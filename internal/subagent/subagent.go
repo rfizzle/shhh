@@ -211,7 +211,27 @@ type Status struct {
 	// could see before: an interruption delivered, answered, and the next
 	// reading finding the same departure. It goes back to zero at the child's
 	// next turn, so what it reports is a child that is not answering now.
+	//
+	// It counts the check's own interruptions and nothing else, which is what
+	// its sentence says: a person's redirect is not the child looking to have
+	// left its task. The two counts below are the rest of this turn's steers,
+	// by the party that gave them.
 	Steers int
+	// LaneSteers is how many of this turn's steers a person gave — typed at
+	// the child's lane, into the field the manager opens on its row, or sent
+	// by a client over the protocol — and ParentSteers how many the
+	// orchestrator that wrote the task gave. Both go back to zero at the
+	// child's next turn, beside Steers.
+	//
+	// They are counts per party rather than one total because a surface that
+	// says "steered twice" of one steer of yours and one of the check's has
+	// answered the wrong question: what a reader wants of a mixed count is
+	// which of them were theirs, and a total cannot be split back afterwards.
+	// SteerFrom below is the last party to speak and not a split of the
+	// count: a child steered by two parties has one last speaker and two
+	// shares, and the two facts are not recoverable from each other.
+	LaneSteers   int
+	ParentSteers int
 	// Verdict is the last reading of this child's work, in the summariser's
 	// own closed vocabulary and never its prose. Empty is a child with no
 	// reading yet — one in its first interval, or one whose session turned
@@ -987,6 +1007,15 @@ type child struct {
 	// side too, and by more than the run's goroutine: the reading that sets
 	// verdict can land after the run it was reading has returned.
 	steers int
+	// laneSteers and parentSteers are what Status.LaneSteers and
+	// Status.ParentSteers report: this turn's steers from the two parties
+	// that are somebody rather than something, counted where the message
+	// reaches the child (drainSteering) rather than where it was queued. A
+	// message still waiting at the boundary has not steered the child yet,
+	// and a count that took it as given would be describing a redirect the
+	// child has never read.
+	laneSteers   int
+	parentSteers int
 	// steersAll is every steer this attempt has been given, which the record
 	// takes; steers above is the current turn's, which the lane shows.
 	steersAll int
@@ -1143,6 +1172,8 @@ func (c *child) status() Status {
 		Handoff:           c.handoffID,
 		RecommendedBudget: c.handoff.RecommendedBudget,
 		Steers:            c.steers,
+		LaneSteers:        c.laneSteers,
+		ParentSteers:      c.parentSteers,
 		Verdict:           c.verdict,
 		SteerFrom:         c.steerFrom,
 		Seeded:            c.seeded,
@@ -1369,6 +1400,15 @@ func (c *child) watchTree(a *agent.Agent, env Env) {
 	a.SetTreeCheck(cfg)
 }
 
+// steerReceipt is the row a person's steer leaves on the child's lane at the
+// boundary that takes it. It states the round because that is the whole of
+// what the reader is waiting to know: a redirect typed three rounds ago and
+// one taken up just now are the same words on the same lane, and only the
+// round tells them apart.
+func steerReceipt(round int) string {
+	return fmt.Sprintf("↳ steer delivered · round %d", round)
+}
+
 // queuedSteer is one message waiting to join a child's conversation, with
 // who sent it. The source travels with the message rather than being read off
 // the child when it lands: two of them can be queued at once, from two
@@ -1379,8 +1419,9 @@ type queuedSteer struct {
 }
 
 // drainSteering pops all queued steering messages, appending each to the
-// transcript as a user entry (they join the conversation now) and recording
-// each in the session record by its source.
+// transcript as a user entry (they join the conversation now), counting each
+// against the party that sent it, and recording each in the session record by
+// its source.
 //
 // The record is written here, where the message reaches the child, rather
 // than where it was queued: the position an event is placed at is read off
@@ -1388,14 +1429,36 @@ type queuedSteer struct {
 // goroutine may touch, and every caller of this is that goroutine. What goes
 // in is the source and nothing else — the message is the parent's or the
 // person's own words, and the record holds no content.
+//
+// A person's own steer also leaves a receipt row beside the message. What
+// they typed went into a queue and joined the conversation some rounds later,
+// and until this row lands the lane shows a message with no answer under it
+// and no way to tell a redirect the child has read from one still waiting.
+// The orchestrator's needs none: it is told at the tool call, and its own
+// steer is not a thing it sits watching a lane for. The check's own
+// interruption already leaves one (OnIntervene).
 func (c *child) drainSteering() []string {
 	c.mu.Lock()
 	queued := c.steering
 	c.steering = nil
+	// The round the receipt states, off the agent this goroutine drives —
+	// the same counter pos reads. Nil is a child with no attempt running,
+	// which has nothing queued to drain.
+	round := 0
+	if c.agent != nil {
+		round = c.agent.Rounds()
+	}
 	msgs := make([]string, 0, len(queued))
 	for _, q := range queued {
 		msgs = append(msgs, q.text)
 		c.transcript = append(c.transcript, TranscriptEntry{Kind: EntryUser, Text: q.text})
+		if q.from == SteerFromParent {
+			c.parentSteers++
+			continue
+		}
+		c.laneSteers++
+		c.transcript = append(c.transcript,
+			TranscriptEntry{Kind: EntrySystem, Text: steerReceipt(round)})
 	}
 	sig := c.rec.Signal
 	c.mu.Unlock()
@@ -1417,8 +1480,9 @@ func (c *child) beginTurn() {
 	// a new instruction — a person's redirection through the lane, usually
 	// the answer to the very count this carries — and starting it on the last
 	// one's tally would report a child as ignoring a steer it has just been
-	// taken off.
-	c.steers = 0
+	// taken off. Every party's share goes with it: what the turn before was
+	// told is that turn's, whoever said it.
+	c.steers, c.laneSteers, c.parentSteers = 0, 0, 0
 	c.mu.Unlock()
 }
 
@@ -2380,6 +2444,7 @@ func (s *Supervisor) restart(c *child, detail string) error {
 	// A retry is a fresh conversation on the same task: no steer has reached
 	// this attempt, whatever the last one was told.
 	c.steers, c.steersAll, c.verdict, c.verdictCode, c.steerFrom = 0, 0, "", "", ""
+	c.laneSteers, c.parentSteers = 0, 0
 	// And the attempt it replaces ended for a reason that is that attempt's,
 	// already on that attempt's own row. A retry that inherited it would
 	// report the child as having ended twice the same way — and a child
@@ -4373,12 +4438,18 @@ func steerMark(st Status) string {
 // one — and is rendered anyway, because a Status is a value a caller can
 // build and a count dropped for want of a word beside it is the worse
 // failure.
+//
+// The count is every party's, because the question the roster is asked here
+// is how often this child has been redirected this turn and by whom. The
+// split the lane draws is not repeated: the orchestrator reads this, and
+// which share was the person's is a distinction for the person.
 func steerCount(st Status) string {
+	n := st.Steers + st.LaneSteers + st.ParentSteers
 	switch {
-	case st.Steers > 0 && st.SteerFrom != "":
-		return plural(st.Steers, "steer") + " · from " + string(st.SteerFrom)
-	case st.Steers > 0:
-		return plural(st.Steers, "steer")
+	case n > 0 && st.SteerFrom != "":
+		return plural(n, "steer") + " · from " + string(st.SteerFrom)
+	case n > 0:
+		return plural(n, "steer")
 	case st.SteerFrom != "":
 		return "steered from " + string(st.SteerFrom)
 	}

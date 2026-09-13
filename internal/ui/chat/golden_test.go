@@ -2155,6 +2155,14 @@ func TestGolden_ScreenAttached(t *testing.T) {
 	noteChild(t, sup, "researcher-1", subagent.TranscriptEntry{
 		Kind: subagent.EntryTool, Tool: "read_file", Args: `{"path":"internal/agent/round.go"}`,
 		Pending: true})
+	// And a redirect typed at this lane that the child has not reached a
+	// boundary to take. It is the one fact about an attached child that is
+	// about the reader rather than the run, and until the boundary takes it
+	// the rail is the only place it is stated
+	// (docs/capabilities/subagents.md#they-are-visible-while-they-run).
+	if err := sup.Steer("researcher-1", "read round.go before the tests", subagent.SteerFromLane); err != nil {
+		t.Fatal(err)
+	}
 	captureGolden(t, "screen-attached", "the surface with the keyboard in a child",
 		[]int{144}, func(width int) []golden.Panel {
 			attached := func(name string) Model {
@@ -2190,7 +2198,8 @@ func TestGolden_ScreenAttached(t *testing.T) {
 			}
 			return []golden.Panel{
 				{Label: "the keyboard in this session · the map marks its first row", View: build("")},
-				{Label: "the keyboard in a child · the rail stays, marked", View: build("researcher-1")},
+				{Label: "the keyboard in a child · the rail stays, marked, and says what is queued for it",
+					View: build("researcher-1")},
 				{Label: "the keyboard in a child's child · the breadcrumb is the lineage",
 					View: build("reviewer-2")},
 				{Label: "another agent waiting · the rail says so and names the chord",

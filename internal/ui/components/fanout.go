@@ -21,6 +21,7 @@ package components
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"charm.land/lipgloss/v2"
@@ -146,6 +147,14 @@ type FanoutLane struct {
 	// to an ellipsis is a lane the reader cannot tell from the one under it,
 	// and the count is worth a line of its own before it is worth that.
 	Steers int
+	// Yours is how many of this turn's steers you gave the child, and
+	// FromParent how many the orchestrator gave it. They stand beside Steers
+	// rather than being folded into it because a lane that says `2 steers`
+	// over one of yours and one of the check's has answered the question
+	// nobody asked: what a reader wants of a count with their own steer in it
+	// is which of them were theirs.
+	Yours      int
+	FromParent int
 	// Verdict is the last reading of the child's work, in the reader's own
 	// closed vocabulary. It is stated beside the count rather than inferred
 	// from it: the count is what has happened this turn and the reading is
@@ -571,13 +580,31 @@ func (l FanoutLane) settledNote() string {
 // redirect the child has already taken up looks like — the count it answered
 // went back to zero when the child took the message, and the source is then
 // the only thing left saying anyone had spoken to it.
+//
+// The count splits by author only where the authors are mixed. One author is
+// one clause — `2 steers · from reading` says everything there is to say
+// about two readings of the same drift — and a lane that spelled the split
+// out anyway would spend a line saying `2 yours` beside `from lane`. Mixed,
+// the total leads and the shares that are somebody's are named under it: the
+// check's own is the remainder, and it is the one share a reader never has to
+// account for.
 func (l FanoutLane) steerNote() string {
 	var note string
+	total := l.Steers + l.Yours + l.FromParent
 	switch {
-	case l.Steers > 0 && l.SteerFrom != "":
-		note = plural(l.Steers, "steer") + " · from " + l.SteerFrom
-	case l.Steers > 0:
-		note = plural(l.Steers, "steer")
+	case l.steerAuthors() > 1:
+		parts := []string{"steered ×" + strconv.Itoa(total)}
+		if l.Yours > 0 {
+			parts = append(parts, strconv.Itoa(l.Yours)+" yours")
+		}
+		if l.FromParent > 0 {
+			parts = append(parts, strconv.Itoa(l.FromParent)+" parent")
+		}
+		note = strings.Join(parts, detailSep)
+	case total > 0 && l.SteerFrom != "":
+		note = plural(total, "steer") + " · from " + l.SteerFrom
+	case total > 0:
+		note = plural(total, "steer")
 	case l.SteerFrom != "":
 		note = "steered from " + l.SteerFrom
 	default:
@@ -587,6 +614,20 @@ func (l FanoutLane) steerNote() string {
 		note += " · last read " + l.Verdict
 	}
 	return note
+}
+
+// steerAuthors is how many parties have steered this child this turn. It is
+// the count of parties and not of steers because that is what decides whether
+// the clause splits: two from one party is one fact, and one from each of two
+// is two.
+func (l FanoutLane) steerAuthors() int {
+	n := 0
+	for _, count := range [...]int{l.Steers, l.Yours, l.FromParent} {
+		if count > 0 {
+			n++
+		}
+	}
+	return n
 }
 
 // sorted returns the lanes in render order: blocked first, in the order they

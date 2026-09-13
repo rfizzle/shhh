@@ -1,9 +1,20 @@
-# One reply per request. The last line repeats once these run out, and both
-# the session and the child it spawns draw from this one queue.
+# One reply queue per agent, opened by a [name] header: the session and the
+# reader it spawns. A steer is about when the child reaches its own round
+# boundary, and a single queue would make that a race between the two of them
+# rather than the sequence this scene is about.
 #
 # The sentence and the spawn are one reply, so the transcript titles the step
 # with the sentence rather than closing a turn before the call was asked for.
+[session]
 Putting a reader on the round accounting.
 +tool:spawn_agent:{"role":"researcher","task":"Read loop.go and say where the round counter is read.","name":"reader-1"}
-tool:read_file:{"path":"loop.go"}
-The round counter is read at the top of the loop, and nowhere else.
+The reader is on it.
+
+# The child's rounds are fifteen seconds long, which is what makes the queue
+# on the rail a thing that can be read: a sentence typed at this lane waits
+# for the boundary, and a child answering instantly would have taken it before
+# the screen could say it was waiting. The last reply of a queue repeats, so
+# this is a child reading for as long as the scene runs.
+[reader-1]
+wait:15
++tool:read_file:{"path":"loop.go"}

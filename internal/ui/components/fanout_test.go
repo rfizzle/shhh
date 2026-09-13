@@ -379,6 +379,40 @@ func TestFanoutLaneSaysWhoSteeredTheChild(t *testing.T) {
 	}
 }
 
+// A count with more than one author splits, and one with a single author does
+// not. `2 steers · from reading` over one steer of yours and one of the
+// check's is the reading this exists to stop: the total says the child has
+// been redirected twice and the source says the check did it, and neither is
+// the reader's own steer. Mixed, the total leads and the shares that belong to
+// somebody are named; the check's is the remainder and stays unnamed.
+func TestFanoutLaneSplitsAMixedSteerCount(t *testing.T) {
+	mixed := FanoutLane{State: FanoutRunning, Name: "writer-1", Task: "docs/loop.md",
+		Tools: 12, Steers: 1, Yours: 1, SteerFrom: "lane", Verdict: "off target"}
+	if view := ansi.Strip(mixed.View(110)); !strings.Contains(view, "steered ×2 · 1 yours · last read off target") {
+		t.Fatalf("a mixed count should say how many were yours: %q", view)
+	}
+	both := FanoutLane{State: FanoutRunning, Name: "writer-1", Tools: 12,
+		Steers: 1, Yours: 2, FromParent: 1, SteerFrom: "parent"}
+	if view := ansi.Strip(both.View(110)); !strings.Contains(view, "steered ×4 · 2 yours · 1 parent") {
+		t.Fatalf("every author with a share is named: %q", view)
+	}
+	// One author is one clause, whichever author it is: a lane that split a
+	// count nobody else contributed to would spend a line saying the same
+	// thing twice.
+	yours := FanoutLane{State: FanoutRunning, Name: "writer-1", Tools: 3, Yours: 2, SteerFrom: "lane"}
+	if view := ansi.Strip(yours.View(110)); !strings.Contains(view, "2 steers · from lane") ||
+		strings.Contains(view, "yours") {
+		t.Fatalf("one author keeps today's clause: %q", view)
+	}
+	// And your steers count towards the total even where the clause does not
+	// split: the count the lane states is every steer this turn, not the
+	// check's share of them.
+	one := FanoutLane{State: FanoutRunning, Name: "writer-1", Tools: 3, Yours: 1, SteerFrom: "lane"}
+	if view := ansi.Strip(one.View(110)); !strings.Contains(view, "1 steer · from lane") {
+		t.Fatalf("your own steer is counted: %q", view)
+	}
+}
+
 // TestFanoutLaneSaysWhatItStartedFrom is the seeded-worktree criterion on a
 // lane: a writer working from your uncommitted files says how many, while it
 // is working and there is nothing else under the lane to say. A lane that has

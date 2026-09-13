@@ -46,7 +46,7 @@
    ◇ agent   researcher-1 · survey the roun…  ⠹ working · 4 tools · $0.01    22s
     steered from parent
    ◇ agent   researcher-2 · survey the fold…  ⠹ working · 2 tools · $0.01    19s
-    2 steers · from reading · last read off target
+    steered ×2 · 1 yours · last read off target
 
 · held · two children parked where you stopped them
 ◇ fan-out    3 agents                                  2 held · 1 running    48s
@@ -102,7 +102,7 @@
    ␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mresearcher-1␛[m␛[38;5;244m · survey the roun…␛[m  ␛[38;5;254m⠹ working␛[m␛[38;5;244m · ␛[m␛[38;5;244m4 tools · $0.01␛[m    ␛[38;5;244m22s␛[m
     ␛[38;5;244msteered from parent␛[m
    ␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mresearcher-2␛[m␛[38;5;244m · survey the fold…␛[m  ␛[38;5;254m⠹ working␛[m␛[38;5;244m · ␛[m␛[38;5;244m2 tools · $0.01␛[m    ␛[38;5;244m19s␛[m
-    ␛[38;5;244m2 steers · from reading · last read off target␛[m
+    ␛[38;5;244msteered ×2 · 1 yours · last read off target␛[m
 
 · held · two children parked where you stopped them
 ␛[38;5;254m◇␛[m ␛[38;5;254mfan-out␛[m    ␛[38;5;244m3 agents␛[m                                  ␛[38;5;244m2 held␛[m␛[38;5;244m · ␛[m␛[38;5;254m1 running␛[m    ␛[38;5;244m48s␛[m

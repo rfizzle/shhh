@@ -899,8 +899,17 @@ func (m Model) childRailSegments() []components.RailSegment {
 			Drop: components.RailNormal,
 		})
 	}
+	// What is queued, said in words. `queued 1` beside a spend and a round
+	// counter reads as a queue of anything the frame counts; what is actually
+	// waiting is a sentence the reader typed at this prompt, held until the
+	// child's next round boundary, and the rail is the only surface that says
+	// so before `/stats` is asked
+	// (docs/capabilities/subagents.md#they-are-visible-while-they-run).
 	if q := m.subagents.QueuedSteering(name); q > 0 {
-		segs = append(segs, components.RailSegment{Text: sty.StatusBar.Render(fmt.Sprintf("queued %d", q)), Drop: components.RailNormal})
+		segs = append(segs, components.RailSegment{
+			Text: sty.StatusBar.Render(fmt.Sprintf("queued steering: %d", q)),
+			Drop: components.RailNormal,
+		})
 	}
 	return append(segs, components.RailSegment{Text: sty.StatusBar.Render(st.Name), Drop: components.RailDetail})
 }

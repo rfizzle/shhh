@@ -464,6 +464,20 @@ agent whose line has not moved between two reads several rounds apart.
 Both surfaces also say where the last message the child was given came from —
 its own reader, this lane, or the orchestrator — because a count with more
 than one possible author leaves the question worth asking of it unanswered.
+Where more than one of them has spoken this turn, the lane splits the count
+instead of naming a last speaker: it states the total and then how many were
+yours, and how many the orchestrator's. Two steers of one author is one fact
+and keeps one clause; two of different authors is the case a single number
+misreports, because a redirect you gave and a drift the check found are
+different news about the same child. What is not named is the check's own
+share, which is whatever the named ones leave.
+
+A steer you type at a child's prompt is not delivered where you type it. It
+waits for the child's next round boundary — an open stream cannot be
+interrupted — so the frame's rail says how many of your sentences are still
+waiting, and the lane leaves a row saying which round took each one. Without
+the pair, a redirect the child has already read and one it has not yet seen
+are the same words on the same screen.
 
 Attaching to a child is not a separate surface. It changes which agent the
 session is looking at, and every agent — the root included — is the same kind

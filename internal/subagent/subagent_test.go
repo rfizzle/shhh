@@ -1305,6 +1305,57 @@ func TestSteerDuringFinalStreamStartsNextTurn(t *testing.T) {
 	}
 }
 
+// A steer is counted against whoever gave it, and the one a person typed
+// leaves a receipt on the child's lane at the boundary that takes it. Both
+// answer the same question: a lane that says a child has been steered twice
+// over one steer of yours and one of the check's has told you nothing about
+// your own, and a lane with your sentence on it and nothing under it cannot
+// say whether the child has read it yet.
+//
+// The orchestrator's steer counts too and leaves no receipt: it is told at
+// the tool call it made, and it is not sitting in front of a lane.
+func TestASteerIsCountedAgainstItsAuthorAndLeavesTheirReceipt(t *testing.T) {
+	env := &scriptedEnv{steps: readRounds(40), delay: 10 * time.Millisecond}
+	sup := New(t.Context(), Options{Root: t.TempDir(), NewEnv: env.factory()})
+	t.Cleanup(sup.Close)
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"long survey"}`)
+	waitState(t, sup, "researcher-1", StateRunning)
+
+	if err := sup.Steer("researcher-1", "read the exporter instead", SteerFromLane); err != nil {
+		t.Fatalf("steering the child: %v", err)
+	}
+	waitFor(t, func() bool {
+		return transcriptHas(sup.Transcript("researcher-1"), EntrySystem, "steer delivered · round ")
+	})
+	if st := statusOf(t, sup, "researcher-1"); st.LaneSteers != 1 || st.ParentSteers != 0 || st.Steers != 0 {
+		t.Fatalf("your steer is yours alone: lane %d, parent %d, reading %d",
+			st.LaneSteers, st.ParentSteers, st.Steers)
+	}
+
+	if err := sup.Steer("researcher-1", "the exporter's tests as well", SteerFromParent); err != nil {
+		t.Fatalf("the orchestrator steering the child: %v", err)
+	}
+	waitFor(t, func() bool {
+		return statusOf(t, sup, "researcher-1").ParentSteers == 1
+	})
+	st := statusOf(t, sup, "researcher-1")
+	if st.LaneSteers != 1 {
+		t.Fatalf("the orchestrator's steer is not yours, got %d of yours", st.LaneSteers)
+	}
+	// One receipt for the one steer that earned it, and it is a row of its
+	// own rather than a mark on the message: the message is the person's
+	// words and this is the machinery's.
+	receipts := 0
+	for _, e := range sup.Transcript("researcher-1") {
+		if e.Kind == EntrySystem && strings.Contains(e.Text, "steer delivered") {
+			receipts++
+		}
+	}
+	if receipts != 1 {
+		t.Fatalf("one receipt for the person's steer and none for the orchestrator's, got %d", receipts)
+	}
+}
+
 // spawnRaw calls spawn_agent and returns its error instead of failing.
 func spawnRaw(sup *Supervisor, args string) (string, error) {
 	exec := sup.WrapExecutor("", func(string, json.RawMessage) (string, error) {

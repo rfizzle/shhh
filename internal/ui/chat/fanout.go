@@ -221,21 +221,23 @@ func (m Model) fanoutBlockFor(e entry) components.FanoutBlock {
 	for _, st := range nested {
 		p := m.childProgress(st)
 		lane := components.FanoutLane{
-			State:     p.State,
-			Name:      st.Name,
-			Depth:     depth[st.Name],
-			Under:     len(m.subagents.Under(st.Name)),
-			Task:      firstLine(st.Task),
-			Step:      p.Step,
-			Steps:     p.Steps,
-			Tools:     p.Tools,
-			Spend:     p.Spend,
-			Elapsed:   turnDuration(st.Elapsed),
-			Seeded:    st.Seeded,
-			Steers:    st.Steers,
-			Verdict:   st.Verdict,
-			SteerFrom: string(st.SteerFrom),
-			Frame:     p.Frame,
+			State:      p.State,
+			Name:       st.Name,
+			Depth:      depth[st.Name],
+			Under:      len(m.subagents.Under(st.Name)),
+			Task:       firstLine(st.Task),
+			Step:       p.Step,
+			Steps:      p.Steps,
+			Tools:      p.Tools,
+			Spend:      p.Spend,
+			Elapsed:    turnDuration(st.Elapsed),
+			Seeded:     st.Seeded,
+			Steers:     st.Steers,
+			Yours:      st.LaneSteers,
+			FromParent: st.ParentSteers,
+			Verdict:    st.Verdict,
+			SteerFrom:  string(st.SteerFrom),
+			Frame:      p.Frame,
 		}
 		if note := childNote(st); note != "" {
 			if st.State == subagent.StateBlocked {

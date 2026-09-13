@@ -273,7 +273,9 @@ func TestAttachedEnterSteersChild(t *testing.T) {
 	if n := sup.QueuedSteering("researcher-1"); n != 1 {
 		t.Fatalf("QueuedSteering = %d, want 1", n)
 	}
-	if !strings.Contains(m.View().Content, "queued 1") {
+	// In words on the rail, because what is waiting is a sentence the reader
+	// typed here and not a queue of whatever else the frame counts.
+	if !strings.Contains(m.View().Content, "queued steering: 1") {
 		t.Fatalf("status bar missing the queued-steering count:\n%s", m.View().Content)
 	}
 }

@@ -1306,13 +1306,18 @@ func TestGolden_FanoutBlock(t *testing.T) {
 					Tools: 12, Spend: "$0.05", Elapsed: "2m04s", Summary: "round limit (25) reached"},
 			},
 		}
+		// The second lane's count is a mixed one: one steer the reader typed
+		// at the lane and one the check earned, which is the case a single
+		// `2 steers · from reading` misreports. The first lane is the other
+		// half of the rule — a redirect it has already taken up, one author,
+		// today's clause.
 		spinning := FanoutBlock{
 			Elapsed: "22s",
 			Lanes: []FanoutLane{
 				{State: FanoutRunning, Name: "researcher-1", Task: "survey the round accounting",
 					Tools: 4, Spend: "$0.01", Elapsed: "22s", Frame: 2, SteerFrom: "parent"},
 				{State: FanoutRunning, Name: "researcher-2", Task: "survey the fold state",
-					Tools: 2, Spend: "$0.01", Elapsed: "19s", Frame: 2, Steers: 2,
+					Tools: 2, Spend: "$0.01", Elapsed: "19s", Frame: 2, Steers: 1, Yours: 1,
 					SteerFrom: "reading", Verdict: "off target"},
 			},
 		}

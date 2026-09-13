@@ -9,6 +9,11 @@
 # pressure and its spend, with the parent's round counter after them and the
 # child's name last — the order the field-drop ladder fixes.
 #
+# And what it says about the reader: a sentence typed at this prompt is not
+# delivered where it is typed. It waits for the child's next round boundary,
+# so the rail counts what is waiting and the lane says which round took it
+# (docs/capabilities/subagents.md#they-are-visible-while-they-run).
+#
 # The command is one door in and the chord is the other, and both are driven
 # here: `/attach` for the child's own frame, and the alt chord the register
 # gives the manager for the list the child is a row of. The chord is the step
@@ -20,24 +25,32 @@ snap 01-start "Some things worth doing first"
 keys "who reads the round counter" Enter
 # Spawning an agent is gated, so the card is what stands between the sentence
 # and a child.
-snap 02-spawn-card "researcher agent"
+snap 02-spawn-card "Spawn researcher"
 sleep 1
 keys y
 snap 03-spawned "reader-1"
 sleep 2
 keys "/attach reader-1" Enter
 snap 04-attached "[esc] detach"
-sleep 1
+# A redirect typed at the child's own prompt, while the child is inside a
+# round. Nothing of it reaches the child yet: the rail is the whole of what
+# says the sentence was taken.
+keys "read round.go as well" Enter
+snap 05-queued "queued steering: 1"
+# The boundary takes it, ten-odd seconds later, and the lane keeps the receipt
+# saying which round did. Without it the sentence above would sit on the lane
+# with nothing to say whether the child had read it.
+snap 06-delivered "steer delivered"
 keys Escape
-snap 05-detached "[enter] send"
+snap 07-detached "[enter] send"
 # The manager, through the one key that opens it: the child that was attached
 # a moment ago is a row on the list, so the capture is also the proof that the
 # chord landed rather than a bare letter falling into the draft.
 keys M-a
-snap 06-manager "[enter] attach"
+snap 08-manager "[enter] attach"
 keys Escape
 sleep 0.5
 keys C-c
-snap 07-quit-armed "again quits"
+snap 09-quit-armed "again quits"
 keys C-c
-snap 08-exit "that is everything the screen was holding"
+snap 10-exit "that is everything the screen was holding"
