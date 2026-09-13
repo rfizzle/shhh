@@ -1,0 +1,36 @@
+# What a question's shape costs the screen
+# (docs/interface/surfaces.md#the-question-card).
+#
+# What a golden cannot say and this can: that a yes-or-no landing in a real
+# terminal leaves the rail in its columns, the transcript in its pane and the
+# frame under the card with the vitals on it — and that the pick-one after it
+# takes all three, because a list is what the width is for.
+setup printf 'package agent\n' > loop.go && printf 'package agent\n' > round.go
+snap 01-start "Some things worth doing first"
+keys "fix the round limit" Enter
+snap 02-read "Reading the round accounting first"
+keys "go on then" Enter
+# The yes-or-no. It arrives over an empty draft holding the keyboard, and the
+# rule between it and the frame is what says so.
+snap 03-ask "Should the migration be reversible?"
+# The same screen, waited for by the rail's own heading: had the card taken
+# the surface the way every other decision does, this snap would never come.
+snap 04-rail "SPEND"
+# And the frame is still under it, with the vitals that never drop.
+snap 05-vitals "gated"
+# The keys are the card's own, unchanged, and the answer lands as the row it
+# always did.
+keys y
+snap 06-answered "on the card"
+keys "and the store" Enter
+# The pick-one, which needs the width for its descriptions and its short
+# fields — so it takes the screen, and the rail, the frame and the reading
+# behind it are what pays for it.
+snap 07-list "in the checkout already"
+keys C-Space
+snap 08-held "the full answer"
+keys Enter
+snap 09-sent "Thank you, that settles both"
+keys C-c
+keys C-c
+snap 10-exit "that is everything the screen was holding"

@@ -1224,6 +1224,25 @@ field that opened with the tab would take the arrows the moment the reader
 arrived, and the strip they were walking would stop moving on the tab they had
 not asked to type into; the note key opens it and hands the keyboard back.
 
+The shape also decides what the card costs the screen. A yes-or-no is one row
+of answer, so it arrives the way a decision that landed mid-sentence arrives:
+it takes the rows it needs above the input frame and nothing else moves. [The
+rail on the right](#the-inspector-rail) keeps its columns, the frame keeps
+[the vitals](#the-input-frame) under it, and the transcript is still being
+read behind the question. That holds once the card has the keyboard too: the
+frame does not go away, and the rule between the two names the card as the
+surface holding it, which is the whole of what the reader needs told.
+
+Every other shape takes the screen. A list needs the width for its
+descriptions and its short fields, a sheet of tabs needs it for the strip, a
+free answer is a sentence being written and wants the room a sentence wants,
+and [an approval](#the-approval-card) needs it for the rows that say what is
+about to happen to the machine — so each of those keeps the whole surface for
+as long as it is up, and the rail, the frame and the reading behind them are
+what pays for it. The line between the two is what this card is for: a question
+that costs a keystroke must not cost the cockpit, and one that has to be read
+costs what reading it takes.
+
 Esc leaves the card and answers nothing. The question is held, the notice
 rail counts it — *1 question waiting* — and the next message the reader sends
 is delivered as the answer, in their words. The gutter says the draft is

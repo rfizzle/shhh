@@ -96,10 +96,14 @@ func (m Model) frameShowing() bool {
 	if m.agentList != nil {
 		return false
 	}
-	if m.decisionUngated() {
-		// The card rides above the frame rather than replacing it (
-		// the draft still holds the keyboard, so it is still on
-		// screen, still accented, and still being typed into.
+	if m.decisionRides() {
+		// The card rides above the frame rather than replacing it
+		// (interrupt.go). Ungated the draft still holds the keyboard, so the
+		// frame is still on screen, still accented and still being typed
+		// into; on the one-answer question the frame stays for what it says
+		// rather than for what it takes — the mode, the pressure and the
+		// spend are the reading the answer is given against, and they are on
+		// its vitals rail.
 		return m.frameLayout() != framePlain
 	}
 	if m.activeChildAsk() != nil {
@@ -316,6 +320,17 @@ func (m Model) frameHints(room int) string {
 			segAs(keys.Draft.Answer, "the card again"),
 			segAs(keys.Draft.Queue, "queues for after").givesUp(1),
 		}
+	case m.decisionGated():
+		// The card above holds the keyboard, so not one of the draft's keys
+		// is live and a rail offering them would be offering nothing. What is
+		// still true of the box is what it is holding, so the rail says that
+		// and stops — the same evidence the undressed draft states under a
+		// card that took the panel instead (interrupt.go). An empty box holds
+		// nothing and says nothing.
+		if m.input.Value() == "" {
+			return ""
+		}
+		return m.draftPosition()
 	case m.decisionUngated():
 		// The three keys that matter while a decision waits. Stopping the run
 		// is the cancel chord, never esc: esc on this surface goes back rather
@@ -1114,7 +1129,14 @@ func (m Model) drawPromptFrame(scr uv.Screen, area uv.Rectangle, cur *cursorSink
 	vitals := " " + m.frameVitals(mode, railLabelWidth("", width)) + " "
 	if mode == frameWide {
 		drawRail(scr, r.vitals, accent, "├", "┤", vitals, "")
-		drawRail(scr, r.bottom, accent, "╰", "╯", " "+m.frameHints(railLabelWidth("", width))+" ", "")
+		// A rail with nothing to say is rule the whole way across rather than
+		// rule with a two-cell notch in it: the spaces are the label's, so a
+		// label that is not there does not get them (frameHints).
+		var hints string
+		if run := m.frameHints(railLabelWidth("", width)); run != "" {
+			hints = " " + run + " "
+		}
+		drawRail(scr, r.bottom, accent, "╰", "╯", hints, "")
 		return
 	}
 	drawRail(scr, r.bottom, accent, "╰", "╯", vitals, "")
@@ -1129,6 +1151,13 @@ func (m Model) drawPromptFrame(scr uv.Screen, area uv.Rectangle, cur *cursorSink
 // the terminal hides its cursor.
 func (m Model) placeFrameCursor(cur *cursorSink, r promptRects, drafted int) {
 	if cur == nil {
+		return
+	}
+	if m.decisionGated() {
+		// A card riding above the frame that holds the keyboard leaves the
+		// box drawn and not live (interrupt.go). A cursor standing in it
+		// would say the next character lands there, which is the one thing
+		// about this frame that is no longer true.
 		return
 	}
 	if m.historySearching() {

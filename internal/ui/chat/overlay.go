@@ -599,7 +599,15 @@ func (m Model) panelOverlay() overlay {
 		return nil
 	}
 	switch o.place {
-	case placePanel, placeFloating:
+	case placeFloating:
+		// A floating decision owns the panel only where there is no frame for
+		// it to ride above: with the frame showing it draws above it and the
+		// panel below stays the draft's (renderInterrupt, interrupt.go).
+		if m.frameShowing() {
+			return nil
+		}
+		return o
+	case placePanel:
 		return o
 	}
 	return nil

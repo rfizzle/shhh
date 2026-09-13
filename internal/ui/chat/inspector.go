@@ -68,11 +68,13 @@ func (m Model) inspectorHidden() bool {
 	if m.agentList != nil {
 		return true
 	}
-	// A decision still waiting for the keyboard is not a takeover (the
-	// mid-sentence rule): the draft is live, the panes above it are what the
-	// reader is looking at, and a card landing must not reflow the screen behind
-	// it.
-	if m.decisionUngated() {
+	// A decision that draws above the frame is not a takeover: the panes above
+	// it are what the reader is looking at, and a card landing must not reflow
+	// the screen behind it. Every decision does that while the draft still
+	// holds the keyboard (the mid-sentence rule), and the one-answer question
+	// does it holding the keyboard too — one row of answer buys nothing with
+	// the columns the rail is standing in (interrupt.go, question.go).
+	if m.decisionRides() {
 		return false
 	}
 	if m.activeChildAsk() != nil {

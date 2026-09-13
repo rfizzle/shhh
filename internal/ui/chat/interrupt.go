@@ -74,6 +74,22 @@ func (m Model) decisionUngated() bool { return m.interruptShowing() && !m.decisi
 // keys are live.
 func (m Model) decisionGated() bool { return m.interruptShowing() && m.decisionHeld }
 
+// decisionRides reports the decision that draws above the frame instead of
+// replacing it. Every decision does while the draft still holds the keyboard,
+// because that is what the mid-sentence rule is: the sentence is on screen and
+// being typed into, so the card takes rows above it rather than the screen out
+// from under it.
+//
+// One decision rides while it holds the keyboard as well — the one-answer
+// question (questionInline). A card the reader answers with a single key has
+// nothing to spend the width on, and taking the screen for it costs them the
+// rail, the vitals and the reading behind it for the length of a keystroke.
+// The rule between the card and the frame is what keeps that honest: it names
+// whichever of the two the keyboard is in, so a frame that is still drawn is
+// never mistaken for one that is still live
+// (docs/interface/surfaces.md#the-question-card).
+func (m Model) decisionRides() bool { return m.decisionUngated() || m.questionInline() }
+
 // releaseDecision hands the keyboard back to the draft. It is called wherever
 // a decision is answered or left, so a card can never inherit the gate a
 // previous one was given. The departure is stamped: a card that appears
@@ -602,11 +618,11 @@ func (m Model) resolveInterruptLines() []string {
 	return nil
 }
 
-// interruptHeight is what the ungated card and its rail add to the bottom
-// panel, so the layout accounting pays for them the way it pays for the
-// notice rail.
+// interruptHeight is what the card riding above the frame and its rail add to
+// the bottom panel, so the layout accounting pays for them the way it pays for
+// the notice rail.
 func (m Model) interruptHeight() int {
-	if !m.decisionUngated() || !m.frameShowing() {
+	if !m.decisionRides() || !m.frameShowing() {
 		return 0
 	}
 	if n := len(m.interruptLines()); n > 0 {
@@ -615,18 +631,27 @@ func (m Model) interruptHeight() int {
 	return 0
 }
 
-// renderInterrupt is the ungated card with the DRAFT rail under it. The card
-// is bordered but undressed; the frame below keeps the accent, because the
-// frame is where the keystrokes are going.
+// renderInterrupt is the card riding above the frame, with the rail that names
+// the keyboard's owner between them. The card is bordered but undressed.
+//
+// The rail is the one thing that moves when the handover does. Ungated it says
+// DRAFT and the frame below keeps the accent, because the frame is where the
+// keystrokes are going; on the one card that rides while it holds the keyboard
+// it names the decision instead, and the frame below it is drawn without a
+// cursor for the same reason (frame.go).
 func (m Model) renderInterrupt(width int) string {
-	if !m.decisionUngated() {
+	if !m.decisionRides() {
 		return ""
 	}
 	lines := m.interruptLines()
 	if len(lines) == 0 {
 		return ""
 	}
-	return strings.Join(lines, "\n") + "\n" + keyboardRail("DRAFT", width)
+	label := "DRAFT"
+	if m.decisionGated() {
+		label = m.decisionRailLabel()
+	}
+	return strings.Join(lines, "\n") + "\n" + keyboardRail(label, width)
 }
 
 // applyNotYetLive puts a card into the state the keyboard says it is in. It

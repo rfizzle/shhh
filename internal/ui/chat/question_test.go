@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/ask"
 	"github.com/rfizzle/shhh/internal/meter"
@@ -1075,5 +1076,142 @@ func TestQuestion_ASentenceOverAnAnsweredCardIsTheWordsBesideThePicks(t *testing
 	}
 	if got[2]["note"] != "cacheStore" {
 		t.Errorf("an answer that carries its own words keeps them: %+v", got[2])
+	}
+}
+
+// askedAt is a question card up on a terminal wide enough to have split, with
+// the keyboard already on the card: the arrangement the shape decides
+// something about (docs/interface/surfaces.md#the-question-card).
+func askedAt(t *testing.T, width int, args string) Model {
+	t.Helper()
+	m := frameModel(t, width, 40).WithAsk()
+	m.state = stateStreaming
+	updated, _ := m.Update(askCall(args))
+	next := updated.(Model)
+	if next.question == nil || !next.decisionGated() {
+		t.Fatal("an ask call on an idle draft should draw the card and take the keyboard")
+	}
+	return next
+}
+
+const confirmArgs = `{"question":"Should the migration be reversible?","shape":"confirm"}`
+
+// A yes-or-no asks for one keystroke, so it costs the reader nothing else:
+// the rail keeps its columns, the transcript keeps its pane and the frame
+// stays under the card with the vitals on it. Every shape that has something
+// to show takes the screen, because that is what the width is for.
+func TestQuestion_OnlyTheOneAnswerShapeKeepsTheCockpit(t *testing.T) {
+	const tabbed = `{"questions":[
+		{"question":"Should the migration be reversible?","shape":"confirm"},
+		{"question":"Should the flag default on?","shape":"confirm"}]}`
+	const text = `{"question":"What should the flag be called?","shape":"text"}`
+	for _, tc := range []struct {
+		name string
+		args string
+		keep bool
+	}{
+		{"a yes or no", confirmArgs, true},
+		{"a yes or no with a required note", `{"question":"Ship it?","shape":"confirm","note":"required"}`, true},
+		{"a list to pick from", chooseArgs, false},
+		{"a list to tick", `{"question":"Which packages?","shape":"choose_many","options":[
+			{"label":"internal/agent"},{"label":"internal/cli"}]}`, false},
+		{"a free answer", text, false},
+		{"two questions on tabs", tabbed, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			m := askedAt(t, 144, tc.args)
+			if got := !m.inspectorHidden(); got != tc.keep {
+				t.Errorf("rail up = %v, want %v", got, tc.keep)
+			}
+			if got := m.frameShowing(); got != tc.keep {
+				t.Errorf("frame showing = %v, want %v", got, tc.keep)
+			}
+			cols := m.columns()
+			if split := !cols.inspector.Empty(); split != tc.keep {
+				t.Errorf("the pane split = %v, want %v", split, tc.keep)
+			}
+			if tc.keep && cols.pane.Dx() >= cols.content.Dx() {
+				t.Errorf("the transcript should keep a pane and not the whole width: %d of %d",
+					cols.pane.Dx(), cols.content.Dx())
+			}
+		})
+	}
+}
+
+// The card rides above the frame, so the panel below it is still the draft's
+// and the rows are paid for once: a card counted into both would push the
+// frame off the bottom of the terminal.
+func TestQuestion_TheOneAnswerCardRidesAboveTheFrame(t *testing.T) {
+	m := askedAt(t, 144, confirmArgs)
+	if p := m.panel(); p.lines != nil {
+		t.Fatalf("the panel should still be the draft's, got %d rows of card", len(p.lines))
+	}
+	if m.interruptHeight() != len(m.questionLines())+1 {
+		t.Errorf("the card and its rail should be budgeted for above the frame: %d for %d rows",
+			m.interruptHeight(), len(m.questionLines()))
+	}
+	view := m.View().Content
+	if n := strings.Count(view, "Should the migration be reversible?"); n != 1 {
+		t.Errorf("the question should be drawn once, found %d", n)
+	}
+	if lines := strings.Split(view, "\n"); len(lines) != 40 {
+		t.Errorf("the surface should fill the terminal exactly once, got %d rows", len(lines))
+	}
+}
+
+// The rule between the card and the frame names whichever of the two the
+// keyboard is in, which is what keeps a frame that is still drawn from being
+// read as one that is still live.
+func TestQuestion_TheRuleUnderTheCardNamesTheKeyboardsOwner(t *testing.T) {
+	m := askedAt(t, 144, confirmArgs)
+	if got := m.renderInterrupt(m.contentWidth()); !strings.Contains(got, "DECISION 1/1") {
+		t.Errorf("the card holds the keyboard, so the rule should name it:\n%s", got)
+	}
+	m.input.SetValue("and keep the migration reversible")
+	back, _ := m.ungateDecision()
+	m = back.(Model)
+	if got := m.renderInterrupt(m.contentWidth()); !strings.Contains(got, "DRAFT") {
+		t.Errorf("the sentence has the keyboard back, so the rule should name it:\n%s", got)
+	}
+}
+
+// The keys are the card's whether it took the screen or not, and the answer
+// lands as the row it always did.
+func TestQuestion_TheKeysAreUnchangedWhileTheCockpitStands(t *testing.T) {
+	m := sendKey(t, askedAt(t, 144, confirmArgs), tea.KeyPressMsg{Code: 'y', Text: "y"})
+	got := answeredResult(t, m)
+	picked, _ := got["picked"].([]any)
+	if len(picked) != 1 || picked[0] != "yes" {
+		t.Fatalf("y should answer yes on the card: %+v", got)
+	}
+	if got["answered"] != string(ask.AnsweredOnCard) {
+		t.Errorf("answered = %v, want %v", got["answered"], ask.AnsweredOnCard)
+	}
+}
+
+// The frame under a card that holds the keyboard offers none of the draft's
+// keys, because not one of them is live: what it says instead is the sentence
+// it is holding and where the cursor is standing in it — the same evidence the
+// undressed draft states under a card that took the panel.
+func TestQuestion_TheFrameUnderTheCardSaysWhatItIsHolding(t *testing.T) {
+	m := frameModel(t, 144, 40).WithAsk()
+	m.state = stateStreaming
+	m.input.SetValue("and keep the migration reversible")
+	m.syncInputHeight()
+	arrived, _ := m.Update(askCall(confirmArgs))
+	m = arrived.(Model)
+	if !m.decisionUngated() {
+		t.Fatal("a card landing on a sentence should wait for the handover")
+	}
+	held, _ := m.gateDecision()
+	m = held.(Model)
+	view := ansi.Strip(m.View().Content)
+	for _, want := range []string{"and keep the migration reversible", "33 characters, cursor at 33"} {
+		if !strings.Contains(view, want) {
+			t.Errorf("the frame should still hold the sentence and say so, missing %q:\n%s", want, view)
+		}
+	}
+	if strings.Contains(view, "queues steering") {
+		t.Errorf("the draft's keys are not live under a card that holds the keyboard:\n%s", view)
 	}
 }

@@ -1763,6 +1763,13 @@ func TestGolden_StatusRow(t *testing.T) {
 // than to the gap beside them.
 var screenWidths = append(append([]int{12, 70}, goldenWidths...), 144, 200)
 
+// questionWidths adds one terminal past the rung the rail appears at. The
+// question card is the one card whose shape decides whether the surface
+// behind it stands, so it is captured where there is a rail to keep: 130 is
+// the rung itself and 144 is past it, where the rail has grown
+// (docs/interface/surfaces.md#the-question-card).
+var questionWidths = append(append([]int{}, goldenWidths...), 144)
+
 // screenHeight is the row count every whole-screen panel is captured at. It
 // is fixed because the capture's subject is the vertical arrangement: the
 // chrome, the pane, the live tail under it and the bottom panel have to add
@@ -3169,7 +3176,7 @@ func TestGolden_ChildAskCard(t *testing.T) {
 // reason is a phrase rather than a dimming — both of which have to survive
 // the mono capture, because that is the whole reason they are words.
 func TestGolden_QuestionCard(t *testing.T) {
-	captureGolden(t, "question-card", "the model's question in the panel", goldenWidths, func(width int) []golden.Panel {
+	captureGolden(t, "question-card", "the model's question in the panel", questionWidths, func(width int) []golden.Panel {
 		build := func(args string, mut func(Model) Model) string {
 			m := frameModel(t, width, 40).WithAsk()
 			m.state = stateStreaming
@@ -3186,7 +3193,23 @@ func TestGolden_QuestionCard(t *testing.T) {
 			{"label":"SQLite","detail":"in the checkout already","field":"3 files","recommended":true},
 			{"label":"Postgres","detail":"one more service to run","field":"9 files"},
 			{"label":"Redis","unavailable":"no client in this project"}]}`
-		return []golden.Panel{
+		// cockpit is the same call drawn into the whole terminal rather than
+		// into the panel alone, with a turn behind it for the rail to report.
+		cockpit := func(args string) string {
+			m := frameModel(t, width, screenHeight).WithAsk()
+			m.transcript = goldenTranscript()
+			m.state = stateStreaming
+			updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{{
+				ID: "call_q", Name: ask.ToolName, Arguments: args,
+			}}})
+			next := updated.(Model)
+			next.invalidateRenderCache()
+			next.syncViewport()
+			next.viewport.SetLines(next.renderHistoryLines())
+			next.viewport.GotoBottom()
+			return next.View().Content
+		}
+		panels := []golden.Panel{
 			{Label: "pick one · the recommendation leads and says so, and the ⊘ row says why not",
 				View: build(choose, nil)},
 			{Label: "the note has the keyboard · the list's digits are text until tab hands it back",
@@ -3202,6 +3225,20 @@ func TestGolden_QuestionCard(t *testing.T) {
 			{Label: "yes or no · the inline confirm, whose enter is the answer that changes nothing",
 				View: build(`{"question":"Should the migration be reversible?","shape":"confirm"}`, nil)},
 		}
+		if width < 130 {
+			return panels
+		}
+		// The whole surface, because what the yes-or-no is pinned for here is
+		// what it does not take: the rail is still in its columns, the
+		// transcript is still in its pane, and the frame is still under the
+		// card with the vitals on it. None of that can be seen in a capture
+		// of the card alone, and the pick-one beside it is the same terminal
+		// with the same question in a shape that does take the screen.
+		return append(panels,
+			golden.Panel{Label: "yes or no · the whole surface, which the card leaves standing",
+				View: cockpit(`{"question":"Should the migration be reversible?","shape":"confirm"}`)},
+			golden.Panel{Label: "pick one · the same terminal, and the card has all of it",
+				View: cockpit(choose)})
 	})
 }
 

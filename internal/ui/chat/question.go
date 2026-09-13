@@ -499,6 +499,25 @@ func (c *questionCard) refuseNote() {
 	c.openNote()
 }
 
+// questionInline reports the question that keeps the cockpit: the yes-or-no,
+// alone on its card. It is one row of answer with a field under it, so it
+// asks for none of the width the surface behind it is using — and it rides
+// above the frame whether or not it holds the keyboard, rather than taking
+// the screen the way every other decision does (inspector.go, frame.go).
+//
+// The shape is what decides it and not the height. A list is wide because its
+// rows carry descriptions and short fields, a sheet of tabs is wide because
+// the strip has to say where the reader is among the questions, and an
+// approval is wide because what it is about to do to the machine is written
+// out on it. A yes-or-no has none of that to show, so the reader who came to
+// press one key keeps the rail, the vitals and the transcript they were
+// reading while they press it
+// (docs/interface/surfaces.md#the-question-card).
+func (m Model) questionInline() bool {
+	c := m.question
+	return m.state == stateQuestion && c != nil && c.sheet == nil && c.conf != nil
+}
+
 // questionPanelLines is the card in the bottom panel, dressed with the rail
 // that names the keyboard's owner the way every decision is.
 func (m Model) questionPanelLines() []string {
