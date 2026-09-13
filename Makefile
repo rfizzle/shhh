@@ -1,14 +1,20 @@
 APP_NAME=shhh
 APP_PACKAGE=github.com/rfizzle/shhh
 GOCMD=go
-GOMOD=$(GOCMD) mod
 GOTEST=$(GOCMD) test
 GOVET=$(GOCMD) vet
-# Tests must not inherit a provider route, credentials, terminal palette, or
-# executable Git fsmonitor hook from the shell that launched them. The quality
-# runner supplies the private GOCACHE; this target supplies the stable process
-# environment shared by local and session checks.
-TEST_HERMETIC_ENV=env -u SHHH_API_KEY -u SHHH_BASE_URL -u NO_COLOR GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.fsmonitor GIT_CONFIG_VALUE_0= TMPDIR=$${TMPDIR:-/tmp} XDG_CACHE_HOME=$${TMPDIR:-/tmp}/shhh-cache GOLANGCI_LINT_CACHE=$${TMPDIR:-/tmp}/shhh-golangci-lint
+# Every check runs in one environment, whether a person types the target or
+# the quality gate runs it under containment. Nothing inherits a provider
+# route, credentials, terminal palette, or executable Git fsmonitor hook from
+# the shell that launched it, and the tool caches live under TMPDIR — which a
+# contained session already points at its private scratch space, so the gate
+# neither needs permission to touch a shared cache nor takes a different
+# branch because a developer happened to export a local setting.
+HERMETIC_ENV=env -u SHHH_API_KEY -u SHHH_BASE_URL -u NO_COLOR GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.fsmonitor GIT_CONFIG_VALUE_0= TMPDIR=$${TMPDIR:-/tmp} XDG_CACHE_HOME=$${TMPDIR:-/tmp}/shhh-cache GOLANGCI_LINT_CACHE=$${TMPDIR:-/tmp}/shhh-golangci-lint
+# The build tags the other test tiers live behind. vet reads them so a
+# contract or integration file that stopped compiling fails here, in the
+# gate, rather than in the one CI job that selects it.
+TIER_TAGS=contract,integration
 # gofmt ships with the toolchain but is not always on PATH — a Go installed
 # through a version manager leaves it in GOROOT and nowhere else. Falling back
 # to GOROOT is what keeps `make fmt` and the gofmt gate from quietly doing
@@ -30,66 +36,37 @@ TRACKED_GOFILES=$(shell git ls-files '*.go')
 PROJECT_PACKAGES=$(shell go list ./...)
 
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
-GIT_COMMIT=$(shell git rev-list -1 HEAD 2>/dev/null || echo "unknown")
-BUILD_TIME=$(shell date -u '+%Y-%m-%dT%H:%M:%SZ')
 LDFLAGS=-s -w -X '$(APP_PACKAGE)/internal/cli.version=$(VERSION)'
 
 ifneq (,$(findstring 256color, ${TERM}))
 	RED     := $(shell tput -Txterm setaf 1)
 	GREEN   := $(shell tput -Txterm setaf 2)
 	YELLOW  := $(shell tput -Txterm setaf 3)
-	BLUE    := $(shell tput -Txterm setaf 4)
-	MAGENTA := $(shell tput -Txterm setaf 5)
 	CYAN    := $(shell tput -Txterm setaf 6)
-	WHITE   := $(shell tput -Txterm setaf 7)
+	MAGENTA := $(shell tput -Txterm setaf 5)
 	RESET   := $(shell tput -Txterm sgr0)
 else
-	RED     := ""
-	GREEN   := ""
-	YELLOW  := ""
-	BLUE    := ""
-	MAGENTA := ""
-	CYAN    := ""
-	WHITE   := ""
-	RESET   := ""
+	RED     :=
+	GREEN   :=
+	YELLOW  :=
+	CYAN    :=
+	MAGENTA :=
+	RESET   :=
 endif
 
-.PHONY: all build build-all linux darwin windows clean fmt fmt-check fmt-check-hermetic lint lint-hermetic vet-hermetic docs-check-hermetic tidy test test-hermetic race test-contract test-integration ci cross docs docs-check eval eval-baseline cache-check tui-build tui-run tui-shot tui-check help
+.PHONY: all build fmt fmt-check vet lint test test-contract test-integration docs docs-check cross ci eval eval-baseline cache-check model-data tui-shot tui-check help
 
 all: help
 
 ## Build:
-build: fmt tidy ## Build binary for current platform
+# One platform: the released matrix is goreleaser's (.goreleaser.yaml), and
+# `make cross` is how a change is checked against it without building it.
+build: fmt ## Build the binary for this platform
 	@echo "${MAGENTA}Building $(APP_NAME)...${RESET}"
 	@CGO_ENABLED=0 $(GOCMD) build -ldflags "$(LDFLAGS)" -o $(APP_NAME) ./cmd/shhh
 
-build-all: fmt clean tidy darwin linux windows ## Build for all platforms
-	@echo "${MAGENTA}Finished building all platforms.${RESET}"
-
-darwin: ## Build for macOS (amd64 + arm64)
-	@echo "${MAGENTA}Building for macOS amd64...${RESET}"
-	@CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 $(GOCMD) build -ldflags "$(LDFLAGS)" -o bin/darwin-amd64/$(APP_NAME) ./cmd/shhh
-	@echo "${MAGENTA}Building for macOS arm64...${RESET}"
-	@CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 $(GOCMD) build -ldflags "$(LDFLAGS)" -o bin/darwin-arm64/$(APP_NAME) ./cmd/shhh
-
-linux: ## Build for Linux (amd64 + arm64)
-	@echo "${MAGENTA}Building for Linux amd64...${RESET}"
-	@CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GOCMD) build -ldflags "$(LDFLAGS)" -o bin/linux-amd64/$(APP_NAME) ./cmd/shhh
-	@echo "${MAGENTA}Building for Linux arm64...${RESET}"
-	@CGO_ENABLED=0 GOOS=linux GOARCH=arm64 $(GOCMD) build -ldflags "$(LDFLAGS)" -o bin/linux-arm64/$(APP_NAME) ./cmd/shhh
-
-windows: ## Build for Windows (amd64 + arm64)
-	@echo "${MAGENTA}Building for Windows amd64...${RESET}"
-	@CGO_ENABLED=0 GOOS=windows GOARCH=amd64 $(GOCMD) build -ldflags "$(LDFLAGS)" -o bin/windows-amd64/$(APP_NAME).exe ./cmd/shhh
-	@echo "${MAGENTA}Building for Windows arm64...${RESET}"
-	@CGO_ENABLED=0 GOOS=windows GOARCH=arm64 $(GOCMD) build -ldflags "$(LDFLAGS)" -o bin/windows-arm64/$(APP_NAME).exe ./cmd/shhh
-
-clean: ## Remove build artifacts
-	@echo "${MAGENTA}Cleaning build artifacts...${RESET}"
-	@rm -rf ./bin
-
-## Format:
-fmt: ## Run gofmt and goimports on all source files
+## Check:
+fmt: ## Rewrite every Go file with gofmt and goimports
 	@echo "${MAGENTA}Running gofmt...${RESET}"
 	@$(GOFMT) -e -s -w $(PROJECT_GOFILES)
 	@if command -v $(GOIMPORTS) >/dev/null 2>&1; then \
@@ -124,21 +101,29 @@ fmt-check: ## Fail if any tracked Go file is not gofmt- and goimports-clean
 		exit 1; \
 	fi
 
-lint: ## Run go vet and golangci-lint
+vet: ## Run go vet over every tier's files
 	@echo "${MAGENTA}Running go vet...${RESET}"
-	@$(GOVET) $(PROJECT_PACKAGES)
+	@$(HERMETIC_ENV) $(GOVET) -mod=readonly -tags $(TIER_TAGS) $(PROJECT_PACKAGES)
+
+lint: ## Run golangci-lint
 	@echo "${MAGENTA}Running golangci-lint...${RESET}"
-	@$(GOLANGCI_LINT) run
+	@$(HERMETIC_ENV) $(GOLANGCI_LINT) run --modules-download-mode=readonly
 
-## Dependencies:
-tidy: ## Tidy go.mod
-	@echo "${MAGENTA}Tidying go.mod...${RESET}"
-	@$(GOMOD) tidy
+## Test:
+# The run stays cacheable on purpose: nothing here adds -count=1, and a test
+# must not chdir (scripts/check-docs.py refuses one). A run that cannot be
+# cached re-runs every package against a tree nothing has touched.
+test: ## Run the hermetic tier: every package, no listener, clipboard, daemon or network
+	@echo "${MAGENTA}Running tests...${RESET}"
+	@$(HERMETIC_ENV) $(GOTEST) -mod=readonly $(PROJECT_PACKAGES)
 
-## Data:
-model-data: ## Regenerate the built-in model-data snapshot from the public table
-	@echo "${MAGENTA}Regenerating internal/pricing/models.json...${RESET}"
-	@python3 scripts/model-data.py > internal/pricing/models.json
+test-contract: ## Run the loopback contract tier (needs a host that can bind a listener)
+	@echo "${MAGENTA}Running loopback contract tests...${RESET}"
+	@$(HERMETIC_ENV) $(GOTEST) -mod=readonly -tags=contract -count=1 -v ./internal/cli ./internal/eval ./internal/observe ./internal/reports
+
+test-integration: ## Run the containment tier (needs the host's sandbox mechanism)
+	@echo "${MAGENTA}Running sandbox integration checks...${RESET}"
+	@$(HERMETIC_ENV) $(GOTEST) -mod=readonly -tags=integration -count=1 -v ./internal/sandbox
 
 ## Docs:
 # The settings reference in docs/capabilities/configuration.md is written from
@@ -155,33 +140,28 @@ docs-check: ## Verify every docs/ citation resolves and every generated section 
 	@echo "${MAGENTA}Checking documentation citations...${RESET}"
 	@python3 scripts/check-docs.py
 	@echo "${MAGENTA}Checking the generated documentation sections...${RESET}"
-	@$(GOTEST) -count=1 -run TestReference ./internal/config ./internal/ui/keys
+	@$(HERMETIC_ENV) $(GOTEST) -mod=readonly -count=1 -run TestReference ./internal/config ./internal/ui/keys
 
-## Cache:
-# The prompt-cache markers are the one thing the offline suite cannot judge: a
-# marker the far end ignores looks exactly like one it honours, because the
-# answer is identical and only the bill differs. So this asks two live
-# endpoints — the Messages API directly, and a gateway forwarding to it, which
-# is the path that can silently drop the field on the way through. Each check
-# skips itself when its own variables are unset, so a run with one pair of
-# credentials still checks that one. -count=1 because a cached PASS would be a
-# run that asked nothing.
-#
-#	SHHH_CACHE_IT_URL=… SHHH_CACHE_IT_KEY=… \
-#	SHHH_CACHE_IT_GATEWAY_URL=… SHHH_CACHE_IT_GATEWAY_KEY=… make cache-check
-cache-check: ## Verify prompt caching against live endpoints (costs real requests)
-	@echo "${MAGENTA}Checking prompt caching against the live endpoints...${RESET}"
-	@$(GOTEST) -tags=integration -count=1 -v -run CacheIntegration ./internal/provider
+## Pipeline:
+# The platforms goreleaser ships. A Unix-only syscall compiles perfectly on the
+# machine that introduced it and breaks a release nobody builds until they tag
+# one — which is how Windows was broken for four months. vet rather than build,
+# because it covers the test files too, and those are where a platform symbol
+# usually gets named first.
+cross: ## Check every released platform still compiles
+	@echo "${MAGENTA}Cross-compiling for every released platform...${RESET}"
+	@for os in darwin linux windows; do \
+		echo "  $$os"; \
+		GOOS=$$os $(GOVET) -tags $(TIER_TAGS) $(PROJECT_PACKAGES) || exit 1; \
+	done
 
-test-integration: ## Run opt-in sandbox integration checks (requires a supported host mechanism)
-	@echo "${MAGENTA}Running sandbox integration checks...${RESET}"
-	@$(TEST_HERMETIC_ENV) $(GOTEST) -mod=readonly -tags=integration -count=1 -v ./internal/sandbox
+# The CI pipeline, and nothing but the targets above in one order: the same
+# spelling a person runs is the one the runner runs. The quality gate
+# (.shhh/quality.json) is the first five; cross and the driven scenes are what
+# CI adds, because a scene wants a terminal a contained session has not got.
+ci: cross fmt-check docs-check test vet lint tui-check ## Run the CI pipeline
 
-test-contract: ## Run loopback contract tests (requires a listener-capable host)
-	@echo "${MAGENTA}Running loopback contract tests...${RESET}"
-	@$(TEST_HERMETIC_ENV) SHHH_TEST_CONTRACT=1 $(GOTEST) -mod=readonly -tags=contract -count=1 -v ./internal/cli ./internal/eval ./internal/observe ./internal/reports
-
-## Evals:
+## Live:
 # Costs real requests: ten of the fourteen cases put a task or a question to
 # the model, which is several minutes and a few dollars a run, and more with
 # --repeat. It is not part of `make ci` for that reason, and the workflow that
@@ -199,26 +179,48 @@ eval-baseline: build ## Rewrite evals/baseline.json from a fresh run (costs real
 	@echo "${MAGENTA}Refreshing the eval baseline...${RESET}"
 	@./$(APP_NAME) eval --refresh-baseline $(EVAL_ARGS)
 
+# The prompt-cache markers are the one thing the offline suite cannot judge: a
+# marker the far end ignores looks exactly like one it honours, because the
+# answer is identical and only the bill differs. So this asks two live
+# endpoints — the Messages API directly, and a gateway forwarding to it, which
+# is the path that can silently drop the field on the way through. Each check
+# skips itself when its own variables are unset, so a run with one pair of
+# credentials still checks that one. -count=1 because a cached PASS would be a
+# run that asked nothing.
+#
+#	SHHH_CACHE_IT_URL=… SHHH_CACHE_IT_KEY=… \
+#	SHHH_CACHE_IT_GATEWAY_URL=… SHHH_CACHE_IT_GATEWAY_KEY=… make cache-check
+cache-check: ## Verify prompt caching against live endpoints (costs real requests)
+	@echo "${MAGENTA}Checking prompt caching against the live endpoints...${RESET}"
+	@$(GOTEST) -tags=integration -count=1 -v -run CacheIntegration ./internal/provider
+
+model-data: ## Regenerate the built-in model-data snapshot from the public table
+	@echo "${MAGENTA}Regenerating internal/pricing/models.json...${RESET}"
+	@python3 scripts/model-data.py > internal/pricing/models.json
+
 ## TUI:
 # The golden tests render a surface in-process. These drive the built binary
 # in a tmux pane against a scripted model (scripts/tui/), which is the only
 # way to see that a key reaches a surface and that the surface reaches the
-# screen. A scene is a directory of replies and steps; the smoke scene is the
-# gate, and a surface change adds a scene of its own. Captures land under
-# bin/tui/<scene>/ and are never committed: the scene is the record.
+# screen. A scene is a directory of replies and steps under
+# scripts/tui/scenes/; a surface change adds a scene of its own, and every
+# scene is run again by tui-check, so a scene is a test for as long as it is
+# in the tree. Captures land under bin/tui/<scene>/ and are never committed:
+# the scene is the record. To open a scene in this terminal instead:
+#
+#	SHHH_BIN=$PWD/bin/tui/shhh scripts/tui/drive.sh --attach scripts/tui/scenes/<name>
 TUI_BIN=bin/tui/$(APP_NAME)
+SCENES=$(sort $(dir $(wildcard scripts/tui/scenes/*/steps.txt)))
 SCENE ?= smoke
-
-tui-build:
-	@CGO_ENABLED=0 $(GOCMD) build -ldflags "$(LDFLAGS)" -o $(TUI_BIN) ./cmd/shhh
-
-tui-run: tui-build ## Open the TUI in this terminal against the scripted model (SCENE=<name> picks the replies)
-	@SHHH_BIN=$(TUI_BIN) scripts/tui/drive.sh --attach scripts/tui/scenes/$(SCENE)
+define tui_build
+	CGO_ENABLED=0 $(GOCMD) build -ldflags "$(LDFLAGS)" -o $(TUI_BIN) ./cmd/shhh
+endef
 
 # The picture wants agg, which draws the captured cells and wants nothing
 # else; a machine without it still gets the cells, and the recipe says so
 # rather than failing.
-tui-shot: tui-build ## Drive a scene through the built binary and capture every step; with agg, draw them too (SCENE=<name> COLS=<width> ROWS=<height>)
+tui-shot: ## Drive one scene and capture every step; with agg, draw them too (SCENE=<name> COLS=<width> ROWS=<height>)
+	@$(tui_build)
 	@echo "${MAGENTA}Driving the $(SCENE) scene...${RESET}"
 	@if command -v agg >/dev/null 2>&1; then \
 		SHHH_BIN=$(TUI_BIN) scripts/tui/drive.sh --pictures scripts/tui/scenes/$(SCENE); \
@@ -227,61 +229,12 @@ tui-shot: tui-build ## Drive a scene through the built binary and capture every 
 		SHHH_BIN=$(TUI_BIN) scripts/tui/drive.sh scripts/tui/scenes/$(SCENE); \
 	fi
 
-tui-check: tui-build ## Drive the smoke scene and fail if a step never draws what it waits for
-	@echo "${MAGENTA}Driving the TUI smoke scene...${RESET}"
-	@SHHH_BIN=$(TUI_BIN) scripts/tui/drive.sh scripts/tui/scenes/smoke
-
-## Cross:
-# The platforms goreleaser ships. A Unix-only syscall compiles perfectly on the
-# machine that introduced it and breaks a release nobody builds until they tag
-# one — which is how Windows was broken for four months. vet rather than build,
-# because it covers the test files too, and those are where a platform symbol
-# usually gets named first.
-cross: ## Check every released platform still compiles
-	@echo "${MAGENTA}Cross-compiling for every released platform...${RESET}"
-	@for os in darwin linux windows; do \
-		echo "  $$os"; \
-		GOOS=$$os $(GOVET) $(PROJECT_PACKAGES) || exit 1; \
+tui-check: ## Drive every scene through the built binary and fail on the first step that never draws what it waits for
+	@$(tui_build)
+	@for scene in $(SCENES); do \
+		echo "${MAGENTA}Driving $$(basename $$scene)...${RESET}"; \
+		SHHH_BIN=$(TUI_BIN) scripts/tui/drive.sh "$$scene" || exit 1; \
 	done
-
-## Test:
-test: ## Run tests
-	@echo "${MAGENTA}Running tests...${RESET}"
-	@$(MAKE) --no-print-directory test-hermetic
-
-test-hermetic: ## Run the contained test tier with a stable environment
-	@$(TEST_HERMETIC_ENV) $(GOTEST) -mod=readonly $(PROJECT_PACKAGES)
-
-vet-hermetic: ## Run go vet with the contained test environment
-	@$(TEST_HERMETIC_ENV) $(GOVET) -mod=readonly $(PROJECT_PACKAGES)
-
-lint-hermetic: ## Run golangci-lint with the contained test environment
-	@$(TEST_HERMETIC_ENV) $(GOLANGCI_LINT) run --modules-download-mode=readonly
-
-fmt-check-hermetic: ## Check formatting with the contained test environment
-	@$(TEST_HERMETIC_ENV) $(MAKE) --no-print-directory fmt-check
-
-docs-check-hermetic: ## Check documentation with the contained test environment
-	@$(TEST_HERMETIC_ENV) $(MAKE) --no-print-directory docs-check
-
-race: ## Run tests with race detector
-	@echo "${MAGENTA}Running tests with race detector...${RESET}"
-	@$(TEST_HERMETIC_ENV) $(GOTEST) -mod=readonly -v -race $(PROJECT_PACKAGES)
-
-# The test run stays cacheable on purpose: -v and -failfast are both flags
-# `go test` will still match a cached result against, and nothing here adds
-# -count=1. It reads like a detail and is not — the CLI suite links the binary
-# its print-mode tests drive, so a run that cannot be cached re-links it and
-# re-runs every package against a tree nothing has touched.
-ci: cross ## Run tests and lint for CI
-	@echo "${MAGENTA}Checking documentation citations...${RESET}"
-	@python3 scripts/check-docs.py
-	@$(MAKE) --no-print-directory fmt-check
-	@echo "${MAGENTA}Running tests...${RESET}"
-	@$(TEST_HERMETIC_ENV) $(GOTEST) -mod=readonly -v -failfast $(PROJECT_PACKAGES)
-	@echo "${MAGENTA}Running golangci-lint...${RESET}"
-	@$(GOLANGCI_LINT) run
-	@$(MAKE) --no-print-directory tui-check
 
 ## Help:
 help: ## Show this help

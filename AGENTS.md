@@ -72,27 +72,27 @@ golden fixture, so this cannot drift back.
 
 | Task | Command |
 |------|---------|
-| Build | `make build` |
-| Test all | `make test-hermetic` (or `make test`; clears provider, palette, and Git-hook environment) |
+| Build | `make build` (this platform; the release matrix is goreleaser's) |
+| Test all | `make test` (the hermetic tier; clears provider, palette, and Git-hook environment) |
 | Test single package | `go test ./internal/<pkg>` |
-| Run loopback contracts | `make test-contract` (CLI/provider, telemetry, fixture-site, and report-serving contracts; requires a listener-capable host and is intentionally outside a contained session) |
-| Run containment integration checks | `make test-integration` (requires a runner with the supported OS mechanism) |
-| Test with race detector | `make race` |
+| Run loopback contracts | `make test-contract` (the `contract` build tag: CLI/provider, telemetry, fixture-site, and report-serving contracts; requires a listener-capable host and is intentionally outside a contained session) |
+| Run containment integration checks | `make test-integration` (the `integration` build tag; requires a runner with the supported OS mechanism) |
 | Format | `make fmt` (runs gofmt + goimports) |
-| Check formatting without rewriting | `make fmt-check` (part of `make ci`; reads the tracked tree and fails on the first drift) |
-| Lint | `make lint` (go vet + golangci-lint) |
-| Tidy modules | `make tidy` |
-| CI suite | `make ci` |
-| Check every released platform compiles | `make cross` (part of `make ci`) |
+| Check formatting without rewriting | `make fmt-check` (reads the tracked tree and fails on the first drift) |
+| Vet | `make vet` (every tier's files, so a tagged test that stopped compiling fails in the gate) |
+| Lint | `make lint` (golangci-lint) |
+| Quality gate | `make test vet lint fmt-check docs-check` — the five checks `.shhh/quality.json` runs; inside a session, `quality_gate` or `/gate run` |
+| CI pipeline | `make ci` (the gate plus `cross` and `tui-check`; the runner's, not an agent's done rule) |
+| Check every released platform compiles | `make cross` |
 | Check doc citations | `make docs-check` |
 | Run the eval suite | `make eval` (the cases that name a model cost real requests; not part of `make ci`) |
 | Rewrite the eval baseline | `make eval-baseline` (the file every run is read against; the diff is the review) |
 | Verify prompt caching against live endpoints | `SHHH_CACHE_IT_URL=… SHHH_CACHE_IT_KEY=… SHHH_CACHE_IT_GATEWAY_URL=… SHHH_CACHE_IT_GATEWAY_KEY=… make cache-check` (costs real requests; each half skips when its own pair is unset) |
 | Update golden files | `go test ./internal/ui ./internal/ui/components ./internal/ui/chat -update-golden` or `SHHH_UPDATE_GOLDEN=1 go test ./...` |
-| Open the TUI by hand against a scripted model | `make tui-run` (`SCENE=<name>` picks the replies; needs tmux) |
-| Capture the TUI at each step of a scene | `make tui-shot SCENE=<name> COLS=110 ROWS=40` (captures under `bin/tui/<name>/`; with `agg` installed, a still per step drawn from those captures as well) |
-| Record a scene's whole run, not only its steps | `make tui-build && SHHH_BIN=$PWD/bin/tui/shhh scripts/tui/drive.sh --record scripts/tui/scenes/<name>` (an `asciinema` `.cast` beside the captures; without asciinema it says so and records nothing) |
-| Drive the smoke scene through the built binary | `make tui-check` (part of `make ci`, the CI pipeline; the quality gate is what an agent runs to finish an item) |
+| Capture the TUI at each step of a scene | `make tui-shot SCENE=<name> COLS=110 ROWS=40` (builds the binary; captures under `bin/tui/<name>/`; with `agg` installed, a still per step drawn from those captures as well) |
+| Open the TUI by hand against a scripted model | `SHHH_BIN=$PWD/bin/tui/shhh scripts/tui/drive.sh --attach scripts/tui/scenes/<name>` (after a `tui-shot` has built the binary; needs tmux) |
+| Record a scene's whole run, not only its steps | `SHHH_BIN=$PWD/bin/tui/shhh scripts/tui/drive.sh --record scripts/tui/scenes/<name>` (an `asciinema` `.cast` beside the captures; without asciinema it says so and records nothing) |
+| Drive every scene through the built binary | `make tui-check` (part of `make ci`, the CI pipeline; the quality gate is what an agent runs to finish an item) |
 
 Build produces a `shhh` binary with version injected via `-ldflags`.
 
@@ -107,12 +107,15 @@ run on the host. This checkout closes changed work with the complete `default`
 suite — hermetic tests, vet, lint, formatting, and documentation checks. The
 shorter `fast` suite is available for an early signal, not a closing verdict.
 
-Tests that prove a real boundary are separate. `make test-contract` selects
-the CLI/provider, telemetry, fixture-site, and report-serving loopback
-contracts with `SHHH_TEST_CONTRACT=1`; those tests skip when not selected and
-fail clearly when the selected host cannot bind.
-Containment implementation checks have the `integration` build tag and run
-through `make test-integration` on a host that supports them. A skip outside
+Tests that prove a real boundary are separate, and a build tag is what
+separates them: a tagged file is not compiled into the hermetic tier, so a
+listener cannot reach the gate by way of a skip somebody forgot. `make
+test-contract` selects the `contract` tag — the CLI/provider, telemetry,
+fixture-site, and report-serving loopback contracts — and fails clearly when
+the selected host cannot bind. Containment implementation checks have the
+`integration` build tag and run through `make test-integration` on a host
+that supports them. `make vet` reads both tags, so a tagged file that stopped
+compiling fails in the gate rather than in the one CI job that selects it. A skip outside
 that host is not contract evidence. CI runs the loopback contract target and
 the Linux and macOS containment targets as separate jobs; none is folded into
 the contained session suite.
@@ -1297,12 +1300,12 @@ built binary driven through a scene that reaches the surface, at the width
 the item names — the narrowest it must fit at, when it names none — and read
 by whoever ticks the criterion: the `.txt` against what the artboard says,
 the picture by eye. A capture that was taken and not read is a screenshot in
-a folder. `make tui-check` runs the `smoke` scene and is part of `make ci`,
-so the harness itself cannot rot. A story's own `make tui-shot` run is an
-optional manual quality check: it is deliberately not added to
-`.shhh/quality.json`, because the scene and terminal requirements are local
-to the surface it exercises. Its scene lives under
-`scripts/tui/scenes/<slug>/` so the next change can run it again.
+a folder. `make tui-check` runs every scene in the tree and is part of `make
+ci`, so a scene is a test for as long as it is committed and the harness
+itself cannot rot. A story's own `make tui-shot` run is the reading of one
+scene: it is deliberately not added to `.shhh/quality.json`, because a scene
+wants a terminal a contained session has not got. Its scene lives under
+`scripts/tui/scenes/<slug>/` so `tui-check` runs it again on every change.
 
 What will bite you: **a capture is the terminal's cells, not the View's
 bytes.** tmux re-emits colour per cell, so an `.ansi` file will never match a
@@ -1328,7 +1331,7 @@ reproduced from it.
 - No external test dependencies (no testify); tests use stdlib `testing`. The one exception is `teatest`, which is a harness rather than an assertion library: it starts a real `tea.Program` over a model, which nothing in the standard library can do. Assertions in those tests are still plain `if`/`t.Fatalf`
 - SQLite storage tests use `OpenPath` with a temp file or `:memory:`
 - The LSP package has integration tests that spawn real language servers
-- `internal/cli` builds the binary once in its `TestMain` (into a `bin` directory under the temp home, since the temp home itself is the config directory) and drives `shhh code -p` against a fake provider over `httptest`; the fake must speak the openai-compatible dialect the built binary is configured for. The suite stays cacheable, so `make ci` must not pass `-count=1`
+- `internal/cli`'s contract tier builds the binary once in its `TestMain` (into a `bin` directory under the temp home, since the temp home itself is the config directory) and drives `shhh code -p` against a fake provider over `httptest`; the fake must speak the openai-compatible dialect the built binary is configured for. Those files carry the `contract` tag, and the hermetic tier's `prepareContractTier` is a no-op. The hermetic suite stays cacheable, so `make test` must not pass `-count=1`
 
 **Never change the working directory in a test.** `cmd/go` records every
 chdir target as one of the test's inputs, and a `t.TempDir()` path is new on

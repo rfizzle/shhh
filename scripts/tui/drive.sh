@@ -6,6 +6,7 @@
 #
 #   replies.txt   what the model says, one reply per request (fakeprovider.py)
 #   launch        what the pane runs, one shell line; default: $SHHH_BIN code
+#   size          the pane, columns then rows; default 120 40
 #   steps.txt     what the reader does, one step per line:
 #
 #     setup <shell>             run in the workspace before the binary starts
@@ -42,11 +43,12 @@
 #   drive.sh --record <scene-dir>     the same, and record the run as a .cast
 #   drive.sh --attach <scene-dir>     open the same pane in this terminal instead
 #
-# Environment: SHHH_BIN (the binary; default ./shhh), COLS/ROWS (the pane,
-# default 120x40), OUT (captures; default bin/tui/<scene>), WAIT (seconds a
-# snap waits for its text; default 20), PORT and SOCK (the provider's port and
-# the tmux server's name, for two scenes running at once), and TMUX_TMPDIR
-# (the tmux socket directory; defaults under OUT).
+# Environment: SHHH_BIN (the binary; default ./shhh), COLS/ROWS (the pane;
+# over the scene's own size, else 120x40), OUT (captures; default
+# bin/tui/<scene>), WAIT (seconds a snap waits for its text; default 20),
+# PORT and SOCK (the provider's port and the tmux server's name, for two
+# scenes running at once), and TMUX_TMPDIR (the tmux socket directory;
+# defaults under OUT).
 set -u
 here=$(cd "$(dirname "$0")" && pwd)
 root=$(cd "$here/../.." && pwd)
@@ -67,8 +69,14 @@ scene=$(cd "$scene" && pwd) || exit 1
 name=$(basename "$scene")
 
 SHHH_BIN=${SHHH_BIN:-$root/shhh}
-COLS=${COLS:-120}
-ROWS=${ROWS:-40}
+# A scene that needs a particular pane says so in a `size` file — `144 40`,
+# columns then rows — because a rail that only appears past a breakpoint is
+# not on a 120-column screen to be waited for. The environment still wins, so
+# a reader can ask for one scene at another width without editing it.
+scene_cols=; scene_rows=
+[ -f "$scene/size" ] && read -r scene_cols scene_rows < "$scene/size"
+COLS=${COLS:-${scene_cols:-120}}
+ROWS=${ROWS:-${scene_rows:-40}}
 OUT=${OUT:-$root/bin/tui/$name}
 WAIT=${WAIT:-20}
 PORT=${PORT:-8765}

@@ -32,10 +32,10 @@ at the seam instead of a host service.
   a writable shared build cache.
 
 The quality runner gives Go checks a private build cache and invokes `make
-test-hermetic`, which clears provider, palette, and executable Git-hook
-environment state. Its other Go-derived checks use the matching hermetic Make
-targets, so vet, lint, formatting, and documentation generation inherit the
-same environment and private tool-cache location. When driving Go directly in a restricted shell, point
+test`, which clears provider, palette, and executable Git-hook environment
+state. Every Make check runs under that one environment, so vet, lint,
+formatting, and documentation generation inherit the same environment and
+private tool-cache location whether a person or the gate runs them. When driving Go directly in a restricted shell, point
 `GOCACHE` at a fresh writable
 directory and pass `-mod=readonly`; do not weaken containment just to reuse a
 host cache or permit a module-cache write.
@@ -44,10 +44,12 @@ host cache or permit a module-cache write.
 
 Use a contract test only when the fact being proved is the real boundary:
 binary-to-provider traffic, telemetry export, fixture-site fetching, report
-serving, loopback behaviour, or an OS service. Gate it on
-`SHHH_TEST_CONTRACT=1`, skip when it is not selected, and fail clearly when the
+serving, loopback behaviour, or an OS service. Put it in a file with
+the `contract` build tag — the tag, not an environment variable, so the file
+is not compiled into the hermetic tier at all — and fail clearly when the
 selected host cannot provide the prerequisite. Run it through `make
 test-contract`; it is intentionally not evidence from a contained session.
+`make vet` reads the tag, so the file still has to compile in the gate.
 
 Put containment-specific checks behind the `integration` build tag and run
 them with `make test-integration`. A missing supported mechanism fails that

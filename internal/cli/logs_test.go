@@ -53,9 +53,7 @@ func TestMain(m *testing.M) {
 	// Before the home moves, because the Go build cache lives under the real
 	// one: a link that cannot find it compiles the module from scratch every
 	// time this package runs (buildShhhBinary, print_integration_test.go).
-	if os.Getenv("SHHH_TEST_CONTRACT") == "1" {
-		buildShhhBinary(dir)
-	}
+	prepareContractTier(dir)
 	for _, key := range []string{"HOME", "XDG_DATA_HOME", "XDG_CONFIG_HOME"} {
 		if err := os.Setenv(key, dir); err != nil {
 			panic(err)

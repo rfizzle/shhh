@@ -164,9 +164,8 @@ coding agents.
 
 ```sh
 make build
-go test ./...
-make lint
-make ci
+make test vet lint fmt-check docs-check   # the quality gate
+make ci                                   # the gate plus cross-platform vet and the driven TUI scenes
 ```
 
 ## License

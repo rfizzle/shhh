@@ -1,3 +1,5 @@
+//go:build contract
+
 package cli
 
 // What a script gets back from `shhh code -p`, asserted against the built
@@ -136,9 +138,6 @@ type fakeProvider struct {
 
 func startFakeProvider(t *testing.T, script ...reply) *fakeProvider {
 	t.Helper()
-	if os.Getenv("SHHH_TEST_CONTRACT") != "1" {
-		t.Skip("CLI provider contract test; run make test-contract on a listener-capable host")
-	}
 	if len(script) == 0 {
 		t.Fatal("a fake provider with no script answers nothing")
 	}

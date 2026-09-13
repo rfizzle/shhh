@@ -19,13 +19,14 @@ are in `AGENTS.md` under *Driving the binary*; this is how to do it.
 ## Run it
 
 ```
-make tui-check                       # the smoke scene; the gate, part of make ci
-make tui-shot SCENE=smoke COLS=110   # capture every step of a scene at a width
-make tui-run  SCENE=smoke            # open the same pane in this terminal, by hand
+make tui-check                       # every scene; the gate, part of make ci
+make tui-shot SCENE=smoke COLS=110   # capture every step of one scene at a width
+SHHH_BIN=$PWD/bin/tui/shhh scripts/tui/drive.sh --attach scripts/tui/scenes/smoke
 ```
 
-`tui-run` needs a terminal to attach to, so it is for a person. An agent
-uses `tui-shot` and reads the captures. Both need `tmux` and `python3`, and
+The third opens the same pane in this terminal, by hand: it needs a terminal
+to attach to, so it is for a person, and the binary `tui-shot` built. An agent
+uses `tui-shot` and reads the captures. All of them need `tmux` and `python3`, and
 `tui-shot` draws a picture as well where `agg` is installed: each snap's
 captured cells, with their colour, rendered as a still beside the capture
 they came from. `brew install agg` is the whole of it — one binary, no
@@ -42,7 +43,6 @@ A snap is a still. To record the run itself — the stream arriving, the card
 landing, the key answering it — add `--record`:
 
 ```
-make tui-build
 SHHH_BIN=$PWD/bin/tui/shhh scripts/tui/drive.sh --record scripts/tui/scenes/smoke
 ```
 
@@ -157,7 +157,9 @@ snap 04-exit "that is everything the screen was holding"
 A snap whose text never appears fails the run, so every scene is also a
 test, and the exit code of `make tui-shot` is its verdict.
 
-`launch` is the third file, and only a scene that is not a session needs it:
+`size` is a file only a scene with a width to insist on needs — `144 40`,
+columns then rows — and `launch` is the other optional file, for a scene
+that is not a session:
 one shell line naming what the pane runs, with `$SHHH_BIN` the built binary.
 Without it the pane runs `shhh code`. `shhh cmd` is a separate entry point —
 there is no key that reaches the one-shot from a session — so a scene for it
@@ -200,8 +202,11 @@ than leaving it out.
   make. A scene cannot exercise the Anthropic or Gemini stream loops.
 - **Two scenes at once collide** on the provider's port and the tmux server.
   Set `PORT` and `SOCK` to run them side by side.
-- **The pane is 120×40 unless told.** `ROWS` matters as much as `COLS` for
-  anything bound by the forty-per-cent panel rule.
+- **The pane is 120×40 unless told.** A scene whose surface only exists
+  past a breakpoint says its own size in a `size` file (`144 40`, columns
+  then rows), so `tui-check` runs it where it means to be run; `COLS` and
+  `ROWS` on the command line still override it. `ROWS` matters as much as
+  `COLS` for anything bound by the forty-per-cent panel rule.
 - **The start screen is the first frame.** A scene that types straight away
   is typing over the pick list, which is fine — the draft takes it — but the
   first snap should be the start screen, so a change to it is seen.

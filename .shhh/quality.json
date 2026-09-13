@@ -7,20 +7,68 @@
       "require_containment": true,
       "allow_write": true,
       "checks": [
-        { "name": "test", "exe": "make", "args": ["test-hermetic"] },
-        { "name": "vet", "exe": "make", "args": ["vet-hermetic"] },
-        { "name": "lint", "exe": "make", "args": ["lint-hermetic"] },
-        { "name": "format", "exe": "make", "args": ["fmt-check-hermetic"] },
-        { "name": "docs", "exe": "make", "args": ["docs-check-hermetic"] }
+        {
+          "name": "test",
+          "exe": "make",
+          "args": [
+            "test"
+          ]
+        },
+        {
+          "name": "vet",
+          "exe": "make",
+          "args": [
+            "vet"
+          ]
+        },
+        {
+          "name": "lint",
+          "exe": "make",
+          "args": [
+            "lint"
+          ]
+        },
+        {
+          "name": "format",
+          "exe": "make",
+          "args": [
+            "fmt-check"
+          ]
+        },
+        {
+          "name": "docs",
+          "exe": "make",
+          "args": [
+            "docs-check"
+          ]
+        }
       ]
     },
     "fast": {
       "timeout_seconds": 120,
       "require_containment": true,
       "checks": [
-        { "name": "vet", "exe": "make", "args": ["vet-hermetic"] },
-        { "name": "format", "exe": "make", "args": ["fmt-check-hermetic"] },
-        { "name": "docs", "exe": "make", "args": ["docs-check-hermetic"] }
+        {
+          "name": "vet",
+          "exe": "make",
+          "args": [
+            "vet"
+          ]
+        },
+        {
+          "name": "format",
+          "exe": "make",
+          "args": [
+            "fmt-check"
+          ]
+        },
+        {
+          "name": "docs",
+          "exe": "make",
+          "args": [
+            "docs-check"
+          ]
+        }
       ]
     }
   }
