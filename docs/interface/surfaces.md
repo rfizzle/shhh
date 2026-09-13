@@ -1020,8 +1020,18 @@ changeset, the window and the bill are the whole session's whichever agent is
 on screen, and the mark is what stops them being read as that agent's. A
 chord walks the map, in both directions and wrapping at both ends, so moving
 between sessions is a keystroke rather than a surface to open and close.
-Everything you do *to* an agent — answer it, retry it, cancel it, kill it —
-is still the manager's; the map is for seeing and moving.
+Everything you do *to* an agent — answer it, steer it, retry it, cancel it,
+kill it — is still the manager's; the map is for seeing and moving.
+
+Every clause of the trailer under the map is a chord, which makes it the one
+piece of chrome on the rail that is a false offer on a terminal whose Option
+key composes a character instead of sending the escape prefix. So where it is
+the first thing in a session to offer a chord, it carries the one-line notice
+that says what the setting is called and which command reads it — the same
+notice, in the same words, a transcript row carries when the row is first. It
+stops carrying it the moment something above says it instead: the fact is
+about the terminal, not about the row, and it is said once. It is shed before
+the trailer it hangs under, which is shed before the map gives up a session.
 
 The order is the order the sessions were started, with one exception: an
 agent waiting on an answer floats to directly under the root, and the ones
@@ -1240,15 +1250,41 @@ so a reader who has learned the separator on one has learned it on the other.
 
 **The key row states what the list can do, and not what the pointer is on.**
 Answering a blocked child in place is offered whenever any child is blocked;
-killing every child is offered whenever more than one is still running. An
+killing every child is offered whenever more than one is still running, and
+that key says how far it reaches — `[K] kill all · every level` — because the
+rows in front of the reader are one level of a tree it walks the whole of. An
 offer a reader has to go hunting for with the pointer is indistinguishable
 from an offer that is not there, which is the whole reason the manager is
 opened. Answering takes the child under the pointer where that is the one
 waiting, and otherwise the first one that is — blocked children sort to the
-top, so that is the child the manager was opened for. The keys that end one
-child — cancel, kill, and running a failed one again — stay with the row the
-pointer is on, because their target is the one thing that must never be
-guessed.
+top, so that is the child the manager was opened for. The keys aimed at one
+child — steering it, cancelling, killing, and running a failed one again —
+stay with the row the pointer is on, because their target is the one thing
+that must never be guessed.
+
+**A redirect is typed on the row, not in the child's session.** Over a child
+that is queued, running or blocked, `[s]` opens the one-line field the
+question card opens, under the row it will reach and labelled with that
+child's name; enter sends it as the same message typing at the child's own
+lane sends, and the lane says where it came from. The argument is the one
+answering in place is built on: opening the manager *because* a child has
+drifted should not then send you into that child's session to say so. It is
+the cheap half of the pair it sits beside — a child reads a redirect and
+carries on, and a kill cannot be taken back — so it is the correction that
+should cost the least, not the most. While the field has the keyboard every
+letter is a letter of the redirect, so the list's own keys leave the key row
+and what is left is the two any surface being typed into keeps: enter sends
+it, esc leaves it unsent
+([a key is inert until its surface holds the keyboard](principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard)).
+A child that has finished or failed is not offered the key, because it has
+nothing left to redirect.
+
+**Ending a child has one name, and it is here.** `[X]` on the row, with the
+confirm that counts what goes with it. Attached, `/exit` used to be a second
+name for the same act — and it is the word that quits the whole session
+everywhere else in the product, so a reader who typed it to leave a child's
+surface ended the child instead. It no longer ends anything: it says where
+the act lives, and esc is how you leave.
 
 **Answering in place is answering, and leaving is leaving.** The card the
 manager opens over the list is the same card the request would have drawn

@@ -12,6 +12,10 @@
 # The rest of the row is read here too: a row joins the child's name to its
 # task with the separator rather than with a column that is not there, and esc
 # says what it leaves rather than saying `cancel`.
+#
+# It ends on the two acts the row keeps for itself, which are the reason the
+# manager exists at all: a blocked child answered without attaching, and a
+# working one redirected without attaching either.
 setup printf 'package agent\n\nfunc loop() {\n    for round := 0; round < limit; round++ {\n        step()\n    }\n}\n' > loop.go
 snap 01-start "Some things worth doing first"
 keys "survey the round accounting" Enter
@@ -25,26 +29,27 @@ keys y
 sleep 3
 # Everything then asks to run a command at once. The session's own card is set
 # aside so the children's routed requests can be let through one at a time; an
-# agent parked at a card takes no reply from the scripted queue, which is what
-# makes the order the reader chooses the order the queue is consumed in.
+# agent parked at a card asks for nothing, so the order the reader lets them
+# through is the order they get anywhere.
 keys Escape
 sleep 2
 snap 03-blocked "needs you"
-# The first child let through runs its command and then asks the model again,
-# and the model keeps it waiting: that child is the one still working.
+# writer-1 runs its command and then asks the model again, and its queue keeps
+# it waiting: that child is the one still working, for the rest of the scene.
 keys C-Space
 sleep 2
 keys y
 sleep 5
-# The second child let through is answered at once, so that child is the one
-# that has finished.
+# writer-2 is answered at once and says its piece — until it asks to run
+# something again, which is the request read from the manager further down.
 keys C-Space
 sleep 2
 keys y
 sleep 5
-# The third is never answered: that child is the one waiting on you. Whatever
-# the queue advanced to is set aside, which puts the keyboard back at the
-# draft — the manager is a takeover and does not open over a card.
+# writer-3's request is never answered: that child is the one waiting on you,
+# from here to the end. Whatever is standing is set aside, which puts the
+# keyboard back at the draft — the manager is a takeover and does not open
+# over a card.
 keys Escape
 sleep 3
 snap 04-three-states "needs you"
@@ -94,3 +99,23 @@ sleep 1
 keys n
 sleep 2
 snap 11-declined "Declined writer-2"
+# The redirect, typed on the row it is aimed at. The manager is a takeover, so
+# the letter is live here the way every other letter on this surface is; the
+# field opens under the row it will reach and is named for it, and while it
+# has the keyboard the list's own keys leave the key row
+# (docs/interface/surfaces.md#the-agent-manager).
+keys k
+keys j
+keys j
+keys s
+sleep 1
+keys "read the exit condition too"
+sleep 1
+snap 12-steer-field "steer writer-1"
+# Sent from the row. It is the same message typing at the child's own lane
+# sends, so the lane says where it came from.
+keys Enter
+sleep 2
+keys Escape
+sleep 3
+snap 13-steered "steered from lane"

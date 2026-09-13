@@ -113,9 +113,10 @@
                       opens over a running turn, which keeps streaming underneath;
                       a transcript with nothing selectable opens as a plain pager.
                       /step opens the in-flight step's detail from the prompt)
-    [alt+a]          Agent manager: enter attaches to an agent's session, x cancels
-                     its turn, X kills it; attached, typing steers the agent,
-                     shift+tab sets its mode (clamped), esc detaches.
+    [alt+a]          Agent manager: enter attaches to an agent's session, s steers
+                     it from its row without attaching, x cancels its turn, X
+                     kills it — the one way an agent ends; attached, typing steers
+                     the agent, shift+tab sets its mode (clamped), esc detaches.
                      On a Mac an alt chord arrives only once the terminal's Option
                      key sends the escape prefix, which the stock terminals do not
                      until told — Terminal.app: Settings › Profiles › Keyboard ›
@@ -313,9 +314,10 @@
   ␛[38;5;244m                    opens over a running turn, which keeps streaming underneath;␛[m
   ␛[38;5;244m                    a transcript with nothing selectable opens as a plain pager.␛[m
   ␛[38;5;244m                    /step opens the in-flight step's detail from the prompt)␛[m
-  ␛[38;5;244m  [alt+a]          Agent manager: enter attaches to an agent's session, x cancels␛[m
-  ␛[38;5;244m                   its turn, X kills it; attached, typing steers the agent,␛[m
-  ␛[38;5;244m                   shift+tab sets its mode (clamped), esc detaches.␛[m
+  ␛[38;5;244m  [alt+a]          Agent manager: enter attaches to an agent's session, s steers␛[m
+  ␛[38;5;244m                   it from its row without attaching, x cancels its turn, X␛[m
+  ␛[38;5;244m                   kills it — the one way an agent ends; attached, typing steers␛[m
+  ␛[38;5;244m                   the agent, shift+tab sets its mode (clamped), esc detaches.␛[m
   ␛[38;5;244m                   On a Mac an alt chord arrives only once the terminal's Option␛[m
   ␛[38;5;244m                   key sends the escape prefix, which the stock terminals do not␛[m
   ␛[38;5;244m                   until told — Terminal.app: Settings › Profiles › Keyboard ›␛[m

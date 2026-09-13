@@ -23,21 +23,30 @@ import (
 // difference between a field the reader may skip and one the answer does not
 // work without, and the reader should not have to be refused to learn which.
 //
+// A host with a word of its own says that instead: the manager's field is a
+// redirect aimed at one child, and `note (optional)` over a row would name
+// neither the act nor its target. The refusal still outranks it — that is the
+// field reporting on itself, which no host's word replaces.
+//
 // Unfocused it is a plain-text echo rather than the textarea's own view: the
 // widget paints a cursor wherever it is drawn, and a cursor on a field the
 // keyboard is not in would say the next character goes there.
-func noteFieldRows(field *textarea.Model, focused, missing, required bool, inner int) []string {
+func noteFieldRows(field *textarea.Model, own string, focused, missing, required bool, inner int) []string {
 	label, style := "note (optional)", sty.Dim
 	if required {
 		label = "note (required)"
+	}
+	if own != "" {
+		label = own
 	}
 	if missing {
 		label, style = "note required", sty.Err
 	}
 	field.SetWidth(max(inner-2, 8))
 	// The placeholder says the same thing the label does, because on an
-	// empty focused field it is the only one of the two the eye is on.
-	if required {
+	// empty focused field it is the only one of the two the eye is on. A
+	// host that named the field has named its placeholder with it.
+	if required && own == "" {
 		field.Placeholder = "note (required)"
 	}
 	StyleTextArea(field)
@@ -71,7 +80,10 @@ type NoteBox struct {
 	// states before anybody is refused for it. Refusing is the host's: what
 	// counts as an answer is not something a field can know.
 	Required bool
-	missing  bool
+	// Label is the host's own word for what the field is, where `note` is
+	// not it. Empty is the note every other host opens.
+	Label   string
+	missing bool
 }
 
 // NewNoteBox builds the field blurred, with the same single-line shape and
@@ -121,5 +133,5 @@ func (n *NoteBox) Settle() { n.missing = false }
 
 // Rows renders the field into a body of the given inner width.
 func (n *NoteBox) Rows(inner int) []string {
-	return noteFieldRows(&n.Field, n.Focused, n.missing, n.Required, inner)
+	return noteFieldRows(&n.Field, n.Label, n.Focused, n.missing, n.Required, inner)
 }

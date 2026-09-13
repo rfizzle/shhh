@@ -8,6 +8,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 
 	"github.com/rfizzle/shhh/internal/subagent"
+	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
@@ -76,6 +77,29 @@ func TestInspectorAgents_TrailerIsTheRegistersOwnLetters(t *testing.T) {
 	}
 	if !strings.Contains(stripANSI(m.View().Content), hint) {
 		t.Fatalf("the trailer reaches the screen:\n%s", stripANSI(m.View().Content))
+	}
+}
+
+// TestInspectorAgents_TheTrailerNamesWhatAltCosts: every clause of the
+// trailer is a chord, so where it is the first thing in the session to offer
+// one it carries the notice about the Option key — the same sentence, in the
+// same words, a transcript row carries when the row is first.
+func TestInspectorAgents_TheTrailerNamesWhatAltCosts(t *testing.T) {
+	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
+	t.Cleanup(sup.Close)
+	updated, _ := newSubagentModel(t, sup).Update(tea.WindowSizeMsg{Width: 144, Height: 40})
+	m := updated.(Model)
+	spawnChild(t, sup, subagent.RoleResearcher, "researcher-1")
+
+	if !m.resolveInspector().AgentsOption {
+		t.Fatal("with nothing above it offering a chord, the trailer is the row that says what one costs")
+	}
+	notice := components.KeyRunOption([]components.TurnKey{{Key: "[r]", Chord: "[alt+r]"}}, true, true)
+	if notice == "" {
+		t.Fatal("the notice a row raises is what this row raises")
+	}
+	if view := stripANSI(m.View().Content); !strings.Contains(view, stripANSI(notice)) {
+		t.Fatalf("the notice should reach the screen under the map:\n%s", view)
 	}
 }
 

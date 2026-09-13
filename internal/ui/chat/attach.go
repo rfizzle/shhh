@@ -587,6 +587,10 @@ func (m Model) updateAgentList(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	}
 	done, res := m.agentList.Update(msg)
 	if res.Action == components.AgentNone {
+		// The redirect's field opens and closes under a row without any
+		// action reaching the host, and it is two lines the panel did not
+		// have — so the frame it opens on is already the taller one.
+		m.syncViewport()
 		return m, nil
 	}
 	if done && res.Action == components.AgentDraft {
@@ -644,6 +648,19 @@ func (m Model) updateAgentList(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		m.answerAgent = name
+		m.syncViewport()
+		return m, nil
+	case components.AgentSteer:
+		// The same message the child's own lane sends, from the row the
+		// reader was already looking at: opening the manager because a child
+		// has drifted should not then send you into its session to say so
+		// (docs/capabilities/subagents.md#three-can-steer-a-child-and-none-of-them-can-end-it).
+		if name == "" {
+			return m, nil // the session's own turn is steered by typing at it
+		}
+		if err := m.subagents.Steer(name, res.Text, subagent.SteerFromLane); err != nil {
+			m.noteChild(name, "Cannot steer: "+err.Error())
+		}
 		m.syncViewport()
 		return m, nil
 	case components.AgentRetry:
@@ -801,13 +818,14 @@ func (m Model) attachedCommand(parts []string) (tea.Model, tea.Cmd) {
 	name := m.attachedTo
 	switch parts[0] {
 	case "/exit":
-		if err := m.subagents.Kill(name); err != nil {
-			m.noteChild(name, err.Error())
-			break
-		}
-		m.purgeChildAsks(name)
-		m.detachOne()
-		m.appendEntry(entry{kind: entrySystem, text: "Killed " + name + "."})
+		// Ending a child has one name, and it is the manager's kill. This
+		// command was a second one, spelled the same as the command that
+		// quits the whole session everywhere else in the product — so a
+		// reader who typed it to leave a child's surface ended the child
+		// instead (docs/capabilities/subagents.md#three-can-steer-a-child-and-none-of-them-can-end-it).
+		m.noteChild(name, "Ending an agent is "+keys.Bracket(keys.Agent.Kill)+
+			" in the agent manager ("+keys.Shown(keys.Draft.Agents)+
+			"). Esc detaches without ending anything.")
 	case "/stats":
 		m.noteChild(name, m.childStatsReport(name))
 	case "/diff":
@@ -823,7 +841,7 @@ func (m Model) attachedCommand(parts []string) (tea.Model, tea.Cmd) {
 	case "/detach":
 		m.detachOne()
 	default:
-		m.noteChild(name, "Commands while attached: /stats, /diff, /permissions [name], /agents, /attach <name>, /detach, /exit (kill this agent). Plain text steers the agent; esc detaches.")
+		m.noteChild(name, "Commands while attached: /stats, /diff, /permissions [name], /agents, /attach <name>, /detach. Plain text steers the agent; esc detaches. Ending it is "+keys.Bracket(keys.Agent.Kill)+" in the agent manager.")
 	}
 	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()

@@ -133,7 +133,7 @@ func (s *NoteSelect) View(width int) string {
 	// The note field and the hints are pinned under the list, so what they
 	// spend comes off the list's budget before its window is drawn —
 	// otherwise a long list pushes the note itself off the card.
-	tail := noteFieldRows(&s.Note, s.FocusNote, s.noteMissing, s.Require, inner)
+	tail := noteFieldRows(&s.Note, "", s.FocusNote, s.noteMissing, s.Require, inner)
 	tail = append(tail, s.hintRowsFor(width)...)
 
 	// The query line is pinned above the list exactly as it is on a plain

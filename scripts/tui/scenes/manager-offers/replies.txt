@@ -1,42 +1,51 @@
-# One reply per request. The last line repeats once these run out, and the
-# session and every child it spawns draw from this one queue.
-#
-# The rounds are uniform for that reason: four agents are in flight after the
-# spawn — the session and its three children — and which of them reaches the
-# endpoint first is a race nothing here can settle, so every reply of a round
-# says the same thing.
-#
-# What lets three children end up in three different states anyway is that a
-# gated agent asks for nothing. Parked at a card it takes no reply from this
-# queue until somebody answers it, so everything after the gated round is
-# consumed one agent at a time, in the order the reader lets them through —
-# which is an order the scene decides rather than a race.
+# One queue per agent, because this scene is about three children in three
+# different states at once and a shared queue cannot say which child is in
+# which. Written as one queue, every reply of a round had to say the same
+# thing — four agents were racing for it — and which child ended up holding
+# the reply that keeps a request open was whichever one asked tenth. The
+# scene then read a different child as "the working one" on every run, which
+# is exactly the fact the manager captures are about.
 #
 # The sentence and the three spawns are one reply, so the transcript titles
 # the step with the sentence rather than closing a turn before the calls were
 # asked for.
+
+[session]
 Fanning three writers over the round accounting.
 +tool:spawn_agent:{"role":"writer","task":"Say where the round counter is read.","name":"writer-1"}
 +tool:spawn_agent:{"role":"writer","task":"Say where the round limit is set.","name":"writer-2"}
 +tool:spawn_agent:{"role":"writer","task":"Say where the loop exits.","name":"writer-3"}
-# The first round: everybody reads, which nothing gates, so every child is
-# working and the manager would draw three rows saying the same thing.
 tool:read_file:{"path":"loop.go"}
+tool:execute_command:{"command":"echo counted"}
+The counter is read at the top of the loop, and nowhere else.
+
+# writer-1 reads, asks to run something — which is the routed request that
+# makes it blocked until somebody answers — and is then kept waiting on the
+# first token of its next answer. That is the child that is working, for
+# longer than the whole scene runs: it is the second live child, which is
+# what puts kill-all on the key row, and it is still the one working several
+# captures later, when a redirect is typed on its row.
+[writer-1]
 tool:read_file:{"path":"loop.go"}
-tool:read_file:{"path":"loop.go"}
-tool:read_file:{"path":"loop.go"}
-# The second round: everybody wants to run something. The session's own is a
-# card of its own; each child's is routed to this session to be answered, and
-# a routed request nobody has answered is what makes a child blocked.
 tool:execute_command:{"command":"echo counted"}
-tool:execute_command:{"command":"echo counted"}
-tool:execute_command:{"command":"echo counted"}
-tool:execute_command:{"command":"echo counted"}
-# The first child let through asks the model again and is kept waiting on the
-# first token, which is a child that is working. It is the second live child,
-# and two live children are what puts kill-all on the key row.
-wait:40
+wait:180
 +The counter is read at the top of the loop, and nowhere else.
-# The second child let through is answered at once, which is the child that
-# has finished. It is the last line, so it repeats.
+
+# writer-2 is the child whose request is read from the manager: answered in
+# place, declined there, and finished on the round after.
+[writer-2]
+tool:read_file:{"path":"loop.go"}
+tool:execute_command:{"command":"echo counted"}
+The counter is read at the top of the loop, and nowhere else.
+
+# writer-3's request is never answered at all: it is the child waiting on
+# you, from the moment it asks to the end of the scene.
+[writer-3]
+tool:read_file:{"path":"loop.go"}
+tool:execute_command:{"command":"echo counted"}
+The counter is read at the top of the loop, and nowhere else.
+
+# The session's own readings of its run take a reply of their own rather than
+# one of anybody's rounds.
+[reading]
 The counter is read at the top of the loop, and nowhere else.

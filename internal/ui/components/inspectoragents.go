@@ -106,6 +106,14 @@ func (r InspectorRail) agentsBlock(width int) (railBlock, bool) {
 		b.rows = append(b.rows, railLine{
 			text: indentRow(sty.Hint.Render(hint), width), give: giveFirst, shed: true,
 		})
+		if r.AgentsOption {
+			// Under the trailer and shed before it: the rail takes the last
+			// of two rows that cost the same, so the row about the terminal
+			// goes before the row about the product.
+			b.rows = append(b.rows, railLine{
+				text: indentRow(optionLine(), width), give: giveFirst, shed: true,
+			})
+		}
 	}
 	b.fold = func(hidden []railLine) string { return agentsFold(hidden, width) }
 	return b, true

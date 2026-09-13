@@ -69,6 +69,15 @@ type AgentRow struct {
 	Depth int
 }
 
+// steerable reports that this row can still take a redirect: a child — a row
+// with progress of its own, which the orchestrator has none of — that is
+// queued, running or blocked. A child that has finished or failed has nothing
+// left to redirect, and the supervisor refuses one, so the key is not offered
+// over it (docs/capabilities/subagents.md#three-can-steer-a-child-and-none-of-them-can-end-it).
+func (r AgentRow) steerable() bool {
+	return r.Progress != nil && !r.Progress.State.settled()
+}
+
 // AgentAction is what the user asked to do with the focused row.
 type AgentAction int
 
@@ -83,6 +92,7 @@ const (
 	AgentKill                // X — kill the agent
 	AgentKillAll             // K — kill every child still running
 	AgentAnswer              // a — answer its pending approval in place
+	AgentSteer               // s — redirect it with the note typed on its row
 	AgentRetry               // r — run a failed agent again on its task
 	AgentDraft               // enter on the offer row — draft a profile
 	AgentBack                // esc — dismiss the list
@@ -92,6 +102,10 @@ const (
 type AgentListResult struct {
 	Action AgentAction
 	Index  int
+	// Text is what was typed into the row's field, for the one action that
+	// carries words: the redirect. Empty for every other action, which is
+	// what a field nobody opened has to say.
+	Text string
 }
 
 // AgentList is the sub-agent manager list, following the selector
@@ -111,6 +125,17 @@ type AgentList struct {
 	// thing that does. Its items are the scrolling half's own positions,
 	// which is why they are indices rather than rows.
 	list List[int]
+	// steer is the one-line field a redirect is typed into, open under the
+	// row it will reach and holding the keyboard while it is — the field the
+	// question card opens, doing here what it does there. Nil when no
+	// redirect is being typed.
+	steer *NoteBox
+	// steerAt is the name of the row the open field is aimed at, and not its
+	// index: the host rebuilds and re-sorts these rows on every frame, so a
+	// child that blocks while somebody is typing moves the index out from
+	// under the field. The one thing a redirect must never do is reach an
+	// agent nobody aimed it at.
+	steerAt string
 }
 
 // split divides the rows into the ones pinned above the window and the ones
@@ -211,6 +236,15 @@ func (l *AgentList) liveChildren() int {
 // that does not offer it rather than reporting a failure the row already
 // predicted, and [a] and [K] are silent when the list holds nothing for them.
 func (l *AgentList) Update(msg tea.KeyPressMsg) (done bool, result AgentListResult) {
+	if l.steer != nil {
+		if l.settleSteer(); l.steer == nil {
+			// The row went away under the field between frames. The keystroke
+			// goes with it rather than acting on whichever agent now stands
+			// where the pointer is.
+			return false, AgentListResult{}
+		}
+		return false, l.typeSteer(msg)
+	}
 	switch pressed := msg.String(); {
 	case l.moved(pressed):
 	case keys.Is(pressed, keys.Agent.Attach):
@@ -228,6 +262,10 @@ func (l *AgentList) Update(msg tea.KeyPressMsg) (done bool, result AgentListResu
 		// happened to be resting on as well as all of them.
 		if l.liveChildren() > 1 {
 			return false, AgentListResult{Action: AgentKillAll, Index: -1}
+		}
+	case keys.Is(pressed, keys.Agent.Steer):
+		if l.focused().steerable() {
+			l.openSteer()
 		}
 	case keys.Is(pressed, keys.Agent.Retry):
 		if l.focused().Retryable {
@@ -250,6 +288,102 @@ func (l *AgentList) Update(msg tea.KeyPressMsg) (done bool, result AgentListResu
 		return true, AgentListResult{Action: AgentBack, Index: -1}
 	}
 	return false, AgentListResult{}
+}
+
+// openSteer puts the field under the focused row with the keyboard in it. It
+// is named for the child it will reach rather than labelled `note`, because a
+// field that opened over a list of agents has to say which of them it is
+// about.
+func (l *AgentList) openSteer() {
+	row := l.focused()
+	l.steer = NewNoteBox()
+	l.steer.Label = keys.Words(keys.Agent.Steer) + " " + row.Name
+	l.steer.Field.Placeholder = "what it should do instead"
+	l.steer.Open()
+	l.steerAt = row.Name
+}
+
+// typeSteer routes one key while the field holds the keyboard. Enter sends
+// what was typed and esc closes the field with the child untouched; every
+// other key is a character of the redirect, including the letters this
+// surface answers with the field shut
+// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+//
+// An empty field is silent on enter rather than refused: nothing has been
+// asked of the reader here, so there is nothing to refuse them for, and a
+// redirect with no words in it is not one.
+//
+// settleSteer has run, so the target is a row in this list.
+func (l *AgentList) typeSteer(msg tea.KeyPressMsg) AgentListResult {
+	switch pressed := msg.String(); {
+	case keys.Is(pressed, keys.Agent.Back):
+		l.closeSteer()
+	case keys.Is(pressed, keys.Agent.Attach):
+		text := l.steer.Value()
+		if text == "" {
+			break
+		}
+		at := l.steerTarget()
+		l.closeSteer()
+		return AgentListResult{Action: AgentSteer, Index: at, Text: text}
+	default:
+		l.steer.Update(msg)
+	}
+	return AgentListResult{}
+}
+
+// settleSteer puts the pointer back on the row the open field is aimed at,
+// and drops the field where that row has left the list. Both are the same
+// fact: the host rebuilds and re-sorts these rows on every frame, and the
+// field is tied to a child rather than to a position.
+//
+// A pointer left at its index would light one row while the field sat under
+// another — and the window is positioned on the pointer, so it would then
+// scroll to the lit row and take the field off the screen with it. A field
+// under no row at all is worse: it would go on holding the keyboard out of
+// sight.
+func (l *AgentList) settleSteer() {
+	if l.steer == nil {
+		return
+	}
+	at := l.steerTarget()
+	if at < 0 {
+		l.closeSteer()
+		return
+	}
+	l.Focus = at
+}
+
+// closeSteer puts the keyboard back on the list.
+func (l *AgentList) closeSteer() { l.steer, l.steerAt = nil, "" }
+
+// steerTarget is where the open field's child sits in the list now, or -1
+// where it is no longer in it.
+func (l *AgentList) steerTarget() int {
+	if l.steer == nil {
+		return -1
+	}
+	for i, r := range l.Rows {
+		if r.Name == l.steerAt {
+			return i
+		}
+	}
+	return -1
+}
+
+// steerRows is the field as it is drawn under row i, indented to the line the
+// row's own note takes: it is about that row, and a field drawn anywhere else
+// on a list of agents is a field whose target has to be worked out.
+func (l *AgentList) steerRows(i, inner int) []string {
+	if l.steerTarget() != i {
+		return nil
+	}
+	indent := detailIndent + max(l.Rows[i].Depth-1, 0)
+	var rows []string
+	for _, r := range l.steer.Rows(max(inner-indent, 8)) {
+		rows = append(rows, strings.Repeat(" ", indent)+r)
+	}
+	return rows
 }
 
 // stateGlyph pairs every state with a glyph so monochrome terminals stay
@@ -362,6 +496,15 @@ const managerWayOut = "back to the turn"
 // target is the one thing that must never be guessed
 // (docs/interface/surfaces.md#the-agent-manager).
 func (l *AgentList) hints() []KeyOffer {
+	if l.steer != nil {
+		// The field holds the keyboard, so the list's own letters are not
+		// live and are not drawn as offers. What is left is the two keys any
+		// surface being typed into keeps.
+		return []KeyOffer{
+			keyOfferAs(keys.Agent.Attach, "send it"),
+			keyOfferAs(keys.Agent.Back, "leave it unsent"),
+		}
+	}
 	focus := l.focused()
 	// The offer row is the one row enter does something else on, so the key
 	// row says which — a hint that read `enter attach` over it would be
@@ -376,6 +519,9 @@ func (l *AgentList) hints() []KeyOffer {
 	if l.answerable() >= 0 {
 		segments = append(segments, keyOfferAs(keys.Agent.Answer, "answer without attaching"))
 	}
+	if agent && focus.steerable() {
+		segments = append(segments, keyOffer(keys.Agent.Steer))
+	}
 	if agent && focus.Retryable {
 		segments = append(segments, keyOffer(keys.Agent.Retry))
 	}
@@ -383,7 +529,12 @@ func (l *AgentList) hints() []KeyOffer {
 		segments = append(segments, keyOffer(keys.Agent.Cancel), keyOffer(keys.Agent.Kill))
 	}
 	if l.liveChildren() > 1 {
-		segments = append(segments, keyOffer(keys.Agent.KillAll))
+		// What it reaches, on the key itself: kill-all walks the whole tree,
+		// and a reader counting the rows in front of them would otherwise be
+		// counting one level of it
+		// (docs/capabilities/subagents.md#a-child-may-delegate-to-a-configured-depth).
+		segments = append(segments, keyOfferAs(keys.Agent.KillAll,
+			keys.Words(keys.Agent.KillAll)+detailSep+"every level"))
 	}
 	return append(segments, keyOfferAs(keys.Agent.Back, managerWayOut))
 }
@@ -420,10 +571,14 @@ func (l *AgentList) visibleRows(width, budget int, scrolling []int) []string {
 	}
 	l.list.Items, l.list.Focus = scrolling, focus
 	l.list.Rows = func(pos int) int {
+		lines := 1
 		if l.Rows[scrolling[pos]].Note != "" {
-			return 2
+			lines++
 		}
-		return 1
+		// The open field is part of the row it is aimed at, so the window
+		// buys them together or not at all.
+		lines += len(l.steerRows(scrolling[pos], inner))
+		return lines
 	}
 	lo, hi := l.list.Range(budget)
 	var rows []string
@@ -433,6 +588,7 @@ func (l *AgentList) visibleRows(width, budget int, scrolling []int) []string {
 	for pos := lo; pos < hi; pos++ {
 		i := scrolling[pos]
 		rows = append(rows, l.Rows[i].render(inner, i == l.Focus)...)
+		rows = append(rows, l.steerRows(i, inner)...)
 	}
 	if hi < n {
 		rows = append(rows, ListOverflowRow("↓", n-hi, "", width-cardFrameWidth))
@@ -441,6 +597,7 @@ func (l *AgentList) visibleRows(width, budget int, scrolling []int) []string {
 }
 
 func (l *AgentList) View(width int) string {
+	l.settleSteer()
 	inner := width - cardFrameWidth
 	// The key hints and the pinned blocked children come off the budget
 	// before the window is drawn: the list scrolls under them, and the window
@@ -450,6 +607,7 @@ func (l *AgentList) View(width int) string {
 	var rows []string
 	for _, i := range pinned {
 		rows = append(rows, l.Rows[i].render(inner, i == l.Focus)...)
+		rows = append(rows, l.steerRows(i, inner)...)
 	}
 	rows = append(rows, l.visibleRows(width, bodyBudget(l.MaxLines, len(hints)+len(rows)), scrolling)...)
 	rows = append(rows, hints...)

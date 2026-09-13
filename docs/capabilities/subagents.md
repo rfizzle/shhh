@@ -338,8 +338,7 @@ hard to make; each is marked below.
   their lane says whose kill they went with.
 - **What kill-all means.** Every live agent at every depth — which is what it
   already does, since it walks the flat list of every agent the session has —
-  and the manager's key row says so (`[K] kill all · every level`). *The
-  wording is not drawn yet.*
+  and the manager's key row says so (`[K] kill all · every level`).
 - **Whose card a grandchild's request is.** The person's, like every other
   child's, with the lineage in the title (`writer-1 ▸ reviewer-1a ▸ Approve
   command`); a blocked grandchild floats to directly under its own parent's
@@ -454,9 +453,10 @@ second implementation for children.
 
 ## Three can steer a child, and none of them can end it
 
-A child is given words by its own reader, by you at its lane, and by the
-orchestrator that wrote its task. All three arrive the same way — as a message
-in front of the child at its next round boundary — and all three have the same
+A child is given words by its own reader, by you — at its lane, or on its row
+in the manager without attaching at all — and by the orchestrator that wrote
+its task. All three arrive the same way — as a message in front of the child
+at its next round boundary — and all three have the same
 consequences for the turn they land in: what the child is judged against grows
 to include them, the reading that was in flight is dropped rather than argued
 with, and the reckoning of how often this child has ignored its check starts
@@ -471,7 +471,10 @@ the orchestrator gains is only the right to speak: the path its words travel
 is the one your own typing takes, and nothing a child reads can reach that
 path. A child's tool output cannot become a steer of any kind.
 
-Ending a child is yours alone, from its lane. It is not something the
+Ending a child is yours alone, from the manager, which is where the keys that
+act on one child are. It has one name there and no second one anywhere else: a
+command that spelled it while attached spelled it with the word that quits the
+whole session everywhere else in the product. It is not something the
 orchestrator is offered, and the reason is not symmetry: a writer stopped
 part-way leaves an isolated copy of the workspace holding an unfinished change
 that nobody has judged, and the party that would be stopping it is the one
@@ -709,13 +712,13 @@ reason: the second attempt at a task that proved too big for the budget is not
 worth making on that budget. A child that failed for any other reason was not
 short of attention and gets what it had.
 
-Both you and the orchestrator can retry. Yours is the key on the child's lane;
-the orchestrator has a verb of its own, so an unattended run — a backlog step,
-a fan-out nobody is watching — can recover a failed child instead of stopping
-on it. It is not put to a card, unlike a spawn: no agent is started, the task
-is the one already approved, and the slot is one already spent. What it spends
-again is the child's budget, which the session's own cap counts. Ending a child
-stays yours alone.
+Both you and the orchestrator can retry. Yours is the key on the child's row
+in the manager; the orchestrator has a verb of its own, so an unattended run —
+a backlog step, a fan-out nobody is watching — can recover a failed child
+instead of stopping on it. It is not put to a card, unlike a spawn: no agent
+is started, the task is the one already approved, and the slot is one already
+spent. What it spends again is the child's budget, which the session's own cap
+counts. Ending a child stays yours alone.
 
 A child that has just failed is often still stopping — a writer's isolated
 copy of the workspace is a directory that has to be taken away, and on a busy

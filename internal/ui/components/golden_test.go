@@ -1067,6 +1067,10 @@ func TestGolden_ReviewMode(t *testing.T) {
 // here) and the failed one ([r] runs it again). The progress is the fan-out
 // lane's renderer, so the capture is also where the two surfaces are held to
 // the same columns.
+//
+// The last panel is the redirect being typed: the field opens under the row
+// it will reach, named for it, and the list's own letters leave the key row
+// while the keyboard is in the field.
 func TestGolden_AgentList(t *testing.T) {
 	captureGolden(t, "agent-list", "agent list", goldenWidths, func(width int) []golden.Panel {
 		progress := func(p AgentProgress) *AgentProgress { return &p }
@@ -1101,6 +1105,13 @@ func TestGolden_AgentList(t *testing.T) {
 				Progress: progress(AgentProgress{State: FanoutDone, Tools: 8, Spend: "$0.02"}),
 				Note:     "the rails and the frame are one component"},
 		}
+		// The field open over a working child, with the pointer on it: the
+		// row it is aimed at is the row it is drawn under.
+		steering := &AgentList{Rows: rows, Focus: 2}
+		steering.Update(key("s"))
+		for _, r := range "read the exit condition too" {
+			steering.Update(key(string(r)))
+		}
 		return []golden.Panel{
 			{Label: "focus · the orchestrator", View: (&AgentList{Rows: rows}).View(width)},
 			{Label: "focus · the blocked child, [a] answers it here", View: (&AgentList{Rows: rows, Focus: 1}).View(width)},
@@ -1109,6 +1120,8 @@ func TestGolden_AgentList(t *testing.T) {
 				View: (&AgentList{Rows: offered, Focus: len(offered) - 1}).View(width)},
 			{Label: "a child that delegated · the request is under the row it belongs to",
 				View: (&AgentList{Rows: nested, Focus: 2}).View(width)},
+			{Label: "the redirect · typed under the row it will reach, and nothing else is live",
+				View: steering.View(width)},
 		}
 	})
 }

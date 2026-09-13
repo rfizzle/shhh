@@ -193,7 +193,8 @@ each other, and what a backlog run wrote up, listed by author.
 Dropping is yours alone: drop <n> removes one, clear empties it`,
 	"/memory": `Durable memories: list (default) · add [global] [kind] <text> ·
 edit <id> (opens the entry in your editor) · forget <id>`,
-	"/agents": `Agent manager: attach, steer, cancel, kill sub-agents (also ` + keys.Bracket(keys.Draft.Agents) + `)
+	"/agents": `Agent manager: attach, answer, steer, retry, cancel and kill
+sub-agents from the row each is on (also ` + keys.Bracket(keys.Draft.Agents) + `)
 new [brief]      draft an agent profile from a sentence with
                  the model's help: answer its questions if it
                  has any, then keep, refine or discard the
@@ -495,9 +496,10 @@ esc or typing returns to the prompt
 	},
 	{
 		binds: []keys.Binding{keys.Draft.Agents},
-		text: `Agent manager: enter attaches to an agent's session, x cancels
-its turn, X kills it; attached, typing steers the agent,
-shift+tab sets its mode (clamped), esc detaches.
+		text: `Agent manager: enter attaches to an agent's session, s steers
+it from its row without attaching, x cancels its turn, X
+kills it — the one way an agent ends; attached, typing steers
+the agent, shift+tab sets its mode (clamped), esc detaches.
 On a Mac an alt chord arrives only once the terminal's Option
 key sends the escape prefix, which the stock terminals do not
 until told — Terminal.app: Settings › Profiles › Keyboard ›

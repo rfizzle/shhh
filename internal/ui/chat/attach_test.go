@@ -664,6 +664,72 @@ func TestRetryFailedChildFromTheList(t *testing.T) {
 	}
 }
 
+// TestSteerAChildFromTheList: the redirect is typed on the row and sent from
+// there, which is the same message attaching and typing sends — opening the
+// manager because a child has drifted should not then send you into its
+// session to say so.
+func TestSteerAChildFromTheList(t *testing.T) {
+	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
+	t.Cleanup(sup.Close)
+	m := newSubagentModel(t, sup)
+	spawnBlockedChild(t, sup)
+
+	updated, _ := m.Update(tea.KeyPressMsg{Code: 'a', Mod: tea.ModAlt})
+	m = updated.(Model)
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyDown})
+	m = updated.(Model)
+	if view := m.View().Content; !strings.Contains(view, "[s] steer") {
+		t.Fatalf("a live child's row must offer the redirect:\n%s", view)
+	}
+
+	updated, _ = m.Update(key('s'))
+	m = updated.(Model)
+	if view := m.View().Content; !strings.Contains(view, "steer researcher-1") {
+		t.Fatalf("the field must name the child it will reach:\n%s", view)
+	}
+	for _, r := range "read the exporter instead" {
+		updated, _ = m.Update(key(r))
+		m = updated.(Model)
+	}
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	m = updated.(Model)
+
+	if m.agentList == nil {
+		t.Fatal("sending a redirect must leave the list open")
+	}
+	if n := sup.QueuedSteering("researcher-1"); n != 1 {
+		t.Fatalf("QueuedSteering = %d, want the redirect queued once", n)
+	}
+	if st, _ := sup.Get("researcher-1"); st.SteerFrom != subagent.SteerFromLane {
+		t.Fatalf("the redirect came from %q, want the person's own source", st.SteerFrom)
+	}
+}
+
+// Ending a child has one name. /exit while attached was a second one, spelled
+// the way the whole session is quit everywhere else, so it ends nothing now
+// and says where the act lives.
+func TestAttachedExitEndsNothingAndSaysWhereKillIs(t *testing.T) {
+	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
+	t.Cleanup(sup.Close)
+	m := newSubagentModel(t, sup)
+	spawnBlockedChild(t, sup)
+	m.attach("researcher-1")
+
+	m.input.SetValue("/exit")
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	m = updated.(Model)
+
+	if st, ok := sup.Get("researcher-1"); !ok || st.State == subagent.StateFailed {
+		t.Fatalf("/exit must not end the child, state = %v", st.State)
+	}
+	if m.attachedTo != "researcher-1" {
+		t.Fatalf("attached to %q, want the surface unchanged", m.attachedTo)
+	}
+	if !childTranscriptContains(sup, "researcher-1", "agent manager") {
+		t.Fatal("/exit should say where ending an agent lives")
+	}
+}
+
 func TestDetachedAskGJumpsToAgent(t *testing.T) {
 	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
 	t.Cleanup(sup.Close)

@@ -131,9 +131,16 @@ type InspectorRail struct {
 	// key register currently binds
 	// (docs/interface/surfaces.md#the-inspector-rail).
 	AgentsHint string
-	Tools      *InspectorTools
-	Context    *InspectorContext
-	Spend      *InspectorSpend
+	// AgentsOption says this trailer is where the session first offers a
+	// chord, so it is the one that carries what alt costs on a stock macOS
+	// terminal. Every clause of the trailer is a chord, which makes the whole
+	// row a false offer on a terminal that composes a character for one, and
+	// a map is often on screen long before a transcript row offers anything
+	// (docs/interface/reserved-keys.md#the-draft-spends-chords-only).
+	AgentsOption bool
+	Tools        *InspectorTools
+	Context      *InspectorContext
+	Spend        *InspectorSpend
 	// Frame is the host's spinner frame index, for the lanes of children that
 	// declared no step count. The rail stays passive: it animates nothing, it
 	// just draws the frame it is handed.

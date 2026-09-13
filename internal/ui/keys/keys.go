@@ -1207,6 +1207,13 @@ type AgentKeys struct {
 	// still waiting when the reader comes back.
 	Go     Binding
 	Answer Binding
+	// Steer is the redirect typed into the row it is aimed at, without
+	// attaching: a child that has drifted is corrected where it was seen to
+	// drift, and the correction is cheaper than the kill beside it. It is
+	// the pointer's row rather than the list's, like cancel and kill,
+	// because its target must never be guessed
+	// (docs/interface/surfaces.md#the-agent-manager).
+	Steer  Binding
 	Retry  Binding
 	Cancel Binding
 	Kill   Binding
@@ -1224,6 +1231,7 @@ var Agent = AgentKeys{
 	Attach:  bind("enter", "attach", "enter"),
 	Go:      bind("g", "go to the agent that asked", "g"),
 	Answer:  bind("a", "answer", "a"),
+	Steer:   bind("s", "steer", "s"),
 	Retry:   bind("r", "retry", "r"),
 	Cancel:  bind("x", "cancel", "x"),
 	Kill:    bind("X", "kill", "X"),

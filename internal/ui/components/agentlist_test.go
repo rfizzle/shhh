@@ -154,6 +154,162 @@ func TestAgentListIgnoresKeysARowDoesNotOffer(t *testing.T) {
 	}
 }
 
+// typeIntoAgentList sends each character of a sentence to the list, one key press at a
+// time, the way a reader types it.
+func typeIntoAgentList(l *AgentList, text string) {
+	for _, r := range text {
+		l.Update(agentKey(string(r)))
+	}
+}
+
+// TestAgentListSteersTheRowThePointerIsOn: [s] opens the field under a child
+// that can still take a redirect, and enter sends what was typed against that
+// row and no other.
+func TestAgentListSteersTheRowThePointerIsOn(t *testing.T) {
+	l := &AgentList{Rows: managerRows(), Focus: 2}
+	if done, result := l.Update(agentKey("s")); done || result.Action != AgentNone {
+		t.Fatalf("[s] = %#v (done=%v), want the field open and nothing sent yet", result, done)
+	}
+	view := ansi.Strip(l.View(110))
+	if !strings.Contains(view, "steer writer-1") {
+		t.Fatalf("the field should name the child it will reach:\n%s", view)
+	}
+	typeIntoAgentList(l, "read the exit condition too")
+	done, result := l.Update(agentKey("enter"))
+	if done || result.Action != AgentSteer || result.Index != 2 {
+		t.Fatalf("enter = %#v (done=%v), want AgentSteer on row 2 with the list open", result, done)
+	}
+	if result.Text != "read the exit condition too" {
+		t.Fatalf("the redirect carried %q", result.Text)
+	}
+	if strings.Contains(ansi.Strip(l.View(110)), "steer writer-1") {
+		t.Fatal("the field should close once the redirect is sent")
+	}
+}
+
+// The keys the list answers with the field shut are letters of the redirect
+// while it is open, which is invariant 5 inside a takeover: the field holds
+// the keyboard, so nothing else may act on a keystroke a sentence produces.
+func TestAgentListSteerFieldTakesEveryLetter(t *testing.T) {
+	l := &AgentList{Rows: managerRows(), Focus: 2}
+	l.Update(agentKey("s"))
+	for _, k := range []string{"x", "X", "a", "r", "K", "j"} {
+		if done, result := l.Update(agentKey(k)); done || result.Action != AgentNone {
+			t.Fatalf("%q while the field is open = %#v (done=%v), want a character", k, result, done)
+		}
+	}
+	view := ansi.Strip(l.View(110))
+	if !strings.Contains(view, "xXarKj") {
+		t.Fatalf("every letter should have gone into the field:\n%s", view)
+	}
+	if strings.Contains(view, "[X] kill") {
+		t.Fatalf("the list's own keys are not live while the field is:\n%s", view)
+	}
+}
+
+// Esc closes the field and sends nothing, and the list is what it closes to.
+func TestAgentListSteerIsAbandonedByEsc(t *testing.T) {
+	l := &AgentList{Rows: managerRows(), Focus: 2}
+	l.Update(agentKey("s"))
+	typeIntoAgentList(l, "never mind")
+	done, result := l.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
+	if done || result.Action != AgentNone {
+		t.Fatalf("esc over the field = %#v (done=%v), want the field closed and the list kept", result, done)
+	}
+	view := ansi.Strip(l.View(110))
+	if strings.Contains(view, "never mind") || !strings.Contains(view, "[X] kill") {
+		t.Fatalf("the list should be back with nothing sent:\n%s", view)
+	}
+}
+
+// An empty field is not a redirect, so enter over one sends nothing and
+// leaves the field where it is.
+func TestAgentListSendsNoEmptySteer(t *testing.T) {
+	l := &AgentList{Rows: managerRows(), Focus: 2}
+	l.Update(agentKey("s"))
+	if done, result := l.Update(agentKey("enter")); done || result.Action != AgentNone {
+		t.Fatalf("enter over an empty field = %#v (done=%v), want nothing sent", result, done)
+	}
+	if !strings.Contains(ansi.Strip(l.View(110)), "steer writer-1") {
+		t.Fatal("the field should still be open")
+	}
+}
+
+// The key is offered over a child that can still read a redirect and nowhere
+// else: not over the orchestrator, which is steered by typing at it, and not
+// over a child that has stopped, which the supervisor refuses.
+func TestAgentListOffersSteerOnlyWhereItReaches(t *testing.T) {
+	rows := managerRows()
+	if view := ansi.Strip((&AgentList{Rows: rows, Focus: 2}).View(110)); !strings.Contains(view, "[s] steer") {
+		t.Fatalf("a running child should offer it:\n%s", view)
+	}
+	for _, focus := range []int{0, 3} {
+		l := &AgentList{Rows: rows, Focus: focus}
+		if view := ansi.Strip(l.View(110)); strings.Contains(view, "[s] steer") {
+			t.Fatalf("row %d should not offer a redirect:\n%s", focus, view)
+		}
+		if _, result := l.Update(agentKey("s")); result.Action != AgentNone {
+			t.Fatalf("[s] on row %d = %#v, want nothing", focus, result)
+		}
+		if strings.Contains(ansi.Strip(l.View(110)), "┄ steer") {
+			t.Fatalf("[s] on row %d opened a field", focus)
+		}
+	}
+}
+
+// A redirect follows the child it was aimed at rather than the position it
+// was typed over: the host re-sorts these rows on every frame, and a blocked
+// child floating to the top under the reader's hand must not move the target.
+// The pointer follows it too — the window is positioned on the pointer, so a
+// pointer left behind would scroll the field it belongs to off the screen.
+func TestAgentListSteerFollowsTheChildNotTheIndex(t *testing.T) {
+	rows := managerRows()
+	// Short enough that the list is windowed, which is where a pointer left
+	// behind costs the field its place on the screen.
+	l := &AgentList{Rows: rows, Focus: 2, MaxLines: 9}
+	l.Update(agentKey("s"))
+	typeIntoAgentList(l, "check the exit")
+	// writer-1 has floated to the head of the list, as a blocked child does.
+	l.Rows = []AgentRow{rows[2], rows[0], rows[1], rows[3]}
+	view := ansi.Strip(l.View(110))
+	if !strings.Contains(view, "❯ ◇ writer-1") {
+		t.Fatalf("the pointer should have followed the field to the row's new place:\n%s", view)
+	}
+	if !strings.Contains(view, "check the exit") {
+		t.Fatalf("the window should still be drawing the field:\n%s", view)
+	}
+	_, result := l.Update(agentKey("enter"))
+	if result.Action != AgentSteer || result.Index != 0 {
+		t.Fatalf("the redirect = %#v, want it on writer-1 at its new row", result)
+	}
+	if l.Focus != 0 {
+		t.Fatalf("the pointer is on row %d, want the row that was just acted on", l.Focus)
+	}
+}
+
+// The field goes with the row it is aimed at. A child killed or finished
+// while the sentence was being typed leaves nothing to draw the field under,
+// and a field nobody can see is a field holding the keyboard out of sight —
+// so it closes, and the keystroke that found it gone goes with it rather than
+// acting on whichever agent now stands where the pointer was.
+func TestAgentListSteerGoesWithTheRowThatLeaves(t *testing.T) {
+	rows := managerRows()
+	l := &AgentList{Rows: rows, Focus: 2}
+	l.Update(agentKey("s"))
+	typeIntoAgentList(l, "check the exit")
+	l.Rows = []AgentRow{rows[0], rows[1], rows[3]} // writer-1 is gone
+	if done, result := l.Update(agentKey("X")); done || result.Action != AgentNone {
+		t.Fatalf("the keystroke after the row left = %#v (done=%v), want nothing", result, done)
+	}
+	view := ansi.Strip(l.View(110))
+	if strings.Contains(view, "┄ steer") {
+		t.Fatalf("the field should have gone with its row:\n%s", view)
+	}
+	if !strings.Contains(view, "[X] kill") {
+		t.Fatalf("the list should have the keyboard back:\n%s", view)
+	}
+}
+
 // [K] is about the list, so it carries no row: a host reading an index off it
 // would kill whichever child the pointer happened to rest on as well as all
 // of them.

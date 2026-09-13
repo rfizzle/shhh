@@ -48,7 +48,10 @@ const (
 type SteerSource string
 
 const (
-	// SteerFromLane: the person opened the child's lane and typed.
+	// SteerFromLane: the person typed it — at the child's lane, or into the
+	// field the manager opens on its row. One word for both because it is
+	// one author: which surface they were looking at is not a thing the
+	// child, the roster or the record has any use for.
 	SteerFromLane SteerSource = "lane"
 	// SteerFromParent: the orchestrator that wrote the task redirected it.
 	SteerFromParent SteerSource = "parent"

@@ -212,10 +212,14 @@ func (m Model) resolveInspector() components.InspectorRail {
 		Changes:    m.inspectorChanges(),
 		Agents:     m.inspectorAgents(),
 		AgentsHint: agentsHintRail(),
-		Tools:      m.inspectorTools(),
-		Context:    m.inspectorContext(),
-		Spend:      m.inspectorSpend(),
-		Frame:      m.spinFrame,
+		// The trailer is all chords, so it is a row that says what a chord
+		// needs — but only while it is the session's first, which is the same
+		// question every transcript row asks before saying it (inertkeys.go).
+		AgentsOption: m.firstRowOffer(),
+		Tools:        m.inspectorTools(),
+		Context:      m.inspectorContext(),
+		Spend:        m.inspectorSpend(),
+		Frame:        m.spinFrame,
 	}
 }
 
