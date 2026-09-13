@@ -14,6 +14,14 @@ repeats once the file is used up. A line is one of:
     the alternatives — and a reply is one line of this file.
     tool:<name>:<json args>   one tool call, e.g.
     tool:execute_command:{"command":"echo hi"}
+    wait:<seconds>            hold the request open before answering it
+
+`wait` is how a scene reaches a phase that is otherwise a moment wide. A
+turn is thinking from the request leaving to the first token arriving, and
+against an endpoint that answers instantly that is a frame nobody can capture
+— so the scene about the thinking phase says how long the model takes to
+begin. It holds the request rather than pausing mid-answer, which is what the
+phase is: the client is streaming and has nothing yet.
 
 A line beginning with + continues the reply above it rather than being one of
 its own, so a single reply can carry several parts:
@@ -36,6 +44,7 @@ print-mode tests make.
 """
 import json
 import sys
+import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 PORT = int(sys.argv[1])
@@ -101,6 +110,12 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         calls = 0
         for part in parts:
+            if part.startswith("wait:"):
+                # Before the headers would be a request that has not been
+                # answered; after them the client is already streaming and
+                # waiting on a first token, which is the phase being drawn.
+                time.sleep(float(part.split(":", 1)[1]))
+                continue
             if part.startswith("tool:"):
                 _, name, args = part.split(":", 2)
                 self.wfile.write(chunk({"tool_calls": [{"index": calls, "id": "call-%d" % (calls + 1),

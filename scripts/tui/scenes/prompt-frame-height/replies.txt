@@ -1,0 +1,12 @@
+# A terminal with rows to spare is the one the frame's height has to be read
+# on, so this reply is chosen for the phases it parks the turn in long enough
+# to photograph. It is one reply in three parts, because the wait, the
+# sentence and the call it introduces all belong to the same round.
+#
+# The model takes six seconds to say its first word: that span is the
+# thinking phase, and against an endpoint that answers instantly it is a
+# frame too narrow to catch.
+wait:6
++Locate the round accounting, then run the suite over it.
++tool:execute_command:{"command":"for f in agent/loop.go agent/round.go ui/chat/frame.go ui/chat/layout.go ui/components/input.go; do echo \"ok  github.com/rfizzle/shhh/internal/$f  0.412s\"; sleep 1; done"}
+The suite passed and the turn is over. Nothing is typed in the box, and the frame is four rows.

@@ -39,13 +39,13 @@ func New(initialMessages []provider.Message, stream StreamFunc) Model {
 	ta.SetVirtualCursor(false)
 	// The box grows and shrinks with what is in it, counted by the textarea
 	// against the same wrap it draws with, so the box and its contents cannot
-	// disagree about how many rows there are. The floor is the three rows the
-	// box has always had; the ceiling moves with the terminal and is set on
-	// every fit (fitDraft).
+	// disagree about how many rows there are. The floor is the one row the
+	// sentence is typed on (minDraftRows); the ceiling moves with the
+	// terminal and is set on every fit (fitDraft).
 	ta.DynamicHeight = true
-	ta.MinHeight = inputHeight
+	ta.MinHeight = minDraftRows
 	ta.MaxHeight = maxDraftRows
-	ta.SetHeight(inputHeight)
+	ta.SetHeight(minDraftRows)
 
 	// One frame set, one cadence, one colour, shared with the one-shot UI.
 	s := components.NewSpinnerModel()

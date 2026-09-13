@@ -325,12 +325,12 @@ func TestFrame_WideViewportAccounting(t *testing.T) {
 	m := frameModel(t, 130, 40)
 	// The wide layout adds one dedicated vitals rail beyond the standard
 	// chrome rows.
-	if want := 40 - inputHeight - (headerHeight + dividerHeight + bottomChromeHeight) - 1; m.viewport.Height() != want {
+	if want := 40 - minDraftRows - (headerHeight + dividerHeight + bottomChromeHeight) - 1; m.viewport.Height() != want {
 		t.Fatalf("wide viewport height = %d, want %d", m.viewport.Height(), want)
 	}
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 100, Height: 40})
 	m = updated.(Model)
-	if want := 40 - inputHeight - (headerHeight + dividerHeight + bottomChromeHeight); m.viewport.Height() != want {
+	if want := 40 - minDraftRows - (headerHeight + dividerHeight + bottomChromeHeight); m.viewport.Height() != want {
 		t.Fatalf("compact viewport height = %d, want %d", m.viewport.Height(), want)
 	}
 }
@@ -666,11 +666,12 @@ func TestFrame_ModeGlyphNeverDependsOnColorAlone(t *testing.T) {
 }
 
 // The box grows one row per draft line up to its cap, gives the viewport
-// back what it took, and returns to three rows when the draft empties.
+// back what it took, and returns to its one resting row when the draft
+// empties.
 func TestDraftBoxGrowsAndShrinks(t *testing.T) {
 	m := frameModel(t, 100, 40)
-	if got := m.input.Height(); got != inputHeight {
-		t.Fatalf("idle box height %d, want %d", got, inputHeight)
+	if got := m.input.Height(); got != minDraftRows {
+		t.Fatalf("idle box height %d, want %d", got, minDraftRows)
 	}
 	restRows := m.viewportHeight()
 
@@ -680,15 +681,15 @@ func TestDraftBoxGrowsAndShrinks(t *testing.T) {
 	if got := m.input.Height(); got != 9 {
 		t.Fatalf("nine-line draft box height %d, want a row per line", got)
 	}
-	if got := m.viewportHeight(); got != restRows-(9-inputHeight) {
-		t.Fatalf("viewport %d rows, want %d — the box must take exactly what it grew", got, restRows-(9-inputHeight))
+	if got := m.viewportHeight(); got != restRows-(9-minDraftRows) {
+		t.Fatalf("viewport %d rows, want %d — the box must take exactly what it grew", got, restRows-(9-minDraftRows))
 	}
 
 	m.input.SetValue("")
 	updated, _ = m.Update(resizeSettledMsg{seq: m.resizeSeq})
 	m = updated.(Model)
-	if got := m.input.Height(); got != inputHeight {
-		t.Fatalf("emptied box height %d, want %d", got, inputHeight)
+	if got := m.input.Height(); got != minDraftRows {
+		t.Fatalf("emptied box height %d, want %d", got, minDraftRows)
 	}
 	if got := m.viewportHeight(); got != restRows {
 		t.Fatalf("viewport %d rows after shrink, want %d restored", got, restRows)
@@ -717,6 +718,136 @@ func TestDraftBoxCapped(t *testing.T) {
 	}
 }
 
+// An empty draft costs the same rows on a 20-row terminal and on a 100-row
+// one, in every state a reader waits through. The bottom panel is measured
+// rather than fixed (layout.go, bottomRows) and it is the only vertical
+// segment that is, so a height that read the terminal anywhere along that
+// path would be the transcript paying for rows nobody typed into — which is
+// what the box opening at three rows was.
+//
+// The five states are the ones a person is looking at the screen through
+// with nothing typed: the session at rest, the three phases a turn passes
+// through, and the turn it resolves into.
+func TestEmptyDraftCostsItsMinimumAtEveryTerminalHeight(t *testing.T) {
+	states := []struct {
+		name string
+		mut  func(*Model)
+	}{
+		{"idle", func(*Model) {}},
+		{"thinking", func(m *Model) { m.state = stateStreaming }},
+		{"streaming", func(m *Model) { m.state = stateStreaming; m.streaming = "Reading the round accounting" }},
+		{"running", func(m *Model) { m.state = stateRunningCmd }},
+		{"completed", func(m *Model) {
+			m.transcript = goldenTranscript()
+			m.turnCount = 1
+			m.transcript[len(m.transcript)-1].turn = 1
+		}},
+	}
+	for _, st := range states {
+		want := 0
+		for i, height := range []int{20, 24, 30, 52, 100} {
+			m := frameModel(t, 130, height)
+			st.mut(&m)
+			m.invalidateRenderCache()
+			m.syncViewport()
+			if got := m.input.Height(); got != minDraftRows {
+				t.Errorf("%s at %d rows: the empty box is %d rows, want %d",
+					st.name, height, got, minDraftRows)
+			}
+			if i == 0 {
+				want = m.bottomRows()
+				continue
+			}
+			if got := m.bottomRows(); got != want {
+				t.Errorf("%s at %d rows: the bottom takes %d rows, want the %d it took at 20 — the terminal's height is not the panel's",
+					st.name, height, got, want)
+			}
+		}
+	}
+}
+
+// What the box does grow for is its own wrapped content, and it grows by
+// exactly that: a row per wrapped line up to the ceiling, and every row it
+// does not take goes to the transcript. The pair is checked together because
+// they are one split — a box that grew without the pane shrinking would be a
+// row drawn twice (layout.go).
+func TestDraftGrowsOnlyForItsContent(t *testing.T) {
+	const height = 52
+	m := frameModel(t, 130, height)
+	restBottom, restPane := m.bottomRows(), m.viewportHeight()
+
+	for _, lines := range []int{2, 5, 9, 12, 30} {
+		draft := m
+		draft.input.SetValue(strings.Repeat("line\n", lines-1) + "line")
+		updated, _ := draft.Update(resizeSettledMsg{seq: draft.resizeSeq})
+		draft = updated.(Model)
+
+		want := min(lines, draft.draftMaxRows())
+		if got := draft.input.Height(); got != want {
+			t.Fatalf("%d-line draft: box %d rows, want %d", lines, got, want)
+		}
+		grown := want - minDraftRows
+		if got := draft.bottomRows(); got != restBottom+grown {
+			t.Fatalf("%d-line draft: the bottom takes %d rows, want %d", lines, got, restBottom+grown)
+		}
+		if got := draft.viewportHeight(); got != restPane-grown {
+			t.Fatalf("%d-line draft: the pane keeps %d rows, want %d — it receives every row the box did not take",
+				lines, got, restPane-grown)
+		}
+	}
+}
+
+// And the frame stays whole while it does it. The gutter glyph, the cursor,
+// the vitals rail and the key rail are the four things the box promises to
+// keep inside itself, and the terminal's last row is the edge they are
+// promised above — at every width the frame is drawn at and at heights from
+// the shortest the panel has a budget for upward.
+func TestFrameKeepsItsPartsAboveTheTerminalEdge(t *testing.T) {
+	for _, width := range frameWidths {
+		for _, height := range []int{10, 20, 24, 40, 52} {
+			for _, wrapped := range []bool{false, true} {
+				m := frameModel(t, width, height)
+				if wrapped {
+					// Typed rather than set, because a draft past the box's
+					// ceiling scrolls inside it and it is the keystroke that
+					// scrolls: two lines' worth of characters at whatever
+					// width this is.
+					m = typeChars(t, m, strings.Repeat("wrap me ", 2+m.input.Width()/4))
+				}
+				updated, _ := m.Update(resizeSettledMsg{seq: m.resizeSeq})
+				m = updated.(Model)
+
+				var cur cursorSink
+				rows := strings.Split(m.paint(&cur), "\n")
+				if len(rows) != height {
+					t.Fatalf("w%d h%d: the surface painted %d rows", width, height, len(rows))
+				}
+				if cur.at == nil {
+					t.Errorf("w%d h%d: the draft has the keyboard and no cursor", width, height)
+				} else if cur.at.Y < 0 || cur.at.Y >= height {
+					t.Errorf("w%d h%d: cursor row %d is off the terminal", width, height, cur.at.Y)
+				}
+				view := stripANSI(strings.Join(rows, "\n"))
+				if !strings.Contains(view, draftGutter) {
+					t.Errorf("w%d h%d: no prompt glyph — nothing says where you type:\n%s", width, height, view)
+				}
+				if !m.frameShowing() {
+					// Below the rung there is no box, and the plain layout's
+					// own rails are the status bar's (paint.go).
+					continue
+				}
+				last := stripANSI(rows[height-1])
+				if !strings.Contains(last, "╰") || !strings.Contains(last, "╯") {
+					t.Errorf("w%d h%d: the box's closing rail is not the terminal's last row:\n%q", width, height, last)
+				}
+				if !strings.Contains(view, "⏸") && !strings.Contains(view, "⏵⏵") {
+					t.Errorf("w%d h%d: the vitals rail lost its mode segment:\n%s", width, height, view)
+				}
+			}
+		}
+	}
+}
+
 // A width change that re-wraps the draft moves the height in the same
 // message: the horizontal pass fits the box to the new width and the vertical
 // one is taken after it, over the box as it came back.
@@ -726,8 +857,8 @@ func TestDraftBoxGrowsOnWidthShrink(t *testing.T) {
 	updated, _ := m.Update(resizeSettledMsg{seq: m.resizeSeq})
 	m = updated.(Model)
 	before := m.input.Height()
-	if before <= inputHeight {
-		t.Fatalf("fixture: the draft should already wrap past %d rows, got %d", inputHeight, before)
+	if before <= minDraftRows {
+		t.Fatalf("fixture: the draft should already wrap past %d rows, got %d", minDraftRows, before)
 	}
 
 	updated, _ = m.Update(tea.WindowSizeMsg{Width: 60, Height: 40})
@@ -748,8 +879,8 @@ func TestResizeSettlesInOneExtraPass(t *testing.T) {
 	m = updated.(Model)
 
 	box, rows := m.input.Height(), m.viewport.Height()
-	if box <= inputHeight {
-		t.Fatalf("fixture: the draft should have re-wrapped past %d rows, got %d", inputHeight, box)
+	if box <= minDraftRows {
+		t.Fatalf("fixture: the draft should have re-wrapped past %d rows, got %d", minDraftRows, box)
 	}
 	// The rows the pane holds are the rows the split hands out over the box
 	// as it now is, not as it was before the width moved.
@@ -796,7 +927,11 @@ func TestDraftCursorIsPlacedInTheBox(t *testing.T) {
 		t.Fatalf("a draft that has not wrapped should not have moved the cursor's row")
 	}
 
-	// A draft long enough to wrap puts it on the row it wrapped onto.
+	// A draft long enough to wrap grows the box, and it grows it upward from
+	// a bottom rail the panel holds still — so the row being typed on is the
+	// row it always was, and what the wrap costs comes off the transcript
+	// above the box rather than off the reader's place in it.
+	rest := m.bottomRows()
 	m.input.SetValue(strings.Repeat("wrap me ", 40))
 	m.syncInputHeight()
 	cur = cursorSink{}
@@ -805,15 +940,17 @@ func TestDraftCursorIsPlacedInTheBox(t *testing.T) {
 	if wrapped == nil {
 		t.Fatal("a wrapped draft still owns the cursor")
 	}
-	if wrapped.Y <= empty.Y {
-		t.Fatalf("cursor row %d on a wrapped draft, want it below the first row %d",
+	grew := m.input.Height()
+	if grew <= minDraftRows {
+		t.Fatalf("the draft did not wrap: the box is still %d rows", grew)
+	}
+	if wrapped.Y != empty.Y {
+		t.Fatalf("cursor row %d on a wrapped draft, want it still on %d: the box grows upward",
 			wrapped.Y, empty.Y)
 	}
-	// The box grows upward from a bottom rail the panel holds still, so the
-	// row being typed on is where the last row of the smallest box was.
-	if want := empty.Y + inputHeight - 1; wrapped.Y != want {
-		t.Fatalf("cursor row %d on the last of the box's %d rows, want %d",
-			wrapped.Y, m.input.Height(), want)
+	if got, want := m.bottomRows(), rest+grew-minDraftRows; got != want {
+		t.Fatalf("the panel took %d rows for a %d-row box, want %d — it must take exactly what the box grew",
+			got, grew, want)
 	}
 }
 

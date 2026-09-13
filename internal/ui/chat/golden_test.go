@@ -342,6 +342,72 @@ func TestGolden_PromptFrame(t *testing.T) {
 	})
 }
 
+// tallScreenHeight is the terminal the height fixture is taken on: tall
+// enough that a bottom panel reading the terminal rather than its own
+// content would be unmissable, and a round number so the panels can be
+// counted against it by eye.
+const tallScreenHeight = 52
+
+// TestGolden_PromptFrameHeight captures what the frame costs the transcript
+// in each of the five states a reader waits through with nothing typed —
+// idle, thinking, streaming, running, and the turn resolved — and then the
+// whole surface at a tall terminal in the state the complaint was filed from.
+//
+// The box rests on one row (minDraftRows), so the frame is four rows and the
+// last panel's transcript reaches within four of the bottom. It used to open
+// at three whatever was in it, and the two blank rows under the cursor are
+// what this sheet is here to keep away: they were the same two rows on a
+// 24-row terminal and on this one, they carried no character, and the
+// transcript paid for them on every frame of every session
+// (docs/interface/surfaces.md#the-input-frame).
+func TestGolden_PromptFrameHeight(t *testing.T) {
+	captureGolden(t, "prompt-frame-height", "the frame's height at rest", goldenWidths, func(width int) []golden.Panel {
+		frame := func(mut func(*Model)) string {
+			m := goldenModel(t, width)
+			mut(&m)
+			m.invalidateRenderCache()
+			return promptSurface(m)
+		}
+		panels := []golden.Panel{
+			// Idle is the session before its first turn, so the transcript
+			// the other four carry is not there to resolve a status from.
+			{Label: "idle · nothing has run", View: promptSurface(frameModel(t, width, tallScreenHeight))},
+			{Label: "thinking · the model is reasoning before it acts", View: frame(func(m *Model) {
+				m.state = stateStreaming
+			})},
+			{Label: "streaming · prose is arriving", View: frame(func(m *Model) {
+				m.state = stateStreaming
+				m.streaming = "Threading the sentinel through the loop"
+			})},
+			{Label: "running · a command is executing", View: frame(func(m *Model) {
+				m.state = stateRunningCmd
+			})},
+			// The rail states the turn it resolved into rather than `idle`,
+			// which is the state the complaint's screenshots were taken in:
+			// the work is over, the reader is reading it, and the box is
+			// still the only thing with nothing to say.
+			{Label: "completed · the turn resolved", View: frame(func(m *Model) {
+				m.turnCount = 1
+				m.transcript[len(m.transcript)-1].turn = 1
+			})},
+		}
+		// The whole surface, so the rows can be counted: at this height the
+		// pane runs to within four rows of the bottom, and every row the box
+		// does not take is a row of transcript.
+		tall := frameModel(t, width, tallScreenHeight)
+		tall.transcript = goldenTranscript()
+		tall.state = stateRunningCmd
+		tall.invalidateRenderCache()
+		tall.syncViewport()
+		tall.viewport.SetLines(tall.renderHistoryLines())
+		tall.viewport.GotoBottom()
+		return append(panels, golden.Panel{
+			Label: "running · the whole surface on a " + strconv.Itoa(tallScreenHeight) + "-row terminal",
+			View:  tall.View().Content,
+		})
+	})
+}
+
 // TestGolden_QuestionWaiting captures the frame with a question handed to the
 // draft (question.go): the notice rail's count beside a steering count, the
 // gutter saying the draft is answering rather than steering, and the bottom

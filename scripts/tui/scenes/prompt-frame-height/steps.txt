@@ -1,0 +1,35 @@
+# What the prompt frame costs the transcript, on a terminal with rows to
+# spare (docs/interface/surfaces.md#the-input-frame). The pane is 52 rows and
+# the draft is empty in every snap here, so what each picture answers is the
+# same question: how many of those rows did the box take, and did the number
+# move when the state did.
+#
+# It should be four in all of them — the top rail, the one row the sentence
+# is typed on, the vitals rail and the key rail — and the transcript should
+# reach to within four rows of the bottom. Read the .txt against the Frame
+# artboard for the rails' contents, and look at the .gif for the thing the
+# cells cannot carry: whether the box below the accent border reads as a
+# place to type or as a hole in the screen.
+#
+# A 52-row terminal is the point. A box that opened at three rows took the
+# same three here as on the 24-row terminal the complaint was filed from, and
+# a box that grew with the terminal would take more — neither is what the
+# reader is owed, and only a tall pane tells the two apart.
+snap 01-idle "Some things worth doing first"
+keys "run the checks" Enter
+# The model has not said its first word yet: the rail names the phase, the
+# box is one row, and the pane below is entirely transcript.
+snap 02-thinking "thinking…"
+snap 03-card "[y] run it once"
+keys y
+# A command in flight, which is the state the empty box looked worst in: the
+# feed carries the command's own row and the frame carries the turn.
+snap 04-running "running…"
+snap 05-tail "0.412s"
+# And the turn resolved, which is where a reader spends the longest with
+# nothing typed.
+snap 06-completed "the frame is four rows"
+keys C-c
+snap 07-quit-armed "again quits"
+keys C-c
+snap 08-exit "that is everything the screen was holding"

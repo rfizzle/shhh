@@ -420,7 +420,11 @@ func escFoldModel(t *testing.T) Model {
 	m.transcript[6].detailFold = foldOpen
 	// A tail of plain rows, so the folded pane is still taller than the
 	// window and the anchor is a real scroll position rather than the end.
-	for i := 0; i < 14; i++ {
+	// The count is the pane's, not a number: the draft box rests on one row
+	// (minDraftRows), so the window of this fixture holds two rows more than
+	// it did when the box opened at three, and a tail that did not follow
+	// would put the anchor at the bottom where the assertion is trivial.
+	for i := 0; i < 16; i++ {
 		m.transcript = append(m.transcript, entry{kind: entryCommand,
 			text: fmt.Sprintf("go test ./internal/agent/round%d", i), toolResult: "ok"})
 	}

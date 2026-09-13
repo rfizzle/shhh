@@ -529,19 +529,34 @@ func (m *Model) syncInputWidth() {
 // is the surface for that.
 const maxDraftRows = 12
 
+// minDraftRows is the box at rest: the one row the sentence is being typed
+// on, and nothing under it
+// (docs/interface/surfaces.md#the-input-frame).
+//
+// The box used to open at three whatever was in it, so an empty draft carried
+// two blank rows in every state of every session — and it is the transcript
+// that pays for every row the bottom panel keeps
+// (docs/interface/departures.md#the-wide-frames-vitals-are-drawn-on-the-rule-not-in-a-row-under-it).
+// Two of the six rows the frame took were blank, on every frame of every
+// session, at the moment the reader is watching the turn work rather than
+// typing. What they were reserving is room to type into, and the box grows a
+// row the instant there is a second line to put in one, so the room arrives
+// when it is wanted rather than standing empty until then.
+const minDraftRows = 1
+
 // draftMaxRows is the box's ceiling on this terminal: maxDraftRows, or the
 // panel's own bound where that is lower
 // (docs/interface/principles.md#the-grammar: the bottom panel takes at most
 // 40% of the terminal), less the two chrome rows around the box. It never
-// falls below the three rows the box has always had, because a ceiling under
-// the floor is a box that cannot show the line being typed into it.
+// falls below the box's resting row, because a ceiling under the floor is a
+// box that cannot show the line being typed into it.
 func (m Model) draftMaxRows() int {
-	return max(min(maxDraftRows, m.maxConfirmPanelHeight()-bottomChromeHeight), inputHeight)
+	return max(min(maxDraftRows, m.maxConfirmPanelHeight()-bottomChromeHeight), minDraftRows)
 }
 
 // syncInputHeight settles what the draft box costs the transcript. The height
 // itself is no longer counted here: the textarea grows and shrinks with its
-// own content between draftMaxRows and the three rows the box starts at, and
+// own content between draftMaxRows and the one row the box rests at, and
 // it wraps that content with the same rule it draws it by, so the box and its
 // contents can no longer disagree about how many rows there are. What is left
 // is the rows the viewport gives up or gets back, through the same split

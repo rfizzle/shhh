@@ -583,11 +583,26 @@ cursor, so the block holding the keyboard says where it is and every other
 block says nothing. That is what puts it on the reverse search's row while the
 match sitting in the box above it goes without.
 
-The box holds three rows while the draft fits in three, and from there grows a
-row per wrapped line to a ceiling of twelve — or to whatever a short
-terminal's bottom panel allows, where that is less. Past the ceiling it
-scrolls inside itself, because a draft long enough to page through is one to
-write somewhere else.
+The box is as tall as what is in it and no taller: one row while the draft
+fits on one, and from there a row per wrapped line to a ceiling of twelve —
+or to whatever a short terminal's bottom panel allows, where that is less.
+Past the ceiling it scrolls inside itself, because a draft long enough to page
+through is one to write somewhere else.
+
+Nothing else moves it, and the terminal's own height moves it least of all.
+An empty draft costs one row on a twenty-row terminal and one on an
+eighty-row one, in every state a person waits through — idle, thinking,
+streaming, running, and the turn resolved — because it is the transcript that
+pays for every row the bottom panel keeps, and a blank row under a cursor
+nobody is typing at carries no character. What such rows would reserve is
+room to type into, and the box grows the instant there is a second line to
+put in one, so the room arrives when it is wanted rather than standing empty
+until then.
+
+It grows upward, from a bottom rail the panel holds still. The row being
+typed on is the same screen row whether the draft is one line or ten, which
+is what lets a reader's eye stay where the cursor is while the sentence
+wraps under their hands.
 
 The draft edits like the shell's own line. The chords a shell user's hands
 already know — line start and end, kill to end and to start, delete a word,

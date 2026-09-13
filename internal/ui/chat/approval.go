@@ -1452,8 +1452,11 @@ func (m Model) resolvePanel() panelBody {
 			return panelBody{lines: cover, height: inputHeight}
 		}
 		// The bare draft box: its height follows its content (frame.go,
-		// syncInputHeight), so the panel reads the box rather than the
-		// three-row constant.
+		// syncInputHeight), so the panel reads the box rather than a
+		// constant. This is the one branch the terminal's own height never
+		// reaches — an empty draft costs minDraftRows on a 24-row terminal
+		// and on an 80-row one, and every row it does not take is a row of
+		// transcript.
 		return panelBody{lines: cover, height: m.input.Height()}
 	}
 	return panelBody{lines: body, height: inputHeight}
