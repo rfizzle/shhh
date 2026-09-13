@@ -385,6 +385,60 @@ func TestActivityCounts_CountsWhatWasFound(t *testing.T) {
 	}
 }
 
+// A call the reader answered at a card says who answered, on the act's own
+// row and after its counts. The row is where the decision is stated — an act
+// and the approval of it are one row — and the reader's yes is not a rule's:
+// scrolling back a week later is exactly when the calls they were shown
+// stop being distinguishable from the ones they were not
+// (docs/interface/principles.md#two-denials-are-not-one-denial).
+func TestActivityRow_ACardYouAnsweredNamesYou(t *testing.T) {
+	m := gatedModel(t, nil, nil).
+		WithRunner(func(context.Context, string) (string, int) { return "ok", 0 })
+	m, _ = runOnce(t, m, "go test ./internal/agent/...")
+
+	answered := lastCommandRow(t, m, 110)
+	if want := "approved by you"; !strings.Contains(answered, want) {
+		t.Fatalf("a command you answered at the card states %q:\n%s", want, answered)
+	}
+
+	// The two never both hold, and neither is claimed by a call that reached
+	// no card at all: a `/run` the reader typed has no decision behind it.
+	auto := activityModel(t)
+	rule := stripANSI(auto.renderEntry(entry{kind: entryCommand, text: "go test ./...",
+		toolResult: "ok", allowedBy: "auto mode"}, 110))
+	if strings.Contains(rule, "approved") || !strings.Contains(rule, "auto-allowed · auto mode") {
+		t.Fatalf("a rule's yes keeps its own two words:\n%s", rule)
+	}
+	typed := stripANSI(auto.renderEntry(entry{kind: entryCommand, text: "ls", toolResult: "ok"}, 110))
+	if strings.Contains(typed, "approved") {
+		t.Fatalf("a command nobody gated carries no decision:\n%s", typed)
+	}
+}
+
+// A command the reader rewrote at the card is still a command they answered,
+// and the row has one field for how it came to be the act it is: the
+// amendment is the more particular fact and takes it.
+func TestActivityRow_AnAmendmentOutranksThePlainApproval(t *testing.T) {
+	m := activityModel(t)
+	row := stripANSI(m.renderEntry(entry{kind: entryCommand, text: "go test ./internal/agent/...",
+		toolResult: "ok", approvedBy: decidedByYou, amendedFrom: "go test ./..."}, 110))
+	if !strings.Contains(row, "amended · you") || strings.Contains(row, "approved by you") {
+		t.Fatalf("an amended command says the reader rewrote it, once:\n%s", row)
+	}
+}
+
+// lastCommandRow renders the last command entry in the transcript.
+func lastCommandRow(t *testing.T, m Model, width int) string {
+	t.Helper()
+	for i := len(m.transcript) - 1; i >= 0; i-- {
+		if m.transcript[i].kind == entryCommand {
+			return stripANSI(m.renderEntry(m.transcript[i], width))
+		}
+	}
+	t.Fatal("the transcript has no command row")
+	return ""
+}
+
 func TestActivityRow_CommandOutcomes(t *testing.T) {
 	m := activityModel(t)
 

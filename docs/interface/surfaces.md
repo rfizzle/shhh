@@ -88,6 +88,19 @@ The account — what allowed the call, and what the judgement cost where a
 classifier made it — is a field of the row beside the outcome, the way the
 decider on a refused row is.
 
+A call the reader *was* asked about carries the same field, and the other of
+the two words: `approved by you`, where a rule's says `auto-allowed` and
+names itself. Both are the answer to one question — how this act came to be
+allowed — and they are two words for the reason the two refusals are
+([`principles.md`](principles.md#two-denials-are-not-one-denial)); the
+reader's takes a colour where the rule's stays quiet, because a session
+scrolled back a week later is exactly where the calls somebody was shown stop
+being distinguishable from the ones they never saw. The account stands last
+in the field, after what the act did and after what it counted: `+12 −4 · 2
+hunks · approved by you`, `ok · 1 line · auto-allowed · classifier 2.1s`. The
+act comes before the decision about it, and the account is the part the row
+gives up when it runs out of width, so it is already where the row runs out.
+
 An act that was refused states that on its own row too, and opens to why.
 What refused it is the field beside the outcome; the sentence behind the
 refusal — the reader's own, or the one the classifier wrote about this call —

@@ -1958,9 +1958,15 @@ func TestGolden_StaleEditRow(t *testing.T) {
 }
 
 // TestGolden_AutoApproved pins what a call nobody was asked about says about
-// itself. Each of the three is one row and not two: the account of who
-// allowed it sits in the act's own outcome field, where the row already
-// bounds what it prints.
+// itself, and what one the reader did answer says instead. Each row is one
+// row and not two: the account of how the call came to be allowed sits in
+// the act's own outcome field, where the row already bounds what it prints.
+//
+// The second panel is the other half of that split. A rule's yes accounts
+// for itself, dim, `auto-allowed · auto mode`; the reader's says who gave it
+// and takes a colour, `approved by you`. Both stand after the counts, which
+// is the artboards' order and the row's: what the act did, then how it came
+// to be allowed (docs/interface/principles.md#two-denials-are-not-one-denial).
 //
 // The three are the three shapes the account has to survive. The edit keeps
 // it on the diff row, beside the stats. The staging keeps it beside a receipt
@@ -2008,7 +2014,30 @@ func TestGolden_AutoApproved(t *testing.T) {
 				allowedBy:  classifierRule, allowElapsed: 2100 * time.Millisecond},
 		}
 		m.invalidateRenderCache()
-		return []golden.Panel{{Label: "an edit, a staging and a command, one row each", View: m.renderHistory()}}
+		answered := frameModel(t, width, 40)
+		answered.transcript = []entry{
+			{kind: entryDiff, diff: &components.DiffView{
+				Path: "internal/ui/chat/approval.go", Verb: "edit",
+				Hunks: []diff.Hunk{{
+					OldStart: 417, OldCount: 3, NewStart: 417, NewCount: 2,
+					Lines: []diff.Line{
+						{Kind: diff.Context, Text: "\t\treq.autoRule = reason", OldNo: 417, NewNo: 417},
+						{Kind: diff.Del, Text: "\t\tm.appendEntry(entry{kind: entrySystem, text: notice})", OldNo: 418},
+						{Kind: diff.Context, Text: "\t\tif req.kind == approvalExec {", OldNo: 419, NewNo: 418},
+					},
+				}},
+				Mode: components.DiffCollapsed, MaxLines: maxDiffExpandedLines,
+				Allowed: components.ApprovedBy(decidedByYou), Duration: "1.1s",
+			}},
+			{kind: entryCommand, text: "go test ./internal/ui/...", duration: 27 * time.Second,
+				toolResult: "ok  \tgithub.com/rfizzle/shhh/internal/ui/chat\t27.107s",
+				approvedBy: decidedByYou},
+		}
+		answered.invalidateRenderCache()
+		return []golden.Panel{
+			{Label: "an edit, a staging and a command, one row each", View: m.renderHistory()},
+			{Label: "the same two acts, answered at the card instead", View: answered.renderHistory()},
+		}
 	})
 }
 

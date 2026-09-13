@@ -399,6 +399,18 @@ func allowedLabel(rule string, elapsed time.Duration) string {
 	return components.OutcomeBy(components.OutcomeAutoAllowed, ruleAccount(rule, elapsed))
 }
 
+// approvalAccount is the account a gated call's row carries: the rule that
+// answered for the reader, or the reader who answered the card. One function
+// because it is one question — how this act came to be allowed — asked of
+// the one request that knows, and because a caller that reached for
+// allowedLabel alone left the person's half of the answer unsaid.
+func approvalAccount(req *approvalRequest) string {
+	if req.autoRule != "" {
+		return allowedLabel(req.autoRule, req.autoCost)
+	}
+	return components.ApprovedBy(decidedByYou)
+}
+
 // commandEnd is how a command ended where its exit code cannot say: the word
 // from the outcome vocabulary, and the number that qualifies it. It is empty
 // on every command that exited on its own, which is nearly all of them.
@@ -708,6 +720,18 @@ func (m Model) activityRowDetail(e entry, stepDetail bool, width int) components
 	// and target (docs/interface/surfaces.md#the-activity-row).
 	if row.Allowed == "" {
 		row.Allowed = allowedLabel(e.allowedBy, e.allowElapsed)
+	}
+	// And where nothing allowed it but the reader, the row says so in the
+	// same field, in the other of the two words the split has: `approved by
+	// you`, after the counts, which is what a person's yes reads as where a
+	// rule's reads as an account of itself
+	// (docs/interface/principles.md#two-denials-are-not-one-denial). It is
+	// stated on the act rather than left implicit in the absence of a rule,
+	// because scrolling back past an edit a week later is exactly when the
+	// reader cannot tell the calls they answered from the ones they were
+	// never shown.
+	if row.Allowed == "" && e.approvedBy != "" {
+		row.Allowed = components.ApprovedBy(e.approvedBy)
 	}
 	// A line the reader wrote at the card is the same fact about the same
 	// act — how it came to be the act it is — so it is stated in the same

@@ -33,7 +33,7 @@
     error: invalid arguments: path is required
 
 · kind · edit
-  ▎✎ edit    internal/agent/loop.go      approved · you · +12 −4 · 2 hunks  1.1s
+  ▎✎ edit    internal/agent/loop.go     +12 −4 · 2 hunks · approved by you  1.1s
 
 · kind · sub-agent
    ◇ agent   writer-1 · docs/loop.md                                    ok 48.0s
@@ -101,7 +101,10 @@
   ▎⊘ run     rm -rf ./build          blocked · classifier 2.1s · /mode why     —
 
 · state · auto-allowed
-   ⚙ read    internal/agent/loop.go   auto-allowed · read-only · 218 lines  0.6s
+   ⚙ read    internal/agent/loop.go   218 lines · auto-allowed · read-only  0.6s
+
+· state · approved at the card, by you
+  ▎$ run     go test ./internal/agent/...    ok · 1 line · approved by you 12.4s
 
 · focus · selected
 ❯  ⚙ read    internal/agent/loop.go                              218 lines  0.6s
@@ -133,7 +136,7 @@
     ␛[38;5;244merror: invalid arguments: path is required␛[m
 
 · kind · edit
-  ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254medit␛[m    ␛[38;5;254minternal/agent/loop.go␛[m      ␛[38;5;254mapproved · you␛[m␛[38;5;244m · ␛[m␛[38;5;254m+12␛[m ␛[38;5;254m−4␛[m␛[38;5;244m · ␛[m␛[38;5;244m2 hunks␛[m  ␛[38;5;244m1.1s␛[m
+  ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254medit␛[m    ␛[38;5;254minternal/agent/loop.go␛[m     ␛[38;5;254m+12␛[m ␛[38;5;254m−4␛[m␛[38;5;244m · ␛[m␛[38;5;244m2 hunks␛[m␛[38;5;244m · ␛[m␛[38;5;254mapproved␛[m␛[38;5;244m by you␛[m  ␛[38;5;244m1.1s␛[m
 
 · kind · sub-agent
    ␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mwriter-1 · docs/loop.md␛[m                                    ␛[38;5;254mok␛[m ␛[38;5;244m48.0s␛[m
@@ -201,7 +204,10 @@
   ␛[38;5;254m▎␛[m␛[38;5;254m⊘␛[m ␛[38;5;254mrun␛[m     ␛[38;5;254mrm -rf ./build␛[m          ␛[38;5;254mblocked␛[m␛[38;5;244m · ␛[m␛[38;5;244mclassifier 2.1s␛[m␛[38;5;244m · ␛[m␛[38;5;254m/mode why␛[m     ␛[38;5;244m—␛[m
 
 · state · auto-allowed
-   ␛[38;5;254m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254minternal/agent/loop.go␛[m   ␛[38;5;244mauto-allowed · read-only␛[m␛[38;5;244m · ␛[m␛[38;5;244m218 lines␛[m  ␛[38;5;244m0.6s␛[m
+   ␛[38;5;254m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254minternal/agent/loop.go␛[m   ␛[38;5;244m218 lines␛[m␛[38;5;244m · ␛[m␛[38;5;244mauto-allowed · read-only␛[m  ␛[38;5;244m0.6s␛[m
+
+· state · approved at the card, by you
+  ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m ␛[38;5;254mrun␛[m     ␛[38;5;254mgo test ./internal/agent/...␛[m    ␛[38;5;254mok␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 line␛[m␛[38;5;244m · ␛[m␛[38;5;254mapproved␛[m␛[38;5;244m by you␛[m ␛[38;5;244m12.4s␛[m
 
 · focus · selected
 ␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m ␛[38;5;254m⚙␛[m␛[48;5;237m ␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237mread    internal/agent/loop.go                              218 lines  0.6s␛[m␛[m

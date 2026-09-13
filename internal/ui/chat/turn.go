@@ -449,7 +449,7 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 		// before both the transcript entry and the tool result, so
 		// the user sees exactly what the model got. /run — the user's own
 		// command — stays unreduced.
-		var allowedBy, amendedFrom string
+		var allowedBy, approvedBy, amendedFrom string
 		var allowElapsed time.Duration
 		// The formatted result, made once and read twice. Formatting a
 		// command's result is not free of consequence any more: an output
@@ -467,14 +467,20 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 			outcome, class := observe.ToolOutcome(formatted)
 			m.recordToolEvent(tools.ExecCommandName, msg.duration, outcome, class)
 			// What allowed the command rides the command's own row: nothing
-			// said so above it (approval.go). A `/run` the reader typed has
-			// no decision behind it and so carries none.
+			// said so above it (approval.go). A rule that answered names
+			// itself; a card the reader answered names them, because a
+			// decision is the same fact either way and the row is where it
+			// is stated. A `/run` the reader typed reaches neither — it was
+			// never gated, so there is no decision behind it to carry.
 			allowedBy, allowElapsed = m.pendingApproval.autoRule, m.pendingApproval.autoCost
+			if allowedBy == "" {
+				approvedBy = decidedByYou
+			}
 		}
 		m.appendEntry(entry{kind: entryCommand, text: msg.command, toolResult: out,
 			exitCode: msg.exitCode, commandResult: result, localRun: msg.local, duration: msg.duration,
-			allowedBy: allowedBy, allowElapsed: allowElapsed, amendedFrom: amendedFrom,
-			end: msg.end})
+			allowedBy: allowedBy, allowElapsed: allowElapsed, approvedBy: approvedBy,
+			amendedFrom: amendedFrom, end: msg.end})
 		if m.pendingApproval != nil {
 			call := m.pendingApproval.call
 			m.pendingApproval = nil
@@ -567,11 +573,15 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 		}
 		m.noteEvictedTurns(msg.evicted)
 		// The plain row, for every landing but the diff's. Whichever of the
-		// three it lands as, it carries the account of what allowed the call:
-		// nothing said so above it (approval.go).
+		// three it lands as, it carries the account of how the call came to
+		// be allowed — the rule that answered, or the reader who answered
+		// the card: nothing said so above it (approval.go).
 		row := entry{kind: entryTool, toolName: req.call.Name, toolArgs: req.call.Arguments,
 			toolResult: msg.result, duration: msg.duration,
 			allowedBy: req.autoRule, allowElapsed: req.autoCost}
+		if req.autoRule == "" {
+			row.approvedBy = decidedByYou
+		}
 		// An applied edit lands in the transcript as a collapsed diff row (
 		// docs/interface/surfaces.md#the-diff-view); failures keep the plain tool
 		// block so the error text stays visible.
@@ -583,7 +593,7 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 				Mode:     components.DiffCollapsed,
 				MaxLines: maxDiffExpandedLines,
 				Syntax:   diffSyntax(req.path),
-				Allowed:  allowedLabel(req.autoRule, req.autoCost),
+				Allowed:  approvalAccount(req),
 				// An applied edit is an activity row, so it says what the
 				// act cost in the field every other act says it in.
 				Duration: activityDuration(msg.duration),

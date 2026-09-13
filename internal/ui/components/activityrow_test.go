@@ -325,8 +325,8 @@ func TestActivityRow_OutcomeTakesTheStatesToken(t *testing.T) {
 	}{
 		{"a command that finished", ActivityRow{Kind: ActivityCommand, Verb: "run",
 			Outcome: OutcomeExit(0)}, sty.Add},
-		{"an edit you approved", ActivityRow{Kind: ActivityEdit, Verb: "edit",
-			Outcome: OutcomeBy(OutcomeApproved, "you")}, sty.Add},
+		{"a commit that landed", ActivityRow{Kind: ActivityEdit, Verb: "commit",
+			Outcome: "9f824a1"}, sty.Add},
 		{"a command in flight", ActivityRow{Kind: ActivityCommand, Verb: "run",
 			State: ActivityRunning, Outcome: OutcomeRunning}, sty.SpinText},
 		{"a call the classifier is judging", ActivityRow{Kind: ActivityCommand, Verb: "run",
@@ -702,5 +702,57 @@ func TestPaintOccupancy_ClaimsOnlyAPairOfPercentages(t *testing.T) {
 	}
 	if got := paintAccount("auto-allowed · auto mode", sty.Dim); got != sty.Dim.Render("auto-allowed · auto mode") {
 		t.Fatalf("an account with no pair in it is one run, got %q", got)
+	}
+}
+
+// A row the reader answered at a card says who answered, in the account
+// field after the counts: `+12 −4 · 2 hunks · approved by you`. The order is
+// the row's own — what the act did, then how it came to be allowed — and it
+// holds whether or not the act had an outcome word of its own besides.
+func TestActivityRow_ApprovedAtTheCardNamesYou(t *testing.T) {
+	edit := ActivityRow{Kind: ActivityEdit, Verb: "edit", Target: "internal/agent/loop.go",
+		Counts: "+12 −4 · 2 hunks", Allowed: ApprovedBy("you"), Duration: "1.1s"}
+	if want, got := "+12 −4 · 2 hunks · approved by you", stripANSI(edit.View(110)); !strings.Contains(got, want) {
+		t.Fatalf("an approved edit states %q:\n%s", want, got)
+	}
+
+	// A command has a word of its own for what came of it, and the counts
+	// still stand between that word and the decision about the call.
+	cmd := ActivityRow{Kind: ActivityCommand, Verb: "run", Target: "go test ./internal/agent/...",
+		Outcome: OutcomeOK, Counts: "1 line", Allowed: ApprovedBy("you"), Duration: "12.4s"}
+	if want, got := "ok · 1 line · approved by you", stripANSI(cmd.View(110)); !strings.Contains(got, want) {
+		t.Fatalf("an approved command states %q:\n%s", want, got)
+	}
+
+	// And an act nobody was asked about keeps the rule's own two words, after
+	// its counts in the same place
+	// (docs/interface/principles.md#two-denials-are-not-one-denial).
+	auto := ActivityRow{Kind: ActivityTool, Verb: "read", Target: "internal/agent/loop.go",
+		Counts: "218 lines", Allowed: OutcomeBy(OutcomeAutoAllowed, "read-only"), Duration: "0.6s"}
+	if want, got := "218 lines · auto-allowed · read-only", stripANSI(auto.View(110)); !strings.Contains(got, want) {
+		t.Fatalf("an auto-allowed read states %q:\n%s", want, got)
+	}
+}
+
+// The two answers are told apart by colour as well as by word: the reader's
+// yes takes the add token, and the rule's account stays dim throughout.
+// Colour is never what carries the fact — both words are on the row either
+// way — but it is what makes the column scannable (invariant 1).
+func TestActivityRow_TheTwoYesesArePaintedApart(t *testing.T) {
+	withColorProfile(t, colorprofile.ANSI256)
+	got := paintAccount(ApprovedBy("you"), sty.Dim)
+	if want := sty.Add.Render(OutcomeApproved) + sty.Dim.Render(" by you"); got != want {
+		t.Fatalf("a person's yes paints the word in add:\n got %q\nwant %q", got, want)
+	}
+	if got, want := paintAccount(OutcomeBy(OutcomeAutoAllowed, "read-only"), sty.Dim),
+		sty.Dim.Render("auto-allowed · read-only"); got != want {
+		t.Fatalf("a rule's yes stays one dim run:\n got %q\nwant %q", got, want)
+	}
+	// The word test claims the decision word and nothing that merely opens
+	// with it, the way the shape tests beside it claim only their shape.
+	for _, seg := range []string{"approvedby you", "approved-by you", "approvals 3", "auto-allowed"} {
+		if _, ok := paintApproval(seg, sty.Dim); ok {
+			t.Fatalf("%q is not the reader's approval", seg)
+		}
 	}
 }

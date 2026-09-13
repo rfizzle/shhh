@@ -479,6 +479,15 @@ type entry struct {
 	// the row and once not at all. Empty on a call the reader answered at the
 	// card, and on every call that was never gated.
 	allowedBy string
+	// approvedBy names the person who answered the card, decidedByYou, and is
+	// the other half of the same question: how this act came to be allowed.
+	// It is a second field rather than a value of allowedBy because a rule's
+	// yes and a person's yes are different facts, reported in different
+	// words and read for different next acts — change your configuration, or
+	// nothing (docs/interface/principles.md#two-denials-are-not-one-denial).
+	// The two never both hold: a call somebody was asked about is not one a
+	// rule waved through. Empty on every call that was never gated.
+	approvedBy string
 	// allowElapsed is what that judgement took, where it took anything, which
 	// is the classifier and nothing else.
 	allowElapsed time.Duration

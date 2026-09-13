@@ -130,13 +130,28 @@ func OutcomeExit(code int) string {
 func SignalAccount(sig int) string { return "signal " + strconv.Itoa(sig) }
 
 // OutcomeBy names the decider behind a decision outcome — `denied · you`,
-// `approved · you`, `auto-allowed · read-only`. Colour never carries the
-// distinction alone (invariant 1), so the word is always there.
+// `auto-allowed · read-only`. Colour never carries the distinction alone
+// (invariant 1), so the word is always there.
 func OutcomeBy(outcome, decider string) string {
 	if decider == "" {
 		return outcome
 	}
 	return outcome + " · " + decider
+}
+
+// ApprovedBy is the account of an act the reader answered at a card:
+// `approved by you`. It is a sentence rather than the ` · ` pair a rule's
+// account is, because the two answers are two different facts and the row
+// draws them apart as well as wording them apart — a person approved this
+// one, a rule allowed that one
+// (docs/interface/principles.md#two-denials-are-not-one-denial). The word
+// takes the add token where a rule's account is dim throughout, which is
+// that same split in the one register left.
+func ApprovedBy(who string) string {
+	if who == "" {
+		return OutcomeApproved
+	}
+	return OutcomeApproved + " by " + who
 }
 
 // ActivityKind selects an activity row's glyph and whether it carries the
@@ -231,18 +246,20 @@ type ActivityRow struct {
 	// (docs/interface/principles.md#one-grid).
 	Outcome string
 	Counts  string
-	// Allowed is the account of a gated call that ran without the reader
-	// being asked — `auto-allowed · auto mode`, `auto-allowed · classifier
-	// 2.1s`. It renders inside the outcome field, after what the call did and
-	// before what it counted, because the row is the only place the decision
-	// is stated: an act and the approval of it are one row, not two. Empty on
-	// a call the reader answered themselves and on every call that was never
-	// gated.
+	// Allowed is the account of a gated call: how it came to be allowed. A
+	// rule that answered for the reader names itself — `auto-allowed · auto
+	// mode`, `auto-allowed · classifier 2.1s` — and a card the reader
+	// answered themselves says so, `approved by you` (ApprovedBy). It
+	// renders last in the outcome field, after what the call did and after
+	// what it counted, because the row is the only place the decision is
+	// stated but it is not what the row is read for: an act and the approval
+	// of it are one row, and the act is the half that comes first. Empty on
+	// every call that was never gated.
 	//
-	// One decision the reader did make is stated here too: `amended · you`,
-	// the line they wrote in place of the one the call carried. It is the
-	// same fact in the same place — how this act came to be the act it is —
-	// and putting it anywhere else would have made two fields out of one
+	// One more decision the reader made is stated here: `amended · you`, the
+	// line they wrote in place of the one the call carried. It is the same
+	// fact in the same place — how this act came to be the act it is — and
+	// putting it anywhere else would have made two fields out of one
 	// question.
 	//
 	// A command that never exited puts its number here as well — `killed ·
@@ -477,20 +494,28 @@ func (r ActivityRow) outcomeStyle() lipgloss.Style {
 	return sty.Add
 }
 
-// outcomeField joins outcome, account, counts and keys into the one
+// outcomeField joins outcome, counts, account and keys into the one
 // right-aligned field. Four tones, one per job: what came of the call in the
-// state's token, what allowed it dim, what it counted dimmer, and the keys it
-// offers in info.
+// state's token, what it counted dimmer, how it came to be allowed dim, and
+// the keys it offers in info.
+//
+// The act comes before the decision about it: `+12 −4 · 2 hunks · approved
+// by you`, `ok · 1 line · auto-allowed · classifier 2.1s`. What the call did
+// is what the row is read for, and where it did enough to be counted the
+// counts are that — a row is left with counts and no outcome word precisely
+// when the counts are the whole of what came of it. Putting the account
+// between the two split one answer with another, and it is the field that
+// gives way besides, so it stands where the row runs out.
 func (r ActivityRow) outcomeField() string {
 	var parts []string
 	if r.Outcome != "" {
 		parts = append(parts, r.outcomeStyle().Render(r.Outcome))
 	}
-	if r.Allowed != "" {
-		parts = append(parts, paintAccount(r.Allowed, sty.Dim))
-	}
 	if r.Counts != "" {
 		parts = append(parts, paintCounts(r.Counts, sty.Dimmer))
+	}
+	if r.Allowed != "" {
+		parts = append(parts, paintAccount(r.Allowed, sty.Dim))
 	}
 	if r.Keys != "" {
 		parts = append(parts, sty.Info.Render(r.Keys))
@@ -566,6 +591,10 @@ func paintAccount(label string, rest lipgloss.Style) string {
 			parts[i], claimed = painted, true
 			continue
 		}
+		if painted, ok := paintApproval(p, rest); ok {
+			parts[i], claimed = painted, true
+			continue
+		}
 		parts[i] = rest.Render(p)
 	}
 	if !claimed {
@@ -575,6 +604,25 @@ func paintAccount(label string, rest lipgloss.Style) string {
 		return rest.Render(label)
 	}
 	return strings.Join(parts, rest.Render(" · "))
+}
+
+// paintApproval paints `approved by you` — the account of an act the reader
+// answered at a card (ApprovedBy) — and reports whether the segment was one.
+// The decision word takes the add token and the person keeps the field's
+// tone, which is the one account with a colour of its own: a rule's
+// `auto-allowed · read-only` stays dim throughout, so the two answers are
+// told apart down the column before either is read
+// (docs/interface/principles.md#two-denials-are-not-one-denial).
+//
+// A word test rather than a shape test, unlike the two above: what earns the
+// token here is a word from the closed outcome vocabulary, and that
+// vocabulary is declared in this file.
+func paintApproval(seg string, rest lipgloss.Style) (string, bool) {
+	who, ok := strings.CutPrefix(seg, OutcomeApproved)
+	if !ok || (who != "" && !strings.HasPrefix(who, " by ")) {
+		return "", false
+	}
+	return sty.Add.Render(OutcomeApproved) + rest.Render(who), true
 }
 
 // paintOccupancy paints `ctx 88% → 28%` — where the window stood before an
@@ -613,11 +661,13 @@ func percentCount(s string) bool {
 }
 
 // fittedOutcome is the outcome field as much of it as this width can carry.
-// The account of who allowed the call is the one part the row gives up, and
-// it gives it up rather than squeeze the target past minTargetWidth: what an
-// act was done to is why the row is read, while who allowed it is also on
-// the frame and in the mode. Nothing else in the field is ever dropped —
-// what the act did and what it counted have nowhere else to be said.
+// The account of how the call came to be allowed is the one part the row
+// gives up, and it gives it up rather than squeeze the target past
+// minTargetWidth: what an act was done to is why the row is read, while what
+// allowed it is also on the frame and in the mode — and where the reader
+// answered the card themselves, they are the one person who already holds
+// that fact. Nothing else in the field is ever dropped — what the act did
+// and what it counted have nowhere else to be said.
 func (r ActivityRow) fittedOutcome(width int) string {
 	field := r.outcomeField()
 	if r.Allowed == "" {

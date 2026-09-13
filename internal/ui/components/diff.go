@@ -60,11 +60,12 @@ type DiffView struct {
 	// — and a file that changed lines as well states it after them, because
 	// putting that file back puts the permissions back too.
 	ModeChange string
-	// Allowed is the account of an edit that applied without the reader being
-	// asked — `auto-allowed · auto mode`. It leads the stats in both
+	// Allowed is the account of how the edit came to be applied — a rule that
+	// answered for the reader, `auto-allowed · auto mode`, or the card they
+	// answered themselves, `approved by you`. It follows the stats in both
 	// in-transcript forms, for the reason the activity row carries the same
-	// field: an act and the approval of it are one row, not two. Empty on an
-	// edit the reader approved at the card.
+	// field in the same place: an act and the approval of it are one row, and
+	// the act is the half the row is read for.
 	Allowed string
 	// Duration is how long the edit took, in the grid's own 6-column field.
 	// An applied edit is an act like any other and its row says what the act

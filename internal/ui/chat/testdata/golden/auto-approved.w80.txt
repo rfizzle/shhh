@@ -11,14 +11,24 @@
 
 ── layout ──────────────────────────────────────────────────
 · an edit, a staging and a command, one row each
-  ▎✎ edit    internal/ui…  auto-allowed · auto mode · +0 −1 · 1 hunk
+  ▎✎ edit    internal/ui…  +0 −1 · 1 hunk · auto-allowed · auto mode
   ▎$ add     internal/ui/chat/row01.go +19           staged 20 files
   ▎$ run     go test ./internal/ui/...                   ok · 1 line   27s
 
 
+· the same two acts, answered at the card instead
+  ▎✎ edit    internal/ui/chat/app…  +0 −1 · 1 hunk · approved by you  1.1s
+  ▎$ run     go test ./internal/ui/.…  ok · 1 line · approved by you   27s
+
+
 ── ansi ────────────────────────────────────────────────────
 · an edit, a staging and a command, one row each
-  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252medit␛[m    ␛[38;5;252minternal/ui…␛[m  ␛[38;5;241mauto-allowed · auto mode␛[m␛[38;5;241m · ␛[m␛[92m+0␛[m ␛[91m−1␛[m␛[38;5;245m · ␛[m␛[38;5;245m1 hunk␛[m
+  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252medit␛[m    ␛[38;5;252minternal/ui…␛[m  ␛[92m+0␛[m ␛[91m−1␛[m␛[38;5;245m · ␛[m␛[38;5;245m1 hunk␛[m␛[38;5;241m · ␛[m␛[38;5;241mauto-allowed · auto mode␛[m
   ␛[38;5;214m▎␛[m␛[38;5;214m$␛[m ␛[38;5;252madd␛[m     ␛[38;5;252minternal/ui/chat/row01.go +19␛[m           ␛[92mstaged 20 files␛[m
   ␛[38;5;214m▎␛[m␛[38;5;214m$␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgo test ./internal/ui/...␛[m                   ␛[92mok␛[m␛[38;5;241m · ␛[m␛[38;5;245m1 line␛[m   ␛[38;5;241m27s␛[m
+
+
+· the same two acts, answered at the card instead
+  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252medit␛[m    ␛[38;5;252minternal/ui/chat/app…␛[m  ␛[92m+0␛[m ␛[91m−1␛[m␛[38;5;245m · ␛[m␛[38;5;245m1 hunk␛[m␛[38;5;241m · ␛[m␛[92mapproved␛[m␛[38;5;241m by you␛[m  ␛[38;5;241m1.1s␛[m
+  ␛[38;5;214m▎␛[m␛[38;5;214m$␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgo test ./internal/ui/.…␛[m  ␛[92mok␛[m␛[38;5;241m · ␛[m␛[38;5;245m1 line␛[m␛[38;5;241m · ␛[m␛[92mapproved␛[m␛[38;5;241m by you␛[m   ␛[38;5;241m27s␛[m
 

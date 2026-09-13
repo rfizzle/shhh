@@ -151,7 +151,7 @@ func TestGolden_ActivityRows(t *testing.T) {
 			})},
 			{Label: "kind · edit", View: row(func(r *ActivityRow) {
 				r.Kind, r.Verb = ActivityEdit, "edit"
-				r.Counts, r.Outcome, r.Duration = "+12 −4 · 2 hunks", OutcomeBy(OutcomeApproved, "you"), "1.1s"
+				r.Counts, r.Allowed, r.Duration = "+12 −4 · 2 hunks", ApprovedBy("you"), "1.1s"
 			})},
 			{Label: "kind · sub-agent", View: row(func(r *ActivityRow) {
 				r.Kind, r.Verb, r.Target = ActivitySubagent, "agent", "writer-1 · docs/loop.md"
@@ -276,6 +276,16 @@ func TestGolden_ActivityRows(t *testing.T) {
 			// field a narrow row gives up.
 			{Label: "state · auto-allowed", View: row(func(r *ActivityRow) {
 				r.Allowed, r.Counts, r.Duration = OutcomeBy(OutcomeAutoAllowed, "read-only"), "218 lines", "0.6s"
+			})},
+			// The other half of that split, on the row that carries all
+			// three parts of the field at once: what the call did, what it
+			// counted, and who answered the card. The counts stand between
+			// the act and the decision about it, which is the order every
+			// row states them in.
+			{Label: "state · approved at the card, by you", View: row(func(r *ActivityRow) {
+				r.Kind, r.Verb, r.Target = ActivityCommand, "run", "go test ./internal/agent/..."
+				r.Outcome, r.Counts = OutcomeOK, "1 line"
+				r.Allowed, r.Duration = ApprovedBy("you"), "12.4s"
 			})},
 			{Label: "focus · selected", View: row(func(r *ActivityRow) {
 				r.Selected, r.Counts, r.Duration = true, "218 lines", "0.6s"
@@ -653,6 +663,22 @@ func TestGolden_ApprovalCard(t *testing.T) {
 					{Label: "receives", Value: "page text, whole, into the evidence store; the first 16 KB into the conversation", Detail: "it counts against the context window"},
 				}
 			})},
+			// What the card leaves behind once it is answered. The decision
+			// is a field of the act's own row and not a line of its own —
+			// an act and the approval of it are one row — and it is the
+			// reader's word rather than a rule's, which is the whole of what
+			// the row has to add to `+12 −4 · 2 hunks`
+			// (docs/interface/principles.md#two-denials-are-not-one-denial).
+			{Label: "answered · the row it leaves in the transcript", View: strings.Join([]string{
+				card(func(c *ApprovalCard) {}),
+				"",
+				ActivityRow{Kind: ActivityCommand, Verb: "run",
+					Target: "go test ./internal/agent/...", Outcome: OutcomeOK,
+					Counts: "1 line", Allowed: ApprovedBy("you"), Duration: "12.4s"}.View(width),
+				ActivityRow{Kind: ActivityEdit, Verb: "edit",
+					Target: "internal/agent/loop.go", Counts: "+12 −4 · 2 hunks",
+					Allowed: ApprovedBy("you"), Duration: "1.1s"}.View(width),
+			}, "\n")},
 		}
 	})
 }
@@ -940,6 +966,17 @@ func TestGolden_DiffView(t *testing.T) {
 		}
 		return []golden.Panel{
 			{Label: "mode · collapsed (transcript row)", View: view(DiffCollapsed, nil)},
+			// The collapsed row's account: the two answers to how the edit
+			// came to be applied, drawn apart. Both stand after the stats,
+			// because the act comes before the decision about it, and only
+			// the reader's takes a colour
+			// (docs/interface/principles.md#two-denials-are-not-one-denial).
+			{Label: "account · you answered the card, or a rule did", View: strings.Join([]string{
+				view(DiffCollapsed, func(d *DiffView) { d.Allowed, d.Duration = ApprovedBy("you"), "1.1s" }),
+				view(DiffCollapsed, func(d *DiffView) {
+					d.Allowed, d.Duration = OutcomeBy(OutcomeAutoAllowed, "auto mode"), "1.1s"
+				}),
+			}, "\n")},
 			{Label: "mode · expanded (bounded body)", View: view(DiffExpanded, func(d *DiffView) { d.MaxLines = 12 })},
 			{Label: "mode · full screen", View: view(DiffFull, nil)},
 		}
