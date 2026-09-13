@@ -595,6 +595,15 @@ func (m Model) inspectorAgents() []components.InspectorAgent {
 			Handoff: st.Handoff != "",
 			Depth:   m.sessionDepth(st.Name, len(snapshot)),
 		}
+		if p.State == components.FanoutHeld {
+			// A parked child has stopped without having ended, and the row
+			// says so in the field the words a session ends on go in: the map,
+			// the lane and the manager row are one child, and a row drawing
+			// motion beside a child that has stopped is the one reading of it
+			// the hold was pressed to end
+			// (docs/capabilities/subagents.md#a-hold-reaches-the-whole-fan-out).
+			a.Outcome = "held"
+		}
 		switch st.State {
 		case subagent.StateDone, subagent.StateFailed:
 			// The supervisor's own word for how it ended, because the

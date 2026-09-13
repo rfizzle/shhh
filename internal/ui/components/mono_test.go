@@ -518,6 +518,7 @@ func monoFixtures() []monoSurface {
 			{"running", lane(func(l *FanoutLane) {})},
 			{"blocked", lane(func(l *FanoutLane) { l.State = FanoutBlocked })},
 			{"idle", lane(func(l *FanoutLane) { l.State = FanoutIdle })},
+			{"held", lane(func(l *FanoutLane) { l.State = FanoutHeld })},
 			{"done", lane(func(l *FanoutLane) { l.State = FanoutDone })},
 			{"failed", lane(func(l *FanoutLane) { l.State = FanoutFailed })},
 		}},

@@ -1303,6 +1303,23 @@ func TestGolden_FanoutBlock(t *testing.T) {
 					SteerFrom: "reading", Verdict: "off target"},
 			},
 		}
+		// A hold reaches the whole fan-out and each child parks at its own
+		// boundary, so the parks land one at a time: two lanes have got there
+		// and the third is still finishing its round. A parked lane keeps ◇
+		// the way every lane state does and says what it is in the field on
+		// the right, where a declared step count would otherwise have drawn
+		// its meter; the header counts how far through the hold is.
+		held := FanoutBlock{
+			Elapsed: "48s",
+			Lanes: []FanoutLane{
+				{State: FanoutHeld, Name: "writer-1", Task: "docs/loop.md",
+					Step: 3, Steps: 5, Tools: 7, Spend: "$0.03", Elapsed: "48s"},
+				{State: FanoutHeld, Name: "writer-2", Task: "internal/agent/round.go",
+					Tools: 4, Spend: "$0.02", Elapsed: "44s"},
+				{State: FanoutRunning, Name: "reader-3", Task: "survey internal/ui",
+					Tools: 2, Spend: "$0.01", Elapsed: "39s", Frame: 2},
+			},
+		}
 		// A batch one of whose children delegated: the grandchildren are drawn
 		// a column in behind the corner, the parent says how many are under
 		// it, and the group floats whole on the request inside it — the
@@ -1327,6 +1344,7 @@ func TestGolden_FanoutBlock(t *testing.T) {
 			{Label: "mid-flight · one child is waiting on you", View: flight.View(width)},
 			{Label: "settled · one lane open on its report, one carrying a verdict", View: settled.View(width)},
 			{Label: "no declared step count · every lane spins", View: spinning.View(width)},
+			{Label: "held · two children parked where you stopped them", View: held.View(width)},
 			{Label: "a child that delegated · its lane says how many are under it", View: nested.View(width)},
 		}
 	})
@@ -1592,6 +1610,27 @@ func TestGolden_InspectorRail(t *testing.T) {
 		reachShort.Agents = append(append([]InspectorAgent{}, reach.Agents...),
 			InspectorAgent{Name: "reader-6", Detail: "waiting for a slot", Depth: 1,
 				State: FanoutQueued})
+		// The map while a hold lands. The hold is the session's and reaches
+		// every child, but each one parks at its own boundary, so two rows
+		// have got there and one has not — and the heading counts the parks
+		// the way the fan-out header does. A parked child says so in the field
+		// a finished child puts the word it ended on in: it has stopped
+		// without having ended, and a row drawing motion beside it would be
+		// drawing the one thing the hold was pressed to stop.
+		parked := InspectorRail{
+			Agents: []InspectorAgent{
+				{Name: "orchestrator", Detail: "round 4 · holding after this round",
+					Spend: "$0.14", Self: true, Focused: true, State: FanoutRunning},
+				{Name: "writer-1", Detail: "docs/loop.md", Spend: "$0.05", Tools: 6,
+					Outcome: "held", Depth: 1, State: FanoutHeld},
+				{Name: "writer-2", Detail: "internal/agent/round.go", Spend: "$0.03",
+					Tools: 4, Outcome: "held", Depth: 1, State: FanoutHeld},
+				{Name: "reader-3", Detail: "survey internal/ui", Spend: "$0.01", Tools: 2,
+					Depth: 1, State: FanoutRunning},
+			},
+			AgentsHint: railAgentsHint,
+			Frame:      2,
+		}
 		// The block on its own, at the three shapes it has: one thing broken
 		// and nothing behind it; the cap, with an older live alert and eight
 		// answered ones behind the marker; and a session whose failures have
@@ -1648,6 +1687,8 @@ func TestGolden_InspectorRail(t *testing.T) {
 			{Label: "the map with the rail shorter than it (height 12)", View: mapped.View(width, 12)},
 			{Label: "a fan-out of five · blocked, near its budget, off task, failed, nested",
 				View: reach.View(width, 0)},
+			{Label: "the map while a hold lands · two children parked, one not yet",
+				View: parked.View(width, 0)},
 			{Label: "the same map three rows short · what it gives up, in order",
 				View: reachShort.View(width, len(reachShort.Lines(width, 0))-3)},
 			{Label: "one command broken · the block above the changeset", View: alerting.View(width, 0)},

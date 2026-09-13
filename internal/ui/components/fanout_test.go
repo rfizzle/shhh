@@ -179,6 +179,7 @@ func TestFanoutLaneKeepsItsKindGlyph(t *testing.T) {
 		{"failed", FanoutLane{State: FanoutFailed, Name: "a"}, "✗ failed"},
 		{"queued", FanoutLane{State: FanoutQueued, Name: "a"}, "queued"},
 		{"idle", FanoutLane{State: FanoutIdle, Name: "a"}, "idle"},
+		{"held", FanoutLane{State: FanoutHeld, Name: "a"}, "⏸ held"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			view := ansi.Strip(tc.lane.View(110))
@@ -285,6 +286,29 @@ func TestFanoutHeaderSettles(t *testing.T) {
 	}
 	if !strings.Contains(header, "3 agents") {
 		t.Fatalf("the header should name the size of the fan-out: %q", header)
+	}
+}
+
+// A hold parks each child at its own boundary, so the header is what says how
+// far through the fan-out that has got — and a park is not the idle a
+// cancelled turn leaves, so it has a word of its own
+// (docs/capabilities/subagents.md#a-hold-reaches-the-whole-fan-out).
+func TestFanoutHeaderCountsTheParksAsTheyLand(t *testing.T) {
+	block := FanoutBlock{Lanes: []FanoutLane{
+		{State: FanoutHeld, Name: "a"}, {State: FanoutHeld, Name: "b"},
+		{State: FanoutRunning, Name: "c"},
+	}}
+	header := plainLines(block.View(110))[0]
+	if !strings.Contains(header, "2 held · 1 running") {
+		t.Fatalf("the header should count the parks beside what is still going: %q", header)
+	}
+	// A child that asks for an answer while the parks land is what the field
+	// keeps instead of the remainder: the tally says two things at most, and
+	// the two are the ones the reader is acting on.
+	block.Lanes = append(block.Lanes, FanoutLane{State: FanoutBlocked, Name: "d"})
+	header = plainLines(block.View(110))[0]
+	if !strings.Contains(header, "1 needs you · 2 held") || strings.Contains(header, "running") {
+		t.Fatalf("the tally should keep the two clauses the reader acts on: %q", header)
 	}
 }
 

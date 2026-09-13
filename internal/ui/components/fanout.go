@@ -37,6 +37,7 @@ const (
 	FanoutRunning                    // working
 	FanoutBlocked                    // waiting on an answer from you
 	FanoutIdle                       // turn cancelled, waiting for steering
+	FanoutHeld                       // parked at its own round boundary by a hold
 	FanoutDone                       // finished
 	FanoutFailed                     // broke
 )
@@ -290,7 +291,7 @@ func (p AgentProgress) kindTone() lipgloss.Style {
 		return sty.Err
 	case FanoutDone:
 		return sty.Add
-	case FanoutQueued, FanoutIdle:
+	case FanoutQueued, FanoutIdle, FanoutHeld:
 		return sty.Dim
 	default:
 		return sty.Info
@@ -316,6 +317,14 @@ func (p AgentProgress) progress() string {
 		return sty.Dim.Render("queued")
 	case FanoutIdle:
 		return sty.Dim.Render("idle")
+	case FanoutHeld:
+		// A parked child and an idle one are both stopped, and only one of
+		// them was stopped on purpose: a hold is something the reader did to
+		// the whole fan-out, and a lane drawn as idle under it reads as a
+		// child that lost its turn
+		// (docs/capabilities/subagents.md#a-hold-reaches-the-whole-fan-out).
+		// The mark is the one the mode chip and the hold's own chip wear.
+		return sty.Dim.Render("⏸ held")
 	case FanoutFailed:
 		return sty.Err.Render("✗ failed")
 	}
@@ -637,11 +646,13 @@ func depthGroups(depths []int) [][]int {
 
 // tallyStates counts a set of children by state, for the one line that heads
 // them.
-func tallyStates(states []FanoutState) (running, blocked, done, failed int) {
+func tallyStates(states []FanoutState) (running, blocked, held, done, failed int) {
 	for _, st := range states {
 		switch st {
 		case FanoutBlocked:
 			blocked++
+		case FanoutHeld:
+			held++
 		case FanoutDone:
 			done++
 		case FanoutFailed:
@@ -650,24 +661,37 @@ func tallyStates(states []FanoutState) (running, blocked, done, failed int) {
 			running++
 		}
 	}
-	return running, blocked, done, failed
+	return running, blocked, held, done, failed
 }
 
 // stateTally states what a set of children still owes you. Whoever needs an
 // answer is said first and in del, because it is the only part of the line
 // that asks anything of you; the tally of finished children is left to the
-// rows until nothing is running, when it becomes the whole story. The field
-// never clips, so it says two things at most. The fan-out header and
-// the manager's title rail are the same sentence about the same children, so
-// they are the same function.
+// rows until nothing is running, when it becomes the whole story. The fan-out
+// header and the manager's title rail are the same sentence about the same
+// children, so they are the same function.
+//
+// A hold parks each child at its own boundary, so the parks land one at a
+// time and the line is what says how far through that is — `2 held · 1
+// running` (docs/capabilities/subagents.md#a-hold-reaches-the-whole-fan-out).
+// It goes between the two: a park is what the reader has just asked for and
+// what they are waiting to see land, and what is still running is the
+// remainder of it. The field never clips, so it says two things at most, and
+// where all three are true it is the two the reader is acting on.
 func stateTally(states []FanoutState) string {
-	running, blocked, done, failed := tallyStates(states)
+	running, blocked, held, done, failed := tallyStates(states)
 	var parts []string
 	if blocked > 0 {
 		parts = append(parts, sty.Err.Render(fmt.Sprintf("%d needs you", blocked)))
 	}
+	if held > 0 {
+		parts = append(parts, sty.Dim.Render(fmt.Sprintf("%d held", held)))
+	}
 	if running > 0 {
 		parts = append(parts, sty.SpinText.Render(fmt.Sprintf("%d running", running)))
+	}
+	if len(parts) > tallyParts {
+		parts = parts[:tallyParts]
 	}
 	if len(parts) == 0 {
 		if done > 0 {
@@ -680,6 +704,11 @@ func stateTally(states []FanoutState) string {
 	return strings.Join(parts, sty.Dim.Render(" · "))
 }
 
+// tallyParts is how many clauses the tally says at most. The field shares a
+// row with the count of children and the batch's duration, and a third clause
+// is what takes a column off the target rather than off itself.
+const tallyParts = 2
+
 // states is the batch's lane states, in lane order.
 func (b FanoutBlock) states() []FanoutState {
 	out := make([]FanoutState, len(b.Lanes))
@@ -690,7 +719,7 @@ func (b FanoutBlock) states() []FanoutState {
 }
 
 // counts tallies the batch for its header.
-func (b FanoutBlock) counts() (running, blocked, done, failed int) {
+func (b FanoutBlock) counts() (running, blocked, held, done, failed int) {
 	return tallyStates(b.states())
 }
 
@@ -711,7 +740,7 @@ func (b FanoutBlock) View(width int) string {
 	for _, l := range lanes {
 		lines = append(lines, l.View(width))
 	}
-	if _, blocked, _, _ := b.counts(); blocked > 0 {
+	if _, blocked, _, _, _ := b.counts(); blocked > 0 {
 		for _, keys := range packOffers(b.Keys, max(width-detailIndent, 1)) {
 			lines = append(lines, detailLine(keys, width))
 		}

@@ -1,0 +1,32 @@
+# One reply queue per agent, opened by a [name] header: the session and the
+# two writers it fans out. A hold is about when each agent reaches its own
+# round boundary, and a single queue would make that a race between the three
+# of them rather than the sequence this scene is about.
+#
+# The sentence and the two spawns are one reply, so the transcript titles the
+# step with the sentence rather than closing a turn before the calls were
+# asked for.
+[session]
+Fanning two writers over the round accounting.
++tool:spawn_agent:{"role":"writer","task":"Say where the round counter is read.","name":"writer-1"}
++tool:spawn_agent:{"role":"writer","task":"Say where the round limit is set.","name":"writer-2"}
+# The session's own next round, held open: a hold is asked of a turn that is
+# going, so the session has to still be streaming when the key is pressed.
+wait:120
+The counter is read at the top of the loop, and nowhere else.
+
+# The writer that parks first. Its rounds are seconds long, so wherever the
+# hold lands it is at its next boundary almost at once. The last reply of a
+# queue repeats, so this is a child reading for as long as the scene runs —
+# until something stops it, which is what the scene is for.
+[writer-1]
+wait:3
++tool:read_file:{"path":"loop.go"}
+
+# The writer that parks second, and the reason the header has a tally rather
+# than a word: nothing stops where it stands, so a child in the middle of a
+# round finishes it first. This one holds its round open for sixteen seconds,
+# which is ten-odd seconds after the other has already parked.
+[writer-2]
+wait:16
++tool:read_file:{"path":"loop.go"}

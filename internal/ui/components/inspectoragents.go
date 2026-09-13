@@ -30,11 +30,11 @@ type InspectorAgent struct {
 	// fan-out lane and a manager row use, so one child cannot be drawn three
 	// ways on one screen.
 	State FanoutState
-	// Outcome is the word a session that has stopped ends on. It is the
-	// host's own word rather than one derived here: the block states how a
-	// child ended, and the only authority on that is whatever ran it. Empty
-	// for a session still moving, whose detail row already says what it is
-	// doing.
+	// Outcome is the word a session that has stopped ends on, and the word a
+	// session parked mid-run has stopped at. It is the host's own word rather
+	// than one derived here: the block states how a child ended, and the only
+	// authority on that is whatever ran it. Empty for a session still moving,
+	// whose detail row already says what it is doing.
 	Outcome string
 	// Focused marks the session the keyboard is in. It is the one thing the
 	// rest of the rail cannot say for itself: every other block answers for

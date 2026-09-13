@@ -139,14 +139,18 @@ func (m Model) childProgress(st subagent.Status) components.AgentProgress {
 		p.ReportVerdict = reportVerdict(m.childReport(st))
 	}
 	// A held child is parked at its own round boundary waiting for the
-	// session to let it go, which is the shape idle already draws: stopped,
-	// with nothing to do until you do something. It is derived here rather
-	// than given a state of its own because the lifecycle it is held in the
-	// middle of is still `running` — the child keeps its slot, its worktree
-	// and its conversation — and the detail beside the glyph is what says
-	// which of the two stopped things this one is.
+	// session to let it go. It is read off the status rather than off the
+	// lifecycle, which is still `running` — the child keeps its slot, its
+	// worktree and its conversation — and it outranks that lifecycle here
+	// because what the surfaces draw is where the child has stopped, not what
+	// it is between (docs/capabilities/subagents.md#a-hold-reaches-the-whole-fan-out).
+	//
+	// It is its own state rather than idle's. Both are stopped and only one
+	// of them was stopped on purpose: idle is a turn that was cancelled and
+	// wants steering, and a park the reader asked of the whole fan-out drawn
+	// that way is a child that reads as having lost its turn.
 	if st.Held {
-		p.State = components.FanoutIdle
+		p.State = components.FanoutHeld
 		return p
 	}
 	switch st.State {

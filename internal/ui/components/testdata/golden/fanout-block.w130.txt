@@ -48,6 +48,12 @@
    ◇ agent   researcher-2 · survey the fold state                                               ⠹ working · 2 tools · $0.01    19s
     2 steers · from reading · last read off target
 
+· held · two children parked where you stopped them
+◇ fan-out    3 agents                                                                                    2 held · 1 running    48s
+   ◇ agent   writer-1 · docs/loop.md                                                               ⏸ held · 7 tools · $0.03    48s
+   ◇ agent   writer-2 · internal/agent/round.go                                                    ⏸ held · 4 tools · $0.02    44s
+   ◇ agent   reader-3 · survey internal/ui                                                      ⠹ working · 2 tools · $0.01    39s
+
 · a child that delegated · its lane says how many are under it
 ◇ fan-out    4 agents                                                                               1 needs you · 2 running  1m40s
    ◇ agent   writer-1 · docs/loop.md                                                           ▰▰▰▱▱ 3/5 · 14 tools · $0.05  1m40s
@@ -97,6 +103,12 @@
     ␛[38;5;245msteered from parent␛[m
    ␛[94m◇␛[m ␛[38;5;252magent␛[m   ␛[38;5;252mresearcher-2␛[m␛[38;5;241m · survey the fold state␛[m                                               ␛[38;5;205m⠹ working␛[m␛[38;5;241m · ␛[m␛[38;5;245m2 tools · $0.01␛[m    ␛[38;5;241m19s␛[m
     ␛[38;5;245m2 steers · from reading · last read off target␛[m
+
+· held · two children parked where you stopped them
+␛[94m◇␛[m ␛[38;5;252mfan-out␛[m    ␛[38;5;241m3 agents␛[m                                                                                    ␛[38;5;241m2 held␛[m␛[38;5;241m · ␛[m␛[38;5;205m1 running␛[m    ␛[38;5;241m48s␛[m
+   ␛[38;5;241m◇␛[m ␛[38;5;252magent␛[m   ␛[38;5;252mwriter-1␛[m␛[38;5;241m · docs/loop.md␛[m                                                               ␛[38;5;241m⏸ held␛[m␛[38;5;241m · ␛[m␛[38;5;245m7 tools · $0.03␛[m    ␛[38;5;241m48s␛[m
+   ␛[38;5;241m◇␛[m ␛[38;5;252magent␛[m   ␛[38;5;252mwriter-2␛[m␛[38;5;241m · internal/agent/round.go␛[m                                                    ␛[38;5;241m⏸ held␛[m␛[38;5;241m · ␛[m␛[38;5;245m4 tools · $0.02␛[m    ␛[38;5;241m44s␛[m
+   ␛[94m◇␛[m ␛[38;5;252magent␛[m   ␛[38;5;252mreader-3␛[m␛[38;5;241m · survey internal/ui␛[m                                                      ␛[38;5;205m⠹ working␛[m␛[38;5;241m · ␛[m␛[38;5;245m2 tools · $0.01␛[m    ␛[38;5;241m39s␛[m
 
 · a child that delegated · its lane says how many are under it
 ␛[94m◇␛[m ␛[38;5;252mfan-out␛[m    ␛[38;5;241m4 agents␛[m                                                                               ␛[91m1 needs you␛[m␛[38;5;241m · ␛[m␛[38;5;205m2 running␛[m  ␛[38;5;241m1m40s␛[m

@@ -1,0 +1,37 @@
+# The fan-out block while a hold lands, at 120 columns
+# (docs/capabilities/subagents.md#a-hold-reaches-the-whole-fan-out).
+#
+# What the capture is for: the word a parked lane says, and the tally over it.
+# A held child is not an idle one — idle is a turn that was cancelled and
+# wants steering, and this is a fan-out the reader stopped on purpose — so the
+# lane says `⏸ held` in the field on the right and keeps ◇ in the glyph
+# column, the way every lane state does. The hold is the session's and reaches
+# every child, but each child stops at its own round boundary: the two writers
+# here park ten-odd seconds apart, and the header counts the parks as they
+# land.
+#
+# The pacing is the endpoint's rather than a sleep in this file: one writer
+# answers every few seconds and parks almost at once, the other holds its
+# round open and parks when it comes back.
+setup printf 'package agent\n\nfunc loop() {\n    for round := 0; round < limit; round++ {\n        step()\n    }\n}\n' > loop.go
+snap 01-start "Some things worth doing first"
+keys "survey the round accounting" Enter
+# Spawning is gated, and the round asked for both children together, so it is
+# one card with a row per child.
+snap 02-spawn-card "Spawn 2 writers"
+keys y
+snap 03-lanes "2 agents"
+# The hold, pressed while the session's own turn is still going. The children
+# are asked with it, because it was asked of the session.
+keys C-p
+# The first park: one lane has reached its own boundary and says so, and the
+# other has not got there yet — which is the whole reason the header counts
+# rather than states.
+snap 04-first-park "1 held · 1 running"
+# The second, ten-odd seconds later. The tally is what says the hold has
+# landed whole.
+snap 05-both-parked "2 held"
+# One press lets them all go, because the hold was asked of the session and
+# letting them out one at a time would be a list nobody could keep.
+keys C-p
+snap 06-released "working"

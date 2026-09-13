@@ -15,6 +15,7 @@ import (
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/tools"
+	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
 // spawnInto starts one child and waits until the supervisor knows about it,
@@ -95,6 +96,52 @@ func TestTwoSpawnsBecomeOneBlock(t *testing.T) {
 	for _, want := range []string{"fan-out", "3 agents", "researcher-1", "researcher-2", "researcher-3"} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("rendered history missing %q:\n%s", want, view)
+		}
+	}
+}
+
+// A hold is asked of the session and reaches every child, each parking at its
+// own round boundary
+// (docs/capabilities/subagents.md#a-hold-reaches-the-whole-fan-out). What the
+// surfaces owe a reader who pressed it is the word: the lane says it where an
+// idle child says idle, the header counts the parks as they land, and the
+// rail's map row says it where a working child's row draws motion.
+func TestFanoutHeldChildIsDrawnHeldAndNotIdle(t *testing.T) {
+	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: heldChildEnv()})
+	t.Cleanup(sup.Close)
+	m := newSubagentModel(t, sup)
+
+	// The hold is taken before the children start, so their first round
+	// boundary is the one they park at.
+	sup.Hold()
+	m.beginSpawnBatch()
+	for _, task := range []string{"survey the loop", "survey the tests"} {
+		spawnInto(t, sup, `{"role":"researcher","task":"`+task+`"}`)
+		m.appendSpawnEntry(spawnRowEntry(task))
+	}
+	for _, name := range []string{"researcher-1", "researcher-2"} {
+		waitFor(t, func() bool {
+			st, ok := sup.Get(name)
+			return ok && st.Held
+		})
+	}
+
+	view := ansi.Strip(m.renderHistory())
+	if n := strings.Count(view, "⏸ held"); n != 2 {
+		t.Fatalf("both parked lanes should say they are held, %d did:\n%s", n, view)
+	}
+	if !strings.Contains(view, "2 held") {
+		t.Fatalf("the header should count the parks:\n%s", view)
+	}
+	if strings.Contains(view, "idle") {
+		t.Fatalf("a child parked on purpose is not an idle one:\n%s", view)
+	}
+	for _, a := range m.inspectorAgents() {
+		if a.Self {
+			continue
+		}
+		if a.State != components.FanoutHeld || a.Outcome != "held" {
+			t.Fatalf("the rail's map row should say a parked child is held: %+v", a)
 		}
 	}
 }

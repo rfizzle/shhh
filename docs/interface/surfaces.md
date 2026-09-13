@@ -1200,6 +1200,14 @@ underneath; a finished one keeps `◇` and puts its tick in the outcome field.
 Both readings come from one renderer, so the lane and the row can differ in
 that column and nowhere else.
 
+A child parked by [a hold](../capabilities/subagents.md#a-hold-reaches-the-whole-fan-out)
+says `⏸ held` in that same field, on the lane and on the row alike. It is not
+the word an idle child gets: a cancelled turn waiting to be steered and a
+fan-out the reader stopped on purpose are two different stopped things, and
+only one of them is news. The parks land one child at a time, so the header's
+tally is what says how far through the hold is — `2 held · 1 running` — and
+the rail's map says `held` where a working child's row says what it is doing.
+
 **A descendant is drawn under the agent that spawned it, on every surface
 that draws more than one agent.** An agent is followed by the agents it
 spawned, and each of those is drawn one column in behind the frame's own
