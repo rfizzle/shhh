@@ -39,6 +39,52 @@ func TestProgressCheckpoint_AfterSilentToolActivity(t *testing.T) {
 	}
 }
 
+// The mark goes on the message, because the message is the only part of a
+// round that outlives it: a conversation reopened from the store has the
+// words and nothing else, and prose that answered a status request has to
+// come back as the note it was rather than as an answer.
+func TestProgressCheckpoint_MarksTheMessageThatCarriedTheStatus(t *testing.T) {
+	now := time.Unix(100, 0)
+	a := New(nil, noStream)
+	a.now = func() time.Time { return now }
+	a.SetProgressIntervals(2, time.Hour)
+	a.StartTurn("find the loop")
+	a.BeginToolRound("", []provider.ToolCall{{ID: "one", Name: "search"}}, nil)
+	a.BeginToolRound("", []provider.ToolCall{{ID: "two", Name: "read_file"}}, nil)
+	if _, ok := a.TakeProgressCheckpoint(); !ok {
+		t.Fatal("two silent calls should earn a public checkpoint")
+	}
+
+	const note = "The objective is the loop. The evidence is two reads. Next I will change it."
+	if !a.NoteProgressProse(note) {
+		t.Fatal("the prose should be read as the status that was asked for")
+	}
+	a.BeginToolRound(note, []provider.ToolCall{{ID: "three", Name: "read_file"}}, nil)
+
+	var marked []string
+	for _, msg := range a.Messages() {
+		if msg.Checkpoint {
+			marked = append(marked, msg.Content)
+		}
+	}
+	if len(marked) != 1 || marked[0] != note {
+		t.Fatalf("the conversation marks %q as public status, want just the note", marked)
+	}
+
+	// And the latch is the round's own: the next round's prose is ordinary
+	// prose, and a latch left set would mark it too.
+	const ordinary = "Now changing the loop."
+	if a.NoteProgressProse(ordinary) {
+		t.Fatal("nothing asked for a second status")
+	}
+	a.BeginToolRound(ordinary, []provider.ToolCall{{ID: "four", Name: "edit_file"}}, nil)
+	for _, msg := range a.Messages() {
+		if msg.Checkpoint && msg.Content != note {
+			t.Errorf("prose nobody asked for was marked as public status: %q", msg.Content)
+		}
+	}
+}
+
 func TestProgressCheckpoint_UsesElapsedTimeAndDoesNotResetInterventions(t *testing.T) {
 	now := time.Unix(100, 0)
 	a := New(nil, noStream)

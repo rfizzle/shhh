@@ -398,6 +398,21 @@ func (m Model) continueStream(res *streamResume) (tea.Model, tea.Cmd) {
 	m.streaming = ""
 	m.atBottom = true
 
+	// The words the drop kept have never been noted. Prose is noted at the
+	// end of the round that wrote it, and this round ended on the wire
+	// instead — so if the session had asked for public status, the note
+	// answering it is sitting in this partial with nothing recording that it
+	// is one. Noting it here is what marks the entry and the message the
+	// branches below are about to make of it, and what settles the request:
+	// left outstanding it would be answered a second time by whatever prose
+	// the continued turn writes next, and that round would carry the mark
+	// this one earned (progress.go).
+	//
+	// A truncated reply is already noted: it reached the conversation and
+	// the transcript when the turn closed, and the round that closed it
+	// noted the prose then.
+	checkpoint := !res.truncated && m.noteProgressProse(res.text)
+
 	if len(res.calls) > 0 {
 		// The calls were finished before the wire broke, so continuing is
 		// running them — the same round the stream was in, resumed at the
@@ -407,7 +422,11 @@ func (m Model) continueStream(res *streamResume) (tea.Model, tea.Cmd) {
 		m.approvalTotal = len(gated)
 		m.beginSpawnBatch()
 		if strings.TrimSpace(res.text) != "" {
-			m.appendEntry(m.stampStep(entry{kind: entryAssistant, text: res.text}))
+			e := m.stampStep(entry{kind: entryAssistant, text: res.text})
+			if checkpoint {
+				e = m.markCheckpoint(e)
+			}
+			m.appendEntry(e)
 		}
 		m.trimForRequest()
 		m.syncViewport()
@@ -427,8 +446,15 @@ func (m Model) continueStream(res *streamResume) (tea.Model, tea.Cmd) {
 		// its own words and ask it to write past the second.
 		prompt = agent.ContinueAfterCeiling
 	} else {
-		m.agent.Append(provider.Message{Role: provider.RoleAssistant, Content: res.text})
-		m.appendEntry(m.stampStep(entry{kind: entryAssistant, text: res.text}))
+		// BeginToolRound is what stamps the mark on the round above; a round
+		// with no calls has no BeginToolRound, so the message carries it from
+		// here.
+		m.agent.Append(provider.Message{Role: provider.RoleAssistant, Content: res.text, Checkpoint: checkpoint})
+		e := m.stampStep(entry{kind: entryAssistant, text: res.text})
+		if checkpoint {
+			e = m.markCheckpoint(e)
+		}
+		m.appendEntry(e)
 	}
 	m.agent.AppendMachine(prompt)
 	m.appendEntry(entry{kind: entrySystem, text: "Continuing from the partial reply."})

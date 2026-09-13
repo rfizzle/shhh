@@ -20,3 +20,9 @@ keys C-c
 snap 07-quit-armed "again quits"
 keys C-c
 snap 08-exit "that is everything the screen was holding"
+# The second sitting opens the same conversation again (see `launch`). What
+# the capture is read for is the note's rung after the rebuild: the transcript
+# is put back from the stored messages alone, so a mark that lived only on the
+# frame would come back as an answer at an answer's weight. Wait for the
+# resume row, which is the proof the second process is the one on screen.
+snap 09-reopened "resumed master"

@@ -522,6 +522,15 @@ var migrations = []string{
 		created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
 	);
 	CREATE INDEX IF NOT EXISTS idx_plan_records_session ON plan_records(chat_session);`,
+
+	// Which assistant messages were the public status a long silent run was
+	// asked for, so a reopened conversation draws each of them as the note it
+	// was rather than promoting it to the answer of a question nobody typed
+	// (docs/interface/surfaces.md#the-progress-checkpoint). Older rows
+	// default to 0, like the machine column beside them: a conversation
+	// stored before this one existed recorded no status notes, and reading
+	// its prose as ordinary prose is what it has always looked like.
+	`ALTER TABLE chat_messages ADD COLUMN checkpoint INTEGER NOT NULL DEFAULT 0;`,
 }
 
 const (

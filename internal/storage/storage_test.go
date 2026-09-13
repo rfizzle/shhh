@@ -259,6 +259,34 @@ func TestSaveChat_RoundTripsWhoWroteTheMessage(t *testing.T) {
 	}
 }
 
+// Which assistant message was the run reporting on itself survives the store.
+// A conversation read back with the mark lost would redraw every status note
+// in it at the weight of an answer, which is the one thing the rung a note is
+// written at says it is not.
+func TestSaveChat_RoundTripsTheStatusNoteMark(t *testing.T) {
+	db := openTestDB(t)
+
+	msgs := []provider.Message{
+		{Role: provider.RoleUser, Content: "trace the counter"},
+		{Role: provider.RoleAssistant, Content: "Objective, evidence, next action.", Checkpoint: true},
+		{Role: provider.RoleAssistant, Content: "The counter is read at the top of the loop."},
+	}
+
+	if err := db.SaveChat("noted", msgs); err != nil {
+		t.Fatalf("save: %v", err)
+	}
+	loaded, err := db.LoadChat("noted")
+	if err != nil {
+		t.Fatalf("load: %v", err)
+	}
+	if !loaded[1].Checkpoint {
+		t.Error("the status note came back as an ordinary answer")
+	}
+	if loaded[2].Checkpoint {
+		t.Error("the answer came back as a status note")
+	}
+}
+
 func TestLoadChat_NotFound(t *testing.T) {
 	db := openTestDB(t)
 

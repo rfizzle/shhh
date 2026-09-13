@@ -67,6 +67,20 @@
 ▸ 1  The round boundary is the seam… ─ ✓ 3 tools  1.0s
 
 
+· the same run reopened · the notes come back as notes
+❯ trace the checkpoint
+──────────────────────────────────────────────────────
+
+  The objective is where the tool-round ceiling is
+    … 4 more lines
+
+   ⚙ read    internal/ui/chat/stream.go  1 line
+
+  The objective is unchanged and the pause row is now
+  the evidence: it carries the grant and spends it
+  where it is drawn. Next I will run the round tests.
+
+
 ── ansi ────────────────────────────────────────────────────
 · the status before the folded group of calls it introduces
 ␛[94m❯␛[m ␛[97mtrace the checkpoint␛[m
@@ -123,4 +137,18 @@
 ␛[38;5;243m──────────────────────────────────────────────────────␛[m
 
 ␛[38;5;241m▸␛[m ␛[38;5;252m1 ␛[m ␛[38;5;252mThe round boundary is the seam…␛[m ␛[38;5;241m─␛[m ␛[92m✓␛[m ␛[38;5;241m3 tools␛[m  ␛[38;5;241m1.0s␛[m
+
+
+· the same run reopened · the notes come back as notes
+␛[94m❯␛[m ␛[97mtrace the checkpoint␛[m
+␛[38;5;243m──────────────────────────────────────────────────────␛[m
+
+  ␛[3;38;5;245mThe objective is where the tool-round ceiling is␛[m
+    ␛[38;5;241m… 4 more lines␛[m
+
+   ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/ui/chat/stream.go␛[m  ␛[38;5;245m1 line␛[m
+
+  ␛[3;38;5;245mThe objective is unchanged and the pause row is now␛[m
+  ␛[3;38;5;245mthe evidence: it carries the grant and spends it␛[m
+  ␛[3;38;5;245mwhere it is drawn. Next I will run the round tests.␛[m
 

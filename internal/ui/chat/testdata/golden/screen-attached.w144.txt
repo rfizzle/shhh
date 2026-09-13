@@ -48,13 +48,13 @@
   ❯ long survey                                                                             │  THIS TURN                                step 2  
   ────────────────────────────────────────────────────────────────────────────────────────  │  0 files this turn · 6 tools                      
                                                                                             │                                                   
-  ▾ 1  Reading the round accounting first. ─────────────────────────────── ▸ 2 tools        │  ALERTS                               1 standing  
-     ⚙ read    internal/agent/loop.go                                     220 lines         │   ✗ go test  exit 1                               
-     ⠋ read    internal/agent/round.go                                     running…         │                                                   
-                                                                                            │  AGENTS                                2 running  
+  ▸ 1  Reading the round accounting first. ──────────────────────────────── ✓ 1 tool        │  ALERTS                               1 standing  
+                                                                                            │   ✗ go test  exit 1                               
+    The objective is where the round counter is read. The evidence is that loop.go reads    │                                                   
+    it once and round.go not at all. Next I will run the round tests.                       │  AGENTS                                2 running  
                                                                                             │  ⊘ orchestrator                            $0.51  
-                                                                                            │    ready                                          
-                                                                                            │❯ ◇ researcher-1                            $0.05  
+     ⚙ exec_co…go test ./internal/agent -run TestRound     1 line · approved by you         │    ready                                          
+     ⠋ read    internal/agent/round.go                                     running…         │❯ ◇ researcher-1                            $0.05  
                                                                                             │    ⠋ running                                      
                                                                                             │  ✗ reviewer-1                      failed  $0.05  
                                                                                             │    cancelled                                      
@@ -145,13 +145,13 @@
   ␛[94m❯␛[m ␛[97mlong survey␛[m                                                                             ␛[38;5;241m│␛[m  ␛[94;1mTHIS TURN␛[m                                ␛[38;5;241mstep 2␛[m  
   ␛[38;5;243m────────────────────────────────────────────────────────────────────────────────────────␛[m  ␛[38;5;241m│␛[m  ␛[38;5;241m0 files this turn · 6 tools␛[m                      
                                                                                             ␛[38;5;241m│␛[m                                                   
-  ␛[38;5;205m▾␛[m ␛[97m1 ␛[m ␛[97mReading the round accounting first.␛[m ␛[38;5;241m───────────────────────────────␛[m ␛[38;5;205m▸␛[m ␛[38;5;241m2 tools␛[m        ␛[38;5;241m│␛[m  ␛[94;1mALERTS␛[m                               ␛[91m1 standing␛[m  
-     ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/loop.go␛[m                                     ␛[38;5;245m220 lines␛[m         ␛[38;5;241m│␛[m   ␛[91m✗␛[m ␛[38;5;252mgo test␛[m  ␛[38;5;241mexit 1␛[m                               
-     ␛[38;5;205m⠋␛[m ␛[97mread␛[m    ␛[97minternal/agent/round.go␛[m                                     ␛[38;5;205mrunning…␛[m         ␛[38;5;241m│␛[m                                                   
-                                                                                            ␛[38;5;241m│␛[m  ␛[94;1mAGENTS␛[m                                ␛[38;5;205m2 running␛[m  
+  ␛[38;5;241m▸␛[m ␛[38;5;252m1 ␛[m ␛[38;5;252mReading the round accounting first.␛[m ␛[38;5;241m────────────────────────────────␛[m ␛[92m✓␛[m ␛[38;5;241m1 tool␛[m        ␛[38;5;241m│␛[m  ␛[94;1mALERTS␛[m                               ␛[91m1 standing␛[m  
+                                                                                            ␛[38;5;241m│␛[m   ␛[91m✗␛[m ␛[38;5;252mgo test␛[m  ␛[38;5;241mexit 1␛[m                               
+    ␛[38;5;245;3mThe objective is where the round counter is read. The evidence is that loop.go reads␛[m    ␛[38;5;241m│␛[m                                                   
+    ␛[38;5;245;3mit once and round.go not at all. Next I will run the round tests.␛[m                       ␛[38;5;241m│␛[m  ␛[94;1mAGENTS␛[m                                ␛[38;5;205m2 running␛[m  
                                                                                             ␛[38;5;241m│␛[m  ␛[38;5;241m⊘␛[m ␛[38;5;252morchestrator␛[m                            ␛[38;5;241m$0.51␛[m  
-                                                                                            ␛[38;5;241m│␛[m    ␛[38;5;245mready␛[m                                          
-                                                                                            ␛[38;5;241m│␛[94m❯␛[m ␛[94;48;5;62m◇␛[39m ␛[97mresearcher-1                            $0.05␛[m  
+     ␛[38;5;214m⚙␛[m ␛[38;5;252mexec_co…go test ./internal/agent -run TestRound␛[m     ␛[38;5;245m1 line␛[38;5;241m · ␛[92mapproved␛[38;5;241m by you␛[m         ␛[38;5;241m│␛[m    ␛[38;5;245mready␛[m                                          
+     ␛[38;5;205m⠋␛[m ␛[97mread␛[m    ␛[97minternal/agent/round.go␛[m                                     ␛[38;5;205mrunning…␛[m         ␛[38;5;241m│␛[94m❯␛[m ␛[94;48;5;62m◇␛[39m ␛[97mresearcher-1                            $0.05␛[m  
                                                                                             ␛[38;5;241m│␛[m    ␛[38;5;205m⠋ running␛[m                                      
                                                                                             ␛[38;5;241m│␛[m  ␛[91m✗␛[m ␛[38;5;252mreviewer-1␛[m                      ␛[91mfailed␛[m  ␛[38;5;241m$0.05␛[m  
                                                                                             ␛[38;5;241m│␛[m    ␛[38;5;245mcancelled␛[m                                      

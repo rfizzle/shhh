@@ -345,6 +345,23 @@ func TestGolden_ProgressUpdate(t *testing.T) {
 				View: build(nil, append([]entry{ask,
 					{kind: entryAssistant, checkpoint: true,
 						text: "The round boundary is the seam; next I will trace its callers."}}, reads...)...)},
+			// The same two notes after the session was closed and reopened.
+			// The transcript is rebuilt from the conversation alone here, so
+			// this panel is what says the mark and the retiring survived the
+			// store rather than living on the frame that drew them.
+			{Label: "the same run reopened · the notes come back as notes", View: func() string {
+				m := frameModel(t, width, 40)
+				m.loadConversation([]provider.Message{
+					{Role: provider.RoleUser, Content: "trace the checkpoint"},
+					{Role: provider.RoleAssistant, Content: note, Checkpoint: true,
+						ToolCalls: []provider.ToolCall{{ID: "r1", Name: "read_file",
+							Arguments: `{"path":"internal/ui/chat/stream.go"}`}}},
+					{Role: provider.RoleTool, ToolCallID: "r1", Content: "lines"},
+					{Role: provider.RoleAssistant, Content: second, Checkpoint: true},
+				})
+				m.invalidateRenderCache()
+				return m.renderHistory()
+			}()},
 		}
 	})
 }
@@ -2053,6 +2070,18 @@ func TestGolden_ScreenAttached(t *testing.T) {
 	noteChild(t, sup, "researcher-1", subagent.TranscriptEntry{
 		Kind: subagent.EntryTool, Tool: "read_file", Args: `{"path":"internal/agent/loop.go"}`,
 		Result: strings.Repeat("internal/agent/loop.go:118 the round counter is read here\n", 220)})
+	// The lane's own public status, drawn at the rung the session draws its
+	// own at, and a call the reader answered at the card it was routed to:
+	// the two facts a mirrored feed used to lose on its way into the parent
+	// (docs/interface/surfaces.md#the-progress-checkpoint).
+	noteChild(t, sup, "researcher-1", subagent.TranscriptEntry{
+		Kind: subagent.EntryAssistant, Checkpoint: true,
+		Text: "The objective is where the round counter is read. The evidence is that loop.go " +
+			"reads it once and round.go not at all. Next I will run the round tests."})
+	noteChild(t, sup, "researcher-1", subagent.TranscriptEntry{
+		Kind: subagent.EntryTool, Tool: "exec_command",
+		Args: `{"command":"go test ./internal/agent -run TestRound"}`, Result: "ok",
+		ApprovedBy: subagent.ApprovedByUser})
 	noteChild(t, sup, "researcher-1", subagent.TranscriptEntry{
 		Kind: subagent.EntryTool, Tool: "read_file", Args: `{"path":"internal/agent/round.go"}`,
 		Pending: true})

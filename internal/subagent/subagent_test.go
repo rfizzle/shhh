@@ -1392,6 +1392,82 @@ func TestChildAutoApprovalStatesTheActOnce(t *testing.T) {
 // toolRow is the one transcript row a call left behind. It fails the test
 // when a call has none or more than one, which is the two-row shape these
 // tests are about.
+// TestChildApprovedCallNamesWhoAnsweredIt: a call the parent's user answered
+// at the card carries that account on its own row, the way a call a rule
+// waved through carries the rule. Without it the one decision in a fan-out
+// that a person actually made is the only one whose row says nothing.
+func TestChildApprovedCallNamesWhoAnsweredIt(t *testing.T) {
+	env := &scriptedEnv{
+		steps:   gatedCommandSteps("echo hi"),
+		gated:   map[string]bool{tools.ExecCommandName: true},
+		execOut: "hi",
+	}
+	sup := newTestSupervisor(t, env)
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"run something"}`)
+
+	nextAsk(t, sup).Respond(true)
+	if report := execTool(t, sup, ReportToolName, `{"name":"researcher-1"}`); !strings.Contains(report, "task complete") {
+		t.Fatalf("unexpected report: %s", report)
+	}
+
+	row := toolRow(t, sup.Transcript("researcher-1"), tools.ExecCommandName)
+	if row.ApprovedBy != ApprovedByUser {
+		t.Fatalf("the command's row should name the person who answered the card, got %q", row.ApprovedBy)
+	}
+	// The two accounts are exclusive: a call somebody was asked about is not
+	// one a rule waved through, and a row claiming both would be read twice.
+	if row.AllowedBy != "" {
+		t.Fatalf("a call the person answered also named a rule: %q", row.AllowedBy)
+	}
+}
+
+// TestChildStatusNoteIsMarkedAsOne: a child's run earns the same public
+// status a session's does, and the entry that carries it says so — otherwise
+// a parent attaching to the lane reads the note at the weight of an answer,
+// which is the one thing the rung it is drawn at says it is not.
+func TestChildStatusNoteIsMarkedAsOne(t *testing.T) {
+	// A round of the default interval's worth of silent reads earns the
+	// request at the next boundary, and the prose that opens the round after
+	// it is what answers it.
+	silent := make([]provider.ToolCall, agent.DefaultProgressIntervalCalls)
+	for i := range silent {
+		silent[i] = provider.ToolCall{ID: fmt.Sprintf("r%d", i), Name: tools.ReadFileName,
+			Arguments: `{"path":"loop.go"}`}
+	}
+	const note = "The objective is the round accounting. The evidence is twelve reads. Next I will change it."
+	env := &scriptedEnv{steps: []streamStep{
+		{calls: silent},
+		{text: note, calls: []provider.ToolCall{
+			{ID: "last", Name: tools.ReadFileName, Arguments: `{"path":"round.go"}`}}},
+		{text: "task complete"},
+	}}
+	sup := newTestSupervisor(t, env)
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"trace the counter"}`)
+	if report := execTool(t, sup, ReportToolName, `{"name":"researcher-1"}`); !strings.Contains(report, "task complete") {
+		t.Fatalf("unexpected report: %s", report)
+	}
+
+	var marked, plain []string
+	for _, e := range sup.Transcript("researcher-1") {
+		if e.Kind != EntryAssistant {
+			continue
+		}
+		if e.Checkpoint {
+			marked = append(marked, e.Text)
+		} else {
+			plain = append(plain, e.Text)
+		}
+	}
+	if len(marked) != 1 || marked[0] != note {
+		t.Fatalf("the status note is not the one entry marked as one: marked %q, plain %q", marked, plain)
+	}
+	// And the answer the turn ends on is not a note: it asked for nothing
+	// after it, so it is the model concluding rather than reporting.
+	if len(plain) != 1 || plain[0] != "task complete" {
+		t.Fatalf("the final answer was marked as public status: marked %q, plain %q", marked, plain)
+	}
+}
+
 func toolRow(t *testing.T, entries []TranscriptEntry, tool string) TranscriptEntry {
 	t.Helper()
 	var found []TranscriptEntry

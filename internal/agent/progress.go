@@ -35,6 +35,12 @@ type progressState struct {
 	calls     int
 	lastProse time.Time
 	pending   bool
+	// answered latches the round whose prose was the status, for the
+	// assistant message about to record that prose (BeginToolRound). It is
+	// the same shape as the reasoning latch beside it and for the same
+	// reason: what the prose was is known before the message that carries it
+	// exists, and the message is the only thing that outlives the round.
+	answered bool
 }
 
 func (a *Agent) progressNow() time.Time {
@@ -53,10 +59,15 @@ func (a *Agent) resetProgress() {
 // silence as a status would let a long run evade the only prompt asking it to
 // speak to the person watching.
 func (a *Agent) NoteProgressProse(text string) (checkpoint bool) {
+	// The latch is this round's own. A round that wrote nothing clears it
+	// rather than leaving the round before it to mark a message it did not
+	// write.
+	a.progress.answered = false
 	if strings.TrimSpace(text) == "" {
 		return false
 	}
 	checkpoint = a.progress.pending
+	a.progress.answered = checkpoint
 	a.progress.calls = 0
 	a.progress.lastProse = a.progressNow()
 	a.progress.pending = false

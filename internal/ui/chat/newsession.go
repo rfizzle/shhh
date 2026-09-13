@@ -311,7 +311,18 @@ func (m *Model) appendMessageEntries(msgs []provider.Message) {
 				m.appendEntry(entry{kind: entryThink, text: think})
 			}
 			if msg.Content != "" {
-				m.appendEntry(entry{kind: entryAssistant, text: msg.Content})
+				e := entry{kind: entryAssistant, text: msg.Content}
+				if msg.Checkpoint {
+					// A status note comes back as the note it was. Left
+					// unmarked it would be redrawn at the weight of an
+					// answer, which is the one thing the rung it is written
+					// at says it is not — and markCheckpoint is what retires
+					// the notes before it to their first lines, so a
+					// conversation with three of them reopens reading the
+					// way it read when it was written (progress.go).
+					e = m.markCheckpoint(e)
+				}
+				m.appendEntry(e)
 			}
 			for _, tc := range msg.ToolCalls {
 				var result string

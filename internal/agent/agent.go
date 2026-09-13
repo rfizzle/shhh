@@ -351,11 +351,20 @@ func (a *Agent) CarryReasoning(blocks []provider.ReasoningBlock) { a.reasoning =
 // wait in the approval queue until the front-end resolves them.
 func (a *Agent) BeginToolRound(text string, calls []provider.ToolCall, gate ApprovalGate) (auto, gated []provider.ToolCall) {
 	a.rounds++
+	// Whether this round's prose was the public status the session asked for
+	// is recorded on the message that carries it, from the latch
+	// NoteProgressProse set a moment ago (progress.go). The message is the
+	// only part of a round that outlives it, so it is the only place the
+	// mark can survive a reopened conversation
+	// (docs/interface/surfaces.md#the-progress-checkpoint).
+	answered := a.progress.answered
+	a.progress.answered = false
 	a.Append(provider.Message{
-		Role:      provider.RoleAssistant,
-		Content:   text,
-		ToolCalls: calls,
-		Reasoning: a.reasoning,
+		Role:       provider.RoleAssistant,
+		Content:    text,
+		ToolCalls:  calls,
+		Reasoning:  a.reasoning,
+		Checkpoint: answered,
 	})
 	a.reasoning = nil
 	a.noteTreeCalls(calls)

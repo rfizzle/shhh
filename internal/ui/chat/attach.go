@@ -74,7 +74,28 @@ func (m *Model) syncChildView(name string) *childView {
 			cv.entries = append(cv.entries, e)
 		}
 	}
+	retireCheckpoints(cv.entries)
 	return cv
+}
+
+// retireCheckpoints folds every status note but the last of them to its first
+// line, which is what the session's own transcript does one note at a time as
+// each lands (progress.go). A mirror is rebuilt from the supervisor's
+// entries on every sync rather than appended to, so which note is the current
+// one is answered here, over the whole list, instead
+// (docs/interface/surfaces.md#the-progress-checkpoint).
+func retireCheckpoints(entries []entry) {
+	last := -1
+	for i := range entries {
+		if entries[i].checkpoint {
+			last = i
+		}
+	}
+	for i := range entries {
+		if entries[i].checkpoint {
+			entries[i].checkpointReplaced = i != last
+		}
+	}
 }
 
 // convertChildEntry maps a supervisor transcript entry onto the chat entry
@@ -84,18 +105,22 @@ func convertChildEntry(te subagent.TranscriptEntry) entry {
 	case subagent.EntryUser:
 		return entry{kind: entryUser, text: te.Text}
 	case subagent.EntryAssistant:
-		return entry{kind: entryAssistant, text: te.Text}
+		// A status note the child's run was asked for is drawn at the rung
+		// the session draws its own at; which of them is the current one is
+		// settled over the whole list (retireCheckpoints).
+		return entry{kind: entryAssistant, text: te.Text, checkpoint: te.Checkpoint}
 	case subagent.EntryTool:
 		result := te.Result
 		if te.Pending {
 			result = pendingToolResult
 		}
-		// The account of an auto-approval comes across on the act, in the
-		// same two fields a session's own call carries it in, so the row the
-		// shared renderers draw for a child says what the row for the
-		// session's identical call says.
+		// The account of the decision comes across on the act, in the same
+		// fields a session's own call carries it in, so the row the shared
+		// renderers draw for a child says what the row for the session's
+		// identical call says — a rule's yes with what it cost, or the
+		// person who answered the card the call was routed to.
 		return entry{kind: entryTool, toolName: te.Tool, toolArgs: te.Args, toolResult: result,
-			allowedBy: te.AllowedBy, allowElapsed: te.AllowElapsed}
+			allowedBy: te.AllowedBy, allowElapsed: te.AllowElapsed, approvedBy: te.ApprovedBy}
 	default:
 		return entry{kind: entrySystem, text: te.Text, toolResult: te.Result}
 	}

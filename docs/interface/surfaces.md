@@ -422,6 +422,22 @@ rest folded under it, and a note a later checkpoint has replaced keeps its
 first line and folds the rest. Nothing is dropped: the fold counts the lines
 behind it and opens on the key that opens every other body in the transcript.
 
+A note that ends the turn is not one. The request is made at a round boundary
+and asks for status on work still in flight; a reply that answers it and then
+asks for nothing has stopped working, so what it wrote is the turn's answer
+and is drawn as one — the brightest prose in the pane after the question.
+Reporting and concluding are different acts, and the rung is the only thing
+that tells them apart.
+
+The mark outlives the round it was made in. A conversation reopened from the
+store, and a child's feed mirrored into the session attached to it, are both
+the transcript rebuilt from a record rather than watched as it happened — and
+a rebuild that lost the mark would promote every note in a run's history to an
+answer, which is the one thing the rung says a note is not. So the record
+carries it: a reopened transcript draws the notes at the rung they were
+written at and retires all but the last of them the way the live one did, and
+a mirrored feed draws the child's notes at the rung the child wrote them at.
+
 A checkpoint short enough to title the batch of calls that follows it is drawn
 as that step's header instead. That is not an exception to any of this — the
 outline is where a title belongs, and a note that is already a title is

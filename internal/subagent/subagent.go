@@ -291,7 +291,30 @@ type TranscriptEntry struct {
 	// AllowElapsed is what that judgement took, where it took anything,
 	// which is the classifier and nothing else.
 	AllowElapsed time.Duration
+	// ApprovedBy names the person who answered the card this call was routed
+	// to, and is the other half of the same question AllowedBy answers: how
+	// the act came to be allowed. The two never both hold — a call somebody
+	// was asked about is not one a rule waved through — and it is a second
+	// field rather than a value of AllowedBy because a rule's yes and a
+	// person's yes are read for different next acts. Without it a call the
+	// parent approved at its own card mirrors back into the parent's feed
+	// with no account at all, which is the one row in a fan-out where the
+	// account is a person.
+	// See docs/interface/principles.md#two-denials-are-not-one-denial.
+	ApprovedBy string
+	// Checkpoint marks assistant prose that was the public status this
+	// child's run was asked for, so the parent's mirror draws it a rung
+	// under an answer the way the parent draws its own.
+	// See docs/interface/surfaces.md#the-progress-checkpoint.
+	Checkpoint bool
 }
+
+// ApprovedByUser is what ApprovedBy holds: the account a row gives of an act
+// the person at the parent's card allowed. It is a word rather than a flag
+// because the field answers "who", and the session's own rows answer it in
+// exactly this word — a mirrored row and the row for the session's identical
+// call have to read the same.
+const ApprovedByUser = "you"
 
 // Env is everything a child needs to run, assembled by the CLI so this
 // package stays free of provider and config plumbing.
@@ -984,6 +1007,12 @@ type child struct {
 	// assistant text, queued steering messages, and the current turn's
 	// interrupt channel.
 	transcript []TranscriptEntry
+	// checkpointNext latches a round whose prose was the public status the
+	// run had been asked for, for the assistant entry the round's first call
+	// is about to flush it into (beginToolEntry). The status arrives on its
+	// own hook and the words arrive as tokens, so the two are only ever put
+	// back together here.
+	checkpointNext bool
 	// callRow is the transcript row each live tool call has open, keyed by
 	// the call's own id — the same id the conversation routes its result by.
 	// A round's reads run concurrently, so several rows are open at once and
@@ -1170,10 +1199,14 @@ func (c *child) beginToolEntry(id, tool, args string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if c.streaming != "" {
-		c.transcript = append(c.transcript, TranscriptEntry{Kind: EntryAssistant, Text: c.streaming})
+		c.transcript = append(c.transcript,
+			TranscriptEntry{Kind: EntryAssistant, Text: c.streaming, Checkpoint: c.checkpointNext})
 		c.streaming = ""
 		c.step++
 	}
+	// The latch is the round's, whether or not this round wrote prose for it
+	// to land on.
+	c.checkpointNext = false
 	c.transcript = append(c.transcript, TranscriptEntry{Kind: EntryTool, Tool: tool, Args: args, Pending: true})
 	if c.callRow == nil {
 		c.callRow = map[string]int{}
@@ -1207,6 +1240,19 @@ func (c *child) noteAllowed(id, rule string, elapsed time.Duration) {
 	defer c.mu.Unlock()
 	if idx, ok := c.callRow[id]; ok {
 		c.transcript[idx].AllowedBy, c.transcript[idx].AllowElapsed = rule, elapsed
+	}
+}
+
+// noteApproved records on a call's own row that the parent's user answered
+// its card. It is noteAllowed's other half: a rule's yes and a person's yes
+// are the same question answered by different things, and a feed states an
+// act once, so both ride the act rather than a notice above it.
+// See docs/interface/surfaces.md#the-activity-row.
+func (c *child) noteApproved(id string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if idx, ok := c.callRow[id]; ok {
+		c.transcript[idx].ApprovedBy = ApprovedByUser
 	}
 }
 
@@ -2331,6 +2377,7 @@ func (s *Supervisor) restart(c *child, detail string) error {
 	// replaces wrote is not in the tree this one is reading.
 	c.wrote = nil
 	c.report, c.patchNote, c.streaming, c.progress = "", "", "", nil
+	c.checkpointNext = false
 	c.handoff, c.handoffID, c.retainWorktree = Handoff{}, "", false
 	c.mu.Unlock()
 
@@ -3294,8 +3341,20 @@ func (s *Supervisor) run(c *child) {
 		},
 		OnProgress: func(text string) {
 			c.mu.Lock()
-			if text = handoffText(text); text != "" && len(c.progress) < maxHandoffProgress {
-				c.progress = append(c.progress, text)
+			// A status is buffered rather than streamed — the run holds it
+			// back so a text-only answer stays the answer — so the words
+			// arrive whole here instead of token by token through OnText.
+			// They join the same buffer all the same, and settle into the
+			// round's assistant entry through the same flush, marked as the
+			// note they are: a lane a reader attaches to draws the child's
+			// public status where the session draws its own, and a lane that
+			// silently dropped it would leave the longest, quietest runs the
+			// only ones with nothing to read
+			// (docs/interface/surfaces.md#the-progress-checkpoint).
+			c.streaming += text
+			c.checkpointNext = true
+			if note := handoffText(text); note != "" && len(c.progress) < maxHandoffProgress {
+				c.progress = append(c.progress, note)
 			}
 			c.mu.Unlock()
 			s.emitUpdate(c)
@@ -3804,6 +3863,9 @@ func (s *Supervisor) resolveGated(c *child, tc provider.ToolCall) string {
 			return "error: the user declined this tool call"
 		}
 		record(observe.DecisionAllow, observe.ReasonUser)
+		// And the account rides the act, as the rule's does above: the
+		// person who answered the card is why this call ran.
+		c.noteApproved(tc.ID)
 	}
 
 	if tc.Name == tools.ExecCommandName {

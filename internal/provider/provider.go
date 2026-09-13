@@ -52,6 +52,15 @@ type Message struct {
 	// stored before the columns existed reads as.
 	// See docs/capabilities/sessions-and-memory.md#a-round-can-be-read-back.
 	Turn, Round int64
+	// Checkpoint marks assistant prose that was the public status a long,
+	// otherwise silent run had been asked for. Nothing on the wire reads it —
+	// the model wrote ordinary prose and gets it back as ordinary prose — and
+	// what reads it is the transcript, which draws a status note a rung under
+	// an answer. It is stored beside the message because a conversation read
+	// back out of the store would otherwise promote every note in it to an
+	// answer the moment the session was reopened.
+	// See docs/interface/surfaces.md#the-progress-checkpoint.
+	Checkpoint bool
 }
 
 type Tool struct {

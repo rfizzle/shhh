@@ -442,10 +442,10 @@ func (db *DB) saveChatTx(tx *sql.Tx, name string, messages []provider.Message) (
 		// so a recorded event can be joined to the words it came from
 		// (docs/capabilities/sessions-and-memory.md#a-round-can-be-read-back).
 		_, err := tx.Exec(
-			`INSERT INTO chat_messages (session_id, seq, role, content, tool_calls, tool_call_id, attachments, machine, turn, round)
-			 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			`INSERT INTO chat_messages (session_id, seq, role, content, tool_calls, tool_call_id, attachments, machine, turn, round, checkpoint)
+			 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 			sessionID, i, string(msg.Role), msg.Content, toolCallsJSON, msg.ToolCallID, attachmentsJSON, msg.Machine,
-			msg.Turn, msg.Round,
+			msg.Turn, msg.Round, msg.Checkpoint,
 		)
 		if err != nil {
 			return 0, fmt.Errorf("insert message %d: %w", i, err)
@@ -501,7 +501,7 @@ func (db *DB) LoadChat(name string) ([]provider.Message, error) {
 // (docs/capabilities/sessions-and-memory.md#a-round-can-be-read-back).
 func (db *DB) chatMessages(sessionID int64) ([]provider.Message, error) {
 	rows, err := db.sql.Query(
-		`SELECT role, content, tool_calls, tool_call_id, attachments, machine, turn, round
+		`SELECT role, content, tool_calls, tool_call_id, attachments, machine, turn, round, checkpoint
 		 FROM chat_messages WHERE session_id = ? ORDER BY seq`, sessionID,
 	)
 	if err != nil {
@@ -514,11 +514,11 @@ func (db *DB) chatMessages(sessionID int64) ([]provider.Message, error) {
 		var (
 			role, content, toolCallID      string
 			toolCallsJSON, attachmentsJSON *string
-			machine                        bool
+			machine, checkpoint            bool
 			turn, round                    int64
 		)
 		if err := rows.Scan(&role, &content, &toolCallsJSON, &toolCallID, &attachmentsJSON, &machine,
-			&turn, &round); err != nil {
+			&turn, &round, &checkpoint); err != nil {
 			return nil, err
 		}
 		msg := provider.Message{
@@ -531,6 +531,9 @@ func (db *DB) chatMessages(sessionID int64) ([]provider.Message, error) {
 			// than being restamped with wherever the resume has got to.
 			Turn:  turn,
 			Round: round,
+			// And whether it was the run reporting on itself, so a reopened
+			// transcript draws the note at the rung it was written at.
+			Checkpoint: checkpoint,
 		}
 		if toolCallsJSON != nil {
 			if err := json.Unmarshal([]byte(*toolCallsJSON), &msg.ToolCalls); err != nil {

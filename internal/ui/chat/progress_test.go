@@ -167,6 +167,170 @@ func TestProgress_AnsweredStatusCostsNoRequestAndNoRound(t *testing.T) {
 	}
 }
 
+// A reply that answers the request and then asks for nothing has stopped
+// working, so it is the turn's answer and is drawn as one. The request is
+// made at a round boundary and asks for status on work still in flight;
+// reporting and concluding are different acts, and the rung is what tells
+// them apart (docs/interface/surfaces.md#the-progress-checkpoint).
+func TestProgress_AConcludingReplyIsTheAnswerAndNotANote(t *testing.T) {
+	m := progressModel(t, mockStream)
+	m = advanceRounds(m, 2)
+	m.injectProgressCheckpoint()
+	if !m.agent.ProgressPending() {
+		t.Fatal("the turn was set up with a checkpoint owed and none is")
+	}
+
+	m.streaming = checkpointNote
+	updated, _ := m.Update(doneMsg{})
+	m = updated.(Model)
+
+	var last entry
+	for _, e := range m.transcript {
+		if e.kind == entryAssistant {
+			last = e
+		}
+	}
+	if last.text != checkpointNote {
+		t.Fatalf("the reply never reached the transcript: %q", last.text)
+	}
+	if last.checkpoint {
+		t.Error("a reply that ended the turn was drawn as a note about work still in flight")
+	}
+	// It still settles the request: the person was written to, and the run
+	// that was asked to speak did.
+	if m.agent.ProgressPending() {
+		t.Error("the answer left the request outstanding, so the next round would ask again")
+	}
+	// And the conversation records it the same way, so reopening the session
+	// cannot promote or demote it either.
+	msgs := m.agent.Messages()
+	for _, msg := range msgs {
+		if msg.Role == provider.RoleAssistant && msg.Checkpoint {
+			t.Errorf("the stored answer is marked as public status: %q", msg.Content)
+		}
+	}
+}
+
+// The mark is on the conversation, not on the frame, so a session reopened
+// from the store draws the notes it was written with — and retires all but
+// the last of them the way the live transcript did. Left to the frame alone,
+// every note in a run's history would come back promoted to an answer.
+func TestProgress_TheMarkSurvivesAReopenedConversation(t *testing.T) {
+	m := progressModel(t, mockStream)
+	m = advanceRounds(m, 2)
+	m.injectProgressCheckpoint()
+	m.streaming = checkpointNote
+	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+		{ID: "call-1", Name: "read_file", Arguments: `{"path":"internal/agent/round.go"}`},
+	}})
+	m = updated.(Model)
+
+	msgs := m.agent.Messages()
+	var marked int
+	for _, msg := range msgs {
+		if msg.Checkpoint {
+			marked++
+			if msg.Content != checkpointNote {
+				t.Errorf("the wrong message carries the mark: %q", msg.Content)
+			}
+		}
+	}
+	if marked != 1 {
+		t.Fatalf("the conversation carries %d marked messages, want 1", marked)
+	}
+
+	// The same conversation with a second note in it, rebuilt from the
+	// messages alone the way every path back to a stored conversation does.
+	msgs = append(msgs,
+		provider.Message{Role: provider.RoleTool, ToolCallID: "call-1", Content: "lines"},
+		provider.Message{Role: provider.RoleAssistant, Content: checkpointNote, Checkpoint: true,
+			ToolCalls: []provider.ToolCall{{ID: "call-2", Name: "read_file"}}},
+		provider.Message{Role: provider.RoleAssistant, Content: "The ceiling is the session's."})
+
+	next := frameModel(t, 110, 40)
+	next.loadConversation(msgs)
+
+	var notes, answers []entry
+	for _, e := range next.transcript {
+		if e.kind != entryAssistant {
+			continue
+		}
+		if e.checkpoint {
+			notes = append(notes, e)
+		} else {
+			answers = append(answers, e)
+		}
+	}
+	if len(notes) != 2 {
+		t.Fatalf("the reopened transcript has %d notes, want 2", len(notes))
+	}
+	if len(answers) != 1 || answers[0].text != "The ceiling is the session's." {
+		t.Fatalf("the reopened transcript has the wrong answers: %+v", answers)
+	}
+	if !notes[0].checkpointReplaced {
+		t.Error("the reopened transcript did not retire the note the later one replaced")
+	}
+	if notes[1].checkpointReplaced {
+		t.Error("the reopened transcript retired the note nothing has replaced")
+	}
+}
+
+// A checkpoint round can be the one the wire drops, and continuing it is the
+// one path that turns partial prose into a round without the round having
+// ended. The note has to keep its mark across that — and the request has to
+// be settled by it, or the next round's ordinary prose would be marked as the
+// status this one already wrote.
+func TestProgress_ContinuingADroppedNoteKeepsItsMark(t *testing.T) {
+	m := progressModel(t, mockStream)
+	m = advanceRounds(m, 2)
+	m.injectProgressCheckpoint()
+
+	// The stream broke after the note and the call it was leading were both
+	// written, which is what the drop row offers to continue from.
+	m.streaming = checkpointNote
+	updated, _ := m.Update(streamErrMsg{
+		err:   &provider.Failure{Class: provider.ClassNetwork},
+		calls: []provider.ToolCall{{ID: "call-1", Name: "read_file", Arguments: `{"path":"round.go"}`}},
+	})
+	m = updated.(Model)
+
+	var drop entry
+	for _, e := range m.transcript {
+		if e.kind == entryStreamDrop {
+			drop = e
+		}
+	}
+	if drop.resume == nil {
+		t.Fatalf("the drop left nothing to continue from: %+v", kindsOf(m.transcript))
+	}
+	updated, _ = m.continueStream(drop.resume)
+	m = updated.(Model)
+
+	var note entry
+	for _, e := range m.transcript {
+		if e.kind == entryAssistant {
+			note = e
+		}
+	}
+	if !note.checkpoint {
+		t.Error("the note the drop kept came back as an ordinary answer")
+	}
+	var marked []string
+	for _, msg := range m.agent.Messages() {
+		if msg.Checkpoint {
+			marked = append(marked, msg.Content)
+		}
+	}
+	if len(marked) != 1 || marked[0] != checkpointNote {
+		t.Errorf("the continued conversation marks %q as public status, want just the note", marked)
+	}
+	// And the request is settled, so the round the reader continues into
+	// writes ordinary prose and is read as ordinary prose.
+	if m.agent.ProgressPending() {
+		t.Error("continuing the note left the request outstanding, so a later round would claim it")
+	}
+}
+
 // ansiCodes is every escape a render sets, as the payloads themselves. It is
 // how a block is read for the rung it was drawn at without asserting about
 // one palette's numbers.

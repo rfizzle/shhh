@@ -850,6 +850,97 @@ func TestAttachedChildStatesAnAutoApprovedActOnce(t *testing.T) {
 	}
 }
 
+// A call the reader answered at the child's card is drawn with their answer
+// on it, where a rule's answer would be. Without it the one decision in a
+// fan-out that a person actually made is the only row with no account at all.
+func TestAttachedChildNamesWhoAnsweredItsCard(t *testing.T) {
+	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
+	t.Cleanup(sup.Close)
+	m := newSubagentModel(t, sup)
+	spawnBlockedChild(t, sup)
+	if err := sup.Note("researcher-1", subagent.TranscriptEntry{
+		Kind: subagent.EntryTool, Tool: "exec_command",
+		Args: `{"command":"go test ./..."}`, Result: "ok",
+		ApprovedBy: subagent.ApprovedByUser,
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	m.attach("researcher-1")
+	got := stripANSI(m.renderAttachedHistory())
+	if !strings.Contains(got, "approved by you") {
+		t.Fatalf("the mirrored row does not say who answered its card:\n%s", got)
+	}
+	if n := strings.Count(got, "go test ./..."); n != 1 {
+		t.Fatalf("the act is stated %d times, want once:\n%s", n, got)
+	}
+}
+
+// A child's public status is drawn where the session's own is: a rung under
+// an answer, bounded, with every note before the current one folded to its
+// first line. The mirror is rebuilt from the supervisor's entries on every
+// sync rather than appended to, so which note is current is settled over the
+// whole list — and a mirror that got that wrong would draw two current notes.
+func TestAttachedChildDrawsItsStatusNotesAsNotes(t *testing.T) {
+	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
+	t.Cleanup(sup.Close)
+	m := newSubagentModel(t, sup)
+	spawnBlockedChild(t, sup)
+	for _, e := range []subagent.TranscriptEntry{
+		{Kind: subagent.EntryAssistant, Text: checkpointNote, Checkpoint: true},
+		{Kind: subagent.EntryTool, Tool: "read_file", Args: `{"path":"loop.go"}`, Result: "lines"},
+		{Kind: subagent.EntryAssistant, Text: checkpointNote, Checkpoint: true},
+		{Kind: subagent.EntryAssistant, Text: "The counter is read at the top of the loop."},
+	} {
+		if err := sup.Note("researcher-1", e); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	m.attach("researcher-1")
+	cv := m.syncChildView("researcher-1")
+	var notes []entry
+	for _, e := range cv.entries {
+		if e.checkpoint {
+			notes = append(notes, e)
+		}
+	}
+	if len(notes) != 2 {
+		t.Fatalf("the mirror carried %d status notes, want 2: %+v", len(notes), cv.entries)
+	}
+	if !notes[0].checkpointReplaced {
+		t.Error("the first note was not retired by the one that replaced it")
+	}
+	if notes[1].checkpointReplaced {
+		t.Error("the newest note was retired by nothing")
+	}
+	if cv.entries[len(cv.entries)-1].checkpoint {
+		t.Error("the child's final answer was mirrored as a status note")
+	}
+	// A sync is a rebuild rather than an append, so the answer has to hold
+	// across one: a mirror that settled it while appending would get it right
+	// once and drift on every frame after.
+	var again []bool
+	for _, e := range m.syncChildView("researcher-1").entries {
+		if e.checkpoint {
+			again = append(again, e.checkpointReplaced)
+		}
+	}
+	if len(again) != 2 || !again[0] || again[1] {
+		t.Errorf("re-syncing the mirror changed which note is the current one: %v", again)
+	}
+	retired := lineCount(stripANSI(m.renderEntry(notes[0], 110)))
+	current := lineCount(stripANSI(m.renderEntry(notes[1], 110)))
+	if retired >= current {
+		t.Errorf("the retired note is %d lines and the current one %d", retired, current)
+	}
+}
+
+// lineCount is how many lines a rendered block spends.
+func lineCount(s string) int {
+	return len(strings.Split(strings.TrimRight(s, "\n"), "\n"))
+}
+
 // TestAttachedChildStreamsThroughItsOwnCache: the attached view redraws the
 // message a child is writing on every frame, and parsing that message whole
 // each time is quadratic in its length — the cost the parent's transcript

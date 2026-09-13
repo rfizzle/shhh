@@ -1,0 +1,4 @@
+# The first sitting earns a public status and quits; the second opens that
+# conversation again, so the note on screen is the one the store gave back
+# rather than the one the frame that drew it still remembers.
+$SHHH_BIN code; $SHHH_BIN code --continue
