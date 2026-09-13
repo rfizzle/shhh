@@ -2439,11 +2439,12 @@ func (c *child) install(w workspace) {
 }
 
 // admissionFloor is the budget required before a child can do useful work:
-// its inherited prompt and declared task, plus the working reserve. Tool
+// its inherited prompt and everything its first turn carries — the declared
+// task and whatever prologue precedes it — plus the working reserve. Tool
 // definitions are prompt cost even though they are not conversation messages.
-func admissionFloor(env Env, task string) (inherited, setup, floor int64) {
+func admissionFloor(env Env, opening string) (inherited, setup, floor int64) {
 	inherited = agent.EstimateTokens(env.SystemPrompt) + env.ToolTokens
-	setup = agent.EstimateTokens(task)
+	setup = agent.EstimateTokens(opening)
 	return inherited, setup, inherited + setup + MinChildMaxTokens
 }
 
@@ -2540,10 +2541,26 @@ func (s *Supervisor) spawn(raw json.RawMessage) (string, error) {
 	if args.profile.Reviews {
 		evidence = declaredEvidence(s.opts.Root, args.paths)
 	}
-	inherited, setup, floor := admissionFloor(preflight, evidence+args.Task)
+	// The evidence goes ahead of everything else the first turn opens with,
+	// including how a resumed attempt ended: a review that reads the change
+	// before it reads the story of the last try is the ordering the whole
+	// contract is about.
+	//
+	// It is built here, ahead of the floor, because the floor is what it has
+	// to be measured against. A resumed handoff runs to whatever the failed
+	// child read and wrote down — thousands of tokens of paths and progress —
+	// and built after admission that is a cost the child pays and was never
+	// admitted for: the resume starts on a budget its opening turn alone
+	// exhausts, and dies where the handoff it was given ends. A retry
+	// measures the same prologue before it commits, and both must.
+	prologue := evidence
+	if args.resumeHandoff != "" {
+		prologue += resumePrologue(resume, s.opts.EvidenceExists)
+	}
+	inherited, setup, floor := admissionFloor(preflight, prologue+args.Task)
 	if args.maxTokens < floor {
 		cancel()
-		return "", fmt.Errorf("max_tokens %d cannot admit this task: at least %d is required for the inherited prompt and declared task plus the %d-token working reserve", args.maxTokens, floor, MinChildMaxTokens)
+		return "", fmt.Errorf("max_tokens %d cannot admit this task: at least %d is required for the inherited prompt, the declared task and the context its first turn opens on, plus the %d-token working reserve", args.maxTokens, floor, MinChildMaxTokens)
 	}
 
 	c := &child{
@@ -2556,6 +2573,7 @@ func (s *Supervisor) spawn(raw json.RawMessage) (string, error) {
 		batch:           batch,
 		steps:           args.steps,
 		evidence:        evidence,
+		prologue:        prologue,
 		root:            s.opts.Root,
 		mode:            mode,
 		maxRounds:       args.maxRounds,
@@ -2574,13 +2592,10 @@ func (s *Supervisor) spawn(raw json.RawMessage) (string, error) {
 		prices:          s.opts.Prices,
 		spend:           meter.New(s.opts.Prices),
 	}
-	// The evidence goes ahead of everything else the first turn opens with,
-	// including how a resumed attempt ended: a review that reads the change
-	// before it reads the story of the last try is the ordering the whole
-	// contract is about.
-	c.prologue = evidence
+	// The replaced attempt's retained copy goes only once the replacement is
+	// admitted: a refused resume must leave the handoff it could not start on
+	// still resumable.
 	if args.resumeHandoff != "" {
-		c.prologue += resumePrologue(resume, s.opts.EvidenceExists)
 		s.supersedeHandoff(args.resumeHandoff)
 	}
 	// A reader's workspace is the parent's own root and costs nothing to

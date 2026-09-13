@@ -3,8 +3,13 @@ package subagent
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"regexp"
+	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/rfizzle/shhh/internal/agent"
 )
 
 func TestHandoff_UsesOnlyPublicProgressAndOpaqueEvidence(t *testing.T) {
@@ -104,4 +109,116 @@ func TestResumePrologueDropsMissingEvidence(t *testing.T) {
 	if strings.Contains(got, "ev-1234567890abcdef") {
 		t.Fatalf("invalid evidence reached replacement: %s", got)
 	}
+}
+
+// A resume opens on the handoff's bounded context before it opens on its
+// task, so that context is part of what the budget has to carry. The floor a
+// resume is admitted against states it.
+func TestResumeAdmissionCountsTheHandoffPrologue(t *testing.T) {
+	read := handoffReadPaths(400)
+	data := marshalTestHandoff(t, Handoff{
+		Child: "failed-reader", Role: RoleResearcher, Task: "survey the parser", Budget: DefaultMaxTokens,
+		Failure:   HandoffFailure{Category: "budget", Detail: "token budget exceeded"},
+		LastRound: 2, ReadPaths: read,
+	})
+	env := &scriptedEnv{steps: []streamStep{{text: "surveyed"}, {text: "carried on"}}}
+	sup := New(context.Background(), Options{
+		Root: t.TempDir(), NewEnv: env.factory(),
+		LoadHandoff: func(string) ([]byte, error) { return data, nil },
+	})
+	t.Cleanup(sup.Close)
+
+	// The same task and budget without a handoff, so the difference between
+	// the two floors is the handoff and nothing else.
+	if _, err := sup.Spawn(json.RawMessage(`{"role":"researcher","task":"survey the parser","max_tokens":300000}`)); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := sup.Spawn(json.RawMessage(`{"role":"researcher","task":"ignored","max_tokens":300000,"resume_handoff":"handoff-1"}`)); err != nil {
+		t.Fatalf("a budget that carries the prologue must admit the resume: %v", err)
+	}
+	plain, ok := sup.Get("researcher-1")
+	resumed, resumedOK := sup.Get("researcher-2")
+	if !ok || !resumedOK {
+		t.Fatalf("both children should exist: %v %v", ok, resumedOK)
+	}
+	grew := resumed.AdmissionFloor - plain.AdmissionFloor
+	if want := agent.EstimateTokens(strings.Join(read, ", ")); grew < want {
+		t.Fatalf("the resume's floor grew by %d over the plain spawn's, want at least the %d tokens of handoff context it opens on", grew, want)
+	}
+}
+
+// And a budget the prologue plus the working reserve cannot fit is refused
+// where every other doomed budget is: before the replacement holds anything.
+func TestResumeTooSmallForItsPrologueIsRefused(t *testing.T) {
+	repo := initTestRepo(t)
+	read := handoffReadPaths(2_000)
+	data := marshalTestHandoff(t, Handoff{
+		Child: "failed-writer", Role: RoleWriter, Task: "rewrite the parser", Budget: DefaultMaxTokens,
+		Failure:   HandoffFailure{Category: "provider", Detail: "provider unavailable"},
+		LastRound: 3, ReadPaths: read,
+	})
+	env := &scriptedEnv{steps: []streamStep{{text: "unreachable"}}}
+	sup := New(context.Background(), Options{
+		Root: repo, NewEnv: env.factory(),
+		LoadHandoff: func(string) ([]byte, error) { return data, nil },
+		Record:      func(Spec, string) Recorder { t.Fatal("a refused resume opened a record"); return Recorder{} },
+	})
+	t.Cleanup(sup.Close)
+
+	// A budget that clears the inherited prompt, the task and the reserve, and
+	// is short only by what the handoff adds.
+	_, err := sup.Spawn(json.RawMessage(`{"role":"writer","task":"ignored","max_tokens":210000,"resume_handoff":"handoff-1"}`))
+	if err == nil || !strings.Contains(err.Error(), "cannot admit") {
+		t.Fatalf("undersized resume error = %v, want a refusal", err)
+	}
+	required := requiredMinimum(t, err)
+	if floor := MinChildMaxTokens + agent.EstimateTokens(strings.Join(read, ", ")); required < floor {
+		t.Fatalf("the refusal requires %d, want at least the %d the prologue and the reserve need", required, floor)
+	}
+	if children := sup.Snapshot(); len(children) != 0 {
+		t.Fatalf("a refused resume claimed a child slot: %+v", children)
+	}
+	out, listErr := runGit(repo, "worktree", "list")
+	if listErr != nil {
+		t.Fatal(listErr)
+	}
+	if lines := strings.Count(strings.TrimSpace(out), "\n") + 1; lines != 1 {
+		t.Fatalf("a refused resume left a worktree behind:\n%s", out)
+	}
+}
+
+// handoffReadPaths is the survey a failed child hands over: the bulk of a
+// resume's bounded context, and what makes a prologue worth admitting for.
+func handoffReadPaths(n int) []string {
+	read := make([]string, n)
+	for i := range read {
+		read[i] = fmt.Sprintf("internal/parser/section%04d/parse.go", i)
+	}
+	return read
+}
+
+func marshalTestHandoff(t *testing.T, h Handoff) []byte {
+	t.Helper()
+	data, err := MarshalHandoff(h)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return data
+}
+
+var admissionMinimum = regexp.MustCompile(`at least (\d+)`)
+
+// requiredMinimum is the floor a refusal states, so a test can say the
+// refusal was about the size of the budget rather than about anything else.
+func requiredMinimum(t *testing.T, err error) int64 {
+	t.Helper()
+	m := admissionMinimum.FindStringSubmatch(err.Error())
+	if m == nil {
+		t.Fatalf("refusal did not state the budget it required: %v", err)
+	}
+	n, convErr := strconv.ParseInt(m[1], 10, 64)
+	if convErr != nil {
+		t.Fatal(convErr)
+	}
+	return n
 }

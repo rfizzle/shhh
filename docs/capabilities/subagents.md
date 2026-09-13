@@ -223,12 +223,13 @@ costs is counted too, in the session's spend ledger and against its cap.
 A normal child defaults to 300,000 tokens. A call may name no less than
 200,000, but this is not a promise that every 200,000-token call starts: before
 a slot, worktree or record row exists, the inherited prompt and tool definitions
-plus the declared task — and, for a review, the evidence it opens on — are
-estimated and added to a 200,000-token working
-reserve. The requested budget must meet that admission floor. Profiles define
-role defaults, so their defaults cannot be below 300,000. The roster and the
-record retain the effective budget, admission floor, and the tokens attributed
-to inherited context, setup, tool results, analysis, and final handoff; this
+plus the declared task — and everything else the first turn opens with: the
+evidence a review is given, the bounded context a resumed or retried attempt
+carries — are estimated and added to a 200,000-token working reserve. The
+requested budget must meet that admission floor. Profiles define role
+defaults, so their defaults cannot be below 300,000. The roster and the record
+retain the effective budget, admission floor, and the tokens attributed to
+inherited context, setup, tool results, analysis, and final handoff; this
 separates an insufficient budget from work that was too broad or unproductive.
 
 The standing context a child is given is the parent's, cut to a smaller budget
@@ -490,9 +491,12 @@ tools, and raw tool output do not cross to another child. A replacement calls
 `spawn_agent` with `resume_handoff`; its supplied task and scope are replaced
 by the immutable originals, and it receives only a bounded context built from
 that record. It starts with the unresolved action rather than surveying the
-repository again. An unavailable, malformed, or expired handoff is refused,
-because silently starting without its evidence would look like a resume while
-paying for the same work twice.
+repository again. That context is counted into the replacement's admission
+floor: a budget the handoff alone would exhaust is refused before a slot, copy
+or row exists, and the handoff it could not start on stays resumable. An
+unavailable, malformed, or expired handoff is refused, because silently
+starting without its evidence would look like a resume while paying for the
+same work twice.
 
 A failed writer with a patch keeps its isolated copy until its patch is
 accepted, rejected, or its handoff is superseded by a replacement. The patch
