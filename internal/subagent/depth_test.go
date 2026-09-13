@@ -9,13 +9,17 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/tools"
 )
 
 // spawnFromAgent is one agent's own spawn call, dispatched through the chain
@@ -618,4 +622,188 @@ func TestDepth_ASessionThatNeverDelegatesIsUnchanged(t *testing.T) {
 	if got := sup.depthOf("only"); got != 2 {
 		t.Fatalf("a child of the session sits at depth %d, want 2", got)
 	}
+}
+
+// A kill takes the subtree, and the agent named goes last. The grandchild here
+// is blocked on an approval nobody is going to answer, which is the state a
+// cascade that reached only the agent named would leave running forever: its
+// parent is gone, the copy of the checkout it was reading is about to be
+// discarded, and the request on the person's card is for work that no longer
+// has anywhere to land.
+//
+// What the assertions are for: the approval comes out of its wait (nothing is
+// left blocked), both agents' rows close, the slots at both depths come back,
+// and the writer's worktree outlives the agent that was reading it.
+// See docs/capabilities/subagents.md#what-nesting-does-to-the-rest-of-it.
+func TestDepth_AKillTakesTheSubtreeAndTheWorktreeGoesLast(t *testing.T) {
+	repo := initTestRepo(t)
+	scripts := map[string][]streamStep{
+		"writer-1": {
+			{calls: []provider.ToolCall{{ID: "s", Name: SpawnToolName,
+				Arguments: `{"role":"researcher","task":"read the change","name":"reader"}`}}},
+			{calls: []provider.ToolCall{{ID: "w", Name: ReportToolName, Arguments: `{"name":"reader"}`}}},
+			{text: "collected"},
+		},
+		"reader": {
+			{calls: []provider.ToolCall{{ID: "c", Name: tools.ExecCommandName,
+				Arguments: `{"command":"go test ./..."}`}}},
+			{text: "read it"},
+		},
+	}
+	var sup *Supervisor
+	base := perAgentEnv(scripts, func(name string, next agent.ToolExecutor) agent.ToolExecutor {
+		return sup.WrapExecutor(name, next)
+	})
+
+	// The reader is held inside its own teardown, between the row it closes
+	// and the done channel it closes last, so the test can look at the
+	// writer's worktree at the one moment the ordering is about.
+	ending, release := make(chan struct{}), make(chan struct{})
+	var mu sync.Mutex
+	var ends []observe.ChildEnd
+	sup = New(t.Context(), Options{
+		Root: repo,
+		NewEnv: func(ctx context.Context, spec Spec) (Env, error) {
+			env, err := base(ctx, spec)
+			if err != nil {
+				return env, err
+			}
+			env.Gated = map[string]bool{tools.ExecCommandName: true}
+			env.RunCommand = func(context.Context, string) (string, int) { return "", 0 }
+			return env, nil
+		},
+		Record: func(spec Spec, _ string) Recorder {
+			name := spec.Name
+			return Recorder{End: func(e observe.ChildEnd) {
+				mu.Lock()
+				ends = append(ends, e)
+				mu.Unlock()
+				if name == "reader" {
+					close(ending)
+					<-release
+				}
+			}}
+		},
+	})
+	released := sync.OnceFunc(func() { close(release) })
+	t.Cleanup(func() { released(); sup.Close() })
+
+	execTool(t, sup, SpawnToolName, `{"role":"writer","task":"add the exporter","name":"writer-1"}`)
+	// The reader has to be on the card before the kill: a grandchild that had
+	// not asked yet would be cancelled out of a wait it was never in.
+	waitFor(t, func() bool {
+		st, ok := sup.Get("reader")
+		return ok && st.State == StateBlocked
+	})
+	worktree := worktreeOf(sup, "writer-1")
+	if worktree == "" {
+		t.Fatal("the writer never opened a worktree, so there is nothing to order the removal of")
+	}
+	writerDone := doneOf(sup, "writer-1")
+
+	if err := sup.Kill("writer-1"); err != nil {
+		t.Fatal(err)
+	}
+
+	<-ending
+	// The writer has said how it ended, so everything left of it is teardown —
+	// and that teardown is inside the wait for the reader, which is why the
+	// copy of the checkout the reader was given is still there.
+	waitState(t, sup, "writer-1", StateFailed)
+	select {
+	case <-writerDone:
+		t.Fatal("the killed writer finished tearing down while the agent under it was still ending")
+	case <-time.After(100 * time.Millisecond):
+	}
+	if _, err := os.Stat(worktree); err != nil {
+		t.Fatalf("the killed writer's worktree went before its subtree had ended: %v", err)
+	}
+	released()
+
+	waitState(t, sup, "reader", StateFailed)
+	st, _ := sup.Get("reader")
+	if st.End != observe.ChildCancelled {
+		t.Errorf("the agent under the killed one ended as %q, want %q — nobody ended it, its parent did",
+			st.End, observe.ChildCancelled)
+	}
+	if !strings.Contains(st.Detail, "writer-1 was killed") {
+		t.Errorf("the lane says %q, and never says whose kill this agent went with", st.Detail)
+	}
+	if killed, _ := sup.Get("writer-1"); killed.End != observe.ChildKilled {
+		t.Errorf("the agent the person named ended as %q, want %q", killed.End, observe.ChildKilled)
+	}
+
+	// Nothing is left holding an approval, a slot or a copy of the checkout.
+	waitFor(t, func() bool {
+		active, blocked := sup.ActiveCounts()
+		return active == 0 && blocked == 0
+	})
+	waitFor(t, func() bool { return len(sup.slots(2)) == 0 && len(sup.slots(3)) == 0 })
+	waitFor(t, func() bool { _, err := os.Stat(worktree); return os.IsNotExist(err) })
+	mu.Lock()
+	defer mu.Unlock()
+	if len(ends) != 2 {
+		t.Fatalf("the kill closed %d rows, want one for each agent in the subtree", len(ends))
+	}
+}
+
+// What the confirm counts before it asks: the live agents under the one being
+// killed, deepest first, and none for a leaf — whose confirm is the one it
+// always was.
+func TestDepth_UnderNamesTheLiveAgentsAKillWouldTake(t *testing.T) {
+	sup := New(t.Context(), Options{Root: t.TempDir(), MaxDepth: 4,
+		NewEnv: (&scriptedEnv{steps: toolRounds(200), delay: 5 * time.Millisecond}).factory()})
+	t.Cleanup(sup.Close)
+
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"the whole job","name":"top"}`)
+	if _, err := spawnFromAgent(sup, "top", `{"role":"researcher","task":"a piece","name":"mid"}`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := spawnFromAgent(sup, "mid", `{"role":"researcher","task":"a detail","name":"low"}`); err != nil {
+		t.Fatal(err)
+	}
+
+	if got := sup.Under("low"); len(got) != 0 {
+		t.Errorf("a leaf has %v under it, want none", got)
+	}
+	// Deepest first, which is the order the kill ends them in.
+	if got := sup.Under("top"); !slices.Equal(got, []string{"low", "mid"}) {
+		t.Errorf("the agents under the root child are %v, want [low mid]", got)
+	}
+	if got := sup.Under("mid"); !slices.Equal(got, []string{"low"}) {
+		t.Errorf("the agents under the middle one are %v, want [low]", got)
+	}
+
+	// A finished agent is not one a kill would take.
+	if err := sup.Kill("low"); err != nil {
+		t.Fatal(err)
+	}
+	waitState(t, sup, "low", StateFailed)
+	if got := sup.Under("top"); !slices.Equal(got, []string{"mid"}) {
+		t.Errorf("the agents under the root child are %v once one has ended, want [mid]", got)
+	}
+}
+
+// worktreeOf and doneOf reach past the public surface for the two things an
+// ordering test has to watch and no caller outside the package ever needs: the
+// directory an attempt is working in, and the channel its goroutine closes
+// last of all.
+func worktreeOf(s *Supervisor, name string) string {
+	s.mu.Lock()
+	c := s.byName[name]
+	s.mu.Unlock()
+	if c == nil {
+		return ""
+	}
+	worktree, _ := c.workspace()
+	return worktree
+}
+
+func doneOf(s *Supervisor, name string) <-chan struct{} {
+	s.mu.Lock()
+	c := s.byName[name]
+	s.mu.Unlock()
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.done
 }

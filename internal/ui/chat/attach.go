@@ -586,10 +586,7 @@ func (m Model) updateAgentList(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		if name == "" {
 			return m, nil // the orchestrator is quit with Ctrl+D, never killed from here
 		}
-		// The confirm states what survives as well as what does not: a kill
-		// that only names its casualties reads as bigger than it is.
-		m.killConfirm = &components.Confirm{Prompt: "Kill " + name +
-			"? Its turn stops and its isolated workspace is discarded; its transcript stays and the other agents keep running."}
+		m.killConfirm = &components.Confirm{Prompt: m.killPrompt(name)}
 		m.killTargets = []string{name}
 		m.syncViewport()
 		return m, nil

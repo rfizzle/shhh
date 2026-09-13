@@ -925,6 +925,13 @@ type child struct {
 	// deciding a child was not worth finishing, and the other is the child
 	// having been going fine when the process left.
 	killed bool
+	// cancelledBy names the ancestor whose kill took this agent with it, and
+	// is empty for every other ending. A kill takes the subtree, and what
+	// separates one of those endings from the agent the person actually named
+	// is only this: the agent named ended because somebody ended it, and the
+	// ones under it ended because it did.
+	// See docs/capabilities/subagents.md#what-nesting-does-to-the-rest-of-it.
+	cancelledBy string
 	// endReason is how this attempt stopped, from the closed set in
 	// internal/observe, and empty until it does.
 	endReason string
@@ -1952,6 +1959,14 @@ func (s *Supervisor) CancelTurn(name string) error {
 // Kill cancels a child outright: its context is cancelled, its run finishes
 // as failed/cancelled with a well-formed conversation, and (for writers) its
 // worktree is removed. The transcript stays inspectable.
+//
+// A kill takes the subtree with it. An agent that delegated is the reason its
+// descendants are running at all — a reviewer under a writer whose worktree is
+// about to be discarded has nothing left to judge — so the agents under the
+// one named are cancelled first, deepest first, and the agent named goes last
+// of all. Their endings say so: the cancelled category, with the kill they
+// went with named on the lane.
+// See docs/capabilities/subagents.md#what-nesting-does-to-the-rest-of-it.
 func (s *Supervisor) Kill(name string) error {
 	c, err := s.lookup(name)
 	if err != nil {
@@ -1972,8 +1987,98 @@ func (s *Supervisor) Kill(name string) error {
 	c.mu.Lock()
 	c.killed = true
 	c.mu.Unlock()
+	for _, d := range s.subtree(name) {
+		d.mu.Lock()
+		live := d.state != StateDone && d.state != StateFailed
+		if live {
+			d.cancelledBy = name
+		}
+		d.mu.Unlock()
+		if !live {
+			continue
+		}
+		d.appendEntry(TranscriptEntry{Kind: EntrySystem, Text: name + " was killed, so this agent ends with it."})
+		d.stop()
+	}
 	c.stop()
 	return nil
+}
+
+// subtree is every agent below name, deepest first, so a caller that walks it
+// reaches a grandchild before the child that spawned it. Finished agents are
+// in it: what a kill's teardown waits for is a goroutine, and one belonging to
+// an agent that has already said it failed may still be removing its worktree.
+func (s *Supervisor) subtree(name string) []*child {
+	if name == "" {
+		return nil
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	var out []*child
+	for _, c := range s.children {
+		if s.descendsLocked(name, c.name) {
+			out = append(out, c)
+		}
+	}
+	// Stable, so agents at one level keep spawn order and only the levels are
+	// reordered.
+	slices.SortStableFunc(out, func(a, b *child) int { return b.depth - a.depth })
+	return out
+}
+
+// Under names the agents a kill of one agent would take with it: the live ones
+// below it, deepest first. It is what a surface asks before it kills, so the
+// confirm can say how many rather than leaving the count to be discovered
+// afterwards on the roster.
+func (s *Supervisor) Under(name string) []string {
+	var names []string
+	for _, c := range s.subtree(name) {
+		c.mu.Lock()
+		state := c.state
+		c.mu.Unlock()
+		switch state {
+		case StateDone, StateFailed:
+		default:
+			names = append(names, c.name)
+		}
+	}
+	return names
+}
+
+// awaitSubtree holds a killed agent's teardown until the agents under it have
+// ended. Kill cancels the subtree ahead of the agent named, but cancelling is
+// not ending: a reviewer still reading the copy of the checkout it was given
+// would find it deleted underneath it, and would report on a tree that went
+// away mid-read. The wait is on the ending agent's own goroutine rather than
+// on the keystroke that asked for the kill, for the reason the retry's is —
+// a surface that blocked on a teardown would stop redrawing everything else
+// for as long as it took — and it is bounded the same way, because a
+// descendant that is stuck is not a reason to leave a worktree on disk.
+// The wait belongs to every agent the kill took and not only to the one the
+// person named: a writer two levels down is an ancestor to whatever it
+// delegated to, and its copy of the checkout is being read by exactly the same
+// kind of agent.
+func (s *Supervisor) awaitSubtree(c *child) {
+	c.mu.Lock()
+	ending := c.killed || c.cancelledBy != ""
+	c.mu.Unlock()
+	if !ending {
+		return
+	}
+	timer := time.NewTimer(retryTeardownWait)
+	defer timer.Stop()
+	for _, d := range s.subtree(c.name) {
+		d.mu.Lock()
+		done := d.done
+		d.mu.Unlock()
+		select {
+		case <-done:
+		case <-timer.C:
+			return
+		case <-s.ctx.Done():
+			return
+		}
+	}
 }
 
 // Retry runs a failed child again on its original task. Only a
@@ -2219,7 +2324,7 @@ func (s *Supervisor) restart(c *child, detail string) error {
 	// already on that attempt's own row. A retry that inherited it would
 	// report the child as having ended twice the same way — and a child
 	// killed once would report every attempt after it as killed too.
-	c.endReason, c.killed = "", false
+	c.endReason, c.killed, c.cancelledBy = "", false, ""
 	c.turns = 0
 	c.toolCalls, c.step = 0, 0
 	// A retry starts from a worktree of its own, so what the attempt it
@@ -2396,6 +2501,13 @@ func (s *Supervisor) descends(caller, name string) bool {
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	return s.descendsLocked(caller, name)
+}
+
+// descendsLocked is descends with s.mu already held and without the session's
+// blanket reach, for a caller walking the roster under the lock it took to
+// read it.
+func (s *Supervisor) descendsLocked(caller, name string) bool {
 	for at, hops := name, 0; at != "" && hops <= len(s.children); hops++ {
 		c, ok := s.byName[at]
 		if !ok {
@@ -2912,6 +3024,14 @@ func (s *Supervisor) run(c *child) {
 	var ended Status
 	finish := func(state State, reason, detail string) {
 		c.mu.Lock()
+		// An agent the kill of an ancestor took with it ended of nothing of
+		// its own, which is what the cancelled category says; the lane says
+		// whose kill it went with, because "cancelled" on its own would send
+		// a reader looking for a turn or a session that ended and there was
+		// neither.
+		if by := c.cancelledBy; by != "" && state == StateFailed {
+			reason, detail = observe.ChildCancelled, "cancelled · "+by+" was killed"
+		}
 		// A kill outranks whatever the run made of the cancellation it was
 		// handed. Everything above this reads a cancelled context, and only
 		// the child itself knows which of the two cancellations it was.
@@ -2954,7 +3074,10 @@ func (s *Supervisor) run(c *child) {
 		if endRec != nil {
 			endRec(c.end())
 		}
-		if !c.keepsWorktree(worktree) {
+		if worktree != "" && !c.keepsWorktree(worktree) {
+			// A killed agent's copy of the checkout goes only once the
+			// subtree the same kill cancelled has ended in it.
+			s.awaitSubtree(c)
 			removeWorktree(repoTop, worktree)
 		}
 	}()

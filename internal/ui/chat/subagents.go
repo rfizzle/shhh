@@ -435,12 +435,44 @@ func (m *Model) killChildren(names []string) {
 		return
 	}
 	for _, name := range names {
+		// A kill takes the subtree, so a list that names a parent and its
+		// child has already ended the child by the time this reaches it.
+		// That is the kill working, not a kill that failed, and a note on the
+		// dead agent's transcript saying it had already finished would be the
+		// only trace of it.
+		if st, ok := m.subagents.Get(name); ok {
+			switch st.State {
+			case subagent.StateDone, subagent.StateFailed:
+				m.purgeChildAsks(name)
+				continue
+			}
+		}
 		if err := m.subagents.Kill(name); err != nil {
 			m.noteChild(name, err.Error())
 			continue
 		}
 		m.purgeChildAsks(name)
 	}
+}
+
+// killPrompt is what the confirm asks before one agent is killed. It states
+// what survives as well as what does not — a kill that only names its
+// casualties reads as bigger than it is — and it counts the subtree, because
+// a kill takes the agents under the one named with it and a person answering
+// "yes" to one name would not otherwise know how many that was
+// (docs/capabilities/subagents.md#what-nesting-does-to-the-rest-of-it).
+func (m Model) killPrompt(name string) string {
+	var under int
+	if m.subagents != nil {
+		under = len(m.subagents.Under(name))
+	}
+	if under == 0 {
+		return "Kill " + name + "? Its turn stops and its isolated workspace is discarded; " +
+			"its transcript stays and the other agents keep running."
+	}
+	return "Kill " + name + " and " + plural(under, "agent") + " under it? " +
+		"Every turn stops and every isolated workspace is discarded; " +
+		"the transcripts stay and the other agents keep running."
 }
 
 // armKillAll is [K] on the manager: the same inline confirm one child gets,

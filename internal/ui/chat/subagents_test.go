@@ -721,3 +721,36 @@ func TestChildAskHeldOnArrivalStillReachesTheManager(t *testing.T) {
 		t.Fatal("the manager's chord opens the manager from a held card too")
 	}
 }
+
+// A kill takes the subtree, so the confirm counts it: answering "yes" to one
+// name is answering for every agent under that name, and a prompt that named
+// only the one would be understating what it is about to do. A leaf keeps the
+// confirm it always had.
+// See docs/capabilities/subagents.md#what-nesting-does-to-the-rest-of-it.
+func TestKillConfirmCountsTheSubtree(t *testing.T) {
+	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
+	t.Cleanup(sup.Close)
+	m := newSubagentModel(t, sup)
+	spawnChild(t, sup, subagent.RoleResearcher, "researcher-1")
+	// Spawned through the child's own chain, which is what writes the parent.
+	exec := sup.WrapExecutor("researcher-1", nil)
+	if _, err := exec(subagent.SpawnToolName,
+		json.RawMessage(`{"role":"researcher","task":"a piece","name":"reader"}`)); err != nil {
+		t.Fatal(err)
+	}
+	waitFor(t, func() bool {
+		st, ok := sup.Get("reader")
+		return ok && st.State == subagent.StateRunning
+	})
+
+	if got := m.killPrompt("reader"); !strings.HasPrefix(got, "Kill reader? Its turn stops") {
+		t.Errorf("a leaf's confirm is %q, and there is nothing under it to count", got)
+	}
+	got := m.killPrompt("researcher-1")
+	if !strings.HasPrefix(got, "Kill researcher-1 and 1 agent under it? ") {
+		t.Errorf("the confirm over a subtree is %q, and never says how many go with it", got)
+	}
+	if !strings.Contains(got, "the transcripts stay and the other agents keep running") {
+		t.Errorf("the confirm over a subtree is %q, and never says what survives", got)
+	}
+}

@@ -307,13 +307,12 @@ Delegation is one mechanism and it reaches every surface a child already
 reaches. The rules below settle each of those, so that a person watching a run
 three levels deep is reading one session and not three.
 
-Four of them are settled and not yet drawn: **the kill's cascade to the
-subtree, the manager's kill-all wording, the nested lane in the fan-out block,
-and the notebook's lineage signature** are the rule as decided, and the
-surfaces still do what they did before nesting existed — a kill ends the agent
-named and leaves what it spawned running, the block lists every agent flat,
-and a note is signed with the bare name. They are written here because the
-decision is the part that was hard to make; each is marked below.
+Three of them are settled and not yet drawn: **the manager's kill-all
+wording, the nested lane in the fan-out block, and the notebook's lineage
+signature** are the rule as decided, and the surfaces still do what they did
+before nesting existed — the block lists every agent flat, and a note is
+signed with the bare name. They are written here because the decision is the
+part that was hard to make; each is marked below.
 
 - **Who may steer a grandchild.** An agent steers what it spawned and nothing
   else — the party that wrote the task is the one who knows what it was for —
@@ -323,8 +322,12 @@ decision is the part that was hard to make; each is marked below.
   counts it (`Kill writer-1 and 2 agents under it?`): a reviewer under a
   writer whose worktree has just been discarded has nothing left to judge, so
   it ends with its parent under the `cancelled` category rather than being
-  left to finish a reading of a tree that is gone. *Not drawn yet: a kill
-  ends the agent named and its descendants go on running.*
+  left to finish a reading of a tree that is gone. The order is deepest
+  first, and the killed writer's worktree is removed only once the agents
+  reading it have ended — a copy of the checkout deleted underneath a
+  reviewer is a report on a tree that went away mid-read. Only the agent the
+  person named ends as `killed`; the ones under it ended because it did, and
+  their lane says whose kill they went with.
 - **What kill-all means.** Every live agent at every depth — which is what it
   already does, since it walks the flat list of every agent the session has —
   and the manager's key row says so (`[K] kill all · every level`). *The
