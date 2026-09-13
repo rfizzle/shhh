@@ -15,7 +15,7 @@
 ─────────────────────────────────────────────────────────────────────────────
 
   ▎$ run     GOCACHE=$PWD/.cache/gocache go build ./...     ok · 1 line  8.2s
-tree moved — 14 paths changed outside this session
+  tree moved — 14 paths changed outside this session
 
 
 · the same reading, with what the tree ignores counted rather than reported
@@ -23,7 +23,7 @@ tree moved — 14 paths changed outside this session
 ─────────────────────────────────────────────────────────────────────────────
 
   ▎$ run     GOCACHE=$PWD/.cache/gocache go build ./...     ok · 1 line  8.2s
-tree moved — 14 paths changed outside this session · 5,811 ignored
+  tree moved — 14 paths changed outside this session · 5,811 ignored
 
 
 ── ansi ────────────────────────────────────────────────────
@@ -32,7 +32,7 @@ tree moved — 14 paths changed outside this session · 5,811 ignored
 ␛[38;5;244m─────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m ␛[38;5;254mrun␛[m     ␛[38;5;254mGOCACHE=$PWD/.cache/gocache go build ./...␛[m     ␛[38;5;254mok␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 line␛[m  ␛[38;5;244m8.2s␛[m
-␛[38;5;244mtree moved — 14 paths changed outside this session␛[m
+  ␛[38;5;244mtree moved — 14 paths changed outside this session␛[m
 
 
 · the same reading, with what the tree ignores counted rather than reported
@@ -40,5 +40,5 @@ tree moved — 14 paths changed outside this session · 5,811 ignored
 ␛[38;5;244m─────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m ␛[38;5;254mrun␛[m     ␛[38;5;254mGOCACHE=$PWD/.cache/gocache go build ./...␛[m     ␛[38;5;254mok␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 line␛[m  ␛[38;5;244m8.2s␛[m
-␛[38;5;244mtree moved — 14 paths changed outside this session · 5,811 ignored␛[m
+  ␛[38;5;244mtree moved — 14 paths changed outside this session · 5,811 ignored␛[m
 

@@ -43,9 +43,9 @@
   ▎✗ run     go test ./internal/agent/...                                                   exit 1   21s
     --- FAIL: TestRoundLimit
 
- ✓ Done · 2 steps · 6 tools · 24.7s · $0.14                                                   round 2/25
-▎✎ 1 file changed +12 −4 · [v] review · [u] undo turn · [ctrl+o] to use them          all tracked in git
- ✗ go test ./internal/agent/... failing · exit 1 · 21s
+   ✓ Done · 2 steps · 6 tools · 24.7s · $0.14                                                 round 2/25
+  ▎✎ 1 file changed +12 −4 · [v] review · [u] undo turn · [ctrl+o] to use them        all tracked in git
+   ✗ go test ./internal/agent/... failing · exit 1 · 21s
 
 ╭─ idle ─────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ ▸                                                                                                      │
@@ -173,9 +173,9 @@
   ␛[91m▎␛[m␛[91m✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgo test ./internal/agent/...␛[m                                                   ␛[91mexit 1␛[m   ␛[38;5;241m21s␛[m
     ␛[38;5;245m--- FAIL: TestRoundLimit␛[m
 
- ␛[92m✓␛[m ␛[38;5;252mDone␛[m␛[38;5;241m · 2 steps · 6 tools · 24.7s · $0.14␛[m                                                   ␛[38;5;241mround 2/25␛[m
-␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m1 file changed ␛[m␛[92m+12␛[m ␛[91m−4␛[m␛[38;5;241m · ␛[m␛[38;5;245m[v]␛[m␛[38;5;241m review␛[m␛[38;5;241m · ␛[m␛[38;5;245m[u]␛[m␛[38;5;241m undo turn␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+o]␛[m␛[38;5;252m to use them␛[m          ␛[38;5;241mall tracked in git␛[m
- ␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/... failing␛[m␛[38;5;241m · exit 1 · 21s␛[m
+   ␛[92m✓␛[m ␛[38;5;252mDone␛[m␛[38;5;241m · 2 steps · 6 tools · 24.7s · $0.14␛[m                                                 ␛[38;5;241mround 2/25␛[m
+  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m1 file changed ␛[m␛[92m+12␛[m ␛[91m−4␛[m␛[38;5;241m · ␛[m␛[38;5;245m[v]␛[m␛[38;5;241m review␛[m␛[38;5;241m · ␛[m␛[38;5;245m[u]␛[m␛[38;5;241m undo turn␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+o]␛[m␛[38;5;252m to use them␛[m        ␛[38;5;241mall tracked in git␛[m
+   ␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/... failing␛[m␛[38;5;241m · exit 1 · 21s␛[m
 
 ␛[38;5;214m╭─␛[m ␛[38;5;241midle␛[m ␛[38;5;214m─────────────────────────────────────────────────────────────────────────────────────────────────╮␛[m
 ␛[38;5;214m│␛[m ␛[38;5;241m▸␛[m ␛[38;5;252m                                                                                                    ␛[m ␛[38;5;214m│␛[m

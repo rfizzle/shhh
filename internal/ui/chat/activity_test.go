@@ -70,10 +70,12 @@ func TestSystemRow_NoNoticeIsWiderThanThePane(t *testing.T) {
 		t.Fatalf("wrapping drops nothing:\n%s", strings.Join(lines, "\n"))
 	}
 	// The block that laid itself out comes back with its own columns, line
-	// for line, rather than re-flowed by words.
+	// for line, rather than re-flowed by words — on the content column, like
+	// every other notice (docs/interface/surfaces.md#the-leading-columns).
+	gutter := strings.Repeat(" ", components.GridPointerWidth)
 	trimmed := make([]string, len(lines))
 	for i, l := range lines {
-		trimmed[i] = strings.TrimRight(l, " ")
+		trimmed[i] = strings.TrimPrefix(strings.TrimRight(l, " "), gutter)
 	}
 	for _, want := range strings.Split(laid, "\n") {
 		if !slices.Contains(trimmed, want) {

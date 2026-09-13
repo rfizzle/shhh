@@ -866,17 +866,27 @@ func appendRendered(lines []string, s string) []string {
 	return append(lines, parts[1:]...)
 }
 
-// onGrid reports whether an entry renders as a row that already holds its
-// first two columns back for the fold mark and the cursor. Everything the
-// grid covers does — a call, a command, a diff, a thought, a round's summary,
-// a run's header, and the step headers and folded group rows around them —
-// and so does the model's prose, which is inset by exactly those two columns
-// (internal/ui/markdown's margin). The blocks that do not are the ones the
-// grid has not reached: a turn's close block, a provider failure, a notice.
+// onGrid reports whether an entry already holds the gutter back for the fold
+// mark and the cursor (docs/interface/surfaces.md#the-leading-columns).
+//
+// Every kind the cursor can stand on does: the calls, commands, diffs,
+// thoughts, summaries and run headers that are literally activity rows; the
+// recovery rows a provider failure, a dropped stream and a round-limit pause
+// are drawn as; the block a turn closes on; the model's prose, inset by
+// exactly the gutter (internal/ui/markdown's margin); and a notice, which
+// starts on the content column with them (render.go).
+//
+// The list is still a list rather than a `return true` because the answer is
+// about how an entry was drawn rather than about what it is, and the safe
+// answer for one nobody has put on the grid is the indent — it moves text
+// sideways, where the pointer would be written over the entry's first word.
+// The one entry that takes it today is a compaction summary recovered from a
+// record written before receipts were rows.
 func onGrid(e entry) bool {
 	switch e.kind {
 	case entryTool, entryCommand, entryDiff, entryThink, entrySummary,
-		entryTodoRun, entryAssistant:
+		entryTodoRun, entryAssistant, entrySystem, entryError,
+		entryTurnClose, entryFailure, entryStreamDrop, entryRoundPause:
 		return true
 	case entryCompactSummary:
 		// The receipt is a row on the grid; a bare summary out of an older

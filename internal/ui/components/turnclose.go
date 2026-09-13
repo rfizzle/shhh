@@ -222,13 +222,22 @@ func (c TurnClose) summaryStats() string {
 	return " · " + strings.Join(parts, " · ")
 }
 
-// closeLead is the gutter the close rows share: the rail column, then the
-// glyph column. There is no pointer column — nothing folds a close row.
+// closeLead is the gutter the close rows share: the pointer column held
+// blank, then the rail column, then the glyph column.
+//
+// Nothing folds a close row, and the pointer column is held anyway. The
+// changed-files row carries the mutation rail so that the close of a turn
+// looks like the rows that produced it (docs/interface/surfaces.md#the-turns-close),
+// and a rail one column left of every other rail in the transcript does not
+// look like them — it reads as a fourth mark in the column the fold carets
+// and the reading cursor own. Holding it is also what lets reading mode put
+// its cursor on the block without pushing the whole thing sideways
+// (docs/interface/surfaces.md#the-leading-columns).
 func closeLead(rail, glyph string) string {
 	if rail == "" {
 		rail = strings.Repeat(" ", railWidth)
 	}
-	return rail + glyph + strings.Repeat(" ", glyphWidth-1)
+	return strings.Repeat(" ", ptrWidth) + rail + glyph + strings.Repeat(" ", glyphWidth-1)
 }
 
 // closeLine lays out one close row: the lead and its statement on the left,

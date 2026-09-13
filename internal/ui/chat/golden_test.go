@@ -3327,6 +3327,43 @@ func TestGolden_FoldedRows(t *testing.T) {
 	})
 }
 
+// TestGolden_TranscriptGrid captures the transcript's left edge
+// (docs/interface/surfaces.md#the-leading-columns): one turn holding a steer,
+// a checkpoint, a steer notice, the tree reading, an error, activity rows, a
+// reading of the round, the block the turn closes on and an arriving reply,
+// at every rung including the one past the inspector's split. The columns
+// are what the sheet is for — the fixture is deliberately one transcript
+// rather than a panel per kind, because a left edge is only readable against
+// the entries above and below it.
+func TestGolden_TranscriptGrid(t *testing.T) {
+	captureBoundedGolden(t, "transcript-grid", "the transcript's leading columns", gridWidths,
+		func(width int) []golden.Panel {
+			feed := gridModel(t, width, 40)
+			// The whole surface, so the columns are read against the pane
+			// they sit in: single-pane below the rung, and with the
+			// inspector rail beside them above it.
+			screen := gridModel(t, width, screenHeight)
+			screen.syncViewport()
+			screen.viewport.SetLines(screen.renderHistoryLines())
+			screen.viewport.GotoBottom()
+			// The same transcript with reading mode's cursor on the steer's
+			// notice: the cursor lands in the column the notice was already
+			// holding for it, so nothing under it moves sideways.
+			next, _ := gridModel(t, width, 40).enterFocusMode()
+			reading := next.(Model)
+			reading.focusIdx = 5
+			reading.refreshFocusView()
+			body, _, _ := reading.renderFocusHistory()
+			return []golden.Panel{
+				{Label: "the feed · every kind of entry on one left edge", View: feed.renderHistory()},
+				{Label: "the whole surface · the same edge in the pane it sits in",
+					View: screen.View().Content},
+				{Label: "reading mode · the cursor takes the gutter the steer held for it",
+					View: body},
+			}
+		})
+}
+
 // TestGolden_TreeMoved captures the row the tree reading draws in the feed:
 // the count of what somebody else moved, and the same reading where the
 // checkout's own ignore rules suppressed the rest of the movement. The two

@@ -12,6 +12,35 @@ the other is always a claim that a decision is being asked for.
 
 ## Rows
 
+### The leading columns
+
+The transcript is one column of text, and every kind of entry in it begins in
+the same place. A narrow gutter on the left is held back for a mark *about* an
+entry — the reader's own `❯`, a step's fold caret, reading mode's cursor — and
+everything that is not one of those marks starts in the first column past it:
+a paragraph's first word, a notice's first word, an activity row's mutation
+rail and the glyph beside it, a progress checkpoint, a reading of the session,
+and the line a turn closes on. An entry with no mark of its own leaves the
+gutter blank rather than starting in it, which is what makes a mark's arrival
+cost nothing — the cursor lands in a column the entry was already holding for
+it, and no text slides sideways to say where the cursor is.
+
+Wrapped text returns to that same column, and a body folded under an entry
+starts one step further in ([one grid](principles.md#one-grid): detail bodies
+indent, they do not re-grid). Neither ever reaches back into the gutter. A
+continuation that started at the left edge would read as a new entry, and an
+entry that began there would put its first word under the marks belonging to
+the rows above and below it — which is the one thing this edge is for, since a
+reader scanning a long session is reading down a column rather than parsing
+each line to find out what kind of thing it is.
+
+So a check-in, a tree reading, an error and the session's own bookkeeping are
+not exceptions to it. They are lines the session wrote about itself rather
+than acts it took, and the temptation is to set them apart by starting them
+further left; what that spends is the one edge the whole transcript is read
+down, and it buys a distinction the grey they are drawn in and the words they
+use were already making for nothing.
+
 ### The activity row
 
 The unit the transcript is made of. Every act the session takes is one — a

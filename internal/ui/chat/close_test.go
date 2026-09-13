@@ -450,7 +450,9 @@ func TestTurnClose_TheCloseNamesWhatTheChildrenWroteDown(t *testing.T) {
 		State: components.TurnDone, Notes: "2 notes from reviewer-1",
 	}, 80)
 	line := strings.Split(view, "\n")[1]
-	if !strings.HasPrefix(line, "   2 notes from reviewer-1") {
+	// The marker gutter, then the rail and glyph columns blank
+	// (docs/interface/surfaces.md#the-leading-columns).
+	if !strings.HasPrefix(line, strings.Repeat(" ", components.GridPointerWidth)+"   2 notes from reviewer-1") {
 		t.Fatalf("the notes row carries a rail or a glyph: %q", line)
 	}
 	// And the notification, which has no glyphs at all, says it too.

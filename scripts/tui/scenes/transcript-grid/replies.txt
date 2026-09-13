@@ -1,0 +1,21 @@
+# One session puts every kind of entry that has a left edge of its own into
+# one transcript: prose over a batch of reads twice (a step each, and the
+# folded run of read-only rows inside them), enough rounds to cross the
+# check-in interval the scene starts the session on (launch), then a third step
+# whose command fails, so it stays open and its row is drawn where the
+# columns can be read — and a plain answer to finish on. The reading of the
+# session takes replies of its own out of this file as it falls due, which is
+# why the last line is the one that repeats.
+The constant is declared in three files, so the loop is the only one of them that can own it.
++tool:read_file:{"path":"one.go"}
++tool:read_file:{"path":"two.go"}
++tool:read_file:{"path":"three.go"}
++tool:read_file:{"path":"four.go"}
+The reads agree with the sentence above them, so the loop is where the constant goes.
++tool:read_file:{"path":"five.go"}
++tool:read_file:{"path":"six.go"}
++tool:read_file:{"path":"seven.go"}
++tool:read_file:{"path":"eight.go"}
+The constant has one home now. What is left is the suite.
++tool:execute_command:{"command":"mkdir -p .cache/gocache/aa && printf x > .cache/gocache/aa/one && printf -- '--- FAIL: TestRoundLimit\n' && exit 1"}
+The suite is still red on the limit itself. Nothing I did touched notes.md, so somebody else has it open.

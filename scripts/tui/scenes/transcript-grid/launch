@@ -1,0 +1,18 @@
+# Two things this scene cannot say with keys.
+#
+# The check-in is one: it is owed every fortieth round by default, which is
+# tens of scripted replies away, so the session is started under a config
+# that asks for one every second round. The interval is the only setting
+# touched — what the check-in says and where it is drawn are the surface's,
+# not the setting's. A write that fails takes the pane with it rather than
+# starting the session on the default interval: that session draws no
+# check-in, and the scene would record a screen missing the row it is about
+# without saying why.
+#
+# Somebody else, in the next terminal, is the other. The line waits for the
+# cache the session's own command writes — so the edit lands after the round
+# boundary that reads the tree, in the same order a person in another window
+# would manage — and then changes a tracked file this session never touched.
+# The wait is bounded: where the command never lands there is nothing left to
+# wait for, and an unbounded loop would outlive the pane it was started in.
+mkdir -p "$XDG_CONFIG_HOME/shhh" && printf '[behavior]\ncheck_in_interval_rounds = 2\n' > "$XDG_CONFIG_HOME/shhh/config.toml" || exit 1; ( n=0; until [ -f .cache/gocache/aa/one ] || [ "$n" -ge 300 ]; do n=$((n+1)); sleep 0.2; done; sleep 2; printf 'and a line from the next terminal\n' >> notes.md ) & "$SHHH_BIN" code

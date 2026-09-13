@@ -12,8 +12,13 @@ import (
 // are character cells and match tokens/terminal.css in the design-system
 // project; nothing in the transcript may invent a width. The target is the
 // only field that grows.
+//
+// ptrWidth is the whole transcript's and not this row's: it is the marker
+// gutter every kind of entry holds back and starts its own words past
+// (docs/interface/surfaces.md#the-leading-columns), which is why it is
+// exported as GridPointerWidth below.
 const (
-	ptrWidth   = 2 // fold state ▾/▸, focus cursor ❯
+	ptrWidth   = 2 // fold state ▾/▸, reading cursor ❯, a sent message's ❯
 	railWidth  = 1 // the mutation rail ▎
 	glyphWidth = 2 // the kind of act, or the state that overrides it
 	verbWidth  = 8 // closed vocabulary, left-aligned, space-padded
@@ -312,8 +317,10 @@ func (r ActivityRow) railCell() string {
 	return sty.Accent.Render("▎")
 }
 
-// pointer renders gutter columns 1–2: the focus cursor today, fold state once
-// steps land.
+// pointer renders the marker gutter: the reading cursor where the row is
+// under it, and blank otherwise, because the columns are held whether or not
+// there is a mark to put in them
+// (docs/interface/surfaces.md#the-leading-columns).
 func (r ActivityRow) pointer() string {
 	if r.Selected {
 		// The pointer is a glyph in its own column, not part of the highlight
@@ -856,7 +863,11 @@ func (n ActivityNotice) View(width int) string {
 // (see AGENTS.md). These are the fields it needs; the widths stay declared
 // here so a grid change remains a one-line change.
 const (
-	// GridPointerWidth is the fold-state/focus column.
+	// GridPointerWidth is the marker gutter: the columns held back for a
+	// mark about an entry rather than for the entry's own words
+	// (docs/interface/surfaces.md#the-leading-columns). Every kind of
+	// transcript entry starts past it, so a renderer outside this file that
+	// is not building a row still needs the number.
 	GridPointerWidth = ptrWidth
 	// GridVerbColumn is where a row's verb — and a step's title — starts.
 	GridVerbColumn = ptrWidth + railWidth + glyphWidth

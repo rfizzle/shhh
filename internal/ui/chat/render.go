@@ -276,7 +276,11 @@ func (m Model) renderEntryDetail(e entry, width int, keysLive, stepDetail bool) 
 		// how the reader takes it back (intervene.go).
 		return m.systemRow(e, width) + m.steerOfferLine(e, keysLive) + "\n"
 	case entryError:
-		return sty.Error.Render("Error: "+e.text) + "\n"
+		// On the content column with the notices, and for the same reason: an
+		// error the session is reporting about itself is prose in the
+		// transcript, not a kind of text with an edge of its own
+		// (docs/interface/surfaces.md#the-leading-columns).
+		return m.marginProse(sty.Error, "Error: "+e.text, width) + "\n"
 	}
 	return ""
 }
@@ -291,7 +295,10 @@ func (m Model) renderEntryDetail(e entry, width int, keysLive, stepDetail bool) 
 // (docs/interface/principles.md#fold-never-hide).
 // A notice that carries a row of its own is drawn as that row: what the
 // session did to itself sits in the transcript's columns rather than beside
-// them (docs/interface/principles.md#one-grid).
+// them (docs/interface/principles.md#one-grid). One that is only prose sits
+// in the same columns by starting on the content column
+// (docs/interface/surfaces.md#the-leading-columns), which is why the body
+// under either of them is indented from the same place.
 func (m Model) systemRow(e entry, width int) string {
 	if e.notice != nil {
 		row := *e.notice
@@ -344,12 +351,55 @@ func (m Model) noticeBody(e entry, width int) []string {
 // the pane is its author's to fit; what the terminal does to it meanwhile
 // keeps the words on screen, which neither of the alternatives here does.
 func (m Model) wrapped(text string, width int) string {
+	return m.marginProse(sty.SystemMsg, text, width)
+}
+
+// marginProse is a block of the session's own prose on the transcript's
+// content column: the gutter every entry holds back for a mark about it,
+// then the words (docs/interface/surfaces.md#the-leading-columns). A notice
+// carries no mark of its own, so those columns stay blank rather than being
+// the place its first word starts — the check-in, the tree reading and the
+// error under it are the lines a reader is most likely to be scanning for,
+// and they were the three that began outside the edge everything else is
+// read down.
+//
+// The width the words are wrapped to is the pane less the gutter, so a
+// continuation lands under the first word rather than two columns to the
+// left of it, and the line ends on the pane the way a row's fields do
+// (components.gridLine): a terminal narrower than the gutter and one column
+// leaves the wrap nothing to work with, and a line that kept its indent
+// there would be drawn over the column beside it.
+//
+// A block that arrived already laid out takes the gutter on every line and
+// is neither re-wrapped nor clipped, which is what it was before the gutter
+// and for the same reason: re-flowing by words takes a table apart, and
+// clipping cuts a row of it off with no way to reach the rest
+// (docs/interface/principles.md#fold-never-hide). The gutter therefore costs
+// a block that was already wider than the pane two more columns of what the
+// pane was already cutting — and it is the block's own width that is wrong
+// there, not the two columns every other entry in the transcript is drawn
+// past. Neither alternative is available here: dropping the gutter for a
+// long line takes an ordinary two-line notice off the grid to protect a
+// sentence the pane had already cut, and clipping is the thing a laid-out
+// block is exempt from.
+func (m Model) marginProse(style lipgloss.Style, text string, width int) string {
+	gutter, inner := components.PointerColumn(), max(width-components.GridPointerWidth, 1)
+	paint := func(l string) string {
+		if l == "" {
+			return ""
+		}
+		return gutter + style.Render(l)
+	}
 	if strings.Contains(text, "\n") {
-		return sty.SystemMsg.Render(text)
+		lines := strings.Split(text, "\n")
+		for i, l := range lines {
+			lines[i] = paint(l)
+		}
+		return strings.Join(lines, "\n")
 	}
 	var out []string
-	for _, l := range strings.Split(m.wordWrap(text, width), "\n") {
-		out = append(out, sty.SystemMsg.Render(components.Clip(l, width)))
+	for _, l := range strings.Split(m.wordWrap(text, inner), "\n") {
+		out = append(out, components.Clip(paint(components.Clip(l, inner)), width))
 	}
 	return strings.Join(out, "\n")
 }

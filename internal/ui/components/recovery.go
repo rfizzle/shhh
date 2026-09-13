@@ -163,7 +163,8 @@ func (r RecoveryRow) outcomeField() string {
 // re-gridding.
 func (r RecoveryRow) View(width int) string {
 	// The pointer and mutation-rail columns stay blank: a failed request
-	// changed nothing, and focus mode supplies its own cursor gutter.
+	// changed nothing, and the pointer column is the reading cursor's to
+	// stand in (docs/interface/surfaces.md#the-leading-columns).
 	lead := strings.Repeat(" ", ptrWidth+railWidth) + r.glyph() + verbField(r.Verb)
 	lines := []string{gridLineWith(lead, r.target(), r.paintTarget, r.outcomeField(), r.Duration, width)}
 

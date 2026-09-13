@@ -42,16 +42,26 @@ func TestTurnClose_ThreeRowsAnswerThreeQuestions(t *testing.T) {
 
 func TestTurnClose_OnlyTheChangesRowCarriesTheMutationRail(t *testing.T) {
 	lines := strings.Split(ansi.Strip(closeFixture().View(130)), "\n")
-	if strings.HasPrefix(lines[0], "▎") || strings.HasPrefix(lines[2], "▎") {
+	// The close block holds the marker gutter back like every other entry in
+	// the transcript, so its rail and glyph are in the transcript's rail and
+	// glyph columns rather than one short of them
+	// (docs/interface/surfaces.md#the-leading-columns).
+	railCol, glyphCol := GridPointerWidth, GridPointerWidth+1
+	for i, l := range lines {
+		if got := []rune(l)[:railCol]; strings.TrimSpace(string(got)) != "" {
+			t.Errorf("row %d writes in the marker gutter: %q", i+1, l)
+		}
+	}
+	if []rune(lines[0])[railCol] == '▎' || []rune(lines[2])[railCol] == '▎' {
 		t.Errorf("a row that wrote nothing has no rail:\n%s", strings.Join(lines, "\n"))
 	}
-	if !strings.HasPrefix(lines[1], "▎") {
+	if []rune(lines[1])[railCol] != '▎' {
 		t.Errorf("the changed-files row carries the mutation rail, got %q", lines[1])
 	}
 	// The rows line up: whatever the rail column holds, the glyph follows it.
 	for i, l := range lines {
-		if got := []rune(l)[1]; got != '✓' && got != '✎' && got != '✗' && got != '⊘' {
-			t.Errorf("row %d should carry its glyph in the second column, got %q in %q", i+1, got, l)
+		if got := []rune(l)[glyphCol]; got != '✓' && got != '✎' && got != '✗' && got != '⊘' {
+			t.Errorf("row %d should carry its glyph in the glyph column, got %q in %q", i+1, got, l)
 		}
 	}
 }

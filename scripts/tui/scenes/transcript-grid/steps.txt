@@ -1,0 +1,36 @@
+# The transcript's leading columns
+# (docs/interface/surfaces.md#the-leading-columns) through the built binary.
+# One session draws, in order: the reader's own `❯` message, the model's
+# prose, activity rows under a step, the session's own check-in, a command's
+# row, a plain reply, and then — at the next turn's round boundary — the tree
+# reading about a file the next terminal changed (launch).
+#
+# Read the cells down the left edge rather than line by line. The `❯` of a
+# sent message is the only thing standing in the two columns every entry
+# holds back; prose, a row's rail, the check-in, the tree notice and the
+# block the turn closes on all start in the first column past them, and a
+# notice long enough to wrap comes back to that same column instead of the
+# pane's edge. Inspect the picture for the same edge in colour: the notices
+# are the quietest thing in the feed, and the tone is what sets them apart
+# rather than the indent.
+setup for f in one two three four five six seven eight; do printf 'package fixture\n' > "${f}.go"; done
+setup printf 'logs/\n.cache/\n' > .gitignore
+setup git add .gitignore one.go two.go three.go four.go five.go six.go seven.go eight.go
+setup printf 'the note this checkout keeps\n' > notes.md
+setup git add notes.md
+setup git -c user.email=tui@shhh -c user.name=tui commit -q -m tracked
+snap 01-start "Some things worth doing first"
+keys "hold the round limit in one place and run the tests" Enter
+snap 02-checkin "Check-in —"
+snap 03-card "[y] run it once"
+keys y
+snap 04-answered "The suite is still red on the limit itself"
+# The cache is on disk now, and the next terminal's edit is two seconds
+# behind it (launch). Nothing draws while it lands, so this is the one step
+# the screen does not mark.
+sleep 5
+keys "anything else?" Enter
+snap 05-tree "tree moved"
+keys C-c
+keys C-c
+snap 06-exit "that is everything the screen was holding"
