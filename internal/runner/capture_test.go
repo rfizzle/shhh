@@ -157,6 +157,44 @@ func TestAChattyCommandIsBoundedWhileItRuns(t *testing.T) {
 	}
 }
 
+// A wait can fail long after a perfectly good start, and then there is no
+// exit status and no signal to report the command by. It still ran, and the
+// result has to say so: `did not start` sends a reader to look at the machine
+// — at a shell that is missing, a directory that has gone — when the command
+// ran, printed, and the only thing left over is a relative of its own holding
+// the pipe open. The one below is exactly that: the shell exits at once and
+// the `sleep` it started in the background inherits the output pipe, so the
+// wait spends its delay on a pipe nobody will close and gives up on it.
+func TestAWaitThatFailedIsNotACommandThatNeverStarted(t *testing.T) {
+	needShell(t)
+	t.Setenv("SHELL", "/bin/sh")
+	SetAdopter(nil)
+
+	result := RunCaptureResult(context.Background(), "echo ran; sleep 10 & exit 0")
+
+	if result.Outcome == tools.ExecDidNotStart {
+		t.Fatalf("a command that printed is a command that started: %+v", result)
+	}
+	if result.Outcome != tools.ExecDidNotComplete {
+		t.Errorf("outcome is %q, want %q", result.Outcome, tools.ExecDidNotComplete)
+	}
+	if !strings.Contains(result.Output, "ran") {
+		t.Errorf("what it printed before the wait broke is evidence: %q", result.Output)
+	}
+	if !strings.Contains(result.Output, exec.ErrWaitDelay.Error()) {
+		t.Errorf("the wait's own words are kept verbatim: %q", result.Output)
+	}
+
+	formatted := tools.FormatExecResult(result)
+	line, _, _ := strings.Cut(formatted, "\n")
+	if line != "error: command ran but did not report how it ended" {
+		t.Errorf("status line is %q", line)
+	}
+	if prereq := tools.ExecPrereqOf(formatted); prereq != "" {
+		t.Errorf("nothing the machine owed the command was missing, but it is filed under %q", prereq)
+	}
+}
+
 func read(t *testing.T, sup *process.Supervisor, name string) string {
 	t.Helper()
 	return execute(t, sup, `{"action":"read","name":"`+name+`"}`)

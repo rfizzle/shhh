@@ -271,12 +271,20 @@ func capture(ctx context.Context, dir, command string, argv []string, kind spawn
 // command-ending vocabulary before output reaches any tool-result consumer.
 // It is the answer for a command that was spawned; one that never was is
 // startFailure's, which has a prerequisite to name.
+//
+// A wait that failed with anything other than an exit status is the one
+// ending with no number behind it — a grandchild holding the output pipe past
+// the wait's delay is what it usually is. The start already succeeded, so the
+// command ran: the error is appended to what it printed and the ending is
+// left at that, and never filed as a command that did not start. Saying that
+// of a command that ran sends a reader to look at the machine, when the whole
+// of what went wrong is here and the output above is real.
 func completedExecResult(output string, err error) tools.ExecResult {
 	result := tools.InferExecResult(output, resultCode(err))
 	var exitErr *exec.ExitError
 	if err != nil && !errors.As(err, &exitErr) {
 		result.Output = strings.TrimSpace(output + "\n" + err.Error())
-		result.Outcome = tools.ExecDidNotStart
+		result.Outcome = tools.ExecDidNotComplete
 	}
 	return result
 }

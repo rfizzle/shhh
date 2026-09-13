@@ -184,11 +184,6 @@ func RunCaptureArgvTailResult(ctx context.Context, command string, argv []string
 	return capture(ctx, "", command, argv, spawnWrapped, onLine)
 }
 
-// RunCaptureArgv executes an explicit argv (no shell) with output captured,
-// for pre-built invocations like sandbox-wrapped commands. A spawn
-// failure — e.g. the containment binary vanished — reports the error in the
-// output with exit code -1, so the command fails visibly instead of running
-// bare.
 // RunCaptureIn is RunCapture with an explicit working directory, for
 // sub-agent commands that must run inside their own workspace.
 func RunCaptureIn(ctx context.Context, dir, command string) (output string, exitCode int) {

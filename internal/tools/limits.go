@@ -151,6 +151,12 @@ const (
 	ExecStopped     ExecOutcome = "stopped"
 	ExecDidNotStart ExecOutcome = "did not start"
 	ExecHandedOff   ExecOutcome = "handed off"
+	// ExecDidNotComplete is a command that ran and whose ending nobody could
+	// read: the wait itself failed, so there is no status and no signal to
+	// name it by. It is the far end of ExecDidNotStart rather than a spelling
+	// of it — something did run, and whatever it printed before the wait broke
+	// is evidence about the command and not about the machine.
+	ExecDidNotComplete ExecOutcome = "did not complete"
 )
 
 // didNotStart is the first line of every result for a command that never
@@ -374,6 +380,8 @@ func execStatusLine(result ExecResult) string {
 		return "error: command timed out"
 	case ExecStopped:
 		return "error: command was stopped before it finished"
+	case ExecDidNotComplete:
+		return "error: command ran but did not report how it ended"
 	case ExecDidNotStart:
 		if label := prereqLabel(result.Prereq); label != "" {
 			return didNotStart + ": " + label
