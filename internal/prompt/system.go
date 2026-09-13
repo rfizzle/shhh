@@ -275,9 +275,15 @@ Your last message IS the deliverable. Make it a self-contained report: the findi
 
 // BuildReviewer is the system prompt for reviewer sub-agents: read-only,
 // handed the change by the task, judging it rather than fixing it.
-func BuildReviewer(info shell.Info, extra ...string) string {
+//
+// The zero spec is the built-in reviewer role, whose prompt is fixed. A named
+// one is a profile that reviews, and the reviewing contract does not cost it
+// what every other profile keeps: it opens with its own name and purpose, and
+// its tool paragraph names the toolset it was really registered with
+// (docs/capabilities/subagents.md#a-review-is-bounded-by-what-it-is-given).
+func BuildReviewer(info shell.Info, spec ProfileSpec, extra ...string) string {
 	os := friendlyOS(info.OS)
-	base := fmt.Sprintf(`You are a review sub-agent working one delegated task for an orchestrating agent. You cannot see the orchestrator's conversation, and it only receives your final message — nothing else survives.
+	base := fmt.Sprintf(`%s
 
 # Environment
 OS: %s
@@ -285,7 +291,7 @@ Cwd: %s
 Date: %s
 
 # Tools
-You have read-only access to the workspace (read_file, list_directory, search, glob). You cannot edit files or run commands. Your declared evidence — the scoped paths and their diff — arrives ahead of your task when the caller declared any, and the task itself carries it otherwise: read that first, then the files it touches, then the tests that cover them. Do not re-read repository instructions or survey unrelated files before examining that declared evidence.
+%s Your declared evidence — the scoped paths and their diff — arrives ahead of your task when the caller declared any, and the task itself carries it otherwise: read that first, then the files it touches, then the tests that cover them. Do not re-read repository instructions or survey unrelated files before examining that declared evidence.
 
 # Reviewing
 You are reviewing a change, not making one. Report, in this order:
@@ -299,11 +305,79 @@ Rank by severity. Say "no findings" for an empty section rather than inventing o
 
 # Final report
 Your last message IS the deliverable. End it with the verdict line the task asks for.`,
-		os, info.Cwd, today())
+		reviewerOpening(spec), os, info.Cwd, today(), reviewerTools(spec))
 	if len(extra) > 0 && extra[0] != "" {
 		base += "\n\n" + extra[0]
 	}
 	return base
+}
+
+// reviewerOpening is the reviewer's first line. The built-in role is a review
+// sub-agent and nothing more; a profile says which one it is and what for, in
+// the words BuildProfile uses, so a drafted reviewer is not left anonymous to
+// itself.
+func reviewerOpening(spec ProfileSpec) string {
+	who, purpose := "a review sub-agent", ""
+	if name := strings.TrimSpace(spec.Name); name != "" {
+		who = fmt.Sprintf("the %q review sub-agent", name)
+		if d := strings.TrimSpace(spec.Description); d != "" {
+			purpose = fmt.Sprintf(" Your purpose: %s.", strings.TrimSuffix(d, "."))
+		}
+	}
+	return fmt.Sprintf("You are %s working one delegated task for an orchestrating agent.%s"+
+		" You cannot see the orchestrator's conversation, and it only receives your final message — nothing else survives.", who, purpose)
+}
+
+// reviewerTools is the reviewer's tool paragraph. The built-in role holds the
+// four reads and nothing else, so its sentence is fixed; a profile holds
+// whatever its permissions and its allowlist left it, and is told that, the
+// way ProfileSpec.Tools keeps a reader's prompt honest — one carrying the web
+// tools or the gate would otherwise be told it has nothing but the reads. A
+// reviewing profile can neither write nor execute (config.AgentDefinition's
+// validation refuses it), so the boundary sentence is only ever about the gate.
+func reviewerTools(spec ProfileSpec) string {
+	if len(spec.Tools) == 0 {
+		return "You have read-only access to the workspace (read_file, list_directory, search, glob). You cannot edit files or run commands."
+	}
+	have, names := toolNames(spec.Tools)
+	var parts []string
+	if ro := names("read_file", "list_directory", "search", "glob"); ro != "" {
+		parts = append(parts, fmt.Sprintf("You have read-only access to the workspace (%s).", ro))
+	}
+	if w := names("web_fetch", "web_search"); w != "" {
+		s := fmt.Sprintf("Web tools (%s) are available for what is not in the workspace; web_fetch may need the human's approval. %s", w, webPages)
+		if !have["web_search"] {
+			s += " " + noSearch
+		}
+		parts = append(parts, s)
+	}
+	if have["quality_gate"] {
+		parts = append(parts,
+			"quality_gate runs the project's own configured checks by suite name, so whether the change builds and its tests pass is something you check rather than infer.",
+			"You cannot edit files, and the gate is the only command you can run.")
+	} else {
+		parts = append(parts, "You cannot edit files or run commands.")
+	}
+	return strings.Join(parts, " ")
+}
+
+// toolNames reports which of the tools a profile was registered with are
+// present, and joins the ones asked for in the order they were asked: a
+// prompt's tool section names only what the child really has.
+func toolNames(tools []string) (map[string]bool, func(...string) string) {
+	have := make(map[string]bool, len(tools))
+	for _, t := range tools {
+		have[t] = true
+	}
+	return have, func(candidates ...string) string {
+		var out []string
+		for _, c := range candidates {
+			if have[c] {
+				out = append(out, c)
+			}
+		}
+		return strings.Join(out, ", ")
+	}
 }
 
 // BuildWriter is the system prompt for writer sub-agents: the full
@@ -548,19 +622,7 @@ type ProfileSpec struct {
 // the specific instructions on top of the general ones.
 func BuildProfile(info shell.Info, spec ProfileSpec, extra ...string) string {
 	os := friendlyOS(info.OS)
-	have := make(map[string]bool, len(spec.Tools))
-	for _, t := range spec.Tools {
-		have[t] = true
-	}
-	names := func(candidates ...string) string {
-		var out []string
-		for _, c := range candidates {
-			if have[c] {
-				out = append(out, c)
-			}
-		}
-		return strings.Join(out, ", ")
-	}
+	have, names := toolNames(spec.Tools)
 
 	var b strings.Builder
 	fmt.Fprintf(&b, "You are the %q sub-agent working one delegated task for an orchestrating agent.", spec.Name)

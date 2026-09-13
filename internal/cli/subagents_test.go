@@ -101,16 +101,26 @@ func TestAReviewingProfileIsInstructedAsAReviewer(t *testing.T) {
 	if strings.Contains(got, "the findings, the evidence") {
 		t.Errorf("a reviewing profile still ends on the reader's final-report contract:\n%s", got)
 	}
+	// And it is still this profile: the reviewing contract costs it neither
+	// its name nor its purpose.
+	for _, want := range []string{`You are the "critic" review sub-agent`, "Your purpose: audits diffs."} {
+		if !strings.Contains(got, want) {
+			t.Errorf("a reviewing profile's prompt lacks %q:\n%s", want, got)
+		}
+	}
 	// The flag is what selects it: the same file without it is a reader,
-	// and the built-in reviewer role is the prompt this reuses unchanged.
+	// and the reviewing contract is the built-in role's own words rather
+	// than a fork of them.
 	plain := def
 	plain.Reviews = false
 	reader, _, _ := profileEnv(plain, subagent.Spec{}, info, "", nil, nil, map[string]bool{})
 	if !strings.Contains(reader, `"critic" sub-agent`) || strings.Contains(reader, "Rank by severity") {
 		t.Errorf("a profile that does not review should get the generic reader's prompt:\n%s", reader)
 	}
-	if builtin := prompt.BuildReviewer(info); !strings.HasPrefix(got, builtin) {
-		t.Errorf("the reviewing profile forked the built-in reviewer's prompt:\n%s", got)
+	builtin := prompt.BuildReviewer(info, prompt.ProfileSpec{})
+	_, contract, ok := strings.Cut(builtin, "\n\n# Reviewing\n")
+	if !ok || !strings.Contains(got, "\n\n# Reviewing\n"+contract) {
+		t.Errorf("the reviewing profile forked the built-in reviewer's contract:\n%s", got)
 	}
 	// prompt_mode = "replace" still owns the whole prompt, review or not.
 	replaced := def
@@ -147,6 +157,32 @@ func TestReadOnlyProfileIsOfferedTheQualityGate(t *testing.T) {
 	}
 	if !strings.Contains(out, "BLOCKED") || !strings.Contains(out, "no quality config") {
 		t.Errorf("an unconfigured checkout should say so: %q", out)
+	}
+}
+
+// A reviewing profile's prompt is built from the toolset it was registered
+// with, and the gate is registered after the prompt's other tiers are
+// settled. A reviewer holding it and told it can run nothing judges the
+// build from the diff instead of running the checks.
+func TestAReviewingProfilesPromptNamesTheGateItHolds(t *testing.T) {
+	def := config.AgentDefinition{Name: "critic", Description: "audits diffs", Reviews: true}
+	info := shell.Info{OS: "linux", Cwd: "/w"}
+
+	held, _, _ := profileEnv(def, subagent.Spec{}, info, "", nil, &quality.Runner{Workspace: t.TempDir()}, map[string]bool{})
+	if !strings.Contains(held, config.QualityGateTool) {
+		t.Errorf("a reviewing profile holding the gate is not told so:\n%s", held)
+	}
+	if strings.Contains(held, "You cannot edit files or run commands.") {
+		t.Errorf("a reviewing profile holding the gate is told it can run nothing:\n%s", held)
+	}
+	// No runner in the session is no gate in the toolset, and the prompt
+	// says the same.
+	without, _, _ := profileEnv(def, subagent.Spec{}, info, "", nil, nil, map[string]bool{})
+	if strings.Contains(without, config.QualityGateTool) {
+		t.Errorf("a reviewing profile without the gate was told it has one:\n%s", without)
+	}
+	if !strings.Contains(without, "You cannot edit files or run commands.") {
+		t.Errorf("a reviewing profile without the gate lost the boundary sentence:\n%s", without)
 	}
 }
 

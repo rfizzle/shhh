@@ -303,11 +303,107 @@ func TestBuildAlternatives_KeepsTheExtraLast(t *testing.T) {
 }
 
 func TestBuildReviewerIsBoundedToDeclaredEvidence(t *testing.T) {
-	reviewer := BuildReviewer(shell.Info{OS: "linux", Cwd: "/w"})
+	reviewer := BuildReviewer(shell.Info{OS: "linux", Cwd: "/w"}, ProfileSpec{})
 	for _, want := range []string{"arrives ahead of your task", "Do not re-read repository instructions", "inspection pass is bounded by a round cap", "direct tests", "report rather than broadening", "say what you did not reach"} {
 		if !strings.Contains(reviewer, want) {
 			t.Fatalf("reviewer prompt lacks %q:\n%s", want, reviewer)
 		}
+	}
+}
+
+// The built-in reviewer role's prompt is fixed. Giving a reviewing profile
+// its name and its real toolset is a change to what a named spec produces,
+// and the zero spec has to come out byte for byte what it did before — so it
+// is pinned here rather than described, because a drift of one word is the
+// kind of thing a Contains assertion never notices.
+func TestTheBuiltInReviewersPromptIsFixed(t *testing.T) {
+	fixed := time.Date(2026, time.September, 1, 12, 0, 0, 0, time.UTC)
+	old := now
+	now = func() time.Time { return fixed }
+	t.Cleanup(func() { now = old })
+
+	want := `You are a review sub-agent working one delegated task for an orchestrating agent. You cannot see the orchestrator's conversation, and it only receives your final message — nothing else survives.
+
+# Environment
+OS: Linux
+Cwd: /w
+Date: Tuesday, 1 September 2026
+
+# Tools
+You have read-only access to the workspace (read_file, list_directory, search, glob). You cannot edit files or run commands. Your declared evidence — the scoped paths and their diff — arrives ahead of your task when the caller declared any, and the task itself carries it otherwise: read that first, then the files it touches, then the tests that cover them. Do not re-read repository instructions or survey unrelated files before examining that declared evidence.
+
+# Reviewing
+You are reviewing a change, not making one. Report, in this order:
+1. Bugs — concrete inputs that produce a wrong result, with the file:line.
+2. Acceptance criteria the task names that are not actually met.
+3. Behaviour changes the task did not ask for.
+4. Missing tests, naming the case that is not covered.
+5. Style only where it hides a bug or contradicts the surrounding file.
+
+Rank by severity. Say "no findings" for an empty section rather than inventing one. Never propose a rewrite of something that works. Your inspection pass is bounded by a round cap, not by your own judgement of when to stop: once you have examined the declared evidence and its direct tests, report rather than broadening the survey. If the pass ends before you have, you are told to report on what you examined and you say what you did not reach.
+
+# Final report
+Your last message IS the deliverable. End it with the verdict line the task asks for.`
+
+	if got := BuildReviewer(shell.Info{OS: "linux", Cwd: "/w"}, ProfileSpec{}); got != want {
+		t.Errorf("the built-in reviewer's prompt moved:\ngot:\n%s\nwant:\n%s", got, want)
+	}
+}
+
+// A reviewing profile is still a profile: it says which agent it is and what
+// it is for, and its tool paragraph names what it actually holds. A reviewer
+// that can run the project's checks and is told it cannot run anything is a
+// reviewer that judges the build from the diff.
+func TestAReviewingProfileKeepsItsNameAndItsTools(t *testing.T) {
+	info := shell.Info{OS: "linux", Cwd: "/w"}
+	reads := []string{"read_file", "list_directory", "search", "glob"}
+
+	withGate := BuildReviewer(info, ProfileSpec{
+		Name: "critic", Description: "audits diffs.",
+		Tools: append(append([]string{}, reads...), "quality_gate"),
+	}, "Audit ruthlessly.")
+	for _, want := range []string{
+		`You are the "critic" review sub-agent`, "Your purpose: audits diffs.",
+		"read-only access to the workspace (read_file, list_directory, search, glob)",
+		"quality_gate runs the project's own configured checks",
+		"the gate is the only command you can run",
+		"# Reviewing", "the verdict line the task asks for",
+	} {
+		if !strings.Contains(withGate, want) {
+			t.Errorf("a reviewing profile holding the gate lacks %q:\n%s", want, withGate)
+		}
+	}
+	if strings.Contains(withGate, "Your purpose: audits diffs..") {
+		t.Errorf("the description's own full stop was doubled:\n%s", withGate)
+	}
+	if strings.Contains(withGate, "You cannot edit files or run commands.") {
+		t.Errorf("a reviewer holding the gate is told it can run nothing:\n%s", withGate)
+	}
+	if !strings.HasSuffix(withGate, "\n\nAudit ruthlessly.") {
+		t.Errorf("the profile's own instructions are no longer last:\n%s", withGate)
+	}
+
+	// The same profile without it: no gate sentence, and the boundary is the
+	// built-in's again.
+	noGate := BuildReviewer(info, ProfileSpec{Name: "critic", Tools: reads})
+	if strings.Contains(noGate, "quality_gate") {
+		t.Errorf("a reviewer without the gate was told it has one:\n%s", noGate)
+	}
+	if !strings.Contains(noGate, "You cannot edit files or run commands.") {
+		t.Errorf("a reviewer without the gate lost the boundary sentence:\n%s", noGate)
+	}
+	if strings.Contains(noGate, "Your purpose:") {
+		t.Errorf("a profile with no description invented one:\n%s", noGate)
+	}
+
+	// A narrowed allowlist and the web tier are the other two things the
+	// fixed paragraph used to be wrong about.
+	narrow := BuildReviewer(info, ProfileSpec{Name: "critic", Tools: []string{"read_file", "search", "web_fetch"}})
+	if !strings.Contains(narrow, "workspace (read_file, search).") {
+		t.Errorf("the tool list names tools the profile does not hold:\n%s", narrow)
+	}
+	if !strings.Contains(narrow, "Web tools (web_fetch)") || !strings.Contains(narrow, noSearch) {
+		t.Errorf("a reviewer with fetch and no search is not told either:\n%s", narrow)
 	}
 }
 
@@ -382,7 +478,7 @@ func TestEveryPromptStatesTheDate(t *testing.T) {
 		"one-shot":     Build(info),
 		"agent":        BuildAgent(info),
 		"researcher":   BuildResearcher(info, WebTools{Fetch: true, Search: true}),
-		"reviewer":     BuildReviewer(info),
+		"reviewer":     BuildReviewer(info, ProfileSpec{}),
 		"writer":       BuildWriter(info),
 		"profile":      BuildProfile(info, spec),
 		"conversation": BuildConversation(info),

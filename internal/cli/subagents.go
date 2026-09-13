@@ -501,7 +501,7 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 		} else {
 			switch role {
 			case subagent.RoleReviewer:
-				sysPrompt = prompt.BuildReviewer(info, extra)
+				sysPrompt = prompt.BuildReviewer(info, prompt.ProfileSpec{}, extra)
 				defs = tools.Definitions()
 			case subagent.RoleWriter:
 				sysPrompt = prompt.BuildWriter(info, extra)
@@ -925,10 +925,16 @@ func profileEnv(def config.AgentDefinition, spec subagent.Spec, info shell.Info,
 	// declared evidence before anything else, or about ending on a verdict.
 	// The child would be run under one contract and instructed in another,
 	// and the instructions are the half it can act on. The file's own
-	// prompt follows the reviewer's the way it follows the reader's.
+	// prompt follows the reviewer's the way it follows the reader's, and the
+	// name, the purpose and the toolset go with it: a review is still this
+	// profile, holding what this profile was registered with.
 	// See docs/capabilities/subagents.md#a-review-is-bounded-by-what-it-is-given.
 	case def.Reviews:
-		sysPrompt = prompt.BuildReviewer(info, prompt.CombineExtra(strings.TrimSpace(def.Prompt), extra))
+		sysPrompt = prompt.BuildReviewer(info, prompt.ProfileSpec{
+			Name:        def.Name,
+			Description: def.Description,
+			Tools:       names,
+		}, prompt.CombineExtra(strings.TrimSpace(def.Prompt), extra))
 	default:
 		sysPrompt = prompt.BuildProfile(info, prompt.ProfileSpec{
 			Name:        def.Name,
