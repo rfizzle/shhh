@@ -49,6 +49,23 @@ const (
 	// MethodTurnInterrupt stops a running turn at its next checkpoint.
 	MethodTurnInterrupt = "turn/interrupt"
 
+	// MethodAgentSteer puts a message in front of one of the session's
+	// children, which the child reads at its next round boundary. It is the
+	// verb the person at a child's lane calls and reaches the child by the
+	// same path, so a redirect from a client has the consequences for the
+	// turn it lands in that a typed one has.
+	MethodAgentSteer = "agent/steer"
+	// MethodAgentKill ends one of the session's children and the agents
+	// under it.
+	//
+	// It is the client's alone. The model that spawned the child is offered
+	// no such tool, for the reason it is offered no such key on shhh's own
+	// screen: a writer stopped part-way leaves an unfinished change nobody
+	// has judged, and the party that would be stopping it has a roster line
+	// for evidence
+	// (docs/capabilities/subagents.md#three-can-steer-a-child-and-none-of-them-can-end-it).
+	MethodAgentKill = "agent/kill"
+
 	// MethodApprovalAnswer answers one approval request by the id it was
 	// shown under.
 	MethodApprovalAnswer = "approval/answer"
@@ -109,6 +126,11 @@ const (
 	// one and an answer that named the wrong series is told so rather than
 	// resolving the other request.
 	CodeUnknownQuestion = -32005
+	// CodeUnknownAgent: no child of that session answers to that name, or it
+	// has already finished and there is nothing left to steer or to end. The
+	// message is the session's own refusal, so a client and shhh's screen are
+	// told the same thing about the same agent.
+	CodeUnknownAgent = -32006
 )
 
 // The two answers an approval request takes. They are the record's own words
@@ -205,12 +227,33 @@ type SteerParams struct {
 	Text    string `json:"text"`
 }
 
+// AgentSteerParams puts a message in front of one of the session's children.
+type AgentSteerParams struct {
+	Session string `json:"session"`
+	Agent   string `json:"agent"`
+	Text    string `json:"text"`
+}
+
+// AgentParams names one of the session's children, and is what a call that
+// only needs to say which one takes.
+type AgentParams struct {
+	Session string `json:"session"`
+	Agent   string `json:"agent"`
+}
+
 // AnswerParams answers one approval request. The id is the one the request
 // was shown under and nothing else: an answer that named a call by its tool
 // would approve whichever of them happened to be waiting.
+//
+// Agent is optional and is checked rather than read: where it is given it has
+// to be the agent the request named, so a client holding a card for the turn
+// and a card for a child cannot answer one of them under the other's id. It
+// decides nothing on its own — an answer that gave only an agent would still
+// be an answer to whichever of its requests happened to be waiting.
 type AnswerParams struct {
 	Session  string `json:"session"`
 	ID       string `json:"id"`
+	Agent    string `json:"agent,omitempty"`
 	Decision string `json:"decision"`
 }
 
@@ -227,13 +270,36 @@ type EventParams struct {
 // ApprovalParams is one call put to the clients. It carries what a decision
 // is made from — which tool, on what arguments — and where in the session it
 // happened, in the same two fields every event on the stream carries them in.
+//
+// Agent is the child the request was raised by, and empty for the turn's own
+// calls. It is what lets a client file a card against the agent that raised
+// it: a fan-out of four writers puts four cards to one client, and one that
+// could only say "run the tests" would be asking which tree it meant.
+//
+// Title and Warnings belong to a child's request and are empty for the turn's
+// own. A child's request is not always a tool call — a writer's finished
+// patch is the whole of its worktree against the checkout, with no call
+// behind it — so Title is what the request was raised under, and Warnings
+// what it was flagged with: the risks a command carries, or the paths a patch
+// would overwrite from one already applied. Where nobody is attached to be
+// asked, that flag is the whole of what the run's own rule decides on
+// (docs/capabilities/headless.md#a-run-can-delegate), so a client answering
+// in its place is shown it too.
+//
+// A child's request carries the turn that owns it and no round. A child runs
+// beside the loop rather than inside one of its rounds, so the number the
+// loop's counter held when the request was raised is a fact about the parent
+// and not about the request.
 type ApprovalParams struct {
-	Session   string `json:"session"`
-	ID        string `json:"id"`
-	Tool      string `json:"tool"`
-	Arguments string `json:"arguments"`
-	Turn      int64  `json:"turn"`
-	Round     int64  `json:"round"`
+	Session   string   `json:"session"`
+	ID        string   `json:"id"`
+	Agent     string   `json:"agent,omitempty"`
+	Tool      string   `json:"tool"`
+	Arguments string   `json:"arguments"`
+	Title     string   `json:"title,omitempty"`
+	Warnings  []string `json:"warnings,omitempty"`
+	Turn      int64    `json:"turn"`
+	Round     int64    `json:"round"`
 }
 
 // QuestionParams is one question put to the clients: what is being asked, the

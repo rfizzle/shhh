@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"net"
 	"path/filepath"
@@ -27,6 +28,14 @@ type fakeLoop struct {
 	// question, when set, is a question this loop puts to the clients once
 	// per turn, the same way and for the same reason.
 	question *ask.Question
+	// child, when set, is a request this loop routes on behalf of one of its
+	// children once per turn: the same seam the turn's own calls go through,
+	// naming the agent that raised it.
+	child *Call
+	// agentErr, when set, is what this loop refuses both agent calls with, so
+	// a test can state what a client is told about a name the session does
+	// not answer to.
+	agentErr error
 	// held, when set, is what a turn waits on before it finishes, so a test
 	// can steer or interrupt a turn that is genuinely still running.
 	held    chan struct{}
@@ -38,6 +47,9 @@ type fakeLoop struct {
 	steers      []string
 	allowed     []bool
 	answers     []ask.Answer
+	childAsked  []bool
+	steered     []string
+	killed      []string
 	interrupted bool
 	forks       int
 	closed      bool
@@ -67,6 +79,14 @@ func (f *fakeLoop) Run(turn int64, prompt string) (string, error) {
 		f.allowed = append(f.allowed, ok)
 		f.mu.Unlock()
 	}
+	if f.child != nil {
+		call := *f.child
+		call.Turn, call.Round = turn, 1
+		ok := f.seams.Ask(call)
+		f.mu.Lock()
+		f.childAsked = append(f.childAsked, ok)
+		f.mu.Unlock()
+	}
 	if f.question != nil {
 		a := f.seams.Question(Question{Ask: *f.question, Turn: turn, Round: 1})
 		f.mu.Lock()
@@ -84,6 +104,26 @@ func (f *fakeLoop) Steer(text string) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.steers = append(f.steers, text)
+}
+
+func (f *fakeLoop) SteerAgent(name, text string) error {
+	if f.agentErr != nil {
+		return f.agentErr
+	}
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.steered = append(f.steered, name+": "+text)
+	return nil
+}
+
+func (f *fakeLoop) KillAgent(name string) error {
+	if f.agentErr != nil {
+		return f.agentErr
+	}
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.killed = append(f.killed, name)
+	return nil
 }
 
 func (f *fakeLoop) Interrupt() {
@@ -1137,5 +1177,179 @@ func TestServer_AnAnswerToAQuestionNobodyWasShownIsRefused(t *testing.T) {
 	defer loop.mu.Unlock()
 	if len(loop.answers) != 1 || loop.answers[0].Note != "start narrow" {
 		t.Errorf("the loop was told %v", loop.answers)
+	}
+}
+
+// A fan-out puts several cards to one client at once, so a card has to say
+// which agent raised it: one that could only say "run the tests" would be
+// asking about a tree the client cannot name. The turn's own calls carry no
+// agent, which is how the two are told apart.
+func TestServer_AChildsRequestNamesTheAgentThatRaisedIt(t *testing.T) {
+	loop := &fakeLoop{child: &Call{
+		Agent: "writer-1", Tool: "execute_command", Arguments: `{"command":"go test ./..."}`,
+		Title: "run go test ./...", Warnings: []string{"overwrites a.go, already applied by writer-2"},
+	}}
+	srv := newServerWith(loop)
+	defer srv.Close()
+	c := dial(t, srv)
+
+	var opened SessionResult
+	c.mustCall(MethodSessionStart, StartParams{}, &opened)
+	c.mustCall(MethodTurnStart, TurnParams{Session: opened.Session, Prompt: "ship it"}, &TurnResult{})
+
+	req := c.waitApproval()
+	if req.Agent != "writer-1" {
+		t.Fatalf("a child's card named %q, want writer-1", req.Agent)
+	}
+	if req.Tool != "execute_command" || req.Arguments == "" {
+		t.Errorf("a child's card lost the call it is about: %+v", req)
+	}
+	if req.Title != "run go test ./..." || len(req.Warnings) != 1 {
+		t.Errorf("a child's card lost what the request was raised under: %+v", req)
+	}
+	c.mustCall(MethodApprovalAnswer,
+		AnswerParams{Session: opened.Session, ID: req.ID, Agent: "writer-1", Decision: DecisionAllow},
+		&struct{}{})
+
+	c.waitEvent("close")
+	loop.mu.Lock()
+	defer loop.mu.Unlock()
+	if len(loop.childAsked) != 1 || !loop.childAsked[0] {
+		t.Fatalf("the child was told %v about a request the client allowed", loop.childAsked)
+	}
+}
+
+// An answer that names an agent is held to it. A client watching a fan-out has
+// a card per agent open at once and the id is the only thing that says which
+// is which, so answering one under the other's name is a refusal rather than a
+// decision — and the card it was meant for is still there to answer.
+func TestServer_AnAnswerThatNamesAnotherAgentSpendsNothing(t *testing.T) {
+	loop := &fakeLoop{child: &Call{Agent: "writer-1", Tool: "execute_command", Arguments: `{}`}}
+	srv := newServerWith(loop)
+	defer srv.Close()
+	c := dial(t, srv)
+
+	var opened SessionResult
+	c.mustCall(MethodSessionStart, StartParams{}, &opened)
+	c.mustCall(MethodTurnStart, TurnParams{Session: opened.Session, Prompt: "ship it"}, &TurnResult{})
+
+	req := c.waitApproval()
+	_, rerr := c.call(MethodApprovalAnswer,
+		AnswerParams{Session: opened.Session, ID: req.ID, Agent: "writer-2", Decision: DecisionAllow})
+	if rerr == nil || rerr.Code != CodeInvalidParams {
+		t.Fatalf("answering a child's card under another child's name answered %v", rerr)
+	}
+	if !strings.Contains(rerr.Message, "writer-1") {
+		t.Errorf("the refusal does not say who raised the request: %s", rerr.Message)
+	}
+	// Still open, because the refusal did not spend the id.
+	c.mustCall(MethodApprovalAnswer,
+		AnswerParams{Session: opened.Session, ID: req.ID, Agent: "writer-1", Decision: DecisionAllow},
+		&struct{}{})
+
+	c.waitEvent("close")
+	loop.mu.Lock()
+	defer loop.mu.Unlock()
+	if len(loop.childAsked) != 1 || !loop.childAsked[0] {
+		t.Fatalf("the child was told %v after the card was answered properly", loop.childAsked)
+	}
+}
+
+// A turn's own card is answered without naming an agent, and an answer that
+// gives one is told the turn raised it: the sentence has to name somebody, and
+// an empty name would read as a server that had lost track of the request.
+func TestServer_AnAnswerThatGivesAnAgentToTheTurnsOwnCardIsRefused(t *testing.T) {
+	loop := &fakeLoop{askTool: "execute_command"}
+	srv := newServerWith(loop)
+	defer srv.Close()
+	c := dial(t, srv)
+
+	var opened SessionResult
+	c.mustCall(MethodSessionStart, StartParams{}, &opened)
+	c.mustCall(MethodTurnStart, TurnParams{Session: opened.Session, Prompt: "ship it"}, &TurnResult{})
+
+	req := c.waitApproval()
+	if req.Agent != "" {
+		t.Fatalf("the turn's own card named an agent: %q", req.Agent)
+	}
+	_, rerr := c.call(MethodApprovalAnswer,
+		AnswerParams{Session: opened.Session, ID: req.ID, Agent: "writer-1", Decision: DecisionAllow})
+	if rerr == nil || !strings.Contains(rerr.Message, "the turn itself") {
+		t.Fatalf("answering the turn's own card under an agent's name answered %v", rerr)
+	}
+	c.mustCall(MethodApprovalAnswer,
+		AnswerParams{Session: opened.Session, ID: req.ID, Decision: DecisionAllow}, &struct{}{})
+	c.waitEvent("close")
+}
+
+// The two calls a client makes about a child: one that puts a message in front
+// of it, one that ends it. Both reach the loop's own verbs, and neither needs
+// a turn to be running — a child outlives the round that spawned it.
+func TestServer_AClientSteersAChildAndEndsOne(t *testing.T) {
+	loop := &fakeLoop{}
+	srv := newServerWith(loop)
+	defer srv.Close()
+	c := dial(t, srv)
+
+	var opened SessionResult
+	c.mustCall(MethodSessionStart, StartParams{}, &opened)
+
+	c.mustCall(MethodAgentSteer,
+		AgentSteerParams{Session: opened.Session, Agent: "writer-1", Text: "leave the goldens alone"},
+		&struct{}{})
+	c.mustCall(MethodAgentKill, AgentParams{Session: opened.Session, Agent: "writer-1"}, &struct{}{})
+
+	loop.mu.Lock()
+	steered, killed := append([]string(nil), loop.steered...), append([]string(nil), loop.killed...)
+	loop.mu.Unlock()
+	if len(steered) != 1 || steered[0] != "writer-1: leave the goldens alone" {
+		t.Errorf("the steer reached the loop as %v", steered)
+	}
+	if len(killed) != 1 || killed[0] != "writer-1" {
+		t.Errorf("the kill reached the loop as %v", killed)
+	}
+}
+
+// What a client gets for naming an agent the session does not have, or one
+// that has already finished: the loop's own refusal, in its own words, under
+// a code of its own rather than folded into a session that does not exist.
+func TestServer_AnAgentCallRefusesInTheLoopsOwnWords(t *testing.T) {
+	loop := &fakeLoop{agentErr: errors.New("agent writer-9 has finished (done); nothing to steer")}
+	srv := newServerWith(loop)
+	defer srv.Close()
+	c := dial(t, srv)
+
+	var opened SessionResult
+	c.mustCall(MethodSessionStart, StartParams{}, &opened)
+
+	for name, params := range map[string]any{
+		MethodAgentSteer: AgentSteerParams{Session: opened.Session, Agent: "writer-9", Text: "stop"},
+		MethodAgentKill:  AgentParams{Session: opened.Session, Agent: "writer-9"},
+	} {
+		_, rerr := c.call(name, params)
+		if rerr == nil || rerr.Code != CodeUnknownAgent {
+			t.Fatalf("%s on an agent that has finished answered %v", name, rerr)
+		}
+		if !strings.Contains(rerr.Message, "nothing to steer") {
+			t.Errorf("%s answered %q rather than the loop's own sentence", name, rerr.Message)
+		}
+	}
+
+	// And the two things neither call can be spelled without.
+	for name, params := range map[string]any{
+		MethodAgentSteer: AgentSteerParams{Session: opened.Session, Text: "stop"},
+		MethodAgentKill:  AgentParams{Session: opened.Session},
+	} {
+		if _, rerr := c.call(name, params); rerr == nil || rerr.Code != CodeInvalidParams {
+			t.Errorf("%s with no agent named answered %v", name, rerr)
+		}
+	}
+	if _, rerr := c.call(MethodAgentSteer,
+		AgentSteerParams{Session: opened.Session, Agent: "writer-9"}); rerr == nil || rerr.Code != CodeInvalidParams {
+		t.Errorf("a steer with nothing to say answered %v", rerr)
+	}
+	if _, rerr := c.call(MethodAgentKill, AgentParams{Session: "s99", Agent: "writer-9"}); rerr == nil ||
+		rerr.Code != CodeUnknownSession {
+		t.Errorf("an agent call on a session nobody opened answered %v", rerr)
 	}
 }

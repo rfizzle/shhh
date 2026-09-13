@@ -1036,19 +1036,48 @@ func webToolsFor(ts *web.Toolset) prompt.WebTools {
 //
 // answerChildAsk is that rule on its own, because the loop around it is a
 // goroutine over a channel and the rule is the part worth asserting.
+//
+// A surface with somebody to ask hands answerChildAsks an answerer of its own
+// instead, and this stays what answers where there is nobody: a scripted run,
+// and a served session the operator has said nobody is attached to
+// (docs/capabilities/headless.md#a-run-can-delegate).
 func answerChildAsk(ask *subagent.Ask, writes bool) bool {
 	return writes && ask.Kind == subagent.AskPatch && len(ask.Warnings) == 0
 }
 
-func answerChildAsks(sup *subagent.Supervisor, writes bool, wrote func(...string)) {
+// answer is what a routed request is put to, or nil for the rule above; state
+// is told every child state change the supervisor reports, or nil where
+// nothing is watching. Both are the served session's: a run printing to a
+// terminal says a child's state in the progress rows beside its output and has
+// nobody to put a request to.
+func answerChildAsks(sup *subagent.Supervisor, writes bool, wrote func(...string),
+	answer func(*subagent.Ask) bool, state func(subagent.Status)) {
 	if sup == nil {
 		return
 	}
 	go func() {
 		for ev := range sup.Events() {
+			// Every event carries the child's status, and the state it
+			// reports goes out before whatever else the event is for: a
+			// request put to a client ahead of the line saying the child is
+			// blocked would be a card for an agent the client last heard was
+			// running.
+			if state != nil {
+				state(ev.Status)
+			}
 			switch ev.Kind {
 			case subagent.EventAsk:
 				if ev.Ask == nil {
+					continue
+				}
+				if answer != nil {
+					// On a goroutine of its own, because an answerer with
+					// somebody to ask takes as long as a person does and the
+					// supervisor blocks delivering the events behind this
+					// one: a second child's request, or its ending, would
+					// wait on the first child's card. The rule below takes no
+					// time at all and stays where it is.
+					go func(as *subagent.Ask) { as.Respond(answer(as)) }(ev.Ask)
 					continue
 				}
 				ev.Ask.Respond(answerChildAsk(ev.Ask, writes))

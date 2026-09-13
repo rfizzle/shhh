@@ -558,6 +558,10 @@ const (
 	// EventUsage: what the run has spent so far, as Observer.Usage reports
 	// it.
 	EventUsage = "usage"
+	// EventAgent: one child of this run, as it stands now. It is written
+	// wherever the run has a reader that cannot see the progress rows a
+	// terminal draws, and carries the record those rows are drawn from.
+	EventAgent = "agent"
 	// EventClose: the turn ending, carrying the turn outcome above. It is the
 	// last line of every stream and the only one that is always written.
 	EventClose = "close"

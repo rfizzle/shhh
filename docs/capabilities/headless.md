@@ -324,6 +324,24 @@ may spawn are the ones that only read, and a persona is worth having for the
 exchange with the person rather than for the paragraph it hands back — which
 is exactly what a run nobody is reading does not have.
 
+**A client driving a served session is shown the fan-out rather than left to
+infer it.** Every state change the supervisor reports reaches it as one more
+line on the event stream — which child, who spawned it, what it was asked for,
+where it has got to, what it has spent and how it ended — which is the reading
+shhh's own manager draws its rows from. A request a child routes up is put to
+the client as an approval like every other, naming the child it came from, so
+a card for a writer's command is not read as one the turn itself asked for.
+And the client may redirect a child or end one, which are the two things a
+person watching a fan-out does.
+
+Where nobody is attached to be asked — a server in auto mode — a child's
+request is answered by the scripted run's rule above instead: a writer's patch
+that overlaps nothing already applied lands, and everything else is refused,
+because nothing there was given the standing to allow it. A client that walks
+away mid-turn is a different thing and gets the different answer: its child's
+request is refused, on the same rule that refuses the turn's own calls the
+moment there is nobody left to answer them.
+
 Children are cancelled and their worktrees removed when the run ends, on the
 same path everything else the run opened is released on, so a run that is
 killed after spawning leaves nothing behind either.
@@ -350,6 +368,29 @@ for whatever the client asks next — which would be a correction folded into
 work it was never about, answered under a turn number nobody sent it to. A
 turn is therefore one call and one close line, however many times the model
 was asked inside it.
+
+**A child of the turn is on the wire too, in three places.** A turn that
+delegates reports every state change of every child as an `agent` event on the
+stream, carrying the record a lane and a map are drawn from. A request a child
+routes up to be answered for is put to the client under the child's name, so a
+card can be filed against the agent that raised it rather than against the
+turn. And the client takes two calls of its own: one that puts a message in
+front of a child, which the child reads at its next round boundary, and one
+that ends a child and the agents under it.
+
+Ending a child is the client's and nobody else's. The orchestrator that
+spawned it is not offered the same call, for the reason it is not offered the
+same key on the screen
+([`subagents.md`](subagents.md#three-can-steer-a-child-and-none-of-them-can-end-it)):
+a redirect is cheap to be wrong about and a stop is not, and the party that
+would be stopping a writer part-way has a roster line for evidence. Both calls
+refuse a name no agent in the session answers to, and one that has already
+finished, in the words the same two verbs answer shhh's own screen in.
+
+There is no call that attaches to a child's conversation. What a lane draws
+while the child runs is on the event stream already, and a transcript of a
+child that has children of its own is a shape the protocol should not be the
+first surface to invent.
 
 Nothing about the run itself moves behind the protocol. It is assembled the
 way an unattended run is — the same tools registered on the same conditions,

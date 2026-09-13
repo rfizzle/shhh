@@ -1145,7 +1145,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	// request and itself behind it. What this run's own calls wrote is where
 	// a landed patch is added, so the tree reading, the close gate and the
 	// git stager all see a child's work as this run's (subagents.go).
-	answerChildAsks(sup, opts.answered(), own.wrote)
+	answerChildAsks(sup, opts.answered(), own.wrote, nil, nil)
 	// Three readers want that list — the tree check, as the subtrahend for
 	// what somebody else changed; the close run, to know whether this turn
 	// changed anything worth checking; and the git stager, which may stage
@@ -2294,6 +2294,9 @@ type jsonEvent struct {
 	Reason     string `json:"reason,omitempty"`
 
 	Usage *jsonUsage `json:"usage,omitempty"`
+	// Agent belongs to the agent line alone: one child of this session as it
+	// stands right now.
+	Agent *jsonAgent `json:"agent,omitempty"`
 	// Exit and Final belong to the close line alone. Exit is a pointer so
 	// that the code the run is about to exit with is stated even when it is
 	// zero, which is the one value a reader most needs to see written down.
@@ -2315,6 +2318,57 @@ type jsonEvent struct {
 	Chat    string `json:"chat,omitempty"`
 	Session string `json:"session,omitempty"`
 	Resume  string `json:"resume,omitempty"`
+}
+
+// jsonAgent is one child of the session as a reader of the stream is told
+// about it: the fields shhh's own lane and map are drawn from, in the record
+// the supervisor already keeps rather than a second reading of it.
+//
+// Parent is what nests them. It is beside the name rather than a depth
+// because a depth is a fact about the set a surface is drawing — a fan-out
+// block holding one round's children counts from its own top — and a parent
+// is a fact about the child, which is what a line reporting one child at a
+// time can honestly carry.
+type jsonAgent struct {
+	Name   string `json:"name"`
+	Parent string `json:"parent,omitempty"`
+	Role   string `json:"role"`
+	State  string `json:"state"`
+	Task   string `json:"task,omitempty"`
+	Model  string `json:"model,omitempty"`
+	// Detail is the child's own line — what it says it is doing — and is the
+	// one field here that is prose. It is not a code and nothing matches on
+	// it; the state above is what a reader acts on.
+	Detail string `json:"detail,omitempty"`
+	// Paths is a writer's declared write scope, empty for an unscoped child.
+	Paths []string `json:"paths,omitempty"`
+	// Batch groups the children one parent tool round spawned, so a fan-out
+	// can be drawn as one block rather than as interleaved rows.
+	Batch     int   `json:"batch,omitempty"`
+	Step      int   `json:"step,omitempty"`
+	Steps     int   `json:"steps,omitempty"`
+	ToolCalls int   `json:"tool_calls,omitempty"`
+	ElapsedMS int64 `json:"elapsed_ms,omitempty"`
+	// Budget is the effective fresh-token budget and Tokens the fresh total
+	// that has gone against it. The record's own split of that total by phase
+	// is not here: what a lane draws is the pair, and the phases are
+	// estimates a reader would have to be told not to add up.
+	Budget int64 `json:"budget,omitempty"`
+	Tokens int64 `json:"tokens,omitempty"`
+	// Summary is the first line of a finished child's report, Verdict the
+	// last reading of its work in the summariser's own closed vocabulary,
+	// and End how the attempt stopped, from the closed set in
+	// internal/observe. End is empty while the child is still running.
+	Summary string `json:"summary,omitempty"`
+	Verdict string `json:"verdict,omitempty"`
+	End     string `json:"end,omitempty"`
+	// Steers is how many times this turn the child has been told it looks to
+	// have left its task, and SteerFrom where the last message in front of it
+	// came from. Held says the child has parked at its round boundary on the
+	// session's hold, which is a running child and not a state of its own.
+	Steers    int    `json:"steers,omitempty"`
+	SteerFrom string `json:"steer_from,omitempty"`
+	Held      bool   `json:"held,omitempty"`
 }
 
 // write puts one event on the stream. A nil stream is the run that asked for
@@ -2376,6 +2430,18 @@ func (s *jsonlStream) signal(at observe.Pos, code, reason string) {
 	}
 	s.write(jsonEvent{Kind: observe.EventSignal, Turn: at.Turn, Round: at.Round,
 		Code: code, Reason: reason})
+}
+
+// agent puts one child's state on the stream. It is the surface with a client
+// on it that writes these: a run printing to a terminal says the same thing in
+// the progress rows beside its output, and one nobody is watching has nobody
+// to say it to.
+// See docs/capabilities/headless.md#something-else-can-drive-it.
+func (s *jsonlStream) agent(at observe.Pos, a jsonAgent) {
+	if s == nil {
+		return
+	}
+	s.write(jsonEvent{Kind: observe.EventAgent, Turn: at.Turn, Round: at.Round, Agent: &a})
 }
 
 func (s *jsonlStream) usage(at observe.Pos, u provider.Usage) {

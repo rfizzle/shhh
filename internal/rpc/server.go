@@ -15,11 +15,17 @@ import (
 	"github.com/rfizzle/shhh/internal/ask"
 )
 
-// Call is one approval-gated tool call as it is put to a client: what the
-// model asked for, and where in the session it asked for it.
+// Call is one approval-gated request as it is put to a client: what was asked
+// for, who asked for it, and where in the session they asked.
+//
+// Agent, Title and Warnings are a child's and empty for the turn's own calls;
+// what each of them is for is on ApprovalParams, which is this on the wire.
 type Call struct {
+	Agent     string
 	Tool      string
 	Arguments string
+	Title     string
+	Warnings  []string
 	Turn      int64
 	Round     int64
 }
@@ -85,6 +91,20 @@ type Loop interface {
 	// Steer joins text to a running turn, which reads it at its next round
 	// boundary.
 	Steer(text string)
+	// SteerAgent puts a message in front of one of this session's children,
+	// which reads it at its next round boundary. The error is the loop's own
+	// refusal — a name nothing in the session answers to, or an agent that
+	// has finished — stated for the client in the words it is stated in on
+	// shhh's own screen.
+	SteerAgent(agent, text string) error
+	// KillAgent ends one of this session's children and the agents under it,
+	// and refuses on the same two grounds SteerAgent does.
+	//
+	// It is here because the client is the person, and ending a child is the
+	// person's
+	// (docs/capabilities/subagents.md#three-can-steer-a-child-and-none-of-them-can-end-it).
+	// Nothing gives the loop's own model a way to reach it.
+	KillAgent(agent string) error
 	// Interrupt stops a running turn at its next checkpoint.
 	Interrupt()
 	// Transcript is the conversation as it stood at the end of the last turn,
@@ -149,7 +169,7 @@ type Session struct {
 	mu      sync.Mutex
 	loop    Loop
 	conns   map[*conn]struct{}
-	pending map[string]chan bool
+	pending map[string]*waitingCall
 	asked   int
 	// questions are the questions waiting for a client, under ids of their
 	// own series. A separate map and a separate counter because the two are
@@ -180,6 +200,15 @@ type Session struct {
 	// turns counts the turn goroutine, so a session being torn down can wait
 	// for it rather than closing the loop out from under it.
 	turns sync.WaitGroup
+}
+
+// waitingCall is one approval request put to the clients: the answer channel,
+// and the agent it was raised by. The agent is kept so an answer that names
+// one can be held to it — a client watching a fan-out has a card per agent
+// open at once, and the id is the only thing that says which is which.
+type waitingCall struct {
+	agent  string
+	answer chan bool
 }
 
 // waitingQuestion is one question put to the clients: the answer channel, and
@@ -375,7 +404,7 @@ func (s *Server) newSession() (*Session, *Error) {
 		srv:       s,
 		grace:     s.grace,
 		conns:     map[*conn]struct{}{},
-		pending:   map[string]chan bool{},
+		pending:   map[string]*waitingCall{},
 		questions: map[string]*waitingQuestion{},
 		gone:      make(chan struct{}),
 		done:      make(chan struct{}),
@@ -480,8 +509,8 @@ func (s *Session) detach(c *conn) {
 	var orphaned []chan bool
 	var unanswered []chan ask.Answer
 	if len(s.conns) == 0 {
-		for id, ch := range s.pending {
-			orphaned = append(orphaned, ch)
+		for id, w := range s.pending {
+			orphaned = append(orphaned, w.answer)
 			delete(s.pending, id)
 		}
 		for id, q := range s.questions {
@@ -539,13 +568,14 @@ func (s *Session) ask(call Call) bool {
 	s.asked++
 	id := fmt.Sprintf("a%d", s.asked)
 	answer := make(chan bool, 1)
-	s.pending[id] = answer
+	s.pending[id] = &waitingCall{agent: call.Agent, answer: answer}
 	conns := s.watchers()
 	s.mu.Unlock()
 
 	params := ApprovalParams{
-		Session: s.id, ID: id,
+		Session: s.id, ID: id, Agent: call.Agent,
 		Tool: call.Tool, Arguments: call.Arguments,
+		Title: call.Title, Warnings: call.Warnings,
 		Turn: call.Turn, Round: call.Round,
 	}
 	for _, c := range conns {
@@ -562,22 +592,43 @@ func (s *Session) ask(call Call) bool {
 // answer resolves one waiting request. An id nothing is waiting under is
 // refused rather than ignored: a client that thinks it approved something is
 // worse off than one that was told it did not.
-func (s *Session) answer(id, decision string) *Error {
+func (s *Session) answer(id, agent, decision string) *Error {
 	switch decision {
 	case DecisionAllow, DecisionDeny:
 	default:
 		return errorf(CodeInvalidParams, "decision %q: one of %s or %s", decision, DecisionAllow, DecisionDeny)
 	}
 	s.mu.Lock()
-	ch, ok := s.pending[id]
+	w, ok := s.pending[id]
+	// An answer that names the wrong agent does not spend the id, for the
+	// reason a malformed question answer does not: the card it was meant for
+	// is still open, and a client told it answered the wrong one can answer
+	// the right one.
+	if ok && agent != "" && agent != w.agent {
+		s.mu.Unlock()
+		return errorf(CodeInvalidParams,
+			"approval request %q on session %s was raised by %s, not by %q",
+			id, s.id, requestRaiser(w.agent), agent)
+	}
 	delete(s.pending, id)
 	s.mu.Unlock()
 	if !ok {
 		return errorf(CodeUnknownApproval,
 			"no approval request %q is waiting on session %s: a client answers a request it was shown", id, s.id)
 	}
-	ch <- decision == DecisionAllow
+	w.answer <- decision == DecisionAllow
 	return nil
+}
+
+// requestRaiser names who a waiting request came from, for the refusal above.
+// The turn's own calls carry no agent, and "the turn itself" is what a client
+// that answered one of them under a child's name has to be told: an empty
+// name in that sentence would read as a server that had lost track of it.
+func requestRaiser(agent string) string {
+	if agent == "" {
+		return "the turn itself"
+	}
+	return agent
 }
 
 // askQuestion puts one question to the clients and waits for an answer.
@@ -909,6 +960,10 @@ func (c *conn) dispatch(ctx context.Context, req request) (any, *Error) {
 		return c.turnSteer(req.Params)
 	case MethodTurnInterrupt:
 		return c.turnInterrupt(req.Params)
+	case MethodAgentSteer:
+		return c.agentSteer(req.Params)
+	case MethodAgentKill:
+		return c.agentKill(req.Params)
 	case MethodApprovalAnswer:
 		return c.approvalAnswer(req.Params)
 	case MethodQuestionAnswer:
@@ -1092,6 +1147,59 @@ func (c *conn) turnInterrupt(raw json.RawMessage) (any, *Error) {
 	return struct{}{}, nil
 }
 
+// agentSteer puts a message in front of one of the session's children. There
+// is no turn to check for: a child outlives the tool round that spawned it and
+// an idle one is waiting for exactly this — for an agent between turns, a
+// steer is the next turn's instruction.
+func (c *conn) agentSteer(raw json.RawMessage) (any, *Error) {
+	p, rerr := decode[AgentSteerParams](raw)
+	if rerr != nil {
+		return nil, rerr
+	}
+	if strings.TrimSpace(p.Agent) == "" {
+		return nil, errorf(CodeInvalidParams, "a steer needs an agent to reach")
+	}
+	if strings.TrimSpace(p.Text) == "" {
+		return nil, errorf(CodeInvalidParams, "a steer needs something to say")
+	}
+	loop, rerr := c.agentLoop(p.Session)
+	if rerr != nil {
+		return nil, rerr
+	}
+	if err := loop.SteerAgent(p.Agent, p.Text); err != nil {
+		return nil, errorf(CodeUnknownAgent, "%v", err)
+	}
+	return struct{}{}, nil
+}
+
+// agentKill ends one of the session's children and the agents under it.
+func (c *conn) agentKill(raw json.RawMessage) (any, *Error) {
+	p, rerr := decode[AgentParams](raw)
+	if rerr != nil {
+		return nil, rerr
+	}
+	if strings.TrimSpace(p.Agent) == "" {
+		return nil, errorf(CodeInvalidParams, "a kill needs an agent to end")
+	}
+	loop, rerr := c.agentLoop(p.Session)
+	if rerr != nil {
+		return nil, rerr
+	}
+	if err := loop.KillAgent(p.Agent); err != nil {
+		return nil, errorf(CodeUnknownAgent, "%v", err)
+	}
+	return struct{}{}, nil
+}
+
+// agentLoop is the session both agent calls resolve their name against.
+func (c *conn) agentLoop(session string) (Loop, *Error) {
+	sess, rerr := c.srv.session(session)
+	if rerr != nil {
+		return nil, rerr
+	}
+	return sess.driver()
+}
+
 func (c *conn) approvalAnswer(raw json.RawMessage) (any, *Error) {
 	p, rerr := decode[AnswerParams](raw)
 	if rerr != nil {
@@ -1101,7 +1209,7 @@ func (c *conn) approvalAnswer(raw json.RawMessage) (any, *Error) {
 	if rerr != nil {
 		return nil, rerr
 	}
-	if rerr := sess.answer(p.ID, p.Decision); rerr != nil {
+	if rerr := sess.answer(p.ID, p.Agent, p.Decision); rerr != nil {
 		return nil, rerr
 	}
 	return struct{}{}, nil

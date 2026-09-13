@@ -240,6 +240,11 @@ type serveLoop struct {
 	// asks of them between turns: taking whatever they have re-listed at
 	// the boundary a turn starts on. Nil where the session opened none.
 	mcp *mcp.Toolset
+	// agents is this session's children, held for the two calls a client
+	// makes about one. A served session always builds a supervisor, so this
+	// is never nil once the assembly has finished; the methods that read it
+	// still say what a client gets if it arrives before that.
+	agents *subagent.Supervisor
 
 	mu sync.Mutex
 	// steering is what a client has said to a running turn and the loop has
@@ -522,6 +527,7 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 	sup.SetParentMode(agent.ModeAuto)
 	sup.SetParentGrants(agent.Grants{AllEdits: true, AllCommands: true})
 	l.closers = append(l.closers, sup.Close)
+	l.agents = sup
 
 	// The same line between the tier that runs on its own and the tier that
 	// has to be answered for that a scripted run draws (approvals.go).
@@ -558,11 +564,41 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 			unattended{sup: sup, at: l.obs.pos, seen: l.seen,
 				judge: &autoJudge{ctx: cmd.Context(), classifier: classifier, recent: a.Messages, cwd: hookCwd}})
 	}
+	// A request a child routes up, put to the client the way the turn's own
+	// gated calls are and naming the child that raised it, so a card for a
+	// writer's command is not read as one this turn asked for. Where the
+	// operator has said nobody is attached, the scripted run's rule answers
+	// it instead — putting a card to a client that is not there would park
+	// the child rather than reach a decision, which is the reason auto mode
+	// answers the turn's own calls itself.
+	//
+	// A client that walks away mid-turn is not that case and is not treated
+	// as it: its child's request is refused, exactly as the turn's own calls
+	// are refused from the moment there is nobody left to answer them. A
+	// patch landing on the checkout after the person watching had gone would
+	// be the one act a session takes with nobody at the other end.
+	// See docs/capabilities/headless.md#a-run-can-delegate.
+	answerChild := func(as *subagent.Ask) bool {
+		if opts.autoMode {
+			return answerChildAsk(as, true)
+		}
+		return seams.Ask(rpc.Call{Agent: as.Agent, Tool: as.Tool, Arguments: as.Arguments,
+			Title: as.Title, Warnings: as.Warnings, Turn: l.turnNow()})
+	}
+	// And every child state change on the event stream, which is the surface
+	// a served session has: a client cannot see the progress rows this
+	// process would draw on a terminal, and a fan-out it is not told about is
+	// one it can neither read nor steer.
+	// See docs/capabilities/headless.md#something-else-can-drive-it.
+	childState := func(st subagent.Status) {
+		parent, _ := sup.Parent(st.Name)
+		l.events.agent(childPos(l.turnNow()), agentLine(st, parent))
+	}
 	// A supervisor blocks on its event channel, so a session that spawned a
 	// child and read nothing would stop the child at its first routed
 	// request and the turn behind it. What this session's own calls wrote is
 	// where a landed patch is added (subagents.go).
-	answerChildAsks(sup, true, own.wrote)
+	answerChildAsks(sup, true, own.wrote, answerChild, childState)
 	// A question the model put to the person, put to whoever is watching and
 	// answered in the reader's own vocabulary. An unreadable one is the call
 	// skipped with the error, the way every other malformed call is answered.
@@ -777,6 +813,52 @@ func (e *eventLines) Write(p []byte) (int, error) {
 	}
 }
 
+// childPos is where a line about a child is filed: the turn that owns it, and
+// no round.
+//
+// A child does not act in a round of its parent's turn. It runs beside the
+// loop on a goroutine of its own, from the round that spawned it until it
+// finishes, and the number the loop's counter happens to hold when the child
+// changes state says nothing about the child — a fan-out of four reporting
+// four different rounds for one moment would be reporting the parent's
+// progress under the children's names. It is also the parent's own goroutine
+// that writes that counter, and everything about a child arrives on a
+// goroutine that is not it.
+func childPos(turn int64) observe.Pos { return observe.Pos{Turn: turn} }
+
+// agentLine is one child's live status as the event stream carries it. The
+// supervisor's record is copied field for field rather than summarised: what
+// a client draws from it is what shhh's own lane and map draw, and a line that
+// chose for them would be deciding which surface a client is allowed to build.
+//
+// The parent is passed in because it is not on the status. It is what nests a
+// fan-out, and the supervisor is the only thing that knows it.
+func agentLine(st subagent.Status, parent string) jsonAgent {
+	return jsonAgent{
+		Name:      st.Name,
+		Parent:    parent,
+		Role:      string(st.Role),
+		State:     st.State.String(),
+		Task:      st.Task,
+		Model:     st.Model,
+		Detail:    st.Detail,
+		Paths:     st.Paths,
+		Batch:     st.Batch,
+		Step:      st.Step,
+		Steps:     st.Steps,
+		ToolCalls: st.ToolCalls,
+		ElapsedMS: st.Elapsed.Milliseconds(),
+		Budget:    st.Budget,
+		Tokens:    st.Tokens.Fresh,
+		Summary:   st.Summary,
+		Verdict:   st.Verdict,
+		End:       st.End,
+		Steers:    st.Steers,
+		SteerFrom: string(st.SteerFrom),
+		Held:      st.Held,
+	}
+}
+
 // hookPos is where this session is now, for the hooks at the tool seams. It
 // is the run's own reading with the turn filled in, because a served session
 // has as many turns as a client asks for.
@@ -834,6 +916,32 @@ func (l *serveLoop) drainSteering() []string {
 	queued := l.steering
 	l.steering = nil
 	return queued
+}
+
+// SteerAgent puts a message in front of one of this session's children. It is
+// the verb the person at the child's lane calls, from the same source: a
+// client driving a session is the person, and a redirect it sends has the
+// consequences for the turn it lands in that a typed one has.
+// See docs/capabilities/subagents.md#three-can-steer-a-child-and-none-of-them-can-end-it.
+func (l *serveLoop) SteerAgent(name, text string) error {
+	if l.agents == nil {
+		return fmt.Errorf("this session has no agents")
+	}
+	return l.agents.Steer(name, text, subagent.SteerFromLane)
+}
+
+// KillAgent ends one of this session's children and the agents under it.
+//
+// Nothing hands the model this: the session's own toolset has a spawn, a
+// report, a steer and a retry, and no verb that ends a child. A stop is not
+// cheap to be wrong about and a run's only evidence is a roster line, which is
+// the same reason shhh's own screen keeps the key on the lane and not in the
+// orchestrator's hands.
+func (l *serveLoop) KillAgent(name string) error {
+	if l.agents == nil {
+		return fmt.Errorf("this session has no agents")
+	}
+	return l.agents.Kill(name)
 }
 
 // Interrupt stops the running turn at its next checkpoint.

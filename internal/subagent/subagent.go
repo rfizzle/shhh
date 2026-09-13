@@ -821,6 +821,20 @@ type Ask struct {
 	// panel and the count is what survives the fold.
 	Files []string
 
+	// Tool and Arguments are the call this request is about, as the child
+	// asked for it and already rooted at the child's own workspace. They are
+	// empty on an AskPatch, which is the one request with no call behind it:
+	// a writer's patch is its whole worktree against the checkout.
+	//
+	// The fields above are what a card is drawn from and these are not; they
+	// are here for the surface that cannot draw one. A protocol client is
+	// handed a request in the two fields it is handed every other gated call
+	// in, and a client left to read the tool out of a title would be parsing
+	// a sentence for something the request already knows
+	// (docs/capabilities/headless.md#something-else-can-drive-it).
+	Tool      string
+	Arguments string
+
 	once sync.Once
 	resp chan bool
 }
@@ -4016,6 +4030,7 @@ func (s *Supervisor) buildAsk(c *child, name string, rooted json.RawMessage, act
 		return nil, err
 	}
 	ask.Root, ask.Worktree = c.root, c.worktree != ""
+	ask.Tool, ask.Arguments = name, string(rooted)
 	return ask, nil
 }
 
