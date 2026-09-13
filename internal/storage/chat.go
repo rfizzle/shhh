@@ -82,7 +82,7 @@ func (db *DB) ClaimChatSlot(name string) (string, error) {
 
 // claimChatSlot is ClaimChatSlot with chatMu already held.
 func (db *DB) claimChatSlot(name string) (string, error) {
-	now := time.Now().UTC().Format(time.RFC3339Nano)
+	now := stamp(time.Now())
 	for n := 1; n <= chatSlotAttempts; n++ {
 		claimed := name
 		if n > 1 {
@@ -305,7 +305,7 @@ func (db *DB) SaveChatBranch(parentName, branchName string, messages []provider.
 	}
 	defer tx.Rollback()
 
-	now := time.Now().UTC().Format(time.RFC3339Nano)
+	now := stamp(time.Now())
 	if _, err := tx.Exec(
 		`INSERT OR IGNORE INTO chat_sessions (name, created_at, updated_at) VALUES (?, ?, ?)`,
 		parentName, now, now,
@@ -379,7 +379,7 @@ func (db *DB) SaveChatBranch(parentName, branchName string, messages []provider.
 // whatever is really in the slot. The caller holds chatMu across both.
 func (db *DB) saveChatTx(tx *sql.Tx, name string, messages []provider.Message) (int64, error) {
 	var sessionID int64
-	now := time.Now().UTC().Format(time.RFC3339Nano)
+	now := stamp(time.Now())
 	// from is the first message this save has to write. A slot being made
 	// holds nothing, so it is all of them.
 	from := 0
@@ -547,10 +547,12 @@ func (db *DB) chatMessages(sessionID int64) ([]provider.Message, error) {
 	return messages, rows.Err()
 }
 
-// ListChats is every saved conversation, newest first. A slot holding no
-// messages is not one of them: a session claims its slot when it starts and
-// may never write to it, and a listing that offered those would put an empty
-// conversation at the top of `--continue` for as long as a session sits idle.
+// ListChats is every saved conversation, newest first, with the id breaking
+// a tie on the update stamp so that two slots written in one tick still list
+// in one order. A slot holding no messages is not one of them: a session
+// claims its slot when it starts and may never write to it, and a listing
+// that offered those would put an empty conversation at the top of
+// `--continue` for as long as a session sits idle.
 //
 // Each entry says whether another running session has the slot, which is the
 // one thing a reader cannot see from the row itself: a name and a timestamp
@@ -567,7 +569,7 @@ func (db *DB) ListChats() ([]ChatListEntry, error) {
 		 FROM chat_sessions s
 		 JOIN chat_messages m ON m.session_id = s.id
 		 GROUP BY s.id
-		 ORDER BY s.updated_at DESC`,
+		 ORDER BY s.updated_at DESC, s.id DESC`,
 	)
 	if err != nil {
 		return nil, err
@@ -642,7 +644,7 @@ func (db *DB) SearchChats(query string) ([]ChatListEntry, error) {
 		 LEFT JOIN chat_messages m ON m.session_id = s.id
 		 WHERE s.id IN (`+strings.Join(perWord, " INTERSECT ")+`)
 		 GROUP BY s.id
-		 ORDER BY s.updated_at DESC`, args...,
+		 ORDER BY s.updated_at DESC, s.id DESC`, args...,
 	)
 	if err != nil {
 		return nil, err
@@ -779,7 +781,7 @@ func (db *DB) MostRecentChat() (RecentChat, bool, error) {
 		`SELECT est_cost FROM agent_sessions
 		 WHERE parent_id IS NULL AND started_at <= ?
 		   AND (ended_at IS NULL OR ended_at >= ?)
-		 ORDER BY started_at DESC LIMIT 1`, at, at)
+		 ORDER BY started_at DESC, id DESC LIMIT 1`, at, at)
 	var cost float64
 	if err := row.Scan(&cost); err == nil {
 		out.Cost, out.Priced = cost, true

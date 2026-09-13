@@ -88,7 +88,7 @@ func (db *DB) saveChangeTx(id, turn int64, seq int, r changeset.Record) error {
 		     track = excluded.track, at = excluded.at`,
 		id, turn, seq, r.Path, before, after,
 		r.BeforeExists, r.AfterExists, uint32(r.BeforeMode), uint32(r.AfterMode),
-		r.Agent, int(r.Origin), int(r.Track), at.UTC().Format(time.RFC3339Nano))
+		r.Agent, int(r.Origin), int(r.Track), stamp(at))
 	if err != nil {
 		return fmt.Errorf("save change: %w", err)
 	}

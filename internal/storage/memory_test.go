@@ -3,7 +3,6 @@ package storage
 import (
 	"strings"
 	"testing"
-	"time"
 )
 
 func TestAddAndListMemories(t *testing.T) {
@@ -55,36 +54,6 @@ func TestAddAndListMemories(t *testing.T) {
 	}
 	if got[0].CreatedAt.IsZero() || got[0].UpdatedAt.IsZero() {
 		t.Fatal("timestamps should round-trip")
-	}
-}
-
-// TestMemoryStampOrdersAsText pins the write format against the reason it was
-// chosen. SQLite orders the listing by comparing these columns as text, so a
-// format whose width varies with the value sorts a later entry first, and the
-// id tie-break above never fires because the two strings are not equal.
-func TestMemoryStampOrdersAsText(t *testing.T) {
-	base := time.Date(2026, 9, 13, 10, 0, 0, 0, time.UTC)
-	// Trailing zeros are what a variable-width format drops: .500000000
-	// renders as ".5" and outsorts the later ".512".
-	earlier := base.Add(500 * time.Millisecond)
-	later := base.Add(512 * time.Millisecond)
-
-	if memoryStamp(earlier) >= memoryStamp(later) {
-		t.Fatalf("a later instant must sort after an earlier one as text: %q >= %q",
-			memoryStamp(earlier), memoryStamp(later))
-	}
-	if len(memoryStamp(earlier)) != len(memoryStamp(later)) {
-		t.Fatalf("the stamp width must not vary with the value: %q vs %q",
-			memoryStamp(earlier), memoryStamp(later))
-	}
-
-	// The reader parses with RFC3339Nano, so the two have to agree.
-	back, err := time.Parse(time.RFC3339Nano, memoryStamp(later))
-	if err != nil {
-		t.Fatalf("parse: %v", err)
-	}
-	if !back.Equal(later) {
-		t.Fatalf("round-trip mismatch: %s want %s", back, later)
 	}
 }
 

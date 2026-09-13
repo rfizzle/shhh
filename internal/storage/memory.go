@@ -7,18 +7,6 @@ import (
 	"time"
 )
 
-// memoryStampLayout writes a memory's timestamp with every fractional digit
-// in place. SQLite compares these columns as text, and time.RFC3339Nano drops
-// trailing zeros, so it renders 10:00:00.500000000 as "10:00:00.5Z" and the
-// later 10:00:00.512000000 as "10:00:00.512Z" — text that sorts the two the
-// wrong way round, because 'Z' outranks '1'. A fixed width makes the text
-// order the instant order. Reads still parse with RFC3339Nano, which accepts
-// either width, so entries written before this are read back unchanged.
-const memoryStampLayout = "2006-01-02T15:04:05.000000000Z07:00"
-
-// memoryStamp renders an instant for storage in UTC.
-func memoryStamp(t time.Time) string { return t.UTC().Format(memoryStampLayout) }
-
 // Memory is one durable memory entry: a short text with a scope ("global" or
 // a per-project key), a kind (preference, convention, correction, lesson),
 // and its provenance (user-stated vs agent-proposed).
@@ -37,10 +25,10 @@ type Memory struct {
 // storage layer only persists.
 func (db *DB) AddMemory(scope, kind, text, provenance string) (Memory, error) {
 	now := time.Now().UTC()
-	stamp := memoryStamp(now)
+	at := stamp(now)
 	res, err := db.sql.Exec(
 		`INSERT INTO memories (scope, kind, text, provenance, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)`,
-		scope, kind, text, provenance, stamp, stamp,
+		scope, kind, text, provenance, at, at,
 	)
 	if err != nil {
 		return Memory{}, err
@@ -118,7 +106,7 @@ func (db *DB) GetMemory(id int64) (Memory, error) {
 func (db *DB) UpdateMemory(id int64, text string) (Memory, error) {
 	res, err := db.sql.Exec(
 		`UPDATE memories SET text = ?, updated_at = ? WHERE id = ?`,
-		text, memoryStamp(time.Now()), id,
+		text, stamp(time.Now()), id,
 	)
 	if err != nil {
 		return Memory{}, err

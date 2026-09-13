@@ -44,6 +44,11 @@ type HistoryFilter struct {
 // the tool (docs/capabilities/sessions-and-memory.md#finding-a-conversation-again).
 // What that costs is the match in the middle of a word — the index knows
 // words, and matchQuery asks for each one as a prefix.
+//
+// The column is written by SQLite's own default at millisecond resolution, so
+// entries recorded in one tick tie outright and the id is what breaks the tie.
+// Both queries order the same way, so a search returns the rows it matches in
+// the order the unfiltered listing would have put them in.
 func (db *DB) ListHistory(f HistoryFilter) ([]HistoryEntry, error) {
 	limit := f.Limit
 	if limit <= 0 {
@@ -62,7 +67,7 @@ func (db *DB) ListHistory(f HistoryFilter) ([]HistoryEntry, error) {
 		                 r.duration_ms, r.exit_code, r.tokens_in, r.tokens_out, r.success
 		          FROM requests r JOIN request_search ON request_search.rowid = r.id
 		          WHERE request_search MATCH ?
-		          ORDER BY r.created_at DESC LIMIT ?`
+		          ORDER BY r.created_at DESC, r.id DESC LIMIT ?`
 		rows, qErr := db.sql.Query(query, match, limit)
 		if qErr != nil {
 			return nil, qErr
@@ -73,7 +78,7 @@ func (db *DB) ListHistory(f HistoryFilter) ([]HistoryEntry, error) {
 		query := `SELECT id, created_at, provider, model, prompt, command, action,
 		                 duration_ms, exit_code, tokens_in, tokens_out, success
 		          FROM requests
-		          ORDER BY created_at DESC LIMIT ?`
+		          ORDER BY created_at DESC, id DESC LIMIT ?`
 		rows, qErr := db.sql.Query(query, limit)
 		if qErr != nil {
 			return nil, qErr

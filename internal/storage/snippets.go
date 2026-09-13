@@ -16,7 +16,7 @@ type Snippet struct {
 }
 
 func (db *DB) SaveSnippet(name, command string) error {
-	now := time.Now().UTC().Format(time.RFC3339Nano)
+	now := stamp(time.Now())
 
 	var id int64
 	err := db.sql.QueryRow(`SELECT id FROM snippets WHERE name = ?`, name).Scan(&id)
@@ -34,9 +34,13 @@ func (db *DB) SaveSnippet(name, command string) error {
 	return err
 }
 
+// ListSnippets is every saved snippet, most recently updated first, with the
+// id breaking a tie on that column so that snippets saved in one tick still
+// come back in one order.
 func (db *DB) ListSnippets() ([]Snippet, error) {
 	rows, err := db.sql.Query(
-		`SELECT id, name, command, description, created_at, updated_at FROM snippets ORDER BY updated_at DESC`,
+		`SELECT id, name, command, description, created_at, updated_at
+		 FROM snippets ORDER BY updated_at DESC, id DESC`,
 	)
 	if err != nil {
 		return nil, err
@@ -79,7 +83,7 @@ func (db *DB) GetSnippet(name string) (Snippet, error) {
 }
 
 func (db *DB) UpdateSnippetDescription(name, description string) error {
-	now := time.Now().UTC().Format(time.RFC3339Nano)
+	now := stamp(time.Now())
 	res, err := db.sql.Exec(`UPDATE snippets SET description = ?, updated_at = ? WHERE name = ?`, description, now, name)
 	if err != nil {
 		return err
@@ -92,7 +96,7 @@ func (db *DB) UpdateSnippetDescription(name, description string) error {
 }
 
 func (db *DB) RenameSnippet(oldName, newName string) error {
-	now := time.Now().UTC().Format(time.RFC3339Nano)
+	now := stamp(time.Now())
 	res, err := db.sql.Exec(`UPDATE snippets SET name = ?, updated_at = ? WHERE name = ?`, newName, now, oldName)
 	if err != nil {
 		return err

@@ -15,7 +15,7 @@ import (
 func (db *DB) SaveNote(session string, n notebook.Note) (int64, error) {
 	res, err := db.sql.Exec(
 		`INSERT INTO notes (session, author, title, body, turn, written_at) VALUES (?, ?, ?, ?, ?, ?)`,
-		session, n.Author, n.Title, n.Body, n.Turn, n.Written.UTC().Format(time.RFC3339Nano),
+		session, n.Author, n.Title, n.Body, n.Turn, stamp(n.Written),
 	)
 	if err != nil {
 		return 0, err
