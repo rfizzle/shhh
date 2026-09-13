@@ -15,6 +15,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/rfizzle/shhh/internal/agent"
@@ -211,6 +212,51 @@ func startChildObserveRecorder(db *storage.DB, kind, provider, model string, pri
 	}
 	return &observeRecorder{db: db, id: id, prices: prices, model: model, kind: kind, provider: provider,
 		span: observeExport.Child(parent.sessionSpan(), kind, provider, model)}
+}
+
+// agentRows is the record row each agent of one session opened, kept by the
+// name the supervisor knows the agent by, so that a child a child spawned is
+// recorded under the agent that spawned it rather than under the session.
+//
+// The link is the record's copy of the one the breadcrumb, the esc-pop and
+// the rail's map all read: a delegated child flattened onto the session reads
+// back as one more of the session's own children, and nothing in the row says
+// otherwise, so a fan-out of three that delegated twice can never be told
+// afterwards from a fan-out of five
+// (docs/capabilities/subagents.md#a-child-may-delegate-to-a-configured-depth).
+// The rows are written from the supervisor's own goroutines, one per agent,
+// so both halves take the lock.
+type agentRows struct {
+	mu   sync.Mutex
+	rows map[string]*observeRecorder
+}
+
+// under is the recorder a child spawned by parent hangs its own row off:
+// parent's own row where that agent recorded one, and the session's
+// otherwise. An agent that could not open a row must not cost its
+// descendants the whole lineage, which is what an unlinked row would.
+func (a *agentRows) under(parent string, session *observeRecorder) *observeRecorder {
+	if parent == "" {
+		return session
+	}
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	if r, ok := a.rows[parent]; ok && r != nil {
+		return r
+	}
+	return session
+}
+
+// keep records the row an agent is running on. A retry replaces it, because
+// what a further delegation belongs under is the attempt that is running and
+// not the one it replaced.
+func (a *agentRows) keep(name string, r *observeRecorder) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	if a.rows == nil {
+		a.rows = map[string]*observeRecorder{}
+	}
+	a.rows[name] = r
 }
 
 // sessionID is the recorder's session row id (0 when recording is disabled),

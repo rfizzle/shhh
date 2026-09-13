@@ -13,14 +13,12 @@
 setup printf 'package agent\n\nfunc loop() {\n    for round := 0; round < limit; round++ {\n        step()\n    }\n}\n' > loop.go
 snap 01-start "Some things worth doing first"
 keys "survey the round accounting" Enter
-# Spawning is gated, so a card stands between the sentence and each child.
-snap 02-spawn-card "writer agent"
+# Spawning is gated, so a card stands between the sentence and the children —
+# one card with a row per child, because the round asked for them together and
+# three cards would be one decision put three times.
+snap 02-spawn-card "Spawn 3 writers"
 keys y
-sleep 1
-keys y
-sleep 1
-keys y
-sleep 3
+sleep 4
 # One of the writers hands a part of its own task down, and the card for that
 # is the person's the way the session's three were: starting an agent is a
 # decision wherever in the tree it is taken
@@ -78,17 +76,38 @@ sleep 1
 snap 11-chord "❯ ⊘ orchestrator"
 keys Escape
 sleep 1
+# And the other way out of a lineage, from the deepest session again — named
+# rather than counted down a list, because the map is drawn in a different
+# order from the one the chord walks. esc pops one level of the tree rather
+# than leaving it, so a child's child is two pops from the session
+# (docs/capabilities/subagents.md#a-child-may-delegate-to-a-configured-depth).
+keys "/attach reader-3a" Enter
+sleep 1
+snap 12-attached-by-name "❯ Say which package the loop's exit condition lives in."
+keys Escape
+sleep 1
+# The first pop: the agent that spawned it, which is the segment the
+# breadcrumb beside it has been naming all along.
+snap 13-esc-parent "❯ Say where the loop exits."
+# That parent has a request of its own standing and arriving armed it, so the
+# next esc is the card's — it goes back to the draft and denies nothing — and
+# the press after it is the second and last pop of the lineage.
+keys Escape
+sleep 1
+keys Escape
+sleep 1
 # The one routed request still standing, answered from the session it was
-# routed to: the card holds nothing until it is taken, so the chord that takes
-# it comes first.
-snap 12-still-waiting "answer it"
+# routed to — which is where the second pop has just put the keyboard: the
+# card holds nothing until it is taken, so the chord that takes it comes
+# first.
+snap 14-still-waiting "answer it"
 keys C-Space
 keys n
 sleep 2
-snap 13-next-card "DECISION"
+snap 15-next-card "DECISION"
 keys n
 sleep 2
 keys C-c
-snap 14-quit-armed "again quits"
+snap 16-quit-armed "again quits"
 keys C-c
-snap 15-exit "that is everything the screen was holding"
+snap 17-exit "that is everything the screen was holding"

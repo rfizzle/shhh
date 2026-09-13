@@ -204,6 +204,43 @@ func TestAgentListOpensAttachesAndDetaches(t *testing.T) {
 	}
 }
 
+// TestEscPopsOneLevelOfTheSpawnTree: esc goes back to the agent that spawned
+// the one you are in, not out of the tree altogether. From a child's child
+// that is two presses, and the session the first one lands on is the one the
+// breadcrumb names beside it and the one the map draws it under — three
+// readings of the same link, asserted together so a spawn that stopped
+// writing it could not leave any of them looking right on its own.
+func TestEscPopsOneLevelOfTheSpawnTree(t *testing.T) {
+	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
+	t.Cleanup(sup.Close)
+	m := newSubagentModel(t, sup)
+	spawnChild(t, sup, subagent.RoleResearcher, "researcher-1")
+	spawnUnder(t, sup, "researcher-1", subagent.RoleReviewer, "reviewer-1")
+
+	m.attach("reviewer-1")
+	if got, want := m.breadcrumb(), "orchestrator ▸ researcher-1 ▸ reviewer-1"; got != want {
+		t.Fatalf("breadcrumb = %q, want %q", got, want)
+	}
+	if got := m.sessionDepth("reviewer-1", len(sup.Snapshot())); got != 2 {
+		t.Fatalf("the map puts the grandchild at depth %d, want 2", got)
+	}
+
+	esc := func(m Model) Model {
+		t.Helper()
+		updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
+		return updated.(Model)
+	}
+	if m = esc(m); m.attachedTo != "researcher-1" {
+		t.Fatalf("the first esc should reach the agent that spawned it, got %q", m.attachedTo)
+	}
+	if got, want := m.breadcrumb(), "orchestrator ▸ researcher-1"; got != want {
+		t.Fatalf("breadcrumb after one pop = %q, want %q", got, want)
+	}
+	if m = esc(m); m.attachedTo != "" {
+		t.Fatalf("the second esc should reach the orchestrator, got %q", m.attachedTo)
+	}
+}
+
 func TestSlashAgentsOpensList(t *testing.T) {
 	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
 	t.Cleanup(sup.Close)

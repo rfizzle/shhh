@@ -5,8 +5,9 @@ package cli
 // session provider with role-scoped toolsets. Researchers get read-only tools
 // plus the web against the real workspace; writers get the full toolset
 // against an isolated git worktree, commands contained when a mechanism is
-// available. Child sessions are recorded linked to the parent session so
-// observability attributes their spend.
+// available. Child sessions are recorded linked to the agent that spawned
+// them — the session, or another child — so observability attributes their
+// spend and reads back as the tree they ran as.
 
 import (
 	"context"
@@ -468,6 +469,9 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 	// afterwards. Nothing reads it before the first spawn, which cannot
 	// happen until New has returned.
 	var sup *subagent.Supervisor
+	// Where each agent's own record row is, so the row a delegated child
+	// opens hangs under its spawner's rather than under the session's.
+	var rows agentRows
 	// The project's instruction files, read once for the session and handed
 	// to every child that follows. They are read from disk and rendered
 	// against a budget that walks the whole set; doing that inside newEnv
@@ -687,7 +691,12 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 			if model == "" {
 				model = env.modelName
 			}
-			r := startChildObserveRecorder(db, string(spec.Role), env.prov.Name(), model, prices, recorder)
+			// And under the agent that spawned it, not under the session
+			// flatly: the record keeps the same tree the map draws, so a
+			// child a child asked for reads back as the level it ran at.
+			r := startChildObserveRecorder(db, string(spec.Role), env.prov.Name(), model, prices,
+				rows.under(spec.Parent, recorder))
+			rows.keep(spec.Name, r)
 			// The child's own provenance, not the parent's: it ran under its
 			// own prompt, and a row that borrowed the parent's hash would put
 			// the two on the same side of an edit that only touched one.

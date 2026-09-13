@@ -152,6 +152,54 @@ func TestChildSessionCostIsTheBilledFigure(t *testing.T) {
 	}
 }
 
+// TestAgentRowsRecordTheSpawnTree: a delegated child's row hangs under the
+// row of the agent that spawned it, so the record read back — by `shhh
+// observe`, by an export, by a session opened over the same store later — is
+// the tree the run actually was rather than a flat fan-out of everything the
+// session ever had under it.
+func TestAgentRowsRecordTheSpawnTree(t *testing.T) {
+	db, err := storage.OpenPath(filepath.Join(t.TempDir(), "test.db"))
+	if err != nil {
+		t.Fatalf("open db: %v", err)
+	}
+	defer db.Close()
+
+	session := startObserveRecorder(db, "code", "anthropic", "test-model", nil)
+	var rows agentRows
+
+	// The session's own child, then the child that child delegates.
+	writer := startChildObserveRecorder(db, "writer", "anthropic", "test-model", nil,
+		rows.under("", session))
+	rows.keep("writer-1", writer)
+	reader := startChildObserveRecorder(db, "researcher", "anthropic", "test-model", nil,
+		rows.under("writer-1", session))
+	rows.keep("reader-1a", reader)
+
+	for _, c := range []struct {
+		what string
+		id   int64
+		want int64
+	}{
+		{"the session's own child", writer.sessionID(), session.sessionID()},
+		{"the child it delegated", reader.sessionID(), writer.sessionID()},
+	} {
+		row, ok, err := db.AgentSession(c.id)
+		if err != nil || !ok {
+			t.Fatalf("read %s: %v (found %v)", c.what, err, ok)
+		}
+		if row.ParentID == nil || *row.ParentID != c.want {
+			t.Fatalf("%s hangs under %v, want %d", c.what, row.ParentID, c.want)
+		}
+	}
+
+	// An agent nobody recorded a row for leaves its descendants on the
+	// session rather than on nothing at all.
+	rows.keep("writer-2", nil)
+	if got := rows.under("writer-2", session); got != session {
+		t.Fatalf("a child of an unrecorded agent should fall back to the session, got %v", got)
+	}
+}
+
 func TestRenderObserveDashboard_Sections(t *testing.T) {
 	db, err := storage.OpenPath(filepath.Join(t.TempDir(), "test.db"))
 	if err != nil {

@@ -640,10 +640,14 @@ func agentsHintRail() string {
 //
 // The walk is bounded by the number of sessions there are: a supervisor whose
 // parent links ever came to point in a circle would otherwise hang the paint
-// rather than draw one row wrong, and this runs on every frame.
+// rather than draw one row wrong, and this runs on every frame. The count is
+// the bound and not one past it: a lineage takes one step per session it
+// passes through and the last of them lands on the orchestrator, so a walk
+// still holding a parent after as many steps as there are sessions has
+// already been somewhere twice.
 func (m Model) sessionDepth(name string, sessions int) int {
 	depth := 0
-	for at := name; at != "" && depth <= sessions; {
+	for at := name; at != "" && depth < sessions; {
 		parent, ok := m.subagents.Parent(at)
 		if !ok {
 			break
