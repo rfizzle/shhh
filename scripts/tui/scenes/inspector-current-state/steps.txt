@@ -1,0 +1,33 @@
+# The rail separating what needs attention now from what the session has
+# already answered (docs/interface/surfaces.md#the-inspector-rail). Read the
+# cells for the block and its keying: at 06 the three runs of the formatter
+# are one alert saying `3 runs`, the tests are a second one, and neither is a
+# row in CHANGES — which is the changeset its heading promises again. At 07
+# the suite has passed over the tree those failures were about and the whole
+# block is gone, with the changed files standing where it was. Inspect the
+# picture for the hierarchy: the alert rows are del, the heading's standing
+# count is del with them, and the close row's verdict at 08 is add.
+setup mkdir -p .shhh checks
+setup printf 'fmt:\n\t@echo "$(DIR) needs formatting"; exit 2\ntest:\n\t@echo "--- FAIL: TestLoopRounds"; echo "    loop_test.go:214: want 3 rounds, got 4"; exit 1\n' > Makefile
+setup printf '#!/bin/sh\necho "ok  github.com/tui/agent  0.4s"\n' > checks/unit.sh; chmod +x checks/unit.sh
+setup printf '#!/bin/sh\nexit 0\n' > checks/vet.sh; chmod +x checks/vet.sh
+setup printf '{"suites":{"default":{"checks":[{"name":"test","exe":"./checks/unit.sh"},{"name":"vet","exe":"./checks/vet.sh"}]}}}\n' > .shhh/quality.json
+snap 01-start "Some things worth doing first"
+keys "format the tree and get the tests passing" Enter
+snap 02-card "make fmt DIR=internal/agent"
+keys y
+snap 03-card "make fmt DIR=internal/ui"
+keys y
+snap 04-card "make fmt DIR=internal/cli"
+keys y
+snap 05-card "make test"
+keys y
+snap 06-alerts-standing "3 runs"
+keys "fix the bound and verify with the suite" Enter
+snap 07-recovered "quality gate default passing"
+keys "anything still outstanding?" Enter
+snap 08-completed "Nothing is outstanding"
+keys C-c
+snap 09-quit-armed "again quits"
+keys C-c
+snap 10-exit "that is everything the screen was holding"

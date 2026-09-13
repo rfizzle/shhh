@@ -480,8 +480,11 @@ func (m Model) summaryChanges() string {
 }
 
 // summaryAlerts is the standing bad news the rail already keeps on screen.
+// Only the live ones: an alert the suite has since answered is history the
+// rail does not draw, and a reading that told the model the workspace was
+// still broken would be describing a session that has moved on (resolved.go).
 func (m Model) summaryAlerts() []string {
-	alerts := m.inspectorAlerts()
+	alerts := m.inspectorAlerts().Live()
 	if len(alerts) == 0 {
 		return nil
 	}

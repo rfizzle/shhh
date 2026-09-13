@@ -229,10 +229,10 @@ func TestInspectorData_BlocksFromTheSession(t *testing.T) {
 	if rail.Turn.Files != 1 || rail.Turn.Added != 2 || rail.Turn.Removed != 1 {
 		t.Fatalf("THIS TURN counts the turn's own files: %+v", rail.Turn)
 	}
-	if len(rail.Changes.Alerts) != 1 {
-		t.Fatalf("the session's broken command: %+v", rail.Changes.Alerts)
+	if len(rail.Alerts) != 1 {
+		t.Fatalf("the session's broken command: %+v", rail.Alerts)
 	}
-	if a := rail.Changes.Alerts[0]; a.Label != "go test ./..." || a.Note != "exit 1" || a.Turn != 1 {
+	if a := rail.Alerts[0]; a.Label != "go test" || a.Note != "exit 1" || a.Turn != 1 || a.Superseded {
 		t.Fatalf("the alert names the turn that broke it: %+v", a)
 	}
 	if rail.Context == nil || rail.Context.Window != 200000 || rail.Context.Pct != 20 {
@@ -579,30 +579,116 @@ func TestInspectorChanges_SessionScoped(t *testing.T) {
 }
 
 // An alert follows the workspace, not the turn: it survives later turns and
-// is cleared by the same command coming back clean.
+// stops being news when the same command comes back clean.
 func TestInspectorAlerts_PersistUntilTheWorkspaceIsClean(t *testing.T) {
 	m := inspectorModel(t, 144, 40)
 	m.turnCount = 2
 	m.appendEntry(entry{kind: entryUser, text: "fix it"})
-	if alerts := m.inspectorAlerts(); len(alerts) != 1 || alerts[0].Turn != 1 {
-		t.Fatalf("turn 1's failure is still standing in turn 2: %+v", alerts)
+	if live := m.inspectorAlerts().Live(); len(live) != 1 || live[0].Turn != 1 {
+		t.Fatalf("turn 1's failure is still standing in turn 2: %+v", live)
 	}
 	// A second command breaks in turn 2; both are standing.
 	m.appendEntry(entry{kind: entryCommand, text: "go build ./...", exitCode: 2})
-	alerts := m.inspectorAlerts()
-	if len(alerts) != 2 || alerts[1].Label != "go build ./..." || alerts[1].Turn != 2 {
-		t.Fatalf("both failures stand, with their own turns: %+v", alerts)
+	live := m.inspectorAlerts().Live()
+	if len(live) != 2 || live[1].Label != "go build" || live[1].Turn != 2 {
+		t.Fatalf("both failures stand, with their own turns: %+v", live)
 	}
-	// The suite comes back clean in turn 3: its alert goes, the other stays.
+	// The tests come back clean in turn 3: that alert is answered, the other
+	// stands. Neither is deleted — the block counts what it took to get here.
 	m.turnCount = 3
 	m.appendEntry(entry{kind: entryCommand, text: "go test ./...", exitCode: 0})
-	alerts = m.inspectorAlerts()
-	if len(alerts) != 1 || alerts[0].Label != "go build ./..." {
-		t.Fatalf("a clean run clears its own alert only: %+v", alerts)
+	alerts := m.inspectorAlerts()
+	live = alerts.Live()
+	if len(live) != 1 || live[0].Label != "go build" {
+		t.Fatalf("a clean run answers its own alert only: %+v", alerts)
+	}
+	if len(alerts) != 2 || !alerts[0].Superseded {
+		t.Fatalf("an answered alert is marked and kept: %+v", alerts)
 	}
 	m.appendEntry(entry{kind: entryCommand, text: "go build ./...", exitCode: 0})
-	if alerts = m.inspectorAlerts(); len(alerts) != 0 {
-		t.Fatalf("a clean workspace has no alerts: %+v", alerts)
+	if live = m.inspectorAlerts().Live(); len(live) != 0 {
+		t.Fatalf("a clean workspace has no live alerts: %+v", live)
+	}
+}
+
+// Three runs of one command in one turn are one alert. The row is keyed by
+// the command's name and the turn, carries the run count, and reports the
+// last run's outcome — the last run is what the workspace is currently like.
+func TestInspectorAlerts_RunsOfOneCommandAreOneRow(t *testing.T) {
+	m := inspectorModel(t, 144, 40)
+	m.turnCount = 2
+	m.appendEntry(entry{kind: entryUser, text: "format it"})
+	for _, dir := range []string{"internal/ui", "internal/agent", "internal/cli"} {
+		m.appendEntry(entry{kind: entryCommand, text: "gofmt -w " + dir, exitCode: 2})
+	}
+	live := m.inspectorAlerts().Live()
+	// Turn 1's own failure is still there; the formatter is the new row.
+	if len(live) != 2 {
+		t.Fatalf("three runs of the formatter are one alert: %+v", live)
+	}
+	if a := live[1]; a.Label != "gofmt" || a.Runs != 3 || a.Turn != 2 || a.Note != "exit 2" {
+		t.Fatalf("the alert is the command, the turn and its runs: %+v", a)
+	}
+	// The same command breaking again in a later turn is news again rather
+	// than a run count going up.
+	m.turnCount = 3
+	m.appendEntry(entry{kind: entryCommand, text: "gofmt -l .", exitCode: 2})
+	live = m.inspectorAlerts().Live()
+	if len(live) != 3 || live[2].Turn != 3 || live[2].Runs != 1 {
+		t.Fatalf("a failure in a new turn is a new alert: %+v", live)
+	}
+}
+
+// A command whose first word is a multiplexer is named by its subcommand
+// too: a broken build and a broken test suite are two things wrong with the
+// workspace, and one row saying `go` would name neither.
+func TestAlertName_KeepsTheSubcommandAndDropsTheArguments(t *testing.T) {
+	for _, c := range []struct{ command, want string }{
+		{"gofmt -w internal/ui/chat/inspector.go", "gofmt"},
+		{"go test ./internal/agent/...", "go test"},
+		{"go build ./...", "go build"},
+		{"make test", "make test"},
+		{"./checks/unit.sh --verbose", "./checks/unit.sh"},
+		{"npm run build", "npm run"},
+		{"CGO_ENABLED=0 go build", "go build"},
+		{"CGO_ENABLED=0 GOFLAGS=-mod=mod go test ./...", "go test"},
+		{"gofmt", "gofmt"},
+		{"", ""},
+	} {
+		if got := alertName(c.command); got != c.want {
+			t.Fatalf("alertName(%q) = %q, want %q", c.command, got, c.want)
+		}
+	}
+}
+
+// A command the reader stopped is neither bad news nor an answer: nobody let
+// it reach a verdict, so it neither raises an alert nor clears one — and it
+// does not overwrite what the run before it reported either.
+func TestInspectorAlerts_AStoppedRunNeitherRaisesNorClears(t *testing.T) {
+	m := inspectorModel(t, 144, 40)
+	m.turnCount = 2
+	m.appendEntry(entry{kind: entryUser, text: "try again"})
+	m.appendEntry(entry{kind: entryCommand, text: "go test ./...", exitCode: -1,
+		end: commandEnd{outcome: components.OutcomeStopped}})
+	live := m.inspectorAlerts().Live()
+	if len(live) != 1 || live[0].Turn != 1 {
+		t.Fatalf("a cancelled run answers nothing: %+v", live)
+	}
+	if live[0].Superseded {
+		t.Fatalf("turn 1's failure is still standing: %+v", live[0])
+	}
+	// A failure and then a cancelled re-run, in one turn and under one key:
+	// the failure is what the workspace is still like, and the stop says
+	// nothing about it at all.
+	m.appendEntry(entry{kind: entryCommand, text: "go build ./...", exitCode: 2})
+	m.appendEntry(entry{kind: entryCommand, text: "go build ./...", exitCode: -1,
+		end: commandEnd{outcome: components.OutcomeStopped}})
+	live = m.inspectorAlerts().Live()
+	if len(live) != 2 {
+		t.Fatalf("a stop cannot take a standing failure off the rail: %+v", live)
+	}
+	if a := live[1]; a.Label != "go build" || a.Note != "exit 2" || a.Runs != 1 {
+		t.Fatalf("the alert is the run that reached a verdict: %+v", a)
 	}
 }
 

@@ -20,8 +20,8 @@ func fullRail() InspectorRail {
 				{Path: "ui/chat/model.go", Added: 9, Removed: 1, ThisTurn: true},
 			},
 			Added: 27, Removed: 4,
-			Alerts: []InspectorAlert{{Label: "go test ./...", Note: OutcomeExit(1), Turn: 7}},
 		},
+		Alerts: InspectorAlerts{{Label: "go test", Note: OutcomeExit(1), Turn: 7}},
 		Agents: []InspectorAgent{
 			{Name: "writer-1", Detail: "docs/loop.md", Spend: "$0.02", Tools: 4, State: FanoutRunning},
 		},
@@ -85,7 +85,7 @@ func TestInspectorRail_BlockOrderAndContents(t *testing.T) {
 	for _, want := range []string{
 		"THIS TURN", "step 3 of 4", "▰", "2 files this turn", "18 tools", "1m 04s",
 		"CHANGES", "session · ", "+27", "−4", "▎✎ agent/loop.go", "+18", "−3", "3t",
-		"✗ go test ./...", "turn 7", "exit 1",
+		"ALERTS", "1 standing", "✗ go test", "turn 7", "exit 1",
 		"AGENTS", "1 running", "◇ writer-1", "$0.02", "docs/loop.md · 4 tools",
 		"CONTEXT", "62% of 200k", "124k", "↑41.2k ↓9.8k", "per round",
 		"SPEND", "$0.14", "gpt-5.2 · $0.12 main · $0.02 ◇", "session total $1.86",
@@ -95,7 +95,7 @@ func TestInspectorRail_BlockOrderAndContents(t *testing.T) {
 		}
 	}
 	// The order is fixed.
-	order := []string{"THIS TURN", "CHANGES", "AGENTS", "CONTEXT", "SPEND"}
+	order := []string{"THIS TURN", "ALERTS", "CHANGES", "AGENTS", "CONTEXT", "SPEND"}
 	at := 0
 	for _, label := range order {
 		i := strings.Index(view[at:], label)
@@ -470,36 +470,135 @@ func TestInspectorChanges_FoldKeepsThisTurnAndCarriesItsCounts(t *testing.T) {
 
 // An alert outlives the turn that caused it, names that turn, and is the last
 // thing the fold takes — a red row that scrolls itself away is the failure
-// the block exists to prevent.
-func TestInspectorChanges_AlertsOutliveTheirTurn(t *testing.T) {
-	r := InspectorRail{Changes: &InspectorChanges{
+// the block exists to prevent. It is a block of its own, above the changeset,
+// so CHANGES is the changeset its heading promises.
+func TestInspectorAlerts_OutliveTheirTurn(t *testing.T) {
+	r := InspectorRail{
+		Changes: &InspectorChanges{
+			Files: []InspectorFile{
+				{Path: "agent/loop.go", Added: 21, Removed: 4},
+				{Path: "go.mod", Added: 1},
+			},
+			Added: 22, Removed: 4,
+		},
+		Alerts: InspectorAlerts{
+			{Label: "go test", Note: OutcomeExit(1), Turn: 7},
+			{Label: "go build", Note: OutcomeExit(2), Turn: 9},
+		},
+	}
+	view := stripANSI(r.View(InspectorWidth, 0))
+	for _, want := range []string{"ALERTS", "2 standing", "✗ go test", "turn 7", "exit 1",
+		"✗ go build", "turn 9"} {
+		if !strings.Contains(view, want) {
+			t.Fatalf("alert missing %q:\n%s", want, view)
+		}
+	}
+	// The block sits above the changeset, and the changeset is only files.
+	if strings.Index(view, "ALERTS") > strings.Index(view, "CHANGES") {
+		t.Fatalf("alerts belong above the changeset:\n%s", view)
+	}
+	// Squeezed, the files go first.
+	tight := stripANSI(r.View(InspectorWidth, 6))
+	if !strings.Contains(tight, "go test") || !strings.Contains(tight, "go build") {
+		t.Fatalf("the alerts are the last rows truncation takes:\n%s", tight)
+	}
+	if strings.Contains(tight, "agent/loop.go") {
+		t.Fatalf("the file rows go before the alerts do:\n%s", tight)
+	}
+}
+
+// One row per command per turn, and the row says how many runs are behind it
+// and what the last of them came to.
+func TestInspectorAlerts_ARowStatesItsRuns(t *testing.T) {
+	r := InspectorRail{Alerts: InspectorAlerts{
+		{Label: "gofmt", Note: OutcomeExit(2), Runs: 3, Turn: 1},
+		{Label: "go build", Note: OutcomeExit(2), Runs: 1, Turn: 2},
+	}}
+	view := stripANSI(r.View(InspectorWidth, 0))
+	if !strings.Contains(view, "exit 2 · 3 runs") {
+		t.Fatalf("the row states the runs behind it:\n%s", view)
+	}
+	// One run states no count: a count of one is a row saying it is a row.
+	if strings.Contains(view, "1 runs") || strings.Contains(view, "· 1 run") {
+		t.Fatalf("a single run is not counted:\n%s", view)
+	}
+}
+
+// The name is what a reader acts on and the account beside it is telemetry,
+// so a rail too narrow for both spends its columns on the name.
+func TestInspectorAlerts_TheNameSurvivesTheNarrowRail(t *testing.T) {
+	r := InspectorRail{Alerts: InspectorAlerts{
+		{Label: "./scripts/check-generated-docs.sh", Note: OutcomeExit(1), Runs: 4, Turn: 12},
+	}}
+	view := stripANSI(r.View(InspectorWidth, 0))
+	if !strings.Contains(view, "./scripts/check-generated-docs.sh") {
+		t.Fatalf("the command's name is never the field that clips:\n%s", view)
+	}
+	if !strings.Contains(view, "turn 12") {
+		t.Fatalf("the turn keeps its own field:\n%s", view)
+	}
+	if strings.Contains(view, "4 runs") {
+		t.Fatalf("the account is what gives way, not the name:\n%s", view)
+	}
+}
+
+// At most two live alerts draw. The rest fold behind a marker that keeps the
+// two counts apart: what is still standing, and what has been answered.
+func TestInspectorAlerts_TwoDrawAndTheRestFold(t *testing.T) {
+	r := InspectorRail{Alerts: InspectorAlerts{
+		{Label: "gofmt", Note: OutcomeExit(2), Turn: 1, Superseded: true},
+		{Label: "go vet", Note: OutcomeExit(1), Turn: 2, Superseded: true},
+		{Label: "make lint", Note: OutcomeExit(1), Turn: 3},
+		{Label: "go test", Note: OutcomeExit(1), Turn: 4},
+		{Label: "go build", Note: OutcomeExit(2), Turn: 5},
+	}}
+	view := stripANSI(r.View(InspectorWidth, 0))
+	for _, want := range []string{"3 standing", "✗ go test", "✗ go build", "… 1 more", "2 superseded"} {
+		if !strings.Contains(view, want) {
+			t.Fatalf("the block should show %q:\n%s", want, view)
+		}
+	}
+	// The two drawn are the most recent, and no answered failure is a row.
+	for _, absent := range []string{"make lint", "gofmt", "go vet"} {
+		if strings.Contains(view, absent) {
+			t.Fatalf("%q belongs behind the marker:\n%s", absent, view)
+		}
+	}
+}
+
+// A session whose every failure has been answered has no block: its news is
+// history, and two rows of history on this rail are two rows the changeset
+// wanted. Nothing answered is ever drawn as a row, so no changed file is
+// pushed off the rail to keep one.
+func TestInspectorAlerts_AnAnsweredSessionDrawsNoBlock(t *testing.T) {
+	files := &InspectorChanges{
 		Files: []InspectorFile{
 			{Path: "agent/loop.go", Added: 21, Removed: 4},
 			{Path: "go.mod", Added: 1},
 		},
 		Added: 22, Removed: 4,
-		Alerts: []InspectorAlert{
-			{Label: "go test ./...", Note: OutcomeExit(1), Turn: 7},
-			{Label: "go build ./...", Note: OutcomeExit(2), Turn: 9},
-		},
-	}}
+	}
+	answered := InspectorAlerts{
+		{Label: "go test", Note: OutcomeExit(1), Turn: 1, Superseded: true},
+		{Label: "gofmt", Note: OutcomeExit(2), Runs: 3, Turn: 2, Superseded: true},
+	}
+	r := InspectorRail{Changes: files, Alerts: answered}
 	view := stripANSI(r.View(InspectorWidth, 0))
-	for _, want := range []string{"✗ go test ./...", "turn 7", "exit 1", "✗ go build ./...", "turn 9"} {
+	if strings.Contains(view, "ALERTS") || strings.Contains(view, "superseded") {
+		t.Fatalf("an answered session has no standing bad news:\n%s", view)
+	}
+	for _, want := range []string{"agent/loop.go", "go.mod"} {
 		if !strings.Contains(view, want) {
-			t.Fatalf("alert missing %q:\n%s", want, view)
+			t.Fatalf("the changeset keeps its rows: %q missing:\n%s", want, view)
 		}
 	}
-	// The alerts sit above the file rows.
-	if strings.Index(view, "go build ./...") > strings.Index(view, "agent/loop.go") {
-		t.Fatalf("alerts belong above the file rows:\n%s", view)
+	// A rail whose only blocks are answered alerts is an empty rail.
+	if !(InspectorRail{Alerts: answered}).Empty() {
+		t.Fatal("a rail with nothing but answered alerts has nothing to say")
 	}
-	// Squeezed, the files go first.
-	tight := stripANSI(r.View(InspectorWidth, 5))
-	if !strings.Contains(tight, "go test ./...") || !strings.Contains(tight, "go build ./...") {
-		t.Fatalf("the alerts are the last rows truncation takes:\n%s", tight)
-	}
-	if strings.Contains(tight, "agent/loop.go") {
-		t.Fatalf("the file rows go before the alerts do:\n%s", tight)
+	if (InspectorRail{Alerts: append(answered,
+		InspectorAlert{Label: "go build", Note: OutcomeExit(2), Turn: 3})}).Empty() {
+		t.Fatal("one standing failure is something to say")
 	}
 }
 
@@ -558,18 +657,19 @@ func TestInspectorChanges_ModeOnlyRowsFoldWithoutATotal(t *testing.T) {
 	}
 }
 
-// A block with nothing but alerts is still a block: the session changed
-// nothing this time and something is still broken.
-func TestInspectorChanges_AlertsAloneStillRender(t *testing.T) {
-	r := InspectorRail{Changes: &InspectorChanges{
-		Alerts: []InspectorAlert{{Label: "go test ./...", Note: OutcomeExit(1), Turn: 3}},
+// A session that has changed nothing and broken something draws the alert
+// and no changeset: a CHANGES heading over an empty block is a block with
+// nothing to say.
+func TestInspectorAlerts_StandAloneWithoutAChangeset(t *testing.T) {
+	r := InspectorRail{Alerts: InspectorAlerts{
+		{Label: "go test", Note: OutcomeExit(1), Turn: 3},
 	}}
 	view := stripANSI(r.View(InspectorWidth, 0))
-	if !strings.Contains(view, "CHANGES") || !strings.Contains(view, "go test ./...") {
+	if !strings.Contains(view, "ALERTS") || !strings.Contains(view, "go test") {
 		t.Fatalf("an alert with no files still renders:\n%s", view)
 	}
-	if strings.Contains(view, "session · ") {
-		t.Fatal("a session that changed nothing states no total")
+	if strings.Contains(view, "CHANGES") {
+		t.Fatalf("a session that changed nothing draws no changeset:\n%s", view)
 	}
 }
 
@@ -984,11 +1084,12 @@ func TestInspectorRail_RowsCarryTheirTargets(t *testing.T) {
 		want  RailTarget
 	}{
 		{"THIS TURN", RailTarget{}},
+		{"ALERTS", RailTarget{}},
 		{"CHANGES", RailTarget{}},
 		{"AGENTS", RailTarget{}},
 		{"CONTEXT", RailTarget{}},
 		{"SPEND", RailTarget{}},
-		{"go test ./...", RailTarget{}},
+		{"✗ go test", RailTarget{}},
 		{"writer-1", RailTarget{Kind: RailTargetSession, Name: "writer-1"}},
 		{"docs/loop.md", RailTarget{Kind: RailTargetSession, Name: "writer-1"}},
 	} {

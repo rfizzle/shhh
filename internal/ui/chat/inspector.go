@@ -28,7 +28,9 @@ package chat
 
 import (
 	"fmt"
+	"strings"
 	"time"
+	"unicode"
 
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/subagent"
@@ -181,6 +183,7 @@ func (m Model) resolveInspector() components.InspectorRail {
 		Turn:    m.inspectorTurn(steps),
 		Plan:    m.inspectorPlan(steps),
 		Todo:    m.inspectorTodo(),
+		Alerts:  m.inspectorAlerts(),
 		Changes: m.inspectorChanges(),
 		Agents:  m.inspectorAgents(),
 		Tools:   m.inspectorTools(),
@@ -273,7 +276,6 @@ func (m Model) inspectorChanges() *components.InspectorChanges {
 			Mode:     f.ModeChange,
 		})
 	}
-	c.Alerts = m.inspectorAlerts()
 	// What the session has banked, and what it deliberately left floating
 	// beside it. Both are read once, when the commit was made, rather than
 	// off the tree here: this runs on every frame, and a rail that shelled
@@ -289,36 +291,55 @@ func (m Model) inspectorChanges() *components.InspectorChanges {
 		// session never touched it.
 		c.Foreign = m.changes.Drifted()
 	}
-	if len(c.Files) == 0 && len(c.Alerts) == 0 && len(c.Foreign) == 0 {
+	if len(c.Files) == 0 && len(c.Foreign) == 0 {
 		return nil
 	}
 	return &c
 }
 
-// inspectorAlerts is the workspace's standing bad news: the commands whose
-// most recent run in this session came back broken, oldest first, each with
-// the turn that ran it.
+// inspectorAlerts is the workspace's standing bad news: every command this
+// session ran that came back broken, in the order they broke, each with the
+// turn that ran it and how many runs of it that turn made
+// (docs/interface/surfaces.md#the-inspector-rail).
 //
-// An alert follows the workspace rather than the turn — it is cleared by the
+// An alert follows the workspace rather than the turn — it is answered by the
 // same command coming back clean, not by a new turn starting. That is the
 // whole point of the block: a red row that clears itself because the agent
 // moved on is the failure this rail exists to prevent.
 //
-// The other thing that clears one is the repository's own suite coming back
+// The other thing that answers one is the repository's own suite coming back
 // clean over the tree the command failed on, which answers that failure
 // whether or not the same line is ever run again. The rail asks the same
 // resolution the close row does, so it cannot be red about a turn the close
 // row called green (resolved.go).
-func (m Model) inspectorAlerts() []components.InspectorAlert {
-	type run struct {
-		turn     int64
-		note     string
-		broken   bool
-		answered bool
+//
+// Neither answer deletes the alert. An answered one is marked and kept, so
+// the block can count what it took to get to green without any of it being
+// on screen as a current failure — which is the block's own rule and not
+// this reading's (inspectoralerts.go).
+//
+// An alert is one command in one turn rather than one command line: an agent
+// that runs a formatter over three directories has one thing wrong with its
+// workspace and not three, and the rail drew three rows for it. The runs are
+// collapsed onto the last one, because the last run is what the workspace is
+// currently like.
+func (m Model) inspectorAlerts() components.InspectorAlerts {
+	type group struct {
+		// at is where the group's last run sits in the transcript, which is
+		// the position a later verification is asked about.
+		at     int
+		runs   int
+		note   string
+		broken bool
 	}
 	verified := lastVerification(m.transcript)
-	last := map[string]*run{}
-	var commands []string
+	groups := map[alertKey]*group{}
+	var order []alertKey
+	// cleared is where each command last came back clean. A clean run answers
+	// every failure of that command before it, in whatever turn it ran: the
+	// key groups the rows, and it is the command rather than the key that the
+	// workspace is either wrong about or not.
+	cleared := map[string]int{}
 	for i, e := range m.transcript {
 		if e.kind != entryCommand {
 			continue
@@ -327,34 +348,104 @@ func (m Model) inspectorAlerts() []components.InspectorAlert {
 		if label == "" {
 			continue
 		}
-		r, ok := last[label]
-		if !ok {
-			r = &run{}
-			last[label] = r
-			commands = append(commands, label)
-		}
 		// A command that never exited says what ended it rather than a
 		// status it never had, the way its row does (activity.go) — and the
-		// one the reader stopped is not bad news at all. This block is
-		// cleared by the same command coming back clean, and a command
-		// somebody cancelled is not waiting to do that: they stopped it, and
-		// they know.
-		note := components.OutcomeExit(e.exitCode)
-		if e.end.outcome != "" {
-			note = e.end.outcome
+		// one the reader stopped is neither. This block is answered by a
+		// command coming back clean, and somebody who cancelled a run is not
+		// waiting for it to do that; nor did the run reach a verdict about
+		// the tree for anything to be answered by. So a stop leaves the
+		// group exactly as it found it, rather than overwriting the failure
+		// the run before it reported.
+		outcome := commandOutcome(e)
+		if outcome == components.OutcomeStopped {
+			continue
 		}
-		r.turn = e.turn
-		r.broken = e.exitCode != 0 && e.end.outcome != components.OutcomeStopped
-		r.answered = verified.settled(i)
-		r.note = note
+		k := alertKey{name: alertName(label), turn: e.turn}
+		g, ok := groups[k]
+		if !ok {
+			g = &group{}
+			groups[k], order = g, append(order, k)
+		}
+		g.at, g.runs, g.note = i, g.runs+1, outcome
+		if e.exitCode == 0 && e.end.outcome == "" {
+			g.broken = false
+			cleared[k.name] = i
+			continue
+		}
+		g.broken = true
 	}
-	var alerts []components.InspectorAlert
-	for _, label := range commands {
-		if r := last[label]; r.broken && !r.answered {
-			alerts = append(alerts, components.InspectorAlert{Label: label, Note: r.note, Turn: r.turn})
+	var alerts components.InspectorAlerts
+	for _, k := range order {
+		g := groups[k]
+		if !g.broken {
+			continue
 		}
+		alerts = append(alerts, components.InspectorAlert{
+			Label:      k.name,
+			Note:       g.note,
+			Runs:       g.runs,
+			Turn:       k.turn,
+			Superseded: verified.settled(g.at) || cleared[k.name] > g.at,
+		})
 	}
 	return alerts
+}
+
+// commandOutcome is what a command's run came to, in the word its own row
+// states: the exit code, or what ended it where nothing let it exit.
+func commandOutcome(e entry) string {
+	if e.end.outcome != "" {
+		return e.end.outcome
+	}
+	return components.OutcomeExit(e.exitCode)
+}
+
+// alertKey is what one alert stands for: a command, in the turn that ran it.
+// The turn is half the key because a failure has a turn here the way every
+// other row on this surface does — the same command breaking again two turns
+// later is news again, not a run count going up.
+type alertKey struct {
+	name string
+	turn int64
+}
+
+// alertName is what an alert calls a command line: its first word, and the
+// subcommand after it where the second word is a bare one rather than a flag
+// or a path. That is the difference between the collapse worth making and
+// the one that is not — `gofmt -w a.go` and `gofmt -w b.go` are one thing
+// wrong with the workspace, and `go test ./...` and `go build ./...` are two
+// (docs/interface/surfaces.md#the-inspector-rail).
+//
+// The environment a line sets in front of the command is not part of its
+// name. Two commands run under one variable are still two commands, and a
+// name read off the assignment would say the same thing about both.
+func alertName(command string) string {
+	fields := strings.Fields(command)
+	for len(fields) > 0 && strings.Contains(fields[0], "=") {
+		fields = fields[1:]
+	}
+	if len(fields) == 0 {
+		return ""
+	}
+	if len(fields) > 1 && bareWord(fields[0]) && bareWord(fields[1]) {
+		return fields[0] + " " + fields[1]
+	}
+	return fields[0]
+}
+
+// bareWord reports whether a token is a word a command is named by rather
+// than something it was given: a flag, a path, an assignment, a glob and a
+// redirection each have a character in them that a subcommand does not.
+func bareWord(s string) bool {
+	if s == "" || s[0] == '-' {
+		return false
+	}
+	for _, r := range s {
+		if !unicode.IsLetter(r) && !unicode.IsDigit(r) && r != '-' && r != '_' {
+			return false
+		}
+	}
+	return true
 }
 
 // inspectorAgents is the session map: this session first, then every child in

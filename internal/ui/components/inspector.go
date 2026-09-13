@@ -10,10 +10,15 @@ package components
 //
 // The rail is passive, like Cockpit: the host feeds it the session's numbers
 // and renders View every frame. It owns no keys, no state and no goroutines,
-// and the block order is fixed — THIS TURN, PLAN, CHANGES, AGENTS, CONTEXT,
-// SPEND. A block with nothing to say is omitted rather than rendered empty
-//, and a rail that does not fit its height truncates its longest block
-// first and says how many rows it swallowed.
+// and the block order is fixed — THIS TURN, ALERTS, PLAN, CHANGES, AGENTS,
+// CONTEXT, SPEND. A block with nothing to say is omitted rather than rendered
+// empty, and a rail that does not fit its height takes its rows off the
+// longest block that has one to give and says how many it swallowed.
+//
+// ALERTS sits directly under the turn because it is the one block that is
+// about neither the turn nor the session but about what wants answering now:
+// what this session has run that is still broken
+// (docs/interface/surfaces.md#the-inspector-rail).
 //
 // THIS TURN is the turn. CHANGES, AGENTS, CONTEXT and SPEND are the session
 //: a file edited in turn 2 is still on screen in turn 8,
@@ -116,6 +121,7 @@ type InspectorRail struct {
 	Turn    *InspectorTurn
 	Plan    *InspectorPlan
 	Todo    *InspectorTodo
+	Alerts  InspectorAlerts
 	Changes *InspectorChanges
 	Agents  []InspectorAgent
 	Tools   *InspectorTools
@@ -130,7 +136,8 @@ type InspectorRail struct {
 // Empty reports whether every block is omitted, so the host can skip the
 // split rather than draw an empty column.
 func (r InspectorRail) Empty() bool {
-	return r.Summary == nil && r.Turn == nil && r.Plan == nil && r.Todo == nil && r.Changes == nil &&
+	return r.Summary == nil && r.Turn == nil && r.Plan == nil && r.Todo == nil &&
+		len(r.Alerts.Live()) == 0 && r.Changes == nil &&
 		len(r.Agents) == 0 && r.Tools == nil && r.Context == nil && r.Spend == nil
 }
 
@@ -286,7 +293,7 @@ func (r InspectorRail) Rows(width, height int) []RailRow {
 func (r InspectorRail) blocks(width int) []railBlock {
 	var blocks []railBlock
 	for _, b := range []func(int) (railBlock, bool){
-		r.summaryBlock, r.turnBlock, r.planBlock, r.todoBlock, r.changesBlock,
+		r.summaryBlock, r.turnBlock, r.alertsBlock, r.planBlock, r.todoBlock, r.changesBlock,
 		r.agentsBlock, r.toolsBlock, r.contextBlock, r.spendBlock,
 	} {
 		if blk, ok := b(width); ok {
@@ -296,37 +303,70 @@ func (r InspectorRail) blocks(width int) []railBlock {
 	return blocks
 }
 
-// fitBlocks truncates the rail into height rows, taking rows off the longest
-// block first. A truncated block keeps its heading and says how many
-// rows it is hiding, so the rail never ends silently; CHANGES folds rather
-// than truncates, and its marker carries the counts it took with it.
+// fitBlocks truncates the rail into height rows, taking rows off the block
+// with the most of them to give. A truncated block keeps its heading and says
+// how many rows it is hiding, so the rail never ends silently; CHANGES and
+// ALERTS fold rather than truncate, and their markers carry what they took.
 func fitBlocks(blocks []railBlock, height int) []railBlock {
 	for total(blocks) > height {
-		longest, rows := -1, 0
-		for i, b := range blocks {
-			if len(b.rows) > rows {
-				longest, rows = i, len(b.rows)
-			}
-		}
-		if longest < 0 {
+		block, row, ok := nextToHide(blocks)
+		if !ok {
 			// Every block is down to its heading: nothing left to give.
 			break
 		}
-		b := &blocks[longest]
-		// The last row truncation is allowed to take: a pinned row — an
-		// alert, or a file the running turn wrote — goes only when there is
-		// nothing else left to give.
-		i := len(b.rows) - 1
-		for j := i; j >= 0; j-- {
-			if !b.rows[j].pinned {
-				i = j
-				break
-			}
-		}
-		b.hidden = append([]railLine{b.rows[i]}, b.hidden...)
-		b.rows = append(b.rows[:i], b.rows[i+1:]...)
+		b := &blocks[block]
+		b.hidden = append([]railLine{b.rows[row]}, b.hidden...)
+		b.rows = append(b.rows[:row], b.rows[row+1:]...)
 	}
 	return blocks
+}
+
+// nextToHide is the row truncation takes next: the bottom-most unpinned row
+// of the longest block that still has one, and — once every block is down to
+// pinned rows — the bottom-most row of the longest block, because a rail that
+// cannot fit what it must keep still has to end somewhere.
+//
+// A block with nothing but pinned rows is not a candidate while any other
+// block has a row to give. That is what keeps ALERTS whole: it is short, its
+// live rows are pinned, and picking by length alone would take the news off a
+// rail that could have folded a file row instead
+// (docs/interface/surfaces.md#the-inspector-rail).
+func nextToHide(blocks []railBlock) (block, row int, ok bool) {
+	block, rows := -1, 0
+	for i, b := range blocks {
+		if len(b.rows) <= rows || !givable(b) {
+			continue
+		}
+		block, rows = i, len(b.rows)
+	}
+	if block >= 0 {
+		for j := len(blocks[block].rows) - 1; j >= 0; j-- {
+			if !blocks[block].rows[j].pinned {
+				return block, j, true
+			}
+		}
+	}
+	longest := -1
+	for i, b := range blocks {
+		if longest < 0 || len(b.rows) > len(blocks[longest].rows) {
+			longest = i
+		}
+	}
+	if longest < 0 || len(blocks[longest].rows) == 0 {
+		return 0, 0, false
+	}
+	return longest, len(blocks[longest].rows) - 1, true
+}
+
+// givable reports whether a block has a row truncation may take before it
+// starts taking pinned ones.
+func givable(b railBlock) bool {
+	for _, r := range b.rows {
+		if !r.pinned {
+			return true
+		}
+	}
+	return false
 }
 
 func total(blocks []railBlock) int {
@@ -350,13 +390,22 @@ func railHeading(label, meta string, metaStyle lipgloss.Style, width int) string
 // rail's right edge. The left field clips when the two would collide — the
 // right field is the number, and a clipped number is a wrong number.
 func railRow(left, right string, width, indent int) string {
+	left = Clip(left, max(railRoom(width, right, indent), 0))
+	gap := width - indent - lipgloss.Width(left) - lipgloss.Width(right)
+	return strings.Repeat(" ", indent) + left + strings.Repeat(" ", max(gap, 0)) + right
+}
+
+// railRoom is the columns railRow leaves the left field: the rail less the
+// indent, the right field and the space between them. A block deciding
+// whether something fits before it renders it asks this rather than measuring
+// the row afterwards, so the two cannot come to disagree about where the left
+// field ends.
+func railRoom(width int, right string, indent int) int {
 	room := width - indent - lipgloss.Width(right)
 	if right != "" {
 		room-- // at least one space between the fields
 	}
-	left = Clip(left, max(room, 0))
-	gap := width - indent - lipgloss.Width(left) - lipgloss.Width(right)
-	return strings.Repeat(" ", indent) + left + strings.Repeat(" ", max(gap, 0)) + right
+	return room
 }
 
 // indentRow is railRow with nothing on the right.

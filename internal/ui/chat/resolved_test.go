@@ -116,8 +116,8 @@ func TestResolvedChecks_UnrelatedFailureBesideAPassingGate(t *testing.T) {
 	// come back clean over the tree it failed on.
 	m := inspectorModel(t, 144, 40)
 	m.transcript = es
-	if alerts := m.inspectorAlerts(); len(alerts) != 0 {
-		t.Fatalf("a passing suite answers the alerts older than it, got %+v", alerts)
+	if live := m.inspectorAlerts().Live(); len(live) != 0 {
+		t.Fatalf("a passing suite answers the alerts older than it, got %+v", live)
 	}
 }
 
@@ -180,8 +180,8 @@ func TestResolvedChecks_AVerdictSurvivesTheTrim(t *testing.T) {
 		after.Failed || after.Superseded != settled.Superseded {
 		t.Fatalf("the close row reads the same verdict after the trim, got %+v", after)
 	}
-	if alerts := m.inspectorAlerts(); len(alerts) != 0 {
-		t.Fatalf("the rail cannot resurrect an answered failure, got %+v", alerts)
+	if live := m.inspectorAlerts().Live(); len(live) != 0 {
+		t.Fatalf("the rail cannot resurrect an answered failure, got %+v", live)
 	}
 	if suite := suiteOfTurn(m.transcript); suite != "default" {
 		t.Fatalf("the row still knows which suite to offer again, got %q", suite)
@@ -194,17 +194,28 @@ func TestResolvedChecks_TheRailAgreesWithTheCloseRow(t *testing.T) {
 	m := inspectorModel(t, 144, 40)
 	m.turnCount = 2
 	m.appendEntry(failedTest())
-	if alerts := m.inspectorAlerts(); len(alerts) == 0 {
+	if live := m.inspectorAlerts().Live(); len(live) == 0 {
 		t.Fatal("an unanswered failure is standing bad news")
 	}
 	m.appendEntry(passingGate())
 	alerts := m.inspectorAlerts()
+	live := alerts.Live()
 	c := turnChecksRow(m.transcript, false)
 	if c == nil || c.Failed {
 		t.Fatalf("the close row reads the suite's pass, got %+v", c)
 	}
-	if len(alerts) != 0 {
+	if len(live) != 0 {
 		t.Fatalf("the rail cannot still be failing, got %+v", alerts)
+	}
+	// Answered rather than deleted: the block still counts what the pass
+	// answered, the way the close row does.
+	if len(alerts) == 0 {
+		t.Fatal("the answered failures are kept rather than dropped")
+	}
+	for _, a := range alerts {
+		if !a.Superseded {
+			t.Fatalf("every failure the pass answered is marked, got %+v", alerts)
+		}
 	}
 }
 

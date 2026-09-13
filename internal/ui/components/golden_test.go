@@ -1109,9 +1109,9 @@ func TestGolden_InspectorRail(t *testing.T) {
 					{Path: "internal/ui/chat/model.go", Added: 9, Removed: 1, ThisTurn: true},
 				},
 				Added: 27, Removed: 4,
-				Alerts: []InspectorAlert{
-					{Label: "go test ./internal/agent/...", Note: OutcomeExit(1), Turn: 7},
-				},
+			},
+			Alerts: InspectorAlerts{
+				{Label: "go test", Note: OutcomeExit(1), Runs: 2, Turn: 7},
 			},
 			Agents: []InspectorAgent{
 				{Name: "orchestrator", Detail: "round 3 · streaming…", Spend: "$0.12",
@@ -1156,10 +1156,12 @@ func TestGolden_InspectorRail(t *testing.T) {
 					{Path: "go.mod", Added: 1},
 				},
 				Added: 96, Removed: 11,
-				Alerts: []InspectorAlert{
-					{Label: "go test ./internal/agent/...", Note: OutcomeExit(1), Turn: 7},
-					{Label: "go build ./...", Note: OutcomeExit(2), Turn: 9},
-				},
+			},
+			Alerts: InspectorAlerts{
+				{Label: "gofmt", Note: OutcomeExit(2), Runs: 3, Turn: 6, Superseded: true},
+				{Label: "go vet", Note: OutcomeExit(1), Turn: 6, Superseded: true},
+				{Label: "go test", Note: OutcomeExit(1), Runs: 2, Turn: 7},
+				{Label: "go build", Note: OutcomeExit(2), Turn: 9},
 			},
 		}
 		// A writer's patch made two scripts executable and moved not a byte.
@@ -1278,6 +1280,45 @@ func TestGolden_InspectorRail(t *testing.T) {
 			},
 			Frame: 2,
 		}
+		// The block on its own, at the three shapes it has: one thing broken
+		// and nothing behind it; the cap, with an older live alert and eight
+		// answered ones behind the marker; and a session whose failures have
+		// all been answered, where the block is not drawn at all and the
+		// changeset has the rows back.
+		alerting := InspectorRail{
+			Turn:   &InspectorTurn{Tools: 6, Elapsed: 21 * time.Second, Running: true},
+			Alerts: InspectorAlerts{{Label: "go build", Note: OutcomeExit(2), Turn: 4}},
+		}
+		crowded := InspectorRail{
+			Turn: &InspectorTurn{Tools: 31, Elapsed: 4 * time.Minute, Running: true},
+			Alerts: append(func() InspectorAlerts {
+				var answered InspectorAlerts
+				for i := range 8 {
+					answered = append(answered, InspectorAlert{
+						Label: "go test", Note: OutcomeExit(1), Turn: int64(i + 1), Superseded: true})
+				}
+				return answered
+			}(), InspectorAlerts{
+				{Label: "golangci-lint run", Note: OutcomeExit(1), Turn: 9},
+				{Label: "gofmt", Note: OutcomeExit(2), Runs: 3, Turn: 10},
+				{Label: "go build", Note: OutcomeExit(2), Turn: 11},
+			}...),
+			Changes: &InspectorChanges{
+				Files: []InspectorFile{
+					{Path: "internal/agent/loop.go", Added: 21, Removed: 4, ThisTurn: true},
+					{Path: "internal/agent/round.go", Added: 6, Removed: 2},
+				},
+				Added: 27, Removed: 6,
+			},
+		}
+		answered := InspectorRail{
+			Turn: &InspectorTurn{Tools: 31, Elapsed: 4 * time.Minute, Files: 2, Added: 27, Removed: 6},
+			Alerts: InspectorAlerts{
+				{Label: "go test", Note: OutcomeExit(1), Runs: 4, Turn: 10, Superseded: true},
+				{Label: "gofmt", Note: OutcomeExit(2), Runs: 3, Turn: 10, Superseded: true},
+			},
+			Changes: crowded.Changes,
+		}
 		return []golden.Panel{
 			{Label: "every block, unbounded height", View: full.View(width, 0)},
 			{Label: "every block, height 16 (truncating)", View: full.View(width, 16)},
@@ -1293,6 +1334,13 @@ func TestGolden_InspectorRail(t *testing.T) {
 			{Label: "memories the recall budget could not carry", View: omitted.View(width, 0)},
 			{Label: "the session map · the keyboard is in writer-2", View: mapped.View(width, 0)},
 			{Label: "the map with the rail shorter than it (height 12)", View: mapped.View(width, 12)},
+			{Label: "one command broken · the block above the changeset", View: alerting.View(width, 0)},
+			{Label: "three standing and eight answered · two draw, the rest count",
+				View: crowded.View(width, 0)},
+			{Label: "the same session with the rail shorter than it (height 10)",
+				View: crowded.View(width, 10)},
+			{Label: "every alert answered · the block goes and the files stay",
+				View: answered.View(width, 0)},
 		}
 	})
 }

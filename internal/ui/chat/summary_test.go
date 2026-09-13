@@ -345,7 +345,7 @@ func TestSummaryRequest_CarriesWhatTheRailAlreadyKnows(t *testing.T) {
 	if req.Assistant != "Adding the sentinel to the loop." {
 		t.Fatalf("assistant = %q", req.Assistant)
 	}
-	if len(req.Alerts) != 1 || !strings.Contains(req.Alerts[0], "go test ./...") {
+	if len(req.Alerts) != 1 || !strings.Contains(req.Alerts[0], "go test") {
 		t.Fatalf("alerts = %v", req.Alerts)
 	}
 	if req.Previous != "" {

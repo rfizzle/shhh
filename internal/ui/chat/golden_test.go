@@ -2727,6 +2727,95 @@ func TestGolden_ResolvedVerification(t *testing.T) {
 	})
 }
 
+// TestGolden_InspectorAlerts captures the rail through one session's four
+// states: a turn working with older failures standing, the same turn failing
+// its own tests, the suite answering all of them, and the turn closed on that
+// answer. What the sheet is for is the hierarchy the four share — the turn,
+// then what is still broken, then the changeset — and the two things only a
+// sequence shows: that three failing commands are three rows and not the ten
+// runs behind them, and that the block goes when the last of them is
+// answered, leaving the changed files the rows it was using.
+//
+// It is the whole screen at every width because the rail is dropped below the
+// split: the narrow captures are where the same session has to say what it
+// can in the transcript and the row above the input instead.
+func TestGolden_InspectorAlerts(t *testing.T) {
+	captureGolden(t, "inspector-alerts", "the rail's standing alerts", goldenWidths,
+		func(width int) []golden.Panel {
+			build := func(stage string) string {
+				m := frameModel(t, width, screenHeight)
+				m.changes.Add(1, changeset.Record{
+					Path: "internal/agent/loop.go", BeforeExists: true, AfterExists: true,
+					Before: "count++\n", After: "if n < cap {\n\tcount++\n}\n",
+				})
+				m.turnCount = 3
+				// Two turns of history: a formatter run over three directories,
+				// which is one thing wrong with the workspace and not three, and
+				// a suite that came back broken in the turn after it.
+				m.transcript = []entry{
+					{kind: entryUser, text: "stop the loop double-counting rounds", turn: 1},
+					{kind: entryCommand, text: "gofmt -w internal/agent", exitCode: 2, turn: 1},
+					{kind: entryCommand, text: "gofmt -w internal/ui", exitCode: 2, turn: 1},
+					{kind: entryCommand, text: "gofmt -w internal/cli", exitCode: 2, turn: 1},
+					{kind: entryUser, text: "and get the tests passing", turn: 2},
+					{kind: entryCommand, text: "go test ./internal/agent/...", exitCode: 1,
+						duration: 4200 * time.Millisecond, turn: 2,
+						toolResult: "--- FAIL: TestLoopRounds\n    loop_test.go:214: want 3 rounds, got 4"},
+					{kind: entryUser, text: "try the bound", turn: 3},
+					{kind: entryDiff, turn: 3, diff: &components.DiffView{
+						Path: "internal/agent/loop.go", Verb: "edit",
+						Hunks: []diff.Hunk{{OldStart: 1, OldCount: 1, NewStart: 1, NewCount: 3,
+							Lines: []diff.Line{
+								{Kind: diff.Add, Text: "if n < cap {"},
+								{Kind: diff.Context, Text: "count++"},
+								{Kind: diff.Add, Text: "}"},
+							}}}}},
+				}
+				if stage == "active" {
+					m.state = stateStreaming
+					m.streaming = ""
+				}
+				if stage != "active" {
+					// The turn runs the tests again and watches them fail.
+					m.transcript = append(m.transcript, entry{kind: entryCommand,
+						text: "go test ./internal/agent/...", exitCode: 1,
+						duration: 3800 * time.Millisecond, turn: 3,
+						toolResult: "--- FAIL: TestLoopRounds\n    loop_test.go:214: want 3 rounds, got 4"})
+				}
+				if stage == "recovered" || stage == "completed" {
+					m.appendCloseGateRow("default", gateResult("PASS", 5, 5))
+				}
+				if stage == "completed" {
+					m.transcript = append(m.transcript, entry{kind: entryTurnClose, turn: 3,
+						close: &components.TurnClose{
+							State: components.TurnDone, Steps: 2, Tools: 5,
+							Elapsed: "1m 12s", Spend: "$0.18", Note: "round 5/25",
+							Changes: &components.TurnChanges{
+								Files: 1, Added: 12, Removed: 3, Note: "all tracked",
+								Keys: []components.TurnKey{{Key: "[v]", Label: "review"}},
+							},
+							Checks: turnChecksRow(m.transcript, false),
+						}})
+				}
+				m.invalidateRenderCache()
+				m.syncViewport()
+				m.viewport.SetLines(m.renderHistoryLines())
+				m.viewport.GotoBottom()
+				return m.View().Content
+			}
+			return []golden.Panel{
+				{Label: "active · three runs of one formatter are one alert",
+					View: build("active")},
+				{Label: "failed · the same command breaking again is a second alert",
+					View: build("failed")},
+				{Label: "recovered · the suite answers every failure before it",
+					View: build("recovered")},
+				{Label: "completed · the turn closes and the rail has no bad news",
+					View: build("completed")},
+			}
+		})
+}
+
 // goldenRunItem is the item every run-row capture is a run of.
 func goldenRunItem(size string) todo.Item {
 	return todo.Item{

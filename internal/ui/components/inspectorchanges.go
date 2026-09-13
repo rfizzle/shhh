@@ -1,9 +1,9 @@
 package components
 
-// The rail's CHANGES block: every path the session has written, the counts
-// beside them, and the workspace alerts that ride with them. It is a file of
-// its own because it is the block that has to fold — the list outgrows the
-// rail and the marker it hides rows behind is part of the same decision.
+// The rail's CHANGES block: every path the session has written and the counts
+// beside them. It is a file of its own because it is the block that has to
+// fold — the list outgrows the rail and the marker it hides rows behind is
+// part of the same decision.
 
 import (
 	"fmt"
@@ -35,18 +35,6 @@ type InspectorFile struct {
 	Mode string
 }
 
-// InspectorAlert is one thing the workspace is still wrong about: a command
-// whose last run in this session came back broken, what it said, and the turn
-// that ran it. Alerts outlive their turn and clear when the workspace is
-// clean — a red row that clears itself because a new turn started is the
-// exact failure this rail exists to prevent.
-type InspectorAlert struct {
-	Label string
-	Note  string
-	// Turn is the turn that ran it; zero prints no turn field.
-	Turn int64
-}
-
 // InspectorCommit is what this session has banked: the sha it landed on, how
 // many files went with it, and where that leaves the branch. It is one row
 // and it is pinned, because the question it answers — is any of this safe
@@ -62,13 +50,10 @@ type InspectorCommit struct {
 }
 
 // InspectorChanges is the CHANGES block: what this session has written to the
-// workspace, what of it has been banked, and what about it is still broken.
+// workspace, and what of it has been banked.
 type InspectorChanges struct {
 	Files          []InspectorFile
 	Added, Removed int
-	// Alerts are the failing commands still standing, oldest first. They are
-	// drawn above the file rows and are the last thing truncation takes.
-	Alerts []InspectorAlert
 	// Committed is the session's own commit, where it has made one.
 	Committed *InspectorCommit
 	// Foreign are the paths in the tree that this session did not write and
@@ -80,13 +65,18 @@ type InspectorChanges struct {
 	Foreign []string
 }
 
-// changesBlock is the session's own diff: every path it has
-// touched since it opened, one row each, with the alerts still standing above
-// them. The heading says "session" in words because THIS TURN counts files
-// too, and a rail that printed two bare counts would read as a contradiction.
+// changesBlock is the session's own diff: every path it has touched since it
+// opened, one row each. The heading says "session" in words because THIS TURN
+// counts files too, and a rail that printed two bare counts would read as a
+// contradiction.
+//
+// It is the changeset its heading promises and nothing else. The commands
+// that came back broken are their own block above it (inspectoralerts.go):
+// they were drawn here while there was one row of them, and a session that
+// had failed at ten things put ten red rows over the files it had changed.
 func (r InspectorRail) changesBlock(width int) (railBlock, bool) {
 	c := r.Changes
-	if c == nil || (len(c.Files) == 0 && len(c.Alerts) == 0 && len(c.Foreign) == 0) {
+	if c == nil || (len(c.Files) == 0 && len(c.Foreign) == 0) {
 		return railBlock{}, false
 	}
 	meta := ""
@@ -102,21 +92,9 @@ func (r InspectorRail) changesBlock(width int) (railBlock, bool) {
 		}
 	}
 	b := railBlock{heading: railHeading("CHANGES", meta, sty.Dim, width)}
-	// The alerts come first and are pinned: they are what the block exists to
-	// keep on screen, and the turn that caused one is part of the fact.
-	for _, a := range c.Alerts {
-		turn := ""
-		if a.Turn > 0 {
-			turn = sty.Dim.Render(fmt.Sprintf("turn %d", a.Turn))
-		}
-		b.pin(railRow(" "+sty.Err.Render("✗")+" "+sty.Body.Render(a.Label), turn, width, inspectorIndent))
-		if a.Note != "" {
-			b.pin(railRow(sty.Dim.Render(a.Note), "", width, inspectorIndent+2))
-		}
-	}
-	// What has been banked, above the paths that have not. It is pinned for
-	// the reason the alerts are: it is the one row in the block that says
-	// some of this work is now somewhere a session ending cannot lose it.
+	// What has been banked, above the paths that have not. It is pinned
+	// because it is the one row in the block that says some of this work is
+	// now somewhere a session ending cannot lose it.
 	if cm := c.Committed; cm != nil {
 		stated := sty.Body.Render("committed "+cm.SHA) +
 			sty.Dim.Render(" · "+plural(cm.Files, "file"))
@@ -176,7 +154,8 @@ func (r InspectorRail) changesBlock(width int) (railBlock, bool) {
 // changesFold is the marker the file list folds behind when the rail is
 // shorter than it. It carries its own counts, so the rows it swallowed are
 // still accounted for (invariant 4); rows with no counts of their own — a
-// truncated alert — fold behind a bare marker rather than a fabricated zero.
+// file whose whole change was its permissions — fold behind a bare marker
+// rather than a fabricated zero.
 func changesFold(hidden []railLine, width int) string {
 	var added, removed, counted int
 	for _, h := range hidden {

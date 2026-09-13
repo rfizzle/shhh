@@ -740,6 +740,38 @@ otherwise be read as contradicting each other. A file edited in turn 2 is
 still on screen in turn 8: "what has this session done to my machine" does not
 reset when the agent starts a new turn.
 
+One block is neither the turn's nor the session's but the standing bad news
+between them: what this session has run that is still broken. It sits directly
+under the turn's own block, above everything scoped to the session, because a
+workspace that is still wrong about something is the one thing on the rail
+that wants an answer now rather than a reading.
+
+An alert is not a command line. Left as one row per line it is the loudest
+thing on the rail and the least useful: a formatter run over three directories
+fails three times, and by the tenth round the red rows outnumber the files
+under them. So an alert is one command in one turn — the command's name, which
+is its first word and the subcommand after it where that word takes one rather
+than a flag or a path, keyed with the turn that ran it. Three runs of the
+formatter in turn 1 are one alert that says `3 runs`, and the outcome it
+carries is the last run's, because the last run is what the workspace is
+currently like. The same command breaking again two turns later is a second
+alert: a failure has a turn here the way every other row on this surface does.
+
+An alert stops being news in one of two ways, and they are the same fact
+stated twice: the command came back clean, or the repository's own suite
+passed over the tree that command failed on — [the same resolution the turn's
+close reads](#the-turns-close). Neither deletes it. A superseded alert keeps
+its place in the count and folds behind `… 8 superseded`, so the session can
+still say how much red it took to get to green without any of that red being
+on screen as a current failure.
+
+Two live alerts are drawn, the two most recent, and everything else folds
+behind that marker. A live one is pinned — the last row the rail gives up when
+it runs out of height — and a superseded one is never a row at all, so no
+changed file is ever pushed off the rail to keep an answered failure on it.
+When nothing is live the block goes with them: a block whose only news has
+been answered is history, and the transcript is where history is read.
+
 One block is scoped wider than the session: the project's backlog. It sits
 under the plan because it is the same question one step further out — the
 plan is what this turn is going through, the backlog is what is queued
