@@ -11,6 +11,7 @@
 #
 #     setup <shell>             run in the workspace before the binary starts
 #     keys <tmux send-keys …>   type; Enter, Escape, Tab, BTab, Up, C-c, "a line"
+#     paste <file>              bracketed-paste a file the setup wrote
 #     snap <name> [text]        capture the screen once <text> is on it
 #     sleep <seconds>           wait, for the rare step nothing on screen marks
 #
@@ -245,6 +246,17 @@ while IFS= read -r line || [ -n "$line" ]; do
 	keys\ *)
 		eval "set -- ${line#keys }"
 		tmux -L "$SOCK" send-keys -t scene "$@"
+		;;
+	paste\ *)
+		# A bracketed paste of a file the setup wrote, which is the one
+		# thing send-keys cannot do: typed bytes arrive as keystrokes, and
+		# what a surface does with two hundred lines arriving at once is a
+		# different question from what it does with two hundred lines typed.
+		# -p is the bracketing; the newline the buffer carries reaches the
+		# program the way a terminal's own paste delivers it.
+		tmux -L "$SOCK" load-buffer -b scene -- "$ws/${line#paste }" ||
+			{ echo "drive.sh: $name: no such file to paste: ${line#paste }" >&2; exit 1; }
+		tmux -L "$SOCK" paste-buffer -p -d -b scene -t scene
 		;;
 	sleep\ *)
 		sleep "${line#sleep }"

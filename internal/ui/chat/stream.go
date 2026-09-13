@@ -13,7 +13,6 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/agent"
-	"github.com/rfizzle/shhh/internal/attachment"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/prompt"
 	"github.com/rfizzle/shhh/internal/provider"
@@ -325,7 +324,7 @@ func (m *Model) injectSteering() bool {
 		m.agent.SetTurn(m.turnCount)
 		m.recordCheckpoint(item.text)
 		m.agent.Append(provider.Message{Role: provider.RoleUser, Content: item.text, Attachments: atts})
-		m.appendEntry(entry{kind: entryUser, text: item.text, attached: attachment.Names(atts)})
+		m.appendEntry(userEntry(item.text, atts))
 		// What the reader has just asked for is part of what this turn is
 		// serving, so it is part of what the readings judge it against
 		// (agent.ExtendTarget). The anchor is there to stop the run moving

@@ -233,20 +233,21 @@ func TestPreview_CompletionOffersWhatTheSurfaceOpens(t *testing.T) {
 	}
 }
 
-// A staged paste opens as its own text: the reader's two questions about
-// bytes with no file behind them — is this the right log, and is it all
-// there — are both answered by looking at it.
+// A staged paste opens on the reader rather than the card, whichever door it
+// was reached by: the reader's two questions about bytes with no file behind
+// them — is this the right log, and is it all there — are the ones a surface
+// that scrolls and states its own span answers.
 func TestPreview_ShowDrawsAStagedPasteAsText(t *testing.T) {
 	m := stageText(t, frameModel(t, 130, 40), "paste-1.txt")
 	updated, _ := m.runPaste([]string{"/paste", "show", "paste-1.txt"})
 	next := updated.(Model)
-	if next.state != statePreview {
-		t.Fatalf("state = %v, want the preview surface", next.state)
+	if next.state != statePasteView {
+		t.Fatalf("state = %v, want the paste reader", next.state)
 	}
 	view := stripANSI(next.View().Content)
-	for _, want := range []string{"paste-1.txt", "# notes", "something", "3 lines"} {
+	for _, want := range []string{"PASTE 1 · lines 1–3 of 3", "# notes", "something"} {
 		if !strings.Contains(view, want) {
-			t.Fatalf("the card never says %q:\n%s", want, view)
+			t.Fatalf("the reader never says %q:\n%s", want, view)
 		}
 	}
 }
@@ -266,13 +267,13 @@ func TestPreview_ShowIsAWholeWord(t *testing.T) {
 func TestPreview_BareShowTakesALonePaste(t *testing.T) {
 	m := stageText(t, frameModel(t, 130, 40), "paste-1.txt")
 	updated, _ := m.runPaste([]string{"/paste", "show"})
-	if next := updated.(Model); next.state != statePreview {
-		t.Fatalf("state = %v, want the preview surface", next.state)
+	if next := updated.(Model); next.state != statePasteView {
+		t.Fatalf("state = %v, want the paste reader", next.state)
 	}
 	// Two it could have meant is still a refusal.
 	two := stageImage(t, m, "shot.png")
 	updated, _ = two.runPaste([]string{"/paste", "show"})
-	if next := updated.(Model); next.state == statePreview {
+	if next := updated.(Model); next.state == statePreview || next.state == statePasteView {
 		t.Fatal("with two staged, bare /paste show should ask for a name")
 	}
 }

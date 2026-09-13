@@ -15,11 +15,13 @@ package chat
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"charm.land/lipgloss/v2"
 	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/charmbracelet/ultraviolet/layout"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -438,6 +440,22 @@ func (m Model) frameHints(room int) string {
 			segAs(keys.Draft.Palette, "palette").givesUp(1),
 			segAs(keys.Draft.Mode, "mode"),
 			twoPress(keys.Draft.Quit, "quit").givesUp(2),
+		}
+		// The key for the fold the draft is holding, offered only while
+		// there is one to open and named for the one it opens — `open the
+		// staged paste` beside a sentence carrying two of them is the rail
+		// asking the reader which it meant
+		// (docs/interface/surfaces.md#the-input-frame). It leads the run
+		// after the send, because it is the only offer here that is about
+		// something on the screen right now, and it sheds last of the ones
+		// that shed at all: the palette announces itself by the character
+		// it opens on, and this chord is the only way to the surface.
+		if staged := m.stagedPastes(); len(staged) > 0 {
+			label := "open " + staged[0].label
+			if len(staged) > 1 {
+				label = "open the pastes"
+			}
+			hints = slices.Insert(hints, 1, segAs(keys.Draft.OpenPaste, label).givesUp(1))
 		}
 	}
 	return joinSegs(fitSegs(hints, room))
@@ -1013,7 +1031,94 @@ func (m Model) topRailLabels(mode frameLayout, width int) (left, right string) {
 // leaves the draft in the table the session started with.
 func (m Model) draftView() string {
 	components.StyleTextArea(&m.input)
-	return m.input.View()
+	return paintPasteFolds(m.input.View())
+}
+
+// paintPasteFolds draws every fold in a rendered body in the tone a thing the
+// session is carrying wears, so the token a paste left in the sentence reads
+// as a token and not as words somebody typed
+// (docs/interface/surfaces.md#the-input-frame).
+//
+// It repaints the finished render rather than the value, which is the only
+// place it can: the draft is a field that paints itself from one table, and
+// the sentence in the transcript has already been through the markdown
+// renderer. The span is cut by display cell through x/ansi, never by byte
+// offset, for the reason a selection is (select.go): the row is full of
+// escape sequences and an index into one is not a column.
+//
+// A fold that wrapped across two rows is painted on both, because the state
+// is carried between them: what opens the run is `⟨` and what closes it is
+// `⟩`, and those two marks are drawn nowhere else in the product
+// (docs/interface/departures.md#the-paste-fold-is-written-in-angle-quotes),
+// so a run between them is a fold and there is nothing else it could be.
+func paintPasteFolds(body string) string {
+	if !strings.ContainsRune(body, components.PasteFoldOpen) {
+		return body
+	}
+	lines := strings.Split(body, "\n")
+	open := false
+	for i, line := range lines {
+		plain := ansi.Strip(line)
+		marked := strings.ContainsRune(plain, components.PasteFoldOpen) ||
+			strings.ContainsRune(plain, components.PasteFoldClose)
+		switch {
+		case marked:
+			lines[i], open = paintFoldsIn(line, plain, open)
+		case open:
+			// The whole row is inside a fold that opened above it.
+			lines[i] = paintSpan(line, 0, lastContentCol(line), sty.Frame.PasteFold)
+		}
+	}
+	return strings.Join(lines, "\n")
+}
+
+// paintFoldsIn paints the fold runs on one row, told whether a fold was open
+// when the row started, and answers whether one is still open after it.
+func paintFoldsIn(line, plain string, open bool) (string, bool) {
+	from := 0
+	if !open {
+		from = -1
+	}
+	var spans [][2]int
+	col := 0
+	for _, r := range plain {
+		switch {
+		case r == components.PasteFoldOpen && from < 0:
+			from = col
+		case r == components.PasteFoldClose && from >= 0:
+			spans = append(spans, [2]int{from, col + 1})
+			from = -1
+		}
+		col += ansi.StringWidth(string(r))
+	}
+	if from >= 0 {
+		spans = append(spans, [2]int{from, lastContentCol(line)})
+	}
+	// Right to left, so an earlier span's columns are not moved by a later
+	// one's escape sequences.
+	for i := len(spans) - 1; i >= 0; i-- {
+		if spans[i][0] < spans[i][1] {
+			line = paintSpan(line, spans[i][0], spans[i][1], sty.Frame.PasteFold)
+		}
+	}
+	return line, from >= 0
+}
+
+// paintSpan restyles cells [lo, hi) of a rendered row, the way a selection
+// does (select.go) — the run loses whatever styling it had, which is what
+// makes a fold one continuous mark rather than a token with the sentence's
+// colours showing through it.
+func paintSpan(line string, lo, hi int, style lipgloss.Style) string {
+	w := ansi.StringWidth(line)
+	if lo >= hi || lo >= w {
+		return line
+	}
+	hi = min(hi, w)
+	post := ""
+	if hi < w {
+		post = ansi.Cut(line, hi, w)
+	}
+	return ansi.Cut(line, 0, lo) + style.Render(ansi.Strip(ansi.Cut(line, lo, hi))) + post
 }
 
 // frameDraftLines is what goes inside the box: the textarea's rows and, under

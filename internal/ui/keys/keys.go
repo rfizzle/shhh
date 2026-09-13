@@ -221,7 +221,16 @@ type DraftKeys struct {
 	PageDown  Binding
 
 	Reading Binding
-	Agents  Binding
+	// OpenPaste opens the paste the draft is holding a fold for
+	// (docs/interface/surfaces.md#the-input-frame). The artboard draws it on
+	// ctrl+o, which is reading mode's here and declared once; every ctrl
+	// letter a terminal delivers is spent or the line editor's, so this went
+	// to alt the way the agent family did
+	// (docs/interface/reserved-keys.md#what-is-left). The letter is v, the
+	// one the paste family already answers to: ctrl+v puts a paste in the
+	// draft and alt+v opens the one that is there.
+	OpenPaste Binding
+	Agents    Binding
 	// Backlog opens the project's backlog as a screen. There is no
 	// mnemonic in the chord and there was none left to find: every letter
 	// the word suggests is spent — b is the agent manager, t is the
@@ -295,7 +304,8 @@ var Draft = DraftKeys{
 	PageUp:    bind("pgup", "page the transcript", "pgup"),
 	PageDown:  bind("pgdn", "page it back", "pgdown"),
 
-	Reading: bind("ctrl+o", "reading mode", "ctrl+o"),
+	Reading:   bind("ctrl+o", "reading mode", "ctrl+o"),
+	OpenPaste: bind("alt+v", "open the staged paste", "alt+v"),
 	// The manager is on alt with the rest of the agent family — alt+[ and
 	// alt+] walk the sessions, alt+a opens the list of them — because
 	// ctrl+b is tmux's prefix and never reaches the program there, and
@@ -1198,6 +1208,40 @@ type PreviewKeys struct {
 var Preview = PreviewKeys{
 	Back:  bind("esc", "back", "esc"),
 	Leave: bind("q", "back", "q", "ctrl+c"),
+}
+
+// PasteKeys are the staged paste's reader — the surface the draft's fold
+// opens onto (docs/interface/surfaces.md#the-input-frame).
+//
+// It is not the preview above it and the difference is what each is asked.
+// The preview answers *is this the file I meant*, which a thumbnail settles
+// in one look, so it scrolls nowhere and decides nothing. A paste is two
+// hundred lines the reader is about to pay for: the questions are whether it
+// is the right log, whether all of it is there, and whether to send it at
+// all, and only the last of those can be answered without moving.
+//
+// So it scrolls, and it carries the one destructive key on any reading
+// surface in the product. That key is a letter rather than a chord because
+// this is a takeover and nothing else is listening, and it is `x` rather
+// than `d` because `d` pages half a screen everywhere a body scrolls.
+type PasteKeys struct {
+	Scroll Binding
+	Remove Binding
+	Leave  Binding
+	Back   Binding
+}
+
+// All is the reader's keys in the order its row offers them.
+func (k PasteKeys) All() []Binding { return []Binding{k.Scroll, k.Remove, k.Leave, k.Back} }
+
+var Paste = PasteKeys{
+	Scroll: bind("j/k", "scroll", "k", "j", "up", "down"),
+	Remove: bind("x", "remove the paste", "x"),
+	// The words are the whole promise, and the promise is the reason the
+	// reader can be talked into opening this at all: the sentence they were
+	// half way through is still there, with the cursor in it.
+	Leave: bind("q", "back to the draft, cursor where you left it", "q", "ctrl+c"),
+	Back:  bind("esc", "back to the draft", "esc"),
 }
 
 // ScreenKeys are the supporting TUIs': `shhh config`, `shhh history`,

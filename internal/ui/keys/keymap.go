@@ -308,6 +308,7 @@ func groups() map[string]reflect.Value {
 		"diff":     reflect.ValueOf(&Diff).Elem(),
 		"output":   reflect.ValueOf(&Output).Elem(),
 		"preview":  reflect.ValueOf(&Preview).Elem(),
+		"paste":    reflect.ValueOf(&Paste).Elem(),
 		"screen":   reflect.ValueOf(&Screen).Elem(),
 		"oneshot":  reflect.ValueOf(&OneShot).Elem(),
 		"setup":    reflect.ValueOf(&Setup).Elem(),

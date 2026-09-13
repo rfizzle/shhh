@@ -641,6 +641,27 @@ func (m Model) updateKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 		if m.inputLive() {
 			return answered(m.submitInput())
 		}
+	case keys.Is(pressed, keys.Draft.OpenPaste):
+		// The fold in the draft, opened (preview.go). Orchestrator-scoped
+		// like the staging area it reads: attached, the keyboard is pointed
+		// at a child and the fold is not in the sentence being typed.
+		if m.inputLive() && m.attachedTo == "" {
+			return answered(m.openStagedPaste())
+		}
+	}
+	// The fold is one character as far as the keyboard is concerned
+	// (docs/interface/surfaces.md#the-input-frame), and this is where that is
+	// true: an arrow steps over the whole run and a backspace at its closing
+	// quote takes the token and the paste together.
+	//
+	// These four are matched on the key's own code and not against the
+	// register, because they are not offers. They are the line editor's, the
+	// way the readline chords the draft deliberately does not declare are
+	// (internal/ui/keys/keys.go), and nothing on any rail names them. What
+	// the fold changes is how much one press of a key the reader already has
+	// consumes — never what the key means.
+	if next, claimed := m.pasteFoldKey(msg); claimed {
+		return next, nil, true
 	}
 	return m, nil, false
 }

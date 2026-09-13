@@ -234,7 +234,10 @@ func (m Model) renderEntryDetail(e entry, width int, keysLive, stepDetail bool) 
 		// cost a row each, said nothing a reader scrolling a log needed, and
 		// spent Add — the token for a thing that landed — on a heading
 		// (docs/interface/surfaces.md#the-activity-row).
-		row := promptMarked(renderReaderMarkdown(e.text, width)) + "\n"
+		row := paintPasteFolds(promptMarked(renderReaderMarkdown(e.text, width))) + "\n"
+		for _, p := range e.pastes {
+			row += m.pasteFoldBlock(p, e.expanded, width)
+		}
 		if len(e.attached) > 0 {
 			row += sty.SystemMsg.Render(clipRow("attached: "+strings.Join(e.attached, ", "), width)) + "\n"
 		}
@@ -574,6 +577,15 @@ func (m Model) cockpitData(includeQueued bool) components.Cockpit {
 	}
 	if _, warned := m.ledger.Warning(); warned {
 		c.Extra = append(c.Extra, "spend warning")
+	}
+	// What the fold in the draft is about to cost. It is here with the
+	// session's own counters rather than beside the chip, because it is a
+	// price and this rail is where prices are read — and it is on the rail
+	// before the send rather than in the receipt after it, which is the
+	// whole point: a paste is the one keystroke that can double what a
+	// message costs (docs/interface/surfaces.md#the-input-frame).
+	if cost := m.pasteCost(); cost != "" {
+		c.Extra = append(c.Extra, cost)
 	}
 	// Steering messages waiting to be injected.
 	if n := len(m.steering); n > 0 && includeQueued {

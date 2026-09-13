@@ -240,7 +240,7 @@ func TestEveryDeclaredGroupIsReachable(t *testing.T) {
 		"DraftKeys", "SearchKeys", "ReadingKeys", "FindKeys", "ContextKeys",
 		"RowKeys", "DecisionKeys", "ConfirmKeys", "SelectKeys", "ReviewKeys",
 		"AgentKeys", "ProfileKeys", "WaitKeys", "DiffKeys", "OutputKeys",
-		"PreviewKeys", "ScreenKeys", "OneShotKeys", "SetupKeys",
+		"PreviewKeys", "PasteKeys", "ScreenKeys", "OneShotKeys", "SetupKeys",
 		"PlanKeys", "QueryKeys",
 	} {
 		if !named[want] {

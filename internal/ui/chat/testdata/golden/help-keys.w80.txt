@@ -44,10 +44,16 @@
                      stack trace does not bury the sentence it came with. Those
                      two numbers are the defaults for appearance.paste_lines and
                      appearance.paste_columns; shhh config shows this machine's,
-                     and a negative turns one of them off. /paste show
-                     paste-1.txt reads it back before you send it, and a paste
-                     over 256 KB is refused rather than staged — it would ride in
-                     the prompt itself
+                     and a negative turns one of them off. A paste over 256 KB is
+                     refused rather than staged — it would ride in the prompt
+                     itself
+    [alt+v]          Open the staged paste. What is staged leaves a fold where
+                     you pasted it — ⟨paste 1 · 214 lines⟩ — which moves, deletes
+                     and sends as one character, and what it will cost is on the
+                     vitals rail before you send. This reads it back: j/k scrolls,
+                     x drops it, q returns to the draft with the cursor where you
+                     left it. /paste show paste-1.txt is the same surface by name
+                     (alt needs the Option setting the agent manager's row names)
     [tab]            Complete a slash command (typing / opens the menu;
                      ↑↓ move, enter runs the highlighted command, esc dismisses)
     [ctrl+a ctrl+e]  The draft is a readline editor: line start and line end,
@@ -222,10 +228,16 @@
   ␛[38;5;241m                   stack trace does not bury the sentence it came with. Those␛[m
   ␛[38;5;241m                   two numbers are the defaults for appearance.paste_lines and␛[m
   ␛[38;5;241m                   appearance.paste_columns; shhh config shows this machine's,␛[m
-  ␛[38;5;241m                   and a negative turns one of them off. /paste show␛[m
-  ␛[38;5;241m                   paste-1.txt reads it back before you send it, and a paste␛[m
-  ␛[38;5;241m                   over 256 KB is refused rather than staged — it would ride in␛[m
-  ␛[38;5;241m                   the prompt itself␛[m
+  ␛[38;5;241m                   and a negative turns one of them off. A paste over 256 KB is␛[m
+  ␛[38;5;241m                   refused rather than staged — it would ride in the prompt␛[m
+  ␛[38;5;241m                   itself␛[m
+  ␛[38;5;241m  [alt+v]          Open the staged paste. What is staged leaves a fold where␛[m
+  ␛[38;5;241m                   you pasted it — ⟨paste 1 · 214 lines⟩ — which moves, deletes␛[m
+  ␛[38;5;241m                   and sends as one character, and what it will cost is on the␛[m
+  ␛[38;5;241m                   vitals rail before you send. This reads it back: j/k scrolls,␛[m
+  ␛[38;5;241m                   x drops it, q returns to the draft with the cursor where you␛[m
+  ␛[38;5;241m                   left it. /paste show paste-1.txt is the same surface by name␛[m
+  ␛[38;5;241m                   (alt needs the Option setting the agent manager's row names)␛[m
   ␛[38;5;241m  [tab]            Complete a slash command (typing / opens the menu;␛[m
   ␛[38;5;241m                   ↑↓ move, enter runs the highlighted command, esc dismisses)␛[m
   ␛[38;5;241m  [ctrl+a ctrl+e]  The draft is a readline editor: line start and line end,␛[m

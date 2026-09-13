@@ -114,6 +114,8 @@ var additions = map[rune]string{
 	'⋮': "departures.md#the-current-one-is-marked-and-four-other-marks-the-pages-do-not-list",
 	'↵': "departures.md#the-current-one-is-marked-and-four-other-marks-the-pages-do-not-list",
 	'↺': "departures.md#the-backlog-runs-row-has-no-artboard",
+	'⟨': "departures.md#the-paste-fold-is-written-in-angle-quotes",
+	'⟩': "departures.md#the-paste-fold-is-written-in-angle-quotes",
 	'▣': "departures.md#the-attachment-chips-mark-what-kind-of-file-is-staged",
 	'▤': "departures.md#the-attachment-chips-mark-what-kind-of-file-is-staged",
 	'▀': "departures.md#two-surfaces-draw-with-blocks-rather-than-in-them",

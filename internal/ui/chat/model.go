@@ -11,7 +11,6 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/ask"
-	"github.com/rfizzle/shhh/internal/attachment"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/clipboard"
 	"github.com/rfizzle/shhh/internal/digest"
@@ -143,6 +142,11 @@ const (
 	// is opened by naming a file rather than by a key, because the chip it
 	// belongs to has no key of its own.
 	statePreview
+	// statePasteView: a staged paste is open for reading, on the pane, under
+	// the labelled rail that names how far through it the reader is. It is
+	// the surface the fold in the draft leads to (preview.go), and unlike
+	// the preview above it, it scrolls and can drop what it is showing.
+	statePasteView
 	// stateScaffold: the card offering to write this project's `.shhh`
 	// context file is up (scaffold.go). It is a takeover because the reader
 	// asked for it — from the start screen's third row or by typing /init.
@@ -388,6 +392,12 @@ type entry struct {
 	// and sizes, never the bytes. The transcript shows a screenshot as the
 	// line "attached: shot.png (412 KB)" and nothing more.
 	attached []string
+	// pastes are the folds a sent message kept in its own words: a paste too
+	// big for the draft left a token in the sentence, and this is the row
+	// that stands under it saying what the token swallowed and offering it
+	// back (docs/interface/surfaces.md#the-input-frame). Empty on every
+	// other user row, which is nearly all of them.
+	pastes []pasteFold
 	// diff is the entryDiff viewer; a pointer so focus-mode
 	// expansion state survives re-renders.
 	diff *components.DiffView
@@ -1084,6 +1094,11 @@ type Model struct {
 	// opened from the draft and from nowhere else, so leaveSurface's own
 	// answer is always the right one.
 	preview *components.AttachmentView
+	// pasteRead is the staged paste open for reading, which the fold in the
+	// draft leads to (preview.go). It has no return state beside it for the
+	// preview's reason, and it is a pointer so the offset the reader
+	// scrolled to survives the frames drawn under it.
+	pasteRead *pasteReader
 	// Review mode: review is the surface while it has the screen,
 	// reviewTurnN the turn it is reviewing (0 for a review of something
 	// else), and reviewReturn where esc goes back to.
@@ -1916,7 +1931,7 @@ func (m Model) sendUserMessageAs(text, shown string) (tea.Model, tea.Cmd) {
 	m.recordCheckpoint(shown)
 	atts := m.takeAttachments()
 	m.agent.StartTurnWith(text, atts)
-	m.appendEntry(entry{kind: entryUser, text: shown, attached: attachment.Names(atts)})
+	m.appendEntry(userEntry(shown, atts))
 	m.trimForRequest()
 	m.setTurnState(stateStreaming)
 	m.streaming = ""

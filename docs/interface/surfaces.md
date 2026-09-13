@@ -618,6 +618,37 @@ about their terminal and their eyes rather than about shhh. Every door onto
 the staging area reads them, because which key the reader used to paste is not
 a fact about how much text they pasted.
 
+The sentence keeps a mark where the paste was. A chip above the box says a
+log is riding out with this message and says nothing about where in the
+sentence it belongs, so the draft holds the fold itself — `⟨paste 1 · 214
+lines⟩`, drawn as the thing the session is carrying rather than as the words
+around it, and one character wide as far as the keyboard is concerned: an
+arrow steps over the whole of it, a backspace at its closing quote takes the
+token and the log it stands for together, and enter sends it as it is
+written. Angle quotes and not square brackets, because square brackets are
+how this product writes a key, and a fold that could be read as an offer
+would be teaching two notations at once.
+
+What the fold will cost stands on the vitals rail while it waits — `paste 1
+will cost ~6.1k tokens` — because a paste is the one keystroke that can
+double the price of a message, and the rail is already where the price of
+this session is read. The bottom rail offers the key that opens it. Opening
+borrows [reading mode](#reading-mode)'s labelled rail — `──── PASTE 1 ·
+lines 1–8 of 214 ────` over the lines themselves — rather than inventing a
+pager of its own, and the draft underneath is untouched: the cursor is where
+it was left, so the way back is to the sentence rather than to the start of
+it. The one key there that changes anything takes the paste back out, and it
+takes the token out of the draft with it — a fold standing for bytes that
+are no longer staged would be a sentence promising something it is not
+carrying.
+
+After the send the transcript keeps the fold and not the flood. The row is
+the sentence as it was typed, the token still in it, and under it `▸ paste 1
+· 214 lines · 6.1k tokens · [enter] expand` — bounded the way every other
+body in the transcript is, because the paste is in the context window and
+does not have to be in the scrollback as well
+([fold, never hide](principles.md#fold-never-hide)).
+
 A paste too big to stage is refused with the limit named, and the draft is
 left exactly as it was. What bounds it is not the size a message can carry but
 the window it will be read in: a paste has no file behind it, so it goes into

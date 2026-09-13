@@ -1,0 +1,25 @@
+# A log too big for the draft, pasted into the middle of a sentence: the fold
+# it leaves, what the vitals say it will cost, the reader the open key gets to,
+# and the row the send leaves behind (docs/interface/surfaces.md#the-input-frame).
+#
+# The paste is a real bracketed paste of a file rather than typed keystrokes.
+# Typing it would be two hundred lines of key presses, which is the other
+# question entirely: what the surface does with text arriving all at once is
+# what the threshold is about.
+setup printf '=== RUN   TestRoundLimit\n' > loop.log
+setup for i in $(seq 1 211); do printf '    loop_test.go:44: round %d reached after 2.1s, loop still running with 3 goroutines parked on the same channel\n' "$i" >> loop.log; done
+setup printf -- '--- FAIL: TestRoundLimit (2.11s)\nexit status 1\n' >> loop.log
+snap 01-start "Some things worth doing first"
+keys "this test log says the loop never stops "
+paste loop.log
+snap 02-fold "will cost"
+keys " fix the exit condition"
+snap 03-priced "open paste 1"
+keys M-v
+snap 04-open "PASTE 1 · lines"
+keys q
+snap 05-back "open paste 1"
+keys Enter
+snap 06-sent "expand"
+keys C-c
+keys C-c

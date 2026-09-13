@@ -119,6 +119,15 @@ func EstimateTokens(s string) int64 {
 	return int64(len(s) / estimatedBytesPerToken)
 }
 
+// EstimateBytesTokens is the same estimate over bytes that are not already a
+// string. An attachment's body is bytes and can be a quarter of a megabyte,
+// and a surface that prices one on every frame — the staged paste's clause on
+// the vitals rail does — would copy the whole of it to ask a question about
+// its length.
+func EstimateBytesTokens(b []byte) int64 {
+	return int64(len(b) / estimatedBytesPerToken)
+}
+
 // EstimateMessageTokens roughly estimates the token count of a conversation.
 //
 // A resumed session and a live one at the same message count are not the
@@ -171,7 +180,7 @@ func EstimateAttachmentTokens(atts []provider.Attachment) int64 {
 	for _, a := range atts {
 		switch a.Kind {
 		case provider.AttachmentText:
-			n += EstimateTokens(string(a.Data))
+			n += EstimateBytesTokens(a.Data)
 		default:
 			n += estimatedImageTokens
 		}

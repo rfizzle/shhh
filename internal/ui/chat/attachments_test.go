@@ -342,8 +342,8 @@ func TestPasteMsg_StagesAPasteTooBigForTheDraft(t *testing.T) {
 	if got := m.attachments[0].Kind; got != provider.AttachmentText {
 		t.Fatalf("the staged paste is %q, want text", got)
 	}
-	if got := m.input.Value(); got != "" {
-		t.Fatalf("the staged paste should not also be typed, got %q", got)
+	if got := m.input.Value(); got != "⟨paste 1 · 11 lines⟩" {
+		t.Fatalf("the draft should hold the fold and not the log, got %q", got)
 	}
 
 	short := strings.Repeat("goroutine 1 [running]:\n", 9) + "goroutine 1 [running]:"
@@ -365,8 +365,8 @@ func TestPasteMsg_StagesOneVeryWideLine(t *testing.T) {
 	if len(m.attachments) != 1 {
 		t.Fatalf("a 1001-column paste should stage one attachment, got %d", len(m.attachments))
 	}
-	if m.input.Value() != "" {
-		t.Fatalf("and it should not also be typed, got %q", m.input.Value())
+	if got := m.input.Value(); got != "⟨paste 1 · 1 line⟩" {
+		t.Fatalf("the draft should hold the fold and not the line, got %q", got)
 	}
 
 	updated, _ = frameModel(t, 100, 40).Update(tea.PasteMsg{Content: strings.Repeat("x", 1000)})
@@ -429,8 +429,8 @@ func TestClipboard_StagesTextTooBigForTheDraft(t *testing.T) {
 	if len(m.attachments) != 1 || m.attachments[0].Name != "paste-1.txt" {
 		t.Fatalf("a tall clipboard should stage paste-1.txt, got %v", m.attachments)
 	}
-	if got := m.input.Value(); got != "" {
-		t.Fatalf("and it should not also be typed, got %q", got)
+	if got := m.input.Value(); got != "⟨paste 1 · 11 lines⟩" {
+		t.Fatalf("the draft should hold the fold and not the log, got %q", got)
 	}
 
 	// Ordinary text still does what ctrl+v always did.
@@ -657,5 +657,184 @@ func TestPasteDrop_NothingStaged(t *testing.T) {
 	}
 	if !strings.Contains(lastSystemText(next), "nothing is attached") {
 		t.Fatalf("expected the empty-state notice, got %q", lastSystemText(next))
+	}
+}
+
+// The fold a staged paste leaves in the sentence
+// (docs/interface/surfaces.md#the-input-frame). These are the claims a golden
+// cannot make: a token is one character to the keyboard, and a keyboard is not
+// something a render can be asked about.
+
+// stagedLog stages a paste of n lines through the door a terminal's own paste
+// comes in by, so the test exercises the threshold rather than a hand-built
+// attachment.
+func stagedLog(t *testing.T, m Model, lines int) Model {
+	t.Helper()
+	log := strings.Repeat("round 26 reached, loop still running\n", lines)
+	next, _ := m.Update(tea.PasteMsg{Content: strings.TrimSuffix(log, "\n")})
+	staged := next.(Model)
+	if len(staged.attachments) != 1 {
+		t.Fatalf("a %d-line paste staged %d attachments", lines, len(staged.attachments))
+	}
+	return staged
+}
+
+// The token lands where the paste did, not at the end of the box: a log
+// pasted into the middle of a question is accounted for in the middle of the
+// question.
+func TestPasteFold_LandsWhereTheCursorWas(t *testing.T) {
+	m := frameModel(t, 120, 40)
+	m.input.SetValue("why does  never stop")
+	m.input.MoveToBegin()
+	m.input.SetCursorColumn(len("why does "))
+	m = stagedLog(t, m, 214)
+	want := "why does " + components.PasteToken("paste 1", 214) + " never stop"
+	if got := m.input.Value(); got != want {
+		t.Fatalf("the draft is %q, want %q", got, want)
+	}
+}
+
+// An arrow steps over the whole run rather than into it, both ways.
+func TestPasteFold_AnArrowStepsOverTheWholeToken(t *testing.T) {
+	m := stagedLog(t, frameModel(t, 120, 40), 214)
+	m.input.SetValue(m.input.Value() + " after")
+	tok := len([]rune(components.PasteToken("paste 1", 214)))
+	m.input.MoveToBegin()
+	m.input.SetCursorColumn(tok)
+	next, claimed := m.pasteFoldKey(tea.KeyPressMsg{Code: tea.KeyLeft})
+	if !claimed {
+		t.Fatal("left at the token's closing quote was not claimed")
+	}
+	if got := next.(Model).input.Column(); got != 0 {
+		t.Fatalf("left landed at column %d, want the opening quote at 0", got)
+	}
+	next, claimed = next.(Model).pasteFoldKey(tea.KeyPressMsg{Code: tea.KeyRight})
+	if !claimed {
+		t.Fatal("right at the token's opening quote was not claimed")
+	}
+	if got := next.(Model).input.Column(); got != tok {
+		t.Fatalf("right landed at column %d, want %d", got, tok)
+	}
+}
+
+// A backspace at the closing quote takes the token and the log together. A
+// staging area holding a paste the sentence no longer mentions is the message
+// going out with two hundred lines nobody meant to send.
+func TestPasteFold_BackspaceOverItDropsThePaste(t *testing.T) {
+	m := stagedLog(t, frameModel(t, 120, 40), 214)
+	m.input.SetCursorColumn(len([]rune(m.input.Value())))
+	next, claimed := m.pasteFoldKey(tea.KeyPressMsg{Code: tea.KeyBackspace})
+	if !claimed {
+		t.Fatal("backspace at the token's closing quote was not claimed")
+	}
+	after := next.(Model)
+	if got := after.input.Value(); got != "" {
+		t.Fatalf("the fold survived the backspace: %q", got)
+	}
+	if len(after.attachments) != 0 {
+		t.Fatalf("the paste is still staged: %v", after.attachments)
+	}
+
+	// A press anywhere else is the line editor's, untouched.
+	m = stagedLog(t, frameModel(t, 120, 40), 214)
+	m.input.SetCursorColumn(2)
+	if _, claimed := m.pasteFoldKey(tea.KeyPressMsg{Code: tea.KeyBackspace}); claimed {
+		t.Fatal("a backspace inside the token was claimed as the whole of it")
+	}
+}
+
+// Every door out of the staging area takes the fold with it.
+func TestPasteFold_DroppingTheChipTakesTheToken(t *testing.T) {
+	m := stagedLog(t, frameModel(t, 120, 40), 214)
+	next, _ := m.dropAttachment("paste-1.txt")
+	if got := next.(Model).input.Value(); got != "" {
+		t.Fatalf("/paste drop left the fold behind: %q", got)
+	}
+	m = stagedLog(t, frameModel(t, 120, 40), 214)
+	next, _ = m.runPaste([]string{"/paste", "clear"})
+	if got := next.(Model).input.Value(); got != "" {
+		t.Fatalf("/paste clear left the fold behind: %q", got)
+	}
+}
+
+// The price is on the vitals rail before the send, which is the whole point.
+func TestPasteFold_TheVitalsPriceIt(t *testing.T) {
+	m := frameModel(t, 120, 40)
+	if got := m.pasteCost(); got != "" {
+		t.Fatalf("an empty staging area priced %q", got)
+	}
+	m = stagedLog(t, m, 214)
+	if got := m.pasteCost(); !strings.HasPrefix(got, "paste 1 will cost ~") {
+		t.Fatalf("the vitals say %q", got)
+	}
+	if frame := stripANSI(promptSurface(m)); !strings.Contains(frame, "will cost") {
+		t.Fatalf("the frame does not carry the clause:\n%s", frame)
+	}
+}
+
+// After the send the row keeps the fold rather than the flood, and the fold is
+// what reading mode's cursor can open.
+func TestPasteFold_TheTranscriptKeepsIt(t *testing.T) {
+	m := stagedLog(t, frameModel(t, 120, 40), 214)
+	sent := m.input.Value()
+	e := userEntry(sent, m.takeAttachments())
+	if len(e.pastes) != 1 {
+		t.Fatalf("the row kept %d folds, want one", len(e.pastes))
+	}
+	if len(e.attached) != 0 {
+		t.Fatalf("a fold in the words is also on the attached line: %v", e.attached)
+	}
+	if !expandable(e) {
+		t.Fatal("a row with a fold cannot be opened")
+	}
+	row := stripANSI(m.renderEntry(e, 120))
+	for _, want := range []string{sent, "▸ paste 1 · 214 lines", "tokens", "expand"} {
+		if !strings.Contains(row, want) {
+			t.Fatalf("the row never says %q:\n%s", want, row)
+		}
+	}
+	// Opened, the body is bounded and the bound counts what it held back.
+	e.expanded = true
+	open := stripANSI(m.renderEntry(e, 120))
+	if n := strings.Count(open, "round 26 reached"); n != maxToolResultLines {
+		t.Fatalf("the opened body shows %d lines, want the tool bound of %d", n, maxToolResultLines)
+	}
+	if !strings.Contains(open, "206 lines more") {
+		t.Fatalf("the bound does not count what it swallowed:\n%s", open)
+	}
+}
+
+// An attachment that is not a fold is named under the row as it always was:
+// the split is the sentence's, and a screenshot has nowhere in the words to be.
+func TestPasteFold_AScreenshotIsStillNamedUnderTheRow(t *testing.T) {
+	e := userEntry("look at this", []provider.Attachment{
+		{Kind: provider.AttachmentImage, Name: "shot.png", Data: pngHeader}})
+	if len(e.pastes) != 0 || len(e.attached) != 1 {
+		t.Fatalf("a screenshot became %d folds and %d names", len(e.pastes), len(e.attached))
+	}
+}
+
+// The open key reaches the reader; leaving it changes nothing, and its one
+// destructive key takes the paste out of both places it is.
+func TestPasteFold_TheOpenKeyReadsItAndLeavesItAlone(t *testing.T) {
+	m := stagedLog(t, frameModel(t, 120, 40), 214)
+	sentence := m.input.Value()
+	opened, _ := m.openStagedPaste()
+	read := opened.(Model)
+	if read.state != statePasteView {
+		t.Fatalf("state = %v, want the paste reader", read.state)
+	}
+	if view := stripANSI(strings.Join(read.pasteReaderLines(120, 12), "\n")); !strings.Contains(view, "PASTE 1 · lines 1–10 of 214") {
+		t.Fatalf("the rail does not say where in the paste this is:\n%s", view)
+	}
+	left, _ := read.updatePasteReader(tea.KeyPressMsg{Code: 'q', Text: "q"})
+	back := left.(Model)
+	if len(back.attachments) != 1 || back.input.Value() != sentence {
+		t.Fatalf("leaving changed something: %d staged, draft %q", len(back.attachments), back.input.Value())
+	}
+	dropped, _ := read.updatePasteReader(tea.KeyPressMsg{Code: 'x', Text: "x"})
+	gone := dropped.(Model)
+	if len(gone.attachments) != 0 || gone.input.Value() != "" {
+		t.Fatalf("[x] left %d staged and the draft at %q", len(gone.attachments), gone.input.Value())
 	}
 }

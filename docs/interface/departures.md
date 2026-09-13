@@ -591,6 +591,33 @@ in a golden fixture.
 `↺` is the run strip's unwatched stage, argued beside [the run
 row](#the-backlog-runs-row-has-no-artboard).
 
+## The paste fold is written in angle quotes
+
+*A gap.* The guideline pages carry no mark for a fold standing inside a
+sentence, and the `Paste` artboard needed one: a log too big for the draft
+leaves a token where it was pasted, and the token has to be legible as *this
+stands for something bigger* in the middle of a line somebody is still
+typing.
+
+Nothing in the kit says that. `▸` is a folded entry and it means it at the
+head of a row, in the glyph column, where the row it folds is the whole line;
+wrapped around a run of words inside a sentence it would be a second meaning
+for the mark the transcript's every fold already uses. `…` is what a clip
+ends on — it says text was lost, and a paste token loses nothing, it stands
+for something staged and counted.
+
+So the draft adds `⟨` and `⟩`, and the artboard says why in one line: square
+brackets are keys. Every offer in this product is written `[enter]`, and a
+fold written the same way in the one place a reader is typing rather than
+choosing would be an offer nothing accepts, three inches from a rail full of
+real ones. The two notations never meet — `⟨ ⟩` never brackets a key and
+`[ ]` never brackets a fold — which is the whole reason a second pair was
+worth two new marks.
+
+They come as a pair and they are drawn in one place: the token the draft, the
+sentence in the transcript and the fold row under it all spell it through the
+one renderer, so there is no second spelling to drift.
+
 ## The attachment chips mark what kind of file is staged
 
 *A gap.* No artboard draws the staged strip's chips, and the kit has no mark

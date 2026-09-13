@@ -374,6 +374,13 @@ func buildOverlays() map[state]*mode {
 			hint:   (Model).renderPreviewHint,
 			answer: (*Model).answerPreview,
 		},
+		statePasteView: {
+			place:   placePane,
+			borrows: true,
+			lines:   (Model).pasteReaderLines,
+			hint:    (Model).renderPasteReaderHint,
+			keys:    (Model).updatePasteReader,
+		},
 		stateReview: {
 			place:   placePane,
 			borrows: true,

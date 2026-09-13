@@ -588,9 +588,23 @@ func TestGolden_DraftGrammar(t *testing.T) {
 			m.followUpsHeld = held
 			return promptSurface(m)
 		}
+		// A fold is the third thing a draft can hold that is not the words
+		// somebody typed, so it belongs beside the bang and the mention: all
+		// three are the box saying that what is in it means something other
+		// than itself.
+		folded := func() string {
+			m := goldenModel(t, width)
+			m.attachments = []provider.Attachment{{
+				Kind: provider.AttachmentText, Name: "paste-1.txt",
+				Data: bytes.Repeat([]byte("round 26 reached, loop still running\n"), 214),
+			}}
+			m.input.SetValue("why does " + components.PasteToken("paste 1", 214) + " never stop")
+			return promptSurface(m)
+		}
 		return []golden.Panel{
 			{Label: "a bang draft · the gutter says it is a command", View: bang()},
 			{Label: "the @ mention menu under the draft", View: mention()},
+			{Label: "a paste folded into the sentence", View: folded()},
 			{Label: "both queues counted apart", View: queues(false)},
 			{Label: "the follow-up held after a cancel", View: queues(true)},
 		}
@@ -683,6 +697,61 @@ func TestGolden_StagedRail(t *testing.T) {
 			{Label: "a notice above it · transient first, then what rides", View: frame(func(m *Model) {
 				m.steering = []steeringItem{{text: "and check the parser"}}
 			})},
+		}
+	})
+}
+
+// TestGolden_PasteToken captures the fold a staged paste leaves in the
+// sentence: the token in the draft with what it will cost on the vitals rail
+// and the key that opens it on the bottom one, the paste opened under
+// reading's labelled rail, and the row the send leaves in the transcript —
+// collapsed, and opened onto its bounded body.
+//
+// Four widths, because the two rails are where the fold is accounted for and
+// both shed fields: at 60 the cost clause is what the vitals give up and the
+// open key is what the hints give up, and the criterion is that the token
+// itself never goes — a sentence that lost its fold would be a message
+// carrying two hundred lines it no longer mentions.
+func TestGolden_PasteToken(t *testing.T) {
+	// A test log of the artboard's own height, and long enough a line that
+	// the estimate on the vitals rail lands where the artboard puts it: what
+	// the criterion is about is a paste that costs more than the sentence
+	// around it, and a fixture of short lines would price at a fraction of
+	// one and make the clause look cheap.
+	log := []byte("=== RUN   TestRoundLimit\n" +
+		strings.Repeat("    loop_test.go:44: round 26 reached after 2.1s, loop still running "+
+			"with 3 goroutines parked on the same channel\n", 209) +
+		"--- FAIL: TestRoundLimit (2.11s)\nFAIL\nFAIL\tshhh/internal/agent\t2.184s\nexit status 1\n")
+	pasted := provider.Attachment{Kind: provider.AttachmentText, Name: "paste-1.txt", Data: log}
+	fold, ok := pasteOf(pasted)
+	if !ok {
+		t.Fatal("the fixture's paste does not read as one")
+	}
+	sentence := "this test log says the loop never stops — " + fold.token + " — fix the exit condition"
+	staged := func(t *testing.T, width int) Model {
+		m := goldenModel(t, width)
+		m.attachments = []provider.Attachment{pasted}
+		m.input.SetValue(sentence)
+		return m
+	}
+	captureGolden(t, "paste-token", "the paste fold", goldenWidths, func(width int) []golden.Panel {
+		sent := func(open bool) string {
+			m := goldenModel(t, width)
+			m.transcript = []entry{userEntry(sentence, []provider.Attachment{pasted})}
+			m.transcript[0].expanded = open
+			m.invalidateRenderCache()
+			return m.renderHistory()
+		}
+		reader := func() string {
+			m := staged(t, width)
+			opened, _ := m.openStagedPaste()
+			return strings.Join(opened.(Model).pasteReaderLines(width, 12), "\n")
+		}
+		return []golden.Panel{
+			{Label: "the fold in the draft · priced on the vitals, opened from the hints", View: promptSurface(staged(t, width))},
+			{Label: "opened · reading's rail says how far through it you are", View: reader()},
+			{Label: "sent · the transcript keeps the fold, not the flood", View: sent(false)},
+			{Label: "opened in the transcript · bounded, and the bound counts", View: sent(true)},
 		}
 	})
 }

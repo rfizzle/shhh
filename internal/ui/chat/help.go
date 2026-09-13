@@ -355,10 +355,19 @@ through ctrl+v and through your terminal's own paste — so a
 stack trace does not bury the sentence it came with. Those
 two numbers are the defaults for appearance.paste_lines and
 appearance.paste_columns; shhh config shows this machine's,
-and a negative turns one of them off. /paste show
-paste-1.txt reads it back before you send it, and a paste
-over 256 KB is refused rather than staged — it would ride in
-the prompt itself`,
+and a negative turns one of them off. A paste over 256 KB is
+refused rather than staged — it would ride in the prompt
+itself`,
+	},
+	{
+		binds: []keys.Binding{keys.Draft.OpenPaste},
+		text: `Open the staged paste. What is staged leaves a fold where
+you pasted it — ⟨paste 1 · 214 lines⟩ — which moves, deletes
+and sends as one character, and what it will cost is on the
+vitals rail before you send. This reads it back: j/k scrolls,
+x drops it, q returns to the draft with the cursor where you
+left it. /paste show paste-1.txt is the same surface by name
+(alt needs the Option setting the agent manager's row names)`,
 	},
 	{
 		binds: []keys.Binding{keys.Draft.Complete},

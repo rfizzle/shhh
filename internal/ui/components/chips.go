@@ -119,6 +119,33 @@ func joinChips(parts []string) string {
 	return strings.Join(parts, sty.Dim.Render(chipSeparator))
 }
 
+// PasteToken is the fold a staged paste leaves in the sentence it was pasted
+// into: `⟨paste 1 · 214 lines⟩`, which the draft holds where the log would
+// otherwise have gone and the transcript keeps once the message is sent
+// (docs/interface/surfaces.md#the-input-frame).
+//
+// The angle quotes are two marks the guideline pages do not carry, taken
+// deliberately because square brackets are how this product writes a key and
+// a fold inside a live draft must not be readable as an offer
+// (docs/interface/departures.md#the-paste-fold-is-written-in-angle-quotes).
+//
+// It is here beside the chip because the strip and the token are the same
+// paste said twice — what is riding, and where in the sentence it goes — and
+// one spelling of its height is what keeps the two from disagreeing about
+// the same file on the same screen.
+func PasteToken(label string, lines int) string {
+	return string(PasteFoldOpen) + label + chipSeparator + countedLines(lines) + string(PasteFoldClose)
+}
+
+// PasteFoldOpen and PasteFoldClose are the two marks, exported because
+// finding a fold is the other half of writing one: the draft and the
+// transcript paint the run between them, and a surface spelling the pair
+// again would be a second place the mark is decided.
+const (
+	PasteFoldOpen  = '⟨'
+	PasteFoldClose = '⟩'
+)
+
 // countedLines is a line count as the rails write one. It is here rather than
 // beside either caller because the strip and the preview card are the two
 // surfaces that report a text attachment's height, and two spellings of the

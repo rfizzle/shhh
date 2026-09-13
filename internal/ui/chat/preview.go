@@ -94,6 +94,13 @@ func onlyPreviewable(atts []provider.Attachment) (provider.Attachment, bool) {
 // already say. An image that will not decode does open, because "this is
 // staged and shhh cannot read it" is a fact about the send that follows.
 func (m Model) openPreview(a provider.Attachment) (tea.Model, tea.Cmd) {
+	if _, ok := pasteOf(a); ok {
+		// A paste has a surface of its own, and the name is a second door
+		// onto it rather than a second reading of it: one thing drawn two
+		// ways depending on which door the reader came in by is two things
+		// to learn about one file.
+		return m.openPasteReader(a)
+	}
 	view := &components.AttachmentView{Name: a.Name, Size: attachment.HumanSize(len(a.Data))}
 	switch a.Kind {
 	case provider.AttachmentImage:
@@ -170,4 +177,178 @@ func (m *Model) closePreview() overlayAction {
 // one of the two ways out, the way every other takeover's hint does.
 func (m Model) renderPreviewHint() string {
 	return seg(keys.Preview.Back).render() + strings.Repeat("\n", inputHeight-1)
+}
+
+// pasteReader is the staged paste opened for reading — the surface the fold
+// in the draft leads to (docs/interface/surfaces.md#the-input-frame).
+//
+// It is a surface of its own rather than the card above, and the difference
+// is what each is asked. The card answers *is this the file I meant*, which a
+// thumbnail settles in one look, so it fits its body to the pane and decides
+// nothing. A paste is two hundred lines the reader is about to pay for, and
+// the questions are whether it is the right log, whether all of it is there
+// and whether to send it at all — only the last of which can be answered
+// without moving.
+//
+// So it scrolls, it can drop what it is showing, and it wears the labelled
+// rail every surface holding the keyboard wears rather than a card's border:
+// what is on screen is the paste, and the rail is what says the keyboard is
+// here and how far through it the reader has got (invariant 5).
+type pasteReader struct {
+	// name is the handle back to the staging area, because the surface can
+	// outlive the chip — a queued `/paste clear`, a send that took
+	// everything staged. Reading it back by name is what lets the key that
+	// drops the paste notice that there is nothing left to drop.
+	name  string
+	label string
+	lines []string
+	page  components.Pager
+}
+
+// openStagedPaste opens the fold the draft is holding. With one paste staged
+// it opens that one; with several it opens the one the cursor is standing in
+// or after, which is the one the reader was looking at when they pressed the
+// key, and falls back to the first — a surface that refused to guess would be
+// asking the reader to type a name that is on the screen in front of them.
+func (m Model) openStagedPaste() (tea.Model, tea.Cmd) {
+	staged := m.stagedPastes()
+	if len(staged) == 0 {
+		return m.surfaceNotice("no paste is staged — " + keys.Bracket(keys.Draft.Attach) +
+			" attaches the clipboard, and a paste too big for the draft stages itself")
+	}
+	want := staged[0].label
+	if len(staged) > 1 {
+		if under, ok := m.pasteUnderCursor(staged); ok {
+			want = under
+		}
+	}
+	for _, a := range m.attachments {
+		if p, ok := pasteOf(a); ok && p.label == want {
+			return m.openPasteReader(a)
+		}
+	}
+	return m, nil
+}
+
+// pasteUnderCursor is the fold the draft's cursor is inside or nearest behind
+// — the last one that opens at or before it. A cursor in front of every fold
+// in the sentence names none, and the caller takes the first.
+func (m Model) pasteUnderCursor(staged []stagedPaste) (string, bool) {
+	value := m.input.Value()
+	at := m.draftOffset(value)
+	label, found := "", false
+	for _, p := range staged {
+		from := strings.Index(value, p.token)
+		if from < 0 || len([]rune(value[:from])) > at {
+			continue
+		}
+		label, found = p.label, true
+	}
+	return label, found
+}
+
+// openPasteReader puts one paste on the pane, from the top.
+func (m Model) openPasteReader(a provider.Attachment) (tea.Model, tea.Cmd) {
+	p, ok := pasteOf(a)
+	if !ok {
+		return m, nil
+	}
+	m.pasteRead = &pasteReader{
+		name:  a.Name,
+		label: p.label,
+		lines: strings.Split(strings.TrimSuffix(string(a.Data), "\n"), "\n"),
+	}
+	m.enterSurface(statePasteView)
+	m.syncViewport()
+	return m, nil
+}
+
+// pasteReaderLines draws the surface: the labelled rail naming the paste and
+// where in it the reader is, the lines themselves indented under it, and the
+// bare rule that closes a body.
+//
+// The rail is reading mode's, not a second one shaped like it (interrupt.go).
+// Opening a paste from the draft is the keyboard leaving the sentence for a
+// body of text, which is what reading mode is, and a surface inventing its
+// own rule for the same act would be a fourth spelling of "the keyboard is
+// here".
+func (m Model) pasteReaderLines(width, height int) []string {
+	r := m.pasteRead
+	if r == nil || width <= 0 {
+		return nil
+	}
+	// Two rows go to the rail above the body and the rule under it.
+	r.page.Height = max(height-2, 1)
+	body := r.page.Window(r.lines)
+	lines := []string{keyboardRail(r.railLabel(), width)}
+	for _, line := range body {
+		lines = append(lines, strings.Repeat(" ", pasteBodyIndent)+
+			sty.Frame.PasteBody.Render(components.Clip(line, max(width-pasteBodyIndent, 1))))
+	}
+	return append(lines, dividerStyle(width))
+}
+
+// pasteBodyIndent is how far the body sits inside the rail above it: the two
+// columns every body in this transcript is set in from the mark that owns it.
+const pasteBodyIndent = 2
+
+// railLabel is what the rail says: which paste, and which of its lines are on
+// screen. The span is the count's whole job here — a body that scrolls has to
+// say where in itself it is, and the total on its own is the one number the
+// chip already gave the reader.
+func (r *pasteReader) railLabel() string {
+	from := r.page.Held() + 1
+	to := min(r.page.Held()+r.page.Height, len(r.lines))
+	return fmt.Sprintf("%s · lines %d–%d of %d",
+		strings.ToUpper(r.label), from, to, len(r.lines))
+}
+
+// updatePasteReader routes the surface's keys: the pair that scrolls, the one
+// that drops what is showing, and the two that leave.
+func (m Model) updatePasteReader(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
+	r := m.pasteRead
+	if r == nil {
+		m.leaveSurface()
+		return m, nil
+	}
+	switch pressed := msg.String(); {
+	case keys.Is(pressed, keys.Paste.Scroll):
+		r.page.Offset += keys.Step(pressed, keys.Paste.Scroll)
+		return m, nil
+	case keys.Is(pressed, keys.Paste.Remove):
+		// The one key here that changes anything. It leaves as well as
+		// removes: the surface was showing bytes that are no longer staged,
+		// and a pane left open on them would be reading a file the session
+		// has forgotten.
+		for _, a := range m.attachments {
+			if strings.EqualFold(a.Name, r.name) {
+				m.closePasteReader()
+				next, _ := m.removePaste(a)
+				return next, nil
+			}
+		}
+		m.closePasteReader()
+		return m, nil
+	case keys.Is(pressed, keys.Paste.Leave), keys.Is(pressed, keys.Paste.Back):
+		// Esc never destroys and neither does q: the paste is still staged,
+		// and the cursor is still where the sentence left it (invariant 3).
+		m.closePasteReader()
+		return m, nil
+	}
+	return m, nil
+}
+
+// closePasteReader hands the pane back to the turn.
+func (m *Model) closePasteReader() {
+	m.pasteRead = nil
+	m.leaveSurface()
+	m.syncViewport()
+}
+
+// renderPasteReaderHint fills the input area while the paste is open, the way
+// every other pane overlay's hint does.
+func (m Model) renderPasteReaderHint() string {
+	return joinSegs([]hintSeg{
+		seg(keys.Paste.Scroll), seg(keys.Paste.Remove), seg(keys.Paste.Leave),
+	}) + strings.Repeat("\n", inputHeight-1)
 }

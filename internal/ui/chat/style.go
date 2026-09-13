@@ -150,6 +150,17 @@ type frameStyles struct {
 	// token a sub-agent wears wherever one is named.
 	Identity      lipgloss.Style
 	IdentityChild lipgloss.Style
+	// PasteFold is the token a staged paste leaves in the sentence, in the
+	// draft and in the transcript row it was sent on. Info is the token a
+	// thing the session is carrying wears, and it is what tells a fold from
+	// the words on either side of it
+	// (docs/interface/surfaces.md#the-input-frame).
+	PasteFold lipgloss.Style
+	// PasteBody is the lines of an opened paste. Dimmer is what every body
+	// under a row is drawn in — a tool's output, a live tail — and a paste
+	// read before it is sent is the same kind of thing: bytes the session is
+	// carrying, not words it is saying.
+	PasteBody lipgloss.Style
 }
 
 func newFrameStyles(p components.ColorTokens) frameStyles {
@@ -169,6 +180,8 @@ func newFrameStyles(p components.ColorTokens) frameStyles {
 		WaitingChip:   lipgloss.NewStyle().Bold(true).Foreground(p.Accent.Color()),
 		Identity:      lipgloss.NewStyle().Foreground(p.Status.Color()),
 		IdentityChild: lipgloss.NewStyle().Foreground(p.Info.Color()),
+		PasteFold:     lipgloss.NewStyle().Foreground(p.Info.Color()),
+		PasteBody:     lipgloss.NewStyle().Foreground(p.Dimmer.Color()),
 	}
 }
 

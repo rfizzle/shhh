@@ -306,6 +306,26 @@ func (m *Model) toggleRow(idx int, g rowGesture) (claimed bool, full *components
 		}
 		return true, nil, false
 	}
+	if len(es[idx].pastes) > 0 {
+		// A sent message's fold cycles the three depths a tool row does:
+		// closed, the bounded window in place, the whole paste full screen
+		// (attachments.go). The bytes are the row's own rather than the
+		// evidence store's, so the third depth is offered whenever the
+		// window did not hold all of them.
+		switch {
+		case g == gestureBody:
+			if es[idx].expanded && pasteFoldOverflows(es[idx]) {
+				return true, nil, true
+			}
+		case !es[idx].expanded:
+			es[idx].expanded = true
+		case g == gestureCycle && pasteFoldOverflows(es[idx]):
+			return true, nil, true
+		default:
+			es[idx].expanded = false
+		}
+		return true, nil, false
+	}
 	if lines := outputLines(es[idx]); len(lines) > 0 {
 		// A tool or command row with a body cycles the diff's three depths
 		// too (docs/interface/surfaces.md#the-activity-row): closed, the

@@ -262,7 +262,8 @@ func optionFix(terminal, profile string) []string {
 // profile where Option types a character is a warning rather than a failure
 // — the keyboard works, and four of its chords do not.
 func doctorOptionKey(s optionKeyState) doctorFinding {
-	chords := joinAnd(altChords())
+	alt := altChords()
+	chords := joinAnd(alt)
 	if s.GOOS != "darwin" {
 		return doctorFinding{
 			Subject: "no Option key on " + s.GOOS, Detail: s.terminalName(),
@@ -273,7 +274,11 @@ func doctorOptionKey(s optionKeyState) doctorFinding {
 		return doctorFinding{
 			Subject: "the Option setting of " + s.terminalName() + " could not be read", Detail: s.Err.Error(),
 			Outcome: "unread", State: components.DoctorWarned,
-			Consequence: "if alt+a types a character, " + chords + " never reach shhh",
+			// The probe is one of the chords, so the run behind it names the
+			// others and not itself again: a reader who has just been told
+			// to press it does not need it repeated, and the row clips
+			// rather than wraps.
+			Consequence: "if " + alt[0] + " types a character, " + joinAnd(alt[1:]) + " never reach shhh",
 			FixLabel:    "show the setting to turn on",
 			Fix:         optionFix(s.Terminal, s.Profile),
 		}

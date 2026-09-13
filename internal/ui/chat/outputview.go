@@ -35,6 +35,12 @@ func (m Model) openOutputFull(v *components.OutputView, idx int, ret state) (tea
 // words as the title, and the whole stored result — already bounded upstream
 // by the evidence store — as the lines.
 func (m Model) rowOutputView(e entry) *components.OutputView {
+	if len(e.pastes) > 0 {
+		// A sent message's body is the paste it folded, and it is on the
+		// row rather than in the store: nothing trimmed it and nothing can
+		// page it back (attachments.go).
+		return pasteOutputView(e)
+	}
 	title := activityVerbFor(e.toolName, e.toolArgs) + " " + digest.Arg(e.toolName, e.toolArgs)
 	if e.kind == entryCommand {
 		title = "$ " + firstLine(e.text)
