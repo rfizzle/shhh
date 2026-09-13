@@ -3,7 +3,9 @@ package chat
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"maps"
 	"slices"
 	"strings"
 	"testing"
@@ -14,9 +16,13 @@ import (
 	"github.com/charmbracelet/colorprofile"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/digest"
+	"github.com/rfizzle/shhh/internal/evidence"
+	"github.com/rfizzle/shhh/internal/mcp"
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/pricing"
+	"github.com/rfizzle/shhh/internal/process"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/structural"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/tools"
@@ -1017,5 +1023,104 @@ func TestCommandEnding_NamesWhatEndedTheCommand(t *testing.T) {
 					got.outcome, got.account, tc.want, tc.account)
 			}
 		})
+	}
+}
+
+// The target is the field a reader scans for what an act was about, so the
+// one thing it may never be is the tool's own identifier: the verb column
+// already carries that, and a row that repeats it there has said one thing
+// twice and what the call touched not at all
+// (docs/interface/principles.md#one-grid).
+//
+// The walk is over the verb table because that is the row's own register of
+// every tool it can draw — a tool missing from it renders as itself and is a
+// hole in the table — so a tool registered tomorrow is covered by this the
+// day its verb is added. Both refusals a call can meet before it runs are put
+// through it: the ordinary row, and the row the queue leaves behind when the
+// arguments cannot be honoured at all.
+func TestActivityRow_NoTargetIsTheToolsOwnName(t *testing.T) {
+	m := activityModel(t)
+	names := slices.Sorted(maps.Keys(activityVerbs))
+	// A server's tool goes through a branch of its own and is the one name
+	// the table cannot hold, since the server half is not known until it
+	// connects.
+	names = append(names, "github"+mcp.Separator+"create_issue")
+	for _, name := range names {
+		for _, args := range []string{"", "{}", "not json", `{"path":`} {
+			rows := []components.ActivityRow{
+				m.activityRowFor(entry{kind: entryTool, toolName: name, toolArgs: args,
+					toolResult: "error: invalid arguments"}),
+				m.activityRowFor(m.skippedCallEntry(
+					provider.ToolCall{Name: name, Arguments: args},
+					errors.New("invalid arguments: the call could not be read"))),
+			}
+			for _, row := range rows {
+				if row.Target == name {
+					t.Errorf("%s called with %q renders its own name as the subject: %q",
+						name, args, row.Target)
+				}
+			}
+		}
+	}
+}
+
+// The three tools whose arguments lead with an operation rather than a
+// subject. The operation is the verb column's job, so a row that put it in
+// the target as well read `run  run` and `read  read` — one word twice, and
+// the suite, the entry or the process never named.
+func TestActivityRow_AnActionIsNotASubject(t *testing.T) {
+	m := activityModel(t)
+	for _, tc := range []struct{ name, tool, args, want string }{
+		{"the gate names its suite", quality.ToolName, `{"action":"run","suite":"default"}`,
+			"quality gate · default"},
+		{"a re-report names the run it re-reports", quality.ToolName, `{"action":"result"}`,
+			"quality gate · last result"},
+		{"an evidence read names the entry", evidence.ToolName,
+			`{"action":"read","id":"ev-1a2b3c4d5e6f7089"}`, "ev-1a2b3c4d5e6f7089"},
+		{"a process read names the process", process.ToolName,
+			`{"action":"read","name":"web"}`, "web"},
+		{"a status of everything says so", process.ToolName, `{"action":"status"}`,
+			"all processes"},
+	} {
+		row := m.activityRowFor(entry{kind: entryTool, toolName: tc.tool, toolArgs: tc.args,
+			toolResult: "ok"})
+		if row.Target != tc.want {
+			t.Errorf("%s: target = %q, want %q", tc.name, row.Target, tc.want)
+		}
+		if row.Target == row.Verb {
+			t.Errorf("%s: the target repeats the verb column (%q)", tc.name, row.Verb)
+		}
+	}
+}
+
+// The gate row is the one row whose subject is finished by its own result:
+// the call says which suite was asked for and the verdict says what that
+// suite turned out to be, so the finished row states how much was verified
+// without the reader opening anything.
+func TestActivityRow_TheGateRowCountsItsChecks(t *testing.T) {
+	m := activityModel(t)
+	res := &quality.Result{Suite: "default", Verdict: quality.VerdictPass, Checks: []quality.CheckResult{
+		{Name: "test"}, {Name: "vet"}, {Name: "lint"}, {Name: "fmt-check"}, {Name: "docs-check"},
+	}}
+	row := m.activityRowFor(entry{kind: entryTool, toolName: quality.ToolName,
+		toolArgs: `{"action":"run","suite":"default"}`, toolResult: res.Format(res.Fingerprint)})
+	if want := "quality gate · default · 5 checks"; row.Target != want {
+		t.Errorf("finished gate row: target = %q, want %q", row.Target, want)
+	}
+	// A run still going has no verdict to read, and says what it can: which
+	// suite it was asked for.
+	running := m.activityRowFor(entry{kind: entryTool, toolName: quality.ToolName,
+		toolArgs: `{"action":"run","suite":"default"}`, toolResult: pendingToolResult})
+	if want := "quality gate · default"; running.Target != want {
+		t.Errorf("running gate row: target = %q, want %q", running.Target, want)
+	}
+	// A run that named no suite fell back to the configured default, and the
+	// verdict is the only thing that knows which suite that was.
+	fell := &quality.Result{Suite: "fast", Verdict: quality.VerdictFail,
+		Checks: []quality.CheckResult{{Name: "test", ExitCode: 1}}}
+	row = m.activityRowFor(entry{kind: entryTool, toolName: quality.ToolName,
+		toolArgs: `{"action":"run"}`, toolResult: fell.Format(fell.Fingerprint)})
+	if want := "quality gate · fast · 1 check"; row.Target != want {
+		t.Errorf("gate row that named no suite: target = %q, want %q", row.Target, want)
 	}
 }

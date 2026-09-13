@@ -1874,17 +1874,21 @@ func TestGolden_ScreenAttached(t *testing.T) {
 // TestGolden_StaleEditRow pins the row an edit refused for staleness leaves
 // behind: the file and what happened to it on one line, the sentence the
 // model was given under it once the row is opened, and — beside them — the
-// row a call the model simply malformed gets, which names its tool and folds
-// its own sentence the same way.
+// row a call the model simply malformed gets, which says that its arguments
+// named no file at all and folds its own sentence the same way.
 func TestGolden_StaleEditRow(t *testing.T) {
 	captureBoundedGolden(t, "stale-edit-row", "the refused stale edit", []int{80}, func(width int) []golden.Panel {
 		build := func(open bool) string {
 			m := frameModel(t, width, 40)
 			m = m.WithWorkspace("/work/shhh")
-			stale := m.skippedCallEntry("write_file", fmt.Errorf("invalid arguments: %w",
-				tools.StaleError{Path: "/work/shhh/internal/agent/loop.go"}))
+			stale := m.skippedCallEntry(
+				provider.ToolCall{Name: "write_file", Arguments: `{"path":"/work/shhh/internal/agent/loop.go"}`},
+				fmt.Errorf("invalid arguments: %w",
+					tools.StaleError{Path: "/work/shhh/internal/agent/loop.go"}))
 			stale.expanded = open
-			bad := m.skippedCallEntry("write_file", errors.New("invalid arguments: path is required"))
+			bad := m.skippedCallEntry(
+				provider.ToolCall{Name: "write_file", Arguments: `{"content":"package agent\n"}`},
+				errors.New("invalid arguments: path is required"))
 			bad.expanded = open
 			m.transcript = []entry{
 				{kind: entryUser, text: "rebase the round cap on what loop.go says now"},

@@ -33,6 +33,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/diff"
+	"github.com/rfizzle/shhh/internal/digest"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/radius"
@@ -117,14 +118,18 @@ func (m Model) previewQueued(tc provider.ToolCall) *approvalRequest {
 }
 
 // skippedArgsReason is the account beside `skipped` on a call whose
-// arguments would not parse. The tool the model asked for is the row's
-// subject, because three of these in one session are otherwise
-// indistinguishable — one mistake repeated and three different ones read
-// exactly alike — and the tool is the first thing that tells them apart.
+// arguments would not parse.
 const skippedArgsReason = "invalid arguments"
 
+// noSubject is the target of a refused call whose arguments named nothing at
+// all. The row still has to fill the column the reader is scanning, and the
+// honest answer is that there was no subject — which is a different fact from
+// the row being about the tool, and the one that says where to look next.
+// It is dim like everything else on a refused row.
+const noSubject = "(no path)"
+
 // skippedCallEntry is the transcript's account of a call the queue refused
-// before it could reach a card. name is the tool the model asked for.
+// before it could reach a card.
 //
 // It is an act's own row and not a sentence beside the acts: the call was
 // one of the things the turn did, so it takes the seven fields every other
@@ -148,14 +153,26 @@ const skippedArgsReason = "invalid arguments"
 // so cost the reader the one fact only they have: which editor, sibling
 // session or background build touched the file. So that refusal names the
 // file as its subject and what happened to it as its reason.
-func (m Model) skippedCallEntry(name string, err error) entry {
+func (m Model) skippedCallEntry(call provider.ToolCall, err error) entry {
 	// The subject goes in text, which is where a command row's subject
-	// already lives: the arguments a refused call arrived with are the ones
-	// that could not be read, so the row cannot take its target off them the
-	// way every accepted call's row does. The expansion is the sentence the
-	// model was given, verbatim — a reader deciding whether the model can
-	// recover needs to see what it was actually told, not a paraphrase.
-	e := entry{kind: entryTool, toolName: name, text: name, skipped: skippedArgsReason}
+	// already lives: the row cannot take its target off the arguments the way
+	// every accepted call's row does, because those arguments are the thing
+	// that could not be honoured. What it can take off them is the path they
+	// named, which most of them did name — the arguments a preview rejected
+	// usually parsed as JSON and failed somewhere past it — and that is the
+	// one fact that tells five refused edits apart. The tool's name is not:
+	// it is already in the verb column, and five rows reading `edit_file` are
+	// one mistake repeated to a reader looking at five different files
+	// (docs/interface/principles.md#one-grid).
+	//
+	// The expansion is the sentence the model was given, verbatim — a reader
+	// deciding whether the model can recover needs to see what it was
+	// actually told, not a paraphrase.
+	subject := noSubject
+	if p := digest.Path(call.Arguments); p != "" {
+		subject = m.rowPath(p)
+	}
+	e := entry{kind: entryTool, toolName: call.Name, text: subject, skipped: skippedArgsReason}
 	var stale tools.StaleError
 	if errors.As(err, &stale) {
 		e.text, e.skipped = m.rowPath(stale.Path), tools.StaleReason

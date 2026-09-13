@@ -1,0 +1,26 @@
+# One turn of calls that have no file path to be about. Read the target column
+# down the feed against the Steps artboard's row anatomy (verb, target,
+# outcome): every row's target is what the call was about and none of them is
+# the tool's own name. At 02 the two history reads say the command they stand
+# for — `git status`, `git diff HEAD` — rather than a bare verb; at 03 the two
+# refused edits say the file the arguments named and, where they named none,
+# that they named none; at 04 the gate's row says which suite ran and how much
+# of one it is. The refusals land under the calls that auto-ran rather than in
+# the order the model asked for them, because a call that needs a decision
+# reaches the queue after every call that needed none. Inspect the picture for
+# the treatment: the refused rows are dim end to end with the mutation rail
+# still on them, and `(no path)` is no brighter than the path above it.
+setup mkdir -p .shhh checks internal/agent
+setup printf 'package agent\n\nfunc rounds(round, cap int) bool {\n\treturn round >= cap\n}\n' > internal/agent/loop.go
+setup git add -A && git -c user.email=tui@shhh -c user.name=tui commit -q -m "the round accounting"
+setup printf '\n// The cap is inclusive.\n' >> internal/agent/loop.go
+setup printf '#!/bin/sh\nexit 0\n' > checks/ok.sh; chmod +x checks/ok.sh
+setup printf '{"suites":{"default":{"checks":[{"name":"test","exe":"./checks/ok.sh"},{"name":"vet","exe":"./checks/ok.sh"},{"name":"lint","exe":"./checks/ok.sh"},{"name":"fmt-check","exe":"./checks/ok.sh"},{"name":"docs-check","exe":"./checks/ok.sh"}]}}}\n' > .shhh/quality.json
+snap 01-start "Some things worth doing first"
+keys "raise the round cap by one and check the tree" Enter
+snap 02-history "git diff HEAD"
+snap 03-refused "(no path)"
+snap 04-gate "quality gate · default · 5 checks"
+keys C-c
+keys C-c
+snap 05-exit "that is everything the screen was holding"

@@ -48,8 +48,17 @@ func Outcome(result string) string {
 	return OutcomeOK
 }
 
-// argKeys is the priority order for picking a tool call's key argument.
-var argKeys = []string{"path", "pattern", "command", "query", "question", "url", "title", "name", "action", "task", "role"}
+// argKeys is the priority order for picking a tool call's key argument. Every
+// one of them names something the call was pointed at, which is what the
+// field is for: the target says what the act was about and never what carried
+// it (docs/interface/principles.md#one-grid).
+//
+// `action` is the key that is deliberately not here. It is the operation, not
+// the subject — the same word the verb column already carries — so a call that
+// fell through to it rendered `read  read` and `run  run`, a row naming the
+// tool twice and the file, suite or process never. The three tools that take
+// an action answer for their own subject in actionToolTarget instead.
+var argKeys = []string{"path", "pattern", "command", "query", "question", "url", "title", "name", "task", "role"}
 
 // searchTools are the calls whose subject is the pattern and whose path is
 // only the scope it was asked in, so their rows lead with what was asked.
@@ -114,19 +123,24 @@ func Arg(tool, rawArgs string) string {
 		}
 	}
 	if tool == "git" {
-		// The verb is what the row is about, and the ref or the first path is
-		// what it was pointed at: `log internal/agent`. Without this the flat
+		// The command a person would have typed, which is the subject here:
+		// `git status`, `git diff HEAD`, `git log internal/agent`. The verb
+		// alone read as a bare enum word in a column of file paths — `status`
+		// beside `internal/agent/loop.go` — and `git` alone would be the tool
+		// naming itself, which the target never is
+		// (docs/interface/principles.md#one-grid). Without either the flat
 		// form leads with the alphabetically first key, which is the limit.
 		if verb, _ := args["verb"].(string); verb != "" {
+			subject := "git " + verb
 			if ref, _ := args["ref"].(string); ref != "" {
-				return verb + " " + ref
+				return subject + " " + ref
 			}
 			if paths, ok := args["paths"].([]any); ok && len(paths) > 0 {
 				if p, _ := paths[0].(string); p != "" {
-					return verb + " " + p
+					return subject + " " + p
 				}
 			}
-			return verb
+			return subject
 		}
 	}
 	if tool == "git_write" {
@@ -147,12 +161,92 @@ func Arg(tool, rawArgs string) string {
 			return name
 		}
 	}
+	if target := actionToolTarget(tool, args); target != "" {
+		return target
+	}
 	for _, key := range argKeys {
 		if v, ok := args[key].(string); ok && v != "" {
 			return FirstLine(v)
 		}
 	}
 	return FormatArgs(rawArgs)
+}
+
+// GateSubject is what a quality-gate row is about before the suite's own name
+// is added to it. It is spelled as the thing rather than as the tool
+// (`quality_gate`) because the target column is read as a list of subjects
+// (docs/interface/principles.md#one-grid).
+const GateSubject = "quality gate"
+
+// actionToolTarget is the subject of a call to one of the three tools that
+// take an `action` — the gate, the evidence store and the process supervisor.
+// Their operation is in the verb column already, so what is left for the
+// target is the thing the operation is being done to: the suite, the stored
+// entry, the process. It reports "" for a call that named none of those,
+// which falls back to the flat form like any other unknown shape.
+func actionToolTarget(tool string, args map[string]any) string {
+	action, _ := args["action"].(string)
+	switch tool {
+	case "quality_gate":
+		// A named suite is the subject of a run; the last run is the subject
+		// of a re-report, which has no suite of its own to name. The check
+		// count belongs beside the suite, but it is a fact about the verdict
+		// rather than about the call, so whoever holds the result adds it.
+		if action == "result" {
+			return GateSubject + " · last result"
+		}
+		if suite, _ := args["suite"].(string); suite != "" {
+			return GateSubject + " · " + suite
+		}
+		return GateSubject
+	case "evidence":
+		// The entry is the subject, and a search of one reads like any other
+		// search: the pattern asked, then where it was asked
+		// (docs/interface/principles.md#one-grid).
+		id, _ := args["id"].(string)
+		if id == "" {
+			return ""
+		}
+		if q, _ := args["query"].(string); q != "" {
+			return FirstLine(q) + " " + id
+		}
+		return id
+	case "process":
+		// The named process, or the command that is about to become one. A
+		// status that named nothing is asking about all of them, which is a
+		// subject too; every other action needs a name, so a call without one
+		// is a malformed call and has nothing to be about.
+		if cmd, _ := args["command"].(string); cmd != "" {
+			return FirstLine(cmd)
+		}
+		if name, _ := args["name"].(string); name != "" {
+			return name
+		}
+		if action == "status" {
+			return "all processes"
+		}
+	}
+	return ""
+}
+
+// Path is the file a call's arguments named, for a caller that needs the
+// subject of a call that never ran and so has no row of its own to read it
+// off. Arguments that are not JSON at all name nothing: the text is then the
+// parse error's business, not a subject.
+func Path(rawArgs string) string {
+	var args map[string]any
+	if err := json.Unmarshal([]byte(rawArgs), &args); err != nil {
+		return ""
+	}
+	if p, _ := args["path"].(string); p != "" {
+		return p
+	}
+	if paths, ok := args["paths"].([]any); ok && len(paths) > 0 {
+		if p, _ := paths[0].(string); p != "" {
+			return p
+		}
+	}
+	return ""
 }
 
 // GitVerb is the write verb a call to the writing half of git names. It is

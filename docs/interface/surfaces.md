@@ -37,7 +37,12 @@ could reach a decision — arguments that would not parse, a file that moved
 since it was read — is the call's own row saying it was skipped and why,
 rather than a sentence beside the acts: the reader is scanning a column for
 what became of each call, and the one call that produced nothing is the one
-they are most likely to be looking for.
+they are most likely to be looking for. It is about the file it tried to
+touch, where its arguments got far enough to name one, and says outright that
+they named nothing where they did not — five refusals of one tool are five
+different files to the session and one mistake repeated to anyone reading a
+column of the tool's name. The sentence the model was given folds under the
+row, whole.
 
 The session's own bookkeeping is on the same grid, a field short. A
 conversation reopened and a new one started are lines the session wrote about

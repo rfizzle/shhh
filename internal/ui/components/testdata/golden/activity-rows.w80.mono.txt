@@ -19,6 +19,19 @@
 · kind · command
   ▎$ run     go test ./internal/agent/...                           exit 0 12.4s
 
+· target · the gate's suite, and how many checks it is
+  ▎$ run     quality gate · default · 5 checks                    43 lines  112s
+
+· target · a history read is the command it stands for
+   ⚙ read    git status                                           14 lines  0.2s
+
+· target · and the side it was pointed at
+   ⚙ read    git diff HEAD                                       212 lines  0.4s
+
+· target · a refusal that came before the call had a subject
+  ▎⊘ edit    (no path)                         skipped · invalid arguments     —
+    error: invalid arguments: path is required
+
 · kind · edit
   ▎✎ edit    internal/agent/loop.go      approved · you · +12 −4 · 2 hunks  1.1s
 
@@ -105,6 +118,19 @@
 
 · kind · command
   ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m ␛[38;5;254mrun␛[m     ␛[38;5;254mgo test ./internal/agent/...␛[m                           ␛[38;5;254mexit 0␛[m ␛[38;5;244m12.4s␛[m
+
+· target · the gate's suite, and how many checks it is
+  ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m ␛[38;5;254mrun␛[m     ␛[38;5;254mquality gate · default · 5 checks␛[m                    ␛[38;5;244m43 lines␛[m  ␛[38;5;244m112s␛[m
+
+· target · a history read is the command it stands for
+   ␛[38;5;254m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254mgit status␛[m                                           ␛[38;5;244m14 lines␛[m  ␛[38;5;244m0.2s␛[m
+
+· target · and the side it was pointed at
+   ␛[38;5;254m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254mgit diff HEAD␛[m                                       ␛[38;5;244m212 lines␛[m  ␛[38;5;244m0.4s␛[m
+
+· target · a refusal that came before the call had a subject
+  ␛[38;5;254m▎␛[m␛[38;5;244m⊘␛[m ␛[38;5;244medit␛[m    ␛[38;5;244m(no path)␛[m                         ␛[38;5;244mskipped␛[m␛[38;5;244m · ␛[m␛[38;5;244minvalid arguments␛[m     ␛[38;5;244m—␛[m
+    ␛[38;5;244merror: invalid arguments: path is required␛[m
 
 · kind · edit
   ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254medit␛[m    ␛[38;5;254minternal/agent/loop.go␛[m      ␛[38;5;254mapproved · you␛[m␛[38;5;244m · ␛[m␛[38;5;254m+12␛[m ␛[38;5;254m−4␛[m␛[38;5;244m · ␛[m␛[38;5;244m2 hunks␛[m  ␛[38;5;244m1.1s␛[m

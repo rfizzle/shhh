@@ -122,6 +122,33 @@ func TestGolden_ActivityRows(t *testing.T) {
 				r.Kind, r.Verb, r.Target = ActivityCommand, "run", "go test ./internal/agent/..."
 				r.Outcome, r.Duration = OutcomeExit(0), "12.4s"
 			})},
+			// Four rows whose call has no path to be about. The target is
+			// still the subject and never the tool's own name: the suite the
+			// gate ran and how much of one it is, the command a history read
+			// stands for, and — where the arguments named nothing at all —
+			// the fact that they named nothing.
+			{Label: "target · the gate's suite, and how many checks it is", View: row(func(r *ActivityRow) {
+				r.Kind, r.Verb, r.Target = ActivityCommand, "run", "quality gate · default · 5 checks"
+				r.Counts, r.Duration = "43 lines", "112s"
+			})},
+			{Label: "target · a history read is the command it stands for", View: row(func(r *ActivityRow) {
+				r.Verb, r.Target = "read", "git status"
+				r.Counts, r.Duration = "14 lines", "0.2s"
+			})},
+			{Label: "target · and the side it was pointed at", View: row(func(r *ActivityRow) {
+				r.Verb, r.Target = "read", "git diff HEAD"
+				r.Counts, r.Duration = "212 lines", "0.4s"
+			})},
+			{Label: "target · a refusal that came before the call had a subject", View: row(func(r *ActivityRow) {
+				r.Kind, r.Verb, r.Target = ActivityEdit, "edit", "(no path)"
+				r.State, r.Outcome, r.Duration = ActivityDenied, OutcomeSkipped, NoDuration
+				r.Allowed, r.Expanded = "invalid arguments", true
+				// Already wrapped to the detail width by the caller: the
+				// sentence the model was given is prose, and the row clips.
+				r.Detail = []string{
+					"error: invalid arguments: path is required",
+				}
+			})},
 			{Label: "kind · edit", View: row(func(r *ActivityRow) {
 				r.Kind, r.Verb = ActivityEdit, "edit"
 				r.Counts, r.Outcome, r.Duration = "+12 −4 · 2 hunks", OutcomeBy(OutcomeApproved, "you"), "1.1s"

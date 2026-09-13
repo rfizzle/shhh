@@ -177,8 +177,18 @@ kind of act it was, which act, what it touched, what came of it, how long it
 took.
 
 Fixing the fields is what lets a reader scan one column instead of parsing
-sentences. Five rules follow from fixing them:
+sentences. Six rules follow from fixing them:
 
+- **The target is the call's subject, and never the tool that carried it.**
+  The column beside it already says which act this was, so a target that
+  names the tool again has spent the widest field on the one fact the row had
+  already stated — and left the suite, the file or the process it was
+  actually about unsaid. A tool whose arguments lead with an operation rather
+  than a subject is the case that gets this wrong: the operation is the verb,
+  and what it was done to is the target. Where a call has no subject at all —
+  arguments that broke before they named anything — the row says that, which
+  is a different fact from the row being about the tool and the one that tells
+  the reader where the mistake was.
 - **The target leads with what the call was about, not where it was made.**
   A search's target is its pattern and then its scope — `steeringItem
   ./internal/ui/chat` — because a column led by the directory turns twenty

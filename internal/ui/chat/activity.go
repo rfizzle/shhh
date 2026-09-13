@@ -189,6 +189,34 @@ var activityVerbs = map[string]string{
 	reports.ToolName:            "report",
 }
 
+// gateTarget adds to a quality-gate row's subject the one thing about the
+// suite that only the verdict knows: how many checks it is. The arguments say
+// which suite was asked for, so `quality gate · default` is what the row reads
+// while the checks run; the verdict says what that suite turned out to be, so
+// the finished row reads `quality gate · default · 5 checks` and a reader
+// scanning the column knows how much was verified without opening anything
+// (docs/interface/principles.md#one-grid).
+//
+// The suite comes off the verdict rather than off the call once there is a
+// verdict to read, because a run that named no suite fell back to the
+// configured default and the row would otherwise never say which one that was.
+// Everything else — a re-report, a run still in flight, a call that was
+// refused — has no verdict, and keeps the subject the arguments gave it.
+func gateTarget(target, tool, result string) string {
+	if tool != quality.ToolName {
+		return target
+	}
+	s, ok := quality.Summarize(result)
+	if !ok || s.Suite == "" {
+		return target
+	}
+	target = digest.GateSubject + " · " + s.Suite
+	if s.Total > 0 {
+		target += " · " + countPhrase(s.Total, false, "check", "checks")
+	}
+	return target
+}
+
 func activityVerb(tool string) string {
 	if v, ok := activityVerbs[tool]; ok {
 		return v
@@ -524,7 +552,7 @@ func (m Model) activityRowDetail(e entry, stepDetail bool, width int) components
 	} else {
 		row.Kind = m.activityKind(e.toolName)
 		row.Verb = activityVerbFor(e.toolName, e.toolArgs)
-		row.Target = digest.Arg(e.toolName, e.toolArgs)
+		row.Target = gateTarget(digest.Arg(e.toolName, e.toolArgs), e.toolName, result)
 		// A search's target is its pattern and then where it was put, and
 		// only the pattern is the subject: the place goes dim behind it, so
 		// the column reads as one question asked somewhere
@@ -546,9 +574,9 @@ func (m Model) activityRowDetail(e entry, stepDetail bool, width int) components
 			// (queue.go). It is the denied row's shape because that is what
 			// happened — ⊘, everything dim, and a dash where the duration
 			// would be — with `skipped` in the outcome and why in the
-			// account beside it. The subject is the file the call named, or
-			// the tool it named where the arguments were unreadable, which
-			// is all there was to go on.
+			// account beside it. The subject is the file the call named
+			// (queue.go), which is the one thing that tells five refusals
+			// apart.
 			row.State = components.ActivityDenied
 			row.Outcome = components.OutcomeSkipped
 			row.Allowed = e.skipped
@@ -557,10 +585,11 @@ func (m Model) activityRowDetail(e entry, stepDetail bool, width int) components
 			// The sentence the model was given, whole, under the row rather
 			// than clipped into the outcome field beside the reason
 			// (docs/interface/principles.md#fold-never-hide). It is not
-			// output — the call never ran — so nothing counts it.
-			if result != "" {
-				row.Detail = strings.Split(strings.TrimRight(result, "\n"), "\n")
-			}
+			// output — the call never ran — so nothing counts it, and it is
+			// wrapped rather than clipped for the same reason a judged
+			// denial's reason is: it is a sentence, and a body that clipped
+			// it would be the fold hiding what it promised.
+			row.Detail = m.detailLines(result, width)
 			result = ""
 		case e.deniedBy != "":
 			// A refusal is not a failure: ⊘ and the decider's name say the

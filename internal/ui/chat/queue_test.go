@@ -623,8 +623,10 @@ func TestSkippedCallEntryTellsStalenessFromBadArguments(t *testing.T) {
 	root := t.TempDir()
 	m := New(nil, mockStream).WithWorkspace(root)
 
-	stale := m.skippedCallEntry("write_file", fmt.Errorf("invalid arguments: %w",
-		tools.StaleError{Path: filepath.Join(root, "internal", "agent", "loop.go")}))
+	stale := m.skippedCallEntry(
+		provider.ToolCall{Name: "write_file", Arguments: `{"path":"internal/agent/loop.go"}`},
+		fmt.Errorf("invalid arguments: %w",
+			tools.StaleError{Path: filepath.Join(root, "internal", "agent", "loop.go")}))
 	if stale.text != "internal/agent/loop.go" || stale.skipped != tools.StaleReason {
 		t.Errorf("stale row:\n got subject %q reason %q\nwant %q, %q",
 			stale.text, stale.skipped, "internal/agent/loop.go", tools.StaleReason)
@@ -646,11 +648,15 @@ func TestSkippedCallEntryTellsStalenessFromBadArguments(t *testing.T) {
 		t.Error("the row must offer its body to the reader")
 	}
 
-	given := fmt.Errorf("invalid arguments: %w", errors.New("path is required"))
-	bad := m.skippedCallEntry("write_file", given)
-	if bad.text != "write_file" || bad.skipped != skippedArgsReason {
+	// A call whose arguments parsed far enough to name a file is about that
+	// file, whatever it was that the preview then refused. The tool's name is
+	// in the verb column and is never the subject.
+	given := fmt.Errorf("invalid arguments: %w", errors.New("content is required"))
+	bad := m.skippedCallEntry(
+		provider.ToolCall{Name: "write_file", Arguments: `{"path":"internal/agent/round.go"}`}, given)
+	if bad.text != "internal/agent/round.go" || bad.skipped != skippedArgsReason {
 		t.Errorf("malformed row:\n got subject %q reason %q\nwant %q, %q",
-			bad.text, bad.skipped, "write_file", skippedArgsReason)
+			bad.text, bad.skipped, "internal/agent/round.go", skippedArgsReason)
 	}
 	// The model is handed this sentence and the reader must be handed the
 	// same one, or three of these rows in a session cannot be told apart.
@@ -663,21 +669,37 @@ func TestSkippedCallEntryTellsStalenessFromBadArguments(t *testing.T) {
 	}
 }
 
-// A call that arrives without a tool name has nothing to name, so the row's
-// subject is empty and the outcome carries the whole of what is known.
-func TestSkippedCallEntryFallsBackWhenTheToolIsUnnamed(t *testing.T) {
+// Arguments that named nothing leave the row saying so. It is a fact of its
+// own — different from the row being about the tool — and it is what tells
+// the reader the call broke before it had a subject rather than at one.
+func TestSkippedCallEntrySaysWhenNothingWasNamed(t *testing.T) {
 	m := New(nil, mockStream)
-	e := m.skippedCallEntry("", errors.New("invalid arguments: path is required"))
-	if e.text != "" || e.skipped != skippedArgsReason {
-		t.Errorf("unnamed row:\n got subject %q reason %q\nwant %q, %q",
-			e.text, e.skipped, "", skippedArgsReason)
-	}
-	if row := m.activityRowFor(e); row.Verb != "" || row.Target != "" ||
-		row.Outcome != components.OutcomeSkipped {
-		t.Errorf("nothing but the refusal is known, got %+v", row)
-	}
-	if e.toolResult == "" {
-		t.Error("an unnamed call still folds the sentence the model was given")
+	for _, tc := range []struct{ name, args string }{
+		{"no arguments at all", ""},
+		{"arguments that are not json", `{"path":`},
+		{"arguments that named no path", `{"old_text":"x"}`},
+	} {
+		e := m.skippedCallEntry(
+			provider.ToolCall{Name: "write_file", Arguments: tc.args},
+			errors.New("invalid arguments: path is required"))
+		if e.text != noSubject || e.skipped != skippedArgsReason {
+			t.Errorf("%s:\n got subject %q reason %q\nwant %q, %q",
+				tc.name, e.text, e.skipped, noSubject, skippedArgsReason)
+		}
+		row := m.activityRowFor(e)
+		if row.Target != noSubject || row.Outcome != components.OutcomeSkipped {
+			t.Errorf("%s: the row states what it has, got %+v", tc.name, row)
+		}
+		// Dim, like everything else on a call the session refused: the state
+		// is what paints it, so the placeholder cannot end up brighter than
+		// the paths it stands in for.
+		if row.State != components.ActivityDenied || row.ByRule {
+			t.Errorf("%s: a refused call is a quiet row, got state %v byRule %v",
+				tc.name, row.State, row.ByRule)
+		}
+		if e.toolResult == "" {
+			t.Errorf("%s: the sentence the model was given still folds under the row", tc.name)
+		}
 	}
 }
 
@@ -686,7 +708,7 @@ func TestSkippedCallEntryFallsBackWhenTheToolIsUnnamed(t *testing.T) {
 func TestSkippedCallEntryKeepsAPathOutsideTheWorkspace(t *testing.T) {
 	m := New(nil, mockStream).WithWorkspace(filepath.Join(t.TempDir(), "checkout"))
 	outside := filepath.Join(t.TempDir(), "elsewhere", "notes.md")
-	e := m.skippedCallEntry("write_file", tools.StaleError{Path: outside})
+	e := m.skippedCallEntry(provider.ToolCall{Name: "write_file"}, tools.StaleError{Path: outside})
 	if !strings.Contains(e.text, outside) {
 		t.Errorf("row should keep the absolute path, got %q", e.text)
 	}

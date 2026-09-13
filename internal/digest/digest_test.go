@@ -37,9 +37,30 @@ func TestArg_PicksTheOneWorthShowing(t *testing.T) {
 		{"unparseable args pass through", "mystery", "not json", "not json"},
 		{"no args at all", "mystery", "", ""},
 		{"an mcp call names the server and tool", "gh__create_issue", `{"title":"Bug"}`, "gh create_issue title=Bug"},
-		{"a history call leads with its verb", "git", `{"verb":"blame","paths":["a.go"]}`, "blame a.go"},
-		{"a ref beats a path", "git", `{"verb":"show","ref":"HEAD~2","paths":["a.go"]}`, "show HEAD~2"},
-		{"a bare verb is enough", "git", `{"verb":"status"}`, "status"},
+		// A history call reads as the command a person would have typed. The
+		// verb alone is a bare enum word in a column of paths, and the tool's
+		// own name alone is never a subject.
+		{"a history call is the command it stands for", "git", `{"verb":"blame","paths":["a.go"]}`, "git blame a.go"},
+		{"a ref beats a path", "git", `{"verb":"show","ref":"HEAD~2","paths":["a.go"]}`, "git show HEAD~2"},
+		{"a bare verb is enough", "git", `{"verb":"status"}`, "git status"},
+		{"a diff names the side it compares against", "git", `{"verb":"diff","ref":"HEAD"}`, "git diff HEAD"},
+		// The three tools that take an `action`. The operation is the verb
+		// column's; the target is the thing the operation is done to.
+		{"a gate run is about its suite", "quality_gate", `{"action":"run","suite":"default"}`,
+			"quality gate · default"},
+		{"a gate run that named no suite still says what it is", "quality_gate", `{"action":"run"}`,
+			"quality gate"},
+		{"a re-report is about the run it re-reports", "quality_gate", `{"action":"result"}`,
+			"quality gate · last result"},
+		{"an evidence read is about the entry", "evidence", `{"action":"read","id":"ev-1a2b3c4d"}`,
+			"ev-1a2b3c4d"},
+		{"an evidence search reads as pattern then scope", "evidence",
+			`{"action":"search","id":"ev-1a2b3c4d","query":"panic"}`, "panic ev-1a2b3c4d"},
+		{"a process start is about the command", "process",
+			`{"action":"start","name":"web","command":"npm run dev"}`, "npm run dev"},
+		{"a process read is about the process", "process", `{"action":"read","name":"web"}`, "web"},
+		{"a status that named nothing is about all of them", "process", `{"action":"status"}`,
+			"all processes"},
 		// A steer's row is who was redirected and what they were told: the
 		// name alone makes every steer of a fan-out look alike, and the key
 		// order alone would give the name and drop the message.
@@ -56,6 +77,23 @@ func TestArg_PicksTheOneWorthShowing(t *testing.T) {
 	}
 	if got := Arg("mystery", `{"depth":3}`); !strings.Contains(got, "depth=3") {
 		t.Errorf("unknown shapes fall back to key=value, got %q", got)
+	}
+}
+
+// Path answers for a call that never ran, so the one thing it must not do is
+// invent a subject out of text that was never a path.
+func TestPath_IsWhatTheArgumentsNamed(t *testing.T) {
+	for _, tc := range []struct{ name, args, want string }{
+		{"the path a write named", `{"path":"internal/a.go","content":"x"}`, "internal/a.go"},
+		{"the first of several", `{"paths":["a.go","b.go"]}`, "a.go"},
+		{"a path key that is not a string", `{"path":42}`, ""},
+		{"arguments that named no path", `{"command":"go test ./..."}`, ""},
+		{"arguments that are not json name nothing", `{"path":"a.go"`, ""},
+		{"no arguments at all", "", ""},
+	} {
+		if got := Path(tc.args); got != tc.want {
+			t.Errorf("%s: Path(%q) = %q, want %q", tc.name, tc.args, got, tc.want)
+		}
 	}
 }
 

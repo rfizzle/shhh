@@ -1,0 +1,16 @@
+# Five calls with no path of their own between them, in one turn: two history
+# reads, an edit the model malformed twice over, and the repository's own
+# suite. Every one of them used to put a word from its own definition in the
+# column the reader scans for what the act was about.
+#
+# The reply opens on a call rather than on a sentence, and the rest continue
+# it with `+`. A sentence in front of a batch titles it as a step, and a step
+# folds its rows away behind a header — and what this scene is for is the
+# rows. Sent as replies of their own they would be five turns, since a reply
+# that is only prose ends one.
+tool:git:{"verb":"status"}
++tool:git:{"verb":"diff","ref":"HEAD"}
++tool:edit_file:{"path":"internal/agent/loop.go","new_text":"\t\tif round > cap {"}
++tool:edit_file:{"old_text":"round >= cap","new_text":"round > cap"}
++tool:quality_gate:{"action":"run","suite":"default"}
+The tree is read, both edits were refused before they ran, and the suite is green.

@@ -98,7 +98,7 @@
     ▎✗ run     go test ./internal/agent/...                     exit 1  3.8s    
       --- FAIL: TestLoopRounds                                                  
           loop_test.go:214: want 3 rounds, got 4                                
-    ▎$ run     run                                             2 lines          
+    ▎$ run     quality gate · default · 5 checks               2 lines          
                                                                                 
                                                                                 
   session · +3 −1                                                               
@@ -127,7 +127,7 @@
     ▎✗ run     go test ./internal/agent/...                     exit 1  3.8s┃   
       --- FAIL: TestLoopRounds                                              ┃   
           loop_test.go:214: want 3 rounds, got 4                            ┃   
-    ▎$ run     run                                             2 lines      ┃   
+    ▎$ run     quality gate · default · 5 checks               2 lines      ┃   
                                                                             ┃   
    ✓ Done · 2 steps · 5 tools · 1m 12s · $0.18                    round 5/25┃   
   ▎✎ 1 file changed +12 −3 · [v] review · [ctrl+o] to use them   all tracked┃   
@@ -227,7 +227,7 @@
     ␛[38;5;254m▎✗␛[m ␛[38;5;254mrun␛[m     ␛[38;5;254mgo test ./internal/agent/...␛[m                     ␛[38;5;254mexit 1␛[m  ␛[38;5;244m3.8s␛[m    
       ␛[38;5;244m--- FAIL: TestLoopRounds␛[m                                                  
       ␛[38;5;244m    loop_test.go:214: want 3 rounds, got 4␛[m                                
-    ␛[38;5;254m▎$␛[m ␛[38;5;254mrun␛[m     ␛[38;5;254mrun␛[m                                             ␛[38;5;244m2 lines␛[m          
+    ␛[38;5;254m▎$␛[m ␛[38;5;254mrun␛[m     ␛[38;5;254mquality gate · default · 5 checks␛[m               ␛[38;5;244m2 lines␛[m          
                                                                                 
                                                                                 
   ␛[38;5;244msession · ␛[38;5;254m+3␛[m ␛[38;5;254m−1␛[m                                                               
@@ -256,7 +256,7 @@
     ␛[38;5;254m▎✗␛[m ␛[38;5;254mrun␛[m     ␛[38;5;254mgo test ./internal/agent/...␛[m                     ␛[38;5;254mexit 1␛[m  ␛[38;5;244m3.8s┃␛[m   
       ␛[38;5;244m--- FAIL: TestLoopRounds␛[m                                              ␛[38;5;244m┃␛[m   
       ␛[38;5;244m    loop_test.go:214: want 3 rounds, got 4␛[m                            ␛[38;5;244m┃␛[m   
-    ␛[38;5;254m▎$␛[m ␛[38;5;254mrun␛[m     ␛[38;5;254mrun␛[m                                             ␛[38;5;244m2 lines␛[m      ␛[38;5;244m┃␛[m   
+    ␛[38;5;254m▎$␛[m ␛[38;5;254mrun␛[m     ␛[38;5;254mquality gate · default · 5 checks␛[m               ␛[38;5;244m2 lines␛[m      ␛[38;5;244m┃␛[m   
                                                                             ␛[38;5;244m┃␛[m   
    ␛[38;5;254m✓␛[m ␛[38;5;254mDone␛[38;5;244m · 2 steps · 5 tools · 1m 12s · $0.18␛[m                    ␛[38;5;244mround 5/25┃␛[m   
   ␛[38;5;254m▎✎␛[m ␛[38;5;254m1 file changed +12␛[m ␛[38;5;254m−3␛[38;5;244m · [v] review · ␛[38;5;254m[ctrl+o] to use them␛[m   ␛[38;5;244mall tracked┃␛[m   
