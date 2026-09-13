@@ -36,31 +36,160 @@ a step — and the folded run of read-only rows inside one — needs the sentenc
 and the calls in one reply; sent as replies of their own, the sentence would
 be a turn that ended before the calls were asked for.
 
+A `+` with no reply above it is an error naming the file and the line, not a
+reply of its own: it says the scene meant to continue something, and streamed
+as prose it becomes a step title nobody wrote over one call fewer than the
+scene says it drives.
+
+A line `[name]` on its own opens a queue, and from there each agent is
+answered from the queue of its own name rather than all of them from one:
+
+    [session]     what the reader's own session is answered with
+    [writer-1]    what the child that spawn_agent named writer-1 is answered
+                  with — one queue per child, so a fan-out scene scripts each
+                  of them instead of writing every racer the same uniform
+                  round to survive the race between them
+    [reading]     the session's own readings of its run — the summariser, the
+                  classifier, the title — which otherwise take the scene's
+                  next reply and leave the turn one short
+
+A file with no header is one queue for everybody, which is what a scene
+written before this is. An agent no queue was written for is answered with a
+line that ends its turn, and the log says which.
+
 It speaks the openai-compatible SSE dialect only, because that is the one
 dialect a base_url on its own redirects; the same choice the CLI's
 print-mode tests make.
 
     fakeprovider.py <port> <replies-file>
+
+Port 0 asks the kernel for a free one. The port taken is printed as `port
+<n>` on stdout once it is bound and listening, which is how drive.sh learns
+it: a port chosen in one process and bound in another leaves a window for
+anything else on the host to take it.
 """
 import json
+import re
 import sys
+import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
+# A queue header is a name in brackets alone on its line. Nothing else in a
+# replies file looks like one, and a file with no header has no queues at all,
+# so a reply that begins with a bracket is still a reply.
+HEADER = re.compile(r"^\[([a-z0-9][a-z0-9 _-]*)\]$")
+SESSION = "session"
+READING = "reading"
+# What an agent no queue was written for is answered with. It has to end a
+# turn rather than ask for anything, and to read correctly to a child, a
+# summariser and a classifier alike.
+UNSCRIPTED = "Nothing to report."
+
+
+def load(path):
+    """Read a replies file into one queue of replies per agent."""
+    queues = {}
+    name = ""
+    unheaded = 0
+    with open(path, encoding="utf-8") as fh:
+        for n, line in enumerate(fh, 1):
+            line = line.rstrip("\n")
+            if not line.strip() or line.startswith("#"):
+                continue
+            head = HEADER.match(line)
+            if head:
+                name = head.group(1)
+                queues.setdefault(name, [])
+                continue
+            if line.startswith("+"):
+                if not queues.get(name):
+                    sys.exit("fakeprovider: %s:%d: a reply cannot begin with +, which "
+                             "continues the reply above it and there is none: %s" % (path, n, line))
+                queues[name][-1].append(line[1:])
+                continue
+            if not name and not queues.get(""):
+                unheaded = n
+            queues.setdefault(name, []).append([line])
+    if queues.get("") and len(queues) > 1:
+        sys.exit("fakeprovider: %s:%d: a reply above the first [queue] header, in a file "
+                 "that has one — every reply belongs to an agent" % (path, unheaded))
+    if not any(queues.values()):
+        sys.exit("fakeprovider: the replies file is empty")
+    return queues
+
+
 PORT = int(sys.argv[1])
-REPLIES = []
-with open(sys.argv[2], encoding="utf-8") as fh:
-    for line in fh:
-        line = line.rstrip("\n")
-        if not line.strip() or line.startswith("#"):
-            continue
-        if line.startswith("+") and REPLIES:
-            REPLIES[-1].append(line[1:])
-        else:
-            REPLIES.append([line])
-if not REPLIES:
-    sys.exit("fakeprovider: the replies file is empty")
-turn = {"i": 0}
+QUEUES = load(sys.argv[2])
+# One queue for everybody is the shape of every scene written before queues,
+# and is kept exactly: no routing, no reading held back, the next reply to
+# whoever asks.
+QUEUED = "" not in QUEUES
+# How many of each queue have been handed out, and what the endpoint knows
+# about the children it has been asked to spawn. Both are read and written
+# from the request threads, which a fan-out runs several of at once.
+turn = {}
+children = []
+lock = threading.Lock()
+
+
+def route(body):
+    """Which agent's queue a request belongs to.
+
+    The session and its children are asked with the whole toolset; the
+    session's own readings of its run are asked with one tool or none, which
+    is what tells them apart without reading a word of anybody's prompt.
+
+    A child is known by its task. The system prompt cannot say which child is
+    asking — two writers of one session are handed the same one, down to the
+    sentence — but the task is the scene's own words, and this endpoint handed
+    out the spawn_agent call that paired it with a name.
+    """
+    if not QUEUED:
+        return ""
+    if len(body.get("tools") or []) < 2:
+        return READING
+    first = ""
+    for message in body.get("messages") or []:
+        if message.get("role") == "user":
+            first = str(message.get("content") or "")
+            break
+    with lock:
+        known = list(children)
+    for task, name in known:
+        if task in first:
+            return name
+    return SESSION
+
+
+def take(queue):
+    """The next reply of a queue. The last one repeats once it is used up."""
+    with lock:
+        i = turn.get(queue, 0)
+        turn[queue] = i + 1
+    replies = QUEUES.get(queue) or []
+    if not replies:
+        return i + 1, [UNSCRIPTED], False
+    return i + 1, replies[min(i, len(replies) - 1)], True
+
+
+def remember_child(args):
+    """Pair a child's name with its task, as the spawn call goes out.
+
+    Here because this is the one place both are in the same hand: the call
+    carries the name, and every request the child makes afterwards carries
+    only the task it was given.
+    """
+    try:
+        spec = json.loads(args)
+    except ValueError:
+        return
+    task = str(spec.get("task") or "").strip()
+    name = str(spec.get("name") or spec.get("role") or "").strip()
+    if task and name:
+        with lock:
+            children.append((task, name))
+
 
 # What the endpoint says it can run, for the scenes that open the model
 # picker. The first is the one every scene is started on; the rest are there
@@ -101,10 +230,16 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         n = int(self.headers.get("Content-Length", 0))
-        self.rfile.read(n)
-        parts = REPLIES[min(turn["i"], len(REPLIES) - 1)]
-        turn["i"] += 1
-        self.log_message("reply %d: %s", turn["i"], " + ".join(parts)[:60])
+        raw = self.rfile.read(n)
+        try:
+            body = json.loads(raw or b"{}")
+        except ValueError:
+            body = {}
+        queue = route(body)
+        count, parts, scripted = take(queue)
+        self.log_message("reply %d%s%s: %s", count, " [%s]" % queue if queue else "",
+                         "" if scripted else " (no queue written for it)",
+                         " + ".join(parts)[:60])
         self.send_response(200)
         self.send_header("Content-Type", "text/event-stream")
         self.end_headers()
@@ -118,6 +253,8 @@ class Handler(BaseHTTPRequestHandler):
                 continue
             if part.startswith("tool:"):
                 _, name, args = part.split(":", 2)
+                if QUEUED and name == "spawn_agent":
+                    remember_child(args)
                 self.wfile.write(chunk({"tool_calls": [{"index": calls, "id": "call-%d" % (calls + 1),
                                         "type": "function",
                                         "function": {"name": name, "arguments": args}}]}))
@@ -139,4 +276,8 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.flush()
 
 
-ThreadingHTTPServer(("127.0.0.1", PORT), Handler).serve_forever()
+server = ThreadingHTTPServer(("127.0.0.1", PORT), Handler)
+# Bound and listening by the line above, so the port is said only once it is
+# ours: the run that reads this line has nothing left to race with.
+print("port %d" % server.server_address[1], flush=True)
+server.serve_forever()

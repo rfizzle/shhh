@@ -6,14 +6,15 @@
 # has to stay under while it runs.
 #
 # The first line of a reply may not begin with +: a leading + continues the
-# reply above it, and with nothing above it the provider has no reply to
-# continue and streams the line as prose (fakeprovider.py).
+# reply above it, and with nothing above it there is nothing to continue, so
+# the provider names the line and refuses to start (fakeprovider.py).
 #
 # The turn is not the only thing asking this endpoint — the session's own
-# reading of the run asks it too, and takes whichever reply is next. So the
-# scene says everything it needs to say in the first three replies, and the
-# last one is written to read correctly however many times it is handed out,
-# because it is the one that repeats once the file is used up.
+# readings of the run, the summariser and the classifier among them, ask it
+# too. The [session] header is what holds them off these replies: a reading
+# is answered from a queue of its own, so the twelve calls are still what the
+# session is handed first and the note is still what follows them.
+[session]
 tool:read_file:{"path":"round01.go"}
 +tool:read_file:{"path":"round02.go"}
 +tool:read_file:{"path":"round03.go"}

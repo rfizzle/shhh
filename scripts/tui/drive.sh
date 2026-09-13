@@ -44,11 +44,11 @@
 #   drive.sh --record <scene-dir>     the same, and record the run as a .cast
 #   drive.sh --attach <scene-dir>     open the same pane in this terminal instead
 #
-# Two runs on one host do not meet. The provider's port is a free one asked
-# of the kernel as the run starts and the tmux server is named for the run,
-# so a second checkout's run cannot take the first's port or kill its server;
-# naming PORT or SOCK overrides both, for a reader who wants to know where to
-# look. The tmux socket lives with the run's other scratch under $TMPDIR and
+# Two runs on one host do not meet. The provider asks the kernel for a free
+# port, binds it and says which one it took, and the tmux server is named for
+# the run, so a second checkout's run cannot take the first's port or kill
+# its server; naming PORT or SOCK overrides both, for a reader who wants to
+# know where to look. The tmux socket lives with the run's other scratch under $TMPDIR and
 # not under OUT, because a Unix socket's path is capped near 104 bytes and
 # OUT's is the checkout's: from a worktree under .claude/worktrees/<name>/
 # the cap is already spent, tmux answers "File name too long" and every snap
@@ -98,19 +98,6 @@ for need in tmux python3; do
 	command -v $need >/dev/null 2>&1 || { echo "drive.sh: $need is required (brew install $need / apt-get install $need)" >&2; exit 2; }
 done
 [ -x "$SHHH_BIN" ] || { echo "drive.sh: no binary at $SHHH_BIN — run make tui-check, or set SHHH_BIN" >&2; exit 2; }
-# The port is asked of the kernel rather than fixed at a number two runs
-# would both pick. The kernel names one nothing is listening on and the
-# provider takes it a moment later; that gap is the only race, and the wait
-# below is what closes it — a provider that lost the port has already died,
-# and the wait says so by name instead of leaving every snap to time out.
-if [ -z "${PORT:-}" ]; then
-	PORT=$(python3 -c 'import socket
-s = socket.socket()
-s.bind(("127.0.0.1", 0))
-print(s.getsockname()[1])
-s.close()') || PORT=
-	[ -n "$PORT" ] || { echo "drive.sh: could not get a free port for the scripted model — set PORT" >&2; exit 2; }
-fi
 if [ "$pictures" = 1 ]; then
 	command -v agg >/dev/null 2>&1 || { echo "drive.sh: --pictures needs agg (brew install agg)" >&2; exit 2; }
 fi
@@ -177,21 +164,32 @@ rm -f "$OUT"/*.txt "$OUT"/*.ansi "$OUT"/*.gif "$OUT"/*.cast
 printf '[behavior]\nprovider_retries = 0\n' > "$home/config/shhh/config.toml"
 (cd "$ws" && git init -q && git -c user.email=tui@shhh -c user.name=tui commit -q --allow-empty -m init)
 
-python3 "$here/fakeprovider.py" "$PORT" "$scene/replies.txt" 2> "$OUT/provider.log" &
+# The provider asks the kernel for a free port, binds it, and says which one
+# it took: a port this script chose and the provider bound a moment later is a
+# window anything else on the host can take it in. PORT names one instead, for
+# a reader who wants to know where to look.
+portfile=$work/port
+python3 "$here/fakeprovider.py" "${PORT:-0}" "$scene/replies.txt" > "$portfile" 2> "$OUT/provider.log" &
 provider=$!
 # Up before the binary asks, or the first turn reports a model it never
-# reached. A provider that is gone is not waited for: it lost the port to
-# something else and the log says so, which is worth more than ten more
-# tries at a port that will never be ours.
+# reached. The port line is written once the socket is bound and listening, so
+# reading it is the whole of the wait. A provider that died instead — a
+# replies file it could not read is the usual reason — is not waited for: it
+# said why on the way out, and that is worth more than ten more tries.
 wait_for_provider() {
 	for _ in 1 2 3 4 5 6 7 8 9 10; do
+		PORT=$(sed -n 's/^port //p' "$portfile")
+		[ -n "$PORT" ] && return 0
 		kill -0 "$provider" 2>/dev/null || return 1
-		python3 -c "import socket; socket.create_connection(('127.0.0.1', $PORT), 1).close()" 2>/dev/null && return 0
 		sleep 0.2
 	done
 	return 1
 }
-wait_for_provider || { echo "drive.sh: the scripted model never came up on port $PORT — $OUT/provider.log" >&2; exit 1; }
+if ! wait_for_provider; then
+	echo "drive.sh: the scripted model never came up — $OUT/provider.log:" >&2
+	sed 's/^/  /' "$OUT/provider.log" >&2
+	exit 1
+fi
 
 # The setup lines run before the binary does, so a scene can put a file, a
 # .shhh directory or a commit in the workspace it will be opened on.

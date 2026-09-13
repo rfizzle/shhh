@@ -112,6 +112,34 @@ immediately before a batch of calls. Sent as replies of their own the sentence
 would be a turn that ended before the calls were asked for, and the scene
 would get four rows and no outline.
 
+A `+` with nothing above it is an error naming the file and the line: the
+provider refuses to start, and the scene fails before the binary opens rather
+than drawing that line as a step title nobody wrote.
+
+A line `[name]` on its own opens a queue, and each agent is then answered from
+the queue of its own name rather than all of them from one:
+
+```
+[session]
+Fanning three writers over the round accounting.
++tool:spawn_agent:{"role":"writer","task":"Say where the counter is read.","name":"writer-1"}
+[writer-1]
+The counter is read at the top of the loop, and nowhere else.
+```
+
+`[session]` is the session the reader types into, `[<name>]` the child
+`spawn_agent` gave that name, and `[reading]` the session's own readings of
+its run — the summariser, the classifier, the title — which otherwise take
+the scene's next reply and leave the turn one short. Each queue is a queue:
+its last line repeats once it is used up. A child is routed by its task
+rather than by its prompt, because two writers of one session are handed the
+same prompt and the task is the scene's own words; an agent no queue was
+written for is answered with a line that ends its turn and the provider log
+says so, so a fan-out scene writes only the children it is about. A file with
+no header is one queue for everybody, which is what a scene written before
+queues is and stays: every racer in uniform rounds, because which of them
+reaches the endpoint first is a race the file cannot settle.
+
 `steps.txt` is the reader, one step per line:
 
 ```
@@ -148,6 +176,11 @@ snap 04-exit "that is everything the screen was holding"
 
   Write a chord in the case the register spells it — `M-a`, never `M-A`: the
   capital is a shift the scene never asked for.
+- `paste <file>` bracketed-pastes a file the setup wrote, by its path in the
+  workspace — `tmux load-buffer` then `paste-buffer -p`, a real bracketed
+  paste, which is the one thing `send-keys` cannot do: typed bytes arrive as
+  keystrokes, and what a surface does with two hundred lines arriving at once
+  is a different question from what it does with two hundred lines typed.
 - `snap <name> "<text>"` waits for the text to be on screen, then captures.
   **The text must be the surface's own.** Waiting for the line you just typed
   passes before the reply lands; wait for a word only the reply carries, an
@@ -201,11 +234,11 @@ than leaving it out.
 - **The scripted model is openai-compatible SSE only.** That is the dialect
   a `base_url` alone redirects, the same choice the CLI's print-mode tests
   make. A scene cannot exercise the Anthropic or Gemini stream loops.
-- **Two scenes at once do not collide.** The provider's port is a free one
-  asked of the kernel as the run starts, and the tmux server is named for the
-  run, so a second checkout's `make tui-shot` cannot take the first's port or
-  kill its server. Set `PORT` or `SOCK` only to pin one somewhere you can
-  look for it.
+- **Two scenes at once do not collide.** The provider asks the kernel for a
+  free port, binds it and says which one it took, and the tmux server is named
+  for the run, so a second checkout's `make tui-shot` cannot take the first's
+  port or kill its server. Set `PORT` or `SOCK` only to pin one somewhere you
+  can look for it.
 - **A worktree needs nothing extra.** The tmux socket lives in a directory of
   the run's own under `$TMPDIR`, removed with the run's other scratch — not
   under `bin/tui/<scene>/`, whose path is the checkout's and overflows the
