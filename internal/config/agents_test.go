@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -76,6 +77,26 @@ func TestLoadAgentsReadIsImplicit(t *testing.T) {
 	}
 }
 
+// Running the project's declared suite is a read of the project's health, so
+// a profile granting nothing but read may name the gate — which is the whole
+// point of it: a role drawn so that it can never run an arbitrary command can
+// still verify that a change compiles and its tests pass.
+func TestLoadAgentsQualityGateIsARead(t *testing.T) {
+	dir := t.TempDir()
+	writeAgent(t, dir, "critic.toml", `tools = ["read_file", "quality_gate"]`)
+	defs, err := LoadAgentsFrom(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	def := defs["critic"]
+	if def.Writes() || !def.Allows(QualityGateTool) || def.Allows("search") {
+		t.Fatalf("a read-only profile may name the gate and nothing it did not list: %+v", def)
+	}
+	if !slices.Contains(KnownAgentTools(), QualityGateTool) {
+		t.Errorf("the gate must be listable by name: %v", KnownAgentTools())
+	}
+}
+
 func TestLoadAgentsInheritSpellings(t *testing.T) {
 	dir := t.TempDir()
 	writeAgent(t, dir, "kid.toml", `model = "inherit"
@@ -135,6 +156,12 @@ func TestLoadAgentsRejectsBadFiles(t *testing.T) {
 		{"negative budget", "a.toml", `max_tokens = -1`, "max_tokens"},
 		{"undersized default budget", "a.toml", `max_tokens = 200000`, "at least 300000"},
 		{"reviewing writer", "a.toml", "reviews = true\npermissions = [\"write\"]", "cannot also be handed them"},
+		// The gate is a read, so read-only profiles may name it; a profile
+		// that writes may not, because it would run over the checkout its
+		// worktree was copied from. Refused here rather than dropped when
+		// the child is built, so the author reads it as a line in a file.
+		{"gate for a writer", "a.toml", "tools = [\"quality_gate\"]\npermissions = [\"write\"]", "changes nothing"},
+		{"gate for an executor", "a.toml", "tools = [\"quality_gate\"]\npermissions = [\"execute\"]", "changes nothing"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

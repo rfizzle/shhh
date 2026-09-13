@@ -28,6 +28,7 @@ import (
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/prompt"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/runner"
 	"github.com/rfizzle/shhh/internal/sandbox"
 	"github.com/rfizzle/shhh/internal/scope"
@@ -447,7 +448,7 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 		gated := map[string]bool{}
 		base := agent.ToolExecutor(tools.Execute)
 		if def, ok := agents.definitions[string(role)]; ok {
-			sysPrompt, defs, base = profileEnv(def, spec, info, extra, session.web, gated)
+			sysPrompt, defs, base = profileEnv(def, spec, info, extra, session.web, session.gateRunner, gated)
 		} else {
 			switch role {
 			case subagent.RoleReviewer:
@@ -788,7 +789,7 @@ func worktreeNote(worktree bool) string {
 // instructions alone when it asked to replace the base. Gated is filled
 // with the approval-routed tools that made it in.
 func profileEnv(def config.AgentDefinition, spec subagent.Spec, info shell.Info, extra string,
-	webTools *web.Toolset, gated map[string]bool) (string, []provider.Tool, agent.ToolExecutor) {
+	webTools *web.Toolset, gate *quality.Runner, gated map[string]bool) (string, []provider.Tool, agent.ToolExecutor) {
 	var defs []provider.Tool
 	for _, t := range tools.Definitions() {
 		if def.Allows(t.Name) {
@@ -822,6 +823,23 @@ func profileEnv(def config.AgentDefinition, spec subagent.Spec, info shell.Info,
 				gated[web.FetchToolName] = true
 			}
 		}
+	}
+	// The project's own checks, and not part of the execute tier: the tool
+	// names a suite out of the checkout's trusted config and can supply no
+	// command text, so a role that must never run an arbitrary command can
+	// still say whether the change compiles and its tests pass. It is
+	// offered only where the session itself has a runner — an untrusted
+	// checkout opens none — and only to a profile that changes nothing,
+	// because a writer works in a copy of the checkout the runner is
+	// pointed at and would be handed a verdict on a tree without its own
+	// changes in it. Auto-run, so it is not added to gated: a child has no
+	// approval card, and this is the one command-shaped tool that needs
+	// none. It goes on after the web branch, which replaces the executor
+	// rather than wrapping it.
+	// See docs/capabilities/subagents.md#a-profile-that-changes-nothing-can-still-run-the-checks.
+	if gate != nil && !def.Writes() && def.Allows(config.QualityGateTool) {
+		defs = append(defs, quality.ToolDefinition())
+		base = gate.WrapExecutor(base)
 	}
 
 	names := make([]string, len(defs))

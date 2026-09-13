@@ -63,7 +63,7 @@ func TestAskToolNeverReachesAChild(t *testing.T) {
 	// answer covers them: their definitions come from the profile and the
 	// session's own shared tools, never from the session's toolset.
 	def := config.AgentDefinition{Name: "reader", Permissions: []string{config.PermissionWeb}}
-	_, defs, _ := profileEnv(def, subagent.Spec{}, shell.Info{}, "", session.web, map[string]bool{})
+	_, defs, _ := profileEnv(def, subagent.Spec{}, shell.Info{}, "", session.web, nil, map[string]bool{})
 	if containsString(toolsetNames(defs), ask.ToolName) {
 		t.Errorf("a profile role was offered %s", ask.ToolName)
 	}

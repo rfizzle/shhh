@@ -381,11 +381,11 @@ back a patch. A profile that can only read and browse is a researcher. There
 is no third shape, and a profile cannot ask for one.
 
 The allowlist narrows the tiers and nothing else. It names file tools,
-commands and the web — the things a tier decides — and never the navigation
-tools, the notebook or the skills catalog, which every child gets whatever its
-profile says: those are how a child reads, and a profile that could take them
-away would be a profile that made its agent worse at the one thing every agent
-does.
+commands and the web — the things a tier decides — along with the quality
+gate, and never the navigation tools, the notebook or the skills catalog,
+which every child gets whatever its profile says: those are how a child reads,
+and a profile that could take them away would be a profile that made its agent
+worse at the one thing every agent does.
 
 A profile can make its children stricter than the session — a reviewer that
 starts in plan mode under an auto session — and never looser. The clamp that
@@ -403,6 +403,34 @@ A profile that does not load stops the session with the file's name and what
 was wrong with it. The alternative — skipping it — is a role that quietly
 went missing, and the model would be told a smaller set of roles than the
 person wrote, with no way for either to notice.
+
+## A profile that changes nothing can still run the checks
+
+A role that must never run an arbitrary command still has to be able to say
+whether a change compiles and its tests pass. Granting it `execute` for that
+one answer grants it every other command the session's execute tier allows,
+and the distinction the role was drawn around is gone.
+
+So the quality gate is a read. The tool picks a suite by name out of the
+checkout's trusted config and can supply no command text at all — the closed
+set of checks the project declared about itself, not a shell — so a profile
+granting only `read` is offered it, and a profile that narrows its tools may
+name it among them. What runs was settled by the person who trusted the
+checkout, before any agent existed to ask; that is why it is not the execute
+tier's concern.
+
+It arrives on the same terms the session has it on. A checkout nobody has
+trusted opens no gate for anyone, so a child is offered none either — the tool
+is absent rather than present and refusing, which is the difference between a
+capability this checkout does not have and a permission the profile was
+denied. A trusted checkout with no suites defined answers a call the way it
+answers the session's: no suite is configured, and where to define one.
+
+A profile that writes does not get it, whatever it lists. A writer works in an
+isolated copy of the checkout and the gate runs over the checkout that copy
+was made from, so the verdict coming back would describe a tree with none of
+the writer's changes in it — a pass it did not earn. That is refused when the
+profile is read, not silently dropped when the child is spawned.
 
 ## A profile is drafted in conversation
 

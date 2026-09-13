@@ -282,7 +282,7 @@ func TestChildFetchesThroughTheSessionsOwnToolset(t *testing.T) {
 	session := codeToolset()
 	def := config.AgentDefinition{Name: "reader", Permissions: []string{config.PermissionWeb}}
 	gated := map[string]bool{}
-	_, defs, exec := profileEnv(def, subagent.Spec{}, shell.Info{}, "", session.web, gated)
+	_, defs, exec := profileEnv(def, subagent.Spec{}, shell.Info{}, "", session.web, nil, gated)
 
 	var offered bool
 	for _, name := range toolsetNames(defs) {

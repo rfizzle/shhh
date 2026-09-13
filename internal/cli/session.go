@@ -87,6 +87,12 @@ type chatSession struct {
 	// gate registers the quality-gate tool and /gate command;
 	// `shhh code` only.
 	gate bool
+	// gateRunner is what that registration opened, filled in by
+	// buildToolset and read again when a child's toolset is assembled. A
+	// checkout the person has not trusted opens none and leaves it nil,
+	// which is how a child comes to be offered exactly the gate the session
+	// itself was offered (quality.go).
+	gateRunner *quality.Runner
 	// processes registers the long-running process supervisor: the
 	// process tool (start approval-gated) and the /ps command; `shhh code`
 	// only. Session end terminates every owned process tree.

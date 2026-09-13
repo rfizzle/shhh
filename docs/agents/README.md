@@ -32,8 +32,8 @@ read-only researcher named after the file.
 | `description` | One line on what the agent is for. The orchestrating model reads this when choosing a role, so write it for the model. |
 | `model` | Model to run on. Empty or `"inherit"` defers to `[agents]` in `config.toml`, then the session model. A `spawn_agent` call naming a model outranks all of them. |
 | `reasoning` | `"off"`, `"low"`, `"medium"`, `"high"`, or `"inherit"` (default) for the session's live level. |
-| `permissions` | Tiers granted: `"read"` (always on), `"write"` (`write_file`, `edit_file`), `"execute"` (`execute_command`), `"web"` (`web_fetch`, `web_search` — only when the session has them). Write or execute puts the agent in an isolated worktree; its changes come back as a patch. |
-| `tools` | Allowlist of tool names within the granted tiers. Empty means every tool the tiers allow. Naming a tool whose tier is not granted is an error. Valid names: `read_file`, `list_directory`, `search`, `glob`, `write_file`, `edit_file`, `execute_command`, `web_fetch`, `web_search`. |
+| `permissions` | Tiers granted: `"read"` (always on: the file tools, and `quality_gate` where the checkout declares suites — running the project's own checks is a read of its health, not a command), `"write"` (`write_file`, `edit_file`), `"execute"` (`execute_command`), `"web"` (`web_fetch`, `web_search` — only when the session has them). Write or execute puts the agent in an isolated worktree; its changes come back as a patch. |
+| `tools` | Allowlist of tool names within the granted tiers. Empty means every tool the tiers allow. Naming a tool whose tier is not granted is an error. Valid names: `read_file`, `list_directory`, `search`, `glob`, `quality_gate`, `write_file`, `edit_file`, `execute_command`, `web_fetch`, `web_search`. |
 | `mode` | Permission mode the agent starts in: `"manual"`, `"accept-edits"`, `"auto"`, `"plan"`. Empty inherits the parent's. Always clamped to the parent's mode — a profile can be stricter, never looser. |
 | `prompt` | The agent's instructions. Appended to a base prompt built from the permissions (environment, tools, working style, final-report contract). |
 | `prompt_file` | Path to a file whose contents are the prompt; relative paths resolve against the profile's directory. Not with `prompt`. |
@@ -50,7 +50,15 @@ read-only researcher named after the file.
   itself — ask the way they always do, subject to the mode.
 - Add tools shhh does not have. The web tools appear only when the session
   registered them; a profile granting `web` without a configured search key
-  gets what is there.
+  gets what is there. `quality_gate` is the same: a checkout nobody has
+  trusted registers none, for the session or for a child.
+- Run anything but the project's own checks without `execute`. `quality_gate`
+  picks a suite by name out of the trusted config and can never supply command
+  text, which is why `read` is enough for it — see
+  [`../capabilities/subagents.md`](../capabilities/subagents.md#a-profile-that-changes-nothing-can-still-run-the-checks).
+  A profile granting `write` or `execute` may not name it at all: that agent
+  works in a copy of the checkout, and the gate would report on the tree the
+  copy was made from.
 - Bypass admission. A profile’s `max_tokens` is a 300000-token-or-higher
   default, and the inherited prompt plus task must leave the 200000-token
   working reserve before the child starts.

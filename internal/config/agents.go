@@ -37,11 +37,12 @@ type AgentDefinition struct {
 	// "xhigh", "max", or "inherit" (the default) for the session's live
 	// level.
 	Reasoning string `toml:"reasoning"`
-	// Permissions is the set of tool tiers the agent gets: "read" (files and
-	// search — always on, listed or not), "write" (write_file, edit_file),
-	// "execute" (execute_command) and "web" (web_fetch, web_search when the
-	// session has them). An agent with write or execute works in an isolated
-	// worktree and its changes come back as a patch.
+	// Permissions is the set of tool tiers the agent gets: "read" (files,
+	// search and the project's own quality gate — always on, listed or not),
+	// "write" (write_file, edit_file), "execute" (execute_command) and "web"
+	// (web_fetch, web_search when the session has them). An agent with write
+	// or execute works in an isolated worktree and its changes come back as
+	// a patch.
 	Permissions []string `toml:"permissions"`
 	// Tools narrows the toolset to these names within the granted
 	// permissions. Empty means every tool the permissions allow.
@@ -94,6 +95,12 @@ const (
 	PromptReplace = "replace"
 )
 
+// QualityGateTool runs the project's own declared checks. It is named here
+// rather than left a literal in the table below because the rule around it is
+// not a tier: a profile granting write or execute may not have it, and that
+// is checked by name.
+const QualityGateTool = "quality_gate"
+
 // knownAgentTools is every tool name a profile may list under tools. A
 // profile is validated against this at load time, so a typo is reported by
 // path and field rather than turning into a child with fewer tools than its
@@ -108,6 +115,16 @@ var knownAgentTools = map[string]string{
 	"execute_command": PermissionExecute,
 	"web_fetch":       PermissionWeb,
 	"web_search":      PermissionWeb,
+	// Running the project's own suite is a reading of the project's health
+	// rather than an act on it — the tool names a suite out of the
+	// checkout's trusted config and can supply no command text — so it sits
+	// under read and a profile granting nothing else may have it. It is
+	// listable, unlike the tools every child gets whatever its profile
+	// says, because taking it away costs an agent nothing it reads the
+	// workspace with, while a suite is minutes of this machine's time a
+	// narrowly drawn role has no business spending.
+	// See docs/capabilities/subagents.md#a-profile-that-changes-nothing-can-still-run-the-checks.
+	QualityGateTool: PermissionRead,
 }
 
 // KnownAgentTools lists the tool names a profile may name, sorted.
@@ -146,9 +163,12 @@ func (d AgentDefinition) Writes() bool {
 // Allows reports whether a tool name survives the profile's allowlist. An
 // empty allowlist admits every tool the permissions grant.
 func (d AgentDefinition) Allows(tool string) bool {
-	if len(d.Tools) == 0 {
-		return true
-	}
+	return len(d.Tools) == 0 || d.lists(tool)
+}
+
+// lists reports whether the profile named a tool outright, which Allows
+// cannot answer: an empty allowlist allows every tool and names none.
+func (d AgentDefinition) lists(tool string) bool {
 	for _, t := range d.Tools {
 		if strings.TrimSpace(t) == tool {
 			return true
@@ -210,6 +230,16 @@ func (d AgentDefinition) Validate() error {
 	}
 	if d.Reviews && d.Writes() {
 		return fmt.Errorf("reviews: a profile that may write or execute claims its paths; it cannot also be handed them as evidence")
+	}
+	// The gate runs over the checkout the session is standing in, and a
+	// profile that writes works in a copy of that checkout — so the verdict
+	// coming back would be about a tree with none of the child's changes in
+	// it, which reads as a pass it did not earn. Refused at load rather than
+	// dropped at the spawn, for the reason the allowlist is validated at all:
+	// a tool the author asked for and will not get should be a line in a
+	// file, not something discovered by reading a child's toolbox.
+	if d.Writes() && d.lists(QualityGateTool) {
+		return fmt.Errorf("tools: %q is for a profile that changes nothing; one granting write or execute works in a copy of the checkout, where the gate would report on a tree without its changes", QualityGateTool)
 	}
 	if d.MaxTokens < 0 {
 		return fmt.Errorf("max_tokens: must not be negative")

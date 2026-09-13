@@ -158,6 +158,12 @@ func buildToolset(cmd *cobra.Command, session *chatSession, kind string, opts to
 	}
 	if t.gate != nil {
 		register(quality.ToolDefinition())
+		// The same runner is what a profile's children are offered, rather
+		// than one apiece: the suites, the containment and the lock that
+		// keeps one run in flight at a time all belong to the checkout, and
+		// a second runner over it would let a child start the suite the
+		// session is already halfway through.
+		session.gateRunner = t.gate
 	}
 	// The long-running process supervisor: start goes through approval like
 	// any command, and Close terminates every owned process tree however the

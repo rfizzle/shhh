@@ -28,6 +28,8 @@ import (
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/prompt"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/quality"
+	"github.com/rfizzle/shhh/internal/shell"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/structural"
 	"github.com/rfizzle/shhh/internal/subagent"
@@ -68,6 +70,127 @@ func TestProfileFromDefinitionCarriesTheReviewContract(t *testing.T) {
 	}
 	if p, err := profileFromDefinition(config.AgentDefinition{Name: "scribe"}); err != nil || p.Reviews {
 		t.Fatalf("an ordinary profile reviews nothing: %+v %v", p, err)
+	}
+}
+
+// A role that must never run an arbitrary command still has to be able to
+// say whether the change compiles and its tests pass. The gate is how, and
+// the read tier is enough for it: what it can run was settled by whoever
+// trusted the checkout, so it is not the execute tier's concern.
+func TestReadOnlyProfileIsOfferedTheQualityGate(t *testing.T) {
+	gate := &quality.Runner{Workspace: t.TempDir()}
+	def := config.AgentDefinition{Name: "critic"}
+	_, defs, exec := profileEnv(def, subagent.Spec{}, shell.Info{}, "", nil, gate, map[string]bool{})
+
+	if !containsString(toolsetNames(defs), config.QualityGateTool) {
+		t.Fatalf("a read-only profile was not offered %s: %v", config.QualityGateTool, toolsetNames(defs))
+	}
+	// The executor has to reach the session's runner, not fall through to
+	// the built-in dispatcher, which would answer an unknown tool.
+	out, err := exec(config.QualityGateTool, json.RawMessage(`{"action":"result"}`))
+	if err != nil || !strings.Contains(out, "No gate runs this session yet") {
+		t.Fatalf("the call did not reach the session's runner: %q %v", out, err)
+	}
+	// A trusted checkout with no suites in it answers the child the way it
+	// answers the session — a verdict of blocked saying where suites are
+	// defined — rather than an error a reader would take for a refusal.
+	out, err = exec(config.QualityGateTool, json.RawMessage(`{"action":"run"}`))
+	if err != nil {
+		t.Fatalf("an unconfigured checkout must answer, not refuse: %v", err)
+	}
+	if !strings.Contains(out, "BLOCKED") || !strings.Contains(out, "no quality config") {
+		t.Errorf("an unconfigured checkout should say so: %q", out)
+	}
+}
+
+// Who does not get it, and why each one is a different reason: an untrusted
+// checkout opened no runner for anybody, an allowlist that omits the gate
+// meant to omit it, and a profile that writes would be handed a verdict on
+// the checkout its worktree was copied from — a tree with none of its own
+// changes in it.
+func TestTheQualityGateReachesOnlyProfilesEntitledToIt(t *testing.T) {
+	gate := &quality.Runner{Workspace: t.TempDir()}
+	cases := []struct {
+		name string
+		def  config.AgentDefinition
+		gate *quality.Runner
+	}{
+		{"untrusted checkout", config.AgentDefinition{Name: "critic"}, nil},
+		{"allowlist without it", config.AgentDefinition{Name: "critic", Tools: []string{"read_file", "search"}}, gate},
+		{"a profile that writes", config.AgentDefinition{Name: "fixer", Permissions: []string{config.PermissionWrite}}, gate},
+		{"a profile that executes", config.AgentDefinition{Name: "runner", Permissions: []string{config.PermissionExecute}}, gate},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, defs, _ := profileEnv(tc.def, subagent.Spec{}, shell.Info{}, "", nil, tc.gate, map[string]bool{})
+			if containsString(toolsetNames(defs), config.QualityGateTool) {
+				t.Errorf("%s was offered %s: %v", tc.name, config.QualityGateTool, toolsetNames(defs))
+			}
+		})
+	}
+	// Naming it is how a narrowed profile keeps it.
+	named := config.AgentDefinition{Name: "critic", Tools: []string{"read_file", config.QualityGateTool}}
+	_, defs, _ := profileEnv(named, subagent.Spec{}, shell.Info{}, "", nil, gate, map[string]bool{})
+	if !containsString(toolsetNames(defs), config.QualityGateTool) {
+		t.Errorf("a profile that named the gate did not get it: %v", toolsetNames(defs))
+	}
+}
+
+// The runner a child is offered is the session's own — the registration is
+// the only place one is opened, so a child is never given a second opinion
+// about the checkout. Both halves are checked: an untrusted checkout that
+// opened none hands a child none, and a trusted one hands over the same
+// object the session dispatches through.
+func TestTheSessionsGateIsTheOneAChildIsOffered(t *testing.T) {
+	t.Setenv("XDG_DATA_HOME", t.TempDir())
+	sc, err := sessionScope(config.Config{}, nil)
+	if err != nil {
+		t.Fatalf("session scope: %v", err)
+	}
+	for _, tc := range []struct {
+		name    string
+		trust   project.Trust
+		offered bool
+	}{
+		{"untrusted", project.Trust{Root: "/repo", Present: []project.Kind{project.KindGate}}, false},
+		{"trusted", project.Trust{Root: "/repo", Granted: true}, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			withProjectTrust(t, tc.trust)
+			session := codeToolset()
+			ts, err := buildToolset(toolsetCmd(t), &session, "code", toolsetOpts{scope: sc})
+			if err != nil {
+				t.Fatalf("session registration: %v", err)
+			}
+			defer ts.close()
+			if session.gateRunner != ts.gate {
+				t.Fatalf("a child would be offered a different gate from the session's: %p vs %p", session.gateRunner, ts.gate)
+			}
+			_, defs, _ := profileEnv(config.AgentDefinition{Name: "critic"}, subagent.Spec{}, shell.Info{}, "",
+				nil, session.gateRunner, map[string]bool{})
+			if got := containsString(toolsetNames(defs), config.QualityGateTool); got != tc.offered {
+				t.Errorf("child offered the gate = %v, want %v", got, tc.offered)
+			}
+		})
+	}
+}
+
+// The web branch replaces the child's executor rather than wrapping it, so a
+// gate wrap installed before it disappears without a compile error and
+// without a failing call — the gate simply answers as an unknown tool.
+func TestTheQualityGateSurvivesTheWebToolset(t *testing.T) {
+	session := codeToolset()
+	def := config.AgentDefinition{Name: "critic", Permissions: []string{config.PermissionWeb}}
+	gate := &quality.Runner{Workspace: t.TempDir()}
+	_, _, exec := profileEnv(def, subagent.Spec{}, shell.Info{}, "", session.web, gate, map[string]bool{})
+
+	if out, err := exec(config.QualityGateTool, json.RawMessage(`{"action":"result"}`)); err != nil ||
+		!strings.Contains(out, "No gate runs this session yet") {
+		t.Errorf("the gate was wrapped away by the web toolset: %q %v", out, err)
+	}
+	if _, err := exec(web.FetchToolName, json.RawMessage(`{"url":"http://169.254.169.254/latest/meta-data/"}`)); err == nil ||
+		!strings.Contains(err.Error(), "metadata") {
+		t.Errorf("the web toolset was wrapped away by the gate: %v", err)
 	}
 }
 
