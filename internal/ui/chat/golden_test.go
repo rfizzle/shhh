@@ -2039,6 +2039,10 @@ func TestGolden_ScreenAttached(t *testing.T) {
 	t.Cleanup(sup.Close)
 	spawnChild(t, sup, subagent.RoleResearcher, "researcher-1")
 	spawnChild(t, sup, subagent.RoleReviewer, "reviewer-1")
+	// And a level the session did not ask for: the researcher delegates a
+	// reading of its own, so the map has a session to indent and the frame's
+	// breadcrumb a lineage to state.
+	spawnUnder(t, sup, "researcher-1", subagent.RoleReviewer, "reviewer-2")
 	killChild(t, sup, "reviewer-1")
 	waitFor(t, func() bool {
 		st, ok := sup.Get("researcher-1")
@@ -2074,6 +2078,8 @@ func TestGolden_ScreenAttached(t *testing.T) {
 			return []golden.Panel{
 				{Label: "the keyboard in this session · the map marks its first row", View: build("")},
 				{Label: "the keyboard in a child · the rail stays, marked", View: build("researcher-1")},
+				{Label: "the keyboard in a child's child · the breadcrumb is the lineage",
+					View: build("reviewer-2")},
 			}
 		})
 }

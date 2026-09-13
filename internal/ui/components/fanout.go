@@ -66,6 +66,17 @@ type FanoutLane struct {
 	// Name is the child's name; it takes the verb column, so a lane lines up
 	// with the rows around it.
 	Name string
+	// Depth is how far under the session the child sits — 1 for a child the
+	// session spawned, 2 for that child's own child — in the numbering the
+	// rail's map uses for the same child. A depth past 1 draws the lane
+	// behind a corner, so a batch that delegated reads as the tree it is
+	// rather than as a row of siblings
+	// (docs/capabilities/subagents.md#a-child-may-delegate-to-a-configured-depth).
+	Depth int
+	// Under is how many agents are live below this one. Zero says nothing:
+	// almost every child delegates nothing, and a lane that reported it
+	// would be reporting a zero on every fan-out there has ever been.
+	Under int
 	// Task is the one-line label of what it was asked to do — the only field
 	// that grows, and the only one that clips.
 	Task string
@@ -136,8 +147,44 @@ type FanoutBlock struct {
 // which is the only field that grows: a name is not a word from a closed
 // vocabulary and must never be clipped to eight columns, where `researcher-1`
 // and `researcher-2` become the same string.
-func fanoutLead(glyph string) string {
-	return strings.Repeat(" ", ptrWidth+railWidth) + glyph + " " + verbField("agent")
+func fanoutLead(glyph string, depth int) string {
+	return laneNesting(depth) + glyph + " " + verbField("agent")
+}
+
+// laneNesting is the lane's gutter: blank for a child of the session, and the
+// corner hard against the glyph for one a child spawned — the same corner in
+// the same place as the rail's map draws for the same child. It goes in the
+// pointer column and the mutation rail, the two columns a lane never uses: a
+// lane is a report and never an act, and nothing points at it.
+//
+// The gutter is three columns and the corner takes the last of them, so every
+// depth past the first draws in that one column. The lane is a row on the
+// grid and the columns past the gutter are the grid's — a lane that indented
+// into the verb field would move the edge the whole transcript is read down
+// (docs/interface/principles.md#one-grid). What the corner says here is that
+// the lane is under something; how far under, the rail's map counts in full.
+func laneNesting(depth int) string {
+	if depth < 2 {
+		return strings.Repeat(" ", ptrWidth+railWidth)
+	}
+	return strings.Repeat(" ", ptrWidth+railWidth-1) + agentNesting(2)
+}
+
+// agentNesting is the column a child spawned by another child is drawn in
+// behind: one space per level below the first, then the corner. The corner is
+// the frame's own, so a nested row borrows a mark the reader has already
+// learned rather than adding one to the set
+// (docs/interface/principles.md#closed-vocabularies). Depth counts the
+// session as 0, so nothing under 2 is nested and nothing under 2 is drawn.
+//
+// A lane, a manager row and the rail's map are the same child through the
+// same renderer, and this is what keeps the three of them indenting it by the
+// same rule (docs/interface/surfaces.md#the-agent-manager).
+func agentNesting(depth int) string {
+	if depth < 2 {
+		return ""
+	}
+	return strings.Repeat(" ", depth-2) + sty.Dimmer.Render("└")
 }
 
 // headerLead is the same gutter one level out — the block heads its lanes the
@@ -317,7 +364,7 @@ func (l FanoutLane) paintTarget(s string) string {
 // blocked child is waiting for, or the first line of a finished child's
 // report.
 func (l FanoutLane) View(width int) string {
-	lines := []string{gridLineWith(fanoutLead(l.glyph()), l.target(), l.paintTarget,
+	lines := []string{gridLineWith(fanoutLead(l.glyph(), l.Depth), l.target(), l.paintTarget,
 		l.outcomeField(), l.Elapsed, width)}
 	if note := l.note(); note != "" {
 		lines = append(lines, indented(note, detailIndent, width))
@@ -345,6 +392,15 @@ func (l FanoutLane) note() string {
 	}
 	if note := l.steerNote(); note != "" {
 		return note
+	}
+	if l.Under > 0 {
+		// A lane with agents under it is quiet for a reason, and this is the
+		// reason: the work it is waiting on is somewhere else on the block.
+		// It outranks the seed line for the same reason a steer does — one is
+		// what the child is doing now and the other is where its files came
+		// from, which will still be there to ask about afterwards
+		// (docs/capabilities/subagents.md#a-child-may-delegate-to-a-configured-depth).
+		return plural(l.Under, "agent") + " under it"
 	}
 	if l.Seeded > 0 {
 		return "started from " + plural(l.Seeded, "uncommitted file") + " in your tree"
@@ -380,16 +436,55 @@ func (l FanoutLane) steerNote() string {
 // were spawned, then everything else in that same order. A child that needs
 // an answer is the only thing in a fan-out that cannot wait, so it is never
 // below one that can.
+//
+// What floats is the group and not the lane. A nested lane hangs off the lane
+// above it, so a request lifted out on its own would leave a corner under
+// nothing and its parent pointing at a lane that has moved
+// (docs/capabilities/subagents.md#a-child-may-delegate-to-a-configured-depth).
+// A group floats when anything in it is blocked, which is the same rule one
+// level up: a parent whose delegate is waiting on you is a parent waiting on
+// you.
 func (b FanoutBlock) sorted() []FanoutLane {
 	var blocked, rest []FanoutLane
-	for _, l := range b.Lanes {
-		if l.State == FanoutBlocked {
-			blocked = append(blocked, l)
-			continue
+	depths := make([]int, len(b.Lanes))
+	for i, l := range b.Lanes {
+		depths[i] = l.Depth
+	}
+	for _, g := range depthGroups(depths) {
+		waiting := false
+		for _, i := range g {
+			waiting = waiting || b.Lanes[i].State == FanoutBlocked
 		}
-		rest = append(rest, l)
+		for _, i := range g {
+			if waiting {
+				blocked = append(blocked, b.Lanes[i])
+			} else {
+				rest = append(rest, b.Lanes[i])
+			}
+		}
 	}
 	return append(blocked, rest...)
+}
+
+// depthGroups splits a run of agents into what moves together: an agent at
+// the top level and every deeper agent drawn under it. It takes the depths
+// and answers in positions, because the surfaces that need it hold different
+// row types and the grouping is the same fact about all of them.
+//
+// A host hands its agents over in tree order, so a group is a run of the list
+// rather than a lookup — which is also what makes an agent with nothing above
+// it to nest under (a fixture, or a child whose parent is in an earlier
+// block) a group of its own.
+func depthGroups(depths []int) [][]int {
+	var groups [][]int
+	for i, d := range depths {
+		if d > 1 && len(groups) > 0 {
+			groups[len(groups)-1] = append(groups[len(groups)-1], i)
+			continue
+		}
+		groups = append(groups, []int{i})
+	}
+	return groups
 }
 
 // tallyStates counts a set of children by state, for the one line that heads

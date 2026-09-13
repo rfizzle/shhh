@@ -56,7 +56,10 @@ snap 09-killed "[enter] attach"
 # with the map whole: the block floated to the top, the failure under it, the
 # grandchild indented under its own parent, and the trailer naming the way
 # out. The session attached to here is the grandchild itself, three rows down
-# the manager's list, so the frame's breadcrumb is the lineage as well.
+# the manager's list, so the frame's breadcrumb is the lineage as well. Driven
+# once at 80 as well, where the rail is gone and the path keeps its nearest two
+# segments (`… ▸ writer-3 ▸ reader-3a`); the run stops at this step there,
+# because the trailer it waits for is the rail's and 80 has no rail.
 keys j
 keys j
 keys j

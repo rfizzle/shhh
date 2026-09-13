@@ -70,6 +70,19 @@
 │ [K] kill all · [esc] back to the turn                    │
 ╰──────────────────────────────────────────────────────────╯
 
+· a child that delegated · the request is under the row it belongs to
+╭─ Agents ─────────────────────── 1 needs you · 1 running ─╮
+│   ● orchestrator · this se…  round 7 · streaming…  $0.12 │
+│   ◇ writer-1 · docs/loop.…  ▰▰▰▱▱ 3/5 · 14 tools · $0.05 │
+│ ❯ └⚠ reviewer-1a · read …  ⚠ needs you · 2 tools · $0.01 │
+│      waiting approval: read internal/agent/loop.go       │
+│   ◇ reader-2 · survey interna…  ✓ done · 8 tools · $0.02 │
+│     the rails and the frame are one component            │
+│ [enter] attach · [a] answer without attaching            │
+│ [x] cancel · [X] kill · [K] kill all                     │
+│ [esc] back to the turn                                   │
+╰──────────────────────────────────────────────────────────╯
+
 ── ansi ────────────────────────────────────────────────────
 · focus · the orchestrator
 ␛[38;5;254m╭─ ␛[m␛[1;38;5;254mAgents ␛[m␛[38;5;254m─────────────────────── ␛[38;5;254m1 needs you␛[m␛[38;5;244m · ␛[m␛[38;5;254m1 running␛[m ─╮␛[m
@@ -129,4 +142,17 @@
 ␛[38;5;254m│␛[m ␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m⚙␛[m␛[48;5;237m ␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237mdraft a new profile                      /agents new␛[m␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m draft a profile␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m answer without attaching␛[m   ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[K]␛[m␛[38;5;244m kill all␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the turn␛[m                    ␛[38;5;254m│␛[m
+␛[38;5;254m╰──────────────────────────────────────────────────────────╯␛[m
+
+· a child that delegated · the request is under the row it belongs to
+␛[38;5;254m╭─ ␛[m␛[1;38;5;254mAgents ␛[m␛[38;5;254m─────────────────────── ␛[38;5;254m1 needs you␛[m␛[38;5;244m · ␛[m␛[38;5;254m1 running␛[m ─╮␛[m
+␛[38;5;254m│␛[m   ␛[1;38;5;254m●␛[m orchestrator␛[38;5;244m · this se…␛[m  ␛[38;5;244mround 7 · streaming…␛[m  ␛[38;5;244m$0.12␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m   ␛[38;5;254m◇␛[m writer-1␛[38;5;244m · docs/loop.…␛[m  ␛[38;5;254m▰▰▰␛[m␛[38;5;244m▱▱␛[m ␛[38;5;254m3/5␛[m␛[38;5;244m · ␛[m␛[38;5;244m14 tools · $0.05␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m❯␛[m ␛[38;5;244m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m└␛[m␛[48;5;237m␛[38;5;254m⚠␛[m␛[48;5;237m ␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237mreviewer-1a · read …  ⚠ needs you · 2 tools · $0.01␛[m␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m      ␛[38;5;244mwaiting approval: read internal/agent/loop.go␛[m       ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m   ␛[38;5;254m◇␛[m reader-2␛[38;5;244m · survey interna…␛[m  ␛[38;5;254m✓ done␛[m␛[38;5;244m · ␛[m␛[38;5;244m8 tools · $0.02␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m     ␛[38;5;244mthe rails and the frame are one component␛[m            ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m attach␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m answer without attaching␛[m            ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[x]␛[m␛[38;5;244m cancel␛[m␛[38;5;244m · ␛[m␛[38;5;254m[X]␛[m␛[38;5;244m kill␛[m␛[38;5;244m · ␛[m␛[38;5;254m[K]␛[m␛[38;5;244m kill all␛[m                     ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m back to the turn␛[m                                   ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────╯␛[m

@@ -307,12 +307,11 @@ Delegation is one mechanism and it reaches every surface a child already
 reaches. The rules below settle each of those, so that a person watching a run
 three levels deep is reading one session and not three.
 
-Three of them are settled and not yet drawn: **the manager's kill-all
-wording, the nested lane in the fan-out block, and the notebook's lineage
-signature** are the rule as decided, and the surfaces still do what they did
-before nesting existed — the block lists every agent flat, and a note is
-signed with the bare name. They are written here because the decision is the
-part that was hard to make; each is marked below.
+Two of them are settled and not yet drawn: **the manager's kill-all wording
+and the notebook's lineage signature** are the rule as decided, and those
+surfaces still do what they did before nesting existed — a note is signed with
+the bare name. They are written here because the decision is the part that was
+hard to make; each is marked below.
 
 - **Who may steer a grandchild.** An agent steers what it spawned and nothing
   else — the party that wrote the task is the one who knows what it was for —
@@ -346,8 +345,10 @@ part that was hard to make; each is marked below.
 - **What the person sees of a level they did not ask for.** The root's fan-out
   block grows a nested lane indented under its parent's, the way the rail's
   map already indents a grandchild, and the parent's own lane says how many
-  are under it (`2 agents under it`). *Not drawn yet: the block and the
-  manager list every agent flat, and only the rail's map indents.*
+  are under it (`2 agents under it`). The manager indents the same agent the
+  same way, and a group moves as one wherever a request floats it: a
+  descendant is drawn under the row it hangs off and never lifted out of the
+  tree, because a corner under nothing says less than no corner at all.
 - **What the notebook says about depth.** A grandchild signs its notes with
   its lineage (`writer-1/reviewer-1a`), so a note read weeks later says which
   run wrote it and under whose task. *Not written yet: a note is signed with

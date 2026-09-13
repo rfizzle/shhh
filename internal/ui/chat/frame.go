@@ -219,7 +219,11 @@ func (m Model) frameAccentStyle() lipgloss.Style {
 // is the one colour on this surface the palette never issued: the path leads
 // in Status and the sessions along it wear Info, the token every sub-agent
 // wears wherever one is named (docs/interface/README.md).
-func (m Model) frameIdentity() string {
+//
+// nearest keeps only the two segments closest to the keyboard and elides what
+// is above them, which is what a rail with no room for the whole path draws
+// (attach.go, nearestBreadcrumb).
+func (m Model) frameIdentity(nearest bool) string {
 	if m.attachedTo == "" {
 		return ""
 	}
@@ -227,18 +231,23 @@ func (m Model) frameIdentity() string {
 	if title == "" {
 		title = defaultTitle
 	}
+	path := m.breadcrumb()
+	if nearest {
+		path = m.nearestBreadcrumb()
+	}
 	// The path first and what the session is called after it: the breadcrumb
 	// answers which session the keyboard is in, which is why the rail carries
 	// an identity at all, and the title is the same word the header above the
 	// transcript is already showing.
-	return m.styledBreadcrumb() + sty.Frame.Identity.Render(" · "+title)
+	return m.styledBreadcrumb(path) + sty.Frame.Identity.Render(" · "+title)
 }
 
-// styledBreadcrumb is breadcrumb in those two tones: the orchestrator the
-// path starts at in Status, and every child along it — its arrow with it, so
-// the pair reads as one step — in Info.
-func (m Model) styledBreadcrumb() string {
-	parts := strings.Split(m.breadcrumb(), " ▸ ")
+// styledBreadcrumb is a path in those two tones: the orchestrator the path
+// starts at in Status — and the … that stands in for it where the path was
+// elided, which is the same segment — and every child along it, its arrow
+// with it so the pair reads as one step, in Info.
+func (m Model) styledBreadcrumb(path string) string {
+	parts := strings.Split(path, " ▸ ")
 	out := sty.Frame.Identity.Render(parts[0])
 	for _, child := range parts[1:] {
 		out += sty.Frame.IdentityChild.Render(" ▸ " + child)
@@ -999,7 +1008,11 @@ func railLabelWidth(leftLabel string, width int) int {
 func (m Model) topRailLabels(mode frameLayout, width int) (left, right string) {
 	var identity, identityLabel string
 	if m.attachedTo != "" && mode != frameNarrow {
-		identity = m.frameIdentity()
+		// Below the wide layout the rail is short enough that a third segment
+		// is taken out of the label beside it, so the path keeps the nearest
+		// two and elides the root
+		// (docs/capabilities/subagents.md#a-child-may-delegate-to-a-configured-depth).
+		identity = m.frameIdentity(mode != frameWide)
 		identityLabel = " " + identity + " "
 	}
 	if m.attachedTo != "" && mode != frameWide {
@@ -1020,7 +1033,15 @@ func (m Model) topRailLabels(mode frameLayout, width int) (left, right string) {
 	}
 	left = " " + activity + " "
 	if lipgloss.Width(identity) > railLabelWidth(left, width) {
-		return left, ""
+		// The whole path does not fit beside the account, so the nearest two
+		// segments are put to the same measurement before the rail gives the
+		// identity up altogether: a path that says which child the keyboard
+		// is in is worth more than no path at all.
+		identity = m.frameIdentity(true)
+		identityLabel = " " + identity + " "
+		if lipgloss.Width(identity) > railLabelWidth(left, width) {
+			return left, ""
+		}
 	}
 	return left, identityLabel
 }

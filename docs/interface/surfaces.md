@@ -1119,6 +1119,24 @@ underneath; a finished one keeps `◇` and puts its tick in the outcome field.
 Both readings come from one renderer, so the lane and the row can differ in
 that column and nowhere else.
 
+**A descendant is drawn under the agent that spawned it, on every surface
+that draws more than one agent.** An agent is followed by the agents it
+spawned, and each of those is drawn one column in behind the frame's own
+corner: `└◇ reviewer-1a` in the manager and in the rail's map, and the same
+corner hard against the same glyph on a fan-out lane, where it takes the two
+gutter columns a lane never uses. The parent's lane says how many are under it
+(`2 agents under it`) while any of them are live, because a lane with nothing
+to report of its own is otherwise a lane that has stopped for no stated
+reason.
+
+What floats is the group and not the row. A request under a descendant lifts
+the whole group — the agent, and everything drawn under it — to the top of the
+list, so the row a reader has to answer is both at the top and still directly
+under the row it belongs to. A corner floated away from the row it hangs off
+says less than no corner at all, and the deepest column of the lane's gutter
+is one column wide, so how far down a tree runs is a question the rail's map
+answers and a lane does not.
+
 **A row joins the child's name to its task the way every row joins two
 facts**, with the separator, not with a gap: `writer-1 · docs/loop.md`. The
 artboard draws the manager's two as adjacent columns and the manager does not

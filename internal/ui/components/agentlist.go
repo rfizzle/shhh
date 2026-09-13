@@ -61,6 +61,12 @@ type AgentRow struct {
 	// nothing is not an offer.
 	Answerable bool
 	Retryable  bool
+	// Depth is how far under the session the agent sits — 0 for the
+	// orchestrator, 1 for a child it spawned, 2 for that child's own child —
+	// in the numbering the rail's map and a fan-out lane use for the same
+	// agent. A depth past 1 draws the row one column in behind a corner
+	// (docs/capabilities/subagents.md#a-child-may-delegate-to-a-configured-depth).
+	Depth int
 }
 
 // AgentAction is what the user asked to do with the focused row.
@@ -116,16 +122,31 @@ type AgentList struct {
 // its own rows: a sort that happens in here is a sort nobody can check
 // against the transcript, and a blocked child that ended up below the fold is
 // a host that did not sort rather than a row this one should move.
+//
+// A nested row is pinned with the row it hangs off, and a parent is pinned
+// with the request under it: what floated to the head of the list is the
+// whole group, and half a group above the window is a corner under nothing
+// (docs/capabilities/subagents.md#a-child-may-delegate-to-a-configured-depth).
 func (l *AgentList) split() (pinned, scrolling []int) {
-	i := 0
-	for ; i < len(l.Rows); i++ {
-		if s := l.Rows[i].State; s != AgentCurrent && s != AgentBlocked {
+	depths := make([]int, len(l.Rows))
+	for i, r := range l.Rows {
+		depths[i] = r.Depth
+	}
+	groups := depthGroups(depths)
+	at := 0
+	for ; at < len(groups); at++ {
+		holds := false
+		for _, i := range groups[at] {
+			s := l.Rows[i].State
+			holds = holds || s == AgentCurrent || s == AgentBlocked
+		}
+		if !holds {
 			break
 		}
-		pinned = append(pinned, i)
+		pinned = append(pinned, groups[at]...)
 	}
-	for ; i < len(l.Rows); i++ {
-		scrolling = append(scrolling, i)
+	for ; at < len(groups); at++ {
+		scrolling = append(scrolling, groups[at]...)
 	}
 	return pinned, scrolling
 }
@@ -290,7 +311,10 @@ func (r AgentRow) rightField() string {
 // any) indented underneath.
 func (r AgentRow) render(inner int, focused bool) []string {
 	right := r.rightField()
-	left := r.stateGlyph() + " " + r.Name
+	// The corner takes the column before the glyph, which is where the rail's
+	// map puts it on the same agent: the row is what moves, so the whole of
+	// it moves.
+	left := agentNesting(r.Depth) + r.stateGlyph() + " " + r.Name
 	if r.Task != "" {
 		// The separator and not a gap, which is what the lane above this row
 		// in the transcript joins the same two facts with: two spaces read as
@@ -315,7 +339,9 @@ func (r AgentRow) render(inner int, focused bool) []string {
 	}
 	rows := []string{row}
 	if r.Note != "" {
-		rows = append(rows, indented(r.Note, detailIndent, inner))
+		// Under the row's own name rather than under a sibling of its
+		// parent's: the line belongs to the row above it, and the row moved.
+		rows = append(rows, indented(r.Note, detailIndent+max(r.Depth-1, 0), inner))
 	}
 	return rows
 }

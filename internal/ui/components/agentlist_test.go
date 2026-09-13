@@ -206,6 +206,65 @@ func TestAgentListWithoutChildrenHasNoTally(t *testing.T) {
 	}
 }
 
+// nestedManagerRows is the list a host hands over once a child has
+// delegated: the group holding the request has floated whole, so the
+// grandchild waiting on an answer sits directly under the row it belongs to.
+func nestedManagerRows() []AgentRow {
+	p := func(v AgentProgress) *AgentProgress { return &v }
+	return []AgentRow{
+		{State: AgentCurrent, Name: "orchestrator", Status: "round 7", Spend: "$0.12"},
+		{State: AgentRunning, Name: "writer-1", Task: "docs/loop.md", Depth: 1,
+			Progress: p(AgentProgress{State: FanoutRunning, Step: 2, Steps: 5, Tools: 6, Spend: "$0.02"})},
+		{State: AgentBlocked, Name: "reviewer-1a", Task: "read the change", Depth: 2, Answerable: true,
+			Progress: p(AgentProgress{State: FanoutBlocked, Tools: 2, Spend: "$0.01"}),
+			Note:     "waiting approval: read internal/agent/loop.go"},
+		{State: AgentDone, Name: "reader-2", Task: "survey internal/ui", Depth: 1,
+			Progress: p(AgentProgress{State: FanoutDone, Tools: 8, Spend: "$0.02"})},
+	}
+}
+
+// TestAgentRowDrawsADescendantUnderItsParent: a row a child spawned takes the
+// column before its glyph for the corner, which is where the rail's map puts
+// the same corner on the same agent, and its note moves in with it.
+func TestAgentRowDrawsADescendantUnderItsParent(t *testing.T) {
+	view := ansi.Strip((&AgentList{Rows: nestedManagerRows()}).View(96))
+	var row, note string
+	for _, line := range strings.Split(view, "\n") {
+		switch {
+		case strings.Contains(line, "reviewer-1a"):
+			row = line
+		case strings.Contains(line, "waiting approval"):
+			note = line
+		}
+	}
+	if !strings.Contains(row, "└⚠ reviewer-1a") {
+		t.Fatalf("a row a child spawned should draw behind the corner: %q", row)
+	}
+	// Under its own name rather than under a sibling of its parent's: the
+	// line belongs to the row above it, and the row moved. In columns, not
+	// bytes — the corner and the state mark are three bytes each.
+	column := func(line, text string) int {
+		return len([]rune(line[:strings.Index(line, text)]))
+	}
+	if a, b := column(row, "reviewer-1a"), column(note, "waiting"); a != b {
+		t.Fatalf("the note starts at column %d and the name at %d: %q under %q", b, a, note, row)
+	}
+}
+
+// TestAgentListPinsTheWholeGroup: a request under a nested row is pinned
+// above the window with the row it hangs off, because half a group above the
+// fold is a corner under nothing.
+func TestAgentListPinsTheWholeGroup(t *testing.T) {
+	l := &AgentList{Rows: nestedManagerRows()}
+	pinned, scrolling := l.split()
+	if len(pinned) != 3 {
+		t.Fatalf("pinned %v, want the orchestrator, the parent and the request under it", pinned)
+	}
+	if len(scrolling) != 1 || scrolling[0] != 3 {
+		t.Fatalf("scrolling %v, want only the settled child", scrolling)
+	}
+}
+
 func TestAgentListFitsItsWidth(t *testing.T) {
 	for _, width := range []int{60, 80, 110, 130} {
 		view := (&AgentList{Rows: managerRows(), Focus: 1}).View(width)

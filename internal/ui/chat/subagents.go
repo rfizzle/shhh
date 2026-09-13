@@ -511,6 +511,83 @@ func (m Model) liveChildNames() []string {
 	return names
 }
 
+// nestAgents puts a set of agents into the order every surface that draws
+// more than one of them draws them in, and says how far under the session
+// each one sits: each agent is followed by the agents it spawned, and at
+// every level the ones waiting on an answer come first. A parent whose
+// delegate is waiting on you is a parent waiting on you, so a subtree floats
+// on the request inside it and the request is drawn directly under the row it
+// belongs to rather than lifted to the top of a flat list
+// (docs/capabilities/subagents.md#a-child-may-delegate-to-a-configured-depth).
+//
+// Depth counts the session as 0 and a child of it as 1, which is what the
+// map, the manager and a lane all indent by. It is counted within the set
+// handed over rather than up the whole tree: a fan-out block holds one round's
+// children, and a child whose parent is in an earlier block has no row here
+// for its corner to hang off.
+func (m Model) nestAgents(all []subagent.Status) ([]subagent.Status, map[string]int) {
+	present := make(map[string]bool, len(all))
+	for _, st := range all {
+		present[st.Name] = true
+	}
+	var roots []subagent.Status
+	under := map[string][]subagent.Status{}
+	for _, st := range all {
+		parent, _ := m.subagents.Parent(st.Name)
+		if parent == "" || !present[parent] {
+			roots = append(roots, st)
+			continue
+		}
+		under[parent] = append(under[parent], st)
+	}
+	ordered := make([]subagent.Status, 0, len(all))
+	depth := make(map[string]int, len(all))
+	var walk func(group []subagent.Status, at int)
+	walk = func(group []subagent.Status, at int) {
+		// A parent link that ever came round in a circle would walk forever,
+		// and this runs on every frame; the set is finite, so the count it
+		// has already placed is the bound.
+		if len(ordered) >= len(all) {
+			return
+		}
+		for _, waiting := range []bool{true, false} {
+			for _, st := range group {
+				if m.agentWaiting(st, under) != waiting {
+					continue
+				}
+				ordered = append(ordered, st)
+				depth[st.Name] = at
+				walk(under[st.Name], at+1)
+			}
+		}
+	}
+	walk(roots, 1)
+	// Anything the walk could not reach is still an agent the surface was
+	// asked to draw, so it goes at the end at the top level rather than
+	// vanishing.
+	for _, st := range all {
+		if _, drawn := depth[st.Name]; !drawn {
+			ordered = append(ordered, st)
+			depth[st.Name] = 1
+		}
+	}
+	return ordered, depth
+}
+
+// agentWaiting reports whether this agent or anything under it is waiting on
+// an answer, which is what floats its whole subtree.
+func (m Model) agentWaiting(st subagent.Status, under map[string][]subagent.Status) bool {
+	if st.State == subagent.StateBlocked {
+		return true
+	}
+	for _, c := range under[st.Name] {
+		if m.agentWaiting(c, under) {
+			return true
+		}
+	}
+	return false
+}
+
 // maxAgentRows bounds how many progress rows the panel occupies.
 const maxAgentRows = 6
 

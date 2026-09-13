@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -244,6 +245,54 @@ func TestFanoutBlockedLaneStatesWhatItNeeds(t *testing.T) {
 	}
 	if !strings.Contains(view, "2 needs you") {
 		t.Fatalf("the header does not carry the blocked count:\n%s", view)
+	}
+}
+
+// TestFanoutDrawsADescendantUnderTheLaneThatSpawnedIt: a child a child
+// spawned during the round joins the same block, drawn directly under the
+// lane it hangs off whatever order the supervisor started it in, one column
+// in behind the corner, and its parent's lane says how many are under it.
+func TestFanoutDrawsADescendantUnderTheLaneThatSpawnedIt(t *testing.T) {
+	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
+	t.Cleanup(sup.Close)
+	m := newSubagentModel(t, sup)
+
+	m.beginSpawnBatch()
+	for _, task := range []string{"one", "two"} {
+		spawnInto(t, sup, `{"role":"researcher","task":"`+task+`"}`)
+		m.appendSpawnEntry(spawnRowEntry(task))
+	}
+	waitFor(t, func() bool { running, _ := sup.ActiveCounts(); return running == 2 })
+	// The first of them delegates, after the second was already spawned: in
+	// the supervisor's own order the grandchild is last, and on the block it
+	// belongs under the lane that asked for it.
+	spawnUnder(t, sup, "researcher-1", subagent.RoleReviewer, "reviewer-1")
+
+	var lanes []string
+	var under int
+	for _, e := range m.transcript {
+		if e.kind != entryFanout {
+			continue
+		}
+		for _, l := range m.fanoutBlockFor(e).Lanes {
+			lanes = append(lanes, l.Name+"@"+strconv.Itoa(l.Depth))
+			if l.Name == "researcher-1" {
+				under = l.Under
+			}
+		}
+	}
+	if want := "researcher-1@1,reviewer-1@2,researcher-2@1"; strings.Join(lanes, ",") != want {
+		t.Fatalf("lanes = %v, want %s", lanes, want)
+	}
+	if under != 1 {
+		t.Fatalf("the parent's lane counts %d under it, want 1", under)
+	}
+	view := ansi.Strip(m.renderHistory())
+	if !strings.Contains(view, "1 agent under it") {
+		t.Fatalf("the parent's lane should say how many are under it:\n%s", view)
+	}
+	if !strings.Contains(view, "  └◇ agent   reviewer-1") {
+		t.Fatalf("the grandchild's lane should draw behind the corner:\n%s", view)
 	}
 }
 

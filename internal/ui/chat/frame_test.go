@@ -434,6 +434,49 @@ func TestFrame_AttachedBreadcrumbTakesTheFarSide(t *testing.T) {
 	}
 }
 
+// A path three segments long does not fit a rail below the wide layout, so
+// the frame keeps the two segments nearest the keyboard — the session it is
+// in and the one esc goes back to — and elides the root behind …, which is
+// the segment the rail's own map is already drawing. At 80 columns, the rung
+// the compact layout starts at.
+func TestFrame_BreadcrumbElidesTheRootOnANarrowRail(t *testing.T) {
+	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
+	t.Cleanup(sup.Close)
+	m := newSubagentModel(t, sup)
+	spawnBlockedChild(t, sup)
+	spawnUnder(t, sup, "researcher-1", subagent.RoleReviewer, "reviewer-1")
+	m.attach("reviewer-1")
+
+	if got, want := m.breadcrumb(), "orchestrator ▸ researcher-1 ▸ reviewer-1"; got != want {
+		t.Fatalf("breadcrumb = %q, want %q", got, want)
+	}
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 40})
+	m = updated.(Model)
+	rail := stripANSI(frameTopRail(m.View().Content))
+	if !strings.Contains(rail, "… ▸ researcher-1 ▸ reviewer-1") {
+		t.Fatalf("80 columns should keep the nearest two segments:\n%s", rail)
+	}
+	if strings.Contains(rail, "orchestrator") {
+		t.Fatalf("80 columns has no room for the root:\n%s", rail)
+	}
+	// Wide, the rail can hold the whole path and states it.
+	updated, _ = m.Update(tea.WindowSizeMsg{Width: 140, Height: 40})
+	m = updated.(Model)
+	if rail := stripANSI(frameTopRail(m.View().Content)); !strings.Contains(rail,
+		"orchestrator ▸ researcher-1 ▸ reviewer-1") {
+		t.Fatalf("a wide rail should state the whole path:\n%s", rail)
+	}
+	// A child of the session has two segments and loses neither: the elision
+	// is what a path too long for the rail does, not what every path does.
+	m.attach("researcher-1")
+	updated, _ = m.Update(tea.WindowSizeMsg{Width: 80, Height: 40})
+	m = updated.(Model)
+	if rail := stripANSI(frameTopRail(m.View().Content)); !strings.Contains(rail,
+		"orchestrator ▸ researcher-1") {
+		t.Fatalf("a two-segment path fits and stays whole:\n%s", rail)
+	}
+}
+
 // A rail with room for one label keeps the account whole. The breadcrumb
 // answers a question a key can ask again; an account clipped to `⠋W…` is a
 // label nobody can read, and it is the only one on the rail that moves.

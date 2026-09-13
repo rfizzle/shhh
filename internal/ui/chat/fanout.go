@@ -154,11 +154,16 @@ func childNote(st subagent.Status) string {
 func (m Model) fanoutBlockFor(e entry) components.FanoutBlock {
 	var block components.FanoutBlock
 	var longest time.Duration
-	for _, st := range m.fanoutStatuses(e.fanout) {
+	// In tree order, so a child a child spawned is the lane under its
+	// parent's and the corner it draws behind has a row to hang off.
+	nested, depth := m.nestAgents(m.fanoutStatuses(e.fanout))
+	for _, st := range nested {
 		p := m.childProgress(st)
 		lane := components.FanoutLane{
 			State:     p.State,
 			Name:      st.Name,
+			Depth:     depth[st.Name],
+			Under:     len(m.subagents.Under(st.Name)),
 			Task:      firstLine(st.Task),
 			Step:      p.Step,
 			Steps:     p.Steps,

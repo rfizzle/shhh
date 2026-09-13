@@ -136,6 +136,12 @@ func (m *Model) renderChildHistory(name, streaming string) string {
 // breadcrumb is the attached header path, e.g. "orchestrator ▸ writer-1"
 // (nesting one segment per lineage level).
 func (m Model) breadcrumb() string {
+	return strings.Join(m.breadcrumbParts(), " ▸ ")
+}
+
+// breadcrumbParts is that path as its segments: the orchestrator, then one
+// per lineage level down to the session the keyboard is in.
+func (m Model) breadcrumbParts() []string {
 	var parts []string
 	for n := m.attachedTo; n != ""; {
 		parts = append([]string{n}, parts...)
@@ -145,7 +151,24 @@ func (m Model) breadcrumb() string {
 		}
 		n = p
 	}
-	return strings.Join(append([]string{"orchestrator"}, parts...), " ▸ ")
+	return append([]string{"orchestrator"}, parts...)
+}
+
+// breadcrumbNearest is how many segments a path keeps when it cannot keep
+// them all: the session the keyboard is in and the one esc goes back to, the
+// pair the two live keys act between.
+const breadcrumbNearest = 2
+
+// nearestBreadcrumb is the path with everything above those two elided behind
+// … — `… ▸ writer-1 ▸ reviewer-1a`. The far segment is the one the rail's own
+// map is already drawing, so it is the one the path can afford to lose
+// (docs/capabilities/subagents.md#a-child-may-delegate-to-a-configured-depth).
+func (m Model) nearestBreadcrumb() string {
+	parts := m.breadcrumbParts()
+	if len(parts) <= breadcrumbNearest {
+		return strings.Join(parts, " ▸ ")
+	}
+	return strings.Join(append([]string{"…"}, parts[len(parts)-breadcrumbNearest:]...), " ▸ ")
 }
 
 // saveScroll stores the current surface's scroll position before a focus
@@ -322,28 +345,25 @@ func (m Model) openAgentList() (tea.Model, tea.Cmd) {
 }
 
 // buildAgentRows assembles the live rows — orchestrator first, then
-// blocked-on-approval children, then the rest in spawn order — and the
-// parallel agent-name index ("" is the orchestrator).
+// blocked-on-approval children, then the rest in spawn order, each followed
+// by the agents it spawned — and the parallel agent-name index ("" is the
+// orchestrator).
 func (m Model) buildAgentRows() ([]components.AgentRow, []string) {
 	rows := []components.AgentRow{m.orchestratorRow()}
 	names := []string{""}
-	var blocked, rest []subagent.Status
+	var nested []subagent.Status
+	var depth map[string]int
 	if m.subagents != nil {
-		for _, st := range m.subagents.Snapshot() {
-			if st.State == subagent.StateBlocked {
-				blocked = append(blocked, st)
-			} else {
-				rest = append(rest, st)
-			}
-		}
+		nested, depth = m.nestAgents(m.subagents.Snapshot())
 	}
-	for _, st := range append(blocked, rest...) {
+	for _, st := range nested {
 		// The row draws the child's progress through the fan-out lane's
 		// renderer, so the manager and the transcript say the same thing
 		// about the same child.
 		progress := m.childProgress(st)
 		row := components.AgentRow{
 			Name:     st.Name,
+			Depth:    depth[st.Name],
 			Task:     firstLine(st.Task),
 			Status:   st.Detail,
 			Progress: &progress,

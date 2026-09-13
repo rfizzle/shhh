@@ -41,7 +41,15 @@ func spawnBlockedChild(t *testing.T, sup *subagent.Supervisor) {
 // sessions without racing the supervisor.
 func spawnChild(t *testing.T, sup *subagent.Supervisor, role subagent.Role, name string) {
 	t.Helper()
-	exec := sup.WrapExecutor("", nil)
+	spawnUnder(t, sup, "", role, name)
+}
+
+// spawnUnder is spawnChild one level further down: the caller is the agent
+// that spawns, so a test can build a map more than one level deep. "" is the
+// session itself.
+func spawnUnder(t *testing.T, sup *subagent.Supervisor, caller string, role subagent.Role, name string) {
+	t.Helper()
+	exec := sup.WrapExecutor(caller, nil)
 	args := json.RawMessage(fmt.Sprintf(`{"role":%q,"task":"long survey"}`, role))
 	if _, err := exec(subagent.SpawnToolName, args); err != nil {
 		t.Fatal(err)
@@ -444,6 +452,75 @@ func TestBlockedRowSortsUpAndSaysWhatItWaitsFor(t *testing.T) {
 	m = updated.(Model)
 	if view := m.View().Content; !strings.Contains(view, "2 needs you") {
 		t.Fatalf("the manager's title rail must state who needs you:\n%s", view)
+	}
+}
+
+// TestManagerRowsFollowTheSpawnTree: the manager lists each agent followed by
+// the agents it spawned, so a grandchild is the row under its own parent's
+// rather than a sibling at the end of a flat list, and the depth it is
+// indented by is the one the rail's map already draws it at.
+func TestManagerRowsFollowTheSpawnTree(t *testing.T) {
+	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
+	t.Cleanup(sup.Close)
+	m := newSubagentModel(t, sup)
+	spawnChild(t, sup, subagent.RoleResearcher, "researcher-1")
+	spawnChild(t, sup, subagent.RoleResearcher, "researcher-2")
+	// Spawned last and drawn second: the tree and not the roster.
+	spawnUnder(t, sup, "researcher-1", subagent.RoleReviewer, "reviewer-1")
+
+	rows, names := m.buildAgentRows()
+	if got, want := strings.Join(names, ","), ",researcher-1,reviewer-1,researcher-2"; got != want {
+		t.Fatalf("rows in order %q, want %q", got, want)
+	}
+	for i, want := range []int{0, 1, 2, 1} {
+		if rows[i].Depth != want {
+			t.Fatalf("%s sits at depth %d, want %d", names[i], rows[i].Depth, want)
+		}
+	}
+	// The same depth the rail's map indents the same session by, so the two
+	// drawings of one tree cannot come to disagree.
+	if got := m.sessionDepth("reviewer-1", len(rows)); got != rows[2].Depth {
+		t.Fatalf("the map puts the grandchild at depth %d and the manager at %d", got, rows[2].Depth)
+	}
+}
+
+// gatedDescendantEnv runs a child of the session forever and parks anything
+// deeper on an approval. It is the one shape a single behaviour cannot reach:
+// a parent still working with a request waiting under it.
+func gatedDescendantEnv() subagent.EnvFactory {
+	blocking, gated := blockingEnv(), gatedEnv()
+	return func(ctx context.Context, spec subagent.Spec) (subagent.Env, error) {
+		if spec.Depth > subagent.SessionDepth+1 {
+			return gated(ctx, spec)
+		}
+		return blocking(ctx, spec)
+	}
+}
+
+// TestManagerFloatsABlockedGrandchildUnderItsParent: a request under a
+// grandchild floats the whole group, so the row the reader has to answer is
+// at the top of the list and still directly under the row it belongs to —
+// never lifted out of the tree, where its corner would hang off nothing.
+func TestManagerFloatsABlockedGrandchildUnderItsParent(t *testing.T) {
+	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: gatedDescendantEnv()})
+	t.Cleanup(sup.Close)
+	m := newSubagentModel(t, sup)
+	spawnChild(t, sup, subagent.RoleResearcher, "researcher-1")
+	spawnChild(t, sup, subagent.RoleResearcher, "researcher-2")
+	// The second of them delegates, and the delegate parks on an approval.
+	exec := sup.WrapExecutor("researcher-2", nil)
+	if _, err := exec(subagent.SpawnToolName, json.RawMessage(`{"role":"researcher","task":"read it"}`)); err != nil {
+		t.Fatal(err)
+	}
+	waitFor(t, func() bool { _, blocked := sup.ActiveCounts(); return blocked == 1 })
+
+	rows, names := m.buildAgentRows()
+	if got, want := strings.Join(names, ","), ",researcher-2,researcher-3,researcher-1"; got != want {
+		t.Fatalf("rows in order %q, want %q", got, want)
+	}
+	if rows[1].State != components.AgentRunning || rows[2].State != components.AgentBlocked {
+		t.Fatalf("the parent should still be running with the request under it: %v, %v",
+			rows[1].State, rows[2].State)
 	}
 }
 

@@ -37,6 +37,17 @@
    ◇ agent   researcher…  ⠹ working · 2 tools · $0.01    19s
     2 steers · from reading · last read off target
 
+· a child that delegated · its lane says how many are under it
+◇ fan-out    4 agents         1 needs you · 2 running  1m40s
+   ◇ agent   writer-1 …  ▰▰▰▱▱ 3/5 · 14 tools · $0.05  1m40s
+    2 agents under it
+  └◇ agent   reviewer…  ⚠ needs you · 2 tools · $0.01    22s
+    waiting approval: read internal/agent/loop.go
+  └◇ agent   tester-1b ·…  ⠹ working · 1 tool · $0.01     9s
+   ◇ agent   reader-2 · su…  ✓ done · 8 tools · $0.02    55s
+    the rails and the frame are one component
+    [alt+a] agents
+
 ── ansi ────────────────────────────────────────────────────
 · mid-flight · one child is waiting on you
 ␛[38;5;254m◇␛[m ␛[38;5;254mfan-out␛[m    ␛[38;5;244m4 agents␛[m         ␛[38;5;254m1 needs you␛[m␛[38;5;244m · ␛[m␛[38;5;254m2 running␛[m  ␛[38;5;244m1m12s␛[m
@@ -64,3 +75,14 @@
     ␛[38;5;244msteered from parent␛[m
    ␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;244mresearcher…␛[m  ␛[38;5;254m⠹ working␛[m␛[38;5;244m · ␛[m␛[38;5;244m2 tools · $0.01␛[m    ␛[38;5;244m19s␛[m
     ␛[38;5;244m2 steers · from reading · last read off target␛[m
+
+· a child that delegated · its lane says how many are under it
+␛[38;5;254m◇␛[m ␛[38;5;254mfan-out␛[m    ␛[38;5;244m4 agents␛[m         ␛[38;5;254m1 needs you␛[m␛[38;5;244m · ␛[m␛[38;5;254m2 running␛[m  ␛[38;5;244m1m40s␛[m
+   ␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mwriter-1␛[m␛[38;5;244m …␛[m  ␛[38;5;254m▰▰▰␛[m␛[38;5;244m▱▱␛[m ␛[38;5;254m3/5␛[m␛[38;5;244m · ␛[m␛[38;5;244m14 tools · $0.05␛[m  ␛[38;5;244m1m40s␛[m
+    ␛[38;5;244m2 agents under it␛[m
+  ␛[38;5;244m└␛[m␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;244mreviewer…␛[m  ␛[38;5;254m⚠ needs you␛[m␛[38;5;244m · ␛[m␛[38;5;244m2 tools · $0.01␛[m    ␛[38;5;244m22s␛[m
+    ␛[38;5;244mwaiting approval: read internal/agent/loop.go␛[m
+  ␛[38;5;244m└␛[m␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mtester-1b␛[m␛[38;5;244m ·…␛[m  ␛[38;5;254m⠹ working␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 tool · $0.01␛[m     ␛[38;5;244m9s␛[m
+   ␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mreader-2␛[m␛[38;5;244m · su…␛[m  ␛[38;5;254m✓ done␛[m␛[38;5;244m · ␛[m␛[38;5;244m8 tools · $0.02␛[m    ␛[38;5;244m55s␛[m
+    ␛[38;5;244mthe rails and the frame are one component␛[m
+    ␛[38;5;254m[alt+a]␛[m␛[38;5;244m agents␛[m

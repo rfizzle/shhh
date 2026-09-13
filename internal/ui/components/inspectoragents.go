@@ -312,15 +312,9 @@ func (a InspectorAgent) railLines(frame, width int) []railLine {
 
 // nesting is the column a session started by another session is drawn in
 // behind, and nothing at all for a session the orchestrator started itself.
-// The corner is the frame's own, so a nested row borrows a glyph the reader
-// has already learned rather than adding one to the set
-// (docs/interface/principles.md#closed-vocabularies).
-func (a InspectorAgent) nesting() string {
-	if a.Depth < 2 {
-		return ""
-	}
-	return strings.Repeat(" ", a.Depth-2) + sty.Dimmer.Render("└")
-}
+// It is the shared one (agentNesting), because the map, the manager and a
+// fan-out lane draw the same child and must indent it by the same rule.
+func (a InspectorAgent) nesting() string { return agentNesting(a.Depth) }
 
 // detailIndent is where a session's second line starts: under its own name,
 // so a nested session's line moves in with the row it belongs to rather than

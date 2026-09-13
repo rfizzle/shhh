@@ -1069,12 +1069,29 @@ func TestGolden_AgentList(t *testing.T) {
 		}
 		offered := append(append([]AgentRow{}, rows...),
 			AgentRow{State: AgentOffer, Name: "draft a new profile", Status: "/agents new"})
+		// A child that delegated, in the order the host hands the list over:
+		// the group with the request in it floats whole, so the grandchild
+		// waiting on an answer is drawn a column in under the row it belongs
+		// to rather than lifted to the top of a flat list.
+		nested := []AgentRow{
+			{State: AgentCurrent, Name: "orchestrator", Task: "this session", Status: "round 7 · streaming…", Spend: "$0.12"},
+			{State: AgentRunning, Name: "writer-1", Task: "docs/loop.md", Depth: 1,
+				Progress: progress(AgentProgress{State: FanoutRunning, Step: 3, Steps: 5, Tools: 14, Spend: "$0.05"})},
+			{State: AgentBlocked, Name: "reviewer-1a", Task: "read the round change", Depth: 2, Answerable: true,
+				Progress: progress(AgentProgress{State: FanoutBlocked, Tools: 2, Spend: "$0.01"}),
+				Note:     "waiting approval: read internal/agent/loop.go"},
+			{State: AgentDone, Name: "reader-2", Task: "survey internal/ui", Depth: 1,
+				Progress: progress(AgentProgress{State: FanoutDone, Tools: 8, Spend: "$0.02"}),
+				Note:     "the rails and the frame are one component"},
+		}
 		return []golden.Panel{
 			{Label: "focus · the orchestrator", View: (&AgentList{Rows: rows}).View(width)},
 			{Label: "focus · the blocked child, [a] answers it here", View: (&AgentList{Rows: rows, Focus: 1}).View(width)},
 			{Label: "focus · the failed child, [r] runs it again", View: (&AgentList{Rows: rows, Focus: 4}).View(width)},
 			{Label: "the row that is not an agent · enter drafts a profile instead of attaching",
 				View: (&AgentList{Rows: offered, Focus: len(offered) - 1}).View(width)},
+			{Label: "a child that delegated · the request is under the row it belongs to",
+				View: (&AgentList{Rows: nested, Focus: 2}).View(width)},
 		}
 	})
 }
@@ -1128,10 +1145,31 @@ func TestGolden_FanoutBlock(t *testing.T) {
 					SteerFrom: "reading", Verdict: "off target"},
 			},
 		}
+		// A batch one of whose children delegated: the grandchildren are drawn
+		// a column in behind the corner, the parent says how many are under
+		// it, and the group floats whole on the request inside it — the
+		// finished lane spawned first ends up below a running one.
+		nested := FanoutBlock{
+			Elapsed: "1m40s",
+			Keys:    []TurnKey{{Key: keys.Bracket(keys.Draft.Agents), Label: "agents"}},
+			Lanes: []FanoutLane{
+				{State: FanoutDone, Name: "reader-2", Task: "survey internal/ui", Depth: 1,
+					Tools: 8, Spend: "$0.02", Elapsed: "55s",
+					Summary: "the rails and the frame are one component"},
+				{State: FanoutRunning, Name: "writer-1", Task: "docs/loop.md", Depth: 1, Under: 2,
+					Step: 3, Steps: 5, Tools: 14, Spend: "$0.05", Elapsed: "1m40s"},
+				{State: FanoutBlocked, Name: "reviewer-1a", Task: "read the round change", Depth: 2,
+					Tools: 2, Spend: "$0.01", Elapsed: "22s",
+					Waiting: "waiting approval: read internal/agent/loop.go"},
+				{State: FanoutRunning, Name: "tester-1b", Task: "run the package tests", Depth: 2,
+					Tools: 1, Spend: "$0.01", Elapsed: "9s", Frame: 2},
+			},
+		}
 		return []golden.Panel{
 			{Label: "mid-flight · one child is waiting on you", View: flight.View(width)},
 			{Label: "settled · every child has stopped", View: settled.View(width)},
 			{Label: "no declared step count · every lane spins", View: spinning.View(width)},
+			{Label: "a child that delegated · its lane says how many are under it", View: nested.View(width)},
 		}
 	})
 }

@@ -383,3 +383,72 @@ func TestFanoutLaneSaysWhatItStartedFrom(t *testing.T) {
 		t.Fatalf("a blocked lane should say what it needs and nothing else: %q", view)
 	}
 }
+
+// TestFanoutLaneDrawsADescendantUnderItsParent: a lane a child spawned is
+// drawn behind the corner, in the gutter the pointer column and the mutation
+// rail leave a lane — the same corner hard against the same glyph as the
+// rail's map draws for the same child — and a lane the session spawned keeps
+// that gutter blank.
+func TestFanoutLaneDrawsADescendantUnderItsParent(t *testing.T) {
+	child := FanoutLane{State: FanoutRunning, Name: "writer-1", Depth: 1}
+	if line := ansi.Strip(child.View(110)); !strings.HasPrefix(line, "   ◇ agent") {
+		t.Fatalf("a child of the session should keep the gutter blank: %q", line)
+	}
+	grandchild := FanoutLane{State: FanoutRunning, Name: "reviewer-1a", Depth: 2}
+	if line := ansi.Strip(grandchild.View(110)); !strings.HasPrefix(line, "  └◇ agent") {
+		t.Fatalf("a lane a child spawned should draw behind the corner: %q", line)
+	}
+	// The columns past the gutter are the grid's, so the nesting costs the
+	// lane nothing: the verb, the name and the duration land where a lane the
+	// session spawned lands them.
+	if a, b := lipgloss.Width(child.View(110)), lipgloss.Width(grandchild.View(110)); a != b {
+		t.Fatalf("nesting moved the grid: %d columns against %d", b, a)
+	}
+}
+
+// TestFanoutLaneSaysHowManyAreUnderIt: a parent's lane states its live
+// descendants while it has any, ahead of the seed line and behind a steer —
+// what the child is doing now over where its files came from — and says
+// nothing at all where it delegated nothing.
+func TestFanoutLaneSaysHowManyAreUnderIt(t *testing.T) {
+	two := FanoutLane{State: FanoutRunning, Name: "writer-1", Under: 2, Seeded: 5}
+	if view := ansi.Strip(two.View(110)); !strings.Contains(view, "2 agents under it") {
+		t.Fatalf("a delegating lane should say how many are under it: %q", view)
+	}
+	one := FanoutLane{State: FanoutRunning, Name: "writer-1", Under: 1}
+	if view := ansi.Strip(one.View(110)); !strings.Contains(view, "1 agent under it") {
+		t.Fatalf("one agent is one agent: %q", view)
+	}
+	steered := FanoutLane{State: FanoutRunning, Name: "writer-1", Under: 2, Steers: 2}
+	if view := ansi.Strip(steered.View(110)); !strings.Contains(view, "2 steers") ||
+		strings.Contains(view, "under it") {
+		t.Fatalf("a steer is news and outranks the count: %q", view)
+	}
+	none := FanoutLane{State: FanoutRunning, Name: "writer-1", Seeded: 5}
+	if view := ansi.Strip(none.View(110)); strings.Contains(view, "under it") {
+		t.Fatalf("a lane that delegated nothing should say nothing: %q", view)
+	}
+	done := FanoutLane{State: FanoutDone, Name: "writer-1", Under: 2, Summary: "documented the sentinel"}
+	if view := ansi.Strip(done.View(110)); !strings.Contains(view, "documented the sentinel") ||
+		strings.Contains(view, "under it") {
+		t.Fatalf("a finished lane keeps its result: %q", view)
+	}
+}
+
+// TestFanoutBlockedFloatsTheWholeGroup: a request under a nested lane floats
+// its parent with it, so the corner it is drawn behind always has the row it
+// hangs off directly above it.
+func TestFanoutBlockedFloatsTheWholeGroup(t *testing.T) {
+	block := FanoutBlock{Lanes: []FanoutLane{
+		{State: FanoutDone, Name: "reader-2", Depth: 1, Summary: "surveyed"},
+		{State: FanoutRunning, Name: "writer-1", Depth: 1, Under: 1},
+		{State: FanoutBlocked, Name: "reviewer-1a", Depth: 2, Waiting: "waiting approval: read loop.go"},
+	}}
+	var order []string
+	for _, l := range block.sorted() {
+		order = append(order, l.Name)
+	}
+	if want := "writer-1,reviewer-1a,reader-2"; strings.Join(order, ",") != want {
+		t.Fatalf("the blocked group should float whole: got %v, want %s", order, want)
+	}
+}
