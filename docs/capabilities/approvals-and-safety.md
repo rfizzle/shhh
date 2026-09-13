@@ -127,6 +127,32 @@ else follows its redirects — a fetch approved on a card was the person
 answering for that request, and a redirect is part of what a request is —
 and a session holding no grants is not held anywhere by this rule.
 
+## A read-only role is granted once
+
+Starting a sub-agent is gated for the same reason a fetch is: it spends
+something. The card names one fact above the others — which role — so the
+role is what `[a]` grants, exactly as the host is on a fetch card. Pressing
+it on a researcher means the next fan-out of researchers is not the same
+card again, and the reader has answered the question the card asks, which is
+what a child of that role is given.
+
+Only a role that changes nothing is offered it. A writer hands back a patch,
+and the patch is the decision that matters; its spawn card is where the
+person reads what it will claim, so there is nothing there to wave through.
+The grant is the role and never the child: a name is one agent, which would
+grant nothing worth having, and the roles are a closed set the session
+loaded.
+
+There is one length and no choice to make. A role grant is already exact —
+there is nothing narrower than a role — and a fan-out happens once in a turn,
+so a grant that expired with the turn would cover the card in front of the
+reader and nothing after it. It is a session grant like the others: listed by
+`/permissions grants` with when it ends, counted on the status line while it
+stands, and taken back by `/permissions revoke agents` or by a revoke of
+everything. The mode still answers first — a grant answers a question the mode
+left open, never one the mode has closed — so plan mode refuses a spawn the
+session waved through in some earlier mode.
+
 ## The classifier fails closed
 
 Auto mode's classifier never approves on error. A timeout, a malformed answer,
@@ -361,7 +387,9 @@ which covers `npm test` and not `npm test --update`; the one file, which
 covers it and nothing beside it in its directory — for the reader who will say
 yes to this and does not want to have said yes to its family. A fetch has no
 narrow width to offer, because a host grant is already exactly the host and
-never a suffix of it, so a fetch card offers the two lengths and stops.
+never a suffix of it, so a fetch card offers the two lengths and stops. A
+spawn card offers neither a width nor the shorter length, for reasons of its
+own ([a read-only role is granted once](#a-read-only-role-is-granted-once)).
 
 A flagged action is offered no grant of any length. "Only for a minute" is
 still blanket, and the card says the key is absent rather than dropping it

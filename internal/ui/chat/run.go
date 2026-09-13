@@ -118,6 +118,9 @@ func (m Model) updateConfirmRun(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	}
 	switch result {
 	case components.ApprovalApprove:
+		// A fan-out card asked about every child of the round, so the plain
+		// answer answers all of them (queue.go).
+		m.answerSpawnSet(true)
 		return m.approvePending("")
 	// The two answers that carry a sentence settle nothing yet: the key opens
 	// the field, and the answer is given when the field is confirmed
@@ -175,6 +178,7 @@ func (m Model) updateConfirmRun(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		return m.releaseToDraft(msg)
 	case components.ApprovalDeny:
 		if m.pendingApproval != nil {
+			m.answerSpawnSet(false)
 			return m.declineApproval()
 		}
 		m.pendingRun = ""

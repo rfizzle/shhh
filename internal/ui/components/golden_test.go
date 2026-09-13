@@ -709,6 +709,103 @@ func TestGolden_ApprovalCard(t *testing.T) {
 	})
 }
 
+// TestGolden_SpawnCard captures the fan-out's own variant: a single child,
+// and a round's three on one card with a row each
+// (docs/capabilities/subagents.md#spawning-is-a-decision).
+func TestGolden_SpawnCard(t *testing.T) {
+	captureGolden(t, "spawn-card", "spawn card", goldenWidths, func(width int) []golden.Panel {
+		card := func(mut func(*ApprovalCard)) string {
+			c := ApprovalCard{Variant: ApprovalSpawn, Severity: SeverityLow}
+			mut(&c)
+			return c.View(width)
+		}
+		budget := CardField{Label: "budget", Value: "no round limit, ~300k new tokens",
+			Detail: "counted in the session totals"}
+		return []golden.Panel{
+			// One child: the row, the profile's clause under it, and the
+			// scope back in the block where every other card answers it.
+			{Label: "single · a writer, with what it claims", View: card(func(c *ApprovalCard) {
+				c.Title = "Spawn writer"
+				c.Answer = "start it"
+				c.SeverityReason = "touches open"
+				c.Spawns = []SpawnRow{{
+					Role: "writer", Name: "writer-1",
+					About:   "full tools against an isolated copy of the workspace",
+					Task:    "add a --max-rounds flag to the loop",
+					Touches: "its own worktree · claims internal/agent/**",
+					Writer:  true,
+				}}
+				c.Fields = []CardField{
+					{Label: "touches", Value: "its own worktree · claims internal/agent/**", Tone: ToneOpen},
+					{Label: "undo", Value: "reviewed",
+						Detail: "its patch is a decision of its own before anything lands"},
+					budget,
+				}
+			})},
+			// A read-only role is the one that can be waved through for the
+			// session, and the key says the role rather than the category.
+			{Label: "single · a researcher, grantable for the session", View: card(func(c *ApprovalCard) {
+				c.Title = "Spawn researcher"
+				c.Answer = "start it"
+				c.SeverityReason = "reaches open"
+				c.AllowAlways, c.AlwaysHint = true, "allow researchers for this session"
+				c.Spawns = []SpawnRow{{
+					Role: "researcher", Name: "researcher-1",
+					About:   "the session's own read-only toolset plus web",
+					Task:    "say where the round counter is read",
+					Touches: "reads only — a researcher changes nothing",
+				}}
+				c.Fields = []CardField{
+					{Label: "touches", Value: "reads only — a researcher changes nothing", Tone: ToneSafe},
+					{Label: "undo", Value: "reviewed", Detail: "the child changes nothing on this checkout"},
+					budget,
+					{Label: "reaches", Value: "no host granted yet",
+						Detail: "every fetch comes back to you as a card", Tone: ToneOpen},
+				}
+			})},
+			// A round that asked for three: one card, a row per child with
+			// its own scope under it, and the block down to what is true of
+			// all three.
+			{Label: "batch · three writers, one decision", View: card(func(c *ApprovalCard) {
+				c.Title = "Spawn 3 writers"
+				c.Answer, c.Decline = "start all 3", "deny all 3"
+				c.SeverityReason = "touches open"
+				c.Batch, c.BatchHint = true, "pick which of the 3 to start"
+				c.Spawns = []SpawnRow{
+					{Role: "writer", Name: "writer-1", Task: "say where the round counter is read",
+						Touches: "its own worktree · claims internal/agent/**", Writer: true},
+					{Role: "writer", Name: "writer-2", Task: "say where the round limit is set",
+						Touches: "its own worktree · claims internal/config/**", Writer: true},
+					{Role: "writer", Name: "writer-3", Task: "say where the loop exits",
+						Touches: "unknown — this agent claimed no paths", Writer: true},
+				}
+				c.Fields = []CardField{
+					{Label: "undo", Value: "reviewed",
+						Detail: "its patch is a decision of its own before anything lands"},
+					budget,
+				}
+			})},
+			// The state every card is in beside a live draft: the decision
+			// keys not yet live and the handover offered under them
+			// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+			{Label: "state · a fan-out beside a draft that has the keyboard", View: card(func(c *ApprovalCard) {
+				c.Title = "Spawn 3 writers"
+				c.Answer, c.Decline = "start all 3", "deny all 3"
+				c.Batch, c.BatchHint = true, "pick which of the 3 to start"
+				c.Spawns = []SpawnRow{
+					{Role: "writer", Name: "writer-1", Task: "say where the round counter is read",
+						Touches: "its own worktree · claims internal/agent/**", Writer: true},
+					{Role: "writer", Name: "writer-2", Task: "say where the round limit is set",
+						Touches: "its own worktree · claims internal/config/**", Writer: true},
+					{Role: "writer", Name: "writer-3", Task: "say where the loop exits",
+						Touches: "unknown — this agent claimed no paths", Writer: true},
+				}
+				c.NotYetLive, c.Handover = true, "ctrl+space"
+			})},
+		}
+	})
+}
+
 // TestGolden_QueueStrip captures the stack above the card: the full
 // list, the bounded list with its overflow count, and a queue with no batch
 // in it at all.

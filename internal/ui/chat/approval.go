@@ -61,6 +61,12 @@ type GatedPreview struct {
 	// are matched against, so the thing granted is the thing the reader read.
 	// See docs/capabilities/approvals-and-safety.md#a-host-is-granted-once.
 	Host string
+	// Spawn is the child this call would start, on the one gated call that
+	// is not a single act: a round asking for three agents is one decision
+	// with a row per child, and only the tool that owns the roles can say
+	// what a row says (docs/capabilities/subagents.md#spawning-is-a-decision).
+	// Nil on every other call.
+	Spawn *components.SpawnRow
 }
 
 // GatedField is one row of a tool's blast-radius block.
@@ -114,6 +120,10 @@ type approvalRequest struct {
 	// host is the host a generic approval's outbound request leaves for,
 	// from its GatedPreview: what [a] grants and what the host lists answer.
 	host string
+	// spawn is the child a spawn_agent call would start, from its
+	// GatedPreview: the card's own row, the role [a] grants, and what marks
+	// this decision as one a round's other spawns are answered with.
+	spawn *components.SpawnRow
 	// autoRule names what approved this call on the reader's behalf — the
 	// mode or grant that allowed it, "classifier", or the batch — and is
 	// empty on a call the reader answered at the card. It rides the request
@@ -353,6 +363,7 @@ func (m Model) buildApprovalRequest(tc provider.ToolCall) (*approvalRequest, err
 		fields:  p.Fields,
 		write:   p.Write,
 		host:    p.Host,
+		spawn:   p.Spawn,
 	}, nil
 }
 
@@ -503,6 +514,18 @@ func (m Model) armApprovalDecision(req *approvalRequest) (tea.Model, tea.Cmd) {
 		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoBottom()
 		return m.advanceApprovalQueue()
+	}
+	// A role the reader granted at a spawn card starts without one, the way a
+	// granted host fetches without one
+	// (docs/capabilities/approvals-and-safety.md#a-read-only-role-is-granted-once).
+	//
+	// It is read after the mode and not before it: a grant answers a question
+	// the mode left open, never one the mode has closed, so plan mode still
+	// refuses a spawn the session waved through in some earlier mode.
+	if req.spawn != nil && m.roleGranted(req.spawn.Role) {
+		m.recordDecision(observe.DecisionAllow, observe.ReasonUserAlways)
+		req.autoRule = observe.ReasonUserAlways
+		return m.executeApprovedTool()
 	}
 	// In auto mode the classifier judges what the static policy would
 	// ask about — except safety-flagged actions, which always prompt the human.
@@ -760,6 +783,10 @@ func (m Model) updateDecisionNote(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	case keys.Match(msg, keys.Select.Take):
 		note := strings.TrimSpace(open.field.Value())
 		m.decisionNote = nil
+		// The sentence is said once and the answer under it is the card's,
+		// which on a fan-out card is the answer to every child on it
+		// (queue.go).
+		m.answerSpawnSet(open.allow)
 		if open.allow {
 			return m.approvePending(note)
 		}
@@ -1182,8 +1209,11 @@ func (m Model) buildApprovalCard() *components.ApprovalCard {
 	}
 
 	card.ActGlyph, card.Act = actGlyph(m.activityKind(req.call.Name)), req.title
-	switch req.kind {
-	case approvalDiff:
+	// A spawn is read off the request rather than off the kind: it arrives as
+	// a generic gated call like every other tool, and what makes it its own
+	// variant is the child it would start.
+	switch {
+	case req.kind == approvalDiff:
 		card.Variant = components.ApprovalEdit
 		card.Title = "Approve edit"
 		card.Hunks = req.hunks
@@ -1201,6 +1231,8 @@ func (m Model) buildApprovalCard() *components.ApprovalCard {
 				card.AlwaysHint += " and add it to the working scope"
 			}
 		}
+	case req.spawn != nil:
+		m.applySpawnCard(card, req)
 	default:
 		card.Variant = components.ApprovalGeneric
 		card.Title = "Approve tool"
@@ -1223,6 +1255,78 @@ func (m Model) buildApprovalCard() *components.ApprovalCard {
 		}
 	}
 	return card
+}
+
+// SpawnTouchesLabel is the label a spawn preview gives its scope field. The
+// field is what rates the decision — an open scope is what makes a spawn
+// medium — and it is also the field a card asking about several children
+// takes off the block and puts on each child's own row, so the tool that
+// writes it and the card that moves it name it from one place.
+const SpawnTouchesLabel = "touches"
+
+// applySpawnCard is the fan-out's card: the children the round asked for, one
+// row each, under a title naming the role rather than the tool that carries
+// it (docs/capabilities/subagents.md#spawning-is-a-decision).
+//
+// The rows were resolved when the decision was armed, for the reason the
+// queue strip's were: the card is rebuilt every frame, and reading every
+// queued spawn's arguments on each of them is work no frame changes.
+func (m Model) applySpawnCard(card *components.ApprovalCard, req *approvalRequest) {
+	rows := m.pendingSpawns
+	if len(rows) == 0 {
+		rows = []components.SpawnRow{*req.spawn}
+	}
+	card.Variant = components.ApprovalSpawn
+	card.Spawns = rows
+	card.Title = "Spawn " + req.spawn.Role
+	card.Answer = "start it"
+	// A card that is the whole of what is waiting says no position: `(1 of
+	// 3)` over three rows counts the same children a second time, and the
+	// number a reader takes from it is the one thing on the card that is not
+	// true (docs/interface/surfaces.md#the-approval-card).
+	if len(rows) >= m.agent.QueuedApprovals() {
+		card.QueuePos = ""
+	}
+	if n := len(rows); n > 1 {
+		card.Title = "Spawn " + plural(n, req.spawn.Role)
+		// One [y] for the set and one [n] against it, because the card is one
+		// decision: the round asked for these children together and the
+		// reader is answering the fan-out, not the first of it. The refusal
+		// says the count too — `start all 3 · deny` reads as a no to the one
+		// child the other key would have started three of.
+		card.Answer = "start all " + strconv.Itoa(n)
+		card.Decline = "deny all " + strconv.Itoa(n)
+		card.BatchHint = "pick which of the " + strconv.Itoa(n) + " to start"
+		// The block has one slot per question and there are now several
+		// answers to the first of them, so each child's scope goes on its own
+		// row and the block stops stating one child's for all of them
+		// (docs/interface/principles.md#a-stat-that-cannot-be-reported-is-left-out).
+		card.Fields = withoutField(card.Fields, SpawnTouchesLabel)
+	}
+	// A role that changes nothing can be waved through for the session, on
+	// the host grant's precedent: what the reader answered for is what a
+	// child of that role is, and the next fan-out of them is the same
+	// question again
+	// (docs/capabilities/approvals-and-safety.md#a-read-only-role-is-granted-once).
+	// A writer's spawn never carries it — a writer's patch is the decision
+	// that matters, and this card is where the person learns what it claims.
+	if !req.spawn.Writer && len(card.Warnings) == 0 {
+		card.AllowAlways = true
+		card.AlwaysHint = "allow " + rolePlural(req.spawn.Role) + " for this session"
+	}
+}
+
+// withoutField drops one row from a blast-radius block, returning a new slice
+// so the block the decision was armed with is not rewritten by the card that
+// happens to be drawing it this frame.
+func withoutField(fields []components.CardField, label string) []components.CardField {
+	out := make([]components.CardField, 0, len(fields))
+	for _, f := range fields {
+		if f.Label != label {
+			out = append(out, f)
+		}
+	}
+	return out
 }
 
 // applyTo puts the resolved block onto the card: the severity, the reading

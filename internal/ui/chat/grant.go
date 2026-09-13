@@ -130,6 +130,17 @@ func (m Model) grantOffers(req *approvalRequest) ([]grantOffer, []components.Sel
 		narrow, narrowLabel = req.path, "this file only"
 	case req.host != "":
 		covers = req.host
+	case req.spawn != nil:
+		// One row and not three, and the asymmetry is worth stating. A role
+		// grant is already exact — a role is what the card printed and there
+		// is nothing narrower than one — and the turn is not a length worth
+		// offering: a fan-out happens once in a turn, so a grant that expired
+		// with it would cover the card in front of the reader and nothing
+		// else
+		// (docs/capabilities/approvals-and-safety.md#a-read-only-role-is-granted-once).
+		return []grantOffer{{length: forThisSession}}, []components.SelectOption{{
+			Label: "this session", Desc: rolePlural(req.spawn.Role), Meta: endsWithSession,
+		}}
 	default:
 		return nil, nil
 	}
@@ -241,8 +252,28 @@ func (m *Model) recordGrant(req *approvalRequest, o grantOffer) string {
 		if what := m.grantHost(req.host, o); what != "" {
 			return grantNote("Fetches from "+what+" will run", o.length)
 		}
+	case req.spawn != nil:
+		if what := m.grantRole(req.spawn.Role); what != "" {
+			return grantNote(capitalise(rolePlural(what))+" will start", o.length)
+		}
 	}
 	return ""
+}
+
+// rolePlural is a role as a grant names it — the set rather than the one
+// child on the card, because what is granted is every spawn of that role and
+// a row reading `researcher` would be read as this one.
+func rolePlural(role string) string { return role + "s" }
+
+// capitalise leads a sentence with the word it opens on. The grant notes are
+// sentences and their subject is a role the model named, which arrives in the
+// case the profile was written in.
+func capitalise(s string) string {
+	if s == "" {
+		return s
+	}
+	r := []rune(s)
+	return strings.ToUpper(string(r[0])) + string(r[1:])
 }
 
 // grantNote is what the transcript records when a grant is made: what it

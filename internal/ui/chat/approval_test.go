@@ -18,6 +18,7 @@ import (
 	"github.com/rfizzle/shhh/internal/digest"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/structural"
+	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
@@ -1066,5 +1067,175 @@ func TestAutoApproval_ASummaryCannotLandInsideAnApprovedAct(t *testing.T) {
 	last := m.transcript[1]
 	if last.kind != entryDiff || last.diff == nil || last.diff.Allowed == "" {
 		t.Fatalf("the edit's row still carries its own account, got %+v", last)
+	}
+}
+
+// spawnPreview is the session's own spawn preview in miniature
+// (cli/session.go): the plan the supervisor resolves, as the block's fields
+// and the row the card draws a child with.
+func spawnPreview(raw json.RawMessage) (GatedPreview, error) {
+	plan, err := subagent.SpawnPlan(nil, raw)
+	if err != nil {
+		return GatedPreview{}, err
+	}
+	return GatedPreview{
+		Action: "spawn", Summary: "start a " + string(plan.Role),
+		Title: "spawn " + plan.Name,
+		Fields: []GatedField{
+			{Label: SpawnTouchesLabel, Value: plan.Scope, Open: plan.Writer},
+			{Label: "budget", Value: plan.Budget},
+		},
+		Spawn: &components.SpawnRow{
+			Role: string(plan.Role), Name: plan.Name, About: plan.About,
+			Task: plan.Task, Touches: plan.Scope, Writer: plan.Writer,
+		},
+	}, nil
+}
+
+// spawnModel is a session at a spawn card, with the calls the round asked for
+// already queued and the keyboard handed to the card.
+func spawnModel(t *testing.T, calls ...provider.ToolCall) Model {
+	t.Helper()
+	m := tallPanel(t, gatedModel(t, func(string, json.RawMessage) (string, error) {
+		return "started", nil
+	}, map[string]GatedPreviewFunc{subagent.SpawnToolName: spawnPreview}))
+	updated, _ := m.Update(toolCallsMsg{calls: calls})
+	return handover(t, updated.(Model))
+}
+
+func spawnCall(id, args string) provider.ToolCall {
+	return provider.ToolCall{ID: id, Name: subagent.SpawnToolName, Arguments: args}
+}
+
+// TestSpawnCard_ARoundIsOneDecision: three children asked for in one round
+// are one card with a row per child, answered by one [y] for the set — not
+// three cards reading "Approve tool (1 of 3)" with nothing to grant on any of
+// them (docs/capabilities/subagents.md#spawning-is-a-decision).
+func TestSpawnCard_ARoundIsOneDecision(t *testing.T) {
+	m := spawnModel(t,
+		spawnCall("s1", `{"role":"researcher","task":"say where the counter is read","name":"researcher-1"}`),
+		spawnCall("s2", `{"role":"researcher","task":"say where the limit is set","name":"researcher-2"}`),
+		spawnCall("s3", `{"role":"researcher","task":"say where the loop exits","name":"researcher-3"}`),
+	)
+	view := ansi.Strip(m.View().Content)
+	for _, want := range []string{
+		"Spawn 3 researchers",
+		"◇ researcher-1 · say where the counter is read",
+		"◇ researcher-2 · say where the limit is set",
+		"◇ researcher-3 · say where the loop exits",
+		"reads only — a researcher changes nothing",
+		"[y] start all 3",
+		"[n] deny all 3",
+		"[A] pick which of the 3 to start",
+	} {
+		if !strings.Contains(view, want) {
+			t.Errorf("the fan-out card does not say %q:\n%s", want, view)
+		}
+	}
+	// The card is the whole of what is waiting, so nothing counts the three
+	// children a second time above it or in its title.
+	if strings.Contains(view, "(1 of 3)") || len(m.pendingQueue.Items) != 0 {
+		t.Errorf("a fan-out card is not also a queue of three:\n%s", view)
+	}
+	// One decision, so the plain answer answers the set: the two behind the
+	// head are marked and carried out as each reaches it (queue.go).
+	updated, _ := m.Update(tea.KeyPressMsg{Code: 'y', Text: "y"})
+	m = updated.(Model)
+	for _, id := range []string{"s2", "s3"} {
+		if allow, ok := m.batchAnswered[id]; !ok || !allow {
+			t.Fatalf("[y] on the fan-out card must answer %s too: %v", id, m.batchAnswered)
+		}
+	}
+}
+
+// TestSpawnCard_AnAnsweredChildIsNotAskedAgain: a row the queue list already
+// answered is neither drawn on the next card nor swept back into its set. A
+// hook can put a card in front of the reader again mid-round, and a batch
+// rebuilt from the queue's contents alone would let the plain key overrule a
+// denial the reader gave a row one card earlier (queue.go).
+func TestSpawnCard_AnAnsweredChildIsNotAskedAgain(t *testing.T) {
+	m := tallPanel(t, gatedModel(t, func(string, json.RawMessage) (string, error) {
+		return "started", nil
+	}, map[string]GatedPreviewFunc{subagent.SpawnToolName: spawnPreview}))
+	// The list denied the third child and allowed the second; the head has
+	// run and the second is the card now.
+	m.batchAnswered = map[string]bool{"s3": false}
+	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+		spawnCall("s2", `{"role":"researcher","task":"say where the limit is set","name":"researcher-2"}`),
+		spawnCall("s3", `{"role":"researcher","task":"say where the loop exits","name":"researcher-3"}`),
+	}})
+	m = handover(t, updated.(Model))
+	if slices.Contains(m.pendingBatch, "s3") {
+		t.Fatalf("an answered child is not part of the next decision: %v", m.pendingBatch)
+	}
+	// It is still a queued decision, so the strip above the card still counts
+	// it; what it is not is a row of this decision.
+	if rows := m.approvalCard().Spawns; len(rows) != 1 || rows[0].Name != "researcher-2" {
+		t.Errorf("an answered child is not drawn as a row again: %+v", rows)
+	}
+	updated, _ = m.Update(tea.KeyPressMsg{Code: 'y', Text: "y"})
+	if allow := updated.(Model).batchAnswered["s3"]; allow {
+		t.Fatal("the plain key must not overrule a denial the reader already gave")
+	}
+}
+
+// TestSpawnCard_ASingleSpawnKeepsItsCard: one child is one row, the profile's
+// clause under it, and the scope back in the block where every other card
+// answers that question.
+func TestSpawnCard_ASingleSpawnKeepsItsCard(t *testing.T) {
+	m := spawnModel(t, spawnCall("s1",
+		`{"role":"writer","task":"add the flag","name":"writer-1","paths":["internal/cli/**"]}`))
+	view := ansi.Strip(m.View().Content)
+	for _, want := range []string{
+		"Spawn writer",
+		"◇ writer-1 · add the flag",
+		"full tools against an isolated copy of the workspace",
+		"touches   its own worktree · claims internal/cli/**",
+		"[y] start it",
+	} {
+		if !strings.Contains(view, want) {
+			t.Errorf("the spawn card does not say %q:\n%s", want, view)
+		}
+	}
+	// A writer's spawn never offers the session grant: its patch is the
+	// decision that matters and this card is where the claim is read.
+	if strings.Contains(view, "[a] allow writers") {
+		t.Errorf("a writer's spawn must not offer a role grant:\n%s", view)
+	}
+	if strings.Contains(view, "[A] ") {
+		t.Errorf("one child is not a queue to pick down:\n%s", view)
+	}
+}
+
+// TestSpawnCard_AReadOnlyRoleIsGrantedForTheSession: [a] on a researcher's
+// card opens the one grant it can make, and taking it is what stops the next
+// fan-out of researchers being the same card again
+// (docs/capabilities/approvals-and-safety.md#a-read-only-role-is-granted-once).
+func TestSpawnCard_AReadOnlyRoleIsGrantedForTheSession(t *testing.T) {
+	m := spawnModel(t, spawnCall("s1", `{"role":"researcher","task":"read it","name":"researcher-1"}`))
+	if !strings.Contains(ansi.Strip(m.View().Content), "[a] allow researchers for this session") {
+		t.Fatalf("a read-only role's card offers the session grant:\n%s", m.View().Content)
+	}
+	updated, _ := m.Update(tea.KeyPressMsg{Code: 'a', Text: "a"})
+	m = updated.(Model)
+	if m.grantChoice == nil || len(m.grantChoice.offers) != 1 {
+		t.Fatalf("a role grant is already exact, so the list is the one length: %+v", m.grantChoice)
+	}
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	m = updated.(Model)
+	if !m.roleGranted("researcher") {
+		t.Fatalf("taking the row grants the role: %v", m.policy.roles)
+	}
+	if listing := m.grantStatus(); !strings.Contains(listing, "agents     researchers") {
+		t.Errorf("/permissions grants does not list the role grant:\n%s", listing)
+	}
+	if got := m.policyLabel(); !strings.Contains(got, "1 role") {
+		t.Errorf("the status line does not count the role grant: %q", got)
+	}
+	if out := m.revokeCommand([]string{"agents"}); !strings.Contains(out, "researchers") {
+		t.Errorf("revoke does not say what went: %q", out)
+	}
+	if m.roleGranted("researcher") {
+		t.Fatal("revoke leaves nothing granted")
 	}
 }

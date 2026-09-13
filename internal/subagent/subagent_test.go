@@ -945,6 +945,50 @@ func TestSpawnSummary(t *testing.T) {
 	}
 }
 
+// TestSpawnPlanStatesWhatTheCardAsksAbout: the card's touches line is one
+// whole statement in each of its three shapes, and the row beside it carries
+// the child, the profile's clause and the task
+// (docs/capabilities/subagents.md#spawning-is-a-decision).
+func TestSpawnPlanStatesWhatTheCardAsksAbout(t *testing.T) {
+	for _, tc := range []struct {
+		name, args, scope string
+	}{
+		{"a claim is a worktree and the paths in it",
+			`{"role":"writer","task":"add the flag","paths":["internal/cli/**"]}`,
+			"its own worktree · claims internal/cli/**"},
+		{"a writer that claimed nothing says so",
+			`{"role":"writer","task":"add the flag"}`,
+			"unknown — this agent claimed no paths"},
+		{"a role that neither writes nor reviews changes nothing",
+			`{"role":"researcher","task":"read the loop"}`,
+			"reads only — a researcher changes nothing"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			plan, err := SpawnPlan(nil, json.RawMessage(tc.args))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if plan.Scope != tc.scope {
+				t.Errorf("touches = %q; want %q", plan.Scope, tc.scope)
+			}
+		})
+	}
+	plan, err := SpawnPlan(nil, json.RawMessage(
+		`{"role":"researcher","task":"read the loop\nand say where","name":"researcher-2"}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	// The row's three fields: which child, what a child of that role is, and
+	// the one line of the task a row has space for — with the fold's own mark
+	// where the task went on.
+	if plan.Name != "researcher-2" || plan.Task != "read the loop …" {
+		t.Errorf("the row does not name the child and its task: %+v", plan)
+	}
+	if plan.About != "the session's own read-only toolset plus web" {
+		t.Errorf("the row takes the profile's leading clause, got %q", plan.About)
+	}
+}
+
 func TestSpawnAdmissionRefusesBeforeCreatingAChild(t *testing.T) {
 	opened := 0
 	sup := New(t.Context(), Options{

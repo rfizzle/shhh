@@ -1232,8 +1232,12 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 			if plan.Writer {
 				undo = "its patch is a decision of its own before anything lands"
 			}
+			// The scope is a whole statement — a worktree and a claim, or the
+			// phrase for a child that changes nothing — so the row carries no
+			// second clause beside it: what reaches this checkout is the undo
+			// row's answer and saying it twice was two sentences in one slot.
 			fields := []chat.GatedField{
-				{Label: "touches", Value: plan.Scope, Detail: "in its own worktree, not this checkout", Open: plan.Writer},
+				{Label: chat.SpawnTouchesLabel, Value: plan.Scope, Open: plan.Writer},
 				{Label: "undo", Value: "reviewed", Detail: undo},
 				{Label: "budget", Value: plan.Budget, Detail: "counted in the session totals"},
 			}
@@ -1243,10 +1247,21 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 			if childReachesWeb(session, agents, plan.Role) {
 				fields = append(fields, chat.GatedField{
 					Label: "reaches", Value: reach.value(),
-					Detail: "the hosts granted here; any other asks you", Open: true,
+					Detail: reach.detail(), Open: true,
 				})
 			}
-			return chat.GatedPreview{Action: "spawn", Summary: summary, Fields: fields}, nil
+			return chat.GatedPreview{
+				Action: "spawn", Summary: summary, Fields: fields,
+				// The act the card's row states, and the transcript's own
+				// title for the call: which agent, and what it was asked to
+				// do. A round asking for three of these draws one card with
+				// three rows (docs/capabilities/subagents.md#spawning-is-a-decision).
+				Title: "spawn " + spawnSubject(plan),
+				Spawn: &components.SpawnRow{
+					Role: string(plan.Role), Name: plan.Name, About: plan.About,
+					Task: plan.Task, Touches: plan.Scope, Writer: plan.Writer,
+				},
+			}, nil
 		}
 		model = model.WithSubagents(sup).WithPersonas(buildPersonas(session, env, agents, sup, ledger))
 	}
@@ -1548,9 +1563,31 @@ type hostReach struct{ hosts []string }
 // is a child whose every fetch comes back here as a card.
 func (h *hostReach) value() string {
 	if h == nil || len(h.hosts) == 0 {
-		return "no host granted yet — every fetch asks you"
+		return "no host granted yet"
 	}
 	return strings.Join(h.hosts, ", ")
+}
+
+// detail finishes the sentence the value opens. The two halves are a field's
+// value and the clause it is read with, not two statements sharing a row: a
+// row that said "no host granted yet — every fetch asks you" and then "the
+// hosts granted here; any other asks you" beside it was one slot carrying two
+// sentences written for it (docs/interface/surfaces.md#the-approval-card).
+func (h *hostReach) detail() string {
+	if h == nil || len(h.hosts) == 0 {
+		return "every fetch comes back to you as a card"
+	}
+	return "any other host asks you"
+}
+
+// spawnSubject names the child a card is about: its own name where the call
+// gave it one, and otherwise the role — the supervisor names an unnamed child
+// when it starts it, and a name invented here would be a different one.
+func spawnSubject(plan subagent.Spawn) string {
+	if plan.Name != "" {
+		return plan.Name
+	}
+	return string(plan.Role)
 }
 
 // childReachesWeb reports whether a child of this role is given the fetch

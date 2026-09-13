@@ -118,6 +118,30 @@ answers every other gated call. A scripted run answers it with `--yes`, or
 with auto mode's classifier, and a run given neither is not offered the roles
 at all ([`headless.md`](headless.md#a-run-can-delegate)).
 
+The card in a session is the spawn's own, and it carries the three answers the
+question has. Which role, as the card's title and a clause saying what a child
+of that role is given. What it may touch, as one statement per child: a
+worktree and the paths a writer claimed, `unknown — this agent claimed no
+paths` for a writer that claimed none, and for a role that neither writes nor
+reviews, that it reads only and changes nothing. And what it costs — its round
+setting, its token ceiling, and the hosts it arrives able to reach without
+asking, which are the session's own and can never be added to.
+
+A round that asked for several children is one card with a row per child, not
+one card per child. Three researchers were three decisions where the reader
+was making one, and the three cards each asked it in the words of a generic
+tool call. `[y]` starts the set; the key that opens the queue picks it down to
+the ones wanted, and each child is still put to the mode, the deny list and
+the working scope when its turn comes. The layout is the interface's
+([`../interface/surfaces.md`](../interface/surfaces.md#the-approval-card)).
+
+A role that changes nothing can be waved through for the rest of the session
+from that card, which is what stops the next fan-out of researchers being the
+same card again
+([`approvals-and-safety.md`](approvals-and-safety.md#a-read-only-role-is-granted-once)).
+A writer's never is: a writer's patch is the decision that matters, and the
+spawn card is where the person learns what it will claim.
+
 ## A child answers to the session
 
 A child's permission mode is clamped to its parent's and can never be looser,

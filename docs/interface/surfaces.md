@@ -1342,8 +1342,8 @@ keys that act on an agent are silent over it.
 
 ### The approval card
 
-The single surface for every approval-gated action, in three body variants:
-a command, an edit, and everything else.
+The single surface for every approval-gated action, in four body variants:
+a command, an edit, a fan-out, and everything else.
 
 Every card answers three questions before it offers a key: what the action
 touches, whether shhh can take it back, and whether the network is open. A
@@ -1583,6 +1583,35 @@ reaches the head of the queue, and the deny list, the safety table, the mode
 and the working scope are put to it there — a decision does not outrank a
 rule, and a call the reader allowed can have become inadmissible while the
 calls ahead of it ran.
+
+A fan-out is a variant of its own. Starting an agent is an approval-gated call
+like any other and used to arrive as one generic card per child: three
+researchers were three cards reading *Approve tool (1 of 3)*, the task buried
+in a summary line, nothing to grant on any of them. The spawn card is titled
+with the role — *Spawn writer* — and its body is a row per child: the mark
+every sub-agent surface draws a child with, the child's name, and the line it
+was asked to do. One child leaves the profile's own clause under its row and
+states what it may touch in the block where every card answers that question;
+several put each scope under its own row instead, because the block has one
+slot per question and three children have three answers to the first of them.
+
+The children of one round are one decision. `[y]` starts the set and `[n]`
+refuses it, and the key over the queue picks that set down to the rows wanted
+— the same list every other queue is answered on. A card that is the whole of
+what is waiting carries neither the strip above it nor a position in its
+title: both would count the same children a second time inside the one panel a
+decision is drawn in. What differs between the children is on their rows and
+what is the same is in the block, which is why a child differing in what it
+costs or reaches is not on the card at all — a block standing for a child it
+does not hold to would be the one thing there a reader cannot check.
+
+*Allow without asking* is offered on a spawn card only where the role changes
+nothing, and what it grants is the role
+([`../capabilities/approvals-and-safety.md`](../capabilities/approvals-and-safety.md#a-read-only-role-is-granted-once)).
+There is one row and not three: a role is already exact, and a fan-out happens
+once in a turn, so the turn is not a length worth offering. A writer's spawn
+carries no such key — a writer's patch is the decision that matters, and this
+card is where the person reads what it will claim.
 
 ### The question card
 

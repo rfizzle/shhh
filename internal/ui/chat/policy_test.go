@@ -1100,7 +1100,7 @@ func TestPolicy_HostGrantsAreListedCountedAndRevoked(t *testing.T) {
 	}
 
 	listing := m.grantStatus()
-	for _, want := range []string{"hosts      docs.python.org", "crates.io from web.allow_hosts", "revoke [edits|commands|hosts]"} {
+	for _, want := range []string{"hosts      docs.python.org", "crates.io from web.allow_hosts", "revoke [edits|commands|hosts|agents]"} {
 		if !strings.Contains(listing, want) {
 			t.Errorf("/permissions grants does not say %q:\n%s", want, listing)
 		}

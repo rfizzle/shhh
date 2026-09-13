@@ -13,13 +13,17 @@ import (
 
 // ApprovalVariant selects which body the approval card renders
 // (docs/interface/surfaces.md#the-approval-card): a command, a file edit
-// diff, or a generic tool summary.
+// diff, a fan-out, or a generic tool summary.
 type ApprovalVariant int
 
 const (
 	ApprovalCommand ApprovalVariant = iota
 	ApprovalEdit
 	ApprovalGeneric
+	// ApprovalSpawn is the fan-out's body: a row per child, because a round
+	// that asked for three agents is one decision and not the same decision
+	// put three times (docs/capabilities/subagents.md#spawning-is-a-decision).
+	ApprovalSpawn
 )
 
 // ApprovalDecision is the card's Update result once a decision key is
@@ -181,8 +185,43 @@ type CardField struct {
 // Design System project.
 const fieldLabelWidth = 10
 
+// SpawnRow is one child the spawn variant asks about: the agent, what it was
+// asked to do, and what it may change.
+//
+// A card carries one of these for a single spawn and one per child for a
+// round that asked for several, which is the whole reason the variant exists:
+// starting three researchers was three cards reading `Approve tool (1 of 3)`
+// with nothing to grant on any of them, and three cards are three decisions
+// where the reader is making one
+// (docs/capabilities/subagents.md#spawning-is-a-decision).
+type SpawnRow struct {
+	// Role is the profile being started — the word the card's title takes.
+	Role string
+	// Name is the child's own, where the call gave it one. A row with no
+	// name is a child the supervisor will name, and the row says only what
+	// it was asked to do rather than inventing the name early.
+	Name string
+	// About is the profile's account of the role in one clause, drawn once
+	// under the title on a card asking about a single child. A card asking
+	// about several does not repeat it: its title already names the role,
+	// and a clause per row would push the tasks off a bounded panel.
+	About string
+	// Task is the first line of what this child was asked to do.
+	Task string
+	// Touches is what the child may change, in the words the card's own
+	// touches field states it in. It rides the row only where there are
+	// several rows; a single child's is the field, under the block every
+	// other card answers its three questions in.
+	Touches string
+	// Writer marks a child that hands back a patch. Nothing here draws it:
+	// it is the fact the host reads to decide which grants the card can
+	// offer, and it travels with the row because the row is what the host
+	// was given (docs/capabilities/subagents.md#spawning-is-a-decision).
+	Writer bool
+}
+
 // ApprovalCard is the single surface for every approval-gated action. One
-// container, three body variants.
+// container, four body variants.
 type ApprovalCard struct {
 	Variant ApprovalVariant
 	// Title is the border title, e.g. "Approve command"; QueuePos ("2 of 5")
@@ -257,6 +296,11 @@ type ApprovalCard struct {
 	// Fields is the blast-radius block under the act row: what the action
 	// touches, whether it can be undone, whether the network is open.
 	Fields []CardField
+	// Spawns is the spawn variant's body: the children this decision starts,
+	// one row each. It stands in for the act row rather than sitting under
+	// it — the act of a fan-out is the children, and a row above them saying
+	// so would be the card describing itself.
+	Spawns []SpawnRow
 	// Hunks is the edit variant's diff body; Syntax highlights its lines.
 	Hunks  []diff.Hunk
 	Syntax Syntax
@@ -517,6 +561,58 @@ func (c *ApprovalCard) actRow() string {
 	return sty.Accent.Render(c.ActGlyph) + " " + sty.Bright.Render(c.Act)
 }
 
+// spawnGlyph opens a child's row with the mark every sub-agent surface draws
+// a child with — the lane in the transcript, the row in the manager, the
+// activity row this call becomes — so a decision and the thing it started are
+// read by one mark (docs/interface/surfaces.md#the-agent-manager).
+const spawnGlyph = "◇"
+
+// spawnRowIndent puts a child's scope under the child rather than under the
+// glyph column, which is where the note selector and the manager's own notes
+// indent to.
+const spawnRowIndent = "  "
+
+// spawnBody is the fan-out's rows: the kind glyph, the child, and the line it
+// was asked to do.
+//
+// What follows a row depends on how many there are. A single child leaves the
+// profile's clause under it and states what it touches in the blast-radius
+// block, where every other card answers that question. Several put each
+// child's scope under its own row instead: the block has one slot per
+// question and three children have three answers, and a block that stated the
+// first child's would be the card answering for agents it did not name
+// (docs/interface/principles.md#a-stat-that-cannot-be-reported-is-left-out).
+//
+// The rows are laid out whole, as the act row is: a task too long for the
+// frame is panned into view rather than cut at the moment it is approved.
+func (c *ApprovalCard) spawnBody(inner int) []string {
+	if c.Variant != ApprovalSpawn || len(c.Spawns) == 0 {
+		return nil
+	}
+	var rows []string
+	for _, s := range c.Spawns {
+		row := sty.Accent.Render(spawnGlyph) + " "
+		if s.Name != "" {
+			row += sty.Bright.Render(s.Name)
+			if s.Task != "" {
+				row += sty.Dim.Render(detailSep)
+			}
+		}
+		row += sty.Body.Render(s.Task)
+		rows = append(rows, row)
+		if len(c.Spawns) == 1 {
+			if s.About != "" {
+				rows = append(rows, sty.Dim.Render(Clip(s.About, inner)))
+			}
+			continue
+		}
+		if s.Touches != "" {
+			rows = append(rows, sty.Dimmer.Render(spawnRowIndent+s.Touches))
+		}
+	}
+	return rows
+}
+
 // buildRows lays the card out as its two halves: the body — the act,
 // severity, blast radius, and the edit variant's whole diff — and the block
 // under the rule, which is pinned. The split is what the scroll works on, so
@@ -524,6 +620,12 @@ func (c *ApprovalCard) actRow() string {
 func (c *ApprovalCard) buildRows(width int) (body, hints []string) {
 	inner := width - cardFrameWidth
 	body = []string{c.actRow()}
+	// The fan-out's rows replace the act row rather than following it: the
+	// act of a spawn card is the children it starts, and one of them is as
+	// much the act as three of them are.
+	if rows := c.spawnBody(inner); len(rows) > 0 {
+		body = rows
+	}
 	// What the call asked for, directly under what will run instead, so the
 	// two are read as one statement rather than as two facts a row apart.
 	if c.Was != "" {

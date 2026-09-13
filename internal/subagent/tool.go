@@ -330,15 +330,42 @@ type Spawn struct {
 	// that this package cannot resolve — what a child of that role is given
 	// is the session's answer, not the supervisor's.
 	Role Role
+	// Name is the name this call gave the child, empty where it named none
+	// and the supervisor will generate one. A card asking about three
+	// children at once needs a word per row to tell them apart, and the task
+	// is not it: three writers over one file open on the same clause.
+	Name string
+	// About is the profile's own account of the role, cut to its leading
+	// clause. The whole of it is written for the orchestrating model choosing
+	// between roles; a card gives it one row.
+	About string
+	// Task is the first line of what this child was asked to do.
+	Task string
 	// Scope is the paths a writer claimed, or the phrase for a child that
-	// changes nothing. A review's paths never appear here as a scope: the
-	// card answers "what can this change", and paths that are evidence
-	// answer a different question — one the reader would take for the first.
+	// changes nothing. Each is a whole statement, because it is the value of
+	// a field whose label is one word: a value needing a second clause beside
+	// it would be two sentences written for one slot. A review's paths never
+	// appear here as a scope: the card answers "what can this change", and
+	// paths that are evidence answer a different question — one the reader
+	// would take for the first.
 	Scope string
 	// Writer marks a child that produces a patch; a researcher never does.
 	Writer bool
 	// Budget is the child's round and token ceiling.
 	Budget string
+}
+
+// aboutRole is the one clause of a profile's description a card has room for.
+// The description qualifies itself over several clauses because it is written
+// for the model choosing between roles; a card gives it a row, and a row that
+// printed the whole would be cut mid-word by the frame rather than ending on
+// a statement (docs/interface/principles.md#fold-never-hide).
+func aboutRole(p Profile) string {
+	desc := strings.TrimSpace(p.Description)
+	if head, _, ok := strings.Cut(desc, "; "); ok {
+		return head
+	}
+	return desc
 }
 
 // SpawnPlan describes a spawn_agent call the way its approval card needs it.
@@ -349,6 +376,9 @@ func SpawnPlan(profiles Profiles, raw json.RawMessage) (Spawn, error) {
 	}
 	p := Spawn{
 		Role:   args.role,
+		Name:   args.Name,
+		About:  aboutRole(args.profile),
+		Task:   firstLine(args.Task),
 		Writer: args.profile.Writes,
 		Budget: fmt.Sprintf("%s, ~%s new tokens", roundBudgetLabel(args.maxRounds), formatTokens(args.maxTokens)),
 	}
@@ -356,11 +386,14 @@ func SpawnPlan(profiles Profiles, raw json.RawMessage) (Spawn, error) {
 	case args.profile.Reviews && len(args.paths) > 0:
 		p.Scope = "nothing — it is handed " + strings.Join(args.paths, ", ") + " and reports"
 	case len(args.paths) > 0:
-		p.Scope = strings.Join(args.paths, ", ")
+		// The worktree rides the same line as the claim. The paths on their
+		// own read as paths on this checkout, which is the one thing a
+		// writer's spawn must not be taken for.
+		p.Scope = "its own worktree · claims " + strings.Join(args.paths, ", ")
 	case p.Writer:
 		p.Scope = "unknown — this agent claimed no paths"
 	default:
-		p.Scope = "nothing — a " + string(args.role) + " reads and reports"
+		p.Scope = "reads only — a " + string(args.role) + " changes nothing"
 	}
 	return p, nil
 }

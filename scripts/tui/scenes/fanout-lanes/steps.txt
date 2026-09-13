@@ -17,14 +17,12 @@
 setup printf 'package agent\n\nfunc loop() {\n    for round := 0; round < limit; round++ {\n        step()\n    }\n}\n' > loop.go
 snap 01-start "Some things worth doing first"
 keys "survey the round accounting" Enter
-# Spawning is gated, so a card stands between the sentence and each child.
-snap 02-spawn-card "writer agent"
+# Spawning is gated, so a card stands between the sentence and the children —
+# one card with a row per child, because the round asked for them together and
+# three cards would be one decision put three times.
+snap 02-spawn-card "Spawn 3 writers"
 keys y
-sleep 1
-keys y
-sleep 1
-keys y
-sleep 3
+sleep 4
 # Three lanes as the block opens, before anything has been asked of the
 # reader: the kind glyph on every one of them and the state in the field on
 # the right.

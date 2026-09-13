@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -259,6 +260,31 @@ func (m *Model) grantHost(host string, o grantOffer) string {
 	return host
 }
 
+// grantRole records a spawn grant: this role starts without a card for the
+// rest of the session, exactly as a granted host fetches without one
+// (docs/capabilities/approvals-and-safety.md#a-read-only-role-is-granted-once).
+// A role already granted adds nothing, so pressing the same row twice records
+// it once.
+//
+// It takes no length. The card offers the session and no turn beside it —
+// grantOffers says why — so there is nothing here to choose between.
+func (m *Model) grantRole(role string) string {
+	role = strings.TrimSpace(role)
+	if role == "" {
+		return ""
+	}
+	if !m.roleGranted(role) {
+		m.policy.roles = append(m.policy.roles, role)
+	}
+	return role
+}
+
+// roleGranted reports whether spawning this role has been waved through for
+// the session.
+func (m Model) roleGranted(role string) bool {
+	return slices.Contains(m.policy.roles, role)
+}
+
 // grantCommand records a command grant of the length and width the reader
 // chose: the command's leading words, which pre-approve the shape of it
 // rather than every command there is, or the line exactly as it stands. A
@@ -389,10 +415,23 @@ func (m *Model) revokeGrants() []string {
 	for _, h := range m.policy.hosts {
 		gone = append(gone, "fetches from "+h)
 	}
+	gone = append(gone, m.revokeRoles()...)
 	m.policy.allEdits, m.policy.allCommands = false, false
 	m.policy.editDirs, m.policy.commands, m.policy.hosts = nil, nil, nil
 	m.policy.editPaths, m.policy.exactCommands = nil, nil
 	return append(gone, m.revokeTurnGrants()...)
+}
+
+// revokeRoles drops the spawn grants and names them. There is no turn-length
+// half to take with them: a role is granted for the session or not at all
+// (policyState).
+func (m *Model) revokeRoles() []string {
+	var gone []string
+	for _, r := range m.policy.roles {
+		gone = append(gone, rolePlural(r)+" starting without a card")
+	}
+	m.policy.roles = nil
+	return gone
 }
 
 // revokeTurnGrants drops what this turn granted and names it, for the two
@@ -625,6 +664,12 @@ func (m Model) policyLabel() string {
 	if n := len(live.Hosts); n > 0 {
 		parts = append(parts, plural(n, "host"))
 	}
+	// The role grants are counted from the session's own field rather than
+	// from live grants: they have no turn-length half to fold in, which is
+	// what liveGrants exists to do (policyState).
+	if n := len(m.policy.roles); n > 0 {
+		parts = append(parts, plural(n, "role"))
+	}
 	if len(m.policy.allowlist) > 0 {
 		parts = append(parts, "allowlist")
 	}
@@ -711,7 +756,7 @@ func allowlistMatches(allowlist []string, command string) bool {
 // the same act.
 func (m Model) grantStatus() string {
 	g := m.grants()
-	if !g.Any() && !m.policy.turn.Any() && len(m.policy.allowlist) == 0 && len(m.policy.denylist) == 0 &&
+	if !g.Any() && !m.policy.turn.Any() && len(m.policy.roles) == 0 && len(m.policy.allowlist) == 0 && len(m.policy.denylist) == 0 &&
 		len(m.policy.allowHosts) == 0 && len(m.policy.denyHosts) == 0 && len(m.scopeDirs()) == 0 {
 		return "Nothing is granted — every gated call asks.\n" +
 			"[a] on a confirm prompt offers the grants that call can make, each with when it ends; /permissions allow <commands|edits> grants the category."
@@ -729,8 +774,15 @@ func (m Model) grantStatus() string {
 	// would read as a second grant rather than as the same one, and a grant
 	// whose end is not stated is one the reader has to remember (grant.go).
 	writeGrants(&sb, g, endsWithSession)
+	// The roles are written here rather than in writeGrants because they are
+	// not one of the two sets that function exists to render the same way:
+	// there is no turn-length half of a role grant to keep in step with
+	// (policyState).
+	for _, r := range m.policy.roles {
+		sb.WriteString("  agents     " + rolePlural(r) + " — " + endsWithSession + "\n")
+	}
 	writeGrants(&sb, m.policy.turn, endsWithTurn)
-	if !g.Any() && !m.policy.turn.Any() {
+	if !g.Any() && !m.policy.turn.Any() && len(m.policy.roles) == 0 {
 		sb.WriteString("  (none — everything below came from config)\n")
 	}
 	for _, d := range m.scopeDirs() {
@@ -748,8 +800,8 @@ func (m Model) grantStatus() string {
 	if n := len(m.policy.denyHosts); n > 0 {
 		fmt.Fprintf(&sb, "  config     %s from web.deny_hosts — refused before anything here can allow them\n", plural(n, "host"))
 	}
-	if g.Any() {
-		sb.WriteString("/permissions revoke [edits|commands|hosts] takes them back.")
+	if g.Any() || len(m.policy.roles) > 0 {
+		sb.WriteString("/permissions revoke [edits|commands|hosts|agents] takes them back.")
 	}
 	return strings.TrimRight(sb.String(), "\n")
 }
@@ -815,7 +867,7 @@ func (m *Model) allowCommand(args []string) string {
 // which refuses everything — undid that.
 func (m *Model) revokeCommand(args []string) string {
 	if len(args) > 1 {
-		return "Usage: /permissions revoke [edits|commands|hosts]"
+		return "Usage: /permissions revoke [edits|commands|hosts|agents]"
 	}
 	scope := "all"
 	if len(args) == 1 {
@@ -867,8 +919,10 @@ func (m *Model) revokeCommand(args []string) string {
 			gone = append(gone, "fetches from "+h+" this turn")
 		}
 		m.policy.turn.Hosts = nil
+	case "agents", "roles":
+		gone = m.revokeRoles()
 	default:
-		return "Usage: /permissions revoke [edits|commands|hosts]"
+		return "Usage: /permissions revoke [edits|commands|hosts|agents]"
 	}
 	m.syncGrants()
 	if len(gone) == 0 {
@@ -929,6 +983,18 @@ type policyState struct {
 	// suffix. There is no blanket counterpart: "every host" is the whole of
 	// the outbound channel.
 	hosts []string
+	// roles are the sub-agent profiles [a] has granted on a spawn card:
+	// spawning one of these starts without a card. Only a role that changes
+	// nothing is ever offered, so there is no blanket counterpart either —
+	// "every role" would include the ones that hand back a patch, and a
+	// patch is the decision the card exists for
+	// (docs/capabilities/subagents.md#spawning-is-a-decision).
+	//
+	// They are the session's alone and have no turn-length half beside them,
+	// which is why they sit here rather than in the turn's Grants: a fan-out
+	// happens once in a turn, so a role granted for the turn would cover the
+	// card in front of the reader and nothing after it.
+	roles []string
 	// Read-only inspection commands auto-run in every mode; config can
 	// extend the built-in list or turn it off entirely.
 	readOnlyExtra    []string

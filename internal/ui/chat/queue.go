@@ -27,6 +27,7 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -75,11 +76,16 @@ func (m Model) resolveQueue(cur *approvalRequest) (components.QueueStrip, []stri
 		return components.QueueStrip{}, nil
 	}
 	kind, batchable := m.batchCategory(cur)
+	// A round's spawns belong to each other whatever the grants say about
+	// them: the grant categories have no answer for a spawn, and what makes
+	// these one decision is that the card asks about all of them at once
+	// (docs/capabilities/subagents.md#spawning-is-a-decision).
+	batchable = batchable || cur.spawn != nil
 	first := m.approvalTotal - len(calls) + 1
 	label, detail := queueLabel(cur)
 	items := []components.QueueItem{{
 		Number: max(first, 1), Label: label, Detail: detail,
-		Severity: queueSeverity(cur), Batch: batchable,
+		Severity: queueSeverity(cur),
 	}}
 	var batch []string
 	for i, tc := range calls[1:] {
@@ -89,12 +95,18 @@ func (m Model) resolveQueue(cur *approvalRequest) (components.QueueStrip, []stri
 			Number: max(first, 1) + i + 1, Label: label, Detail: detail,
 			Severity: queueSeverity(req),
 		}
-		if k, ok := m.batchCategory(req); batchable && ok && k == kind {
+		if m.batchesWith(cur, kind, batchable, req) {
 			item.Batch = true
 			batch = append(batch, tc.ID)
 		}
 		items = append(items, item)
 	}
+	// The head is marked only where the mark means something. A queue whose
+	// other decisions are all of another kind leaves the key unoffered on the
+	// card, and a row wearing its mark under a strip with no note would be
+	// advertising a key nobody can press
+	// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+	items[0].Batch = len(batch) > 0
 	strip := components.QueueStrip{Items: items, MaxRows: m.stripRows()}
 	if len(batch) > 0 {
 		strip.Note = fmt.Sprintf("%s lists the %d marked",
@@ -268,6 +280,83 @@ func (m Model) rowPath(p string) string {
 		return p
 	}
 	return rel
+}
+
+// batchesWith reports whether a queued decision is answered along with the
+// one the card is showing. kind and batchable are the head's category,
+// resolved once by the caller because reading it costs a scope reading per
+// call and the head does not change as the queue is walked.
+func (m Model) batchesWith(cur *approvalRequest, kind agent.ActionKind, batchable bool, req *approvalRequest) bool {
+	if !batchable {
+		return false
+	}
+	// A call the queue list already answered is not open, so it is not part
+	// of the set the card in front of the reader is asking about. It carries
+	// its own answer and is carried out when it reaches the head, and a
+	// reader who unchecked a row is owed that answer whatever happens to the
+	// calls ahead of it — a card is armed again mid-round whenever a hook
+	// asks for one, and a batch rebuilt from the queue's contents alone would
+	// sweep that row back in and let the next plain key overrule it
+	// (takeQueueAnswer).
+	if _, answered := m.batchAnswered[req.call.ID]; answered {
+		return false
+	}
+	if cur.spawn != nil {
+		return spawnsTogether(cur, req)
+	}
+	k, ok := m.batchCategory(req)
+	return ok && k == kind && req.spawn == nil
+}
+
+// spawnsTogether reports whether two spawns are one decision. They are where
+// they start the same role and everything the card would state about them
+// beyond their own scope agrees — the budget, what a patch costs, the hosts
+// they arrive with. One card states those once, so a child that differs in
+// any of them is a different decision however alike the two calls look:
+// a block standing for children it does not hold to would be the one thing on
+// the card a reader cannot check
+// (docs/interface/principles.md#a-stat-that-cannot-be-reported-is-left-out).
+func spawnsTogether(cur, req *approvalRequest) bool {
+	if req.spawn == nil || cur.spawn.Role != req.spawn.Role {
+		return false
+	}
+	return slices.Equal(sharedSpawnFields(cur), sharedSpawnFields(req))
+}
+
+// sharedSpawnFields are the facts one card states once for every child on it:
+// the whole block except the scope, which is the one answer a child has of
+// its own and rides its own row.
+func sharedSpawnFields(req *approvalRequest) []GatedField {
+	out := make([]GatedField, 0, len(req.fields))
+	for _, f := range req.fields {
+		if f.Label != SpawnTouchesLabel {
+			out = append(out, f)
+		}
+	}
+	return out
+}
+
+// resolveSpawns are the children the card would start: the decision's own and
+// every spawn of the round the queue marked as answered along with it, in the
+// order the round asked for them.
+func (m Model) resolveSpawns(cur *approvalRequest, batch []string) []components.SpawnRow {
+	if cur == nil || cur.spawn == nil {
+		return nil
+	}
+	marked := make(map[string]bool, len(batch))
+	for _, id := range batch {
+		marked[id] = true
+	}
+	rows := []components.SpawnRow{*cur.spawn}
+	for _, tc := range m.agent.PendingApprovals() {
+		if !marked[tc.ID] {
+			continue
+		}
+		if req := m.previewQueued(tc); req.spawn != nil {
+			rows = append(rows, *req.spawn)
+		}
+	}
+	return rows
 }
 
 // batchCategory is the class a session grant ([a]) would cover, which is
@@ -515,6 +604,28 @@ func (m Model) answerQueueList(idx []int) (tea.Model, tea.Cmd) {
 	return m.executeApprovedTool()
 }
 
+// answerSpawnSet marks the round's other spawns with the answer just given at
+// the card. That card asked about all of them, a row per child, so [y] is the
+// answer to the set and [n] refuses the set; each peer is carried out when it
+// reaches the head, which is what a marked call has always done
+// (docs/capabilities/subagents.md#spawning-is-a-decision).
+//
+// It is called where the reader answers the card and nowhere else. A decision
+// the queue list answered carries that list's own marks, row by row, and a
+// head a rule answered was never a card anybody read.
+func (m *Model) answerSpawnSet(allow bool) {
+	req := m.pendingApproval
+	if req == nil || req.spawn == nil || len(m.pendingBatch) == 0 {
+		return
+	}
+	if m.batchAnswered == nil {
+		m.batchAnswered = make(map[string]bool, len(m.pendingBatch))
+	}
+	for _, id := range m.pendingBatch {
+		m.batchAnswered[id] = allow
+	}
+}
+
 // takeQueueAnswer reports how the list answered this call, if it answered it,
 // consuming the answer either way.
 //
@@ -547,6 +658,16 @@ func (m *Model) takeQueueAnswer(req *approvalRequest) (allow, answered bool) {
 // queue strip and the set the queue key would list alongside it.
 func (m *Model) armConfirm(req *approvalRequest) {
 	m.pendingQueue, m.pendingBatch = m.resolveQueue(req)
+	m.pendingSpawns = m.resolveSpawns(req, m.pendingBatch)
+	// A fan-out card draws a row per child, so a strip over it listing the
+	// same children would put every decision on the screen twice inside a
+	// panel bounded to two fifths of the terminal
+	// (docs/interface/principles.md#one-interaction-panel). The strip stays
+	// wherever it still has something to say — a decision of another kind
+	// queued behind the fan-out is exactly what it is for.
+	if len(m.pendingSpawns) > 1 && len(m.pendingSpawns) >= len(m.pendingQueue.Items) {
+		m.pendingQueue = components.QueueStrip{}
+	}
 	// A list open over the last decision is not a list over this one: it was
 	// answered, or escaped, before this card was armed.
 	m.queueList = nil
