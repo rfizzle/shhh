@@ -27,6 +27,19 @@ import (
 
 func TestMain(m *testing.M) { os.Exit(golden.Run(m)) }
 
+// rowOffer is a transcript row's offer built the way the session builds one:
+// the letter reading mode answers with its cursor on the row, and the chord
+// the draft answers, which is what the row draws while the draft can take
+// text (keys.RowChord). A capture that spelled the pair by hand would go on
+// drawing a letter the register had moved.
+func rowOffer(b keys.Binding, label string) TurnKey {
+	o := TurnKey{Key: keys.Bracket(b), Label: label}
+	if c, ok := keys.ChordFor(b); ok {
+		o.Chord = keys.Bracket(c)
+	}
+	return o
+}
+
 // goldenWidths are the width breakpoints from guidelines/layout-breakpoints
 // in the shhh Design System project: minimal, folded, one-pane-with-vitals,
 // and the two-pane split. Every surface is captured at all four so the drop
@@ -320,8 +333,8 @@ func TestGolden_TurnClose(t *testing.T) {
 					Files: 3, Added: 30, Removed: 4,
 					// Review, keep, or take back — the three things a
 					// changeset can become, on one line and in that order.
-					Keys: []TurnKey{{Key: "[v]", Label: "review"},
-						{Key: "[g]", Label: "commit"}, {Key: "[u]", Label: "undo turn"}},
+					Keys: []TurnKey{rowOffer(keys.Row.Review, "review"),
+						rowOffer(keys.Row.Commit, "commit"), rowOffer(keys.Row.Undo, "undo turn")},
 					Note: "all tracked in git",
 				},
 				Checks: &TurnChecks{Label: "go test ./internal/agent/...", Counts: "41 packages · 12.8s"},
@@ -346,14 +359,18 @@ func TestGolden_TurnClose(t *testing.T) {
 			{Label: "unpriced · tokens, never a made-up zero", View: closed(func(c *TurnClose) {
 				c.Spend, c.Changes, c.Checks = "~48.1k tok", nil, nil
 			})},
-			// The changeset row in the two states invariant 5 puts it in
-			//: its [v] and [u] are handled by reading mode on the row,
-			// so beside a live draft they are letters and the row says so.
-			{Label: "keys waiting · the draft has the keyboard, ctrl+o takes it", View: closed(func(c *TurnClose) {
+			// The changeset row in the two spellings invariant 5 puts it in.
+			// Its [v], [g] and [u] are reading mode's, on the row; beside a
+			// live draft each of those is a letter of the sentence being
+			// typed, so what the row draws there is the chord that reaches
+			// the same offer without the handover.
+			{Label: "keys waiting · beside a live draft, the row offers its chords", View: closed(func(c *TurnClose) {
 				c.KeysWaiting, c.Handover = true, "ctrl+o"
 			})},
-			{Label: "keys waiting · reading mode is up, the cursor is elsewhere", View: closed(func(c *TurnClose) {
-				c.KeysWaiting = true
+			// And the first block in a session to offer one says what an alt
+			// chord costs on a stock macOS terminal, once.
+			{Label: "keys waiting · the first chord of a session names the Option row", View: closed(func(c *TurnClose) {
+				c.KeysWaiting, c.Handover, c.Option = true, "ctrl+o", true
 			})},
 			// A turn that committed: the receipt is a row of its own, the
 			// undo sentence rides beside it, and the changed-files row loses
@@ -362,14 +379,14 @@ func TestGolden_TurnClose(t *testing.T) {
 			// been spent.
 			{Label: "committed · the receipt, and what undo does not reach", View: closed(func(c *TurnClose) {
 				c.Commit = &TurnCommit{Receipt: "committed 3 files as a41f2c9 on master"}
-				c.Changes.Keys = []TurnKey{{Key: "[v]", Label: "review"}}
+				c.Changes.Keys = []TurnKey{rowOffer(keys.Row.Review, "review")}
 			})},
 			// The checks row's own offer, which is present only where there
 			// is a suite to run again.
 			{Label: "checks · the suite can be run again", View: closed(func(c *TurnClose) {
 				c.Checks = &TurnChecks{
 					Label: "quality gate default", Counts: "4/4 checks · 12.8s",
-					Keys: []TurnKey{{Key: "[t]", Label: "run the checks again"}},
+					Keys: []TurnKey{rowOffer(keys.Row.Rerun, "run the checks again")},
 				}
 			})},
 			// The two states a turn's verification can close in. A pass over
@@ -380,7 +397,7 @@ func TestGolden_TurnClose(t *testing.T) {
 				c.Checks = &TurnChecks{
 					Label: "quality gate default", Counts: "5/5 checks · 12.8s",
 					Superseded: 1,
-					Keys:       []TurnKey{{Key: "[t]", Label: "run the checks again"}},
+					Keys:       []TurnKey{rowOffer(keys.Row.Rerun, "run the checks again")},
 				}
 			})},
 			{Label: "unresolved · nothing has answered the failure", View: closed(func(c *TurnClose) {
@@ -1826,34 +1843,34 @@ func TestGolden_RecoveryRows(t *testing.T) {
 			{Label: "auth · the key it sent, named by its last four", View: row(func(r *RecoveryRow) {
 				r.Qualifier, r.Outcome = "401 unauthorized", "key ···4f9c rejected"
 				r.Detail = []string{"Incorrect API key provided"}
-				r.Keys = []KeyOffer{{Key: "[e]", Label: "enter a new key"}, {Key: "[p]", Label: "switch provider"}}
+				r.Keys = []KeyOffer{rowOffer(keys.Row.Key, "enter a new key"), rowOffer(keys.Row.Provider, "switch provider")}
 			})},
 			{Label: "rate limit · a stall, with the wait the provider asked for", View: row(func(r *RecoveryRow) {
 				r.State, r.Qualifier, r.Outcome = RecoveryStalled, "429 rate limited", "retry in 38s"
 				r.Detail = []string{"Rate limit reached for gpt-4o. Please try again in 38s."}
-				r.Keys = []KeyOffer{{Key: "[r]", Label: "try again"}, {Key: "[p]", Label: "switch provider"}}
+				r.Keys = []KeyOffer{rowOffer(keys.Row.Retry, "try again"), rowOffer(keys.Row.Provider, "switch provider")}
 			})},
 			{Label: "quota · not a stall, because waiting does not clear it", View: row(func(r *RecoveryRow) {
 				r.Qualifier, r.Outcome = "429 quota exhausted", "the account, not the rate"
 				r.Detail = []string{"You exceeded your current quota, please check your plan and billing details"}
-				r.Keys = []KeyOffer{{Key: "[p]", Label: "switch provider"}}
+				r.Keys = []KeyOffer{rowOffer(keys.Row.Provider, "switch provider")}
 				r.Note = "waiting will not clear this one"
 			})},
 			{Label: "overloaded · the provider's own side", View: row(func(r *RecoveryRow) {
 				r.State, r.Qualifier, r.Outcome = RecoveryStalled, "529 overloaded", "the provider's side"
 				r.Detail = []string{"Overloaded"}
-				r.Keys = []KeyOffer{{Key: "[r]", Label: "try again"}, {Key: "[p]", Label: "switch provider"}}
+				r.Keys = []KeyOffer{rowOffer(keys.Row.Retry, "try again"), rowOffer(keys.Row.Provider, "switch provider")}
 			})},
 			{Label: "context length · the one class with a remedy of its own", View: row(func(r *RecoveryRow) {
 				r.Qualifier, r.Outcome = "400 context too long", "over the window"
 				r.Detail = []string{"This model's maximum context length is 128000 tokens"}
-				r.Keys = []KeyOffer{{Key: "[c]", Label: "compact now"}, {Key: "[r]", Label: "then try again"}}
+				r.Keys = []KeyOffer{rowOffer(keys.Row.Continue, "compact now"), rowOffer(keys.Row.Retry, "then try again")}
 				r.Note = "compacting keeps the plan and the recent turns"
 			})},
 			{Label: "network · it never reached the provider", View: row(func(r *RecoveryRow) {
 				r.State, r.Qualifier, r.Outcome = RecoveryStalled, "network", "never reached it"
 				r.Detail = []string{`Post "https://api.openai.com/v1/chat/completions": dial tcp: connection refused`}
-				r.Keys = []KeyOffer{{Key: "[r]", Label: "try again"}}
+				r.Keys = []KeyOffer{rowOffer(keys.Row.Retry, "try again")}
 			})},
 			{Label: "cancelled · you did it on purpose, so no key is offered", View: row(func(r *RecoveryRow) {
 				r.State, r.Qualifier, r.Outcome = RecoveryStopped, "cancelled", "stopped"
@@ -1862,23 +1879,23 @@ func TestGolden_RecoveryRows(t *testing.T) {
 			{Label: "unclassified · the message is the whole point of the row", View: row(func(r *RecoveryRow) {
 				r.Qualifier, r.Outcome = "400 unclassified", "message below"
 				r.Detail = []string{"Unknown parameter: 'reasoning.effort'"}
-				r.Keys = []KeyOffer{{Key: "[r]", Label: "try again"}, {Key: "[p]", Label: "switch provider"}}
+				r.Keys = []KeyOffer{rowOffer(keys.Row.Retry, "try again"), rowOffer(keys.Row.Provider, "switch provider")}
 			})},
-			// The same row in the two states invariant 5 puts it in.
-			// It is a transcript row, so the draft below usually has the
-			// keyboard and `r` is a letter — the state a reader meets first
-			// is the waiting one.
-			{Label: "keys waiting · the draft has the keyboard, ctrl+o takes it", View: row(func(r *RecoveryRow) {
+			// The same row in the two spellings invariant 5 puts it in. It is
+			// a transcript row, so the draft below usually has the keyboard
+			// and `r` is a letter — what the row draws there is the chord
+			// that reaches the same offer from the prompt.
+			{Label: "keys waiting · beside a live draft, the row offers its chords", View: row(func(r *RecoveryRow) {
 				r.State, r.Qualifier, r.Outcome = RecoveryStalled, "429 rate limited", "retry in 38s"
 				r.Detail = []string{"Rate limit reached for gpt-4o. Please try again in 38s."}
-				r.Keys = []KeyOffer{{Key: "[r]", Label: "try again"}, {Key: "[p]", Label: "switch provider"}}
+				r.Keys = []KeyOffer{rowOffer(keys.Row.Retry, "try again"), rowOffer(keys.Row.Provider, "switch provider")}
 				r.KeysWaiting, r.Handover = true, "ctrl+o"
 			})},
-			{Label: "keys waiting · reading mode is up, the cursor is elsewhere", View: row(func(r *RecoveryRow) {
+			{Label: "keys waiting · the first chord of a session names the Option row", View: row(func(r *RecoveryRow) {
 				r.State, r.Qualifier, r.Outcome = RecoveryStalled, "429 rate limited", "retry in 38s"
 				r.Detail = []string{"Rate limit reached for gpt-4o. Please try again in 38s."}
-				r.Keys = []KeyOffer{{Key: "[r]", Label: "try again"}, {Key: "[p]", Label: "switch provider"}}
-				r.KeysWaiting = true
+				r.Keys = []KeyOffer{rowOffer(keys.Row.Retry, "try again"), rowOffer(keys.Row.Provider, "switch provider")}
+				r.KeysWaiting, r.Handover, r.Option = true, "ctrl+o", true
 			})},
 		}
 	})

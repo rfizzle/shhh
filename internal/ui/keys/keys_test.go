@@ -178,7 +178,8 @@ func TestEveryDeclaredBindingIsOnASurface(t *testing.T) {
 		{"Backlog", Backlog.All()},
 		{"Sprint", Sprint.All()},
 		{"Row", []Binding{Row.Review, Row.Commit, Row.Undo, Row.Retry, Row.Continue,
-			Row.Key, Row.Provider, Row.Rounds, Row.Uncap, Row.Rerun}},
+			Row.Key, Row.Provider, Row.Rounds, Row.Uncap, Row.Reopen, Row.Rerun}},
+		{"RowChord", RowChord.All()},
 		{"Commit", Commit.All()},
 		{"Decision", []Binding{Decision.Allow, Decision.Deny, Decision.Refuse,
 			Decision.Always, Decision.Batch, Decision.Diff,
@@ -432,6 +433,57 @@ func handoversNamedBy(s Surface) []Binding {
 		}
 	}
 	return named
+}
+
+// TestEveryRowOfferHasAChordThatIsOne is the row offers' half of the
+// mid-sentence rule. A row is drawn beside a live draft nearly all the time,
+// so every offer it makes has to be reachable from there — and reachable
+// means a keystroke no sentence produces. The pairing is what the row draws
+// from and what the dispatch reads back, so it has to be total in both
+// directions: every letter has a chord, and every chord names its letter.
+func TestEveryRowOfferHasAChordThatIsOne(t *testing.T) {
+	for _, b := range []Binding{Row.Review, Row.Commit, Row.Undo, Row.Retry,
+		Row.Continue, Row.Key, Row.Provider, Row.Rounds, Row.Uncap, Row.Reopen,
+		Row.Rerun} {
+		chord, ok := ChordFor(b)
+		if !ok {
+			t.Errorf("%q (%s) is offered on a row and has no chord, so it cannot be taken from the draft",
+				Shown(b), Words(b))
+			continue
+		}
+		for _, k := range chord.Keys() {
+			if Typed(k) {
+				t.Errorf("%q reaches %q, which is a key a sentence produces", k, Words(b))
+			}
+		}
+		if letter, ok := RowLetter(Shown(chord)); !ok || letter != Shown(b) {
+			t.Errorf("%q reads back as %q, want %q", Shown(chord), letter, Shown(b))
+		}
+	}
+}
+
+// And a chord the register has already spent is not free. Every row chord is
+// bound on the row-offers surface and nowhere else, the way the realigned
+// chords are pinned: a second home is a surface answering a key somebody has
+// been taught to press over a transcript with something else entirely.
+func TestRowChordsHaveOneHome(t *testing.T) {
+	for _, b := range RowChord.All() {
+		for _, chord := range b.Keys() {
+			var homes []string
+			for _, s := range all() {
+				for _, sb := range s.Bindings {
+					for _, k := range sb.Keys() {
+						if k == chord {
+							homes = append(homes, s.Name)
+						}
+					}
+				}
+			}
+			if len(homes) != 1 {
+				t.Errorf("%q is bound on %d surfaces (%v), want exactly one", chord, len(homes), homes)
+			}
+		}
+	}
 }
 
 // TestTheKeyListIsReachedWithoutTheOptionSetting pins the one thing that made

@@ -35,6 +35,39 @@ says which box. Every surface that offers an alt chord names that row beside
 it. The key list, which is where a reader goes to be told the setting exists,
 is on a ctrl chord for exactly that reason.
 
+### The eleven a transcript row spends
+
+The offers a transcript row makes are the largest single claim on the free
+set, because there are eleven of them and each is drawn beside a live draft
+([the row's side of it](surfaces.md#the-turns-close)). They are all on alt:
+every ctrl letter a terminal delivers is spent or the line editor's, and the
+free set at the end of this page is function keys and modified navigation
+keys, which eleven acts named after words do not come out of. The first row in
+a session to offer one names the doctor's Option row beside it.
+
+The letter each takes is the row's own where alt still had it. Six letters
+were already spent, and this is where each replacement is recorded:
+
+| Offer | On the row | The chord | Why not the row's own letter |
+|---|---|---|---|
+| review | `v` | `alt+w` | `alt+v` opens the staged paste; `w` ends the word |
+| commit | `g` | `alt+g` | — (`ctrl+g` is the editor's, which is why this is on alt) |
+| undo turn | `u` | `alt+z` | `alt+u` is the textarea's uppercase-word; `z` is undo everywhere else |
+| try again | `r` | `alt+r` | — |
+| continue from here | `c` | `alt+n` | `alt+c` is the textarea's capitalize-word; `n` is the next letter of the word |
+| enter a new key | `e` | `alt+e` | — |
+| switch provider | `p` | `alt+p` | — |
+| more rounds | `+` | `alt+m` | the row draws the grant (`[+50]`), not a keystroke; `m` is *more* |
+| let it run | `!` | `alt+x` | no mnemonic was left: `u`, `c` and `l` are the textarea's, and `a`, `p`, `n`, `r` and `t` are spent above |
+| reopen the item | `o` | `alt+o` | — |
+| run the checks again | `t` | `alt+k` | `alt+t` is the reasoning level's alias; `k` is the letter of *checks* |
+
+The four alt letters the textarea holds — `alt+b`, `alt+f`, `alt+d` and the
+case chords `alt+c`, `alt+l`, `alt+u` — are left to it for the reason the
+readline chords are: the draft is a readline-shaped editor and those keys
+reach it, so binding one takes a shell user's muscle memory to open something
+they did not ask for.
+
 ## What the encoding can carry
 
 Before the list, the constraint that shapes it. shhh asks every terminal for
@@ -188,6 +221,11 @@ is spent or the line editor's (`ctrl+a`, `ctrl+e`, `ctrl+k`, `ctrl+u`,
 alt. `ctrl+]` left that set for the key list, which could not: it is the
 door a lost reader opens, and a door behind the Option setting is a door
 that is shut on the desktop where the setting is off.
+
+What is left on alt, after the eleven a transcript row spends and the family
+the agent manager took: `alt+h`, `alt+i`, `alt+j`, `alt+q`, `alt+s`, `alt+y`.
+The six the textarea holds and `alt+0` … `alt+9`, which GNOME Terminal
+switches tabs with, are not among them.
 
 ## Sources
 

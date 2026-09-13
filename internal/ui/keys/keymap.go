@@ -337,6 +337,7 @@ func groups() map[string]reflect.Value {
 		"find":     reflect.ValueOf(&Find).Elem(),
 		"context":  reflect.ValueOf(&Context).Elem(),
 		"row":      reflect.ValueOf(&Row).Elem(),
+		"rowchord": reflect.ValueOf(&RowChord).Elem(),
 		"decision": reflect.ValueOf(&Decision).Elem(),
 		"confirm":  reflect.ValueOf(&Confirm).Elem(),
 		"select":   reflect.ValueOf(&Select).Elem(),

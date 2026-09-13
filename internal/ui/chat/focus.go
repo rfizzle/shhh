@@ -265,6 +265,75 @@ func (m Model) openCursorRow(ret state) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+// rowKey runs the offer a transcript row makes, on the row m.focusIdx names,
+// and reports whether that row claimed it. `pressed` is the offer's own
+// letter, which is how the register declares it (keys.Row).
+//
+// It is one dispatch behind two doors. Reading mode presses the letter with
+// its cursor on the row, where a letter is live because nothing else is
+// listening; from the draft the same offer is a chord, which puts the cursor
+// on the row it acts on and arrives here as the letter (keyroute.go). Two
+// dispatches would be two answers to "what does [g] do on this row", and the
+// second one would be discovered by a reader whose commit committed a
+// different turn.
+//
+// A row that does not make the offer claims nothing, and the caller decides
+// what the key was instead: a character for the draft, or the pager's half
+// page.
+func (m Model) rowKey(pressed string) (tea.Model, tea.Cmd, bool) {
+	// A round-limit pause offers four of them on its own row; it is asked
+	// first because it stands where the close block would be.
+	if next, cmd, claimed := m.roundPauseKey(pressed); claimed {
+		return next, cmd, true
+	}
+	// And `[u]` on the notice an automatic steer left, which takes the
+	// message back out of the conversation (intervene.go).
+	if next, cmd, claimed := m.withdrawSteer(pressed); claimed {
+		return next, cmd, true
+	}
+	// The offers on a turn's changeset row, which are [v] and [u] and no
+	// others. The switch names them both rather than treating "not [v]" as
+	// [u]: the pause's other two keys reach this line whenever the cursor is
+	// on a close row, and a key a row does not offer has to fall through,
+	// not land on whichever offer happened to be last.
+	if e, ok := m.focusedClose(); ok && e.close.Changes != nil {
+		switch {
+		case keys.Is(pressed, keys.Row.Review):
+			// Review mode is a takeover opened from the row; esc comes back
+			// here, to the row that offered it.
+			return answered(m.openReview(e.turn))
+		case keys.Is(pressed, keys.Row.Undo):
+			// Undo asks before it writes. The confirm borrows the bottom
+			// panel and the screen is kept, so the cursor stays on the row
+			// that offered it and esc comes back here.
+			return answered(m.undoTurn(e.turn, nil))
+		}
+	}
+	// Banking what the turn changed, and running its checks again
+	// (commit.go, close.go).
+	if next, cmd, claimed := m.commitKey(pressed); claimed {
+		return next, cmd, true
+	}
+	if next, cmd, claimed := m.rerunChecksKey(pressed); claimed {
+		return next, cmd, true
+	}
+	// A blocked backlog run's own offer: the item goes back to open from the
+	// row that says why it stopped.
+	if keys.Is(pressed, keys.Row.Reopen) {
+		if next, cmd, claimed := m.todoRunReopen(m.focusIdx); claimed {
+			return next, cmd, true
+		}
+	}
+	// A dropped stream's offers, and a provider failure's.
+	if next, cmd, claimed := m.dropKey(pressed); claimed {
+		return next, cmd, true
+	}
+	if next, cmd, claimed := m.failureKey(pressed); claimed {
+		return next, cmd, true
+	}
+	return m, nil, false
+}
+
 // updateFocus handles keys while focus mode is active. Esc never destroys:
 // it only returns to the input, keeping any expansion state.
 func (m Model) updateFocus(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
@@ -315,35 +384,8 @@ func (m Model) updateFocus(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		m.refreshFocusView()
 		return m, nil
 	case keys.Is(pressed, keys.Row.Review, keys.Row.Undo, keys.Row.Rounds, keys.Row.Uncap):
-		// A round-limit pause offers all four on its own row; it is
-		// asked first because it stands where the close block would be.
-		if next, cmd, claimed := m.roundPauseKey(pressed); claimed {
+		if next, cmd, claimed := m.rowKey(pressed); claimed {
 			return next, cmd
-		}
-		// And `[u]` on the notice an automatic steer left, which takes the
-		// message back out of the conversation (intervene.go).
-		if next, cmd, claimed := m.withdrawSteer(pressed); claimed {
-			return next, cmd
-		}
-		// The offers on a turn's changeset row, which are [v]
-		// and [u] and no others. They are handled here rather than globally,
-		// so the input keeps both keys. The switch names them both rather
-		// than treating "not [v]" as [u]: the pause's other two keys reach
-		// this line whenever the cursor is on a close row, and a key a row
-		// does not offer has to fall through to the draft, not land on
-		// whichever offer happened to be last.
-		if e, ok := m.focusedClose(); ok && e.close.Changes != nil {
-			switch {
-			case keys.Is(pressed, keys.Row.Review):
-				// Review mode is a takeover opened from the row;
-				// esc comes back here, to the row that offered it.
-				return m.openReview(e.turn)
-			case keys.Is(pressed, keys.Row.Undo):
-				// Undo asks before it writes. The confirm borrows the
-				// bottom panel and focus mode keeps the screen, so the cursor
-				// stays on the row that offered it and esc comes back here.
-				return m.undoTurn(e.turn, nil)
-			}
 		}
 		// [u] off a close row is the pager's half page, not an offer nothing
 		// made; the rest go back to the draft as the characters they are.
@@ -363,38 +405,27 @@ func (m Model) updateFocus(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		// the scroll to wherever it was standing.
 		m.halfPageFocus(pressed)
 		return m, nil
-	case keys.Is(pressed, keys.Row.Commit, keys.Row.Rerun):
-		// A turn's close offering to bank what it changed, and to run the
-		// checks over it again (commit.go, close.go). Handled here rather
-		// than globally, so the input keeps both letters for typing.
-		if next, cmd, claimed := m.commitKey(pressed); claimed {
-			return next, cmd
-		}
-		if next, cmd, claimed := m.rerunChecksKey(pressed); claimed {
-			return next, cmd
-		}
-		return m.returnToInput(msg)
-	case keys.Is(pressed, keys.Row.Reopen):
-		// A blocked run's own offer: the item goes back to open from the row
-		// that says why it stopped. Handled here rather than globally, so
-		// the input keeps the letter for typing.
-		if next, cmd, claimed := m.todoRunReopen(m.focusIdx); claimed {
+	case keys.Is(pressed, keys.Row.Commit, keys.Row.Rerun, keys.Row.Reopen,
+		keys.Row.Retry, keys.Row.Continue, keys.Row.Key, keys.Row.Provider):
+		// A turn's close offering to bank what it changed and to run the
+		// checks again, a blocked backlog run's reopen, a provider failure's
+		// own offers and a dropped stream's. Every one is answered on the row
+		// under the cursor, so the input keeps all seven letters for typing.
+		if next, cmd, claimed := m.rowKey(pressed); claimed {
 			return next, cmd
 		}
 		return m.returnToInput(msg)
-	case keys.Is(pressed, keys.Row.Retry, keys.Row.Continue, keys.Row.Key, keys.Row.Provider):
-		// A provider failure's own offers, and a dropped
-		// stream's. Like the changeset row's, they are handled here
-		// rather than globally, so the input keeps every one of these letters
-		// for typing — which is also why continuing from a partial is [c]
-		// rather than the artboard's [enter].
-		if next, cmd, claimed := m.dropKey(pressed); claimed {
+	case keys.Is(pressed, keys.RowChord.All()...):
+		// The same offers as chords. A row draws them wherever its own
+		// letters are not live, and that includes this mode standing on some
+		// other row — so the chord answers here too, on the row the cursor is
+		// on if it offers it and on the newest row that does otherwise
+		// (keyroute.go). A chord no row answers is nothing: no sentence can
+		// produce it, so there is no letter to hand back.
+		if next, cmd, claimed := m.rowChordKey(pressed); claimed {
 			return next, cmd
 		}
-		if next, cmd, claimed := m.failureKey(pressed); claimed {
-			return next, cmd
-		}
-		return m.returnToInput(msg)
+		return m, nil
 	case keys.Is(pressed, keys.Reading.Collapse):
 		// The explicit half of [enter]'s toggle. Where the row under
 		// the cursor has nothing open, [-] is a character like any other and

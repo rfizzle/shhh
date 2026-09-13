@@ -263,7 +263,13 @@ func optionFix(terminal, profile string) []string {
 // — the keyboard works, and four of its chords do not.
 func doctorOptionKey(s optionKeyState) doctorFinding {
 	alt := altChords()
-	chords := joinAnd(alt)
+	// The row counts the chords rather than listing them. It listed them
+	// while there were four; a transcript row's offers put eleven more on
+	// alt, and a sentence naming sixteen chords is one the screen clips —
+	// which loses the name of the box, and the box is what the row is for.
+	// The count is the fact a reader acts on, and the key list is where the
+	// chords themselves are written down.
+	chords := fmt.Sprintf("%d alt chords", len(alt))
 	if s.GOOS != "darwin" {
 		return doctorFinding{
 			Subject: "no Option key on " + s.GOOS, Detail: s.terminalName(),
@@ -278,9 +284,10 @@ func doctorOptionKey(s optionKeyState) doctorFinding {
 			// others and not itself again: a reader who has just been told
 			// to press it does not need it repeated, and the row clips
 			// rather than wraps.
-			Consequence: "if " + alt[0] + " types a character, " + joinAnd(alt[1:]) + " never reach shhh",
-			FixLabel:    "show the setting to turn on",
-			Fix:         optionFix(s.Terminal, s.Profile),
+			Consequence: fmt.Sprintf("if %s types a character, %d more alt chords never reach shhh",
+				alt[0], len(alt)-1),
+			FixLabel: "show the setting to turn on",
+			Fix:      optionFix(s.Terminal, s.Profile),
 		}
 	}
 	profile := s.Profile + " profile"
@@ -303,9 +310,10 @@ func doctorOptionKey(s optionKeyState) doctorFinding {
 		return doctorFinding{
 			Subject: "Option types a character", Detail: joinDetail(s.terminalName(), profile),
 			Outcome: "chords dead", State: components.DoctorWarned,
-			Consequence: chords + " type a character and never reach shhh",
-			FixLabel:    "show the setting to turn on",
-			Fix:         optionFix(s.Terminal, s.Profile),
+			Consequence: chords + " type a character and never reach shhh; " +
+				keys.Shown(keys.Draft.KeyList) + " lists them",
+			FixLabel: "show the setting to turn on",
+			Fix:      optionFix(s.Terminal, s.Profile),
 		}
 	case optionHighBit:
 		return doctorFinding{

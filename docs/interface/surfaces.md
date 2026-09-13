@@ -251,6 +251,22 @@ on the row rather than a sentence typed in another window, because the moment
 a person knows whether the work is worth keeping is the moment they have just
 read what it changed.
 
+Each of those three is drawn in the spelling that works from where the reader
+is standing. The row sits above a live draft nearly all the time, and a letter
+offered there is a letter of the sentence being typed, so what the row prints
+while the draft can take text is the chord — pressed from the prompt, with the
+half-written sentence still in the box. Under reading mode's cursor the letter
+is live and the row prints that instead. It is one offer either way, and the
+row never draws both
+([why](principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard)).
+
+The chord acts on one row: the one the pointer names, or the newest row that
+makes the offer where no pointer is lit. That is the row reading mode would
+open on, so the two doors reach the same place. And the first row in a session
+to offer a chord says beside it that alt needs the Option setting on a stock
+macOS terminal, with the doctor row that reads it — once, because it is a fact
+about the terminal and not about that row.
+
 The key opens a card, for the reason every act that cannot be taken back gets
 one. It states the message that will be written, what will be staged, what
 will deliberately not be, the branch this lands on, whether the checkout's own
@@ -338,6 +354,12 @@ The row names the model and then the class; the outcome is the one thing that
 decides what to do next, never a repeat of the class. The provider's own words
 appear underneath, bounded — which is why "unclassified" is a class rather
 than an error path. A message we could not name still gets said.
+
+The offered key is drawn the way [a turn's close](#the-turns-close) draws its
+three: as a chord while the draft below can take text, as the letter under
+reading mode's cursor. A failure row is the one row a reader most often meets
+mid-sentence — the turn broke while they were typing the next thing — so it is
+the row where a key that only worked after a handover was least useful.
 
 Two failures earn a card instead, and only two: the ones that stop the session
 dead.

@@ -480,7 +480,7 @@ func (r *todoRunRow) offers() []components.TurnKey {
 	if r.st.Stage != run.StageBlocked {
 		return nil
 	}
-	return []components.TurnKey{{Key: keys.Bracket(keys.Row.Reopen), Label: keys.Words(keys.Row.Reopen)}}
+	return []components.TurnKey{rowOffer(keys.Row.Reopen, keys.Words(keys.Row.Reopen))}
 }
 
 // todoRunRowView renders the row: its header, the strip, the notes each
@@ -523,6 +523,9 @@ func (m Model) todoRunRowView(e entry, width int, keysLive bool) string {
 	}
 	if offers := components.KeyRun(r.offers(), !keysLive, m.rowHandover(keysLive)); offers != "" {
 		clipped(offers)
+	}
+	if option := components.KeyRunOption(r.offers(), !keysLive, m.namesOptionRow(e)); option != "" {
+		clipped(option)
 	}
 	return strings.Join(lines, "\n")
 }

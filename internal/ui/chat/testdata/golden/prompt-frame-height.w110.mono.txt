@@ -54,7 +54,7 @@
       --- FAIL: TestRoundLimit                                                                                
                                                                                                               
      ✓ Done · 2 steps · 6 tools · 24.7s · $0.14                                                 round 2/25    
-    ▎✎ 1 file changed +12 −4 · [v] review · [u] undo turn · [ctrl+o] to use them        all tracked in git    
+    ▎✎ 1 file changed +12 −4 · [alt+w] review · [alt+z] undo turn                       all tracked in git    
      ✗ go test ./internal/agent/... failing · exit 1 · 21s                                                    
                                                                                                               
                                                                                                               
@@ -139,7 +139,7 @@
       ␛[38;5;244m--- FAIL: TestRoundLimit␛[m                                                                                
                                                                                                               
      ␛[38;5;254m✓␛[m ␛[38;5;254mDone␛[38;5;244m · 2 steps · 6 tools · 24.7s · $0.14␛[m                                                 ␛[38;5;244mround 2/25␛[m    
-    ␛[38;5;254m▎✎␛[m ␛[38;5;254m1 file changed +12␛[m ␛[38;5;254m−4␛[38;5;244m · [v] review · [u] undo turn · ␛[38;5;254m[ctrl+o] to use them␛[m        ␛[38;5;244mall tracked in git␛[m    
+    ␛[38;5;254m▎✎␛[m ␛[38;5;254m1 file changed +12␛[m ␛[38;5;254m−4␛[38;5;244m · ␛[38;5;254m[alt+w]␛[38;5;244m review · ␛[38;5;254m[alt+z]␛[38;5;244m undo turn␛[m                       ␛[38;5;244mall tracked in git␛[m    
      ␛[38;5;254m✗␛[m ␛[38;5;254mgo test ./internal/agent/... failing␛[38;5;244m · exit 1 · 21s␛[m                                                    
                                                                                                               
                                                                                                               

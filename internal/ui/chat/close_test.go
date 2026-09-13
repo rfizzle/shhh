@@ -151,11 +151,11 @@ func TestTurnClose_ACommittedTurnNamesTheShaAndDropsTheUndoOffer(t *testing.T) {
 // assertion above is about the row's shape rather than about a changeset
 // store it had to fill first.
 func turnChangesRowFor(files, added, removed int, committed bool) *components.TurnChanges {
-	keys := []components.TurnKey{{Key: "[v]", Label: "review"}}
+	offers := []components.TurnKey{rowOffer(keys.Row.Review, "review")}
 	if !committed {
-		keys = append(keys, components.TurnKey{Key: "[u]", Label: "undo turn"})
+		offers = append(offers, rowOffer(keys.Row.Undo, "undo turn"))
 	}
-	return &components.TurnChanges{Files: files, Added: added, Removed: removed, Keys: keys}
+	return &components.TurnChanges{Files: files, Added: added, Removed: removed, Keys: offers}
 }
 
 func TestTurnClose_ACancelledTurnSaysSoAndStillReportsWhatItChanged(t *testing.T) {

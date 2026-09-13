@@ -24,36 +24,49 @@ sleep 1
 keys C-Space
 sleep 0.3
 keys y
-# The row the scene is for: review, keep, take back, with the keys grey
-# because the draft still has the keyboard and the chord that changes that
-# named beside them.
-snap 03-close "commit"
+# The row the scene is for: review, keep, take back — drawn as the chords
+# that reach them, because the draft below still has the keyboard and a
+# letter offered there is a letter of the sentence being typed.
+snap 03-close "[alt+g] commit"
+# So the offer is taken from the prompt, mid-sentence, and the sentence is
+# still in the box behind the card.
+keys "and while you are at it"
+sleep 0.3
+keys M-g
+snap 04-card-from-the-draft "Commit this turn"
+sleep 0.5
+keys Escape
+sleep 0.5
+# Esc leaves the changeset standing, and the draft with it; the second one
+# clears the box, so what follows is the other route to the same card.
+keys Escape
+sleep 0.3
 keys C-o
-snap 04-reading "back to the prompt"
+snap 05-reading "back to the prompt"
 # Reading mode opens on the last row of the turn, which is the reading the
 # session took of its own run; the close is one row above it.
 keys k
 sleep 0.3
 keys g
-snap 05-card "Commit this turn"
+snap 06-card "Commit this turn"
 # The message as a draft under its own rail, with the subject-line budget as
 # the frame's title. Esc comes back to the card with the edits kept.
 sleep 1
 keys e
-snap 06-message "COMMIT MESSAGE"
+snap 07-message "COMMIT MESSAGE"
 sleep 0.5
 keys Escape
 sleep 0.5
-snap 07-back "pick hunks"
+snap 08-back "pick hunks"
 keys Enter
 # The receipt is the row the close already draws for a commit, and the row
 # above it has lost the two offers a committed changeset no longer has.
-snap 08-receipt "committed 1 file as"
+snap 09-receipt "committed 1 file as"
 # The card handed the screen back to the row that offered it, so the first
 # cancel is reading mode's way out and the pair after it is the session's.
 keys C-c
 sleep 0.3
 keys C-c
-snap 09-quit-armed "again quits"
+snap 10-quit-armed "again quits"
 keys C-c
-snap 10-exit "that is everything the screen was holding"
+snap 11-exit "that is everything the screen was holding"

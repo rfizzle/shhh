@@ -49,15 +49,16 @@
     Unknown parameter: 'reasoning.effort'
     [r] try again · [p] switch provider · nothing in the turn was lost
 
-· keys waiting · the draft has the keyboard, ctrl+o takes it
+· keys waiting · beside a live draft, the row offers its chords
    ⚠ model   gpt-4o · 429 rate limited                                                                         retry in 38s   0.3s
     Rate limit reached for gpt-4o. Please try again in 38s.
-    [r] try again · [p] switch provider · [ctrl+o] to use them · nothing in the turn was lost
+    [alt+r] try again · [alt+p] switch provider · nothing in the turn was lost
 
-· keys waiting · reading mode is up, the cursor is elsewhere
+· keys waiting · the first chord of a session names the Option row
    ⚠ model   gpt-4o · 429 rate limited                                                                         retry in 38s   0.3s
     Rate limit reached for gpt-4o. Please try again in 38s.
-    [r] try again · [p] switch provider · nothing in the turn was lost
+    [alt+r] try again · [alt+p] switch provider · nothing in the turn was lost
+    alt needs Option as Meta — shhh doctor
 
 ── ansi ────────────────────────────────────────────────────
 · auth · the key it sent, named by its last four
@@ -99,12 +100,13 @@
     ␛[38;5;244mUnknown parameter: 'reasoning.effort'␛[m
     ␛[38;5;254m[r]␛[m␛[38;5;244m try again␛[m␛[38;5;244m · ␛[m␛[38;5;254m[p]␛[m␛[38;5;244m switch provider␛[m␛[38;5;244m · ␛[m␛[38;5;244mnothing in the turn was lost␛[m
 
-· keys waiting · the draft has the keyboard, ctrl+o takes it
+· keys waiting · beside a live draft, the row offers its chords
    ␛[38;5;254m⚠␛[m ␛[38;5;254mmodel␛[m   ␛[38;5;254mgpt-4o␛[m␛[38;5;244m · 429 rate limited␛[m                                                                         ␛[38;5;254mretry in 38s␛[m   ␛[38;5;244m0.3s␛[m
     ␛[38;5;244mRate limit reached for gpt-4o. Please try again in 38s.␛[m
-    ␛[38;5;244m[r]␛[m␛[38;5;244m try again␛[m␛[38;5;244m · ␛[m␛[38;5;244m[p]␛[m␛[38;5;244m switch provider␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+o]␛[m␛[38;5;254m to use them␛[m␛[38;5;244m · ␛[m␛[38;5;244mnothing in the turn was lost␛[m
+    ␛[38;5;254m[alt+r]␛[m␛[38;5;244m try again␛[m␛[38;5;244m · ␛[m␛[38;5;254m[alt+p]␛[m␛[38;5;244m switch provider␛[m␛[38;5;244m · ␛[m␛[38;5;244mnothing in the turn was lost␛[m
 
-· keys waiting · reading mode is up, the cursor is elsewhere
+· keys waiting · the first chord of a session names the Option row
    ␛[38;5;254m⚠␛[m ␛[38;5;254mmodel␛[m   ␛[38;5;254mgpt-4o␛[m␛[38;5;244m · 429 rate limited␛[m                                                                         ␛[38;5;254mretry in 38s␛[m   ␛[38;5;244m0.3s␛[m
     ␛[38;5;244mRate limit reached for gpt-4o. Please try again in 38s.␛[m
-    ␛[38;5;244m[r]␛[m␛[38;5;244m try again␛[m␛[38;5;244m · ␛[m␛[38;5;244m[p]␛[m␛[38;5;244m switch provider␛[m␛[38;5;244m · ␛[m␛[38;5;244mnothing in the turn was lost␛[m
+    ␛[38;5;254m[alt+r]␛[m␛[38;5;244m try again␛[m␛[38;5;244m · ␛[m␛[38;5;254m[alt+p]␛[m␛[38;5;244m switch provider␛[m␛[38;5;244m · ␛[m␛[38;5;244mnothing in the turn was lost␛[m
+    ␛[38;5;244malt needs Option as Meta — shhh doctor␛[m

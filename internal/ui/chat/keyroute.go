@@ -24,6 +24,46 @@ import (
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
+// rowChordKey answers a transcript row's offer pressed as the chord that
+// reaches it while the row's own letters are not live (keys.RowChord). One
+// press, one row: the pointer names it where the reader has lit one — it is
+// reading mode's cursor seen from the prompt, and a reader standing on a row
+// means that row — and otherwise it is the newest row on screen that offers
+// the key, which is where the cursor would open (pointer.go, openingCursor).
+//
+// It finds that row by asking the rows rather than by keeping a second list
+// of what each one offers: the dispatch a row answers with is the whole
+// answer to whether it offers a key, and a list beside it is a list that
+// drifts. Walking back from the newest, the first row that claims the offer
+// is the row that has it.
+func (m Model) rowChordKey(pressed string) (tea.Model, tea.Cmd, bool) {
+	letter, ok := keys.RowLetter(pressed)
+	// Attached, the keyboard is pointed at a child and the rows in the pane
+	// are the child's feed, which offers none of this.
+	if !ok || m.attachedTo != "" {
+		return m, nil, false
+	}
+	es := *m.entries()
+	at := make([]int, 0, len(es)+1)
+	if m.pointerLit() || m.state == stateFocus {
+		at = append(at, m.focusIdx)
+	}
+	for i := len(es) - 1; i >= 0; i-- {
+		at = append(at, i)
+	}
+	for _, i := range at {
+		if i < 0 || i >= len(es) {
+			continue
+		}
+		row := m
+		row.focusIdx = i
+		if next, cmd, claimed := row.rowKey(letter); claimed {
+			return next, cmd, true
+		}
+	}
+	return m, nil, false
+}
+
 // updateKey routes one key press. handled is false when nothing on the
 // surface claimed it: the key is then the start of a sentence and belongs to
 // the draft, so the session comes back stamped either way — the arrival
@@ -641,6 +681,25 @@ func (m Model) updateKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 		// idle and steering while the agent works.
 		if m.inputLive() {
 			return answered(m.submitInput())
+		}
+	case keys.Is(pressed, keys.RowChord.All()...):
+		// A transcript row's own offer, taken from the prompt. The row is
+		// drawn beside a live draft nearly all the time, and the letter it
+		// used to print there was a letter of the sentence being typed —
+		// `[g] commit` under a half-written prompt was an offer that typed a
+		// g (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+		// So each offer has a chord as well, and the row prints whichever of
+		// the two is true where it stands.
+		if next, cmd, claimed := m.rowChordKey(pressed); claimed {
+			return next, cmd, true
+		}
+		// A chord no row on screen answers is claimed all the same: nothing
+		// else in the register wants it, and the textarea underneath binds
+		// its own alt chords to words and case — a chord the input declares
+		// must not fall through to a meaning nothing offered, the way the
+		// pointer's shift-arrows must not.
+		if m.inputLive() {
+			return m, nil, true
 		}
 	case keys.Is(pressed, keys.Draft.OpenPaste):
 		// The fold in the draft, opened (preview.go). Orchestrator-scoped

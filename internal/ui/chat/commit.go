@@ -687,7 +687,7 @@ func (m *Model) bankTurnClose(msg commitDoneMsg) {
 			// because the honest way back from a commit is `git revert` and
 			// the receipt row says so, and the commit key, which is spent.
 			e.close.Changes.Keys = []components.TurnKey{
-				{Key: keys.Bracket(keys.Row.Review), Label: keys.Words(keys.Row.Review)},
+				rowOffer(keys.Row.Review, keys.Words(keys.Row.Review)),
 			}
 		}
 		return

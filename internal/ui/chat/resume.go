@@ -251,6 +251,7 @@ func (m Model) dropRow(e entry) components.RecoveryRow {
 			Outcome:   "partial",
 			Duration:  turnDuration(e.duration),
 			Keys:      m.dropKeys(res),
+			Option:    m.namesOptionRow(e),
 			Note:      "the reply is in the conversation",
 		}
 	}
@@ -264,6 +265,7 @@ func (m Model) dropRow(e entry) components.RecoveryRow {
 		Detail:    res.tail(),
 		MaxDetail: maxDropDetail,
 		Keys:      m.dropKeys(res),
+		Option:    m.namesOptionRow(e),
 		Note:      "the partial reply stays",
 	}
 }
@@ -320,7 +322,7 @@ func (m Model) dropKeys(res *streamResume) []components.KeyOffer {
 		return nil
 	}
 	offers := []components.KeyOffer{
-		{Key: keys.Bracket(keys.Row.Continue), Label: keys.Words(keys.Row.Continue)},
+		rowOffer(keys.Row.Continue, keys.Words(keys.Row.Continue)),
 	}
 	if res.truncated {
 		// Asking again is not on offer here. The reply is in the
@@ -329,9 +331,7 @@ func (m Model) dropKeys(res *streamResume) []components.KeyOffer {
 		// not the question that was asked the first time.
 		return offers
 	}
-	return append(offers, components.KeyOffer{
-		Key: keys.Bracket(keys.Row.Retry), Label: "ask again from scratch",
-	})
+	return append(offers, rowOffer(keys.Row.Retry, "ask again from scratch"))
 }
 
 // focusedDrop returns the stream-drop row the focus cursor is on, if it is on

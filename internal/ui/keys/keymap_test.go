@@ -156,6 +156,42 @@ func TestLoad_RefusesABareKeyAtTheDraft(t *testing.T) {
 	}
 }
 
+// A row offer's chord is held to the same rule, and it is the one a file is
+// most likely to try: `[g] commit` is the spelling a reader knows, and moving
+// the chord back onto the letter would put it in every prompt they write.
+// The letter itself stays a file's to move — reading mode holds the keyboard
+// while it is live, so a bare key there is a bare key on a takeover.
+func TestLoad_RefusesABareKeyOnARowChord(t *testing.T) {
+	restoreRegister(t)
+	err := Load(keymapFile(t, "[rowchord]\ncommit = \"g\"\n"))
+	if err == nil {
+		t.Fatal("a bare key on a row chord should be refused")
+	}
+	for _, want := range []string{"\"g\"", "commit", "chord"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("the refusal does not name %s: %v", want, err)
+		}
+	}
+	if !Is("alt+g", RowChord.Commit) {
+		t.Errorf("a refused file left the register at %v", RowChord.Commit.Keys())
+	}
+}
+
+// And a file may move one, which is the other half of the same claim: the
+// chords are a keyboard like any other and not a set of constants.
+func TestLoad_TakesAnotherChordOnARowOffer(t *testing.T) {
+	restoreRegister(t)
+	if err := Load(keymapFile(t, "[rowchord]\ncommit = \"f7\"\n")); err != nil {
+		t.Fatalf("a chord on a row offer was refused: %v", err)
+	}
+	if !Is("f7", RowChord.Commit) || Is("alt+g", RowChord.Commit) {
+		t.Errorf("the file did not move the chord: %v", RowChord.Commit.Keys())
+	}
+	if letter, ok := RowLetter("f7"); !ok || letter != Shown(Row.Commit) {
+		t.Errorf("the moved chord reads back as %q, want %q", letter, Shown(Row.Commit))
+	}
+}
+
 // And the two the rule excepts are still a file's to spend. Esc is the input's
 // own already, so the file has to move it off the key it is on first — which
 // is the whole demonstration: the refusal above is about letters, and esc is

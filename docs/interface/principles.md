@@ -109,6 +109,23 @@ two kinds of bracket apart in the one moment they are least free to look. They
 come back whole the instant the card has the keyboard, which is the only state
 in which they are true.
 
+A row of the transcript is the other shape this takes, and it answers
+differently because a row is not waiting for anything. A card is one decision
+that will be answered and then gone; a row's offers stand for the rest of the
+session, and a row that spent them all on "press ctrl+o first" would be a
+screen full of keys nobody presses. So each of those offers exists twice: the
+letter, live under reading mode's cursor, and a chord that reaches the same
+act from the prompt. The row draws whichever of the two is true where it
+stands — the chord while the draft can take text, the letter once the cursor
+is on it — and never both, because two spellings of one act on one line is the
+notation problem the paragraph above is about.
+
+One press goes to one row, and which row is the pointer's answer: the row it
+names where the reader has lit one, and the newest row that makes the offer
+where they have not. That is the same row reading mode would open on, which is
+what makes the chord and the letter one gesture seen from two places rather
+than two keyboards to learn.
+
 Invariant 3 depends on this one: Esc can only be the safe answer if it reaches
 the surface you believe you are answering. The same rule is what stops a
 transcript key from firing while you are typing that letter into a sentence.

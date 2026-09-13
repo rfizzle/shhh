@@ -7,6 +7,7 @@ package cli
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -342,19 +343,24 @@ func TestDoctorOptionKey_FitsAnEightyColumnScreen(t *testing.T) {
 	}
 }
 
-// The warning names every alt chord the keyboard has, the character the
-// reader will see instead, and the tick in the terminal's own words with
-// the profile it was read from — the reader is sent to one box, not to a
-// settings window.
+// The warning counts the alt chords the keyboard has, says what the reader
+// will get instead, names the door that lists them, and gives the tick in the
+// terminal's own words with the profile it was read from — the reader is sent
+// to one box, not to a settings window.
+//
+// The count rather than the list: there are sixteen of them now that a
+// transcript row's offers are chords, and a sentence naming sixteen is a
+// sentence the screen clips before it reaches the name of the box.
 func TestDoctorOptionKey_TypingACharacterWarnsAndNamesTheTick(t *testing.T) {
 	f := doctorOptionKey(optionKeyState{GOOS: "darwin", Terminal: "Apple_Terminal", Profile: "Basic", Sends: optionCharacter})
 	if f.State != components.DoctorWarned {
 		t.Fatalf("a profile that types characters did not warn: %+v", f)
 	}
-	for _, chord := range altChords() {
-		if !strings.Contains(f.Consequence, chord) {
-			t.Errorf("the consequence does not name %q: %q", chord, f.Consequence)
-		}
+	if want := fmt.Sprintf("%d alt chords", len(altChords())); !strings.Contains(f.Consequence, want) {
+		t.Errorf("the consequence does not count the chords as %q: %q", want, f.Consequence)
+	}
+	if !strings.Contains(f.Consequence, keys.Shown(keys.Draft.KeyList)) {
+		t.Errorf("the consequence does not name the list the chords are in: %q", f.Consequence)
 	}
 	if !strings.Contains(f.Consequence, "never reach shhh") {
 		t.Errorf("the consequence does not say what the reader loses: %q", f.Consequence)

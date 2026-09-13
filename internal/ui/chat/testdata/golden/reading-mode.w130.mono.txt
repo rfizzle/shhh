@@ -44,7 +44,7 @@
     --- FAIL: TestRoundLimit
 
    ✓ Done · 2 steps · 6 tools · 24.7s · $0.14                      round 2/25
-  ▎✎ 1 file changed +12 −4 · [ctrl+o] read                 all tracked in git
+  ▎✎ 1 file changed +12 −4 · [alt+w] review · [alt+z] undo turn
    ✗ go test ./internal/agent/... failing · exit 1 · 21s
 
 ╭─ idle ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
@@ -65,7 +65,7 @@
     --- FAIL: TestRoundLimit
 
    ✓ Done · 2 steps · 6 tools · 24.7s · $0.14                      round 2/25
-  ▎✎ 1 file changed +12 −4 · [v] review · [u] undo turn    all tracked in git
+  ▎✎ 1 file changed +12 −4 · [alt+w] review · [alt+z] undo turn
    ✗ go test ./internal/agent/... failing · exit 1 · 21s
 
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -87,7 +87,7 @@
     --- FAIL: TestRoundLimit
 
    ✓ Done · 2 steps · 6 tools · 24.7s · $0.14                      round 2/25
-  ▎✎ 1 file changed +12 −4 · [v] review · [u] undo turn    all tracked in git
+  ▎✎ 1 file changed +12 −4 · [alt+w] review · [alt+z] undo turn
    ✗ go test ./internal/agent/... failing · exit 1 · 21s
 
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -175,7 +175,7 @@
     ␛[38;5;244m--- FAIL: TestRoundLimit␛[m
 
    ␛[38;5;254m✓␛[m ␛[38;5;254mDone␛[m␛[38;5;244m · 2 steps · 6 tools · 24.7s · $0.14␛[m                      ␛[38;5;244mround 2/25␛[m
-  ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m1 file changed ␛[m␛[38;5;254m+12␛[m ␛[38;5;254m−4␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+o]␛[m␛[38;5;254m read␛[m                 ␛[38;5;244mall tracked in git␛[m
+  ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m1 file changed ␛[m␛[38;5;254m+12␛[m ␛[38;5;254m−4␛[m␛[38;5;244m · ␛[m␛[38;5;254m[alt+w]␛[m␛[38;5;244m review␛[m␛[38;5;244m · ␛[m␛[38;5;254m[alt+z]␛[m␛[38;5;244m undo turn␛[m
    ␛[38;5;254m✗␛[m ␛[38;5;254mgo test ./internal/agent/... failing␛[m␛[38;5;244m · exit 1 · 21s␛[m
 
 ␛[38;5;254m╭─␛[m ␛[38;5;244midle␛[m ␛[38;5;254m─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮␛[m
@@ -196,7 +196,7 @@
     ␛[38;5;244m--- FAIL: TestRoundLimit␛[m
 
    ␛[38;5;254m✓␛[m ␛[38;5;254mDone␛[m␛[38;5;244m · 2 steps · 6 tools · 24.7s · $0.14␛[m                      ␛[38;5;244mround 2/25␛[m
-  ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m1 file changed ␛[m␛[38;5;254m+12␛[m ␛[38;5;254m−4␛[m␛[38;5;244m · ␛[m␛[38;5;244m[v]␛[m␛[38;5;244m review␛[m␛[38;5;244m · ␛[m␛[38;5;244m[u]␛[m␛[38;5;244m undo turn␛[m    ␛[38;5;244mall tracked in git␛[m
+  ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m1 file changed ␛[m␛[38;5;254m+12␛[m ␛[38;5;254m−4␛[m␛[38;5;244m · ␛[m␛[38;5;254m[alt+w]␛[m␛[38;5;244m review␛[m␛[38;5;244m · ␛[m␛[38;5;254m[alt+z]␛[m␛[38;5;244m undo turn␛[m
    ␛[38;5;254m✗␛[m ␛[38;5;254mgo test ./internal/agent/... failing␛[m␛[38;5;244m · exit 1 · 21s␛[m
 
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
@@ -218,7 +218,7 @@
     ␛[38;5;244m--- FAIL: TestRoundLimit␛[m
 
    ␛[38;5;254m✓␛[m ␛[38;5;254mDone␛[m␛[38;5;244m · 2 steps · 6 tools · 24.7s · $0.14␛[m                      ␛[38;5;244mround 2/25␛[m
-  ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m1 file changed ␛[m␛[38;5;254m+12␛[m ␛[38;5;254m−4␛[m␛[38;5;244m · ␛[m␛[38;5;244m[v]␛[m␛[38;5;244m review␛[m␛[38;5;244m · ␛[m␛[38;5;244m[u]␛[m␛[38;5;244m undo turn␛[m    ␛[38;5;244mall tracked in git␛[m
+  ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m1 file changed ␛[m␛[38;5;254m+12␛[m ␛[38;5;254m−4␛[m␛[38;5;244m · ␛[m␛[38;5;254m[alt+w]␛[m␛[38;5;244m review␛[m␛[38;5;244m · ␛[m␛[38;5;254m[alt+z]␛[m␛[38;5;244m undo turn␛[m
    ␛[38;5;254m✗␛[m ␛[38;5;254mgo test ./internal/agent/... failing␛[m␛[38;5;244m · exit 1 · 21s␛[m
 
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m

@@ -308,6 +308,29 @@ func (r helpKeyRow) column() []string {
 	}
 }
 
+// rowChordList is the transcript rows' own offers as the key list writes
+// them: the chord and the register's words for it, two to a line so the
+// prose column holds them at eighty. They are one row of the list rather
+// than eleven because they are one gesture — the offers a row makes, taken
+// from the prompt — and eleven rows of one word each would bury the keys
+// around them (docs/interface/surfaces.md#the-turns-close).
+//
+// Read off the register, like every other spelling here, so a rebind moves
+// the list with the handler.
+func rowChordList() string {
+	var lines, pair []string
+	for _, b := range keys.RowChord.All() {
+		pair = append(pair, keys.Shown(b)+" "+keys.Words(b))
+		if len(pair) == 2 {
+			lines, pair = append(lines, strings.Join(pair, ", ")), nil
+		}
+	}
+	if len(pair) > 0 {
+		lines = append(lines, strings.Join(pair, ", "))
+	}
+	return strings.Join(lines, ",\n")
+}
+
 // helpKeyRows is the key list, in the order a reader meets the keys rather
 // than the order the register declares them: what sends a message first, then
 // what the draft does, then what takes the screen, then the ways out.
@@ -480,6 +503,17 @@ key sends the escape prefix, which the stock terminals do not
 until told — Terminal.app: Settings › Profiles › Keyboard ›
 Use Option as Meta key; iTerm2: Profiles › Keys › Left Option
 key: Esc+. shhh doctor's keys row reads yours`,
+	},
+	{
+		key: "[alt+…]",
+		text: `A transcript row's own offers, taken from the prompt with the
+draft still holding the keyboard:
+` + rowChordList() + `.
+In reading mode each is the bare letter instead, on the row
+under the cursor; the row draws whichever of the two works
+where you are. From the prompt the chord acts on the row the
+pointer names, or on the newest row that offers it.
+On a Mac an alt chord needs the Option key setting above`,
 	},
 	{
 		binds: []keys.Binding{keys.Draft.Backlog},

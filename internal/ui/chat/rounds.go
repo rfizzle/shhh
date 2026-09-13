@@ -171,6 +171,7 @@ func (m Model) roundPauseRow(e entry) components.RecoveryRow {
 		Duration:  turnDuration(e.duration),
 		Detail:    []string{p.detail()},
 		Keys:      p.keys(),
+		Option:    m.namesOptionRow(e),
 	}
 }
 
@@ -216,16 +217,16 @@ func (p roundPause) grant() int { return p.granted + roundGrantBlock }
 func (p roundPause) keys() []components.KeyOffer {
 	var offers []components.KeyOffer
 	if p.files > 0 {
-		offers = append(offers, components.KeyOffer{Key: keys.Bracket(keys.Row.Review), Label: "review what it did"})
+		offers = append(offers, rowOffer(keys.Row.Review, "review what it did"))
 	}
 	if !p.spent {
-		offers = append(offers, components.KeyOffer{Key: fmt.Sprintf("[+%d]", p.grant()), Label: "more rounds"})
+		offers = append(offers, rowOfferAs(keys.Row.Rounds, fmt.Sprintf("[+%d]", p.grant()), "more rounds"))
 		if p.granted > 0 {
-			offers = append(offers, components.KeyOffer{Key: keys.Bracket(keys.Row.Uncap), Label: uncapRoundsLabel})
+			offers = append(offers, rowOffer(keys.Row.Uncap, uncapRoundsLabel))
 		}
 	}
 	if p.files > 0 {
-		offers = append(offers, components.KeyOffer{Key: keys.Bracket(keys.Row.Undo), Label: "undo the turn"})
+		offers = append(offers, rowOffer(keys.Row.Undo, "undo the turn"))
 	}
 	return offers
 }
@@ -238,16 +239,16 @@ func (p roundPause) keys() []components.KeyOffer {
 func roundPauseOffers(p *roundPause) []components.KeyOffer {
 	var offers []components.KeyOffer
 	if p.files > 0 {
-		offers = append(offers, components.KeyOffer{Key: keys.Bracket(keys.Row.Review), Label: "review what it did"})
+		offers = append(offers, rowOffer(keys.Row.Review, "review what it did"))
 	}
 	if !p.spent {
-		offers = append(offers, components.KeyOffer{Key: keys.Bracket(keys.Row.Rounds), Label: fmt.Sprintf("%d more rounds", p.grant())})
+		offers = append(offers, rowOffer(keys.Row.Rounds, fmt.Sprintf("%d more rounds", p.grant())))
 		if p.granted > 0 {
-			offers = append(offers, components.KeyOffer{Key: keys.Bracket(keys.Row.Uncap), Label: uncapRoundsLabel})
+			offers = append(offers, rowOffer(keys.Row.Uncap, uncapRoundsLabel))
 		}
 	}
 	if p.files > 0 {
-		offers = append(offers, components.KeyOffer{Key: keys.Bracket(keys.Row.Undo), Label: "undo the turn"})
+		offers = append(offers, rowOffer(keys.Row.Undo, "undo the turn"))
 	}
 	return offers
 }

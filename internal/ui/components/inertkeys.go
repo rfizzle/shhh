@@ -67,22 +67,78 @@ func handoverOffer(key, words string) string {
 	return sty.Info.Render("["+key+"]") + sty.Body.Render(" "+words)
 }
 
+// chorded reports that every offer in the run carries the chord that reaches
+// it while the row's letters are not live. All or none: a run drawn half in
+// chords and half in letters would be asking the reader to tell which of two
+// notations each bracket is in, mid-sentence, which is the moment the rule
+// this file is about exists to protect.
+func chorded(keys []TurnKey) bool {
+	for _, k := range keys {
+		if k.Chord == "" {
+			return false
+		}
+	}
+	return len(keys) > 0
+}
+
+// asChords is the run with each offer spelled the way it is pressed from the
+// draft.
+func asChords(keys []TurnKey) []TurnKey {
+	out := make([]TurnKey, len(keys))
+	for i, k := range keys {
+		k.Key = k.Chord
+		out[i] = k
+	}
+	return out
+}
+
+// optionRow is what the first row in a session to offer a chord says under
+// it: an alt chord composes a character rather than arriving on the two stock
+// macOS terminals until the profile is told to send the escape prefix, and
+// the doctor's keys row is what reads that setting and says which box
+// (docs/interface/reserved-keys.md#the-draft-spends-chords-only). It is said
+// once, because it is a fact about the terminal and not about this row.
+//
+// It takes a line of its own rather than trailing the keys. A row's key run
+// is already the widest thing on it, and a sentence appended to that run is a
+// sentence the narrowing drops first — which would leave the note on the wide
+// terminals that least need it and off the narrow ones that most do.
+const optionRow = "alt needs Option as Meta — shhh doctor"
+
+// optionLine is that sentence as the line a row appends.
+func optionLine() string { return sty.Dim.Render(optionRow) }
+
+// namesTheOption reports that this run is the one that says it: the offers
+// are being drawn as chords, and this row is the session's first to do it.
+func namesTheOption(keys []TurnKey, waiting, option bool) bool {
+	return option && waiting && chorded(keys)
+}
+
 // keyRun renders a row's offers in the state the keyboard puts them in.
 // Waiting is the row's own claim — a host that makes none keeps the live
 // treatment the run always had, which is what leaves the one-shot's printed
 // rows and every component test untouched.
 //
-// A waiting run with no handover named is the third state and it is a real
-// one: reading mode holds the keyboard with its cursor on some other row, so
-// these keys are not live and ctrl+o is not the way to them either — the
-// mode's own bar names that, and it is `j/k`. The keys go grey and the row
-// offers nothing, which is exactly true.
+// A waiting run whose offers carry chords is live: the row's letters are not,
+// but the chords are, and they are live from the draft and from reading mode
+// standing on some other row alike. So the run is drawn in the treatment that
+// says "you can press this", because you can, and no key hands anything over
+// — there is nothing left waiting.
+//
+// A waiting run with no chords is the older shape, and both its states are
+// real: with a handover named, the keys go grey beside the one key that makes
+// them live; with none, reading mode holds the keyboard with its cursor on
+// some other row, so the keys are grey and the row offers nothing, which is
+// exactly true.
 func keyRun(keys []TurnKey, waiting bool, handover string) string {
 	if len(keys) == 0 {
 		return ""
 	}
 	if !waiting {
 		return keyOffers(keys)
+	}
+	if chorded(keys) {
+		return keyOffers(asChords(keys))
 	}
 	if handover == "" {
 		return inertOffers(keys)
@@ -93,9 +149,10 @@ func keyRun(keys []TurnKey, waiting bool, handover string) string {
 // keyRunNarrow is the same run once the terminal has run out of room for the
 // keys that are not live yet. It differs only where there is a handover to
 // keep: with nothing live in the run there is nothing to prefer, and the keys
-// clip like any other field.
+// clip like any other field. A chorded run has nothing to prefer either:
+// every offer in it is live.
 func keyRunNarrow(keys []TurnKey, waiting bool, handover string) string {
-	if len(keys) == 0 || !waiting || handover == "" {
+	if len(keys) == 0 || !waiting || handover == "" || chorded(keys) {
 		return keyRun(keys, waiting, handover)
 	}
 	return handoverOffer(handover, handoverWord)
@@ -107,4 +164,13 @@ func keyRunNarrow(keys []TurnKey, waiting bool, handover string) string {
 // rule a surface gets to keep a second copy of.
 func KeyRun(keys []TurnKey, waiting bool, handover string) string {
 	return keyRun(keys, waiting, handover)
+}
+
+// KeyRunOption is the sentence such a row appends the first time a session
+// offers a chord, or "" where it is not that row.
+func KeyRunOption(keys []TurnKey, waiting, option bool) string {
+	if !namesTheOption(keys, waiting, option) {
+		return ""
+	}
+	return optionLine()
 }

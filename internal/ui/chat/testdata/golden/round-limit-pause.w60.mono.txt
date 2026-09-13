@@ -16,9 +16,9 @@
 
    ⚠ rounds  150 of 150 used · the tu…  stopped  4m12s
     3 files changed +30 −4 · the suite has not been r…
-    [v] review what it did · [+50] more rounds
-    [u] undo the turn
-    [ctrl+o] to use them
+    [alt+w] review what it did · [alt+m] more rounds
+    [alt+z] undo the turn
+    alt needs Option as Meta — shhh doctor
 
 
 · nothing changed · only the grant can be honoured
@@ -27,7 +27,8 @@
 
    ⚠ rounds  150 of 150 used · the tu…  stopped  4m12s
     nothing changed
-    [+50] more rounds · [ctrl+o] to use them
+    [alt+m] more rounds
+    alt needs Option as Meta — shhh doctor
 
 
 · a second stop · the grant doubles and [!] arrives
@@ -36,9 +37,9 @@
 
    ⚠ rounds  200 of 200 used · 50 alr…  stopped  4m12s
     5 files changed +112 −40
-    [v] review what it did · [+100] more rounds
-    [!] let it run · [u] undo the turn
-    [ctrl+o] to use them
+    [alt+w] review what it did · [alt+m] more rounds
+    [alt+x] let it run · [alt+z] undo the turn
+    alt needs Option as Meta — shhh doctor
 
 
 · the offer is spent · the row keeps its words
@@ -47,8 +48,8 @@
 
    ⚠ rounds  150 of 150 used · the tu…  stopped  4m12s
     3 files changed +30 −4 · the suite has not been r…
-    [v] review what it did · [u] undo the turn
-    [ctrl+o] to use them
+    [alt+w] review what it did · [alt+z] undo the turn
+    alt needs Option as Meta — shhh doctor
 
 
 ── ansi ────────────────────────────────────────────────────
@@ -58,9 +59,9 @@
 
    ␛[38;5;254m⚠␛[m ␛[38;5;254mrounds␛[m  ␛[38;5;254m150 of 150 used␛[m␛[38;5;244m · the tu…␛[m  ␛[38;5;254mstopped␛[m  ␛[38;5;244m4m12s␛[m
     ␛[38;5;244m3 files changed +30 −4 · the suite has not been r…␛[m
-    ␛[38;5;244m[v]␛[m␛[38;5;244m review what it did␛[m␛[38;5;244m · ␛[m␛[38;5;244m[+50]␛[m␛[38;5;244m more rounds␛[m
-    ␛[38;5;244m[u]␛[m␛[38;5;244m undo the turn␛[m
-    ␛[38;5;254m[ctrl+o]␛[m␛[38;5;254m to use them␛[m
+    ␛[38;5;254m[alt+w]␛[m␛[38;5;244m review what it did␛[m␛[38;5;244m · ␛[m␛[38;5;254m[alt+m]␛[m␛[38;5;244m more rounds␛[m
+    ␛[38;5;254m[alt+z]␛[m␛[38;5;244m undo the turn␛[m
+    ␛[38;5;244malt needs Option as Meta — shhh doctor␛[m
 
 
 · nothing changed · only the grant can be honoured
@@ -69,7 +70,8 @@
 
    ␛[38;5;254m⚠␛[m ␛[38;5;254mrounds␛[m  ␛[38;5;254m150 of 150 used␛[m␛[38;5;244m · the tu…␛[m  ␛[38;5;254mstopped␛[m  ␛[38;5;244m4m12s␛[m
     ␛[38;5;244mnothing changed␛[m
-    ␛[38;5;244m[+50]␛[m␛[38;5;244m more rounds␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+o]␛[m␛[38;5;254m to use them␛[m
+    ␛[38;5;254m[alt+m]␛[m␛[38;5;244m more rounds␛[m
+    ␛[38;5;244malt needs Option as Meta — shhh doctor␛[m
 
 
 · a second stop · the grant doubles and [!] arrives
@@ -78,9 +80,9 @@
 
    ␛[38;5;254m⚠␛[m ␛[38;5;254mrounds␛[m  ␛[38;5;254m200 of 200 used␛[m␛[38;5;244m · 50 alr…␛[m  ␛[38;5;254mstopped␛[m  ␛[38;5;244m4m12s␛[m
     ␛[38;5;244m5 files changed +112 −40␛[m
-    ␛[38;5;244m[v]␛[m␛[38;5;244m review what it did␛[m␛[38;5;244m · ␛[m␛[38;5;244m[+100]␛[m␛[38;5;244m more rounds␛[m
-    ␛[38;5;244m[!]␛[m␛[38;5;244m let it run␛[m␛[38;5;244m · ␛[m␛[38;5;244m[u]␛[m␛[38;5;244m undo the turn␛[m
-    ␛[38;5;254m[ctrl+o]␛[m␛[38;5;254m to use them␛[m
+    ␛[38;5;254m[alt+w]␛[m␛[38;5;244m review what it did␛[m␛[38;5;244m · ␛[m␛[38;5;254m[alt+m]␛[m␛[38;5;244m more rounds␛[m
+    ␛[38;5;254m[alt+x]␛[m␛[38;5;244m let it run␛[m␛[38;5;244m · ␛[m␛[38;5;254m[alt+z]␛[m␛[38;5;244m undo the turn␛[m
+    ␛[38;5;244malt needs Option as Meta — shhh doctor␛[m
 
 
 · the offer is spent · the row keeps its words
@@ -89,6 +91,6 @@
 
    ␛[38;5;254m⚠␛[m ␛[38;5;254mrounds␛[m  ␛[38;5;254m150 of 150 used␛[m␛[38;5;244m · the tu…␛[m  ␛[38;5;254mstopped␛[m  ␛[38;5;244m4m12s␛[m
     ␛[38;5;244m3 files changed +30 −4 · the suite has not been r…␛[m
-    ␛[38;5;244m[v]␛[m␛[38;5;244m review what it did␛[m␛[38;5;244m · ␛[m␛[38;5;244m[u]␛[m␛[38;5;244m undo the turn␛[m
-    ␛[38;5;254m[ctrl+o]␛[m␛[38;5;254m to use them␛[m
+    ␛[38;5;254m[alt+w]␛[m␛[38;5;244m review what it did␛[m␛[38;5;244m · ␛[m␛[38;5;254m[alt+z]␛[m␛[38;5;244m undo the turn␛[m
+    ␛[38;5;244malt needs Option as Meta — shhh doctor␛[m
 

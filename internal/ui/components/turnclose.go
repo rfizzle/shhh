@@ -132,6 +132,10 @@ type TurnClose struct {
 	// live beside the waiting keys. Empty where there is no such key to
 	// press from this screen.
 	Handover string
+	// Option says this block is the first in the session to offer a chord,
+	// so its first key run names the profile setting an alt chord needs on a
+	// stock macOS terminal (inertkeys.go).
+	Option bool
 }
 
 // Word is how the turn ended, in the one word that rides beside the glyph so
@@ -280,6 +284,14 @@ func (c TurnClose) View(width int) string {
 			}
 		}
 		lines = append(lines, closeLine(lead, text, sty.Dim.Render(ch.Note), width))
+		// And, the first time a session offers a chord, what alt costs on a
+		// stock macOS terminal. It takes a line under the row rather than a
+		// clause on it: the row is already the widest line in the block, and
+		// this is the sentence a reader whose chord did nothing needs most
+		// (inertkeys.go).
+		if option := KeyRunOption(ch.Keys, c.KeysWaiting, c.Option); option != "" {
+			lines = append(lines, closeLine(closeLead("", " "), option, "", width))
+		}
 	}
 
 	if cm := c.Commit; cm != nil {
@@ -324,6 +336,15 @@ func (c TurnClose) View(width int) string {
 			text += sty.Dim.Render(" · ") + run
 		}
 		lines = append(lines, closeLine(closeLead("", glyph), text, note, width))
+		// The Option sentence belongs to whichever row in the block offers a
+		// chord first, and the changed-files row above has already said it
+		// where there is one: a turn that changed nothing and ran its checks
+		// leaves this row holding the block's only chord.
+		if c.Changes == nil {
+			if option := KeyRunOption(ck.Keys, c.KeysWaiting, c.Option); option != "" {
+				lines = append(lines, closeLine(closeLead("", " "), option, "", width))
+			}
+		}
 	}
 	return strings.Join(lines, "\n")
 }

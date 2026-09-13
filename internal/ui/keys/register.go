@@ -182,6 +182,20 @@ func Surfaces() []Surface {
 			},
 		},
 		{
+			// The same eleven offers, from the draft. They are a surface of
+			// their own and positioned Home because that is where they are
+			// answered: a chord is live while the input holds the keyboard,
+			// which is the only position in the register that means that.
+			// What the row above this one describes is the other door —
+			// reading mode's cursor, where the letters are live because
+			// nothing else is listening.
+			Name:     "a transcript row's offers, from the draft",
+			Section:  "docs/interface/surfaces.md#the-turns-close, docs/interface/surfaces.md#the-recovery-row, docs/interface/surfaces.md#the-backlog-runs-row",
+			Position: Home,
+			Reached:  "the input has the keyboard; the chord acts on the row the pointer names, or the newest row that offers it",
+			Bindings: RowChord.All(),
+		},
+		{
 			// The card the changed-files row's commit key opens. It is a
 			// takeover and not a card beside the draft: the key that opened
 			// it was pressed in reading mode, so the keyboard had already

@@ -711,6 +711,11 @@ type RowKeys struct {
 	// key is declared once — the same reason reading mode's copy is `[y]`.
 	// The word beside it carries the act, which is what a letter never has
 	// to (docs/interface/principles.md#colour-never-carries-meaning-alone).
+	//
+	// Which letter this is stopped being the interesting question when the
+	// chord arrived: RowChord.Commit is what a reader mid-sentence presses,
+	// and `g` is only ever read inside reading mode, where the keyboard has
+	// already left the draft and no letter of it is a letter.
 	Commit Binding
 
 	// Rerun is `[t]` on the row a turn's checks left: the suite runs again
@@ -737,6 +742,131 @@ var Row = RowKeys{
 
 	Commit: bind("g", "commit", "g"),
 	Rerun:  bind("t", "run the checks again", "t"),
+}
+
+// RowChordKeys are the same eleven offers, reached from the draft. A row is
+// drawn beside a live input nearly all the time, and a letter drawn there is
+// a letter of the sentence being typed: pressing `g` under `[g] commit` typed
+// a g (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+// So each offer has a chord as well, live wherever the row's letter is not,
+// and the row draws whichever of the two is true where it stands — the chord
+// while the draft has the keyboard, the letter under reading mode's cursor.
+//
+// Every one of them is on alt, and that is not a preference. Each ctrl letter
+// a terminal delivers is spent or the line editor's, and the free set is
+// function keys and modified navigation keys — eleven offers do not come out
+// of it (docs/interface/reserved-keys.md#what-is-left). What alt costs is the
+// Option key on the two stock macOS terminals, which compose a character
+// until the profile is told to send the escape prefix; `shhh doctor`'s keys
+// row reads that setting and says which box, and the first row in a session
+// to offer one of these names it.
+//
+// The letter each chord carries is the row's own where alt still had it. Six
+// did not: `alt+v` is the staged paste's, `alt+t` the reasoning level's, and
+// `alt+u`, `alt+c`, `alt+l` and `alt+b` are the textarea's own word and case
+// chords, which the draft leaves to it the way it leaves the readline chords
+// (DraftKeys). Each replacement says below which letter it took and why.
+type RowChordKeys struct {
+	// Review is `alt+w`, the last letter of the word: `alt+v` opens the
+	// staged paste, and a chord is declared once.
+	Review Binding
+	// Undo is `alt+z`, the chord an editor has meant by undo for thirty
+	// years; `alt+u` is the textarea's uppercase-word.
+	Undo  Binding
+	Retry Binding
+	// Continue is `alt+n`: `alt+c` is the textarea's capitalize-word, and
+	// `n` is the next letter of the word — which is also what continuing
+	// from a partial answer asks for.
+	Continue Binding
+	Key      Binding
+	Provider Binding
+	// Rounds is `alt+m` for the words the row says rather than the mark it
+	// draws: `[+50]` is the block being granted, not a keystroke, and `+`
+	// under a modifier is a spelling only some terminals deliver.
+	Rounds Binding
+	// Uncap is `alt+x`, and there is no mnemonic in it. Every letter of
+	// "uncap" and of "let it run" is spent — `u`, `c` and `l` are the
+	// textarea's, `a` is the agent manager's, `p` is the provider's, `n` is
+	// continuing, `r` is trying again, `t` is the reasoning level's — so
+	// this is simply a chord the register still had free. The words beside
+	// it carry the act, as they do on the row.
+	Uncap  Binding
+	Reopen Binding
+	Commit Binding
+	// Rerun is `alt+k` for the checks it runs again: `alt+t` is the
+	// reasoning level's alias, and `k` is the letter of the word the row
+	// actually says.
+	Rerun Binding
+}
+
+// All is the chords in the order the rows offer them, which is the order Row
+// declares the letters in.
+func (k RowChordKeys) All() []Binding {
+	return []Binding{k.Review, k.Commit, k.Undo, k.Retry, k.Continue,
+		k.Key, k.Provider, k.Rounds, k.Uncap, k.Reopen, k.Rerun}
+}
+
+var RowChord = RowChordKeys{
+	Review: bind("alt+w", "review", "alt+w"),
+	Undo:   bind("alt+z", "undo turn", "alt+z"),
+
+	Retry:    bind("alt+r", "try again", "alt+r"),
+	Continue: bind("alt+n", "continue from here", "alt+n"),
+	Key:      bind("alt+e", "enter a new key", "alt+e"),
+	Provider: bind("alt+p", "switch provider", "alt+p"),
+
+	Rounds: bind("alt+m", "more rounds", "alt+m"),
+	Uncap:  bind("alt+x", "let it run", "alt+x"),
+
+	Reopen: bind("alt+o", "reopen the item", "alt+o"),
+
+	Commit: bind("alt+g", "commit", "alt+g"),
+	Rerun:  bind("alt+k", "run the checks again", "alt+k"),
+}
+
+// rowPairs is each row offer beside the chord that reaches it from the draft.
+// The two are declared apart — one spelling each, one set of words each — and
+// paired here, so nothing has to hold a letter and a chord in one binding and
+// then decide which of them to print.
+func rowPairs() [][2]Binding {
+	return [][2]Binding{
+		{Row.Review, RowChord.Review},
+		{Row.Commit, RowChord.Commit},
+		{Row.Undo, RowChord.Undo},
+		{Row.Retry, RowChord.Retry},
+		{Row.Continue, RowChord.Continue},
+		{Row.Key, RowChord.Key},
+		{Row.Provider, RowChord.Provider},
+		{Row.Rounds, RowChord.Rounds},
+		{Row.Uncap, RowChord.Uncap},
+		{Row.Reopen, RowChord.Reopen},
+		{Row.Rerun, RowChord.Rerun},
+	}
+}
+
+// ChordFor is the chord that reaches a row offer from the draft. A binding
+// that is not one of the row's offers has none, which is what the second
+// return says.
+func ChordFor(b Binding) (Binding, bool) {
+	for _, p := range rowPairs() {
+		if Shown(p[0]) == Shown(b) {
+			return p[1], true
+		}
+	}
+	return Binding{}, false
+}
+
+// RowLetter is the reverse: the keystroke a row chord stands for, which is
+// the spelling the row's own dispatch is written in. It is how one press
+// reaches one handler from either door — reading mode's cursor on the row, or
+// the chord from the draft.
+func RowLetter(pressed string) (string, bool) {
+	for _, p := range rowPairs() {
+		if Is(pressed, p[1]) {
+			return Shown(p[0]), true
+		}
+	}
+	return "", false
 }
 
 // CommitKeys are the commit card's — the card a turn's changed-files row

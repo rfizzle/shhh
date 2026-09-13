@@ -121,6 +121,19 @@
                      until told — Terminal.app: Settings › Profiles › Keyboard ›
                      Use Option as Meta key; iTerm2: Profiles › Keys › Left Option
                      key: Esc+. shhh doctor's keys row reads yours
+    [alt+…]          A transcript row's own offers, taken from the prompt with the
+                     draft still holding the keyboard:
+                     alt+w review, alt+g commit,
+                     alt+z undo turn, alt+r try again,
+                     alt+n continue from here, alt+e enter a new key,
+                     alt+p switch provider, alt+m more rounds,
+                     alt+x let it run, alt+o reopen the item,
+                     alt+k run the checks again.
+                     In reading mode each is the bare letter instead, on the row
+                     under the cursor; the row draws whichever of the two works
+                     where you are. From the prompt the chord acts on the row the
+                     pointer names, or on the newest row that offers it.
+                     On a Mac an alt chord needs the Option key setting above
     [ctrl+f]         The backlog screen: the project's items on the left and the one
                      under the pointer on the right, / and s/p/k/r narrow the list,
                      enter reads the body, e edits the file, R runs it, b/o/d/x
@@ -308,6 +321,19 @@
   ␛[38;5;244m                   until told — Terminal.app: Settings › Profiles › Keyboard ›␛[m
   ␛[38;5;244m                   Use Option as Meta key; iTerm2: Profiles › Keys › Left Option␛[m
   ␛[38;5;244m                   key: Esc+. shhh doctor's keys row reads yours␛[m
+  ␛[38;5;244m  [alt+…]          A transcript row's own offers, taken from the prompt with the␛[m
+  ␛[38;5;244m                   draft still holding the keyboard:␛[m
+  ␛[38;5;244m                   alt+w review, alt+g commit,␛[m
+  ␛[38;5;244m                   alt+z undo turn, alt+r try again,␛[m
+  ␛[38;5;244m                   alt+n continue from here, alt+e enter a new key,␛[m
+  ␛[38;5;244m                   alt+p switch provider, alt+m more rounds,␛[m
+  ␛[38;5;244m                   alt+x let it run, alt+o reopen the item,␛[m
+  ␛[38;5;244m                   alt+k run the checks again.␛[m
+  ␛[38;5;244m                   In reading mode each is the bare letter instead, on the row␛[m
+  ␛[38;5;244m                   under the cursor; the row draws whichever of the two works␛[m
+  ␛[38;5;244m                   where you are. From the prompt the chord acts on the row the␛[m
+  ␛[38;5;244m                   pointer names, or on the newest row that offers it.␛[m
+  ␛[38;5;244m                   On a Mac an alt chord needs the Option key setting above␛[m
   ␛[38;5;244m  [ctrl+f]         The backlog screen: the project's items on the left and the one␛[m
   ␛[38;5;244m                   under the pointer on the right, / and s/p/k/r narrow the list,␛[m
   ␛[38;5;244m                   enter reads the body, e edits the file, R runs it, b/o/d/x␛[m

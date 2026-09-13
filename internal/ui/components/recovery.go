@@ -31,6 +31,13 @@ import (
 // (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 type KeyOffer struct {
 	Key, Label string
+	// Chord is the same offer spelled as the chord that reaches it while the
+	// row's letters are not live — from the draft, where `g` under `[g]
+	// commit` is a letter of the sentence being typed. A row draws whichever
+	// of the two is true where it stands, and an offer with no chord is one
+	// whose surface holds the keyboard, so its key is live as it is
+	// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+	Chord string
 	// Safe marks the answer that changes nothing. It is esc, everywhere, and
 	// it is set off the register's spelling rather than at each row
 	// (keyoffers.go), so a surface cannot forget it
@@ -107,6 +114,11 @@ type RecoveryRow struct {
 	// live beside the waiting keys. Empty where there is no such key to
 	// press from this screen.
 	Handover string
+	// Option says this is the first row in the session to offer a chord, so
+	// the run names the profile setting an alt chord needs on a stock macOS
+	// terminal. One row says it, because it is a fact about the terminal
+	// rather than about this row (inertkeys.go).
+	Option bool
 }
 
 // glyph is the state's glyph, in the state's colour.
@@ -198,18 +210,31 @@ func (r RecoveryRow) keyLines(width int) []string {
 		}
 		return []string{note}
 	}
+	option := KeyRunOption(r.Keys, r.KeysWaiting, r.Option)
 	if one := r.keyLine(); lipgloss.Width(one) <= width {
-		return []string{one}
+		if option == "" {
+			return []string{one}
+		}
+		return []string{one, option}
 	}
-	rows := packOffersIn(r.Keys, width, !r.KeysWaiting)
-	// The key that hands the keyboard over keeps a line of its own rather
-	// than wrapping in among the keys it makes live: it is the only offer on
-	// a row that does not hold the keyboard, and it reads as one.
-	if r.KeysWaiting && r.Handover != "" {
+	// A chorded run is live wherever the row's letters are not, so it packs
+	// as the offers it is rather than as keys waiting for something.
+	offers, live := r.Keys, !r.KeysWaiting
+	if r.KeysWaiting && chorded(offers) {
+		offers, live = asChords(offers), true
+	}
+	rows := packOffersIn(offers, width, live)
+	if r.KeysWaiting && !chorded(r.Keys) && r.Handover != "" {
+		// The key that hands the keyboard over keeps a line of its own rather
+		// than wrapping in among the keys it makes live: it is the only offer
+		// on a row that does not hold the keyboard, and it reads as one.
 		rows = append(rows, handoverOffer(r.Handover, handoverWords))
 	}
 	if note != "" {
 		rows = append(rows, note)
+	}
+	if option != "" {
+		rows = append(rows, option)
 	}
 	return rows
 }

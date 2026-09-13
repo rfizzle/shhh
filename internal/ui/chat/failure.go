@@ -86,6 +86,7 @@ func (m Model) failureRow(e entry) components.RecoveryRow {
 		Detail:    f.Detail(),
 		MaxDetail: maxFailureDetail,
 		Keys:      m.failureKeys(f),
+		Option:    m.namesOptionRow(e),
 		Note:      failureNote(f),
 	}
 	switch {
@@ -171,38 +172,38 @@ func failureNote(f *provider.Failure) string {
 // [c].
 func (m Model) failureKeys(f *provider.Failure) []components.KeyOffer {
 	var offers []components.KeyOffer
-	add := func(key, label string) {
-		offers = append(offers, components.KeyOffer{Key: "[" + key + "]", Label: label})
+	add := func(b keys.Binding, label string) {
+		offers = append(offers, rowOffer(b, label))
 	}
 	switch f.Class {
 	case provider.ClassAuth:
 		if m.replaceKeyFn != nil {
-			add(keys.Shown(keys.Row.Key), "enter a new key")
+			add(keys.Row.Key, "enter a new key")
 		}
 		if m.canSwitchProvider() {
-			add(keys.Shown(keys.Row.Provider), "switch provider")
+			add(keys.Row.Provider, "switch provider")
 		}
 	case provider.ClassQuota:
 		if m.canSwitchProvider() {
-			add(keys.Shown(keys.Row.Provider), "switch provider")
+			add(keys.Row.Provider, "switch provider")
 		}
 	case provider.ClassContextLength:
-		add(keys.Shown(keys.Row.Continue), "compact now")
-		add(keys.Shown(keys.Row.Retry), "then try again")
+		add(keys.Row.Continue, "compact now")
+		add(keys.Row.Retry, "then try again")
 	case provider.ClassModelNotFound:
 		// No [r]. The id is the failure, and the next request would carry
 		// the same one — the note sends the reader to the picker that can
 		// change it instead.
 		if m.canSwitchProvider() {
-			add(keys.Shown(keys.Row.Provider), "switch provider")
+			add(keys.Row.Provider, "switch provider")
 		}
 	case provider.ClassCancelled:
 		// You stopped it on purpose. Offering a key here would be the
 		// interface arguing with the decision.
 	default:
-		add(keys.Shown(keys.Row.Retry), "try again")
+		add(keys.Row.Retry, "try again")
 		if m.canSwitchProvider() {
-			add(keys.Shown(keys.Row.Provider), "switch provider")
+			add(keys.Row.Provider, "switch provider")
 		}
 	}
 	return offers

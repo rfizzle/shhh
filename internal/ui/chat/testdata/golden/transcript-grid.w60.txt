@@ -30,7 +30,8 @@
   Steered — the reading says the edits have moved
   outside the round loop. Say what you meant if that
   is wrong.
-    [u] take the steer back · [ctrl+o] to use them
+    [alt+z] take the steer back
+    alt needs Option as Meta — shhh doctor
   tree moved — 14 paths changed outside this session ·
   5,811 ignored
   Error: the notebook is read-only, so nothing was
@@ -38,7 +39,7 @@
    ≡ summary   ▸ on target · 2 lines · [enter]…
 
    ✓ Done · 2 steps · 6 tools · 24.7s · $0.14
-  ▎✎ 1 file changed +12 −4 · [ctrl+o] read
+  ▎✎ 1 file changed +12 −4 · [alt+w] review · [alt+z]…
    ✗ go test ./internal/agent/... failing · exit 1 · …
 
   Re-running the suite now that the constant has one
@@ -47,19 +48,19 @@
 · the whole surface · the same edge in the pane it sits in
    shhh chat                                                
   ────────────────────────────────────────────────────────  
-      --- FAIL: TestRoundLimit                              
                                                             
     The objective is one home for the round limit. The      
     evidence is the failure above, which reads the          
     constant from the loop and not from the caller. Next    
       … 1 more line                                         
-                                                        ┃   
-    Check-in — 36 rounds used. Taking stock, then       ┃   
+                                                            
+    Check-in — 36 rounds used. Taking stock, then           
     carrying on.                                        ┃   
     Steered — the reading says the edits have moved     ┃   
     outside the round loop. Say what you meant if that  ┃   
     is wrong.                                           ┃   
-      [u] take the steer back · [ctrl+o] to use them    ┃   
+      [alt+z] take the steer back                       ┃   
+      alt needs Option as Meta — shhh doctor            ┃   
     tree moved — 14 paths changed outside this session ·┃   
     5,811 ignored                                       ┃   
     Error: the notebook is read-only, so nothing was    ┃   
@@ -67,7 +68,7 @@
      ≡ summary   ▸ on target · 2 lines · [enter]…       ┃   
                                                         ┃   
      ✓ Done · 2 steps · 6 tools · 24.7s · $0.14         ┃   
-    ▎✎ 1 file changed +12 −4 · [ctrl+o] read            ┃   
+    ▎✎ 1 file changed +12 −4 · [alt+w] review · [alt+z]…┃   
      ✗ go test ./internal/agent/... failing · exit 1 · …┃   
                                                         ┃   
     Re-running the suite now that the constant has one  ┃   
@@ -96,7 +97,8 @@
   Steered — the reading says the edits have moved
   outside the round loop. Say what you meant if that
   is wrong.
-    [u] take the steer back
+    [alt+z] take the steer back
+    alt needs Option as Meta — shhh doctor
   tree moved — 14 paths changed outside this session ·
   5,811 ignored
   Error: the notebook is read-only, so nothing was
@@ -104,7 +106,7 @@
    ≡ summary   ▸ on target · 2 lines · [enter]…
 
    ✓ Done · 2 steps · 6 tools · 24.7s · $0.14
-  ▎✎ 1 file changed +12 −4 · [v] review · [u] undo tu…
+  ▎✎ 1 file changed +12 −4 · [alt+w] review · [alt+z]…
    ✗ go test ./internal/agent/... failing · exit 1 · …
 
 
@@ -129,7 +131,8 @@
   ␛[38;5;241mSteered — the reading says the edits have moved␛[m
   ␛[38;5;241moutside the round loop. Say what you meant if that␛[m
   ␛[38;5;241mis wrong.␛[m
-    ␛[38;5;245m[u]␛[m␛[38;5;241m take the steer back␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+o]␛[m␛[38;5;252m to use them␛[m
+    ␛[94m[alt+z]␛[m␛[38;5;241m take the steer back␛[m
+    ␛[38;5;241malt needs Option as Meta — shhh doctor␛[m
   ␛[38;5;241mtree moved — 14 paths changed outside this session ·␛[m
   ␛[38;5;241m5,811 ignored␛[m
   ␛[91mError: the notebook is read-only, so nothing was␛[m
@@ -137,7 +140,7 @@
    ␛[38;5;241m≡␛[m ␛[38;5;252msummary␛[m ␛[38;5;252m␛[m  ␛[38;5;241m▸ on target␛[m␛[38;5;241m · ␛[m␛[38;5;245m2 lines␛[m␛[38;5;241m · ␛[m␛[94m[enter]…␛[m
 
    ␛[92m✓␛[m ␛[38;5;252mDone␛[m␛[38;5;241m · 2 steps · 6 tools · 24.7s · $0.14␛[m
-  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m1 file changed ␛[m␛[92m+12␛[m ␛[91m−4␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+o]␛[m␛[38;5;252m read␛[m
+  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m1 file changed ␛[m␛[92m+12␛[m ␛[91m−4␛[m␛[38;5;241m · ␛[m␛[94m[alt+w]␛[m␛[38;5;241m review␛[m␛[38;5;241m · ␛[m␛[94m[alt+z]␛[m␛[38;5;241m…␛[m
    ␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/... failing␛[m␛[38;5;241m · exit 1 · …␛[m
 
   ␛[38;5;252mRe-running the suite now that the constant has one␛[m
@@ -146,19 +149,19 @@
 · the whole surface · the same edge in the pane it sits in
   ␛[97;1m shhh chat␛[m                                                
   ␛[38;5;241m────────────────────────────────────────────────────────␛[m  
-      ␛[38;5;245m--- FAIL: TestRoundLimit␛[m                              
                                                             
     ␛[38;5;245;3mThe objective is one home for the round limit. The␛[m      
     ␛[38;5;245;3mevidence is the failure above, which reads the␛[m          
     ␛[38;5;245;3mconstant from the loop and not from the caller. Next␛[m    
       ␛[38;5;241m… 1 more line␛[m                                         
-                                                        ␛[38;5;241m┃␛[m   
-    ␛[38;5;241mCheck-in — 36 rounds used. Taking stock, then␛[m       ␛[38;5;241m┃␛[m   
+                                                            
+    ␛[38;5;241mCheck-in — 36 rounds used. Taking stock, then␛[m           
     ␛[38;5;241mcarrying on.␛[m                                        ␛[38;5;241m┃␛[m   
     ␛[38;5;241mSteered — the reading says the edits have moved␛[m     ␛[38;5;241m┃␛[m   
     ␛[38;5;241moutside the round loop. Say what you meant if that␛[m  ␛[38;5;241m┃␛[m   
     ␛[38;5;241mis wrong.␛[m                                           ␛[38;5;241m┃␛[m   
-      ␛[38;5;245m[u]␛[38;5;241m take the steer back · ␛[94m[ctrl+o]␛[38;5;252m to use them␛[m    ␛[38;5;241m┃␛[m   
+      ␛[94m[alt+z]␛[38;5;241m take the steer back␛[m                       ␛[38;5;241m┃␛[m   
+      ␛[38;5;241malt needs Option as Meta — shhh doctor␛[m            ␛[38;5;241m┃␛[m   
     ␛[38;5;241mtree moved — 14 paths changed outside this session ·┃␛[m   
     ␛[38;5;241m5,811 ignored␛[m                                       ␛[38;5;241m┃␛[m   
     ␛[91mError: the notebook is read-only, so nothing was␛[m    ␛[38;5;241m┃␛[m   
@@ -166,7 +169,7 @@
      ␛[38;5;241m≡␛[m ␛[38;5;252msummary␛[m   ␛[38;5;241m▸ on target · ␛[38;5;245m2 lines␛[38;5;241m · ␛[94m[enter]…␛[m       ␛[38;5;241m┃␛[m   
                                                         ␛[38;5;241m┃␛[m   
      ␛[92m✓␛[m ␛[38;5;252mDone␛[38;5;241m · 2 steps · 6 tools · 24.7s · $0.14␛[m         ␛[38;5;241m┃␛[m   
-    ␛[38;5;214m▎✎␛[m ␛[38;5;252m1 file changed ␛[92m+12␛[m ␛[91m−4␛[38;5;241m · ␛[94m[ctrl+o]␛[38;5;252m read␛[m            ␛[38;5;241m┃␛[m   
+    ␛[38;5;214m▎✎␛[m ␛[38;5;252m1 file changed ␛[92m+12␛[m ␛[91m−4␛[38;5;241m · ␛[94m[alt+w]␛[38;5;241m review · ␛[94m[alt+z]␛[38;5;241m…┃␛[m   
      ␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/... failing␛[38;5;241m · exit 1 · …┃␛[m   
                                                         ␛[38;5;241m┃␛[m   
     ␛[38;5;252mRe-running the suite now that the constant has one␛[m  ␛[38;5;241m┃␛[m   
@@ -195,7 +198,8 @@
   ␛[38;5;241mSteered — the reading says the edits have moved␛[m
   ␛[38;5;241moutside the round loop. Say what you meant if that␛[m
   ␛[38;5;241mis wrong.␛[m
-    ␛[38;5;245m[u]␛[m␛[38;5;241m take the steer back␛[m
+    ␛[94m[alt+z]␛[m␛[38;5;241m take the steer back␛[m
+    ␛[38;5;241malt needs Option as Meta — shhh doctor␛[m
   ␛[38;5;241mtree moved — 14 paths changed outside this session ·␛[m
   ␛[38;5;241m5,811 ignored␛[m
   ␛[91mError: the notebook is read-only, so nothing was␛[m
@@ -203,6 +207,6 @@
    ␛[38;5;241m≡␛[m ␛[38;5;252msummary␛[m ␛[38;5;252m␛[m  ␛[38;5;241m▸ on target␛[m␛[38;5;241m · ␛[m␛[38;5;245m2 lines␛[m␛[38;5;241m · ␛[m␛[94m[enter]…␛[m
 
    ␛[92m✓␛[m ␛[38;5;252mDone␛[m␛[38;5;241m · 2 steps · 6 tools · 24.7s · $0.14␛[m
-  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m1 file changed ␛[m␛[92m+12␛[m ␛[91m−4␛[m␛[38;5;241m · ␛[m␛[38;5;245m[v]␛[m␛[38;5;241m review␛[m␛[38;5;241m · ␛[m␛[38;5;245m[u]␛[m␛[38;5;241m undo tu…␛[m
+  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m1 file changed ␛[m␛[92m+12␛[m ␛[91m−4␛[m␛[38;5;241m · ␛[m␛[94m[alt+w]␛[m␛[38;5;241m review␛[m␛[38;5;241m · ␛[m␛[94m[alt+z]␛[m␛[38;5;241m…␛[m
    ␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/... failing␛[m␛[38;5;241m · exit 1 · …␛[m
 

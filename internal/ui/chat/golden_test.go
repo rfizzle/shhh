@@ -152,7 +152,7 @@ func goldenTranscript() []entry {
 			Steps: 2, Tools: 6, Elapsed: "24.7s", Spend: "$0.14", Note: "round 2/25",
 			Changes: &components.TurnChanges{
 				Files: 1, Added: 12, Removed: 4,
-				Keys: []components.TurnKey{{Key: "[v]", Label: "review"}, {Key: "[u]", Label: "undo turn"}},
+				Keys: []components.TurnKey{rowOffer(keys.Row.Review, "review"), rowOffer(keys.Row.Undo, "undo turn")},
 				Note: "all tracked in git",
 			},
 			Checks: &components.TurnChecks{
@@ -2358,7 +2358,7 @@ func TestGolden_GitWriteRows(t *testing.T) {
 				entry{kind: entryTurnClose, turn: 1, close: &components.TurnClose{
 					State: components.TurnDone, Steps: 4, Tools: 18, Elapsed: "1m 04s", Spend: "$0.14",
 					Changes: &components.TurnChanges{Files: 3, Added: 30, Removed: 4,
-						Keys: []components.TurnKey{{Key: "[v]", Label: "review"}},
+						Keys: []components.TurnKey{rowOffer(keys.Row.Review, "review")},
 						Note: "all tracked in git"},
 					Commit: &components.TurnCommit{Receipt: "committed 3 files as a41f2c9 on master"},
 				}},
@@ -2592,9 +2592,9 @@ func TestGolden_ResumedChanges(t *testing.T) {
 				State: components.TurnDone, Steps: 2, Tools: 6, Elapsed: "24.7s", Spend: "$0.14",
 				Changes: &components.TurnChanges{Files: 1, Added: 1, Removed: 1,
 					Keys: []components.TurnKey{
-						{Key: "[v]", Label: "review"},
-						{Key: "[g]", Label: "commit"},
-						{Key: "[u]", Label: "undo turn"},
+						rowOffer(keys.Row.Review, "review"),
+						rowOffer(keys.Row.Commit, "commit"),
+						rowOffer(keys.Row.Undo, "undo turn"),
 					},
 					Note: "all tracked in git"},
 			}})
@@ -2898,7 +2898,7 @@ func TestGolden_OnCloseGate(t *testing.T) {
 				Elapsed: "41.3s", Spend: "$0.12", Note: "round 4/25",
 				Changes: &components.TurnChanges{
 					Files: 2, Added: 31, Removed: 7,
-					Keys: []components.TurnKey{{Key: "[v]", Label: "review"}, {Key: "[u]", Label: "undo turn"}},
+					Keys: []components.TurnKey{rowOffer(keys.Row.Review, "review"), rowOffer(keys.Row.Undo, "undo turn")},
 					Note: "all tracked in git",
 				},
 				// Read off the row above, the way the live close reads it.
@@ -2966,7 +2966,7 @@ func TestGolden_ResolvedVerification(t *testing.T) {
 				Elapsed: "1m 12s", Spend: "$0.18", Note: "round 5/25",
 				Changes: &components.TurnChanges{
 					Files: 1, Added: 12, Removed: 3,
-					Keys: []components.TurnKey{{Key: "[v]", Label: "review"}, {Key: "[u]", Label: "undo turn"}},
+					Keys: []components.TurnKey{rowOffer(keys.Row.Review, "review"), rowOffer(keys.Row.Undo, "undo turn")},
 					Note: "all tracked",
 				},
 				// Read off the rows above, the way the live close reads them.
@@ -3053,7 +3053,7 @@ func TestGolden_InspectorAlerts(t *testing.T) {
 							Elapsed: "1m 12s", Spend: "$0.18", Note: "round 5/25",
 							Changes: &components.TurnChanges{
 								Files: 1, Added: 12, Removed: 3, Note: "all tracked",
-								Keys: []components.TurnKey{{Key: "[v]", Label: "review"}},
+								Keys: []components.TurnKey{rowOffer(keys.Row.Review, "review")},
 							},
 							Checks: turnChecksRow(m.transcript, false),
 						}})

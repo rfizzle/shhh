@@ -179,7 +179,7 @@ func (m Model) steerOffers(e entry) []components.TurnKey {
 	if !m.withdrawableSteer(e) {
 		return nil
 	}
-	return []components.TurnKey{{Key: keys.Bracket(keys.Row.Undo), Label: "take the steer back"}}
+	return []components.TurnKey{rowOffer(keys.Row.Undo, "take the steer back")}
 }
 
 // steerOfferLine is that run as the line the notice draws under itself, or ""
@@ -195,7 +195,14 @@ func (m Model) steerOfferLine(e entry, keysLive bool) string {
 	if run == "" {
 		return ""
 	}
-	return "\n" + strings.Repeat(" ", components.GridDetailIndent) + run
+	indent := "\n" + strings.Repeat(" ", components.GridDetailIndent)
+	line := indent + run
+	// And, where this is the session's first chord, what alt costs on a stock
+	// macOS terminal — a line of its own, like every other row's.
+	if option := components.KeyRunOption(offers, !keysLive, m.namesOptionRow(e)); option != "" {
+		line += indent + option
+	}
+	return line
 }
 
 // focusedSteerNotice is the withdrawable steer notice the reading cursor is

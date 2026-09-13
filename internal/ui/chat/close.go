@@ -100,6 +100,11 @@ func (m Model) turnCloseData() *components.TurnClose {
 		Commit:  commit,
 		Notes:   m.turnNotesClause(),
 		Checks:  turnChecksRow(es, m.gate.Manage != nil),
+		// Whether this block is the first in the session to offer a chord is
+		// settled here, where the block is built and the transcript above it
+		// is what it will be: the note about the Option key is a fact about
+		// the terminal, said once (inertkeys.go).
+		Option: m.firstRowOffer(),
 	}
 	// The count is the steps this turn actually ran, so an approved plan's
 	// declared-but-not-started steps are not counted as work done.
@@ -198,6 +203,7 @@ func (m *Model) restoreTurnClose() {
 		close: &components.TurnClose{
 			State:   components.TurnDone,
 			Changes: m.turnChangesFor(t, false),
+			Option:  m.firstRowOffer(),
 		},
 	})
 }
@@ -210,7 +216,7 @@ func (m Model) turnChangesFor(t changeset.Turn, committed bool) *components.Turn
 		return nil
 	}
 	offers := []components.TurnKey{
-		{Key: keys.Bracket(keys.Row.Review), Label: keys.Words(keys.Row.Review)},
+		rowOffer(keys.Row.Review, keys.Words(keys.Row.Review)),
 	}
 	if !committed {
 		// Review, keep, or take back — the three things a changeset can
@@ -218,8 +224,8 @@ func (m Model) turnChangesFor(t changeset.Turn, committed bool) *components.Turn
 		// as long as the changeset is uncommitted and goes when it is not:
 		// banking work twice is not one of the three.
 		offers = append(offers,
-			components.TurnKey{Key: keys.Bracket(keys.Row.Commit), Label: keys.Words(keys.Row.Commit)},
-			components.TurnKey{Key: keys.Bracket(keys.Row.Undo), Label: keys.Words(keys.Row.Undo)})
+			rowOffer(keys.Row.Commit, keys.Words(keys.Row.Commit)),
+			rowOffer(keys.Row.Undo, keys.Words(keys.Row.Undo)))
 	}
 	return &components.TurnChanges{
 		Files:   t.Files(),
@@ -276,7 +282,7 @@ func turnChecksRow(es []entry, gated bool) *components.TurnChecks {
 	row := components.TurnChecks{Superseded: r.superseded()}
 	if gated && r.suites() > 0 {
 		row.Keys = []components.TurnKey{
-			{Key: keys.Bracket(keys.Row.Rerun), Label: keys.Words(keys.Row.Rerun)},
+			rowOffer(keys.Row.Rerun, keys.Words(keys.Row.Rerun)),
 		}
 	}
 	if len(standing) == 1 {

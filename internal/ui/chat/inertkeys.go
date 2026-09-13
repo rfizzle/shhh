@@ -29,6 +29,107 @@ import (
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
+// rowOffer is one offer a transcript row makes, in both the spellings it has:
+// the letter reading mode answers with its cursor on the row, and the chord
+// the draft answers wherever that letter is a letter of the sentence being
+// typed (keys.RowChord). The row draws whichever of the two is true where it
+// stands, and neither the row nor the hint bar has to know which — they read
+// the same offer.
+func rowOffer(b keys.Binding, label string) components.KeyOffer {
+	return rowOfferAs(b, keys.Bracket(b), label)
+}
+
+// rowOfferAs is the same offer where the row draws something other than the
+// keystroke: the round-limit pause draws the grant as the block it grants
+// (`[+50]`) rather than as the `+` that takes it.
+func rowOfferAs(b keys.Binding, shown, label string) components.KeyOffer {
+	o := components.KeyOffer{Key: shown, Label: label}
+	if c, ok := keys.ChordFor(b); ok {
+		o.Chord = keys.Bracket(c)
+	}
+	return o
+}
+
+// namesOptionRow reports that a row about to be built is the first in the
+// session to offer a chord, so it is the row that names the profile setting
+// an alt chord needs on a stock macOS terminal
+// (docs/interface/reserved-keys.md#the-draft-spends-chords-only). It is asked
+// of the transcript rather than remembered, because the answer is the same
+// question either way: is there already a row up there saying it.
+func (m Model) namesOptionRow(row entry) bool {
+	for _, e := range *m.entries() {
+		if sameOfferRow(e, row) {
+			return true
+		}
+		if m.offersRowKeys(e) {
+			return false
+		}
+	}
+	return false
+}
+
+// firstRowOffer is the same question asked by a row that is being built and
+// is not in the transcript yet: nothing up there offers anything, so this is
+// the row that names the setting.
+func (m Model) firstRowOffer() bool {
+	for _, e := range *m.entries() {
+		if m.offersRowKeys(e) {
+			return false
+		}
+	}
+	return true
+}
+
+// offersRowKeys reports that an entry carries offers of its own — the rows
+// whose keys keys.Row declares. It is the list the Option note counts and the
+// chord walks, so both read one answer.
+func (m Model) offersRowKeys(e entry) bool {
+	switch e.kind {
+	case entryTurnClose:
+		return e.close != nil &&
+			((e.close.Changes != nil && len(e.close.Changes.Keys) > 0) ||
+				(e.close.Checks != nil && len(e.close.Checks.Keys) > 0))
+	case entryFailure:
+		return e.fail != nil && len(m.failureKeys(e.fail)) > 0
+	case entryStreamDrop:
+		return e.resume != nil && len(m.dropKeys(e.resume)) > 0
+	case entryRoundPause:
+		return e.pause != nil && len(e.pause.keys()) > 0
+	case entryTodoRun:
+		return e.todorun != nil && len(e.todorun.offers()) > 0
+	case entrySystem:
+		return len(m.steerOffers(e)) > 0
+	}
+	return false
+}
+
+// sameOfferRow reports that two entries are the same row on the screen. The
+// entries hold slices and cannot be compared, and the pointer each kind hangs
+// its state off is unique to the row, so that is the identity.
+func sameOfferRow(a, b entry) bool {
+	if a.kind != b.kind {
+		return false
+	}
+	switch a.kind {
+	case entryTurnClose:
+		return a.close != nil && a.close == b.close
+	case entryFailure:
+		return a.fail != nil && a.fail == b.fail
+	case entryStreamDrop:
+		return a.resume != nil && a.resume == b.resume
+	case entryRoundPause:
+		return a.pause != nil && a.pause == b.pause
+	case entryTodoRun:
+		return a.todorun != nil && a.todorun == b.todorun
+	case entrySystem:
+		// The notice an automatic steer left, which is the one system row
+		// that offers a key. What it hangs the offer off is the record of the
+		// interruption (intervene.go), so that is its identity here.
+		return a.intervened != nil && a.intervened == b.intervened
+	}
+	return false
+}
+
 // rowHandover is the key a transcript row offers beside keys that are not
 // live yet, or "" where the row has nothing to offer.
 //
