@@ -636,7 +636,7 @@ func (m Model) blockUnits(blk transcriptBlock, es []entry, width int, focus bool
 		units = append(units, unit{idx: idx, sepBefore: sepBefore, sepAfter: sepAfter, text: text})
 	}
 	entryWidth := func(e entry) int {
-		if focus && selectable(e) {
+		if focus && m.selectableRow(e) {
 			return gutterWidth(width, onGrid(e))
 		}
 		return width
@@ -648,7 +648,7 @@ func (m Model) blockUnits(blk transcriptBlock, es []entry, width int, focus bool
 		// where every letter is text — they render beside the key that
 		// hands the keyboard to the transcript.
 		keysLive := focus && i == focusIdx && m.state == stateFocus
-		add(i, e, e, m.renderEntryDetail(e, entryWidth(e), keysLive, detail), selectable(e), onGrid(e))
+		add(i, e, e, m.renderEntryDetail(e, entryWidth(e), keysLive, detail), m.selectableRow(e), onGrid(e))
 	}
 
 	// A block's rows render through its slots, so a folded run of read-only

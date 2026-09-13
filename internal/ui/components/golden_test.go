@@ -1124,6 +1124,11 @@ func TestGolden_AgentList(t *testing.T) {
 // one the orchestrator has redirected and which has taken the redirect up, so
 // the count it answered is back at zero and the source is all that is left.
 // A steer note outranks the seed line where both are true.
+//
+// The settled batch is where a stopped child is read: one lane folded open on
+// the report the child wrote, with the assumptions it stated instead of asking
+// counted on its detail line, and a reviewing lane carrying the verdict it
+// ended on beside `✓ done`.
 func TestGolden_FanoutBlock(t *testing.T) {
 	captureGolden(t, "fanout-block", "fan-out block", goldenWidths, func(width int) []golden.Panel {
 		flight := FanoutBlock{
@@ -1145,9 +1150,29 @@ func TestGolden_FanoutBlock(t *testing.T) {
 			Elapsed: "2m04s",
 			Lanes: []FanoutLane{
 				{State: FanoutDone, Name: "writer-1", Task: "docs/loop.md",
-					Tools: 11, Spend: "$0.04", Elapsed: "1m38s", Summary: "documented the sentinel and linked the test"},
-				{State: FanoutDone, Name: "tester-2", Task: "internal/agent tests",
-					Tools: 9, Spend: "$0.03", Elapsed: "41s", Summary: "all four packages pass"},
+					Tools: 11, Spend: "$0.04", Elapsed: "1m38s",
+					Summary:     "documented the sentinel and linked the test",
+					Assumptions: 2, ReportOpen: true, MaxReport: 32,
+					Report: []string{
+						"Documented the sentinel and linked the test.",
+						"",
+						"The sentinel is returned from one place and read in two, and the",
+						"paragraph names both.",
+						"",
+						"## Assumptions",
+						"",
+						"- The loop's own callers are out of scope.",
+						"- docs/loop.md is the page, not the package comment.",
+					}},
+				{State: FanoutDone, Name: "reviewer-2", Task: "read the round change",
+					Tools: 9, Spend: "$0.03", Elapsed: "41s",
+					Summary:       "two findings, both in the round accounting",
+					ReportVerdict: "approve with changes",
+					Report: []string{
+						"Two findings, both in the round accounting.",
+						"",
+						"approve with changes",
+					}},
 				{State: FanoutFailed, Name: "patcher-3", Task: "apply the patch",
 					Tools: 12, Spend: "$0.05", Elapsed: "2m04s", Summary: "round limit (25) reached"},
 			},
@@ -1184,7 +1209,7 @@ func TestGolden_FanoutBlock(t *testing.T) {
 		}
 		return []golden.Panel{
 			{Label: "mid-flight · one child is waiting on you", View: flight.View(width)},
-			{Label: "settled · every child has stopped", View: settled.View(width)},
+			{Label: "settled · one lane open on its report, one carrying a verdict", View: settled.View(width)},
 			{Label: "no declared step count · every lane spins", View: spinning.View(width)},
 			{Label: "a child that delegated · its lane says how many are under it", View: nested.View(width)},
 		}

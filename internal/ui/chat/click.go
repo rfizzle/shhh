@@ -192,7 +192,7 @@ func (m Model) clickRow(line int) (tea.Model, tea.Cmd) {
 	}
 	claimed, full, output := m.toggleRow(idx, g)
 	if !claimed {
-		if !expandable(es[idx]) {
+		if !m.rowExpands(es[idx]) {
 			return m, nil
 		}
 		es[idx].expanded = !es[idx].expanded

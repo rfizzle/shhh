@@ -40,4 +40,9 @@ wait:40
 +The counter is read at the top of the loop, and nowhere else.
 # The second child let through is answered at once, which is the lane that
 # has finished. It is the last line, so it repeats.
-The counter is read at the top of the loop, and nowhere else.
+#
+# It is a report and not a sentence: a first line for the lane to keep, and a
+# section for what the child assumed instead of asking, which is what the lane
+# counts beside that line. A `\n` in a reply is a line break, so this arrives
+# as the several lines the fold under the lane opens on.
+The counter is read at the top of the loop, and nowhere else.\n\n## Assumptions\n\n- The limit named in the task is the one in loop.go.\n- Nothing else in the package reads the counter.

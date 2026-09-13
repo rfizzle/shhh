@@ -385,3 +385,171 @@ func TestChildSpendLabel_UnpricedFallsBackToTheChildsModel(t *testing.T) {
 		t.Fatalf("an unpriced child = %q, want its own model's rate %q", got, want)
 	}
 }
+
+// childReport is the text a scripted child ends on, written the way a child's
+// final report is: a first line the lane keeps, and a section for what it
+// assumed instead of asking.
+const childReportText = "Counted the rounds.\n\n## Assumptions\n\n" +
+	"- The limit is the one in loop.go.\n- Nothing else reads the counter."
+
+// A settled lane folds the child's own report under it, the count of what it
+// assumed goes on the detail line, and the key that opens every other fold in
+// the transcript opens this one.
+func TestFanoutSettledLaneOpensOnTheReport(t *testing.T) {
+	sup := subagent.New(context.Background(), subagent.Options{
+		Root: t.TempDir(), NewEnv: reportingEnv(childReportText)})
+	t.Cleanup(sup.Close)
+	m := newSubagentModel(t, sup)
+
+	m.beginSpawnBatch()
+	for _, task := range []string{"one", "two"} {
+		spawnInto(t, sup, `{"role":"researcher","task":"`+task+`"}`)
+		m.appendSpawnEntry(spawnRowEntry(task))
+	}
+	waitFor(t, func() bool { a, _ := sup.ActiveCounts(); return a == 0 })
+
+	shut := ansi.Strip(m.renderHistory())
+	if !strings.Contains(shut, "▸ report · 6 lines · [enter] expand") {
+		t.Fatalf("a settled lane should offer the report as a fold:\n%s", shut)
+	}
+	// The first line and the count, and no continuation marker between them:
+	// the fold under the line is what says there is more of it, and says how
+	// much.
+	if !strings.Contains(shut, "Counted the rounds. · 2 assumptions") {
+		t.Fatalf("the detail line should count the assumptions:\n%s", shut)
+	}
+	if strings.Contains(shut, "Nothing else reads the counter.") {
+		t.Fatalf("a shut fold should hold the report back:\n%s", shut)
+	}
+
+	idx := -1
+	for i, e := range m.transcript {
+		if e.kind == entryFanout {
+			idx = i
+		}
+	}
+	if idx < 0 {
+		t.Fatal("the two spawns did not become a block")
+	}
+	if !m.selectableRow(m.transcript[idx]) {
+		t.Fatal("the reading cursor cannot stop on a block holding a report")
+	}
+	m.focusIdx = idx
+	if !m.focusedExpands() {
+		t.Fatal("the bar does not offer the key the block honours")
+	}
+	updated, _ := m.openCursorRow(stateFocus)
+	m = updated.(Model)
+
+	open := ansi.Strip(m.renderHistory())
+	if !strings.Contains(open, "▾ report · 6 lines") {
+		t.Fatalf("the fold did not open:\n%s", open)
+	}
+	if !strings.Contains(open, "Nothing else reads the counter.") {
+		t.Fatalf("the opened fold does not show the report:\n%s", open)
+	}
+}
+
+// A block whose children are all still running has nothing to open, and the
+// reading cursor does not stop on it: a key offered where it does nothing
+// reads as a key that is broken.
+func TestFanoutLiveBlockIsNotACursorStop(t *testing.T) {
+	sup := subagent.New(context.Background(), subagent.Options{
+		Root: t.TempDir(), NewEnv: blockingEnv()})
+	t.Cleanup(sup.Close)
+	m := newSubagentModel(t, sup)
+
+	m.beginSpawnBatch()
+	for _, task := range []string{"one", "two"} {
+		spawnInto(t, sup, `{"role":"researcher","task":"`+task+`"}`)
+		m.appendSpawnEntry(spawnRowEntry(task))
+	}
+	waitFor(t, func() bool { a, _ := sup.ActiveCounts(); return a == 2 })
+
+	for _, e := range m.transcript {
+		if e.kind == entryFanout && m.selectableRow(e) {
+			t.Fatal("a running fan-out offers a fold it does not have")
+		}
+	}
+}
+
+// A review's last line is its verdict, and the lane says it beside the state.
+// Everything else a report can end on is prose, which the outcome field has
+// no business quoting a clause of.
+func TestReportVerdictReadsTheLastLine(t *testing.T) {
+	for _, tc := range []struct{ name, report, want string }{
+		{"bare", "Read it all.\n\napprove with changes", "approve with changes"},
+		{"labelled", "Read it all.\n\nVerdict: request changes", "request changes"},
+		{"bold label", "Read it all.\n\n**Verdict:** approve", "approve"},
+		{"a label makes a sentence one", "Read it all.\n\nVerdict: ship it.", "ship it"},
+		{"trailing blanks", "approve\n\n\n", "approve"},
+		{"prose", "The change is fine but the test names are wrong and I would rename them.", ""},
+		{"two statements", "Findings: three of them", ""},
+		{"a sentence of few words", "It is fine. Ship it.", ""},
+		// A report that ends on an ordinary short sentence ended on prose.
+		// Unlabelled, a stop or a subject is what says so.
+		{"a short sentence", "Read it all.\n\nShip it.", ""},
+		{"a short verdict with a stop", "Read it all.\n\nApprove.", ""},
+		{"no changes needed", "Read it all.\n\nNo changes needed.", ""},
+		{"a subject and no stop", "Read it all.\n\nThe tests pass now", ""},
+		{"nothing", "", ""},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := reportVerdict(tc.report); got != tc.want {
+				t.Fatalf("reportVerdict(%q) = %q, want %q", tc.report, got, tc.want)
+			}
+		})
+	}
+}
+
+// The assumptions a child states instead of asking are counted off the
+// section it wrote them under, however it wrote the heading. A report with no
+// such section counts nothing rather than asserting a zero.
+func TestStatedAssumptionsCountsTheSection(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		report string
+		want   int
+	}{
+		{"markdown heading", "Done.\n\n## Assumptions\n- one\n- two\n", 2},
+		{"bold heading", "Done.\n\n**Assumptions**\n\n* one\n", 1},
+		{"labelled", "Done.\n\nAssumptions:\n1. one\n2. two\n3. three\n", 3},
+		{"stops at the next section", "## Assumptions\n- one\n\n## Findings\n- a\n- b\n", 1},
+		{"no section", "Done. I assumed the limit was the one in loop.go.\n", 0},
+		{"an empty section", "## Assumptions\n\nNone.\n", 0},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := statedAssumptions(tc.report); got != tc.want {
+				t.Fatalf("statedAssumptions(%q) = %d, want %d", tc.report, got, tc.want)
+			}
+		})
+	}
+}
+
+// Only a review has a verdict to read off its last line: its prompt makes it
+// end on one, and every other role ends on prose. Two children with the same
+// last line, and only the reviewer's lane states it.
+func TestFanoutVerdictIsTheReviewersAlone(t *testing.T) {
+	sup := subagent.New(context.Background(), subagent.Options{
+		Root: t.TempDir(), NewEnv: reportingEnv("Read it all.\n\napprove with changes")})
+	t.Cleanup(sup.Close)
+	m := newSubagentModel(t, sup)
+
+	m.beginSpawnBatch()
+	for _, spawn := range []string{
+		`{"role":"reviewer","task":"read the round change"}`,
+		`{"role":"researcher","task":"survey the round accounting"}`,
+	} {
+		spawnInto(t, sup, spawn)
+		m.appendSpawnEntry(spawnRowEntry("a task"))
+	}
+	waitFor(t, func() bool { a, _ := sup.ActiveCounts(); return a == 0 })
+
+	view := ansi.Strip(m.renderHistory())
+	if !strings.Contains(view, "✓ done · approve with changes") {
+		t.Fatalf("the review's lane should carry its verdict:\n%s", view)
+	}
+	if n := strings.Count(view, "approve with changes"); n != 1 {
+		t.Fatalf("%d lanes state a verdict, want the reviewer's alone:\n%s", n, view)
+	}
+}

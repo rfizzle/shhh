@@ -80,6 +80,30 @@ func (m Model) fanoutStatuses(b *fanoutBatch) []subagent.Status {
 	return out
 }
 
+// fanoutOpens reports whether a fan-out block has anything for the reading
+// key to open: the report of a child that has stopped. It is a Model question
+// and not an entry one because the block stores only its batch number and
+// everything it draws is read off the supervisor.
+//
+// A block whose children are all still running opens nothing, and the cursor
+// does not stop on it. A key offered on a row that will not honour it is a key
+// that reads as broken
+// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+func (m Model) fanoutOpens(e entry) bool {
+	for _, st := range m.fanoutStatuses(e.fanout) {
+		if m.childReport(st) != "" {
+			return true
+		}
+	}
+	return false
+}
+
+// rowExpands is expandable plus the one row whose body is not on the entry
+// at all: a fan-out block, whose reports live on the supervisor. Every
+// surface that asks whether a row opens asks this, so the key, the pointer
+// and the bar cannot disagree about which rows do.
+func (m Model) rowExpands(e entry) bool { return expandable(e) || m.fanoutOpens(e) }
+
 // fanoutLive reports whether any child of the entry's batch is still working.
 // A block with a live child can never be frozen into the render cache — its
 // lanes have to keep moving.
@@ -105,6 +129,14 @@ func (m Model) childProgress(st subagent.Status) components.AgentProgress {
 		Tools: st.ToolCalls,
 		Spend: m.childSpendLabel(st),
 		Frame: m.spinFrame,
+	}
+	// A review is the one role whose last line is a word rather than prose:
+	// its prompt makes it end on the verdict the task asked for, so the
+	// verdict is a fact about the child the way its state is, and it is read
+	// here so the lane and the manager row say it together
+	// (docs/capabilities/subagents.md#what-comes-back-says-what-happened-to-it).
+	if st.Role == subagent.RoleReviewer {
+		p.ReportVerdict = reportVerdict(m.childReport(st))
 	}
 	// A held child is parked at its own round boundary waiting for the
 	// session to let it go, which is the shape idle already draws: stopped,
@@ -150,6 +182,31 @@ func childNote(st subagent.Status) string {
 	return ""
 }
 
+// childReport is a settled child's own final report, as it wrote it — the
+// text a lane folds open under its detail line. It is read off the supervisor
+// at render time rather than carried on the status: the status is snapshotted
+// on every frame for every child, and a report is the largest thing a child
+// produces.
+//
+// Only a child that has stopped has one to show. A report read mid-run would
+// be whatever the child had said so far, which is not a report and is not
+// what the first line under the lane is the first line of.
+func (m Model) childReport(st subagent.Status) string {
+	if m.subagents == nil {
+		return ""
+	}
+	switch st.State {
+	case subagent.StateDone, subagent.StateFailed:
+	default:
+		return ""
+	}
+	report, _, ok := m.subagents.FinalReport(st.Name)
+	if !ok {
+		return ""
+	}
+	return strings.TrimSpace(report)
+}
+
 // fanoutBlockFor builds the block for one entry from the live snapshot.
 func (m Model) fanoutBlockFor(e entry) components.FanoutBlock {
 	var block components.FanoutBlock
@@ -183,6 +240,25 @@ func (m Model) fanoutBlockFor(e entry) components.FanoutBlock {
 				lane.Summary = note
 			}
 		}
+		// The child's own words, under the lane it ran in. One fold flag for
+		// the whole block, which is the shape a message with several pastes
+		// already has (attachments.go): the reader opened the block, not one
+		// of the lanes in it.
+		if report := m.childReport(st); report != "" {
+			lane.Report = strings.Split(report, "\n")
+			lane.ReportOpen = e.expanded
+			lane.MaxReport = maxExpandedResultLines
+			lane.Assumptions = statedAssumptions(report)
+			lane.ReportVerdict = p.ReportVerdict
+			if st.State == subagent.StateDone {
+				// The first line without the marker that says there is more
+				// of it. The fold directly under this line says the same
+				// thing and says how much, so the `…` is the second of two
+				// signals for one fact — and the one that ends up in the
+				// middle of the line as soon as a count follows it.
+				lane.Summary = strings.TrimSpace(lane.Report[0])
+			}
+		}
 		if st.Elapsed > longest {
 			longest = st.Elapsed
 		}
@@ -196,6 +272,166 @@ func (m Model) fanoutBlockFor(e entry) components.FanoutBlock {
 	// detour through the child's session.
 	block.Keys = []components.TurnKey{{Key: keys.Bracket(keys.Draft.Agents), Label: "agents"}}
 	return block
+}
+
+// Reading a report. Two facts about a finished child are in the child's own
+// words and nowhere else: what it assumed instead of asking, and — for a
+// review — what it concluded. Both are read off the text here rather than
+// recorded as the child runs, because neither is a thing the supervisor
+// watches happen; they are things the report turns out to say.
+
+// verdictWords and verdictChars are how short a line has to be to be a
+// verdict rather than a sentence. A verdict is a phrase from whatever
+// vocabulary the task named — `approve`, `request changes`, `approve with
+// changes` — and a report that ended on a paragraph ended on prose. Putting
+// a clause of that beside `✓ done` would state a conclusion the child never
+// drew.
+const (
+	verdictWords = 4
+	verdictChars = 32
+)
+
+// reportVerdict is the word a review ended on, or empty where its last line
+// is not a verdict at all. A reviewing child is told its last message is the
+// deliverable and to end it with the verdict line the task asked for
+// (internal/subagent's review directive), so where the verdict is is settled
+// and what is left is whether the line is one.
+//
+// The word is lower-cased. It stands in the outcome field beside `✓ done` and
+// `⚠ needs you`, which is a field of lower-case words, and a verdict that
+// arrived capitalised because the child began a sentence with it would be the
+// one word in the column shouting (docs/interface/principles.md#one-grid).
+func reportVerdict(report string) string {
+	lines := strings.Split(report, "\n")
+	i := len(lines) - 1
+	for i >= 0 && strings.TrimSpace(lines[i]) == "" {
+		i--
+	}
+	if i < 0 {
+		return ""
+	}
+	line, labelled := unmarked(lines[i]), false
+	if label, rest, ok := strings.Cut(line, ":"); ok {
+		// A labelled verdict — `Verdict: approve with changes` — is the
+		// label's own text, and the label is what says the line is one. Any
+		// other colon is a line making two statements, which a verdict does
+		// not do.
+		if l := unmarked(label); l != "verdict" && l != "final verdict" {
+			return ""
+		}
+		line, labelled = strings.TrimRight(unmarked(rest), "."), true
+	}
+	// Unlabelled, what has to be told apart is a verdict from a sentence the
+	// report happened to end on, and two things separate them. A sentence
+	// ends on a stop and a verdict does not; a sentence has a subject and a
+	// verdict names a decision instead. So `Ship it.` and `The tests pass
+	// now` are reports of what happened rather than the word the task asked
+	// the reviewer to end on, and neither belongs beside `✓ done`.
+	//
+	// It costs the reviewer that ends on `Approve.` its word, which the lane
+	// then draws as `done` alone — the same as any other report with nothing
+	// a verdict can be read off. Reading a sentence as a verdict is the worse
+	// of the two failures: one leaves the field empty and the other puts a
+	// conclusion in it that the child never drew.
+	if !labelled && (strings.ContainsAny(line, ".!?") || opensASentence(line)) {
+		return ""
+	}
+	if line == "" || len(line) > verdictChars || len(strings.Fields(line)) > verdictWords {
+		return ""
+	}
+	if strings.ContainsAny(line, ".!?") {
+		return ""
+	}
+	return line
+}
+
+// sentenceOpeners are the words a sentence starts with and a verdict never
+// does, because a verdict has no subject: it names what was decided.
+var sentenceOpeners = map[string]bool{
+	"a": true, "an": true, "the": true, "i": true, "we": true, "you": true,
+	"they": true, "it": true, "this": true, "that": true, "there": true,
+}
+
+// opensASentence reports whether a line starts the way a sentence does.
+func opensASentence(line string) bool {
+	f := strings.Fields(line)
+	return len(f) > 0 && sentenceOpeners[f[0]]
+}
+
+// statedAssumptions counts what a report lists under a heading of its own for
+// assumptions. A child is never offered the tool that asks, and what it does
+// instead is state the assumption it would have asked about
+// (docs/capabilities/subagents.md#a-child-answers-to-the-session); the count
+// on the lane is what says there is something in there to disagree with.
+//
+// A report with no such heading counts nothing rather than zero, and the two
+// are the same on the lane: neither draws a field. What must not happen is a
+// lane asserting that a child assumed nothing because it never wrote the
+// section.
+func statedAssumptions(report string) int {
+	lines := strings.Split(report, "\n")
+	at := -1
+	for i, line := range lines {
+		if unmarked(line) == "assumptions" {
+			at = i
+			break
+		}
+	}
+	if at < 0 {
+		return 0
+	}
+	n := 0
+	for _, line := range lines[at+1:] {
+		if sectionBreak(line) {
+			break
+		}
+		if listItem(line) {
+			n++
+		}
+	}
+	return n
+}
+
+// unmarked is a line with its Markdown taken off and folded to lower case:
+// the same heading whether the child wrote `## Assumptions`, `**Assumptions**`
+// or `Assumptions:`. A report is prose a model wrote, so the shape it names a
+// section with is the one thing about it that cannot be relied on.
+func unmarked(s string) string {
+	s = strings.TrimSpace(s)
+	s = strings.TrimLeft(s, "#")
+	s = strings.Trim(s, " *_`")
+	return strings.ToLower(strings.TrimSpace(strings.TrimSuffix(s, ":")))
+}
+
+// sectionBreak reports whether a line opens a section of its own, which is
+// where the section above it stops.
+func sectionBreak(line string) bool {
+	t := strings.TrimSpace(line)
+	switch {
+	case t == "":
+		return false
+	case strings.HasPrefix(t, "#"):
+		return true
+	case strings.HasPrefix(t, "**") && strings.HasSuffix(t, "**"):
+		return true
+	}
+	return strings.HasSuffix(t, ":") && !listItem(t)
+}
+
+// listItem reports whether a line is an item of a list, in either of the two
+// shapes Markdown writes one in.
+func listItem(line string) bool {
+	t := strings.TrimSpace(line)
+	for _, mark := range []string{"- ", "* ", "+ "} {
+		if strings.HasPrefix(t, mark) {
+			return true
+		}
+	}
+	i := 0
+	for i < len(t) && t[i] >= '0' && t[i] <= '9' {
+		i++
+	}
+	return i > 0 && i+1 < len(t) && (t[i] == '.' || t[i] == ')') && t[i+1] == ' '
 }
 
 // childSpendLabel is what a child was billed: the total the child priced

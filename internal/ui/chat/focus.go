@@ -72,7 +72,9 @@ func (m Model) selectableRow(e entry) bool {
 	if e.kind == entryThink && !m.showThink() {
 		return false
 	}
-	return selectable(e)
+	// A fan-out block joins the list once a child has reported: what it opens
+	// is that report, under the lane the child ran in (fanout.go).
+	return selectable(e) || m.fanoutOpens(e)
 }
 
 // expandableIndices lists the transcript indices focus mode can select,
@@ -932,7 +934,8 @@ func onGrid(e entry) bool {
 	switch e.kind {
 	case entryTool, entryCommand, entryDiff, entryThink, entrySummary,
 		entryTodoRun, entryAssistant, entrySystem, entryError,
-		entryTurnClose, entryFailure, entryStreamDrop, entryRoundPause:
+		entryTurnClose, entryFailure, entryStreamDrop, entryRoundPause,
+		entryFanout:
 		return true
 	case entryCompactSummary:
 		// The receipt is a row on the grid; a bare summary out of an older

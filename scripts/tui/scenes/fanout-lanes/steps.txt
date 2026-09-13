@@ -53,3 +53,22 @@ sleep 5
 keys Escape
 sleep 2
 snap 05-three-states "needs you"
+# The finished lane carries what the child actually wrote, folded: the count
+# of lines behind the fold, the assumptions it stated instead of asking on the
+# line above it, and the transcript's own key as the way in.
+snap 06-report-fold "report ·"
+# Reading mode, and the key that opens every other fold in the transcript
+# opens this one. The report is read where the child ran rather than by
+# attaching to a child nobody thinks to attach to.
+#
+# The cursor is walked to the block rather than counted to it: [k] stops at
+# the first row it can stand on — the step this turn opened with — and the
+# block is the row under it, whatever else the turn has landed by then.
+keys C-o
+sleep 2
+keys k k k k k k k k k k
+keys j
+sleep 1
+keys Enter
+sleep 2
+snap 07-report-open "▾ report · 6 lines"

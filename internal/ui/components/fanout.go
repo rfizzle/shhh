@@ -24,6 +24,7 @@ import (
 	"strings"
 
 	"charm.land/lipgloss/v2"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // FanoutState is one lane's lifecycle state. It mirrors the supervisor's
@@ -58,6 +59,17 @@ type AgentProgress struct {
 	// Frame is the spinner frame for a child with no declared step count;
 	// the host ticks it.
 	Frame int
+	// ReportVerdict is the word a reviewing child ended its report on, which
+	// is the one thing the parent acts on and the one thing no count of
+	// rounds, tools or money says. It is beside the state rather than in
+	// place of it: `✓ done` is what became of the run and the verdict is
+	// what the run concluded, and a review that finished cleanly having
+	// asked for changes is both at once
+	// (docs/capabilities/subagents.md#what-comes-back-says-what-happened-to-it).
+	//
+	// Empty for every child that is not a review and every review whose last
+	// line is not a verdict, which is what leaves `done` standing alone.
+	ReportVerdict string
 }
 
 // FanoutLane is one child of the batch.
@@ -91,6 +103,32 @@ type FanoutLane struct {
 	Elapsed string
 	// Summary is the first line of a finished child's report.
 	Summary string
+	// Report is the whole of that report, line by line — the child's own
+	// words, folded under the lane's detail line once it has settled. A
+	// child's report used to reach the model and nobody else; the person
+	// holding the approval keys got the first line of it and the choice of
+	// attaching to a child they had no reason to think held anything
+	// (docs/capabilities/subagents.md#what-comes-back-says-what-happened-to-it).
+	//
+	// It is the lines and not the text because the fold has to count them
+	// while it is shut, and a fold that counts nothing is a fold nobody
+	// knows the size of (docs/interface/principles.md#fold-never-hide).
+	Report []string
+	// ReportOpen is whether the reader has opened that fold.
+	ReportOpen bool
+	// MaxReport bounds the opened report; zero draws the whole of it. The
+	// bound counts what it held back, the way every other bounded body does.
+	MaxReport int
+	// Assumptions is how many assumptions the report states — the substitute
+	// a child gets for the question it is never offered the tool to ask
+	// (docs/capabilities/subagents.md#a-child-answers-to-the-session). Zero
+	// says nothing: a report with no assumptions in it and one that never
+	// had a section for them are the same lane to a reader, and neither is
+	// worth a field.
+	Assumptions int
+	// ReportVerdict is the verdict word a reviewing child ended on; see
+	// AgentProgress.ReportVerdict.
+	ReportVerdict string
 	// Waiting names what a blocked child is waiting for, stated under the
 	// lane: "needs you" without saying what for sends you looking.
 	Waiting string
@@ -290,12 +328,28 @@ func (p AgentProgress) progress() string {
 			m.Pct, m.Tone = 100, MeterProgress
 			m.Text = fmt.Sprintf("✓ %d/%d", p.Steps, p.Steps)
 		}
-		return m.View()
+		return p.withVerdict(m.View())
 	}
 	if p.State == FanoutDone {
-		return sty.Add.Render("✓ done")
+		return p.withVerdict(sty.Add.Render("✓ done"))
 	}
 	return Spinner{Frame: p.Frame, Label: "working"}.View()
+}
+
+// withVerdict puts a review's own last word beside what the run came to:
+// `✓ done · approve with changes`. The tick is the session's account of the
+// child and the verdict is the child's account of the work, and a reader
+// deciding what to do next is reading the second one.
+//
+// It is in body rather than in a state's colour because the vocabulary is the
+// reviewer's and not the product's: nothing here can tell an approval from a
+// refusal, so nothing here may paint one
+// (docs/interface/principles.md#closed-vocabularies).
+func (p AgentProgress) withVerdict(s string) string {
+	if p.State != FanoutDone || p.ReportVerdict == "" {
+		return s
+	}
+	return s + sty.Dim.Render(detailSep) + sty.Body.Render(p.ReportVerdict)
 }
 
 // stats is what the child cost so far: the calls it made and the money it
@@ -332,11 +386,44 @@ func (p AgentProgress) outcomeField() string {
 // the manager row for the same child draw from one renderer.
 func (l FanoutLane) progressOf() AgentProgress {
 	return AgentProgress{State: l.State, Step: l.Step, Steps: l.Steps,
-		Tools: l.Tools, Spend: l.Spend, Frame: l.Frame}
+		Tools: l.Tools, Spend: l.Spend, Frame: l.Frame,
+		ReportVerdict: l.ReportVerdict}
 }
 
 func (l FanoutLane) glyph() string        { return l.progressOf().glyph() }
 func (l FanoutLane) outcomeField() string { return l.progressOf().outcomeField() }
+
+// fittedOutcome is as much of the outcome field as this width can carry,
+// which on a lane carrying a verdict is a question of what gives way first.
+// Nothing gives way at all until the name would be squeezed past
+// minTargetWidth, the bound an activity row keeps for the same reason: a name
+// clipped to an ellipsis is a lane the reader cannot tell from the one under
+// it, and two children of one profile then read as the same child.
+//
+// Past that the cost goes before the verdict. What the child spent is
+// bookkeeping, and the manager's row states it for the same child; the
+// verdict is the thing the reader is about to act on and the only part of the
+// field that came out of the child's own words. The verdict goes last of all,
+// and only where `✓ done` and the word together will not fit — it is still a
+// key away in the report it was read off, which is more than the counts have.
+func (l FanoutLane) fittedOutcome(width int) string {
+	p := l.progressOf()
+	if p.ReportVerdict == "" || fitsBesideName(width, p.outcomeField()) {
+		return p.outcomeField()
+	}
+	if bare := (AgentProgress{State: p.State, Step: p.Step, Steps: p.Steps,
+		Frame: p.Frame, ReportVerdict: p.ReportVerdict}); fitsBesideName(width, bare.outcomeField()) {
+		return bare.outcomeField()
+	}
+	p.ReportVerdict = ""
+	return p.outcomeField()
+}
+
+// fitsBesideName reports whether an outcome field of this width leaves the
+// lane's name enough of the growing field to still be a name.
+func fitsBesideName(width int, field string) bool {
+	return width-leadWidth-durGap-durWidth-lipgloss.Width(field)-2 >= minTargetWidth
+}
 
 // target is the lane's growing field: the child's name, then what it was
 // asked to do, joined with the separator every row in the product joins two
@@ -362,14 +449,54 @@ func (l FanoutLane) paintTarget(s string) string {
 
 // View renders one lane plus whatever it has to say underneath: what a
 // blocked child is waiting for, or the first line of a finished child's
-// report.
+// report — and, under that, the fold the rest of the report is behind.
 func (l FanoutLane) View(width int) string {
 	lines := []string{gridLineWith(fanoutLead(l.glyph(), l.Depth), l.target(), l.paintTarget,
-		l.outcomeField(), l.Elapsed, width)}
+		l.fittedOutcome(width), l.Elapsed, width)}
 	if note := l.note(); note != "" {
 		lines = append(lines, indented(note, detailIndent, width))
 	}
-	return strings.Join(lines, "\n")
+	return strings.Join(append(lines, l.reportFold(width)...), "\n")
+}
+
+// reportFold is the child's own words under a settled lane: the row that says
+// how much there is of them, and the report itself once the reader has opened
+// it. It is the transcript's own fold grammar and its own key — `▸ report · 14
+// lines · [enter] expand` — because a reader who has learned how a paste or a
+// run of calls opens has learned this
+// (docs/interface/principles.md#fold-never-hide).
+//
+// It is here and not on the manager's row or the rail's for the same reason
+// the summary line is: the transcript is where a turn is read afterwards, and
+// a report is the last thing that happened in the turn. The manager is a list
+// of things to act on now.
+func (l FanoutLane) reportFold(width int) []string {
+	if !l.State.settled() || len(l.Report) == 0 {
+		return nil
+	}
+	mark, key := "▸", GroupExpandKey
+	if l.ReportOpen {
+		mark, key = "▾", keys.Bracket(keys.Reading.Expand)+" fold it back up"
+	}
+	head := mark + " report" + detailSep + plural(len(l.Report), "line") + detailSep
+	lines := []string{strings.Repeat(" ", detailIndent) +
+		sty.Dimmer.Render(head) + sty.Hint.Render(key)}
+	if !l.ReportOpen {
+		return lines
+	}
+	body, dropped := l.Report, 0
+	if l.MaxReport > 0 && len(body) > l.MaxReport {
+		body, dropped = body[:l.MaxReport], len(body)-l.MaxReport
+	}
+	for _, line := range body {
+		lines = append(lines, indented(line, detailIndent, width))
+	}
+	if dropped > 0 {
+		// The bound is a fold like any other, so it counts what it swallowed.
+		lines = append(lines, strings.Repeat(" ", detailIndent)+
+			sty.Dim.Render(Clip(countedTail(dropped), max(width-detailIndent, 1))))
+	}
+	return lines
 }
 
 // note is the line under the lane: a blocked child's reason, a finished
@@ -388,7 +515,7 @@ func (l FanoutLane) note() string {
 		return l.Waiting
 	}
 	if l.State.settled() {
-		return l.Summary
+		return l.settledNote()
 	}
 	if note := l.steerNote(); note != "" {
 		return note
@@ -406,6 +533,27 @@ func (l FanoutLane) note() string {
 		return "started from " + plural(l.Seeded, "uncommitted file") + " in your tree"
 	}
 	return ""
+}
+
+// settledNote is a stopped child's line: the first line of what it reported,
+// and how many assumptions it had to make to get there. A child is never
+// offered the tool that asks, so an assumption is what it left in place of a
+// question — the one thing in a report a reader may want to disagree with,
+// and the one thing a first line almost never carries
+// (docs/capabilities/subagents.md#a-child-answers-to-the-session).
+//
+// The count and not the assumptions themselves: they are in the report, which
+// is one key away under this line, and a lane that spelled them out would be
+// a lane that had stopped being a line.
+func (l FanoutLane) settledNote() string {
+	if l.Assumptions == 0 {
+		return l.Summary
+	}
+	stated := plural(l.Assumptions, "assumption")
+	if l.Summary == "" {
+		return stated
+	}
+	return l.Summary + detailSep + stated
 }
 
 // steerNote is the steering half of the line: how often the child has been

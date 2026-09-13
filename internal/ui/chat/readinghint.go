@@ -132,7 +132,7 @@ func (m Model) focusedExpands() bool {
 	if m.groupAnchor(es, m.focusIdx) {
 		return true
 	}
-	return expandable(es[m.focusIdx])
+	return m.rowExpands(es[m.focusIdx])
 }
 
 // seg is a binding as one segment of the bar: the register's spelling and the

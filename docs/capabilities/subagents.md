@@ -186,6 +186,15 @@ they are on the report because the report is what the parent acts on — a child
 steered three times that comes back calling its work sufficient is one to
 check rather than to take, and nothing in the words themselves would say so.
 
+The person reads it where the child ran. A lane that has stopped folds open on
+the report under its own detail line, so the words are read in the transcript
+rather than by attaching to a child nobody has a reason to attach to
+([`../interface/surfaces.md`](../interface/surfaces.md#the-agent-manager)).
+What the lane states without being opened is the count of assumptions the
+report lists and, for a review, the verdict it ends on: the two things a
+reader would otherwise have to open every report to find, and the two the
+first line almost never carries.
+
 A writing child's report also says what became of its patch and which files
 were in it. What a patch touched is the whole of what the parent needs to
 integrate it, and it is already known at the moment the patch lands; a note

@@ -1167,6 +1167,27 @@ gutter columns a lane never uses. The parent's lane says how many are under it
 to report of its own is otherwise a lane that has stopped for no stated
 reason.
 
+**A lane that has stopped folds open on the report its child wrote.** The
+first line of it stays on the lane's detail line, and under that is the fold
+every other body in the transcript wears — `▸ report · 14 lines · [enter]
+expand` — opened by the reading key that opens all of them. A child's report
+used to reach the model and nobody else; the person holding the approval keys
+got the first line and the option of attaching to a child they had no reason
+to think was holding anything. The fold is the transcript's alone, because the
+transcript is where a turn is read afterwards and the manager is a list of
+things to act on now.
+
+Two things the report says that a first line does not, the lane says itself.
+How many assumptions the child stated instead of asking is counted beside the
+summary (`· 2 assumptions`): a child is never offered the tool that asks, so
+an assumption is what stands where a question would have been, and it is the
+part of a report a reader may want to disagree with. And a reviewing child's
+verdict — the word its report ends on — stands beside the state in the outcome
+field, `✓ done · approve with changes`, because what became of the run and what
+the run concluded are two facts and only the second is acted on. A report with
+no verdict on its last line draws `done` alone. As the pane narrows the cost
+gives way first and the verdict after it; the name never does.
+
 What floats is the group and not the row. A request under a descendant lifts
 the whole group — the agent, and everything drawn under it — to the top of the
 list, so the row a reader has to answer is both at the top and still directly

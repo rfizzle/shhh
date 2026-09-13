@@ -21,12 +21,23 @@
    ◇ agent   reader-4 · survey internal/ui                         queued   1.0s
     [alt+a] agents
 
-· settled · every child has stopped
+· settled · one lane open on its report, one carrying a verdict
 ◇ fan-out    3 agents                                   2 done · 1 failed  2m04s
    ◇ agent   writer-1 · docs/loop.md            ✓ done · 11 tools · $0.04  1m38s
-    documented the sentinel and linked the test
-   ◇ agent   tester-2 · internal/agent tests     ✓ done · 9 tools · $0.03    41s
-    all four packages pass
+    documented the sentinel and linked the test · 2 assumptions
+    ▾ report · 9 lines · [enter] fold it back up
+    Documented the sentinel and linked the test.
+    
+    The sentinel is returned from one place and read in two, and the
+    paragraph names both.
+    
+    ## Assumptions
+    
+    - The loop's own callers are out of scope.
+    - docs/loop.md is the page, not the package comment.
+   ◇ agent   reviewer-2 · read the round …  ✓ done · approve with changes    41s
+    two findings, both in the round accounting
+    ▸ report · 3 lines · [enter] expand
    ◇ agent   patcher-3 · apply the patch      ✗ failed · 12 tools · $0.05  2m04s
     round limit (25) reached
 
@@ -60,12 +71,23 @@
    ␛[38;5;241m◇␛[m ␛[38;5;252magent␛[m   ␛[38;5;252mreader-4␛[m␛[38;5;241m · survey internal/ui␛[m                         ␛[38;5;241mqueued␛[m   ␛[38;5;241m1.0s␛[m
     ␛[94m[alt+a]␛[m␛[38;5;241m agents␛[m
 
-· settled · every child has stopped
+· settled · one lane open on its report, one carrying a verdict
 ␛[94m◇␛[m ␛[38;5;252mfan-out␛[m    ␛[38;5;241m3 agents␛[m                                   ␛[92m2 done␛[m␛[38;5;241m · ␛[m␛[91m1 failed␛[m  ␛[38;5;241m2m04s␛[m
    ␛[92m◇␛[m ␛[38;5;252magent␛[m   ␛[38;5;252mwriter-1␛[m␛[38;5;241m · docs/loop.md␛[m            ␛[92m✓ done␛[m␛[38;5;241m · ␛[m␛[38;5;245m11 tools · $0.04␛[m  ␛[38;5;241m1m38s␛[m
-    ␛[38;5;245mdocumented the sentinel and linked the test␛[m
-   ␛[92m◇␛[m ␛[38;5;252magent␛[m   ␛[38;5;252mtester-2␛[m␛[38;5;241m · internal/agent tests␛[m     ␛[92m✓ done␛[m␛[38;5;241m · ␛[m␛[38;5;245m9 tools · $0.03␛[m    ␛[38;5;241m41s␛[m
-    ␛[38;5;245mall four packages pass␛[m
+    ␛[38;5;245mdocumented the sentinel and linked the test · 2 assumptions␛[m
+    ␛[38;5;245m▾ report · 9 lines · ␛[m␛[38;5;241m[enter] fold it back up␛[m
+    ␛[38;5;245mDocumented the sentinel and linked the test.␛[m
+    ␛[38;5;245m␛[m
+    ␛[38;5;245mThe sentinel is returned from one place and read in two, and the␛[m
+    ␛[38;5;245mparagraph names both.␛[m
+    ␛[38;5;245m␛[m
+    ␛[38;5;245m## Assumptions␛[m
+    ␛[38;5;245m␛[m
+    ␛[38;5;245m- The loop's own callers are out of scope.␛[m
+    ␛[38;5;245m- docs/loop.md is the page, not the package comment.␛[m
+   ␛[92m◇␛[m ␛[38;5;252magent␛[m   ␛[38;5;252mreviewer-2␛[m␛[38;5;241m · read the round …␛[m  ␛[92m✓ done␛[m␛[38;5;241m · ␛[m␛[38;5;252mapprove with changes␛[m    ␛[38;5;241m41s␛[m
+    ␛[38;5;245mtwo findings, both in the round accounting␛[m
+    ␛[38;5;245m▸ report · 3 lines · ␛[m␛[38;5;241m[enter] expand␛[m
    ␛[91m◇␛[m ␛[38;5;252magent␛[m   ␛[38;5;252mpatcher-3␛[m␛[38;5;241m · apply the patch␛[m      ␛[91m✗ failed␛[m␛[38;5;241m · ␛[m␛[38;5;245m12 tools · $0.05␛[m  ␛[38;5;241m2m04s␛[m
     ␛[38;5;245mround limit (25) reached␛[m
 

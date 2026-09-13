@@ -452,3 +452,135 @@ func TestFanoutBlockedFloatsTheWholeGroup(t *testing.T) {
 		t.Fatalf("the blocked group should float whole: got %v, want %s", order, want)
 	}
 }
+
+// A settled lane folds the child's own report under it, in the transcript's
+// own fold grammar and behind the transcript's own key: what the person acts
+// on is the child's words, not the first line of them.
+func TestFanoutSettledLaneFoldsItsReport(t *testing.T) {
+	report := []string{"Counted the rounds.", "", "The counter is read once."}
+	shut := FanoutLane{State: FanoutDone, Name: "reader-1", Summary: "Counted the rounds.",
+		Report: report}
+	view := ansi.Strip(shut.View(110))
+	if !strings.Contains(view, "▸ report · 3 lines · [enter] expand") {
+		t.Fatalf("a settled lane should offer its report as a fold: %q", view)
+	}
+	if strings.Contains(view, "The counter is read once.") {
+		t.Fatalf("a shut fold should hold the report back: %q", view)
+	}
+
+	open := shut
+	open.ReportOpen = true
+	oview := ansi.Strip(open.View(110))
+	if !strings.Contains(oview, "▾ report · 3 lines") {
+		t.Fatalf("an opened fold should say it is open: %q", oview)
+	}
+	if !strings.Contains(oview, "The counter is read once.") {
+		t.Fatalf("an opened fold should show the report: %q", oview)
+	}
+
+	// The bound is a fold like any other, so it counts what it swallowed.
+	long := shut
+	long.Report = []string{"one", "two", "three", "four"}
+	long.ReportOpen, long.MaxReport = true, 2
+	lview := ansi.Strip(long.View(110))
+	if !strings.Contains(lview, "… 2 more lines") {
+		t.Fatalf("a bounded report should count what it held back: %q", lview)
+	}
+	if strings.Contains(lview, "three") {
+		t.Fatalf("a bounded report should stop at its bound: %q", lview)
+	}
+}
+
+// Only a lane that has stopped has a report, and only a lane with one draws
+// the fold: a running child's words are not a report yet.
+func TestFanoutRunningLaneHasNoReportFold(t *testing.T) {
+	for _, lane := range []FanoutLane{
+		{State: FanoutRunning, Name: "a", Report: []string{"half a thought"}},
+		{State: FanoutBlocked, Name: "a", Report: []string{"half a thought"}},
+		{State: FanoutDone, Name: "a"},
+	} {
+		if view := ansi.Strip(lane.View(110)); strings.Contains(view, "report ·") {
+			t.Fatalf("no fold belongs on this lane: %q", view)
+		}
+	}
+}
+
+// The assumptions a child stated instead of asking are counted on the lane's
+// own detail line, beside the first line of what it reported. Zero states
+// nothing: a child that assumed nothing and one that never wrote the section
+// are the same lane.
+func TestFanoutSettledLaneCountsTheAssumptions(t *testing.T) {
+	lane := FanoutLane{State: FanoutDone, Name: "reader-1",
+		Summary: "Counted the rounds.", Assumptions: 2}
+	view := ansi.Strip(lane.View(110))
+	if !strings.Contains(view, "Counted the rounds. · 2 assumptions") {
+		t.Fatalf("the detail line should carry the count: %q", view)
+	}
+
+	none := lane
+	none.Assumptions = 0
+	if view := ansi.Strip(none.View(110)); strings.Contains(view, "assumption") {
+		t.Fatalf("no assumptions is no field: %q", view)
+	}
+
+	bare := FanoutLane{State: FanoutDone, Name: "reader-1", Assumptions: 1}
+	if view := ansi.Strip(bare.View(110)); !strings.Contains(view, "1 assumption") {
+		t.Fatalf("a report with nothing else to say still counts them: %q", view)
+	}
+}
+
+// A review's verdict stands beside the state in the outcome field, on the
+// lane and on the manager row alike — the two draw a child through one
+// renderer, and they differ in the glyph column and nowhere else.
+func TestFanoutLaneCarriesTheReviewVerdict(t *testing.T) {
+	lane := FanoutLane{State: FanoutDone, Name: "reviewer-1", Task: "the round change",
+		ReportVerdict: "approve with changes"}
+	if view := ansi.Strip(lane.View(110)); !strings.Contains(view, "✓ done · approve with changes") {
+		t.Fatalf("the verdict belongs beside the state: %q", view)
+	}
+
+	metered := lane
+	metered.Step, metered.Steps = 5, 5
+	if view := ansi.Strip(metered.View(110)); !strings.Contains(view, "✓ 5/5 · approve with changes") {
+		t.Fatalf("a review that declared a count keeps both: %q", view)
+	}
+
+	progress := lane.progressOf()
+	row := AgentRow{State: AgentDone, Name: "reviewer-1", Progress: &progress}
+	rendered := ansi.Strip(strings.Join(row.render(110, false), "\n"))
+	if !strings.Contains(rendered, "approve with changes") {
+		t.Fatalf("the manager row reads the same verdict: %q", rendered)
+	}
+
+	// What gives way as the pane narrows, and in what order: the cost first,
+	// then the verdict, and never the name the lane is read by.
+	costly := lane
+	costly.Tools, costly.Spend = 9, "$0.03"
+	tight := ansi.Strip(costly.View(80))
+	if !strings.Contains(tight, "approve with changes") {
+		t.Fatalf("the cost should give way before the verdict: %q", tight)
+	}
+	if strings.Contains(tight, "9 tools") {
+		t.Fatalf("both the cost and the verdict cannot fit here: %q", tight)
+	}
+	narrow := ansi.Strip(costly.View(60))
+	if strings.Contains(narrow, "approve with changes") {
+		t.Fatalf("the verdict should give way before the name does: %q", narrow)
+	}
+	if !strings.Contains(narrow, "reviewer-1") {
+		t.Fatalf("the lane lost the name it is read by: %q", narrow)
+	}
+
+	// A child still going has nothing to conclude, and a report with no
+	// verdict on its last line leaves `done` standing alone.
+	live := lane
+	live.State = FanoutRunning
+	if view := ansi.Strip(live.View(110)); strings.Contains(view, "approve with changes") {
+		t.Fatalf("a running lane has no verdict to state: %q", view)
+	}
+	silent := lane
+	silent.ReportVerdict = ""
+	if view := ansi.Strip(silent.View(110)); !strings.Contains(view, "✓ done") {
+		t.Fatalf("a report with no verdict draws done alone: %q", view)
+	}
+}
