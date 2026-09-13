@@ -262,7 +262,7 @@ func (m *Model) cancelStreaming() {
 	// request to a hung server running until its own timeout (mcp.go).
 	m.abandonMCPCalls()
 	for _, tc := range m.agent.CancelTurn() {
-		m.appendEntry(entry{kind: entryTool, toolName: tc.Name, toolArgs: tc.Arguments, toolResult: cancelledToolResult})
+		m.appendCallRow(tc.ID, entry{kind: entryTool, toolName: tc.Name, toolArgs: tc.Arguments, toolResult: cancelledToolResult})
 	}
 	m.pendingApproval = nil
 	m.memoryAsk = nil

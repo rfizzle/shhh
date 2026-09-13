@@ -52,8 +52,9 @@ func (m *Model) appendSpawnEntry(e entry) {
 	}
 	batch := m.subagents.Batch()
 	if m.subagents.BatchSize(batch) < 2 {
-		m.spawnRow = len(m.transcript) + 1
-		m.appendEntry(e)
+		// Where the row landed, not where the feed ended: a spawn is a gated
+		// call, so its row goes back among the round's own rows (queue.go).
+		m.spawnRow = m.appendEntry(e) + 1
 		return
 	}
 	if m.spawnRow > 0 {

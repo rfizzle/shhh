@@ -402,6 +402,10 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 			// It goes under the announcement, which is where it happened.
 			m.truncatedRound()
 		}
+		// The round's rows begin here: the announcement above them titles the
+		// round rather than any one call in it, and the order the model asked
+		// in is what decides where each row goes (queue.go).
+		m.openCallBatch(msg.calls)
 		m.streaming = ""
 		m.events = nil
 		m.cancel = nil
@@ -423,7 +427,7 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 			if agent.IsRepeatNotice(r.Result) {
 				m.signal(observe.SignalRepeat, r.Call.Name)
 			}
-			m.appendEntry(entry{kind: entryTool, toolName: r.Call.Name, toolArgs: r.Call.Arguments, toolResult: r.Result, duration: r.Duration})
+			m.appendCallRow(r.Call.ID, entry{kind: entryTool, toolName: r.Call.Name, toolArgs: r.Call.Arguments, toolResult: r.Result, duration: r.Duration})
 		}
 		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoBottom()
@@ -575,10 +579,14 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 		// The plain row, for every landing but the diff's. Whichever of the
 		// three it lands as, it carries the account of how the call came to
 		// be allowed — the rule that answered, or the reader who answered
-		// the card: nothing said so above it (approval.go).
+		// the card: nothing said so above it (approval.go). And whichever it
+		// lands as, it goes at the place the call had in its round rather
+		// than at the end of the feed, because the calls that needed no
+		// decision ran while this one waited for one (queue.go).
 		row := entry{kind: entryTool, toolName: req.call.Name, toolArgs: req.call.Arguments,
 			toolResult: msg.result, duration: msg.duration,
-			allowedBy: req.autoRule, allowElapsed: req.autoCost}
+			allowedBy: req.autoRule, allowElapsed: req.autoCost,
+			callSeq: m.callPlace(req.call.ID)}
 		if req.autoRule == "" {
 			row.approvedBy = decidedByYou
 		}
@@ -586,7 +594,7 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 		// docs/interface/surfaces.md#the-diff-view); failures keep the plain tool
 		// block so the error text stays visible.
 		if req.kind == approvalDiff && len(req.hunks) > 0 && digest.Outcome(msg.result) == digest.OutcomeOK {
-			m.appendEntry(entry{kind: entryDiff, diff: &components.DiffView{
+			m.appendCallRow(req.call.ID, entry{kind: entryDiff, diff: &components.DiffView{
 				Path:     req.path,
 				Verb:     req.verb,
 				Hunks:    req.hunks,

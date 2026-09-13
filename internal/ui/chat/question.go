@@ -1109,7 +1109,7 @@ func (m Model) resolveQuestion(req *approvalRequest, qs []ask.Question, as []ask
 	m.releaseDecision()
 	m.agent.ResolveApproval(result)
 	m.recordToolResult(req.call.Name, 0, result)
-	m.appendEntry(entry{
+	m.appendCallRow(req.call.ID, entry{
 		kind:       entryTool,
 		toolName:   req.call.Name,
 		toolArgs:   req.call.Arguments,

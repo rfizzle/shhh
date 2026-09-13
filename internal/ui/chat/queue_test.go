@@ -8,10 +8,12 @@ package chat
 // unchecked is denied, one at a time, by the path a single card's no takes.
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -711,5 +713,151 @@ func TestSkippedCallEntryKeepsAPathOutsideTheWorkspace(t *testing.T) {
 	e := m.skippedCallEntry(provider.ToolCall{Name: "write_file"}, tools.StaleError{Path: outside})
 	if !strings.Contains(e.text, outside) {
 		t.Errorf("row should keep the absolute path, got %q", e.text)
+	}
+}
+
+// writeNeedsContent is a write preview that refuses arguments it cannot act
+// on. The path still parses, which is what lets the skipped row say which
+// file the call was about.
+func writeNeedsContent(raw json.RawMessage) (GatedPreview, error) {
+	var args struct {
+		Path    string `json:"path"`
+		Content string `json:"content"`
+	}
+	if err := json.Unmarshal(raw, &args); err != nil {
+		return GatedPreview{}, err
+	}
+	if args.Content == "" {
+		return GatedPreview{}, errors.New("content is required")
+	}
+	return GatedPreview{Action: "write", Path: args.Path, NewText: args.Content}, nil
+}
+
+// readCall is one read the session runs without asking.
+func readCall(id, path string) provider.ToolCall {
+	return provider.ToolCall{
+		ID: id, Name: "read_file", Arguments: fmt.Sprintf(`{"path":%q}`, path),
+	}
+}
+
+// batchModel is a session that reads without asking and stops for every
+// write, which is the split a round has to keep its order across.
+func batchModel(t *testing.T) Model {
+	t.Helper()
+	return tallPanel(t, gatedModel(t, func(name string, args json.RawMessage) (string, error) {
+		return "ok", nil
+	}, map[string]GatedPreviewFunc{"write_file": writeNeedsContent}))
+}
+
+// runRound puts a round of calls to the model and lets the calls that need no
+// decision finish, which is the state a queued decision is answered from.
+func runRound(m Model, calls []provider.ToolCall) Model {
+	updated, cmd := m.Update(toolCallsMsg{calls: calls})
+	m = updated.(Model)
+	for _, c := range unwrapBatch(cmd) {
+		if msg, ok := c().(toolResultsMsg); ok {
+			updated, _ = m.Update(msg)
+			m = updated.(Model)
+		}
+	}
+	return m
+}
+
+// batchTargets is what each of the round's rows was about, in the order the
+// feed holds them. A diff row keeps its target on the viewer and every other
+// act on its activity row, so both are read — the question here is where the
+// rows are, not which shape they took.
+func batchTargets(m Model) []string {
+	var targets []string
+	for _, e := range m.transcript {
+		switch {
+		case e.kind == entryDiff && e.diff != nil:
+			targets = append(targets, e.diff.Path)
+		case e.kind == entryTool:
+			targets = append(targets, m.activityRowFor(e).Target)
+		}
+	}
+	return targets
+}
+
+// TestBatchOrder_ADecidedCallKeepsItsPlaceInTheRound holds the feed to the
+// order the model asked in. A round of three — a read, a write that stops for
+// a decision, and a second read — runs both reads while the write waits, so
+// the write's row is filed last however it is answered. It still belongs
+// second: the transcript is the record of what the turn did, and a refusal
+// under the read proposed after it reads as a session that changed its mind
+// (docs/interface/principles.md#one-grid).
+//
+// Every answer, because the row a decision leaves is a different row each
+// time — the diff an approval applies, the ⊘ a decline leaves, and the
+// skipped row a call the preview could not read gets without ever reaching a
+// card — and where they go is the one thing all three share.
+func TestBatchOrder_ADecidedCallKeepsItsPlaceInTheRound(t *testing.T) {
+	round := []provider.ToolCall{
+		readCall("call_1", "first.go"),
+		writeCall("call_2", "second.go", "the write\n"),
+		readCall("call_3", "third.go"),
+	}
+	malformed := round[1]
+	malformed.Arguments = `{"path":"second.go"}`
+	want := []string{"first.go", "second.go", "third.go"}
+
+	t.Run("approved", func(t *testing.T) {
+		m := runRound(batchModel(t), round)
+		if m.state != stateConfirmRun {
+			t.Fatalf("the write should be waiting on a decision, got state %d", m.state)
+		}
+		updated, cmd := handover(t, m).Update(tea.KeyPressMsg{Code: 'y', Text: "y"})
+		m = updated.(Model)
+		for _, c := range unwrapBatch(cmd) {
+			if msg, ok := c().(approvedToolDoneMsg); ok {
+				updated, _ = m.Update(msg)
+				m = updated.(Model)
+			}
+		}
+		if got := batchTargets(m); !slices.Equal(got, want) {
+			t.Fatalf("the round's rows should read in call order %v, got %v", want, got)
+		}
+	})
+
+	t.Run("refused", func(t *testing.T) {
+		m := runRound(batchModel(t), round)
+		updated, _ := handover(t, m).Update(keyN())
+		m = updated.(Model)
+		if got := batchTargets(m); !slices.Equal(got, want) {
+			t.Fatalf("the round's rows should read in call order %v, got %v", want, got)
+		}
+	})
+
+	t.Run("skipped for invalid arguments", func(t *testing.T) {
+		m := runRound(batchModel(t), []provider.ToolCall{round[0], malformed, round[2]})
+		if m.state == stateConfirmRun {
+			t.Fatal("a call the preview cannot read never reaches a card")
+		}
+		if got := batchTargets(m); !slices.Equal(got, want) {
+			t.Fatalf("the round's rows should read in call order %v, got %v", want, got)
+		}
+	})
+}
+
+// TestBatchOrder_ALateRowStaysInsideItsOwnRound is the other half of the
+// rule. The place a late row goes is found by walking back over the rows of
+// the calls asked for after it and stopping at anything else, so a row
+// already drawn is never drawn somewhere else and the round before this one
+// is never reached — not even where nothing was said between them.
+func TestBatchOrder_ALateRowStaysInsideItsOwnRound(t *testing.T) {
+	m := runRound(batchModel(t), []provider.ToolCall{
+		readCall("a1", "one.go"), readCall("a2", "two.go"),
+	})
+	// The second round's first call is the one that waits, and the read after
+	// it has already landed. Neither round announced itself, so there is no
+	// prose between them for the walk to stop at.
+	m = runRound(m, []provider.ToolCall{
+		{ID: "b1", Name: "write_file", Arguments: `{"path":"three.go"}`},
+		readCall("b2", "four.go"),
+	})
+	want := []string{"one.go", "two.go", "three.go", "four.go"}
+	if got := batchTargets(m); !slices.Equal(got, want) {
+		t.Fatalf("a late row goes back only among its own round's rows, wanted %v, got %v", want, got)
 	}
 }

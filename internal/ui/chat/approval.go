@@ -367,7 +367,7 @@ func (m Model) advanceApprovalQueue() (tea.Model, tea.Cmd) {
 	req, err := m.buildApprovalRequest(tc)
 	if err != nil {
 		m.agent.ResolveApproval(m.refusedResult(tc, "error: "+err.Error()))
-		m.appendEntry(m.skippedCallEntry(tc, err))
+		m.appendCallRow(tc.ID, m.skippedCallEntry(tc, err))
 		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoBottom()
 		return m.advanceApprovalQueue()
@@ -379,7 +379,7 @@ func (m Model) advanceApprovalQueue() (tea.Model, tea.Cmd) {
 	// where it can act on it.
 	if refusal := m.containmentRefusal(req); refusal != "" {
 		m.agent.ResolveApproval(m.refusedResult(req.call, refusal))
-		m.appendEntry(entry{
+		m.appendCallRow(req.call.ID, entry{
 			kind: entrySystem,
 			text: "Refused — nothing is containing commands in this session: " + req.summary,
 			// The expansion is what the model was told, verbatim, including
@@ -403,7 +403,7 @@ func (m Model) advanceApprovalQueue() (tea.Model, tea.Cmd) {
 		// Surfaces on the notice rail until the next user turn.
 		m.denialNotice = req.summary
 		m.agent.ResolveApproval(m.refusedResult(req.call, result))
-		m.appendEntry(deniedEntry(req, decidedByAuto, reason, 0))
+		m.appendCallRow(req.call.ID, deniedEntry(req, decidedByAuto, reason, 0))
 		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoBottom()
 		return m.advanceApprovalQueue()
@@ -499,7 +499,7 @@ func (m Model) armApprovalDecision(req *approvalRequest) (tea.Model, tea.Cmd) {
 		m.pendingRun = ""
 		m.pendingScope = scopeReach{}
 		m.agent.ResolveApproval(m.refusedResult(req.call, denialResult(reason)))
-		m.appendEntry(deniedEntry(req, decidedByAuto, reason, 0))
+		m.appendCallRow(req.call.ID, deniedEntry(req, decidedByAuto, reason, 0))
 		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoBottom()
 		return m.advanceApprovalQueue()
@@ -546,7 +546,7 @@ func (m Model) finishPreToolHook(msg preToolHookMsg) (tea.Model, tea.Cmd) {
 		// Surfaces on the notice rail until the next user turn.
 		m.denialNotice = req.summary
 		m.agent.ResolveApproval(m.refusedResult(req.call, hook.DeniedResult(v.Reason)))
-		m.appendEntry(deniedEntry(req, decidedByAuto, hook.DenyRule(v.Reason), 0))
+		m.appendCallRow(req.call.ID, deniedEntry(req, decidedByAuto, hook.DenyRule(v.Reason), 0))
 		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoBottom()
 		return m.advanceApprovalQueue()
@@ -561,7 +561,7 @@ func (m Model) finishPreToolHook(msg preToolHookMsg) (tea.Model, tea.Cmd) {
 		rebuilt, err := m.buildApprovalRequest(call)
 		if err != nil {
 			m.agent.ResolveApproval(m.refusedResult(call, "error: "+err.Error()))
-			m.appendEntry(m.skippedCallEntry(call, err))
+			m.appendCallRow(call.ID, m.skippedCallEntry(call, err))
 			m.viewport.SetLines(m.renderHistoryLines())
 			m.viewport.GotoBottom()
 			return m.advanceApprovalQueue()
@@ -632,7 +632,7 @@ func (m Model) finishClassifierCheck(v agent.ClassifierVerdict) (tea.Model, tea.
 		// and nothing is left on the frame, which says what the session is
 		// doing now and not what it did three rounds ago
 		// (docs/capabilities/approvals-and-safety.md#a-judged-denial-carries-its-reason).
-		m.appendEntry(deniedEntry(req, decidedByAuto, classifierRule, v.Elapsed).withDenyWhy(why))
+		m.appendCallRow(req.call.ID, deniedEntry(req, decidedByAuto, classifierRule, v.Elapsed).withDenyWhy(why))
 		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoBottom()
 		return m.advanceApprovalQueue()
@@ -832,7 +832,7 @@ func (m Model) declineApprovalWith(note string) (tea.Model, tea.Cmd) {
 		content = "error: " + note
 	}
 	m.agent.ResolveApproval(m.refusedResult(req.call, content))
-	m.appendEntry(deniedEntry(req, decidedByYou, "", 0).withDenyNote(note))
+	m.appendCallRow(req.call.ID, deniedEntry(req, decidedByYou, "", 0).withDenyNote(note))
 	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()
 	return m.advanceApprovalQueue()
@@ -1414,15 +1414,12 @@ func (m Model) resolvePanel() panelBody {
 
 	var lines []string
 	bound := m.maxConfirmPanelHeight()
-	// The register says which mode owns the panel and how tall it may grow.
-	// A decision still waiting on the handover owns none of it: it rides
-	// above the frame rather than filling the panel — the placement the
-	// register calls floating — so the panel is the input's and
-	// interruptHeight is what pays for the card.
+	// The register says which mode owns the panel and how tall it may grow,
+	// and it is the register that says a floating decision owns none of it
+	// while there is a frame for it to ride above: panelOverlay reads the
+	// placement, so the rule is stated once there rather than restated here
+	// (overlay.go).
 	o := m.panelOverlay()
-	if m.decisionUngated() && showingFrame {
-		o = nil
-	}
 	switch {
 	case o != nil:
 		lines, bound = o.Lines(m, m.contentWidth(), 0), o.Bound(m)

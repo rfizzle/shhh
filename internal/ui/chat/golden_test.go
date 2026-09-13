@@ -3465,3 +3465,38 @@ func TestGolden_TreeMoved(t *testing.T) {
 		}
 	})
 }
+
+// TestGolden_BatchOrder pins the order a round's rows are read in. The model
+// asked for a read, a write and a second read; the reads ran while the write
+// waited for an answer, so the write's row was the last one the session had
+// anything to file. It is drawn second all the same, because the feed is the
+// record of what the turn did and the order it did it in is part of that
+// record (docs/interface/principles.md#one-grid).
+//
+// Both ways the middle call ends, because they are two different rows in the
+// same place: the ⊘ of a write the reader refused, and the skipped row of one
+// whose arguments the preview could not read. Four widths, because a row that
+// gives up its account on a narrow terminal must not give up its place.
+func TestGolden_BatchOrder(t *testing.T) {
+	captureGolden(t, "batch-order", "a round's rows in the order it asked", goldenWidths, func(width int) []golden.Panel {
+		open := func(middle provider.ToolCall) Model {
+			m := batchModel(t)
+			updated, _ := m.Update(tea.WindowSizeMsg{Width: width, Height: 40})
+			return runRound(updated.(Model), []provider.ToolCall{
+				readCall("call_1", "internal/agent/loop.go"),
+				middle,
+				readCall("call_3", "internal/ui/chat/turn.go"),
+			})
+		}
+		answered, _ := handover(t, open(writeCall("call_2", "internal/agent/round.go", "the write\n"))).Update(keyN())
+		refused := answered.(Model)
+		skipped := open(provider.ToolCall{ID: "call_2", Name: "write_file",
+			Arguments: `{"path":"internal/agent/round.go"}`})
+		return []golden.Panel{
+			{Label: "the write refused at the card, between the reads that ran while it waited",
+				View: refused.renderHistory()},
+			{Label: "the write skipped for arguments the preview could not read",
+				View: skipped.renderHistory()},
+		}
+	})
+}

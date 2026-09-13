@@ -567,6 +567,12 @@ type entry struct {
 	// entry is appended, so every reader of the outline stays a pure function
 	// of the transcript.
 	planStep int
+	// callSeq is the place the call this row is about had in the round the
+	// model asked for it in, counted from one: what decides where the row
+	// goes rather than anything the row says (queue.go). Zero on every entry
+	// that is not one of a round's calls, and those are filed at the end of
+	// the feed the way everything always was.
+	callSeq int
 }
 
 // steeringItem is an entry in the steering queue. Messages the session writes
@@ -605,6 +611,10 @@ type Model struct {
 	// row, or 0 once the round has none left to convert — the row a second
 	// child of the same round turns into the fan-out block.
 	spawnRow int
+	// batch is the order the current round asked for its calls in, which is
+	// the order their rows are filed in however long a decision holds one of
+	// them up (queue.go).
+	batch callBatch
 	// thinkIdx is 1 + the transcript index of this round's think row, or 0
 	// where the round has not thought yet (think.go). It is the round's row
 	// rather than the block's, so reasoning that arrives in three pieces

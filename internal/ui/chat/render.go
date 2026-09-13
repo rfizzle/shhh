@@ -9,6 +9,7 @@ package chat
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"charm.land/lipgloss/v2"
@@ -17,14 +18,39 @@ import (
 	"github.com/rfizzle/shhh/internal/ui/markdown"
 )
 
-func (m *Model) appendEntry(e entry) {
+// appendEntry files an entry and reports the transcript index it landed at.
+//
+// Nearly everything lands at the end. A row for one of the current round's
+// calls lands at the place that call had in the round instead, which is
+// behind the rows of any calls the model asked for after it and that ran
+// while a decision held this one up (queue.go).
+func (m *Model) appendEntry(e entry) int {
 	// Every entry knows the turn it belongs to, so a row that outlives its
 	// turn can still name it — the rail's alerts do. An entry
 	// that already carries one (a close block, a round-limit pause) keeps it.
 	if e.turn == 0 {
 		e.turn = m.turnCount
 	}
-	m.transcript = append(m.transcript, e)
+	at := len(m.transcript)
+	if e.callSeq > 0 {
+		at = m.placeCall(e.callSeq)
+	}
+	if at >= len(m.transcript) {
+		m.transcript = append(m.transcript, e)
+		return at
+	}
+	m.transcript = slices.Insert(m.transcript, at, e)
+	// Only the round's own later rows move — placeCall walks back over those
+	// and nothing else — so the indices kept into the transcript outside a
+	// round (the think row, the run's row, an approved plan's start) still
+	// name what they named. Two readers do have to be told: the stable-prefix
+	// caches have frozen the rows behind this one at the index they had, and
+	// the reading cursor names the row a reader is standing on.
+	m.invalidateRenderCache()
+	if m.focusIdx >= at {
+		m.focusIdx++
+	}
+	return at
 }
 
 // appendEntries appends a run of entries a single act left behind — the
@@ -42,6 +68,9 @@ func (m *Model) resetTranscript() {
 	// no longer exists, and so does the round's think row and the run's row.
 	m.spawnRow = 0
 	m.thinkIdx = 0
+	// The round's order is where in a transcript its rows go, and this one
+	// no longer exists.
+	m.batch = callBatch{}
 	m.todoRunner.rowIdx, m.todoRunner.followUpRow = 0, 0
 	// The checklist is read off the transcript, so a transcript that is gone
 	// takes the approved plan with it rather than pointing at entries that no

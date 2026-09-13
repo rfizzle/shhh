@@ -103,6 +103,75 @@ func (m Model) resolveQueue(cur *approvalRequest) (components.QueueStrip, []stri
 	return strip, batch
 }
 
+// callBatch is where a round's rows go.
+//
+// A round's calls are asked for in one order and answered in another: the
+// ones that need no decision run at once, together, while the queue holds
+// back the ones that do. A row filed when its call was answered therefore
+// landed after calls the model asked for later — two refused edits under the
+// suite that was proposed after them, which reads as a session that ran the
+// suite and then changed its mind.
+//
+// So the round's own order is written down when the round opens, and a row
+// goes at the place its call had in it rather than at the end of the feed.
+// The feed is the record of what the turn did and the order the turn did it
+// in is part of that record (docs/interface/principles.md#one-grid). Nothing
+// already drawn moves past anything else: a row only ever goes back among
+// the rows of calls asked for after it.
+type callBatch struct {
+	// seq is each call's place in the round, counted from one, by call id. A
+	// call this round did not carry is absent, and its row is filed at the
+	// end like every entry that is not one of a round's calls.
+	seq map[string]int
+	// start is the transcript index the round's rows begin at. It is the
+	// floor the walk back stops at, so a round whose announcement was silent
+	// cannot reach into the round before it and file a row among its rows.
+	start int
+}
+
+// openCallBatch records the order a round asked for its calls in, and where
+// its rows begin. It is called once a round, after the announcement that
+// titles it, because that row belongs to the round and not to any call in it.
+func (m *Model) openCallBatch(calls []provider.ToolCall) {
+	seq := make(map[string]int, len(calls))
+	for i, tc := range calls {
+		seq[tc.ID] = i + 1
+	}
+	m.batch = callBatch{seq: seq, start: len(m.transcript)}
+}
+
+// callPlace is where in the round the call with this id was asked for, or
+// zero for a call no open round carries — a `/run` of the reader's own, or a
+// call left over from a round that has closed.
+func (m Model) callPlace(id string) int { return m.batch.seq[id] }
+
+// appendCallRow files the row one of the round's calls left behind at the
+// place the call had in the round.
+func (m *Model) appendCallRow(id string, e entry) int {
+	e.callSeq = m.callPlace(id)
+	return m.appendEntry(e)
+}
+
+// placeCall is the transcript index a row for the round's nth call goes at:
+// after every row already filed for a call asked for earlier, and in front of
+// the rows of the calls asked for after it.
+//
+// The walk stops at anything that is not a later call's row — a notice, an
+// announcement, the round before this one — so a row is only ever put back
+// past a contiguous run of rows it is owed a place in front of. That is what
+// makes the rule safe to apply to a feed already on screen: no row that is
+// drawn is drawn again somewhere else.
+func (m Model) placeCall(seq int) int {
+	at := len(m.transcript)
+	for i := len(m.transcript) - 1; i >= m.batch.start && i >= 0; i-- {
+		if m.transcript[i].callSeq <= seq {
+			break
+		}
+		at = i
+	}
+	return at
+}
+
 // previewQueued describes a queued call for the strip. A call whose arguments
 // will not parse is listed as what it is rather than omitted: it is still a
 // decision the queue holds, and it will be reported when its turn comes.
