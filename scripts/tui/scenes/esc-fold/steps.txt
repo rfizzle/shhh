@@ -34,7 +34,7 @@ snap 04-folded "folded 2 rows"
 keys Escape
 sleep 0.2
 keys Escape
-snap 05-rewind "Rewind to before"
+snap 05-rewind "pick a turn to return to"
 # Esc leaves the picker having changed nothing, and the session ends the way
 # every scene ends: the cancel chord, twice.
 keys Escape
