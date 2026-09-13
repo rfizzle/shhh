@@ -748,11 +748,12 @@ itself on a row under the draft — the same row the completion menu uses,
 because both are the input explaining what the next keystroke will do to it.
 Backing out restores the draft exactly as it was.
 
-An empty draft answers two gestures the other harnesses taught. A double
-Esc, idle, opens the rewind picker — going back is a gesture, not a command
-to remember — and a question mark prints the key list as a transcript row.
-Both keys stay ordinary the moment there is any text in the box: the input
-owns every ordinary key while a sentence is being typed.
+An empty draft answers one gesture the other harnesses taught: a double Esc,
+idle, opens the rewind picker — going back is a gesture, not a command to
+remember. The key list was the other, on a question mark, and it is a chord
+now for the reason every offer at the input is one — a bare key here is a
+letter of the sentence being typed, and "on an empty draft" is a condition a
+reader finds out about by having it fire.
 
 One press of Esc on an empty draft folds every row the reader opened back to
 its resting form, and the notice rail counts what it folded. Reading a turn

@@ -201,7 +201,7 @@ func heldCommandProgram(t *testing.T, ran *[]string) *teatest.TestModel {
 	waitForText(t, tm, draftSentence)
 
 	release()
-	waitForText(t, tm, "run it once")
+	waitForText(t, tm, "Approve command")
 	return tm
 }
 
@@ -257,9 +257,13 @@ func TestProgram_ACardsKeyIsInertUntilTheHandover(t *testing.T) {
 	if !strings.Contains(frame, "$ echo hi") {
 		t.Fatalf("the card left the screen without being answered:\n%s", frame)
 	}
-	// And it says so rather than leaving the reader to infer it from a dim
-	// key row (invariant 1).
-	if !strings.Contains(frame, "not live yet") {
-		t.Fatalf("the card does not say its keys are not live:\n%s", frame)
+	// And it says so in words rather than leaving the reader to infer it
+	// from a key row nothing painted: the card draws the one key that is
+	// live and says where the rest of them are going (invariant 1).
+	if !strings.Contains(frame, "you are still typing into the draft") {
+		t.Fatalf("the card does not say where the keystrokes are going:\n%s", frame)
+	}
+	if strings.Contains(frame, "[y]") {
+		t.Fatalf("the card drew a key the draft would answer:\n%s", frame)
 	}
 }

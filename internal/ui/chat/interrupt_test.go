@@ -86,13 +86,21 @@ func TestInterrupt_ALetterGoesIntoTheSentenceNotIntoTheCard(t *testing.T) {
 	}
 }
 
-func TestInterrupt_TheCardSaysItsKeysAreNotLiveAndOffersTheOneThatIs(t *testing.T) {
+func TestInterrupt_TheCardOffersOnlyTheKeyThatIsLive(t *testing.T) {
 	m := interruptedModel(t, "also add a --max-rounds flag")
 
 	view := ansi.Strip(m.View().Content)
-	for _, want := range []string{"not live yet", "[ctrl+space] answer it", "these letters go into your draft"} {
+	for _, want := range []string{"[ctrl+space] answer it", "you are still typing into the draft"} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("the ungated card should say %q:\n%s", want, view)
+		}
+	}
+	// And none of its own keys, however they would have been painted: a
+	// bracketed letter beside a live draft is an offer the draft answers
+	// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+	for _, gone := range []string{"[y]", "[Y]", "[n]", "[N]", "[a]", "[d]"} {
+		if strings.Contains(view, gone) {
+			t.Fatalf("the ungated card draws %s, which the draft would answer:\n%s", gone, view)
 		}
 	}
 	// The rail names the surface that has the keyboard, in words — the check
@@ -110,8 +118,10 @@ func TestInterrupt_TheCardSaysItsKeysAreNotLiveAndOffersTheOneThatIs(t *testing.
 
 	m = handover(t, m)
 	view = ansi.Strip(m.View().Content)
-	if strings.Contains(view, "not live yet") {
-		t.Fatalf("a gated card's keys are ordinary keys:\n%s", view)
+	for _, back := range []string{"[y]", "[n]", "[d]"} {
+		if !strings.Contains(view, back) {
+			t.Fatalf("a gated card's keys are ordinary keys, %s is missing:\n%s", back, view)
+		}
 	}
 	if !strings.Contains(view, "DECISION") || strings.Contains(view, "DRAFT") {
 		t.Fatalf("the rail should move to the decision:\n%s", view)
@@ -254,8 +264,16 @@ func TestInterrupt_ARoutedChildApprovalIsInertUntilItHoldsTheKeyboard(t *testing
 		t.Fatal("a routed approval arrives the way every other decision does")
 	}
 	view := ansi.Strip(m.View().Content)
-	if !strings.Contains(view, "not live yet") || !strings.Contains(view, "DRAFT") {
+	if !strings.Contains(view, "[ctrl+space] answer it") || !strings.Contains(view, "DRAFT") {
 		t.Fatalf("the routed card should render as not-yet-live:\n%s", view)
+	}
+	// A child's card is the one a reader has least context for, and it draws
+	// the same nothing every other ungated card draws: the letters would go
+	// into the sentence, and one of them attaches to an agent.
+	for _, gone := range []string{"[y]", "[n]", "[g]"} {
+		if strings.Contains(view, gone) {
+			t.Fatalf("the routed card draws %s beside a live draft:\n%s", gone, view)
+		}
 	}
 	// [g] jumps to the agent — but only once the card has the keyboard.
 	updated, _ := m.Update(tea.KeyPressMsg{Code: 'g', Text: "g"})

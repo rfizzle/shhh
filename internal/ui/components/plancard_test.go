@@ -133,6 +133,30 @@ func TestPlanCard_OptionsAreNumberedAndKeyed(t *testing.T) {
 	}
 }
 
+// A plan that lands on a sentence somebody is still typing offers the one key
+// that would take the keyboard and none of its own: the card's letters go into
+// the draft until it is pressed, so drawing them is drawing an offer the draft
+// answers
+// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+// The steps and the options stay — a decision nobody can read is not one they
+// can make — and only the key row gives way.
+func TestPlanCard_NotYetLiveOffersTheHandoverAlone(t *testing.T) {
+	c := planFixture()
+	c.NotYetLive, c.Handover = true, keys.Shown(keys.Draft.Answer)
+	view := planView(c, 100)
+	if !strings.Contains(view, "[ctrl+space] answer it") {
+		t.Errorf("the one live key is not offered:\n%s", view)
+	}
+	for _, gone := range []string{"[s] save", "[enter] select", "[esc] keep planning"} {
+		if strings.Contains(view, gone) {
+			t.Errorf("the card offers %q beside a live draft:\n%s", gone, view)
+		}
+	}
+	if !strings.Contains(view, "1. Run the whole plan") {
+		t.Errorf("the plan itself is still what the card is for:\n%s", view)
+	}
+}
+
 func TestPlanCard_BoundedHeightCountsWhatItDrops(t *testing.T) {
 	c := planFixture()
 	c.MaxLines = 16

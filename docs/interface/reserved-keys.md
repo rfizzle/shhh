@@ -14,6 +14,27 @@ and the keymap file's refusal both read; this page is it printed, and
 `make docs-check` fails when the two drift. One row of the prose is marked
 *verify*: a default known from use, not from a page.
 
+## The draft spends chords only
+
+A key that is live while the draft can take text has to be a chord, because a
+bare one is a letter in the sentence being typed ([a key is inert until its
+surface holds the
+keyboard](principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard)).
+Enter and esc are the exceptions and there is no third, so every offer the
+input frame makes comes out of the free set at the end of this page — which is
+why that set is short, and why it is worth keeping accurate. The key list is
+the offer that moved for this rule: it was `?` on an empty draft, which is a
+false offer the moment somebody starts a sentence with a question mark, and it
+is `ctrl+]` now.
+
+An alt chord is the wrong answer for a key a reader reaches for when they are
+lost. On the stock macOS terminals Option composes a character until the
+profile is told to send the escape prefix, so an alt chord is dead there until
+a box is ticked, and `shhh doctor`'s keys row is what reads that setting and
+says which box. Every surface that offers an alt chord names that row beside
+it. The key list, which is where a reader goes to be told the setting exists,
+is on a ctrl chord for exactly that reason.
+
 ## What the encoding can carry
 
 Before the list, the constraint that shapes it. shhh asks every terminal for
@@ -151,20 +172,22 @@ row for it, which on a Mac reads the setting from the profile Terminal.app
 opens new windows with, or the profile the iTerm2 session is in, and says
 which box turns it on — a profile that composes characters is a warning
 naming the chords it costs, and the row is not checked at all off a Mac or
-in a terminal whose preferences shhh does not read. The key list (`?` on an
-empty draft, and `/help`) names the same setting beside the chords. iTerm2's
-"Meta" is not the tick: it sets the eighth bit on the byte, which is not the
+in a terminal whose preferences shhh does not read. The key list (`ctrl+]`,
+and `/help`) names the same setting beside the chords. iTerm2's "Meta" is
+not the tick: it sets the eighth bit on the byte, which is not the
 escape prefix a chord is, and the row says so.
 
 Free chords, spelled the way the decoder spells them and so the way a
-keymap file must: `ctrl+]`, `ctrl+^`, the plain function keys `f2` … `f9`
-and `f12`, and the modifier combinations on the arrow and navigation rows
+keymap file must: `ctrl+^`, the plain function keys `f2` … `f9` and `f12`,
+and the modifier combinations on the arrow and navigation rows
 the tables above do not name — `alt+pgup`, `alt+pgdown`, `alt+home`,
 `alt+end`, `ctrl+home`, `ctrl+end`, `alt+shift+pgup`, `alt+shift+pgdown`,
 `ctrl+alt+pgup`, `ctrl+alt+pgdown`. Every ctrl letter the terminal delivers
 is spent or the line editor's (`ctrl+a`, `ctrl+e`, `ctrl+k`, `ctrl+u`,
 `ctrl+w` stay with the textarea), which is why the agent manager went to
-alt.
+alt. `ctrl+]` left that set for the key list, which could not: it is the
+door a lost reader opens, and a door behind the Option setting is a door
+that is shut on the desktop where the setting is off.
 
 ## Sources
 

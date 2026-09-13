@@ -82,8 +82,32 @@ and folding always leaves a count behind.
 
 There is one keyboard and there are several things that would like it, so
 every screen says which one has it. The surface holding the keyboard names
-itself in a labelled rail. The surfaces that do not render their keys greyed,
-beside the one key that hands the keyboard over.
+itself in a labelled rail. The surfaces that do not offer the one key that
+hands the keyboard over, live, and render anything else they answer in the
+grey that says it is not an offer yet.
+
+Which surface holds it decides what a key *is*, and that gives the rule a
+companion about the draft: while the draft can take text, every live binding
+is a chord — ctrl, alt, shift, or a function key — except enter and esc. Those
+two are the exceptions because no sentence is made of them: enter sends what
+was typed and esc goes back, and they mean that on every surface in the
+product. A bare key is live only inside a surface that holds the keyboard —
+reading mode after esc, a card after the handover, a picker, a takeover screen
+— and it is live there because nothing else is listening.
+
+The reason is the hand and not the parser. A letter pressed in the middle of a
+sentence is a letter, and a keyboard that sometimes commits, kills, denies or
+opens on one is a keyboard nobody can type on without watching the screen for
+what has just appeared on it. So beside a live draft a chord is not the more
+careful of two ways to offer a key; it is the only one there is.
+
+What that leaves a surface to draw while it waits is the chord, not the
+letters. A decision that lands mid-sentence draws the one key that hands the
+keyboard over and nothing else it answers: until that key is pressed its
+letters go into the sentence, and drawing them greyed asked a reader to tell
+two kinds of bracket apart in the one moment they are least free to look. They
+come back whole the instant the card has the keyboard, which is the only state
+in which they are true.
 
 Invariant 3 depends on this one: Esc can only be the safe answer if it reaches
 the surface you believe you are answering. The same rule is what stops a

@@ -10,11 +10,12 @@ package keys
 //
 // So the list is here, beside the bindings, and the tests check the code
 // against it: every binding belongs to exactly one surface, no surface
-// answers one keystroke with two bindings, and no surface that is not a
-// takeover offers a bare letter without naming the key that hands the
-// keyboard over.
+// answers one keystroke with two bindings, no surface that is not a takeover
+// offers a bare letter without naming the key that hands the keyboard over,
+// and nothing the input itself answers is a keystroke a sentence can
+// produce.
 //
-// It is also what `?` renders and what /help's key section is built
+// It is also what the key list renders and what /help's key section is built
 // from, so the register a reader is shown is the register the handlers use.
 
 // Position is where a surface stands relative to the keyboard. The register
@@ -25,7 +26,8 @@ type Position int
 const (
 	// Home is the framed input. It holds the keyboard whenever nothing
 	// has taken it, which is most of the time, and it is why every key in
-	// this position is a chord — a bare letter here is a letter.
+	// this position is a chord but enter and esc — a bare key here is a
+	// letter of the sentence being typed.
 	Home Position = iota
 	// Takeover holds the keyboard exclusively. Its state is routed before
 	// the input sees a key and the input is not live while it is up, so its

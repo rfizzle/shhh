@@ -640,17 +640,17 @@ func TestGolden_DraftGrammar(t *testing.T) {
 	})
 }
 
-// TestGolden_HelpKeys pins the key section as `?` prints it — one width,
-// because the row wraps like any system row and the words are what is under
-// test: a rebind that reaches the dispatch without reaching this sheet is
-// the drift the register exists to stop.
+// TestGolden_HelpKeys pins the key section as the key list prints it — one
+// width, because the row wraps like any system row and the words are what is
+// under test: a rebind that reaches the dispatch without reaching this sheet
+// is the drift the register exists to stop.
 func TestGolden_HelpKeys(t *testing.T) {
 	captureGolden(t, "help-keys", "the /help key section as a system row", []int{80}, func(width int) []golden.Panel {
 		m := frameModel(t, width, 40)
-		mm, _ := m.Update(tea.KeyPressMsg{Code: '?', Text: "?"})
+		mm, _ := m.Update(tea.KeyPressMsg{Code: ']', Mod: tea.ModCtrl})
 		m = mm.(Model)
 		return []golden.Panel{
-			{Label: "? on an empty draft", View: m.renderHistory()},
+			{Label: "the key list, on the chord that prints it", View: m.renderHistory()},
 		}
 	})
 }
@@ -3316,6 +3316,11 @@ func TestGolden_NotebookRows(t *testing.T) {
 // keyboard by arriving answers two keys and advertises two keys; [g] and the
 // manager's chord belong to the draft in that state, and drawing them would
 // be offering a key that puts a letter in the sentence.
+//
+// The third panel is the state neither of those is: the card landing on a
+// sentence somebody is still typing, where the draft holds the keyboard and
+// the card draws the one key that would take it and none of its own
+// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 func TestGolden_ChildAskCard(t *testing.T) {
 	dir := t.TempDir()
 	if err := os.MkdirAll(filepath.Join(dir, "build"), 0o755); err != nil {
@@ -3330,17 +3335,21 @@ func TestGolden_ChildAskCard(t *testing.T) {
 	t.Cleanup(sup.Close)
 
 	captureGolden(t, "child-ask-card", "a child agent's routed approval", goldenWidths, func(width int) []golden.Panel {
-		build := func(ask *subagent.Ask, hold bool) string {
+		buildWithDraft := func(ask *subagent.Ask, hold bool, draft string) string {
 			m := frameModel(t, width, 40)
 			m = m.WithSubagents(sup).WithChangeset(changeset.New(64), nil).WithContainment(Containment{
 				Status: "bwrap · workspace", Mechanism: "bwrap", Profile: "workspace",
 			})
+			m.input.SetValue(draft)
 			updated, _ := m.Update(subagentEventMsg{ev: subagent.Event{Kind: subagent.EventAsk, Ask: ask}})
 			m = updated.(Model)
 			if hold {
 				m = handover(t, m)
 			}
 			return strings.Join(m.childAskLines(ask), "\n")
+		}
+		build := func(ask *subagent.Ask, hold bool) string {
+			return buildWithDraft(ask, hold, "")
 		}
 		command := func() *subagent.Ask {
 			ask := subagent.NewAsk("writer-1", subagent.AskCommand, "run rm -rf build")
@@ -3352,6 +3361,8 @@ func TestGolden_ChildAskCard(t *testing.T) {
 			{Label: "a child's command · resolved in the agent's own checkout", View: build(command(), true)},
 			{Label: "the same card, held by arriving · two answers, and nothing else offered",
 				View: build(command(), false)},
+			{Label: "landing on a half-typed sentence · one key, and it is the handover",
+				View: buildWithDraft(command(), false, "also add a --max-rounds flag")},
 			{Label: "a writer's patch · your files, and the diff behind a counted tail",
 				View: build(longPatchAsk(dir), true)},
 		}

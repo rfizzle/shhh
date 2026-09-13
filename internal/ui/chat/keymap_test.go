@@ -87,7 +87,7 @@ func TestDraft_ReadlineChordsReachTheTextarea(t *testing.T) {
 
 // The palette answers the slash chord in both of the spellings a terminal
 // can deliver it in, and the chord it used to answer belongs to the hold now.
-// A person whose terminal sends neither is not stranded: the `?` list names
+// A person whose terminal sends neither is not stranded: the key list names
 // the other door, and that is asserted beside the text (help_test.go).
 func TestPalette_OpensOnBothSpellingsOfItsChord(t *testing.T) {
 	for _, tc := range []struct {
@@ -357,14 +357,26 @@ func TestHistorySearch_AnEmptyRingSaysSo(t *testing.T) {
 	}
 }
 
-func TestKeyList_QuestionMarkOnAnEmptyDraftPrintsTheKeys(t *testing.T) {
+// The key list is a chord, so it needs no empty box to be safe: it prints the
+// keys with a half-written prompt standing, and the `?` it used to answer to
+// is a letter like any other
+// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+func TestKeyList_TheChordPrintsTheKeysAndAQuestionMarkIsALetter(t *testing.T) {
 	m, _ := pressKey(t, readyModel(t), tea.KeyPressMsg{Code: '?', Text: "?"})
-	if got := m.input.Value(); got != "" {
-		t.Fatalf("? on an empty draft landed in the draft: %q", got)
+	if got := m.input.Value(); got != "?" {
+		t.Fatalf("? is a letter at the draft, got %q", got)
+	}
+	if view := stripANSI(m.renderHistory()); strings.Contains(view, "Keys:") {
+		t.Errorf("? printed the key list:\n%s", view)
+	}
+
+	m, _ = pressKey(t, m, tea.KeyPressMsg{Code: ']', Mod: tea.ModCtrl})
+	if got := m.input.Value(); got != "?" {
+		t.Fatalf("the chord took the draft with it, got %q", got)
 	}
 	view := stripANSI(m.renderHistory())
 	if !strings.Contains(view, "Keys:") || !strings.Contains(view, "reading mode") {
-		t.Errorf("? did not print the key section as a system row:\n%s", view)
+		t.Errorf("the chord did not print the key section as a system row:\n%s", view)
 	}
 }
 

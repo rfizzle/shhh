@@ -165,9 +165,10 @@ func Words(b Binding) string { return b.Help().Desc }
 
 // Draft is the framed input: the keys that are live while the sentence
 // being typed holds the keyboard. Every one of them is a chord or a
-// navigation key, because a bare letter here is a letter (invariant 5) —
-// except KeyList, which is live only while the draft is empty and there is
-// no sentence for it to be a letter of.
+// navigation key, and there is no exception but the two the rule itself
+// names — enter sends the sentence and esc goes back — because a bare key
+// here is a letter
+// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 //
 // The chords the shell's own line editor uses — ctrl+a, ctrl+e, ctrl+k,
 // ctrl+u, ctrl+w, alt+b, alt+f — are deliberately absent: the draft is a
@@ -246,7 +247,21 @@ type DraftKeys struct {
 	NextAgent Binding
 	PrevAgent Binding
 	Mouse     Binding
-	KeyList   Binding
+	// KeyList prints the whole register as a system row. It was `?` on an
+	// empty draft, which is the door Claude Code taught and the one bare key
+	// the input had left: a sentence that opens with a question mark opened
+	// the key list instead, and "on an empty draft" is a condition a reader
+	// discovers by having it fire.
+	//
+	// The chord is ctrl rather than alt, which is a decision about this key
+	// in particular. Alt is where the register's spare chords are, and it
+	// costs the Option setting on a stock macOS terminal
+	// (docs/interface/reserved-keys.md#the-draft-spends-chords-only) — a
+	// price every other alt chord pays by naming the doctor's row beside
+	// itself. This is the row that names it. A key list behind a setting the
+	// key list is what tells you about is a door that only opens once you no
+	// longer need it, so it took ctrl+] from the free set instead.
+	KeyList Binding
 
 	// Suspend hands the terminal back to the shell, and Redraw takes the
 	// screen back. Neither is shhh's own idea: ctrl+z is what the shell does
@@ -282,7 +297,7 @@ var Draft = DraftKeys{
 	// slash with a ctrl modifier, and every other one sends the single byte
 	// the decoder resolves to ctrl+_. A terminal that sends neither (Windows
 	// conhost is the known one) still reaches the palette through `/` on an
-	// empty draft and tab, which is what the `?` list says beside it.
+	// empty draft and tab, which is what the key list says beside it.
 	Palette:   bind("ctrl+/", "the command palette", "ctrl+/", "ctrl+_"),
 	Reasoning: bind("ctrl+t", "cycle the reasoning level", "ctrl+t", "alt+t"),
 	Mode:      bind("shift+tab", "cycle the permission mode", "shift+tab"),
@@ -330,7 +345,7 @@ var Draft = DraftKeys{
 	PrevAgent: bind("alt+[", "the previous one", "alt+["),
 
 	Mouse:   bind("ctrl+x", "mouse reporting on or off", "ctrl+x"),
-	KeyList: bind("?", "the keys, on an empty draft", "?"),
+	KeyList: bind("ctrl+]", "the keys", "ctrl+]"),
 
 	Suspend: bind("ctrl+z", "suspend shhh (idle only)", "ctrl+z"),
 	Redraw:  bind("ctrl+l", "redraw the screen", "ctrl+l"),
@@ -343,7 +358,7 @@ var Draft = DraftKeys{
 	//
 	// The spelling stays ctrl+space, because it is the one that works
 	// everywhere else and a hint offering two chords teaches neither. The
-	// alias is in the `?` list and in /help, which is where somebody whose
+	// alias is in the key list and in /help, which is where somebody whose
 	// chord does nothing goes looking.
 	//
 	// ctrl+y is free rather than merely unused: it is not in the bubbles

@@ -197,6 +197,18 @@ func TestClick_ReadingModeMovesTheCursor(t *testing.T) {
 // click finds it: by asking the card what it drew.
 func cardKeyCell(t *testing.T, m Model, key string) (x, y int) {
 	t.Helper()
+	x, y, ok := findCardKeyCell(t, m, key)
+	if !ok {
+		t.Fatalf("the card drew no cell for %q", key)
+	}
+	return x, y
+}
+
+// findCardKeyCell is the same search where the absence is the assertion: a
+// card that does not hold the keyboard draws none of its own keys, and what
+// proves it is that no cell resolves to one.
+func findCardKeyCell(t *testing.T, m Model, key string) (x, y int, ok bool) {
+	t.Helper()
 	card := m.decisionCard()
 	if card == nil {
 		t.Fatal("no decision card is on screen")
@@ -204,12 +216,31 @@ func cardKeyCell(t *testing.T, m Model, key string) (x, y int) {
 	for row, line := range strings.Split(m.screen(), "\n") {
 		plain := ansi.Strip(line)
 		for col := range ansi.StringWidth(plain) {
-			if k, ok := card.KeyAt(line, col); ok && k == key {
+			if k, found := card.KeyAt(line, col); found && k == key {
+				return col, row, true
+			}
+		}
+	}
+	return 0, 0, false
+}
+
+// cardHandoverCell is the one cell an ungated card offers: the key that hands
+// it the keyboard.
+func cardHandoverCell(t *testing.T, m Model) (x, y int) {
+	t.Helper()
+	card := m.decisionCard()
+	if card == nil {
+		t.Fatal("no decision card is on screen")
+	}
+	for row, line := range strings.Split(m.screen(), "\n") {
+		plain := ansi.Strip(line)
+		for col := range ansi.StringWidth(plain) {
+			if card.HandoverAt(line, col) {
 				return col, row
 			}
 		}
 	}
-	t.Fatalf("the card drew no cell for %q", key)
+	t.Fatal("the card drew no cell for the handover")
 	return 0, 0
 }
 
@@ -281,7 +312,12 @@ func TestClick_UngatedCardHandsOverRatherThanAnswering(t *testing.T) {
 	if !m.decisionUngated() {
 		t.Fatal("a card landing on a live draft arrives ungated")
 	}
-	x, y := cardKeyCell(t, m, "y")
+	// The card draws one key while the draft has the keyboard, so that is the
+	// one cell there is to click.
+	if x, y, ok := findCardKeyCell(t, m, "y"); ok {
+		t.Fatalf("an ungated card drew a cell for y at %d,%d", x, y)
+	}
+	x, y := cardHandoverCell(t, m)
 	m = click(t, m, x, y)
 	if len(executed) != 0 {
 		t.Fatal("a click on a not-yet-live key must not answer the decision")

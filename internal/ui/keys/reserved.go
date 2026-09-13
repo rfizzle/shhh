@@ -17,7 +17,7 @@ package keys
 // The list is refused on every platform, not the reader's. shhh cannot know
 // which desk a keymap file will be carried to, and the keyboard it ships is
 // one keyboard everywhere; that is the product's claim, and it is what makes
-// the `?` list true on the machine the reader is holding. If the list ever
+// the key list true on the machine the reader is holding. If the list ever
 // leaves too few chords, the floor is macOS: Tier A's macOS rows and Tiers
 // C and D stay refusals, and the rest become a warning.
 //

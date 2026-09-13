@@ -679,7 +679,7 @@ func (c *ApprovalCard) hintRowsFor(width, inner int) []string {
 	dead := c.plainRun
 	switch {
 	case c.NotYetLive:
-		return notYetLiveRows(dead(), c.Handover, width)
+		return notYetLiveRows(c.Handover, width)
 	case c.NoteOpen:
 		return append(typingRows(dead(), width), c.noteRows(width, inner)...)
 	case c.AmendOpen:
@@ -955,6 +955,30 @@ func (c *ApprovalCard) KeyAt(row string, col int) (string, bool) {
 		}
 	}
 	return "", false
+}
+
+// HandoverAt reports whether display column col of a rendered row is on the
+// one key a card offers while the draft still holds the keyboard. It is the
+// pointer's half of the mid-sentence rule: the card's own keys are not drawn
+// there, so the handover is the only thing on it a click can honestly mean
+// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+//
+// The geometry is read back out of the render for KeyAt's reason — a key that
+// is on the screen is clickable by construction rather than by upkeep — and
+// the target is the same shape: the bracket and the imperative after it, and
+// not the sentence that explains where the keystrokes are going meanwhile.
+func (c *ApprovalCard) HandoverAt(row string, col int) bool {
+	if c.Handover == "" {
+		return false
+	}
+	mark := "[" + c.Handover + "]"
+	plain := ansi.Strip(row)
+	i := strings.Index(plain, mark)
+	if i < 0 {
+		return false
+	}
+	lo := ansi.StringWidth(plain[:i])
+	return col >= lo && col < lo+ansi.StringWidth(mark+handoverImperative)
 }
 
 // arrivalRest names what the handover still buys on a card that took the

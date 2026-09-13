@@ -10,7 +10,7 @@
 # it for the colour assignments. Trailing spaces are significant in both.
 
 ── layout ──────────────────────────────────────────────────
-· ? on an empty draft
+· the key list, on the chord that prints it
   Keys:
     [enter]          Send message        shift+enter  Insert newline
                      (ctrl+j does the same, for terminals that cannot report
@@ -155,8 +155,9 @@
                      you say no. ctrl+y does the same thing, for terminals and
                      desktops that never deliver ctrl+space — macOS binds it to
                      the input-source switcher and takes it first
-    [?]              On an empty draft, print this key list; with any text in the
-                     box it is a letter like any other
+    [ctrl+]]         Print this key list. It is a chord and not the ? it used to be,
+                     because a bare key at the draft is a letter of whatever you
+                     are typing — every key live here is a chord but enter and esc
     [esc]            Go back, in this order: drop a selection, drop the pointer,
                      dismiss the completion menu, detach one level — then, with
                      any text in the box, clear the input, and on an empty draft
@@ -194,7 +195,7 @@
 
 
 ── ansi ────────────────────────────────────────────────────
-· ? on an empty draft
+· the key list, on the chord that prints it
   ␛[38;5;241mKeys:␛[m
   ␛[38;5;241m  [enter]          Send message        shift+enter  Insert newline␛[m
   ␛[38;5;241m                   (ctrl+j does the same, for terminals that cannot report␛[m
@@ -339,8 +340,9 @@
   ␛[38;5;241m                   you say no. ctrl+y does the same thing, for terminals and␛[m
   ␛[38;5;241m                   desktops that never deliver ctrl+space — macOS binds it to␛[m
   ␛[38;5;241m                   the input-source switcher and takes it first␛[m
-  ␛[38;5;241m  [?]              On an empty draft, print this key list; with any text in the␛[m
-  ␛[38;5;241m                   box it is a letter like any other␛[m
+  ␛[38;5;241m  [ctrl+]]         Print this key list. It is a chord and not the ? it used to be,␛[m
+  ␛[38;5;241m                   because a bare key at the draft is a letter of whatever you␛[m
+  ␛[38;5;241m                   are typing — every key live here is a chord but enter and esc␛[m
   ␛[38;5;241m  [esc]            Go back, in this order: drop a selection, drop the pointer,␛[m
   ␛[38;5;241m                   dismiss the completion menu, detach one level — then, with␛[m
   ␛[38;5;241m                   any text in the box, clear the input, and on an empty draft␛[m

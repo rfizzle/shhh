@@ -382,6 +382,71 @@ func TestOnlyTakeoversHoldBareLetters(t *testing.T) {
 	}
 }
 
+// TestNoBareKeyIsLiveWhileTheDraftCanTakeText is the other half of invariant
+// 5, asked of the register. The input holds the keyboard nearly all the time,
+// so a key that is live beside it has to be one no sentence can produce:
+// enter and esc are the two the rule excepts, and neither of those is a
+// keystroke a sentence is made of, which is exactly what Typed reports. So
+// the check is Typed and nothing beside it.
+//
+// A surface drawn beside the draft keeps its bare letters, because none of
+// them is live there — the only key such a surface answers before the
+// handover is the handover, and that has to be a chord for the same reason
+// every other live key does. What the register can check is that; that the
+// letters are not drawn as offers until then is the surfaces' own, and their
+// goldens are where it is held.
+func TestNoBareKeyIsLiveWhileTheDraftCanTakeText(t *testing.T) {
+	for _, s := range all() {
+		switch s.Position {
+		case Home:
+			for _, b := range s.Bindings {
+				for _, k := range b.Keys() {
+					if Typed(k) {
+						t.Errorf("%s: %q answers %q, which is a key a sentence produces; beside a draft that can take text every binding is a chord",
+							s.Name, Shown(b), k)
+					}
+				}
+			}
+		case Beside:
+			for _, b := range handoversNamedBy(s) {
+				for _, k := range b.Keys() {
+					if Typed(k) {
+						t.Errorf("%s is reached by %q, which answers %q — a key a sentence produces cannot be the one that hands the keyboard over",
+							s.Name, Shown(b), k)
+					}
+				}
+			}
+		}
+	}
+}
+
+// handoversNamedBy is the keys a surface's Reached column names as the way it
+// gets the keyboard. There are two in the product and a surface names one of
+// them; a surface that names neither is the other test's failure, not this
+// one's.
+func handoversNamedBy(s Surface) []Binding {
+	var named []Binding
+	for _, b := range []Binding{Draft.Reading, Draft.Answer} {
+		if strings.Contains(s.Reached, Shown(b)) {
+			named = append(named, b)
+		}
+	}
+	return named
+}
+
+// TestTheKeyListIsReachedWithoutTheOptionSetting pins the one thing that made
+// the key list's chord a ctrl chord rather than an alt one. Alt is where the
+// register's spare chords are, and an alt chord is dead on a stock macOS
+// terminal until a profile setting is ticked — which this is the list that
+// names (docs/interface/reserved-keys.md#the-draft-spends-chords-only).
+func TestTheKeyListIsReachedWithoutTheOptionSetting(t *testing.T) {
+	for _, k := range Draft.KeyList.Keys() {
+		if strings.HasPrefix(k, "alt+") {
+			t.Errorf("the key list answers %q; it is the row that names the Option setting, so it cannot be behind it", k)
+		}
+	}
+}
+
 // The handover answers to two chords, not one, because the canonical one is
 // taken by the desktop on macOS. Both must reach the same act, and the hint
 // must still print only the canonical spelling — a hint that offers two

@@ -136,6 +136,41 @@ func TestLoad_RefusesADestructiveActOnAMovementKey(t *testing.T) {
 	}
 }
 
+// The input's own rule, asked of a file: a bare key at the draft is a letter
+// of whatever is being typed, so a file that put the palette on `p` would
+// take that letter out of every prompt the reader ever writes.
+func TestLoad_RefusesABareKeyAtTheDraft(t *testing.T) {
+	restoreRegister(t)
+	path := keymapFile(t, "[draft]\npalette = \"p\"\n")
+	err := Load(path)
+	if err == nil {
+		t.Fatal("a bare key at the draft should be refused")
+	}
+	for _, want := range []string{"\"p\"", "the command palette", "chord"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("the refusal does not name %s: %v", want, err)
+		}
+	}
+	if !Is("ctrl+/", Draft.Palette) || Is("p", Draft.Palette) {
+		t.Errorf("a refused file left the register at %v", Draft.Palette.Keys())
+	}
+}
+
+// And the two the rule excepts are still a file's to spend. Esc is the input's
+// own already, so the file has to move it off the key it is on first — which
+// is the whole demonstration: the refusal above is about letters, and esc is
+// refused nowhere.
+func TestLoad_TakesEscAtTheDraft(t *testing.T) {
+	restoreRegister(t)
+	path := keymapFile(t, "[draft]\nclear = \"f4\"\nnewline = [\"esc\"]\n")
+	if err := Load(path); err != nil {
+		t.Fatalf("esc at the draft was refused: %v", err)
+	}
+	if !Is("esc", Draft.Newline) {
+		t.Errorf("the newline answers %v", Draft.Newline.Keys())
+	}
+}
+
 // The register's own rule, asked of a file: a surface that answered one
 // keystroke with two acts is a surface where the first case of a switch
 // silently wins.

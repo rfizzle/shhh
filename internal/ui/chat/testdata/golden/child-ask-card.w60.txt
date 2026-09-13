@@ -42,6 +42,20 @@
 │ [esc] don't — the safe answer; the decision waits    │
 ╰──────────────────────────────────────────────────────╯
 
+· landing on a half-typed sentence · one key, and it is the handover
+╭─ writer-1 ▸ Approve command ──────────────── ⚠ HIGH ─╮
+│ $ run rm -rf build                                   │
+│ ⚠ HIGH · recursive forced deletion — may destroy fi… │
+│                                                      │
+│ lands in  the agent's worktree                       │
+│ touches   build                                      │
+│ undo      none                                       │
+│ network   closed — the workspace profile removes it  │
+│ ⛨         bwrap · workspace                          │
+├──────────────────────────────────────────────────────┤
+│ [ctrl+space] answer it                               │
+╰──────────────────────────────────────────────────────╯
+
 · a writer's patch · your files, and the diff behind a counted tail
 ╭─ writer-1 ▸ Apply patch ────────────────── ⚠ medium ─╮
 │ ✎ apply patch (+40 −40, 2 file(s))                   │
@@ -91,6 +105,20 @@
 ␛[91m│␛[m ␛[94m[y]␛[m ␛[38;5;252mrun it once␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m ␛[38;5;252mdeny␛[m                           ␛[91m│␛[m
 ␛[91m│␛[m ␛[38;5;241many other key goes to your draft␛[m                     ␛[91m│␛[m
 ␛[91m│␛[m ␛[92m[esc] don't — the safe answer; the decision waits␛[m    ␛[91m│␛[m
+␛[91m╰──────────────────────────────────────────────────────╯␛[m
+
+· landing on a half-typed sentence · one key, and it is the handover
+␛[91m╭─ ␛[m␛[1;97mwriter-1 ▸ Approve command ␛[m␛[38;5;241m────────────────␛[m␛[91m ⚠ HIGH ─╮␛[m
+␛[91m│␛[m ␛[38;5;214m$␛[m ␛[97mrun rm -rf build␛[m                                   ␛[91m│␛[m
+␛[91m│␛[m ␛[91m⚠ HIGH␛[m␛[38;5;241m · recursive forced deletion — may destroy fi␛[m␛[38;5;241m…␛[m ␛[91m│␛[m
+␛[91m│␛[m                                                      ␛[91m│␛[m
+␛[91m│␛[m ␛[38;5;243mlands in  ␛[m␛[92mthe agent's worktree␛[m                       ␛[91m│␛[m
+␛[91m│␛[m ␛[38;5;243mtouches   ␛[m␛[38;5;252mbuild␛[m                                      ␛[91m│␛[m
+␛[91m│␛[m ␛[38;5;243mundo      ␛[m␛[91mnone␛[m                                       ␛[91m│␛[m
+␛[91m│␛[m ␛[38;5;243mnetwork   ␛[m␛[92mclosed␛[m␛[38;5;245m — the workspace profile removes it␛[m  ␛[91m│␛[m
+␛[91m│␛[m ␛[38;5;243m⛨         ␛[m␛[38;5;243mbwrap · workspace␛[m                          ␛[91m│␛[m
+␛[91m├──────────────────────────────────────────────────────┤␛[m
+␛[91m│␛[m ␛[94m[ctrl+space]␛[m␛[38;5;252m answer it␛[m                               ␛[91m│␛[m
 ␛[91m╰──────────────────────────────────────────────────────╯␛[m
 
 · a writer's patch · your files, and the diff behind a counted tail

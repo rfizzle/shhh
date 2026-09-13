@@ -13,11 +13,14 @@ package keys
 // of it happens once, at the top of the process, and the register is
 // ordinary package data from then on.
 //
-// Three things a file may not do, and each is a refusal of the whole file
+// Four things a file may not do, and each is a refusal of the whole file
 // rather than of a line. It may not move a key onto a chord the desktop, the
 // terminal or a multiplexer takes before shhh sees it (reserved.go): a hint
 // offering such a chord is a false offer on the machine the reader is
-// holding. It may not leave a surface answering one keystroke
+// holding. It may not put a bare key on the input, where the draft can take
+// text and a bare key is a letter of the sentence
+// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+// It may not leave a surface answering one keystroke
 // with two acts — that is the register's own rule, the one the list exists
 // to make checkable
 // (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard),
@@ -181,6 +184,9 @@ func check() error {
 	if err := checkDestructive(); err != nil {
 		return err
 	}
+	if err := checkBareAtTheDraft(); err != nil {
+		return err
+	}
 	if err := checkPairs(); err != nil {
 		return err
 	}
@@ -278,6 +284,39 @@ func checkDestructive() error {
 		for _, k := range b.Keys() {
 			if slices.Contains(movement, k) {
 				return fmt.Errorf("%q moves the cursor, so it cannot also be %q", k, Words(b))
+			}
+		}
+	}
+	return nil
+}
+
+// checkBareAtTheDraft holds a file to the rule the input's own keyboard is
+// built on: the draft can take text nearly all the time, so a key that is
+// live there is a chord and never a letter of the sentence being typed
+// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+// A file that moved the palette onto `p` would take that letter out of every
+// prompt the reader ever writes, and nothing on the screen would say why.
+//
+// Enter and esc are the rule's own two exceptions and neither is a keystroke
+// a sentence produces, so Typed is the whole of the test — the same question
+// a surface being typed into asks of its own movement keys.
+//
+// It is the input's rule and not every surface's. A takeover holds the
+// keyboard exclusively, so its letters are live because nothing else is
+// listening, and a surface beside the draft answers nothing at all until the
+// handover: both are free to spend letters, and the register's own test is
+// what holds them to that.
+func checkBareAtTheDraft() error {
+	for _, s := range append(Surfaces(), Programs()...) {
+		if s.Position != Home {
+			continue
+		}
+		for _, b := range s.Bindings {
+			for _, k := range b.Keys() {
+				if Typed(k) {
+					return fmt.Errorf("%q is a letter while the draft can take text, so it cannot also be %q on %s; a key live at the input is a chord",
+						k, Words(b), s.Name)
+				}
 			}
 		}
 	}

@@ -61,20 +61,6 @@ func Offer(b keys.Binding) KeyOffer { return keyOffer(b) }
 // does.
 func OfferAs(b keys.Binding, label string) KeyOffer { return keyOfferAs(b, label) }
 
-// offerRun is a run of offers as the plain sentences a row drawn in one tone
-// needs. A live row paints the key apart from the words beside it, so it
-// keeps the offers themselves; the runs where no key is live — the card
-// waiting for the draft, the one being typed into — wear a single grey, and
-// a seam nothing paints across is a seam worth flattening
-// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
-func offerRun(offers []KeyOffer) []string {
-	out := make([]string, 0, len(offers))
-	for _, o := range offers {
-		out = append(out, o.Key+" "+o.Label)
-	}
-	return out
-}
-
 // cancelOffer is esc on a selector, worded. A surface with better words for
 // what it leaves supplies them; the ones that have none get the family's own,
 // which is the answer that changes nothing said as the counterpart of what

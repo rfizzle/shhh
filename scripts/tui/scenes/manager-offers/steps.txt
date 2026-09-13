@@ -63,3 +63,11 @@ snap 06-blocked-row "answer without attaching"
 keys Escape
 sleep 1
 snap 07-back "writer-2 ▸ Approve command"
+# And the state the mid-sentence rule is about: that same routed card standing
+# over a sentence somebody is still typing. Every letter goes into the draft,
+# so the card draws the one key that would take the keyboard and none of its
+# own — no [y], no [n], nothing a word could press by accident
+# (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+keys "and check the exit condition too"
+sleep 1
+snap 08-mid-sentence "and check the exit condition too"

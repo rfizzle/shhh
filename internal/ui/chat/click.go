@@ -374,19 +374,21 @@ func (m Model) clickKey(x, y int) (tea.Model, tea.Cmd) {
 	if y < 0 || y >= len(lines) {
 		return m, nil
 	}
+	if m.decisionUngated() {
+		// The card is on screen with the draft holding the keyboard, so the
+		// one key it draws is the handover and that is the only thing on it
+		// a click can mean. It means what the chord means: the card gets the
+		// keyboard, the decision stays waiting, and the next click answers
+		// it. Nothing about a decision is decided by a gesture the surface
+		// has not first said is live.
+		if card.HandoverAt(lines[y], x) {
+			return m.gateDecision()
+		}
+		return m, nil
+	}
 	key, ok := card.KeyAt(lines[y], x)
 	if !ok {
 		return m, nil
-	}
-	if m.decisionUngated() {
-		// The card is on screen with its keys drawn not-yet-live and the
-		// draft holding the keyboard. A click that answered anyway
-		// would be answering keys the screen says nobody can press, so it
-		// means what the handover means instead: the card gets the keyboard,
-		// the decision stays waiting, and the second click answers it. Nothing
-		// about a decision is decided by a gesture the surface has not first
-		// said is live.
-		return m.gateDecision()
 	}
 	if m.graceShowing() && m.graceDiscards(key) {
 		// The screen says the keys are a moment from live (interrupt.go);

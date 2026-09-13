@@ -122,12 +122,11 @@ func (c *PlanCard) tailRows(width, inner int, options []string) []string {
 	rows = append(rows, options...)
 	switch {
 	case c.NotYetLive:
-		// A plan that arrived while a sentence was half-typed offers its keys
-		// the same way an approval card does: dimmed, said to be
-		// waiting, with the one key that hands the keyboard over under them.
-		// The run is handed over as segments, because a run too wide for the
-		// terminal takes another row rather than giving up an offer.
-		rows = append(rows, notYetLiveRows(offerRun(c.HintKeys), c.Handover, width)...)
+		// A plan that arrived while a sentence was half-typed offers what an
+		// approval card offers there: the one key that hands the keyboard
+		// over, and none of its own, because those are letters and the
+		// sentence underneath is still taking them.
+		rows = append(rows, notYetLiveRows(c.Handover, width)...)
 	case len(c.HintKeys) > 0:
 		rows = append(rows, hintRows(c.HintKeys, width)...)
 	}

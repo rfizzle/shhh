@@ -341,13 +341,14 @@ func (m Model) updateKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 			return answered(m.enterFocusMode())
 		}
 	case keys.Is(pressed, keys.Draft.KeyList):
-		// `?` on an empty draft prints the keys as a system row — the
-		// door Claude Code taught. With any text in the box it is a
-		// letter, because the input owns every ordinary key the moment
-		// there is a draft
+		// The keys as a system row. It was `?` on an empty draft — the door
+		// Claude Code taught — and the emptiness was doing the work a chord
+		// does: no sentence can produce this one, so the key list opens with
+		// a half-written prompt in the box and leaves it there
 		// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
-		if m.inputLive() && m.attachedTo == "" && !m.completionActive() &&
-			strings.TrimSpace(m.input.Value()) == "" && !m.browsingHistory() {
+		// Attached, the keyboard is pointed at a child and the orchestrator's
+		// register is not what it is about, as with the palette above.
+		if m.inputLive() && m.attachedTo == "" {
 			return answered(m.systemNotice(helpKeysText()))
 		}
 	case keys.Is(pressed, keys.Draft.PageUp, keys.Draft.PageDown):

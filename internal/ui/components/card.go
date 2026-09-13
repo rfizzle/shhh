@@ -230,25 +230,29 @@ func dropRules(rows []string) []string {
 }
 
 // notYetLiveWords is what a key row says about itself while the surface
-// offering it does not hold the keyboard. It is words rather than a border
-// colour because invariant 1 does not stop applying to the state of a key.
+// offering it does not hold the keyboard, and nothing names the key that
+// would change that. It is words rather than a border colour because
+// invariant 1 does not stop applying to the state of a key.
 const notYetLiveWords = "not live yet"
 
 // notYetLiveRows renders a decision surface's key row while that surface does
 // not hold the keyboard
 // (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard,
-// invariant 5). The keys are dimmed and said to be waiting in words, and
-// handover — the one key that is live — is offered underneath with what it
-// does and what the letters do until it is pressed. A key that is not yet
-// live is a different thing from
-// one that cannot be pressed at all (the palette's ⊘), so the two never render
-// alike: this one is waiting for the keyboard, that one is refused.
-func notYetLiveRows(run []string, handover string, width int) []string {
-	rows := deadRows(run, notYetLiveWords, width)
-	if handover != "" {
-		rows = append(rows, handoverRow(handover, Card{}.Inner(width)))
+// invariant 5). It is the handover and nothing else: the card's own answers
+// are bare letters, and a letter drawn beside a draft that can take text is
+// going into the sentence whatever colour it is painted.
+//
+// It used to be the whole run in grey with `not live yet` beside it, which
+// asked a reader mid-sentence to tell two kinds of bracket apart — the
+// hardest moment to ask it in, and the one where being wrong costs a word of
+// their prompt. The letters come back whole the instant the card has the
+// keyboard, which is the only state they are true in.
+func notYetLiveRows(handover string, width int) []string {
+	inner := Card{}.Inner(width)
+	if handover == "" {
+		return []string{sty.Dim.Render(Clip(notYetLiveWords, inner))}
 	}
-	return rows
+	return []string{handoverRow(handover, inner)}
 }
 
 // deadRows is the shape those four states share: the run drawn in one grey
@@ -328,12 +332,19 @@ const chosenWords = "the list below has the keyboard"
 // the keyboard, not how a card says its keys are dead.
 func chosenRows(run []string, width int) []string { return deadRows(run, chosenWords, width) }
 
-// handoverRow is the one live key on a not-yet-live surface. Its wording is
-// the card's rather than the caller's, because the mid-sentence rule fixes
-// it: the key, what it does, and where the letters go until it is pressed.
+// handoverImperative is what the handover key does, and it is a constant
+// because the pointer aims at it: a key owns its bracket and the imperative
+// after it, so the row that draws the words and the method that resolves a
+// click on them cannot be two spellings (ApprovalCard.HandoverAt).
+const handoverImperative = " answer it"
+
+// handoverRow is the one live key on a not-yet-live surface, and now the only
+// key on it. Its wording is the card's rather than the caller's, because the
+// mid-sentence rule fixes it: the key, what it does, and where the keystrokes
+// are going until it is pressed.
 func handoverRow(key string, inner int) string {
-	head := sty.Info.Render("["+key+"]") + sty.Body.Render(" answer it")
-	tail := sty.Dim.Render(" — until then these letters go into your draft")
+	head := sty.Info.Render("["+key+"]") + sty.Body.Render(handoverImperative)
+	tail := sty.Dim.Render(" — until then you are still typing into the draft")
 	if lipgloss.Width(head)+lipgloss.Width(tail) > inner {
 		return Clip(head, inner)
 	}

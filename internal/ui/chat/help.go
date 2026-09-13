@@ -530,8 +530,9 @@ the input-source switcher and takes it first`,
 	},
 	{
 		binds: []keys.Binding{keys.Draft.KeyList},
-		text: `On an empty draft, print this key list; with any text in the
-box it is a letter like any other`,
+		text: `Print this key list. It is a chord and not the ? it used to be,
+because a bare key at the draft is a letter of whatever you
+are typing — every key live here is a chord but enter and esc`,
 	},
 	{
 		binds: []keys.Binding{keys.Draft.Clear},
