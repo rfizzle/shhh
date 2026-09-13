@@ -1528,7 +1528,11 @@ func TestGolden_StartScreen(t *testing.T) {
 					{Glyph: "⚙", Title: "run the default quality gate and triage what fails",
 						Detail: "one approval, then it reports back"},
 				},
-				Hint: "[↑↓] choose · [enter] start · or just type what you want",
+				Hint: []KeyOffer{
+					{Key: "[↑↓]", Label: "choose"},
+					{Key: "[enter]", Label: "start"},
+				},
+				Typing: "or just type what you want",
 			}
 			mut(&s)
 			return s.View(width)
@@ -1558,7 +1562,7 @@ func TestGolden_StartScreen(t *testing.T) {
 					{Text: "another session open here since 10:32", Tone: ToneOpen}}, s.Facts[1:]...)
 			})},
 			{Label: "typing dismissed the list · the facts stay", View: screen(func(s *StartScreen) {
-				s.Suggestions, s.Lead, s.Hint = nil, "", ""
+				s.Suggestions, s.Lead, s.Hint, s.Typing = nil, "", nil, ""
 			})},
 		}
 	})
@@ -1595,7 +1599,11 @@ func TestGolden_StartFace(t *testing.T) {
 					{Glyph: "⚙", Title: "explain what changed in the working tree",
 						Detail: "reads only, no writes"},
 				},
-				Hint: "[↑↓] choose · [enter] start · or just type what you want",
+				Hint: []KeyOffer{
+					{Key: "[↑↓]", Label: "choose"},
+					{Key: "[enter]", Label: "start"},
+				},
+				Typing: "or just type what you want",
 			}.View(width)
 		}
 		return []golden.Panel{

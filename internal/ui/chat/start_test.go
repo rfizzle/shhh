@@ -322,7 +322,7 @@ func TestStartScreen_TypingDismissesTheListAndGivesTheKeysBack(t *testing.T) {
 		t.Fatal("the list still claims the keys with a draft in the input")
 	}
 	view := startText(m)
-	if strings.Contains(view, "[↑↓] choose") || strings.Contains(view, "worth doing first") {
+	if strings.Contains(view, "[↑↓]") || strings.Contains(view, "worth doing first") {
 		t.Fatalf("the dismissed list left its chrome behind:\n%s", view)
 	}
 	if !strings.Contains(view, "~/src/shhh") {

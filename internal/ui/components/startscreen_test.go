@@ -6,6 +6,7 @@ import (
 
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // startFixture is the screen every test here starts from: the facts a Go
@@ -30,7 +31,11 @@ func startFixture() StartScreen {
 			{Glyph: "⚙", Title: "run the default quality gate and triage what fails",
 				Detail: "one approval, then it reports back"},
 		},
-		Hint: "[↑↓] choose · [enter] start · or just type what you want",
+		Hint: []KeyOffer{
+			{Key: "[↑↓]", Label: "choose"},
+			{Key: "[enter]", Label: "start"},
+		},
+		Typing: "or just type what you want",
 	}
 }
 
@@ -114,11 +119,51 @@ func TestStartScreen_NoteDetailMovesUnderItsValue(t *testing.T) {
 	}
 }
 
+// The one screen a new reader sees first writes its keys in the notation
+// every other surface uses: the key in Info because this screen answers it,
+// the words beside it in Dim, and the answer that costs nothing in Add. It is
+// the shared painter that decides all three, so the screen cannot drift from
+// the rest of the product on its own.
+func TestStartScreen_KeyRowsWearTheBracketGrammar(t *testing.T) {
+	s := startFixture()
+	s.Nav = []KeyOffer{
+		keyOfferAs(keys.Draft.PageUp, "scroll"),
+		keyOfferAs(keys.Select.Cancel, backToPrompt),
+	}
+	view := s.View(110)
+	for _, want := range []struct{ what, run string }{
+		{"the list's own key", sty.Info.Render("[↑↓]") + sty.Dim.Render(" choose")},
+		{"a navigation key", sty.Info.Render(keys.Bracket(keys.Draft.PageUp)) + sty.Dim.Render(" scroll")},
+		{"the safe answer", sty.Add.Render("[esc]") + sty.Dim.Render(" "+backToPrompt)},
+		{"the clause that is not a key", sty.Dim.Render("or just type what you want")},
+	} {
+		if !strings.Contains(view, want.run) {
+			t.Fatalf("%s is not painted in the bracket grammar:\n%q", want.what, view)
+		}
+	}
+}
+
+// The typing clause is the alternative to the keys rather than one of them,
+// so it closes their row where there is room and takes one of its own where
+// there is not — it is never dropped.
+func TestStartScreen_TheTypingClauseFoldsRatherThanGoing(t *testing.T) {
+	s := startFixture()
+	s.Facts, s.Notes, s.Suggestions, s.Lead = nil, nil, nil, ""
+	wide := strings.Split(strings.TrimLeft(startView(s, 110), "\n"), "\n")
+	if len(wide) != 1 || !strings.HasSuffix(wide[0], "· or just type what you want") {
+		t.Fatalf("a wide row should carry the clause beside the keys: %q", wide)
+	}
+	narrow := strings.Split(strings.TrimLeft(startView(s, 30), "\n"), "\n")
+	if len(narrow) != 2 || narrow[1] != "or just type what you want" {
+		t.Fatalf("a narrow row should give the clause a row of its own: %q", narrow)
+	}
+}
+
 func TestStartScreen_WithoutSuggestionsTheKeysGoToo(t *testing.T) {
 	// Typing dismisses the list; a key line with nothing to choose from is an
 	// offer nothing accepts.
 	s := startFixture()
-	s.Suggestions, s.Lead, s.Hint = nil, "", ""
+	s.Suggestions, s.Lead, s.Hint, s.Typing = nil, "", nil, ""
 	view := startView(s, 110)
 	if strings.Contains(view, "[↑↓]") || strings.Contains(view, "worth doing first") {
 		t.Fatalf("the dismissed list left its chrome behind:\n%s", view)

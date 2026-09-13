@@ -59,16 +59,30 @@ type StartScreen struct {
 	Lead        string
 	Suggestions []StartSuggestion
 	Focus       int
-	// Hint is the key line under the list. It is dropped along with the
-	// suggestions once the reader starts typing, because a key nothing
-	// accepts is not an offer.
-	Hint string
-	// Nav is the second key line: how to move between the prompt and the
+	// Hint is the key row under the list, and it arrives as offers rather
+	// than as a sentence the host has already joined. A pre-joined run can
+	// only wear one tone, and this row is painted the way every key row in
+	// the product is painted: the key in Info because this screen will
+	// answer it, the words beside it in Dim because they are the screen
+	// talking about itself, and the answer that costs nothing in Add
+	// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+	// It is the one screen a new reader sees first, so a notation of its own
+	// here is a notation the rest of the product then abandons.
+	//
+	// It is dropped along with the suggestions once the reader starts
+	// typing, because a key nothing accepts is not an offer.
+	Hint []KeyOffer
+	// Typing closes that row with the way in that is not a key. It is a
+	// field of its own rather than an offer with an empty key, because every
+	// segment of a key row is a key and this clause is what a reader does
+	// instead of pressing one.
+	Typing string
+	// Nav is the second key row: how to move between the prompt and the
 	// transcript. It outlives the typing dismissal that takes
 	// Hint, because those keys outlive it too — the wheel, pgup and ctrl+o
 	// work with a half-written draft in the box, which is the whole point of
 	// them.
-	Nav string
+	Nav []KeyOffer
 	// Height is how many rows the pane this is drawn in has, which decides
 	// how much of a face the screen wears. Zero is a host that has not said —
 	// a bare model, a test — and it gets the screen with no face at all
@@ -136,19 +150,46 @@ func (s StartScreen) layout(width int) ([]string, []int) {
 		rows = append(rows, lines...)
 		offers = append(offers, owners...)
 	}
-	if s.Hint != "" {
-		rows = append(rows, "", sty.Hint.Render(Clip(s.Hint, width)))
-		blank(2)
+	hint := s.hintRows(width)
+	if len(hint) > 0 {
+		rows = append(rows, "")
+		rows = append(rows, hint...)
+		blank(1 + len(hint))
 	}
-	if s.Nav != "" {
-		if s.Hint == "" {
+	if nav := HintRows(s.Nav, width); len(nav) > 0 {
+		if len(hint) == 0 {
 			rows = append(rows, "")
 			blank(1)
 		}
-		rows = append(rows, sty.Hint.Render(Clip(s.Nav, width)))
-		blank(1)
+		rows = append(rows, nav...)
+		blank(len(nav))
 	}
 	return rows, offers
+}
+
+// hintRows is the suggestion list's key row with the typing clause closing
+// it. The keys are packed by the rule every key row in the product is packed
+// by — an offer that will not fit beside the one before it starts a row of
+// its own rather than being dropped
+// (docs/interface/principles.md#fold-never-hide) — and the clause that is not
+// a key rides the last of those rows where there is room and takes one of its
+// own where there is not. It is last because it is the alternative to the
+// keys and not one of them.
+func (s StartScreen) hintRows(width int) []string {
+	rows := HintRows(s.Hint, width)
+	if s.Typing == "" {
+		return rows
+	}
+	typing := sty.Dim.Render(s.Typing)
+	if len(rows) == 0 {
+		return []string{Clip(typing, width)}
+	}
+	last := len(rows) - 1
+	if joined := rows[last] + sty.Dim.Render(" · ") + typing; lipgloss.Width(joined) <= width {
+		rows[last] = joined
+		return rows
+	}
+	return append(rows, Clip(typing, width))
 }
 
 // The product's name as this screen wears it

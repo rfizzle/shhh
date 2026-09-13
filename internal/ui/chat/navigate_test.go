@@ -526,12 +526,14 @@ func TestUICommand_MouseSendsTheTerminalACommand(t *testing.T) {
 // line outlives the typing that dismisses the suggestion list.
 func TestStartScreen_NavLineSurvivesTyping(t *testing.T) {
 	m := startModel(t, startFixture())
-	if !strings.Contains(m.renderStartScreen(100), "scroll") {
+	// Stripped, because the keys are painted apart from the words they carry
+	// and a raw render has an escape between the two.
+	if !strings.Contains(ansi.Strip(m.renderStartScreen(100)), "scroll") {
 		t.Fatal("the start screen should name the scrolling keys")
 	}
 	m = typeChars(t, m, "x")
-	view := m.renderStartScreen(100)
-	if strings.Contains(view, "[↑↓] choose") {
+	view := ansi.Strip(m.renderStartScreen(100))
+	if strings.Contains(view, "[↑↓]") {
 		t.Fatal("typing should still dismiss the suggestion list")
 	}
 	if !strings.Contains(view, "scroll") {

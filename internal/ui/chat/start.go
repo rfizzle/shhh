@@ -221,7 +221,8 @@ func (m Model) renderStartScreen(width int) string {
 	if !m.startChoosing() {
 		// Typing dismisses the list, not the facts — and not the
 		// navigation line, whose keys are still live.
-		screen.Suggestions, screen.Lead, screen.Hint = nil, "", ""
+		screen.Suggestions, screen.Lead = nil, ""
+		screen.Hint, screen.Typing = nil, ""
 	}
 	// The pane's rows, not the terminal's: the screen wears a face only where
 	// there are rows to spare after the offers, and the offers are laid out
@@ -247,11 +248,22 @@ func (m Model) startScreen() (components.StartScreen, []string) {
 		// Both routes to an offer are named, because they answer different
 		// hands: the plain arrows are what a reader tries first, and the
 		// pointer chords are the ones that go on working in the pane after
-		// the first turn (pointer.go).
-		Hint: keys.BracketPair(keys.Draft.HistoryPrev, keys.Draft.HistoryNext) + " or " +
-			keys.BracketPair(keys.Draft.PointUp, keys.Draft.PointDown) + " choose · " +
-			keys.Bracket(keys.Draft.Send) + " or " +
-			keys.Bracket(keys.Draft.Open) + " start · or just type what you want",
+		// the first turn (pointer.go). The two spellings share one offer
+		// rather than taking one each, because they are one act — and they
+		// are joined the way the completion menu joins its own pair, inside
+		// the run of keys, so the word between them is not painted as though
+		// it were one.
+		//
+		// The row goes over as offers and not as a sentence: the screen
+		// paints the key apart from the words, and a run joined here could
+		// only arrive in one tone.
+		Hint: []components.KeyOffer{
+			{Key: keys.BracketPair(keys.Draft.HistoryPrev, keys.Draft.HistoryNext) + "/" +
+				keys.BracketPair(keys.Draft.PointUp, keys.Draft.PointDown), Label: "choose"},
+			{Key: keys.Bracket(keys.Draft.Send) + "/" + keys.Bracket(keys.Draft.Open), Label: "start"},
+		},
+		// And the way in that is not a key, which closes the row.
+		Typing: "or just type what you want",
 		// The navigation line survives the typing dismissal above, because
 		// these keys survive it: every one of them works with a half-written
 		// draft in the box. This is the one screen every user
@@ -263,9 +275,15 @@ func (m Model) startScreen() (components.StartScreen, []string) {
 		// things: pgup reads without giving up the keyboard, the reading
 		// chord is what hands it over when the rows' own letters are what
 		// you want. The spellings are the register's, so this line cannot
-		// survive a rebind with the old chord on it.
-		Nav: keys.Bracket(keys.Draft.PageUp) + " scroll · " + keys.Bracket(keys.Draft.Reading) + " select rows · " +
-			keys.Bracket(keys.Draft.Palette) + " palette · " + keys.Bracket(keys.Draft.Mouse) + " mouse",
+		// survive a rebind with the old chord on it — and they are read off
+		// the declaration by the component's own door, which is also what
+		// decides whether an offer is the safe one.
+		Nav: []components.KeyOffer{
+			components.OfferAs(keys.Draft.PageUp, "scroll"),
+			components.OfferAs(keys.Draft.Reading, "select rows"),
+			components.OfferAs(keys.Draft.Palette, "palette"),
+			components.OfferAs(keys.Draft.Mouse, "mouse"),
+		},
 	}, actions
 }
 

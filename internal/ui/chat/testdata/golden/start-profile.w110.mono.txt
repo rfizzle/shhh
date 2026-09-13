@@ -22,7 +22,7 @@ Some things worth doing first:
   ⚙ explain what changed in the working tree — reads only, no writes
   ⚙ run the default quality gate and triage what fails — one approval, then it reports back
 
-[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] start · or just type what you want
+[↑↓]/[shift+↑↓] choose · [enter]/[shift+→] start · or just type what you want
 [pgup] scroll · [ctrl+o] select rows · [ctrl+/] palette · [ctrl+x] mouse
 
 · a profile of the reader's own, by name
@@ -37,7 +37,7 @@ Some things worth doing first:
   ⚙ explain what changed in the working tree — reads only, no writes
   ⚙ run the default quality gate and triage what fails — one approval, then it reports back
 
-[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] start · or just type what you want
+[↑↓]/[shift+↑↓] choose · [enter]/[shift+→] start · or just type what you want
 [pgup] scroll · [ctrl+o] select rows · [ctrl+/] palette · [ctrl+x] mouse
 
 · one of the profiles shhh ships
@@ -52,7 +52,7 @@ Some things worth doing first:
   ⚙ explain what changed in the working tree — reads only, no writes
   ⚙ run the default quality gate and triage what fails — one approval, then it reports back
 
-[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] start · or just type what you want
+[↑↓]/[shift+↑↓] choose · [enter]/[shift+→] start · or just type what you want
 [pgup] scroll · [ctrl+o] select rows · [ctrl+/] palette · [ctrl+x] mouse
 
 ── ansi ────────────────────────────────────────────────────
@@ -68,8 +68,8 @@ Some things worth doing first:
   ␛[38;5;254m⚙␛[m ␛[38;5;254mexplain what changed in the working tree␛[m␛[38;5;244m — reads only, no writes␛[m
   ␛[38;5;254m⚙␛[m ␛[38;5;254mrun the default quality gate and triage what fails␛[m␛[38;5;244m — one approval, then it reports back␛[m
 
-␛[38;5;244m[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] start · or just type what you want␛[m
-␛[38;5;244m[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palette · [ctrl+x] mouse␛[m
+␛[38;5;254m[↑↓]/[shift+↑↓]␛[m␛[38;5;244m choose␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]/[shift+→]␛[m␛[38;5;244m start␛[m␛[38;5;244m · ␛[m␛[38;5;244mor just type what you want␛[m
+␛[38;5;254m[pgup]␛[m␛[38;5;244m scroll␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+o]␛[m␛[38;5;244m select rows␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+/]␛[m␛[38;5;244m palette␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+x]␛[m␛[38;5;244m mouse␛[m
 
 · a profile of the reader's own, by name
 ␛[1;38;5;254m~/src/shhh␛[m␛[38;5;244m · ␛[m␛[38;5;254mgo 1.24␛[m␛[38;5;244m · ␛[m␛[38;5;254mgit main␛[m␛[38;5;244m · ␛[m␛[38;5;254m3 files changed␛[m␛[38;5;244m · ␛[m␛[38;5;254m41 packages␛[m
@@ -83,8 +83,8 @@ Some things worth doing first:
   ␛[38;5;254m⚙␛[m ␛[38;5;254mexplain what changed in the working tree␛[m␛[38;5;244m — reads only, no writes␛[m
   ␛[38;5;254m⚙␛[m ␛[38;5;254mrun the default quality gate and triage what fails␛[m␛[38;5;244m — one approval, then it reports back␛[m
 
-␛[38;5;244m[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] start · or just type what you want␛[m
-␛[38;5;244m[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palette · [ctrl+x] mouse␛[m
+␛[38;5;254m[↑↓]/[shift+↑↓]␛[m␛[38;5;244m choose␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]/[shift+→]␛[m␛[38;5;244m start␛[m␛[38;5;244m · ␛[m␛[38;5;244mor just type what you want␛[m
+␛[38;5;254m[pgup]␛[m␛[38;5;244m scroll␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+o]␛[m␛[38;5;244m select rows␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+/]␛[m␛[38;5;244m palette␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+x]␛[m␛[38;5;244m mouse␛[m
 
 · one of the profiles shhh ships
 ␛[1;38;5;254m~/src/shhh␛[m␛[38;5;244m · ␛[m␛[38;5;254mgo 1.24␛[m␛[38;5;244m · ␛[m␛[38;5;254mgit main␛[m␛[38;5;244m · ␛[m␛[38;5;254m3 files changed␛[m␛[38;5;244m · ␛[m␛[38;5;254m41 packages␛[m
@@ -98,5 +98,5 @@ Some things worth doing first:
   ␛[38;5;254m⚙␛[m ␛[38;5;254mexplain what changed in the working tree␛[m␛[38;5;244m — reads only, no writes␛[m
   ␛[38;5;254m⚙␛[m ␛[38;5;254mrun the default quality gate and triage what fails␛[m␛[38;5;244m — one approval, then it reports back␛[m
 
-␛[38;5;244m[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] start · or just type what you want␛[m
-␛[38;5;244m[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palette · [ctrl+x] mouse␛[m
+␛[38;5;254m[↑↓]/[shift+↑↓]␛[m␛[38;5;244m choose␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]/[shift+→]␛[m␛[38;5;244m start␛[m␛[38;5;244m · ␛[m␛[38;5;244mor just type what you want␛[m
+␛[38;5;254m[pgup]␛[m␛[38;5;244m scroll␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+o]␛[m␛[38;5;244m select rows␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+/]␛[m␛[38;5;244m palette␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+x]␛[m␛[38;5;244m mouse␛[m
