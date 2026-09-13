@@ -1,0 +1,8 @@
+# One turn: the tests fail, the code is fixed, and the repository's own suite
+# is run over the tree that came out of it. The close row is the reading of
+# all three.
+Check where the rounds are counted
++tool:execute_command:{"command":"make test"}
+Off by one at the loop bound. Fixing it, then verifying against the suite
++tool:quality_gate:{"action":"run","suite":"default"}
+The bound is fixed and the suite is green.

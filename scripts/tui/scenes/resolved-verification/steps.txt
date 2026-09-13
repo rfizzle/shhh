@@ -1,0 +1,24 @@
+# One turn watches its tests fail, fixes the code, and runs the repository's
+# own suite over what came out of it. Read the cells for one unambiguous final
+# verdict (docs/interface/surfaces.md#the-turns-close): at 03 the failing
+# command is standing bad news on the rail, at 04 the same row is still in the
+# feed with the outcome and the time it had while the rail no longer carries
+# an alert for it and the close row reads the suite's pass. Nowhere do the two
+# say different things about one turn. Inspect the picture for the alert
+# treatment: the feed row keeps its del glyph on the mutation rail, the rail's
+# alert is del while it stands, and the close row's verdict is add.
+setup mkdir -p .shhh checks
+setup printf 'test:\n\t@echo "--- FAIL: TestLoopRounds"; echo "    loop_test.go:214: want 3 rounds, got 4"; exit 1\n' > Makefile
+setup printf '#!/bin/sh\necho "ok  github.com/tui/agent  0.4s"\n' > checks/unit.sh; chmod +x checks/unit.sh
+setup printf '#!/bin/sh\nexit 0\n' > checks/vet.sh; chmod +x checks/vet.sh
+setup printf '{"suites":{"default":{"checks":[{"name":"test","exe":"./checks/unit.sh"},{"name":"vet","exe":"./checks/vet.sh"}]}}}\n' > .shhh/quality.json
+snap 01-start "Some things worth doing first"
+keys "stop the loop double-counting rounds" Enter
+snap 02-card "make test"
+keys y
+snap 03-alert-standing "want 3 rounds, got 4"
+snap 04-resolved "quality gate default passing"
+keys C-c
+snap 05-quit-armed "again quits"
+keys C-c
+snap 06-exit "that is everything the screen was holding"

@@ -85,6 +85,14 @@ type TurnChecks struct {
 	Label string
 	// Counts is the pass/fail tally, e.g. "4/4 checks · 12.8s".
 	Counts string
+	// Superseded is how many earlier failures a later verification answered.
+	// The row states the count rather than swallowing it: the turn really did
+	// watch something fail, and a close that reported only the green would be
+	// hiding the work it took to get there. The attempts themselves are still
+	// in the transcript with the outcome and the time they had — what they no
+	// longer do is decide what this row says
+	// (docs/interface/surfaces.md#the-turns-close).
+	Superseded int
 	// Keys are the offers the row makes, in order. There is one — run the
 	// suite again — and it is present only where there is a suite to run: a
 	// verdict a command left is a verdict about a line nobody is looking at
@@ -290,6 +298,14 @@ func (c TurnClose) View(width int) string {
 		if ck.Counts != "" {
 			text += sty.Dim.Render(" · " + ck.Counts)
 		}
+		// What the verdict answered rides in the note column, where it is the
+		// first thing a narrow terminal drops: it annotates the verdict and
+		// is never the verdict, and the offer beside it is a key somebody can
+		// press.
+		note := ""
+		if ck.Superseded > 0 {
+			note = sty.Dim.Render(plural(ck.Superseded, "earlier failure") + " superseded")
+		}
 		// The offer is answered by reading mode on the row, exactly as the
 		// changed-files row's are, so it renders under the same rule about
 		// which keys are live (invariant 5). The handover is not repeated
@@ -298,7 +314,7 @@ func (c TurnClose) View(width int) string {
 		if run := keyRun(ck.Keys, c.KeysWaiting, ""); run != "" {
 			text += sty.Dim.Render(" · ") + run
 		}
-		lines = append(lines, closeLine(closeLead("", glyph), text, "", width))
+		lines = append(lines, closeLine(closeLead("", glyph), text, note, width))
 	}
 	return strings.Join(lines, "\n")
 }

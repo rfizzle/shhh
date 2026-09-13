@@ -2515,6 +2515,55 @@ func TestGolden_OnCloseGate(t *testing.T) {
 	})
 }
 
+// TestGolden_ResolvedVerification captures the two states a turn's
+// verification can close in, drawn from the rows the turn actually left
+// rather than from a hand-built block: the failure a later suite run
+// answered, and the failure nothing has.
+//
+// Both are captured because the pair is the whole point — the same failing
+// command row is on screen in each, and what differs is only whether the
+// repository's own suite has since come back clean over it. A close that read
+// them the same way is the contradiction this capture exists to hold shut.
+func TestGolden_ResolvedVerification(t *testing.T) {
+	captureGolden(t, "resolved-verification", "a turn closing on its resolved verdict", goldenWidths, func(width int) []golden.Panel {
+		rows := func(verified bool) string {
+			m := frameModel(t, width, 40)
+			m.appendEntry(entry{kind: entryUser, text: "make the loop stop double-counting", turn: 1})
+			m.appendEntry(entry{kind: entryCommand, text: "go test ./internal/agent/...",
+				exitCode: 1, duration: 4200 * time.Millisecond, turn: 1,
+				toolResult: "--- FAIL: TestLoopRounds\n    loop_test.go:214: want 3 rounds, got 4"})
+			if verified {
+				res := &quality.Result{
+					Suite: "default", Verdict: quality.VerdictPass, Trusted: true,
+					Duration: 12800 * time.Millisecond,
+					Checks: []quality.CheckResult{
+						{Name: "test", Command: "make test", Duration: 11000 * time.Millisecond},
+						{Name: "vet", Command: "go vet ./...", Duration: 1800 * time.Millisecond},
+					},
+				}
+				m.appendCloseGateRow(res.Suite, res.Format(res.Fingerprint))
+			}
+			m.appendEntry(entry{kind: entryTurnClose, turn: 1, close: &components.TurnClose{
+				State: components.TurnDone, Steps: 2, Tools: 6,
+				Elapsed: "1m 12s", Spend: "$0.18", Note: "round 5/25",
+				Changes: &components.TurnChanges{
+					Files: 1, Added: 12, Removed: 3,
+					Keys: []components.TurnKey{{Key: "[v]", Label: "review"}, {Key: "[u]", Label: "undo turn"}},
+					Note: "all tracked",
+				},
+				// Read off the rows above, the way the live close reads them.
+				Checks: turnChecksRow(m.transcript, false),
+			}})
+			m.invalidateRenderCache()
+			return m.renderHistory()
+		}
+		return []golden.Panel{
+			{Label: "fail then pass · the suite answers the attempt before it", View: rows(true)},
+			{Label: "unresolved · nothing has answered the failure", View: rows(false)},
+		}
+	})
+}
+
 // goldenRunItem is the item every run-row capture is a run of.
 func goldenRunItem(size string) todo.Item {
 	return todo.Item{

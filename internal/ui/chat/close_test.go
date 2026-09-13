@@ -265,12 +265,12 @@ func TestTurnChecksRow_SeveralRunsCollapseToOneTally(t *testing.T) {
 		{kind: entryCommand, text: "go test ./internal/agent/..."},
 		{kind: entryCommand, text: "go test ./internal/ui/...", exitCode: 1},
 		{kind: entryTool, toolName: quality.ToolName,
-			toolResult: "Quality gate \"default\": PASS — 2/2 checks passed (1s)"},
+			toolResult: "Quality gate \"default\": FAIL — 1/2 checks passed (1s)"},
 	}, false)
 	if c == nil || !c.Failed {
 		t.Fatalf("one failure among three makes the verdict failing, got %+v", c)
 	}
-	if c.Counts != "2 of 3 passing" {
+	if c.Counts != "1 of 3 passing" {
 		t.Fatalf("the row answers with a tally, got %q", c.Counts)
 	}
 }

@@ -1,0 +1,4 @@
+# A suite in .shhh/quality.json is command text that runs without an approval,
+# so the gate is registered only in a checkout the person has answered for.
+# The scene answers, then opens the session.
+"$SHHH_BIN" doctor trust >/dev/null && "$SHHH_BIN" code

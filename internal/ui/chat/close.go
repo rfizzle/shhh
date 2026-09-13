@@ -19,7 +19,6 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/digest"
-	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/structural"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
@@ -257,29 +256,11 @@ func trackingNote(t changeset.Turn) string {
 	return fmt.Sprintf("%d tracked · %d new", tracked, untracked)
 }
 
-// testCommandHints are the command shapes whose exit code is a verdict about
-// the code rather than about the shell. The quality gate is the authoritative
-// source — it reports a tally the session can quote — and this list is the
-// approximation for the turns that just ran the suite themselves.
-var testCommandHints = []string{
-	"go test", "gotestsum", "npm test", "npm run test", "yarn test",
-	"pnpm test", "pytest", "cargo test", "make test", "mix test",
-	"dotnet test", "rspec", "bundle exec rspec",
-}
-
-func isTestCommand(command string) bool {
-	c := strings.ToLower(firstLine(command))
-	for _, hint := range testCommandHints {
-		if strings.Contains(c, hint) {
-			return true
-		}
-	}
-	return false
-}
-
 // turnChecksRow is the verdict row: what the turn ran to check its own work.
 // Several runs collapse into one tally rather than one row each — the row
-// answers "does it still build", not "what did you run".
+// answers "does it still build", not "what did you run" — and a run the
+// repository's own suite has since answered is counted rather than argued
+// with (resolved.go).
 //
 // gated says the session has a quality gate to run again, which is what puts
 // `[t]` on the row. A verdict a command left never carries the offer, however
@@ -287,70 +268,32 @@ func isTestCommand(command string) bool {
 // a line nobody is looking at any more, and a key that did that on a row is
 // not an offer, it is a hazard.
 func turnChecksRow(es []entry, gated bool) *components.TurnChecks {
-	var checks []components.TurnChecks
-	suites := 0
-	for _, e := range es {
-		switch {
-		case e.kind == entryTool && e.toolName == quality.ToolName:
-			s, ok := quality.Summarize(e.toolResult)
-			if !ok {
-				continue
-			}
-			counts := fmt.Sprintf("%d/%d checks", s.Passed, s.Total)
-			if s.Duration != "" {
-				counts += " · " + s.Duration
-			}
-			if s.Stale {
-				counts += " · stale"
-			}
-			suites++
-			checks = append(checks, components.TurnChecks{
-				Failed: !s.OK(),
-				Label:  "quality gate " + s.Suite,
-				Counts: counts,
-			})
-		case e.kind == entryCommand && isTestCommand(e.text):
-			// A command has no tally of its own, so the exit code is the
-			// count: it either came back clean or it did not.
-			var counts []string
-			if e.exitCode != 0 {
-				counts = append(counts, components.OutcomeExit(e.exitCode))
-			}
-			if d := activityDuration(e.duration); d != "" {
-				counts = append(counts, d)
-			}
-			checks = append(checks, components.TurnChecks{
-				Failed: e.exitCode != 0,
-				Label:  firstLine(e.text),
-				Counts: strings.Join(counts, " · "),
-			})
-		}
+	r := resolveChecks(es)
+	standing := r.standing()
+	if len(standing) == 0 {
+		return nil
 	}
-	var rerun []components.TurnKey
-	if gated && suites > 0 {
-		rerun = []components.TurnKey{
+	row := components.TurnChecks{Superseded: r.superseded()}
+	if gated && r.suites() > 0 {
+		row.Keys = []components.TurnKey{
 			{Key: keys.Bracket(keys.Row.Rerun), Label: keys.Words(keys.Row.Rerun)},
 		}
 	}
-	switch len(checks) {
-	case 0:
-		return nil
-	case 1:
-		checks[0].Keys = rerun
-		return &checks[0]
+	if len(standing) == 1 {
+		row.Failed = standing[0].outcome == checkFailed
+		row.Label, row.Counts = standing[0].label, standing[0].counts
+		return &row
 	}
 	passed := 0
-	for _, c := range checks {
-		if !c.Failed {
+	for _, a := range standing {
+		if a.outcome == checkPassed {
 			passed++
 		}
 	}
-	return &components.TurnChecks{
-		Failed: passed < len(checks),
-		Label:  "checks",
-		Counts: fmt.Sprintf("%d of %d passing", passed, len(checks)),
-		Keys:   rerun,
-	}
+	row.Failed = passed < len(standing)
+	row.Label = "checks"
+	row.Counts = fmt.Sprintf("%d of %d passing", passed, len(standing))
+	return &row
 }
 
 // rerunChecksKey answers the checks row's rerun offer: the suite the row is a
@@ -380,10 +323,7 @@ func (m Model) rerunChecksKey(pressed string) (tea.Model, tea.Cmd, bool) {
 // that produced it is the fact.
 func suiteOfTurn(es []entry) string {
 	for i := len(es) - 1; i >= 0; i-- {
-		if es[i].kind != entryTool || es[i].toolName != quality.ToolName {
-			continue
-		}
-		if s, ok := quality.Summarize(es[i].toolResult); ok {
+		if s, ok := gateVerdict(es[i]); ok {
 			return s.Suite
 		}
 	}

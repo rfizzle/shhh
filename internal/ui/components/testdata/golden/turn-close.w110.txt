@@ -54,6 +54,16 @@
 ▎✎ 3 files changed +30 −4 · [v] review · [g] commit · [u] undo turn                         all tracked in git
  ✓ quality gate default passing · 4/4 checks · 12.8s · [t] run the checks again
 
+· resolved · the suite answered the failure before it
+ ✓ Done · 4 steps · 18 tools · 1m 04s · $0.14                                                       round 7/25
+▎✎ 3 files changed +30 −4 · [v] review · [g] commit · [u] undo turn                         all tracked in git
+ ✓ quality gate default passing · 5/5 checks · 12.8s · [t] run the checks again   1 earlier failure superseded
+
+· unresolved · nothing has answered the failure
+ ✓ Done · 4 steps · 18 tools · 1m 04s · $0.14                                                       round 7/25
+▎✎ 3 files changed +30 −4 · [v] review · [g] commit · [u] undo turn                         all tracked in git
+ ✗ go test ./internal/agent/... failing · exit 1 · 4.2s
+
 ── ansi ────────────────────────────────────────────────────
 · done · changed · checked
  ␛[92m✓␛[m ␛[38;5;252mDone␛[m␛[38;5;241m · 4 steps · 18 tools · 1m 04s · $0.14␛[m                                                       ␛[38;5;241mround 7/25␛[m
@@ -98,3 +108,13 @@
  ␛[92m✓␛[m ␛[38;5;252mDone␛[m␛[38;5;241m · 4 steps · 18 tools · 1m 04s · $0.14␛[m                                                       ␛[38;5;241mround 7/25␛[m
 ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m3 files changed ␛[m␛[92m+30␛[m ␛[91m−4␛[m␛[38;5;241m · ␛[m␛[94m[v]␛[m␛[38;5;241m review␛[m␛[38;5;241m · ␛[m␛[94m[g]␛[m␛[38;5;241m commit␛[m␛[38;5;241m · ␛[m␛[94m[u]␛[m␛[38;5;241m undo turn␛[m                         ␛[38;5;241mall tracked in git␛[m
  ␛[92m✓␛[m ␛[38;5;252mquality gate default passing␛[m␛[38;5;241m · 4/4 checks · 12.8s␛[m␛[38;5;241m · ␛[m␛[94m[t]␛[m␛[38;5;241m run the checks again␛[m
+
+· resolved · the suite answered the failure before it
+ ␛[92m✓␛[m ␛[38;5;252mDone␛[m␛[38;5;241m · 4 steps · 18 tools · 1m 04s · $0.14␛[m                                                       ␛[38;5;241mround 7/25␛[m
+␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m3 files changed ␛[m␛[92m+30␛[m ␛[91m−4␛[m␛[38;5;241m · ␛[m␛[94m[v]␛[m␛[38;5;241m review␛[m␛[38;5;241m · ␛[m␛[94m[g]␛[m␛[38;5;241m commit␛[m␛[38;5;241m · ␛[m␛[94m[u]␛[m␛[38;5;241m undo turn␛[m                         ␛[38;5;241mall tracked in git␛[m
+ ␛[92m✓␛[m ␛[38;5;252mquality gate default passing␛[m␛[38;5;241m · 5/5 checks · 12.8s␛[m␛[38;5;241m · ␛[m␛[94m[t]␛[m␛[38;5;241m run the checks again␛[m   ␛[38;5;241m1 earlier failure superseded␛[m
+
+· unresolved · nothing has answered the failure
+ ␛[92m✓␛[m ␛[38;5;252mDone␛[m␛[38;5;241m · 4 steps · 18 tools · 1m 04s · $0.14␛[m                                                       ␛[38;5;241mround 7/25␛[m
+␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m3 files changed ␛[m␛[92m+30␛[m ␛[91m−4␛[m␛[38;5;241m · ␛[m␛[94m[v]␛[m␛[38;5;241m review␛[m␛[38;5;241m · ␛[m␛[94m[g]␛[m␛[38;5;241m commit␛[m␛[38;5;241m · ␛[m␛[94m[u]␛[m␛[38;5;241m undo turn␛[m                         ␛[38;5;241mall tracked in git␛[m
+ ␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/... failing␛[m␛[38;5;241m · exit 1 · 4.2s␛[m

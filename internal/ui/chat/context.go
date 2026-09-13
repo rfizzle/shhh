@@ -194,6 +194,12 @@ type elidedRow struct {
 	outcome  string
 	counts   string
 	evidence string
+	// verdict is the quality gate's own answer, kept for the same reason the
+	// counts are and one more: the close row the turn already drew read this
+	// verdict and is permanent, so a rail that lost it to a trim would start
+	// contradicting a row nobody can redraw (resolved.go). Empty on every row
+	// that is not a gate run.
+	verdict string
 }
 
 // messageBodies is the conversation's contents, by message index.
@@ -254,6 +260,7 @@ func (m *Model) elideTranscript(was []string) {
 			outcome:  was.Outcome,
 			counts:   activityCounts(e.toolName, e.toolResult),
 			evidence: id,
+			verdict:  gateVerdictLine(*e),
 		}
 		e.toolResult = queue[0]
 	}

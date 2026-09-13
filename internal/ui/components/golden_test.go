@@ -329,6 +329,22 @@ func TestGolden_TurnClose(t *testing.T) {
 					Keys: []TurnKey{{Key: "[t]", Label: "run the checks again"}},
 				}
 			})},
+			// The two states a turn's verification can close in. A pass over
+			// the tree it ran against answers the attempts before it, and the
+			// row says how many rather than swallowing them; a failure
+			// nothing answered is the turn's verdict and reads as one.
+			{Label: "resolved · the suite answered the failure before it", View: closed(func(c *TurnClose) {
+				c.Checks = &TurnChecks{
+					Label: "quality gate default", Counts: "5/5 checks · 12.8s",
+					Superseded: 1,
+					Keys:       []TurnKey{{Key: "[t]", Label: "run the checks again"}},
+				}
+			})},
+			{Label: "unresolved · nothing has answered the failure", View: closed(func(c *TurnClose) {
+				c.Checks = &TurnChecks{
+					Failed: true, Label: "go test ./internal/agent/...", Counts: "exit 1 · 4.2s",
+				}
+			})},
 		}
 	})
 }

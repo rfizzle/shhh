@@ -151,6 +151,9 @@ func (m Model) reviewVerdict(n int64) *components.ReviewVerdict {
 	if checks.Counts != "" {
 		v.Label += " · " + checks.Counts
 	}
+	if checks.Superseded > 0 {
+		v.Label += " · " + plural(checks.Superseded, "earlier failure") + " superseded"
+	}
 	if checks.Failed {
 		v.Detail = failureLines(es)
 	}
@@ -205,9 +208,14 @@ func (m Model) entriesForTurn(n int64) []entry {
 
 // failureLines are the first lines of what a failing check printed — the
 // shape of the failure, beside the hunks that claim to fix it.
+//
+// A failure the repository's own suite has since answered is skipped: it is
+// the wrong failure to pin beside a verdict that is about something else
+// (resolved.go).
 func failureLines(es []entry) []string {
-	for _, e := range es {
-		if e.exitCode == 0 {
+	verified := lastVerification(es)
+	for i, e := range es {
+		if e.exitCode == 0 || verified.settled(i) {
 			continue
 		}
 		var out []string

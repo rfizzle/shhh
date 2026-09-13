@@ -214,6 +214,28 @@ where there is a suite. A command the turn happened to run is a line nobody is
 looking at any more, and a key that re-ran one would be shhh choosing to
 execute it.
 
+A turn that watched the tests fail, fixed the code and ran the repository's
+own suite again has one true answer about the tree it leaves behind, and it is
+the last one. A passing suite run supersedes every check the turn made before
+it: the suite ran over that tree and came back clean, so a failure older than
+it has been answered. It supersedes nothing that ran afterwards, because that
+is a fact about a tree the suite never saw, and a run the suite itself marked
+stale supersedes nothing at all — it has already disowned the tree it is a
+verdict about. A run nobody let finish is neither: it reached no verdict, so
+the checks row does not count it in either direction.
+
+That resolution is read once and every surface reporting a verdict reads the
+same one — the checks row, the verdict pinned beside a review, and the rail's
+standing alerts. A session that says the gate passed on one row and the checks
+are failing on another has told the reader nothing they can act on, and this
+is what makes that state unreachable rather than unlikely.
+
+Superseded is not deleted. The failed attempt keeps its row, its outcome and
+the time it took, so what the turn went through is still there to read; the
+checks row states how many attempts the verdict answered, in the note column
+where a narrow terminal drops it before it drops the verdict. What a
+superseded attempt no longer does is decide what the turn says about itself.
+
 ### The backlog run's row
 
 A run of the backlog works one item through five stages over as many turns as

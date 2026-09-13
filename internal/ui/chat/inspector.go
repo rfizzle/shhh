@@ -303,15 +303,23 @@ func (m Model) inspectorChanges() *components.InspectorChanges {
 // same command coming back clean, not by a new turn starting. That is the
 // whole point of the block: a red row that clears itself because the agent
 // moved on is the failure this rail exists to prevent.
+//
+// The other thing that clears one is the repository's own suite coming back
+// clean over the tree the command failed on, which answers that failure
+// whether or not the same line is ever run again. The rail asks the same
+// resolution the close row does, so it cannot be red about a turn the close
+// row called green (resolved.go).
 func (m Model) inspectorAlerts() []components.InspectorAlert {
 	type run struct {
-		turn   int64
-		note   string
-		broken bool
+		turn     int64
+		note     string
+		broken   bool
+		answered bool
 	}
+	verified := lastVerification(m.transcript)
 	last := map[string]*run{}
 	var commands []string
-	for _, e := range m.transcript {
+	for i, e := range m.transcript {
 		if e.kind != entryCommand {
 			continue
 		}
@@ -337,11 +345,12 @@ func (m Model) inspectorAlerts() []components.InspectorAlert {
 		}
 		r.turn = e.turn
 		r.broken = e.exitCode != 0 && e.end.outcome != components.OutcomeStopped
+		r.answered = verified.settled(i)
 		r.note = note
 	}
 	var alerts []components.InspectorAlert
 	for _, label := range commands {
-		if r := last[label]; r.broken {
+		if r := last[label]; r.broken && !r.answered {
 			alerts = append(alerts, components.InspectorAlert{Label: label, Note: r.note, Turn: r.turn})
 		}
 	}
