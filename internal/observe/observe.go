@@ -34,6 +34,7 @@ import (
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/digest"
 	"github.com/rfizzle/shhh/internal/quality"
+	"github.com/rfizzle/shhh/internal/tools"
 )
 
 // Pos is where in the session an event happened: the turn, and the tool
@@ -643,6 +644,23 @@ const (
 	ClassExitStatus = "exit-status"
 	// ClassEmpty qualifies a successful search that matched nothing.
 	ClassEmpty = "empty"
+	// The harness classes are a command that never ran, one per prerequisite
+	// the machine failed to provide (tools.ExecPrereq). They are their own
+	// classes rather than one, because they are acted on differently and by
+	// different people: a working directory that went is the session's own
+	// doing and often recoverable within it, a missing shell or mechanism is
+	// the host's and is the same for every session on it, and a refusal is
+	// a boundary rather than a fault. Folded into one code, a run of them
+	// would say only that something about the machine was wrong.
+	//
+	// They are spelled out here, like every other class, so a rename in the
+	// vocabulary they are read from cannot silently reclassify rows already
+	// written.
+	ClassHarnessWorkingDir  = "harness-working-directory"
+	ClassHarnessShell       = "harness-execution-shell"
+	ClassHarnessContainment = "harness-containment"
+	ClassHarnessPermission  = "harness-permission"
+	ClassHarnessSpawn       = "harness-spawn"
 )
 
 // The two halves of one reading: the tools a session finds its way around
@@ -802,6 +820,14 @@ func ClassFromResult(result string) string {
 		}
 		return ""
 	}
+	// A command that never started is classified where it failed, and the
+	// category travels in the result the model was shown. It is read before
+	// the keyword ladder below because the operating system's own words for
+	// a missing directory or a refused spawn are exactly the words that
+	// ladder reads as a stale path or a denied tool.
+	if prereq := harnessClass(tools.ExecPrereqOf(result)); prereq != "" {
+		return prereq
+	}
 	r := strings.ToLower(result)
 	switch {
 	case strings.Contains(r, "declined") || strings.Contains(r, "not approved") || strings.Contains(r, "denied"):
@@ -825,6 +851,26 @@ func ClassFromResult(result string) string {
 		return ClassBadArgs
 	}
 	return ClassOther
+}
+
+// harnessClass is the record's code for a harness prerequisite that failed,
+// or "" for a result that names none. It is the same read as GateVerdict and
+// SummaryCode: one producer's closed enum, mapped into the closed set the
+// store is allowed to hold, so the two can be renamed independently.
+func harnessClass(p tools.ExecPrereq) string {
+	switch p {
+	case tools.PrereqWorkingDir:
+		return ClassHarnessWorkingDir
+	case tools.PrereqShell:
+		return ClassHarnessShell
+	case tools.PrereqContainment:
+		return ClassHarnessContainment
+	case tools.PrereqPermission:
+		return ClassHarnessPermission
+	case tools.PrereqSpawn:
+		return ClassHarnessSpawn
+	}
+	return ""
 }
 
 // GateVerdict maps a gate run's verdict to the code the record keeps of it,

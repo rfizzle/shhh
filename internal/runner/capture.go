@@ -201,7 +201,7 @@ func (w *captureWriter) handOff(dst io.Writer) string {
 // killed the command before there was anything to decide. The caller's
 // cancellation still travels, through the watch below, and stops the command
 // the way it always did.
-func capture(ctx context.Context, dir, command string, argv []string, onLine func(string)) tools.ExecResult {
+func capture(ctx context.Context, dir, command string, argv []string, kind spawnKind, onLine func(string)) tools.ExecResult {
 	if len(argv) == 0 {
 		return tools.ExecResult{Output: "empty command", ExitCode: -1, Outcome: tools.ExecDidNotStart}
 	}
@@ -213,7 +213,10 @@ func capture(ctx context.Context, dir, command string, argv []string, onLine fun
 	started := time.Now()
 	if err := g.start(); err != nil {
 		cancel()
-		return completedExecResult("", err)
+		// Nothing was spawned, so what failed is the machine and not the
+		// command: it is classified here, where what was being attempted is
+		// still known (prereq.go).
+		return startFailure(dir, kind, err)
 	}
 	done := make(chan error, 1)
 	// The wait goes through the group so that the moment this command's pid
@@ -266,6 +269,8 @@ func capture(ctx context.Context, dir, command string, argv []string, onLine fun
 
 // completedExecResult turns the operating system's result into the closed
 // command-ending vocabulary before output reaches any tool-result consumer.
+// It is the answer for a command that was spawned; one that never was is
+// startFailure's, which has a prerequisite to name.
 func completedExecResult(output string, err error) tools.ExecResult {
 	result := tools.InferExecResult(output, resultCode(err))
 	var exitErr *exec.ExitError

@@ -95,6 +95,75 @@ func verboseBuild(middleLines int) string {
 	return b.String()
 }
 
+// A classified harness failure refines the one case it is about, and does it
+// on every surface at once: the status line names the category, the report
+// keeps the operating system's words and says what is still possible, and the
+// category can be read back out of the formatted text by the record and the
+// event stream, which are handed the text and nothing else.
+func TestFormatExecResult_NamesTheFailedPrerequisite(t *testing.T) {
+	cases := []struct {
+		prereq ExecPrereq
+		detail string
+		line   string
+		advice string
+	}{
+		{PrereqWorkingDir, "/tmp/gone — chdir /tmp/gone: no such file or directory",
+			"error: command did not start: working directory unavailable", "somewhere that still exists"},
+		{PrereqShell, "fork/exec /bin/zsh: no such file or directory",
+			"error: command did not start: execution shell unavailable", "every command here goes through it"},
+		{PrereqContainment, "fork/exec /usr/bin/bwrap: no such file or directory",
+			"error: command did not start: containment unavailable", "was not run uncontained"},
+		{PrereqPermission, "fork/exec /opt/tool: permission denied",
+			"error: command did not start: permission denied", "not a decision this session made or can undo"},
+		{PrereqSpawn, "fork/exec /bin/sh: resource temporarily unavailable",
+			"error: command did not start: spawn refused", "the host's rather than the command's"},
+	}
+	for _, tc := range cases {
+		t.Run(string(tc.prereq), func(t *testing.T) {
+			got := FormatExecResult(ExecResult{
+				Output:   ExecPrereqReport(tc.prereq, tc.detail),
+				ExitCode: -1,
+				Outcome:  ExecDidNotStart,
+				Prereq:   tc.prereq,
+			})
+			first, rest, _ := strings.Cut(got, "\n")
+			if first != tc.line {
+				t.Errorf("status line = %q, want %q", first, tc.line)
+			}
+			if !strings.Contains(rest, tc.detail) {
+				t.Errorf("the operating system's words are gone:\n%s", got)
+			}
+			if !strings.Contains(rest, tc.advice) {
+				t.Errorf("the next action is gone:\n%s", got)
+			}
+			if got := ExecPrereqOf(got); got != tc.prereq {
+				t.Errorf("ExecPrereqOf() = %q, want %q", got, tc.prereq)
+			}
+		})
+	}
+}
+
+// A did-not-start the runner could not classify is the sentence it always
+// was, and a command that ran is never read as a harness failure however much
+// its own output sounds like one.
+func TestExecPrereqOf_ReadsOnlyAClassifiedResult(t *testing.T) {
+	unclassified := FormatExecResult(ExecResult{Output: "empty command", ExitCode: -1, Outcome: ExecDidNotStart})
+	if !strings.HasPrefix(unclassified, "error: command did not start\n") {
+		t.Errorf("an unclassified failure changed its wording: %q", unclassified)
+	}
+	if got := ExecPrereqOf(unclassified); got != "" {
+		t.Errorf("ExecPrereqOf() = %q, want no category", got)
+	}
+	ran := FormatExecResult(ExecResult{
+		Output:   "bwrap: permission denied\nmake: *** [test] Error 1",
+		ExitCode: 2,
+		Outcome:  ExecExited,
+	})
+	if got := ExecPrereqOf(ran); got != "" {
+		t.Errorf("a command that ran was classified as %q:\n%s", got, ran)
+	}
+}
+
 func TestFormatExecResult_KeepsBothEndsOfAnOversizeResult(t *testing.T) {
 	output := verboseBuild(400)
 	if len(output) <= MaxExecOutputBytes {

@@ -153,6 +153,141 @@ const (
 	ExecHandedOff   ExecOutcome = "handed off"
 )
 
+// didNotStart is the first line of every result for a command that never
+// became a process, classified or not. It is a constant because two things
+// depend on the exact words: the `error:` convention the digest and the hooks
+// read, and ExecPrereqOf, which will not read a category out of a result that
+// does not open with it.
+const didNotStart = "error: command did not start"
+
+// ExecPrereq is the harness prerequisite a command needed and did not have.
+// It is the closed vocabulary of ways a command can fail for a reason that is
+// not the command's: the directory it was to run in, the shell that runs it,
+// the containment it runs under, the operating system's permission to run it
+// at all, and the spawn itself.
+//
+// It qualifies ExecDidNotStart and nothing else. A command that ran and
+// failed — a compiler with an error, a shell answering `command not found`
+// for a program that is not installed — is the command's own output and is
+// never one of these: over-classifying it would tell a model to look at the
+// machine when what is wrong is the line it wrote.
+//
+// The values are codes rather than sentences because they are what a record
+// and an event stream carry, and prose is not a code. The sentence a person
+// or a model reads is ExecPrereqReport.
+type ExecPrereq string
+
+const (
+	// PrereqWorkingDir: the directory the command was to run in is not
+	// there. A worktree or checkout removed under a running session is what
+	// this usually is.
+	PrereqWorkingDir ExecPrereq = "working-directory"
+	// PrereqShell: the shell every captured command is run through is not
+	// available on this host (shell.Execution).
+	PrereqShell ExecPrereq = "execution-shell"
+	// PrereqContainment: the mechanism that was to contain the command is
+	// not available, and a contained command is never run uncontained.
+	PrereqContainment ExecPrereq = "containment"
+	// PrereqPermission: the operating system refused to run it.
+	PrereqPermission ExecPrereq = "permission"
+	// PrereqSpawn: the spawn failed for a reason none of the above names. It
+	// is the bucket that keeps the four above honest — a category nothing
+	// falls out of is one that has started guessing.
+	PrereqSpawn ExecPrereq = "spawn"
+)
+
+// prereqLabel is the category as a reader meets it: the first words of the
+// status line and the first words of the report, so the two say the same
+// thing and ExecPrereqOf has one string to look for rather than two.
+func prereqLabel(p ExecPrereq) string {
+	switch p {
+	case PrereqWorkingDir:
+		return "working directory unavailable"
+	case PrereqShell:
+		return "execution shell unavailable"
+	case PrereqContainment:
+		return "containment unavailable"
+	case PrereqPermission:
+		return "permission denied"
+	case PrereqSpawn:
+		return "spawn refused"
+	}
+	return ""
+}
+
+// prereqAdvice is the narrow next action, which is the only part of the
+// report that is not a fact. Each one is what remains possible from where the
+// reader is standing, and none of them is a way around a decision: a session
+// that will not run a command uncontained is not offered a command that runs
+// uncontained, and an operating system's refusal is not answered with a way
+// to stop being refused.
+func prereqAdvice(p ExecPrereq) string {
+	switch p {
+	case PrereqWorkingDir:
+		return "Nothing ran: a command's working directory has to be there when it starts. " +
+			"Find out where it went — a worktree or checkout removed under a running session is the usual cause — " +
+			"and run the command somewhere that still exists."
+	case PrereqShell:
+		return "Nothing ran, and nothing will until that shell is back: every command here goes through it, " +
+			"so another spelling of the same command reaches the same missing program. Report it."
+	case PrereqContainment:
+		return "Nothing ran, and it was not run uncontained — that is the one substitution this session will not make. " +
+			"Report the mechanism as missing; `shhh doctor` says what this host needs."
+	case PrereqPermission:
+		return "Nothing ran. The refusal is the operating system's and not a decision this session made or can undo, " +
+			"so use a program and a path the current user is already allowed, or report what is refusing it."
+	case PrereqSpawn:
+		return "Nothing ran, and the reason above is the host's rather than the command's. " +
+			"Retry only if that reason names something that has since changed; otherwise report it."
+	}
+	return ""
+}
+
+// ExecPrereqReport is the harness's own account of a command that never ran:
+// the category, the operating system's words for it kept verbatim, and the
+// one thing the reader can still do about it.
+//
+// It is composed here rather than where the classification is made because
+// every route a command's result takes reads it — the typed result the tool
+// formatter builds, and the older output/status pair the chat, a child and a
+// contained runner still hand back — and a wording that existed twice would
+// be two wordings within a release.
+//
+// The detail leads because it is the fact: a model that already knows what a
+// missing directory means needs the path, and everything after the first line
+// is what it does not know.
+func ExecPrereqReport(p ExecPrereq, detail string) string {
+	label := prereqLabel(p)
+	if label == "" {
+		return strings.TrimSpace(detail)
+	}
+	if detail = strings.TrimSpace(detail); detail != "" {
+		label += ": " + detail
+	}
+	return label + "\n" + prereqAdvice(p)
+}
+
+// ExecPrereqOf is the category read back out of a formatted result, for the
+// consumers that are handed the text and not the typed result — the session
+// record and the event stream, which have to file this under the same closed
+// category every other surface shows.
+//
+// It reads only a result that says the command did not start, so a command
+// that ran and printed the word "containment" is not filed as a harness
+// failure. Within one of those the text is the harness's own: the command
+// never ran, so nothing else printed anything.
+func ExecPrereqOf(result string) ExecPrereq {
+	if !strings.HasPrefix(result, didNotStart) {
+		return ""
+	}
+	for _, p := range []ExecPrereq{PrereqWorkingDir, PrereqShell, PrereqContainment, PrereqPermission, PrereqSpawn} {
+		if strings.Contains(result, prereqLabel(p)) {
+			return p
+		}
+	}
+	return ""
+}
+
 // ExecResult is one command's output and the fact of how it ended. ExitCode is
 // retained for the activity row and callers that need an ordinary process
 // status; Outcome is the answer every tool-result consumer needs.
@@ -160,6 +295,11 @@ type ExecResult struct {
 	Output   string
 	ExitCode int
 	Outcome  ExecOutcome
+	// Prereq is the harness prerequisite that failed, where the runner
+	// classified one. It qualifies ExecDidNotStart and is empty on every
+	// other outcome — and empty on a did-not-start the runner could not
+	// classify, which stays the sentence it was before.
+	Prereq ExecPrereq
 }
 
 // Failed reports whether the command did not complete successfully. A handoff
@@ -215,11 +355,12 @@ func FormatExecResultKeeping(result ExecResult, keep ExecKeep) string {
 // that succeeded, and the `error:` convention for every other ending, because
 // that prefix is what the digest, hooks, repeat detector and observers read.
 //
-// It is also the one place a failure of the harness will be told apart from a
-// command that ran and failed. Today ExecDidNotStart is a single sentence; the
-// classified prerequisite — a working directory that has gone, no shell, no
-// containment, a spawn refused — refines this case and no other, and nothing
-// else in the formatter has to learn about it.
+// It is also the one place a failure of the harness is told apart from a
+// command that ran and failed. The classified prerequisite — a working
+// directory that has gone, no shell, no containment, a refusal, a spawn that
+// failed — refines ExecDidNotStart and no other case, and nothing else in the
+// formatter has to learn about it. An unclassified one is the sentence it
+// always was.
 func execStatusLine(result ExecResult) string {
 	if !result.Failed() {
 		return fmt.Sprintf("exit code: %d", result.ExitCode)
@@ -234,7 +375,10 @@ func execStatusLine(result ExecResult) string {
 	case ExecStopped:
 		return "error: command was stopped before it finished"
 	case ExecDidNotStart:
-		return "error: command did not start"
+		if label := prereqLabel(result.Prereq); label != "" {
+			return didNotStart + ": " + label
+		}
+		return didNotStart
 	default:
 		return "error: command did not complete"
 	}

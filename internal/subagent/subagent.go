@@ -323,6 +323,16 @@ type Env struct {
 	// permanent.
 	// See docs/capabilities/evidence.md#a-trim-makes-the-same-promise.
 	Archive func(tool, content string) (string, bool)
+	// Keep is where the middle of a long command result goes when the bound
+	// on a tool result cuts it, answering with the id that pages the whole
+	// output back. It is the same store the two fields above write to, and
+	// it is a third field because it is a third moment: the reduction runs
+	// first and fails open on output it would barely shrink, and what
+	// reaches the cap after that still has a middle worth keeping. Without
+	// it a child whose reduction failed open is told a byte count and
+	// offered nothing.
+	// See docs/capabilities/evidence.md#the-reader-can-always-get-the-whole-thing-back.
+	Keep tools.ExecKeep
 	// Gated names the tools that must go through approval routing.
 	Gated map[string]bool
 	// Scrub, when set, is installed on the child's agent so its
@@ -431,14 +441,15 @@ func (e Env) autoExecutor(s Seam) agent.ToolExecutor {
 }
 
 // execResult is a command's output as the child's tool result: reduced, then
-// formatted. Every route from a child's command to tools.FormatExecResult
-// runs through here, so every child command enters the same error-result
-// convention as its parent after reduction.
+// formatted with somewhere to put what the format's own cap cuts. Every route
+// from a child's command to the formatter runs through here, so every child
+// command enters the same error-result convention as its parent after
+// reduction — and the same offer of the whole output back.
 func (e Env) execResult(output string, exitCode int) string {
 	if e.Reduce != nil {
 		output = e.Reduce(tools.ExecCommandName, output)
 	}
-	return tools.FormatExecResult(tools.InferExecResult(output, exitCode))
+	return tools.FormatExecResultKeeping(tools.InferExecResult(output, exitCode), e.Keep)
 }
 
 // childCompactor is a child's window-recovery step, or nothing where the

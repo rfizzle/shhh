@@ -60,6 +60,10 @@ type scriptedEnv struct {
 	// through, as a session hands one in. Nil is a child whose surface has
 	// no evidence store.
 	reduce func(tool, result string) string
+	// keep is where the formatter's own cap puts the middle it cuts, as a
+	// session hands one in beside the reduction. Nil is a child with
+	// nowhere to put it.
+	keep tools.ExecKeep
 	// requests is every message list the scripted stream has been handed,
 	// so a test can state what the child's next round actually carried —
 	// a tool result included, which is the only place a child's own view of
@@ -156,6 +160,7 @@ func (s *scriptedEnv) factory() EnvFactory {
 				return s.execOut, s.execCode
 			},
 			Reduce: s.reduce,
+			Keep:   s.keep,
 			Gated:  s.gated,
 		}
 		if s.repeats != nil {
@@ -447,6 +452,50 @@ func TestChildCommandOutputIsReduced(t *testing.T) {
 	m := evidenceID.FindStringSubmatch(result)
 	if m == nil {
 		t.Fatalf("no evidence id in the result:\n%s", result)
+	}
+	paged, err := store.ExecuteTool(json.RawMessage(
+		fmt.Sprintf(`{"action":"read","id":%q,"offset":%d}`, m[1], len(out)-2000)))
+	if err != nil {
+		t.Fatalf("paging the stored output: %v", err)
+	}
+	if !strings.Contains(paged, "pkg999") {
+		t.Fatalf("the store kept something other than the whole run:\n%s", paged)
+	}
+}
+
+// A reduction that fails open — output the pipeline cannot improve — leaves
+// the formatter's own cap as the only thing bounding the result. The store is
+// still there, so what the cap cuts goes into it and the child is offered the
+// id rather than a byte count and nothing to do about it.
+func TestChildCommandOutputKeptWhenReductionFailsOpen(t *testing.T) {
+	store, err := evidence.Open(t.TempDir(), evidence.NewSessionID())
+	if err != nil {
+		t.Fatalf("open evidence store: %v", err)
+	}
+	red := evidence.NewReducer(store)
+	out := testRunOutput(500)
+	env := &scriptedEnv{
+		steps:    gatedCommandSteps("go test ./..."),
+		gated:    map[string]bool{tools.ExecCommandName: true},
+		execOut:  out,
+		execCode: 1,
+		// The pipeline that could not improve this result, which is what
+		// fail-open leaves behind: the text passes through untouched.
+		reduce: func(_, result string) string { return result },
+		keep:   red.Keep,
+	}
+	sup := newTestSupervisor(t, env)
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"run the tests"}`)
+	nextAsk(t, sup).Respond(true)
+	execTool(t, sup, ReportToolName, `{"name":"researcher-1"}`)
+
+	result := env.lastToolResult()
+	if !strings.Contains(result, "bytes from the middle omitted") {
+		t.Fatalf("expected the formatter's own cap:\n%s", result)
+	}
+	m := evidenceID.FindStringSubmatch(result)
+	if m == nil {
+		t.Fatalf("the cap offered no id to page the middle back with:\n%s", result)
 	}
 	paged, err := store.ExecuteTool(json.RawMessage(
 		fmt.Sprintf(`{"action":"read","id":%q,"offset":%d}`, m[1], len(out)-2000)))

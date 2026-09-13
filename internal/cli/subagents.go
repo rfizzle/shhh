@@ -575,8 +575,13 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 			// answers that it kept nothing.
 			KeepResult: keepResult,
 			Archive:    red.Keep,
-			Gated:      gated,
-			Scrub:      session.vault.ScrubMessage,
+			// And once more at the cap under both of them: what the bound on
+			// a command result cuts out of the middle goes to the same
+			// store, so a child whose reduction failed open is offered the
+			// id rather than a byte count. Safe on a nil reducer.
+			Keep:  red.Keep,
+			Gated: gated,
+			Scrub: session.vault.ScrubMessage,
 			// A child is as unwatched as a headless run and is read for the
 			// same reason. A fan-out multiplies the cost by its width, which
 			// is what summary.subagents is there to turn off; off, the

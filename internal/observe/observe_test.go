@@ -5,6 +5,7 @@ import (
 
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/quality"
+	"github.com/rfizzle/shhh/internal/tools"
 )
 
 func TestReasonCode_Mapping(t *testing.T) {
@@ -67,6 +68,46 @@ func TestClassFromResult(t *testing.T) {
 		if got := ClassFromResult(in); got != want {
 			t.Errorf("ClassFromResult(%q) = %q, want %q", in, got, want)
 		}
+	}
+}
+
+// A command that never ran is filed under the prerequisite that failed, and
+// under nothing else: the operating system's words for a missing directory or
+// a refused spawn are the same words the keyword ladder reads as a stale path
+// or a declined call, so a run of harness failures would otherwise be spread
+// across three classes that each mean something different.
+func TestClassFromResult_HarnessFailures(t *testing.T) {
+	cases := []struct {
+		prereq tools.ExecPrereq
+		detail string
+		want   string
+	}{
+		{tools.PrereqWorkingDir, "/tmp/gone — chdir /tmp/gone: no such file or directory", ClassHarnessWorkingDir},
+		{tools.PrereqShell, "fork/exec /bin/zsh: no such file or directory", ClassHarnessShell},
+		{tools.PrereqContainment, "fork/exec /usr/bin/bwrap: no such file or directory", ClassHarnessContainment},
+		{tools.PrereqPermission, "fork/exec /opt/tool: permission denied", ClassHarnessPermission},
+		{tools.PrereqSpawn, "fork/exec /bin/sh: resource temporarily unavailable", ClassHarnessSpawn},
+	}
+	for _, tc := range cases {
+		result := tools.FormatExecResult(tools.ExecResult{
+			Output:   tools.ExecPrereqReport(tc.prereq, tc.detail),
+			ExitCode: -1,
+			Outcome:  tools.ExecDidNotStart,
+			Prereq:   tc.prereq,
+		})
+		if got := ClassFromResult(result); got != tc.want {
+			t.Errorf("ClassFromResult(%q) = %q, want %q", result, got, tc.want)
+		}
+	}
+	// A shell that ran and could not find the program is the model's picture
+	// of the machine being wrong, not the machine.
+	ran := tools.FormatExecResult(tools.ExecResult{
+		Output:   "sh: frobnicate: command not found",
+		ExitCode: 127,
+		Outcome:  tools.ExecExited,
+	})
+	if got := ClassFromResult(ran); got != ClassNotFound {
+		t.Errorf("ClassFromResult(%q) = %q, want %q", ran, got, ClassNotFound)
 	}
 }
 
