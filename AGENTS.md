@@ -4,6 +4,36 @@
 
 `shhh` is a Go CLI tool that turns natural language into executable shell commands. It has four interaction modes: one-shot generation (`shhh cmd <prompt>`), inline/hotkey (`Ctrl+K` in shell), a read-only conversation with persona sub-agents (`shhh chat`), and a coding agent (`shhh code`); both sessions keep a shared notebook their children read and write. The TUI is built with Bubble Tea v2 (charm.land/bubbletea/v2) and the LLM backend supports Anthropic, OpenAI, Gemini, and OpenRouter via a pluggable provider registry.
 
+## Scope and restraint
+
+Solve the requested problem with the smallest change that makes it correct,
+safe, and verifiable while following an established local pattern. Do not add
+abstractions, perform opportunistic refactors or renames, reformat unrelated
+code, update dependencies, rewrite tests, expand documentation, or clean up
+adjacent code merely because it is visible. Such work is in scope only when it
+is necessary for the requested behavior or its verification.
+
+Prefer the existing shape over a theoretically cleaner design. Introduce a new
+abstraction only when the requested change itself has repeated behavior that
+cannot be expressed clearly through the shape already present. Keep tests and
+documentation proportionate: cover the changed behavior and its meaningful
+edges, rather than using the request as a reason to broaden unrelated
+coverage or prose.
+
+A review reports concrete, evidenced defects in the proposed change:
+incorrect behavior, a regression, security or data-loss risk, broken
+compatibility, or missing verification for behavior the change claims. It does
+not turn stylistic preferences, speculative concerns, or possible future
+refactors into findings. When the evidence supports no such issue, say so.
+
+Still notice exceptional windfalls. A broadly applicable, low-risk correction
+that prevents serious correctness, security, data-loss, reliability, or major
+maintenance harm may be called out separately, with the evidence, impact, and
+why it is unusually high value. Do not silently fold it into the task, pad a
+review with ordinary cleanup, or pursue it unless it is required to complete
+the requested work or the user chooses to take it on. The default is focus:
+finish the requested outcome and leave unrelated improvements unchanged.
+
 ## Documentation
 
 Two skills in [`.agents/skills/`](.agents/skills/) carry the working guidance.
