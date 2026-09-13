@@ -710,6 +710,17 @@ body in the transcript is, because the paste is in the context window and
 does not have to be in the scrollback as well
 ([fold, never hide](principles.md#fold-never-hide)).
 
+Recalling that sentence brings the paste back with it. ↑ puts a line in the
+draft as it was sent, so the fold in it has to be a fold again or stop being
+one: the log is on the row the send left, and it is staged again under the
+next free number with the token renumbered to match — the same key opens it,
+the same rail prices it, and the next send carries it. Where the bytes are not
+there to stage — a conversation loaded from storage keeps the names of what
+rode rather than the log itself — the fold loses its quotes and stays as
+`paste 1 · 214 lines`, which is words about a log that is not riding rather
+than a mark with nothing behind it. Walking on drops what walking here staged,
+for the reason a backspace over a token does.
+
 A paste too big to stage is refused with the limit named, and the draft is
 left exactly as it was. What bounds it is not the size a message can carry but
 the window it will be read in: a paste has no file behind it, so it goes into
@@ -2068,13 +2079,9 @@ one the moment two screenshots are staged and the question is which of them
 has the stack trace in it. That question has no verbal answer at any width, so
 there is a surface that shows the attachment at full size.
 
-A paste asks it harder. It arrived with no name anybody chose and no file
-behind it to open in something else, so a chip is the whole of what a reader
-knows about bytes they are about to send — and the two things they want to
-check, that it is the right log and that it is all of it, are both answered by
-looking at it. So text opens here too: laid out from the top and from the
-left, with whatever did not fit counted at the foot rather than trailing off
-([invariant 4](principles.md#fold-never-hide)).
+Text opens here too, for a staged file of it: laid out from the top and from
+the left, with whatever did not fit counted at the foot rather than trailing
+off ([invariant 4](principles.md#fold-never-hide)).
 
 Neither body scrolls. This is a preview of something staged, not a reader for
 it — the question it answers is *is this the right thing to send*, and what
@@ -2099,6 +2106,16 @@ would be. That it is staged and unreadable is a fact about the message you are
 about to send, and a blank card would not have said it. A PDF does not open at
 all: shhh does not render one, so there is nothing the card could say that the
 chip has not said already.
+
+A paste asks it harder, and asks it of a surface of its own. It arrived with
+no name anybody chose and no file behind it to open in something else, so a
+chip is the whole of what a reader knows about bytes they are about to send —
+and the questions are whether it is the right log, whether all of it is there,
+and whether to send it at all, only the last of which can be answered without
+moving. So `/paste show` on a paste opens the reader the fold in the draft
+leads to, described with [the frame](#the-input-frame): the same surface by
+name and by key, because one thing drawn two ways by the door it was reached
+through is two things to learn about one file.
 
 ### The one-shot result
 

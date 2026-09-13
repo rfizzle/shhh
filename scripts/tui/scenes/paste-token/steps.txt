@@ -21,5 +21,14 @@ keys q
 snap 05-back "open paste 1"
 keys Enter
 snap 06-sent "expand"
+# ↑ on the sent sentence. The send emptied the staging area, so what the fold
+# stands for has to come back with the words: it is staged again from the row's
+# own bytes, priced on the vitals as it was before the send, and opened by the
+# same key — rather than five words about a log that is not riding (recall.go).
+keys Up
+snap 07-recalled "paste 1 will cost"
+keys M-v
+snap 08-reopened "PASTE 1 · lines"
+keys q
 keys C-c
 keys C-c

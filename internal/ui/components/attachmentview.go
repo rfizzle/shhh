@@ -11,12 +11,19 @@ package components
 // which of them is the one with the stack trace in it. Nothing else in shhh
 // can answer that, because until now nothing drew the bytes.
 //
-// A picture and a paste are the same question asked of different bytes, so
-// they are the same card with two bodies: the picture fitted to the pane, or
-// the text laid out from the top with what did not fit counted at the foot
+// A picture and a text file are the same question asked of different bytes,
+// so they are the same card with two bodies: the picture fitted to the pane,
+// or the text laid out from the top with what did not fit counted at the foot
 // (docs/interface/principles.md#fold-never-hide). Neither body scrolls: the
 // question this card answers is whether the thing staged is the thing the
 // reader meant to send, not what is in it.
+//
+// A paste is not one of the two. It asks the same question harder — two
+// hundred lines the reader is about to pay for, and whether to send them at
+// all — so `/paste show` on one opens the reader the fold in the draft leads
+// to instead, which scrolls and can drop what it is showing
+// (internal/ui/chat/preview.go). What is left here is the file somebody
+// named: a staged .txt whose bytes the card lays out the way it always did.
 //
 // The card is a frame and not a renderer. Which rung the picture was drawn at
 // — the terminal's own graphics protocol, half-blocks, or the density ramp of
@@ -40,7 +47,7 @@ import (
 const viewChrome = 2
 
 // AttachmentView is one staged attachment shown as itself: a picture, or the
-// text of a file or a paste.
+// text of a file.
 type AttachmentView struct {
 	// Name and Size are the chip's own two fields, and they ride the
 	// top border rather than a caption row: the attachment is what the

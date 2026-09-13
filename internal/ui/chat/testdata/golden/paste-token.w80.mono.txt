@@ -54,6 +54,13 @@
 ──────────────────────────────────────────────────────────────────────────
 
 
+· recalled · the fold is a paste again, not five words about one
+≡ paste-1.txt 23 KB 214 lines                                               
+╭─ idle ───────────────────────────────────────────────────────────────────╮
+│ ▸ this test log says the loop never stops — ⟨paste 1 · 214 lines⟩ — fix  │
+│   the exit condition                                                     │
+╰─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 · paste 1 will cost ~6.0k tokens ───╯
+
 ── ansi ────────────────────────────────────────────────────
 · the fold in the draft · priced on the vitals, opened from the hints
 ␛[38;5;254m≡ paste-1.txt␛[38;5;244m 23 KB 214 lines␛[m                                               
@@ -98,3 +105,10 @@
     ␛[38;5;244m… 206 lines more, [enter] opens the whole of it␛[m
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────␛[m
 
+
+· recalled · the fold is a paste again, not five words about one
+␛[38;5;254m≡ paste-1.txt␛[38;5;244m 23 KB 214 lines␛[m                                               
+␛[38;5;254m╭─␛[m ␛[38;5;244midle␛[m ␛[38;5;254m───────────────────────────────────────────────────────────────────╮␛[m
+␛[38;5;254m│␛[m ␛[38;5;244m▸␛[m ␛[38;5;254mthis test log says the loop never stops — ⟨paste 1 · 214 lines⟩ — fix ␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m   ␛[38;5;254mthe exit condition                                                    ␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m╰─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mctx 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51 · paste 1 will cost ~6.0k tokens␛[m ␛[38;5;254m───╯␛[m

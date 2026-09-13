@@ -605,7 +605,7 @@ func (m Model) updateKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 			(m.browsingHistory() || strings.TrimSpace(m.input.Value()) == "") {
 			if m.historyIdx > 0 {
 				m.historyIdx--
-				m.input.SetValue(m.inputHistory[m.historyIdx])
+				m.recallDraft(m.inputHistory[m.historyIdx])
 			}
 			return m, nil, true
 		}
@@ -631,9 +631,9 @@ func (m Model) updateKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 			m.historyIdx++
 			if m.historyIdx >= len(m.inputHistory) {
 				m.historyIdx = len(m.inputHistory)
-				m.input.Reset()
+				m.recallDraft("")
 			} else {
-				m.input.SetValue(m.inputHistory[m.historyIdx])
+				m.recallDraft(m.inputHistory[m.historyIdx])
 			}
 			return m, nil, true
 		}

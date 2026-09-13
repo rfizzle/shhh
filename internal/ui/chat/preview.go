@@ -10,13 +10,17 @@ package chat
 // attachment itself, full width of the pane, framed by the name and size the
 // chip already carried.
 //
+// The card's body does not scroll, because the question is whether to send
+// the thing rather than what is in it: what did not fit is counted, and the
+// model reads the whole of it either way.
+//
 // A paste asks the same question harder. It arrived with no name it was given
 // and no file behind it to open in something else, so `paste-1.txt 4 KB` on
 // the rail is the whole of what a reader knows about bytes they are about to
-// send — and the two things they want to check, that it is the right log and
-// that it is all there, are both answered by looking at it. Neither body
-// scrolls, because the question is whether to send it rather than what is in
-// it: what did not fit is counted, and the model reads the whole of it.
+// send — and what they want to check is that it is the right log, that all of
+// it is there, and whether to send it at all. So the name routes to the paste
+// reader below rather than to the card: the surface the fold in the draft
+// leads to, which scrolls and can drop what it is showing.
 //
 // It is reached by name and not by a key, for the staged rail's own reason —
 // a chip sits above a live draft, so the name printed on it is the handle and

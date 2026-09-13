@@ -834,11 +834,24 @@ func TestGolden_PasteToken(t *testing.T) {
 			opened, _ := m.openStagedPaste()
 			return strings.Join(opened.(Model).pasteReaderLines(width, 12), "\n")
 		}
+		// ↑ on the sent row, through the key itself: the fold comes back
+		// staged from the row's own bytes, so the rails price it and offer
+		// the key that opens it exactly as they did before the send
+		// (recall.go).
+		recalled := func() string {
+			m := goldenModel(t, width)
+			m.transcript = []entry{userEntry(sentence, []provider.Attachment{pasted})}
+			m.recordInput(sentence)
+			m.invalidateRenderCache()
+			back, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyUp})
+			return promptSurface(back.(Model))
+		}
 		return []golden.Panel{
 			{Label: "the fold in the draft · priced on the vitals, opened from the hints", View: promptSurface(staged(t, width))},
 			{Label: "opened · reading's rail says how far through it you are", View: reader()},
 			{Label: "sent · the transcript keeps the fold, not the flood", View: sent(false)},
 			{Label: "opened in the transcript · bounded, and the bound counts", View: sent(true)},
+			{Label: "recalled · the fold is a paste again, not five words about one", View: recalled()},
 		}
 	})
 }
