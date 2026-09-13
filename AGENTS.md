@@ -1005,6 +1005,18 @@ emphasis. If a diff looks like that, the bound is the first thing to check.
 
 The step outline is a layer over the entry list in `internal/ui/chat/steps.go`
 rather than a component: it groups history instead of rendering a widget.
+`stepBlocks` tiles the entries into blocks — a titled step, a run of
+consecutive calls nothing titled (`callRun`), or one lone entry — and
+`Model.blockSlots` (`fold.go`) is what every reader of a block asks for its
+rows, since a folded run of read-only calls is one counted row where its
+members would have been. Two traps. **Ask through the slots, never over the
+range**: the renderer, focus mode's targets, the search's folds and the
+copy row all walk the same list, and a walk over `blk.start`…`blk.end` puts a
+cursor on a row nothing is drawing. And **the tiling is a prefix that only
+ever grows at its end**, which is what both stable-prefix caches
+(`renderHistory`, `frozenGutterBlocks`) freeze against — a block that can
+still take a row is the last one with entries in it, so nothing that changes
+as calls land may widen a block behind it.
 
 A tool or command row's output has the same three depths an edit's diff has:
 the bounded body with its counted tail (`components/activityrow.go`), the

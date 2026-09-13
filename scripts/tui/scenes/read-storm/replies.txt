@@ -1,0 +1,21 @@
+# One reply per request; a line beginning with + continues the reply above it.
+# Twelve reads and nothing said over them: no plan to number them and no prose
+# to title them, so there is no step for the run to fold under. The fold is
+# over the run itself, so the turn is one counted row rather than a column of
+# twelve line counts. The sentence comes after the calls, where it is an
+# answer rather than a title. The first call opens the reply rather than
+# continuing it: a `+` with nothing above it is text, and the scene would get
+# a step titled with the line it meant to call.
+tool:read_file:{"path":"one.go"}
++tool:read_file:{"path":"two.go"}
++tool:read_file:{"path":"three.go"}
++tool:read_file:{"path":"four.go"}
++tool:read_file:{"path":"five.go"}
++tool:read_file:{"path":"six.go"}
++tool:read_file:{"path":"seven.go"}
++tool:read_file:{"path":"eight.go"}
++tool:read_file:{"path":"nine.go"}
++tool:read_file:{"path":"ten.go"}
++tool:read_file:{"path":"eleven.go"}
++tool:read_file:{"path":"twelve.go"}
+The round limit is counted in the loop and nowhere else.

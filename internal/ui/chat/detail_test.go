@@ -125,14 +125,18 @@ func TestStepDetail_OpeningUnfoldsTheStepAndClosingLeavesItOpen(t *testing.T) {
 func TestStepDetail_OpenedStepGivesItsGroupRowBack(t *testing.T) {
 	m := detailModel(t)
 	g := firstStep(t, m)
-	if slots := m.stepSlots(m.transcript, g); !slots[0].group {
+	blk, ok := m.stepBlockAt(m.transcript, g.titleIdx)
+	if !ok {
+		t.Fatal("step 1 went missing")
+	}
+	if slots := m.blockSlots(m.transcript, blk); !slots[0].group {
 		t.Fatal("the fixture's read-only run is not folded to begin with")
 	}
 
 	m.toggleStepDetail(g)
 	m.invalidateRenderCache()
 
-	for _, sl := range m.stepSlots(m.transcript, g) {
+	for _, sl := range m.blockSlots(m.transcript, blk) {
 		if sl.group {
 			t.Error("an opened step is still swallowing rows into a counted group row")
 		}

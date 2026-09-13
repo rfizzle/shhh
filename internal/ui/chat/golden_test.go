@@ -215,6 +215,49 @@ func TestGolden_StepOutline(t *testing.T) {
 	})
 }
 
+// readRunTranscript is the turn this transcript used to render as a column of
+// line counts: a question, then thirty consecutive reads and searches with no
+// prose over them and no plan to number them, so there is no step for the run
+// to fold under and nothing but the run itself to fold.
+func readRunTranscript() []entry {
+	es := []entry{{kind: entryUser, text: "how is the round limit counted"}}
+	for i := 1; i <= 24; i++ {
+		es = append(es, entry{kind: entryTool, toolName: "read_file",
+			toolArgs:   fmt.Sprintf(`{"path":"internal/agent/round%02d.go"}`, i),
+			toolResult: "a\nb", duration: time.Duration(180+i*7) * time.Millisecond})
+	}
+	for _, pattern := range []string{"ErrRoundLimit", "roundLimit", "maxRounds", "budgetFor", "checkpoint", "resumeAt"} {
+		es = append(es, entry{kind: entryTool, toolName: "search",
+			toolArgs:   fmt.Sprintf(`{"pattern":%q,"path":"internal/agent"}`, pattern),
+			toolResult: "internal/agent/loop.go:41:\t" + pattern, duration: 300 * time.Millisecond})
+	}
+	return es
+}
+
+// TestGolden_ReadRun captures the fold where there is no outline over it: a
+// planless turn of thirty read-only calls, closed to the counted group row
+// the step draws and opened back onto its rows.
+//
+// It is the counterpart of the step outline's capture. There the group row is
+// one line inside a titled step; here it is the whole turn, which is the
+// shape the fold was worth the least in and buried the most.
+func TestGolden_ReadRun(t *testing.T) {
+	captureGolden(t, "read-run", "a planless run of reads", goldenWidths, func(width int) []golden.Panel {
+		m := frameModel(t, width, 40)
+		m.transcript = readRunTranscript()
+		m.invalidateRenderCache()
+		closed := m.renderHistory()
+		// The reader opened it: every row back, in place, under nothing.
+		m.transcript[1].groupFold = foldOpen
+		m.invalidateRenderCache()
+		opened := m.renderHistory()
+		return []golden.Panel{
+			{Label: "no plan and no prose · thirty calls as one counted row", View: closed},
+			{Label: "the same run opened · every row back in place", View: opened},
+		}
+	})
+}
+
 // TestGolden_PlanChecklist captures the outline an approved plan numbers
 // : declared steps carrying the plan's own numbers and titles in the
 // order the run reached them, one group the plan never named marked off it,
@@ -1327,6 +1370,10 @@ func scrollFixture(n int) []entry {
 			toolArgs:   fmt.Sprintf(`{"path":"internal/agent/round%02d.go"}`, i),
 			toolResult: "a\nb", duration: 200 * time.Millisecond})
 	}
+	// The run is open, because the subject is the column beside the rows: a
+	// run of reads is one counted row until a reader opens it (fold.go), and
+	// a pane with one row in it has no gutter to capture.
+	es[1].groupFold = foldOpen
 	return es
 }
 
@@ -1448,6 +1495,10 @@ func TestGolden_TranscriptSearch(t *testing.T) {
 				toolArgs:   fmt.Sprintf(`{"path":%q}`, path),
 				toolResult: "a\nb", duration: time.Duration(200+i*10) * time.Millisecond})
 		}
+		// Opened, because the subject here is the marks on the rows: the run
+		// would otherwise be one counted row, which is the case the last two
+		// panels capture (fold.go).
+		reads[1].groupFold = foldOpen
 		search := func(keep bool) string {
 			m := frameModel(t, width, 24)
 			m.transcript = reads
@@ -1964,6 +2015,10 @@ func TestGolden_GitWriteRows(t *testing.T) {
 		}
 		build := func(es ...entry) string {
 			m := frameModel(t, width, 40)
+			// The run is open: three read-only calls in a row fold to one
+			// counted row (fold.go), and what this capture is about is what
+			// each of them says on its own row.
+			es[0].groupFold = foldOpen
 			m.transcript = es
 			m.invalidateRenderCache()
 			return m.renderHistory()
@@ -2018,6 +2073,10 @@ func TestGolden_SearchSweep(t *testing.T) {
 		}
 		build := func(es ...entry) string {
 			m := frameModel(t, width, 40)
+			// The run is open: three read-only calls in a row fold to one
+			// counted row (fold.go), and what this capture is about is what
+			// each of them says on its own row.
+			es[0].groupFold = foldOpen
 			m.transcript = es
 			m.invalidateRenderCache()
 			return m.renderHistory()
@@ -2075,6 +2134,10 @@ func TestGolden_SearchCounts(t *testing.T) {
 			tool("search", `{"pattern":"authorOf","path":"internal/ui/chat"}`,
 				tools.NoMatchesFound, 200*time.Millisecond),
 		}
+		// Four read-only calls in a row are one counted row until a reader
+		// opens them (fold.go), and the counts this capture is about are the
+		// ones on the rows inside.
+		m.transcript[0].groupFold = foldOpen
 		m.invalidateRenderCache()
 		return []golden.Panel{{Label: "found, not printed", View: m.renderHistory()}}
 	})

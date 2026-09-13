@@ -169,10 +169,11 @@ func (m Model) focusedCopyable() bool {
 // an ordinary row — its members are on screen with cursors of their own.
 func (m Model) foldedGroupSpan(es []entry, idx int) int {
 	for _, blk := range m.blocksOf(es) {
-		if blk.step == nil || blk.step.queued() {
+		// The one block the row can be in, asked before its slots are built.
+		if !blk.holds(idx) || (blk.step != nil && blk.step.queued()) {
 			continue
 		}
-		for _, s := range m.stepSlots(es, blk.step) {
+		for _, s := range m.blockSlots(es, blk) {
 			if s.idx == idx && s.group {
 				return s.span
 			}

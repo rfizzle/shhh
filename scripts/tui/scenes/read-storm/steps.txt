@@ -1,0 +1,28 @@
+# A turn that reads its way into a task before it has anything to say about
+# it (docs/interface/surfaces.md#the-step). Twelve reads with no plan and no
+# prose over them: the run folds to one counted row all the same, and the
+# reading cursor opens it in place.
+setup for f in one two three four five six seven eight nine ten eleven twelve; do printf 'package fixture\n' > "${f}.go"; done
+snap 01-start "Some things worth doing first"
+keys "how is the round limit counted" Enter
+# Twelve calls, one row: what they were, how many, and what they cost.
+snap 02-folded "12 reads"
+keys C-o
+snap 03-reading "12 reads"
+# The cursor starts on the last row of the turn; up twice is the group row,
+# with the answer's prose between them.
+keys k
+keys k
+snap 04-on-the-group "12 reads"
+keys Enter
+# Opened in place: every read back with its own target, under no heading.
+snap 05-opened "eleven.go"
+keys Enter
+snap 06-refolded "12 reads"
+# The way out of reading mode, and the session's.
+keys q
+snap 07-prompt "[enter] send"
+keys C-c
+snap 08-quit-armed "again quits"
+keys C-c
+snap 09-exit "that is everything the screen was holding"

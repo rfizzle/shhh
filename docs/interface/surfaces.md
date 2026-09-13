@@ -107,12 +107,12 @@ can be cut; this one is prose, where a paragraph is a single line hundreds of
 characters long and cutting it keeps a sentence and loses the thought.
 
 The row also ends the group above it, because the model stopping to think is
-where one round of work ends and the next begins. What follows stands as its
-own rows until the model says what it is doing: a step is a titled group, and
-private reasoning is not a title anybody asked for. So a round that thinks and
-then works without a word costs the fold its calls would otherwise have had —
-which is the cheaper of the two mistakes, because the other one was a fold
-that hid the thinking and did not count it.
+where one round of work ends and the next begins. What follows stands under no
+heading until the model says what it is doing: a step is a titled group, and
+private reasoning is not a title anybody asked for. It costs those calls
+nothing but the heading — the fold is over the run and not over the outline,
+so the round that thought still reads as one counted row rather than as its
+calls one by one.
 
 The row fills while the model thinks, so the wait is legible as work rather
 than as a spinner. Thinking is the model talking to itself: it changed
@@ -166,6 +166,14 @@ the title. Where there is no structure to find, the transcript is a flat list
 and no empty grouping chrome is drawn. A public progress update is ordinary
 assistant prose, so it titles the following group while the rail continues to
 state only the immediate phase.
+
+The counted row a run of read-only calls collapses into is not the step's,
+though the step is where it is most often seen. It is a fact about a run of
+rows — three or more consecutive calls that only looked at something and came
+back — so a turn that reads its way into a task before it has said anything
+folds the same way, under no heading at all. That turn is the one the fold is
+worth the most in: a session with a plan buries eight reads under a step, and
+a session still working out what to do buries thirty under nothing.
 
 ### The turn's close
 

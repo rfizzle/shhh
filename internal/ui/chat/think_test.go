@@ -354,6 +354,10 @@ func TestThinkRow_WrapsRatherThanClips(t *testing.T) {
 // follows belongs to the round it thought for. Left inside the step, the row
 // would split the read-only run around it into two runs too short to fold and
 // then vanish behind the step's own fold with nothing counting it.
+//
+// The round that follows is in no step, and it folds all the same: the fold
+// is a property of a run of rows rather than of the outline over it
+// (fold.go), so ending the step costs the calls below it nothing but a title.
 func TestThinkRow_EndsTheStepAboveIt(t *testing.T) {
 	m := readyModel(t)
 	m.appendEntry(entry{kind: entryAssistant, text: "Reading the loop"})
@@ -382,22 +386,30 @@ func TestThinkRow_EndsTheStepAboveIt(t *testing.T) {
 		}
 	}
 	// The step is open, so its rows are on screen: the run above the think row
-	// is whole and still folds into one counted group. The run below does not
-	// — it is in no step, and a step is a titled group
-	// (docs/interface/surfaces.md#the-think-row). That trade is deliberate:
-	// the alternative split the run in two and then hid the think row behind
-	// the step's fold with nothing counting it. It is pinned here rather than
-	// left to be re-argued.
+	// is whole and folds into one counted group, and the run below folds into
+	// one of its own. Two counted rows with the thought between them is the
+	// round said in three lines, which is what the fold is for.
 	m.transcript[0].stepFold = foldOpen
 	view := stripANSI(m.renderHistory())
-	if !strings.Contains(view, "3 reads") {
-		t.Fatalf("the run above the row is untouched and still folds:\n%s", view)
+	if got := strings.Count(view, "3 reads"); got != 2 {
+		t.Fatalf("each side of the think row folds into a counted row of its own, got %d:\n%s", got, view)
 	}
 	for _, path := range []string{"d.go", "e.go", "f.go"} {
-		if !strings.Contains(view, path) {
-			t.Fatalf("the calls after the row stand as their own rows:\n%s", view)
+		if strings.Contains(view, path) {
+			t.Fatalf("the run under the row is counted rather than listed (%s):\n%s", path, view)
 		}
 	}
+	// And it opens with no step to have opened it: the group row is the whole
+	// of what stands between the reader and the rows.
+	m.transcript[5].groupFold = foldOpen
+	m.invalidateRenderCache()
+	view = stripANSI(m.renderHistory())
+	for _, path := range []string{"d.go", "e.go", "f.go"} {
+		if !strings.Contains(view, path) {
+			t.Fatalf("the opened run restores %s in place:\n%s", path, view)
+		}
+	}
+	m.transcript[5].groupFold = foldAuto
 	// The row is still on screen and still reachable once the step folds.
 	m.transcript[0].stepFold = foldClosed
 	m.invalidateRenderCache()

@@ -565,16 +565,12 @@ func (m Model) settingHoldsRowsOpen() bool {
 	}
 	es := *m.entries()
 	for _, blk := range m.blocksOf(es) {
-		if blk.step == nil {
-			if m.settingShowsBody(es[blk.start]) {
-				return true
+		if blk.step != nil {
+			if h := m.headerFor(blk, es); h.Folded || blk.step.queued() {
+				continue
 			}
-			continue
 		}
-		if h := m.headerFor(blk, es); h.Folded || blk.step.queued() {
-			continue
-		}
-		for _, sl := range m.stepSlots(es, blk.step) {
+		for _, sl := range m.blockSlots(es, blk) {
 			// A folded run is one counted row and no bodies.
 			if sl.group {
 				continue

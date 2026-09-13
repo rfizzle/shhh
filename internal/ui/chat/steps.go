@@ -160,6 +160,25 @@ func isStepMember(e entry) bool {
 	return isActivityEntry(e) || (!entryIsBlock(e) && e.kind != entryAssistant)
 }
 
+// callRun measures the run of consecutive tool calls starting at i, which is
+// the block a batch of calls nothing titled renders as. It is at least one
+// row: everything else on the transcript stands alone, and a call is the only
+// kind of row a group row can ever stand in for (fold.go).
+//
+// Only calls, because a tool entry can never title a step — a title is
+// assistant prose — so a run can be taken here without a second look at what
+// the scan above it already claimed.
+func callRun(es []entry, i int) int {
+	if es[i].kind != entryTool {
+		return 1
+	}
+	n := 0
+	for i+n < len(es) && es[i+n].kind == entryTool {
+		n++
+	}
+	return n
+}
+
 // stepTitle reports the title an assistant entry offers a step, if any.
 func stepTitle(e entry) (string, bool) {
 	if e.kind != entryAssistant {
@@ -218,8 +237,14 @@ func stepBlocks(es []entry, declared []plan.Step) []transcriptBlock {
 				continue
 			}
 		}
-		blocks = append(blocks, transcriptBlock{start: i, end: i + 1})
-		i++
+		// A run of consecutive calls no prose titled is one block rather than
+		// one block each, because the fold is a property of a run of rows and
+		// not of the outline above it: a turn that reads thirty files before
+		// it has anything to say about them is the deepest burial there is,
+		// and it is exactly the turn with no step to fold under (fold.go).
+		run := callRun(es, i)
+		blocks = append(blocks, transcriptBlock{start: i, end: i + run})
+		i += run
 	}
 	// The last block a turn can still add to is the last one with entries in
 	// it; a declared step nobody has started is not somewhere rows can land.
@@ -610,10 +635,28 @@ func (m Model) blockUnits(blk transcriptBlock, es []entry, width int, focus bool
 		add(i, e, e, m.renderEntryDetail(e, entryWidth(e), keysLive, detail), selectable(e), onGrid(e))
 	}
 
+	// A block's rows render through its slots, so a folded run of read-only
+	// calls arrives as one counted group row — unless the step around it has
+	// its detail open, which gives the run back.
+	addSlots := func(detail bool) {
+		for _, sl := range m.blockSlots(es, blk) {
+			if !sl.group {
+				addEntry(sl.idx, detail)
+				continue
+			}
+			// A folded group row is an activity row: it holds its own pointer
+			// column back like the rows it swallowed.
+			e := es[sl.idx]
+			add(sl.idx, e, es[sl.idx+sl.span-1], m.groupRowFor(es, sl).View(width)+"\n", true, true)
+		}
+	}
+
 	if blk.step == nil {
-		// A row outside a step has no step to be opened by, so /step never
-		// reaches it and [enter] is the only thing that opens it.
-		addEntry(blk.start, false)
+		// A run outside a step has no header to be opened by, so /step never
+		// reaches it and [enter] on the group row is the only thing that
+		// opens it. There is nothing else for the detail to come from either,
+		// which is why the rows here are never a step's detail.
+		addSlots(false)
 		return units
 	}
 	g := blk.step
@@ -625,19 +668,7 @@ func (m Model) blockUnits(blk transcriptBlock, es []entry, width int, focus bool
 	if header.Folded || g.queued() {
 		return units
 	}
-	// A step's rows render through its slots, so a folded run of read-only
-	// calls arrives as one counted group row — unless the step
-	// has its detail open, which gives the run back.
-	for _, sl := range m.stepSlots(es, g) {
-		if !sl.group {
-			addEntry(sl.idx, header.Detail)
-			continue
-		}
-		// A folded group row is an activity row: it holds its own pointer
-		// column back like the rows it swallowed.
-		e := es[sl.idx]
-		add(sl.idx, e, es[sl.idx+sl.span-1], m.groupRowFor(es, sl).View(width)+"\n", true, true)
-	}
+	addSlots(header.Detail)
 	return units
 }
 

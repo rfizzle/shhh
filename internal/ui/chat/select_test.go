@@ -863,6 +863,10 @@ func TestSelection_ConfinedToTheNormalTranscript(t *testing.T) {
 			for i := 0; i < 40; i++ {
 				entries = append(entries, entry{kind: entryTool, toolName: "read_file", toolResult: "one\ntwo"})
 			}
+			// Opened, because the pane has to be taller than itself for the
+			// wheel to have anywhere to go: forty consecutive reads are one
+			// counted row until a reader opens them (fold.go).
+			entries[0].groupFold = foldOpen
 			m := selectModel(t, c, entries...)
 			next, _ := m.enterFocusMode()
 			m = next.(Model)

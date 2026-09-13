@@ -111,16 +111,19 @@ func (m Model) groupFolded(e entry, stepDetail bool) bool {
 	return !stepDetail && m.verbosity != verbosityHigh
 }
 
-// stepSlots walks a step's members and reports what the transcript renders
-// for each: one slot per entry, or one group slot per folded run. Both the
-// renderer and focus mode read the step through this, so what is on screen
-// and what can be selected can never disagree.
-func (m Model) stepSlots(es []entry, g *stepGroup) []slot {
-	if g == nil {
-		return nil
-	}
-	start, end := g.start, g.end
-	detail := m.stepDetailOpen(g, es)
+// blockSlots walks a block's rows and reports what the transcript renders for
+// each: one slot per entry, or one group slot per folded run. Both the
+// renderer and focus mode read a block through this, so what is on screen and
+// what can be selected can never disagree.
+//
+// A block with no step is a run of calls nothing titled (steps.go), and it
+// folds by the same rule its members would inside one. The fold is about the
+// rows, not about the outline over them: a turn that reads its way into a
+// task before it has a plan has no step for the reads to fold under, and it
+// is the turn where they bury the most.
+func (m Model) blockSlots(es []entry, blk transcriptBlock) []slot {
+	start, end := blk.members()
+	detail := m.stepDetailOpen(blk.step, es)
 	var slots []slot
 	for i := start; i < end; {
 		run := m.foldRun(es, i, end)
@@ -178,15 +181,18 @@ func (m Model) groupRowFor(es []entry, s slot) components.ActivityGroup {
 // — so its first row keeps the ordinary expand behaviour.
 func (m Model) groupAnchor(es []entry, idx int) bool {
 	for _, blk := range m.blocksOf(es) {
-		if blk.step == nil || blk.step.queued() {
+		// The one block the row can be in, asked before its slots are built:
+		// this is answered for the row under the cursor on every frame.
+		if !blk.holds(idx) || (blk.step != nil && blk.step.queued()) {
 			continue
 		}
-		for _, s := range m.stepSlots(es, blk.step) {
+		for _, s := range m.blockSlots(es, blk) {
 			if s.idx != idx {
 				continue
 			}
+			_, end := blk.members()
 			opened := es[idx].groupFold == foldOpen || es[idx].groupFold == foldSearch
-			return s.group || (opened && m.foldRun(es, idx, blk.step.end) >= minGroupRun)
+			return s.group || (opened && m.foldRun(es, idx, end) >= minGroupRun)
 		}
 	}
 	return false

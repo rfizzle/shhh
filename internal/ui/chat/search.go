@@ -61,15 +61,16 @@ type transcriptFold struct {
 func (m Model) transcriptFolds(es []entry) []transcriptFold {
 	var folds []transcriptFold
 	for _, blk := range m.blocksOf(es) {
-		g := blk.step
-		if g == nil || g.queued() {
-			continue
+		if g := blk.step; g != nil {
+			if g.queued() {
+				continue
+			}
+			if m.stepFolded(g, es, m.stepStateFor(blk, es)) {
+				folds = append(folds, transcriptFold{idx: g.titleIdx, start: g.start, end: g.end, step: true})
+				continue
+			}
 		}
-		if m.stepFolded(g, es, m.stepStateFor(blk, es)) {
-			folds = append(folds, transcriptFold{idx: g.titleIdx, start: g.start, end: g.end, step: true})
-			continue
-		}
-		for _, sl := range m.stepSlots(es, g) {
+		for _, sl := range m.blockSlots(es, blk) {
 			if sl.group {
 				folds = append(folds, transcriptFold{idx: sl.idx, start: sl.idx, end: sl.idx + sl.span})
 			}
@@ -394,7 +395,7 @@ func (m *Model) focusFirstMatchUnder(es []entry, f transcriptFold) {
 	if !ok {
 		return
 	}
-	for _, sl := range m.stepSlots(es, blk.step) {
+	for _, sl := range m.blockSlots(es, blk) {
 		if m.searchMatchesIn(es, sl.idx, sl.idx+sl.span) > 0 {
 			m.focusIdx = sl.idx
 			return

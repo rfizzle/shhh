@@ -104,18 +104,12 @@ func (m Model) scanExpandable(es []entry) []int {
 			if m.headerFor(blk, es).Folded {
 				continue
 			}
-			// A folded group offers its group row, not the rows inside it.
-			for _, sl := range m.stepSlots(es, blk.step) {
-				if m.selectableRow(es[sl.idx]) {
-					idxs = append(idxs, sl.idx)
-				}
-			}
-			continue
 		}
-		start, end := blk.members()
-		for i := start; i < end; i++ {
-			if m.selectableRow(es[i]) {
-				idxs = append(idxs, i)
+		// A folded group offers its group row, not the rows inside it —
+		// inside a step or outside one (fold.go).
+		for _, sl := range m.blockSlots(es, blk) {
+			if m.selectableRow(es[sl.idx]) {
+				idxs = append(idxs, sl.idx)
 			}
 		}
 	}
@@ -139,23 +133,23 @@ func (m Model) rowOnScreen(idx int) bool {
 		if !blk.holds(idx) {
 			continue
 		}
-		if blk.step == nil {
-			start, end := blk.members()
-			return idx >= start && idx < end && m.selectableRow(es[idx])
+		if blk.step != nil {
+			if blk.step.queued() {
+				// A declared step nobody has started is a header with no rows
+				// and no entry behind it.
+				return false
+			}
+			if idx == blk.step.titleIdx {
+				return true
+			}
+			if m.headerFor(blk, es).Folded {
+				// A folded step offers its header, not the rows inside it.
+				return false
+			}
 		}
-		if blk.step.queued() {
-			// A declared step nobody has started is a header with no rows
-			// and no entry behind it.
-			return false
-		}
-		if idx == blk.step.titleIdx {
-			return true
-		}
-		if m.headerFor(blk, es).Folded {
-			// A folded group offers its group row, not the rows inside it.
-			return false
-		}
-		for _, sl := range m.stepSlots(es, blk.step) {
+		// And a folded run offers its group row: a row behind one is not on
+		// the screen to stand on, whether the run is in a step or not.
+		for _, sl := range m.blockSlots(es, blk) {
 			if sl.idx == idx {
 				return m.selectableRow(es[idx])
 			}
