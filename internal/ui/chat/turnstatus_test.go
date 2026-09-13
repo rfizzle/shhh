@@ -92,7 +92,7 @@ func TestTurnStatus_TheRailLeavesTheCommandToTheFeed(t *testing.T) {
 	if strings.Contains(rail, "go test") {
 		t.Fatalf("the rail repeated the command: %q", rail)
 	}
-	if !strings.Contains(rail, "running") {
+	if !strings.Contains(rail, "acting…") {
 		t.Fatalf("the rail should still say what the turn is doing: %q", rail)
 	}
 
@@ -102,6 +102,17 @@ func TestTurnStatus_TheRailLeavesTheCommandToTheFeed(t *testing.T) {
 	}
 	if !strings.Contains(row, "0.412s") {
 		t.Fatalf("the feed's row should carry the command's live tail:\n%s", row)
+	}
+
+	// Two words as well as two clocks: `running…` is the outcome of the one
+	// call the row is about, so the rail states the turn's phase in a word of
+	// its own rather than standing a few rows from itself with a second
+	// subject (docs/interface/surfaces.md#the-input-frame).
+	if !strings.Contains(row, components.OutcomeRunning) {
+		t.Fatalf("the feed's row should state the call's own outcome:\n%s", row)
+	}
+	if strings.Contains(rail, "running") {
+		t.Fatalf("the rail should not carry the row's outcome word: %q", rail)
 	}
 
 	// Two clocks, and only one of them says `turn`: the row's is the

@@ -11,62 +11,62 @@
 
 ── layout ──────────────────────────────────────────────────
 · the entrance · the word arrives in reading order
-⠋ ru····· · turn 0.4s
-⠋ ru····· · turn 0.4s
-⠋ ru····· · turn 0.4s
-⠋ run···· · turn 0.4s
-⠋ run···· · turn 0.4s
-⠋ runn··· · turn 0.4s
-⠋ runn··· · turn 0.4s
-⠋ runni·· · turn 0.4s
-⠋ runni·· · turn 0.4s
-⠋ running · turn 0.4s
-⠋ running · turn 0.4s
-⠋ running · turn 0.4s
-⠋ running · turn 0.4s
+⠋ a······ · turn 0.4s
+⠋ ac····· · turn 0.4s
+⠋ act···· · turn 0.4s
+⠋ act···· · turn 0.4s
+⠋ acti··· · turn 0.4s
+⠋ acti··· · turn 0.4s
+⠋ acti··· · turn 0.4s
+⠋ actin·· · turn 0.4s
+⠋ actin·· · turn 0.4s
+⠋ acting· · turn 0.4s
+⠋ acting… · turn 0.4s
+⠋ acting… · turn 0.4s
+⠋ acting… · turn 0.4s
 
 · the sweep · one pass, with its rest either side
-⠋ running · turn 0.4s
-⠙ running · turn 0.4s
-⠹ running · turn 0.4s
-⠸ running · turn 0.4s
-⠼ running · turn 0.4s
-⠴ running · turn 0.4s
-⠦ running · turn 0.4s
-⠧ running · turn 0.4s
-⠋ running · turn 0.4s
-⠙ running · turn 0.4s
-⠹ running · turn 0.4s
-⠸ running · turn 0.4s
-⠼ running · turn 0.4s
+⠋ acting… · turn 0.4s
+⠙ acting… · turn 0.4s
+⠹ acting… · turn 0.4s
+⠸ acting… · turn 0.4s
+⠼ acting… · turn 0.4s
+⠴ acting… · turn 0.4s
+⠦ acting… · turn 0.4s
+⠧ acting… · turn 0.4s
+⠋ acting… · turn 0.4s
+⠙ acting… · turn 0.4s
+⠹ acting… · turn 0.4s
+⠸ acting… · turn 0.4s
+⠼ acting… · turn 0.4s
 
 ── ansi ────────────────────────────────────────────────────
 · the entrance · the word arrives in reading order
-␛[38;5;254m⠋ ru␛[m␛[38;5;244m·····␛[m␛[38;5;244m · turn 0.4s␛[m
-␛[38;5;254m⠋ ru␛[m␛[38;5;244m·····␛[m␛[38;5;244m · turn 0.4s␛[m
-␛[38;5;254m⠋ ru␛[m␛[38;5;244m·····␛[m␛[38;5;244m · turn 0.4s␛[m
-␛[38;5;254m⠋ run␛[m␛[38;5;244m····␛[m␛[38;5;244m · turn 0.4s␛[m
-␛[38;5;254m⠋ run␛[m␛[38;5;244m····␛[m␛[38;5;244m · turn 0.4s␛[m
-␛[38;5;254m⠋ runn␛[m␛[38;5;244m···␛[m␛[38;5;244m · turn 0.4s␛[m
-␛[38;5;254m⠋ runn␛[m␛[38;5;244m···␛[m␛[38;5;244m · turn 0.4s␛[m
-␛[38;5;254m⠋ runni␛[m␛[38;5;244m··␛[m␛[38;5;244m · turn 0.4s␛[m
-␛[38;5;254m⠋ runni␛[m␛[38;5;244m··␛[m␛[38;5;244m · turn 0.4s␛[m
-␛[38;5;254m⠋ running␛[m␛[38;5;244m · turn 0.4s␛[m
-␛[38;5;254m⠋ running␛[m␛[38;5;244m · turn 0.4s␛[m
-␛[38;5;254m⠋ running␛[m␛[38;5;244m · turn 0.4s␛[m
-␛[38;5;254m⠋ running␛[m␛[38;5;244m · turn 0.4s␛[m
+␛[38;5;254m⠋ a␛[m␛[38;5;244m······␛[m␛[38;5;244m · turn 0.4s␛[m
+␛[38;5;254m⠋ ac␛[m␛[38;5;244m·····␛[m␛[38;5;244m · turn 0.4s␛[m
+␛[38;5;254m⠋ act␛[m␛[38;5;244m····␛[m␛[38;5;244m · turn 0.4s␛[m
+␛[38;5;254m⠋ act␛[m␛[38;5;244m····␛[m␛[38;5;244m · turn 0.4s␛[m
+␛[38;5;254m⠋ acti␛[m␛[38;5;244m···␛[m␛[38;5;244m · turn 0.4s␛[m
+␛[38;5;254m⠋ acti␛[m␛[38;5;244m···␛[m␛[38;5;244m · turn 0.4s␛[m
+␛[38;5;254m⠋ acti␛[m␛[38;5;244m···␛[m␛[38;5;244m · turn 0.4s␛[m
+␛[38;5;254m⠋ actin␛[m␛[38;5;244m··␛[m␛[38;5;244m · turn 0.4s␛[m
+␛[38;5;254m⠋ actin␛[m␛[38;5;244m··␛[m␛[38;5;244m · turn 0.4s␛[m
+␛[38;5;254m⠋ acting␛[m␛[38;5;244m·␛[m␛[38;5;244m · turn 0.4s␛[m
+␛[38;5;254m⠋ acting…␛[m␛[38;5;244m · turn 0.4s␛[m
+␛[38;5;254m⠋ acting…␛[m␛[38;5;244m · turn 0.4s␛[m
+␛[38;5;254m⠋ acting…␛[m␛[38;5;244m · turn 0.4s␛[m
 
 · the sweep · one pass, with its rest either side
-␛[38;5;254m⠋ running␛[m␛[38;5;244m · turn 0.4s␛[m
-␛[38;5;254m⠙ running␛[m␛[38;5;244m · turn 0.4s␛[m
-␛[38;5;254m⠹ running␛[m␛[38;5;244m · turn 0.4s␛[m
-␛[38;5;254m⠸ running␛[m␛[38;5;244m · turn 0.4s␛[m
-␛[38;5;254m⠼ running␛[m␛[38;5;244m · turn 0.4s␛[m
-␛[38;5;254m⠴ running␛[m␛[38;5;244m · turn 0.4s␛[m
-␛[38;5;254m⠦ running␛[m␛[38;5;244m · turn 0.4s␛[m
-␛[38;5;254m⠧ running␛[m␛[38;5;244m · turn 0.4s␛[m
-␛[38;5;254m⠋ running␛[m␛[38;5;244m · turn 0.4s␛[m
-␛[38;5;254m⠙ running␛[m␛[38;5;244m · turn 0.4s␛[m
-␛[38;5;254m⠹ running␛[m␛[38;5;244m · turn 0.4s␛[m
-␛[38;5;254m⠸ running␛[m␛[38;5;244m · turn 0.4s␛[m
-␛[38;5;254m⠼ running␛[m␛[38;5;244m · turn 0.4s␛[m
+␛[38;5;254m⠋ acting…␛[m␛[38;5;244m · turn 0.4s␛[m
+␛[38;5;254m⠙ acting…␛[m␛[38;5;244m · turn 0.4s␛[m
+␛[38;5;254m⠹ acting…␛[m␛[38;5;244m · turn 0.4s␛[m
+␛[38;5;254m⠸ acting…␛[m␛[38;5;244m · turn 0.4s␛[m
+␛[38;5;254m⠼ acting…␛[m␛[38;5;244m · turn 0.4s␛[m
+␛[38;5;254m⠴ acting…␛[m␛[38;5;244m · turn 0.4s␛[m
+␛[38;5;254m⠦ acting…␛[m␛[38;5;244m · turn 0.4s␛[m
+␛[38;5;254m⠧ acting…␛[m␛[38;5;244m · turn 0.4s␛[m
+␛[38;5;254m⠋ acting…␛[m␛[38;5;244m · turn 0.4s␛[m
+␛[38;5;254m⠙ acting…␛[m␛[38;5;244m · turn 0.4s␛[m
+␛[38;5;254m⠹ acting…␛[m␛[38;5;244m · turn 0.4s␛[m
+␛[38;5;254m⠸ acting…␛[m␛[38;5;244m · turn 0.4s␛[m
+␛[38;5;254m⠼ acting…␛[m␛[38;5;244m · turn 0.4s␛[m

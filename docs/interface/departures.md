@@ -400,10 +400,16 @@ is also true of every moment of every turn, so it answers nothing the rail is
 being asked.
 
 Of the two artboards' words, four are the vocabulary — `thinking…`,
-`deciding…`, `running <tool>`, `streaming…` — and `writing` is not among them.
-It is the nearest to `streaming…`, which is what a phase outside a closed
+`deciding…`, `acting…`, `streaming…` — and `writing` is not among them. It is
+the nearest to `streaming…`, which is what a phase outside a closed
 vocabulary becomes ([closed vocabularies](principles.md#closed-vocabularies)):
 a fifth word would be a fifth state to read.
+
+The artboard's `running go test` is that third phase, and the binary draws
+neither half of it: the tool's name is the feed's row rather than a second
+clipped copy on the rail, and `running` is that row's own outcome word, so the
+rail says `acting…` instead of putting one word with two subjects a few rows
+apart ([the input frame](surfaces.md#the-input-frame)).
 
 ## The attached rail states no elapsed beside the child's phase
 

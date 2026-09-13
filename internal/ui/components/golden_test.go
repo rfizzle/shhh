@@ -487,10 +487,10 @@ func TestGolden_TurnStatus(t *testing.T) {
 			{Label: "phase · deciding", View: live(func(s *TurnStatus) {
 				s.Phase, s.Elapsed = PhaseDeciding, "0.8s"
 			})},
-			// The running phase names no call: the command is the feed's
+			// The acting phase names no call: the command is the feed's
 			// live row, and this slot is a fraction of that width
 			// (docs/interface/surfaces.md#the-input-frame).
-			{Label: "phase · running, and it names no call", View: live(func(s *TurnStatus) {})},
+			{Label: "phase · acting, and it names no call", View: live(func(s *TurnStatus) {})},
 			{Label: "phase · streaming", View: live(func(s *TurnStatus) {
 				s.Phase = PhaseStreaming
 			})},
@@ -536,7 +536,7 @@ func TestGolden_Anim(t *testing.T) {
 			entrance = append(entrance, status(0, arriving).View(width))
 		}
 		var sweep []string
-		for frame := range animRest + len("running") {
+		for frame := range animRest + len([]rune(PhaseRunning.Word())) {
 			sweep = append(sweep, status(frame, 0).View(width))
 		}
 		return []golden.Panel{

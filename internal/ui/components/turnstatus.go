@@ -54,21 +54,24 @@ const (
 	// PhaseDeciding is the auto-mode classifier judging a call (the vitals
 	// rail's `✦ checking`, seen from the frame).
 	PhaseDeciding
-	// PhaseRunning is a tool executing, named.
+	// PhaseRunning is a tool executing.
 	PhaseRunning
 	// PhaseStreaming is prose arriving.
 	PhaseStreaming
 )
 
-// phaseWords is the vocabulary itself. The running phase is the one word
-// without an ellipsis, and it keeps that shape now that it has no argument to
-// carry: the feed's live row states `running…` of the call it belongs to, and
-// the two are a few rows apart on the same screen. The bare word is the
-// turn's phase; the one with the ellipsis is one call's outcome.
+// phaseWords is the vocabulary itself. The phase a call in flight puts the
+// turn in is `acting…` and not `running`, because the feed's live row a few
+// rows above already states `running…` of the one call it belongs to: one word
+// with two subjects on one screen is read as one subject, and the reader who
+// has to tell the turn from the command is exactly the reader watching a
+// command run. Each vocabulary keeps the word about its own subject — the turn
+// acts, over the act the row is reporting, and the command runs
+// (docs/interface/surfaces.md#the-input-frame).
 var phaseWords = map[TurnPhase]string{
 	PhaseThinking:  "thinking…",
 	PhaseDeciding:  "deciding…",
-	PhaseRunning:   "running",
+	PhaseRunning:   "acting…",
 	PhaseStreaming: "streaming…",
 }
 

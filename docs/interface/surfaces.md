@@ -508,10 +508,18 @@ and how long the turn has been running — and it states it while it is
 happening rather than after the fact. Nothing else on screen says the same
 thing twice: the phase is named here, not also under the transcript.
 
+The four are `thinking…`, `deciding…`, `acting…` and `streaming…`. The third
+is not `running`, because that is the word the [row for a call in
+flight](#the-activity-row) already carries as its outcome, a few rows above
+this one: one word with two subjects on one screen is read as one subject, and
+which of the two is meant — the whole turn, or the one command — is the thing
+the two lines exist to keep apart. Each vocabulary keeps the word about its own
+subject, so the turn acts and the command runs.
+
 The act the phase is for is named the other way round. A running command is
 [a row in the feed](#the-activity-row) — the command itself, what it is
 doing, the clock it started, and the last line it printed under it while it
-runs — and the rail says only that the turn is running. A command is what
+runs — and the rail says only that the turn is acting. A command is what
 made the rule: the row has the width of the pane and the grammar to bound
 what runs past it, while the slot on the rail is a fraction of that, so a
 copy there was the same command twice over and the shorter copy was cut off

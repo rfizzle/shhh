@@ -25,7 +25,7 @@ func TestTurnStatus_PhaseVocabularyIsClosed(t *testing.T) {
 	}{
 		{PhaseThinking, "thinking…"},
 		{PhaseDeciding, "deciding…"},
-		{PhaseRunning, "running"},
+		{PhaseRunning, "acting…"},
 		{PhaseStreaming, "streaming…"},
 		// A phase nobody defined picks the nearest of the four rather than
 		// rendering blank or inventing a fifth.
@@ -44,16 +44,16 @@ func TestTurnStatus_PhaseVocabularyIsClosed(t *testing.T) {
 func TestTurnStatus_DropOrder(t *testing.T) {
 	s := liveStatus()
 	full := plainStatus(s, 200)
-	if want := "⠋ running · turn 12.4s"; full != want {
+	if want := "⠋ acting… · turn 12.4s"; full != want {
 		t.Fatalf("full line = %q, want %q", full, want)
 	}
 	for _, c := range []struct {
 		width int
 		want  string
 	}{
-		{lipgloss.Width(full), "⠋ running · turn 12.4s"},
-		{lipgloss.Width(full) - 1, "⠋ running"},
-		{14, "⠋ running"},
+		{lipgloss.Width(full), "⠋ acting… · turn 12.4s"},
+		{lipgloss.Width(full) - 1, "⠋ acting…"},
+		{14, "⠋ acting…"},
 	} {
 		if got := plainStatus(s, c.width); got != c.want {
 			t.Fatalf("at width %d = %q, want %q", c.width, got, c.want)
@@ -68,7 +68,7 @@ func TestTurnStatus_PhaseNeverDrops(t *testing.T) {
 		if lipgloss.Width(got) > width {
 			t.Fatalf("width %d overflowed: %q", width, got)
 		}
-		if width >= 9 && !strings.Contains(got, "running") {
+		if width >= 9 && !strings.Contains(got, "acting…") {
 			t.Fatalf("width %d dropped the phase: %q", width, got)
 		}
 	}

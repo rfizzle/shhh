@@ -577,7 +577,7 @@ func TestChildRail_NeverDropsAStoppedChildsState(t *testing.T) {
 
 // The attached top rail names the child's phase in the same closed vocabulary
 // a turn of this session's own is reported in, read off what the supervisor
-// reports: a call the child still has open is `running`, and `WORKING` — true
+// reports: a call the child still has open is `acting…`, and `WORKING` — true
 // of every moment of every turn, and therefore an answer to nothing — is not
 // one of the words (docs/interface/principles.md#closed-vocabularies).
 func TestFrame_AttachedRailNamesThePhaseRatherThanWorking(t *testing.T) {
@@ -597,8 +597,8 @@ func TestFrame_AttachedRailNamesThePhaseRatherThanWorking(t *testing.T) {
 		Kind: subagent.EntryTool, Tool: "execute_command",
 		Args: `{"command":"go test ./internal/agent/..."}`, Pending: true})
 	rail = stripANSI(m.frameActivity(120))
-	if !strings.Contains(rail, "running") {
-		t.Fatalf("an open call puts the child in the running phase: %q", rail)
+	if !strings.Contains(rail, "acting…") {
+		t.Fatalf("an open call puts the child in the acting phase: %q", rail)
 	}
 	if strings.Contains(rail, "go test") {
 		t.Fatalf("the rail repeated the child's command: %q", rail)
@@ -610,8 +610,8 @@ func TestFrame_AttachedRailNamesThePhaseRatherThanWorking(t *testing.T) {
 	if strings.Contains(rail, "round.go") || strings.Contains(rail, "go test") {
 		t.Fatalf("a round of several calls is named by none of them: %q", rail)
 	}
-	if !strings.Contains(rail, "running") {
-		t.Fatalf("it is still the running phase: %q", rail)
+	if !strings.Contains(rail, "acting…") {
+		t.Fatalf("it is still the acting phase: %q", rail)
 	}
 }
 
