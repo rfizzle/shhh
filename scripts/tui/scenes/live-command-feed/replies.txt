@@ -1,0 +1,5 @@
+# One command, long enough to be clipped on any rail and slow enough to be
+# watched, printing a line at a time so the feed's row has a live tail under
+# it while the frame's rail reports the turn.
+tool:execute_command:{"command":"for f in agent/loop.go agent/round.go ui/chat/frame.go ui/chat/turnstatus.go ui/components/activityrow.go; do echo \"ok  github.com/rfizzle/shhh/internal/$f  0.412s\"; sleep 1; done"}
+The command finished and its row settled.

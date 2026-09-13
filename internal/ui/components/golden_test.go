@@ -423,19 +423,16 @@ func TestGolden_CommitCard(t *testing.T) {
 }
 
 // TestGolden_TurnStatus captures the running turn's status line: the four
-// phases, the fields ticking, the collapse ladder, and the three ways it
-// resolves. The line states no account, so it is now short enough to fit the
-// narrowest terminal the frame draws on and the capture widths no longer
-// shed anything from it. What still narrows it is the slot — what is left of
-// the top rail after the identity — so the ladder is captured at two slot
-// widths instead, the same at every terminal width.
+// phases, the elapsed ticking, the collapse ladder, and the three ways it
+// resolves. The line states no account and names no call, so what is left of
+// it fits the narrowest terminal the frame draws on and the capture widths
+// shed nothing from it. What still narrows it is the slot — what is left of
+// the top rail after the identity — so the one rung the live line has left is
+// captured at a slot width instead, the same at every terminal width.
 func TestGolden_TurnStatus(t *testing.T) {
 	captureGolden(t, "turn-status", "running turn status", goldenWidths, func(width int) []golden.Panel {
 		live := func(mut func(*TurnStatus)) string {
-			s := TurnStatus{
-				Phase: PhaseRunning, Tool: "go test ./internal/agent/...",
-				Elapsed: "12.4s",
-			}
+			s := TurnStatus{Phase: PhaseRunning, Elapsed: "12.4s"}
 			mut(&s)
 			return s.View(width)
 		}
@@ -445,19 +442,21 @@ func TestGolden_TurnStatus(t *testing.T) {
 			return s.View(width)
 		}
 		slot := func(cols int) string {
-			return TurnStatus{Phase: PhaseRunning,
-				Tool: "go test ./internal/agent/...", Elapsed: "12.4s"}.View(cols)
+			return TurnStatus{Phase: PhaseRunning, Elapsed: "12.4s"}.View(cols)
 		}
 		return []golden.Panel{
 			{Label: "phase · thinking", View: live(func(s *TurnStatus) {
-				s.Phase, s.Tool, s.Elapsed = PhaseThinking, "", "4.2s"
+				s.Phase, s.Elapsed = PhaseThinking, "4.2s"
 			})},
 			{Label: "phase · deciding", View: live(func(s *TurnStatus) {
-				s.Phase, s.Tool, s.Elapsed = PhaseDeciding, "", "0.8s"
+				s.Phase, s.Elapsed = PhaseDeciding, "0.8s"
 			})},
-			{Label: "phase · running, named", View: live(func(s *TurnStatus) {})},
+			// The running phase names no call: the command is the feed's
+			// live row, and this slot is a fraction of that width
+			// (docs/interface/surfaces.md#the-input-frame).
+			{Label: "phase · running, and it names no call", View: live(func(s *TurnStatus) {})},
 			{Label: "phase · streaming", View: live(func(s *TurnStatus) {
-				s.Phase, s.Tool = PhaseStreaming, ""
+				s.Phase = PhaseStreaming
 			})},
 			// A live line handed a cost anyway: the field is the resolved
 			// summary's, and the running form does not print it whatever the
@@ -465,8 +464,7 @@ func TestGolden_TurnStatus(t *testing.T) {
 			{Label: "running · a cost is not the live line's to state", View: live(func(s *TurnStatus) {
 				s.Cost = "$0.06"
 			})},
-			{Label: "slot · the argument goes first", View: slot(24)},
-			{Label: "slot · then elapsed, leaving the phase", View: slot(12)},
+			{Label: "slot · elapsed goes, leaving the phase", View: slot(12)},
 			{Label: "resolved · done", View: done(func(s *TurnStatus) {})},
 			{Label: "resolved · cancelled", View: done(func(s *TurnStatus) {
 				s.Outcome, s.Tools, s.Duration = TurnCancelled, 5, "8.1s"
@@ -489,7 +487,7 @@ func TestGolden_Anim(t *testing.T) {
 	captureGolden(t, "anim", "the working label in motion", []int{80}, func(width int) []golden.Panel {
 		status := func(frame, arriving int) TurnStatus {
 			return TurnStatus{Frame: frame, Arriving: arriving,
-				Phase: PhaseRunning, Tool: "go test", Elapsed: "0.4s"}
+				Phase: PhaseRunning, Elapsed: "0.4s"}
 		}
 		// Each panel is one frame per row, oldest first, so the whole
 		// animation is legible as a block instead of one still at a time.
@@ -499,7 +497,7 @@ func TestGolden_Anim(t *testing.T) {
 			entrance = append(entrance, status(0, arriving).View(width))
 		}
 		var sweep []string
-		for frame := range animRest + len("running go test") {
+		for frame := range animRest + len("running") {
 			sweep = append(sweep, status(frame, 0).View(width))
 		}
 		return []golden.Panel{

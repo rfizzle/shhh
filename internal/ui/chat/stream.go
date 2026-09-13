@@ -95,10 +95,11 @@ func (m Model) requestStreamFor(msgs []provider.Message, choice string) tea.Cmd 
 	}
 }
 
-// execToolsCmd dispatches an auto-run batch off the UI goroutine, stamping
-// what it dispatched so the frame's status line can name it.
+// execToolsCmd dispatches an auto-run batch off the UI goroutine. What the
+// batch is running is not stamped anywhere for the frame to read: the calls
+// are rows in the feed while they run, and the rail says only that the turn
+// is in its running phase (turnstatus.go).
 func (m *Model) execToolsCmd(calls []provider.ToolCall) tea.Cmd {
-	m.runningTools = calls
 	a := m.agent
 	runID := a.RunID()
 	return func() tea.Msg {

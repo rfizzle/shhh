@@ -63,6 +63,13 @@ record, so the refusal and what was said about it are still together after the
 turn has moved on, and the frame above carries neither
 ([`../capabilities/approvals-and-safety.md`](../capabilities/approvals-and-safety.md#a-judged-denial-carries-its-reason)).
 
+A call still in flight is a row already, and it is the only place the live
+command is drawn: the outcome field says it is running, the duration field
+ticks that call's own clock, and the last line it has printed sits under it
+until it finishes. The [frame](#the-input-frame) below states the phase the
+turn is in and leaves the command here, where the field that grows has the
+width of the pane behind it.
+
 A row's output is bounded, and the bound is a fold rather than a loss: a body
 cut at the cap ends by counting what it swallowed. Opening the row widens the
 window in place — enough to read a failed test run whole — and opening it
@@ -409,10 +416,26 @@ contextual key hints on the bottom rail that change with what the session is
 doing.
 
 The top rail states what one turn is doing — which of four phases it is in,
-the call it is running where that is the phase, and how long it has been
-there — and it states it while it is happening rather than after the fact.
-Nothing else on screen says the same thing twice: the phase is named here, not
-also under the transcript.
+and how long the turn has been running — and it states it while it is
+happening rather than after the fact. Nothing else on screen says the same
+thing twice: the phase is named here, not also under the transcript.
+
+The act the phase is for is named the other way round. A running command is
+[a row in the feed](#the-activity-row) — the command itself, what it is
+doing, the clock it started, and the last line it printed under it while it
+runs — and the rail says only that the turn is running. A command is what
+made the rule: the row has the width of the pane and the grammar to bound
+what runs past it, while the slot on the rail is a fraction of that, so a
+copy there was the same command twice over and the shorter copy was cut off
+mid-word. It is the reader's own attention that is spent by the second copy;
+what they wanted from the rail was to know the turn had not stalled.
+
+Each clock says whose it is. The rail's is the whole turn's and carries the
+word for it, because the row above is ticking the command's own and two bare
+figures a few rows apart are two readings of one operation to anyone who does
+not already know which is which. The word stays on the summary the line
+resolves into: a turn that has finished leaves its rows on screen with their
+durations still on them.
 
 It states it at the rail's near corner, two rows above the prompt glyph,
 because it is the one thing on the frame that moves and the eye watching it is
@@ -457,12 +480,14 @@ so does the row the turn leaves in the transcript.
 Attached to a child agent, both rails scope to that child. The top one names
 the phase the child is in, read off what the supervisor already reports — a
 call the child still has open, prose already arriving, or neither — in the
-same closed vocabulary a turn of this session's own is reported in. It states
-no elapsed beside it: the number that belongs there is how long the turn has
-been in its phase, and what is reported of a child is how long the child has
-been alive, which is a different span. The vitals rail states the child's
-permission mode, its own context pressure, what it has spent against what the
-whole session has, and which of the parent's rounds it is running under.
+same closed vocabulary a turn of this session's own is reported in. The call
+that decided the phase stays where the session's own does, in the mirrored
+row under the rail. It states no elapsed beside it either: the number that
+belongs there is how long the turn has been running, and what is reported of
+a child is how long the child has been alive, which is a different span. The
+vitals rail states the child's permission mode, its own context pressure,
+what it has spent against what the whole session has, and which of the
+parent's rounds it is running under.
 
 The fields a rail may shed when it runs out of columns leave in one order:
 model and provider detail first, then token counts, then the round counter,

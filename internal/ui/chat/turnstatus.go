@@ -5,7 +5,15 @@ package chat
 // to say `WORKING` — which is true of every moment of every turn and
 // therefore says nothing — and what the turn was doing was reported only
 // after the fact. This is that slot given the turn's live account of itself:
-// which of the four phases it is in, and how long it has been there.
+// which of the four phases it is in, and how long the turn has been running.
+//
+// The call it is in that phase for is not on it. The feed already draws the
+// act as a row — the command whole, its outcome, and its last line of output
+// under it while it runs (activity.go, paint.go) — and the slot the rail
+// leaves is a fraction of that width, so a copy of the command here was the
+// same words a second time and cut off mid-word besides. The elapsed that
+// stays says whose clock it is, because the row below is ticking the
+// command's (docs/interface/surfaces.md#the-input-frame).
 //
 // What the turn is spending is not on it. The tokens are on the vitals rail a
 // row below, which already carries the running turn's estimate inside the
@@ -24,7 +32,6 @@ package chat
 
 import (
 	"github.com/rfizzle/shhh/internal/agent"
-	"github.com/rfizzle/shhh/internal/digest"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -33,11 +40,11 @@ import (
 // into. A session that has not run a turn yet has neither, and the slot says
 // `idle`.
 func (m Model) turnStatus() (components.TurnStatus, bool) {
-	phase, tool, running := m.turnPhase()
+	phase, running := m.turnPhase()
 	if !running {
 		return m.resolvedTurnStatus()
 	}
-	s := components.TurnStatus{Frame: m.spinFrame, Phase: phase, Tool: tool}
+	s := components.TurnStatus{Frame: m.spinFrame, Phase: phase}
 	// A turn with no start stamp reports no elapsed rather than counting from
 	// the zero time; every turn the user starts has one.
 	if !m.turnStarted.IsZero() {
@@ -53,58 +60,31 @@ func (m Model) turnStatus() (components.TurnStatus, bool) {
 	return s, true
 }
 
-// turnPhase is which of the four phases the turn is in, the argument to name
-// beside `running`, and whether the turn is in any of them at all. The
-// vocabulary is closed: a state that is not one of the four picks the nearest
-// rather than becoming a fifth.
-func (m Model) turnPhase() (components.TurnPhase, string, bool) {
+// turnPhase is which of the four phases the turn is in, and whether the turn
+// is in any of them at all. The vocabulary is closed: a state that is not one
+// of the four picks the nearest rather than becoming a fifth.
+//
+// What is running is read here and not reported: the phase is the answer, and
+// the call that produced it has a row of its own in the feed.
+func (m Model) turnPhase() (components.TurnPhase, bool) {
 	switch m.turnState() {
 	case stateClassifying:
 		// The vitals rail's `✦ checking`, seen from the frame.
-		return components.PhaseDeciding, "", true
+		return components.PhaseDeciding, true
 	case stateRunningCmd:
-		return components.PhaseRunning, firstLine(m.runningCommand), true
+		return components.PhaseRunning, true
 	case stateStreaming:
 		switch {
 		case m.agent.Executing():
-			return components.PhaseRunning, m.runningToolLabel(), true
+			return components.PhaseRunning, true
 		case m.streaming != "":
-			return components.PhaseStreaming, "", true
+			return components.PhaseStreaming, true
 		}
 		// Nothing has arrived yet: the model is reasoning before it acts,
 		// which is the phase a reasoning stream would fill in.
-		return components.PhaseThinking, "", true
+		return components.PhaseThinking, true
 	}
-	return components.PhaseThinking, "", false
-}
-
-// runningToolLabel names the call being executed the way the activity grid
-// already names it — its verb and its argument, minus the verb where
-// the verb is `run`, because `running run go test` says it twice.
-//
-// A round executing several calls at once is named by none of them: picking
-// the first would report one of three as if it were the only one, and `⠋
-// running` is a form the drop ladder already defines.
-func (m Model) runningToolLabel() string {
-	if len(m.runningTools) != 1 {
-		return ""
-	}
-	tc := m.runningTools[0]
-	return toolLabel(tc.Name, tc.Arguments)
-}
-
-// toolLabel is that naming for one call, shared with the rail scoped to a
-// child agent, whose calls arrive through the supervisor rather than through
-// this session's own round (frame.go).
-func toolLabel(name, args string) string {
-	verb, arg := activityVerbFor(name, args), digest.Arg(name, args)
-	switch {
-	case arg == "":
-		return verb
-	case verb == "run":
-		return arg
-	}
-	return verb + " " + arg
+	return components.PhaseThinking, false
 }
 
 // liveTurnTokens is what the turn has spent so far: the requests it has
@@ -176,7 +156,7 @@ func (m Model) countsEasing() bool {
 // rather than the session's settled totals, which is what decides the
 // resolution they print at.
 func (m Model) countsLive() bool {
-	_, _, running := m.turnPhase()
+	_, running := m.turnPhase()
 	return running || m.countsEasing()
 }
 

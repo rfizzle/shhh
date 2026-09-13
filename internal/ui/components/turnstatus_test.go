@@ -9,10 +9,11 @@ import (
 )
 
 // liveStatus is the fullest live line every drop-order test starts from —
-// the phase, its argument and elapsed — so what a narrower width removes is
-// visible.
+// the phase and the turn's elapsed — so what a narrower width removes is
+// visible. There is no third field: the call the phase is for is a row in the
+// feed and not a copy on this line.
 func liveStatus() TurnStatus {
-	return TurnStatus{Phase: PhaseRunning, Tool: "go test", Elapsed: "12.4s"}
+	return TurnStatus{Phase: PhaseRunning, Elapsed: "12.4s"}
 }
 
 func plainStatus(s TurnStatus, width int) string { return ansi.Strip(s.View(width)) }
@@ -37,21 +38,21 @@ func TestTurnStatus_PhaseVocabularyIsClosed(t *testing.T) {
 	}
 }
 
-// The whole ladder in one table: what each width leaves, in the order the
-// turn status says fields leave — tool argument, then elapsed — with the
-// phase still standing at the floor.
+// The whole ladder in one table: what each width leaves, with the phase still
+// standing at the floor. The live line has one field to shed now — the
+// elapsed — and it sheds it last of all.
 func TestTurnStatus_DropOrder(t *testing.T) {
 	s := liveStatus()
 	full := plainStatus(s, 200)
-	if want := "⠋ running go test 12.4s"; full != want {
+	if want := "⠋ running · turn 12.4s"; full != want {
 		t.Fatalf("full line = %q, want %q", full, want)
 	}
 	for _, c := range []struct {
 		width int
 		want  string
 	}{
-		{lipgloss.Width(full), "⠋ running go test 12.4s"},
-		{lipgloss.Width(full) - 1, "⠋ running 12.4s"},
+		{lipgloss.Width(full), "⠋ running · turn 12.4s"},
+		{lipgloss.Width(full) - 1, "⠋ running"},
 		{14, "⠋ running"},
 	} {
 		if got := plainStatus(s, c.width); got != c.want {
@@ -100,12 +101,17 @@ func TestTurnStatus_TheRunningLineStatesNoCost(t *testing.T) {
 	}
 }
 
-// The tool argument belongs to `running` and to nothing else.
-func TestTurnStatus_ToolNamesOnlyTheRunningPhase(t *testing.T) {
-	s := liveStatus()
-	s.Phase = PhaseStreaming
-	if got := plainStatus(s, 200); strings.Contains(got, "go test") {
-		t.Fatalf("streaming named a tool: %q", got)
+// Both forms of the line say whose clock they are stating. The feed under
+// them carries a clock per row and a ticking one on the command in flight, so
+// an unlabelled figure here is a second reading of an operation the reader is
+// already watching (docs/interface/surfaces.md#the-input-frame).
+func TestTurnStatus_TheClockSaysItIsTheTurns(t *testing.T) {
+	if got := plainStatus(liveStatus(), 200); !strings.Contains(got, "turn 12.4s") {
+		t.Fatalf("the running line's elapsed is unlabelled: %q", got)
+	}
+	done := TurnStatus{Done: true, Duration: "1m 04s", Tools: 18, Cost: "$0.14"}
+	if got := plainStatus(done, 200); !strings.Contains(got, "turn 1m 04s") {
+		t.Fatalf("the resolved line's duration is unlabelled: %q", got)
 	}
 }
 
@@ -114,9 +120,9 @@ func TestTurnStatus_ResolvesIntoTheSummary(t *testing.T) {
 		outcome TurnState
 		want    string
 	}{
-		{TurnDone, "✓ done · 1m 04s · 18 tools · $0.14"},
-		{TurnCancelled, "⊘ cancelled · 1m 04s · 18 tools · $0.14"},
-		{TurnFailed, "✗ failed · 1m 04s · 18 tools · $0.14"},
+		{TurnDone, "✓ done · turn 1m 04s · 18 tools · $0.14"},
+		{TurnCancelled, "⊘ cancelled · turn 1m 04s · 18 tools · $0.14"},
+		{TurnFailed, "✗ failed · turn 1m 04s · 18 tools · $0.14"},
 	}
 	for _, c := range cases {
 		s := TurnStatus{Done: true, Outcome: c.outcome, Duration: "1m 04s", Tools: 18, Cost: "$0.14"}
@@ -132,8 +138,8 @@ func TestTurnStatus_ResolvedLineDropsInTheSameOrder(t *testing.T) {
 		width int
 		want  string
 	}{
-		{34, "✓ done · 1m 04s · 18 tools · $0.14"},
-		{24, "✓ done · 1m 04s · $0.14"},
+		{39, "✓ done · turn 1m 04s · 18 tools · $0.14"},
+		{29, "✓ done · turn 1m 04s · $0.14"},
 		{16, "✓ done · $0.14"},
 	} {
 		if got := plainStatus(s, c.width); got != c.want {

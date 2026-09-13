@@ -589,14 +589,21 @@ func TestFrame_AttachedRailNamesThePhaseRatherThanWorking(t *testing.T) {
 	if !strings.Contains(rail, "thinking…") {
 		t.Fatalf("a child with nothing open is reasoning before it acts: %q", rail)
 	}
+	// The call moves the phase and is not copied onto the rail: the mirrored
+	// row in the transcript under it is where the child's command is read,
+	// the way the session's own line leaves its command to the feed
+	// (turnstatus.go).
 	noteChild(t, m.subagents, "researcher-1", subagent.TranscriptEntry{
 		Kind: subagent.EntryTool, Tool: "execute_command",
 		Args: `{"command":"go test ./internal/agent/..."}`, Pending: true})
-	if rail := stripANSI(m.frameActivity(120)); !strings.Contains(rail, "running go test ./internal/agent/...") {
-		t.Fatalf("an open call names itself on the rail: %q", rail)
+	rail = stripANSI(m.frameActivity(120))
+	if !strings.Contains(rail, "running") {
+		t.Fatalf("an open call puts the child in the running phase: %q", rail)
 	}
-	// Two calls in flight are named by neither, which is the rule the
-	// session's own status line follows.
+	if strings.Contains(rail, "go test") {
+		t.Fatalf("the rail repeated the child's command: %q", rail)
+	}
+	// A second call in flight changes none of that.
 	noteChild(t, m.subagents, "researcher-1", subagent.TranscriptEntry{
 		Kind: subagent.EntryTool, Tool: "read_file", Args: `{"path":"round.go"}`, Pending: true})
 	rail = stripANSI(m.frameActivity(120))

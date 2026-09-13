@@ -692,10 +692,6 @@ type Model struct {
 	runningCommand string
 	runStart       time.Time
 	runTail        *commandTail
-	// runningTools is the auto-run batch currently executing, so the frame's
-	// status line can name the call it is running. It is read
-	// only while agent.Executing() is true.
-	runningTools []provider.ToolCall
 	// Head of the agent's approval queue while its confirm prompt is showing,
 	// with everything needed to preview and execute it.
 	pendingApproval *approvalRequest

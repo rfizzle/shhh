@@ -553,7 +553,7 @@ func monoFixtures() []monoSurface {
 		{"turn status phase", []monoState{
 			{"thinking", status(func(s *TurnStatus) { s.Phase = PhaseThinking })},
 			{"deciding", status(func(s *TurnStatus) { s.Phase = PhaseDeciding })},
-			{"running", status(func(s *TurnStatus) { s.Phase, s.Tool = PhaseRunning, "go test" })},
+			{"running", status(func(s *TurnStatus) { s.Phase = PhaseRunning })},
 			{"streaming", status(func(s *TurnStatus) { s.Phase = PhaseStreaming })},
 		}},
 		{"turn status resolution", []monoState{

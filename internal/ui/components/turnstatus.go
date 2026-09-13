@@ -17,14 +17,25 @@ package components
 // Tokens leave with it: the vitals rail a row down already states the pair
 // (docs/interface/surfaces.md#the-input-frame).
 //
+// It names no call either. The act itself — the command, what it is doing,
+// what it printed a moment ago — is the feed's live row, which has the width
+// to hold a command whole and the grammar to bound one that runs past it. A
+// copy of it here was the same command a second time, in a slot a hand wide,
+// clipped mid-word (docs/interface/surfaces.md#the-activity-row).
+//
+// What is left is the turn's, and the elapsed says so: `turn 12.4s`, because
+// the row below is ticking its own command's clock and two unlabelled figures
+// a few rows apart are two readings of one operation to anybody who does not
+// already know which is which.
+//
 // Three rules are enforced here rather than left to the hosts. The phases are
 // a closed vocabulary of four, so a state nobody defined has to pick the
 // nearest rather than invent a fifth. The fields leave in one order as the
-// terminal narrows — tool argument, then elapsed — and the phase never
-// leaves, because what the turn is doing is the thing the line exists to say.
-// And the spinner frame is passed in rather than kept, so this line, the
-// running activity row and anything else that moves show the same frame from
-// the one tick source.
+// terminal narrows — the resolved line's tool count, then elapsed — and the
+// phase never leaves, because what the turn is doing is the thing the line
+// exists to say. And the spinner frame is passed in rather than kept, so this
+// line, the running activity row and anything else that moves show the same
+// frame from the one tick source.
 
 import "charm.land/lipgloss/v2"
 
@@ -45,8 +56,11 @@ const (
 	PhaseStreaming
 )
 
-// phaseWords is the vocabulary itself. The running phase carries its argument
-// beside it, so it is the one word without an ellipsis.
+// phaseWords is the vocabulary itself. The running phase is the one word
+// without an ellipsis, and it keeps that shape now that it has no argument to
+// carry: the feed's live row states `running…` of the call it belongs to, and
+// the two are a few rows apart on the same screen. The bare word is the
+// turn's phase; the one with the ellipsis is one call's outcome.
 var phaseWords = map[TurnPhase]string{
 	PhaseThinking:  "thinking…",
 	PhaseDeciding:  "deciding…",
@@ -65,13 +79,13 @@ func (p TurnPhase) Word() string {
 
 // Field-drop levels (guidelines/turnstatus-drop-order). Fields leave in this
 // order and no other; the phase, the outcome and the resolved cost are not on
-// the ladder. The counts level is the resolved line's tool count, and the
-// running line reaches it with nothing left to shed, having no account to
-// state.
+// the ladder. The guideline's first rung is gone with the field it shed: the
+// line carries no tool argument to drop, so the counts rung — the resolved
+// line's tool count — is what a narrowing slot reaches first, and the running
+// line reaches it with nothing left to shed at all.
 const (
 	TurnDropNone    = iota // every field the host supplied
-	TurnDropTool           // the tool argument goes first
-	TurnDropTokens         // then the counts: the resolved line's tool count
+	TurnDropCounts         // the resolved line's tool count goes first
 	TurnDropElapsed        // then elapsed — the floor is the phase or outcome
 )
 
@@ -87,19 +101,20 @@ type TurnStatus struct {
 	// the settled label. The chat frame fills it from the turn's own age.
 	Arriving int
 	Phase    TurnPhase
-	// Tool is the argument beside `running` — the call the grid's own naming
-	// gives it. Read only in PhaseRunning, and the first field dropped.
-	Tool string
 	// Elapsed is the turn's wall time so far, pre-formatted by FormatElapsed:
-	// tenths under ten seconds, whole seconds above.
+	// tenths under ten seconds, whole seconds above. It renders behind the
+	// word `turn`, which is what says it is not the clock on the command's
+	// own row in the feed.
 	Elapsed string
 
 	// Done resolves the line into the summary it becomes: the same fields
 	// finished, with the outcome's glyph where the spinner was.
 	Done    bool
 	Outcome TurnState
-	// Duration is the finished turn's wall time, Tools what it ran, and Cost
-	// what the turn was billed — all three read only when Done, because all
+	// Duration is the finished turn's wall time — labelled `turn` like the
+	// live elapsed it replaces, because the rows it closed over are still on
+	// screen with clocks of their own — Tools what the turn ran, and Cost
+	// what it was billed. All three are read only when Done, because all
 	// three are facts a turn has only once it is over. Cost in particular:
 	// the host reads it off the close block, where it is the ledger's own
 	// per-request total rather than a live pair re-priced at the fresh rate.
@@ -153,16 +168,14 @@ func (s TurnStatus) render(drop int) string {
 		return s.renderDone(drop)
 	}
 	label := s.Phase.Word()
-	if s.Phase == PhaseRunning && s.Tool != "" && drop < TurnDropTool {
-		label += " " + s.Tool
-	}
 	// Elapsed, where the ladder left it standing, rides behind the label as
 	// the animation's suffix: it is the host's own styling and the animation
 	// never touches it, but it belongs to the same string so the line is
-	// measured and clipped as one.
+	// measured and clipped as one. The word in front of it is what makes it
+	// the turn's clock rather than a second reading of the command's.
 	var tail string
 	if s.Elapsed != "" && drop < TurnDropElapsed {
-		tail += sty.Dim.Render(" " + s.Elapsed)
+		tail += sty.Dim.Render(" · " + turnClock(s.Elapsed))
 	}
 	// The line's moving part. The spinner's frame leads, outside the sweep
 	// because its eight-frame cycle is not the label's; the label arrives
@@ -176,6 +189,13 @@ func (s TurnStatus) render(drop int) string {
 	}.View()
 }
 
+// turnClock labels a span as the whole turn's. The feed under this line is
+// full of clocks — every row that ran carries its own, and the command
+// running right now is ticking one — so the frame's says whose it is rather
+// than being the second bare figure on the screen
+// (docs/interface/surfaces.md#the-input-frame).
+func turnClock(span string) string { return "turn " + span }
+
 // renderDone is the resolved line, and the only form that states a cost. It
 // sheds in the ladder's order — the tool count first, then the duration,
 // leaving the outcome and what the turn was billed.
@@ -183,9 +203,9 @@ func (s TurnStatus) renderDone(drop int) string {
 	glyph, word, style := s.doneGlyph()
 	out := style.Render(glyph + " " + word)
 	if s.Duration != "" && drop < TurnDropElapsed {
-		out += sty.Dim.Render(" · " + s.Duration)
+		out += sty.Dim.Render(" · " + turnClock(s.Duration))
 	}
-	if s.Tools > 0 && drop < TurnDropTokens {
+	if s.Tools > 0 && drop < TurnDropCounts {
 		out += sty.Dim.Render(" · " + plural(s.Tools, "tool"))
 	}
 	if s.Cost != "" {

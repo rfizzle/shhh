@@ -269,15 +269,18 @@ func (m Model) frameActivity(width int) string {
 	// product is saying rather than a heading over a block.
 	//
 	// No elapsed rides beside it. The number the artboard draws there is how
-	// long the turn has been in its phase, and what the supervisor reports of
-	// a child is how long the child has been alive — a different span, and
+	// long the turn has been running, and what the supervisor reports of a
+	// child is how long the child has been alive — a different span, and
 	// putting it under the same label would be answering a question with a
 	// figure from another one. A stat that cannot be reported is left out
 	// (docs/interface/principles.md#a-stat-that-cannot-be-reported-is-left-out).
+	//
+	// The call is not named here either, for the reason the session's own
+	// line does not name one: the child's pending call is already a row in
+	// the transcript the attach view is showing (turnstatus.go).
 	if m.attachedTo != "" {
 		if m.frameWorking() {
-			r := m.attachedReading()
-			return components.TurnStatus{Frame: m.spinFrame, Phase: r.phase, Tool: r.tool}.View(width)
+			return components.TurnStatus{Frame: m.spinFrame, Phase: m.attachedReading().phase}.View(width)
 		}
 		return sty.Frame.Idle.Render(clipRow("idle", width))
 	}
@@ -859,13 +862,12 @@ func (m Model) childContextPct(st subagent.Status) (int, bool) {
 }
 
 // childReading is what one pass over the attached child's mirrored transcript
-// answers: the phase the child is in, the call it named where it is running
-// one, and how much of its context window the conversation has filled. The
-// top rail asks for the first two and the vitals rail for the third, so the
-// pass is made once per paint and both read it (layout.go).
+// answers: the phase the child is in, and how much of its context window the
+// conversation has filled. The top rail asks for the first and the vitals
+// rail for the second, so the pass is made once per paint and both read it
+// (layout.go).
 type childReading struct {
 	phase  components.TurnPhase
-	tool   string
 	tokens int64
 }
 
@@ -884,9 +886,10 @@ func (m Model) attachedReading() childReading {
 // readChild reads the child's transcript once. The phase is taken off what
 // the supervisor already reports rather than invented: calls the child still
 // has open are `running`, prose already arriving is `streaming…`, and a child
-// with neither is the model reasoning before it acts. A round with several
-// calls in flight is named by none of them, which is the rule the session's
-// own status line follows (turnstatus.go).
+// with neither is the model reasoning before it acts. Which call it is stays
+// where the reader can read it whole — the mirrored row in the transcript
+// under the rail — the way the session's own status line leaves it
+// (turnstatus.go).
 func (m Model) readChild(name string) childReading {
 	r := childReading{phase: components.PhaseThinking}
 	if m.subagents == nil || name == "" {
@@ -900,15 +903,11 @@ func (m Model) readChild(name string) childReading {
 			break
 		}
 		open++
-		r.tool = toolLabel(e.Tool, e.Args)
 	}
 	streaming := m.subagents.StreamingText(name)
 	switch {
 	case open > 0:
 		r.phase = components.PhaseRunning
-		if open > 1 {
-			r.tool = ""
-		}
 	case streaming != "":
 		r.phase = components.PhaseStreaming
 	}

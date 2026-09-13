@@ -552,7 +552,10 @@ func TestGolden_TurnStatus(t *testing.T) {
 		}
 		return []golden.Panel{
 			{Label: "phase · thinking", View: frame(func(m *Model) {})},
-			{Label: "phase · running, named", View: frame(func(m *Model) {
+			// The command is not on the rail: what a running turn puts there
+			// is the phase and the turn's own clock, and the command itself
+			// is the feed's row (live-command.*).
+			{Label: "phase · running", View: frame(func(m *Model) {
 				m.state = stateRunningCmd
 				m.runningCommand = "go test ./internal/agent/..."
 			})},
@@ -598,6 +601,37 @@ func TestGolden_TurnStatus(t *testing.T) {
 				m.turnOpen = true
 				m.hold = &turnHold{turn: 1, rounds: 12}
 			})},
+		}
+	})
+}
+
+// TestGolden_LiveCommand captures the two surfaces a long command in flight
+// occupies, at the widths the grid is measured at: the feed's own row — the
+// command, the outcome, the ticking clock that belongs to it and the last
+// line it printed — and the frame under it, which states the phase and the
+// turn's clock and repeats none of it
+// (docs/interface/surfaces.md#the-input-frame).
+//
+// The command is longer than any of the four widths on purpose. The rail used
+// to carry a copy of it in a slot a hand wide, cut mid-word; what bounds it
+// now is the activity row's own grammar, which clips the one field that grows
+// and leaves the outcome and the duration standing.
+func TestGolden_LiveCommand(t *testing.T) {
+	captureBoundedGolden(t, "live-command", "a long command running in the feed", goldenWidths, func(width int) []golden.Panel {
+		m := frameModel(t, width, 40)
+		m.turnCount = 1
+		// Stamps half a second off a rounding boundary, so both clocks are
+		// captured ticking without the capture depending on the clock.
+		m.turnStarted = time.Now().Add(-64500 * time.Millisecond)
+		m.state = stateRunningCmd
+		m.runningCommand = "go test ./internal/agent/... ./internal/ui/chat/... -run TestRoundLimitPause -count=1 -timeout 120s"
+		m.runStart = time.Now().Add(-42500 * time.Millisecond)
+		m.runTail = &commandTail{}
+		m.runTail.Set("--- FAIL: TestRoundLimitPause/the ceiling holds the turn open (0.42s)")
+		m.invalidateRenderCache()
+		return []golden.Panel{
+			{Label: "feed · the command, its outcome, its clock and its last line out", View: m.liveTail(width)},
+			{Label: "frame · the phase and the turn's clock, and no second copy", View: promptSurface(m)},
 		}
 	})
 }

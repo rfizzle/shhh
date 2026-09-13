@@ -410,7 +410,6 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 			return m, nil, true
 		}
 		m.agent.RecordAutoResults(msg.results)
-		m.runningTools = nil
 		for _, r := range msg.results {
 			m.recordToolResult(r.Call.Name, r.Duration, r.Result)
 			if agent.IsRepeatNotice(r.Result) {

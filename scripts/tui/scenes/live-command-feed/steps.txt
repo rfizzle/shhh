@@ -1,0 +1,18 @@
+# A long command in flight, on the two surfaces it occupies: the feed's row —
+# the command, its outcome, its own clock and the last line it printed — and
+# the frame's top rail, which states the phase and the turn's clock and
+# repeats none of it. Read the cells against the live-command goldens: the
+# command is bounded by the activity row's grammar rather than cut on the
+# rail, the rail carries no copy of it, and of the two clocks on screen only
+# the rail's says `turn`.
+snap 01-start "Some things worth doing first"
+keys "run the checks" Enter
+snap 02-card "[y] run it once"
+keys y
+snap 03-running "running…"
+snap 04-tail "0.412s"
+snap 05-settled "The command finished and its row settled"
+keys C-c
+snap 06-quit-armed "again quits"
+keys C-c
+snap 07-exit "that is everything the screen was holding"

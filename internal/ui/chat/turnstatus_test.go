@@ -9,7 +9,6 @@ import (
 	"charm.land/lipgloss/v2"
 
 	"github.com/rfizzle/shhh/internal/provider"
-	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -41,65 +40,78 @@ func TestTurnStatus_PhaseFollowsWhatTheTurnIsDoing(t *testing.T) {
 	m := statusModel(t)
 
 	// Nothing has arrived yet: the model is reasoning before it acts.
-	if p, _, ok := m.turnPhase(); !ok || p != components.PhaseThinking {
+	if p, ok := m.turnPhase(); !ok || p != components.PhaseThinking {
 		t.Fatalf("a silent stream = phase %d ok=%v, want thinking", p, ok)
 	}
 
 	m.streaming = "here is what I found"
-	if p, _, ok := m.turnPhase(); !ok || p != components.PhaseStreaming {
+	if p, ok := m.turnPhase(); !ok || p != components.PhaseStreaming {
 		t.Fatalf("prose arriving = phase %d ok=%v, want streaming", p, ok)
 	}
 
 	m.state = stateClassifying
-	if p, _, ok := m.turnPhase(); !ok || p != components.PhaseDeciding {
+	if p, ok := m.turnPhase(); !ok || p != components.PhaseDeciding {
 		t.Fatalf("the classifier = phase %d ok=%v, want deciding", p, ok)
 	}
 
 	m.state = stateRunningCmd
 	m.runningCommand = "go test ./internal/agent/...\nsecond line"
-	p, tool, ok := m.turnPhase()
-	if !ok || p != components.PhaseRunning || tool != "go test ./internal/agent/... …" {
-		t.Fatalf("a running command = phase %d tool %q ok=%v", p, tool, ok)
+	if p, ok := m.turnPhase(); !ok || p != components.PhaseRunning {
+		t.Fatalf("a running command = phase %d ok=%v, want running", p, ok)
 	}
 
 	// An idle session is in none of the four.
 	m.state = stateInput
-	if _, _, ok := m.turnPhase(); ok {
+	if _, ok := m.turnPhase(); ok {
 		t.Fatal("an idle session should report no phase")
 	}
 }
 
-func TestTurnStatus_NamesTheCallItIsRunning(t *testing.T) {
+// The command runs in the feed and nowhere else. The rail states the phase
+// the turn is in; the row under the transcript states what is running, whole,
+// with the clock that belongs to it — so the long command that used to be cut
+// in half on the rail is readable in the one place that has the width for it
+// (docs/interface/surfaces.md#the-input-frame).
+func TestTurnStatus_TheRailLeavesTheCommandToTheFeed(t *testing.T) {
+	const command = "go test ./internal/agent/... ./internal/ui/chat/... -run TestRoundLimit -count=1"
 	m := statusModel(t)
-	cases := []struct {
-		name string
-		call provider.ToolCall
-		want string
-	}{
-		// A command is named by the command: `running run go test` says it
-		// twice.
-		{"command", provider.ToolCall{Name: tools.ExecCommandName, Arguments: `{"command":"go test ./..."}`}, "go test ./..."},
-		// Everything else keeps the grid's verb, so the argument is not
-		// mistaken for something being executed.
-		{"read", provider.ToolCall{Name: "read_file", Arguments: `{"path":"internal/agent/loop.go"}`}, "read internal/agent/loop.go"},
-		{"edit", provider.ToolCall{Name: "edit_file", Arguments: `{"path":"internal/ui/chat/frame.go"}`}, "edit internal/ui/chat/frame.go"},
-		{"no argument", provider.ToolCall{Name: "read_file"}, "read"},
+	// Past the label's entrance, so the rail's word is the settled one
+	// rather than the cells that have arrived of it so far.
+	m.turnStarted = time.Now().Add(-2 * time.Minute)
+	m.state = stateRunningCmd
+	m.runningCommand = command
+	m.runStart = time.Now().Add(-42 * time.Second)
+	m.runTail = &commandTail{}
+	m.runTail.Set("ok  	github.com/rfizzle/shhh/internal/agent	0.412s")
+
+	s, ok := m.turnStatus()
+	if !ok {
+		t.Fatal("a command in flight should have a live line")
 	}
-	for _, c := range cases {
-		m.runningTools = []provider.ToolCall{c.call}
-		if got := m.runningToolLabel(); got != c.want {
-			t.Fatalf("%s = %q, want %q", c.name, got, c.want)
-		}
+	rail := stripANSI(s.View(120))
+	if strings.Contains(rail, "go test") {
+		t.Fatalf("the rail repeated the command: %q", rail)
+	}
+	if !strings.Contains(rail, "running") {
+		t.Fatalf("the rail should still say what the turn is doing: %q", rail)
 	}
 
-	// A round running three calls at once is named by none of them.
-	m.runningTools = []provider.ToolCall{
-		{Name: "read_file", Arguments: `{"path":"a.go"}`},
-		{Name: "read_file", Arguments: `{"path":"b.go"}`},
-		{Name: "search", Arguments: `{"pattern":"x"}`},
+	row := stripANSI(m.runningCommandRow(120))
+	if !strings.Contains(row, command) {
+		t.Fatalf("the feed's row should carry the command whole:\n%s", row)
 	}
-	if got := m.runningToolLabel(); got != "" {
-		t.Fatalf("a batch of three named %q; it should name none of them", got)
+	if !strings.Contains(row, "0.412s") {
+		t.Fatalf("the feed's row should carry the command's live tail:\n%s", row)
+	}
+
+	// Two clocks, and only one of them says `turn`: the row's is the
+	// command's own, in the duration column every row states its own span
+	// in, and the rail's is the whole turn's.
+	if !strings.Contains(rail, "turn ") {
+		t.Fatalf("the rail's clock should name the span it measures: %q", rail)
+	}
+	if strings.Contains(row, "turn ") {
+		t.Fatalf("the command's row should not state the turn's clock:\n%s", row)
 	}
 }
 
@@ -224,7 +236,7 @@ func TestTurnStatus_FrameRailShowsTheTurnAndThenItsSummary(t *testing.T) {
 	m.transcript = append(m.transcript, entry{kind: entryTurnClose, turn: 1,
 		close: &components.TurnClose{State: components.TurnDone, Tools: 18, Elapsed: "1m 04s", Spend: "$0.14"}})
 	view = stripANSI(m.View().Content)
-	if !strings.Contains(view, "✓ done · 1m 04s · 18 tools · $0.14") {
+	if !strings.Contains(view, "✓ done · turn 1m 04s · 18 tools · $0.14") {
 		t.Fatalf("the top rail should resolve into the turn summary:\n%s", view)
 	}
 	if strings.Contains(view, "thinking…") {

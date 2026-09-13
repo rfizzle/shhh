@@ -11,78 +11,62 @@
 
 ── layout ──────────────────────────────────────────────────
 · the entrance · the word arrives in reading order
-⠋ run············ 0.4s
-⠋ run············ 0.4s
-⠋ runni·········· 0.4s
-⠋ running········ 0.4s
-⠋ running ······· 0.4s
-⠋ running ······· 0.4s
-⠋ running ······· 0.4s
-⠋ running g······ 0.4s
-⠋ running go····· 0.4s
-⠋ running go te·· 0.4s
-⠋ running go tes· 0.4s
-⠋ running go test 0.4s
-⠋ running go test 0.4s
+⠋ ru····· · turn 0.4s
+⠋ ru····· · turn 0.4s
+⠋ ru····· · turn 0.4s
+⠋ run···· · turn 0.4s
+⠋ run···· · turn 0.4s
+⠋ runn··· · turn 0.4s
+⠋ runn··· · turn 0.4s
+⠋ runni·· · turn 0.4s
+⠋ runni·· · turn 0.4s
+⠋ running · turn 0.4s
+⠋ running · turn 0.4s
+⠋ running · turn 0.4s
+⠋ running · turn 0.4s
 
 · the sweep · one pass, with its rest either side
-⠋ running go test 0.4s
-⠙ running go test 0.4s
-⠹ running go test 0.4s
-⠸ running go test 0.4s
-⠼ running go test 0.4s
-⠴ running go test 0.4s
-⠦ running go test 0.4s
-⠧ running go test 0.4s
-⠋ running go test 0.4s
-⠙ running go test 0.4s
-⠹ running go test 0.4s
-⠸ running go test 0.4s
-⠼ running go test 0.4s
-⠴ running go test 0.4s
-⠦ running go test 0.4s
-⠧ running go test 0.4s
-⠋ running go test 0.4s
-⠙ running go test 0.4s
-⠹ running go test 0.4s
-⠸ running go test 0.4s
-⠼ running go test 0.4s
+⠋ running · turn 0.4s
+⠙ running · turn 0.4s
+⠹ running · turn 0.4s
+⠸ running · turn 0.4s
+⠼ running · turn 0.4s
+⠴ running · turn 0.4s
+⠦ running · turn 0.4s
+⠧ running · turn 0.4s
+⠋ running · turn 0.4s
+⠙ running · turn 0.4s
+⠹ running · turn 0.4s
+⠸ running · turn 0.4s
+⠼ running · turn 0.4s
 
 ── ansi ────────────────────────────────────────────────────
 · the entrance · the word arrives in reading order
-␛[38;5;205m⠋ run␛[m␛[38;5;241m············␛[m␛[38;5;241m 0.4s␛[m
-␛[38;5;205m⠋ run␛[m␛[38;5;241m············␛[m␛[38;5;241m 0.4s␛[m
-␛[38;5;205m⠋ runni␛[m␛[38;5;241m··········␛[m␛[38;5;241m 0.4s␛[m
-␛[38;5;205m⠋ running␛[m␛[38;5;241m········␛[m␛[38;5;241m 0.4s␛[m
-␛[38;5;205m⠋ running ␛[m␛[38;5;241m·······␛[m␛[38;5;241m 0.4s␛[m
-␛[38;5;205m⠋ running ␛[m␛[38;5;241m·······␛[m␛[38;5;241m 0.4s␛[m
-␛[38;5;205m⠋ running ␛[m␛[38;5;241m·······␛[m␛[38;5;241m 0.4s␛[m
-␛[38;5;205m⠋ running g␛[m␛[38;5;241m······␛[m␛[38;5;241m 0.4s␛[m
-␛[38;5;205m⠋ running go␛[m␛[38;5;241m·····␛[m␛[38;5;241m 0.4s␛[m
-␛[38;5;205m⠋ running go te␛[m␛[38;5;241m··␛[m␛[38;5;241m 0.4s␛[m
-␛[38;5;205m⠋ running go tes␛[m␛[38;5;241m·␛[m␛[38;5;241m 0.4s␛[m
-␛[38;5;205m⠋ running go test␛[m␛[38;5;241m 0.4s␛[m
-␛[38;5;205m⠋ running go test␛[m␛[38;5;241m 0.4s␛[m
+␛[38;5;205m⠋ ru␛[m␛[38;5;241m·····␛[m␛[38;5;241m · turn 0.4s␛[m
+␛[38;5;205m⠋ ru␛[m␛[38;5;241m·····␛[m␛[38;5;241m · turn 0.4s␛[m
+␛[38;5;205m⠋ ru␛[m␛[38;5;241m·····␛[m␛[38;5;241m · turn 0.4s␛[m
+␛[38;5;205m⠋ run␛[m␛[38;5;241m····␛[m␛[38;5;241m · turn 0.4s␛[m
+␛[38;5;205m⠋ run␛[m␛[38;5;241m····␛[m␛[38;5;241m · turn 0.4s␛[m
+␛[38;5;205m⠋ runn␛[m␛[38;5;241m···␛[m␛[38;5;241m · turn 0.4s␛[m
+␛[38;5;205m⠋ runn␛[m␛[38;5;241m···␛[m␛[38;5;241m · turn 0.4s␛[m
+␛[38;5;205m⠋ runni␛[m␛[38;5;241m··␛[m␛[38;5;241m · turn 0.4s␛[m
+␛[38;5;205m⠋ runni␛[m␛[38;5;241m··␛[m␛[38;5;241m · turn 0.4s␛[m
+␛[38;5;205m⠋ running␛[m␛[38;5;241m · turn 0.4s␛[m
+␛[38;5;205m⠋ running␛[m␛[38;5;241m · turn 0.4s␛[m
+␛[38;5;205m⠋ running␛[m␛[38;5;241m · turn 0.4s␛[m
+␛[38;5;205m⠋ running␛[m␛[38;5;241m · turn 0.4s␛[m
 
 · the sweep · one pass, with its rest either side
-␛[38;5;205m⠋ running go test␛[m␛[38;5;241m 0.4s␛[m
-␛[38;5;205m⠙ running go test␛[m␛[38;5;241m 0.4s␛[m
-␛[38;5;205m⠹ running go test␛[m␛[38;5;241m 0.4s␛[m
-␛[38;5;205m⠸ running go test␛[m␛[38;5;241m 0.4s␛[m
-␛[38;5;205m⠼ running go test␛[m␛[38;5;241m 0.4s␛[m
-␛[38;5;205m⠴ ␛[m␛[97mr␛[m␛[38;5;205munning go test␛[m␛[38;5;241m 0.4s␛[m
-␛[38;5;205m⠦ ␛[m␛[97mru␛[m␛[38;5;205mnning go test␛[m␛[38;5;241m 0.4s␛[m
-␛[38;5;205m⠧ ␛[m␛[97mrun␛[m␛[38;5;205mning go test␛[m␛[38;5;241m 0.4s␛[m
-␛[38;5;205m⠋ r␛[m␛[97munn␛[m␛[38;5;205ming go test␛[m␛[38;5;241m 0.4s␛[m
-␛[38;5;205m⠙ ru␛[m␛[97mnni␛[m␛[38;5;205mng go test␛[m␛[38;5;241m 0.4s␛[m
-␛[38;5;205m⠹ run␛[m␛[97mnin␛[m␛[38;5;205mg go test␛[m␛[38;5;241m 0.4s␛[m
-␛[38;5;205m⠸ runn␛[m␛[97ming␛[m␛[38;5;205m go test␛[m␛[38;5;241m 0.4s␛[m
-␛[38;5;205m⠼ runni␛[m␛[97mng ␛[m␛[38;5;205mgo test␛[m␛[38;5;241m 0.4s␛[m
-␛[38;5;205m⠴ runnin␛[m␛[97mg g␛[m␛[38;5;205mo test␛[m␛[38;5;241m 0.4s␛[m
-␛[38;5;205m⠦ running␛[m␛[97m go␛[m␛[38;5;205m test␛[m␛[38;5;241m 0.4s␛[m
-␛[38;5;205m⠧ running ␛[m␛[97mgo ␛[m␛[38;5;205mtest␛[m␛[38;5;241m 0.4s␛[m
-␛[38;5;205m⠋ running g␛[m␛[97mo t␛[m␛[38;5;205mest␛[m␛[38;5;241m 0.4s␛[m
-␛[38;5;205m⠙ running go␛[m␛[97m te␛[m␛[38;5;205mst␛[m␛[38;5;241m 0.4s␛[m
-␛[38;5;205m⠹ running go ␛[m␛[97mtes␛[m␛[38;5;205mt␛[m␛[38;5;241m 0.4s␛[m
-␛[38;5;205m⠸ running go t␛[m␛[97mest␛[m␛[38;5;241m 0.4s␛[m
-␛[38;5;205m⠼ running go te␛[m␛[97mst␛[m␛[38;5;241m 0.4s␛[m
+␛[38;5;205m⠋ running␛[m␛[38;5;241m · turn 0.4s␛[m
+␛[38;5;205m⠙ running␛[m␛[38;5;241m · turn 0.4s␛[m
+␛[38;5;205m⠹ running␛[m␛[38;5;241m · turn 0.4s␛[m
+␛[38;5;205m⠸ running␛[m␛[38;5;241m · turn 0.4s␛[m
+␛[38;5;205m⠼ running␛[m␛[38;5;241m · turn 0.4s␛[m
+␛[38;5;205m⠴ ␛[m␛[97mr␛[m␛[38;5;205munning␛[m␛[38;5;241m · turn 0.4s␛[m
+␛[38;5;205m⠦ ␛[m␛[97mru␛[m␛[38;5;205mnning␛[m␛[38;5;241m · turn 0.4s␛[m
+␛[38;5;205m⠧ ␛[m␛[97mrun␛[m␛[38;5;205mning␛[m␛[38;5;241m · turn 0.4s␛[m
+␛[38;5;205m⠋ r␛[m␛[97munn␛[m␛[38;5;205ming␛[m␛[38;5;241m · turn 0.4s␛[m
+␛[38;5;205m⠙ ru␛[m␛[97mnni␛[m␛[38;5;205mng␛[m␛[38;5;241m · turn 0.4s␛[m
+␛[38;5;205m⠹ run␛[m␛[97mnin␛[m␛[38;5;205mg␛[m␛[38;5;241m · turn 0.4s␛[m
+␛[38;5;205m⠸ runn␛[m␛[97ming␛[m␛[38;5;241m · turn 0.4s␛[m
+␛[38;5;205m⠼ runni␛[m␛[97mng␛[m␛[38;5;241m · turn 0.4s␛[m
