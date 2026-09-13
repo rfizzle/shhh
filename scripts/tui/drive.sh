@@ -43,12 +43,22 @@
 #   drive.sh --record <scene-dir>     the same, and record the run as a .cast
 #   drive.sh --attach <scene-dir>     open the same pane in this terminal instead
 #
+# Two runs on one host do not meet. The provider's port is a free one asked
+# of the kernel as the run starts and the tmux server is named for the run,
+# so a second checkout's run cannot take the first's port or kill its server;
+# naming PORT or SOCK overrides both, for a reader who wants to know where to
+# look. The tmux socket lives with the run's other scratch under $TMPDIR and
+# not under OUT, because a Unix socket's path is capped near 104 bytes and
+# OUT's is the checkout's: from a worktree under .claude/worktrees/<name>/
+# the cap is already spent, tmux answers "File name too long" and every snap
+# times out. Nothing extra is needed to drive a scene from a worktree.
+#
 # Environment: SHHH_BIN (the binary; default ./shhh), COLS/ROWS (the pane;
 # over the scene's own size, else 120x40), OUT (captures; default
 # bin/tui/<scene>), WAIT (seconds a snap waits for its text; default 20),
-# PORT and SOCK (the provider's port and the tmux server's name, for two
-# scenes running at once), and TMUX_TMPDIR (the tmux socket directory;
-# defaults under OUT).
+# PORT and SOCK (the provider's port and the tmux server's name; both per run
+# unless set), and TMUX_TMPDIR (the tmux socket directory; a directory of the
+# run's own under $TMPDIR unless set).
 set -u
 here=$(cd "$(dirname "$0")" && pwd)
 root=$(cd "$here/../.." && pwd)
@@ -79,15 +89,27 @@ COLS=${COLS:-${scene_cols:-120}}
 ROWS=${ROWS:-${scene_rows:-40}}
 OUT=${OUT:-$root/bin/tui/$name}
 WAIT=${WAIT:-20}
-PORT=${PORT:-8765}
-SOCK=${SOCK:-shhh-tui}
-TMUX_TMPDIR=${TMUX_TMPDIR:-$OUT/.tmux}
-export TMUX_TMPDIR
+# Named for this run rather than for the script, so a second run does not
+# talk to — or kill — the first one's tmux server.
+SOCK=${SOCK:-shhh-tui-$$}
 
 for need in tmux python3; do
 	command -v $need >/dev/null 2>&1 || { echo "drive.sh: $need is required (brew install $need / apt-get install $need)" >&2; exit 2; }
 done
 [ -x "$SHHH_BIN" ] || { echo "drive.sh: no binary at $SHHH_BIN — run make tui-check, or set SHHH_BIN" >&2; exit 2; }
+# The port is asked of the kernel rather than fixed at a number two runs
+# would both pick. The kernel names one nothing is listening on and the
+# provider takes it a moment later; that gap is the only race, and the wait
+# below is what closes it — a provider that lost the port has already died,
+# and the wait says so by name instead of leaving every snap to time out.
+if [ -z "${PORT:-}" ]; then
+	PORT=$(python3 -c 'import socket
+s = socket.socket()
+s.bind(("127.0.0.1", 0))
+print(s.getsockname()[1])
+s.close()') || PORT=
+	[ -n "$PORT" ] || { echo "drive.sh: could not get a free port for the scripted model — set PORT" >&2; exit 2; }
+fi
 if [ "$pictures" = 1 ]; then
 	command -v agg >/dev/null 2>&1 || { echo "drive.sh: --pictures needs agg (brew install agg)" >&2; exit 2; }
 fi
@@ -112,10 +134,39 @@ fi
 # Everything the run touches is its own: a home so no developer setting or
 # saved chat leaks in, and a fresh repository to work in, because the start
 # screen and the approval card both read the checkout they are opened in.
-work=$(mktemp -d "${TMPDIR:-/tmp}/shhh-tui.XXXXXX")
+work=$(mktemp -d "${TMPDIR:-/tmp}/shhh-tui.XXXXXX") || { echo "drive.sh: could not make a scratch directory under ${TMPDIR:-/tmp}" >&2; exit 1; }
 home=$work/home
 ws=$work/ws
-mkdir -p "$home/config/shhh" "$ws" "$OUT" "$TMUX_TMPDIR"
+# The tmux socket goes here too. It cannot go under OUT: a Unix socket's path
+# is capped at 104 bytes on macOS and OUT's begins with the checkout's own
+# path, so a worktree under .claude/worktrees/<name>/ overflows it and tmux
+# fails with "File name too long" — which reaches the reader as every snap
+# timing out. Under the run's own scratch the path is short whatever the
+# checkout is called, and it is removed with the rest of the scratch. An
+# inherited TMUX_TMPDIR still wins, for a reader with somewhere of their own.
+TMUX_TMPDIR=${TMUX_TMPDIR:-$work/t}
+export TMUX_TMPDIR
+# Set before anything is started, so a run that stops here still takes its
+# scratch — the socket directory with it — away.
+provider=
+cleanup() {
+	tmux -L "$SOCK" kill-server 2>/dev/null
+	if [ -n "$provider" ]; then
+		kill "$provider" 2>/dev/null
+		wait "$provider" 2>/dev/null
+	fi
+	rm -rf "$work"
+}
+trap cleanup EXIT
+mkdir -p "$home/config/shhh" "$ws" "$OUT" || { echo "drive.sh: could not make the run's directories under $work and $OUT" >&2; exit 1; }
+mkdir -p "$TMUX_TMPDIR" || { echo "drive.sh: could not make the tmux socket directory $TMUX_TMPDIR" >&2; exit 1; }
+# tmux puts its socket at $TMUX_TMPDIR/tmux-<uid>/<name>. Said here, with the
+# path, rather than left to tmux to report as a name that is too long.
+sockpath=$TMUX_TMPDIR/tmux-$(id -u)/$SOCK
+if [ ${#sockpath} -ge 104 ]; then
+	echo "drive.sh: the tmux socket path is ${#sockpath} bytes and a Unix socket's is capped at 104: $sockpath — set TMUX_TMPDIR to a shorter directory" >&2
+	exit 1
+fi
 # Everything the last run left, gone before this one starts. A capture is
 # rewritten every run and a picture is not, so a still from a scene that has
 # since been renamed would sit in the directory being read as this run's — and
@@ -127,17 +178,13 @@ printf '[behavior]\nprovider_retries = 0\n' > "$home/config/shhh/config.toml"
 
 python3 "$here/fakeprovider.py" "$PORT" "$scene/replies.txt" 2> "$OUT/provider.log" &
 provider=$!
-cleanup() {
-	tmux -L "$SOCK" kill-server 2>/dev/null
-	kill "$provider" 2>/dev/null
-	wait "$provider" 2>/dev/null
-	rm -rf "$work"
-}
-trap cleanup EXIT
 # Up before the binary asks, or the first turn reports a model it never
-# reached.
+# reached. A provider that is gone is not waited for: it lost the port to
+# something else and the log says so, which is worth more than ten more
+# tries at a port that will never be ours.
 wait_for_provider() {
 	for _ in 1 2 3 4 5 6 7 8 9 10; do
+		kill -0 "$provider" 2>/dev/null || return 1
 		python3 -c "import socket; socket.create_connection(('127.0.0.1', $PORT), 1).close()" 2>/dev/null && return 0
 		sleep 0.2
 	done

@@ -54,7 +54,7 @@ else
 	RESET   :=
 endif
 
-.PHONY: all build fmt fmt-check vet lint test test-contract test-integration docs docs-check cross ci eval eval-baseline cache-check model-data tui-shot tui-check help
+.PHONY: all build fmt fmt-check vet lint test test-contract test-integration docs docs-check cross ci eval eval-baseline cache-check model-data tui-shot tui-check tui-longpath help
 
 all: help
 
@@ -235,6 +235,28 @@ tui-check: ## Drive every scene through the built binary and fail on the first s
 		echo "${MAGENTA}Driving $$(basename $$scene)...${RESET}"; \
 		SHHH_BIN=$(TUI_BIN) scripts/tui/drive.sh "$$scene" || exit 1; \
 	done
+	@$(MAKE) --no-print-directory tui-longpath
+
+# A Unix socket's path is capped at 104 bytes, and a checkout under
+# .claude/worktrees/<name>/ has already spent most of them. So the harness
+# keeps its tmux socket under $$TMPDIR rather than beside the captures, and
+# this drives one scene from a copy of scripts/tui/ whose own path is past
+# the cap to hold it there: back under bin/tui/<scene>/ the run fails with
+# "File name too long" and every snap times out, which is a failure nobody
+# reads as a path being long. Part of tui-check, so the harness that lets an
+# agent drive a scene from its worktree is itself tested on every change.
+tui-longpath: ## Drive the smoke scene from a checkout path longer than a Unix socket's 104-byte cap
+	@$(tui_build)
+	@bin=$$PWD/$(TUI_BIN); \
+	tmp=$$(mktemp -d "$${TMPDIR:-/tmp}/shhh-longpath.XXXXXX") || exit 1; \
+	deep=$$tmp; \
+	while [ $${#deep} -lt 104 ]; do deep=$$deep/a-checkout-path-past-the-cap; done; \
+	if ! mkdir -p "$$deep/scripts" || ! cp -R scripts/tui "$$deep/scripts/tui"; then \
+		echo "${RED}Could not lay a checkout out under $$deep${RESET}"; rm -rf "$$tmp"; exit 1; \
+	fi; \
+	echo "${MAGENTA}Driving smoke from a $${#deep}-byte checkout...${RESET}"; \
+	SHHH_BIN=$$bin "$$deep/scripts/tui/drive.sh" "$$deep/scripts/tui/scenes/smoke"; \
+	status=$$?; rm -rf "$$tmp"; exit $$status
 
 ## Help:
 help: ## Show this help

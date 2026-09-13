@@ -1323,6 +1323,23 @@ scene: it is deliberately not added to `.shhh/quality.json`, because a scene
 wants a terminal a contained session has not got. Its scene lives under
 `scripts/tui/scenes/<slug>/` so `tui-check` runs it again on every change.
 
+**A scene drives from wherever the checkout is**, a worktree under
+`.claude/worktrees/<name>/` included, and needs nothing set to do it. The
+tmux socket lives in a directory of the run's own under `$TMPDIR` and goes
+when the run's other scratch does — never under `bin/tui/<scene>/`, where the
+checkout's own path has already spent most of a Unix socket's 104-byte cap
+and tmux answers "File name too long", which reaches the reader as every snap
+timing out rather than as a path being long. An inherited `TMUX_TMPDIR` still
+wins, and a socket path that is over the cap even so is named and stops the
+run before the provider starts. Two runs on one host do not meet either: the
+provider's port is a free one asked of the kernel as the run starts and the
+tmux server is named for the run, so a second worktree's `make tui-shot`
+cannot take the first's port or kill its server; `PORT` and `SOCK` override
+both, for a reader who wants to know where to look. `make tui-longpath`,
+which `tui-check` runs after the scenes, drives the smoke scene from a copy
+of `scripts/tui/` whose own path is past the cap, so the harness cannot
+quietly go back to a socket named after the checkout.
+
 What will bite you: **a capture is the terminal's cells, not the View's
 bytes.** tmux re-emits colour per cell, so an `.ansi` file will never match a
 golden's ansi block and must not be diffed against one; compare the `.txt`

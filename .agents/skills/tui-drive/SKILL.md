@@ -21,6 +21,7 @@ are in `AGENTS.md` under *Driving the binary*; this is how to do it.
 ```
 make tui-check                       # every scene; the gate, part of make ci
 make tui-shot SCENE=smoke COLS=110   # capture every step of one scene at a width
+make tui-longpath                    # one scene from a checkout path past the socket cap
 SHHH_BIN=$PWD/bin/tui/shhh scripts/tui/drive.sh --attach scripts/tui/scenes/smoke
 ```
 
@@ -200,8 +201,21 @@ than leaving it out.
 - **The scripted model is openai-compatible SSE only.** That is the dialect
   a `base_url` alone redirects, the same choice the CLI's print-mode tests
   make. A scene cannot exercise the Anthropic or Gemini stream loops.
-- **Two scenes at once collide** on the provider's port and the tmux server.
-  Set `PORT` and `SOCK` to run them side by side.
+- **Two scenes at once do not collide.** The provider's port is a free one
+  asked of the kernel as the run starts, and the tmux server is named for the
+  run, so a second checkout's `make tui-shot` cannot take the first's port or
+  kill its server. Set `PORT` or `SOCK` only to pin one somewhere you can
+  look for it.
+- **A worktree needs nothing extra.** The tmux socket lives in a directory of
+  the run's own under `$TMPDIR`, removed with the run's other scratch — not
+  under `bin/tui/<scene>/`, whose path is the checkout's and overflows the
+  104-byte cap on a Unix socket from anywhere as deep as
+  `.claude/worktrees/<name>/`. There tmux fails with "File name too long" and
+  every snap times out, which reads as the scene being broken rather than the
+  path being long. An inherited `TMUX_TMPDIR` still wins, and a socket path
+  over the cap even so is named and stops the run before the provider starts.
+  `make tui-longpath`, which `tui-check` runs after the scenes, is the check
+  that keeps it that way.
 - **The pane is 120×40 unless told.** A scene whose surface only exists
   past a breakpoint says its own size in a `size` file (`144 40`, columns
   then rows), so `tui-check` runs it where it means to be run; `COLS` and
