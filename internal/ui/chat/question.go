@@ -549,23 +549,45 @@ func (m Model) questionLines() []string {
 	if c.sheet != nil {
 		lines = append(lines, c.sheet.strip().View(width))
 	}
+	// Which of the four dressings is drawn does not decide whether its keys
+	// are live, so the handover is settled here for all of them, the way
+	// applyNotYetLive settles it in one place for the approval card
+	// (interrupt.go). Every answer this card offers is a bare letter, and a
+	// bare letter beside a draft that can take text is a letter of the
+	// sentence being typed
+	// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+	handover := m.questionHandover()
 	switch {
 	case c.submit:
 		lines = append(lines, c.sheet.submitRows(width)...)
 	case c.sel != nil:
 		c.sel.Select.Title, c.sel.Select.Tone = questionTitle, components.CardDecision
 		c.sel.Select.Chips, c.sel.Select.Lead = []string{c.place()}, m.questionLead(c, width)
+		c.sel.NotYetLive, c.sel.Handover = handover != "", handover
 		lines = append(lines, strings.Split(c.sel.View(width), "\n")...)
 	case c.multi != nil:
 		c.multi.Title, c.multi.Tone = questionTitle, components.CardDecision
 		c.multi.Chips, c.multi.Lead = []string{c.place()}, m.questionLead(c, width)
+		c.multi.NotYetLive, c.multi.Handover = handover != "", handover
 		lines = append(lines, strings.Split(c.multi.View(width), "\n")...)
 	case c.conf != nil:
+		c.conf.NotYetLive = handover != ""
 		lines = append(lines, components.Clip(c.conf.View(width), width))
 		lines = append(lines, c.note.Rows(width)...)
-		lines = append(lines, questionConfirmKeys(c, width)...)
+		lines = append(lines, questionConfirmKeys(c, width, handover)...)
 	}
 	return lines
+}
+
+// questionHandover is the key an ungated card offers in place of its own, and
+// the empty string once the card holds the keyboard and its keys are true.
+// The state is the session's rather than the card's: whether the keyboard has
+// been handed over is what the reader has done, not what was asked.
+func (m Model) questionHandover() string {
+	if !m.decisionUngated() {
+		return ""
+	}
+	return keys.Shown(keys.Draft.Answer)
 }
 
 // questionTitle is what the card is called. The question itself is a body row
@@ -603,7 +625,16 @@ func (c *questionCard) place() string {
 // dressings draw their own from the register; the inline confirm has no card
 // to draw one in, so the card states it here — from the register, not from a
 // spelling written down beside it.
-func questionConfirmKeys(c *questionCard, width int) []string {
+//
+// A handover names the one key that is live, and while the draft still holds
+// the keyboard it is the whole row: the two answers this dressing has are `y`
+// and `n`, which is to say two letters of the sentence being typed. The row is
+// drawn into the whole width because this is the dressing with no frame to pay
+// for, and the answer pair beside the question goes with it (Confirm).
+func questionConfirmKeys(c *questionCard, width int, handover string) []string {
+	if handover != "" {
+		return components.NotYetLiveRows(handover, width)
+	}
 	segs := []components.KeyOffer{
 		components.Offer(keys.Confirm.Yes),
 		components.Offer(keys.Confirm.No),
@@ -619,6 +650,12 @@ func questionConfirmKeys(c *questionCard, width int) []string {
 // submitRows is the page that ends the set: what enter would send, and — where
 // some tab is still open — what leaving it open costs, said here as well as on
 // the strip because this is the row the key is under.
+//
+// It is the one page no reader can be standing on without the keyboard: a
+// sheet arrives on its first question, and esc from a question closes the
+// whole card rather than handing the keyboard back (escLeavesWaiting), so
+// this page is only ever reached from a card that already holds it. That is
+// why it states its keys where the pages before it hold theirs back.
 func (s *questionSheet) submitRows(width int) []string {
 	line := "send " + countedAnswers(s.answered())
 	if left := len(s.qs) - s.answered(); left > 0 {

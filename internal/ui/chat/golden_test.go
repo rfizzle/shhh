@@ -3575,11 +3575,18 @@ func TestGolden_ChildAskCard(t *testing.T) {
 // `recommended` beside the model's own short field, and the ⊘ row whose
 // reason is a phrase rather than a dimming — both of which have to survive
 // the mono capture, because that is the whole reason they are words.
+//
+// Two of the dressings are captured a second time on a half-typed sentence,
+// which is the state that decides whether the card's keys are the card's:
+// every answer it offers is a bare letter, so beside a live draft it draws
+// the chord that hands the keyboard over and nothing else
+// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 func TestGolden_QuestionCard(t *testing.T) {
 	captureGolden(t, "question-card", "the model's question in the panel", questionWidths, func(width int) []golden.Panel {
-		build := func(args string, mut func(Model) Model) string {
+		buildWithDraft := func(args, draft string, mut func(Model) Model) string {
 			m := frameModel(t, width, 40).WithAsk()
 			m.state = stateStreaming
+			m.input.SetValue(draft)
 			updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{{
 				ID: "call_q", Name: ask.ToolName, Arguments: args,
 			}}})
@@ -3589,10 +3596,17 @@ func TestGolden_QuestionCard(t *testing.T) {
 			}
 			return strings.Join(next.questionLines(), "\n")
 		}
+		build := func(args string, mut func(Model) Model) string {
+			return buildWithDraft(args, "", mut)
+		}
 		const choose = `{"question":"Which store should the cache use?","shape":"choose","options":[
 			{"label":"SQLite","detail":"in the checkout already","field":"3 files","recommended":true},
 			{"label":"Postgres","detail":"one more service to run","field":"9 files"},
 			{"label":"Redis","unavailable":"no client in this project"}]}`
+		const confirm = `{"question":"Should the migration be reversible?","shape":"confirm"}`
+		// halfTyped is the sentence the card lands on, which is what decides
+		// whether its keys are its own.
+		const halfTyped = "also add a --max-rounds flag"
 		// cockpit is the same call drawn into the whole terminal rather than
 		// into the panel alone, with a turn behind it for the rail to report.
 		cockpit := func(args string) string {
@@ -3623,7 +3637,15 @@ func TestGolden_QuestionCard(t *testing.T) {
 			{Label: "a short answer in your own words · the field and no rows above it",
 				View: build(`{"question":"What should the flag be called?","shape":"text","note":"required"}`, nil)},
 			{Label: "yes or no · the inline confirm, whose enter is the answer that changes nothing",
-				View: build(`{"question":"Should the migration be reversible?","shape":"confirm"}`, nil)},
+				View: build(confirm, nil)},
+			// The two dressings the mid-sentence rule reads differently: the
+			// list keeps its rows and gives up its key row, and the yes-or-no
+			// gives up the answer pair beside the question as well, because
+			// that pair is the whole of what it offers.
+			{Label: "landing on a half-typed sentence · one key, and it is the handover",
+				View: buildWithDraft(choose, halfTyped, nil)},
+			{Label: "the yes-or-no on the same sentence · the answer pair goes with the letters",
+				View: buildWithDraft(confirm, halfTyped, nil)},
 		}
 		if width < 130 {
 			return panels
@@ -3636,7 +3658,7 @@ func TestGolden_QuestionCard(t *testing.T) {
 		// with the same question in a shape that does take the screen.
 		return append(panels,
 			golden.Panel{Label: "yes or no · the whole surface, which the card leaves standing",
-				View: cockpit(`{"question":"Should the migration be reversible?","shape":"confirm"}`)},
+				View: cockpit(confirm)},
 			golden.Panel{Label: "pick one · the same terminal, and the card has all of it",
 				View: cockpit(choose)})
 	})

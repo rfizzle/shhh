@@ -77,7 +77,13 @@ type MultiSelect struct {
 	// family's — applying none of the boxes, which is the counterpart of the
 	// `apply (N)` beside it (cancelOffer).
 	CancelLabel string
-	notice      string
+	// NotYetLive and Handover are the note-selector's, for the reason the
+	// note field and the lead are: a question asked with boxes is the same
+	// question asked with rows, and it lands beside a live draft the same way
+	// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+	NotYetLive bool
+	Handover   string
+	notice     string
 	// list is the shared pointer and window (list.go). A multi-select owns
 	// its own Focus, which is why it did not come along when the movement and
 	// the window went to the selector.
@@ -198,6 +204,23 @@ func (s *MultiSelect) View(width int) string {
 	if s.Note != nil {
 		tail = append(tail, s.Note.Rows(inner)...)
 	}
+	tail = append(tail, s.hintRowsFor(width)...)
+	head := leadRows(s.Lead, width)
+	rows := append(head, s.visibleRows(width, bodyBudget(s.MaxLines, len(tail)+len(head)))...)
+	rows = append(rows, tail...)
+	rows = boundRows(rows, s.MaxLines)
+	return Card{Title: s.Title, Chips: s.Chips, Tone: s.Tone}.Render(rows, width)
+}
+
+// hintRowsFor is the card's key row, or the handover alone while the draft
+// still holds the keyboard — the note-selector's rule, on the same terms: the
+// boxes toggle on a bare letter, and a bare letter drawn beside a live draft
+// is a letter of the sentence being typed
+// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+func (s *MultiSelect) hintRowsFor(width int) []string {
+	if s.NotYetLive {
+		return notYetLiveRows(s.Handover, width)
+	}
 	var segs []KeyOffer
 	if s.Note != nil {
 		// The field's own key leads, because it is the one this card has
@@ -215,12 +238,7 @@ func (s *MultiSelect) View(width int) string {
 	// Handed over as segments and never pre-joined: a row too wide for the
 	// terminal takes another row, and a joined one could only be cut in the
 	// middle of a clause (docs/interface/principles.md#fold-never-hide).
-	tail = append(tail, hintRows(segs, width)...)
-	head := leadRows(s.Lead, width)
-	rows := append(head, s.visibleRows(width, bodyBudget(s.MaxLines, len(tail)+len(head)))...)
-	rows = append(rows, tail...)
-	rows = boundRows(rows, s.MaxLines)
-	return Card{Title: s.Title, Chips: s.Chips, Tone: s.Tone}.Render(rows, width)
+	return hintRows(segs, width)
 }
 
 // visibleRows renders the checkbox list windowed to a body budget, with the

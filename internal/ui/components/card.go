@@ -248,11 +248,20 @@ const notYetLiveWords = "not live yet"
 // their prompt. The letters come back whole the instant the card has the
 // keyboard, which is the only state they are true in.
 func notYetLiveRows(handover string, width int) []string {
-	inner := Card{}.Inner(width)
+	return NotYetLiveRows(handover, Card{}.Inner(width))
+}
+
+// NotYetLiveRows is the same row for a decision surface a host outside this
+// package draws — the dressings the model's question is asked in
+// (chat/question.go), which are this package's cards assembled there rather
+// than one card of its own. The room is what the rows are drawn into, the way
+// HintRows takes it: inside a card that is the card's inner width, and on the
+// one dressing with no frame it is the whole of the panel.
+func NotYetLiveRows(handover string, room int) []string {
 	if handover == "" {
-		return []string{sty.Dim.Render(Clip(notYetLiveWords, inner))}
+		return []string{sty.Dim.Render(Clip(notYetLiveWords, room))}
 	}
-	return []string{handoverRow(handover, inner)}
+	return []string{handoverRow(handover, room)}
 }
 
 // deadRows is the shape those four states share: the run drawn in one grey

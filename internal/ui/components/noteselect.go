@@ -36,6 +36,14 @@ type NoteSelect struct {
 	// that means one thing where it is declared can mean a near thing here,
 	// and the row has to say which.
 	Actions []KeyOffer
+	// NotYetLive says the card is drawn beside a draft that still holds the
+	// keyboard, so none of the keys above is live yet and the row under the
+	// field is the one that changes that. Handover is that key
+	// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+	// The host owns both, because whether the keyboard has been handed over
+	// is a fact about the session and not about the card.
+	NotYetLive bool
+	Handover   string
 	// noteMissing marks a confirm attempt on a note-required option with an
 	// empty note; the note border hint turns red until the next key.
 	noteMissing bool
@@ -126,6 +134,32 @@ func (s *NoteSelect) View(width int) string {
 	// spend comes off the list's budget before its window is drawn —
 	// otherwise a long list pushes the note itself off the card.
 	tail := noteFieldRows(&s.Note, s.FocusNote, s.noteMissing, s.Require, inner)
+	tail = append(tail, s.hintRowsFor(width)...)
+
+	// The query line is pinned above the list exactly as it is on a plain
+	// card, so the budget order is the artboard's — query line, key hints,
+	// note field, and then the options take what is left.
+	head := append(leadRows(s.Select.Lead, width), s.Select.queryRows(width)...)
+	rows, shown := s.Select.visibleRows(width, s.Select.bodyBudget(len(head)+len(tail)), true)
+	rows = append(head, rows...)
+	rows = append(rows, tail...)
+	rows = boundRows(rows, s.Select.MaxLines)
+	return Card{
+		Title: s.Select.Title, Chips: s.Select.chips(shown), Tone: s.Select.Tone,
+	}.Render(rows, width)
+}
+
+// hintRowsFor is the card's key row, or the handover alone while the draft is
+// still the surface holding the keyboard: every key on this row is a bare
+// letter, and a bare letter drawn beside a live draft is a letter of the
+// sentence being typed
+// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+// The list and the field stay — a question nobody can read is not one they can
+// answer — and only the row of offers gives way.
+func (s *NoteSelect) hintRowsFor(width int) []string {
+	if s.NotYetLive {
+		return notYetLiveRows(s.Handover, width)
+	}
 	// The note field's own key leads, because it is the one this card has
 	// that the plain selector does not — on a card that has options for it
 	// to move between.
@@ -147,17 +181,5 @@ func (s *NoteSelect) View(width int) string {
 	// joined one could only be cut in the middle of a clause — which on this
 	// row is the clause that says how to leave
 	// (docs/interface/principles.md#fold-never-hide).
-	tail = append(tail, hintRows(hint, width)...)
-
-	// The query line is pinned above the list exactly as it is on a plain
-	// card, so the budget order is the artboard's — query line, key hints,
-	// note field, and then the options take what is left.
-	head := append(leadRows(s.Select.Lead, width), s.Select.queryRows(width)...)
-	rows, shown := s.Select.visibleRows(width, s.Select.bodyBudget(len(head)+len(tail)), true)
-	rows = append(head, rows...)
-	rows = append(rows, tail...)
-	rows = boundRows(rows, s.Select.MaxLines)
-	return Card{
-		Title: s.Select.Title, Chips: s.Select.chips(shown), Tone: s.Select.Tone,
-	}.Render(rows, width)
+	return hintRows(hint, width)
 }

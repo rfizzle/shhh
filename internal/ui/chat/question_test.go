@@ -637,6 +637,64 @@ func TestQuestion_ArrivesInertOverASentenceAndHeldOverAnEmptyDraft(t *testing.T)
 	}
 }
 
+// Inert has to be what the card looks like as well as what it does. Every
+// answer the four dressings offer is a bare letter, so beside a draft that can
+// still take text the card draws the one chord that hands the keyboard over
+// and none of its own — a bracket a reader is invited to press mid-sentence is
+// a word of their prompt spent finding out it was not live
+// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+// The letters come back whole the moment the handover is pressed, which is the
+// only state they are true in.
+func TestQuestion_UngatedDrawsTheHandoverAndNoneOfItsOwnKeys(t *testing.T) {
+	const manyArgs = `{"question":"Which packages should the flag reach?","shape":"choose_many","options":[
+		{"label":"internal/agent"},{"label":"internal/cli"}]}`
+	const textArgs = `{"question":"What should the flag be called?","shape":"text"}`
+	for _, tc := range []struct {
+		name, args string
+		// gone are the offers the dressing draws once it has the keyboard,
+		// each of which is reached by a key a sentence produces.
+		gone []string
+	}{
+		{"pick one", chooseArgs, []string{"[tab]", "[enter]", "[d]", "[esc]"}},
+		{"pick several", manyArgs, []string{"[tab]", "[space]", "[a]", "[enter]", "[esc]"}},
+		{"the free answer", textArgs, []string{"[enter]", "[esc]"}},
+		{"yes or no", confirmArgs, []string{"[y", "[tab]", "/N]"}},
+		{"the sheet of tabs", tabbedArgs, []string{"[tab]", "[enter]", "[d]", "[←→]", "[esc]"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			m := questionModel(t, agent.ModeManual)
+			m.input.SetValue("I was in the middle of")
+			updated, _ := m.Update(askCall(tc.args))
+			m = updated.(Model)
+			if !m.decisionUngated() {
+				t.Fatal("a card landing on a sentence waits for the handover")
+			}
+			ungated := stripANSI(strings.Join(m.questionLines(), "\n"))
+			want := keys.Bracketed(keys.Shown(keys.Draft.Answer)) + " answer it"
+			if !strings.Contains(ungated, want) {
+				t.Errorf("the one live key is not offered:\n%s", ungated)
+			}
+			for _, offer := range tc.gone {
+				if strings.Contains(ungated, offer) {
+					t.Errorf("the card offers %q beside a live draft:\n%s", offer, ungated)
+				}
+			}
+
+			// The question itself is not what gives way: a decision nobody
+			// can read is not one they can make.
+			held := stripANSI(strings.Join(handover(t, m).questionLines(), "\n"))
+			if strings.Contains(held, want) {
+				t.Errorf("the handover is still offered after it was taken:\n%s", held)
+			}
+			for _, offer := range tc.gone {
+				if !strings.Contains(held, offer) {
+					t.Errorf("the card kept %q from a reader holding the keyboard:\n%s", offer, held)
+				}
+			}
+		})
+	}
+}
+
 // A cancelled turn takes the outstanding question with it. The card is not
 // only off the screen: the grace window reads the card to decide which keys
 // a burst may not answer, so one left behind would protect the next decision

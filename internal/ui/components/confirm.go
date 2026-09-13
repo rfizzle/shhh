@@ -14,6 +14,15 @@ import (
 // declines — never destroys.
 type Confirm struct {
 	Prompt string
+	// NotYetLive says the prompt is drawn beside a draft that still holds the
+	// keyboard, which the model's yes-or-no question is
+	// (chat/question.go). The answer set goes with it: `y` and `n` are
+	// letters of the sentence being typed until the keyboard is handed over,
+	// and the host draws the key that hands it over in their place
+	// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+	// Every other confirm in the product holds the keyboard and leaves this
+	// false.
+	NotYetLive bool
 }
 
 // Update resolves on the first decisive key: y confirms; n, enter, esc, and
@@ -47,6 +56,9 @@ func confirmed(c **Confirm, msg tea.KeyPressMsg) (answered, yes bool) {
 }
 
 func (c *Confirm) View(width int) string {
+	if c.NotYetLive {
+		return Clip(sty.Body.Render(c.Prompt), width)
+	}
 	return Clip(sty.Body.Render(c.Prompt)+"  "+confirmKeys(), width)
 }
 
