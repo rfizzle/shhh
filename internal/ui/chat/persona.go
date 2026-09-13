@@ -38,6 +38,10 @@ type Personas struct {
 	Draft func(ctx context.Context, req persona.Request) persona.Outcome
 	// Existing lists the role names the session has now.
 	Existing func() []string
+	// Roles is the same set read for the manager: what each role is for and
+	// where the file that says so lives, so a profile drafted in conversation
+	// can be found again (docs/interface/surfaces.md#the-agent-manager).
+	Roles func() []SpawnableRole
 	// Models the draft may name.
 	Models []string
 	// Save writes the draft under scope and registers the role with the
@@ -46,6 +50,18 @@ type Personas struct {
 	// ProjectDir and GlobalDir are the two places a file can go, for the
 	// card to name.
 	ProjectDir, GlobalDir string
+}
+
+// SpawnableRole is one role this session can spawn, as the manager lists it:
+// what it is called, what it is for, and where it lives. Scope is the word
+// the drafter's own card uses for the two places a file can go; a role shhh
+// ships lives in neither and has no Path, which is what leaves its row
+// nothing for enter to open.
+type SpawnableRole struct {
+	Name        string
+	Description string
+	Scope       string
+	Path        string
 }
 
 // WithPersonas wires the drafting flow.

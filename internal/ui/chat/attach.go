@@ -11,6 +11,7 @@ package chat
 
 import (
 	"fmt"
+	"os/exec"
 	"strings"
 	"time"
 
@@ -444,11 +445,24 @@ func (m Model) buildAgentRows() ([]components.AgentRow, []string) {
 		rows = append(rows, row)
 		names = append(names, st.Name)
 	}
-	// The row that is not an agent: the manager is where a person goes to
-	// see what this session has, so it is where the answer "none of these"
-	// gets somewhere to go (docs/interface/surfaces.md#the-agent-manager).
-	// It is offered only where drafting is wired, because a row that opened
-	// a surface saying no model can draft would be an offer that is not one.
+	// The rows that are not agents. First the roles this session can spawn:
+	// the manager is where a person goes to see what this session has, and
+	// until now a role was named nowhere a reader could reach
+	// (docs/interface/surfaces.md#the-agent-manager). A role with a file
+	// behind it is one enter opens; the ones shhh ships have none.
+	for _, role := range m.spawnableRoles() {
+		rows = append(rows, components.AgentRow{
+			State:    components.AgentRole,
+			Name:     role.Name,
+			Task:     role.Description,
+			Status:   role.Scope,
+			Editable: role.Path != "",
+		})
+		names = append(names, role.Name)
+	}
+	// Then the answer "none of these" gets somewhere to go. It is offered
+	// only where drafting is wired, because a row that opened a surface
+	// saying no model can draft would be an offer that is not one.
 	if m.personas.Enabled {
 		rows = append(rows, components.AgentRow{
 			State:  components.AgentOffer,
@@ -458,6 +472,65 @@ func (m Model) buildAgentRows() ([]components.AgentRow, []string) {
 		names = append(names, "")
 	}
 	return rows, names
+}
+
+// spawnableRoles is the roles this session can spawn, or none where the
+// session wired no list — a surface built without one draws the agents and
+// stops there.
+func (m Model) spawnableRoles() []SpawnableRole {
+	if m.personas.Roles == nil {
+		return nil
+	}
+	return m.personas.Roles()
+}
+
+// openRoleEditor hands a role's own file to the reader's editor, which is
+// what /memory edit does with an entry: the file is the profile, so there is
+// nothing to write out first and nothing to read back afterwards.
+//
+// What the session spawns was decided when it started, so an edit lands in
+// the next one — said on the way back rather than left for the reader to
+// discover from a child that behaved the old way.
+//
+// The manager opens over a running turn and the editor takes the terminal
+// with it, so the one refusal reachable from here is the turn's own. The list
+// has already closed by then, which is what makes the notice worth writing:
+// it lands where the reader is looking rather than behind a takeover.
+func (m Model) openRoleEditor(name string) (tea.Model, tea.Cmd) {
+	if reason, refused := m.editorRefusal(); refused {
+		return m.surfaceNotice(reason)
+	}
+	path := ""
+	for _, role := range m.spawnableRoles() {
+		if role.Name == name {
+			path = role.Path
+		}
+	}
+	if path == "" {
+		return m, nil
+	}
+	argv := editorArgv(editorCommand(), path, 1, 1)
+	proc := exec.Command(argv[0], argv[1:]...)
+	return m, tea.ExecProcess(proc, func(err error) tea.Msg {
+		return roleEditorDoneMsg{name: name, path: path, err: err}
+	})
+}
+
+// roleEditorDoneMsg is the editor's exit over a role's file.
+type roleEditorDoneMsg struct {
+	name string
+	path string
+	err  error
+}
+
+// roleEditorFinished says what became of the edit. There is nothing to save:
+// the editor wrote the file, and the profiles this session spawns from were
+// read when it started.
+func (m Model) roleEditorFinished(msg roleEditorDoneMsg) (tea.Model, tea.Cmd) {
+	if msg.err != nil {
+		return m.surfaceNotice("the editor exited with an error, so " + msg.name + " is as it was — " + msg.err.Error())
+	}
+	return m.systemNotice("Edited " + msg.path + ". A session started from here spawns " + msg.name + " as the file now reads.")
 }
 
 // pendingAskFor is the approval this agent is waiting on, if the session
@@ -615,6 +688,14 @@ func (m Model) updateAgentList(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	}
 	name := names[res.Index]
 	switch res.Action {
+	case components.AgentOpenRole:
+		// The editor takes the terminal, so the list goes first: coming back
+		// to a takeover that was drawn before the file was edited is coming
+		// back to a stale screen.
+		m.agentList = nil
+		m.answerAgent = ""
+		m.syncViewport()
+		return m.openRoleEditor(name)
 	case components.AgentAttach:
 		if name == m.attachedTo {
 			m.agentList = nil

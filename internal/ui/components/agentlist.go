@@ -36,6 +36,13 @@ const (
 	// thought somebody is already having. Its glyph is the start screen's ⚙
 	// — starting something new — rather than one of its own.
 	AgentOffer
+	// AgentRole is not an agent either: it is one of the roles this session
+	// can spawn, in the short section above the offer row
+	// (docs/interface/surfaces.md#the-agent-manager). It wears the sub-agent's
+	// own ◇ unlit, because that is what the row would become if somebody
+	// spawned it, and the field on the right says where the file that
+	// describes it lives rather than how it is doing.
+	AgentRole
 )
 
 // AgentRow is one agent in the list: identity, task label, live status, and
@@ -57,10 +64,12 @@ type AgentRow struct {
 	Note string
 	// Answerable marks a blocked row whose pending approval can be answered
 	// here; Retryable marks a failed row that can be run again on its
-	// original task. Each gates a key, because a key offered where it does
-	// nothing is not an offer.
+	// original task; Editable marks a role row with a file behind it, which
+	// the roles shhh ships have not got. Each gates a key, because a key
+	// offered where it does nothing is not an offer.
 	Answerable bool
 	Retryable  bool
+	Editable   bool
 	// Depth is how far under the session the agent sits — 0 for the
 	// orchestrator, 1 for a child it spawned, 2 for that child's own child —
 	// in the numbering the rail's map and a fan-out lane use for the same
@@ -68,6 +77,11 @@ type AgentRow struct {
 	// (docs/capabilities/subagents.md#a-child-may-delegate-to-a-configured-depth).
 	Depth int
 }
+
+// isAgent reports a row the keys that act on an agent may act on. The two
+// rows at the foot of the list — a spawnable role, and the offer to draft one
+// — are not agents, and every one of those keys is silent over them.
+func (r AgentRow) isAgent() bool { return r.State != AgentOffer && r.State != AgentRole }
 
 // steerable reports that this row can still take a redirect: a child — a row
 // with progress of its own, which the orchestrator has none of — that is
@@ -86,16 +100,17 @@ const (
 	// surface answered without asking the host for anything cannot be read as
 	// the first action in it. The result is a value rather than an interface,
 	// so there is no nil left to mean this.
-	AgentNone    AgentAction = iota
-	AgentAttach              // enter — attach to the agent's surface
-	AgentCancel              // x — cancel its current turn
-	AgentKill                // X — kill the agent
-	AgentKillAll             // K — kill every child still running
-	AgentAnswer              // a — answer its pending approval in place
-	AgentSteer               // s — redirect it with the note typed on its row
-	AgentRetry               // r — run a failed agent again on its task
-	AgentDraft               // enter on the offer row — draft a profile
-	AgentBack                // esc — dismiss the list
+	AgentNone     AgentAction = iota
+	AgentAttach               // enter — attach to the agent's surface
+	AgentCancel               // x — cancel its current turn
+	AgentKill                 // X — kill the agent
+	AgentKillAll              // K — kill every child still running
+	AgentAnswer               // a — answer its pending approval in place
+	AgentSteer                // s — redirect it with the note typed on its row
+	AgentRetry                // r — run a failed agent again on its task
+	AgentDraft                // enter on the offer row — draft a profile
+	AgentOpenRole             // enter on a role row — open its file in the editor
+	AgentBack                 // esc — dismiss the list
 )
 
 // AgentListResult is the agent-list Update result.
@@ -248,10 +263,18 @@ func (l *AgentList) Update(msg tea.KeyPressMsg) (done bool, result AgentListResu
 	switch pressed := msg.String(); {
 	case l.moved(pressed):
 	case keys.Is(pressed, keys.Agent.Attach):
-		if l.focused().State == AgentOffer {
+		switch row := l.focused(); row.State {
+		case AgentOffer:
 			return true, AgentListResult{Action: AgentDraft, Index: l.Focus}
+		case AgentRole:
+			// A role shhh ships has no file, so there is nothing for the key
+			// to open and it is silent rather than saying so.
+			if row.Editable {
+				return true, AgentListResult{Action: AgentOpenRole, Index: l.Focus}
+			}
+		default:
+			return true, AgentListResult{Action: AgentAttach, Index: l.Focus}
 		}
-		return true, AgentListResult{Action: AgentAttach, Index: l.Focus}
 	case keys.Is(pressed, keys.Agent.Answer):
 		if i := l.answerable(); i >= 0 {
 			return false, AgentListResult{Action: AgentAnswer, Index: i}
@@ -272,15 +295,15 @@ func (l *AgentList) Update(msg tea.KeyPressMsg) (done bool, result AgentListResu
 			return false, AgentListResult{Action: AgentRetry, Index: l.Focus}
 		}
 	case keys.Is(pressed, keys.Agent.Cancel):
-		// The offer row is not an agent, so the keys that act on one are
-		// silent over it the way [a] and [r] are silent over a row that
-		// cannot take them (invariant 5).
-		if l.focused().State == AgentOffer {
+		// A role row and the offer row are not agents, so the keys that act
+		// on one are silent over them the way [a] and [r] are silent over a
+		// row that cannot take them (invariant 5).
+		if !l.focused().isAgent() {
 			break
 		}
 		return false, AgentListResult{Action: AgentCancel, Index: l.Focus}
 	case keys.Is(pressed, keys.Agent.Kill):
-		if l.focused().State == AgentOffer {
+		if !l.focused().isAgent() {
 			break
 		}
 		return false, AgentListResult{Action: AgentKill, Index: l.Focus}
@@ -409,6 +432,11 @@ func (r AgentRow) stateGlyph() string {
 		return AgentProgress{State: FanoutDone}.rowGlyph()
 	case AgentOffer:
 		return sty.Accent.Render("⚙")
+	case AgentRole:
+		// The sub-agent's own mark, unlit: a role is what a child is before
+		// anybody spawns one, and a lit ◇ on this list is a child that is
+		// running.
+		return sty.Dimmer.Render("◇")
 	default:
 		return AgentProgress{State: FanoutRunning}.rowGlyph()
 	}
@@ -416,8 +444,10 @@ func (r AgentRow) stateGlyph() string {
 
 // rightField is what the row reports: the lane renderer's outcome field for a
 // child, and the plain status and spend for a row that has no child progress.
+// The two rows that are not agents report where they lead instead — the
+// command the offer opens, and the place a role's file lives.
 func (r AgentRow) rightField() string {
-	if r.State == AgentOffer {
+	if !r.isAgent() {
 		return sty.Dimmer.Render(r.Status)
 	}
 	if r.Progress != nil {
@@ -506,16 +536,21 @@ func (l *AgentList) hints() []KeyOffer {
 		}
 	}
 	focus := l.focused()
-	// The offer row is the one row enter does something else on, so the key
-	// row says which — a hint that read `enter attach` over it would be
-	// naming an action the row does not have. The two list-wide keys are
-	// still offered over it, because they still work over it.
-	agent := focus.State != AgentOffer
-	attach := keyOffer(keys.Agent.Attach)
-	if !agent {
-		attach = keyOfferAs(keys.Agent.Attach, "draft a profile")
+	// The two rows that are not agents are the rows enter does something else
+	// on, so the key row says which — a hint that read `enter attach` over one
+	// of them would be naming an action the row does not have. The two
+	// list-wide keys are still offered over them, because they still work over
+	// them.
+	agent := focus.isAgent()
+	var segments []KeyOffer
+	switch {
+	case agent:
+		segments = append(segments, keyOffer(keys.Agent.Attach))
+	case focus.State == AgentOffer:
+		segments = append(segments, keyOfferAs(keys.Agent.Attach, "draft a profile"))
+	case focus.Editable:
+		segments = append(segments, keyOfferAs(keys.Agent.Attach, "open its file"))
 	}
-	segments := []KeyOffer{attach}
 	if l.answerable() >= 0 {
 		segments = append(segments, keyOfferAs(keys.Agent.Answer, "answer without attaching"))
 	}

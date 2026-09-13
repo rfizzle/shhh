@@ -14,6 +14,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/rfizzle/shhh/internal/agent"
@@ -25,6 +27,7 @@ import (
 	"github.com/rfizzle/shhh/internal/mcp"
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/notebook"
+	"github.com/rfizzle/shhh/internal/persona"
 	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/prompt"
@@ -132,6 +135,42 @@ func (a *agentProfiles) readers() *agentProfiles {
 			out.profiles[name] = p
 		}
 	}
+	return out
+}
+
+// roleBuiltIn is where a role that shhh ships lives, in the field the two
+// scopes are named in. It is not a place, which is the fact the row carries:
+// there is no file to open and nothing to edit.
+const roleBuiltIn = "built-in"
+
+// roles is the spawnable roles as the agent manager reads them: what each is
+// called, what it is for, and where the file that says so lives. It is the
+// set this session can actually spawn — a conversation's is the readers —
+// rather than every profile on the machine, because the manager answers
+// "what has this session got" (docs/interface/surfaces.md#the-agent-manager).
+//
+// A definition's scope is read off its path against the project directory
+// the loader searched first, so the word says which of two same-named files
+// won rather than which one exists.
+func (a *agentProfiles) roles(cwd string) []chat.SpawnableRole {
+	if a == nil {
+		return nil
+	}
+	projectDir := config.ProjectAgentDir(cwd)
+	out := make([]chat.SpawnableRole, 0, len(a.profiles))
+	for name, p := range a.profiles {
+		role := chat.SpawnableRole{Name: string(name), Description: p.Description, Scope: roleBuiltIn}
+		if def, ok := a.definitions[string(name)]; ok && def.Path != "" {
+			role.Path, role.Scope = def.Path, string(persona.ScopeGlobal)
+			if filepath.Dir(def.Path) == projectDir {
+				role.Scope = string(persona.ScopeProject)
+			}
+		}
+		out = append(out, role)
+	}
+	// By name: the map has no order, and a list of roles that reshuffled
+	// between two openings of the manager would be a list nobody can point at.
+	sort.Slice(out, func(i, j int) bool { return out[i].Name < out[j].Name })
 	return out
 }
 

@@ -2,6 +2,7 @@ package chat
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -352,6 +353,58 @@ func TestPersona_TheManagerOpensOnASessionWithNoAgents(t *testing.T) {
 		if !strings.Contains(view, want) {
 			t.Fatalf("the manager lacks %q:\n%s", want, view)
 		}
+	}
+}
+
+// The manager is where the session's roles are read. Each is a row under the
+// agents — what it is for, and where the file that says so lives — with the
+// drafter's own row under them, and enter on a role hands its file to the
+// editor and leaves the list.
+func TestPersona_TheManagerListsTheRolesThisSessionCanSpawn(t *testing.T) {
+	m, _, _ := personaModel(t, persona.KindCode, persona.Outcome{Draft: &persona.Draft{Name: "x"}})
+	m.personas.Roles = func() []SpawnableRole {
+		return []SpawnableRole{
+			{Name: "critic", Description: "reads a diff", Scope: "project", Path: "/repo/.shhh/agents/critic.toml"},
+			{Name: "researcher", Description: "read-only tools", Scope: "built-in"},
+		}
+	}
+	m = submitLine(t, m, "/agents")
+	rows := m.agentList.Rows
+	if len(rows) != 4 || rows[1].Name != "critic" || rows[2].Name != "researcher" ||
+		rows[1].State != components.AgentRole || rows[3].State != components.AgentOffer {
+		t.Fatalf("the roles belong under the agents and above the drafter row: %+v", rows)
+	}
+	if !rows[1].Editable || rows[2].Editable {
+		t.Fatalf("only a role with a file behind it can be opened: %+v", rows[1:3])
+	}
+	view := m.panelView()
+	for _, want := range []string{"critic · reads a diff", "project", "researcher", "built-in"} {
+		if !strings.Contains(view, want) {
+			t.Fatalf("the manager lacks %q:\n%s", want, view)
+		}
+	}
+	m.agentList.Focus = 1
+	m = pressOn(t, m, tea.KeyPressMsg{Code: tea.KeyEnter})
+	if m.agentList != nil {
+		t.Fatal("enter on a role row should hand the terminal to the editor and leave the list")
+	}
+}
+
+// What the session spawns was settled when it started, so an edited role is
+// the next session's — said on the way back rather than left to be found out
+// from a child that behaved the old way.
+func TestPersona_AnEditedRoleIsTheNextSessions(t *testing.T) {
+	m, _, _ := personaModel(t, persona.KindCode, persona.Outcome{Draft: &persona.Draft{Name: "x"}})
+	next, _ := m.roleEditorFinished(roleEditorDoneMsg{name: "critic", path: "/repo/.shhh/agents/critic.toml"})
+	said := lastNote(next.(Model))
+	for _, want := range []string{"/repo/.shhh/agents/critic.toml", "critic"} {
+		if !strings.Contains(said, want) {
+			t.Fatalf("the note should name the file and the role, got %q", said)
+		}
+	}
+	next, _ = m.roleEditorFinished(roleEditorDoneMsg{name: "critic", err: fmt.Errorf("exit status 1")})
+	if said := lastNote(next.(Model)); !strings.Contains(said, "exit status 1") {
+		t.Fatalf("an editor that failed should say so, got %q", said)
 	}
 }
 

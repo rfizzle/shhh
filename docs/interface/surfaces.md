@@ -1339,12 +1339,25 @@ is the same whichever agent has the keyboard. Its map is what says which
 agent that is, by marking the row, so nothing on screen has to be read twice
 to work out whose numbers are whose.
 
-The list ends with the one row that is not an agent: the offer to draft a new
-profile. The manager is where a person goes to find out what this session has,
-which makes it the one place where *and none of these is what I want* is a
-thought somebody is already having, so the answer to it is a row rather than a
-command they have to know. It is offered only where drafting is wired, and the
-keys that act on an agent are silent over it.
+The list ends with a short section that is not agents: the roles this session
+can spawn, and under them the offer to draft a new one. The manager is where a
+person goes to find out what this session has, which is the argument both rows
+are built on — it makes this the one place where *and none of these is what I
+want* is a thought somebody is already having, so the answer to it is a row
+rather than a command they have to know, and it makes it the place the
+question before that one is asked too: *what has it got*. A role was named
+nowhere a reader could reach until here.
+
+A role's row says what it is called, what it is for, and where the file that
+says so lives — `project`, `global`, or `built-in` for the roles shhh ships,
+which live in no file — and `[enter]` opens that file in your editor, the way
+editing a memory hands you its text. What a session can spawn was settled when
+it started, so an edit is the next session's, and the way back from the editor
+says so rather than leaving it to be discovered from a child that behaved the
+old way. A role with no file behind it is offered no `[enter]`, because there
+would be nothing to open. The offer to draft stands only where drafting is
+wired, and the keys that act on an agent are silent over every row in this
+section.
 
 ## Cards
 

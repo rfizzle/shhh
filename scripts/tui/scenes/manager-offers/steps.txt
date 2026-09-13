@@ -19,12 +19,9 @@
 setup printf 'package agent\n\nfunc loop() {\n    for round := 0; round < limit; round++ {\n        step()\n    }\n}\n' > loop.go
 snap 01-start "Some things worth doing first"
 keys "survey the round accounting" Enter
-# Spawning is gated, so a card stands between the sentence and each child.
-snap 02-spawn-card "writer agent"
-keys y
-sleep 1
-keys y
-sleep 1
+# Spawning is gated, so a card stands between the sentence and the children —
+# one card with a row per child, and one key that starts all three.
+snap 02-spawn-card "Spawn 3 writers"
 keys y
 sleep 3
 # Everything then asks to run a command at once. The session's own card is set
@@ -55,7 +52,9 @@ sleep 3
 snap 04-three-states "needs you"
 # The manager, with the pointer where it opens: on the orchestrator, which can
 # neither be answered nor retried. Both list-wide offers are on the row
-# anyway, which is the whole of what this scene is for.
+# anyway, which is the whole of what this scene is for. Under the three
+# children are the rows that are not agents: the roles this session can spawn,
+# each saying where it lives, and the offer to draft another under them.
 keys M-a
 sleep 2
 snap 05-manager "kill all"

@@ -40,6 +40,9 @@ func buildPersonas(session chatSession, env *sessionEnv, agents *agentProfiles, 
 	if kind == persona.KindCode {
 		p.ProjectDir = persona.Dir(persona.ScopeProject, cwd)
 	}
+	// Read on every frame the manager draws, so a role saved from the card
+	// above appears in the list under it without the session restarting.
+	p.Roles = func() []chat.SpawnableRole { return agents.roles(cwd) }
 	p.Existing = func() []string {
 		var builtins []string
 		for name := range sup.Profiles() {

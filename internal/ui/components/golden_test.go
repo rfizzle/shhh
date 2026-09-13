@@ -1171,6 +1171,11 @@ func TestGolden_ReviewMode(t *testing.T) {
 // lane's renderer, so the capture is also where the two surfaces are held to
 // the same columns.
 //
+// Two panels are the section under the agents, which is not agents at all:
+// the roles this session can spawn, each saying what it is for and where the
+// file that says so lives, and the offer to draft another under them. A role
+// shhh ships has no file, so the pointer on it offers no enter.
+//
 // The last panel is the redirect being typed: the field opens under the row
 // it will reach, named for it, and the list's own letters leave the key row
 // while the keyboard is in the field.
@@ -1191,7 +1196,13 @@ func TestGolden_AgentList(t *testing.T) {
 				Progress: progress(AgentProgress{State: FanoutFailed, Tools: 1, Spend: "$0.01"}),
 				Note:     "round limit (25) reached"},
 		}
+		// The section that is not agents: the roles this session can spawn,
+		// one read from a file and one shhh ships — which lives nowhere and
+		// so has nothing for enter to open — with the offer to draft another
+		// under them.
 		offered := append(append([]AgentRow{}, rows...),
+			AgentRow{State: AgentRole, Name: "critic", Task: "reads a diff and argues", Status: "project", Editable: true},
+			AgentRow{State: AgentRole, Name: "researcher", Task: "read-only tools plus web", Status: "built-in"},
 			AgentRow{State: AgentOffer, Name: "draft a new profile", Status: "/agents new"})
 		// A child that delegated, in the order the host hands the list over:
 		// the group with the request in it floats whole, so the grandchild
@@ -1219,8 +1230,10 @@ func TestGolden_AgentList(t *testing.T) {
 			{Label: "focus · the orchestrator", View: (&AgentList{Rows: rows}).View(width)},
 			{Label: "focus · the blocked child, [a] answers it here", View: (&AgentList{Rows: rows, Focus: 1}).View(width)},
 			{Label: "focus · the failed child, [r] runs it again", View: (&AgentList{Rows: rows, Focus: 4}).View(width)},
-			{Label: "the row that is not an agent · enter drafts a profile instead of attaching",
+			{Label: "the rows that are not agents · the session's roles, and the offer to draft another",
 				View: (&AgentList{Rows: offered, Focus: len(offered) - 1}).View(width)},
+			{Label: "focus · a role read from a file, which enter opens",
+				View: (&AgentList{Rows: offered, Focus: len(offered) - 3}).View(width)},
 			{Label: "a child that delegated · the request is under the row it belongs to",
 				View: (&AgentList{Rows: nested, Focus: 2}).View(width)},
 			{Label: "the redirect · typed under the row it will reach, and nothing else is live",

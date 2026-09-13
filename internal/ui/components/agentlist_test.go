@@ -35,6 +35,70 @@ func managerRows() []AgentRow {
 	}
 }
 
+// roleRows is the section under the agents: a role read from a file, and one
+// shhh ships, which has none.
+func roleRows() []AgentRow {
+	return []AgentRow{
+		{State: AgentRole, Name: "researcher", Task: "read-only tools", Status: "built-in"},
+		{State: AgentRole, Name: "critic", Task: "reads a diff", Status: "project", Editable: true},
+	}
+}
+
+// TestAgentListReadsTheSessionsRoles: the manager is where a person finds out
+// what this session has, so a role is a row of its own — what it is called,
+// what it is for, and where the file that says so lives — and enter opens
+// that file. A role shhh ships has no file, so the key is silent over it and
+// is not offered there.
+func TestAgentListReadsTheSessionsRoles(t *testing.T) {
+	rows := append(managerRows(), roleRows()...)
+	fromFile, builtIn := len(rows)-1, len(rows)-2
+
+	view := ansi.Strip((&AgentList{Rows: rows, Focus: fromFile}).View(96))
+	for _, want := range []string{
+		"researcher · read-only tools", "built-in",
+		"critic · reads a diff", "project",
+		"[enter] open its file",
+	} {
+		if !strings.Contains(view, want) {
+			t.Fatalf("the roles section lacks %q:\n%s", want, view)
+		}
+	}
+	if done, res := (&AgentList{Rows: rows, Focus: fromFile}).Update(agentKey("enter")); !done ||
+		res.Action != AgentOpenRole || res.Index != fromFile {
+		t.Fatalf("enter on a role with a file = %#v (done=%v), want AgentOpenRole on row %d", res, done, fromFile)
+	}
+
+	l := &AgentList{Rows: rows, Focus: builtIn}
+	if done, res := l.Update(agentKey("enter")); done || res.Action != AgentNone {
+		t.Fatalf("enter on a role with no file = %#v (done=%v), want nothing", res, done)
+	}
+	if view := ansi.Strip(l.View(96)); strings.Contains(view, "[enter]") {
+		t.Fatalf("a role with no file must offer no enter:\n%s", view)
+	}
+}
+
+// The keys that act on an agent are silent over a role row, as they are over
+// the drafter row: a role is not something that can be cancelled, killed,
+// redirected or run again.
+func TestAgentListIgnoresAgentKeysOverARoleRow(t *testing.T) {
+	rows := append(managerRows(), roleRows()...)
+	l := &AgentList{Rows: rows, Focus: len(rows) - 1}
+	for _, pressed := range []string{"x", "X", "s", "r"} {
+		if done, res := l.Update(agentKey(pressed)); done || res.Action != AgentNone {
+			t.Fatalf("[%s] over a role row = %#v (done=%v), want nothing", pressed, res, done)
+		}
+	}
+	if l.steer != nil {
+		t.Fatal("[s] over a role row must not open the redirect field")
+	}
+	view := ansi.Strip(l.View(96))
+	for _, gone := range []string{"[x] cancel", "[X] kill agent", "[s] steer", "[r] retry"} {
+		if strings.Contains(view, gone) {
+			t.Fatalf("a role row must not offer %q:\n%s", gone, view)
+		}
+	}
+}
+
 // TestAgentRowAndLaneAgreeOnProgress is the "one renderer" claim, asserted:
 // the same child drawn as a manager row and as a fan-out lane reports the
 // same thing in the same words.
