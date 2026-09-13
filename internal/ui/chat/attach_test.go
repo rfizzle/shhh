@@ -555,16 +555,14 @@ func TestAnswerBlockedChildFromTheList(t *testing.T) {
 	if strings.Contains(view, "[enter] attach") {
 		t.Fatalf("the list must step aside while the card is up:\n%s", view)
 	}
-	// Esc here declines: there is no draft under the list to hand the
-	// keyboard back to, so the card says that once and says nothing about a
-	// decision that stays waiting
+	// Esc here leaves rather than declines, and the card says so once: the
+	// surface underneath is the list, and the row the reader lands back on
+	// goes on saying the child needs them
 	// (docs/interface/principles.md#esc-is-always-the-safe-answer).
 	plain := ansi.Strip(view)
-	if strings.Count(plain, "[esc]") != 1 || !strings.Contains(plain, "[esc] deny, back to the agents") {
+	if strings.Count(plain, "[esc]") != 1 ||
+		!strings.Contains(plain, "[esc] back to the agents — the decision stays waiting") {
 		t.Fatalf("the card over the list states its own esc, once:\n%s", plain)
-	}
-	if strings.Contains(plain, "the decision stays waiting") {
-		t.Fatalf("esc over the list is a denial, not a way back to a draft:\n%s", plain)
 	}
 
 	updated, _ = m.Update(key('y'))
@@ -587,9 +585,12 @@ func TestAnswerBlockedChildFromTheList(t *testing.T) {
 	}
 }
 
-// TestAnswerFromTheListDeclinesOnEsc: a routed request is never dropped, and
-// the list is still what the answer returns to.
-func TestAnswerFromTheListDeclinesOnEsc(t *testing.T) {
+// TestAnswerFromTheListLeavesTheDecisionWaitingOnEsc: esc on the card picked
+// off the manager is a way back and not an answer. The request stays queued
+// and the row it returns to still says the child needs somebody, which is
+// what makes leaving safe — the decision is as visible on the list as it was
+// on the card (docs/interface/principles.md#esc-is-always-the-safe-answer).
+func TestAnswerFromTheListLeavesTheDecisionWaitingOnEsc(t *testing.T) {
 	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: gatedEnv()})
 	t.Cleanup(sup.Close)
 	m := newSubagentModel(t, sup)
@@ -605,11 +606,17 @@ func TestAnswerFromTheListDeclinesOnEsc(t *testing.T) {
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	m = updated.(Model)
 
-	if !transcriptContains(m, "Declined researcher-1 ▸ run echo hi") {
-		t.Fatal("a routed request is never dropped: the decline must be recorded")
+	if transcriptContains(m, "Declined researcher-1 ▸ run echo hi") {
+		t.Fatal("esc is a way back, not a denial")
 	}
 	if m.agentList == nil || m.answerAgent != "" {
-		t.Fatal("declining must return to the list")
+		t.Fatal("esc must return to the list")
+	}
+	if m.pendingAskFor("researcher-1") == nil {
+		t.Fatal("the request must still be queued after esc")
+	}
+	if !strings.Contains(ansi.Strip(m.View().Content), "⚠ needs you") {
+		t.Fatalf("the row must still say the child needs you:\n%s", ansi.Strip(m.View().Content))
 	}
 }
 
@@ -981,5 +988,35 @@ func TestAttachedChildStreamsThroughItsOwnCache(t *testing.T) {
 	got = m.renderChildHistory("researcher-1", arriving)
 	if want := renderMarkdown(arriving, w); !strings.HasSuffix(got, want) {
 		t.Fatal("the cached prefix and the tail do not glue back to the whole message")
+	}
+}
+
+// The manager over one of the session's own decisions: one panel holds one
+// thing, so the list does not open — and the refusal is said, because a chord
+// that does nothing at all is indistinguishable from a chord that is broken.
+func TestAgentsOverAParkedCardSaysWhatHoldsThePanel(t *testing.T) {
+	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
+	t.Cleanup(sup.Close)
+	for _, tc := range []struct {
+		state state
+		names string
+	}{
+		{stateConfirmRun, "A command is waiting for an answer"},
+		{statePlanApprove, "A plan is waiting for an answer"},
+		{stateQuestion, "A question is waiting for an answer"},
+	} {
+		m := newSubagentModel(t, sup)
+		m.state = tc.state
+		opened, _ := m.openAgentList()
+		m = opened.(Model)
+		if m.agentList != nil {
+			t.Fatalf("%v: the manager must not open over the panel's own decision", tc.state)
+		}
+		if !transcriptContains(m, tc.names) {
+			t.Fatalf("%v: the refusal names what holds the panel", tc.state)
+		}
+		if !transcriptContains(m, "Answer it or press esc, then the agents open.") {
+			t.Fatalf("%v: the refusal names the way out", tc.state)
+		}
 	}
 }

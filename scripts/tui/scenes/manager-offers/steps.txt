@@ -71,3 +71,26 @@ snap 07-back "writer-2 ▸ Approve command"
 keys "and check the exit condition too"
 sleep 1
 snap 08-mid-sentence "and check the exit condition too"
+# The blocked child answered from the manager, twice: once with esc and once
+# with the answer esc is not. The card over the list claims every key it has —
+# the list is a takeover and there is no draft under it — so its own run is
+# live and its esc row says what leaving does here.
+keys M-a
+sleep 1
+keys j
+keys a
+sleep 1
+snap 09-answer-in-place "back to the agents"
+# Esc leaves the decision waiting: the list comes back and the row it comes
+# back to still says the child needs somebody
+# (docs/interface/principles.md#esc-is-always-the-safe-answer).
+keys Escape
+sleep 1
+snap 10-still-waiting "needs you"
+# And the answer that is one. [n] declines the request and hands the list
+# back, which is where the reader was.
+keys a
+sleep 1
+keys n
+sleep 2
+snap 11-declined "Declined writer-2"

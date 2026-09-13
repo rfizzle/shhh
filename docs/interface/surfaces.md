@@ -1228,6 +1228,44 @@ child — cancel, kill, and running a failed one again — stay with the row the
 pointer is on, because their target is the one thing that must never be
 guessed.
 
+**Answering in place is answering, and leaving is leaving.** The card the
+manager opens over the list is the same card the request would have drawn
+anywhere else, and the two answers mean on it what they mean everywhere. Esc
+is the third thing and it is not an answer: it puts the reader back on the
+list with the request still queued, and the row they land on still says the
+child needs them. The argument for esc declining there was that there is no
+draft underneath to hand the keyboard back to — but what is underneath is the
+list, which is showing the decision as plainly as a draft would have, and
+[escape never abandons work](principles.md#esc-is-always-the-safe-answer).
+
+**A routed command card offers the grant, and the grant is the turn's.** A
+permission the session makes already reaches every child, so the reader
+answering the twentieth identical request from a fan-out can make it from the
+card in front of them instead of waiting for one of the session's own. The
+offer names both halves of what it covers — the command's shape, and every
+agent — and it names its end, which is this turn: the length is fixed here
+rather than chosen from a list, because the reach is the thing being decided
+and a standing permission is wider than the card is about. A safety-flagged
+command is the one place the key is missing, here as everywhere, and the card
+says so where the key would have been.
+
+**The manager does not open over one of the session's own decisions, and says
+so.** A command, a plan or a question waiting in the panel holds it — [one
+panel holds one thing](principles.md#one-interaction-panel) — so the chord is
+refused rather than obeyed. The refusal is a notice naming what is holding the
+panel and the two keys that free it, because a chord that does nothing at all
+is indistinguishable from a chord that is broken. A child's routed card is not
+one of these: it steps aside while the list is open and comes back when it
+closes.
+
+**Attached, another agent waiting is not left off the screen.** The card is
+narrowed to the agent whose transcript is on screen, so a request from any
+other child would otherwise be visible nowhere while the reader reads. The
+attached frame's bottom rail carries it — `⚠ 1 other agent waiting`, with the
+chord to the manager beside it, which stops shedding for as long as the
+warning is up. The frame's top rail counts what is waiting; this says that
+some of it is somewhere else, and how to get there.
+
 Attaching does not take the inspector rail with it. What you are looking at
 is one agent's transcript; what the rail reports — what this run has changed,
 how full the window is, what it has all cost — is the whole session's, and it
@@ -1412,8 +1450,10 @@ the line saying so is the handover's.
 What the line says is what esc actually does on that card, which is not one
 thing. On a gated card it hands the keyboard back and leaves the request
 where it was, which is a different act from the denial `[n]` is; on a card
-picked off the agent manager there is no draft underneath, so leaving is
-declining and the line says so.
+picked off the [agent manager](#the-agent-manager) there is no draft
+underneath, so it hands the reader back to the list instead — the request
+still queued, and the line naming the surface it returns to rather than the
+draft it did not come from.
 
 A rail above the card names whichever surface holds the keyboard and says
 which of what is waiting this is — `DECISION 1/2`, and `DECISION 1/1` where

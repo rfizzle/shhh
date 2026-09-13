@@ -2100,7 +2100,7 @@ func TestGolden_ScreenAttached(t *testing.T) {
 		Pending: true})
 	captureGolden(t, "screen-attached", "the surface with the keyboard in a child",
 		[]int{144}, func(width int) []golden.Panel {
-			build := func(name string) string {
+			attached := func(name string) Model {
 				m := frameModel(t, width, screenHeight)
 				m.transcript = goldenTranscript()
 				// The turn the transcript closes on spent two rounds, and the
@@ -2111,17 +2111,33 @@ func TestGolden_ScreenAttached(t *testing.T) {
 				}
 				m = m.WithSubagents(sup)
 				m.attach(name)
+				return m
+			}
+			draw := func(m Model) string {
 				m.invalidateRenderCache()
 				m.syncViewport()
 				m.viewport.SetLines(m.renderHistoryLines())
 				m.viewport.GotoBottom()
 				return m.View().Content
 			}
+			build := func(name string) string { return draw(attached(name)) }
+			// A second child blocked while the keyboard is in the first: its
+			// card is narrowed to the agent on screen, so the fact rides the
+			// rail with the chord that reaches it.
+			other := func(name, waiting string) string {
+				ask := subagent.NewAsk(waiting, subagent.AskCommand, "run go test ./...")
+				ask.Command = "go test ./..."
+				updated, _ := attached(name).Update(
+					subagentEventMsg{ev: subagent.Event{Kind: subagent.EventAsk, Ask: ask}})
+				return draw(updated.(Model))
+			}
 			return []golden.Panel{
 				{Label: "the keyboard in this session · the map marks its first row", View: build("")},
 				{Label: "the keyboard in a child · the rail stays, marked", View: build("researcher-1")},
 				{Label: "the keyboard in a child's child · the breadcrumb is the lineage",
 					View: build("reviewer-2")},
+				{Label: "another agent waiting · the rail says so and names the chord",
+					View: other("researcher-1", "reviewer-2")},
 			}
 		})
 }
@@ -3433,18 +3449,30 @@ func TestGolden_ChildAskCard(t *testing.T) {
 	t.Cleanup(sup.Close)
 
 	captureGolden(t, "child-ask-card", "a child agent's routed approval", goldenWidths, func(width int) []golden.Panel {
-		buildWithDraft := func(ask *subagent.Ask, hold bool, draft string) string {
+		routed := func(ask *subagent.Ask, draft string) Model {
 			m := frameModel(t, width, 40)
 			m = m.WithSubagents(sup).WithChangeset(changeset.New(64), nil).WithContainment(Containment{
 				Status: "bwrap · workspace", Mechanism: "bwrap", Profile: "workspace",
 			})
 			m.input.SetValue(draft)
 			updated, _ := m.Update(subagentEventMsg{ev: subagent.Event{Kind: subagent.EventAsk, Ask: ask}})
-			m = updated.(Model)
+			return updated.(Model)
+		}
+		buildWithDraft := func(ask *subagent.Ask, hold bool, draft string) string {
+			m := routed(ask, draft)
 			if hold {
 				m = handover(t, m)
 			}
 			return strings.Join(m.childAskLines(ask), "\n")
+		}
+		// The same card picked off the manager rather than arrived at: it
+		// claims every key it has, and its esc is the way back to the list
+		// with the request still queued.
+		overList := func(ask *subagent.Ask) string {
+			m := routed(ask, "")
+			m.answerAgent = ask.Agent
+			opened, _ := m.openAgentList()
+			return strings.Join(opened.(Model).agentListLines(), "\n")
 		}
 		build := func(ask *subagent.Ask, hold bool) string {
 			return buildWithDraft(ask, hold, "")
@@ -3455,12 +3483,24 @@ func TestGolden_ChildAskCard(t *testing.T) {
 			ask.Root, ask.Worktree = dir, true
 			return ask
 		}
+		// A command nothing flags, which is the card that carries the grant:
+		// the flagged one above states why it has none instead.
+		grantable := func() *subagent.Ask {
+			ask := subagent.NewAsk("writer-1", subagent.AskCommand, "run go test ./...")
+			ask.Command = "go test ./..."
+			ask.Root, ask.Worktree = dir, true
+			return ask
+		}
 		return []golden.Panel{
 			{Label: "a child's command · resolved in the agent's own checkout", View: build(command(), true)},
 			{Label: "the same card, held by arriving · two answers, and nothing else offered",
 				View: build(command(), false)},
 			{Label: "landing on a half-typed sentence · one key, and it is the handover",
 				View: buildWithDraft(command(), false, "also add a --max-rounds flag")},
+			{Label: "a command nothing flags · [a] grants it to every agent for the turn",
+				View: build(grantable(), true)},
+			{Label: "answered in place on the manager · esc goes back, the decision stays waiting",
+				View: overList(grantable())},
 			{Label: "a writer's patch · your files, and the diff behind a counted tail",
 				View: build(longPatchAsk(dir), true)},
 		}

@@ -754,3 +754,99 @@ func TestKillConfirmCountsTheSubtree(t *testing.T) {
 		t.Errorf("the confirm over a subtree is %q, and never says what survives", got)
 	}
 }
+
+// [a] on a routed command card makes the grant the session would have made at
+// its own card: the turn's, over the shape of the command, and the supervisor
+// has it the moment it is made — which is the half of the rule that was
+// missing, since a parent's grants already travel to its children.
+func TestChildAskAlwaysGrantsTheCommandForTheTurn(t *testing.T) {
+	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
+	t.Cleanup(sup.Close)
+	m := newSubagentModel(t, sup)
+	ask := subagent.NewAsk("writer-1", subagent.AskCommand, "run go test ./...")
+	ask.Command = "go test ./..."
+	updated, _ := m.Update(subagentEventMsg{ev: subagent.Event{Kind: subagent.EventAsk, Ask: ask}})
+	m = handover(t, updated.(Model))
+
+	const offer = `[a] allow "go test" for every agent, this turn`
+	if view := ansi.Strip(m.View().Content); !strings.Contains(view, offer) {
+		t.Fatalf("the routed command card offers the grant and names its end:\n%s", view)
+	}
+	updated, _ = m.Update(key('a'))
+	m = updated.(Model)
+
+	if approved, answered := ask.Answered(); !answered || !approved {
+		t.Fatalf("[a] answers the request it grants over (answered=%v approved=%v)", answered, approved)
+	}
+	if got := m.policy.turn.Commands; len(got) != 1 || got[0] != "go test" {
+		t.Fatalf("turn grants = %v, want the command's shape once", got)
+	}
+	if !transcriptContains(m,
+		`Commands starting "go test" will run for every agent without asking until this turn ends.`) {
+		t.Fatal("a grant nobody can read is a grant nobody can revoke")
+	}
+}
+
+// A flagged command is the one place the key is missing, here as on the
+// session's own card — and the card says why rather than dropping the row,
+// which is the whole reason the footnote exists.
+func TestChildAskOffersNoGrantOnAFlaggedCommand(t *testing.T) {
+	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
+	t.Cleanup(sup.Close)
+	m := newSubagentModel(t, sup)
+	ask := subagent.NewAsk("writer-1", subagent.AskCommand, "run rm -rf build")
+	ask.Command = "rm -rf build"
+	updated, _ := m.Update(subagentEventMsg{ev: subagent.Event{Kind: subagent.EventAsk, Ask: ask}})
+	m = handover(t, updated.(Model))
+
+	view := ansi.Strip(m.View().Content)
+	if strings.Contains(view, "[a] allow") {
+		t.Fatalf("a safety-flagged command is never pre-approved:\n%s", view)
+	}
+	if !strings.Contains(view, "[a] always — not offered: a safety-flagged command is never pre-approved") {
+		t.Fatalf("the missing key states its reason:\n%s", view)
+	}
+}
+
+// Attached to one child, another child's request is nowhere on the screen —
+// the card is narrowed to the agent whose transcript this is. The rail is
+// where the session says so, with the chord that reaches the manager beside
+// it.
+func TestAttachedRailNamesAnotherAgentWaiting(t *testing.T) {
+	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
+	t.Cleanup(sup.Close)
+	m := newSubagentModel(t, sup)
+	spawnBlockedChild(t, sup)
+	spawnInto(t, sup, `{"role":"writer","task":"write"}`)
+	m.attach("writer-2")
+	if got := m.othersWaiting(); got != 0 {
+		t.Fatalf("nothing is queued yet, othersWaiting = %d", got)
+	}
+
+	ask := subagent.NewAsk("researcher-1", subagent.AskCommand, "run go test ./...")
+	ask.Command = "go test ./..."
+	updated, _ := m.Update(subagentEventMsg{ev: subagent.Event{Kind: subagent.EventAsk, Ask: ask}})
+	m = updated.(Model)
+	if m.activeChildAsk() != nil {
+		t.Fatal("attached, another child's request draws no card here")
+	}
+	if got := m.othersWaiting(); got != 1 {
+		t.Fatalf("othersWaiting = %d, want 1", got)
+	}
+	view := ansi.Strip(m.View().Content)
+	if !strings.Contains(view, "⚠ 1 other agent waiting") {
+		t.Fatalf("the attached rail states what is waiting elsewhere:\n%s", view)
+	}
+	if !strings.Contains(view, "[alt+a] agents") {
+		t.Fatalf("the rail keeps the chord that reaches it:\n%s", view)
+	}
+	// The child the reader is attached to is not an "other": its own request
+	// draws the card in place, which is the drawing this rail stands in for.
+	own := subagent.NewAsk("writer-2", subagent.AskCommand, "run go build ./...")
+	own.Command = "go build ./..."
+	updated, _ = m.Update(subagentEventMsg{ev: subagent.Event{Kind: subagent.EventAsk, Ask: own}})
+	m = updated.(Model)
+	if got := m.othersWaiting(); got != 1 {
+		t.Fatalf("othersWaiting = %d after the attached child's own request, want 1", got)
+	}
+}

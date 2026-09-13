@@ -55,6 +55,13 @@ func (s hintSeg) givesUp(n int) hintSeg { s.give = n; return s }
 // its imperative in dim, and the safe answer in add where there is one
 // (invariant 3).
 func (s hintSeg) render() string {
+	// A segment with no key is a fact the rail is stating rather than an
+	// offer it is making — what is waiting elsewhere on the screen — so it is
+	// painted the way the frame paints anything that is waiting, and the
+	// offer that answers it is the segment beside it (frame.go).
+	if s.key == "" {
+		return sty.Frame.WaitingChip.Render(s.label)
+	}
 	if s.reason != "" {
 		return sty.Hint.Dim.Render("[" + s.key + "] " + s.label + " — " + s.reason)
 	}

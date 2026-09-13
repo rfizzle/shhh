@@ -373,6 +373,22 @@ func (m Model) frameHints(room int) string {
 			segAs(keys.Agent.Detach, "detach"),
 			segAs(keys.Draft.Agents, "agents").givesUp(1),
 		}
+		// Attached, the screen is one child's and a routed card is narrowed
+		// to that child (activeChildAsk), so another child's request is
+		// nowhere on it — the reader is looking at a transcript while an
+		// agent they cannot see waits on them. The rail is where that fact
+		// belongs: it is the one row that is about the session rather than
+		// about the agent whose transcript this is. The chord that reaches it
+		// stops shedding while it is up, because a warning whose answer the
+		// rail dropped is a warning with nothing to do about it
+		// (docs/interface/surfaces.md#the-agent-manager).
+		if n := m.othersWaiting(); n > 0 {
+			hints = []hintSeg{
+				{label: "⚠ " + plural(n, "other agent") + " waiting"},
+				segAs(keys.Draft.Agents, "agents"),
+				segAs(keys.Agent.Detach, "detach").givesUp(1),
+			}
+		}
 	case m.heldAtBoundary():
 		// A held turn is idle in every way the frame can see, so its rail
 		// has to say the three things only it knows: the key that lets the

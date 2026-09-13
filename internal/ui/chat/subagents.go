@@ -7,6 +7,7 @@ package chat
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
@@ -197,6 +198,25 @@ func (m Model) activeChildAsk() *subagent.Ask {
 	return m.childAsks[0]
 }
 
+// othersWaiting counts the agents with a request queued that the surface in
+// front of the reader is not showing: attached, every child but the one whose
+// transcript this is. It counts agents and not requests, because what the
+// rail is telling the reader is that somebody else is stopped — a child that
+// queued two calls is one agent to go and see
+// (docs/interface/surfaces.md#the-agent-manager).
+func (m Model) othersWaiting() int {
+	if m.attachedTo == "" {
+		return 0
+	}
+	seen := map[string]bool{}
+	for _, ask := range m.childAsks {
+		if ask.Agent != m.attachedTo {
+			seen[ask.Agent] = true
+		}
+	}
+	return len(seen)
+}
+
 // updateChildAsk routes keys to the presented child approval card. Its esc/n
 // path declines — a routed request is never silently dropped or auto-denied.
 // Detached, [g] jumps into the agent's attached view instead of answering
@@ -240,6 +260,14 @@ func (m Model) updateChildAsk(msg tea.KeyPressMsg, ask *subagent.Ask) (tea.Model
 		// waiting behind it; esc comes back to the card, which keeps the
 		// keyboard because the reader took it on purpose (leaveSurface).
 		return m.openChildDiff(ask)
+	}
+	if result == components.ApprovalAlways {
+		// [a] grants and then answers: the request in front of the reader is
+		// the first thing the grant covers, and a key that widened the
+		// permission without letting this one through would leave the child
+		// waiting on a decision that had just been taken.
+		m.grantChildCommand(ask)
+		result = components.ApprovalApprove
 	}
 	approved, ok := askAnswer(result)
 	if !ok {
@@ -323,6 +351,32 @@ func (m Model) childAskCard(ask *subagent.Ask) *components.ApprovalCard {
 		card.Title = prefix + "Approve command"
 		card.ActGlyph = "$"
 		card.Answer = "run it once"
+		// [a] here is the other half of a rule the session already keeps: a
+		// grant the parent makes travels to every child (syncGrants), so a
+		// reader answering the twentieth identical request from the fan-out
+		// can make that grant from the card in front of them rather than
+		// waiting for one of the session's own. The grant is the turn's,
+		// which is the only length this key offers without a list: the reach
+		// is what the reader is choosing here — one command, every agent —
+		// and a standing permission chosen from a child's card is a wider
+		// thing than the card is about
+		// (docs/capabilities/approvals-and-safety.md#a-grant-says-when-it-ends).
+		//
+		// Flagged commands keep the exception they have everywhere: the key
+		// is absent and the footnote says why (radius.go).
+		//
+		// The end is `this turn` and not the grant list's own `until this
+		// turn ends`: an offer is one segment of a key row and a key row
+		// never cuts one (docs/interface/principles.md#fold-never-hide), so
+		// at sixty columns the longer spelling would lose the end it exists
+		// to state. The transcript keeps the length in the list's words,
+		// where there is a whole row for it (grantChildCommand).
+		if len(card.Warnings) == 0 {
+			if grant := agent.GrantPrefix(ask.Command); grant != "" {
+				card.AllowAlways = true
+				card.AlwaysHint = "allow " + strconv.Quote(grant) + " for every agent, this turn"
+			}
+		}
 	case subagent.AskEdit:
 		card.Variant = components.ApprovalEdit
 		card.Title = prefix + "Approve edit"
@@ -384,6 +438,25 @@ func askAnswer(result components.ApprovalDecision) (approved, ok bool) {
 		return false, true
 	}
 	return false, false
+}
+
+// grantChildCommand is what [a] on a routed command card makes: the turn
+// grant covering the shape of the command in front of the reader. It is the
+// session's own grant and not a child's, because there is no such thing as a
+// child's — the supervisor is handed the session's standing grants and every
+// child decides against those (syncGrants) — so the one answer this key can
+// give is the one the session would have given at its own card.
+//
+// The transcript keeps what was granted and when it ends, the way it does for
+// a grant taken off the list, because a grant nobody can see is a grant
+// nobody can revoke (grant.go).
+func (m *Model) grantChildCommand(ask *subagent.Ask) {
+	what := m.grantCommand(ask.Command, grantOffer{length: forThisTurn})
+	if what == "" {
+		return
+	}
+	m.noteGrant(grantNote("Commands starting "+what+" will run for every agent", forThisTurn))
+	m.syncGrants()
 }
 
 // openChildDiff takes a routed request's change full screen. An edit names

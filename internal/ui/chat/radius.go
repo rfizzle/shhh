@@ -494,14 +494,12 @@ func (m Model) childRadius(ask *subagent.Ask) blastRadius {
 func (m Model) childCommandRadius(ask *subagent.Ask) blastRadius {
 	b := m.commandRadiusIn(radiusIn{ask.Root, m.childTracker(ask)}, ask.Command, scopeReach{},
 		cardContainment{assistant: true, mechanism: m.containment.Mechanism})
-	// The session's card explains a missing [a] as the safety flag's doing. A
-	// routed card offers no [a] at all — a session grant is the session's to
-	// make, and a child's card cannot make one — so that footnote would be
-	// answering a question this card never raised. The uncontained one stays:
-	// it is about the session, and it is as true here.
-	if !b.uncontained {
-		b.footnote = ""
-	}
+	// Both footnotes stand here, for the reason they stand on the session's
+	// own card: a routed command card offers [a] too, and the grant it makes
+	// is the session's turn grant, which is the grant every child already
+	// answers to (syncGrants, subagents.go). A flagged command is the one
+	// place that key is missing, so the row that says why it is missing is a
+	// row this card raises the question for.
 	b.fields = append([]components.CardField{landsInField(ask)}, b.fields...)
 	return b
 }

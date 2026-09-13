@@ -355,8 +355,21 @@ func (m Model) openAgentList() (tea.Model, tea.Cmd) {
 		m.viewport.GotoBottom()
 		return m, nil
 	}
-	switch m.state {
-	case stateConfirmRun, statePlanApprove, stateQuestion, stateFocus:
+	// A decision of this session's own holds the panel, and the manager is a
+	// takeover: one panel holds one thing
+	// (docs/interface/principles.md#one-interaction-panel). The key used to
+	// do nothing at all here, which reads exactly like a key that is broken —
+	// so the refusal is said, and it names what is holding the panel and the
+	// two keys that free it
+	// (docs/interface/surfaces.md#the-agent-manager).
+	if holder := m.panelHolder(); holder != "" {
+		m.appendEntry(entry{kind: entrySystem, text: holder +
+			", and the panel holds one thing at a time. Answer it or press esc, then the agents open."})
+		m.viewport.SetLines(m.renderHistoryLines())
+		m.viewport.GotoBottom()
+		return m, nil
+	}
+	if m.state == stateFocus {
 		return m, nil
 	}
 	if m.agentList != nil {
@@ -367,6 +380,24 @@ func (m Model) openAgentList() (tea.Model, tea.Cmd) {
 	m.agentList.Rows = rows
 	m.syncViewport()
 	return m, nil
+}
+
+// panelHolder names the session's own decision standing in the panel, in the
+// words the notice is built on, or "" where nothing of the session's is. It
+// is the three states the manager cannot open over: each of them is a card
+// the reader has to answer or set aside, and none of them is a child's — a
+// routed card steps aside for the list and comes back when it closes
+// (updateChildAsk).
+func (m Model) panelHolder() string {
+	switch m.state {
+	case stateConfirmRun:
+		return "A command is waiting for an answer"
+	case statePlanApprove:
+		return "A plan is waiting for an answer"
+	case stateQuestion:
+		return "A question is waiting for an answer"
+	}
+	return ""
 }
 
 // buildAgentRows assembles the live rows — orchestrator first, then
@@ -663,20 +694,35 @@ func (m Model) listAnswerCard(ask *subagent.Ask) *components.ApprovalCard {
 	// have suppressed along with the rest
 	// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 	card.HeldOnArrival = false
-	// Esc is the card's own row rather than an offer beside the run, and the
-	// words are what esc actually does here: there is no draft under the list
-	// to hand the keyboard back to, so leaving is declining, and a card
-	// saying the decision stayed waiting would be describing a different
-	// surface (docs/interface/principles.md#esc-is-always-the-safe-answer).
+	// Esc is the card's own row rather than an offer beside the run, and what
+	// it does here is leave, not decline. It used to decline, argued from
+	// there being no draft under the list to hand the keyboard back to — but
+	// the surface a reader lands back on is the manager, and the row they
+	// came from goes on saying `⚠ needs you`, so the decision is as visibly
+	// still there as it is behind a draft. Escape never abandons work
+	// (docs/interface/principles.md#esc-is-always-the-safe-answer), and a key
+	// that answered no because the reader wanted to look at the list again
+	// was the one place in the product where it did.
 	card.ExtraHints = nil
-	card.Return = "deny, back to the agents"
+	card.Return = "back to the agents — the decision stays waiting"
 	return card
 }
 
 // updateListAnswer routes keys to the card over the list. Either answer
-// resolves the request and returns to the list; esc/n declines, because a
-// routed request is never silently dropped.
+// resolves the request and returns to the list; [n] declines, because a
+// routed request is never silently dropped, and esc returns to the list
+// without answering.
 func (m Model) updateListAnswer(msg tea.KeyPressMsg, ask *subagent.Ask) (tea.Model, tea.Cmd) {
+	// Esc before the card reads it, because the card's own deny binds the
+	// same keystroke under the letter `n` and the two are different acts
+	// here: [n] answers the child no, esc puts the reader back on the list
+	// with the request still queued and its row still saying it needs them
+	// (docs/interface/principles.md#esc-is-always-the-safe-answer).
+	if keys.Match(msg, keys.Select.Cancel) {
+		m.answerAgent = ""
+		m.syncViewport()
+		return m, nil
+	}
 	card := m.listAnswerCard(ask)
 	// The card over the list is bounded like the card anywhere else, so it
 	// counts what the bound swallowed — and the chord it counts it behind
@@ -694,6 +740,13 @@ func (m Model) updateListAnswer(msg tea.KeyPressMsg, ask *subagent.Ask) (tea.Mod
 		// behind it — the same door the card offers anywhere else. Esc comes
 		// back here, to the list with the card still over it.
 		return m.openChildDiff(ask)
+	}
+	if result == components.ApprovalAlways {
+		// The same grant the card makes anywhere else: this is one card drawn
+		// in two places, and a key that meant a different thing depending on
+		// how the reader got to it would be two keys (subagents.go).
+		m.grantChildCommand(ask)
+		result = components.ApprovalApprove
 	}
 	approved, ok := askAnswer(result)
 	if !ok {

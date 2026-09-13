@@ -22,6 +22,7 @@
 │ ⛨         bwrap · workspace                                                                                                │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
 │ [y] run it once · [n] deny · [g] attach to writer-1 · [alt+a] agents                                                       │
+│ [a] always — not offered: a safety-flagged command is never pre-approved                                                   │
 │ [esc] don't — the safe answer; the decision waits                                                                          │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
@@ -38,6 +39,7 @@
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
 │ [y] run it once · [n] deny                                                                                                 │
 │ any other key goes to your draft                                                                                           │
+│ [a] always — not offered: a safety-flagged command is never pre-approved                                                   │
 │ [esc] don't — the safe answer; the decision waits                                                                          │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
@@ -53,6 +55,36 @@
 │ ⛨         bwrap · workspace                                                                                                │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
 │ [ctrl+space] answer it — until then you are still typing into the draft                                                    │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+· a command nothing flags · [a] grants it to every agent for the turn
+╭─ writer-1 ▸ Approve command ──────────────────────────────────────────────────────────────────────────────────── ⚠ medium ─╮
+│ $ run go test ./...                                                                                                        │
+│ ⚠ medium · what it writes could not be resolved                                                                            │
+│                                                                                                                            │
+│ lands in  the agent's worktree — an isolated checkout; your files change only when you apply its patch                     │
+│ touches   unknown — shhh cannot tell what go writes                                                                        │
+│ undo      unknown — shhh could not resolve what this writes                                                                │
+│ network   closed — the workspace profile removes it                                                                        │
+│ ⛨         bwrap · workspace                                                                                                │
+├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ [y] run it once · [n] deny · [a] allow "go test" for every agent, this turn · [g] attach to writer-1 · [alt+a] agents      │
+│ [esc] back to your draft — the decision stays waiting, nothing is denied                                                   │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+· answered in place on the manager · esc goes back, the decision stays waiting
+╭─ writer-1 ▸ Approve command ──────────────────────────────────────────────────────────────────────────────────── ⚠ medium ─╮
+│ $ run go test ./...                                                                                                        │
+│ ⚠ medium · what it writes could not be resolved                                                                            │
+│                                                                                                                            │
+│ lands in  the agent's worktree — an isolated checkout; your files change only when you apply its patch                     │
+│ touches   unknown — shhh cannot tell what go writes                                                                        │
+│ undo      unknown — shhh could not resolve what this writes                                                                │
+│ network   closed — the workspace profile removes it                                                                        │
+│ ⛨         bwrap · workspace                                                                                                │
+├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ [y] run it once · [n] deny · [a] allow "go test" for every agent, this turn                                                │
+│ [esc] back to the agents — the decision stays waiting                                                                      │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 · a writer's patch · your files, and the diff behind a counted tail
@@ -86,6 +118,7 @@
 ␛[38;5;254m│␛[m ␛[38;5;244m⛨         ␛[m␛[38;5;244mbwrap · workspace␛[m                                                                                                ␛[38;5;254m│␛[m
 ␛[38;5;254m├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mrun it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m␛[38;5;244m · ␛[m␛[38;5;254m[g]␛[m ␛[38;5;254mattach to writer-1␛[m␛[38;5;244m · ␛[m␛[38;5;254m[alt+a]␛[m ␛[38;5;254magents␛[m                                                       ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244m[a] always — not offered: a safety-flagged command is never pre-approved␛[m                                                   ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[esc] don't — the safe answer; the decision waits␛[m                                                                          ␛[38;5;254m│␛[m
 ␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
@@ -102,6 +135,7 @@
 ␛[38;5;254m├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mrun it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m                                                                                                 ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244many other key goes to your draft␛[m                                                                                           ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244m[a] always — not offered: a safety-flagged command is never pre-approved␛[m                                                   ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[esc] don't — the safe answer; the decision waits␛[m                                                                          ␛[38;5;254m│␛[m
 ␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
@@ -117,6 +151,36 @@
 ␛[38;5;254m│␛[m ␛[38;5;244m⛨         ␛[m␛[38;5;244mbwrap · workspace␛[m                                                                                                ␛[38;5;254m│␛[m
 ␛[38;5;254m├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[ctrl+space]␛[m␛[38;5;254m answer it␛[m␛[38;5;244m — until then you are still typing into the draft␛[m                                                    ␛[38;5;254m│␛[m
+␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
+
+· a command nothing flags · [a] grants it to every agent for the turn
+␛[38;5;254m╭─ ␛[m␛[1;38;5;254mwriter-1 ▸ Approve command ␛[m␛[38;5;254m──────────────────────────────────────────────────────────────────────────────────── ⚠ medium ─╮␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m$␛[m ␛[38;5;254mrun go test ./...␛[m                                                                                                        ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m⚠ medium␛[m␛[38;5;244m · what it writes could not be resolved␛[m                                                                            ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m                                                                                                                            ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244mlands in  ␛[m␛[38;5;254mthe agent's worktree␛[m␛[38;5;244m — an isolated checkout; your files change only when you apply its patch␛[m                     ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244mtouches   ␛[m␛[38;5;254munknown␛[m␛[38;5;244m — shhh cannot tell what go writes␛[m                                                                        ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244mundo      ␛[m␛[38;5;254munknown␛[m␛[38;5;244m — shhh could not resolve what this writes␛[m                                                                ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[m␛[38;5;254mclosed␛[m␛[38;5;244m — the workspace profile removes it␛[m                                                                        ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244m⛨         ␛[m␛[38;5;244mbwrap · workspace␛[m                                                                                                ␛[38;5;254m│␛[m
+␛[38;5;254m├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mrun it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m ␛[38;5;254mallow "go test" for every agent, this turn␛[m␛[38;5;244m · ␛[m␛[38;5;254m[g]␛[m ␛[38;5;254mattach to writer-1␛[m␛[38;5;244m · ␛[m␛[38;5;254m[alt+a]␛[m ␛[38;5;254magents␛[m      ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[esc] back to your draft — the decision stays waiting, nothing is denied␛[m                                                   ␛[38;5;254m│␛[m
+␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
+
+· answered in place on the manager · esc goes back, the decision stays waiting
+␛[38;5;254m╭─ ␛[m␛[1;38;5;254mwriter-1 ▸ Approve command ␛[m␛[38;5;254m──────────────────────────────────────────────────────────────────────────────────── ⚠ medium ─╮␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m$␛[m ␛[38;5;254mrun go test ./...␛[m                                                                                                        ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m⚠ medium␛[m␛[38;5;244m · what it writes could not be resolved␛[m                                                                            ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m                                                                                                                            ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244mlands in  ␛[m␛[38;5;254mthe agent's worktree␛[m␛[38;5;244m — an isolated checkout; your files change only when you apply its patch␛[m                     ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244mtouches   ␛[m␛[38;5;254munknown␛[m␛[38;5;244m — shhh cannot tell what go writes␛[m                                                                        ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244mundo      ␛[m␛[38;5;254munknown␛[m␛[38;5;244m — shhh could not resolve what this writes␛[m                                                                ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[m␛[38;5;254mclosed␛[m␛[38;5;244m — the workspace profile removes it␛[m                                                                        ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244m⛨         ␛[m␛[38;5;244mbwrap · workspace␛[m                                                                                                ␛[38;5;254m│␛[m
+␛[38;5;254m├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mrun it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m ␛[38;5;254mallow "go test" for every agent, this turn␛[m                                                ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[esc] back to the agents — the decision stays waiting␛[m                                                                      ␛[38;5;254m│␛[m
 ␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · a writer's patch · your files, and the diff behind a counted tail

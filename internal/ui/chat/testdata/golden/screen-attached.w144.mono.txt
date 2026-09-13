@@ -106,6 +106,38 @@
   ├─ ⏸ plan · running · ctx 0% ▱▱▱▱▱▱▱▱ · $0.05 of $0.51 · parent round 2/150 · reviewer-2 ──────────────────────────────────────────────────┤  
   ╰─ [esc] detach · [alt+a] agents ──────────────────────────────────────────────────────────────────────────────────────────────────────────╯  
 
+· another agent waiting · the rail says so and names the chord
+   shhh chat                                                                                                                                    
+  ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────  
+  ❯ long survey                                                                             │  THIS TURN                                step 2  
+  ────────────────────────────────────────────────────────────────────────────────────────  │  0 files this turn · 6 tools                      
+                                                                                            │                                                   
+  ▸ 1  Reading the round accounting first. ──────────────────────────────── ✓ 1 tool        │  ALERTS                               1 standing  
+                                                                                            │   ✗ go test  exit 1                               
+    The objective is where the round counter is read. The evidence is that loop.go reads    │                                                   
+    it once and round.go not at all. Next I will run the round tests.                       │  AGENTS                                2 running  
+                                                                                            │  ⊘ orchestrator                            $0.51  
+     ⚙ exec_co…go test ./internal/agent -run TestRound     1 line · approved by you         │    ready                                          
+     ⠋ read    internal/agent/round.go                                     running…         │❯ ◇ researcher-1                            $0.05  
+                                                                                            │    ⠋ running                                      
+                                                                                            │  ✗ reviewer-1                      failed  $0.05  
+                                                                                            │    cancelled                                      
+                                                                                            │  └◇ reviewer-2                             $0.05  
+                                                                                            │     ⠋ running                                     
+                                                                                            │  alt+a manager · alt+] next · click to attach     
+                                                                                            │                                                   
+                                                                                            │  CONTEXT                             32% of 128k  
+                                                                                            │  ▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱                   41k  
+                                                                                            │                                     ↑41.2k ↓9.8k  
+                                                                                            │                                                   
+                                                                                            │  SPEND                                     $0.51  
+                                                                                            │  gpt-4o · $0.51 main · $0.15 ◇                    
+                                                                                            │  session total $0.51                              
+  ╭─ ⏸ 1 waiting ────────────────────────────────────────────────────────────────────────────────── orchestrator ▸ researcher-1 · shhh chat ─╮  
+  │ researcher-1 ▸                                                                                                                           │  
+  ├─ ⏸ manual · running · ctx 9% ▰▱▱▱▱▱▱▱ · $0.05 of $0.51 · parent round 2/150 · researcher-1 ──────────────────────────────────────────────┤  
+  ╰─ ⚠ 1 other agent waiting · [alt+a] agents · [esc] detach ────────────────────────────────────────────────────────────────────────────────╯  
+
 ── ansi ────────────────────────────────────────────────────
 · the keyboard in this session · the map marks its first row
   ␛[38;5;254;1m shhh chat␛[m                                                                                                                                    
@@ -202,3 +234,35 @@
   ␛[38;5;254m│␛[m ␛[38;5;254;1mreviewer-2 ▸␛[m ␛[38;5;254m                                                                                                                           ␛[m ␛[38;5;254m│␛[m  
   ␛[38;5;254m├─␛[m ␛[38;5;254m⏸ plan␛[38;5;244m · running · ␛[38;5;254mctx 0%␛[m ␛[38;5;244m▱▱▱▱▱▱▱▱ · $0.05 of $0.51 · parent round 2/150 · reviewer-2␛[m ␛[38;5;254m──────────────────────────────────────────────────┤␛[m  
   ␛[38;5;254m╰─␛[m ␛[38;5;254m[esc]␛[38;5;244m detach · ␛[38;5;254m[alt+a]␛[38;5;244m agents␛[m ␛[38;5;254m──────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m  
+
+· another agent waiting · the rail says so and names the chord
+  ␛[38;5;254;1m shhh chat␛[m                                                                                                                                    
+  ␛[38;5;244m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m  
+  ␛[38;5;254m❯␛[m long survey                                                                             ␛[38;5;244m│␛[m  ␛[38;5;254;1mTHIS TURN␛[m                                ␛[38;5;244mstep 2␛[m  
+  ␛[38;5;244m────────────────────────────────────────────────────────────────────────────────────────␛[m  ␛[38;5;244m│␛[m  ␛[38;5;244m0 files this turn · 6 tools␛[m                      
+                                                                                            ␛[38;5;244m│␛[m                                                   
+  ␛[38;5;244m▸␛[m ␛[38;5;254m1 ␛[m ␛[38;5;254mReading the round accounting first.␛[m ␛[38;5;244m────────────────────────────────␛[m ␛[38;5;254m✓␛[m ␛[38;5;244m1 tool␛[m        ␛[38;5;244m│␛[m  ␛[38;5;254;1mALERTS␛[m                               ␛[38;5;254m1 standing␛[m  
+                                                                                            ␛[38;5;244m│␛[m   ␛[38;5;254m✗␛[m ␛[38;5;254mgo test␛[m  ␛[38;5;244mexit 1␛[m                               
+    ␛[38;5;244;3mThe objective is where the round counter is read. The evidence is that loop.go reads␛[m    ␛[38;5;244m│␛[m                                                   
+    ␛[38;5;244;3mit once and round.go not at all. Next I will run the round tests.␛[m                       ␛[38;5;244m│␛[m  ␛[38;5;254;1mAGENTS␛[m                                ␛[38;5;254m2 running␛[m  
+                                                                                            ␛[38;5;244m│␛[m  ␛[38;5;244m⊘␛[m ␛[38;5;254morchestrator␛[m                            ␛[38;5;244m$0.51␛[m  
+     ␛[38;5;254m⚙␛[m ␛[38;5;254mexec_co…go test ./internal/agent -run TestRound␛[m     ␛[38;5;244m1 line · ␛[38;5;254mapproved␛[38;5;244m by you␛[m         ␛[38;5;244m│␛[m    ␛[38;5;244mready␛[m                                          
+     ␛[38;5;254m⠋␛[m ␛[38;5;254mread␛[m    ␛[38;5;254minternal/agent/round.go␛[m                                     ␛[38;5;254mrunning…␛[m         ␛[38;5;244m│␛[38;5;254m❯␛[m ␛[38;5;254;48;5;237m◇␛[39m ␛[38;5;254mresearcher-1                            $0.05␛[m  
+                                                                                            ␛[38;5;244m│␛[m    ␛[38;5;254m⠋ running␛[m                                      
+                                                                                            ␛[38;5;244m│␛[m  ␛[38;5;254m✗␛[m ␛[38;5;254mreviewer-1␛[m                      ␛[38;5;254mfailed␛[m  ␛[38;5;244m$0.05␛[m  
+                                                                                            ␛[38;5;244m│␛[m    ␛[38;5;244mcancelled␛[m                                      
+                                                                                            ␛[38;5;244m│␛[m  ␛[38;5;244m└␛[38;5;254m◇␛[m ␛[38;5;254mreviewer-2␛[m                             ␛[38;5;244m$0.05␛[m  
+                                                                                            ␛[38;5;244m│␛[m     ␛[38;5;254m⠋ running␛[m                                     
+                                                                                            ␛[38;5;244m│␛[m  ␛[38;5;244malt+a manager · alt+] next · click to attach␛[m     
+                                                                                            ␛[38;5;244m│␛[m                                                   
+                                                                                            ␛[38;5;244m│␛[m  ␛[38;5;254;1mCONTEXT␛[m                             ␛[38;5;254m32% of 128k␛[m  
+                                                                                            ␛[38;5;244m│␛[m  ␛[38;5;254m▰▰▰▰▰▰▰▰␛[38;5;244m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m                   ␛[38;5;254m41k␛[m  
+                                                                                            ␛[38;5;244m│␛[m                                     ␛[38;5;244m↑41.2k ↓9.8k␛[m  
+                                                                                            ␛[38;5;244m│␛[m                                                   
+                                                                                            ␛[38;5;244m│␛[m  ␛[38;5;254;1mSPEND␛[m                                     ␛[38;5;254m$0.51␛[m  
+                                                                                            ␛[38;5;244m│␛[m  ␛[38;5;244mgpt-4o · $0.51 main · $0.15 ◇␛[m                    
+                                                                                            ␛[38;5;244m│␛[m  ␛[38;5;244msession total $0.51␛[m                              
+  ␛[38;5;254m╭─␛[m ␛[38;5;254;1m⏸ 1 waiting␛[m ␛[38;5;254m──────────────────────────────────────────────────────────────────────────────────␛[m ␛[38;5;244morchestrator␛[38;5;254m ▸ researcher-1␛[38;5;244m · shhh chat␛[m ␛[38;5;254m─╮␛[m  
+  ␛[38;5;254m│␛[m ␛[38;5;254;1mresearcher-1 ▸␛[m ␛[38;5;254m                                                                                                                         ␛[m ␛[38;5;254m│␛[m  
+  ␛[38;5;254m├─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · running · ␛[38;5;254mctx 9%␛[m ␛[38;5;254m▰␛[38;5;244m▱▱▱▱▱▱▱ · $0.05 of $0.51 · parent round 2/150 · researcher-1␛[m ␛[38;5;254m──────────────────────────────────────────────┤␛[m  
+  ␛[38;5;254m╰─␛[m ␛[38;5;254;1m⚠ 1 other agent waiting␛[38;5;244;22m · ␛[38;5;254m[alt+a]␛[38;5;244m agents · ␛[38;5;254m[esc]␛[38;5;244m detach␛[m ␛[38;5;254m────────────────────────────────────────────────────────────────────────────────╯␛[m  
