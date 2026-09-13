@@ -416,6 +416,47 @@ func TestGolden_PromptFrame(t *testing.T) {
 	})
 }
 
+// TestGolden_ModeWord captures the frame in every permission mode, one panel
+// each, because the mode segment is one field read before every keystroke and
+// the thing to check is the five of them side by side: five distinct words,
+// the mark in front of each carrying the class, and `auto` on no panel but
+// auto's (docs/interface/surfaces.md#the-input-frame). The last panel is what
+// the segment says instead while the classifier is deciding, which is the one
+// state where the mode is not the answer.
+func TestGolden_ModeWord(t *testing.T) {
+	captureGolden(t, "mode-word", "the mode segment in every mode", goldenWidths, func(width int) []golden.Panel {
+		var panels []golden.Panel
+		for _, mode := range agent.DefaultCycle() {
+			m := goldenModel(t, width).WithApprovalMode(mode, nil)
+			m.invalidateRenderCache()
+			panels = append(panels, golden.Panel{Label: "mode · " + mode.String(), View: promptSurface(m)})
+		}
+		checking := goldenModel(t, width)
+		checking.state = stateClassifying
+		checking.invalidateRenderCache()
+		return append(panels, golden.Panel{Label: "the classifier is deciding", View: promptSurface(checking)})
+	})
+}
+
+// TestGolden_ModePicker captures the picker bare /permissions opens: one row
+// per mode of the session's cycle, each with the one sentence that says what
+// it will and will not stop for, focused on the mode the session is in. It is
+// the surface where the names are chosen, and the rail's words are the same
+// words.
+func TestGolden_ModePicker(t *testing.T) {
+	captureGolden(t, "mode-picker", "the permission-mode picker", goldenWidths, func(width int) []golden.Panel {
+		open := func(mode agent.Mode) string {
+			m := frameModel(t, width, 40).WithApprovalMode(mode, nil)
+			opened, _ := m.openModePick()
+			return strings.Join(opened.(Model).pickerLines(), "\n")
+		}
+		return []golden.Panel{
+			{Label: "the five, focused on the mode the session is in", View: open(agent.ModeManual)},
+			{Label: "focused on read-only, the mode that is only a bound", View: open(agent.ModeReadOnly)},
+		}
+	})
+}
+
 // tallScreenHeight is the terminal the height fixture is taken on: tall
 // enough that a bottom panel reading the terminal rather than its own
 // content would be unmissable, and a round number so the panels can be
@@ -2521,6 +2562,15 @@ func TestGolden_NewSessionRow(t *testing.T) {
 				View: rows(boundary, kept)},
 			{Label: "a conversation that was never written down",
 				View: rows(entry{kind: entrySystem, notice: newSessionRow("", "")})},
+			// A plan taken over the boundary is a second row under the
+			// first, and it is a row for the same reason: what came over is
+			// the subject and how much of it is the outcome.
+			{Label: "with an approved plan carried over",
+				View: rows(boundary, entry{kind: entrySystem, notice: carriedPlanRow(plan.Record{
+					Title: "make the round limit recoverable",
+					Steps: []plan.RecordStep{{Number: 1, Title: "Locate the round accounting"},
+						{Number: 2, Title: "Return a sentinel when the rounds run out"}},
+				})})},
 		}
 	})
 }

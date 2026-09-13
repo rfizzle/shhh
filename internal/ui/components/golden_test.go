@@ -1508,6 +1508,7 @@ func TestGolden_PlanCard(t *testing.T) {
 				},
 				HintKeys: []KeyOffer{{Key: "[↑↓/jk]", Label: "move"}, {Key: "[enter]", Label: "select"},
 					{Key: "[1–5]", Label: "jump"}, {Key: "[s]", Label: "save"},
+					keyOfferAs(keys.Wait.NewSession, NewSessionCarryPlan()),
 					keyOfferAs(keys.Select.Cancel, "keep planning")},
 			}
 			mut(&c)

@@ -505,6 +505,23 @@ var migrations = []string{
 	// written before this column ran under a total nobody recorded, and a
 	// zero would read as a child that took nothing in.
 	`ALTER TABLE agent_sessions ADD COLUMN child_tokens_fresh INTEGER;`,
+
+	// An approved plan, kept so a fresh session can be opened holding it. It
+	// is a table of its own for the reason child_handoffs is: the content is
+	// a person's own words about their own work, and the observability rows
+	// beside it stay safe to aggregate and export.
+	//
+	// The chat slot is a name and not a foreign key, because the record is
+	// the thing that outlives the conversation — the whole point of it is a
+	// session started after that one is gone, and a cascade would delete the
+	// plan with the transcript it was made to replace.
+	`CREATE TABLE IF NOT EXISTS plan_records (
+		handle TEXT PRIMARY KEY,
+		chat_session TEXT NOT NULL DEFAULT '',
+		content BLOB NOT NULL,
+		created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+	);
+	CREATE INDEX IF NOT EXISTS idx_plan_records_session ON plan_records(chat_session);`,
 }
 
 const (

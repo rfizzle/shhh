@@ -19,6 +19,9 @@ func TestParseMode(t *testing.T) {
 		{" accept-edits ", ModeAcceptEdits},
 		{"accept_edits", ModeAcceptEdits},
 		{"auto", ModeAuto},
+		{"read-only", ModeReadOnly},
+		{"read_only", ModeReadOnly},
+		{"Read Only", ModeReadOnly},
 		{"plan", ModePlan},
 	}
 	for _, c := range cases {
@@ -38,29 +41,47 @@ func TestParseMode(t *testing.T) {
 	}
 }
 
-// The class is a closed list of three and every mode is in it. Where a class
-// carries the name of a mode, that mode is in the class: a word that named
-// one state on the frame and a different one in the config file is the trap
-// a second vocabulary sets.
-func TestModeClass(t *testing.T) {
-	classes := map[Mode]string{
-		ModeManual:      "gated",
-		ModeAcceptEdits: "auto",
-		ModeAuto:        "auto",
-		ModePlan:        "read-only",
+// Five modes, five names, five sentences, and the cycle walks them in one
+// direction. The name is the whole of the vocabulary now — the frame's mark
+// carries the class — so two modes under one word would be two states behind
+// one name on the segment read before every keystroke.
+func TestModeNamesAreFiveDistinctWords(t *testing.T) {
+	cycle := DefaultCycle()
+	want := []string{"manual", "accept-edits", "auto", "read-only", "plan"}
+	if len(cycle) != len(want) {
+		t.Fatalf("DefaultCycle has %d modes, want %d", len(cycle), len(want))
 	}
+	// Word is what every surface that draws a mode spells it with. It is
+	// String but for the one name a row has the space to write as the two
+	// words it is; read-only's hyphen stays, because split it says something
+	// else.
+	words := []string{"manual", "accept edits", "auto", "read-only", "plan"}
+	seen := map[string]Mode{}
+	for i, m := range cycle {
+		if m.String() != want[i] {
+			t.Errorf("cycle position %d is %q, want %q", i, m.String(), want[i])
+		}
+		if m.Word() != words[i] {
+			t.Errorf("%v.Word() = %q, want %q", m, m.Word(), words[i])
+		}
+		if strings.TrimSpace(m.Describe()) == "" {
+			t.Errorf("%v has no one-line description; the picker would list it blank", m)
+		}
+		if other, dup := seen[m.String()]; dup {
+			t.Errorf("%v and %v are both called %q", other, m, m.String())
+		}
+		seen[m.String()] = m
+	}
+}
+
+// Read-only and plan are two modes and one policy, and ReadOnly is the
+// question every reader asks. A surface that tested for plan mode alone would
+// let a write through in the mode whose whole content is that it does not.
+func TestModeReadOnly(t *testing.T) {
 	for _, m := range DefaultCycle() {
-		want, ok := classes[m]
-		if !ok {
-			t.Fatalf("%v has no class; the frame has no word for it", m)
-		}
-		if got := m.Class(); got != want {
-			t.Errorf("%v.Class() = %q, want %q", m, got, want)
-		}
-		for _, other := range DefaultCycle() {
-			if other.String() == m.Class() && other.Class() != m.Class() {
-				t.Errorf("%v's class is %v's own name, and %v is not in it", m, other, other)
-			}
+		want := m == ModeReadOnly || m == ModePlan
+		if got := m.ReadOnly(); got != want {
+			t.Errorf("%v.ReadOnly() = %v, want %v", m, got, want)
 		}
 	}
 }
@@ -81,6 +102,12 @@ func TestParseCycle(t *testing.T) {
 func TestNextMode(t *testing.T) {
 	if got := NextMode(nil, ModeManual); got != ModeAcceptEdits {
 		t.Errorf("default cycle after manual = %v, want accept-edits", got)
+	}
+	if got := NextMode(nil, ModeAuto); got != ModeReadOnly {
+		t.Errorf("default cycle after auto = %v, want read-only", got)
+	}
+	if got := NextMode(nil, ModeReadOnly); got != ModePlan {
+		t.Errorf("default cycle after read-only = %v, want plan", got)
 	}
 	if got := NextMode(nil, ModePlan); got != ModeManual {
 		t.Errorf("default cycle should wrap plan → manual, got %v", got)
@@ -129,6 +156,15 @@ func TestModePolicy_Decide(t *testing.T) {
 		{"plan denies other tools", ModePolicy{Mode: ModePlan}, other, Deny, "plan mode"},
 		{"plan allows inspection commands", ModePolicy{Mode: ModePlan}, Action{Kind: ActionCommand, Command: "git status"}, Allow, "plan mode inspection"},
 		{"plan denies flagged inspection commands", ModePolicy{Mode: ModePlan}, Action{Kind: ActionCommand, Command: "git diff", SafetyFlagged: true}, Deny, "plan mode"},
+		// Read-only is plan's policy under its own name, and the reason says
+		// which mode answered: the refusal the model reads and the code the
+		// record keeps are both taken off this string.
+		{"read-only denies edits", ModePolicy{Mode: ModeReadOnly, AllowEdits: true}, edit, Deny, "read-only mode"},
+		{"read-only denies commands", ModePolicy{Mode: ModeReadOnly, AllowCommands: true, CommandAllowlist: []string{"go test"}}, cmd, Deny, "read-only mode"},
+		{"read-only denies flagged commands", ModePolicy{Mode: ModeReadOnly}, flagged, Deny, "read-only mode"},
+		{"read-only denies other tools", ModePolicy{Mode: ModeReadOnly}, other, Deny, "read-only mode"},
+		{"read-only allows inspection commands", ModePolicy{Mode: ModeReadOnly}, Action{Kind: ActionCommand, Command: "git status"}, Allow, "read-only mode inspection"},
+		{"read-only denies flagged inspection commands", ModePolicy{Mode: ModeReadOnly}, Action{Kind: ActionCommand, Command: "git diff", SafetyFlagged: true}, Deny, "read-only mode"},
 	}
 	for _, c := range cases {
 		got, reason := c.policy.Decide(c.action)
@@ -164,6 +200,25 @@ func TestPlanInspectionAllowed(t *testing.T) {
 	}
 }
 
+// The two read-only modes want different next rounds out of the model, so
+// they refuse in different words: plan mode's refusal sends it to a plan, and
+// read-only mode has no plan to send it to.
+func TestModeRefusedResult(t *testing.T) {
+	planned := ModeRefusedResult(ModePlan.String() + " mode")
+	readOnly := ModeRefusedResult(ModeReadOnly.String() + " mode")
+	if planned != PlanModeResult || readOnly != ReadOnlyModeResult {
+		t.Fatalf("the refusals are crossed: plan = %q, read-only = %q", planned, readOnly)
+	}
+	if strings.Contains(readOnly, "plan") {
+		t.Errorf("read-only's refusal asks for a plan: %q", readOnly)
+	}
+	// An unrecognised reason still carries a refusal the model can read: a
+	// call refused with an empty result is a call it retries.
+	if ModeRefusedResult("") != PlanModeResult {
+		t.Error("an unknown reason should fall back to a refusal, not to nothing")
+	}
+}
+
 func TestClampMode(t *testing.T) {
 	cases := []struct {
 		mode, ceiling, want Mode
@@ -176,6 +231,13 @@ func TestClampMode(t *testing.T) {
 		{ModeManual, ModeAcceptEdits, ModeManual},
 		{ModePlan, ModeAuto, ModePlan},
 		{ModeManual, ModePlan, ModePlan},
+		{ModeAuto, ModeReadOnly, ModeReadOnly},
+		{ModeManual, ModeReadOnly, ModeReadOnly},
+		// Read-only and plan allow the same calls, so neither clamps the
+		// other: a clamp that moved a child off plan mode would take the
+		// planning away and let through nothing less than before.
+		{ModePlan, ModeReadOnly, ModePlan},
+		{ModeReadOnly, ModePlan, ModeReadOnly},
 	}
 	for _, c := range cases {
 		if got := ClampMode(c.mode, c.ceiling); got != c.want {

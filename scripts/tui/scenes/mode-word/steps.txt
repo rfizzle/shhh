@@ -1,45 +1,64 @@
 # The permission mode is the one field on the frame that is read before every
-# keystroke, so it is written in one closed vocabulary: the class the mark
-# already means, and the mode's own name after it only where the class covers
-# more than one mode (docs/interface/surfaces.md#the-input-frame).
+# keystroke, so it is written in one closed vocabulary: the mode's own name,
+# under the mark that carries its class
+# (docs/interface/surfaces.md#the-input-frame).
 #
 # What the capture is for: the cycle key walked all the way round, one snap
-# per mode, so the marks and the words are read against each other rather than
-# one at a time — ⏵⏵ in add where work goes through, ⏸ in accent where
-# something is gated, and never two words for one state. The child's frame at
-# the end says the same thing about the agent the keyboard moved into.
+# per mode, so the five words and the marks are read against each other rather
+# than one at a time — ⏵⏵ in add where work goes through, ⏸ in accent where
+# nothing does, `auto` on no rail but auto's, and never one word for two
+# states. The child's frame at the end says the same thing about the agent the
+# keyboard moved into.
 #
 # The turn comes first so the segment is read where it is really read: in
 # front of the counters, on a frame that has something to report.
 setup printf 'package agent\n\nfunc loop() {\n    for round := 0; round < limit; round++ {\n        step()\n    }\n}\n' > loop.go
 snap 01-start "Some things worth doing first"
 keys "where is the round counter read" Enter
-snap 02-gated "⏸ gated · ctx"
+snap 02-manual "⏸ manual · ctx"
 keys BTab
-snap 03-accept-edits "⏵⏵ auto · accept edits"
+snap 03-accept-edits "⏵⏵ accept edits"
 keys BTab
 snap 04-auto "⏵⏵ auto · ctx"
 keys BTab
 snap 05-read-only "⏸ read-only"
 keys BTab
-snap 06-gated-again "⏸ gated · ctx"
+snap 06-plan "⏸ plan · ctx"
+# Plan mode is read-only plus an artifact, and this is the artifact: the turn
+# ends on the card, and the card's own key row is where the plan can leave the
+# conversation that produced it.
+keys "plan the round counter change" Enter
+snap 07-plan-card "Plan · make the round limit recoverable"
+# The card landed while the draft still had the keyboard, so it draws its
+# handover chord and none of its own keys: the handover is what makes [n] a
+# key at all.
+keys C-Space
+snap 08-card-live "[n] new session, carry the plan"
+keys n
+# The boundary's own row names the slot the conversation was left in, and the
+# row under it says the plan came over. What the new session is holding is the
+# plan and nothing else — the research that produced it stayed behind, which
+# is the whole reason for the key.
+snap 09-carried "carried · 2 steps"
+keys BTab
+snap 10-back-to-manual "⏸ manual · think"
 # The child's rail carries the mode for the same reason the parent's does, and
 # a child is never more permissive than the session that spawned it — which is
-# the gated word again, on a frame the keyboard has moved into. The command
+# the manual word again, on a frame the keyboard has moved into. The command
 # rather than the chord is the door in, because it is the one both terminals
 # under this harness deliver.
 keys "put a reader on it" Enter
-snap 07-spawn-card "researcher agent"
+snap 11-spawn-card "researcher agent"
 sleep 1
 keys y
-snap 08-spawned "reader-1"
+snap 12-spawned "reader-1"
 sleep 2
 keys "/attach reader-1" Enter
-snap 09-attached "[esc] detach"
+snap 13-attached "[esc] detach"
 sleep 1
 keys Escape
-snap 10-detached "[enter] send"
+snap 14-detached "[enter] send"
 keys C-c
-snap 11-quit-armed "again quits"
+snap 15-quit-armed "again quits"
 keys C-c
-snap 12-exit "that is everything the screen was holding"
+snap 16-exit "that is everything the screen was holding"

@@ -767,6 +767,35 @@ planning response that never adopted the step shape moves nothing: the prose is
 already in the conversation as the model wrote it, and quoting it back as the
 instruction would put the model's own words where the person's belong.
 
+## An approved plan is an artifact
+
+A plan-mode turn ends on something that outlives the conversation. When the
+plan is approved the session writes it down as a record: the instruction that
+asked for it, the files the steps name, the steps themselves, and the handles
+of any evidence the research kept. No raw tool output goes in — a record made
+of what a command printed is the transcript again, and the transcript is the
+thing being left behind.
+
+Left behind, because the other thing the card offers is a fresh session that
+carries it. Research is expensive in a way the plan is not: reaching a plan
+costs a window full of files read, commands run and paths that turned out to
+be wrong, and carrying all of that into the execution is paying for the search
+twice, on every request, for the rest of the work. So the plan card offers the
+same session boundary the context-pressure card does — a new conversation in
+its own slot, this one saved — and the new conversation opens holding the
+record and nothing else. What the model is given is what the person approved,
+which is the whole of what the research was for.
+
+The mode does not move. Every other answer on the card names the mode it
+enters, because approving a plan is never an unstated mode change; carrying it
+into a new session names none, so the new session is in the mode the old one
+was and the person chooses how it runs from there.
+
+Approving into this session is still the ordinary answer, and it is the right
+one whenever the execution needs what the research saw — the file that was
+read and not named in a step, the failure a command printed. The record is
+what a plan is worth once that is no longer true.
+
 ## The interval is the last thing watching
 
 The check-in fires on a clock, and how long that clock should be depends

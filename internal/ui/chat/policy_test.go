@@ -470,6 +470,73 @@ func TestMode_PlanRefusesGatedCalls(t *testing.T) {
 	}
 }
 
+// Read-only mode is plan mode's policy and its own refusal. The edit is
+// refused rather than asked about, the row says which mode answered, and the
+// sentence the model reads sends it back with an answer instead of asking it
+// for a plan there is nothing here to approve.
+func TestMode_ReadOnlyRefusesAnEditInItsOwnWords(t *testing.T) {
+	var ran []string
+	m := execModel(t, &ran)
+	m.policy.mode = agent.ModeReadOnly
+	m.policy.allEdits = true
+	path := filepath.Join(t.TempDir(), "a.txt")
+
+	updated, restream := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+		{ID: "call_w", Name: "write_file", Arguments: fmt.Sprintf(`{"path":%q,"content":"one\n"}`, path)},
+	}})
+	m = updated.(Model)
+
+	if _, err := os.Stat(path); err == nil {
+		t.Fatal("read-only mode must not write files")
+	}
+	msgs := m.Messages()
+	last := msgs[len(msgs)-1]
+	if last.Role != provider.RoleTool || last.Content != agent.ReadOnlyModeResult {
+		t.Fatalf("the refusal should be read-only mode's own, got %+v", last)
+	}
+	if strings.Contains(last.Content, "plan") {
+		t.Errorf("read-only mode has no plan to ask for: %q", last.Content)
+	}
+	found := false
+	for _, e := range m.transcript {
+		if e.kind == entryTool && e.deniedBy == decidedByAuto && e.denyRule == "read-only mode" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatal("the row should name read-only mode as the rule that answered")
+	}
+	resized, _ := m.Update(tea.WindowSizeMsg{Width: 130, Height: 40})
+	wide := resized.(Model)
+	view := stripANSI(wide.renderHistory())
+	if !strings.Contains(view, components.OutcomeBlocked+" · read-only mode") {
+		t.Fatalf("the refusal names the rule on its row:\n%s", view)
+	}
+	if m.state != stateStreaming || restream == nil {
+		t.Fatal("the loop should resume so the model sees the refusal")
+	}
+}
+
+// An inspection command runs in read-only mode exactly as it does in plan
+// mode: reading is the whole of what the mode is for.
+func TestMode_ReadOnlyRunsInspectionCommands(t *testing.T) {
+	var ran []string
+	m := execModel(t, &ran)
+	m.policy.mode = agent.ModeReadOnly
+
+	updated, cmd := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+		{ID: "call_c", Name: "execute_command", Arguments: `{"command":"git status"}`},
+	}})
+	m = updated.(Model)
+	if m.state != stateRunningCmd {
+		t.Fatalf("an inspection command should run without a prompt, got state %d", m.state)
+	}
+	m.Update(driveCmdDone(t, cmd))
+	if len(ran) != 1 || ran[0] != "git status" {
+		t.Fatalf("expected the inspection command to run, got %v", ran)
+	}
+}
+
 func TestMode_ReadOnlyToolsBypassApprovalInPlanMode(t *testing.T) {
 	m := gatedModel(t, nil, nil)
 	m.policy.mode = agent.ModePlan
@@ -503,7 +570,7 @@ func TestMode_ShiftTabCyclesAndStatusBarShowsMode(t *testing.T) {
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
 
-	if !strings.Contains(m.renderStatusBar(80), "⏸ gated") {
+	if !strings.Contains(m.renderStatusBar(80), "⏸ manual") {
 		t.Fatalf("status bar should show the default gated mode, got %q", m.renderStatusBar(80))
 	}
 
@@ -512,7 +579,7 @@ func TestMode_ShiftTabCyclesAndStatusBarShowsMode(t *testing.T) {
 	if m.policy.mode != agent.ModeAcceptEdits {
 		t.Fatalf("shift+tab should cycle manual → accept-edits, got %v", m.policy.mode)
 	}
-	if !strings.Contains(m.renderStatusBar(80), "⏵⏵ auto · accept edits") {
+	if !strings.Contains(m.renderStatusBar(80), "⏵⏵ accept edits") {
 		t.Fatalf("status bar should show the permissive mode, got %q", m.renderStatusBar(80))
 	}
 
@@ -530,24 +597,25 @@ func TestMode_ShiftTabCyclesAndStatusBarShowsMode(t *testing.T) {
 	}
 }
 
-// TestMode_TheSegmentStatesThePermissionClass pins the one vocabulary the
-// mode segment is written in — three class words for four modes — and the
-// rule for the second word: it stands only where the class covers more than
-// one mode, so that no state is ever named twice on the one rail read before
-// every keystroke. The attached child's segment is checked with it, because a
+// TestMode_TheSegmentNamesTheMode pins the one vocabulary the mode segment is
+// written in: the mode's own word, under the mark that carries its class.
+// Five modes and five words, and `auto` on no rail but auto's — a word for
+// the class would be the mark said twice, and it is what cost two of the five
+// their names. The attached child's segment is checked with it, because a
 // child's mode is read for the same reason and must not answer differently.
-func TestMode_TheSegmentStatesThePermissionClass(t *testing.T) {
+func TestMode_TheSegmentNamesTheMode(t *testing.T) {
 	for _, tc := range []struct {
 		mode agent.Mode
 		want string
-		// gone is the mode's own name, which the segment states only where
-		// the class alone would not say which mode it is.
+		// gone is a word no rail in this mode may carry: another mode's name,
+		// or the class word the mark already means.
 		gone string
 	}{
-		{agent.ModeManual, "⏸ gated", "manual"},
-		{agent.ModeAcceptEdits, "⏵⏵ auto · accept edits", ""},
-		{agent.ModeAuto, "⏵⏵ auto", ""},
-		{agent.ModePlan, "⏸ read-only", "plan"},
+		{agent.ModeManual, "⏸ manual", "auto"},
+		{agent.ModeAcceptEdits, "⏵⏵ accept edits", "auto"},
+		{agent.ModeAuto, "⏵⏵ auto", "gated"},
+		{agent.ModeReadOnly, "⏸ read-only", "plan"},
+		{agent.ModePlan, "⏸ plan", "read-only"},
 	} {
 		t.Run(tc.mode.String(), func(t *testing.T) {
 			m := gatedModel(t, nil, nil).WithApprovalMode(tc.mode, nil)
@@ -555,8 +623,8 @@ func TestMode_TheSegmentStatesThePermissionClass(t *testing.T) {
 			if !strings.Contains(bar, tc.want) {
 				t.Fatalf("the rail should state %q, got %q", tc.want, bar)
 			}
-			if tc.gone != "" && strings.Contains(bar, tc.gone) {
-				t.Fatalf("%q is the class's own state under another name and should not be on the rail: %q", tc.gone, bar)
+			if tc.gone != "" && strings.Contains(stripANSI(bar), tc.gone) {
+				t.Fatalf("%q is not this mode and should not be on its rail: %q", tc.gone, bar)
 			}
 			if child := childModeSegment(tc.mode); !strings.Contains(child, tc.want) {
 				t.Fatalf("an attached child's segment should state %q, got %q", tc.want, child)
@@ -569,7 +637,7 @@ func TestMode_SlashModeShowsAndSets(t *testing.T) {
 	m := gatedModel(t, nil, nil)
 
 	_, status := m.handleSlashCommand("/mode")
-	if !strings.Contains(status, "Mode: manual") || !strings.Contains(status, "manual → accept-edits → auto → plan") {
+	if !strings.Contains(status, "Mode: manual") || !strings.Contains(status, "manual → accept-edits → auto → read-only → plan") {
 		t.Fatalf("/mode should show the current mode and cycle, got %q", status)
 	}
 

@@ -165,10 +165,11 @@ func (r *Recorder) PreviewMutation(name string, raw json.RawMessage) (Mutation, 
 
 // The two descriptions below say a change is gated and leave the rest to the
 // permission mode, because promising that the user sees a diff and answers for
-// it is true in one of the four modes: --yes, accept-edits and auto each apply
-// writes without asking, and a model told otherwise plans around a pause that
-// never comes and reports its own edits as pending.
-// See docs/capabilities/approvals-and-safety.md#the-four-modes.
+// it is true in one of the five modes: --yes, accept-edits and auto each apply
+// writes without asking, read-only and plan refuse the write outright, and a
+// model told otherwise plans around a pause that never comes and reports its
+// own edits as pending.
+// See docs/capabilities/approvals-and-safety.md#the-five-modes.
 var writeFile = Definition{
 	Tool: provider.Tool{
 		Name: WriteFileName,

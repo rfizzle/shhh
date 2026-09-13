@@ -147,11 +147,11 @@ Explanation, review, planning, brainstorming, and analysis-only requests are exc
 //
 // Nor may it say what the permission mode says. The approval sentence used to
 // promise that a gated call is shown to the user and waits for their answer,
-// which is true in one of the four modes: --yes, accept-edits and auto each
-// run some or all of them without asking, and a model told otherwise treats
-// its own edits as pending somebody's approval and stops to report instead of
-// carrying on. The sentence names the mode as the thing that decides and
-// leaves the decision to it.
+// which is true in one of the five modes: --yes, accept-edits and auto each
+// run some or all of them without asking, read-only and plan refuse them, and
+// a model told otherwise treats its own edits as pending somebody's approval
+// and stops to report instead of carrying on. The sentence names the mode as
+// the thing that decides and leaves the decision to it.
 //
 // It also no longer asks the model to respect a decline and not retry the
 // same call. Each gated tool's own description says what a declined call
@@ -346,6 +346,19 @@ Your last message IS the deliverable. Report what you changed (files and why), h
 	}
 	return base
 }
+
+// ReadOnlyModeInstructions is appended to the system prompt while the session
+// is in read-only mode. It says what the mode is and stops: the mode has no
+// product of its own, so an instruction about what to produce instead would be
+// this file deciding what the person's question was.
+//
+// It exists because the alternative is the model learning the bound one
+// refused call at a time — a round spent on an edit that was never going to
+// apply, then another, for as long as the turn has rounds.
+const ReadOnlyModeInstructions = `# Read-only mode
+You are in read-only mode: nothing you do can change the workspace.
+- Read, search and the read-only inspection commands (e.g. git status, git diff, ls) work as usual. File edits and every other command are refused and no approval can run one.
+- Answer in words. Do not make a call you know will be refused, and do not wait for a permission this mode has no way to give.`
 
 // PlanModeInstructions is appended to the system prompt while the session is
 // in plan mode: research read-only, present a plan, and wait for the

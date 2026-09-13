@@ -24,6 +24,11 @@
      session                                                started
 
 
+· with an approved plan carried over
+     session 2026-09-04 11:20:07       saved · shhh code --continue
+     plan    make the round limit recoverable     carried · 2 steps
+
+
 ── ansi ────────────────────────────────────────────────────
 · the slot left behind, and the command that reopens it
      ␛[38;5;241msession␛[m ␛[38;5;241m2026-09-04 11:20:07␛[m       ␛[38;5;241msaved · shhh code --continue␛[m
@@ -37,4 +42,9 @@
 
 · a conversation that was never written down
      ␛[38;5;241msession␛[m                                                ␛[38;5;241mstarted␛[m
+
+
+· with an approved plan carried over
+     ␛[38;5;241msession␛[m ␛[38;5;241m2026-09-04 11:20:07␛[m       ␛[38;5;241msaved · shhh code --continue␛[m
+     ␛[38;5;241mplan␛[m    ␛[38;5;241mmake the round limit recoverable␛[m     ␛[38;5;241mcarried · 2 steps␛[m
 

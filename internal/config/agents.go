@@ -48,7 +48,7 @@ type AgentDefinition struct {
 	// permissions. Empty means every tool the permissions allow.
 	Tools []string `toml:"tools"`
 	// Mode is the permission mode the agent starts in ("manual",
-	// "accept-edits", "auto", "plan"); empty inherits the parent's. It is
+	// "accept-edits", "auto", "read-only", "plan"); empty inherits the parent's. It is
 	// clamped to the parent's mode either way — a profile can make a child
 	// stricter than its parent, never looser.
 	Mode string `toml:"mode"`

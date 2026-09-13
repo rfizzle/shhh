@@ -555,11 +555,11 @@ type BehaviorConfig struct {
 	// the scope and contained commands can write there.
 	ScopeDirs []string `toml:"scope_dirs"`
 	// DefaultMode is the permission mode agent sessions start in: "manual",
-	// "accept-edits", "auto", or "plan". Empty means manual (everything
+	// "accept-edits", "auto", "read-only" or "plan". Empty means manual (everything
 	// prompts).
 	DefaultMode string `toml:"default_mode"`
 	// ModeCycle overrides the Shift+Tab mode order (same names as
-	// DefaultMode). Empty means manual → accept-edits → auto → plan.
+	// DefaultMode). Empty means manual → accept-edits → auto → read-only → plan.
 	ModeCycle []string `toml:"mode_cycle"`
 	// ClassifierModel is the model auto mode's permission classifier uses.
 	// Empty means the provider's own small model, and the session model

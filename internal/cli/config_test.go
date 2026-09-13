@@ -67,22 +67,25 @@ func TestConfigRows_UnsetRowsShowTheirDefault(t *testing.T) {
 }
 
 // The mode glyph carries the distinction the colour also carries: `⏵⏵` for
-// the two modes that let work through, `⏸` for the two that gate it.
+// the two modes that let work through, `⏸` for the three that do not — and
+// the word beside it is the one the frame's own segment draws, because a mode
+// written one way here and another there is two names for one setting.
 func TestConfigRows_ModeGlyphMatchesTheCockpit(t *testing.T) {
 	for _, tc := range []struct {
-		mode, glyph string
-		tone        components.FieldTone
+		mode, glyph, word string
+		tone              components.FieldTone
 	}{
-		{"auto", "⏵⏵", components.ToneSafe},
-		{"accept-edits", "⏵⏵", components.ToneSafe},
-		{"manual", "⏸", components.ToneOpen},
-		{"plan", "⏸", components.ToneOpen},
+		{"auto", "⏵⏵", "auto", components.ToneSafe},
+		{"accept-edits", "⏵⏵", "accept edits", components.ToneSafe},
+		{"manual", "⏸", "manual", components.ToneOpen},
+		{"read-only", "⏸", "read-only", components.ToneOpen},
+		{"plan", "⏸", "plan", components.ToneOpen},
 	} {
 		var cfg config.Config
 		cfg.Behavior.DefaultMode = tc.mode
 		row := rowFor(configRows(cfg, cfg, config.Project{}), "behavior.default_mode")
-		if !strings.HasPrefix(row.Value, tc.glyph+" ") {
-			t.Errorf("%s renders as %q, want the %s glyph", tc.mode, row.Value, tc.glyph)
+		if row.Value != tc.glyph+" "+tc.word {
+			t.Errorf("%s renders as %q, want %q", tc.mode, row.Value, tc.glyph+" "+tc.word)
 		}
 		if row.ValueTone != tc.tone {
 			t.Errorf("%s is toned %v, want %v", tc.mode, row.ValueTone, tc.tone)

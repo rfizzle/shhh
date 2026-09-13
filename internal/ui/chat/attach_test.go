@@ -273,11 +273,12 @@ func TestAttachedModeClampedToCeiling(t *testing.T) {
 	m.attach("researcher-1")
 
 	// Shift+Tab skips accept-edits and auto (over the manual ceiling) and
-	// lands on plan; the skipped modes are named as disabled.
+	// lands on read-only, the next mode in the cycle the ceiling allows; the
+	// skipped modes are named as disabled.
 	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyTab, Mod: tea.ModShift})
 	m = updated.(Model)
-	if mode, _ := sup.AgentMode("researcher-1"); mode != agent.ModePlan {
-		t.Fatalf("child mode = %s, want plan", mode)
+	if mode, _ := sup.AgentMode("researcher-1"); mode != agent.ModeReadOnly {
+		t.Fatalf("child mode = %s, want read-only", mode)
 	}
 	if !childTranscriptContains(sup, "researcher-1", "Disabled") {
 		t.Fatal("disabled over-ceiling modes not surfaced")
@@ -287,7 +288,7 @@ func TestAttachedModeClampedToCeiling(t *testing.T) {
 	m.input.SetValue("/mode auto")
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
-	if mode, _ := sup.AgentMode("researcher-1"); mode != agent.ModePlan {
+	if mode, _ := sup.AgentMode("researcher-1"); mode != agent.ModeReadOnly {
 		t.Fatalf("over-ceiling /mode must not change the mode, got %s", mode)
 	}
 	if !childTranscriptContains(sup, "researcher-1", "exceeds the orchestrator's ceiling") {

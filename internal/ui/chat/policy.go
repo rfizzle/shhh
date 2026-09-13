@@ -585,7 +585,7 @@ func (m Model) modeStatus() string {
 	var sb strings.Builder
 	fmt.Fprintf(&sb, "Mode: %s — %s.\n", m.policy.mode, m.policy.mode.Describe())
 	sb.WriteString("Cycle (Shift+Tab): " + strings.Join(names, " → ") + "\n")
-	sb.WriteString("Set with /permissions <manual|accept-edits|auto|plan>; /permissions why shows the latest auto-mode denial.\n")
+	sb.WriteString("Set with /permissions <manual|accept-edits|auto|read-only|plan>; /permissions why shows the latest auto-mode denial.\n")
 	sb.WriteString("/permissions grants lists what this session has stopped asking about; /permissions revoke takes it back.")
 	return sb.String()
 }

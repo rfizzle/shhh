@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -62,6 +63,13 @@ var planApproveOptions = []components.SelectOption{
 // card of its own because saving is not a decision — it is something you do
 // on the way to one.
 //
+// [n] is a decision, and it is a key rather than a sixth row because it is
+// the same offer the context-pressure card makes in the same words
+// (components.PressureOffers): a reader who has taken it once has learnt what
+// it does, and the two cards are where the window is the question. The rows
+// are the modes the plan can be run in here, which is a different question
+// from where it is run at all.
+//
 // Built from the register and not written out, so the row cannot come to
 // offer a key the card no longer answers: every spelling on it is the
 // declaration the handler above matches against, and a keymap file that
@@ -79,6 +87,7 @@ func planHint() []components.KeyOffer {
 		components.OfferAs(keys.Select.Take, "select"),
 		components.OfferAs(keys.Plan.Jump, "jump"),
 		components.OfferAs(keys.Plan.Save, "save"),
+		components.OfferAs(keys.Wait.NewSession, components.NewSessionCarryPlan()),
 		components.OfferAs(keys.Select.Cancel, "keep planning"),
 	}
 }
@@ -113,6 +122,8 @@ func (m Model) updatePlanApprove(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		return m.selectPlanOption(keys.Nth(pressed, keys.Plan.Jump))
 	case keys.Is(pressed, keys.Plan.Save):
 		return m.savePlanFromCard()
+	case keys.Is(pressed, keys.Wait.NewSession):
+		return m.carryPlanToNewSession()
 	case keys.Is(pressed, keys.Select.Cancel):
 		// Esc never destroys: dismissing the prompt keeps planning.
 		return m.keepPlanning()
@@ -143,6 +154,7 @@ func (m Model) approvePlan(execMode agent.Mode) (tea.Model, tea.Cmd) {
 	m.signal(observe.SignalPlan, "approved")
 	m.applyMode(execMode)
 	doc := m.planDoc
+	m.writePlanRecord(doc)
 	m.clearPlan()
 	m.setTurnState(stateStreaming)
 	m.streaming = ""
@@ -177,6 +189,111 @@ func (m Model) approvePlan(execMode agent.Mode) (tea.Model, tea.Cmd) {
 	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()
 	return m, tea.Batch(m.requestStream(), m.autosaveCmd())
+}
+
+// writePlanRecord is what makes an approved plan outlive the conversation:
+// the plan, the instruction it was serving and the handles of what the
+// research kept, written down as one record
+// (docs/capabilities/coding-agent.md#an-approved-plan-is-an-artifact).
+//
+// Every answer that accepts the plan writes it, including the one that takes
+// it to a new session — a record written only on the way out would leave the
+// ordinary approval with nothing to carry when the window fills later. A
+// session with no store keeps the record in hand and no handle: the artifact
+// is what was decided, and where it was filed is a second question.
+func (m *Model) writePlanRecord(doc plan.Plan) plan.Record {
+	rec := plan.NewRecord(m.planTask(), doc, m.planEvidence())
+	if rec.Empty() {
+		// A response the parser found no plan in leaves no record. A handle
+		// promising a plan and answering with a task line is worse than no
+		// handle: the session it seeded would be told it was carrying one.
+		return plan.Record{}
+	}
+	if m.db != nil {
+		if data, err := plan.MarshalRecord(rec); err == nil {
+			if handle, err := m.db.SavePlanRecord(m.sessionName, data); err == nil {
+				rec.Handle = handle
+			}
+		}
+	}
+	m.planned = rec
+	return rec
+}
+
+// planTask is the instruction the planning turn was serving: what the reader
+// asked, extended by anything they steered in, which is the same target every
+// reading of the turn is taken against (summary.go). The last user entry
+// stands in where the target was never set, so a record always says what was
+// asked for.
+func (m Model) planTask() string {
+	if strings.TrimSpace(m.summaryTarget) != "" {
+		return m.summaryTarget
+	}
+	es := m.transcript
+	for i := len(es) - 1; i >= 0; i-- {
+		if es[i].kind == entryUser {
+			return es[i].text
+		}
+	}
+	return ""
+}
+
+// planEvidence is the handles of retained output this turn's calls left
+// behind, in first-mention order. Handles and never the output itself: the
+// record exists so a session can open without the transcript, and a record
+// carrying what a command printed would be the transcript by another name.
+func (m Model) planEvidence() []string {
+	var out []string
+	seen := map[string]bool{}
+	for _, e := range m.turnEntries() {
+		if e.kind != entryTool {
+			continue
+		}
+		for _, id := range evidenceHandle.FindAllString(e.toolResult, -1) {
+			if !seen[id] {
+				seen[id] = true
+				out = append(out, id)
+			}
+		}
+	}
+	return out
+}
+
+// evidenceHandle is the shape of an evidence id as the store mints it
+// (internal/evidence). It is matched out of a result rather than read off a
+// field because the id reaches the transcript inside the text a check
+// printed, which is the only place the chat side ever sees one.
+var evidenceHandle = regexp.MustCompile(`\bev-[0-9a-f]{16}\b`)
+
+// carryPlanToNewSession is `[n]`: the plan is approved and taken across the
+// session boundary instead of being run here. Reaching a plan costs a window
+// full of research, and carrying that research into the execution pays for
+// the search again on every request for the rest of the work — so the plan
+// goes over and the transcript does not
+// (docs/capabilities/coding-agent.md#an-approved-plan-is-an-artifact).
+//
+// The mode does not move. Every row on the card names the mode it enters
+// because approving a plan is never an unstated mode change, and this answer
+// names none.
+func (m Model) carryPlanToNewSession() (tea.Model, tea.Cmd) {
+	rec := m.writePlanRecord(m.planDoc)
+	if rec.Empty() {
+		m.appendEntry(entry{kind: entrySystem, text: "No plan to carry — the response has no plan in it to write down."})
+		m.syncViewport()
+		m.viewport.SetLines(m.renderHistoryLines())
+		m.viewport.GotoBottom()
+		return m, nil
+	}
+	m.signal(observe.SignalPlan, "carried")
+	m.clearPlan()
+	m.setTurnState(stateInput)
+	notes, save := m.startNewSession()
+	m.appendEntries(notes)
+	m.appendEntries(m.seedFromPlan(rec))
+	m.syncViewport()
+	m.viewport.SetLines(m.renderHistoryLines())
+	m.viewport.GotoBottom()
+	return m, save
 }
 
 // keepPlanning dismisses the prompt so the user can send feedback; the

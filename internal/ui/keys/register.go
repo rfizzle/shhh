@@ -301,6 +301,13 @@ func Surfaces() []Surface {
 			Reached:  Shown(Draft.Answer),
 			Bindings: []Binding{
 				Select.MoveJK, Select.Take, Plan.Jump, Plan.Save,
+				// The session boundary, borrowed from the card that already
+				// offers it in the same words: an approved plan can be run
+				// here or carried into a conversation with nothing else in
+				// it, and both cards are read where the window is the
+				// question
+				// (docs/capabilities/coding-agent.md#an-approved-plan-is-an-artifact).
+				Wait.NewSession,
 				Select.Cancel,
 			},
 		},

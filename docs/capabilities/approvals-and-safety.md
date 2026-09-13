@@ -17,7 +17,7 @@ running one, by a bug or by a model that has learned to ask nicely. This is the
 codebase's most important invariant and the easiest to erode, because merging
 the paths always looks like a simplification.
 
-## The four modes
+## The five modes
 
 How much has been decided in advance:
 
@@ -25,12 +25,24 @@ How much has been decided in advance:
 - **Accept-edits** — writes proceed, commands are asked. This is the mode for
   work where the edits are the point and you will review them at the end.
 - **Auto** — a classifier decides, and asks when it is not sure.
-- **Plan** — nothing runs at all; the session proposes an ordered list of what
-  it would do, and you approve the plan rather than the steps.
+- **Read-only** — nothing is written. Reading, searching and the inspection
+  commands run as they do in every mode; a file edit and any other command are
+  refused rather than asked about, because there is no answer that would let
+  one through.
+- **Plan** — read-only, and it ends on something: the session proposes an
+  ordered list of what it would do, and you approve the plan rather than the
+  steps.
 
-Plan mode is not a safety mode with the volume turned up. It is a different
-activity: deciding whether the approach is right, before any of it is worth
-approving individually.
+The last two are one policy and two activities, which is why they are two
+modes. Read-only is a bound on the session and nothing more — it is the mode
+for a question you want answered without the answer being acted on, and it
+does not ask for a plan or wait for one. Plan mode is the bound plus a piece
+of work: deciding whether the approach is right, before any of it is worth
+approving individually, and finishing with [a plan you can start a fresh
+session from](coding-agent.md#an-approved-plan-is-an-artifact).
+
+Neither is a safety mode with the volume turned up. A mode that refuses is not
+a stricter manual: manual asks, and being asked is how work gets through.
 
 ## A deny list is answered before anything can allow
 
@@ -507,11 +519,11 @@ as the reader's excluded verbs have none.
 
 It is not a read, so it is not on the reader's tier. It sits at the write tier
 and is answered the way an edit is answered: it applies where an edit applies,
-it asks where an edit asks, and plan mode refuses it. The deny list is read
-before any of that — an entry for `git commit` refuses the commit verb by the
-same match the command path uses, because a person who wrote that line meant
-the act and not the spelling, and a tool that let the act through under
-another name would be the way around the list.
+it asks where an edit asks, and read-only and plan refuse it. The deny list
+is read before any of that — an entry for `git commit` refuses the commit
+verb by the same match the command path uses, because a person who wrote that
+line meant the act and not the spelling, and a tool that let the act through
+under another name would be the way around the list.
 
 Two of its rules are things a shell cannot do.
 

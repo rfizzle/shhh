@@ -606,20 +606,21 @@ permission-mode segment are not on that ladder at any width. A rail that goes
 quiet about what a child is burning goes quiet exactly where somebody is
 watching it, which is the one moment those figures are being read for.
 
-That segment is written in three words and the mark says which: `⏵⏵` in add
-for `auto`, where a mode lets work through, and `⏸` in accent for `gated`,
-where it asks first, and for `read-only`, where nothing can be written at
-all. There are more modes than there are words, so the one class that covers
-two of them carries the mode's own name after it — `⏵⏵ auto` is every gate a
-mode can open and `⏵⏵ auto · accept edits` is the same mark narrowed to
-edits, the pair in one tone because it is one field. A class covering a
-single mode carries no second word: the name it happens to be set under would
-be one state said twice, on the one segment that is read before every
-keystroke. Those names are the answer to a different question — what the mode
-is called where it is chosen, which is what the picker lists, what
-`/permissions` takes and what the config row shows — and while the classifier
-is deciding a call the segment says `✦ checking` instead, because for that
-moment the mode is not the answer.
+That segment carries the mode's own name, and the mark in front of it carries
+the class: `⏵⏵` in add where a mode lets work through, `⏸` in accent where it
+asks first or where nothing can be written at all. Five modes and five words —
+`⏸ manual`, `⏵⏵ accept edits`, `⏵⏵ auto`, `⏸ read-only`, `⏸ plan` — because
+the class is what the mark already says, and a word that repeated it would
+leave two modes wearing one name. That is what the segment used to do: it said
+`gated` for manual and `auto · accept edits` for the mode that is not auto, so
+the reader about to press a key was told the class twice and the mode never.
+`auto` is one of the five and stands on the segment only while the session is
+in it. The word is the name the picker lists, `/permissions` takes and the
+settings row shows — written as the two words `accept edits` where the file
+hyphenates them, and one speller does that for every surface, so no mode is
+written two ways.
+While the classifier is deciding a call the segment says `✦ checking` instead,
+because for that moment the mode is not the answer.
 
 Above it, a notice rail exists only while there is something to say and
 disappears when there is not. Under that, on the terminals too narrow for the

@@ -584,18 +584,20 @@ func boolOptions(on, off string) []components.SelectOption {
 
 // modeShow renders a permission mode under the mark ladder the frame's own
 // mode segment uses: `⏵⏵` and add for the two that let work through, `⏸` and
-// accent for the two that gate it. The glyph carries the distinction, so the
+// accent for the three that do not. The glyph carries the distinction, so the
 // colour is never carrying it alone.
 //
-// The word is the mode's name rather than the frame's class word, because
+// The word is the mode's own name and not the frame's old class word, because
 // this row is a setting: what it states is the value in the file, which is
-// the value the row's own picker writes back.
+// the value the row's own picker writes back. It is spelled through
+// agent.Mode.Word, the frame's own speller, so the row and the rail cannot
+// come to write one mode two ways.
 func modeShow(raw string) (string, components.FieldTone, string) {
 	mode, err := agent.ParseMode(raw)
 	if err != nil {
 		return raw, components.ToneRisk, "not a mode — manual stands until this is fixed"
 	}
-	name := strings.ReplaceAll(mode.String(), "-", " ")
+	name := mode.Word()
 	if mode == agent.ModeAuto || mode == agent.ModeAcceptEdits {
 		return "⏵⏵ " + name, components.ToneSafe, mode.Describe()
 	}

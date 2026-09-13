@@ -1,11 +1,29 @@
-# One reply per request. The last line repeats once these run out, and both
-# the session and the child it spawns draw from this one queue.
+# One reply queue per agent, opened by a [name] header: the session, the
+# reader it spawns at the end, and the session's own readings of its run —
+# which otherwise take the next reply meant for the turn and leave the scene
+# one short. That is exactly what the plan turn cannot afford: the card is
+# priced from the shape of the answer, so the plan has to reach the turn it
+# was written for.
 #
 # Prose for the first turn: the mode segment is what the scene is reading, so
-# nothing here should put a card in front of it. The second turn spawns, which
-# is gated in the mode the cycle ends on — the card is the proof of it.
+# nothing here should put a card in front of it. The second turn is asked for
+# in plan mode and answers in the shape the card prices, which is what puts
+# the card up and the [n] offer on its key row. Its heading cannot open the
+# line — a reply beginning with # is a comment in this file — so the plan
+# leads with the sentence a model would write above it anyway. The third turn
+# spawns, which is gated in the mode the cycle is back to, and the line after
+# it is the one the queue repeats: a queue ending on a spawn would open an
+# agent every round until the cap.
+[session]
 The counter is read at the top of the loop, and nowhere else.
+Here is what I would do.\n\n## Plan: make the round limit recoverable\n\n1. Locate the round accounting\n   files: loop.go\n   action: read\n2. Return a sentinel when the rounds run out\n   files: loop.go\n   action: edit\n   note: no signature changes
 Putting a reader on the round accounting.
 +tool:spawn_agent:{"role":"researcher","task":"Read loop.go and say where the round counter is read.","name":"reader-1"}
+The reader has it from here.
+
+[reader-1]
 tool:read_file:{"path":"loop.go"}
 The round counter is read at the top of the loop, and nowhere else.
+
+[reading]
+The turn answered where the round counter is read.

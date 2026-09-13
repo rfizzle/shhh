@@ -890,9 +890,9 @@ func TestEditFile_OverlapNamesTheEditsInTheOrderTheyWereGiven(t *testing.T) {
 	}
 }
 
-// Three of the four permission modes apply a write without asking, so neither
-// description may promise the user sees it.
-// See docs/capabilities/approvals-and-safety.md#the-four-modes.
+// Only one of the five permission modes puts a write to the user: two apply it
+// and two refuse it, so neither description may promise the user sees it.
+// See docs/capabilities/approvals-and-safety.md#the-five-modes.
 func TestMutatingDescriptions_LeaveTheApprovalToTheMode(t *testing.T) {
 	for _, tc := range []struct {
 		name string

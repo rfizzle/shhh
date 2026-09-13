@@ -279,6 +279,32 @@ func TestPlan_RequestStreamInjectsInstructions(t *testing.T) {
 	}
 }
 
+// Read-only mode injects its own block, and it is not plan mode's: the model
+// is told what the bound is and nothing about a plan, because there is no
+// card here to approve one and a turn spent writing one is a turn wasted.
+func TestMode_ReadOnlyRequestCarriesItsOwnInstructions(t *testing.T) {
+	var captured []provider.Message
+	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	m := New(msgs, recordingStream(&captured))
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
+	m = updated.(Model)
+	m.policy.mode = agent.ModeReadOnly
+
+	updated, cmd := m.sendUserMessage("where is the counter read")
+	m = updated.(Model)
+	driveStream(t, cmd)
+
+	if len(captured) == 0 || !strings.Contains(captured[0].Content, "# Read-only mode") {
+		t.Fatal("read-only requests should carry the read-only instructions in the system prompt")
+	}
+	if strings.Contains(captured[0].Content, "# Plan mode") {
+		t.Fatal("read-only mode must not ask the model for a plan")
+	}
+	if strings.Contains(m.Messages()[0].Content, "# Read-only mode") {
+		t.Fatal("the stored conversation's system prompt must stay untouched")
+	}
+}
+
 func TestPlan_InspectionCommandRunsWithoutPrompt(t *testing.T) {
 	var ran []string
 	m := execModel(t, &ran)
@@ -623,5 +649,138 @@ func TestPlan_ApprovalExtendsTheSummaryTarget(t *testing.T) {
 func TestPlanTarget_UnstructuredPlanMovesNothing(t *testing.T) {
 	if got := planTarget(plan.Plan{Text: "I would start by reading the exporter."}); got != "" {
 		t.Errorf("an unstructured plan should extend nothing, got %q", got)
+	}
+}
+
+// planRecordModel is a plan-mode session whose research left a piece of
+// retained evidence behind, so the record has a handle to carry.
+func planRecordModel(t *testing.T, stream StreamFunc) Model {
+	t.Helper()
+	m := planModel(t, stream)
+	m.appendEntry(entry{kind: entryUser, text: "plan the change"})
+	m.appendEntry(entry{
+		kind: entryTool, toolName: "quality_gate", toolArgs: "{}",
+		toolResult: "3 checks passed [full output: evidence ev-00112233445566aa]",
+	})
+	m.streaming = "## Plan: split the modes\n\n1. Add the mode\n   files: internal/agent/mode.go\n   action: edit\n2. Draw its word\n   files: internal/ui/chat/render.go\n   action: edit"
+	return m
+}
+
+// Approving is what writes the plan down. The record is the plan, the
+// instruction it was serving and the handles of what the research kept — and
+// nothing a tool printed, because a record made of tool output is the
+// transcript again.
+func TestPlan_ApprovalWritesTheRecord(t *testing.T) {
+	m := planRecordModel(t, mockStream).WithDB(rewindTestDB(t))
+	updated, _ := m.Update(doneMsg{})
+	m = handover(t, updated.(Model))
+
+	updated, _ = m.Update(tea.KeyPressMsg{Code: '1', Text: "1"})
+	m = updated.(Model)
+
+	rec := m.planned
+	if rec.Task != "plan the change" {
+		t.Errorf("the record should say what was asked for, got %q", rec.Task)
+	}
+	if rec.Title != "split the modes" || len(rec.Steps) != 2 {
+		t.Fatalf("the record should carry the plan, got %+v", rec)
+	}
+	if len(rec.Scope) != 2 || rec.Scope[0] != "internal/agent/mode.go" {
+		t.Errorf("the record should carry the paths the steps name, got %v", rec.Scope)
+	}
+	if len(rec.Evidence) != 1 || rec.Evidence[0] != "ev-00112233445566aa" {
+		t.Errorf("the record should carry the evidence handles, got %v", rec.Evidence)
+	}
+	if strings.Contains(rec.Prologue(), "3 checks passed") {
+		t.Error("the record carries handles, never the output behind them")
+	}
+	if rec.Handle == "" {
+		t.Fatal("a session with a store should have filed the record and kept its handle")
+	}
+	data, err := m.db.LoadPlanRecord(rec.Handle)
+	if err != nil {
+		t.Fatalf("the handle should read back: %v", err)
+	}
+	back, err := plan.UnmarshalRecord(data)
+	if err != nil || back.Task != rec.Task || len(back.Steps) != len(rec.Steps) {
+		t.Fatalf("the stored record = %+v, %v", back, err)
+	}
+}
+
+// [n] on the card is the boundary: the plan goes over and the research does
+// not. What the new session holds is the system prompt and the record, and
+// nothing else — which is the whole reason for crossing it.
+func TestPlan_CarryToNewSessionSeedsAFreshContext(t *testing.T) {
+	m := planRecordModel(t, mockStream)
+	m = m.WithNewSession(func() SessionStart { return SessionStart{Prompt: "sys"} })
+	updated, _ := m.Update(doneMsg{})
+	m = handover(t, updated.(Model))
+	if m.state != statePlanApprove {
+		t.Fatalf("the card should be up, got state %d", m.state)
+	}
+
+	updated, _ = m.Update(tea.KeyPressMsg{Code: 'n', Text: "n"})
+	m = updated.(Model)
+
+	msgs := m.Messages()
+	if len(msgs) != 2 {
+		t.Fatalf("the new session should hold the prompt and the plan and nothing else, got %d: %+v", len(msgs), msgs)
+	}
+	if msgs[0].Role != provider.RoleSystem || msgs[0].Content != "sys" {
+		t.Fatalf("the first message should be the freshly built system prompt, got %+v", msgs[0])
+	}
+	seed := msgs[1]
+	if seed.Role != provider.RoleUser || !seed.Machine {
+		t.Fatalf("the plan is the session's own message, not the reader's: %+v", seed)
+	}
+	for _, want := range []string{"plan the change", "1. Add the mode", "internal/agent/mode.go", "ev-00112233445566aa"} {
+		if !strings.Contains(seed.Content, want) {
+			t.Errorf("the seed does not carry %q:\n%s", want, seed.Content)
+		}
+	}
+	// The research is what was left behind: nothing the old conversation held
+	// may be in the new one.
+	if strings.Contains(seed.Content, "3 checks passed") {
+		t.Error("the seed carries tool output the boundary was crossed to leave")
+	}
+	// The mode does not move: this answer names none, and approving a plan is
+	// never an unstated mode change.
+	if m.policy.mode != agent.ModePlan {
+		t.Errorf("carrying a plan should not change the mode, got %v", m.policy.mode)
+	}
+	if m.state != stateInput {
+		t.Fatalf("the card should be down and the draft live, got state %d", m.state)
+	}
+	carried := false
+	for _, e := range m.transcript {
+		if e.notice != nil && e.notice.Verb == carriedPlanVerb {
+			carried = true
+			if !strings.Contains(e.notice.Outcome, "2 steps") {
+				t.Errorf("the row should say how much came over, got %q", e.notice.Outcome)
+			}
+		}
+	}
+	if !carried {
+		t.Error("the boundary should leave a row saying the plan came over")
+	}
+}
+
+// A card with no plan behind it is not written down, and the key says so
+// instead of opening a session seeded with a task line and nothing to do.
+func TestPlan_CarryRefusesWhenThereIsNoPlan(t *testing.T) {
+	m := planModel(t, mockStream)
+	updated, _ := m.Update(doneMsg{})
+	m = handover(t, updated.(Model))
+	m.planDoc = plan.Plan{}
+
+	before := len(m.Messages())
+	updated, _ = m.Update(tea.KeyPressMsg{Code: 'n', Text: "n"})
+	m = updated.(Model)
+	if len(m.Messages()) != before {
+		t.Fatal("a card with no plan on it must not cross the session boundary")
+	}
+	last := m.transcript[len(m.transcript)-1]
+	if last.kind != entrySystem || !strings.Contains(last.text, "No plan to carry") {
+		t.Fatalf("the refusal should say why nothing happened, got %+v", last)
 	}
 }

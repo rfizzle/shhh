@@ -133,17 +133,29 @@ func (c *PressureCard) Update(msg tea.KeyPressMsg) (done bool, result PressureDe
 // moves one moves the offer with it; the words are the card's own where the
 // register's are shorter than the answer.
 //
-// A new session here carries the plan: a run in progress keeps its checkpoint
-// and the session that opens is told how to pick it up, and a reader deciding
-// between compacting and starting again is deciding exactly that. The clause
-// is on the key row rather than in the prose above it because it is what the
-// key buys (docs/interface/surfaces.md#the-recovery-row).
+// A new session here carries the plan, which is what NewSessionCarryPlan
+// says; the clause is on the key row rather than in the prose above it
+// because it is what the key buys
+// (docs/interface/surfaces.md#the-recovery-row).
 func PressureOffers() []KeyOffer {
 	return []KeyOffer{
 		keyOffer(keys.Wait.Compact),
-		keyOfferAs(keys.Wait.NewSession, keys.Words(keys.Wait.NewSession)+", carry the plan"),
+		keyOfferAs(keys.Wait.NewSession, NewSessionCarryPlan()),
 		keyOffer(keys.Wait.KeepGoing),
 	}
+}
+
+// NewSessionCarryPlan is the words on the session boundary wherever a plan
+// goes over it with the reader: this card, where the window is what forced
+// the question, and the plan card, where taking it is the answer. One
+// sentence for one act — a reader who has taken it once knows what the other
+// card's `[n]` will do (docs/capabilities/coding-agent.md#an-approved-plan-is-an-artifact).
+//
+// A function and not a package var, because a keymap file is read after this
+// package is initialised and before anything draws: a var would have
+// snapshotted the shipped spelling of the key the words are built from.
+func NewSessionCarryPlan() string {
+	return keys.Words(keys.Wait.NewSession) + ", carry the plan"
 }
 
 // meter is the card's bar: the same component, cell count and thresholds the

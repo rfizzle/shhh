@@ -280,11 +280,11 @@ var settings = []Setting{
 		Desc: "Directories added to a session's working scope at start, beside the one it was opened in.",
 	}, {
 		Key: "behavior.default_mode", Kind: KindEnum, Default: "manual",
-		Values: []string{"manual", "accept-edits", "auto", "plan"},
+		Values: []string{"manual", "accept-edits", "auto", "read-only", "plan"},
 		Desc:   "The permission mode a session starts in.",
 	}, {
-		Key: "behavior.mode_cycle", Kind: KindList, Default: "manual, accept-edits, auto, plan", Literal: "manual, accept-edits, auto, plan",
-		Values: []string{"manual", "accept-edits", "auto", "plan"},
+		Key: "behavior.mode_cycle", Kind: KindList, Default: "manual, accept-edits, auto, read-only, plan", Literal: "manual, accept-edits, auto, read-only, plan",
+		Values: []string{"manual", "accept-edits", "auto", "read-only", "plan"},
 		Desc:   "The order the mode key walks the permission modes in.",
 	}, {
 		Key: "behavior.classifier_model", Kind: KindString, Default: "(the provider's small model, or the session's own)",

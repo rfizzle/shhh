@@ -3728,9 +3728,10 @@ func (s *Supervisor) resolveGated(c *child, tc provider.ToolCall) string {
 		}
 	}
 	// The static policy denies for a command the user's deny list names,
-	// which is refused whatever this child's mode is; in plan mode, which
-	// refuses the call with the result that tells the model why nothing ran;
-	// and for a path no grant can reach, which says which path and why.
+	// which is refused whatever this child's mode is; in either read-only
+	// mode, which refuses the call with the result that tells the model why
+	// nothing ran, in the words of the mode that refused it; and for a path
+	// no grant can reach, which says which path and why.
 	if decision == agent.Deny {
 		record(observe.DecisionDeny, observe.ReasonCode(reason))
 		if reason == agent.DenyReasonDenylist {
@@ -3741,7 +3742,7 @@ func (s *Supervisor) resolveGated(c *child, tc provider.ToolCall) string {
 			c.appendEntry(TranscriptEntry{Kind: EntrySystem, Text: "Refused: " + title + " — " + reason})
 			return agent.ScopeRefusedResult(reason)
 		}
-		return agent.PlanModeResult
+		return agent.ModeRefusedResult(reason)
 	}
 	// Whether the classifier is what decided, because from here the rule has
 	// a name of its own and a duration behind it — which the policy's reason

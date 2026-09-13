@@ -129,9 +129,15 @@ const (
 	// code for the same reason the deny list's is: what a reader does about
 	// it is edit a hook, and a rate that mixed it with a mode would answer
 	// neither question.
-	ReasonHook           = "hook"
-	ReasonPlanMode       = "plan-mode"
-	ReasonPlanInspection = "plan-inspection"
+	ReasonHook = "hook"
+	// The two read-only modes keep separate codes for the same policy,
+	// because what a reader does about a refusal differs: a plan-mode session
+	// is on its way to a card, and a read-only one is not going to run
+	// anything this conversation.
+	ReasonPlanMode           = "plan-mode"
+	ReasonPlanInspection     = "plan-inspection"
+	ReasonReadOnlyMode       = "read-only-mode"
+	ReasonReadOnlyInspection = "read-only-inspection"
 	// AskReason's, for a call the policy hands to a person.
 	ReasonSafety         = "safety"
 	ReasonScopeSensitive = "scope-sensitive"
@@ -630,16 +636,17 @@ const (
 // a prompt's fault, an out-of-scope one is policy's, a not-found one is the
 // model's picture of the tree being stale.
 const (
-	ClassDeclined   = "declined"
-	ClassPlanMode   = "plan-mode"
-	ClassOutOfScope = "out-of-scope"
-	ClassNotFound   = "not-found"
-	ClassPermission = "permission"
-	ClassTimeout    = "timeout"
-	ClassCancelled  = "cancelled"
-	ClassBadArgs    = "bad-args"
-	ClassUnknown    = "unknown-tool"
-	ClassOther      = "other"
+	ClassDeclined     = "declined"
+	ClassPlanMode     = "plan-mode"
+	ClassReadOnlyMode = "read-only-mode"
+	ClassOutOfScope   = "out-of-scope"
+	ClassNotFound     = "not-found"
+	ClassPermission   = "permission"
+	ClassTimeout      = "timeout"
+	ClassCancelled    = "cancelled"
+	ClassBadArgs      = "bad-args"
+	ClassUnknown      = "unknown-tool"
+	ClassOther        = "other"
 	// ClassExitStatus is a command that ran and exited non-zero.
 	ClassExitStatus = "exit-status"
 	// ClassEmpty qualifies a successful search that matched nothing.
@@ -782,10 +789,14 @@ func ReasonCode(raw string) string {
 		// Both lists are the same fact for the metrics: a rule the person
 		// wrote answered before anything could allow.
 		return ReasonDenylist
-	case "plan mode":
+	case agent.ModePlan.String() + " mode":
 		return ReasonPlanMode
-	case "plan mode inspection":
+	case agent.ModePlan.String() + " mode inspection":
 		return ReasonPlanInspection
+	case agent.ModeReadOnly.String() + " mode":
+		return ReasonReadOnlyMode
+	case agent.ModeReadOnly.String() + " mode inspection":
+		return ReasonReadOnlyInspection
 	}
 	// A refusal for what the call reaches carries the directory in
 	// its reason, so it is matched by shape rather than by equality — the
@@ -834,6 +845,8 @@ func ClassFromResult(result string) string {
 		return ClassDeclined
 	case strings.Contains(r, "plan mode"):
 		return ClassPlanMode
+	case strings.Contains(r, "read-only mode"):
+		return ClassReadOnlyMode
 	case strings.Contains(r, "outside the") || strings.Contains(r, "scope"):
 		return ClassOutOfScope
 	case strings.Contains(r, "cancelled") || strings.Contains(r, "canceled"):

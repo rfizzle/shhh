@@ -636,8 +636,8 @@ own file could hold.
 | `read_only_commands` | list | (the built-in inspection list alone) | Commands added to the built-in inspection list that runs without asking; entries skip the built-in flag guards. |
 | `read_only_auto` | true/false | `on` | Run the built-in inspection list without asking; off makes a read prompt like anything else. |
 | `scope_dirs` | list | (the directory the session opened in) | Directories added to a session's working scope at start, beside the one it was opened in. |
-| `default_mode` | word: `manual`, `accept-edits`, `auto`, `plan` | `manual` | The permission mode a session starts in. |
-| `mode_cycle` | list: `manual`, `accept-edits`, `auto`, `plan` | manual, accept-edits, auto, plan | The order the mode key walks the permission modes in. |
+| `default_mode` | word: `manual`, `accept-edits`, `auto`, `read-only`, `plan` | `manual` | The permission mode a session starts in. |
+| `mode_cycle` | list: `manual`, `accept-edits`, `auto`, `read-only`, `plan` | manual, accept-edits, auto, read-only, plan | The order the mode key walks the permission modes in. |
 | `classifier_model` | text | (the provider's small model, or the session's own) | The model auto mode's permission classifier runs on. |
 | `classifier_timeout_seconds` | number | `30` | How long one classifier request may take. |
 | `classifier_max_tokens` | number | `8192` | The ceiling on a classifier response, the reasoning it does before answering included. |

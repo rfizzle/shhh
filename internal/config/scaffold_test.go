@@ -55,7 +55,7 @@ func TestScaffold_ADefaultStatedAsASentenceIsWrittenAsItsValue(t *testing.T) {
 	}{
 		{"web.fetch_max_bytes", "2097152"},
 		{"behavior.context_max_tokens", "8000"},
-		{"behavior.mode_cycle", "manual, accept-edits, auto, plan"},
+		{"behavior.mode_cycle", "manual, accept-edits, auto, read-only, plan"},
 		{"observe.retention_days", "180"},
 	} {
 		if got, _ := Value(cfg, tc.key); got != tc.want {

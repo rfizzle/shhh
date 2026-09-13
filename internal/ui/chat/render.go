@@ -508,20 +508,16 @@ func (m Model) renderStatusBar(width int) string {
 }
 
 // modeWord is what a mode segment says, on this session's frame and on an
-// attached child's: the permission class the mark already means, and the
-// mode's own name after it where the class is not the whole of it. `⏵⏵ auto`
-// is every gate a mode can open; `⏵⏵ auto · accept edits` wears the same mark
-// narrowed to edits, and the second word is the difference between the two.
-// `⏸ gated` and `⏸ read-only` are each the only mode of their class, so the
-// name they happen to be set under would be one state said twice — which is
-// the drift the one segment read before every keystroke cannot afford
-// (docs/interface/principles.md#closed-vocabularies).
-func modeWord(mode agent.Mode) string {
-	if mode == agent.ModeAcceptEdits {
-		return mode.Class() + " · " + strings.ReplaceAll(mode.String(), "-", " ")
-	}
-	return mode.Class()
-}
+// attached child's: the mode's own name (agent.Mode.Word), which is also the
+// settings row's. The class is what the mark in front of it carries — `⏵⏵`
+// where work goes through, `⏸` where it does not — so a word for the class
+// would be the mark said twice, and it cost the modes that share a class
+// their names. `auto` is one of the five and stands here only in auto,
+// because a segment read before every keystroke that draws another mode's
+// name is the drift a closed vocabulary exists to prevent
+// (docs/interface/surfaces.md#the-input-frame,
+// docs/interface/principles.md#closed-vocabularies).
+func modeWord(mode agent.Mode) string { return mode.Word() }
 
 // cockpitData assembles the cockpit segments. The frame's vitals rail
 // omits the queued-steering extra — the notice rail carries it — so

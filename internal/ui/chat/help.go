@@ -119,7 +119,13 @@ agents [name]    show or persist the model sub-agents run on
                  ("inherit" follows the session model)`,
 	"/permissions": `What runs without asking, and the permission mode that
 frames it (also /perms; was /mode)
-[name]   manual, accept-edits, auto or plan; bare opens a picker
+[name]   bare opens a picker over the five modes:
+         manual asks about every consequential call
+         accept-edits applies the edits and asks for the rest
+         auto adds the allowlist and lets the classifier judge
+         read-only writes nothing — a write is refused, not asked
+         plan is read-only, ending on a plan you can approve here
+         or carry into a fresh session
 why      the latest auto-mode denial's reason
 grants   what this session has stopped asking about
 allow <commands|edits>   grant a whole category
@@ -419,7 +425,9 @@ row names)`,
 	},
 	{
 		binds: []keys.Binding{keys.Draft.Mode},
-		text: `Cycle the permission mode
+		text: `Cycle the permission mode: manual → accept-edits → auto →
+read-only → plan, and round again (behavior.mode_cycle sets
+another order)
 (while the agent is working, enter queues a steering message
  that joins the conversation before the next model request)`,
 	},

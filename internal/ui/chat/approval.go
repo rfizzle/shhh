@@ -451,9 +451,9 @@ func (m Model) armApprovalDecision(req *approvalRequest) (tea.Model, tea.Cmd) {
 	}
 	// Agent-proposed memories always require explicit user
 	// confirmation: no mode, session grant, or classifier can wave one
-	// through. Plan mode falls through to the policy below, which refuses the
-	// write like any other.
-	if req.kind == approvalMemory && m.policy.mode != agent.ModePlan {
+	// through. A read-only mode falls through to the policy below, which
+	// refuses the write like any other.
+	if req.kind == approvalMemory && !m.policy.mode.ReadOnly() {
 		m.recordDecision(observe.DecisionAsk, observe.ReasonMemory)
 		m.openMemoryAsk(req)
 		m.armConfirm(req)
@@ -667,16 +667,16 @@ func (m *Model) refusedResult(tc provider.ToolCall, content string) string {
 }
 
 // denialResult is the tool result for a call the session refused without
-// asking: plan mode's own sentence, the scope's when the path is one no grant
-// can reach, and the classifier's reason otherwise.
+// asking: the refusing mode's own sentence, the scope's when the path is one
+// no grant can reach, and the classifier's reason otherwise.
 func denialResult(reason string) string {
 	switch {
 	case reason == agent.DenyReasonDenylist:
 		return agent.DenylistResult
 	case reason == agent.DenyReasonHost:
 		return agent.DeniedHostResult
-	case reason == "plan mode":
-		return agent.PlanModeResult
+	case reason == agent.ModePlan.String()+" mode", reason == agent.ModeReadOnly.String()+" mode":
+		return agent.ModeRefusedResult(reason)
 	case strings.HasPrefix(reason, "outside the working scope"):
 		return agent.ScopeRefusedResult(reason)
 	}

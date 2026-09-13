@@ -845,6 +845,13 @@ type Model struct {
 	// carried out: it numbers the transcript's steps, fills the
 	// rail's PLAN block and answers /plan. Nil when no plan is running.
 	planRun *planRun
+	// planned is the durable record the last approval wrote: the plan, what
+	// was asked for, and the handles of what the research kept. It is kept on
+	// the model rather than only in the store because it is what a session
+	// boundary carries over, and a boundary crossed by a session with no
+	// store still has a plan to carry
+	// (docs/capabilities/coding-agent.md#an-approved-plan-is-an-artifact).
+	planned plan.Record
 	// focusIdx is the transcript index of the row selected in focus mode
 	//; -1 while the transcript is being read with nothing on it to
 	// select.

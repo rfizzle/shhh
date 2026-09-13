@@ -47,7 +47,7 @@ example.com                                                     │   asked for 
 
 · the panel it leaves · the way out, on one row
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-⏸ gated                                                                                                                       
+⏸ manual                                                                                                                      
 sources · [q] back to the prompt
 
 ── ansi ────────────────────────────────────────────────────
@@ -88,5 +88,5 @@ sources · [q] back to the prompt
 
 · the panel it leaves · the way out, on one row
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
-␛[38;5;254m⏸ gated␛[m                                                                                                                       
+␛[38;5;254m⏸ manual␛[m                                                                                                                      
 ␛[38;5;244msources · ␛[m␛[38;5;254m[q]␛[m␛[38;5;244m back to the prompt␛[m

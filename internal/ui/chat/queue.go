@@ -537,7 +537,7 @@ func (m *Model) takeQueueAnswer(req *approvalRequest) (allow, answered bool) {
 		return false, true
 	}
 	act := m.approvalAction(req)
-	if m.policy.mode == agent.ModePlan || act.SafetyFlagged || len(act.OutOfScope) > 0 {
+	if m.policy.mode.ReadOnly() || act.SafetyFlagged || len(act.OutOfScope) > 0 {
 		return false, false
 	}
 	return true, true

@@ -63,7 +63,7 @@ https://docs.rs/tokio/latest/tokio/         orchestrator
 
 · the panel it leaves · the way out, on one row
 ────────────────────────────────────────────────────────
-⏸ gated                                                 
+⏸ manual                                                
 sources · [q] back to the prompt
 
 ── ansi ────────────────────────────────────────────────────
@@ -120,5 +120,5 @@ sources · [q] back to the prompt
 
 · the panel it leaves · the way out, on one row
 ␛[38;5;241m────────────────────────────────────────────────────────␛[m
-␛[38;5;214m⏸ gated␛[m                                                 
+␛[38;5;214m⏸ manual␛[m                                                
 ␛[38;5;241msources · ␛[m␛[94m[q]␛[m␛[38;5;241m back to the prompt␛[m

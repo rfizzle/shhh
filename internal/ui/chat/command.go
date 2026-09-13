@@ -518,7 +518,7 @@ func slashPermissions(m *Model, parts []string) string {
 		return m.revokeCommand(parts[2:])
 	}
 	if len(parts) > 2 {
-		return "Usage: /permissions [manual|accept-edits|auto|plan|why|grants|allow|revoke]"
+		return "Usage: /permissions [manual|accept-edits|auto|read-only|plan|why|grants|allow|revoke]"
 	}
 	if parts[1] == "why" {
 		if m.lastDenial == "" {

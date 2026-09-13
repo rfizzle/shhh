@@ -17,6 +17,11 @@ func TestReasonCode_Mapping(t *testing.T) {
 		"allowlist":            "allowlist",
 		"plan mode":            "plan-mode",
 		"plan mode inspection": "plan-inspection",
+		// The other read-only mode keeps codes of its own: the two share a
+		// policy and a reader does something different about each, so a rate
+		// that put them under one word would answer neither question.
+		"read-only mode":            "read-only-mode",
+		"read-only mode inspection": "read-only-inspection",
 		// The refusal carries the directory it was refused for, so it is
 		// matched by shape — and the path does not reach the code.
 		"outside the working scope: /home/someone/secrets": "out-of-scope",
@@ -56,6 +61,7 @@ func TestClassFromResult(t *testing.T) {
 		"error: open x: no such file or directory": ClassNotFound,
 		"error: the user declined this tool call":  ClassDeclined,
 		"error: this session is in plan mode":      ClassPlanMode,
+		"error: this session is in read-only mode": ClassReadOnlyMode,
 		"error: this path is outside the session":  ClassOutOfScope,
 		"error: cancelled by user":                 ClassCancelled,
 		"error: open x: permission denied":         ClassDeclined,

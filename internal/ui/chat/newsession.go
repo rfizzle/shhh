@@ -10,6 +10,7 @@ package chat
 import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/attachment"
+	"github.com/rfizzle/shhh/internal/plan"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -154,6 +155,46 @@ func (m *Model) startNewSession() (notes []entry, save tea.Cmd) {
 		notes = append(notes, entry{kind: entrySystem, text: kept})
 	}
 	return notes, save
+}
+
+// seedFromPlan is what makes the new conversation the plan's and not a blank
+// one: the approved plan goes in as the session's own message, above nothing.
+// It runs after startNewSession, so what the model is handed is the system
+// prompt built for this checkout and the record, and none of the research
+// that produced it — which is the whole reason the boundary was crossed
+// (docs/capabilities/coding-agent.md#an-approved-plan-is-an-artifact).
+//
+// The message is the session's and not the reader's: they pressed a key, they
+// did not type a plan. It is the same rule a compaction's handoff follows,
+// and it is what keeps ↑ from recalling a page of steps as something to send
+// again (provider.Message.Machine).
+func (m *Model) seedFromPlan(rec plan.Record) []entry {
+	// Nothing is set on the context accounting here: contextTokens is what a
+	// provider reported, and the seed has not been sent yet. The estimate the
+	// rail draws until one arrives already walks the message list, so the
+	// plan is counted by being in it.
+	m.agent.Append(provider.Message{Role: provider.RoleUser, Content: rec.Prologue(), Machine: true})
+	return []entry{{kind: entrySystem, notice: carriedPlanRow(rec)}}
+}
+
+// carriedPlanVerb is the boundary's other verb, in the column every verb is
+// in.
+const carriedPlanVerb = "plan"
+
+// carriedPlanRow says what came over: the plan, by its own title, and how
+// many steps of it the new session is holding. It is a row on the grid rather
+// than a sentence for the reason the boundary's own row is
+// (docs/interface/principles.md#one-grid).
+func carriedPlanRow(rec plan.Record) *components.ActivityNotice {
+	subject := rec.Title
+	if subject == "" {
+		subject = rec.Handle
+	}
+	outcome := "carried"
+	if n := len(rec.Steps); n > 0 {
+		outcome += " · " + stepsWord(n)
+	}
+	return &components.ActivityNotice{Verb: carriedPlanVerb, Subject: subject, Outcome: outcome}
 }
 
 // The two words the boundary's own row ends on. They are its outcome and not

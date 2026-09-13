@@ -428,26 +428,35 @@ and the child's lifetime is already on its lane in the agent map, where it is
 what the column means. The gap is closed by the supervisor reporting a child's
 turn, at which point the rail can draw what the artboard draws.
 
-## A read-only frame, and an auto narrowed to edits, have no artboard
+## The mode segment names the mode, not its class
 
-*A gap.* The palette row offers three words for the mode — `gated, auto or
-read-only` — and the artboards draw two of them: `⏵⏵ auto` in add on the
-frame, the main window and the interrupt, `⏸ gated` in accent on the frame
-and on an attached child's rail. No artboard draws the third, and none draws
-the mode that lets edits through while still asking about commands. The
-binary has one more mode than the design has words, so it had to decide both.
+*A disagreement.* The palette row offers three words for the mode — `gated,
+auto or read-only` — and the artboards draw two of them: `⏵⏵ auto` in add on
+the frame, the main window and the interrupt, `⏸ gated` in accent on the frame
+and on an attached child's rail. The binary draws neither word. It draws the
+mode's own name under the class's mark: `⏸ manual`, `⏵⏵ accept edits`,
+`⏵⏵ auto`, `⏸ read-only`, `⏸ plan`
+([the input frame](surfaces.md#the-input-frame)).
 
-Read-only wears `⏸` in accent, the mark every gated state already wears,
-because a mode that gates everything a mode can gate is not a fourth kind of
-state and a fourth mark would be read as one. The narrowed one is
-`⏵⏵ auto · accept edits`: the class's mark and word, with the mode's own name
-after it as the difference from `⏵⏵ auto`, which is every gate open. A word
-of its own for that mode was the other option and is what reopens a list the
-design closed at three
-([closed vocabularies](principles.md#closed-vocabularies)) — the reader would
-be back to learning a word per mode on the one segment they check before
-every keystroke. The gap is closed by drawing the two frames, and where they
-then differ the artboard wins.
+The three-word palette was a closed vocabulary
+([closed vocabularies](principles.md#closed-vocabularies)) and this replaces
+it with another one, of five, rather than opening it. What made the shorter
+list wrong is that the marks already carry it: `⏵⏵` is every class that lets
+work through and `⏸` every class that does not, so the word beside the mark
+was the mark spelled out, and the three modes it could not tell apart had to
+borrow. Manual read as `gated`, which is the class and not the mode.
+Accept-edits read as `⏵⏵ auto · accept edits`, which names the mode it is not
+before the mode it is. Read-only and plan read as one word for two modes that
+now differ in what a turn ends on. A reader checking the segment before a
+keystroke was being told the class twice and the mode never, and the two
+complaints that produced this — that auto and accept-edits are called the same
+thing, and that read-only and plan are not the same mode — are the same
+complaint.
+
+The marks are unchanged, and they are what keeps the count of *states* at
+three: work goes through, work is asked about, nothing is written. The
+departure is closed by the palette row taking the five names, at which point
+the artboard and the binary say the same thing.
 
 ## A row with no kind of its own carries its outcome in the glyph column
 

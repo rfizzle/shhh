@@ -84,7 +84,9 @@
                      the level is stated on the vitals rail beside the model
                      (the alt+t alias needs the Option setting the agent manager's
                      row names)
-    [shift+tab]      Cycle the permission mode
+    [shift+tab]      Cycle the permission mode: manual → accept-edits → auto →
+                     read-only → plan, and round again (behavior.mode_cycle sets
+                     another order)
                      (while the agent is working, enter queues a steering message
                       that joins the conversation before the next model request)
     [up/down]        Recall previous inputs (when the input is empty)
@@ -269,7 +271,9 @@
   ␛[38;5;241m                   the level is stated on the vitals rail beside the model␛[m
   ␛[38;5;241m                   (the alt+t alias needs the Option setting the agent manager's␛[m
   ␛[38;5;241m                   row names)␛[m
-  ␛[38;5;241m  [shift+tab]      Cycle the permission mode␛[m
+  ␛[38;5;241m  [shift+tab]      Cycle the permission mode: manual → accept-edits → auto →␛[m
+  ␛[38;5;241m                   read-only → plan, and round again (behavior.mode_cycle sets␛[m
+  ␛[38;5;241m                   another order)␛[m
   ␛[38;5;241m                   (while the agent is working, enter queues a steering message␛[m
   ␛[38;5;241m                    that joins the conversation before the next model request)␛[m
   ␛[38;5;241m  [up/down]        Recall previous inputs (when the input is empty)␛[m

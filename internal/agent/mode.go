@@ -27,9 +27,15 @@ const (
 	// anything else is judged by the LLM classifier when configured,
 	// else asks. Classifier failures fall back to asking, never allowing.
 	ModeAuto
-	// ModePlan is read-only research: file edits and non-inspection
-	// commands are refused with a result telling the model it is in plan
-	// mode; shell access is restricted to the inspection allowlist.
+	// ModeReadOnly writes nothing: file edits and non-inspection commands are
+	// refused rather than asked about, and shell access is the inspection
+	// allowlist. It is a bound on the session and nothing else.
+	ModeReadOnly
+	// ModePlan is ModeReadOnly's policy with a piece of work on top: the
+	// request carries planning instructions and the turn ends on a plan the
+	// person answers, which is why it is a mode of its own rather than the
+	// same bound under another name.
+	// See docs/capabilities/approvals-and-safety.md#the-five-modes.
 	ModePlan
 )
 
@@ -39,6 +45,8 @@ func (m Mode) String() string {
 		return "accept-edits"
 	case ModeAuto:
 		return "auto"
+	case ModeReadOnly:
+		return "read-only"
 	case ModePlan:
 		return "plan"
 	default:
@@ -47,41 +55,48 @@ func (m Mode) String() string {
 }
 
 // Describe is the one-line explanation of a mode shown by /permissions and
-// /help.
+// /help. Every mode has one, because the picker lists them all and a mode
+// with nothing beside its name is the one a reader cannot choose between.
 func (m Mode) Describe() string {
 	switch m {
 	case ModeAcceptEdits:
 		return "file edits apply without prompts; commands and other actions ask"
 	case ModeAuto:
 		return "edits apply; allowlisted commands run; the classifier judges the rest (or asks)"
+	case ModeReadOnly:
+		return "nothing is written — edits and non-inspection commands are refused"
 	case ModePlan:
-		return "read-only research — edits and non-inspection commands are refused"
+		return "read-only, and the turn ends on a plan you can carry into a fresh session"
 	default:
 		return "every consequential tool call asks"
 	}
 }
 
-// Class is the permission class a mode belongs to, and the word a session's
-// frame states its mode in: `auto` where work goes through, `gated` where it
-// asks, `read-only` where nothing can be written at all. Three words for four
-// modes, because what the reader checks before a keystroke is which of the
-// three will happen, and a class is what the frame's mark already means
-// spelled out — the mark and the word cannot then drift apart.
+// Word is the mode's name as a surface writes it, which is String with one
+// exception: accept-edits is a verb and its object, and a row with the space
+// for it writes the two words it is. `read-only` is one hyphenated adjective
+// and keeps its hyphen — split, it spells a different thing.
 //
-// String is the other vocabulary and stays the other vocabulary: it is the
-// name the config file and /permissions take, which is a different question
-// from what the session will do next.
+// It is one function rather than the rule spelled out at each surface,
+// because the surfaces that draw a mode — the frame's segment, an attached
+// child's rail, the settings row — are read against each other, and a
+// spelling that existed on only one of them would be a second name for one
+// mode.
 // See docs/interface/surfaces.md#the-input-frame.
-func (m Mode) Class() string {
-	switch m {
-	case ModeAcceptEdits, ModeAuto:
-		return "auto"
-	case ModePlan:
-		return "read-only"
-	default:
-		return "gated"
+func (m Mode) Word() string {
+	if m == ModeAcceptEdits {
+		return "accept edits"
 	}
+	return m.String()
 }
+
+// ReadOnly reports whether the mode writes nothing at all. It is the one
+// question the policy and the surfaces ask, because read-only and plan are
+// one policy and two activities: a caller that tested for plan mode alone
+// would let an edit through in the mode whose whole content is that it does
+// not.
+// See docs/capabilities/approvals-and-safety.md#the-five-modes.
+func (m Mode) ReadOnly() bool { return m == ModeReadOnly || m == ModePlan }
 
 // ParseMode maps a config or /permissions name to its Mode.
 func ParseMode(s string) (Mode, error) {
@@ -92,16 +107,20 @@ func ParseMode(s string) (Mode, error) {
 		return ModeAcceptEdits, nil
 	case "auto":
 		return ModeAuto, nil
+	case "read-only", "read_only", "read only", "readonly":
+		return ModeReadOnly, nil
 	case "plan":
 		return ModePlan, nil
 	}
-	return ModeManual, fmt.Errorf("unknown mode %q (valid: manual, accept-edits, auto, plan)", s)
+	return ModeManual, fmt.Errorf("unknown mode %q (valid: manual, accept-edits, auto, read-only, plan)", s)
 }
 
 // DefaultCycle is the Shift+Tab mode order when the config does not override
-// it (behavior.mode_cycle).
+// it (behavior.mode_cycle). It runs from the mode that asks about everything
+// to the two that run nothing, so a reader pressing the key walks one way
+// along a single scale.
 func DefaultCycle() []Mode {
-	return []Mode{ModeManual, ModeAcceptEdits, ModeAuto, ModePlan}
+	return []Mode{ModeManual, ModeAcceptEdits, ModeAuto, ModeReadOnly, ModePlan}
 }
 
 // ParseCycle parses behavior.mode_cycle entries; an empty list means the
@@ -136,11 +155,18 @@ func NextMode(cycle []Mode, current Mode) Mode {
 	return cycle[0]
 }
 
-// permissiveness ranks modes for ClampMode: plan is the most restrictive,
-// auto the most permissive.
+// permissiveness ranks modes for ClampMode: the two modes that write nothing
+// are the most restrictive, auto the most permissive.
+//
+// Read-only and plan share the rank because they allow exactly the same calls,
+// and the rank is a statement about what may run. Ranking them apart would
+// have a ceiling rewrite a child's mode for a difference that is not a
+// permission — a plan-mode child under a read-only parent would lose the
+// planning half of its job to a clamp that let through no more than it already
+// had.
 func permissiveness(m Mode) int {
 	switch m {
-	case ModePlan:
+	case ModeReadOnly, ModePlan:
 		return 0
 	case ModeAcceptEdits:
 		return 2
@@ -212,7 +238,8 @@ type Action struct {
 	// the site, not for the page.
 	Host string
 	// SafetyFlagged marks commands flagged by safety.Check; they always ask
-	// the human, in every mode except plan (which refuses them outright).
+	// the human, in every mode but the read-only two, which refuse them
+	// outright.
 	SafetyFlagged bool
 	// OutOfScope names the directories this action reaches that are outside
 	// the session's working scope. It is resolved by the front-end,
@@ -315,7 +342,28 @@ func UnattendedRefusedResult(what, reason string) string {
 // PlanModeResult is the tool result recorded for a gated call refused in
 // plan mode, so the model learns why nothing ran instead of the call being
 // silently dropped.
-const PlanModeResult = "error: this session is in plan mode (read-only); the call was not executed. Present your plan as a message, or ask the user to switch modes (Shift+Tab or /permissions)."
+const PlanModeResult = "error: this session is in plan mode; the call was not executed. Present your plan as a message, or ask the user to switch modes (Shift+Tab or /permissions)."
+
+// ReadOnlyModeResult is the same for read-only mode, and it is a different
+// sentence because the two modes want different next rounds. Plan mode's
+// refusal sends the model to a plan, which is the turn's whole product;
+// read-only mode has no product of its own, so its refusal sends the model
+// back with an answer in words. A model told to present a plan in a mode with
+// nothing to approve spends the rest of the turn on a document nobody asked
+// for.
+const ReadOnlyModeResult = "error: this session is in read-only mode; the call was not executed and no approval can run it. Answer with what you can read, or ask the user to switch modes (Shift+Tab or /permissions)."
+
+// ModeRefusedResult is the sentence for a call one of the read-only modes
+// refused, chosen by the reason the policy answered with. It is a function
+// rather than two constants at each call site because the two modes share a
+// policy: a site that matched on plan mode alone would hand a read-only
+// session plan mode's instructions.
+func ModeRefusedResult(reason string) string {
+	if reason == ModeReadOnly.String()+" mode" {
+		return ReadOnlyModeResult
+	}
+	return PlanModeResult
+}
 
 // ModePolicy is the session approval-policy state: the active mode plus the
 // Session-grant internals (per-category grants and the config command
@@ -428,8 +476,8 @@ func ReadOnlyCommands() []string {
 	}
 }
 
-// PlanInspectionCommands is the read-only allowlist under its plan-mode name
-// ; plan mode grants exactly the same set.
+// PlanInspectionCommands is the read-only allowlist under the name the
+// read-only modes grant it by; they grant exactly the same set.
 func PlanInspectionCommands() []string { return ReadOnlyCommands() }
 
 // readOnlyGuards names the flags that turn an otherwise read-only command
@@ -491,7 +539,7 @@ func ReadOnlyAllowed(command string, extra []string) bool {
 	return len(extra) > 0 && AllowlistMatches(extra, command)
 }
 
-// PlanInspectionAllowed reports whether a command is on plan mode's
+// PlanInspectionAllowed reports whether a command is on the read-only modes'
 // inspection allowlist.
 func PlanInspectionAllowed(command string) bool {
 	return ReadOnlyAllowed(command, nil)
@@ -579,13 +627,15 @@ func (p ModePolicy) decide(a Action) (Decision, string) {
 	if a.Kind == ActionFetch && HostMatches(p.DenyHosts, a.Host) {
 		return Deny, DenyReasonHost
 	}
-	if p.Mode == ModePlan {
-		// Plan mode grants inspection even with the read-only allowlist
-		// disabled: read-only is the whole point of the mode.
+	if p.Mode.ReadOnly() {
+		// Both read-only modes grant inspection even with the read-only
+		// allowlist disabled: reading is the whole of what they are for. The
+		// reason carries the mode's own name, so the refusal the model reads
+		// and the code the record keeps are each true of the mode it was in.
 		if a.Kind == ActionCommand && !a.SafetyFlagged && ReadOnlyAllowed(a.Command, p.ReadOnlyExtra) {
-			return Allow, "plan mode inspection"
+			return Allow, p.Mode.String() + " mode inspection"
 		}
-		return Deny, "plan mode"
+		return Deny, p.Mode.String() + " mode"
 	}
 	if a.SafetyFlagged {
 		return Ask, ""
