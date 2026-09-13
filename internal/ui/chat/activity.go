@@ -424,26 +424,54 @@ func ruleAccount(rule string, elapsed time.Duration) string {
 	return rule
 }
 
+// detailLines is prose as a row's detail body shows it: wrapped to the
+// body's width, which is the pane less the indent every detail body carries.
+//
+// Wrapping is not decoration here. A detail body clips what does not fit,
+// which is right for the output of a program — a log line's information is at
+// its head — and wrong for prose. A round's reasoning is one paragraph on one
+// physical line hundreds of characters long, and a judgement's reason is a
+// sentence; clipped, an opened row would show the head of it and an ellipsis
+// where the fold promised the whole
+// (docs/interface/principles.md#fold-never-hide).
+//
+// A width of zero is a caller reading a row's state rather than drawing it,
+// and there is no body to build.
+func (m Model) detailLines(text string, width int) []string {
+	text = strings.TrimRight(text, "\n")
+	if text == "" || width <= 0 {
+		return nil
+	}
+	return strings.Split(m.wordWrap(text, max(width-components.GridDetailIndent, 1)), "\n")
+}
+
 // activityRowFor builds the compact row for a tool or command entry, as
 // it renders outside any step that has been opened. Everything that only
 // wants to read a row's state — what it is, whether it ran, whether it broke
 // — asks through here, because none of those answers depend on how much of
 // the output is showing.
 func (m Model) activityRowFor(e entry) components.ActivityRow {
-	return m.activityRowDetail(e, false)
+	return m.activityRowDetail(e, false, 0)
 }
 
 // activityRowDetail is the same row told whether the step around it has its
-// detail open. Collapsed rows never show output; focus-mode expansion opens
-// the wider in-place window, with the whole result one more press away on
-// the full screen (docs/interface/surfaces.md#the-activity-row); failed
-// rows, an opened step and high verbosity show the bounded detail view; and
-// low verbosity hides counts. Every bounded body counts what it swallowed.
+// detail open, and how wide the pane it is going into is. Collapsed rows
+// never show output; focus-mode expansion opens the wider in-place window,
+// with the whole result one more press away on the full screen
+// (docs/interface/surfaces.md#the-activity-row); failed rows, an opened step
+// and high verbosity show the bounded detail view; and low verbosity hides
+// counts. Every bounded body counts what it swallowed.
 //
 // A row you opened yourself keeps its wider body inside an opened step: the
 // step's answer is the default for its rows, never a ceiling on one you
 // asked about by name.
-func (m Model) activityRowDetail(e entry, stepDetail bool) components.ActivityRow {
+//
+// The width is only ever read to wrap a body that is prose, and a caller
+// that is reading the row's state rather than drawing it passes zero. That
+// is not a render at width zero: every other field is a fact about the entry
+// and answers the same at any width, which is the whole reason one function
+// serves both.
+func (m Model) activityRowDetail(e entry, stepDetail bool, width int) components.ActivityRow {
 	row := components.ActivityRow{
 		Expanded:  e.expanded || stepDetail || m.verbosity == verbosityHigh,
 		MaxDetail: maxToolResultLines,
@@ -546,7 +574,16 @@ func (m Model) activityRowDetail(e entry, stepDetail bool) components.ActivityRo
 				// (docs/interface/principles.md#two-denials-are-not-one-denial).
 				row.Outcome = components.OutcomeBlocked
 				row.Allowed = ruleAccount(e.denyRule, e.duration)
-				row.Keys = "/permissions why"
+				if e.denyWhy == "" {
+					// A rule that only matched sends the reader to the
+					// session's own answer for the longer one. A rule that
+					// judged has already folded its sentence under this row,
+					// so the offer would point away from where the answer is
+					// — and it would cost the row the columns the rule's
+					// name is in, which is the one field the outcome cannot
+					// do without.
+					row.Keys = "/permissions why"
+				}
 			} else {
 				row.Outcome = components.OutcomeBy(components.OutcomeDenied, e.deniedBy)
 			}
@@ -562,8 +599,19 @@ func (m Model) activityRowDetail(e entry, stepDetail bool) components.ActivityRo
 			// rather than left to the body below because a denial has no
 			// output to count and none of the readings that follow — the
 			// error prefix, the receipt, the link — describe a sentence.
-			if e.denyNote != "" {
+			//
+			// A rule that judged rather than matched says why in the same
+			// place, and the two never meet: one is the reader's sentence
+			// and the other the judge's, and only one of them refused this
+			// call. The judge's is wrapped because it is prose and the body
+			// clips rather than wraps — a reason cut off at the pane is the
+			// fold hiding what it promised
+			// (docs/interface/principles.md#fold-never-hide).
+			switch {
+			case e.denyNote != "":
 				row.Detail = strings.Split(e.denyNote, "\n")
+			case e.denyWhy != "":
+				row.Detail = m.detailLines(e.denyWhy, width)
 			}
 		case result == pendingToolResult:
 			row.State = components.ActivityRunning

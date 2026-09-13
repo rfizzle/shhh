@@ -105,7 +105,7 @@ func TestAmend_TheReadersLineRunsAndEverythingSaysSo(t *testing.T) {
 	if row.amendedFrom != "npm test" {
 		t.Fatalf("the row should keep the line the call carried, got %q", row.amendedFrom)
 	}
-	detail := m.activityRowDetail(row, false)
+	detail := m.activityRowDetail(row, false, m.contentWidth())
 	if want := components.OutcomeBy(components.OutcomeAmended, decidedByYou); detail.Allowed != want {
 		t.Fatalf("the row's outcome should name the decider, want %q got %q", want, detail.Allowed)
 	}

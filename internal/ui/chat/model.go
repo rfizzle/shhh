@@ -432,6 +432,15 @@ type entry struct {
 	// It is not toolResult — the call never ran and produced nothing — which
 	// is why the row that never has a body has this one instead.
 	denyNote string
+	// denyWhy is the account of a denial by the one rule that judged rather
+	// than matched: the call and the sentence the judgement gave for
+	// refusing it. It is folded under the row for the same reason denyNote
+	// is, and it is on the row rather than only in a session-wide summary
+	// because the reason belongs to the act and outlives the moment
+	// (docs/capabilities/approvals-and-safety.md#a-judged-denial-carries-its-reason).
+	// Empty on a denial by a rule that only matched, which has nothing to
+	// say beyond which rule it was.
+	denyWhy string
 	// answered is how a question the model asked was answered, from the
 	// closed vocabulary the tool's own result carries (question.go). Empty
 	// on every row that is not a question, which is every other row.
@@ -741,8 +750,17 @@ type Model struct {
 	defaults Defaults
 	// lastDenial is the most recent auto-mode denial, shown by /permissions why.
 	lastDenial string
-	// denialNotice mirrors lastDenial on the notice rail until the
-	// next user turn clears it.
+	// denialNotice names a call a rule matched and refused, on the notice
+	// rail until the next user turn clears it: a standing rule the reader
+	// wrote and may want to go and change is a state of the session and not
+	// only a moment in it.
+	//
+	// A judged denial is not one of these. The classifier answers this call
+	// and no other, so what it said is the act's and belongs to the act's
+	// row, where it stays; left on the rail it would still be there after
+	// the turn had moved on, saying something about the session that was no
+	// longer true
+	// (docs/capabilities/approvals-and-safety.md#a-judged-denial-carries-its-reason).
 	denialNotice string
 	// planChoice is the focused row of the plan-approval prompt.
 	planChoice int

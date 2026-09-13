@@ -248,7 +248,7 @@ func (m *Model) elideTranscript(was []string) {
 		id, _ := agent.Elided(queue[0])
 		// What the row says about the call is read off the body while there
 		// is still a body to read it off.
-		was := m.activityRowDetail(*e, false)
+		was := m.activityRowDetail(*e, false, 0)
 		e.elided = &elidedRow{
 			state:    was.State,
 			outcome:  was.Outcome,

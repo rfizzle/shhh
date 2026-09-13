@@ -619,20 +619,20 @@ func (m Model) finishClassifierCheck(v agent.ClassifierVerdict) (tea.Model, tea.
 		return m.executeApprovedTool()
 	case agent.Deny:
 		m.recordDecision(observe.DecisionDeny, observe.ReasonClassifier)
-		m.lastDenial = req.summary + " — " + reason
-		// Surfaces on the notice rail until the next user turn.
-		m.denialNotice = req.summary
+		why := req.summary + " — " + reason
+		m.lastDenial = why
 		m.pendingApproval = nil
 		m.pendingRun = ""
 		m.pendingScope = scopeReach{}
 		m.agent.ResolveApproval(m.refusedResult(req.call, denialResult(reason)))
-		// The row names the rule, not the judgement: every other rule denial
-		// states a rule the reader can change, and the classifier's sentence
-		// is neither short enough for the outcome column nor a thing to
-		// change. It is on the notice rail and behind the row's own
-		// `/permissions why`, which is where a reason belongs
-		// (docs/interface/principles.md#closed-vocabularies).
-		m.appendEntry(deniedEntry(req, decidedByAuto, classifierRule, v.Elapsed))
+		// The outcome column names the rule, not the judgement: it is a
+		// closed vocabulary and the classifier's sentence is prose
+		// (docs/interface/principles.md#closed-vocabularies). The sentence
+		// goes under the row instead, whole, where the call it judged is —
+		// and nothing is left on the frame, which says what the session is
+		// doing now and not what it did three rounds ago
+		// (docs/capabilities/approvals-and-safety.md#a-judged-denial-carries-its-reason).
+		m.appendEntry(deniedEntry(req, decidedByAuto, classifierRule, v.Elapsed).withDenyWhy(why))
 		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoBottom()
 		return m.advanceApprovalQueue()
@@ -862,11 +862,22 @@ func deniedEntry(req *approvalRequest, decider, rule string, elapsed time.Durati
 // (docs/interface/principles.md#fold-never-hide). It is the row's body, so it
 // opens with the row and is carried verbatim.
 //
-// Only a reader's denial can have one. A rule's denial goes through its own
-// path with its own code and has nothing to say beyond which rule it was
+// Only a reader's denial can have one. A rule that matched has nothing to say
+// beyond which rule it was; a rule that judged says it through withDenyWhy
 // (docs/capabilities/approvals-and-safety.md#denials-are-two-different-facts).
 func (e entry) withDenyNote(note string) entry {
 	e.denyNote = note
+	return e
+}
+
+// withDenyWhy folds a judgement's account under the row it refused: the call
+// and the sentence the judge gave for it, in the shape `/permissions why`
+// prints, because the two are the same fact asked in two places. The session
+// summary answers "what was the last one"; the row answers "why was this
+// one", which is the question a reader scrolling back to a refusal has
+// (docs/capabilities/approvals-and-safety.md#a-judged-denial-carries-its-reason).
+func (e entry) withDenyWhy(why string) entry {
+	e.denyWhy = why
 	return e
 }
 

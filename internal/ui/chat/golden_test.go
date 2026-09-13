@@ -1806,6 +1806,49 @@ func TestGolden_AutoApproved(t *testing.T) {
 	})
 }
 
+// TestGolden_ClassifierDenial captures what a judged refusal leaves behind
+// (docs/capabilities/approvals-and-safety.md#a-judged-denial-carries-its-reason):
+// the row settled in the feed with the rule in the account field, the same row
+// opened onto the sentence the judgement gave, and the reading cursor standing
+// on it. A later command that ran follows it in every panel, because the whole
+// point is that the refusal stays a row while the turn goes on — and because
+// the row that ran is what the blocked one is read against.
+//
+// All four widths: the account is the one field the row cannot do without
+// here, and 60 is where the outcome column runs out of room for it.
+func TestGolden_ClassifierDenial(t *testing.T) {
+	captureGolden(t, "classifier-denial", "a refusal the classifier judged", goldenWidths, func(width int) []golden.Panel {
+		const denied = "npm run deploy -- --tag latest"
+		feed := func(open bool) []entry {
+			return []entry{
+				{kind: entryTool, toolName: tools.ExecCommandName,
+					toolArgs: `{"command":"` + denied + `"}`,
+					deniedBy: decidedByAuto, denyRule: classifierRule,
+					duration: 2100 * time.Millisecond, expanded: open,
+					denyWhy: denied + " — the task asked for a release check and this publishes one"},
+				{kind: entryCommand, text: "npm test", duration: 8 * time.Second,
+					toolResult: "Test Suites: 12 passed, 12 total",
+					allowedBy:  classifierRule, allowElapsed: 1800 * time.Millisecond},
+			}
+		}
+		build := func(open bool) Model {
+			m := frameModel(t, width, 40)
+			m.transcript = feed(open)
+			m.invalidateRenderCache()
+			return m
+		}
+		settled, opened := build(false), build(true)
+		cursor, _ := build(false).enterFocusMode()
+		onDenial := cursor.(Model)
+		onDenial.moveFocus(-1)
+		return []golden.Panel{
+			{Label: "settled in the feed, with the command that ran after it", View: settled.renderHistory()},
+			{Label: "opened · the call it refused and why, under the row", View: opened.renderHistory()},
+			{Label: "the reading cursor on it", View: readingSurface(onDenial)},
+		}
+	})
+}
+
 // TestGolden_CommandErrors captures the command-result states. Failed command
 // rows open their retained evidence, and no negative process status is painted
 // as a normal exit status.

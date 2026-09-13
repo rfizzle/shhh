@@ -221,7 +221,7 @@ func (m Model) renderEntryDetail(e entry, width int, keysLive, stepDetail bool) 
 	case entryTool, entryCommand:
 		// Compact one-row activity rendering; focus mode expands it,
 		// and so does the step around it.
-		return m.activityRowDetail(e, stepDetail).View(width) + "\n"
+		return m.activityRowDetail(e, stepDetail, width).View(width) + "\n"
 	case entryThink:
 		// The round's reasoning, folded (think.go). Low verbosity draws no
 		// row at all, and an entry that renders to nothing is not a unit, so

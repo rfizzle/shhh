@@ -92,7 +92,7 @@ func TestDenyNoted_TheSentenceIsWhatTheModelIsToldAndWhatTheRowKeeps(t *testing.
 	if row.denyNote != why {
 		t.Fatalf("the row should keep the sentence verbatim, got %q", row.denyNote)
 	}
-	detail := m.activityRowDetail(row, false)
+	detail := m.activityRowDetail(row, false, m.contentWidth())
 	if strings.Contains(detail.Outcome, why) {
 		t.Fatalf("the sentence belongs under the row, not in its outcome: %q", detail.Outcome)
 	}
@@ -101,7 +101,7 @@ func TestDenyNoted_TheSentenceIsWhatTheModelIsToldAndWhatTheRowKeeps(t *testing.
 	}
 
 	row.expanded = true
-	if view := m.activityRowDetail(row, false).View(m.contentWidth()); !strings.Contains(ansi.Strip(view), why) {
+	if view := m.activityRowDetail(row, false, m.contentWidth()).View(m.contentWidth()); !strings.Contains(ansi.Strip(view), why) {
 		t.Fatalf("the expanded row should show the sentence:\n%s", view)
 	}
 }

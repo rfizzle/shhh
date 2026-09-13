@@ -58,25 +58,13 @@ const (
 // (docs/interface/principles.md#closed-vocabularies).
 const thinkVerb = "think"
 
-// thinkLines is the block as the row would show it: wrapped to the detail
-// body's width, which is the pane less the indent every detail body carries.
-//
-// Wrapping is not decoration here. A detail body clips what does not fit,
-// which is right for the output of a program — a log line's information is at
-// its head — and wrong for prose, and reasoning arrives as prose: one
-// paragraph is one physical line, hundreds of characters long. Clipped, an
-// opened row would show a sentence and an ellipsis where the fold promised
-// forty lines, which is the fold hiding what it said it had
-// (docs/interface/principles.md#fold-never-hide).
+// thinkLines is the block as the row would show it, wrapped the way every
+// detail body carrying prose is (detailLines in activity.go).
 //
 // It is also what the count counts, so the number on a closed row is the
 // number of lines opening it costs.
 func (m Model) thinkLines(text string, width int) []string {
-	text = strings.TrimRight(text, "\n")
-	if text == "" {
-		return nil
-	}
-	return strings.Split(m.wordWrap(text, max(width-components.GridDetailIndent, 1)), "\n")
+	return m.detailLines(text, width)
 }
 
 // lineCounts is a folded prose row's outcome field: what the fold swallowed.

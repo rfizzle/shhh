@@ -1,0 +1,41 @@
+# A refusal the classifier judged is a row in the feed and nothing on the
+# frame (docs/capabilities/approvals-and-safety.md#a-judged-denial-carries-its-reason).
+#
+# What the capture is for: the row is opened onto the sentence the judge
+# wrote, and then the session goes on — a later command is judged, allowed
+# and run with the refusal still behind it. Read the rows against the Steps
+# artboard's row anatomy and states, and read the frame in every snap against
+# the Frame artboard, which has no denial field on it: the label this scene
+# exists to remove would sit between the notices and the box.
+#
+# The mode comes first, because the classifier only judges in auto: two
+# presses of the cycle key from the mode a session opens in.
+snap 01-start "Some things worth doing first"
+keys BTab
+keys BTab
+snap 02-auto "⏵⏵ auto"
+keys "publish the release" Enter
+# The judge says no. The row is the refusal — blocked, with the rule in the
+# account field — and the turn goes on to its answer underneath it.
+snap 03-blocked "blocked"
+snap 04-carried-on "Leaving the release alone"
+# The reading cursor walks back to the refusal and opens it: the call it
+# judged and the sentence it judged by, folded under the row.
+keys C-o
+snap 05-reading "back to the prompt"
+keys k
+keys k
+snap 06-on-the-denial "row 1 of 3"
+keys Enter
+snap 07-opened "the task asked for a release check"
+keys q
+sleep 0.5
+# And the session goes on. The next command is judged too, allowed, and runs
+# with the refusal still open above it — and the frame still says nothing
+# about either decision.
+keys "start the release notes instead" Enter
+snap 08-later-ran "The notes file is there"
+keys C-c
+snap 09-quit-armed "again quits"
+keys C-c
+snap 10-exit "that is everything the screen was holding"

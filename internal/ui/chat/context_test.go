@@ -754,7 +754,7 @@ func TestTrimContext_ElidesTheTranscriptCopy(t *testing.T) {
 	if row.elided == nil || row.elided.counts != want {
 		t.Fatalf("counts %#v, want %q kept from before the elision", row.elided, want)
 	}
-	if got := m.activityRowDetail(row, false).Counts; got != want {
+	if got := m.activityRowDetail(row, false, m.contentWidth()).Counts; got != want {
 		t.Fatalf("the row draws counts %q, want %q", got, want)
 	}
 }
@@ -825,12 +825,12 @@ func TestElidedRow_KeepsWhatTheBodySaid(t *testing.T) {
 	}, mockStream)
 	m.appendEntry(entry{kind: entryTool, toolName: "read_file", toolResult: boom})
 	m.contextTokens = 30000
-	before := m.activityRowDetail(m.transcript[0], false)
+	before := m.activityRowDetail(m.transcript[0], false, m.contentWidth())
 
 	if n := m.trimContext(); n != 1 {
 		t.Fatalf("want 1 elided result, got %d", n)
 	}
-	after := m.activityRowDetail(m.transcript[0], false)
+	after := m.activityRowDetail(m.transcript[0], false, m.contentWidth())
 	if !after.Failed() {
 		t.Fatal("eliding the body turned a failed call into a clean one")
 	}

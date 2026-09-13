@@ -1,0 +1,13 @@
+# One reply per request, and the classifier draws from this queue too: its
+# verdict is a request to the same endpoint, so every judged call costs two
+# lines here — the call, then the decision tool the judge is asked to call.
+#
+# Each call is a reply of its own rather than prose and a call together, so
+# the rows stand in the transcript rather than inside a step that folds to
+# its header when the turn ends: this scene is about the row.
+tool:execute_command:{"command":"npm run deploy -- --tag latest"}
+tool:permission_decision:{"decision":"deny","reason":"the task asked for a release check and this publishes one"}
+Leaving the release alone.
+tool:execute_command:{"command":"touch RELEASE_NOTES.md"}
+tool:permission_decision:{"decision":"allow","reason":"a notes file is not a release, and the task asked for one"}
+The notes file is there and the release is still unpublished.

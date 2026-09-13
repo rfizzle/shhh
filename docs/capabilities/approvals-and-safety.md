@@ -252,6 +252,32 @@ things to go and change.
 A denial is recorded as an act, and carries the mutation rail, because the
 point of that rail is finding the moments that mattered.
 
+## A judged denial carries its reason
+
+Most rules only match. The deny list, plan mode, a path no grant can reach —
+each answers with the rule's own name, and the name is the whole of what it
+had to say. One rule judges instead: auto mode's classifier reads this call,
+in this conversation, and writes a sentence about it. That sentence is not the
+rule's name and cannot be reported as one.
+
+**So it is folded under the row of the call it refused**, where the reader
+finds it by opening the refusal they are already looking at. A refusal is a
+moment in a record, and the record is the feed: the row is still there after
+the turn has moved on, it is still there ten turns later, and what refused it
+is still on it. Anything else asks a reader who scrolled back to a denial to
+go somewhere else and hope the answer there is still about this one.
+
+**The prompt frame says nothing about it.** The frame is current state, read
+before every keystroke; a judgement about one call three rounds ago is not
+state, and a label left there would go on saying something true of a moment
+and false of the session. A standing rule the reader wrote *is* state — it
+will refuse the next call too, and going and changing it is an act — so a rule
+that matched still says so there until the next turn.
+
+`/permissions why` keeps its own answer, and the two are not the same
+question. It reports the latest denial, wherever the reader happens to be; the
+row reports this one, wherever the denial happens to be.
+
 ## A no can say why, and a yes can say what next
 
 A denial reached the model as one fixed sentence: the user declined. Whatever
@@ -264,8 +290,10 @@ thing the model cannot find out on its own.
 So the card's no has a second spelling that opens a note, and the sentence
 the reader writes is what the model receives in place of the fixed one. It is
 still the reader's denial: the row draws it in the reader's colour and word,
-distinct from a rule's, with the note folded under it. A rule's denial never
-carries a note, because a rule has nothing to say beyond which rule it was.
+distinct from a rule's, with the note folded under it. A rule that only
+matched carries no note there, because it has nothing to say beyond which rule
+it was; the one rule that judged folds its own sentence into the same place
+([above](#a-judged-denial-carries-its-reason)).
 
 The yes has the same second spelling. A note beside an allow is steering: the
 act runs, and the sentence joins the conversation before the next round, the

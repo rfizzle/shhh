@@ -54,6 +54,15 @@ The account — what allowed the call, and what the judgement cost where a
 classifier made it — is a field of the row beside the outcome, the way the
 decider on a refused row is.
 
+An act that was refused states that on its own row too, and opens to why.
+What refused it is the field beside the outcome; the sentence behind the
+refusal — the reader's own, or the one the classifier wrote about this call —
+is the row's body, folded, because a sentence clipped into a field is a reason
+nobody can read. A row is the only place the reason keeps: the feed is the
+record, so the refusal and what was said about it are still together after the
+turn has moved on, and the frame above carries neither
+([`../capabilities/approvals-and-safety.md`](../capabilities/approvals-and-safety.md#a-judged-denial-carries-its-reason)).
+
 A row's output is bounded, and the bound is a fold rather than a loss: a body
 cut at the cap ends by counting what it swallowed. Opening the row widens the
 window in place — enough to read a failed test run whole — and opening it
