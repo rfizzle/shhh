@@ -369,12 +369,19 @@ Whether the working tree moved under a turn is decided in
 `internal/agent/tree.go` (`SetTreeCheck`, `NextTreeNotice`) and delivered by
 whichever front-end holds the turn: `internal/ui/chat/tree.go` for a session,
 `Headless.deliverTree` for a headless run. The snapshot is one
-`git status --porcelain=v2 --branch -z` at the repository root; the
-subtrahend is the front-end's — a session hands in its changeset, a headless
-run the paths its mutating calls wrote (`writtenByCalls` in
-`internal/cli/print.go`). `BeginToolRound` counts the command calls of a round
-so the next notice can say a command ran rather than claim the changes are
-somebody else's. A sub-agent is not handed one: a writer stands in its own
+`git status --porcelain=v2 --branch --untracked-files=normal -z` at the
+repository root — **the untracked mode is asked for and not inherited**,
+because `status.showUntrackedFiles=all` in somebody's own config names every
+file of a new directory and turns a build cache into thousands of paths in
+the notice; the subtrahend is the front-end's — a session hands in its
+changeset, a headless run the paths its mutating calls wrote (`writtenByCalls`
+in `internal/cli/print.go`). `BeginToolRound` counts the command calls of a
+round so the next notice can say a command ran rather than claim the changes
+are somebody else's. **`DefaultTreeBudget` is one deadline for the whole
+reading**, not one per call: `treeState.begin`/`spent`/`downgrade` spend the
+status, the `check-ignore` and the `ls-files` against one clock, and a reading
+that runs past it is finished — cutting a call off would lose the subtraction
+it exists for — and then keeps only the turn boundary. A sub-agent is not handed one: a writer stands in its own
 worktree, and a reader's fan-out would multiply the cost. `behavior.tree_check`
 turns it off.
 

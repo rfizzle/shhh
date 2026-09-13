@@ -266,6 +266,65 @@ func TestTree_ASlowStatusKeepsOnlyTheTurnBoundary(t *testing.T) {
 	}
 }
 
+// The budget is one deadline for the reading rather than one per call: a
+// status that came back well inside it and an ignore reading that ran long is
+// a reading that ran over, and it downgrades exactly as a slow status does.
+func TestTree_ABudgetSpentAfterTheStatusStillDowngrades(t *testing.T) {
+	ws, _ := treeFixture(t)
+	var logged []string
+	a := New(nil, nil)
+	a.SetTreeCheck(TreeCheck{Dir: ws, Budget: 300 * time.Millisecond, Log: func(s string) { logged = append(logged, s) }})
+	if !a.TreeChecking() {
+		t.Fatal("the reading should be on inside a repository")
+	}
+	// A clock the reading spends rather than one it waits out. It is read at
+	// the start of the reading and as each git call comes back: the status
+	// inside the budget, the ignore rules well past it.
+	base, reads := time.Now(), 0
+	at := []time.Duration{0, 100 * time.Millisecond, 900 * time.Millisecond}
+	a.tree.now = func() time.Time {
+		d := at[min(reads, len(at)-1)]
+		reads++
+		return base.Add(d)
+	}
+
+	write(t, ws, "b.txt", "")
+	if _, ok := a.NextTreeNotice(false); !ok {
+		t.Fatal("a reading that ran over still reports what it read")
+	}
+	if len(logged) != 1 || !strings.Contains(logged[0], "git check-ignore") ||
+		!strings.Contains(logged[0], "turn boundaries only") {
+		t.Fatalf("the call that found the budget gone is named, once: %q", logged)
+	}
+	write(t, ws, "c.txt", "")
+	if _, ok := a.NextTreeNotice(false); ok {
+		t.Error("a reading that ran over does not run between rounds")
+	}
+	if n, ok := a.NextTreeNotice(true); !ok || !strings.Contains(n.Message, "c.txt") {
+		t.Errorf("it still runs at the turn boundary, got ok=%v:\n%s", ok, n.Message)
+	}
+}
+
+// The reading asks for the untracked mode it wants. A person's own
+// `status.showUntrackedFiles=all` is about their `git status` and not about
+// what the model is told: under it git names every file of a new directory,
+// and a build cache reaches the notice as thousands of paths rather than one.
+func TestTree_TheUntrackedModeIsTheReadingsAndNotTheCheckouts(t *testing.T) {
+	ws, run := treeFixture(t)
+	run("config", "status.showUntrackedFiles", "all")
+	for _, p := range []string{"cache/aa/one", "cache/bb/two", "cache/three"} {
+		write(t, ws, p, "x\n")
+	}
+
+	snap, err := TakeTreeSnapshot(ws)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(snap.Status) != 1 || snap.Status["cache/"] != "??" {
+		t.Errorf("a new untracked directory is one entry whatever the checkout asks for, got %v", snap.Status)
+	}
+}
+
 func TestTree_ParseStatusV2(t *testing.T) {
 	out := strings.Join([]string{
 		"# branch.oid abc123",
@@ -667,10 +726,11 @@ func TestTree_ACacheACommandWroteIsNotReported(t *testing.T) {
 		name      string
 		untracked string
 	}{
-		// Git collapses a new untracked directory to one entry, unless the
-		// checkout is configured to name every file under it.
-		{"collapsed", "normal"},
-		{"named one by one", "all"},
+		// The reading asks git for the untracked mode, so a checkout
+		// configured to name every file under a new directory and one that
+		// collapses it are the same reading and the same subtraction.
+		{"the default", "normal"},
+		{"a checkout that asks for every file", "all"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			ws, run := treeFixture(t)

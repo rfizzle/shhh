@@ -60,11 +60,17 @@ import (
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
-// DefaultTreeBudget is how long one status call may take before the reading
-// stops running at every round boundary. The call sits between a round's
-// results and the next request, so a slow one is paid on every round of every
-// turn; past the budget the reading keeps only the turn boundary, where the
-// wait is against a person typing rather than a model answering.
+// DefaultTreeBudget is how long one reading may take before it stops running
+// at every round boundary. The reading sits between a round's results and the
+// next request, so a slow one is paid on every round of every turn; past the
+// budget the reading keeps only the turn boundary, where the wait is against a
+// person typing rather than a model answering.
+//
+// It is one deadline for the whole reading and not one per call. The reading
+// is three git calls — the status, the ignore rules, and the directories a
+// command made — and three calls each allowed the budget is three times the
+// wait the budget promises to a person whose checkout is large enough for any
+// of it to matter.
 const DefaultTreeBudget = 300 * time.Millisecond
 
 // treeNoticePaths bounds how many changed paths a notice names. The rest are
@@ -169,9 +175,25 @@ type treeState struct {
 	top      string
 	last     TreeSnapshot
 	commands int
-	// degraded is set once a status call blew the budget; from then on only
-	// the turn boundary reads.
+	// degraded is set once a reading blew the budget; from then on only the
+	// turn boundary reads.
 	degraded bool
+	// now is the clock the budget is spent against, so a test can spend one
+	// without waiting it out. Nil is time.Now.
+	now func() time.Time
+	// started is when the reading in progress began, and overCall with overAt
+	// is the git call that came back to find the budget gone, if one did.
+	//
+	// The budget is read after each call rather than enforced on it. A call
+	// cut off mid-way answers nothing, and what the two calls after the status
+	// answer is which of the changed paths are the session's own scratch: a
+	// reading that loses that answer reports the cache instead of suppressing
+	// it, which is the five-thousand-path alarm this reading was taught not to
+	// raise. So an over-budget reading is finished and then stops happening
+	// every round, which is where the repeated cost was anyway.
+	started  time.Time
+	overCall string
+	overAt   time.Duration
 	// instructions is cfg.Instructions keyed the way the snapshot keys
 	// paths, worked out once: the set is a session's prompt and does not
 	// change while it runs, and keying it per boundary would resolve the
@@ -272,25 +294,19 @@ func (a *Agent) NextTreeNotice(turnStart bool) (TreeNotice, bool) {
 	if t == nil || (t.degraded && !turnStart) {
 		return TreeNotice{}, false
 	}
-	start := time.Now()
+	t.begin()
 	now, err := TakeTreeSnapshot(t.top)
 	if err != nil {
 		return TreeNotice{}, false
 	}
-	if took := time.Since(start); took > t.cfg.Budget && !t.degraded {
-		t.degraded = true
-		if t.cfg.Log != nil {
-			t.cfg.Log(fmt.Sprintf("tree check: git status took %s, over the %s budget; reading at turn boundaries only from here",
-				took.Round(time.Millisecond), t.cfg.Budget))
-		}
-	}
+	t.spent("git status")
 	own := t.ownPaths()
 	commands := t.commands
 	last := t.last
 	t.noteCommandDirs(last, now, commands)
 	t.last, t.commands = now, 0
 
-	return diffTree(last, now, treeAttribution{
+	n, ok := diffTree(last, now, treeAttribution{
 		own:          own,
 		made:         t.made,
 		instructions: t.instructions,
@@ -299,6 +315,50 @@ func (a *Agent) NextTreeNotice(turnStart bool) (TreeNotice, bool) {
 		sibling:      t.cfg.Sibling,
 		ignored:      t.ignoredPaths,
 	})
+	// After the comparison, because the ignore reading is made inside it: the
+	// budget covers every call the reading makes, wherever it is made from.
+	t.downgrade()
+	return n, ok
+}
+
+// clock is what the budget is spent against.
+func (t *treeState) clock() time.Time {
+	if t.now != nil {
+		return t.now()
+	}
+	return time.Now()
+}
+
+// begin starts the deadline this reading's git calls share.
+func (t *treeState) begin() {
+	t.started, t.overCall, t.overAt = t.clock(), "", 0
+}
+
+// spent is called as each git call of the reading comes back, and remembers
+// the first one that found the budget gone — the call worth naming, since a
+// reading three calls long has three answers to "which one was slow".
+func (t *treeState) spent(call string) {
+	if t.overCall != "" {
+		return
+	}
+	if took := t.clock().Sub(t.started); took > t.cfg.Budget {
+		t.overCall, t.overAt = call, took
+	}
+}
+
+// downgrade keeps only the turn boundary once a reading has run past the
+// budget, and says so once. A reading already downgraded says nothing: the
+// line is about the change of behaviour, and repeating it every round would
+// cost the reader more than the reading does.
+func (t *treeState) downgrade() {
+	if t.overCall == "" || t.degraded {
+		return
+	}
+	t.degraded = true
+	if t.cfg.Log != nil {
+		t.cfg.Log(fmt.Sprintf("tree check: %s took the reading to %s, over the %s budget; reading at turn boundaries only from here",
+			t.overCall, t.overAt.Round(time.Millisecond), t.cfg.Budget))
+	}
 }
 
 // noteCommandDirs remembers the directories a command of this session
@@ -374,6 +434,7 @@ func (t *treeState) untrackedDirs(dirs map[string]bool) []string {
 		ask = ask[:treeDirProbe]
 	}
 	out, err := gitOut(t.top, append([]string{"ls-files", "-z", "--"}, ask...)...)
+	t.spent("git ls-files")
 	if err != nil {
 		return nil
 	}
@@ -428,6 +489,7 @@ func (t *treeState) ignoredPaths(paths []string) map[string]bool {
 		return nil
 	}
 	out, err := gitIn(t.top, strings.Join(paths, "\x00")+"\x00", "check-ignore", "-z", "--stdin")
+	t.spent("git check-ignore")
 	if err != nil {
 		return nil
 	}
@@ -779,8 +841,15 @@ func branchName(s TreeSnapshot) string {
 // TakeTreeSnapshot reads the tree in one git call: porcelain v2 with the
 // branch header, NUL-terminated so a path is never quoted. Paths come back
 // relative to the directory git ran in, which is why it is run at the root.
+//
+// The untracked mode is asked for rather than left to the checkout. A person
+// who set `status.showUntrackedFiles=all` for their own reading of a tree has
+// said nothing about this one, and the setting is not a small difference: git
+// names every file under a new directory where the default names the
+// directory once, which is how one notice came to count 5,825 cache files one
+// by one. What the model is told is the same reading in every checkout.
 func TakeTreeSnapshot(top string) (TreeSnapshot, error) {
-	out, err := gitOut(top, "status", "--porcelain=v2", "--branch", "-z")
+	out, err := gitOut(top, "status", "--porcelain=v2", "--branch", "--untracked-files=normal", "-z")
 	if err != nil {
 		return TreeSnapshot{}, err
 	}
