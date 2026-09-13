@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/preflight"
 	"github.com/rfizzle/shhh/internal/provider"
 )
@@ -1142,4 +1143,49 @@ func TestGenerate_SilentExplainGoesStraightToAction(t *testing.T) {
 	if strings.Contains(m.View().Content, "lists files") {
 		t.Error("silent mode explained the command anyway")
 	}
+}
+
+// A frame drawn inline owns every cell of every row it draws, so a narrower
+// frame after a wider one leaves nothing of the wider one on screen. The
+// alternatives card is the narrow frame this surface has: it is drawn at the
+// width it wants or the terminal's, whichever is less, and in a terminal
+// wider than the card the cells to its right were the result surface's.
+func TestGenerate_ANarrowerFrameLeavesNoneOfTheWiderOne(t *testing.T) {
+	const width = 100
+	wide := sized(withAlternatives(t, twoOthers), width)
+	rowsAre(t, "the result surface", wide.View().Content, width)
+
+	narrow := press(t, wide, "a")
+	if narrow.Phase() != phasePick {
+		t.Fatalf("`a` did not open the picker: phase %v", narrow.Phase())
+	}
+	// The card itself is narrower than the terminal — otherwise there is
+	// nothing for a row to cover and the check below passes for the wrong
+	// reason.
+	if card := ansi.StringWidth(widestRow(narrow.screen())); card >= width {
+		t.Fatalf("the picker is %d columns of a %d-column terminal; it fills the row on its own", card, width)
+	}
+	rowsAre(t, "the picker", narrow.View().Content, width)
+}
+
+// rowsAre asserts every row of a frame is exactly the terminal's width.
+func rowsAre(t *testing.T, what, view string, width int) {
+	t.Helper()
+	for i, line := range strings.Split(ansi.Strip(view), "\n") {
+		if w := ansi.StringWidth(line); w != width {
+			t.Errorf("%s: row %d is %d columns of a %d-column terminal: %q", what, i+1, w, width, line)
+		}
+	}
+}
+
+// widestRow is the widest row of a render, which for a frame read before the
+// view pads it is the width the frame laid itself out at.
+func widestRow(view string) string {
+	var widest string
+	for _, line := range strings.Split(ansi.Strip(view), "\n") {
+		if ansi.StringWidth(line) > ansi.StringWidth(widest) {
+			widest = line
+		}
+	}
+	return widest
 }

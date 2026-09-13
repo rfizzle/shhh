@@ -1267,6 +1267,31 @@ func foldToWidth(s string, width int) string {
 	return ansi.Hardwrap(s, width, true)
 }
 
+// padToWidth carries every row out to the terminal's own width. Folding says
+// no row is wider than the terminal; this says none is narrower, and the two
+// together are the frame owning every cell of every row it draws.
+//
+// It is what a frame drawn inline has to do for itself. The renderer holds
+// the cells the last frame wrote and repaints the ones that changed, so a
+// row the new frame ends early is a row whose tail is still the old frame's:
+// the alternatives card is as wide as it wants to be or as wide as there is
+// room for, and opening it in a terminal wider than the card left the result
+// surface's own tail on screen beside it. A row that reaches the last column
+// leaves nothing to show through
+// (docs/interface/surfaces.md#the-one-shot-result).
+func padToWidth(s string, width int) string {
+	if width < 1 {
+		return s
+	}
+	lines := strings.Split(s, "\n")
+	for i, line := range lines {
+		if pad := width - ansi.StringWidth(line); pad > 0 {
+			lines[i] = line + strings.Repeat(" ", pad)
+		}
+	}
+	return strings.Join(lines, "\n")
+}
+
 func prefixLines(s, pad string) string {
 	lines := strings.Split(s, "\n")
 	for i, line := range lines {
@@ -1278,9 +1303,10 @@ func prefixLines(s, pad string) string {
 // View is the frame. The one-shot generate UI draws inline under the prompt
 // it was typed at rather than taking the screen over, so the view carries
 // content and no state — but inline is still inside a terminal, and the last
-// thing a frame does is fit the one it is in.
+// thing a frame does is fit the one it is in: fold what runs past the last
+// column, and paint out to it what stops short of one.
 func (m GenerateModel) View() tea.View {
-	return tea.NewView(foldToWidth(m.screen(), m.width))
+	return tea.NewView(padToWidth(foldToWidth(m.screen(), m.width), m.width))
 }
 
 // fieldView is a one-shot field's render, in the palette as it stands now.

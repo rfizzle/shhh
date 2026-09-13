@@ -1958,6 +1958,15 @@ it was a row whose tail nobody was shown, and what went missing was the end
 of the sentence and the last keys on the row, `[s] save` and the `[esc]` that
 says how to leave.
 
+The count is owed in the other direction too. Inline means the frame shares
+the screen with what was already on it — including the frame before it — so a
+row that stops short of the last column is a row whose tail is still whatever
+was there. The alternatives card is as wide as it wants to be or as wide as
+there is room for, whichever is less, and opening it in a wider terminal left
+the result surface's own tail on screen beside it. Every row of every frame
+reaches the last column, so a narrower frame after a wider one leaves nothing
+of the wider one behind.
+
 So each kind of row breaks the way that kind of row should. A sentence — the
 explanation, a risk, the containment line — breaks between words, and reads
 the same at every width. The key row breaks between one offer and the next

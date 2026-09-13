@@ -11,14 +11,14 @@
 
 ── layout ──────────────────────────────────────────────────
 · waiting on the first token
-⠋ Thinking…
+⠋ Thinking…                                                                                                                       
 
 · part-way through the stream
-$ lsof -nP -iTCP
+$ lsof -nP -iTCP                                                                                                                  
 
 ── ansi ────────────────────────────────────────────────────
 · waiting on the first token
-␛[38;5;254m⠋␛[m Thinking…
+␛[38;5;254m⠋␛[m Thinking…                                                                                                                       
 
 · part-way through the stream
-␛[38;5;254m$ ␛[m␛[1;38;5;254mlsof -nP -iTCP␛[m
+␛[38;5;254m$ ␛[m␛[1;38;5;254mlsof -nP -iTCP␛[m                                                                                                                  
