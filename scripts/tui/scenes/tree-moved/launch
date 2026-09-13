@@ -1,0 +1,6 @@
+# Somebody else, in the next terminal. The line waits for the cache the
+# session's own command writes — so the edit lands after the round boundary
+# that reads the tree, in the same order a person in another window would
+# manage — and then changes a tracked file this session never touched. There
+# is no key that reaches outside the session, so the scene says it here.
+( until [ -f .cache/gocache/aa/one ]; do sleep 0.2; done; sleep 2; printf 'and a line from the next terminal\n' >> notes.md ) & "$SHHH_BIN" code

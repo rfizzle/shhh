@@ -1,0 +1,28 @@
+# One turn writes a log under an ignored directory and a build cache under a
+# directory of its own making; then somebody else changes a tracked file
+# (launch). Read the cells for how many notices the run drew and what they
+# counted: 03 and 04 carry no tree row at all, because nothing the tree
+# ignores and nothing this session's own command created is the tree moving,
+# and 05 carries exactly one — `tree moved — 1 path changed outside this
+# session`, the one file a stranger touched. Inspect the picture for the row's
+# tone: a notice is Muted, the quietest thing in the feed, and it sits among
+# the rows rather than apart from them.
+setup printf 'logs/\n' > .gitignore
+setup printf 'the note this checkout keeps\n' > notes.md
+setup git add .gitignore notes.md
+setup git -c user.email=tui@shhh -c user.name=tui commit -q -m tracked
+snap 01-start "Some things worth doing first"
+keys "build it" Enter
+snap 02-card "[y] run it once"
+keys y
+snap 03-built "The build is clean"
+# The cache and the log are on disk now, and the next terminal's edit is two
+# seconds behind them (launch). Nothing draws while it lands, so this is the
+# one step the screen does not mark.
+sleep 5
+keys "anything else?" Enter
+snap 04-notice "tree moved"
+snap 05-answered "somebody else has it open"
+keys C-c
+keys C-c
+snap 06-exit "that is everything the screen was holding"

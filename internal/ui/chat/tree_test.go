@@ -68,7 +68,7 @@ func TestTree_ANoticeReachesTheConversationAndTheTranscript(t *testing.T) {
 		t.Errorf("a tree notice must not move the round counter: %d → %d", before, m.agent.Rounds())
 	}
 	last := m.transcript[len(m.transcript)-1]
-	if last.kind != entrySystem || !strings.Contains(last.text, "Tree moved") {
+	if last.kind != entrySystem || !strings.Contains(last.text, "tree moved") {
 		t.Errorf("the notice should be visible in the transcript, got %q", last.text)
 	}
 	if len(signals) != 1 || signals[0] != observe.SignalTree+":paths" {

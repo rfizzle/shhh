@@ -3285,3 +3285,31 @@ func TestGolden_FoldedRows(t *testing.T) {
 		}
 	})
 }
+
+// TestGolden_TreeMoved captures the row the tree reading draws in the feed:
+// the count of what somebody else moved, and the same reading where the
+// checkout's own ignore rules suppressed the rest of the movement. The two
+// strings are the ones internal/agent/tree.go builds, pinned there by its own
+// tests; what this file holds is what they look like in the transcript, a row
+// after the command whose cache the second one is not counting.
+func TestGolden_TreeMoved(t *testing.T) {
+	captureBoundedGolden(t, "tree-moved", "the tree-moved notice", goldenWidths, func(width int) []golden.Panel {
+		build := func(notice string) string {
+			m := frameModel(t, width, 40)
+			m.transcript = []entry{
+				{kind: entryUser, text: "build it and run the tests"},
+				{kind: entryCommand, text: "GOCACHE=$PWD/.cache/gocache go build ./...",
+					toolResult: "ok", duration: 8200 * time.Millisecond},
+				{kind: entrySystem, text: notice},
+			}
+			m.invalidateRenderCache()
+			return m.renderHistory()
+		}
+		return []golden.Panel{
+			{Label: "what somebody else moved",
+				View: build("tree moved — 14 paths changed outside this session")},
+			{Label: "the same reading, with what the tree ignores counted rather than reported",
+				View: build("tree moved — 14 paths changed outside this session · 5,811 ignored")},
+		}
+	})
+}

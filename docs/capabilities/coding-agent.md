@@ -1191,6 +1191,20 @@ because a command may write anything; a change that follows one is reported
 as *since your last command*, and the model, which has the command in front
 of it, is left to reconcile.
 
+Two more subtractions keep the report about somebody else. What the tree
+ignores is not the tree moving: a build cache is the session's own scratch,
+and counting it is how a notice that exists to report a stranger comes to
+report five thousand paths of the turn's own making. And a directory that
+first appears in a round where a command ran, somewhere the tree tracks
+nothing, is that command's work — it and everything under it stop being news.
+Neither covers a file dropped into a directory the tree already keeps files
+in, which is the line the subtraction may not cross. What the ignore rules
+suppressed is counted on the row rather than dropped in silence — *tree moved
+— 14 paths changed outside this session · 5,811 ignored* — because a reading
+that reports fourteen and a reading that had only fourteen to report are
+different answers, and a reading whose every path was ignored draws no row at
+all.
+
 **The session is told when the tree moves; it is never told what moved it.**
 Git does not know, and a guess presented as a fact is exactly what the model
 would act on — reverting a colleague's work as an accident, or explaining its

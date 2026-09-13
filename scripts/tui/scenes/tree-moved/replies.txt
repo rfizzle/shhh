@@ -1,0 +1,7 @@
+# One reply per request. The first turn's command writes where nobody is
+# watching: a log under the ignored directory, and a build cache under a
+# directory it creates itself. Neither is the tree moving, so the round
+# boundary after it has nothing to report.
+tool:execute_command:{"command":"mkdir -p logs .cache/gocache/aa .cache/gocache/bb && printf 'build ok\n' > logs/build.log && printf x > .cache/gocache/aa/one && printf x > .cache/gocache/bb/two"}
+The build is clean. Its cache went under .cache and its log under logs.
+Nothing I did touched notes.md, so somebody else has it open.

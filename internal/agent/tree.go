@@ -16,11 +16,21 @@ package agent
 // loop already takes its other readings at. The difference between two
 // snapshots is attributed before it is reported: paths the session's own
 // edits account for are subtracted, so the report says something the model
-// could not already infer from its transcript. Commands are the one hole a
-// subtraction cannot close, because a command may write anything, so a
-// change that follows one is reported as "since your last command" and the
-// model — which has the command in its own transcript — is left to
+// could not already infer from its transcript. Commands are the hole a
+// subtraction cannot close on its own, because a command may write anything,
+// so a change that follows one is reported as "since your last command" and
+// the model — which has the command in its own transcript — is left to
 // reconcile.
+//
+// Two more subtractions keep the report about what somebody else did. What
+// the tree ignores is not the tree moving: a build cache under a gitignored
+// directory is the session's own scratch, and counting it is how a notice
+// that exists to say a stranger was here comes to say five thousand paths
+// about a cache the same turn wrote. And a directory that first appears in a
+// round where a command of this session ran is that command's doing, so it
+// and everything under it are the session's too. What the ignore rules
+// suppressed is counted rather than dropped in silence — a reading that says
+// nothing and a reading that had nothing to say are different answers.
 //
 // What git does not see is content. A path that was already changed when a
 // stranger changed it again has the same status line before and after, and
@@ -37,11 +47,13 @@ package agent
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"os/exec"
 	"path/filepath"
 	"slices"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -125,6 +137,12 @@ type TreeNotice struct {
 	// is not zero the message attributes nothing, since a command may have
 	// made any of these changes.
 	Commands int
+	// Ignored is how many changed paths the tree's own ignore rules
+	// suppressed. It is on the row rather than in the message: the model is
+	// told what moved, and the reader is told how much of the movement was
+	// scratch, which is the difference between a quiet reading and a reading
+	// that found nothing.
+	Ignored int
 }
 
 // Signal is what the notice reported, as the observability recorder's closed
@@ -159,6 +177,19 @@ type treeState struct {
 	// change while it runs, and keying it per boundary would resolve the
 	// same handful of paths on every round.
 	instructions map[string]bool
+	// made is the untracked directories a command of this session created,
+	// as the status keys them, with their trailing slash. A directory that
+	// was not there at the last boundary and is there at one where a command
+	// ran is that command's work — nothing else in the round could have made
+	// it — so it and everything under it stop being news.
+	//
+	// The cost of the guess is a directory a stranger created in the same
+	// round as one of this session's commands, which stays subtracted. That
+	// round is already the one where attribution is a guess: its notice says
+	// "since your last command" precisely because the session cannot tell
+	// the two apart, and a false alarm every time a build runs is the more
+	// expensive of the two mistakes.
+	made map[string]bool
 	// reported is the set of stale readings the notices already named. The
 	// path half of this reading reports each change once because it compares
 	// two snapshots, and the content half has to be made to: a file the model
@@ -256,10 +287,157 @@ func (a *Agent) NextTreeNotice(turnStart bool) (TreeNotice, bool) {
 	own := t.ownPaths()
 	commands := t.commands
 	last := t.last
+	t.noteCommandDirs(last, now, commands)
 	t.last, t.commands = now, 0
 
-	n, ok := diffTree(last, now, own, t.instructions, t.readChanged(), commands, t.cfg.Sibling)
-	return n, ok
+	return diffTree(last, now, treeAttribution{
+		own:          own,
+		made:         t.made,
+		instructions: t.instructions,
+		read:         t.readChanged(),
+		commands:     commands,
+		sibling:      t.cfg.Sibling,
+		ignored:      t.ignoredPaths,
+	})
+}
+
+// noteCommandDirs remembers the directories a command of this session
+// created. The evidence is untracked content that was not there at the last
+// boundary, in a round where a command ran, under a directory git tracks
+// nothing in: git collapses a new untracked directory to one entry and lists
+// its files one by one where a configuration asks it to, so the candidates
+// are every ancestor of every new untracked entry and the question is asked
+// of all of them in one call.
+//
+// A directory git already keeps files in is never one of these. That is the
+// line that matters: a file a stranger drops into a source directory while a
+// build runs is still reported, and it is only the scratch directory nothing
+// tracks that goes quiet.
+func (t *treeState) noteCommandDirs(last, now TreeSnapshot, commands int) {
+	if commands == 0 {
+		return
+	}
+	cand := map[string]bool{}
+	for p, st := range now.Status {
+		if st != "??" {
+			continue
+		}
+		if _, was := last.Status[p]; was {
+			continue
+		}
+		for _, d := range ancestors(p) {
+			if !inAny(t.made, d) {
+				cand[d] = true
+			}
+		}
+	}
+	// Shallowest first, and a directory already covered by one kept is not
+	// kept: the subtraction is by prefix, so remembering the cache's own
+	// hundreds of subdirectories under it would only cost the next reading
+	// the same answer over again.
+	for _, d := range t.untrackedDirs(cand) {
+		if inAny(t.made, d) {
+			continue
+		}
+		if t.made == nil {
+			t.made = map[string]bool{}
+		}
+		t.made[d] = true
+	}
+}
+
+// treeDirProbe bounds how many directories one reading asks git about. The
+// shallowest are kept, which is the truncation that loses nothing: the
+// subtraction is by prefix, so the top of a cache covers everything under it.
+const treeDirProbe = 256
+
+// untrackedDirs is which of these directories git tracks nothing in, in one
+// call. An empty answer, and any failure, keeps every path in the notice:
+// this subtraction exists to stop a false alarm, and guessing it while git is
+// unavailable would trade that for a silence nothing can see.
+func (t *treeState) untrackedDirs(dirs map[string]bool) []string {
+	if len(dirs) == 0 {
+		return nil
+	}
+	ask := make([]string, 0, len(dirs))
+	for d := range dirs {
+		ask = append(ask, d)
+	}
+	sort.Slice(ask, func(i, j int) bool {
+		di, dj := strings.Count(ask[i], "/"), strings.Count(ask[j], "/")
+		if di != dj {
+			return di < dj
+		}
+		return ask[i] < ask[j]
+	})
+	if len(ask) > treeDirProbe {
+		ask = ask[:treeDirProbe]
+	}
+	out, err := gitOut(t.top, append([]string{"ls-files", "-z", "--"}, ask...)...)
+	if err != nil {
+		return nil
+	}
+	var untracked []string
+	for _, d := range ask {
+		if !anyWithPrefix(out, d) {
+			untracked = append(untracked, d)
+		}
+	}
+	return untracked
+}
+
+// anyWithPrefix reports whether any of the NUL-separated paths in out is
+// under dir.
+func anyWithPrefix(out, dir string) bool {
+	for _, p := range strings.Split(out, "\x00") {
+		if p != "" && strings.HasPrefix(p, dir) {
+			return true
+		}
+	}
+	return false
+}
+
+// ancestors is every directory a status path lies in, shallowest first, with
+// the trailing slash the status itself uses for a collapsed directory. A path
+// at the root has none, which is why a file a command wrote beside the readme
+// is still reported: there is no directory to attribute it to.
+func ancestors(p string) []string {
+	var out []string
+	for i, c := range p {
+		if c == '/' && i+1 < len(p) {
+			out = append(out, p[:i+1])
+		}
+	}
+	if strings.HasSuffix(p, "/") {
+		out = append(out, p)
+	}
+	return out
+}
+
+// ignoredPaths is which of these paths the tree's own ignore rules cover, in
+// one git call for the whole reading: check-ignore answers a list, and asking
+// it per path would pay a process for every entry of the set this exists to
+// throw away.
+//
+// The index is consulted, which is the behaviour to want: a tracked file that
+// also matches a pattern is not ignored — somebody changed a file git is
+// keeping, and that is the notice's whole subject. Exit status 1 is
+// check-ignore saying none of them, so it is an answer rather than a failure.
+func (t *treeState) ignoredPaths(paths []string) map[string]bool {
+	if len(paths) == 0 {
+		return nil
+	}
+	out, err := gitIn(t.top, strings.Join(paths, "\x00")+"\x00", "check-ignore", "-z", "--stdin")
+	if err != nil {
+		return nil
+	}
+	set := map[string]bool{}
+	for _, p := range strings.Split(strings.TrimRight(out, "\x00"), "\x00") {
+		if p != "" {
+			set[p] = true
+		}
+	}
+	return set
 }
 
 // ownPaths is what the session has written, keyed the way the snapshot keys
@@ -327,13 +505,37 @@ func (t *treeState) relative(p string) (string, bool) {
 	return filepath.ToSlash(rel), true
 }
 
+// treeAttribution is everything the comparison needs to say whose work a
+// change was. Every field is optional: the zero value attributes nothing and
+// reports every difference between the two snapshots, which is what a
+// surface with no changeset, no ignore rules and nobody to name has to say.
+type treeAttribution struct {
+	// own is what the session wrote, keyed to the repository root.
+	own map[string]bool
+	// made is the directories its commands created, keyed the same way and
+	// subtracted by prefix.
+	made map[string]bool
+	// instructions is the project's instruction files, keyed the same way.
+	instructions map[string]bool
+	// read is what the record of shown files says has moved, keyed the same
+	// way.
+	read []string
+	// commands is how many command calls ran in the interval.
+	commands int
+	// sibling is asked only once there is something to report — it is a
+	// store read, and a boundary where nothing moved has nothing to
+	// attribute to anybody.
+	sibling func() bool
+	// ignored answers which of a list of paths the tree ignores, and is
+	// asked once per reading with everything left after the cheap
+	// subtractions: it shells out, and the paths it would answer for are the
+	// ones already known to be the session's.
+	ignored func(paths []string) map[string]bool
+}
+
 // diffTree is the comparison itself, separated from the git calls so it can
-// be tested on snapshots built by hand. read is what the record of shown
-// files says has moved, already keyed to the root. instructions is the
-// project's instruction files, keyed the same way. sibling may be nil and is
-// asked only once there is something to report — it is a store read, and a
-// boundary where nothing moved has nothing to attribute to anybody.
-func diffTree(last, now TreeSnapshot, own, instructions map[string]bool, read []string, commands int, sibling func() bool) (TreeNotice, bool) {
+// be tested on snapshots built by hand.
+func diffTree(last, now TreeSnapshot, at treeAttribution) (TreeNotice, bool) {
 	var changed []string
 	for p, st := range now.Status {
 		if last.Status[p] != st {
@@ -345,7 +547,9 @@ func diffTree(last, now TreeSnapshot, own, instructions map[string]bool, read []
 			changed = append(changed, p)
 		}
 	}
-	changed = foreign(changed, own, instructions)
+	own, instructions, read, commands := at.own, at.instructions, at.read, at.commands
+	changed = foreign(changed, own, at.made, instructions)
+	changed, ignored := unignored(changed, at.ignored)
 	sort.Strings(changed)
 	// The session's own writes are not subtracted from the read set, because
 	// they are already absent from it: a tool that writes a file records what
@@ -353,7 +557,7 @@ func diffTree(last, now TreeSnapshot, own, instructions map[string]bool, read []
 	// is dropped is the tool's own state directory, which is bookkeeping
 	// rather than the tree moving — bar an instruction file the project
 	// keeps there, which is the project's word and not shhh's.
-	read = foreign(read, nil, instructions)
+	read = foreign(read, nil, nil, instructions)
 	sort.Strings(read)
 
 	n := TreeNotice{
@@ -362,6 +566,7 @@ func diffTree(last, now TreeSnapshot, own, instructions map[string]bool, read []
 		HeadMoved:   last.Head != now.Head,
 		BranchMoved: last.Branch != now.Branch || last.Detached != now.Detached,
 		Commands:    commands,
+		Ignored:     ignored,
 	}
 	if !n.HeadMoved && !n.BranchMoved && n.Paths == 0 && n.ReadPaths == 0 {
 		return TreeNotice{}, false
@@ -380,7 +585,7 @@ func diffTree(last, now TreeSnapshot, own, instructions map[string]bool, read []
 	}
 	count := ""
 	if n.Paths > 0 {
-		count = fmt.Sprintf("%d %s changed %s", n.Paths, plural(n.Paths, "path"), attribution)
+		count = fmt.Sprintf("%s %s changed %s", grouped(n.Paths), plural(n.Paths, "path"), attribution)
 		parts = append(parts, count+": "+pathList(changed))
 	}
 	// The read set is named on its own clause rather than folded into the
@@ -389,7 +594,7 @@ func diffTree(last, now TreeSnapshot, own, instructions map[string]bool, read []
 	// A path can honestly be in both.
 	readCount := ""
 	if n.ReadPaths > 0 {
-		readCount = fmt.Sprintf("%d %s you have read changed", n.ReadPaths, plural(n.ReadPaths, "file"))
+		readCount = fmt.Sprintf("%s %s you have read changed", grouped(n.ReadPaths), plural(n.ReadPaths, "file"))
 		parts = append(parts, readCount+": "+pathList(read))
 	}
 	var b strings.Builder
@@ -405,7 +610,7 @@ func diffTree(last, now TreeSnapshot, own, instructions map[string]bool, read []
 	// names no transcript and no slot: which conversation the other session
 	// is having is its own, and this one is being told only that somebody is
 	// there to ask.
-	if sibling != nil && sibling() {
+	if at.sibling != nil && at.sibling() {
 		b.WriteString(" — another session is open in this checkout")
 	}
 	b.WriteString(".")
@@ -433,8 +638,32 @@ func diffTree(last, now TreeSnapshot, own, instructions map[string]bool, read []
 	if readCount != "" {
 		row = append(row, readCount)
 	}
-	n.Notice = "Tree moved — " + strings.Join(row, ", ") + "."
+	// The row is the product reporting, in the voice every other row uses:
+	// lower case, no full stop. The ignored count rides on the end as its own
+	// fact, because it is the answer to the question a count of fourteen
+	// raises in a checkout where six thousand paths moved.
+	// See docs/capabilities/coding-agent.md#the-tree-can-move-under-a-session.
+	n.Notice = "tree moved — " + strings.Join(row, ", ")
+	if n.Ignored > 0 {
+		n.Notice += " · " + grouped(n.Ignored) + " ignored"
+	}
 	return n, true
+}
+
+// grouped is a count with its thousands separated. A notice's numbers are
+// read rather than computed with, and 5811 is a number a reader has to count
+// the digits of. Grouping runs from the right, so a sign in front of it is
+// carried rather than counted.
+func grouped(n int) string {
+	s := strconv.Itoa(n)
+	var b strings.Builder
+	for i, c := range s {
+		if i > 0 && (len(s)-i)%3 == 0 {
+			b.WriteByte(',')
+		}
+		b.WriteRune(c)
+	}
+	return b.String()
 }
 
 // namedIn is the paths of set that this notice names, in the order the notice
@@ -454,15 +683,16 @@ func namedIn(set map[string]bool, lists ...[]string) []string {
 }
 
 // foreign drops the paths the session accounts for: its own, anything under
-// the tool's state directory, and an untracked directory entry that one of
-// its own files lives under (git collapses a new directory to one line).
+// a directory one of its commands created, anything under the tool's state
+// directory, and an untracked directory entry that one of its own files
+// lives under (git collapses a new directory to one line).
 //
 // keep is the exception to the state directory, and the reason there is one:
 // the instruction file a project writes for its agents may live in there, and
 // that file is the project's word rather than shhh's bookkeeping. Dropped
 // with the checkpoints, the change the session most needs to hear about is
 // the one it would never be told.
-func foreign(paths []string, own, keep map[string]bool) []string {
+func foreign(paths []string, own, made, keep map[string]bool) []string {
 	var out []string
 	for _, p := range paths {
 		if own[p] || (strings.HasPrefix(p, stateDir) && !keep[p]) {
@@ -471,9 +701,43 @@ func foreign(paths []string, own, keep map[string]bool) []string {
 		if strings.HasSuffix(p, "/") && anyUnder(own, p) {
 			continue
 		}
+		if inAny(made, p) {
+			continue
+		}
 		out = append(out, p)
 	}
 	return out
+}
+
+// unignored is the paths the tree does not ignore, and how many it dropped.
+// ask is called once for the whole list or not at all: it is a git call, and
+// this is the reading's one chance to make it.
+func unignored(paths []string, ask func([]string) map[string]bool) ([]string, int) {
+	if ask == nil || len(paths) == 0 {
+		return paths, 0
+	}
+	ignored := ask(paths)
+	if len(ignored) == 0 {
+		return paths, 0
+	}
+	var out []string
+	for _, p := range paths {
+		if ignored[p] {
+			continue
+		}
+		out = append(out, p)
+	}
+	return out, len(paths) - len(out)
+}
+
+// inAny reports whether p is one of these directories or sits under one.
+func inAny(dirs map[string]bool, p string) bool {
+	for d := range dirs {
+		if p == d || strings.HasPrefix(p, d) {
+			return true
+		}
+	}
+	return false
 }
 
 func anyUnder(own map[string]bool, dir string) bool {
@@ -573,6 +837,26 @@ func gitOut(dir string, args ...string) (string, error) {
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	if err := cmd.Run(); err != nil {
+		return "", err
+	}
+	return out.String(), nil
+}
+
+// gitIn is gitOut with a list on standard input, for the query git answers
+// that way. Exit status 1 is a question answered no — check-ignore's way of
+// saying none of these — and comes back as an empty answer rather than an
+// error; anything else is git failing.
+func gitIn(dir, stdin string, args ...string) (string, error) {
+	cmd := exec.Command("git", append([]string{"-C", dir}, args...)...)
+	cmd.Stdin = strings.NewReader(stdin)
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	err := cmd.Run()
+	var exit *exec.ExitError
+	if errors.As(err, &exit) && exit.ExitCode() == 1 {
+		err = nil
+	}
+	if err != nil {
 		return "", err
 	}
 	return out.String(), nil

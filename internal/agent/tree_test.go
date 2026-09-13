@@ -82,7 +82,7 @@ func TestTree_AForeignWriteIsReported(t *testing.T) {
 	if !strings.Contains(n.Message, "did not make these changes") {
 		t.Errorf("message should say the changes are not the session's, got:\n%s", n.Message)
 	}
-	if n.Notice != "Tree moved — 1 path changed outside this session." {
+	if n.Notice != "tree moved — 1 path changed outside this session" {
 		t.Errorf("notice = %q", n.Notice)
 	}
 	if n.Signal() != "paths" || n.Paths != 1 || n.HeadMoved {
@@ -303,7 +303,7 @@ func TestTree_ParseStatusV2(t *testing.T) {
 func TestTree_DiffOnSnapshotsBuiltByHand(t *testing.T) {
 	last := TreeSnapshot{Head: "1111111aaaa", Branch: "main", Status: map[string]string{"a": ".M", "gone": "??"}}
 	now := TreeSnapshot{Head: "2222222bbbb", Branch: "main", Status: map[string]string{"a": "M.", "new": "??", "mine": "??"}}
-	n, ok := diffTree(last, now, map[string]bool{"mine": true}, nil, nil, 0, nil)
+	n, ok := diffTree(last, now, treeAttribution{own: map[string]bool{"mine": true}})
 	if !ok {
 		t.Fatal("expected a notice")
 	}
@@ -313,7 +313,7 @@ func TestTree_DiffOnSnapshotsBuiltByHand(t *testing.T) {
 	if n.Signal() != "both" {
 		t.Errorf("signal = %q", n.Signal())
 	}
-	if _, ok := diffTree(now, now, nil, nil, nil, 0, nil); ok {
+	if _, ok := diffTree(now, now, treeAttribution{}); ok {
 		t.Error("identical snapshots owe nothing")
 	}
 }
@@ -340,7 +340,7 @@ func TestTree_BlockNamesTheOtherSessionInThisCheckout(t *testing.T) {
 	last := TreeSnapshot{Head: "1111111aaaa", Branch: "main", Status: map[string]string{}}
 	now := TreeSnapshot{Head: "1111111aaaa", Branch: "main", Status: map[string]string{"a": ".M"}}
 
-	alone, ok := diffTree(last, now, nil, nil, nil, 0, func() bool { return false })
+	alone, ok := diffTree(last, now, treeAttribution{sibling: func() bool { return false }})
 	if !ok {
 		t.Fatal("expected a notice")
 	}
@@ -348,7 +348,7 @@ func TestTree_BlockNamesTheOtherSessionInThisCheckout(t *testing.T) {
 		t.Errorf("nobody else is here to name:\n%s", alone.Message)
 	}
 
-	shared, ok := diffTree(last, now, nil, nil, nil, 0, func() bool { return true })
+	shared, ok := diffTree(last, now, treeAttribution{sibling: func() bool { return true }})
 	if !ok {
 		t.Fatal("expected a notice")
 	}
@@ -362,7 +362,7 @@ func TestTree_BlockNamesTheOtherSessionInThisCheckout(t *testing.T) {
 
 	// The same clause after a command of the session's own, where the block
 	// attributes nothing: it still says who else is here to ask.
-	afterCommand, _ := diffTree(last, now, nil, nil, nil, 1, func() bool { return true })
+	afterCommand, _ := diffTree(last, now, treeAttribution{commands: 1, sibling: func() bool { return true }})
 	if !strings.HasSuffix(afterCommand.Message, "another session is open in this checkout.") {
 		t.Errorf("the clause is owed on both wordings:\n%s", afterCommand.Message)
 	}
@@ -373,7 +373,7 @@ func TestTree_BlockNamesTheOtherSessionInThisCheckout(t *testing.T) {
 func TestTree_NoSiblingReadingCostsOnlyTheClause(t *testing.T) {
 	last := TreeSnapshot{Head: "1111111aaaa", Branch: "main", Status: map[string]string{}}
 	now := TreeSnapshot{Head: "1111111aaaa", Branch: "main", Status: map[string]string{"a": ".M"}}
-	n, ok := diffTree(last, now, nil, nil, nil, 0, nil)
+	n, ok := diffTree(last, now, treeAttribution{})
 	if !ok || !strings.HasSuffix(n.Message, "do not revert or explain them.") {
 		t.Errorf("message:\n%s", n.Message)
 	}
@@ -408,7 +408,7 @@ func TestTree_AFileTheModelReadIsNamedWhenItsContentMoved(t *testing.T) {
 		"This session did not make these changes. Re-read a file before editing it, and do not revert or explain them." {
 		t.Errorf("message:\n%s", n.Message)
 	}
-	if n.Notice != "Tree moved — 1 file you have read changed." {
+	if n.Notice != "tree moved — 1 file you have read changed" {
 		t.Errorf("notice = %q", n.Notice)
 	}
 	if n.Paths != 0 || n.ReadPaths != 1 || n.HeadMoved || n.Signal() != "paths" {
@@ -486,7 +486,7 @@ func TestTree_TheInstructionSentenceRidesOnEitherHalf(t *testing.T) {
 	now := TreeSnapshot{Head: "1111111aaaa", Branch: "main", Status: map[string]string{"docs/x.md": "??"}}
 	instructions := map[string]bool{"AGENTS.md": true}
 
-	n, ok := diffTree(last, now, nil, instructions, []string{"AGENTS.md"}, 0, nil)
+	n, ok := diffTree(last, now, treeAttribution{instructions: instructions, read: []string{"AGENTS.md"}})
 	if !ok {
 		t.Fatal("expected a notice")
 	}
@@ -498,12 +498,12 @@ func TestTree_TheInstructionSentenceRidesOnEitherHalf(t *testing.T) {
 		t.Errorf("said %d times:\n%s", c, n.Message)
 	}
 	both := TreeSnapshot{Head: "1111111aaaa", Branch: "main", Status: map[string]string{"AGENTS.md": ".M"}}
-	n, _ = diffTree(last, both, nil, instructions, []string{"AGENTS.md"}, 0, nil)
+	n, _ = diffTree(last, both, treeAttribution{instructions: instructions, read: []string{"AGENTS.md"}})
 	if strings.Count(n.Message, "AGENTS.md)") != 1 {
 		t.Errorf("a file in both lists is named once in the sentence:\n%s", n.Message)
 	}
 	// And a session with no instruction block hears nothing about one.
-	n, _ = diffTree(last, both, nil, nil, nil, 0, nil)
+	n, _ = diffTree(last, both, treeAttribution{})
 	if strings.Contains(n.Message, "project instructions") {
 		t.Errorf("no block, no sentence:\n%s", n.Message)
 	}
@@ -518,7 +518,7 @@ func TestTree_AnInstructionFileInTheStateDirectoryIsStillNews(t *testing.T) {
 		".shhh/run.json":   ".M",
 	}}
 
-	n, ok := diffTree(last, now, nil, map[string]bool{".shhh/project.md": true}, nil, 0, nil)
+	n, ok := diffTree(last, now, treeAttribution{instructions: map[string]bool{".shhh/project.md": true}})
 	if !ok {
 		t.Fatal("expected a notice")
 	}
@@ -531,7 +531,7 @@ func TestTree_AnInstructionFileInTheStateDirectoryIsStillNews(t *testing.T) {
 	if !strings.Contains(n.Message, "The project instructions changed (.shhh/project.md)") {
 		t.Errorf("and it carries the sentence:\n%s", n.Message)
 	}
-	if _, ok := diffTree(last, now, nil, nil, nil, 0, nil); ok {
+	if _, ok := diffTree(last, now, treeAttribution{}); ok {
 		t.Error("with no instruction block, the state directory is all there is")
 	}
 }
@@ -542,14 +542,14 @@ func TestTree_MovedPathsAndStaleReadsAreReportedTogether(t *testing.T) {
 	last := TreeSnapshot{Head: "1111111aaaa", Branch: "main", Status: map[string]string{"a": ".M"}}
 	now := TreeSnapshot{Head: "1111111aaaa", Branch: "main", Status: map[string]string{"a": ".M", "new": "??"}}
 
-	n, ok := diffTree(last, now, nil, nil, []string{"b", "a"}, 0, nil)
+	n, ok := diffTree(last, now, treeAttribution{read: []string{"b", "a"}})
 	if !ok {
 		t.Fatal("expected a notice")
 	}
 	if want := "[tree: 1 path changed outside this session: new · 2 files you have read changed: a, b]"; !strings.HasPrefix(n.Message, want) {
 		t.Errorf("message:\n%s\nwant prefix:\n%s", n.Message, want)
 	}
-	if n.Notice != "Tree moved — 1 path changed outside this session, 2 files you have read changed." {
+	if n.Notice != "tree moved — 1 path changed outside this session, 2 files you have read changed" {
 		t.Errorf("notice = %q", n.Notice)
 	}
 	if n.Signal() != "paths" {
@@ -565,9 +565,160 @@ func TestTree_MovedPathsAndStaleReadsAreReportedTogether(t *testing.T) {
 
 func mustDiff(t *testing.T, last, now TreeSnapshot, read []string) TreeNotice {
 	t.Helper()
-	n, ok := diffTree(last, now, nil, nil, read, 0, nil)
+	n, ok := diffTree(last, now, treeAttribution{read: read})
 	if !ok {
 		t.Fatal("expected a notice")
 	}
 	return n
+}
+
+// What the tree ignores is not the tree moving. The suppressed paths are
+// counted on the row rather than dropped in silence, so a reading of fourteen
+// in a checkout where six thousand paths moved says which reading it is.
+func TestTree_TheIgnoredAreCountedNotReported(t *testing.T) {
+	last := TreeSnapshot{Head: "1111111aaaa", Branch: "main", Status: map[string]string{}}
+	now := TreeSnapshot{Head: "1111111aaaa", Branch: "main", Status: map[string]string{
+		"src/handler.go":      ".M",
+		".cache/gocache/aa/x": "??",
+		".cache/gocache/aa/y": "??",
+	}}
+	asked := 0
+	ignore := func(paths []string) map[string]bool {
+		asked++
+		out := map[string]bool{}
+		for _, p := range paths {
+			if strings.HasPrefix(p, ".cache/") {
+				out[p] = true
+			}
+		}
+		return out
+	}
+
+	n, ok := diffTree(last, now, treeAttribution{ignored: ignore})
+	if !ok {
+		t.Fatal("a tracked file somebody else changed is still news")
+	}
+	if n.Paths != 1 || n.Ignored != 2 {
+		t.Errorf("paths = %d, ignored = %d; want 1 and 2", n.Paths, n.Ignored)
+	}
+	if n.Notice != "tree moved — 1 path changed outside this session · 2 ignored" {
+		t.Errorf("notice = %q", n.Notice)
+	}
+	if strings.Contains(n.Message, ".cache/") {
+		t.Errorf("the model is told what moved, not what was ignored:\n%s", n.Message)
+	}
+	// One question for the whole reading: the paths this exists to throw away
+	// are exactly the ones a call per path would be paid for.
+	if asked != 1 {
+		t.Errorf("the ignore rules were asked %d times, want once", asked)
+	}
+
+	// A reading whose only movement was ignored is not a reading at all.
+	cache := TreeSnapshot{Head: "1111111aaaa", Branch: "main", Status: map[string]string{
+		".cache/gocache/aa/x": "??",
+		".cache/gocache/aa/y": "??",
+	}}
+	if n, ok := diffTree(last, cache, treeAttribution{ignored: ignore}); ok {
+		t.Errorf("an all-ignored reading draws nothing, got:\n%s", n.Notice)
+	}
+}
+
+// The row's numbers are read rather than computed with.
+func TestTree_CountsAreGrouped(t *testing.T) {
+	for n, want := range map[int]string{0: "0", 14: "14", 999: "999", 5811: "5,811", 1234567: "1,234,567"} {
+		if got := grouped(n); got != want {
+			t.Errorf("grouped(%d) = %q, want %q", n, got, want)
+		}
+	}
+}
+
+// The rules are the tree's own, asked of git, which is what makes a tracked
+// file that happens to match a pattern still news: somebody changed a file
+// git is keeping.
+func TestTree_TheTreesOwnIgnoreRulesAreAsked(t *testing.T) {
+	ws, _ := treeFixture(t)
+	write(t, ws, "logs/run.log", "old\n")
+	a := treeAgent(t, ws, nil)
+
+	// Somebody adds the rule that covers the directory already sitting there:
+	// the status stops naming it, which is a difference between the two
+	// snapshots and is not the tree moving.
+	write(t, ws, ".gitignore", "logs/\n")
+	n, ok := a.NextTreeNotice(false)
+	if !ok {
+		t.Fatal("the new .gitignore is itself a path somebody else wrote")
+	}
+	if n.Paths != 1 || n.Ignored != 1 {
+		t.Errorf("paths = %d, ignored = %d; want 1 and 1 (%s)", n.Paths, n.Ignored, n.Notice)
+	}
+	if n.Notice != "tree moved — 1 path changed outside this session · 1 ignored" {
+		t.Errorf("notice = %q", n.Notice)
+	}
+	if strings.Contains(n.Message, "logs/") {
+		t.Errorf("an ignored path is not named to the model:\n%s", n.Message)
+	}
+}
+
+// The cache a command of this session wrote is the session's own scratch.
+// This is the notice the reading cried wolf with: a build cache under a
+// directory the same turn created, counted as somebody else's work.
+func TestTree_ACacheACommandWroteIsNotReported(t *testing.T) {
+	for _, tc := range []struct {
+		name      string
+		untracked string
+	}{
+		// Git collapses a new untracked directory to one entry, unless the
+		// checkout is configured to name every file under it.
+		{"collapsed", "normal"},
+		{"named one by one", "all"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ws, run := treeFixture(t)
+			run("config", "status.showUntrackedFiles", tc.untracked)
+			write(t, ws, "src/keep.go", "package src\n")
+			run("add", ".")
+			run("commit", "-q", "-m", "src")
+			a := treeAgent(t, ws, nil)
+
+			a.BeginToolRound("", []provider.ToolCall{{ID: "c1", Name: "execute_command",
+				Arguments: `{"command":"GOCACHE=$PWD/.cache/gocache go build ./..."}`}}, nil)
+			for _, p := range []string{".cache/gocache/aa/one", ".cache/gocache/bb/two", ".cache/trim.txt"} {
+				write(t, ws, p, "x\n")
+			}
+			// Somebody else, meanwhile, in a directory git already keeps
+			// files in: the line the subtraction may not cross.
+			write(t, ws, "src/theirs.go", "package src\n")
+
+			n, ok := a.NextTreeNotice(false)
+			if !ok {
+				t.Fatal("a file in a tracked directory is still reported")
+			}
+			if n.Paths != 1 || !strings.Contains(n.Message, "src/theirs.go") {
+				t.Errorf("paths = %d, want the one foreign file:\n%s", n.Paths, n.Message)
+			}
+			if strings.Contains(n.Message, ".cache") {
+				t.Errorf("the cache the command wrote is not somebody else's:\n%s", n.Message)
+			}
+
+			// It goes on growing after the round that made it, and goes on
+			// being the session's.
+			write(t, ws, ".cache/gocache/cc/three", "x\n")
+			if n, ok := a.NextTreeNotice(false); ok {
+				t.Errorf("the cache is still the session's at a later boundary:\n%s", n.Message)
+			}
+		})
+	}
+}
+
+// Without a command in the round there is nothing to attribute a new
+// directory to, and a stranger's new directory is exactly what the reading
+// exists to report.
+func TestTree_ANewDirectoryWithNoCommandIsStillReported(t *testing.T) {
+	ws, _ := treeFixture(t)
+	a := treeAgent(t, ws, nil)
+	write(t, ws, "vendor/theirs/x.go", "package theirs\n")
+	n, ok := a.NextTreeNotice(false)
+	if !ok || n.Paths != 1 {
+		t.Fatalf("a directory nobody here made is news, got ok=%v:\n%s", ok, n.Message)
+	}
 }
