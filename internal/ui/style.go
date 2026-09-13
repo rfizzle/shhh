@@ -28,8 +28,8 @@ type Styles struct {
 	Label       lipgloss.Style
 	ExplainBody lipgloss.Style
 
-	// The result surface: the key row, the containment line, the risk
-	// line, and the dimmed command a revise is being compared against.
+	// The result surface: the key row, the containment line and the risk
+	// line.
 	Key        lipgloss.Style
 	KeyLabel   lipgloss.Style
 	PrimaryKey lipgloss.Style
@@ -39,9 +39,15 @@ type Styles struct {
 	// reading is shouted in Del, a low or medium one stated in Accent. One
 	// colour for both makes an argument shhh could not resolve the same red
 	// as a recursive forced deletion.
-	Risk        lipgloss.Style
-	Caution     lipgloss.Style
-	Dim         lipgloss.Style
+	Risk    lipgloss.Style
+	Caution lipgloss.Style
+	Dim     lipgloss.Style
+	// PastCommand is the rung a revise left behind: the command being
+	// compared against and the feedback that replaced it, above the answer
+	// they produced. It is the one run on the surface that is content the
+	// answer superseded rather than chrome about it, so it takes the grey
+	// between the two — below the body an explanation is written in, above
+	// the dim the counts and hints are.
 	PastCommand lipgloss.Style
 }
 
@@ -69,15 +75,24 @@ func newStyles(p components.ColorTokens) Styles {
 		// Every key the interface offers is Info; the default and the
 		// deliberate one carry their tone as well, and both say it in words
 		// too.
-		Key:         lipgloss.NewStyle().Foreground(p.Info.Color()),
-		KeyLabel:    lipgloss.NewStyle().Foreground(p.Dim.Color()),
-		PrimaryKey:  lipgloss.NewStyle().Foreground(p.Add.Color()),
-		DangerKey:   lipgloss.NewStyle().Foreground(p.Del.Color()),
-		Reach:       lipgloss.NewStyle().Foreground(p.Status.Color()),
-		Risk:        lipgloss.NewStyle().Foreground(p.Del.Color()),
-		Caution:     lipgloss.NewStyle().Foreground(p.Accent.Color()),
-		Dim:         lipgloss.NewStyle().Foreground(p.Dim.Color()),
-		PastCommand: lipgloss.NewStyle().Foreground(p.Dim.Color()),
+		Key:        lipgloss.NewStyle().Foreground(p.Info.Color()),
+		KeyLabel:   lipgloss.NewStyle().Foreground(p.Dim.Color()),
+		PrimaryKey: lipgloss.NewStyle().Foreground(p.Add.Color()),
+		DangerKey:  lipgloss.NewStyle().Foreground(p.Del.Color()),
+		Reach:      lipgloss.NewStyle().Foreground(p.Status.Color()),
+		Risk:       lipgloss.NewStyle().Foreground(p.Del.Color()),
+		Caution:    lipgloss.NewStyle().Foreground(p.Accent.Color()),
+		Dim:        lipgloss.NewStyle().Foreground(p.Dim.Color()),
+		// Subtle rather than Dim, which is where the rung was drawn while
+		// the token was spent on labels the surface no longer has. What is
+		// above the answer is the command the reader is comparing it
+		// against, and a command drawn at the weight of a hint is one the
+		// comparison cannot be made from — Dim is what chrome is, and this
+		// is last turn's answer rather than chrome about this one. Subtle is
+		// the ladder's rung for exactly that: one step under the body, well
+		// clear of the bold bright run the current command is.
+		// See docs/interface/principles.md#a-colour-is-three-values-and-a-ground.
+		PastCommand: lipgloss.NewStyle().Foreground(p.Subtle.Color()),
 	}
 }
 

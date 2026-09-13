@@ -100,7 +100,7 @@ type ColorTokens struct {
 	Spin    Token // anything in motion — spinner frames, ▸ running…, ✦ checking
 	Status  Token // status text, the ⛨ containment line
 	Bright  Token // headings, the focused row's text, the working label's crest
-	Subtle  Token // inactive labels (generate UI); no design-system counterpart
+	Subtle  Token // the one-shot rung a revise superseded; no colors.css counterpart
 	Body    Token // ordinary body text
 }
 

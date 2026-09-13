@@ -258,6 +258,30 @@ func TestResult_ReviseKeepsThePreviousCommandAndCountsRevisions(t *testing.T) {
 	}
 }
 
+// The rung a revise left behind is content the answer superseded, not chrome
+// about it, so it is drawn one step under the body rather than in the grey
+// the counts and hints share: a command the reader cannot read is a
+// comparison they cannot make. Both of its rows take that one rung — the `$`
+// and the `❯` are what tell the command from the feedback.
+func TestResult_ThePreviousRungIsUnderTheBodyAndOverTheChrome(t *testing.T) {
+	inColour(t)
+	if got, want := sty.PastCommand.GetForeground(), components.Palette.Subtle.Color(); got != want {
+		t.Errorf("the previous rung is %v, want the subtle rung %v", got, want)
+	}
+	if sty.PastCommand.GetForeground() == sty.Dim.GetForeground() {
+		t.Error("the previous rung is drawn in the grey the surface's chrome uses")
+	}
+	if sty.PastCommand.GetForeground() == sty.ExplainBody.GetForeground() {
+		t.Error("the previous rung is drawn at the weight of the current answer's prose")
+	}
+	view := reviseOnce(t).View().Content
+	for _, row := range []string{"$ ls", "❯ add -la"} {
+		if !strings.Contains(view, sty.PastCommand.Render(row)) {
+			t.Errorf("%q is not drawn on the previous rung:\n%s", row, view)
+		}
+	}
+}
+
 func TestResult_BackStepsToThePreviousCommand(t *testing.T) {
 	m := press(t, reviseOnce(t), "u")
 	if got := m.stream.Output(); got != "ls" {

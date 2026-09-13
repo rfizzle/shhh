@@ -19,8 +19,8 @@ $ lsof -nP -iTCP -sTCP:LISTEN -u $(id -un) -Fpcn
 revision 1  [↵] run  [e] edit  [r] revise  [u] back  [x] explain  [c] copy  [s] save  [esc] quit
 
 ── ansi ────────────────────────────────────────────────────
-␛[38;5;241m$ lsof -nP -iTCP -sTCP:LISTEN | awk '$9 ~ /:[89][0-9]{3}$/'␛[m
-␛[38;5;241m❯ only ones owned by me, and show the pid␛[m
+␛[38;5;250m$ lsof -nP -iTCP -sTCP:LISTEN | awk '$9 ~ /:[89][0-9]{3}$/'␛[m
+␛[38;5;250m❯ only ones owned by me, and show the pid␛[m
 ␛[38;5;214m$ ␛[m␛[1;97mlsof -nP -iTCP -sTCP:LISTEN -u $(id -un) -Fpcn␛[m
   ␛[38;5;252m-u filters to your uid; -F prints pid, command and name as parseable fields.␛[m
   ␛[38;5;243m⛨ writes unknown · network unknown · no sudo␛[m

@@ -1092,9 +1092,17 @@ func (m GenerateModel) commandView() string {
 }
 
 // pastView is the revise ladder's top rung: the command being compared
-// against and the feedback that replaced it, dimmed above the new one. It is
-// not history you scroll for — it is the thing the new command is an answer
-// to, so it stays on screen while the answer does.
+// against and the feedback that replaced it, above the new one. It is not
+// history you scroll for — it is the thing the new command is an answer to,
+// so it stays on screen while the answer does, and it is drawn one rung under
+// the body rather than at the weight of a hint: a superseded command still
+// has to be legible enough to compare the new one against (style.go's
+// PastCommand).
+//
+// The two rows are one style because they are one rung. The `$` and the `❯`
+// say which of them is the command and which is the feedback, so a second
+// tone would be a distinction already made in glyphs
+// (docs/interface/principles.md#colour-never-carries-meaning-alone).
 func (m GenerateModel) pastView() string {
 	if len(m.past) == 0 {
 		return ""

@@ -174,17 +174,15 @@ func newFrameStyles(p components.ColorTokens) frameStyles {
 
 // completeStyles is the slash-command menu's own group.
 type completeStyles struct {
-	Focus lipgloss.Style
-	Name  lipgloss.Style
-	Args  lipgloss.Style
-	Desc  lipgloss.Style
-	Off   lipgloss.Style
-	Hint  lipgloss.Style
+	Name lipgloss.Style
+	Args lipgloss.Style
+	Desc lipgloss.Style
+	Off  lipgloss.Style
+	Hint lipgloss.Style
 }
 
 func newCompleteStyles(p components.ColorTokens) completeStyles {
 	return completeStyles{
-		Focus: lipgloss.NewStyle().Bold(true).Background(p.FocusBg.Color()),
 		// The unlit row's command name. It went out unpainted until the menu
 		// started greying what it cannot offer: the terminal's own foreground
 		// is a colour the palette never issued and differs between two
