@@ -460,3 +460,64 @@ did is in the glyph column, in del, where the scan finds it anyway.
 The gap is closed by a guideline that names the case: a row whose glyph column
 has no kind in it states its outcome there. Where that guideline and this
 differ, the guideline wins.
+
+## A rewind returns to before a turn, and the picker's frame is a card's
+
+*A disagreement.* The `Rewind` artboard draws three things the binary does
+otherwise, and all three come from one place: what the product's own `/rewind`
+has always meant.
+
+**Picking a turn returns to before it, not to the end of it.** The artboard's
+caption reads *return to how things stood when this turn ended*, so its turn 5
+keeps turns 1–5 and folds 6–7. `/rewind 5` cuts the conversation at the start
+of turn 5 and keeps 1–4, which is what the numbered command has meant since it
+was written and what the surfaces around it say. Every figure the artboard
+draws is therefore one turn along from the binary's: the card is titled
+`Rewind to before turn 5`, the turns leaving the window are 5–7, and the
+frame's rail reads `at turn 4`. Changing the meaning would change the command
+as well as the picker, which is a product decision rather than a wording one;
+until it is taken, the two must agree, and it is the picker that was drawn
+against a different one.
+
+**The picker is a card and not a bare rail.** The artboard draws the timeline
+frameless, rows under a labelled rule. Selectors are cards
+([surfaces.md](surfaces.md#selectors) is normative on that), and a catalog
+opens as a search card, so the picker keeps its frame and takes the artboard's
+rule above it — which is the rule that names the keyboard's owner and belongs
+to the session rather than to the card. The frame carries no title of its own:
+the rail has already said what the surface is, and the count on the frame's
+own rail says how big the catalog is, which is the other question.
+
+**The unreachable row's `⊘` leads the row rather than the reason.** The
+artboard puts the mark where the diffstat would be, after the turn's words.
+The selector's rule is that an option that cannot be taken says so behind `⊘`
+at the head of the row, in one glyph, once — the same shape on every list in
+the product — so the mark leads and the reason follows the separator. The
+guideline wins.
+
+**The reason itself is the binary's to know.** The artboard's turn ran `rm -rf
+tmp/`, and shhh cannot tell that from any other command: what a command
+changed was never recorded, which the scope card says outright on the row that
+would write. What the binary *can* see is a run of turns whose records were
+dropped to stay inside the changeset store's limit, and a conversation that
+came back from the store without records at all. Those are the two boundaries
+the row states.
+
+## The rewound turns are branched, not folded
+
+*A disagreement.* The `Rewind` artboard's third window keeps the rewound turns
+in the transcript as a `▸` group row — `turns 6–7 · rewound · 2 turns, 3
+files' worth of work` — with a key that reads them and a key that reapplies
+them. The binary truncates the conversation and preserves the abandoned tail
+as a branch of the session, reachable with `/branches`, which is the mechanism
+`/rewind` has always used and the one the transcript is rebuilt from.
+
+So nothing is hidden — the turns are a switch away, and the notice under the
+row names the branch and the command — but they are not on this transcript,
+and the row says `out of the window` rather than `folded` because folded is a
+claim about rows that are still here. The `[r] reapply` key has nothing behind
+it yet for the same reason: reapplying is switching back to the branch, which
+is a key on a surface this story did not build. Closing the gap means holding
+the rewound turns as fold entries on the transcript beside the branch, which
+is a change to how a rewind stores what it took back rather than to how the
+row is worded.

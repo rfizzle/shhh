@@ -55,6 +55,12 @@ type undoSubject struct {
 	since string
 	note  string
 	again string
+	// rewind is set where the plan is a rewind's file half, and carries what
+	// the conversation half already did. It rides the subject because the
+	// two halves are one act and land as one row, and the row cannot be
+	// written until the confirm behind the files has been answered
+	// (docs/interface/surfaces.md#the-rewind). Nil for a turn's own undo.
+	rewind *rewindReturn
 }
 
 // undoOf is the subject for taking one turn back.
@@ -138,6 +144,16 @@ func (m Model) updateUndoConfirm(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	updated, cmd := m.closeUndoConfirm()
 	next := updated.(Model)
 	if decision == components.UndoCancel {
+		// A rewind whose conversation half has already been taken still owes
+		// the transcript the row that says so: the files were declined, not
+		// the whole act (docs/interface/surfaces.md#the-rewind).
+		if of.rewind != nil && of.rewind.first > 0 {
+			next.appendRewindRow(next.settled(*of.rewind), changeset.Turn{})
+			next.invalidateRenderCache()
+			next.syncViewport()
+			next.viewport.SetLines(next.renderHistoryLines())
+			next.viewport.GotoBottom()
+		}
 		return next, cmd
 	}
 	return next.applyUndo(plan, of, decision == components.UndoForce)
@@ -175,12 +191,25 @@ func (m Model) applyUndo(plan changeset.UndoPlan, of undoSubject, force bool) (t
 		for _, r := range out.Records {
 			evicted = append(evicted, m.changes.Add(m.turnCount, r)...)
 		}
+		// A rewind lands as its own act first and as a turn's close after
+		// it, the way every other act on the transcript does: the row says
+		// what happened, the close says it was a turn and offers the key
+		// that takes it back (docs/interface/surfaces.md#the-rewind).
+		if of.rewind != nil {
+			restored, _ := m.changes.Turn(m.turnCount)
+			m.appendRewindRow(m.settled(*of.rewind), restored)
+		}
 		m.appendEntry(entry{
 			kind:  entryTurnClose,
 			turn:  m.turnCount,
 			close: m.undoCloseData(of.note),
 		})
 		m.noteEvictedTurns(evicted)
+	} else if of.rewind != nil && of.rewind.first > 0 {
+		// Nothing came back — every file had drifted, or the writes failed —
+		// and the conversation half still happened, so the row still owes
+		// the reader an account of it.
+		m.appendRewindRow(m.settled(*of.rewind), changeset.Turn{})
 	}
 	if note := undoOutcomeNotice(of, out); note != "" {
 		m.appendEntry(entry{kind: entrySystem, text: note})

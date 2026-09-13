@@ -219,6 +219,15 @@ func buildOverlays() map[state]*mode {
 			cursor:  (Model).pickCursor,
 			keys:    (Model).updatePick,
 		},
+		// The card the rewind picker opens once a turn has been taken. It
+		// borrows the panel and the keyboard the picker already had, so
+		// every letter on it is live (internal/ui/keys/register.go).
+		stateRewindScope: {
+			place:   placePanel,
+			borrows: true,
+			lines:   panelRows((Model).rewindScopeLines),
+			answer:  (*Model).updateRewindScope,
+		},
 		stateTodoPropose: {
 			place:   placePanel,
 			borrows: true,

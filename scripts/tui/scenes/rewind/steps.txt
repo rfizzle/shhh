@@ -1,0 +1,64 @@
+# The rewind, end to end (docs/interface/surfaces.md#the-rewind): three turns,
+# two of them mutating, then the timeline over them, the card that asks what
+# "back" means here, and the row the act lands as.
+#
+# The workspace is a repository with one tracked file the turns edit, so the
+# changeset the picker's rows report is a real one and the restore has
+# something to put back.
+setup printf 'package agent\n\nconst limit = 25\n' > loop.go
+setup git add loop.go
+setup git config user.email tui@shhh
+setup git config user.name tui
+setup git commit -q -m 'seed the repository'
+snap 01-start "Some things worth doing first"
+# Turn one reads and writes nothing.
+keys "find where rounds are counted" Enter
+snap 02-read "at the top of the run"
+# Turn two writes one file. The edit is gated, so the card is what the turn
+# stops on: the answer waits out the grace window and hands the keyboard over
+# before pressing, because a letter that arrives while the draft still holds
+# the keyboard goes into the draft.
+keys "cap rounds at the limit instead of erroring" Enter
+snap 03-edit-card "const limit = 50"
+sleep 1
+keys C-Space
+sleep 0.3
+keys y
+snap 04-capped "Capped at fifty now"
+# Turn three writes two files, so the timeline has three rows that differ.
+keys "raise the cap and move the accounting out" Enter
+snap 05-second-card "const floor = 1"
+sleep 1
+keys C-Space
+sleep 0.3
+keys y
+snap 06-write-card "rounds.go"
+sleep 1
+keys C-Space
+sleep 0.3
+keys y
+snap 07-moved "accounting moved to rounds.go"
+# The timeline: the rail that names it, the rows newest first, each with its
+# turn number, its mutation mark and diffstat, and its age.
+keys "/rewind" Enter
+snap 08-picker "pick a turn to return to"
+# Down one row and take it: the scope card is what a taken row opens.
+keys Down
+sleep 0.3
+keys Enter
+snap 09-scope "code only"
+# Both is the usual reading of going back. The file half is answered at the
+# undo confirm behind it, and the row waits for that answer.
+keys b
+snap 10-confirm "Undo turn"
+keys y
+# One act, one row: the mutation rail, what came back, what left the window,
+# and what the window costs now. The frame's top rail says where the session
+# now stands.
+snap 11-row "out of the window"
+# The prompt has the keyboard, so the first cancel arms the pair and the
+# second takes it.
+keys C-c
+snap 12-quit-armed "again quits"
+keys C-c
+snap 13-exit "that is everything the screen was holding"

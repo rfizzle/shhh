@@ -1390,6 +1390,68 @@ and left the one fact the pair exists to carry resting on the shape of a
 letter alone. The capital is still a capital on a terminal with no colour at
 all.
 
+### The rewind
+
+One key takes the last turn back; the timeline makes the whole session
+addressable. It is three surfaces in a row — the picker over the turns, the
+card that asks what "back" means here, and the row the act lands as — and the
+first of them never acts.
+
+The picker is a card of the [selector](#selectors) family, opened over a
+catalog and so opened as a search, under the rule that names the surface
+holding the keyboard: `──── REWIND · pick a turn to return to ────`, in the
+same treatment DRAFT, DECISION and READING are drawn in. The rail says what
+taking a row means, because the picker is the one list in the product whose
+rows look like acts and are not: picking a turn opens the question, and the
+card behind it is what answers it.
+
+A row is a turn — the words that started it, what it changed, and how long
+ago. The turn's own number leads it, so a reader comparing a row with a close
+row's `turn 6` is comparing the same figure, and the rows read newest first
+because the turn a reader wants back is almost always a recent one. What the
+turn changed follows the words after the separator every row joins two facts
+with: the mutation mark in the accent every write on the transcript wears, the
+file count in the grey between them, and the lines added and removed in the
+diff's own two registers. A turn that wrote nothing says `reads only, nothing
+changed` there rather than leaving the column blank — the column is what the
+reader is scanning, and a blank in it reads as a row nobody measured. The age
+is the short field at the end, and a turn whose moment is not known reports
+none rather than an invented one.
+
+A turn past which the files cannot be restored stays in the list. It is drawn
+as any unavailable row is — behind `⊘`, with the reason where the diffstat
+would be — and it is still selectable, because choosing it is how the surface
+says why. Talk only still works past it: the conversation is shhh's to give
+back, and what the records never held never was. The boundary is a fact about
+the records rather than about the tree: a run of turns whose records were
+dropped to stay inside the changeset store's size limit, or a conversation
+that came back from the store without them at all.
+
+The scope card is what a taken row opens. A rewind is two rewinds arriving as
+one word — the files a run of turns wrote, and the turns themselves — and the
+card states them apart, in the same field block an approval states a blast
+radius in: what comes back on disk and where it comes from, what leaves the
+window and what the window costs afterwards, and whether the act can be taken
+back. The three answers are on one row under the rule, both leading, because
+both is the usual reading of "go back"; code only is *the approach was wrong,
+keep the knowledge* and talk only is *the model went down a bad path, keep the
+files*. Esc is the safe answer in the fullest sense the product has — nothing
+restored, no turn out of the window, and the picker still there.
+
+The rewind lands as a row, because a rewind is a turn: it is counted, it is
+reviewable, and the key that undoes a turn takes it back. It carries the
+mutation rail and the edit glyph where files came back, and neither where the
+window moved and the machine was not touched — the reading a compaction's own
+row takes, for the same reason. What it says is where the workspace was put
+back to, which turns left the window, and what the window holds now. The two
+halves land as one row and not two: the file half is answered at the undo
+confirm, and the row waits for that answer.
+
+The frame's top rail says `at turn N` where it would otherwise say `idle`,
+until the next turn makes the default reading true again. The transcript below
+is shorter than it was, and where the session now stands is the one thing
+about an idle session worth saying.
+
 ## Takeover surfaces
 
 ### The palette

@@ -462,7 +462,24 @@ func indentRow(s string, width int) string {
 // three ways — and the signs carry the distinction, so a monochrome terminal
 // reads it too.
 func DiffStat(added, removed int) string {
-	return sty.Add.Render(fmt.Sprintf("+%d", added)) + " " + sty.Del.Render(fmt.Sprintf("−%d", removed))
+	plus, minus := diffStatParts(added, removed)
+	return plus.Tone.style().Render(plus.Text) + " " + minus.Tone.style().Render(minus.Text)
+}
+
+// DiffStatSpans is that same line count as the two tokens it is made of, for
+// a surface that has to measure it before painting it, or paint it twice — a
+// list row, which is drawn once in its own tones and once bright on the focus
+// background. It is shaped by the same function DiffStat is, for the reason
+// DiffStat exists: an edit stated two ways is a chance to disagree.
+func DiffStatSpans(added, removed int) []DetailSpan {
+	plus, minus := diffStatParts(added, removed)
+	return []DetailSpan{plus, {Text: " ", Tone: ToneQuiet}, minus}
+}
+
+// diffStatParts is what the two halves say and how each is read.
+func diffStatParts(added, removed int) (plus, minus DetailSpan) {
+	return DetailSpan{Text: fmt.Sprintf("+%d", added), Tone: ToneSafe},
+		DetailSpan{Text: fmt.Sprintf("−%d", removed), Tone: ToneRisk}
 }
 
 // FormatElapsed is the shared wall-clock format: seconds under a minute,

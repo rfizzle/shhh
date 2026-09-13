@@ -1,0 +1,18 @@
+# One reply per request. The last line repeats once these run out.
+#
+# Two mutating turns, so the timeline has a turn that wrote, a turn that only
+# read, and a diffstat on each row that differs — which is the whole of what
+# the picker's rows are compared down the list for
+# (docs/interface/surfaces.md#the-rewind).
+#
+# Turn one reads and does not write, so its row says `reads only, nothing
+# changed`.
+tool:read_file:{"path":"loop.go"}
+The rounds are counted in loop.go, at the top of the run.
+# Turn two edits one file.
+tool:edit_file:{"path":"loop.go","old_text":"const limit = 25","new_text":"const limit = 50"}
+Capped at fifty now.
+# Turn three edits two, so its row carries the larger diffstat.
+tool:edit_file:{"path":"loop.go","old_text":"const limit = 50","new_text":"const limit = 100\nconst floor = 1"}
++tool:write_file:{"path":"rounds.go","content":"package agent\n\n// Rounds is the ceiling one turn may spend.\nfunc Rounds() int { return limit }\n"}
+Raised again, and the accounting moved to rounds.go.

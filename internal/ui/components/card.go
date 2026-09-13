@@ -130,6 +130,12 @@ func (c Card) Render(rows []string, width int) string {
 // clipped without the frame losing its corner.
 const cardLeadIn = "╭─ "
 
+// cardLeadInBare is the corner of a card with no title: the space in the
+// lead-in is the gap a title needs to sit on the rail, and a card whose
+// surface is named on the rule above it has no title to spend it on
+// (docs/interface/surfaces.md#the-rewind).
+const cardLeadInBare = "╭─"
+
 // cardTop draws the top border: the title on the left, the chips on the
 // right, and the texture between them. Chips are dropped from the front until
 // what is left fits beside the title; a title that still does not fit is
@@ -143,13 +149,16 @@ func cardTop(c Card, border lipgloss.Style, width int) string {
 	// The space after the title travels with it rather than with the fill:
 	// it is the gap the title needs to sit on the rail at all, so a title
 	// clipped to the last cell has spent it and a title that fits has not.
-	title := c.Title + " "
-	room := max(0, width-1-lipgloss.Width(cardLeadIn))
+	lead, title := cardLeadIn, c.Title+" "
+	if c.Title == "" {
+		lead, title = cardLeadInBare, ""
+	}
+	room := max(0, width-1-lipgloss.Width(lead))
 	chips := c.Chips
 	for {
 		right := chipRun(chips)
 		if lipgloss.Width(title)+lipgloss.Width(right)+1 <= room {
-			return paintCardTop(border, title, room-lipgloss.Width(title)-lipgloss.Width(right), right+"╮")
+			return paintCardTop(border, lead, title, room-lipgloss.Width(title)-lipgloss.Width(right), right+"╮")
 		}
 		if len(chips) == 0 {
 			break
@@ -157,7 +166,7 @@ func cardTop(c Card, border lipgloss.Style, width int) string {
 		chips = chips[1:]
 	}
 	title = Clip(title, room)
-	return paintCardTop(border, title, max(0, room-lipgloss.Width(title)), "╮")
+	return paintCardTop(border, lead, title, max(0, room-lipgloss.Width(title)), "╮")
 }
 
 // paintCardTop paints the parts of the top edge. The title is a heading and
@@ -180,8 +189,11 @@ func cardTop(c Card, border lipgloss.Style, width int) string {
 // that call too: a style renders a pair of escapes around an empty string,
 // and two runs where there is nothing between the title and the corner is one
 // of those for nothing.
-func paintCardTop(border lipgloss.Style, title string, fill int, right string) string {
-	head := border.Render(cardLeadIn) + sty.Bright.Bold(true).Render(title)
+func paintCardTop(border lipgloss.Style, lead, title string, fill int, right string) string {
+	head := border.Render(lead)
+	if title != "" {
+		head += sty.Bright.Bold(true).Render(title)
+	}
 	if Mono() || fill <= 0 {
 		return head + border.Render(ruleRun(fill)+right)
 	}

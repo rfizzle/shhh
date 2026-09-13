@@ -242,12 +242,22 @@ func (m Model) updatePick(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
-// pickerLines is the rendered picker, one row per line.
+// pickerLines is the rendered picker, one row per line — under the rule that
+// names it, for a card that carries a rail label. Only a picker that is a
+// surface in its own right does: a menu a command dropped is named by the
+// command that dropped it, and a second rail over one would be chrome saying
+// what the card's own title already said
+// (docs/interface/surfaces.md#the-rewind).
 func (m Model) pickerLines() []string {
 	if m.picker == nil {
 		return nil
 	}
-	lines := strings.Split(m.picker.View(m.contentWidth()), "\n")
+	width := m.contentWidth()
+	var lines []string
+	if m.picker.Rail != "" {
+		lines = append(lines, keyboardRail(m.picker.Rail, width))
+	}
+	lines = append(lines, strings.Split(m.picker.View(width), "\n")...)
 	return append(lines, m.chatPickLines()...)
 }
 

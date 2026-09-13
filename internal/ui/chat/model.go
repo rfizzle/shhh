@@ -190,6 +190,12 @@ const (
 	// Every letter is text while it is up, which is why it is a state of its
 	// own rather than a flag on the card.
 	stateCommitMessage
+	// stateRewindScope: the card the /rewind picker opens once a turn has
+	// been taken — what a restore puts back, what leaves the window, and the
+	// three answers (docs/interface/surfaces.md#the-rewind). It is a
+	// takeover: the picker already held the keyboard, so every letter on it
+	// is live.
+	stateRewindScope
 )
 
 const inputHeight = 3
@@ -1059,6 +1065,16 @@ type Model struct {
 	// undoSubject is what the armed plan is taking back, in words: a turn,
 	// or the run of turns a rewind puts back (undo.go).
 	undoSubject undoSubject
+	// rewindScope is the scope card while it is up: the turn picked, the
+	// turns a restore would put back, and what the card states about each
+	// half (rewind.go). A pointer, nil while the card is down, because it is
+	// one surface's state and nothing else on the model reads it.
+	rewindScope *rewindScope
+	// rewoundTo is the turn the session stands at after a rewind, which is
+	// what the frame's top rail says in place of `idle` until the next turn
+	// makes it true by default. Zero once a turn has been taken, and for a
+	// session that has not rewound (rewind.go).
+	rewoundTo int
 	// commit is the commit surface's own state: the card and its message
 	// while they are up, and — once a commit has landed — the sha and the
 	// reader's own uncommitted paths, which the rail's CHANGES block goes on

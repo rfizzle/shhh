@@ -1350,3 +1350,40 @@ var Setup = SetupKeys{
 	Paste:  bind("p", "paste a key", "p"),
 	Local:  bind("o", "a local model", "o"),
 }
+
+// RewindKeys are the rewind scope card's — the card the /rewind picker opens
+// once a turn has been taken (docs/interface/surfaces.md#the-rewind).
+//
+// A rewind is two rewinds arriving as one word: the files a run of turns
+// wrote, and the turns themselves. The card offers each on its own and both
+// together, because going back to before a turn and leaving what it wrote on
+// disk is a real answer and so is the reverse — and the person is the only
+// one who knows which they meant.
+//
+// It is a takeover, so its letters are bare: the picker that opened it had
+// already taken the keyboard, and there is nothing left to hand over.
+type RewindKeys struct {
+	// Both is the usual reading of "go back", and the first key offered.
+	Both Binding
+	// Code puts the files back and keeps the conversation: the approach was
+	// wrong, the knowledge was not.
+	Code Binding
+	// Talk rewinds the conversation and leaves the files: the model went
+	// down a bad path, and the work it left is worth keeping. It is the one
+	// answer that still works past a turn whose code cannot be restored.
+	Talk   Binding
+	Cancel Binding
+}
+
+// All is the card's keys in the order it offers them.
+func (k RewindKeys) All() []Binding { return []Binding{k.Both, k.Code, k.Talk, k.Cancel} }
+
+var Rewind = RewindKeys{
+	Both: bind("b", "both", "b"),
+	Code: bind("c", "code only", "c"),
+	Talk: bind("t", "talk only", "t"),
+	// The words say what is still standing rather than "cancel": nothing was
+	// restored, nothing left the window, and the picker is still there
+	// (docs/interface/principles.md#esc-is-always-the-safe-answer).
+	Cancel: bind("esc", "don't", "esc"),
+}

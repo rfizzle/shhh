@@ -288,6 +288,15 @@ func (m Model) frameActivity(width int) string {
 		}
 		return sty.Frame.Idle.Render(clipRow("idle", width))
 	}
+	// A session that has just been rewound says where it stands, and says it
+	// ahead of the last turn's summary: after a rewind that summary is about
+	// a turn that has left the window, or about the rewind itself, and
+	// neither answers the question the reader has just created — where am I
+	// now. It holds until the next turn is sent, which makes the default
+	// reading true again (docs/interface/surfaces.md#the-rewind).
+	if m.rewoundTo > 0 {
+		return sty.Frame.Idle.Render(clipRow(fmt.Sprintf("at turn %d", m.rewoundTo), width))
+	}
 	if s, ok := m.turnStatus(); ok {
 		if line := s.View(width); line != "" {
 			return line

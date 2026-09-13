@@ -35,6 +35,27 @@ type SelectOption struct {
 	// it says the same thing, so the colour is never carrying it alone
 	// (invariant 1).
 	ValueTone FieldTone
+	// Number is what the row is called where that is not its position in the
+	// list — the rewind picker's turn number, which counts down as the list
+	// is read. It takes the numbering column, so the figure stays chrome and
+	// right-aligned instead of riding the label as text the query would
+	// match. A card that sets it takes Unnumbered with it: the jump keys
+	// address positions, and the digits on screen are not those digits.
+	Number int
+	// Detail is the row's continuation where Desc's one dim run will not do:
+	// a fact made of several tokens, each read in its own tone — the rewind
+	// picker's `▎3 files +30 −4`, where the mutation mark, the lines added
+	// and the lines removed say three different things and the words between
+	// them say none. It joins the label with the ` · ` a row's facts are
+	// joined with everywhere else, and it takes Desc's place on a row that
+	// sets both.
+	//
+	// The spans are text and a tone rather than a string the caller has
+	// already painted, because the row is painted twice: unlit each span
+	// wears its own tone, and lit the whole row goes bright on the focus
+	// background, which a run of escapes arriving from outside could only
+	// punch holes in.
+	Detail []DetailSpan
 	// Meta is the right-aligned field at the end of the row: a key binding,
 	// `this one`, the reason an unavailable row is unavailable. It is the
 	// short field — one clause, never a sentence — and it is dropped before
@@ -82,6 +103,42 @@ type SelectOption struct {
 	Dim bool
 }
 
+// DetailSpan is one token of a row's Detail: what it says and how it is
+// read. The tones are the card field's, because a list row's facts and a
+// card field's are the same facts — an answer that reassures, one that should
+// give pause, and the words in between that are neither.
+type DetailSpan struct {
+	Text string
+	Tone FieldTone
+}
+
+// detailSep joins the label to its detail. It is the separator every row in
+// the product joins two equal facts with, so a reader who has learned it on
+// the frame's vitals has learned it here
+// (docs/interface/principles.md#one-grid).
+const detailSep = " · "
+
+// detailText is the detail as plain cells: what the row is measured by, and
+// what a lit row is painted from.
+func (opt SelectOption) detailText() string {
+	var b strings.Builder
+	for _, s := range opt.Detail {
+		b.WriteString(s.Text)
+	}
+	return b.String()
+}
+
+// detailPainted is the detail with each span in its own tone, clipped to the
+// room the row has left. Clipping is done on the painted run rather than on
+// the plain one so a span cut in half still ends inside its own colour.
+func (opt SelectOption) detailPainted(width int) string {
+	var b strings.Builder
+	for _, s := range opt.Detail {
+		b.WriteString(s.Tone.style().Render(s.Text))
+	}
+	return Clip(b.String(), width)
+}
+
 // SelectResult is the single-select Update result.
 type SelectResult struct {
 	Index    int
@@ -121,6 +178,14 @@ type Select struct {
 	// Tone is the frame's colour: chrome on a card that is showing a list,
 	// Info on one that is asking a question with it (CardTone).
 	Tone CardTone
+	// Rail is the label the host puts on the rule above the card, for a
+	// picker that is a surface in its own right rather than a menu a command
+	// dropped — the rewind's timeline. The card carries the word and does not
+	// draw it: the rule that names the keyboard's owner is the session's
+	// chrome, drawn where DRAFT, DECISION and READING are drawn, and a card
+	// that drew one for itself would be a second rail in a second place
+	// (docs/interface/surfaces.md#the-rewind). Empty on every other picker.
+	Rail string
 	// Lead is the sentence the options answer, in rows the caller has already
 	// wrapped, pinned above them. It is a body row rather than the card's
 	// title because a title is clipped into the border it is drawn on, and
@@ -729,7 +794,7 @@ func (s *Select) grid(numbered, inner int) optionGrid {
 	if numbered > 0 {
 		g.num = numbered
 	}
-	continued := false
+	continued, detailed := false, false
 	for _, opt := range s.Options {
 		if opt.passive() {
 			continue
@@ -737,8 +802,16 @@ func (s *Select) grid(numbered, inner int) optionGrid {
 		if opt.Desc != "" || opt.Meta != "" || opt.Value != "" {
 			continued = true
 		}
+		if len(opt.Detail) > 0 {
+			detailed = true
+		}
 	}
-	if !continued || s.FocusDesc {
+	// A list whose rows carry their own detail spends no column aligning it.
+	// The ` · ` is what tells the label from what follows it, and a column
+	// would set every row's mutation mark at a different distance from the
+	// words it is about — which is the one thing the reader is comparing
+	// down the list.
+	if !continued || s.FocusDesc || detailed {
 		return g
 	}
 	for _, opt := range s.Options {
@@ -749,6 +822,19 @@ func (s *Select) grid(numbered, inner int) optionGrid {
 	}
 	g.label = min(g.label, max(inner/2, 8))
 	return g
+}
+
+// ownNumberWidth is the numbering column a list whose rows are called
+// something other than their position needs: the widest of those numbers and
+// the full stop after it. Zero where no row carries one.
+func (s *Select) ownNumberWidth() int {
+	widest := 0
+	for _, opt := range s.Options {
+		if opt.Number > 0 {
+			widest = max(widest, len(strconv.Itoa(opt.Number))+1)
+		}
+	}
+	return widest
 }
 
 // passive reports a row no key can land on: a group rail, or the fold marker
@@ -814,6 +900,12 @@ func (s *Select) optionRows(width int, numbered bool, lo, hi int) []string {
 	numWidth := 0
 	if numbered {
 		numWidth = len(strconv.Itoa(s.selectable())) + 1
+	}
+	// A list whose rows are called something other than their position keeps
+	// the column and fills it from the rows, so the figures line up whether
+	// the card offers a jump or not.
+	if own := s.ownNumberWidth(); own > numWidth {
+		numWidth = own
 	}
 	g := s.grid(numWidth, inner)
 	var rows []string
@@ -885,6 +977,9 @@ func (s *Select) optionRow(opt SelectOption, n int, focused bool, g optionGrid, 
 	room := max(inner-GridPointerWidth, 0)
 	number := ""
 	if g.num > 0 {
+		if opt.Number > 0 {
+			n = opt.Number
+		}
 		number = padLeft(strconv.Itoa(n)+".", g.num) + " "
 	}
 	label := opt.labelText()
@@ -901,8 +996,16 @@ func (s *Select) optionRow(opt SelectOption, n int, focused bool, g optionGrid, 
 		value = Clip(opt.Value, avail-2)
 		avail -= lipgloss.Width(value) + 2
 	}
+	// The detail takes the description's room and its place: a row that
+	// carries both is a row that says the same thing twice, and the detail
+	// is the one whose tones the reader is scanning for.
+	detail := ""
+	if len(opt.Detail) > 0 && avail >= minDescWidth {
+		detail = Clip(opt.detailText(), avail-lipgloss.Width(detailSep))
+		avail -= lipgloss.Width(detail) + lipgloss.Width(detailSep)
+	}
 	gap := descGap(value)
-	if !s.FocusDesc && opt.Desc != "" && avail >= minDescWidth {
+	if detail == "" && !s.FocusDesc && opt.Desc != "" && avail >= minDescWidth {
 		desc = Clip(opt.Desc, avail-len(gap))
 	}
 
@@ -913,6 +1016,9 @@ func (s *Select) optionRow(opt SelectOption, n int, focused bool, g optionGrid, 
 		row := left
 		if value != "" {
 			row += "  " + value
+		}
+		if detail != "" {
+			row += detailSep + detail
 		}
 		if desc != "" {
 			row += gap + desc
@@ -930,15 +1036,23 @@ func (s *Select) optionRow(opt SelectOption, n int, focused bool, g optionGrid, 
 	// half of them (docs/interface/principles.md#one-grid). Numbering is
 	// chrome the eye counts down and the label is the row, so they take the
 	// two tones that say exactly that.
-	body, num := emphasizeMatch(label, s.Query, sty.Body), sty.Dim
+	body, num, sep := emphasizeMatch(label, s.Query, sty.Body), sty.Dim, ""
 	if opt.Dim {
 		// A row that cannot be acted on is not a row the query is hunting
 		// for, and the dimming is one run: emphasis inside it would break the
-		// run and say the wrong thing twice.
+		// run and say the wrong thing twice. Its detail goes out in that run
+		// too — the row's own tones would be saying that a restore is on
+		// offer where the row exists to say it is not.
 		body, num = sty.Dimmer.Render(label), sty.Dimmer
 		desc, meta = sty.Dimmer.Render(desc), sty.Dimmer.Render(meta)
 		value = sty.Dimmer.Render(value)
+		if detail != "" {
+			sep, detail = sty.Dimmer.Render(detailSep), sty.Dimmer.Render(detail)
+		}
 	} else {
+		if detail != "" {
+			sep, detail = sty.Dim.Render(detailSep), opt.detailPainted(lipgloss.Width(detail))
+		}
 		desc = sty.Dim.Render(desc)
 		if value != "" {
 			value = opt.ValueTone.style().Render(value)
@@ -957,6 +1071,9 @@ func (s *Select) optionRow(opt SelectOption, n int, focused bool, g optionGrid, 
 	row += padRight(body, g.label)
 	if lipgloss.Width(value) > 0 {
 		row += "  " + value
+	}
+	if sep != "" {
+		row += sep + detail
 	}
 	if lipgloss.Width(desc) > 0 {
 		row += gap + desc

@@ -38,6 +38,7 @@ func TestOverlayPlacements(t *testing.T) {
 		statePressure:      placePanel,
 		stateCommitCard:    placePanel,
 		stateCommitMessage: placePanel,
+		stateRewindScope:   placePanel,
 
 		stateDiffFull:   placePane,
 		stateOutputFull: placePane,

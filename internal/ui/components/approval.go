@@ -137,6 +137,13 @@ const (
 	// that is the same on the twentieth card as on the first does not compete
 	// with the three that are not.
 	ToneChrome
+	// ToneQuiet marks the words a figure is read through rather than a fact
+	// of its own — the `3 files` between a mutation mark and a diffstat, the
+	// clause that says a turn changed nothing. It is the dim every divider
+	// and every count's furniture is drawn in, so the eye lands on the
+	// figures and not on the words holding them apart
+	// (docs/interface/principles.md#weight-tracks-risk).
+	ToneQuiet
 )
 
 func (t FieldTone) style() lipgloss.Style {
@@ -149,6 +156,8 @@ func (t FieldTone) style() lipgloss.Style {
 		return sty.Del
 	case ToneChrome:
 		return sty.Status
+	case ToneQuiet:
+		return sty.Dim
 	}
 	return sty.Body
 }

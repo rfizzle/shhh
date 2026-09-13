@@ -181,6 +181,17 @@ func Surfaces() []Surface {
 			Bindings: Commit.All(),
 		},
 		{
+			// The card the /rewind picker opens once a turn has been taken.
+			// It is a takeover for the commit card's reason: the picker
+			// already held the keyboard when the card arrived, so there is
+			// nothing to hand over and every letter here is live.
+			Name:     "the rewind scope card",
+			Section:  "docs/interface/surfaces.md#the-rewind",
+			Position: Takeover,
+			Reached:  "a turn taken in the /rewind picker",
+			Bindings: Rewind.All(),
+		},
+		{
 			// The proposed message as a draft, which is a row of its own for
 			// the reason the approval card's note field is: a surface being
 			// typed into keeps every letter as text, so none of the card's

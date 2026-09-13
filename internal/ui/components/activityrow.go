@@ -832,10 +832,23 @@ type ActivityNotice struct {
 	// worse than one that costs two lines.
 	Detail   []string
 	Expanded bool
+	// Act is the row a notice that is also an act is drawn as. A rewind is
+	// the one: what it says is about the session's own conversation, which
+	// is what puts it here, and it put files back while saying it, which is
+	// what makes the dim bookkeeping line above the wrong shape for it. Set,
+	// the notice is that act's row — kind glyph, mutation rail and all —
+	// because weight tracks risk and a line that restored three files is not
+	// chrome (docs/interface/principles.md#weight-tracks-risk).
+	Act *ActivityRow
 }
 
 // View renders the notice at the given width.
 func (n ActivityNotice) View(width int) string {
+	if n.Act != nil {
+		row := *n.Act
+		row.Expanded, row.Detail = n.Expanded, n.Detail
+		return row.View(width)
+	}
 	lead := strings.Repeat(" ", ptrWidth+railWidth+glyphWidth) + verbFieldIn(n.Verb, sty.Dim)
 	// Rendered only when there is something to render: an empty field put
 	// through a style is escape bytes with no width, which the line's own
