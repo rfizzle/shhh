@@ -170,6 +170,12 @@ review does not: it is told to report on the evidence it examined, with only
 the rounds a report needs, and to name what it did not reach. A review that
 spends those too stops with what it has rather than opening a wider pass.
 
+The words a review reads are the same contract. Declaring a review is what
+selects the reviewer's prompt — read the declared evidence before anything
+else, rank findings by severity, end on a verdict — for a profile as well as
+for the built-in role, because a child bounded as a review and instructed as a
+reader would spend its pass doing the thing the bound exists to prevent.
+
 ## What comes back says what happened to it
 
 A child's report is the child's own words, and around them is everything the

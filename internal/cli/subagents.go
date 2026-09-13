@@ -789,10 +789,11 @@ func worktreeNote(worktree bool) string {
 
 // profileEnv builds a custom profile's prompt, toolset and auto-run
 // executor from its definition. The toolset is the tiers the profile
-// granted, narrowed by its allowlist; the prompt is either the generic
-// profile prompt with the file's instructions appended, or the file's
-// instructions alone when it asked to replace the base. Gated is filled
-// with the approval-routed tools that made it in.
+// granted, narrowed by its allowlist; the prompt is the generic profile
+// prompt with the file's instructions appended, the reviewer's prompt with
+// them appended when the profile reviews, or the file's instructions alone
+// when it asked to replace the base. Gated is filled with the
+// approval-routed tools that made it in.
 func profileEnv(def config.AgentDefinition, spec subagent.Spec, info shell.Info, extra string,
 	webTools *web.Toolset, gate *quality.Runner, gated map[string]bool) (string, []provider.Tool, agent.ToolExecutor) {
 	var defs []provider.Tool
@@ -852,12 +853,25 @@ func profileEnv(def config.AgentDefinition, spec subagent.Spec, info shell.Info,
 		names[i] = t.Name
 	}
 	var sysPrompt string
-	if strings.EqualFold(strings.TrimSpace(def.PromptMode), config.PromptReplace) {
+	switch {
+	case strings.EqualFold(strings.TrimSpace(def.PromptMode), config.PromptReplace):
 		sysPrompt = strings.TrimSpace(def.Prompt)
 		if extra != "" {
 			sysPrompt += "\n\n" + extra
 		}
-	} else {
+	// A reviewing profile is run as a review: it is handed the change ahead
+	// of its task and stopped at its round cap with a request for its
+	// report. Its permissions say only that it changes nothing, so the
+	// generic prompt they select is the reader's — asked for findings and
+	// evidence, told nothing about ranking by severity, about reading the
+	// declared evidence before anything else, or about ending on a verdict.
+	// The child would be run under one contract and instructed in another,
+	// and the instructions are the half it can act on. The file's own
+	// prompt follows the reviewer's the way it follows the reader's.
+	// See docs/capabilities/subagents.md#a-review-is-bounded-by-what-it-is-given.
+	case def.Reviews:
+		sysPrompt = prompt.BuildReviewer(info, prompt.CombineExtra(strings.TrimSpace(def.Prompt), extra))
+	default:
 		sysPrompt = prompt.BuildProfile(info, prompt.ProfileSpec{
 			Name:        def.Name,
 			Description: def.Description,

@@ -73,6 +73,53 @@ func TestProfileFromDefinitionCarriesTheReviewContract(t *testing.T) {
 	}
 }
 
+// The runtime hands a reviewing profile the change and stops it at its cap
+// for a report; its permissions grant only reading. Left to those, the words
+// it reads are the reader's — gather facts, report findings — and the child
+// is run under one contract and instructed in another.
+func TestAReviewingProfileIsInstructedAsAReviewer(t *testing.T) {
+	info := shell.Info{OS: "linux", Cwd: "/w"}
+	def := config.AgentDefinition{
+		Name: "critic", Description: "audits diffs", Reviews: true,
+		Prompt: "Audit ruthlessly across three axes.",
+	}
+	got, _, _ := profileEnv(def, subagent.Spec{}, info, "", nil, nil, map[string]bool{})
+
+	// Reading the evidence first, ranking, the bounded pass, the verdict:
+	// the four things the reader's prompt never says.
+	for _, want := range []string{
+		"arrives ahead of your task", "Rank by severity",
+		"inspection pass is bounded by a round cap", "the verdict line the task asks for",
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("a reviewing profile's prompt lacks %q:\n%s", want, got)
+		}
+	}
+	if !strings.HasSuffix(got, "\n\nAudit ruthlessly across three axes.") {
+		t.Errorf("the profile's own instructions did not follow the reviewer's:\n%s", got)
+	}
+	if strings.Contains(got, "the findings, the evidence") {
+		t.Errorf("a reviewing profile still ends on the reader's final-report contract:\n%s", got)
+	}
+	// The flag is what selects it: the same file without it is a reader,
+	// and the built-in reviewer role is the prompt this reuses unchanged.
+	plain := def
+	plain.Reviews = false
+	reader, _, _ := profileEnv(plain, subagent.Spec{}, info, "", nil, nil, map[string]bool{})
+	if !strings.Contains(reader, `"critic" sub-agent`) || strings.Contains(reader, "Rank by severity") {
+		t.Errorf("a profile that does not review should get the generic reader's prompt:\n%s", reader)
+	}
+	if builtin := prompt.BuildReviewer(info); !strings.HasPrefix(got, builtin) {
+		t.Errorf("the reviewing profile forked the built-in reviewer's prompt:\n%s", got)
+	}
+	// prompt_mode = "replace" still owns the whole prompt, review or not.
+	replaced := def
+	replaced.PromptMode = config.PromptReplace
+	if own, _, _ := profileEnv(replaced, subagent.Spec{}, info, "", nil, nil, map[string]bool{}); own != def.Prompt {
+		t.Errorf("replace no longer sends the profile's instructions alone:\n%s", own)
+	}
+}
+
 // A role that must never run an arbitrary command still has to be able to
 // say whether the change compiles and its tests pass. The gate is how, and
 // the read tier is enough for it: what it can run was settled by whoever
