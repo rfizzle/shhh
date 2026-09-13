@@ -426,8 +426,8 @@ func TestApprovalCard_WideBodyPans(t *testing.T) {
 		Answer:  "run it once",
 	}
 	plain := ansi.Strip(c.View(80))
-	if !strings.Contains(plain, "›") {
-		t.Fatalf("a clipped row should end in the pan marker:\n%s", plain)
+	if !strings.Contains(plain, "…") {
+		t.Fatalf("a clipped row should end in the clip mark:\n%s", plain)
 	}
 	c.PanOffset = 5
 	panned := ansi.Strip(c.View(80))

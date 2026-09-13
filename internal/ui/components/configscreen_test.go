@@ -129,7 +129,7 @@ func TestConfigScreen_SecretIsNeverEchoed(t *testing.T) {
 	if strings.Contains(view, "sk-live-secret") {
 		t.Fatalf("the key is never rendered:\n%s", view)
 	}
-	if !strings.Contains(view, "••••") {
+	if !strings.Contains(view, "●●●●") {
 		t.Fatalf("the entry masks what was typed:\n%s", view)
 	}
 	_, result := c.Update(key("enter"))

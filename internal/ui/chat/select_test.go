@@ -365,7 +365,7 @@ func TestSelection_KeepsParagraphsListsAndCodeLines(t *testing.T) {
 
 	for _, want := range []string{
 		"First paragraph.\n\nSecond paragraph.",
-		"• first bullet\n• second bullet",
+		"· first bullet\n· second bullet",
 		"func main() {",
 	} {
 		if !strings.Contains(c.text, want) {
@@ -961,10 +961,10 @@ func TestJoinSelectedRows(t *testing.T) {
 		{
 			name: "list items keep their own lines even when full width",
 			rows: []string{
-				"• a bullet long enough to fill the row up",
-				"• the next bullet",
+				"· a bullet long enough to fill the row up",
+				"· the next bullet",
 			},
-			want: "• a bullet long enough to fill the row up\n• the next bullet",
+			want: "· a bullet long enough to fill the row up\n· the next bullet",
 		},
 		{
 			name: "a change of indent ends the line",

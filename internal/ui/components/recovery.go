@@ -499,7 +499,7 @@ func (s SecretPrompt) View(width int) string {
 	} else if s.Hint != "" {
 		head += sty.Dim.Render(" · stands in for " + s.Hint)
 	}
-	mask := strings.Repeat("•", min(len(s.value), max(width-4, 1)))
+	mask := strings.Repeat("●", min(len(s.value), max(width-4, 1)))
 	entry := sty.Dim.Render("▸ ") + sty.Accent.Render(mask) + sty.FocusRow.Render(" ")
 	offers := keyOffers([]KeyOffer{keyOffer(keys.Wait.UseKey), keyOffer(keys.Wait.KeepKey)})
 	return strings.Join([]string{

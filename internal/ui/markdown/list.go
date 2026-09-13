@@ -66,9 +66,13 @@ func isTask(item gast.Node) bool {
 }
 
 // marker is the item's own prefix, ending in the space that sets the hang.
+// An unordered item leads with `·`, which is the mark the product already
+// draws for a thing that is one of several and is not asking anything of you.
+// A second, heavier dot for the same job is a glyph a reader has to tell from
+// the first one (docs/interface/principles.md#closed-vocabularies).
 func (r *renderer) marker(n *gast.List, number int) string {
 	if !n.IsOrdered() {
-		return "• "
+		return "· "
 	}
 	return strconv.Itoa(number) + string(n.Marker) + " "
 }

@@ -111,8 +111,14 @@ const queueIndent = "  "
 
 // header is the dot run — one per decision still waiting, the current one
 // filled — the count in words, and the note that names what [A] covers.
+//
+// The filled dot is del and the rest dim. A queue is a run of decisions
+// nobody has taken yet, and the one at its head is the one holding the turn
+// up: it wears the weight of what it is asking for rather than the spinner's,
+// which would read as work in progress
+// (docs/interface/principles.md#weight-tracks-risk).
 func (q QueueStrip) header(width int) string {
-	dots := sty.SpinText.Render("●") + sty.Dim.Render(strings.Repeat("○", len(q.Items)-1))
+	dots := sty.Err.Render("●") + sty.Dim.Render(strings.Repeat("○", len(q.Items)-1))
 	head := dots + sty.Dim.Render("  "+strconv.Itoa(len(q.Items))+" pending")
 	if q.Note != "" {
 		head += sty.Dim.Render("  ·  ") + sty.Info.Render(q.Note)

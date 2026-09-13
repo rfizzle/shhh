@@ -75,7 +75,7 @@ func TestAlternatives_ThePickerMarksTheCommandOnScreen(t *testing.T) {
 		t.Fatalf("`a` did not open the picker: phase %v", m.Phase())
 	}
 	view := m.View().Content
-	if !strings.Contains(view, "◆ lsof -nP -iTCP -sTCP:LISTEN") {
+	if !strings.Contains(view, "● lsof -nP -iTCP -sTCP:LISTEN") {
 		t.Errorf("the command on screen is not marked in the list:\n%s", view)
 	}
 	for _, want := range []string{"netstat -anv -p tcp | grep LISTEN", "ss -ltn"} {
@@ -149,7 +149,7 @@ func TestAlternatives_ChoosingOneMakesItTheCommand(t *testing.T) {
 	if !strings.Contains(view, "[a] 2 others") {
 		t.Errorf("the offers did not survive the choice:\n%s", view)
 	}
-	if !strings.Contains(press(t, m, "a").View().Content, "◆ netstat") {
+	if !strings.Contains(press(t, m, "a").View().Content, "● netstat") {
 		t.Errorf("the picker still marks the old command:\n%s", press(t, m, "a").View().Content)
 	}
 }
@@ -203,7 +203,7 @@ func TestAlternatives_AnEditRewritesTheChoiceItStartedFrom(t *testing.T) {
 		t.Errorf("an edit dropped the alternatives to the request:\n%s", m.View().Content)
 	}
 	view := press(t, m, "a").View().Content
-	if !strings.Contains(view, "◆ lsof -nP -iTCP\n") && !strings.Contains(view, "◆ lsof -nP -iTCP ") {
+	if !strings.Contains(view, "● lsof -nP -iTCP\n") && !strings.Contains(view, "● lsof -nP -iTCP ") {
 		t.Errorf("the picker still lists the command as it was before the edit:\n%s", view)
 	}
 }
@@ -251,7 +251,7 @@ func TestAlternatives_SteppingBackRestoresTheOffersWithTheCommand(t *testing.T) 
 	if !strings.Contains(m.View().Content, "[a] 2 others") {
 		t.Errorf("stepping back did not bring the offers back with the command:\n%s", m.View().Content)
 	}
-	if back := press(t, m, "a").View().Content; !strings.Contains(back, "◆ lsof -nP") {
+	if back := press(t, m, "a").View().Content; !strings.Contains(back, "● lsof -nP") {
 		t.Errorf("the restored picker does not mark the restored command:\n%s", back)
 	}
 }

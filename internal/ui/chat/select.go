@@ -363,9 +363,9 @@ func (m Model) copySelection() (tea.Model, tea.Cmd) {
 func copiedNotice(text string) string {
 	n := strings.Count(text, "\n") + 1
 	if n == 1 {
-		return "✂ copied 1 line"
+		return "✓ copied 1 line"
 	}
-	return fmt.Sprintf("✂ copied %d lines", n)
+	return fmt.Sprintf("✓ copied %d lines", n)
 }
 
 // cancelSelection drops any selection and stops any edge scroll, and reports
@@ -632,7 +632,7 @@ func startsBlock(row string) bool {
 	row = strings.TrimLeft(row, " ")
 	switch {
 	case strings.HasPrefix(row, "- "), strings.HasPrefix(row, "* "),
-		strings.HasPrefix(row, "+ "), strings.HasPrefix(row, "• "),
+		strings.HasPrefix(row, "+ "), strings.HasPrefix(row, "· "),
 		strings.HasPrefix(row, "#"), strings.HasPrefix(row, "> "):
 		return true
 	}

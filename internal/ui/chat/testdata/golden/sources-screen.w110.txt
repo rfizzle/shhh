@@ -15,10 +15,10 @@
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 searches                                              │ https://example.com/gone            web-researcher
-  ⇢ tokio runtime             3 results · orchestrat… │ 
+  ⚙ tokio runtime             3 results · orchestrat… │ 
 docs.rs                                               │   kind fetch
-  ⇢ /tokio/latest/tokio/      200 · orchestra…  60 KB │   url https://example.com/gone
-  ⇢ /tokio/latest/tokio/runtime/  200 (cached)  12 KB │   status 404
+  ⚙ /tokio/latest/tokio/      200 · orchestra…  60 KB │   url https://example.com/gone
+  ⚙ /tokio/latest/tokio/runtime/  200 (cached)  12 KB │   status 404
 example.com                                           │   when turn 2
 ❯ ✗ /gone                     404 · web-researcher    │ 
 
@@ -29,10 +29,10 @@ example.com                                           │   when turn 2
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 searches                                              │ https://docs.rs/tokio/latest/tokio/   orchestrator
-  ⇢ tokio runtime             3 results · orchestrat… │   tokio — Rust
+  ⚙ tokio runtime             3 results · orchestrat… │   tokio — Rust
 docs.rs                                               │ 
-❯ ⇢ /tokio/latest/tokio/      200 · orchestra…  60 KB │   kind fetch
-  ⇢ /tokio/latest/tokio/runtime/  200 (cached)  12 KB │   url https://docs.rs/tokio/latest/tokio/
+❯ ⚙ /tokio/latest/tokio/      200 · orchestra…  60 KB │   kind fetch
+  ⚙ /tokio/latest/tokio/runtime/  200 (cached)  12 KB │   url https://docs.rs/tokio/latest/tokio/
 example.com                                           │   asked for https://docs.rs/tokio
   ✗ /gone                     404 · web-researcher    │   status 200
                                                       │   read 60 KB
@@ -51,10 +51,10 @@ example.com                                           │   asked for https://do
 ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[1;94msearches␛[m                                             ␛[38;5;241m │ ␛[m␛[1;97mhttps://example.com/gone␛[m            ␛[38;5;241mweb-researcher␛[m
-  ␛[38;5;252m⇢ tokio runtime␛[m             ␛[38;5;252m3 results␛[m ␛[38;5;241m· orchestrat…␛[m␛[38;5;241m │ ␛[m
+  ␛[38;5;252m⚙ tokio runtime␛[m             ␛[92m3 results␛[m ␛[38;5;241m· orchestrat…␛[m␛[38;5;241m │ ␛[m
 ␛[1;94mdocs.rs␛[m                                              ␛[38;5;241m │ ␛[m  ␛[38;5;245mkind ␛[m␛[38;5;241mfetch␛[m
-  ␛[38;5;252m⇢ /tokio/latest/tokio/␛[m      ␛[38;5;252m200␛[m ␛[38;5;241m· orchestra…␛[m  ␛[38;5;252m60 KB␛[m␛[38;5;241m │ ␛[m  ␛[38;5;245murl ␛[m␛[38;5;241mhttps://example.com/gone␛[m
-  ␛[38;5;252m⇢ /tokio/latest/tokio/runtime/␛[m  ␛[38;5;252m200 (cached)␛[m  ␛[38;5;252m12 KB␛[m␛[38;5;241m │ ␛[m  ␛[38;5;245mstatus ␛[m␛[38;5;241m404␛[m
+  ␛[38;5;252m⚙ /tokio/latest/tokio/␛[m      ␛[92m200␛[m ␛[38;5;241m· orchestra…␛[m  ␛[38;5;252m60 KB␛[m␛[38;5;241m │ ␛[m  ␛[38;5;245murl ␛[m␛[38;5;241mhttps://example.com/gone␛[m
+  ␛[38;5;252m⚙ /tokio/latest/tokio/runtime/␛[m  ␛[92m200 (cached)␛[m  ␛[38;5;252m12 KB␛[m␛[38;5;241m │ ␛[m  ␛[38;5;245mstatus ␛[m␛[38;5;241m404␛[m
 ␛[1;94mexample.com␛[m                                          ␛[38;5;241m │ ␛[m  ␛[38;5;245mwhen ␛[m␛[38;5;241mturn 2␛[m
 ␛[94m❯␛[m ␛[1;97;48;5;62m✗ /gone                     404 · web-researcher   ␛[m␛[38;5;241m │ ␛[m
 
@@ -65,10 +65,10 @@ example.com                                           │   asked for https://do
 ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[1;94msearches␛[m                                             ␛[38;5;241m │ ␛[m␛[1;97mhttps://docs.rs/tokio/latest/tokio/␛[m   ␛[38;5;241morchestrator␛[m
-  ␛[38;5;252m⇢ tokio runtime␛[m             ␛[38;5;252m3 results␛[m ␛[38;5;241m· orchestrat…␛[m␛[38;5;241m │ ␛[m  ␛[38;5;241mtokio — Rust␛[m
+  ␛[38;5;252m⚙ tokio runtime␛[m             ␛[92m3 results␛[m ␛[38;5;241m· orchestrat…␛[m␛[38;5;241m │ ␛[m  ␛[38;5;241mtokio — Rust␛[m
 ␛[1;94mdocs.rs␛[m                                              ␛[38;5;241m │ ␛[m
-␛[94m❯␛[m ␛[1;97;48;5;62m⇢ /tokio/latest/tokio/      200 · orchestra…  60 KB␛[m␛[38;5;241m │ ␛[m  ␛[38;5;245mkind ␛[m␛[38;5;241mfetch␛[m
-  ␛[38;5;252m⇢ /tokio/latest/tokio/runtime/␛[m  ␛[38;5;252m200 (cached)␛[m  ␛[38;5;252m12 KB␛[m␛[38;5;241m │ ␛[m  ␛[38;5;245murl ␛[m␛[38;5;241mhttps://docs.rs/tokio/latest/tokio/␛[m
+␛[94m❯␛[m ␛[1;97;48;5;62m⚙ /tokio/latest/tokio/      200 · orchestra…  60 KB␛[m␛[38;5;241m │ ␛[m  ␛[38;5;245mkind ␛[m␛[38;5;241mfetch␛[m
+  ␛[38;5;252m⚙ /tokio/latest/tokio/runtime/␛[m  ␛[92m200 (cached)␛[m  ␛[38;5;252m12 KB␛[m␛[38;5;241m │ ␛[m  ␛[38;5;245murl ␛[m␛[38;5;241mhttps://docs.rs/tokio/latest/tokio/␛[m
 ␛[1;94mexample.com␛[m                                          ␛[38;5;241m │ ␛[m  ␛[38;5;245masked for ␛[m␛[38;5;241mhttps://docs.rs/tokio␛[m
   ␛[38;5;252m✗ /gone␛[m                     ␛[91m404␛[m ␛[38;5;241m· web-researcher␛[m   ␛[38;5;241m │ ␛[m  ␛[38;5;245mstatus ␛[m␛[38;5;241m200␛[m
                                                      ␛[38;5;241m │ ␛[m  ␛[38;5;245mread ␛[m␛[38;5;241m60 KB␛[m

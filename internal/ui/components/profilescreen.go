@@ -495,10 +495,12 @@ func (p *ProfileScreen) railRow(width int) string {
 		switch {
 		case i == 1 && i < at && p.Of == 0:
 			// A brief that was already a specification gets a draft and no
-			// questions, and the rail says which happened: ⊘ is the glyph
-			// for a step that was skipped, and a ✓ over a step nobody was
-			// asked would be the rail claiming an exchange that never
-			// happened.
+			// questions, and the rail says which happened: ⊘ is the mark for
+			// a step that was skipped as well as for one that was refused —
+			// both are a thing that did not happen — and a ✓ over a step
+			// nobody was asked would be the rail claiming an exchange that
+			// never happened
+			// (docs/interface/departures.md#the-drafters-rail-marks-a-step-nothing-was-asked-at).
 			parts = append(parts, sty.Dimmer.Render("⊘ "+name))
 		case i < at:
 			parts = append(parts, sty.Dim.Render("✓ "+name))

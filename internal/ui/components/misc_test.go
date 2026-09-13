@@ -102,7 +102,7 @@ func TestAgentList_ViewAndKeys(t *testing.T) {
 		{State: AgentFailed, Name: "writer-2", Status: "failed · round limit"},
 	}}
 	view := l.View(90)
-	for _, want := range []string{"●", "◇", "✓", "✗", "⚠ waiting approval", "orchestrator", "[enter] attach"} {
+	for _, want := range []string{"●", "◇", "✓ done", "✗", "⚠ waiting approval", "orchestrator", "[enter] attach"} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("agent list should contain %q:\n%s", want, view)
 		}

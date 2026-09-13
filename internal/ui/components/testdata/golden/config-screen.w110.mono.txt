@@ -121,7 +121,7 @@ shhh config · ~/.config/shhh/config.toml                                       
     model              gpt-5.2                                                              user · 6 available
   ❯ api key            ···4f9c                                                                            user
     Paste a value for api key · replacing ···4f9c
-    ▸ •••••••••••• 
+    ▸ ●●●●●●●●●●●● 
     base url           (the provider's own)                                                            default
     sub-agent model    inherit                                                                         default
 
@@ -355,7 +355,7 @@ shhh config · ~/.config/shhh/config.toml                                       
     ␛[38;5;254mmodel␛[m              ␛[38;5;254mgpt-5.2␛[m                                                              ␛[38;5;254muser · 6 available␛[m
   ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mapi key            ···4f9c                                                                            user␛[m
     ␛[38;5;254mPaste a value for api key␛[m␛[38;5;244m · replacing ···4f9c␛[m
-    ␛[38;5;244m▸ ␛[m␛[38;5;254m••••••••••••␛[m␛[1;38;5;254;48;5;237m ␛[m
+    ␛[38;5;244m▸ ␛[m␛[38;5;254m●●●●●●●●●●●●␛[m␛[1;38;5;254;48;5;237m ␛[m
     ␛[38;5;254mbase url␛[m           ␛[38;5;254m(the provider's own)␛[m                                                            ␛[38;5;254mdefault␛[m
     ␛[38;5;254msub-agent model␛[m    ␛[38;5;254minherit␛[m                                                                         ␛[38;5;254mdefault␛[m
 

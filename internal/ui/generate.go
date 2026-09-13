@@ -747,8 +747,11 @@ func (m GenerateModel) openAlternatives() (GenerateModel, tea.Cmd) {
 		if i == m.chosen {
 			// The mark is a glyph in the label, not the focus bar: the reader
 			// has to be able to find the current command without moving the
-			// pointer onto it (invariant 1).
-			label = "◆ " + oneLine(c.Command)
+			// pointer onto it (invariant 1). It is ● — the mark the drafter's
+			// rail and the agent manager already use for "the one you are on"
+			// — rather than a shape of this card's own
+			// (docs/interface/departures.md#the-current-one-is-marked-and-four-other-marks-the-pages-do-not-list).
+			label = "● " + oneLine(c.Command)
 		}
 		desc := c.Tradeoff
 		if i == m.chosen && desc == "" {
@@ -1161,7 +1164,7 @@ func (m GenerateModel) affectedView() string {
 // dryRunView is what `[d]` came back with, bounded and counted.
 func (m GenerateModel) dryRunView() string {
 	if m.phase == phaseDryRun {
-		return "\n" + indent(sty.Dim.Render("⟳ dry run — "+m.dryCommand))
+		return "\n" + indent(sty.Dim.Render("▸ dry run — "+m.dryCommand))
 	}
 	if m.dryOutput == "" {
 		return ""

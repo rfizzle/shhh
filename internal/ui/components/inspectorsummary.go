@@ -136,11 +136,18 @@ func SummaryLabel(s SummaryTone) string {
 	return glyph + " " + style.Render(label)
 }
 
-// summaryTone is the state row's glyph, its words and its weight. The glyph
-// carries the distinction so a monochrome terminal reads the same as a colour
-// one: ▸ for a run still on its instruction, ◆ for one that has what it needs
-// and is still looking, ⚠ for one that has left the instruction, · for a
-// reading that could not tell.
+// summaryTone is the state row's glyph, its words and its weight: ▸ for a run
+// still on its instruction, ⚠ for one that has left it, · for a reading that
+// could not tell.
+//
+// The verdict is three marks and four words. A run still on its instruction
+// and a run that has found what it needs are both a run going where it was
+// sent, so they share ▸ and are told apart by the word beside it — which is
+// the half a monochrome terminal reads anyway, and the half that says what
+// the difference actually is. A fourth mark for the fourth verdict would be a
+// mark a reader meets once a session and has to look up, on a rail whose
+// whole job is to be read at a glance
+// (docs/interface/departures.md#the-summarys-fourth-verdict-shares-the-thirds-mark).
 //
 // Only the departure is drawn in the accent: a run that has found what it
 // needs is not a warning, it is news, so it takes the reading weight and the
@@ -169,7 +176,7 @@ func SummaryGlyph(s SummaryTone) string {
 	case SummaryOnTarget:
 		return "▸"
 	case SummarySufficient:
-		return "◆"
+		return "▸"
 	case SummaryOffTarget:
 		return "⚠"
 	}

@@ -82,7 +82,7 @@
 
 · bound · a wide body, panned right
 ╭─ Approve command ────────────────────────────────────────────────────────────╮
-│ x-amd64.tar.gz --exclude .git --exclude node_modules --transform 's,^,shhh/› │
+│ x-amd64.tar.gz --exclude .git --exclude node_modules --transform 's,^,shhh/… │
 ├──────────────────────────────────────────────────────────────────────────────┤
 │ [y] run it once · [n] deny                                                   │
 │ [esc] back to your draft — the decision stays waiting, nothing is denied     │
@@ -134,7 +134,7 @@
 │                                                                              │
 │ domain    pkg.go.dev — the request leaves this machine                       │
 │ sends     the URL and a shhh-web/1.0 user-agent                              │
-│ receives  page text, whole, into the evidence store; the first 16 KB into t› │
+│ receives  page text, whole, into the evidence store; the first 16 KB into t… │
 ├──────────────────────────────────────────────────────────────────────────────┤
 │ [y] allow it · [n] deny · [a] allow pkg.go.dev without asking                │
 │ [esc] back to your draft — the decision stays waiting, nothing is denied     │
@@ -224,7 +224,7 @@
 
 · bound · a wide body, panned right
 ␛[94m╭─ ␛[m␛[1;97mApprove command ␛[m␛[38;5;241m────────────────────────────────────────────────────────────␛[m␛[94m╮␛[m
-␛[94m│␛[m ␛[38;5;214m␛[m␛[97mx-amd64.tar.gz --exclude .git --exclude node_modules --transform 's,^,shhh/␛[m␛[38;5;241m›␛[m ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;214m␛[m␛[97mx-amd64.tar.gz --exclude .git --exclude node_modules --transform 's,^,shhh/␛[m␛[38;5;241m…␛[m ␛[94m│␛[m
 ␛[94m├──────────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[94m│␛[m ␛[94m[y]␛[m ␛[38;5;252mrun it once␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m ␛[38;5;252mdeny␛[m                                                   ␛[94m│␛[m
 ␛[94m│␛[m ␛[92m[esc] back to your draft — the decision stays waiting, nothing is denied␛[m     ␛[94m│␛[m
@@ -276,7 +276,7 @@
 ␛[38;5;214m│␛[m                                                                              ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mdomain    ␛[m␛[38;5;214mpkg.go.dev␛[m␛[38;5;245m — the request leaves this machine␛[m                       ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243msends     ␛[m␛[38;5;252mthe URL and a shhh-web/1.0 user-agent␛[m                              ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;243mreceives  ␛[m␛[38;5;252mpage text, whole, into the evidence store; the first 16 KB into t␛[m␛[38;5;241m›␛[m ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;243mreceives  ␛[m␛[38;5;252mpage text, whole, into the evidence store; the first 16 KB into t␛[m␛[38;5;241m…␛[m ␛[38;5;214m│␛[m
 ␛[38;5;214m├──────────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;214m│␛[m ␛[94m[y]␛[m ␛[38;5;252mallow it␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m ␛[38;5;252mdeny␛[m␛[38;5;241m · ␛[m␛[94m[a]␛[m ␛[38;5;252mallow pkg.go.dev without asking␛[m                ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[92m[esc] back to your draft — the decision stays waiting, nothing is denied␛[m     ␛[38;5;214m│␛[m

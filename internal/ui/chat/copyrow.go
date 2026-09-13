@@ -49,7 +49,7 @@ func (m Model) copyFocusedRow(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	if n == 1 {
 		noun = "line"
 	}
-	m.readingCopied = fmt.Sprintf("✂ copied %s · %d %s", what, n, noun)
+	m.readingCopied = fmt.Sprintf("✓ copied %s · %d %s", what, n, noun)
 	// The caption stands as soon as the write leaves. A clipboard write to
 	// the terminal has no reply and nothing to wait for, so "it went" is the
 	// whole of what can be known about it.

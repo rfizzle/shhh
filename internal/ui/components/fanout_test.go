@@ -127,29 +127,110 @@ func TestFanoutProgressNeedsADeclaredCount(t *testing.T) {
 
 // TestFanoutFinishedLaneKeepsItsResult covers the second half of the
 // update-in-place criterion: a lane that has stopped reports its outcome and
-// what it found, and stops drawing progress that no longer measures anything.
+// what it found. A child that declared a step count keeps the bar it climbed,
+// full and ticked, because the bar has stopped measuring and started stating
+// — a lane that dropped it would answer "did it get through the five" by
+// taking the five away.
 func TestFanoutFinishedLaneKeepsItsResult(t *testing.T) {
 	done := FanoutLane{State: FanoutDone, Name: "tester-4", Task: "internal/agent tests",
 		Step: 2, Steps: 5, Tools: 9, Spend: "$0.03", Elapsed: "41s",
 		Summary: "all four packages pass"}
 	view := ansi.Strip(done.View(110))
-	if !strings.Contains(view, "✓") || !strings.Contains(view, "done") {
-		t.Fatalf("a finished lane should state its outcome in glyph and word: %q", view)
+	if !strings.Contains(view, "▰▰▰▰▰ ✓ 5/5") {
+		t.Fatalf("a finished lane should state its outcome on a full meter: %q", view)
+	}
+	if strings.Contains(view, "2/5") || strings.Contains(view, "▱") {
+		t.Fatalf("a finished lane still has room left on its bar: %q", view)
 	}
 	if !strings.Contains(view, "all four packages pass") {
 		t.Fatalf("a finished lane should keep its result summary: %q", view)
 	}
-	if strings.Contains(view, "2/5") {
-		t.Fatalf("a finished lane is still drawing progress: %q", view)
+
+	bare := FanoutLane{State: FanoutDone, Name: "tester-5", Summary: "nothing to do"}
+	bview := ansi.Strip(bare.View(110))
+	if !strings.Contains(bview, "✓ done") {
+		t.Fatalf("a finished lane that declared no count should say so in words: %q", bview)
 	}
 
 	failed := FanoutLane{State: FanoutFailed, Name: "patcher-5", Summary: "round limit (25) reached"}
 	fview := ansi.Strip(failed.View(110))
-	if !strings.Contains(fview, "✗") || !strings.Contains(fview, "failed") {
+	if !strings.Contains(fview, "✗ failed") {
 		t.Fatalf("a broken lane should state its outcome in glyph and word: %q", fview)
 	}
 	if !strings.Contains(fview, "round limit") {
 		t.Fatalf("a broken lane should say why: %q", fview)
+	}
+}
+
+// TestFanoutLaneKeepsItsKindGlyph is the rule the Agents artboard draws and
+// docs/interface/departures.md#a-fan-out-lane-keeps-its-kind-glyph-and-a-manager-row-does-not
+// argues: the lane's glyph column says what the child is in every state, and
+// the state is said in the outcome field beside it, in words. A monochrome
+// terminal has to read the same lane, so the words are the assertion.
+func TestFanoutLaneKeepsItsKindGlyph(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		lane    FanoutLane
+		outcome string
+	}{
+		{"running", FanoutLane{State: FanoutRunning, Name: "a", Step: 2, Steps: 5}, "2/5"},
+		{"blocked", FanoutLane{State: FanoutBlocked, Name: "a"}, "⚠ needs you"},
+		{"done", FanoutLane{State: FanoutDone, Name: "a"}, "✓ done"},
+		{"failed", FanoutLane{State: FanoutFailed, Name: "a"}, "✗ failed"},
+		{"queued", FanoutLane{State: FanoutQueued, Name: "a"}, "queued"},
+		{"idle", FanoutLane{State: FanoutIdle, Name: "a"}, "idle"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			view := ansi.Strip(tc.lane.View(110))
+			if !strings.Contains(view, "◇") {
+				t.Errorf("the lane dropped its kind glyph: %q", view)
+			}
+			if !strings.Contains(view, tc.outcome) {
+				t.Errorf("the outcome field should say %q: %q", tc.outcome, view)
+			}
+		})
+	}
+}
+
+// A manager row is a row, and a row keeps the outcome table's rule: the two
+// states that ask something of the reader take the glyph column, and a
+// finished child does not.
+func TestAgentRowFollowsTheOutcomeTable(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		state AgentState
+		want  string
+	}{
+		{"blocked", AgentBlocked, "⚠"},
+		{"failed", AgentFailed, "✗"},
+		{"running", AgentRunning, "◇"},
+		{"done", AgentDone, "◇"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			got := ansi.Strip(AgentRow{State: tc.state, Name: "writer-1"}.stateGlyph())
+			if got != tc.want {
+				t.Errorf("stateGlyph() = %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
+
+// A lane joins the child's name to what it was asked to do with the separator
+// every row in the product joins two facts with.
+func TestFanoutLaneJoinsNameAndTaskWithTheSeparator(t *testing.T) {
+	lane := FanoutLane{State: FanoutRunning, Name: "writer-1", Task: "docs/loop.md"}
+	if view := ansi.Strip(lane.View(110)); !strings.Contains(view, "writer-1 · docs/loop.md") {
+		t.Fatalf("the lane should join its name and task with ` · `: %q", view)
+	}
+}
+
+// The block's header mark sits in the marker gutter's own first column, where
+// a step header's fold caret and a sent message's ❯ sit
+// (docs/interface/surfaces.md#the-leading-columns).
+func TestFanoutHeaderTakesThePointerColumn(t *testing.T) {
+	head := plainLines(fanoutFixture().View(110))[0]
+	if !strings.HasPrefix(head, "◇ ") {
+		t.Fatalf("the header should start in the pointer column: %q", head)
 	}
 }
 

@@ -547,7 +547,7 @@ func TestRunPick_MultipleBlocksOpensPicker(t *testing.T) {
 	if !strings.Contains(second.Label, "python") || !strings.Contains(second.Label, "2 lines") {
 		t.Fatalf("second row should be a 2-line python block, got %q", second.Label)
 	}
-	if !strings.Contains(second.Desc, `print("a") ⏎ print("b")`) {
+	if !strings.Contains(second.Desc, `print("a") ↵ print("b")`) {
 		t.Fatalf("description should preview the block, got %q", second.Desc)
 	}
 }

@@ -342,9 +342,9 @@ func (s *SourcesScreen) sync() {
 		}
 		s.optAt[i] = len(opts)
 		opts = append(opts, SelectOption{
-			Label:     sourcesGlyph(row.State) + " " + oneLine(row.Label),
+			Label:     sourcesGlyph(row) + " " + oneLine(row.Label),
 			Value:     s.outcomeOf(row),
-			ValueTone: sourcesTone(row.State),
+			ValueTone: sourcesTone(row),
 			Desc:      sourcesAgent(row.Agent),
 			Meta:      row.Bytes,
 		})
@@ -425,26 +425,54 @@ func (s *SourcesScreen) optIndex(row int) int {
 	return 0
 }
 
-// sourcesGlyph is the row's leading glyph, plain rather than painted for the
-// history browser's reason: the label runs through the card's own emphasis,
-// and an escape sequence inside it would be cut in half.
-func sourcesGlyph(state ActivityState) string {
-	switch state {
-	case ActivityFailed:
+// The fetcher's two kinds, as the host words them on the row.
+const (
+	sourceKindFetch  = "fetch"
+	sourceKindSearch = "search"
+)
+
+// unvouched reports whether the row reached somewhere the session never
+// marked read-only. The fetcher writes the two kinds above; a row filed under
+// any other kind came from a server, and a server's call is a command unless
+// somebody said otherwise
+// (docs/capabilities/mcp.md#a-call-is-a-command-unless-you-said-otherwise).
+func (r SourcesRow) unvouched() bool {
+	return r.Kind != sourceKindFetch && r.Kind != sourceKindSearch
+}
+
+// sourcesGlyph is the row's leading glyph, and it is the mark the transcript
+// already drew when the page was read: ⚙ for the fetcher's own reads, which
+// are read-only, and ⇄ for a call nobody vouched for. A screen that collects
+// acts a reader has scrolled past is the last place to invent a mark for
+// them.
+//
+// It is plain rather than painted, for the history browser's reason: the
+// label runs through the card's own emphasis, and an escape sequence inside
+// it would be cut in half. The colour is on the outcome beside it, which is a
+// word, so no mark here is carrying a state on its own (invariant 1).
+func sourcesGlyph(row SourcesRow) string {
+	switch {
+	case row.State == ActivityFailed:
 		return "✗"
-	case ActivityDenied:
+	case row.State == ActivityDenied:
 		return "⊘"
+	case row.unvouched():
+		return "⇄"
 	}
-	return "⇢"
+	return "⚙"
 }
 
 // sourcesTone reads the outcome the way a card field is read: a fetch that
-// was refused or broke is at risk, and one that answered is a fact.
-func sourcesTone(state ActivityState) FieldTone {
-	if state == ActivityFailed || state == ActivityDenied {
+// was refused or broke is at risk, a call to a server nobody vouched for is a
+// door left open, and a page that answered is the reassuring answer.
+func sourcesTone(row SourcesRow) FieldTone {
+	switch {
+	case row.State == ActivityFailed || row.State == ActivityDenied:
 		return ToneRisk
+	case row.unvouched():
+		return ToneOpen
 	}
-	return ToneNeutral
+	return ToneSafe
 }
 
 // sourcesAgent is the `· web-researcher` continuation. The separator is the

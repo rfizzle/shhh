@@ -285,7 +285,7 @@ func (a InspectorAgent) railLines(frame, width int) []railLine {
 		// keyboard goes back to, which every host spells as no name at all.
 		target.Name = ""
 	}
-	row := railRow(lead+AgentProgress{State: a.State}.glyph()+" "+sty.Body.Render(a.Name),
+	row := railRow(lead+AgentProgress{State: a.State}.rowGlyph()+" "+sty.Body.Render(a.Name),
 		a.rightField(), width, 0)
 	if a.Focused {
 		row = LitRow(row, GridPointerWidth, width)

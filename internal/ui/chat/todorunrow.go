@@ -35,11 +35,15 @@ import (
 type runMark int
 
 const (
-	runPending  runMark = iota // · not reached
-	runRestored                // ↺ done in an earlier session; this row did not watch it
-	runLive                    // ▸ where the run is now
-	runPassed                  // ✓ watched finish
-	runStopped                 // ✗ where the run blocked
+	runPending runMark = iota // · not reached
+	// runRestored is a stage finished in an earlier session, which this row
+	// never watched. Its ↺ is a mark the glyph kit does not have, argued
+	// beside the run row in
+	// docs/interface/departures.md#the-backlog-runs-row-has-no-artboard.
+	runRestored
+	runLive    // ▸ where the run is now
+	runPassed  // ✓ watched finish
+	runStopped // ✗ where the run blocked
 )
 
 // todoRunRow is the transcript's handle on one run.

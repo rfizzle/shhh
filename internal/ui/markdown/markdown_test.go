@@ -52,10 +52,10 @@ func TestWrappedListItemHangsUnderItsText(t *testing.T) {
 	if len(rows) < 2 {
 		t.Fatalf("expected a wrap, got %q", rows)
 	}
-	if !strings.HasPrefix(rows[0], "  • ") {
+	if !strings.HasPrefix(rows[0], "  · ") {
 		t.Fatalf("first row = %q", rows[0])
 	}
-	if !strings.HasPrefix(rows[1], "    ") || strings.HasPrefix(strings.TrimLeft(rows[1], " "), "•") {
+	if !strings.HasPrefix(rows[1], "    ") || strings.HasPrefix(strings.TrimLeft(rows[1], " "), "·") {
 		t.Fatalf("continuation should hang under the text, got %q", rows[1])
 	}
 }
@@ -207,7 +207,7 @@ func TestTaskListKeepsItsBoxes(t *testing.T) {
 // A task item's marker is the box. Drawing a bullet as well gives it two.
 func TestTaskItemHasOneMarker(t *testing.T) {
 	rows := plain(t, "- [ ] a task item long enough to wrap at this narrow width\n", 30)
-	if strings.Contains(rows[0], "•") {
+	if strings.Contains(rows[0], "·") {
 		t.Errorf("task item drew a bullet as well as a box: %q", rows[0])
 	}
 	if len(rows) > 1 && !strings.HasPrefix(rows[1], strings.Repeat(" ", Margin+TaskBoxWidth)) {

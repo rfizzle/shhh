@@ -26,9 +26,11 @@ import (
 	"charm.land/lipgloss/v2"
 )
 
-// ChipKind is what a staged attachment is, as the strip marks it. The three
-// marks are the glyph set's additions, and they are closed for the same
-// reason the rest of that set is.
+// ChipKind is what a staged attachment is, as the strip marks it. Two of the
+// three marks are the glyph set's additions and the third is borrowed from
+// it, argued in
+// docs/interface/departures.md#the-attachment-chips-mark-what-kind-of-file-is-staged;
+// they are closed for the same reason the rest of that set is.
 type ChipKind int
 
 const (

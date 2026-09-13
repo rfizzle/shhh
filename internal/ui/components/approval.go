@@ -581,7 +581,7 @@ func (c *ApprovalCard) visibleBody(hintRows int) int {
 // either edge cuts is counted on the row it took
 // (docs/interface/principles.md#fold-never-hide): the last visible row
 // becomes `… N more lines · shift+↓`, the first `… N lines above · shift+↑`
-// once scrolled, and a row running past the right edge ends in ›.
+// once scrolled, and a row running past the right edge ends in ….
 func (c *ApprovalCard) windowBody(body []string, hintRows int, width int) []string {
 	inner := Card{}.Inner(width)
 	body = panRows(body, max(c.PanOffset, 0), inner)
@@ -614,9 +614,13 @@ func (c *ApprovalCard) tailLabel(count, key string) string {
 }
 
 // panRows shifts body rows left by x columns and marks a row that still runs
-// past the right edge with › — the sign the pan exists, distinct from the …
-// every other clip in the product uses because this one is recoverable in
-// place.
+// past the right edge with …, the one mark every clip in the product ends on.
+// It wore a mark of its own once, for a true distinction — this cut is
+// recoverable in place and a clip is not — and the distinction was already
+// being made a row below, by the key the card offers for panning. A
+// twenty-second glyph costs every reader of every card a lookup to learn
+// something one line of chrome had already told them
+// (docs/interface/principles.md#closed-vocabularies).
 func panRows(rows []string, x, inner int) []string {
 	out := make([]string, len(rows))
 	for i, r := range rows {
@@ -630,7 +634,7 @@ func panRows(rows []string, x, inner int) []string {
 			cut = ansi.Cut(r, x, min(x+inner, w))
 		}
 		if x+inner < w {
-			cut = ansi.Truncate(cut, max(inner-1, 0), "") + sty.Dim.Render("›")
+			cut = ansi.Truncate(cut, max(inner-1, 0), "") + sty.Dim.Render("…")
 		}
 		out[i] = cut
 	}

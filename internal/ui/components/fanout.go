@@ -7,12 +7,13 @@ package components
 // has cost, and what state it is in.
 //
 // Three rules the block enforces rather than documents. A blocked lane sorts
-// to the top and says `⚠ needs you` in words, because the only thing a
-// fan-out can need from you is an answer and it must never be the thing you
-// scroll past. A lane draws a progress bar only when the spawn declared a
-// step count — without one it gets the spinner, never a ratio nobody
-// supplied. And progress stops being the point once a child finishes: a
-// settled lane reports its outcome and the first line of what it found.
+// to the top and says `⚠ needs you` in words in its outcome field, because
+// the only thing a fan-out can need from you is an answer and it must never
+// be the thing you scroll past. A lane draws a progress bar only when the
+// spawn declared a step count — without one it gets the spinner, never a
+// ratio nobody supplied. And a finished lane's bar stops measuring and starts
+// stating: full, with `✓ 5/5` beside it, over the first line of what the
+// child found.
 //
 // This is a passive renderer. The block re-renders from the supervisor's live
 // snapshot at whatever width the host has, so a resize costs nothing and no
@@ -21,6 +22,8 @@ package components
 import (
 	"fmt"
 	"strings"
+
+	"charm.land/lipgloss/v2"
 )
 
 // FanoutState is one lane's lifecycle state. It mirrors the supervisor's
@@ -29,12 +32,12 @@ import (
 type FanoutState int
 
 const (
-	FanoutQueued  FanoutState = iota // · accepted, waiting for a slot
+	FanoutQueued  FanoutState = iota // accepted, waiting for a slot
 	FanoutRunning                    // working
-	FanoutBlocked                    // ⚠ waiting on an answer from you
+	FanoutBlocked                    // waiting on an answer from you
 	FanoutIdle                       // turn cancelled, waiting for steering
-	FanoutDone                       // ✓ finished
-	FanoutFailed                     // ✗ broke
+	FanoutDone                       // finished
+	FanoutFailed                     // broke
 )
 
 // settled reports whether the lane has stopped moving, which is when its
@@ -141,33 +144,85 @@ func fanoutLead(glyph string) string {
 // way a step header heads its rows, so the nesting is visible without a rule.
 // It still fills leadWidth, so the header's target and duration land in the
 // same columns as its lanes': only the gutter moves.
+//
+// The mark takes the marker gutter's own first column, where a step header's
+// fold caret and a sent message's ❯ go, rather than landing one column into
+// it. That gutter is the edge the whole transcript is read down, and a mark
+// half inside it lines up with nothing above or below the block
+// (docs/interface/surfaces.md#the-leading-columns).
 func headerLead() string {
-	return strings.Repeat(" ", railWidth) + sty.Info.Render("◇") + " " +
-		verbField("fan-out") + strings.Repeat(" ", ptrWidth)
+	return sty.Info.Render("◇") + strings.Repeat(" ", ptrWidth-1) +
+		verbField("fan-out") + strings.Repeat(" ", railWidth+glyphWidth)
 }
 
-// glyph pairs every state with a mark of its own, so a monochrome terminal
-// keeps them apart (invariant 1).
-func (p AgentProgress) glyph() string {
+// glyph is the kind glyph, and on a lane it is the kind glyph in every state:
+// a lane is one child from the moment it is queued until it stops being one,
+// and ◇ is what a child is. The state is said in the outcome field beside it,
+// in words behind the state's own mark — `⚠ needs you`, `✓ 5/5`, `✗ failed` —
+// so a monochrome terminal reads the same lane a colour one does
+// (invariant 1) and the colour here only reinforces it.
+//
+// This is the one place the outcome table does not override the kind glyph,
+// and the reason is that a lane is not a row. A row is one act and its
+// outcome is the whole of what became of it; a lane is a child that will be
+// many acts before it is anything. A manager row *is* a row and does override
+// — see AgentRow.stateGlyph
+// (docs/interface/departures.md#a-fan-out-lane-keeps-its-kind-glyph-and-a-manager-row-does-not).
+func (p AgentProgress) glyph() string { return p.kindTone().Render("◇") }
+
+// rowGlyph is the same child on a row rather than in a lane, and a row keeps
+// the outcome table's rule: the states that ask something of the reader take
+// the glyph column from the kind, and the ones that do not leave it alone. A
+// blocked child leads with ⚠, a broken one with ✗, one still waiting for a
+// slot with · and one waiting to be steered with ⊘; a child running or
+// finished keeps ◇ and says how it went in the field on the right.
+//
+// The manager, the rail's AGENTS block and a lane are the same child through
+// the same renderer, and this is the one place they differ — see glyph above
+// for why a lane is not a row
+// (docs/interface/departures.md#a-fan-out-lane-keeps-its-kind-glyph-and-a-manager-row-does-not).
+func (p AgentProgress) rowGlyph() string {
 	switch p.State {
-	case FanoutQueued:
-		return sty.Dim.Render("·")
 	case FanoutBlocked:
 		return sty.Err.Render("⚠")
-	case FanoutIdle:
-		return sty.Dim.Render("⊘")
-	case FanoutDone:
-		return sty.Add.Render("✓")
 	case FanoutFailed:
 		return sty.Err.Render("✗")
+	case FanoutQueued:
+		return sty.Dim.Render("·")
+	case FanoutIdle:
+		return sty.Dim.Render("⊘")
+	}
+	return p.glyph()
+}
+
+// kindTone is the colour the kind glyph carries: info while the child is
+// going, add once it has answered, del while it is stopped on something. A
+// queued or idle child is none of those and takes the grey everything waiting
+// takes.
+func (p AgentProgress) kindTone() lipgloss.Style {
+	switch p.State {
+	case FanoutBlocked, FanoutFailed:
+		return sty.Err
+	case FanoutDone:
+		return sty.Add
+	case FanoutQueued, FanoutIdle:
+		return sty.Dim
 	default:
-		return sty.Info.Render("◇")
+		return sty.Info
 	}
 }
 
-// progress is the left-hand status field: the meter when the spawn declared
-// a step count, the spinner when it did not, and the outcome word once the
-// child has settled — a bar against a finished child measures nothing.
+// progress is the left-hand status field: the meter when the spawn declared a
+// step count, the spinner when it did not, and the state's own mark and word
+// once the child has stopped moving. The mark stands here rather than in the
+// glyph column, which says what the child is; this says how it is doing.
+//
+// A child that finished against a declared step count keeps its meter, full,
+// with `✓ 5/5` as the meter's text. The bar is no longer measuring anything —
+// it states that the whole of the declared work was covered, which is what a
+// reader who watched it climb was waiting to see, in the shape they were
+// watching. A child that declared no count has no such shape and says `✓
+// done`.
 func (p AgentProgress) progress() string {
 	switch p.State {
 	case FanoutBlocked:
@@ -176,14 +231,22 @@ func (p AgentProgress) progress() string {
 		return sty.Dim.Render("queued")
 	case FanoutIdle:
 		return sty.Dim.Render("idle")
-	case FanoutDone:
-		return sty.Add.Render("done")
 	case FanoutFailed:
-		return sty.Err.Render("failed")
+		return sty.Err.Render("✗ failed")
 	}
 	if m, ok := AgentMeter(p.Step, p.Steps); ok {
 		m.Text = fmt.Sprintf("%d/%d", min(max(p.Step, 0), p.Steps), p.Steps)
+		if p.State == FanoutDone {
+			// Full, and in the add every finished thing wears rather than the
+			// info a lane climbs in: the run is over and the bar is now a
+			// statement about it.
+			m.Pct, m.Tone = 100, MeterProgress
+			m.Text = fmt.Sprintf("✓ %d/%d", p.Steps, p.Steps)
+		}
 		return m.View()
+	}
+	if p.State == FanoutDone {
+		return sty.Add.Render("✓ done")
 	}
 	return Spinner{Frame: p.Frame, Label: "working"}.View()
 }
@@ -229,12 +292,15 @@ func (l FanoutLane) glyph() string        { return l.progressOf().glyph() }
 func (l FanoutLane) outcomeField() string { return l.progressOf().outcomeField() }
 
 // target is the lane's growing field: the child's name, then what it was
-// asked to do.
+// asked to do, joined with the separator every row in the product joins two
+// facts with (docs/interface/principles.md#one-grid). Two spaces read as a
+// column that is not there — the tasks under them never line up, because the
+// names are not one width.
 func (l FanoutLane) target() string {
 	if l.Task == "" {
 		return l.Name
 	}
-	return l.Name + "  " + l.Task
+	return l.Name + detailSep + l.Task
 }
 
 // paintTarget leads the field with the name in body text and dims the task

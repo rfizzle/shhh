@@ -145,8 +145,8 @@ func TestSecretPrompt_MasksAndNeverEchoes(t *testing.T) {
 	if strings.Contains(got, "sk-secret") {
 		t.Errorf("the prompt must never render the key, got:\n%s", got)
 	}
-	if !strings.Contains(got, strings.Repeat("•", 9)) {
-		t.Errorf("the prompt should mask a bullet per rune, got:\n%s", got)
+	if !strings.Contains(got, strings.Repeat("●", 9)) {
+		t.Errorf("the prompt should mask a cell per rune, got:\n%s", got)
 	}
 	if p.Len() != 9 {
 		t.Errorf("Len() = %d, want 9", p.Len())

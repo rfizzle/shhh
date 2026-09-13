@@ -88,12 +88,40 @@ func TestSourcesScreen_AnEmptyLedgerSaysSo(t *testing.T) {
 	}
 }
 
+// The row leads with the mark the transcript drew when the page was read, and
+// the outcome beside it carries the colour: a fetch is a read and takes ⚙, a
+// row from anywhere the session never marked read-only takes ⇄ and the tone
+// of a door left open, and one that broke keeps ✗.
+func TestSourcesScreen_TheRowLeadsWithTheMarkTheActWore(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		row   SourcesRow
+		glyph string
+		tone  FieldTone
+	}{
+		{"a fetch that answered", SourcesRow{Kind: "fetch"}, "⚙", ToneSafe},
+		{"a search", SourcesRow{Kind: "search"}, "⚙", ToneSafe},
+		{"a call nobody vouched for", SourcesRow{Kind: "mcp"}, "⇄", ToneOpen},
+		{"a fetch that broke", SourcesRow{Kind: "fetch", State: ActivityFailed}, "✗", ToneRisk},
+		{"a fetch that was refused", SourcesRow{Kind: "fetch", State: ActivityDenied}, "⊘", ToneRisk},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := sourcesGlyph(tc.row); got != tc.glyph {
+				t.Errorf("sourcesGlyph() = %q, want %q", got, tc.glyph)
+			}
+			if got := sourcesTone(tc.row); got != tc.tone {
+				t.Errorf("sourcesTone() = %v, want %v", got, tc.tone)
+			}
+		})
+	}
+}
+
 // Stacked, the list gives way to the preview's floor rather than the other
 // way round, which is the family's rule.
 func TestSourcesScreen_NarrowStacksThePanes(t *testing.T) {
 	s := &SourcesScreen{Rows: sourceRows(), Focus: 1, Subject: "2 pages", MaxLines: 16}
 	view := s.View(60)
-	if !strings.Contains(view, "⇢ /tokio/latest/tokio/") ||
+	if !strings.Contains(view, "⚙ /tokio/latest/tokio/") ||
 		!strings.Contains(view, "https://docs.rs/tokio/latest/tokio/") {
 		t.Errorf("the stacked screen dropped a pane:\n%s", view)
 	}

@@ -192,7 +192,7 @@ func mapRail() InspectorRail {
 func TestInspectorRail_AgentsMapEveryStateInSpawnOrder(t *testing.T) {
 	view := stripANSI(mapRail().View(InspectorMaxWidth, 0))
 	for _, want := range []string{
-		"\u2298 orchestrator", "\u25c7 writer-1", "\u2713 writer-2", "\u25c7 runner-3", "\u2717 reader-4",
+		"\u2298 orchestrator", "\u25c7 writer-1", "\u25c7 writer-2", "\u25c7 runner-3", "\u2717 reader-4",
 	} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("the map is missing %q:\n%s", want, view)
@@ -891,23 +891,32 @@ func TestInspectorTools_SaysWhatRecallLeftOut(t *testing.T) {
 	}
 }
 
-// The glyph carries the distinction, so a monochrome terminal reads the same
-// verdict as a colour one — which means no two states may share one.
+// A monochrome terminal has to read the same verdict as a colour one, so no
+// two states may render alike — and the verdict is a mark and a word
+// together. Four verdicts share three marks: a run still on its instruction
+// and a run that has found what it needs are both going where they were sent,
+// so the word is what separates them
+// (docs/interface/departures.md#the-summarys-fourth-verdict-shares-the-thirds-mark).
 func TestSummaryTone_EveryStateHasItsOwnGlyphAndWords(t *testing.T) {
-	glyphs := map[string]SummaryTone{}
+	labels := map[string]SummaryTone{}
 	words := map[string]SummaryTone{}
+	vocabulary := map[string]bool{"▸": true, "⚠": true, "·": true}
 	for _, s := range []SummaryTone{SummaryUnclear, SummaryOnTarget, SummaryOffTarget, SummarySufficient} {
 		glyph, label, _ := summaryTone(s)
 		if glyph == "" || label == "" {
 			t.Fatalf("state %v has no rendering", s)
 		}
-		if prev, seen := glyphs[glyph]; seen {
-			t.Errorf("states %v and %v share the glyph %q", prev, s, glyph)
+		if !vocabulary[stripANSI(glyph)] {
+			t.Errorf("state %v draws %q, which the verdict vocabulary does not have",
+				s, stripANSI(glyph))
+		}
+		if prev, seen := labels[stripANSI(glyph)+label]; seen {
+			t.Errorf("states %v and %v read alike: %q", prev, s, stripANSI(glyph)+" "+label)
 		}
 		if prev, seen := words[label]; seen {
 			t.Errorf("states %v and %v share the words %q", prev, s, label)
 		}
-		glyphs[glyph] = s
+		labels[stripANSI(glyph)+label] = s
 		words[label] = s
 	}
 }

@@ -1,0 +1,55 @@
+# The fan-out block in the transcript at 120 columns, driven to the state the
+# Agents artboard's first window draws: three children, one still going, one
+# finished and one waiting on an answer.
+#
+# What the capture is for is the block's grammar rather than its plumbing.
+# Every lane keeps ◇ in the glyph column whatever state it is in — the column
+# says what the child is, and how it is doing is said in words in the field on
+# the right: `⚠ needs you`, a meter, `✓ done`. The block's own header mark
+# sits in the marker gutter's first column, where a step header's caret sits.
+# And a lane joins the child's name to what it was asked to do with ` · `
+# rather than with a column that is not there.
+#
+# The session's own request is left standing throughout. That is not tidiness:
+# an agent parked at a card takes no reply from the scripted queue, so keeping
+# the session there is what makes the order the children are let through in
+# the order they consume it.
+setup printf 'package agent\n\nfunc loop() {\n    for round := 0; round < limit; round++ {\n        step()\n    }\n}\n' > loop.go
+snap 01-start "Some things worth doing first"
+keys "survey the round accounting" Enter
+# Spawning is gated, so a card stands between the sentence and each child.
+snap 02-spawn-card "writer agent"
+keys y
+sleep 1
+keys y
+sleep 1
+keys y
+sleep 3
+# Three lanes as the block opens, before anything has been asked of the
+# reader: the kind glyph on every one of them and the state in the field on
+# the right.
+snap 03-lanes "3 agents"
+sleep 4
+# Everything then asks to run a command at once. The session's own card is
+# left where it is, and the children's routed requests are what the block is
+# now drawing as blocked.
+keys Escape
+sleep 2
+snap 04-blocked "needs you"
+# The first child let through runs its command and then asks the model again,
+# and the model keeps it waiting: that lane is the one still working.
+keys C-Space
+sleep 2
+keys y
+sleep 5
+# The second child let through is answered at once, so its lane is the one
+# that has finished.
+keys C-Space
+sleep 2
+keys y
+sleep 5
+# The third is never answered, and the card standing over the draft is left
+# standing: that lane is the one waiting on you.
+keys Escape
+sleep 2
+snap 05-three-states "needs you"

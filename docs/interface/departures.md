@@ -114,6 +114,16 @@ settle, and the artboard is the place to settle them. This is a gap: when the
 row is drawn, this is what the artboard has to reconcile with, and where the
 two differ the artboard wins.
 
+The strip under it carries one mark the glyph pages do not: `↺`, for a stage
+that was finished in an earlier session and that this row therefore never
+watched. The four the kit supplies are all this row could otherwise say, and
+each of them would be a claim it cannot make — `✓` says *I saw this pass*, `·`
+says *nothing has happened here*, and both are wrong about a stage whose
+record came out of the store. What the reader is deciding is whether to trust
+the strip, and the difference between a stage this session watched and one it
+read about is the whole of that decision. The mark is dim, behind the ticks,
+because a stage that is already done is not what the row is about.
+
 ## The light table's rungs were chosen in the binary
 
 `tokens/colors.css` has one column. It states a hex and the 256 index that hex
@@ -521,3 +531,139 @@ is a key on a surface this story did not build. Closing the gap means holding
 the rewound turns as fold entries on the transcript beside the branch, which
 is a change to how a rewind stores what it took back rather than to how the
 row is worded.
+
+## A fan-out lane keeps its kind glyph, and a manager row does not
+
+*A gap the artboard fills two ways, and both are kept.* The states guideline
+closes its table with a rule — five of the state marks override the kind
+glyph, `✓` never does — and then says `✓` marks "the things that are not rows:
+a step header, a turn close, a fan-out lane, a check on the doctor screen". So
+a lane is named as one of the things the rule is not about, and the `Agents`
+artboard draws it that way: `◇` stands in every lane it draws and its colour
+carries the state, with the state itself in words in the outcome field —
+`▰▰▰▱▱ 2/5` running, `▰▰▰▰▰ ✓ 5/5` done, `⚠ needs you` blocked.
+
+The same artboard's manager window draws the same three children the other
+way, and that is the rule rather than an inconsistency: a manager row is a
+row. Its blocked child leads with `⚠` and its done child keeps `◇` with `✓
+done` on the right, which is exactly "five override, `✓` does not".
+
+Both are implemented. The difference is what the two surfaces are lists of. A
+lane is a child, from the moment it is queued until it stops being one, and it
+will be many acts before it is anything — so the column that says *what this
+is* keeps saying it, and how the child is doing is the field that changes. A
+manager row is the child as one thing you are about to act on, in a list where
+`⚠` is what sorts to the top and what the key row is offering to answer; there
+the state is the reason the row is in front of you, and it takes the lead
+column the way it does on every other row in the product.
+
+Two states no artboard draws are extended from the lane's rule rather than the
+row's: a failed lane is `◇` in del with `✗ failed` in the outcome field, and a
+queued or idle one is `◇` in grey with its word. A lane that changed shape on
+the one state that went wrong would be the reader learning a second grammar
+for the case they are least able to spend attention on.
+
+## The current one is marked, and four other marks the pages do not list
+
+*A gap.* Five marks the binary draws are on no guideline page. Two of them are
+on artboards; three had nowhere to come from.
+
+`●` is the current one of a run — the step the drafter's rail is standing on,
+the agent whose surface is showing in the manager, the decision at the head of
+the approval queue. The `Drafter` and `Agents` artboards both draw it and no
+glyph page lists it. It is not a state: `✓ brief   ● questions   · draft` says
+where you are in something, which is a different question from how any of it
+turned out, and answering it with a state mark would be the rail claiming an
+outcome for a step nobody has finished. `○` is its pair, and only the queue
+strip draws it — a run of dots is a shape rather than a list of rows, and a
+dot that is not the current one has to be a dot.
+
+`⋮` is the drafter's profile pane counting what did not fit: `⋮ 2 more lines ·
+shift+↓ read on`. The `Drafter` artboard draws it. Everywhere else a fold ends
+on `…`, and the difference is the axis — `…` says a line was cut, and this
+says the rows continue below.
+
+`↵` is a line break inside a one-line preview, where a code block is being
+shown on a description row. It is not a mark about the row; it is a character
+standing in for one that cannot be drawn, the way `␛` stands in for an escape
+in a golden fixture.
+
+`↺` is the run strip's unwatched stage, argued beside [the run
+row](#the-backlog-runs-row-has-no-artboard).
+
+## The attachment chips mark what kind of file is staged
+
+*A gap.* No artboard draws the staged strip's chips, and the kit has no mark
+for *this is a picture*. The tool-kind glyphs answer a different question —
+they say what the session did, and a chip is a thing the reader attached
+before the session does anything at all.
+
+So the strip adds two and reuses one. `▣` is a raster image: a frame with a
+subject inside it. `▤` is a document the model reads whole — a PDF: the same
+lines as text, inside the boundary that makes it one artifact. `≡` is text
+bound for the prompt itself, and it is the kit's own mark for a reading,
+borrowed rather than invented — the shape already means *lines of it*, and a
+third new mark on a strip that has to survive at 60 columns would be three
+things to learn where two and a familiar one will do. The two meanings never
+meet: `≡` on a row is an act the session took, `≡` on a chip is a file waiting
+above the draft, and no surface draws both at once.
+
+Colour reinforces nothing here. The chips are body text and the mark carries
+the whole distinction, which is what makes the strip read the same in mono
+([invariant 1](principles.md#colour-never-carries-meaning-alone)).
+
+## Two surfaces draw with blocks rather than in them
+
+*A gap.* The drawing kit's eight sparkline blocks are cells of a bar. Two
+surfaces use block characters as ink instead, for pictures rather than
+measurements, and neither has an artboard.
+
+The start screen's wordmark is drawn in `▀ ▄ █` — the letters are the blocks,
+five rows tall, and mono drops the whole thing rather than drawing it in one
+grey. The image rasteriser is the other: a picture arrives as half-block cells
+(`▀`, with the lower half as the cell's background), and a terminal that will
+not take colour gets `░ ▒ ▓ █` as a four-step ramp, which is the only way left
+to say *this pixel is darker than that one*.
+
+Neither is a glyph in the sense the kit means. Nothing here is a mark a reader
+learns and then recognises somewhere else; they are pixels, and the test that
+keeps the set closed lists them so that the next block character to arrive has
+to say which of the two it is.
+
+## The summary's fourth verdict shares the third's mark
+
+*A gap.* The tools guideline says a reading of the session "carries its
+verdict in the outcome field, in the marks the rail's SUMMARY block uses", and
+gives one example: `⚠ off target`. It gives no mark for a run that is still on
+its instruction but has found what it needs and has not started acting on it,
+which is the fourth thing the reader's summariser can say.
+
+That verdict draws `▸ has enough`. A run that has what it needs is a run going
+where it was sent, so it takes the running mark and is told apart from `▸ on
+target` by the word — which is the half a monochrome terminal reads anyway,
+and the half that says what the difference actually is. What it is not is a
+departure or a state that could not tell, and those are the only other marks
+the vocabulary has. A mark of its own for it would be one a reader meets once
+a session, on a rail whose whole job is to be read at a glance
+([closed vocabularies](principles.md#closed-vocabularies)).
+
+Only the departure is drawn in the accent. A run that has found what it needs
+is not a warning, it is news, so it takes the reading weight and the healthy
+glyph colour, and the two `▸` verdicts differ in the weight of their words as
+well as in the words.
+
+## The drafter's rail marks a step nothing was asked at
+
+*A gap.* The `Drafter` artboard draws its rail in three states — `● brief`,
+`● questions`, `● draft`, with `✓` behind and `·` ahead — and never draws a
+step that was skipped. Its own caption says why: "the rail keeps the step it
+was started from: this turn may still come back with questions."
+
+The binary has the case the artboard does not. A brief that was already a
+specification gets a draft and no questions at all, and the rail then has a
+middle step that is behind you and that never happened. It draws `⊘`, which is
+the states page's own mark: it reads "denied / skipped", and the page has it
+leading an option a picker cannot take here — skipped, with the reason on the
+row in words. So this is the kit's mark used for the meaning the kit gives it,
+not a fourth one. `✓ questions` was the alternative and is a lie: it would be
+the rail claiming an exchange that never happened.

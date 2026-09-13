@@ -27,7 +27,7 @@ const (
 	AgentCurrent AgentState = iota // ● the agent whose surface is shown
 	AgentRunning                   // ◇ working
 	AgentBlocked                   // ⚠ waiting on the user
-	AgentDone                      // ✓ finished
+	AgentDone                      // ◇ finished, ✓ in the outcome field
 	AgentFailed                    // ✗ failed
 	// AgentOffer is not an agent: it is the row at the foot of the list that
 	// opens the profile drafter (docs/interface/surfaces.md#the-agent-manager).
@@ -190,23 +190,30 @@ func (l *AgentList) Update(msg tea.KeyPressMsg) (done bool, result AgentListResu
 }
 
 // stateGlyph pairs every state with a glyph so monochrome terminals stay
-// usable. A child's glyph is the lane's, so the manager and the transcript
-// mark the same child the same way; only the orchestrator's `●` is the
-// list's own.
+// usable. A row here is a row, so it keeps the outcome table's rule: the two
+// states that ask something of the reader take the column from the kind
+// glyph, and the one that does not leaves it alone. A blocked child leads
+// with `⚠` and a broken one with `✗`; a child that is running or has finished
+// keeps `◇`, in the colour its lane wears, and says `✓ done` in the field on
+// the right.
+//
+// That is where the manager and the transcript part company, and deliberately
+// (docs/interface/departures.md#a-fan-out-lane-keeps-its-kind-glyph-and-a-manager-row-does-not).
+// Only the orchestrator's `●` is the list's own.
 func (r AgentRow) stateGlyph() string {
 	switch r.State {
 	case AgentCurrent:
 		return sty.Headline.Render("●")
 	case AgentBlocked:
-		return AgentProgress{State: FanoutBlocked}.glyph()
-	case AgentDone:
-		return AgentProgress{State: FanoutDone}.glyph()
+		return AgentProgress{State: FanoutBlocked}.rowGlyph()
 	case AgentFailed:
-		return AgentProgress{State: FanoutFailed}.glyph()
+		return AgentProgress{State: FanoutFailed}.rowGlyph()
+	case AgentDone:
+		return AgentProgress{State: FanoutDone}.rowGlyph()
 	case AgentOffer:
 		return sty.Accent.Render("⚙")
 	default:
-		return AgentProgress{State: FanoutRunning}.glyph()
+		return AgentProgress{State: FanoutRunning}.rowGlyph()
 	}
 }
 
@@ -220,9 +227,15 @@ func (r AgentRow) rightField() string {
 		return r.Progress.outcomeField()
 	}
 	status := r.Status
-	if r.State == AgentBlocked {
+	switch r.State {
+	case AgentBlocked:
 		status = sty.Err.Render("⚠ " + status)
-	} else {
+	case AgentDone:
+		// ✓ never takes an activity row's glyph column, so a finished child
+		// keeps ◇ there and its tick stands in the outcome field, which is
+		// where the outcome table puts it (stateGlyph).
+		status = sty.Add.Render("✓ " + status)
+	default:
 		status = sty.Dim.Render(status)
 	}
 	if r.Spend != "" {

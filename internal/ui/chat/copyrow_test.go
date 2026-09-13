@@ -170,7 +170,7 @@ func TestCopyRow_CaptionStandsUntilTheNextKey(t *testing.T) {
 	m.appendEntry(entry{kind: entryCommand, text: "go build", toolResult: "ok"})
 	m = yank(t, m)
 	line := ansi.Strip(m.readingKeyLine(m.contentWidth()))
-	if !strings.Contains(line, "✂ copied command · 2 lines") {
+	if !strings.Contains(line, "✓ copied command · 2 lines") {
 		t.Fatalf("the bar should carry the caption, got %q", line)
 	}
 	updated, _ := m.Update(tea.KeyPressMsg{Code: 'k', Text: "k"})

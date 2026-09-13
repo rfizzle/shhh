@@ -574,7 +574,7 @@ func runPickLabel(b codeBlock) string {
 }
 
 // runPickPreview flattens a block onto the description row: blank lines
-// dropped, line breaks shown as ⏎, capped at runPreviewMax.
+// dropped, line breaks shown as ↵, capped at runPreviewMax.
 func runPickPreview(body string) string {
 	var parts []string
 	for _, line := range strings.Split(body, "\n") {
@@ -582,7 +582,7 @@ func runPickPreview(body string) string {
 			parts = append(parts, trimmed)
 		}
 	}
-	preview := strings.Join(parts, " ⏎ ")
+	preview := strings.Join(parts, " ↵ ")
 	if r := []rune(preview); len(r) > runPreviewMax {
 		preview = strings.TrimRight(string(r[:runPreviewMax]), " ") + " …"
 	}
