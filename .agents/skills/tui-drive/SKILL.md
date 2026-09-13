@@ -26,11 +26,17 @@ make tui-run  SCENE=smoke            # open the same pane in this terminal, by h
 
 `tui-run` needs a terminal to attach to, so it is for a person. An agent
 uses `tui-shot` and reads the captures. Both need `tmux` and `python3`, and
-`tui-shot` makes a picture as well where `vhs` is installed: the scene is
-written as a tape and played again in a real terminal, which leaves a PNG per
-snap and a GIF of the run. `brew install vhs` brings vhs, ttyd and ffmpeg;
-without them the run is cells only, and says so. By hand that is
-`drive.sh --vhs`.
+`tui-shot` draws a picture as well where `agg` is installed: each snap's
+captured cells, with their colour, rendered as a still beside the capture
+they came from. `brew install agg` is the whole of it — one binary, no
+browser. Without it the run is cells only, and says so. By hand that is
+`drive.sh --pictures`.
+
+**The still is the capture drawn, not a second run of the scene.** It is
+rendered from the same `.ansi` the `.txt` came from, so the picture and the
+text are the same screen and cannot disagree — and there is no second run of
+the scene for them to disagree about. What it cannot show is where the cursor
+stood: tmux does not capture that either.
 
 A snap is a still. To record the run itself — the stream arriving, the card
 landing, the key answering it — add `--record`:
@@ -47,18 +53,14 @@ Captures land under `bin/tui/<scene>/` and are never committed. For each
 |---|---|---|
 | `<name>.txt` | the terminal's cells, no colour | `cat`; diff against a golden's layout block |
 | `<name>.ansi` | the same cells with colour | not for diffing — tmux re-emits colour per cell |
-| `<name>.png` | the screen as a real terminal drew it, under `--vhs` | open it, or read it inline with the file reader |
-| `<scene>.gif` | the whole run as a real terminal drew it, under `--vhs` | any viewer |
-| `<scene>.tape` | the scene as vhs played it, under `--vhs` | `vhs <scene>.tape` replays it by hand |
+| `<name>.gif` | those same cells drawn, under `--pictures` — one frame, so a still | open it, or read it inline with the file reader |
 | `<scene>.cast` | the whole run under `--record`, one per scene rather than per snap | `asciinema play`; `agg` renders it to a `<scene>.cast.gif` beside it |
 
-**A missing picture is said out loud.** vhs can play a whole tape, print
-that it is creating the GIF, exit 0 and write no file — which is what a
-machine whose headless browser cannot start looks like from here. So the run
-takes the previous pictures away before it starts and afterwards holds vhs to
-every path its tape named; where one is missing the run fails and names it,
-rather than leaving a still from an earlier run to be read as this one's.
-The cells are unaffected and are still the gate.
+**A missing picture is said out loud.** The run clears the previous run's
+captures and stills before it starts, and holds `agg` to a still per snap
+afterwards; where one is missing the run fails and names it, rather than
+leaving a picture from an earlier run to be read as this one's. The cells are
+unaffected and are still the gate.
 
 Read the `.txt` first: it is the layout, and a column that drifted shows
 there. Look at the picture for what text cannot carry — a colour that stopped
@@ -66,10 +68,11 @@ meaning what it meant, a rail that is there but dim, a glyph that fell back.
 Watch the cast for what a still cannot carry at all: how long the screen sat
 empty, what order the rows arrived in, whether a key was answered at once.
 
-The cast is text, so it diffs, and it is the record; the GIF is a bonus and
-wants `agg` (`vhs` drives a tape of its own and cannot read a cast). A
-machine without `asciinema` says so and records nothing — the run is the
-gate, and the recording never decides it.
+The cast is text, so it diffs, and it is the record; the GIF beside it is a
+bonus. A machine without `asciinema` says so and records nothing — the run is
+the gate, and the recording never decides it. Note that a GIF of a whole run
+opens on its first frame, which is an empty terminal: it is for watching, and
+a snap's own still is what you read a surface from.
 
 ## Write a scene
 
@@ -128,35 +131,22 @@ snap 04-exit "that is everything the screen was holding"
   surface reads. The workspace is a new repository with one empty commit,
   under a home of its own, so nothing on the machine leaks in.
 - `keys …` is passed to `tmux send-keys`: a quoted string types it, and the
-  rest are keys by name. A scene is played by two drivers with two keyboards,
-  so every name it may write is also a line on the vhs tape:
+  rest are keys by name.
 
-  | The scene writes | What it presses | On the tape |
-  |---|---|---|
-  | `"a line"`, `y`, `q` | the text, a letter at a time | `Type` |
-  | `Enter` `Escape` `Tab` `Space` `Up` `Down` `Left` `Right` `Backspace` `Home` `End` | itself | the same word |
-  | `BTab` | shift+tab | `Shift+Tab` |
-  | `PgUp` `PgDn` | page up, page down | `PageUp` `PageDown` |
-  | `C-c` `C-o` | a control chord | `Ctrl+c` — the letter as the scene wrote it |
-  | `C-Space` | ctrl+space | `Ctrl+Space` |
-  | `S-Tab` `S-Enter` | a shift chord on those two | `Shift+Tab` `Shift+Enter` |
-  | `C-/` `C-_` | ctrl+/ | `Type` of the unit separator |
-  | `S-Up` `S-Down` `S-Left` `S-Right` | a shift chord on an arrow | `Type` of the arrow's own escape sequence |
-  | `M-a` `M-]` | an alt chord | `Escape@1ms` then the key |
+  | The scene writes | What it presses |
+  |---|---|
+  | `"a line"`, `y`, `q` | the text, a letter at a time |
+  | `Enter` `Escape` `Tab` `Space` `Up` `Down` `Left` `Right` `Backspace` `Home` `End` | itself |
+  | `BTab` | shift+tab |
+  | `PgUp` `PgDn` | page up, page down |
+  | `C-c` `C-o` | a control chord |
+  | `C-Space` | ctrl+space |
+  | `S-Tab` `S-Enter` `S-Up` `S-Down` `S-Left` `S-Right` | a shift chord |
+  | `C-/` `C-_` | ctrl+/ |
+  | `M-a` `M-]` | an alt chord |
 
-  The last three are written as bytes rather than named because vhs has no
-  working name for them. Its parser refuses a control chord on a punctuation
-  key and a shift chord on an arrow outright, and its `Alt+` is a modifier on
-  a browser key event, which the terminal vhs drives reads as a third-level
-  shift rather than as meta — so `Alt+a` arrives as a bare `a` and the chord
-  is gone. The bytes a terminal sends have none of those problems: ctrl+/ is
-  the unit separator, shift+↑ is `CSI 1;2A`, and alt+a is escape followed by
-  `a`. Each is written a millisecond a character, which keeps every byte
-  inside the reader's escape timeout of the one before it, so the run arrives
-  as the one key rather than as an escape and a handful of letters. Write a
-  chord in the case the register spells it — `M-a`, never `M-A` — and the
-  tape keeps that case, because a capital after a modifier is a shift vhs
-  would add to the chord.
+  Write a chord in the case the register spells it — `M-a`, never `M-A`: the
+  capital is a shift the scene never asked for.
 - `snap <name> "<text>"` waits for the text to be on screen, then captures.
   **The text must be the surface's own.** Waiting for the line you just typed
   passes before the reply lands; wait for a word only the reply carries, an
@@ -212,11 +202,6 @@ than leaving it out.
   Set `PORT` and `SOCK` to run them side by side.
 - **The pane is 120×40 unless told.** `ROWS` matters as much as `COLS` for
   anything bound by the forty-per-cent panel rule.
-- **A chord written as bytes has a deadline.** The reader only joins them
-  into one key while its escape timeout is open, so a machine slow enough to
-  miss it delivers an escape and a stray letter instead. That fails the snap
-  rather than passing quietly, which is the way round it should be — but it
-  is what a chord that suddenly stops landing looks like.
 - **The start screen is the first frame.** A scene that types straight away
   is typing over the pick list, which is fine — the draft takes it — but the
   first snap should be the start screen, so a change to it is seen.
