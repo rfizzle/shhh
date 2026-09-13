@@ -3,6 +3,7 @@ package storage
 import (
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestAddAndListMemories(t *testing.T) {
@@ -15,7 +16,12 @@ func TestAddAndListMemories(t *testing.T) {
 	if first.ID == 0 {
 		t.Fatal("expected an assigned id")
 	}
-	if _, err := db.AddMemory("/proj/a", "convention", "errors wrap with %w", "agent"); err != nil {
+	second, err := db.AddMemory("/proj/a", "convention", "errors wrap with %w", "agent")
+	if err != nil {
+		t.Fatalf("add: %v", err)
+	}
+	third, err := db.AddMemory("global", "lesson", "read the error before the stack", "agent")
+	if err != nil {
 		t.Fatalf("add: %v", err)
 	}
 	if _, err := db.AddMemory("/proj/b", "lesson", "other project", "user"); err != nil {
@@ -26,18 +32,59 @@ func TestAddAndListMemories(t *testing.T) {
 	if err != nil {
 		t.Fatalf("list: %v", err)
 	}
-	if len(got) != 2 {
-		t.Fatalf("expected 2 in-scope memories, got %d", len(got))
+	if len(got) != 3 {
+		t.Fatalf("expected 3 in-scope memories, got %d", len(got))
 	}
-	// Newest first.
-	if got[0].Scope != "/proj/a" || got[1].Scope != "global" {
-		t.Fatalf("expected newest-first ordering, got scopes %q, %q", got[0].Scope, got[1].Scope)
+	// Three saved in one tick share a timestamp to whatever precision the
+	// clock has, so only a total order puts them here every run.
+	wantIDs := []int64{third.ID, second.ID, first.ID}
+	for i, want := range wantIDs {
+		if got[i].ID != want {
+			gotIDs := make([]int64, len(got))
+			for j, m := range got {
+				gotIDs[j] = m.ID
+			}
+			t.Fatalf("expected newest-first ids %v, got %v", wantIDs, gotIDs)
+		}
 	}
-	if got[1].Kind != "preference" || got[1].Provenance != "user" || !strings.Contains(got[1].Text, "table-driven") {
-		t.Fatalf("round-trip mismatch: %+v", got[1])
+	if got[2].Scope != "global" || got[1].Scope != "/proj/a" {
+		t.Fatalf("expected the out-of-scope entry left out, got scopes %q, %q, %q", got[0].Scope, got[1].Scope, got[2].Scope)
+	}
+	if got[2].Kind != "preference" || got[2].Provenance != "user" || !strings.Contains(got[2].Text, "table-driven") {
+		t.Fatalf("round-trip mismatch: %+v", got[2])
 	}
 	if got[0].CreatedAt.IsZero() || got[0].UpdatedAt.IsZero() {
 		t.Fatal("timestamps should round-trip")
+	}
+}
+
+// TestMemoryStampOrdersAsText pins the write format against the reason it was
+// chosen. SQLite orders the listing by comparing these columns as text, so a
+// format whose width varies with the value sorts a later entry first, and the
+// id tie-break above never fires because the two strings are not equal.
+func TestMemoryStampOrdersAsText(t *testing.T) {
+	base := time.Date(2026, 9, 13, 10, 0, 0, 0, time.UTC)
+	// Trailing zeros are what a variable-width format drops: .500000000
+	// renders as ".5" and outsorts the later ".512".
+	earlier := base.Add(500 * time.Millisecond)
+	later := base.Add(512 * time.Millisecond)
+
+	if memoryStamp(earlier) >= memoryStamp(later) {
+		t.Fatalf("a later instant must sort after an earlier one as text: %q >= %q",
+			memoryStamp(earlier), memoryStamp(later))
+	}
+	if len(memoryStamp(earlier)) != len(memoryStamp(later)) {
+		t.Fatalf("the stamp width must not vary with the value: %q vs %q",
+			memoryStamp(earlier), memoryStamp(later))
+	}
+
+	// The reader parses with RFC3339Nano, so the two have to agree.
+	back, err := time.Parse(time.RFC3339Nano, memoryStamp(later))
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if !back.Equal(later) {
+		t.Fatalf("round-trip mismatch: %s want %s", back, later)
 	}
 }
 
