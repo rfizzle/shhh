@@ -97,7 +97,9 @@ type transcriptBlock struct {
 	start int
 	end   int
 	step  *stepGroup
-	// last marks the final block, the only one a turn can still add to.
+	// last marks the block a turn can still add to. It is usually the final
+	// one, and it is not whenever notices stand after it: a notice is
+	// provisional (stepBlocks), so the block still open is the one under it.
 	last bool
 }
 
@@ -193,8 +195,10 @@ func stepTitle(e entry) (string, bool) {
 
 // stepBlocks tiles the entries into blocks: a step wherever a one-line
 // assistant title is followed by at least one call, a lone entry everywhere
-// else. The scan is left to right, so a block that already has a successor
-// can never change — which is what lets renderHistory keep caching.
+// else. The scan is left to right, so a block a call has landed after can
+// never change — which is what lets renderHistory keep caching. A notice is
+// the one entry that can land after a block and still be taken back into it,
+// and `last` below is where that is accounted for.
 //
 // declared is the approved plan's step list, or nil. With one, a group takes
 // the number stamped on its title entry rather than the running count, the
@@ -247,9 +251,21 @@ func stepBlocks(es []entry, declared []plan.Step) []transcriptBlock {
 		i += run
 	}
 	// The last block a turn can still add to is the last one with entries in
-	// it; a declared step nobody has started is not somewhere rows can land.
+	// it; a declared step nobody has started is not somewhere rows can land,
+	// and neither is a trailing notice. A notice is trimmed off the step
+	// above rather than given a step of its own, so the next batch of calls
+	// to land takes it and the step's next rows back into that step — which
+	// makes the step, not the notice standing after it, the block still open.
+	// Everything before this one is frozen and may never change again
+	// (render.go, focus.go), and a step frozen while a notice stood after it
+	// drew its whole block a second time when the batch arrived: one header,
+	// one ordinal, twice.
+	tail := len(es)
+	for tail > 0 && isStepMember(es[tail-1]) && !isActivityEntry(es[tail-1]) {
+		tail--
+	}
 	for k := len(blocks) - 1; k >= 0; k-- {
-		if blocks[k].end > blocks[k].start {
+		if blocks[k].end > blocks[k].start && blocks[k].start < tail {
 			blocks[k].last = true
 			break
 		}

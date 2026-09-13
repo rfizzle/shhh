@@ -162,6 +162,25 @@ func goldenTranscript() []entry {
 	}
 }
 
+// arrivingStep is one step's rows in the order they land: the title and its
+// first call, the notice the call earned, and then the batch the same step
+// made with no prose over it. Rendered a row at a time it is the case the
+// feed's cache has to survive — the notice puts a block after the step for a
+// frame, and a step frozen there drew its header twice (steps.go).
+func arrivingStep() []entry {
+	return []entry{
+		{kind: entryUser, text: "fix the round limit"},
+		{kind: entryAssistant, text: "Locate the round accounting"},
+		{kind: entryTool, toolName: "read_file", toolArgs: `{"path":"internal/agent/loop.go"}`,
+			toolResult: "a\nb\nc", duration: 400 * time.Millisecond},
+		{kind: entrySystem, text: "auto-allowed by policy: read_file"},
+		{kind: entryTool, toolName: "read_file", toolArgs: `{"path":"internal/agent/round.go"}`,
+			toolResult: "a\nb", duration: 300 * time.Millisecond},
+		{kind: entryTool, toolName: "search", toolArgs: `{"pattern":"ErrRoundLimit"}`,
+			toolResult: searchHits, duration: 200 * time.Millisecond},
+	}
+}
+
 // goldenModel is a ready model at one width with usage, pricing and a model
 // name, so every vitals segment has something to show and nothing in the
 // render depends on the clock.
@@ -205,12 +224,22 @@ func TestGolden_StepOutline(t *testing.T) {
 		m.verbosity = verbosityLow
 		m.invalidateRenderCache()
 		low := m.renderHistory()
+		// The same outline built the way a turn builds one, a row at a time,
+		// so the panel is drawn from the cache the feed actually keeps.
+		live := frameModel(t, width, 40)
+		live.setTurnState(stateStreaming)
+		for _, e := range arrivingStep() {
+			live.appendEntry(e)
+			_ = live.renderHistory()
+		}
+		arriving := live.renderHistory()
 		return []golden.Panel{
 			{Label: "verbosity · normal (a finished step collapses)", View: normal},
 			{Label: "verbosity · normal, step 1 opened (read-only run folds to a group row)", View: opened},
 			{Label: "/step · step 1's detail, one step deep", View: detail},
 			{Label: "verbosity · high (every row, with detail)", View: high},
 			{Label: "verbosity · low (step headers only)", View: low},
+			{Label: "row by row · a notice, then a batch with no prose over it, under one header", View: arriving},
 		}
 	})
 }

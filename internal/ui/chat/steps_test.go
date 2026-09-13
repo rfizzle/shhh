@@ -229,6 +229,58 @@ func TestSteps_SurviveResizeAndCaching(t *testing.T) {
 	}
 }
 
+// TestSteps_BatchAfterANoticeJoinsTheStepAbove drives the order the rows
+// actually arrive in: a titled step, a notice after its last call, and then
+// the batch of calls the same step made with no prose over them. The notice
+// is trimmed off the step, so for one frame the step is not the final block —
+// and freezing it there drew the whole step again when the batch landed: one
+// title and one ordinal, twice.
+func TestSteps_BatchAfterANoticeJoinsTheStepAbove(t *testing.T) {
+	m := activityModel(t)
+	m.setTurnState(stateStreaming)
+	arrive := func(e entry) {
+		m.appendEntry(e)
+		// The frame the row landed in, which is what freezes the blocks
+		// above it.
+		_ = m.renderHistory()
+	}
+	arrive(entry{kind: entryUser, text: "fix the round limit"})
+	arrive(entry{kind: entryAssistant, text: "Locate the round accounting"})
+	arrive(entry{kind: entryTool, toolName: "read_file", toolArgs: `{"path":"loop.go"}`,
+		toolResult: "a\nb", duration: 400 * time.Millisecond})
+	arrive(entry{kind: entrySystem, text: "auto-allowed by policy"})
+	arrive(entry{kind: entryTool, toolName: "read_file", toolArgs: `{"path":"round.go"}`,
+		toolResult: "a", duration: 300 * time.Millisecond})
+	arrive(entry{kind: entryTool, toolName: "search", toolArgs: `{"pattern":"ErrRoundLimit"}`,
+		toolResult: searchHits, duration: 200 * time.Millisecond})
+
+	view := stripANSI(m.renderHistory())
+	if got := strings.Count(view, "Locate the round accounting"); got != 1 {
+		t.Fatalf("the step should be headed once, got %d headers:\n%s", got, view)
+	}
+	header := stepLine(t, view, "Locate the round accounting")
+	for _, want := range []string{"1 ", "3 tools"} {
+		if !strings.Contains(header, want) {
+			t.Fatalf("the one header should carry %q and count the whole step: %q", want, header)
+		}
+	}
+	// The batch is the step's, so its rows are the ones under that header.
+	for _, row := range []string{"loop.go", "round.go", "ErrRoundLimit"} {
+		if !strings.Contains(view, row) {
+			t.Fatalf("the step should show %q under its header:\n%s", row, view)
+		}
+	}
+	// And the frame is what the same entries render as from cold: a frozen
+	// block that changed is exactly the difference between the two.
+	fresh := activityModel(t)
+	fresh.setTurnState(stateStreaming)
+	fresh.transcript = m.transcript
+	fresh.invalidateRenderCache()
+	if want := stripANSI(fresh.renderHistory()); view != want {
+		t.Fatalf("the cached frame drifted from a cold render:\n%s\nwant:\n%s", view, want)
+	}
+}
+
 func TestSteps_FocusFoldsAndUnfolds(t *testing.T) {
 	m := stepsModel(t)
 	m.viewport.SetLines(m.renderHistoryLines())

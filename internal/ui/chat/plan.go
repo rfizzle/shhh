@@ -513,12 +513,13 @@ func runOf(es []entry) blockRun {
 	return blockRun{first: &es[0], n: len(es)}
 }
 
-// lastLiveBlock is the index of the last block rows can still land in — the
-// last one with entries. Declared steps that have not started trail it and
-// change as the run reaches them, so nothing from there on can be frozen.
+// lastLiveBlock is the index of the block rows can still land in — the one
+// the tiling marked as open (steps.go). Declared steps that have not started
+// trail it and change as the run reaches them, and so does a notice the step
+// under it will take back, so nothing from there on can be frozen.
 func lastLiveBlock(blocks []transcriptBlock) int {
 	for i := len(blocks) - 1; i >= 0; i-- {
-		if blocks[i].end > blocks[i].start {
+		if blocks[i].last {
 			return i
 		}
 	}
