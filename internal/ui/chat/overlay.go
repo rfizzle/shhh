@@ -422,6 +422,19 @@ func buildOverlays() map[state]*mode {
 			hint: (Model).renderSourcesHint,
 			keys: (Model).updateSources,
 		},
+		stateNotes: {
+			place:   placePane,
+			borrows: true,
+			lines: func(m Model, width, height int) []string {
+				if m.notes == nil {
+					return nil
+				}
+				m.notes.SetSize(width, height)
+				return strings.Split(m.notes.View(width), "\n")
+			},
+			hint: (Model).renderNotesHint,
+			keys: (Model).updateNotes,
+		},
 		stateBacklog: {
 			place:   placePane,
 			borrows: true,

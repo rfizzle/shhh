@@ -135,7 +135,7 @@ func (m Model) runCommand(text, name string) (tea.Model, tea.Cmd) {
 	parts := strings.Fields(text)
 	switch {
 	case name == "/notes":
-		return m.surfaceNotice(m.notesCommand(parts[1:]))
+		return m.notesCommand(parts[1:])
 
 	case name == "/paste":
 		// Attachments. Not idleOnly: staging bytes for the next

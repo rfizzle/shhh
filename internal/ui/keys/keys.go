@@ -532,6 +532,37 @@ var Sources = SourcesKeys{
 	Back: bind("q", "back to the prompt", "q", "esc", "ctrl+c"),
 }
 
+// NotesKeys are the notes screen's own — the session's shared notebook. It
+// is a takeover in the chat like the sources screen, so its way out goes
+// back to the prompt rather than quitting.
+//
+// Its keys are the family's, not new ones: a list moves, `enter` takes what
+// the pointer is on, `?` shows the register. Drop is the one key here that
+// destroys something, so it says so in its own words and asks through the
+// inline confirm before it acts — dropping a note is the person's alone, and
+// no agent has a tool that reaches it.
+type NotesKeys struct {
+	Move Binding
+	Read Binding
+	Drop Binding
+	List Binding
+	Back Binding
+}
+
+// All is the surface's keys in the order it offers them, which is the order
+// `?` lists them in.
+func (k NotesKeys) All() []Binding {
+	return []Binding{k.Move, k.Read, k.Drop, k.List, k.Back}
+}
+
+var Notes = NotesKeys{
+	Move: bind("↑↓/jk", "move", "up", "down", "k", "j"),
+	Read: bind("enter", "read the whole note", "enter"),
+	Drop: bind("d", "drop it", "d"),
+	List: bind("?", "keys", "?"),
+	Back: bind("q", "back to the prompt", "q", "esc", "ctrl+c"),
+}
+
 // BacklogKeys are the backlog screen's own. It is a takeover in the chat
 // like the context surface, so its way out goes back to the prompt rather
 // than quitting.

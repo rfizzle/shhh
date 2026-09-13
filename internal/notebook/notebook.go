@@ -365,6 +365,38 @@ func FormatByAuthor(notes []Note) string {
 	return b.String()
 }
 
+// WrittenAfter returns the notes past id written by anyone but author —
+// what a reader who has seen the notebook up to id has not seen yet. Ids
+// rise as notes are written and a note keeps the id it was given, so the
+// highest id a reader has looked at is the whole of what has to be
+// remembered about a reading.
+//
+// It excludes author for WrittenIn's reason: the session's own notes were
+// written by rows that were on the screen as they happened, so counting
+// them as unseen would report the person's own reading back to them.
+func WrittenAfter(notes []Note, id int64, author string) []Note {
+	var out []Note
+	for _, n := range notes {
+		if n.ID > id && n.Author != author {
+			out = append(out, n)
+		}
+	}
+	return out
+}
+
+// Newest is the highest id in notes, which is the mark a reader who has just
+// read the whole notebook carries away. Zero for an empty notebook, which is
+// a reader who has seen nothing and has nothing to have seen.
+func Newest(notes []Note) int64 {
+	var newest int64
+	for _, n := range notes {
+		if n.ID > newest {
+			newest = n.ID
+		}
+	}
+	return newest
+}
+
 // WrittenIn returns the notes written in one turn by anyone but author —
 // what a fan-out left behind, which is the thing the turn that spawned it
 // has to be told about. A note stamped with turn zero was written before

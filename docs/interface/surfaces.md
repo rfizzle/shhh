@@ -1910,11 +1910,12 @@ the list on the left, the one the pointer is on beside it, and the renaming
 and deleting the picker inside a session already offers
 (../capabilities/sessions-and-memory.md#housekeeping).
 
-Ten surfaces take the whole terminal this way — those seven, the reading of
+Eleven surfaces take the whole terminal this way — those seven, the reading of
 what is in the session's context, the ledger of what the session read
-(`/sources`, [what was read](../capabilities/chat.md#what-was-read)) and the
+(`/sources`, [what was read](../capabilities/chat.md#what-was-read)), the
+session's shared notebook (`/notes`, below) and the
 drafting flow for a new agent profile — and they are one family rather than
-ten screens: the same header, the same
+eleven screens: the same header, the same
 ground given up in the same order as the terminal narrows, the same key row at
 the foot and the same `[?]` behind it. The two that arrived last had each been
 drawing a chrome of their own, and the way that showed was not in either of
@@ -1962,12 +1963,40 @@ surface that put `[?]` and the letter on both rows spent its bottom row saying
 what its top row had already said, which on the narrowest terminal is the row
 that had least to give.
 
-Four of them list something and preview what the pointer is on — past
-commands, saved commands, saved conversations, and the pages this session
-read — and they split the terminal the same way: two columns where there is
+Five of them list something and preview what the pointer is on — past
+commands, saved commands, saved conversations, the pages this session
+read, and the notes its agents wrote each other — and they split the terminal
+the same way: two columns where there is
 room for two, stacked where there is not, and the preview giving way to the
 list when the rows run out, because a screen that cannot preview an item can
 still say which items there are.
+
+`/notes` is the newest of the five, and it is the shared notebook — what one
+agent found and the next should not have to find again
+([what they share](../capabilities/subagents.md#what-they-share)). The list is
+grouped under the agent that signed each note, because a fan-out's notes
+arrive interleaved and the question somebody asks their own session is who
+found what; where a note carries the lineage of the child that wrote it, that
+signature is what the grouping follows rather than a second reading of who
+wrote what. `[enter]` opens the note whole. `[d]` drops the one under the
+pointer behind the same inline confirm the saved-chat browser puts in front
+of a delete, and `/notes clear` asks over the whole notebook, on this screen,
+so what it would take is in front of the reader while they answer. Dropping
+is the only thing on this screen that changes what the session holds, and it
+is the person's alone: no agent has a tool that reaches it. An empty notebook
+prints one line into the transcript instead of opening — there is nothing to
+point at.
+
+**What is new is said at the turn's close and not on the rail.** The close
+already carries the clause naming what the turn's delegates wrote, so the
+count of what has not been read since the screen was last opened rides on the
+end of it — `2 notes from writer-1, researcher-2 · 3 unread` — and it is
+stated only where it says something the count before it does not. A NOTES
+block on the rail was the alternative and it is not worth two rows: the rail
+is the one surface in the product whose height is always spent against
+something else on it, and what the block would say is one number that already
+has a home in a line the reader is looking at
+([the inspector rail](#the-inspector-rail)).
 
 Rating is the one of them that asks rather than reports, and it is drawn as
 the thing it is: one card, the answers as keys on it, and no list to walk,

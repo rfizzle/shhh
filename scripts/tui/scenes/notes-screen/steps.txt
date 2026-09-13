@@ -1,0 +1,45 @@
+# The shared notebook at 120 columns: two children write into it, the turn's
+# close says so, and the screen the person reads it on is opened, walked and
+# corrected.
+#
+# What the capture is for is the two things the notebook could not do before
+# it had a screen. The first is being read at all: the close names what the
+# fan-out wrote and nothing more, and a store agents write to without asking
+# has to be one the person can open. The second is being corrected — the one
+# key here that takes something out of the notebook, behind the confirm every
+# destructive key in the product is behind.
+#
+# The list is grouped under the agent that signed each note, which is the
+# whole reason this is a screen rather than a printed list: a fan-out's notes
+# arrive interleaved, and who found what is the question somebody asks their
+# own session.
+setup printf 'package agent\n\nfunc loop() {\n    for round := 0; round < limit; round++ {\n        step()\n    }\n}\n' > loop.go
+snap 01-start "Some things worth doing first"
+keys "survey the round accounting" Enter
+# Spawning is a decision, and a round that asked for two children is one card
+# with a row per child: one key starts the pair.
+snap 02-spawn-card "Spawn 2 writers"
+keys y
+sleep 10
+# The close of the session's own turn: the line naming what the children left
+# in the notebook, with no rail and nothing in the glyph column, because a
+# reading of what the session already holds changed nothing about the machine.
+snap 03-close "2 notes from writer-1, writer-2"
+keys "/notes" Enter
+# The screen: the notes under the agents that signed them, the one the
+# pointer is on beside the list, and the key row at the foot.
+snap 04-screen "2 notes · 2 agents"
+# The pointer walks to the other author's note, which is what the grouping is
+# for: the reader moves between authors, not between arrivals.
+keys k
+sleep 1
+snap 05-pointed "The counter is read at the top of the loop"
+# The one key that takes something out asks first, and names what it would
+# take rather than saying "this note".
+keys d
+snap 06-confirm "Drop \"The counter is read at the top of the loop\"?"
+keys y
+# And the screen stays up over the notebook it just corrected: the reader is
+# walking a list and fixing it, and leaving after each correction would take
+# the list away.
+snap 07-dropped "Dropped note"

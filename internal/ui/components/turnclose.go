@@ -119,8 +119,11 @@ type TurnClose struct {
 	Commit  *TurnCommit
 	Checks  *TurnChecks
 	// Notes is what the turn's delegates left in the session's shared
-	// notebook, e.g. "2 notes from reviewer". Empty where no delegate wrote
-	// one, which is every turn that did not fan out.
+	// notebook, and how much of it is still waiting on the screen that holds
+	// it — e.g. "2 notes from reviewer · 3 unread". Empty where no delegate
+	// wrote one, which is every turn that did not fan out. The host words
+	// the whole clause, because what counts as unread is a reading of the
+	// session (docs/interface/surfaces.md#the-supporting-screens).
 	Notes string
 	// KeysWaiting says the changeset row does not hold the keyboard, so its
 	// keys render grey rather than in the colour that means "you can press

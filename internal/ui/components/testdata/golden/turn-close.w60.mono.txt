@@ -50,6 +50,12 @@
   ▎✓ committed 3 files as a41f2c9 on master
    ✓ go test ./internal/agent/... passing · 41 packages · 1…
 
+· notes · what the fan-out wrote, and what is unread
+   ✓ Done · 4 steps · 18 tools · 1m 04s · $0.14   round 7/25
+  ▎✎ 3 files changed +30 −4 · [v] review · [g] commit · [u]…
+     2 notes from writer-1, researcher-2 · 3 unread
+   ✓ go test ./internal/agent/... passing · 41 packages · 1…
+
 · checks · the suite can be run again
    ✓ Done · 4 steps · 18 tools · 1m 04s · $0.14   round 7/25
   ▎✎ 3 files changed +30 −4 · [v] review · [g] commit · [u]…
@@ -104,6 +110,12 @@
    ␛[38;5;254m✓␛[m ␛[38;5;254mDone␛[m␛[38;5;244m · 4 steps · 18 tools · 1m 04s · $0.14␛[m   ␛[38;5;244mround 7/25␛[m
   ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m3 files changed ␛[m␛[38;5;254m+30␛[m ␛[38;5;254m−4␛[m␛[38;5;244m · ␛[m␛[38;5;254m[v]␛[m␛[38;5;244m review␛[m  ␛[38;5;244mall tracked in git␛[m
   ␛[38;5;254m▎␛[m␛[38;5;254m✓␛[m ␛[38;5;254mcommitted 3 files as a41f2c9 on master␛[m
+   ␛[38;5;254m✓␛[m ␛[38;5;254mgo test ./internal/agent/... passing␛[m␛[38;5;244m · 41 packages · 1…␛[m
+
+· notes · what the fan-out wrote, and what is unread
+   ␛[38;5;254m✓␛[m ␛[38;5;254mDone␛[m␛[38;5;244m · 4 steps · 18 tools · 1m 04s · $0.14␛[m   ␛[38;5;244mround 7/25␛[m
+  ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m3 files changed ␛[m␛[38;5;254m+30␛[m ␛[38;5;254m−4␛[m␛[38;5;244m · ␛[m␛[38;5;254m[v]␛[m␛[38;5;244m review␛[m␛[38;5;244m · ␛[m␛[38;5;254m[g]␛[m␛[38;5;244m commit␛[m␛[38;5;244m · ␛[m␛[38;5;254m[u]␛[m␛[38;5;244m…␛[m
+     ␛[38;5;244m2 notes from writer-1, researcher-2 · 3 unread␛[m
    ␛[38;5;254m✓␛[m ␛[38;5;254mgo test ./internal/agent/... passing␛[m␛[38;5;244m · 41 packages · 1…␛[m
 
 · checks · the suite can be run again

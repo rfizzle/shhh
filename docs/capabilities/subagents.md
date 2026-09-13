@@ -529,8 +529,14 @@ notes its children left and who wrote them.
 A child may add and read; it may never remove. There is no delete tool for
 any agent in any mode: without that line a child could quietly unmake a
 sibling's finding, and the parent would read a notebook that looks complete.
-Dropping a note is the person's, through `/notes`, which lists the notebook
-grouped by the agent that wrote each entry.
+Dropping a note is the person's, through `/notes`, which opens the notebook as
+a screen grouped by the agent that wrote each entry
+([the supporting screens](../interface/surfaces.md#the-supporting-screens)):
+the note under the pointer is read whole with `[enter]` and dropped with
+`[d]`, behind a confirm, and clearing the notebook asks over the whole of it
+first. The close of the parent's turn says how many notes are still unread —
+written since that screen was last opened — beside how many its children
+left and who wrote them.
 
 A writer child works in an isolated copy of the checkout and still writes
 into the parent's notebook, because the notebook belongs to the session and

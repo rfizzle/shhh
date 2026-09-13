@@ -121,6 +121,12 @@ resumes its notebook, and a delegate spawned later starts by reading what
 the earlier ones left. A backlog run whose finish is a write-up rather than a
 commit puts the write-up here, which is where it is read.
 
+`/notes` is that notebook as a screen, grouped by the agent that signed each
+note, with the note the pointer is on beside it, the whole of it under
+`[enter]`, and `[d]` to drop one — the only way anything leaves the notebook,
+and the person's alone. What has been written since that screen was last
+opened is what the turn's close calls unread.
+
 The notebook is not a conversation's alone: a coding session and its children
 share one on the same terms, and what an agent may put in it, what it may
 never take out, and why it is a file rather than a messaging runtime are in

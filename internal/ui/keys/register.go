@@ -149,6 +149,17 @@ func Surfaces() []Surface {
 			Bindings: Sources.All(),
 		},
 		{
+			// The session's shared notebook, as a screen: the notes on the
+			// left grouped under the agent that wrote each one, the note the
+			// pointer is on beside it, and the one key that takes something
+			// out of a store every agent can add to.
+			Name:     "the notes screen",
+			Section:  "docs/interface/surfaces.md#the-supporting-screens",
+			Position: Takeover,
+			Reached:  "/notes",
+			Bindings: Notes.All(),
+		},
+		{
 			// The backlog as a screen rather than as a command that prints:
 			// the list on the left and the item's own prose on the right,
 			// with the keys that would otherwise be typed as verbs.

@@ -175,6 +175,12 @@ const (
 	// it. A takeover like the context surface: full width, the rail hidden,
 	// esc returns, and it changes nothing.
 	stateSources
+	// stateNotes: the notes screen is up — the session's shared notebook,
+	// grouped by the agent that wrote each note, with the note the pointer
+	// is on beside it. A takeover like the sources screen: full width, the
+	// rail hidden, esc returns. It is the one of the three that can change
+	// what the session holds, and it asks before it does (notes.go).
+	stateNotes
 	// stateConfig: the settings screen is up — `shhh config`'s own staged
 	// edit surface, reached from inside a session (config.go). It is the one
 	// takeover here that can write a file, and it writes it on `[w]` alone.
@@ -1342,6 +1348,18 @@ type Model struct {
 	// conversation marks `shhh chat`; notebook is its shared notebook.
 	conversation bool
 	notebook     *notebook.Store
+	// notes is the notes screen while it is up, built once per opening the
+	// way the sources screen is. notesSeen is the highest note number the
+	// reader has had on that screen: what a turn closes by calling unread is
+	// what a delegate wrote past it (notes.go).
+	//
+	// The mark is the session's and is not written to the slot, so a resume
+	// starts at zero and the notebook it brings back is unread until the
+	// screen is opened. That is the reading rather than a gap: "unread" is a
+	// promise that the reader has had these notes in front of them, and the
+	// only surface that can make it is the one this session drew.
+	notes     *components.NotesScreen
+	notesSeen int64
 	// personas is the profile-drafting flow's wiring; persona the one in
 	// progress, personaScreen the surface it runs on.
 	personas      Personas

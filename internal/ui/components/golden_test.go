@@ -381,6 +381,12 @@ func TestGolden_TurnClose(t *testing.T) {
 				c.Commit = &TurnCommit{Receipt: "committed 3 files as a41f2c9 on master"}
 				c.Changes.Keys = []TurnKey{rowOffer(keys.Row.Review, "review")}
 			})},
+			// What the turn's delegates left in the shared notebook, and
+			// what is still waiting unread on the screen that holds it. No
+			// rail and no glyph: nothing here changed the machine.
+			{Label: "notes · what the fan-out wrote, and what is unread", View: closed(func(c *TurnClose) {
+				c.Notes = "2 notes from writer-1, researcher-2 · 3 unread"
+			})},
 			// The checks row's own offer, which is present only where there
 			// is a suite to run again.
 			{Label: "checks · the suite can be run again", View: closed(func(c *TurnClose) {

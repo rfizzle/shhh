@@ -1,5 +1,5 @@
 # golden:  notebook-rows.w80
-# surface: the notebook on the screen
+# surface: the notebook in the transcript
 # width:   80 columns
 # palette: mono (two greys)
 # cursor:  none
@@ -15,21 +15,14 @@
      2 notes from reviewer-1, researcher-1
 
 
-· /notes · the notebook by the agent that wrote each entry
-  # assistant
+· the turn's close · and what is still waiting on the screen
+   ✓ Done · 2 steps · 11 tools · 1m 12s · $0.21
+     2 notes from reviewer-1, researcher-1 · 5 unread
 
-  ## [n1] The freeze is the target
-  From here the work is making what exists better, not wider.
 
-  # reviewer-1
-
-  ## [n2] The deny list is read before the tier
-  policy.Decide matches on the command, so an entry refuses the verb in every mode.
-
-  # researcher-1
-
-  ## [n3] Where the goldens live
-  internal/ui/chat/testdata/golden, one file per width and one per palette.
+· /notes on an empty notebook · the one line it prints
+  The notebook is empty. Agents write to it with write_note; /notes drop
+  <n> removes one.
 
 
 ── ansi ────────────────────────────────────────────────────
@@ -38,19 +31,12 @@
      ␛[38;5;244m2 notes from reviewer-1, researcher-1␛[m
 
 
-· /notes · the notebook by the agent that wrote each entry
-  ␛[38;5;244m# assistant␛[m
+· the turn's close · and what is still waiting on the screen
+   ␛[38;5;254m✓␛[m ␛[38;5;254mDone␛[m␛[38;5;244m · 2 steps · 11 tools · 1m 12s · $0.21␛[m
+     ␛[38;5;244m2 notes from reviewer-1, researcher-1 · 5 unread␛[m
 
-  ␛[38;5;244m## [n1] The freeze is the target␛[m
-  ␛[38;5;244mFrom here the work is making what exists better, not wider.␛[m
 
-  ␛[38;5;244m# reviewer-1␛[m
-
-  ␛[38;5;244m## [n2] The deny list is read before the tier␛[m
-  ␛[38;5;244mpolicy.Decide matches on the command, so an entry refuses the verb in every mode.␛[m
-
-  ␛[38;5;244m# researcher-1␛[m
-
-  ␛[38;5;244m## [n3] Where the goldens live␛[m
-  ␛[38;5;244minternal/ui/chat/testdata/golden, one file per width and one per palette.␛[m
+· /notes on an empty notebook · the one line it prints
+  ␛[38;5;244mThe notebook is empty. Agents write to it with write_note; /notes drop␛[m
+  ␛[38;5;244m<n> removes one.␛[m
 

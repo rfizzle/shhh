@@ -1,0 +1,33 @@
+# A queue per agent, so the session and its two writers are not racing each
+# other for the next line: what this scene is about is which agent signed
+# which note, and a shared queue would hand a writer the session's reply and
+# put the wrong name on the notebook.
+#
+# The sentence and the two spawns are one reply, so the transcript titles the
+# step with the sentence rather than closing a turn before the calls were
+# asked for.
+[session]
+Two writers on the round accounting.
++tool:spawn_agent:{"role":"writer","task":"Say where the round counter is read, and write what you find into the notebook.","name":"writer-1"}
++tool:spawn_agent:{"role":"writer","task":"Say where the round limit is set, and write what you find into the notebook.","name":"writer-2"}
+# The session's own turn closes here, and the close is where the notebook is
+# first reported: neither child's report is shown in full, so the line naming
+# what they wrote down is the only thing that says anything was written.
+#
+# It waits first. The close counts the notebook as it stands when the turn
+# ends, and the second writer is still going when the first one's report
+# comes back — a session that answered at once would close over half a
+# fan-out and report half of what it left.
+wait:8
++Both of them left a note.
+[writer-1]
+tool:write_note:{"title":"The counter is read at the top of the loop","body":"loop.go reads round at the top of the for and nowhere else, so a check further down is reading a number that has already moved."}
+The counter is read at the top of the loop, and nowhere else.
+[writer-2]
+# The second writer waits before it writes, so the two notes are numbered in
+# the order the scene means rather than in the order two children starting
+# together happen to reach the store — which is a race the file cannot
+# settle, and the pointer this scene walks is placed by it.
+wait:3
++tool:write_note:{"title":"The limit is set from the profile","body":"round.go takes maxRounds from the profile the run started with; the flag only overrides it where it was passed."}
+The limit is set from the profile the run started with.

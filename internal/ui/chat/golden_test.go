@@ -3438,43 +3438,89 @@ func TestGolden_ChatTodo(t *testing.T) {
 }
 
 // TestGolden_NotebookRows captures the two places a shared notebook reaches
-// the screen: the line a turn closes with when its children wrote something
-// down, and /notes, which is where the person reads and corrects a store the
-// agents write to without asking.
+// the transcript: the line a turn closes with when its children wrote
+// something down — with what is still waiting on the screen, where that says
+// something the count before it does not — and the one line /notes prints
+// instead of putting up an empty screen.
 //
-// One width. The close line is a clause and the listing is prose the
+// One width. The close line is a clause and the notice is prose the
 // transcript wraps like any other; neither has a layout that changes with
-// the terminal, so three more captures would be copies of this one.
+// the terminal, so three more captures would be copies of this one. The
+// screen itself is `notes-screen`, at all four.
 func TestGolden_NotebookRows(t *testing.T) {
-	captureGolden(t, "notebook-rows", "the notebook on the screen", []int{80}, func(width int) []golden.Panel {
-		nb := notebook.New(nil)
-		nb.SetTurn(4)
-		_, _, _ = nb.Write(notebook.Orchestrator, "The freeze is the target",
-			"From here the work is making what exists better, not wider.")
-		_, _, _ = nb.Write("reviewer-1", "The deny list is read before the tier",
-			"policy.Decide matches on the command, so an entry refuses the verb in every mode.")
-		_, _, _ = nb.Write("researcher-1", "Where the goldens live",
-			"internal/ui/chat/testdata/golden, one file per width and one per palette.")
-
-		closeBlock := func() string {
+	captureGolden(t, "notebook-rows", "the notebook in the transcript", []int{80}, func(width int) []golden.Panel {
+		closeBlock := func(notes string) string {
 			m := frameModel(t, width, 40)
 			m.transcript = []entry{{kind: entryTurnClose, turn: 4, close: &components.TurnClose{
 				State: components.TurnDone, Steps: 2, Tools: 11, Elapsed: "1m 12s", Spend: "$0.21",
-				Notes: "2 notes from reviewer-1, researcher-1",
+				Notes: notes,
 			}}}
 			m.invalidateRenderCache()
 			return m.renderHistory()
 		}
-		listing := func() string {
-			m := frameModel(t, width, 40).WithNotebook(nb)
-			m.appendEntry(entry{kind: entrySystem, text: m.notesCommand(nil)})
-			return m.renderHistory()
+		empty := func() string {
+			m := frameModel(t, width, 40).WithNotebook(notebook.New(nil))
+			next, _ := m.notesCommand(nil)
+			shown := next.(Model)
+			return shown.renderHistory()
 		}
 		return []golden.Panel{
-			{Label: "the turn's close · what the fan-out wrote down", View: closeBlock()},
-			{Label: "/notes · the notebook by the agent that wrote each entry", View: listing()},
+			{Label: "the turn's close · what the fan-out wrote down",
+				View: closeBlock("2 notes from reviewer-1, researcher-1")},
+			{Label: "the turn's close · and what is still waiting on the screen",
+				View: closeBlock("2 notes from reviewer-1, researcher-1 · 5 unread")},
+			{Label: "/notes on an empty notebook · the one line it prints", View: empty()},
 		}
 	})
+}
+
+// TestGolden_NotesScreen captures the notes screen through the host: the
+// rows are resolved from a real notebook rather than from a fixture of drawn
+// strings, so who a note is filed under is who signed it.
+//
+// The last two panels are the two questions the screen asks. Dropping one
+// note names it; `/notes clear` counts what it would take and asks on the
+// screen, so the notes it would take are in front of the reader while they
+// answer.
+func TestGolden_NotesScreen(t *testing.T) {
+	captureGolden(t, "notes-screen", "the session's shared notebook", goldenWidths, func(width int) []golden.Panel {
+		m := sendText(t, goldenNotesModel(t, width), "/notes")
+		opened := strings.Join(m.notesLines(), "\n")
+		panel := m.takeoverPanel(m.contentWidth())
+		// The second note, which a delegate wrote: the pointer opens on the
+		// last one and this is what walking off it looks like — a different
+		// author's group, and the drop below acting on a child's note rather
+		// than on the session's own.
+		m.notes.Focus = 1
+		pointed := strings.Join(m.notesLines(), "\n")
+		dropping, _ := m.Update(tea.KeyPressMsg{Code: 'd', Text: "d"})
+		clearing := sendText(t, goldenNotesModel(t, width), "/notes clear")
+		return []golden.Panel{
+			{Label: "as it opens · the pointer on the last note written", View: opened},
+			{Label: "a note from the fan-out · the preview reads it", View: pointed},
+			{Label: "[d] · the one key that takes something out asks first",
+				View: strings.Join(dropping.(Model).notesLines(), "\n")},
+			{Label: "/notes clear · the question counts what it would take",
+				View: strings.Join(clearing.notesLines(), "\n")},
+			{Label: "the panel it leaves · the way out, on one row", View: panel},
+		}
+	})
+}
+
+// goldenNotesModel is a session whose notebook the orchestrator and two
+// delegates have written in, over two turns.
+func goldenNotesModel(t *testing.T, width int) Model {
+	t.Helper()
+	m := frameModel(t, width, 40).WithNotebook(notebook.New(nil))
+	m.notebook.SetTurn(3)
+	_, _, _ = m.notebook.Write(notebook.Orchestrator, "The freeze is the target",
+		"From here the work is making what exists better, not wider.")
+	m.notebook.SetTurn(4)
+	_, _, _ = m.notebook.Write("reviewer-1", "The deny list is read before the tier",
+		"policy.Decide matches on the command, so an entry refuses the verb in every mode.")
+	_, _, _ = m.notebook.Write("researcher-1", "Where the goldens live",
+		"internal/ui/chat/testdata/golden, one file per width and one per palette.")
+	return m
 }
 
 // TestGolden_ChildAskCard pins the routed card with the real resolver behind

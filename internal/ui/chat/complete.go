@@ -269,11 +269,11 @@ func buildSlashCommands() []slashCommand {
 				argOption{"set", "Declare one: NAME from the environment, or NAME=value"},
 				argOption{"forget", "Drop one by name"},
 			)},
-		{name: "/notes", args: "[drop <n>|clear]", desc: "The session's shared notebook: what the agents wrote for each other",
+		{name: "/notes", args: "[drop <n>|clear]", desc: "The session's shared notebook, as a screen: what the agents wrote for each other",
 			enabled: func(m *Model) bool { return m.notebook != nil },
 			argSpecs: staticArgs(
 				argOption{"drop", "Remove one note by number"},
-				argOption{"clear", "Empty the notebook"},
+				argOption{"clear", "Empty the notebook, after confirming it"},
 			)},
 		{name: "/memory", args: "[list|add|edit|forget]", desc: "Durable memories",
 			enabled: func(m *Model) bool { return m.memory.Manage != nil },

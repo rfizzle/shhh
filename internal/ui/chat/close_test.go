@@ -439,8 +439,11 @@ func TestTurnClose_TheCloseNamesWhatTheChildrenWroteDown(t *testing.T) {
 	if got := m.turnNotesClause(); got != "" {
 		t.Fatalf("turn 5 claimed turn 4's notes: %q", got)
 	}
+	// And what is still waiting on the notes screen rides beside the count,
+	// because the notebook has not been opened in this session: turn 4's
+	// three are unread as well as this one (notes.go).
 	_, _, _ = m.notebook.Write("writer-1", "The patch is in loop.go", "one hunk")
-	if got := m.turnNotesClause(); got != "1 note from writer-1" {
+	if got := m.turnNotesClause(); got != "1 note from writer-1 · 4 unread" {
 		t.Fatalf("the close said %q", got)
 	}
 
