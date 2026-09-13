@@ -53,6 +53,30 @@ func TestModelPick_BareModelOpensPicker(t *testing.T) {
 	}
 }
 
+// Esc on the model picker says what it leaves, and what it leaves is the
+// model the session is already on — the one thing the word `cancel` cannot
+// say (docs/interface/principles.md#esc-is-always-the-safe-answer).
+func TestModelPick_EscSaysWhichModelItKeeps(t *testing.T) {
+	m := readyModel(t).
+		WithModelSwitcher(func(string) {}).
+		WithPricing(nil, "m1").
+		WithModelOptions([]string{"m1", "m2", "m3"})
+
+	m.input.SetValue("/model")
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	m = updated.(Model)
+
+	if m.picker == nil {
+		t.Fatal("/model should open the picker")
+	}
+	if got := m.picker.CancelLabel; got != "keep m1" {
+		t.Fatalf("esc should offer %q, got %q", "keep m1", got)
+	}
+	if view := ansi.Strip(m.picker.View(110)); !strings.Contains(view, "[esc] keep m1") {
+		t.Fatalf("the key row should offer `[esc] keep m1`:\n%s", view)
+	}
+}
+
 func TestModelPick_EscCancels(t *testing.T) {
 	var switched string
 	m := readyModel(t).

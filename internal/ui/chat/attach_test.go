@@ -327,8 +327,8 @@ func TestKillFromListWithInlineConfirm(t *testing.T) {
 	m = updated.(Model)
 	updated, _ = m.Update(key('X'))
 	m = updated.(Model)
-	if m.killConfirm == nil || m.killTarget != "researcher-1" {
-		t.Fatalf("X must arm the inline kill confirm (target %q)", m.killTarget)
+	if m.killConfirm == nil || len(m.killTargets) != 1 || m.killTargets[0] != "researcher-1" {
+		t.Fatalf("X must arm the inline kill confirm (targets %q)", m.killTargets)
 	}
 	if !strings.Contains(m.View().Content, "Kill researcher-1?") {
 		t.Fatalf("kill confirm not rendered:\n%s", m.View().Content)
@@ -351,6 +351,42 @@ func TestKillFromListWithInlineConfirm(t *testing.T) {
 		st, ok := sup.Get("researcher-1")
 		return ok && st.State == subagent.StateFailed
 	})
+}
+
+// [K] arms one confirm over every child that is still going, and taking it
+// kills them all. The manager's two kill keys differ in how many names they
+// hand over and in nothing else
+// (docs/interface/surfaces.md#the-agent-manager).
+func TestKillAllFromListWithOneConfirm(t *testing.T) {
+	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
+	t.Cleanup(sup.Close)
+	m := newSubagentModel(t, sup)
+	spawnChild(t, sup, subagent.RoleResearcher, "researcher-1")
+	spawnChild(t, sup, subagent.RoleResearcher, "researcher-2")
+
+	updated, _ := m.Update(tea.KeyPressMsg{Code: 'a', Mod: tea.ModAlt})
+	m = updated.(Model)
+	updated, _ = m.Update(key('K'))
+	m = updated.(Model)
+	if len(m.killTargets) != 2 {
+		t.Fatalf("K must arm the confirm over both children, got %q", m.killTargets)
+	}
+	if !strings.Contains(m.View().Content, "Kill all 2 agents?") {
+		t.Fatalf("the confirm should name the count:\n%s", m.View().Content)
+	}
+	updated, _ = m.Update(key('y'))
+	m = updated.(Model)
+	for _, name := range []string{"researcher-1", "researcher-2"} {
+		waitFor(t, func() bool {
+			st, ok := sup.Get(name)
+			return ok && st.State == subagent.StateFailed
+		})
+	}
+	// One child left running is not two, so the key is not offered at all.
+	if _, res := (&components.AgentList{Rows: []components.AgentRow{{State: components.AgentCurrent, Name: "orchestrator"}}}).
+		Update(key('K')); res.Action != components.AgentNone {
+		t.Fatalf("[K] with no children = %#v, want nothing", res)
+	}
 }
 
 // pumpAsks feeds the supervisor's events into the model the way

@@ -27,7 +27,6 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
-	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // armPressureCard opens the card when the turn that just closed left the
@@ -86,14 +85,10 @@ func (m Model) pressureCardData() *components.PressureCard {
 		Alert:     trimThresholdPercent,
 		Estimated: b.estimated(),
 		Rows:      m.pressureRows(b),
-		// The three offers come from the same declarations the card reads a
-		// press against, so a keymap that moves one moves the offer with it
-		// rather than showing a key the card no longer answers to.
-		Keys: []components.KeyOffer{
-			{Key: keys.Bracket(keys.Wait.Compact), Label: keys.Words(keys.Wait.Compact)},
-			{Key: keys.Bracket(keys.Wait.NewSession), Label: keys.Words(keys.Wait.NewSession)},
-			{Key: keys.Bracket(keys.Wait.KeepGoing), Label: keys.Words(keys.Wait.KeepGoing)},
-		},
+		// The three offers are the card's own, so the host cannot hand it a
+		// key it does not answer or words that disagree with what pressing
+		// it does (components.PressureOffers).
+		Keys: components.PressureOffers(),
 	}
 	card.Keeps = m.compactKeepsClause()
 	card.Drops = compactDropsClause(b)

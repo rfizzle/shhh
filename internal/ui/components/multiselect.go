@@ -72,8 +72,12 @@ type MultiSelect struct {
 	// Chips ride the right end of the title border, the single-select's way:
 	// a card whose title is what it is asking needs somewhere to say which of
 	// several questions this one is.
-	Chips  []string
-	notice string
+	Chips []string
+	// CancelLabel is what esc leaves, in the host's own words. Empty is the
+	// family's — applying none of the boxes, which is the counterpart of the
+	// `apply (N)` beside it (cancelOffer).
+	CancelLabel string
+	notice      string
 	// list is the shared pointer and window (list.go). A multi-select owns
 	// its own Focus, which is why it did not come along when the movement and
 	// the window went to the selector.
@@ -207,7 +211,7 @@ func (s *MultiSelect) View(width int) string {
 	segs = append(segs, s.Actions...)
 	segs = append(segs,
 		keyOfferAs(keys.Select.Take, fmt.Sprintf("apply (%d)", s.count())),
-		keyOffer(keys.Select.Cancel))
+		cancelOffer(s.CancelLabel, applyNone))
 	// Handed over as segments and never pre-joined: a row too wide for the
 	// terminal takes another row, and a joined one could only be cut in the
 	// middle of a clause (docs/interface/principles.md#fold-never-hide).

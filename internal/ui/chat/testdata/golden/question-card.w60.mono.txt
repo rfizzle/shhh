@@ -21,7 +21,8 @@
 │ ┄ note (optional)                                    │
 │   (none)                                             │
 │ [tab] note/options · [enter] confirm                 │
-│ [d] the full answer · [esc] cancel                   │
+│ [d] the full answer                                  │
+│ [esc] back to the draft — the question waits         │
 ╰──────────────────────────────────────────────────────╯
 
 · the note has the keyboard · the list's digits are text until tab hands it back
@@ -35,7 +36,8 @@
 │ ┄ note (optional)                                    │
 │   ┃ note (optional)                                  │
 │ [tab] note/options · [enter] confirm                 │
-│ [d] the full answer · [esc] cancel                   │
+│ [d] the full answer                                  │
+│ [esc] back to the draft — the question waits         │
 ╰──────────────────────────────────────────────────────╯
 
 · pick several · the boxes, with the same field under them
@@ -50,7 +52,7 @@
 │   (none)                                             │
 │ [tab] note/options · [space] toggle · [a] all/none   │
 │ [d] the full answer · [enter] apply (0)              │
-│ [esc] cancel                                         │
+│ [esc] back to the draft — the question waits         │
 ╰──────────────────────────────────────────────────────╯
 
 · a short answer in your own words · the field and no rows above it
@@ -59,7 +61,8 @@
 │                                                      │
 │ ┄ note (required)                                    │
 │   ┃ note (required)                                  │
-│ [enter] confirm · [esc] cancel                       │
+│ [enter] confirm                                      │
+│ [esc] back to the draft — the question waits         │
 ╰──────────────────────────────────────────────────────╯
 
 · yes or no · the inline confirm, whose enter is the answer that changes nothing
@@ -80,7 +83,8 @@ Should the migration be reversible?  [y/N]
 ␛[38;5;254m│␛[m ␛[38;5;244m┄ note (optional)␛[m                                    ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;244m(none)␛[m                                             ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[tab]␛[m␛[38;5;244m note/options␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m confirm␛[m                 ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[d]␛[m␛[38;5;244m the full answer␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m cancel␛[m                   ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[d]␛[m␛[38;5;244m the full answer␛[m                                  ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m back to the draft — the question waits␛[m         ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────╯␛[m
 
 · the note has the keyboard · the list's digits are text until tab hands it back
@@ -94,7 +98,8 @@ Should the migration be reversible?  [y/N]
 ␛[38;5;254m│␛[m ␛[38;5;244m┄ note (optional)␛[m                                    ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;254m␛[38;5;244m┃ ␛[m␛[m␛[38;5;254m␛[7;38;5;237mn␛[m␛[m␛[38;5;254m␛[38;5;244mote (optional)␛[m␛[m␛[38;5;254m                                 ␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[tab]␛[m␛[38;5;244m note/options␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m confirm␛[m                 ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[d]␛[m␛[38;5;244m the full answer␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m cancel␛[m                   ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[d]␛[m␛[38;5;244m the full answer␛[m                                  ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m back to the draft — the question waits␛[m         ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────╯␛[m
 
 · pick several · the boxes, with the same field under them
@@ -109,7 +114,7 @@ Should the migration be reversible?  [y/N]
 ␛[38;5;254m│␛[m   ␛[38;5;244m(none)␛[m                                             ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[tab]␛[m␛[38;5;244m note/options␛[m␛[38;5;244m · ␛[m␛[38;5;254m[space]␛[m␛[38;5;244m toggle␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m all/none␛[m   ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[d]␛[m␛[38;5;244m the full answer␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m apply (0)␛[m              ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m cancel␛[m                                         ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m back to the draft — the question waits␛[m         ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────╯␛[m
 
 · a short answer in your own words · the field and no rows above it
@@ -118,7 +123,8 @@ Should the migration be reversible?  [y/N]
 ␛[38;5;254m│␛[m                                                      ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m┄ note (required)␛[m                                    ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;254m␛[38;5;244m┃ ␛[m␛[m␛[38;5;254m␛[7;38;5;237mn␛[m␛[m␛[38;5;254m␛[38;5;244mote (required)␛[m␛[m␛[38;5;254m                                 ␛[m ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m confirm␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m cancel␛[m                       ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m confirm␛[m                                      ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m back to the draft — the question waits␛[m         ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────╯␛[m
 
 · yes or no · the inline confirm, whose enter is the answer that changes nothing

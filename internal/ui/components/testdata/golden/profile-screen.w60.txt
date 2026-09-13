@@ -108,7 +108,7 @@
 │   4. Discard                                             │
 │ ┄ note (optional)                                        │
 │   (none)                                                 │
-│ [tab] note/options · [enter] confirm · [esc] cancel      │
+│ [tab] note/options · [enter] confirm · [esc] take none   │
 ╰──────────────────────────────────────────────────────────╯
 
 · a short surface · the card is the one thing that never gives ground
@@ -126,7 +126,7 @@
 │   4. Discard                                             │
 │ ┄ note (optional)                                        │
 │   (none)                                                 │
-│ [tab] note/options · [enter] confirm · [esc] cancel      │
+│ [tab] note/options · [enter] confirm · [esc] take none   │
 ╰──────────────────────────────────────────────────────────╯
 
 · the file already exists · the card asks again, saying so
@@ -158,7 +158,7 @@
 │   4. Discard                                             │
 │ ┄ note (optional)                                        │
 │   (none)                                                 │
-│ [tab] note/options · [enter] confirm · [esc] cancel      │
+│ [tab] note/options · [enter] confirm · [esc] take none   │
 ╰──────────────────────────────────────────────────────────╯
 
 ── ansi ────────────────────────────────────────────────────
@@ -260,7 +260,7 @@
 ␛[38;5;241m│␛[m   ␛[38;5;241m4. ␛[m␛[38;5;252mDiscard␛[m                                             ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[38;5;241m┄ note (optional)␛[m                                        ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;245m(none)␛[m                                                 ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[94m[tab]␛[m␛[38;5;241m note/options␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m confirm␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m cancel␛[m      ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[94m[tab]␛[m␛[38;5;241m note/options␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m confirm␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m take none␛[m   ␛[38;5;241m│␛[m
 ␛[38;5;241m╰──────────────────────────────────────────────────────────╯␛[m
 
 · a short surface · the card is the one thing that never gives ground
@@ -278,7 +278,7 @@
 ␛[38;5;241m│␛[m   ␛[38;5;241m4. ␛[m␛[38;5;252mDiscard␛[m                                             ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[38;5;241m┄ note (optional)␛[m                                        ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;245m(none)␛[m                                                 ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[94m[tab]␛[m␛[38;5;241m note/options␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m confirm␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m cancel␛[m      ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[94m[tab]␛[m␛[38;5;241m note/options␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m confirm␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m take none␛[m   ␛[38;5;241m│␛[m
 ␛[38;5;241m╰──────────────────────────────────────────────────────────╯␛[m
 
 · the file already exists · the card asks again, saying so
@@ -310,5 +310,5 @@
 ␛[38;5;241m│␛[m   ␛[38;5;241m4. ␛[m␛[38;5;252mDiscard␛[m                                             ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[38;5;241m┄ note (optional)␛[m                                        ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;245m(none)␛[m                                                 ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[94m[tab]␛[m␛[38;5;241m note/options␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m confirm␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m cancel␛[m      ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[94m[tab]␛[m␛[38;5;241m note/options␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m confirm␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m take none␛[m   ␛[38;5;241m│␛[m
 ␛[38;5;241m╰──────────────────────────────────────────────────────────╯␛[m

@@ -262,7 +262,7 @@ var movement = []string{
 // "gone" is a judgement this file makes once.
 func destructive() []Binding {
 	return []Binding{
-		Agent.Cancel, Agent.Kill,
+		Agent.Cancel, Agent.Kill, Agent.KillAll,
 		Select.Delete, Screen.Delete,
 		Confirm.Force,
 	}

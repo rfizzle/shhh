@@ -71,14 +71,15 @@ const (
 	// surface answered without asking the host for anything cannot be read as
 	// the first action in it. The result is a value rather than an interface,
 	// so there is no nil left to mean this.
-	AgentNone   AgentAction = iota
-	AgentAttach             // enter — attach to the agent's surface
-	AgentCancel             // x — cancel its current turn
-	AgentKill               // X — kill the agent
-	AgentAnswer             // a — answer its pending approval in place
-	AgentRetry              // r — run a failed agent again on its task
-	AgentDraft              // enter on the offer row — draft a profile
-	AgentBack               // esc — dismiss the list
+	AgentNone    AgentAction = iota
+	AgentAttach              // enter — attach to the agent's surface
+	AgentCancel              // x — cancel its current turn
+	AgentKill                // X — kill the agent
+	AgentKillAll             // K — kill every child still running
+	AgentAnswer              // a — answer its pending approval in place
+	AgentRetry               // r — run a failed agent again on its task
+	AgentDraft               // enter on the offer row — draft a profile
+	AgentBack                // esc — dismiss the list
 )
 
 // AgentListResult is the agent-list Update result.
@@ -149,11 +150,45 @@ func (l *AgentList) moved(pressed string) bool {
 	return moved
 }
 
+// answerable is the row [a] acts on: the one under the pointer where that row
+// is waiting on an answer, and otherwise the first row in the list that is.
+// It returns -1 where nothing is waiting.
+//
+// The pointer is asked first so that a reader who walked to a particular
+// blocked child answers that one. Everywhere else the key acts on the head of
+// the list, which — given the sort the host owes this list — is the child that
+// has been waiting longest, and is the reason the manager was opened at all
+// (docs/interface/surfaces.md#the-agent-manager).
+func (l *AgentList) answerable() int {
+	if l.focused().Answerable {
+		return l.Focus
+	}
+	for i, r := range l.Rows {
+		if r.Answerable {
+			return i
+		}
+	}
+	return -1
+}
+
+// liveChildren counts the children that can still be killed. A child is a row
+// with progress of its own — the orchestrator has none and is not killed from
+// here — and it is live until its own state has settled.
+func (l *AgentList) liveChildren() int {
+	n := 0
+	for _, r := range l.Rows {
+		if r.Progress != nil && !r.Progress.State.settled() {
+			n++
+		}
+	}
+	return n
+}
+
 // Update handles list keys. Cancel, kill, answer and retry resolve with
 // done=false so the list stays open over the live view (the host performs the
-// action and comes back); attach and esc dismiss it. [a] and [r] are silent
-// on a row that does not offer them rather than reporting a failure the row
-// already predicted.
+// action and comes back); attach and esc dismiss it. [r] is silent on a row
+// that does not offer it rather than reporting a failure the row already
+// predicted, and [a] and [K] are silent when the list holds nothing for them.
 func (l *AgentList) Update(msg tea.KeyPressMsg) (done bool, result AgentListResult) {
 	switch pressed := msg.String(); {
 	case l.moved(pressed):
@@ -163,8 +198,15 @@ func (l *AgentList) Update(msg tea.KeyPressMsg) (done bool, result AgentListResu
 		}
 		return true, AgentListResult{Action: AgentAttach, Index: l.Focus}
 	case keys.Is(pressed, keys.Agent.Answer):
-		if l.focused().Answerable {
-			return false, AgentListResult{Action: AgentAnswer, Index: l.Focus}
+		if i := l.answerable(); i >= 0 {
+			return false, AgentListResult{Action: AgentAnswer, Index: i}
+		}
+	case keys.Is(pressed, keys.Agent.KillAll):
+		// The list rather than a row, so the index says so: a host that read
+		// one off this action would be killing whichever child the pointer
+		// happened to be resting on as well as all of them.
+		if l.liveChildren() > 1 {
+			return false, AgentListResult{Action: AgentKillAll, Index: -1}
 		}
 	case keys.Is(pressed, keys.Agent.Retry):
 		if l.focused().Retryable {
@@ -250,7 +292,12 @@ func (r AgentRow) render(inner int, focused bool) []string {
 	right := r.rightField()
 	left := r.stateGlyph() + " " + r.Name
 	if r.Task != "" {
-		left += "  " + sty.Dimmer.Render(Clip(r.Task, max(inner/3, 8)))
+		// The separator and not a gap, which is what the lane above this row
+		// in the transcript joins the same two facts with: two spaces read as
+		// a column that is not there, because the names are not one width and
+		// so the tasks under them never line up
+		// (docs/interface/surfaces.md#the-agent-manager).
+		left += sty.Dimmer.Render(detailSep + Clip(r.Task, max(inner/3, 8)))
 	}
 	gap := inner - 2 - lipgloss.Width(left) - lipgloss.Width(right)
 	row := left
@@ -273,25 +320,46 @@ func (r AgentRow) render(inner int, focused bool) []string {
 	return rows
 }
 
-// hints are the keys the focused row offers. [a] and [r] appear only where
-// the row can act on them, so the run states what this row can do rather than
-// what the list can do in general.
+// managerWayOut is what esc leaves the manager for. The list is a takeover
+// over a turn that is still going, and `cancel` says nothing about which of
+// the several things on screen is being left
+// (docs/interface/principles.md#esc-is-always-the-safe-answer).
+const managerWayOut = "back to the turn"
+
+// hints are the keys the manager offers. Two of them are about the list and
+// not about the pointer: answering in place is offered whenever any child is
+// waiting on an answer, and killing every child whenever more than one is
+// still running. A key that appears only once the pointer has found the row
+// that needs it is a key a reader has to go hunting for, and an offer nobody
+// can see is not distinguishable from an offer that is not there. The keys
+// that end one child stay with the row the pointer is on, because their
+// target is the one thing that must never be guessed
+// (docs/interface/surfaces.md#the-agent-manager).
 func (l *AgentList) hints() []KeyOffer {
 	focus := l.focused()
 	// The offer row is the one row enter does something else on, so the key
 	// row says which — a hint that read `enter attach` over it would be
-	// naming an action the row does not have.
-	if focus.State == AgentOffer {
-		return []KeyOffer{keyOfferAs(keys.Agent.Attach, "draft a profile"), keyOffer(keys.Agent.Back)}
+	// naming an action the row does not have. The two list-wide keys are
+	// still offered over it, because they still work over it.
+	agent := focus.State != AgentOffer
+	attach := keyOffer(keys.Agent.Attach)
+	if !agent {
+		attach = keyOfferAs(keys.Agent.Attach, "draft a profile")
 	}
-	segments := []KeyOffer{keyOffer(keys.Agent.Attach)}
-	if focus.Answerable {
-		segments = append(segments, keyOffer(keys.Agent.Answer))
+	segments := []KeyOffer{attach}
+	if l.answerable() >= 0 {
+		segments = append(segments, keyOfferAs(keys.Agent.Answer, "answer without attaching"))
 	}
-	if focus.Retryable {
+	if agent && focus.Retryable {
 		segments = append(segments, keyOffer(keys.Agent.Retry))
 	}
-	return append(segments, keyOffer(keys.Agent.Cancel), keyOffer(keys.Agent.Kill), keyOffer(keys.Agent.Back))
+	if agent {
+		segments = append(segments, keyOffer(keys.Agent.Cancel), keyOffer(keys.Agent.Kill))
+	}
+	if l.liveChildren() > 1 {
+		segments = append(segments, keyOffer(keys.Agent.KillAll))
+	}
+	return append(segments, keyOfferAs(keys.Agent.Back, managerWayOut))
 }
 
 // tally is the manager's title-rail summary: the same sentence the fan-out

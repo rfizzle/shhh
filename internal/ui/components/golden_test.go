@@ -1929,11 +1929,7 @@ func TestGolden_PressureCard(t *testing.T) {
 				Recovers:    96_000,
 				RecoversPct: 48,
 				Continuing:  "keeping going asks nothing further — the oldest tool output is elided before each request from here, and what falls out does not come back",
-				Keys: []KeyOffer{
-					{Key: "[enter]", Label: "compact now"},
-					{Key: "[n]", Label: "new session"},
-					{Key: "[esc]", Label: "keep going"},
-				},
+				Keys:        PressureOffers(),
 			}
 			mut(&c)
 			return c.View(width)

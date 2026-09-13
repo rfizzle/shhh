@@ -410,7 +410,7 @@ func Surfaces() []Surface {
 			Reached:  Shown(Draft.Agents) + ", /agents",
 			Bindings: []Binding{
 				Agent.Move, Agent.Attach, Agent.Answer, Agent.Retry,
-				Agent.Cancel, Agent.Kill, Agent.Back,
+				Agent.Cancel, Agent.Kill, Agent.KillAll, Agent.Back,
 			},
 		},
 		{

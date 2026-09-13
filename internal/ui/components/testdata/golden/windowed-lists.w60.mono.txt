@@ -20,7 +20,7 @@
 │   [ ] the plan directory is scrum, not code              │
 │ ↓ 12 more · 1 checked                                    │
 │ [space] toggle · [a] all/none · [enter] apply (3)        │
-│ [esc] cancel                                             │
+│ [esc] apply none                                         │
 ╰──────────────────────────────────────────────────────────╯
 
 · the tail · the marker carries the ticks that scrolled away
@@ -33,33 +33,33 @@
 │   [ ] steering is queued, not interrupting               │
 │ ❯ [ ] esc always changes nothing                         │
 │ [space] toggle · [a] all/none · [enter] apply (3)        │
-│ [esc] cancel                                             │
+│ [esc] apply none                                         │
 ╰──────────────────────────────────────────────────────────╯
 
 · the manager · the blocked child is pinned above the window
 ╭─ Agents ─────────────────────── 1 needs you · 8 running ─╮
-│ ❯ ● orchestrator  this ses…  round 7 · streaming…  $0.12 │
-│   ⚠ runner-2  go test ./…  ⚠ needs you · 3 tools · $0.01 │
+│ ❯ ● orchestrator · this se…  round 7 · streaming…  $0.12 │
+│   ⚠ runner-2 · go test .…  ⚠ needs you · 3 tools · $0.01 │
 │     waiting approval: run go test ./internal/agent/...   │
-│   ◇ writer-3  docs/loop.md   ▰▱▱▱▱ 1/5 · 6 tools · $0.02 │
-│   ◇ writer-4  internal/age…  ▰▰▱▱▱ 2/5 · 6 tools · $0.02 │
-│   ◇ writer-5  survey inter…  ▰▰▰▱▱ 3/5 · 6 tools · $0.02 │
-│   ◇ writer-6  apply patch    ▰▰▰▰▱ 4/5 · 6 tools · $0.02 │
-│ ↓ 4 more                                                 │
-│ [enter] attach · [x] cancel · [X] kill · [esc] back      │
+│   ◇ writer-3 · docs/loop.md  ▰▱▱▱▱ 1/5 · 6 tools · $0.02 │
+│   ◇ writer-4 · internal/ag…  ▰▰▱▱▱ 2/5 · 6 tools · $0.02 │
+│ ↓ 6 more                                                 │
+│ [enter] attach · [a] answer without attaching            │
+│ [x] cancel · [X] kill · [K] kill all                     │
+│ [esc] back to the turn                                   │
 ╰──────────────────────────────────────────────────────────╯
 
 · the manager · the pointer at the foot, the blocked child still on the card
 ╭─ Agents ─────────────────────── 1 needs you · 8 running ─╮
-│   ● orchestrator  this ses…  round 7 · streaming…  $0.12 │
-│   ⚠ runner-2  go test ./…  ⚠ needs you · 3 tools · $0.01 │
+│   ● orchestrator · this se…  round 7 · streaming…  $0.12 │
+│   ⚠ runner-2 · go test .…  ⚠ needs you · 3 tools · $0.01 │
 │     waiting approval: run go test ./internal/agent/...   │
-│ ↑ 4 more                                                 │
-│   ◇ writer-7  internal/too…  ▰▰▰▰▰ 5/5 · 6 tools · $0.02 │
-│   ◇ writer-8  README examp…  ▰▱▱▱▱ 1/5 · 6 tools · $0.02 │
-│   ◇ writer-9  golden captu…  ▰▰▱▱▱ 2/5 · 6 tools · $0.02 │
-│ ❯ ◇ writer-10  config sche…  ▰▰▰▱▱ 3/5 · 6 tools · $0.02 │
-│ [enter] attach · [x] cancel · [X] kill · [esc] back      │
+│ ↑ 6 more                                                 │
+│   ◇ writer-9 · golden capt…  ▰▰▱▱▱ 2/5 · 6 tools · $0.02 │
+│ ❯ ◇ writer-10 · config sch…  ▰▰▰▱▱ 3/5 · 6 tools · $0.02 │
+│ [enter] attach · [a] answer without attaching            │
+│ [x] cancel · [X] kill · [K] kill all                     │
+│ [esc] back to the turn                                   │
 ╰──────────────────────────────────────────────────────────╯
 
 ── ansi ────────────────────────────────────────────────────
@@ -73,7 +73,7 @@
 ␛[38;5;244m│␛[m   ␛[38;5;244m[ ]␛[m the plan directory is scrum, not code              ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;244m↓ 12 more · 1 checked␛[m                                    ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;254m[space]␛[m␛[38;5;244m toggle␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m all/none␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m apply (3)␛[m        ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m cancel␛[m                                             ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m apply none␛[m                                         ␛[38;5;244m│␛[m
 ␛[38;5;244m╰──────────────────────────────────────────────────────────╯␛[m
 
 · the tail · the marker carries the ticks that scrolled away
@@ -86,31 +86,31 @@
 ␛[38;5;244m│␛[m   ␛[38;5;244m[ ]␛[m steering is queued, not interrupting               ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;254m❯␛[m ␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m[ ]␛[m␛[48;5;237m ␛[38;5;254;48;5;237mesc always changes nothing                        ␛[m␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;254m[space]␛[m␛[38;5;244m toggle␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m all/none␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m apply (3)␛[m        ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m cancel␛[m                                             ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m apply none␛[m                                         ␛[38;5;244m│␛[m
 ␛[38;5;244m╰──────────────────────────────────────────────────────────╯␛[m
 
 · the manager · the blocked child is pinned above the window
 ␛[38;5;254m╭─ ␛[m␛[1;38;5;254mAgents ␛[m␛[38;5;254m─────────────────────── ␛[38;5;254m1 needs you␛[m␛[38;5;244m · ␛[m␛[38;5;254m8 running␛[m ─╮␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m❯␛[m ␛[1;38;5;254m␛[m␛[38;5;244m␛[m␛[38;5;244m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[1;38;5;254m●␛[m␛[48;5;237m ␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237morchestrator  this ses…  round 7 · streaming…  $0.12␛[m␛[m ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m   ␛[38;5;254m⚠␛[m runner-2  ␛[38;5;244mgo test ./…␛[m  ␛[38;5;254m⚠ needs you␛[m␛[38;5;244m · ␛[m␛[38;5;244m3 tools · $0.01␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m❯␛[m ␛[1;38;5;254m␛[m␛[38;5;244m␛[m␛[38;5;244m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[1;38;5;254m●␛[m␛[48;5;237m ␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237morchestrator · this se…  round 7 · streaming…  $0.12␛[m␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m   ␛[38;5;254m⚠␛[m runner-2␛[38;5;244m · go test .…␛[m  ␛[38;5;254m⚠ needs you␛[m␛[38;5;244m · ␛[m␛[38;5;244m3 tools · $0.01␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m     ␛[38;5;244mwaiting approval: run go test ./internal/agent/...␛[m   ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m   ␛[38;5;254m◇␛[m writer-3  ␛[38;5;244mdocs/loop.md␛[m   ␛[38;5;254m▰␛[m␛[38;5;244m▱▱▱▱␛[m ␛[38;5;254m1/5␛[m␛[38;5;244m · ␛[m␛[38;5;244m6 tools · $0.02␛[m ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m   ␛[38;5;254m◇␛[m writer-4  ␛[38;5;244minternal/age…␛[m  ␛[38;5;254m▰▰␛[m␛[38;5;244m▱▱▱␛[m ␛[38;5;254m2/5␛[m␛[38;5;244m · ␛[m␛[38;5;244m6 tools · $0.02␛[m ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m   ␛[38;5;254m◇␛[m writer-5  ␛[38;5;244msurvey inter…␛[m  ␛[38;5;254m▰▰▰␛[m␛[38;5;244m▱▱␛[m ␛[38;5;254m3/5␛[m␛[38;5;244m · ␛[m␛[38;5;244m6 tools · $0.02␛[m ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m   ␛[38;5;254m◇␛[m writer-6  ␛[38;5;244mapply patch␛[m    ␛[38;5;254m▰▰▰▰␛[m␛[38;5;244m▱␛[m ␛[38;5;254m4/5␛[m␛[38;5;244m · ␛[m␛[38;5;244m6 tools · $0.02␛[m ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244m↓ 4 more␛[m                                                 ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m attach␛[m␛[38;5;244m · ␛[m␛[38;5;254m[x]␛[m␛[38;5;244m cancel␛[m␛[38;5;244m · ␛[m␛[38;5;254m[X]␛[m␛[38;5;244m kill␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m      ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m   ␛[38;5;254m◇␛[m writer-3␛[38;5;244m · docs/loop.md␛[m  ␛[38;5;254m▰␛[m␛[38;5;244m▱▱▱▱␛[m ␛[38;5;254m1/5␛[m␛[38;5;244m · ␛[m␛[38;5;244m6 tools · $0.02␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m   ␛[38;5;254m◇␛[m writer-4␛[38;5;244m · internal/ag…␛[m  ␛[38;5;254m▰▰␛[m␛[38;5;244m▱▱▱␛[m ␛[38;5;254m2/5␛[m␛[38;5;244m · ␛[m␛[38;5;244m6 tools · $0.02␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244m↓ 6 more␛[m                                                 ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m attach␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m answer without attaching␛[m            ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[x]␛[m␛[38;5;244m cancel␛[m␛[38;5;244m · ␛[m␛[38;5;254m[X]␛[m␛[38;5;244m kill␛[m␛[38;5;244m · ␛[m␛[38;5;254m[K]␛[m␛[38;5;244m kill all␛[m                     ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m back to the turn␛[m                                   ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────╯␛[m
 
 · the manager · the pointer at the foot, the blocked child still on the card
 ␛[38;5;254m╭─ ␛[m␛[1;38;5;254mAgents ␛[m␛[38;5;254m─────────────────────── ␛[38;5;254m1 needs you␛[m␛[38;5;244m · ␛[m␛[38;5;254m8 running␛[m ─╮␛[m
-␛[38;5;254m│␛[m   ␛[1;38;5;254m●␛[m orchestrator  ␛[38;5;244mthis ses…␛[m  ␛[38;5;244mround 7 · streaming…␛[m  ␛[38;5;244m$0.12␛[m ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m   ␛[38;5;254m⚠␛[m runner-2  ␛[38;5;244mgo test ./…␛[m  ␛[38;5;254m⚠ needs you␛[m␛[38;5;244m · ␛[m␛[38;5;244m3 tools · $0.01␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m   ␛[1;38;5;254m●␛[m orchestrator␛[38;5;244m · this se…␛[m  ␛[38;5;244mround 7 · streaming…␛[m  ␛[38;5;244m$0.12␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m   ␛[38;5;254m⚠␛[m runner-2␛[38;5;244m · go test .…␛[m  ␛[38;5;254m⚠ needs you␛[m␛[38;5;244m · ␛[m␛[38;5;244m3 tools · $0.01␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m     ␛[38;5;244mwaiting approval: run go test ./internal/agent/...␛[m   ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244m↑ 4 more␛[m                                                 ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m   ␛[38;5;254m◇␛[m writer-7  ␛[38;5;244minternal/too…␛[m  ␛[38;5;254m▰▰▰▰▰␛[m ␛[38;5;254m5/5␛[m␛[38;5;244m · ␛[m␛[38;5;244m6 tools · $0.02␛[m ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m   ␛[38;5;254m◇␛[m writer-8  ␛[38;5;244mREADME examp…␛[m  ␛[38;5;254m▰␛[m␛[38;5;244m▱▱▱▱␛[m ␛[38;5;254m1/5␛[m␛[38;5;244m · ␛[m␛[38;5;244m6 tools · $0.02␛[m ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m   ␛[38;5;254m◇␛[m writer-9  ␛[38;5;244mgolden captu…␛[m  ␛[38;5;254m▰▰␛[m␛[38;5;244m▱▱▱␛[m ␛[38;5;254m2/5␛[m␛[38;5;244m · ␛[m␛[38;5;244m6 tools · $0.02␛[m ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;244m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m◇␛[m␛[48;5;237m ␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237mwriter-10  config sche…  ▰▰▰▱▱ 3/5 · 6 tools · $0.02␛[m␛[m ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m attach␛[m␛[38;5;244m · ␛[m␛[38;5;254m[x]␛[m␛[38;5;244m cancel␛[m␛[38;5;244m · ␛[m␛[38;5;254m[X]␛[m␛[38;5;244m kill␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m      ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244m↑ 6 more␛[m                                                 ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m   ␛[38;5;254m◇␛[m writer-9␛[38;5;244m · golden capt…␛[m  ␛[38;5;254m▰▰␛[m␛[38;5;244m▱▱▱␛[m ␛[38;5;254m2/5␛[m␛[38;5;244m · ␛[m␛[38;5;244m6 tools · $0.02␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;244m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m◇␛[m␛[48;5;237m ␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237mwriter-10 · config sch…  ▰▰▰▱▱ 3/5 · 6 tools · $0.02␛[m␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m attach␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m answer without attaching␛[m            ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[x]␛[m␛[38;5;244m cancel␛[m␛[38;5;244m · ␛[m␛[38;5;254m[X]␛[m␛[38;5;244m kill␛[m␛[38;5;244m · ␛[m␛[38;5;254m[K]␛[m␛[38;5;244m kill all␛[m                     ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m back to the turn␛[m                                   ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────╯␛[m

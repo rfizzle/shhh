@@ -128,6 +128,24 @@ func (c *PressureCard) Update(msg tea.KeyPressMsg) (done bool, result PressureDe
 	return false, PressureNone
 }
 
+// PressureOffers is the card's three answers as it offers them. The keys come
+// from the same declarations Update reads a press against, so a keymap that
+// moves one moves the offer with it; the words are the card's own where the
+// register's are shorter than the answer.
+//
+// A new session here carries the plan: a run in progress keeps its checkpoint
+// and the session that opens is told how to pick it up, and a reader deciding
+// between compacting and starting again is deciding exactly that. The clause
+// is on the key row rather than in the prose above it because it is what the
+// key buys (docs/interface/surfaces.md#the-recovery-row).
+func PressureOffers() []KeyOffer {
+	return []KeyOffer{
+		keyOffer(keys.Wait.Compact),
+		keyOfferAs(keys.Wait.NewSession, keys.Words(keys.Wait.NewSession)+", carry the plan"),
+		keyOffer(keys.Wait.KeepGoing),
+	}
+}
+
 // meter is the card's bar: the same component, cell count and thresholds the
 // inspector rail's CONTEXT block uses, so the two cannot disagree about what
 // colour 84% is.

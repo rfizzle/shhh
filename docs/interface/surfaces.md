@@ -1036,6 +1036,41 @@ root is the same kind of thing.
 A child's approvals route to wherever you are, so detaching does not mean
 missing a decision.
 
+**A child is drawn twice, and the two drawings disagree about one column on
+purpose.** In the transcript a fan-out gives each child a lane; in the manager
+and in the rail's map the same child is a row. A lane keeps `◇` in every state
+it has, in the colour the state wears, and says how the child is doing in
+words in the field on the right — `▰▰▰▱▱ 2/5`, `✓ 5/5`, `⚠ needs you`: a child
+is a child from the moment it is queued until it stops being one, and it will
+be many acts before it is anything. A row is that same child as one thing you
+are about to act on, so it keeps the rule every other row in the product
+keeps: `⚠ ✗ ▸ ⊘ ✦` take the lead column from the kind mark and `✓` never does.
+A blocked child leads its row with `⚠` and says what it is waiting for
+underneath; a finished one keeps `◇` and puts its tick in the outcome field.
+Both readings come from one renderer, so the lane and the row can differ in
+that column and nowhere else.
+
+**A row joins the child's name to its task the way every row joins two
+facts**, with the separator, not with a gap: `writer-1 · docs/loop.md`. The
+artboard draws the manager's two as adjacent columns and the manager does not
+keep that. A column needs a fixed width, and a name is not a word from a
+closed vocabulary — clipped to one, two children of the same profile become
+the same string, and left unclipped the tasks beside them never line up, which
+is a rule drawn where there is no rule. The lane above it reads the same way,
+so a reader who has learned the separator on one has learned it on the other.
+
+**The key row states what the list can do, and not what the pointer is on.**
+Answering a blocked child in place is offered whenever any child is blocked;
+killing every child is offered whenever more than one is still running. An
+offer a reader has to go hunting for with the pointer is indistinguishable
+from an offer that is not there, which is the whole reason the manager is
+opened. Answering takes the child under the pointer where that is the one
+waiting, and otherwise the first one that is — blocked children sort to the
+top, so that is the child the manager was opened for. The keys that end one
+child — cancel, kill, and running a failed one again — stay with the row the
+pointer is on, because their target is the one thing that must never be
+guessed.
+
 Attaching does not take the inspector rail with it. What you are looking at
 is one agent's transcript; what the rail reports — what this run has changed,
 how full the window is, what it has all cost — is the whole session's, and it

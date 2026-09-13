@@ -1022,15 +1022,17 @@ type Model struct {
 	// Sub-agent management and steering: attachedTo focuses the chat
 	// surface on a child ("" = orchestrator); childViews holds each child's
 	// mirrored transcript and scroll state so attach/detach loses nothing;
-	// agentList is the open agent manager, killConfirm/killTarget its armed
-	// inline kill confirmation, and answerAgent the row whose approval is
-	// being answered over the list rather than inside the child.
+	// agentList is the open agent manager, killConfirm/killTargets its armed
+	// inline kill confirmation — one child for [X] and every live one for
+	// [K], which is why the names are a list rather than a name — and
+	// answerAgent the row whose approval is being answered over the list
+	// rather than inside the child.
 	attachedTo  string
 	childViews  map[string]*childView
 	parentView  viewState
 	agentList   *components.AgentList
 	killConfirm *components.Confirm
-	killTarget  string
+	killTargets []string
 	answerAgent string
 	// Session branching and rewind: checkpoints mark each user turn's
 	// start; sessionName is the storage slot rewind branches hang off (set by

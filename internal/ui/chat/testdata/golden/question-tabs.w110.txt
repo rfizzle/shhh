@@ -20,7 +20,8 @@
 │   3. Something else …  answer in your own words                                                        │
 │ ┄ note (optional)                                                                                      │
 │   (none)                                                                                               │
-│ [tab] note/options · [enter] confirm · [d] the full answer · [←→] the next question · [esc] cancel     │
+│ [tab] note/options · [enter] confirm · [d] the full answer · [←→] the next question                    │
+│ [esc] back to the draft — the question waits                                                           │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 · one answered · the mark turns and the tail counts what is still open
@@ -37,7 +38,7 @@ Should the migration be reversible?  [y/N]
 │                                                                                                        │
 │ ┄ note (required)                                                                                      │
 │   (none)                                                                                               │
-│ [enter] confirm · [tab] answer · [←→] the next question · [esc] cancel                                 │
+│ [enter] confirm · [tab] answer · [←→] the next question · [esc] back to the draft — the question waits │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 · the tab that ends the set · what enter sends, and what leaving a tab open costs
@@ -58,7 +59,7 @@ Should the migration be reversible?  [y/N]
 │ ┄ note (optional)                                                                                      │
 │   (none)                                                                                               │
 │ [tab] note/options · [space] toggle · [a] all/none · [d] the full answer · [←→] the next question      │
-│ [enter] apply (0) · [esc] cancel                                                                       │
+│ [enter] apply (0) · [esc] back to the draft — the question waits                                       │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 ── ansi ────────────────────────────────────────────────────
@@ -72,7 +73,8 @@ Should the migration be reversible?  [y/N]
 ␛[94m│␛[m   ␛[38;5;241m3. ␛[m␛[38;5;252mSomething else …␛[m  ␛[38;5;241manswer in your own words␛[m                                                        ␛[94m│␛[m
 ␛[94m│␛[m ␛[38;5;241m┄ note (optional)␛[m                                                                                      ␛[94m│␛[m
 ␛[94m│␛[m   ␛[38;5;245m(none)␛[m                                                                                               ␛[94m│␛[m
-␛[94m│␛[m ␛[94m[tab]␛[m␛[38;5;241m note/options␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m confirm␛[m␛[38;5;241m · ␛[m␛[94m[d]␛[m␛[38;5;241m the full answer␛[m␛[38;5;241m · ␛[m␛[94m[←→]␛[m␛[38;5;241m the next question␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m cancel␛[m     ␛[94m│␛[m
+␛[94m│␛[m ␛[94m[tab]␛[m␛[38;5;241m note/options␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m confirm␛[m␛[38;5;241m · ␛[m␛[94m[d]␛[m␛[38;5;241m the full answer␛[m␛[38;5;241m · ␛[m␛[94m[←→]␛[m␛[38;5;241m the next question␛[m                    ␛[94m│␛[m
+␛[94m│␛[m ␛[92m[esc]␛[m␛[38;5;241m back to the draft — the question waits␛[m                                                           ␛[94m│␛[m
 ␛[94m╰────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · one answered · the mark turns and the tail counts what is still open
@@ -89,7 +91,7 @@ Should the migration be reversible?  [y/N]
 ␛[94m│␛[m                                                                                                        ␛[94m│␛[m
 ␛[94m│␛[m ␛[38;5;241m┄ note (required)␛[m                                                                                      ␛[94m│␛[m
 ␛[94m│␛[m   ␛[38;5;245m(none)␛[m                                                                                               ␛[94m│␛[m
-␛[94m│␛[m ␛[94m[enter]␛[m␛[38;5;241m confirm␛[m␛[38;5;241m · ␛[m␛[94m[tab]␛[m␛[38;5;241m answer␛[m␛[38;5;241m · ␛[m␛[94m[←→]␛[m␛[38;5;241m the next question␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m cancel␛[m                                 ␛[94m│␛[m
+␛[94m│␛[m ␛[94m[enter]␛[m␛[38;5;241m confirm␛[m␛[38;5;241m · ␛[m␛[94m[tab]␛[m␛[38;5;241m answer␛[m␛[38;5;241m · ␛[m␛[94m[←→]␛[m␛[38;5;241m the next question␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the draft — the question waits␛[m ␛[94m│␛[m
 ␛[94m╰────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · the tab that ends the set · what enter sends, and what leaving a tab open costs
@@ -110,5 +112,5 @@ Should the migration be reversible?  [y/N]
 ␛[94m│␛[m ␛[38;5;241m┄ note (optional)␛[m                                                                                      ␛[94m│␛[m
 ␛[94m│␛[m   ␛[38;5;245m(none)␛[m                                                                                               ␛[94m│␛[m
 ␛[94m│␛[m ␛[94m[tab]␛[m␛[38;5;241m note/options␛[m␛[38;5;241m · ␛[m␛[94m[space]␛[m␛[38;5;241m toggle␛[m␛[38;5;241m · ␛[m␛[94m[a]␛[m␛[38;5;241m all/none␛[m␛[38;5;241m · ␛[m␛[94m[d]␛[m␛[38;5;241m the full answer␛[m␛[38;5;241m · ␛[m␛[94m[←→]␛[m␛[38;5;241m the next question␛[m      ␛[94m│␛[m
-␛[94m│␛[m ␛[94m[enter]␛[m␛[38;5;241m apply (0)␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m cancel␛[m                                                                       ␛[94m│␛[m
+␛[94m│␛[m ␛[94m[enter]␛[m␛[38;5;241m apply (0)␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the draft — the question waits␛[m                                       ␛[94m│␛[m
 ␛[94m╰────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m

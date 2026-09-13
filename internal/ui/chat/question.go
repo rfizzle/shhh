@@ -273,6 +273,13 @@ func (m *Model) openQuestion(req *approvalRequest) {
 	m.question = req.sheet.page()
 }
 
+// questionWayOut is what esc leaves a question card for. The question is not
+// answered and not dropped — it goes back into the queue and the card comes
+// again — so the row says both halves: a card whose safe answer read `cancel`
+// would leave the reader to guess whether the model is still waiting
+// (docs/interface/principles.md#esc-is-always-the-safe-answer).
+const questionWayOut = "back to the draft — the question waits"
+
 // questionPage builds one question's card in the dressing its shape asks for.
 func (m *Model) questionPage(q ask.Question, sheet *questionSheet) *questionCard {
 	c := &questionCard{q: q, sheet: sheet}
@@ -287,12 +294,14 @@ func (m *Model) questionPage(q ask.Question, sheet *questionSheet) *questionCard
 		c.rows = questionRows(q.Options)
 		c.sel = components.NewNoteSelect(questionTitle, selectRows(c.rows))
 		c.sel.Select.MaxLines = body
+		c.sel.Select.CancelLabel = questionWayOut
 		c.sel.Actions = c.offers()
 	case ask.ShapeChooseMany:
 		c.rows = questionRows(q.Options)
 		c.multi = components.NewMultiSelect(questionTitle, selectRows(c.rows))
 		c.multi.Note = components.NewNoteBox()
 		c.multi.MaxLines = body
+		c.multi.CancelLabel = questionWayOut
 		c.multi.Actions = c.offers()
 	case ask.ShapeConfirm:
 		c.conf = &components.Confirm{Prompt: firstLine(q.Question)}
@@ -302,6 +311,7 @@ func (m *Model) questionPage(q ask.Question, sheet *questionSheet) *questionCard
 		// opens with the keyboard already in it.
 		c.sel = components.NewNoteSelect(questionTitle, nil)
 		c.sel.Require = true
+		c.sel.Select.CancelLabel = questionWayOut
 		c.sel.Actions = c.offers()
 		c.armNote()
 	}

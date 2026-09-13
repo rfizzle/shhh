@@ -164,7 +164,7 @@ func TestMultiSelectWindow_TheMarkerSaysHowManyHiddenRowsAreChecked(t *testing.T
 	s.Checked[0], s.Checked[1], s.Checked[19] = true, true, true
 
 	top := ansi.Strip(s.View(70))
-	if !strings.Contains(top, "↓ 14 more · 1 checked") {
+	if !strings.Contains(top, "↓ 15 more · 1 checked") {
 		t.Fatalf("the bottom marker should count the ticked row below it:\n%s", top)
 	}
 	if !strings.Contains(top, "apply (3)") {
@@ -176,7 +176,7 @@ func TestMultiSelectWindow_TheMarkerSaysHowManyHiddenRowsAreChecked(t *testing.T
 		s.Update(key("down"))
 	}
 	bottom := ansi.Strip(s.View(70))
-	if !strings.Contains(bottom, "↑ 14 more · 2 checked") {
+	if !strings.Contains(bottom, "↑ 15 more · 2 checked") {
 		t.Fatalf("the top marker should count the two ticked rows above it:\n%s", bottom)
 	}
 	if !strings.Contains(bottom, "apply (3)") {
@@ -191,12 +191,12 @@ func TestMultiSelectWindow_MarkersCountAndSumToTheList(t *testing.T) {
 	s := NewMultiSelect("Forget which memories?", checkList(14))
 	s.MaxLines = 10
 	top := ansi.Strip(s.View(70))
-	if !strings.Contains(top, "↓ 8 more") || strings.Contains(top, "checked") {
+	if !strings.Contains(top, "↓ 9 more") || strings.Contains(top, "checked") {
 		t.Fatalf("nothing is ticked, so the marker should say only what it hid:\n%s", top)
 	}
 	shown := strings.Count(top, "memory-")
-	if shown+8 != 14 {
-		t.Fatalf("the marker and the rows on screen should sum to the list: %d shown + 8 hidden:\n%s", shown, top)
+	if shown+9 != 14 {
+		t.Fatalf("the marker and the rows on screen should sum to the list: %d shown + 9 hidden:\n%s", shown, top)
 	}
 }
 

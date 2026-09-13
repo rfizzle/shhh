@@ -12,107 +12,115 @@
 ── layout ──────────────────────────────────────────────────
 · focus · the orchestrator
 ╭─ Agents ─────────────────────────────────────────── 1 needs you · 1 running ─╮
-│ ❯ ● orchestrator  this session                   round 7 · streaming…  $0.12 │
-│   ⚠ runner-2  go test ./...                    ⚠ needs you · 3 tools · $0.01 │
+│ ❯ ● orchestrator · this session                  round 7 · streaming…  $0.12 │
+│   ⚠ runner-2 · go test ./...                   ⚠ needs you · 3 tools · $0.01 │
 │     waiting approval: run go test ./internal/agent/...                       │
-│   ◇ writer-1  docs/loop.md                       ▰▰▱▱▱ 2/5 · 6 tools · $0.02 │
-│   ◇ reader-3  survey internal/ui                   ✓ done · 12 tools · $0.04 │
+│   ◇ writer-1 · docs/loop.md                      ▰▰▱▱▱ 2/5 · 6 tools · $0.02 │
+│   ◇ reader-3 · survey internal/ui                  ✓ done · 12 tools · $0.04 │
 │     the rails and the frame are one component                                │
-│   ✗ patcher-4  apply patch                         ✗ failed · 1 tool · $0.01 │
+│   ✗ patcher-4 · apply patch                        ✗ failed · 1 tool · $0.01 │
 │     round limit (25) reached                                                 │
-│ [enter] attach · [x] cancel · [X] kill · [esc] back                          │
+│ [enter] attach · [a] answer without attaching · [x] cancel · [X] kill        │
+│ [K] kill all · [esc] back to the turn                                        │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
 · focus · the blocked child, [a] answers it here
 ╭─ Agents ─────────────────────────────────────────── 1 needs you · 1 running ─╮
-│   ● orchestrator  this session                   round 7 · streaming…  $0.12 │
-│ ❯ ⚠ runner-2  go test ./...                    ⚠ needs you · 3 tools · $0.01 │
+│   ● orchestrator · this session                  round 7 · streaming…  $0.12 │
+│ ❯ ⚠ runner-2 · go test ./...                   ⚠ needs you · 3 tools · $0.01 │
 │     waiting approval: run go test ./internal/agent/...                       │
-│   ◇ writer-1  docs/loop.md                       ▰▰▱▱▱ 2/5 · 6 tools · $0.02 │
-│   ◇ reader-3  survey internal/ui                   ✓ done · 12 tools · $0.04 │
+│   ◇ writer-1 · docs/loop.md                      ▰▰▱▱▱ 2/5 · 6 tools · $0.02 │
+│   ◇ reader-3 · survey internal/ui                  ✓ done · 12 tools · $0.04 │
 │     the rails and the frame are one component                                │
-│   ✗ patcher-4  apply patch                         ✗ failed · 1 tool · $0.01 │
+│   ✗ patcher-4 · apply patch                        ✗ failed · 1 tool · $0.01 │
 │     round limit (25) reached                                                 │
-│ [enter] attach · [a] answer · [x] cancel · [X] kill · [esc] back             │
+│ [enter] attach · [a] answer without attaching · [x] cancel · [X] kill        │
+│ [K] kill all · [esc] back to the turn                                        │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
 · focus · the failed child, [r] runs it again
 ╭─ Agents ─────────────────────────────────────────── 1 needs you · 1 running ─╮
-│   ● orchestrator  this session                   round 7 · streaming…  $0.12 │
-│   ⚠ runner-2  go test ./...                    ⚠ needs you · 3 tools · $0.01 │
+│   ● orchestrator · this session                  round 7 · streaming…  $0.12 │
+│   ⚠ runner-2 · go test ./...                   ⚠ needs you · 3 tools · $0.01 │
 │     waiting approval: run go test ./internal/agent/...                       │
-│   ◇ writer-1  docs/loop.md                       ▰▰▱▱▱ 2/5 · 6 tools · $0.02 │
-│   ◇ reader-3  survey internal/ui                   ✓ done · 12 tools · $0.04 │
+│   ◇ writer-1 · docs/loop.md                      ▰▰▱▱▱ 2/5 · 6 tools · $0.02 │
+│   ◇ reader-3 · survey internal/ui                  ✓ done · 12 tools · $0.04 │
 │     the rails and the frame are one component                                │
-│ ❯ ✗ patcher-4  apply patch                         ✗ failed · 1 tool · $0.01 │
+│ ❯ ✗ patcher-4 · apply patch                        ✗ failed · 1 tool · $0.01 │
 │     round limit (25) reached                                                 │
-│ [enter] attach · [r] retry · [x] cancel · [X] kill · [esc] back              │
+│ [enter] attach · [a] answer without attaching · [r] retry · [x] cancel       │
+│ [X] kill · [K] kill all · [esc] back to the turn                             │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
 · the row that is not an agent · enter drafts a profile instead of attaching
 ╭─ Agents ─────────────────────────────────────────── 1 needs you · 1 running ─╮
-│   ● orchestrator  this session                   round 7 · streaming…  $0.12 │
-│   ⚠ runner-2  go test ./...                    ⚠ needs you · 3 tools · $0.01 │
+│   ● orchestrator · this session                  round 7 · streaming…  $0.12 │
+│   ⚠ runner-2 · go test ./...                   ⚠ needs you · 3 tools · $0.01 │
 │     waiting approval: run go test ./internal/agent/...                       │
-│   ◇ writer-1  docs/loop.md                       ▰▰▱▱▱ 2/5 · 6 tools · $0.02 │
-│   ◇ reader-3  survey internal/ui                   ✓ done · 12 tools · $0.04 │
+│   ◇ writer-1 · docs/loop.md                      ▰▰▱▱▱ 2/5 · 6 tools · $0.02 │
+│   ◇ reader-3 · survey internal/ui                  ✓ done · 12 tools · $0.04 │
 │     the rails and the frame are one component                                │
-│   ✗ patcher-4  apply patch                         ✗ failed · 1 tool · $0.01 │
+│   ✗ patcher-4 · apply patch                        ✗ failed · 1 tool · $0.01 │
 │     round limit (25) reached                                                 │
 │ ❯ ⚙ draft a new profile                                          /agents new │
-│ [enter] draft a profile · [esc] back                                         │
+│ [enter] draft a profile · [a] answer without attaching · [K] kill all        │
+│ [esc] back to the turn                                                       │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
 ── ansi ────────────────────────────────────────────────────
 · focus · the orchestrator
 ␛[94m╭─ ␛[m␛[1;97mAgents ␛[m␛[38;5;241m───────────────────────────────────────────␛[m␛[94m ␛[91m1 needs you␛[m␛[38;5;241m · ␛[m␛[38;5;205m1 running␛[m ─╮␛[m
-␛[94m│␛[m ␛[94m❯␛[m ␛[1;94m␛[m␛[38;5;245m␛[m␛[38;5;241m␛[m␛[38;5;243m␛[m␛[48;5;62m␛[1;94m●␛[m␛[48;5;62m ␛[38;5;245m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;243m␛[m␛[48;5;62m␛[97;48;5;62morchestrator  this session                   round 7 · streaming…  $0.12␛[m␛[m ␛[94m│␛[m
-␛[94m│␛[m   ␛[91m⚠␛[m runner-2  ␛[38;5;245mgo test ./...␛[m                    ␛[91m⚠ needs you␛[m␛[38;5;241m · ␛[m␛[38;5;245m3 tools · $0.01␛[m ␛[94m│␛[m
+␛[94m│␛[m ␛[94m❯␛[m ␛[1;94m␛[m␛[38;5;245m␛[m␛[38;5;241m␛[m␛[38;5;243m␛[m␛[48;5;62m␛[1;94m●␛[m␛[48;5;62m ␛[38;5;245m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;243m␛[m␛[48;5;62m␛[97;48;5;62morchestrator · this session                  round 7 · streaming…  $0.12␛[m␛[m ␛[94m│␛[m
+␛[94m│␛[m   ␛[91m⚠␛[m runner-2␛[38;5;245m · go test ./...␛[m                   ␛[91m⚠ needs you␛[m␛[38;5;241m · ␛[m␛[38;5;245m3 tools · $0.01␛[m ␛[94m│␛[m
 ␛[94m│␛[m     ␛[38;5;245mwaiting approval: run go test ./internal/agent/...␛[m                       ␛[94m│␛[m
-␛[94m│␛[m   ␛[94m◇␛[m writer-1  ␛[38;5;245mdocs/loop.md␛[m                       ␛[94m▰▰␛[m␛[38;5;241m▱▱▱␛[m ␛[94m2/5␛[m␛[38;5;241m · ␛[m␛[38;5;245m6 tools · $0.02␛[m ␛[94m│␛[m
-␛[94m│␛[m   ␛[92m◇␛[m reader-3  ␛[38;5;245msurvey internal/ui␛[m                   ␛[92m✓ done␛[m␛[38;5;241m · ␛[m␛[38;5;245m12 tools · $0.04␛[m ␛[94m│␛[m
+␛[94m│␛[m   ␛[94m◇␛[m writer-1␛[38;5;245m · docs/loop.md␛[m                      ␛[94m▰▰␛[m␛[38;5;241m▱▱▱␛[m ␛[94m2/5␛[m␛[38;5;241m · ␛[m␛[38;5;245m6 tools · $0.02␛[m ␛[94m│␛[m
+␛[94m│␛[m   ␛[92m◇␛[m reader-3␛[38;5;245m · survey internal/ui␛[m                  ␛[92m✓ done␛[m␛[38;5;241m · ␛[m␛[38;5;245m12 tools · $0.04␛[m ␛[94m│␛[m
 ␛[94m│␛[m     ␛[38;5;245mthe rails and the frame are one component␛[m                                ␛[94m│␛[m
-␛[94m│␛[m   ␛[91m✗␛[m patcher-4  ␛[38;5;245mapply patch␛[m                         ␛[91m✗ failed␛[m␛[38;5;241m · ␛[m␛[38;5;245m1 tool · $0.01␛[m ␛[94m│␛[m
+␛[94m│␛[m   ␛[91m✗␛[m patcher-4␛[38;5;245m · apply patch␛[m                        ␛[91m✗ failed␛[m␛[38;5;241m · ␛[m␛[38;5;245m1 tool · $0.01␛[m ␛[94m│␛[m
 ␛[94m│␛[m     ␛[38;5;245mround limit (25) reached␛[m                                                 ␛[94m│␛[m
-␛[94m│␛[m ␛[94m[enter]␛[m␛[38;5;241m attach␛[m␛[38;5;241m · ␛[m␛[94m[x]␛[m␛[38;5;241m cancel␛[m␛[38;5;241m · ␛[m␛[94m[X]␛[m␛[38;5;241m kill␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back␛[m                          ␛[94m│␛[m
+␛[94m│␛[m ␛[94m[enter]␛[m␛[38;5;241m attach␛[m␛[38;5;241m · ␛[m␛[94m[a]␛[m␛[38;5;241m answer without attaching␛[m␛[38;5;241m · ␛[m␛[94m[x]␛[m␛[38;5;241m cancel␛[m␛[38;5;241m · ␛[m␛[94m[X]␛[m␛[38;5;241m kill␛[m        ␛[94m│␛[m
+␛[94m│␛[m ␛[94m[K]␛[m␛[38;5;241m kill all␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the turn␛[m                                        ␛[94m│␛[m
 ␛[94m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · focus · the blocked child, [a] answers it here
 ␛[94m╭─ ␛[m␛[1;97mAgents ␛[m␛[38;5;241m───────────────────────────────────────────␛[m␛[94m ␛[91m1 needs you␛[m␛[38;5;241m · ␛[m␛[38;5;205m1 running␛[m ─╮␛[m
-␛[94m│␛[m   ␛[1;94m●␛[m orchestrator  ␛[38;5;245mthis session␛[m                   ␛[38;5;241mround 7 · streaming…␛[m  ␛[38;5;243m$0.12␛[m ␛[94m│␛[m
-␛[94m│␛[m ␛[94m❯␛[m ␛[91m␛[m␛[38;5;245m␛[m␛[91m␛[m␛[38;5;241m␛[m␛[38;5;245m␛[m␛[48;5;62m␛[91m⚠␛[m␛[48;5;62m ␛[38;5;245m␛[m␛[48;5;62m␛[91m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;245m␛[m␛[48;5;62m␛[97;48;5;62mrunner-2  go test ./...                    ⚠ needs you · 3 tools · $0.01␛[m␛[m ␛[94m│␛[m
+␛[94m│␛[m   ␛[1;94m●␛[m orchestrator␛[38;5;245m · this session␛[m                  ␛[38;5;241mround 7 · streaming…␛[m  ␛[38;5;243m$0.12␛[m ␛[94m│␛[m
+␛[94m│␛[m ␛[94m❯␛[m ␛[91m␛[m␛[38;5;245m␛[m␛[91m␛[m␛[38;5;241m␛[m␛[38;5;245m␛[m␛[48;5;62m␛[91m⚠␛[m␛[48;5;62m ␛[38;5;245m␛[m␛[48;5;62m␛[91m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;245m␛[m␛[48;5;62m␛[97;48;5;62mrunner-2 · go test ./...                   ⚠ needs you · 3 tools · $0.01␛[m␛[m ␛[94m│␛[m
 ␛[94m│␛[m     ␛[38;5;245mwaiting approval: run go test ./internal/agent/...␛[m                       ␛[94m│␛[m
-␛[94m│␛[m   ␛[94m◇␛[m writer-1  ␛[38;5;245mdocs/loop.md␛[m                       ␛[94m▰▰␛[m␛[38;5;241m▱▱▱␛[m ␛[94m2/5␛[m␛[38;5;241m · ␛[m␛[38;5;245m6 tools · $0.02␛[m ␛[94m│␛[m
-␛[94m│␛[m   ␛[92m◇␛[m reader-3  ␛[38;5;245msurvey internal/ui␛[m                   ␛[92m✓ done␛[m␛[38;5;241m · ␛[m␛[38;5;245m12 tools · $0.04␛[m ␛[94m│␛[m
+␛[94m│␛[m   ␛[94m◇␛[m writer-1␛[38;5;245m · docs/loop.md␛[m                      ␛[94m▰▰␛[m␛[38;5;241m▱▱▱␛[m ␛[94m2/5␛[m␛[38;5;241m · ␛[m␛[38;5;245m6 tools · $0.02␛[m ␛[94m│␛[m
+␛[94m│␛[m   ␛[92m◇␛[m reader-3␛[38;5;245m · survey internal/ui␛[m                  ␛[92m✓ done␛[m␛[38;5;241m · ␛[m␛[38;5;245m12 tools · $0.04␛[m ␛[94m│␛[m
 ␛[94m│␛[m     ␛[38;5;245mthe rails and the frame are one component␛[m                                ␛[94m│␛[m
-␛[94m│␛[m   ␛[91m✗␛[m patcher-4  ␛[38;5;245mapply patch␛[m                         ␛[91m✗ failed␛[m␛[38;5;241m · ␛[m␛[38;5;245m1 tool · $0.01␛[m ␛[94m│␛[m
+␛[94m│␛[m   ␛[91m✗␛[m patcher-4␛[38;5;245m · apply patch␛[m                        ␛[91m✗ failed␛[m␛[38;5;241m · ␛[m␛[38;5;245m1 tool · $0.01␛[m ␛[94m│␛[m
 ␛[94m│␛[m     ␛[38;5;245mround limit (25) reached␛[m                                                 ␛[94m│␛[m
-␛[94m│␛[m ␛[94m[enter]␛[m␛[38;5;241m attach␛[m␛[38;5;241m · ␛[m␛[94m[a]␛[m␛[38;5;241m answer␛[m␛[38;5;241m · ␛[m␛[94m[x]␛[m␛[38;5;241m cancel␛[m␛[38;5;241m · ␛[m␛[94m[X]␛[m␛[38;5;241m kill␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back␛[m             ␛[94m│␛[m
+␛[94m│␛[m ␛[94m[enter]␛[m␛[38;5;241m attach␛[m␛[38;5;241m · ␛[m␛[94m[a]␛[m␛[38;5;241m answer without attaching␛[m␛[38;5;241m · ␛[m␛[94m[x]␛[m␛[38;5;241m cancel␛[m␛[38;5;241m · ␛[m␛[94m[X]␛[m␛[38;5;241m kill␛[m        ␛[94m│␛[m
+␛[94m│␛[m ␛[94m[K]␛[m␛[38;5;241m kill all␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the turn␛[m                                        ␛[94m│␛[m
 ␛[94m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · focus · the failed child, [r] runs it again
 ␛[94m╭─ ␛[m␛[1;97mAgents ␛[m␛[38;5;241m───────────────────────────────────────────␛[m␛[94m ␛[91m1 needs you␛[m␛[38;5;241m · ␛[m␛[38;5;205m1 running␛[m ─╮␛[m
-␛[94m│␛[m   ␛[1;94m●␛[m orchestrator  ␛[38;5;245mthis session␛[m                   ␛[38;5;241mround 7 · streaming…␛[m  ␛[38;5;243m$0.12␛[m ␛[94m│␛[m
-␛[94m│␛[m   ␛[91m⚠␛[m runner-2  ␛[38;5;245mgo test ./...␛[m                    ␛[91m⚠ needs you␛[m␛[38;5;241m · ␛[m␛[38;5;245m3 tools · $0.01␛[m ␛[94m│␛[m
+␛[94m│␛[m   ␛[1;94m●␛[m orchestrator␛[38;5;245m · this session␛[m                  ␛[38;5;241mround 7 · streaming…␛[m  ␛[38;5;243m$0.12␛[m ␛[94m│␛[m
+␛[94m│␛[m   ␛[91m⚠␛[m runner-2␛[38;5;245m · go test ./...␛[m                   ␛[91m⚠ needs you␛[m␛[38;5;241m · ␛[m␛[38;5;245m3 tools · $0.01␛[m ␛[94m│␛[m
 ␛[94m│␛[m     ␛[38;5;245mwaiting approval: run go test ./internal/agent/...␛[m                       ␛[94m│␛[m
-␛[94m│␛[m   ␛[94m◇␛[m writer-1  ␛[38;5;245mdocs/loop.md␛[m                       ␛[94m▰▰␛[m␛[38;5;241m▱▱▱␛[m ␛[94m2/5␛[m␛[38;5;241m · ␛[m␛[38;5;245m6 tools · $0.02␛[m ␛[94m│␛[m
-␛[94m│␛[m   ␛[92m◇␛[m reader-3  ␛[38;5;245msurvey internal/ui␛[m                   ␛[92m✓ done␛[m␛[38;5;241m · ␛[m␛[38;5;245m12 tools · $0.04␛[m ␛[94m│␛[m
+␛[94m│␛[m   ␛[94m◇␛[m writer-1␛[38;5;245m · docs/loop.md␛[m                      ␛[94m▰▰␛[m␛[38;5;241m▱▱▱␛[m ␛[94m2/5␛[m␛[38;5;241m · ␛[m␛[38;5;245m6 tools · $0.02␛[m ␛[94m│␛[m
+␛[94m│␛[m   ␛[92m◇␛[m reader-3␛[38;5;245m · survey internal/ui␛[m                  ␛[92m✓ done␛[m␛[38;5;241m · ␛[m␛[38;5;245m12 tools · $0.04␛[m ␛[94m│␛[m
 ␛[94m│␛[m     ␛[38;5;245mthe rails and the frame are one component␛[m                                ␛[94m│␛[m
-␛[94m│␛[m ␛[94m❯␛[m ␛[91m␛[m␛[38;5;245m␛[m␛[91m␛[m␛[38;5;241m␛[m␛[38;5;245m␛[m␛[48;5;62m␛[91m✗␛[m␛[48;5;62m ␛[38;5;245m␛[m␛[48;5;62m␛[91m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;245m␛[m␛[48;5;62m␛[97;48;5;62mpatcher-4  apply patch                         ✗ failed · 1 tool · $0.01␛[m␛[m ␛[94m│␛[m
+␛[94m│␛[m ␛[94m❯␛[m ␛[91m␛[m␛[38;5;245m␛[m␛[91m␛[m␛[38;5;241m␛[m␛[38;5;245m␛[m␛[48;5;62m␛[91m✗␛[m␛[48;5;62m ␛[38;5;245m␛[m␛[48;5;62m␛[91m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;245m␛[m␛[48;5;62m␛[97;48;5;62mpatcher-4 · apply patch                        ✗ failed · 1 tool · $0.01␛[m␛[m ␛[94m│␛[m
 ␛[94m│␛[m     ␛[38;5;245mround limit (25) reached␛[m                                                 ␛[94m│␛[m
-␛[94m│␛[m ␛[94m[enter]␛[m␛[38;5;241m attach␛[m␛[38;5;241m · ␛[m␛[94m[r]␛[m␛[38;5;241m retry␛[m␛[38;5;241m · ␛[m␛[94m[x]␛[m␛[38;5;241m cancel␛[m␛[38;5;241m · ␛[m␛[94m[X]␛[m␛[38;5;241m kill␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back␛[m              ␛[94m│␛[m
+␛[94m│␛[m ␛[94m[enter]␛[m␛[38;5;241m attach␛[m␛[38;5;241m · ␛[m␛[94m[a]␛[m␛[38;5;241m answer without attaching␛[m␛[38;5;241m · ␛[m␛[94m[r]␛[m␛[38;5;241m retry␛[m␛[38;5;241m · ␛[m␛[94m[x]␛[m␛[38;5;241m cancel␛[m       ␛[94m│␛[m
+␛[94m│␛[m ␛[94m[X]␛[m␛[38;5;241m kill␛[m␛[38;5;241m · ␛[m␛[94m[K]␛[m␛[38;5;241m kill all␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the turn␛[m                             ␛[94m│␛[m
 ␛[94m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · the row that is not an agent · enter drafts a profile instead of attaching
 ␛[94m╭─ ␛[m␛[1;97mAgents ␛[m␛[38;5;241m───────────────────────────────────────────␛[m␛[94m ␛[91m1 needs you␛[m␛[38;5;241m · ␛[m␛[38;5;205m1 running␛[m ─╮␛[m
-␛[94m│␛[m   ␛[1;94m●␛[m orchestrator  ␛[38;5;245mthis session␛[m                   ␛[38;5;241mround 7 · streaming…␛[m  ␛[38;5;243m$0.12␛[m ␛[94m│␛[m
-␛[94m│␛[m   ␛[91m⚠␛[m runner-2  ␛[38;5;245mgo test ./...␛[m                    ␛[91m⚠ needs you␛[m␛[38;5;241m · ␛[m␛[38;5;245m3 tools · $0.01␛[m ␛[94m│␛[m
+␛[94m│␛[m   ␛[1;94m●␛[m orchestrator␛[38;5;245m · this session␛[m                  ␛[38;5;241mround 7 · streaming…␛[m  ␛[38;5;243m$0.12␛[m ␛[94m│␛[m
+␛[94m│␛[m   ␛[91m⚠␛[m runner-2␛[38;5;245m · go test ./...␛[m                   ␛[91m⚠ needs you␛[m␛[38;5;241m · ␛[m␛[38;5;245m3 tools · $0.01␛[m ␛[94m│␛[m
 ␛[94m│␛[m     ␛[38;5;245mwaiting approval: run go test ./internal/agent/...␛[m                       ␛[94m│␛[m
-␛[94m│␛[m   ␛[94m◇␛[m writer-1  ␛[38;5;245mdocs/loop.md␛[m                       ␛[94m▰▰␛[m␛[38;5;241m▱▱▱␛[m ␛[94m2/5␛[m␛[38;5;241m · ␛[m␛[38;5;245m6 tools · $0.02␛[m ␛[94m│␛[m
-␛[94m│␛[m   ␛[92m◇␛[m reader-3  ␛[38;5;245msurvey internal/ui␛[m                   ␛[92m✓ done␛[m␛[38;5;241m · ␛[m␛[38;5;245m12 tools · $0.04␛[m ␛[94m│␛[m
+␛[94m│␛[m   ␛[94m◇␛[m writer-1␛[38;5;245m · docs/loop.md␛[m                      ␛[94m▰▰␛[m␛[38;5;241m▱▱▱␛[m ␛[94m2/5␛[m␛[38;5;241m · ␛[m␛[38;5;245m6 tools · $0.02␛[m ␛[94m│␛[m
+␛[94m│␛[m   ␛[92m◇␛[m reader-3␛[38;5;245m · survey internal/ui␛[m                  ␛[92m✓ done␛[m␛[38;5;241m · ␛[m␛[38;5;245m12 tools · $0.04␛[m ␛[94m│␛[m
 ␛[94m│␛[m     ␛[38;5;245mthe rails and the frame are one component␛[m                                ␛[94m│␛[m
-␛[94m│␛[m   ␛[91m✗␛[m patcher-4  ␛[38;5;245mapply patch␛[m                         ␛[91m✗ failed␛[m␛[38;5;241m · ␛[m␛[38;5;245m1 tool · $0.01␛[m ␛[94m│␛[m
+␛[94m│␛[m   ␛[91m✗␛[m patcher-4␛[38;5;245m · apply patch␛[m                        ␛[91m✗ failed␛[m␛[38;5;241m · ␛[m␛[38;5;245m1 tool · $0.01␛[m ␛[94m│␛[m
 ␛[94m│␛[m     ␛[38;5;245mround limit (25) reached␛[m                                                 ␛[94m│␛[m
 ␛[94m│␛[m ␛[94m❯␛[m ␛[38;5;214m␛[m␛[38;5;245m␛[m␛[48;5;62m␛[38;5;214m⚙␛[m␛[48;5;62m ␛[38;5;245m␛[m␛[48;5;62m␛[97;48;5;62mdraft a new profile                                          /agents new␛[m␛[m ␛[94m│␛[m
-␛[94m│␛[m ␛[94m[enter]␛[m␛[38;5;241m draft a profile␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back␛[m                                         ␛[94m│␛[m
+␛[94m│␛[m ␛[94m[enter]␛[m␛[38;5;241m draft a profile␛[m␛[38;5;241m · ␛[m␛[94m[a]␛[m␛[38;5;241m answer without attaching␛[m␛[38;5;241m · ␛[m␛[94m[K]␛[m␛[38;5;241m kill all␛[m        ␛[94m│␛[m
+␛[94m│␛[m ␛[92m[esc]␛[m␛[38;5;241m back to the turn␛[m                                                       ␛[94m│␛[m
 ␛[94m╰──────────────────────────────────────────────────────────────────────────────╯␛[m

@@ -1,0 +1,65 @@
+# The agent manager at 110 columns, over three children in three states — one
+# working, one finished, one waiting on an answer
+# (docs/interface/surfaces.md#the-agent-manager).
+#
+# What the capture is for is the key row. Two of its offers are about the list
+# and not about the row the pointer is on: answering a blocked child in place
+# stands wherever the pointer is standing, and killing every child stands
+# while more than one is still running. So the manager is opened with the
+# pointer on the orchestrator — the row that can do none of it — and the
+# offers are read there before the pointer is moved anywhere.
+#
+# The rest of the row is read here too: a row joins the child's name to its
+# task with the separator rather than with a column that is not there, and esc
+# says what it leaves rather than saying `cancel`.
+setup printf 'package agent\n\nfunc loop() {\n    for round := 0; round < limit; round++ {\n        step()\n    }\n}\n' > loop.go
+snap 01-start "Some things worth doing first"
+keys "survey the round accounting" Enter
+# Spawning is gated, so a card stands between the sentence and each child.
+snap 02-spawn-card "writer agent"
+keys y
+sleep 1
+keys y
+sleep 1
+keys y
+sleep 3
+# Everything then asks to run a command at once. The session's own card is set
+# aside so the children's routed requests can be let through one at a time; an
+# agent parked at a card takes no reply from the scripted queue, which is what
+# makes the order the reader chooses the order the queue is consumed in.
+keys Escape
+sleep 2
+snap 03-blocked "needs you"
+# The first child let through runs its command and then asks the model again,
+# and the model keeps it waiting: that child is the one still working.
+keys C-Space
+sleep 2
+keys y
+sleep 5
+# The second child let through is answered at once, so that child is the one
+# that has finished.
+keys C-Space
+sleep 2
+keys y
+sleep 5
+# The third is never answered: that child is the one waiting on you. Whatever
+# the queue advanced to is set aside, which puts the keyboard back at the
+# draft — the manager is a takeover and does not open over a card.
+keys Escape
+sleep 3
+snap 04-three-states "needs you"
+# The manager, with the pointer where it opens: on the orchestrator, which can
+# neither be answered nor retried. Both list-wide offers are on the row
+# anyway, which is the whole of what this scene is for.
+keys M-a
+sleep 2
+snap 05-manager "kill all"
+# The pointer on the blocked child. The offers do not change, because they
+# were never the pointer's.
+keys j
+snap 06-blocked-row "answer without attaching"
+# And the way out leaves what it says it leaves: the turn, with the decision
+# that was standing over it still standing.
+keys Escape
+sleep 1
+snap 07-back "writer-2 ▸ Approve command"

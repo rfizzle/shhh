@@ -96,6 +96,10 @@ func (m *Model) openMemoryAsk(req *approvalRequest) {
 	if req.memoryDraft.Scope == memory.GlobalScope {
 		ns.Select.Focus = 1
 	}
+	// Esc is the third row said as a key, and it says so: nothing is written
+	// and the proposal is declined
+	// (docs/interface/principles.md#esc-is-always-the-safe-answer).
+	ns.Select.CancelLabel = "don't remember it"
 	ns.Select.MaxLines = m.maxConfirmPanelHeight() - 1
 	// The proposal is a decision like every other card that stops a turn, and
 	// it has no severity to colour its frame with (components.CardTone).

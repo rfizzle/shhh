@@ -426,6 +426,59 @@ func (m *Model) cancelSubagents() {
 	m.childAsks = nil
 }
 
+// killChildren ends the named children and drops whatever each was waiting on
+// an answer for. It is one function for [X] and [K] because a kill is a kill:
+// the manager's two keys differ in how many names they hand over and in
+// nothing else.
+func (m *Model) killChildren(names []string) {
+	if m.subagents == nil {
+		return
+	}
+	for _, name := range names {
+		if err := m.subagents.Kill(name); err != nil {
+			m.noteChild(name, err.Error())
+			continue
+		}
+		m.purgeChildAsks(name)
+	}
+}
+
+// armKillAll is [K] on the manager: the same inline confirm one child gets,
+// over every child that is still going. It names the count rather than the
+// children, because a prompt that listed nine names would be a prompt nobody
+// reads to the end, and it states what survives for the reason the single
+// kill's does — a kill that only names its casualties reads as bigger than it
+// is (docs/interface/surfaces.md#the-agent-manager).
+func (m Model) armKillAll() (tea.Model, tea.Cmd) {
+	names := m.liveChildNames()
+	if len(names) == 0 {
+		return m, nil
+	}
+	m.killConfirm = &components.Confirm{Prompt: "Kill all " + plural(len(names), "agent") +
+		"? Every turn stops and every isolated workspace is discarded; the transcripts stay and your own turn keeps going."}
+	m.killTargets = names
+	m.syncViewport()
+	return m, nil
+}
+
+// liveChildNames are the children a kill can still reach: the ones that have
+// not finished or broken on their own. The order is the supervisor's, which
+// is spawn order.
+func (m Model) liveChildNames() []string {
+	if m.subagents == nil {
+		return nil
+	}
+	var names []string
+	for _, st := range m.subagents.Snapshot() {
+		switch st.State {
+		case subagent.StateDone, subagent.StateFailed:
+		default:
+			names = append(names, st.Name)
+		}
+	}
+	return names
+}
+
 // maxAgentRows bounds how many progress rows the panel occupies.
 const maxAgentRows = 6
 

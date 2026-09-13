@@ -244,7 +244,7 @@ func TestSelectFilter_NoMatchIsARowNotAnEmptyPane(t *testing.T) {
 	view := ansi.Strip(s.View(70))
 	for _, want := range []string{
 		"0 of 24 match", `no match for "sonnet-5"`,
-		"closest is claude-sonnet-4.6", "[ctrl+u] clear the filter", "[esc] cancel",
+		"closest is claude-sonnet-4.6", "[ctrl+u] clear the filter", "[esc] take none",
 	} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("expected %q on the empty card:\n%s", want, view)

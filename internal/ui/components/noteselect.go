@@ -141,7 +141,7 @@ func (s *NoteSelect) View(width int) string {
 	case s.Select.Filterable:
 		hint = append(hint, keyOffer(keys.Select.Filter))
 	}
-	hint = append(hint, keyOffer(keys.Select.Cancel))
+	hint = append(hint, s.Select.cancelOffer())
 	// Handed over as segments and never pre-joined, the way the checkbox
 	// list's are: a row too wide for the terminal takes another row, and a
 	// joined one could only be cut in the middle of a clause — which on this

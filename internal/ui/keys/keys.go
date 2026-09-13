@@ -1055,20 +1055,26 @@ type AgentKeys struct {
 	Retry  Binding
 	Cancel Binding
 	Kill   Binding
-	Back   Binding
-	Detach Binding
+	// KillAll ends every child at once, and it is the capital of Kill's own
+	// letter for the reason Kill is a capital at all: an act nobody can undo
+	// may not sit under a keystroke a reader presses without reading the row
+	// (keymap.go's destructive list).
+	KillAll Binding
+	Back    Binding
+	Detach  Binding
 }
 
 var Agent = AgentKeys{
-	Move:   bind("j/k", "move", "k", "j", "up", "down"),
-	Attach: bind("enter", "attach", "enter"),
-	Go:     bind("g", "go to the agent that asked", "g"),
-	Answer: bind("a", "answer", "a"),
-	Retry:  bind("r", "retry", "r"),
-	Cancel: bind("x", "cancel", "x"),
-	Kill:   bind("X", "kill", "X"),
-	Back:   bind("esc", "back", "esc", "ctrl+c"),
-	Detach: bind("esc", "back to your own session", "esc"),
+	Move:    bind("j/k", "move", "k", "j", "up", "down"),
+	Attach:  bind("enter", "attach", "enter"),
+	Go:      bind("g", "go to the agent that asked", "g"),
+	Answer:  bind("a", "answer", "a"),
+	Retry:   bind("r", "retry", "r"),
+	Cancel:  bind("x", "cancel", "x"),
+	Kill:    bind("X", "kill", "X"),
+	KillAll: bind("K", "kill all", "K"),
+	Back:    bind("esc", "back", "esc", "ctrl+c"),
+	Detach:  bind("esc", "back to your own session", "esc"),
 }
 
 // ProfileKeys are the profile drafter's. The surface is a flow rather than a

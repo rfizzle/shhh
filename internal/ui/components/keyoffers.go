@@ -75,6 +75,27 @@ func offerRun(offers []KeyOffer) []string {
 	return out
 }
 
+// cancelOffer is esc on a selector, worded. A surface with better words for
+// what it leaves supplies them; the ones that have none get the family's own,
+// which is the answer that changes nothing said as the counterpart of what
+// enter buys. Neither is the register's bare `cancel`: what the safe answer
+// leaves is exactly what the reader cannot work out from the word
+// (docs/interface/principles.md#esc-is-always-the-safe-answer).
+func cancelOffer(surface, family string) KeyOffer {
+	if surface == "" {
+		surface = family
+	}
+	return keyOfferAs(keys.Select.Cancel, surface)
+}
+
+// The two family wordings. A single-select's enter takes a row and a
+// multi-select's applies the boxes, so what esc leaves is none of the one and
+// none of the other.
+const (
+	takeNone  = "take none"
+	applyNone = "apply none"
+)
+
 // The two phrases a take-over screen states its way out in. Which of them a
 // screen uses is a fact about where the reader was when they opened it and
 // nothing else, and there is no third: leaving a screen that changes nothing

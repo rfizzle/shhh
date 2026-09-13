@@ -185,7 +185,7 @@ func (m *Model) attach(name string) {
 	m.attachedTo = name
 	m.agentList = nil
 	m.killConfirm = nil
-	m.killTarget = ""
+	m.killTargets = nil
 	m.answerAgent = ""
 	// The prompt gutter shows the child's name while attached, so the
 	// textarea re-fits around it.
@@ -494,15 +494,11 @@ func (m Model) updateAgentList(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		if !done {
 			return m, nil
 		}
-		target := m.killTarget
+		targets := m.killTargets
 		m.killConfirm = nil
-		m.killTarget = ""
+		m.killTargets = nil
 		if yes {
-			if err := m.subagents.Kill(target); err != nil {
-				m.noteChild(target, err.Error())
-			} else {
-				m.purgeChildAsks(target)
-			}
+			m.killChildren(targets)
 		}
 		m.syncViewport()
 		return m, nil
@@ -528,6 +524,11 @@ func (m Model) updateAgentList(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		m.answerAgent = ""
 		m.syncViewport()
 		return m, nil
+	}
+	// The one action that is about the list and not about a row, so it is
+	// answered before the index is read: it carries none.
+	if res.Action == components.AgentKillAll {
+		return m.armKillAll()
 	}
 	if res.Index < 0 || res.Index >= len(names) {
 		return m, nil
@@ -589,7 +590,7 @@ func (m Model) updateAgentList(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		// that only names its casualties reads as bigger than it is.
 		m.killConfirm = &components.Confirm{Prompt: "Kill " + name +
 			"? Its turn stops and its isolated workspace is discarded; its transcript stays and the other agents keep running."}
-		m.killTarget = name
+		m.killTargets = []string{name}
 		m.syncViewport()
 		return m, nil
 	}

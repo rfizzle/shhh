@@ -17,7 +17,7 @@
 │ ❯ 3. cap rounds instead of erroring · ▎2 files +18 −12                                                                 12m │
 │   2. find where rounds are counted · reads only, nothing changed                                                       21m │
 │   1. ⊘ clear the tmp dir · code can't be restored past this — this conversation came back without its records          30m │
-│ [↑↓] move · [enter] select · [esc] cancel                                                                                  │
+│ [↑↓] move · [enter] select · [esc] take none                                                                               │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 · typed into · the run the query named is bold
@@ -26,7 +26,7 @@
 │ ▸ rounds                                                                                                      2 of 3 match │
 │ ❯ 3. cap rounds instead of erroring · ▎2 files +18 −12                                                                 12m │
 │   2. find where rounds are counted · reads only, nothing changed                                                       21m │
-│ [↑↓] move · [enter] select · [ctrl+u] clear · [esc] cancel                                                                 │
+│ [↑↓] move · [enter] select · [ctrl+u] clear · [esc] take none                                                              │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 ── ansi ────────────────────────────────────────────────────
@@ -37,7 +37,7 @@
 ␛[38;5;241m│␛[m ␛[94m❯␛[m ␛[1;97;48;5;62m3. cap rounds instead of erroring · ▎2 files +18 −12                                                                 12m␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m2. ␛[m␛[38;5;252mfind where rounds are counted␛[m␛[38;5;241m · ␛[m␛[38;5;241mreads only, nothing changed␛[m                                                       ␛[38;5;252m21m␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;245m1. ␛[m␛[38;5;245m⊘ clear the tmp dir␛[m␛[38;5;245m · ␛[m␛[38;5;245mcode can't be restored past this — this conversation came back without its records␛[m          ␛[38;5;245m30m␛[m ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[94m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m select␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m cancel␛[m                                                                                  ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[94m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m select␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m take none␛[m                                                                               ␛[38;5;241m│␛[m
 ␛[38;5;241m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · typed into · the run the query named is bold
@@ -46,5 +46,5 @@
 ␛[38;5;241m│␛[m ␛[94m▸ ␛[m␛[97mrounds ␛[m                                                                                                     ␛[38;5;241m2 of 3 match␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[94m❯␛[m ␛[1;97;48;5;62m3. cap rounds instead of erroring · ▎2 files +18 −12                                                                 12m␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m2. ␛[m␛[38;5;252mfind where ␛[m␛[1;38;5;252mrounds␛[m␛[38;5;252m are counted␛[m␛[38;5;241m · ␛[m␛[38;5;241mreads only, nothing changed␛[m                                                       ␛[38;5;252m21m␛[m ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[94m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m select␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+u]␛[m␛[38;5;241m clear␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m cancel␛[m                                                                 ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[94m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m select␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+u]␛[m␛[38;5;241m clear␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m take none␛[m                                                              ␛[38;5;241m│␛[m
 ␛[38;5;241m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m

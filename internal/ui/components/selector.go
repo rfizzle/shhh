@@ -211,6 +211,14 @@ type Select struct {
 	// that opens as a search that is ctrl+u away, and the key row says so.
 	AltKey   string
 	AltLabel string
+	// CancelLabel is what esc leaves, in the surface's own words — `keep
+	// gpt-5.2` on the model picker, `back to the draft — the question waits`
+	// on a question. Empty takes the family's, which says none of the rows
+	// was taken (cancelOffer); neither is the register's bare `cancel`,
+	// because the one thing a reader cannot work out from that word is what
+	// they are going back to
+	// (docs/interface/principles.md#esc-is-always-the-safe-answer).
+	CancelLabel string
 	// EnterLabel is what enter buys, for a card where "select" is not the
 	// whole answer because AltKey buys something else. Empty is "select".
 	EnterLabel string
@@ -563,6 +571,10 @@ func (s *Select) proseRows(width, budget int) []string {
 	return append(rows, ListOverflowRow("↓", len(s.Body)-keep, "", inner))
 }
 
+// cancelOffer is esc as this card offers it: the host's words where it has
+// them, and the single-select family's where it does not.
+func (s *Select) cancelOffer() KeyOffer { return cancelOffer(s.CancelLabel, takeNone) }
+
 // hintSegments is the card's key row, and the order it gives things up in.
 // The filter changes it twice: an open query line offers the key that clears
 // it, and a card that matched nothing offers only that one and esc, because
@@ -596,7 +608,7 @@ func (s *Select) hintSegments(width int) []KeyOffer {
 	}
 	if s.Filtering {
 		if s.selectable() == 0 {
-			return []KeyOffer{keyOffer(keys.Select.ClearQ), keyOffer(keys.Select.Cancel)}
+			return []KeyOffer{keyOffer(keys.Select.ClearQ), s.cancelOffer()}
 		}
 		// ctrl+u is one key with two readings, and the row names the one it
 		// has: with something typed it clears; with nothing typed it closes
@@ -607,12 +619,12 @@ func (s *Select) hintSegments(width int) []KeyOffer {
 		if s.Query == "" {
 			if !s.hasRowKeys() {
 				return []KeyOffer{keyOffer(keys.Select.Move), keyOffer(keys.Select.Take),
-					keyOffer(keys.Select.Cancel)}
+					s.cancelOffer()}
 			}
 			back = keyOfferAs(keys.Select.ClearQ, "row keys")
 		}
 		return []KeyOffer{keyOffer(keys.Select.Move), keyOffer(keys.Select.Take),
-			back, keyOffer(keys.Select.Cancel)}
+			back, s.cancelOffer()}
 	}
 	move := keyOffer(keys.Select.MoveJK)
 	// A card whose rows are fields offers the key that changes one. It is an
@@ -650,9 +662,9 @@ func (s *Select) hintSegments(width int) []KeyOffer {
 		actions = append(actions, keyOffer(b))
 	}
 	rungs := [][]KeyOffer{
-		rung([]KeyOffer{move, change, take, alt}, actions, []KeyOffer{jump, filter, keyOffer(keys.Select.Cancel)}),
-		rung([]KeyOffer{move, change, take, alt}, actions, []KeyOffer{filter, keyOffer(keys.Select.Cancel)}),
-		rung([]KeyOffer{keyOffer(keys.Select.Move), change, take, alt}, actions, []KeyOffer{filter, keyOffer(keys.Select.Cancel)}),
+		rung([]KeyOffer{move, change, take, alt}, actions, []KeyOffer{jump, filter, s.cancelOffer()}),
+		rung([]KeyOffer{move, change, take, alt}, actions, []KeyOffer{filter, s.cancelOffer()}),
+		rung([]KeyOffer{keyOffer(keys.Select.Move), change, take, alt}, actions, []KeyOffer{filter, s.cancelOffer()}),
 	}
 	for _, rung := range rungs {
 		segs := presentSegments(rung)

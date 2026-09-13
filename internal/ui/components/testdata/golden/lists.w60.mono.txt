@@ -11,16 +11,16 @@
 
 ── layout ──────────────────────────────────────────────────
 · the head · the price rides the row, the unusable row says why
-╭─ Switch model ──────────────── 24 available · 7 showing ─╮
+╭─ Switch model ──────────────── 24 available · 6 showing ─╮
 │ ❯  1. gpt-5.2            current default     $1.25 / $10 │
 │    2. gpt-5.2-mini                            $0.25 / $2 │
 │    3. gpt-5.1                                            │
 │    4. gpt-5.1-mini                                       │
 │    5. o4-mini                                            │
 │    6. claude-opus-4.6    deepest reasoning     $15 / $75 │
-│    7. claude-sonnet-4.6  better diffs · 200k …  $3 / $15 │
-│ ↓ 17 more                                                │
-│ [↑↓] move · [enter] select · [/] filter · [esc] cancel   │
+│ ↓ 18 more                                                │
+│ [↑↓] move · [enter] select · [/] filter                  │
+│ [esc] take none                                          │
 ╰──────────────────────────────────────────────────────────╯
 
 · the filter just opened · the row names what the key was for
@@ -33,46 +33,46 @@
 │    5. o4-mini                                            │
 │ ↓ 19 more                                                │
 │ [↑↓] move · [enter] select · [ctrl+u] row keys           │
-│ [esc] cancel                                             │
+│ [esc] take none                                          │
 ╰──────────────────────────────────────────────────────────╯
 
 · mid-list from above · the option sits at the foot of the window
-╭─ Switch model ──────────────── 24 available · 6 showing ─╮
-│ ↑ 7 more                                                 │
-│    8. claude-sonnet-4.5                         $3 / $15 │
+╭─ Switch model ──────────────── 24 available · 5 showing ─╮
+│ ↑ 8 more                                                 │
 │    9. claude-haiku-4.5   fastest                 $1 / $5 │
 │   10. gemini-3-pro       1M ctx                 $2 / $12 │
 │   11. gemini-3-flash                       $0.30 / $2.50 │
 │   12. grok-4.1                                           │
 │ ❯ 13. ⊘ deepseek-r2      no tool use     not usable here │
 │ ↓ 11 more                                                │
-│ [↑↓] move · [enter] select · [/] filter · [esc] cancel   │
+│ [↑↓] move · [enter] select · [/] filter                  │
+│ [esc] take none                                          │
 ╰──────────────────────────────────────────────────────────╯
 
 · the same option from below · it sits at the head instead
-╭─ Switch model ──────────────── 24 available · 6 showing ─╮
+╭─ Switch model ──────────────── 24 available · 5 showing ─╮
 │ ↑ 12 more                                                │
 │ ❯ 13. ⊘ deepseek-r2      no tool use     not usable here │
 │   14. deepseek-v4                                        │
 │   15. qwen3-coder-72b    local via ollama                │
 │   16. llama-4-maverick                                   │
 │   17. ⊘ llama-3.3-70b    no tool use     not usable here │
-│   18. mistral-large-3                                    │
-│ ↓ 6 more                                                 │
-│ [↑↓] move · [enter] select · [/] filter · [esc] cancel   │
+│ ↓ 7 more                                                 │
+│ [↑↓] move · [enter] select · [/] filter                  │
+│ [esc] take none                                          │
 ╰──────────────────────────────────────────────────────────╯
 
 · the tail · nothing is hidden below it
-╭─ Switch model ──────────────── 24 available · 7 showing ─╮
-│ ↑ 17 more                                                │
-│   18. mistral-large-3                                    │
+╭─ Switch model ──────────────── 24 available · 6 showing ─╮
+│ ↑ 18 more                                                │
 │   19. phi-5-mini                                         │
 │   20. command-r-plus                                     │
 │   21. nova-pro-2                                         │
 │   22. jamba-2                                            │
 │   23. yi-2-34b                                           │
 │ ❯ 24. solar-pro-3                                        │
-│ [↑↓] move · [enter] select · [/] filter · [esc] cancel   │
+│ [↑↓] move · [enter] select · [/] filter                  │
+│ [esc] take none                                          │
 ╰──────────────────────────────────────────────────────────╯
 
 · filtered · the run is bold, the row states both counts
@@ -85,7 +85,7 @@
 │   5. gemini-3-flash                        $0.30 / $2.50 │
 │   6. phi-5-mini                                          │
 │ [↑↓] move · [enter] select · [ctrl+u] clear              │
-│ [esc] cancel                                             │
+│ [esc] take none                                          │
 ╰──────────────────────────────────────────────────────────╯
 
 · no match · a row, not an empty pane
@@ -93,21 +93,21 @@
 │ ▸ sonnet-5█                                0 of 24 match │
 │   no match for "sonnet-5"                                │
 │   closest is claude-sonnet-4.6                           │
-│ [ctrl+u] clear the filter · [esc] cancel                 │
+│ [ctrl+u] clear the filter · [esc] take none              │
 ╰──────────────────────────────────────────────────────────╯
 
 ── ansi ────────────────────────────────────────────────────
 · the head · the price rides the row, the unusable row says why
-␛[38;5;244m╭─ ␛[m␛[1;38;5;254mSwitch model ␛[m␛[38;5;244m──────────────── 24 available · 7 showing ─╮␛[m
+␛[38;5;244m╭─ ␛[m␛[1;38;5;254mSwitch model ␛[m␛[38;5;244m──────────────── 24 available · 6 showing ─╮␛[m
 ␛[38;5;244m│␛[m ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m 1. gpt-5.2            current default     $1.25 / $10␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m 2. ␛[m␛[38;5;254mgpt-5.2-mini␛[m                            ␛[38;5;254m$0.25 / $2␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m 3. ␛[m␛[38;5;254mgpt-5.1␛[m                                            ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m 4. ␛[m␛[38;5;254mgpt-5.1-mini␛[m                                       ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m 5. ␛[m␛[38;5;254mo4-mini␛[m                                            ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m 6. ␛[m␛[38;5;254mclaude-opus-4.6␛[m    ␛[38;5;244mdeepest reasoning␛[m     ␛[38;5;254m$15 / $75␛[m ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m   ␛[38;5;244m 7. ␛[m␛[38;5;254mclaude-sonnet-4.6␛[m  ␛[38;5;244mbetter diffs · 200k …␛[m  ␛[38;5;254m$3 / $15␛[m ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[38;5;244m↓ 17 more␛[m                                                ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m select␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m cancel␛[m   ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;244m↓ 18 more␛[m                                                ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m select␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m                  ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m take none␛[m                                          ␛[38;5;244m│␛[m
 ␛[38;5;244m╰──────────────────────────────────────────────────────────╯␛[m
 
 · the filter just opened · the row names what the key was for
@@ -120,46 +120,46 @@
 ␛[38;5;244m│␛[m   ␛[38;5;244m 5. ␛[m␛[38;5;254mo4-mini␛[m                                            ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;244m↓ 19 more␛[m                                                ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m select␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+u]␛[m␛[38;5;244m row keys␛[m           ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m cancel␛[m                                             ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m take none␛[m                                          ␛[38;5;244m│␛[m
 ␛[38;5;244m╰──────────────────────────────────────────────────────────╯␛[m
 
 · mid-list from above · the option sits at the foot of the window
-␛[38;5;244m╭─ ␛[m␛[1;38;5;254mSwitch model ␛[m␛[38;5;244m──────────────── 24 available · 6 showing ─╮␛[m
-␛[38;5;244m│␛[m ␛[38;5;244m↑ 7 more␛[m                                                 ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m   ␛[38;5;244m 8. ␛[m␛[38;5;254mclaude-sonnet-4.5␛[m                         ␛[38;5;254m$3 / $15␛[m ␛[38;5;244m│␛[m
+␛[38;5;244m╭─ ␛[m␛[1;38;5;254mSwitch model ␛[m␛[38;5;244m──────────────── 24 available · 5 showing ─╮␛[m
+␛[38;5;244m│␛[m ␛[38;5;244m↑ 8 more␛[m                                                 ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m 9. ␛[m␛[38;5;254mclaude-haiku-4.5␛[m   ␛[38;5;244mfastest␛[m                 ␛[38;5;254m$1 / $5␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m10. ␛[m␛[38;5;254mgemini-3-pro␛[m       ␛[38;5;244m1M ctx␛[m                 ␛[38;5;254m$2 / $12␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m11. ␛[m␛[38;5;254mgemini-3-flash␛[m                       ␛[38;5;254m$0.30 / $2.50␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m12. ␛[m␛[38;5;254mgrok-4.1␛[m                                           ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m13. ⊘ deepseek-r2      no tool use     not usable here␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;244m↓ 11 more␛[m                                                ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m select␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m cancel␛[m   ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m select␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m                  ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m take none␛[m                                          ␛[38;5;244m│␛[m
 ␛[38;5;244m╰──────────────────────────────────────────────────────────╯␛[m
 
 · the same option from below · it sits at the head instead
-␛[38;5;244m╭─ ␛[m␛[1;38;5;254mSwitch model ␛[m␛[38;5;244m──────────────── 24 available · 6 showing ─╮␛[m
+␛[38;5;244m╭─ ␛[m␛[1;38;5;254mSwitch model ␛[m␛[38;5;244m──────────────── 24 available · 5 showing ─╮␛[m
 ␛[38;5;244m│␛[m ␛[38;5;244m↑ 12 more␛[m                                                ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m13. ⊘ deepseek-r2      no tool use     not usable here␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m14. ␛[m␛[38;5;254mdeepseek-v4␛[m                                        ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m15. ␛[m␛[38;5;254mqwen3-coder-72b␛[m    ␛[38;5;244mlocal via ollama␛[m                ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m16. ␛[m␛[38;5;254mllama-4-maverick␛[m                                   ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m17. ␛[m␛[38;5;244m⊘ llama-3.3-70b␛[m    ␛[38;5;244mno tool use␛[m     ␛[38;5;244mnot usable here␛[m ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m   ␛[38;5;244m18. ␛[m␛[38;5;254mmistral-large-3␛[m                                    ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[38;5;244m↓ 6 more␛[m                                                 ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m select␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m cancel␛[m   ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;244m↓ 7 more␛[m                                                 ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m select␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m                  ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m take none␛[m                                          ␛[38;5;244m│␛[m
 ␛[38;5;244m╰──────────────────────────────────────────────────────────╯␛[m
 
 · the tail · nothing is hidden below it
-␛[38;5;244m╭─ ␛[m␛[1;38;5;254mSwitch model ␛[m␛[38;5;244m──────────────── 24 available · 7 showing ─╮␛[m
-␛[38;5;244m│␛[m ␛[38;5;244m↑ 17 more␛[m                                                ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m   ␛[38;5;244m18. ␛[m␛[38;5;254mmistral-large-3␛[m                                    ␛[38;5;244m│␛[m
+␛[38;5;244m╭─ ␛[m␛[1;38;5;254mSwitch model ␛[m␛[38;5;244m──────────────── 24 available · 6 showing ─╮␛[m
+␛[38;5;244m│␛[m ␛[38;5;244m↑ 18 more␛[m                                                ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m19. ␛[m␛[38;5;254mphi-5-mini␛[m                                         ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m20. ␛[m␛[38;5;254mcommand-r-plus␛[m                                     ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m21. ␛[m␛[38;5;254mnova-pro-2␛[m                                         ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m22. ␛[m␛[38;5;254mjamba-2␛[m                                            ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m23. ␛[m␛[38;5;254myi-2-34b␛[m                                           ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m24. solar-pro-3                                       ␛[m ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m select␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m cancel␛[m   ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m select␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m                  ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m take none␛[m                                          ␛[38;5;244m│␛[m
 ␛[38;5;244m╰──────────────────────────────────────────────────────────╯␛[m
 
 · filtered · the run is bold, the row states both counts
@@ -172,7 +172,7 @@
 ␛[38;5;244m│␛[m   ␛[38;5;244m5. ␛[m␛[38;5;254mge␛[m␛[1;38;5;254mmini␛[m␛[38;5;254m-3-flash␛[m                        ␛[38;5;254m$0.30 / $2.50␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m6. ␛[m␛[38;5;254mphi-5-␛[m␛[1;38;5;254mmini␛[m                                          ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m select␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+u]␛[m␛[38;5;244m clear␛[m              ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m cancel␛[m                                             ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m take none␛[m                                          ␛[38;5;244m│␛[m
 ␛[38;5;244m╰──────────────────────────────────────────────────────────╯␛[m
 
 · no match · a row, not an empty pane
@@ -180,5 +180,5 @@
 ␛[38;5;244m│␛[m ␛[38;5;254m▸ ␛[m␛[38;5;254msonnet-5█␛[m                                ␛[38;5;244m0 of 24 match␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;244m  no match for "sonnet-5"␛[m                                ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;244m  closest is claude-sonnet-4.6␛[m                           ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[38;5;254m[ctrl+u]␛[m␛[38;5;244m clear the filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m cancel␛[m                 ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m[ctrl+u]␛[m␛[38;5;244m clear the filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m take none␛[m              ␛[38;5;244m│␛[m
 ␛[38;5;244m╰──────────────────────────────────────────────────────────╯␛[m

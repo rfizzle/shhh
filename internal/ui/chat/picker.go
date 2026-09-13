@@ -389,7 +389,11 @@ func (m Model) openModelPick() (tea.Model, tea.Cmd) {
 	if m.writeConfig == nil {
 		alt = pickerAlt{}
 	}
-	return m.openPickerWith("Switch model", opts, focus, alt, true, func(m *Model, idx int, makeDefault bool) (string, tea.Cmd) {
+	// What esc leaves is the model the session is already on, which is the
+	// one thing the word `cancel` cannot say
+	// (docs/interface/principles.md#esc-is-always-the-safe-answer).
+	keep := m.modelName
+	updated, cmd := m.openPickerWith("Switch model", opts, focus, alt, true, func(m *Model, idx int, makeDefault bool) (string, tea.Cmd) {
 		name := choices[idx]
 		switched := name != m.modelName
 		if switched {
@@ -413,6 +417,9 @@ func (m Model) openModelPick() (tea.Model, tea.Cmd) {
 		}
 		return fmt.Sprintf("Switched to %s. %s", name, saved), nil
 	})
+	next := updated.(Model)
+	next.picker.CancelLabel = "keep " + keep
+	return next, cmd
 }
 
 // openModePick opens the interactive /permissions picker over the session's

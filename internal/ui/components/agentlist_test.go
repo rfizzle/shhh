@@ -63,32 +63,59 @@ func TestAgentListStatesWhatARowIsWaitingOnAndDiedOf(t *testing.T) {
 	}
 }
 
-// TestAgentListOffersOnlyWhatTheRowCanDo: a key hint is a promise, so [a] and
-// [r] appear on the rows that can act on them and nowhere else.
-func TestAgentListOffersOnlyWhatTheRowCanDo(t *testing.T) {
-	rows := managerRows()
-	cases := []struct {
-		focus int
-		want  []string
-		gone  []string
-	}{
-		{focus: 0, gone: []string{"[a] answer", "[r] retry"}},
-		{focus: 1, want: []string{"[a] answer"}, gone: []string{"[r] retry"}},
-		{focus: 2, gone: []string{"[a] answer", "[r] retry"}},
-		{focus: 3, want: []string{"[r] retry"}, gone: []string{"[a] answer"}},
-	}
-	for _, c := range cases {
-		view := ansi.Strip((&AgentList{Rows: rows, Focus: c.focus}).View(96))
-		for _, want := range c.want {
+// TestAgentListOffersWhatTheListCanDo: answering in place and killing every
+// child are offers about the list, so they stand wherever the pointer is
+// standing — an offer a reader has to go hunting for with the pointer is
+// indistinguishable from an offer that is not there. Retry is the row's, and
+// stays with it.
+func TestAgentListOffersWhatTheListCanDo(t *testing.T) {
+	rows := append(managerRows(), AgentRow{State: AgentOffer, Name: "draft a new profile"})
+	for focus := range rows {
+		view := ansi.Strip((&AgentList{Rows: rows, Focus: focus}).View(96))
+		for _, want := range []string{"[a] answer without attaching", "[K] kill all", "[esc] back to the turn"} {
 			if !strings.Contains(view, want) {
-				t.Fatalf("focus %d missing %q:\n%s", c.focus, want, view)
+				t.Fatalf("focus %d missing %q:\n%s", focus, want, view)
 			}
 		}
-		for _, gone := range c.gone {
-			if strings.Contains(view, gone) {
-				t.Fatalf("focus %d must not offer %q:\n%s", c.focus, gone, view)
-			}
+		if got := strings.Contains(view, "[x] cancel"); got != (focus != 4) {
+			t.Fatalf("focus %d offers cancel=%v, want %v:\n%s", focus, got, focus != 4, view)
 		}
+		if got := strings.Contains(view, "[r] retry"); got != (focus == 3) {
+			t.Fatalf("focus %d offers retry=%v, want %v:\n%s", focus, got, focus == 3, view)
+		}
+	}
+}
+
+// The two list-wide offers are still offers, so neither is drawn where it
+// would do nothing: nothing blocked, no answer to give; one child left, no
+// second one for kill-all to reach.
+func TestAgentListDropsTheOffersTheListCannotMake(t *testing.T) {
+	p := func(v AgentProgress) *AgentProgress { return &v }
+	rows := []AgentRow{
+		{State: AgentCurrent, Name: "orchestrator", Status: "round 7"},
+		{State: AgentRunning, Name: "writer-1", Task: "docs/loop.md",
+			Progress: p(AgentProgress{State: FanoutRunning, Step: 2, Steps: 5})},
+		{State: AgentDone, Name: "reader-3", Task: "survey",
+			Progress: p(AgentProgress{State: FanoutDone})},
+	}
+	view := ansi.Strip((&AgentList{Rows: rows, Focus: 1}).View(96))
+	for _, gone := range []string{"[a] answer", "[K] kill all"} {
+		if strings.Contains(view, gone) {
+			t.Fatalf("one running child and nothing blocked must not offer %q:\n%s", gone, view)
+		}
+	}
+	if _, res := (&AgentList{Rows: rows, Focus: 1}).Update(agentKey("K")); res.Action != AgentNone {
+		t.Fatalf("[K] with one live child = %#v, want nothing", res)
+	}
+}
+
+// A manager row joins the child's name to its task with the separator every
+// row in the product joins two facts with, which is what the lane above it in
+// the transcript joins the same two with.
+func TestAgentRowJoinsNameAndTaskWithTheSeparator(t *testing.T) {
+	view := ansi.Strip((&AgentList{Rows: managerRows()}).View(96))
+	if !strings.Contains(view, "writer-1 · docs/loop.md") {
+		t.Fatalf("the row should read `writer-1 · docs/loop.md`:\n%s", view)
 	}
 }
 
@@ -116,13 +143,25 @@ func TestAgentListAnswerAndRetryKeys(t *testing.T) {
 
 func TestAgentListIgnoresKeysARowDoesNotOffer(t *testing.T) {
 	rows := managerRows()
-	// [a] on the running child and [r] on the blocked one do nothing rather
-	// than reporting a failure the row already predicted.
-	if _, result := (&AgentList{Rows: rows, Focus: 2}).Update(agentKey("a")); result.Action != AgentNone {
-		t.Fatalf("[a] on a row that cannot be answered = %#v, want nothing", result)
+	// [a] away from the blocked row answers the blocked row: the key is the
+	// list's, and blocked children sort to the top, so the one it reaches is
+	// the one the manager was opened for.
+	if _, result := (&AgentList{Rows: rows, Focus: 2}).Update(agentKey("a")); result.Action != AgentAnswer || result.Index != 1 {
+		t.Fatalf("[a] from the running row = %#v, want AgentAnswer on row 1", result)
 	}
 	if _, result := (&AgentList{Rows: rows, Focus: 1}).Update(agentKey("r")); result.Action != AgentNone {
 		t.Fatalf("[r] on a row that cannot be retried = %#v, want nothing", result)
+	}
+}
+
+// [K] is about the list, so it carries no row: a host reading an index off it
+// would kill whichever child the pointer happened to rest on as well as all
+// of them.
+func TestAgentListKillAllCarriesNoRow(t *testing.T) {
+	l := &AgentList{Rows: managerRows(), Focus: 2}
+	done, result := l.Update(agentKey("K"))
+	if done || result.Action != AgentKillAll || result.Index != -1 {
+		t.Fatalf("[K] = %#v (done=%v), want AgentKillAll with no index and the list open", result, done)
 	}
 }
 
