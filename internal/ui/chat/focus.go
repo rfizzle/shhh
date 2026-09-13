@@ -33,7 +33,11 @@ func expandable(e entry) bool {
 		// like any other — and the one that opens with the fold already open,
 		// because a reader who has just lost five turns is owed what replaced
 		// them without asking (context.go).
-		(e.kind == entryCompactSummary && e.compact != nil && e.compact.floor == "")
+		(e.kind == entryCompactSummary && e.compact != nil && e.compact.floor == "") ||
+		// A public status is bounded where an answer is not, so it is the one
+		// assistant message with a body of its own: what the bound held back
+		// is what [enter] gives back (progress.go).
+		e.checkpoint
 }
 
 // selectable reports whether focus mode can put its cursor on an entry. It is

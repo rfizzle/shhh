@@ -1,18 +1,32 @@
-# Twelve silent reads cross the default public-progress threshold. The next
-# response is ordinary assistant status and another read, so the transcript
-# makes it the title of the following activity group.
-+tool:read_file:{"path":"one.go"}
-+tool:read_file:{"path":"two.go"}
-+tool:read_file:{"path":"three.go"}
-+tool:read_file:{"path":"four.go"}
-+tool:read_file:{"path":"five.go"}
-+tool:read_file:{"path":"six.go"}
-+tool:read_file:{"path":"seven.go"}
-+tool:read_file:{"path":"eight.go"}
-+tool:read_file:{"path":"nine.go"}
-+tool:read_file:{"path":"ten.go"}
-+tool:read_file:{"path":"eleven.go"}
-+tool:read_file:{"path":"twelve.go"}
-The evidence points to the round boundary. Next I will inspect the caller that resumes the loop.
+# Twelve silent reads cross the default public-progress threshold, and the
+# reply after them is the status the session asked for, written to the
+# template the request states: objective, evidence, next action. It is longer
+# than a step title, so the transcript draws it as the note it is rather than
+# as the header of the calls under it. The command after it is what the note
+# has to stay under while it runs.
+#
+# The first line of a reply may not begin with +: a leading + continues the
+# reply above it, and with nothing above it the provider has no reply to
+# continue and streams the line as prose (fakeprovider.py).
+#
+# The turn is not the only thing asking this endpoint — the session's own
+# reading of the run asks it too, and takes whichever reply is next. So the
+# scene says everything it needs to say in the first three replies, and the
+# last one is written to read correctly however many times it is handed out,
+# because it is the one that repeats once the file is used up.
+tool:read_file:{"path":"round01.go"}
++tool:read_file:{"path":"round02.go"}
++tool:read_file:{"path":"round03.go"}
++tool:read_file:{"path":"round04.go"}
++tool:read_file:{"path":"round05.go"}
++tool:read_file:{"path":"round06.go"}
++tool:read_file:{"path":"round07.go"}
++tool:read_file:{"path":"round08.go"}
++tool:read_file:{"path":"round09.go"}
++tool:read_file:{"path":"round10.go"}
++tool:read_file:{"path":"round11.go"}
++tool:read_file:{"path":"round12.go"}
+The objective is where the round limit is counted and who is allowed to raise it. The evidence is that the counter moves in the agent while the ceiling is read by the session, so a raise granted for one turn never reaches the agent at all. Next I will read the pause row and the offer beside it.
 +tool:read_file:{"path":"stream.go"}
-The checkpoint is now visible.
+tool:execute_command:{"command":"for f in loop.go round.go turn.go stream.go; do echo \"ok  internal/agent/$f  0.412s\"; sleep 1; done"}
+The suite is green and the run is quiet again.

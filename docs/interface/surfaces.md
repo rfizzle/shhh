@@ -198,8 +198,9 @@ hide the fact that it happened.
 Where nothing was declared, the prose that preceded a batch of calls becomes
 the title. Where there is no structure to find, the transcript is a flat list
 and no empty grouping chrome is drawn. A public progress update is ordinary
-assistant prose, so it titles the following group while the rail continues to
-state only the immediate phase.
+assistant prose, so one short enough to be a title titles the following group
+while the rail continues to state only the immediate phase; one too long to be
+a title is drawn as [the checkpoint it is](#the-progress-checkpoint).
 
 The counted row a run of read-only calls collapses into is not the step's,
 though the step is where it is most often seen. It is a fact about a run of
@@ -358,6 +359,38 @@ freed, and what is still in the window that no summary can stand in for — a
 plan, a changeset, the turns it is keeping. That row is a break, because the
 act was asked to recover a window and did not, and it carries no fold, because
 there is nothing behind it.
+
+### The progress checkpoint
+
+A turn that has gone a long way on tool calls alone is asked, at a round
+boundary, for a short public status: the objective it is working to, the
+evidence it has, and the next action. The request is the session's, not the
+reader's, and that is the whole of what the rung says. The answer to a
+question somebody typed is the brightest prose in the pane after the question
+itself; a checkpoint is the session reporting on work still in flight, so it
+is drawn a rung under that — in the grey a body under a row is drawn in, and
+slanted the way a compaction's summary is, because the slant means model
+output nobody asked a question for and this is the second and last place it
+means it.
+
+Quieter than the answer is not quieter than the work. A checkpoint never
+outranks what is happening now: a command still running, a card waiting to be
+answered, the line a turn closes its verification on. Those are the rows that
+decide what the reader does next, and a note *about* them drawn heavier than
+they are would be the signpost competing with the road.
+
+It is bounded, because it repeats. A run long enough to earn one checkpoint
+usually earns three, and three notes on one objective are three paragraphs
+that mostly agree — the reason a long session reads as prose accumulating
+rather than as progress. So the current note is drawn to a few lines with the
+rest folded under it, and a note a later checkpoint has replaced keeps its
+first line and folds the rest. Nothing is dropped: the fold counts the lines
+behind it and opens on the key that opens every other body in the transcript.
+
+A checkpoint short enough to title the batch of calls that follows it is drawn
+as that step's header instead. That is not an exception to any of this — the
+outline is where a title belongs, and a note that is already a title is
+already one row and already folds with its step.
 
 ## Panels
 

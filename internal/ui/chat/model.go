@@ -511,6 +511,19 @@ type entry struct {
 	// anchored per turn and an old row must keep saying what it was actually
 	// read against once the next instruction has moved it.
 	reading *summaryReading
+	// checkpoint marks assistant prose that answered the session's own
+	// request for public status rather than a question anybody asked
+	// (progress.go). It is a fact about why the words were written, so it is
+	// on the entry and not derived at render: the request that earned them
+	// is over by the time the row is drawn, and a later reader scrolling
+	// back is owed the same distinction as the one who watched it arrive
+	// (docs/interface/surfaces.md#the-progress-checkpoint).
+	checkpoint bool
+	// checkpointReplaced marks a checkpoint a later one has taken over from.
+	// The status a run is on is the last one it wrote; the ones before it
+	// are the record of how it got there, so they keep their first line and
+	// fold the rest. False on every checkpoint until the next one lands.
+	checkpointReplaced bool
 	// thinkStreaming says the reasoning is still being written, which is what
 	// spins the row. It is on the entry rather than on the Model for
 	// the reason a pending tool result is: what a row is doing is part of the

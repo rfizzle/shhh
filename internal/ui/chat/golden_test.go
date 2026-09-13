@@ -258,28 +258,73 @@ func TestGolden_ReadRun(t *testing.T) {
 	})
 }
 
+// TestGolden_ProgressUpdate captures the public status a long silent run is
+// asked for: the rung it is drawn at, the bound it folds to, and the two
+// places it has to stay under the work — above the group of calls it
+// introduces, and beside a command that is still running
+// (docs/interface/surfaces.md#the-progress-checkpoint).
+func TestGolden_ProgressUpdate(t *testing.T) {
+	captureGolden(t, "progress-update", "a public progress checkpoint", goldenWidths, func(width int) []golden.Panel {
+		// Written to the template the request states — objective, evidence,
+		// next action — which is longer than a step title and is the note the
+		// transcript draws for itself.
+		const note = "The objective is where the tool-round ceiling is read. The evidence is that " +
+			"the counter moves in the agent while the ceiling is the session's, so a raise for one " +
+			"turn never reaches the agent. Next I will read the pause row and the offer beside it."
+		const second = "The objective is unchanged and the pause row is now the evidence: it carries " +
+			"the grant and spends it where it is drawn. Next I will run the round tests."
+		reads := []entry{
+			{kind: entryTool, toolName: "search", toolArgs: `{"pattern":"resumeToolLoop"}`, toolResult: "4 hits", duration: 400 * time.Millisecond},
+			{kind: entryTool, toolName: "read_file", toolArgs: `{"path":"internal/ui/chat/stream.go"}`, toolResult: "lines", duration: 300 * time.Millisecond},
+			{kind: entryTool, toolName: "read_file", toolArgs: `{"path":"internal/agent/headless.go"}`, toolResult: "lines", duration: 300 * time.Millisecond},
+		}
+		build := func(mut func(*Model), es ...entry) string {
+			m := frameModel(t, width, 40)
+			m.transcript = es
+			if mut != nil {
+				mut(&m)
+			}
+			m.invalidateRenderCache()
+			return m.renderHistory()
+		}
+		ask := entry{kind: entryUser, text: "trace the checkpoint"}
+		checkpoint := entry{kind: entryAssistant, checkpoint: true, text: note}
+		return []golden.Panel{
+			{Label: "the status before the folded group of calls it introduces",
+				View: build(nil, append([]entry{ask, checkpoint}, reads...)...)},
+			{Label: "the same status opened onto every line it was holding",
+				View: build(nil, ask, entry{kind: entryAssistant, checkpoint: true, text: note, expanded: true})},
+			// The live row is the session's, not the transcript's (paint.go),
+			// so the panel is the feed and the live area under it — which is
+			// what a reader is looking at while the note is on screen.
+			{Label: "beside a command that is still running", View: func() string {
+				m := frameModel(t, width, 40)
+				m.transcript = []entry{ask, checkpoint}
+				m.turnCount, m.state = 1, stateRunningCmd
+				m.runningCommand = "go test ./internal/agent/... -run TestRoundLimit"
+				m.runTail = &commandTail{}
+				m.runTail.Set("ok  github.com/rfizzle/shhh/internal/agent  0.412s")
+				m.invalidateRenderCache()
+				return m.renderHistory() + "\n" + m.liveTail(width)
+			}()},
+			{Label: "a second status, and the one it replaced folded to its first line",
+				View: build(nil, ask,
+					entry{kind: entryAssistant, checkpoint: true, checkpointReplaced: true, text: note},
+					reads[0], reads[1],
+					entry{kind: entryAssistant, checkpoint: true, text: second})},
+			{Label: "a status short enough to title the calls under it is the step's header",
+				View: build(nil, append([]entry{ask,
+					{kind: entryAssistant, checkpoint: true,
+						text: "The round boundary is the seam; next I will trace its callers."}}, reads...)...)},
+		}
+	})
+}
+
 // TestGolden_PlanChecklist captures the outline an approved plan numbers
 // : declared steps carrying the plan's own numbers and titles in the
 // order the run reached them, one group the plan never named marked off it,
 // and the declared-but-not-started steps trailing as queued headers. It is
 // the one shape of the outline that does not come from the prose.
-// TestGolden_ProgressUpdate captures the ordinary assistant status that heads
-// the following folded activity group after a silent investigation.
-func TestGolden_ProgressUpdate(t *testing.T) {
-	captureGolden(t, "progress-update", "a public progress update before a folded activity group", goldenWidths, func(width int) []golden.Panel {
-		m := frameModel(t, width, 40)
-		m.transcript = []entry{
-			{kind: entryUser, text: "trace the checkpoint"},
-			{kind: entryAssistant, text: "The round boundary is the seam; next I will trace its callers."},
-			{kind: entryTool, toolName: "search", toolArgs: `{"pattern":"resumeToolLoop"}`, toolResult: "4 hits", duration: 400 * time.Millisecond},
-			{kind: entryTool, toolName: "read_file", toolArgs: `{"path":"internal/ui/chat/stream.go"}`, toolResult: "lines", duration: 300 * time.Millisecond},
-			{kind: entryTool, toolName: "read_file", toolArgs: `{"path":"internal/agent/headless.go"}`, toolResult: "lines", duration: 300 * time.Millisecond},
-		}
-		m.invalidateRenderCache()
-		return []golden.Panel{{Label: "ordinary public status before a folded activity group", View: m.renderHistory()}}
-	})
-}
-
 func TestGolden_PlanChecklist(t *testing.T) {
 	captureGolden(t, "plan-checklist", "plan checklist outline", goldenWidths, func(width int) []golden.Panel {
 		build := func(st state) string {

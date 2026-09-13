@@ -370,7 +370,7 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 		if m.compacting {
 			return answered(m.abortCompact())
 		}
-		m.noteProgressProse(m.streaming)
+		checkpoint := m.noteProgressProse(m.streaming)
 		auto, gated := m.agent.BeginToolRound(m.streaming, msg.calls, m.requiresApproval)
 		m.approvalTotal = len(gated)
 		// A round is also where the session summary is scheduled:
@@ -383,7 +383,15 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 		if m.streaming != "" {
 			// This is the announcement a step is titled by, so it is where an
 			// approved plan's step list joins the transcript.
-			m.appendEntry(m.stampStep(entry{kind: entryAssistant, text: m.streaming}))
+			e := m.stampStep(entry{kind: entryAssistant, text: m.streaming})
+			if checkpoint {
+				// And where the prose was the public status the session
+				// asked for, it says so: same entry, same place in the
+				// round, drawn at the rung a status note is drawn at
+				// (progress.go).
+				e = m.markCheckpoint(e)
+			}
+			m.appendEntry(e)
 		}
 		if msg.stop == provider.StopLength {
 			// The round asked for tools and ran out of budget while it was

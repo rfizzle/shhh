@@ -42,16 +42,26 @@ type Styles struct {
 	HeaderHint lipgloss.Style
 	Welcome    lipgloss.Style
 	// CompactSummary is the summary a compaction produced, quoted under the
-	// receipt row that announced it (context.go). It is the one italic this
-	// package sets, because the slant means quoted model output and nothing
-	// else: hints, fold markers, notices, viewer bars and the welcome line are
-	// the product's own voice, so they stay upright and say what they are with
-	// their grey. The rule is the design system's *Type* rule
-	// (docs/interface/README.md names where it is normative).
+	// receipt row that announced it (context.go). It is one of the two
+	// italics this package sets, because the slant means quoted model output
+	// and nothing else: hints, fold markers, notices, viewer bars and the
+	// welcome line are the product's own voice, so they stay upright and say
+	// what they are with their grey. The rule is the design system's *Type*
+	// rule (docs/interface/README.md names where it is normative).
 	CompactSummary lipgloss.Style
-	Tool           lipgloss.Style
-	ToolArgs       lipgloss.Style
-	StatusBar      lipgloss.Style
+	// Checkpoint is the other one, and it is the same treatment for the same
+	// reason: the public status a long silent run was asked for is the
+	// model's prose, written for a request the session made rather than one
+	// the reader typed, so it is quoted at the rung a body under a row is
+	// quoted at instead of drawn at the weight an answer is
+	// (docs/interface/surfaces.md#the-progress-checkpoint). Two names for one
+	// pair of values rather than one name used twice: the compaction receipt
+	// and the checkpoint are free to part company, and the next reader should
+	// not have to find out which of them a change to a shared style was for.
+	Checkpoint lipgloss.Style
+	Tool       lipgloss.Style
+	ToolArgs   lipgloss.Style
+	StatusBar  lipgloss.Style
 	// Divider is the faint rule under the header and above the bottom
 	// panel; the width is the caller's, the colour is the palette's.
 	Divider lipgloss.Style
@@ -273,8 +283,9 @@ func newStyles(p components.ColorTokens) Styles {
 		HeaderHint: lipgloss.NewStyle().Foreground(p.Dim.Color()),
 		Welcome:    lipgloss.NewStyle().Foreground(p.Dim.Color()),
 
-		// On its own, because it is the only italic in the file.
+		// On their own, because they are the only italics in the file.
 		CompactSummary: lipgloss.NewStyle().Foreground(p.Dimmer.Color()).Italic(true),
+		Checkpoint:     lipgloss.NewStyle().Foreground(p.Dimmer.Color()).Italic(true),
 
 		Tool:      lipgloss.NewStyle().Foreground(p.Accent.Color()),
 		ToolArgs:  lipgloss.NewStyle().Foreground(p.Dim.Color()),

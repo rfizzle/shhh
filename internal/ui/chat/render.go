@@ -211,6 +211,19 @@ func (m Model) renderEntryDetail(e entry, width int, keysLive, stepDetail bool) 
 		}
 		return row + promptRule(width) + "\n"
 	case entryAssistant:
+		// Unless the session asked for it. A public status is the model's
+		// prose written to a request nobody typed, so it is drawn a rung
+		// under the answers and bounded
+		// (docs/interface/surfaces.md#the-progress-checkpoint). A checkpoint
+		// short enough to title the calls under it never reaches here: the
+		// step draws its header instead, which is one row already.
+		if e.checkpoint {
+			block := m.checkpointBlock(e, width)
+			if block == "" {
+				return ""
+			}
+			return block + "\n"
+		}
 		return renderMarkdown(e.text, width) + "\n"
 	case entryCompactSummary:
 		block := m.compactBlock(e, width)
@@ -383,25 +396,39 @@ func (m Model) wrapped(text string, width int) string {
 // sentence the pane had already cut, and clipping is the thing a laid-out
 // block is exempt from.
 func (m Model) marginProse(style lipgloss.Style, text string, width int) string {
-	gutter, inner := components.PointerColumn(), max(width-components.GridPointerWidth, 1)
-	paint := func(l string) string {
-		if l == "" {
-			return ""
-		}
-		return gutter + style.Render(l)
-	}
+	inner := max(width-components.GridPointerWidth, 1)
 	if strings.Contains(text, "\n") {
 		lines := strings.Split(text, "\n")
 		for i, l := range lines {
-			lines[i] = paint(l)
+			lines[i] = marginPaint(style, l)
 		}
 		return strings.Join(lines, "\n")
 	}
 	var out []string
 	for _, l := range strings.Split(m.wordWrap(text, inner), "\n") {
-		out = append(out, components.Clip(paint(components.Clip(l, inner)), width))
+		out = append(out, marginLine(style, l, inner, width))
 	}
 	return strings.Join(out, "\n")
+}
+
+// marginPaint is one line on the content column: the gutter, then the words.
+// An empty line stays empty — trailing blanks on a line nobody can see are
+// what a terminal's own selection picks up.
+func marginPaint(style lipgloss.Style, line string) string {
+	if line == "" {
+		return ""
+	}
+	return components.PointerColumn() + style.Render(line)
+}
+
+// marginLine is marginPaint for a line that was wrapped to inner and still
+// has to end on the pane: the inner clip is what a word longer than the
+// column cannot escape, and the outer one measures the gutter in with it.
+// A caller that wrapped the words itself needs the same two clips as the one
+// that let marginProse do it (progress.go), and measuring them twice is how
+// they drift.
+func marginLine(style lipgloss.Style, line string, inner, width int) string {
+	return components.Clip(marginPaint(style, components.Clip(line, inner)), width)
 }
 
 // entryIsBlock reports whether an entry reads as a standalone block — a

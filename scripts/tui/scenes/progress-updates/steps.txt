@@ -1,10 +1,22 @@
-# A scripted silent investigation crosses the default checkpoint threshold.
-# The ordinary public status is the title of the following folded group.
-setup for f in one two three four five six seven eight nine ten eleven twelve stream; do printf 'package fixture\n' > "${f}.go"; done
+# A scripted silent investigation crosses the default checkpoint threshold, so
+# the scene holds the two states the public status has to be read in: the note
+# on its own under the reader's prompt and over the calls it explains, and the
+# note beside a command that is still running.
+#
+# What the captures are read for is the rung, which cells cannot carry:
+# 03-status against the Main artboard, and 05-running for the note staying
+# under the command rather than over it. The `.txt` says where the words are;
+# the picture beside it says how loud they are.
+setup for i in 01 02 03 04 05 06 07 08 09 10 11 12; do printf 'package fixture\n' > "round${i}.go"; done; printf 'package fixture\n' > stream.go
 snap 01-start "Some things worth doing first"
 keys "trace the checkpoint" Enter
-snap 02-progress "The evidence points to the round boundary"
+snap 02-silent-run "12 reads"
+snap 03-status "the round limit is counted"
+snap 04-card "[y] run it once"
+keys y
+snap 05-running "running…"
+snap 06-settled "the run is quiet again"
 keys C-c
-snap 03-quit-armed "again quits"
+snap 07-quit-armed "again quits"
 keys C-c
-snap 04-exit "that is everything the screen was holding"
+snap 08-exit "that is everything the screen was holding"

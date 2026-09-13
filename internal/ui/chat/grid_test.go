@@ -25,9 +25,10 @@ var gridWidths = append(append([]int{}, goldenWidths...), 160)
 
 // gridTranscript is one turn holding every entry the grid has a column rule
 // for: the reader's own message, the model's prose, an activity row, the
-// interval's check-in, a steer the reader can still take back, the tree
-// reading, an error the session is reporting about itself, a reading of the
-// round and the block the turn closes on.
+// public status a silent run was asked for, the interval's check-in, a steer
+// the reader can still take back, the tree reading, an error the session is
+// reporting about itself, a reading of the round and the block the turn
+// closes on.
 func gridTranscript() []entry {
 	return []entry{
 		{kind: entryUser, turn: 1, text: "hold the round limit in one place and run the tests"},
@@ -36,6 +37,10 @@ func gridTranscript() []entry {
 			toolResult: "a\nb\nc", duration: 400 * time.Millisecond},
 		{kind: entryCommand, turn: 1, text: "go test ./internal/agent/...",
 			toolResult: "--- FAIL: TestRoundLimit", exitCode: 1, duration: 21400 * time.Millisecond},
+		{kind: entryAssistant, turn: 1, checkpoint: true,
+			text: "The objective is one home for the round limit. The evidence is the failure above, " +
+				"which reads the constant from the loop and not from the caller. Next I will move " +
+				"the declaration and run the suite again."},
 		{kind: entrySystem, turn: 1,
 			text: "Check-in — 36 rounds used. Taking stock, then carrying on."},
 		{kind: entrySystem, turn: 1,
@@ -129,13 +134,15 @@ func TestTranscriptGrid_NoEntryStartsInsideTheMarkerGutter(t *testing.T) {
 }
 
 // TestTranscriptGrid_EveryKindSharesOneLeftEdge measures the entries the
-// story of a turn is told in — a checkpoint, a steer, the tree reading, an
-// error, an arriving reply and the mutation rail a turn closes on — and
-// requires every one of them to begin in the same column at every width.
+// story of a turn is told in — a public status note, a check-in, a steer, the
+// tree reading, an error, an arriving reply and the mutation rail a turn
+// closes on — and requires every one of them to begin in the same column at
+// every width.
 func TestTranscriptGrid_EveryKindSharesOneLeftEdge(t *testing.T) {
 	// Each probe is a substring only one entry's first line carries, short
 	// enough to survive the narrowest pane's clip.
 	probes := map[string]string{
+		"the public status note": "The objective is one home",
 		"the check-in":           "Check-in —",
 		"the steer":              "Steered —",
 		"the tree reading":       "tree moved —",

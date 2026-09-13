@@ -584,9 +584,12 @@ The session has a second backstop for models that make only tool calls. After
 twelve calls or ninety seconds without assistant prose, it inserts a bounded
 machine instruction at the next safe round boundary. The instruction cannot
 arrive while a tool batch is owed results, while a command runs, or behind a
-surface that owns the screen. It requests ordinary assistant prose, so that
-prose titles the activity group that follows it without creating a second
-transcript form or changing the tool-call protocol.
+surface that owns the screen. It requests ordinary assistant prose, so nothing
+about the tool-call protocol changes and the status arrives where the model's
+prose already arrives. What the transcript then does with it — the rung it is
+drawn at and the bound it is folded to — is a presentation decision and not a
+second protocol ([`the progress
+checkpoint`](../interface/surfaces.md#the-progress-checkpoint)).
 
 The public text is not stored in the content-free observation record and is
 never confused with provider reasoning. A headless text run keeps stdout for

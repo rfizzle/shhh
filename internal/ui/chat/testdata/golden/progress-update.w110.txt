@@ -1,5 +1,5 @@
 # golden:  progress-update.w110
-# surface: a public progress update before a folded activity group
+# surface: a public progress checkpoint
 # width:   110 columns
 # palette: color
 # cursor:  none
@@ -10,7 +10,52 @@
 # it for the colour assignments. Trailing spaces are significant in both.
 
 ── layout ──────────────────────────────────────────────────
-· ordinary public status before a folded activity group
+· the status before the folded group of calls it introduces
+❯ trace the checkpoint
+────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  The objective is where the tool-round ceiling is read. The evidence is that the counter moves in the
+  agent while the ceiling is the session's, so a raise for one turn never reaches the agent. Next I will
+  read the pause row and the offer beside it.
+
+   ▸ ⚙       1 search · 2 reads                                                     [enter] expand  1.0s
+
+
+· the same status opened onto every line it was holding
+❯ trace the checkpoint
+────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  The objective is where the tool-round ceiling is read. The evidence is that the counter moves in the
+  agent while the ceiling is the session's, so a raise for one turn never reaches the agent. Next I will
+  read the pause row and the offer beside it.
+
+
+· beside a command that is still running
+❯ trace the checkpoint
+────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  The objective is where the tool-round ceiling is read. The evidence is that the counter moves in the
+  agent while the ceiling is the session's, so a raise for one turn never reaches the agent. Next I will
+  read the pause row and the offer beside it.
+
+  ▎⠋ run     go test ./internal/agent/... -run TestRoundLimit                                   running…
+  ok  github.com/rfizzle/shhh/internal/agent  0.412s
+
+· a second status, and the one it replaced folded to its first line
+❯ trace the checkpoint
+────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  The objective is where the tool-round ceiling is read. The evidence is that the counter moves in the
+    … 2 more lines
+
+   ⚙ search  resumeToolLoop                                                              0 matches
+   ⚙ read    internal/ui/chat/stream.go                                                     1 line
+
+  The objective is unchanged and the pause row is now the evidence: it carries the grant and spends it
+  where it is drawn. Next I will run the round tests.
+
+
+· a status short enough to title the calls under it is the step's header
 ❯ trace the checkpoint
 ────────────────────────────────────────────────────────────────────────────────────────────────────────
 
@@ -18,7 +63,52 @@
 
 
 ── ansi ────────────────────────────────────────────────────
-· ordinary public status before a folded activity group
+· the status before the folded group of calls it introduces
+␛[94m❯␛[m ␛[97mtrace the checkpoint␛[m
+␛[38;5;243m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+
+  ␛[3;38;5;245mThe objective is where the tool-round ceiling is read. The evidence is that the counter moves in the␛[m
+  ␛[3;38;5;245magent while the ceiling is the session's, so a raise for one turn never reaches the agent. Next I will␛[m
+  ␛[3;38;5;245mread the pause row and the offer beside it.␛[m
+
+   ␛[38;5;241m▸␛[m ␛[38;5;241m⚙␛[m       ␛[38;5;241m1 search · 2 reads␛[m                                                     ␛[38;5;241m[enter] expand␛[m  ␛[38;5;241m1.0s␛[m
+
+
+· the same status opened onto every line it was holding
+␛[94m❯␛[m ␛[97mtrace the checkpoint␛[m
+␛[38;5;243m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+
+  ␛[3;38;5;245mThe objective is where the tool-round ceiling is read. The evidence is that the counter moves in the␛[m
+  ␛[3;38;5;245magent while the ceiling is the session's, so a raise for one turn never reaches the agent. Next I will␛[m
+  ␛[3;38;5;245mread the pause row and the offer beside it.␛[m
+
+
+· beside a command that is still running
+␛[94m❯␛[m ␛[97mtrace the checkpoint␛[m
+␛[38;5;243m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+
+  ␛[3;38;5;245mThe objective is where the tool-round ceiling is read. The evidence is that the counter moves in the␛[m
+  ␛[3;38;5;245magent while the ceiling is the session's, so a raise for one turn never reaches the agent. Next I will␛[m
+  ␛[3;38;5;245mread the pause row and the offer beside it.␛[m
+
+  ␛[38;5;214m▎␛[m␛[38;5;205m⠋␛[m ␛[97mrun␛[m     ␛[97mgo test ./internal/agent/... -run TestRoundLimit␛[m                                   ␛[38;5;205mrunning…␛[m
+  ␛[38;5;245mok  github.com/rfizzle/shhh/internal/agent  0.412s␛[m
+
+· a second status, and the one it replaced folded to its first line
+␛[94m❯␛[m ␛[97mtrace the checkpoint␛[m
+␛[38;5;243m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+
+  ␛[3;38;5;245mThe objective is where the tool-round ceiling is read. The evidence is that the counter moves in the␛[m
+    ␛[38;5;241m… 2 more lines␛[m
+
+   ␛[38;5;214m⚙␛[m ␛[38;5;252msearch␛[m  ␛[38;5;252mresumeToolLoop␛[m                                                              ␛[38;5;245m0 matches␛[m
+   ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/ui/chat/stream.go␛[m                                                     ␛[38;5;245m1 line␛[m
+
+  ␛[3;38;5;245mThe objective is unchanged and the pause row is now the evidence: it carries the grant and spends it␛[m
+  ␛[3;38;5;245mwhere it is drawn. Next I will run the round tests.␛[m
+
+
+· a status short enough to title the calls under it is the step's header
 ␛[94m❯␛[m ␛[97mtrace the checkpoint␛[m
 ␛[38;5;243m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 

@@ -19,6 +19,12 @@
    ⚙ read    internal/agent/loop.go      3 lines
   ▎✗ run     go test ./internal/agent/.…  exit 1   21s
     --- FAIL: TestRoundLimit
+
+  The objective is one home for the round limit. The
+  evidence is the failure above, which reads the
+  constant from the loop and not from the caller. Next
+    … 1 more line
+
   Check-in — 36 rounds used. Taking stock, then
   carrying on.
   Steered — the reading says the edits have moved
@@ -41,13 +47,13 @@
 · the whole surface · the same edge in the pane it sits in
    shhh chat                                                
   ────────────────────────────────────────────────────────  
-    tests                                                   
-  ──────────────────────────────────────────────────────┃   
+      --- FAIL: TestRoundLimit                              
+                                                            
+    The objective is one home for the round limit. The      
+    evidence is the failure above, which reads the          
+    constant from the loop and not from the caller. Next    
+      … 1 more line                                         
                                                         ┃   
-  ▾ 1  The constant is declared in th… ─ ✗ 2 tools   21s┃   
-     ⚙ read    internal/agent/loop.go      3 lines      ┃   
-    ▎✗ run     go test ./internal/agent/.…  exit 1   21s┃   
-      --- FAIL: TestRoundLimit                          ┃   
     Check-in — 36 rounds used. Taking stock, then       ┃   
     carrying on.                                        ┃   
     Steered — the reading says the edits have moved     ┃   
@@ -79,9 +85,15 @@
    ⚙ read    internal/agent/loop.go      3 lines
   ▎✗ run     go test ./internal/agent/.…  exit 1   21s
     --- FAIL: TestRoundLimit
+
+  The objective is one home for the round limit. The
+  evidence is the failure above, which reads the
+  constant from the loop and not from the caller. Next
+    … 1 more line
+
   Check-in — 36 rounds used. Taking stock, then
   carrying on.
-❯ Steered — the reading says the edits have moved     
+  Steered — the reading says the edits have moved
   outside the round loop. Say what you meant if that
   is wrong.
     [u] take the steer back
@@ -106,6 +118,12 @@
    ␛[38;5;254m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254minternal/agent/loop.go␛[m      ␛[38;5;244m3 lines␛[m
   ␛[38;5;254m▎␛[m␛[38;5;254m✗␛[m ␛[38;5;254mrun␛[m     ␛[38;5;254mgo test ./internal/agent/.…␛[m  ␛[38;5;254mexit 1␛[m   ␛[38;5;244m21s␛[m
     ␛[38;5;244m--- FAIL: TestRoundLimit␛[m
+
+  ␛[3;38;5;244mThe objective is one home for the round limit. The␛[m
+  ␛[3;38;5;244mevidence is the failure above, which reads the␛[m
+  ␛[3;38;5;244mconstant from the loop and not from the caller. Next␛[m
+    ␛[38;5;244m… 1 more line␛[m
+
   ␛[38;5;244mCheck-in — 36 rounds used. Taking stock, then␛[m
   ␛[38;5;244mcarrying on.␛[m
   ␛[38;5;244mSteered — the reading says the edits have moved␛[m
@@ -128,13 +146,13 @@
 · the whole surface · the same edge in the pane it sits in
   ␛[38;5;254;1m shhh chat␛[m                                                
   ␛[38;5;244m────────────────────────────────────────────────────────␛[m  
-    tests                                                   
-  ␛[38;5;244m──────────────────────────────────────────────────────┃␛[m   
+      ␛[38;5;244m--- FAIL: TestRoundLimit␛[m                              
+                                                            
+    ␛[38;5;244;3mThe objective is one home for the round limit. The␛[m      
+    ␛[38;5;244;3mevidence is the failure above, which reads the␛[m          
+    ␛[38;5;244;3mconstant from the loop and not from the caller. Next␛[m    
+      ␛[38;5;244m… 1 more line␛[m                                         
                                                         ␛[38;5;244m┃␛[m   
-  ␛[38;5;244m▾␛[m ␛[38;5;254m1 ␛[m ␛[38;5;254mThe constant is declared in th…␛[m ␛[38;5;244m─␛[m ␛[38;5;254m✗␛[m ␛[38;5;244m2 tools␛[m   ␛[38;5;244m21s┃␛[m   
-     ␛[38;5;254m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254minternal/agent/loop.go␛[m      ␛[38;5;244m3 lines␛[m      ␛[38;5;244m┃␛[m   
-    ␛[38;5;254m▎✗␛[m ␛[38;5;254mrun␛[m     ␛[38;5;254mgo test ./internal/agent/.…␛[m  ␛[38;5;254mexit 1␛[m   ␛[38;5;244m21s┃␛[m   
-      ␛[38;5;244m--- FAIL: TestRoundLimit␛[m                          ␛[38;5;244m┃␛[m   
     ␛[38;5;244mCheck-in — 36 rounds used. Taking stock, then␛[m       ␛[38;5;244m┃␛[m   
     ␛[38;5;244mcarrying on.␛[m                                        ␛[38;5;244m┃␛[m   
     ␛[38;5;244mSteered — the reading says the edits have moved␛[m     ␛[38;5;244m┃␛[m   
@@ -166,12 +184,18 @@
    ␛[38;5;254m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254minternal/agent/loop.go␛[m      ␛[38;5;244m3 lines␛[m
   ␛[38;5;254m▎␛[m␛[38;5;254m✗␛[m ␛[38;5;254mrun␛[m     ␛[38;5;254mgo test ./internal/agent/.…␛[m  ␛[38;5;254mexit 1␛[m   ␛[38;5;244m21s␛[m
     ␛[38;5;244m--- FAIL: TestRoundLimit␛[m
+
+  ␛[3;38;5;244mThe objective is one home for the round limit. The␛[m
+  ␛[3;38;5;244mevidence is the failure above, which reads the␛[m
+  ␛[3;38;5;244mconstant from the loop and not from the caller. Next␛[m
+    ␛[38;5;244m… 1 more line␛[m
+
   ␛[38;5;244mCheck-in — 36 rounds used. Taking stock, then␛[m
   ␛[38;5;244mcarrying on.␛[m
-␛[38;5;254m❯␛[m ␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237mSteered — the reading says the edits have moved     ␛[m␛[m
+  ␛[38;5;244mSteered — the reading says the edits have moved␛[m
   ␛[38;5;244moutside the round loop. Say what you meant if that␛[m
   ␛[38;5;244mis wrong.␛[m
-    ␛[38;5;254m[u]␛[m␛[38;5;244m take the steer back␛[m
+    ␛[38;5;244m[u]␛[m␛[38;5;244m take the steer back␛[m
   ␛[38;5;244mtree moved — 14 paths changed outside this session ·␛[m
   ␛[38;5;244m5,811 ignored␛[m
   ␛[38;5;254mError: the notebook is read-only, so nothing was␛[m
