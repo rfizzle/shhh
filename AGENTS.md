@@ -1312,9 +1312,14 @@ text has to be the surface's own.** Waiting for the line you typed passes
 before the reply arrives; wait for a word only the reply carries. **The
 scripted model speaks one dialect**, openai-compatible SSE, the one a
 `base_url` alone redirects — a scene cannot exercise the Anthropic or Gemini
-stream loops, which the provider package's own tests cover. **Captures live
-under `bin/` and are never committed**: the scene is the record, and a
-capture is reproduced from it.
+stream loops, which the provider package's own tests cover. **The picture can
+go missing without anything failing**: vhs plays the tape, prints that it is
+creating the GIF, exits 0 and writes no file wherever the headless browser it
+starts for itself cannot run, so `drive.sh` clears the previous run's pictures
+before it starts and holds vhs to every path its own tape named — a still from
+an earlier run is the one thing a still must never be. **Captures live under
+`bin/` and are never committed**: the scene is the record, and a capture is
+reproduced from it.
 
 ### Test Conventions
 

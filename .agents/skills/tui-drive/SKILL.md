@@ -50,7 +50,15 @@ Captures land under `bin/tui/<scene>/` and are never committed. For each
 | `<name>.png` | the screen as a real terminal drew it, under `--vhs` | open it, or read it inline with the file reader |
 | `<scene>.gif` | the whole run as a real terminal drew it, under `--vhs` | any viewer |
 | `<scene>.tape` | the scene as vhs played it, under `--vhs` | `vhs <scene>.tape` replays it by hand |
-| `<scene>.cast` | the whole run under `--record`, one per scene rather than per snap | `asciinema play`; `agg` renders it to a `<scene>.gif` beside it |
+| `<scene>.cast` | the whole run under `--record`, one per scene rather than per snap | `asciinema play`; `agg` renders it to a `<scene>.cast.gif` beside it |
+
+**A missing picture is said out loud.** vhs can play a whole tape, print
+that it is creating the GIF, exit 0 and write no file — which is what a
+machine whose headless browser cannot start looks like from here. So the run
+takes the previous pictures away before it starts and afterwards holds vhs to
+every path its tape named; where one is missing the run fails and names it,
+rather than leaving a still from an earlier run to be read as this one's.
+The cells are unaffected and are still the gate.
 
 Read the `.txt` first: it is the layout, and a column that drifted shows
 there. Look at the picture for what text cannot carry — a colour that stopped

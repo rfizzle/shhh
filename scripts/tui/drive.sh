@@ -26,6 +26,13 @@
 # ttyd and ffmpeg (`brew install vhs` brings all three); the tmux pass is the
 # gate and needs none of them.
 #
+# The picture pass is held to what it produced rather than to its exit code.
+# vhs can play the whole tape, print that it is creating the GIF, exit 0 and
+# write nothing — which is what a machine whose headless browser cannot start
+# looks like from here. So the run takes the previous pictures away before it
+# starts, and afterwards holds vhs to every path its own tape named: a still
+# left over from an earlier run is the one thing a still must never be.
+#
 # A snap is a still. --record adds the motion: the whole run wrapped in
 # asciinema, written beside the captures as <scene>.cast — text, so it diffs,
 # and playable with `asciinema play`. Where agg is installed the cast is
@@ -119,11 +126,17 @@ cleanup() {
 }
 trap cleanup EXIT
 # Up before the binary asks, or the first turn reports a model it never
-# reached.
-for _ in 1 2 3 4 5 6 7 8 9 10; do
-	python3 -c "import socket; socket.create_connection(('127.0.0.1', $PORT), 1).close()" 2>/dev/null && break
-	sleep 0.2
-done
+# reached. It is a function because the pass is run twice — once through tmux
+# and once through vhs, each against a provider of its own — and a readiness
+# wait that only the first one did is the second one racing.
+wait_for_provider() {
+	for _ in 1 2 3 4 5 6 7 8 9 10; do
+		python3 -c "import socket; socket.create_connection(('127.0.0.1', $PORT), 1).close()" 2>/dev/null && return 0
+		sleep 0.2
+	done
+	return 1
+}
+wait_for_provider || { echo "drive.sh: the scripted model never came up on port $PORT — $OUT/provider.log" >&2; exit 1; }
 
 # The setup lines run before the binary does, so a scene can put a file, a
 # .shhh directory or a commit in the workspace it will be opened on.
@@ -302,10 +315,27 @@ write_tape() {
 		esac
 	done < "$scene/steps.txt"
 }
+# What the tape said it would write, and did not. vhs is asked for a still per
+# snap and one GIF of the run, and the tape names every one of those paths, so
+# the tape is the list to hold it to rather than a count kept alongside it.
+# Names only — a caller printing four of them at sixty columns is reporting a
+# failure, not drawing a surface.
+missing_pictures() {
+	{
+		sed -n 's/^Screenshot "\(.*\)"$/\1/p' "$OUT/$name.tape"
+		echo "$OUT/$name.gif"
+	} | while IFS= read -r want; do
+		[ -s "$want" ] || basename "$want"
+	done | tr '\n' ' ' | sed 's/ $//'
+}
+
 if [ "$vhs" = 1 ] && [ "$failed" = 0 ]; then
 	tmux -L "$SOCK" kill-server 2>/dev/null
 	# The pass above used the replies up and worked in the workspace; the tape
-	# starts both again from the top.
+	# starts both again from the top. The wait is the same one the first start
+	# does: the tape types its launch line the moment vhs is up, and a binary
+	# that asked for the model list before the endpoint was listening opens a
+	# session reporting a model it never reached.
 	kill "$provider" 2>/dev/null; wait "$provider" 2>/dev/null
 	python3 "$here/fakeprovider.py" "$PORT" "$scene/replies.txt" 2>> "$OUT/provider.log" &
 	provider=$!
@@ -313,18 +343,49 @@ if [ "$vhs" = 1 ] && [ "$failed" = 0 ]; then
 	(cd "$ws" && git init -q && git -c user.email=tui@shhh -c user.name=tui commit -q --allow-empty -m init)
 	while IFS= read -r line; do
 		case $line in
-		setup\ *) (cd "$ws" && eval "${line#setup }") ;;
+		# Judged the way the first pass judges it. A setup line that failed
+		# for one pass and not the other is two different scenes.
+		setup\ *) (cd "$ws" && eval "${line#setup }") || { echo "drive.sh: setup failed: ${line#setup }" >&2; exit 1; } ;;
 		esac
 	done < "$scene/steps.txt"
+	wait_for_provider || { echo "drive.sh: the scripted model never came back up on port $PORT — $OUT/provider.log" >&2; exit 1; }
+	# The pictures this run is about to take, taken away before it takes them.
+	# vhs can play a whole tape, report success and write nothing at all, and
+	# a picture left over from an earlier run would then be read as this
+	# run's — which is the one mistake a still is there to prevent.
+	rm -f "$OUT"/*.png "$OUT/$name.gif"
 	write_tape > "$OUT/$name.tape"
-	if vhs "$OUT/$name.tape" > "$OUT/vhs.log" 2>&1; then
-		echo "pictures: $OUT/$name.gif, and a png per snap"
-	else
-		# vhs writes its screenshots only when the whole tape played, so a
-		# wait that timed out leaves no picture at all; the log says which.
+	# vhs opens a ttyd and a headless browser beside itself. Where the browser
+	# cannot start, vhs gives up and leaves the ttyd running — four of them
+	# had been waiting three days on the machine this was written on. Job
+	# control puts vhs in a process group of its own, so whatever it opened
+	# is closed with it rather than guessed at by name.
+	set -m
+	vhs "$OUT/$name.tape" > "$OUT/vhs.log" 2>&1 &
+	vhs_job=$!
+	wait "$vhs_job"; vhs_rc=$?
+	kill -- -"$vhs_job" 2>/dev/null
+	set +m
+	if [ "$vhs_rc" != 0 ]; then
+		# A wait that timed out: the tape stopped where the screen never said
+		# what the scene said it would, and the log names the step.
 		echo "drive.sh: vhs failed — $OUT/vhs.log" >&2
 		grep -m1 'timeout waiting' "$OUT/vhs.log" | cut -c1-160 >&2
 		failed=1
+	elif missing=$(missing_pictures); [ -n "$missing" ]; then
+		# And the other way it goes wrong, which costs nothing to check and
+		# is invisible without the check: vhs plays the whole tape, says it
+		# is creating the GIF, exits 0 and writes no file. The frames come
+		# from a headless browser it starts for itself, and a machine where
+		# that browser cannot run fails exactly this way — so the browser is
+		# what to go and try. The cells above are unaffected and still the
+		# gate; what is lost is the picture.
+		echo "drive.sh: vhs reported success and left $(printf '%s' "$missing" | wc -w | tr -d ' ') of its pictures unwritten: $missing" >&2
+		echo "drive.sh: its frames come from a headless browser it starts itself, and it exits 0 when" >&2
+		echo "drive.sh: that browser cannot run — $OUT/vhs.log, and try a headless browser by hand" >&2
+		failed=1
+	else
+		echo "pictures: $OUT/$name.gif, and a png per snap"
 	fi
 fi
 
@@ -338,9 +399,12 @@ if [ "$record" = 1 ]; then
 	if [ -s "$cast" ]; then
 		echo "recording: $cast"
 		# agg is what renders a cast; vhs drives a tape of its own and cannot
-		# read one, so it is named here only to say where the GIF went.
+		# read one, so it is named here only to say where the GIF went. It
+		# writes beside the cast rather than over $name.gif: --record and
+		# --vhs are two renderings of two different runs, and one path for
+		# both left the GIF meaning whichever pass happened to finish last.
 		if command -v agg >/dev/null 2>&1; then
-			agg "$cast" "$OUT/$name.gif" && echo "recording: $OUT/$name.gif"
+			agg "$cast" "$OUT/$name.cast.gif" && echo "recording: $OUT/$name.cast.gif"
 		elif command -v vhs >/dev/null 2>&1; then
 			echo "drive.sh: vhs drives a .tape, not a .cast — brew install agg to render $cast as a GIF" >&2
 		fi
