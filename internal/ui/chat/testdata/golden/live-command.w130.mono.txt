@@ -11,7 +11,7 @@
 
 ── layout ──────────────────────────────────────────────────
 · feed · the command, its outcome, its clock and its last line out
-  ▎⠋ run     go test ./internal/agent/... ./internal/ui/chat/... -run TestRoundLimitPause -count=1 -timeout 120s    running…   42s
+  ▎⠋ run     go test ./internal/agent/... ./internal/ui/chat/... -run TestRoundLimitPause -count=1 -timeout 120s   running…    42s
   --- FAIL: TestRoundLimitPause/the ceiling holds the turn open (0.42s)
 
 · frame · the phase and the turn's clock, and no second copy
@@ -22,7 +22,7 @@
 
 ── ansi ────────────────────────────────────────────────────
 · feed · the command, its outcome, its clock and its last line out
-  ␛[38;5;254m▎␛[m␛[38;5;254m⠋␛[m ␛[38;5;254mrun␛[m     ␛[38;5;254mgo test ./internal/agent/... ./internal/ui/chat/... -run TestRoundLimitPause -count=1 -timeout 120s␛[m    ␛[38;5;254mrunning…␛[m   ␛[38;5;244m42s␛[m
+  ␛[38;5;254m▎␛[m␛[38;5;254m⠋␛[m ␛[38;5;254mrun␛[m     ␛[38;5;254mgo test ./internal/agent/... ./internal/ui/chat/... -run TestRoundLimitPause -count=1 -timeout 120s␛[m   ␛[38;5;254mrunning…␛[m    ␛[38;5;244m42s␛[m
   ␛[38;5;244m--- FAIL: TestRoundLimitPause/the ceiling holds the turn open (0.42s)␛[m
 
 · frame · the phase and the turn's clock, and no second copy

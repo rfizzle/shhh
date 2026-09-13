@@ -34,7 +34,7 @@ func TestRecoveryRow_SitsOnTheActivityGrid(t *testing.T) {
 	if verb != "model   " {
 		t.Errorf("verb field = %q, want model padded to %d columns", verb, verbWidth)
 	}
-	if !strings.HasSuffix(string(line), "key ···4f9c rejected  0.3s") {
+	if !strings.HasSuffix(string(line), "key ···4f9c rejected   0.3s") {
 		t.Errorf("the outcome and duration should close the row, got %q", string(line))
 	}
 }

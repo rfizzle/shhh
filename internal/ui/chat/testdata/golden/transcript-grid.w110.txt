@@ -15,8 +15,8 @@
 ────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 ▾ 1  The constant is declared in three files, so the loop is the only one of them tha… ─ ✗ 2 tools   21s
-   ⚙ read    internal/agent/loop.go                                                        3 lines
-  ▎✗ run     go test ./internal/agent/...                                                   exit 1   21s
+   ⚙ read    internal/agent/loop.go                                                       3 lines
+  ▎✗ run     go test ./internal/agent/...                                                  exit 1    21s
     --- FAIL: TestRoundLimit
 
   The objective is one home for the round limit. The evidence is the failure above, which reads the
@@ -29,7 +29,7 @@
     [u] take the steer back · [ctrl+o] to use them
   tree moved — 14 paths changed outside this session · 5,811 ignored
   Error: the notebook is read-only, so nothing was written down
-   ≡ summary round 36                                        ▸ on target · 1 line · [enter] expand
+   ≡ summary round 36                                       ▸ on target · 1 line · [enter] expand
 
    ✓ Done · 2 steps · 6 tools · 24.7s · $0.14                                                round 36/50
   ▎✎ 1 file changed +12 −4 · [v] review · [u] undo turn · [ctrl+o] to use them        all tracked in git
@@ -43,8 +43,8 @@
   ────────────────────────────────────────────────────────────────────────────────────────────────────────    
                                                                                                           ┃   
   ▾ 1  The constant is declared in three files, so the loop is the only one of them tha… ─ ✗ 2 tools   21s┃   
-     ⚙ read    internal/agent/loop.go                                                        3 lines      ┃   
-    ▎✗ run     go test ./internal/agent/...                                                   exit 1   21s┃   
+     ⚙ read    internal/agent/loop.go                                                       3 lines       ┃   
+    ▎✗ run     go test ./internal/agent/...                                                  exit 1    21s┃   
       --- FAIL: TestRoundLimit                                                                            ┃   
                                                                                                           ┃   
     The objective is one home for the round limit. The evidence is the failure above, which reads the     ┃   
@@ -57,7 +57,7 @@
       [u] take the steer back · [ctrl+o] to use them                                                      ┃   
     tree moved — 14 paths changed outside this session · 5,811 ignored                                    ┃   
     Error: the notebook is read-only, so nothing was written down                                         ┃   
-     ≡ summary round 36                                        ▸ on target · 1 line · [enter] expand      ┃   
+     ≡ summary round 36                                       ▸ on target · 1 line · [enter] expand       ┃   
                                                                                                           ┃   
      ✓ Done · 2 steps · 6 tools · 24.7s · $0.14                                                round 36/50┃   
     ▎✎ 1 file changed +12 −4 · [v] review · [u] undo turn · [ctrl+o] to use them        all tracked in git┃   
@@ -74,8 +74,8 @@
 ────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 ▾ 1  The constant is declared in three files, so the loop is the only one of them tha… ─ ✗ 2 tools   21s
-   ⚙ read    internal/agent/loop.go                                                        3 lines
-  ▎✗ run     go test ./internal/agent/...                                                   exit 1   21s
+   ⚙ read    internal/agent/loop.go                                                       3 lines
+  ▎✗ run     go test ./internal/agent/...                                                  exit 1    21s
     --- FAIL: TestRoundLimit
 
   The objective is one home for the round limit. The evidence is the failure above, which reads the
@@ -88,7 +88,7 @@
     [u] take the steer back
   tree moved — 14 paths changed outside this session · 5,811 ignored
   Error: the notebook is read-only, so nothing was written down
-   ≡ summary round 36                                        ▸ on target · 1 line · [enter] expand
+   ≡ summary round 36                                       ▸ on target · 1 line · [enter] expand
 
    ✓ Done · 2 steps · 6 tools · 24.7s · $0.14                                                round 36/50
   ▎✎ 1 file changed +12 −4 · [v] review · [u] undo turn                               all tracked in git
@@ -101,8 +101,8 @@
 ␛[38;5;243m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;241m▾␛[m ␛[38;5;252m1 ␛[m ␛[38;5;252mThe constant is declared in three files, so the loop is the only one of them tha…␛[m ␛[38;5;241m─␛[m ␛[91m✗␛[m ␛[38;5;241m2 tools␛[m   ␛[38;5;241m21s␛[m
-   ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/loop.go␛[m                                                        ␛[38;5;245m3 lines␛[m
-  ␛[91m▎␛[m␛[91m✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgo test ./internal/agent/...␛[m                                                   ␛[91mexit 1␛[m   ␛[38;5;241m21s␛[m
+   ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/loop.go␛[m                                                       ␛[38;5;245m3 lines␛[m
+  ␛[91m▎␛[m␛[91m✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgo test ./internal/agent/...␛[m                                                  ␛[91mexit 1␛[m    ␛[38;5;241m21s␛[m
     ␛[38;5;245m--- FAIL: TestRoundLimit␛[m
 
   ␛[3;38;5;245mThe objective is one home for the round limit. The evidence is the failure above, which reads the␛[m
@@ -115,7 +115,7 @@
     ␛[38;5;245m[u]␛[m␛[38;5;241m take the steer back␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+o]␛[m␛[38;5;252m to use them␛[m
   ␛[38;5;241mtree moved — 14 paths changed outside this session · 5,811 ignored␛[m
   ␛[91mError: the notebook is read-only, so nothing was written down␛[m
-   ␛[38;5;241m≡␛[m ␛[38;5;252msummary␛[m ␛[38;5;252mround 36␛[m                                        ␛[38;5;241m▸ on target␛[m␛[38;5;241m · ␛[m␛[38;5;245m1 line␛[m␛[38;5;241m · ␛[m␛[94m[enter] expand␛[m
+   ␛[38;5;241m≡␛[m ␛[38;5;252msummary␛[m ␛[38;5;252mround 36␛[m                                       ␛[38;5;241m▸ on target␛[m␛[38;5;241m · ␛[m␛[38;5;245m1 line␛[m␛[38;5;241m · ␛[m␛[94m[enter] expand␛[m
 
    ␛[92m✓␛[m ␛[38;5;252mDone␛[m␛[38;5;241m · 2 steps · 6 tools · 24.7s · $0.14␛[m                                                ␛[38;5;241mround 36/50␛[m
   ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m1 file changed ␛[m␛[92m+12␛[m ␛[91m−4␛[m␛[38;5;241m · ␛[m␛[38;5;245m[v]␛[m␛[38;5;241m review␛[m␛[38;5;241m · ␛[m␛[38;5;245m[u]␛[m␛[38;5;241m undo turn␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+o]␛[m␛[38;5;252m to use them␛[m        ␛[38;5;241mall tracked in git␛[m
@@ -129,8 +129,8 @@
   ␛[38;5;243m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m    
                                                                                                           ␛[38;5;241m┃␛[m   
   ␛[38;5;241m▾␛[m ␛[38;5;252m1 ␛[m ␛[38;5;252mThe constant is declared in three files, so the loop is the only one of them tha…␛[m ␛[38;5;241m─␛[m ␛[91m✗␛[m ␛[38;5;241m2 tools␛[m   ␛[38;5;241m21s┃␛[m   
-     ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/loop.go␛[m                                                        ␛[38;5;245m3 lines␛[m      ␛[38;5;241m┃␛[m   
-    ␛[91m▎✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgo test ./internal/agent/...␛[m                                                   ␛[91mexit 1␛[m   ␛[38;5;241m21s┃␛[m   
+     ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/loop.go␛[m                                                       ␛[38;5;245m3 lines␛[m       ␛[38;5;241m┃␛[m   
+    ␛[91m▎✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgo test ./internal/agent/...␛[m                                                  ␛[91mexit 1␛[m    ␛[38;5;241m21s┃␛[m   
       ␛[38;5;245m--- FAIL: TestRoundLimit␛[m                                                                            ␛[38;5;241m┃␛[m   
                                                                                                           ␛[38;5;241m┃␛[m   
     ␛[38;5;245;3mThe objective is one home for the round limit. The evidence is the failure above, which reads the␛[m     ␛[38;5;241m┃␛[m   
@@ -143,7 +143,7 @@
       ␛[38;5;245m[u]␛[38;5;241m take the steer back · ␛[94m[ctrl+o]␛[38;5;252m to use them␛[m                                                      ␛[38;5;241m┃␛[m   
     ␛[38;5;241mtree moved — 14 paths changed outside this session · 5,811 ignored␛[m                                    ␛[38;5;241m┃␛[m   
     ␛[91mError: the notebook is read-only, so nothing was written down␛[m                                         ␛[38;5;241m┃␛[m   
-     ␛[38;5;241m≡␛[m ␛[38;5;252msummary␛[m ␛[38;5;252mround 36␛[m                                        ␛[38;5;241m▸ on target · ␛[38;5;245m1 line␛[38;5;241m · ␛[94m[enter] expand␛[m      ␛[38;5;241m┃␛[m   
+     ␛[38;5;241m≡␛[m ␛[38;5;252msummary␛[m ␛[38;5;252mround 36␛[m                                       ␛[38;5;241m▸ on target · ␛[38;5;245m1 line␛[38;5;241m · ␛[94m[enter] expand␛[m       ␛[38;5;241m┃␛[m   
                                                                                                           ␛[38;5;241m┃␛[m   
      ␛[92m✓␛[m ␛[38;5;252mDone␛[38;5;241m · 2 steps · 6 tools · 24.7s · $0.14␛[m                                                ␛[38;5;241mround 36/50┃␛[m   
     ␛[38;5;214m▎✎␛[m ␛[38;5;252m1 file changed ␛[92m+12␛[m ␛[91m−4␛[38;5;241m · ␛[38;5;245m[v]␛[38;5;241m review · ␛[38;5;245m[u]␛[38;5;241m undo turn · ␛[94m[ctrl+o]␛[38;5;252m to use them␛[m        ␛[38;5;241mall tracked in git┃␛[m   
@@ -160,8 +160,8 @@
 ␛[38;5;243m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;241m▾␛[m ␛[38;5;252m1 ␛[m ␛[38;5;252mThe constant is declared in three files, so the loop is the only one of them tha…␛[m ␛[38;5;241m─␛[m ␛[91m✗␛[m ␛[38;5;241m2 tools␛[m   ␛[38;5;241m21s␛[m
-   ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/loop.go␛[m                                                        ␛[38;5;245m3 lines␛[m
-  ␛[91m▎␛[m␛[91m✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgo test ./internal/agent/...␛[m                                                   ␛[91mexit 1␛[m   ␛[38;5;241m21s␛[m
+   ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/loop.go␛[m                                                       ␛[38;5;245m3 lines␛[m
+  ␛[91m▎␛[m␛[91m✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgo test ./internal/agent/...␛[m                                                  ␛[91mexit 1␛[m    ␛[38;5;241m21s␛[m
     ␛[38;5;245m--- FAIL: TestRoundLimit␛[m
 
   ␛[3;38;5;245mThe objective is one home for the round limit. The evidence is the failure above, which reads the␛[m
@@ -174,7 +174,7 @@
     ␛[38;5;245m[u]␛[m␛[38;5;241m take the steer back␛[m
   ␛[38;5;241mtree moved — 14 paths changed outside this session · 5,811 ignored␛[m
   ␛[91mError: the notebook is read-only, so nothing was written down␛[m
-   ␛[38;5;241m≡␛[m ␛[38;5;252msummary␛[m ␛[38;5;252mround 36␛[m                                        ␛[38;5;241m▸ on target␛[m␛[38;5;241m · ␛[m␛[38;5;245m1 line␛[m␛[38;5;241m · ␛[m␛[94m[enter] expand␛[m
+   ␛[38;5;241m≡␛[m ␛[38;5;252msummary␛[m ␛[38;5;252mround 36␛[m                                       ␛[38;5;241m▸ on target␛[m␛[38;5;241m · ␛[m␛[38;5;245m1 line␛[m␛[38;5;241m · ␛[m␛[94m[enter] expand␛[m
 
    ␛[92m✓␛[m ␛[38;5;252mDone␛[m␛[38;5;241m · 2 steps · 6 tools · 24.7s · $0.14␛[m                                                ␛[38;5;241mround 36/50␛[m
   ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m1 file changed ␛[m␛[92m+12␛[m ␛[91m−4␛[m␛[38;5;241m · ␛[m␛[38;5;245m[v]␛[m␛[38;5;241m review␛[m␛[38;5;241m · ␛[m␛[38;5;245m[u]␛[m␛[38;5;241m undo turn␛[m                               ␛[38;5;241mall tracked in git␛[m

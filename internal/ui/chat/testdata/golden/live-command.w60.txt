@@ -11,7 +11,7 @@
 
 ── layout ──────────────────────────────────────────────────
 · feed · the command, its outcome, its clock and its last line out
-  ▎⠋ run     go test ./internal/agent/... .…  running…   42s
+  ▎⠋ run     go test ./internal/agent/... …  running…    42s
   --- FAIL: TestRoundLimitPause/the ceiling holds the turn …
 
 · frame · the phase and the turn's clock, and no second copy
@@ -21,7 +21,7 @@
 
 ── ansi ────────────────────────────────────────────────────
 · feed · the command, its outcome, its clock and its last line out
-  ␛[38;5;214m▎␛[m␛[38;5;205m⠋␛[m ␛[97mrun␛[m     ␛[97mgo test ./internal/agent/... .…␛[m  ␛[38;5;205mrunning…␛[m   ␛[38;5;241m42s␛[m
+  ␛[38;5;214m▎␛[m␛[38;5;205m⠋␛[m ␛[97mrun␛[m     ␛[97mgo test ./internal/agent/... …␛[m  ␛[38;5;205mrunning…␛[m    ␛[38;5;241m42s␛[m
   ␛[38;5;245m--- FAIL: TestRoundLimitPause/the ceiling holds the turn …␛[m
 
 · frame · the phase and the turn's clock, and no second copy

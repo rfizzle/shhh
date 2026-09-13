@@ -145,8 +145,8 @@
 │ [esc] back to your draft — the decision stays waiting, nothing is denied                                                       │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-  ▎$ run     go test ./internal/agent/...                                                      ok · 1 line · approved by you 12.4s
-  ▎✎ edit    internal/agent/loop.go                                                       +12 −4 · 2 hunks · approved by you  1.1s
+  ▎$ run     go test ./internal/agent/...                                                     ok · 1 line · approved by you  12.4s
+  ▎✎ edit    internal/agent/loop.go                                                      +12 −4 · 2 hunks · approved by you   1.1s
 
 ── ansi ────────────────────────────────────────────────────
 · variant · command, always-allow offered
@@ -284,5 +284,5 @@
 ␛[38;5;254m│␛[m ␛[38;5;254m[esc] back to your draft — the decision stays waiting, nothing is denied␛[m                                                       ␛[38;5;254m│␛[m
 ␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
-  ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m ␛[38;5;254mrun␛[m     ␛[38;5;254mgo test ./internal/agent/...␛[m                                                      ␛[38;5;254mok␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 line␛[m␛[38;5;244m · ␛[m␛[38;5;254mapproved␛[m␛[38;5;244m by you␛[m ␛[38;5;244m12.4s␛[m
-  ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254medit␛[m    ␛[38;5;254minternal/agent/loop.go␛[m                                                       ␛[38;5;254m+12␛[m ␛[38;5;254m−4␛[m␛[38;5;244m · ␛[m␛[38;5;244m2 hunks␛[m␛[38;5;244m · ␛[m␛[38;5;254mapproved␛[m␛[38;5;244m by you␛[m  ␛[38;5;244m1.1s␛[m
+  ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m ␛[38;5;254mrun␛[m     ␛[38;5;254mgo test ./internal/agent/...␛[m                                                     ␛[38;5;254mok␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 line␛[m␛[38;5;244m · ␛[m␛[38;5;254mapproved␛[m␛[38;5;244m by you␛[m  ␛[38;5;244m12.4s␛[m
+  ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254medit␛[m    ␛[38;5;254minternal/agent/loop.go␛[m                                                      ␛[38;5;254m+12␛[m ␛[38;5;254m−4␛[m␛[38;5;244m · ␛[m␛[38;5;244m2 hunks␛[m␛[38;5;244m · ␛[m␛[38;5;254mapproved␛[m␛[38;5;244m by you␛[m   ␛[38;5;244m1.1s␛[m

@@ -23,7 +23,14 @@ const (
 	glyphWidth = 2 // the kind of act, or the state that overrides it
 	verbWidth  = 8 // closed vocabulary, left-aligned, space-padded
 	durWidth   = 6 // right-aligned; blank under 0.5s, — when it never ran
-	leadWidth  = ptrWidth + railWidth + glyphWidth + verbWidth
+	// durGap is the column between the outcome and the duration. The
+	// duration is a field and not a suffix on the outcome
+	// (docs/interface/principles.md#one-grid), so the gap is reserved rather
+	// than borrowed from the right-alignment inside durWidth: a duration
+	// that filled its field would otherwise abut the count beside it and
+	// read as one word — `43 lines1m 52s`.
+	durGap    = 1
+	leadWidth = ptrWidth + railWidth + glyphWidth + verbWidth
 
 	// detailIndent is the detail body (2 row body / 4 detail body / 6 nested
 	// detail); tailIndent is a running command's live tail.
@@ -673,7 +680,7 @@ func (r ActivityRow) fittedOutcome(width int) string {
 	if r.Allowed == "" {
 		return field
 	}
-	if width-leadWidth-durWidth-lipgloss.Width(field)-2 >= minTargetWidth {
+	if width-leadWidth-durGap-durWidth-lipgloss.Width(field)-2 >= minTargetWidth {
 		return field
 	}
 	bare := r
@@ -731,20 +738,20 @@ func gridLineWith(lead, target string, paint func(string) string, outcome, durat
 	// column the grid exists to give them
 	// (docs/interface/principles.md#one-grid). So the tail clips with …, and
 	// the head of the field — the outcome word itself — is what survives.
-	if room := width - leadWidth - durWidth - sep; outW > room {
+	if room := width - leadWidth - durGap - durWidth - sep; outW > room {
 		outcome = Clip(outcome, room)
 		outW = lipgloss.Width(outcome)
 		if outW == 0 {
 			sep = 0
 		}
 	}
-	target = Clip(target, width-leadWidth-durWidth-outW-sep)
+	target = Clip(target, width-leadWidth-durGap-durWidth-outW-sep)
 	// The gap is at least the separator, and the separator is never less
 	// than nothing — a pane narrower than the fixed fields leaves this
 	// arithmetic negative, and a negative run of spaces is a panic rather
 	// than a short line.
-	pad := max(width-leadWidth-lipgloss.Width(target)-outW-durWidth, sep)
-	line := strings.TrimRight(lead+paint(target)+strings.Repeat(" ", pad)+outcome+durationField(duration), " ")
+	pad := max(width-leadWidth-lipgloss.Width(target)-outW-durGap-durWidth, sep)
+	line := strings.TrimRight(lead+paint(target)+strings.Repeat(" ", pad)+outcome+strings.Repeat(" ", durGap)+durationField(duration), " ")
 	// The last word on the width, over fields that have already given up what
 	// they can. Below about twenty columns the fixed fields alone are wider
 	// than the pane and there is nothing left to take from them, and a row

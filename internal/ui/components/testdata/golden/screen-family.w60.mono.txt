@@ -14,7 +14,7 @@
 shhh doctor · 10 checks           1.4s · [?] keys · [q] quit
 ────────────────────────────────────────────────────────────
 
-❯  ✗ model   anthropic · claude-opus-5 · no k…  no key      
+❯  ✗ model   anthropic · claude-opus-5 · no …  no key       
     no session will start until a key is found — every one …
     [f] show the four places shhh looks
   ↓ 9 more · binary · config · store · sandbox · engine · g…
@@ -70,7 +70,7 @@ shhh rate · 1 of 5                       [?] keys · [q] quit
 ╭─ 4m ago ─────────────────────────────────────────────────╮
 │ delete every log file older than a week                  │
 │                                                          │
-│   ▎$ run     find . -name '*.log' -mtime    exit 0       │
+│   ▎$ run     find . -name '*.log' -mtime   exit 0        │
 │     +7 -delete                                           │
 ╰──────────────────────────────────────────────────────────╯
 
@@ -144,7 +144,7 @@ docs.rs
 ␛[1;38;5;254mshhh doctor␛[m␛[38;5;244m · 10 checks␛[m           ␛[38;5;244m1.4s␛[m␛[38;5;244m · [?] keys · [q] quit␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
-␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m ␛[38;5;254m✗␛[m␛[48;5;237m ␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254;48;5;237mmodel   anthropic · claude-opus-5 · no k…  no key      ␛[m␛[m
+␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m ␛[38;5;254m✗␛[m␛[48;5;237m ␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254;48;5;237mmodel   anthropic · claude-opus-5 · no …  no key       ␛[m␛[m
     ␛[38;5;244mno session will start until a key is found — every one …␛[m
     ␛[38;5;254m[f]␛[m␛[38;5;244m show the four places shhh looks␛[m
   ␛[38;5;244m↓ 9 more · binary · config · store · sandbox · engine · g…␛[m
@@ -200,7 +200,7 @@ docs.rs
 ␛[38;5;244m╭─ ␛[m␛[1;38;5;254m4m ago ␛[m␛[38;5;244m─────────────────────────────────────────────────╮␛[m
 ␛[38;5;244m│␛[m ␛[38;5;254mdelete every log file older than a week␛[m                  ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m                                                          ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m   ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m ␛[38;5;254mrun␛[m     ␛[38;5;254mfind . -name '*.log' -mtime␛[m    ␛[38;5;254mexit 0␛[m       ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m   ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m ␛[38;5;254mrun␛[m     ␛[38;5;254mfind . -name '*.log' -mtime␛[m   ␛[38;5;254mexit 0␛[m        ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m     ␛[38;5;244m+7 -delete␛[m                                           ␛[38;5;244m│␛[m
 ␛[38;5;244m╰──────────────────────────────────────────────────────────╯␛[m
 

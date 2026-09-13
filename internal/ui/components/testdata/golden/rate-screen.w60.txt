@@ -17,7 +17,7 @@ shhh rate · 1 of 5                       [?] keys · [q] quit
 ╭─ 4m ago ─────────────────────────────────────────────────╮
 │ delete every log file older than a week                  │
 │                                                          │
-│   ▎$ run     find . -name '*.log' -mtime    exit 0       │
+│   ▎$ run     find . -name '*.log' -mtime   exit 0        │
 │     +7 -delete                                           │
 ╰──────────────────────────────────────────────────────────╯
 
@@ -30,7 +30,7 @@ shhh rate · 2 of 5                       [?] keys · [q] quit
 ╭─ yesterday ──────────────────────────────────────────────╮
 │ show the ten biggest files here                          │
 │                                                          │
-│   ▎$ run     du -ah . | sort -rh | head     copied       │
+│   ▎$ run     du -ah . | sort -rh | head    copied        │
 │     -10                                                  │
 ╰──────────────────────────────────────────────────────────╯
 
@@ -44,8 +44,9 @@ shhh rate · 4 of 5                       [?] keys · [q] quit
 │ find every reference to ErrRoundLimit under internal and │
 │ sort them                                                │
 │                                                          │
-│   ▎$ run     rg --hidden --glob '!.git'     exit 0       │
-│     --line-number 'ErrRoundLimit'                        │
+│   ▎$ run     rg --hidden --glob '!.git'    exit 0        │
+│     --line-number                                        │
+│     'ErrRoundLimit'                                      │
 │     internal/agent internal/ui |                         │
 │     sort -u                                              │
 ╰──────────────────────────────────────────────────────────╯
@@ -59,7 +60,7 @@ shhh rate · 5 of 5                       [?] keys · [q] quit
 ╭─ mon ────────────────────────────────────────────────────╮
 │ get the observe dashboard to show the gate pass rate     │
 │                                                          │
-│    ◇ agent   2026-09-01T18-02 · chat ·   completed       │
+│    ◇ agent   2026-09-01T18-02 · chat ·  completed        │
 │     claude-opus-5 · 14 turns                             │
 ╰──────────────────────────────────────────────────────────╯
 
@@ -72,7 +73,7 @@ shhh rate · 5 of 5                       [?] keys · [q] quit
 ╭─ mon ────────────────────────────────────────────────────╮
 │ get the observe dashboard to show the gate pass rate     │
 │                                                          │
-│   ▎⊘ agent   2026-09-01T18-02 · chat ·   abandoned       │
+│   ▎⊘ agent   2026-09-01T18-02 · chat ·  abandoned        │
 │     claude-opus-5 · 14 turns                             │
 ╰──────────────────────────────────────────────────────────╯
 
@@ -85,7 +86,7 @@ shhh rate · 4 of 5                       [?] keys · [q] quit
 ╭─ mon ────────────────────────────────────────────────────╮
 │ find every reference to ErrRoundLimit under internal and │
 │ sort them                                                │
-│ … (+5 more rows)                                         │
+│ … (+6 more rows)                                         │
 ╰──────────────────────────────────────────────────────────╯
 
 [y] worked · [n] did not · [s] skip · [esc] stop
@@ -97,8 +98,8 @@ shhh rate · 3 of 5                       [?] keys · [q] quit
 ╭─ tue ────────────────────────────────────────────────────╮
 │ rebase onto main and force push                          │
 │                                                          │
-│   ▎✗ run     git rebase main && git push  exit 128       │
-│     --force-with-lease                                   │
+│   ▎✗ run     git rebase main && git      exit 128        │
+│     push --force-with-lease                              │
 ╰──────────────────────────────────────────────────────────╯
 
 [y] worked · [n] did not · [s] skip · [esc] stop
@@ -119,7 +120,7 @@ shhh rate · 1 of 5                       [?] keys · [q] quit
 ╭─ 4m ago ─────────────────────────────────────────────────╮
 │ delete every log file older than a week                  │
 │                                                          │
-│   ▎$ run     find . -name '*.log' -mtime    exit 0       │
+│   ▎$ run     find . -name '*.log' -mtime   exit 0        │
 │     +7 -delete                                           │
 ╰──────────────────────────────────────────────────────────╯
 
@@ -138,7 +139,7 @@ shhh rate · 1 of 5                       [?] keys · [q] quit
 ␛[38;5;241m╭─ ␛[m␛[1;97m4m ago ␛[m␛[38;5;241m─────────────────────────────────────────────────␛[m␛[38;5;241m╮␛[m
 ␛[38;5;241m│␛[m ␛[38;5;252mdelete every log file older than a week␛[m                  ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m                                                          ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m   ␛[38;5;214m▎␛[m␛[38;5;214m$␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mfind . -name '*.log' -mtime␛[m    ␛[92mexit 0␛[m       ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m   ␛[38;5;214m▎␛[m␛[38;5;214m$␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mfind . -name '*.log' -mtime␛[m   ␛[92mexit 0␛[m        ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m     ␛[38;5;245m+7 -delete␛[m                                           ␛[38;5;241m│␛[m
 ␛[38;5;241m╰──────────────────────────────────────────────────────────╯␛[m
 
@@ -151,7 +152,7 @@ shhh rate · 1 of 5                       [?] keys · [q] quit
 ␛[38;5;241m╭─ ␛[m␛[1;97myesterday ␛[m␛[38;5;241m──────────────────────────────────────────────␛[m␛[38;5;241m╮␛[m
 ␛[38;5;241m│␛[m ␛[38;5;252mshow the ten biggest files here␛[m                          ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m                                                          ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m   ␛[38;5;214m▎␛[m␛[38;5;214m$␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mdu -ah . | sort -rh | head␛[m     ␛[92mcopied␛[m       ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m   ␛[38;5;214m▎␛[m␛[38;5;214m$␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mdu -ah . | sort -rh | head␛[m    ␛[92mcopied␛[m        ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m     ␛[38;5;245m-10␛[m                                                  ␛[38;5;241m│␛[m
 ␛[38;5;241m╰──────────────────────────────────────────────────────────╯␛[m
 
@@ -165,8 +166,9 @@ shhh rate · 1 of 5                       [?] keys · [q] quit
 ␛[38;5;241m│␛[m ␛[38;5;252mfind every reference to ErrRoundLimit under internal and␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[38;5;252msort them␛[m                                                ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m                                                          ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m   ␛[38;5;214m▎␛[m␛[38;5;214m$␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mrg --hidden --glob '!.git'␛[m     ␛[92mexit 0␛[m       ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m     ␛[38;5;245m--line-number 'ErrRoundLimit'␛[m                        ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m   ␛[38;5;214m▎␛[m␛[38;5;214m$␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mrg --hidden --glob '!.git'␛[m    ␛[92mexit 0␛[m        ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m     ␛[38;5;245m--line-number␛[m                                        ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m     ␛[38;5;245m'ErrRoundLimit'␛[m                                      ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m     ␛[38;5;245minternal/agent internal/ui |␛[m                         ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m     ␛[38;5;245msort -u␛[m                                              ␛[38;5;241m│␛[m
 ␛[38;5;241m╰──────────────────────────────────────────────────────────╯␛[m
@@ -180,7 +182,7 @@ shhh rate · 1 of 5                       [?] keys · [q] quit
 ␛[38;5;241m╭─ ␛[m␛[1;97mmon ␛[m␛[38;5;241m────────────────────────────────────────────────────␛[m␛[38;5;241m╮␛[m
 ␛[38;5;241m│␛[m ␛[38;5;252mget the observe dashboard to show the gate pass rate␛[m     ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m                                                          ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m    ␛[94m◇␛[m ␛[38;5;252magent␛[m   ␛[38;5;252m2026-09-01T18-02 · chat ·␛[m   ␛[92mcompleted␛[m       ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m    ␛[94m◇␛[m ␛[38;5;252magent␛[m   ␛[38;5;252m2026-09-01T18-02 · chat ·␛[m  ␛[92mcompleted␛[m        ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m     ␛[38;5;245mclaude-opus-5 · 14 turns␛[m                             ␛[38;5;241m│␛[m
 ␛[38;5;241m╰──────────────────────────────────────────────────────────╯␛[m
 
@@ -193,7 +195,7 @@ shhh rate · 1 of 5                       [?] keys · [q] quit
 ␛[38;5;241m╭─ ␛[m␛[1;97mmon ␛[m␛[38;5;241m────────────────────────────────────────────────────␛[m␛[38;5;241m╮␛[m
 ␛[38;5;241m│␛[m ␛[38;5;252mget the observe dashboard to show the gate pass rate␛[m     ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m                                                          ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m   ␛[38;5;214m▎␛[m␛[38;5;241m⊘␛[m ␛[38;5;241magent␛[m   ␛[38;5;241m2026-09-01T18-02 · chat ·␛[m   ␛[38;5;241mabandoned␛[m       ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m   ␛[38;5;214m▎␛[m␛[38;5;241m⊘␛[m ␛[38;5;241magent␛[m   ␛[38;5;241m2026-09-01T18-02 · chat ·␛[m  ␛[38;5;241mabandoned␛[m        ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m     ␛[38;5;245mclaude-opus-5 · 14 turns␛[m                             ␛[38;5;241m│␛[m
 ␛[38;5;241m╰──────────────────────────────────────────────────────────╯␛[m
 
@@ -206,7 +208,7 @@ shhh rate · 1 of 5                       [?] keys · [q] quit
 ␛[38;5;241m╭─ ␛[m␛[1;97mmon ␛[m␛[38;5;241m────────────────────────────────────────────────────␛[m␛[38;5;241m╮␛[m
 ␛[38;5;241m│␛[m ␛[38;5;252mfind every reference to ErrRoundLimit under internal and␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[38;5;252msort them␛[m                                                ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[38;5;241m… (+5 more rows)␛[m                                         ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[38;5;241m… (+6 more rows)␛[m                                         ␛[38;5;241m│␛[m
 ␛[38;5;241m╰──────────────────────────────────────────────────────────╯␛[m
 
 ␛[94m[y]␛[m␛[38;5;241m worked␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m␛[38;5;241m did not␛[m␛[38;5;241m · ␛[m␛[94m[s]␛[m␛[38;5;241m skip␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m stop␛[m
@@ -218,8 +220,8 @@ shhh rate · 1 of 5                       [?] keys · [q] quit
 ␛[38;5;241m╭─ ␛[m␛[1;97mtue ␛[m␛[38;5;241m────────────────────────────────────────────────────␛[m␛[38;5;241m╮␛[m
 ␛[38;5;241m│␛[m ␛[38;5;252mrebase onto main and force push␛[m                          ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m                                                          ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m   ␛[91m▎␛[m␛[91m✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgit rebase main && git push␛[m  ␛[91mexit 128␛[m       ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m     ␛[38;5;245m--force-with-lease␛[m                                   ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m   ␛[91m▎␛[m␛[91m✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgit rebase main && git␛[m      ␛[91mexit 128␛[m        ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m     ␛[38;5;245mpush --force-with-lease␛[m                              ␛[38;5;241m│␛[m
 ␛[38;5;241m╰──────────────────────────────────────────────────────────╯␛[m
 
 ␛[94m[y]␛[m␛[38;5;241m worked␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m␛[38;5;241m did not␛[m␛[38;5;241m · ␛[m␛[94m[s]␛[m␛[38;5;241m skip␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m stop␛[m
@@ -240,7 +242,7 @@ shhh rate · 1 of 5                       [?] keys · [q] quit
 ␛[38;5;241m╭─ ␛[m␛[1;97m4m ago ␛[m␛[38;5;241m─────────────────────────────────────────────────␛[m␛[38;5;241m╮␛[m
 ␛[38;5;241m│␛[m ␛[38;5;252mdelete every log file older than a week␛[m                  ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m                                                          ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m   ␛[38;5;214m▎␛[m␛[38;5;214m$␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mfind . -name '*.log' -mtime␛[m    ␛[92mexit 0␛[m       ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m   ␛[38;5;214m▎␛[m␛[38;5;214m$␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mfind . -name '*.log' -mtime␛[m   ␛[92mexit 0␛[m        ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m     ␛[38;5;245m+7 -delete␛[m                                           ␛[38;5;241m│␛[m
 ␛[38;5;241m╰──────────────────────────────────────────────────────────╯␛[m
 

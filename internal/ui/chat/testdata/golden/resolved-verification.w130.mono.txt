@@ -14,10 +14,10 @@
 ❯ make the loop stop double-counting
 ─────────────────────────────────────────────────────────────────────────────
 
-  ▎✗ run     go test ./internal/agent/...                        exit 1  4.2s
+  ▎✗ run     go test ./internal/agent/...                       exit 1   4.2s
     --- FAIL: TestLoopRounds
         loop_test.go:214: want 3 rounds, got 4
-  ▎$ run     quality gate · default · 2 checks                  4 lines
+  ▎$ run     quality gate · default · 2 checks                 4 lines
 
    ✓ Done · 2 steps · 6 tools · 1m 12s · $0.18                     round 5/25
   ▎✎ 1 file changed +12 −3 · [ctrl+o] read                        all tracked
@@ -28,7 +28,7 @@
 ❯ make the loop stop double-counting
 ─────────────────────────────────────────────────────────────────────────────
 
-  ▎✗ run     go test ./internal/agent/...                        exit 1  4.2s
+  ▎✗ run     go test ./internal/agent/...                       exit 1   4.2s
     --- FAIL: TestLoopRounds
         loop_test.go:214: want 3 rounds, got 4
 
@@ -42,10 +42,10 @@
 ␛[38;5;254m❯␛[m make the loop stop double-counting
 ␛[38;5;244m─────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;254m▎␛[m␛[38;5;254m✗␛[m ␛[38;5;254mrun␛[m     ␛[38;5;254mgo test ./internal/agent/...␛[m                        ␛[38;5;254mexit 1␛[m  ␛[38;5;244m4.2s␛[m
+  ␛[38;5;254m▎␛[m␛[38;5;254m✗␛[m ␛[38;5;254mrun␛[m     ␛[38;5;254mgo test ./internal/agent/...␛[m                       ␛[38;5;254mexit 1␛[m   ␛[38;5;244m4.2s␛[m
     ␛[38;5;244m--- FAIL: TestLoopRounds␛[m
     ␛[38;5;244m    loop_test.go:214: want 3 rounds, got 4␛[m
-  ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m ␛[38;5;254mrun␛[m     ␛[38;5;254mquality gate · default · 2 checks␛[m                  ␛[38;5;244m4 lines␛[m
+  ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m ␛[38;5;254mrun␛[m     ␛[38;5;254mquality gate · default · 2 checks␛[m                 ␛[38;5;244m4 lines␛[m
 
    ␛[38;5;254m✓␛[m ␛[38;5;254mDone␛[m␛[38;5;244m · 2 steps · 6 tools · 1m 12s · $0.18␛[m                     ␛[38;5;244mround 5/25␛[m
   ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m1 file changed ␛[m␛[38;5;254m+12␛[m ␛[38;5;254m−3␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+o]␛[m␛[38;5;254m read␛[m                        ␛[38;5;244mall tracked␛[m
@@ -56,7 +56,7 @@
 ␛[38;5;254m❯␛[m make the loop stop double-counting
 ␛[38;5;244m─────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;254m▎␛[m␛[38;5;254m✗␛[m ␛[38;5;254mrun␛[m     ␛[38;5;254mgo test ./internal/agent/...␛[m                        ␛[38;5;254mexit 1␛[m  ␛[38;5;244m4.2s␛[m
+  ␛[38;5;254m▎␛[m␛[38;5;254m✗␛[m ␛[38;5;254mrun␛[m     ␛[38;5;254mgo test ./internal/agent/...␛[m                       ␛[38;5;254mexit 1␛[m   ␛[38;5;244m4.2s␛[m
     ␛[38;5;244m--- FAIL: TestLoopRounds␛[m
     ␛[38;5;244m    loop_test.go:214: want 3 rounds, got 4␛[m
 

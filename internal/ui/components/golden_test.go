@@ -130,6 +130,13 @@ func TestGolden_ActivityRows(t *testing.T) {
 				r.Kind, r.Verb, r.Target = ActivityCommand, "run", "quality gate · default · 5 checks"
 				r.Counts, r.Duration = "43 lines", "112s"
 			})},
+			// The duration is a field and not a suffix, so the column in
+			// front of it is reserved: one that fills its six columns still
+			// reads apart from the count beside it.
+			{Label: "duration · one that fills the field keeps its gap", View: row(func(r *ActivityRow) {
+				r.Kind, r.Verb, r.Target = ActivityCommand, "run", "quality gate · default · 5 checks"
+				r.Counts, r.Duration = "43 lines", "1m 52s"
+			})},
 			{Label: "target · a history read is the command it stands for", View: row(func(r *ActivityRow) {
 				r.Verb, r.Target = "read", "git status"
 				r.Counts, r.Duration = "14 lines", "0.2s"

@@ -11,16 +11,16 @@
 
 ── layout ──────────────────────────────────────────────────
 · found, not printed
-   ⚙ search  steeringItem ./intern…  50+ matches  0.9s
-   ⚙ search  queuedSteer ./internal/ui…  2 files
-   ⚙ glob    **/*.go ./internal/ui/ch…  2+ items
+   ⚙ search  steeringItem ./inter…  50+ matches   0.9s
+   ⚙ search  queuedSteer ./internal/u…  2 files
+   ⚙ glob    **/*.go ./internal/ui/c…  2+ items
    ⚙ search  authorOf ./internal/ui/chat
 
 
 ── ansi ────────────────────────────────────────────────────
 · found, not printed
-   ␛[38;5;254m⚙␛[m ␛[38;5;254msearch␛[m  ␛[38;5;254msteeringItem ./intern…␛[m  ␛[38;5;244m50+ matches␛[m  ␛[38;5;244m0.9s␛[m
-   ␛[38;5;254m⚙␛[m ␛[38;5;254msearch␛[m  ␛[38;5;254mqueuedSteer ./internal/ui…␛[m  ␛[38;5;244m2 files␛[m
-   ␛[38;5;254m⚙␛[m ␛[38;5;254mglob␛[m    ␛[38;5;254m**/*.go ./internal/ui/ch…␛[m  ␛[38;5;244m2+ items␛[m
+   ␛[38;5;254m⚙␛[m ␛[38;5;254msearch␛[m  ␛[38;5;254msteeringItem ./inter…␛[m  ␛[38;5;244m50+ matches␛[m   ␛[38;5;244m0.9s␛[m
+   ␛[38;5;254m⚙␛[m ␛[38;5;254msearch␛[m  ␛[38;5;254mqueuedSteer ./internal/u…␛[m  ␛[38;5;244m2 files␛[m
+   ␛[38;5;254m⚙␛[m ␛[38;5;254mglob␛[m    ␛[38;5;254m**/*.go ./internal/ui/c…␛[m  ␛[38;5;244m2+ items␛[m
    ␛[38;5;254m⚙␛[m ␛[38;5;254msearch␛[m  ␛[38;5;254mauthorOf␛[m␛[38;5;244m ./internal/ui/chat␛[m
 

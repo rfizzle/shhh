@@ -14,7 +14,7 @@
 ❯ build it and run the tests
 ────────────────────────────────────────────────────────────────────────────────────────────────────────
 
-  ▎$ run     GOCACHE=$PWD/.cache/gocache go build ./...                                ok · 1 line  8.2s
+  ▎$ run     GOCACHE=$PWD/.cache/gocache go build ./...                               ok · 1 line   8.2s
   tree moved — 14 paths changed outside this session
 
 
@@ -22,7 +22,7 @@
 ❯ build it and run the tests
 ────────────────────────────────────────────────────────────────────────────────────────────────────────
 
-  ▎$ run     GOCACHE=$PWD/.cache/gocache go build ./...                                ok · 1 line  8.2s
+  ▎$ run     GOCACHE=$PWD/.cache/gocache go build ./...                               ok · 1 line   8.2s
   tree moved — 14 paths changed outside this session · 5,811 ignored
 
 
@@ -31,7 +31,7 @@
 ␛[38;5;254m❯␛[m build it and run the tests
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m ␛[38;5;254mrun␛[m     ␛[38;5;254mGOCACHE=$PWD/.cache/gocache go build ./...␛[m                                ␛[38;5;254mok␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 line␛[m  ␛[38;5;244m8.2s␛[m
+  ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m ␛[38;5;254mrun␛[m     ␛[38;5;254mGOCACHE=$PWD/.cache/gocache go build ./...␛[m                               ␛[38;5;254mok␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 line␛[m   ␛[38;5;244m8.2s␛[m
   ␛[38;5;244mtree moved — 14 paths changed outside this session␛[m
 
 
@@ -39,6 +39,6 @@
 ␛[38;5;254m❯␛[m build it and run the tests
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m ␛[38;5;254mrun␛[m     ␛[38;5;254mGOCACHE=$PWD/.cache/gocache go build ./...␛[m                                ␛[38;5;254mok␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 line␛[m  ␛[38;5;244m8.2s␛[m
+  ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m ␛[38;5;254mrun␛[m     ␛[38;5;254mGOCACHE=$PWD/.cache/gocache go build ./...␛[m                               ␛[38;5;254mok␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 line␛[m   ␛[38;5;244m8.2s␛[m
   ␛[38;5;244mtree moved — 14 paths changed outside this session · 5,811 ignored␛[m
 

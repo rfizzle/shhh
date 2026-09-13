@@ -307,7 +307,7 @@ func TestDiffView_TheAccountGivesWayToThePath(t *testing.T) {
 	}
 	// And spends what the account was taking on the path, which then clips
 	// where the grid clips every target rather than where this view would.
-	if !strings.Contains(narrow, "internal/ui/chat/approva") {
+	if !strings.Contains(narrow, "internal/ui/chat/approv") {
 		t.Fatalf("and spends the room on the path:\n%s", narrow)
 	}
 	// The expanded form answers the same way, so opening a row never loses

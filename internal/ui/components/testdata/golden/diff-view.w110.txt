@@ -11,14 +11,14 @@
 
 ── layout ──────────────────────────────────────────────────
 · mode · collapsed (transcript row)
-  ▎✎ edit    internal/agent/loop.go                                                       +2 −1 · 1 hunk
+  ▎✎ edit    internal/agent/loop.go                                                      +2 −1 · 1 hunk
 
 · account · you answered the card, or a rule did
-  ▎✎ edit    internal/agent/loop.go                                     +2 −1 · 1 hunk · approved by you  1.1s
-  ▎✎ edit    internal/agent/loop.go                            +2 −1 · 1 hunk · auto-allowed · auto mode  1.1s
+  ▎✎ edit    internal/agent/loop.go                                    +2 −1 · 1 hunk · approved by you   1.1s
+  ▎✎ edit    internal/agent/loop.go                           +2 −1 · 1 hunk · auto-allowed · auto mode   1.1s
 
 · mode · expanded (bounded body)
-  ▎✎ edit    internal/agent/loop.go                                                       +2 −1 · 1 hunk
+  ▎✎ edit    internal/agent/loop.go                                                      +2 −1 · 1 hunk
     @@ -138,6 +138,7 @@
       138      for round := 0; ; round++ {
       139          if round >= a.maxRounds {
@@ -46,14 +46,14 @@ diff · [j/k] scroll · [n/p] hunk · [s] side-by-side · [esc] back
 
 ── ansi ────────────────────────────────────────────────────
 · mode · collapsed (transcript row)
-  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252medit␛[m    ␛[38;5;252minternal/agent/loop.go␛[m                                                       ␛[92m+2␛[m ␛[91m−1␛[m␛[38;5;245m · ␛[m␛[38;5;245m1 hunk␛[m
+  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252medit␛[m    ␛[38;5;252minternal/agent/loop.go␛[m                                                      ␛[92m+2␛[m ␛[91m−1␛[m␛[38;5;245m · ␛[m␛[38;5;245m1 hunk␛[m
 
 · account · you answered the card, or a rule did
-  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252medit␛[m    ␛[38;5;252minternal/agent/loop.go␛[m                                     ␛[92m+2␛[m ␛[91m−1␛[m␛[38;5;245m · ␛[m␛[38;5;245m1 hunk␛[m␛[38;5;241m · ␛[m␛[92mapproved␛[m␛[38;5;241m by you␛[m  ␛[38;5;241m1.1s␛[m
-  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252medit␛[m    ␛[38;5;252minternal/agent/loop.go␛[m                            ␛[92m+2␛[m ␛[91m−1␛[m␛[38;5;245m · ␛[m␛[38;5;245m1 hunk␛[m␛[38;5;241m · ␛[m␛[38;5;241mauto-allowed · auto mode␛[m  ␛[38;5;241m1.1s␛[m
+  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252medit␛[m    ␛[38;5;252minternal/agent/loop.go␛[m                                    ␛[92m+2␛[m ␛[91m−1␛[m␛[38;5;245m · ␛[m␛[38;5;245m1 hunk␛[m␛[38;5;241m · ␛[m␛[92mapproved␛[m␛[38;5;241m by you␛[m   ␛[38;5;241m1.1s␛[m
+  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252medit␛[m    ␛[38;5;252minternal/agent/loop.go␛[m                           ␛[92m+2␛[m ␛[91m−1␛[m␛[38;5;245m · ␛[m␛[38;5;245m1 hunk␛[m␛[38;5;241m · ␛[m␛[38;5;241mauto-allowed · auto mode␛[m   ␛[38;5;241m1.1s␛[m
 
 · mode · expanded (bounded body)
-  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252medit␛[m    ␛[38;5;252minternal/agent/loop.go␛[m                                                       ␛[92m+2␛[m ␛[91m−1␛[m␛[38;5;245m · ␛[m␛[38;5;245m1 hunk␛[m
+  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252medit␛[m    ␛[38;5;252minternal/agent/loop.go␛[m                                                      ␛[92m+2␛[m ␛[91m−1␛[m␛[38;5;245m · ␛[m␛[38;5;245m1 hunk␛[m
     ␛[96m@@ -138,6 +138,7 @@␛[m
     ␛[38;5;241m  138  ␛[m␛[38;5;245m    for round := 0; ; round++ {␛[m
     ␛[38;5;241m  139  ␛[m␛[38;5;245m        if round >= a.maxRounds {␛[m

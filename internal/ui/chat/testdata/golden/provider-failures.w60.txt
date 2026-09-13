@@ -14,7 +14,7 @@
 ❯ rename the round-limit sentinel
 ──────────────────────────────────────────────────────
 
-   ✗ model   gpt-4o · 401…  key ···4f9c rejected
+   ✗ model   gpt-4o · 40…  key ···4f9c rejected
     Incorrect API key provided
     [e] enter a new key · [p] switch provider
     [ctrl+o] to use them
@@ -25,7 +25,7 @@
 ❯ rename the round-limit sentinel
 ──────────────────────────────────────────────────────
 
-   ⚠ model   gpt-4o · 429 rate li…  retry in 38s
+   ⚠ model   gpt-4o · 429 rate l…  retry in 38s
     Rate limit reached for gpt-4o. Please try again i…
     [r] try again · [p] switch provider
     [ctrl+o] to use them
@@ -36,7 +36,7 @@
 ❯ rename the round-limit sentinel
 ──────────────────────────────────────────────────────
 
-   ✗ model   gpt-4o · 400 cont…  over the window
+   ✗ model   gpt-4o · 400 con…  over the window
     This model's maximum context length is 128000 tok…
     [c] compact now · [r] then try again
     [ctrl+o] to use them
@@ -47,7 +47,7 @@
 ❯ rename the round-limit sentinel
 ──────────────────────────────────────────────────────
 
-   ✗ model   gpt-4o · 400 unclas…  message below
+   ✗ model   gpt-4o · 400 uncla…  message below
     Unknown parameter: 'reasoning.effort'
     [r] try again · [p] switch provider
     [ctrl+o] to use them
@@ -59,7 +59,7 @@
 ␛[94m❯␛[m ␛[97mrename the round-limit sentinel␛[m
 ␛[38;5;243m──────────────────────────────────────────────────────␛[m
 
-   ␛[91m✗␛[m ␛[38;5;252mmodel␛[m   ␛[38;5;252mgpt-4o␛[m␛[38;5;241m · 401…␛[m  ␛[91mkey ···4f9c rejected␛[m
+   ␛[91m✗␛[m ␛[38;5;252mmodel␛[m   ␛[38;5;252mgpt-4o␛[m␛[38;5;241m · 40…␛[m  ␛[91mkey ···4f9c rejected␛[m
     ␛[38;5;245mIncorrect API key provided␛[m
     ␛[38;5;245m[e]␛[m␛[38;5;241m enter a new key␛[m␛[38;5;241m · ␛[m␛[38;5;245m[p]␛[m␛[38;5;241m switch provider␛[m
     ␛[94m[ctrl+o]␛[m␛[38;5;252m to use them␛[m
@@ -70,7 +70,7 @@
 ␛[94m❯␛[m ␛[97mrename the round-limit sentinel␛[m
 ␛[38;5;243m──────────────────────────────────────────────────────␛[m
 
-   ␛[38;5;214m⚠␛[m ␛[38;5;252mmodel␛[m   ␛[38;5;252mgpt-4o␛[m␛[38;5;241m · 429 rate li…␛[m  ␛[38;5;214mretry in 38s␛[m
+   ␛[38;5;214m⚠␛[m ␛[38;5;252mmodel␛[m   ␛[38;5;252mgpt-4o␛[m␛[38;5;241m · 429 rate l…␛[m  ␛[38;5;214mretry in 38s␛[m
     ␛[38;5;245mRate limit reached for gpt-4o. Please try again i…␛[m
     ␛[38;5;245m[r]␛[m␛[38;5;241m try again␛[m␛[38;5;241m · ␛[m␛[38;5;245m[p]␛[m␛[38;5;241m switch provider␛[m
     ␛[94m[ctrl+o]␛[m␛[38;5;252m to use them␛[m
@@ -81,7 +81,7 @@
 ␛[94m❯␛[m ␛[97mrename the round-limit sentinel␛[m
 ␛[38;5;243m──────────────────────────────────────────────────────␛[m
 
-   ␛[91m✗␛[m ␛[38;5;252mmodel␛[m   ␛[38;5;252mgpt-4o␛[m␛[38;5;241m · 400 cont…␛[m  ␛[91mover the window␛[m
+   ␛[91m✗␛[m ␛[38;5;252mmodel␛[m   ␛[38;5;252mgpt-4o␛[m␛[38;5;241m · 400 con…␛[m  ␛[91mover the window␛[m
     ␛[38;5;245mThis model's maximum context length is 128000 tok…␛[m
     ␛[38;5;245m[c]␛[m␛[38;5;241m compact now␛[m␛[38;5;241m · ␛[m␛[38;5;245m[r]␛[m␛[38;5;241m then try again␛[m
     ␛[94m[ctrl+o]␛[m␛[38;5;252m to use them␛[m
@@ -92,7 +92,7 @@
 ␛[94m❯␛[m ␛[97mrename the round-limit sentinel␛[m
 ␛[38;5;243m──────────────────────────────────────────────────────␛[m
 
-   ␛[91m✗␛[m ␛[38;5;252mmodel␛[m   ␛[38;5;252mgpt-4o␛[m␛[38;5;241m · 400 unclas…␛[m  ␛[91mmessage below␛[m
+   ␛[91m✗␛[m ␛[38;5;252mmodel␛[m   ␛[38;5;252mgpt-4o␛[m␛[38;5;241m · 400 uncla…␛[m  ␛[91mmessage below␛[m
     ␛[38;5;245mUnknown parameter: 'reasoning.effort'␛[m
     ␛[38;5;245m[r]␛[m␛[38;5;241m try again␛[m␛[38;5;241m · ␛[m␛[38;5;245m[p]␛[m␛[38;5;241m switch provider␛[m
     ␛[94m[ctrl+o]␛[m␛[38;5;252m to use them␛[m

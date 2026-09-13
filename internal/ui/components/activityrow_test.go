@@ -58,13 +58,35 @@ func TestActivityRow_GridAlignment(t *testing.T) {
 				t.Fatalf("width %d: row %d target starts at %d, want %d", width, i, col, leadWidth)
 			}
 		}
-		// Rows carrying a duration end at the right edge; the duration field is
-		// reserved on the others, so their outcomes stop 6 columns short.
+		// Rows carrying a duration end at the right edge; the duration field
+		// and the gap in front of it are reserved on the others, so their
+		// outcomes stop 7 columns short.
 		if got := rights[0]; got != width {
 			t.Fatalf("width %d: a row with a duration should reach the right edge, got %d", width, got)
 		}
-		if got := rights[1]; got != width-durWidth {
-			t.Fatalf("width %d: a row without a duration should stop %d short, got %d", width, durWidth, width-got)
+		if got := rights[1]; got != width-durWidth-durGap {
+			t.Fatalf("width %d: a row without a duration should stop %d short, got %d", width, durWidth+durGap, width-got)
+		}
+	}
+}
+
+// A duration wide enough to fill its field keeps the column between it and
+// the outcome. The gap is reserved rather than borrowed from the duration's
+// own right-alignment, which is a gap that disappears exactly when the
+// duration is widest: `43 lines1m 52s` is one word to read and two facts.
+func TestActivityRow_WideDurationKeepsItsGap(t *testing.T) {
+	r := ActivityRow{Kind: ActivityCommand, Verb: "run",
+		Target: "quality gate · default · 5 checks", Counts: "43 lines", Duration: "1m 52s"}
+	if lipgloss.Width(r.Duration) != durWidth {
+		t.Fatalf("this test is about a duration that fills the field, got %q", r.Duration)
+	}
+	for _, width := range []int{60, 80, 120} {
+		line := stripANSI(r.View(width))
+		if w := len([]rune(line)); w != width {
+			t.Fatalf("width %d: a row with a duration reaches the right edge, got %d: %q", width, w, line)
+		}
+		if !strings.Contains(line, r.Counts+" "+r.Duration) {
+			t.Fatalf("width %d: the counts and the duration should keep a gap: %q", width, line)
 		}
 	}
 }
@@ -427,7 +449,7 @@ func TestActivityRow_ScopeStaysBehindTheSubject(t *testing.T) {
 	if strings.Contains(stripANSI(narrow), "./internal/ui/chat") {
 		t.Fatalf("a 40-column row has no room for the scope: %q", stripANSI(narrow))
 	}
-	if want := sty.Body.Render("ErrRoundL…"); !strings.Contains(narrow, want) {
+	if want := sty.Body.Render("ErrRound…"); !strings.Contains(narrow, want) {
 		t.Fatalf("and what is left of the field is all subject: %q", narrow)
 	}
 }

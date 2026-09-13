@@ -422,7 +422,7 @@ func gridRows(act ActivityRow, target string, width int) []string {
 	// plain text rather than through wrapSpans because the grid does its own
 	// painting, and a styled run it clipped would leave half an escape sequence
 	// behind.
-	head := width - leadWidth - durWidth - lipgloss.Width(act.Outcome) - 2
+	head := width - leadWidth - durGap - durWidth - lipgloss.Width(act.Outcome) - 2
 	rest := max(width-detailIndent, 8)
 	// A pane whose fixed fields have taken all of it leaves the row nothing to
 	// wrap into, and a first line written anyway is one the grid clips — which
