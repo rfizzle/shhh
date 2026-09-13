@@ -199,7 +199,7 @@ func TestReadingHint_CollapseIsOfferedOnlyWhenSomethingIsOpen(t *testing.T) {
 // offers none renders no second line at all.
 func TestReadingHint_RowKeysAreASecondLineUnderTheRowsOwnRail(t *testing.T) {
 	m := readingModel(t, 130)
-	rows := m.readingRowLines(m.contentWidth(), inputHeight-1)
+	rows := m.readingRowLines(m.contentWidth(), minPanelHeight-1)
 	if len(rows) != 1 {
 		t.Fatalf("the close row offers keys, so it should carry one line, got %d", len(rows))
 	}
@@ -215,7 +215,7 @@ func TestReadingHint_RowKeysAreASecondLineUnderTheRowsOwnRail(t *testing.T) {
 
 	m.moveFocus(-1)
 	m.moveFocus(-1)
-	if rows := m.readingRowLines(m.contentWidth(), inputHeight-1); len(rows) != 0 {
+	if rows := m.readingRowLines(m.contentWidth(), minPanelHeight-1); len(rows) != 0 {
 		t.Fatalf("an edit row offers no keys, so it should say nothing, got %q", rows)
 	}
 }

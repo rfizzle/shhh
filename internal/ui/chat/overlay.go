@@ -309,9 +309,10 @@ func buildOverlays() map[state]*mode {
 		stateFocus: {
 			place:   placePanel,
 			borrows: true,
-			// The reading bar is normally the input's three rows; `[?]` grows it
-			// into the mode's key register, and the panel pays for it out of the
-			// transcript the way every other panel does.
+			// The reading bar is normally the panel's three rest rows
+			// (minPanelHeight); `[?]` grows it into the mode's key register, and
+			// the panel pays for it out of the transcript the way every other
+			// panel does.
 			lines: panelRows((Model).focusHintLines),
 			// The one row of this mode that is typed into rather than read is
 			// the transcript search's query, so the cursor is placed on it

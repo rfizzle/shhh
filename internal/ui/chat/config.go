@@ -121,5 +121,5 @@ func (m Model) configScreenLines(width, height int) []string {
 // screen's does.
 func (m Model) renderConfigHint() string {
 	hint := segAs(keys.Screen.Quit, "back to the prompt")
-	return sty.SystemMsg.Render("config · ") + hint.render() + strings.Repeat("\n", inputHeight-1)
+	return sty.SystemMsg.Render("config · ") + hint.render()
 }

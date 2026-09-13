@@ -228,5 +228,5 @@ func (m Model) renderDiffFullHint() string {
 	if m.diffReturn == stateConfirmRun {
 		label = segAs(keys.Diff.Back, "back to the approval prompt")
 	}
-	return label.render() + strings.Repeat("\n", inputHeight-1)
+	return label.render()
 }

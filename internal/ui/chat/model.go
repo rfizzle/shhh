@@ -202,7 +202,14 @@ const (
 	stateRewindScope
 )
 
-const inputHeight = 3
+// minPanelHeight is the fewest rows the bottom panel takes: what a surface
+// with less than that to draw is padded out to, and the floor under every
+// bound the panel is grown against. It was the draft box's fixed height until
+// the box began to follow its own content (frame.go, minDraftRows), and the
+// panel's own floor is what the number has meant since. A one-line hint left
+// by a full-screen surface is not held to it — that hint follows the box down
+// to its resting row (approval.go, resolvePanel).
+const minPanelHeight = 3
 const headerHeight = 1
 const dividerHeight = 1
 const statusBarHeight = 1

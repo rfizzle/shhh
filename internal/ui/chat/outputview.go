@@ -167,5 +167,5 @@ func (m Model) renderOutputFullHint() string {
 	case stateQuestion:
 		label = segAs(keys.Output.Back, "back to the question")
 	}
-	return label.render() + strings.Repeat("\n", inputHeight-1)
+	return label.render()
 }

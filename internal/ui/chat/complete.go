@@ -604,9 +604,12 @@ func (m Model) completionMenuLines() []string {
 		return nil
 	}
 	width := m.completionMenuWidth()
-	// The input (inputHeight rows) plus the menu must fit the confirm-panel
-	// cap; on very short terminals the hint line goes first, then rows.
-	budget := max(m.maxConfirmPanelHeight()-inputHeight, 1)
+	// The box's own rows plus the menu must fit the confirm-panel cap; on
+	// very short terminals the hint line goes first, then rows. The box is
+	// asked how tall it is rather than assumed to be three rows: it follows
+	// its content now (frame.go, syncInputHeight), so a menu budgeted against
+	// a constant would leave the rows an empty draft is not using unspent.
+	budget := max(m.maxConfirmPanelHeight()-m.input.Height(), 1)
 	showHint := budget >= 2
 	if showHint {
 		budget--

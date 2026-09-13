@@ -974,5 +974,5 @@ func (m Model) focusHintLines() []string {
 		return m.readingKeyListLines(width, m.maxConfirmPanelHeight())
 	}
 	lines := []string{m.readingKeyLine(width)}
-	return append(lines, m.readingRowLines(width, inputHeight-1)...)
+	return append(lines, m.readingRowLines(width, minPanelHeight-1)...)
 }

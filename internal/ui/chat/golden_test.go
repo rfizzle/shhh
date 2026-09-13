@@ -1140,14 +1140,19 @@ func TestGolden_ContextScreen(t *testing.T) {
 // TestGolden_SourcesScreen captures the sources screen through the host: the
 // rows are resolved from a real ledger rather than from a fixture of drawn
 // strings, so what the screen says a fetch cost is what the ledger recorded.
+// The last panel is what the screen leaves at the foot of the terminal — the
+// one row the hint is written on, which is the row the draft box was resting
+// at, so opening the screen does not move the panel.
 func TestGolden_SourcesScreen(t *testing.T) {
 	captureGolden(t, "sources-screen", "the ledger of what the session read", goldenWidths, func(width int) []golden.Panel {
 		m := sendText(t, sourcesModel(t, width), "/sources")
 		opened := strings.Join(m.sourcesLines(), "\n")
+		panel := m.takeoverPanel(m.contentWidth())
 		m.sources.Focus = 1
 		return []golden.Panel{
 			{Label: "as it opens · the pointer on the last thing read", View: opened},
 			{Label: "a page that was kept · the preview opens it", View: strings.Join(m.sourcesLines(), "\n")},
+			{Label: "the panel it leaves · the way out, on one row", View: panel},
 		}
 	})
 }

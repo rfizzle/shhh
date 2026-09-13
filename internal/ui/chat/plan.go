@@ -234,7 +234,7 @@ func (m Model) savePlanFromCard() (tea.Model, tea.Cmd) {
 // leave room for none of them, which is a prompt about nothing. It gets 60%,
 // and the transcript keeps the plan in full either way.
 func (m Model) planPanelBound() int {
-	return max(m.height*3/5, inputHeight)
+	return max(m.height*3/5, minPanelHeight)
 }
 
 // planCard builds the card from the plan armed when the prompt opened. It

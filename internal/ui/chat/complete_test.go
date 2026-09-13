@@ -41,6 +41,36 @@ func TestCompletion_OpensOnSlashPrefix(t *testing.T) {
 	}
 }
 
+// The menu is budgeted against the rows the box is actually drawing. On a
+// terminal short enough for the cap to bite, a menu with more to show than
+// fits spends the cap to the row: the box's rows plus the menu's are the cap
+// exactly. Budgeting against a fixed three rows left the two rows an empty
+// draft is not using unspent, so the menu showed two commands fewer than
+// there was room for.
+func TestCompletion_MenuBudgetFollowsTheBox(t *testing.T) {
+	base := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream)
+	updated, _ := base.Update(tea.WindowSizeMsg{Width: 100, Height: 18})
+	m := typeChars(t, updated.(Model), "/")
+	if !m.completionActive() {
+		t.Fatal("fixture: a bare slash should open the registry")
+	}
+	if m.input.Height() != minDraftRows {
+		t.Fatalf("fixture: a slash command is one line, box height %d", m.input.Height())
+	}
+	bound, menu := m.maxConfirmPanelHeight(), len(m.completionMenuLines())
+	rows := m.input.Height() + menu
+	if rows > bound {
+		t.Fatalf("the box and its menu take %d rows, past the %d-row cap", rows, bound)
+	}
+	// The hint line is the row the menu sheds last, so a menu holding more
+	// than it drew is one the cap cut — and a cut menu that stopped short of
+	// the cap is a budget counted against something other than the box.
+	if menu-1 < min(len(m.complete.items), maxCompletionRows) && rows != bound {
+		t.Fatalf("the menu was cut at %d of %d rows with %d of the %d-row cap unspent",
+			menu-1, len(m.complete.items), bound-rows, bound)
+	}
+}
+
 func TestCompletion_NoMenuForPlainText(t *testing.T) {
 	m := typeChars(t, readyModel(t), "hello")
 	if m.completionActive() {

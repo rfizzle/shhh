@@ -1438,15 +1438,19 @@ func (m Model) resolvePanel() panelBody {
 	if cover != nil {
 		body = cover
 	}
-	if n := len(lines); n > inputHeight {
+	if n := len(lines); n > minPanelHeight {
 		return panelBody{lines: body, height: min(n, bound)}
 	}
 	if lines == nil {
 		if o := overlayFor(m.state); o != nil && o.place == placePane {
-			// A pane overlay replaces the input with a one-line hint; a grown
-			// draft comes back with the input, and paying its rows here would
-			// blank most of the panel under the hint.
-			return panelBody{lines: cover, height: inputHeight}
+			// A pane overlay replaces the input with a one-line hint, and the
+			// hint costs what the box at rest costs (frame.go, minDraftRows):
+			// a surface opened over an idle draft would otherwise push the
+			// panel two rows open and let it shut again on the way out, which
+			// is the compact frame jumping on every diff, review and
+			// /sources. A grown draft comes back with the input, so its rows
+			// are not paid for here either.
+			return panelBody{lines: cover, height: minDraftRows}
 		}
 		// The bare draft box: its height follows its content (frame.go,
 		// syncInputHeight), so the panel reads the box rather than a
@@ -1456,7 +1460,7 @@ func (m Model) resolvePanel() panelBody {
 		// transcript.
 		return panelBody{lines: cover, height: m.input.Height()}
 	}
-	return panelBody{lines: body, height: inputHeight}
+	return panelBody{lines: body, height: minPanelHeight}
 }
 
 // testHookRenderPanel, when non-nil, observes every render of the bottom
@@ -1470,7 +1474,7 @@ var testHookRenderPanel func()
 // viewport (docs/interface/principles.md#the-grammar: at most 40% of terminal
 // height).
 func (m Model) maxConfirmPanelHeight() int {
-	return max(m.height*2/5, inputHeight)
+	return max(m.height*2/5, minPanelHeight)
 }
 
 // syncViewportHeight resizes the viewport when the bottom panel grows or

@@ -1053,19 +1053,35 @@ func TestDraftBoxReportsTheRowsItDraws(t *testing.T) {
 	}
 }
 
-// A full-screen surface replaces the input with a one-line hint; a grown
-// draft must not leave its rows behind as blank panel.
+// A full-screen surface replaces the input with a one-line hint, and the hint
+// costs the row the box rests at: a grown draft must not leave its rows behind
+// as blank panel, and an idle draft must not have the panel pushed open under
+// it only to have it shut again on the way out.
 func TestDraftBoxRowsStayWithTheInput(t *testing.T) {
-	m := frameModel(t, 100, 40)
-	m.input.SetValue(strings.Repeat("line\n", 8) + "line")
-	updated, _ := m.Update(resizeSettledMsg{seq: m.resizeSeq})
-	m = updated.(Model)
-	if m.input.Height() <= inputHeight {
+	open := func(draft string) Model {
+		m := frameModel(t, 100, 40)
+		m.input.SetValue(draft)
+		updated, _ := m.Update(resizeSettledMsg{seq: m.resizeSeq})
+		return updated.(Model)
+	}
+
+	m := open(strings.Repeat("line\n", 8) + "line")
+	if m.input.Height() <= minDraftRows {
 		t.Fatal("fixture: the box should have grown")
 	}
 	m.state = stateDiffFull
-	if got := m.bottomPanelHeight(); got != inputHeight {
-		t.Fatalf("full-screen panel height %d, want the %d-row hint", got, inputHeight)
+	if got := m.bottomPanelHeight(); got != minDraftRows {
+		t.Fatalf("full-screen panel height %d, want the %d-row hint", got, minDraftRows)
+	}
+	if got := lipgloss.Height(m.draftPanel()); got != minDraftRows {
+		t.Fatalf("the hint draws %d rows, want the %d the panel paid for", got, minDraftRows)
+	}
+
+	idle := open("")
+	before := idle.bottomPanelHeight()
+	idle.state = stateDiffFull
+	if got := idle.bottomPanelHeight(); got != before {
+		t.Fatalf("the panel moved from %d rows to %d when the surface opened", before, got)
 	}
 }
 

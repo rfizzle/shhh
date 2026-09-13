@@ -176,7 +176,7 @@ func (m *Model) closePreview() overlayAction {
 // renderPreviewHint fills the input area while the preview shows. It names
 // one of the two ways out, the way every other takeover's hint does.
 func (m Model) renderPreviewHint() string {
-	return seg(keys.Preview.Back).render() + strings.Repeat("\n", inputHeight-1)
+	return seg(keys.Preview.Back).render()
 }
 
 // pasteReader is the staged paste opened for reading — the surface the fold
@@ -350,5 +350,5 @@ func (m *Model) closePasteReader() {
 func (m Model) renderPasteReaderHint() string {
 	return joinSegs([]hintSeg{
 		seg(keys.Paste.Scroll), seg(keys.Paste.Remove), seg(keys.Paste.Leave),
-	}) + strings.Repeat("\n", inputHeight-1)
+	})
 }
