@@ -28,14 +28,14 @@
 · slot · elapsed goes, leaving the phase
 ⠋ running
 
-· resolved · done
-✓ done · turn 1m 04s · 18 tools · $0.14
+· resolved · done, and the span is the close row's
+✓ done · 18 tools · $0.14
 
 · resolved · cancelled
-⊘ cancelled · turn 8.1s · 5 tools · $0.14
+⊘ cancelled · 5 tools · $0.14
 
 · resolved · failed
-✗ failed · turn 3.4s · 2 tools · ~1.2k tok
+✗ failed · 2 tools · ~1.2k tok
 
 ── ansi ────────────────────────────────────────────────────
 · phase · thinking
@@ -56,11 +56,11 @@
 · slot · elapsed goes, leaving the phase
 ␛[38;5;254m⠋ running␛[m
 
-· resolved · done
-␛[38;5;254m✓ done␛[m␛[38;5;244m · turn 1m 04s␛[m␛[38;5;244m · 18 tools␛[m␛[38;5;254m · $0.14␛[m
+· resolved · done, and the span is the close row's
+␛[38;5;254m✓ done␛[m␛[38;5;244m · 18 tools␛[m␛[38;5;254m · $0.14␛[m
 
 · resolved · cancelled
-␛[38;5;244m⊘ cancelled␛[m␛[38;5;244m · turn 8.1s␛[m␛[38;5;244m · 5 tools␛[m␛[38;5;254m · $0.14␛[m
+␛[38;5;244m⊘ cancelled␛[m␛[38;5;244m · 5 tools␛[m␛[38;5;254m · $0.14␛[m
 
 · resolved · failed
-␛[38;5;254m✗ failed␛[m␛[38;5;244m · turn 3.4s␛[m␛[38;5;244m · 2 tools␛[m␛[38;5;254m · ~1.2k tok␛[m
+␛[38;5;254m✗ failed␛[m␛[38;5;244m · 2 tools␛[m␛[38;5;254m · ~1.2k tok␛[m

@@ -26,16 +26,20 @@ package components
 // What is left is the turn's, and the elapsed says so: `turn 12.4s`, because
 // the row below is ticking its own command's clock and two unlabelled figures
 // a few rows apart are two readings of one operation to anybody who does not
-// already know which is which.
+// already know which is which. The clock is the running line's alone: when
+// the turn stops the span is the transcript's, on the row the turn leaves
+// behind, which is still carrying it when the turn is ten turns back and this
+// line has moved on to the next one
+// (docs/interface/surfaces.md#the-input-frame).
 //
 // Three rules are enforced here rather than left to the hosts. The phases are
 // a closed vocabulary of four, so a state nobody defined has to pick the
 // nearest rather than invent a fifth. The fields leave in one order as the
-// terminal narrows — the resolved line's tool count, then elapsed — and the
-// phase never leaves, because what the turn is doing is the thing the line
-// exists to say. And the spinner frame is passed in rather than kept, so this
-// line, the running activity row and anything else that moves show the same
-// frame from the one tick source.
+// terminal narrows — the resolved line's tool count, then the running line's
+// elapsed — and the phase never leaves, because what the turn is doing is the
+// thing the line exists to say. And the spinner frame is passed in rather
+// than kept, so this line, the running activity row and anything else that
+// moves show the same frame from the one tick source.
 
 import "charm.land/lipgloss/v2"
 
@@ -81,12 +85,13 @@ func (p TurnPhase) Word() string {
 // order and no other; the phase, the outcome and the resolved cost are not on
 // the ladder. The guideline's first rung is gone with the field it shed: the
 // line carries no tool argument to drop, so the counts rung — the resolved
-// line's tool count — is what a narrowing slot reaches first, and the running
-// line reaches it with nothing left to shed at all.
+// line's tool count — is what a narrowing slot reaches first. Each form
+// reaches one of the two rungs with nothing to shed at it: the running line
+// has no count, and the resolved line has no clock.
 const (
 	TurnDropNone    = iota // every field the host supplied
 	TurnDropCounts         // the resolved line's tool count goes first
-	TurnDropElapsed        // then elapsed — the floor is the phase or outcome
+	TurnDropElapsed        // then the running line's elapsed; the floor is the word
 )
 
 // TurnStatus is the line. A host fills the live fields while the turn runs
@@ -107,22 +112,24 @@ type TurnStatus struct {
 	// own row in the feed.
 	Elapsed string
 
-	// Done resolves the line into the summary it becomes: the same fields
-	// finished, with the outcome's glyph where the spinner was.
+	// Done resolves the line into the summary it becomes: the account where
+	// the clock was, with the outcome's glyph where the spinner was.
 	Done    bool
 	Outcome TurnState
-	// Duration is the finished turn's wall time — labelled `turn` like the
-	// live elapsed it replaces, because the rows it closed over are still on
-	// screen with clocks of their own — Tools what the turn ran, and Cost
-	// what it was billed. All three are read only when Done, because all
-	// three are facts a turn has only once it is over. Cost in particular:
-	// the host reads it off the close block, where it is the ledger's own
-	// per-request total rather than a live pair re-priced at the fresh rate.
-	// A field the host cannot report is left out rather than reported as
-	// zero.
-	Duration string
-	Tools    int
-	Cost     string
+	// Tools is what the turn ran and Cost what it was billed. Both are read
+	// only when Done, because both are facts a turn has only once it is over.
+	// Cost in particular: the host reads it off the close block, where it is
+	// the ledger's own per-request total rather than a live pair re-priced at
+	// the fresh rate. A field the host cannot report is left out rather than
+	// reported as zero.
+	//
+	// The turn's wall time is not among them. A clock that has stopped is a
+	// fact about the past, and the past is the transcript's: the close row
+	// the host reads these off states the span, and states it still when the
+	// turn has scrolled away from a line that only ever reports the last one
+	// (docs/interface/surfaces.md#the-input-frame).
+	Tools int
+	Cost  string
 }
 
 // doneWords is the resolved line's word per outcome. It is lower case where
@@ -197,14 +204,10 @@ func (s TurnStatus) render(drop int) string {
 func turnClock(span string) string { return "turn " + span }
 
 // renderDone is the resolved line, and the only form that states a cost. It
-// sheds in the ladder's order — the tool count first, then the duration,
-// leaving the outcome and what the turn was billed.
+// sheds the tool count, leaving the outcome and what the turn was billed.
 func (s TurnStatus) renderDone(drop int) string {
 	glyph, word, style := s.doneGlyph()
 	out := style.Render(glyph + " " + word)
-	if s.Duration != "" && drop < TurnDropElapsed {
-		out += sty.Dim.Render(" · " + turnClock(s.Duration))
-	}
 	if s.Tools > 0 && drop < TurnDropCounts {
 		out += sty.Dim.Render(" · " + plural(s.Tools, "tool"))
 	}

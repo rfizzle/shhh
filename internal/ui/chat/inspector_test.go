@@ -215,9 +215,6 @@ func TestInspectorData_BlocksFromTheSession(t *testing.T) {
 	if rail.Turn == nil || rail.Turn.Tools != 3 || rail.Turn.Step != 1 {
 		t.Fatalf("THIS TURN: %+v", rail.Turn)
 	}
-	if rail.Turn.Elapsed < 60*time.Second {
-		t.Fatalf("elapsed should be the turn's own clock: %s", rail.Turn.Elapsed)
-	}
 	if rail.Changes == nil || len(rail.Changes.Files) != 1 {
 		t.Fatalf("CHANGES: %+v", rail.Changes)
 	}

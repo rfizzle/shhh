@@ -25,10 +25,15 @@ package chat
 // beside it (attach.go, render.go).
 //
 // Nothing here is a second source of truth. The phase is read off the state
-// the turn is already in, the elapsed off the same clock the inspector rail's
-// THIS TURN block reads, and the resolved line off the turn's own close
-// block — so the status line and the row it leaves in the transcript state
-// the same facts and cannot disagree.
+// the turn is already in, the elapsed off the turn's own start stamp, and the
+// resolved line off the turn's close block — so the status line and the row
+// it leaves in the transcript state the same facts and cannot disagree.
+//
+// The clock is stated once on the screen, and this line has it only while the
+// turn is running: the rail's THIS TURN block counts the turn's files and
+// tools and no span, and the summary this line resolves into leaves the
+// finished span on the close row, which is still carrying it when the turn
+// has scrolled away (docs/interface/surfaces.md#the-input-frame).
 
 import (
 	"github.com/rfizzle/shhh/internal/agent"
@@ -180,11 +185,10 @@ func (m Model) resolvedTurnStatus() (components.TurnStatus, bool) {
 			break
 		}
 		return components.TurnStatus{
-			Done:     true,
-			Outcome:  e.close.State,
-			Duration: e.close.Elapsed,
-			Tools:    e.close.Tools,
-			Cost:     e.close.Spend,
+			Done:    true,
+			Outcome: e.close.State,
+			Tools:   e.close.Tools,
+			Cost:    e.close.Spend,
 		}, true
 	}
 	return components.TurnStatus{}, false

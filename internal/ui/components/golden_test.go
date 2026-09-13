@@ -16,7 +16,6 @@ import (
 	"strconv"
 	"strings"
 	"testing"
-	"time"
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/colorprofile"
@@ -474,7 +473,7 @@ func TestGolden_TurnStatus(t *testing.T) {
 			return s.View(width)
 		}
 		done := func(mut func(*TurnStatus)) string {
-			s := TurnStatus{Done: true, Duration: "1m 04s", Tools: 18, Cost: "$0.14"}
+			s := TurnStatus{Done: true, Tools: 18, Cost: "$0.14"}
 			mut(&s)
 			return s.View(width)
 		}
@@ -502,12 +501,15 @@ func TestGolden_TurnStatus(t *testing.T) {
 				s.Cost = "$0.06"
 			})},
 			{Label: "slot · elapsed goes, leaving the phase", View: slot(12)},
-			{Label: "resolved · done", View: done(func(s *TurnStatus) {})},
+			// The resolved line states the account and no span: a stopped
+			// clock belongs to the row the turn left in the transcript
+			// (docs/interface/surfaces.md#the-input-frame).
+			{Label: "resolved · done, and the span is the close row's", View: done(func(s *TurnStatus) {})},
 			{Label: "resolved · cancelled", View: done(func(s *TurnStatus) {
-				s.Outcome, s.Tools, s.Duration = TurnCancelled, 5, "8.1s"
+				s.Outcome, s.Tools = TurnCancelled, 5
 			})},
 			{Label: "resolved · failed", View: done(func(s *TurnStatus) {
-				s.Outcome, s.Tools, s.Duration, s.Cost = TurnFailed, 2, "3.4s", "~1.2k tok"
+				s.Outcome, s.Tools, s.Cost = TurnFailed, 2, "~1.2k tok"
 			})},
 		}
 	})
@@ -1151,7 +1153,7 @@ func TestGolden_InspectorRail(t *testing.T) {
 				Text:  "Wiring the round-limit pause into the chat model; the sentinel is in and the tests have not been run yet.",
 				State: SummaryOnTarget, Round: 24,
 			},
-			Turn: &InspectorTurn{Step: 3, Steps: 4, Tools: 18, Elapsed: 64 * time.Second, Running: true,
+			Turn: &InspectorTurn{Step: 3, Steps: 4, Tools: 18, Running: true,
 				Files: 3, Added: 30, Removed: 4},
 			Plan: &InspectorPlan{
 				Steps: []InspectorPlanStep{
@@ -1206,7 +1208,7 @@ func TestGolden_InspectorRail(t *testing.T) {
 				Session: "$1.86", Model: "gpt-5.2"},
 		}
 		quiet := InspectorRail{
-			Turn:    &InspectorTurn{Tools: 2, Elapsed: 3 * time.Second, Running: true},
+			Turn:    &InspectorTurn{Tools: 2, Running: true},
 			Context: &InspectorContext{Pct: 41, Tokens: 82000, Window: 200000, Estimated: true},
 		}
 		// Four turns deep, with the rail shorter than the list it has to show
@@ -1215,7 +1217,7 @@ func TestGolden_InspectorRail(t *testing.T) {
 		// the counts it took, and a suite that has failed in every turn since
 		// turn 7 is one row saying since when and how many runs it has taken.
 		session := InspectorRail{
-			Turn: &InspectorTurn{Step: 1, Steps: 3, Running: true, Elapsed: 8 * time.Second},
+			Turn: &InspectorTurn{Step: 1, Steps: 3, Running: true},
 			Changes: &InspectorChanges{
 				Files: []InspectorFile{
 					{Path: "internal/agent/loop.go", Added: 21, Removed: 4, Turns: 3, ThisTurn: true},
@@ -1289,14 +1291,14 @@ func TestGolden_InspectorRail(t *testing.T) {
 				Reason: "docs were not part of the round-limit request",
 				Round:  31,
 			},
-			Turn: &InspectorTurn{Tools: 9, Elapsed: 41 * time.Second, Running: true},
+			Turn: &InspectorTurn{Tools: 9, Running: true},
 		}
 		stale := InspectorRail{
 			Summary: &InspectorSummary{
 				Text:  "Running the agent package's tests.",
 				State: SummaryUnclear, Round: 12, Stale: true,
 			},
-			Turn: &InspectorTurn{Tools: 40, Elapsed: 6 * time.Minute, Running: true},
+			Turn: &InspectorTurn{Tools: 40, Running: true},
 		}
 		// Every state a source can be in, and one more than the block draws:
 		// what is up, what is waiting on a person, what was left out on
@@ -1393,11 +1395,11 @@ func TestGolden_InspectorRail(t *testing.T) {
 		// all been answered, where the block is not drawn at all and the
 		// changeset has the rows back.
 		alerting := InspectorRail{
-			Turn:   &InspectorTurn{Tools: 6, Elapsed: 21 * time.Second, Running: true},
+			Turn:   &InspectorTurn{Tools: 6, Running: true},
 			Alerts: InspectorAlerts{{Label: "go build", Note: OutcomeExit(2), Turn: 4}},
 		}
 		crowded := InspectorRail{
-			Turn: &InspectorTurn{Tools: 31, Elapsed: 4 * time.Minute, Running: true},
+			Turn: &InspectorTurn{Tools: 31, Running: true},
 			Alerts: append(func() InspectorAlerts {
 				var answered InspectorAlerts
 				for i := range 8 {
@@ -1419,7 +1421,7 @@ func TestGolden_InspectorRail(t *testing.T) {
 			},
 		}
 		answered := InspectorRail{
-			Turn: &InspectorTurn{Tools: 31, Elapsed: 4 * time.Minute, Files: 2, Added: 27, Removed: 6},
+			Turn: &InspectorTurn{Tools: 31, Files: 2, Added: 27, Removed: 6},
 			Alerts: InspectorAlerts{
 				{Label: "go test", Note: OutcomeExit(1), Runs: 4, Turn: 10, Superseded: true},
 				{Label: "gofmt", Note: OutcomeExit(2), Runs: 3, Turn: 10, Superseded: true},

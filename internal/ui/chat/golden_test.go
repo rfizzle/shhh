@@ -1953,6 +1953,17 @@ func TestGolden_Screen(t *testing.T) {
 			// surface with the status row standing in for it above the
 			// input, which is how the capture shows what the narrow terminal
 			// keeps of the block and what it has to ask for.
+			// One turn, one clock, and the whole screen is where that is
+			// legible: the row the turn left in the transcript states the
+			// span, the rail's THIS TURN counts what the turn did without
+			// one, and the summary the top rail resolves into states the
+			// account and no span
+			// (docs/interface/surfaces.md#the-input-frame).
+			{Label: "resolved · the finished turn's span is stated once", View: build(func(m *Model) {
+				m.state = stateInput
+				m.turnCount = 1
+				m.transcript[len(m.transcript)-1].turn = 1
+			})},
 			{Label: "working · a reading of the session leads the rail", View: build(func(m *Model) {
 				m.state = stateStreaming
 				m.streaming = ""

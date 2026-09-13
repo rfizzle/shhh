@@ -2,6 +2,7 @@ package components
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -12,7 +13,7 @@ import (
 // fullRail is a rail with every block populated.
 func fullRail() InspectorRail {
 	return InspectorRail{
-		Turn: &InspectorTurn{Step: 3, Steps: 4, Tools: 18, Elapsed: 64 * time.Second, Running: true,
+		Turn: &InspectorTurn{Step: 3, Steps: 4, Tools: 18, Running: true,
 			Files: 2, Added: 27, Removed: 4},
 		Changes: &InspectorChanges{
 			Files: []InspectorFile{
@@ -83,7 +84,7 @@ func TestInspectorContext_CorrectedSaysSo(t *testing.T) {
 func TestInspectorRail_BlockOrderAndContents(t *testing.T) {
 	view := stripANSI(fullRail().View(InspectorWidth, 0))
 	for _, want := range []string{
-		"THIS TURN", "step 3 of 4", "▰", "2 files this turn", "18 tools", "1m 04s",
+		"THIS TURN", "step 3 of 4", "▰", "2 files this turn", "18 tools",
 		"CHANGES", "session · ", "+27", "−4", "▎✎ agent/loop.go", "+18", "−3", "3t",
 		"ALERTS", "1 standing", "✗ go test", "turn 7", "exit 1",
 		"AGENTS", "1 running", "◇ writer-1", "$0.02", "docs/loop.md · 4 tools",
@@ -339,7 +340,7 @@ func TestInspectorRail_TruncatesLongestBlockFirst(t *testing.T) {
 }
 
 func TestInspectorRail_NoDeclaredStepsNoRatio(t *testing.T) {
-	r := InspectorRail{Turn: &InspectorTurn{Step: 3, Tools: 7, Elapsed: 2 * time.Second, Running: true}}
+	r := InspectorRail{Turn: &InspectorTurn{Step: 3, Tools: 7, Running: true}}
 	view := stripANSI(r.View(InspectorWidth, 0))
 	if !strings.Contains(view, "step 3") || strings.Contains(view, "of") {
 		t.Fatalf("an observed step count has no denominator:\n%s", view)
@@ -347,15 +348,14 @@ func TestInspectorRail_NoDeclaredStepsNoRatio(t *testing.T) {
 	if strings.Contains(view, "▰") {
 		t.Fatalf("no meter without a declared step count:\n%s", view)
 	}
-	// The row is the artboard's: the turn's own file count said in
-	// words, then its tools and its clock. Whether that clock is still
-	// running is the live turn status's answer, not a word repeated
-	// here — and a turn that wrote nothing still says so.
-	if !strings.Contains(view, "0 files this turn · 7 tools · 2.0s") {
+	// The row is the artboard's: the turn's own file count said in words,
+	// then its tools. How long the turn has been at it is the live turn
+	// status's to answer — and a turn that wrote nothing still says so.
+	if !strings.Contains(view, "0 files this turn · 7 tools") {
 		t.Fatalf("the block still states its counts:\n%s", view)
 	}
-	done := InspectorRail{Turn: &InspectorTurn{Tools: 1, Elapsed: time.Second, Files: 1, Added: 4, Removed: 2}}
-	if !strings.Contains(stripANSI(done.View(InspectorWidth, 0)), "1 file this turn +4 −2 · 1 tool · 1.0s") {
+	done := InspectorRail{Turn: &InspectorTurn{Tools: 1, Files: 1, Added: 4, Removed: 2}}
+	if !strings.Contains(stripANSI(done.View(InspectorWidth, 0)), "1 file this turn +4 −2 · 1 tool") {
 		t.Fatalf("a turn's own files are counted beside its tools:\n%s", done.View(InspectorWidth, 0))
 	}
 }
@@ -397,26 +397,36 @@ func TestInspectorRail_BothFileCountsSayTheirScope(t *testing.T) {
 
 // A stat that was not measured is left out rather than reported as a zero
 // (docs/interface/principles.md#a-stat-that-cannot-be-reported-is-left-out).
-// A turn that called no tools has no tool count, and a turn the clock could
-// not separate from its own start has no duration. The file count is the one
+// A turn that called no tools has no tool count. The file count is the one
 // figure the block states at zero, because it says its scope in words and
 // "nothing this turn" is the answer CHANGES beneath it is being told apart
 // from.
 func TestInspectorTurn_LeavesOutWhatItDidNotMeasure(t *testing.T) {
-	rail := InspectorRail{Turn: &InspectorTurn{Step: 1, Steps: 2, Tools: 0, Elapsed: 20 * time.Millisecond}}
+	rail := InspectorRail{Turn: &InspectorTurn{Step: 1, Steps: 2, Tools: 0}}
 	view := stripANSI(rail.View(InspectorWidth, 0))
-	for _, unwanted := range []string{"0 tools", "0.0s"} {
-		if strings.Contains(view, unwanted) {
-			t.Fatalf("an unmeasured stat is left out, found %q in:\n%s", unwanted, view)
-		}
+	if strings.Contains(view, "0 tools") {
+		t.Fatalf("an unmeasured stat is left out:\n%s", view)
 	}
 	if !strings.Contains(view, "0 files this turn") {
 		t.Fatalf("the file count states its scope at zero too:\n%s", view)
 	}
-	measured := InspectorRail{Turn: &InspectorTurn{Step: 1, Steps: 2, Tools: 3, Elapsed: 4 * time.Second}}
-	got := stripANSI(measured.View(InspectorWidth, 0))
-	if !strings.Contains(got, "3 tools") || !strings.Contains(got, "4.0s") {
+	measured := InspectorRail{Turn: &InspectorTurn{Step: 1, Steps: 2, Tools: 3}}
+	if got := stripANSI(measured.View(InspectorWidth, 0)); !strings.Contains(got, "3 tools") {
 		t.Fatalf("what was measured is stated:\n%s", got)
+	}
+}
+
+// And the block states no span at all. The turn's clock is the frame's while
+// the turn runs and the transcript's once it has stopped; this block is up
+// only above the two-pane rung, so a figure here would be the same span
+// twice over and on wide terminals only
+// (docs/interface/surfaces.md#the-input-frame).
+func TestInspectorTurn_StatesNoClock(t *testing.T) {
+	span := regexp.MustCompile(`\d+(\.\d+)?s|\d+m \d\ds`)
+	view := stripANSI(fullRail().View(InspectorWidth, 0))
+	turn, _, _ := strings.Cut(view, "ALERTS")
+	if got := span.FindString(turn); got != "" {
+		t.Fatalf("THIS TURN stated a span (%q):\n%s", got, turn)
 	}
 }
 

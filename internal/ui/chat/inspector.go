@@ -225,7 +225,7 @@ func (m Model) resolveInspector() components.InspectorRail {
 // and only then does the progress meter have a true denominator.
 func (m Model) inspectorTurn(steps []components.InspectorPlanStep) *components.InspectorTurn {
 	es := m.turnEntries()
-	t := components.InspectorTurn{Running: m.working(), Elapsed: m.turnElapsed()}
+	t := components.InspectorTurn{Running: m.working()}
 	if len(steps) > 0 {
 		t.Step, t.Steps = planProgress(steps), len(steps)
 	} else {

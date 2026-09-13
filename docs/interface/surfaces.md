@@ -521,11 +521,25 @@ what they wanted from the rail was to know the turn had not stalled.
 Each clock says whose it is. The rail's is the whole turn's and carries the
 word for it, because the row above is ticking the command's own and two bare
 figures a few rows apart are two readings of one operation to anyone who does
-not already know which is which. The word stays on the summary the line
-resolves into: a turn that has finished leaves its rows on screen with their
-durations still on them.
+not already know which is which.
 
-It states it at the rail's near corner, two rows above the prompt glyph,
+There is one of that clock, and which surface holds it changes when the turn
+stops. While the turn runs it is the top rail's: the frame is on screen at
+every width, the rail sits beside the cursor, and saying the turn has not
+stalled is what it is for. The [inspector's THIS TURN
+block](#the-inspector-rail) counts the turn's files and its tools and states
+no span — it is up only above the two-pane rung, so a clock there would be the
+same figure twice over on wide terminals and one figure on narrow ones, and
+where the reader looks for it would depend on how much room they had. When
+the turn stops, the clock stops with it and the span belongs to the past,
+which is the transcript's: [the row the turn leaves](#the-turns-close)
+carries the span and is still carrying it ten turns later, while the rail can
+only ever answer for the last one. So the summary the line resolves into
+states the outcome, what the turn ran and what it was billed, and no span —
+the fields that arrive with the bill, in the place the reader was already
+watching, and no second printing of the figure two rows above it.
+
+The rail states it at its near corner, two rows above the prompt glyph,
 because it is the one thing on the frame that moves and the eye watching it is
 already on the cursor. Against the far edge of a wide terminal the same words
 sit a hundred columns from anything the reader is looking at. The far side

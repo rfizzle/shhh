@@ -8,27 +8,30 @@ package components
 import (
 	"fmt"
 	"strings"
-	"time"
 )
 
 // InspectorTurn is the THIS TURN block: how far through its steps the turn
-// is, how many tools it has spent, and how long it has been running.
+// is, how many tools it has spent, and what it has changed.
+//
+// It states no elapsed. The turn's clock belongs to the frame while the turn
+// runs and to the transcript once it has stopped, and this block is up only
+// above the two-pane rung — a span here is the same figure a second time, a
+// few columns apart and on wide terminals only
+// (docs/interface/surfaces.md#the-input-frame).
 type InspectorTurn struct {
 	// Step and Steps drive the progress meter and the "step 3 of 4" heading.
 	// Steps == 0 means the turn declared none, so no ratio is fabricated —
-	// the block states its tool count and elapsed time alone.
+	// the block states its tool count alone.
 	Step, Steps int
 	Tools       int
-	Elapsed     time.Duration
 	// Files and its counts are what this turn changed — the turn-scoped half of
 	// the scoped pair, and the reason the row says "this turn" in words rather
 	// than printing a bare count beside CHANGES' session total.
 	Files          int
 	Added, Removed int
 	// Running says the turn is still in flight, which is what lights the
-	// progress meter's current cell. The row states the clock without saying
-	// whether it is still moving — the live turn status is what answers that
-	//, and saying it twice cost the row its file count.
+	// progress meter's current cell. Whether the turn is still moving, and
+	// how long it has been at it, are the live turn status's to answer.
 	Running bool
 }
 
@@ -57,18 +60,14 @@ func (r InspectorRail) turnBlock(width int) (railBlock, bool) {
 		files += " " + DiffStat(t.Added, t.Removed)
 	}
 	stats := []string{files}
-	// A turn that called no tools reports no tool count, and a turn too quick
-	// to time reports no duration: neither zero was measured, and a gap is
-	// legible as a gap where a fabricated zero is not
+	// A turn that called no tools reports no tool count: that zero was never
+	// measured, and a gap is legible as a gap where a fabricated zero is not
 	// (docs/interface/principles.md#a-stat-that-cannot-be-reported-is-left-out).
 	// The file count is the exception and says so in words — "0 files this
 	// turn" is the answer to a question the block is being asked, which is
 	// what CHANGES beneath it is being told apart from.
 	if t.Tools > 0 {
 		stats = append(stats, sty.Dim.Render(plural(t.Tools, "tool")))
-	}
-	if elapsed := FormatMeasuredElapsed(t.Elapsed); elapsed != "" {
-		stats = append(stats, sty.Dim.Render(elapsed))
 	}
 	b.add(indentRow(strings.Join(stats, sty.Dim.Render(" · ")), width))
 	return b, true

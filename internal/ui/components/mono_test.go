@@ -359,8 +359,7 @@ func monoFixtures() []monoSurface {
 	// The status line holds its numbers constant, so the phase and the
 	// outcome are the only things left to tell its states apart.
 	status := func(mut func(*TurnStatus)) string {
-		s := TurnStatus{Elapsed: "12.4s", Cost: "$0.06",
-			Duration: "12.4s", Tools: 18}
+		s := TurnStatus{Elapsed: "12.4s", Cost: "$0.06", Tools: 18}
 		mut(&s)
 		return s.View(w)
 	}

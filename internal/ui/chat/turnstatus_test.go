@@ -210,8 +210,14 @@ func TestTurnStatus_ResolvesFromTheTurnsOwnCloseBlock(t *testing.T) {
 		t.Fatalf("a closed turn should resolve into its summary (ok=%v done=%v)", ok, s.Done)
 	}
 	// The numbers agree because they are the same numbers.
-	if s.Tools != close.Tools || s.Duration != close.Elapsed || s.Cost != close.Spend {
+	if s.Tools != close.Tools || s.Cost != close.Spend {
 		t.Fatalf("the resolved line disagrees with the close row: %+v", s)
+	}
+	// All but one: the span stays on the close row, which is still carrying
+	// it when the turn has scrolled away from a line that reports only the
+	// last one (docs/interface/surfaces.md#the-input-frame).
+	if line := stripANSI(s.View(200)); strings.Contains(line, close.Elapsed) {
+		t.Fatalf("the resolved line restated the close row's span: %q", line)
 	}
 
 	// A newer turn with no close of its own does not inherit the old one.
@@ -236,7 +242,7 @@ func TestTurnStatus_FrameRailShowsTheTurnAndThenItsSummary(t *testing.T) {
 	m.transcript = append(m.transcript, entry{kind: entryTurnClose, turn: 1,
 		close: &components.TurnClose{State: components.TurnDone, Tools: 18, Elapsed: "1m 04s", Spend: "$0.14"}})
 	view = stripANSI(m.View().Content)
-	if !strings.Contains(view, "✓ done · turn 1m 04s · 18 tools · $0.14") {
+	if !strings.Contains(view, "✓ done · 18 tools · $0.14") {
 		t.Fatalf("the top rail should resolve into the turn summary:\n%s", view)
 	}
 	if strings.Contains(view, "thinking…") {
@@ -320,11 +326,21 @@ func TestTurnStatus_ARealTurnResolvesOnTheRail(t *testing.T) {
 		t.Fatalf("a finished turn should resolve into ✓ done (ok=%v %+v)", ok, s)
 	}
 	c := lastClose(t, m)
-	if s.Duration != c.Elapsed || s.Tools != c.Tools || s.Cost != c.Spend {
+	if s.Tools != c.Tools || s.Cost != c.Spend {
 		t.Fatalf("the rail and the close row disagree: %+v vs %+v", s, c)
 	}
-	if view := stripANSI(m.View().Content); !strings.Contains(view, "✓ done") {
+	view := stripANSI(m.View().Content)
+	if !strings.Contains(view, "✓ done") {
 		t.Fatalf("the top rail should carry the resolved summary:\n%s", view)
+	}
+	// And the span it took is on the screen once, on the row the turn left in
+	// the transcript rather than on the rail below it
+	// (docs/interface/surfaces.md#the-input-frame).
+	if c.Elapsed == "" {
+		t.Fatal("a finished turn's close row should state its span")
+	}
+	if n := strings.Count(view, c.Elapsed); n != 1 {
+		t.Fatalf("the finished turn's span %q is on screen %d times:\n%s", c.Elapsed, n, view)
 	}
 }
 
