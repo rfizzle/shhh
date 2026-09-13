@@ -2,23 +2,29 @@ package components
 
 // The running turn's status line (
 // docs/interface/surfaces.md#the-input-frame). While a turn runs, this
-// is the one line on screen that changes: a spinner frame, the phase, ticking
-// elapsed, the turn's live token counts and what they have cost. It lives in
-// the frame's activity slot and it *resolves into* the turn summary
-// rather than being replaced by one — same line, same facts,
-// `✓` where the spinner was.
+// is the one line on screen that changes: a spinner frame, the phase, and
+// ticking elapsed. It lives in the frame's activity slot and it *resolves
+// into* the turn summary rather than being replaced by one — same line,
+// `✓` where the spinner was, and the finished turn's account where the
+// running line carried none.
+//
+// The running line states no account, and states none whatever a host puts
+// in Cost: a turn in flight can only be priced at the full input rate,
+// because the split between fresh and cached prompt reads arrives with the
+// provider's report and not before. A dollar figure struck here is high by
+// whatever the cache served, and it is high beside the billed totals the
+// rails below carry — the newest figure on the frame, and the only wrong one.
+// Tokens leave with it: the vitals rail a row down already states the pair
+// (docs/interface/surfaces.md#the-input-frame).
 //
 // Three rules are enforced here rather than left to the hosts. The phases are
 // a closed vocabulary of four, so a state nobody defined has to pick the
 // nearest rather than invent a fifth. The fields leave in one order as the
-// terminal narrows — tool argument, then token counts, then elapsed — and the
-// phase never leaves, nor does the cost once a host has stated one, because
-// what it is doing and what it is costing are the two things the line exists
-// to say. Whether it states the cost at all is the host's: an account the
-// rail below is already carrying is not one this line has to repeat
-// (docs/interface/surfaces.md#the-input-frame). And the spinner frame is
-// passed in rather than kept, so this line, the running activity row and
-// anything else that moves show the same frame from the one tick source.
+// terminal narrows — tool argument, then elapsed — and the phase never
+// leaves, because what the turn is doing is the thing the line exists to say.
+// And the spinner frame is passed in rather than kept, so this line, the
+// running activity row and anything else that moves show the same frame from
+// the one tick source.
 
 import "charm.land/lipgloss/v2"
 
@@ -57,13 +63,16 @@ func (p TurnPhase) Word() string {
 	return phaseWords[PhaseThinking]
 }
 
-// Field-drop levels (guidelines/turnstatus-drop-order). Fields leave in
-// this order and no other; the phase and the cost are not on the ladder.
+// Field-drop levels (guidelines/turnstatus-drop-order). Fields leave in this
+// order and no other; the phase, the outcome and the resolved cost are not on
+// the ladder. The counts level is the resolved line's tool count, and the
+// running line reaches it with nothing left to shed, having no account to
+// state.
 const (
 	TurnDropNone    = iota // every field the host supplied
 	TurnDropTool           // the tool argument goes first
-	TurnDropTokens         // then the token counts
-	TurnDropElapsed        // then elapsed — the floor is phase and cost
+	TurnDropTokens         // then the counts: the resolved line's tool count
+	TurnDropElapsed        // then elapsed — the floor is the phase or outcome
 )
 
 // TurnStatus is the line. A host fills the live fields while the turn runs
@@ -84,30 +93,21 @@ type TurnStatus struct {
 	// Elapsed is the turn's wall time so far, pre-formatted by FormatElapsed:
 	// tenths under ten seconds, whole seconds above.
 	Elapsed string
-	// Up and Down are the turn's live token counts, at whatever resolution
-	// the host is printing them at — every digit while the turn is spending
-	// them ("9,834"), the settled shape ("41.2k") once nothing is, and a
-	// figure part-way between two rounds while a count is still climbing to
-	// the second (odometer.go). Both are needed for either to render, because
-	// one arrow alone is half a fact. Cost is what they have cost, and once
-	// it is here the drop ladder never takes it.
-	//
-	// A host leaves all three empty where the account it would draw is the
-	// one already on the rail below — on a first-turn session the turn is the
-	// session — and the line is the phase, the spinner and elapsed
-	// (docs/interface/surfaces.md#the-input-frame).
-	Up, Down string
-	Cost     string
 
 	// Done resolves the line into the summary it becomes: the same fields
 	// finished, with the outcome's glyph where the spinner was.
 	Done    bool
 	Outcome TurnState
-	// Duration is the finished turn's wall time and Tools what it ran, both
-	// read only when Done. A field the host cannot report is left out rather
-	// than reported as zero.
+	// Duration is the finished turn's wall time, Tools what it ran, and Cost
+	// what the turn was billed — all three read only when Done, because all
+	// three are facts a turn has only once it is over. Cost in particular:
+	// the host reads it off the close block, where it is the ledger's own
+	// per-request total rather than a live pair re-priced at the fresh rate.
+	// A field the host cannot report is left out rather than reported as
+	// zero.
 	Duration string
 	Tools    int
+	Cost     string
 }
 
 // doneWords is the resolved line's word per outcome. It is lower case where
@@ -156,19 +156,13 @@ func (s TurnStatus) render(drop int) string {
 	if s.Phase == PhaseRunning && s.Tool != "" && drop < TurnDropTool {
 		label += " " + s.Tool
 	}
-	// The fields the ladder left standing ride behind the label as the
-	// animation's suffix: they are the host's own styling and the
-	// animation never touches them, but they belong to the same string so the
-	// line is measured and clipped as one.
+	// Elapsed, where the ladder left it standing, rides behind the label as
+	// the animation's suffix: it is the host's own styling and the animation
+	// never touches it, but it belongs to the same string so the line is
+	// measured and clipped as one.
 	var tail string
 	if s.Elapsed != "" && drop < TurnDropElapsed {
 		tail += sty.Dim.Render(" " + s.Elapsed)
-	}
-	if s.Up != "" && s.Down != "" && drop < TurnDropTokens {
-		tail += sty.Dim.Render(" · ↑" + s.Up + " ↓" + s.Down)
-	}
-	if s.Cost != "" {
-		tail += sty.Body.Render(" · " + s.Cost)
 	}
 	// The line's moving part. The spinner's frame leads, outside the sweep
 	// because its eight-frame cycle is not the label's; the label arrives
@@ -182,9 +176,9 @@ func (s TurnStatus) render(drop int) string {
 	}.View()
 }
 
-// renderDone is the resolved line. It sheds the same fields in the same
-// order — the tool argument is spent, the counts become the tool count, and
-// the duration is the last thing to go before the outcome and the cost.
+// renderDone is the resolved line, and the only form that states a cost. It
+// sheds in the ladder's order — the tool count first, then the duration,
+// leaving the outcome and what the turn was billed.
 func (s TurnStatus) renderDone(drop int) string {
 	glyph, word, style := s.doneGlyph()
 	out := style.Render(glyph + " " + word)

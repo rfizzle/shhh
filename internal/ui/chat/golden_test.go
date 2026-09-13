@@ -566,11 +566,10 @@ func TestGolden_TurnStatus(t *testing.T) {
 			{Label: "phase · thinking, mid-sweep", View: frame(func(m *Model) {
 				m.spinFrame = 8
 			})},
-			// One frame of a round's report arriving. The top rail's account
-			// and the vitals rail's total are on the same step of the same
-			// climb, because the round moved both targets by the same amount
-			// on the same frame (vitals.go), and both print every digit
-			// while the turn is still spending them.
+			// One frame of a round's report arriving. The climb is the vitals
+			// rail's alone — the top rail states what the turn is doing and
+			// not what it is spending (turnstatus.go) — and it prints every
+			// digit while the turn is still spending them.
 			{Label: "counts · mid-climb", View: frame(func(m *Model) {
 				m.easeCounts()
 				// The round's report, folded in by hand so the capture is of

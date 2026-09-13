@@ -406,18 +406,19 @@ func TestGolden_CommitCard(t *testing.T) {
 	})
 }
 
-// TestGolden_TurnStatus captures the running turn's status line:
-// the four phases, the fields ticking, the collapse ladder as the slot
-// narrows, and the three ways it resolves. The captures are taken at the
-// ladder widths, which is where the ladder is visible — the slot is what is
-// left of the frame's top rail after the identity, so the narrow captures
-// are the drop order rather than a copy of the wide ones.
+// TestGolden_TurnStatus captures the running turn's status line: the four
+// phases, the fields ticking, the collapse ladder, and the three ways it
+// resolves. The line states no account, so it is now short enough to fit the
+// narrowest terminal the frame draws on and the capture widths no longer
+// shed anything from it. What still narrows it is the slot — what is left of
+// the top rail after the identity — so the ladder is captured at two slot
+// widths instead, the same at every terminal width.
 func TestGolden_TurnStatus(t *testing.T) {
 	captureGolden(t, "turn-status", "running turn status", goldenWidths, func(width int) []golden.Panel {
 		live := func(mut func(*TurnStatus)) string {
 			s := TurnStatus{
 				Phase: PhaseRunning, Tool: "go test ./internal/agent/...",
-				Elapsed: "12.4s", Up: "41.2k", Down: "2.1k", Cost: "$0.06",
+				Elapsed: "12.4s",
 			}
 			mut(&s)
 			return s.View(width)
@@ -426,6 +427,10 @@ func TestGolden_TurnStatus(t *testing.T) {
 			s := TurnStatus{Done: true, Duration: "1m 04s", Tools: 18, Cost: "$0.14"}
 			mut(&s)
 			return s.View(width)
+		}
+		slot := func(cols int) string {
+			return TurnStatus{Phase: PhaseRunning,
+				Tool: "go test ./internal/agent/...", Elapsed: "12.4s"}.View(cols)
 		}
 		return []golden.Panel{
 			{Label: "phase · thinking", View: live(func(s *TurnStatus) {
@@ -438,21 +443,14 @@ func TestGolden_TurnStatus(t *testing.T) {
 			{Label: "phase · streaming", View: live(func(s *TurnStatus) {
 				s.Phase, s.Tool = PhaseStreaming, ""
 			})},
-			{Label: "unpriced · tokens, never a made-up zero", View: live(func(s *TurnStatus) {
-				s.Cost = "~43.3k tok"
+			// A live line handed a cost anyway: the field is the resolved
+			// summary's, and the running form does not print it whatever the
+			// host puts there (turnstatus.go).
+			{Label: "running · a cost is not the live line's to state", View: live(func(s *TurnStatus) {
+				s.Cost = "$0.06"
 			})},
-			// One frame of a count on its way to the figure a round reported,
-			// at the resolution a working turn prints: the shape the rail
-			// wears between the number it was showing and the number it is
-			// about to show (odometer.go).
-			{Label: "counts · mid-climb", View: live(func(s *TurnStatus) {
-				var up, down Odometer
-				up.Toward(4096, 0)
-				down.Toward(512, 0)
-				up.Toward(9834, 1)
-				down.Toward(2140, 1)
-				s.Up, s.Down = FormatLiveCount(up.Value()), FormatLiveCount(down.Value())
-			})},
+			{Label: "slot · the argument goes first", View: slot(24)},
+			{Label: "slot · then elapsed, leaving the phase", View: slot(12)},
 			{Label: "resolved · done", View: done(func(s *TurnStatus) {})},
 			{Label: "resolved · cancelled", View: done(func(s *TurnStatus) {
 				s.Outcome, s.Tools, s.Duration = TurnCancelled, 5, "8.1s"
@@ -475,7 +473,7 @@ func TestGolden_Anim(t *testing.T) {
 	captureGolden(t, "anim", "the working label in motion", []int{80}, func(width int) []golden.Panel {
 		status := func(frame, arriving int) TurnStatus {
 			return TurnStatus{Frame: frame, Arriving: arriving,
-				Phase: PhaseRunning, Tool: "go test", Elapsed: "0.4s", Cost: "$0.01"}
+				Phase: PhaseRunning, Tool: "go test", Elapsed: "0.4s"}
 		}
 		// Each panel is one frame per row, oldest first, so the whole
 		// animation is legible as a block instead of one still at a time.

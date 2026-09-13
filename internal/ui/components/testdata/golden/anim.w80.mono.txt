@@ -11,78 +11,78 @@
 
 ── layout ──────────────────────────────────────────────────
 · the entrance · the word arrives in reading order
-⠋ run············ 0.4s · $0.01
-⠋ run············ 0.4s · $0.01
-⠋ runni·········· 0.4s · $0.01
-⠋ running········ 0.4s · $0.01
-⠋ running ······· 0.4s · $0.01
-⠋ running ······· 0.4s · $0.01
-⠋ running ······· 0.4s · $0.01
-⠋ running g······ 0.4s · $0.01
-⠋ running go····· 0.4s · $0.01
-⠋ running go te·· 0.4s · $0.01
-⠋ running go tes· 0.4s · $0.01
-⠋ running go test 0.4s · $0.01
-⠋ running go test 0.4s · $0.01
+⠋ run············ 0.4s
+⠋ run············ 0.4s
+⠋ runni·········· 0.4s
+⠋ running········ 0.4s
+⠋ running ······· 0.4s
+⠋ running ······· 0.4s
+⠋ running ······· 0.4s
+⠋ running g······ 0.4s
+⠋ running go····· 0.4s
+⠋ running go te·· 0.4s
+⠋ running go tes· 0.4s
+⠋ running go test 0.4s
+⠋ running go test 0.4s
 
 · the sweep · one pass, with its rest either side
-⠋ running go test 0.4s · $0.01
-⠙ running go test 0.4s · $0.01
-⠹ running go test 0.4s · $0.01
-⠸ running go test 0.4s · $0.01
-⠼ running go test 0.4s · $0.01
-⠴ running go test 0.4s · $0.01
-⠦ running go test 0.4s · $0.01
-⠧ running go test 0.4s · $0.01
-⠋ running go test 0.4s · $0.01
-⠙ running go test 0.4s · $0.01
-⠹ running go test 0.4s · $0.01
-⠸ running go test 0.4s · $0.01
-⠼ running go test 0.4s · $0.01
-⠴ running go test 0.4s · $0.01
-⠦ running go test 0.4s · $0.01
-⠧ running go test 0.4s · $0.01
-⠋ running go test 0.4s · $0.01
-⠙ running go test 0.4s · $0.01
-⠹ running go test 0.4s · $0.01
-⠸ running go test 0.4s · $0.01
-⠼ running go test 0.4s · $0.01
+⠋ running go test 0.4s
+⠙ running go test 0.4s
+⠹ running go test 0.4s
+⠸ running go test 0.4s
+⠼ running go test 0.4s
+⠴ running go test 0.4s
+⠦ running go test 0.4s
+⠧ running go test 0.4s
+⠋ running go test 0.4s
+⠙ running go test 0.4s
+⠹ running go test 0.4s
+⠸ running go test 0.4s
+⠼ running go test 0.4s
+⠴ running go test 0.4s
+⠦ running go test 0.4s
+⠧ running go test 0.4s
+⠋ running go test 0.4s
+⠙ running go test 0.4s
+⠹ running go test 0.4s
+⠸ running go test 0.4s
+⠼ running go test 0.4s
 
 ── ansi ────────────────────────────────────────────────────
 · the entrance · the word arrives in reading order
-␛[38;5;254m⠋ run␛[m␛[38;5;244m············␛[m␛[38;5;244m 0.4s␛[m␛[38;5;254m · $0.01␛[m
-␛[38;5;254m⠋ run␛[m␛[38;5;244m············␛[m␛[38;5;244m 0.4s␛[m␛[38;5;254m · $0.01␛[m
-␛[38;5;254m⠋ runni␛[m␛[38;5;244m··········␛[m␛[38;5;244m 0.4s␛[m␛[38;5;254m · $0.01␛[m
-␛[38;5;254m⠋ running␛[m␛[38;5;244m········␛[m␛[38;5;244m 0.4s␛[m␛[38;5;254m · $0.01␛[m
-␛[38;5;254m⠋ running ␛[m␛[38;5;244m·······␛[m␛[38;5;244m 0.4s␛[m␛[38;5;254m · $0.01␛[m
-␛[38;5;254m⠋ running ␛[m␛[38;5;244m·······␛[m␛[38;5;244m 0.4s␛[m␛[38;5;254m · $0.01␛[m
-␛[38;5;254m⠋ running ␛[m␛[38;5;244m·······␛[m␛[38;5;244m 0.4s␛[m␛[38;5;254m · $0.01␛[m
-␛[38;5;254m⠋ running g␛[m␛[38;5;244m······␛[m␛[38;5;244m 0.4s␛[m␛[38;5;254m · $0.01␛[m
-␛[38;5;254m⠋ running go␛[m␛[38;5;244m·····␛[m␛[38;5;244m 0.4s␛[m␛[38;5;254m · $0.01␛[m
-␛[38;5;254m⠋ running go te␛[m␛[38;5;244m··␛[m␛[38;5;244m 0.4s␛[m␛[38;5;254m · $0.01␛[m
-␛[38;5;254m⠋ running go tes␛[m␛[38;5;244m·␛[m␛[38;5;244m 0.4s␛[m␛[38;5;254m · $0.01␛[m
-␛[38;5;254m⠋ running go test␛[m␛[38;5;244m 0.4s␛[m␛[38;5;254m · $0.01␛[m
-␛[38;5;254m⠋ running go test␛[m␛[38;5;244m 0.4s␛[m␛[38;5;254m · $0.01␛[m
+␛[38;5;254m⠋ run␛[m␛[38;5;244m············␛[m␛[38;5;244m 0.4s␛[m
+␛[38;5;254m⠋ run␛[m␛[38;5;244m············␛[m␛[38;5;244m 0.4s␛[m
+␛[38;5;254m⠋ runni␛[m␛[38;5;244m··········␛[m␛[38;5;244m 0.4s␛[m
+␛[38;5;254m⠋ running␛[m␛[38;5;244m········␛[m␛[38;5;244m 0.4s␛[m
+␛[38;5;254m⠋ running ␛[m␛[38;5;244m·······␛[m␛[38;5;244m 0.4s␛[m
+␛[38;5;254m⠋ running ␛[m␛[38;5;244m·······␛[m␛[38;5;244m 0.4s␛[m
+␛[38;5;254m⠋ running ␛[m␛[38;5;244m·······␛[m␛[38;5;244m 0.4s␛[m
+␛[38;5;254m⠋ running g␛[m␛[38;5;244m······␛[m␛[38;5;244m 0.4s␛[m
+␛[38;5;254m⠋ running go␛[m␛[38;5;244m·····␛[m␛[38;5;244m 0.4s␛[m
+␛[38;5;254m⠋ running go te␛[m␛[38;5;244m··␛[m␛[38;5;244m 0.4s␛[m
+␛[38;5;254m⠋ running go tes␛[m␛[38;5;244m·␛[m␛[38;5;244m 0.4s␛[m
+␛[38;5;254m⠋ running go test␛[m␛[38;5;244m 0.4s␛[m
+␛[38;5;254m⠋ running go test␛[m␛[38;5;244m 0.4s␛[m
 
 · the sweep · one pass, with its rest either side
-␛[38;5;254m⠋ running go test␛[m␛[38;5;244m 0.4s␛[m␛[38;5;254m · $0.01␛[m
-␛[38;5;254m⠙ running go test␛[m␛[38;5;244m 0.4s␛[m␛[38;5;254m · $0.01␛[m
-␛[38;5;254m⠹ running go test␛[m␛[38;5;244m 0.4s␛[m␛[38;5;254m · $0.01␛[m
-␛[38;5;254m⠸ running go test␛[m␛[38;5;244m 0.4s␛[m␛[38;5;254m · $0.01␛[m
-␛[38;5;254m⠼ running go test␛[m␛[38;5;244m 0.4s␛[m␛[38;5;254m · $0.01␛[m
-␛[38;5;254m⠴ running go test␛[m␛[38;5;244m 0.4s␛[m␛[38;5;254m · $0.01␛[m
-␛[38;5;254m⠦ running go test␛[m␛[38;5;244m 0.4s␛[m␛[38;5;254m · $0.01␛[m
-␛[38;5;254m⠧ running go test␛[m␛[38;5;244m 0.4s␛[m␛[38;5;254m · $0.01␛[m
-␛[38;5;254m⠋ running go test␛[m␛[38;5;244m 0.4s␛[m␛[38;5;254m · $0.01␛[m
-␛[38;5;254m⠙ running go test␛[m␛[38;5;244m 0.4s␛[m␛[38;5;254m · $0.01␛[m
-␛[38;5;254m⠹ running go test␛[m␛[38;5;244m 0.4s␛[m␛[38;5;254m · $0.01␛[m
-␛[38;5;254m⠸ running go test␛[m␛[38;5;244m 0.4s␛[m␛[38;5;254m · $0.01␛[m
-␛[38;5;254m⠼ running go test␛[m␛[38;5;244m 0.4s␛[m␛[38;5;254m · $0.01␛[m
-␛[38;5;254m⠴ running go test␛[m␛[38;5;244m 0.4s␛[m␛[38;5;254m · $0.01␛[m
-␛[38;5;254m⠦ running go test␛[m␛[38;5;244m 0.4s␛[m␛[38;5;254m · $0.01␛[m
-␛[38;5;254m⠧ running go test␛[m␛[38;5;244m 0.4s␛[m␛[38;5;254m · $0.01␛[m
-␛[38;5;254m⠋ running go test␛[m␛[38;5;244m 0.4s␛[m␛[38;5;254m · $0.01␛[m
-␛[38;5;254m⠙ running go test␛[m␛[38;5;244m 0.4s␛[m␛[38;5;254m · $0.01␛[m
-␛[38;5;254m⠹ running go test␛[m␛[38;5;244m 0.4s␛[m␛[38;5;254m · $0.01␛[m
-␛[38;5;254m⠸ running go test␛[m␛[38;5;244m 0.4s␛[m␛[38;5;254m · $0.01␛[m
-␛[38;5;254m⠼ running go test␛[m␛[38;5;244m 0.4s␛[m␛[38;5;254m · $0.01␛[m
+␛[38;5;254m⠋ running go test␛[m␛[38;5;244m 0.4s␛[m
+␛[38;5;254m⠙ running go test␛[m␛[38;5;244m 0.4s␛[m
+␛[38;5;254m⠹ running go test␛[m␛[38;5;244m 0.4s␛[m
+␛[38;5;254m⠸ running go test␛[m␛[38;5;244m 0.4s␛[m
+␛[38;5;254m⠼ running go test␛[m␛[38;5;244m 0.4s␛[m
+␛[38;5;254m⠴ running go test␛[m␛[38;5;244m 0.4s␛[m
+␛[38;5;254m⠦ running go test␛[m␛[38;5;244m 0.4s␛[m
+␛[38;5;254m⠧ running go test␛[m␛[38;5;244m 0.4s␛[m
+␛[38;5;254m⠋ running go test␛[m␛[38;5;244m 0.4s␛[m
+␛[38;5;254m⠙ running go test␛[m␛[38;5;244m 0.4s␛[m
+␛[38;5;254m⠹ running go test␛[m␛[38;5;244m 0.4s␛[m
+␛[38;5;254m⠸ running go test␛[m␛[38;5;244m 0.4s␛[m
+␛[38;5;254m⠼ running go test␛[m␛[38;5;244m 0.4s␛[m
+␛[38;5;254m⠴ running go test␛[m␛[38;5;244m 0.4s␛[m
+␛[38;5;254m⠦ running go test␛[m␛[38;5;244m 0.4s␛[m
+␛[38;5;254m⠧ running go test␛[m␛[38;5;244m 0.4s␛[m
+␛[38;5;254m⠋ running go test␛[m␛[38;5;244m 0.4s␛[m
+␛[38;5;254m⠙ running go test␛[m␛[38;5;244m 0.4s␛[m
+␛[38;5;254m⠹ running go test␛[m␛[38;5;244m 0.4s␛[m
+␛[38;5;254m⠸ running go test␛[m␛[38;5;244m 0.4s␛[m
+␛[38;5;254m⠼ running go test␛[m␛[38;5;244m 0.4s␛[m

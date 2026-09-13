@@ -3,17 +3,24 @@ package chat
 // The running turn's status (
 // docs/interface/surfaces.md#the-input-frame). The frame's activity slot used
 // to say `WORKING` — which is true of every moment of every turn and
-// therefore says nothing — and the numbers that would have made it useful
-// were reported only after the fact. This is that slot given the turn's live
-// account of itself: which of the four phases it is in, how long it has been
-// there, what it has spent, and what that has cost.
+// therefore says nothing — and what the turn was doing was reported only
+// after the fact. This is that slot given the turn's live account of itself:
+// which of the four phases it is in, and how long it has been there.
+//
+// What the turn is spending is not on it. The tokens are on the vitals rail a
+// row below, which already carries the running turn's estimate inside the
+// session's total (vitals.go), and the cost is on the close block the line
+// resolves into, where the ledger states what each request was actually
+// billed. Priced here it could only be freshRateLabel's upper bound on a live
+// pair, which charges every cached prompt read at the fresh rate: the newest
+// figure on the frame would be the one wrong number among the right ones
+// beside it (attach.go, render.go).
 //
 // Nothing here is a second source of truth. The phase is read off the state
 // the turn is already in, the elapsed off the same clock the inspector rail's
-// THIS TURN block reads, the tokens off the vitals the session already
-// records, and the resolved line off the turn's own close block — so
-// the status line and the row it leaves in the transcript state the same four
-// facts in the two orders the turn status asks for and cannot disagree.
+// THIS TURN block reads, and the resolved line off the turn's own close
+// block — so the status line and the row it leaves in the transcript state
+// the same facts and cannot disagree.
 
 import (
 	"github.com/rfizzle/shhh/internal/agent"
@@ -43,38 +50,7 @@ func (m Model) turnStatus() (components.TurnStatus, bool) {
 		// the one tick source's.
 		s.Arriving = components.AnimArriving(age)
 	}
-	// The eased figures rather than the raw ones: what the counts are is
-	// liveTurnTokens' answer, and how they get there is the odometer's. Full
-	// resolution while the turn works, because the rounding that makes
-	// `41.2k` the right shape for a finished session is exactly what hides a
-	// round of movement. The cost is derived from those live counts and not
-	// from the last thing a response reported, which is also why an unpriced
-	// model states tokens here instead of a made-up zero.
-	in, out := m.easedTurnTokens()
-	if in > 0 || out > 0 {
-		up, down, cost := components.FormatLiveCount(in), components.FormatLiveCount(out), m.freshRateLabel(in, out)
-		if m.accountDiffers(up, down, cost) {
-			s.Up, s.Down, s.Cost = up, down, cost
-		}
-	}
 	return s, true
-}
-
-// accountDiffers reports whether the turn's account is something the frame is
-// not already saying. The vitals rail two rows below carries the session's,
-// and on the first turn of a session the two are the same three figures —
-// drawn twice, a hand apart, with nothing to tell the reader which is which
-// except that they agree (docs/interface/surfaces.md#the-input-frame).
-//
-// It compares what the two rails would print rather than what they were
-// composed from. That is the fact the reader has in front of them, and it is
-// also the honest test: the two accounts climb on counters of their own
-// (vitals.go), so figures that round to one shape are one shape on screen
-// whatever the raw totals behind them were.
-func (m Model) accountDiffers(up, down, cost string) bool {
-	sin, sout := m.liveSessionTokens()
-	return up != m.countLabel(sin) || down != m.countLabel(sout) ||
-		cost != m.freshRateLabel(sin, sout)
 }
 
 // turnPhase is which of the four phases the turn is in, the argument to name
@@ -162,9 +138,8 @@ func (m Model) liveTurnTokens() (in, out int64) {
 	return in, out
 }
 
-// easeCounts re-aims the counters — the turn's and the session's — at what
-// has actually been spent, and advances them one step per frame of the one
-// tick source. It is called
+// easeCounts re-aims the session's counters at what has actually been spent,
+// and advances them one step per frame of the one tick source. It is called
 // from the tail of every update rather than from the paths that change a
 // count, for the reason the spinner's own rule is applied there: a usage
 // report, a chunk of prose, the turn opening and the turn closing all move
@@ -177,55 +152,29 @@ func (m Model) liveTurnTokens() (in, out int64) {
 // is what lets the chain end on the frame a climb arrives rather than one
 // frame later.
 func (m *Model) easeCounts() {
-	in, out := m.liveTurnTokens()
-	// The turn's counters are aimed only while a turn is in a phase, and
-	// settled where they stand the rest of the time. Nothing reads them
-	// between turns — the slot has resolved into the summary — and re-aiming
-	// them at the closed turn's nothing is what would make a turn later put
-	// back on the books climb from zero to a figure the rail had already
-	// shown and the session never re-measured. That happens: a turn stopped
-	// at its round ceiling is closed, and granting it more rounds reopens it
-	// with everything it spent still on it (rounds.go).
-	if _, _, running := m.turnPhase(); running {
-		m.turnUp.Toward(in, m.spinFrame)
-		m.turnDown.Toward(out, m.spinFrame)
-	} else {
-		m.turnUp.Settle()
-		m.turnDown.Settle()
-	}
-	// The session's are aimed always, because the rail states them at rest
-	// too. Their own target already survives that reopening: what the turn
-	// spent moves between the two halves of the sum and never leaves it
-	// (vitals.go).
-	sin, sout := m.sessionTokensFrom(in, out)
+	// The counters are aimed on every call, at rest as well as mid-turn,
+	// because the vitals rail states them at rest too — and their target
+	// survives a turn being reopened: a turn stopped at its round ceiling is
+	// closed, and granting it more rounds puts everything it spent back on
+	// the books (rounds.go), but that spend only moves between the two halves
+	// of the session's sum and never leaves it (vitals.go).
+	sin, sout := m.sessionTokensFrom(m.liveTurnTokens())
 	m.sessionUp.Toward(sin, m.spinFrame)
 	m.sessionDown.Toward(sout, m.spinFrame)
 }
 
-// easedTurnTokens is the turn's account as the rails print it: the odometers'
-// intermediate figures while a count is still climbing, and the measured
-// count itself once it has arrived. The measured figures are read again here
-// rather than trusted to the odometers, so a figure the update tail has not
-// aimed them at is stated rather than withheld — the ease may lag the truth
-// and may not contradict it.
-func (m Model) easedTurnTokens() (in, out int64) {
-	tin, tout := m.liveTurnTokens()
-	return m.turnUp.Reading(tin), m.turnDown.Reading(tout)
-}
-
-// countsEasing reports whether any of the counters is still climbing. The spinner
+// countsEasing reports whether either counter is still climbing. The spinner
 // asks it, because a climb is something moving on screen and the one tick
 // source is what moves it (spin.go) — and because it goes false on the frame
 // the last count lands, the chain it keeps alive ends there rather than
 // running on over an idle session.
 func (m Model) countsEasing() bool {
-	return m.turnUp.Easing() || m.turnDown.Easing() ||
-		m.sessionUp.Easing() || m.sessionDown.Easing()
+	return m.sessionUp.Easing() || m.sessionDown.Easing()
 }
 
-// countsLive reports whether the counters are a turn's live account rather
-// than the session's settled totals, which is what decides the resolution
-// they print at.
+// countsLive reports whether the counters are carrying a turn in flight
+// rather than the session's settled totals, which is what decides the
+// resolution they print at.
 func (m Model) countsLive() bool {
 	_, _, running := m.turnPhase()
 	return running || m.countsEasing()

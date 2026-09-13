@@ -24,14 +24,6 @@ func statusModel(t *testing.T) Model {
 	return m
 }
 
-// afterAnEarlierTurn puts a closed turn's spend on the session. It is what
-// makes the running turn's account something the top rail states at all: on a
-// session whose first turn is still open the two rails carry one figure, and
-// the top one leaves it to the rail below (turnstatus.go).
-func afterAnEarlierTurn(m *Model) {
-	m.TotalTokensIn, m.TotalTokensOut = 5000, 2000
-}
-
 // settleCounts runs the counters to their targets, so a test can assert the
 // figures the session measured rather than whichever frame of the climb it
 // happened to stop on.
@@ -111,21 +103,19 @@ func TestTurnStatus_NamesTheCallItIsRunning(t *testing.T) {
 	}
 }
 
+// The turn's account is not on the status line, but it is what the vitals
+// rail's counters are aimed at, and it moves while the prose does.
 func TestTurnStatus_TokensMoveWhileTheProseArrives(t *testing.T) {
 	m := statusModel(t)
-	afterAnEarlierTurn(&m)
-	before, _ := m.turnStatus()
+	beforeIn, beforeOut := m.liveTurnTokens()
 
 	m.streaming = strings.Repeat("token ", 400)
-	after, _ := m.turnStatus()
-	if after.Down == before.Down {
-		t.Fatalf("output tokens did not move as prose arrived (%q)", after.Down)
+	in, out := m.liveTurnTokens()
+	if out == beforeOut {
+		t.Fatalf("output tokens did not move as prose arrived (%d)", out)
 	}
-	if after.Cost == before.Cost {
-		t.Fatalf("cost is derived from the live counts, so it should have moved too (%q)", after.Cost)
-	}
-	if after.Up != before.Up {
-		t.Fatalf("input tokens should not move while output arrives (%q -> %q)", before.Up, after.Up)
+	if in != beforeIn {
+		t.Fatalf("input tokens should not move while output arrives (%d -> %d)", beforeIn, in)
 	}
 }
 
@@ -135,38 +125,62 @@ func TestTurnStatus_TokensMoveWhileTheProseArrives(t *testing.T) {
 // numbers under it.
 func TestTurnStatus_TokensMoveWhileTheReasoningArrives(t *testing.T) {
 	m := statusModel(t)
-	afterAnEarlierTurn(&m)
 	m.events = make(chan provider.StreamEvent)
-	before, _ := m.turnStatus()
+	_, before := m.liveTurnTokens()
 
 	m.appendThinking(strings.Repeat("weighing it up ", 200))
-	after, _ := m.turnStatus()
-	if after.Down == before.Down {
-		t.Fatalf("output tokens did not move as the reasoning arrived (%q)", after.Down)
+	if _, out := m.liveTurnTokens(); out == before {
+		t.Fatalf("output tokens did not move as the reasoning arrived (%d)", out)
 	}
 
 	// The row stays on screen for the rest of the turn, but the usage event
 	// that closed its round has already counted those tokens: the estimate
 	// stops with the round rather than being added to what it was billed.
 	m.events = nil
-	closed, _ := m.turnStatus()
-	if closed.Down != before.Down {
-		t.Fatalf("the estimate should stop when the round does: %q -> %q", before.Down, closed.Down)
+	if _, out := m.liveTurnTokens(); out != before {
+		t.Fatalf("the estimate should stop when the round does: %d -> %d", before, out)
 	}
 }
 
 // Until the turn's first request reports, there is no billed prompt to
-// state — and `↑0` would be stating a number the session knows is wrong.
+// count — and zero would be a number the session knows is wrong.
 func TestTurnStatus_PromptEstimatedUntilTheFirstUsageLands(t *testing.T) {
 	m := statusModel(t)
 	m.vitals.startTurn() // a fresh turn: nothing billed yet
-	if got, _ := m.turnStatus(); got.Up == "" || got.Up == "0" {
-		t.Fatalf("an unbilled prompt should state the context estimate, got %q", got.Up)
+	if in, _ := m.liveTurnTokens(); in == 0 {
+		t.Fatal("an unbilled prompt should count the context estimate, got 0")
 	}
 
 	m.accumulateUsage(&provider.Usage{PromptTokens: 41200, CompletionTokens: 100})
-	if got, _ := m.turnStatus(); got.Up != components.FormatLiveCount(41200) {
-		t.Fatalf("a reported prompt replaces the estimate, got %q", got.Up)
+	if in, _ := m.liveTurnTokens(); in != 41200 {
+		t.Fatalf("a reported prompt replaces the estimate, got %d", in)
+	}
+}
+
+// The running line states no account at all. A turn in flight can only be
+// priced at the fresh input rate, which charges every cached prompt read as
+// if it were new; the figure that produces is the newest one on the frame and
+// the only wrong one, beside the billed totals the rails below carry. The
+// tokens go with it — the vitals rail already states the pair
+// (docs/interface/surfaces.md#the-input-frame).
+func TestTurnStatus_TheRunningLineStatesNoAccount(t *testing.T) {
+	m := statusModel(t)
+	m.TotalTokensIn, m.TotalTokensOut = 5000, 2000
+	m.streaming = strings.Repeat("token ", 400)
+	settleCounts(&m)
+
+	s, ok := m.turnStatus()
+	if !ok || s.Done {
+		t.Fatalf("a running turn should have a live line (ok=%v done=%v)", ok, s.Done)
+	}
+	if line := stripANSI(s.View(160)); strings.ContainsAny(line, "$↑↓") {
+		t.Fatalf("the running line stated an account: %q", line)
+	}
+
+	// What it leaves out is not missing from the frame: the rail below
+	// carries the session's pair, this turn's estimate inside it.
+	if bar := stripANSI(m.renderStatusBar(160)); !strings.Contains(bar, "↑") {
+		t.Fatalf("the vitals rail should still carry the counts:\n%s", bar)
 	}
 }
 
@@ -202,7 +216,7 @@ func TestTurnStatus_FrameRailShowsTheTurnAndThenItsSummary(t *testing.T) {
 	// is the settled word, and how it gets there is the test below.
 	m.turnStarted = time.Now().Add(-2 * time.Second)
 	view := stripANSI(m.View().Content)
-	if !strings.Contains(view, "thinking…") || !strings.Contains(view, "$") {
+	if !strings.Contains(view, "thinking…") {
 		t.Fatalf("the top rail should carry the live status:\n%s", view)
 	}
 
@@ -310,16 +324,15 @@ func TestTurnStatus_CountsHoldThroughAToolRound(t *testing.T) {
 	m.vitals.startTurn()
 	m.accumulateUsage(&provider.Usage{PromptTokens: 2000, CompletionTokens: 700})
 	settleCounts(&m)
-	before, _ := m.turnStatus()
+	beforeIn, beforeOut := m.liveSessionTokens()
 
 	for range 10 {
 		m.spinFrame++
 		m.easeCounts()
 	}
-	after, _ := m.turnStatus()
-	if after.Up != before.Up || after.Down != before.Down {
-		t.Fatalf("a round that billed nothing moved the counts: ↑%s ↓%s -> ↑%s ↓%s",
-			before.Up, before.Down, after.Up, after.Down)
+	if in, out := m.liveSessionTokens(); in != beforeIn || out != beforeOut {
+		t.Fatalf("a round that billed nothing moved the counts: ↑%d ↓%d -> ↑%d ↓%d",
+			beforeIn, beforeOut, in, out)
 	}
 }
 
@@ -338,7 +351,7 @@ func TestTurnStatus_TheUpdateTailAimsTheCounters(t *testing.T) {
 	// Prose arriving is the output growing, and the account has to follow it
 	// without any of the stream's own handlers saying so.
 	m.streaming = strings.Repeat("token ", 400)
-	_, want := m.liveTurnTokens()
+	_, want := m.sessionTokensFrom(m.liveTurnTokens())
 	if want == 0 {
 		t.Fatal("prose arriving should give the output something to climb to")
 	}
@@ -346,7 +359,7 @@ func TestTurnStatus_TheUpdateTailAimsTheCounters(t *testing.T) {
 	if !m.countsEasing() {
 		t.Fatal("the tail should have set the output counter climbing")
 	}
-	if _, got := m.easedTurnTokens(); got >= want {
+	if _, got := m.liveSessionTokens(); got >= want {
 		t.Fatalf("the first frame should be short of %d, got %d", want, got)
 	}
 	for range 20 {
@@ -355,33 +368,7 @@ func TestTurnStatus_TheUpdateTailAimsTheCounters(t *testing.T) {
 		}
 		m, _ = tick(t, m)
 	}
-	if _, got := m.easedTurnTokens(); got != want {
+	if _, got := m.liveSessionTokens(); got != want {
 		t.Fatalf("the climb should land on the measured figure %d, got %d", want, got)
-	}
-}
-
-// The top rail states the turn's account only where it is not the session's.
-// A first turn is the whole of what the session has spent, so the two rails
-// would carry the same three figures a hand apart and neither would say which
-// is which (docs/interface/surfaces.md#the-input-frame).
-func TestTurnStatus_TheFirstTurnLeavesTheAccountToTheRailBelow(t *testing.T) {
-	m := statusModel(t)
-	m.streaming = strings.Repeat("token ", 400)
-	settleCounts(&m)
-
-	first, _ := m.turnStatus()
-	if first.Up != "" || first.Down != "" || first.Cost != "" {
-		t.Fatalf("the first turn is the session's whole account, so the top rail states none of it: %q %q %q",
-			first.Up, first.Down, first.Cost)
-	}
-
-	// With a turn behind it the same figures are a different reading, and the
-	// rail says them.
-	afterAnEarlierTurn(&m)
-	settleCounts(&m)
-	again, _ := m.turnStatus()
-	if again.Up == "" || again.Down == "" || again.Cost == "" {
-		t.Fatalf("a turn that is not the whole session states its own account: %q %q %q",
-			again.Up, again.Down, again.Cost)
 	}
 }

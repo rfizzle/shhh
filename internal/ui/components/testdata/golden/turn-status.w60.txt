@@ -11,22 +11,25 @@
 
 ── layout ──────────────────────────────────────────────────
 · phase · thinking
-⠋ thinking… 4.2s · ↑41.2k ↓2.1k · $0.06
+⠋ thinking… 4.2s
 
 · phase · deciding
-⠋ deciding… 0.8s · ↑41.2k ↓2.1k · $0.06
+⠋ deciding… 0.8s
 
 · phase · running, named
-⠋ running 12.4s · ↑41.2k ↓2.1k · $0.06
+⠋ running go test ./internal/agent/... 12.4s
 
 · phase · streaming
-⠋ streaming… 12.4s · ↑41.2k ↓2.1k · $0.06
+⠋ streaming… 12.4s
 
-· unpriced · tokens, never a made-up zero
-⠋ running 12.4s · ↑41.2k ↓2.1k · ~43.3k tok
+· running · a cost is not the live line's to state
+⠋ running go test ./internal/agent/... 12.4s
 
-· counts · mid-climb
-⠋ running 12.4s · ↑6,514 ↓1,198 · $0.06
+· slot · the argument goes first
+⠋ running 12.4s
+
+· slot · then elapsed, leaving the phase
+⠋ running
 
 · resolved · done
 ✓ done · 1m 04s · 18 tools · $0.14
@@ -39,22 +42,25 @@
 
 ── ansi ────────────────────────────────────────────────────
 · phase · thinking
-␛[38;5;205m⠋ thinking…␛[m␛[38;5;241m 4.2s␛[m␛[38;5;241m · ↑41.2k ↓2.1k␛[m␛[38;5;252m · $0.06␛[m
+␛[38;5;205m⠋ thinking…␛[m␛[38;5;241m 4.2s␛[m
 
 · phase · deciding
-␛[38;5;205m⠋ deciding…␛[m␛[38;5;241m 0.8s␛[m␛[38;5;241m · ↑41.2k ↓2.1k␛[m␛[38;5;252m · $0.06␛[m
+␛[38;5;205m⠋ deciding…␛[m␛[38;5;241m 0.8s␛[m
 
 · phase · running, named
-␛[38;5;205m⠋ running␛[m␛[38;5;241m 12.4s␛[m␛[38;5;241m · ↑41.2k ↓2.1k␛[m␛[38;5;252m · $0.06␛[m
+␛[38;5;205m⠋ running go test ./internal/agent/...␛[m␛[38;5;241m 12.4s␛[m
 
 · phase · streaming
-␛[38;5;205m⠋ streaming…␛[m␛[38;5;241m 12.4s␛[m␛[38;5;241m · ↑41.2k ↓2.1k␛[m␛[38;5;252m · $0.06␛[m
+␛[38;5;205m⠋ streaming…␛[m␛[38;5;241m 12.4s␛[m
 
-· unpriced · tokens, never a made-up zero
-␛[38;5;205m⠋ running␛[m␛[38;5;241m 12.4s␛[m␛[38;5;241m · ↑41.2k ↓2.1k␛[m␛[38;5;252m · ~43.3k tok␛[m
+· running · a cost is not the live line's to state
+␛[38;5;205m⠋ running go test ./internal/agent/...␛[m␛[38;5;241m 12.4s␛[m
 
-· counts · mid-climb
-␛[38;5;205m⠋ running␛[m␛[38;5;241m 12.4s␛[m␛[38;5;241m · ↑6,514 ↓1,198␛[m␛[38;5;252m · $0.06␛[m
+· slot · the argument goes first
+␛[38;5;205m⠋ running␛[m␛[38;5;241m 12.4s␛[m
+
+· slot · then elapsed, leaving the phase
+␛[38;5;205m⠋ running␛[m
 
 · resolved · done
 ␛[92m✓ done␛[m␛[38;5;241m · 1m 04s␛[m␛[38;5;241m · 18 tools␛[m␛[38;5;252m · $0.14␛[m

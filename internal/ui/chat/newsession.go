@@ -101,7 +101,6 @@ func (m *Model) startNewSession() (notes []entry, save tea.Cmd) {
 	// And the counters are put back to their zero value rather than aimed at
 	// it: a climb is measured movement, and there is nothing here for a
 	// figure to travel across (turnstatus.go).
-	m.turnUp, m.turnDown = components.Odometer{}, components.Odometer{}
 	m.sessionUp, m.sessionDown = components.Odometer{}, components.Odometer{}
 	m.resetRounds()
 	// The turn's accounting started over, so there is no longer a turn to

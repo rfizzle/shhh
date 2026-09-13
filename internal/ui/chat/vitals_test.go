@@ -233,7 +233,7 @@ func TestVitals_SessionTotalIsTheTurnsAccountPlusTheEarlierTurns(t *testing.T) {
 	m.streaming = strings.Repeat("token ", 400)
 	settleCounts(&m)
 
-	turnIn, turnOut := m.easedTurnTokens()
+	turnIn, turnOut := m.liveTurnTokens()
 	sessionIn, sessionOut := m.liveSessionTokens()
 	if sessionIn != earlierIn+turnIn || sessionOut != earlierOut+turnOut {
 		t.Fatalf("the rail's total ↑%d ↓%d is not the turn's ↑%d ↓%d plus the earlier ↑%d ↓%d",
@@ -292,16 +292,14 @@ func TestVitals_RailCountsChangeResolutionWithTheTurn(t *testing.T) {
 
 // A turn granted more rounds after a round-limit pause is put back on the
 // books with nothing spent: what it cost moves out of the closed totals and
-// into the open turn again. Neither rail has anything to move — a session
-// total that falls would be a lie about what has been spent, and a turn's
-// account that climbs back to a figure it was already showing is movement
-// nothing measured.
-func TestVitals_NeitherRailMovesWhenATurnGoesBackOnTheBooks(t *testing.T) {
+// into the open turn again. The rail has nothing to move — a session total
+// that falls would be a lie about what has been spent, and a figure that
+// climbs back to what it was already showing is movement nothing measured.
+func TestVitals_TheRailDoesNotMoveWhenATurnGoesBackOnTheBooks(t *testing.T) {
 	m := statusModel(t)
 	m.vitals.startTurn()
 	m.accumulateUsage(&provider.Usage{PromptTokens: 2000, CompletionTokens: 700})
 	settleCounts(&m)
-	turnIn, turnOut := m.easedTurnTokens()
 
 	// The ceiling: the turn is closed with everything it spent.
 	m.state = stateInput
@@ -317,10 +315,6 @@ func TestVitals_NeitherRailMovesWhenATurnGoesBackOnTheBooks(t *testing.T) {
 	if in, out := m.liveSessionTokens(); in != sessionIn || out != sessionOut {
 		t.Fatalf("the session's total moved on a turn that spent nothing: ↑%d ↓%d -> ↑%d ↓%d",
 			sessionIn, sessionOut, in, out)
-	}
-	if in, out := m.easedTurnTokens(); in != turnIn || out != turnOut {
-		t.Fatalf("the turn's account climbed again on a grant that spent nothing: ↑%d ↓%d -> ↑%d ↓%d",
-			turnIn, turnOut, in, out)
 	}
 	if m.countsEasing() {
 		t.Fatal("a grant that spent nothing has nothing to animate")

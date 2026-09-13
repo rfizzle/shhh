@@ -386,24 +386,22 @@ itself on the top rail, the session's counters on the vitals rail, and
 contextual key hints on the bottom rail that change with what the session is
 doing.
 
-The top rail states one turn's four facts — which phase it is in, how long it
-has been there, the tokens it has spent and what they cost — and it states
-them while they are still moving: before the provider reports a request's
-usage, the prompt is the context estimate and the output is the reasoning and
-the prose as they arrive, replaced by the reported count the moment there is
-one. Nothing else on screen says the same thing twice: the phase is named
-here, not also under the transcript.
+The top rail states what one turn is doing — which of four phases it is in,
+the call it is running where that is the phase, and how long it has been
+there — and it states it while it is happening rather than after the fact.
+Nothing else on screen says the same thing twice: the phase is named here, not
+also under the transcript.
 
-It states them at the rail's near corner, two rows above the prompt glyph,
-because the account is the one thing on the frame that moves and the eye
-watching it is already on the cursor. Against the far edge of a wide terminal
-the same figures sit a hundred columns from anything the reader is looking
-at. The far side carries the identity instead: nothing at the root session,
-where the header above the transcript already names the surface, and attached
-to a child agent the breadcrumb — there the rail is the one place that says
-which session the keyboard is in. A rail with room for only one of the two
-keeps the account, because the breadcrumb answers a question a key can ask
-again and the numbers are why the rail carries labels at all.
+It states it at the rail's near corner, two rows above the prompt glyph,
+because it is the one thing on the frame that moves and the eye watching it is
+already on the cursor. Against the far edge of a wide terminal the same words
+sit a hundred columns from anything the reader is looking at. The far side
+carries the identity instead: nothing at the root session, where the header
+above the transcript already names the surface, and attached to a child agent
+the breadcrumb — there the rail is the one place that says which session the
+keyboard is in. A rail with room for only one of the two keeps the status,
+because the breadcrumb answers a question a key can ask again and what the
+turn is doing is why the rail carries a label at all.
 
 A figure that changes climbs to its new value over about half a second rather
 than cutting to it, on the same tick that draws everything else moving on the
@@ -414,21 +412,25 @@ While a turn is spending them they print every digit, because a hundred tokens
 of movement vanish inside the rounding that makes `41.2k` the right shape to
 carry a finished session in; once nothing is moving them they go back to it.
 
-The session's counters on the vitals rail carry the running turn's estimate
-the same way, so the two rails are one account rather than two: what the
-session has spent is what the earlier turns cost plus what this one is costing,
-and a request's report replaces that turn's estimate instead of being added to
-it.
+The counters that climb are the session's, on the vitals rail, and they carry
+the running turn's estimate inside them: what the session has spent is what
+the earlier turns cost plus what this one is costing, and a request's report
+replaces that turn's estimate instead of being added to it. That is the
+account, and the frame draws it once.
 
-Which is why the top rail states the turn's tokens and cost only where they
-are not the session's. On the first turn of a session the two accounts are the
-same three figures, and drawing them on both rails puts one number twice on
-one frame, a hand apart, with nothing to say which is which except that they
-agree. So the top rail draws them once the turns before it have made them a
-different reading, and carries the phase, the spinner and how long it has been
-in it until then. Nothing about how a figure is shaped changes with it: a
-count still prints every digit while something is moving it and goes back to
-`41.2k` once nothing is.
+The top rail carries none of it. A turn in flight can only be priced at the
+full input rate, because the split between the prompt read fresh and the
+prompt served from cache arrives with the provider's report and not before; on
+a session whose prefix is re-sent every round that is most of the input, so
+the figure overstates the bill — and it overstates it beside the vitals rail's
+billed total and the spend view's breakdown, which are right. The newest
+figure on the frame would be the only wrong one, and the one a reader takes
+for the most current. The tokens leave with it: the pair a row below is the
+same pair on the turn a session opens with, and on any later turn it is the
+question nobody is asking of a line whose job is to say what the turn is
+doing. What the turn spent is stated once more when there is a bill for it —
+the summary this line resolves into carries what the ledger was charged, and
+so does the row the turn leaves in the transcript.
 
 Attached to a child agent, both rails scope to that child. The top one names
 the phase the child is in, read off what the supervisor already reports — a

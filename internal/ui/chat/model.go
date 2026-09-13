@@ -597,12 +597,11 @@ type Model struct {
 	// "one tick source, never three" a property rather than a habit:
 	// spinCmd starts a chain only when this is false (spin.go).
 	spinning bool
-	// turnUp and turnDown carry the turn's token counts, and sessionUp and
-	// sessionDown the session's, from the figure on screen to the figure the
-	// session has measured — a step per frame of the counter above. The
-	// session's are separate counters rather than the turn's plus what came
-	// before, for the reason the rail's own accounting gives (vitals.go).
-	turnUp, turnDown       components.Odometer
+	// sessionUp and sessionDown carry the session's token counts from the
+	// figure on screen to the figure the session has measured — a step per
+	// frame of the counter above. They are the only pair: the running turn's
+	// own account is not drawn anywhere, and what it is spending reaches the
+	// screen inside these (turnstatus.go, vitals.go).
 	sessionUp, sessionDown components.Odometer
 	// streamDirty reports whether a chunk has landed that the transcript has
 	// not been repainted for. It rides the tick above rather than adding a

@@ -8,13 +8,11 @@ import (
 	"github.com/charmbracelet/x/ansi"
 )
 
-// liveStatus is the fully-populated live line every drop-order test starts
-// from: every field present, so what a narrower width removes is visible.
+// liveStatus is the fullest live line every drop-order test starts from —
+// the phase, its argument and elapsed — so what a narrower width removes is
+// visible.
 func liveStatus() TurnStatus {
-	return TurnStatus{
-		Phase: PhaseRunning, Tool: "go test",
-		Elapsed: "12.4s", Up: "41.2k", Down: "2.1k", Cost: "$0.06",
-	}
+	return TurnStatus{Phase: PhaseRunning, Tool: "go test", Elapsed: "12.4s"}
 }
 
 func plainStatus(s TurnStatus, width int) string { return ansi.Strip(s.View(width)) }
@@ -40,22 +38,21 @@ func TestTurnStatus_PhaseVocabularyIsClosed(t *testing.T) {
 }
 
 // The whole ladder in one table: what each width leaves, in the order the
-// turn status says fields leave — tool argument, token counts, elapsed — with
-// the phase and the cost still standing at the floor.
+// turn status says fields leave — tool argument, then elapsed — with the
+// phase still standing at the floor.
 func TestTurnStatus_DropOrder(t *testing.T) {
 	s := liveStatus()
 	full := plainStatus(s, 200)
-	if want := "⠋ running go test 12.4s · ↑41.2k ↓2.1k · $0.06"; full != want {
+	if want := "⠋ running go test 12.4s"; full != want {
 		t.Fatalf("full line = %q, want %q", full, want)
 	}
 	for _, c := range []struct {
 		width int
 		want  string
 	}{
-		{lipgloss.Width(full), "⠋ running go test 12.4s · ↑41.2k ↓2.1k · $0.06"},
-		{lipgloss.Width(full) - 1, "⠋ running 12.4s · ↑41.2k ↓2.1k · $0.06"},
-		{30, "⠋ running 12.4s · $0.06"},
-		{20, "⠋ running · $0.06"},
+		{lipgloss.Width(full), "⠋ running go test 12.4s"},
+		{lipgloss.Width(full) - 1, "⠋ running 12.4s"},
+		{14, "⠋ running"},
 	} {
 		if got := plainStatus(s, c.width); got != c.want {
 			t.Fatalf("at width %d = %q, want %q", c.width, got, c.want)
@@ -63,17 +60,15 @@ func TestTurnStatus_DropOrder(t *testing.T) {
 	}
 }
 
-func TestTurnStatus_PhaseAndCostNeverDrop(t *testing.T) {
+func TestTurnStatus_PhaseNeverDrops(t *testing.T) {
 	s := liveStatus()
 	for width := 1; width <= 60; width++ {
 		got := plainStatus(s, width)
 		if lipgloss.Width(got) > width {
 			t.Fatalf("width %d overflowed: %q", width, got)
 		}
-		if width < lipgloss.Width(plainStatus(s, 200)) && width >= 18 {
-			if !strings.Contains(got, "running") || !strings.Contains(got, "$0.06") {
-				t.Fatalf("width %d dropped the phase or the cost: %q", width, got)
-			}
+		if width >= 9 && !strings.Contains(got, "running") {
+			t.Fatalf("width %d dropped the phase: %q", width, got)
 		}
 	}
 }
@@ -89,12 +84,19 @@ func TestTurnStatus_ClipsRatherThanVanishes(t *testing.T) {
 	}
 }
 
-// Both counts or neither: one arrow alone is half a fact.
-func TestTurnStatus_TokenCountsTravelTogether(t *testing.T) {
+// The cost belongs to the resolved line and to nothing else. A turn in
+// flight can only be priced at the fresh input rate, which charges every
+// cached prompt read as if it were new, so a host that fills the field early
+// gets no dollars for it (docs/interface/surfaces.md#the-input-frame).
+func TestTurnStatus_TheRunningLineStatesNoCost(t *testing.T) {
 	s := liveStatus()
-	s.Down = ""
-	if got := plainStatus(s, 200); strings.Contains(got, "↑") {
-		t.Fatalf("half a token count rendered: %q", got)
+	s.Cost = "$0.06"
+	if got := plainStatus(s, 200); strings.Contains(got, "$") {
+		t.Fatalf("a turn still running was priced: %q", got)
+	}
+	s.Done, s.Duration, s.Tools = true, "12.4s", 18
+	if got := plainStatus(s, 200); !strings.Contains(got, "$0.06") {
+		t.Fatalf("the resolved line should carry what the turn was billed: %q", got)
 	}
 }
 
