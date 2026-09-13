@@ -443,6 +443,11 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 		// command — stays unreduced.
 		var allowedBy, amendedFrom string
 		var allowElapsed time.Duration
+		// The formatted result, made once and read twice. Formatting a
+		// command's result is not free of consequence any more: an output
+		// over the cap puts its middle in the evidence store, and a second
+		// call would file a second entry for the one command.
+		var formatted string
 		if m.pendingApproval != nil {
 			// The line the call carried, where the reader wrote another one
 			// in its place: the row records what ran and says whose line it
@@ -450,7 +455,8 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 			amendedFrom = m.pendingApproval.amendedFrom
 			out = m.reduceResult(tools.ExecCommandName, out)
 			result.Output = out
-			outcome, class := observe.ToolOutcome(execToolResult(result))
+			formatted = m.execToolResult(result)
+			outcome, class := observe.ToolOutcome(formatted)
 			m.recordToolEvent(tools.ExecCommandName, msg.duration, outcome, class)
 			// What allowed the command rides the command's own row: nothing
 			// said so above it (approval.go). A `/run` the reader typed has
@@ -486,7 +492,7 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 				ranArgs = execArguments(msg.command)
 			}
 			toolResult := m.repeats.Notice(tools.ExecCommandName,
-				json.RawMessage(ranArgs), execToolResult(result))
+				json.RawMessage(ranArgs), formatted)
 			if agent.IsRepeatNotice(toolResult) {
 				m.signal(observe.SignalRepeat, tools.ExecCommandName)
 			}
@@ -511,7 +517,7 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 		// A local run's output stays out of the conversation: that is the
 		// whole difference `!!` buys, and the row's outcome says so (bang.go).
 		if !msg.local {
-			m.agent.AppendMachine(commandContextMessage(msg.command, out, msg.exitCode))
+			m.agent.AppendMachine(commandContextMessage(msg.command, out, msg.exitCode, m.evidence.Keep))
 		}
 		// A message typed while the /run command executed is sent now, with
 		// the command context already in the conversation.

@@ -1954,7 +1954,11 @@ func headlessApprover(ctx context.Context, opts printOpts, allowlist, denylist [
 				result = tools.InferExecResult(out, code)
 			}
 			result.Output = red.Process(tools.ExecCommandName, result.Output)
-			return tools.FormatExecResult(result)
+			// The store is handed to the formatter as well as to the
+			// reduction: the pipeline fails open on a result it would barely
+			// shrink, and the cap below it still has a middle to put
+			// somewhere the model can ask for it.
+			return tools.FormatExecResultKeeping(result, red.Keep)
 		}
 		// A git write sits at the write tier, so it is answered where a file
 		// modification is answered — after the deny list, which reads the

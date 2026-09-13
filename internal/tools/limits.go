@@ -81,8 +81,24 @@ const (
 	MaxGlobResults = 500
 
 	// MaxExecOutputBytes caps captured command output embedded in tool
-	// results and /run context messages.
+	// results and /run context messages. What it cuts is the middle: the cap
+	// is spent on both ends (BoundExecOutput), never on a prefix.
 	MaxExecOutputBytes = 4000
+
+	// execHeadShare is the fraction of the budget the verbatim head takes;
+	// the rest is the tail. It is the proportion the quality gate's excerpt
+	// already cuts a check's output at, for the reason that applies here
+	// unchanged: a compiler or a linter says what is wrong first and stops,
+	// while a test run says it first and counts it last, so the end that
+	// carries the verdict is the end worth the larger share.
+	execHeadShare = 4
+
+	// execNoticeRoom is what the line between the two ends costs at its
+	// widest — the byte count, the evidence id and the sentence naming the
+	// tool that pages it back. The two ends are cut to leave room for it,
+	// because a bound that the sentence about the bound pushes past is not
+	// one.
+	execNoticeRoom = 192
 )
 
 // The sentences a reader returns when it found nothing. They are sentences
@@ -171,35 +187,151 @@ func InferExecResult(output string, exitCode int) ExecResult {
 	return result
 }
 
+// ExecKeep stores output the model-visible bound is about to cut and answers
+// with the opaque evidence id that pages it back, or false where the store
+// would not take it. It is handed in rather than reached for, because this
+// package must not know what an evidence store is; nil is a session with
+// nowhere to put the middle, which is a bound that says what went and offers
+// nothing back.
+// See docs/capabilities/evidence.md#the-reader-can-always-get-the-whole-thing-back.
+type ExecKeep func(tool, content string) (id string, ok bool)
+
 // FormatExecResult formats a command's captured result for an approved
-// execute_command call, applying the shared output cap. All failures lead with
-// the error convention the digest, hooks, repeat detector and observers read.
+// execute_command call with no evidence store behind it. All failures lead
+// with the error convention the digest, hooks, repeat detector and observers
+// read.
 func FormatExecResult(result ExecResult) string {
-	output := strings.TrimRight(result.Output, "\n")
-	if cut, truncated := TruncateOutput(output, MaxExecOutputBytes); truncated {
-		output = cut + "\n… (output truncated)"
+	return FormatExecResultKeeping(result, nil)
+}
+
+// FormatExecResultKeeping is FormatExecResult with somewhere to put what the
+// cap cuts, so the notice between the two ends can name the entry that holds
+// the whole of it.
+func FormatExecResultKeeping(result ExecResult, keep ExecKeep) string {
+	return execStatusLine(result) + "\noutput:\n" + BoundExecOutput(result.Output, keep)
+}
+
+// execStatusLine is the result's first line: the process status for a command
+// that succeeded, and the `error:` convention for every other ending, because
+// that prefix is what the digest, hooks, repeat detector and observers read.
+//
+// It is also the one place a failure of the harness will be told apart from a
+// command that ran and failed. Today ExecDidNotStart is a single sentence; the
+// classified prerequisite — a working directory that has gone, no shell, no
+// containment, a spawn refused — refines this case and no other, and nothing
+// else in the formatter has to learn about it.
+func execStatusLine(result ExecResult) string {
+	if !result.Failed() {
+		return fmt.Sprintf("exit code: %d", result.ExitCode)
+	}
+	switch result.Outcome {
+	case ExecExited:
+		return fmt.Sprintf("error: command exited with status %d", result.ExitCode)
+	case ExecSignaled:
+		return fmt.Sprintf("error: command was killed by signal %d", -result.ExitCode)
+	case ExecTimedOut:
+		return "error: command timed out"
+	case ExecStopped:
+		return "error: command was stopped before it finished"
+	case ExecDidNotStart:
+		return "error: command did not start"
+	default:
+		return "error: command did not complete"
+	}
+}
+
+// BoundExecOutput holds one command's output to MaxExecOutputBytes for the
+// model, keeping a verbatim head and a verbatim tail with a line between them
+// saying what fell out.
+//
+// It is not a prefix cut, and that is the whole of the change: the runner
+// already bounds a chatty command at both ends (CaptureBuffer) precisely
+// because the tail is where a command says how it went, and a second,
+// prefix-only cut on top of that threw the surviving tail away again — so a
+// `go build` that failed on its last file was reported by its warmup, and the
+// model's cheapest way out was to run the whole thing again with `| tail`.
+//
+// Both ends are cut on a line boundary where there is one, because the
+// diagnostic the reader is here for is a line, and on a UTF-8 boundary
+// otherwise, because a single enormous line still must not reach the model as
+// a replacement character.
+func BoundExecOutput(output string, keep ExecKeep) string {
+	output = strings.TrimRight(output, "\n")
+	if len(output) > MaxExecOutputBytes {
+		head, tail, omitted := splitExecOutput(output, MaxExecOutputBytes-execNoticeRoom)
+		parts := make([]string, 0, 3)
+		if head != "" {
+			parts = append(parts, head)
+		}
+		parts = append(parts, execOmissionNotice(omitted, keep, output))
+		if tail != "" {
+			parts = append(parts, tail)
+		}
+		output = strings.Join(parts, "\n")
 	}
 	if strings.TrimSpace(output) == "" {
-		output = "(no output)"
+		return "(no output)"
 	}
-	status := fmt.Sprintf("exit code: %d", result.ExitCode)
-	if result.Failed() {
-		switch result.Outcome {
-		case ExecExited:
-			status = fmt.Sprintf("error: command exited with status %d", result.ExitCode)
-		case ExecSignaled:
-			status = fmt.Sprintf("error: command was killed by signal %d", -result.ExitCode)
-		case ExecTimedOut:
-			status = "error: command timed out"
-		case ExecStopped:
-			status = "error: command was stopped before it finished"
-		case ExecDidNotStart:
-			status = "error: command did not start"
-		default:
-			status = "error: command did not complete"
+	return output
+}
+
+// splitExecOutput cuts s to a verbatim head and a verbatim tail totalling at
+// most budget bytes, and reports how many bytes fell between them. A budget
+// with no room in it keeps neither end, which leaves the notice alone to say
+// what the output was.
+func splitExecOutput(s string, budget int) (head, tail string, omitted int) {
+	if budget > 0 {
+		headMax := budget / execHeadShare
+		head = wholeLinesHead(cutUTF8(s, headMax))
+		tail = wholeLinesTail(trimPartialRune(s[len(s)-(budget-headMax):]))
+	}
+	return head, tail, len(s) - len(head) - len(tail)
+}
+
+// execOmissionNotice is the line between the two ends.
+//
+// Where the session has an evidence store the middle goes into it and the
+// notice names the id in the one wording the toolbox teaches — a notice
+// carrying an id is paged back with the evidence tool — so the model is told
+// that once and it covers a reduction, a window trim and this. Where it has
+// none the notice still says exactly how much went and what to do instead,
+// because a gap with nothing in it reads as the command having stopped
+// printing.
+// See docs/capabilities/evidence.md#the-reader-can-always-get-the-whole-thing-back.
+func execOmissionNotice(omitted int, keep ExecKeep, full string) string {
+	if keep != nil {
+		if id, ok := keep(ExecCommandName, full); ok {
+			return fmt.Sprintf("… (%d bytes from the middle omitted; full output stored as evidence %s — retrieve it with the evidence tool (info/read/search))", omitted, id)
 		}
 	}
-	return status + "\noutput:\n" + output
+	return fmt.Sprintf("… (%d bytes from the middle omitted; this session has nowhere to store them, so narrow the command if you need them)", omitted)
+}
+
+// wholeLinesHead drops a partial last line, so a head ends where a line does.
+// A head with no line break in it at all is kept as it is: one very long line
+// is still the only thing there is to show.
+func wholeLinesHead(s string) string {
+	if i := strings.LastIndexByte(s, '\n'); i > 0 {
+		return s[:i]
+	}
+	return s
+}
+
+// wholeLinesTail drops a partial first line, on the same terms.
+func wholeLinesTail(s string) string {
+	if i := strings.IndexByte(s, '\n'); i >= 0 && i < len(s)-1 {
+		return s[i+1:]
+	}
+	return s
+}
+
+// trimPartialRune drops the leading bytes of a UTF-8 sequence a byte cut
+// split, so a tail does not open on a replacement character.
+func trimPartialRune(s string) string {
+	for len(s) > 0 && !utf8.RuneStart(s[0]) {
+		s = s[1:]
+	}
+	return s
 }
 
 // cutUTF8 truncates s to at most max bytes, dropping any trailing partial

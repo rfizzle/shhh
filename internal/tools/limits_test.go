@@ -79,6 +79,170 @@ func TestFormatExecResult_ClassifiesEveryCommandEnding(t *testing.T) {
 	}
 }
 
+// verboseBuild is a failing build's output: a first compiler error at the top,
+// a great deal of noise, and the verdict on the last line. It is the shape the
+// bound exists for — a prefix cut keeps the first error and throws the verdict
+// away.
+func verboseBuild(middleLines int) string {
+	var b strings.Builder
+	b.WriteString("# github.com/example/pkg\n")
+	b.WriteString("pkg/first.go:12:9: undefined: firstThing\n")
+	for i := range middleLines {
+		fmt.Fprintf(&b, "compiling package number %d of a great many\n", i)
+	}
+	b.WriteString("pkg/last.go:99:2: undefined: lastThing\n")
+	b.WriteString("FAIL\tgithub.com/example/pkg [build failed]\n")
+	return b.String()
+}
+
+func TestFormatExecResult_KeepsBothEndsOfAnOversizeResult(t *testing.T) {
+	output := verboseBuild(400)
+	if len(output) <= MaxExecOutputBytes {
+		t.Fatalf("fixture is only %d bytes; it must exceed the cap to exercise it", len(output))
+	}
+	got := FormatExecResult(ExecResult{Output: output, ExitCode: 2, Outcome: ExecExited})
+
+	if !strings.HasPrefix(got, "error: command exited with status 2\n") {
+		t.Errorf("the error status must survive the bound, got %q", firstLine(got))
+	}
+	for _, want := range []string{
+		"pkg/first.go:12:9: undefined: firstThing",
+		"pkg/last.go:99:2: undefined: lastThing",
+		"FAIL\tgithub.com/example/pkg [build failed]",
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("bounded result dropped %q", want)
+		}
+	}
+	if !strings.HasSuffix(got, "FAIL\tgithub.com/example/pkg [build failed]") {
+		t.Errorf("the last line of the command is the last line of the result, got tail %q", lastLine(got))
+	}
+	if len(got) > MaxExecOutputBytes+execNoticeRoom {
+		t.Errorf("bounded result is %d bytes, over the cap plus its notice's room", len(got))
+	}
+}
+
+func TestBoundExecOutput_NoticeCountsWhatWentAndNamesNoIdWithoutAStore(t *testing.T) {
+	output := verboseBuild(400)
+	got := BoundExecOutput(output, nil)
+
+	notice := noticeLine(t, got)
+	if strings.Contains(notice, "evidence") {
+		t.Errorf("a session with no store must not offer an id: %q", notice)
+	}
+	// The notice's count is the arithmetic a reader would do themselves:
+	// what the command printed, less the two ends that survived.
+	head, tail, ok := strings.Cut(got, "\n"+notice+"\n")
+	if !ok {
+		t.Fatalf("notice is not between two ends in %q", got)
+	}
+	omitted := len(strings.TrimRight(output, "\n")) - len(head) - len(tail)
+	if !strings.Contains(notice, fmt.Sprintf("%d bytes", omitted)) {
+		t.Errorf("notice %q should say %d bytes went", notice, omitted)
+	}
+	if !TruncationNotice(notice) {
+		t.Errorf("notice %q is not in the shape every cap announces itself in", notice)
+	}
+}
+
+func TestBoundExecOutput_NoticeNamesTheEvidenceEntryWhereThereIsOne(t *testing.T) {
+	output := verboseBuild(400)
+	var storedTool, storedContent string
+	keep := func(tool, content string) (string, bool) {
+		storedTool, storedContent = tool, content
+		return "ev-0123456789abcdef", true
+	}
+	got := BoundExecOutput(output, keep)
+
+	notice := noticeLine(t, got)
+	for _, want := range []string{
+		"full output stored as evidence ev-0123456789abcdef",
+		"retrieve it with the evidence tool (info/read/search)",
+	} {
+		if !strings.Contains(notice, want) {
+			t.Errorf("notice %q should contain %q", notice, want)
+		}
+	}
+	if storedTool != ExecCommandName {
+		t.Errorf("entry filed under %q, want %q", storedTool, ExecCommandName)
+	}
+	if storedContent != strings.TrimRight(output, "\n") {
+		t.Error("the whole output is what the store keeps, not the bounded view")
+	}
+}
+
+func TestBoundExecOutput_StoreThatRefusesFallsBackToTheBareCount(t *testing.T) {
+	refuse := func(string, string) (string, bool) { return "", false }
+	got := BoundExecOutput(verboseBuild(400), refuse)
+	notice := noticeLine(t, got)
+	if strings.Contains(notice, "evidence") {
+		t.Errorf("a refused store must not leave an id nobody can resolve: %q", notice)
+	}
+	if !strings.Contains(notice, "bytes from the middle omitted") {
+		t.Errorf("notice %q should still say what went", notice)
+	}
+}
+
+func TestBoundExecOutput_CutsOnUTF8Boundaries(t *testing.T) {
+	// Multi-byte runes packed with no line break anywhere, so both ends are
+	// cut mid-line and the only boundary left to respect is the rune's.
+	output := strings.Repeat("héllo wörld ", 2000)
+	got := BoundExecOutput(output, nil)
+	if !utf8.ValidString(got) {
+		t.Fatal("bounded output is not valid UTF-8")
+	}
+	if strings.ContainsRune(got, utf8.RuneError) {
+		t.Error("bounded output contains a replacement character")
+	}
+	if !strings.HasPrefix(got, "héllo") {
+		t.Errorf("head lost, got %q", got[:20])
+	}
+	if !strings.HasSuffix(got, "wörld ") {
+		t.Errorf("tail lost, got %q", got[len(got)-20:])
+	}
+}
+
+func TestBoundExecOutput_OneEnormousLineStillKeepsBothEnds(t *testing.T) {
+	// A single line over the cap has no boundary to fall back on: the ends
+	// are still both there rather than the head alone.
+	output := "START" + strings.Repeat("x", 3*MaxExecOutputBytes) + "END"
+	got := BoundExecOutput(output, nil)
+	if !strings.HasPrefix(got, "START") {
+		t.Errorf("head lost, got %q", got[:20])
+	}
+	if !strings.HasSuffix(got, "END") {
+		t.Errorf("tail lost, got %q", got[len(got)-20:])
+	}
+}
+
+func TestBoundExecOutput_UnderTheCapIsUntouched(t *testing.T) {
+	if got := BoundExecOutput("ok\n", nil); got != "ok" {
+		t.Errorf("BoundExecOutput() = %q, want %q", got, "ok")
+	}
+	if got := BoundExecOutput("   \n", nil); got != "(no output)" {
+		t.Errorf("BoundExecOutput() = %q, want %q", got, "(no output)")
+	}
+}
+
+// noticeLine is the one line of a bounded result that says what fell out.
+func noticeLine(t *testing.T, bounded string) string {
+	t.Helper()
+	for _, line := range strings.Split(bounded, "\n") {
+		if TruncationNotice(line) {
+			return line
+		}
+	}
+	t.Fatalf("no omission notice in %q", bounded)
+	return ""
+}
+
+func firstLine(s string) string { return strings.SplitN(s, "\n", 2)[0] }
+
+func lastLine(s string) string {
+	lines := strings.Split(s, "\n")
+	return lines[len(lines)-1]
+}
+
 func TestReadFile_LineCapTruncation(t *testing.T) {
 	tmp := t.TempDir()
 	path := filepath.Join(tmp, "big.txt")

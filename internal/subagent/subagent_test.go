@@ -472,8 +472,21 @@ func TestChildCommandOutputWithoutReducer(t *testing.T) {
 	nextAsk(t, sup).Respond(true)
 	execTool(t, sup, ReportToolName, `{"name":"researcher-1"}`)
 
-	if result := env.lastToolResult(); !strings.Contains(result, "(output truncated)") {
+	result := env.lastToolResult()
+	// The formatter's own cap, applied at both ends: a child with no store
+	// still reads the run's verdict rather than the first five hundred
+	// packages that passed.
+	if !strings.Contains(result, "bytes from the middle omitted") {
 		t.Fatalf("expected the formatter's own cap:\n%s", result)
+	}
+	if !strings.HasPrefix(result, "error: command exited with status 1\n") {
+		t.Fatalf("expected the error status to survive the cap:\n%s", result)
+	}
+	if !strings.HasSuffix(result, "\nFAIL") {
+		t.Fatalf("expected the run's last line to survive the cap:\n%s", result)
+	}
+	if strings.Contains(result, "evidence") {
+		t.Fatalf("a child with no store must not be offered an id:\n%s", result)
 	}
 }
 

@@ -90,7 +90,7 @@ func TestResumedSession_SkipsWhatNobodyTyped(t *testing.T) {
 		{Role: provider.RoleUser, Content: compactContextMessage("the session so far, summarised"), Machine: true},
 		{Role: provider.RoleUser, Content: "the only thing anyone typed"},
 		{Role: provider.RoleAssistant, Content: "an answer"},
-		{Role: provider.RoleUser, Content: commandContextMessage("go test ./...", "ok", 0), Machine: true},
+		{Role: provider.RoleUser, Content: commandContextMessage("go test ./...", "ok", 0, nil), Machine: true},
 		{Role: provider.RoleUser, Content: continuePrompt, Machine: true},
 		{Role: provider.RoleUser, Content: "You are editing a file the task did not ask about.", Machine: true},
 	})

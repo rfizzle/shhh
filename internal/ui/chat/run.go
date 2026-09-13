@@ -189,8 +189,12 @@ func (m Model) updateConfirmRun(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func execToolResult(result tools.ExecResult) string {
-	return tools.FormatExecResult(result)
+// execToolResult is a command's result as the model reads it. The session's
+// store goes with it: the reduction above has already failed open on anything
+// it would barely shrink, and the cap in the formatter still has a middle to
+// put where the evidence tool can page it back.
+func (m Model) execToolResult(result tools.ExecResult) string {
+	return tools.FormatExecResultKeeping(result, m.evidence.Keep)
 }
 
 func (m Model) executeRun() (tea.Model, tea.Cmd) {
@@ -284,13 +288,13 @@ func (m Model) executeRun() (tea.Model, tea.Cmd) {
 // role, because that is the only role a fact can be read in, and is flagged
 // as the session's own so no surface offers it back as something the reader
 // typed (provider.Message.Machine).
-func commandContextMessage(command, output string, exitCode int) string {
-	if cut, truncated := tools.TruncateOutput(output, tools.MaxExecOutputBytes); truncated {
-		output = cut + "\n… (output truncated)"
-	}
-	if strings.TrimSpace(output) == "" {
-		output = "(no output)"
-	}
+//
+// It is bounded the way a tool result is — both ends, with the middle in the
+// store where there is one — because it is the same command output read by
+// the same reader: a /run of the test suite whose failure was cut off tells
+// the model the suite ran and nothing about how it went.
+func commandContextMessage(command, output string, exitCode int, keep tools.ExecKeep) string {
+	output = tools.BoundExecOutput(output, keep)
 	return fmt.Sprintf(commandContextPrefix+"\n```\n%s\n```\nExit code: %d\nOutput:\n```\n%s\n```", command, exitCode, output)
 }
 
