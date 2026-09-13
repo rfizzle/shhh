@@ -79,7 +79,11 @@ func (r InspectorRail) planBlock(width int) (railBlock, bool) {
 			"", width, inspectorIndent))
 	}
 	if p.Hint != "" {
-		b.add(indentRow(sty.Hint.Render(p.Hint), width))
+		// It goes rather than folds: the hint is not a step, so the marker
+		// counting what the block hid has nothing to count for it, and would
+		// spend the row the fold just saved while reporting a step hidden
+		// that is still on screen (railLine.shed).
+		b.shedRow(indentRow(sty.Hint.Render(p.Hint), width))
 	}
 	return b, true
 }

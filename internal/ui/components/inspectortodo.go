@@ -115,7 +115,11 @@ func (r InspectorRail) todoBlock(width int) (railBlock, bool) {
 		b.add(indentRow(sty.Hint.Render(fmt.Sprintf("… %d more", t.More)), width))
 	}
 	if t.Hint != "" {
-		b.add(indentRow(sty.Hint.Render(t.Hint), width))
+		// It goes rather than folds, like PLAN's: the hint is not a backlog
+		// item, so the marker counting what the block hid has nothing to
+		// count for it, and would spend the row the fold just saved while
+		// reporting an item hidden that is still on screen (railLine.shed).
+		b.shedRow(indentRow(sty.Hint.Render(t.Hint), width))
 	}
 	return b, true
 }

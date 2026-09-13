@@ -859,6 +859,13 @@ behind it — and it shows the first few items in working order with what each
 one waits on, then counts the rest. The whole list is one command away, and
 the block says which.
 
+A block that ends on the command behind it — the plan's whole list, the
+backlog's, the way into the map — ends on chrome rather than on an item of
+its own list. When the rail runs short that row is the first thing the block
+gives up, and it leaves rather than folding behind the block's count:
+folding it would spend the row the fold just saved on the marker, and the
+marker would then say an item is hidden that is still on screen.
+
 One block is a map rather than a measurement: every session this run has,
 the root and each agent it started, in the order they were started. Each row
 carries the state it is in, what it has spent, and — once it has stopped —

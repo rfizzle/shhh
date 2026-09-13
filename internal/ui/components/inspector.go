@@ -234,6 +234,11 @@ func (b *railBlock) add(text string) { b.rows = append(b.rows, railLine{text: te
 // pin appends a row truncation takes only when nothing else is left.
 func (b *railBlock) pin(text string) { b.rows = append(b.rows, railLine{text: text, pinned: true}) }
 
+// shedRow appends a row truncation removes outright rather than folding it
+// behind the block's marker (railLine.shed): chrome standing for nothing the
+// marker could count, such as a trailer naming a command.
+func (b *railBlock) shedRow(text string) { b.rows = append(b.rows, railLine{text: text, shed: true}) }
+
 func (b railBlock) height() int {
 	h := 1 + len(b.rows)
 	if len(b.hidden) > 0 {
