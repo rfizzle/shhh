@@ -124,9 +124,16 @@ type InspectorRail struct {
 	Alerts  InspectorAlerts
 	Changes *InspectorChanges
 	Agents  []InspectorAgent
-	Tools   *InspectorTools
-	Context *InspectorContext
-	Spend   *InspectorSpend
+	// AgentsHint is the trailer under the map: how to reach the sessions it
+	// draws. It is beside the slice rather than on a block struct of its own
+	// because the map's rows are the block — and it is the host's sentence
+	// rather than a constant here, since the letters in it are whatever the
+	// key register currently binds
+	// (docs/interface/surfaces.md#the-inspector-rail).
+	AgentsHint string
+	Tools      *InspectorTools
+	Context    *InspectorContext
+	Spend      *InspectorSpend
 	// Frame is the host's spinner frame index, for the lanes of children that
 	// declared no step count. The rail stays passive: it animates nothing, it
 	// just draws the frame it is handed.
@@ -188,6 +195,22 @@ type railLine struct {
 	counted        bool
 	added, removed int
 	target         RailTarget
+	// give is the order this block's rows are taken in when the rail runs
+	// short of height: the lowest number goes first, and rows sharing a
+	// number go bottom-most first, which is what a block that numbers
+	// nothing gets throughout. A block whose rows are not equally
+	// expendable numbers them — the map can afford to lose a finished
+	// session before a queued one, and neither is at the bottom
+	// (docs/interface/surfaces.md#the-inspector-rail).
+	give int
+	// shed marks a row truncation removes outright rather than folding behind
+	// the block's marker: chrome standing for nothing a marker could count —
+	// a trailer naming keys is not an item on a list. Folding one would spend
+	// the row it just saved on the marker, leaving the rail no shorter and
+	// the loop below taking a second row of real content for the same one row
+	// of pressure — and the marker would then report something hidden that is
+	// still on screen.
+	shed bool
 }
 
 // railBlock is one headed block under assembly: its heading line, its rows,
@@ -195,7 +218,9 @@ type railLine struct {
 type railBlock struct {
 	heading string
 	rows    []railLine
-	// hidden holds what truncation took, in the order it stood in.
+	// hidden holds what truncation took. Nothing reads its order — every fold
+	// marker counts or sums it — which is what lets a block name a taking
+	// order of its own rather than always losing its bottom row (give).
 	hidden []railLine
 	// fold renders the marker for the hidden rows. Nil prints the bare
 	// "… N more" every block but CHANGES uses.
@@ -315,16 +340,27 @@ func fitBlocks(blocks []railBlock, height int) []railBlock {
 			break
 		}
 		b := &blocks[block]
-		b.hidden = append([]railLine{b.rows[row]}, b.hidden...)
+		if taken := b.rows[row]; !taken.shed {
+			b.hidden = append([]railLine{taken}, b.hidden...)
+		}
 		b.rows = append(b.rows[:row], b.rows[row+1:]...)
 	}
 	return blocks
 }
 
-// nextToHide is the row truncation takes next: the bottom-most unpinned row
-// of the longest block that still has one, and — once every block is down to
-// pinned rows — the bottom-most row of the longest block, because a rail that
-// cannot fit what it must keep still has to end somewhere.
+// nextToHide is the row truncation takes next: the most expendable unpinned
+// row of the longest block that still has one, and — once every block is down
+// to pinned rows — the bottom-most row of the longest block, because a rail
+// that cannot fit what it must keep still has to end somewhere. Which of a
+// block's rows is the most expendable is the block's own answer, in give;
+// a block that gives no answer loses its bottom row first.
+//
+// Two blocks of the same length are a tie the lower one loses, in both
+// passes. The rail is read downwards and its order runs from the turn out to
+// the session, so the block nearer the top is the one nearer what is
+// happening now: without this the turn's own block hands over a row while a
+// block of session history keeps all of its
+// (docs/interface/surfaces.md#the-inspector-rail).
 //
 // A block with nothing but pinned rows is not a candidate while any other
 // block has a row to give. That is what keeps ALERTS whole: it is short, its
@@ -334,21 +370,28 @@ func fitBlocks(blocks []railBlock, height int) []railBlock {
 func nextToHide(blocks []railBlock) (block, row int, ok bool) {
 	block, rows := -1, 0
 	for i, b := range blocks {
-		if len(b.rows) <= rows || !givable(b) {
+		if len(b.rows) < rows || !givable(b) {
 			continue
 		}
 		block, rows = i, len(b.rows)
 	}
 	if block >= 0 {
+		row = -1
 		for j := len(blocks[block].rows) - 1; j >= 0; j-- {
-			if !blocks[block].rows[j].pinned {
-				return block, j, true
+			if blocks[block].rows[j].pinned {
+				continue
 			}
+			if row < 0 || blocks[block].rows[j].give < blocks[block].rows[row].give {
+				row = j
+			}
+		}
+		if row >= 0 {
+			return block, row, true
 		}
 	}
 	longest := -1
 	for i, b := range blocks {
-		if longest < 0 || len(b.rows) > len(blocks[longest].rows) {
+		if longest < 0 || len(b.rows) >= len(blocks[longest].rows) {
 			longest = i
 		}
 	}

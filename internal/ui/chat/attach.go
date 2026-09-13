@@ -195,10 +195,17 @@ func (m *Model) attach(name string) {
 	m.restoreScroll()
 }
 
-// sessionMap is every session the keyboard can be in, in row order: the
-// orchestrator ("") first, then every child in the supervisor's own spawn
-// order. It is the order the rail's AGENTS block draws them in
-// (inspector.go), so one step on the keyboard is one row on screen.
+// sessionMap is every session the keyboard can be in: the orchestrator ("")
+// first, then every child in the supervisor's own spawn order. That is the
+// order the rail's AGENTS block draws them in (inspector.go) with one
+// exception — a child waiting on an answer floats to the top of the map — so
+// one step on the keyboard is one row on screen everywhere except past a
+// blocked child.
+//
+// The chord keeps spawn order rather than following the float: the map is
+// read and the chord is aimed, and a key whose destination moved every time
+// a child blocked or was answered would be a key nobody could aim
+// (docs/interface/surfaces.md#the-inspector-rail).
 func (m Model) sessionMap() []string {
 	names := []string{""}
 	if m.subagents != nil {

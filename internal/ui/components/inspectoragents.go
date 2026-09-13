@@ -10,6 +10,8 @@ import (
 	"strings"
 
 	"charm.land/lipgloss/v2"
+
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // InspectorAgent is one session in the AGENTS block — the orchestrator or one
@@ -43,6 +45,29 @@ type InspectorAgent struct {
 	// finishes, so it never folds, and it is left out of the tally the
 	// heading states about what the children still owe you.
 	Self bool
+	// Fresh and Budget are what the child has taken in and what it was given
+	// to take in. They are the one denominator nobody has to declare, so a
+	// child that named no step count still has a bar to draw once it is close
+	// enough to the ceiling for the bar to be news
+	// (docs/interface/surfaces.md#the-inspector-rail). Zero Budget is a child
+	// nothing bounded, which is the spinner's case either way.
+	Fresh, Budget int64
+	// Steers is how many times this turn the child has been told it looks to
+	// have left its task. The row states it from two, never from one: one
+	// steer is the machinery working as designed, and a row that shouted
+	// about it would be a warning on every healthy fan-out
+	// (docs/capabilities/subagents.md#they-are-visible-while-they-run).
+	Steers int
+	// Handoff marks a stopped child that left a record a replacement could
+	// resume from. It is a flag rather than the record's own handle because
+	// the row does nothing with it: the rail says the record was kept and
+	// names the key, and the key is the manager's.
+	Handoff bool
+	// Depth is how far under the orchestrator the session sits — 0 for the
+	// orchestrator, 1 for a child it spawned, 2 for that child's own child.
+	// A depth past 1 draws the row one column in behind a corner, so a run
+	// two levels deep reads as two levels rather than as five siblings.
+	Depth int
 }
 
 // agentsBlock is the session map: the orchestrator, then every child in spawn
@@ -61,14 +86,73 @@ func (r InspectorRail) agentsBlock(width int) (railBlock, bool) {
 	}
 	b := railBlock{heading: railHeading("AGENTS", r.childTally(), sty.Dim, width)}
 	shown, folded := r.mappedAgents()
-	for _, a := range shown {
-		b.rows = append(b.rows, a.railLines(r.Frame, width)...)
+	rows := make([][]railLine, len(shown))
+	for i, a := range shown {
+		rows[i] = a.railLines(r.Frame, width)
+	}
+	orderGiving(shown, rows)
+	for _, group := range rows {
+		b.rows = append(b.rows, group...)
 	}
 	for _, a := range folded {
 		b.hidden = append(b.hidden, a.railLines(r.Frame, width)...)
 	}
+	if hint := r.AgentsHint; hint != "" && r.hasChild() {
+		// The trailer goes before anything else the block owns, because a map
+		// missing one session is still a map and a hint standing over no map
+		// is not a hint (docs/interface/surfaces.md#the-inspector-rail). It
+		// goes rather than folds: it is not a session, so the marker has
+		// nothing to count for it and would cost the row it saved.
+		b.rows = append(b.rows, railLine{
+			text: indentRow(sty.Hint.Render(hint), width), give: giveFirst, shed: true,
+		})
+	}
 	b.fold = func(hidden []railLine) string { return agentsFold(hidden, width) }
 	return b, true
+}
+
+// giveFirst is the give of a row the block would rather lose than any other.
+// It is below every give orderGiving hands out, so the trailer goes before
+// the first finished child does.
+const giveFirst = -1
+
+// orderGiving numbers the map's rows in the order height truncation may take
+// them: every session that has stopped, oldest first, then every session that
+// has not started or has been parked, and — because both of a session's rows
+// are one session — the line under a row immediately before the row itself.
+// A session still working is pinned, so its number is never reached: a
+// pinned row is taken only once nothing else on the whole rail has one left
+// to give (docs/interface/surfaces.md#the-inspector-rail).
+//
+// The two passes are the order rather than a sort key on the state, because
+// what a rail short of height can afford to lose is not a property of the
+// state: a finished child's outcome has been read once already and is still
+// in the transcript, and a queued child has nothing to report yet.
+func orderGiving(agents []InspectorAgent, rows [][]railLine) {
+	give := 0
+	for _, settled := range []bool{true, false} {
+		for i, a := range agents {
+			if a.State.settled() != settled {
+				continue
+			}
+			for j := len(rows[i]) - 1; j >= 0; j-- {
+				rows[i][j].give = give
+				give++
+			}
+		}
+	}
+}
+
+// hasChild reports whether the map has a session under the orchestrator. The
+// orchestrator alone is not a map, and the trailer naming how to reach the
+// others would be naming nothing.
+func (r InspectorRail) hasChild() bool {
+	for _, a := range r.Agents {
+		if !a.Self {
+			return true
+		}
+	}
+	return false
 }
 
 // inspectorAgentsSettled is how many finished children the map keeps on
@@ -90,10 +174,11 @@ const inspectorAgentsSettled = 2
 // never finishes, and the focused session never folds because the mark on it
 // is the reason the rest of the rail can be read at all.
 func (r InspectorRail) mappedAgents() (shown, folded []InspectorAgent) {
+	ordered := r.mapOrder()
 	drop := make(map[int]bool)
 	budget := inspectorAgentsSettled
-	for i := len(r.Agents) - 1; i >= 0; i-- {
-		a := r.Agents[i]
+	for i := len(ordered) - 1; i >= 0; i-- {
+		a := ordered[i]
 		if a.Self || a.Focused || !a.State.settled() {
 			continue
 		}
@@ -103,7 +188,7 @@ func (r InspectorRail) mappedAgents() (shown, folded []InspectorAgent) {
 		}
 		drop[i] = true
 	}
-	for i, a := range r.Agents {
+	for i, a := range ordered {
 		if drop[i] {
 			folded = append(folded, a)
 		} else {
@@ -111,6 +196,37 @@ func (r InspectorRail) mappedAgents() (shown, folded []InspectorAgent) {
 		}
 	}
 	return shown, folded
+}
+
+// mapOrder is the order the map draws its sessions in: the orchestrator, then
+// every child waiting on an answer, then everything else — each group in the
+// spawn order the host handed over. A child that wants something from you is
+// the only row on this block that is a job rather than a reading, and a run
+// of six leaves those rows wherever the fan-out happened to reach them.
+//
+// The chord does not float with them: it walks spawn order whole, which is
+// the one rule by which the map and the chord may differ
+// (docs/interface/surfaces.md#the-inspector-rail). A key whose destination
+// moved every time a child blocked or was answered would be a key nobody
+// could aim, and the map is read rather than aimed.
+func (r InspectorRail) mapOrder() []InspectorAgent {
+	ordered := make([]InspectorAgent, 0, len(r.Agents))
+	for _, a := range r.Agents {
+		if a.Self {
+			ordered = append(ordered, a)
+		}
+	}
+	for _, a := range r.Agents {
+		if !a.Self && a.State == FanoutBlocked {
+			ordered = append(ordered, a)
+		}
+	}
+	for _, a := range r.Agents {
+		if !a.Self && a.State != FanoutBlocked {
+			ordered = append(ordered, a)
+		}
+	}
+	return ordered
 }
 
 // childTally is the heading's own sentence: what the children still owe you,
@@ -158,6 +274,7 @@ func (a InspectorAgent) railLines(frame, width int) []railLine {
 	if a.Focused {
 		lead = sty.FocusPointer.Render("❯") + " "
 	}
+	lead += a.nesting()
 	// Both of a session's rows point at that session. They are one thing
 	// drawn on two lines — the name and what it is doing — and a pointer that
 	// answered on the first and not the second would make the target half a
@@ -173,20 +290,43 @@ func (a InspectorAgent) railLines(frame, width int) []railLine {
 	if a.Focused {
 		row = LitRow(row, GridPointerWidth, width)
 	}
+	// The orchestrator, the session the keyboard is in, a child waiting on an
+	// answer and a child still working are the rows the map exists to keep on
+	// screen; truncation takes them only when nothing else is left. Both of
+	// a session's rows are pinned together, because half a pinned session is
+	// a name with no line saying what it is doing — which is the whole of
+	// what the pin was keeping.
+	pinned := a.Self || a.Focused || a.State == FanoutBlocked || a.State == FanoutRunning
 	rows := []railLine{{
-		text: row,
-		// The orchestrator, the session the keyboard is in and a child
-		// waiting on an answer are the rows the map exists to keep on
-		// screen; truncation takes them only when nothing else is left.
-		pinned: a.Self || a.Focused || a.State == FanoutBlocked,
+		text:   row,
+		pinned: pinned,
 		// The fold counts sessions, and this is the row that is one.
 		counted: true,
 		target:  target,
 	}}
 	if detail := a.detailRow(frame, width); detail != "" {
-		rows = append(rows, railLine{text: detail, target: target})
+		rows = append(rows, railLine{text: detail, pinned: pinned, target: target})
 	}
 	return rows
+}
+
+// nesting is the column a session started by another session is drawn in
+// behind, and nothing at all for a session the orchestrator started itself.
+// The corner is the frame's own, so a nested row borrows a glyph the reader
+// has already learned rather than adding one to the set
+// (docs/interface/principles.md#closed-vocabularies).
+func (a InspectorAgent) nesting() string {
+	if a.Depth < 2 {
+		return ""
+	}
+	return strings.Repeat(" ", a.Depth-2) + sty.Dimmer.Render("└")
+}
+
+// detailIndent is where a session's second line starts: under its own name,
+// so a nested session's line moves in with the row it belongs to rather than
+// lining up with a sibling of its parent.
+func (a InspectorAgent) detailIndent() int {
+	return inspectorIndent + 2 + max(a.Depth-1, 0)
 }
 
 // rightField is what a session's row reports: the word it ended on where it
@@ -235,6 +375,16 @@ func (a InspectorAgent) detailRow(frame, width int) string {
 		if a.Detail != "" {
 			parts = append(parts, sty.Dimmer.Render(a.Detail))
 		}
+	case a.State == FanoutRunning && a.pastHalfItsBudget():
+		// Nobody declared a step count, but somebody set a ceiling, and the
+		// child is close enough to it for the distance to be news. The bar
+		// is the budget's rather than a step count's, and it takes the
+		// spinner's place: a child near its ceiling is doing one thing worth
+		// watching, and it is not the fact that it is still moving.
+		parts = append(parts, a.budgetMeter().View())
+		if a.Detail != "" {
+			parts = append(parts, sty.Dimmer.Render(a.Detail))
+		}
 	case a.Detail == "":
 	case a.State != FanoutRunning:
 		// Waiting on an answer, waiting for a slot, or waiting to be
@@ -245,11 +395,55 @@ func (a InspectorAgent) detailRow(frame, width int) string {
 		// running, never a fabricated ratio.
 		parts = append(parts, Spinner{Frame: frame, Label: a.Detail}.View())
 	}
+	if a.Steers >= inspectorSteersWorthSaying {
+		// The count and not a flag: one steer is the machinery working, and a
+		// second is an interruption delivered, answered, and the next reading
+		// finding the same departure — which is the thing worth knowing forty
+		// rounds before the report says it
+		// (docs/capabilities/subagents.md#they-are-visible-while-they-run).
+		parts = append(parts, sty.Del.Render(fmt.Sprintf("⚠ off task ×%d", a.Steers)))
+	}
 	if a.Tools > 0 {
 		parts = append(parts, sty.Dimmer.Render(plural(a.Tools, "tool")))
+	}
+	if a.Handoff {
+		// The row ends on what can still be done about it, and does nothing
+		// about it: the key is the manager's, and the trailer under the block
+		// is how a reader gets there
+		// (docs/interface/surfaces.md#the-inspector-rail).
+		parts = append(parts, sty.Dimmer.Render("handoff kept"),
+			sty.Hint.Render(keys.Bracket(keys.Agent.Retry)+" "+keys.Words(keys.Agent.Retry)))
 	}
 	if len(parts) == 0 {
 		return ""
 	}
-	return railRow(strings.Join(parts, sty.Dimmer.Render(" · ")), "", width, inspectorIndent+2)
+	return railRow(strings.Join(parts, sty.Dimmer.Render(" · ")), "", width, a.detailIndent())
+}
+
+// inspectorSteersWorthSaying is the steer count the map draws a warning at.
+// One is the machinery working as designed — a child told once and back on
+// task is the case it was built for — so a row that said so would carry a
+// warning on every healthy fan-out
+// (docs/capabilities/subagents.md#they-are-visible-while-they-run).
+const inspectorSteersWorthSaying = 2
+
+// pastHalfItsBudget reports whether the child has taken in half or more of
+// the fresh tokens it was given. Half is where the distance to the ceiling
+// stops being arithmetic and starts being a decision: under it there is
+// nothing to do about the number, and over it there is.
+func (a InspectorAgent) pastHalfItsBudget() bool {
+	return a.Budget > 0 && a.Fresh*2 >= a.Budget
+}
+
+// budgetMeter is the lane drawn against the budget instead of against a step
+// count: the same five cells and the same info tone every lane meter takes,
+// with the intake and the ceiling stated beside it, because the bar is never
+// the only carrier of the value.
+func (a InspectorAgent) budgetMeter() Meter {
+	return Meter{
+		Pct:   int(min(a.Fresh*100/a.Budget, 100)),
+		Cells: MeterCellsAgent,
+		Tone:  MeterAgent,
+		Text:  formatTokens(a.Fresh) + " of " + formatTokens(a.Budget),
+	}
 }

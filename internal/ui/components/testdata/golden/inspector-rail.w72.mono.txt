@@ -48,10 +48,11 @@
   AGENTS                                         1 needs you · 1 running
 ❯ ◇ orchestrator                                                   $0.12
     ⠋ round 3 · streaming…                                              
-  ◇ writer-1                                                       $0.02
-    ⠋ docs/loop.md · 4 tools                                            
   ⚠ runner-2                                                       $0.01
     ▰▰▰▱▱ step 2 of 3 · go test ./...                                   
+  ◇ writer-1                                                       $0.02
+    ⠋ docs/loop.md · 4 tools                                            
+  alt+a manager · alt+] next · click to attach                          
 
   TOOLS                                                        2 of 3 up
   ✓ built-in                                               up · 18 tools
@@ -179,31 +180,63 @@
   AGENTS                                         1 needs you · 2 running
   ⚠ orchestrator                                                   $0.12
     round 3 · waiting on you                                            
+  ⚠ reviewer-5                                                     $0.03
+    waiting approval: apply patch                                       
 ❯ ◇ writer-2                                                       $0.04
     ⠹ internal/ui/chat/model.go · 11 tools                              
   ◇ runner-4                                                       $0.02
     ▰▰▰▱▱ step 2 of 3 · go build ./...                                  
-  ⚠ reviewer-5                                                     $0.03
-    waiting approval: apply patch                                       
   ✓ reader-6                                                 done  $0.01
     read 9 files                                                        
   ✓ reader-7                                                 done  $0.01
     nothing under that path                                             
+  alt+a manager · alt+] next · click to attach                          
   … 2 more                                                              
 
 · the map with the rail shorter than it (height 12)
   AGENTS                                         1 needs you · 2 running
   ⚠ orchestrator                                                   $0.12
     round 3 · waiting on you                                            
+  ⚠ reviewer-5                                                     $0.03
+    waiting approval: apply patch                                       
 ❯ ◇ writer-2                                                       $0.04
     ⠹ internal/ui/chat/model.go · 11 tools                              
   ◇ runner-4                                                       $0.02
     ▰▰▰▱▱ step 2 of 3 · go build ./...                                  
-  ⚠ reviewer-5                                                     $0.03
-    waiting approval: apply patch                                       
-  ✓ reader-6                                                 done  $0.01
-    read 9 files                                                        
+  ✓ reader-7                                                 done  $0.01
+    nothing under that path                                             
   … 3 more                                                              
+
+· a fan-out of five · blocked, near its budget, off task, failed, nested
+  AGENTS                                         1 needs you · 3 running
+❯ ◇ orchestrator                                                   $0.21
+    ⠹ round 6 · streaming…                                              
+  ⚠ reviewer-3                                                     $0.02
+    waiting approval: apply patch                                       
+  ◇ writer-1                                                       $0.09
+    ▰▰▰▱▱ 210k of 300k · docs/loop.md · 4 tools                         
+  ◇ runner-2                                                       $0.04
+    ⠹ go test ./internal/agent/... · ⚠ off task ×2 · 12 tools           
+  ✗ writer-4                                               failed  $0.07
+    token budget exceeded · handoff kept · [r] retry                    
+  └◇ reader-5                                                      $0.01
+     ⠹ internal/agent/round.go · 3 tools                                
+  alt+a manager · alt+] next · click to attach                          
+
+· the same map three rows short · what it gives up, in order
+  AGENTS                                         1 needs you · 4 running
+❯ ◇ orchestrator                                                   $0.21
+    ⠹ round 6 · streaming…                                              
+  ⚠ reviewer-3                                                     $0.02
+    waiting approval: apply patch                                       
+  ◇ writer-1                                                       $0.09
+    ▰▰▰▱▱ 210k of 300k · docs/loop.md · 4 tools                         
+  ◇ runner-2                                                       $0.04
+    ⠹ go test ./internal/agent/... · ⚠ off task ×2 · 12 tools           
+  └◇ reader-5                                                      $0.01
+     ⠹ internal/agent/round.go · 3 tools                                
+  · reader-6                                                            
+  … 1 more                                                              
 
 · one command broken · the block above the changeset
   THIS TURN                                                             
@@ -284,10 +317,11 @@
   ␛[1;38;5;254mAGENTS␛[m                                         ␛[38;5;254m1 needs you␛[m␛[38;5;244m · ␛[m␛[38;5;254m1 running␛[m
 ␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254m◇␛[m␛[48;5;237m ␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237morchestrator                                                   $0.12␛[m␛[m
     ␛[38;5;254m⠋ round 3 · streaming…␛[m                                              
-  ␛[38;5;254m◇␛[m ␛[38;5;254mwriter-1␛[m                                                       ␛[38;5;244m$0.02␛[m
-    ␛[38;5;254m⠋ docs/loop.md␛[m␛[38;5;244m · ␛[m␛[38;5;244m4 tools␛[m                                            
   ␛[38;5;254m⚠␛[m ␛[38;5;254mrunner-2␛[m                                                       ␛[38;5;244m$0.01␛[m
     ␛[38;5;254m▰▰▰␛[m␛[38;5;244m▱▱␛[m ␛[38;5;254mstep 2 of 3␛[m␛[38;5;244m · ␛[m␛[38;5;244mgo test ./...␛[m                                   
+  ␛[38;5;254m◇␛[m ␛[38;5;254mwriter-1␛[m                                                       ␛[38;5;244m$0.02␛[m
+    ␛[38;5;254m⠋ docs/loop.md␛[m␛[38;5;244m · ␛[m␛[38;5;244m4 tools␛[m                                            
+  ␛[38;5;244malt+a manager · alt+] next · click to attach␛[m                          
 
   ␛[1;38;5;254mTOOLS␛[m                                                        ␛[38;5;244m2 of 3 up␛[m
   ␛[38;5;254m✓␛[m ␛[38;5;254mbuilt-in␛[m                                               ␛[38;5;244mup␛[m␛[38;5;244m · 18 tools␛[m
@@ -415,31 +449,63 @@
   ␛[1;38;5;254mAGENTS␛[m                                         ␛[38;5;254m1 needs you␛[m␛[38;5;244m · ␛[m␛[38;5;254m2 running␛[m
   ␛[38;5;254m⚠␛[m ␛[38;5;254morchestrator␛[m                                                   ␛[38;5;244m$0.12␛[m
     ␛[38;5;244mround 3 · waiting on you␛[m                                            
+  ␛[38;5;254m⚠␛[m ␛[38;5;254mreviewer-5␛[m                                                     ␛[38;5;244m$0.03␛[m
+    ␛[38;5;244mwaiting approval: apply patch␛[m                                       
 ␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254m◇␛[m␛[48;5;237m ␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237mwriter-2                                                       $0.04␛[m␛[m
     ␛[38;5;254m⠹ internal/ui/chat/model.go␛[m␛[38;5;244m · ␛[m␛[38;5;244m11 tools␛[m                              
   ␛[38;5;254m◇␛[m ␛[38;5;254mrunner-4␛[m                                                       ␛[38;5;244m$0.02␛[m
     ␛[38;5;254m▰▰▰␛[m␛[38;5;244m▱▱␛[m ␛[38;5;254mstep 2 of 3␛[m␛[38;5;244m · ␛[m␛[38;5;244mgo build ./...␛[m                                  
-  ␛[38;5;254m⚠␛[m ␛[38;5;254mreviewer-5␛[m                                                     ␛[38;5;244m$0.03␛[m
-    ␛[38;5;244mwaiting approval: apply patch␛[m                                       
   ␛[38;5;254m✓␛[m ␛[38;5;254mreader-6␛[m                                                 ␛[38;5;254mdone␛[m  ␛[38;5;244m$0.01␛[m
     ␛[38;5;244mread 9 files␛[m                                                        
   ␛[38;5;254m✓␛[m ␛[38;5;254mreader-7␛[m                                                 ␛[38;5;254mdone␛[m  ␛[38;5;244m$0.01␛[m
     ␛[38;5;244mnothing under that path␛[m                                             
+  ␛[38;5;244malt+a manager · alt+] next · click to attach␛[m                          
   ␛[38;5;244m… 2 more␛[m                                                              
 
 · the map with the rail shorter than it (height 12)
   ␛[1;38;5;254mAGENTS␛[m                                         ␛[38;5;254m1 needs you␛[m␛[38;5;244m · ␛[m␛[38;5;254m2 running␛[m
   ␛[38;5;254m⚠␛[m ␛[38;5;254morchestrator␛[m                                                   ␛[38;5;244m$0.12␛[m
     ␛[38;5;244mround 3 · waiting on you␛[m                                            
+  ␛[38;5;254m⚠␛[m ␛[38;5;254mreviewer-5␛[m                                                     ␛[38;5;244m$0.03␛[m
+    ␛[38;5;244mwaiting approval: apply patch␛[m                                       
 ␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254m◇␛[m␛[48;5;237m ␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237mwriter-2                                                       $0.04␛[m␛[m
     ␛[38;5;254m⠹ internal/ui/chat/model.go␛[m␛[38;5;244m · ␛[m␛[38;5;244m11 tools␛[m                              
   ␛[38;5;254m◇␛[m ␛[38;5;254mrunner-4␛[m                                                       ␛[38;5;244m$0.02␛[m
     ␛[38;5;254m▰▰▰␛[m␛[38;5;244m▱▱␛[m ␛[38;5;254mstep 2 of 3␛[m␛[38;5;244m · ␛[m␛[38;5;244mgo build ./...␛[m                                  
-  ␛[38;5;254m⚠␛[m ␛[38;5;254mreviewer-5␛[m                                                     ␛[38;5;244m$0.03␛[m
-    ␛[38;5;244mwaiting approval: apply patch␛[m                                       
-  ␛[38;5;254m✓␛[m ␛[38;5;254mreader-6␛[m                                                 ␛[38;5;254mdone␛[m  ␛[38;5;244m$0.01␛[m
-    ␛[38;5;244mread 9 files␛[m                                                        
+  ␛[38;5;254m✓␛[m ␛[38;5;254mreader-7␛[m                                                 ␛[38;5;254mdone␛[m  ␛[38;5;244m$0.01␛[m
+    ␛[38;5;244mnothing under that path␛[m                                             
   ␛[38;5;244m… 3 more␛[m                                                              
+
+· a fan-out of five · blocked, near its budget, off task, failed, nested
+  ␛[1;38;5;254mAGENTS␛[m                                         ␛[38;5;254m1 needs you␛[m␛[38;5;244m · ␛[m␛[38;5;254m3 running␛[m
+␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254m◇␛[m␛[48;5;237m ␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237morchestrator                                                   $0.21␛[m␛[m
+    ␛[38;5;254m⠹ round 6 · streaming…␛[m                                              
+  ␛[38;5;254m⚠␛[m ␛[38;5;254mreviewer-3␛[m                                                     ␛[38;5;244m$0.02␛[m
+    ␛[38;5;244mwaiting approval: apply patch␛[m                                       
+  ␛[38;5;254m◇␛[m ␛[38;5;254mwriter-1␛[m                                                       ␛[38;5;244m$0.09␛[m
+    ␛[38;5;254m▰▰▰␛[m␛[38;5;244m▱▱␛[m ␛[38;5;254m210k of 300k␛[m␛[38;5;244m · ␛[m␛[38;5;244mdocs/loop.md␛[m␛[38;5;244m · ␛[m␛[38;5;244m4 tools␛[m                         
+  ␛[38;5;254m◇␛[m ␛[38;5;254mrunner-2␛[m                                                       ␛[38;5;244m$0.04␛[m
+    ␛[38;5;254m⠹ go test ./internal/agent/...␛[m␛[38;5;244m · ␛[m␛[38;5;254m⚠ off task ×2␛[m␛[38;5;244m · ␛[m␛[38;5;244m12 tools␛[m           
+  ␛[38;5;254m✗␛[m ␛[38;5;254mwriter-4␛[m                                               ␛[38;5;254mfailed␛[m  ␛[38;5;244m$0.07␛[m
+    ␛[38;5;244mtoken budget exceeded␛[m␛[38;5;244m · ␛[m␛[38;5;244mhandoff kept␛[m␛[38;5;244m · ␛[m␛[38;5;244m[r] retry␛[m                    
+  ␛[38;5;244m└␛[m␛[38;5;254m◇␛[m ␛[38;5;254mreader-5␛[m                                                      ␛[38;5;244m$0.01␛[m
+     ␛[38;5;254m⠹ internal/agent/round.go␛[m␛[38;5;244m · ␛[m␛[38;5;244m3 tools␛[m                                
+  ␛[38;5;244malt+a manager · alt+] next · click to attach␛[m                          
+
+· the same map three rows short · what it gives up, in order
+  ␛[1;38;5;254mAGENTS␛[m                                         ␛[38;5;254m1 needs you␛[m␛[38;5;244m · ␛[m␛[38;5;254m4 running␛[m
+␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254m◇␛[m␛[48;5;237m ␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237morchestrator                                                   $0.21␛[m␛[m
+    ␛[38;5;254m⠹ round 6 · streaming…␛[m                                              
+  ␛[38;5;254m⚠␛[m ␛[38;5;254mreviewer-3␛[m                                                     ␛[38;5;244m$0.02␛[m
+    ␛[38;5;244mwaiting approval: apply patch␛[m                                       
+  ␛[38;5;254m◇␛[m ␛[38;5;254mwriter-1␛[m                                                       ␛[38;5;244m$0.09␛[m
+    ␛[38;5;254m▰▰▰␛[m␛[38;5;244m▱▱␛[m ␛[38;5;254m210k of 300k␛[m␛[38;5;244m · ␛[m␛[38;5;244mdocs/loop.md␛[m␛[38;5;244m · ␛[m␛[38;5;244m4 tools␛[m                         
+  ␛[38;5;254m◇␛[m ␛[38;5;254mrunner-2␛[m                                                       ␛[38;5;244m$0.04␛[m
+    ␛[38;5;254m⠹ go test ./internal/agent/...␛[m␛[38;5;244m · ␛[m␛[38;5;254m⚠ off task ×2␛[m␛[38;5;244m · ␛[m␛[38;5;244m12 tools␛[m           
+  ␛[38;5;244m└␛[m␛[38;5;254m◇␛[m ␛[38;5;254mreader-5␛[m                                                      ␛[38;5;244m$0.01␛[m
+     ␛[38;5;254m⠹ internal/agent/round.go␛[m␛[38;5;244m · ␛[m␛[38;5;244m3 tools␛[m                                
+  ␛[38;5;244m·␛[m ␛[38;5;254mreader-6␛[m                                                            
+  ␛[38;5;244m… 1 more␛[m                                                              
 
 · one command broken · the block above the changeset
   ␛[1;38;5;254mTHIS TURN␛[m                                                             

@@ -1,0 +1,29 @@
+# One reply per request. The last line repeats once these run out, and the
+# session and every child it spawns draw from this one queue.
+#
+# That shared queue is why the rounds below are uniform. Four agents are in
+# flight after the spawn — the session and its three children — and which of
+# them reaches the endpoint first is a race nothing here can settle, so every
+# reply of a round says the same thing and the race stops mattering.
+#
+# The sentence and the three spawns are one reply, so the transcript titles
+# the step with the sentence rather than closing a turn before the calls were
+# asked for.
+Fanning three writers over the round accounting.
++tool:spawn_agent:{"role":"writer","task":"Say where the round counter is read.","name":"writer-1"}
++tool:spawn_agent:{"role":"writer","task":"Say where the round limit is set.","name":"writer-2"}
++tool:spawn_agent:{"role":"writer","task":"Say where the loop exits.","name":"writer-3"}
+# The first round: everybody reads, which nothing gates, so the map fills with
+# children that are working.
+tool:read_file:{"path":"loop.go"}
+tool:read_file:{"path":"loop.go"}
+tool:read_file:{"path":"loop.go"}
+tool:read_file:{"path":"loop.go"}
+# The second round: everybody wants to run something. A child's command is
+# routed to this session for an answer, which is what puts a child in the map
+# as blocked — the state the block floats to the top.
+tool:execute_command:{"command":"go test ./internal/agent/..."}
+tool:execute_command:{"command":"go test ./internal/agent/..."}
+tool:execute_command:{"command":"go test ./internal/agent/..."}
+tool:execute_command:{"command":"go test ./internal/agent/..."}
+The counter is read at the top of the loop, and nowhere else.

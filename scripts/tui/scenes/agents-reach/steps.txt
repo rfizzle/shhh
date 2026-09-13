@@ -1,0 +1,70 @@
+# The rail's map with a fan-out under it, at 130 columns — the rung where the
+# content splits, so the AGENTS block is on screen beside the transcript
+# (docs/interface/surfaces.md#the-inspector-rail).
+#
+# What the capture is for: the map is somewhere to go from. The trailer under
+# the block names the manager, the chord and the pointer; a child waiting on
+# an answer is drawn directly under the orchestrator whatever order it was
+# spawned in; and a child that failed says so on its own line. Both doors the
+# trailer names are driven here — the chord that walks the map, and the key
+# that opens the manager — so the row is proof of the keys rather than a
+# sentence about them.
+setup printf 'package agent\n\nfunc loop() {\n    for round := 0; round < limit; round++ {\n        step()\n    }\n}\n' > loop.go
+snap 01-start "Some things worth doing first"
+keys "survey the round accounting" Enter
+# Spawning is gated, so a card stands between the sentence and each child.
+snap 02-spawn-card "writer agent"
+keys y
+sleep 1
+keys y
+sleep 1
+keys y
+sleep 3
+# Everything then asks to run a command at once: the session's own request is
+# a card of its own, and the children's are routed here to be answered. The
+# queue counter is what says how many are standing behind this one.
+snap 03-routed "DECISION"
+# The session's own is declined, which leaves the routed ones — and a routed
+# request nobody has answered is what makes a child blocked.
+keys n
+sleep 3
+snap 04-blocked "waiting approval"
+# The manager is the door the trailer names for acting rather than reading:
+# one child is killed here, which is the failure the map then carries.
+keys M-a
+snap 05-manager "[enter] attach"
+keys j
+keys X
+snap 06-kill-asks "Its turn stops"
+keys y
+sleep 1
+snap 07-killed "[enter] attach"
+# Attaching to a session that is not the one asking is what puts the rail back
+# with the map whole: the block floated to the top, the failure under it, and
+# the trailer naming the way out.
+keys j
+keys j
+keys Enter
+sleep 1
+snap 08-map "alt+a manager"
+# The chord itself, twice: it walks spawn order rather than the order the map
+# is drawn in, so from the last child it wraps to the orchestrator and then
+# reaches the first — which is the failed one, not the blocked one the map
+# draws at the top. The breadcrumb on the frame is where the keyboard says
+# where it ended up.
+keys M-]
+keys M-]
+snap 09-chord "orchestrator ▸ writer-1"
+keys Escape
+sleep 1
+# The one routed request still standing, answered from the session it was
+# routed to: the card holds nothing until it is taken, so the chord that takes
+# it comes first.
+snap 10-still-waiting "answer it"
+keys C-Space
+keys n
+sleep 2
+keys C-c
+snap 11-quit-armed "again quits"
+keys C-c
+snap 12-exit "that is everything the screen was holding"

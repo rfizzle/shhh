@@ -801,6 +801,54 @@ between sessions is a keystroke rather than a surface to open and close.
 Everything you do *to* an agent — answer it, retry it, cancel it, kill it —
 is still the manager's; the map is for seeing and moving.
 
+The order is the order the sessions were started, with one exception: an
+agent waiting on an answer floats to directly under the root, and the ones
+waiting keep the started order among themselves. Everything the run needs
+from a person is in those rows, so they are where the eye lands rather than
+wherever the run happened to reach them. The chord does not float with them.
+It walks the started order whole, folded rows included, and that is the one
+place the map and the chord are allowed to differ: a key that reordered
+itself under the reader's hand every time an agent blocked or was answered
+would be a key nobody could aim.
+
+An agent started by another agent is drawn one column in under the rest,
+behind the same corner every nested thing on this interface is drawn behind,
+so a run two levels deep reads as two levels rather than as five siblings.
+Leaving a session still goes to whatever started it rather than to the root.
+
+When the rail runs short of height the map gives up its rows in the order it
+can afford to lose them: an agent that has stopped goes first and the oldest
+of those before the newest, then one that has not started yet, and an agent
+still working is the last thing taken — only once nothing else on the rail
+has a row to give. The live half of a run is what the block is for; its
+finished half is in the transcript and in the manager, and its outcome has
+already been read once. Between two blocks of the same length the lower one
+gives first, because the rail is read downwards and the block nearer the top
+is nearer the turn it is about.
+
+An agent that declared no step count draws motion beside what it is doing,
+since a bar against a denominator nobody supplied is a number the interface
+invented. There is one denominator nobody had to declare: the fresh tokens
+the agent was given to spend. Once half of them are gone the lane draws
+that instead — the bar, the intake and the budget, in the same five cells a
+declared step count gets — so a ceiling is something seen coming rather than
+read about afterwards in the word the agent died on. Under half it stays the
+spinner: a quarter spent is not news.
+
+Two things the line under an agent says that its state cannot. An agent told
+twice in one turn that it has left its task carries that count in the weight
+a failure takes, because once is the machinery working and twice is the case
+worth knowing forty rounds before the report says so. And an agent that
+failed leaving a record a replacement could resume from says the record was
+kept, and names the key that uses it. The row stays inert — that key is the
+manager's — which is the reason the block ends the way it does.
+
+The map ends on a line naming how to reach what it draws, in the voice the
+plan's own list already uses: the manager, the chord to the next session, and
+the pointer. It is there only when there is a session to reach, and it is the
+first row the block gives up when the rail runs short, because a map missing
+one row is still a map and a hint with no map under it is not a hint.
+
 Two of the rail's lists are places to go from rather than only to read. A
 click on a changed file opens that file's diff full screen, and the same
 click closes it again; a click on a session moves the keyboard into it, and a

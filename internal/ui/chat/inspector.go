@@ -35,6 +35,7 @@ import (
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 const (
@@ -181,17 +182,18 @@ func (m Model) railKey() railKey {
 func (m Model) resolveInspector() components.InspectorRail {
 	steps := m.planChecklist()
 	return components.InspectorRail{
-		Summary: m.inspectorSummary(),
-		Turn:    m.inspectorTurn(steps),
-		Plan:    m.inspectorPlan(steps),
-		Todo:    m.inspectorTodo(),
-		Alerts:  m.inspectorAlerts(),
-		Changes: m.inspectorChanges(),
-		Agents:  m.inspectorAgents(),
-		Tools:   m.inspectorTools(),
-		Context: m.inspectorContext(),
-		Spend:   m.inspectorSpend(),
-		Frame:   m.spinFrame,
+		Summary:    m.inspectorSummary(),
+		Turn:       m.inspectorTurn(steps),
+		Plan:       m.inspectorPlan(steps),
+		Todo:       m.inspectorTodo(),
+		Alerts:     m.inspectorAlerts(),
+		Changes:    m.inspectorChanges(),
+		Agents:     m.inspectorAgents(),
+		AgentsHint: agentsHintRail(),
+		Tools:      m.inspectorTools(),
+		Context:    m.inspectorContext(),
+		Spend:      m.inspectorSpend(),
+		Frame:      m.spinFrame,
 	}
 }
 
@@ -485,6 +487,15 @@ func (m Model) inspectorAgents() []components.InspectorAgent {
 			Steps:   p.Steps,
 			State:   p.State,
 			Focused: st.Name == m.attachedTo,
+			// What the child has taken in against what it was given, so the
+			// row can draw the ceiling coming rather than the word it died
+			// on; how many times this turn it has been told it left its
+			// task; and whether a replacement could pick its work up.
+			Fresh:   st.Tokens.Fresh,
+			Budget:  st.Budget,
+			Steers:  st.Steers,
+			Handoff: st.Handoff != "",
+			Depth:   m.sessionDepth(st.Name, len(snapshot)),
 		}
 		switch st.State {
 		case subagent.StateDone, subagent.StateFailed:
@@ -493,10 +504,56 @@ func (m Model) inspectorAgents() []components.InspectorAgent {
 			// says what it found or why it broke, rather than repeating the
 			// word with a tool count on it.
 			a.Outcome, a.Detail = st.State.String(), childNote(st)
+			// The supervisor writes the record's handle into the same line,
+			// for a surface with room to print it. This row has none: it is
+			// forty-odd columns and it says the record was kept in words,
+			// with the key that uses it, so the handle here would be a
+			// truncated identifier crowding out the offer.
+			if a.Handoff {
+				a.Detail = strings.TrimSuffix(a.Detail, " · handoff "+st.Handoff)
+			}
 		}
 		agents = append(agents, a)
 	}
 	return agents
+}
+
+// agentsHintRail is the trailer under the map: the manager, the chord to the
+// next session, and the pointer. The letters are the register's, so a rebind
+// moves the row with it (docs/interface/surfaces.md#the-inspector-rail).
+//
+// The chord walks both ways and only the forward key is named. The row is
+// forty-four columns at the rail's floor, which is exactly what these three
+// clauses take, and the reverse of a chord whose forward key is on screen is
+// the one thing a reader can guess — where a fourth clause would clip one of
+// the other three off the narrowest rail there is.
+func agentsHintRail() string {
+	return strings.Join([]string{
+		keys.Shown(keys.Draft.Agents) + " manager",
+		keys.Shown(keys.Draft.NextAgent) + " next",
+		"click to attach",
+	}, " · ")
+}
+
+// sessionDepth is how far under the orchestrator a session sits: 1 for a
+// child this session spawned, 2 for that child's own child. The map draws a
+// depth past 1 one column in, so a run several levels deep reads as the tree
+// it is rather than as a flat list of siblings.
+//
+// The walk is bounded by the number of sessions there are: a supervisor whose
+// parent links ever came to point in a circle would otherwise hang the paint
+// rather than draw one row wrong, and this runs on every frame.
+func (m Model) sessionDepth(name string, sessions int) int {
+	depth := 0
+	for at := name; at != "" && depth <= sessions; {
+		parent, ok := m.subagents.Parent(at)
+		if !ok {
+			break
+		}
+		depth++
+		at = parent
+	}
+	return depth
 }
 
 // orchestratorAgent is the map's first row: this session itself. Its state is

@@ -1100,6 +1100,12 @@ func TestGolden_FanoutBlock(t *testing.T) {
 // the one block whose rows are not all the same kind of thing: the
 // orchestrator, children in five states, the marked row, and the fold the
 // finished ones go behind.
+// railAgentsHint is the row the host writes under the map from the key
+// register. It is a literal in these tests because the fixture is the
+// component's input: what the register currently binds is the host's own
+// test to make.
+const railAgentsHint = "alt+a manager · alt+] next · click to attach"
+
 func TestGolden_InspectorRail(t *testing.T) {
 	captureGolden(t, "inspector-rail", "inspector rail", []int{InspectorWidth, InspectorMaxWidth}, func(width int) []golden.Panel {
 		full := InspectorRail{
@@ -1147,6 +1153,7 @@ func TestGolden_InspectorRail(t *testing.T) {
 				{Name: "runner-2", Detail: "go test ./...", Spend: "$0.01", Step: 2, Steps: 3,
 					State: FanoutBlocked},
 			},
+			AgentsHint: railAgentsHint,
 			Context: &InspectorContext{
 				Pct: 62, Tokens: 124000, Window: 200000,
 				Tokens1: "↑41.2k", Tokens2: "↓9.8k",
@@ -1305,8 +1312,43 @@ func TestGolden_InspectorRail(t *testing.T) {
 				{Name: "reader-7", Detail: "nothing under that path", Spend: "$0.01",
 					Outcome: "done", State: FanoutDone},
 			},
-			Frame: 2,
+			AgentsHint: railAgentsHint,
+			Frame:      2,
 		}
+		// The map with everything a child can be about to want from you: one
+		// waiting on an answer, which is why it is drawn directly under the
+		// orchestrator rather than fourth; one past half the tokens it was
+		// given, whose lane is the budget rather than a spinner; one told
+		// twice this turn that it has left its task; one that failed leaving
+		// a record a replacement could resume from; and one a child started
+		// rather than the session, drawn a column in behind the corner. The
+		// trailer under them all names the keys that reach them.
+		reach := InspectorRail{
+			Agents: []InspectorAgent{
+				{Name: "orchestrator", Detail: "round 6 · streaming…", Spend: "$0.21",
+					Self: true, Focused: true, State: FanoutRunning},
+				{Name: "writer-1", Detail: "docs/loop.md", Spend: "$0.09", Tools: 4,
+					Fresh: 210_000, Budget: 300_000, Depth: 1, State: FanoutRunning},
+				{Name: "runner-2", Detail: "go test ./internal/agent/...", Spend: "$0.04",
+					Tools: 12, Steers: 2, Depth: 1, State: FanoutRunning},
+				{Name: "reviewer-3", Detail: "waiting approval: apply patch", Spend: "$0.02",
+					Depth: 1, State: FanoutBlocked},
+				{Name: "writer-4", Detail: "token budget exceeded", Spend: "$0.07",
+					Outcome: "failed", Handoff: true, Depth: 1, State: FanoutFailed},
+				{Name: "reader-5", Detail: "internal/agent/round.go", Spend: "$0.01",
+					Tools: 3, Depth: 2, State: FanoutRunning},
+			},
+			AgentsHint: railAgentsHint,
+			Frame:      2,
+		}
+		// The same map with a queued child added and the rail three rows
+		// short of it: the trailer goes first, then the child that stopped,
+		// then the one that never started, and every working row is still
+		// there.
+		reachShort := reach
+		reachShort.Agents = append(append([]InspectorAgent{}, reach.Agents...),
+			InspectorAgent{Name: "reader-6", Detail: "waiting for a slot", Depth: 1,
+				State: FanoutQueued})
 		// The block on its own, at the three shapes it has: one thing broken
 		// and nothing behind it; the cap, with an older live alert and eight
 		// answered ones behind the marker; and a session whose failures have
@@ -1361,6 +1403,10 @@ func TestGolden_InspectorRail(t *testing.T) {
 			{Label: "memories the recall budget could not carry", View: omitted.View(width, 0)},
 			{Label: "the session map · the keyboard is in writer-2", View: mapped.View(width, 0)},
 			{Label: "the map with the rail shorter than it (height 12)", View: mapped.View(width, 12)},
+			{Label: "a fan-out of five · blocked, near its budget, off task, failed, nested",
+				View: reach.View(width, 0)},
+			{Label: "the same map three rows short · what it gives up, in order",
+				View: reachShort.View(width, len(reachShort.Lines(width, 0))-3)},
 			{Label: "one command broken · the block above the changeset", View: alerting.View(width, 0)},
 			{Label: "three standing and eight answered · two draw, the rest count",
 				View: crowded.View(width, 0)},
