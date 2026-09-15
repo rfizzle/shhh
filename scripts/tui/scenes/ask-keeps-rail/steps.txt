@@ -17,7 +17,7 @@ snap 03-ask "Should the migration be reversible?"
 # the surface the way every other decision does, this snap would never come.
 snap 04-rail "SPEND"
 # And the frame is still under it, with the vitals that never drop.
-snap 05-vitals "gated"
+snap 05-vitals "⏸ manual"
 # The keys are the card's own, unchanged, and the answer lands as the row it
 # always did.
 keys y

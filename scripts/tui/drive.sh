@@ -277,7 +277,14 @@ while IFS= read -r line || [ -n "$line" ]; do
 		screen > "$OUT/$snapname.txt"
 		tmux -L "$SOCK" capture-pane -p -e -t scene > "$OUT/$snapname.ansi" 2>/dev/null
 		step=$((step + 1))
-		echo "  $snapname${want:+  ✓ \"$want\"}"
+		# The mark says what the wait found: a tick for text that drew, a
+		# cross for a wait that ran out, so the line under a timeout does not
+		# read as a pass.
+		if [ "$failed" = 1 ]; then
+			echo "  $snapname  ✗ \"$want\""
+		else
+			echo "  $snapname${want:+  ✓ \"$want\"}"
+		fi
 		;;
 	*)
 		echo "drive.sh: $name: unknown step: $line" >&2
