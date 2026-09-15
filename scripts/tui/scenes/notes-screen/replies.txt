@@ -17,8 +17,11 @@ Two writers on the round accounting.
 # It waits first. The close counts the notebook as it stands when the turn
 # ends, and the second writer is still going when the first one's report
 # comes back — a session that answered at once would close over half a
-# fan-out and report half of what it left.
-wait:8
+# fan-out and report half of what it left. The hold is long: the second
+# writer is done in about three seconds on a quiet machine, but on a loaded
+# runner its two round trips have taken eight, and a hold that only just
+# outlasted the quiet case closed over one note where there were two.
+wait:15
 +Both of them left a note.
 [writer-1]
 tool:write_note:{"title":"The counter is read at the top of the loop","body":"loop.go reads round at the top of the for and nowhere else, so a check further down is reading a number that has already moved."}

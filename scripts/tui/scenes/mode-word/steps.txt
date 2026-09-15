@@ -48,7 +48,7 @@ snap 10-back-to-manual "⏸ manual · think"
 # rather than the chord is the door in, because it is the one both terminals
 # under this harness deliver.
 keys "put a reader on it" Enter
-snap 11-spawn-card "researcher agent"
+snap 11-spawn-card "Spawn researcher"
 sleep 1
 keys y
 snap 12-spawned "reader-1"
