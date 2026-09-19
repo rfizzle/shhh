@@ -117,6 +117,18 @@ until it finishes. The [frame](#the-input-frame) below states the phase the
 turn is in and leaves the command here, where the field that grows has the
 width of the pane behind it.
 
+A call held on a decision is a row already too, and while the card is up it
+is the last row above the rule that names the card. Its outcome field says
+it is waiting for you, and its duration field ticks how long it has, in the
+cells every act's clock takes — counting the wait rather than the act,
+because nothing is running, and a clock that implied otherwise would be the
+one lie on the screen. The row is what joins the card to its cause: the card
+says what is being decided, the rows above this one say why the model asked,
+and the eye crosses nothing to get from one to the other. Answered, the row
+settles into the account every decided call carries. The wait it counts is
+the wait the frame, the tab and the summons count
+([when you are not there](#when-you-are-not-there)).
+
 A row's output is bounded, and the bound is a fold rather than a loss: a body
 cut at the cap ends by counting what it swallowed. Opening the row widens the
 window in place — enough to read a failed test run whole — and opening it
@@ -659,6 +671,19 @@ hyphenates them, and one speller does that for every surface, so no mode is
 written two ways.
 While the classifier is deciding a call the segment says `✦ checking` instead,
 because for that moment the mode is not the answer.
+
+While a decision is waiting the frame says so in words, on the rail the phase
+is stated on: how many are waiting, and how long the session has stood idle,
+under the glyph every gated state wears. The wait is not a fifth phase,
+because a phase is something the turn is doing and a wait is the turn doing
+nothing; the clock beside it is the one the [waiting
+row](#the-activity-row) ticks and not a second one. The vitals rail holds
+still and says that it has: no round runs, no token streams, and the spend
+is what it was when the card went up — so stepping away is visibly free, and
+a reader coming back never has to wonder whether the wait cost anything. The
+words are not a setting. A state the frame would not admit to is [the first
+invariant](principles.md#colour-never-carries-meaning-alone) failing at the
+scale of the whole product.
 
 Above it, a notice rail exists only while there is something to say and
 disappears when there is not. Under that, on the terminals too narrow for the
@@ -1703,15 +1728,19 @@ read behind the question. That holds once the card has the keyboard too: the
 frame does not go away, and the rule between the two names the card as the
 surface holding it, which is the whole of what the reader needs told.
 
-Every other shape takes the screen. A list needs the width for its
+Every other shape takes the panel. A list needs the width for its
 descriptions and its short fields, a sheet of tabs needs it for the strip, a
 free answer is a sentence being written and wants the room a sentence wants,
 and [an approval](#the-approval-card) needs it for the rows that say what is
-about to happen to the machine — so each of those keeps the whole surface for
-as long as it is up, and the rail, the frame and the reading behind them are
-what pays for it. The line between the two is what this card is for: a question
-that costs a keystroke must not cost the cockpit, and one that has to be read
-costs what reading it takes.
+about to happen to the machine — so each of those takes the whole width and
+as many rows as [the grammar](principles.md#one-interaction-panel) allows a
+panel, and the rail and the frame are what pays for it. The transcript is
+not. It stays above the card at every shape, because the rows the model just
+wrote and the row the call left are what the answer is judged against, and a
+card that covered them would be asking the reader to decide from memory. The
+line between the two is what this card is for: a question that costs a
+keystroke must not cost the cockpit, and one that has to be read costs what
+reading it takes.
 
 Esc leaves the card and answers nothing. The question is held, the notice
 rail counts it — *1 question waiting* — and the next message the reader sends
@@ -2423,9 +2452,16 @@ directory it is running in, shortened to the couple of segments that tell one
 checkout from another. A waiting decision moves to the front of that name
 under the same glyph every gated state wears, because it is the one thing
 happening in here that the reader has to come back for, and the tab is where
-they will see it from the next window over. It is a switch of its own, and a
-different one from the switch that names the saved conversation: one is what
-the window manager shows, the other is what the transcript is filed under.
+they will see it from the next window over. The glyph leads because a tab
+title is cut from the right, and the one character that survives any width
+has to be the state. Behind the name the title carries how many are waiting
+and for how long — the two figures the frame states, because a reader with
+eight tabs open is deciding which one to come back to, and *that one is
+stuck* is half the answer while *for twelve minutes* is the other half. A
+tab title has no colour, so this line is the mono check the terminal runs
+for us. It is a switch of its own, and a different one from the switch that
+names the saved conversation: one is what the window manager shows, the
+other is what the transcript is filed under.
 
 The progress state is indeterminate while a turn runs, red for a moment when
 one breaks, and absent otherwise. There is no percentage and there will not be
@@ -2461,6 +2497,23 @@ trusted to every place that causes one.
 that never reports focus never sends a blur, so shhh never decides it is being
 ignored on a guess.
 
+The bell is the other half of the summons, and it is the half for a window
+that *is* in front. One terminal bell, on the same transition, whatever the
+focus: a reader who has watched a transcript scroll for three minutes has
+stopped reading it, and the moment the run stops needing them is the one
+moment a sound is worth its interruption. It rings once per wait and never
+per card. A second decision joining the queue moves the count on the frame
+and the tab and rings nothing, because the reader is already being called,
+and a bell per card is how a queue of five teaches someone to answer without
+reading. A turn that finishes rings nothing either: you asked shhh to work,
+not to talk. The bell rides the notification switch rather than a switch of
+its own, the way the progress state does, because it makes the notification's
+promise in a different channel; off is honoured completely, and what stays
+when it is off is the words on the frame, which are not a setting. There is
+no native backend here either — a bell is one byte down the same connection
+the notification travels, so it rings at the terminal in front of you and
+never on a server nobody is sitting at.
+
 What it says is what the screen it is calling you back to says, word for word.
 A summons that describes the screen in different words is one you have to
 reconcile when you arrive.
@@ -2476,3 +2529,15 @@ is not always the machine you are sitting at: over SSH a native notification is
 raised on the server, where nobody is, while an escape sequence travels back
 down the connection to the terminal actually in front of you. One dialect that
 is right everywhere beats two that are each right sometimes.
+
+Four surfaces say the session is waiting — [the row](#the-activity-row),
+[the frame](#the-input-frame), [the tab](#what-the-tab-says) and the summons
+— and they say one number. How many are waiting and how long they have been
+are one value each, read off the session's state and rendered four times,
+never four counters: a title that says two over a queue strip that says
+three is a bug by definition, and one figure in four places is what lets a
+reader trust whichever one they happen to be looking at. What none of the
+four ever does is act. Nothing is auto-answered, nothing times out, nothing
+is denied on the reader's behalf; an unanswered card waits for as long as it
+takes, because the esc of simply not being there is [still the safe
+answer](principles.md#esc-is-always-the-safe-answer).

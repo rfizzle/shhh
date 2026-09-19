@@ -709,3 +709,23 @@ leading an option a picker cannot take here — skipped, with the reason on the
 row in words. So this is the kit's mark used for the meaning the kit gives it,
 not a fourth one. `✓ questions` was the alternative and is a lie: it would be
 the rail claiming an exchange that never happened.
+
+## The bell rides the notification switch, not a four-way setting
+
+*A disagreement.* The artboard draws one setting with four values — title,
+bell, both, off — and the words on the frame outside it. The binary keeps the
+two switches it already had, one for the window title and one for the
+summons, and puts the bell on the second.
+
+The reason is the third channel the artboard does not draw. By the time the
+bell arrived the summons was already a desktop notification, raised only when
+the terminal says its window is not in front, and a setting that named the
+title and the bell would have left the notification with nowhere to be turned
+off — or turned off beside the bell, which is the pairing that makes sense:
+the bell is the summons for a window in front and the notification is the
+summons for one that is not, and a reader who wants neither is saying one
+thing. The title keeps a switch of its own because it is not a summons. It is
+a label, and it is on whether or not anything is waiting. What the artboard
+settles and the binary keeps is everything else: one bell per wait on the
+transition, silence for a second card and for a turn that finishes, and the
+words on the frame outside any setting at all.
