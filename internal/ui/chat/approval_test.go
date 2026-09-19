@@ -518,7 +518,9 @@ func TestGatedTool_LargeDiffTruncatedAndPanelGrows(t *testing.T) {
 	if h := m.bottomPanelHeight(); h != 13 {
 		t.Fatalf("expected confirm panel capped at 12 rows plus its rail, got %d", h)
 	}
-	if m.viewport.Height() != m.height-(headerHeight+dividerHeight+bottomChromeHeight)-13 {
+	// The held call's own row is the live tail while the card is up, and it
+	// is paid for by the transcript the way the panel is (waiting.go).
+	if m.viewport.Height() != m.height-(headerHeight+dividerHeight+bottomChromeHeight)-13-m.liveTailHeight() {
 		t.Fatalf("viewport should shrink for the diff preview, got %d", m.viewport.Height())
 	}
 

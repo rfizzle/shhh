@@ -266,9 +266,10 @@ func (m Model) frameActivity(width int) string {
 		return ""
 	}
 	// A turn paused on a decision is not working, and what the rail should
-	// say is how many answers it is waiting for.
-	if n := m.waitingCount(); n > 0 {
-		return sty.Frame.WaitingChip.Render(clipRow(fmt.Sprintf("⏸ %d waiting", n), width))
+	// say is how many answers it is waiting for and how long it has been
+	// standing (waiting.go).
+	if m.waitingCount() > 0 {
+		return sty.Frame.WaitingChip.Render(clipRow(m.waitingChip(), width))
 	}
 	// A turn asked to hold, and a turn parked at the boundary, are the next
 	// thing the slot says: a phase would be the wrong answer to both, since

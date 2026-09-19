@@ -171,6 +171,16 @@ func TestProgram_ATypedLineFetchesAReplyOntoTheFrame(t *testing.T) {
 // keyboard — which is the state both keys below are asked about.
 func heldCommandProgram(t *testing.T, ran *[]string) *teatest.TestModel {
 	t.Helper()
+	return heldCommandProgramUntil(t, ran, "Approve command")
+}
+
+// heldCommandProgramUntil is heldCommandProgram waiting for a phrase of the
+// caller's choosing on the frame the card lands in. The wait consumes the
+// output up to that frame, and the frames after it are the renderer's
+// diffs, so a phrase that arrived with the card can only be waited for
+// here.
+func heldCommandProgramUntil(t *testing.T, ran *[]string, landed string) *teatest.TestModel {
+	t.Helper()
 	hold := make(chan struct{})
 	// Released once, whichever way the test leaves: a fixture that fails
 	// before the release would otherwise park the provider's goroutine on a
@@ -201,7 +211,7 @@ func heldCommandProgram(t *testing.T, ran *[]string) *teatest.TestModel {
 	waitForText(t, tm, draftSentence)
 
 	release()
-	waitForText(t, tm, "Approve command")
+	waitForText(t, tm, landed)
 	return tm
 }
 
@@ -265,5 +275,26 @@ func TestProgram_ACardsKeyIsInertUntilTheHandover(t *testing.T) {
 	}
 	if strings.Contains(frame, "[y]") {
 		t.Fatalf("the card drew a key the draft would answer:\n%s", frame)
+	}
+}
+
+// A call held on a decision is a row while it waits, and the row goes when
+// the decision does: the whole program, so the row's arrival is the runtime's
+// and not a render built by hand
+// (docs/interface/surfaces.md#the-activity-row).
+func TestProgram_AHeldCallIsARowUntilItIsAnswered(t *testing.T) {
+	var ran []string
+	tm := heldCommandProgramUntil(t, &ran, "waiting for you")
+
+	tm.Send(programHandover)
+	tm.Send(programAllow)
+	waitForText(t, tm, "and that is done")
+
+	frame := finalFrame(t, tm)
+	if strings.Contains(frame, "waiting for you") {
+		t.Fatalf("the waiting row outlived its decision:\n%s", frame)
+	}
+	if !strings.Contains(frame, "ok ·") {
+		t.Fatalf("the answered call's own row did not land:\n%s", frame)
 	}
 }

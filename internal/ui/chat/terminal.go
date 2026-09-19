@@ -109,13 +109,19 @@ func (m Model) windowTitle() string {
 	if m.windowDir != "" {
 		name += " · " + m.windowDir
 	}
-	if m.interruptShowing() {
+	if m.decisionWaiting() {
 		// The same ⏸ the mode chip and a held child wear: the session is
 		// stopped, waiting on a person. "A decision" is the same set the
 		// summons reads (notify.go) — an approval, a plan, a child's routed
 		// ask — so the tab and the notification cannot disagree about what
-		// the reader is being called back for.
-		return "⏸ " + name
+		// the reader is being called back for. The glyph leads because a
+		// title is cut from the right, and the one character that survives
+		// any width has to be the state; behind the name ride the count and
+		// the wait, which are the frame's own two figures (waiting.go).
+		name = fmt.Sprintf("⏸ %s · %d waiting", name, m.waitingCount())
+		if label := waitLabel(m.waitedFor()); label != "" {
+			name += " · " + label
+		}
 	}
 	return name
 }

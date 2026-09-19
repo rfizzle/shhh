@@ -126,3 +126,18 @@ func notifyPlain(s string, max int) string {
 func notify777(s string) string {
 	return strings.Join(strings.Fields(strings.ReplaceAll(s, ";", " ")), " ")
 }
+
+// Bell rings the terminal once. It is the summons for a window that is in
+// front — the notification above is for one that is not — and it goes down
+// the same connection for the same reason: over ssh it rings at the
+// terminal in front of the reader, never on the server
+// (docs/interface/surfaces.md#when-you-are-not-there).
+//
+// It writes nothing into a pipe, by the guard Notify uses: a bell is one
+// byte, and one byte of BEL in a captured log is a byte nobody asked for.
+func (t Terminal) Bell() tea.Cmd {
+	if !t.Asked {
+		return nil
+	}
+	return tea.Raw("\a")
+}

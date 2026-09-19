@@ -151,6 +151,7 @@ func TestActivityRow_StateGlyphs(t *testing.T) {
 		{ActivityQueued, ActivityTool, "·"},
 		{ActivityRunning, ActivityCommand, "▸"},
 		{ActivityChecking, ActivityCommand, "✦"},
+		{ActivityWaiting, ActivityEdit, "✦"},
 		{ActivityFailed, ActivityCommand, "✗"},
 		{ActivityDenied, ActivityEdit, "⊘"},
 	}
@@ -353,6 +354,8 @@ func TestActivityRow_OutcomeTakesTheStatesToken(t *testing.T) {
 			State: ActivityRunning, Outcome: OutcomeRunning}, sty.SpinText},
 		{"a call the classifier is judging", ActivityRow{Kind: ActivityCommand, Verb: "run",
 			State: ActivityChecking, Outcome: OutcomeChecking}, sty.SpinText},
+		{"a call held on the reader", ActivityRow{Kind: ActivityEdit, Verb: "edit",
+			State: ActivityWaiting, Outcome: OutcomeWaiting}, sty.SpinText},
 		{"a command that broke", ActivityRow{Kind: ActivityCommand, Verb: "run",
 			State: ActivityFailed, Outcome: OutcomeExit(1)}, sty.Del},
 		{"a rule's no", ActivityRow{Kind: ActivityCommand, Verb: "run", State: ActivityDenied,

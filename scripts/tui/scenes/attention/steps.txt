@@ -1,0 +1,26 @@
+# The session waiting on a person, said where the reader is looking
+# (docs/interface/surfaces.md#when-you-are-not-there). One gated command
+# lands on an empty draft: the call's own row says it is waiting for you
+# above the rule that names the card, and the vitals under it say they are
+# frozen. Esc gives the draft back with the decision still waiting, which is
+# the return the reader makes from another window: the frame's top rail
+# counts the wait and, once a second has passed, says how long the session
+# has stood idle. The handover then answers the card with its no, so nothing
+# in the scene's workspace is run.
+#
+# What a capture cannot show: the tab's title, which tmux does not draw into
+# the pane, and the bell, which is one byte with no cells. Both are held by
+# the package's own tests.
+setup printf 'the round limit is a checkpoint\n' > notes.md
+snap 01-start "Some things worth doing first"
+keys "read the note" Enter
+snap 02-waiting "waiting for you"
+keys Escape
+sleep 2
+snap 03-idle "· idle "
+keys C-Space
+keys n
+snap 04-answered "denied"
+keys C-c
+keys C-c
+snap 05-exit "that is everything the screen was holding"

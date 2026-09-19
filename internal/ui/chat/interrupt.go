@@ -431,9 +431,14 @@ func (m Model) escLeavesWaiting() bool {
 // what the DECISION rail numbers, so the two never disagree.
 func (m Model) waitingCount() int {
 	n := len(m.childAsks)
-	switch m.state {
+	// The queue, not the card: the card's own title says `(1 of 5)`, and a
+	// chip that said one waiting over it was two counts of one thing
+	// (docs/interface/surfaces.md#when-you-are-not-there). The turn's state
+	// rather than the screen's, so a full view opened over the card does
+	// not read as nothing waiting.
+	switch m.turnState() {
 	case stateConfirmRun, statePlanApprove, stateQuestion:
-		n++
+		n += max(1, len(m.agent.PendingApprovals()))
 	}
 	return n
 }
@@ -529,8 +534,8 @@ func (m Model) undressedDraft(width int) []string {
 	// The chip is dim like the rest of the block: this frame is not the one
 	// holding the keyboard, and the accent form of the same chip is what the
 	// frame wears once the card hands it back (frame.go).
-	if n := m.waitingCount(); n > 0 {
-		topLabel = " " + idle.Render(fmt.Sprintf("⏸ %d waiting", n)) + " "
+	if m.waitingCount() > 0 {
+		topLabel = " " + idle.Render(m.waitingChip()) + " "
 	}
 	drawRail(scr, rowAt(box.area, 0), idle, "╭", "╮", topLabel, "")
 	drawIn(scr, idle.Render("│"), rowAt(box.left, 1))

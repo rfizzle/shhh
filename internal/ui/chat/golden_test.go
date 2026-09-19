@@ -559,6 +559,7 @@ func TestGolden_QuestionWaiting(t *testing.T) {
 			next := updated.(Model)
 			esc, _ := next.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 			next = esc.(Model)
+			pinWait(&next)
 			for i := 0; i < steering; i++ {
 				next.steering = append(next.steering, steeringItem{text: "and keep the migration reversible"})
 			}
@@ -1337,6 +1338,7 @@ func TestGolden_Interrupt(t *testing.T) {
 		for _, m := range []*Model{&ungated, &gated} {
 			m.TotalTokensIn += 41_200
 			m.TotalTokensOut += 9_800
+			pinWait(m)
 		}
 		// A card that landed on a warm, empty keyboard: held, with the grace
 		// window open and the run dimmed (interrupt.go).
@@ -1348,6 +1350,7 @@ func TestGolden_Interrupt(t *testing.T) {
 		grace.lastKeypress = time.Now()
 		grace.armDecision(stateConfirmRun)
 		grace.syncViewport()
+		pinWait(&grace)
 		return []golden.Panel{
 			{Label: "ungated · the draft still has the keyboard", View: interruptSurface(ungated)},
 			{Label: "gated · the handover, and the card has it", View: interruptSurface(gated)},
@@ -1565,6 +1568,49 @@ func interruptSurface(m Model) string {
 		return m.renderInterrupt(m.contentWidth()) + "\n" + m.renderPromptFrame()
 	}
 	return strings.Join(m.confirmPanelLines(), "\n")
+}
+
+// pinWait stamps a fixture's wait twelve minutes back, so the clock every
+// surface prints is captured at a figure rather than at whatever the test
+// took to get here (waiting.go).
+func pinWait(m *Model) { m.waitingSince = time.Now().Add(-twelveMinutes) }
+
+// TestGolden_WaitingRow captures the call the session is stopped on as the
+// last row above its card: the held write on an empty draft, gated on
+// arrival, and the model's own question, each with the wait's clock in the
+// row's duration field and again on the frame's chip
+// (docs/interface/surfaces.md#the-activity-row).
+func TestGolden_WaitingRow(t *testing.T) {
+	captureGolden(t, "waiting-row", "the held call's row above its card", goldenWidths, func(width int) []golden.Panel {
+		held := interruptedModel(t, "")
+		held.width, held.height = width, 40
+		held.syncInputWidth()
+		held.TotalTokensIn, held.TotalTokensOut = 41_200, 9_800
+		pinWait(&held)
+		held.syncViewport()
+		question := frameModel(t, width, 40).WithAsk()
+		question.state = stateStreaming
+		updated, _ := question.Update(toolCallsMsg{calls: []provider.ToolCall{{
+			ID: "call_q", Name: ask.ToolName, Arguments: `{"question":"Which store should the cache use?","shape":"choose","options":[
+				{"label":"SQLite","detail":"in the checkout already","recommended":true},
+				{"label":"Postgres","detail":"one more service to run"}]}`,
+		}}})
+		asked := updated.(Model)
+		pinWait(&asked)
+		// The row over whichever card the state draws: the frame's riding
+		// card where a draft holds the keyboard, the panel's otherwise.
+		surface := func(m Model) string {
+			card := interruptSurface(m)
+			if !m.frameShowing() {
+				card = strings.Join(overlayFor(m.state).Lines(m, m.contentWidth(), 0), "\n")
+			}
+			return m.liveTail(m.paneWidth()) + "\n" + card
+		}
+		return []golden.Panel{
+			{Label: "a held write \u00b7 the row says who it waits for, the card says what", View: surface(held)},
+			{Label: "a question \u00b7 the same row over the selector", View: surface(asked)},
+		}
+	})
 }
 
 // TestGolden_ScrollGutter captures the transcript pane's right-hand column
@@ -2194,7 +2240,9 @@ func TestGolden_ScreenAttached(t *testing.T) {
 				ask.Command = "go test ./..."
 				updated, _ := attached(name).Update(
 					subagentEventMsg{ev: subagent.Event{Kind: subagent.EventAsk, Ask: ask}})
-				return draw(updated.(Model))
+				asked := updated.(Model)
+				pinWait(&asked)
+				return draw(asked)
 			}
 			return []golden.Panel{
 				{Label: "the keyboard in this session · the map marks its first row", View: build("")},
@@ -3672,6 +3720,7 @@ func TestGolden_QuestionCard(t *testing.T) {
 				ID: "call_q", Name: ask.ToolName, Arguments: args,
 			}}})
 			next := updated.(Model)
+			pinWait(&next)
 			next.invalidateRenderCache()
 			next.syncViewport()
 			next.viewport.SetLines(next.renderHistoryLines())

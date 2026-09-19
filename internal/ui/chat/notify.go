@@ -182,7 +182,7 @@ func (m Model) notifyStatus() string {
 	case !m.caps.Asked:
 		return "on, but there is no terminal to notify"
 	case !m.away && !m.caps.FocusEvents:
-		return "on, but this terminal has not reported focus — nothing will fire until it does"
+		return "on, but this terminal has not reported focus — only the bell can reach you until it does"
 	case m.caps.Notifications:
 		return "on (OSC 99)"
 	}
@@ -209,9 +209,9 @@ func (m *Model) setNotify(on bool) string {
 // "shhh will tell you the one thing, and only when you cannot see it".
 func notifyNote(on bool) string {
 	if on {
-		return "Desktop notifications on: when a turn stops and your terminal has said the window is not in front, shhh raises one notification saying what it stopped on."
+		return "Desktop notifications on: when the session stops on a decision shhh rings the terminal once, and when a turn stops while your terminal has said the window is not in front it raises one notification saying what it stopped on."
 	}
-	return "Desktop notifications off: a turn that stops while you are elsewhere waits silently."
+	return "Desktop notifications off: a turn that stops while you are elsewhere waits silently, and nothing rings."
 }
 
 // notifyCommand handles /ui notify. It is a setting rather than a default
@@ -221,7 +221,7 @@ func notifyNote(on bool) string {
 func (m *Model) notifyCommand(parts []string) string {
 	if len(parts) == 2 {
 		return "Desktop notifications: " + m.notifyStatus() +
-			".\nUsage: /ui notify <on|off> — on, a turn that stops while the window is not in front raises one notification; nothing fires while you are looking at the screen."
+			".\nUsage: /ui notify <on|off> — on, the session stopping on a decision rings the terminal once, and a turn that stops while the window is not in front raises one notification."
 	}
 	if len(parts) != 3 {
 		return "Usage: /ui notify <on|off>"

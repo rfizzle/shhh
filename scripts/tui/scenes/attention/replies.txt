@@ -1,0 +1,5 @@
+# One reply per request. The last line repeats once these run out.
+# One gated command, so the session stops on a decision and stays there
+# until the reader answers; the reply after it ends the turn.
+tool:execute_command:{"command":"sed -n 1p notes.md"}
+The note is above.

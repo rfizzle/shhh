@@ -1072,6 +1072,10 @@ type Model struct {
 	// a card replacing another (the queue advancing) is told apart from a
 	// card landing on fresh typing.
 	lastDecisionLeft time.Time
+	// waitingSince is when the session stopped on the reader's answer, and
+	// zero while it is not stopped. It is one stamp for a whole queue of
+	// decisions, kept in Update's tail (waiting.go).
+	waitingSince time.Time
 	// resizeSeq names the latest resize, so the settle scheduled for an
 	// abandoned width recognises itself as stale (resizeSettledMsg).
 	resizeSeq int
@@ -1795,6 +1799,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// trusted to send.
 	if call := mm.notifyCmd(m); call != nil {
 		cmd = tea.Batch(cmd, call)
+	}
+	// The wait is a transition too — a decision landed, or the last one was
+	// answered — and the bell rings on its opening and never again until
+	// it has closed (waiting.go). The stamp is tracked before the bell
+	// reads it, so the bell is a fact about the stamp before against after.
+	mm.trackWait()
+	if ring := mm.bellCmd(m); ring != nil {
+		cmd = tea.Batch(cmd, ring)
 	}
 	// And the tab's progress light, for the same reason again: a turn
 	// breaking is a transition, and the paths that break one are the same

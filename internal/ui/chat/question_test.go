@@ -1208,8 +1208,12 @@ func TestQuestion_TheOneAnswerCardRidesAboveTheFrame(t *testing.T) {
 		t.Errorf("the card and its rail should be budgeted for above the frame: %d for %d rows",
 			m.interruptHeight(), len(m.questionLines()))
 	}
+	// The card is drawn once. The held call's own row carries the question
+	// as its target too, above the rule (waiting.go), and that row is the
+	// live tail's rather than a second drawing of the card.
 	view := m.View().Content
-	if n := strings.Count(view, "Should the migration be reversible?"); n != 1 {
+	const q = "Should the migration be reversible?"
+	if n := strings.Count(view, q) - strings.Count(m.liveTail(m.paneWidth()), q); n != 1 {
 		t.Errorf("the question should be drawn once, found %d", n)
 	}
 	if lines := strings.Split(view, "\n"); len(lines) != 40 {

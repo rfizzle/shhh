@@ -425,7 +425,7 @@ var settings = []Setting{
 		Desc: "Terminal mouse reporting: the wheel scrolls the transcript and shhh selects text itself. Off leaves the terminal its native click-drag selection.",
 	}, {
 		Key: "appearance.notify", Kind: KindBool, Default: "on",
-		Desc: "Raise a desktop notification when a turn stops while the window is not the one in front.",
+		Desc: "Summon you when the session stops on a decision: one bell, and a desktop notification when the window is not the one in front.",
 	}, {
 		Key: "appearance.window_title", Kind: KindBool, Default: "on",
 		Desc: "Name the terminal's own tab after the session.",

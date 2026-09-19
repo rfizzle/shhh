@@ -205,6 +205,9 @@ func TestGolden_ActivityRows(t *testing.T) {
 			{Label: "state · classifier checking", View: row(func(r *ActivityRow) {
 				r.State, r.Outcome = ActivityChecking, OutcomeChecking
 			})},
+			{Label: "state · held on a decision", View: row(func(r *ActivityRow) {
+				r.State, r.Outcome, r.Duration = ActivityWaiting, OutcomeWaiting, "12m"
+			})},
 			{Label: "state · failed, expanded", View: row(func(r *ActivityRow) {
 				r.Kind, r.Verb, r.Target = ActivityCommand, "run", "go test ./internal/agent/..."
 				r.State, r.Outcome, r.Duration = ActivityFailed, OutcomeExit(1), "21.4s"

@@ -699,7 +699,7 @@ own file could hold.
 | `accent_color` | text | (the palette's own) | The accent the surfaces are painted with. |
 | `theme` | word: `auto`, `dark`, `light`, `charm` | `auto` | Which colour table every surface draws with: `auto` asks the terminal what its own background is and takes the table chosen for that ground, or name one. |
 | `mouse` | true/false | `on` | Terminal mouse reporting: the wheel scrolls the transcript and shhh selects text itself. Off leaves the terminal its native click-drag selection. |
-| `notify` | true/false | `on` | Raise a desktop notification when a turn stops while the window is not the one in front. |
+| `notify` | true/false | `on` | Summon you when the session stops on a decision: one bell, and a desktop notification when the window is not the one in front. |
 | `window_title` | true/false | `on` | Name the terminal's own tab after the session. |
 | `paste_lines` | number | 10 lines | The height past which a paste is staged as an attachment instead of typed into the draft; a negative turns that half of the test off. |
 | `paste_columns` | number | 1000 columns | The width past which a paste is staged as an attachment; a negative turns that half of the test off. |

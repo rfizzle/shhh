@@ -574,6 +574,13 @@ func (m Model) cockpitData(includeQueued bool) components.Cockpit {
 	if _, warned := m.ledger.Warning(); warned {
 		c.Extra = append(c.Extra, "spend warning")
 	}
+	// Stopped on a decision the counters hold still, and the rail says so:
+	// no round runs and no token streams, so stepping away is visibly free
+	// (docs/interface/surfaces.md#the-input-frame). Not while children are
+	// working — their lanes are moving and the agents segment says it.
+	if m.decisionWaiting() && !m.childrenRunning() {
+		c.Extra = append(c.Extra, "frozen")
+	}
 	// What the fold in the draft is about to cost. It is here with the
 	// session's own counters rather than beside the chip, because it is a
 	// price and this rail is where prices are read — and it is on the rail

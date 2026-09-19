@@ -406,6 +406,7 @@ func monoFixtures() []monoSurface {
 			})},
 			{"running", row(func(r *ActivityRow) { r.State, r.Outcome = ActivityRunning, OutcomeRunning })},
 			{"checking", row(func(r *ActivityRow) { r.State, r.Outcome = ActivityChecking, OutcomeChecking })},
+			{"waiting", row(func(r *ActivityRow) { r.State, r.Outcome = ActivityWaiting, OutcomeWaiting })},
 			{"failed", row(func(r *ActivityRow) { r.State, r.Outcome = ActivityFailed, OutcomeExit(1) })},
 			// The two denials are the case the invariant is really about: the
 			// component colours them differently, so the decider has to be a

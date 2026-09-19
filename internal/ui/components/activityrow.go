@@ -57,7 +57,12 @@ const (
 	OutcomeRunning  = "running…"
 	OutcomeQueued   = "queued"
 	OutcomeChecking = "checking"
-	OutcomeDenied   = "denied"
+	// OutcomeWaiting is a call held on a decision nobody has made yet. It
+	// names the reader because they are what the call is waiting for, and
+	// the duration beside it counts that wait rather than any act: nothing
+	// is running (docs/interface/surfaces.md#the-activity-row).
+	OutcomeWaiting = "waiting for you"
+	OutcomeDenied  = "denied"
 	// OutcomeBlocked is a rule's no, and the reason it is a second word
 	// rather than OutcomeDenied with a different decider: "you said no" and
 	// "a rule said no" are different facts, and the reader's next act is
@@ -223,6 +228,7 @@ const (
 	ActivityQueued                        // · accepted, not started
 	ActivityRunning                       // ▸ in flight
 	ActivityChecking                      // ✦ the classifier is deciding
+	ActivityWaiting                       // ✦ held on a decision of the reader's
 	ActivityFailed                        // ✗ the call failed
 	ActivityDenied                        // ⊘ you said no, or a rule did
 )
@@ -374,7 +380,9 @@ func (r ActivityRow) glyph() string {
 		g = sty.Dim.Render("·")
 	case ActivityRunning:
 		g = sty.SpinText.Render(r.runningGlyph())
-	case ActivityChecking:
+	case ActivityChecking, ActivityWaiting:
+		// One glyph for both: each is a call stopped on a judgement, and
+		// the outcome word says whose.
 		g = sty.SpinText.Render("✦")
 	case ActivityFailed:
 		g = sty.Err.Render("✗")
@@ -475,7 +483,7 @@ func (r ActivityRow) paintTarget(s string) string {
 // carries the fact.
 func (r ActivityRow) outcomeStyle() lipgloss.Style {
 	switch r.State {
-	case ActivityRunning, ActivityChecking:
+	case ActivityRunning, ActivityChecking, ActivityWaiting:
 		return sty.SpinText
 	case ActivityFailed:
 		return sty.Del

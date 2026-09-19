@@ -65,6 +65,12 @@ func (m Model) spinnerWanted() bool {
 	if m.childrenRunning() {
 		return true
 	}
+	// The wait's own clock, on the held call's row, the frame's chip and
+	// the tab. It is the one tick source spent on one more thing that
+	// moves, rather than a second timer for a slower clock (waiting.go).
+	if m.decisionWaiting() {
+		return true
+	}
 	// A counter still climbing to the figure a round reported. It is the one
 	// entry here that outlives the turn it belongs to: the last usage of a
 	// round can land as the turn stops for an approval, and the chain has to

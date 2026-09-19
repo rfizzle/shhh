@@ -212,6 +212,10 @@ func (m Model) resolveLiveTail(width int) string {
 		return m.retryWaitBlock(width)
 	case stateModelList:
 		return m.spinner.View() + " Listing models…"
+	case stateConfirmRun, stateQuestion:
+		// The call the session is stopped on, as the last row above the
+		// rule that names its card (waiting.go).
+		return m.waitingRow(width)
 	}
 	return ""
 }
