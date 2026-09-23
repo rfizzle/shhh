@@ -148,17 +148,14 @@ func isActivityEntry(e entry) bool {
 // notices (an approval, an auto-allow) are part of the batch they sit in;
 // anything that reads as a standalone block ends the step.
 //
-// A think row ends it too, and that is the whole of what it means: the model
-// stopped to think, so whatever it does next belongs to the round it thought
-// for and not to the step above (think.go). Left inside, it would also split
-// the read-only run around it into two runs too short to fold, and then
-// disappear behind the step's own fold with nothing counting it — which is
-// the one thing a fold may not do
-// (docs/interface/principles.md#fold-never-hide).
+// A think row is a member, not a stop. The model thinking between two rounds
+// of the same step is still that step's work, so the calls after it stay
+// under the title it announced, and folding the step folds the thought with
+// them. The header's count is its calls and does not count the thought: it
+// counts acts, and a thought ran, read and changed nothing
+// (docs/interface/surfaces.md#the-step). A think row trailing the step's last
+// call is trimmed off like a notice, and taken back when the next call lands.
 func isStepMember(e entry) bool {
-	if e.kind == entryThink {
-		return false
-	}
 	return isActivityEntry(e) || (!entryIsBlock(e) && e.kind != entryAssistant)
 }
 

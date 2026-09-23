@@ -350,75 +350,67 @@ func TestThinkRow_WrapsRatherThanClips(t *testing.T) {
 	}
 }
 
-// TestThinkRow_EndsTheStepAboveIt: the model stopped to think, so what
-// follows belongs to the round it thought for. Left inside the step, the row
-// would split the read-only run around it into two runs too short to fold and
-// then vanish behind the step's own fold with nothing counting it.
-//
-// The round that follows is in no step, and it folds all the same: the fold
-// is a property of a run of rows rather than of the outline over it
-// (fold.go), so ending the step costs the calls below it nothing but a title.
-func TestThinkRow_EndsTheStepAboveIt(t *testing.T) {
+// TestThinkRow_StaysInTheStepItWasThoughtIn: [title][call][think][call][call]
+// is one step. The think row is a member rather than a stop, so the two calls
+// after it stay under the title, the header counts the three calls and not
+// the thought, and folding the step folds the thought with them — nothing is
+// left standing under a header that no longer owns it
+// (docs/interface/surfaces.md#the-think-row). The rows arrive one at a time,
+// as a turn lands them, so the feed's cache is the one being read.
+func TestThinkRow_StaysInTheStepItWasThoughtIn(t *testing.T) {
 	m := readyModel(t)
-	m.appendEntry(entry{kind: entryAssistant, text: "Reading the loop"})
 	read := func(path string) entry {
 		return entry{kind: entryTool, toolName: "read_file",
 			toolArgs: `{"path":"` + path + `"}`, toolResult: "package agent"}
 	}
-	m.appendEntry(read("a.go"))
-	m.appendEntry(read("b.go"))
-	m.appendEntry(read("c.go"))
-	m.appendEntry(entry{kind: entryThink, text: "Now for the other half."})
-	m.appendEntry(read("d.go"))
-	m.appendEntry(read("e.go"))
-	m.appendEntry(read("f.go"))
+	for _, e := range []entry{
+		{kind: entryAssistant, text: "Reading the loop"},
+		read("a.go"),
+		{kind: entryThink, text: "Now for the other half."},
+		read("d.go"),
+		read("e.go"),
+	} {
+		m.appendEntry(e)
+		_ = m.renderHistory()
+	}
 
 	blocks := m.blocksOf(m.transcript)
-	if len(blocks) == 0 || blocks[0].step == nil {
-		t.Fatalf("the announcement should still title a step: %+v", blocks)
+	if len(blocks) != 1 || blocks[0].step == nil {
+		t.Fatalf("the title, the calls and the thought between them are one step: %+v", blocks)
 	}
-	if got := blocks[0].step.end; got != 4 {
-		t.Fatalf("the step should end at the think row (4), got %d", got)
+	if g := blocks[0].step; g.start != 1 || g.end != 5 {
+		t.Fatalf("the step should run from the first call to the last (1..5), got %d..%d", g.start, g.end)
 	}
-	for _, blk := range blocks[1:] {
-		if blk.step != nil {
-			t.Fatal("the rounds after a think row are not part of the step above it")
-		}
+	header := m.headerFor(blocks[0], m.transcript)
+	if header.Tools != 3 {
+		t.Fatalf("the header counts the step's three calls and not the thought, got %d", header.Tools)
 	}
-	// The step is open, so its rows are on screen: the run above the think row
-	// is whole and folds into one counted group, and the run below folds into
-	// one of its own. Two counted rows with the thought between them is the
-	// round said in three lines, which is what the fold is for.
+
 	m.transcript[0].stepFold = foldOpen
-	view := stripANSI(m.renderHistory())
-	if got := strings.Count(view, "3 reads"); got != 2 {
-		t.Fatalf("each side of the think row folds into a counted row of its own, got %d:\n%s", got, view)
-	}
-	for _, path := range []string{"d.go", "e.go", "f.go"} {
-		if strings.Contains(view, path) {
-			t.Fatalf("the run under the row is counted rather than listed (%s):\n%s", path, view)
-		}
-	}
-	// And it opens with no step to have opened it: the group row is the whole
-	// of what stands between the reader and the rows.
-	m.transcript[5].groupFold = foldOpen
 	m.invalidateRenderCache()
-	view = stripANSI(m.renderHistory())
-	for _, path := range []string{"d.go", "e.go", "f.go"} {
-		if !strings.Contains(view, path) {
-			t.Fatalf("the opened run restores %s in place:\n%s", path, view)
+	view := stripANSI(m.renderHistory())
+	if strings.Count(view, "Reading the loop") != 1 || !strings.Contains(view, "3 tools") {
+		t.Fatalf("one header, counting three calls:\n%s", view)
+	}
+	for _, want := range []string{"a.go", "✻", "d.go", "e.go"} {
+		if !strings.Contains(view, want) {
+			t.Fatalf("the opened step holds %s:\n%s", want, view)
 		}
 	}
-	m.transcript[5].groupFold = foldAuto
-	// The row is still on screen and still reachable once the step folds.
+
 	m.transcript[0].stepFold = foldClosed
 	m.invalidateRenderCache()
 	view = stripANSI(m.renderHistory())
-	if !strings.Contains(view, "✻") {
-		t.Fatalf("a folded step must not swallow the think row below it:\n%s", view)
+	for _, gone := range []string{"a.go", "✻", "d.go", "e.go"} {
+		if strings.Contains(view, gone) {
+			t.Fatalf("folding the step folds %s with it:\n%s", gone, view)
+		}
 	}
-	if !slices.Contains(m.expandableIndices(), 4) {
-		t.Fatalf("the row the fold left on screen is still selectable: %v", m.expandableIndices())
+	if !strings.Contains(view, "3 tools") {
+		t.Fatalf("the folded header still counts what it swallowed:\n%s", view)
+	}
+	if slices.Contains(m.expandableIndices(), 2) {
+		t.Fatalf("a folded step offers its header, not the thought inside it: %v", m.expandableIndices())
 	}
 }
 

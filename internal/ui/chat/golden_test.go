@@ -162,6 +162,23 @@ func goldenTranscript() []entry {
 	}
 }
 
+// thinkingStep is one step that stopped to think between its rounds: the
+// title and its first call, the round's think row, then two more calls the
+// same step made.
+func thinkingStep() []entry {
+	return []entry{
+		{kind: entryUser, text: "fix the round limit"},
+		{kind: entryAssistant, text: "Locate the round accounting"},
+		{kind: entryTool, toolName: "read_file", toolArgs: `{"path":"internal/agent/loop.go"}`,
+			toolResult: "a\nb\nc", duration: 400 * time.Millisecond},
+		{kind: entryThink, text: "The cap is counted in the loop, so the sentinel has to come from there."},
+		{kind: entryTool, toolName: "read_file", toolArgs: `{"path":"internal/agent/round.go"}`,
+			toolResult: "a\nb", duration: 300 * time.Millisecond},
+		{kind: entryTool, toolName: "search", toolArgs: `{"pattern":"ErrRoundLimit"}`,
+			toolResult: searchHits, duration: 200 * time.Millisecond},
+	}
+}
+
 // arrivingStep is one step's rows in the order they land: the title and its
 // first call, the notice the call earned, and then the batch the same step
 // made with no prose over it. Rendered a row at a time it is the case the
@@ -233,6 +250,19 @@ func TestGolden_StepOutline(t *testing.T) {
 			_ = live.renderHistory()
 		}
 		arriving := live.renderHistory()
+		// A step that stopped to think between its rounds, landed the same
+		// way: the think row is a member, so the calls after it stay under
+		// the title and the fold takes the thought with them.
+		thought := frameModel(t, width, 40)
+		thought.setTurnState(stateStreaming)
+		for _, e := range thinkingStep() {
+			thought.appendEntry(e)
+			_ = thought.renderHistory()
+		}
+		thinkOpen := thought.renderHistory()
+		thought.toggleStepFold(1)
+		thought.invalidateRenderCache()
+		thinkFolded := thought.renderHistory()
 		return []golden.Panel{
 			{Label: "verbosity · normal (a finished step collapses)", View: normal},
 			{Label: "verbosity · normal, step 1 opened (read-only run folds to a group row)", View: opened},
@@ -240,6 +270,8 @@ func TestGolden_StepOutline(t *testing.T) {
 			{Label: "verbosity · high (every row, with detail)", View: high},
 			{Label: "verbosity · low (step headers only)", View: low},
 			{Label: "row by row · a notice, then a batch with no prose over it, under one header", View: arriving},
+			{Label: "row by row · a think row mid-step, opened (the calls after it stay in the step)", View: thinkOpen},
+			{Label: "row by row · a think row mid-step, folded (the thought folds with the step)", View: thinkFolded},
 		}
 	})
 }

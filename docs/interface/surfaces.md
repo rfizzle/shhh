@@ -153,13 +153,14 @@ output of a program, where the head of a line is the information and the tail
 can be cut; this one is prose, where a paragraph is a single line hundreds of
 characters long and cutting it keeps a sentence and loses the thought.
 
-The row also ends the group above it, because the model stopping to think is
-where one round of work ends and the next begins. What follows stands under no
-heading until the model says what it is doing: a step is a titled group, and
-private reasoning is not a title anybody asked for. It costs those calls
-nothing but the heading — the fold is over the run and not over the outline,
-so the round that thought still reads as one counted row rather than as its
-calls one by one.
+The row sits inside the step it was thought in rather than ending it. The
+model stopping to think between two rounds of the same step is still that
+step's work, and what it does next is still what the title announced, so the
+calls after the row stay under the heading and folding the step folds the
+thought with them. The header's count is the step's calls, and the row is not
+one of them: the count is of acts, and a thought ran nothing, read nothing and
+changed nothing. What ends a step is prose — a new title, or an explanation
+too long to be one — never private reasoning.
 
 The row fills while the model thinks, so the wait is legible as work rather
 than as a spinner. Thinking is the model talking to itself: it changed
@@ -209,7 +210,10 @@ is marked as such rather than renumbered into it, because renumbering would
 hide the fact that it happened.
 
 Where nothing was declared, the prose that preceded a batch of calls becomes
-the title. Where there is no structure to find, the transcript is a flat list
+the title. A step runs until the next prose: the notices a batch earns and
+the think rows between its rounds are members of it, so a step that paused to
+reason reads as one step and folds as one, and its count stays the calls it
+made. Where there is no structure to find, the transcript is a flat list
 and no empty grouping chrome is drawn. A public progress update is ordinary
 assistant prose, so one short enough to be a title titles the following group
 while the rail continues to state only the immediate phase; one too long to be
