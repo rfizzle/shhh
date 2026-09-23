@@ -279,16 +279,52 @@ func TestRecall_RestagesTheSentPaste(t *testing.T) {
 	}
 }
 
-// A conversation loaded from storage keeps the names of what rode rather than
-// the bytes, so there is nothing to stage from and the fold loses its quotes:
-// a count in plain words, not a mark with no key behind it.
+// A conversation loaded from storage saved the log with the message that
+// carried it, and its row is rebuilt the way the send built it — so ↑ on a
+// reopened session stages the paste again rather than reading the fold as a
+// count (newsession.go, recall.go).
+func TestRecall_RestagesAPasteFromAReopenedSession(t *testing.T) {
+	log := strings.Repeat("loop_test.go:44: round 26 reached, still running\n", 11)
+	token := components.PasteToken("paste 1", 11)
+	sentence := "this log says the loop never stops — " + token + " — fix it"
+	m := resumedModel(t, []provider.Message{
+		{Role: provider.RoleSystem, Content: "sys"},
+		{Role: provider.RoleUser, Content: sentence,
+			Attachments: []provider.Attachment{{
+				Kind: provider.AttachmentText, Name: "paste-1.txt", Data: []byte(log)}}},
+	})
+	folds := 0
+	for _, e := range m.transcript {
+		if e.kind == entryUser {
+			folds += len(e.pastes)
+		}
+	}
+	if folds != 1 {
+		t.Fatalf("the reopened row should keep its fold with the log behind it, got %d folds", folds)
+	}
+
+	m = pressUp(t, m)
+	if got := m.input.Value(); got != sentence {
+		t.Fatalf("the fold should come back live, got %q, want %q", got, sentence)
+	}
+	if !m.stagedFold(token) {
+		t.Fatalf("the recalled token should stand for a staged paste, got %v",
+			attachment.Names(m.attachments))
+	}
+	if got := string(m.attachments[0].Data); got != log {
+		t.Fatalf("the restaged paste is not the log that was saved: %q", got)
+	}
+}
+
+// A fold whose sentence carried nothing — a message typed with the marks in
+// it, or one whose paste no longer fits — has nothing to stage from, and the
+// fold loses its quotes: a count in plain words, not a mark with no key
+// behind it.
 func TestRecall_StripsAFoldWithNoPasteBehindIt(t *testing.T) {
 	token := components.PasteToken("paste 1", 214)
 	m := resumedModel(t, []provider.Message{
 		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: "this log says the loop never stops — " + token + " — fix it",
-			Attachments: []provider.Attachment{{
-				Kind: provider.AttachmentText, Name: "paste-1.txt", Data: []byte("the log\n")}}},
+		{Role: provider.RoleUser, Content: "this log says the loop never stops — " + token + " — fix it"},
 	})
 
 	m = pressUp(t, m)

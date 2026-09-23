@@ -94,13 +94,15 @@ func typedByHand(msg provider.Message) bool { return !msg.Machine }
 // rides out with the next send: the line as it was, ready to go again, which
 // is what recall means everywhere else in this surface.
 //
+// A conversation loaded from storage is the same case: the bytes were saved
+// with the message that carried them, and its rows are rebuilt through the
+// same userEntry the send used (newsession.go), so a reopened session's folds
+// have their logs behind them too.
+//
 // Where the bytes are not there the fold loses its quotes instead and stays as
-// its count in plain words. A conversation loaded from storage rebuilds its
-// rows from the messages and keeps the names of what rode rather than the
-// bytes (newsession.go), so its sentences carry folds nothing can be staged
-// from; a paste that no longer fits beside what is already staged is the same
-// case reached the other way. `paste 1 · 214 lines` is prose about a log that
-// is not riding, and prose is what it now is.
+// its count in plain words — a paste that no longer fits beside what is
+// already staged. `paste 1 · 214 lines` is prose about a log that is not
+// riding, and prose is what it now is.
 //
 // Walking on drops what walking here staged. ↑ again, or ↓ back out to the
 // empty draft, replaces the sentence the fold was in, and a paste whose fold

@@ -746,12 +746,13 @@ Recalling that sentence brings the paste back with it. ↑ puts a line in the
 draft as it was sent, so the fold in it has to be a fold again or stop being
 one: the log is on the row the send left, and it is staged again under the
 next free number with the token renumbered to match — the same key opens it,
-the same rail prices it, and the next send carries it. Where the bytes are not
-there to stage — a conversation loaded from storage keeps the names of what
-rode rather than the log itself — the fold loses its quotes and stays as
-`paste 1 · 214 lines`, which is words about a log that is not riding rather
-than a mark with nothing behind it. Walking on drops what walking here staged,
-for the reason a backspace over a token does.
+the same rail prices it, and the next send carries it. A conversation loaded
+from storage is no different: the log was saved with the message that carried
+it, so a reopened session's row has it too. Where the bytes cannot be staged —
+a paste that no longer fits beside what is already staged — the fold loses its
+quotes and stays as `paste 1 · 214 lines`, which is words about a log that is
+not riding rather than a mark with nothing behind it. Walking on drops what
+walking here staged, for the reason a backspace over a token does.
 
 A paste too big to stage is refused with the limit named, and the draft is
 left exactly as it was. What bounds it is not the size a message can carry but

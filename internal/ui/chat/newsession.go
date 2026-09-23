@@ -10,7 +10,6 @@ package chat
 import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/agent"
-	"github.com/rfizzle/shhh/internal/attachment"
 	"github.com/rfizzle/shhh/internal/plan"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/tools"
@@ -300,11 +299,12 @@ func (m *Model) appendMessageEntries(msgs []provider.Message) {
 				}
 				break
 			}
-			// A resumed turn keeps the names of what it attached:
-			// the bytes were saved with it, so the row that said "attached:
-			// shot.png" says it again.
-			m.appendEntry(entry{kind: entryUser, text: msg.Content,
-				attached: attachment.Names(msg.Attachments)})
+			// A resumed turn is the row the send left: the bytes were saved
+			// with it, so the row that said "attached: shot.png" says it
+			// again, and a paste whose fold is in the words is that fold
+			// again — with the log behind it, which is what ↑ stages back
+			// from (recall.go).
+			m.appendEntry(userEntry(msg.Content, msg.Attachments))
 		case provider.RoleAssistant:
 			// The thinking that led to the turn comes back with it, above it,
 			// where it happened (think.go). A conversation that is still

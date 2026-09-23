@@ -846,12 +846,27 @@ func TestGolden_PasteToken(t *testing.T) {
 			back, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyUp})
 			return promptSurface(back.(Model))
 		}
+		// The same ↑ on a session reopened from storage: the row is rebuilt
+		// from the saved message, whose attachment carried the log, so the
+		// fold comes back staged exactly as it does in the sitting that sent
+		// it (newsession.go).
+		reopened := func() string {
+			m := goldenModel(t, width)
+			m.loadConversation([]provider.Message{
+				{Role: provider.RoleSystem, Content: "sys"},
+				{Role: provider.RoleUser, Content: sentence, Attachments: []provider.Attachment{pasted}},
+			})
+			m.invalidateRenderCache()
+			back, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyUp})
+			return promptSurface(back.(Model))
+		}
 		return []golden.Panel{
 			{Label: "the fold in the draft · priced on the vitals, opened from the hints", View: promptSurface(staged(t, width))},
 			{Label: "opened · reading's rail says how far through it you are", View: reader()},
 			{Label: "sent · the transcript keeps the fold, not the flood", View: sent(false)},
 			{Label: "opened in the transcript · bounded, and the bound counts", View: sent(true)},
 			{Label: "recalled · the fold is a paste again, not five words about one", View: recalled()},
+			{Label: "recalled after a reopen · the saved log is staged the same way", View: reopened()},
 		}
 	})
 }

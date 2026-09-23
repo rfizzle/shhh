@@ -61,6 +61,13 @@
 │   1 · 214 lines⟩ — fix the exit condition            │
 ╰─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 ────────────────╯
 
+· recalled after a reopen · the saved log is staged the same way
+≡ paste-1.txt 23 KB 214 lines                           
+╭─ idle ───────────────────────────────────────────────╮
+│ ▸ this test log says the loop never stops — ⟨paste   │
+│   1 · 214 lines⟩ — fix the exit condition            │
+╰─ ⏸ manual · ctx 36% ▰▰▱▱▱▱▱▱ · $0.51 ────────────────╯
+
 ── ansi ────────────────────────────────────────────────────
 · the fold in the draft · priced on the vitals, opened from the hints
 ␛[38;5;252m≡ paste-1.txt␛[38;5;241m 23 KB 214 lines␛[m                           
@@ -112,3 +119,10 @@
 ␛[38;5;214m│␛[m ␛[38;5;241m▸␛[m ␛[38;5;252mthis test log says the loop never stops — ␛[94m⟨paste␛[38;5;252m  ␛[m ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m   ␛[94m1 · 214 lines⟩␛[38;5;252m — fix the exit condition           ␛[m ␛[38;5;214m│␛[m
 ␛[38;5;214m╰─␛[m ␛[38;5;214m⏸ manual␛[38;5;243m · ␛[92mctx 32%␛[m ␛[92m▰▰␛[38;5;241m▱▱▱▱▱▱␛[38;5;243m · $0.51␛[m ␛[38;5;214m────────────────╯␛[m
+
+· recalled after a reopen · the saved log is staged the same way
+␛[38;5;252m≡ paste-1.txt␛[38;5;241m 23 KB 214 lines␛[m                           
+␛[38;5;214m╭─␛[m ␛[38;5;241midle␛[m ␛[38;5;214m───────────────────────────────────────────────╮␛[m
+␛[38;5;214m│␛[m ␛[38;5;241m▸␛[m ␛[38;5;252mthis test log says the loop never stops — ␛[94m⟨paste␛[38;5;252m  ␛[m ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m   ␛[94m1 · 214 lines⟩␛[38;5;252m — fix the exit condition           ␛[m ␛[38;5;214m│␛[m
+␛[38;5;214m╰─␛[m ␛[38;5;214m⏸ manual␛[38;5;243m · ␛[92mctx 36%␛[m ␛[92m▰▰␛[38;5;241m▱▱▱▱▱▱␛[38;5;243m · $0.51␛[m ␛[38;5;214m────────────────╯␛[m
