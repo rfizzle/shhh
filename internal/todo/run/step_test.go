@@ -90,10 +90,10 @@ func TestShape_IsBuiltFromTheKindAndWhatTheStepReads(t *testing.T) {
 	}
 
 	review, _ := BuiltinCode().Step("review")
-	if got := review.Shape(code, false); !strings.Contains(got, "Answer with one line `verdict: clean`") {
+	if got := review.Shape(code, false); !strings.Contains(got, "Answer with the findings first") || !strings.Contains(got, "alone on the last line") {
 		t.Errorf("the reading's shape = %q", got)
 	}
-	if got := review.Shape(code, true); !strings.Contains(got, "End your report with") {
+	if got := review.Shape(code, true); !strings.Contains(got, "In your report, give the findings first") {
 		t.Errorf("a child writes a report and ends it with the verdict, got %q", got)
 	}
 

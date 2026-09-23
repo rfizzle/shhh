@@ -1287,13 +1287,19 @@ func questionLines(text string) []string {
 	return out
 }
 
+// verdictLine reads a reading's verdict and the findings around it. The shape
+// asks for the findings first and the verdict last, so the last verdict line
+// is the one that counts, and the findings are the rest of the answer — which
+// also keeps a reader that wrote its findings under the line.
 func verdictLine(text string) (verdict, findings string) {
-	loc := verdictPattern.FindStringSubmatchIndex(text)
-	if loc == nil {
+	all := verdictPattern.FindAllStringSubmatchIndex(text, -1)
+	if all == nil {
 		return "", ""
 	}
+	loc := all[len(all)-1]
 	verdict = strings.ToLower(text[loc[2]:loc[3]])
-	return verdict, strings.TrimSpace(text[loc[1]:])
+	before, after := strings.TrimSpace(text[:loc[0]]), strings.TrimSpace(text[loc[1]:])
+	return verdict, strings.TrimSpace(before + "\n" + after)
 }
 
 // commitParts reads a commit finish's turn: a `COMMIT:` block and a

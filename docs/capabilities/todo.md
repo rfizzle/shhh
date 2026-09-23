@@ -866,6 +866,12 @@ its own — a fresh conversation, the same task, the same verdict line at the
 end — because the thing that makes the reading a second opinion is where it
 comes from, not whether a supervisor was involved.
 
+**The reader is told to write its findings first and end on the verdict.**
+That is the shape every reviewer the product spawns answers in
+([`subagents.md`](subagents.md#what-comes-back-says-what-happened-to-it)), so
+the reviewer child's lane shows the same *clean* or *findings* the run acts
+on, without anyone opening the report to find it.
+
 **The reader is handed every file that changed.** The change is bounded
 before it goes into the reader's task — a thousand-file diff would spend the
 child's whole window on the change before it had read the item — and the

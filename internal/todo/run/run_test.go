@@ -130,6 +130,10 @@ func TestParsers(t *testing.T) {
 	if v, f := verdictLine("Verdict: FINDINGS\n1. x"); v != "findings" || f != "1. x" {
 		t.Errorf("verdict = %q %q", v, f)
 	}
+	// The shape the step asks for: the findings, then the verdict last.
+	if v, f := verdictLine("1. a.go:3 off by one\n2. b.go:9 unchecked\n\nVerdict: findings"); v != "findings" || f != "1. a.go:3 off by one\n2. b.go:9 unchecked" {
+		t.Errorf("verdict last = %q %q", v, f)
+	}
 	if _, _, ok := commitParts("REPORT: r\nCOMMIT: c"); ok {
 		t.Error("markers out of order accepted")
 	}

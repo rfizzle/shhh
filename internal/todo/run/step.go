@@ -238,8 +238,11 @@ const planShape = `The plan, in the plan shape (a "## Plan:" heading, then numbe
 const questionsShape = "One line `questions: none`, or `questions:` followed by one bulleted line per question you cannot answer from the code and the item and that would change what you build. Do not ask what you can decide yourself; do ask before guessing at a product decision."
 
 // verdictShape is what a reading answers with, whether the reader is a child
-// or the session's own turn.
-const verdictShape = "one line `verdict: clean` if there is nothing that must change before this is finished, or `verdict: findings` followed by the findings ranked by severity with file:line. Style that hides no bug is not a finding."
+// or the session's own turn. The verdict is the last line for both, because a
+// reviewer child's lane reads the verdict off its report's last line
+// (docs/capabilities/subagents.md#what-comes-back-says-what-happened-to-it),
+// and asked for the findings after it the lane drew no verdict at all.
+const verdictShape = "the findings first, ranked by severity with file:line, and then the verdict alone on the last line: `verdict: clean` if there is nothing that must change before this is finished, or `verdict: findings` if there is. Style that hides no bug is not a finding."
 
 // reportShape is the archive's own record, which every finish that spends a
 // turn asks for.
@@ -254,15 +257,16 @@ Follow-ups: <none, or bullets of work this item leaves open>`
 
 // Shape is the answer this step asks for, in the words the code that reads it
 // back understands. task is the reading handed to a child rather than taken
-// in the session's own turn: the child writes a report and the verdict is the
-// last line of it, where a turn answers with the verdict and nothing else.
+// in the session's own turn: the child writes a report around its findings,
+// where a turn answers with the findings and nothing else. Both end on the
+// verdict line.
 func (ps PipelineStep) Shape(p todo.Profile, task bool) string {
 	switch ps.Kind {
 	case KindTurn:
 		return ps.turnShape(p)
 	case KindAgent:
 		if task {
-			return "End your report with " + verdictShape
+			return "In your report, give " + verdictShape
 		}
 		return "Answer with " + verdictShape
 	case KindFanOut:

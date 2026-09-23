@@ -629,6 +629,45 @@ func TestTodoRun_ReviewerChildAnswersTheStage(t *testing.T) {
 	}
 }
 
+// A backlog reviewer answers in the reviewer contract's shape — findings,
+// then the verdict alone on the last line — so the run and the child's lane
+// read the same word off the one report.
+func TestTodoRun_ReviewerVerdictIsOnTheLane(t *testing.T) {
+	m, _ := runModel(t)
+	report := "1. a.go:3 the flag is never read\n\nverdict: findings"
+	sup := subagent.New(context.Background(), subagent.Options{Root: m.todos.Root, NewEnv: reportingEnv(report)})
+	t.Cleanup(sup.Close)
+	m = m.WithSubagents(sup)
+	m.input.SetValue("/todo run do-it")
+	updated, _ := m.submitInput()
+	m = answer(t, updated.(Model), strings.Replace(runPlan, "size: S", "size: M", 1))
+	m.changes.Add(m.turnCount, changeset.Record{Path: filepath.Join(m.todos.Root, "a.go"), Before: "a", After: "b", BeforeExists: true, AfterExists: true})
+	m = answer(t, m, "done")
+	updated, _ = m.Update(todoVerifyMsg{slug: "do-it", ok: true})
+	m = updated.(Model)
+	var ev subagent.Event
+	deadline := time.After(5 * time.Second)
+	for ev.Kind != subagent.EventDone {
+		select {
+		case ev = <-sup.Events():
+		case <-deadline:
+			t.Fatal("the child never finished")
+		}
+	}
+	updated, _ = m.handleSubagentEvent(ev)
+	m = updated.(Model)
+	if s := m.todoRunner.state; s.Stage != run.StageRemediate || !strings.Contains(s.Findings, "the flag is never read") {
+		t.Fatalf("the findings above the verdict should reach the remediation: %+v", s)
+	}
+	st, ok := sup.Get("todo-review-do-it-1")
+	if !ok {
+		t.Fatal("the reviewer is gone")
+	}
+	if got := m.childProgress(st).ReportVerdict; got != "findings" {
+		t.Fatalf("the lane's verdict = %q, want findings", got)
+	}
+}
+
 func TestTodoRun_BlockOffersAFollowUp(t *testing.T) {
 	m, root := runModel(t)
 	m.input.SetValue("/todo run do-it")
