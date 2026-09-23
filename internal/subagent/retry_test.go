@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 	"sync"
 	"testing"
@@ -488,5 +489,59 @@ func TestTheRetryToolRefusesWhatTheSupervisorRefuses(t *testing.T) {
 	}
 	if _, err := exec(RetryToolName, json.RawMessage(`{}`)); err == nil {
 		t.Fatal("a retry with no name has nothing to run")
+	}
+}
+
+// A retry refused at admission says what a spawn refused there says: the
+// same parts, the same reserve, its own number. A caller told only a number
+// cannot check it against the rule.
+func TestARetryAndASpawnAreRefusedAtAdmissionInOneSentence(t *testing.T) {
+	env := &scriptedEnv{}
+	var mu sync.Mutex
+	prompt := ""
+	factory := env.factory()
+	sup := New(context.Background(), Options{Root: t.TempDir(), NewEnv: func(ctx context.Context, spec Spec) (Env, error) {
+		e, err := factory(ctx, spec)
+		mu.Lock()
+		e.SystemPrompt += prompt
+		mu.Unlock()
+		return e, err
+	}})
+	t.Cleanup(sup.Close)
+
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"survey the loop","max_tokens":300000}`)
+	waitState(t, sup, "researcher-1", StateFailed)
+	c := sup.byName["researcher-1"]
+	c.mu.Lock()
+	done := c.done
+	c.mu.Unlock()
+	<-done
+
+	// The prompt grows past what the budget can carry, for the retry and for
+	// a spawn of the same task alike.
+	mu.Lock()
+	prompt = strings.Repeat("p", 600_000)
+	mu.Unlock()
+	retryErr := sup.Retry("researcher-1")
+	if retryErr == nil || !strings.HasPrefix(retryErr.Error(), "cannot set up the retry: max_tokens 300000 cannot admit this task") {
+		t.Fatalf("retry error = %v, want the admission refusal", retryErr)
+	}
+	_, spawnErr := sup.Spawn(json.RawMessage(`{"role":"researcher","task":"survey the loop","max_tokens":300000}`))
+	if spawnErr == nil {
+		t.Fatal("the spawn must be refused at admission")
+	}
+
+	// The floors differ — the retry also carries how the last attempt ended —
+	// so the number is the one thing allowed to.
+	floor := regexp.MustCompile(`at least \d+ is required`)
+	retry := floor.ReplaceAllString(strings.TrimPrefix(retryErr.Error(), "cannot set up the retry: "), "at least N is required")
+	spawn := floor.ReplaceAllString(spawnErr.Error(), "at least N is required")
+	if retry != spawn {
+		t.Fatalf("the two refusals must share their sentence:\nretry: %s\nspawn: %s", retry, spawn)
+	}
+	for _, part := range []string{"the inherited prompt and tool definitions", "the declared task", "review evidence, a resume or retry prologue", "200000-token working reserve"} {
+		if !strings.Contains(spawn, part) {
+			t.Fatalf("the refusal must name %q: %s", part, spawn)
+		}
 	}
 }

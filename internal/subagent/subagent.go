@@ -2608,7 +2608,7 @@ func (s *Supervisor) restart(c *child, detail string) error {
 	inherited, setup, floor := admissionFloor(preflight, inheritance+evidence+retryPrologue(detail, handoff)+c.task)
 	if budget < floor {
 		cancel()
-		return fmt.Errorf("cannot set up the retry: max_tokens %d cannot admit this task; at least %d is required", budget, floor)
+		return errors.New("cannot set up the retry: " + admissionRefusal(budget, floor, inheritTurns, agent.EstimateTokens(inheritance)))
 	}
 	// A reader's workspace is opened here, where a failure is still this
 	// caller's to report. A writer's waits for the slot the new attempt has
@@ -3098,6 +3098,16 @@ func admissionFloor(env Env, opening string) (inherited, setup, floor int64) {
 	return inherited, setup, inherited + setup + MinChildMaxTokens
 }
 
+// admissionRefusal is the sentence a spawn and a retry are both refused with
+// when a budget cannot cover the floor admissionFloor measured. It names every
+// part the floor is made of, so the number it states can be checked against
+// the rule rather than taken on trust.
+// See docs/capabilities/subagents.md#limits-are-about-attention-not-resources.
+func admissionRefusal(budget, floor int64, inheritTurns int, inheritTokens int64) string {
+	return fmt.Sprintf("max_tokens %d cannot admit this task: at least %d is required for the inherited prompt and tool definitions, the declared task%s and the context its first turn opens on (review evidence, a resume or retry prologue), plus the %d-token working reserve",
+		budget, floor, inheritedClause(inheritTurns, inheritTokens), MinChildMaxTokens)
+}
+
 // spawnFrom validates the arguments, gives the child everything that does not
 // depend on where it will work, and starts it in the background. A reader's
 // workspace is opened here; a writer's is opened when its slot comes free
@@ -3264,8 +3274,7 @@ func (s *Supervisor) spawnFrom(caller string, raw json.RawMessage) (string, erro
 	inherited, setup, floor := admissionFloor(preflight, inheritance+evidence+resumeText+args.Task)
 	if args.maxTokens < floor {
 		cancel()
-		return "", fmt.Errorf("max_tokens %d cannot admit this task: at least %d is required for the inherited prompt, the declared task%s and the context its first turn opens on, plus the %d-token working reserve",
-			args.maxTokens, floor, inheritedClause(inheritTurns, agent.EstimateTokens(inheritance)), MinChildMaxTokens)
+		return "", errors.New(admissionRefusal(args.maxTokens, floor, inheritTurns, agent.EstimateTokens(inheritance)))
 	}
 	if preflight.Archive != nil {
 		inheritance = inheritedPrologue(turns, inheritTurns, preflight.Scrub, preflight.Archive)
