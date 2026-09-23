@@ -169,24 +169,36 @@ printf '[behavior]\nprovider_retries = 0\n' > "$home/config/shhh/config.toml"
 # window anything else on the host can take it in. PORT names one instead, for
 # a reader who wants to know where to look.
 portfile=$work/port
-python3 "$here/fakeprovider.py" "${PORT:-0}" "$scene/replies.txt" > "$portfile" 2> "$OUT/provider.log" &
+asked=${PORT:-0}
+python3 "$here/fakeprovider.py" "$asked" "$scene/replies.txt" > "$portfile" 2> "$OUT/provider.log" &
 provider=$!
 # Up before the binary asks, or the first turn reports a model it never
 # reached. The port line is written once the socket is bound and listening, so
-# reading it is the whole of the wait. A provider that died instead — a
-# replies file it could not read is the usual reason — is not waited for: it
-# said why on the way out, and that is worth more than ten more tries.
+# reading it is the whole of the wait. The poll stays short and the bound is
+# long: on a loaded host a python interpreter can take several seconds just to
+# start, and two seconds failed a run at a load of ~8 with the provider still
+# on its way up. A provider that died instead — a replies file it could not
+# read is the usual reason — is not waited for: it said why on the way out,
+# and that is worth more than the rest of the bound.
+provider_wait=30
 wait_for_provider() {
-	for _ in 1 2 3 4 5 6 7 8 9 10; do
+	tries=$((provider_wait * 5))
+	while [ "$tries" -gt 0 ]; do
 		PORT=$(sed -n 's/^port //p' "$portfile")
 		[ -n "$PORT" ] && return 0
 		kill -0 "$provider" 2>/dev/null || return 1
 		sleep 0.2
+		tries=$((tries - 1))
 	done
 	return 1
 }
 if ! wait_for_provider; then
-	echo "drive.sh: the scripted model never came up — $OUT/provider.log:" >&2
+	if [ "$asked" = 0 ]; then port_words="a free port"; else port_words="port $asked"; fi
+	if kill -0 "$provider" 2>/dev/null; then
+		echo "drive.sh: the scripted model (fakeprovider.py, pid $provider, asked for $port_words) did not say it was listening within ${provider_wait}s — $OUT/provider.log:" >&2
+	else
+		echo "drive.sh: the scripted model (fakeprovider.py, asked for $port_words) exited before it was listening — $OUT/provider.log:" >&2
+	fi
 	sed 's/^/  /' "$OUT/provider.log" >&2
 	exit 1
 fi
