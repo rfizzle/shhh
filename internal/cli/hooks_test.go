@@ -73,6 +73,20 @@ func TestHookPayload_SharesTheEventStreamsSpelling(t *testing.T) {
 			t.Errorf("a child's %q is %q on the stream's agent line and %q in the payload", name, line[name], child[name])
 		}
 	}
+	// And held against a line a `-p` run actually writes, not only against
+	// the type a served session writes it from: a child seam's payload read
+	// off that line names the child the line is about.
+	for _, raw := range headlessChildLines(t) {
+		var ev struct {
+			Agent hook.Agent `json:"agent"`
+		}
+		if err := json.Unmarshal([]byte(raw), &ev); err != nil {
+			t.Fatalf("a -p agent line is not an event: %q (%v)", raw, err)
+		}
+		if ev.Agent.Name != "researcher-1" || ev.Agent.Role != string(subagent.RoleResearcher) {
+			t.Errorf("a -p agent line read as a payload's child is %+v: %q", ev.Agent, raw)
+		}
+	}
 	// And the payload's own three: what a hook cannot work out for itself,
 	// because it is a separate process.
 	for _, name := range []string{"event", "session", "cwd"} {

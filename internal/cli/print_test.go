@@ -26,6 +26,7 @@ import (
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/structural"
+	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/testhttp"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/web"
@@ -135,6 +136,93 @@ func TestAHeadlessRunKeepsHowACommandEnded(t *testing.T) {
 					ev.Result, ev.Outcome, ev.Class, c.lead, observe.OutcomeError, c.class)
 			}
 		})
+	}
+}
+
+// headlessChildLines runs one `-p` turn that spawns a scripted child and
+// answers, wired the way runPrintSession wires it, and returns the agent lines
+// its stream wrote once the child has ended.
+func headlessChildLines(t *testing.T) []string {
+	t.Helper()
+	children := &scriptedChildren{steps: []childStep{{text: "the exporter is fine"}}}
+	sup := subagent.New(t.Context(), subagent.Options{Root: t.TempDir(), NewEnv: children.factory()})
+	t.Cleanup(sup.Close)
+
+	rounds := [][]provider.StreamEvent{
+		{{ToolCalls: []provider.ToolCall{{ID: "s1", Name: subagent.SpawnToolName,
+			Arguments: `{"role":"researcher","task":"survey the exporter"}`}}}},
+		{{Token: "spawned"}, {Done: true}},
+	}
+	var next int
+	a := agent.New(nil, func([]provider.Message, string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		if next >= len(rounds) {
+			t.Fatalf("unexpected stream request #%d", next+1)
+		}
+		ch := make(chan provider.StreamEvent, len(rounds[next]))
+		for _, ev := range rounds[next] {
+			ch <- ev
+		}
+		close(ch)
+		next++
+		return ch, func() {}, nil
+	})
+	lines := &syncLines{}
+	obs := headlessObserver{rounds: a.Rounds, stream: newJSONLStream(lines)}
+	answerChildAsks(sup, true, nil, nil, obs.childLives(sup))
+	h := &agent.Headless{
+		Agent: a,
+		Gate:  unattendedGate(nil, nil, nil, sup),
+		Resolve: headlessApprover(context.Background(), printOpts{yes: true}, nil, nil, nil, "", nil, obs.decision,
+			nil, nil, nil, nil, nil, nil, unattended{sup: sup, at: obs.pos}),
+	}
+	if _, err := h.Run("survey the exporter"); err != nil {
+		t.Fatalf("run: %v", err)
+	}
+	waitFor(t, "the child's end on the stream", func() bool {
+		return strings.Contains(lines.String(), `"state":"done"`)
+	})
+
+	var agents []string
+	for _, line := range strings.Split(strings.TrimSpace(lines.String()), "\n") {
+		var ev jsonEvent
+		if err := json.Unmarshal([]byte(line), &ev); err != nil {
+			t.Fatalf("the stream wrote a line that is not an event: %q (%v)", line, err)
+		}
+		if ev.Kind == observe.EventAgent {
+			agents = append(agents, line)
+		}
+	}
+	return agents
+}
+
+// A `-p` run's stream says when a child it spawned starts and when it ends,
+// in the agent line a served session writes, and says nothing between: a
+// script wants to know a child exists and how it ended, and the lanes a
+// client draws from every state change are a served session's.
+// See docs/capabilities/headless.md#the-stream-is-the-record-as-it-happens.
+func TestAHeadlessRunsStreamSaysWhenAChildStartsAndEnds(t *testing.T) {
+	lines := headlessChildLines(t)
+	if len(lines) != 2 {
+		t.Fatalf("a child that started and ended wrote %d agent lines, want 2:\n%s", len(lines), strings.Join(lines, "\n"))
+	}
+	var states []string
+	for _, line := range lines {
+		var ev jsonEvent
+		_ = json.Unmarshal([]byte(line), &ev)
+		if ev.Agent == nil || ev.Agent.Name != "researcher-1" || ev.Agent.Role != string(subagent.RoleResearcher) ||
+			ev.Agent.Task != "survey the exporter" {
+			t.Fatalf("an agent line does not say which child it is about: %q", line)
+		}
+		if ev.Turn != 1 || ev.Round != 0 {
+			t.Fatalf("an agent line is filed at turn %d round %d, want turn 1 and no round: %q", ev.Turn, ev.Round, line)
+		}
+		states = append(states, ev.Agent.State)
+	}
+	if states[0] == subagent.StateDone.String() || states[0] == subagent.StateFailed.String() {
+		t.Errorf("the first line should be the child starting, got state %q", states[0])
+	}
+	if states[1] != subagent.StateDone.String() {
+		t.Errorf("the second line should be the child's end, got state %q", states[1])
 	}
 }
 

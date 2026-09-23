@@ -258,8 +258,16 @@ started doing something it should not.
 Every line carries its kind, where in the run it happened, and its payload:
 the answer arriving in pieces, a call the model asked for, what that call came
 back with, an approval verdict, one of the loop's own safeguards firing, the
-running totals, and a close line stating how the turn ended and the code the
-process is about to exit with.
+running totals, a child the run delegated to starting and ending, and a close
+line stating how the turn ended and the code the process is about to exit with.
+
+**A child is two `agent` lines: one as it starts, one as it ends.** They are
+the line a served session writes at every state change of a child, spelled the
+same way, and the second carries how the child ended in the record's own word.
+A script wants to know a child exists and how it came out; the changes between
+are for a client drawing lanes, which is what a served session is for. A child
+retried or spoken to again after it ended starts again, with a line of its
+own.
 
 **The words are the record's own.** A denial on the stream is spelled the way
 the metrics tables spell it; so is a failed call's class, a compaction, a

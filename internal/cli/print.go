@@ -326,6 +326,36 @@ func (h headlessObserver) inTurn(turn int64) headlessObserver {
 	return h
 }
 
+// childLives is what a `-p` run's stream is told about the children it
+// spawns: an agent line as each one starts and another as it ends, spelled as
+// a served session's are, so the child seams a hook is told about have a line
+// on every unattended stream to share their spelling with. The state changes
+// between are left to a served session, whose client draws lanes from them; a
+// script reading this stream wants to know a child exists and how it ended.
+// A child that is retried or spoken to again after it ended starts again.
+//
+// It is nil where the run streams nothing. The function is called from the one
+// goroutine that reads the supervisor's events, so the map needs no lock.
+// See docs/capabilities/headless.md#the-stream-is-the-record-as-it-happens.
+func (h headlessObserver) childLives(sup *subagent.Supervisor) func(subagent.Status) {
+	if h.stream == nil || sup == nil {
+		return nil
+	}
+	// live is absent for a child nothing has been written about, true for one
+	// whose start was written and false for one whose end was.
+	live := map[string]bool{}
+	return func(st subagent.Status) {
+		ended := st.State == subagent.StateDone || st.State == subagent.StateFailed
+		running, seen := live[st.Name]
+		if ended && seen && !running || !ended && running {
+			return
+		}
+		live[st.Name] = !ended
+		parent, _ := sup.Parent(st.Name)
+		h.stream.agent(childPos(h.at(0).Turn), agentLine(st, parent))
+	}
+}
+
 // signal records one of the loop's own safeguards firing, and puts it on the
 // stream under the same code. Every signal below goes through here, so a code
 // cannot reach one and not the other.
@@ -1189,7 +1219,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	// request and itself behind it. What this run's own calls wrote is where
 	// a landed patch is added, so the tree reading, the close gate and the
 	// git stager all see a child's work as this run's (subagents.go).
-	answerChildAsks(sup, opts.answered(), own.wrote, nil, nil)
+	answerChildAsks(sup, opts.answered(), own.wrote, nil, obs.childLives(sup))
 	// Three readers want that list — the tree check, as the subtrahend for
 	// what somebody else changed; the close run, to know whether this turn
 	// changed anything worth checking; and the git stager, which may stage
@@ -2576,10 +2606,9 @@ func (s *jsonlStream) compacted(at observe.Pos, n agent.CompactNotice) {
 		Trigger: hook.TriggerAuto, BeforePct: n.BeforePct, AfterPct: n.AfterPct})
 }
 
-// agent puts one child's state on the stream. It is the surface with a client
-// on it that writes these: a run printing to a terminal says the same thing in
-// the progress rows beside its output, and one nobody is watching has nobody
-// to say it to.
+// agent puts one child's state on the stream. A served session writes one at
+// every state change, because a client draws its lanes from them; a `-p` run
+// writes one as a child starts and one as it ends (childLives).
 // See docs/capabilities/headless.md#something-else-can-drive-it.
 func (s *jsonlStream) agent(at observe.Pos, a jsonAgent) {
 	if s == nil {

@@ -1209,9 +1209,9 @@ func answerChildAsk(ask *subagent.Ask, writes bool) bool {
 
 // answer is what a routed request is put to, or nil for the rule above; state
 // is told every child state change the supervisor reports, or nil where
-// nothing is watching. Both are the served session's: a run printing to a
-// terminal says a child's state in the progress rows beside its output and has
-// nobody to put a request to.
+// nothing is watching. An answerer is the served session's alone: a run
+// printing to a terminal has nobody to put a request to. A state reader is the
+// served session's and a `-p` run streaming events (childLives, print.go).
 func answerChildAsks(sup *subagent.Supervisor, writes bool, wrote func(...string),
 	answer func(*subagent.Ask) bool, state func(subagent.Status)) {
 	if sup == nil {
