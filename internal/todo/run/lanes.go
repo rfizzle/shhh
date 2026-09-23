@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/todo"
 )
 
@@ -137,12 +138,8 @@ func ParseLanes(text string) ([]Lane, error) {
 			if lanes[i].Name == lanes[j].Name {
 				return nil, fmt.Errorf("two lanes named %s", lanes[i].Name)
 			}
-			for _, a := range lanes[i].Paths {
-				for _, b := range lanes[j].Paths {
-					if pathsOverlap(a, b) {
-						return nil, fmt.Errorf("lanes %s and %s both claim %s", lanes[j].Name, lanes[i].Name, a)
-					}
-				}
+			if b, ok := subagent.ClaimOverlap(lanes[i].Paths, lanes[j].Paths); ok {
+				return nil, fmt.Errorf("lanes %s and %s both claim %s", lanes[j].Name, lanes[i].Name, b)
 			}
 		}
 	}
@@ -174,27 +171,6 @@ func validLanePath(p string) error {
 		return fmt.Errorf("path %q is the backlog", p)
 	}
 	return nil
-}
-
-// pathsOverlap is the supervisor's rule for two claims naming one file:
-// each claim reduced to the literal prefix before its first wildcard, and
-// a prefix that contains the other is an overlap.
-func pathsOverlap(a, b string) bool {
-	pa, pb := literalPrefix(a), literalPrefix(b)
-	return strings.HasPrefix(pa, pb) || strings.HasPrefix(pb, pa)
-}
-
-func literalPrefix(p string) string {
-	p = strings.TrimPrefix(strings.TrimSpace(p), "./")
-	if i := strings.IndexAny(p, "*?["); i >= 0 {
-		p = p[:i]
-		if j := strings.LastIndex(p, "/"); j >= 0 {
-			p = p[:j+1]
-		} else {
-			p = ""
-		}
-	}
-	return p
 }
 
 // AllLanesDone reports every lane's patch has landed.

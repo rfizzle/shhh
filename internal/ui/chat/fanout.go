@@ -217,6 +217,7 @@ func (m Model) childProgress(st subagent.Status) components.AgentProgress {
 	switch st.State {
 	case subagent.StateQueued:
 		p.State = components.FanoutQueued
+		p.Behind = st.WaitsOn
 	case subagent.StateBlocked:
 		p.State = components.FanoutBlocked
 	case subagent.StateIdle:
@@ -304,6 +305,7 @@ func (m Model) fanoutBlockFor(e entry) components.FanoutBlock {
 			Seeded:     st.Seeded,
 			Reseeds:    st.Reseeds,
 			Reseeding:  st.Reseeding,
+			Behind:     p.Behind,
 			Inherited:  p.Inherited,
 			Steers:     st.Steers,
 			Yours:      st.LaneSteers,

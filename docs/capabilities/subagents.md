@@ -120,6 +120,27 @@ start together are given their copies one at a time, because git making two
 copies of one repository at once can trip over its own half-written
 bookkeeping; only the making waits, and the children then work side by side.
 
+A writer can also wait for a file rather than for room. Two writers that
+declare overlapping paths are refused by default while both are live, because
+two patches over one file are two claims on the same lines and the second
+landing is the conflict. When an orchestrator hands a whole batch over at once,
+the spawn can instead say to wait for the claim: the writer is admitted like
+any other — a budget that could not start it is refused then, not when its
+turn comes — but holds no slot and no copy while it waits, and its lane reads
+`queued behind` the writer it follows. It starts once every overlapping writer
+spawned before it has finished, which is after that writer's patch has been
+landed or declined — or kept for you, where the writer stopped short — so its
+copy is taken from the tree with the earlier work already in it. Writers
+handed over in one round are put in order as they arrive, so two of them
+cannot both find the other absent and start together. Writers queued behind one claim start in the order they were
+spawned. Asking for its report says it has not started and why, rather than
+waiting on work nobody named; killing it drops it from the queue with nothing
+to keep. The default stays a refusal because an overlap the orchestrator did
+not expect is usually work divided along the wrong line, and queueing it would
+turn a mistake it could fix now into a serial run it did not ask for. A
+parallel sprint serialises two items the same way and by the same test, so a
+batch the session queues and one the backlog runner works are ordered alike.
+
 This changes what a child starts from and nothing about what comes back.
 Approval is still the only way anything reaches your checkout, the lane says
 how many of your files the child started from, and a checkout with nothing

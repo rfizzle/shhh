@@ -313,6 +313,14 @@ type Status struct {
 	// while its tree changes under it.
 	Held      bool
 	Reseeding bool
+	// WaitsOn names the writer a queued child's claim is waiting behind: it
+	// was spawned with wait_for_claim, its paths overlap that writer's, and
+	// it starts — with a copy of the tree as it stands then — once no writer
+	// spawned ahead of it claims a path its own claim meets. Empty for every
+	// other child, a slot-queued one included: that one waits for room, and
+	// this one for a file.
+	// See docs/capabilities/subagents.md#a-writer-starts-from-your-tree.
+	WaitsOn string
 	// FollowUp is the first words of the follow-up a finished child was
 	// handed and is working on now, and empty for every other child.
 	// TakesFollowUp is whether a finished child can still be spoken to —
@@ -1241,6 +1249,12 @@ type child struct {
 	landings  []landing
 	reseeding string
 	reseeds   int
+	// waitClaim is a writer spawned with wait_for_claim: its run waits for
+	// the writers ahead of it to release an overlapping claim before it takes
+	// a slot (awaitClaim), and waitsOn names the one it is waiting behind
+	// now, empty once it has none.
+	waitClaim bool
+	waitsOn   string
 }
 
 // landing is a patch that landed in the parent's checkout, and which writer
@@ -1354,6 +1368,7 @@ func (c *child) status() Status {
 		Inheritance:       c.inheritTokens,
 		Held:              c.heldOn != nil || c.reseeding != "",
 		Reseeding:         c.reseeding != "",
+		WaitsOn:           c.waitsOn,
 		FollowUp:          c.followUp,
 		TakesFollowUp:     c.state == StateDone && c.listening,
 	}
@@ -1881,6 +1896,16 @@ type Supervisor struct {
 	// has to be able to come back — every hold after the first would
 	// otherwise let the fan-out straight through.
 	held chan struct{}
+	// claimsFreed is closed and replaced whenever a child ends, which is
+	// when a claim can be released: a writer queued behind a claim
+	// (awaitClaim) wakes on it and asks again. Under mu.
+	claimsFreed chan struct{}
+	// claimMu is held by a writer's spawn from the moment it takes its place
+	// in spawn order until it is in the list the claim check reads. A
+	// round's calls run at once, so without it two writers handed over in
+	// one round would each check their claims before the other was there to
+	// be seen, and both would start over the same files.
+	claimMu sync.Mutex
 
 	wg        sync.WaitGroup
 	closeOnce sync.Once
@@ -1938,6 +1963,7 @@ func New(ctx context.Context, opts Options) *Supervisor {
 		counters:     map[Role]int{},
 		parentMode:   agent.ModeManual,
 		appliedFiles: map[string]string{},
+		claimsFreed:  make(chan struct{}),
 	}
 }
 
@@ -3370,6 +3396,10 @@ func (s *Supervisor) spawnFrom(caller string, raw json.RawMessage) (string, erro
 		}
 	}
 
+	if args.profile.Writes {
+		s.claimMu.Lock()
+		defer s.claimMu.Unlock()
+	}
 	s.mu.Lock()
 	if len(s.children) >= s.opts.MaxChildren {
 		s.mu.Unlock()
@@ -3415,9 +3445,24 @@ func (s *Supervisor) spawnFrom(caller string, raw json.RawMessage) (string, erro
 	// other's files — but two patches over the same file conflict when they
 	// land. A declared scope is refused up front rather than discovered at
 	// apply time.
+	//
+	// A spawn that asked to wait for the claim is queued behind it instead.
+	// It is still admitted below like any other, so a budget that could not
+	// start it is refused now rather than when the claim comes free; what it
+	// does not take until then is a slot and a copy of the tree.
+	// See docs/capabilities/subagents.md#a-writer-starts-from-your-tree.
+	waitsOn, waitsFor := "", ""
 	if args.profile.Writes {
 		if holder, claim, clash := s.claimConflict(args.paths); clash {
-			return "", fmt.Errorf("%s already claims %s, which overlaps this agent's paths; wait for it with agent_report, or narrow the paths so the two do not share files", holder, claim)
+			if !args.WaitForClaim {
+				return "", fmt.Errorf("%s already claims %s, which overlaps this agent's paths; wait for it with agent_report, or narrow the paths so the two do not share files", holder, claim)
+			}
+			// Named as the writer it follows rather than the first of the
+			// claims ahead of it, the way its lane goes on naming it.
+			waitsOn, waitsFor = holder, claim
+			if h, c, ok := s.claimAhead(args.paths, seq); ok {
+				waitsOn, waitsFor = h, c
+			}
 		}
 	}
 
@@ -3515,7 +3560,9 @@ func (s *Supervisor) spawnFrom(caller string, raw json.RawMessage) (string, erro
 		done:            make(chan struct{}),
 		steerWake:       make(chan struct{}, 1),
 		state:           StateQueued,
-		detail:          "queued",
+		detail:          queuedDetail(waitsOn),
+		waitClaim:       args.WaitForClaim && args.profile.Writes,
+		waitsOn:         waitsOn,
 		started:         time.Now(),
 		attempt:         1,
 		prices:          s.opts.Prices,
@@ -3552,6 +3599,9 @@ func (s *Supervisor) spawnFrom(caller string, raw json.RawMessage) (string, erro
 		} else {
 			note += " It declared no paths, so nothing stops a second writer from touching the same files — pass paths when you fan out writers."
 		}
+		if waitsOn != "" {
+			note += fmt.Sprintf(" It has not started: %s claims %s, and it waits behind that claim without a slot or a copy of the workspace, starting from the tree as it stands once the claim is released.", waitsOn, waitsFor)
+		}
 	}
 	// The evidence a review opened on, so the caller knows whether it is
 	// judging the change or looking for it. Declaring nothing is worth
@@ -3587,13 +3637,30 @@ func (s *Supervisor) spawnFrom(caller string, raw json.RawMessage) (string, erro
 // conflict; an undeclared claim conflicts with nothing (it is flagged at
 // patch time instead), so existing callers keep working.
 func (s *Supervisor) claimConflict(paths []string) (holder, claim string, conflict bool) {
+	return s.claimAhead(paths, 0)
+}
+
+// claimAhead is claimConflict asked on behalf of a writer queued behind a
+// claim: only the live writers spawned before seq count, so two writers
+// queued behind one claim wait in spawn order rather than each on the other,
+// and the one named is the nearest ahead — the writer it follows, which is
+// the one a lane saying whom it waits behind should name. A seq of zero
+// counts every live writer and names the earliest.
+func (s *Supervisor) claimAhead(paths []string, seq int) (holder, claim string, conflict bool) {
 	if len(paths) == 0 {
 		return "", "", false
 	}
 	s.mu.Lock()
-	kids := make([]*child, len(s.children))
-	copy(kids, s.children)
+	kids := make([]*child, 0, len(s.children))
+	for _, c := range s.children {
+		if seq == 0 || c.seq < seq {
+			kids = append(kids, c)
+		}
+	}
 	s.mu.Unlock()
+	if seq > 0 {
+		slices.Reverse(kids)
+	}
 	for _, c := range kids {
 		st := c.status()
 		if !c.profile.Writes || len(st.Paths) == 0 {
@@ -3608,15 +3675,86 @@ func (s *Supervisor) claimConflict(paths []string) (holder, claim string, confli
 		case StateDone, StateFailed:
 			continue
 		}
-		for _, theirs := range st.Paths {
-			for _, ours := range paths {
-				if pathsOverlap(ours, theirs) {
-					return st.Name, theirs, true
-				}
-			}
+		if theirs, ok := ClaimOverlap(paths, st.Paths); ok {
+			return st.Name, theirs, true
 		}
 	}
 	return "", "", false
+}
+
+// ClaimOverlap reports whether a declared path list meets one already held,
+// and the held path it meets. It is the one rule for two claims naming one
+// file, asked wherever work is taken beside other work: by the supervisor of
+// a writer's claim against every live writer's, and by a parallel sprint of
+// an item's paths against every running lane's — so a batch the session
+// queues and a sprint the runner serialises are ordered by the same test.
+// See docs/capabilities/subagents.md#a-writer-starts-from-your-tree.
+func ClaimOverlap(paths, held []string) (string, bool) {
+	for _, theirs := range held {
+		for _, ours := range paths {
+			if pathsOverlap(ours, theirs) {
+				return theirs, true
+			}
+		}
+	}
+	return "", false
+}
+
+// awaitClaim holds a writer spawned with wait_for_claim until no writer
+// spawned ahead of it claims a path its own claim meets, saying on its lane
+// whom it waits behind. It is asked before the slot, so a queued writer holds
+// neither a slot nor a copy of the tree while it waits, and the copy it is
+// given is the tree as it stands once the claim is released — the writer it
+// waited on has landed or declined its patch by then, since a writer ends
+// only after its patch has been answered, or has stopped with its patch kept
+// for the person, which a later landing carries in like any other. False is a writer cancelled or
+// killed while it waited.
+// See docs/capabilities/subagents.md#a-writer-starts-from-your-tree.
+func (s *Supervisor) awaitClaim(ctx context.Context, c *child) bool {
+	for {
+		// The signal is taken before the claims are read, so a release that
+		// lands after the read closes the channel the wait below holds.
+		s.mu.Lock()
+		freed := s.claimsFreed
+		s.mu.Unlock()
+		holder, _, clash := s.claimAhead(c.paths, c.seq)
+		c.mu.Lock()
+		moved := c.waitsOn != holder
+		c.waitsOn = holder
+		if moved {
+			c.detail = queuedDetail(holder)
+		}
+		c.mu.Unlock()
+		if moved {
+			s.emitUpdate(c)
+		}
+		if !clash {
+			return true
+		}
+		select {
+		case <-freed:
+		case <-ctx.Done():
+			return false
+		}
+	}
+}
+
+// releaseClaims wakes every writer queued behind a claim to ask again. It is
+// called wherever a child ends, which is the only time a claim is released.
+func (s *Supervisor) releaseClaims() {
+	s.mu.Lock()
+	close(s.claimsFreed)
+	s.claimsFreed = make(chan struct{})
+	s.mu.Unlock()
+}
+
+// queuedDetail is a queued child's lane word: behind the writer whose claim
+// it waits on, where it waits on one.
+func queuedDetail(behind string) string {
+	if behind == "" {
+		return "queued"
+	}
+	return "queued behind " + behind
 }
 
 // pathsOverlap reports whether two path claims can name the same file. Each
@@ -3704,6 +3842,9 @@ func (s *Supervisor) run(c *child) {
 			}
 		}
 		c.set(state, detail)
+		// An ending is a claim released, so a writer queued behind it asks
+		// again (awaitClaim).
+		s.releaseClaims()
 		ended = c.status()
 		// A follow-up that answers again is the same ending said twice, so
 		// only the first answer is filed; a follow-up that fails is an ending
@@ -3775,6 +3916,14 @@ func (s *Supervisor) run(c *child) {
 	// own ancestors — an ancestor blocked in agent_report waiting for this
 	// child would otherwise be holding the slot this child is waiting for.
 	// See docs/capabilities/subagents.md#a-wait-only-ever-points-down-the-tree.
+	// A writer that asked to wait for an overlapping claim waits for it
+	// first, ahead of the slot: what it is waiting for is a file, and a slot
+	// held through that wait is one a writer with nothing in its way cannot
+	// have.
+	if c.waitClaim && !s.awaitClaim(ctx, c) {
+		finish(StateFailed, observe.ChildCancelled, "cancelled")
+		return
+	}
 	sem := s.slots(c.depth)
 	holding := false
 	defer func() {
@@ -5385,6 +5534,12 @@ func (s *Supervisor) report(caller string, raw json.RawMessage) (string, error) 
 		if i := firstFinished(kids); i >= 0 {
 			return collected(kids, i), nil
 		}
+		// A wait on nothing but writers queued behind a claim would wait for
+		// the agents they are queued behind as well, which the caller did not
+		// name, so it answers now with where each one stands.
+		if notStarted(kids) {
+			return queuedAnswer(kids), nil
+		}
 		if pending {
 			return wokenBySteer(kids), nil
 		}
@@ -5451,6 +5606,31 @@ func collected(kids []*child, i int) string {
 		if j != i {
 			sb.WriteString("\n" + standingLine(c.status()))
 		}
+	}
+	return sb.String()
+}
+
+// notStarted reports every named child a writer queued behind a claim.
+func notStarted(kids []*child) bool {
+	for _, c := range kids {
+		if st := c.status(); st.State != StateQueued || st.WaitsOn == "" {
+			return false
+		}
+	}
+	return true
+}
+
+// queuedAnswer is what a wait on writers queued behind claims answers: a
+// named one's own report text, which says it has not started and why, or a
+// line for each of several.
+func queuedAnswer(kids []*child) string {
+	if len(kids) == 1 {
+		return kids[0].reportText()
+	}
+	var sb strings.Builder
+	sb.WriteString("None of the agents you named has started: each waits behind another writer's claim. Wait on the writers they are queued behind instead.")
+	for _, c := range kids {
+		sb.WriteString("\n" + standingLine(c.status()))
 	}
 	return sb.String()
 }
@@ -5760,6 +5940,8 @@ func (c *child) reportText() string {
 		formatTokens(st.Tokens.Inherited), formatTokens(st.Tokens.Setup), formatTokens(st.Tokens.Tools),
 		formatTokens(st.Tokens.Analysis), formatTokens(st.Tokens.Handoff))
 	switch {
+	case st.State == StateQueued && st.WaitsOn != "":
+		fmt.Fprintf(&sb, "It has not started: its paths overlap the claim %s holds, and it starts from the tree as it stands once that claim is released. To wait for it, wait on %s first.", st.WaitsOn, st.WaitsOn)
 	case st.State == StateFailed && report == "":
 		sb.WriteString("The agent did not finish; no final report was produced. Its durable handoff retains the completed activity.")
 	case report == "":

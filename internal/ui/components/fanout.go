@@ -85,6 +85,11 @@ type AgentProgress struct {
 	// at the same boundary either way, and the word says which of the two
 	// stopped it (docs/capabilities/subagents.md#a-writer-starts-from-your-tree).
 	Reseeding bool
+	// Behind names the writer a queued child waits behind: it asked to wait
+	// for a claim that writer holds, rather than for a slot. It is only read
+	// beside FanoutQueued, and it is what the word says instead of the bare
+	// "queued" (docs/capabilities/subagents.md#a-writer-starts-from-your-tree).
+	Behind string
 	// Planned marks Step and Steps as the child's own plan — steps it named
 	// and marks done itself — rather than a count the spawn declared, and
 	// StepTitle is the step it is on. A plan is stated in words, `3 of 7
@@ -196,6 +201,8 @@ type FanoutLane struct {
 	// carried in now (AgentProgress.Reseeding).
 	Reseeds   int
 	Reseeding bool
+	// Behind is the writer a queued child waits behind (AgentProgress.Behind).
+	Behind string
 	// Inherited is the child's inherited turns in tokens, carried to the
 	// progress the lane and the manager's row both draw.
 	Inherited int64
@@ -411,6 +418,9 @@ func (p AgentProgress) progress() string {
 	case FanoutBlocked:
 		return sty.Err.Render("⚠ needs you")
 	case FanoutQueued:
+		if p.Behind != "" {
+			return sty.Dim.Render("queued behind " + p.Behind)
+		}
 		return sty.Dim.Render("queued")
 	case FanoutIdle:
 		return sty.Dim.Render("idle")
@@ -521,7 +531,7 @@ func (p AgentProgress) outcomeField() string {
 func (l FanoutLane) progressOf() AgentProgress {
 	return AgentProgress{State: l.State, Step: l.Step, Steps: l.Steps,
 		Tools: l.Tools, Spend: l.Spend, Frame: l.Frame,
-		ReportVerdict: l.ReportVerdict, Inherited: l.Inherited, Reseeding: l.Reseeding,
+		ReportVerdict: l.ReportVerdict, Inherited: l.Inherited, Reseeding: l.Reseeding, Behind: l.Behind,
 		Planned: l.Planned, StepTitle: l.StepTitle, BudgetPct: l.BudgetPct}
 }
 

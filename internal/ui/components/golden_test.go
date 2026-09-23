@@ -1280,6 +1280,11 @@ func TestGolden_AgentList(t *testing.T) {
 		reseeding := append([]AgentRow{}, rows...)
 		reseeding[2] = AgentRow{State: AgentRunning, Name: "writer-1", Task: "docs/loop.md",
 			Progress: progress(AgentProgress{State: FanoutHeld, Reseeding: true, Tools: 6, Spend: "$0.02"})}
+		// A writer spawned to wait for a claim another writer holds: no slot
+		// and no copy yet, and the row names whom it waits behind.
+		queued := append([]AgentRow{}, rows...)
+		queued[2] = AgentRow{State: AgentRunning, Name: "writer-3", Task: "docs/loop.md",
+			Progress: progress(AgentProgress{State: FanoutQueued, Behind: "writer-2"})}
 		// A writer counting its own plan: the steps it named and marked, the
 		// share of its budget beside them, and the step it is on after its
 		// task where the card has room for it — the first thing to go.
@@ -1312,6 +1317,8 @@ func TestGolden_AgentList(t *testing.T) {
 				View: (&AgentList{Rows: inheriting, Focus: 2}).View(width)},
 			{Label: "a writer reseeding · parked while another's landed patch is carried into its copy",
 				View: (&AgentList{Rows: reseeding, Focus: 2}).View(width)},
+			{Label: "a writer queued behind a claim · no slot and no copy until the writer it overlaps is done",
+				View: (&AgentList{Rows: queued, Focus: 2}).View(width)},
 			{Label: "a writer on its own plan · its steps and its budget's share, and the step it is on where there is room",
 				View: (&AgentList{Rows: planned, Focus: 2}).View(width)},
 		}
@@ -1455,6 +1462,17 @@ func TestGolden_FanoutBlock(t *testing.T) {
 					BudgetPct: 12, Tools: 4, Spend: "$0.01", Elapsed: "58s", Frame: 2},
 			},
 		}
+		// Three writers handed over at once over one file: the first runs and
+		// the other two wait in spawn order, each naming the writer it follows.
+		claimed := FanoutBlock{
+			Elapsed: "31s",
+			Lanes: []FanoutLane{
+				{State: FanoutRunning, Name: "writer-1", Task: "docs/loop.md",
+					Tools: 5, Spend: "$0.02", Elapsed: "31s", Frame: 2},
+				{State: FanoutQueued, Name: "writer-2", Task: "docs/loop.md", Elapsed: "31s", Behind: "writer-1"},
+				{State: FanoutQueued, Name: "writer-3", Task: "docs/loop.md", Elapsed: "31s", Behind: "writer-2"},
+			},
+		}
 		return []golden.Panel{
 			{Label: "mid-flight · one child is waiting on you, the session's spawn count on the header", View: flight.View(width)},
 			{Label: "settled · one lane open on its report, one carrying a verdict, and no spawn count once nothing is live", View: settled.View(width)},
@@ -1462,6 +1480,7 @@ func TestGolden_FanoutBlock(t *testing.T) {
 			{Label: "held · two children parked where you stopped them", View: held.View(width)},
 			{Label: "a child that delegated · its lane says how many are under it", View: nested.View(width)},
 			{Label: "writers on their own plans · steps in words and the budget's share, never one bar", View: planned.View(width)},
+			{Label: "writers queued behind a claim · each waits for the writer it overlaps, in spawn order", View: claimed.View(width)},
 		}
 	})
 }

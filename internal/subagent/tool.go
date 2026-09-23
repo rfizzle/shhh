@@ -99,7 +99,8 @@ func Definitions(profiles Profiles) []provider.Tool {
 					"max_rounds": {"type": "integer", "description": "Optional: make the agent pause every N tool rounds to take stock — what it has done, what is left, what it is doing next — before carrying on with a larger budget. Omitted (the default) it runs to completion without pausing, which is what you want for most tasks. Pass it for long open-ended work where an agent quietly drifting off the task would otherwise go unnoticed. It is a pacing choice, not a limit: it never stops the agent, and the token budget is what bounds it."},
 					"max_tokens": {"type": "integer", "description": "Optional token budget (default 1200000, what one writer measured on one backlog item; minimum 200000 before prompt admission; at most 2400000). It counts new tokens — the part of each prompt the provider did not serve from its cache, plus the completion. It must cover the admission floor: the inherited prompt and tool definitions, the declared task, the inherited turns where any, and the context the first turn opens on (review evidence, a resume or retry prologue), plus a 200000-token working reserve; a spawn or retry under it is refused with that floor stated."},
 					"resume_handoff": {"type": "string", "description": "Optional opaque handoff handle from a failed child. The replacement keeps that handoff's original task and declared scope, and receives only its bounded verified context."},
-					"inherit": {"type": "integer", "minimum": 0, "description": "Optional number of your most recent turns to hand the agent ahead of its task: your user's words and yours whole, tool results elided to ids it can read back. Pass it for a subtask of the work in hand, where the agent should read what you read rather than your summary of it — a review of the change you just made, a check of a conclusion you just reached. Leave it out (0, the default unless the role sets one) for a wide independent hunt: an agent that starts from its task alone is cheaper, and the turns count against its budget. It is a count of turns, not of bytes."}
+					"inherit": {"type": "integer", "minimum": 0, "description": "Optional number of your most recent turns to hand the agent ahead of its task: your user's words and yours whole, tool results elided to ids it can read back. Pass it for a subtask of the work in hand, where the agent should read what you read rather than your summary of it — a review of the change you just made, a check of a conclusion you just reached. Leave it out (0, the default unless the role sets one) for a wide independent hunt: an agent that starts from its task alone is cheaper, and the turns count against its budget. It is a count of turns, not of bytes."},
+					"wait_for_claim": {"type": "boolean", "description": "Optional, for an agent that changes files: when its paths overlap a writer that is still running, queue it behind that writer instead of refusing the spawn. It then holds no slot and no copy of the workspace until every overlapping claim spawned before it is released, and starts from the tree as it stands then, with the earlier writer's patch already landed or declined. Pass it when you hand a whole batch of writers over at once and some of them touch the same files. Leave it out (false, the default) otherwise, and never add it to retry a spawn that was refused for overlapping: that refusal is telling you the work was split along the wrong line."}
 				},
 				"required": ["role", "task"]
 			}`),
@@ -209,6 +210,9 @@ type spawnArgs struct {
 	// lowers a profile's default to nothing, and one that says nothing takes
 	// the default.
 	Inherit *int `json:"inherit"`
+	// WaitForClaim queues a writer whose paths overlap a live writer's
+	// behind that claim instead of refusing it.
+	WaitForClaim bool `json:"wait_for_claim"`
 
 	role          Role
 	profile       Profile
@@ -276,6 +280,12 @@ func parseSpawnArgs(profiles Profiles, raw json.RawMessage) (spawnArgs, error) {
 	// had scoped something.
 	if !profile.Writes && !profile.Reviews && len(args.paths) > 0 {
 		return args, fmt.Errorf("paths apply to agents that change files or review them; a %s does neither", args.role)
+	}
+	// Only a writer claims anything, so only a writer can wait for a claim;
+	// a caller told nothing would believe it had ordered agents that were
+	// never going to meet.
+	if args.WaitForClaim && !profile.Writes {
+		return args, fmt.Errorf("wait_for_claim applies to agents that change files; a %s claims nothing, so there is nothing for it to wait behind", args.role)
 	}
 	// A step count outside the useful range is dropped rather than clamped:
 	// the lane's rule is that a denominator nobody supplied is not invented,

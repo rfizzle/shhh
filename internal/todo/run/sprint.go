@@ -24,6 +24,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/todo"
 )
 
@@ -329,15 +330,12 @@ func (s *Sprint) drained(word, why string) {
 }
 
 // overlapsLane reports a declared path list meeting a running lane's, by the
-// rule a fan-out's lanes are held disjoint by (pathsOverlap).
+// rule a session's writers are queued by (subagent.ClaimOverlap): a sprint
+// serialises two items the way a session queues two writers.
 func (s *Sprint) overlapsLane(paths []string) bool {
 	for _, l := range s.Lanes {
-		for _, a := range l.Paths {
-			for _, b := range paths {
-				if pathsOverlap(a, b) {
-					return true
-				}
-			}
+		if _, ok := subagent.ClaimOverlap(paths, l.Paths); ok {
+			return true
 		}
 	}
 	return false

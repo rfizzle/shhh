@@ -72,6 +72,12 @@
     the round cap is a pause
    ◇ agent   reader-3 · survey internal/ui                  ⠹ working · 12% of budget · 4 tools · $0.01    58s
 
+· writers queued behind a claim · each waits for the writer it overlaps, in spawn order
+◇ fan-out    3 agents                                                                         3 running    31s
+   ◇ agent   writer-1 · docs/loop.md                                        ⠹ working · 5 tools · $0.02    31s
+   ◇ agent   writer-2 · docs/loop.md                                             queued behind writer-1    31s
+   ◇ agent   writer-3 · docs/loop.md                                             queued behind writer-2    31s
+
 ── ansi ────────────────────────────────────────────────────
 · mid-flight · one child is waiting on you, the session's spawn count on the header
 ␛[38;5;254m◇␛[m ␛[38;5;254mfan-out␛[m    ␛[38;5;244m4 agents · 4 of 32 spawned␛[m                                         ␛[38;5;254m1 needs you␛[m␛[38;5;244m · ␛[m␛[38;5;254m2 running␛[m  ␛[38;5;244m1m12s␛[m
@@ -134,3 +140,9 @@
    ␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mwriter-2␛[m␛[38;5;244m · internal/agent/round.go␛[m       ␛[38;5;254m✓ 5 of 7 steps␛[m␛[38;5;244m · ␛[m␛[38;5;244m63% of budget␛[m␛[38;5;244m · ␛[m␛[38;5;244m19 tools · $0.06␛[m  ␛[38;5;244m1m52s␛[m
     ␛[38;5;244mthe round cap is a pause␛[m
    ␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mreader-3␛[m␛[38;5;244m · survey internal/ui␛[m                  ␛[38;5;254m⠹ working␛[m␛[38;5;244m · ␛[m␛[38;5;244m12% of budget␛[m␛[38;5;244m · ␛[m␛[38;5;244m4 tools · $0.01␛[m    ␛[38;5;244m58s␛[m
+
+· writers queued behind a claim · each waits for the writer it overlaps, in spawn order
+␛[38;5;254m◇␛[m ␛[38;5;254mfan-out␛[m    ␛[38;5;244m3 agents␛[m                                                                         ␛[38;5;254m3 running␛[m    ␛[38;5;244m31s␛[m
+   ␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mwriter-1␛[m␛[38;5;244m · docs/loop.md␛[m                                        ␛[38;5;254m⠹ working␛[m␛[38;5;244m · ␛[m␛[38;5;244m5 tools · $0.02␛[m    ␛[38;5;244m31s␛[m
+   ␛[38;5;244m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mwriter-2␛[m␛[38;5;244m · docs/loop.md␛[m                                             ␛[38;5;244mqueued behind writer-1␛[m    ␛[38;5;244m31s␛[m
+   ␛[38;5;244m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mwriter-3␛[m␛[38;5;244m · docs/loop.md␛[m                                             ␛[38;5;244mqueued behind writer-2␛[m    ␛[38;5;244m31s␛[m
