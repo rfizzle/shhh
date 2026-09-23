@@ -1,7 +1,9 @@
 package agent
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"testing"
 	"time"
 
@@ -47,5 +49,50 @@ func TestHeadlessRun_ProgressCheckpointDoesNotPolluteTextCallback(t *testing.T) 
 	}
 	if text != "answer" {
 		t.Fatalf("text callback = %q, want final answer only", text)
+	}
+}
+
+// A checkpoint's status is buffered until the response says what it leads,
+// so a round interrupted after writing it has shown it nowhere. The words the
+// conversation keeps reach the feed as status, and never as the answer.
+func TestHeadlessRun_AnInterruptedCheckpointKeepsItsStatus(t *testing.T) {
+	call := provider.ToolCall{ID: "one", Name: "read_file", Arguments: `{}`}
+	var h *Headless
+	n := 0
+	stream := func([]provider.Message, string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		n++
+		ch := make(chan provider.StreamEvent)
+		ctx, cancel := context.WithCancel(context.Background())
+		first := n == 1
+		go func() {
+			defer close(ch)
+			if first {
+				ch <- provider.StreamEvent{ToolCalls: []provider.ToolCall{call}}
+				return
+			}
+			ch <- provider.StreamEvent{Token: "status"}
+			h.Interrupt()
+			<-ctx.Done()
+		}()
+		return ch, cancel, nil
+	}
+	a := New(nil, stream)
+	a.SetProgressIntervals(1, time.Hour)
+	a.SetExecutor(func(string, json.RawMessage) (string, error) { return "ok", nil })
+	var progress []string
+	var text string
+	h = &Headless{
+		Agent:      a,
+		OnProgress: func(s string) { progress = append(progress, s) },
+		OnText:     func(s string) { text += s },
+	}
+	if _, err := h.Run("investigate"); !errors.Is(err, ErrInterrupted) {
+		t.Fatalf("err = %v, want ErrInterrupted", err)
+	}
+	if len(progress) != 1 || progress[0] != "status" {
+		t.Fatalf("progress = %#v, want the buffered status", progress)
+	}
+	if text != "" {
+		t.Fatalf("text callback = %q, want nothing: an interrupted turn has no answer", text)
 	}
 }

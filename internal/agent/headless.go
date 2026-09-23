@@ -316,6 +316,14 @@ func (h *Headless) Run(prompt string) (string, error) {
 			// from an aborted stream are dropped whole so no assistant message
 			// is ever owed results. CancelTurn fences off the run either way.
 			if len(calls) == 0 && text != "" {
+				// A checkpoint's status was buffered rather than streamed, so
+				// nothing has shown it yet; the words kept here reach the feed
+				// as the status they are before the turn is fenced off. It is
+				// not an answer — the turn has none — so it goes to OnProgress
+				// and never to OnText.
+				if progressPending && h.OnProgress != nil {
+					h.OnProgress(text)
+				}
 				h.Agent.Append(provider.Message{Role: provider.RoleAssistant, Content: text})
 			}
 			h.Agent.CancelTurn()
