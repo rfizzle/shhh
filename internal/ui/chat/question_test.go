@@ -1182,10 +1182,11 @@ func askedAt(t *testing.T, width int, args string) Model {
 
 const confirmArgs = `{"question":"Should the migration be reversible?","shape":"confirm"}`
 
-// A yes-or-no asks for one keystroke, so it costs the reader nothing else:
-// the rail keeps its columns, the transcript keeps its pane and the frame
-// stays under the card with the vitals on it. Every shape that has something
-// to show takes the screen, because that is what the width is for.
+// A yes-or-no asks for one keystroke and a free answer for one line, so
+// neither costs the reader anything else: the rail keeps its columns, the
+// transcript keeps its pane and the frame stays under the card with the
+// vitals on it. Every shape that has something to show takes the screen,
+// because that is what the width is for.
 func TestQuestion_OnlyTheOneAnswerShapeKeepsTheCockpit(t *testing.T) {
 	const tabbed = `{"questions":[
 		{"question":"Should the migration be reversible?","shape":"confirm"},
@@ -1201,7 +1202,8 @@ func TestQuestion_OnlyTheOneAnswerShapeKeepsTheCockpit(t *testing.T) {
 		{"a list to pick from", chooseArgs, false},
 		{"a list to tick", `{"question":"Which packages?","shape":"choose_many","options":[
 			{"label":"internal/agent"},{"label":"internal/cli"}]}`, false},
-		{"a free answer", text, false},
+		{"a free answer", text, true},
+		{"a free answer with a required note", `{"question":"What should the flag be called?","shape":"text","note":"required"}`, true},
 		{"two questions on tabs", tabbed, false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -1242,6 +1244,45 @@ func TestQuestion_TheOneAnswerCardRidesAboveTheFrame(t *testing.T) {
 	}
 	if lines := strings.Split(view, "\n"); len(lines) != 40 {
 		t.Errorf("the surface should fill the terminal exactly once, got %d rows", len(lines))
+	}
+}
+
+// A free answer's field grows with the sentence the way the draft does, and
+// the card keeps the cockpit only while it fits the panel's bound: a sentence
+// that has become a paragraph takes the screen like any card that needs the
+// room, and gives it back when it is cut down again.
+func TestQuestion_AFreeAnswerTakesTheScreenOnlyPastThePanelBound(t *testing.T) {
+	m := askedAt(t, 144, `{"question":"What should the flag be called?","shape":"text"}`)
+	field := &m.question.sel.Note
+	rows := func() int { _ = m.questionLines(); return field.Height() }
+	if got := rows(); got != 1 {
+		t.Fatalf("an empty answer should cost one row of field, got %d", got)
+	}
+	field.SetValue("max-rounds\nand a second line")
+	if got := rows(); got != 2 {
+		t.Errorf("a second line should grow the field a row, got %d", got)
+	}
+	if !m.questionInline() {
+		t.Fatal("a two-line answer fits the panel, so the card should keep the cockpit")
+	}
+	field.SetValue(strings.Repeat("a line of the answer\n", 30))
+	if got, ceiling := rows(), m.draftMaxRows(); got != ceiling {
+		t.Errorf("the field should stop at the draft's ceiling, %d rows, got %d", ceiling, got)
+	}
+	if m.questionInline() || !m.inspectorHidden() || m.frameShowing() {
+		t.Error("a card grown past the panel's bound should take the screen")
+	}
+	p := m.panel()
+	if p.lines == nil {
+		t.Fatal("a card that took the screen should be the panel, not ride above the frame")
+	}
+	if p.height < len(p.lines) || !strings.Contains(strings.Join(p.lines, "\n"), "confirm") {
+		t.Errorf("a card that took the screen for its room should keep its key row: %d rows in %d",
+			len(p.lines), p.height)
+	}
+	field.SetValue("max-rounds")
+	if !m.questionInline() || m.inspectorHidden() {
+		t.Error("cut back to one line, the card should give the screen back")
 	}
 }
 

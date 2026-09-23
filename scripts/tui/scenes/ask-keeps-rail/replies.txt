@@ -1,9 +1,9 @@
 # One reply per request. The last line repeats once these run out.
 #
 # A turn with something in it first, so the rail beside the card has a reading
-# to hold: a step, the files it read, and the spend it cost. Then the two
+# to hold: a step, the files it read, and the spend it cost. Then the three
 # shapes this scene is for — the yes-or-no, which keeps the surface behind it,
-# and the pick-one, which takes it
+# the pick-one, which takes it, and the free answer, which keeps it again
 # (docs/interface/surfaces.md#the-question-card). Nothing here acts on the
 # machine: a question is a decision and not an act.
 Reading the round accounting first
@@ -13,4 +13,6 @@ I have one fork I cannot settle on my own.
 tool:ask:{"question":"Should the migration be reversible?","shape":"confirm"}
 And one more, which is a list rather than a yes or no.
 tool:ask:{"question":"Which store should the cache use?","shape":"choose","options":[{"label":"SQLite","detail":"in the checkout already","field":"3 files","recommended":true},{"label":"Postgres","detail":"one more service to run","field":"9 files"}]}
-Thank you, that settles both.
+And a name for it, in your own words.
+tool:ask:{"question":"What should the flag be called?","shape":"text"}
+Thank you, that settles all three.

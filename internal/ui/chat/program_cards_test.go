@@ -331,3 +331,30 @@ func TestProgram_AYesOrNoQuestionTakesItsLetter(t *testing.T) {
 	frame := finalFrame(t, tm)
 	frameHas(t, frame, "Reversible it is.")
 }
+
+// A free answer that lands on an empty draft takes the keyboard into its
+// field while the rail stays up beside it, and what is typed there is the
+// answer the model reads back.
+func TestProgram_AFreeAnswerIsTypedBesideTheRail(t *testing.T) {
+	hold, release := quietHold(t)
+	m, p := scriptedSession(
+		programTurn{hold: hold, calls: []provider.ToolCall{call("q1", ask.ToolName, `{"question":"What should the flag be called?","shape":"text"}`)}},
+		programTurn{text: "max-rounds it is."},
+	)
+	tm := runProgramAt(t, m.WithAsk(), 130, 40)
+
+	send(tm, "fix the round limit")
+	release()
+	waitForText(t, tm, "What should the flag be called?")
+	// The rail's own heading, drawn with the card up: a card that took the
+	// screen would have taken the rail with it.
+	waitForText(t, tm, "CONTEXT")
+	programPress(t, tm, "m", "a", "x", "enter")
+	waitForText(t, tm, "max-rounds it is")
+
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if len(p.asked) < 2 || !strings.Contains(p.asked[1].Content, `"max"`) {
+		t.Fatalf("the typed sentence should be the answer the model reads: %+v", p.asked)
+	}
+}

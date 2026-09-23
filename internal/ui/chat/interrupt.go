@@ -81,9 +81,10 @@ func (m Model) decisionGated() bool { return m.interruptShowing() && m.decisionH
 // from under it.
 //
 // One decision rides while it holds the keyboard as well — the one-answer
-// question (questionInline). A card the reader answers with a single key has
-// nothing to spend the width on, and taking the screen for it costs them the
-// rail, the vitals and the reading behind it for the length of a keystroke.
+// question (questionInline). A card the reader answers with a single key or a
+// single line has nothing to spend the width on, and taking the screen for it
+// costs them the rail, the vitals and the reading behind it for the length of
+// the answer.
 // The rule between the card and the frame is what keeps that honest: it names
 // whichever of the two the keyboard is in, so a frame that is still drawn is
 // never mistaken for one that is still live

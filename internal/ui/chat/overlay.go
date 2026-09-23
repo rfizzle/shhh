@@ -202,11 +202,13 @@ func buildOverlays() map[state]*mode {
 		// takes the confirm card's bound rather than the plan card's
 		// headroom, because a question's answers are shorter than a plan's
 		// steps and it has no reason to leave the forty per cent
-		// (docs/interface/principles.md#one-interaction-panel).
+		// (docs/interface/principles.md#one-interaction-panel) — except the
+		// free answer that has grown past it, which is why it took the
+		// screen (questionPanelBound).
 		stateQuestion: {
 			place: placeFloating,
 			lines: panelRows((Model).questionPanelLines),
-			bound: (Model).confirmPanelBound,
+			bound: (Model).questionPanelBound,
 			keys:  (Model).updateQuestion,
 		},
 

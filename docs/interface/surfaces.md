@@ -1798,15 +1798,26 @@ read behind the question. That holds once the card has the keyboard too: the
 frame does not go away, and the rule between the two names the card as the
 surface holding it, which is the whole of what the reader needs told.
 
+A free answer rides the same way, because a sentence has no more to show than a
+keystroke does: one field under the question, and nothing beside it that the
+width would buy. The field grows with what is typed into it the way [the
+draft](#the-input-frame) grows — a row at a time from the one it opens on, up
+to the draft's own ceiling, past which it scrolls inside itself — so a
+one-line answer costs one row. The card takes the screen only once it has
+grown past the forty percent the panel is allowed, which is the point where the
+answer has stopped being a line and become something to read, and there it has
+the headroom the plan card has, so the room it took the
+screen for is room it gets. Cut back under the forty percent, the card gives
+the screen back.
+
 Every other shape takes the screen. A list needs the width for its
-descriptions and its short fields, a sheet of tabs needs it for the strip, a
-free answer is a sentence being written and wants the room a sentence wants,
-and [an approval](#the-approval-card) needs it for the rows that say what is
-about to happen to the machine — so each of those keeps the whole surface for
-as long as it is up, and the rail, the frame and the reading behind them are
-what pays for it. The line between the two is what this card is for: a question
-that costs a keystroke must not cost the cockpit, and one that has to be read
-costs what reading it takes.
+descriptions and its short fields, a sheet of tabs needs it for the strip, and
+[an approval](#the-approval-card) needs it for the rows that say what is about
+to happen to the machine — so each of those keeps the whole surface for as
+long as it is up, and the rail, the frame and the reading behind them are what
+pays for it. The line between the two is what this card is for: a question
+that costs a keystroke or a line must not cost the cockpit, and one that has
+to be read costs what reading it takes.
 
 Esc leaves the card and answers nothing. The question is held, the notice
 rail counts it — *1 question waiting* — and the next message the reader sends

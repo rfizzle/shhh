@@ -3883,10 +3883,14 @@ func TestGolden_QuestionCard(t *testing.T) {
 		// transcript is still in its pane, and the frame is still under the
 		// card with the vitals on it. None of that can be seen in a capture
 		// of the card alone, and the pick-one beside it is the same terminal
-		// with the same question in a shape that does take the screen.
+		// with the same question in a shape that does take the screen. The
+		// free answer keeps the surface too: one line of answer needs no
+		// more width than one key does.
 		return append(panels,
 			golden.Panel{Label: "yes or no · the whole surface, which the card leaves standing",
 				View: cockpit(confirm)},
+			golden.Panel{Label: "a free answer · the whole surface, which a one-line field leaves standing",
+				View: cockpit(`{"question":"What should the flag be called?","shape":"text"}`)},
 			golden.Panel{Label: "pick one · the same terminal, and the card has all of it",
 				View: cockpit(choose)})
 	})

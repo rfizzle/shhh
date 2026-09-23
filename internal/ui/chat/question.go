@@ -313,6 +313,13 @@ func (m *Model) questionPage(q ask.Question, sheet *questionSheet) *questionCard
 		c.sel.Require = true
 		c.sel.Select.CancelLabel = questionWayOut
 		c.sel.Actions = c.offers()
+		// The field grows with the sentence the way the draft box does, a
+		// row at a time from the one it opens on, so a one-line answer
+		// costs one row and a paragraph is read whole rather than through
+		// a one-row slot. Its ceiling is set where the card is drawn,
+		// because it moves with the terminal (questionCardLines).
+		c.sel.Note.DynamicHeight = true
+		c.sel.Note.MinHeight = minDraftRows
 		c.armNote()
 	}
 	if q.Note == ask.NoteRequired {
@@ -509,23 +516,55 @@ func (c *questionCard) refuseNote() {
 	c.openNote()
 }
 
-// questionInline reports the question that keeps the cockpit: the yes-or-no,
-// alone on its card. It is one row of answer with a field under it, so it
-// asks for none of the width the surface behind it is using — and it rides
-// above the frame whether or not it holds the keyboard, rather than taking
-// the screen the way every other decision does (inspector.go, frame.go).
+// questionInline reports the question that keeps the cockpit: the yes-or-no
+// or the free answer, alone on its card. Each is one answer with a field
+// under it, so it asks for none of the width the surface behind it is using —
+// and it rides above the frame whether or not it holds the keyboard, rather
+// than taking the screen the way every other decision does (inspector.go,
+// frame.go).
 //
-// The shape is what decides it and not the height. A list is wide because its
-// rows carry descriptions and short fields, a sheet of tabs is wide because
-// the strip has to say where the reader is among the questions, and an
-// approval is wide because what it is about to do to the machine is written
-// out on it. A yes-or-no has none of that to show, so the reader who came to
-// press one key keeps the rail, the vitals and the transcript they were
-// reading while they press it
+// The shape decides it first. A list is wide because its rows carry
+// descriptions and short fields, a sheet of tabs is wide because the strip
+// has to say where the reader is among the questions, and an approval is wide
+// because what it is about to do to the machine is written out on it. A
+// yes-or-no and a sentence have none of that to show, so the reader who came
+// to press one key or type one line keeps the rail, the vitals and the
+// transcript they were reading while they do it.
+//
+// The free answer's height decides it second, because a sentence is the one
+// answer that grows: its field grows the way the draft does, and a card that
+// has grown past the panel's bound is no longer one line of answer, so it
+// takes the screen like any card that needs the room
 // (docs/interface/surfaces.md#the-question-card).
 func (m Model) questionInline() bool {
 	c := m.question
-	return m.state == stateQuestion && c != nil && c.sheet == nil && c.conf != nil
+	if m.state != stateQuestion || c == nil || c.sheet != nil {
+		return false
+	}
+	if c.conf != nil {
+		return true
+	}
+	// Measured at the content width without asking columns() for it: the
+	// split is what this answer decides, so reading the split to reach it
+	// would ask the question of itself. The card spans the whole content
+	// either way, so the two widths are one.
+	width := max(m.width-horizontalPadding*2, 0)
+	return c.freeAnswer() && len(m.questionCardLines(c, width)) <= m.maxConfirmPanelHeight()
+}
+
+// questionPanelBound is how tall the card may grow once it has the screen.
+// Every dressing keeps the confirm card's forty per cent, except the free
+// answer: while it fits that bound it rides above the frame and the panel is
+// not its own (questionInline), so it only ever has the panel once it has
+// grown past it — and a card that took the screen for its room and was then
+// cut back to the bound it outgrew would lose its own key row off the bottom.
+// It gets the plan card's headroom instead, which the field's ceiling
+// (draftMaxRows) keeps it inside.
+func (m Model) questionPanelBound() int {
+	if c := m.question; c != nil && c.sheet == nil && c.freeAnswer() {
+		return m.planPanelBound() + m.pendingQueue.Rows() + m.gatedExtraRows()
+	}
+	return m.confirmPanelBound()
 }
 
 // questionPanelLines is the card in the bottom panel, dressed with the rail
@@ -545,7 +584,14 @@ func (m Model) questionLines() []string {
 		return nil
 	}
 	width := m.contentWidth()
-	lines := m.pendingQueue.View(width)
+	return append(m.pendingQueue.View(width), m.questionCardLines(c, width)...)
+}
+
+// questionCardLines is the card without the queue strip above it. The strip
+// is context for the decision and is paid for outside the card's own bound
+// (confirmPanelBound), so this is what questionInline holds to that bound.
+func (m Model) questionCardLines(c *questionCard, width int) []string {
+	var lines []string
 	if c.sheet != nil {
 		lines = append(lines, c.sheet.strip().View(width))
 	}
@@ -564,6 +610,12 @@ func (m Model) questionLines() []string {
 		c.sel.Select.Title, c.sel.Select.Tone = questionTitle, components.CardDecision
 		c.sel.Select.Chips, c.sel.Select.Lead = []string{c.place()}, m.questionLead(c, width)
 		c.sel.NotYetLive, c.sel.Handover = handover != "", handover
+		if c.freeAnswer() {
+			// The draft's own ceiling, which moves with the terminal
+			// (draftMaxRows): past it the field scrolls inside itself, as
+			// the draft box does.
+			c.sel.Note.MaxHeight = m.draftMaxRows()
+		}
 		lines = append(lines, strings.Split(c.sel.View(width), "\n")...)
 	case c.multi != nil:
 		c.multi.Title, c.multi.Tone = questionTitle, components.CardDecision
