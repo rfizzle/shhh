@@ -14,10 +14,10 @@
 # And a lane joins the child's name to what it was asked to do with ` · `
 # rather than with a column that is not there.
 #
-# The session's own request is left standing throughout. That is not tidiness:
-# an agent parked at a card takes no reply from the scripted queue, so keeping
-# the session there is what makes the order the children are let through in
-# the order they consume it.
+# The session asks to run nothing of its own. That is not tidiness: a card of
+# the session's is the one an answer takes first, so leaving it out is what
+# leaves the children's routed requests as the cards the reader lets through,
+# one at a time and in the order their queues stand them in.
 setup printf 'package agent\n\nfunc loop() {\n    for round := 0; round < limit; round++ {\n        step()\n    }\n}\n' > loop.go
 snap 01-start "Some things worth doing first"
 keys "survey the round accounting" Enter
@@ -32,9 +32,9 @@ sleep 4
 # the right.
 snap 03-lanes "3 agents"
 sleep 4
-# Everything then asks to run a command at once. The session's own card is
-# left where it is, and the children's routed requests are what the block is
-# now drawing as blocked.
+# Every child then asks to run a command. Each request is routed to this
+# session to be answered, and a routed request nobody has answered is what
+# the block draws as blocked.
 keys Escape
 sleep 2
 snap 04-blocked "needs you"

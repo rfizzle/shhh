@@ -1,48 +1,59 @@
-# One reply per request. The last line repeats once these run out, and the
-# session and every child it spawns draw from this one queue.
+# One queue per agent, because this scene is about three children in three
+# different states at once and a shared queue cannot say which child is in
+# which. Written as one queue, every reply of a round had to say the same
+# thing — four agents were racing for it — and which child ended up holding
+# the reply that keeps a request open was whichever one asked at that moment.
 #
-# The rounds are uniform for that reason: four agents are in flight after the
-# spawn — the session and its three children — and which of them reaches the
-# endpoint first is a race nothing here can settle, so every reply of a round
-# says the same thing.
-#
-# What lets three children end up in three different states anyway is that a
-# gated agent asks for nothing. Parked at a card it takes no reply from this
-# queue until somebody answers it, so everything after the gated round is
-# consumed one agent at a time, in the order the reader lets them through —
-# which is an order the scene decides rather than a race. The session's own
-# card is never answered, which keeps the session parked too.
+# What the queues cannot settle on their own is the order the routed requests
+# stand in, and that order is who the reader lets through first. So each
+# child is held a second longer than the one before it on the round it asks
+# to run something: the requests stand writer-1, writer-2, writer-3, which is
+# the order the steps answer them in. The session asks to run nothing, so
+# there is no card of its own in front of them for an answer to take.
 #
 # The sentence and the three spawns are one reply, so the transcript titles
 # the step with the sentence rather than closing a turn before the calls were
 # asked for.
+
+[session]
 Fanning three writers over the round accounting.
 +tool:spawn_agent:{"role":"writer","task":"Say where the round counter is read.","name":"writer-1"}
 +tool:spawn_agent:{"role":"writer","task":"Say where the round limit is set.","name":"writer-2"}
 +tool:spawn_agent:{"role":"writer","task":"Say where the loop exits.","name":"writer-3"}
-# The first round: everybody reads, which nothing gates, so every lane is
-# working and the block draws three of them.
 tool:read_file:{"path":"loop.go"}
+The counter is read at the top of the loop, and nowhere else.
+
+# writer-1 is let through first. It runs its command and asks the model again,
+# and is kept waiting on the first token: its lane is the one still going
+# while the block is read.
+[writer-1]
 tool:read_file:{"path":"loop.go"}
-tool:read_file:{"path":"loop.go"}
-tool:read_file:{"path":"loop.go"}
-# The second round: everybody wants to run something. The session's own is a
-# card of its own; each child's is routed to this session to be answered, and
-# a routed request nobody has answered is what makes a lane blocked.
-tool:execute_command:{"command":"echo counted"}
-tool:execute_command:{"command":"echo counted"}
-tool:execute_command:{"command":"echo counted"}
-tool:execute_command:{"command":"echo counted"}
-# The first child let through asks the model again and is kept waiting on the
-# first token, which is a child that is working: its lane is the one still
-# going while the block is read.
+wait:1
++tool:execute_command:{"command":"echo counted"}
 wait:40
 +The counter is read at the top of the loop, and nowhere else.
-# The second child let through is answered at once, which is the lane that
-# has finished. It is the last line, so it repeats.
+
+# writer-2 is let through second and answered at once, which is the lane that
+# has finished.
 #
 # It is a report and not a sentence: a first line for the lane to keep, and a
 # section for what the child assumed instead of asking, which is what the lane
 # counts beside that line. A `\n` in a reply is a line break, so this arrives
 # as the several lines the fold under the lane opens on.
+[writer-2]
+tool:read_file:{"path":"loop.go"}
+wait:2
++tool:execute_command:{"command":"echo counted"}
 The counter is read at the top of the loop, and nowhere else.\n\n## Assumptions\n\n- The limit named in the task is the one in loop.go.\n- Nothing else in the package reads the counter.
+
+# writer-3's request is never answered: it is the lane waiting on you.
+[writer-3]
+tool:read_file:{"path":"loop.go"}
+wait:3
++tool:execute_command:{"command":"echo counted"}
+The loop exits on the counter reaching the limit.
+
+# The session's own readings of its run take a reply of their own rather than
+# one of anybody's rounds.
+[reading]
+The counter is read at the top of the loop, and nowhere else.
