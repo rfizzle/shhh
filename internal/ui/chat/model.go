@@ -1845,6 +1845,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if proposal != nil {
 		cmd = tea.Batch(cmd, proposal)
 	}
+	// And the steering queue's length, for the supervisor: a sentence
+	// queued while the session waits on its children ends that wait, so the
+	// redirect is read at the next round rather than behind the slowest
+	// child. Every path that queues or drains steering is a transition
+	// read here, which is why no one of them says so itself.
+	if mm.subagents != nil && len(mm.steering) != len(m.steering) {
+		mm.subagents.SessionSteering(len(mm.steering))
+	}
 	return mm, cmd
 }
 

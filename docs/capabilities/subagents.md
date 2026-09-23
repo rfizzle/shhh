@@ -461,6 +461,25 @@ promise about the whole session and is not one. What bounds the whole session
 is the thirty-two total spawns and the spend cap; what `max_concurrent` bounds is
 how many things are moving at one level of the same job.
 
+**A wait is on a set, and the first of it to finish ends it.** `agent_report`
+takes several names as well as one, and returns as soon as any of them has
+finished — that one's report, and a line for each of the others saying where
+it stands — so a fan-out is collected in the order it lands rather than in the
+order it was named, and the parent can act on the first answer while the
+slowest is still reading. A child that finishes while nothing is waiting on it
+loses nothing: the next wait that names it returns at once. The deadlock rule
+does not change, because every name in the set is still one of the waiter's
+own descendants and one outside them refuses the whole call.
+
+**A wait also ends when the waiter is steered.** A person typing into the
+session, a client's steer to a served one, or any of the three sources
+steering a child that is itself waiting on children — each of those ends the
+wait with a first line saying a steer woke it and where each named agent
+stands. The message is read at the next round, which is after the tool call,
+so without this a redirect would sit behind the slowest child it was probably
+meant to change the plan about. The kill and the cancelled turn end a wait as
+they always have.
+
 The alternatives were considered and are worse. Making a child's
 `agent_report` non-blocking turns a free wait into a poll, and a child paying
 rounds and tokens to ask "are you done yet" spends its budget on the question

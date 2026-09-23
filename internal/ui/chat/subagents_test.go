@@ -1082,3 +1082,37 @@ func TestAKeptPatchIsReviewedFromTheManager(t *testing.T) {
 		t.Fatal("an answered review is still over the list")
 	}
 }
+
+// A sentence typed while the session waits on its children ends the wait, so
+// the redirect is read at the next round rather than behind the slowest child.
+// See docs/capabilities/subagents.md#a-wait-only-ever-points-down-the-tree.
+func TestTypedSteeringEndsTheSessionsWaitOnItsChildren(t *testing.T) {
+	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
+	t.Cleanup(sup.Close)
+	m := newSubagentModel(t, sup)
+	m = sendText(t, m, "do the task")
+	spawnInto(t, sup, `{"role":"researcher","task":"survey one","name":"one"}`)
+
+	out := make(chan string, 1)
+	go func() {
+		text, _ := sup.WrapExecutor("", nil)(subagent.ReportToolName, json.RawMessage(`{"names":["one"]}`))
+		out <- text
+	}()
+	select {
+	case text := <-out:
+		t.Fatalf("the wait returned before anything happened:\n%s", text)
+	case <-time.After(50 * time.Millisecond):
+	}
+	m = sendText(t, m, "look at the importer instead")
+	if len(m.steering) != 1 {
+		t.Fatalf("the sentence should be queued as steering, got %v", m.steering)
+	}
+	select {
+	case text := <-out:
+		if !strings.HasPrefix(text, "Woken by a steer") {
+			t.Fatalf("the wait should say a steer woke it:\n%s", text)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("typed steering did not end the session's wait")
+	}
+}

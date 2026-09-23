@@ -25,6 +25,7 @@ package digest
 
 import (
 	"encoding/json"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -159,6 +160,25 @@ func Arg(tool, rawArgs string) string {
 				return name + " " + FirstLine(msg)
 			}
 			return name
+		}
+	}
+	if tool == "agent_report" {
+		// A wait on a set is about every agent it names, so the row lists
+		// them joined — `writer-1, writer-2, reviewer-1` — and the row clips
+		// a long set as it clips any long target.
+		var names []string
+		if name, _ := args["name"].(string); name != "" {
+			names = append(names, name)
+		}
+		if set, ok := args["names"].([]any); ok {
+			for _, v := range set {
+				if name, _ := v.(string); name != "" && !slices.Contains(names, name) {
+					names = append(names, name)
+				}
+			}
+		}
+		if len(names) > 0 {
+			return strings.Join(names, ", ")
 		}
 	}
 	if target := actionToolTarget(tool, args); target != "" {

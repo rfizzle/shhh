@@ -905,16 +905,25 @@ func (l *serveLoop) spendQuestion() bool {
 func (l *serveLoop) Steer(text string) {
 	l.mu.Lock()
 	l.steering = append(l.steering, text)
+	queued := len(l.steering)
 	l.mu.Unlock()
+	// A turn waiting on its children comes out of the wait for this, so
+	// the client's redirect is read at the next round.
+	if l.agents != nil {
+		l.agents.SessionSteering(queued)
+	}
 }
 
 // drainSteering is the loop's half of that: everything said since the last
 // round boundary, taken in one go.
 func (l *serveLoop) drainSteering() []string {
 	l.mu.Lock()
-	defer l.mu.Unlock()
 	queued := l.steering
 	l.steering = nil
+	l.mu.Unlock()
+	if l.agents != nil {
+		l.agents.SessionSteering(0)
+	}
 	return queued
 }
 

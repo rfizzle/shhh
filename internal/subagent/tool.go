@@ -92,12 +92,13 @@ func Definitions(profiles Profiles) []provider.Tool {
 		},
 		{
 			Name:        ReportToolName,
-			Description: "Check on background sub-agents. With no arguments: a status overview of every agent. With a name: waits until that agent finishes and returns its final report (pass wait=false for a non-blocking status peek). An agent's report is returned verbatim; a writing agent's report also states what happened to its patch.",
+			Description: "Check on background sub-agents. With no arguments: a status overview of every agent. With a name: waits until that agent finishes and returns its final report. With several agents out, wait on the set with names and act on the first to finish rather than waiting on one name at a time: the call returns as soon as any of them finishes, with that one's report and a line for each of the others saying where it stands, so the next call names only the ones still out. Any wait also ends early when you are steered, saying so on its first line, so you read the redirect before waiting again. Pass wait=false for a non-blocking status peek. An agent's report is returned verbatim; a writing agent's report also states what happened to its patch.",
 			Parameters: json.RawMessage(`{
 				"type": "object",
 				"properties": {
 					"name": {"type": "string", "description": "Agent to report on; omit for a status overview of all agents"},
-					"wait": {"type": "boolean", "description": "Wait for the named agent to finish (default true)"}
+					"names": {"type": "array", "items": {"type": "string"}, "description": "Several agents to wait on; returns when the first of them finishes"},
+					"wait": {"type": "boolean", "description": "Wait for the named agent, or the first of names, to finish (default true)"}
 				}
 			}`),
 		},

@@ -70,6 +70,11 @@ func TestArg_PicksTheOneWorthShowing(t *testing.T) {
 		{"a long instruction is bounded to its first line", "agent_steer",
 			`{"name":"writer-1","message":"read the exporter instead\nnot the importer"}`,
 			"writer-1 read the exporter instead …"},
+		// A wait on a set is about every agent it names.
+		{"a wait on a set names every agent", "agent_report",
+			`{"name":"writer-1","names":["writer-2","writer-1","reviewer-1"]}`,
+			"writer-1, writer-2, reviewer-1"},
+		{"a wait on one name is that name", "agent_report", `{"name":"writer-1"}`, "writer-1"},
 	} {
 		if got := Arg(tc.tool, tc.args); got != tc.want {
 			t.Errorf("%s: Arg(%q, %q) = %q, want %q", tc.name, tc.tool, tc.args, got, tc.want)

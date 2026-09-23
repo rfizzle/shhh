@@ -15,6 +15,7 @@ import (
 	"maps"
 	"os"
 	"path/filepath"
+	"reflect"
 	"slices"
 	"strings"
 	"sync"
@@ -951,6 +952,12 @@ type child struct {
 	done     chan struct{}
 	// steerWake nudges an idle child that new steering arrived (buffered 1).
 	steerWake chan struct{}
+	// steered is closed and replaced each time a steer is queued, under mu,
+	// so every agent_report wait this child is inside comes out of it. It is
+	// a broadcast rather than a token like steerWake because a round can hold
+	// several waits at once, and a token would wake one of them and leave the
+	// rest behind the slowest agent they name.
+	steered chan struct{}
 
 	mu      sync.Mutex
 	mode    agent.Mode
@@ -1737,6 +1744,14 @@ type Supervisor struct {
 	// lock give up and the write lock be had.
 	sendMu sync.RWMutex
 	closed bool
+
+	// sessionQueued is how many steering messages the session says wait to
+	// join its own conversation, and sessionSteered is the session's
+	// counterpart of child.steered: closed and replaced when that count
+	// grows. Both under mu. The session's queue is its front-end's, not the
+	// supervisor's, so SessionSteering is how it is told.
+	sessionQueued  int
+	sessionSteered chan struct{}
 }
 
 // ErrClosed is what a supervisor answers once Close has run: a steer, a note,
@@ -2047,6 +2062,10 @@ func (s *Supervisor) Steer(name, text string, from SteerSource) error {
 		c.claimFollowUp(text)
 	}
 	c.steering = append(c.steering, queuedSteer{text: text, from: from})
+	if c.steered != nil {
+		close(c.steered)
+		c.steered = nil
+	}
 	// The source is on the status the moment the message is queued, not when
 	// the child takes it: the orchestrator reads the roster in the round
 	// after it steered, and a redirect still waiting at a round boundary is
@@ -2059,6 +2078,48 @@ func (s *Supervisor) Steer(name, text string, from SteerSource) error {
 	}
 	s.emitUpdate(c)
 	return nil
+}
+
+// SessionSteering is the session telling the supervisor how many steering
+// messages wait to join its own conversation. A count that grows ends every
+// agent_report wait the session is inside, and a wait that starts while it is
+// above zero returns at once: the redirect is read at the next round, which
+// is after the tool call, and a wait on the slowest child would otherwise
+// hold it there.
+// See docs/capabilities/subagents.md#a-wait-only-ever-points-down-the-tree.
+func (s *Supervisor) SessionSteering(queued int) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if queued > s.sessionQueued && s.sessionSteered != nil {
+		close(s.sessionSteered)
+		s.sessionSteered = nil
+	}
+	s.sessionQueued = queued
+}
+
+// steerSignal is what a wait by caller watches for a steer: a channel closed
+// when the caller is next steered, and whether a steer already waits in its
+// queue — read together, under the lock that writes both, so a steer cannot
+// land between the check and the wait and be missed.
+func (s *Supervisor) steerSignal(caller string) (<-chan struct{}, bool) {
+	if caller == "" {
+		s.mu.Lock()
+		defer s.mu.Unlock()
+		if s.sessionSteered == nil {
+			s.sessionSteered = make(chan struct{})
+		}
+		return s.sessionSteered, s.sessionQueued > 0
+	}
+	c, err := s.lookup(caller)
+	if err != nil {
+		return nil, false
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.steered == nil {
+		c.steered = make(chan struct{})
+	}
+	return c.steered, len(c.steering) > 0
 }
 
 // QueuedSteering is how many steering messages wait to join the child's
@@ -4788,57 +4849,169 @@ func (s *Supervisor) awaitKept(c *child, k *keptPatch, ask *Ask, touched []strin
 }
 
 // report implements agent_report: a status overview with no name, or a
-// blocking wait for one child's final report. Both are bounded to what the
+// blocking wait on one or several children. Every name is bounded to what the
 // caller spawned, so the wait always points down the spawn tree.
+//
+// A wait on several ends when the first of them finishes, and any wait ends
+// when the caller is itself steered: a fan-out is collected in the order it
+// lands rather than the order it was named, and a redirect is read at the
+// next round instead of behind the slowest child.
+// See docs/capabilities/subagents.md#a-wait-only-ever-points-down-the-tree.
 func (s *Supervisor) report(caller string, raw json.RawMessage) (string, error) {
 	var args struct {
-		Name string `json:"name"`
-		Wait *bool  `json:"wait"`
+		Name  string   `json:"name"`
+		Names []string `json:"names"`
+		Wait  *bool    `json:"wait"`
 	}
 	if len(raw) > 0 {
 		if err := json.Unmarshal(raw, &args); err != nil {
 			return "", fmt.Errorf("invalid arguments: %w", err)
 		}
 	}
-	if args.Name == "" {
+	names := reportNames(args.Name, args.Names)
+	if len(names) == 0 {
 		return s.statusOverview(caller), nil
 	}
 
-	s.mu.Lock()
-	c, ok := s.byName[args.Name]
-	s.mu.Unlock()
-	if !ok {
-		return "", fmt.Errorf("no agent named %q; spawn it first, or call agent_report with no arguments for the roster", args.Name)
-	}
-	if err := s.reachable(caller, args.Name); err != nil {
-		return "", err
+	kids := make([]*child, 0, len(names))
+	for _, name := range names {
+		s.mu.Lock()
+		c, ok := s.byName[name]
+		s.mu.Unlock()
+		if !ok {
+			return "", fmt.Errorf("no agent named %q; spawn it first, or call agent_report with no arguments for the roster", name)
+		}
+		if err := s.reachable(caller, name); err != nil {
+			return "", err
+		}
+		kids = append(kids, c)
 	}
 
-	if args.Wait == nil || *args.Wait {
-		// A waiting agent has to come out of the wait when it is itself
-		// ended, and not only when the agent it is waiting for finishes. The
-		// session's own wait had one way out because nothing kills the
-		// session; an agent's has the two an agent can be stopped by — the
-		// kill and the cancelled turn — which are the same two `await` gives
-		// a child blocked on a person. Without them a killed agent stays
-		// inside this call holding its slot, its worktree and its goroutine
-		// until its descendant happens to finish, which for a descendant
-		// waiting on an approval nobody will answer is never.
-		var ended, interrupted <-chan struct{}
-		if up, err := s.lookup(caller); caller != "" && err == nil {
-			ended, interrupted = up.ctx.Done(), up.interruptCh()
+	if args.Wait != nil && !*args.Wait {
+		if len(kids) == 1 {
+			return kids[0].reportText(), nil
 		}
+		lines := make([]string, len(kids))
+		for i, c := range kids {
+			lines[i] = rosterLine(c.status())
+		}
+		return strings.Join(lines, "\n"), nil
+	}
+
+	// A waiting agent has to come out of the wait when it is itself ended,
+	// and not only when the agent it is waiting for finishes. The session's
+	// own wait had one way out because nothing kills the session; an agent's
+	// has the two an agent can be stopped by — the kill and the cancelled
+	// turn — which are the same two `await` gives a child blocked on a
+	// person. Without them a killed agent stays inside this call holding its
+	// slot, its worktree and its goroutine until its descendant happens to
+	// finish, which for a descendant waiting on an approval nobody will
+	// answer is never.
+	var ended, interrupted <-chan struct{}
+	if up, err := s.lookup(caller); caller != "" && err == nil {
+		ended, interrupted = up.ctx.Done(), up.interruptCh()
+	}
+	for {
+		// The steer signal is taken before the children are looked at, so a
+		// steer landing after the look closes the channel the select below
+		// holds rather than one it has not taken yet. A child's done channel
+		// is read afresh on every pass for the same reason: a follow-up
+		// replaces it, and the wait is on the turn now running.
+		steered, pending := s.steerSignal(caller)
+		if i := firstFinished(kids); i >= 0 {
+			return collected(kids, i), nil
+		}
+		if pending {
+			return wokenBySteer(kids), nil
+		}
+		cases := make([]reflect.SelectCase, 0, len(kids)+4)
+		for _, c := range kids {
+			cases = append(cases, reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(c.turnDone())})
+		}
+		stop := len(cases)
+		// A nil channel is never ready, which is what a caller with no kill
+		// or no turn of its own wants from the first two.
+		for _, ch := range []<-chan struct{}{ended, interrupted, s.ctx.Done()} {
+			cases = append(cases, reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(ch)})
+		}
+		cases = append(cases, reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(steered)})
+		if chosen, _, _ := reflect.Select(cases); chosen >= stop && chosen < stop+3 {
+			return "", errors.New("cancelled")
+		}
+		// A child finished or the caller was steered: the next pass reads
+		// which, in the order the names were given.
+	}
+}
+
+// reportNames is the set an agent_report call names: name first, then names,
+// each once. An empty entry names nothing.
+func reportNames(name string, names []string) []string {
+	var out []string
+	seen := map[string]bool{}
+	for _, n := range append([]string{name}, names...) {
+		n = strings.TrimSpace(n)
+		if n == "" || seen[n] {
+			continue
+		}
+		seen[n] = true
+		out = append(out, n)
+	}
+	return out
+}
+
+// firstFinished is the index of the first named child whose current turn has
+// answered, or -1 when none has.
+func firstFinished(kids []*child) int {
+	for i, c := range kids {
 		select {
 		case <-c.turnDone():
-		case <-ended:
-			return "", errors.New("cancelled")
-		case <-interrupted:
-			return "", errors.New("cancelled")
-		case <-s.ctx.Done():
-			return "", errors.New("cancelled")
+			return i
+		default:
 		}
 	}
-	return c.reportText(), nil
+	return -1
+}
+
+// collected is a finished child's report, with one line for each other agent
+// the wait named saying where it stands, so the next wait can name the ones
+// still out.
+func collected(kids []*child, i int) string {
+	text := kids[i].reportText()
+	if len(kids) == 1 {
+		return text
+	}
+	var sb strings.Builder
+	sb.WriteString(text)
+	sb.WriteString("\n\nThe others you named:")
+	for j, c := range kids {
+		if j != i {
+			sb.WriteString("\n" + standingLine(c.status()))
+		}
+	}
+	return sb.String()
+}
+
+// wokenBySteer is what a wait answers when the caller was steered before
+// anything it named finished: the fact first, so the redirect is read before
+// the wait is taken up again, then where each named agent stands.
+func wokenBySteer(kids []*child) string {
+	var sb strings.Builder
+	sb.WriteString("Woken by a steer: a message for you joins your conversation at the next round. Read it before waiting again; nothing you named has finished yet.")
+	for _, c := range kids {
+		sb.WriteString("\n" + standingLine(c.status()))
+	}
+	return sb.String()
+}
+
+// standingLine is one agent a wait named and did not return: its name and
+// its state (`writer-2 · running · 14 tools`), and that a report is waiting
+// where it has one.
+func standingLine(st Status) string {
+	line := st.Name + " · " + st.Detail + steerMark(st)
+	if st.State == StateDone || st.State == StateFailed {
+		line += " · report ready"
+	}
+	return line
 }
 
 // steer implements agent_steer: the orchestrator's own words onto the same
@@ -5053,23 +5226,28 @@ func (s *Supervisor) statusOverview(caller string) string {
 		sb.WriteString(readingsNote + "\n\n")
 	}
 	for _, st := range statuses {
-		label := fmt.Sprintf("%s, %s budget (floor %s)", st.Role, formatTokens(st.Budget), formatTokens(st.AdmissionFloor))
-		if st.Model != "" {
-			label += ", " + st.Model
-		}
-		if len(st.Paths) > 0 {
-			label += "; " + strings.Join(st.Paths, ", ")
-		}
-		detail := st.Detail
-		if st.TakesFollowUp {
-			// The one thing a roster line can say that saves a spawn: this
-			// agent has answered and can be asked again, on everything it
-			// already read.
-			detail = "done · takes a follow-up · " + strings.TrimPrefix(detail, "done · ")
-		}
-		fmt.Fprintf(&sb, "%s (%s): %s%s — %s\n", st.Name, label, detail, steerMark(st), firstLine(st.Task))
+		sb.WriteString(rosterLine(st) + "\n")
 	}
 	return strings.TrimRight(sb.String(), "\n")
+}
+
+// rosterLine is one agent as the roster lists it.
+func rosterLine(st Status) string {
+	label := fmt.Sprintf("%s, %s budget (floor %s)", st.Role, formatTokens(st.Budget), formatTokens(st.AdmissionFloor))
+	if st.Model != "" {
+		label += ", " + st.Model
+	}
+	if len(st.Paths) > 0 {
+		label += "; " + strings.Join(st.Paths, ", ")
+	}
+	detail := st.Detail
+	if st.TakesFollowUp {
+		// The one thing a roster line can say that saves a spawn: this
+		// agent has answered and can be asked again, on everything it
+		// already read.
+		detail = "done · takes a follow-up · " + strings.TrimPrefix(detail, "done · ")
+	}
+	return fmt.Sprintf("%s (%s): %s%s — %s", st.Name, label, detail, steerMark(st), firstLine(st.Task))
 }
 
 // reportText is what the parent model receives about a child: its status
