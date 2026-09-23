@@ -762,6 +762,14 @@ quotes and stays as `paste 1 · 214 lines`, which is words about a log that is
 not riding rather than a mark with nothing behind it. Walking on drops what
 walking here staged, for the reason a backspace over a token does.
 
+The reverse search is the same recall by another road, and it settles the
+folds once, when a match is kept — not as the query moves, since each
+keystroke shows a different line and staging a paste for every line glanced
+at would churn the staging area for sentences nobody chose. Esc puts the draft
+back as it was and stages nothing. Clearing the draft is a fold leaving it
+too, so the pastes its folds stood for leave with it; a file attached by hand
+has no fold in the sentence and stays.
+
 A paste too big to stage is refused with the limit named, and the draft is
 left exactly as it was. What bounds it is not the size a message can carry but
 the window it will be read in: a paste has no file behind it, so it goes into

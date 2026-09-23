@@ -49,10 +49,22 @@ func (m Model) openHistorySearch() (tea.Model, tea.Cmd) {
 }
 
 // closeHistorySearch ends the search. restore puts the draft back as it was;
-// otherwise whatever match is in the box stays there.
+// otherwise whatever match is in the box stays there, its folds settled the
+// way ↑ settles them (recall.go).
+//
+// The settling happens here and not as the match changes: every keystroke
+// of the query places a different line, and staging and dropping pastes on
+// each of them would churn the staging area for lines the reader only
+// looked at. So the draft goes back to what it held when the search opened
+// and the kept match arrives through recallDraft from there — the sentence
+// being left is the one the reader wrote, which is what decides which of its
+// pastes leave with it.
 func (m *Model) closeHistorySearch(restore bool) {
-	if restore {
+	if match := m.input.Value(); match != m.histSearch.saved {
 		m.input.SetValue(m.histSearch.saved)
+		if !restore {
+			m.recallDraft(match)
+		}
 	}
 	m.histSearch = nil
 	m.historyIdx = len(m.inputHistory)

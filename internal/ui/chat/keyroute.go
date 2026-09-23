@@ -261,8 +261,7 @@ func (m Model) updateKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 			return answered(m.routeDecision(msg))
 		}
 		if strings.TrimSpace(m.input.Value()) != "" {
-			m.input.Reset()
-			m.historyIdx = len(m.inputHistory)
+			m.clearDraft()
 			return m, nil, true
 		}
 		// An empty idle draft: the chord means quit, and quitting is
@@ -561,8 +560,7 @@ func (m Model) updateKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 			}
 			return m, m.armPressFor(armRewind, keys.Shown(keys.Draft.Clear), rewindPressWindow), true
 		}
-		m.input.Reset()
-		m.historyIdx = len(m.inputHistory)
+		m.clearDraft()
 		return m, nil, true
 	case keys.Is(pressed, keys.Draft.Complete):
 		// Tab writes the focused completion into the input. A file

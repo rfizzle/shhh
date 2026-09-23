@@ -338,7 +338,7 @@ func TestRecall_StripsAFoldWithNoPasteBehindIt(t *testing.T) {
 }
 
 // The name a paste had can be taken by the time its sentence comes back — a
-// draft cleared out from under a staged paste leaves one behind. The bytes are
+// paste staged since holds it. The bytes are
 // staged under the next free name and the sentence is renumbered to match, so
 // the fold and the chip never disagree about which paste is which.
 func TestRecall_RenumbersAFoldWhoseNameIsTaken(t *testing.T) {
@@ -383,5 +383,99 @@ func TestRecall_StagesNothingWhileAttached(t *testing.T) {
 	if want := "paste 1 · 11 lines"; m.input.Value() != want {
 		t.Fatalf("a fold in a steer should read as its count, got %q, want %q",
 			m.input.Value(), want)
+	}
+}
+
+// Reverse search is recall by another road, so a kept match's folds are live
+// the way ↑ makes them — but only once it is kept. Every keystroke of the
+// query shows a different line, and staging a paste for each would churn the
+// staging area for sentences the reader only looked at.
+func TestHistorySearch_StagesTheKeptMatchsPasteOnAccept(t *testing.T) {
+	log := strings.Repeat("loop_test.go:44: round 26 reached, still running\n", 11)
+	updated, _ := frameModel(t, 100, 40).Update(tea.PasteMsg{Content: log})
+	m := updated.(Model)
+	m.input.InsertString(" fix the exit condition")
+	sentence := m.input.Value()
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	m = updated.(Model)
+
+	m, _ = pressKey(t, m, ctrlR)
+	m = typeChars(t, m, "exit")
+	if got := m.input.Value(); got != sentence {
+		t.Fatalf("the search should show the sentence as it was sent, got %q", got)
+	}
+	if len(m.attachments) != 0 {
+		t.Fatalf("a match being looked at stages nothing, got %v", attachment.Names(m.attachments))
+	}
+
+	m, _ = pressKey(t, m, enter)
+	if got := m.input.Value(); got != sentence {
+		t.Fatalf("enter should keep the match with its fold, got %q, want %q", got, sentence)
+	}
+	if len(m.attachments) != 1 || string(m.attachments[0].Data) != log {
+		t.Fatalf("the kept match's fold should stage its paste again, got %v",
+			attachment.Names(m.attachments))
+	}
+}
+
+// Esc out of the search is the draft as it was, staging area included.
+func TestHistorySearch_EscStagesNothing(t *testing.T) {
+	log := strings.Repeat("a line of the log\n", 11)
+	updated, _ := frameModel(t, 100, 40).Update(tea.PasteMsg{Content: log})
+	m := updated.(Model)
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	m = updated.(Model)
+	m = typeChars(t, m, "draft words")
+
+	m, _ = pressKey(t, m, ctrlR)
+	m = typeChars(t, m, "paste")
+	m, _ = pressKey(t, m, escK)
+	if got := m.input.Value(); got != "draft words" {
+		t.Fatalf("esc should put the draft back, got %q", got)
+	}
+	if len(m.attachments) != 0 {
+		t.Fatalf("esc should stage nothing, got %v", attachment.Names(m.attachments))
+	}
+}
+
+// Clearing the draft is a fold leaving it, so the paste it stood for leaves
+// too — otherwise the next message carries bytes it never mentions. A file
+// the reader attached by hand has no fold in the sentence and stays.
+func TestClearKey_DropsThePastesTheDraftFolded(t *testing.T) {
+	log := strings.Repeat("a line of the log\n", 11)
+	m := frameModel(t, 100, 40)
+	m.attachments = []provider.Attachment{{
+		Kind: provider.AttachmentText, Name: "notes.md", Data: []byte("by hand\n")}}
+	updated, _ := m.Update(tea.PasteMsg{Content: log})
+	m = updated.(Model)
+	m.input.InsertString(" fix it")
+	if len(m.attachments) != 2 {
+		t.Fatalf("the paste should be staged beside the file, got %v", attachment.Names(m.attachments))
+	}
+
+	m, _ = pressKey(t, m, escK)
+	if m.input.Value() != "" {
+		t.Fatalf("esc should clear the draft, got %q", m.input.Value())
+	}
+	if len(m.attachments) != 1 || m.attachments[0].Name != "notes.md" {
+		t.Fatalf("the cleared fold's paste should go and the hand-attached file stay, got %v",
+			attachment.Names(m.attachments))
+	}
+}
+
+// Ctrl+C on a sentence clears it too, and a cleared fold takes its paste
+// with it by that road as well.
+func TestCtrlC_DropsThePastesTheDraftFolded(t *testing.T) {
+	log := strings.Repeat("a line of the log\n", 11)
+	updated, _ := frameModel(t, 100, 40).Update(tea.PasteMsg{Content: log})
+	m := updated.(Model)
+	m.input.InsertString(" fix it")
+
+	m, _ = pressKey(t, m, ctrlC)
+	if m.input.Value() != "" {
+		t.Fatalf("ctrl+c should clear the draft, got %q", m.input.Value())
+	}
+	if len(m.attachments) != 0 {
+		t.Fatalf("the cleared fold's paste should go, got %v", attachment.Names(m.attachments))
 	}
 }

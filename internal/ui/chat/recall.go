@@ -135,10 +135,26 @@ func (m *Model) recallDraft(text string) {
 	m.syncViewport()
 }
 
+// clearDraft empties the draft and takes the pastes whose folds were in it
+// out of the staging area with it. A cleared sentence is a fold leaving the
+// draft like a step of the walk is, and the paste it stood for would
+// otherwise ride out with the next message, mentioned by nothing — the rule
+// a backspace over a token already follows. Only a paste the draft named
+// goes: a file the reader attached by hand has no fold in the sentence and
+// was never the sentence's to take. Attached, the staging area is the
+// orchestrator's and is left alone, as the walk leaves it.
+func (m *Model) clearDraft() {
+	if m.attachedTo == "" {
+		m.unstageRecalled(m.input.Value(), "")
+	}
+	m.input.Reset()
+	m.historyIdx = len(m.inputHistory)
+	m.syncViewport()
+}
+
 // unstageRecalled drops the pastes whose folds are in the sentence being
 // walked away from and not in the one arriving. A paste staged by some other
-// door and left without a fold — a draft cleared out from under one — is not
-// this walk's to drop.
+// door and left without a fold is not this walk's to drop.
 func (m *Model) unstageRecalled(prev, next string) {
 	for i := len(m.attachments) - 1; i >= 0; i-- {
 		p, ok := pasteOf(m.attachments[i])
