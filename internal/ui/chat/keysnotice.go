@@ -22,15 +22,17 @@ import (
 // list: a row that runs past the terminal's edge loses the newest change,
 // which is the one entry it exists for. So the oldest entries go as new ones
 // arrive — the two prefixes that gained a meaning rather than keys that moved
-// were the first to, being the two nobody has had to relearn in releases.
+// were the first to, being the two nobody has had to relearn in releases, and
+// reading mode followed them when the key list left `?` for a chord, having
+// sat on the same key longer than anything else here.
 func KeysChangedNotice() string {
 	changes := []string{
+		keys.Bracket(keys.Draft.KeyList) + " key list",
 		keys.Bracket(keys.Draft.Queue) + " queue",
 		keys.Bracket(keys.Draft.Agents) + " agents",
 		keys.Bracket(keys.Draft.PointDown) + " pointer",
 		keys.Bracket(keys.Draft.Palette) + " palette",
 		keys.Bracket(keys.Draft.Pause) + " hold",
-		keys.Bracket(keys.Draft.Reading) + " reading",
 	}
 	return "keys changed: " + strings.Join(changes, " · ") + " — /help keys"
 }

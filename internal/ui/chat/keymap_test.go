@@ -386,7 +386,7 @@ func TestKeysNotice_RidesTheNoticeRailWhenDue(t *testing.T) {
 	if !strings.Contains(line, "keys changed:") {
 		t.Errorf("the rebind notice is not on the rail: %q", line)
 	}
-	for _, want := range []string{"queue", "agents", "pointer", "palette", "reading"} {
+	for _, want := range []string{"[ctrl+]] key list", "queue", "agents", "pointer", "palette"} {
 		if !strings.Contains(line, want) {
 			t.Errorf("the notice does not name the %s rebind: %q", want, line)
 		}
