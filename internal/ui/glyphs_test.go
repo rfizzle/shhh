@@ -122,13 +122,31 @@ var additions = map[rune]string{
 	'░': "departures.md#two-surfaces-draw-with-blocks-rather-than-in-them",
 	'▒': "departures.md#two-surfaces-draw-with-blocks-rather-than-in-them",
 	'▓': "departures.md#two-surfaces-draw-with-blocks-rather-than-in-them",
+	'↳': "departures.md#a-line-that-answers-the-one-above-hangs-from-it",
 }
 
-// The whole of internal/ui is read: every package under it draws, including
-// the one-shot's own surface, the markdown renderer and the image rasteriser.
+// screenSources is every tree this test reads, relative to internal/ui. The
+// whole of internal/ui is read: every package under it draws, including the
+// one-shot's own surface, the markdown renderer and the image rasteriser. A
+// package outside it is listed when it composes text a surface draws as it
+// stands — the sub-agent supervisor writes a child's transcript rows, which
+// the attached view renders without rewording — because a mark written one
+// package away from the renderer is still a mark the reader has to learn. A
+// package that writes screen text and is not listed is one whose marks
+// nobody has decided.
+var screenSources = []string{".", "../subagent"}
+
 func TestTheGlyphSetIsClosed(t *testing.T) {
 	fset := token.NewFileSet()
-	err := filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
+	for _, root := range screenSources {
+		walkGlyphs(t, fset, root)
+	}
+}
+
+// walkGlyphs checks every string literal in the non-test Go files under root.
+func walkGlyphs(t *testing.T, fset *token.FileSet, root string) {
+	t.Helper()
+	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
 		switch {
 		case err != nil:
 			return err

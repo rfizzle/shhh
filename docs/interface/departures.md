@@ -709,3 +709,22 @@ leading an option a picker cannot take here — skipped, with the reason on the
 row in words. So this is the kit's mark used for the meaning the kit gives it,
 not a fourth one. `✓ questions` was the alternative and is a lie: it would be
 the rail claiming an exchange that never happened.
+
+## A line that answers the one above hangs from it
+
+*A gap.* No guideline page lists `↳` and no artboard draws the two places it
+appears. Both are a line whose whole meaning is that it answers the line
+directly above it: the receipt a person's steer leaves on a child's lane,
+`↳ steer delivered · round 3`, under the message it acknowledges; and an
+unattended run's failure line on stderr, `↳ read_file: no such file`, under
+the call it is the result of.
+
+The kit has nothing that says *this belongs to the row above*. `✓` was the
+alternative for the receipt and claims too much: a delivered steer has reached
+the child's conversation, not been acted on, and a done mark on it would be
+the lane reporting an outcome the next rounds have not produced yet. `→` is
+typography for a link and a value becoming another, and `▸` is a running or
+folded entry — each would give an existing mark a second meaning, which is the
+cost the closed set exists to refuse. So the hook is added once, with the one
+meaning both sites already give it, and a third line that hangs from its
+parent takes this mark rather than inventing another.
