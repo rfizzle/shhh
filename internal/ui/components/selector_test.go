@@ -152,6 +152,24 @@ func TestNoteSelect_RequireNoteBlocksEmpty(t *testing.T) {
 	}
 }
 
+// A free answer opens its field with the card, and beside a draft that still
+// holds the keyboard that field must not paint a caret of its own: the screen
+// would then show two places the next character goes.
+func TestNoteSelect_UngatedFieldDrawsNoCursor(t *testing.T) {
+	s := NewNoteSelect("Question", nil)
+	s.Require = true
+	s.FocusNote = true
+	s.Note.Focus()
+	s.NotYetLive, s.Handover = true, "ctrl+space"
+	if view := s.View(80); strings.Contains(view, "┃") {
+		t.Fatalf("an ungated field drew a cursor:\n%s", view)
+	}
+	s.NotYetLive, s.Handover = false, ""
+	if view := s.View(80); !strings.Contains(view, "┃") {
+		t.Fatalf("the cursor should appear with the handover:\n%s", view)
+	}
+}
+
 func TestNoteSelect_ListNavigationWhileNoteBlurred(t *testing.T) {
 	s := NewNoteSelect("Pick", planOptions())
 	s.Update(key("j"))

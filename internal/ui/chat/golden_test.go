@@ -3841,6 +3841,12 @@ func TestGolden_QuestionCard(t *testing.T) {
 				View: buildWithDraft(choose, halfTyped, nil)},
 			{Label: "the yes-or-no on the same sentence · the answer pair goes with the letters",
 				View: buildWithDraft(confirm, halfTyped, nil)},
+			// The free answer opens its field with the card, so on the same
+			// sentence it is the one dressing whose field would otherwise
+			// claim the keyboard: it draws blurred until the handover, and
+			// the draft's cursor is the only one on screen.
+			{Label: "the free answer on the same sentence · the field draws no cursor until the handover",
+				View: buildWithDraft(`{"question":"What should the flag be called?","shape":"text","note":"required"}`, halfTyped, nil)},
 		}
 		if width < 130 {
 			return panels

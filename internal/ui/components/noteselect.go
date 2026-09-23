@@ -133,7 +133,12 @@ func (s *NoteSelect) View(width int) string {
 	// The note field and the hints are pinned under the list, so what they
 	// spend comes off the list's budget before its window is drawn —
 	// otherwise a long list pushes the note itself off the card.
-	tail := noteFieldRows(&s.Note, "", s.FocusNote, s.noteMissing, s.Require, inner)
+	//
+	// A field opened with the card is still not where the next character
+	// goes while the draft holds the keyboard, so it draws as a blurred one
+	// until the handover: two cursors on one screen claim one keyboard twice
+	// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+	tail := noteFieldRows(&s.Note, "", s.FocusNote && !s.NotYetLive, s.noteMissing, s.Require, inner)
 	tail = append(tail, s.hintRowsFor(width)...)
 
 	// The query line is pinned above the list exactly as it is on a plain
