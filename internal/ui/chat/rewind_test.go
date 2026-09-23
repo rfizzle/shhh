@@ -214,6 +214,9 @@ func TestRewind_TurnNIsWhereTurnNEnded(t *testing.T) {
 	if len(m.Messages()) != 1 {
 		t.Fatalf("the start of the session is the system prompt alone, got %d messages", len(m.Messages()))
 	}
+	if got := m.frameActivity(40); !strings.Contains(got, "at the start") {
+		t.Fatalf("a rewind to turn 0 still says where the session stands, got %q", got)
+	}
 }
 
 func TestRewind_BarePicker_EscKeepsConversation(t *testing.T) {
@@ -913,6 +916,41 @@ func TestRewind_LandsAsARowAndTheFrameSaysWhereYouStand(t *testing.T) {
 	m = sendText(t, m, "carry on")
 	if got := m.frameActivity(40); strings.Contains(got, "at turn") {
 		t.Fatalf("a new turn should retire the rewind's label, got %q", got)
+	}
+}
+
+// The card's ctx pair is the row's. The provider's report counted the turns
+// the cut takes out, so the rewind drops it, and the window afterwards is the
+// corrected estimate of what is kept: a card that subtracted an estimate of
+// the tail from the report would predict one figure and the row land on
+// another (docs/interface/surfaces.md#the-rewind).
+func TestRewind_TheCardsContextPairIsTheRows(t *testing.T) {
+	for _, answer := range []keys.Binding{keys.Rewind.Talk, keys.Rewind.Both} {
+		m, _, _ := rewindOfferModel(t)
+		m.width, m.height = 120, 40
+		m.syncInputWidth()
+		// A small report over a conversation whose estimate is a fifth of the
+		// window, the shape a scripted endpoint gives: the report puts the
+		// window near empty and the estimate the cut falls back on does not.
+		m.toolDefTokens = m.contextWindow() / 5
+		m.contextTokens, m.contextReportedAt = 10, len(m.Messages())
+
+		m = sendText(t, m, "/rewind 1")
+		if m.rewindScope == nil {
+			t.Fatal("the rewind should have opened the scope card")
+		}
+		detail := m.rewindScope.card.Talk.Detail
+		pair := detail[:strings.Index(detail, " · ")]
+		if pair != "ctx 0% → 20%" {
+			t.Fatalf("the card should predict the corrected estimate of the kept turns, got %q", pair)
+		}
+		m = press(t, m, keys.Shown(answer))
+		if m.state == stateUndoConfirm {
+			m = press(t, m, "y")
+		}
+		if row := lastRewindRow(t, m); !strings.Contains(row.Target, pair) {
+			t.Fatalf("the row should land on the card's %q, got %q", pair, row.Target)
+		}
 	}
 }
 

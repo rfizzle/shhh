@@ -305,8 +305,12 @@ func (m Model) frameActivity(width int) string {
 	// neither answers the question the reader has just created — where am I
 	// now. It holds until the next turn is sent, which makes the default
 	// reading true again (docs/interface/surfaces.md#the-rewind).
-	if m.rewoundTo > 0 {
-		return sty.Frame.Idle.Render(clipRow(fmt.Sprintf("at turn %d", m.rewoundTo), width))
+	if m.rewoundTo != nil {
+		at := "at the start"
+		if *m.rewoundTo > 0 {
+			at = fmt.Sprintf("at turn %d", *m.rewoundTo)
+		}
+		return sty.Frame.Idle.Render(clipRow(at, width))
 	}
 	if s, ok := m.turnStatus(); ok {
 		if line := s.View(width); line != "" {

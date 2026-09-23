@@ -1167,9 +1167,10 @@ type Model struct {
 	rewindScope *rewindScope
 	// rewoundTo is the turn the session stands at after a rewind, which is
 	// what the frame's top rail says in place of `idle` until the next turn
-	// makes it true by default. Zero once a turn has been taken, and for a
-	// session that has not rewound (rewind.go).
-	rewoundTo int
+	// makes it true by default. Nil once a turn has been taken, and for a
+	// session that has not rewound; a pointer because turn 0, the start of
+	// the session, is a place a rewind can leave it (rewind.go).
+	rewoundTo *int
 	// commit is the commit surface's own state: the card and its message
 	// while they are up, and — once a commit has landed — the sha and the
 	// reader's own uncommitted paths, which the rail's CHANGES block goes on

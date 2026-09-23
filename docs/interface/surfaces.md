@@ -1908,10 +1908,16 @@ window moved and the machine was not touched — the reading a compaction's own
 row takes, for the same reason. What it says is where the workspace was put
 back to, which turns left the window, and what the window holds now. The two
 halves land as one row and not two: the file half is answered at the undo
-confirm, and the row waits for that answer.
+confirm, and the row waits for that answer. The window's figure on the row is
+the one the card predicted: the provider's last count covered the turns the
+cut takes out, so both read the window afterwards as this session's corrected
+estimate of what is kept, and a card that named one figure over a row that
+lands on another would be a question answered with a different fact.
 
-The frame's top rail says `at turn N` where it would otherwise say `idle`,
-until the next turn makes the default reading true again. The transcript below
+The frame's top rail says `at turn N` where it would otherwise say `idle`, and
+`at the start` after a rewind to turn 0 — a place the session can stand, not
+the absence of one — until the next turn makes the default reading true
+again. The transcript below
 is shorter than it was, and where the session now stands is the one thing
 about an idle session worth saying.
 

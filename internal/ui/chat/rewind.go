@@ -95,7 +95,7 @@ func (m *Model) recordCheckpoint(text string) {
 	// A new turn is what makes the frame's `at turn N` untrue: the session
 	// no longer stands where the rewind left it, it is moving on from there
 	// (docs/interface/surfaces.md#the-rewind).
-	m.rewoundTo = 0
+	m.rewoundTo = nil
 }
 
 // checkpointsFromMessages derives checkpoints from a stored conversation:
@@ -423,19 +423,17 @@ func (m Model) rewindReturnFor(n int) rewindReturn {
 	r := rewindReturn{turn: n, first: n + 1, last: len(m.checkpoints), was: m.contextPercent(), at: time.Now()}
 	r.now = r.was
 	cp := m.checkpoints[n]
-	msgs := m.agent.Messages()
-	window, raw := m.contextWindow(), m.contextEstimate().total()
-	if window <= 0 || raw <= 0 || cp.index > len(msgs) {
+	if cp.index > len(m.agent.Messages()) {
 		return r
 	}
-	// The two figures have to be on one scale to be read as a pair. What the
-	// window holds may be the provider's own report rather than this
-	// session's arithmetic, so what the rewind would take out of it is put
-	// through the same ratio before it is subtracted — a reported total less
-	// an unscaled estimate is a subtraction between two different rulers.
-	total := m.estimatedContextTokens()
-	dropped := estimateMessageTokens(msgs[cp.index:]) * total / raw
-	r.now = int(min(max(total-dropped, 0)*100/window, 100))
+	// The cut drops the provider's report, since it counted the turns the
+	// cut takes out (rewindConversation), so what the window holds afterwards
+	// is contextAccounting's reading with no report: the corrected estimate
+	// of the kept prefix. The card states that figure rather than a report
+	// less an estimate of the tail, because the row reads the window after
+	// the cut and a card that predicted any other arithmetic would name a
+	// figure the row then contradicts.
+	r.now = m.windowShare(m.correctedEstimateTo(cp.index).total())
 	return r
 }
 
@@ -593,7 +591,8 @@ func (m *Model) appendRewindRow(r rewindReturn, folded changeset.Turn) {
 	// The frame's top rail says where the reader stands until the next turn
 	// makes it true by default.
 	if r.first > 0 {
-		m.rewoundTo = r.turn
+		turn := r.turn
+		m.rewoundTo = &turn
 	}
 }
 

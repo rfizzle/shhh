@@ -624,11 +624,16 @@ func (r compactReceipt) account() string {
 // surface states it in. Zero for a session with no window to measure
 // against, which is the one case where the figure would be invented.
 func (m Model) contextPercent() int {
+	return m.windowShare(m.estimatedContextTokens())
+}
+
+// windowShare states a token count as that share of the window.
+func (m Model) windowShare(tokens int64) int {
 	window := m.contextWindow()
 	if window <= 0 {
 		return 0
 	}
-	return int(min(m.estimatedContextTokens()*100/window, 100))
+	return int(min(tokens*100/window, 100))
 }
 
 // droppedTokens is what the conversation loses to a compaction: everything

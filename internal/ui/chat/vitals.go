@@ -375,7 +375,17 @@ func (m Model) contextAccounting() contextBreakdown {
 		}
 		return b
 	}
-	b := m.contextEstimate()
+	return m.correctedEstimateTo(len(m.agent.Messages()))
+}
+
+// correctedEstimateTo is the reading contextAccounting falls back on where no
+// report has arrived, taken over messages[:to]: the estimate, corrected by
+// what earlier reports said it was worth. It takes the end of the list as an
+// argument so a rewind's card can state the figure the window will hold once
+// the cut drops the report, by the same arithmetic the row then reads it with
+// (rewind.go).
+func (m Model) correctedEstimateTo(to int) contextBreakdown {
+	b := m.contextEstimateRange(0, to)
 	if corrected := m.calibration.Apply(b.total()); corrected != b.total() {
 		b = b.scaledTo(corrected)
 		b.Corrected = true
