@@ -3819,6 +3819,8 @@ func TestGolden_ChildRequestRouted(t *testing.T) {
 				View: build(longPatchAsk(dir), true)},
 			{Label: "a patch your checkout moved under · the merge is the diff, and the card says so",
 				View: build(mergedPatchAsk(dir), true)},
+			{Label: "a patch that touched a golden file · its generator wrote it, and the card names the command",
+				View: build(regeneratedPatchAsk(dir), true)},
 		}
 	})
 }

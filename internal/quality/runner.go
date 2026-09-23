@@ -150,6 +150,10 @@ type Runner struct {
 	// Wrap contains each check; nil runs checks bare, reported
 	// honestly in the result.
 	Wrap WrapFunc
+	// WrapIn contains a generator (Regenerate), which runs in a tree that is
+	// not the workspace and writes to it; nil runs generators bare, as a nil
+	// Wrap runs checks. It is built from the same policy as Wrap.
+	WrapIn func(dir string, argv []string) ([]string, error)
 	// Mechanism names the containment mechanism Wrap uses, for the result's
 	// containment line.
 	Mechanism string
@@ -344,7 +348,7 @@ func (r *Runner) execute(ctx context.Context, suiteName string) *Result {
 			defer wg.Done()
 			sem <- struct{}{}
 			defer func() { <-sem }()
-			res.Checks[i] = r.runCheck(ctx, suiteName, check, argvs[i], timeout)
+			res.Checks[i] = r.runCheck(ctx, r.Workspace, suiteName, check, argvs[i], timeout)
 		}(i, check)
 	}
 	wg.Wait()
@@ -369,8 +373,10 @@ func (r *Runner) execute(ctx context.Context, suiteName string) *Result {
 }
 
 // runCheck spawns one check with its timeout and output ceilings, storing the
-// bounded capture as evidence and keeping an inline tail excerpt.
-func (r *Runner) runCheck(ctx context.Context, suite string, check Check, argv []string, timeout time.Duration) CheckResult {
+// bounded capture as evidence and keeping an inline tail excerpt. dir is where
+// it runs: the workspace for a suite's check, and the tree being regenerated
+// for a generator.
+func (r *Runner) runCheck(ctx context.Context, dir, suite string, check Check, argv []string, timeout time.Duration) CheckResult {
 	cr := CheckResult{
 		Name:    check.Name,
 		Command: strings.Join(append([]string{check.Exe}, check.Args...), " "),
@@ -380,7 +386,7 @@ func (r *Runner) runCheck(ctx context.Context, suite string, check Check, argv [
 
 	out := &boundedWriter{limit: MaxCaptureBytes}
 	cmd := exec.CommandContext(cctx, argv[0], argv[1:]...)
-	cmd.Dir = r.Workspace
+	cmd.Dir = dir
 	cmd.Stdout = out
 	cmd.Stderr = out
 	// A killed check can leave children holding the output pipes; give up on

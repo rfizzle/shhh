@@ -55,6 +55,14 @@ func openQualityGate(cfg config.Config, red *evidence.Reducer, sc *scope.Scope) 
 				p.ReadOnlyWorkspace = !allowWrite
 				return sandbox.WrapArgv(avail, p, argv)
 			}
+			// A generator is a check that writes, and writes in the tree it
+			// was pointed at — a copy of the checkout, or a writer's copy —
+			// so the same policy is stood in that tree instead.
+			r.WrapIn = func(dir string, argv []string) ([]string, error) {
+				p := policy
+				p.Workspace, p.ReadOnlyWorkspace = dir, false
+				return sandbox.WrapArgv(avail, p, argv)
+			}
 		}
 	}
 	return r

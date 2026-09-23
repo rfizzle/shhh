@@ -67,7 +67,7 @@ func TestReseedWorktree_TheLandedChangeJoinsTheBase(t *testing.T) {
 	}
 	writeInto(t, mine.root, "two.go", "package main\n\nvar two = 2\n")
 
-	if err := reseedWorktree(mine.dir, landed); err != nil {
+	if _, err := reseedWorktree(context.Background(), mine.dir, landed, nil); err != nil {
 		t.Fatalf("a patch over a file the writer has not touched should carry: %v", err)
 	}
 	if got := readFrom(t, mine.root, "main.go"); !strings.Contains(got, "var x = 1") {
@@ -110,7 +110,7 @@ func TestReseedWorktree_ACollisionLeavesTheCopyAsItWas(t *testing.T) {
 	writeInto(t, mine.root, "main.go", mineText)
 	head, _ := gitOutput(mine.dir, "rev-parse", "HEAD")
 
-	err = reseedWorktree(mine.dir, landed)
+	_, err = reseedWorktree(context.Background(), mine.dir, landed, nil)
 	var clash *ReseedCollision
 	if !errors.As(err, &clash) {
 		t.Fatalf("a patch over the writer's own line should be refused as a collision, got %v", err)

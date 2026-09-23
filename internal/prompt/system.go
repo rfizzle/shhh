@@ -429,8 +429,10 @@ func alsoHeld(names string) string {
 // one is carried into its copy between its rounds. A writer that believed its
 // copy frozen would take a file changing under it for its own mistake, and
 // would not know a collision message was about its patch rather than its task.
+// A writer that hand-merged a golden file would be doing by hand the merge the
+// landing refuses to do, so it is told its generated files are regenerated.
 // See docs/capabilities/subagents.md#a-writer-starts-from-your-tree.
-const writerCopyMoves = "The tree you started from can move while you work. When another writer's patch lands in the real checkout, the same change is carried into your copy between two of your rounds, without a message: a file you have not touched may read differently the next time you read it, and that is the checkout as it now stands, not something you did. If the landed change meets your own changes, your copy is left as it was and you are told, in a message naming the files that landed and the ones they collided on. Carry on with your task, and name those files in your final report so the reviewer knows where your change meets the other."
+const writerCopyMoves = "The tree you started from can move while you work. When another writer's patch lands in the real checkout, the same change is carried into your copy between two of your rounds, without a message: a file you have not touched may read differently the next time you read it, and that is the checkout as it now stands, not something you did. If the landed change meets your own changes, your copy is left as it was and you are told, in a message naming the files that landed and the ones they collided on. Carry on with your task, and name those files in your final report so the reviewer knows where your change meets the other. A file the project declares as generated (a golden test fixture, a generated section of a document) is regenerated from the source by its generator when your patch lands and when another writer's lands in your copy: change the source it is generated from, and never hand-merge a generated file on a collision."
 
 // writerSteps asks a writer for the plan its lane counts: a numbered list of
 // its own steps before its first call, and a progress line as each is done,

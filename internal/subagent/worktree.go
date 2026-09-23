@@ -535,7 +535,14 @@ func atoiDefault(s string, def int) int {
 // clashes when it lands — and two copies of that reasoning come apart at the
 // first fix to either.
 // See docs/capabilities/subagents.md#a-writer-starts-from-your-tree.
-type Worktree struct{ h worktreeHandle }
+type Worktree struct {
+	h worktreeHandle
+	// root and untracked are what the copy was made from, kept for the
+	// copy a landing regenerates in, which is made the same way.
+	root      string
+	untracked []string
+	gen       Regenerator
+}
 
 // NewWorktree makes one, seeded with the caller's uncommitted work: what `git
 // diff HEAD` reports, plus the untracked paths the caller says are its own.
@@ -544,8 +551,13 @@ func NewWorktree(root string, untracked []string) (*Worktree, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Worktree{h: h}, nil
+	return &Worktree{h: h, root: root, untracked: untracked}, nil
 }
+
+// UseGenerators gives the copy the project's generated paths: Land and
+// Reseed then regenerate those rather than merge or apply their bytes. A
+// copy given none treats every file as text.
+func (w *Worktree) UseGenerators(gen Regenerator) { w.gen = gen }
 
 // Root is where the work happens: the copy's own version of the directory
 // the caller was standing in, which is what keeps a lane's relative paths
@@ -567,6 +579,11 @@ func (w *Worktree) Root() string { return w.h.root }
 // ways against the copy's base (mergeWorktree) and the merge is what lands,
 // by the same plain apply. A merge that leaves a conflict region lands
 // nothing and names the files.
+//
+// A path the project declares generated (UseGenerators) is neither applied
+// nor merged: the rest of the patch is, in a copy of the checkout, its
+// generators are run there, and what lands is that copy's difference
+// (regenerateOver). A generator that fails lands nothing.
 func (w *Worktree) Land() ([]string, error) {
 	patch, err := worktreePatch(w.h.dir)
 	if err != nil {
@@ -575,24 +592,33 @@ func (w *Worktree) Land() ([]string, error) {
 	if strings.TrimSpace(patch) == "" {
 		return nil, nil
 	}
-	applyErr := applyPatch(w.h.repoTop, patch)
-	if applyErr == nil {
-		return PatchFiles(patch), nil
+	generated := generatedPaths(w.gen, PatchFiles(patch))
+	offer := withoutFiles(patch, generated)
+	if offer != "" {
+		if applyErr := checkPatch(w.h.repoTop, offer); applyErr != nil {
+			m, err := mergeWorktree(w.h.dir, w.h.repoTop, generated)
+			switch {
+			case err != nil:
+				return nil, fmt.Errorf("%w; merging it over the checkout: %v", applyErr, err)
+			case len(m.Conflicts) > 0:
+				return nil, &MergeConflict{Files: m.Conflicts}
+			}
+			offer = m.Patch
+		}
 	}
-	m, err := mergeWorktree(w.h.dir, w.h.repoTop)
-	switch {
-	case err != nil:
-		return nil, fmt.Errorf("%w; merging it over the checkout: %v", applyErr, err)
-	case len(m.Conflicts) > 0:
-		return nil, &MergeConflict{Files: m.Conflicts}
-	case m.Patch == "":
+	if len(generated) > 0 {
+		if offer, _, err = regenerateOver(context.Background(), w.gen, w.root, w.untracked, offer, generated); err != nil {
+			return nil, err
+		}
+	}
+	if offer == "" {
 		// The checkout already says everything the copy does.
 		return nil, nil
 	}
-	if err := applyPatch(w.h.repoTop, m.Patch); err != nil {
+	if err := applyPatch(w.h.repoTop, offer); err != nil {
 		return nil, err
 	}
-	return PatchFiles(m.Patch), nil
+	return PatchFiles(offer), nil
 }
 
 // Remove tears the copy down. Best-effort, like every other teardown of one:
@@ -634,38 +660,53 @@ func (e *ReseedCollision) Error() string {
 // is the plain all-or-nothing one (applyPatch), so a patch that meets the
 // writer's work leaves every file in the copy as it was and comes back as a
 // *ReseedCollision naming where.
+//
+// A landed path the project declares generated (gen) is never applied to the
+// working tree as hunks: the base takes the landed bytes, which are what the
+// checkout now holds, and the working tree's copy of the file is put back to
+// the base and its generator run in the copy, so what the writer sees there
+// is what its own source change generates over the landed one. A generator
+// that fails leaves those files at the landed text and is reported, not
+// raised: the landing itself has carried.
 // See docs/capabilities/subagents.md#a-writer-starts-from-your-tree.
-func reseedWorktree(worktree, patch string) error {
+func reseedWorktree(ctx context.Context, worktree, patch string, gen Regenerator) (reseedRegen, error) {
+	var regen reseedRegen
 	landed := PatchFiles(patch)
+	generated := generatedPaths(gen, landed)
+	carry := withoutFiles(patch, generated)
 	collide := func(reason string) error {
-		return &ReseedCollision{Landed: landed, Files: collidedPaths(worktree, landed), Reason: firstReseedLine(reason)}
+		return &ReseedCollision{Landed: landed, Files: collidedPaths(worktree, PatchFiles(carry)), Reason: firstReseedLine(reason)}
 	}
 	scratch, err := os.MkdirTemp("", "shhh-reseed-*")
 	if err != nil {
-		return err
+		return regen, err
 	}
 	defer func() { _ = os.RemoveAll(scratch) }()
 	// A scratch index, so the writer's own index — which it may have staged
 	// into with a command of its own — is not what the base is built from.
 	index := []string{"GIT_INDEX_FILE=" + filepath.Join(scratch, "index")}
 	if _, err := gitWithEnv(worktree, index, "", "read-tree", "HEAD"); err != nil {
-		return err
+		return regen, err
 	}
 	if _, err := gitWithEnv(worktree, index, patch, "apply", "--cached", "--whitespace=nowarn"); err != nil {
-		return collide(err.Error())
+		return regen, collide(err.Error())
 	}
-	if _, err := gitWithEnv(worktree, nil, patch, "apply", "--check", "--whitespace=nowarn"); err != nil {
-		return collide(err.Error())
-	}
-	if err := applyPatch(worktree, patch); err != nil {
-		return collide(err.Error())
+	if carry != "" {
+		if _, err := gitWithEnv(worktree, nil, carry, "apply", "--check", "--whitespace=nowarn"); err != nil {
+			return regen, collide(err.Error())
+		}
+		if err := applyPatch(worktree, carry); err != nil {
+			return regen, collide(err.Error())
+		}
 	}
 	// From here the files have moved and the base has not. A step that fails
 	// takes the files back, because a copy whose tree holds the landed change
 	// over a base that does not would hand it back as the writer's own work.
-	undo := func(err error) error {
-		_, _ = gitWithEnv(worktree, nil, patch, "apply", "-R", "--whitespace=nowarn")
-		return err
+	undo := func(err error) (reseedRegen, error) {
+		if carry != "" {
+			_, _ = gitWithEnv(worktree, nil, carry, "apply", "-R", "--whitespace=nowarn")
+		}
+		return regen, err
 	}
 	tree, err := gitWithEnv(worktree, index, "", "write-tree")
 	if err != nil {
@@ -685,8 +726,26 @@ func reseedWorktree(worktree, patch string) error {
 	// The writer's index is put back on the new base and the working tree
 	// left alone: an index still on the old base would read the landed change
 	// as the writer's own to anything that asked it.
-	_, err = runGit(worktree, "reset", "--quiet")
-	return err
+	if _, err := runGit(worktree, "reset", "--quiet"); err != nil {
+		return regen, err
+	}
+	if len(generated) == 0 {
+		return regen, nil
+	}
+	if err := restoreFromBase(worktree, generated); err != nil {
+		regen.failed = err
+		return regen, nil
+	}
+	regen.ran, regen.failed = runGenerators(ctx, gen, worktree, generated)
+	return regen, nil
+}
+
+// reseedRegen is what a reseed did about the landed patch's generated paths:
+// the generator commands that ran in the copy, and the failure of the one
+// that did not finish, which leaves those paths at the landed text.
+type reseedRegen struct {
+	ran    []string
+	failed error
 }
 
 // collidedPaths is which of the landed paths the writer has changed in its
@@ -751,12 +810,18 @@ func gitWithEnv(dir string, env []string, stdin string, args ...string) (string,
 // of the copy's base — so the next Land hands back only this copy's own work,
 // measured against the checkout as it now stands. A patch that meets the work
 // here is refused as a *ReseedCollision and the copy is left exactly as it
-// was (reseedWorktree).
+// was (reseedWorktree). A generated path's generator that fails in the copy
+// is the error too, with the landing itself carried and that path at the
+// landed text.
 func (w *Worktree) Reseed(patch string) error {
 	if strings.TrimSpace(patch) == "" {
 		return nil
 	}
-	return reseedWorktree(w.h.dir, patch)
+	regen, err := reseedWorktree(context.Background(), w.h.dir, patch, w.gen)
+	if err != nil {
+		return err
+	}
+	return regen.failed
 }
 
 // MergeConflict is a patch that would not apply plainly and whose three-way
@@ -829,12 +894,20 @@ func (a mergeSide) textual() bool {
 // of its own — and the person's checkout is only read: what comes back is a
 // patch against it, written only by the ordinary all-or-nothing apply once it
 // is approved. It is not `git apply --3way`, for the reason applyPatch gives.
+//
+// The paths in skip are left out of it altogether — neither merged, nor
+// moved, nor in conflict — because they are generated, and a generated file
+// is regenerated over the merge rather than merged (regenerateOver).
 // See docs/capabilities/subagents.md#a-writer-starts-from-your-tree.
-func mergeWorktree(worktree, repoTop string) (patchMerge, error) {
+func mergeWorktree(worktree, repoTop string, skip []string) (patchMerge, error) {
 	var m patchMerge
 	raw, err := gitOutput(worktree, "diff", "--cached", "--raw", "--no-renames", "--no-abbrev", "-z")
 	if err != nil {
 		return m, err
+	}
+	skipped := map[string]bool{}
+	for _, p := range skip {
+		skipped[p] = true
 	}
 	scratch, err := os.MkdirTemp("", "shhh-merge-*")
 	if err != nil {
@@ -850,7 +923,7 @@ func mergeWorktree(worktree, repoTop string) (patchMerge, error) {
 	fields := strings.Split(raw, "\x00")
 	for i := 0; i+1 < len(fields); i += 2 {
 		head, path := strings.Fields(strings.TrimPrefix(fields[i], ":")), fields[i+1]
-		if len(head) < 5 {
+		if len(head) < 5 || skipped[path] {
 			continue
 		}
 		base := mergeSide{exists: head[0] != "000000", mode: head[0], sha: head[2]}

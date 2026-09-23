@@ -583,6 +583,17 @@ func (m Model) patchRadius(ask *subagent.Ask) blastRadius {
 			Tone:   components.ToneNeutral,
 		})
 	}
+	// And a patch that touched generated files carries what their generators
+	// wrote, not what the writer did, so the card names the command that
+	// wrote them (docs/capabilities/subagents.md#a-writer-starts-from-your-tree).
+	if len(ask.Regenerated) > 0 {
+		b.fields = append(b.fields, components.CardField{
+			Label:  "generated",
+			Value:  "by " + strings.Join(ask.Regenerated, ", "),
+			Detail: "generated files are written by their generator over your checkout, never merged",
+			Tone:   components.ToneNeutral,
+		})
+	}
 	if m.changes == nil {
 		b.reversibility = "undo none — this session records no changeset"
 		return b

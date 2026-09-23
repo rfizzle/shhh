@@ -805,9 +805,17 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 		}, nil
 	}
 
+	// The generated paths come from the gate's own trusted config and run
+	// through its runner, so a checkout nobody has trusted declares none —
+	// there is no runner — and every file there merges as text.
+	var generators subagent.Regenerator
+	if session.gateRunner != nil {
+		generators = session.gateRunner
+	}
 	sup = subagent.New(ctx, subagent.Options{
-		Root:   root,
-		NewEnv: newEnv,
+		Root:       root,
+		NewEnv:     newEnv,
+		Generators: generators,
 		// The same table the session ledger bills against, so a child's own
 		// bill and the session's share of it are the same arithmetic on the
 		// same rates rather than two answers to reconcile.

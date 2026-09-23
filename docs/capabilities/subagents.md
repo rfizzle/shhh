@@ -192,6 +192,38 @@ merged at all: which side wins is a judgement about your work and the
 writer's, and a merge has no standing to make it, so the patch is kept for you
 with the files named.
 
+A generated file is never merged, and never carried in as the writer wrote it.
+A golden fixture or a generated section of a document is the output of a
+command over the source, and a three-way merge of two writers' versions of one
+is wrong even when it comes out clean: each writer's source change rewrote the
+fixture, and interleaving the two rewrites gives a file no generator would
+write — the kind that passes review because it looks like the others and fails
+the next run of the suite. So the project declares its generated paths beside
+its checks, in the quality config, each with the command that writes it, and a
+patch that touches one lands in two parts: the rest of the patch, applied or
+merged as above, to a copy of your checkout as it stands, and then the
+generators for those paths run in that copy. What you are shown and what lands
+is the copy's difference from your checkout — the source change and every file
+its generators rewrote — with the card naming the command that wrote them. The
+generator runs contained, the way a check does, with its output kept as
+evidence. One that fails lands nothing on its own: the card comes up with the
+change and without the generated files, saying which generator failed and
+where its output is, and your files have not been touched. A patch kept for
+you to review from the writer's row is kept without its generated files and
+says so: it lands later by the plain apply, with no copy left to regenerate
+in, so those files are left to their generator rather than landed as the
+writer wrote them. A landing carried
+into a live writer's copy follows the same rule: the copy's base takes the
+landed bytes, and the writer's own copy of each generated file is regenerated
+there, over its own work, rather than patched — so two writers who both
+regenerated one fixture do not collide over it. The declaration is part of the
+quality config, so it is trusted with it: a checkout nobody has trusted
+declares nothing, and a file the config does not name is text like any other,
+merged as above. The rule is declared, never guessed from a file's name. The
+writer's prompt says so too, so a writer that meets a collision over a
+generated file changes the source and leaves the file to its generator rather
+than merging it by hand.
+
 ## Spawning is a decision
 
 Starting a child is an approval-gated call, like an edit or a command. It

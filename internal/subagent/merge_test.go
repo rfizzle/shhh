@@ -92,7 +92,7 @@ func TestMergeWorktree_APatchOverAMovedFileMergesAgainstTheCheckout(t *testing.T
 		t.Fatal("the fixture should move the checkout under the writer's hunk")
 	}
 
-	m, err := mergeWorktree(h.dir, repo)
+	m, err := mergeWorktree(h.dir, repo, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -144,7 +144,7 @@ func TestMergeWorktree_UnmovedFilesAreTheWritersOutright(t *testing.T) {
 	}
 	writeInto(t, repo, "main.go", moved(mergeBase))
 
-	m, err := mergeWorktree(h.dir, repo)
+	m, err := mergeWorktree(h.dir, repo, nil)
 	if err != nil || len(m.Conflicts) != 0 || len(m.Moved) != 1 {
 		t.Fatalf("one moved file and no conflict, got moved %v conflicts %v err %v", m.Moved, m.Conflicts, err)
 	}
@@ -182,7 +182,7 @@ func TestMergeWorktree_TheSameLinesAreAConflictAndNothingIsMerged(t *testing.T) 
 	theirs := strings.Replace(mergeBase, "var y = 0", "var y = 1", 1)
 	writeInto(t, repo, "main.go", theirs)
 
-	m, err := mergeWorktree(h.dir, repo)
+	m, err := mergeWorktree(h.dir, repo, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

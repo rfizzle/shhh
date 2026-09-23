@@ -1,6 +1,42 @@
 {
   "max_parallel": 1,
   "on_close": "default",
+  "generated": [
+    {
+      "name": "ui goldens",
+      "paths": [
+        "internal/ui/**/testdata/golden/**"
+      ],
+      "exe": "go",
+      "args": [
+        "test",
+        "{pkg}",
+        "-update-golden"
+      ]
+    },
+    {
+      "name": "settings reference",
+      "paths": [
+        "docs/capabilities/configuration.md"
+      ],
+      "exe": "make",
+      "args": [
+        "docs"
+      ]
+    },
+    {
+      "name": "report fixtures",
+      "paths": [
+        "internal/cli/testdata/report/**"
+      ],
+      "exe": "go",
+      "args": [
+        "test",
+        "./internal/cli",
+        "-update-golden"
+      ]
+    }
+  ],
   "suites": {
     "default": {
       "timeout_seconds": 600,

@@ -73,6 +73,11 @@ type Config struct {
 	// ended writes 0, where an absent key takes DefaultCloseRetries.
 	OnCloseRetries *int             `json:"on_close_retries"`
 	Suites         map[string]Suite `json:"suites"`
+	// Generated is the project's generated paths and the command that
+	// writes each. A landing regenerates a path listed here rather than
+	// merging its bytes, and a path listed nowhere is text like any other.
+	// See docs/capabilities/subagents.md#a-writer-starts-from-your-tree.
+	Generated []Generator `json:"generated"`
 }
 
 // CloseRetries is how many feedback rounds a failing on-close verdict earns
@@ -121,6 +126,11 @@ func (c Config) validate() error {
 	if c.OnClose != "" {
 		if _, ok := c.Suites[c.OnClose]; !ok {
 			return fmt.Errorf("on_close names suite %q, which is not defined (defined: %s)", c.OnClose, strings.Join(c.SuiteNames(), ", "))
+		}
+	}
+	for i, gen := range c.Generated {
+		if err := gen.validate(); err != nil {
+			return fmt.Errorf("generated %d: %w", i+1, err)
 		}
 	}
 	for name, suite := range c.Suites {
