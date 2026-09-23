@@ -1047,7 +1047,7 @@ func TestTodoRunHeadless_TheRemediateStageIsHandedTheEvidenceAndCanReadTheRest(t
 	if !strings.Contains(remediation, "FIRST FAILURE") || !strings.Contains(remediation, "LAST FAILURE") {
 		t.Fatalf("the fix round was handed neither end of the failure:\n%.600s", remediation)
 	}
-	if !strings.Contains(remediation, "bytes elided") {
+	if !strings.Contains(remediation, "bytes from the middle omitted") {
 		t.Fatalf("the excerpt should say what it cut:\n%.600s", remediation)
 	}
 	// And the rest of it is there to be fetched, by the stage's own process,

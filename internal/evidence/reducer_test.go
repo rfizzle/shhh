@@ -408,3 +408,83 @@ func TestReducer_ProcessKeepsAThreeMegabyteCommandsVerdict(t *testing.T) {
 		t.Errorf("the stored original ends where the command did, got %q", stored)
 	}
 }
+
+// reductionMarkerRoom is what a reduced result carries beyond its three
+// bounded runs of lines: the notice that leads it (two counts and an id), the
+// line saying how many lines were elided and why, and the tail marker.
+const reductionMarkerRoom = 512
+
+// worstReduction is output shaped to make the reduced view as long as the
+// bounds allow: lines short enough that every byte budget fills before its
+// line budget, and a middle whose every line is flagged, so the kept lines
+// fill theirs as well.
+func worstReduction(middle int) string {
+	var b strings.Builder
+	for i := 0; i < 50; i++ {
+		b.WriteString(strings.Repeat("h", 60) + "\n")
+	}
+	for i := 0; i < middle; i++ {
+		fmt.Fprintf(&b, "error %s\n", strings.Repeat("m", 20))
+	}
+	for i := 0; i < 50; i++ {
+		b.WriteString(strings.Repeat("t", 60) + "\n")
+	}
+	return strings.TrimRight(b.String(), "\n")
+}
+
+// A reduced result has to fit under the command formatter's cap, or the cap
+// cuts the reduced view and files it as a second entry beside the original
+// the reduction already stored. The bounds are held to each other, and the
+// longest reduction they allow is measured against the cap as well.
+func TestReducer_AReducedResultFitsTheCommandCap(t *testing.T) {
+	if worst := headByteMax + tailByteMax + keptByteMax + reductionMarkerRoom; worst > tools.MaxExecOutputBytes {
+		t.Fatalf("a reduction can reach %d bytes, over the %d the command formatter keeps", worst, tools.MaxExecOutputBytes)
+	}
+	r := testReducer(t)
+	for _, middle := range []int{200, 100_000} {
+		out := r.Process(tools.ExecCommandName, worstReduction(middle))
+		if !strings.HasPrefix(out, "[output reduced:") {
+			t.Fatalf("the worst case has to be a reduction: %.120q", out)
+		}
+		if len(out) > tools.MaxExecOutputBytes {
+			t.Errorf("a %d-line middle reduces to %d bytes, over the %d cap", middle, len(out), tools.MaxExecOutputBytes)
+		}
+	}
+}
+
+// A command's output is stored once whichever of the two bounds takes it: the
+// reduction where it shrinks the output, the formatter's cap where the
+// reduction passes it through. The corners are either side of both numbers —
+// the longest reduction there is, output just over the cap and too small to
+// reduce, and output just over the reduction's threshold.
+func TestReducer_ACommandsOutputIsStoredOnce(t *testing.T) {
+	justOver := func(n int) string {
+		line := "ok  \tgithub.com/example/pkg\t0.002s\n"
+		return strings.Repeat(line, n/len(line)+1)[:n]
+	}
+	cases := []struct {
+		name    string
+		output  string
+		reduced bool
+	}{
+		{"the longest reduction", worstReduction(100_000), true},
+		{"just over the cap, under the threshold", justOver(tools.MaxExecOutputBytes + 1), false},
+		{"just over the threshold", justOver(ReduceThreshold + 1), true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			r := testReducer(t)
+			reduced := r.Process(tools.ExecCommandName, tc.output)
+			result := tools.FormatExecResultKeeping(tools.InferExecResult(reduced, 1), r.Keep)
+			if got := r.Store().Stats().Entries; got != 1 {
+				t.Fatalf("%d bytes of output filed %d entries, want 1:\n%.300s", len(tc.output), got, result)
+			}
+			if got := strings.HasPrefix(reduced, "[output reduced:"); got != tc.reduced {
+				t.Errorf("reduced = %v, want %v", got, tc.reduced)
+			}
+			if tc.reduced && strings.Contains(result, "bytes from the middle omitted") {
+				t.Errorf("the formatter cut a reduced view:\n%s", result)
+			}
+		})
+	}
+}

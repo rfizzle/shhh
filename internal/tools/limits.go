@@ -83,6 +83,12 @@ const (
 	// MaxExecOutputBytes caps captured command output embedded in tool
 	// results and /run context messages. What it cuts is the middle: the cap
 	// is spent on both ends (BoundExecOutput), never on a prefix.
+	//
+	// It sits above the largest result the evidence reduction hands back,
+	// notice included, and that is what keeps a reduced result stored once:
+	// the reduction has already filed the whole output, so a cap that could
+	// still cut the reduced view would file a second entry holding only the
+	// view. The evidence package's tests hold the two numbers to each other.
 	MaxExecOutputBytes = 4000
 
 	// execHeadShare is the fraction of the budget the verbatim head takes;
@@ -126,6 +132,21 @@ const (
 // See docs/interface/principles.md#one-grid.
 func TruncationNotice(line string) bool {
 	return strings.HasPrefix(line, "… (")
+}
+
+// OmissionNotice is the one sentence a cut through the middle of some output
+// is stated in: how many bytes went and, after the semicolon where there is
+// one, where they went or what to do without them. The command formatter, the
+// capture buffer a running command is held in and the quality gate's excerpt
+// all say it this way, so a reader meeting two of those cuts in one result
+// reads one sentence twice rather than three wordings of one fact. It opens
+// the way every other bound here does, which is what TruncationNotice
+// recognises.
+func OmissionNotice(omitted int64, where string) string {
+	if where == "" {
+		return fmt.Sprintf("… (%d bytes from the middle omitted)", omitted)
+	}
+	return fmt.Sprintf("… (%d bytes from the middle omitted; %s)", omitted, where)
 }
 
 // TruncateOutput caps s at max bytes without splitting a UTF-8 sequence. It
@@ -453,10 +474,10 @@ func splitExecOutput(s string, budget int) (head, tail string, omitted int) {
 func execOmissionNotice(omitted int, keep ExecKeep, full string) string {
 	if keep != nil {
 		if id, ok := keep(ExecCommandName, full); ok {
-			return fmt.Sprintf("… (%d bytes from the middle omitted; full output stored as evidence %s — retrieve it with the evidence tool (info/read/search))", omitted, id)
+			return OmissionNotice(int64(omitted), "full output stored as evidence "+id+" — retrieve it with the evidence tool (info/read/search)")
 		}
 	}
-	return fmt.Sprintf("… (%d bytes from the middle omitted; this session has nowhere to store them, so narrow the command if you need them)", omitted)
+	return OmissionNotice(int64(omitted), "this session has nowhere to store them, so narrow the command if you need them")
 }
 
 // wholeLinesHead drops a partial last line, so a head ends where a line does.
@@ -624,8 +645,8 @@ func (b *CaptureBuffer) Bytes() []byte {
 		out := make([]byte, 0, len(b.head)+len(b.tail))
 		return append(append(out, b.head...), b.tail...)
 	}
-	notice := fmt.Sprintf("\n… (%d bytes from the middle were dropped: one command's output is held to %d bytes while it runs, so both ends survive)\n",
-		b.dropped, b.max)
+	notice := "\n" + OmissionNotice(b.dropped,
+		fmt.Sprintf("one command's output is held to %d bytes while it runs, so both ends survive", b.max)) + "\n"
 	head := bytes.TrimRight(b.head, "\n")
 	tail := b.ordered()
 	out := make([]byte, 0, len(head)+len(notice)+len(tail))

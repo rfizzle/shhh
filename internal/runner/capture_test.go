@@ -152,7 +152,7 @@ func TestAChattyCommandIsBoundedWhileItRuns(t *testing.T) {
 	if len(out) > tools.MaxCapturedOutputBytes+1024 {
 		t.Errorf("held %d bytes, want the bound %d", len(out), tools.MaxCapturedOutputBytes)
 	}
-	if !strings.Contains(out, "dropped") {
+	if !strings.Contains(out, "bytes from the middle omitted") {
 		t.Error("the output has to say bytes went missing, or the gap reads as silence")
 	}
 }

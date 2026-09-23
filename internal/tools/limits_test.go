@@ -472,7 +472,7 @@ func TestCaptureBuffer_HoldsABurstToItsBound(t *testing.T) {
 	if len(out) > MaxCapturedOutputBytes+512 {
 		t.Errorf("kept %d bytes, want the bound %d and a notice", len(out), MaxCapturedOutputBytes)
 	}
-	if !strings.Contains(out, "dropped") {
+	if !strings.Contains(out, "bytes from the middle omitted") {
 		t.Error("the output has to say bytes went missing, or the gap reads as silence")
 	}
 	if !strings.Contains(out, strconv.Itoa(burst-MaxCapturedOutputBytes)) {
@@ -522,7 +522,7 @@ func TestCaptureBuffer_KeepsTheVerdictInTheTail(t *testing.T) {
 		t.Errorf("the notice should count the middle, %d bytes", printed-MaxCapturedOutputBytes)
 	}
 	// The notice sits between the two ends, not after them.
-	gap := strings.Index(out, "dropped")
+	gap := strings.Index(out, "bytes from the middle omitted")
 	if gap < 0 || gap > len(out)-len(verdict) {
 		t.Errorf("the drop notice belongs between the head and the tail, found at %d of %d", gap, len(out))
 	}
@@ -547,8 +547,27 @@ func TestCaptureBuffer_KeepsBothEnds(t *testing.T) {
 	if got, want := b.Len(), int64(14); got != want {
 		t.Errorf("printed %d bytes, want %d", got, want)
 	}
-	if !strings.Contains(out, "6 bytes from the middle") {
-		t.Errorf("six bytes went from the middle: %q", out)
+	// The gap is stated in the one sentence every cut through the middle is,
+	// the one BoundExecOutput and the quality gate's excerpt use as well.
+	lines := strings.Split(out, "\n")
+	if len(lines) != 3 || !TruncationNotice(lines[1]) ||
+		!strings.HasPrefix(lines[1], "… (6 bytes from the middle omitted; ") {
+		t.Errorf("six bytes went from the middle, in the omission sentence: %q", out)
+	}
+}
+
+// Every cut through the middle opens the way the other bounds do, so a
+// reader — and anything counting a result — recognises it by one shape.
+func TestOmissionNotice_IsATruncationNotice(t *testing.T) {
+	for _, where := range []string{"", "full output stored as evidence ev-0123456789abcdef"} {
+		notice := OmissionNotice(1234, where)
+		if !TruncationNotice(notice) || !strings.HasPrefix(notice, "… (1234 bytes from the middle omitted") ||
+			!strings.HasSuffix(notice, ")") {
+			t.Errorf("OmissionNotice(1234, %q) = %q", where, notice)
+		}
+		if (where != "") != strings.Contains(notice, "omitted; ") {
+			t.Errorf("the clause after the semicolon is there exactly when there is somewhere to name: %q", notice)
+		}
 	}
 }
 

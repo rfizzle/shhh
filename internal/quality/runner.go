@@ -10,6 +10,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/rfizzle/shhh/internal/tools"
 )
 
 // Verdict is a gate run's outcome. Blocked and cancelled are distinct from
@@ -519,9 +521,10 @@ func Excerpt(s string, max int) string {
 	return headTail([]byte(head), []byte(tail), int64(len(s)-len(head)-len(tail)))
 }
 
-// elisionRoom is what headTail's own line costs at its widest — the count in
-// it is a byte count, and no capture this reads is near a petabyte.
-const elisionRoom = 48
+// elisionRoom is what headTail's own line costs at its widest, the two line
+// breaks around it included — the count in it is a byte count, and no
+// capture this reads is near a petabyte.
+const elisionRoom = 64
 
 // wholeLinesHead drops a partial last line, so the head ends where a line
 // does; a head with no line break at all is kept as it is rather than
@@ -542,12 +545,14 @@ func wholeLinesTail(s string) string {
 }
 
 // headTail is the two ends with the count of what fell between them, in the
-// one wording every caller of it prints.
+// sentence a command's own output is cut with (tools.OmissionNotice). It
+// names nowhere for the middle: the check's line in the verdict already names
+// the evidence entry holding the whole capture.
 func headTail(head, tail []byte, elided int64) string {
 	if elided <= 0 {
 		return string(head) + string(tail)
 	}
-	return fmt.Sprintf("%s\n… (%d bytes elided) …\n%s", head, elided, tail)
+	return string(head) + "\n" + tools.OmissionNotice(elided, "") + "\n" + string(tail)
 }
 
 // boundedWriter keeps the head and a rolling tail of a stream within a byte

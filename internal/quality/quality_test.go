@@ -10,6 +10,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/rfizzle/shhh/internal/tools"
 )
 
 func writeConfig(t *testing.T, ws, content string) {
@@ -743,7 +745,7 @@ func TestBoundedWriter(t *testing.T) {
 	if len(out) > 200 {
 		t.Fatalf("bounded output = %d bytes", len(out))
 	}
-	if !strings.Contains(out, "chunk-000") || !strings.Contains(out, "chunk-099") || !strings.Contains(out, "elided") {
+	if !strings.Contains(out, "chunk-000") || !strings.Contains(out, "chunk-099") || !strings.Contains(out, "bytes from the middle omitted") {
 		t.Fatalf("head/tail/elision missing: %q", out)
 	}
 }
@@ -766,8 +768,15 @@ func TestExcerpt(t *testing.T) {
 	if !strings.HasSuffix(got, "FAIL 3 tests") {
 		t.Fatalf("the tail is missing: %q", got)
 	}
-	if !strings.Contains(got, "bytes elided") {
+	// The cut is stated in the sentence a command's output is cut with, and
+	// counts what the two ends do not hold.
+	head, tail, ok := strings.Cut(got, "\n… (")
+	if !ok {
 		t.Fatalf("the cut is not stated: %q", got)
+	}
+	notice, tail, _ := strings.Cut("… ("+tail, "\n")
+	if want := tools.OmissionNotice(int64(len(long)-len(head)-len(tail)), ""); notice != want {
+		t.Fatalf("the cut reads %q, want %q", notice, want)
 	}
 	// A cut that lands mid-line keeps whole lines on both sides of it.
 	for _, line := range strings.Split(got, "\n") {
