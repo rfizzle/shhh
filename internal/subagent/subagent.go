@@ -471,6 +471,23 @@ type Env struct {
 	// Nil leaves the dispatcher exactly as this Env built it.
 	WrapAuto  func(Seam, agent.ToolExecutor) agent.ToolExecutor
 	WrapGated func(Seam, func(provider.ToolCall) string) func(provider.ToolCall) string
+	// Start, Stop and Compaction are the surface's seams at the rest of a
+	// child's life: as it starts, as it ends, and either side of a
+	// compaction of its conversation.
+	//
+	// Start answers with a refusal, or "" to let the child run; a refusal
+	// fails the child before its first request. Stop is handed the report the
+	// child ended on and answers with a steer, or "" to let it end; a steer
+	// on a child that answered goes in through Steer and the child carries
+	// on, and on one that ended any other way it is dropped, since there is
+	// nothing left to carry on. Compaction puts the seams on the child's own
+	// recovery step, which cannot be refused. None of the three is handed
+	// anything that names the child's role, its tools or its mode as a thing
+	// to set: what comes back is text, or nothing.
+	// See docs/capabilities/hooks.md#a-child-starts-and-ends-at-a-seam.
+	Start      func(Life) (refusal string)
+	Stop       func(l Life, final string) (steer string)
+	Compaction func(Life, *agent.Compactor)
 	// Sweeps is where this child's circling detector is asked what ground it
 	// has been over without writing anything, for the digest its readings are
 	// made of. The surface owns the detector because the surface is what
@@ -517,6 +534,14 @@ type Seam struct {
 	// approval rate that covered the parent and not its children would be a
 	// rate over the half of the work a person was looking at.
 	Record func(decision, code string)
+}
+
+// Life is who a child is, for the seams at its start, its end and its
+// compactions: its name, its role and the agent that spawned it, beside the
+// child's own seam for where a line about it goes and where it has got to.
+type Life struct {
+	Name, Role, Parent string
+	Seam
 }
 
 // autoExecutor is the child's auto-run dispatcher with the surface's seam
@@ -1436,6 +1461,12 @@ func (c *child) seam() Seam {
 			}
 		},
 	}
+}
+
+// life is this child as the seams at its start, end and compactions are told
+// about it.
+func (c *child) life() Life {
+	return Life{Name: c.name, Role: string(c.role), Parent: c.parent, Seam: c.seam()}
 }
 
 // watchTree turns this attempt's tree reading on, with the child's own writes
@@ -3328,6 +3359,9 @@ func (s *Supervisor) run(c *child) {
 	// the time this runs a retry may already have started: the child would
 	// then report itself queued in the event that says it finished.
 	var ended Status
+	// started says the seam at the child's start let it run, which is what
+	// makes there be an end for the seam at its end to be told about.
+	started := false
 	finish := func(state State, reason, detail string) {
 		c.mu.Lock()
 		// An agent the kill of an ancestor took with it ended of nothing of
@@ -3345,7 +3379,16 @@ func (s *Supervisor) run(c *child) {
 			reason = observe.ChildKilled
 		}
 		c.endReason = reason
+		final := c.report
 		c.mu.Unlock()
+		// The seam at a child's end, for an attempt that ended any way but
+		// answering: that one met it in the loop below, where a steer can
+		// still keep it working. Here there is nothing left to carry on, so
+		// what a hook answers is only what it said. An attempt a start hook
+		// refused never started, and has no end for a hook to be told about.
+		if state == StateFailed && started && c.env.Stop != nil {
+			c.env.Stop(c.life(), final)
+		}
 		if state == StateFailed {
 			// What the attempt wrote is kept before anything is torn down,
 			// and before the handoff that names it is written.
@@ -3479,6 +3522,22 @@ func (s *Supervisor) run(c *child) {
 		worktree, repoTop = w.wt.dir, w.wt.repoTop
 	}
 
+	// The seam at the child's start, once it has everything it will run with
+	// and before its first request: a hook that refuses it costs the child
+	// nothing it has spent, and the refusal is what the parent reads for it.
+	// What the seam can answer is a refusal and nothing else — no role, no
+	// tool, no mode — so the child that runs is the child that was spawned.
+	// See docs/capabilities/hooks.md#a-child-starts-and-ends-at-a-seam.
+	if c.env.Start != nil {
+		if refusal := c.env.Start(c.life()); refusal != "" {
+			cancel()
+			finish(StateFailed, observe.ChildHook, refusal)
+			s.emitUpdate(c)
+			return
+		}
+	}
+	started = true
+
 	c.set(StateRunning, "running")
 	// An attempt that replaces another says so on its own record, at the
 	// start. The row the failed attempt wrote is closed by the time anything
@@ -3510,9 +3569,13 @@ func (s *Supervisor) run(c *child) {
 	if c.env.WrapGated != nil {
 		resolve = c.env.WrapGated(c.seam(), resolve)
 	}
+	compact := childCompactor(c.model, c.env)
+	if compact != nil && c.env.Compaction != nil {
+		c.env.Compaction(c.life(), compact)
+	}
 	h := &agent.Headless{
 		Agent:   c.agent,
-		Compact: childCompactor(c.model, c.env),
+		Compact: compact,
 		// A child is as unwatched as a headless run, and its task is the
 		// instruction every reading is judged against. Nil where
 		// summary.subagents turned the reading off.
@@ -3776,7 +3839,22 @@ func (s *Supervisor) run(c *child) {
 			// Steering that arrived during the final stream becomes the next
 			// turn instead of being dropped (the TUI's dispatchSteering
 			// semantics).
-			if msgs := c.drainSteering(); len(msgs) > 0 {
+			msgs := c.drainSteering()
+			// The seam at the child's end, met here rather than on the way
+			// out because here the child can still be kept: a hook that does
+			// not take this answer as the end sends it back in through Steer,
+			// the one door into a child's conversation, and the turn it opens
+			// is the one below. It is asked only of an answer that is about to
+			// be the end — a child with steering already waiting is not
+			// ending — and each answer is asked afresh, so what bounds a hook
+			// that never accepts one is the child's own budget.
+			// See docs/capabilities/hooks.md#a-child-starts-and-ends-at-a-seam.
+			if len(msgs) == 0 && c.env.Stop != nil {
+				if steer := c.env.Stop(c.life(), report); steer != "" && s.Steer(c.name, steer, SteerFromHook) == nil {
+					msgs = c.drainSteering()
+				}
+			}
+			if len(msgs) > 0 {
 				endTurn(observe.TurnDone)
 				turn = strings.Join(msgs, "\n\n")
 				c.set(StateRunning, "running")

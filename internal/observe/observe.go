@@ -412,6 +412,11 @@ const (
 	// for — a workspace that could not be taken, a loop that returned an
 	// error nothing above classified.
 	ChildFailed = "failed"
+	// ChildHook: one of the person's own subagent_start hooks refused the
+	// child before its first request. It is a rule answering, not the child
+	// breaking, and a fan-out whose children a hook turns away is a question
+	// about the hook rather than about the budget.
+	ChildHook = "hook"
 	// ChildRetry: an attempt began in place of one that ended. It is filed
 	// on the new attempt's own record, because the row that ended is closed
 	// by the time anything replaces it, and it is what makes a retry visible

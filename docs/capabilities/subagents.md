@@ -578,6 +578,14 @@ the orchestrator gains is only the right to speak: the path its words travel
 is the one your own typing takes, and nothing a child reads can reach that
 path. A child's tool output cannot become a steer of any kind.
 
+One of your own hooks can speak for you too, once: at a child's end, a
+`subagent_stop` hook that does not take the answer as the end sends the child
+back to work by the same path, named on the lane as a hook's rather than as
+something you typed
+([`hooks.md`](hooks.md#a-child-starts-and-ends-at-a-seam)). It is your rule,
+written before the run, and like the other three it can redirect a child and
+cannot end one.
+
 Ending a child is yours alone, from the manager, which is where the keys that
 act on one child are. It has one name there and no second one anywhere else: a
 command that spelled it while attached spelled it with the word that quits the

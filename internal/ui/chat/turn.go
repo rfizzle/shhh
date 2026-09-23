@@ -623,6 +623,19 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 		}
 		return answered(m.finishPreToolHook(msg))
 
+	case preCompactMsg:
+		// The hooks in front of a compaction have answered; the summary is
+		// asked for, or the refusal is said (context.go).
+		return answered(m.finishPreCompact(msg))
+
+	case hookNotesMsg:
+		if len(msg.verdict.Notes) == 0 {
+			return m, nil, true
+		}
+		m.hookNotes(msg.verdict)
+		m.syncViewport()
+		return m, nil, true
+
 	case classifierDoneMsg:
 		if msg.runID != m.agent.RunID() || m.turnState() != stateClassifying || m.pendingApproval == nil {
 			return m, nil, true

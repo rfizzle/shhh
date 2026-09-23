@@ -10,10 +10,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/hook"
+	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -40,7 +43,8 @@ func jsonTags(t *testing.T, v any) map[string]string {
 func TestHookPayload_SharesTheEventStreamsSpelling(t *testing.T) {
 	stream := jsonTags(t, jsonEvent{})
 	payload := jsonTags(t, hook.Payload{})
-	shared := []string{"turn", "round", "id", "tool", "arguments", "result", "outcome", "final"}
+	shared := []string{"turn", "round", "id", "tool", "arguments", "result", "outcome", "final",
+		"trigger", "before_pct", "after_pct"}
 	for _, name := range shared {
 		want, ok := stream[name]
 		if !ok {
@@ -52,6 +56,21 @@ func TestHookPayload_SharesTheEventStreamsSpelling(t *testing.T) {
 		}
 		if got != want {
 			t.Errorf("%q is %s on the stream and %s in the payload", name, want, got)
+		}
+	}
+	// A child is an object on both, under the one name, and the three fields
+	// a child seam tells a hook are spelled the way the stream's agent line
+	// spells them.
+	if _, ok := stream["agent"]; !ok {
+		t.Fatal("the event stream no longer has an agent line; the payload still names one")
+	}
+	if _, ok := payload["agent"]; !ok {
+		t.Fatal("the payload no longer carries the child a child seam is about")
+	}
+	line, child := jsonTags(t, jsonAgent{}), jsonTags(t, hook.Agent{})
+	for _, name := range []string{"name", "role", "parent"} {
+		if child[name] == "" || child[name] != line[name] {
+			t.Errorf("a child's %q is %q on the stream's agent line and %q in the payload", name, line[name], child[name])
 		}
 	}
 	// And the payload's own three: what a hook cannot work out for itself,
@@ -235,5 +254,111 @@ func TestHookApprover_AnAskIsNotSaidAsARefusal(t *testing.T) {
 	}
 	if got != hook.AskedResult("guard") {
 		t.Fatalf("an ask should not read as a refusal: %q", got)
+	}
+}
+
+// A child's hook is the session's hook, fired about a child: the payload
+// carries the session the runner was opened for and the child the seam is
+// about, what the hook says lands on the child's own transcript, and what
+// comes back to the supervisor is text or nothing.
+// See docs/capabilities/hooks.md#a-child-starts-and-ends-at-a-seam.
+func TestChildHooks_TellTheSessionAndTheChild(t *testing.T) {
+	var told []hook.Payload
+	exec := func(_ context.Context, _ string, stdin []byte) (string, int, error) {
+		var p hook.Payload
+		if err := json.Unmarshal(stdin, &p); err != nil {
+			t.Fatal(err)
+		}
+		told = append(told, p)
+		return "not yet\n", hook.DenyExit, nil
+	}
+	set := hook.Load(map[string]hook.Entry{
+		"gate": {Event: hook.SubagentStart, Command: "gate"},
+		"keep": {Event: hook.SubagentStop, Command: "keep"},
+	}, "config.toml", "")
+	r := hook.NewRunner(set, exec, time.Second, "/work")
+	r.SetSession("7")
+
+	var notes []string
+	life := subagent.Life{Name: "writer-2", Role: "writer", Parent: "researcher-1", Seam: subagent.Seam{
+		At:   func() observe.Pos { return observe.Pos{Turn: 1, Round: 3} },
+		Note: func(text string) { notes = append(notes, text) },
+	}}
+	if got := childHookStart(r)(life); got != "refused by the gate hook: not yet" {
+		t.Errorf("a refused start should come back as the refusal: %q", got)
+	}
+	if got := childHookStop(r)(life, "done"); !strings.Contains(got, "keep hook") || !strings.Contains(got, "not yet") {
+		t.Errorf("a refused end should come back as a steer: %q", got)
+	}
+	if len(told) != 2 {
+		t.Fatalf("want both seams fired, got %d", len(told))
+	}
+	for _, p := range told {
+		if p.Session != "7" || p.Agent == nil || p.Agent.Name != "writer-2" || p.Agent.Role != "writer" ||
+			p.Agent.Parent != "researcher-1" || p.Round != 3 {
+			t.Errorf("a child's hook should be told the session and the child: %+v", p)
+		}
+	}
+	if len(notes) == 0 || !strings.HasPrefix(notes[0], "hook — ") {
+		t.Errorf("what the hook said should go on the child's transcript: %q", notes)
+	}
+	if childHookStart(nil) != nil || childHookStop(nil) != nil || childHookCompaction(nil) != nil {
+		t.Error("a session with no hooks should install nothing on a child")
+	}
+}
+
+// An unattended run's compaction is the round tail's, so its hooks are told
+// it was automatic and a refusal there is only said; and the stream's line
+// for the compaction carries the same three fields the hook is told.
+// See docs/capabilities/hooks.md#a-compaction-is-a-seam.
+func TestHookCompaction_IsAutomaticAndMatchesTheStreamsLine(t *testing.T) {
+	var told []hook.Payload
+	exec := func(_ context.Context, _ string, stdin []byte) (string, int, error) {
+		var p hook.Payload
+		if err := json.Unmarshal(stdin, &p); err != nil {
+			t.Fatal(err)
+		}
+		told = append(told, p)
+		return "", hook.DenyExit, nil
+	}
+	set := hook.Load(map[string]hook.Entry{
+		"before": {Event: hook.PreCompact, Command: "before"},
+		"after":  {Event: hook.PostCompact, Command: "after"},
+	}, "config.toml", "")
+	r := hook.NewRunner(set, exec, time.Second, "/work")
+	c := &agent.Compactor{}
+	var said []string
+	hookCompaction(c, r, func() hook.Pos { return hook.Pos{Turn: 1} }, nil,
+		func(v hook.Verdict) { said = append(said, v.Notes...) })
+	n := agent.CompactNotice{Compacted: true, BeforePct: 88, AfterPct: 31}
+	c.Before(88)
+	c.After(n)
+	if len(told) != 2 || told[0].Event != hook.PreCompact || told[1].Event != hook.PostCompact {
+		t.Fatalf("want both compaction seams, got %+v", told)
+	}
+	if told[0].Trigger != hook.TriggerAuto || told[0].BeforePct != 88 || told[1].AfterPct != 31 {
+		t.Errorf("the seams should be told who asked and both figures: %+v", told)
+	}
+	if !strings.Contains(strings.Join(said, "\n"), "went ahead") {
+		t.Errorf("a refusal of the round tail's compaction should be said, and not obeyed: %q", said)
+	}
+
+	var lines strings.Builder
+	newJSONLStream(&lines).compacted(observe.Pos{Turn: 1, Round: 4}, n)
+	var line map[string]any
+	if err := json.Unmarshal([]byte(lines.String()), &line); err != nil {
+		t.Fatal(err)
+	}
+	if line["trigger"] != hook.TriggerAuto || line["before_pct"] != float64(88) || line["after_pct"] != float64(31) ||
+		line["code"] != observe.SignalCompact {
+		t.Errorf("the stream's compaction line should carry the hook's three fields: %s", lines.String())
+	}
+
+	var none *agent.Compactor
+	hookCompaction(none, r, nil, nil, nil)
+	bare := &agent.Compactor{}
+	hookCompaction(bare, nil, nil, nil, nil)
+	if bare.Before != nil || bare.After != nil {
+		t.Error("a run with no hooks should put nothing on its compactor")
 	}
 }

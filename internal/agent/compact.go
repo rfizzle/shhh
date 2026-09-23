@@ -241,6 +241,17 @@ type Compactor struct {
 	// child whose prompt names the worktree it stands in.
 	// See docs/capabilities/coding-agent.md#the-agent-knows-where-and-when-it-is-standing.
 	Workspace func(system string) string
+	// Before and After are the surface's seams either side of a compaction:
+	// Before as the summary is about to be asked for, with the share of the
+	// window the conversation is at, and After once the conversation has
+	// been rebuilt, with the notice that says how it came out. Neither can
+	// stop the step. Every compaction this type starts is one a round tail
+	// asked for to keep the next request sendable, and a seam that could
+	// refuse it would leave the run sending a request the provider will
+	// refuse for its size. Nil fires nothing.
+	// See docs/capabilities/hooks.md#a-compaction-is-a-seam.
+	Before func(beforePct int)
+	After  func(n CompactNotice)
 
 	cal Calibration
 	// asked records that a summary was already requested on this crossing. A
@@ -423,6 +434,9 @@ func (c *Compactor) recover(a *Agent, before int64, ask CompactAsk) CompactNotic
 		return n
 	}
 	c.asked = true
+	if c.Before != nil {
+		c.Before(n.BeforePct)
+	}
 	summary, err := ask(a.CompactRequest(), provider.ToolChoiceNone)
 	if summary = strings.TrimSpace(summary); err != nil || summary == "" {
 		if errors.Is(err, ErrInterrupted) {
@@ -446,6 +460,9 @@ func (c *Compactor) recover(a *Agent, before int64, ask CompactAsk) CompactNotic
 	n.Compacted, n.Kept = true, CompactKeptTurns(kept)
 	n.AfterPct = percentOfWindow(c.Estimate(a.Messages()), c.Window)
 	n.Notice = compactNoticeText(n)
+	if c.After != nil {
+		c.After(n)
+	}
 	return n
 }
 

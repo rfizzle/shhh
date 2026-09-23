@@ -40,7 +40,7 @@ const (
 )
 
 // SteerSource is where a message put in front of a child came from. It is a
-// closed set of three because the surfaces that draw it — the roster the
+// closed set because the surfaces that draw it — the roster the
 // orchestrator reads, the lane the person reads, the session record — must
 // all say the same word for the same event, and a child that has been
 // redirected by the orchestrator is a different thing to read than one its
@@ -59,6 +59,12 @@ const (
 	// task and the machinery interrupted it. Unlike the other two this is
 	// nobody's message — which is exactly why the surfaces name it.
 	SteerFromReading SteerSource = "reading"
+	// SteerFromHook: one of the person's own subagent_stop hooks did not take
+	// the child's answer as its end. It is the person's rule rather than
+	// their typing, so it is named apart from the lane and counted with it:
+	// the orchestrator did not send it, and nothing read the child to earn it.
+	// See docs/capabilities/hooks.md#a-child-starts-and-ends-at-a-seam.
+	SteerFromHook SteerSource = "hook"
 )
 
 // Definitions returns the orchestration tool definitions the parent session

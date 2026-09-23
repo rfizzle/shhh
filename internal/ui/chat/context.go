@@ -7,6 +7,7 @@ package chat
 // conversation and restarts the message list from it.
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -14,6 +15,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/hook"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/provider"
@@ -382,9 +384,74 @@ func (m Model) startCompact() (tea.Model, tea.Cmd) {
 	m.appendEntry(entry{kind: entrySystem, text: compactingNotice})
 	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()
+	// The seam in front of a compaction, before the summary is paid for. It
+	// runs off the goroutine drawing the screen, the way the seam in front of
+	// a gated call does, and the request follows its answer (finishPreCompact).
+	if m.hooks.Has(hook.PreCompact, "") {
+		hooks, at, run := m.hooks, m.hookPos(), m.compactRun
+		c := hook.Compaction{Trigger: m.compactTrigger(), BeforePct: run.pct}
+		return m, func() tea.Msg {
+			return preCompactMsg{run: run, verdict: hooks.PreCompact(context.Background(), at, c)}
+		}
+	}
 	// The request the shared step builds, under the choice it asks for: what
 	// a compaction sends is one thing whichever surface asked for it.
 	return m, m.requestStreamFor(m.agent.CompactRequest(), provider.ToolChoiceNone)
+}
+
+// compactTrigger is who asked for the compaction under way, in the word a
+// compaction hook is told: the round tail recovering its window, or somebody
+// asking — /compact, the pressure card, the failure row's key.
+func (m Model) compactTrigger() string {
+	if m.compactResume {
+		return hook.TriggerAuto
+	}
+	return hook.TriggerManual
+}
+
+// finishPreCompact carries out what the hooks in front of a compaction came
+// to. A refusal stops one somebody asked for, before its request is sent, and
+// leaves the conversation as it was; on the round tail's own compaction the
+// hook package has already made a refusal a note, because that compaction is
+// what keeps the next request sendable.
+// See docs/capabilities/hooks.md#a-compaction-is-a-seam.
+func (m Model) finishPreCompact(msg preCompactMsg) (tea.Model, tea.Cmd) {
+	// A compaction cancelled while its hooks ran, or one that has since been
+	// replaced by another, is not the one this answer is about.
+	if !m.compacting || msg.run != m.compactRun {
+		return m, nil
+	}
+	// What the hooks said goes above the line saying a compaction is running,
+	// which has to stay the last row: the receipt answers it by taking it
+	// back off, and only the last row is taken back.
+	m.dropCompactingNotice()
+	m.hookNotes(msg.verdict)
+	if msg.verdict.Denied() {
+		m.compacting, m.compactRun = false, nil
+		m.appendEntry(entry{kind: entrySystem,
+			text: "Compaction " + hook.StartRefused(msg.verdict) + "; conversation unchanged."})
+		m.releaseAfterCompact()
+		m.viewport.SetLines(m.renderHistoryLines())
+		m.viewport.GotoBottom()
+		return m.resumeAfterCompact(nil)
+	}
+	m.appendEntry(entry{kind: entrySystem, text: compactingNotice})
+	m.syncViewport()
+	return m, m.requestStreamFor(m.agent.CompactRequest(), provider.ToolChoiceNone)
+}
+
+// postCompactCmd is the seam behind a compaction, once the conversation has
+// been rebuilt: off the goroutine drawing the screen, with what it says
+// arriving as notes. Nil where nothing would fire.
+func (m Model) postCompactCmd(trigger string, before int) tea.Cmd {
+	if !m.hooks.Has(hook.PostCompact, "") {
+		return nil
+	}
+	hooks, at := m.hooks, m.hookPos()
+	c := hook.Compaction{Trigger: trigger, BeforePct: before, AfterPct: m.contextPercent()}
+	return func() tea.Msg {
+		return hookNotesMsg{verdict: hooks.PostCompact(context.Background(), at, c)}
+	}
 }
 
 // finishCompact restarts the message list from the streamed summary: system
@@ -396,6 +463,7 @@ func (m Model) finishCompact() (tea.Model, tea.Cmd) {
 	// by value: what the receipt is drawn from is spent by drawing it, and a
 	// record left behind would be the next compaction's figures.
 	started := m.compactRun
+	trigger := m.compactTrigger()
 	m.compacting, m.compactRun = false, nil
 	m.streaming = ""
 	m.events = nil
@@ -500,7 +568,11 @@ func (m Model) finishCompact() (tea.Model, tea.Cmd) {
 	// after that.
 	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()
-	return m.resumeAfterCompact(m.autosaveCmd())
+	before := 0
+	if started != nil {
+		before = started.pct
+	}
+	return m.resumeAfterCompact(tea.Batch(m.autosaveCmd(), m.postCompactCmd(trigger, before)))
 }
 
 // releaseAfterCompact ends the turn a compaction was asked inside of — unless

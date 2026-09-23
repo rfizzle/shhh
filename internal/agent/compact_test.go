@@ -403,6 +403,41 @@ func TestRecoverRewritesTheSystemPromptWhenAskedTo(t *testing.T) {
 	}
 }
 
+// The surface's seams either side of a compaction fire around the act and
+// only around it: in front of the summary request with the occupancy it is
+// being asked at, behind the rebuild with both figures — and nothing behind a
+// summary that never came back, since nothing was rebuilt.
+// See docs/capabilities/hooks.md#a-compaction-is-a-seam.
+func TestRecoverFiresTheSeamsAroundACompactionOnly(t *testing.T) {
+	var order []string
+	var after CompactNotice
+	c := &Compactor{Model: "test-model", Window: testWindow,
+		Before: func(pct int) { order = append(order, "before:"+strconv.Itoa(pct)) },
+		After:  func(n CompactNotice) { order = append(order, "after"); after = n },
+	}
+	a := New(filledWithProse(), nil)
+	n := c.Recover(a, func([]provider.Message, string) (string, error) {
+		order = append(order, "ask")
+		return "the conversation so far", nil
+	})
+	if !n.Compacted {
+		t.Fatalf("expected a compaction: %+v", n)
+	}
+	if len(order) != 3 || !strings.HasPrefix(order[0], "before:") || order[1] != "ask" || order[2] != "after" {
+		t.Fatalf("the seams should be either side of the act, got %v", order)
+	}
+	if order[0] != "before:"+strconv.Itoa(n.BeforePct) || after.BeforePct != n.BeforePct || after.AfterPct != n.AfterPct {
+		t.Errorf("the seams should be told the step's own figures: %v, %+v against %+v", order, after, n)
+	}
+
+	order = nil
+	failed := &Compactor{Model: "test-model", Window: testWindow, Before: c.Before, After: c.After}
+	failed.Recover(New(filledWithProse(), nil), func([]provider.Message, string) (string, error) { return "", nil })
+	if len(order) != 1 || !strings.HasPrefix(order[0], "before:") {
+		t.Errorf("a summary that never came back rebuilt nothing, so nothing is behind it: %v", order)
+	}
+}
+
 // What the step did is written down, in the shares of the window it did it
 // at. The two figures are what tell a run that trimmed once and bought real
 // headroom from one shaving itself back to just under its trigger every

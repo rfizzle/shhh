@@ -702,9 +702,13 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 		a.SetTreeCheck(*c)
 	}
 
+	// The compaction seams sit on the recovery step itself, where a served
+	// turn's window is recovered (hooks.go).
+	compact := headlessCompactor(cmd.Context(), cfg, env, l.ledger, prices, session.toolDefs)
+	hookCompaction(compact, hooks, l.hookPos, nil, l.hookNote)
 	l.headless = &agent.Headless{
 		Agent:        a,
-		Compact:      headlessCompactor(cmd.Context(), cfg, env, l.ledger, prices, session.toolDefs),
+		Compact:      compact,
 		Gate:         gate,
 		Resolve:      resolveCall,
 		Steer:        l.drainSteering,

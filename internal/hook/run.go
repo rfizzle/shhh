@@ -102,6 +102,11 @@ type Verdict struct {
 	// prints. "A rule said no" is only actionable when the reader is told
 	// which rule (docs/capabilities/approvals-and-safety.md#denials-are-two-different-facts).
 	Reason string
+	// Said is what the refusing hook said, in its own words: its note, or the
+	// first line it printed. It is kept apart from Notes, which prefix the
+	// hook's name, because the seams that pass a refusal on — a child's start
+	// refused, a child's end sent back to it — quote it rather than list it.
+	Said string
 	// Input is the call's arguments as the hooks left them, and nil where
 	// none of them rewrote anything. It is arguments and nothing else: this
 	// is the field the tier rule lives in.
@@ -179,6 +184,97 @@ func (r *Runner) Stop(ctx context.Context, at Pos, final string) Verdict {
 	}, false)
 }
 
+// SubagentStart fires as a child starts, before its first request. A refusal
+// fails the child before it has spent anything; nothing else a hook says here
+// decides anything, and nothing it can say names the child's role, its tools
+// or its mode — the answer has no field for any of them.
+// See docs/capabilities/hooks.md#a-child-starts-and-ends-at-a-seam.
+func (r *Runner) SubagentStart(ctx context.Context, at Pos, a Agent) Verdict {
+	return lifeOnly(r.fire(ctx, SubagentStart, "", Payload{
+		Event: SubagentStart, Turn: at.Turn, Round: at.Round, Agent: &a,
+	}, false))
+}
+
+// SubagentStop fires as a child ends, with the report it ended on. A refusal
+// on a child that answered is sent back to it as a steer and it carries on —
+// the one way a hook keeps a child working. On a child that ended any other
+// way there is nothing left to carry on, and a refusal is only what it said.
+func (r *Runner) SubagentStop(ctx context.Context, at Pos, a Agent, final string) Verdict {
+	return lifeOnly(r.fire(ctx, SubagentStop, "", Payload{
+		Event: SubagentStop, Turn: at.Turn, Round: at.Round, Agent: &a, Final: final,
+	}, false))
+}
+
+// PreCompact fires in front of a compaction, before the summary is asked
+// for. A refusal stops one somebody asked for. On one the round tail asked
+// for it is a note and the compaction goes ahead: that compaction is what
+// keeps the next request sendable, and refusing it would leave a turn
+// sending a request the provider will refuse for its size.
+func (r *Runner) PreCompact(ctx context.Context, at Pos, c Compaction) Verdict {
+	v := lifeOnly(r.fire(ctx, PreCompact, "", compactPayload(PreCompact, at, c), false))
+	if v.Denied() && c.Trigger != TriggerManual {
+		v.Notes = append(v.Notes, v.Reason+" refused an automatic compaction; it went ahead, because the next request would not fit without it")
+		v.Decision, v.Reason, v.Said = "", "", ""
+	}
+	return v
+}
+
+// PostCompact fires once the conversation has been rebuilt. The compaction
+// has happened, so what a hook here is for is its note.
+func (r *Runner) PostCompact(ctx context.Context, at Pos, c Compaction) Verdict {
+	v := r.fire(ctx, PostCompact, "", compactPayload(PostCompact, at, c), false)
+	v.Decision, v.Reason, v.Said, v.Input = "", "", "", nil
+	return v
+}
+
+func compactPayload(event string, at Pos, c Compaction) Payload {
+	return Payload{Event: event, Turn: at.Turn, Round: at.Round, Agent: c.Agent,
+		Trigger: c.Trigger, BeforePct: c.BeforePct, AfterPct: c.AfterPct}
+}
+
+// lifeOnly keeps the one decision the seams with no call to put to anybody
+// can act on, which is a refusal. An ask has nobody to be asked of there —
+// the spawn was already a decision, a compaction is not a card — so it is
+// read as nothing said, the way a word outside the closed set is.
+func lifeOnly(v Verdict) Verdict {
+	if v.Asked() {
+		v.Decision, v.Reason = "", ""
+	}
+	return v
+}
+
+// StartRefused is the line a child refused at its start ends on: which hook,
+// and what it said. It is what the parent reads for the child, where the
+// report would have been, and it names the hook and nothing about where hooks
+// live, for the reason DeniedResult does.
+func StartRefused(v Verdict) string {
+	who := "a hook this session runs"
+	if v.Reason != "" {
+		who = "the " + v.Reason + " hook"
+	}
+	return "refused by " + who + said(v.Said)
+}
+
+// StopSteer is what a child whose end a hook refused is told, as a steer:
+// that its answer was not taken as the end, by whom, and why. It is a steer
+// and not a tool result because it arrives between turns, on the one door
+// into a child's conversation every other redirect uses.
+func StopSteer(v Verdict) string {
+	who := "One of the user's own hooks"
+	if v.Reason != "" {
+		who = "The user's own " + v.Reason + " hook"
+	}
+	return who + " did not take that answer as the end of your task" + said(v.Said) +
+		". Carry on from here, and answer again once that is dealt with."
+}
+
+func said(text string) string {
+	if text = strings.TrimRight(strings.TrimSpace(text), "."); text == "" {
+		return ""
+	}
+	return ": " + text
+}
+
 // fire runs every hook on one seam, in order, and folds their answers into
 // one. A refusal stops the rest: the call is not going to happen, and running
 // the remaining hooks would be work nothing reads and side effects nobody
@@ -220,13 +316,15 @@ func (r *Runner) fire(ctx context.Context, event, tool string, p Payload, gated 
 		if res.Context != "" {
 			v.Context = joinContext(v.Context, res.Context)
 		}
-		if len(res.UpdatedInput) > 0 && json.Valid(res.UpdatedInput) {
+		// Arguments are a call's, so only the seams that carry a call take a
+		// rewrite; anywhere else there is nothing for it to replace.
+		if hasTool(event) && len(res.UpdatedInput) > 0 && json.Valid(res.UpdatedInput) {
 			v.Input = res.UpdatedInput
 			v.Notes = append(v.Notes, h.Name+" rewrote the arguments")
 		}
 		switch res.Decision {
 		case DecisionDeny:
-			v.Decision, v.Reason = DecisionDeny, h.Name
+			v.Decision, v.Reason, v.Said = DecisionDeny, h.Name, res.Note
 			return v
 		case DecisionAsk:
 			if !v.Denied() {

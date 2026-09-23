@@ -246,6 +246,147 @@ func TestHook_TurnCloseFiresOnceAsTheTurnEnds(t *testing.T) {
 	}
 }
 
+// compactingModel is a session with a conversation worth compacting, whose
+// stream counts the requests it is asked for and answers each with a summary.
+func compactingModel(requests *int) Model {
+	stream := func([]provider.Message, string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		*requests++
+		ch := make(chan provider.StreamEvent, 2)
+		ch <- provider.StreamEvent{Token: "the summary"}
+		ch <- provider.StreamEvent{Done: true}
+		close(ch)
+		_, cancel := context.WithCancel(context.Background())
+		return ch, cancel, nil
+	}
+	return New([]provider.Message{
+		{Role: provider.RoleSystem, Content: "sys"},
+		{Role: provider.RoleUser, Content: "question"},
+		{Role: provider.RoleAssistant, Content: "answer"},
+	}, stream)
+}
+
+// A compaction somebody asked for meets the seam in front of it before its
+// summary is paid for, off the goroutine drawing the screen, and a refusal
+// there leaves the conversation as it was and says which hook refused.
+// See docs/capabilities/hooks.md#a-compaction-is-a-seam.
+func TestHook_PreCompactRefusesACompactionSomebodyAskedFor(t *testing.T) {
+	var seen []hook.Payload
+	requests := 0
+	m := compactingModel(&requests)
+	m.hooks = hookRunner(t, map[string]hook.Entry{
+		"hold": {Event: hook.PreCompact, Command: "hold"},
+	}, "the release notes are still in this conversation\n", hook.DenyExit, &seen)
+
+	m.input.SetValue("/compact")
+	updated, cmd := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	m = updated.(Model)
+	if len(seen) != 0 {
+		t.Fatal("the hook ran on the goroutine drawing the screen")
+	}
+	var answered bool
+	for _, c := range unwrapBatch(cmd) {
+		if msg, ok := c().(preCompactMsg); ok {
+			updated, _ = m.Update(msg)
+			m, answered = updated.(Model), true
+		}
+	}
+	if !answered {
+		t.Fatal("a compaction with a hook in front of it should have produced the hook's cmd")
+	}
+	if len(seen) != 1 || seen[0].Trigger != hook.TriggerManual || seen[0].AfterPct != 0 {
+		t.Errorf("the hook should be told somebody asked, and nothing about an after: %+v", seen)
+	}
+	if requests != 0 {
+		t.Errorf("a refused compaction sent %d summary requests", requests)
+	}
+	if m.compacting || m.state != stateInput || len(m.Messages()) != 3 {
+		t.Fatalf("a refused compaction should leave the conversation and hand back the input: compacting=%v state=%d", m.compacting, m.state)
+	}
+	var said, running bool
+	for _, e := range m.transcript {
+		said = said || strings.Contains(e.text, "refused by the hold hook")
+		running = running || e.text == compactingNotice
+	}
+	if !said || running {
+		t.Errorf("the transcript should say which hook refused, and nothing about a compaction running: %+v", m.transcript)
+	}
+}
+
+// The round tail's own compaction is what keeps its next request sendable, so
+// a refusal in front of it is said and the summary is asked for anyway.
+func TestHook_PreCompactOnlyRemarksOnTheRoundTailsCompaction(t *testing.T) {
+	var seen []hook.Payload
+	requests := 0
+	m := compactingModel(&requests)
+	m.hooks = hookRunner(t, map[string]hook.Entry{
+		"hold": {Event: hook.PreCompact, Command: "hold"},
+	}, "not now\n", hook.DenyExit, &seen)
+	m.compactResume = true
+
+	updated, cmd := m.startCompact()
+	m = updated.(Model)
+	msg, ok := cmd().(preCompactMsg)
+	if !ok {
+		t.Fatal("a compaction with a hook in front of it should have produced the hook's cmd")
+	}
+	updated, cmd = m.Update(msg)
+	m = updated.(Model)
+	if len(seen) != 1 || seen[0].Trigger != hook.TriggerAuto {
+		t.Fatalf("the hook should be told the round tail asked: %+v", seen)
+	}
+	if !m.compacting || cmd == nil {
+		t.Fatal("the round tail's compaction should go ahead whatever the hook said")
+	}
+	for _, c := range unwrapBatch(cmd) {
+		c()
+	}
+	if requests != 1 {
+		t.Fatalf("the summary should have been asked for once, got %d requests", requests)
+	}
+	last := m.transcript[len(m.transcript)-1]
+	if last.text != compactingNotice {
+		t.Errorf("the running compaction's line should still be the last row, got %q", last.text)
+	}
+}
+
+// The seam behind a compaction is told both figures once the conversation has
+// been rebuilt, off the goroutine drawing the screen, and what it says lands
+// on the transcript.
+func TestHook_PostCompactHearsTheRebuild(t *testing.T) {
+	var seen []hook.Payload
+	requests := 0
+	m := compactingModel(&requests)
+	m.hooks = hookRunner(t, map[string]hook.Entry{
+		"after": {Event: hook.PostCompact, Command: "after"},
+	}, `{"note":"archived the summary"}`, 0, &seen)
+	m.compacting, m.compactRun, m.streaming = true, &compactStart{pct: 83}, "the summary"
+
+	updated, cmd := m.finishCompact()
+	m = updated.(Model)
+	if len(seen) != 0 {
+		t.Fatal("the hook ran on the goroutine drawing the screen")
+	}
+	var heard bool
+	for _, c := range unwrapBatch(cmd) {
+		if msg, ok := c().(hookNotesMsg); ok {
+			updated, _ = m.Update(msg)
+			m, heard = updated.(Model), true
+		}
+	}
+	if !heard || len(seen) != 1 || seen[0].Event != hook.PostCompact || seen[0].BeforePct != 83 || seen[0].Trigger != hook.TriggerManual {
+		t.Fatalf("the seam behind the compaction should fire once with the figure it started at: %+v", seen)
+	}
+	var noted bool
+	for _, e := range m.transcript {
+		if e.kind == entrySystem && strings.Contains(e.text, "archived the summary") {
+			noted = true
+		}
+	}
+	if !noted {
+		t.Error("what the hook said should reach the transcript")
+	}
+}
+
 // The session's hooks are part of what makes this session different from the
 // one beside it, so `/status` says what they are.
 func TestHook_StatusNamesTheHooks(t *testing.T) {

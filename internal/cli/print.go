@@ -431,7 +431,9 @@ func (h headlessObserver) compact(n agent.CompactNotice) {
 		h.signal(observe.SignalTrim, observe.TrimReason(n.Elided, n.BeforePct, n.AfterPct))
 	}
 	if n.Compacted {
-		h.signal(observe.SignalCompact, observe.CompactPressure)
+		at := h.pos()
+		h.rec.signal(at, observe.SignalCompact, observe.CompactPressure)
+		h.stream.compacted(at, n)
 	}
 }
 
@@ -1188,9 +1190,13 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	if c := headlessTree(cfg, session.sibling, own); c != nil {
 		a.SetTreeCheck(*c)
 	}
+	// The compaction seams sit on the recovery step itself, which is where
+	// an unattended run recovers its window (hooks.go).
+	compact := headlessCompactor(cmd.Context(), cfg, env, ledger, prices, session.toolDefs)
+	hookCompaction(compact, hooks, hookPos(a.Rounds), nil, hookNoteLine)
 	h := &agent.Headless{
 		Agent:   a,
-		Compact: headlessCompactor(cmd.Context(), cfg, env, ledger, prices, session.toolDefs),
+		Compact: compact,
 		Summary: summaryRun,
 		OnProgress: func(text string) {
 			obs.progress(text)
@@ -2380,6 +2386,13 @@ type jsonEvent struct {
 	Decision   string `json:"decision,omitempty"`
 	Code       string `json:"code,omitempty"`
 	Reason     string `json:"reason,omitempty"`
+	// Trigger, BeforePct and AfterPct belong to a compaction's signal line:
+	// who asked for it and how full the window was either side, the figures
+	// the log already writes. A compaction hook is told the same three under
+	// the same names (docs/capabilities/hooks.md#the-payload-is-the-event-stream).
+	Trigger   string `json:"trigger,omitempty"`
+	BeforePct int    `json:"before_pct,omitempty"`
+	AfterPct  int    `json:"after_pct,omitempty"`
 
 	Usage *jsonUsage `json:"usage,omitempty"`
 	// Agent belongs to the agent line alone: one child of this session as it
@@ -2534,6 +2547,18 @@ func (s *jsonlStream) signal(at observe.Pos, code, reason string) {
 	}
 	s.write(jsonEvent{Kind: observe.EventSignal, Turn: at.Turn, Round: at.Round,
 		Code: code, Reason: reason})
+}
+
+// compacted is the signal line a compaction is, with the figures either side
+// of it. Every compaction an unattended surface makes is one its round tail
+// asked for, so its trigger is always the automatic one.
+func (s *jsonlStream) compacted(at observe.Pos, n agent.CompactNotice) {
+	if s == nil {
+		return
+	}
+	s.write(jsonEvent{Kind: observe.EventSignal, Turn: at.Turn, Round: at.Round,
+		Code: observe.SignalCompact, Reason: observe.CompactPressure,
+		Trigger: hook.TriggerAuto, BeforePct: n.BeforePct, AfterPct: n.AfterPct})
 }
 
 // agent puts one child's state on the stream. It is the surface with a client

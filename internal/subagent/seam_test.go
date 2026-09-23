@@ -218,3 +218,97 @@ func TestAChildWithoutATreeReadingTakesNone(t *testing.T) {
 		t.Fatal("a child took a reading nobody asked for")
 	}
 }
+
+// The seam at a child's start may refuse it, and a refused child ends there:
+// before its first request, on the refusal's own words, under the end the
+// record keeps for a rule answering — and with no end for the seam at its end
+// to be told about, since it never started.
+// See docs/capabilities/hooks.md#a-child-starts-and-ends-at-a-seam.
+func TestASurfacesStartSeamCanRefuseAChild(t *testing.T) {
+	env := &scriptedEnv{steps: []streamStep{{text: "should never be asked"}}}
+	var mu sync.Mutex
+	var started []Life
+	stopped := 0
+	base := env.factory()
+	factory := func(ctx context.Context, spec Spec) (Env, error) {
+		e, err := base(ctx, spec)
+		e.Start = func(l Life) string {
+			mu.Lock()
+			defer mu.Unlock()
+			started = append(started, l)
+			return "refused by the gate hook: no researchers after six"
+		}
+		e.Stop = func(Life, string) string {
+			mu.Lock()
+			defer mu.Unlock()
+			stopped++
+			return ""
+		}
+		return e, err
+	}
+	sup := New(context.Background(), Options{Root: t.TempDir(), NewEnv: factory})
+	t.Cleanup(sup.Close)
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"read the tree"}`)
+	report := execTool(t, sup, ReportToolName, `{"name":"researcher-1"}`)
+
+	mu.Lock()
+	defer mu.Unlock()
+	if len(started) != 1 || started[0].Name != "researcher-1" || started[0].Role != "researcher" {
+		t.Fatalf("the start seam was not told which child it was about: %+v", started)
+	}
+	if !strings.Contains(report, "refused by the gate hook: no researchers after six") {
+		t.Errorf("the parent should read the refusal for the child:\n%s", report)
+	}
+	st, _ := sup.Get("researcher-1")
+	if st.State != StateFailed || st.End != observe.ChildHook {
+		t.Errorf("a refused child should end failed, by a hook: %v %q", st.State, st.End)
+	}
+	if env.asked("read the tree") {
+		t.Error("a refused child made a request")
+	}
+	if stopped != 0 {
+		t.Error("a child that never started was reported as ending")
+	}
+}
+
+// The seam at a child's end is handed the report it ended on, and a steer it
+// answers with goes in through the one door a child's conversation has: the
+// child carries on, answers again, and the second answer is asked about too.
+func TestASurfacesStopSeamCanKeepAChildWorking(t *testing.T) {
+	env := &scriptedEnv{steps: []streamStep{{text: "first answer"}, {text: "second answer"}}}
+	var mu sync.Mutex
+	var finals []string
+	base := env.factory()
+	factory := func(ctx context.Context, spec Spec) (Env, error) {
+		e, err := base(ctx, spec)
+		e.Stop = func(_ Life, final string) string {
+			mu.Lock()
+			defer mu.Unlock()
+			finals = append(finals, final)
+			if len(finals) == 1 {
+				return "run the tests before you stop"
+			}
+			return ""
+		}
+		return e, err
+	}
+	sup := New(context.Background(), Options{Root: t.TempDir(), NewEnv: factory})
+	t.Cleanup(sup.Close)
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"read the tree"}`)
+	report := execTool(t, sup, ReportToolName, `{"name":"researcher-1"}`)
+
+	mu.Lock()
+	defer mu.Unlock()
+	if len(finals) != 2 || finals[0] != "first answer" || finals[1] != "second answer" {
+		t.Fatalf("the end seam should be asked of each answer, got %q", finals)
+	}
+	if !env.asked("run the tests before you stop") {
+		t.Error("the steer never reached the child's conversation")
+	}
+	if !strings.Contains(report, "second answer") {
+		t.Errorf("the child's report should be the answer it ended on:\n%s", report)
+	}
+	if st, _ := sup.Get("researcher-1"); st.State != StateDone || st.SteerFrom != SteerFromHook {
+		t.Errorf("the child should finish, steered by a hook: %v %q", st.State, st.SteerFrom)
+	}
+}

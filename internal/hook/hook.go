@@ -1,6 +1,7 @@
 // Package hook runs the user's own commands at the seams a session already
 // has: a session opening, a tool call about to run, a result about to be
-// read, a turn closing, a run stopping.
+// read, a child starting and ending, a conversation being compacted, a turn
+// closing, a run stopping.
 //
 // The seams are the ones that were in the code before this package existed —
 // the approval queue, the executor chain, the turn's close, the session
@@ -35,23 +36,40 @@ import (
 )
 
 // The events, in the order a listing names them: the session opening, the two
-// either side of a tool call, the turn closing, and the run stopping.
+// either side of a tool call, a child's start and end, the two either side of
+// a compaction, the turn closing, and the run stopping.
 //
-// They are the seams that exist, which is why there are five and not more. A
-// sixth would mean a new place in the loop for something to happen, and that
-// is a change to the product rather than a line in a table.
+// Each is a place the loop already has, opened to a command line. A new one
+// costs a place in the loop somebody found, a payload the event stream
+// already carries, and the ceiling every other seam runs under — so the list
+// grows when the loop grows a place worth opening, and not by a line here.
+// See docs/capabilities/hooks.md#the-seams.
 const (
-	SessionStart = "session_start"
-	PreTool      = "pre_tool"
-	PostTool     = "post_tool"
-	TurnClose    = "turn_close"
-	Stop         = "stop"
+	SessionStart  = "session_start"
+	PreTool       = "pre_tool"
+	PostTool      = "post_tool"
+	SubagentStart = "subagent_start"
+	SubagentStop  = "subagent_stop"
+	PreCompact    = "pre_compact"
+	PostCompact   = "post_compact"
+	TurnClose     = "turn_close"
+	Stop          = "stop"
 )
 
 // Events is every event a hook may name, in listing order.
 func Events() []string {
-	return []string{SessionStart, PreTool, PostTool, TurnClose, Stop}
+	return []string{SessionStart, PreTool, PostTool, SubagentStart, SubagentStop,
+		PreCompact, PostCompact, TurnClose, Stop}
 }
+
+// The two ways a compaction starts, as a compaction hook is told them. Manual
+// is somebody asking for one; auto is the round tail recovering a window the
+// next request would not otherwise fit in — which is why a hook may refuse the
+// first and only remark on the second.
+const (
+	TriggerManual = "manual"
+	TriggerAuto   = "auto"
+)
 
 // Decisions a hook may answer with. They are the words the record already
 // keeps for an approval verdict, so a reader who has seen one has seen the
@@ -93,7 +111,7 @@ type Call struct {
 // stream's spelling.
 // See docs/capabilities/hooks.md#the-payload-is-the-event-stream.
 type Payload struct {
-	// Event is which seam fired, from the five above. It is the first field
+	// Event is which seam fired, from the nine above. It is the first field
 	// a hook reads and the one every hook reads, so it leads.
 	Event string `json:"event"`
 	// Session is the saved conversation this session is writing, and CWD the
@@ -112,6 +130,38 @@ type Payload struct {
 	Result    string `json:"result,omitempty"`
 	Outcome   string `json:"outcome,omitempty"`
 	Final     string `json:"final,omitempty"`
+
+	// Agent is the child a child seam is about, and on a compaction seam the
+	// child whose conversation is being recycled. It is an object spelled the
+	// way the event stream's agent line spells the same three fields, because
+	// that line already carries `agent` and a second spelling here would be
+	// two vocabularies for one child. Session above stays the session's: a
+	// child's hook is the session's hook, fired about a child.
+	Agent *Agent `json:"agent,omitempty"`
+	// Trigger, BeforePct and AfterPct are the compaction seams': who asked
+	// for it, and how full the window was either side of it, in the shares of
+	// the window the event stream's compaction line states. AfterPct is empty
+	// in front of a compaction, which has not happened yet.
+	Trigger   string `json:"trigger,omitempty"`
+	BeforePct int    `json:"before_pct,omitempty"`
+	AfterPct  int    `json:"after_pct,omitempty"`
+}
+
+// Agent is one child as a hook is told about it: its name, its role and the
+// agent that spawned it, which is empty where that was the session.
+type Agent struct {
+	Name   string `json:"name"`
+	Role   string `json:"role"`
+	Parent string `json:"parent,omitempty"`
+}
+
+// Compaction is one compaction as its two seams are told about it. Agent is
+// nil for the session's own conversation.
+type Compaction struct {
+	Trigger   string
+	BeforePct int
+	AfterPct  int
+	Agent     *Agent
 }
 
 // Response is what a hook writes on stdout. Every field is optional: a hook
@@ -216,8 +266,8 @@ func knownEvent(event string) bool {
 }
 
 // hasTool reports whether an event carries a tool name for a matcher to
-// match. The other three are about the session and the turn, which are not
-// things a name selects between.
+// match. The others are about the session, a child, a compaction and the
+// turn, which are not things a tool name selects between.
 func hasTool(event string) bool { return event == PreTool || event == PostTool }
 
 // matches reports whether this hook is about a call on the named tool.

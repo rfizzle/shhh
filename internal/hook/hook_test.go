@@ -68,16 +68,22 @@ func TestRunner_EverySeamFiresOnceWithItsPayload(t *testing.T) {
 	ctx, at := context.Background(), Pos{Turn: 3, Round: 7}
 	call := Call{ID: "call_1", Name: "read_file", Arguments: `{"path":"a.go"}`}
 
+	child := Agent{Name: "researcher-1", Role: "researcher", Parent: "writer-1"}
+
 	r.SessionStart(ctx)
 	r.PreTool(ctx, at, call, false)
 	r.PostTool(ctx, at, call, "one line", observe.OutcomeOK)
+	r.SubagentStart(ctx, at, child)
+	r.SubagentStop(ctx, at, child, "found it")
+	r.PreCompact(ctx, at, Compaction{Trigger: TriggerManual, BeforePct: 91})
+	r.PostCompact(ctx, at, Compaction{Trigger: TriggerManual, BeforePct: 91, AfterPct: 24, Agent: &child})
 	r.TurnClose(ctx, at, "done")
 	r.Stop(ctx, at, "done")
 
 	if len(seen) != len(Events()) {
 		t.Fatalf("want one run per seam, got %d: %+v", len(seen), seen)
 	}
-	for i, want := range []string{SessionStart, PreTool, PostTool, TurnClose, Stop} {
+	for i, want := range Events() {
 		got := seen[i].payload
 		if got.Event != want {
 			t.Errorf("run %d says event %q, want %q", i, got.Event, want)
@@ -92,8 +98,88 @@ func TestRunner_EverySeamFiresOnceWithItsPayload(t *testing.T) {
 	if got := seen[2].payload; got.Result != "one line" || got.Outcome != observe.OutcomeOK {
 		t.Errorf("post_tool should carry the result: %+v", got)
 	}
-	if got := seen[3].payload; got.Final != "done" || got.Turn != 3 || got.Round != 7 {
+	if got := seen[3].payload; got.Agent == nil || *got.Agent != child || got.Final != "" {
+		t.Errorf("subagent_start should carry the child and nothing it has not said yet: %+v", got)
+	}
+	if got := seen[4].payload; got.Agent == nil || *got.Agent != child || got.Final != "found it" {
+		t.Errorf("subagent_stop should carry the child and the report it ended on: %+v", got)
+	}
+	if got := seen[5].payload; got.Trigger != TriggerManual || got.BeforePct != 91 || got.AfterPct != 0 || got.Agent != nil {
+		t.Errorf("pre_compact should carry who asked and the occupancy before: %+v", got)
+	}
+	if got := seen[6].payload; got.BeforePct != 91 || got.AfterPct != 24 || got.Agent == nil || got.Agent.Name != "researcher-1" {
+		t.Errorf("post_compact should carry both figures and whose conversation it was: %+v", got)
+	}
+	if got := seen[7].payload; got.Final != "done" || got.Turn != 3 || got.Round != 7 {
 		t.Errorf("turn_close should carry the answer and the position: %+v", got)
+	}
+}
+
+// A child's start can be refused, and nothing else a hook says there decides
+// anything: an ask has nobody to be put to, a rewrite has no call to rewrite,
+// and a failure decides nothing, the way it decides nothing anywhere.
+// See docs/capabilities/hooks.md#a-child-starts-and-ends-at-a-seam.
+func TestRunner_AChildsSeamsTakeOnlyARefusal(t *testing.T) {
+	child := Agent{Name: "writer-1", Role: "writer"}
+	ctx := context.Background()
+	for _, c := range []struct {
+		name, stdout string
+		code         int
+		denied       bool
+	}{
+		{"exit two refuses", "writers wait for the release branch\n", DenyExit, true},
+		{"a deny answer refuses", `{"decision":"deny","note":"not today"}`, 0, true},
+		{"an ask decides nothing", `{"decision":"ask"}`, 0, false},
+		{"a rewrite is dropped", `{"updated_input":{"role":"writer"}}`, 0, false},
+		{"a failure decides nothing", "boom", 1, false},
+	} {
+		var seen []fired
+		r := runnerOf(t, fakeExec(&seen, c.stdout, c.code),
+			map[string]Entry{"gate": {Event: SubagentStart, Command: "gate"}, "keep": {Event: SubagentStop, Command: "keep"}})
+		for _, v := range []Verdict{r.SubagentStart(ctx, Pos{}, child), r.SubagentStop(ctx, Pos{}, child, "done")} {
+			if v.Denied() != c.denied || v.Asked() || v.Input != nil {
+				t.Errorf("%s: %+v", c.name, v)
+			}
+		}
+	}
+
+	var seen []fired
+	r := runnerOf(t, fakeExec(&seen, "fix the failing test first.\n", DenyExit),
+		map[string]Entry{"keep": {Event: SubagentStop, Command: "keep"}})
+	v := r.SubagentStop(ctx, Pos{}, child, "done")
+	steer := StopSteer(v)
+	if !strings.Contains(steer, "keep hook") || !strings.Contains(steer, "fix the failing test first") ||
+		strings.Contains(steer, "hooks.json") || strings.Contains(steer, "config") {
+		t.Errorf("the steer should name the hook and quote it, and nothing about where hooks live: %q", steer)
+	}
+	if got := StartRefused(v); got != "refused by the keep hook: fix the failing test first" {
+		t.Errorf("a refused start reads %q", got)
+	}
+}
+
+// A compaction somebody asked for can be refused. The round tail's cannot:
+// that one is what keeps the next request sendable, so a refusal there is a
+// note and the compaction goes ahead.
+// See docs/capabilities/hooks.md#a-compaction-is-a-seam.
+func TestRunner_AnAutomaticCompactionIsNeverRefused(t *testing.T) {
+	ctx := context.Background()
+	var seen []fired
+	r := runnerOf(t, fakeExec(&seen, "not now\n", DenyExit), map[string]Entry{
+		"hold":  {Event: PreCompact, Command: "hold"},
+		"after": {Event: PostCompact, Command: "after"},
+	})
+	if v := r.PreCompact(ctx, Pos{}, Compaction{Trigger: TriggerManual, BeforePct: 60}); !v.Denied() || v.Reason != "hold" {
+		t.Errorf("a manual compaction should be refused: %+v", v)
+	}
+	v := r.PreCompact(ctx, Pos{}, Compaction{Trigger: TriggerAuto, BeforePct: 92})
+	if v.Denied() || v.Decision != "" {
+		t.Fatalf("an automatic compaction was refused: %+v", v)
+	}
+	if joined := strings.Join(v.Notes, "\n"); !strings.Contains(joined, "not now") || !strings.Contains(joined, "went ahead") {
+		t.Errorf("the refusal should still be said, and that it did not stop anything: %q", joined)
+	}
+	if v := r.PostCompact(ctx, Pos{}, Compaction{Trigger: TriggerAuto, BeforePct: 92, AfterPct: 30}); v.Decision != "" {
+		t.Errorf("the seam behind a compaction has nothing left to decide: %+v", v)
 	}
 }
 
@@ -358,6 +444,10 @@ func TestRunner_NilIsSafeAtEverySeam(t *testing.T) {
 		r.SessionStart(ctx),
 		r.PreTool(ctx, Pos{}, Call{Name: "read_file"}, true),
 		r.PostTool(ctx, Pos{}, Call{Name: "read_file"}, "", ""),
+		r.SubagentStart(ctx, Pos{}, Agent{Name: "researcher-1"}),
+		r.SubagentStop(ctx, Pos{}, Agent{Name: "researcher-1"}, ""),
+		r.PreCompact(ctx, Pos{}, Compaction{Trigger: TriggerManual}),
+		r.PostCompact(ctx, Pos{}, Compaction{Trigger: TriggerAuto}),
 		r.TurnClose(ctx, Pos{}, ""),
 		r.Stop(ctx, Pos{}, ""),
 	} {

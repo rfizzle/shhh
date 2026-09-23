@@ -756,6 +756,11 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 			// (toolset.go puts the vault outside everything).
 			WrapAuto:  childHookAuto(hooks),
 			WrapGated: childHookGated(hooks),
+			// And at the rest of its life: its start, its end, and either
+			// side of a compaction of its conversation.
+			Start:      childHookStart(hooks),
+			Stop:       childHookStop(hooks),
+			Compaction: childHookCompaction(hooks),
 			// And the same detector the two dispatchers above were wrapped
 			// with, asked what ground this child has been over: its readings
 			// are the only thing watching it, and a child that has searched

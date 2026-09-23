@@ -321,6 +321,21 @@ type preToolHookMsg struct {
 	verdict hook.Verdict
 }
 
+// preCompactMsg carries what the hooks in front of a compaction came to. The
+// compaction it was asked about rides on it, so an answer that arrives after
+// that compaction was cancelled or replaced is recognised as somebody else's
+// (context.go).
+type preCompactMsg struct {
+	run     *compactStart
+	verdict hook.Verdict
+}
+
+// hookNotesMsg carries what a seam's hooks said where nothing waits on the
+// answer: the seam behind a compaction, whose act has already happened.
+type hookNotesMsg struct {
+	verdict hook.Verdict
+}
+
 type entryKind int
 
 const (

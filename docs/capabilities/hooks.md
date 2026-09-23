@@ -8,23 +8,35 @@ file.
 
 Hooks exist because extensibility was the thing shhh controlled least. The
 seams were all in the tree — the moment before a tool call, the moment after
-it, the turn's close, the session's start — and nothing outside the binary
+it, a child's start and end, a compaction, the turn's close, the session's
+start — and nothing outside the binary
 could reach any of them. This opens them, and opens nothing else: a hook is
 not a new place where things happen, it is a place that already happened.
 
-## The five seams
+## The seams
 
 | Event | When it fires | What it is told |
 |---|---|---|
 | `session_start` | once, as a session opens, before its first turn | the directory the session was opened in |
 | `pre_tool` | before a tool call runs or is put to you | the tool and its arguments |
 | `post_tool` | after a call has run, before the model reads the result | the tool, its arguments and the result |
+| `subagent_start` | as a child starts, before its first request | the child: its name, its role, who spawned it |
+| `subagent_stop` | as a child ends | the child, and the report it ended on |
+| `pre_compact` | before a compaction asks for its summary | who asked for it, and how full the window is |
+| `post_compact` | once the conversation has been rebuilt | who asked, and how full the window was either side |
 | `turn_close` | as a turn's accounting closes | the answer the turn ended on |
 | `stop` | as the session or the run ends | the last answer |
 
-There are five and not more because those are the seams that exist. A sixth
-would mean a new place in the loop for something to happen, which is a change
-to the product rather than a line in a table.
+There are nine because those are the places in the loop worth opening, and a
+tenth costs what the last four cost. A seam is a place the loop already has,
+found and named: here, a child's life — the moment it starts and the moment it
+ends — and the window's recovery, either side of the act that replaces a
+conversation with a summary of it. Each of those then needs a payload the
+event stream already carries, so a hook author learns nothing new; an answer
+that can decide only what that place can safely have decided, and nothing
+that names a tool, a role or a mode; and the same ceiling every other seam
+runs under. That is a change to the product, and it is paid for one place at
+a time rather than by adding a line to this table.
 
 `pre_tool` covers a command as well as a tool: an `execute_command` is put to
 the same seam, at the same moment the approval card would have been drawn.
@@ -62,6 +74,14 @@ cannot work out for itself: `event`, `session` and `cwd`. There is one
 vocabulary, so a hook written against the record's codes matches the stream's
 without a second table to learn
 ([`headless.md`](headless.md#the-stream-is-the-record-as-it-happens)).
+
+The child and compaction seams add the stream's own spellings of what they
+are about. A child is `agent`, an object with the child's `name`, `role` and
+`parent` — the three fields the stream's agent line carries under the same
+names, so there is one way to spell a child. A compaction is `trigger`
+(`manual` where somebody asked for it, `auto` where the round tail did),
+`before_pct` and, behind it, `after_pct`: the shares of the window the
+stream's compaction line states.
 
 `session` is the session's own row in the local record, so a hook that keeps
 its own notes can join them to the table shhh already writes rather than
@@ -139,7 +159,49 @@ Three of the seams stay with the session. `session_start`, `turn_close` and
 `stop` fire once for the session that did the spawning, not once per child: a
 child's turn is not a turn you asked for, and a `stop` hook that ran sixteen
 times because a fan-out was sixteen wide would be reporting on the wrong
-thing.
+thing. A child's own end has a seam of its own for exactly that reason, and a
+child's compaction meets the same two compaction seams the session's does.
+
+## A child starts and ends at a seam
+
+`subagent_start` fires once a child has everything it will run with — a slot,
+and for a writer its copy of the workspace — and before its first request. A
+refusal ends the child there, before it has spent anything: the parent reads
+which hook refused it and what the hook said where the child's report would
+have been, and the record files the child as ended by a hook rather than as
+broken. A retry asks again.
+
+`subagent_stop` fires as a child ends, with the report it ended on as `final`.
+On a child that answered, a refusal is sent back to it as a steer — through
+the same door your own words at its lane take — and the child carries on and
+answers again, which is asked about afresh. This is the one way a hook keeps a
+child working: the hook form of the checks a session runs as a turn closes,
+and bounded the way the child is, by its budget. On a child that ended any
+other way — a kill, a budget spent, a failure — there is nothing left to
+carry on, and what the hook says is only said.
+
+Neither seam can change what the child is. A hook's answer has no field that
+names a role, a tool or a mode, so the child that runs is the child that was
+spawned, doing the work it was spawned for. Either seam's hook is the
+session's own: it is told the session it belongs to and the child it is
+about, and what it says goes on the child's transcript.
+
+## A compaction is a seam
+
+`pre_compact` fires before a compaction asks for its summary, and
+`post_compact` once the conversation has been rebuilt from it — in a session,
+in an unattended or served run, and in a child. What a refusal in front of one
+does depends on who asked. A compaction you asked for — `/compact`, the
+pressure card, the key a failure offers — is refused, before the summary is
+paid for, and the conversation stays as it was. One the round tail started to
+recover its window is not: that compaction is what keeps the next request
+sendable, and refusing it would leave the turn sending a request the provider
+refuses for its size. There the refusal is said, and the compaction goes ahead
+([`coding-agent.md`](coding-agent.md#the-window-recovers-where-nobody-is-watching)).
+
+In a session both seams run off the screen, the way the seam in front of a
+gated call does: a compaction already waits on one request, and a hook is not
+a reason to stop drawing while it does.
 
 ## Nothing decides yes on a failure
 

@@ -259,6 +259,80 @@ func childHookGated(r *hook.Runner) func(subagent.Seam, func(provider.ToolCall) 
 	}
 }
 
+// childHookStart, childHookStop and childHookCompaction are the seams at the
+// rest of a child's life: its start, its end, and either side of a compaction
+// of its conversation. They fire on the session's own runner, so a child's
+// hook is told the session it belongs to and the child it is about, and what
+// it says goes on the child's transcript beside the tool seams' lines.
+//
+// What each hands back is text or nothing. The supervisor turns a start's
+// refusal into the child's ending and an end's refusal into a steer; there is
+// no answer here that could name a role, a tool or a mode, which is the tier
+// rule held the way the tool seams hold it.
+// See docs/capabilities/hooks.md#a-child-starts-and-ends-at-a-seam.
+func childHookStart(r *hook.Runner) func(subagent.Life) string {
+	if r == nil {
+		return nil
+	}
+	return func(l subagent.Life) string {
+		v := r.SubagentStart(context.Background(), childHookPos(l.At)(), hookAgent(l))
+		childHookNotes(l.Note)(v)
+		if !v.Denied() {
+			return ""
+		}
+		return hook.StartRefused(v)
+	}
+}
+
+func childHookStop(r *hook.Runner) func(subagent.Life, string) string {
+	if r == nil {
+		return nil
+	}
+	return func(l subagent.Life, final string) string {
+		v := r.SubagentStop(context.Background(), childHookPos(l.At)(), hookAgent(l), final)
+		childHookNotes(l.Note)(v)
+		if !v.Denied() {
+			return ""
+		}
+		return hook.StopSteer(v)
+	}
+}
+
+func childHookCompaction(r *hook.Runner) func(subagent.Life, *agent.Compactor) {
+	if r == nil {
+		return nil
+	}
+	return func(l subagent.Life, c *agent.Compactor) {
+		who := hookAgent(l)
+		hookCompaction(c, r, childHookPos(l.At), &who, childHookNotes(l.Note))
+	}
+}
+
+// hookAgent is a child as a hook's payload names it.
+func hookAgent(l subagent.Life) hook.Agent {
+	return hook.Agent{Name: l.Name, Role: l.Role, Parent: l.Parent}
+}
+
+// hookCompaction puts the two compaction seams on a recovery step a round
+// tail drives — an unattended run's, a served session's or a child's. Every
+// compaction such a step starts is automatic, so a refusal there is a note
+// and the step goes ahead: it is what keeps the next request sendable
+// (docs/capabilities/hooks.md#a-compaction-is-a-seam). who is nil for the
+// session's own conversation.
+func hookCompaction(c *agent.Compactor, r *hook.Runner, at func() hook.Pos, who *hook.Agent, note func(hook.Verdict)) {
+	if c == nil || r == nil {
+		return
+	}
+	c.Before = func(before int) {
+		note(r.PreCompact(context.Background(), at(),
+			hook.Compaction{Trigger: hook.TriggerAuto, BeforePct: before, Agent: who}))
+	}
+	c.After = func(n agent.CompactNotice) {
+		note(r.PostCompact(context.Background(), at(),
+			hook.Compaction{Trigger: hook.TriggerAuto, BeforePct: n.BeforePct, AfterPct: n.AfterPct, Agent: who}))
+	}
+}
+
 // childHookPos is where a child is, in the two numbers the record and the
 // event stream carry. A child counts its own turns and rounds, so unlike an
 // unattended run it has a real answer to both.
