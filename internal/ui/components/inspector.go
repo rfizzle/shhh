@@ -218,6 +218,12 @@ type railLine struct {
 	// of pressure — and the marker would then report something hidden that is
 	// still on screen.
 	shed bool
+	// more marks a row that is itself a count of list rows the host left out
+	// — TODO's `… N more` — and holds that count. It is never taken on its
+	// own: the first list row the block folds takes it with it, and the
+	// block's marker states both, because a host's count and the block's
+	// stacked one above the other are two numbers for one question.
+	more int
 }
 
 // railBlock is one headed block under assembly: its heading line, its rows,
@@ -240,6 +246,12 @@ func (b *railBlock) add(text string) { b.rows = append(b.rows, railLine{text: te
 
 // pin appends a row truncation takes only when nothing else is left.
 func (b *railBlock) pin(text string) { b.rows = append(b.rows, railLine{text: text, pinned: true}) }
+
+// moreRow appends the host's own count of list rows it left out
+// (railLine.more).
+func (b *railBlock) moreRow(text string, n int) {
+	b.rows = append(b.rows, railLine{text: text, more: n})
+}
 
 // shedRow appends a row truncation removes outright rather than folding it
 // behind the block's marker (railLine.shed): chrome standing for nothing the
@@ -274,7 +286,11 @@ func (b railBlock) render(width int) []RailRow {
 	case b.fold != nil:
 		out = append(out, RailRow{Text: b.fold(b.hidden)})
 	default:
-		out = append(out, RailRow{Text: indentRow(sty.Hint.Render(fmt.Sprintf("… %d more", len(b.hidden))), width)})
+		n := 0
+		for _, h := range b.hidden {
+			n += max(h.more, 1)
+		}
+		out = append(out, RailRow{Text: indentRow(sty.Hint.Render(fmt.Sprintf("… %d more", n)), width)})
 	}
 	return out
 }
@@ -352,10 +368,21 @@ func fitBlocks(blocks []railBlock, height int) []railBlock {
 			break
 		}
 		b := &blocks[block]
-		if taken := b.rows[row]; !taken.shed {
-			b.hidden = append([]railLine{taken}, b.hidden...)
-		}
+		taken := b.rows[row]
 		b.rows = append(b.rows[:row], b.rows[row+1:]...)
+		if taken.shed {
+			continue
+		}
+		b.hidden = append([]railLine{taken}, b.hidden...)
+		// The marker this fold draws is the block's only count from here on,
+		// so a host's count row goes behind it in the same step rather than
+		// standing over it (railLine.more).
+		for j := len(b.rows) - 1; j >= 0; j-- {
+			if b.rows[j].more > 0 {
+				b.hidden = append(b.hidden, b.rows[j])
+				b.rows = append(b.rows[:j], b.rows[j+1:]...)
+			}
+		}
 	}
 	return blocks
 }
@@ -390,7 +417,7 @@ func nextToHide(blocks []railBlock) (block, row int, ok bool) {
 	if block >= 0 {
 		row = -1
 		for j := len(blocks[block].rows) - 1; j >= 0; j-- {
-			if blocks[block].rows[j].pinned {
+			if r := blocks[block].rows[j]; r.pinned || r.more > 0 {
 				continue
 			}
 			if row < 0 || blocks[block].rows[j].give < blocks[block].rows[row].give {
@@ -417,7 +444,7 @@ func nextToHide(blocks []railBlock) (block, row int, ok bool) {
 // starts taking pinned ones.
 func givable(b railBlock) bool {
 	for _, r := range b.rows {
-		if !r.pinned {
+		if !r.pinned && r.more == 0 {
 			return true
 		}
 	}

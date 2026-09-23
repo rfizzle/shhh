@@ -112,7 +112,10 @@ func (r InspectorRail) todoBlock(width int) (railBlock, bool) {
 		b.add(railRow(left, row.note(), width, inspectorIndent))
 	}
 	if t.More > 0 {
-		b.add(indentRow(sty.Hint.Render(fmt.Sprintf("… %d more", t.More)), width))
+		// Not an item but a count of them, so it is not folded like one: the
+		// first item the rail folds takes this row with it and the block's
+		// marker states both numbers as one (railLine.more).
+		b.moreRow(indentRow(sty.Hint.Render(fmt.Sprintf("… %d more", t.More)), width), t.More)
 	}
 	if t.Hint != "" {
 		// It goes rather than folds, like PLAN's: the hint is not a backlog

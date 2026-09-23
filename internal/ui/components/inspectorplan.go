@@ -75,8 +75,13 @@ func (r InspectorRail) planBlock(width int) (railBlock, bool) {
 		b.add(railRow(glyph+" "+style.Render(s.Title), elapsed, width, inspectorIndent))
 	}
 	if p.Drift != "" {
-		b.add(railRow(sty.Accent.Render("⚠")+" "+sty.Dim.Render(p.Drift),
-			"", width, inspectorIndent))
+		// Pinned, because it is a warning and not a step: the rail folds
+		// steps before it, and a rail short enough to reach it removes it
+		// rather than counting it among the steps the marker says it hid.
+		b.rows = append(b.rows, railLine{
+			text:   railRow(sty.Accent.Render("⚠")+" "+sty.Dim.Render(p.Drift), "", width, inspectorIndent),
+			pinned: true, shed: true,
+		})
 	}
 	if p.Hint != "" {
 		// It goes rather than folds: the hint is not a step, so the marker

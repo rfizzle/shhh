@@ -25,7 +25,28 @@ func TestInspectorPlan_TheHintIsShedNotFolded(t *testing.T) {
 		"Locate the round accounting",
 		"Add a RoundsExhausted sentinel",
 		"Return it from runRound",
-	})
+	}, 0)
+}
+
+// TestInspectorPlan_TheDriftRowIsPinnedNotCounted: the drift row is a warning
+// about the plan, not a step of it. The rail folds every step before it, and
+// the marker over the folded plan counts steps and nothing else.
+func TestInspectorPlan_TheDriftRowIsPinnedNotCounted(t *testing.T) {
+	r := InspectorRail{Plan: &InspectorPlan{
+		Steps: []InspectorPlanStep{
+			{Number: 1, Title: "Locate the round accounting", State: PlanStepDone, Elapsed: "6.2s"},
+			{Number: 2, Title: "Add a RoundsExhausted sentinel", State: PlanStepDone, Elapsed: "38.1s"},
+			{Number: 3, Title: "Return it from runRound", State: PlanStepRunning},
+		},
+		Done:  2,
+		Drift: "1 off plan",
+		Hint:  "/plan for the whole list",
+	}}
+	assertHintIsShed(t, r, "/plan for the whole list", []string{
+		"Locate the round accounting",
+		"Add a RoundsExhausted sentinel",
+		"Return it from runRound",
+	}, 0, "⚠ 1 off plan")
 }
 
 // assertHintIsShed is what PLAN and TODO both promise about the hint row
@@ -37,7 +58,13 @@ func TestInspectorPlan_TheHintIsShedNotFolded(t *testing.T) {
 // The first check compares the whole rail rather than looking for the hint's
 // absence, because the failure it is here for takes some other row while
 // leaving the hint: every containment check would still pass.
-func assertHintIsShed(t *testing.T, r InspectorRail, hint string, items []string) {
+//
+// more is the host's own count of list rows it left out, drawn as a row of
+// its own: it is never a second marker, and once the block folds a row it is
+// part of the one marker's count. kept are rows that are neither list rows
+// nor chrome — a warning — which stay through every pressure and are never
+// counted.
+func assertHintIsShed(t *testing.T, r InspectorRail, hint string, items []string, more int, kept ...string) {
 	t.Helper()
 	full := len(r.Lines(InspectorMaxWidth, 0))
 	gone := func(rows int) string {
@@ -56,7 +83,9 @@ func assertHintIsShed(t *testing.T, r InspectorRail, hint string, items []string
 	}
 	// And it goes rather than folding: a hint is not an item, so nothing is
 	// behind a marker yet and the rail is a row shorter for having lost it.
-	if v := gone(1); strings.Contains(v, "… ") {
+	// The only count left is the host's own, where it drew one.
+	if v, want := gone(1), countRows(more); strings.Count(v, "… ") != want ||
+		(more > 0 && !strings.Contains(v, fmt.Sprintf("… %d more", more))) {
 		t.Fatalf("the hint is shed, not folded behind a count:\n%s", v)
 	}
 	// Past that the block folds list rows, and the marker states how many —
@@ -74,8 +103,25 @@ func assertHintIsShed(t *testing.T, r InspectorRail, hint string, items []string
 				off++
 			}
 		}
-		if want := fmt.Sprintf("… %d more", off); !strings.Contains(v, want) {
-			t.Fatalf("the marker counts the %d rows actually hidden, wanted %q:\n%s", off, want, v)
+		if want := fmt.Sprintf("… %d more", off+more); !strings.Contains(v, want) {
+			t.Fatalf("the marker counts the %d rows actually hidden, wanted %q:\n%s", off+more, want, v)
+		}
+		if n := strings.Count(v, "… "); n != 1 {
+			t.Fatalf("one count under pressure %d, not %d stacked:\n%s", pressure, n, v)
+		}
+		for _, k := range kept {
+			if !strings.Contains(v, k) {
+				t.Fatalf("%q is kept, not folded, under pressure %d:\n%s", k, pressure, v)
+			}
 		}
 	}
+}
+
+// countRows is how many count rows a block draws with nothing folded: the
+// host's own, where it has one.
+func countRows(more int) int {
+	if more > 0 {
+		return 1
+	}
+	return 0
 }
