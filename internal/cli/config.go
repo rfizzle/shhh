@@ -19,6 +19,7 @@ import (
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/ui/chat"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/web"
 	"github.com/spf13/cobra"
 )
 
@@ -250,6 +251,15 @@ var configJudges = map[string]func(string) error{
 	"sandbox.allow_hosts":       func(v string) error { _, err := sandbox.ParseHosts(strings.Split(v, ",")); return err },
 	"sandbox.container_engine":  func(v string) error { _, err := sandbox.ParseEngine(v); return err },
 	"sandbox.require_isolation": func(v string) error { _, err := sandbox.ParseIsolation(v); return err },
+	"web.reputation_off": func(v string) error {
+		names := web.HostListNames()
+		for name := range strings.SplitSeq(v, ",") {
+			if name = strings.TrimSpace(name); name != "" && !slices.Contains(names, strings.ToLower(name)) {
+				return fmt.Errorf("unknown host list %q (valid: %s)", name, strings.Join(names, ", "))
+			}
+		}
+		return nil
+	},
 }
 
 // wordFromTheTable judges a word key whose vocabulary no other package owns:

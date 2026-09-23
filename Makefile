@@ -54,7 +54,7 @@ else
 	RESET   :=
 endif
 
-.PHONY: all build fmt fmt-check vet lint test test-contract test-integration docs docs-check cross ci eval eval-baseline cache-check model-data tui-shot tui-check tui-longpath help
+.PHONY: all build fmt fmt-check vet lint test test-contract test-integration docs docs-check cross ci eval eval-baseline cache-check model-data host-lists tui-shot tui-check tui-longpath help
 
 all: help
 
@@ -199,6 +199,10 @@ cache-check: ## Verify prompt caching against live endpoints (costs real request
 model-data: ## Regenerate the built-in model-data snapshot from the public table
 	@echo "${MAGENTA}Regenerating internal/pricing/models.json...${RESET}"
 	@python3 scripts/model-data.py > internal/pricing/models.json
+
+host-lists: ## Regenerate the built-in host-list snapshots from the public lists
+	@echo "${MAGENTA}Regenerating internal/web/hosts/...${RESET}"
+	@python3 scripts/host-lists.py
 
 ## TUI:
 # The golden tests render a surface in-process. These drive the built binary

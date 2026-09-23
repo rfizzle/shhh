@@ -26,6 +26,7 @@ import (
 	"github.com/rfizzle/shhh/internal/shell"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/ui"
+	"github.com/rfizzle/shhh/internal/web"
 )
 
 func TestBarePromptNamesTheCommandThatGenerates(t *testing.T) {
@@ -161,13 +162,29 @@ func seedModelData(tb testing.TB, cacheHome string) {
 
 // writeModelData is seedModelData with the error handed back, for TestMain,
 // which has no testing.TB to fail.
+//
+// It seeds the host lists beside the table too, fresh and empty: an unseeded
+// list is one a fetch decision would start downloading from the public
+// network, and an empty one keeps every test's reading of a host to shhh's
+// own built-in list, which does not move under the suite the way a
+// downloaded ranking would.
 func writeModelData(cacheHome string) error {
 	snapshot, err := os.ReadFile(filepath.Join("..", "pricing", "models.json"))
 	if err != nil {
 		return fmt.Errorf("read the price snapshot: %w", err)
 	}
-	if err := os.MkdirAll(filepath.Join(cacheHome, "shhh"), 0o700); err != nil {
+	if err := os.MkdirAll(filepath.Join(cacheHome, "shhh", "hosts"), 0o700); err != nil {
 		return err
+	}
+	stamp := time.Now().UTC().Format(time.RFC3339)
+	for _, name := range web.HostListNames() {
+		if name == web.BuiltinHosts {
+			continue
+		}
+		header := "#shhh-hosts 1 " + name + " " + stamp + "\n"
+		if err := os.WriteFile(filepath.Join(cacheHome, "shhh", "hosts", name+".hosts"), []byte(header), 0o600); err != nil {
+			return err
+		}
 	}
 	return os.WriteFile(filepath.Join(cacheHome, "shhh", "model_prices.json"), snapshot, 0o600)
 }

@@ -1089,7 +1089,8 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	var judge *autoJudge
 	classifier := buildClassifier(cfg, env, ledger)
 	if opts.autoMode {
-		judge = &autoJudge{ctx: cmd.Context(), classifier: classifier, recent: a.Messages, cwd: hookCwd}
+		judge = &autoJudge{ctx: cmd.Context(), classifier: classifier, recent: a.Messages, cwd: hookCwd,
+			allowHosts: cfg.Web.AllowHosts, denyHosts: cfg.Web.DenyHosts}
 	}
 
 	// Sub-agent orchestration: spawn_agent and agent_report short-circuit on
@@ -1969,7 +1970,9 @@ func headlessApprover(ctx context.Context, opts printOpts, allowlist, denylist [
 			// judged on: the classifier is being asked whether this page is
 			// an outbound channel worth stopping for, and where the request
 			// goes is most of that question.
-			fetchAction := agent.Action{Kind: agent.ActionFetch}
+			// The reading comes from the function every surface asks, so an
+			// unattended run judges a host the way the session beside it does.
+			fetchAction := agent.Action{Kind: agent.ActionFetch, Reading: web.ReadFetch(json.RawMessage(tc.Arguments))}
 			if plan, err := webTools.FetchPlan(json.RawMessage(tc.Arguments)); err == nil {
 				fetchAction.Host = plan.Host
 			}

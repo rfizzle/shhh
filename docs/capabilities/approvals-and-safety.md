@@ -132,6 +132,75 @@ else follows its redirects — a fetch approved on a card was the person
 answering for that request, and a redirect is part of what a request is —
 and a session holding no grants is not held anywhere by this rule.
 
+## A host is read against the world before it is judged
+
+Auto mode's classifier judges a fetch mostly on where it goes, and a host's
+name alone says little: a documentation site everybody reads and a domain
+registered yesterday are the same string to a model that has never heard of
+either. So before a fetch is judged its host is read against public lists,
+and the reading is one of five words:
+
+| Standing | What says so | What it changes |
+|---|---|---|
+| `known` | shhh's own short list, or the top ten thousand of the [Tranco](https://tranco-list.eu) ranking | auto mode lets the fetch through without asking the classifier |
+| `young` | a feed of domains registered in the last ten days ([NRD](https://github.com/cenk/nrd)) | a fetch the classifier would have allowed is put to you |
+| `disposable` | the [disposable-domains](https://github.com/disposable-email-domains/disposable-email-domains) list | the same |
+| `listed` | [URLhaus](https://urlhaus.abuse.ch) malware hosts, or the [StevenBlack](https://github.com/StevenBlack/hosts) blocking list | the same |
+| `unknown` | no list names it, or no list could be read | nothing |
+
+**The reading advises and never widens.** It is evidence for a classifier and
+stands in for one where it is sure; it is never asked to stand in for a
+person. `manual` and `accept-edits` still put every fetch on a card, a known
+host included, and a conversation reads the web without asking whatever the
+lists say. What a list warns about can only move an answer toward asking: the
+classifier's no still refuses, and its yes becomes a card saying which list
+spoke — `ask · registered in the last 10 days (nrd)`. A known host is let
+through with the list named on the row: `auto-allowed · known host (tranco
+top 10k)`. In a run with nobody to ask, the card is a refusal naming the
+same list. A sub-agent's fetch and an unattended run's are read by the same
+function and answered by the same rule.
+
+**Your own lists outrank every reading.** `web.deny_hosts` refuses a host the
+ranking calls known, and `web.allow_hosts` — or a host granted with `[a]` —
+lets through a host a list warns about. A list is somebody else's opinion of
+the internet; the two host lists and a grant are yours about this session.
+`web.reputation_off` turns any list off, shhh's own included.
+
+**A list that cannot be read says nothing.** A list is third-party data
+landing in a decision, so a copy that is missing, malformed, or older than
+its window names no host — and a host no list names is `unknown`, which
+changes nothing. A failure can therefore never make a host known. The lists
+are downloaded into the cache directory the way the model data is: behind the
+first fetch a session decides, at most once per process, never while
+anything waits, with a failed download remembered for an hour. The ranking
+and the disposable list ship inside the binary as the floor under the
+download; the new-domain and malware feeds do not, because a snapshot of
+this week's new domains is wrong by the time the binary is installed. Each
+list is asked for again after its own refresh — a day for the feeds that
+move daily, a week for the ranking — and stops answering past its window.
+`shhh doctor` names each list's age.
+
+**The ranking vouches for a site, not for what is sent to it.** Tranco ranks
+registrable domains, so its word stops at the public suffix list's boundary:
+`anything.github.io` or `anything.workers.dev` is a site of its own and is
+not covered by the platform's rank. And a URL carrying a query string is
+never known by the ranking, because a query string is how a GET carries data
+out and a popular site says nothing about who reads it — Telegram's bot API
+sends a message on a GET. Such a fetch goes to the classifier as before.
+
+**shhh's own list is short, and it is shhh's.** It holds the sites a coding
+session reads every day, each run by one organisation across every host
+under its name, so an entry covers its subdomains: anthropic.com,
+claude.com, openai.com, github.com, gitlab.com, stackoverflow.com,
+stackexchange.com, serverfault.com, superuser.com, go.dev, golang.org,
+python.org, pypi.org, rust-lang.org, docs.rs, crates.io, nodejs.org,
+npmjs.com, typescriptlang.org, developer.mozilla.org, ruby-lang.org,
+rubygems.org, kotlinlang.org, swift.org, dev.java, docs.oracle.com,
+learn.microsoft.com, cppreference.com, php.net, postgresql.org, sqlite.org,
+git-scm.com, kubernetes.io and docs.docker.com. It is short because every
+entry is a site auto mode reads without a second opinion; anything a person
+wants beside it belongs in `web.allow_hosts`, where it is theirs.
+
 ## A read-only role is granted once
 
 Starting a sub-agent is gated for the same reason a fetch is: it spends

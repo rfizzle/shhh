@@ -150,6 +150,14 @@ type autoJudge struct {
 	classifier *agent.Classifier
 	recent     func() []provider.Message
 	cwd        string
+	// allowHosts and denyHosts are the person's own host lists
+	// (web.allow_hosts, web.deny_hosts). A fetch is put to the same policy a
+	// session's is before the classifier is paid to think about it, so the
+	// person's lists answer first and a host's standing answers where the
+	// session's would: a known host goes through, and a host the lists warn
+	// about is refused where the classifier would have let it through
+	// (docs/capabilities/approvals-and-safety.md#a-host-is-read-against-the-world-before-it-is-judged).
+	allowHosts, denyHosts []string
 }
 
 // decide answers one gated call: the verdict, the sentence a refusal is
@@ -162,18 +170,27 @@ func (j *autoJudge) decide(tc provider.ToolCall, action agent.Action) (agent.Dec
 	if j == nil {
 		return agent.Deny, "", observe.ReasonHeadlessDefault
 	}
+	if action.Kind == agent.ActionFetch {
+		policy := agent.ModePolicy{Mode: agent.ModeAuto, AllowHosts: j.allowHosts, DenyHosts: j.denyHosts}
+		if decision, why := policy.Decide(action); decision != agent.Ask {
+			return decision, why, observe.ReasonCode(why)
+		}
+	}
 	var recent []provider.Message
 	if j.recent != nil {
 		recent = j.recent()
 	}
 	v := j.classifier.Judge(j.ctx, agent.ClassifierRequest{
-		Tool: tc.Name, Arguments: tc.Arguments, CWD: j.cwd, Recent: recent,
+		Tool: tc.Name, Arguments: tc.Arguments, CWD: j.cwd, Recent: recent, Reading: action.Reading,
 	})
 	code := observe.ReasonClassifier
 	if v.Failed {
 		code = observe.ReasonClassifierFailed
 	}
 	decision, reason := agent.ResolveUnattended(action, v)
+	if host := observe.HostReason(web.StandingOf(reason)); host != "" && !v.Failed {
+		code = host
+	}
 	return decision, reason, code
 }
 

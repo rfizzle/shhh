@@ -27,6 +27,7 @@ import (
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
+	"github.com/rfizzle/shhh/internal/web"
 )
 
 // GatedPreview describes what an approval-gated tool call is about to do, for
@@ -618,6 +619,7 @@ func (m Model) startClassifierCheck(req *approvalRequest) (tea.Model, tea.Cmd) {
 		Arguments: req.call.Arguments,
 		CWD:       cwd,
 		Recent:    m.agent.RequestMessages(),
+		Reading:   m.approvalAction(req).Reading,
 	}
 	return m, func() tea.Msg {
 		return classifierDoneMsg{runID: runID, verdict: classifier.Judge(ctx, creq)}
@@ -662,8 +664,21 @@ func (m Model) finishClassifierCheck(v agent.ClassifierVerdict) (tea.Model, tea.
 		m.viewport.GotoBottom()
 		return m.advanceApprovalQueue()
 	}
-	// Ask: the classifier failed closed or the safety backstop fired — the
-	// user decides, never a silent allow.
+	// Ask: the classifier failed closed, the safety backstop fired, or the
+	// host's standing overruled a yes — the user decides, never a silent
+	// allow.
+	resolved, why := agent.ResolveAuto(m.approvalAction(req), v)
+	if code := observe.HostReason(web.StandingOf(why)); resolved == agent.Ask && code != "" && !v.Failed {
+		// The card says so, because this is the one card a person would not
+		// otherwise expect: the classifier said yes, and the lists said the
+		// host is theirs to answer for
+		// (docs/capabilities/approvals-and-safety.md#a-host-is-read-against-the-world-before-it-is-judged).
+		m.recordDecision(observe.DecisionAsk, code)
+		req.fields = append(req.fields, GatedField{Label: "standing", Value: why,
+			Detail: "the classifier would have allowed it; the lists put it to you", Open: true})
+		m.armConfirm(req)
+		return m, nil
+	}
 	if v.Failed {
 		m.recordDecision(observe.DecisionAsk, observe.ReasonClassifierFailed)
 		// The notice is about this call, so it goes where the call's row

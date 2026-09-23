@@ -10,6 +10,7 @@ import (
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/web"
 )
@@ -85,7 +86,31 @@ func openWebTools(cfg config.Config) *web.Toolset {
 	// while the session runs, and the fetch that needs it is already the
 	// slowest call in the session.
 	ts.PDFText = web.DetectPDFText()
+	// The host reading every fetch decision in this process asks: the
+	// session's card, its children's policy and an unattended run all read a
+	// host through web.ReadFetch, which reads this. Opening it reads nothing
+	// and downloads nothing; a list is looked at, and a stale one asked for
+	// again, the first time a fetch is decided
+	// (docs/capabilities/approvals-and-safety.md#a-host-is-read-against-the-world-before-it-is-judged).
+	web.UseReputation(openReputation(cfg))
 	return ts
+}
+
+// openReputation is the host reading over the lists cached beside the model
+// data, with the ones the configuration turned off left out. A machine with
+// no cache directory reads the shipped snapshots and downloads nothing.
+func openReputation(cfg config.Config) *web.Reputation {
+	return web.OpenReputation(hostListsDir(), cfg.Web.ReputationOff)
+}
+
+// hostListsDir is where the host lists are cached, and "" where there is no
+// cache directory. The doctor's row names the same directory by asking here.
+func hostListsDir() string {
+	dir, err := pricing.CacheDir()
+	if err != nil {
+		return ""
+	}
+	return filepath.Join(dir, "hosts")
 }
 
 // scrubWebCache hands the session's rewrite to the response cache. The cache

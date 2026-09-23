@@ -391,6 +391,10 @@ var settings = []Setting{
 		Key: "web.deny_hosts", Kind: KindList, Default: "(empty — nothing is refused in advance)",
 		Desc: "Hosts no fetch reaches; read before the allow list, before a session grant and before the classifier, and no approval can allow one.",
 	}, {
+		Key: "web.reputation_off", Kind: KindList, Default: "(empty — every list is read)",
+		Values: []string{"builtin", "tranco", "nrd", "disposable", "urlhaus", "stevenblack"},
+		Desc:   "Host lists a fetch is not read against: `builtin` is shhh's own short list, `tranco` the popularity ranking, `nrd` newly registered domains, `disposable` throwaway domains, `urlhaus` and `stevenblack` malware and blocking lists. A reading only advises auto mode, and never outranks `allow_hosts` or `deny_hosts`.",
+	}, {
 		Key: "web.search_provider", Kind: KindEnum, Default: "brave",
 		Values: []string{"brave", "searxng"},
 		Desc:   "Which backend the web_search tool asks: `brave`, which takes a key, or `searxng`, a self-hosted instance at `search_url`, which takes none.",

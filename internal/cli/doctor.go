@@ -233,6 +233,7 @@ func doctorProbes() []doctorProbe {
 		{name: "migrate", run: probeMigrate},
 		{name: "model", run: probeModel},
 		{name: "search", run: probeSearch},
+		{name: "hosts", run: probeHosts},
 		{name: "store", run: probeStore},
 		{name: "logs", run: probeLogs},
 		{name: "reports", run: probeReports},
@@ -731,6 +732,76 @@ func probeSearch(ctx context.Context, cfg config.Config) doctorFinding {
 		return doctorSearchInstance(endpoint, searxngCheck(ctx, endpoint))
 	}
 	return doctorSearchUnknown(backend)
+}
+
+// probeHosts reads the host lists a fetch is judged beside: where they are
+// cached, and how old each one is. It opens the reading the session would
+// and downloads nothing — the row reports what a fetch would find.
+func probeHosts(_ context.Context, cfg config.Config) doctorFinding {
+	return doctorHosts(hostListsDir(), openReputation(cfg).Lists())
+}
+
+// doctorHosts is the row over each list's state: shhh's own, and each
+// download's age or why it is not answering. A list older than its window is
+// a warning and not a failure — a
+// list that cannot answer reads every host as unknown, which is the reading
+// that changes nothing
+// (docs/capabilities/approvals-and-safety.md#a-host-is-read-against-the-world-before-it-is-judged).
+func doctorHosts(dir string, lists []web.ListState) doctorFinding {
+	parts := make([]string, 0, len(lists))
+	var quiet []string
+	for _, st := range lists {
+		var word string
+		switch {
+		case st.Off:
+			word = "off"
+		case st.From == "binary":
+			word = "built in"
+		case st.Stale:
+			word = "stale " + hostListAge(st.Age)
+			quiet = append(quiet, st.Name)
+		case st.From == "snapshot":
+			word = "shipped " + hostListAge(st.Age)
+		case st.From == "download":
+			word = hostListAge(st.Age)
+		default:
+			word = "not fetched"
+		}
+		// A failed refresh is named, and it is not a list that cannot answer:
+		// the copy on disk goes on answering until its window closes, which is
+		// what Stale says.
+		if st.Failed {
+			word += ", last download failed"
+		}
+		parts = append(parts, st.Name+" "+word)
+	}
+	subject := "nowhere to cache them"
+	if dir != "" {
+		subject = shortPath(dir)
+	}
+	f := doctorFinding{Subject: subject, Detail: strings.Join(parts, " · "), Outcome: "ok"}
+	if len(quiet) > 0 {
+		f.Outcome, f.State = "stale", components.DoctorWarned
+		f.Consequence = strings.Join(quiet, ", ") + " cannot answer; a host only it would have named reads as unknown"
+		f.FixLabel = "how a list is fetched"
+		f.Fix = []string{
+			"a list is downloaded behind the first fetch a session decides once its copy is older than its refresh",
+			"a failed download is tried again an hour later; web.reputation_off turns a list off",
+		}
+	}
+	return f
+}
+
+// hostListAge is a list's age in the unit a reader compares: hours inside
+// two days, days after.
+func hostListAge(d time.Duration) string {
+	switch {
+	case d < time.Hour:
+		return "<1h"
+	case d < 48*time.Hour:
+		return fmt.Sprintf("%dh", int(d.Hours()))
+	}
+	return fmt.Sprintf("%dd", int(d.Hours()/24))
 }
 
 // searxngCheck is the instance request, a variable so the suite can answer
@@ -1797,6 +1868,8 @@ func doctorQueuedSubject(name string) string {
 		return "the provider and where its key comes from"
 	case "search":
 		return "the backend a session searches the web with"
+	case "hosts":
+		return "the lists a fetch's host is read against"
 	case "store":
 		return "the local store"
 	case "logs":

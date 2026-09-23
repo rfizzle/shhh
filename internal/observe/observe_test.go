@@ -10,14 +10,22 @@ import (
 
 func TestReasonCode_Mapping(t *testing.T) {
 	cases := map[string]string{
-		"accept-edits mode":    "mode-accept-edits",
-		"auto mode":            "mode-auto",
-		"session policy":       "session-grant",
-		"session grant":        "session-scope",
-		"allowlist":            "allowlist",
-		"conversation read":    "conversation-read",
-		"plan mode":            "plan-mode",
-		"plan mode inspection": "plan-inspection",
+		"accept-edits mode": "mode-accept-edits",
+		"auto mode":         "mode-auto",
+		"session policy":    "session-grant",
+		"session grant":     "session-scope",
+		"allowlist":         "allowlist",
+		"conversation read": "conversation-read",
+		// A standing is read back from the reason its reading wrote, and
+		// the list it came from does not reach the code.
+		"known host (tranco top 10k)":          "host-known",
+		"known host (built-in list)":           "host-known",
+		"registered in the last 10 days (nrd)": "host-young",
+		"disposable domain (disposable list)":  "host-disposable",
+		"listed host (urlhaus)":                "host-listed",
+		"listed host (stevenblack)":            "host-listed",
+		"plan mode":                            "plan-mode",
+		"plan mode inspection":                 "plan-inspection",
 		// The other read-only mode keeps codes of its own: the two share a
 		// policy and a reader does something different about each, so a rate
 		// that put them under one word would answer neither question.

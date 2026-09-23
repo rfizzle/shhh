@@ -12,6 +12,7 @@ import (
 
 	"github.com/rfizzle/shhh/internal/logs"
 	"github.com/rfizzle/shhh/internal/pricing"
+	"github.com/rfizzle/shhh/internal/web"
 )
 
 // TestMain gives the whole package a home of its own. Every test that builds
@@ -37,7 +38,8 @@ import (
 // cache the suite does not own is the developer's real one, which a refresh
 // writes into, and an unseeded one is where pricing.Load starts a download
 // from the public table on the first session a test builds. After the run it
-// asks pricing whether any test started that download anyway.
+// asks pricing whether any test started that download anyway, and asks the
+// host reading the same about its lists.
 //
 // It also pins the zone. A report prints a timestamp in local time, so a
 // fixture recorded in one zone reads as a different clock time in another —
@@ -79,6 +81,10 @@ func TestMain(m *testing.M) {
 	code := m.Run()
 	if code == 0 && pricing.Refreshed() {
 		fmt.Fprintln(os.Stderr, "a test started the model-data download: it pointed XDG_CACHE_HOME at a cache nothing seeded (seedModelData)")
+		code = 1
+	}
+	if code == 0 && web.HostListsRefreshed() {
+		fmt.Fprintln(os.Stderr, "a test started a host-list download: it pointed XDG_CACHE_HOME at a cache nothing seeded (seedModelData)")
 		code = 1
 	}
 	// Best effort: the run is over and the temp directory is the operating

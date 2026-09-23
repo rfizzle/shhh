@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/rfizzle/shhh/internal/logs"
+	"github.com/rfizzle/shhh/internal/web"
 )
 
 // Mode is the session's permission mode.
@@ -237,6 +238,15 @@ type Action struct {
 	// against, and it carries no port and no path: the person answered for
 	// the site, not for the page.
 	Host string
+	// Reading is what the public lists say about Host, read by the one
+	// function every surface asks (web.ReadFetch). It advises and never
+	// widens: a known host is let through where auto mode would have asked
+	// its classifier, a young, disposable or listed one is put to the person
+	// where the classifier would have let it through, and the person's own
+	// host lists and grants outrank it either way. The zero value is a
+	// reading that says nothing.
+	// See docs/capabilities/approvals-and-safety.md#a-host-is-read-against-the-world-before-it-is-judged.
+	Reading web.Reading
 	// SafetyFlagged marks commands flagged by safety.Check; they always ask
 	// the human, in every mode but the read-only two, which refuse them
 	// outright.
@@ -698,6 +708,24 @@ func (p ModePolicy) decide(a Action) (Decision, string) {
 		if HostMatches(p.AllowHosts, a.Host) {
 			return Allow, "session grant"
 		}
+		// A known host is answered here and nowhere but auto mode: the
+		// reading stands in for the classifier, whose question it answers,
+		// and never for a person, so manual and accept-edits still ask.
+		if reason, ok := ReadingAllows(p.Mode, a); ok {
+			return Allow, reason
+		}
 	}
 	return Ask, ""
+}
+
+// ReadingAllows reports whether a fetch's reading answers it in mode, with the
+// reason the row prints. It is a known host in auto mode and nothing else:
+// the reading is evidence for a classifier and is never asked to stand in for
+// a person. It is exported for the unattended runs, whose auto mode is a
+// judge rather than a ModePolicy and must take the same answer.
+func ReadingAllows(mode Mode, a Action) (string, bool) {
+	if mode != ModeAuto || a.Kind != ActionFetch || !a.Reading.Known() {
+		return "", false
+	}
+	return a.Reading.Reason(), true
 }

@@ -1,6 +1,7 @@
 package chat
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -12,6 +13,7 @@ import (
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/safety"
 	"github.com/rfizzle/shhh/internal/scope"
+	"github.com/rfizzle/shhh/internal/web"
 )
 
 // Session approval policy: the permission mode decides how each
@@ -596,8 +598,13 @@ func baseAction(req *approvalRequest) agent.Action {
 	// two host lists and a session grant are matched against, and it is read
 	// before the command fallback for the reason the write tier is — what
 	// the call is, not what tier it sits at, decides which rule answers it.
+	//
+	// The host's reading rides along, read from the call's own URL by the
+	// function every surface asks, so the policy and the classifier judge
+	// the fetch on what the lists say as well as on where it goes.
 	if req.host != "" {
-		return agent.Action{Kind: agent.ActionFetch, Host: req.host, Command: req.command}
+		return agent.Action{Kind: agent.ActionFetch, Host: req.host, Command: req.command,
+			Reading: web.ReadFetch(json.RawMessage(req.call.Arguments))}
 	}
 	// A generic approval carrying a command — a process start — is
 	// judged as a command: allowlist entries apply and safety flags stick.

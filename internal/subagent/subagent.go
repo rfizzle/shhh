@@ -4601,9 +4601,15 @@ func (s *Supervisor) resolveGated(c *child, tc provider.ToolCall) string {
 	// never has, and which the record's code can never carry.
 	classified := false
 	var cost time.Duration
+	// standing is the reading's reason where the host's standing is what
+	// turned the classifier's yes into a card, which the ask is filed under.
+	var standing string
 	if decision == agent.Ask {
 		var denial string
 		decision, cost, denial = s.classify(c, policy.Mode, tc, action)
+		if decision == agent.Ask {
+			standing = denial
+		}
 		classified = true
 		if decision == agent.Deny {
 			record(observe.DecisionDeny, observe.ReasonClassifier)
@@ -4628,7 +4634,11 @@ func (s *Supervisor) resolveGated(c *child, tc provider.ToolCall) string {
 		// person, and what they said. The first is what a prompt-rate is
 		// made of and the second is what an approval-rate is, and one event
 		// carrying both could answer neither.
-		record(observe.DecisionAsk, observe.AskReason(action))
+		askCode := observe.AskReason(action)
+		if code := observe.HostReason(web.StandingOf(standing)); code != "" {
+			askCode = code
+		}
+		record(observe.DecisionAsk, askCode)
 		ask, askErr := s.buildAsk(c, tc.Name, rooted, action)
 		if askErr != nil {
 			// A child's refusals are rows in its own transcript, which the
@@ -4681,7 +4691,7 @@ func (s *Supervisor) resolveGated(c *child, tc provider.ToolCall) string {
 // ever remove a prompt it is allowed to remove, never add permission.
 // It returns the decision, what the judgement took — the one rule whose cost
 // the child's transcript states — and, for a denial, the reason the model is
-// told.
+// told; for an ask the host's standing forced, the standing's reason.
 func (s *Supervisor) classify(c *child, mode agent.Mode, tc provider.ToolCall, action agent.Action) (decision agent.Decision, cost time.Duration, denial string) {
 	if mode != agent.ModeAuto || s.opts.Classifier == nil || action.SafetyFlagged {
 		return agent.Ask, 0, ""
@@ -4691,6 +4701,7 @@ func (s *Supervisor) classify(c *child, mode agent.Mode, tc provider.ToolCall, a
 		Arguments: tc.Arguments,
 		CWD:       c.root,
 		Recent:    c.agent.RequestMessages(),
+		Reading:   action.Reading,
 	})
 	// Classifier spend is the child's spend: it counts toward the child's
 	// token budget, and exhausting it cancels the child like any other
@@ -4711,6 +4722,11 @@ func (s *Supervisor) classify(c *child, mode agent.Mode, tc provider.ToolCall, a
 		return agent.Allow, v.Elapsed, ""
 	case verdict == agent.Deny:
 		return agent.Deny, v.Elapsed, reason
+	case !v.Failed && web.StandingOf(reason) != "":
+		// The classifier said yes and the host's standing put the call to
+		// the person instead; the child's transcript says which list did.
+		c.appendEntry(TranscriptEntry{Kind: EntrySystem, Text: "Asking the user: " + reason + "."})
+		return agent.Ask, 0, reason
 	case v.Failed:
 		// Fails closed: the user decides, and sees why they were asked.
 		c.appendEntry(TranscriptEntry{Kind: EntrySystem, Text: "Classifier unavailable (" + v.Reason + "); asking the user instead."})
@@ -4760,7 +4776,10 @@ func actionFor(name string, args json.RawMessage) (agent.Action, error) {
 		// A child's fetch is decided on the same host the parent's card
 		// would have named, so a granted host is as quiet in a child as it
 		// is in the session that granted it.
-		return agent.Action{Kind: agent.ActionFetch, Host: web.FetchHost(args)}, nil
+		// It carries the host's reading from the same function, so a host
+		// the lists vouch for is as quiet in a child as in the session, and
+		// one they warn about is put to the person from either.
+		return agent.Action{Kind: agent.ActionFetch, Host: web.FetchHost(args), Reading: web.ReadFetch(args)}, nil
 	case tools.IsMutating(name):
 		return agent.Action{Kind: agent.ActionEdit}, nil
 	}

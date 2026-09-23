@@ -575,7 +575,8 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 			cfg.Behavior.CommandDenylist, run, containment.Refusal, red, record,
 			session.web, procSup, chainMutation(lspMutationHook(session.lsp), hookPostMutation(hooks)), sc, session.mcpTools, session.structural,
 			unattended{sup: sup, at: l.obs.pos, seen: l.seen,
-				judge: &autoJudge{ctx: cmd.Context(), classifier: classifier, recent: a.Messages, cwd: hookCwd}})
+				judge: &autoJudge{ctx: cmd.Context(), classifier: classifier, recent: a.Messages, cwd: hookCwd,
+					allowHosts: cfg.Web.AllowHosts, denyHosts: cfg.Web.DenyHosts}})
 	}
 	// A request a child routes up, put to the client the way the turn's own
 	// gated calls are and naming the child that raised it, so a card for a

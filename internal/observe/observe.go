@@ -35,6 +35,7 @@ import (
 	"github.com/rfizzle/shhh/internal/digest"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/tools"
+	"github.com/rfizzle/shhh/internal/web"
 )
 
 // Pos is where in the session an event happened: the turn, and the tool
@@ -125,6 +126,19 @@ const (
 	// reads with a coding session's grants has to tell the two apart
 	// (docs/capabilities/chat.md#a-conversation-has-one-mode).
 	ReasonConversationRead = "conversation-read"
+	// A fetch whose host's standing changed the answer: a known host let
+	// through where auto mode would have asked its classifier, or a young,
+	// disposable or listed one put to the person where the classifier had
+	// let it through. One code per standing, and none for unknown, which
+	// never changes an answer. They are codes of their own rather than the
+	// classifier's, because what a reader does about one is turn a list off
+	// or put a host on their own list, and a rate that mixed them with the
+	// classifier's verdicts could not say how often a list decided
+	// (docs/capabilities/approvals-and-safety.md#a-host-is-read-against-the-world-before-it-is-judged).
+	ReasonHostKnown      = "host-known"
+	ReasonHostYoung      = "host-young"
+	ReasonHostDisposable = "host-disposable"
+	ReasonHostListed     = "host-listed"
 	// A command the deny list refused. It is its own code rather than one
 	// of the mode's, because what a reader does about it is edit a list and
 	// not change a mode, and a rate that mixed the two would answer neither
@@ -824,6 +838,9 @@ func ReasonCode(raw string) string {
 	case agent.ModeReadOnly.String() + " mode inspection":
 		return ReasonReadOnlyInspection
 	}
+	if code := HostReason(web.StandingOf(raw)); code != "" {
+		return code
+	}
 	// A refusal for what the call reaches carries the directory in
 	// its reason, so it is matched by shape rather than by equality — the
 	// free text still never reaches the metrics.
@@ -831,6 +848,22 @@ func ReasonCode(raw string) string {
 		return ReasonOutOfScope
 	}
 	return ReasonOther
+}
+
+// HostReason is the code a host's standing is filed under, and "" for an
+// unknown standing, which never changes an answer and so is never a reason.
+func HostReason(s web.Standing) string {
+	switch s {
+	case web.StandingKnown:
+		return ReasonHostKnown
+	case web.StandingYoung:
+		return ReasonHostYoung
+	case web.StandingDisposable:
+		return ReasonHostDisposable
+	case web.StandingListed:
+		return ReasonHostListed
+	}
+	return ""
 }
 
 // AskReason is the reason code recorded when policy falls through to

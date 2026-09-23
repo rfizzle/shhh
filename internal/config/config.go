@@ -399,6 +399,13 @@ type WebConfig struct {
 	// list, before a session grant and before the classifier, and no
 	// approval reaches past it.
 	DenyHosts []string `toml:"deny_hosts"`
+	// ReputationOff names the host lists a fetch is not read against:
+	// "builtin" for shhh's own, or any of the downloaded lists. The reading
+	// only advises the approval policy, and never outranks AllowHosts or
+	// DenyHosts; turning a list off is how a person says they do not want its
+	// word in the decision at all.
+	// See docs/capabilities/approvals-and-safety.md#a-host-is-read-against-the-world-before-it-is-judged.
+	ReputationOff []string `toml:"reputation_off"`
 	// SearchProvider names the web_search backend: "brave" (the default),
 	// which needs a key, or "searxng", a self-hosted instance at SearchURL,
 	// which needs none.
