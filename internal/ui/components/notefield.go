@@ -131,7 +131,15 @@ func (n *NoteBox) Refuse() { n.missing = true }
 // stands for exactly as long as the reader has not answered it.
 func (n *NoteBox) Settle() { n.missing = false }
 
-// Rows renders the field into a body of the given inner width.
-func (n *NoteBox) Rows(inner int) []string {
-	return noteFieldRows(&n.Field, n.Label, n.Focused, n.missing, n.Required, inner)
+// Rows renders the field into a body of the given inner width, for a host
+// that always holds the keyboard while it is drawn.
+func (n *NoteBox) Rows(inner int) []string { return n.RowsLive(inner, true) }
+
+// RowsLive is Rows for a host that can be drawn before it holds the keyboard.
+// live is whether it does: a field opened with an ungated card is still not
+// where the next character goes, so it draws blurred until the handover and
+// the draft's cursor is the only one on screen
+// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+func (n *NoteBox) RowsLive(inner int, live bool) []string {
+	return noteFieldRows(&n.Field, n.Label, n.Focused && live, n.missing, n.Required, inner)
 }

@@ -637,6 +637,34 @@ func TestQuestion_ArrivesInertOverASentenceAndHeldOverAnEmptyDraft(t *testing.T)
 	}
 }
 
+// A required note opens its field with the card on the pick-several and the
+// yes-or-no too, and beside a sentence still being typed the field draws no
+// caret: the draft's is the only place the next character goes until the
+// handover.
+func TestQuestion_AnUngatedRequiredNoteDrawsNoCursor(t *testing.T) {
+	for name, args := range map[string]string{
+		"pick several": `{"question":"Which?","shape":"choose_many","note":"required","options":[{"label":"a"},{"label":"b"}]}`,
+		"yes or no":    `{"question":"Reversible?","shape":"confirm","note":"required"}`,
+	} {
+		t.Run(name, func(t *testing.T) {
+			m := questionModel(t, agent.ModeManual)
+			m.input.SetValue("I was in the middle of")
+			updated, _ := m.Update(askCall(args))
+			m = updated.(Model)
+			if !m.decisionUngated() {
+				t.Fatal("a card landing on a sentence waits for the handover")
+			}
+			if card := strings.Join(m.questionLines(), "\n"); strings.Contains(card, "┃") {
+				t.Fatalf("an ungated field drew a cursor:\n%s", card)
+			}
+			m = handover(t, m)
+			if card := strings.Join(m.questionLines(), "\n"); !strings.Contains(card, "┃") {
+				t.Fatalf("the cursor should appear with the handover:\n%s", card)
+			}
+		})
+	}
+}
+
 // Inert has to be what the card looks like as well as what it does. Every
 // answer the four dressings offer is a bare letter, so beside a draft that can
 // still take text the card draws the one chord that hands the keyboard over

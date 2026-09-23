@@ -202,7 +202,7 @@ func (s *MultiSelect) View(width int) string {
 		tail = append(tail, sty.Warn.Render(Clip(s.notice, inner)))
 	}
 	if s.Note != nil {
-		tail = append(tail, s.Note.Rows(inner)...)
+		tail = append(tail, s.Note.RowsLive(inner, !s.NotYetLive)...)
 	}
 	tail = append(tail, s.hintRowsFor(width)...)
 	head := leadRows(s.Lead, width)

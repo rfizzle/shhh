@@ -573,7 +573,7 @@ func (m Model) questionLines() []string {
 	case c.conf != nil:
 		c.conf.NotYetLive = handover != ""
 		lines = append(lines, components.Clip(c.conf.View(width), width))
-		lines = append(lines, c.note.Rows(width)...)
+		lines = append(lines, c.note.RowsLive(width, handover == "")...)
 		lines = append(lines, questionConfirmKeys(c, width, handover)...)
 	}
 	return lines

@@ -3867,6 +3867,13 @@ func TestGolden_QuestionCard(t *testing.T) {
 			// the draft's cursor is the only one on screen.
 			{Label: "the free answer on the same sentence · the field draws no cursor until the handover",
 				View: buildWithDraft(`{"question":"What should the flag be called?","shape":"text","note":"required"}`, halfTyped, nil)},
+			// A required note opens the field with the other two dressings
+			// as well, and on the same sentence each draws it blurred.
+			{Label: "pick several with a required note on the same sentence · the field draws no cursor until the handover",
+				View: buildWithDraft(`{"question":"Which packages should the flag reach?","shape":"choose_many","note":"required","options":[
+					{"label":"internal/agent"},{"label":"internal/cli"},{"label":"internal/ui/chat"}]}`, halfTyped, nil)},
+			{Label: "yes or no with a required note on the same sentence · the field draws no cursor until the handover",
+				View: buildWithDraft(`{"question":"Should the migration be reversible?","shape":"confirm","note":"required"}`, halfTyped, nil)},
 		}
 		if width < 130 {
 			return panels

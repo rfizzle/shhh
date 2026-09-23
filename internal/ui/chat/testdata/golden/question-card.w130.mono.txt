@@ -93,6 +93,25 @@ Should the migration be reversible?
 │ [ctrl+space] answer it — until then you are still typing into the draft                                                    │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
+· pick several with a required note on the same sentence · the field draws no cursor until the handover
+╭─ Question ──────────────────────────────────────────────────────────────────────────────────────────────────────── 1 of 1 ─╮
+│ Which packages should the flag reach?                                                                                      │
+│                                                                                                                            │
+│ ❯ [ ] internal/agent                                                                                                       │
+│   [ ] internal/cli                                                                                                         │
+│   [ ] internal/ui/chat                                                                                                     │
+│   [ ] Something else …                                                                                                     │
+│ ┄ note (required)                                                                                                          │
+│   (none)                                                                                                                   │
+│ [ctrl+space] answer it — until then you are still typing into the draft                                                    │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+· yes or no with a required note on the same sentence · the field draws no cursor until the handover
+Should the migration be reversible?
+┄ note (required)
+  (none)
+[ctrl+space] answer it — until then you are still typing into the draft
+
 · yes or no · the whole surface, which the card leaves standing
    shhh chat                                                                                                                      
   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────  
@@ -240,6 +259,25 @@ Should the migration be reversible?
 ␛[38;5;254m│␛[m   ␛[38;5;244m(none)␛[m                                                                                                                   ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[ctrl+space]␛[m␛[38;5;254m answer it␛[m␛[38;5;244m — until then you are still typing into the draft␛[m                                                    ␛[38;5;254m│␛[m
 ␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
+
+· pick several with a required note on the same sentence · the field draws no cursor until the handover
+␛[38;5;254m╭─ ␛[m␛[1;38;5;254mQuestion ␛[m␛[38;5;254m──────────────────────────────────────────────────────────────────────────────────────────────────────── 1 of 1 ─╮␛[m
+␛[38;5;254m│␛[m ␛[38;5;254mWhich packages should the flag reach?␛[m                                                                                      ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m                                                                                                                            ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m❯␛[m ␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m[ ]␛[m␛[48;5;237m ␛[38;5;254;48;5;237minternal/agent                                                                                                      ␛[m␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m   ␛[38;5;244m[ ]␛[m internal/cli                                                                                                         ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m   ␛[38;5;244m[ ]␛[m internal/ui/chat                                                                                                     ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m   ␛[38;5;244m[ ]␛[m Something else …                                                                                                     ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244m┄ note (required)␛[m                                                                                                          ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m   ␛[38;5;244m(none)␛[m                                                                                                                   ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[ctrl+space]␛[m␛[38;5;254m answer it␛[m␛[38;5;244m — until then you are still typing into the draft␛[m                                                    ␛[38;5;254m│␛[m
+␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
+
+· yes or no with a required note on the same sentence · the field draws no cursor until the handover
+␛[38;5;254mShould the migration be reversible?␛[m
+␛[38;5;244m┄ note (required)␛[m
+  ␛[38;5;244m(none)␛[m
+␛[38;5;254m[ctrl+space]␛[m␛[38;5;254m answer it␛[m␛[38;5;244m — until then you are still typing into the draft␛[m
 
 · yes or no · the whole surface, which the card leaves standing
   ␛[38;5;254;1m shhh chat␛[m                                                                                                                      

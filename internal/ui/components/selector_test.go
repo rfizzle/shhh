@@ -80,6 +80,23 @@ func TestMultiSelect_ToggleAllAndApply(t *testing.T) {
 	}
 }
 
+// A required note opens the checkbox list's field with the card, and beside a
+// draft that still holds the keyboard it must not paint a caret of its own.
+func TestMultiSelect_UngatedNoteDrawsNoCursor(t *testing.T) {
+	s := NewMultiSelect("Question", planOptions())
+	s.Note = NewNoteBox()
+	s.Note.Required = true
+	s.Note.Open()
+	s.NotYetLive, s.Handover = true, "ctrl+space"
+	if view := s.View(80); strings.Contains(view, "┃") {
+		t.Fatalf("an ungated field drew a cursor:\n%s", view)
+	}
+	s.NotYetLive, s.Handover = false, ""
+	if view := s.View(80); !strings.Contains(view, "┃") {
+		t.Fatalf("the cursor should appear with the handover:\n%s", view)
+	}
+}
+
 func TestMultiSelect_AllNoneAndZeroSelection(t *testing.T) {
 	s := NewMultiSelect("Apply?", planOptions())
 	s.Update(key("a"))
