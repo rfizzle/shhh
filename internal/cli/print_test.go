@@ -541,7 +541,7 @@ func TestHeadlessObserver_EventShapes(t *testing.T) {
 	obs.decision(observe.DecisionDeny, "headless-default")
 	rounds = 3
 	obs.toolResult(toolResultOf("search", time.Millisecond, "[repeat: this exact search call has now run 3 times]"))
-	obs.summary(agent.SummaryVerdict{State: agent.SummaryOffTarget})
+	obs.summary(agent.SummaryVerdict{State: agent.SummaryOffTarget, Round: 3})
 	obs.intervene(agent.Intervention{Kind: agent.InterveneSteer})
 	obs.retry(agent.RetryNotice{Failure: &provider.Failure{Class: provider.ClassOverloaded}, Attempt: 1, Max: agent.MaxRetryAttempts})
 	rec.turn(1, 3, time.Second, observe.TurnDone)
@@ -559,6 +559,30 @@ func TestHeadlessObserver_EventShapes(t *testing.T) {
 		{kind: storage.AgentEventSignal, outcome: observe.SignalRetry, reason: "overloaded", turn: 1, round: 3},
 		{kind: storage.AgentEventTurn, outcome: observe.TurnDone, turn: 1, round: 3, timed: true},
 	})
+}
+
+// A closing reading lands on the summariser's own goroutine, after Run has
+// returned and while the next turn may already be resetting the round
+// counter, so the observer files it at the round the reading states rather
+// than asking the agent where it is now.
+func TestHeadlessObserver_SummaryFilesAtTheReadingsRound(t *testing.T) {
+	a := agent.New(nil, func([]provider.Message, string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		return nil, nil, errors.New("unused")
+	})
+	var lines strings.Builder
+	obs := headlessObserver{rounds: a.Rounds, stream: newJSONLStream(&lines)}
+
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		obs.summary(agent.SummaryVerdict{State: agent.SummaryOnTarget, Round: 4})
+	}()
+	a.StartTurn("the next turn")
+	<-done
+
+	if !strings.Contains(lines.String(), `"round":4`) {
+		t.Fatalf("summary not filed at the reading's round:\n%s", lines.String())
+	}
 }
 
 // A headless run's turn ends in the same closed set a session's does. The

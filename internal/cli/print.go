@@ -305,18 +305,27 @@ type headlessObserver struct {
 
 // pos is where the run is now.
 func (h headlessObserver) pos() observe.Pos {
+	return h.at(h.rounds())
+}
+
+// at is the run's turn with a round the caller already holds.
+func (h headlessObserver) at(round int) observe.Pos {
 	turn := int64(1)
 	if h.turn != nil {
 		turn = h.turn()
 	}
-	return observe.Pos{Turn: turn, Round: int64(h.rounds())}
+	return observe.Pos{Turn: turn, Round: int64(round)}
 }
 
 // signal records one of the loop's own safeguards firing, and puts it on the
 // stream under the same code. Every signal below goes through here, so a code
 // cannot reach one and not the other.
 func (h headlessObserver) signal(code, reason string) {
-	at := h.pos()
+	h.signalAt(h.pos(), code, reason)
+}
+
+// signalAt is signal at a position the caller already holds.
+func (h headlessObserver) signalAt(at observe.Pos, code, reason string) {
 	h.rec.signal(at, code, reason)
 	h.stream.signal(at, code, reason)
 }
@@ -376,8 +385,13 @@ func (h headlessObserver) usage(u provider.Usage) {
 // summary records a reading. Every reading lands here and not only the ones
 // that go on to interrupt the turn: a drift rate is a fraction, and this is
 // its denominator.
+//
+// It is filed at the round the reading states rather than at h.pos(): a
+// closing reading is delivered on the summariser's own goroutine after Run
+// has returned, where the agent's round counter is the next turn's to write,
+// and the verdict is about the round its evidence was taken at anyway.
 func (h headlessObserver) summary(v agent.SummaryVerdict) {
-	h.signal(observe.SignalSummary, observe.SummaryCode(v.State))
+	h.signalAt(h.at(v.Round), observe.SignalSummary, observe.SummaryCode(v.State))
 }
 
 // intervene records the run interrupting its own turn to ask it to take
