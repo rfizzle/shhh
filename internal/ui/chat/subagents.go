@@ -554,18 +554,6 @@ func (m *Model) killChildren(names []string) {
 		return
 	}
 	for _, name := range names {
-		// A kill takes the subtree, so a list that names a parent and its
-		// child has already ended the child by the time this reaches it.
-		// That is the kill working, not a kill that failed, and a note on the
-		// dead agent's transcript saying it had already finished would be the
-		// only trace of it.
-		if st, ok := m.subagents.Get(name); ok {
-			switch st.State {
-			case subagent.StateDone, subagent.StateFailed:
-				m.purgeChildAsks(name)
-				continue
-			}
-		}
 		if err := m.subagents.Kill(name); err != nil {
 			m.noteChild(name, err.Error())
 			continue
@@ -618,18 +606,45 @@ func (m Model) keptClause(clause string, names ...string) string {
 // reads to the end, and it states what survives for the reason the single
 // kill's does — a kill that only names its casualties reads as bigger than it
 // is (docs/interface/surfaces.md#the-agent-manager).
+//
+// What it hands the kill is the roots alone — the live agents with no live
+// agent above them — because a kill takes the subtree, and naming the agents
+// under a root as well would kill each of them a second time
+// (docs/capabilities/subagents.md#what-nesting-does-to-the-rest-of-it). The
+// count is still the whole roster: the roots and everything under them.
 func (m Model) armKillAll() (tea.Model, tea.Cmd) {
-	names := m.liveChildNames()
-	if len(names) == 0 {
+	roots := m.liveRootNames()
+	if len(roots) == 0 {
 		return m, nil
 	}
-	m.killConfirm = &components.Confirm{Prompt: "Kill all " + plural(len(names), "agent") +
+	all := append([]string(nil), roots...)
+	for _, name := range roots {
+		all = append(all, m.subagents.Under(name)...)
+	}
+	m.killConfirm = &components.Confirm{Prompt: "Kill all " + plural(len(all), "agent") +
 		"? Every turn stops and every isolated workspace is discarded" +
-		m.keptClause(" and the patches in them are kept", names...) +
+		m.keptClause(" and the patches in them are kept", all...) +
 		"; the transcripts stay and your own turn keeps going."}
-	m.killTargets = names
+	m.killTargets = roots
 	m.syncViewport()
 	return m, nil
+}
+
+// liveRootNames are the live children whose parent is not itself live: the
+// tops of the subtrees a kill of everything has to name.
+func (m Model) liveRootNames() []string {
+	names := m.liveChildNames()
+	live := make(map[string]bool, len(names))
+	for _, name := range names {
+		live[name] = true
+	}
+	var roots []string
+	for _, name := range names {
+		if parent, _ := m.subagents.Parent(name); !live[parent] {
+			roots = append(roots, name)
+		}
+	}
+	return roots
 }
 
 // liveChildNames are the children a kill can still reach: the ones that have

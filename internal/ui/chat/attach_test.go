@@ -437,6 +437,58 @@ func TestKillAllFromListWithOneConfirm(t *testing.T) {
 	}
 }
 
+// [K] over a parent and the agent it spawned names the parent alone and lets
+// the kill's cascade take the child, so the child ends once, as the parent's
+// casualty, while the confirm still counts both
+// (docs/capabilities/subagents.md#what-nesting-does-to-the-rest-of-it).
+func TestKillAllHandsTheCascadeItsRoots(t *testing.T) {
+	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
+	t.Cleanup(sup.Close)
+	m := newSubagentModel(t, sup)
+	spawnChild(t, sup, subagent.RoleResearcher, "researcher-1")
+	exec := sup.WrapExecutor("researcher-1", nil)
+	if _, err := exec(subagent.SpawnToolName, json.RawMessage(`{"role":"researcher","task":"read it"}`)); err != nil {
+		t.Fatal(err)
+	}
+	waitFor(t, func() bool {
+		st, ok := sup.Get("researcher-2")
+		return ok && st.State == subagent.StateRunning
+	})
+
+	updated, _ := m.Update(tea.KeyPressMsg{Code: 'a', Mod: tea.ModAlt})
+	m = updated.(Model)
+	updated, _ = m.Update(key('K'))
+	m = updated.(Model)
+	if got := strings.Join(m.killTargets, ","); got != "researcher-1" {
+		t.Fatalf("K must name the root alone, got %q", got)
+	}
+	if !strings.Contains(m.View().Content, "Kill all 2 agents?") {
+		t.Fatalf("the confirm should count the whole roster:\n%s", m.View().Content)
+	}
+	updated, _ = m.Update(key('y'))
+	_ = updated.(Model)
+	waitFor(t, func() bool {
+		st, ok := sup.Get("researcher-2")
+		return ok && st.State == subagent.StateFailed
+	})
+	if st, _ := sup.Get("researcher-2"); st.Detail != "cancelled · researcher-1 was killed" {
+		t.Fatalf("the child's ending = %q, want it named as the parent's casualty", st.Detail)
+	}
+	var cascade, direct int
+	for _, e := range sup.Transcript("researcher-2") {
+		switch e.Text {
+		case "researcher-1 was killed, so this agent ends with it.":
+			cascade++
+		case "Killed by the user.":
+			direct++
+		}
+	}
+	if cascade != 1 || direct != 0 {
+		t.Fatalf("the child's transcript says it was taken %d times and killed directly %d times, want 1 and 0",
+			cascade, direct)
+	}
+}
+
 // pumpAsks feeds the supervisor's events into the model the way
 // listenSubagents does at runtime, until want approvals have been routed into
 // the session. The child is really blocked on the other end of them, which is
