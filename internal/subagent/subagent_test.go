@@ -2679,3 +2679,63 @@ func TestAReadingOfAChildThatOnlyReadsIsGivenTheSweep(t *testing.T) {
 		}
 	}
 }
+
+// A lane or a protocol client can steer a child while the session closes.
+// The send and the close are one guard, so the steer lands or is refused and
+// never panics on a closed stream, and the reader still sees the stream end.
+func TestCloseRacesSteerWithoutPanic(t *testing.T) {
+	sup := New(context.Background(), Options{Root: t.TempDir(), NewEnv: resumableEnv()})
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"long survey"}`)
+	waitState(t, sup, "researcher-1", StateRunning)
+
+	drained := make(chan struct{})
+	go func() {
+		for range sup.Events() {
+		}
+		close(drained)
+	}()
+
+	start := make(chan struct{})
+	var wg sync.WaitGroup
+	for i := 0; i < 4; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			<-start
+			for j := 0; j < 200; j++ {
+				err := sup.Steer("researcher-1", "keep going", SteerFromLane)
+				if errors.Is(err, ErrClosed) {
+					return
+				}
+			}
+		}()
+	}
+	close(start)
+	sup.Close()
+	wg.Wait()
+
+	select {
+	case <-drained:
+	case <-time.After(5 * time.Second):
+		t.Fatal("the events reader did not end after Close")
+	}
+
+	if err := sup.Steer("researcher-1", "too late", SteerFromLane); !errors.Is(err, ErrClosed) {
+		t.Fatalf("Steer after Close = %v, want ErrClosed", err)
+	}
+	if err := sup.Note("researcher-1", TranscriptEntry{Kind: EntrySystem, Text: "late"}); !errors.Is(err, ErrClosed) {
+		t.Fatalf("Note after Close = %v, want ErrClosed", err)
+	}
+	if err := sup.CancelTurn("researcher-1"); !errors.Is(err, ErrClosed) {
+		t.Fatalf("CancelTurn after Close = %v, want ErrClosed", err)
+	}
+	if err := sup.Retry("researcher-1"); !errors.Is(err, ErrClosed) {
+		t.Fatalf("Retry after Close = %v, want ErrClosed", err)
+	}
+	if _, err := sup.SetAgentMode("researcher-1", agent.ModeManual); !errors.Is(err, ErrClosed) {
+		t.Fatalf("SetAgentMode after Close = %v, want ErrClosed", err)
+	}
+	// Neither returns anything to refuse with; what they owe is not to panic.
+	sup.Hold()
+	sup.Release()
+}

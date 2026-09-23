@@ -1685,7 +1685,21 @@ type Supervisor struct {
 
 	wg        sync.WaitGroup
 	closeOnce sync.Once
+
+	// sendMu and closed guard the event channel against its own close. A
+	// send on a closed channel panics even inside a select with a default, so
+	// every sender reads closed under the read lock and sends while holding
+	// it, and Close takes the write lock to close the channel. Close cancels
+	// ctx first, which is what lets a must-see send blocked under the read
+	// lock give up and the write lock be had.
+	sendMu sync.RWMutex
+	closed bool
 }
+
+// ErrClosed is what a supervisor answers once Close has run: a steer, a note,
+// a retry or a mode change asked of a session that is ending is refused in
+// words rather than sent into a stream nobody is reading.
+var ErrClosed = errors.New("the agent supervisor is shut down")
 
 // New builds a Supervisor. The parent-mode ceiling starts at manual (the
 // safest) until SetParentMode reports the session's real mode.
@@ -1938,6 +1952,9 @@ func (s *Supervisor) Note(name string, e TranscriptEntry) error {
 	if err != nil {
 		return err
 	}
+	if s.isClosed() {
+		return ErrClosed
+	}
 	c.appendEntry(e)
 	s.emitUpdate(c)
 	return nil
@@ -1961,6 +1978,9 @@ func (s *Supervisor) Steer(name, text string, from SteerSource) error {
 	c, err := s.lookup(name)
 	if err != nil {
 		return err
+	}
+	if s.isClosed() {
+		return ErrClosed
 	}
 	c.mu.Lock()
 	switch c.state {
@@ -2063,6 +2083,9 @@ func (s *Supervisor) CancelTurn(name string) error {
 	c, err := s.lookup(name)
 	if err != nil {
 		return err
+	}
+	if s.isClosed() {
+		return ErrClosed
 	}
 	c.mu.Lock()
 	state := c.state
@@ -2231,7 +2254,7 @@ func (s *Supervisor) Retry(name string) error {
 		return err
 	}
 	if s.ctx.Err() != nil {
-		return errors.New("the agent supervisor is shut down")
+		return ErrClosed
 	}
 	var wctx context.Context
 	var wcancel context.CancelFunc
@@ -2351,7 +2374,7 @@ func (s *Supervisor) abandonRetry(c *child, detail, reason string) {
 // it right with.
 func (s *Supervisor) restart(c *child, detail string) error {
 	if s.ctx.Err() != nil {
-		return errors.New("the agent supervisor is shut down")
+		return ErrClosed
 	}
 	// Read before anything is replaced: the handoff a child stopped by its
 	// budget was asked for is sitting in the report field this attempt is
@@ -2522,6 +2545,9 @@ func (s *Supervisor) SetAgentMode(name string, mode agent.Mode) (agent.Mode, err
 	if err != nil {
 		return agent.ModeManual, err
 	}
+	if s.isClosed() {
+		return agent.ModeManual, ErrClosed
+	}
 	s.mu.Lock()
 	ceiling := s.parentMode
 	s.mu.Unlock()
@@ -2581,8 +2607,19 @@ func (s *Supervisor) Close() {
 				removeWorktree(repoTop, worktree)
 			}
 		}
+		s.sendMu.Lock()
+		s.closed = true
 		close(s.events)
+		s.sendMu.Unlock()
 	})
+}
+
+// isClosed reports whether Close has closed the event stream, so a caller
+// can refuse before it changes a child it could no longer report on.
+func (s *Supervisor) isClosed() bool {
+	s.sendMu.RLock()
+	defer s.sendMu.RUnlock()
+	return s.closed
 }
 
 // WrapExecutor intercepts the orchestration tools on one agent's executor
@@ -2839,7 +2876,7 @@ func (s *Supervisor) spawnFrom(caller string, raw json.RawMessage) (string, erro
 		return "", err
 	}
 	if s.ctx.Err() != nil {
-		return "", errors.New("the agent supervisor is shut down")
+		return "", ErrClosed
 	}
 	// Depth is checked with the role and before everything else that could
 	// claim something, for the reason the token admission is: a refusal that
@@ -4619,6 +4656,11 @@ func (c *child) reportText() string {
 // emit delivers a must-see event (asks, completions), giving up only when the
 // supervisor is shut down.
 func (s *Supervisor) emit(ev Event) {
+	s.sendMu.RLock()
+	defer s.sendMu.RUnlock()
+	if s.closed {
+		return
+	}
 	select {
 	case s.events <- ev:
 	case <-s.ctx.Done():
@@ -4628,6 +4670,11 @@ func (s *Supervisor) emit(ev Event) {
 // emitUpdate delivers a best-effort progress update; drops are fine because
 // rendering reads live snapshots.
 func (s *Supervisor) emitUpdate(c *child) {
+	s.sendMu.RLock()
+	defer s.sendMu.RUnlock()
+	if s.closed {
+		return
+	}
 	select {
 	case s.events <- Event{Kind: EventUpdate, Status: c.status()}:
 	default:
