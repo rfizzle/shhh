@@ -49,12 +49,12 @@ type InspectorAlert struct {
 	// naming only its latest run would date a failure four turns old to a
 	// moment ago (docs/interface/surfaces.md#the-inspector-rail).
 	Turns int
-	// Superseded marks a row the block no longer makes its statement with:
-	// one something has since answered, or one a later failure of the same
-	// command stands in for. It is kept and counted rather than dropped — the
-	// session did break this, and getting to green is work the block can
-	// still account for — but it is never drawn as a row, so an answered
-	// failure cannot push a changed file off the rail.
+	// Superseded marks an alert something has since answered: one entry for
+	// the whole episode, however many turns it stood in, with the runs and
+	// turns it carried while it stood. It is kept and counted rather than
+	// dropped — the session did break this, and getting to green is work the
+	// block can still account for — but it is never drawn as a row, so an
+	// answered failure cannot push a changed file off the rail.
 	Superseded bool
 }
 

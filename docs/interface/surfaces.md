@@ -998,13 +998,14 @@ run is what the workspace is currently like.
 
 Nor is an alert one turn. A suite that has failed in four turns running is
 one thing wrong with the workspace and not four, and a heading over it
-reading `4 standing` counts attempts and calls them problems. So the alert
-follows the command across every turn it keeps failing in: a later failure
-supersedes the earlier turn's row, and the row standing in its place carries
-the turn the command first broke in and every run behind it since —
-`✗ make test  exit 2 · 5 runs  since turn 3`. It also takes the place of its
-latest failure, because the alerts drawn are the most recent ones and a
-command that broke again a moment ago is the one being fought now. What the
+reading `4 standing` counts attempts and calls them problems. So an alert is
+an episode: the command's failures from the first one to whatever answers
+them, across every turn it keeps failing in. The earlier turns are not rows of
+their own; the one row carries the turn the command first broke in and every
+run behind it since — `✗ make test  exit 2 · 5 runs  since turn 3`. It also
+takes the place of its latest failure, because the alerts drawn are the most
+recent ones and a command that broke again a moment ago is the one being
+fought now. What the
 heading counts is then what the rows are: one standing alert for each command
 the workspace is still wrong about, which is one row for each thing there is
 to answer.
@@ -1012,13 +1013,20 @@ to answer.
 An alert stops being news in one of two ways, and they are the same fact
 stated twice: the command came back clean, or the repository's own suite
 passed over the tree that command failed on — [the same resolution the turn's
-close reads](#the-turns-close). Neither deletes it, and neither does the later
-failure that stands in for an earlier one: superseded is what the block calls
-a row it no longer makes its statement with, whether because something
-answered that row or because a newer run of the same command is what the
-workspace is like now. A superseded row keeps its place in the count and folds
-behind `… 8 superseded`, so the session can still say how much red it took to
-get to green without any of that red being on screen as a current failure.
+close reads](#the-turns-close). Neither deletes it: superseded is what the
+block calls an episode something has answered, and it is one entry however
+many turns the episode stood for, carrying the same runs and turn span its
+row did. So one broken command reads `1 standing` until it is answered and
+`1 superseded` after, rather than being counted once per turn it failed in.
+A failure answered inside its own turn is an episode too, superseded from
+the start. It was never news, so it is never a row — the block is what is
+broken, and it is not — but it was red, and the fold is the account of how
+much red it took to get to green; a count that left it out would call a
+session that broke and fixed its build in one turn one that never broke it.
+A superseded entry folds behind `… 8 superseded`, so the session can still
+give that account without any of that red being on screen as a current
+failure. A failure after the suite's pass opens an episode of its own, since
+it is about a tree the pass never saw.
 
 Two live alerts are drawn, the two most recent, and everything else folds
 behind that marker. A live one is pinned — the last row the rail gives up when

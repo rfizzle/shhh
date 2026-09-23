@@ -28,6 +28,7 @@ package chat
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 	"unicode"
@@ -383,41 +384,48 @@ type alertMemo struct {
 // not three, and the rail drew three rows for it. The runs are collapsed onto
 // the last one, because the last run is what the workspace is currently like.
 //
-// Nor is it one command in one turn. A suite still failing in the fourth turn
-// running is the same one piece of news it was in the first, so the standing
-// alert follows the command across those turns: the earlier turn's row is
-// superseded by the later failure, and the one still standing says the turn
-// the command first broke in and what every turn since has thrown at it. That
-// is what makes the heading's count the number of rows under it rather than
-// the number of attempts behind them.
+// Nor is it one command in one turn. An alert is an episode: a command's run
+// of failures from the first one to whatever answered it, however many turns
+// that took. A suite still failing in the fourth turn running is the same one
+// piece of news it was in the first, so the alert says the turn the command
+// first broke in and every run since; and once it is answered it is one
+// superseded entry carrying the same account, not one per turn it stood in.
+// That is what makes the heading's count the number of rows under it and the
+// fold's count the number of things that were fixed, rather than either
+// counting the attempts behind them.
+//
+// A failure answered inside its own turn is an episode too, and a superseded
+// one from the start. It never stood long enough to be news, so it is never a
+// row — but it was red, and the fold is the account of how much red it took
+// to get to green (docs/interface/surfaces.md#the-inspector-rail).
 func (m Model) scanAlerts() components.InspectorAlerts {
-	type group struct {
-		// at is where the group's last run sits in the transcript, which is
-		// the position a later verification is asked about.
-		at     int
-		runs   int
-		note   string
-		broken bool
-	}
-	// standing is the alert still standing for a command: where it started,
-	// how much is behind it, and which of its turns is the one that states
-	// all that — the last turn it broke in, so the row sits where the most
-	// recent failure is and the block draws it as the recent news it is.
-	type standing struct {
-		first int64
-		runs  int
-		turns int
-		last  alertKey
+	// episode is one command's alert while the walk is still reading it: the
+	// alert as it stands, where its last failure sits (the position a later
+	// verification is asked about) and the turn that failure ran in.
+	type episode struct {
+		alert    components.InspectorAlert
+		lastFail int
+		lastTurn int64
 	}
 	verified := lastVerification(m.transcript)
-	groups := map[alertKey]*group{}
-	var order []alertKey
-	// cleared is where each command last came back clean. A clean run answers
-	// every failure of that command before it, in whatever turn it ran: the
-	// key groups the rows, and it is the command rather than the key that the
-	// workspace is either wrong about or not.
-	cleared := map[string]int{}
+	var closed []*episode
+	open := map[string]*episode{}
+	// passed is where the suite last came back clean so far in the walk. A
+	// failure after it is about a tree the pass never saw, so it opens an
+	// episode of its own rather than going on with one the pass answered.
+	passed := -1
+	answer := func(name string) {
+		if ep := open[name]; ep != nil {
+			ep.alert.Superseded = true
+			closed = append(closed, ep)
+			delete(open, name)
+		}
+	}
 	for i, e := range m.transcript {
+		if s, ok := gateVerdict(e); ok && s.OK() {
+			passed = i
+			continue
+		}
 		if e.kind != entryCommand {
 			continue
 		}
@@ -431,63 +439,49 @@ func (m Model) scanAlerts() components.InspectorAlerts {
 		// command coming back clean, and somebody who cancelled a run is not
 		// waiting for it to do that; nor did the run reach a verdict about
 		// the tree for anything to be answered by. So a stop leaves the
-		// group exactly as it found it, rather than overwriting the failure
+		// episode exactly as it found it, rather than overwriting the failure
 		// the run before it reported.
 		outcome := commandOutcome(e)
 		if outcome == components.OutcomeStopped {
 			continue
 		}
-		k := alertKey{name: alertName(label), turn: e.turn}
-		g, ok := groups[k]
-		if !ok {
-			g = &group{}
-			groups[k], order = g, append(order, k)
-		}
-		g.at, g.runs, g.note = i, g.runs+1, outcome
+		name := alertName(label)
+		// A clean run answers every failure of that command before it, in
+		// whatever turn it ran: it is the command rather than the line that
+		// the workspace is either wrong about or not.
 		if e.exitCode == 0 && e.end.outcome == "" {
-			g.broken = false
-			cleared[k.name] = i
+			answer(name)
 			continue
 		}
-		g.broken = true
-	}
-	// A group is answered where the workspace has since been said to be right
-	// about that command, by either answer the session has.
-	answered := func(k alertKey, at int) bool {
-		return verified.settled(at) || cleared[k.name] > at
-	}
-	still := map[string]*standing{}
-	for _, k := range order {
-		g := groups[k]
-		if !g.broken || answered(k, g.at) {
-			continue
+		if ep := open[name]; ep != nil && passed > ep.lastFail {
+			answer(name)
 		}
-		st, ok := still[k.name]
-		if !ok {
-			st = &standing{first: k.turn}
-			still[k.name] = st
+		ep := open[name]
+		if ep == nil {
+			ep = &episode{alert: components.InspectorAlert{Label: name, Turn: e.turn, Turns: 1}, lastTurn: e.turn}
+			open[name] = ep
+		} else if e.turn != ep.lastTurn {
+			ep.alert.Turns++
+			ep.lastTurn = e.turn
 		}
-		st.runs, st.turns, st.last = st.runs+g.runs, st.turns+1, k
+		ep.alert.Runs++
+		ep.alert.Note = outcome
+		ep.lastFail = i
 	}
+	// What is still open at the end is standing unless the suite has since
+	// passed over the tree its last failure ran on — the same resolution the
+	// close row reads (resolved.go).
+	for _, ep := range open {
+		ep.alert.Superseded = verified.settled(ep.lastFail)
+		closed = append(closed, ep)
+	}
+	// The block's order is the order the commands last broke in, so an alert
+	// sits where its most recent failure is and the block draws it as the
+	// recent news it is.
+	sort.Slice(closed, func(a, b int) bool { return closed[a].lastFail < closed[b].lastFail })
 	var alerts components.InspectorAlerts
-	for _, k := range order {
-		g := groups[k]
-		if !g.broken {
-			continue
-		}
-		// Every group but the one the standing alert is stated at is
-		// superseded: an answered one by what answered it, an earlier live
-		// one by the failure that came after it.
-		alert := components.InspectorAlert{
-			Label: k.name, Note: g.note, Runs: g.runs, Turn: k.turn,
-			Turns: 1, Superseded: true,
-		}
-		if st := still[k.name]; st != nil && st.last == k {
-			alert = components.InspectorAlert{
-				Label: k.name, Note: g.note, Runs: st.runs, Turn: st.first, Turns: st.turns,
-			}
-		}
-		alerts = append(alerts, alert)
+	for _, ep := range closed {
+		alerts = append(alerts, ep.alert)
 	}
 	return alerts
 }
@@ -499,16 +493,6 @@ func commandOutcome(e entry) string {
 		return e.end.outcome
 	}
 	return components.OutcomeExit(e.exitCode)
-}
-
-// alertKey is what the walk groups a command's runs by: the command, in the
-// turn that ran it. The turn is half the key because a run count is a turn's
-// own — three runs of a formatter in one turn are one attempt at one thing —
-// while the alert those groups roll up into spans every turn the command has
-// gone on breaking in.
-type alertKey struct {
-	name string
-	turn int64
 }
 
 // alertName is what an alert calls a command line: its first word, and the

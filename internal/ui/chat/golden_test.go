@@ -3255,8 +3255,16 @@ func TestGolden_InspectorAlerts(t *testing.T) {
 						duration: 3800 * time.Millisecond, turn: 4,
 						toolResult: "--- FAIL: TestLoopRounds\n    loop_test.go:214: want 3 rounds, got 4"})
 				}
-				if stage == "recovered" || stage == "completed" {
+				if stage == "recovered" || stage == "regressed" || stage == "completed" {
 					m.appendCloseGateRow("default", gateResult("PASS", 5, 5))
+				}
+				if stage == "regressed" {
+					// Something new breaks after the pass. The two answered
+					// episodes are two superseded entries — the suite's three
+					// turns of failure are one of them, not three.
+					m.transcript = append(m.transcript, entry{kind: entryCommand,
+						text: "go vet ./...", exitCode: 1, turn: 4,
+						toolResult: "internal/agent/loop.go:12: unreachable code"})
 				}
 				if stage == "completed" {
 					m.transcript = append(m.transcript, entry{kind: entryTurnClose, turn: 4,
@@ -3283,6 +3291,8 @@ func TestGolden_InspectorAlerts(t *testing.T) {
 					View: build("failed")},
 				{Label: "recovered · the suite answers every failure before it",
 					View: build("recovered")},
+				{Label: "regressed · each answered episode is one superseded entry",
+					View: build("regressed")},
 				{Label: "completed · the turn closes and the rail has no bad news",
 					View: build("completed")},
 			}

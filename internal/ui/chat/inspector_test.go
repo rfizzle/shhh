@@ -629,7 +629,8 @@ func TestInspectorAlerts_RunsOfOneCommandAreOneRow(t *testing.T) {
 	}
 	// The same command breaking again in a later turn is the alert going on
 	// rather than a second one: the runs behind it go up, the turn it broke
-	// in stays where it was, and the earlier turn's row is superseded.
+	// in stays where it was, and the earlier turn is part of it rather than a
+	// row of its own.
 	m.turnCount = 3
 	m.appendEntry(entry{kind: entryCommand, text: "gofmt -l .", exitCode: 2})
 	alerts := m.inspectorAlerts()
@@ -640,8 +641,8 @@ func TestInspectorAlerts_RunsOfOneCommandAreOneRow(t *testing.T) {
 	if a := live[1]; a.Label != "gofmt" || a.Runs != 4 || a.Turn != 2 || a.Turns != 2 {
 		t.Fatalf("the alert spans the turns the command broke in: %+v", a)
 	}
-	if len(alerts) != 3 || !alerts[1].Superseded {
-		t.Fatalf("the earlier turn's row is kept and marked: %+v", alerts)
+	if len(alerts) != 2 {
+		t.Fatalf("the earlier turn is not a superseded entry of its own: %+v", alerts)
 	}
 }
 
@@ -664,8 +665,8 @@ func TestInspectorAlerts_ACommandBrokenInFourTurnsIsOneAlert(t *testing.T) {
 	if a := live[0]; a.Label != "go test" || a.Runs != 4 || a.Turn != 1 || a.Turns != 4 {
 		t.Fatalf("the alert carries the turn it broke in and the runs since: %+v", a)
 	}
-	if len(alerts) != 4 {
-		t.Fatalf("the three superseded rows are kept and counted: %+v", alerts)
+	if len(alerts) != 1 {
+		t.Fatalf("the turns it stood in are one entry, not one each: %+v", alerts)
 	}
 	view := stripANSI(m.View().Content)
 	if !strings.Contains(view, "1 standing") || !strings.Contains(view, "since turn 1") {
@@ -673,6 +674,78 @@ func TestInspectorAlerts_ACommandBrokenInFourTurnsIsOneAlert(t *testing.T) {
 	}
 	if strings.Count(view, "✗ go test") != 1 {
 		t.Fatalf("one broken command is one row:\n%s", view)
+	}
+}
+
+// An answered episode is one superseded entry however many turns it stood in:
+// the fold counts what was fixed, not the attempts behind it, and the entry
+// keeps the account the standing row carried
+// (docs/interface/surfaces.md#the-inspector-rail).
+func TestInspectorAlerts_AnAnsweredEpisodeIsOneSupersededEntry(t *testing.T) {
+	m := inspectorModel(t, 144, 40)
+	for turn := int64(2); turn <= 3; turn++ {
+		m.turnCount = turn
+		m.appendEntry(entry{kind: entryUser, text: "try it again"})
+		m.appendEntry(entry{kind: entryCommand, text: "go test ./...", exitCode: 1})
+	}
+	m.appendEntry(entry{kind: entryCommand, text: "go vet ./...", exitCode: 1})
+	view := stripANSI(m.View().Content)
+	if !strings.Contains(view, "2 standing") || strings.Contains(view, "superseded") {
+		t.Fatalf("before its answer the episode is one standing alert and nothing folded:\n%s", view)
+	}
+	m.turnCount = 4
+	m.appendEntry(entry{kind: entryCommand, text: "go test ./...", exitCode: 0})
+	alerts := m.inspectorAlerts()
+	if len(alerts) != 2 {
+		t.Fatalf("three turns of one failure are one entry once answered: %+v", alerts)
+	}
+	a := alerts[0]
+	if a.Label != "go test" || !a.Superseded || a.Runs != 3 || a.Turn != 1 || a.Turns != 3 {
+		t.Fatalf("the superseded entry carries the episode's runs and turns: %+v", a)
+	}
+	view = stripANSI(m.View().Content)
+	if !strings.Contains(view, "1 standing") || !strings.Contains(view, "… 1 superseded") {
+		t.Fatalf("after its answer the episode is one superseded entry:\n%s", view)
+	}
+}
+
+// A failure answered inside its own turn is an episode too: it is never a
+// row, because it never stood, but the fold counts it — it was red on the way
+// to green (docs/interface/surfaces.md#the-inspector-rail).
+func TestInspectorAlerts_AFailureAnsweredInItsOwnTurnIsCounted(t *testing.T) {
+	m := inspectorModel(t, 144, 40)
+	m.turnCount = 2
+	m.appendEntry(entry{kind: entryUser, text: "build it"})
+	m.appendEntry(entry{kind: entryCommand, text: "go build ./...", exitCode: 2})
+	m.appendEntry(entry{kind: entryCommand, text: "go build ./...", exitCode: 2})
+	m.appendEntry(entry{kind: entryCommand, text: "go build ./...", exitCode: 0})
+	alerts := m.inspectorAlerts()
+	if len(alerts) != 2 {
+		t.Fatalf("turn 1's failure and the answered build: %+v", alerts)
+	}
+	if a := alerts[1]; a.Label != "go build" || !a.Superseded || a.Runs != 2 || a.Turn != 2 || a.Turns != 1 {
+		t.Fatalf("the answered build is one superseded entry of two runs: %+v", a)
+	}
+	if live := alerts.Live(); len(live) != 1 || live[0].Label != "go test" {
+		t.Fatalf("it is never a live alert: %+v", live)
+	}
+}
+
+// A passing suite ends an episode: the same command failing after it is a
+// fact about a tree the pass never saw, so it is news of its own rather than
+// the answered episode going on.
+func TestInspectorAlerts_AFailureAfterAPassIsANewEpisode(t *testing.T) {
+	m := inspectorModel(t, 144, 40)
+	m.turnCount = 2
+	m.appendEntry(entry{kind: entryUser, text: "check it"})
+	m.appendCloseGateRow("default", gateResult("PASS", 5, 5))
+	m.appendEntry(entry{kind: entryCommand, text: "go test ./...", exitCode: 1})
+	alerts := m.inspectorAlerts()
+	if len(alerts) != 2 || !alerts[0].Superseded || alerts[1].Superseded {
+		t.Fatalf("the answered episode and the new one: %+v", alerts)
+	}
+	if a := alerts[1]; a.Turn != 2 || a.Runs != 1 || a.Turns != 1 {
+		t.Fatalf("the new episode starts at its own failure: %+v", a)
 	}
 }
 
