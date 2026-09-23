@@ -150,6 +150,13 @@ ws=$work/ws
 # timing out. Under the run's own scratch the path is short whatever the
 # checkout is called, and it is removed with the rest of the scratch. An
 # inherited TMUX_TMPDIR still wins, for a reader with somewhere of their own.
+#
+# Run inside shhh's containment — the `tui` quality suite — this is also the
+# only place that works. Containment denies /tmp, where tmux puts its socket
+# by default, and hands the command a TMPDIR of the session's own: a private
+# /tmp on bubblewrap, a directory under shhh's data directory on Seatbelt.
+# TMUX_TMPDIR is not among the variables that reach a contained command, so
+# there the socket is always under that directory.
 TMUX_TMPDIR=${TMUX_TMPDIR:-$work/t}
 export TMUX_TMPDIR
 # Set before anything is started, so a run that stops here still takes its
@@ -170,7 +177,7 @@ mkdir -p "$TMUX_TMPDIR" || { echo "drive.sh: could not make the tmux socket dire
 # path, rather than left to tmux to report as a name that is too long.
 sockpath=$TMUX_TMPDIR/tmux-$(id -u)/$SOCK
 if [ ${#sockpath} -ge 104 ]; then
-	echo "drive.sh: the tmux socket path is ${#sockpath} bytes and a Unix socket's is capped at 104: $sockpath — set TMUX_TMPDIR to a shorter directory" >&2
+	echo "drive.sh: the tmux socket path is ${#sockpath} bytes and a Unix socket's is capped at 104: $sockpath — set TMUX_TMPDIR to a shorter directory; inside shhh's containment it is TMPDIR, the session's own under shhh's data directory, that has to be shorter" >&2
 	exit 1
 fi
 # Everything the last run left, gone before this one starts. A capture is

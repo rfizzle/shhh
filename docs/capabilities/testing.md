@@ -78,6 +78,49 @@ ordinary ones, such as a host without git, follow. Counting reads the run's
 output and adds nothing to its inputs, so the suite stays as cacheable as it
 was, and a failing package still prints its failures in full.
 
+## A scene can run in the gate
+
+A driven scene is the one check that sees the built program in a terminal,
+and a person closing a surface from a session should be able to have the gate
+run one rather than tick the box by hand. It cannot join the closing suite:
+it needs tmux, a Python interpreter and a loopback listener for the scripted
+model, and the closing verdict may depend on none of them. So it is a suite of
+its own, `tui`, run by name and never on close. It drives the smoke scene
+contained, with the workspace writable, because that is where the captures
+are written.
+
+Where a program is missing, the suite blocks. It names tmux and the
+interpreter as checks of their own, and the runner finds every executable a
+suite names before it runs any of them. So a host without tmux gets a blocked
+verdict that names tmux. It does not get a failed scene, and it does not get
+a skip that reads as a pass.
+
+A contained run can write in two places: the workspace, and a temporary
+directory of the session's own. On bubblewrap that directory is a private
+`/tmp`; on Seatbelt it is a directory under shhh's data directory. The run
+puts its captures in the workspace and everything else in the temporary
+directory: the scene's own repository and home, and the tmux socket. The
+socket cannot go in the checkout, because a Unix socket's path is capped near
+104 bytes and a worktree's path has already used most of them. On Seatbelt a
+data directory deep enough to push the socket past that cap stops the run
+before anything starts, and the driver names the path. Setting the socket's
+directory yourself does not help there, because containment passes a command
+only an allowlist of variables and that one is not on it.
+
+The first attempt to run a scene from a session, on 2026-09-08, was recorded
+as a run that hung because it wrote outside the workspace. What was denied
+was the tmux socket. With no socket directory set, tmux uses `/tmp`, and
+containment gives a command a temporary directory of its own in place of
+`/tmp`. tmux could not start, so no pane opened and the model was never
+asked. The first snap then waited out its twenty seconds for a screen that
+did not exist. Run again with that day's binary and driver, the failure is
+the same (`couldn't read directory /private/tmp/tmux-502 (Operation not
+permitted)`), but the run exits after that one wait. Nothing in it waits
+forever, so the hang was most likely that silent wait: it drew nothing, and
+it still printed a tick under the step it failed. The driver now keeps the
+socket in the session's own temporary directory, and it marks a failed step
+as failed.
+
 ## Related
 
 - [`approvals-and-safety.md`](approvals-and-safety.md#quality-gates-run-what-you-wrote)

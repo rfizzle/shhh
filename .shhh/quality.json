@@ -44,6 +44,35 @@
         }
       ]
     },
+    "tui": {
+      "timeout_seconds": 300,
+      "require_containment": true,
+      "allow_write": true,
+      "checks": [
+        {
+          "name": "tmux",
+          "exe": "tmux",
+          "args": [
+            "-V"
+          ]
+        },
+        {
+          "name": "python3",
+          "exe": "python3",
+          "args": [
+            "--version"
+          ]
+        },
+        {
+          "name": "smoke",
+          "exe": "make",
+          "args": [
+            "tui-shot",
+            "SCENE=smoke"
+          ]
+        }
+      ]
+    },
     "fast": {
       "timeout_seconds": 120,
       "require_containment": true,

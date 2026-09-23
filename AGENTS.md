@@ -1397,9 +1397,13 @@ the picture by eye. A capture that was taken and not read is a screenshot in
 a folder. `make tui-check` runs every scene in the tree and is part of `make
 ci`, so a scene is a test for as long as it is committed and the harness
 itself cannot rot. A story's own `make tui-shot` run is the reading of one
-scene: it is deliberately not added to `.shhh/quality.json`, because a scene
-wants a terminal a contained session has not got. Its scene lives under
-`scripts/tui/scenes/<slug>/` so `tui-check` runs it again on every change.
+scene, and its scene lives under `scripts/tui/scenes/<slug>/` so `tui-check`
+runs it again on every change. The `tui` suite in `.shhh/quality.json`
+(`/gate run tui`) drives the smoke scene contained; it is never `default` or
+`on_close`, because it wants tmux and a loopback listener the closing verdict
+may not depend on, and it names `tmux` and `python3` as checks of their own so
+a host without them blocks rather than failing a scene
+([`docs/capabilities/testing.md#a-scene-can-run-in-the-gate`](docs/capabilities/testing.md#a-scene-can-run-in-the-gate)).
 
 **A scene drives from wherever the checkout is**, a worktree under
 `.claude/worktrees/<name>/` included, and needs nothing set to do it. The
