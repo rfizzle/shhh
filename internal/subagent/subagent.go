@@ -123,13 +123,17 @@ const (
 	// child has actually taken in, which is the thing worth bounding in
 	// something with nobody watching it. Money is the ledger's business and
 	// the session spend cap's, and both count a child's requests already.
-	// DefaultMaxTokens is large enough for a delegated task to investigate,
-	// act, and verify rather than ending after the inherited context.
-	DefaultMaxTokens = 300_000
+	// DefaultMaxTokens is what one writer spent on one backlog item: four
+	// such children, each summed over its requests as cache creation plus
+	// fresh input plus output, came to 0.7M to 1.2M new tokens while reading
+	// 6M to 80M from cache. A default below that stops the child a quarter of
+	// the way in and its doubled retry short again, so it is set at the top
+	// of that evidence and the ceiling at twice it, where a retry lands.
+	DefaultMaxTokens = 1_200_000
 	// MinChildMaxTokens is the smallest explicit budget a bounded child may
 	// receive. Admission reserves this much after its fixed prompt and task.
 	MinChildMaxTokens = 200_000
-	MaxTokensCeiling  = 1_000_000
+	MaxTokensCeiling  = 2_400_000
 )
 
 // State is a child's lifecycle state.

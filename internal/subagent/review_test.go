@@ -239,8 +239,10 @@ func TestReviewThatSpendsItsReportAllowanceStops(t *testing.T) {
 
 // TestRoleDefaultBudgetsClearTheOrdinaryDefault: no role's default may leave a
 // child unable to investigate, act and verify. The floor is what an explicit
-// bounded spawn may name, never what a role falls back to.
+// bounded spawn may name, never what a role falls back to; a role's default is
+// held to the profile minimum a profile file is validated against.
 func TestRoleDefaultBudgetsClearTheOrdinaryDefault(t *testing.T) {
+	const profileMinimum = 300_000
 	profiles := customProfiles()
 	for _, role := range profiles.Names() {
 		args, err := parseSpawnArgs(profiles, json.RawMessage(
@@ -248,9 +250,9 @@ func TestRoleDefaultBudgetsClearTheOrdinaryDefault(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", role, err)
 		}
-		if args.maxTokens < DefaultMaxTokens {
-			t.Fatalf("%s defaults to %d, below the ordinary default %d",
-				role, args.maxTokens, DefaultMaxTokens)
+		if args.maxTokens < profileMinimum {
+			t.Fatalf("%s defaults to %d, below the profile minimum %d",
+				role, args.maxTokens, profileMinimum)
 		}
 		if _, err := parseSpawnArgs(profiles, json.RawMessage(
 			`{"role":"`+role+`","task":"x","max_tokens":60000}`)); err == nil ||

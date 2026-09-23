@@ -292,10 +292,18 @@ part of each request's prompt the provider did not serve from its cache, plus
 what the child wrote — so it bounds what the child has taken in rather than
 what it cost. A cached prompt is a fraction of the price and nothing the child
 has newly read, and counting it charged a child again for its own standing
-context on every round, which ended runs that had barely started. What a child
-costs is counted too, in the session's spend ledger and against its cap.
+context on every round, which ended runs that had barely started: writers
+measured on one backlog item each read 65 to 80 million cached tokens against
+about a million new. What a child costs is counted too, in the session's spend
+ledger and against its cap.
 
-A normal child defaults to 300,000 tokens. A call may name no less than
+A normal child defaults to 1,200,000 tokens, which is what one writer spent on
+one backlog item: four such children, summed over their requests as cache
+creation plus fresh input plus output, came to between 0.7 and 1.2 million new
+tokens each. A default under that stops a child a quarter of the way through
+its item and its doubled retry short again. No spawn is given more than
+2,400,000, twice the default, which is where a retry of a child stopped at the
+default lands. A call may name no less than
 200,000, but this is not a promise that every 200,000-token call starts: before
 a slot, worktree or record row exists, the inherited prompt and tool definitions
 plus the declared task — and everything else the first turn opens with: the

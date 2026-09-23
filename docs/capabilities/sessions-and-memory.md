@@ -847,8 +847,8 @@ A sub-agent's lane says `failed`, and that word answers nothing. A budget
 spent, a person pressing kill, a round limit reached with no way on and a
 provider that stopped answering are the same word there and four different
 answers to the only question anybody asks of a fan-out afterwards — whether
-three concurrent children, sixteen in total and a 200k token budget each are
-the right numbers.
+three concurrent children, thirty-two in total and a 1.2 million token budget
+each are the right numbers.
 
 So a child's attempt ends with a reason from a closed set — `done`, `budget`,
 `killed`, `cancelled`, `cap`, `provider` or `failed` — and it is recorded on

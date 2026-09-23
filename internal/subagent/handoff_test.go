@@ -49,9 +49,10 @@ func TestHandoff_UsesOnlyPublicProgressAndOpaqueEvidence(t *testing.T) {
 
 func TestSpawnResumesASanitizedFailureHandoff(t *testing.T) {
 	env := &scriptedEnv{steps: []streamStep{{text: "finished the unresolved action"}}}
+	recommended := recommendedBudget(DefaultMaxTokens, true)
 	h := Handoff{
 		Child: "failed-reader", Role: RoleResearcher, Task: "survey the parser", Budget: DefaultMaxTokens,
-		RecommendedBudget: 600000, Failure: HandoffFailure{Category: "budget", Detail: "token budget exceeded"},
+		RecommendedBudget: recommended, Failure: HandoffFailure{Category: "budget", Detail: "token budget exceeded"},
 		LastRound: 2, ReadPaths: []string{"parser.go"}, Progress: []string{"mapped the parser entry points"},
 		Evidence: []string{"ev-1234567890abcdef"},
 	}
@@ -88,7 +89,7 @@ func TestSpawnResumesASanitizedFailureHandoff(t *testing.T) {
 		t.Fatalf("replacement accepted a task outside the handoff: %s", opening)
 	}
 	st, ok := sup.Get("researcher-1")
-	if !ok || st.Task != "survey the parser" || st.Budget != 600000 {
+	if !ok || st.Task != "survey the parser" || st.Budget != recommended {
 		t.Fatalf("replacement status = %+v", st)
 	}
 }
