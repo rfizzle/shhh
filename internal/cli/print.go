@@ -2558,6 +2558,15 @@ type jsonAgent struct {
 	Steers    int    `json:"steers,omitempty"`
 	SteerFrom string `json:"steer_from,omitempty"`
 	Held      bool   `json:"held,omitempty"`
+	// LaneSteers and ParentSteers are the rest of this turn's steers by the
+	// party that gave them — a person at the lane or over the protocol, and
+	// the orchestrator that wrote the task — beside Steers, which is the
+	// check's alone. They are counts per party because a total of one of
+	// yours and one of the check's cannot be split back into the "1 yours" a
+	// lane says. A hook's agent object does not carry them: it names whose
+	// seam fired, and carries no other field a lane is drawn from either.
+	LaneSteers   int `json:"lane_steers,omitempty"`
+	ParentSteers int `json:"parent_steers,omitempty"`
 }
 
 // write puts one event on the stream. A nil stream is the run that asked for

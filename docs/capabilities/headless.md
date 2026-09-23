@@ -421,6 +421,16 @@ at. They are named apart because they count a different conversation: a
 child spawned in the run's third turn is on its first, and news from it filed
 under the run's number is filed against work the child never did.
 
+**A child's line says whose steers it has had.** The agent object's `steers`
+is the check's count this turn — how often the child was told it looks to have
+left its task — and `lane_steers` and `parent_steers` beside it are the rest,
+by the party that gave them: a person, at the lane or as a client over the
+protocol, and the orchestrator that wrote the task. All three go back to zero
+at the child's next turn, and `steer_from` names the last party to speak. They
+are three counts rather than one because a total cannot be split back: a
+client that is to say "1 yours" of a child steered once by the person and once
+by the check needs the shares, not the sum.
+
 ## Something else can drive it
 
 A script starts a run, waits, and reads what it left behind. That is the whole

@@ -1136,8 +1136,13 @@ type child struct {
 	// child has never read.
 	laneSteers   int
 	parentSteers int
-	// steersAll is every steer this attempt has been given, which the record
-	// takes; steers above is the current turn's, which the lane shows.
+	// steersAll is every steer the check gave this attempt, which the record
+	// takes; steers above is the current turn's, which the lane shows. It
+	// counts the check's interruptions and not a person's or the
+	// orchestrator's: each of theirs is already a steered signal of its own
+	// carrying its source, and a column that added them in would count them
+	// twice and put a party's redirects into the one figure that says
+	// whether the check's own steering helps.
 	steersAll int
 	verdict   string
 	// verdictCode is the same reading in the record's own closed vocabulary,

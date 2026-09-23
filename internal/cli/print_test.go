@@ -154,6 +154,9 @@ func headlessChildLinesFor(t *testing.T, steps ...childStep) []string {
 	children := &scriptedChildren{steps: steps}
 	sup := subagent.New(t.Context(), subagent.Options{Root: t.TempDir(), NewEnv: children.factory()})
 	t.Cleanup(sup.Close)
+	children.mu.Lock()
+	children.sup = sup
+	children.mu.Unlock()
 
 	rounds := [][]provider.StreamEvent{
 		{{ToolCalls: []provider.ToolCall{{ID: "s1", Name: subagent.SpawnToolName,
@@ -262,6 +265,32 @@ func TestAnAgentLineCarriesTheChildsOwnPosition(t *testing.T) {
 	for _, field := range []string{`"child_turn":1`, `"child_round":2`} {
 		if !strings.Contains(lines[1], field) {
 			t.Errorf("the line does not spell %s: %q", field, lines[1])
+		}
+	}
+}
+
+// An agent line says whose steers the child has had: the person's and the
+// orchestrator's are counted apart from each other and from the check's, so a
+// reader of the stream can say "1 yours" of a child steered by both.
+// See docs/capabilities/headless.md#a-run-can-delegate.
+func TestAnAgentLineCarriesEachPartysSteers(t *testing.T) {
+	read := provider.ToolCall{ID: "r1", Name: tools.ReadFileName, Arguments: `{"path":"exporter.go"}`}
+	lines := headlessChildLinesFor(t,
+		childStep{calls: []provider.ToolCall{read},
+			steers: []subagent.SteerSource{subagent.SteerFromLane, subagent.SteerFromParent, subagent.SteerFromParent}},
+		childStep{text: "the exporter is fine"})
+	end := lines[len(lines)-1]
+	var ev jsonEvent
+	if err := json.Unmarshal([]byte(end), &ev); err != nil || ev.Agent == nil {
+		t.Fatalf("the child's end is not an agent line: %q (%v)", end, err)
+	}
+	if ev.Agent.LaneSteers != 1 || ev.Agent.ParentSteers != 2 || ev.Agent.Steers != 0 {
+		t.Errorf("the child's end counts lane %d, parent %d, check %d, want 1, 2 and 0: %q",
+			ev.Agent.LaneSteers, ev.Agent.ParentSteers, ev.Agent.Steers, end)
+	}
+	for _, field := range []string{`"lane_steers":1`, `"parent_steers":2`} {
+		if !strings.Contains(end, field) {
+			t.Errorf("the line does not spell %s: %q", field, end)
 		}
 	}
 }

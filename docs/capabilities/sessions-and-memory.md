@@ -883,7 +883,10 @@ Three more facts ride the same row. **The last reading of the child's work**,
 in the summariser's own vocabulary, so a child that ended `done` while every
 reading of it said off-target is visible as such. **How many steers it was
 given** over the whole attempt, which is what says whether steering a child
-helps. And **which attempt the row is**: a retry keeps the child's name and
+helps — the check's steers and only those. A person's redirect and the
+orchestrator's are each a `steered` signal of their own, naming who gave it,
+so counting them on the row as well would file every one twice and put a
+party's redirects into the figure that is asking about the check. And **which attempt the row is**: a retry keeps the child's name and
 its place in the batch, but it is a separate run with its own conversation,
 its own budget and its own spend, so it gets a row of its own — and the
 attempt number is the only thing that joins that row to the one it replaces.

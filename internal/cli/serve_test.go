@@ -53,6 +53,10 @@ func TestServeOnSocket_RefusesAPathThatIsAlreadyThere(t *testing.T) {
 type childStep struct {
 	text  string
 	calls []provider.ToolCall
+	// steers are sent to the child, through the supervisor the script was
+	// handed, as this step's stream opens, so they reach it at the round
+	// boundary after the step.
+	steers []subagent.SteerSource
 }
 
 // scriptedChildren stands in for the provider behind a session's children, so
@@ -63,10 +67,11 @@ type childStep struct {
 type scriptedChildren struct {
 	mu    sync.Mutex
 	steps []childStep
+	sup   *subagent.Supervisor
 }
 
 func (s *scriptedChildren) factory() subagent.EnvFactory {
-	return func(ctx context.Context, _ subagent.Spec) (subagent.Env, error) {
+	return func(ctx context.Context, spec subagent.Spec) (subagent.Env, error) {
 		stream := func(_ []provider.Message, _ string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
 			if ctx.Err() != nil {
 				return nil, nil, ctx.Err()
@@ -78,7 +83,13 @@ func (s *scriptedChildren) factory() subagent.EnvFactory {
 			}
 			step := s.steps[0]
 			s.steps = s.steps[1:]
+			sup := s.sup
 			s.mu.Unlock()
+			for _, from := range step.steers {
+				if err := sup.Steer(spec.Name, "look at the exporter's tests too", from); err != nil {
+					return nil, nil, err
+				}
+			}
 
 			ch := make(chan provider.StreamEvent, 2)
 			if step.text != "" {
@@ -304,6 +315,7 @@ func TestAgentLineCarriesTheRecordALaneIsDrawnFrom(t *testing.T) {
 		Budget: 300_000, Batch: 3, Steps: subagent.StepCount{Done: 2, Total: 5},
 		Elapsed: 90 * time.Second, Summary: "ported", Verdict: "on-target",
 		End: observe.ChildKilled, Steers: 1, SteerFrom: subagent.SteerFromLane, Held: true,
+		LaneSteers: 2, ParentSteers: 3,
 	}
 	st.Tokens.Fresh = 42_000
 
@@ -314,7 +326,7 @@ func TestAgentLineCarriesTheRecordALaneIsDrawnFrom(t *testing.T) {
 		Paths: []string{"internal/observe"}, Batch: 3, Step: 2, Steps: 5, ToolCalls: 7,
 		ElapsedMS: 90_000, Budget: 300_000, Tokens: 42_000,
 		Summary: "ported", Verdict: "on-target", End: observe.ChildKilled,
-		Steers: 1, SteerFrom: "lane", Held: true,
+		Steers: 1, SteerFrom: "lane", Held: true, LaneSteers: 2, ParentSteers: 3,
 	}
 	got, _ := json.Marshal(line)
 	wantJSON, _ := json.Marshal(want)

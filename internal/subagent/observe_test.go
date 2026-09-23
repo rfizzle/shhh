@@ -1006,3 +1006,46 @@ func TestARetrysRecordedCostIsItsOwnAttempts(t *testing.T) {
 		t.Fatalf("the roster = %.6f, want both attempts' %.6f", st.Spend.Cost, first+second)
 	}
 }
+
+// The row's steer count is the check's alone. A person's redirect and the
+// orchestrator's are each a steered signal naming who gave it, so the row
+// that also counted them would file every one twice and mix a party's
+// redirects into the figure that asks whether the check's steering helps.
+// See docs/capabilities/sessions-and-memory.md#a-child-ends-for-a-reason.
+func TestAChildsRowCountsOnlyTheChecksSteers(t *testing.T) {
+	env := &scriptedEnv{steps: readRounds(20), delay: 10 * time.Millisecond}
+	rec := &testRecorder{}
+	sup := supervisorRecording(t, env, rec)
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"long survey"}`)
+	waitState(t, sup, "researcher-1", StateRunning)
+
+	for _, from := range []SteerSource{SteerFromLane, SteerFromParent} {
+		if err := sup.Steer("researcher-1", "read the exporter instead", from); err != nil {
+			t.Fatalf("steering the child from %s: %v", from, err)
+		}
+	}
+	waitFor(t, func() bool {
+		st := statusOf(t, sup, "researcher-1")
+		return st.LaneSteers == 1 && st.ParentSteers == 1
+	})
+	execTool(t, sup, ReportToolName, `{"name":"researcher-1"}`)
+
+	rec.mu.Lock()
+	ended, end := rec.ended, rec.end
+	rec.mu.Unlock()
+	if !ended {
+		t.Fatal("the child's row was never ended")
+	}
+	if end.Steers != 0 {
+		t.Errorf("the row counts %d steers for a child only a person and the orchestrator steered, want 0", end.Steers)
+	}
+	var sources []string
+	for _, e := range rec.of("signal") {
+		if e.outcome == observe.SignalSteer {
+			sources = append(sources, e.reason)
+		}
+	}
+	if strings.Join(sources, ",") != "lane,parent" {
+		t.Errorf("the steers are recorded as signals from %v, want lane then parent", sources)
+	}
+}

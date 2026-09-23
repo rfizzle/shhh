@@ -477,7 +477,12 @@ type ChildEnd struct {
 	// lane shows a person, so a child's end and the readings that led to it
 	// can be read against each other.
 	Verdict string
-	// Steers is how many times the child was told it had left its task.
+	// Steers is how many times the child was told it had left its task — the
+	// check's interruptions over the attempt, SignalIntervene's "steer", and
+	// never a person's or the orchestrator's redirect, which is a
+	// SignalSteer row of its own naming its source. Counting those here as
+	// well would file each of them twice and mix a party's redirects into
+	// the figure that says whether the check's steering helps.
 	Steers int
 	// Attempt is which attempt this row is, from 1. A retry's row and the
 	// one it replaces share a parent and differ here, which is the whole of
