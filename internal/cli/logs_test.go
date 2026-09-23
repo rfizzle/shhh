@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/rfizzle/shhh/internal/logs"
+	"github.com/rfizzle/shhh/internal/pricing"
 )
 
 // TestMain gives the whole package a home of its own. Every test that builds
@@ -31,6 +32,12 @@ import (
 // inside it cannot read the developer's config even to be tainted by it, so
 // the test that reads it fails only on the machines that sandbox their
 // tests, which is the worst way to find out.
+//
+// The cache directory is the package's too, seeded with the model data: a
+// cache the suite does not own is the developer's real one, which a refresh
+// writes into, and an unseeded one is where pricing.Load starts a download
+// from the public table on the first session a test builds. After the run it
+// asks pricing whether any test started that download anyway.
 //
 // It also pins the zone. A report prints a timestamp in local time, so a
 // fixture recorded in one zone reads as a different clock time in another —
@@ -61,12 +68,19 @@ func TestMain(m *testing.M) {
 	// one: a link that cannot find it compiles the module from scratch every
 	// time this package runs (buildShhhBinary, print_integration_test.go).
 	prepareContractTier(dir)
-	for _, key := range []string{"HOME", "XDG_DATA_HOME", "XDG_CONFIG_HOME"} {
+	for _, key := range []string{"HOME", "XDG_DATA_HOME", "XDG_CONFIG_HOME", "XDG_CACHE_HOME"} {
 		if err := os.Setenv(key, dir); err != nil {
 			panic(err)
 		}
 	}
+	if err := writeModelData(dir); err != nil {
+		panic(err)
+	}
 	code := m.Run()
+	if code == 0 && pricing.Refreshed() {
+		fmt.Fprintln(os.Stderr, "a test started the model-data download: it pointed XDG_CACHE_HOME at a cache nothing seeded (seedModelData)")
+		code = 1
+	}
 	// Best effort: the run is over and the temp directory is the operating
 	// system's to sweep if this cannot.
 	_ = os.RemoveAll(dir)

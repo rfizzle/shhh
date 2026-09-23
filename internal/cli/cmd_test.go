@@ -9,6 +9,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -153,16 +154,22 @@ func TestOneShotSessionIsOneTurn(t *testing.T) {
 // same document the download fetches.
 func seedModelData(tb testing.TB, cacheHome string) {
 	tb.Helper()
+	if err := writeModelData(cacheHome); err != nil {
+		tb.Fatal(err)
+	}
+}
+
+// writeModelData is seedModelData with the error handed back, for TestMain,
+// which has no testing.TB to fail.
+func writeModelData(cacheHome string) error {
 	snapshot, err := os.ReadFile(filepath.Join("..", "pricing", "models.json"))
 	if err != nil {
-		tb.Fatalf("read the price snapshot: %v", err)
+		return fmt.Errorf("read the price snapshot: %w", err)
 	}
 	if err := os.MkdirAll(filepath.Join(cacheHome, "shhh"), 0o700); err != nil {
-		tb.Fatal(err)
+		return err
 	}
-	if err := os.WriteFile(filepath.Join(cacheHome, "shhh", "model_prices.json"), snapshot, 0o600); err != nil {
-		tb.Fatal(err)
-	}
+	return os.WriteFile(filepath.Join(cacheHome, "shhh", "model_prices.json"), snapshot, 0o600)
 }
 
 // oneShotFixture points a one-shot at a machine of its own: a store, a model

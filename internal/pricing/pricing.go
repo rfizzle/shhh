@@ -16,6 +16,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -152,7 +153,15 @@ var (
 	// the goroutine it started.
 	refreshOnce sync.Once
 	refreshing  sync.WaitGroup
+	// refreshStarted is whether refreshOnce has fired, for Refreshed.
+	refreshStarted atomic.Bool
 )
+
+// Refreshed reports whether this process has started the background download.
+// It is how a suite in another package asserts that it never reached the
+// public table: a test there cannot see refreshing, and a download that was
+// never started is the proof nothing left the machine for it.
+func Refreshed() bool { return refreshStarted.Load() }
 
 // refreshInBackground downloads the table without the caller waiting. A
 // process that exits first simply kills the goroutine: nothing is half
@@ -160,6 +169,7 @@ var (
 // process cannot fetch again.
 func refreshInBackground(path string) {
 	refreshOnce.Do(func() {
+		refreshStarted.Store(true)
 		refreshing.Add(1)
 		go func() {
 			defer refreshing.Done()

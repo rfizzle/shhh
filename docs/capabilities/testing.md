@@ -13,8 +13,11 @@ The ordinary suite is therefore hermetic. It holds its inputs and side effects
 inside a temporary workspace, replaces an in-process HTTP peer with an
 in-memory transport, and substitutes any host helper at its command seam. It
 does not need an open port, a clipboard, a container engine, a running daemon,
-the public network, or a shared compiler cache. That is the suite a session
-can run again after an edit and obtain the same answer.
+the public network, or a shared compiler cache. The model-data cache is one of
+the things it owns: seeded from the snapshot inside its temporary home, so a
+test never starts the download from the public price table or writes into the
+developer's own cache. That is the suite a session can run again after an
+edit and obtain the same answer.
 
 ## When does a real boundary belong in a test?
 
