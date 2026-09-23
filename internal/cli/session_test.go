@@ -465,6 +465,7 @@ func buildSession(t *testing.T, args ...string) chat.Wiring {
 	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, "config"))
 	t.Setenv("XDG_DATA_HOME", filepath.Join(home, "data"))
 	t.Setenv("XDG_CACHE_HOME", filepath.Join(home, "cache"))
+	seedModelData(t, filepath.Join(home, "cache"))
 	// The resolution reads the environment above the config, and what this
 	// session runs on is what the flags below say.
 	t.Setenv("SHHH_PROVIDER", "")

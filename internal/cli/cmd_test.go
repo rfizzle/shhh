@@ -145,6 +145,26 @@ func TestOneShotSessionIsOneTurn(t *testing.T) {
 	}
 }
 
+// seedModelData writes a model-data cache younger than a day under the cache
+// home, which is what stops pricing.Load starting its background download. A
+// download nothing stopped is a request to the public network and a goroutine
+// still writing into the cache home after the test has returned, where it
+// races the removal of the test's temporary directory. The snapshot is the
+// same document the download fetches.
+func seedModelData(tb testing.TB, cacheHome string) {
+	tb.Helper()
+	snapshot, err := os.ReadFile(filepath.Join("..", "pricing", "models.json"))
+	if err != nil {
+		tb.Fatalf("read the price snapshot: %v", err)
+	}
+	if err := os.MkdirAll(filepath.Join(cacheHome, "shhh"), 0o700); err != nil {
+		tb.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(cacheHome, "shhh", "model_prices.json"), snapshot, 0o600); err != nil {
+		tb.Fatal(err)
+	}
+}
+
 // oneShotFixture points a one-shot at a machine of its own: a store, a model
 // data cache seeded from the snapshot so nothing reaches the network, and a
 // provider that answers with answer. It hands back the store's directory and
@@ -155,18 +175,7 @@ func oneShotFixture(tb testing.TB, answer string) (string, *[]time.Time) {
 	cache := tb.TempDir()
 	tb.Setenv("XDG_DATA_HOME", data)
 	tb.Setenv("XDG_CACHE_HOME", cache)
-	// A refresh is a download, and a cache file younger than a day is what
-	// stops one. The snapshot is the same document.
-	snapshot, err := os.ReadFile(filepath.Join("..", "pricing", "models.json"))
-	if err != nil {
-		tb.Fatalf("read the price snapshot: %v", err)
-	}
-	if err := os.MkdirAll(filepath.Join(cache, "shhh"), 0o700); err != nil {
-		tb.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(cache, "shhh", "model_prices.json"), snapshot, 0o600); err != nil {
-		tb.Fatal(err)
-	}
+	seedModelData(tb, cache)
 	// The one-shot reads stdin whenever it is not a terminal, and a stdin
 	// held open by whatever started the test — a pipe with no writer at the
 	// other end — is a read that never returns. This one is empty and
