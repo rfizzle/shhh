@@ -1129,22 +1129,26 @@ func childCommandRunner(cfg config.Config, dir string, sc *scope.Scope) func(con
 // a shell the mechanism could not exec is a command that never started, not
 // one that ran and exited.
 // See docs/capabilities/containment.md#a-command-that-never-started-names-what-it-needed.
+// childContainment is how a child's runner asks which mechanism the host has.
+// It is a variable so a test can stand a mechanism in on a host that has none.
+var childContainment = sandbox.Detect
+
 func childCommandRunnerUnbounded(cfg config.Config, dir string, sc *scope.Scope) func(context.Context, string) tools.ExecResult {
 	if _, err := sandboxPolicy(cfg); err == nil {
-		avail := sandbox.Detect()
+		avail := childContainment()
 		if avail.OK {
 			return func(ctx context.Context, command string) tools.ExecResult {
 				// The policy is rebuilt per command so a directory the parent
 				// added mid-session is writable in the child too.
 				p, pErr := sandboxPolicy(cfg, sc.Dirs()...)
 				if pErr != nil {
-					return runner.WrapFailure(pErr)
+					return runner.WrapFailure(dir, pErr)
 				}
 				p.Workspace = dir
 				p.Cwd = dir
 				argv, wErr := sandbox.Wrap(avail, p, command)
 				if wErr != nil {
-					return runner.WrapFailure(wErr)
+					return runner.WrapFailure(dir, wErr)
 				}
 				return readContained(avail.Mechanism, runner.RunCaptureArgvInResult(ctx, dir, command, argv))
 			}

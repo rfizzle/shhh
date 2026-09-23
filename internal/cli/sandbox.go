@@ -192,19 +192,21 @@ func buildContainment(cfg config.Config, sc *scope.Scope, sup *process.Superviso
 	// A wrap that cannot be built is a command that never started, and the
 	// result says which prerequisite it was missing rather than composing a
 	// prefix into the output: the row reads the category off the result, and
-	// an exit code of -1 is not one (runner.WrapFailure).
+	// an exit code of -1 is not one (runner.WrapFailure). The session's
+	// commands run in this process's own directory, which is the one "" asks
+	// after.
 	// See docs/capabilities/containment.md#a-command-that-never-started-names-what-it-needed.
 	c.Run = func(ctx context.Context, command string) tools.ExecResult {
 		argv, err := wrap(command)
 		if err != nil {
-			return runner.WrapFailure(err)
+			return runner.WrapFailure("", err)
 		}
 		return readContained(avail.Mechanism, runner.RunCaptureArgvInResult(ctx, "", command, argv))
 	}
 	c.TailRun = func(ctx context.Context, command string, onLine func(string)) tools.ExecResult {
 		argv, err := wrap(command)
 		if err != nil {
-			return runner.WrapFailure(err)
+			return runner.WrapFailure("", err)
 		}
 		return readContained(avail.Mechanism, runner.RunCaptureArgvTailResult(ctx, command, argv, onLine))
 	}

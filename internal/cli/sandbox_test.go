@@ -394,3 +394,35 @@ func TestAChildsContainedShellThatCannotExecDidNotStart(t *testing.T) {
 		t.Fatalf("got %+v, want an execution shell that did not start", got)
 	}
 }
+
+// A child's worktree removed under it is the child's working directory gone,
+// not a containment the host is missing: the wrap fails because its policy
+// cannot be built over a directory that is not there, and what is asked about
+// is the directory the child's command was bound for rather than this
+// process's own, which is still there. The mechanism is stood in, since
+// nothing past the policy is reached.
+func TestAChildsRemovedWorktreeIsItsWorkingDirectory(t *testing.T) {
+	restore := childContainment
+	t.Cleanup(func() { childContainment = restore })
+	childContainment = func() sandbox.Availability {
+		return sandbox.Availability{Mechanism: "bwrap", OK: true, Detail: "stand-in"}
+	}
+	t.Setenv("XDG_DATA_HOME", t.TempDir())
+	dir := filepath.Join(t.TempDir(), "worktree")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	sc, errs := scope.New(dir)
+	if len(errs) > 0 {
+		t.Fatalf("scope: %v", errs)
+	}
+	run := childCommandRunnerUnbounded(config.Config{}, dir, sc)
+	if err := os.RemoveAll(dir); err != nil {
+		t.Fatal(err)
+	}
+
+	got := run(context.Background(), "echo hi")
+	if got.Outcome != tools.ExecDidNotStart || got.Prereq != tools.PrereqWorkingDir {
+		t.Fatalf("got %+v, want a working directory that was not there", got)
+	}
+}

@@ -794,7 +794,7 @@ func TestApprovalCard_DryRunThatDidNotStartKeepsItsCategory(t *testing.T) {
 	var bare, contained []string
 	m := containedModel(t, &bare, &contained, "contained: bwrap")
 	m.containment.Run = func(context.Context, string) tools.ExecResult {
-		return runner.WrapFailure(errors.New("wrap unsupported: bwrap vanished"))
+		return runner.WrapFailure("", errors.New("wrap unsupported: bwrap vanished"))
 	}
 	m = execApproval(t, m, "rsync --delete src/ dst/")
 	updated, cmd := m.Update(tea.KeyPressMsg{Code: 't', Text: "t"})

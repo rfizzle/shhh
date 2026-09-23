@@ -154,7 +154,7 @@ func TestAWrapFailureIsClassifiedLikeASpawn(t *testing.T) {
 
 	here := t.TempDir()
 	getwd = func() (string, error) { return here, nil }
-	contained := WrapFailure(errors.New("wrap unsupported: bwrap vanished"))
+	contained := WrapFailure("", errors.New("wrap unsupported: bwrap vanished"))
 	if contained.Outcome != tools.ExecDidNotStart || contained.Prereq != tools.PrereqContainment || contained.ExitCode != -1 {
 		t.Fatalf("got %+v, want a containment failure that did not start", contained)
 	}
@@ -163,15 +163,25 @@ func TestAWrapFailureIsClassifiedLikeASpawn(t *testing.T) {
 	}
 
 	getwd = func() (string, error) { return "", errors.New("getwd: no such file or directory") }
-	gone := WrapFailure(errors.New("getwd: no such file or directory"))
+	gone := WrapFailure("", errors.New("getwd: no such file or directory"))
 	if gone.Prereq != tools.PrereqWorkingDir {
 		t.Fatalf("prereq = %q, want %q", gone.Prereq, tools.PrereqWorkingDir)
 	}
 	// A directory the platform still names after it was removed is gone too.
 	removed := filepath.Join(here, "removed-checkout")
 	getwd = func() (string, error) { return removed, nil }
-	if got := WrapFailure(errors.New("cannot resolve workspace")); got.Prereq != tools.PrereqWorkingDir {
+	if got := WrapFailure("", errors.New("cannot resolve workspace")); got.Prereq != tools.PrereqWorkingDir {
 		t.Fatalf("prereq = %q, want %q", got.Prereq, tools.PrereqWorkingDir)
+	}
+	// A command bound for a directory of its own is asked about that one,
+	// whatever this process's directory is doing.
+	getwd = func() (string, error) { return here, nil }
+	if got := WrapFailure(removed, errors.New("cannot resolve workspace")); got.Prereq != tools.PrereqWorkingDir {
+		t.Fatalf("a removed command directory: prereq = %q, want %q", got.Prereq, tools.PrereqWorkingDir)
+	}
+	getwd = func() (string, error) { return removed, nil }
+	if got := WrapFailure(here, errors.New("wrap unsupported: bwrap vanished")); got.Prereq != tools.PrereqContainment {
+		t.Fatalf("a present command directory: prereq = %q, want %q", got.Prereq, tools.PrereqContainment)
 	}
 
 	out, code := legacyResult(contained)
