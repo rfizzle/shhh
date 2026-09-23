@@ -873,6 +873,11 @@ func agentLine(st subagent.Status, parent string) jsonAgent {
 		Steers:    st.Steers,
 		SteerFrom: string(st.SteerFrom),
 		Held:      st.Held,
+
+		// The child's own position, beside the line's turn, which is the
+		// parent's (childPos).
+		ChildTurn:  st.Turn,
+		ChildRound: st.Round,
 	}
 }
 

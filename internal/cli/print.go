@@ -2529,6 +2529,15 @@ type jsonAgent struct {
 	Steps     int   `json:"steps,omitempty"`
 	ToolCalls int   `json:"tool_calls,omitempty"`
 	ElapsedMS int64 `json:"elapsed_ms,omitempty"`
+	// ChildTurn and ChildRound are where the child is in its own
+	// conversation, the position its own events are filed at. They are
+	// named apart from the line's turn, which is the parent's: a child
+	// spawned in the parent's third turn is on its first, and a reader
+	// filing the child's news under the parent's number files it wrong.
+	// A hook's agent object does not carry them, because a child seam's
+	// payload is already placed at the child's own turn and round.
+	ChildTurn  int64 `json:"child_turn,omitempty"`
+	ChildRound int64 `json:"child_round,omitempty"`
 	// Budget is the effective fresh-token budget and Tokens the fresh total
 	// that has gone against it. The record's own split of that total by phase
 	// is not here: what a lane draws is the pair, and the phases are

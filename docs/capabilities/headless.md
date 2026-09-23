@@ -412,6 +412,15 @@ Children are cancelled and their worktrees removed when the run ends, on the
 same path everything else the run opened is released on, so a run that is
 killed after spawning leaves nothing behind either.
 
+**A child's line says where the child is, not only where the run is.** An
+`agent` line is filed under the run's own `turn`, because that is the stream's
+timeline; the child's own place is inside the agent object, as `child_turn`
+and `child_round` — the turn of its own conversation it is on and the tool
+round it last started within it, the same position its events are recorded
+at. They are named apart because they count a different conversation: a
+child spawned in the run's third turn is on its first, and news from it filed
+under the run's number is filed against work the child never did.
+
 ## Something else can drive it
 
 A script starts a run, waits, and reads what it left behind. That is the whole

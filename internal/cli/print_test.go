@@ -144,7 +144,14 @@ func TestAHeadlessRunKeepsHowACommandEnded(t *testing.T) {
 // its stream wrote once the child has ended.
 func headlessChildLines(t *testing.T) []string {
 	t.Helper()
-	children := &scriptedChildren{steps: []childStep{{text: "the exporter is fine"}}}
+	return headlessChildLinesFor(t, childStep{text: "the exporter is fine"})
+}
+
+// headlessChildLinesFor is headlessChildLines with the child's own rounds
+// scripted.
+func headlessChildLinesFor(t *testing.T, steps ...childStep) []string {
+	t.Helper()
+	children := &scriptedChildren{steps: steps}
 	sup := subagent.New(t.Context(), subagent.Options{Root: t.TempDir(), NewEnv: children.factory()})
 	t.Cleanup(sup.Close)
 
@@ -223,6 +230,39 @@ func TestAHeadlessRunsStreamSaysWhenAChildStartsAndEnds(t *testing.T) {
 	}
 	if states[1] != subagent.StateDone.String() {
 		t.Errorf("the second line should be the child's end, got state %q", states[1])
+	}
+}
+
+// An agent line carries the child's own turn and round beside the line's
+// turn, which is the parent's: a child that ends in its second tool round of
+// its first turn says so, while the line stays filed under the parent's turn.
+// See docs/capabilities/headless.md#a-run-can-delegate.
+func TestAnAgentLineCarriesTheChildsOwnPosition(t *testing.T) {
+	read := func(id string) provider.ToolCall {
+		return provider.ToolCall{ID: id, Name: tools.ReadFileName, Arguments: `{"path":"exporter.go"}`}
+	}
+	lines := headlessChildLinesFor(t,
+		childStep{calls: []provider.ToolCall{read("r1")}},
+		childStep{calls: []provider.ToolCall{read("r2")}},
+		childStep{text: "the exporter is fine"})
+	if len(lines) != 2 {
+		t.Fatalf("a child that started and ended wrote %d agent lines, want 2:\n%s", len(lines), strings.Join(lines, "\n"))
+	}
+	var ev jsonEvent
+	if err := json.Unmarshal([]byte(lines[1]), &ev); err != nil || ev.Agent == nil {
+		t.Fatalf("the child's end is not an agent line: %q (%v)", lines[1], err)
+	}
+	if ev.Agent.ChildTurn != 1 || ev.Agent.ChildRound != 2 {
+		t.Errorf("the child's end says it is at turn %d round %d of its own, want turn 1 round 2: %q",
+			ev.Agent.ChildTurn, ev.Agent.ChildRound, lines[1])
+	}
+	if ev.Turn != 1 {
+		t.Errorf("the line is filed at the parent's turn %d, want 1: %q", ev.Turn, lines[1])
+	}
+	for _, field := range []string{`"child_turn":1`, `"child_round":2`} {
+		if !strings.Contains(lines[1], field) {
+			t.Errorf("the line does not spell %s: %q", field, lines[1])
+		}
 	}
 }
 

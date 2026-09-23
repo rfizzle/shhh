@@ -209,6 +209,14 @@ type Status struct {
 	// denominator gets a spinner rather than an invented ratio.
 	// See docs/capabilities/subagents.md#how-far-along-is-three-numbers-not-one.
 	Steps StepCount
+	// Turn and Round are where the child is in its own conversation: the
+	// turn this attempt is on and the tool round it last started within it,
+	// the position its own events are filed at. Neither is the parent's,
+	// which counts a different conversation — a child spawned in the
+	// parent's third turn is on its first. Both are zero for a child that
+	// has not started, and Round is zero for a turn that has asked for no
+	// tool yet.
+	Turn, Round int64
 	// Summary is the first line of the child's final report — what a finished
 	// lane keeps once its progress stops meaning anything. Empty
 	// until the child reports.
@@ -1044,6 +1052,11 @@ type child struct {
 	// different fact from the same call in round 2 of turn 1.
 	turns     int
 	toolCalls int
+	// round is the tool round the child last started, copied off its agent
+	// by the goroutine that drives it, so a status taken from anywhere can
+	// state it: the agent's own counter is written unguarded by that
+	// goroutine, and reading it from another is a race.
+	round int64
 	// wrote is the set of files this attempt's own mutating calls have
 	// written, which is what its readings are told the child has changed.
 	//
@@ -1313,6 +1326,8 @@ func (c *child) status() Status {
 		Started:           c.started,
 		Elapsed:           end.Sub(c.started),
 		Steps:             c.stepCount(),
+		Turn:              int64(c.turns),
+		Round:             c.round,
 		Summary:           summary,
 		CheckIns:          c.checkIns,
 		End:               c.endReason,
@@ -1643,6 +1658,7 @@ func (c *child) beginTurn() {
 	c.intCh = make(chan struct{})
 	c.intClosed = false
 	c.turns++
+	c.round = 0
 	// A turn is steered about the instruction it was given. The next one has
 	// a new instruction — a person's redirection through the lane, usually
 	// the answer to the very count this carries — and starting it on the last
@@ -2838,7 +2854,7 @@ func (s *Supervisor) restart(c *child, detail string) error {
 	// report the child as having ended twice the same way — and a child
 	// killed once would report every attempt after it as killed too.
 	c.endReason, c.killed, c.cancelledBy = "", false, ""
-	c.turns = 0
+	c.turns, c.round = 0, 0
 	c.toolCalls, c.step = 0, 0
 	// A retry is a fresh conversation, which names its own plan.
 	c.ownSteps, c.stepsDone = nil, nil
@@ -3993,7 +4009,9 @@ func (s *Supervisor) run(c *child) {
 		},
 		OnToolCall: func(tc provider.ToolCall) {
 			c.beginToolEntry(tc.ID, tc.Name, tc.Arguments)
+			at := c.pos()
 			c.mu.Lock()
+			c.round = at.Round
 			c.toolCalls++
 			n := c.toolCalls
 			c.mu.Unlock()
