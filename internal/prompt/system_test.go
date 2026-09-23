@@ -256,6 +256,35 @@ func TestTheFinalReportNamesItsSections(t *testing.T) {
 	}
 }
 
+// Every sub-agent prompt says the child cannot see the orchestrator's
+// conversation in the one clause Inherited rewrites, so a child handed turns
+// is told which it has — and a child handed none is told as it always was.
+func TestInheritedRewritesTheConversationClause(t *testing.T) {
+	info := shell.Info{Shell: "bash", OS: "linux", Cwd: "/w"}
+	for name, got := range map[string]string{
+		"researcher": BuildResearcher(info, WebTools{}),
+		"writer":     BuildWriter(info),
+		"reviewer":   BuildReviewer(info, ProfileSpec{}),
+		"profile":    BuildProfile(info, ProfileSpec{Name: "auditor", Description: "reads the tree"}),
+	} {
+		if !strings.Contains(got, unseenConversation) {
+			t.Errorf("the %s prompt does not carry the clause Inherited rewrites", name)
+			continue
+		}
+		if Inherited(got, 0) != got {
+			t.Errorf("the %s prompt changed for a child handed no turns", name)
+		}
+		two := Inherited(got, 2)
+		if strings.Contains(two, unseenConversation) ||
+			!strings.Contains(two, "You were handed the orchestrator's last 2 turns ahead of your task and cannot see the rest of its conversation") {
+			t.Errorf("the %s prompt was not told which turns it was handed:\n%s", name, two)
+		}
+		if one := Inherited(got, 1); !strings.Contains(one, "the orchestrator's last turn ahead") {
+			t.Errorf("the %s prompt misstates a single turn:\n%s", name, one)
+		}
+	}
+}
+
 func TestBuildWriter_Instructions(t *testing.T) {
 	info := shell.Info{Shell: "bash", OS: "linux", Cwd: "/tmp/worktree/proj"}
 	got := BuildWriter(info, "EXTRA CONTEXT")

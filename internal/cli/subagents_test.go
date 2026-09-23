@@ -75,6 +75,15 @@ func TestProfileFromDefinitionCarriesTheReviewContract(t *testing.T) {
 	}
 }
 
+// A profile's inherit reaches the supervisor as the default a spawn of it
+// takes, so the file is what a drafted checker is handed its turns by.
+func TestProfileFromDefinitionCarriesInherit(t *testing.T) {
+	p, err := profileFromDefinition(config.AgentDefinition{Name: "checker", Inherit: 2})
+	if err != nil || p.Inherit != 2 {
+		t.Fatalf("inherit = 2 reached the supervisor as %d (%v)", p.Inherit, err)
+	}
+}
+
 // The runtime hands a reviewing profile the change and stops it at its cap
 // for a report; its permissions grant only reading. Left to those, the words
 // it reads are the reader's — gather facts, report findings — and the child

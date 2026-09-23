@@ -43,6 +43,12 @@ type Profile struct {
 	// neither; zero means the package defaults.
 	MaxTokens int64
 	MaxRounds int
+	// Inherit is how many of its parent's last turns a spawn of this role is
+	// handed ahead of its task when the call does not say; a call may lower
+	// it, to zero included. Zero, the default for every role shhh ships,
+	// hands a child its task alone.
+	// See docs/capabilities/subagents.md#what-they-share.
+	Inherit int
 }
 
 // Profiles is the set of roles a session can spawn, keyed by name.

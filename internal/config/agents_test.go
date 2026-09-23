@@ -110,6 +110,20 @@ reasoning = "Inherit"`)
 	}
 }
 
+// A profile's inherit is the count of the parent's turns a spawn of it is
+// handed when the call does not say, and it is read as written.
+func TestLoadAgentsReadsInherit(t *testing.T) {
+	dir := t.TempDir()
+	writeAgent(t, dir, "checker.toml", `inherit = 2`)
+	defs, err := LoadAgentsFrom(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if defs["checker"].Inherit != 2 {
+		t.Fatalf("inherit = 2 read as %d", defs["checker"].Inherit)
+	}
+}
+
 func TestLoadAgentsFirstDirectoryWins(t *testing.T) {
 	first, second := t.TempDir(), t.TempDir()
 	writeAgent(t, first, "dup.toml", `description = "first"`)
@@ -155,6 +169,7 @@ func TestLoadAgentsRejectsBadFiles(t *testing.T) {
 		{"bad toml", "a.toml", `= =`, "a.toml"},
 		{"negative budget", "a.toml", `max_tokens = -1`, "max_tokens"},
 		{"undersized default budget", "a.toml", `max_tokens = 200000`, "at least 300000"},
+		{"negative inherit", "a.toml", `inherit = -1`, "inherit"},
 		{"reviewing writer", "a.toml", "reviews = true\npermissions = [\"write\"]", "cannot also be handed them"},
 		// The gate is a read, so read-only profiles may name it; a profile
 		// that writes may not, because it would run over the checkout its

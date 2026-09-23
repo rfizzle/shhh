@@ -278,6 +278,30 @@ func TestEstimateMessageTokens_CountsReasoning(t *testing.T) {
 	}
 }
 
+// ElideResult is the trim's own choice of placeholder: the one naming the id
+// where the store took a result long enough to keep, the bare one otherwise,
+// and an existing placeholder left as it is.
+func TestElideResult_MakesTheTrimsOffer(t *testing.T) {
+	long := strings.Repeat("x", minEvidenceBytes)
+	keep := func(tool, content string) (string, bool) { return "ev-0123456789abcdef", tool == "read_file" }
+	if got := ElideResult("read_file", long, keep); got != elidedWithEvidence(len(long), "ev-0123456789abcdef") {
+		t.Fatalf("a kept result: %q", got)
+	}
+	for name, got := range map[string]string{
+		"store refused": ElideResult("search", long, keep),
+		"too short":     ElideResult("read_file", "short", keep),
+		"no store":      ElideResult("read_file", long, nil),
+	} {
+		if got != ElidedResult {
+			t.Errorf("%s: %q, want the bare placeholder", name, got)
+		}
+	}
+	placed := elidedWithEvidence(9000, "ev-ffffffffffffffff")
+	if got := ElideResult("read_file", placed, keep); got != placed {
+		t.Fatalf("an existing placeholder was replaced: %q", got)
+	}
+}
+
 // TestElided_ReadsBackWhatTheTrimWrote: the placeholder and the read of it
 // are one wording, so a surface offering the original is offering the entry
 // the trim actually made.

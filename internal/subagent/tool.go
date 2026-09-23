@@ -79,7 +79,7 @@ func Definitions(profiles Profiles) []provider.Tool {
 	return []provider.Tool{
 		{
 			Name:        SpawnToolName,
-			Description: "Delegate a scoped task to a background sub-agent. Roles: " + profiles.describe() + ". The user must approve each spawn. Returns immediately — the agent works in the background; collect its final report with agent_report in a LATER step (never in the same round as the spawn). Give each agent a complete, self-contained task prompt: it cannot see this conversation. To ask more of an agent that has already reported, send it a follow-up with agent_steer instead: it already knows the ground, so a follow-up is cheaper than a second spawn that has to read it all again.",
+			Description: "Delegate a scoped task to a background sub-agent. Roles: " + profiles.describe() + ". The user must approve each spawn. Returns immediately — the agent works in the background; collect its final report with agent_report in a LATER step (never in the same round as the spawn). Give each agent a complete, self-contained task prompt: it cannot see this conversation unless you pass inherit, which hands it your last few turns ahead of its task. To ask more of an agent that has already reported, send it a follow-up with agent_steer instead: it already knows the ground, so a follow-up is cheaper than a second spawn that has to read it all again.",
 			Parameters: json.RawMessage(`{
 				"type": "object",
 				"properties": {
@@ -91,7 +91,8 @@ func Definitions(profiles Profiles) []provider.Tool {
 					"steps": {"type": "integer", "description": "Optional number of steps this task breaks into (max 20). Pass it when you can name the steps up front: the agent's lane then shows progress against it instead of a spinner. Leave it out rather than guessing — an invented denominator is worse than none."},
 					"max_rounds": {"type": "integer", "description": "Optional: make the agent pause every N tool rounds to take stock — what it has done, what is left, what it is doing next — before carrying on with a larger budget. Omitted (the default) it runs to completion without pausing, which is what you want for most tasks. Pass it for long open-ended work where an agent quietly drifting off the task would otherwise go unnoticed. It is a pacing choice, not a limit: it never stops the agent, and the token budget is what bounds it."},
 					"max_tokens": {"type": "integer", "description": "Optional token budget (default 1200000, what one writer measured on one backlog item; minimum 200000 before prompt admission; at most 2400000). It counts new tokens — the part of each prompt the provider did not serve from its cache, plus the completion. The inherited prompt and declared task must still leave a 200000-token working reserve."},
-					"resume_handoff": {"type": "string", "description": "Optional opaque handoff handle from a failed child. The replacement keeps that handoff's original task and declared scope, and receives only its bounded verified context."}
+					"resume_handoff": {"type": "string", "description": "Optional opaque handoff handle from a failed child. The replacement keeps that handoff's original task and declared scope, and receives only its bounded verified context."},
+					"inherit": {"type": "integer", "minimum": 0, "description": "Optional number of your most recent turns to hand the agent ahead of its task: your user's words and yours whole, tool results elided to ids it can read back. Pass it for a subtask of the work in hand, where the agent should read what you read rather than your summary of it — a review of the change you just made, a check of a conclusion you just reached. Leave it out (0, the default unless the role sets one) for a wide independent hunt: an agent that starts from its task alone is cheaper, and the turns count against its budget. It is a count of turns, not of bytes."}
 				},
 				"required": ["role", "task"]
 			}`),
@@ -197,6 +198,10 @@ type spawnArgs struct {
 	MaxRounds     int      `json:"max_rounds"`
 	MaxTokens     int64    `json:"max_tokens"`
 	ResumeHandoff string   `json:"resume_handoff"`
+	// Inherit is a pointer because zero is an answer: a call that says 0
+	// lowers a profile's default to nothing, and one that says nothing takes
+	// the default.
+	Inherit *int `json:"inherit"`
 
 	role          Role
 	profile       Profile
@@ -205,6 +210,7 @@ type spawnArgs struct {
 	maxRounds     int
 	maxTokens     int64
 	resumeHandoff string
+	inherit       int
 }
 
 // MaxDeclaredSteps bounds the step count a spawn may declare. A lane
@@ -279,6 +285,13 @@ func parseSpawnArgs(profiles Profiles, raw json.RawMessage) (spawnArgs, error) {
 	}
 	if args.maxRounds <= 0 {
 		args.maxRounds = DefaultMaxRounds
+	}
+	args.inherit = profile.Inherit
+	if args.Inherit != nil {
+		if *args.Inherit < 0 {
+			return args, fmt.Errorf("inherit %d is a count of turns and cannot be negative", *args.Inherit)
+		}
+		args.inherit = *args.Inherit
 	}
 	args.maxTokens = args.MaxTokens
 	if args.maxTokens <= 0 {
@@ -388,6 +401,12 @@ func SpawnPlan(profiles Profiles, raw json.RawMessage) (Spawn, error) {
 		Task:   firstLine(args.Task),
 		Writer: args.profile.Writes,
 		Budget: fmt.Sprintf("%s, ~%s new tokens", roundBudgetLabel(args.maxRounds), formatTokens(args.maxTokens)),
+	}
+	// What of this conversation the child will be shown is part of what is
+	// being approved: a person who sees only the task line would take the
+	// child to know nothing the task does not say.
+	if args.inherit > 0 {
+		p.Budget += ", handed your " + lastTurnsPhrase(args.inherit)
 	}
 	switch {
 	case args.profile.Reviews && len(args.paths) > 0:

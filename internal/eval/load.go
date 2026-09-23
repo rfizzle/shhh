@@ -140,7 +140,7 @@ func LoadCase(dir string) (Case, error) {
 			return Case{}, err
 		}
 		c.Site, c.Prompt, c.Facts = site, strings.TrimSpace(f.Prompt), facts
-	case KindClassifier, KindSummary, KindSteer, KindCompaction, KindSpawn, KindGate:
+	case KindClassifier, KindSummary, KindSteer, KindCompaction, KindSpawn, KindGate, KindInherit:
 		rows, err := loadTable(filepath.Join(dir, TableFile), kind)
 		if err != nil {
 			return Case{}, err
@@ -160,7 +160,8 @@ func LoadCase(dir string) (Case, error) {
 // added, for the sentence a misspelled one is refused with.
 func kindNames() []string {
 	return []string{string(KindWorkspace), string(KindResearch), string(KindClassifier),
-		string(KindSummary), string(KindSteer), string(KindCompaction), string(KindSpawn), string(KindGate)}
+		string(KindSummary), string(KindSteer), string(KindCompaction), string(KindSpawn), string(KindGate),
+		string(KindInherit)}
 }
 
 // tableFile is a table on disk: nothing but rows, and no top-level key beside
@@ -211,6 +212,12 @@ type rowFile struct {
 	Decline   bool     `toml:"decline"`
 	Config    string   `toml:"config"`
 	Suite     string   `toml:"suite"`
+
+	// What an inherit row states (inherit.go): how many turns of the
+	// conversation its child is handed, and the workspace it is spawned
+	// into, path to contents.
+	Inherit int               `toml:"inherit"`
+	Files   map[string]string `toml:"files"`
 }
 
 // loadTable reads a case's rows and refuses one that cannot be scored.
@@ -277,6 +284,8 @@ func loadTable(path string, kind Kind) ([]Row, error) {
 			WriteBody: rf.WriteBody,
 			Reply:     strings.TrimSpace(rf.Reply),
 			Decline:   rf.Decline,
+			Inherit:   rf.Inherit,
+			Files:     rf.Files,
 			Config:    rf.Config,
 			Suite:     strings.TrimSpace(rf.Suite),
 		}
@@ -329,6 +338,16 @@ func checkScriptedRow(path string, kind Kind, row Row) error {
 	case KindGate:
 		if strings.TrimSpace(row.Config) == "" {
 			return fmt.Errorf("%s: %s: config is required — it is the workspace the gate reads", path, row.Name)
+		}
+	case KindInherit:
+		if len(row.Conversation) == 0 || row.Inherit <= 0 {
+			return fmt.Errorf("%s: %s: conversation and inherit are required — they are the turns the child is handed", path, row.Name)
+		}
+		if row.Task == "" || len(row.Needs) == 0 {
+			return fmt.Errorf("%s: %s: task and needs are required — the spawn call, and what its report has to carry", path, row.Name)
+		}
+		if len(row.Paths) == 0 {
+			return fmt.Errorf("%s: %s: paths is required — it is what the turns already read, and what the child must not read again", path, row.Name)
 		}
 	}
 	return nil

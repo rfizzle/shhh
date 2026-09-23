@@ -527,6 +527,7 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 	sup := buildSupervisor(cmd.Context(), cfg, session, env, agents, red, l.recorder, db, prices, classifier, sc, l.ledger, hooks, nil)
 	sup.SetParentMode(agent.ModeAuto)
 	sup.SetParentGrants(agent.Grants{AllEdits: true, AllCommands: true})
+	sup.SetConversation(a.Messages)
 	l.closers = append(l.closers, sup.Close)
 	l.agents = sup
 

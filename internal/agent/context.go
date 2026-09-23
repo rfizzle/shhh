@@ -108,6 +108,29 @@ func Elided(content string) (id string, elided bool) {
 	return id, true
 }
 
+// ElideResult is what a tool result is replaced with when it leaves a window:
+// the placeholder naming the id archive kept the original under, or the bare
+// one where archive is nil, the result is too short to be worth storing, or
+// the store refused. A result that is already a placeholder is returned as it
+// is. tool is the name of the call the result answers, which the store keeps
+// beside it.
+//
+// It is the trim's own choice exported, so a surface that elides a result
+// somewhere other than the window — a child handed its parent's turns —
+// makes the same offer in the same words rather than a second spelling of it.
+// See docs/capabilities/evidence.md#a-trim-makes-the-same-promise.
+func ElideResult(tool, content string, archive func(tool, content string) (string, bool)) string {
+	if strings.HasPrefix(content, elidedPrefix) {
+		return content
+	}
+	if archive != nil && len(content) >= minEvidenceBytes {
+		if id, ok := archive(tool, content); ok {
+			return elidedWithEvidence(len(content), id)
+		}
+	}
+	return ElidedResult
+}
+
 // estimatedBytesPerToken is the rough chars→tokens heuristic used when the
 // provider hasn't reported real usage. It is about right for prose and wrong
 // in one direction for everything else a coding session carries, which is
@@ -358,11 +381,8 @@ func (a *Agent) TrimOldToolResults(est, threshold, mark int64, cal Calibration) 
 		// trim that failed because the disk did would send the very request
 		// it was called to shrink.
 		// See docs/capabilities/evidence.md#a-trim-makes-the-same-promise.
-		if a.archive != nil && len(msg.Content) >= minEvidenceBytes {
-			if id, ok := a.archive(called[msg.ToolCallID], msg.Content); ok {
-				placeholder = elidedWithEvidence(len(msg.Content), id)
-				saved = cal.Apply(EstimateTokens(msg.Content) - EstimateTokens(placeholder))
-			}
+		if placeholder = ElideResult(called[msg.ToolCallID], msg.Content, a.archive); placeholder != ElidedResult {
+			saved = cal.Apply(EstimateTokens(msg.Content) - EstimateTokens(placeholder))
 		}
 		// What rode on the result goes with it. An image a reader attached
 		// is the largest thing in the message and the reason the trim was

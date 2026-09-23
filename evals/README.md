@@ -134,6 +134,14 @@ defect, and a table with only the first kind cannot see the second.
 are prose, and prose is the thing this suite refuses to grade. The label is
 what is compared.
 
+`kind = "inherit"` is a table whose call is a child: each row spawns a reader
+on the run's model, handed the last `inherit` turns of the row's
+`conversation` as its parent's, in a workspace of `files` (path to contents).
+`paths` are the files those turns already read, and `needs` what the report
+has to carry. The label is what the child did: `acted` (carried every need and
+read none of `paths`), `reread` (read one of them again) or `missed` (a need is
+not in its report).
+
 ## Writing a scripted case
 
 A scripted case is a table too, and its kind names the mechanism:

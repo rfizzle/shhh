@@ -527,7 +527,6 @@ func keptPatchOffer() string {
 // render lays one row out across the card's inner width, with its note (if
 // any) indented underneath.
 func (r AgentRow) render(inner int, focused bool) []string {
-	right := r.rightField()
 	// The corner takes the column before the glyph, which is where the rail's
 	// map puts it on the same agent: the row is what moves, so the whole of
 	// it moves.
@@ -539,6 +538,17 @@ func (r AgentRow) render(inner int, focused bool) []string {
 		// so the tasks under them never line up
 		// (docs/interface/surfaces.md#the-agent-manager).
 		left += sty.Dimmer.Render(detailSep + Clip(r.Task, max(inner/3, 8)))
+	}
+	right := r.rightField()
+	// What a child inherited is the first part of the field to give way on a
+	// narrow card, before the name is clipped: it is how the child was
+	// started, and a name cut to an ellipsis is a row the reader cannot tell
+	// from the one under it.
+	if r.Progress != nil && r.Progress.Inherited > 0 && inner-2-lipgloss.Width(left)-lipgloss.Width(right) < 2 {
+		bare := *r.Progress
+		bare.Inherited = 0
+		r.Progress = &bare
+		right = r.rightField()
 	}
 	gap := inner - 2 - lipgloss.Width(left) - lipgloss.Width(right)
 	row := left

@@ -75,6 +75,10 @@ type AgentDefinition struct {
 	// MaxRounds is the default check-in interval in tool rounds; zero means
 	// none, which is the built-in default.
 	MaxRounds int `toml:"max_rounds"`
+	// Inherit is how many of the parent's last turns a spawn of this profile
+	// is handed ahead of its task when the call does not say; zero, the
+	// default, hands it the task alone. A spawn may lower it.
+	Inherit int `toml:"inherit"`
 
 	// Path is the file this definition was read from; empty for one built
 	// in code.
@@ -279,6 +283,9 @@ func (d AgentDefinition) Validate() error {
 	}
 	if d.MaxRounds < 0 {
 		return fmt.Errorf("max_rounds: must not be negative")
+	}
+	if d.Inherit < 0 {
+		return fmt.Errorf("inherit: must not be negative")
 	}
 	return nil
 }

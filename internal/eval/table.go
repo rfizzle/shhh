@@ -60,7 +60,9 @@ const (
 // workspace. A scripted case (mechanism.go) is one of these too: it is a
 // table of rows put to a call, and the only thing that differs is that the
 // call is the harness's own and no model is asked.
-func (k Kind) IsTable() bool { return k == KindClassifier || k == KindSummary || k.Scripted() }
+func (k Kind) IsTable() bool {
+	return k == KindClassifier || k == KindSummary || k == KindInherit || k.Scripted()
+}
 
 // Labels is the closed set this kind's answers come from. A row expecting
 // anything else is a typo, and the loader refuses it rather than scoring
@@ -71,6 +73,8 @@ func (k Kind) Labels() []string {
 		return []string{LabelAllow, LabelDeny}
 	case KindSummary:
 		return []string{LabelOnTarget, LabelSufficient, LabelOffTarget, LabelUnclear}
+	case KindInherit:
+		return []string{LabelActed, LabelReread, LabelMissed}
 	}
 	return scriptedLabels(k)
 }
@@ -146,6 +150,12 @@ type Row struct {
 	WriteBody string
 	Reply     string
 	Decline   bool
+	// Inherit is how many of the Conversation's turns an inherit row's child
+	// is handed, and Files the workspace it is spawned into, by path. The
+	// row's Paths are the files the turns already read, which the child must
+	// not read again.
+	Inherit int
+	Files   map[string]string
 	// Config is the gate configuration the row's workspace is given, and
 	// Suite the suite the gate is asked for.
 	Config string
@@ -300,6 +310,8 @@ func askRow(ctx context.Context, p provider.Provider, model string, kind Kind, r
 		return askClassifier(ctx, p, model, row)
 	case kind == KindSummary:
 		return askSummary(ctx, p, model, row)
+	case kind == KindInherit:
+		return askInherit(ctx, p, model, row)
 	case kind.Scripted():
 		return askScripted(ctx, kind, row)
 	}

@@ -620,8 +620,9 @@ child that finished, and it is the same conversation carrying on.
 
 ## What they share
 
-A child cannot see the conversation it was spawned from, and the parent only
-receives its final message. That is the right contract for one task and the
+A child cannot see the conversation it was spawned from — unless the spawn
+hands it the last few turns, below — and the parent only receives its final
+message. That is the right contract for one task and the
 wrong one for a fan-out: four children sent into the same unfamiliar tree
 will each work out where the tests live, and three of those readings are
 paid for twice.
@@ -662,6 +663,48 @@ unchanged. A note is what a sibling will need. And a note is not memory
 (`sessions-and-memory.md`): memory is durable, general, and confirmed by the
 person before it is kept; a note is working state, and its lifetime is the
 session's.
+
+A spawn may also hand the child the last few turns of the conversation it was
+spawned from. The notebook and the inheritance are for different things. A
+note is what a sibling will need, written once and read by whoever asks for
+it; inherited turns are for a subtask of the work in hand — a review of the
+change the parent just made, a check of a conclusion it just reached — where
+a briefing the parent writes from its turns would hand the child the parent's
+conclusions, and the child needs what the parent read. The turns arrive ahead
+of the task under a line saying they are the parent's and not the child's:
+what the person and the assistant said, whole; each tool result elided the
+way the window trim elides one, to a placeholder naming the id the original
+can be read back by; and all of it through the session's scrub, so a secret
+the parent's conversation held never reaches the child's. The child's prompt
+says which turns it was given and that the rest is not there.
+
+The count is of turns, not of bytes. A turn is what a person can count on the
+transcript — the turn they asked the question in, and the one before — and a
+byte bound would be a number nobody can see. The byte bound is still there,
+underneath: the inherited turns are part of what the child is admitted for,
+beside its task and a review's evidence, so a spawn whose turns would not
+leave the working reserve is refused before a slot, a worktree or a record is
+taken, and the refusal names the turns among what it counted. A retry hands
+the second attempt the same turns the first was spawned with, ahead of its
+handoff — the text as it was, not a fresh read of a conversation that has
+moved on since. A profile may carry a default count, and a spawn may lower it
+to nothing.
+
+The default stays at nothing. A child spawned on its task alone is cheaper,
+and the task-only contract is what makes the parent say what it wants: a
+child handed the conversation is handed the parent's framing with it,
+detours included, and pays for every turn of it out of its own budget before
+it has done anything. A wide, independent hunt — a survey, a search the
+parent has not started — gains nothing from the turns, and that is what most
+spawns are.
+
+Handing turns over does not promise that the provider's prompt cache is
+shared. A cached prefix is matched from the first byte of a request, and a
+child's request opens on its own system prompt and its own tools, not the
+parent's; whether any of the inherited text is served from a cache the
+parent's requests wrote depends on the provider and the model, and has not
+been measured. What the turns are known to cost is what the admission floor
+counts.
 
 ## A hold reaches the whole fan-out
 
@@ -867,7 +910,9 @@ nothing that spawning a replacement would.
 The new attempt is a new conversation — one that inherited the context that
 killed the last one would die of it again — but new is not blind. It opens
 with how the previous attempt ended and whatever handoff that one wrote on its
-way out, and then the task, unchanged and named as such. Without that a retry
+way out, and then the task, unchanged and named as such. A child spawned with
+the parent's last turns is handed the same turns again, ahead of all of it
+([what they share](#what-they-share)). Without that a retry
 is the same attempt run twice: it takes the same first steps, and one that ran
 out of budget spends the same budget the same way and stops in the same place.
 The handoff is already written — a child stopped by its budget is asked for

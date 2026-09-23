@@ -1195,6 +1195,10 @@ func TestGolden_ReviewMode(t *testing.T) {
 // Three panels are a finished child taking a follow-up: the done row offering
 // [s] as a follow-up, the question typed under it, and the same row moved
 // back to running with the question's first words under it.
+//
+// The last is a child spawned with the parent's last turns: what it was
+// handed is stated first on the line that says what it has cost, since it is
+// spent before the child has done anything.
 func TestGolden_AgentList(t *testing.T) {
 	captureGolden(t, "agent-list", "agent list", goldenWidths, func(width int) []golden.Panel {
 		progress := func(p AgentProgress) *AgentProgress { return &p }
@@ -1262,6 +1266,11 @@ func TestGolden_AgentList(t *testing.T) {
 		following[3] = AgentRow{State: AgentRunning, Name: "reader-3", Task: "survey internal/ui",
 			Progress: progress(AgentProgress{State: FanoutRunning, Tools: 12, Spend: "$0.04", Frame: 2}),
 			Note:     "follow-up · which component owns the rail?"}
+		// A reviewer handed the orchestrator's last turns, beside the rows as
+		// they were: the figure is the only thing that differs.
+		inheriting := append([]AgentRow{}, rows...)
+		inheriting[2] = AgentRow{State: AgentRunning, Name: "reviewer-1", Task: "review the round change",
+			Progress: progress(AgentProgress{State: FanoutRunning, Tools: 4, Spend: "$0.02", Inherited: 12_400})}
 		return []golden.Panel{
 			{Label: "focus · the orchestrator", View: (&AgentList{Rows: rows}).View(width)},
 			{Label: "focus · the blocked child, [a] answers it here", View: (&AgentList{Rows: rows, Focus: 1}).View(width)},
@@ -1282,6 +1291,8 @@ func TestGolden_AgentList(t *testing.T) {
 				View: asking.View(width)},
 			{Label: "the follow-up sent · the row is running again, on the question",
 				View: (&AgentList{Rows: following, Focus: 3}).View(width)},
+			{Label: "a child handed the last turns · what it inherited leads the line of what it cost, and gives way first when the card is narrow",
+				View: (&AgentList{Rows: inheriting, Focus: 2}).View(width)},
 		}
 	})
 }

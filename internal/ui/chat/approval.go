@@ -23,6 +23,7 @@ import (
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/process"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
@@ -926,6 +927,15 @@ func (m Model) executeApprovedTool() (tea.Model, tea.Cmd) {
 	a := m.agent
 	runID := a.RunID()
 	call := m.pendingApproval.call
+	// A spawn may hand the child this conversation's last turns. They are
+	// copied here, on the goroutine that owns the conversation, because the
+	// call runs on another one and a cancel pressed meanwhile appends to the
+	// conversation it would be reading
+	// (docs/capabilities/subagents.md#what-they-share).
+	if call.Name == subagent.SpawnToolName && m.subagents != nil {
+		turns := append([]provider.Message(nil), a.Messages()...)
+		m.subagents.SetConversation(func() []provider.Message { return turns })
+	}
 	// Built-in mutating tools run through their own dispatcher; the session
 	// executor (the auto-run read-only path) never learns them. A registered
 	// gated tool keeps the session executor. The session executor is already

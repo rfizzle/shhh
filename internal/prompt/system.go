@@ -501,6 +501,32 @@ Write the plan like this — a title heading, then a numbered step list, one ste
 - ` + "`action:`" + ` says what the step does to them. Omit it and a step with files is taken as an edit, one without as inspection.
 - Steps are numbered from 1 and climb. Keep each title to one line; the detail belongs in ` + "`note:`" + `.`
 
+// unseenConversation is the clause every sub-agent prompt tells its child
+// with: what it holds of the orchestrator's conversation is nothing. It is a
+// constant because Inherited rewrites it, and a builder that spelled it
+// differently would leave a child that was handed turns being told it has
+// none.
+const unseenConversation = "You cannot see the orchestrator's conversation"
+
+// Inherited is a sub-agent's system prompt for a child handed its parent's
+// last turns ahead of its task: the clause saying it cannot see the
+// conversation becomes one saying which part of it it was given and that the
+// rest is not there. Zero turns is the prompt as built. A prompt that never
+// said the clause — a profile whose own words replaced the base — is left as
+// it is; the turns arrive under a heading that says what they are either way.
+// See docs/capabilities/subagents.md#what-they-share.
+func Inherited(sysPrompt string, turns int) string {
+	if turns <= 0 {
+		return sysPrompt
+	}
+	given := "last turn"
+	if turns > 1 {
+		given = fmt.Sprintf("last %d turns", turns)
+	}
+	return strings.Replace(sysPrompt, unseenConversation,
+		"You were handed the orchestrator's "+given+" ahead of your task and cannot see the rest of its conversation", 1)
+}
+
 func CombineExtra(parts ...string) string {
 	var out []string
 	for _, p := range parts {

@@ -1087,6 +1087,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 		sup = buildSupervisor(cmd.Context(), cfg, session, env, agents, red, recorder, db, prices, classifier, sc, ledger, hooks, nil)
 		sup.SetParentMode(agent.ModeAuto)
 		sup.SetParentGrants(agent.Grants{AllEdits: opts.yes, AllCommands: opts.yes, Commands: opts.allow})
+		sup.SetConversation(a.Messages)
 		defer sup.Close()
 		exec = sup.WrapExecutor("", exec)
 	}

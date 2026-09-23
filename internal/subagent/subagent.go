@@ -294,6 +294,13 @@ type Status struct {
 	// killed (docs/capabilities/subagents.md#three-can-steer-a-child-and-none-of-them-can-end-it).
 	FollowUp      string
 	TakesFollowUp bool
+	// Inheritance is the estimated tokens of the parent's turns this child
+	// was handed ahead of its task (spawn_agent's inherit), and zero for the
+	// ordinary child, which is handed its task alone. It is a part of the
+	// setup the admission floor counted, stated apart because it is the one
+	// part of it the spawn chose.
+	// See docs/capabilities/subagents.md#what-they-share.
+	Inheritance int64
 }
 
 // EarlierReport is a report a child gave before a follow-up asked it
@@ -688,6 +695,13 @@ type Spec struct {
 	// row of its own — and this number is the only thing that joins that row
 	// to the one it replaces.
 	Attempt int
+	// Inherit is how many of its parent's turns the child is handed ahead of
+	// its task — the turns it was really given, which is fewer than the spawn
+	// asked for where the conversation is shorter — and zero for a child
+	// handed its task alone. The prompt says which it is: a child told it
+	// cannot see the conversation while holding some of it would doubt the
+	// turns, and one told nothing would go looking for the rest.
+	Inherit int
 }
 
 // EnvFactory builds a child's Env; ctx is the child's context (cancelling it
@@ -1117,6 +1131,15 @@ type child struct {
 	// retry is a fresh conversation: an attempt that opens on the task alone
 	// is the unbounded review the second attempt least needs to be.
 	evidence string
+	// inheritance is the parent's turns this child was spawned with, as the
+	// text its first turn opened on, and inheritTurns how many turns that is.
+	// Held for the reason evidence is: a retry re-issues exactly what the
+	// first attempt was handed, not a fresh read of a conversation that has
+	// moved on since (docs/capabilities/subagents.md#what-they-share).
+	// inheritTokens is its estimate, which the lane's budget line states.
+	inheritance   string
+	inheritTurns  int
+	inheritTokens int64
 	// Live session surface: transcript entries, the in-flight
 	// assistant text, queued steering messages, and the current turn's
 	// interrupt channel.
@@ -1250,6 +1273,7 @@ func (c *child) status() Status {
 		Verdict:           c.verdict,
 		SteerFrom:         c.steerFrom,
 		Seeded:            c.seeded,
+		Inheritance:       c.inheritTokens,
 		Held:              c.heldOn != nil,
 		FollowUp:          c.followUp,
 		TakesFollowUp:     c.state == StateDone && c.listening,
@@ -1783,6 +1807,10 @@ type Supervisor struct {
 	// supervisor's, so SessionSteering is how it is told.
 	sessionQueued  int
 	sessionSteered chan struct{}
+
+	// conversation reads the session's own messages for a child of the
+	// session that inherits turns (SetConversation). Under mu.
+	conversation func() []provider.Message
 }
 
 // ErrClosed is what a supervisor answers once Close has run: a steer, a note,
@@ -2541,6 +2569,7 @@ func (s *Supervisor) restart(c *child, detail string) error {
 	c.mu.Lock()
 	handoff := c.report
 	evidence := c.evidence
+	inheritance, inheritTurns := c.inheritance, c.inheritTurns
 	had := c.maxTokens
 	budget, grew := retryBudget(c.maxTokens, c.budgetHit)
 	// The cap the attempt being replaced grew to, so a retry does not start
@@ -2557,12 +2586,16 @@ func (s *Supervisor) restart(c *child, detail string) error {
 	cctx, cancel := context.WithCancel(s.ctx)
 	preflight, preflightErr := s.opts.NewEnv(cctx, Spec{Name: c.name, Role: c.role, Root: s.opts.Root,
 		Parent: c.parent, Depth: c.depth,
-		Model: c.model, Paths: c.paths, Worktree: c.profile.Writes, MaxTokens: budget, Attempt: attempt})
+		Model: c.model, Paths: c.paths, Worktree: c.profile.Writes, MaxTokens: budget, Attempt: attempt, Inherit: inheritTurns})
 	if preflightErr != nil {
 		cancel()
 		return fmt.Errorf("cannot set up the retry: the agent's environment could not be built: %w", preflightErr)
 	}
-	inherited, setup, floor := admissionFloor(preflight, evidence+retryPrologue(detail, handoff)+c.task)
+	// The inherited turns go first again, ahead of the handoff, exactly as
+	// the first attempt was handed them: the handoff is written against that
+	// context, and an attempt that read it without the turns it assumes would
+	// be reading notes about a conversation it was never shown.
+	inherited, setup, floor := admissionFloor(preflight, inheritance+evidence+retryPrologue(detail, handoff)+c.task)
 	if budget < floor {
 		cancel()
 		return fmt.Errorf("cannot set up the retry: max_tokens %d cannot admit this task; at least %d is required", budget, floor)
@@ -2612,7 +2645,7 @@ func (s *Supervisor) restart(c *child, detail string) error {
 	// differently: the child that died re-reading a large file dies
 	// re-reading it, and the budget the session spent on the second attempt
 	// bought the first one over again.
-	c.prologue = evidence + retryPrologue(detail, handoff)
+	c.prologue = inheritance + evidence + retryPrologue(detail, handoff)
 	// Each attempt is measured against the budget it was spawned with; what
 	// the earlier attempts spent is carried, not forgotten.
 	c.priorSpend = c.priorSpend.Plus(c.spend.Total())
@@ -2989,7 +3022,7 @@ func (s *Supervisor) openWorkspace(c *child, ctx context.Context, maxRounds, att
 	}
 	w.env, err = s.opts.NewEnv(ctx, Spec{Name: c.name, Role: c.role, Root: w.root, Model: c.model, Paths: c.paths,
 		Parent: c.parent, Depth: c.depth,
-		Worktree: w.wt.dir != "", MaxTokens: c.maxTokens, AdmissionFloor: c.admissionFloor})
+		Worktree: w.wt.dir != "", MaxTokens: c.maxTokens, AdmissionFloor: c.admissionFloor, Inherit: c.inheritTurns})
 	if err != nil {
 		removeWorktree(w.wt.repoTop, w.wt.dir)
 		return workspace{}, fmt.Errorf("the agent's environment could not be built: %w", err)
@@ -3152,6 +3185,12 @@ func (s *Supervisor) spawnFrom(caller string, raw json.RawMessage) (string, erro
 		model = s.opts.ModelFor(args.role, depth, args.Model)
 	}
 
+	// The turns the child inherits are chosen before its environment is
+	// built, because the prompt that environment carries says how many it
+	// was given; they are rendered after, because the scrub and the store an
+	// elided result goes into are the environment's.
+	turns, inheritTurns := lastTurns(s.conversationOf(caller), args.inherit)
+
 	// The context is the child's from here, whether or not it has anywhere
 	// to work yet: a writer queued behind a full set of slots is one a kill
 	// has to reach, and the cancel is what reaches it.
@@ -3160,7 +3199,7 @@ func (s *Supervisor) spawnFrom(caller string, raw json.RawMessage) (string, erro
 	// worktree or record. A doomed budget must not consume either resource.
 	preflight, preflightErr := s.opts.NewEnv(cctx, Spec{Name: name, Role: args.role, Root: s.opts.Root,
 		Parent: caller, Depth: depth,
-		Model: model, Paths: args.paths, Worktree: args.profile.Writes, MaxTokens: args.maxTokens})
+		Model: model, Paths: args.paths, Worktree: args.profile.Writes, MaxTokens: args.maxTokens, Inherit: inheritTurns})
 	if preflightErr != nil {
 		cancel()
 		return "", fmt.Errorf("the agent's environment could not be built: %w", preflightErr)
@@ -3185,15 +3224,27 @@ func (s *Supervisor) spawnFrom(caller string, raw json.RawMessage) (string, erro
 	// admitted for: the resume starts on a budget its opening turn alone
 	// exhausts, and dies where the handoff it was given ends. A retry
 	// measures the same prologue before it commits, and both must.
-	prologue := evidence
+	//
+	// The parent's turns go ahead of all of it: they are what the evidence
+	// and the task were written in the middle of. They are measured with a
+	// stand-in for the store, so a spawn the floor refuses leaves nothing in
+	// it; the real placeholders are the same length and are written only
+	// once the child is admitted.
+	resumeText := ""
 	if args.resumeHandoff != "" {
-		prologue += resumePrologue(resume, s.opts.EvidenceExists)
+		resumeText = resumePrologue(resume, s.opts.EvidenceExists)
 	}
-	inherited, setup, floor := admissionFloor(preflight, prologue+args.Task)
+	inheritance := inheritedPrologue(turns, inheritTurns, preflight.Scrub, measuringArchive(preflight.Archive))
+	inherited, setup, floor := admissionFloor(preflight, inheritance+evidence+resumeText+args.Task)
 	if args.maxTokens < floor {
 		cancel()
-		return "", fmt.Errorf("max_tokens %d cannot admit this task: at least %d is required for the inherited prompt, the declared task and the context its first turn opens on, plus the %d-token working reserve", args.maxTokens, floor, MinChildMaxTokens)
+		return "", fmt.Errorf("max_tokens %d cannot admit this task: at least %d is required for the inherited prompt, the declared task%s and the context its first turn opens on, plus the %d-token working reserve",
+			args.maxTokens, floor, inheritedClause(inheritTurns, agent.EstimateTokens(inheritance)), MinChildMaxTokens)
 	}
+	if preflight.Archive != nil {
+		inheritance = inheritedPrologue(turns, inheritTurns, preflight.Scrub, preflight.Archive)
+	}
+	prologue := inheritance + evidence + resumeText
 
 	c := &child{
 		name:            name,
@@ -3207,6 +3258,9 @@ func (s *Supervisor) spawnFrom(caller string, raw json.RawMessage) (string, erro
 		batch:           batch,
 		steps:           args.steps,
 		evidence:        evidence,
+		inheritance:     inheritance,
+		inheritTurns:    inheritTurns,
+		inheritTokens:   agent.EstimateTokens(inheritance),
 		prologue:        prologue,
 		root:            s.opts.Root,
 		mode:            mode,
@@ -3275,6 +3329,12 @@ func (s *Supervisor) spawnFrom(caller string, raw json.RawMessage) (string, erro
 	resumed := ""
 	if args.resumeHandoff != "" {
 		resumed = fmt.Sprintf(" It resumes the verified handoff %s without replaying the failed child's transcript.", args.resumeHandoff)
+	}
+	// What it was handed of this conversation, in the unit the call asked
+	// in, so a caller that asked for more turns than there were learns it.
+	if inheritTurns > 0 {
+		resumed += fmt.Sprintf(" It was handed your %s (~%s tokens) ahead of its task.",
+			lastTurnsPhrase(inheritTurns), formatTokens(agent.EstimateTokens(inheritance)))
 	}
 	return fmt.Sprintf("Spawned %s (%s%s, %s, ~%s token budget).%s%s It works in the background: call agent_report with name=%q in a later step to wait for and collect its final report, or agent_report with no arguments for a status overview.",
 		name, args.role, modelNote, roundBudgetLabel(args.maxRounds), formatTokens(args.maxTokens), note, resumed, name), nil

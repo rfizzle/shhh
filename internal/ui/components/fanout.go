@@ -72,6 +72,13 @@ type AgentProgress struct {
 	// Empty for every child that is not a review and every review whose last
 	// line is not a verdict, which is what leaves `done` standing alone.
 	ReportVerdict string
+	// Inherited is the estimated tokens of the parent's turns the child was
+	// handed ahead of its task, and zero for a child handed its task alone.
+	// It is stated beside what the child spent because it is spent before
+	// the child has done anything, and a lane that showed a figure with no
+	// account of it would read as a child that started expensive
+	// (docs/capabilities/subagents.md#what-they-share).
+	Inherited int64
 }
 
 // FanoutLane is one child of the batch.
@@ -144,6 +151,9 @@ type FanoutLane struct {
 	// the repository was started from. Zero says nothing — a child that
 	// started from the last commit has nothing to explain.
 	Seeded int
+	// Inherited is the child's inherited turns in tokens, carried to the
+	// progress the lane and the manager's row both draw.
+	Inherited int64
 	// Steers is how many times this turn the child has been told the check
 	// reads its work as off its task. Zero says nothing — a child nobody has
 	// had to steer is almost every child.
@@ -392,6 +402,9 @@ func (p AgentProgress) withVerdict(s string) string {
 // a zero.
 func (p AgentProgress) stats() string {
 	var parts []string
+	if p.Inherited > 0 {
+		parts = append(parts, "inherited "+formatTokens(p.Inherited))
+	}
 	if p.Tools > 0 {
 		parts = append(parts, plural(p.Tools, "tool"))
 	}
@@ -422,7 +435,7 @@ func (p AgentProgress) outcomeField() string {
 func (l FanoutLane) progressOf() AgentProgress {
 	return AgentProgress{State: l.State, Step: l.Step, Steps: l.Steps,
 		Tools: l.Tools, Spend: l.Spend, Frame: l.Frame,
-		ReportVerdict: l.ReportVerdict}
+		ReportVerdict: l.ReportVerdict, Inherited: l.Inherited}
 }
 
 func (l FanoutLane) glyph() string        { return l.progressOf().glyph() }
@@ -443,6 +456,11 @@ func (l FanoutLane) outcomeField() string { return l.progressOf().outcomeField()
 // key away in the report it was read off, which is more than the counts have.
 func (l FanoutLane) fittedOutcome(width int) string {
 	p := l.progressOf()
+	// What the child inherited goes first of all: it is a fact about how the
+	// child was started, and the manager's row states it for the same child.
+	if p.Inherited > 0 && !fitsBesideName(width, p.outcomeField()) {
+		p.Inherited = 0
+	}
 	if p.ReportVerdict == "" || fitsBesideName(width, p.outcomeField()) {
 		return p.outcomeField()
 	}

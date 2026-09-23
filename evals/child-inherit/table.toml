@@ -1,0 +1,31 @@
+[[row]]
+name = "a child handed the turn acts on what the parent already read"
+why = "inheriting turns is worth only what it saves: a child that reads again the file its parent just read has paid for the turns and the read both"
+expect = ["acted"]
+task = "Write two sentences for the release notes: how many times a failed request is retried, as a numeral, and which file sets it."
+inherit = 1
+conversation = [
+  "user: why do requests give up after a while?",
+  "assistant: Reading limits.go to find the retry bound.",
+  "tool: package limits\n\n// MaxRetries is how many times a failed request is sent again before the session gives up.\nconst MaxRetries = 7\n",
+  "assistant: limits.go sets MaxRetries = 7: a failed request is sent again seven times, with the wait doubling from one second, and then the session gives up.",
+]
+paths = ["limits.go"]
+files = { "limits.go" = "package limits\n\n// MaxRetries is how many times a failed request is sent again before the session gives up.\nconst MaxRetries = 7\n" }
+needs = ["7", "limits.go"]
+
+[[row]]
+name = "two turns handed over reach back to the first of them"
+why = "inherit counts turns; a fact settled in the earlier of the two handed over is as much the child's as one in the later"
+expect = ["acted"]
+task = "Say in one sentence which port the fixture server listens on, as a numeral, and which file sets it."
+inherit = 2
+conversation = [
+  "user: where does the fixture server take its port from?",
+  "assistant: server.go binds FixturePort, which is 4417; nothing overrides it.",
+  "user: and does anything else read that constant?",
+  "assistant: Only the test harness, through the same constant; no second copy of the number exists.",
+]
+paths = ["server.go"]
+files = { "server.go" = "package fixture\n\n// FixturePort is where the fixture server listens.\nconst FixturePort = 4417\n" }
+needs = ["4417", "server.go"]

@@ -179,6 +179,9 @@ func (m Model) childProgress(st subagent.Status) components.AgentProgress {
 		Tools: st.ToolCalls,
 		Spend: m.childSpendLabel(st),
 		Frame: m.spinFrame,
+		// What it was handed of the parent's conversation, on the line that
+		// says what it has cost (docs/capabilities/subagents.md#what-they-share).
+		Inherited: st.Inheritance,
 	}
 	// A review is the one role whose last line is a word rather than prose:
 	// its prompt makes it end on the verdict the task asked for, so the
@@ -288,6 +291,7 @@ func (m Model) fanoutBlockFor(e entry) components.FanoutBlock {
 			Spend:      p.Spend,
 			Elapsed:    turnDuration(st.Elapsed),
 			Seeded:     st.Seeded,
+			Inherited:  p.Inherited,
 			Steers:     st.Steers,
 			Yours:      st.LaneSteers,
 			FromParent: st.ParentSteers,

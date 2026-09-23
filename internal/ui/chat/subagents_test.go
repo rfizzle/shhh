@@ -1204,3 +1204,54 @@ func TestTypedSteeringEndsTheSessionsWaitOnItsChildren(t *testing.T) {
 		t.Fatal("typed steering did not end the session's wait")
 	}
 }
+
+// A spawn approved at the card hands the child the conversation as it stood
+// when the call was dispatched. The call runs off the UI goroutine, so what it
+// reads is the copy taken on it — a message appended meanwhile (a cancel, the
+// next turn) is not what the child is handed, and is not read under the
+// goroutine appending it
+// (docs/capabilities/subagents.md#what-they-share).
+func TestApprovingASpawnHandsOverTheTurnsAsTheyStoodAtDispatch(t *testing.T) {
+	opened := make(chan string, 1)
+	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(),
+		NewEnv: func(context.Context, subagent.Spec) (subagent.Env, error) {
+			stream := func(msgs []provider.Message, _ string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+				for _, m := range msgs {
+					if m.Role == provider.RoleUser {
+						select {
+						case opened <- m.Content:
+						default:
+						}
+						break
+					}
+				}
+				ch := make(chan provider.StreamEvent, 1)
+				ch <- provider.StreamEvent{Token: "done", Done: true}
+				close(ch)
+				return ch, func() {}, nil
+			}
+			return subagent.Env{SystemPrompt: "child", Stream: stream}, nil
+		}})
+	t.Cleanup(sup.Close)
+	m := newSubagentModel(t, sup)
+	m.agent.Append(provider.Message{Role: provider.RoleUser, Content: "the ask at the card"})
+	m.agent.Append(provider.Message{Role: provider.RoleAssistant, Content: "spawning a checker"})
+
+	args := `{"role":"researcher","task":"check it","inherit":1}`
+	m.pendingApproval = &approvalRequest{call: provider.ToolCall{ID: "s1", Name: subagent.SpawnToolName, Arguments: args}}
+	updated, _ := m.executeApprovedTool()
+	m = updated.(Model)
+	m.agent.Append(provider.Message{Role: provider.RoleUser, Content: "a later ask"})
+
+	if _, err := sup.WrapExecutor("", nil)(subagent.SpawnToolName, json.RawMessage(args)); err != nil {
+		t.Fatal(err)
+	}
+	select {
+	case got := <-opened:
+		if !strings.Contains(got, "user: the ask at the card") || strings.Contains(got, "a later ask") {
+			t.Fatalf("the child was not handed the turn as it stood at dispatch:\n%s", got)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("the child never opened")
+	}
+}

@@ -115,6 +115,7 @@ func profileFromDefinition(def config.AgentDefinition) (subagent.Profile, error)
 		Reviews:     def.Reviews,
 		MaxTokens:   def.MaxTokens,
 		MaxRounds:   def.MaxRounds,
+		Inherit:     def.Inherit,
 	}
 	if strings.TrimSpace(def.Mode) != "" {
 		mode, err := agent.ParseMode(def.Mode)
@@ -629,6 +630,9 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 		defs, base = withDelegation(sup, agents, agents.definitions[string(role)], spec, defs, base, gated)
 		defs, base, sysPrompt, keepResult := withSessionTools(
 			session, red, notebookSignature(sup, spec), croot, defs, base, rolePrompt)
+		// A child handed its parent's last turns is told so, in place of the
+		// sentence that says it can see none of the conversation.
+		sysPrompt = prompt.Inherited(sysPrompt, spec.Inherit)
 
 		// Approved non-exec gated calls: file mutations dispatch through their
 		// own path (never the auto-run executor), everything else falls back to
