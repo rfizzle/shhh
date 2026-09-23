@@ -66,6 +66,11 @@ func formatCheck(c CheckResult) string {
 		fmt.Fprintf(&b, "  ✗ %s — %s (exit %d, %s)%s\n", c.Name, c.Command, c.ExitCode, roundDuration(c.Duration), evidence)
 	default:
 		fmt.Fprintf(&b, "  ✓ %s — %s (%s)%s\n", c.Name, c.Command, roundDuration(c.Duration), evidence)
+	}
+	for _, s := range c.Skips {
+		b.WriteString("    " + s + "\n")
+	}
+	if c.OK() {
 		return b.String()
 	}
 	if out := strings.TrimSpace(c.Output); out != "" {
@@ -93,11 +98,18 @@ type Summary struct {
 	// Stale marks a verdict the run itself disowned — the tree moved under
 	// it. A stale pass is not a pass.
 	Stale bool
+	// Skipped is every skip line the result carried, under the check that
+	// reported it.
+	Skipped []Skipped
 }
 
 // OK reports a verdict a caller may treat as green: a pass over the tree it
 // actually ran against.
 func (s Summary) OK() bool { return s.Verdict == VerdictPass && !s.Stale }
+
+// checkLinePattern is the head of formatCheck's row, which names the check
+// the indented lines under it belong to.
+var checkLinePattern = regexp.MustCompile(`^  [✓✗!] (.+?) — `)
 
 var summaryPattern = regexp.MustCompile(
 	`^Quality gate "([^"]*)": ([A-Z]+)(?: — (\d+)/(\d+) checks passed \(([^)]*)\))?`)
@@ -118,5 +130,18 @@ func Summarize(result string) (Summary, bool) {
 	}
 	s.Passed, _ = strconv.Atoi(m[3])
 	s.Total, _ = strconv.Atoi(m[4])
+	check := ""
+	for _, line := range strings.Split(result, "\n") {
+		if c := checkLinePattern.FindStringSubmatch(line); c != nil {
+			check = c[1]
+			continue
+		}
+		if check == "" || !strings.HasPrefix(line, "    ") {
+			continue
+		}
+		if sk, ok := parseSkipLine(check, strings.TrimPrefix(line, "    ")); ok {
+			s.Skipped = append(s.Skipped, sk)
+		}
+	}
 	return s, true
 }

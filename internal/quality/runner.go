@@ -103,6 +103,10 @@ type CheckResult struct {
 	Output     string // bounded excerpt (tail) of combined stdout/stderr
 	EvidenceID string
 	Duration   time.Duration
+	// Skips are the check's skip-reason lines (SkipLine), taken out of
+	// Output and carried whatever the verdict: a check that passed with
+	// tests skipped has to say so.
+	Skips []string
 }
 
 // OK reports whether the check ran and passed.
@@ -416,7 +420,9 @@ func (r *Runner) runCheck(ctx context.Context, suite string, check Check, argv [
 			cr.EvidenceID = id
 		}
 	}
-	cr.Output = Excerpt(captured, MaxInlineBytes)
+	skips, rest := splitSkips(captured)
+	cr.Skips = skips
+	cr.Output = Excerpt(rest, MaxInlineBytes)
 	return cr
 }
 

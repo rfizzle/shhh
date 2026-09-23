@@ -112,10 +112,12 @@ lint: ## Run golangci-lint
 ## Test:
 # The run stays cacheable on purpose: nothing here adds -count=1, and a test
 # must not chdir (scripts/check-docs.py refuses one). A run that cannot be
-# cached re-runs every package against a tree nothing has touched.
+# cached re-runs every package against a tree nothing has touched. The reader
+# it runs through only reads the -json stream, and -json is a cacheable flag;
+# it ends the output on a count per skip reason, which the gate carries.
 test: ## Run the hermetic tier: every package, no listener, clipboard, daemon or network
 	@echo "${MAGENTA}Running tests...${RESET}"
-	@$(HERMETIC_ENV) $(GOTEST) -mod=readonly $(PROJECT_PACKAGES)
+	@$(HERMETIC_ENV) $(GOCMD) run -mod=readonly ./scripts/gotest $(GOTEST) -mod=readonly -json $(PROJECT_PACKAGES)
 
 test-contract: ## Run the loopback contract tier (needs a host that can bind a listener)
 	@echo "${MAGENTA}Running loopback contract tests...${RESET}"

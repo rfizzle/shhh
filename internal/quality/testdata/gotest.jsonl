@@ -1,0 +1,52 @@
+{"ImportPath":"sk/b [sk/b.test]","Action":"build-output","Output":"# sk/b [sk/b.test]\n"}
+{"ImportPath":"sk/b [sk/b.test]","Action":"build-output","Output":"b/b.go:2:12: undefined: y\n"}
+{"ImportPath":"sk/b [sk/b.test]","Action":"build-fail"}
+{"Time":"2026-09-23T13:28:08.457131+07:00","Action":"start","Package":"sk"}
+{"Time":"2026-09-23T13:28:08.457257+07:00","Action":"start","Package":"sk/b"}
+{"Time":"2026-09-23T13:28:08.45731+07:00","Action":"output","Package":"sk/b","Output":"FAIL\tsk/b [build failed]\n","OutputType":"frame"}
+{"Time":"2026-09-23T13:28:08.45732+07:00","Action":"start","Package":"sk/c"}
+{"Time":"2026-09-23T13:28:08.457337+07:00","Action":"fail","Package":"sk/b","Elapsed":0,"FailedBuild":"sk/b [sk/b.test]"}
+{"Time":"2026-09-23T13:28:08.457368+07:00","Action":"start","Package":"sk/d"}
+{"Time":"2026-09-23T13:28:08.457385+07:00","Action":"output","Package":"sk/d","Output":"?   \tsk/d\t[no test files]\n"}
+{"Time":"2026-09-23T13:28:08.457396+07:00","Action":"skip","Package":"sk/d","Elapsed":0}
+{"Time":"2026-09-23T13:28:08.457355+07:00","Action":"run","Package":"sk/c","Test":"TestZ"}
+{"Time":"2026-09-23T13:28:08.457413+07:00","Action":"output","Package":"sk/c","Test":"TestZ","Output":"=== RUN   TestZ\n","OutputType":"frame"}
+{"Time":"2026-09-23T13:28:08.457426+07:00","Action":"output","Package":"sk/c","Test":"TestZ","Output":"    c_test.go:3: git not on PATH\n"}
+{"Time":"2026-09-23T13:28:08.457438+07:00","Action":"output","Package":"sk/c","Test":"TestZ","Output":"--- SKIP: TestZ (0.00s)\n","OutputType":"frame"}
+{"Time":"2026-09-23T13:28:08.457448+07:00","Action":"skip","Package":"sk/c","Test":"TestZ","Elapsed":0}
+{"Time":"2026-09-23T13:28:08.457457+07:00","Action":"output","Package":"sk/c","Output":"PASS\n","OutputType":"frame"}
+{"Time":"2026-09-23T13:28:08.457465+07:00","Action":"output","Package":"sk/c","Output":"ok  \tsk/c\t(cached)\n"}
+{"Time":"2026-09-23T13:28:08.457476+07:00","Action":"pass","Package":"sk/c","Elapsed":0}
+{"Time":"2026-09-23T13:28:08.848281+07:00","Action":"run","Package":"sk","Test":"TestSeatbeltWrite"}
+{"Time":"2026-09-23T13:28:08.848339+07:00","Action":"output","Package":"sk","Test":"TestSeatbeltWrite","Output":"=== RUN   TestSeatbeltWrite\n","OutputType":"frame"}
+{"Time":"2026-09-23T13:28:08.848375+07:00","Action":"output","Package":"sk","Test":"TestSeatbeltWrite","Output":"    a_test.go:6: probing\n"}
+{"Time":"2026-09-23T13:28:08.848388+07:00","Action":"output","Package":"sk","Test":"TestSeatbeltWrite","Output":"    a_test.go:7: no Seatbelt containment here: sandbox_apply: Operation not permitted\n"}
+{"Time":"2026-09-23T13:28:08.848402+07:00","Action":"output","Package":"sk","Test":"TestSeatbeltWrite","Output":"        second line\n"}
+{"Time":"2026-09-23T13:28:08.848429+07:00","Action":"output","Package":"sk","Test":"TestSeatbeltWrite","Output":"--- SKIP: TestSeatbeltWrite (0.00s)\n","OutputType":"frame"}
+{"Time":"2026-09-23T13:28:08.84844+07:00","Action":"skip","Package":"sk","Test":"TestSeatbeltWrite","Elapsed":0}
+{"Time":"2026-09-23T13:28:08.848458+07:00","Action":"run","Package":"sk","Test":"TestSeatbeltRead"}
+{"Time":"2026-09-23T13:28:08.848468+07:00","Action":"output","Package":"sk","Test":"TestSeatbeltRead","Output":"=== RUN   TestSeatbeltRead\n","OutputType":"frame"}
+{"Time":"2026-09-23T13:28:08.848478+07:00","Action":"output","Package":"sk","Test":"TestSeatbeltRead","Output":"    a_test.go:10: no Seatbelt containment here: denied\n"}
+{"Time":"2026-09-23T13:28:08.848488+07:00","Action":"output","Package":"sk","Test":"TestSeatbeltRead","Output":"--- SKIP: TestSeatbeltRead (0.00s)\n","OutputType":"frame"}
+{"Time":"2026-09-23T13:28:08.848496+07:00","Action":"skip","Package":"sk","Test":"TestSeatbeltRead","Elapsed":0}
+{"Time":"2026-09-23T13:28:08.848503+07:00","Action":"run","Package":"sk","Test":"TestFail"}
+{"Time":"2026-09-23T13:28:08.848511+07:00","Action":"output","Package":"sk","Test":"TestFail","Output":"=== RUN   TestFail\n","OutputType":"frame"}
+{"Time":"2026-09-23T13:28:08.848529+07:00","Action":"run","Package":"sk","Test":"TestFail/sub"}
+{"Time":"2026-09-23T13:28:08.848539+07:00","Action":"output","Package":"sk","Test":"TestFail/sub","Output":"=== RUN   TestFail/sub\n","OutputType":"frame"}
+{"Time":"2026-09-23T13:28:08.848566+07:00","Action":"output","Package":"sk","Test":"TestFail/sub","Output":"    a_test.go:12: boom\n","OutputType":"error"}
+{"Time":"2026-09-23T13:28:08.848657+07:00","Action":"output","Package":"sk","Test":"TestFail/sub","Output":"--- FAIL: TestFail/sub (0.00s)\n","OutputType":"frame"}
+{"Time":"2026-09-23T13:28:08.848667+07:00","Action":"fail","Package":"sk","Test":"TestFail/sub","Elapsed":0}
+{"Time":"2026-09-23T13:28:08.848675+07:00","Action":"output","Package":"sk","Test":"TestFail","Output":"--- FAIL: TestFail (0.00s)\n","OutputType":"frame"}
+{"Time":"2026-09-23T13:28:08.848682+07:00","Action":"fail","Package":"sk","Test":"TestFail","Elapsed":0}
+{"Time":"2026-09-23T13:28:08.848688+07:00","Action":"run","Package":"sk","Test":"TestPass"}
+{"Time":"2026-09-23T13:28:08.848696+07:00","Action":"output","Package":"sk","Test":"TestPass","Output":"=== RUN   TestPass\n","OutputType":"frame"}
+{"Time":"2026-09-23T13:28:08.848704+07:00","Action":"output","Package":"sk","Test":"TestPass","Output":"    a_test.go:13: quiet\n"}
+{"Time":"2026-09-23T13:28:08.848712+07:00","Action":"output","Package":"sk","Test":"TestPass","Output":"--- PASS: TestPass (0.00s)\n","OutputType":"frame"}
+{"Time":"2026-09-23T13:28:08.848718+07:00","Action":"pass","Package":"sk","Test":"TestPass","Elapsed":0}
+{"Time":"2026-09-23T13:28:08.848724+07:00","Action":"run","Package":"sk","Test":"TestBare"}
+{"Time":"2026-09-23T13:28:08.848795+07:00","Action":"output","Package":"sk","Test":"TestBare","Output":"=== RUN   TestBare\n","OutputType":"frame"}
+{"Time":"2026-09-23T13:28:08.848804+07:00","Action":"output","Package":"sk","Test":"TestBare","Output":"--- SKIP: TestBare (0.00s)\n","OutputType":"frame"}
+{"Time":"2026-09-23T13:28:08.848811+07:00","Action":"skip","Package":"sk","Test":"TestBare","Elapsed":0}
+{"Time":"2026-09-23T13:28:08.848821+07:00","Action":"output","Package":"sk","Output":"FAIL\n","OutputType":"frame"}
+{"Time":"2026-09-23T13:28:08.84887+07:00","Action":"output","Package":"sk","Output":"FAIL\tsk\t0.391s\n","OutputType":"frame"}
+{"Time":"2026-09-23T13:28:08.848881+07:00","Action":"fail","Package":"sk","Elapsed":0.392}

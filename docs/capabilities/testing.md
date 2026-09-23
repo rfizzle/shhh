@@ -57,6 +57,24 @@ Continuous integration selects those targets in separate jobs, so preparing a
 listener or an operating-system mechanism cannot change the result of the
 ordinary contained gate.
 
+## A skipped test is counted
+
+A test that skips did not run, and a green suite with skips in it is a suite
+that proved less than it appears to. The tests that put containment to the
+operating system cannot nest inside a contained session, so the gate a session
+runs is exactly where they skip — and a pass that says nothing about them
+reads as though the boundary had been checked.
+
+The test run therefore ends on one line per distinct skip reason with its
+count, and the gate carries those lines under the test check's row whatever
+its verdict: `skipped 9: no Seatbelt containment here`. A reason is the skip
+message up to its first colon, so the error text after it does not split one
+reason into many. Reasons naming a missing containment mechanism come first,
+because those are the tests only the integration target can stand in for;
+ordinary ones, such as a host without git, follow. Counting reads the run's
+output and adds nothing to its inputs, so the suite stays as cacheable as it
+was, and a failing package still prints its failures in full.
+
 ## Related
 
 - [`approvals-and-safety.md`](approvals-and-safety.md#quality-gates-run-what-you-wrote)
