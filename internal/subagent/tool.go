@@ -73,7 +73,7 @@ func Definitions(profiles Profiles) []provider.Tool {
 	return []provider.Tool{
 		{
 			Name:        SpawnToolName,
-			Description: "Delegate a scoped task to a background sub-agent. Roles: " + profiles.describe() + ". The user must approve each spawn. Returns immediately — the agent works in the background; collect its final report with agent_report in a LATER step (never in the same round as the spawn). Give each agent a complete, self-contained task prompt: it cannot see this conversation.",
+			Description: "Delegate a scoped task to a background sub-agent. Roles: " + profiles.describe() + ". The user must approve each spawn. Returns immediately — the agent works in the background; collect its final report with agent_report in a LATER step (never in the same round as the spawn). Give each agent a complete, self-contained task prompt: it cannot see this conversation. To ask more of an agent that has already reported, send it a follow-up with agent_steer instead: it already knows the ground, so a follow-up is cheaper than a second spawn that has to read it all again.",
 			Parameters: json.RawMessage(`{
 				"type": "object",
 				"properties": {
@@ -103,7 +103,7 @@ func Definitions(profiles Profiles) []provider.Tool {
 		},
 		{
 			Name:        SteerToolName,
-			Description: "Redirect a running sub-agent: your message reaches it as an instruction from you, the way one typed into its lane does. Two things on the roster call for it: an agent listed as steered more than once, which is not answering the check that steers it; and an agent whose line has not moved between two reads several rounds apart, which is the one to watch for when the roster's header says readings are off and nothing but you is checking. You wrote its task, so say what it should do instead. The agent's own reading is judged against the task plus your message, so it will not be told it has drifted for doing what you just asked. Refused once the agent has finished; ending one is the user's, not yours.",
+			Description: "Redirect a running sub-agent: your message reaches it as an instruction from you, the way one typed into its lane does. Two things on the roster call for it: an agent listed as steered more than once, which is not answering the check that steers it; and an agent whose line has not moved between two reads several rounds apart, which is the one to watch for when the roster's header says readings are off and nothing but you is checking. You wrote its task, so say what it should do instead. The agent's own reading is judged against the task plus your message, so it will not be told it has drifted for doing what you just asked. It reaches an agent that has finished too: there your message is a follow-up — one more turn on the agent's own conversation, with everything it already read — and its answer replaces the report; collect it with agent_report. Refused for an agent that failed (agent_retry runs that one again) and for one whose remaining budget is below the working reserve; ending an agent is the user's, not yours.",
 			Parameters: json.RawMessage(`{
 				"type": "object",
 				"properties": {

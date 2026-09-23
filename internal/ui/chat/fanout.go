@@ -177,6 +177,12 @@ func childNote(st subagent.Status) string {
 	switch st.State {
 	case subagent.StateBlocked:
 		return st.Detail
+	case subagent.StateRunning, subagent.StateQueued:
+		// A child answering a follow-up is working on something other than
+		// the task its row names, and the row says which question.
+		if st.FollowUp != "" {
+			return "follow-up · " + st.FollowUp
+		}
 	case subagent.StateDone:
 		return firstLine(st.Summary)
 	case subagent.StateFailed:
@@ -251,6 +257,12 @@ func (m Model) fanoutBlockFor(e entry) components.FanoutBlock {
 		// already has (attachments.go): the reader opened the block, not one
 		// of the lanes in it.
 		if report := m.childReport(st); report != "" {
+			// What the child answered before each follow-up, folded above
+			// the answer that replaced it and headed with its turn.
+			for _, r := range m.subagents.EarlierReports(st.Name) {
+				lane.Earlier = append(lane.Earlier, components.LaneReport{
+					Turn: r.Turn, Lines: strings.Split(strings.TrimSpace(r.Text), "\n")})
+			}
 			lane.Report = strings.Split(report, "\n")
 			lane.ReportOpen = e.expanded
 			lane.MaxReport = maxExpandedResultLines

@@ -432,6 +432,8 @@ func (m Model) buildAgentRows() ([]components.AgentRow, []string) {
 			Answerable: st.State == subagent.StateBlocked && m.pendingAskFor(st.Name) != nil,
 			Retryable:  st.State == subagent.StateFailed,
 			PatchKept:  st.PatchKept,
+			// A child that has answered is asked again from here too.
+			TakesFollowUp: st.TakesFollowUp,
 		}
 		switch {
 		case st.Name == m.attachedTo:

@@ -32,11 +32,15 @@ wait:180
 +The counter is read at the top of the loop, and nowhere else.
 
 # writer-2 is the child whose request is read from the manager: answered in
-# place, declined there, and finished on the round after.
+# place, declined there, and finished on the round after. Its last reply is
+# the follow-up it is asked from its row once it has answered, held open so
+# the row is still running on the question when it is captured.
 [writer-2]
 tool:read_file:{"path":"loop.go"}
 tool:execute_command:{"command":"echo counted"}
 The counter is read at the top of the loop, and nowhere else.
+wait:180
++The limit is read where the loop is set up.
 
 # writer-3's request is never answered at all: it is the child waiting on
 # you, from the moment it asks to the end of the scene.

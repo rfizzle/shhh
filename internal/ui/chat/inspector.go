@@ -600,6 +600,11 @@ func (m Model) inspectorAgents() []components.InspectorAgent {
 			PatchKept: st.PatchKept,
 			Depth:     depth[st.Name],
 		}
+		if st.FollowUp != "" {
+			// The question it was asked after it answered, which is what it
+			// is working on rather than the task its name was spawned for.
+			a.Detail = childNote(st)
+		}
 		if p.State == components.FanoutHeld {
 			// A parked child has stopped without having ended, and the row
 			// says so in the field the words a session ends on go in: the map,

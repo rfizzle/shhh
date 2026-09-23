@@ -1179,6 +1179,10 @@ func TestGolden_ReviewMode(t *testing.T) {
 // The last panel is the redirect being typed: the field opens under the row
 // it will reach, named for it, and the list's own letters leave the key row
 // while the keyboard is in the field.
+//
+// Three panels are a finished child taking a follow-up: the done row offering
+// [s] as a follow-up, the question typed under it, and the same row moved
+// back to running with the question's first words under it.
 func TestGolden_AgentList(t *testing.T) {
 	captureGolden(t, "agent-list", "agent list", goldenWidths, func(width int) []golden.Panel {
 		progress := func(p AgentProgress) *AgentProgress { return &p }
@@ -1233,6 +1237,19 @@ func TestGolden_AgentList(t *testing.T) {
 		for _, r := range "read the exit condition too" {
 			steering.Update(key(string(r)))
 		}
+		// The finished reader can still be asked: [s] is a follow-up on its
+		// row, and once sent the row is running again on the question.
+		answered := append([]AgentRow{}, rows...)
+		answered[3].TakesFollowUp = true
+		asking := &AgentList{Rows: answered, Focus: 3}
+		asking.Update(key("s"))
+		for _, r := range "which component owns the rail?" {
+			asking.Update(key(string(r)))
+		}
+		following := append([]AgentRow{}, rows...)
+		following[3] = AgentRow{State: AgentRunning, Name: "reader-3", Task: "survey internal/ui",
+			Progress: progress(AgentProgress{State: FanoutRunning, Tools: 12, Spend: "$0.04", Frame: 2}),
+			Note:     "follow-up · which component owns the rail?"}
 		return []golden.Panel{
 			{Label: "focus · the orchestrator", View: (&AgentList{Rows: rows}).View(width)},
 			{Label: "focus · the blocked child, [a] answers it here", View: (&AgentList{Rows: rows, Focus: 1}).View(width)},
@@ -1247,6 +1264,12 @@ func TestGolden_AgentList(t *testing.T) {
 				View: (&AgentList{Rows: nested, Focus: 2}).View(width)},
 			{Label: "the redirect · typed under the row it will reach, and nothing else is live",
 				View: steering.View(width)},
+			{Label: "focus · a finished child, [s] asks it a follow-up",
+				View: (&AgentList{Rows: answered, Focus: 3}).View(width)},
+			{Label: "the follow-up · typed under the finished row",
+				View: asking.View(width)},
+			{Label: "the follow-up sent · the row is running again, on the question",
+				View: (&AgentList{Rows: following, Focus: 3}).View(width)},
 		}
 	})
 }
@@ -1694,6 +1717,20 @@ func TestGolden_InspectorRail(t *testing.T) {
 			AgentsHint: railAgentsHint,
 			Frame:      2,
 		}
+		// A reader that had answered, handed a follow-up: its row is running
+		// again, and the line under it is the question rather than the task.
+		following := InspectorRail{
+			Agents: []InspectorAgent{
+				{Name: "orchestrator", Detail: "round 4 · streaming…", Spend: "$0.09",
+					Self: true, Focused: true, State: FanoutRunning},
+				{Name: "reader-1", Detail: "follow-up · which component owns the rail?",
+					Spend: "$0.04", Tools: 12, Depth: 1, State: FanoutRunning},
+				{Name: "writer-2", Detail: "wrote the loop's two files", Spend: "$0.06",
+					Outcome: "done", Depth: 1, State: FanoutDone},
+			},
+			AgentsHint: railAgentsHint,
+			Frame:      2,
+		}
 		// The block on its own, at the three shapes it has: one thing broken
 		// and nothing behind it; the cap, with an older live alert and eight
 		// answered ones behind the marker; and a session whose failures have
@@ -1752,6 +1789,8 @@ func TestGolden_InspectorRail(t *testing.T) {
 				View: reach.View(width, 0)},
 			{Label: "the map while a hold lands · two children parked, one not yet",
 				View: parked.View(width, 0)},
+			{Label: "a finished child taking a follow-up · running again, on the question",
+				View: following.View(width, 0)},
 			{Label: "a failed sibling beside a nested pair · the subtree moves whole",
 				View: subtree.View(width, 0)},
 			{Label: "a killed writer · its patch is kept, and [p] reviews it",

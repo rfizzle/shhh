@@ -118,6 +118,12 @@ type FanoutLane struct {
 	Report []string
 	// ReportOpen is whether the reader has opened that fold.
 	ReportOpen bool
+	// Earlier is what the child answered before each follow-up it was
+	// handed, oldest first. Each is folded above the report that replaced
+	// it and headed with the turn it closed, so a lane that was asked twice
+	// reads as two answers rather than as one that changed its mind
+	// (docs/capabilities/subagents.md#three-can-steer-a-child-and-none-of-them-can-end-it).
+	Earlier []LaneReport
 	// MaxReport bounds the opened report; zero draws the whole of it. The
 	// bound counts what it held back, the way every other bounded body does.
 	MaxReport int
@@ -173,6 +179,13 @@ type FanoutLane struct {
 	// Frame is the spinner frame for a lane with no declared step count; the
 	// host ticks it.
 	Frame int
+}
+
+// LaneReport is one earlier report on a lane: the turn it closed and its
+// lines.
+type LaneReport struct {
+	Turn  int
+	Lines []string
 }
 
 // FanoutBlock is the whole batch — the header stating how many children are
@@ -500,8 +513,16 @@ func (l FanoutLane) reportFold(width int) []string {
 		mark, key = "▾", keys.Bracket(keys.Reading.Expand)+" fold it back up"
 	}
 	head := mark + " report" + detailSep + plural(len(l.Report), "line") + detailSep
-	lines := []string{strings.Repeat(" ", detailIndent) +
-		sty.Dimmer.Render(head) + sty.Hint.Render(key)}
+	var lines []string
+	for _, r := range l.Earlier {
+		// Folded, and only folded: the answer the reader acts on is the one
+		// under them, and an earlier one is a heading to remember it by.
+		lines = append(lines, strings.Repeat(" ", detailIndent)+sty.Dimmer.Render(Clip(
+			fmt.Sprintf("▸ turn %d report%s%s", r.Turn, detailSep, plural(len(r.Lines), "line")),
+			max(width-detailIndent, 1))))
+	}
+	lines = append(lines, strings.Repeat(" ", detailIndent)+
+		sty.Dimmer.Render(head)+sty.Hint.Render(key))
 	if !l.ReportOpen {
 		return lines
 	}

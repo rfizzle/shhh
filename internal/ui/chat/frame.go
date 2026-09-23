@@ -377,6 +377,14 @@ func (m Model) frameHints(room int) string {
 			segAs(keys.Agent.Detach, "detach"),
 			segAs(keys.Draft.Agents, "agents").givesUp(1),
 		}
+		// A child that has answered is still listening, and what is typed
+		// here is its next question rather than text with nowhere to go.
+		if m.subagents == nil {
+			break
+		}
+		if st, ok := m.subagents.Get(m.attachedTo); ok && st.TakesFollowUp {
+			hints = append([]hintSeg{segAs(keys.Draft.Send, "asks a follow-up")}, hints...)
+		}
 		// Attached, the screen is one child's and a routed card is narrowed
 		// to that child (activeChildAsk), so another child's request is
 		// nowhere on it — the reader is looking at a transcript while an

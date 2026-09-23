@@ -641,3 +641,23 @@ func TestFanoutLaneCarriesTheReviewVerdict(t *testing.T) {
 		t.Fatalf("a report with no verdict draws done alone: %q", view)
 	}
 }
+
+// A child asked a follow-up answered twice, and its lane says so: the answer
+// it gave first is folded above the one that replaced it, headed with the
+// turn it closed and counted, and the reader opens the current one.
+func TestFanoutLaneFoldsTheReportAFollowUpReplaced(t *testing.T) {
+	b := fanoutFixture()
+	b.Lanes = []FanoutLane{{State: FanoutDone, Name: "reader-1", Task: "survey internal/ui",
+		Tools: 9, Elapsed: "41s", Summary: "the rail is one component",
+		Earlier: []LaneReport{{Turn: 1, Lines: []string{"the frame draws the rail", "and the pane"}}},
+		Report:  []string{"the rail is one component", "inspector.go draws it"}, ReportOpen: true}}
+	text := strings.Join(plainLines(b.View(100)), "\n")
+	earlier := strings.Index(text, "▸ turn 1 report · 2 lines")
+	current := strings.Index(text, "▾ report · 2 lines")
+	if earlier < 0 || current < 0 || earlier > current {
+		t.Fatalf("the replaced report should be folded above the current one:\n%s", text)
+	}
+	if strings.Contains(text, "the frame draws the rail") {
+		t.Fatalf("the replaced report should stay folded:\n%s", text)
+	}
+}

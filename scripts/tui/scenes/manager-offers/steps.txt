@@ -1,7 +1,8 @@
 # program test: TestProgram_ASpawnCardStartsTheChildrenAsLanes,
 #   TestProgram_AChildsRequestIsAnsweredFromItsCard,
 #   TestProgram_TheManagerAnswersAChildInPlace,
-#   TestProgram_TheManagerSteersAndKillsAChild
+#   TestProgram_TheManagerSteersAndKillsAChild,
+#   TestProgram_TheManagerAsksAFinishedChildAFollowUp
 #
 # The agent manager at 110 columns, over three children in three states — one
 # working, one finished, one waiting on an answer
@@ -123,3 +124,25 @@ sleep 2
 keys Escape
 sleep 3
 snap 13-steered "steered from lane"
+# writer-2 has answered, and a finished child can still be asked: over its row
+# the steer key is a follow-up, and what is typed is the next question on the
+# conversation it already holds
+# (docs/capabilities/subagents.md#three-can-steer-a-child-and-none-of-them-can-end-it).
+# The manager opens on the orchestrator; writer-2 is the fourth row, under the
+# child waiting on you and the one still working.
+keys M-a
+sleep 1
+keys j
+keys j
+keys j
+snap 14-done-row "[s] follow up"
+keys s
+sleep 1
+keys "and where is the limit read"
+sleep 1
+snap 15-follow-up-field "follow up writer-2"
+# Sent, the row's state word moves from done back to running, and the line
+# under it is the question rather than the report it answered before.
+keys Enter
+sleep 2
+snap 16-following "follow-up · and where is the limit read"

@@ -145,12 +145,33 @@ func (m Model) handleSubagentEvent(ev subagent.Event) (tea.Model, tea.Cmd) {
 		m.recordChildPatch(ev.Patch)
 		m.todoLanePatched(ev.Patch)
 	}
+	m.reopenFrozenLane(ev.Status)
 	m.syncViewport()
 	m.viewport.SetLines(m.renderHistoryLines())
 	if m.atBottom {
 		m.viewport.GotoBottom()
 	}
 	return m, listenSubagents(m.subagents.Events())
+}
+
+// reopenFrozenLane lets go of the render cache when a child whose lane was
+// frozen into it has been handed a follow-up. A lane is frozen once every
+// child in its block has settled, because nothing lands in the block after
+// that — except this: a follow-up sets a finished child moving again with no
+// row landing anywhere, and a block kept from the cache would go on drawing
+// it done.
+func (m *Model) reopenFrozenLane(st subagent.Status) {
+	if st.FollowUp == "" || st.State == subagent.StateDone || st.State == subagent.StateFailed {
+		return
+	}
+	for i, e := range m.transcript {
+		if e.kind == entryFanout && e.fanout != nil && e.fanout.batch == st.Batch {
+			if i < m.cached.count {
+				m.invalidateRenderCache()
+			}
+			return
+		}
+	}
 }
 
 // childHasLane reports whether the transcript already draws this child as a

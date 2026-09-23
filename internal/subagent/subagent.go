@@ -279,6 +279,21 @@ type Status struct {
 	// its worktree and its conversation, and one release puts it back to
 	// work with the round it was about to ask for.
 	Held bool
+	// FollowUp is the first words of the follow-up a finished child was
+	// handed and is working on now, and empty for every other child.
+	// TakesFollowUp is whether a finished child can still be spoken to —
+	// false once the session is ending, or for a child whose ancestor was
+	// killed (docs/capabilities/subagents.md#three-can-steer-a-child-and-none-of-them-can-end-it).
+	FollowUp      string
+	TakesFollowUp bool
+}
+
+// EarlierReport is a report a child gave before a follow-up asked it
+// something else: its words, and the turn it closed on the child's
+// conversation, which is what a lane heads it with.
+type EarlierReport struct {
+	Turn int
+	Text string
 }
 
 // EntryKind tags one child transcript entry: the attached view
@@ -1037,6 +1052,17 @@ type child struct {
 	progress    []string
 	handoff     Handoff
 	handoffID   string
+	// earlier is every report this attempt gave before a follow-up asked it
+	// something else, oldest first, each with the turn it closed. followUp is
+	// the first words of the follow-up it is working on now, and empty
+	// otherwise. listening marks a finished child whose goroutine is still
+	// there to take one, which is what Steer asks of a done child.
+	earlier   []EarlierReport
+	followUp  string
+	listening bool
+	// answered marks an attempt that has finished once, so the record is
+	// told the attempt answered once however many follow-ups it answers.
+	answered bool
 	// kept is a writer's change that never reached the checkout: declined,
 	// cancelled, refused by the apply, or stopped short by a budget, a kill or
 	// a cancel. Nil for every child that has none.
@@ -1106,6 +1132,7 @@ func (c *child) set(state State, detail string) {
 		if c.ended.IsZero() {
 			c.ended = time.Now()
 		}
+		c.followUp = ""
 	}
 	c.mu.Unlock()
 }
@@ -1185,6 +1212,8 @@ func (c *child) status() Status {
 		SteerFrom:         c.steerFrom,
 		Seeded:            c.seeded,
 		Held:              c.heldOn != nil,
+		FollowUp:          c.followUp,
+		TakesFollowUp:     c.state == StateDone && c.listening,
 	}
 }
 
@@ -1968,9 +1997,10 @@ func (s *Supervisor) Note(name string, e TranscriptEntry) error {
 }
 
 // Steer queues a message for a child (steering semantics): injected
-// before its next stream request when running, or starting a fresh turn when
-// the child is idle after a cancelled turn. Finished children cannot be
-// steered.
+// before its next stream request when running, starting a fresh turn when
+// the child is idle after a cancelled turn, and starting a follow-up turn on
+// its own conversation when the child has finished. A failed child cannot be
+// steered: running it again is Retry's, on a fresh conversation.
 //
 // from is who is speaking, and every route in goes through here: the person
 // typing at the child's lane and the orchestrator calling the steer tool are
@@ -1989,12 +2019,25 @@ func (s *Supervisor) Steer(name, text string, from SteerSource) error {
 	if s.isClosed() {
 		return ErrClosed
 	}
+	// A writer asked something new writes again, so its claim has to be one
+	// no live writer has taken in the meantime. It is asked before the child
+	// is locked, because the check reads every child's status.
+	if st := c.status(); st.State == StateDone && c.profile.Writes {
+		if holder, claim, conflict := s.claimConflict(st.Paths); conflict {
+			return fmt.Errorf("agent %s cannot take a follow-up: %s now holds %s, which overlaps its paths", name, holder, claim)
+		}
+	}
 	c.mu.Lock()
 	switch c.state {
-	case StateDone, StateFailed:
-		state := c.state
+	case StateFailed:
 		c.mu.Unlock()
-		return fmt.Errorf("agent %s has finished (%s); nothing to steer", name, state)
+		return fmt.Errorf("agent %s has finished (failed); nothing to steer — agent_retry runs it again on its task", name)
+	case StateDone:
+		if err := s.followUpRefusal(c); err != nil {
+			c.mu.Unlock()
+			return err
+		}
+		c.claimFollowUp(text)
 	}
 	c.steering = append(c.steering, queuedSteer{text: text, from: from})
 	// The source is on the status the moment the message is queued, not when
@@ -2147,7 +2190,16 @@ func (s *Supervisor) Kill(name string) error {
 		if live {
 			d.cancelledBy = name
 		}
+		listening := d.state == StateDone && d.listening
 		d.mu.Unlock()
+		if listening {
+			// A descendant that has answered stays answered, but it can no
+			// longer be asked anything: what it would be asked about is the
+			// work the kill is throwing away, and what it read may be a copy
+			// that is about to be removed.
+			d.stop()
+			continue
+		}
 		if !live {
 			continue
 		}
@@ -2491,6 +2543,10 @@ func (s *Supervisor) restart(c *child, detail string) error {
 	// replaces stops offering its patch. The patch is still in the evidence
 	// store, and the handoff the new attempt opens on names it.
 	c.handoff, c.handoffID, c.kept = Handoff{}, "", nil
+	// And what earlier turns of the replaced attempt answered is that
+	// attempt's: its conversation is gone, so there is nothing left to follow
+	// up on.
+	c.earlier, c.followUp, c.answered = nil, "", false
 	c.mu.Unlock()
 
 	s.wg.Add(1)
@@ -2580,8 +2636,9 @@ func (s *Supervisor) WorktreeDiff(name string) (string, error) {
 	worktree, _ := c.workspace()
 	if worktree == "" {
 		if c.profile.Writes {
-			// A writer's copy is made when it starts and torn down when it
-			// stops, so there is one to diff only while it runs.
+			// A writer's copy is made when it starts and torn down once it
+			// can no longer be spoken to, so there is one to diff only
+			// while it runs or waits for a follow-up.
 			return "", fmt.Errorf("agent %s is %s and has no copy of the workspace to diff", name, c.status().State)
 		}
 		return "", fmt.Errorf("agent %s has no isolated workspace (%s role) — nothing to diff", name, c.role)
@@ -2766,6 +2823,18 @@ func (s *Supervisor) FinalReport(name string) (report string, state State, ok bo
 	report = c.report
 	c.mu.Unlock()
 	return report, st.State, true
+}
+
+// EarlierReports is what a child answered before each follow-up it was
+// handed, oldest first — the reports its current one replaced.
+func (s *Supervisor) EarlierReports(name string) []EarlierReport {
+	c, err := s.lookup(name)
+	if err != nil {
+		return nil
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return slices.Clone(c.earlier)
 }
 
 // Report is a child's report text now, without waiting for it to finish.
@@ -3221,16 +3290,44 @@ func (s *Supervisor) run(c *child) {
 		}
 		c.set(state, detail)
 		ended = c.status()
+		// A follow-up that answers again is the same ending said twice, so
+		// only the first answer is filed; a follow-up that fails is an ending
+		// of its own and is.
+		c.mu.Lock()
+		again := state == StateDone && c.answered
+		if state == StateDone {
+			c.answered = true
+		}
+		c.mu.Unlock()
 		// The attempt says how it ended on its own record, once, here — the
 		// one place every route out of the loop passes through. It goes to
 		// the child's row and not the parent's because that is where the
 		// attempt's model, its budget and what it spent already are, and a
 		// budget is only answerable beside the spend it bounded
 		// (docs/capabilities/sessions-and-memory.md#a-child-ends-for-a-reason).
-		c.signalAt(c.endRound(), observe.SignalSubagent, reason)
+		if !again {
+			c.signalAt(c.endRound(), observe.SignalSubagent, reason)
+		}
 	}
-	defer func() { s.emit(Event{Kind: EventDone, Status: ended}) }()
-	defer close(c.done)
+	// done is the channel a caller waiting on this child is waiting on. A
+	// finished child that is spoken to again is handed a new one for the
+	// follow-up (claimFollowUp), so a wait started mid-follow-up waits for
+	// the follow-up's answer; announced marks the one already closed, which
+	// a child parked after answering has done before it waits.
+	c.mu.Lock()
+	done := c.done
+	c.mu.Unlock()
+	announced := false
+	announce := func() {
+		close(done)
+		s.emit(Event{Kind: EventDone, Status: ended})
+		announced = true
+	}
+	defer func() {
+		if !announced {
+			announce()
+		}
+	}()
 	// The attempt's record and its workspace are captured rather than read
 	// in the defers: a retry gives the child new ones, and this goroutine
 	// closes and removes its own. Both are set again below, because a
@@ -3240,8 +3337,13 @@ func (s *Supervisor) run(c *child) {
 	ctx, cancel, maxRounds, attempt, endRec := c.ctx, c.cancel, c.maxRounds, c.attempt, c.rec.End
 	c.mu.Unlock()
 	var worktree, repoTop string
+	// recorded marks a row already closed on how the attempt last answered.
+	// A child that answered closes its row there, as one that could not be
+	// spoken to again did; a follow-up turn after it writes to the same row,
+	// and whatever it ended on is written over the close on the way out.
+	recorded := false
 	defer func() {
-		if endRec != nil {
+		if endRec != nil && !recorded {
 			endRec(c.end())
 		}
 		if worktree != "" {
@@ -3259,9 +3361,15 @@ func (s *Supervisor) run(c *child) {
 	// child would otherwise be holding the slot this child is waiting for.
 	// See docs/capabilities/subagents.md#a-wait-only-ever-points-down-the-tree.
 	sem := s.slots(c.depth)
+	holding := false
+	defer func() {
+		if holding {
+			<-sem
+		}
+	}()
 	select {
 	case sem <- struct{}{}:
-		defer func() { <-sem }()
+		holding = true
 	case <-ctx.Done():
 		// Nothing of this attempt ever ran, so there is nothing for it to
 		// have ended of: whatever cancelled a queued child cancelled it.
@@ -3607,18 +3715,100 @@ func (s *Supervisor) run(c *child) {
 			}
 
 			if c.profile.Writes {
-				s.reviewPatch(c)
+				landed := s.reviewPatch(c)
 				c.mu.Lock()
 				note := c.patchNote
 				c.mu.Unlock()
 				if note != "" {
 					c.appendEntry(TranscriptEntry{Kind: EntrySystem, Text: note})
 				}
+				if landed {
+					// What landed is the parent's now, so it becomes the copy's
+					// base: a follow-up's patch is then what the follow-up
+					// wrote, and not this turn's change handed over twice.
+					if err := commitBase(worktree, landedBaseMessage); err != nil {
+						c.appendEntry(TranscriptEntry{Kind: EntrySystem,
+							Text: "The copy's base could not be moved past the landed patch: " + firstLine(err.Error())})
+					}
+				}
 			}
 
 			endTurn(observe.TurnDone)
+			c.mu.Lock()
+			c.listening = true
+			c.mu.Unlock()
 			finish(StateDone, observe.ChildDone, "done · "+plural(tools, "tool"))
-			return
+
+			// A child that has answered can still be spoken to. It gives up
+			// the slot it ran in — a finished child is not one running at
+			// once, and holding it would stall every fan-out after this one
+			// — and says it has answered, which is what a wait on it is
+			// waiting for. Everything else it keeps: its conversation, its
+			// claimed paths and, for a writer, its copy of the workspace, so a
+			// follow-up is one more turn on the ground it already read. It
+			// lets go of those when the session ends or it is killed, which
+			// is the same place a child that could not be spoken to again
+			// let go of them
+			// (docs/capabilities/subagents.md#three-can-steer-a-child-and-none-of-them-can-end-it).
+			<-sem
+			holding = false
+			if endRec != nil {
+				endRec(c.end())
+			}
+			recorded = true
+			announce()
+			next, ok := s.awaitFollowUp(c)
+			c.mu.Lock()
+			if ok && c.state == StateDone {
+				// A message sent while the child was still running, and not
+				// read before it answered: it is a follow-up all the same.
+				c.claimFollowUp(next)
+			}
+			claimed := c.state != StateDone
+			if claimed {
+				done = c.done
+				announced, recorded = false, false
+			}
+			c.mu.Unlock()
+			if !ok {
+				if claimed {
+					// The session ended, or the child was killed, between the
+					// follow-up being claimed and its turn starting.
+					finish(StateFailed, observe.ChildCancelled, "cancelled")
+				}
+				return
+			}
+			select {
+			case sem <- struct{}{}:
+			default:
+				c.set(StateQueued, "queued · follow-up waiting for a slot")
+				s.emitUpdate(c)
+				select {
+				case sem <- struct{}{}:
+				case <-ctx.Done():
+					finish(StateFailed, observe.ChildCancelled, "cancelled")
+					return
+				}
+			}
+			holding = true
+			c.mu.Lock()
+			if c.profile.Reviews && c.reporting {
+				// A review that has reported is asked something new, so its
+				// inspection allowance is back rather than the few rounds its
+				// report was given.
+				c.reporting = false
+				c.agent.SetMaxRounds(c.maxRounds)
+			}
+			detail := followUpDetail(c.followUp)
+			c.mu.Unlock()
+			c.set(StateRunning, detail)
+			s.emitUpdate(c)
+			// What the follow-up asks is what its readings are judged
+			// against, on top of the task: a child answering the question it
+			// was just asked has not drifted from the one it was spawned for.
+			h.Summary.Extend(next)
+			turn = next
+			continue
 		}
 
 		if errors.Is(err, agent.ErrInterrupted) && c.ctx.Err() == nil {
@@ -3731,6 +3921,95 @@ func (s *Supervisor) awaitSteering(c *child) (string, bool) {
 			return "", false
 		}
 	}
+}
+
+// awaitFollowUp is awaitSteering for a child that has answered, and the end
+// of the time it can be spoken to: the mark Steer asks before it hands a
+// finished child a new turn is set before the child says it is done — a
+// caller that sees it done and steers at once must not find it deaf — and
+// cleared here, once the wait is over either way.
+func (s *Supervisor) awaitFollowUp(c *child) (string, bool) {
+	next, ok := s.awaitSteering(c)
+	c.mu.Lock()
+	c.listening = false
+	c.mu.Unlock()
+	return next, ok
+}
+
+// followUpRefusal is why a finished child cannot take a follow-up, or nil
+// where it can. The caller holds c.mu.
+//
+// The admission floor is not asked again: the child's opening is already
+// paid for and in its conversation. What is asked is the part of admission
+// that still means something — whether what is left of the budget covers the
+// working reserve a turn is admitted with — because a follow-up started on
+// less stops for its budget part-way through and hands back a handoff where
+// an answer was wanted.
+func (s *Supervisor) followUpRefusal(c *child) error {
+	if s.ctx.Err() != nil {
+		return ErrClosed
+	}
+	if !c.listening || c.ctx.Err() != nil {
+		return fmt.Errorf("agent %s has finished (done) and can no longer be spoken to; nothing to steer", c.name)
+	}
+	if c.maxTokens > 0 {
+		if left := c.maxTokens - c.fresh; left < MinChildMaxTokens {
+			return fmt.Errorf("agent %s cannot take a follow-up: ~%s of its ~%s new-token budget is left, under the %d-token working reserve a turn is admitted with; spawn a new agent for it", c.name, formatTokens(max(left, 0)), formatTokens(c.maxTokens), MinChildMaxTokens)
+		}
+	}
+	return nil
+}
+
+// claimFollowUp turns a finished child into one working on a follow-up. The
+// caller holds c.mu and has seen the child done.
+//
+// It is claimed where the message is sent rather than where the child's
+// goroutine wakes to it, so the state, the report a wait returns and the
+// channel a wait waits on all move in the one step: a caller that steers and
+// then asks for the report in the same breath waits for the follow-up's
+// answer rather than being handed the answer it was following up.
+//
+// The report the child had given is kept, headed with the turn it closed,
+// and cleared from the field the next report is written into: a follow-up
+// that fails must not be read as having answered with its predecessor's
+// words.
+func (c *child) claimFollowUp(text string) {
+	if c.report != "" {
+		c.earlier = append(c.earlier, EarlierReport{Turn: c.turns, Text: c.report})
+	}
+	c.report, c.patchNote = "", ""
+	c.followUp = followUpWords(text)
+	c.done = make(chan struct{})
+	c.state, c.detail = StateRunning, followUpDetail(c.followUp)
+	c.ended = time.Time{}
+}
+
+// followUpWordsMax bounds how much of a follow-up its lane quotes: the words
+// that say which question this is, not the question.
+const followUpWordsMax = 48
+
+// followUpWords is the first line of a follow-up, bounded for a row.
+func followUpWords(text string) string {
+	line := firstLine(strings.TrimSpace(text))
+	if r := []rune(line); len(r) > followUpWordsMax {
+		line = strings.TrimSpace(string(r[:followUpWordsMax-1])) + "…"
+	}
+	return line
+}
+
+// followUpDetail is the lane's detail while a follow-up runs, before its
+// first call replaces it with a count.
+func followUpDetail(words string) string {
+	return "running · follow-up · " + words
+}
+
+// turnDone is the channel a wait on this child waits on: closed when the
+// turn it is working on answers. A follow-up replaces it, which is why it is
+// read under the lock rather than off the field.
+func (c *child) turnDone() <-chan struct{} {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.done
 }
 
 // finalCheckInTimeout bounds the handoff completion. It is short on purpose:
@@ -4191,19 +4470,19 @@ func (s *Supervisor) await(c *child, ask *Ask) (approved, ok bool) {
 
 // reviewPatch computes the writer's worktree patch and routes it through the
 // approval flow before anything touches the real checkout.
-func (s *Supervisor) reviewPatch(c *child) {
+func (s *Supervisor) reviewPatch(c *child) (landed bool) {
 	patch, err := worktreePatch(c.worktree)
 	if err != nil {
 		c.mu.Lock()
 		c.patchNote = "the worktree patch could not be computed: " + firstLine(err.Error()) + "; no files were changed"
 		c.mu.Unlock()
-		return
+		return false
 	}
 	if strings.TrimSpace(patch) == "" {
 		c.mu.Lock()
 		c.patchNote = "no file changes were made"
 		c.mu.Unlock()
-		return
+		return false
 	}
 
 	ask, touched := s.patchAsk(c.name, c.repoTop, patch)
@@ -4221,15 +4500,16 @@ func (s *Supervisor) reviewPatch(c *child) {
 	case !approved:
 		note = "the user declined the patch; no files were changed" + c.keepPatch(patch) + held
 	default:
-		if landed, applyErr := s.landPatch(c, c.repoTop, patch, touched); applyErr != nil {
+		if applied, applyErr := s.landPatch(c, c.repoTop, patch, touched); applyErr != nil {
 			note = "the patch failed to apply cleanly: " + firstLine(applyErr.Error()) + c.keepPatch(patch) + held
 		} else {
-			note = landed
+			note, landed = applied, true
 		}
 	}
 	c.mu.Lock()
 	c.patchNote = note
 	c.mu.Unlock()
+	return landed
 }
 
 // patchAsk is the card a writer's patch is put to the person on, whichever
@@ -4540,7 +4820,7 @@ func (s *Supervisor) report(caller string, raw json.RawMessage) (string, error) 
 			ended, interrupted = up.ctx.Done(), up.interruptCh()
 		}
 		select {
-		case <-c.done:
+		case <-c.turnDone():
 		case <-ended:
 			return "", errors.New("cancelled")
 		case <-interrupted:
@@ -4577,6 +4857,9 @@ func (s *Supervisor) steer(caller string, raw json.RawMessage) (string, error) {
 	}
 	if before.State == StateIdle {
 		return fmt.Sprintf("Steered %s. Its turn had been cancelled, so your message starts its next one; collect it with agent_report.", args.Name), nil
+	}
+	if before.State == StateDone {
+		return fmt.Sprintf("Sent %s a follow-up. It had answered, so your message starts one more turn on its own conversation, with everything it already read; its answer replaces the report you had. Collect it with agent_report in a later step.", args.Name), nil
 	}
 	return fmt.Sprintf("Steered %s. It joins the agent's conversation at its next tool round, is judged as part of what the agent was asked for, and the reading that was running is dropped rather than argued with. Do not steer it again in this round — give it rounds to answer, then read the roster.", args.Name), nil
 }
@@ -4768,7 +5051,14 @@ func (s *Supervisor) statusOverview(caller string) string {
 		if len(st.Paths) > 0 {
 			label += "; " + strings.Join(st.Paths, ", ")
 		}
-		fmt.Fprintf(&sb, "%s (%s): %s%s — %s\n", st.Name, label, st.Detail, steerMark(st), firstLine(st.Task))
+		detail := st.Detail
+		if st.TakesFollowUp {
+			// The one thing a roster line can say that saves a spawn: this
+			// agent has answered and can be asked again, on everything it
+			// already read.
+			detail = "done · takes a follow-up · " + strings.TrimPrefix(detail, "done · ")
+		}
+		fmt.Fprintf(&sb, "%s (%s): %s%s — %s\n", st.Name, label, detail, steerMark(st), firstLine(st.Task))
 	}
 	return strings.TrimRight(sb.String(), "\n")
 }

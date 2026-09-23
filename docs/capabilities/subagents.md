@@ -543,6 +543,26 @@ sometimes stops one doing exactly what it was asked to do, with nobody there
 to disagree. A redirect is cheap to be wrong about — the child reads it and
 carries on — and a stop is not.
 
+A child that has answered can be spoken to again, by the same three and by
+the same path. There the message is a follow-up: one more turn on the
+child's own conversation, with everything it read to write its report still
+in front of it, and its answer replaces the report it gave — which is kept,
+folded above the new one under the turn it closed. While it can still be
+asked, a finished child keeps its name, its claimed paths, its conversation
+and, for a writer, its copy of the workspace, with what already landed as
+that copy's base so the next patch is only the new work; it gives up its
+place among the children running at once, and takes one again for the
+follow-up. It lets go of the rest when the session ends, or when an agent
+above it is killed. The follow-up spends what is left of the same budget, so
+a child whose remainder is below the working reserve a turn is admitted with
+refuses it and says how much is left. The point is the reading: a question
+for a researcher that has just reported is answered from the ground it
+already covered, where a second spawn would pay to cover it again.
+
+A follow-up is not a retry. A retry is for a child that failed, and it is a
+new conversation that opens on how the last one ended; a follow-up is for a
+child that finished, and it is the same conversation carrying on.
+
 ## What they share
 
 A child cannot see the conversation it was spawned from, and the parent only
@@ -809,6 +829,14 @@ person pressing it then has no way of knowing that the previous attempt is
 still letting go. The wait is bounded, because a teardown that never finishes
 must not leave a child queued behind it forever; past the bound the child is
 failed again, with the same offer still standing.
+
+Which of the two a caller wants follows from how the child ended. A failed
+child is retried: its conversation is what failed, so the second attempt
+starts a new one and does not accept a steer. A finished child is sent a
+follow-up
+([three can steer a child](#three-can-steer-a-child-and-none-of-them-can-end-it)):
+its conversation is what is worth keeping, and a retry of work that
+succeeded would throw it away.
 
 ## Related
 

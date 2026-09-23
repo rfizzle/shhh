@@ -244,13 +244,26 @@ func copyIntoWorktree(repoTop, worktree, rel string) (bool, error) {
 // files git is told to ignore, which `git add` will not stage and which the
 // child still has on disk.
 func commitSeed(worktree string) error {
+	return commitBase(worktree, "uncommitted work carried from the parent session")
+}
+
+// landedBaseMessage is the base commit a writer's copy takes once its patch
+// has landed in the parent's checkout.
+const landedBaseMessage = "patch landed in the parent session"
+
+// commitBase makes whatever the worktree holds now its HEAD, which is the
+// base the next patch is measured from: the seed when a writer starts, and a
+// patch that has landed when it is asked a follow-up, so the follow-up's patch
+// is its own work and not the landed one a second time. The flags are
+// commitSeed's, for its reasons.
+func commitBase(worktree, message string) error {
 	if _, err := runGit(worktree, "add", "-A"); err != nil {
 		return err
 	}
 	_, err := runGit(worktree,
 		"-c", "user.name=shhh", "-c", "user.email=shhh@localhost",
 		"commit", "--quiet", "--no-verify", "--no-gpg-sign", "--allow-empty",
-		"-m", "uncommitted work carried from the parent session")
+		"-m", message)
 	return err
 }
 

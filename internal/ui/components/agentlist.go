@@ -76,6 +76,12 @@ type AgentRow struct {
 	// to do about the row
 	// (docs/capabilities/subagents.md#a-failed-child-leaves-a-handoff).
 	PatchKept bool
+	// TakesFollowUp marks a finished child that can still be spoken to. It
+	// is what puts [s] on a done row: a message to a child that has
+	// answered is a follow-up on its own conversation, one more turn on
+	// everything it already read
+	// (docs/capabilities/subagents.md#three-can-steer-a-child-and-none-of-them-can-end-it).
+	TakesFollowUp bool
 	// Depth is how far under the session the agent sits — 0 for the
 	// orchestrator, 1 for a child it spawned, 2 for that child's own child —
 	// in the numbering the rail's map and a fan-out lane use for the same
@@ -89,13 +95,23 @@ type AgentRow struct {
 // — are not agents, and every one of those keys is silent over them.
 func (r AgentRow) isAgent() bool { return r.State != AgentOffer && r.State != AgentRole }
 
-// steerable reports that this row can still take a redirect: a child — a row
+// steerable reports that this row can still take a message: a child — a row
 // with progress of its own, which the orchestrator has none of — that is
-// queued, running or blocked. A child that has finished or failed has nothing
-// left to redirect, and the supervisor refuses one, so the key is not offered
-// over it (docs/capabilities/subagents.md#three-can-steer-a-child-and-none-of-them-can-end-it).
+// queued, running or blocked, or one that has answered and can be asked
+// again. A child that failed has nothing left to redirect — running it again
+// is [r] — and the supervisor refuses one, so the key is not offered over it
+// (docs/capabilities/subagents.md#three-can-steer-a-child-and-none-of-them-can-end-it).
 func (r AgentRow) steerable() bool {
-	return r.Progress != nil && !r.Progress.State.settled()
+	if r.Progress == nil {
+		return false
+	}
+	return !r.Progress.State.settled() || r.followsUp()
+}
+
+// followsUp reports a finished row whose message would be a follow-up
+// rather than a redirect, which the key and its field say in those words.
+func (r AgentRow) followsUp() bool {
+	return r.Progress != nil && r.Progress.State == FanoutDone && r.TakesFollowUp
 }
 
 // AgentAction is what the user asked to do with the focused row.
@@ -333,6 +349,10 @@ func (l *AgentList) openSteer() {
 	l.steer = NewNoteBox()
 	l.steer.Label = keys.Words(keys.Agent.Steer) + " " + row.Name
 	l.steer.Field.Placeholder = "what it should do instead"
+	if row.followsUp() {
+		l.steer.Label = followUpWord + " " + row.Name
+		l.steer.Field.Placeholder = "what to ask it next"
+	}
 	l.steer.Open()
 	l.steerAt = row.Name
 }
@@ -543,6 +563,11 @@ func (r AgentRow) render(inner int, focused bool) []string {
 	return rows
 }
 
+// followUpWord is what the steer key does over a child that has answered:
+// the message is not a redirect of work in progress but the next question on
+// work that is finished.
+const followUpWord = "follow up"
+
 // managerWayOut is what esc leaves the manager for. The list is a takeover
 // over a turn that is still going, and `cancel` says nothing about which of
 // the several things on screen is being left
@@ -587,7 +612,10 @@ func (l *AgentList) hints() []KeyOffer {
 	if l.answerable() >= 0 {
 		segments = append(segments, keyOfferAs(keys.Agent.Answer, "answer without attaching"))
 	}
-	if agent && focus.steerable() {
+	switch {
+	case agent && focus.followsUp():
+		segments = append(segments, keyOfferAs(keys.Agent.Steer, followUpWord))
+	case agent && focus.steerable():
 		segments = append(segments, keyOffer(keys.Agent.Steer))
 	}
 	if agent && focus.Retryable {

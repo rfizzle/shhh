@@ -1135,10 +1135,6 @@ func TestCancelTurnIdleThenSteerResumes(t *testing.T) {
 	if !transcriptHas(entries, EntryAssistant, "resumed and finished") {
 		t.Fatal("transcript missing the final assistant entry")
 	}
-
-	if err := sup.Steer("researcher-1", "too late", SteerFromLane); err == nil {
-		t.Fatal("steering a finished agent must error")
-	}
 }
 
 func TestKillFailsChildAndKeepsTranscript(t *testing.T) {
@@ -2245,24 +2241,25 @@ func TestSteerToolRedirectsAChildAndItsNextReadingIsJudgedAgainstIt(t *testing.T
 	}
 }
 
-// A steer is a message for a running agent. One for an agent that has already
-// answered has nowhere to go, and the refusal names it rather than failing
-// quietly — the orchestrator is choosing between agents by name.
-func TestSteerToolRefusesAFinishedChildByName(t *testing.T) {
-	env := &scriptedEnv{steps: []streamStep{{text: "done"}}}
+// A steer is for an agent that can still answer it. One for an agent that
+// failed has nowhere to go — running it again is the retry's — and the
+// refusal names it rather than failing quietly: the orchestrator is choosing
+// between agents by name.
+func TestSteerToolRefusesAFailedChildByName(t *testing.T) {
+	env := &scriptedEnv{steps: []streamStep{{fail: &provider.Failure{Message: "the provider refused"}}}}
 	sup := newTestSupervisor(t, env)
 	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"survey the exporter"}`)
-	waitFor(t, func() bool { return statusOf(t, sup, "researcher-1").State == StateDone })
+	waitFor(t, func() bool { return statusOf(t, sup, "researcher-1").State == StateFailed })
 
 	exec := sup.WrapExecutor("", func(string, json.RawMessage) (string, error) {
 		return "", errors.New("unexpected passthrough")
 	})
 	_, err := exec(SteerToolName, json.RawMessage(`{"name":"researcher-1","message":"read the exporter"}`))
 	if err == nil {
-		t.Fatal("a finished agent cannot be steered")
+		t.Fatal("a failed agent cannot be steered")
 	}
-	if !strings.Contains(err.Error(), "researcher-1") || !strings.Contains(err.Error(), "finished") {
-		t.Fatalf("the refusal names the agent and why, got %q", err)
+	if !strings.Contains(err.Error(), "researcher-1") || !strings.Contains(err.Error(), "agent_retry") {
+		t.Fatalf("the refusal names the agent and the way to run it again, got %q", err)
 	}
 
 	if _, err := exec(SteerToolName, json.RawMessage(`{"name":"nobody","message":"x"}`)); err == nil ||

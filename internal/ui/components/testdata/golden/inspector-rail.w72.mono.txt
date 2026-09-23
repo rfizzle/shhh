@@ -235,6 +235,16 @@
     ⠹ survey internal/ui · 2 tools                                      
   alt+a manager · alt+] next · click to attach                          
 
+· a finished child taking a follow-up · running again, on the question
+  AGENTS                                                       1 running
+❯ ◇ orchestrator                                                   $0.09
+    ⠹ round 4 · streaming…                                              
+  ◇ reader-1                                                       $0.04
+    ⠹ follow-up · which component owns the rail? · 12 tools             
+  ◇ writer-2                                                 done  $0.06
+    wrote the loop's two files                                          
+  alt+a manager · alt+] next · click to attach                          
+
 · a failed sibling beside a nested pair · the subtree moves whole
   AGENTS                                         1 needs you · 2 running
 ❯ ◇ orchestrator                                                   $0.18
@@ -538,6 +548,16 @@
     ␛[38;5;244minternal/agent/round.go␛[m␛[38;5;244m · ␛[m␛[38;5;244m4 tools␛[m                                   
   ␛[38;5;254m◇␛[m ␛[38;5;254mreader-3␛[m                                                       ␛[38;5;244m$0.01␛[m
     ␛[38;5;254m⠹ survey internal/ui␛[m␛[38;5;244m · ␛[m␛[38;5;244m2 tools␛[m                                      
+  ␛[38;5;244malt+a manager · alt+] next · click to attach␛[m                          
+
+· a finished child taking a follow-up · running again, on the question
+  ␛[1;38;5;254mAGENTS␛[m                                                       ␛[38;5;254m1 running␛[m
+␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254m◇␛[m␛[48;5;237m ␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237morchestrator                                                   $0.09␛[m␛[m
+    ␛[38;5;254m⠹ round 4 · streaming…␛[m                                              
+  ␛[38;5;254m◇␛[m ␛[38;5;254mreader-1␛[m                                                       ␛[38;5;244m$0.04␛[m
+    ␛[38;5;254m⠹ follow-up · which component owns the rail?␛[m␛[38;5;244m · ␛[m␛[38;5;244m12 tools␛[m             
+  ␛[38;5;254m◇␛[m ␛[38;5;254mwriter-2␛[m                                                 ␛[38;5;254mdone␛[m  ␛[38;5;244m$0.06␛[m
+    ␛[38;5;244mwrote the loop's two files␛[m                                          
   ␛[38;5;244malt+a manager · alt+] next · click to attach␛[m                          
 
 · a failed sibling beside a nested pair · the subtree moves whole

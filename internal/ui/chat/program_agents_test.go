@@ -193,6 +193,39 @@ func TestProgram_TheManagerSteersAndKillsAChild(t *testing.T) {
 	frameHas(t, finalFrame(t, tm), "reader-2", "cancelled")
 }
 
+// A child that has answered is asked again from its row: over a finished
+// child the steer key is a follow-up, what is typed reaches the child's own
+// conversation, and the row goes back to running with the question under it.
+func TestProgram_TheManagerAsksAFinishedChildAFollowUp(t *testing.T) {
+	hold, release := quietHold(t)
+	// The follow-up's answer is held, so the row is still running on the
+	// question when the frame is read.
+	busy := make(chan struct{})
+	t.Cleanup(sync.OnceFunc(func() { close(busy) }))
+	root := fixtureDir(t, map[string]string{"loop.go": "package agent\n"})
+	lead := spawns("One reader on the round accounting.\n", "researcher", "reader-1")
+	lead.hold = hold
+	m, _ := agentSession(t, root, nil, children{
+		"reader-1": {{text: "The counter is read at the top of the loop."},
+			{hold: busy, text: "The limit is read where the loop is set up."}},
+	}, lead, programTurn{text: "The reader is on it."})
+	tm := runProgramAt(t, m, 110, 44)
+
+	startChildren(t, tm, release, "Spawn researcher", "The reader is on it")
+	waitForText(t, tm, "Agent reader-1: done")
+	programPress(t, tm, "alt+a")
+	waitForText(t, tm, "[enter] attach")
+	programPress(t, tm, "j")
+	waitForText(t, tm, "[s] follow up")
+	programPress(t, tm, "s")
+	waitForText(t, tm, "follow up reader-1")
+	tm.Send(tea.PasteMsg{Content: "and where is the limit read"})
+	programPress(t, tm, "enter")
+	waitForText(t, tm, "follow-up · and where is the limit read")
+
+	frameHas(t, finalFrame(t, tm), "reader-1", "working")
+}
+
 // Attaching by name moves the keyboard into a child: the frame is the
 // child's, a line typed there is the child's steering, and esc gives the
 // keyboard back to the session.

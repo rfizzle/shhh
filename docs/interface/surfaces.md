@@ -1335,8 +1335,12 @@ letter is a letter of the redirect, so the list's own keys leave the key row
 and what is left is the two any surface being typed into keeps: enter sends
 it, esc leaves it unsent
 ([a key is inert until its surface holds the keyboard](principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard)).
-A child that has finished or failed is not offered the key, because it has
-nothing left to redirect.
+A child that failed is not offered the key, because it has nothing left to
+redirect — running it again is `[r]`. A child that has finished is, and there
+the key reads `follow up`: what is typed is the next question on the
+conversation it already holds, and its row goes from `done` back to running
+with that question's first words under it
+([a finished child can be spoken to again](../capabilities/subagents.md#three-can-steer-a-child-and-none-of-them-can-end-it)).
 
 **Ending a child has one name, and it is here.** `[X]` on the row, with the
 confirm that counts what goes with it. Attached, `/exit` used to be a second
