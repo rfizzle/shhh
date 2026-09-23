@@ -11,20 +11,21 @@
 
 ── layout ──────────────────────────────────────────────────
 · as it opens · the pointer on the last note written
-/notes · 3 notes · 3 agents                                                            [?] keys · [q] back
+/notes · 4 notes · 4 agents                                                            [?] keys · [q] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 
-orchestrator                                          │ Where the goldens live                researcher-1
-  The freeze is the target    n1               turn 3 │   n3 · turn 4
+orchestrator                                          │ The reviewer's own delegate
+  The freeze is the target    n1               turn 3 │   n4 · turn 4
 reviewer-1                                            │ 
-  The deny list is read before the tier  n2    turn 4 │   internal/ui/chat/testdata/golden, one file per
-researcher-1                                          │   width and one per palette.
-❯ Where the goldens live      n3               turn 4 │ 
+  The deny list is read before the tier  n2    turn 4 │   A grandchild signs with its spawner's name in
+researcher-1                                          │   front, so its note files under researcher-1.
+  Where the goldens live      n3               turn 4 │ 
+❯ The reviewer's own delegate  n4              turn 4 │ 
 
 [↑↓/jk] move · [enter] read the whole note · [d] drop it · [esc] back to the prompt
 
 · a note from the fan-out · the preview reads it
-/notes · 3 notes · 3 agents                                                            [?] keys · [q] back
+/notes · 4 notes · 4 agents                                                            [?] keys · [q] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 orchestrator                                          │ The deny list is read before the tier   reviewer-1
@@ -33,11 +34,12 @@ reviewer-1                                            │
 ❯ The deny list is read before the tier  n2    turn 4 │   policy.Decide matches on the command, so an
 researcher-1                                          │   entry refuses the verb in every mode.
   Where the goldens live      n3               turn 4 │ 
+  The reviewer's own delegate  n4              turn 4 │ 
 
 [↑↓/jk] move · [enter] read the whole note · [d] drop it · [esc] back to the prompt
 
 · [d] · the one key that takes something out asks first
-/notes · 3 notes · 3 agents                                                            [?] keys · [q] back
+/notes · 4 notes · 4 agents                                                            [?] keys · [q] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 orchestrator                                          │ The deny list is read before the tier   reviewer-1
@@ -46,21 +48,23 @@ reviewer-1                                            │
 ❯ The deny list is read before the tier  n2    turn 4 │   policy.Decide matches on the command, so an
 researcher-1                                          │   entry refuses the verb in every mode.
   Where the goldens live      n3               turn 4 │ 
+  The reviewer's own delegate  n4              turn 4 │ 
 
 Drop "The deny list is read before the tier"?  [y/N]
 
 · /notes clear · the question counts what it would take
-/notes · 3 notes · 3 agents                                                            [?] keys · [q] back
+/notes · 4 notes · 4 agents                                                            [?] keys · [q] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 
-orchestrator                                          │ Where the goldens live                researcher-1
-  The freeze is the target    n1               turn 3 │   n3 · turn 4
+orchestrator                                          │ The reviewer's own delegate
+  The freeze is the target    n1               turn 3 │   n4 · turn 4
 reviewer-1                                            │ 
-  The deny list is read before the tier  n2    turn 4 │   internal/ui/chat/testdata/golden, one file per
-researcher-1                                          │   width and one per palette.
-❯ Where the goldens live      n3               turn 4 │ 
+  The deny list is read before the tier  n2    turn 4 │   A grandchild signs with its spawner's name in
+researcher-1                                          │   front, so its note files under researcher-1.
+  Where the goldens live      n3               turn 4 │ 
+❯ The reviewer's own delegate  n4              turn 4 │ 
 
-Drop 3 notes? Nothing else in the session is touched.  [y/N]
+Drop 4 notes? Nothing else in the session is touched.  [y/N]
 
 · the panel it leaves · the way out, on one row
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -69,20 +73,21 @@ notes · [q] back to the prompt
 
 ── ansi ────────────────────────────────────────────────────
 · as it opens · the pointer on the last note written
-␛[1;38;5;254m/notes␛[m␛[38;5;244m · 3 notes · 3 agents␛[m                                                            ␛[38;5;244m[?] keys · [q] back␛[m
+␛[1;38;5;254m/notes␛[m␛[38;5;244m · 4 notes · 4 agents␛[m                                                            ␛[38;5;244m[?] keys · [q] back␛[m
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[1;38;5;254morchestrator␛[m                                         ␛[38;5;244m │ ␛[m␛[1;38;5;254mWhere the goldens live␛[m                ␛[38;5;244mresearcher-1␛[m
-  ␛[38;5;254mThe freeze is the target␛[m    ␛[38;5;254mn1␛[m               ␛[38;5;254mturn 3␛[m␛[38;5;244m │ ␛[m  ␛[38;5;244mn3 · turn 4␛[m
+␛[1;38;5;254morchestrator␛[m                                         ␛[38;5;244m │ ␛[m␛[1;38;5;254mThe reviewer's own delegate␛[m
+  ␛[38;5;254mThe freeze is the target␛[m    ␛[38;5;254mn1␛[m               ␛[38;5;254mturn 3␛[m␛[38;5;244m │ ␛[m  ␛[38;5;244mn4 · turn 4␛[m
 ␛[1;38;5;254mreviewer-1␛[m                                           ␛[38;5;244m │ ␛[m
-  ␛[38;5;254mThe deny list is read before the tier␛[m  ␛[38;5;254mn2␛[m    ␛[38;5;254mturn 4␛[m␛[38;5;244m │ ␛[m  ␛[38;5;244minternal/ui/chat/testdata/golden, one file per␛[m
-␛[1;38;5;254mresearcher-1␛[m                                         ␛[38;5;244m │ ␛[m  ␛[38;5;244mwidth and one per palette.␛[m
-␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mWhere the goldens live      n3               turn 4␛[m␛[38;5;244m │ ␛[m
+  ␛[38;5;254mThe deny list is read before the tier␛[m  ␛[38;5;254mn2␛[m    ␛[38;5;254mturn 4␛[m␛[38;5;244m │ ␛[m  ␛[38;5;244mA grandchild signs with its spawner's name in␛[m
+␛[1;38;5;254mresearcher-1␛[m                                         ␛[38;5;244m │ ␛[m  ␛[38;5;244mfront, so its note files under researcher-1.␛[m
+  ␛[38;5;254mWhere the goldens live␛[m      ␛[38;5;254mn3␛[m               ␛[38;5;254mturn 4␛[m␛[38;5;244m │ ␛[m
+␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mThe reviewer's own delegate  n4              turn 4␛[m␛[38;5;244m │ ␛[m
 
 ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m read the whole note␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m drop it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m
 
 · a note from the fan-out · the preview reads it
-␛[1;38;5;254m/notes␛[m␛[38;5;244m · 3 notes · 3 agents␛[m                                                            ␛[38;5;244m[?] keys · [q] back␛[m
+␛[1;38;5;254m/notes␛[m␛[38;5;244m · 4 notes · 4 agents␛[m                                                            ␛[38;5;244m[?] keys · [q] back␛[m
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[1;38;5;254morchestrator␛[m                                         ␛[38;5;244m │ ␛[m␛[1;38;5;254mThe deny list is read before the tier␛[m   ␛[38;5;244mreviewer-1␛[m
@@ -91,11 +96,12 @@ notes · [q] back to the prompt
 ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mThe deny list is read before the tier  n2    turn 4␛[m␛[38;5;244m │ ␛[m  ␛[38;5;244mpolicy.Decide matches on the command, so an␛[m
 ␛[1;38;5;254mresearcher-1␛[m                                         ␛[38;5;244m │ ␛[m  ␛[38;5;244mentry refuses the verb in every mode.␛[m
   ␛[38;5;254mWhere the goldens live␛[m      ␛[38;5;254mn3␛[m               ␛[38;5;254mturn 4␛[m␛[38;5;244m │ ␛[m
+  ␛[38;5;254mThe reviewer's own delegate␛[m  ␛[38;5;254mn4␛[m              ␛[38;5;254mturn 4␛[m␛[38;5;244m │ ␛[m
 
 ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m read the whole note␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m drop it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m
 
 · [d] · the one key that takes something out asks first
-␛[1;38;5;254m/notes␛[m␛[38;5;244m · 3 notes · 3 agents␛[m                                                            ␛[38;5;244m[?] keys · [q] back␛[m
+␛[1;38;5;254m/notes␛[m␛[38;5;244m · 4 notes · 4 agents␛[m                                                            ␛[38;5;244m[?] keys · [q] back␛[m
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[1;38;5;254morchestrator␛[m                                         ␛[38;5;244m │ ␛[m␛[1;38;5;254mThe deny list is read before the tier␛[m   ␛[38;5;244mreviewer-1␛[m
@@ -104,21 +110,23 @@ notes · [q] back to the prompt
 ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mThe deny list is read before the tier  n2    turn 4␛[m␛[38;5;244m │ ␛[m  ␛[38;5;244mpolicy.Decide matches on the command, so an␛[m
 ␛[1;38;5;254mresearcher-1␛[m                                         ␛[38;5;244m │ ␛[m  ␛[38;5;244mentry refuses the verb in every mode.␛[m
   ␛[38;5;254mWhere the goldens live␛[m      ␛[38;5;254mn3␛[m               ␛[38;5;254mturn 4␛[m␛[38;5;244m │ ␛[m
+  ␛[38;5;254mThe reviewer's own delegate␛[m  ␛[38;5;254mn4␛[m              ␛[38;5;254mturn 4␛[m␛[38;5;244m │ ␛[m
 
 ␛[38;5;254m␛[38;5;254mDrop "The deny list is read before the tier"?␛[m␛[m  ␛[38;5;244m[␛[m␛[38;5;244my␛[m␛[38;5;244m/␛[m␛[1;38;5;254mN␛[m␛[38;5;244m]␛[m
 
 · /notes clear · the question counts what it would take
-␛[1;38;5;254m/notes␛[m␛[38;5;244m · 3 notes · 3 agents␛[m                                                            ␛[38;5;244m[?] keys · [q] back␛[m
+␛[1;38;5;254m/notes␛[m␛[38;5;244m · 4 notes · 4 agents␛[m                                                            ␛[38;5;244m[?] keys · [q] back␛[m
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[1;38;5;254morchestrator␛[m                                         ␛[38;5;244m │ ␛[m␛[1;38;5;254mWhere the goldens live␛[m                ␛[38;5;244mresearcher-1␛[m
-  ␛[38;5;254mThe freeze is the target␛[m    ␛[38;5;254mn1␛[m               ␛[38;5;254mturn 3␛[m␛[38;5;244m │ ␛[m  ␛[38;5;244mn3 · turn 4␛[m
+␛[1;38;5;254morchestrator␛[m                                         ␛[38;5;244m │ ␛[m␛[1;38;5;254mThe reviewer's own delegate␛[m
+  ␛[38;5;254mThe freeze is the target␛[m    ␛[38;5;254mn1␛[m               ␛[38;5;254mturn 3␛[m␛[38;5;244m │ ␛[m  ␛[38;5;244mn4 · turn 4␛[m
 ␛[1;38;5;254mreviewer-1␛[m                                           ␛[38;5;244m │ ␛[m
-  ␛[38;5;254mThe deny list is read before the tier␛[m  ␛[38;5;254mn2␛[m    ␛[38;5;254mturn 4␛[m␛[38;5;244m │ ␛[m  ␛[38;5;244minternal/ui/chat/testdata/golden, one file per␛[m
-␛[1;38;5;254mresearcher-1␛[m                                         ␛[38;5;244m │ ␛[m  ␛[38;5;244mwidth and one per palette.␛[m
-␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mWhere the goldens live      n3               turn 4␛[m␛[38;5;244m │ ␛[m
+  ␛[38;5;254mThe deny list is read before the tier␛[m  ␛[38;5;254mn2␛[m    ␛[38;5;254mturn 4␛[m␛[38;5;244m │ ␛[m  ␛[38;5;244mA grandchild signs with its spawner's name in␛[m
+␛[1;38;5;254mresearcher-1␛[m                                         ␛[38;5;244m │ ␛[m  ␛[38;5;244mfront, so its note files under researcher-1.␛[m
+  ␛[38;5;254mWhere the goldens live␛[m      ␛[38;5;254mn3␛[m               ␛[38;5;254mturn 4␛[m␛[38;5;244m │ ␛[m
+␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mThe reviewer's own delegate  n4              turn 4␛[m␛[38;5;244m │ ␛[m
 
-␛[38;5;254m␛[38;5;254mDrop 3 notes? Nothing else in the session is touched.␛[m␛[m  ␛[38;5;244m[␛[m␛[38;5;244my␛[m␛[38;5;244m/␛[m␛[1;38;5;254mN␛[m␛[38;5;244m]␛[m
+␛[38;5;254m␛[38;5;254mDrop 4 notes? Nothing else in the session is touched.␛[m␛[m  ␛[38;5;244m[␛[m␛[38;5;244my␛[m␛[38;5;244m/␛[m␛[1;38;5;254mN␛[m␛[38;5;244m]␛[m
 
 · the panel it leaves · the way out, on one row
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m

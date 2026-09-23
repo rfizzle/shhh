@@ -282,22 +282,12 @@ func Format(notes []Note) string {
 	if len(notes) == 0 {
 		return "The notebook is empty."
 	}
-	return formatNotes(notes, true)
-}
-
-// formatNotes is Format's body, with the author dropped where the reader
-// already has it from the heading above.
-func formatNotes(notes []Note, signed bool) string {
 	var b strings.Builder
 	for i, n := range notes {
 		if i > 0 {
 			b.WriteString("\n\n")
 		}
-		if signed {
-			fmt.Fprintf(&b, "## [n%d] %s — %s\n%s", n.ID, n.Title, n.Author, n.Body)
-			continue
-		}
-		fmt.Fprintf(&b, "## [n%d] %s\n%s", n.ID, n.Title, n.Body)
+		fmt.Fprintf(&b, "## [n%d] %s — %s\n%s", n.ID, n.Title, n.Author, n.Body)
 	}
 	return b.String()
 }
@@ -337,35 +327,6 @@ func PromptBlock(notes []Note) string {
 		fmt.Fprintf(&b, "- [n%d] %s (%s)\n", n.ID, n.Title, n.Author)
 	}
 	return strings.TrimRight(b.String(), "\n")
-}
-
-// FormatByAuthor is the notebook as the person reads it: the notes grouped
-// under the agent that wrote each one, authors in the order they first
-// wrote. Format's flat, oldest-first list is what an agent reads, because an
-// agent is looking for a fact and the session's order is the useful one;
-// somebody reading their own session is asking who found what, and a
-// fan-out's notes arrive interleaved.
-// See docs/capabilities/subagents.md#what-they-share.
-func FormatByAuthor(notes []Note) string {
-	if len(notes) == 0 {
-		return "The notebook is empty."
-	}
-	var authors []string
-	byAuthor := map[string][]Note{}
-	for _, n := range notes {
-		if _, seen := byAuthor[n.Author]; !seen {
-			authors = append(authors, n.Author)
-		}
-		byAuthor[n.Author] = append(byAuthor[n.Author], n)
-	}
-	var b strings.Builder
-	for i, a := range authors {
-		if i > 0 {
-			b.WriteString("\n\n")
-		}
-		fmt.Fprintf(&b, "# %s\n\n%s", a, formatNotes(byAuthor[a], false))
-	}
-	return b.String()
 }
 
 // WrittenAfter returns the notes past id written by anyone but author —

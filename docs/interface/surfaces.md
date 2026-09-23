@@ -2071,8 +2071,8 @@ act in one word: `quit` where the screen was opened from a command line,
 `back` where it was opened from a session. The foot ends with the same act
 under the key a reader reaches for without thinking, and there it is a phrase:
 **back to the shell** on doctor, metrics, history, snippets and the saved-chat
-browser, **back to the prompt** on the context reading and on the backlog,
-which is drawn on this chrome too ([the backlog screen](#the-backlog-screen)).
+browser, **back to the prompt** on the context reading, the sources ledger, the
+notebook and the backlog, which is drawn on this chrome too ([the backlog screen](#the-backlog-screen)).
 For leaving a screen and changing nothing there is no third wording.
 
 Three of them leave by doing something rather than nothing, and each says what

@@ -180,7 +180,7 @@ func TestScrubRunsBeforeTheNoteIsKept(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, got := range []string{n.Title, n.Body, Format(s.List()), FormatByAuthor(s.List())} {
+	for _, got := range []string{n.Title, n.Body, Format(s.List())} {
 		if strings.Contains(got, "hunter2") {
 			t.Errorf("the value survived in %q", got)
 		}
@@ -266,31 +266,5 @@ func TestPromptBlockIsCapped(t *testing.T) {
 	// The newest are the ones kept.
 	if !strings.Contains(block, "Note 49") || strings.Contains(block, "Note 0 (") {
 		t.Fatalf("the block kept the wrong end: %q", block)
-	}
-}
-
-// The person's listing groups by the agent that wrote each note; the
-// model's stays in the session's own order.
-func TestFormatByAuthorGroups(t *testing.T) {
-	s := New(nil)
-	_, _, _ = s.Write("researcher-1", "First", "a")
-	_, _, _ = s.Write("reviewer-1", "Second", "b")
-	_, _, _ = s.Write("researcher-1", "Third", "c")
-	got := FormatByAuthor(s.List())
-	if strings.Index(got, "# researcher-1") > strings.Index(got, "# reviewer-1") {
-		t.Fatalf("authors out of first-write order: %q", got)
-	}
-	if strings.Count(got, "# researcher-1") != 1 {
-		t.Fatalf("an author was listed twice: %q", got)
-	}
-	if strings.Index(got, "Third") > strings.Index(got, "Second") {
-		t.Fatalf("a note was not filed under its author: %q", got)
-	}
-	// The author is on the heading, so it is not repeated on every note.
-	if strings.Contains(got, "— researcher-1") {
-		t.Fatalf("the author is stated twice: %q", got)
-	}
-	if FormatByAuthor(nil) != "The notebook is empty." {
-		t.Fatal("an empty notebook did not say so")
 	}
 }

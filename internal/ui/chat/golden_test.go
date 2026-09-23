@@ -3646,8 +3646,8 @@ func TestGolden_NotesScreen(t *testing.T) {
 	})
 }
 
-// goldenNotesModel is a session whose notebook the orchestrator and two
-// delegates have written in, over two turns.
+// goldenNotesModel is a session whose notebook the orchestrator, two
+// delegates and one delegate's own delegate have written in, over two turns.
 func goldenNotesModel(t *testing.T, width int) Model {
 	t.Helper()
 	m := frameModel(t, width, 40).WithNotebook(notebook.New(nil))
@@ -3659,6 +3659,8 @@ func goldenNotesModel(t *testing.T, width int) Model {
 		"policy.Decide matches on the command, so an entry refuses the verb in every mode.")
 	_, _, _ = m.notebook.Write("researcher-1", "Where the goldens live",
 		"internal/ui/chat/testdata/golden, one file per width and one per palette.")
+	_, _, _ = m.notebook.Write("researcher-1/reviewer-1a", "The reviewer's own delegate",
+		"A grandchild signs with its spawner's name in front, so its note files under researcher-1.")
 	return m
 }
 
