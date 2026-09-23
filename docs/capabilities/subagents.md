@@ -147,7 +147,7 @@ spawn card is where the person learns what it will claim.
 A child's permission mode is clamped to its parent's and can never be looser,
 and the parent's session grants travel with it: what you waved through for the
 session is waved through for its children, so one grant is not re-asked once
-per agent. A profile may start a child stricter — a reviewer in plan mode
+per agent. A profile may start a child stricter — a reviewer in read-only mode
 under an auto session — and that is the only direction the clamp allows.
 
 What a child cannot do is ask somebody the session cannot reach. In a session
@@ -602,7 +602,7 @@ and a profile that could take them away would be a profile that made its agent
 worse at the one thing every agent does.
 
 A profile can make its children stricter than the session — a reviewer that
-starts in plan mode under an auto session — and never looser. The clamp that
+starts in read-only mode under an auto session — and never looser. The clamp that
 keeps a child inside its parent's mode applies to a profile's mode the same
 way, so writing a file is not a way around the mode the person chose.
 

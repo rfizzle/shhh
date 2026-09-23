@@ -30,8 +30,8 @@ func TestProfilesParseAndNames(t *testing.T) {
 	if _, err := BuiltinProfiles().Parse("critic"); err == nil {
 		t.Fatal("a custom role is unknown to the built-in set")
 	}
-	if prof, err := BuiltinProfiles().Parse("reviewer"); err != nil || !prof.HasMode || prof.Mode != agent.ModePlan || prof.Writes || prof.MaxTokens < DefaultMaxTokens || prof.MaxRounds <= 0 {
-		t.Fatalf("the reviewer is built in, bounded, read-only, in plan mode: %+v %v", prof, err)
+	if prof, err := BuiltinProfiles().Parse("reviewer"); err != nil || !prof.HasMode || prof.Mode != agent.ModeReadOnly || prof.Writes || prof.MaxTokens < DefaultMaxTokens || prof.MaxRounds <= 0 {
+		t.Fatalf("the reviewer is built in, bounded, in read-only mode: %+v %v", prof, err)
 	}
 }
 
@@ -112,6 +112,40 @@ func TestProfileModeIsClampedToParent(t *testing.T) {
 	execTool(t, sup2, SpawnToolName, `{"role":"loose","task":"try","name":"l"}`)
 	if mode, _ := sup2.AgentMode("l"); mode != agent.ModeManual {
 		t.Fatalf("a profile can never start looser than its parent: %v", mode)
+	}
+}
+
+// A reviewer's refused edit tells it to answer in words, not to present a
+// plan: the child is in read-only mode, and plan mode's sentence would send
+// it to write a document nobody approves.
+func TestBuiltinReviewerRefusesAnEditInReadOnlyWords(t *testing.T) {
+	env := &scriptedEnv{
+		steps: []streamStep{
+			{calls: []provider.ToolCall{{ID: "e1", Name: "edit_file", Arguments: `{"path":"a.go","old_text":"x","new_text":"y"}`}}},
+			{text: "task complete"},
+		},
+		gated: map[string]bool{"edit_file": true},
+	}
+	sup := newTestSupervisor(t, env)
+	sup.SetParentMode(agent.ModeAuto)
+	execTool(t, sup, SpawnToolName, `{"role":"reviewer","task":"judge it","name":"r"}`)
+	if report := execTool(t, sup, ReportToolName, `{"name":"r"}`); !strings.Contains(report, "task complete") {
+		t.Fatalf("unexpected report: %s", report)
+	}
+
+	env.mu.Lock()
+	defer env.mu.Unlock()
+	if len(env.requests) < 2 {
+		t.Fatalf("the child made %d requests, want the refusal answered", len(env.requests))
+	}
+	var result string
+	for _, m := range env.requests[1] {
+		if m.ToolCallID == "e1" {
+			result = m.Content
+		}
+	}
+	if result != agent.ReadOnlyModeResult {
+		t.Fatalf("the reviewer's edit came back as %q, want read-only mode's refusal", result)
 	}
 }
 

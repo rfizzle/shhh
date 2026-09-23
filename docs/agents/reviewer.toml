@@ -13,9 +13,9 @@ reasoning = "low"
 # Read is always granted; nothing else is. There is no worktree, no patch.
 permissions = ["read"]
 
-# Plan mode makes the restriction visible to the agent itself: an attempt
-# to edit or run something is refused with a message saying why.
-mode = "plan"
+# Read-only mode makes the restriction visible to the agent itself: an
+# attempt to edit or run something is refused with a message saying why.
+mode = "read-only"
 
 max_tokens = 80000
 

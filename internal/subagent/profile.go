@@ -63,10 +63,13 @@ func BuiltinProfiles() Profiles {
 		RoleReviewer: {
 			Name:        RoleReviewer,
 			Description: "reviews a change for correctness and clarity; reads only, changes nothing; declare its paths and it opens on their diff",
-			Mode:        agent.ModePlan,
-			HasMode:     true,
-			Reviews:     true,
-			MaxTokens:   DefaultMaxTokens,
+			// Read-only rather than plan: the child is never handed plan mode's
+			// instructions, so plan would name a job it was not given, and a
+			// refused call would send it to present a plan nobody approves.
+			Mode:      agent.ModeReadOnly,
+			HasMode:   true,
+			Reviews:   true,
+			MaxTokens: DefaultMaxTokens,
 			// Twenty rounds is the inspection pass: the declared diff arrives
 			// with the task, so the rounds are spent on the files it touches
 			// and their tests rather than on finding the change. It is a stop
