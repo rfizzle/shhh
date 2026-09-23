@@ -35,27 +35,29 @@ const planApprovedMessage = "The plan is approved. Leave planning and execute it
 // planApproveOptions are the plan-approval rows, in order; selection is by
 // index (see selectPlanOption). Each execution option names the mode the
 // session enters, because accepting a plan is never an unstated mode change —
-// and its description says what that mode will and will not stop for.
+// and its description says what that mode will and will not stop for. The
+// mode names are Mode.Word's, so the card spells a mode the way the frame and
+// the rail beside it do.
 var planApproveOptions = []components.SelectOption{
 	{
-		Label: "Run the whole plan — accept-edits mode",
+		Label: "Run the whole plan — " + agent.ModeAcceptEdits.Word() + " mode",
 		Desc:  "edits apply as they come; commands and other actions still ask",
 	},
 	{
-		Label: "Run it unattended — auto mode",
+		Label: "Run it unattended — " + agent.ModeAuto.Word() + " mode",
 		Desc:  "edits and allowlisted commands run; the classifier judges the rest",
 	},
 	{
-		Label: "Step through it — manual approvals",
+		Label: "Step through it — " + agent.ModeManual.Word() + " approvals",
 		Desc:  "every edit and every command asks you first",
 	},
 	{
 		Label: "Keep planning — tell me what to change",
-		Desc:  "stays in plan mode; the plan keeps its place in the conversation",
+		Desc:  "stays in " + agent.ModePlan.Word() + " mode; the plan keeps its place in the conversation",
 	},
 	{
 		Label: "Reject the plan",
-		Desc:  "nothing runs and the session stays in plan mode",
+		Desc:  "nothing runs and the session stays in " + agent.ModePlan.Word() + " mode",
 	},
 }
 

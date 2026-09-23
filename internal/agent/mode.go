@@ -476,10 +476,6 @@ func ReadOnlyCommands() []string {
 	}
 }
 
-// PlanInspectionCommands is the read-only allowlist under the name the
-// read-only modes grant it by; they grant exactly the same set.
-func PlanInspectionCommands() []string { return ReadOnlyCommands() }
-
 // readOnlyGuards names the flags that turn an otherwise read-only command
 // into one that writes, deletes, or executes something else. A command whose
 // prefix matches a key and that carries any of its flags is not read-only,
@@ -537,12 +533,6 @@ func ReadOnlyAllowed(command string, extra []string) bool {
 		return true
 	}
 	return len(extra) > 0 && AllowlistMatches(extra, command)
-}
-
-// PlanInspectionAllowed reports whether a command is on the read-only modes'
-// inspection allowlist.
-func PlanInspectionAllowed(command string) bool {
-	return ReadOnlyAllowed(command, nil)
 }
 
 // Decide returns the verdict for one gated action and, for Allow, the reason

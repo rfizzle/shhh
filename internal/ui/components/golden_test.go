@@ -1806,7 +1806,7 @@ func TestGolden_PlanCard(t *testing.T) {
 				},
 				SummaryDetail: "every file is tracked in git",
 				Options: []SelectOption{
-					{Label: "Run the whole plan — accept-edits mode",
+					{Label: "Run the whole plan — accept edits mode",
 						Desc: "edits apply as they come; commands and other actions still ask"},
 					{Label: "Run it unattended — auto mode",
 						Desc: "edits and allowlisted commands run; the classifier judges the rest"},

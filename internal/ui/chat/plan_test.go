@@ -510,7 +510,7 @@ func TestPlanCard_OptionsNameTheModeTheyEnter(t *testing.T) {
 	m := plannedModel(t, structuredPlan)
 	view := m.View().Content
 	// Accepting a plan is a mode change, so every execution option says which.
-	for _, want := range []string{"accept-edits mode", "auto mode", "manual approvals"} {
+	for _, want := range []string{"accept edits mode", "auto mode", "manual approvals"} {
 		if !strings.Contains(view, want) {
 			t.Errorf("the options should name the mode %q:\n%s", want, view)
 		}

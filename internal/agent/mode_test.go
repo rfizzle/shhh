@@ -174,7 +174,7 @@ func TestModePolicy_Decide(t *testing.T) {
 	}
 }
 
-func TestPlanInspectionAllowed(t *testing.T) {
+func TestReadOnlyAllowed(t *testing.T) {
 	cases := []struct {
 		command string
 		want    bool
@@ -194,8 +194,8 @@ func TestPlanInspectionAllowed(t *testing.T) {
 		{"git diff | tee patch.txt", false}, // pipe
 	}
 	for _, c := range cases {
-		if got := PlanInspectionAllowed(c.command); got != c.want {
-			t.Errorf("PlanInspectionAllowed(%q) = %v, want %v", c.command, got, c.want)
+		if got := ReadOnlyAllowed(c.command, nil); got != c.want {
+			t.Errorf("ReadOnlyAllowed(%q) = %v, want %v", c.command, got, c.want)
 		}
 	}
 }

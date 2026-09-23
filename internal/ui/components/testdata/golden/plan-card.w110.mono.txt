@@ -23,7 +23,7 @@
 │                                                                                                            │
 │ 3 files touched · no deletes · no network · reversible — every file is tracked in git                      │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ ❯ 1. Run the whole plan — accept-edits mode                                                                │
+│ ❯ 1. Run the whole plan — accept edits mode                                                                │
 │     edits apply as they come; commands and other actions still ask                                         │
 │   2. Run it unattended — auto mode                                                                         │
 │   3. Step through it — manual approvals                                                                    │
@@ -46,7 +46,7 @@
 │                                                                                                            │
 │ 3 files touched · no deletes · no network · reversible — every file is tracked in git                      │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│   1. Run the whole plan — accept-edits mode                                                                │
+│   1. Run the whole plan — accept edits mode                                                                │
 │   2. Run it unattended — auto mode                                                                         │
 │ ❯ 3. Step through it — manual approvals                                                                    │
 │     every edit and every command asks you first                                                            │
@@ -69,7 +69,7 @@
 │                                                                                                            │
 │ 4 files touched · deletes 1 file · network needed · partly reversible — 3 of 4 files tracked in git        │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ ❯ 1. Run the whole plan — accept-edits mode                                                                │
+│ ❯ 1. Run the whole plan — accept edits mode                                                                │
 │     edits apply as they come; commands and other actions still ask                                         │
 │   2. Run it unattended — auto mode                                                                         │
 │   3. Step through it — manual approvals                                                                    │
@@ -89,7 +89,7 @@
 │                                                                                                            │
 │ 3 files touched · no deletes · no network · reversible — every file is tracked in git                      │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ ❯ 1. Run the whole plan — accept-edits mode                                                                │
+│ ❯ 1. Run the whole plan — accept edits mode                                                                │
 │     edits apply as they come; commands and other actions still ask                                         │
 │   2. Run it unattended — auto mode                                                                         │
 │   3. Step through it — manual approvals                                                                    │
@@ -105,7 +105,7 @@
 │                                                                                                            │
 │ 3 files touched · no deletes · no network · reversible — every file is tracked in git                      │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ ❯ 1. Run the whole plan — accept-edits mode                                                                │
+│ ❯ 1. Run the whole plan — accept edits mode                                                                │
 │     edits apply as they come; commands and other actions still ask                                         │
 │   2. Run it unattended — auto mode                                                                         │
 │   3. Step through it — manual approvals                                                                    │
@@ -121,7 +121,7 @@
 │ the round loop, then handle it in the chat model so the user is                                            │
 │ offered more rounds instead of the turn simply stopping.                                                   │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ ❯ 1. Run the whole plan — accept-edits mode                                                                │
+│ ❯ 1. Run the whole plan — accept edits mode                                                                │
 │     edits apply as they come; commands and other actions still ask                                         │
 │   2. Run it unattended — auto mode                                                                         │
 │   3. Step through it — manual approvals                                                                    │
@@ -145,7 +145,7 @@
 ␛[38;5;254m│␛[m                                                                                                            ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m3 files touched␛[m␛[38;5;244m · ␛[m␛[38;5;254mno deletes␛[m␛[38;5;244m · ␛[m␛[38;5;254mno network␛[m␛[38;5;244m · ␛[m␛[38;5;254mreversible␛[m␛[38;5;244m — every file is tracked in git␛[m                      ␛[38;5;254m│␛[m
 ␛[38;5;254m├────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m1. Run the whole plan — accept-edits mode                                                               ␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m1. Run the whole plan — accept edits mode                                                               ␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m    edits apply as they come; commands and other actions still ask␛[m                                         ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;244m2. ␛[m␛[38;5;254mRun it unattended — auto mode␛[m                                                                         ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;244m3. ␛[m␛[38;5;254mStep through it — manual approvals␛[m                                                                    ␛[38;5;254m│␛[m
@@ -168,7 +168,7 @@
 ␛[38;5;254m│␛[m                                                                                                            ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m3 files touched␛[m␛[38;5;244m · ␛[m␛[38;5;254mno deletes␛[m␛[38;5;244m · ␛[m␛[38;5;254mno network␛[m␛[38;5;244m · ␛[m␛[38;5;254mreversible␛[m␛[38;5;244m — every file is tracked in git␛[m                      ␛[38;5;254m│␛[m
 ␛[38;5;254m├────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m   ␛[38;5;244m1. ␛[m␛[38;5;254mRun the whole plan — accept-edits mode␛[m                                                                ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m   ␛[38;5;244m1. ␛[m␛[38;5;254mRun the whole plan — accept edits mode␛[m                                                                ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;244m2. ␛[m␛[38;5;254mRun it unattended — auto mode␛[m                                                                         ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m3. Step through it — manual approvals                                                                   ␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m    every edit and every command asks you first␛[m                                                            ␛[38;5;254m│␛[m
@@ -191,7 +191,7 @@
 ␛[38;5;254m│␛[m                                                                                                            ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m4 files touched␛[m␛[38;5;244m · ␛[m␛[38;5;254mdeletes 1 file␛[m␛[38;5;244m · ␛[m␛[38;5;254mnetwork needed␛[m␛[38;5;244m · ␛[m␛[38;5;254mpartly reversible␛[m␛[38;5;244m — 3 of 4 files tracked in git␛[m        ␛[38;5;254m│␛[m
 ␛[38;5;254m├────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m1. Run the whole plan — accept-edits mode                                                               ␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m1. Run the whole plan — accept edits mode                                                               ␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m    edits apply as they come; commands and other actions still ask␛[m                                         ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;244m2. ␛[m␛[38;5;254mRun it unattended — auto mode␛[m                                                                         ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;244m3. ␛[m␛[38;5;254mStep through it — manual approvals␛[m                                                                    ␛[38;5;254m│␛[m
@@ -211,7 +211,7 @@
 ␛[38;5;254m│␛[m                                                                                                            ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m3 files touched␛[m␛[38;5;244m · ␛[m␛[38;5;254mno deletes␛[m␛[38;5;244m · ␛[m␛[38;5;254mno network␛[m␛[38;5;244m · ␛[m␛[38;5;254mreversible␛[m␛[38;5;244m — every file is tracked in git␛[m                      ␛[38;5;254m│␛[m
 ␛[38;5;254m├────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m1. Run the whole plan — accept-edits mode                                                               ␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m1. Run the whole plan — accept edits mode                                                               ␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m    edits apply as they come; commands and other actions still ask␛[m                                         ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;244m2. ␛[m␛[38;5;254mRun it unattended — auto mode␛[m                                                                         ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;244m3. ␛[m␛[38;5;254mStep through it — manual approvals␛[m                                                                    ␛[38;5;254m│␛[m
@@ -227,7 +227,7 @@
 ␛[38;5;254m│␛[m                                                                                                            ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m3 files touched␛[m␛[38;5;244m · ␛[m␛[38;5;254mno deletes␛[m␛[38;5;244m · ␛[m␛[38;5;254mno network␛[m␛[38;5;244m · ␛[m␛[38;5;254mreversible␛[m␛[38;5;244m — every file is tracked in git␛[m                      ␛[38;5;254m│␛[m
 ␛[38;5;254m├────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m1. Run the whole plan — accept-edits mode                                                               ␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m1. Run the whole plan — accept edits mode                                                               ␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m    edits apply as they come; commands and other actions still ask␛[m                                         ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;244m2. ␛[m␛[38;5;254mRun it unattended — auto mode␛[m                                                                         ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;244m3. ␛[m␛[38;5;254mStep through it — manual approvals␛[m                                                                    ␛[38;5;254m│␛[m
@@ -243,7 +243,7 @@
 ␛[38;5;254m│␛[m ␛[38;5;254mthe round loop, then handle it in the chat model so the user is␛[m                                            ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254moffered more rounds instead of the turn simply stopping.␛[m                                                   ␛[38;5;254m│␛[m
 ␛[38;5;254m├────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m1. Run the whole plan — accept-edits mode                                                               ␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m1. Run the whole plan — accept edits mode                                                               ␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m    edits apply as they come; commands and other actions still ask␛[m                                         ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;244m2. ␛[m␛[38;5;254mRun it unattended — auto mode␛[m                                                                         ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;244m3. ␛[m␛[38;5;254mStep through it — manual approvals␛[m                                                                    ␛[38;5;254m│␛[m
