@@ -52,6 +52,11 @@ again just as it stands, so a script that retries it burns its schedule on a
 typo. A failure the classification has no name for stays `4`, because
 "unclassified" is not evidence that anything about the request was wrong.
 
+An answer that missed its schema twice is a `4` as well, with `schema` as
+its class rather than a provider's. It is a turn that failed, which is what
+the record files it as, and the class is what tells it from an outage
+([below](#an-answer-can-be-held-to-a-schema)).
+
 The backlog runner's row is one more code in this set rather than a set of
 its own. A blocked item is not a turn that broke — every turn in it ended the
 way turns end — and it is not a failing suite or a refusal either. It is the
@@ -189,6 +194,37 @@ and completion counts. It is billed at a fraction of the rest and cannot be
 recovered from the other two figures, so a script pricing a night of runs
 against a rate card needs it stated
 ([`providers.md`](providers.md#the-prompt-prefix-is-paid-for-once)).
+
+### An answer can be held to a schema
+
+`--output-schema <file>` on `shhh code -p` and `shhh chat --print` names a
+JSON Schema the final answer must satisfy, so a script that wants data gets
+data rather than a paragraph to grep. The schema closes the prompt the run is
+given, so the model knows the shape before it writes anything, and the
+answer is checked where the turn would end. An answer that does not satisfy
+it is asked for once more, with the validator's own reasons, as the user
+message a failing suite is handed back as; a second miss ends the run with
+`4` and `error_class: schema`, and the record files the turn as failed. One
+more attempt is the bound for the reason a ceiling gets one continuation: a
+model that cannot produce the shape twice running is not going to on the
+fifth, and there is nobody here to notice the turn being spent on it.
+
+The checker reads four keywords — `type`, `required`, `properties` and `enum`
+— and passes over the ones that only annotate (`title`, `description`,
+`$schema` and the like). A schema that uses any other keyword is refused
+before the run starts, naming it, and so is one that cannot be satisfied at
+all, such as an `enum` with no value of its own `type`. A keyword the checker
+skipped would be a promise the run said it kept and did not.
+
+What the schema does to the three shapes: `.final` in the transcript and on
+the stream's close line is the answer as JSON — an object where the schema
+says object — rather than a string holding it, and `text` writes that value
+to stdout once it has been checked rather than every attempt as it is
+written, so a `$(...)` never captures the attempt that missed. `truncated`
+does not appear: half an object is not an answer, so a reply cut at the
+ceiling takes the continuation the run already makes, and one that is cut
+again is a miss like any other. The backlog runner passes no schema — its
+stages answer in marker lines — so none of this reaches it.
 
 ### The run says where it left off
 

@@ -206,6 +206,11 @@ type printOpts struct {
 	// left alone (config, then the default) and --max-rounds 0 (uncapped).
 	maxRounds    int
 	maxRoundsSet bool
+	// schema is --output-schema, read before the run: the shape the final
+	// answer is held to, or nil for an answer that is whatever the model
+	// wrote.
+	// See docs/capabilities/headless.md#an-answer-can-be-held-to-a-schema.
+	schema *answerSchema
 	// execResult preserves command-ending facts for the headless formatter.
 	// Test and compatibility callers continue to supply the legacy tuple runner.
 	execResult func(context.Context, string) tools.ExecResult
@@ -824,6 +829,9 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	if strings.TrimSpace(initialPrompt) == "" {
 		return fmt.Errorf("print mode needs a prompt: pass one as an argument or pipe it on stdin")
 	}
+	if opts.schema != nil {
+		initialPrompt += opts.schema.instruction()
+	}
 
 	allowlist := append([]string{}, cfg.Behavior.CommandAllowlist...)
 	allowlist = append(allowlist, opts.allow...)
@@ -1269,12 +1277,32 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 		// only one of the two is worth interrupting.
 		summaryRun.WithAlerts(closing.alerts)
 	}
+	// The schema is asked after the checks, because it is about the answer
+	// and the answer that counts is the one written after the last hand-back
+	// the checks made. Both hand back the same way, as a user message.
+	var shape *schemaClose
+	if opts.schema != nil {
+		shape = &schemaClose{schema: opts.schema, truncated: h.TruncatedReply}
+		checks := h.OnClose
+		h.OnClose = func(final string) string {
+			if checks != nil {
+				if fb := checks(final); fb != "" {
+					return fb
+				}
+			}
+			return shape.close(final)
+		}
+	}
 	// Where the answer goes as it is written: stdout for a person or a
 	// `$(...)`, the stream for a consumer reading events, and nowhere at all
 	// for the transcript shape, which states the whole answer at the end.
 	switch opts.output {
 	case outputText:
-		h.OnText = func(text string) { fmt.Fprint(os.Stdout, text) }
+		// Under a schema the answer is data, and stdout carries it once it
+		// has been checked rather than every attempt as it is written.
+		if shape == nil {
+			h.OnText = func(text string) { fmt.Fprint(os.Stdout, text) }
+		}
 	case outputJSONL:
 		h.OnText = obs.text
 	}
@@ -1293,6 +1321,13 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	mcpTurnBoundary(session.mcpTools)
 	final, err := h.Run(initialPrompt)
 	stopSignals()
+	// A turn that finished is held to the schema once more, after the
+	// hand-back has been spent: an answer that still misses is the run's
+	// ending, and it is a failed turn in the record like any other.
+	var answer json.RawMessage
+	if err == nil && shape != nil {
+		answer, err = shape.check(final)
+	}
 	// And again on the other side of it, because an unattended run is one
 	// turn: a server that went mid-run has no later boundary to be said at,
 	// and stderr is where this run's other diagnostics are
@@ -1316,7 +1351,13 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	// suffix, and a handle naming the name this run asked for would open
 	// somebody else's conversation.
 	left := saved.handles(recorder)
-	if opts.output == outputText && final != "" && !strings.HasSuffix(final, "\n") {
+	switch {
+	case opts.output != outputText:
+	case shape != nil:
+		if answer != nil {
+			fmt.Fprintln(os.Stdout, string(answer))
+		}
+	case final != "" && !strings.HasSuffix(final, "\n"):
 		fmt.Fprintln(os.Stdout)
 	}
 	// The loop ended the way it ended; whether the code it left behind
@@ -1349,13 +1390,16 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	switch opts.output {
 	case outputJSON:
 		if err := writeJSONTranscript(os.Stdout, jsonRun{
-			messages: a.Messages(), final: final, truncated: h.TruncatedReply(),
-			usage: usage, gate: closing.state(), written: own.paths(), left: left, err: out,
+			messages: a.Messages(), final: final, answer: answer,
+			// Under a schema a cut answer is a miss rather than a label: the
+			// check above refused it, so what is quoted is never half a value.
+			truncated: h.TruncatedReply() && shape == nil,
+			usage:     usage, gate: closing.state(), written: own.paths(), left: left, err: out,
 		}); err != nil {
 			return err
 		}
 	case outputJSONL:
-		events.closed(obs.pos(), outcome, code, final, usage, left, out)
+		events.closed(obs.pos(), outcome, code, final, answer, usage, left, out)
 	}
 	// Nothing to report and nothing to report it as: every code above zero
 	// has an error behind it, which is what carries it out to the process.
@@ -1723,6 +1767,10 @@ func providerRefusedRequest(err error) bool {
 func failureClass(err error) string {
 	if f, ok := provider.AsFailure(err); ok {
 		return string(f.Class)
+	}
+	var miss *schemaMiss
+	if errors.As(err, &miss) {
+		return errorClassSchema
 	}
 	return ""
 }
@@ -2099,7 +2147,11 @@ type jsonTranscript struct {
 	// without waiting for a status to be minted for every class.
 	// See docs/capabilities/headless.md#the-exit-code-is-the-contract.
 	ErrorClass string `json:"error_class,omitempty"`
-	Final      string `json:"final"`
+	// Final is the answer as the model wrote it, or — where the run was
+	// given --output-schema and the answer satisfied it — the answer as JSON
+	// (answer, below, which MarshalJSON puts in its place).
+	// See docs/capabilities/headless.md#an-answer-can-be-held-to-a-schema.
+	Final string `json:"final"`
 	// Truncated qualifies Final: the answer stopped at the model's output
 	// ceiling and the run's one continuation had already been spent, so what
 	// is quoted is the first half of an answer. It is stated because nothing
@@ -2142,6 +2194,21 @@ type jsonTranscript struct {
 	Resume   string        `json:"resume,omitempty"`
 	Usage    jsonUsage     `json:"usage"`
 	Messages []jsonMessage `json:"messages"`
+
+	answer json.RawMessage
+}
+
+// MarshalJSON states the checked answer as JSON in Final's place, so that
+// `.final` is the value a schema was given for and not a string holding it.
+func (t jsonTranscript) MarshalJSON() ([]byte, error) {
+	type plain jsonTranscript
+	if t.answer == nil {
+		return json.Marshal(plain(t))
+	}
+	return json.Marshal(struct {
+		plain
+		Final json.RawMessage `json:"final"`
+	}{plain(t), t.answer})
 }
 
 // jsonUsage is what the run cost, as every JSON shape reports it. The cached
@@ -2208,8 +2275,10 @@ func jsonMessages(msgs []provider.Message) []jsonMessage {
 // caller that transposed two of them would be writing a transcript nothing
 // downstream could tell was wrong.
 type jsonRun struct {
-	messages  []provider.Message
-	final     string
+	messages []provider.Message
+	final    string
+	// answer is final as JSON, where a schema checked it.
+	answer    json.RawMessage
 	truncated bool
 	usage     provider.Usage
 	gate      quality.Closing
@@ -2256,6 +2325,7 @@ func writeJSONTranscript(w io.Writer, r jsonRun) error {
 		Resume:    r.left.resume,
 		Usage:     usageOf(r.usage),
 		Messages:  jsonMessages(r.messages),
+		answer:    r.answer,
 	}
 	if r.err != nil {
 		t.Error, t.ErrorClass = r.err.Error(), failureClass(r.err)
@@ -2335,6 +2405,22 @@ type jsonEvent struct {
 	Chat    string `json:"chat,omitempty"`
 	Session string `json:"session,omitempty"`
 	Resume  string `json:"resume,omitempty"`
+
+	// answer is the close line's Final as JSON, where a schema checked it.
+	answer json.RawMessage
+}
+
+// MarshalJSON states the checked answer as JSON in Final's place, the way
+// the transcript states it.
+func (e jsonEvent) MarshalJSON() ([]byte, error) {
+	type plain jsonEvent
+	if e.answer == nil {
+		return json.Marshal(plain(e))
+	}
+	return json.Marshal(struct {
+		plain
+		Final json.RawMessage `json:"final"`
+	}{plain(e), e.answer})
 }
 
 // jsonAgent is one child of the session as a reader of the stream is told
@@ -2473,14 +2559,14 @@ func (s *jsonlStream) usage(at observe.Pos, u provider.Usage) {
 // word the record keeps, the exit code projected from it, the answer, and
 // what the run spent getting there. A consumer that reads only this line has
 // everything the exit status says and the answer besides.
-func (s *jsonlStream) closed(at observe.Pos, outcome string, code int, final string, u provider.Usage, left headlessHandles, err error) {
+func (s *jsonlStream) closed(at observe.Pos, outcome string, code int, final string, answer json.RawMessage, u provider.Usage, left headlessHandles, err error) {
 	if s == nil {
 		return
 	}
 	priced := usageOf(u)
 	ev := jsonEvent{Kind: observe.EventClose, Turn: at.Turn, Round: at.Round,
 		Outcome: outcome, Exit: &code, Final: final, Usage: &priced,
-		Chat: left.chat, Session: left.session, Resume: left.resume}
+		Chat: left.chat, Session: left.session, Resume: left.resume, answer: answer}
 	if err != nil {
 		ev.Error, ev.ErrorClass = err.Error(), failureClass(err)
 	}

@@ -1540,7 +1540,7 @@ func TestJSONLStreamReplaysToTheTranscript(t *testing.T) {
 		t.Fatalf("run = %q, %v", final, err)
 	}
 	events.closed(obs.pos(), headlessTurnOutcome(err), headlessExitCode(headlessTurnOutcome(err), false, false),
-		final, provider.Usage{PromptTokens: 10, CompletionTokens: 2, CachedTokens: 8}, headlessHandles{}, nil)
+		final, nil, provider.Usage{PromptTokens: 10, CompletionTokens: 2, CachedTokens: 8}, headlessHandles{}, nil)
 
 	// The prompt and the system message are what the run opened on, not
 	// something it did; the stream carries the turn.
@@ -1600,7 +1600,7 @@ func TestJSONLStreamIsAQuietNoOpWhenNobodyAskedForOne(t *testing.T) {
 	obs.decision(observe.DecisionDeny, observe.ReasonHeadlessDefault)
 	obs.usage(provider.Usage{PromptTokens: 1})
 	obs.signal(observe.SignalRetry, "overloaded")
-	obs.stream.closed(obs.pos(), observe.TurnDone, exitDone, "done", provider.Usage{}, headlessHandles{}, nil)
+	obs.stream.closed(obs.pos(), observe.TurnDone, exitDone, "done", nil, provider.Usage{}, headlessHandles{}, nil)
 }
 
 // treeRepo is a checkout with one commit and a clean tree. Config is pinned

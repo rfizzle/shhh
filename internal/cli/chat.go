@@ -26,6 +26,7 @@ func newChatCmd() *cobra.Command {
 	var resumeChat string
 	var printMode bool
 	var popts printOpts
+	var schemaPath string
 	var addDirs []string
 	var secretFlags []string
 
@@ -44,6 +45,12 @@ func newChatCmd() *cobra.Command {
 				return err
 			}
 			popts.output = output
+			// The schema is read here for the same reason: one the answer
+			// could never be held to is refused before a provider is asked
+			// anything.
+			if popts.schema, err = outputSchema(schemaPath); err != nil {
+				return err
+			}
 			// An empty name is a request to resume that names nothing, and
 			// starting a new conversation for it would answer a question
 			// nobody asked.
@@ -52,7 +59,7 @@ func newChatCmd() *cobra.Command {
 			}
 			session := conversationSession(cmd, &flags, continueLast, resumeChat == resumeFromPicker, addDirs, secretFlags)
 			session.resumeName = resumeNamed(resumeChat)
-			if printMode || popts.json || cmd.Flags().Changed("output") {
+			if printMode || popts.json || cmd.Flags().Changed("output") || cmd.Flags().Changed("output-schema") {
 				// The session says what it is rather than leaving the two
 				// fields describing the screen it does not have. A memory is
 				// a proposal the person confirms, and there is nobody here to
@@ -84,6 +91,7 @@ func newChatCmd() *cobra.Command {
 	cmd.Flags().BoolVarP(&printMode, "print", "p", false, "run headless: stream the answer to stdout and exit (no TUI)")
 	cmd.Flags().BoolVar(&popts.json, "json", false, "with --print, emit a structured JSON transcript instead of streaming text (implies --print; the same as --output json)")
 	cmd.Flags().StringVar(&popts.output, "output", "", "with --print, what the run writes: text (the answer as it is written), json (the transcript at the end) or jsonl (one event per line while it runs) (implies --print)")
+	addOutputSchemaFlag(cmd, &schemaPath)
 	// The one opt-in a conversation has anything to spend. Nothing here
 	// edits a file or runs a command, so the only decision a read-only
 	// session ever puts to a person is whether a request may leave the

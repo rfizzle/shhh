@@ -1071,7 +1071,7 @@ func (l *serveLoop) Run(turn int64, prompt string) (string, error) {
 	// because that is the order the two happen in: a hook told about a turn
 	// after the close line had gone out would be closing nothing.
 	l.hookNote(l.hooks.TurnClose(l.hookCtx, l.hookPos(), final))
-	l.events.closed(l.obs.pos(), outcome, headlessExitCode(outcome, gateErr != nil, refused), final, usage,
+	l.events.closed(l.obs.pos(), outcome, headlessExitCode(outcome, gateErr != nil, refused), final, nil, usage,
 		l.saved.handles(l.recorder), out)
 	return final, out
 }

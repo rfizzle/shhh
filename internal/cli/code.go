@@ -37,6 +37,7 @@ func newCodeCmd() *cobra.Command {
 	var resumeChat string
 	var printMode bool
 	var popts printOpts
+	var schemaPath string
 	var addDirs []string
 	var secretFlags []string
 	var requireSandbox bool
@@ -61,7 +62,13 @@ func newCodeCmd() *cobra.Command {
 				return err
 			}
 			popts.output = output
-			headless := printMode || popts.json || popts.sandbox || cmd.Flags().Changed("output")
+			// The schema is read here for the same reason: one the answer
+			// could never be held to is refused before a provider is asked
+			// anything.
+			if popts.schema, err = outputSchema(schemaPath); err != nil {
+				return err
+			}
+			headless := printMode || popts.json || popts.sandbox || cmd.Flags().Changed("output") || cmd.Flags().Changed("output-schema")
 			// The permission mode, which only a run with nobody in front of
 			// it takes as a flag: a session cycles its own with Shift+Tab
 			// and starts in behavior.default_mode, so a flag here would be a
@@ -138,6 +145,7 @@ func newCodeCmd() *cobra.Command {
 	cmd.Flags().BoolVarP(&printMode, "print", "p", false, "run headless: stream the response to stdout and exit (no TUI)")
 	cmd.Flags().BoolVar(&popts.json, "json", false, "with --print, emit a structured JSON transcript instead of streaming text (implies --print; the same as --output json)")
 	cmd.Flags().StringVar(&popts.output, "output", "", "with --print, what the run writes: text (the answer as it is written), json (the transcript at the end) or jsonl (one event per line while it runs) (implies --print)")
+	addOutputSchemaFlag(cmd, &schemaPath)
 	cmd.Flags().BoolVar(&popts.yes, "yes", false, "with --print, auto-approve file edits and commands (safety-flagged commands stay denied)")
 	cmd.Flags().StringArrayVar(&popts.allow, "allow", nil, "with --print, auto-approve commands matching this prefix (repeatable; extends the config allowlist)")
 	cmd.Flags().StringVar(&mode, "mode", "", "with --print, the permission mode: `auto` puts a call --yes and --allow do not answer to the permission classifier, which refuses whatever it cannot approve (the only mode a run with no terminal takes)")
