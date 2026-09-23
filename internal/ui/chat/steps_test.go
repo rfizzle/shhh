@@ -183,6 +183,23 @@ func TestStepHeader_GridAndClipping(t *testing.T) {
 	}
 }
 
+// A duration that fills its whole field is the case the reserved gap is for:
+// without it `4 tools` and `12345s` read as one word, which is the defect the
+// activity row's own gap was added for, on the same grid.
+func TestStepHeader_AFullDurationDoesNotAbutTheCount(t *testing.T) {
+	h := stepHeader{Ordinal: 1, Title: "Locate the round accounting",
+		State: stepDone, Tools: 4, Duration: 12345 * time.Second}
+	for _, width := range []int{60, 80} {
+		line := stripANSI(h.View(width))
+		if !strings.HasSuffix(line, "4 tools 12345s") {
+			t.Fatalf("width %d: the count and a six-column duration should be one column apart: %q", width, line)
+		}
+		if got := lipgloss.Width(line); got != width {
+			t.Fatalf("width %d: header should fill the grid, got %d: %q", width, got, line)
+		}
+	}
+}
+
 func TestStepHeader_StatesAndCounts(t *testing.T) {
 	cases := []struct {
 		state stepState

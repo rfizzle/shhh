@@ -487,7 +487,8 @@ func (h stepHeader) durationText() string {
 
 // View renders the header at the given width, on the column grid: the title
 // starts in the verb column and the duration is the same right-aligned
-// 6-column field the rows use, so the outline and the feed share one edge.
+// 6-column field the rows use, behind the same reserved gap, so the outline
+// and the feed share one edge and a full duration never abuts the count.
 func (h stepHeader) View(width int) string {
 	fold := "▾"
 	switch {
@@ -521,7 +522,7 @@ func (h stepHeader) View(width int) string {
 		// (guidelines/layout-breakpoints: the word goes rather than being
 		// cut down).
 		key := " · " + searchOpenKey
-		if width-leadW-statsW-lipgloss.Width(key)-components.GridDurationWidth-3 >= stepTitleMinWidth {
+		if width-leadW-statsW-lipgloss.Width(key)-components.GridDurationGap-components.GridDurationWidth-3 >= stepTitleMinWidth {
 			stats += sty.Step.Stats.Render(" · ") + sty.Search.Hint.Render(searchOpenKey)
 			statsW += lipgloss.Width(key)
 		}
@@ -529,15 +530,16 @@ func (h stepHeader) View(width int) string {
 
 	// The rule takes what the title leaves; the title clips before the rule
 	// disappears, because the stats are the reason to read the header.
-	fixed := leadW + statsW + components.GridDurationWidth + 3
+	fixed := leadW + statsW + components.GridDurationGap + components.GridDurationWidth + 3
 	title := clipRow(h.Title, width-fixed)
-	rule := width - leadW - lipgloss.Width(title) - statsW - components.GridDurationWidth - 2
+	rule := width - leadW - lipgloss.Width(title) - statsW - components.GridDurationGap - components.GridDurationWidth - 2
 	if rule < 1 {
 		rule = 1
 	}
 	line := lead + titleStyle.Render(title) + " " +
 		sty.Step.Rule.Render(strings.Repeat("─", rule)) + " " +
-		stats + stepDurationField(h.durationText(), durStyle)
+		stats + strings.Repeat(" ", components.GridDurationGap) +
+		stepDurationField(h.durationText(), durStyle)
 	return strings.TrimRight(line, " ")
 }
 

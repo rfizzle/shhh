@@ -954,6 +954,10 @@ const (
 	GridVerbColumn = ptrWidth + railWidth + glyphWidth
 	// GridDurationWidth is the right-aligned duration field.
 	GridDurationWidth = durWidth
+	// GridDurationGap is the column reserved between whatever a row states
+	// last and its duration, so a duration that fills its field cannot abut
+	// the count beside it and read as one word with it.
+	GridDurationGap = durGap
 	// GridDetailIndent is where a detail body starts. A caller that has to
 	// wrap prose before handing it over as Detail lines needs the same number
 	// this file indents them by; measuring it twice is how they drift.

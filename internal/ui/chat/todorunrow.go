@@ -242,15 +242,15 @@ func (r *todoRunRow) headerLine(width int, folded bool) string {
 	if r.live() {
 		titleStyle = sty.Step.LiveTitle
 	}
-	fixed := leadW + statsW + components.GridDurationWidth + 3
+	fixed := leadW + statsW + components.GridDurationGap + components.GridDurationWidth + 3
 	title := clipRow(r.title(), width-fixed)
-	rule := width - leadW - lipgloss.Width(title) - statsW - components.GridDurationWidth - 2
+	rule := width - leadW - lipgloss.Width(title) - statsW - components.GridDurationGap - components.GridDurationWidth - 2
 	if rule < 1 {
 		rule = 1
 	}
 	line := lead + titleStyle.Render(title) + " " +
 		sty.Step.Rule.Render(strings.Repeat("─", rule)) + " " + stats +
-		stepDurationField(turnDuration(r.elapsed()), sty.Step.Stats)
+		strings.Repeat(" ", components.GridDurationGap) + stepDurationField(turnDuration(r.elapsed()), sty.Step.Stats)
 	return strings.TrimRight(line, " ")
 }
 

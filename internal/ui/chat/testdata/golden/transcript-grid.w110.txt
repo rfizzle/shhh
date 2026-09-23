@@ -14,7 +14,7 @@
 ❯ hold the round limit in one place and run the tests
 ────────────────────────────────────────────────────────────────────────────────────────────────────────
 
-▾ 1  The constant is declared in three files, so the loop is the only one of them tha… ─ ✗ 2 tools   21s
+▾ 1  The constant is declared in three files, so the loop is the only one of them th… ─ ✗ 2 tools    21s
    ⚙ read    internal/agent/loop.go                                                       3 lines
   ▎✗ run     go test ./internal/agent/...                                                  exit 1    21s
     --- FAIL: TestRoundLimit
@@ -42,7 +42,7 @@
    shhh chat                                                                                                  
   ──────────────────────────────────────────────────────────────────────────────────────────────────────────  
                                                                                                               
-  ▾ 1  The constant is declared in three files, so the loop is the only one of them tha… ─ ✗ 2 tools   21s    
+  ▾ 1  The constant is declared in three files, so the loop is the only one of them th… ─ ✗ 2 tools    21s    
      ⚙ read    internal/agent/loop.go                                                       3 lines       ┃   
     ▎✗ run     go test ./internal/agent/...                                                  exit 1    21s┃   
       --- FAIL: TestRoundLimit                                                                            ┃   
@@ -74,7 +74,7 @@
 ❯ hold the round limit in one place and run the tests
 ────────────────────────────────────────────────────────────────────────────────────────────────────────
 
-▾ 1  The constant is declared in three files, so the loop is the only one of them tha… ─ ✗ 2 tools   21s
+▾ 1  The constant is declared in three files, so the loop is the only one of them th… ─ ✗ 2 tools    21s
    ⚙ read    internal/agent/loop.go                                                       3 lines
   ▎✗ run     go test ./internal/agent/...                                                  exit 1    21s
     --- FAIL: TestRoundLimit
@@ -102,7 +102,7 @@
 ␛[94m❯␛[m ␛[97mhold the round limit in one place and run the tests␛[m
 ␛[38;5;243m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[38;5;241m▾␛[m ␛[38;5;252m1 ␛[m ␛[38;5;252mThe constant is declared in three files, so the loop is the only one of them tha…␛[m ␛[38;5;241m─␛[m ␛[91m✗␛[m ␛[38;5;241m2 tools␛[m   ␛[38;5;241m21s␛[m
+␛[38;5;241m▾␛[m ␛[38;5;252m1 ␛[m ␛[38;5;252mThe constant is declared in three files, so the loop is the only one of them th…␛[m ␛[38;5;241m─␛[m ␛[91m✗␛[m ␛[38;5;241m2 tools␛[m    ␛[38;5;241m21s␛[m
    ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/loop.go␛[m                                                       ␛[38;5;245m3 lines␛[m
   ␛[91m▎␛[m␛[91m✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgo test ./internal/agent/...␛[m                                                  ␛[91mexit 1␛[m    ␛[38;5;241m21s␛[m
     ␛[38;5;245m--- FAIL: TestRoundLimit␛[m
@@ -130,7 +130,7 @@
   ␛[97;1m shhh chat␛[m                                                                                                  
   ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m  
                                                                                                               
-  ␛[38;5;241m▾␛[m ␛[38;5;252m1 ␛[m ␛[38;5;252mThe constant is declared in three files, so the loop is the only one of them tha…␛[m ␛[38;5;241m─␛[m ␛[91m✗␛[m ␛[38;5;241m2 tools␛[m   ␛[38;5;241m21s␛[m    
+  ␛[38;5;241m▾␛[m ␛[38;5;252m1 ␛[m ␛[38;5;252mThe constant is declared in three files, so the loop is the only one of them th…␛[m ␛[38;5;241m─␛[m ␛[91m✗␛[m ␛[38;5;241m2 tools␛[m    ␛[38;5;241m21s␛[m    
      ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/loop.go␛[m                                                       ␛[38;5;245m3 lines␛[m       ␛[38;5;241m┃␛[m   
     ␛[91m▎✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgo test ./internal/agent/...␛[m                                                  ␛[91mexit 1␛[m    ␛[38;5;241m21s┃␛[m   
       ␛[38;5;245m--- FAIL: TestRoundLimit␛[m                                                                            ␛[38;5;241m┃␛[m   
@@ -162,7 +162,7 @@
 ␛[94m❯␛[m ␛[97mhold the round limit in one place and run the tests␛[m
 ␛[38;5;243m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[38;5;241m▾␛[m ␛[38;5;252m1 ␛[m ␛[38;5;252mThe constant is declared in three files, so the loop is the only one of them tha…␛[m ␛[38;5;241m─␛[m ␛[91m✗␛[m ␛[38;5;241m2 tools␛[m   ␛[38;5;241m21s␛[m
+␛[38;5;241m▾␛[m ␛[38;5;252m1 ␛[m ␛[38;5;252mThe constant is declared in three files, so the loop is the only one of them th…␛[m ␛[38;5;241m─␛[m ␛[91m✗␛[m ␛[38;5;241m2 tools␛[m    ␛[38;5;241m21s␛[m
    ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/loop.go␛[m                                                       ␛[38;5;245m3 lines␛[m
   ␛[91m▎␛[m␛[91m✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgo test ./internal/agent/...␛[m                                                  ␛[91mexit 1␛[m    ␛[38;5;241m21s␛[m
     ␛[38;5;245m--- FAIL: TestRoundLimit␛[m
