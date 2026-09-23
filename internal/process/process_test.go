@@ -407,6 +407,34 @@ func TestStop_KillsAProcessThatIgnoresTheGentleSignal(t *testing.T) {
 	})
 }
 
+// A stop that has to kill must not leave the shell a moment to run its next
+// command. The shell here ignores TERM (and so does the sleep it is waiting
+// on, which inherits the ignore), so the grace runs out and the kill goes to
+// the group; a kill that reached the sleep before the shell would wake the
+// shell into the touch, which was not in the group when the kill went out.
+func TestStop_TheShellsNextCommandDoesNotOutliveTheKill(t *testing.T) {
+	s := newTestSupervisor(t, nil)
+	marker := filepath.Join(t.TempDir(), "survived")
+	const commandLife = 5 * time.Second
+	command := fmt.Sprintf("trap '' TERM; echo ARMED; sleep %d; touch %s", int(commandLife/time.Second), marker)
+	args, err := json.Marshal(map[string]string{"action": "start", "name": "shell", "command": command})
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	execute(t, s, string(args))
+	waitFor(t, "the shell to arm", func() bool {
+		return strings.Contains(execute(t, s, `{"action":"read","name":"shell"}`), "ARMED")
+	})
+	armed := time.Now()
+	execute(t, s, `{"action":"stop","name":"shell"}`)
+
+	// Past when the shell would have written, had it survived.
+	time.Sleep(time.Until(armed.Add(commandLife + 500*time.Millisecond)))
+	if _, err := os.Stat(marker); err == nil {
+		t.Fatal("the shell ran its next command after the stop killed its group")
+	}
+}
+
 // pidAlive reports whether a pid still exists (signal 0 probe).
 func pidAlive(pid int) bool {
 	p, err := os.FindProcess(pid)
