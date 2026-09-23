@@ -17,6 +17,9 @@
 #                               capture the screen once <text> is on it; every
 #                               further string must be on that capture too
 #     sleep <seconds>           wait, for the rare step nothing on screen marks
+#     wide <cols> <step>        the step, only where the pane is <cols> or wider
+#     narrow <cols> <step>      the step, only where the pane is narrower; the
+#                               two stack, to bound a step on both sides
 #
 # A snap that names text polls the screen for it and fails the run when it
 # never appears, so a scene is also a test: the exit code says whether every
@@ -276,6 +279,37 @@ screen() { tmux -L "$SOCK" capture-pane -p -t scene 2>/dev/null; }
 failed=0
 step=0
 while IFS= read -r line || [ -n "$line" ]; do
+	# A step one side of a width: `wide <cols>` runs it where the pane is at
+	# least that wide, `narrow <cols>` where it is narrower, and the two
+	# together bound it on both sides. A scene is driven at its own size by
+	# the gate and at any COLS by hand, and a row that only exists past a
+	# breakpoint — the inspector rail — is a failure to wait for on the other
+	# side of it, where what the scene is for may still be there.
+	skip=0
+	while :; do
+		case $line in
+		wide\ *|narrow\ *) ;;
+		*) break ;;
+		esac
+		side=${line%% *}
+		line=${line#* }
+		at=${line%% *}
+		line=${line#* }
+		case $at in
+		""|*[!0-9]*)
+			echo "drive.sh: $name: $side needs a column count before the step: $side $at $line" >&2
+			failed=1
+			break
+			;;
+		esac
+		if [ "$side" = wide ]; then
+			[ "$COLS" -ge "$at" ] || skip=1
+		else
+			[ "$COLS" -lt "$at" ] || skip=1
+		fi
+	done
+	[ "$failed" = 1 ] && break
+	[ "$skip" = 1 ] && continue
 	case $line in
 	""|\#*|setup\ *) continue ;;
 	keys\ *)

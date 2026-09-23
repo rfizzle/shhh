@@ -64,40 +64,48 @@ snap 06-blocked "waiting approval"
 # once all three writers are asking. The snap waits for the last of them —
 # writer-3, whose clock started only once its delegation was answered — rather
 # than counting on the harness to beat the clock: on a loaded host it does
-# not, and the rows move under the pointer between the kill and the attach.
+# not, and the rows move under the pointer before the kill. Each row is named
+# by as much of its task as the manager draws at 80, where the rest is cut.
 keys M-a
-snap 07-manager "⚠ writer-3 · Say where the loop exits." "⚠ writer-2 · Say where the round limit is set." "[enter] attach"
+snap 07-manager "⚠ writer-3 · Say where the loop" "⚠ writer-2 · Say where the round" "[enter] attach"
 keys j
 keys X
-snap 08-kill-asks "its patch is kept"
+# The confirm is one line cut at the width, so on a narrow pane the sentence
+# about the patch is past its end and the snap waits on the question instead.
+wide 130 snap 08-kill-asks "its patch is kept"
+narrow 130 snap 08-kill-asks "Kill writer-1?"
 keys y
 sleep 1
 snap 09-killed "[p] review"
 # Attaching to a session that is not the one asking is what puts the rail back
 # with the map whole: the block floated to the top, the failure under it, the
 # grandchild indented under its own parent, and the trailer naming the way
-# out. The session attached to here is the grandchild itself, two rows down
-# the manager's list from where the kill left the pointer — under the two
-# writers still asking, and over the one that failed — so the frame's
-# breadcrumb is the lineage as well. Driven
-# once at 80 as well, where the rail is gone and the path keeps its nearest two
-# segments (`… ▸ writer-3 ▸ reader-3a`); the run stops at this step there,
-# because the trailer it waits for is the rail's and 80 has no rail.
-keys j
-keys j
-keys Enter
+# out. The session attached to here is the grandchild itself, so the frame's
+# breadcrumb is the lineage as well — named rather than walked to down the
+# manager's list, whose rows the kill has just moved. The capture is the rail
+# at the scene's own 130; below that the rail is gone, and below the frame's
+# 110 rung the path keeps its nearest two segments (`… ▸ writer-3 ▸
+# reader-3a`), so the snap is one per side of each and `make tui-shot
+# COLS=80` runs the scene to its end.
+keys Escape
 sleep 1
-snap 10-map "alt+a manager" "alt+] next" "orchestrator ▸ writer-3 ▸ reader-3a" "└◇ reader-3a" "✗ writer-1"
+keys "/attach reader-3a" Enter
+sleep 1
+wide 130 snap 10-map "alt+a manager" "alt+] next" "orchestrator ▸ writer-3 ▸ reader-3a" "└◇ reader-3a" "✗ writer-1"
+narrow 130 wide 110 snap 10-map "orchestrator ▸ writer-3 ▸ reader-3a"
+narrow 110 snap 10-map "… ▸ writer-3 ▸ reader-3a"
 # The chord itself, twice: it walks spawn order rather than the order the map
-# is drawn in, and from the grandchild — the last thing spawned, and the
-# deepest — it walks up past its own parent and wraps to the session itself.
-# Where it ended up is the map's own pointer, which is what the trailer
-# promised the key would move.
+# is drawn in. From the grandchild — the last thing spawned, and the deepest —
+# it wraps to the session itself, and then to the first writer spawned, which
+# the map draws at the bottom because it failed. Where it ended up is the
+# map's own pointer, which is what the trailer promised the key would move,
+# and the breadcrumb, which is what says so where there is no map.
 keys M-]
 sleep 1
 keys M-]
 sleep 1
-snap 11-chord "❯ ⊘ orchestrator"
+wide 130 snap 11-chord "❯ ✗ writer-1" "orchestrator ▸ writer-1"
+narrow 130 snap 11-chord "orchestrator ▸ writer-1"
 keys Escape
 sleep 1
 # And the other way out of a lineage, from the deepest session again — named

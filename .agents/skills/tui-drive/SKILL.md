@@ -216,6 +216,13 @@ snap 04-exit "that is everything the screen was holding"
   they are for `keys`.
 - `sleep <seconds>` is for the rare step nothing on screen marks. Prefer a
   snap with text; a sleep is a guess about a machine's speed.
+- `wide <cols> <step>` runs the step only where the pane is at least `<cols>`
+  wide, and `narrow <cols> <step>` only where it is narrower; the two stack
+  (`narrow 130 wide 110 snap …`). The gate drives a scene at its own `size`,
+  and `COLS` drives it at any other, so a snap on a row that exists only past
+  a breakpoint — the inspector rail at 130, the whole breadcrumb at 110 — is
+  written once per side of it, each waiting on what that side draws, rather
+  than leaving the scene to stop there at the narrower width.
 
 A snap whose text never appears, or whose capture lacks a compared string,
 fails the run, so every scene is also a test, and the exit code of
