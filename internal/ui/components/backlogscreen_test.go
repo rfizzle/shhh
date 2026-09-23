@@ -360,7 +360,7 @@ func TestBacklogScreen_StartingAnItemWorksOnAnEmptyList(t *testing.T) {
 	if r.Do == nil || r.Do.Act != BacklogNew {
 		t.Fatalf("[n] on an empty list resolved to %+v", r.Do)
 	}
-	if !strings.Contains(view, keyOffers([]KeyOffer{keyOffer(keys.Backlog.New)})) {
+	if !strings.Contains(view, ansi.Strip(keyOffers([]KeyOffer{keyOffer(keys.Backlog.New)}))) {
 		t.Errorf("the empty list does not offer the key it answers:\n%s", view)
 	}
 }

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
@@ -217,7 +218,7 @@ func TestCompletion_AliasMatches(t *testing.T) {
 func TestCompletion_MenuInView(t *testing.T) {
 	m := typeChars(t, readyModel(t), "/mo")
 	view := m.View().Content
-	if !strings.Contains(view, "/model") || !strings.Contains(view, "[tab] complete") {
+	if !strings.Contains(view, "/model") || !strings.Contains(ansi.Strip(view), "[tab] complete") {
 		t.Fatal("the view should render the completion menu and its hint line")
 	}
 }

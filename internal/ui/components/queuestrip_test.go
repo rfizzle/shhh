@@ -127,7 +127,7 @@ func TestApprovalCard_BatchKey(t *testing.T) {
 
 	c.Batch, c.BatchHint = true, "answer 3 like this as a list"
 	view := c.View(80)
-	if !strings.Contains(view, "[A] answer 3 like this as a list") {
+	if !strings.Contains(ansi.Strip(view), "[A] answer 3 like this as a list") {
 		t.Fatalf("a batch should offer [A] under the count it answers:\n%s", view)
 	}
 	if done, result := c.Update(key("A")); !done || result != ApprovalBatch {

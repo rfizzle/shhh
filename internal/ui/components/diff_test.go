@@ -6,6 +6,7 @@ import (
 
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/colorprofile"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/diff"
 )
 
@@ -118,7 +119,7 @@ func TestDiffView_FullViewScrollAndToggle(t *testing.T) {
 	v := &DiffView{Path: "big.txt", Hunks: hunks, Mode: DiffFull, Height: 10}
 
 	view := v.View(80)
-	if !strings.Contains(view, "[j/k] scroll") {
+	if !strings.Contains(ansi.Strip(view), "[j/k] scroll") {
 		t.Fatalf("full view should show its key hints:\n%s", view)
 	}
 	if got := len(strings.Split(view, "\n")); got != 10 {

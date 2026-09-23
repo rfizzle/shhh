@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/charmbracelet/x/ansi"
 )
 
 func profileStarts() []string {
@@ -236,7 +237,7 @@ func TestProfileScreen_TheCardSurvivesAShortSurface(t *testing.T) {
 			t.Fatalf("h=%d: rendered %d lines", height, lines)
 		}
 		for _, want := range []string{"Keep test-writer?", "Save to this project", "[enter] confirm", "[esc] take none"} {
-			if !strings.Contains(view, want) {
+			if !strings.Contains(ansi.Strip(view), want) {
 				t.Fatalf("h=%d: the card lost %q:\n%s", height, want, view)
 			}
 		}

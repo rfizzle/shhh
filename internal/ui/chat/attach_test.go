@@ -189,7 +189,7 @@ func TestAgentListOpensAttachesAndDetaches(t *testing.T) {
 	if !strings.Contains(view, "orchestrator ▸ researcher-1") {
 		t.Fatalf("attached view missing breadcrumb:\n%s", view)
 	}
-	if !strings.Contains(view, "[esc] detach") {
+	if !strings.Contains(ansi.Strip(view), "[esc] detach") {
 		t.Fatalf("attached view missing detach hint:\n%s", view)
 	}
 	if !strings.Contains(view, "long survey") {
@@ -663,7 +663,7 @@ func TestAnswerBlockedChildFromTheList(t *testing.T) {
 	if !strings.Contains(view, "echo hi") {
 		t.Fatalf("the approval card is not over the list:\n%s", view)
 	}
-	if strings.Contains(view, "[enter] attach") {
+	if strings.Contains(ansi.Strip(view), "[enter] attach") {
 		t.Fatalf("the list must step aside while the card is up:\n%s", view)
 	}
 	// Esc here leaves rather than declines, and the card says so once: the
@@ -691,7 +691,7 @@ func TestAnswerBlockedChildFromTheList(t *testing.T) {
 	if m.answerAgent != "" || m.agentList == nil {
 		t.Fatalf("answering must return to the list (answerAgent=%q, open=%v)", m.answerAgent, m.agentList != nil)
 	}
-	if !strings.Contains(m.View().Content, "[enter] attach") {
+	if !strings.Contains(ansi.Strip(m.View().Content), "[enter] attach") {
 		t.Fatalf("the list did not come back:\n%s", m.View().Content)
 	}
 }
@@ -751,7 +751,7 @@ func TestRetryFailedChildFromTheList(t *testing.T) {
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyDown})
 	m = updated.(Model)
 	view := m.View().Content
-	if !strings.Contains(view, "[r] retry") {
+	if !strings.Contains(ansi.Strip(view), "[r] retry") {
 		t.Fatalf("a failed row must offer the retry:\n%s", view)
 	}
 	if !strings.Contains(view, "cancelled") {
@@ -789,7 +789,7 @@ func TestSteerAChildFromTheList(t *testing.T) {
 	m = updated.(Model)
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyDown})
 	m = updated.(Model)
-	if view := m.View().Content; !strings.Contains(view, "[s] steer") {
+	if view := m.View().Content; !strings.Contains(ansi.Strip(view), "[s] steer") {
 		t.Fatalf("a live child's row must offer the redirect:\n%s", view)
 	}
 
@@ -855,7 +855,7 @@ func TestDetachedAskGJumpsToAgent(t *testing.T) {
 	// Detached, the card offers the jump — once it holds the keyboard, since
 	// until then [g] is a letter.
 	m = handover(t, m)
-	if view := m.View().Content; !strings.Contains(view, "[g] attach to researcher-1") {
+	if view := m.View().Content; !strings.Contains(ansi.Strip(view), "[g] attach to researcher-1") {
 		t.Fatalf("routed card missing the [g] hint:\n%s", view)
 	}
 	updated, _ = m.Update(key('g'))

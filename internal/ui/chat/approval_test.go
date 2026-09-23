@@ -126,7 +126,7 @@ func TestGatedTool_DiffApprovalFlow(t *testing.T) {
 			t.Fatalf("a card holding the keyboard by arrival offers %q:\n%s", want, view)
 		}
 	}
-	if !strings.Contains(view, "[ctrl+space] for [a]/[d]") {
+	if !strings.Contains(ansi.Strip(view), "[ctrl+space] for [a]/[d]") {
 		t.Fatal("the card should say what the handover still buys")
 	}
 

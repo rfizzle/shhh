@@ -46,7 +46,7 @@ func TestApprovalCard_CommandVariant(t *testing.T) {
 	if !strings.Contains(view, "Approve command") || !strings.Contains(view, "go test ./...") {
 		t.Fatalf("command card should show title and command:\n%s", view)
 	}
-	if !strings.Contains(view, "[y] run it once") || strings.Contains(view, "[a]") {
+	if !strings.Contains(ansi.Strip(view), "[y] run it once") || strings.Contains(view, "[a]") {
 		t.Fatalf("without AllowAlways the card offers the two answers alone:\n%s", view)
 	}
 

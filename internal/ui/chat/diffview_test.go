@@ -162,7 +162,7 @@ func TestFocusMode_DiffRowCyclesToFullScreen(t *testing.T) {
 		t.Fatalf("second enter should open the diff full screen, got state %d", m.state)
 	}
 	view := m.View().Content
-	if !strings.Contains(view, "[j/k] scroll") {
+	if !strings.Contains(ansi.Strip(view), "[j/k] scroll") {
 		t.Fatal("full-screen view should show its key hints")
 	}
 

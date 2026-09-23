@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
@@ -60,7 +61,7 @@ func TestSelect_ViewShowsPointerAndFocusedDesc(t *testing.T) {
 	if !strings.Contains(view, "tell me what to change") {
 		t.Fatalf("focused option's description should show:\n%s", view)
 	}
-	if !strings.Contains(view, "[esc] take none") {
+	if !strings.Contains(ansi.Strip(view), "[esc] take none") {
 		t.Fatalf("hints should render:\n%s", view)
 	}
 }
@@ -128,7 +129,7 @@ func TestMultiSelect_ViewShowsChecksAndCount(t *testing.T) {
 	if !strings.Contains(view, "[x]") || !strings.Contains(view, "[ ]") {
 		t.Fatalf("view should render checked and unchecked boxes:\n%s", view)
 	}
-	if !strings.Contains(view, "[enter] apply (1)") {
+	if !strings.Contains(ansi.Strip(view), "[enter] apply (1)") {
 		t.Fatalf("confirm hint should show the live count:\n%s", view)
 	}
 }
@@ -271,7 +272,7 @@ func TestSelect_QueryChipsAndHint(t *testing.T) {
 	}
 	view := s.View(70)
 	for _, want := range []string{"Palette", "12 results", "▸ mod█", "COMMANDS", "[tab] complete"} {
-		if !strings.Contains(view, want) {
+		if !strings.Contains(ansi.Strip(view), want) {
 			t.Fatalf("expected %q in the card:\n%s", want, view)
 		}
 	}
@@ -404,7 +405,7 @@ func TestMultiSelect_HostActionsAreOffered(t *testing.T) {
 	s := NewMultiSelect("proposals", planOptions())
 	s.Actions = []KeyOffer{{Key: "[e]", Label: "its header"}}
 	view := s.View(70)
-	if !strings.Contains(view, "[e] its header") {
+	if !strings.Contains(ansi.Strip(view), "[e] its header") {
 		t.Fatalf("the action should be on the key row:\n%s", view)
 	}
 	if !strings.Contains(view, "apply (0)") {

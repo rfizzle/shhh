@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/charmbracelet/x/ansi"
 
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/subagent"
@@ -64,7 +65,7 @@ func TestAFinishedChildIsAskedAFollowUpFromItsRow(t *testing.T) {
 	})
 
 	m = pressKeys(t, m, tea.KeyPressMsg{Code: 'a', Mod: tea.ModAlt}, tea.KeyPressMsg{Code: tea.KeyDown})
-	if view := m.View().Content; !strings.Contains(view, "[s] follow up") {
+	if view := m.View().Content; !strings.Contains(ansi.Strip(view), "[s] follow up") {
 		t.Fatalf("a finished child's row must offer the follow-up:\n%s", view)
 	}
 	m = pressKeys(t, m, key('s'))

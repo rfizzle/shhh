@@ -103,7 +103,7 @@ func TestAgentList_ViewAndKeys(t *testing.T) {
 	}}
 	view := l.View(90)
 	for _, want := range []string{"●", "◇", "✓ done", "✗", "⚠ waiting approval", "orchestrator", "[enter] attach"} {
-		if !strings.Contains(view, want) {
+		if !strings.Contains(ansi.Strip(view), want) {
 			t.Fatalf("agent list should contain %q:\n%s", want, view)
 		}
 	}
