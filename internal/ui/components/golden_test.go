@@ -1272,7 +1272,8 @@ func TestGolden_AgentList(t *testing.T) {
 		inheriting[2] = AgentRow{State: AgentRunning, Name: "reviewer-1", Task: "review the round change",
 			Progress: progress(AgentProgress{State: FanoutRunning, Tools: 4, Spend: "$0.02", Inherited: 12_400})}
 		return []golden.Panel{
-			{Label: "focus · the orchestrator", View: (&AgentList{Rows: rows}).View(width)},
+			{Label: "focus · the orchestrator · the session's spawn count beside the tally, given up first when narrow",
+				View: (&AgentList{Rows: rows, Spawned: 4, SpawnLimit: 32}).View(width)},
 			{Label: "focus · the blocked child, [a] answers it here", View: (&AgentList{Rows: rows, Focus: 1}).View(width)},
 			{Label: "focus · the failed child, [r] runs it again", View: (&AgentList{Rows: rows, Focus: 4}).View(width)},
 			{Label: "focus · a killed writer whose patch is kept, [p] reviews it",
@@ -1316,8 +1317,10 @@ func TestGolden_AgentList(t *testing.T) {
 func TestGolden_FanoutBlock(t *testing.T) {
 	captureGolden(t, "fanout-block", "fan-out block", goldenWidths, func(width int) []golden.Panel {
 		flight := FanoutBlock{
-			Elapsed: "1m12s",
-			Keys:    []TurnKey{{Key: keys.Bracket(keys.Draft.Agents), Label: "agents"}},
+			Elapsed:    "1m12s",
+			Spawned:    4,
+			SpawnLimit: 32,
+			Keys:       []TurnKey{{Key: keys.Bracket(keys.Draft.Agents), Label: "agents"}},
 			Lanes: []FanoutLane{
 				{State: FanoutRunning, Name: "writer-1", Task: "docs/loop.md",
 					Step: 2, Steps: 5, Tools: 6, Spend: "$0.02", Elapsed: "12s", Seeded: 5},
@@ -1331,7 +1334,9 @@ func TestGolden_FanoutBlock(t *testing.T) {
 			},
 		}
 		settled := FanoutBlock{
-			Elapsed: "2m04s",
+			Elapsed:    "2m04s",
+			Spawned:    3,
+			SpawnLimit: 32,
 			Lanes: []FanoutLane{
 				{State: FanoutDone, Name: "writer-1", Task: "docs/loop.md",
 					Tools: 11, Spend: "$0.04", Elapsed: "1m38s",
@@ -1414,8 +1419,8 @@ func TestGolden_FanoutBlock(t *testing.T) {
 			},
 		}
 		return []golden.Panel{
-			{Label: "mid-flight · one child is waiting on you", View: flight.View(width)},
-			{Label: "settled · one lane open on its report, one carrying a verdict", View: settled.View(width)},
+			{Label: "mid-flight · one child is waiting on you, the session's spawn count on the header", View: flight.View(width)},
+			{Label: "settled · one lane open on its report, one carrying a verdict, and no spawn count once nothing is live", View: settled.View(width)},
 			{Label: "no declared step count · every lane spins", View: spinning.View(width)},
 			{Label: "held · two children parked where you stopped them", View: held.View(width)},
 			{Label: "a child that delegated · its lane says how many are under it", View: nested.View(width)},

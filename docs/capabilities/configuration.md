@@ -769,6 +769,7 @@ own file could hold.
 | `depth.<depth>.model` | text | (the sub-agent model) | The model one level of delegation runs — `2` is a child of this session, `3` a child of that. A role that names its own model outranks it. |
 | `max_concurrent` | number | `3` | How many children may run at once at one level of delegation; further spawns queue. |
 | `max_depth` | number | `3` | How deep delegation may go, counting this session as 1: `3` is this session, its children and theirs. |
+| `max_children` | number | `32` | How many children this session may start in all, wherever in the tree the spawn happened; a finished child keeps its slot. |
 
 **`[summary]`**
 

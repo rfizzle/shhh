@@ -10,8 +10,8 @@
 # it for the colour assignments. Trailing spaces are significant in both.
 
 ── layout ──────────────────────────────────────────────────
-· mid-flight · one child is waiting on you
-◇ fan-out    4 agents                             1 needs you · 2 running  1m12s
+· mid-flight · one child is waiting on you, the session's spawn count on the header
+◇ fan-out    4 agents · 4 of 32 spawned           1 needs you · 2 running  1m12s
    ◇ agent   scout-3 · other ErrRoundLimi…  ⚠ needs you · 3 tools · $0.01    18s
     waiting approval: read ../shhh-plugins/registry.go
    ◇ agent   writer-1 · docs/loop.md          ▰▰▱▱▱ 2/5 · 6 tools · $0.02    12s
@@ -21,7 +21,7 @@
    ◇ agent   reader-4 · survey internal/ui                         queued   1.0s
     [alt+a] agents
 
-· settled · one lane open on its report, one carrying a verdict
+· settled · one lane open on its report, one carrying a verdict, and no spawn count once nothing is live
 ◇ fan-out    3 agents                                   2 done · 1 failed  2m04s
    ◇ agent   writer-1 · docs/loop.md            ✓ done · 11 tools · $0.04  1m38s
     documented the sentinel and linked the test · 2 assumptions
@@ -66,8 +66,8 @@
     [alt+a] agents
 
 ── ansi ────────────────────────────────────────────────────
-· mid-flight · one child is waiting on you
-␛[94m◇␛[m ␛[38;5;252mfan-out␛[m    ␛[38;5;241m4 agents␛[m                             ␛[91m1 needs you␛[m␛[38;5;241m · ␛[m␛[38;5;205m2 running␛[m  ␛[38;5;241m1m12s␛[m
+· mid-flight · one child is waiting on you, the session's spawn count on the header
+␛[94m◇␛[m ␛[38;5;252mfan-out␛[m    ␛[38;5;241m4 agents · 4 of 32 spawned␛[m           ␛[91m1 needs you␛[m␛[38;5;241m · ␛[m␛[38;5;205m2 running␛[m  ␛[38;5;241m1m12s␛[m
    ␛[91m◇␛[m ␛[38;5;252magent␛[m   ␛[38;5;252mscout-3␛[m␛[38;5;241m · other ErrRoundLimi…␛[m  ␛[91m⚠ needs you␛[m␛[38;5;241m · ␛[m␛[38;5;245m3 tools · $0.01␛[m    ␛[38;5;241m18s␛[m
     ␛[38;5;245mwaiting approval: read ../shhh-plugins/registry.go␛[m
    ␛[94m◇␛[m ␛[38;5;252magent␛[m   ␛[38;5;252mwriter-1␛[m␛[38;5;241m · docs/loop.md␛[m          ␛[94m▰▰␛[m␛[38;5;241m▱▱▱␛[m ␛[94m2/5␛[m␛[38;5;241m · ␛[m␛[38;5;245m6 tools · $0.02␛[m    ␛[38;5;241m12s␛[m
@@ -77,7 +77,7 @@
    ␛[38;5;241m◇␛[m ␛[38;5;252magent␛[m   ␛[38;5;252mreader-4␛[m␛[38;5;241m · survey internal/ui␛[m                         ␛[38;5;241mqueued␛[m   ␛[38;5;241m1.0s␛[m
     ␛[94m[alt+a]␛[m␛[38;5;241m agents␛[m
 
-· settled · one lane open on its report, one carrying a verdict
+· settled · one lane open on its report, one carrying a verdict, and no spawn count once nothing is live
 ␛[94m◇␛[m ␛[38;5;252mfan-out␛[m    ␛[38;5;241m3 agents␛[m                                   ␛[92m2 done␛[m␛[38;5;241m · ␛[m␛[91m1 failed␛[m  ␛[38;5;241m2m04s␛[m
    ␛[92m◇␛[m ␛[38;5;252magent␛[m   ␛[38;5;252mwriter-1␛[m␛[38;5;241m · docs/loop.md␛[m            ␛[92m✓ done␛[m␛[38;5;241m · ␛[m␛[38;5;245m11 tools · $0.04␛[m  ␛[38;5;241m1m38s␛[m
     ␛[38;5;245mdocumented the sentinel and linked the test · 2 assumptions␛[m

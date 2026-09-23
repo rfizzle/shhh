@@ -10,8 +10,8 @@
 # it for the colour assignments. Trailing spaces are significant in both.
 
 ── layout ──────────────────────────────────────────────────
-· focus · the orchestrator
-╭─ Agents ─────────────────────── 1 needs you · 1 running ─╮
+· focus · the orchestrator · the session's spawn count beside the tally, given up first when narrow
+╭─ Agents ───── 4 of 32 spawned ─ 1 needs you · 1 running ─╮
 │ ❯ ● orchestrator · this se…  round 7 · streaming…  $0.12 │
 │   ⚠ runner-2 · go test .…  ⚠ needs you · 3 tools · $0.01 │
 │     waiting approval: run go test ./internal/agent/...   │
@@ -193,8 +193,8 @@
 ╰──────────────────────────────────────────────────────────╯
 
 ── ansi ────────────────────────────────────────────────────
-· focus · the orchestrator
-␛[94m╭─ ␛[m␛[1;97mAgents ␛[m␛[38;5;241m───────────────────────␛[m␛[94m ␛[91m1 needs you␛[m␛[38;5;241m · ␛[m␛[38;5;205m1 running␛[m ─╮␛[m
+· focus · the orchestrator · the session's spawn count beside the tally, given up first when narrow
+␛[94m╭─ ␛[m␛[1;97mAgents ␛[m␛[38;5;241m─────␛[m␛[94m ␛[38;5;241m4 of 32 spawned␛[m ─ ␛[91m1 needs you␛[m␛[38;5;241m · ␛[m␛[38;5;205m1 running␛[m ─╮␛[m
 ␛[94m│␛[m ␛[94m❯␛[m ␛[1;94m␛[m␛[38;5;245m␛[m␛[38;5;241m␛[m␛[38;5;243m␛[m␛[48;5;62m␛[1;94m●␛[m␛[48;5;62m ␛[38;5;245m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;243m␛[m␛[48;5;62m␛[97;48;5;62morchestrator · this se…  round 7 · streaming…  $0.12␛[m␛[m ␛[94m│␛[m
 ␛[94m│␛[m   ␛[91m⚠␛[m runner-2␛[38;5;245m · go test .…␛[m  ␛[91m⚠ needs you␛[m␛[38;5;241m · ␛[m␛[38;5;245m3 tools · $0.01␛[m ␛[94m│␛[m
 ␛[94m│␛[m     ␛[38;5;245mwaiting approval: run go test ./internal/agent/...␛[m   ␛[94m│␛[m

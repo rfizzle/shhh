@@ -644,6 +644,11 @@ type AgentsConfig struct {
 	// theirs. Zero is unset and means DefaultMaxDepth.
 	// See docs/capabilities/subagents.md#a-child-may-delegate-to-a-configured-depth.
 	MaxDepth int `toml:"max_depth"`
+	// MaxChildren bounds how many children one session may start in all,
+	// wherever in the tree they were spawned; a finished child keeps its
+	// place in the count. Zero is unset and means the supervisor's default.
+	// See docs/capabilities/subagents.md#limits-are-about-attention-not-resources.
+	MaxChildren int `toml:"max_children"`
 	// Depths override per level of delegation, keyed by the depth as the
 	// file writes it: "2" is a child of the session, "3" a child of that.
 	// It is a map keyed by a string rather than a slice indexed by the

@@ -343,6 +343,7 @@ func (m Model) fanoutBlockFor(e entry) components.FanoutBlock {
 	//; the answer happens in the list itself, without a
 	// detour through the child's session.
 	block.Keys = []components.TurnKey{{Key: keys.Bracket(keys.Draft.Agents), Label: "agents"}}
+	block.Spawned, block.SpawnLimit = m.subagents.Spawned()
 	return block
 }
 

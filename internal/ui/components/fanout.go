@@ -208,6 +208,22 @@ type FanoutBlock struct {
 	// They render once, under the lanes, and wrap rather than clip on a
 	// narrow terminal (packOffers).
 	Keys []TurnKey
+	// Spawned and SpawnLimit are the session's spawn count against its cap,
+	// stated on the header while any lane is still working; a zero limit
+	// states nothing.
+	Spawned, SpawnLimit int
+}
+
+// spawnedCount is how many children the session has started against how
+// many it may, or "" where the host named no cap. A finished child keeps its
+// place in the count, so the number a reader watches never goes down — which
+// is the half of the limit a reader otherwise assumes the other way round
+// (docs/capabilities/subagents.md#limits-are-about-attention-not-resources).
+func spawnedCount(started, limit int) string {
+	if limit <= 0 {
+		return ""
+	}
+	return fmt.Sprintf("%d of %d spawned", started, limit)
 }
 
 // fanoutLead is the gutter a lane shares with an activity row: the pointer
@@ -820,10 +836,27 @@ func (b FanoutBlock) View(width int) string {
 		return ""
 	}
 	lanes := b.sorted()
+	outcome := b.headerOutcome()
+	target := plural(len(lanes), "agent")
+	// The count rides the header only while the batch is live: that is when
+	// the next spawn is being planned, and a finished batch frozen into the
+	// transcript would otherwise carry a number that has since moved. It is
+	// given up whole where it does not fit, since half a count is a
+	// different number.
+	if running, blocked, held, _, _ := b.counts(); running+blocked+held > 0 {
+		sep := 0
+		if outcome != "" {
+			sep = 2
+		}
+		room := width - leadWidth - durGap - durWidth - lipgloss.Width(outcome) - sep
+		if count := spawnedCount(b.Spawned, b.SpawnLimit); count != "" && lipgloss.Width(target+" · "+count) <= room {
+			target += " · " + count
+		}
+	}
 	lines := []string{gridLine(
 		headerLead(),
-		plural(len(lanes), "agent"),
-		b.headerOutcome(), b.Elapsed, width)}
+		target,
+		outcome, b.Elapsed, width)}
 	for _, l := range lanes {
 		lines = append(lines, l.View(width))
 	}

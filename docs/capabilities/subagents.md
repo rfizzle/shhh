@@ -286,14 +286,24 @@ reader assumes the other way round, so the line says it. It is also why a
 failed child is retried rather than replaced: a replacement costs a slot the
 session may not have.
 
-The cap is thirty-two starts. A finished child costs no attention, so the
+The person is shown the same number the model is. The agent manager's header
+carries `4 of 32 spawned` beside its tally, and a fan-out's header carries it
+while any of the batch is still working — the moment the next spawn is being
+planned. The count never goes down, because a finished child keeps its slot,
+and that is the half of the limit the number is there to say.
+
+The cap is thirty-two starts by default, and `max_children` in the `[agents]`
+table of `config.toml` moves it. A finished child costs no attention, so the
 figure is set by what one session legitimately starts rather than by what one
 person can watch: a batch run of the backlog starts one child per item, and a
 measured run started thirty-one in one sitting of under two hours. Sixteen
 stopped that run at its sixteenth spawn with fifteen ready items still queued.
 A spawn past the cap is refused with the count of starts and says it is one,
-because `16 of 16` read with three children live looks like a concurrency
-limit, and that is `max_concurrent`'s.
+because `32 of 32` read with three children live looks like a concurrency
+limit, and that is `max_concurrent`'s. The refusal names `agents.max_children`
+the way the depth refusal names `agents.max_depth`: it is a limit on attention
+you can raise, so the refusal says what to change rather than that you
+cannot.
 
 Children run without a round budget by default, because a child has nobody to
 ask when it reaches a checkpoint. The parent is the one with a human attached.

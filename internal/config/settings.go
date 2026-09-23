@@ -491,6 +491,9 @@ var settings = []Setting{
 	}, {
 		Key: "agents.max_depth", Kind: KindInt, Default: "3",
 		Desc: "How deep delegation may go, counting this session as 1: `3` is this session, its children and theirs.",
+	}, {
+		Key: "agents.max_children", Kind: KindInt, Default: "32",
+		Desc: "How many children this session may start in all, wherever in the tree the spawn happened; a finished child keeps its slot.",
 	},
 
 	{

@@ -10,7 +10,7 @@
 # it for the colour assignments. Trailing spaces are significant in both.
 
 ── layout ──────────────────────────────────────────────────
-· mid-flight · one child is waiting on you
+· mid-flight · one child is waiting on you, the session's spawn count on the header
 ◇ fan-out    4 agents         1 needs you · 2 running  1m12s
    ◇ agent   scout-3 …  ⚠ needs you · 3 tools · $0.01    18s
     waiting approval: read ../shhh-plugins/registry.go
@@ -21,7 +21,7 @@
    ◇ agent   reader-4 · survey internal/ui     queued   1.0s
     [alt+a] agents
 
-· settled · one lane open on its report, one carrying a verdict
+· settled · one lane open on its report, one carrying a verdict, and no spawn count once nothing is live
 ◇ fan-out    3 agents               2 done · 1 failed  2m04s
    ◇ agent   writer-1 · d…  ✓ done · 11 tools · $0.04  1m38s
     documented the sentinel and linked the test · 2 assumpt…
@@ -66,7 +66,7 @@
     [alt+a] agents
 
 ── ansi ────────────────────────────────────────────────────
-· mid-flight · one child is waiting on you
+· mid-flight · one child is waiting on you, the session's spawn count on the header
 ␛[38;5;254m◇␛[m ␛[38;5;254mfan-out␛[m    ␛[38;5;244m4 agents␛[m         ␛[38;5;254m1 needs you␛[m␛[38;5;244m · ␛[m␛[38;5;254m2 running␛[m  ␛[38;5;244m1m12s␛[m
    ␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mscout-3␛[m␛[38;5;244m …␛[m  ␛[38;5;254m⚠ needs you␛[m␛[38;5;244m · ␛[m␛[38;5;244m3 tools · $0.01␛[m    ␛[38;5;244m18s␛[m
     ␛[38;5;244mwaiting approval: read ../shhh-plugins/registry.go␛[m
@@ -77,7 +77,7 @@
    ␛[38;5;244m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mreader-4␛[m␛[38;5;244m · survey internal/ui␛[m     ␛[38;5;244mqueued␛[m   ␛[38;5;244m1.0s␛[m
     ␛[38;5;254m[alt+a]␛[m␛[38;5;244m agents␛[m
 
-· settled · one lane open on its report, one carrying a verdict
+· settled · one lane open on its report, one carrying a verdict, and no spawn count once nothing is live
 ␛[38;5;254m◇␛[m ␛[38;5;254mfan-out␛[m    ␛[38;5;244m3 agents␛[m               ␛[38;5;254m2 done␛[m␛[38;5;244m · ␛[m␛[38;5;254m1 failed␛[m  ␛[38;5;244m2m04s␛[m
    ␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mwriter-1␛[m␛[38;5;244m · d…␛[m  ␛[38;5;254m✓ done␛[m␛[38;5;244m · ␛[m␛[38;5;244m11 tools · $0.04␛[m  ␛[38;5;244m1m38s␛[m
     ␛[38;5;244mdocumented the sentinel and linked the test · 2 assumpt…␛[m

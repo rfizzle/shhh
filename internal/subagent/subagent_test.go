@@ -2503,7 +2503,7 @@ func TestRosterSaysHowManyAgentSlotsAreUsed(t *testing.T) {
 	execTool(t, sup, ReportToolName, `{"name":"researcher-1"}`)
 
 	roster := execTool(t, sup, ReportToolName, `{}`)
-	if !strings.Contains(roster, fmt.Sprintf("1 of %d agent slots used", MaxChildren)) {
+	if !strings.Contains(roster, fmt.Sprintf("1 of %d agent slots used", DefaultMaxChildren)) {
 		t.Fatalf("the roster must say what is left of the session's spawns:\n%s", roster)
 	}
 	// A finished agent keeps its slot, which is the half a reader assumes
@@ -2511,18 +2511,18 @@ func TestRosterSaysHowManyAgentSlotsAreUsed(t *testing.T) {
 	if !strings.Contains(roster, "keeps its slot") {
 		t.Fatalf("the roster must say a finished agent keeps its slot:\n%s", roster)
 	}
-	if got := slotsLine(MaxChildren); !strings.Contains(got, "can spawn no more") {
+	if got := slotsLine(DefaultMaxChildren, DefaultMaxChildren); !strings.Contains(got, "can spawn no more") {
 		t.Fatalf("a session at the ceiling must be told so, got %q", got)
 	}
 }
 
 // A refusal at the cap with three children still running would otherwise read
 // as a concurrency limit, which is max_concurrent's, so it counts what was
-// started and says the count is of starts.
+// started, says the count is of starts, and names the key that moves it.
 func TestSpawnPastTheCapSaysItCountsStarts(t *testing.T) {
 	sup := newTestSupervisor(t, &scriptedEnv{})
 	sup.mu.Lock()
-	for range MaxChildren {
+	for range DefaultMaxChildren {
 		sup.children = append(sup.children, &child{})
 	}
 	sup.mu.Unlock()
@@ -2531,9 +2531,36 @@ func TestSpawnPastTheCapSaysItCountsStarts(t *testing.T) {
 	if err == nil {
 		t.Fatal("a spawn past the cap must be refused")
 	}
-	want := fmt.Sprintf("started %d of %d agents", MaxChildren, MaxChildren)
+	want := fmt.Sprintf("started %d of %d agents", DefaultMaxChildren, DefaultMaxChildren)
 	if !strings.Contains(err.Error(), want) || !strings.Contains(err.Error(), "not agents running") {
 		t.Fatalf("the refusal must count starts and say the cap is on them, got %q", err)
+	}
+	if !strings.Contains(err.Error(), MaxChildrenKey) {
+		t.Fatalf("the refusal must name %s, got %q", MaxChildrenKey, err)
+	}
+}
+
+// A configured cap is the one the refusal, the roster and Spawned all read,
+// and a finished child still counts against it.
+func TestConfiguredSpawnCapIsTheOneEveryReaderStates(t *testing.T) {
+	env := &scriptedEnv{steps: []streamStep{{text: "surveyed"}}}
+	sup := New(context.Background(), Options{Root: t.TempDir(), NewEnv: env.factory(), MaxChildren: 1})
+	t.Cleanup(sup.Close)
+	if started, limit := sup.Spawned(); started != 0 || limit != 1 {
+		t.Fatalf("Spawned() = %d, %d before any spawn, want 0, 1", started, limit)
+	}
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"survey the loop"}`)
+	execTool(t, sup, ReportToolName, `{"name":"researcher-1"}`)
+
+	if started, limit := sup.Spawned(); started != 1 || limit != 1 {
+		t.Fatalf("Spawned() = %d, %d after a finished child, want 1, 1", started, limit)
+	}
+	if roster := execTool(t, sup, ReportToolName, `{}`); !strings.Contains(roster, "1 of 1 agent slots used") {
+		t.Fatalf("the roster must state the configured cap:\n%s", roster)
+	}
+	_, err := sup.Spawn(json.RawMessage(`{"role":"researcher","task":"one more"}`))
+	if err == nil || !strings.Contains(err.Error(), "started 1 of 1 agents") {
+		t.Fatalf("a spawn past a configured cap of one must be refused against it, got %v", err)
 	}
 }
 

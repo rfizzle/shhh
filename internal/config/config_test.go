@@ -509,6 +509,7 @@ func TestSetAgentAndReadOnlyKeys(t *testing.T) {
 		{"agents.profiles.researcher.model", "tiny"},
 		{"agents.max_concurrent", "5"},
 		{"agents.max_depth", "2"},
+		{"agents.max_children", "8"},
 		{"agents.depth.3.model", "cheap"},
 		{"behavior.read_only_commands", "make lint, bazel query"},
 		{"behavior.read_only_auto", "false"},
@@ -522,6 +523,9 @@ func TestSetAgentAndReadOnlyKeys(t *testing.T) {
 	}
 	if cfg.Agents.MaxConcurrent != 5 {
 		t.Errorf("max_concurrent = %d, want 5", cfg.Agents.MaxConcurrent)
+	}
+	if cfg.Agents.MaxChildren != 8 {
+		t.Errorf("max_children = %d, want 8", cfg.Agents.MaxChildren)
 	}
 	if cfg.Agents.MaxDepth != 2 || cfg.Agents.Depths["3"].Model != "cheap" {
 		t.Errorf("the depth keys were not set: %+v", cfg.Agents)
@@ -930,6 +934,7 @@ func TestSet_RefusesAValueThatIsNotTheKeysShape(t *testing.T) {
 		{"history.retention_days", "abc", "a whole number"},
 		{"web.fetch_max_bytes", "2mb", "a whole number"},
 		{"agents.max_concurrent", "-1", "a whole number, zero or above"},
+		{"agents.max_children", "-1", "a whole number, zero or above"},
 		{"behavior.silent_mode", "yes", "true or false"},
 		{"summary.disabled", "on", "true or false"},
 		{"appearance.mouse", "yes", "true or false"},

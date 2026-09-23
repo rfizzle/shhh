@@ -153,6 +153,9 @@ type AgentList struct {
 	Rows     []AgentRow
 	Focus    int
 	MaxLines int
+	// Spawned and SpawnLimit are the session's spawn count against its cap,
+	// drawn beside the tally; a zero limit draws nothing.
+	Spawned, SpawnLimit int
 	// list is the shared pointer and window (list.go). A fan-out wide
 	// enough to overflow this card is itself the problem the screen should be
 	// showing, which is why the manager went unwindowed at first — but a
@@ -726,8 +729,14 @@ func (l *AgentList) View(width int) string {
 	// that is rated, so there is no severity to take the frame's colour from
 	// (CardTone).
 	card := Card{Title: "Agents", Tone: CardDecision}
+	// The count goes in front of the tally because chips drop from the
+	// front: on a narrow terminal what still needs you outlasts how many
+	// have been started.
+	if count := spawnedCount(l.Spawned, l.SpawnLimit); count != "" {
+		card.Chips = append(card.Chips, sty.Dim.Render(count))
+	}
 	if tally := l.tally(); tally != "" {
-		card.Chips = []string{tally}
+		card.Chips = append(card.Chips, tally)
 	}
 	return card.Render(rows, width)
 }

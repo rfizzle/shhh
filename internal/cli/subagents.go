@@ -855,6 +855,7 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 		Profiles:      agents.profiles,
 		MaxConcurrent: cfg.Agents.MaxConcurrent,
 		MaxDepth:      cfg.AgentMaxDepth(),
+		MaxChildren:   cfg.Agents.MaxChildren,
 		// Children answer to the parent's working scope on top of
 		// their own worktree, which is where their file edits are already
 		// pinned (RootArgs). This is what stops a child *command* writing

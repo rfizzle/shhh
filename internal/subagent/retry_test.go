@@ -464,7 +464,7 @@ func TestTheParentCanRetryAFailedChildWithoutSpendingASlot(t *testing.T) {
 	if !strings.Contains(report, "the loop lives in internal/agent") {
 		t.Fatalf("the retried child's report never reached the parent:\n%s", report)
 	}
-	if !strings.Contains(execTool(t, sup, ReportToolName, `{}`), fmt.Sprintf("1 of %d agent slots used", MaxChildren)) {
+	if !strings.Contains(execTool(t, sup, ReportToolName, `{}`), fmt.Sprintf("1 of %d agent slots used", DefaultMaxChildren)) {
 		t.Fatal("a retried child holds the one slot it always held")
 	}
 }

@@ -58,12 +58,16 @@ const (
 	// agent that is waiting for it
 	// (docs/capabilities/subagents.md#a-wait-only-ever-points-down-the-tree).
 	DefaultMaxConcurrent = 3
-	// MaxChildren caps how many children one session may spawn in total,
-	// wherever in the tree they were spawned. It counts starts, and a batch
-	// run of a backlog starts one child per item: a measured run started 31
-	// in one sitting, which sixteen would have stopped halfway.
+	// DefaultMaxChildren caps how many children one session may spawn in
+	// total, wherever in the tree they were spawned, when nothing configures
+	// it. It counts starts, and a batch run of a backlog starts one child
+	// per item: a measured run started 31 in one sitting, which sixteen
+	// would have stopped halfway.
 	// See docs/capabilities/subagents.md#limits-are-about-attention-not-resources.
-	MaxChildren = 32
+	DefaultMaxChildren = 32
+	// MaxChildrenKey is the config key that sets that cap, named in the
+	// refusal for the reason MaxDepthKey is.
+	MaxChildrenKey = "agents.max_children"
 	// DefaultMaxDepth is how deep delegation goes when nothing configures
 	// it, counting the session as depth 1: the orchestrator, its children,
 	// and theirs. SessionDepth is the session's own.
@@ -792,6 +796,9 @@ type Options struct {
 	// SessionDepth; <= 0 uses DefaultMaxDepth. A spawn that would open a
 	// level past it is refused before anything is claimed for it.
 	MaxDepth int
+	// MaxChildren is how many children the session may start in all,
+	// wherever in the tree; <= 0 uses DefaultMaxChildren.
+	MaxChildren int
 	// LoadHandoff resolves an opaque handoff handle for an explicit replacement
 	// spawn. It is nil where the session has no durable store.
 	LoadHandoff func(handle string) ([]byte, error)
@@ -1826,6 +1833,9 @@ func New(ctx context.Context, opts Options) *Supervisor {
 	}
 	if opts.MaxDepth <= 0 {
 		opts.MaxDepth = DefaultMaxDepth
+	}
+	if opts.MaxChildren <= 0 {
+		opts.MaxChildren = DefaultMaxChildren
 	}
 	if opts.Profiles == nil {
 		opts.Profiles = BuiltinProfiles()
@@ -2909,6 +2919,22 @@ func (s *Supervisor) Spawn(raw json.RawMessage) (string, error) { return s.spawn
 // level left below it is handed no delegation tools.
 func (s *Supervisor) MaxDepth() int { return s.opts.MaxDepth }
 
+// Spawned is how many children the session has started and how many it may
+// start in all. A finished child keeps its place in the first number, which
+// is what a surface drawing the pair says by the count never going down.
+// See docs/capabilities/subagents.md#limits-are-about-attention-not-resources.
+//
+// A nil supervisor answers zero for both, which a surface reads as a session
+// with no cap to state.
+func (s *Supervisor) Spawned() (started, limit int) {
+	if s == nil {
+		return 0, 0
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return len(s.children), s.opts.MaxChildren
+}
+
 // depthOf is how far under the session an agent sits, for the agent that is
 // about to spawn: the session itself is SessionDepth and a child is its
 // parent's depth plus one.
@@ -3132,11 +3158,11 @@ func (s *Supervisor) spawnFrom(caller string, raw json.RawMessage) (string, erro
 	}
 
 	s.mu.Lock()
-	if len(s.children) >= MaxChildren {
+	if len(s.children) >= s.opts.MaxChildren {
 		s.mu.Unlock()
 		// The count is of starts, so a refusal with three children live must
 		// not read as a concurrency limit, which is max_concurrent's.
-		return "", fmt.Errorf("agent limit reached: this session has started %d of %d agents; the limit counts agents started, not agents running, so a finished agent still holds its slot — steer or retry the agents it has", len(s.children), MaxChildren)
+		return "", fmt.Errorf("agent limit reached: this session has started %d of %d agents; the limit counts agents started, not agents running, so a finished agent still holds its slot — steer or retry the agents it has, or raise %s", len(s.children), s.opts.MaxChildren, MaxChildrenKey)
 	}
 	name := args.Name
 	if name == "" {
@@ -5321,16 +5347,16 @@ func (s *Supervisor) readingsOff() bool {
 // it the ceiling is something the parent discovers by having a spawn refused
 // — a round spent, on a plan for a fan-out that was never going to fit — and
 // the count is not one it can keep for itself either, since the person, a
-// profile drafter and the backlog runner all spawn into the same sixteen.
+// profile drafter and the backlog runner all spawn into the same cap.
 //
 // "Used" and not "in use": a finished agent keeps its slot, because the limit
 // is on how many one session may start rather than on how many run at once.
 // That is the half a reader assumes wrongly, so the line says it rather than
 // leaving a parent to wonder why four finished agents left it twelve.
 // See docs/capabilities/subagents.md#limits-are-about-attention-not-resources.
-func slotsLine(used int) string {
-	line := fmt.Sprintf("%d of %d agent slots used", used, MaxChildren)
-	if used >= MaxChildren {
+func slotsLine(used, limit int) string {
+	line := fmt.Sprintf("%d of %d agent slots used", used, limit)
+	if used >= limit {
 		return line + " — this session can spawn no more; what is left is to steer or retry the agents it has."
 	}
 	return line + " (a finished agent keeps its slot: the limit is on how many this session may start, not on how many run at once)."
@@ -5359,7 +5385,7 @@ func (s *Supervisor) statusOverview(caller string) string {
 		return "No agents have been spawned this session."
 	}
 	var sb strings.Builder
-	sb.WriteString(slotsLine(len(all)) + "\n\n")
+	sb.WriteString(slotsLine(len(all), s.opts.MaxChildren) + "\n\n")
 	if s.readingsOff() {
 		sb.WriteString(readingsNote + "\n\n")
 	}
