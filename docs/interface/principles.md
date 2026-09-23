@@ -280,7 +280,7 @@ most: at sixteen colours the nearest match to a warning and to a thing in
 motion is the red a failure already owns, so three states arrive as one hue on
 the profile invariant 1 exists for.
 
-Five of the fifteen are the terminal's own theme colours by choice — the
+Five of the palette's tokens are the terminal's own theme colours by choice — the
 diff's two verdicts, the hunk heading, the key offer, and the crest. A user
 who set their green is looked at all day in their green, and the design's own
 hex is what a terminal that can show it gets.
@@ -301,7 +301,7 @@ match.
 
 The exact rungs are the design system's. What is fixed here is that there are
 three of them, that five defer to the terminal, that a ground is asked for,
-and that no surface may reach for a colour outside the fifteen.
+and that no surface may reach for a colour outside the palette.
 
 ### Closed vocabularies
 

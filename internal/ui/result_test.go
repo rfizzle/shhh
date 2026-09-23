@@ -847,8 +847,9 @@ func TestResult_TheRiskLadderShoutsOnlyAtTheTop(t *testing.T) {
 }
 
 // A field's label is its own name in lower case, in Status — the voice every
-// other label in shhh is written in. The bold Subtle block the long form used
-// to lead with was the one heading on a screen that has no headings.
+// other label in shhh is written in. The long form used to lead with a bold
+// heading, the one heading on a screen that has no headings; the grey it was
+// drawn in, Subtle, now draws only the rung a revise superseded.
 func TestResult_TheFieldLabelsAreLowerCaseStatus(t *testing.T) {
 	inColour(t)
 	m := armed(t, "ls -la", nil)

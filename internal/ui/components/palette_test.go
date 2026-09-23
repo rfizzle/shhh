@@ -2,6 +2,7 @@ package components
 
 import (
 	"image/color"
+	"reflect"
 	"strconv"
 	"testing"
 
@@ -37,6 +38,19 @@ var paletteTable = []struct {
 	{"bright", FullPalette.Bright, "#eaeaea", "15", "15"},
 	{"subtle", FullPalette.Subtle, "#bcbcbc", "250", "7"},
 	{"body", FullPalette.Body, "#d0d0d0", "252", "7"},
+}
+
+// The palette's size is counted here and written nowhere else. The struct
+// and the table above are two statements of it — a field added to one and
+// not the other is a token some check never walks — and PaletteSize is what
+// every sentence that needs the number reads, so both are held to it.
+func TestPalette_TheCountIsHeld(t *testing.T) {
+	if got := reflect.TypeFor[ColorTokens]().NumField(); got != PaletteSize {
+		t.Errorf("ColorTokens has %d tokens and PaletteSize says %d", got, PaletteSize)
+	}
+	if got := len(paletteTable); got != PaletteSize {
+		t.Errorf("the design system's table lists %d tokens and PaletteSize says %d", got, PaletteSize)
+	}
 }
 
 // The token set is the design system's, at every profile. A hex alone would
@@ -304,10 +318,10 @@ func TestPalette_LightIsWrittenForEveryProfile(t *testing.T) {
 	}
 }
 
-// Every shipped table answers for all fifteen jobs at all three profiles. A
+// Every shipped table answers for every job at all three profiles. A
 // theme is a token set and not a patch over one, so a table that left a token
 // nil would draw that surface in whatever the terminal was last told.
-func TestPalette_EveryThemeAnswersForTheFifteen(t *testing.T) {
+func TestPalette_EveryThemeAnswersForEveryToken(t *testing.T) {
 	// The list a reader chooses from and the tables that ship are two
 	// places, so they are held together here: a table nobody can name is
 	// unreachable, and a name with no table behind it is refused at the door

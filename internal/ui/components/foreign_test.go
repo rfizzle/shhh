@@ -149,7 +149,7 @@ func TestForeignText_BackgroundsAreDropped(t *testing.T) {
 	}
 }
 
-// The extended half is the only route by which a colour outside the fifteen
+// The extended half is the only route by which a colour outside the palette
 // could reach a detail body, so it is folded the way the sixteen are: a
 // program's red is del whether it wrote the short form, the index or the
 // triple, and a colour with no hue in it joins the grey ramp.
@@ -176,7 +176,7 @@ func TestForeignText_ExplicitColoursArriveAsTokens(t *testing.T) {
 	}
 }
 
-// Nothing outside the fifteen reaches the screen: whatever a program names,
+// Nothing outside the palette reaches the screen: whatever a program names,
 // what comes back is a colour the palette issued
 // (docs/interface/principles.md#one-grid). Every index a terminal can be sent
 // is checked, because the cube and the ramp are where a stray colour would

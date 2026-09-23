@@ -22,7 +22,7 @@ package components
 //
 // **The ramp is two rungs, not a gradient.** Crush blends two arbitrary
 // colours through HCL across the label. The palette is a closed set of
-// fifteen tokens and the reason a mono swap is a swap rather than a rewrite
+// tokens and the reason a mono swap is a swap rather than a rewrite
 // is that nothing on screen is a colour the table does not name;
 // interpolating spin → bright would put twenty unnamed colours on the top
 // rail. So the sweep is the ramp the palette can afford: the label in spin, a

@@ -11,7 +11,7 @@ package components
 //
 // So the line is read before it is drawn. It is re-painted the way every
 // other surface is painted — as runs of text carrying a lipgloss style — with
-// every colour a program can name arriving as one of the fifteen tokens: the
+// every colour a program can name arriving as one of the palette's tokens: the
 // sixteen a terminal theme owns by what they mean, the cube, the greyscale
 // ramp and a truecolor triple by what they look like. Bold, faint, underline
 // and strikethrough are kept, because they are emphasis rather than colour

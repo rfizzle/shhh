@@ -127,7 +127,7 @@ because a stage that is already done is not what the row is about.
 ## The light table's rungs were chosen in the binary
 
 `tokens/colors.css` has one column. It states a hex and the 256 index that hex
-stands for, for fifteen tokens, chosen against a dark ground — and every one of
+stands for, for every token, chosen against a dark ground — and every one of
 those choices is a choice about the ground as much as about the hue, which is
 why a light terminal cannot be served by lightening them
 ([the rule](principles.md#a-colour-is-three-values-and-a-ground)).
@@ -139,14 +139,13 @@ ten hexes that are exactly the 256 index beside them, and the two chrome greys
 keeping their jobs by swapping their weight — the faint one is the one nearer
 the ground, which is the lighter grey on black and the darker grey on white.
 
-This is a gap and not a disagreement. When the column is drawn, these fifteen
-rows are what it has to reconcile with, and where the two differ the artboard
+This is a gap and not a disagreement. When the column is drawn, these rows
+are what it has to reconcile with, and where the two differ the artboard
 wins.
 
 ## A theme is a table, and CharmTone is one of them
 
-The design system describes one palette. A second table of the same fifteen
-jobs drawn in CharmTone is not a divergence from it — nothing about the
+The design system describes one palette. A second table of the same jobs drawn in CharmTone is not a divergence from it — nothing about the
 product's colours changes for anyone who does not ask for it — but it is a set
 of colours that no artboard states, so it is written down here.
 
@@ -161,7 +160,7 @@ palette.
 *A gap.* No artboard draws a detail body a program painted itself. What the
 design system states is the rule — output a program painted is re-painted into
 the palette on the way in
-([the rule](principles.md#one-grid)) — the fifteen tokens and their one job
+([the rule](principles.md#one-grid)) — the palette's tokens and their one job
 each, and a type system of a foreground colour, one background tint, bold and
 italic. It does not say what happens to the colours that rule has no token
 for, and there are two hundred and forty of them in the 256-colour table alone,
@@ -725,18 +724,18 @@ draws nothing, so the screen the artboard draws is the one most sessions see.
 
 ## A picture is drawn in its own colours
 
-*A disagreement.* No surface may reach for a colour outside the fifteen
+*A disagreement.* No surface may reach for a colour outside the palette
 ([the rule](principles.md#a-colour-is-three-values-and-a-ground)), and output
 that arrives painted is re-painted into the palette on the way in
 ([one grid](principles.md#one-grid)). The staged attachment's picture is the
-one thing on screen drawn in colours none of the fifteen name: each half-block
+one thing on screen drawn in colours none of the palette's tokens name: each half-block
 cell takes the two colours the rasteriser read out of the image, converted to
 the rung the terminal can carry.
 
 The reason is what the surface is for. It answers which of two screenshots is
 the one with the stack trace in it
 ([a staged attachment](surfaces.md#a-staged-attachment)), and a photograph
-folded onto fifteen tokens stops being recognisable as the one somebody took.
+folded onto the palette's tokens stops being recognisable as the one somebody took.
 A program's colours are folded because they are markup about words, and the
 palette is what keeps the interface's words meaning one thing each. A
 picture's colours are the picture — content, like the text of a message — and

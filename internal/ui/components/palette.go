@@ -104,6 +104,15 @@ type ColorTokens struct {
 	Body    Token // ordinary body text
 }
 
+// PaletteSize is how many tokens a table holds: every field of ColorTokens,
+// one job each. It is the one place the count is written.
+// TestPalette_TheCountIsHeld holds both the struct and the design system's
+// table to it, so a token added or dropped fails there instead of leaving a
+// sentence somewhere still reciting the old number — which is also why the
+// prose in docs/interface/principles.md#a-colour-is-three-values-and-a-ground
+// speaks of the palette's tokens and never of how many there are.
+const PaletteSize = 15
+
 // Palette is the live token set: whichever of the shipped tables the theme
 // resolves to, or the two-grey mono palette while mono conformance is on
 // (mono.go). Every style in the product reads it through newStyles, which
@@ -113,7 +122,7 @@ var Palette = FullPalette
 // FullPalette is the coloured token set chosen against a dark ground — the
 // palette unless mono is on or another theme was asked for.
 //
-// Ten of the fifteen hexes are exactly the 256 index beside them, because the
+// Ten of the hexes are exactly the 256 index beside them, because the
 // cube and the greyscale ramp are colours a design can name. The other five —
 // add, del, info, hunk and bright — live in the range a terminal theme owns,
 // where 10 is whatever green the user's config says it is and 12 is a blue
@@ -140,14 +149,14 @@ var FullPalette = ColorTokens{
 	Body:   token("#d0d0d0", "252", "7"),
 }
 
-// LightPalette is the same fifteen jobs on a light ground.
+// LightPalette is the same jobs on a light ground.
 //
 // A table is chosen against a ground and is legible only on it
 // (docs/interface/principles.md#a-colour-is-three-values-and-a-ground): body
 // text at #d0d0d0 is the most readable thing on a black terminal and almost
 // nothing on a white one, while the chrome greys — chosen to sit *below* the
 // body on a dark ground — come out above it. So this is not the dark table
-// lightened; it is the same fifteen decisions taken again with the ground
+// lightened; it is the same decisions taken again with the ground
 // the other way up.
 //
 // Three things carry over unchanged, because they are not about the ground:
@@ -194,12 +203,12 @@ var LightPalette = ColorTokens{
 	Body:   token("#303030", "236", "0"),
 }
 
-// CharmPalette is the fifteen jobs done in CharmTone, the palette the
+// CharmPalette is the same jobs done in CharmTone, the palette the
 // libraries this interface is built on are drawn in. It is a dark table like
 // the first one and it is not a variant of it: every hue is picked from the
 // published set rather than approximated, which is why it exists at all —
 // a theme that only shifted the greys would be a preference, and this one is
-// a different set of colours doing the same fifteen jobs.
+// a different set of colours doing the same jobs.
 //
 // The five that defer to the terminal on the other two tables do not defer
 // here. A named palette that handed its green back to whatever the user's
@@ -270,7 +279,7 @@ const (
 )
 
 // theme is one shipped table and the ground it was chosen against. The table
-// is the whole of the theme — fifteen tokens, no more, so a surface cannot
+// is the whole of the theme — PaletteSize tokens, no more, so a surface cannot
 // reach for a colour a theme forgot to bring — and the ground is beside it
 // rather than in it because nothing draws with it: it is what the screen
 // would be painted with if the reader asked for that (GroundColor), and the
@@ -517,7 +526,7 @@ type Styles struct {
 	// one. Left unset it is the terminal's own default, which is a colour the
 	// palette never issued: on half the terminals in use it reads brighter
 	// than the bright token beside it, so the row the keyboard is on was the
-	// one row on screen whose text came from outside the fifteen
+	// one row on screen whose text came from outside the palette
 	// (docs/interface/principles.md#one-grid).
 	FocusRow     lipgloss.Style
 	LitText      lipgloss.Style
@@ -555,7 +564,7 @@ type Styles struct {
 	// paints itself from a table of its own, so the only way the palette
 	// reaches one is to give it that table; left alone it keeps a set of
 	// literal 256 indices chosen for one ground, which is a surface reaching
-	// outside the fifteen
+	// outside the palette
 	// (docs/interface/principles.md#a-colour-is-three-values-and-a-ground).
 	TextArea  textarea.Styles
 	TextInput textinput.Styles

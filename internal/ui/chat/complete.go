@@ -184,8 +184,8 @@ func buildSlashCommands() []slashCommand {
 				{after: []string{"theme"}, options: []argOption{
 					{components.ThemeAuto, "The table chosen for the background this terminal reports"},
 					{components.ThemeDark, "The product's own colours, on a dark ground"},
-					{components.ThemeLight, "The same fifteen jobs, on a light ground"},
-					{components.ThemeCharm, "The same fifteen jobs in CharmTone"},
+					{components.ThemeLight, fmt.Sprintf("The same %d jobs, on a light ground", components.PaletteSize)},
+					{components.ThemeCharm, fmt.Sprintf("The same %d jobs in CharmTone", components.PaletteSize)},
 				}},
 				{after: []string{"ground"}, options: []argOption{
 					{"on", "Paint the background the theme was drawn against"},
