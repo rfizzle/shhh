@@ -1113,9 +1113,18 @@ func TestKillConfirmSaysAPatchIsKeptOnlyWhereThereIsOne(t *testing.T) {
 	spawnChild(t, sup, subagent.RoleWriter, "writer-1")
 	waitFor(t, func() bool { return sup.PatchToKeep("writer-1") })
 
-	want := "Kill writer-1? Its turn stops and its isolated workspace is discarded and its patch is kept; "
+	want := "Kill writer-1? Its patch is kept. Its turn stops and its isolated workspace is discarded; "
 	if got := m.killPrompt("writer-1"); !strings.HasPrefix(got, want) {
 		t.Errorf("the confirm over a writer with work is %q, want it to open %q", got, want)
+	}
+	// The confirm is one line cut at the pane's width, so the sentence the
+	// answer turns on has to come first to survive an 80-column terminal
+	// (docs/interface/surfaces.md#the-inline-confirm).
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 40})
+	narrow := updated.(Model)
+	confirm := &components.Confirm{Prompt: narrow.killPrompt("writer-1")}
+	if got := ansi.Strip(confirm.View(narrow.contentWidth())); !strings.Contains(got, "Kill writer-1? Its patch is kept. ") {
+		t.Errorf("at 80 columns the kill confirm reads %q, and the kept patch is not whole on it", got)
 	}
 	spawnChild(t, sup, subagent.RoleResearcher, "researcher-1")
 	if got := m.killPrompt("researcher-1"); strings.Contains(got, "patch") {

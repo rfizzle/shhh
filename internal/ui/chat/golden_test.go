@@ -1944,6 +1944,30 @@ func TestGolden_KeyEntry(t *testing.T) {
 	})
 }
 
+// TestGolden_KillConfirm captures the agent manager's kill confirm, which is
+// one line cut at the pane's width: over a writer holding a patch the kept
+// patch is the sentence straight after the question, so the narrow widths cut
+// the workspace clause and never that one, and over a child with nothing to
+// keep there is no such sentence (docs/interface/surfaces.md#the-inline-confirm).
+func TestGolden_KillConfirm(t *testing.T) {
+	sup := subagent.New(context.Background(), subagent.Options{Root: keptRepo(t), NewEnv: keptWriterEnv(false)})
+	t.Cleanup(sup.Close)
+	spawnChild(t, sup, subagent.RoleWriter, "writer-1")
+	waitFor(t, func() bool { return sup.PatchToKeep("writer-1") })
+	spawnChild(t, sup, subagent.RoleResearcher, "researcher-1")
+
+	captureGolden(t, "kill-confirm", "the kill confirm under the agent manager", goldenWidths, func(width int) []golden.Panel {
+		m := frameModel(t, width, 40).WithSubagents(sup)
+		view := func(name string) string {
+			return (&components.Confirm{Prompt: m.killPrompt(name)}).View(m.contentWidth())
+		}
+		return []golden.Panel{
+			{Label: "a writer holding a patch", View: view("writer-1")},
+			{Label: "a child with nothing to keep", View: view("researcher-1")},
+		}
+	})
+}
+
 // TestGolden_Palette captures the command palette in the bottom panel
 // : the query line, the group rails, a command that cannot run
 // while the agent works, and the count of what did not fit.

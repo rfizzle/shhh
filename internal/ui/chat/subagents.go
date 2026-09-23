@@ -570,20 +570,26 @@ func (m Model) killPrompt(name string) string {
 		under = m.subagents.Under(name)
 	}
 	if len(under) == 0 {
-		return "Kill " + name + "? Its turn stops and its isolated workspace is discarded" +
-			m.keptClause(" and its patch is kept", name) +
-			"; its transcript stays and the other agents keep running."
+		return "Kill " + name + "? " + m.keptClause("Its patch is kept. ", name) +
+			"Its turn stops and its isolated workspace is discarded; " +
+			"its transcript stays and the other agents keep running."
 	}
 	return "Kill " + name + " and " + plural(len(under), "agent") + " under it? " +
-		"Every turn stops and every isolated workspace is discarded" +
-		m.keptClause(" and the patches in them are kept", append(under, name)...) +
-		"; the transcripts stay and the other agents keep running."
+		m.keptClause("Their patches are kept. ", append(under, name)...) +
+		"Every turn stops and every isolated workspace is discarded; " +
+		"the transcripts stay and the other agents keep running."
 }
 
 // keptClause is what a kill confirm adds about the work that survives it: a
 // writer's change is kept rather than discarded with its workspace, and the
 // confirm says so only where one of the agents it names has a change to keep
 // (docs/capabilities/subagents.md#a-failed-child-leaves-a-handoff).
+//
+// It comes straight after the question. The inline confirm is one line cut
+// at the pane's width, and whether a writer's work survives is the fact the
+// answer turns on: placed after the workspace clause it was the part an
+// 80-column pane cut off, so what the cut takes now is the part every kill
+// says alike (docs/interface/surfaces.md#the-inline-confirm).
 func (m Model) keptClause(clause string, names ...string) string {
 	if m.subagents == nil {
 		return ""
@@ -618,9 +624,9 @@ func (m Model) armKillAll() (tea.Model, tea.Cmd) {
 		all = append(all, m.subagents.Under(name)...)
 	}
 	m.killConfirm = &components.Confirm{Prompt: "Kill all " + plural(len(all), "agent") +
-		"? Every turn stops and every isolated workspace is discarded" +
-		m.keptClause(" and the patches in them are kept", all...) +
-		"; the transcripts stay and your own turn keeps going."}
+		"? " + m.keptClause("Their patches are kept. ", all...) +
+		"Every turn stops and every isolated workspace is discarded; " +
+		"the transcripts stay and your own turn keeps going."}
 	m.killTargets = roots
 	m.syncViewport()
 	return m, nil

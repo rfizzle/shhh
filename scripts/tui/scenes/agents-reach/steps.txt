@@ -70,10 +70,10 @@ keys M-a
 snap 07-manager "⚠ writer-3 · Say where the loop" "⚠ writer-2 · Say where the round" "[enter] attach"
 keys j
 keys X
-# The confirm is one line cut at the width, so on a narrow pane the sentence
-# about the patch is past its end and the snap waits on the question instead.
-wide 130 snap 08-kill-asks "its patch is kept"
-narrow 130 snap 08-kill-asks "Kill writer-1?"
+# The confirm is one line cut at the width, and the sentence about the patch
+# comes straight after the question so that the cut never takes it: one snap
+# holds for every width the scene is driven at.
+snap 08-kill-asks "Kill writer-1? Its patch is kept."
 keys y
 sleep 1
 snap 09-killed "[p] review"
