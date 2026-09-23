@@ -124,6 +124,30 @@ func TestConversation_TheRailOffersNoModeKey(t *testing.T) {
 	}
 }
 
+// The key list leaves the mode chord out of a conversation the way the rail
+// does — through the chord that prints it and through /help's key section,
+// which are one list — and keeps it in a coding session.
+func TestConversation_TheKeyListOffersNoModeKey(t *testing.T) {
+	const row = "Cycle the permission mode"
+	coding := gatedModel(t, nil, nil)
+	if !strings.Contains(coding.helpKeys(), row) {
+		t.Fatal("the control is wrong: a coding session's key list has no mode row")
+	}
+	chat := gatedModel(t, nil, nil).WithConversation()
+	chat.state = stateInput
+	if got := helpText(&chat); strings.Contains(got, row) {
+		t.Errorf("/help's key section offers the mode chord in a conversation:\n%s", got)
+	}
+	updated, _ := chat.Update(tea.KeyPressMsg{Code: ']', Mod: tea.ModCtrl})
+	chat = updated.(Model)
+	if !transcriptContains(chat, "Keys:") {
+		t.Fatal("the key-list chord printed no key list")
+	}
+	if transcriptContains(chat, row) {
+		t.Error("the key list printed in a conversation offers the mode chord")
+	}
+}
+
 // TestGolden_ScreenChat captures a conversation's frame: the mode word fixed
 // at read-only, no key offered for a mode, the sentence the chord answers
 // with, and a fetch that ran without a card with the rule that allowed it on

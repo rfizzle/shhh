@@ -19,6 +19,7 @@ package chat
 // gesture the register does not bind.
 
 import (
+	"slices"
 	"strings"
 	"unicode/utf8"
 
@@ -241,10 +242,13 @@ deletes (asks first), [r] renames`,
 // in the column is the register's, so a rebind moves the list with the
 // handler and a key added to the register with no row here fails the test
 // rather than quietly not being in the help.
-func helpKeysText() string {
+func helpKeysText() string { return helpKeyList(helpKeyRows) }
+
+// helpKeyList renders the given rows as the key section.
+func helpKeyList(rows []helpKeyRow) string {
 	var b strings.Builder
 	b.WriteString("Keys:")
-	for _, r := range helpKeyRows {
+	for _, r := range rows {
 		col := r.column()
 		for i, line := range strings.Split(r.text, "\n") {
 			head := ""
@@ -264,8 +268,19 @@ func helpKeysText() string {
 // words for the key promise a choice of how long, which that card does not
 // draw: it makes one grant, for this command, every agent, this turn
 // (docs/interface/surfaces.md#the-agent-manager).
+//
+// A conversation's list has no row for the mode chord: it has one mode, and
+// the chord answers with a sentence saying so, so a row offering to cycle it
+// would offer a key the session refuses
+// (docs/capabilities/chat.md#a-conversation-has-one-mode).
 func (m Model) helpKeys() string {
-	list := helpKeysText()
+	rows := helpKeyRows
+	if m.conversation {
+		rows = slices.DeleteFunc(slices.Clone(rows), func(r helpKeyRow) bool {
+			return len(r.binds) == 1 && keys.Shown(r.binds[0]) == keys.Shown(keys.Draft.Mode)
+		})
+	}
+	list := helpKeyList(rows)
 	ask := m.activeChildAsk()
 	if ask == nil || ask.Kind != subagent.AskCommand || !m.childAskCard(ask).AllowAlways {
 		return list
