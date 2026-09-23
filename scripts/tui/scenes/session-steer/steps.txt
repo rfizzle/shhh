@@ -1,0 +1,29 @@
+# program test: TestProgram_ALineFromAnotherSessionStartsATurn,
+#   TestProgram_AHeldLineIsPassedOnFromItsCard
+#
+# One session hands another a line (docs/capabilities/sessions-and-memory.md#a-session-can-hand-another-a-line).
+# A second shhh is started in a checkout of its own beside the session in the
+# pane, finds the session's slot with `shhh sessions --json`, and sends it a
+# sentence with `shhh send`; the session is reached over its own socket, not
+# through the keyboard.
+#
+# What the capture is for: the steer row a line leaves — `steer` in the verb
+# column, `from session lane-b` naming who sent it, the line open beneath —
+# and the turn the idle session starts on it. Then the session goes to auto,
+# where a second line is held on its card, naming the sender, with two keys
+# and no default; [y] passes it on.
+#
+# The first turn is there so the session has saved and has a slot to be
+# named by: a session that has saved nothing cannot be sent to.
+snap 01-start "Some things worth doing first"
+keys "hello" Enter
+snap 02-saved "Ready when you are."
+shell mkdir -p ../other && cd ../other && git init -q && for i in $(seq 100); do slot=$("$SHHH_BIN" sessions --json | python3 -c 'import json,sys; s=json.load(sys.stdin); print(s[0]["slot"] if s else "")'); [ -n "$slot" ] && break; sleep 0.2; done && printf '%s' "$slot" > ../slot && "$SHHH_BIN" send --from lane-b "$slot" "master moved under you: rebase onto it"
+snap 03-steer "Rebased onto master" "steer" "from session lane-b" "master moved under you: rebase onto it"
+keys BTab
+keys BTab
+snap 04-auto "⏵⏵ auto · ctx"
+shell cd ../other && "$SHHH_BIN" send --from lane-b "$(cat ../slot)" "master moved again: rebase once more"
+snap 05-held "pass it to the turn" "a line from session lane-b" "master moved again: rebase once more" "[n] drop it"
+keys y
+snap 06-passed "Rebased again"

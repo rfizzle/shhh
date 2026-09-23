@@ -318,8 +318,16 @@ func (m *Model) injectSteering() bool {
 	// all injected into the same round, so which one carries them is only a
 	// question of where the transcript names them.
 	atts := m.takeAttachments()
-	humanSteers := 0
+	humanSteers, sentSteers := 0, 0
 	for _, item := range m.steering {
+		if item.sent {
+			// A line another session sent: a steer, in the session's own
+			// voice rather than the reader's, so it is not a turn of theirs
+			// and leaves no checkpoint for a rewind to offer (inbound.go).
+			m.injectSent(item, false)
+			sentSteers++
+			continue
+		}
 		if item.machine {
 			m.agent.AppendMachine(item.text)
 			m.appendEntry(entry{kind: entrySystem, text: item.text})
@@ -347,11 +355,13 @@ func (m *Model) injectSteering() bool {
 		m.summaryTarget = agent.ExtendTarget(m.summaryTarget, item.text)
 		atts = nil
 	}
-	if humanSteers > 0 {
+	if humanSteers+sentSteers > 0 {
 		// And what was judged against the shorter instruction is retired, before
 		// the boundary below can deliver it (summary.go).
 		m.summarySteered()
-		m.signal(observe.SignalSteer, strconv.Itoa(humanSteers))
+		if humanSteers > 0 {
+			m.signal(observe.SignalSteer, strconv.Itoa(humanSteers))
+		}
 		m.resetRounds()
 	}
 	m.steering = nil
@@ -395,7 +405,13 @@ func (m *Model) restoreSteering() {
 	}
 	var parts []string
 	for _, item := range m.steering {
-		if !item.machine {
+		switch {
+		case item.sent:
+			// Another session's words are not the reader's draft: they go
+			// back to their card, for the reader to pass on to the next turn
+			// or drop (inbound.go).
+			m.inbound.held = append(m.inbound.held, InboundLine{From: item.from, Text: item.text})
+		case !item.machine:
 			parts = append(parts, item.text)
 		}
 	}

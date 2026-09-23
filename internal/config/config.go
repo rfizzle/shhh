@@ -25,6 +25,7 @@ type Config struct {
 	Appearance AppearanceConfig `toml:"appearance"`
 	History    HistoryConfig    `toml:"history"`
 	Chats      ChatsConfig      `toml:"chats"`
+	Sessions   SessionsConfig   `toml:"sessions"`
 	Reports    ReportsConfig    `toml:"reports"`
 	Observe    ObserveConfig    `toml:"observe"`
 	Otel       OtelConfig       `toml:"otel"`
@@ -150,6 +151,10 @@ type PromptsConfig struct {
 	// sent. The proposed call is appended after it, and takes no
 	// placeholders.
 	Classifier string `toml:"classifier,omitempty"`
+	// SessionSteer is the wording a line another session sent is framed in
+	// before it joins the conversation. It may name `{{source}}`, the
+	// sending session; the line itself follows it whatever it says.
+	SessionSteer string `toml:"session_steer,omitempty"`
 
 	// The backlog runner's stage instructions. Each names a file that
 	// replaces what one stage of a run tells the model; the blocks the run
@@ -799,6 +804,20 @@ type AppearanceConfig struct {
 	// it is a string here and the surface that owns the rail reads it; an
 	// empty value is auto, the way an unset key is everywhere else.
 	RailWidth string `toml:"rail_width"`
+}
+
+// SessionsConfig is what this session does with what other sessions on the
+// machine send it.
+type SessionsConfig struct {
+	// Inbound is what becomes of a line another session sends: `accept`
+	// hands it to the turn as a steer, `hold` puts it on a card for the
+	// person to pass on or drop, and `refuse` takes nothing. Empty is `hold`
+	// under auto and `accept` otherwise: auto is the one mode in which a
+	// redirected turn goes on to run commands nobody is asked about, so a
+	// line from elsewhere waits for a person there, while in every other
+	// mode each act the line could lead to is still put to one.
+	// See docs/capabilities/sessions-and-memory.md#a-session-can-hand-another-a-line.
+	Inbound string `toml:"inbound"`
 }
 
 type HistoryConfig struct {

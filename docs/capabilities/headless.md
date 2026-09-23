@@ -446,6 +446,14 @@ events it receives while all that happens are the ones above, unchanged: the
 same lines, the same words, forwarded rather than rewritten, so a client that
 can read a run's output can read a session it is driving with the same code.
 
+A terminal session listens too, on a socket of its own, and takes exactly one
+of these calls there: a line of text from another session, which it reads as
+a steer and which can do nothing else
+([`sessions-and-memory.md`](sessions-and-memory.md#a-session-can-hand-another-a-line)).
+A served session does not open that second door, because the protocol it is
+already served over carries a steer, and a line that had to wait on a card
+would have no screen to wait on.
+
 A steer belongs to the turn it was sent to, wherever in that turn it lands.
 One that arrives while the answer is being written has no round boundary left
 in front of it, and is carried out as the rest of that turn rather than held

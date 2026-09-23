@@ -283,13 +283,28 @@ func (a *Agent) StartTurn(text string) { a.StartTurnWith(text, nil) }
 // . They ride on the user message itself, so every later snapshot,
 // save and resume keeps them beside the sentence that was asked about them.
 func (a *Agent) StartTurnWith(text string, atts []provider.Attachment) {
+	a.startTurn()
+	a.Append(provider.Message{Role: provider.RoleUser, Content: text, Attachments: atts})
+}
+
+// StartMachineTurn begins a turn on a message nobody at this keyboard typed —
+// a line another session sent an idle one. The turn starts exactly as a typed
+// one does; the message is marked the session's own
+// (provider.Message.Machine), so a rebuild draws it as the row it was rather
+// than over the reader's name, and recall and rewind never offer it as
+// something they wrote.
+func (a *Agent) StartMachineTurn(text string) {
+	a.startTurn()
+	a.AppendMachine(text)
+}
+
+func (a *Agent) startTurn() {
 	a.rounds = 0
 	a.lastIntervention = 0
 	a.checkIns = 0
 	a.markSpend()
 	a.resetProgress()
 	a.StartInterveneTurn()
-	a.Append(provider.Message{Role: provider.RoleUser, Content: text, Attachments: atts})
 }
 
 // RequestMessages snapshots the conversation for a stream request, so

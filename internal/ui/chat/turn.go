@@ -680,6 +680,14 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 	case subagentEventMsg:
 		return answered(m.handleSubagentEvent(msg.ev))
 
+	case inboundMsg:
+		return answered(m.takeInboundMsg(msg))
+
+	case inboundOpenMsg:
+		// Nothing to do here: the Update tail asks whether the held card
+		// can open on every message, and this one exists to be a message.
+		return m, nil, true
+
 	case streamErrMsg:
 		// Classified, never raw: the failure is a row on the
 		// activity grid with the provider's own words in its detail body and

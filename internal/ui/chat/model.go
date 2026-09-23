@@ -114,6 +114,10 @@ const (
 	// confirm) — what it would restore, what has drifted since, and esc to
 	// decline. It borrows the bottom panel, not the transcript.
 	stateUndoConfirm
+	// stateInboundHold: a line another session sent is waiting on its card
+	// for the person to pass on or drop (inbound.go). It borrows the bottom
+	// panel, so the turn keeps running under it.
+	stateInboundHold
 	// stateKeyEntry: the masked key prompt an auth failure's [k] opens
 	//. It borrows the bottom panel; esc keeps the old key.
 	stateKeyEntry
@@ -629,6 +633,12 @@ type entry struct {
 type steeringItem struct {
 	text    string
 	machine bool
+	// sent marks a line another session handed this one (inbound.go), and
+	// from is the slot that sent it, empty for the command line. It joins
+	// the turn as a steer does but in the session's own voice, framed by the
+	// wording that says who it came from.
+	sent bool
+	from string
 }
 
 type Model struct {
@@ -652,6 +662,10 @@ type Model struct {
 	// the CLI's, so the host hands both over as one call; nil where there is
 	// no store to read.
 	sessions func() string
+	// inbound is what other sessions on the machine send this one: where
+	// the lines arrive, what the settings say to do with them, and the ones
+	// held for a person to pass on or drop (inbound.go).
+	inbound inboundState
 	// workspaceBlock is the checkout read again, as the prompt section that
 	// states it. Nil in a host that cannot survey one, which leaves a
 	// rebuilt conversation on the reading it already carried.
@@ -1782,6 +1796,9 @@ func (m Model) Init() tea.Cmd {
 	if m.todoRunner.following {
 		cmds = append(cmds, todoLanesTick())
 	}
+	if listen := listenInbound(m.inbound.lines); listen != nil {
+		cmds = append(cmds, listen)
+	}
 	// Mouse reporting is not asked for here: it is a field on the View
 	//, so every surface that runs this Model gets the same answer
 	// from the same place and the toggle has one thing to flip.
@@ -1885,6 +1902,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// read here, which is why no one of them says so itself.
 	if mm.subagents != nil && len(mm.steering) != len(m.steering) {
 		mm.subagents.SessionSteering(len(mm.steering))
+	}
+	// And a line another session sent that is waiting on its card
+	// (inbound.go): whatever was in front of it — a decision, a surface, a
+	// sentence in the draft — goes away in a transition, and this is where
+	// every transition is read.
+	if open := mm.openHeldLine(); open != nil {
+		cmd = tea.Batch(cmd, open)
 	}
 	return mm, cmd
 }
@@ -1996,6 +2020,19 @@ func (m Model) sendUserMessage(text string) (tea.Model, tea.Cmd) {
 // shown in its place — the command that produced a message, where the
 // message itself is not what the user typed.
 func (m Model) sendUserMessageAs(text, shown string) (tea.Model, tea.Cmd) {
+	m.openTurn(shown)
+	m.recordCheckpoint(shown)
+	atts := m.takeAttachments()
+	m.agent.StartTurnWith(text, atts)
+	m.appendEntry(userEntry(shown, atts))
+	return m.streamOpenedTurn()
+}
+
+// openTurn is everything a turn starts with before its first message joins:
+// the counters, the clocks, the ceiling and the target it is judged against.
+// A typed turn and a turn another session's line opens (inbound.go) both
+// start here, so the two cannot come to begin differently.
+func (m *Model) openTurn(shown string) {
 	// A plan that has been through its list has answered "where are we", so
 	// the next instruction retires it. One with steps left to go survives the
 	// message, because that question is still open.
@@ -2028,10 +2065,10 @@ func (m Model) sendUserMessageAs(text, shown string) (tea.Model, tea.Cmd) {
 	// would otherwise be read against — and before the checkpoint, so the
 	// checkpoint still points at the person's own words.
 	m.injectTreeNotice(true)
-	m.recordCheckpoint(shown)
-	atts := m.takeAttachments()
-	m.agent.StartTurnWith(text, atts)
-	m.appendEntry(userEntry(shown, atts))
+}
+
+// streamOpenedTurn sends the first request of a turn openTurn began.
+func (m Model) streamOpenedTurn() (tea.Model, tea.Cmd) {
 	m.trimForRequest()
 	m.setTurnState(stateStreaming)
 	m.streaming = ""

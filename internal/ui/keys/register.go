@@ -394,6 +394,16 @@ func Surfaces() []Surface {
 			Bindings: []Binding{Confirm.Yes, Confirm.Force, Confirm.No},
 		},
 		{
+			// A line from another session has no default answer: passing a
+			// colleague's words to the turn is a decision, so enter and esc
+			// answer nothing and the no is Refuse, which is two letters.
+			Name:     "the held-line card",
+			Section:  "docs/capabilities/sessions-and-memory.md#a-session-can-hand-another-a-line",
+			Position: Takeover,
+			Reached:  "a line another session sent, where sessions.inbound holds it",
+			Bindings: []Binding{Confirm.Yes, Decision.Refuse},
+		},
+		{
 			Name:     "the selector family, the model and rewind pickers",
 			Section:  "docs/interface/surfaces.md#selectors",
 			Position: Takeover,

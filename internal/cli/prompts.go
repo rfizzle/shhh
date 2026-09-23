@@ -47,6 +47,11 @@ type sessionPrompts struct {
 	checkIn    string
 	summary    string
 	classifier string
+
+	// sessionSteer frames a line another session sent
+	// (docs/capabilities/sessions-and-memory.md#a-session-can-hand-another-a-line).
+	sessionSteer string
+
 	// todo is the backlog runner's set, handed to a run whole: the runner is
 	// what places the blocks and appends the answer shape around each of
 	// them, and a stage that got its wording from anywhere else would be a
@@ -126,7 +131,7 @@ type wording struct {
 	validate func(string) error
 }
 
-// wordingKeys is every wording a file can replace: this package's four, then
+// wordingKeys is every wording a file can replace: this package's five, then
 // one per step of the backlog run, named `todo_<step>`. The run's half comes
 // from the pipeline rather than from a table written out here, because which
 // steps a run has is the profile's to say and a table would be a second
@@ -143,6 +148,9 @@ func wordingKeys() []wording {
 		{"steer", func(c config.PromptsConfig) string { return c.Steer },
 			setSteer, func(p sessionPrompts) string { return p.steer },
 			agent.SteerWording, agent.ValidateSteer},
+		{"session_steer", func(c config.PromptsConfig) string { return c.SessionSteer },
+			setSessionSteer, func(p sessionPrompts) string { return p.sessionSteer },
+			agent.SessionSteerWording, agent.ValidateSessionSteer},
 		{"check_in", func(c config.PromptsConfig) string { return c.CheckIn },
 			setCheckIn, func(p sessionPrompts) string { return p.checkIn },
 			agent.CheckInWording, agent.ValidateCheckIn},
@@ -176,6 +184,8 @@ func setSteer(p *sessionPrompts, text string)      { p.steer = text }
 func setCheckIn(p *sessionPrompts, text string)    { p.checkIn = text }
 func setSummary(p *sessionPrompts, text string)    { p.summary = text }
 func setClassifier(p *sessionPrompts, text string) { p.classifier = text }
+
+func setSessionSteer(p *sessionPrompts, text string) { p.sessionSteer = text }
 
 // setTodo keeps one step's wording, minting the set on the first one: a
 // session that replaced nothing carries none at all, which is what makes its
@@ -324,6 +334,7 @@ func steering(cfg config.Config, prompts sessionPrompts) agent.Steering {
 		SteerTargetChars: cfg.Summary.SteerTargetChars,
 		CheckIn:          prompts.checkIn,
 		Steer:            prompts.steer,
+		SessionSteerText: prompts.sessionSteer,
 	}
 }
 

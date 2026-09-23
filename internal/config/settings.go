@@ -458,6 +458,12 @@ var settings = []Setting{
 	},
 
 	{
+		Key: "sessions.inbound", Kind: KindEnum, Default: "(hold under auto, accept otherwise)",
+		Values: []string{"accept", "hold", "refuse"},
+		Desc:   "What becomes of a line another session sends with `shhh send`: `accept` hands it to the turn as a steer, `hold` puts it on a card to pass on or drop, `refuse` takes nothing. It is never an approval or a command.",
+	},
+
+	{
 		Key: "reports.retention_days", Kind: KindInt, Default: "90 days", Literal: "90",
 		Desc: "How long a generated report page is kept.",
 	},
@@ -564,6 +570,9 @@ var settings = []Setting{
 	{
 		Key: "prompts.steer", Kind: KindPath, Default: "(the built-in wording)",
 		Desc: "A file whose contents replace the message a drifting turn is given; it may place `{{target}}`, `{{reason}}` and `{{count}}`, how many times this turn the check has said so.",
+	}, {
+		Key: "prompts.session_steer", Kind: KindPath, Default: "(the built-in wording)",
+		Desc: "A file whose contents replace the words a line another session sent is framed in; it may place `{{source}}`, the sending session, and the line follows it.",
 	}, {
 		Key: "prompts.check_in", Kind: KindPath, Default: "(the built-in wording)",
 		Desc: "A file whose contents replace the message a turn that has reached its interval is given; it may place `{{rounds}}` and `{{finished}}`.",

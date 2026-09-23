@@ -273,6 +273,66 @@ watching — so the slot is named and refused instead, with the name the way
 through as before. A slot whose session is gone is offered like any other,
 since the record of that session was closed at this one's start.
 
+### A session can hand another a line
+
+Three sessions in three worktrees are three colleagues who cannot hear each
+other. When one of them lands a change, the other two are working on a
+branch that has moved, and the only way to tell them was to switch to each
+terminal and type it. `shhh send <slot> <text>` is that sentence without the
+switch: it finds the session saving to that slot in the record, the way
+`shhh sessions` names it, and hands it one line.
+
+Every terminal session listens for it on a socket of its own under the state
+directory, named for its process, which is the whole of how a sender finds
+it — the record says which process holds a slot. The socket takes one thing,
+a line of text, in the protocol's own framing, and nothing else: it cannot
+start a turn of its own, answer a card, run a command or change a setting,
+because any process of the same user can open it, and a door that could do
+any of that would be a way around every approval the session asks for. A
+session that cannot open its socket says so once as it starts and takes
+nothing; a line sent to it is told the session is not listening.
+
+What arrives is a steer, handed to the turn the way one typed into the draft
+is: a working turn reads it at its next boundary, and an idle session takes
+it as its next instruction. It is not the person at this keyboard, and the
+session never pretends it is. The transcript shows it as a steer from a
+fourth source, naming the slot that sent it — or the command line, where no
+session did — with the line beneath; the record files it as a steer from a
+session, beside the lane, the orchestrator, the reading and the landing; and
+the model is handed it under a wording that names the sender and says it
+carries no authority, so a colleague's note reads as one and not as an order
+from the person it works for. The wording is a file like the steer's
+(`prompts.session_steer`), and a replacement places the sender through
+`{{source}}`; the line follows whatever it says, since the line is the
+message. A script that speaks for a session names it with `--from`; left
+out, the sender is the one session saving from the checkout `shhh send` was
+run in, if there is exactly one.
+
+A line carries no authority on the receiving side either. A card that is
+waiting when it arrives goes on waiting — the line joins behind it and
+answers nothing, however much it reads like `y` — and a slash command in it
+is text, since it never passes through the draft. A line that arrives while
+a turn is cancelled is not put in the reader's draft, where sending it would
+make it theirs; it goes back to waiting on its card.
+
+`sessions.inbound` says what becomes of one: `accept` hands it to the turn,
+`refuse` takes nothing and tells the sender so, and `hold` puts it on a card
+naming the sender, answered with `[y]` to pass it on or `[n]` to drop it and
+nothing else — passing a colleague's words to the turn is a decision rather
+than a confirmation, so the card has no default for enter or esc to take.
+Left unset it is `hold` under auto and `accept` otherwise. Auto is the one
+mode whose turn goes on to run commands nobody is asked about, so a line from
+elsewhere waits there for a person to read it; in every other mode each act
+the line could lead to is still put to one, and holding it too would only
+make the person answer twice. The card opens only onto an empty draft and a
+screen nothing else holds, so a sentence being typed cannot answer it with
+its next letter and a decision already waiting is not pushed aside; the
+sender is told the line was held.
+
+A served session is not among the ones listening: it has no terminal to hold
+a card on, and a client of `shhh serve` steers it over the protocol it is
+already speaking.
+
 ### A slot belongs to one session
 
 A session that was never named is called by the moment it began, and for a

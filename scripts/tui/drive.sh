@@ -13,6 +13,10 @@
 #     keys <tmux send-keys …>   type; Enter, Escape, Tab, BTab, Up, C-c, "a line"
 #     press <seconds> <key> …   the keys <seconds> apart, timed by tmux itself
 #     paste <file>              bracketed-paste a file the setup wrote
+#     shell <shell>             run beside the binary, mid-scene, in the
+#                               workspace with the run's environment and
+#                               $SHHH_BIN; output to shell.log, and a failure
+#                               fails the run
 #     snap <name> [text] [also …]
 #                               capture the screen once <text> is on it; every
 #                               further string must be on that capture too
@@ -184,8 +188,9 @@ fi
 # rewritten every run and a picture is not, so a still from a scene that has
 # since been renamed would sit in the directory being read as this run's — and
 # a picture nobody took is the one thing a picture must never be. The logs are
-# left to the redirections that write them.
-rm -f "$OUT"/*.txt "$OUT"/*.ansi "$OUT"/*.gif "$OUT"/*.cast
+# left to the redirections that write them, except the shell steps', which
+# each append to one.
+rm -f "$OUT"/*.txt "$OUT"/*.ansi "$OUT"/*.gif "$OUT"/*.cast "$OUT/shell.log"
 printf '[behavior]\nprovider_retries = 0\n' > "$home/config/shhh/config.toml"
 (cd "$ws" && git init -q && git -c user.email=tui@shhh -c user.name=tui commit -q --allow-empty -m init)
 
@@ -333,6 +338,14 @@ while IFS= read -r line || [ -n "$line" ]; do
 		tmux -L "$SOCK" load-buffer -b scene -- "$ws/${line#paste }" ||
 			{ echo "drive.sh: $name: no such file to paste: ${line#paste }" >&2; exit 1; }
 		tmux -L "$SOCK" paste-buffer -p -d -b scene -t scene
+		;;
+	shell\ *)
+		# A second process beside the one in the pane — another shhh, most
+		# often, which the session under test has to hear from while it runs.
+		# It sees the same home and the same store the pane does, so what it
+		# reads and writes is that session's machine rather than this one's.
+		(cd "$ws" && export $envs SHHH_BIN="$SHHH_BIN" && eval "${line#shell }") >> "$OUT/shell.log" 2>&1 ||
+			{ echo "drive.sh: $name: shell step failed: ${line#shell } — $OUT/shell.log:" >&2; sed 's/^/  /' "$OUT/shell.log" >&2; failed=1; }
 		;;
 	press\ *)
 		# A gesture the binary times — two escapes inside the rewind's half

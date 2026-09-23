@@ -1,0 +1,8 @@
+# The session's own turns in one queue and its readings in another, so a
+# reading taken at a turn's close cannot take the reply a turn is waiting for.
+[session]
+Ready when you are.
+Rebased onto master; nothing conflicted.
+Rebased again; the tests still pass.
+[reading]
+The session rebased onto master when another session said the branch moved.

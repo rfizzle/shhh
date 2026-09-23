@@ -190,6 +190,13 @@ snap 04-exit "that is everything the screen was holding"
   paste, which is the one thing `send-keys` cannot do: typed bytes arrive as
   keystrokes, and what a surface does with two hundred lines arriving at once
   is a different question from what it does with two hundred lines typed.
+- `shell <shell>` runs a line beside the binary while the scene is going, in
+  the workspace, with the run's home, store and `$SHHH_BIN` — a second shhh
+  the session in the pane has to hear from, which no key can be. Its output
+  goes to `shell.log` beside the captures, and a line that fails fails the
+  run with that log. Follow it with a snap on what the session drew in
+  answer, since the step returns when the command does, not when the pane
+  has caught up.
 - `snap <name> "<text>"` waits for the text to be on screen, then captures.
   **The text must be the surface's own.** Waiting for the line you just typed
   passes before the reply lands; wait for a word only the reply carries, an

@@ -135,6 +135,9 @@ type Steering struct {
 	// that before a session runs on one.
 	CheckIn string
 	Steer   string
+	// SessionSteerText replaces the wording a line from another session is
+	// framed in (sessionsteer.go). It may name {{source}} and nothing else.
+	SessionSteerText string
 }
 
 // SetSteering installs the tuning for this surface. It replaces the whole

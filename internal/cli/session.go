@@ -1338,6 +1338,14 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		return assembled(model)
 	}
 
+	// The socket another session hands this one a line through, opened only
+	// once the session is certain to run, and closed with it (send.go).
+	lines, closeInbox := openInbox(cmd.Context(), cfg.Sessions.Inbound)
+	defer closeInbox()
+	if lines != nil {
+		model = model.WithInbound(chat.Inbound{Lines: lines, Policy: cfg.Sessions.Inbound})
+	}
+
 	if session.wantsResume() {
 		reopened, err := session.resumeChat(db)
 		if err != nil {

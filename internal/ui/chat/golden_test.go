@@ -4131,3 +4131,34 @@ func TestGolden_BatchOrder(t *testing.T) {
 		}
 	})
 }
+
+// TestGolden_SteerFromASession captures the row a line from another session
+// leaves where it joins the turn, and the card it waits on where
+// sessions.inbound holds it. The row is a steer on the grid naming the slot
+// that sent it, with the line open beneath; the card names the sender, shows
+// the line, and offers two keys and no default.
+func TestGolden_SteerFromASession(t *testing.T) {
+	const line = "master moved under you: 04150ee7 landed the sprint lanes. Rebase onto it before your next commit."
+	captureBoundedGolden(t, "steer-from-session", "a line another session sent", goldenWidths, func(width int) []golden.Panel {
+		row := func(from string) string {
+			m := frameModel(t, width, 40)
+			m.appendEntry(sessionSteerEntry(from, line))
+			return m.renderHistory()
+		}
+		card := func(more int) string {
+			m := frameModel(t, width, 40).WithInbound(Inbound{Policy: InboundHold})
+			m.lastKeypress = time.Time{}
+			for i := 0; i <= more; i++ {
+				updated, _ := m.Update(inboundMsg{line: InboundLine{From: "2026-09-23 10:41:07", Text: line}})
+				m = updated.(Model)
+			}
+			return strings.Join(m.heldLineLines(), "\n")
+		}
+		return []golden.Panel{
+			{Label: "the steer row · the sending slot, the line beneath", View: row("2026-09-23 10:41:07")},
+			{Label: "the steer row · a line no session sent", View: row("")},
+			{Label: "the held card · two keys, no default", View: card(0)},
+			{Label: "the held card · with more lines behind it", View: card(2)},
+		}
+	})
+}

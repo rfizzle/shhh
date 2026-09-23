@@ -72,6 +72,14 @@ const (
 	// changes nothing about the task.
 	// See docs/capabilities/subagents.md#a-writer-starts-from-your-tree.
 	SteerFromLanding SteerSource = "landing"
+	// SteerFromSession: another shhh session on this machine handed the
+	// session a line over its socket. It is a colleague's message, not the
+	// person at this keyboard, and it carries no authority: text joined to
+	// the turn and nothing else. It steers a session rather than a child, and
+	// is in this set because the session's own steer row and its record draw
+	// the source from the same words a child's lane does.
+	// See docs/capabilities/sessions-and-memory.md#a-session-can-hand-another-a-line.
+	SteerFromSession SteerSource = "session"
 )
 
 // Definitions returns the orchestration tool definitions the parent session

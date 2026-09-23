@@ -276,6 +276,15 @@ func buildOverlays() map[state]*mode {
 			lines:   panelRows((Model).undoConfirmLines),
 			keys:    (Model).updateUndoConfirm,
 		},
+		// The card a line from another session waits on. It borrows the
+		// panel and opens only onto an empty draft, so both of its keys are
+		// live from the moment it is drawn (inbound.go).
+		stateInboundHold: {
+			place:   placePanel,
+			borrows: true,
+			lines:   panelRows((Model).heldLineLines),
+			keys:    (Model).updateHeldLine,
+		},
 		stateQuitConfirm: {
 			place:    placePanel,
 			borrows:  true,

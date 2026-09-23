@@ -737,6 +737,12 @@ own file could hold.
 |---|---|---|---|
 | `retention_days` | number | 180 days | How long a saved conversation nobody has written to is kept before startup prunes it, with a chat's branches going when it does; it matches the record's window because a record row names a conversation, and a negative keeps every conversation for good. |
 
+**`[sessions]`**
+
+| Key | Takes | Default | What it decides |
+|---|---|---|---|
+| `inbound` | word: `accept`, `hold`, `refuse` | (hold under auto, accept otherwise) | What becomes of a line another session sends with `shhh send`: `accept` hands it to the turn as a steer, `hold` puts it on a card to pass on or drop, `refuse` takes nothing. It is never an approval or a command. |
+
 **`[reports]`**
 
 | Key | Takes | Default | What it decides |
@@ -810,6 +816,7 @@ own file could hold.
 | Key | Takes | Default | What it decides |
 |---|---|---|---|
 | `steer` | path | (the built-in wording) | A file whose contents replace the message a drifting turn is given; it may place `{{target}}`, `{{reason}}` and `{{count}}`, how many times this turn the check has said so. |
+| `session_steer` | path | (the built-in wording) | A file whose contents replace the words a line another session sent is framed in; it may place `{{source}}`, the sending session, and the line follows it. |
 | `check_in` | path | (the built-in wording) | A file whose contents replace the message a turn that has reached its interval is given; it may place `{{rounds}}` and `{{finished}}`. |
 | `summary` | path | (the built-in wording) | A file whose contents replace the reading instruction the summarizing model is sent. |
 | `classifier` | path | (the built-in wording) | A file whose contents replace the instruction auto mode's permission classifier is sent. |

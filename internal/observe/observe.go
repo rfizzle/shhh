@@ -261,16 +261,18 @@ const (
 	// the drifting ones — a drift rate needs its denominator.
 	SignalSummary = "summary"
 	// SignalSteer: instructions reached a running turn from outside it.
-	// Reason: how many messages, as a number, where the subject is a session
-	// — a person types into their own turn, and there is nowhere else it
-	// could have come from. Where the subject is a sub-agent the reason is
+	// Reason: how many messages, as a number, where a person typed them into
+	// their own session's turn. Where the subject is a sub-agent the reason is
 	// the source instead — "lane" (the person opened the child's lane and
 	// typed) or "parent" (the orchestrator that wrote the task redirected
 	// it) — because a fan-out has two of them and a rate that cannot tell
 	// them apart cannot say whether the orchestrator is answering what it
 	// sees. "landing" is the third: a patch another writer landed would not
 	// carry into this writer's copy, and the writer was told where the two
-	// met. The supervisor owns those words, the way SignalIntervene's are
+	// met. "session" is the fourth, and the one whose subject is a session
+	// rather than a child: another session on the machine handed this one a
+	// line, and a count would file a colleague's note as the person's own
+	// typing. The supervisor owns those words, the way SignalIntervene's are
 	// the loop's. A child's own reading is not among them: an interruption
 	// the machinery delivered is SignalIntervene's "steer" below, and a
 	// second record here would count one steer twice.
