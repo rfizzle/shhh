@@ -544,10 +544,10 @@ func bareWord(s string) bool {
 //
 // The order is the tree the manager lists (nestAgents): each child followed by
 // the ones it started, so a grandchild's corner hangs off its own parent's row
-// rather than off whichever sibling was spawned just before it. Among
-// siblings that is spawn order, the order the cycle walks (attach.go), so
-// moving one row on the keyboard moves one row on screen wherever nothing
-// nests.
+// rather than off whichever sibling was spawned just before it. That tree,
+// in spawn order among siblings, is the order the cycle walks (attach.go),
+// so moving one row on the keyboard moves one row on screen wherever nothing
+// has floated.
 func (m Model) inspectorAgents() []components.InspectorAgent {
 	if m.subagents == nil {
 		return nil

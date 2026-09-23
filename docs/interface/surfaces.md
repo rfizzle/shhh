@@ -1101,7 +1101,9 @@ It is drawn directly under the agent that started it, and what floats is
 that whole branch: an agent whose own child is waiting floats with it,
 and nothing floating or folding lands between an agent and the one it
 started, since a corner under the wrong row names the wrong parent. That is
-the manager's order too; the chord keeps the started order here as well.
+the manager's order too, and the chord walks it: one press is one row down
+the map, an agent and then the ones it started before the next sibling,
+because the map is what the reader is looking at when they press it.
 Leaving a session still goes to whatever started it rather than to the root.
 
 When the rail runs short of height the map gives up its rows in the order it

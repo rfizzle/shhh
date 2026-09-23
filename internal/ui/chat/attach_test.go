@@ -146,6 +146,38 @@ func TestCycleAgentKeepsItsStopsAcrossAKill(t *testing.T) {
 	}
 }
 
+// TestCycleAgentWalksTheMapsRows: under a nested fan-out one press of the
+// chord is one row down the rail's map — a grandchild is the stop after its
+// own parent, not after the sibling spawned before it.
+func TestCycleAgentWalksTheMapsRows(t *testing.T) {
+	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
+	t.Cleanup(sup.Close)
+	m := newSubagentModel(t, sup)
+	spawnChild(t, sup, subagent.RoleResearcher, "researcher-1")
+	spawnChild(t, sup, subagent.RoleResearcher, "researcher-2")
+	// Spawned last, drawn under its parent.
+	spawnUnder(t, sup, "researcher-1", subagent.RoleReviewer, "reviewer-1")
+
+	// The map's first row is the session itself, which the keyboard names "".
+	rows := []string{""}
+	for _, a := range m.inspectorAgents()[1:] {
+		rows = append(rows, a.Name)
+	}
+	if want := []string{"", "researcher-1", "reviewer-1", "researcher-2"}; !slices.Equal(rows, want) {
+		t.Fatalf("the map should draw the grandchild under its parent: %q", rows)
+	}
+	var stops []string
+	for range len(rows) {
+		updated, _ := m.Update(tea.KeyPressMsg{Code: ']', Mod: tea.ModAlt})
+		m = updated.(Model)
+		stops = append(stops, m.attachedTo)
+	}
+	// The last press wraps back to the orchestrator, the map's first row.
+	if want := append(slices.Clone(rows[1:]), rows[0]); !slices.Equal(stops, want) {
+		t.Fatalf("the chord stops at %q, the map draws %q", stops, rows)
+	}
+}
+
 // TestCycleAgentKeepsEachSessionsScroll: moving through the map is a focus
 // switch and nothing more, so every session comes back to the row it was
 // left on rather than to the bottom of a transcript nobody asked to be at.

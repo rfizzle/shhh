@@ -246,21 +246,58 @@ func (m *Model) attach(name string) {
 }
 
 // sessionMap is every session the keyboard can be in: the orchestrator ("")
-// first, then every child in the supervisor's own spawn order. That is the
-// order the rail's AGENTS block draws them in (inspector.go) except where the
-// map follows the tree — a child waiting on an answer floats to the top of the
-// map, and a child's child is drawn under its parent — so one step on the
-// keyboard is one row on screen everywhere except past a blocked child or a
-// nested one.
+// first, then every child in the tree the rail's AGENTS block draws them in
+// (inspector.go, nestAgents) — each agent followed by the agents it started,
+// depth-first, then its next sibling, and siblings in the supervisor's own
+// spawn order. The tree is built from that spawn order, so a stop keeps its
+// place across a kill and a retry the way the roster does, and one step on
+// the keyboard is one row on screen everywhere except past a blocked child.
 //
-// The chord keeps spawn order rather than following the float: the map is
-// read and the chord is aimed, and a key whose destination moved every time
-// a child blocked or was answered would be a key nobody could aim
+// The chord follows the nesting and not the float: a child waiting on an
+// answer floats to the top of the map, but the map is read and the chord is
+// aimed, and a key whose destination moved every time a child blocked or was
+// answered would be a key nobody could aim
 // (docs/interface/surfaces.md#the-inspector-rail).
 func (m Model) sessionMap() []string {
 	names := []string{""}
-	if m.subagents != nil {
-		for _, st := range m.subagents.Snapshot() {
+	if m.subagents == nil {
+		return names
+	}
+	snapshot := m.subagents.Snapshot()
+	present := make(map[string]bool, len(snapshot))
+	for _, st := range snapshot {
+		present[st.Name] = true
+	}
+	var roots []string
+	under := map[string][]string{}
+	for _, st := range snapshot {
+		parent, _ := m.subagents.Parent(st.Name)
+		if parent == "" || !present[parent] {
+			roots = append(roots, st.Name)
+			continue
+		}
+		under[parent] = append(under[parent], st.Name)
+	}
+	placed := make(map[string]bool, len(snapshot))
+	var walk func(group []string)
+	walk = func(group []string) {
+		for _, name := range group {
+			// A parent link that came round in a circle would walk forever;
+			// a name already placed is where it stops.
+			if placed[name] {
+				continue
+			}
+			placed[name] = true
+			names = append(names, name)
+			walk(under[name])
+		}
+	}
+	walk(roots)
+	// Anything the walk could not reach is still a session the keyboard can
+	// be in, so it goes at the end rather than out of reach, where the map
+	// draws it too.
+	for _, st := range snapshot {
+		if !placed[st.Name] {
 			names = append(names, st.Name)
 		}
 	}
