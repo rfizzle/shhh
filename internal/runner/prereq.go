@@ -91,7 +91,7 @@ func startFailure(dir string, kind spawnKind, err error) tools.ExecResult {
 // See docs/capabilities/containment.md#a-command-that-never-started-names-what-it-needed.
 func WrapFailure(err error) tools.ExecResult {
 	prereq := tools.PrereqContainment
-	if wd, cwdErr := getwd(); cwdErr != nil || !isDir(wd) {
+	if inheritedDirGone() != nil {
 		prereq = tools.PrereqWorkingDir
 	}
 	return tools.ExecResult{
@@ -100,6 +100,44 @@ func WrapFailure(err error) tools.ExecResult {
 		Outcome:  tools.ExecDidNotStart,
 		Prereq:   prereq,
 	}
+}
+
+// inheritedDirFailure is the result of a command that was to run in this
+// process's own working directory when that directory has been removed. It is
+// answered before the spawn rather than read from it, because the spawn does
+// not fail: a child inherits a removed directory as happily as a present one,
+// `ls` in it prints nothing and exits 0, and the reader is told a command ran
+// against a checkout that is not there. A contained command reaches the same
+// category through WrapFailure, since a policy cannot be built over a
+// directory that is gone; asking here is what makes the bare spawn — every
+// command on a host with no containment — agree with it.
+// See docs/capabilities/containment.md#a-command-that-never-started-names-what-it-needed.
+func inheritedDirFailure() (tools.ExecResult, bool) {
+	err := inheritedDirGone()
+	if err == nil {
+		return tools.ExecResult{}, false
+	}
+	return tools.ExecResult{
+		Output:   tools.ExecPrereqReport(tools.PrereqWorkingDir, errorText(err)),
+		ExitCode: -1,
+		Outcome:  tools.ExecDidNotStart,
+		Prereq:   tools.PrereqWorkingDir,
+	}, true
+}
+
+// inheritedDirGone is the error saying this process's working directory is
+// gone, or nil while it is there. It is asked whether the directory is still
+// there and not only whether it can be named, because a platform can go on
+// naming one that has been removed.
+func inheritedDirGone() error {
+	wd, err := getwd()
+	if err != nil {
+		return err
+	}
+	if !isDir(wd) {
+		return &fs.PathError{Op: "stat", Path: wd, Err: fs.ErrNotExist}
+	}
+	return nil
 }
 
 // getwd is how WrapFailure asks after the working directory. It is a

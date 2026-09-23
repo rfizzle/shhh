@@ -1,1 +1,1 @@
-mkdir -p "$HOME/bin" "$HOME/spare"; printf '#!/gone/interpreter\n' > "$HOME/spare/bash"; chmod +x "$HOME/spare/bash"; printf 'command_timeout_seconds = 1\n' >> "$XDG_CONFIG_HOME/shhh/config.toml"; PATH="$HOME/bin:$PATH" "$SHHH_BIN" code
+printf 'command_timeout_seconds = 1\n' >> "$XDG_CONFIG_HOME/shhh/config.toml"; "$SHHH_BIN" code

@@ -181,3 +181,33 @@ func TestAWrapFailureIsClassifiedLikeASpawn(t *testing.T) {
 		t.Fatalf("the pair should carry the category in its text, got %d %q", code, out)
 	}
 }
+
+// A command that inherits this process's directory is refused when that
+// directory is gone, before anything is spawned: on Linux the spawn itself
+// succeeds in a removed directory, and the command would run against a
+// checkout that is not there.
+func TestAnInheritedDirectoryThatIsGoneIsNamedBeforeTheSpawn(t *testing.T) {
+	needShell(t)
+	restore := getwd
+	t.Cleanup(func() { getwd = restore })
+
+	removed := filepath.Join(t.TempDir(), "removed-checkout")
+	getwd = func() (string, error) { return removed, nil }
+	got := RunCaptureResult(context.Background(), "echo hi")
+	if got.Outcome != tools.ExecDidNotStart || got.Prereq != tools.PrereqWorkingDir {
+		t.Fatalf("got %+v, want a working-directory failure that did not start", got)
+	}
+	if !strings.Contains(got.Output, removed) {
+		t.Fatalf("the directory should be named:\n%s", got.Output)
+	}
+
+	getwd = func() (string, error) { return "", errors.New("getwd: no such file or directory") }
+	if got := RunCaptureResult(context.Background(), "echo hi"); got.Prereq != tools.PrereqWorkingDir {
+		t.Fatalf("prereq = %q, want %q; output:\n%s", got.Prereq, tools.PrereqWorkingDir, got.Output)
+	}
+
+	getwd = restore
+	if got := RunCaptureResult(context.Background(), "echo hi"); got.Outcome == tools.ExecDidNotStart {
+		t.Fatalf("a present directory should run the command, got %+v", got)
+	}
+}

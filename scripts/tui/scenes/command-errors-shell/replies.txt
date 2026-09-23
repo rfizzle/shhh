@@ -1,0 +1,3 @@
+# The reader's own commands ask the model nothing; this is only the reply a
+# stray request would get.
+Nothing to do here.

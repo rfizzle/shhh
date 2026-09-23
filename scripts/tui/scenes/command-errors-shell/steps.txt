@@ -1,0 +1,20 @@
+# A command that never starts because the execution shell is gone. A bash
+# whose interpreter is missing is put first on PATH by the reader's own
+# command, so the next command has no shell to run in, and the row names that
+# category in the outcome field, with the operating system's words and the
+# next action beneath it. It is a scene of its own rather than the end of
+# command-errors because that one ends with the working directory removed,
+# and a command with no directory never gets as far as its shell.
+snap 01-start "Some things worth doing first"
+keys "!cp ~/spare/bash ~/bin/bash" Enter
+snap 02-shell-card "run it once"
+keys y
+snap 03-shell-replaced "cp ~/spare/bash"
+keys "!echo hi" Enter
+snap 04-echo-card "run it once"
+keys y
+snap 05-no-execution-shell "did not start · execution shell"
+keys C-c
+snap 06-quit-armed "again quits"
+keys C-c
+snap 07-exit "that is everything the screen was holding"

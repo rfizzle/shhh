@@ -205,6 +205,13 @@ func capture(ctx context.Context, dir, command string, argv []string, kind spawn
 	if len(argv) == 0 {
 		return tools.ExecResult{Output: "empty command", ExitCode: -1, Outcome: tools.ExecDidNotStart}
 	}
+	if dir == "" {
+		// The command inherits this process's directory, which the spawn
+		// itself will not refuse even when it is gone (prereq.go).
+		if result, gone := inheritedDirFailure(); gone {
+			return result
+		}
+	}
 	inner, cancel := context.WithCancel(context.WithoutCancel(ctx))
 	g := prepare(exec.CommandContext(inner, argv[0], argv[1:]...), dir)
 	cmd := g.cmd
