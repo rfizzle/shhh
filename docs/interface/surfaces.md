@@ -1302,6 +1302,17 @@ child — steering it, cancelling, killing, and running a failed one again —
 stay with the row the pointer is on, because their target is the one thing
 that must never be guessed.
 
+**A writer's kept patch is offered from its row.** A writer that stopped with
+work that never reached your checkout says `patch kept · [p] review` in the
+outcome field, where a blocked child says `⚠ needs you`: the lead column
+already says how it ended, so the field spends itself on the one thing left to
+do. `[p]` opens the patch full screen, headed `writer-1's patch` — the view
+`[d]` opens from a live card — and esc from it lands on the patch card over
+the list, apply or decline, the card a finishing writer's patch is put on. The
+rail's line under the same child carries the same words and, like its
+`handoff kept · [r] retry`, names the manager's key rather than acting on it
+([a failed child leaves a handoff](../capabilities/subagents.md#a-failed-child-leaves-a-handoff)).
+
 **A redirect is typed on the row, not in the child's session.** Over a child
 that is queued, running or blocked, `[s]` opens the one-line field the
 question card opens, under the row it will reach and labelled with that

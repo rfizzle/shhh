@@ -932,3 +932,153 @@ func TestAttachedRailNamesAnotherAgentWaiting(t *testing.T) {
 		t.Fatalf("othersWaiting = %d after the attached child's own request, want 1", got)
 	}
 }
+
+// keptRepo is a committed repository for a writer to copy, since a writer's
+// isolation is a linked worktree and one needs a commit to hang off.
+func keptRepo(t *testing.T) string {
+	t.Helper()
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git is not installed")
+	}
+	repo := t.TempDir()
+	if err := os.WriteFile(filepath.Join(repo, "main.go"), []byte("package main\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	for _, args := range [][]string{
+		{"init", "-q"}, {"config", "user.email", "t@t"}, {"config", "user.name", "t"},
+		{"add", "main.go"}, {"commit", "-q", "-m", "init"},
+	} {
+		if out, err := exec.Command("git", append([]string{"-C", repo}, args...)...).CombinedOutput(); err != nil {
+			t.Skipf("git setup failed: %v (%s)", err, out)
+		}
+	}
+	return repo
+}
+
+// keptWriterEnv is a writer whose first round writes kept.go in its own copy
+// of the checkout. With answer set its second round finishes, so the patch
+// goes to a card; without it the second round waits on the child's context,
+// so a kill is what ends it.
+func keptWriterEnv(answer bool) subagent.EnvFactory {
+	return func(ctx context.Context, spec subagent.Spec) (subagent.Env, error) {
+		round := 0
+		stream := func([]provider.Message, string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+			round++
+			ch := make(chan provider.StreamEvent, 2)
+			switch {
+			case round == 1:
+				ch <- provider.StreamEvent{ToolCalls: []provider.ToolCall{
+					{ID: "w1", Name: "write_file", Arguments: `{"path":"kept.go"}`},
+				}}
+			case answer:
+				ch <- provider.StreamEvent{Token: "wrote kept.go"}
+				ch <- provider.StreamEvent{Done: true}
+			default:
+				go func() {
+					<-ctx.Done()
+					close(ch)
+				}()
+				return ch, func() {}, nil
+			}
+			close(ch)
+			return ch, func() {}, nil
+		}
+		return subagent.Env{
+			SystemPrompt: "sys",
+			Stream:       stream,
+			Executor: func(string, json.RawMessage) (string, error) {
+				return "written", os.WriteFile(filepath.Join(spec.Root, "kept.go"), []byte("package kept\n"), 0o644)
+			},
+		}, nil
+	}
+}
+
+// The kill confirm says what survives the kill, and a writer's change is one
+// of those things now: it is kept rather than discarded with the workspace.
+// A child with nothing to keep is told nothing about a patch.
+// See docs/capabilities/subagents.md#a-failed-child-leaves-a-handoff.
+func TestKillConfirmSaysAPatchIsKeptOnlyWhereThereIsOne(t *testing.T) {
+	sup := subagent.New(context.Background(), subagent.Options{Root: keptRepo(t), NewEnv: keptWriterEnv(false)})
+	t.Cleanup(sup.Close)
+	m := newSubagentModel(t, sup)
+	spawnChild(t, sup, subagent.RoleWriter, "writer-1")
+	waitFor(t, func() bool { return sup.PatchToKeep("writer-1") })
+
+	want := "Kill writer-1? Its turn stops and its isolated workspace is discarded and its patch is kept; "
+	if got := m.killPrompt("writer-1"); !strings.HasPrefix(got, want) {
+		t.Errorf("the confirm over a writer with work is %q, want it to open %q", got, want)
+	}
+	spawnChild(t, sup, subagent.RoleResearcher, "researcher-1")
+	if got := m.killPrompt("researcher-1"); strings.Contains(got, "patch") {
+		t.Errorf("the confirm over a child with nothing to keep promises a patch: %q", got)
+	}
+}
+
+// [p] on a row holding a kept patch opens the patch on the surface [d] opens
+// from a live card, headed with whose it is, and the card behind it is the
+// patch card with its two answers: apply lands the change the way a finishing
+// writer's does, and the row stops offering it.
+func TestAKeptPatchIsReviewedFromTheManager(t *testing.T) {
+	repo := keptRepo(t)
+	ctx, cancel := context.WithCancel(context.Background())
+	sup := subagent.New(ctx, subagent.Options{Root: repo, NewEnv: keptWriterEnv(true)})
+	t.Cleanup(sup.Close)
+	t.Cleanup(cancel)
+	// The finishing writer's own card is declined off-screen, which is one of
+	// the ends that keeps a patch; everything after it is the manager's.
+	go func() {
+		for {
+			select {
+			case ev := <-sup.Events():
+				if ev.Kind == subagent.EventAsk {
+					ev.Ask.Respond(false)
+				}
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+	m := newSubagentModel(t, sup)
+	// Spawned without waiting to see it running: it finishes as soon as it
+	// starts, and a wait for the running state could miss it.
+	if _, err := sup.WrapExecutor("", nil)(subagent.SpawnToolName,
+		json.RawMessage(`{"role":"writer","task":"add kept.go"}`)); err != nil {
+		t.Fatal(err)
+	}
+	waitFor(t, func() bool {
+		st, ok := sup.Get("writer-1")
+		return ok && st.PatchKept
+	})
+
+	updated, _ := m.openAgentList()
+	m = updated.(Model)
+	rows, _ := m.buildAgentRows()
+	if len(rows) < 2 || !rows[1].PatchKept {
+		t.Fatalf("the writer's row should offer its kept patch, got %+v", rows)
+	}
+	m.agentList.Focus = 1
+	m = press(t, m, "p")
+	if m.state != stateDiffFull || m.fullDiff == nil || m.fullDiff.Path != "writer-1's patch" {
+		t.Fatalf("[p] should open the patch full screen, headed with whose it is; state %v, diff %+v", m.state, m.fullDiff)
+	}
+	ask := m.listAnswerAsk()
+	if ask == nil || ask.Kind != subagent.AskPatch {
+		t.Fatalf("the patch card should be waiting behind the diff, got %+v", ask)
+	}
+	m = press(t, m, "esc")
+	if view := m.View().Content; !strings.Contains(view, "Apply patch") {
+		t.Fatalf("leaving the diff should land on the patch card over the list:\n%s", view)
+	}
+	m = press(t, m, "y")
+	waitFor(t, func() bool {
+		_, err := os.Stat(filepath.Join(repo, "kept.go"))
+		return err == nil
+	})
+	waitFor(t, func() bool {
+		st, _ := sup.Get("writer-1")
+		return !st.PatchKept
+	})
+	if m.listAnswerAsk() != nil {
+		t.Fatal("an answered review is still over the list")
+	}
+}

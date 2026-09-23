@@ -63,6 +63,10 @@ type InspectorAgent struct {
 	// the row does nothing with it: the rail says the record was kept and
 	// names the key, and the key is the manager's.
 	Handoff bool
+	// PatchKept marks a stopped writer holding a change that never reached
+	// the checkout. Like Handoff it names the manager's key and does nothing
+	// itself.
+	PatchKept bool
 	// Depth is how far under the orchestrator the session sits — 0 for the
 	// orchestrator, 1 for a child it spawned, 2 for that child's own child.
 	// A depth past 1 draws the row one column in behind a corner, so a run
@@ -434,6 +438,13 @@ func (a InspectorAgent) detailRow(frame, width int) string {
 		// No declared total: motion beside the word naming what is
 		// running, never a fabricated ratio.
 		parts = append(parts, Spinner{Frame: frame, Label: a.Detail}.View())
+	}
+	if a.PatchKept {
+		// The same words the manager's row carries for the same child, and
+		// straight after why it stopped: a change that never reached the
+		// checkout is the one thing on the line that is somebody's work, so
+		// it is not the part a narrow rail clips away.
+		parts = append(parts, keptPatchOffer())
 	}
 	if a.Steers >= inspectorSteersWorthSaying {
 		// The count and not a flag: one steer is the machinery working, and a

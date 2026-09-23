@@ -52,6 +52,20 @@
 │ [X] kill · [K] kill all · every level · [esc] back to the turn               │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
+· focus · a killed writer whose patch is kept, [p] reviews it
+╭─ Agents ─────────────────────────────────────────── 1 needs you · 1 running ─╮
+│   ● orchestrator · this session                  round 7 · streaming…  $0.12 │
+│   ⚠ runner-2 · go test ./...                   ⚠ needs you · 3 tools · $0.01 │
+│     waiting approval: run go test ./internal/agent/...                       │
+│   ◇ writer-1 · docs/loop.md                      ▰▰▱▱▱ 2/5 · 6 tools · $0.02 │
+│   ◇ reader-3 · survey internal/ui                  ✓ done · 12 tools · $0.04 │
+│     the rails and the frame are one component                                │
+│ ❯ ✗ writer-5 · docs/round.md       patch kept · [p] review · 4 tools · $0.03 │
+│     cancelled                                                                │
+│ [enter] attach · [a] answer without attaching · [r] retry · [p] review       │
+│ [x] cancel · [X] kill · [K] kill all · every level · [esc] back to the turn  │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
 · the rows that are not agents · the session's roles, and the offer to draft another
 ╭─ Agents ─────────────────────────────────────────── 1 needs you · 1 running ─╮
 │   ● orchestrator · this session                  round 7 · streaming…  $0.12 │
@@ -154,6 +168,20 @@
 ␛[94m│␛[m     ␛[38;5;245mround limit (25) reached␛[m                                                 ␛[94m│␛[m
 ␛[94m│␛[m ␛[94m[enter]␛[m␛[38;5;241m attach␛[m␛[38;5;241m · ␛[m␛[94m[a]␛[m␛[38;5;241m answer without attaching␛[m␛[38;5;241m · ␛[m␛[94m[r]␛[m␛[38;5;241m retry␛[m␛[38;5;241m · ␛[m␛[94m[x]␛[m␛[38;5;241m cancel␛[m       ␛[94m│␛[m
 ␛[94m│␛[m ␛[94m[X]␛[m␛[38;5;241m kill␛[m␛[38;5;241m · ␛[m␛[94m[K]␛[m␛[38;5;241m kill all · every level␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the turn␛[m               ␛[94m│␛[m
+␛[94m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
+
+· focus · a killed writer whose patch is kept, [p] reviews it
+␛[94m╭─ ␛[m␛[1;97mAgents ␛[m␛[38;5;241m───────────────────────────────────────────␛[m␛[94m ␛[91m1 needs you␛[m␛[38;5;241m · ␛[m␛[38;5;205m1 running␛[m ─╮␛[m
+␛[94m│␛[m   ␛[1;94m●␛[m orchestrator␛[38;5;245m · this session␛[m                  ␛[38;5;241mround 7 · streaming…␛[m  ␛[38;5;243m$0.12␛[m ␛[94m│␛[m
+␛[94m│␛[m   ␛[91m⚠␛[m runner-2␛[38;5;245m · go test ./...␛[m                   ␛[91m⚠ needs you␛[m␛[38;5;241m · ␛[m␛[38;5;245m3 tools · $0.01␛[m ␛[94m│␛[m
+␛[94m│␛[m     ␛[38;5;245mwaiting approval: run go test ./internal/agent/...␛[m                       ␛[94m│␛[m
+␛[94m│␛[m   ␛[94m◇␛[m writer-1␛[38;5;245m · docs/loop.md␛[m                      ␛[94m▰▰␛[m␛[38;5;241m▱▱▱␛[m ␛[94m2/5␛[m␛[38;5;241m · ␛[m␛[38;5;245m6 tools · $0.02␛[m ␛[94m│␛[m
+␛[94m│␛[m   ␛[92m◇␛[m reader-3␛[38;5;245m · survey internal/ui␛[m                  ␛[92m✓ done␛[m␛[38;5;241m · ␛[m␛[38;5;245m12 tools · $0.04␛[m ␛[94m│␛[m
+␛[94m│␛[m     ␛[38;5;245mthe rails and the frame are one component␛[m                                ␛[94m│␛[m
+␛[94m│␛[m ␛[94m❯␛[m ␛[91m␛[m␛[38;5;245m␛[m␛[38;5;245m␛[m␛[38;5;245m␛[m␛[38;5;241m␛[m␛[38;5;241m␛[m␛[38;5;245m␛[m␛[48;5;62m␛[91m✗␛[m␛[48;5;62m ␛[38;5;245m␛[m␛[48;5;62m␛[38;5;245m␛[m␛[48;5;62m␛[38;5;245m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;245m␛[m␛[48;5;62m␛[97;48;5;62mwriter-5 · docs/round.md       patch kept · [p] review · 4 tools · $0.03␛[m␛[m ␛[94m│␛[m
+␛[94m│␛[m     ␛[38;5;245mcancelled␛[m                                                                ␛[94m│␛[m
+␛[94m│␛[m ␛[94m[enter]␛[m␛[38;5;241m attach␛[m␛[38;5;241m · ␛[m␛[94m[a]␛[m␛[38;5;241m answer without attaching␛[m␛[38;5;241m · ␛[m␛[94m[r]␛[m␛[38;5;241m retry␛[m␛[38;5;241m · ␛[m␛[94m[p]␛[m␛[38;5;241m review␛[m       ␛[94m│␛[m
+␛[94m│␛[m ␛[94m[x]␛[m␛[38;5;241m cancel␛[m␛[38;5;241m · ␛[m␛[94m[X]␛[m␛[38;5;241m kill␛[m␛[38;5;241m · ␛[m␛[94m[K]␛[m␛[38;5;241m kill all · every level␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the turn␛[m  ␛[94m│␛[m
 ␛[94m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · the rows that are not agents · the session's roles, and the offer to draft another

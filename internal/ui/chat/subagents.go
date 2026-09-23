@@ -560,17 +560,35 @@ func (m *Model) killChildren(names []string) {
 // "yes" to one name would not otherwise know how many that was
 // (docs/capabilities/subagents.md#what-nesting-does-to-the-rest-of-it).
 func (m Model) killPrompt(name string) string {
-	var under int
+	var under []string
 	if m.subagents != nil {
-		under = len(m.subagents.Under(name))
+		under = m.subagents.Under(name)
 	}
-	if under == 0 {
-		return "Kill " + name + "? Its turn stops and its isolated workspace is discarded; " +
-			"its transcript stays and the other agents keep running."
+	if len(under) == 0 {
+		return "Kill " + name + "? Its turn stops and its isolated workspace is discarded" +
+			m.keptClause(" and its patch is kept", name) +
+			"; its transcript stays and the other agents keep running."
 	}
-	return "Kill " + name + " and " + plural(under, "agent") + " under it? " +
-		"Every turn stops and every isolated workspace is discarded; " +
-		"the transcripts stay and the other agents keep running."
+	return "Kill " + name + " and " + plural(len(under), "agent") + " under it? " +
+		"Every turn stops and every isolated workspace is discarded" +
+		m.keptClause(" and the patches in them are kept", append(under, name)...) +
+		"; the transcripts stay and the other agents keep running."
+}
+
+// keptClause is what a kill confirm adds about the work that survives it: a
+// writer's change is kept rather than discarded with its workspace, and the
+// confirm says so only where one of the agents it names has a change to keep
+// (docs/capabilities/subagents.md#a-failed-child-leaves-a-handoff).
+func (m Model) keptClause(clause string, names ...string) string {
+	if m.subagents == nil {
+		return ""
+	}
+	for _, name := range names {
+		if m.subagents.PatchToKeep(name) {
+			return clause
+		}
+	}
+	return ""
 }
 
 // armKillAll is [K] on the manager: the same inline confirm one child gets,
@@ -585,7 +603,9 @@ func (m Model) armKillAll() (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 	m.killConfirm = &components.Confirm{Prompt: "Kill all " + plural(len(names), "agent") +
-		"? Every turn stops and every isolated workspace is discarded; the transcripts stay and your own turn keeps going."}
+		"? Every turn stops and every isolated workspace is discarded" +
+		m.keptClause(" and the patches in them are kept", names...) +
+		"; the transcripts stay and your own turn keeps going."}
 	m.killTargets = names
 	m.syncViewport()
 	return m, nil

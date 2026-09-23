@@ -1244,8 +1244,12 @@ type AgentKeys struct {
 	// the pointer's row rather than the list's, like cancel and kill,
 	// because its target must never be guessed
 	// (docs/interface/surfaces.md#the-agent-manager).
-	Steer  Binding
-	Retry  Binding
+	Steer Binding
+	Retry Binding
+	// Review puts a stopped writer's kept patch on the card a finishing
+	// writer's patch is put on, with the diff open over it
+	// (docs/capabilities/subagents.md#a-failed-child-leaves-a-handoff).
+	Review Binding
 	Cancel Binding
 	Kill   Binding
 	// KillAll ends every child at once, and it is the capital of Kill's own
@@ -1264,6 +1268,7 @@ var Agent = AgentKeys{
 	Answer:  bind("a", "answer", "a"),
 	Steer:   bind("s", "steer", "s"),
 	Retry:   bind("r", "retry", "r"),
+	Review:  bind("p", "review", "p"),
 	Cancel:  bind("x", "cancel", "x"),
 	Kill:    bind("X", "kill", "X"),
 	KillAll: bind("K", "kill all", "K"),

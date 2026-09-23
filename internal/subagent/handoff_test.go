@@ -4,12 +4,18 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/provider"
 )
 
 func TestHandoff_UsesOnlyPublicProgressAndOpaqueEvidence(t *testing.T) {
@@ -87,19 +93,218 @@ func TestSpawnResumesASanitizedFailureHandoff(t *testing.T) {
 	}
 }
 
-func TestFailedWriterKeepsItsPatchUntilSuperseded(t *testing.T) {
-	c := &child{
-		name: "writer-1", profile: Profile{Writes: true}, worktree: "/worktree", repoTop: "/repo",
-		handoffID: "handoff-1", handoff: Handoff{Patch: "diff --git a/a b/a"}, retainWorktree: true,
+// keptWriter is a writer whose first round writes kept.go inside its own copy
+// of the checkout. After that it either answers, so the patch goes to the
+// card, or waits on its context, so a kill is what ends it. Archive stands in
+// for the session's evidence store and remembers what it was handed.
+type keptWriter struct {
+	answer  bool
+	writing chan struct{}
+
+	mu       sync.Mutex
+	round    int
+	archived []string
+}
+
+func (w *keptWriter) stored() []string {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	return append([]string(nil), w.archived...)
+}
+
+func (w *keptWriter) factory() EnvFactory {
+	return func(ctx context.Context, spec Spec) (Env, error) {
+		stream := func([]provider.Message, string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+			w.mu.Lock()
+			w.round++
+			round := w.round
+			w.mu.Unlock()
+			ch := make(chan provider.StreamEvent, 2)
+			switch {
+			case round == 1:
+				ch <- provider.StreamEvent{ToolCalls: []provider.ToolCall{
+					{ID: "w1", Name: "write_file", Arguments: `{"path":"kept.go"}`},
+				}}
+			case w.answer:
+				ch <- provider.StreamEvent{Token: "wrote kept.go"}
+				ch <- provider.StreamEvent{Done: true}
+			default:
+				close(w.writing)
+				go func() {
+					<-ctx.Done()
+					close(ch)
+				}()
+				return ch, func() {}, nil
+			}
+			close(ch)
+			return ch, func() {}, nil
+		}
+		return Env{
+			SystemPrompt: "sys",
+			Stream:       stream,
+			Executor: func(string, json.RawMessage) (string, error) {
+				return "written", os.WriteFile(filepath.Join(spec.Root, "kept.go"), []byte("package kept\n"), 0o644)
+			},
+			Archive: func(tool, content string) (string, bool) {
+				w.mu.Lock()
+				defer w.mu.Unlock()
+				if tool != keptPatchTool {
+					return "", false
+				}
+				w.archived = append(w.archived, content)
+				return fmt.Sprintf("ev-%016x", len(w.archived)), true
+			},
+		}, nil
 	}
-	sup := New(context.Background(), Options{Root: t.TempDir(), NewEnv: (&scriptedEnv{}).factory()})
-	sup.children = []*child{c}
-	if !c.keepsWorktree("/worktree") {
-		t.Fatal("failed writer patch should keep its worktree")
+}
+
+// A declined patch is kept in the evidence store rather than written to a
+// file the note names, and the row's review is the same card and the same
+// apply a finishing writer's patch goes through: the change lands only on a
+// yes, and the session hears about it the way it hears about every patch.
+// See docs/capabilities/subagents.md#a-failed-child-leaves-a-handoff.
+func TestADeclinedPatchIsKeptAndReviewedFromItsRow(t *testing.T) {
+	repo := initTestRepo(t)
+	ctx, cancel := context.WithCancel(context.Background())
+	w := &keptWriter{answer: true}
+	sup := New(ctx, Options{Root: repo, NewEnv: w.factory()})
+	t.Cleanup(sup.Close)
+	t.Cleanup(cancel)
+	landed := make(chan *PatchApplied, 1)
+	go func() {
+		for {
+			select {
+			case ev := <-sup.Events():
+				switch ev.Kind {
+				case EventAsk:
+					ev.Ask.Respond(false)
+				case EventPatch:
+					landed <- ev.Patch
+				}
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+
+	if _, err := spawnRaw(sup, `{"role":"writer","task":"add kept.go"}`); err != nil {
+		t.Fatal(err)
 	}
-	sup.supersedeHandoff("handoff-1")
-	if c.keepsWorktree("/worktree") {
-		t.Fatal("replacement should release the superseded worktree")
+	waitState(t, sup, "writer-1", StateDone)
+	stored := w.stored()
+	if len(stored) != 1 || !strings.Contains(stored[0], "kept.go") {
+		t.Fatalf("the declined patch should be in the evidence store, got %q", stored)
+	}
+	if st := statusOf(t, sup, "writer-1"); !st.PatchKept {
+		t.Fatalf("the writer's status should say its patch is kept, got %+v", st)
+	}
+	report := execTool(t, sup, ReportToolName, `{"name":"writer-1"}`)
+	if !strings.Contains(report, "kept as ev-0000000000000001") || strings.Contains(report, "saved to") {
+		t.Fatalf("the parent should be told the handle the patch is kept under:\n%s", report)
+	}
+	if _, err := os.Stat(filepath.Join(repo, "kept.go")); err == nil {
+		t.Fatal("a declined patch reached the checkout")
+	}
+
+	ask, err := sup.ReviewKept("writer-1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if ask.Kind != AskPatch || !slices.Contains(ask.Files, "kept.go") {
+		t.Fatalf("the review should be the patch card over kept.go, got %+v", ask)
+	}
+	if again, _ := sup.ReviewKept("writer-1"); again != ask {
+		t.Fatal("a second review of the same patch put a second card out")
+	}
+	// Declining the review leaves the patch kept and offered again.
+	ask.Respond(false)
+	deadline := time.Now().Add(5 * time.Second)
+	for {
+		if next, err := sup.ReviewKept("writer-1"); err == nil && next != ask {
+			ask = next
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("a declined review took the kept patch with it")
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	if !statusOf(t, sup, "writer-1").PatchKept {
+		t.Fatal("a declined review stopped offering the patch")
+	}
+	ask.Respond(true)
+	select {
+	case p := <-landed:
+		if p.Agent != "writer-1" || len(p.Files) != 1 {
+			t.Fatalf("the applied patch should be recorded as writer-1's, got %+v", p)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("the reviewed patch never landed")
+	}
+	if _, err := os.Stat(filepath.Join(repo, "kept.go")); err != nil {
+		t.Fatalf("the approved patch did not reach the checkout: %v", err)
+	}
+	deadline = time.Now().Add(5 * time.Second)
+	for statusOf(t, sup, "writer-1").PatchKept {
+		if time.Now().After(deadline) {
+			t.Fatal("an applied patch is still offered for review")
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	if _, err := sup.ReviewKept("writer-1"); err == nil {
+		t.Fatal("a patch that landed was offered again")
+	}
+}
+
+// A killed writer used to lose what it had written with its copy of the
+// checkout. Now the patch is kept before the copy goes, and the handoff names
+// the handle rather than carrying the patch a second time.
+func TestAKilledWriterKeepsItsPatchAndTheHandoffNamesIt(t *testing.T) {
+	repo := initTestRepo(t)
+	w := &keptWriter{writing: make(chan struct{})}
+	sup := New(context.Background(), Options{Root: repo, NewEnv: w.factory()})
+	t.Cleanup(sup.Close)
+
+	if _, err := spawnRaw(sup, `{"role":"writer","task":"add kept.go"}`); err != nil {
+		t.Fatal(err)
+	}
+	select {
+	case <-w.writing:
+	case <-time.After(5 * time.Second):
+		t.Fatal("the writer never reached its second round")
+	}
+	if !sup.PatchToKeep("writer-1") {
+		t.Fatal("a writer whose copy holds a change should say a kill keeps it")
+	}
+	if err := sup.Kill("writer-1"); err != nil {
+		t.Fatal(err)
+	}
+	waitState(t, sup, "writer-1", StateFailed)
+	if st := statusOf(t, sup, "writer-1"); !st.PatchKept {
+		t.Fatalf("a killed writer's patch should be kept, got %+v", st)
+	}
+	if stored := w.stored(); len(stored) != 1 || !strings.Contains(stored[0], "kept.go") {
+		t.Fatalf("the killed writer's patch should be in the evidence store, got %q", stored)
+	}
+	c, err := sup.lookup("writer-1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	c.mu.Lock()
+	h := c.handoff
+	c.mu.Unlock()
+	if h.PatchEvidence != "ev-0000000000000001" {
+		t.Fatalf("the handoff should name the kept patch, got %q", h.PatchEvidence)
+	}
+	if data, _ := MarshalHandoff(h); strings.Contains(string(data), "package kept") {
+		t.Fatalf("the handoff carries the patch as well as its handle: %s", data)
+	}
+	deadline := time.Now().Add(5 * time.Second)
+	for linkedWorktrees(t, repo) != 0 {
+		if time.Now().After(deadline) {
+			t.Fatal("the killed writer's copy of the checkout was kept as well as its patch")
+		}
+		time.Sleep(10 * time.Millisecond)
 	}
 }
 

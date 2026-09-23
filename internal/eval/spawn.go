@@ -139,41 +139,10 @@ func askSpawn(ctx context.Context, row Row) Answer {
 	}
 
 	told := strings.Join([]string{spawned, report, overview}, "\n\n")
-	dropSavedPatch(told)
 	if gone := missing(told, row.needs()); gone != "" {
 		return Answer{Label: LabelIncomplete, Reason: "the parent was never told " + quoteFragment(gone)}
 	}
 	return Answer{Label: LabelReported, Reason: firstLine(report)}
-}
-
-// savedPatchPrefix opens the note a refused patch is kept under. A patch the
-// person declined is written to a file so they can still get at it, which is
-// right in a session and is litter here — nobody is coming back for a
-// scripted child's work — so the case takes it away again.
-const savedPatchPrefix = "(patch saved to "
-
-// dropSavedPatch removes the file such a note names.
-//
-// The path is read out of what the parent was told, which is the only place
-// it exists, and it is deleted only where it is what it claims to be: a
-// temporary file, under this machine's temporary directory, ending in the
-// extension the note promises. A wording that changes leaves the file behind
-// rather than deleting something else.
-func dropSavedPatch(told string) {
-	at := strings.Index(told, savedPatchPrefix)
-	if at < 0 {
-		return
-	}
-	rest := told[at+len(savedPatchPrefix):]
-	end := strings.Index(rest, ")")
-	if end < 0 {
-		return
-	}
-	path := rest[:end]
-	if filepath.Ext(path) != ".patch" || !strings.HasPrefix(path, os.TempDir()) {
-		return
-	}
-	_ = os.Remove(path)
 }
 
 // scriptedChild is the child's model: a fixed sequence of rounds, and the

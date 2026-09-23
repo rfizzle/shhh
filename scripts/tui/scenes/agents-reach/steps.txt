@@ -12,6 +12,11 @@
 # them.
 setup printf 'package agent\n\nfunc loop() {\n    for round := 0; round < limit; round++ {\n        step()\n    }\n}\n' > loop.go
 snap 01-start "Some things worth doing first"
+# Accept edits, so a writer's edit inside its own copy of the checkout goes
+# through without a card of its own: the one it makes is what its row offers
+# back once it has been killed
+# (docs/capabilities/subagents.md#a-failed-child-leaves-a-handoff).
+keys BTab
 keys "survey the round accounting" Enter
 # Spawning is gated, so a card stands between the sentence and the children —
 # one card with a row per child, because the round asked for them together and
@@ -41,15 +46,17 @@ keys n
 sleep 3
 snap 06-blocked "waiting approval"
 # The manager is the door the trailer names for acting rather than reading:
-# one child is killed here, which is the failure the map then carries.
+# one child is killed here, which is the failure the map then carries. It had
+# written something in its copy of the checkout, so the confirm says the patch
+# outlives the copy, and the row it leaves offers the patch back.
 keys M-a
 snap 07-manager "[enter] attach"
 keys j
 keys X
-snap 08-kill-asks "Its turn stops"
+snap 08-kill-asks "its patch is kept"
 keys y
 sleep 1
-snap 09-killed "[enter] attach"
+snap 09-killed "[p] review"
 # Attaching to a session that is not the one asking is what puts the rail back
 # with the map whole: the block floated to the top, the failure under it, the
 # grandchild indented under its own parent, and the trailer naming the way

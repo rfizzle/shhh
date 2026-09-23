@@ -593,11 +593,12 @@ func (m Model) inspectorAgents() []components.InspectorAgent {
 			// row can draw the ceiling coming rather than the word it died
 			// on; how many times this turn it has been told it left its
 			// task; and whether a replacement could pick its work up.
-			Fresh:   st.Tokens.Fresh,
-			Budget:  st.Budget,
-			Steers:  st.Steers,
-			Handoff: st.Handoff != "",
-			Depth:   depth[st.Name],
+			Fresh:     st.Tokens.Fresh,
+			Budget:    st.Budget,
+			Steers:    st.Steers,
+			Handoff:   st.Handoff != "",
+			PatchKept: st.PatchKept,
+			Depth:     depth[st.Name],
 		}
 		if p.State == components.FanoutHeld {
 			// A parked child has stopped without having ended, and the row

@@ -55,6 +55,21 @@
 │ [K] kill all · every level · [esc] back to the turn      │
 ╰──────────────────────────────────────────────────────────╯
 
+· focus · a killed writer whose patch is kept, [p] reviews it
+╭─ Agents ─────────────────────── 1 needs you · 1 running ─╮
+│   ● orchestrator · this se…  round 7 · streaming…  $0.12 │
+│   ⚠ runner-2 · go test .…  ⚠ needs you · 3 tools · $0.01 │
+│     waiting approval: run go test ./internal/agent/...   │
+│   ◇ writer-1 · docs/loop.md  ▰▰▱▱▱ 2/5 · 6 tools · $0.02 │
+│   ◇ reader-3 · survey intern…  ✓ done · 12 tools · $0.04 │
+│     the rails and the frame are one component            │
+│ ❯ ✗ writer-5…  patch kept · [p] review · 4 tools · $0.03 │
+│     cancelled                                            │
+│ [enter] attach · [a] answer without attaching            │
+│ [r] retry · [p] review · [x] cancel · [X] kill           │
+│ [K] kill all · every level · [esc] back to the turn      │
+╰──────────────────────────────────────────────────────────╯
+
 · the rows that are not agents · the session's roles, and the offer to draft another
 ╭─ Agents ─────────────────────── 1 needs you · 1 running ─╮
 │   ● orchestrator · this se…  round 7 · streaming…  $0.12 │
@@ -160,6 +175,21 @@
 ␛[38;5;254m│␛[m     ␛[38;5;244mround limit (25) reached␛[m                             ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m attach␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m answer without attaching␛[m            ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[r]␛[m␛[38;5;244m retry␛[m␛[38;5;244m · ␛[m␛[38;5;254m[x]␛[m␛[38;5;244m cancel␛[m␛[38;5;244m · ␛[m␛[38;5;254m[X]␛[m␛[38;5;244m kill␛[m                        ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[K]␛[m␛[38;5;244m kill all · every level␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the turn␛[m      ␛[38;5;254m│␛[m
+␛[38;5;254m╰──────────────────────────────────────────────────────────╯␛[m
+
+· focus · a killed writer whose patch is kept, [p] reviews it
+␛[38;5;254m╭─ ␛[m␛[1;38;5;254mAgents ␛[m␛[38;5;254m─────────────────────── ␛[38;5;254m1 needs you␛[m␛[38;5;244m · ␛[m␛[38;5;254m1 running␛[m ─╮␛[m
+␛[38;5;254m│␛[m   ␛[1;38;5;254m●␛[m orchestrator␛[38;5;244m · this se…␛[m  ␛[38;5;244mround 7 · streaming…␛[m  ␛[38;5;244m$0.12␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m   ␛[38;5;254m⚠␛[m runner-2␛[38;5;244m · go test .…␛[m  ␛[38;5;254m⚠ needs you␛[m␛[38;5;244m · ␛[m␛[38;5;244m3 tools · $0.01␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m     ␛[38;5;244mwaiting approval: run go test ./internal/agent/...␛[m   ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m   ␛[38;5;254m◇␛[m writer-1␛[38;5;244m · docs/loop.md␛[m  ␛[38;5;254m▰▰␛[m␛[38;5;244m▱▱▱␛[m ␛[38;5;254m2/5␛[m␛[38;5;244m · ␛[m␛[38;5;244m6 tools · $0.02␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m   ␛[38;5;254m◇␛[m reader-3␛[38;5;244m · survey intern…␛[m  ␛[38;5;254m✓ done␛[m␛[38;5;244m · ␛[m␛[38;5;244m12 tools · $0.04␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m     ␛[38;5;244mthe rails and the frame are one component␛[m            ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;244m␛[m␛[38;5;244m␛[m␛[38;5;244m␛[m␛[38;5;244m␛[m␛[38;5;244m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m✗␛[m␛[48;5;237m ␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237mwriter-5…  patch kept · [p] review · 4 tools · $0.03␛[m␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m     ␛[38;5;244mcancelled␛[m                                            ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m attach␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m answer without attaching␛[m            ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[r]␛[m␛[38;5;244m retry␛[m␛[38;5;244m · ␛[m␛[38;5;254m[p]␛[m␛[38;5;244m review␛[m␛[38;5;244m · ␛[m␛[38;5;254m[x]␛[m␛[38;5;244m cancel␛[m␛[38;5;244m · ␛[m␛[38;5;254m[X]␛[m␛[38;5;244m kill␛[m           ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[K]␛[m␛[38;5;244m kill all · every level␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the turn␛[m      ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────╯␛[m
 

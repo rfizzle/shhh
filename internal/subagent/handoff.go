@@ -30,9 +30,10 @@ var (
 	errInvalidHandoff = errors.New("invalid failure handoff")
 )
 
-// Handoff is the persisted record of a failed child attempt. Patch is retained
-// for the parent to review but is deliberately never placed in a replacement
-// prompt; the replacement receives PatchEvidence as an opaque handle instead.
+// Handoff is the persisted record of a failed child attempt. A writer's
+// unapplied patch is not in it: the patch is kept in the evidence store, like
+// every writer's work that did not land, and the record carries only its
+// handle, PatchEvidence — which is also all a replacement is given of it.
 type Handoff struct {
 	Handle            string         `json:"-"`
 	Child             string         `json:"child"`
@@ -52,7 +53,6 @@ type Handoff struct {
 	Progress          []string       `json:"progress,omitempty"`
 	Evidence          []string       `json:"evidence,omitempty"`
 	PatchEvidence     string         `json:"patch_evidence,omitempty"`
-	Patch             string         `json:"patch,omitempty"`
 }
 
 // HandoffTokens keeps the phase accounting independent of the observability
@@ -180,19 +180,14 @@ func recommendedBudget(budget int64, budgetHit bool) int64 {
 
 func (s *Supervisor) persistHandoff(c *child, reason, detail string, lastRound int) {
 	h := c.makeHandoff(reason, detail, lastRound)
-	// A memory-only supervisor has no durable handoff to attach a patch to.
-	// Reading and staging a writer worktree during cancellation would delay its
-	// slot release for data that cannot be recovered, so it tears down normally.
+	// The patch was kept before this ran (keepStoppedPatch), so the record
+	// names the handle rather than carrying the patch a second time.
+	c.mu.Lock()
+	if c.kept != nil {
+		h.PatchEvidence = c.kept.id
+	}
+	c.mu.Unlock()
 	if c.rec.Handoff != nil {
-		if c.profile.Writes {
-			worktree, _ := c.workspace()
-			if patch, err := worktreePatch(worktree); err == nil && strings.TrimSpace(patch) != "" {
-				h.Patch = patch
-				if c.env.Archive != nil {
-					h.PatchEvidence, _ = c.env.Archive("subagent_patch", patch)
-				}
-			}
-		}
 		if data, err := MarshalHandoff(h); err == nil {
 			if id, saveErr := c.rec.Handoff(data); saveErr == nil {
 				h.Handle = id
@@ -201,35 +196,7 @@ func (s *Supervisor) persistHandoff(c *child, reason, detail string, lastRound i
 	}
 	c.mu.Lock()
 	c.handoff, c.handoffID = h, h.Handle
-	c.retainWorktree = c.profile.Writes && strings.TrimSpace(h.Patch) != ""
 	c.mu.Unlock()
-}
-
-func (s *Supervisor) supersedeHandoff(handle string) {
-	s.mu.Lock()
-	children := append([]*child(nil), s.children...)
-	s.mu.Unlock()
-	for _, c := range children {
-		c.mu.Lock()
-		if c.handoffID != handle || !c.retainWorktree {
-			c.mu.Unlock()
-			continue
-		}
-		worktree, repoTop := c.worktree, c.repoTop
-		c.retainWorktree = false
-		c.mu.Unlock()
-		removeWorktree(repoTop, worktree)
-		return
-	}
-}
-
-func (c *child) keepsWorktree(worktree string) bool {
-	if worktree == "" {
-		return false
-	}
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	return c.retainWorktree && c.worktree == worktree
 }
 
 func resumePrologue(h Handoff, validEvidence func(string) bool) string {

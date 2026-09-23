@@ -12,6 +12,7 @@ package chat
 import (
 	"fmt"
 	"os/exec"
+	"slices"
 	"strings"
 	"time"
 
@@ -430,6 +431,7 @@ func (m Model) buildAgentRows() ([]components.AgentRow, []string) {
 			// still queued; a failed one can be run again on its task.
 			Answerable: st.State == subagent.StateBlocked && m.pendingAskFor(st.Name) != nil,
 			Retryable:  st.State == subagent.StateFailed,
+			PatchKept:  st.PatchKept,
 		}
 		switch {
 		case st.Name == m.attachedTo:
@@ -752,11 +754,19 @@ func (m Model) updateAgentList(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		if err := m.subagents.Retry(name); err != nil {
 			m.noteChild(name, err.Error())
 		} else {
+			// A review of the attempt the retry replaced is a decision about
+			// work nobody is asking for any more, so it goes with it.
+			m.purgeChildAsks(name)
 			m.appendEntry(entry{kind: entrySystem, text: "Retrying " + name + " on its original task."})
 			m.viewport.SetLines(m.renderHistoryLines())
 			m.viewport.GotoBottom()
 		}
 		return m, nil
+	case components.AgentReview:
+		if name == "" {
+			return m, nil
+		}
+		return m.reviewKeptPatch(name)
 	case components.AgentKill:
 		if name == "" {
 			return m, nil // the orchestrator is quit with Ctrl+D, never killed from here
@@ -767,6 +777,36 @@ func (m Model) updateAgentList(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 	return m, nil
+}
+
+// reviewKeptPatch is [p] on a row holding a kept patch: the patch opens full
+// screen on the surface [d] opens from a live card, headed with whose it is,
+// and the card behind it is the one a finishing writer's patch is put on —
+// apply and decline, over the list, the way [a] answers a blocked child from
+// here. Pressing it again finds the card already out rather than putting out
+// a second one over the same work
+// (docs/capabilities/subagents.md#a-failed-child-leaves-a-handoff).
+func (m Model) reviewKeptPatch(name string) (tea.Model, tea.Cmd) {
+	if m.subagents == nil {
+		return m, nil
+	}
+	ask, err := m.subagents.ReviewKept(name)
+	if err != nil {
+		m.noteChild(name, err.Error())
+		return m, nil
+	}
+	if !slices.Contains(m.childAsks, ask) {
+		m.childAsks = append(m.childAsks, ask)
+		// Read once, where it arrives, for the reason a routed request's is
+		// (handleSubagentEvent): the card is rebuilt every frame.
+		if m.childBlast == nil {
+			m.childBlast = map[*subagent.Ask]blastRadius{}
+		}
+		m.childBlast[ask] = m.childRadius(ask)
+	}
+	m.answerAgent = name
+	m.syncViewport()
+	return m.openChildDiff(ask)
 }
 
 // listAnswerAsk is the approval being answered from the list, if one is: the

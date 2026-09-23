@@ -70,6 +70,12 @@ type AgentRow struct {
 	Answerable bool
 	Retryable  bool
 	Editable   bool
+	// PatchKept marks a stopped writer holding a change that never reached
+	// the checkout. It gates [p], and it takes the outcome field the way a
+	// blocked child's `⚠ needs you` does, because it is the one thing left
+	// to do about the row
+	// (docs/capabilities/subagents.md#a-failed-child-leaves-a-handoff).
+	PatchKept bool
 	// Depth is how far under the session the agent sits — 0 for the
 	// orchestrator, 1 for a child it spawned, 2 for that child's own child —
 	// in the numbering the rail's map and a fan-out lane use for the same
@@ -108,6 +114,7 @@ const (
 	AgentAnswer               // a — answer its pending approval in place
 	AgentSteer                // s — redirect it with the note typed on its row
 	AgentRetry                // r — run a failed agent again on its task
+	AgentReview               // p — review a stopped writer's kept patch
 	AgentDraft                // enter on the offer row — draft a profile
 	AgentOpenRole             // enter on a role row — open its file in the editor
 	AgentBack                 // esc — dismiss the list
@@ -294,6 +301,10 @@ func (l *AgentList) Update(msg tea.KeyPressMsg) (done bool, result AgentListResu
 		if l.focused().Retryable {
 			return false, AgentListResult{Action: AgentRetry, Index: l.Focus}
 		}
+	case keys.Is(pressed, keys.Agent.Review):
+		if l.focused().PatchKept {
+			return false, AgentListResult{Action: AgentReview, Index: l.Focus}
+		}
 	case keys.Is(pressed, keys.Agent.Cancel):
 		// A role row and the offer row are not agents, so the keys that act
 		// on one are silent over them the way [a] and [r] are silent over a
@@ -451,6 +462,9 @@ func (r AgentRow) rightField() string {
 		return sty.Dimmer.Render(r.Status)
 	}
 	if r.Progress != nil {
+		if r.PatchKept {
+			return keptPatchField(*r.Progress)
+		}
 		return r.Progress.outcomeField()
 	}
 	status := r.Status
@@ -469,6 +483,25 @@ func (r AgentRow) rightField() string {
 		status += "  " + sty.Status.Render(r.Spend)
 	}
 	return status
+}
+
+// keptPatchField is the outcome field of a row holding a kept patch: what is
+// left to do about it, in the place `⚠ needs you` stands on a blocked row,
+// with the counts after it. The glyph column already says how the child
+// ended, so the field spends itself on the offer instead.
+func keptPatchField(p AgentProgress) string {
+	field := keptPatchOffer()
+	if stats := p.stats(); stats != "" {
+		field += sty.Dim.Render(detailSep) + stats
+	}
+	return field
+}
+
+// keptPatchOffer is `patch kept · [p] review`, one spelling for the manager's
+// row and the rail's line under the same child.
+func keptPatchOffer() string {
+	return sty.Dimmer.Render("patch kept") + sty.Dimmer.Render(detailSep) +
+		sty.Hint.Render(keys.Bracket(keys.Agent.Review)+" "+keys.Words(keys.Agent.Review))
 }
 
 // render lays one row out across the card's inner width, with its note (if
@@ -559,6 +592,9 @@ func (l *AgentList) hints() []KeyOffer {
 	}
 	if agent && focus.Retryable {
 		segments = append(segments, keyOffer(keys.Agent.Retry))
+	}
+	if agent && focus.PatchKept {
+		segments = append(segments, keyOffer(keys.Agent.Review))
 	}
 	if agent {
 		segments = append(segments, keyOffer(keys.Agent.Cancel), keyOffer(keys.Agent.Kill))

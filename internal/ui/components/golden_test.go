@@ -1202,6 +1202,13 @@ func TestGolden_AgentList(t *testing.T) {
 				Progress: progress(AgentProgress{State: FanoutFailed, Tools: 1, Spend: "$0.01"}),
 				Note:     "round limit (25) reached"},
 		}
+		// A writer killed with work in its copy of the checkout, in the failed
+		// child's place: the patch is kept, and the outcome field says so
+		// where `⚠ needs you` stands on a blocked row.
+		killed := append(append([]AgentRow{}, rows[:4]...),
+			AgentRow{State: AgentFailed, Name: "writer-5", Task: "docs/round.md", Retryable: true, PatchKept: true,
+				Progress: progress(AgentProgress{State: FanoutFailed, Tools: 4, Spend: "$0.03"}),
+				Note:     "cancelled"})
 		// The section that is not agents: the roles this session can spawn,
 		// one read from a file and one shhh ships — which lives nowhere and
 		// so has nothing for enter to open — with the offer to draft another
@@ -1236,6 +1243,8 @@ func TestGolden_AgentList(t *testing.T) {
 			{Label: "focus · the orchestrator", View: (&AgentList{Rows: rows}).View(width)},
 			{Label: "focus · the blocked child, [a] answers it here", View: (&AgentList{Rows: rows, Focus: 1}).View(width)},
 			{Label: "focus · the failed child, [r] runs it again", View: (&AgentList{Rows: rows, Focus: 4}).View(width)},
+			{Label: "focus · a killed writer whose patch is kept, [p] reviews it",
+				View: (&AgentList{Rows: killed, Focus: 4}).View(width)},
 			{Label: "the rows that are not agents · the session's roles, and the offer to draft another",
 				View: (&AgentList{Rows: offered, Focus: len(offered) - 1}).View(width)},
 			{Label: "focus · a role read from a file, which enter opens",
@@ -1626,6 +1635,22 @@ func TestGolden_InspectorRail(t *testing.T) {
 			AgentsHint: railAgentsHint,
 			Frame:      2,
 		}
+		// A writer killed with work in its copy of the checkout: the patch is
+		// kept rather than discarded with the copy, and the line under the
+		// row says so with the manager's key, ahead of the handoff it also
+		// left (docs/capabilities/subagents.md#a-failed-child-leaves-a-handoff).
+		killed := InspectorRail{
+			Agents: []InspectorAgent{
+				{Name: "orchestrator", Detail: "round 6 · streaming…", Spend: "$0.21",
+					Self: true, Focused: true, State: FanoutRunning},
+				{Name: "writer-1", Detail: "cancelled", Spend: "$0.03", Tools: 4,
+					Outcome: "failed", Handoff: true, PatchKept: true, Depth: 1, State: FanoutFailed},
+				{Name: "writer-2", Detail: "internal/agent/round.go", Spend: "$0.02",
+					Tools: 3, Depth: 1, State: FanoutRunning},
+			},
+			AgentsHint: railAgentsHint,
+			Frame:      2,
+		}
 		// The same map with a queued child added and the rail three rows
 		// short of it: the trailer goes first, then the child that stopped,
 		// then the one that never started, and every working row is still
@@ -1735,6 +1760,8 @@ func TestGolden_InspectorRail(t *testing.T) {
 				View: parked.View(width, 0)},
 			{Label: "a failed sibling beside a nested pair · the subtree moves whole",
 				View: subtree.View(width, 0)},
+			{Label: "a killed writer · its patch is kept, and [p] reviews it",
+				View: killed.View(width, 0)},
 			{Label: "the same map three rows short · what it gives up, in order",
 				View: reachShort.View(width, len(reachShort.Lines(width, 0))-3)},
 			{Label: "one command broken · the block above the changeset", View: alerting.View(width, 0)},

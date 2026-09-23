@@ -240,6 +240,11 @@ type Status struct {
 	// Handoff is the durable record a replacement can resume from. It is empty
 	// for completed children and when durable storage is unavailable.
 	Handoff string
+	// PatchKept is whether this child holds a change that never reached the
+	// checkout, kept in the evidence store and offered for review from its
+	// row. It is one fate for every way a writer can end with work unlanded
+	// (docs/capabilities/subagents.md#a-failed-child-leaves-a-handoff).
+	PatchKept bool
 	// RecommendedBudget is the useful budget for a replacement of this attempt.
 	RecommendedBudget int64
 	// End is how this child's attempt stopped, from the closed set in
@@ -1032,9 +1037,10 @@ type child struct {
 	progress    []string
 	handoff     Handoff
 	handoffID   string
-	// retainWorktree keeps a failed writer's patch available until a
-	// replacement supersedes it or the supervisor closes.
-	retainWorktree bool
+	// kept is a writer's change that never reached the checkout: declined,
+	// cancelled, refused by the apply, or stopped short by a budget, a kill or
+	// a cancel. Nil for every child that has none.
+	kept *keptPatch
 	// prologue is what the next attempt's first turn opens with, ahead of
 	// the task: what the attempt it replaces hit, and the handoff it left.
 	// It is a field rather than an argument to run because a retry can be
@@ -1170,6 +1176,7 @@ func (c *child) status() Status {
 		CheckIns:          c.checkIns,
 		End:               c.endReason,
 		Handoff:           c.handoffID,
+		PatchKept:         c.kept != nil,
 		RecommendedBudget: c.handoff.RecommendedBudget,
 		Steers:            c.steers,
 		LaneSteers:        c.laneSteers,
@@ -2480,7 +2487,10 @@ func (s *Supervisor) restart(c *child, detail string) error {
 	c.wrote = nil
 	c.report, c.patchNote, c.streaming, c.progress = "", "", "", nil
 	c.checkpointNext = false
-	c.handoff, c.handoffID, c.retainWorktree = Handoff{}, "", false
+	// A retry is the person asking for the work again, so the attempt it
+	// replaces stops offering its patch. The patch is still in the evidence
+	// store, and the handoff the new attempt opens on names it.
+	c.handoff, c.handoffID, c.kept = Handoff{}, "", nil
 	c.mu.Unlock()
 
 	s.wg.Add(1)
@@ -3046,12 +3056,6 @@ func (s *Supervisor) spawnFrom(caller string, raw json.RawMessage) (string, erro
 		prices:          s.opts.Prices,
 		spend:           meter.New(s.opts.Prices),
 	}
-	// The replaced attempt's retained copy goes only once the replacement is
-	// admitted: a refused resume must leave the handoff it could not start on
-	// still resumable.
-	if args.resumeHandoff != "" {
-		s.supersedeHandoff(args.resumeHandoff)
-	}
 	// A reader's workspace is the parent's own root and costs nothing to
 	// hold, so it is opened here where a failure is still this call's answer
 	// rather than a child that appears and immediately fails. A writer's
@@ -3204,6 +3208,9 @@ func (s *Supervisor) run(c *child) {
 		c.endReason = reason
 		c.mu.Unlock()
 		if state == StateFailed {
+			// What the attempt wrote is kept before anything is torn down,
+			// and before the handoff that names it is written.
+			c.keepStoppedPatch()
 			s.persistHandoff(c, reason, detail, c.endRound())
 			c.mu.Lock()
 			handoffID := c.handoffID
@@ -3237,7 +3244,7 @@ func (s *Supervisor) run(c *child) {
 		if endRec != nil {
 			endRec(c.end())
 		}
-		if worktree != "" && !c.keepsWorktree(worktree) {
+		if worktree != "" {
 			// A killed agent's copy of the checkout goes only once the
 			// subtree the same kill cancelled has ended in it.
 			s.awaitSubtree(c)
@@ -4199,23 +4206,7 @@ func (s *Supervisor) reviewPatch(c *child) {
 		return
 	}
 
-	hunks, files := PatchHunks(patch)
-	adds, dels := diff.Stats(hunks)
-	title := fmt.Sprintf("apply patch (+%d −%d, %d file(s))", adds, dels, files)
-	touched := PatchFiles(patch)
-	ask := NewAsk(c.name, AskPatch, title)
-	ask.Hunks = hunks
-	// A patch is the one child request that writes the reader's own files, so
-	// it is measured in the reader's own checkout: the worktree the child
-	// edited in is not where any of this lands.
-	ask.Root, ask.Files = c.repoTop, touched
-	// Two writers can hold the same file in separate worktrees; the collision
-	// only becomes visible when the second patch lands on top of the first.
-	// Say so on the card, before it is applied.
-	if clashes := s.patchClashes(c.name, touched); len(clashes) > 0 {
-		ask.Warnings = append(ask.Warnings, "overwrites changes already applied by "+strings.Join(clashes, ", "))
-	}
-
+	ask, touched := s.patchAsk(c.name, c.repoTop, patch)
 	// What the patch names is the whole of what the parent has to know to
 	// integrate it, and it is already in hand here: a note that gave only a
 	// count sent the parent to `git status` for the names, one round and one
@@ -4226,33 +4217,70 @@ func (s *Supervisor) reviewPatch(c *child) {
 	approved, ok := s.await(c, ask)
 	switch {
 	case !ok:
-		note = "cancelled before the patch was reviewed; no files were changed" + savedPatchNote(c.name, patch) + held
+		note = "cancelled before the patch was reviewed; no files were changed" + c.keepPatch(patch) + held
 	case !approved:
-		note = "the user declined the patch; no files were changed" + savedPatchNote(c.name, patch) + held
+		note = "the user declined the patch; no files were changed" + c.keepPatch(patch) + held
 	default:
-		// Both sides are read around `git apply`, in the real checkout: the
-		// child's own worktree edits never touched these files, so this is
-		// the only place the session can see what its workspace lost and
-		// gained.
-		before := readSides(c.repoTop, touched)
-		if applyErr := applyPatch(c.repoTop, patch); applyErr != nil {
-			note = "the patch failed to apply cleanly: " + firstLine(applyErr.Error()) + savedPatchNote(c.name, patch) + held
+		if landed, applyErr := s.landPatch(c, c.repoTop, patch, touched); applyErr != nil {
+			note = "the patch failed to apply cleanly: " + firstLine(applyErr.Error()) + c.keepPatch(patch) + held
 		} else {
-			s.recordApplied(c.name, touched)
-			s.emit(Event{
-				Kind:   EventPatch,
-				Status: c.status(),
-				Patch: &PatchApplied{
-					Agent: c.name,
-					Files: patchedFiles(s.opts.Root, c.repoTop, touched, before, readSides(c.repoTop, touched)),
-				},
-			})
-			note = fmt.Sprintf("patch applied to the workspace (+%d −%d, %d file(s)): %s", adds, dels, files, patchPaths(touched))
+			note = landed
 		}
 	}
 	c.mu.Lock()
 	c.patchNote = note
 	c.mu.Unlock()
+}
+
+// patchAsk is the card a writer's patch is put to the person on, whichever
+// door it arrives by: a writer finishing, or a patch kept from one that did
+// not land being reviewed from its row. The two are one path so that what
+// the card warns about and where it measures are the same either way.
+func (s *Supervisor) patchAsk(name, repoTop, patch string) (*Ask, []string) {
+	hunks, files := PatchHunks(patch)
+	adds, dels := diff.Stats(hunks)
+	title := fmt.Sprintf("apply patch (+%d −%d, %d file(s))", adds, dels, files)
+	touched := PatchFiles(patch)
+	ask := NewAsk(name, AskPatch, title)
+	ask.Hunks = hunks
+	// A patch is the one child request that writes the reader's own files, so
+	// it is measured in the reader's own checkout: the worktree the child
+	// edited in is not where any of this lands.
+	ask.Root, ask.Files = repoTop, touched
+	// Two writers can hold the same file in separate worktrees; the collision
+	// only becomes visible when the second patch lands on top of the first.
+	// Say so on the card, before it is applied.
+	if clashes := s.patchClashes(name, touched); len(clashes) > 0 {
+		ask.Warnings = append(ask.Warnings, "overwrites changes already applied by "+strings.Join(clashes, ", "))
+	}
+	return ask, touched
+}
+
+// landPatch applies an approved patch to the real checkout, records which
+// agent last touched each file, and tells the session what changed. It
+// answers with the note the parent reads. repoTop is handed in rather than
+// read off the child, because a kept patch lands from a goroutine of its own
+// and a retry may be giving the child a new workspace at the same moment.
+func (s *Supervisor) landPatch(c *child, repoTop, patch string, touched []string) (string, error) {
+	// Both sides are read around `git apply`, in the real checkout: the
+	// child's own worktree edits never touched these files, so this is the
+	// only place the session can see what its workspace lost and gained.
+	before := readSides(repoTop, touched)
+	if err := applyPatch(repoTop, patch); err != nil {
+		return "", err
+	}
+	s.recordApplied(c.name, touched)
+	s.emit(Event{
+		Kind:   EventPatch,
+		Status: c.status(),
+		Patch: &PatchApplied{
+			Agent: c.name,
+			Files: patchedFiles(s.opts.Root, repoTop, touched, before, readSides(repoTop, touched)),
+		},
+	})
+	hunks, files := PatchHunks(patch)
+	adds, dels := diff.Stats(hunks)
+	return fmt.Sprintf("patch applied to the workspace (+%d −%d, %d file(s)): %s", adds, dels, files, patchPaths(touched)), nil
 }
 
 // maxNotedPatchPaths bounds the file list a patch note carries. The file
@@ -4298,20 +4326,176 @@ func (s *Supervisor) recordApplied(name string, files []string) {
 	s.mu.Unlock()
 }
 
-// savedPatchNote persists an unapplied patch so nothing is lost, returning
-// the note fragment naming where it went (empty if saving failed).
-func savedPatchNote(name, patch string) string {
-	f, err := os.CreateTemp("", "shhh-"+name+"-*.patch")
-	if err != nil {
-		return ""
-	}
-	defer f.Close()
-	if err := f.Chmod(0o600); err == nil {
-		if _, err := f.WriteString(patch); err == nil {
-			return " (patch saved to " + f.Name() + ")"
+// keptPatchTool is the name a kept patch is filed under in the evidence
+// store, where every other entry is filed under the tool that produced it.
+const keptPatchTool = "subagent_patch"
+
+// keptPatch is a writer's change that never reached the checkout. The patch
+// is held whole because it is what an apply writes: the copy in the evidence
+// store has been through the secrets scrub and may be cut at the store's
+// bound, and applying either would write something the child never did.
+type keptPatch struct {
+	// id is the evidence store's handle for it, or "" where the session has
+	// no store or the store would not take it.
+	id    string
+	patch string
+	// repoTop is the checkout the patch was made against and lands in.
+	repoTop string
+	// review is the card it is out on, while one is; a second press of the
+	// key hands back the same card rather than a second one over the same
+	// work.
+	review *Ask
+}
+
+// keepPatch is the one fate of a writer's change that did not land, however
+// the child ended: written to the evidence store — through the session's
+// scrub, like every other copy that outlives a turn — and held on the child
+// for review from its row. It answers with the note fragment naming it.
+// See docs/capabilities/subagents.md#a-failed-child-leaves-a-handoff.
+func (c *child) keepPatch(patch string) string {
+	c.mu.Lock()
+	k := &keptPatch{patch: patch, repoTop: c.repoTop}
+	c.mu.Unlock()
+	if c.env.Archive != nil {
+		if id, ok := c.env.Archive(keptPatchTool, patch); ok {
+			k.id = id
 		}
 	}
-	return ""
+	c.mu.Lock()
+	c.kept = k
+	c.mu.Unlock()
+	if k.id == "" {
+		return " (the patch is kept for the user to review)"
+	}
+	return " (the patch is kept as " + k.id + " for the user to review)"
+}
+
+// keepStoppedPatch keeps what a writer that did not finish had written in its
+// copy of the checkout: a budget, a kill and a cancel all end it here, before
+// its worktree is removed. A writer that already kept its patch at the card
+// has nothing more to keep.
+func (c *child) keepStoppedPatch() {
+	if !c.profile.Writes {
+		return
+	}
+	c.mu.Lock()
+	worktree, kept := c.worktree, c.kept != nil
+	c.mu.Unlock()
+	if worktree == "" || kept {
+		return
+	}
+	patch, err := worktreePatch(worktree)
+	if err != nil || strings.TrimSpace(patch) == "" {
+		return
+	}
+	c.keepPatch(patch)
+}
+
+// PatchToKeep reports whether ending this agent now would keep a patch: a
+// writer whose copy of the checkout holds changes, or one already holding a
+// kept patch. It is what the kill confirm asks, so the confirm can say what
+// survives the kill. It reads the copy's status and stages nothing, because
+// the child is still working in it.
+func (s *Supervisor) PatchToKeep(name string) bool {
+	c, err := s.lookup(name)
+	if err != nil || !c.profile.Writes {
+		return false
+	}
+	c.mu.Lock()
+	worktree, kept := c.worktree, c.kept != nil
+	c.mu.Unlock()
+	if kept {
+		return true
+	}
+	if worktree == "" {
+		return false
+	}
+	out, err := gitOutput(worktree, "status", "--porcelain")
+	return err == nil && strings.TrimSpace(out) != ""
+}
+
+// ReviewKept puts a stopped writer's kept patch to the person on the same
+// card a finishing writer's patch is put on (patchAsk), and applies it on a
+// yes the same way (landPatch) — so the overlap warning and the record of
+// which agent applied which file are the ones every patch gets. It answers
+// with the card for the surface to show; the answer arrives through
+// Ask.Respond. A no leaves the patch kept.
+func (s *Supervisor) ReviewKept(name string) (*Ask, error) {
+	c, err := s.lookup(name)
+	if err != nil {
+		return nil, err
+	}
+	if s.isClosed() {
+		return nil, ErrClosed
+	}
+	c.mu.Lock()
+	k := c.kept
+	var pending *Ask
+	if k != nil {
+		pending = k.review
+	}
+	c.mu.Unlock()
+	if k == nil {
+		return nil, fmt.Errorf("agent %s has no kept patch", name)
+	}
+	if pending != nil {
+		return pending, nil
+	}
+	ask, touched := s.patchAsk(c.name, k.repoTop, k.patch)
+	c.mu.Lock()
+	if c.kept != k {
+		c.mu.Unlock()
+		return nil, fmt.Errorf("agent %s has no kept patch", name)
+	}
+	// The card was built outside the lock, so another caller may have put
+	// one out in the meantime; that one stands and this one is dropped.
+	if k.review != nil {
+		pending = k.review
+		c.mu.Unlock()
+		return pending, nil
+	}
+	k.review = ask
+	c.mu.Unlock()
+	// Tracked like every other goroutine the supervisor starts, so Close
+	// waits for an apply already under way rather than closing the event
+	// stream under it.
+	s.wg.Add(1)
+	go s.awaitKept(c, k, ask, touched)
+	return ask, nil
+}
+
+// awaitKept waits for the answer to a kept patch's card. The patch lands only
+// while it is still the one the child holds: a retry in the meantime is the
+// person asking for the work again, and the patch it replaced is not what
+// they are now approving.
+func (s *Supervisor) awaitKept(c *child, k *keptPatch, ask *Ask, touched []string) {
+	defer s.wg.Done()
+	var approved bool
+	select {
+	case approved = <-ask.resp:
+	case <-s.ctx.Done():
+		return
+	}
+	c.mu.Lock()
+	current := c.kept == k
+	if current {
+		k.review = nil
+	}
+	c.mu.Unlock()
+	if !approved || !current {
+		return
+	}
+	note, err := s.landPatch(c, k.repoTop, k.patch, touched)
+	c.mu.Lock()
+	if err != nil {
+		note = "the kept patch failed to apply cleanly: " + firstLine(err.Error()) + "; it is still kept"
+	} else if c.kept == k {
+		c.kept = nil
+	}
+	c.patchNote = note
+	c.mu.Unlock()
+	c.appendEntry(TranscriptEntry{Kind: EntrySystem, Text: note})
+	s.emitUpdate(c)
 }
 
 // report implements agent_report: a status overview with no name, or a
@@ -4609,7 +4793,11 @@ func (c *child) reportText() string {
 	patchNote := c.patchNote
 	handoffID := c.handoffID
 	recommended := c.handoff.RecommendedBudget
-	hasPatch := strings.TrimSpace(c.handoff.Patch) != ""
+	var kept string
+	hasPatch := c.kept != nil
+	if hasPatch {
+		kept = c.kept.id
+	}
 	c.mu.Unlock()
 
 	// The status line counts the tools itself wherever it has a count to
@@ -4639,8 +4827,11 @@ func (c *child) reportText() string {
 		sb.WriteString(report)
 	}
 	if st.State == StateFailed {
-		if hasPatch {
-			sb.WriteString("\n\nThe failed writer's isolated patch is retained for review or replacement.")
+		if hasPatch && patchNote == "" {
+			if kept != "" {
+				kept = " as " + kept
+			}
+			sb.WriteString("\n\nThe failed writer's patch was not applied; it is kept" + kept + " for the user to review.")
 		}
 		if handoffID != "" {
 			fmt.Fprintf(&sb, "\n\nFailure handoff: %s", handoffID)

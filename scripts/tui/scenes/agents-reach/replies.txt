@@ -29,9 +29,11 @@ wait:12
 +tool:execute_command:{"command":"go test ./internal/agent/..."}
 The counter is read at the top of the loop, and nowhere else.
 
+# writer-1 writes a note in its own copy of the checkout before it asks to run
+# anything, so the kill the scene makes of it has a patch to keep.
 [writer-1]
 tool:read_file:{"path":"loop.go"}
-tool:read_file:{"path":"loop.go"}
+tool:write_file:{"path":"round.md","content":"The counter is read at the top of the loop.\n"}
 wait:15
 +tool:execute_command:{"command":"go test ./internal/agent/..."}
 The counter is read at the top of the loop.

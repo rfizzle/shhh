@@ -748,12 +748,25 @@ unavailable, malformed, or expired handoff is refused, because silently
 starting without its evidence would look like a resume while paying for the
 same work twice.
 
-A failed writer with a patch keeps its isolated copy until its patch is
-accepted, rejected, or its handoff is superseded by a replacement. The patch
-itself remains outside the replacement instruction; a valid opaque evidence
-handle is all the replacement can receive. A reader has no copy or patch to
-preserve. In every case the failed child has released its concurrent slot
-before the failure is reported, so retained work never blocks the fan-out.
+A writer's work that did not reach your checkout has one fate, however the
+writer ended. Its budget ran out, it was killed or cancelled, you declined its
+patch, or the patch would not apply: in each case the patch is kept in the
+session's evidence store — through the same secrets scrub as every copy that
+outlives a turn — under an opaque handle, before its isolated copy is removed.
+The copy goes either way; the patch is what is kept. The agent manager's row
+and the rail's line under that writer say `patch kept · [p] review`, and `[p]`
+opens the patch full screen with the card a finishing writer's patch is put on
+behind it: apply or decline, with the same overlap warning and the same record
+of which agent's patch changed which file. Declining it leaves it kept. A kill
+confirm says the patch will be kept when there is one to keep.
+
+The handoff names that handle rather than carrying the patch a second time, and
+the patch stays outside the replacement instruction: a valid handle is all a
+replacement can receive. Retrying the writer is asking for the work again, so
+the attempt it replaces stops offering its patch; the handle stays in the
+store. A reader has no copy or patch to preserve. In every case the failed
+child has released its concurrent slot before the failure is reported, so kept
+work never blocks the fan-out.
 
 ## A failed child can be run again
 

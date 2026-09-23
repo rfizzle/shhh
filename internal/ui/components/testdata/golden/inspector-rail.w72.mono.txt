@@ -249,6 +249,16 @@
     ⠹ internal/agent/loop.go · 5 tools                                  
   alt+a manager · alt+] next · click to attach                          
 
+· a killed writer · its patch is kept, and [p] reviews it
+  AGENTS                                                       1 running
+❯ ◇ orchestrator                                                   $0.21
+    ⠹ round 6 · streaming…                                              
+  ✗ writer-1                                               failed  $0.03
+    cancelled · patch kept · [p] review · 4 tools · handoff kept · [r] …
+  ◇ writer-2                                                       $0.02
+    ⠹ internal/agent/round.go · 3 tools                                 
+  alt+a manager · alt+] next · click to attach                          
+
 · the same map three rows short · what it gives up, in order
   AGENTS                                         1 needs you · 4 running
 ❯ ◇ orchestrator                                                   $0.21
@@ -542,6 +552,16 @@
     ␛[38;5;244mits worktree was dirty␛[m                                              
   ␛[38;5;254m◇␛[m ␛[38;5;254mwriter-2␛[m                                                       ␛[38;5;244m$0.04␛[m
     ␛[38;5;254m⠹ internal/agent/loop.go␛[m␛[38;5;244m · ␛[m␛[38;5;244m5 tools␛[m                                  
+  ␛[38;5;244malt+a manager · alt+] next · click to attach␛[m                          
+
+· a killed writer · its patch is kept, and [p] reviews it
+  ␛[1;38;5;254mAGENTS␛[m                                                       ␛[38;5;254m1 running␛[m
+␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254m◇␛[m␛[48;5;237m ␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237morchestrator                                                   $0.21␛[m␛[m
+    ␛[38;5;254m⠹ round 6 · streaming…␛[m                                              
+  ␛[38;5;254m✗␛[m ␛[38;5;254mwriter-1␛[m                                               ␛[38;5;254mfailed␛[m  ␛[38;5;244m$0.03␛[m
+    ␛[38;5;244mcancelled␛[m␛[38;5;244m · ␛[m␛[38;5;244mpatch kept␛[m␛[38;5;244m · ␛[m␛[38;5;244m[p] review␛[m␛[38;5;244m · ␛[m␛[38;5;244m4 tools␛[m␛[38;5;244m · ␛[m␛[38;5;244mhandoff kept␛[m␛[38;5;244m · ␛[m␛[38;5;244m[r] …␛[m
+  ␛[38;5;254m◇␛[m ␛[38;5;254mwriter-2␛[m                                                       ␛[38;5;244m$0.02␛[m
+    ␛[38;5;254m⠹ internal/agent/round.go␛[m␛[38;5;244m · ␛[m␛[38;5;244m3 tools␛[m                                 
   ␛[38;5;244malt+a manager · alt+] next · click to attach␛[m                          
 
 · the same map three rows short · what it gives up, in order
