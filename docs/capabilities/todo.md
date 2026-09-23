@@ -1083,6 +1083,14 @@ a script. The session stays free, and `/todo stop` asks the runner to stop —
 each lane is interrupted at the step it is on, its item goes back to open,
 and its copy is kept.
 
+Any session in the checkout follows a running sprint, not only the one that
+started it: a session opened beside it, or one that meets it at a `/todo`,
+re-reads the checkpoint every two seconds until the sprint ends. A sprint
+over the whole ready list has no sprint file, so its board has no name, goal
+or meter — only the lanes, what the sprint has spent, what it takes next,
+and a row for each item in flight — and that is still the screen behind the
+rail's row.
+
 ## Done is archived, not deleted
 
 A finished item moves into an archive beside the active ones, with the

@@ -1779,6 +1779,9 @@ func (m Model) Init() tea.Cmd {
 	if m.subagents != nil {
 		cmds = append(cmds, listenSubagents(m.subagents.Events()))
 	}
+	if m.todoRunner.following {
+		cmds = append(cmds, todoLanesTick())
+	}
 	// Mouse reporting is not asked for here: it is a field on the View
 	//, so every surface that runs this Model gets the same answer
 	// from the same place and the toggle has one thing to flip.

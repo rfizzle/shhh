@@ -371,7 +371,12 @@ func (b *BacklogScreen) header() ScreenHeader {
 			h.Left = append(h.Left, screenField(b.Plan.Budget))
 		}
 	case b.sprinting() && b.Board != nil:
-		h.Left = append(h.Left, screenField("sprint"), screenField(b.Board.Name))
+		// A sprint over the whole ready list has no file and so no name;
+		// the header says it is a sprint and stops there.
+		h.Left = append(h.Left, screenField("sprint"))
+		if b.Board.Name != "" {
+			h.Left = append(h.Left, screenField(b.Board.Name))
+		}
 	}
 	if words := b.filterWords(); words != "" && !b.planning() {
 		h.Left = append(h.Left, screenField(words))

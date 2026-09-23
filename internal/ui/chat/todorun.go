@@ -647,6 +647,9 @@ type todoRunState struct {
 	// said, read where the backlog is read (reloadTodos). The sprint is
 	// another process's, so this is the only way the rail hears of it.
 	lanes []run.SprintLane
+	// following is a re-read of that checkpoint pending on the clock, so a
+	// backlog event that finds the sprint going arms one and never a second.
+	following bool
 	// overSpend is the session's cost cap refusing the stage's request, with
 	// the ledger's figures, kept until the turn it broke is read.
 	overSpend *meter.CapError

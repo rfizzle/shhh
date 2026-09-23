@@ -2782,6 +2782,15 @@ func TestGolden_SprintBoard(t *testing.T) {
 			lanes.Lanes = append(lanes.Lanes, SprintLane{Slug: lanes.Rows[i+1].Slug, Stage: stage})
 		}
 		lanes.Next = ""
+		ready := &SprintBoard{Spend: "6 turns · $1.20", Next: goldenSprintRows()[0].Slug}
+		for i, stage := range []string{"implement", "verify", "research"} {
+			row := goldenSprintRows()[i+1]
+			row.Note = stage
+			ready.Rows = append(ready.Rows, row)
+			ready.Lanes = append(ready.Lanes, SprintLane{Slug: row.Slug, Stage: stage})
+		}
+		readyScreen := goldenSprintScreen(ready)
+		readyScreen.Sprint = ""
 		closed := &SprintBoard{
 			Name: "the cockpit sprint", Goal: goldenSprintBoard().Goal, Closed: true,
 			Report: "http://127.0.0.1:8731/r/rp-4c1d90ab77e25f30",
@@ -2808,6 +2817,8 @@ func TestGolden_SprintBoard(t *testing.T) {
 				View: goldenSprintScreen(capped).View(width)},
 			{Label: "three lanes at once · each item the sprint is working, with the step it is at",
 				View: goldenSprintScreen(lanes).View(width)},
+			{Label: "lanes over the ready list · no file, so no name, goal or meter; the lanes and their items",
+				View: readyScreen.View(width)},
 			{Label: "stopped on a block · the block on the board with the item that wrote it",
 				View: goldenSprintScreen(blocked).View(width)},
 			{Label: "closed · the record, with the page it wrote as the last row",

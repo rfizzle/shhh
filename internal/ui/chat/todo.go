@@ -94,6 +94,10 @@ type Todos struct {
 func (m Model) WithTodos(t Todos) Model {
 	m.todos = t
 	m.reloadTodos()
+	// A session opened beside a parallel sprint follows it from its first
+	// frame, the way the session that started it does: Init starts the
+	// re-read this marks as armed.
+	m.todoRunner.following = m.lanesLive()
 	return m
 }
 
@@ -281,9 +285,9 @@ func (m Model) todoCommand(parts []string) (tea.Model, tea.Cmd) {
 	// account for is a list they cannot trust they are adding to.
 	if note := m.namedTodoRoot(); note != "" {
 		model, _ := m.systemNotice(note)
-		return model.(Model).todoCommandFor(parts)
+		return followingLanes(model.(Model).todoCommandFor(parts))
 	}
-	return m.todoCommandFor(parts)
+	return followingLanes(m.todoCommandFor(parts))
 }
 
 // namedTodoRoot is that sentence, said once per session and only where the
@@ -586,7 +590,7 @@ func (m Model) openTodoScreen() (tea.Model, tea.Cmd) {
 	m.backlog.Priority, m.backlog.Fields = todoScreenFieldSet(m.todos.Profile)
 	m.reloadTodos()
 	m.enterSurface(stateBacklog)
-	return m, nil
+	return followingLanes(m, nil)
 }
 
 // todoProse lays an item's sections out through the renderer the transcript

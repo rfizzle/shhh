@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/todo"
 	"github.com/rfizzle/shhh/internal/todo/run"
 )
@@ -112,5 +113,80 @@ func TestParseTodoRunArgs_Parallel(t *testing.T) {
 		if _, ok := parseTodoRunArgs(args); ok {
 			t.Errorf("%v should be refused", args)
 		}
+	}
+}
+
+// A session opened beside a parallel sprint it did not start follows it: the
+// re-read is armed from the first frame, and a sprint over the whole ready
+// list, which has no sprint file, still has a board behind the rail's row.
+func TestTodoSprint_ASessionOpenedBesideLanesFollowsThem(t *testing.T) {
+	m, root := runModel(t)
+	dir := todo.Dir(root)
+	for _, slug := range []string{"b-two", "c-three"} {
+		must(t, os.WriteFile(filepath.Join(dir, slug+".md"), []byte("---\ntitle: "+slug+"\nsize: S\n---\n"), 0o644))
+	}
+	sp := run.StartSprint("elsewhere", "", 0, false)
+	sp.Parallel = 3
+	sp.Lanes = []run.SprintLane{
+		{Slug: "do-it", Stage: run.StageImplement},
+		{Slug: "b-two", Stage: run.StageVerify},
+		{Slug: "c-three", Stage: run.StageResearch},
+	}
+	must(t, sp.Save(root))
+	m = m.WithTodos(m.todos)
+
+	if !m.todoRunner.following || m.Init() == nil {
+		t.Fatal("a session opened beside a running parallel sprint arms the re-read")
+	}
+	if block := m.inspectorTodo(); block == nil || block.SprintItem != "3 items" {
+		t.Fatalf("the rail counts the lanes: %+v", block)
+	}
+
+	updated, _ := m.openTodoScreen()
+	m = updated.(Model)
+	if m.backlog == nil || m.backlog.Board == nil {
+		t.Fatal("a sprint over the ready list has a board")
+	}
+	board := m.backlog.Board
+	if board.Name != "" || board.Goal != "" || board.Total != 0 || len(board.Lanes) != 3 || len(board.Rows) != 3 {
+		t.Fatalf("the board is drawn from the checkpoint alone: %+v", board)
+	}
+	if board.Rows[1].Slug != "b-two" || board.Rows[1].Note != "verify" {
+		t.Fatalf("each lane's item is a row saying its step: %+v", board.Rows[1])
+	}
+	m.backlog.Update(tea.KeyPressMsg{Code: tea.KeyTab})
+	if view := m.backlog.View(130); !strings.Contains(view, "working · 3 at once") {
+		t.Fatalf("the sprint tab is reachable and lists the lanes:\n%s", view)
+	}
+
+	// The sprint ends: the next re-read finds nothing going and stops.
+	sp.Ended = run.SprintStopped
+	must(t, sp.Save(root))
+	updated, cmd := m.followLanes()
+	m = updated.(Model)
+	if cmd != nil || m.todoRunner.following {
+		t.Fatal("the re-read stops when the sprint ends")
+	}
+}
+
+// A backlog event that finds a parallel sprint going arms the re-read once:
+// a second event while one is pending does not start a second chain.
+func TestTodoSprint_ABacklogEventArmsTheReReadOnce(t *testing.T) {
+	m, root := runModel(t)
+	if m.todoRunner.following {
+		t.Fatal("nothing is followed while no sprint is going")
+	}
+	sp := run.StartSprint("elsewhere", "", 0, false)
+	sp.Parallel = 2
+	sp.Lanes = []run.SprintLane{{Slug: "do-it", Stage: run.StageImplement}}
+	must(t, sp.Save(root))
+
+	updated, cmd := m.todoCommand([]string{"/todo", "list"})
+	m = updated.(Model)
+	if cmd == nil || !m.todoRunner.following {
+		t.Fatal("a /todo event arms the re-read")
+	}
+	if _, again := followingLanes(m, nil); again != nil {
+		t.Fatal("an armed re-read is not armed twice")
 	}
 }

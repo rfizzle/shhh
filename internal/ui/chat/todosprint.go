@@ -524,6 +524,9 @@ func (m Model) sprintBoard() *components.SprintBoard {
 	if s.Sprint.Open() {
 		return m.openSprintBoard(s)
 	}
+	if sp, live := run.Live(m.todos.Root); live && sp.Laned() {
+		return m.lanesBoard(s, sp)
+	}
 	if c := m.sprintClosed; c != nil {
 		// A closed sprint is a record, so its board is the goal and the
 		// page and nothing that reads as still to do.
@@ -574,6 +577,31 @@ func (m Model) openSprintBoard(s *todo.Store) *components.SprintBoard {
 	}
 	if c := m.sprintClosed; c != nil && c.report != "" && c.name == s.Sprint.Name {
 		board.Report = c.report
+	}
+	return board
+}
+
+// lanesBoard is the board of a parallel sprint over the whole ready list,
+// which has no sprint file: no name, no goal and no set to measure, so it
+// is drawn from the checkpoint alone — the lanes with their steps, what the
+// sprint has spent and what it takes next, and a row for each item in
+// flight. Without it the rail would say the sprint is on several items and
+// the screen would have nothing to show for them.
+// See docs/capabilities/todo.md#a-sprint-can-work-several-items-at-once.
+func (m Model) lanesBoard(s *todo.Store, sp *run.Sprint) *components.SprintBoard {
+	board := &components.SprintBoard{}
+	turns, cost := m.sprintSpend(sp)
+	board.Spend = sprintSpendWords(turns, cost, sp.CapCents)
+	if next, ok := sp.Peek(s); ok {
+		board.Next = next.Slug
+	}
+	for _, l := range sp.Lanes {
+		board.Lanes = append(board.Lanes, components.SprintLane{Slug: l.Slug, Stage: string(l.Stage)})
+		if it, ok := s.Find(l.Slug); ok {
+			row := m.todoScreenRow(s, it)
+			row.Note = string(l.Stage)
+			board.Rows = append(board.Rows, row)
+		}
 	}
 	return board
 }

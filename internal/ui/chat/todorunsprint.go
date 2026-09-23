@@ -111,6 +111,12 @@ func (m Model) startParallelSprint(opt todoRunArgs, noCommit bool) (tea.Model, t
 	note := fmt.Sprintf("Sprint started — up to %d items at once, each in its own copy of the checkout, landing on the branch as each finishes. "+
 		"It is the unattended runner, so nobody approves its steps; its lines go to %s, and the sprint tab and the rail follow it. /todo stop ends it.",
 		opt.parallel, log)
+	// The runner may not have written its checkpoint yet, so the session
+	// that started it arms the re-read without asking the file first.
+	if m.todoRunner.following {
+		return m.systemNotice(note)
+	}
+	m.todoRunner.following = true
 	model, _ := m.systemNotice(note)
 	return model, todoLanesTick()
 }
@@ -132,10 +138,35 @@ func todoLanesTick() tea.Cmd {
 // for as long as the sprint is going.
 func (m Model) followLanes() (tea.Model, tea.Cmd) {
 	m.reloadTodos()
-	if sp, live := run.Live(m.todos.Root); live && sp.Laned() {
+	if m.lanesLive() {
 		return m, todoLanesTick()
 	}
+	m.todoRunner.following = false
 	return m, nil
+}
+
+// lanesLive reports that a sprint working several items at once is going in
+// this backlog, whoever started it.
+func (m Model) lanesLive() bool {
+	if m.todos.Root == "" {
+		return false
+	}
+	sp, live := run.Live(m.todos.Root)
+	return live && sp.Laned()
+}
+
+// followingLanes arms the re-read after a backlog event where a parallel
+// sprint is going and nothing is following it yet. The sprint may be
+// another session's or a script's, so a session that did not start it
+// finds out here, where the backlog is read, rather than never.
+// See docs/capabilities/todo.md#a-sprint-can-work-several-items-at-once.
+func followingLanes(model tea.Model, cmd tea.Cmd) (tea.Model, tea.Cmd) {
+	m, ok := model.(Model)
+	if !ok || m.todoRunner.following || !m.lanesLive() {
+		return model, cmd
+	}
+	m.todoRunner.following = true
+	return m, tea.Batch(cmd, todoLanesTick())
 }
 
 // todoSprintStartNote says what the sprint is about to work and how it ends,

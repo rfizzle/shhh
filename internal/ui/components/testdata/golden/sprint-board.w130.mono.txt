@@ -70,6 +70,32 @@ working · 3 at once
 [R] run it · [g] read it against the tree · [b] block it · [d] archive it · [x] drop it, deleting the file
 [S] drop it from the cockpit sprint · [n] a new item · [esc] back to the prompt
 
+· lanes over the ready list · no file, so no name, goal or meter; the lanes and their items
+backlog · sprint                                                                                     3 items · [?] keys · [q] back
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+6 turns · $1.20
+working · 3 at once
+  rail-todo-block    implement
+  screen-over-items  verify
+  prose-renderer     research
+next · keys-are-declared-once
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ ▸ rail-todo-block  HM  implement  The backlog blo… │ rail-todo-block
+  · screen-over-items  HL  verify  A screen over th… │ The backlog block on the inspector rail
+  · prose-renderer  MS  research  One renderer for … │ story · high · size M · in progress · written 2026-08-28 · in 
+                                                     │ 1 item waits on this: screen-over-items
+                                                     │ ───────────────────────────────────────────────────────────────────────────
+                                                     │ 
+                                                     │ **As a** reader, **I want** the queue beside the turn.
+                                                     │ 
+                                                     │ ## Acceptance criteria
+                                                     │ … (+3 more rows)
+
+[↑↓] move · [enter] read the body · [/] filter by text · [s/p/k/r] narrow it · [tab] what shipped · [e] open it in $EDITOR
+[R] run it · [g] read it against the tree · [b] block it · [d] archive it · [x] drop it, deleting the file · [n] a new item
+[esc] back to the prompt
+
 · stopped on a block · the block on the board with the item that wrote it
 backlog · sprint · the cockpit sprint                                                                5 items · [?] keys · [q] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -214,6 +240,32 @@ Reads as a minor release.
 ␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m read the body␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter by text␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s/p/k/r]␛[m␛[38;5;244m narrow it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m what shipped␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m open it in $EDITOR␛[m
 ␛[38;5;254m[R]␛[m␛[38;5;244m run it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[g]␛[m␛[38;5;244m read it against the tree␛[m␛[38;5;244m · ␛[m␛[38;5;254m[b]␛[m␛[38;5;244m block it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m archive it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[x]␛[m␛[38;5;244m drop it, deleting the file␛[m
 ␛[38;5;254m[S]␛[m␛[38;5;244m drop it from the cockpit sprint␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;244m a new item␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m
+
+· lanes over the ready list · no file, so no name, goal or meter; the lanes and their items
+␛[1;38;5;254mbacklog␛[m␛[38;5;244m · sprint␛[m                                                                                     ␛[38;5;244m3 items␛[m␛[38;5;244m · [?] keys · [q] back␛[m
+␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+
+␛[38;5;244m6 turns · $1.20␛[m
+␛[38;5;244mworking · 3 at once␛[m
+  ␛[38;5;254mrail-todo-block␛[m    ␛[38;5;244mimplement␛[m
+  ␛[38;5;254mscreen-over-items␛[m  ␛[38;5;244mverify␛[m
+  ␛[38;5;254mprose-renderer␛[m     ␛[38;5;244mresearch␛[m
+␛[38;5;244mnext · ␛[m␛[38;5;254mkeys-are-declared-once␛[m
+␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[38;5;254m❯ ␛[m␛[38;5;254m␛[m␛[1;38;5;254m␛[m␛[38;5;244m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m▸␛[m␛[48;5;237m ␛[1;38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237mrail-todo-block  HM  implement  The backlog blo…␛[m␛[m␛[38;5;244m │ ␛[m␛[1;38;5;254mrail-todo-block␛[m
+  ␛[38;5;244m·␛[m ␛[38;5;244mscreen-over-items␛[m  ␛[38;5;244mHL␛[m␛[38;5;244m  verify  A screen over th…␛[m␛[38;5;244m │ ␛[m␛[38;5;244mThe backlog block on the inspector rail␛[m
+  ␛[38;5;244m·␛[m ␛[38;5;254mprose-renderer␛[m  ␛[38;5;244mMS␛[m␛[38;5;244m  research  One renderer for …␛[m␛[38;5;244m │ ␛[m␛[38;5;244mstory · high · size M · in progress · written 2026-08-28 · in ␛[m
+                                                    ␛[38;5;244m │ ␛[m␛[38;5;244m1 item waits on this: screen-over-items␛[m
+                                                    ␛[38;5;244m │ ␛[m␛[38;5;244m───────────────────────────────────────────────────────────────────────────␛[m
+                                                    ␛[38;5;244m │ ␛[m
+                                                    ␛[38;5;244m │ ␛[m␛[38;5;244m**As a** reader, **I want** the queue beside the turn.␛[m
+                                                    ␛[38;5;244m │ ␛[m
+                                                    ␛[38;5;244m │ ␛[m␛[38;5;244m## Acceptance criteria␛[m
+                                                    ␛[38;5;244m │ ␛[m␛[38;5;244m… (+3 more rows)␛[m
+
+␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m read the body␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter by text␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s/p/k/r]␛[m␛[38;5;244m narrow it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m what shipped␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m open it in $EDITOR␛[m
+␛[38;5;254m[R]␛[m␛[38;5;244m run it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[g]␛[m␛[38;5;244m read it against the tree␛[m␛[38;5;244m · ␛[m␛[38;5;254m[b]␛[m␛[38;5;244m block it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m archive it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[x]␛[m␛[38;5;244m drop it, deleting the file␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;244m a new item␛[m
+␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m
 
 · stopped on a block · the block on the board with the item that wrote it
 ␛[1;38;5;254mbacklog␛[m␛[38;5;244m · sprint␛[m␛[38;5;244m · the cockpit sprint␛[m                                                                ␛[38;5;244m5 items␛[m␛[38;5;244m · [?] keys · [q] back␛[m
