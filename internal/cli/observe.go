@@ -179,7 +179,7 @@ func startObserveRecorder(db *storage.DB, kind, provider, model string, prices *
 	// (docs/capabilities/sessions-and-memory.md#a-session-knows-it-is-not-alone).
 	_, _ = db.CloseCrashedAgentSessions()
 	parent := parentSession()
-	id, err := db.StartChildAgentSession(parent, kind, provider, model)
+	id, err := db.StartChildAgentSession(parent, kind, provider, model, "")
 	if err != nil && parent > 0 {
 		// The parent is a foreign key, so an id naming no row is refused
 		// rather than stored. What fails there is the link and not the
@@ -202,11 +202,15 @@ func startObserveRecorder(db *storage.DB, kind, provider, model string, prices *
 // It takes the parent's recorder rather than its row id because the link is
 // made twice — once in the table, once in the trace — and a caller handed the
 // two separately could link the row to one session and the span to another.
-func startChildObserveRecorder(db *storage.DB, kind, provider, model string, prices *pricing.Table, parent *observeRecorder) *observeRecorder {
+//
+// name is the child's name as the supervisor knows it — a role and a counter,
+// never the task, so the record stays content-free — written on the row so
+// the tree the parent link builds reads back with the names the map drew.
+func startChildObserveRecorder(db *storage.DB, kind, provider, model, name string, prices *pricing.Table, parent *observeRecorder) *observeRecorder {
 	if db == nil {
 		return nil
 	}
-	id, err := db.StartChildAgentSession(parent.sessionID(), kind, provider, model)
+	id, err := db.StartChildAgentSession(parent.sessionID(), kind, provider, model, name)
 	if err != nil {
 		return nil
 	}
@@ -721,7 +725,7 @@ func (r *observeRecorder) restart() bool {
 	// row does not have: the parent was there when this session started and
 	// a sweep can have taken it since. A boundary that lost the record
 	// altogether is worse than one that lost the link.
-	id, err := r.db.StartChildAgentSession(r.parent, r.kind, r.provider, r.model)
+	id, err := r.db.StartChildAgentSession(r.parent, r.kind, r.provider, r.model, "")
 	if err != nil && r.parent > 0 {
 		r.parent = 0
 		id, err = r.db.StartAgentSession(r.kind, r.provider, r.model)
@@ -1332,7 +1336,7 @@ func observeSessionRows(sessions []storage.AgentSessionSummary) []report.Row {
 		row := report.Row{
 			State:   report.Pass,
 			Name:    strconv.FormatInt(s.ID, 10),
-			Subject: joinDetail(s.Kind, s.Model),
+			Subject: joinDetail(observeKindOf(s), s.Model),
 			Detail: joinDetail(s.StartedAt.Local().Format("Jan 2 15:04"),
 				joinDetail(countOf(int(s.Turns), "turn", "turns"),
 					joinDetail(observeTokens(s.TokensIn, s.TokensOut), observeCost(s.Cost)))),
@@ -1344,6 +1348,13 @@ func observeSessionRows(sessions []storage.AgentSessionSummary) []report.Row {
 		rows = append(rows, row)
 	}
 	return rows
+}
+
+// observeKindOf is what kind of session a row was, with the agent's name
+// beside it where the row is a child's: three writers of one fan-out are
+// otherwise one word three times, told apart only by their row ids.
+func observeKindOf(s storage.AgentSessionSummary) string {
+	return joinDetail(s.Kind, s.Name)
 }
 
 // observeElapsed is how long a session took, or `active` for one that is
@@ -1459,7 +1470,7 @@ func observeSessionReport(s storage.AgentSessionSummary, events []storage.AgentE
 
 	r := report.Report{
 		Title:    "shhh observe session " + strconv.FormatInt(s.ID, 10),
-		Subject:  joinDetail(s.Kind, observeElapsed(s)),
+		Subject:  joinDetail(observeKindOf(s), observeElapsed(s)),
 		Sections: []report.Section{{Pairs: pairs}},
 	}
 

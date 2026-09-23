@@ -540,6 +540,14 @@ var migrations = []string{
 	// unchanged: the person answered, and nothing can say what has moved
 	// since, so the next session stamps the digests and says nothing.
 	`ALTER TABLE project_trust ADD COLUMN kinds TEXT NOT NULL DEFAULT '';`,
+
+	// The name the supervisor knows a child by — a role and a counter, never
+	// the task — so a fan-out's rows read back as the agents the map drew
+	// rather than as three rows of the same role told apart only by row id.
+	// Nullable, and NULL on every row that is not a child's: a session, a
+	// headless run and a one-shot have no name to carry, and a row written
+	// before this column existed is a child nobody wrote a name down for.
+	`ALTER TABLE agent_sessions ADD COLUMN name TEXT;`,
 }
 
 const (

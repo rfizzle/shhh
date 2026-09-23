@@ -782,7 +782,7 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 			// And under the agent that spawned it, not under the session
 			// flatly: the record keeps the same tree the map draws, so a
 			// child a child asked for reads back as the level it ran at.
-			r := startChildObserveRecorder(db, string(spec.Role), env.prov.Name(), model, prices,
+			r := startChildObserveRecorder(db, string(spec.Role), env.prov.Name(), model, spec.Name, prices,
 				rows.under(spec.Parent, recorder))
 			rows.keep(spec.Name, r)
 			// The child's own provenance, not the parent's: it ran under its

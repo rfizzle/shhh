@@ -168,7 +168,7 @@ func TestStartChildAgentSession_LinksParent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("start parent: %v", err)
 	}
-	childID, err := db.StartChildAgentSession(parentID, "writer", "openai", "gpt-test")
+	childID, err := db.StartChildAgentSession(parentID, "writer", "openai", "gpt-test", "")
 	if err != nil {
 		t.Fatalf("start child: %v", err)
 	}
@@ -206,7 +206,7 @@ func TestStartChildAgentSession_LinksParent(t *testing.T) {
 	}
 
 	// A non-positive parent records an unlinked session.
-	looseID, err := db.StartChildAgentSession(0, "researcher", "openai", "gpt-test")
+	looseID, err := db.StartChildAgentSession(0, "researcher", "openai", "gpt-test", "")
 	if err != nil {
 		t.Fatalf("start unlinked: %v", err)
 	}
@@ -775,7 +775,7 @@ func TestLiveSibling_IgnoresThisProcessItsChildrenAndWhatIsGone(t *testing.T) {
 
 	// A sub-agent runs inside somebody's process and is never a session of
 	// its own to be alone with.
-	child, err := db.StartChildAgentSession(own, "writer", "openai", "gpt-test")
+	child, err := db.StartChildAgentSession(own, "writer", "openai", "gpt-test", "")
 	if err != nil {
 		t.Fatalf("start child: %v", err)
 	}
@@ -1073,7 +1073,7 @@ func TestPruneAgentObservability_TakesTheEventsAndLeavesTheWindow(t *testing.T) 
 func TestPruneAgentObservability_TakesTheChildrenWithTheParent(t *testing.T) {
 	db := openTestDB(t)
 	parent := endedSessionAt(t, db, 200*24*time.Hour)
-	child, err := db.StartChildAgentSession(parent, "subagent", "openai", "gpt-test")
+	child, err := db.StartChildAgentSession(parent, "subagent", "openai", "gpt-test", "")
 	if err != nil {
 		t.Fatalf("start child: %v", err)
 	}
@@ -1336,7 +1336,7 @@ func TestEndChildAgentSession_ClosesTheRowWithHowTheAttemptEnded(t *testing.T) {
 	if err != nil {
 		t.Fatalf("start session: %v", err)
 	}
-	child, err := db.StartChildAgentSession(parent, "writer", "openai", "gpt-small")
+	child, err := db.StartChildAgentSession(parent, "writer", "openai", "gpt-small", "")
 	if err != nil {
 		t.Fatalf("start child session: %v", err)
 	}

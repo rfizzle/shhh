@@ -123,7 +123,7 @@ func TestChildSessionCostIsTheBilledFigure(t *testing.T) {
 		},
 	})
 	parent := startObserveRecorder(db, "code", "anthropic", "cheap-model", prices)
-	child := startChildObserveRecorder(db, "researcher", "anthropic", "cheap-model", prices, parent)
+	child := startChildObserveRecorder(db, "researcher", "anthropic", "cheap-model", "", prices, parent)
 
 	// A million tokens in, nine tenths of them a cache read: 100k fresh at
 	// $1.50/M, 900k cached at $0.15/M, 1k out at $9/M.
@@ -168,10 +168,10 @@ func TestAgentRowsRecordTheSpawnTree(t *testing.T) {
 	var rows agentRows
 
 	// The session's own child, then the child that child delegates.
-	writer := startChildObserveRecorder(db, "writer", "anthropic", "test-model", nil,
+	writer := startChildObserveRecorder(db, "writer", "anthropic", "test-model", "writer-1", nil,
 		rows.under("", session))
 	rows.keep("writer-1", writer)
-	reader := startChildObserveRecorder(db, "researcher", "anthropic", "test-model", nil,
+	reader := startChildObserveRecorder(db, "researcher", "anthropic", "test-model", "reader-1a", nil,
 		rows.under("writer-1", session))
 	rows.keep("reader-1a", reader)
 
@@ -179,9 +179,10 @@ func TestAgentRowsRecordTheSpawnTree(t *testing.T) {
 		what string
 		id   int64
 		want int64
+		name string
 	}{
-		{"the session's own child", writer.sessionID(), session.sessionID()},
-		{"the child it delegated", reader.sessionID(), writer.sessionID()},
+		{"the session's own child", writer.sessionID(), session.sessionID(), "writer-1"},
+		{"the child it delegated", reader.sessionID(), writer.sessionID(), "reader-1a"},
 	} {
 		row, ok, err := db.AgentSession(c.id)
 		if err != nil || !ok {
@@ -190,6 +191,33 @@ func TestAgentRowsRecordTheSpawnTree(t *testing.T) {
 		if row.ParentID == nil || *row.ParentID != c.want {
 			t.Fatalf("%s hangs under %v, want %d", c.what, row.ParentID, c.want)
 		}
+		// The name is what lets the tree be read back as the agents the
+		// map drew, and both the page and the export carry it.
+		if row.Name != c.name {
+			t.Fatalf("%s is named %q, want %q", c.what, row.Name, c.name)
+		}
+		page := observeSessionReport(row, nil, storage.AgentFirstWrite{}, nil, false).Render(80)
+		if !strings.Contains(page, c.name) {
+			t.Fatalf("the session page for %s does not name it:\n%s", c.what, page)
+		}
+		if got := observeSessionRows([]storage.AgentSessionSummary{row})[0].Subject; !strings.Contains(got, c.name) {
+			t.Fatalf("the sessions row for %s reads %q, without its name", c.what, got)
+		}
+	}
+	// A session is not a child and carries no name.
+	if row, _, _ := db.AgentSession(session.sessionID()); row.Name != "" {
+		t.Fatalf("the session's own row is named %q", row.Name)
+	}
+	exported, err := db.ExportAgentObservability(time.Time{}, false)
+	if err != nil {
+		t.Fatalf("export: %v", err)
+	}
+	names := map[int64]string{}
+	for _, e := range exported {
+		names[e.ID] = e.Name
+	}
+	if names[reader.sessionID()] != "reader-1a" || names[session.sessionID()] != "" {
+		t.Fatalf("the export names the rows %v", names)
 	}
 
 	// An agent nobody recorded a row for leaves its descendants on the
@@ -415,7 +443,7 @@ func recordEverySurface(t *testing.T, db *storage.DB) map[string]int64 {
 	ids["print"] = head.sessionID()
 
 	// A sub-agent: its own provenance, linked to the session that spawned it.
-	child := startChildObserveRecorder(db, "researcher", "anthropic", "cheap-model", nil, sess)
+	child := startChildObserveRecorder(db, "researcher", "anthropic", "cheap-model", "", nil, sess)
 	child.stamp("the researcher prompt", 3, "/repo", storage.AgentSettings{})
 	declined, declinedClass := observe.ToolOutcome("error: the user declined this tool call")
 	child.decisionAt(observe.Pos{Turn: 1, Round: 1}, observe.DecisionAsk, observe.ReasonPolicy)

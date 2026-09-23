@@ -172,15 +172,22 @@ func (db *DB) StartAgentSession(kind, provider, model string) (int64, error) {
 
 // StartChildAgentSession opens a session row linked to a parent session, so
 // sub-agent spend is attributable. A non-positive parentID records an
-// unlinked session.
-func (db *DB) StartChildAgentSession(parentID int64, kind, provider, model string) (int64, error) {
-	if parentID <= 0 {
-		return db.StartAgentSession(kind, provider, model)
+// unlinked session. name is the agent's name as the supervisor knows it
+// (`writer-3`, `reader-3a`), which is what lets a fan-out's rows be read back
+// as the tree the map drew; an empty one is stored as NULL, which is what
+// every row that is not a child's holds.
+func (db *DB) StartChildAgentSession(parentID int64, kind, provider, model, name string) (int64, error) {
+	var parent, named any
+	if parentID > 0 {
+		parent = parentID
+	}
+	if name != "" {
+		named = name
 	}
 	res, err := db.sql.Exec(
-		`INSERT INTO agent_sessions (kind, provider, model, parent_id, pid, heartbeat)
-		 VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now'))`,
-		kind, provider, model, parentID, os.Getpid(),
+		`INSERT INTO agent_sessions (kind, provider, model, parent_id, name, pid, heartbeat)
+		 VALUES (?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now'))`,
+		kind, provider, model, parent, named, os.Getpid(),
 	)
 	if err != nil {
 		return 0, err
@@ -1341,6 +1348,9 @@ type AgentSessionSummary struct {
 	// rather than printing a timeline of nameless calls.
 	ChatSessionID *int64
 	ParentID      *int64
+	// Name is the agent's name as its supervisor knew it, and empty on
+	// every row that is not a child's.
+	Name string
 	// Outcome is how the session came out, from the closed set in
 	// internal/observe. It is empty for a session that never closed a turn,
 	// which the reader shows as unknown rather than filling in.
@@ -1366,7 +1376,7 @@ const agentSessionColumns = `id, started_at, ended_at, kind, provider, model, tu
 		        classifier_model, sandbox_profile, item, stage, config_hash, outcome, rating,
 		        check_in_interval, end_reason, verdict, steers, attempt,
 		        child_budget, child_admission_floor, child_tokens_inherited, child_tokens_setup,
-		        child_tokens_tools, child_tokens_analysis, child_tokens_handoff, child_tokens_fresh`
+		        child_tokens_tools, child_tokens_analysis, child_tokens_handoff, child_tokens_fresh, name`
 
 func scanAgentSession(rows interface{ Scan(...any) error }) (AgentSessionSummary, error) {
 	var (
@@ -1392,6 +1402,7 @@ func scanAgentSession(rows interface{ Scan(...any) error }) (AgentSessionSummary
 		inherited, setup, tools, analysis, handoff sql.NullInt64
 		fresh                                      sql.NullInt64
 		endReason, verdict                         sql.NullString
+		name                                       sql.NullString
 	)
 	if err := rows.Scan(&s.ID, &startedAt, &endedAt, &s.Kind, &s.Provider, &s.Model,
 		&s.Turns, &s.TokensIn, &s.TokensOut, &s.Cost,
@@ -1400,10 +1411,11 @@ func scanAgentSession(rows interface{ Scan(...any) error }) (AgentSessionSummary
 		&classifierModel, &sandboxProfile, &item, &stage, &configHash, &outcome, &rating,
 		&checkInInterval, &endReason, &verdict, &steers, &attempt,
 		&budget, &admissionFloor, &inherited, &setup, &tools, &analysis, &handoff,
-		&fresh); err != nil {
+		&fresh, &name); err != nil {
 		return s, err
 	}
 	s.Outcome = outcome.String
+	s.Name = name.String
 	if rating.Valid {
 		s.Rating = &rating.Bool
 	}
@@ -1577,6 +1589,7 @@ type AgentExportSession struct {
 	TokensOut   int64   `json:"tokens_out"`
 	EstCost     float64 `json:"est_cost"`
 	ParentID    *int64  `json:"parent_id,omitempty"`
+	Name        string  `json:"name,omitempty"`
 	Version     string  `json:"version,omitempty"`
 	PromptHash  string  `json:"prompt_hash,omitempty"`
 	Skills      int     `json:"skills,omitempty"`
@@ -1679,7 +1692,7 @@ func exportSession(s AgentSessionSummary) AgentExportSession {
 		ID: s.ID, StartedAt: s.StartedAt.UTC().Format(observeTimeFormat),
 		Kind: s.Kind, Provider: s.Provider, Model: s.Model,
 		Turns: s.Turns, TokensIn: s.TokensIn, TokensOut: s.TokensOut, EstCost: s.Cost,
-		ParentID: s.ParentID, Version: s.Version, PromptHash: s.PromptHash,
+		ParentID: s.ParentID, Name: s.Name, Version: s.Version, PromptHash: s.PromptHash,
 		Skills: s.Skills, Project: s.Project, ChatSession: s.ChatSession,
 		Outcome: s.Outcome, Rating: s.Rating, Settings: s.Settings,
 	}
