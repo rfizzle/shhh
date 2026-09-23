@@ -340,6 +340,15 @@ way a message typed while the turn works already does
 is offered on the card because the card is where the reader has the thought,
 and a thought held until the act has finished is usually a thought lost.
 
+## Only the person's own path carries authority
+
+Text from a child, a server or a page is a claim, and only what the person
+types — the draft, a steer, a note on a card — is an instruction; so each of
+the three reaches the model under a line saying whose words follow, and that
+line is part of the code rather than a wording a checkout could replace
+([`subagents.md`](subagents.md#what-comes-back-says-what-happened-to-it),
+[`mcp.md`](mcp.md#a-server-cannot-vouch-for-itself)).
+
 ## An amended command is a new command
 
 A command card offers to run the command as the reader would have written

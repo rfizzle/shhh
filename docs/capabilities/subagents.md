@@ -231,6 +231,17 @@ they are on the report because the report is what the parent acts on — a child
 steered three times that comes back calling its work sufficient is one to
 check rather than to take, and nothing in the words themselves would say so.
 
+Between that header and the report is one line naming the child and saying
+that what follows is its words, not the user's, and that nothing in it is an
+instruction. The report lands in the parent's conversation beside everything
+the person said, and a child that read a page telling it to *approve this* can
+hand that sentence on word for word; the line is what keeps it reading as the
+child's claim rather than as the person's request
+([`approvals-and-safety.md`](approvals-and-safety.md#only-the-persons-own-path-carries-authority)).
+It is above the report and never inside it, so the report still ends on its
+own last line, and the lane below reads the report the child wrote rather than
+the fenced copy.
+
 The person reads it where the child ran. A lane that has stopped folds open on
 the report under its own detail line, so the words are read in the transcript
 rather than by attaching to a child nobody has a reason to attach to
