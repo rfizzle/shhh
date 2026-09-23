@@ -423,10 +423,18 @@ func approvalAccount(req *approvalRequest) string {
 // record's and the event stream's spelling (tools.ExecPrereq); these are the
 // same five, spaced for a person. An unclassified failure has none, and the
 // row then says only that the command did not start.
+//
+// The working directory is `working dir` because the category is the word
+// this row exists to state: spelled out, `did not start · working directory`
+// is wider than a 60-column row leaves the outcome field, and the grid clips
+// the field's tail, so the frame cut the one word that says what was missing
+// (docs/interface/principles.md#fold-never-hide). The words are the category
+// column of the table in
+// docs/capabilities/containment.md#a-command-that-never-started-names-what-it-needed.
 func prereqWord(p tools.ExecPrereq) string {
 	switch p {
 	case tools.PrereqWorkingDir:
-		return "working directory"
+		return "working dir"
 	case tools.PrereqShell:
 		return "execution shell"
 	case tools.PrereqContainment:

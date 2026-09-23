@@ -40,7 +40,7 @@ keys y
 snap 13-removed "The checkout is removed"
 # A read-only command is waved through, so there is no card before it.
 keys "list what is left" Enter
-snap 14-no-working-directory "did not start · working directory"
+snap 14-no-working-directory "did not start · working dir"
 snap 15-no-working-directory-answer "The command could not start"
 keys C-c
 snap 16-quit-armed "again quits"

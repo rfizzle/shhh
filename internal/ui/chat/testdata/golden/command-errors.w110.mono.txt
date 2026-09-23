@@ -24,7 +24,7 @@
 
 
 · did not start · working-directory
-  ▎✗ run     go test ./...                                      did not start · working directory      —
+  ▎✗ run     go test ./...                                            did not start · working dir      —
     working directory unavailable: /work/.claude/worktrees/gone — chdir /bin/bash: no such file or
     directory
     Nothing ran: a command's working directory has to be there when it starts. Find out where it went —
@@ -81,7 +81,7 @@
 
 
 · did not start · working-directory
-  ␛[38;5;254m▎␛[m␛[38;5;254m✗␛[m ␛[38;5;254mrun␛[m     ␛[38;5;254mgo test ./...␛[m                                      ␛[38;5;254mdid not start · working directory␛[m      ␛[38;5;244m—␛[m
+  ␛[38;5;254m▎␛[m␛[38;5;254m✗␛[m ␛[38;5;254mrun␛[m     ␛[38;5;254mgo test ./...␛[m                                            ␛[38;5;254mdid not start · working dir␛[m      ␛[38;5;244m—␛[m
     ␛[38;5;244mworking directory unavailable: /work/.claude/worktrees/gone — chdir /bin/bash: no such file or␛[m
     ␛[38;5;244mdirectory␛[m
     ␛[38;5;244mNothing ran: a command's working directory has to be there when it starts. Find out where it went —␛[m

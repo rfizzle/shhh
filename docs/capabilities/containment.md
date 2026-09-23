@@ -401,7 +401,7 @@ and they are a closed set:
 
 | Category | What was missing | Recorded as |
 |---|---|---|
-| working directory | the directory the command was to run in — usually a worktree or checkout removed under a running session | `harness-working-directory` |
+| working dir | the directory the command was to run in — usually a worktree or checkout removed under a running session | `harness-working-directory` |
 | execution shell | the shell every command is run through | `harness-execution-shell` |
 | containment | the mechanism that was to contain it, or a wrap it could not build; the command is never run bare instead | `harness-containment` |
 | permission | the operating system's permission to run it | `harness-permission` |
@@ -409,8 +409,9 @@ and they are a closed set:
 
 The category is decided once, where the failure is still an error rather than
 text, and it travels with the result from there. The command's row names it
-in the outcome field — `did not start · working directory` — in words rather
-than in colour alone, with a dash where the duration would be because nothing
+in the outcome field — `did not start · working dir` — in words rather
+than in colour alone, and in the table's own words, which are short enough
+that a 60-column row carries the category whole rather than clipping it, with a dash where the duration would be because nothing
 ran. The operating system's own words and the one thing still possible are
 folded beneath the row. The model reads the same category on its result's
 first line, and the session record files the call under the class in the
