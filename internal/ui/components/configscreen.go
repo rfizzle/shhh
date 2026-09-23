@@ -435,10 +435,11 @@ func (c *ConfigScreen) inlineRows(width int) []string {
 	case c.edit != nil:
 		rows = append(rows, c.edit.view())
 	case c.secret != nil:
-		// The masked entry's own key row is dropped: the screen already has one at
-		// its foot, and the two would offer the same two keys twice.
+		// The masked entry's own key rows are dropped — the prompt and the mask
+		// are its first two — because the screen already has a key row at its
+		// foot, and the two would offer the same two keys twice.
 		lines := strings.Split(c.secret.View(inner), "\n")
-		rows = append(rows, lines[:max(len(lines)-1, 1)]...)
+		rows = append(rows, lines[:min(len(lines), 2)]...)
 	default:
 		return nil
 	}

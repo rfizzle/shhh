@@ -647,7 +647,7 @@ func (p *ProfileScreen) hintFor(width int) []string {
 	}
 	rows := hintRows(segments, width-profileIndent)
 	for i, row := range rows {
-		rows[i] = Clip(indent(row), width)
+		rows[i] = indent(row)
 	}
 	return rows
 }

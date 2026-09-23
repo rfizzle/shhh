@@ -244,9 +244,9 @@ func (f KeyFooter) Rows(width int) []string {
 	if f.Showing {
 		rows := make([]string, 0, len(f.Register)+1)
 		for _, offer := range f.Register {
-			rows = append(rows, Clip(keyOffers([]KeyOffer{offer}), width))
+			rows = append(rows, packOffers([]KeyOffer{offer}, width)...)
 		}
-		return append(rows, Clip(keyOffers([]KeyOffer{hideKeysOffer()}), width))
+		return append(rows, packOffers([]KeyOffer{hideKeysOffer()}, width)...)
 	}
 	if f.Lead != "" {
 		if len(f.Offers) == 0 {
@@ -289,10 +289,20 @@ func packOffersIn(offers []KeyOffer, width int, live bool) []string {
 	var rows []string
 	line := []KeyOffer{}
 	flush := func() {
-		if len(line) > 0 {
-			rows = append(rows, paint(line))
-			line = nil
+		if len(line) == 0 {
+			return
 		}
+		row := paint(line)
+		line = nil
+		// Only an offer alone on its row can be wider than the room, since
+		// a second one would have started a row of its own. It takes the
+		// next row for its tail rather than leaving the caller to clip it,
+		// because the tail is the words that say what the key does.
+		if width > 0 && lipgloss.Width(row) > width {
+			rows = append(rows, strings.Split(lipgloss.Wrap(row, width, ""), "\n")...)
+			return
+		}
+		rows = append(rows, row)
 	}
 	for _, o := range offers {
 		next := append(append([]KeyOffer{}, line...), o)

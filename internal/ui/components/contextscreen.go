@@ -609,14 +609,20 @@ func (c *ContextScreen) keyRows(width int) []string {
 	if !c.ShowKeys {
 		return []string{Clip(contextKeyRow(width), width)}
 	}
-	rows := make([]string, 0, len(keys.Context.All())+1)
+	offers := make([]KeyOffer, 0, len(keys.Context.All())+1)
 	for _, b := range keys.Context.All() {
-		rows = append(rows, Clip("  "+keyOffers([]KeyOffer{keyOffer(b)}), width))
+		offers = append(offers, keyOffer(b))
 	}
 	// The way out answers to esc as well as to the letter, and the register
 	// is where a key the compact row spells one way is spelled both.
-	return append(rows,
-		Clip("  "+keyOffers([]KeyOffer{keyOfferAs(keys.Select.Cancel, backToPrompt)}), width))
+	offers = append(offers, keyOfferAs(keys.Select.Cancel, backToPrompt))
+	rows := make([]string, 0, len(offers))
+	for _, o := range offers {
+		for _, row := range packOffers([]KeyOffer{o}, max(width-2, 1)) {
+			rows = append(rows, "  "+row)
+		}
+	}
+	return rows
 }
 
 // contextKeyRow is the surface's keys as one line, in the order the register

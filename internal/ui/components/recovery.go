@@ -526,10 +526,9 @@ func (s SecretPrompt) View(width int) string {
 	}
 	mask := strings.Repeat("●", min(len(s.value), max(width-4, 1)))
 	entry := sty.Dim.Render("▸ ") + sty.Accent.Render(mask) + sty.FocusRow.Render(" ")
-	offers := keyOffers([]KeyOffer{keyOffer(keys.Wait.UseKey), keyOffer(keys.Wait.KeepKey)})
-	return strings.Join([]string{
+	offers := packOffers([]KeyOffer{keyOffer(keys.Wait.UseKey), keyOffer(keys.Wait.KeepKey)}, width)
+	return strings.Join(append([]string{
 		Clip(head, width),
 		Clip(entry, width),
-		Clip(offers, width),
-	}, "\n")
+	}, offers...), "\n")
 }

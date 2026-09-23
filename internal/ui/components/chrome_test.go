@@ -185,6 +185,34 @@ func TestKeyFooter_OffersWrapRatherThanClip(t *testing.T) {
 	}
 }
 
+// An offer wider than the row on its own takes the next row for its tail
+// rather than being clipped at the edge: the tail is the words that say what
+// the key does, and the way out is one of them
+// (docs/interface/principles.md#fold-never-hide). The register behind `[?]`
+// is one offer per row and is held to the same.
+func TestKeyFooter_AnOfferWiderThanTheRowWrapsRatherThanClips(t *testing.T) {
+	wide := KeyOffer{Key: "[esc]", Label: "back to the draft, cursor where you left it"}
+	const width = 24
+	for name, rows := range map[string][]string{
+		"offers":   KeyFooter{Offers: []KeyOffer{{Key: "[y]", Label: "allow"}, wide}}.Rows(width),
+		"register": KeyFooter{Register: []KeyOffer{wide}, Showing: true}.Rows(width),
+		"packed":   HintRows([]KeyOffer{wide}, width),
+	} {
+		for _, row := range rows {
+			if w := lipgloss.Width(row); w > width {
+				t.Fatalf("%s: a row is %d wide at %d: %q", name, w, width, ansi.Strip(row))
+			}
+		}
+		joined := ansi.Strip(strings.Join(rows, " "))
+		if strings.Contains(joined, "…") {
+			t.Fatalf("%s: the offer was clipped: %q", name, joined)
+		}
+		if !strings.Contains(strings.Join(strings.Fields(joined), " "), wide.Key+" "+wide.Label) {
+			t.Fatalf("%s: the offer lost its tail: %q", name, joined)
+		}
+	}
+}
+
 // A sub-surface that has taken the footer over is the whole footer: while a
 // confirm is up it is what the keyboard is answering, so the keys underneath
 // it are not offers.
