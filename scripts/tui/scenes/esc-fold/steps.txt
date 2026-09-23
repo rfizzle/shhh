@@ -23,7 +23,7 @@ keys S-Up S-Up S-Up
 keys S-Right
 keys S-Up
 keys S-Right
-snap 03-open "const limit = 25"
+snap 03-open "const limit = 25" "for round := 0; round < limit; round++"
 # The pointer is the thing most recently put on screen, so it is what the
 # first esc leaves; the second is the one that folds.
 keys Escape
@@ -31,12 +31,12 @@ sleep 0.5
 keys Escape
 snap 04-folded "folded 2 rows"
 # And the chain goes on meaning what it always meant: the two presses of the
-# rewind gesture, unchanged, after the one that folded. The sleeps are the
+# rewind gesture, unchanged, after the one that folded. The gap is the
 # terminal's, not the product's — two escapes written into the pty together
-# arrive as one sequence — and they stay well inside the gesture's window.
-keys Escape
-sleep 0.2
-keys Escape
+# arrive as one sequence — and it is kept by tmux rather than by a step of its
+# own, because a process started between the presses can outlast the
+# gesture's half second on a loaded host.
+press 0.2 Escape Escape
 snap 05-rewind "pick a turn to return to"
 # Esc leaves the picker having changed nothing, and the session ends the way
 # every scene ends: the cancel chord, twice.

@@ -16,10 +16,10 @@ snap 03-reading "12 reads"
 # with the answer's prose between them.
 keys k
 keys k
-snap 04-on-the-group "12 reads"
+snap 04-on-the-group "12 reads" "❯  ▸ ⚙"
 keys Enter
 # Opened in place: every read back with its own target, under no heading.
-snap 05-opened "eleven.go"
+snap 05-opened "eleven.go" "⚙ read    one.go" "⚙ read    twelve.go"
 keys Enter
 snap 06-refolded "12 reads"
 # The way out of reading mode, and the session's.

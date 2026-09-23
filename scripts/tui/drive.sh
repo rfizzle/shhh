@@ -11,14 +11,27 @@
 #
 #     setup <shell>             run in the workspace before the binary starts
 #     keys <tmux send-keys …>   type; Enter, Escape, Tab, BTab, Up, C-c, "a line"
+#     press <seconds> <key> …   the keys <seconds> apart, timed by tmux itself
 #     paste <file>              bracketed-paste a file the setup wrote
-#     snap <name> [text]        capture the screen once <text> is on it
+#     snap <name> [text] [also …]
+#                               capture the screen once <text> is on it; every
+#                               further string must be on that capture too
 #     sleep <seconds>           wait, for the rare step nothing on screen marks
 #
 # A snap that names text polls the screen for it and fails the run when it
 # never appears, so a scene is also a test: the exit code says whether every
-# step drew what it said it would. Captures land under $OUT as <name>.txt (the
+# step drew what it said it would. The strings after the first are compared,
+# not awaited: the first says when the screen is ready, and the rest must be
+# on the screen it was ready on — a row the capture is for, which a wait word
+# alone would let go missing unnoticed. One absent from the capture is looked
+# for again for COMPARE seconds, a frame late at most, and then fails the run
+# naming the snap and the string. Captures land under $OUT as <name>.txt (the
 # cells) and <name>.ansi (the cells with colour).
+#
+# `press` is for a gesture the binary times, such as the rewind's two escapes
+# inside half a second: the keys leave in one tmux command and the server
+# keeps the gap, so no process the harness starts between them can stretch
+# it past the window on a loaded host.
 #
 # A capture is cells; --pictures draws them. Each snap's `.ansi` — the same
 # cells with their colour — is wrapped as a one-frame asciicast (still.py) and
@@ -57,6 +70,7 @@
 # Environment: SHHH_BIN (the binary; default ./shhh), COLS/ROWS (the pane;
 # over the scene's own size, else 120x40), OUT (captures; default
 # bin/tui/<scene>), WAIT (seconds a snap waits for its text; default 20),
+# COMPARE (seconds a compared string is looked for again; default 2),
 # PORT and SOCK (the provider's port and the tmux server's name; both per run
 # unless set), and TMUX_TMPDIR (the tmux socket directory; a directory of the
 # run's own under $TMPDIR unless set).
@@ -90,6 +104,7 @@ COLS=${COLS:-${scene_cols:-120}}
 ROWS=${ROWS:-${scene_rows:-40}}
 OUT=${OUT:-$root/bin/tui/$name}
 WAIT=${WAIT:-20}
+COMPARE=${COMPARE:-2}
 # Named for this run rather than for the script, so a second run does not
 # talk to — or kill — the first one's tmux server.
 SOCK=${SOCK:-shhh-tui-$$}
@@ -278,6 +293,22 @@ while IFS= read -r line || [ -n "$line" ]; do
 			{ echo "drive.sh: $name: no such file to paste: ${line#paste }" >&2; exit 1; }
 		tmux -L "$SOCK" paste-buffer -p -d -b scene -t scene
 		;;
+	press\ *)
+		# A gesture the binary times — two escapes inside the rewind's half
+		# second — sent as one tmux command, with the gap between the keys
+		# kept by the tmux server. The same keys as `keys … / sleep / keys …`
+		# cost a process start per step, and on a loaded host those starts
+		# alone can outlast the window the binary is measuring.
+		eval "set -- ${line#press }"
+		gap=$1
+		shift
+		seq=(send-keys -t scene "$1")
+		shift
+		for k in "$@"; do
+			seq+=(";" run-shell -d "$gap" ";" send-keys -t scene "$k")
+		done
+		tmux -L "$SOCK" "${seq[@]}"
+		;;
 	sleep\ *)
 		sleep "${line#sleep }"
 		;;
@@ -285,6 +316,14 @@ while IFS= read -r line || [ -n "$line" ]; do
 		eval "set -- ${line#snap }"
 		snapname=$1
 		want=${2:-}
+		shift
+		[ $# -gt 0 ] && shift
+		# Every string after the wait word is compared, not awaited: the wait
+		# word says when the screen is ready, and the rest must be on that
+		# same screen. A capture missing one is looked at again for up to
+		# COMPARE seconds — a frame the terminal had not finished drawing —
+		# and never for the whole of WAIT, because a row that is gone is the
+		# failure this exists to catch and it should not cost a timeout.
 		deadline=$(( $(date +%s) + WAIT ))
 		while [ -n "$want" ] && ! screen | grep -qF -- "$want"; do
 			if [ "$(date +%s)" -ge "$deadline" ]; then
@@ -297,15 +336,35 @@ while IFS= read -r line || [ -n "$line" ]; do
 		# One more frame so a row that arrived with the text has drawn too.
 		sleep 0.3
 		screen > "$OUT/$snapname.txt"
+		if [ "$failed" = 0 ] && [ $# -gt 0 ]; then
+			settle=$(( $(date +%s) + COMPARE ))
+			while :; do
+				missing=()
+				for also in "$@"; do
+					grep -qF -- "$also" "$OUT/$snapname.txt" || missing+=("$also")
+				done
+				[ ${#missing[@]} -eq 0 ] && break
+				[ "$(date +%s)" -ge "$settle" ] && break
+				sleep 0.3
+				screen > "$OUT/$snapname.txt"
+			done
+			for also in ${missing[@]+"${missing[@]}"}; do
+				echo "drive.sh: $name/$snapname: saw \"$want\" but the capture does not hold: $also" >&2
+				failed=1
+			done
+		fi
 		tmux -L "$SOCK" capture-pane -p -e -t scene > "$OUT/$snapname.ansi" 2>/dev/null
 		step=$((step + 1))
-		# The mark says what the wait found: a tick for text that drew, a
-		# cross for a wait that ran out, so the line under a timeout does not
-		# read as a pass.
+		# The mark says what the snap found: a tick for text that drew, a
+		# cross for a wait that ran out or a compared string the capture did
+		# not hold, so the line under a failure does not read as a pass. The
+		# count is how many strings the capture was compared against.
+		compared=
+		[ $# -gt 0 ] && compared="  + $# compared"
 		if [ "$failed" = 1 ]; then
-			echo "  $snapname  ✗ \"$want\""
+			echo "  $snapname  ✗ \"$want\"$compared"
 		else
-			echo "  $snapname${want:+  ✓ \"$want\"}"
+			echo "  $snapname${want:+  ✓ \"$want\"}$compared"
 		fi
 		;;
 	*)

@@ -18,10 +18,10 @@ setup for i in 01 02 03 04 05 06 07 08 09 10 11 12; do printf 'package fixture\n
 snap 01-start "Some things worth doing first"
 keys "trace the checkpoint" Enter
 snap 02-silent-run "12 reads"
-snap 03-status "the round limit is counted"
+snap 03-status "the round limit is counted" "12 reads"
 snap 04-card "[y] run it once"
 keys y
-snap 05-running "running…"
+snap 05-running "running…" "The objective is where the round limit is counted"
 snap 06-settled "the run is quiet again"
 keys C-c
 snap 07-quit-armed "again quits"
@@ -32,4 +32,4 @@ snap 08-exit "that is everything the screen was holding"
 # is put back from the stored messages alone, so a mark that lived only on the
 # frame would come back as an answer at an answer's weight. Wait for the
 # resume row, which is the proof the second process is the one on screen.
-snap 09-reopened "resumed master"
+snap 09-reopened "resumed master" "The objective is where the round limit is counted"

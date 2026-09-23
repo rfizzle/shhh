@@ -27,12 +27,12 @@ snap 03-reading "Locate the round accounting"
 # both counts of what the entries hold.
 keys "/"
 keys "errors.go"
-snap 04-counted "match inside"
+snap 04-counted "match inside" "1 match inside"
 # Enter closes the query row; the next enter is the fold's, and it opens the
 # step onto the run that is still standing in for the row with the match.
 keys Enter
 keys Enter
-snap 05-opened "match inside"
+snap 05-opened "match inside" "1 match inside · 4 reads"
 # And again: the run gives its rows back and the path is on the screen, bold,
 # on the row the cursor is standing on.
 keys Enter
@@ -50,7 +50,7 @@ snap 07-refolded "READING"
 # the answer could still be.
 keys "/"
 keys "round_test.go"
-snap 08-nothing "no match in this session"
+snap 08-nothing "no match in this session" "8 rows searched, folds and pastes included"
 # The way out, and the session's. The sleep is the terminal's rather than the
 # product's: esc and a letter written into the pty together arrive as one
 # escape sequence, which is a chord and not two keys.

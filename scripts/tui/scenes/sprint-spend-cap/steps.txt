@@ -22,4 +22,4 @@ snap 02-backlog "cache-evict"
 keys Tab
 # The head: the goal, the meter with the spend against the ceiling beside it,
 # and the item the sprint takes next.
-snap 03-sprint-tab 'spend $4.10 of $20'
+snap 03-sprint-tab 'spend $4.10 of $20' "0 of 3 done" "next · cache-ttl"

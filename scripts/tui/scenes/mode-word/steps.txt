@@ -45,7 +45,7 @@ keys n
 # row under it says the plan came over. What the new session is holding is the
 # plan and nothing else — the research that produced it stayed behind, which
 # is the whole reason for the key.
-snap 09-carried "carried · 2 steps"
+snap 09-carried "carried · 2 steps" "saved · shhh code --continue"
 keys BTab
 snap 10-back-to-manual "⏸ manual · think"
 # The child's rail carries the mode for the same reason the parent's does, and
@@ -60,7 +60,7 @@ keys y
 snap 12-spawned "reader-1"
 sleep 2
 keys "/attach reader-1" Enter
-snap 13-attached "[esc] detach"
+snap 13-attached "[esc] detach" "⏸ manual" "parent round 1/150 · reader-1"
 sleep 1
 keys Escape
 snap 14-detached "[enter] send"

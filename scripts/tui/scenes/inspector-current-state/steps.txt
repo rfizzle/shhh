@@ -29,11 +29,11 @@ snap 04-card "make fmt DIR=internal/cli"
 keys y
 snap 05-card "make test"
 keys y
-snap 06-alerts-standing "3 runs"
+snap 06-alerts-standing "3 runs" "2 standing"
 keys "run the failing package on its own" Enter
 snap 07-card "make test PKG=./internal/agent"
 keys y
-snap 08-alerts-spanning "since turn 1"
+snap 08-alerts-spanning "since turn 1" "2 standing" "exit 2 · 2 runs"
 keys "fix the bound and verify with the suite" Enter
 snap 09-recovered "quality gate default passing"
 keys "anything still outstanding?" Enter

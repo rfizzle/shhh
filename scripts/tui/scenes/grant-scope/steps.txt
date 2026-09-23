@@ -17,7 +17,7 @@ snap 03-card "[y] run it once"
 keys C-Space
 snap 04-live "without asking"
 keys a
-snap 05-grants "until this turn ends"
+snap 05-grants "until this turn ends" "until you revoke it" "[esc] back to the card — nothing is granted"
 # Esc leaves the list. The card's other offers come back, which is the one
 # thing on screen that is absent while the list holds the keyboard — so
 # waiting for it waits for the card rather than passing on a row that never

@@ -25,7 +25,7 @@ snap 02-broken "No such file or directory"
 snap 03-card "mv loop.go loop.go.bak"
 sleep 1
 keys n
-snap 04-refused "Every state the row paints is above"
+snap 04-refused "Every state the row paints is above" "ok · 7 lines · auto-allowed · read-only" "exit 1 · auto-allowed · read-only" "denied · you"
 keys C-c
 snap 05-quit-armed "again quits"
 keys C-c

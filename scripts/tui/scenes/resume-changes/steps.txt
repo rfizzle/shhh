@@ -27,8 +27,8 @@ keys C-c
 # The second sitting is --continue. Wait for the resume row, not the close
 # the first sitting already drew: that row is how a reopened conversation
 # accounts for itself, and it is the proof the second process is on screen.
-snap 04-resumed "resumed master"
+snap 04-resumed "resumed master" "[alt+g] commit" "[alt+w] review"
 keys C-o
 snap 05-reading "back to the prompt"
 keys v
-snap 06-review "loop.go"
+snap 06-review "loop.go" "❯ [x] ✎ loop.go"

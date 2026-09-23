@@ -19,7 +19,7 @@ snap 02-read "Reading the round accounting first"
 keys "go on then" Enter
 # The yes-or-no. It arrives over an empty draft holding the keyboard, and the
 # rule between it and the frame is what says so.
-snap 03-ask "Should the migration be reversible?"
+snap 03-ask "Should the migration be reversible?" "SPEND" "⏸ manual"
 # The same screen, waited for by the rail's own heading: had the card taken
 # the surface the way every other decision does, this snap would never come.
 snap 04-rail "SPEND"
@@ -41,10 +41,10 @@ snap 09-sent "And a name for it"
 keys "and the name" Enter
 # The free answer. It arrives over an empty draft with the keyboard already
 # in its field, and rides above the frame the way the yes-or-no did.
-snap 10-text "What should the flag be called?"
+snap 10-text "What should the flag be called?" "⏸ manual"
 # Waited for by the rail's heading again, with the card up: a field that
 # took the screen would have taken the rail with it.
-snap 11-text-rail "SPEND"
+snap 11-text-rail "SPEND" "⏸ manual"
 keys "max-rounds"
 snap 12-typed "max-rounds"
 keys Enter

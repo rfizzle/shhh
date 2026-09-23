@@ -25,7 +25,7 @@ snap 03-built "The build is clean"
 # one step the screen does not mark.
 sleep 5
 keys "anything else?" Enter
-snap 04-notice "tree moved"
+snap 04-notice "tree moved" "tree moved — 1 path changed outside this session"
 snap 05-answered "somebody else has it open"
 keys C-c
 keys C-c

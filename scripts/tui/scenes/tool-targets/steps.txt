@@ -26,9 +26,9 @@ setup printf '#!/bin/sh\nexit 0\n' > checks/ok.sh; chmod +x checks/ok.sh
 setup printf '{"suites":{"default":{"checks":[{"name":"test","exe":"./checks/ok.sh"},{"name":"vet","exe":"./checks/ok.sh"},{"name":"lint","exe":"./checks/ok.sh"},{"name":"fmt-check","exe":"./checks/ok.sh"},{"name":"docs-check","exe":"./checks/ok.sh"}]}}}\n' > .shhh/quality.json
 snap 01-start "Some things worth doing first"
 keys "raise the round cap by one and check the tree" Enter
-snap 02-history "git diff HEAD"
+snap 02-history "git diff HEAD" "git status"
 snap 03-gate "quality gate · default · 5 checks"
-snap 04-refused "(no path)"
+snap 04-refused "(no path)" "internal/agent/loop.go" "skipped · invalid arguments"
 keys C-c
 keys C-c
 snap 05-exit "that is everything the screen was holding"

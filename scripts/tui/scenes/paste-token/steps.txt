@@ -14,21 +14,21 @@ setup printf -- '--- FAIL: TestRoundLimit (2.11s)\nexit status 1\n' >> loop.log
 snap 01-start "Some things worth doing first"
 keys "this test log says the loop never stops "
 paste loop.log
-snap 02-fold "will cost"
+snap 02-fold "will cost" "⟨paste 1 · 214 lines⟩"
 keys " fix the exit condition"
-snap 03-priced "open paste 1"
+snap 03-priced "open paste 1" "paste 1 will cost"
 keys M-v
 snap 04-open "PASTE 1 · lines"
 keys q
 snap 05-back "open paste 1"
 keys Enter
-snap 06-sent "expand"
+snap 06-sent "expand" "▸ paste 1 · 214 lines"
 # ↑ on the sent sentence. The send emptied the staging area, so what the fold
 # stands for has to come back with the words: it is staged again from the row's
 # own bytes, priced on the vitals as it was before the send, and opened by the
 # same key — rather than five words about a log that is not riding (recall.go).
 keys Up
-snap 07-recalled "paste 1 will cost"
+snap 07-recalled "paste 1 will cost" "⟨paste 1 · 214 lines⟩ fix the exit condition"
 keys M-v
 snap 08-reopened "PASTE 1 · lines"
 keys q

@@ -11,7 +11,7 @@ snap 02-reply "Hello from the scripted provider"
 keys "run something" Enter
 snap 03-approval "[y] run it once"
 keys y
-snap 04-ran "Done: the command printed a greeting"
+snap 04-ran "Done: the command printed a greeting" "ok · 1 line · approved by you"
 keys C-c
 snap 05-quit-armed "again quits"
 keys C-c

@@ -63,11 +63,11 @@ snap 04-three-states "needs you"
 # each saying where it lives, and the offer to draft another under them.
 keys M-a
 sleep 2
-snap 05-manager "kill all"
+snap 05-manager "kill all" "[a] answer without attaching" "[esc] back to the turn"
 # The pointer on the blocked child. The offers do not change, because they
 # were never the pointer's.
 keys j
-snap 06-blocked-row "answer without attaching"
+snap 06-blocked-row "answer without attaching" "[K] kill all"
 # And the way out leaves what it says it leaves: the turn, with the decision
 # that was standing over it still standing.
 keys Escape
@@ -96,7 +96,7 @@ snap 09-answer-in-place "back to the agents"
 # (docs/interface/principles.md#esc-is-always-the-safe-answer).
 keys Escape
 sleep 1
-snap 10-still-waiting "needs you"
+snap 10-still-waiting "needs you" "❯ ⚠ writer-2 · Say where the round limit is set."
 # And the answer that is one. [n] declines the request and hands the list
 # back, which is where the reader was.
 keys a
@@ -145,4 +145,4 @@ snap 15-follow-up-field "follow up writer-2"
 # under it is the question rather than the report it answered before.
 keys Enter
 sleep 2
-snap 16-following "follow-up · and where is the limit read"
+snap 16-following "follow-up · and where is the limit read" "[s] steer"

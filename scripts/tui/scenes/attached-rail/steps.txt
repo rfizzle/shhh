@@ -36,12 +36,12 @@ keys y
 snap 03-spawned "reader-1"
 sleep 2
 keys "/attach reader-1" Enter
-snap 04-attached "[esc] detach"
+snap 04-attached "[esc] detach" "orchestrator ▸ reader-1 · shhh code" "parent round 1/150 · reader-1"
 # A redirect typed at the child's own prompt, while the child is inside a
 # round. Nothing of it reaches the child yet: the rail is the whole of what
 # says the sentence was taken.
 keys "read round.go as well" Enter
-snap 05-queued "queued steering: 1"
+snap 05-queued "queued steering: 1" "orchestrator ▸ reader-1 · shhh code"
 # The boundary takes it, ten-odd seconds later, and the lane keeps the receipt
 # saying which round did. Without it the sentence above would sit on the lane
 # with nothing to say whether the child had read it.
@@ -52,7 +52,7 @@ snap 07-detached "[enter] send"
 # a moment ago is a row on the list, so the capture is also the proof that the
 # chord landed rather than a bare letter falling into the draft.
 keys M-a
-snap 08-manager "[enter] attach"
+snap 08-manager "[enter] attach" "reader-1 ·"
 keys Escape
 sleep 0.5
 keys C-c

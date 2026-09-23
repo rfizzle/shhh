@@ -36,7 +36,7 @@ sleep 0.3
 keys y
 # The first depth: the edit closed to one row on the grid, its counts beside
 # the path.
-snap 03-row "The cap is where the file says it is"
+snap 03-row "The cap is where the file says it is" "+1 −1 · 1 hunk · approved by you"
 keys C-o
 snap 04-reading "row 5 of 5"
 # The cursor lands on the row most recently put on the pane, so it walks up
@@ -46,7 +46,7 @@ snap 05-on-the-edit "row 2 of 5"
 # The second depth: the change in place under the row it was opened from,
 # indented, bounded to the lines the transcript can spare.
 keys Enter
-snap 06-in-place "@@ -4,7 +4,7 @@"
+snap 06-in-place "@@ -4,7 +4,7 @@" "if a.round >= limit {"
 # The third: the whole screen, and at this width the paired layout.
 keys Enter
 snap 07-full-screen "[j/k] scroll"
@@ -61,7 +61,7 @@ snap 08-back-in-place "@@ -4,7 +4,7 @@"
 keys j j
 sleep 0.3
 keys v
-snap 09-review "leave, change nothing"
+snap 09-review "leave, change nothing" "❯ [x] @@ -4,7 +4,7 @@"
 # Esc leaves review with nothing staged and nothing done, which is what the
 # surface says about itself the whole time it is up; the second drops the
 # reading cursor.

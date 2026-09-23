@@ -13,7 +13,7 @@ keys "run the checks" Enter
 snap 02-card "[y] run it once"
 keys y
 snap 03-running "running…"
-snap 04-tail "0.412s"
+snap 04-tail "0.412s" "acting… · turn"
 snap 05-settled "The command finished and its row settled"
 keys C-c
 snap 06-quit-armed "again quits"

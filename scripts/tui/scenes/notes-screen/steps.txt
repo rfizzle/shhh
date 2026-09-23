@@ -30,7 +30,7 @@ snap 03-close "2 notes from writer-1, writer-2"
 keys "/notes" Enter
 # The screen: the notes under the agents that signed them, the one the
 # pointer is on beside the list, and the key row at the foot.
-snap 04-screen "2 notes · 2 agents"
+snap 04-screen "2 notes · 2 agents" "[d] drop it"
 # The pointer walks to the other author's note, which is what the grouping is
 # for: the reader moves between authors, not between arrivals.
 keys k
@@ -44,4 +44,4 @@ keys y
 # And the screen stays up over the notebook it just corrected: the reader is
 # walking a list and fixing it, and leaving after each correction would take
 # the list away.
-snap 07-dropped "Dropped note"
+snap 07-dropped "Dropped note" "/notes · 1 note · 1 agent"

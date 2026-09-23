@@ -54,11 +54,13 @@ sleep 5
 # standing: that lane is the one waiting on you.
 keys Escape
 sleep 2
-snap 05-three-states "needs you"
+# Waited for by the finished lane, the last of the three to arrive: `needs you`
+# has been on the screen since the step before.
+snap 05-three-states "✓ done ·" "⚠ needs you ·" "working ·"
 # The finished lane carries what the child actually wrote, folded: the count
 # of lines behind the fold, the assumptions it stated instead of asking on the
 # line above it, and the transcript's own key as the way in.
-snap 06-report-fold "report ·"
+snap 06-report-fold "report ·" "▸ report · 6 lines · [enter] expand" "· 2 assumptions"
 # Reading mode, and the key that opens every other fold in the transcript
 # opens this one. The report is read where the child ran rather than by
 # attaching to a child nobody thinks to attach to.
@@ -73,4 +75,4 @@ keys j
 sleep 1
 keys Enter
 sleep 2
-snap 07-report-open "▾ report · 6 lines"
+snap 07-report-open "▾ report · 6 lines" "## Assumptions"

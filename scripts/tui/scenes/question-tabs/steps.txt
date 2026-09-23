@@ -21,7 +21,7 @@ keys C-Space
 # The strip: the tab the keyboard is on, the two still to answer, the submit
 # last, and the tail that says in words what the marks say in glyphs. `1 of 3`
 # is the reading a terminal with one colour is left with.
-snap 04-strip "1 of 3"
+snap 04-strip "1 of 3" "3 unanswered will be sent as skipped"
 # The long form of the marked row, on the screen the dry run already takes.
 # It answers nothing.
 keys d
@@ -32,13 +32,13 @@ snap 06-back "1 of 3"
 # three of them presses no movement key at all. The mark on the first turns and
 # the word follows it.
 keys Enter
-snap 07-answered "2 of 3"
+snap 07-answered "2 of 3" "✓ 1 answered"
 keys y
 snap 08-third "3 of 3"
 # The arrows are the strip's, which is what the note key not being them is for.
 # Right off the last question is the tab that ends the set.
 keys Right
-snap 09-submit "unanswered"
+snap 09-submit "unanswered" "✓ 2 answered"
 # And back, to show the strip walks both ways and the answers are still on it.
 keys Left
 snap 10-walked "3 of 3"

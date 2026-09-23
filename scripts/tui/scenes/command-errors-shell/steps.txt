@@ -21,7 +21,7 @@ snap 03-shell-replaced "cp ~/spare/bash"
 keys "!echo hi" Enter
 snap 04-echo-card "run it once"
 keys y
-snap 05-no-execution-shell "did not start · execution shell"
+snap 05-no-execution-shell "did not start · execution shell" "Nothing ran, and nothing will until that shell is back"
 # The assistant's command is the one containment wraps where the host has a
 # mechanism: the mechanism starts and only its exec of the shell fails, and
 # its row names the same category the bare spawn's did. On a host with none
@@ -30,7 +30,7 @@ snap 05-no-execution-shell "did not start · execution shell"
 # snap waits for the answer that follows the row, and the second row is read
 # in the cells.
 keys "list the files" Enter
-snap 06-contained-no-shell "The contained command could not start"
+snap 06-contained-no-shell "The contained command could not start" "did not start · execution shell · auto-allowed"
 keys C-c
 snap 07-quit-armed "again quits"
 keys C-c

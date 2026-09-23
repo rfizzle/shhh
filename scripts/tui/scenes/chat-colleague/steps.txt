@@ -16,20 +16,20 @@ snap 01-start "shhh chat"
 # The menu, narrowed by what follows the @: the colleague first, with what it
 # is for, and the files beside it.
 keys "ask @se"
-snap 02-menu "reads a change for what it exposes"
+snap 02-menu "reads a change for what it exposes" "❯ @security-reviewer"
 keys Tab
 keys "about the token check"
 snap 03-named "@security-reviewer about the token check"
 keys Enter
 # The spawn the hint led to is put to the person like any other.
-snap 04-spawn-card "Spawn security-reviewer"
+snap 04-spawn-card "Spawn security-reviewer" "reads only — a security-reviewer changes nothing"
 # The card's keys go live a moment after it lands, so the answer waits for
 # them rather than falling into the draft.
 sleep 1
 keys y
 # And the child runs in the lane every spawn gets.
 snap 05-lane "The security reviewer is reading the token check."
-snap 06-working "running · 1 tool"
+snap 06-working "running · 1 tool" "◇ sec-1 ·"
 keys C-d
 snap 07-quit-armed "again quits"
 keys C-d

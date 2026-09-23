@@ -11,7 +11,7 @@
 # trust row is the one addition.
 setup mkdir -p .shhh
 setup printf '{"suites":{"default":{"checks":[{"name":"test","exe":"./checks/unit.sh"}]}}}\n' > .shhh/quality.json
-snap 01-changed "changed since you trusted it"
+snap 01-changed "changed since you trusted it" "quality suites" "shhh trust off"
 keys C-c
 sleep 0.3
 keys C-c

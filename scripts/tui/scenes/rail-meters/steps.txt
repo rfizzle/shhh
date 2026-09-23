@@ -25,7 +25,7 @@ keys y
 # the turn still open: CONTEXT's bar, and THIS TURN counting what the turn has
 # spent so far. It runs for longer than the meters need so that the cancel
 # below lands on a command that is still going and not on one that finished.
-snap 03-mid-turn "CONTEXT"
+snap 03-mid-turn "CONTEXT" "THIS TURN" "% of 32k"
 # The command row's own outcome is what says the chord will reach the command
 # rather than the turn: CONTEXT is on the rail from the round before this one.
 # The live tail underneath would do as well but is only ever one second old,
@@ -36,7 +36,7 @@ keys C-c
 # signal ended has no exit status to print — so the row says `stopped` in the
 # grey a person's own decision takes, not `exit -1` in the del of a break
 # (docs/interface/principles.md#closed-vocabularies).
-snap 05-stopped "stopped"
+snap 05-stopped "stopped" "stopped · "
 snap 06-answered "The limit is counted in one place"
 # The answer arrives a word at a time and the turn closes after it, so the
 # frame offering to send again is what says the turn is over — a cancel before

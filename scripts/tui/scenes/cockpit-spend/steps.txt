@@ -5,5 +5,5 @@
 # stays in the prompt frame through a real session.
 snap 01-start "Some things worth doing first"
 keys "how is cockpit spend reported" Enter
-snap 02-reply "The cockpit uses the session's billed total"
-snap 03-idle "[enter] send"
+snap 02-reply "The cockpit uses the session's billed total" "↑10 ↓3"
+snap 03-idle "[enter] send" "↑10 ↓3"

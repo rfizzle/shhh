@@ -19,7 +19,7 @@ snap 01-start "Some things worth doing first"
 keys "check the lint" Enter
 snap 02-card "[y] run it once"
 keys y
-snap 03-repainted "no-unused-vars"
+snap 03-repainted "no-unused-vars" "warn  no-unused-vars  src/app.ts" "1 error, 2 warnings"
 keys C-c
 keys C-c
 snap 04-exit "that is everything the screen was holding"

@@ -60,7 +60,7 @@ snap 10-picker-again "what the turns after it changed"
 # Take it: turn 2, whose end is where the session goes back to, so turn 3 is
 # what the scope card offers to take back.
 keys Enter
-snap 11-scope "Rewind to turn 2"
+snap 11-scope "Rewind to turn 2" "a rewind is a turn, and [u] takes it back"
 # Both is the usual reading of going back. The file half is answered at the
 # undo confirm behind it, and the row waits for that answer.
 keys b
@@ -70,14 +70,14 @@ keys y
 # and what the window costs now. Above it, the turn it took back, folded and
 # out of the window, with the key that puts it back. The frame's top rail
 # says where the session now stands — the same turn the card named.
-snap 13-row "files back to turn 2"
+snap 13-row "files back to turn 2" "▸ turn 3 · rewound" "╭─ at turn 2"
 # The fold's reapply, reached from the draft by its chord: the conversation
 # comes back, and the files come back through the undo confirm every undo
 # goes through.
 keys M-r
 snap 14-reapply-confirm "Reapplied turn 3"
 keys y
-snap 15-reapplied "undo of turn"
+snap 15-reapplied "undo of turn" "turn 3 · rewound, then reapplied below"
 # The prompt has the keyboard, so the first cancel arms the pair and the
 # second takes it.
 keys C-c

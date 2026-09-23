@@ -22,7 +22,7 @@ snap 02-reply "Threading a sentinel through it"
 keys "now run the agent tests" Enter
 # A card that lands on an empty draft takes the keyboard with a grace window
 # open, so the answer waits for the window to close rather than racing it.
-snap 03-card "go test ./internal/agent/..."
+snap 03-card "go test ./internal/agent/..." '│ $ go test ./internal/agent/...'
 sleep 1
 keys n
 snap 04-answered "That is the shape of it"

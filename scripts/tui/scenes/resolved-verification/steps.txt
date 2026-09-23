@@ -20,7 +20,7 @@ keys "stop the loop double-counting rounds" Enter
 snap 02-card "make test"
 keys y
 snap 03-alert-standing "want 3 rounds, got 4"
-snap 04-resolved "quality gate default passing"
+snap 04-resolved "quality gate default passing" "exit 2 · approved by you"
 keys C-c
 snap 05-quit-armed "again quits"
 keys C-c

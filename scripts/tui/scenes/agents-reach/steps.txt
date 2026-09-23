@@ -44,7 +44,7 @@ keys y
 sleep 3
 # And the level the session did not ask for, on the map: the grandchild under
 # the agent that spawned it, a column in behind the corner.
-snap 04-nested "reader-3a"
+snap 04-nested "reader-3a" "└◇ reader-3a"
 # Everything then asks to run a command at once: the session's own request is
 # a card of its own, and the children's are routed here to be answered. The
 # queue counter is what says how many are standing behind this one.
@@ -58,8 +58,15 @@ snap 06-blocked "waiting approval"
 # one child is killed here, which is the failure the map then carries. It had
 # written something in its copy of the checkout, so the confirm says the patch
 # outlives the copy, and the row it leaves offers the patch back.
+#
+# The list is ordered by who needs you, and each writer's request is held on a
+# clock (replies.txt), so the rows below are only where the keys expect them
+# once all three writers are asking. The snap waits for the last of them —
+# writer-3, whose clock started only once its delegation was answered — rather
+# than counting on the harness to beat the clock: on a loaded host it does
+# not, and the rows move under the pointer between the kill and the attach.
 keys M-a
-snap 07-manager "[enter] attach"
+snap 07-manager "⚠ writer-3 · Say where the loop exits." "⚠ writer-2 · Say where the round limit is set." "[enter] attach"
 keys j
 keys X
 snap 08-kill-asks "its patch is kept"
@@ -69,17 +76,18 @@ snap 09-killed "[p] review"
 # Attaching to a session that is not the one asking is what puts the rail back
 # with the map whole: the block floated to the top, the failure under it, the
 # grandchild indented under its own parent, and the trailer naming the way
-# out. The session attached to here is the grandchild itself, three rows down
-# the manager's list, so the frame's breadcrumb is the lineage as well. Driven
+# out. The session attached to here is the grandchild itself, two rows down
+# the manager's list from where the kill left the pointer — under the two
+# writers still asking, and over the one that failed — so the frame's
+# breadcrumb is the lineage as well. Driven
 # once at 80 as well, where the rail is gone and the path keeps its nearest two
 # segments (`… ▸ writer-3 ▸ reader-3a`); the run stops at this step there,
 # because the trailer it waits for is the rail's and 80 has no rail.
 keys j
 keys j
-keys j
 keys Enter
 sleep 1
-snap 10-map "alt+a manager"
+snap 10-map "alt+a manager" "alt+] next" "orchestrator ▸ writer-3 ▸ reader-3a" "└◇ reader-3a" "✗ writer-1"
 # The chord itself, twice: it walks spawn order rather than the order the map
 # is drawn in, and from the grandchild — the last thing spawned, and the
 # deepest — it walks up past its own parent and wraps to the session itself.

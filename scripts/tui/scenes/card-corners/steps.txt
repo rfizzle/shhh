@@ -15,11 +15,11 @@ snap 02-card "notes.md"
 # draft, not into the card — which is the state the frame is drawn live in.
 sleep 1
 keys "and then check the round limit"
-snap 03-draft-keeps-the-keyboard "and then check the round limit"
+snap 03-draft-keeps-the-keyboard "and then check the round limit" "[ctrl+space] answer it — until then you are still typing into the draft"
 # Handed the keyboard, the card takes the panel and the frame goes with it;
 # the same four corners are then the only frame on the screen.
 keys C-Space
-snap 04-card-holds-the-keyboard "notes.md"
+snap 04-card-holds-the-keyboard "notes.md" "[y] apply the change"
 keys y
 snap 05-answered "The note is written"
 # The draft is still holding the sentence typed at the card, and the first

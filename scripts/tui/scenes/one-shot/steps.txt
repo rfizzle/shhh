@@ -28,7 +28,7 @@
 snap 01-piped "lsof -nP -iTCP -sTCP:LISTEN"
 # The result surface. The key row is the surface's own and says how many other
 # commands the generation offered, so it is what the wait is on.
-snap 02-result "2 others"
+snap 02-result "2 others" "[↵] run" "⛨ writes unknown"
 # The ways it was not taken, the one on screen marked. The wait is on a
 # command only this card carries: a tradeoff is clipped to its column and the
 # column itself goes when the card is narrow, so waiting for one of those
@@ -45,6 +45,6 @@ keys Escape
 # The third run, on a command the safety check flags. Enter is spent on saying
 # what would be affected and running takes a deliberate `y` — the scene reads
 # the offer and presses neither.
-snap 04-destructive "recursive forced deletion"
+snap 04-destructive "recursive forced deletion" "[y] run it"
 keys Escape
 snap 05-quit

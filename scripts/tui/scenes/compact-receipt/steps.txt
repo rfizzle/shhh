@@ -28,11 +28,11 @@ snap 03-second "disagree about who owns it"
 # The compaction itself: the receipt row, and under it the summary the
 # provider answered the compaction's own request with.
 keys "/compact" Enter
-snap 04-receipt "folded turn"
+snap 04-receipt "folded turn" "✓ compact folded turn 1" "→ a 3-line summary"
 snap 05-summary "established loop.go as the owner"
 # The turn the summary stands in for is still here, and its header says which
 # side of the window it is on.
-snap 06-out-of-window "out of the window"
+snap 06-out-of-window "out of the window" "✓ 2 tools · out of the window"
 # The receipt is a row, so the summary under it is a row's fold. Reading mode
 # takes the keyboard, the cursor walks up to the first row on the transcript —
 # which is the receipt — and [enter] folds the summary away and gives it back.

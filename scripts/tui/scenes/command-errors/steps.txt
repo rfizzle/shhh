@@ -13,19 +13,21 @@ snap 01-start "Some things worth doing first"
 keys "run the checks" Enter
 snap 02-failure-card "[y] run it once"
 keys y
-snap 03-failed "lint: broken rule"
+snap 03-failed "lint: broken rule" "exit 1 · approved by you"
 snap 04-failure-answer "The failed command is recorded"
 keys "wait for the checks" Enter
 snap 05-timeout-card "sleep 5"
 keys y
-snap 06-timed-out "timed out"
+snap 06-timed-out "timed out" "timed out ·"
 snap 07-timeout-answer "The timed-out command is recorded"
 keys "watch the command" Enter
 snap 08-stop-card "waiting"
 keys y
 snap 09-running "running…"
 keys C-c
-snap 10-stopped "stopped"
+# The row's own outcome field: the timed-out row above already says its
+# command was stopped, so a bare `stopped` is on the screen before this press.
+snap 10-stopped "stopped · "
 snap 11-answered "The stopped command is recorded"
 # A command that never starts. The checkout the session stands in is removed
 # under it, so the next command has no working directory, and the row names
@@ -40,7 +42,7 @@ keys y
 snap 13-removed "The checkout is removed"
 # A read-only command is waved through, so there is no card before it.
 keys "list what is left" Enter
-snap 14-no-working-directory "did not start · working dir"
+snap 14-no-working-directory "did not start · working dir" "Nothing ran: a command's working directory has to be there when it starts."
 snap 15-no-working-directory-answer "The command could not start"
 keys C-c
 snap 16-quit-armed "again quits"

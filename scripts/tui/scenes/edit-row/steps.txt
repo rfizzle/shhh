@@ -41,7 +41,7 @@ sleep 0.3
 keys y
 # The row the scene is for, and the refusal under it: the write never reaches
 # a card, so the turn runs to its last sentence on its own.
-snap 04-rows "The cap is where the file says it is"
+snap 04-rows "The cap is where the file says it is" "+1 −1 · 1 hunk · approved by you" "skipped · changed since it was read"
 keys C-c
 snap 05-quit-armed "again quits"
 keys C-c

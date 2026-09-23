@@ -193,12 +193,42 @@ snap 04-exit "that is everything the screen was holding"
 - `snap <name> "<text>"` waits for the text to be on screen, then captures.
   **The text must be the surface's own.** Waiting for the line you just typed
   passes before the reply lands; wait for a word only the reply carries, an
-  offer off a card's own key row, the rail's own count.
+  offer off a card's own key row, the rail's own count. A word some earlier
+  row already carries is no wait at all: `stopped` is on the screen from the
+  moment a timed-out command says it was stopped, so the snap for a stopped
+  row waits for `stopped · `, which only that row's outcome field draws.
+- `snap <name> "<text>" "<also>" …` — every string after the first is
+  **compared, not awaited**. The first says when the screen is ready; the
+  rest must be on the capture taken then, and one that is not fails the run
+  naming the snap and the string. Put the row the scene's head comment says
+  the capture is for here: a wait word alone lets that row go missing and the
+  scene still pass. A string not on the capture is looked for again for
+  `COMPARE` seconds (default 2) — a frame the terminal had not finished
+  drawing — and never for the whole of `WAIT`, because a row that is gone is
+  what the comparison is for and it should fail at once, not after a timeout.
+  So choose the wait word as the last thing to arrive and compare what is
+  already there by then; a row that comes later is a wait of its own.
+- `press <seconds> <key> …` sends the keys `<seconds>` apart in one tmux
+  command, with the gap kept by the tmux server. It is for a gesture the
+  binary times — the rewind's two escapes inside half a second — where
+  `keys`, `sleep`, `keys` would start three processes between the presses
+  and a loaded host can stretch those past the window. The keys are named as
+  they are for `keys`.
 - `sleep <seconds>` is for the rare step nothing on screen marks. Prefer a
   snap with text; a sleep is a guess about a machine's speed.
 
-A snap whose text never appears fails the run, so every scene is also a
-test, and the exit code of `make tui-shot` is its verdict.
+A snap whose text never appears, or whose capture lacks a compared string,
+fails the run, so every scene is also a test, and the exit code of
+`make tui-shot` is its verdict.
+
+**A step that counts on the screen's order waits for the order first.** A
+scene that presses `j` three times to reach a row is betting the rows are
+where it last saw them. Where something the scene does not drive — a child's
+request held on a clock, a stream still arriving — can move them, snap on the
+state that fixes the order before the keys that walk it, and compare the
+destination after them. That is the answer to a load flake, and a retry is
+not: the harness has no way to tell a press that was lost from one that was
+merely slow, and pressing again after a slow one acts twice.
 
 The first line of `steps.txt` names the program tests that walk the same
 route inside the gate — `# program test: TestProgram_A, TestProgram_B`,

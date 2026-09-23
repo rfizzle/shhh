@@ -35,7 +35,7 @@ snap 04-answered "The suite is still red on the limit itself"
 # the screen does not mark.
 sleep 5
 keys "anything else?" Enter
-snap 05-tree "tree moved"
+snap 05-tree "tree moved" "Check-in — 2 rounds used" "tree moved — 1 path changed outside this session"
 keys C-c
 keys C-c
 snap 06-exit "that is everything the screen was holding"

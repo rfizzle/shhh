@@ -30,13 +30,13 @@ keys y
 # The row the scene is for: review, keep, take back — drawn as the chords
 # that reach them, because the draft below still has the keyboard and a
 # letter offered there is a letter of the sentence being typed.
-snap 03-close "[alt+g] commit"
+snap 03-close "[alt+g] commit" "[alt+w] review" "[alt+z] undo turn"
 # So the offer is taken from the prompt, mid-sentence, and the sentence is
 # still in the box behind the card.
 keys "and while you are at it"
 sleep 0.3
 keys M-g
-snap 04-card-from-the-draft "Commit this turn"
+snap 04-card-from-the-draft "Commit this turn" "README.md changed by you, never staged"
 sleep 0.5
 keys Escape
 sleep 0.5
@@ -51,7 +51,7 @@ snap 05-reading "back to the prompt"
 keys k
 sleep 0.3
 keys g
-snap 06-card "Commit this turn"
+snap 06-card "Commit this turn" "README.md changed by you, never staged"
 # The message as a draft under its own rail, with the subject-line budget as
 # the frame's title. Esc comes back to the card with the edits kept.
 sleep 1
@@ -64,7 +64,7 @@ snap 08-back "pick hunks"
 keys Enter
 # The receipt is the row the close already draws for a commit, and the row
 # above it has lost the two offers a committed changeset no longer has.
-snap 09-receipt "committed 1 file as"
+snap 09-receipt "committed 1 file as" "/undo does not reach history"
 # The card handed the screen back to the row that offered it, so the first
 # cancel is reading mode's way out and the pair after it is the session's.
 keys C-c

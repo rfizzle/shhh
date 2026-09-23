@@ -29,10 +29,10 @@ keys C-p
 # The first park: one lane has reached its own boundary and says so, and the
 # other has not got there yet — which is the whole reason the header counts
 # rather than states.
-snap 04-first-park "1 held · 1 running"
+snap 04-first-park "1 held · 1 running" "⏸ held"
 # The second, ten-odd seconds later. The tally is what says the hold has
 # landed whole.
-snap 05-both-parked "2 held"
+snap 05-both-parked "2 held" "⏸ held"
 # One press lets them all go, because the hold was asked of the session and
 # letting them out one at a time would be a list nobody could keep.
 keys C-p
