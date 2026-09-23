@@ -812,7 +812,7 @@ func (m Model) renderAgentRows(width int) string {
 		// them never line up (docs/interface/principles.md#one-grid).
 		left := components.AgentNesting(depth[st.Name]) + glyph + " " + st.Name
 		if task := firstLine(st.Task); task != "" {
-			left += sty.ToolArgs.Render(" · " + clipText(task, max(width/3, 8)))
+			left += sty.ToolArgs.Render(" · " + components.Clip(task, max(width/3, 8)))
 		}
 		right := detail
 		if spend := st.Spend.In + st.Spend.Out; spend > 0 {
@@ -833,14 +833,4 @@ func joinRow(left, right string, width int) string {
 		return left + strings.Repeat(" ", gap) + right
 	}
 	return left + "  " + right
-}
-
-func clipText(s string, maxLen int) string {
-	if len(s) <= maxLen {
-		return s
-	}
-	if maxLen <= 1 {
-		return "…"
-	}
-	return s[:maxLen-1] + "…"
 }

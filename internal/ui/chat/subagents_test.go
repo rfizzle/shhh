@@ -12,6 +12,7 @@ import (
 	"strings"
 	"testing"
 	"time"
+	"unicode/utf8"
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
@@ -227,6 +228,29 @@ func TestAgentRowsNestAGrandchildUnderItsParent(t *testing.T) {
 		if !strings.HasPrefix(rows[i], want) {
 			t.Fatalf("row %d = %q, want it to start %q", i, rows[i], want)
 		}
+	}
+}
+
+// TestAgentRowsClipATaskOnACharacter: a task too long for its third of the
+// row is cut at a character and a column count, never at a byte, so a task
+// written in anything but ASCII does not end in half a character.
+func TestAgentRowsClipATaskOnACharacter(t *testing.T) {
+	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
+	t.Cleanup(sup.Close)
+	m := newSubagentModel(t, sup)
+
+	// One ASCII letter and then two-byte runes, so a cut at the clip's byte
+	// count lands inside a rune.
+	task := "a" + strings.Repeat("é", 60)
+	spawnInto(t, sup, `{"role":"researcher","task":"`+task+`"}`)
+	waitFor(t, func() bool { running, _ := sup.ActiveCounts(); return running == 1 })
+
+	row := ansi.Strip(m.renderAgentRows(100))
+	if !utf8.ValidString(row) {
+		t.Fatalf("the row holds a broken character: %q", row)
+	}
+	if want := " · a" + strings.Repeat("é", 31) + "…"; !strings.Contains(row, want) {
+		t.Fatalf("row = %q, want the task clipped to %q", row, want)
 	}
 }
 
