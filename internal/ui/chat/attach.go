@@ -1153,6 +1153,19 @@ func (m Model) childModeStatus(name string) string {
 	return sb.String()
 }
 
+// attachedDetail is what the attached frame says the child is doing. A parked
+// child says `held`, the word its row on the rail's map says, and nothing
+// about the release: the supervisor's sentence names a release the chord
+// cannot give from here, since attached the chord keeps its textarea meaning
+// and the key is named on the orchestrator's frame where it is live
+// (docs/interface/surfaces.md#the-agent-manager).
+func attachedDetail(st subagent.Status) string {
+	if st.Held {
+		return "held"
+	}
+	return st.Detail
+}
+
 // renderChildStatusBar is the status bar scoped to the attached child.
 func (m Model) renderChildStatusBar(width int) string {
 	name := m.attachedTo
@@ -1161,7 +1174,7 @@ func (m Model) renderChildStatusBar(width int) string {
 		return sty.StatusBar.Render(name)
 	}
 	mode, _ := m.subagents.AgentMode(name)
-	parts := []string{childModeSegment(mode), sty.StatusBar.Render(st.Detail)}
+	parts := []string{childModeSegment(mode), sty.StatusBar.Render(attachedDetail(st))}
 	if st.State == subagent.StateBlocked {
 		parts[1] = sty.CtxAlert.Render(st.Detail)
 	}

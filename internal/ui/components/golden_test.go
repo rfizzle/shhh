@@ -1694,14 +1694,16 @@ func TestGolden_InspectorRail(t *testing.T) {
 		// the way the fan-out header does. A parked child says so in the field
 		// a finished child puts the word it ended on in: it has stopped
 		// without having ended, and a row drawing motion beside it would be
-		// drawing the one thing the hold was pressed to stop.
+		// drawing the one thing the hold was pressed to stop. The detail is
+		// the sentence the supervisor really hands a parked child, so the
+		// capture shows the row saying the word once rather than twice.
 		parked := InspectorRail{
 			Agents: []InspectorAgent{
 				{Name: "orchestrator", Detail: "round 4 · holding after this round",
 					Spend: "$0.14", Self: true, Focused: true, State: FanoutRunning},
-				{Name: "writer-1", Detail: "docs/loop.md", Spend: "$0.05", Tools: 6,
+				{Name: "writer-1", Detail: "held · waiting for release", Spend: "$0.05", Tools: 6,
 					Outcome: "held", Depth: 1, State: FanoutHeld},
-				{Name: "writer-2", Detail: "internal/agent/round.go", Spend: "$0.03",
+				{Name: "writer-2", Detail: "held · waiting for release", Spend: "$0.03",
 					Tools: 4, Outcome: "held", Depth: 1, State: FanoutHeld},
 				{Name: "reader-3", Detail: "survey internal/ui", Spend: "$0.01", Tools: 2,
 					Depth: 1, State: FanoutRunning},

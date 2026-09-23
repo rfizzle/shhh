@@ -2201,6 +2201,18 @@ func TestGolden_ScreenAttached(t *testing.T) {
 	if err := sup.Steer("researcher-1", "read round.go before the tests", subagent.SteerFromLane); err != nil {
 		t.Fatal(err)
 	}
+	// A child parked by a hold, in a supervisor of its own because the hold
+	// reaches every child a supervisor has. The session's own turn is parked
+	// too, which is the state a parked child is found in once the hold has
+	// landed whole.
+	held := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: heldChildEnv()})
+	t.Cleanup(held.Close)
+	held.Hold()
+	spawnChild(t, held, subagent.RoleResearcher, "researcher-1")
+	waitFor(t, func() bool {
+		st, ok := held.Get("researcher-1")
+		return ok && st.Held
+	})
 	captureGolden(t, "screen-attached", "the surface with the keyboard in a child",
 		[]int{144}, func(width int) []golden.Panel {
 			attached := func(name string) Model {
@@ -2242,6 +2254,15 @@ func TestGolden_ScreenAttached(t *testing.T) {
 					View: build("reviewer-2")},
 				{Label: "another agent waiting · the rail says so and names the chord",
 					View: other("researcher-1", "reviewer-2")},
+				{Label: "a parked child · held on the frame and on the map, and no key the frame cannot answer",
+					View: func() string {
+						m := frameModel(t, width, screenHeight)
+						m.transcript = goldenTranscript()
+						m = m.WithSubagents(held)
+						m.hold = &turnHold{turn: m.turnCount}
+						m.attach("researcher-1")
+						return draw(m)
+					}()},
 			}
 		})
 }

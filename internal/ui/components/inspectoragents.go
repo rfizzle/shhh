@@ -406,6 +406,14 @@ func outcomeStyle(s FanoutState) lipgloss.Style {
 // the spinner, and the name row is what has to survive the rail's narrowest
 // width (docs/interface/departures.md#the-agents-blocks-meter-is-on-the-detail-row).
 func (a InspectorAgent) detailRow(frame, width int) string {
+	if a.State == FanoutHeld {
+		// A parked row says `held` once, in the outcome field on its name
+		// row. The detail a host has for a parked child is the supervisor's
+		// sentence saying the same thing, and the release it waits on is
+		// named on the frame where the key is live, not on a map row where
+		// no key reaches it (docs/interface/surfaces.md#the-agent-manager).
+		a.Detail = ""
+	}
 	var parts []string
 	switch m, ok := AgentMeter(a.Step, a.Steps); {
 	case a.State == FanoutDone || a.State == FanoutFailed:

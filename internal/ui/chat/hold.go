@@ -169,6 +169,12 @@ func (m *Model) releaseChildren() {
 // same fact about the session: it has stopped, and it is waiting on you.
 func (m Model) holdChip() string {
 	switch {
+	case m.heldAtBoundary() && m.attachedTo != "":
+		// Attached, the chord keeps its textarea meaning (keyroute.go), so
+		// the chip names no key the reader could not press here: the release
+		// is named once, on the orchestrator's frame where it is live
+		// (docs/interface/surfaces.md#the-agent-manager).
+		return "⏸ held"
 	case m.heldAtBoundary():
 		return "⏸ held · " + keys.Bracket(keys.Draft.Pause) + " resumes"
 	case m.holdAsked && m.working():

@@ -887,7 +887,7 @@ func (m Model) childRailSegments() []components.RailSegment {
 	// off the drop ladder: an attached rail that shed the word `failed` to
 	// make room for a round counter would be silent about the one thing the
 	// reader is attached to find out (guidelines/layout-drop-order).
-	detail, drop := sty.StatusBar.Render(st.Detail), components.RailNormal
+	detail, drop := sty.StatusBar.Render(attachedDetail(st)), components.RailNormal
 	switch st.State {
 	case subagent.StateBlocked, subagent.StateFailed:
 		detail, drop = sty.CtxAlert.Render(st.Detail), components.RailVital

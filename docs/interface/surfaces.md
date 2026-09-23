@@ -1247,6 +1247,11 @@ fan-out the reader stopped on purpose are two different stopped things, and
 only one of them is news. The parks land one child at a time, so the header's
 tally is what says how far through the hold is — `2 held · 1 running` — and
 the rail's map says `held` where a working child's row says what it is doing.
+The word is said once on each surface, and the key that lets the hold go is
+named only on the orchestrator's frame, the one place it is live: the map
+row's line underneath does not repeat it, and the frame of an attached child
+says `held` and names no key, because attached the chord types into the
+draft.
 
 **A descendant is drawn under the agent that spawned it, on every surface
 that draws more than one agent.** An agent is followed by the agents it

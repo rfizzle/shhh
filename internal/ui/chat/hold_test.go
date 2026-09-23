@@ -296,3 +296,36 @@ func TestHold_TheSpinnerStopsForAParkedFanOut(t *testing.T) {
 		t.Fatal("a released child should have the spinner going again")
 	}
 }
+
+// A parked child is `held` on every surface that draws it, and the key that
+// lets the hold go is named only where it is live: on the orchestrator's
+// frame, never on an attached child's, where the chord types into the draft
+// (docs/interface/surfaces.md#the-agent-manager).
+func TestHold_AParkedChildNamesTheReleaseOnce(t *testing.T) {
+	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: heldChildEnv()})
+	t.Cleanup(sup.Close)
+	sup.Hold()
+	spawnChild(t, sup, subagent.RoleResearcher, "researcher-1")
+	waitFor(t, func() bool {
+		st, ok := sup.Get("researcher-1")
+		return ok && st.Held
+	})
+	release := keys.Bracket(keys.Draft.Pause)
+	m := frameModel(t, 144, screenHeight).WithSubagents(sup)
+	m.hold = &turnHold{turn: m.turnCount}
+
+	if view := stripANSI(m.View().Content); !strings.Contains(view, release) {
+		t.Fatalf("the orchestrator's frame should name the release:\n%s", view)
+	}
+	m.attach("researcher-1")
+	view := stripANSI(m.View().Content)
+	if strings.Contains(view, release) {
+		t.Fatalf("an attached frame names a release its chord cannot give:\n%s", view)
+	}
+	if strings.Contains(view, "waiting for release") {
+		t.Fatalf("the parked child should say held once, not the sentence:\n%s", view)
+	}
+	if !strings.Contains(view, "· held ·") {
+		t.Fatalf("the attached frame should say the child is held:\n%s", view)
+	}
+}
