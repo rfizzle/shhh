@@ -555,11 +555,11 @@ func mcpFinding(r mcp.Report, root string, db *storage.DB) doctorFinding {
 		f.ActionPrompt = "Trust " + shortPath(t.Root) + "? " + d.Name + " starts from " + d.Source +
 			" and runs " + d.Target() + " as you, along with everything else the checkout declares."
 		f.Apply = func() ([]string, error) {
-			note, err := setProjectTrust(db, t, true)
+			row, err := setProjectTrust(db, t, true)
 			if err != nil {
 				return nil, err
 			}
-			return []string{note}, nil
+			return []string{trustLine(row)}, nil
 		}
 	}
 	return f

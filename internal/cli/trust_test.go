@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/evidence"
 	"github.com/rfizzle/shhh/internal/project"
@@ -81,24 +82,50 @@ func TestSetProjectTrustRecordsAndWithdrawsTheAnswer(t *testing.T) {
 
 	answer := project.Trust{Root: "/repo", Fingerprint: "fp1", Present: []project.Kind{project.KindSkills, project.KindGate},
 		Digests: map[project.Kind]string{project.KindGate: "d1"}}
-	note, err := setProjectTrust(db, answer, true)
+	trusted, err := setProjectTrust(db, answer, true)
 	if err != nil {
 		t.Fatal(err)
-	}
-	for _, want := range []string{"skills", "quality suites", ".shhh/quality.json", "shhh trust off"} {
-		if !strings.Contains(note, want) {
-			t.Errorf("the answer does not say what it covers (%q):\n%s", want, note)
-		}
 	}
 	if kinds, ok := db.ProjectTrusted("/repo"); !ok || kinds[string(project.KindGate)] != "d1" {
 		t.Fatalf("recorded = %v %v", kinds, ok)
 	}
-	if _, err := setProjectTrust(db, answer, false); err != nil {
+	untrusted, err := setProjectTrust(db, answer, false)
+	if err != nil {
 		t.Fatal(err)
 	}
 	if _, ok := db.ProjectTrusted("/repo"); ok {
 		t.Error("still trusted after it was withdrawn")
 	}
+	again, err := setProjectTrust(db, answer, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Each confirmation is one row naming the root and the kinds, as the
+	// command prints it to a pipe; the paths behind the kinds are the
+	// doctor's trust row's to list.
+	var out strings.Builder
+	for _, row := range []report.Row{trusted, untrusted, again} {
+		var buf strings.Builder
+		if err := report.Fprintln(&buf, row); err != nil {
+			t.Fatal(err)
+		}
+		if lines := strings.Count(buf.String(), "\n"); lines != 1 {
+			t.Errorf("a confirmation took %d lines:\n%s", lines, buf.String())
+		}
+		out.WriteString(buf.String())
+	}
+	got := strings.TrimSuffix(out.String(), "\n")
+	for _, want := range []string{"trusted /repo", "skills · quality suites"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("the confirmation does not name %q:\n%s", want, got)
+		}
+	}
+	if strings.Contains(got, ".shhh/quality.json") {
+		t.Errorf("the confirmation lists the resource paths:\n%s", got)
+	}
+	assertReportGolden(t, "trust", got)
+
 	if _, err := setProjectTrust(nil, answer, true); err == nil {
 		t.Error("trust was recorded with nowhere to record it")
 	}

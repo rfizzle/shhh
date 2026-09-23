@@ -16,6 +16,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/storage"
@@ -104,34 +105,56 @@ func readProjectTrust() project.Trust {
 }
 
 // setProjectTrust records or withdraws the checkout's answer and returns
-// what to tell the person. It is the only writer of that row: the doctor's
-// offer, `shhh mcp`'s row and /trust all land here, so the sentence they
+// the row that confirms it. It is the only writer of that row: the doctor's
+// offer, `shhh mcp`'s row and /trust all land here, so the confirmation they
 // print and the state they leave cannot drift apart.
-func setProjectTrust(db *storage.DB, t project.Trust, trust bool) (string, error) {
+//
+// The confirmation is one row — the root and the kinds that load — because
+// it is a receipt. The paths behind each kind are the doctor's trust row's to
+// list, and the way back is on `shhh trust --help` and that row's fix.
+func setProjectTrust(db *storage.DB, t project.Trust, trust bool) (report.Row, error) {
 	if db == nil {
-		return "", errors.New("the local store is unavailable, so trust cannot be recorded")
+		return report.Row{}, errors.New("the local store is unavailable, so trust cannot be recorded")
 	}
 	if t.Root == "" {
-		return "", errors.New("no project root here, so there is nothing to trust")
+		return report.Row{}, errors.New("no project root here, so there is nothing to trust")
 	}
+	root := shortPath(t.Root)
 	if !trust {
 		had, err := db.DistrustProject(t.Root)
 		if err != nil {
-			return "", err
+			return report.Row{}, err
 		}
 		forgetProjectTrust()
 		if !had {
-			return "This checkout was not trusted.", nil
+			return report.Empty(root+" was not trusted", "nothing to withdraw"), nil
 		}
-		return "This checkout is no longer trusted: " + declares(t) + " will not load.", nil
+		row := report.Done("untrusted", root)
+		row.Detail = trustKinds(t)
+		return row, nil
 	}
 	if err := db.TrustProject(t.Root, t.Fingerprint, t.DigestNames()); err != nil {
-		return "", err
+		return report.Row{}, err
 	}
 	forgetProjectTrust()
-	return "This checkout is trusted: " + declares(t) + " load, and go on loading as " +
-		strings.Join(project.ResourceNames(), ", ") + " change. A change is said once, at the next session; " +
-		"`shhh trust off` withdraws the answer.", nil
+	row := report.Done("trusted", root)
+	row.Detail = trustKinds(t)
+	return row, nil
+}
+
+// trustKinds is the detail of a trust confirmation: the kinds the checkout
+// declares, spelled as the doctor's trust row spells them.
+func trustKinds(t project.Trust) string {
+	if present := kindNames(t.Present); len(present) > 0 {
+		return strings.Join(present, " · ")
+	}
+	return "nothing declared yet"
+}
+
+// trustLine is a confirmation for a caller that answers in text — /trust and
+// the doctor's and `shhh mcp`'s offers — rendered as the command prints it.
+func trustLine(row report.Row) string {
+	return strings.TrimSpace(report.Report{Sections: []report.Section{{Rows: []report.Row{row}}}}.String())
 }
 
 // restampProjectTrust moves a trusted checkout's record to the digests it
@@ -182,24 +205,13 @@ func newTrustCmd() *cobra.Command {
 				return fmt.Errorf("the local store is unavailable, so trust cannot be recorded: %w", err)
 			}
 			defer db.Close()
-			note, err := setProjectTrust(db, projectTrust(), len(args) == 0)
+			row, err := setProjectTrust(db, projectTrust(), len(args) == 0)
 			if err != nil {
 				return err
 			}
-			fmt.Fprintln(cmd.OutOrStdout(), note)
-			return nil
+			return report.Fprintln(cmd.OutOrStdout(), row)
 		},
 	}
-}
-
-// declares names what the checkout puts into a session, or says that it puts
-// nothing there yet — a repository that declares none of this is still worth
-// answering for, because the answer covers what it writes later too.
-func declares(t project.Trust) string {
-	if names := kindNames(t.Present); len(names) > 0 {
-		return "its " + joinAnd(names)
-	}
-	return "what it declares"
 }
 
 // joinAnd is a list inside a sentence. The doctor's rows join with a middot
@@ -233,17 +245,17 @@ func trustManager(db *storage.DB) func(args []string) string {
 		t := projectTrust()
 		switch {
 		case len(args) == 0:
-			note, err := setProjectTrust(db, t, true)
+			row, err := setProjectTrust(db, t, true)
 			if err != nil {
 				return err.Error()
 			}
-			return note + " It takes effect in the next session."
+			return trustLine(row) + " — it takes effect in the next session."
 		case len(args) == 1 && args[0] == "off":
-			note, err := setProjectTrust(db, t, false)
+			row, err := setProjectTrust(db, t, false)
 			if err != nil {
 				return err.Error()
 			}
-			return note + " It takes effect in the next session."
+			return trustLine(row) + " — it takes effect in the next session."
 		}
 		return "Usage: /trust [off]"
 	}
@@ -344,11 +356,11 @@ func doctorTrust(t project.Trust, offer bool) doctorFinding {
 			return nil, fmt.Errorf("the local store is unavailable, so trust cannot be recorded: %w", err)
 		}
 		defer db.Close()
-		note, err := setProjectTrust(db, t, true)
+		row, err := setProjectTrust(db, t, true)
 		if err != nil {
 			return nil, err
 		}
-		return []string{note}, nil
+		return []string{trustLine(row)}, nil
 	}
 	return f
 }
