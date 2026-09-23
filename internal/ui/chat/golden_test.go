@@ -3603,6 +3603,14 @@ func TestGolden_ChildAskCard(t *testing.T) {
 			ask.Root, ask.Worktree = dir, true
 			return ask
 		}
+		// A grant whose command words run long: the offer is wider than a
+		// narrow card and folds under its own words rather than being cut.
+		longGrant := func() *subagent.Ask {
+			ask := subagent.NewAsk("writer-1", subagent.AskCommand, "run go run tools generate-fixtures")
+			ask.Command = "go run tools generate-fixtures ./testdata"
+			ask.Root, ask.Worktree = dir, true
+			return ask
+		}
 		return []golden.Panel{
 			{Label: "a child's command · resolved in the agent's own checkout", View: build(command(), true)},
 			{Label: "the same card, held by arriving · two answers, and nothing else offered",
@@ -3611,6 +3619,8 @@ func TestGolden_ChildAskCard(t *testing.T) {
 				View: buildWithDraft(command(), false, "also add a --max-rounds flag")},
 			{Label: "a command nothing flags · [a] grants it to every agent for the turn",
 				View: build(grantable(), true)},
+			{Label: "a long grant · the offer folds under its words, never clipped",
+				View: build(longGrant(), true)},
 			{Label: "answered in place on the manager · esc goes back, the decision stays waiting",
 				View: overList(grantable())},
 			{Label: "a writer's patch · your files, and the diff behind a counted tail",

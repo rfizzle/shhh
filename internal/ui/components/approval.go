@@ -922,6 +922,16 @@ func runRows(segments []string, inner int) []string {
 		}
 	}
 	for _, seg := range segments {
+		// One offer wider than the whole row is folded onto rows of its own:
+		// left whole, the frame would clip its tail, and the tail is the half
+		// of an offer that states what the key costs. Below the width a card
+		// is framed at the rows are drawn bare and nothing is readable, and
+		// a fold there would spend the body's rows one word at a time.
+		if lipgloss.Width(seg) > inner && inner >= minCardWidth-cardFrameWidth {
+			flush()
+			rows = append(rows, foldSegment(seg, inner)...)
+			continue
+		}
 		next := strings.Join(append(append([]string{}, line...), seg), " · ")
 		if len(line) > 0 && lipgloss.Width(next) > inner {
 			flush()
@@ -929,6 +939,46 @@ func runRows(segments []string, inner int) []string {
 		line = append(line, seg)
 	}
 	flush()
+	return rows
+}
+
+// foldSegment breaks one painted offer at word boundaries into rows no wider
+// than inner. The key stays in front of the first row and every continuation
+// is indented under the words rather than under the bracket, so the key
+// column reads down the block as keys and nothing else. It never ends on an
+// ellipsis, which is the frame's mark for a clipped target: an offer's tail
+// is the part that states the consequence
+// (docs/interface/principles.md#fold-never-hide).
+func foldSegment(seg string, inner int) []string {
+	plain := ansi.Strip(seg)
+	indent := 0
+	if strings.HasPrefix(plain, "[") {
+		if i := strings.Index(plain, "] "); i >= 0 {
+			indent = ansi.StringWidth(plain[:i+2])
+		}
+	}
+	// A key so wide that little is left beside it gives the continuation the
+	// whole row instead.
+	if indent > inner/2 {
+		indent = 0
+	}
+	var rows []string
+	lo, col, room := 0, 0, inner
+	end := 0 // the column the current row's last word ends at
+	for _, word := range strings.Split(plain, " ") {
+		w := ansi.StringWidth(word)
+		if end > lo && col+w-lo > room {
+			rows = append(rows, ansi.Cut(seg, lo, end))
+			lo, room = col, inner-indent
+		}
+		end = col + w
+		col = end + 1
+	}
+	rows = append(rows, ansi.Cut(seg, lo, end))
+	pad := strings.Repeat(" ", indent)
+	for i := 1; i < len(rows); i++ {
+		rows[i] = pad + rows[i]
+	}
 	return rows
 }
 

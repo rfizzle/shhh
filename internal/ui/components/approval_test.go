@@ -527,6 +527,51 @@ func TestApprovalCard_TheRunIsBracketedOffers(t *testing.T) {
 	}
 }
 
+// An offer wider than the card folds onto continuation rows under its words:
+// every word stays on screen, nothing ends on the frame's ellipsis, and the
+// key is still findable on the row it was drawn on.
+func TestApprovalCard_AnOfferWiderThanTheCardFolds(t *testing.T) {
+	const hint = `allow "go test" for every agent until this turn ends, and internal/agent with it`
+	c := &ApprovalCard{
+		Variant: ApprovalCommand, Title: "Approve command",
+		Act:    "go test ./...",
+		Answer: "run it once", AllowAlways: true, AlwaysHint: hint,
+	}
+	view := ansi.Strip(c.View(60))
+	if strings.Contains(view, "…") {
+		t.Fatalf("an offer reached the frame's ellipsis:\n%s", view)
+	}
+	var words []string
+	for _, line := range strings.Split(view, "\n") {
+		words = append(words, strings.Fields(strings.Trim(line, "│ "))...)
+	}
+	joined := " " + strings.Join(words, " ") + " "
+	if !strings.Contains(joined, " [a] "+hint+" ") {
+		t.Fatalf("the offer should read whole across its rows:\n%s", view)
+	}
+	// The rows between the [a] row and the esc row are the offer's
+	// continuation, and each starts under the words rather than the bracket.
+	lines := strings.Split(view, "\n")
+	continued := 0
+	for i, line := range lines {
+		if !strings.HasPrefix(line, "│ [a] ") {
+			continue
+		}
+		for _, next := range lines[i+1:] {
+			if strings.HasPrefix(next, "│ [esc]") {
+				break
+			}
+			if !strings.HasPrefix(next, "│     ") || strings.HasPrefix(next, "│      ") {
+				t.Fatalf("a continuation should sit under the words, not under the bracket:\n%s", view)
+			}
+			continued++
+		}
+	}
+	if continued == 0 {
+		t.Fatalf("an offer this long should take a continuation row at 60 columns:\n%s", view)
+	}
+}
+
 // Every variant carries the esc line, not only the ones a flagged command put
 // one on: the way out of a decision is what a reader must be able to find
 // without having pressed anything.

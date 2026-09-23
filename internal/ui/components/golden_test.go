@@ -593,6 +593,12 @@ func TestGolden_ApprovalCard(t *testing.T) {
 			{Label: "variant · command, always-allow offered", View: card(func(c *ApprovalCard) {
 				c.AllowAlways, c.AlwaysHint = true, "allow commands without asking this session"
 			})},
+			// An offer wider than a narrow card folds under its own words
+			// rather than ending on the frame's ellipsis.
+			{Label: "variant · command, an offer wider than the card", View: card(func(c *ApprovalCard) {
+				c.AllowAlways = true
+				c.AlwaysHint = `allow "go test" for every agent until this turn ends, and internal/agent with it`
+			})},
 			{Label: "variant · command, a batch waiting behind it", View: card(func(c *ApprovalCard) {
 				c.QueuePos = "1 of 5"
 				c.AllowAlways, c.AlwaysHint = true, "allow commands without asking this session"

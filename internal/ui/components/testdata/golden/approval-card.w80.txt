@@ -18,6 +18,16 @@
 │ [esc] back to your draft — the decision stays waiting, nothing is denied     │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
+· variant · command, an offer wider than the card
+╭─ Approve command ────────────────────────────────────────────────────────────╮
+│ $ go test ./internal/agent/...                                               │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ [y] run it once · [n] deny                                                   │
+│ [a] allow "go test" for every agent until this turn ends, and internal/agent │
+│     with it                                                                  │
+│ [esc] back to your draft — the decision stays waiting, nothing is denied     │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
 · variant · command, a batch waiting behind it
 ╭─ Approve command (1 of 5) ─────────────────────────────────────────── ⚠ low ─╮
 │ $ go test ./internal/agent/...                                               │
@@ -154,6 +164,16 @@
 ␛[94m│␛[m ␛[38;5;214m$␛[m ␛[97mgo test ./internal/agent/...␛[m                                               ␛[94m│␛[m
 ␛[94m├──────────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[94m│␛[m ␛[94m[y]␛[m ␛[38;5;252mrun it once␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m ␛[38;5;252mdeny␛[m␛[38;5;241m · ␛[m␛[94m[a]␛[m ␛[38;5;252mallow commands without asking this session␛[m  ␛[94m│␛[m
+␛[94m│␛[m ␛[92m[esc] back to your draft — the decision stays waiting, nothing is denied␛[m     ␛[94m│␛[m
+␛[94m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
+
+· variant · command, an offer wider than the card
+␛[94m╭─ ␛[m␛[1;97mApprove command ␛[m␛[38;5;241m────────────────────────────────────────────────────────────␛[m␛[94m╮␛[m
+␛[94m│␛[m ␛[38;5;214m$␛[m ␛[97mgo test ./internal/agent/...␛[m                                               ␛[94m│␛[m
+␛[94m├──────────────────────────────────────────────────────────────────────────────┤␛[m
+␛[94m│␛[m ␛[94m[y]␛[m ␛[38;5;252mrun it once␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m ␛[38;5;252mdeny␛[m                                                   ␛[94m│␛[m
+␛[94m│␛[m ␛[94m[a]␛[m ␛[38;5;252mallow "go test" for every agent until this turn ends, and internal/agent␛[m ␛[94m│␛[m
+␛[94m│␛[m     ␛[94m␛[m␛[38;5;252mwith it␛[m                                                                  ␛[94m│␛[m
 ␛[94m│␛[m ␛[92m[esc] back to your draft — the decision stays waiting, nothing is denied␛[m     ␛[94m│␛[m
 ␛[94m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
 

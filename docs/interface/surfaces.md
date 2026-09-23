@@ -1515,6 +1515,16 @@ a row apart — the offers under a frame's rule read one way and the offers
 under a card's read another — and a reader who has learned that a bracket
 means a live key is worse served by two notations than by one.
 
+A run too long for the card takes another row, and an offer that is itself
+wider than the card folds at a word onto a continuation row indented under
+its words rather than under its bracket — *[a] allow "go test" for every agent
+until this turn* over *ends, and internal/agent with it* — so the key column
+reads down the block as keys and nothing else. The offer never ends on the
+frame's ellipsis, which marks a clipped target: an offer's tail is the half
+that states what the key costs, and cutting it leaves a key whose price is
+unread ([invariant 4](principles.md#fold-never-hide)). The artboards draw no
+card narrow enough to need the fold; this is the shape where they are silent.
+
 Every card holding the keyboard carries the esc line, whatever it is about and
 whoever it came from, because the way out of a decision is the one thing a
 reader must be able to find without having pressed anything first
