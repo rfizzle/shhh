@@ -24,16 +24,18 @@ func TestCancellingACommandKillsWhatItStarted(t *testing.T) {
 	marker := filepath.Join(dir, "still-alive")
 
 	ctx, cancel := context.WithCancel(context.Background())
+	lines := make(chan string, 4)
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
 		// A child that outlives its parent shell unless the group is
-		// signalled, and that leaves evidence behind if it does.
-		RunCapture(ctx, "sh -c 'sleep 5; touch "+marker+"' & sleep 5")
+		// signalled, and that leaves evidence behind if it does. It says so
+		// once it is running, which is the moment there is a child to leave
+		// behind.
+		RunCaptureTail(ctx, "sh -c 'echo started; sleep 5; touch "+marker+"' & sleep 5", sendLine(lines))
 	}()
 
-	// Let the shell get as far as spawning its child before pulling the rug.
-	time.Sleep(300 * time.Millisecond)
+	awaitLine(t, lines, "started")
 	cancel()
 
 	select {
@@ -111,22 +113,23 @@ func TestQuittingStopsACommandThatIgnoresTheInterrupt(t *testing.T) {
 	dir := t.TempDir()
 	marker := filepath.Join(dir, "still-alive")
 
-	spawned := time.Now()
 	commandLife := 5 * time.Second
+	lines := make(chan string, 4)
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
 		// Ignoring the interrupt is the whole case: asking it to stop does
 		// nothing, so only the kill behind the grace ends it, and it leaves
-		// evidence behind if it survives.
-		RunCapture(context.Background(), "trap '' INT; sleep 5; touch "+marker)
+		// evidence behind if it survives. It says so once the trap is in
+		// place, since a drain before that stops it on the interrupt and
+		// proves nothing.
+		RunCaptureTail(context.Background(), "trap '' INT; echo armed; sleep 5; touch "+marker, sendLine(lines))
 	}()
 
-	// Let the shell get as far as installing the trap.
-	time.Sleep(300 * time.Millisecond)
-	drained := time.Now()
+	awaitLine(t, lines, "armed")
+	armed := time.Now()
 	StopCaptured()
-	if took := time.Since(drained); took > killGrace+time.Second {
+	if took := time.Since(armed); took > killGrace+time.Second {
 		t.Errorf("the drain took %s; a quit is bounded at %s", took.Round(time.Millisecond), killGrace)
 	}
 
@@ -137,9 +140,40 @@ func TestQuittingStopsACommandThatIgnoresTheInterrupt(t *testing.T) {
 	}
 
 	// Past when the command would have written, had it survived.
-	time.Sleep(time.Until(spawned.Add(commandLife + 500*time.Millisecond)))
+	time.Sleep(time.Until(armed.Add(commandLife + 500*time.Millisecond)))
 	if _, err := os.Stat(marker); err == nil {
 		t.Fatal("a command that ignores the interrupt outlived the session that started it")
+	}
+}
+
+// awaitLine blocks until the command under test prints want, which is how a
+// fixture says it has reached the state the test is about. Waiting on the
+// fixture rather than on a timer is what keeps a loaded machine from signalling
+// a shell that has not got that far yet.
+func awaitLine(t *testing.T, lines <-chan string, want string) {
+	t.Helper()
+	timeout := time.After(15 * time.Second)
+	for {
+		select {
+		case line := <-lines:
+			if line == want {
+				return
+			}
+		case <-timeout:
+			t.Fatalf("the command never printed %q", want)
+		}
+	}
+}
+
+// sendLine hands each line the command prints to lines, dropping what does not
+// fit: the writer calling it is the one draining the command's output, and a
+// test that has stopped reading must not stall it.
+func sendLine(lines chan<- string) func(string) {
+	return func(line string) {
+		select {
+		case lines <- line:
+		default:
+		}
 	}
 }
 
