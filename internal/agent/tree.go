@@ -86,8 +86,8 @@ const stateDir = ".shhh/"
 // checkout. Own returns the paths this session has written, in any form
 // relative to the process or absolute; they are what the reading subtracts.
 // IsCommand names the tools that may write anything. Budget zero is
-// DefaultTreeBudget; Log, when set, takes the one line written when the
-// reading downgrades.
+// DefaultTreeBudget; Log, when set, takes the line written when the reading
+// downgrades, when it recovers, and when git stops answering it.
 type TreeCheck struct {
 	Dir       string
 	Own       func() []string
@@ -149,6 +149,10 @@ type TreeNotice struct {
 	// scratch, which is the difference between a quiet reading and a reading
 	// that found nothing.
 	Ignored int
+	// Unavailable is a notice that the tree could not be read at all, rather
+	// than that it moved. It is not a movement, so a surface that records
+	// movements records nothing for it.
+	Unavailable bool
 }
 
 // Signal is what the notice reported, as the observability recorder's closed
@@ -176,8 +180,13 @@ type treeState struct {
 	last     TreeSnapshot
 	commands int
 	// degraded is set once a reading blew the budget; from then on only the
-	// turn boundary reads.
+	// turn boundary reads, until a reading there comes back well inside it.
 	degraded bool
+	// failed is the reason the last snapshot could not be taken, and empty
+	// once one could. A git that has stopped answering goes on not answering
+	// at every boundary, so the reader is told once per reason rather than
+	// once per round.
+	failed string
 	// now is the clock the budget is spent against, so a test can spend one
 	// without waiting it out. Nil is time.Now.
 	now func() time.Time
@@ -297,8 +306,9 @@ func (a *Agent) NextTreeNotice(turnStart bool) (TreeNotice, bool) {
 	t.begin()
 	now, err := TakeTreeSnapshot(t.top)
 	if err != nil {
-		return TreeNotice{}, false
+		return t.unavailable(err)
 	}
+	t.failed = ""
 	t.spent("git status")
 	own := t.ownPaths()
 	commands := t.commands
@@ -318,7 +328,31 @@ func (a *Agent) NextTreeNotice(turnStart bool) (TreeNotice, bool) {
 	// After the comparison, because the ignore reading is made inside it: the
 	// budget covers every call the reading makes, wherever it is made from.
 	t.downgrade()
+	t.recover()
 	return n, ok
+}
+
+// unavailable is what a boundary owes when git would not give a snapshot: a
+// broken index or a repository removed from under the session is otherwise
+// silence, and silence is what a tree that has not moved sounds like. The
+// reason is said once, and again only when it changes.
+func (t *treeState) unavailable(err error) (TreeNotice, bool) {
+	reason := err.Error()
+	if reason == t.failed {
+		return TreeNotice{}, false
+	}
+	t.failed = reason
+	if t.cfg.Log != nil {
+		t.cfg.Log("tree check: git status failed: " + reason)
+	}
+	// The model is told as well as the reader, because a turn that hears
+	// nothing about the tree takes that to mean it has not moved.
+	return TreeNotice{
+		Message: "[tree: check unavailable · " + reason + "]\n" +
+			"The tree is not being read, so changes made outside this session will not be reported until git answers again.",
+		Notice:      "tree check unavailable · " + reason,
+		Unavailable: true,
+	}, true
 }
 
 // clock is what the budget is spent against.
@@ -358,6 +392,27 @@ func (t *treeState) downgrade() {
 	if t.cfg.Log != nil {
 		t.cfg.Log(fmt.Sprintf("tree check: %s took the reading to %s, over the %s budget; reading at turn boundaries only from here",
 			t.overCall, t.overAt.Round(time.Millisecond), t.cfg.Budget))
+	}
+}
+
+// recover goes back to reading at every round boundary once a degraded
+// reading has come back well inside the budget — at most half of it, so a
+// reading hovering at the line does not flip back and forth every turn. One
+// stall under a `git gc` is not the checkout's size, and without this it cost
+// the rest of the session its round-boundary readings. A later reading over
+// the budget degrades again through downgrade.
+func (t *treeState) recover() {
+	if !t.degraded || t.overCall != "" {
+		return
+	}
+	took := t.clock().Sub(t.started)
+	if took > t.cfg.Budget/2 {
+		return
+	}
+	t.degraded = false
+	if t.cfg.Log != nil {
+		t.cfg.Log(fmt.Sprintf("tree check: the reading took %s, inside the %s budget; reading at round boundaries again",
+			took.Round(time.Millisecond), t.cfg.Budget))
 	}
 }
 
@@ -901,11 +956,18 @@ func parseStatusV2(out string) TreeSnapshot {
 	return snap
 }
 
+// gitOut runs git and returns its standard output. A failure carries git's
+// own first line of complaint where it gave one, since "exit status 128" is
+// not a reason anybody can act on.
 func gitOut(dir string, args ...string) (string, error) {
 	cmd := exec.Command("git", append([]string{"-C", dir}, args...)...)
-	var out bytes.Buffer
+	var out, errOut bytes.Buffer
 	cmd.Stdout = &out
+	cmd.Stderr = &errOut
 	if err := cmd.Run(); err != nil {
+		if line, _, _ := strings.Cut(strings.TrimSpace(errOut.String()), "\n"); line != "" {
+			return "", errors.New(line)
+		}
 		return "", err
 	}
 	return out.String(), nil

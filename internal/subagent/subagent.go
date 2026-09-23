@@ -3414,7 +3414,9 @@ func (s *Supervisor) run(c *child) {
 		// back and re-read a file it had already read.
 		OnTree: func(n agent.TreeNotice) {
 			c.appendEntry(TranscriptEntry{Kind: EntrySystem, Text: n.Notice})
-			signal(observe.SignalTree, n.Signal())
+			if !n.Unavailable {
+				signal(observe.SignalTree, n.Signal())
+			}
 			s.emitUpdate(c)
 		},
 		Gate:    func(tc provider.ToolCall) bool { return c.env.Gated[tc.Name] },

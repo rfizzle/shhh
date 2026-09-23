@@ -782,3 +782,84 @@ func TestTree_ANewDirectoryWithNoCommandIsStillReported(t *testing.T) {
 		t.Fatalf("a directory nobody here made is news, got ok=%v:\n%s", ok, n.Message)
 	}
 }
+
+// A degraded reading is a stall, not a verdict on the checkout: a reading at a
+// turn boundary that comes back well inside the budget puts the round
+// boundaries back, and the next one over the budget takes them away again.
+func TestTree_AFastReadingRecoversTheRoundBoundaries(t *testing.T) {
+	ws, _ := treeFixture(t)
+	var logged []string
+	a := New(nil, nil)
+	a.SetTreeCheck(TreeCheck{Dir: ws, Budget: time.Nanosecond, Log: func(s string) { logged = append(logged, s) }})
+	a.NextTreeNotice(false) // over budget: degrades
+	if len(logged) != 1 {
+		t.Fatalf("the downgrade is logged, got %q", logged)
+	}
+
+	a.tree.cfg.Budget = time.Hour
+	write(t, ws, "b.txt", "")
+	if _, ok := a.NextTreeNotice(false); ok {
+		t.Fatal("still degraded until a turn boundary reads fast")
+	}
+	if _, ok := a.NextTreeNotice(true); !ok {
+		t.Fatal("the turn boundary still reads while degraded")
+	}
+	if len(logged) != 2 || !strings.Contains(logged[1], "reading at round boundaries again") {
+		t.Fatalf("the recovery is logged once, got %q", logged)
+	}
+	write(t, ws, "c.txt", "")
+	if n, ok := a.NextTreeNotice(false); !ok || !strings.Contains(n.Message, "c.txt") {
+		t.Fatalf("a recovered reading runs between rounds again, got ok=%v:\n%s", ok, n.Message)
+	}
+
+	a.tree.cfg.Budget = time.Nanosecond
+	a.NextTreeNotice(false)
+	if len(logged) != 3 || !strings.Contains(logged[2], "turn boundaries only") {
+		t.Fatalf("a second slow reading degrades again, got %q", logged)
+	}
+	write(t, ws, "d.txt", "")
+	if _, ok := a.NextTreeNotice(false); ok {
+		t.Error("degraded again: no reading between rounds")
+	}
+}
+
+// A snapshot git will not give is said, once per reason: a broken index is
+// otherwise silence, which is what an unmoved tree sounds like.
+func TestTree_AFailedSnapshotIsSaidOncePerReason(t *testing.T) {
+	ws, _ := treeFixture(t)
+	var logged []string
+	a := New(nil, nil)
+	a.SetTreeCheck(TreeCheck{Dir: ws, Log: func(s string) { logged = append(logged, s) }})
+
+	write(t, ws, ".git/index", "not an index")
+	n, ok := a.NextTreeNotice(false)
+	if !ok || !n.Unavailable {
+		t.Fatalf("a failed snapshot owes a notice, got ok=%v %+v", ok, n)
+	}
+	if !strings.HasPrefix(n.Notice, "tree check unavailable · ") || strings.Contains(n.Notice, "exit status") {
+		t.Errorf("the row names git's own reason: %q", n.Notice)
+	}
+	if !strings.Contains(n.Message, "[tree: check unavailable · ") {
+		t.Errorf("the model is told too: %q", n.Message)
+	}
+	if len(logged) != 1 || !strings.Contains(logged[0], "git status failed") {
+		t.Fatalf("one machine line per reason, got %q", logged)
+	}
+	if _, ok := a.NextTreeNotice(false); ok {
+		t.Error("the same reason is not said again at the next boundary")
+	}
+	if _, ok := a.NextTreeNotice(true); ok {
+		t.Error("nor at the next turn")
+	}
+
+	if err := os.RemoveAll(filepath.Join(ws, ".git")); err != nil {
+		t.Fatal(err)
+	}
+	n2, ok := a.NextTreeNotice(false)
+	if !ok || n2.Notice == n.Notice {
+		t.Fatalf("a different reason is said, got ok=%v %q", ok, n2.Notice)
+	}
+	if len(logged) != 2 {
+		t.Errorf("one machine line per distinct reason, got %q", logged)
+	}
+}

@@ -396,6 +396,9 @@ func (h headlessObserver) withheld(reason string) {
 
 // tree records the run being told the tree moved under it.
 func (h headlessObserver) tree(n agent.TreeNotice) {
+	if n.Unavailable {
+		return
+	}
 	h.signal(observe.SignalTree, n.Signal())
 }
 

@@ -82,7 +82,9 @@ func (m *Model) injectTreeNotice(turnStart bool) {
 	}
 	m.agent.AppendMachine(n.Message)
 	m.appendEntry(entry{kind: entrySystem, text: n.Notice})
-	m.signal(observe.SignalTree, n.Signal())
+	if !n.Unavailable {
+		m.signal(observe.SignalTree, n.Signal())
+	}
 	// A row was appended, so the pane is redrawn the way every other system
 	// row is; the resize hook alone would leave it unseen until the next
 	// stream flush.
