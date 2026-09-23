@@ -456,6 +456,72 @@ func TestBuildProfileFollowsPermissions(t *testing.T) {
 	}
 }
 
+// A read-only profile holding the project's checks is told the gate is the
+// one command it has; one without it is told what it always was. The
+// gate-less prompt is pinned rather than described, because the gate
+// sentence is a branch beside it and a drift of one word in the prompt every
+// other reading profile gets is what a Contains assertion never notices.
+func TestAReadOnlyProfileIsToldAboutTheGateOnlyWhenItHasIt(t *testing.T) {
+	fixed := time.Date(2026, time.September, 1, 12, 0, 0, 0, time.UTC)
+	old := now
+	now = func() time.Time { return fixed }
+	t.Cleanup(func() { now = old })
+
+	info := shell.Info{OS: "linux", Cwd: "/w"}
+	reads := []string{"read_file", "list_directory", "search", "glob", "web_fetch"}
+
+	want := `You are the "auditor" sub-agent working one delegated task for an orchestrating agent. Your purpose: reads the tree. You cannot see the orchestrator's conversation, and it only receives your final message — nothing else survives.
+
+# Environment
+OS: Linux
+Cwd: /w
+Date: Tuesday, 1 September 2026
+
+# Tools
+Read-only tools (read_file, list_directory, search, glob) run automatically — use them proactively instead of guessing at file contents.
+Web tools (web_fetch) are available for what is not in the workspace; web_fetch may need the human's approval. A long page comes back cut, with a notice naming the evidence entry that holds the whole of it — read on from the offset it gives you, or search that entry; fetching the same URL again returns the same first slice. A host that refused the request has already been waited out once for you — find the fact on another site rather than asking that one again.
+This session has no web search: read a URL the task or the user gave you, or find the answer in the workspace, rather than reaching for a search that is not there.
+You cannot edit files or run commands — do not propose to; gather facts instead.
+
+# Working style
+- Work autonomously until the task is done or you are genuinely blocked; do not ask questions — nobody will answer mid-run.
+- Batch independent searches and reads into one round — they run at the same time — and make each search count: matches come with their surrounding lines, files_only for which files are involved, include to narrow by file type.
+- Never repeat a call you already made; its result is above. If two attempts have not answered the question, change approach rather than asking again.
+- Know when to stop looking: once you can name what you are going to change or report, start. More reading is not more progress.
+- Prefer primary evidence: read the actual files, cite paths (file:line) and URLs.
+- Stay on the delegated task; depth over breadth.
+
+# Final report
+Your last message IS the deliverable. Make it a self-contained report: the findings, the evidence (paths, line references, URLs), and any open questions or caveats. Do not end on a question or a promise of further work.
+
+Be terse.`
+	noGate := BuildProfile(info, ProfileSpec{Name: "auditor", Description: "reads the tree", Tools: reads}, "Be terse.")
+	if noGate != want {
+		t.Errorf("a read-only profile without the gate moved:\ngot:\n%s\nwant:\n%s", noGate, want)
+	}
+
+	withGate := BuildProfile(info, ProfileSpec{Name: "auditor", Description: "reads the tree",
+		Tools: append(append([]string{}, reads...), "quality_gate")}, "Be terse.")
+	for _, part := range []string{
+		"quality_gate runs the project's own configured checks by suite name",
+		"the gate is the only command you can run",
+	} {
+		if !strings.Contains(withGate, part) {
+			t.Errorf("a read-only profile holding the gate lacks %q:\n%s", part, withGate)
+		}
+	}
+	if strings.Contains(withGate, "You cannot edit files or run commands") {
+		t.Errorf("a profile holding the gate is told it can run nothing:\n%s", withGate)
+	}
+	// Everything but the boundary sentence is the gate-less prompt's.
+	back := strings.Replace(withGate,
+		"quality_gate runs the project's own configured checks by suite name, so whether the code builds and its tests pass is something you check rather than infer. You cannot edit files, and the gate is the only command you can run — do not propose to edit; gather facts instead.",
+		"You cannot edit files or run commands — do not propose to; gather facts instead.", 1)
+	if back != want {
+		t.Errorf("the gate changed more than the boundary sentence:\n%s", withGate)
+	}
+}
+
 // Coding prompts default to the work the user asked for, while a request that
 // names a read-only deliverable must not acquire a mutation merely because a
 // profile can make one.

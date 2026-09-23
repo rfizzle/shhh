@@ -1017,7 +1017,6 @@ func profileEnv(def config.AgentDefinition, spec subagent.Spec, info shell.Info,
 			Description: def.Description,
 			Write:       def.Has(config.PermissionWrite),
 			Execute:     def.Has(config.PermissionExecute),
-			Web:         def.Has(config.PermissionWeb),
 			Tools:       names,
 			Isolated:    def.Writes(),
 		}, prompt.CombineExtra(strings.TrimSpace(def.Prompt), extra))

@@ -186,6 +186,29 @@ func TestAReviewingProfilesPromptNamesTheGateItHolds(t *testing.T) {
 	}
 }
 
+// The same holds for a read-only profile that does not review: the gate
+// sentence follows the toolset, so it is there when the runner reached the
+// child and absent when an untrusted checkout opened none.
+func TestAReadOnlyProfilesPromptNamesTheGateItHolds(t *testing.T) {
+	def := config.AgentDefinition{Name: "auditor", Description: "reads the tree"}
+	info := shell.Info{OS: "linux", Cwd: "/w"}
+
+	held, _, _ := profileEnv(def, subagent.Spec{}, info, "", nil, &quality.Runner{Workspace: t.TempDir()}, map[string]bool{})
+	if !strings.Contains(held, "the gate is the only command you can run") {
+		t.Errorf("a read-only profile holding the gate is not told so:\n%s", held)
+	}
+	if strings.Contains(held, "You cannot edit files or run commands") {
+		t.Errorf("a read-only profile holding the gate is told it can run nothing:\n%s", held)
+	}
+	without, _, _ := profileEnv(def, subagent.Spec{}, info, "", nil, nil, map[string]bool{})
+	if strings.Contains(without, config.QualityGateTool) {
+		t.Errorf("a read-only profile without the gate was told it has one:\n%s", without)
+	}
+	if !strings.Contains(without, "You cannot edit files or run commands") {
+		t.Errorf("a read-only profile without the gate lost the boundary sentence:\n%s", without)
+	}
+}
+
 // Who does not get it, and why each one is a different reason: an untrusted
 // checkout opened no runner for anybody, an allowlist that omits the gate
 // meant to omit it, and a profile that writes would be handed a verdict on

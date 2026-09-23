@@ -619,11 +619,11 @@ type ProfileSpec struct {
 	// Name is the profile's role name; Description its one-line purpose.
 	Name        string
 	Description string
-	// Write, Execute and Web are the tiers the profile granted; read is
-	// always granted.
+	// Write and Execute are the tiers the profile granted; read is always
+	// granted. Whether it holds the web tools is read off Tools, which is
+	// what the permission and the allowlist actually left it.
 	Write   bool
 	Execute bool
-	Web     bool
 	// Tools is the names actually registered for this agent, so the tool
 	// section names only what the child really has
 	// (docs/capabilities/coding-agent.md#the-agent-knows-what-this-machine-has).
@@ -676,6 +676,16 @@ func BuildProfile(info shell.Info, spec ProfileSpec, extra ...string) string {
 		b.WriteString("Make changes with write_file and edit_file rather than pasting code into your messages. Relative paths resolve inside your workspace; keep every change inside it.")
 	case spec.Execute:
 		b.WriteString("You cannot edit files directly — do not propose to; commands are your only way to change anything, and every change is collected as a patch.")
+	// A profile that changes nothing may still hold the project's checks,
+	// and a child told it can run nothing either judges the build by
+	// reading or reaches for a command it does not hold and is refused — so
+	// the sentence names the one command it has, the way reviewerTools does
+	// for a reviewing profile. Only a profile that changes nothing is handed
+	// the gate, which is why this case sits below the two that change things.
+	// See docs/capabilities/subagents.md#a-profile-that-changes-nothing-can-still-run-the-checks.
+	case have["quality_gate"]:
+		b.WriteString("quality_gate runs the project's own configured checks by suite name, so whether the code builds and its tests pass is something you check rather than infer. ")
+		b.WriteString("You cannot edit files, and the gate is the only command you can run — do not propose to edit; gather facts instead.")
 	default:
 		b.WriteString("You cannot edit files or run commands — do not propose to; gather facts instead.")
 	}
