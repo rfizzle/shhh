@@ -18,6 +18,11 @@
    ✓ rewind  turns 6–7 out of the window · ctx 62% → 41%
 
 
+· as it lands · the turns folded above the row
+   ▸ turns 2–3 · rewound · 2 turns, nothing written · [enter] read them · [alt+r] reapply — undo the rewind
+   alt needs Option as Meta — shhh doctor
+   ✓ rewind  turns 2–3 out of the window · ctx 0% → 0%
+
 ── ansi ────────────────────────────────────────────────────
 · both · the files came back and the window moved
   ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252mrewind␛[m  ␛[38;5;252mfiles back to turn 5 · turns 6–7 out of the window · ctx 62% → 41%␛[m                            ␛[38;5;245m3 files␛[m␛[38;5;245m · ␛[m␛[92m+4␛[m ␛[91m−30␛[m
@@ -26,3 +31,8 @@
 · talk only · nothing on the machine was touched
    ␛[92m✓␛[m ␛[38;5;252mrewind␛[m  ␛[38;5;252mturns 6–7 out of the window · ctx 62% → 41%␛[m
 
+
+· as it lands · the turns folded above the row
+   ␛[38;5;241m▸ turns 2–3 · rewound · 2 turns, nothing written · ␛[m␛[94m[enter] read them␛[m␛[38;5;241m · ␛[m␛[94m[alt+r]␛[m␛[38;5;241m reapply — undo the rewind␛[m
+   ␛[38;5;241malt needs Option as Meta — shhh doctor␛[m
+   ␛[92m✓␛[m ␛[38;5;252mrewind␛[m  ␛[38;5;252mturns 2–3 out of the window · ctx 0% → 0%␛[m

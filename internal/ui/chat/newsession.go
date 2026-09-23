@@ -267,6 +267,9 @@ func (m *Model) loadConversation(msgs []provider.Message) {
 	// A loaded conversation is a session with a past; the start screen does
 	// not come back after it is cleared.
 	m.spendStartScreen()
+	// A fold a rewind left can only be put back onto the conversation it was
+	// cut from, and this is a different one (rewind.go).
+	m.retireRewoundFolds()
 	m.agent.SetMessages(msgs)
 	m.resetTranscript()
 	// Follow-ups were written against the conversation being replaced, so

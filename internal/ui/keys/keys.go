@@ -1622,6 +1622,13 @@ type RewindKeys struct {
 	// answer that still works past a turn whose code cannot be restored.
 	Talk   Binding
 	Cancel Binding
+
+	// Diff is the picker's own key rather than the card's: the change a
+	// rewind to the row under the pointer would take back, read full screen
+	// before the row is taken. It is `d` for the diff it opens, and like
+	// every letter on a card that opens as a search it is live once the
+	// query row is closed.
+	Diff Binding
 }
 
 // All is the card's keys in the order it offers them.
@@ -1635,4 +1642,6 @@ var Rewind = RewindKeys{
 	// restored, nothing left the window, and the picker is still there
 	// (docs/interface/principles.md#esc-is-always-the-safe-answer).
 	Cancel: bind("esc", "don't", "esc"),
+
+	Diff: bind("d", "what the turns after it changed", "d"),
 }

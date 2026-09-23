@@ -153,3 +153,49 @@ func TestProgram_TheRewindPutsTheFilesBackToATurn(t *testing.T) {
 		t.Fatalf("the rewind should leave the file as turn 2 left it (%v): %q", err, got)
 	}
 }
+
+// The picker's diff key reads what a rewind to a row takes back and comes
+// back to the picker; the turns taken back fold above the row, and the fold's
+// reapply puts them — and the files they wrote — back.
+func TestProgram_TheRewoundTurnsFoldAndReapply(t *testing.T) {
+	root := programRepo(t, nil)
+	tm := runProgram(t, changesSession(root,
+		programTurn{calls: reads("loop.go")},
+		programTurn{text: "The rounds are counted in loop.go."},
+		editTurn(root, "loop.go", "const limit = 25", "const limit = 50"),
+		programTurn{text: "Capped at fifty now."},
+		editTurn(root, "loop.go", "const limit = 50", "const limit = 100"),
+		programTurn{text: "Raised again."},
+	))
+
+	send(tm, "find where rounds are counted")
+	waitForText(t, tm, "counted in loop.go")
+	send(tm, "cap rounds at the limit")
+	allowEdit(t, tm, "const limit = 50")
+	waitForText(t, tm, "Capped at fifty now")
+	send(tm, "raise the cap")
+	allowEdit(t, tm, "const limit = 100")
+	waitForText(t, tm, "Raised again")
+	send(tm, "/rewind")
+	waitForText(t, tm, "pick a turn to return to")
+	programPress(t, tm, "ctrl+u", "down", "d")
+	waitForText(t, tm, "+1 −1 · 1 file")
+	programPress(t, tm, "esc")
+	waitForText(t, tm, "what the turns after it changed")
+	programPress(t, tm, "enter")
+	waitForText(t, tm, "Rewind to turn 2")
+	programPress(t, tm, "b")
+	waitForText(t, tm, "Undo turn")
+	programPress(t, tm, "y")
+	waitForText(t, tm, "turn 3 · rewound")
+	programPress(t, tm, "alt+r")
+	waitForText(t, tm, "Reapplied turn 3")
+	programPress(t, tm, "y")
+	waitForText(t, tm, "undo of turn")
+
+	frameHas(t, finalFrame(t, tm), "rewound, then reapplied below")
+	got, err := os.ReadFile(filepath.Join(root, "loop.go"))
+	if err != nil || !strings.Contains(string(got), "const limit = 100") {
+		t.Fatalf("the reapply should leave the file as turn 3 left it (%v): %q", err, got)
+	}
+}

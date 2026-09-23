@@ -282,6 +282,12 @@ func (m Model) renderEntryDetail(e entry, width int, keysLive, stepDetail bool) 
 			return ""
 		}
 		return block + "\n"
+	case entryRewound:
+		// The turns a rewind took back, folded (rewind.go).
+		if e.rewound == nil {
+			return ""
+		}
+		return m.rewoundBlock(e, width, keysLive) + "\n"
 	case entryTool, entryCommand:
 		// Compact one-row activity rendering; focus mode expands it,
 		// and so does the step around it.
@@ -495,7 +501,7 @@ func marginLine(style lipgloss.Style, line string, inner, width int) string {
 func entryIsBlock(e entry) bool {
 	switch e.kind {
 	case entryUser, entryAssistant, entryCompactSummary,
-		entryTurnClose, entryFanout, entryTodoRun:
+		entryTurnClose, entryFanout, entryTodoRun, entryRewound:
 		return true
 	case entrySystem, entryError:
 		return strings.Contains(strings.TrimSpace(e.text), "\n")

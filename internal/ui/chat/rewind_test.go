@@ -1028,10 +1028,19 @@ func TestGolden_RewindPicker(t *testing.T) {
 				m = press(t, m, string(r))
 			}
 			m.syncViewport()
+			// The query row closed, which is where the picker's own key is
+			// live: what a rewind to the row would take back.
+			c := rewindPickerModel(t, width)
+			c = sendText(t, c, "/rewind")
+			updated, _ := c.Update(tea.KeyPressMsg{Code: 'u', Mod: tea.ModCtrl})
+			c = updated.(Model)
+			c.syncViewport()
 			return []golden.Panel{
 				{Label: "the timeline · newest first, one row per turn", View: whole},
 				{Label: "typed into · the run the query named is bold",
 					View: strings.Join(m.pickerLines(), "\n")},
+				{Label: "the query row closed · [d] reads what a rewind here takes back",
+					View: strings.Join(c.pickerLines(), "\n")},
 			}
 		})
 }
@@ -1063,10 +1072,29 @@ func TestGolden_RewindRow(t *testing.T) {
 				m.appendRewindRow(r, folded)
 				return m.renderEntry(m.transcript[len(m.transcript)-1], width)
 			}
+			// As it lands after a real rewind: the fold the turns went into,
+			// and the row under it.
+			landed := func() string {
+				m := newRewindModel(t)
+				m.width, m.height = width, 40
+				m.syncInputWidth()
+				for _, turn := range []string{"find where rounds are counted", "cap rounds at the limit", "raise the cap"} {
+					m = completeExchange(t, m, turn, "done")
+				}
+				m = sendText(t, m, "/rewind 1")
+				var out []string
+				for _, e := range m.transcript {
+					if e.kind == entryRewound || (e.notice != nil && e.notice.Act != nil && e.notice.Act.Verb == rewindVerb) {
+						out = append(out, strings.TrimRight(m.renderEntry(e, width), "\n"))
+					}
+				}
+				return strings.Join(out, "\n")
+			}
 			return []golden.Panel{
 				{Label: "both · the files came back and the window moved", View: row(ret, restored)},
 				{Label: "talk only · nothing on the machine was touched",
 					View: row(ret, changeset.Turn{})},
+				{Label: "as it lands · the turns folded above the row", View: landed()},
 			}
 		})
 }

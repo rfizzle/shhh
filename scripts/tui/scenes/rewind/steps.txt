@@ -1,4 +1,5 @@
 # program test: TestProgram_TheRewindPutsTheFilesBackToATurn,
+#   TestProgram_TheRewoundTurnsFoldAndReapply,
 #   TestProgram_TheQuitChordArmsThenLeaves
 #
 # The rewind, end to end (docs/interface/surfaces.md#the-rewind): three turns,
@@ -45,24 +46,41 @@ snap 07-moved "accounting moved to rounds.go"
 # turn number, its mutation mark and diffstat, and its age.
 keys "/rewind" Enter
 snap 08-picker "pick a turn to return to"
-# Down one row and take it: turn 2, whose end is where the session goes back
-# to, so turn 3 is what the scope card offers to take back.
+# Close the query row, which is what makes the picker's own key live, and
+# read what a rewind to turn 2 would take back — turn 3's two files, full
+# screen — before taking it. Esc comes back to the picker where it was.
+keys C-u
+sleep 0.3
 keys Down
 sleep 0.3
+keys d
+snap 09-diff "+6 −1 · 2 files"
+keys Escape
+snap 10-picker-again "what the turns after it changed"
+# Take it: turn 2, whose end is where the session goes back to, so turn 3 is
+# what the scope card offers to take back.
 keys Enter
-snap 09-scope "Rewind to turn 2"
+snap 11-scope "Rewind to turn 2"
 # Both is the usual reading of going back. The file half is answered at the
 # undo confirm behind it, and the row waits for that answer.
 keys b
-snap 10-confirm "Undo turn"
+snap 12-confirm "Undo turn"
 keys y
 # One act, one row: the mutation rail, what came back, what left the window,
-# and what the window costs now. The frame's top rail says where the session
-# now stands — the same turn the card named.
-snap 11-row "files back to turn 2"
+# and what the window costs now. Above it, the turn it took back, folded and
+# out of the window, with the key that puts it back. The frame's top rail
+# says where the session now stands — the same turn the card named.
+snap 13-row "files back to turn 2"
+# The fold's reapply, reached from the draft by its chord: the conversation
+# comes back, and the files come back through the undo confirm every undo
+# goes through.
+keys M-r
+snap 14-reapply-confirm "Reapplied turn 3"
+keys y
+snap 15-reapplied "undo of turn"
 # The prompt has the keyboard, so the first cancel arms the pair and the
 # second takes it.
 keys C-c
-snap 12-quit-armed "again quits"
+snap 16-quit-armed "again quits"
 keys C-c
-snap 13-exit "that is everything the screen was holding"
+snap 17-exit "that is everything the screen was holding"

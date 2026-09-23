@@ -520,25 +520,6 @@ dropped to stay inside the changeset store's limit, and a conversation that
 came back from the store without records at all. Those are the two boundaries
 the row states.
 
-## The rewound turns are branched, not folded
-
-*A disagreement.* The `Rewind` artboard's third window keeps the rewound turns
-in the transcript as a `▸` group row — `turns 6–7 · rewound · 2 turns, 3
-files' worth of work` — with a key that reads them and a key that reapplies
-them. The binary truncates the conversation and preserves the abandoned tail
-as a branch of the session, reachable with `/branches`, which is the mechanism
-`/rewind` has always used and the one the transcript is rebuilt from.
-
-So nothing is hidden — the turns are a switch away, and the notice under the
-row names the branch and the command — but they are not on this transcript,
-and the row says `out of the window` rather than `folded` because folded is a
-claim about rows that are still here. The `[r] reapply` key has nothing behind
-it yet for the same reason: reapplying is switching back to the branch, which
-is a key on a surface this story did not build. Closing the gap means holding
-the rewound turns as fold entries on the transcript beside the branch, which
-is a change to how a rewind stores what it took back rather than to how the
-row is worded.
-
 ## A fan-out lane keeps its kind glyph, and a manager row does not
 
 *A gap.* The rule in the heading is not itself a departure. The states

@@ -497,6 +497,9 @@ func (m Model) finishCompact() (tea.Model, tea.Cmd) {
 	// compaction was running goes first: the receipt is its answer.
 	m.dropCompactingNotice()
 	folded, remaining, turns := m.compactSplit(kept)
+	// A fold a rewind left can only be put back onto the conversation it was
+	// cut from, and the summary is about to replace that (rewind.go).
+	m.retireRewoundFolds()
 
 	m.agent.Compact(summary, kept)
 	// A compaction keeps the system prompt and replaces everything under it,

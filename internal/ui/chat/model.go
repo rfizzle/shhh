@@ -388,6 +388,12 @@ const (
 	// handle on the run's own state rather than a copy of it, the way the
 	// fan-out block holds a batch number.
 	entryTodoRun
+	// entryRewound: the turns a rewind took back, held as one fold on the
+	// transcript beside the branch that keeps them (rewind.go). The rows
+	// are the fold's own and not the transcript's, so nothing that counts
+	// turns or reads verdicts off the transcript sees them; they are out of
+	// the window, and [r] on the fold puts them back.
+	entryRewound
 )
 
 // entry is one transcript item, stored raw so the history can be re-rendered
@@ -586,6 +592,10 @@ type entry struct {
 	// receipt row says the compaction did, and what its fold counts
 	// (context.go). Nil on nothing else, because nothing else is a receipt.
 	compact *compactReceipt
+	// rewound is what an entryRewound fold holds: the rows, the messages and
+	// the checkpoints a rewind took back (rewind.go). Nil on every other
+	// entry.
+	rewound *rewoundFold
 	// outOfWindow marks an entry the model no longer remembers firsthand: a
 	// compaction folded the turn it belongs to into a summary and the rows
 	// stayed behind. The transcript is the record of what happened on this

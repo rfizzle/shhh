@@ -414,6 +414,15 @@ func Surfaces() []Surface {
 			Bindings: []Binding{Select.Delete, Select.Rename},
 		},
 		{
+			// The rewind picker's own key: what a rewind to the row under
+			// the pointer would take back, read before the row is taken.
+			Name:     "the rewind picker",
+			Section:  "docs/interface/surfaces.md#the-rewind",
+			Position: Takeover,
+			Reached:  "/rewind",
+			Bindings: []Binding{Rewind.Diff},
+		},
+		{
 			// The same family with the query line open, which is why it is
 			// a row of its own: a list being typed into keeps every letter
 			// as text, so j/k are not keys and the arrows are the movement

@@ -208,6 +208,10 @@ func (m Model) updatePick(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	if model, cmd, handled := m.updateChatOps(msg); handled {
 		return model, cmd
 	}
+	// And the rewind picker's diff key (rewind.go).
+	if model, cmd, handled := m.updateRewindPick(msg); handled {
+		return model, cmd
+	}
 	done, sel := m.picker.Update(msg)
 	if m.picker.QueryChanged() {
 		m.refilterPicker()

@@ -53,6 +53,10 @@ type transcriptFold struct {
 	// step marks a step's header, whose override is stepFold; a group row's
 	// is groupFold.
 	step bool
+	// rewound marks a rewind's fold, which covers rows of its own rather
+	// than a run of the transcript's, and opens on its expanded flag
+	// (rewind.go).
+	rewound bool
 }
 
 // transcriptFolds lists every fold row on the transcript in the order they
@@ -79,6 +83,11 @@ func (m Model) transcriptFolds(es []entry) []transcriptFold {
 		for _, sl := range m.blockSlots(es, blk) {
 			if sl.group {
 				folds = append(folds, transcriptFold{idx: sl.idx, start: sl.idx, end: sl.idx + sl.span})
+				continue
+			}
+			if e := es[sl.idx]; e.kind == entryRewound && e.rewound != nil &&
+				!e.expanded && len(e.rewound.rows) > 0 {
+				folds = append(folds, transcriptFold{idx: sl.idx, start: sl.idx, end: sl.idx + 1, rewound: true})
 			}
 		}
 	}
@@ -193,6 +202,11 @@ func (m Model) searchKeyFor(es []entry) searchKey {
 	folds := offset
 	for i := range es {
 		folds ^= uint64(es[i].stepFold)<<4 | uint64(es[i].groupFold)<<2 | uint64(es[i].detailFold)
+		if es[i].rewound != nil && es[i].expanded {
+			// A rewind's fold opens on its expanded flag rather than on an
+			// override, and what it covers changes when it does.
+			folds ^= 1 << 7
+		}
 		folds *= prime
 	}
 	at, found := m.viewport.MatchPosition()
@@ -265,11 +279,20 @@ func (m Model) searchHidden() []hiddenMatches {
 	es := *m.entries()
 	var out []hiddenMatches
 	for _, f := range m.transcriptFolds(es) {
-		if n := m.searchMatchesIn(es, f.start, f.end); n > 0 {
+		if n := m.foldMatches(es, f); n > 0 {
 			out = append(out, hiddenMatches{fold: f, count: n})
 		}
 	}
 	return out
+}
+
+// foldMatches is what the query would find behind one fold: the transcript's
+// own rows it is covering, or — for a rewind's fold — the rows it holds.
+func (m Model) foldMatches(es []entry, f transcriptFold) int {
+	if f.rewound {
+		return m.rewoundMatches(es[f.idx].rewound, m.searchRowWidth(es[f.idx]))
+	}
+	return m.searchMatchesIn(es, f.start, f.end)
 }
 
 // searchedRows is how many rows the search looked at: every entry in the
@@ -312,6 +335,9 @@ func (m *Model) clearSearchFolds() bool {
 		}
 		if es[i].groupFold == foldSearch {
 			es[i].groupFold, found = foldAuto, true
+		}
+		if f := es[i].rewound; f != nil && f.searchOpened {
+			f.searchOpened, es[i].expanded, found = false, false, true
 		}
 	}
 	if found {
@@ -369,8 +395,19 @@ func (m Model) openFoldToMatch() (Model, bool) {
 		return m, false
 	}
 	f, ok := m.foldAt(es, m.focusIdx)
-	if !ok || m.searchMatchesIn(es, f.start, f.end) == 0 {
+	if !ok || m.foldMatches(es, f) == 0 {
 		return m, false
+	}
+	if f.rewound {
+		// A rewind's fold holds rows the transcript has no cursor stop for,
+		// so it opens in place and the cursor stays on it; the marks are on
+		// the rows it now draws.
+		es[f.idx].expanded = true
+		es[f.idx].rewound.searchOpened = true
+		m.invalidateRenderCache()
+		m.refreshFocusView()
+		m.pointAtFocusedRow()
+		return m, true
 	}
 	if f.step {
 		es[f.idx].stepFold = foldSearch

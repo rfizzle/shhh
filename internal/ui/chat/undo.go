@@ -196,6 +196,11 @@ func (m Model) applyUndo(plan changeset.UndoPlan, of undoSubject, force bool) (t
 		// what happened, the close says it was a turn and offers the key
 		// that takes it back (docs/interface/surfaces.md#the-rewind).
 		if of.rewind != nil {
+			if of.rewind.fold != nil {
+				// Reapplying the fold takes this turn back as well
+				// (rewind.go).
+				of.rewind.fold.restored = m.turnCount
+			}
 			restored, _ := m.changes.Turn(m.turnCount)
 			m.appendRewindRow(m.settled(*of.rewind), restored)
 		}

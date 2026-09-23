@@ -38,6 +38,9 @@ func expandable(e entry) bool {
 		// because a reader who has just lost five turns is owed what replaced
 		// them without asking (context.go).
 		(e.kind == entryCompactSummary && e.compact != nil && e.compact.floor == "") ||
+		// The turns a rewind took back are a body under their fold, until a
+		// reapply puts them back on the transcript (rewind.go).
+		(e.kind == entryRewound && e.rewound != nil && len(e.rewound.rows) > 0) ||
 		// A public status is bounded where an answer is not, so it is the one
 		// assistant message with a body of its own: what the bound held back
 		// is what [enter] gives back (progress.go).
@@ -320,6 +323,10 @@ func (m Model) rowKey(pressed string) (tea.Model, tea.Cmd, bool) {
 		if next, cmd, claimed := m.todoRunReopen(m.focusIdx); claimed {
 			return next, cmd, true
 		}
+	}
+	// A rewound fold's reapply (rewind.go).
+	if next, cmd, claimed := m.reapplyKey(pressed); claimed {
+		return next, cmd, true
 	}
 	// A dropped stream's offers, and a provider failure's.
 	if next, cmd, claimed := m.dropKey(pressed); claimed {
@@ -938,7 +945,7 @@ func onGrid(e entry) bool {
 	case entryTool, entryCommand, entryDiff, entryThink, entrySummary,
 		entryTodoRun, entryAssistant, entrySystem, entryError,
 		entryTurnClose, entryFailure, entryStreamDrop, entryRoundPause,
-		entryFanout:
+		entryFanout, entryRewound:
 		return true
 	case entryCompactSummary:
 		// The receipt is a row on the grid; a bare summary out of an older

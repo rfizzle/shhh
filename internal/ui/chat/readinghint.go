@@ -638,6 +638,9 @@ func (m Model) readingRowOffers() []components.KeyOffer {
 	if e, ok := m.focusedSteerNotice(); ok {
 		return m.steerOffers(e)
 	}
+	if e, ok := m.focusedRewound(); ok {
+		return m.rewoundOffers(e)
+	}
 	// A backlog run's row, which offers the reopen once it has blocked. Like
 	// the rows above, it is the session's own transcript only.
 	if m.attachedTo == "" {

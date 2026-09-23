@@ -97,6 +97,8 @@ func (m Model) offersRowKeys(e entry) bool {
 		return e.pause != nil && len(e.pause.keys()) > 0
 	case entryTodoRun:
 		return e.todorun != nil && len(e.todorun.offers()) > 0
+	case entryRewound:
+		return len(m.rewoundOffers(e)) > 0
 	case entrySystem:
 		return len(m.steerOffers(e)) > 0
 	}
@@ -121,6 +123,8 @@ func sameOfferRow(a, b entry) bool {
 		return a.pause != nil && a.pause == b.pause
 	case entryTodoRun:
 		return a.todorun != nil && a.todorun == b.todorun
+	case entryRewound:
+		return a.rewound != nil && a.rewound == b.rewound
 	case entrySystem:
 		// The notice an automatic steer left, which is the one system row
 		// that offers a key. What it hangs the offer off is the record of the

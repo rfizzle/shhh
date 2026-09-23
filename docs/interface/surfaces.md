@@ -1935,6 +1935,17 @@ the records of the turns after it rather than about the tree: a run of turns
 whose records were dropped to stay inside the changeset store's size limit, or
 a conversation that came back from the store without them at all.
 
+The picker has one key of its own, and it is a reading rather than an act:
+`[d]` opens what a rewind to the row under the pointer would take back — every
+turn after it, one net change per file, the same reading the card's code field
+states in figures — full screen, and esc comes back to the picker as it was
+left. A row is picked by what its turns changed, and the diffstat is the
+summary of that; the diff is the thing itself, read before the question is
+asked rather than after the answer. Like every letter on a card that opens as
+a search it is live once the query row is closed. Where there is nothing to
+read — the latest turn, a row past the boundary, a run that wrote nothing on
+record — the card says which on its warning line and stays where it was.
+
 The scope card is what a taken row opens. A rewind is two rewinds arriving as
 one word — the files a run of turns wrote, and the turns themselves — and the
 card states them apart, in the same field block an approval states a blast
@@ -1958,6 +1969,26 @@ the one the card predicted: the provider's last count covered the turns the
 cut takes out, so both read the window afterwards as this session's corrected
 estimate of what is kept, and a card that named one figure over a row that
 lands on another would be a question answered with a different fact.
+
+The turns the rewind took back stay on the transcript, above that row, as one
+fold: `▸ turns 6–7 · rewound · 2 turns, 3 files' worth of work · [enter] read
+them · [r] reapply — undo the rewind`. They are out of the window — the model
+is never sent them again, and nothing that counts turns or reads a verdict off
+the transcript counts them — but they are not out of the record, for the reason
+a compaction's folded turns are not: a rewind is about where the conversation
+goes on from, and a transcript that dropped the rows would be answering a
+question nobody asked it. Opening the fold draws the turns as they were, and
+the search counts what it holds while it is closed and opens it onto the match.
+The branch the tail is saved as is still there; the fold is the same turns
+where the reader last saw them. `[r]` puts them back: the conversation is what
+it was before the rewind, the turns' rows return below the rewind's own row,
+the frame stops saying `at turn N`, and where the rewind also put files back,
+the turn that restore landed as is put to the undo confirm, so the files come
+back the way every undo brings them back. The fold stays as the record that the
+turns were once taken back. It can only be put back onto the conversation it
+was cut from, so once anything moves that conversation — a new turn, a branch
+switched to, a compaction — the key goes and the fold is only something to
+read.
 
 The frame's top rail says `at turn N` where it would otherwise say `idle`, and
 `at the start` after a rewind to turn 0 — a place the session can stand, not
