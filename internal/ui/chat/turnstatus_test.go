@@ -56,8 +56,8 @@ func TestTurnStatus_PhaseFollowsWhatTheTurnIsDoing(t *testing.T) {
 
 	m.state = stateRunningCmd
 	m.runningCommand = "go test ./internal/agent/...\nsecond line"
-	if p, ok := m.turnPhase(); !ok || p != components.PhaseRunning {
-		t.Fatalf("a running command = phase %d ok=%v, want running", p, ok)
+	if p, ok := m.turnPhase(); !ok || p != components.PhaseActing {
+		t.Fatalf("a running command = phase %d ok=%v, want acting", p, ok)
 	}
 
 	// An idle session is in none of the four.
@@ -220,15 +220,16 @@ func TestTurnStatus_ResolvesFromTheTurnsOwnCloseBlock(t *testing.T) {
 	if !ok || !s.Done {
 		t.Fatalf("a closed turn should resolve into its summary (ok=%v done=%v)", ok, s.Done)
 	}
-	// The numbers agree because they are the same numbers.
-	if s.Tools != close.Tools || s.Cost != close.Spend {
+	// The outcome agrees because it is the same outcome.
+	if s.Outcome != close.State {
 		t.Fatalf("the resolved line disagrees with the close row: %+v", s)
 	}
-	// All but one: the span stays on the close row, which is still carrying
-	// it when the turn has scrolled away from a line that reports only the
-	// last one (docs/interface/surfaces.md#the-input-frame).
-	if line := stripANSI(s.View(200)); strings.Contains(line, close.Elapsed) {
-		t.Fatalf("the resolved line restated the close row's span: %q", line)
+	// And the account stays on the close row: the span, the tools and the
+	// bill, which the row is still carrying when the turn has scrolled away
+	// from a line that reports only the last one
+	// (docs/interface/surfaces.md#the-input-frame).
+	if line := stripANSI(s.View(200)); line != "✓ done" {
+		t.Fatalf("the resolved line restated the close row's account: %q", line)
 	}
 
 	// A newer turn with no close of its own does not inherit the old one.
@@ -253,8 +254,8 @@ func TestTurnStatus_FrameRailShowsTheTurnAndThenItsSummary(t *testing.T) {
 	m.transcript = append(m.transcript, entry{kind: entryTurnClose, turn: 1,
 		close: &components.TurnClose{State: components.TurnDone, Tools: 18, Elapsed: "1m 04s", Spend: "$0.14"}})
 	view = stripANSI(m.View().Content)
-	if !strings.Contains(view, "✓ done · 18 tools · $0.14") {
-		t.Fatalf("the top rail should resolve into the turn summary:\n%s", view)
+	if !strings.Contains(view, "╭─ ✓ done ─") {
+		t.Fatalf("the top rail should resolve into the turn's outcome and nothing after it:\n%s", view)
 	}
 	if strings.Contains(view, "thinking…") {
 		t.Fatalf("the live line should be finished, not still running:\n%s", view)
@@ -337,7 +338,7 @@ func TestTurnStatus_ARealTurnResolvesOnTheRail(t *testing.T) {
 		t.Fatalf("a finished turn should resolve into ✓ done (ok=%v %+v)", ok, s)
 	}
 	c := lastClose(t, m)
-	if s.Tools != c.Tools || s.Cost != c.Spend {
+	if s.Outcome != c.State {
 		t.Fatalf("the rail and the close row disagree: %+v vs %+v", s, c)
 	}
 	view := stripANSI(m.View().Content)

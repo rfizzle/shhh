@@ -10,7 +10,7 @@
 # it for the colour assignments. Trailing spaces are significant in both.
 
 ── layout ──────────────────────────────────────────────────
-· idle · the draft has the keyboard
+· idle · the turn resolved and the draft has the keyboard
    shhh chat                                                
   ────────────────────────────────────────────────────────  
   ❯ fix the round limit                                     
@@ -38,7 +38,7 @@
                                                             
                                                             
                                                             
-  ╭─ idle ───────────────────────────────────────────────╮  
+  ╭─ ✓ done ─────────────────────────────────────────────╮  
   │ ▸                                                    │  
   ╰─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 ────────────────╯  
 
@@ -74,38 +74,6 @@
   │ ▸                                                    │  
   ╰─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 ────────────────╯  
 
-· resolved · the finished turn's span is stated once
-   shhh chat                                                
-  ────────────────────────────────────────────────────────  
-  ❯ fix the round limit                                     
-  ──────────────────────────────────────────────────────    
-                                                            
-  ▸ 1  Locate the round accounting ───── ✓ 4 tools  1.2s    
-                                                            
-  ▾ 2  Thread the sentinel through th… ─ ✗ 2 tools   22s    
-    ▎✎ edit    internal/agent/loop.go      1 line   1.1s    
-    ▎✗ run     go test ./internal/agent/…  exit 1    21s    
-      --- FAIL: TestRoundLimit                              
-                                                            
-     ✓ Done · 2 steps · 6 tools · 24.7s · $0.14             
-    ▎✎ 1 file changed +12 −4 · [alt+w] review · [alt+z]…    
-     ✗ go test ./internal/agent/... failing · exit 1 · …    
-                                                            
-                                                            
-                                                            
-                                                            
-                                                            
-                                                            
-                                                            
-                                                            
-                                                            
-                                                            
-                                                            
-                                                            
-  ╭─ ✓ done · 6 tools · $0.14 ───────────────────────────╮  
-  │ ▸                                                    │  
-  ╰─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 ────────────────╯  
-
 · a fan-out · one row a child above the input
    shhh chat                                                
   ────────────────────────────────────────────────────────  
@@ -134,7 +102,7 @@
   ⚠ researcher-2 · Say where the rou…  waiting approval: r  
   ⚠ researcher-3 · Say where the loo…  waiting approval: r  
   ⚠ 3 agents waiting approval                               
-  ╭─ idle ───────────────────────────────────────────────╮  
+  ╭─ ✓ done ─────────────────────────────────────────────╮  
   │ ▸                                                    │  
   ╰─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 ────────────────╯  
 
@@ -203,7 +171,7 @@
   ╰─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 ────────────────╯  
 
 ── ansi ────────────────────────────────────────────────────
-· idle · the draft has the keyboard
+· idle · the turn resolved and the draft has the keyboard
   ␛[38;5;254;1m shhh chat␛[m                                                
   ␛[38;5;244m────────────────────────────────────────────────────────␛[m  
   ␛[38;5;254m❯␛[m fix the round limit                                     
@@ -231,7 +199,7 @@
                                                             
                                                             
                                                             
-  ␛[38;5;254m╭─␛[m ␛[38;5;244midle␛[m ␛[38;5;254m───────────────────────────────────────────────╮␛[m  
+  ␛[38;5;254m╭─␛[m ␛[38;5;254m✓ done␛[m ␛[38;5;254m─────────────────────────────────────────────╮␛[m  
   ␛[38;5;254m│␛[m ␛[38;5;244m▸␛[m ␛[38;5;254m                                                  ␛[m ␛[38;5;254m│␛[m  
   ␛[38;5;254m╰─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mctx 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51␛[m ␛[38;5;254m────────────────╯␛[m  
 
@@ -267,38 +235,6 @@
   ␛[38;5;254m│␛[m ␛[38;5;254;1m▸␛[m ␛[38;5;254m                                                  ␛[m ␛[38;5;254m│␛[m  
   ␛[38;5;254m╰─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mctx 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51␛[m ␛[38;5;254m────────────────╯␛[m  
 
-· resolved · the finished turn's span is stated once
-  ␛[38;5;254;1m shhh chat␛[m                                                
-  ␛[38;5;244m────────────────────────────────────────────────────────␛[m  
-  ␛[38;5;254m❯␛[m fix the round limit                                     
-  ␛[38;5;244m──────────────────────────────────────────────────────␛[m    
-                                                            
-  ␛[38;5;244m▸␛[m ␛[38;5;254m1 ␛[m ␛[38;5;254mLocate the round accounting␛[m ␛[38;5;244m─────␛[m ␛[38;5;254m✓␛[m ␛[38;5;244m4 tools␛[m  ␛[38;5;244m1.2s␛[m    
-                                                            
-  ␛[38;5;244m▾␛[m ␛[38;5;254m2 ␛[m ␛[38;5;254mThread the sentinel through th…␛[m ␛[38;5;244m─␛[m ␛[38;5;254m✗␛[m ␛[38;5;244m2 tools␛[m   ␛[38;5;244m22s␛[m    
-    ␛[38;5;254m▎✎␛[m ␛[38;5;254medit␛[m    ␛[38;5;254minternal/agent/loop.go␛[m      ␛[38;5;244m1 line␛[m   ␛[38;5;244m1.1s␛[m    
-    ␛[38;5;254m▎✗␛[m ␛[38;5;254mrun␛[m     ␛[38;5;254mgo test ./internal/agent/…␛[m  ␛[38;5;254mexit 1␛[m    ␛[38;5;244m21s␛[m    
-      ␛[38;5;244m--- FAIL: TestRoundLimit␛[m                              
-                                                            
-     ␛[38;5;254m✓␛[m ␛[38;5;254mDone␛[38;5;244m · 2 steps · 6 tools · 24.7s · $0.14␛[m             
-    ␛[38;5;254m▎✎␛[m ␛[38;5;254m1 file changed +12␛[m ␛[38;5;254m−4␛[38;5;244m · ␛[38;5;254m[alt+w]␛[38;5;244m review · ␛[38;5;254m[alt+z]␛[38;5;244m…␛[m    
-     ␛[38;5;254m✗␛[m ␛[38;5;254mgo test ./internal/agent/... failing␛[38;5;244m · exit 1 · …␛[m    
-                                                            
-                                                            
-                                                            
-                                                            
-                                                            
-                                                            
-                                                            
-                                                            
-                                                            
-                                                            
-                                                            
-                                                            
-  ␛[38;5;254m╭─␛[m ␛[38;5;254m✓ done␛[38;5;244m · 6 tools␛[38;5;254m · $0.14␛[m ␛[38;5;254m───────────────────────────╮␛[m  
-  ␛[38;5;254m│␛[m ␛[38;5;244m▸␛[m ␛[38;5;254m                                                  ␛[m ␛[38;5;254m│␛[m  
-  ␛[38;5;254m╰─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mctx 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51␛[m ␛[38;5;254m────────────────╯␛[m  
-
 · a fan-out · one row a child above the input
   ␛[38;5;254;1m shhh chat␛[m                                                
   ␛[38;5;244m────────────────────────────────────────────────────────␛[m  
@@ -327,7 +263,7 @@
   ␛[38;5;254m⚠␛[m researcher-2␛[38;5;244m · Say where the rou…␛[m  ␛[38;5;254mwaiting approval: r␛[m  
   ␛[38;5;254m⚠␛[m researcher-3␛[38;5;244m · Say where the loo…␛[m  ␛[38;5;254mwaiting approval: r␛[m  
   ␛[38;5;254m⚠ 3 agents waiting approval␛[m                               
-  ␛[38;5;254m╭─␛[m ␛[38;5;244midle␛[m ␛[38;5;254m───────────────────────────────────────────────╮␛[m  
+  ␛[38;5;254m╭─␛[m ␛[38;5;254m✓ done␛[m ␛[38;5;254m─────────────────────────────────────────────╮␛[m  
   ␛[38;5;254m│␛[m ␛[38;5;244m▸␛[m ␛[38;5;254m                                                  ␛[m ␛[38;5;254m│␛[m  
   ␛[38;5;254m╰─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mctx 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51␛[m ␛[38;5;254m────────────────╯␛[m  
 

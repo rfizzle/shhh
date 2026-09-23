@@ -17,23 +17,26 @@ package chat
 //
 // What the turn is spending is not on it. The tokens are on the vitals rail a
 // row below, which already carries the running turn's estimate inside the
-// session's total (vitals.go), and the cost is on the close block the line
-// resolves into, where the ledger states what each request was actually
-// billed. Priced here it could only be freshRateLabel's upper bound on a live
-// pair, which charges every cached prompt read at the fresh rate: the newest
-// figure on the frame would be the one wrong number among the right ones
-// beside it (attach.go, render.go).
+// session's total (vitals.go), and the cost is on the close row the turn
+// leaves in the transcript, where the ledger states what each request was
+// actually billed. Priced here it could only be freshRateLabel's upper bound
+// on a live pair, which charges every cached prompt read at the fresh rate:
+// the newest figure on the frame would be the one wrong number among the
+// right ones beside it (attach.go, render.go).
 //
 // Nothing here is a second source of truth. The phase is read off the state
 // the turn is already in, the elapsed off the turn's own start stamp, and the
-// resolved line off the turn's close block — so the status line and the row
-// it leaves in the transcript state the same facts and cannot disagree.
+// resolved line's outcome off the turn's close block — so the status line and
+// the row it leaves in the transcript cannot disagree about how it ended.
 //
 // The clock is stated once on the screen, and this line has it only while the
 // turn is running: the rail's THIS TURN block counts the turn's files and
 // tools and no span, and the summary this line resolves into leaves the
 // finished span on the close row, which is still carrying it when the turn
-// has scrolled away (docs/interface/surfaces.md#the-input-frame).
+// has scrolled away. The summary leaves the close row's tool count and bill
+// there too: it says the turn is over and how it ended, which is the one
+// thing the reader watching the cursor wants from it
+// (docs/interface/surfaces.md#the-input-frame).
 
 import (
 	"github.com/rfizzle/shhh/internal/agent"
@@ -77,11 +80,11 @@ func (m Model) turnPhase() (components.TurnPhase, bool) {
 		// The vitals rail's `✦ checking`, seen from the frame.
 		return components.PhaseDeciding, true
 	case stateRunningCmd:
-		return components.PhaseRunning, true
+		return components.PhaseActing, true
 	case stateStreaming:
 		switch {
 		case m.agent.Executing():
-			return components.PhaseRunning, true
+			return components.PhaseActing, true
 		case m.streaming != "":
 			return components.PhaseStreaming, true
 		}
@@ -166,8 +169,8 @@ func (m Model) countsLive() bool {
 }
 
 // resolvedTurnStatus is the summary the live line becomes when the turn ends
-// : the same line finished, in place. It is read off the turn's own
-// close block rather than recomputed, so the two cannot disagree.
+// : the same line finished, in place. Its outcome is read off the turn's
+// own close block rather than recomputed, so the two cannot disagree.
 //
 // A turn that closed without one — a round-limit pause states its own
 // checkpoint instead — resolves into nothing, and the slot goes back
@@ -184,12 +187,7 @@ func (m Model) resolvedTurnStatus() (components.TurnStatus, bool) {
 		if e.turn != m.turnCount {
 			break
 		}
-		return components.TurnStatus{
-			Done:    true,
-			Outcome: e.close.State,
-			Tools:   e.close.Tools,
-			Cost:    e.close.Spend,
-		}, true
+		return components.TurnStatus{Done: true, Outcome: e.close.State}, true
 	}
 	return components.TurnStatus{}, false
 }

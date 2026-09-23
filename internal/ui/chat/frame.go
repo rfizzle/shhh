@@ -998,7 +998,7 @@ func (m Model) readChild(name string) childReading {
 	streaming := m.subagents.StreamingText(name)
 	switch {
 	case open > 0:
-		r.phase = components.PhaseRunning
+		r.phase = components.PhaseActing
 	case streaming != "":
 		r.phase = components.PhaseStreaming
 	}

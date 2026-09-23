@@ -598,10 +598,19 @@ where the reader looks for it would depend on how much room they had. When
 the turn stops, the clock stops with it and the span belongs to the past,
 which is the transcript's: [the row the turn leaves](#the-turns-close)
 carries the span and is still carrying it ten turns later, while the rail can
-only ever answer for the last one. So the summary the line resolves into
-states the outcome, what the turn ran and what it was billed, and no span —
-the fields that arrive with the bill, in the place the reader was already
-watching, and no second printing of the figure two rows above it.
+only ever answer for the last one.
+
+The rest of the turn's account goes the same way. The close row states what
+the turn ran and what it was billed beside its span, a few rows above the
+rail, so a summary that stated them too was every field of that row a second
+time at the cursor, less the steps — and the reader who had just watched the
+turn end would read the same count and the same bill twice between the last
+act and the prompt. What only the rail says there is that the turn is over and
+how it ended, so that is all the summary says: `✓ done`, `⊘ cancelled` or
+`✗ failed`, the glyph where the spinner was and the word where the phase was. The
+turn's account is the close row's, and on terminals wide enough for the
+[inspector rail](#the-inspector-rail) its THIS TURN block counts the tools as
+well.
 
 The rail states it at its near corner, two rows above the prompt glyph,
 because it is the one thing on the frame that moves and the eye watching it is
@@ -639,9 +648,8 @@ figure on the frame would be the only wrong one, and the one a reader takes
 for the most current. The tokens leave with it: the pair a row below is the
 same pair on the turn a session opens with, and on any later turn it is the
 question nobody is asking of a line whose job is to say what the turn is
-doing. What the turn spent is stated once more when there is a bill for it —
-the summary this line resolves into carries what the ledger was charged, and
-so does the row the turn leaves in the transcript.
+doing. What the turn spent is stated once there is a bill for it, on the row
+the turn leaves in the transcript, and the vitals rail's total has it inside.
 
 Attached to a child agent, both rails scope to that child. The top one names
 the phase the child is in, read off what the supervisor already reports — a
@@ -824,12 +832,12 @@ through is one to write somewhere else.
 Nothing else moves it, and the terminal's own height moves it least of all.
 An empty draft costs one row on a twenty-row terminal and one on an
 eighty-row one, in every state a person waits through — idle, thinking,
-streaming, running, and the turn resolved — because it is the transcript that
-pays for every row the bottom panel keeps, and a blank row under a cursor
-nobody is typing at carries no character. What such rows would reserve is
-room to type into, and the box grows the instant there is a second line to
-put in one, so the room arrives when it is wanted rather than standing empty
-until then.
+deciding, acting, streaming, and the turn resolved — because it is the
+transcript that pays for every row the bottom panel keeps, and a blank row
+under a cursor nobody is typing at carries no character. What such rows
+would reserve is room to type into, and the box grows the instant there is a
+second line to put in one, so the room arrives when it is wanted rather than
+standing empty until then.
 
 It grows upward, from a bottom rail the panel holds still. The row being
 typed on is the same screen row whether the draft is one line or ten, which

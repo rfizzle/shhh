@@ -5,12 +5,10 @@ package components
 // is the one line on screen that changes: a spinner frame, the phase, and
 // ticking elapsed. It lives in the frame's activity slot and it *resolves
 // into* the turn summary rather than being replaced by one — same line,
-// `✓` where the spinner was, and the finished turn's account where the
-// running line carried none.
+// `✓` where the spinner was and the outcome's word where the phase was.
 //
-// The running line states no account, and states none whatever a host puts
-// in Cost: a turn in flight can only be priced at the full input rate,
-// because the split between fresh and cached prompt reads arrives with the
+// Neither form states an account. The running line cannot: a turn in flight
+// can only be priced at the full input rate, because the split between fresh and cached prompt reads arrives with the
 // provider's report and not before. A dollar figure struck here is high by
 // whatever the cache served, and it is high beside the billed totals the
 // rails below carry — the newest figure on the frame, and the only wrong one.
@@ -32,13 +30,19 @@ package components
 // line has moved on to the next one
 // (docs/interface/surfaces.md#the-input-frame).
 //
+// The resolved line states none either, though by then there is a bill: the
+// close row the turn leaves a few rows above it states what the turn ran and
+// what it was billed, so a count and a bill here were that row's fields a
+// second time, minus its steps. What the line keeps is what only it says at
+// the cursor — that the turn is over, and how it ended, in the place the
+// reader was watching it run (docs/interface/surfaces.md#the-input-frame).
+//
 // Three rules are enforced here rather than left to the hosts. The phases are
 // a closed vocabulary of four, so a state nobody defined has to pick the
-// nearest rather than invent a fifth. The fields leave in one order as the
-// terminal narrows — the resolved line's tool count, then the running line's
-// elapsed — and the phase never leaves, because what the turn is doing is the
-// thing the line exists to say. And the spinner frame is passed in rather
-// than kept, so this line, the running activity row and anything else that
+// nearest rather than invent a fifth. The one field the line can shed as the
+// terminal narrows is the running line's elapsed, and the phase never leaves,
+// because what the turn is doing is the thing the line exists to say. And the
+// spinner frame is passed in rather than kept, so this line, the running activity row and anything else that
 // moves show the same frame from the one tick source.
 
 import "charm.land/lipgloss/v2"
@@ -54,8 +58,9 @@ const (
 	// PhaseDeciding is the auto-mode classifier judging a call (the vitals
 	// rail's `✦ checking`, seen from the frame).
 	PhaseDeciding
-	// PhaseRunning is a tool executing.
-	PhaseRunning
+	// PhaseActing is a tool executing. The word is `acting…`, for the reason
+	// phaseWords gives.
+	PhaseActing
 	// PhaseStreaming is prose arriving.
 	PhaseStreaming
 )
@@ -71,7 +76,7 @@ const (
 var phaseWords = map[TurnPhase]string{
 	PhaseThinking:  "thinking…",
 	PhaseDeciding:  "deciding…",
-	PhaseRunning:   "acting…",
+	PhaseActing:    "acting…",
 	PhaseStreaming: "streaming…",
 }
 
@@ -84,17 +89,14 @@ func (p TurnPhase) Word() string {
 	return phaseWords[PhaseThinking]
 }
 
-// Field-drop levels (guidelines/turnstatus-drop-order). Fields leave in this
-// order and no other; the phase, the outcome and the resolved cost are not on
-// the ladder. The guideline's first rung is gone with the field it shed: the
-// line carries no tool argument to drop, so the counts rung — the resolved
-// line's tool count — is what a narrowing slot reaches first. Each form
-// reaches one of the two rungs with nothing to shed at it: the running line
-// has no count, and the resolved line has no clock.
+// Field-drop levels (guidelines/turnstatus-drop-order). The phase and the
+// outcome are not on the ladder. The guideline's earlier rungs are gone with
+// the fields they shed: the line carries no tool argument and no tool count,
+// so the running line's elapsed is the one field a narrowing slot reaches,
+// and the resolved line has nothing to shed at all.
 const (
 	TurnDropNone    = iota // every field the host supplied
-	TurnDropCounts         // the resolved line's tool count goes first
-	TurnDropElapsed        // then the running line's elapsed; the floor is the word
+	TurnDropElapsed        // the running line's elapsed goes; the floor is the word
 )
 
 // TurnStatus is the line. A host fills the live fields while the turn runs
@@ -115,24 +117,14 @@ type TurnStatus struct {
 	// own row in the feed.
 	Elapsed string
 
-	// Done resolves the line into the summary it becomes: the account where
-	// the clock was, with the outcome's glyph where the spinner was.
+	// Done resolves the line into the summary it becomes: the outcome's glyph
+	// where the spinner was and its word where the phase was, and nothing
+	// after them. The turn's span, what it ran and what it was billed are the
+	// close row's, which states them still when the turn has scrolled away
+	// from a line that only ever reports the last one
+	// (docs/interface/surfaces.md#the-input-frame).
 	Done    bool
 	Outcome TurnState
-	// Tools is what the turn ran and Cost what it was billed. Both are read
-	// only when Done, because both are facts a turn has only once it is over.
-	// Cost in particular: the host reads it off the close block, where it is
-	// the ledger's own per-request total rather than a live pair re-priced at
-	// the fresh rate. A field the host cannot report is left out rather than
-	// reported as zero.
-	//
-	// The turn's wall time is not among them. A clock that has stopped is a
-	// fact about the past, and the past is the transcript's: the close row
-	// the host reads these off states the span, and states it still when the
-	// turn has scrolled away from a line that only ever reports the last one
-	// (docs/interface/surfaces.md#the-input-frame).
-	Tools int
-	Cost  string
 }
 
 // doneWords is the resolved line's word per outcome. It is lower case where
@@ -175,7 +167,7 @@ func (s TurnStatus) View(width int) string {
 // render lays the line out at one drop level, unclipped.
 func (s TurnStatus) render(drop int) string {
 	if s.Done {
-		return s.renderDone(drop)
+		return s.renderDone()
 	}
 	label := s.Phase.Word()
 	// Elapsed, where the ladder left it standing, rides behind the label as
@@ -206,16 +198,8 @@ func (s TurnStatus) render(drop int) string {
 // (docs/interface/surfaces.md#the-input-frame).
 func turnClock(span string) string { return "turn " + span }
 
-// renderDone is the resolved line, and the only form that states a cost. It
-// sheds the tool count, leaving the outcome and what the turn was billed.
-func (s TurnStatus) renderDone(drop int) string {
+// renderDone is the resolved line: the outcome, and only the outcome.
+func (s TurnStatus) renderDone() string {
 	glyph, word, style := s.doneGlyph()
-	out := style.Render(glyph + " " + word)
-	if s.Tools > 0 && drop < TurnDropCounts {
-		out += sty.Dim.Render(" · " + plural(s.Tools, "tool"))
-	}
-	if s.Cost != "" {
-		out += sty.Body.Render(" · " + s.Cost)
-	}
-	return out
+	return style.Render(glyph + " " + word)
 }

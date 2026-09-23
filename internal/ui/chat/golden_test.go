@@ -893,7 +893,7 @@ func TestGolden_TurnStatus(t *testing.T) {
 			// The command is not on the rail: what a running turn puts there
 			// is the phase and the turn's own clock, and the command itself
 			// is the feed's row (live-command.*).
-			{Label: "phase · running", View: frame(func(m *Model) {
+			{Label: "phase · acting", View: frame(func(m *Model) {
 				m.state = stateRunningCmd
 				m.runningCommand = "go test ./internal/agent/..."
 			})},
@@ -2042,6 +2042,14 @@ func TestGolden_Screen(t *testing.T) {
 		build := func(mut func(*Model)) string {
 			m := frameModel(t, width, screenHeight)
 			m.transcript = goldenTranscript()
+			// The transcript is the session's first turn, and a real turn
+			// stamps every row it leaves with its number: without it the
+			// frame reads the close row as some other turn's and says
+			// `idle` over the turn that just closed.
+			m.turnCount = 1
+			for i := range m.transcript {
+				m.transcript[i].turn = 1
+			}
 			mut(&m)
 			m.invalidateRenderCache()
 			m.syncViewport()
@@ -2065,26 +2073,15 @@ func TestGolden_Screen(t *testing.T) {
 			})
 		}
 		return []golden.Panel{
-			{Label: "idle · the draft has the keyboard", View: build(func(m *Model) {})},
+			// One turn, one clock, and the whole screen is where that is
+			// legible: the row the turn left in the transcript states the
+			// span, the tools and the bill, the rail's THIS TURN counts what
+			// the turn did without a span, and the top rail resolves into the
+			// outcome alone (docs/interface/surfaces.md#the-input-frame).
+			{Label: "idle · the turn resolved and the draft has the keyboard", View: build(func(m *Model) {})},
 			{Label: "working · the live tail sits under the pane", View: build(func(m *Model) {
 				m.state = stateStreaming
 				m.streaming = ""
-			})},
-			// The session summary leads the rail where there is a rail to
-			// lead; below 130 columns the same panel is the single-pane
-			// surface with the status row standing in for it above the
-			// input, which is how the capture shows what the narrow terminal
-			// keeps of the block and what it has to ask for.
-			// One turn, one clock, and the whole screen is where that is
-			// legible: the row the turn left in the transcript states the
-			// span, the rail's THIS TURN counts what the turn did without
-			// one, and the summary the top rail resolves into states the
-			// account and no span
-			// (docs/interface/surfaces.md#the-input-frame).
-			{Label: "resolved · the finished turn's span is stated once", View: build(func(m *Model) {
-				m.state = stateInput
-				m.turnCount = 1
-				m.transcript[len(m.transcript)-1].turn = 1
 			})},
 			// The compact rows above the input and the block they belong to.
 			// With nothing being answered they are the fan-out's only
@@ -2096,6 +2093,11 @@ func TestGolden_Screen(t *testing.T) {
 			// (docs/interface/surfaces.md#the-input-frame).
 			{Label: "a fan-out · one row a child above the input", View: fanout(false)},
 			{Label: "…and that child's request on the card · the rows go", View: fanout(true)},
+			// The session summary leads the rail where there is a rail to
+			// lead; below 130 columns the same panel is the single-pane
+			// surface with the status row standing in for it above the
+			// input, which is how the capture shows what the narrow terminal
+			// keeps of the block and what it has to ask for.
 			{Label: "working · a reading of the session leads the rail", View: build(func(m *Model) {
 				m.state = stateStreaming
 				m.streaming = ""

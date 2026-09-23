@@ -498,17 +498,17 @@ func TestGolden_CommitCard(t *testing.T) {
 func TestGolden_TurnStatus(t *testing.T) {
 	captureGolden(t, "turn-status", "running turn status", goldenWidths, func(width int) []golden.Panel {
 		live := func(mut func(*TurnStatus)) string {
-			s := TurnStatus{Phase: PhaseRunning, Elapsed: "12.4s"}
+			s := TurnStatus{Phase: PhaseActing, Elapsed: "12.4s"}
 			mut(&s)
 			return s.View(width)
 		}
 		done := func(mut func(*TurnStatus)) string {
-			s := TurnStatus{Done: true, Tools: 18, Cost: "$0.14"}
+			s := TurnStatus{Done: true}
 			mut(&s)
 			return s.View(width)
 		}
 		slot := func(cols int) string {
-			return TurnStatus{Phase: PhaseRunning, Elapsed: "12.4s"}.View(cols)
+			return TurnStatus{Phase: PhaseActing, Elapsed: "12.4s"}.View(cols)
 		}
 		return []golden.Panel{
 			{Label: "phase · thinking", View: live(func(s *TurnStatus) {
@@ -524,22 +524,16 @@ func TestGolden_TurnStatus(t *testing.T) {
 			{Label: "phase · streaming", View: live(func(s *TurnStatus) {
 				s.Phase = PhaseStreaming
 			})},
-			// A live line handed a cost anyway: the field is the resolved
-			// summary's, and the running form does not print it whatever the
-			// host puts there (turnstatus.go).
-			{Label: "running · a cost is not the live line's to state", View: live(func(s *TurnStatus) {
-				s.Cost = "$0.06"
-			})},
 			{Label: "slot · elapsed goes, leaving the phase", View: slot(12)},
-			// The resolved line states the account and no span: a stopped
-			// clock belongs to the row the turn left in the transcript
+			// The resolved line is the outcome alone: the span, the tools and
+			// the bill are the row the turn left in the transcript
 			// (docs/interface/surfaces.md#the-input-frame).
-			{Label: "resolved · done, and the span is the close row's", View: done(func(s *TurnStatus) {})},
+			{Label: "resolved · done, and the account is the close row's", View: done(func(s *TurnStatus) {})},
 			{Label: "resolved · cancelled", View: done(func(s *TurnStatus) {
-				s.Outcome, s.Tools = TurnCancelled, 5
+				s.Outcome = TurnCancelled
 			})},
 			{Label: "resolved · failed", View: done(func(s *TurnStatus) {
-				s.Outcome, s.Tools, s.Cost = TurnFailed, 2, "~1.2k tok"
+				s.Outcome = TurnFailed
 			})},
 		}
 	})
@@ -556,7 +550,7 @@ func TestGolden_Anim(t *testing.T) {
 	captureGolden(t, "anim", "the working label in motion", []int{80}, func(width int) []golden.Panel {
 		status := func(frame, arriving int) TurnStatus {
 			return TurnStatus{Frame: frame, Arriving: arriving,
-				Phase: PhaseRunning, Elapsed: "0.4s"}
+				Phase: PhaseActing, Elapsed: "0.4s"}
 		}
 		// Each panel is one frame per row, oldest first, so the whole
 		// animation is legible as a block instead of one still at a time.
@@ -566,7 +560,7 @@ func TestGolden_Anim(t *testing.T) {
 			entrance = append(entrance, status(0, arriving).View(width))
 		}
 		var sweep []string
-		for frame := range animRest + len([]rune(PhaseRunning.Word())) {
+		for frame := range animRest + len([]rune(PhaseActing.Word())) {
 			sweep = append(sweep, status(frame, 0).View(width))
 		}
 		return []golden.Panel{

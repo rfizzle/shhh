@@ -13,7 +13,7 @@ import (
 // visible. There is no third field: the call the phase is for is a row in the
 // feed and not a copy on this line.
 func liveStatus() TurnStatus {
-	return TurnStatus{Phase: PhaseRunning, Elapsed: "12.4s"}
+	return TurnStatus{Phase: PhaseActing, Elapsed: "12.4s"}
 }
 
 func plainStatus(s TurnStatus, width int) string { return ansi.Strip(s.View(width)) }
@@ -25,7 +25,7 @@ func TestTurnStatus_PhaseVocabularyIsClosed(t *testing.T) {
 	}{
 		{PhaseThinking, "thinking…"},
 		{PhaseDeciding, "deciding…"},
-		{PhaseRunning, "acting…"},
+		{PhaseActing, "acting…"},
 		{PhaseStreaming, "streaming…"},
 		// A phase nobody defined picks the nearest of the four rather than
 		// rendering blank or inventing a fifth.
@@ -85,22 +85,6 @@ func TestTurnStatus_ClipsRatherThanVanishes(t *testing.T) {
 	}
 }
 
-// The cost belongs to the resolved line and to nothing else. A turn in
-// flight can only be priced at the fresh input rate, which charges every
-// cached prompt read as if it were new, so a host that fills the field early
-// gets no dollars for it (docs/interface/surfaces.md#the-input-frame).
-func TestTurnStatus_TheRunningLineStatesNoCost(t *testing.T) {
-	s := liveStatus()
-	s.Cost = "$0.06"
-	if got := plainStatus(s, 200); strings.Contains(got, "$") {
-		t.Fatalf("a turn still running was priced: %q", got)
-	}
-	s.Done, s.Tools = true, 18
-	if got := plainStatus(s, 200); !strings.Contains(got, "$0.06") {
-		t.Fatalf("the resolved line should carry what the turn was billed: %q", got)
-	}
-}
-
 // The running line says whose clock it is stating. The feed under it carries
 // a clock per row and a ticking one on the command in flight, so an
 // unlabelled figure here is a second reading of an operation the reader is
@@ -111,50 +95,24 @@ func TestTurnStatus_TheClockSaysItIsTheTurns(t *testing.T) {
 	}
 }
 
-// And the line holds that clock only while the turn is running. A stopped
-// clock is a fact about the past, and the past is the transcript's: the close
-// row this summary is read off states the span, and states it still when the
-// turn has scrolled away from a line that reports only the last one
-// (docs/interface/surfaces.md#the-input-frame).
-func TestTurnStatus_TheResolvedLineStatesNoSpan(t *testing.T) {
-	done := TurnStatus{Done: true, Tools: 18, Cost: "$0.14"}
-	got := plainStatus(done, 200)
-	if strings.Contains(got, "turn ") {
-		t.Fatalf("the resolved line stated the turn's span: %q", got)
-	}
-	if !strings.Contains(got, "18 tools") || !strings.Contains(got, "$0.14") {
-		t.Fatalf("the resolved line should still state the account: %q", got)
-	}
-}
-
-func TestTurnStatus_ResolvesIntoTheSummary(t *testing.T) {
+// The resolved line is the outcome and nothing after it. The stopped clock,
+// the tools the turn ran and what it was billed are the close row's, which
+// the turn leaves a few rows above this line and which still states them when
+// the turn has scrolled away (docs/interface/surfaces.md#the-input-frame).
+func TestTurnStatus_ResolvesIntoTheOutcome(t *testing.T) {
 	cases := []struct {
 		outcome TurnState
 		want    string
 	}{
-		{TurnDone, "✓ done · 18 tools · $0.14"},
-		{TurnCancelled, "⊘ cancelled · 18 tools · $0.14"},
-		{TurnFailed, "✗ failed · 18 tools · $0.14"},
+		{TurnDone, "✓ done"},
+		{TurnCancelled, "⊘ cancelled"},
+		{TurnFailed, "✗ failed"},
 	}
 	for _, c := range cases {
-		s := TurnStatus{Done: true, Outcome: c.outcome, Tools: 18, Cost: "$0.14"}
+		// A host that leaves the clock filled in does not get it restated.
+		s := TurnStatus{Done: true, Outcome: c.outcome, Elapsed: "1m 04s"}
 		if got := plainStatus(s, 200); got != c.want {
 			t.Fatalf("resolved %d = %q, want %q", c.outcome, got, c.want)
-		}
-	}
-}
-
-func TestTurnStatus_ResolvedLineDropsInTheSameOrder(t *testing.T) {
-	s := TurnStatus{Done: true, Tools: 18, Cost: "$0.14"}
-	for _, c := range []struct {
-		width int
-		want  string
-	}{
-		{25, "✓ done · 18 tools · $0.14"},
-		{16, "✓ done · $0.14"},
-	} {
-		if got := plainStatus(s, c.width); got != c.want {
-			t.Fatalf("resolved at width %d = %q, want %q", c.width, got, c.want)
 		}
 	}
 }
