@@ -34,7 +34,7 @@ func (db *DB) SaveSource(slot string, s web.Source) (int64, error) {
 		     title, status, bytes, results, cached, evidence, at)
 		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		id, s.Turn, s.Agent, s.Kind, s.Query, s.Requested, s.FinalURL,
-		s.Title, s.Status, s.Bytes, s.Results, s.Cached, s.Evidence, at.UTC().Format(time.RFC3339Nano),
+		s.Title, s.Status, s.Bytes, s.Results, s.Cached, s.Evidence, stamp(at),
 	)
 	if err != nil {
 		return 0, err

@@ -157,8 +157,9 @@ func dataDir() (string, error) {
 	return filepath.Join(home, ".local", "share", "shhh"), nil
 }
 
-// retentionCutoff is the moment a row is past a window of so many days, in
-// the layout most of this store writes a timestamp in.
+// retentionCutoff is the moment a row is past a window of so many days,
+// written by stamp at the width the store's own rows are, so the text
+// comparison a prune makes cannot drop or keep a row by a fractional width.
 //
 // It is a function rather than the same expression written out beside each
 // table, because the store keeps more than one kind of row for a window and
@@ -167,7 +168,7 @@ func dataDir() (string, error) {
 // and whatever joined one to the other then finds half a pair.
 // See docs/capabilities/sessions-and-memory.md#a-conversation-is-kept-for-a-window.
 func retentionCutoff(now time.Time, days int) string {
-	return now.UTC().AddDate(0, 0, -days).Format(time.RFC3339Nano)
+	return stamp(now.UTC().AddDate(0, 0, -days))
 }
 
 // matchTerms turns what a person typed into one expression per word for the
@@ -323,7 +324,7 @@ func (db *DB) ClaimPrune(every time.Duration) (bool, error) {
 			`INSERT INTO housekeeping (job, ran_at) VALUES (?, ?)
 			 ON CONFLICT(job) DO UPDATE SET ran_at = excluded.ran_at
 			 WHERE housekeeping.ran_at < ?`,
-			pruneJob, now.Format(time.RFC3339Nano), now.Add(-every).Format(time.RFC3339Nano),
+			pruneJob, stamp(now), stamp(now.Add(-every)),
 		)
 		if err != nil {
 			return err

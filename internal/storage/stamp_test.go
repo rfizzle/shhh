@@ -13,6 +13,7 @@ import (
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/notebook"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/web"
 )
 
 // TestStampOrdersAsText pins the write format against the reason it was
@@ -49,7 +50,9 @@ func TestStampOrdersAsText(t *testing.T) {
 // listings below order by: one row per table, written the way the product
 // writes it, and each stamp read back has to parse against the fixed-width
 // layout. time.RFC3339Nano renders a stamp that will not, which is how a
-// write slipping back to it is caught here rather than in a flake.
+// write slipping back to it is caught here rather than in a flake. The two
+// bounds a sweep compares those columns against are held to the same layout,
+// since a bound at another width misplaces a row by up to a second.
 func TestStoredStampsAreWrittenAtOneWidth(t *testing.T) {
 	db := openTestDB(t)
 	slot := changeSlot(t, db, "stamps")
@@ -70,6 +73,12 @@ func TestStoredStampsAreWrittenAtOneWidth(t *testing.T) {
 		Path: "main.go", After: "fresh\n", AfterExists: true,
 		Agent: changeset.MainAgent, At: time.Now(),
 	})
+	if _, err := db.SaveSource(slot, web.Source{Kind: web.KindFetch, FinalURL: "https://go.dev/"}); err != nil {
+		t.Fatalf("save source: %v", err)
+	}
+	if _, err := db.ClaimPrune(24 * time.Hour); err != nil {
+		t.Fatalf("claim prune: %v", err)
+	}
 
 	for _, c := range []struct{ column, query string }{
 		{"memories.created_at", `SELECT created_at FROM memories`},
@@ -80,6 +89,8 @@ func TestStoredStampsAreWrittenAtOneWidth(t *testing.T) {
 		{"chat_sessions.updated_at", `SELECT updated_at FROM chat_sessions`},
 		{"notes.written_at", `SELECT written_at FROM notes`},
 		{"changes.at", `SELECT at FROM changes`},
+		{"sources.at", `SELECT at FROM sources`},
+		{"housekeeping.ran_at", `SELECT ran_at FROM housekeeping`},
 	} {
 		var got string
 		if err := db.sql.QueryRow(c.query).Scan(&got); err != nil {
@@ -88,6 +99,13 @@ func TestStoredStampsAreWrittenAtOneWidth(t *testing.T) {
 		if _, err := time.Parse(stampLayout, got); err != nil {
 			t.Errorf("%s holds %q, which is not the one width: %v", c.column, got, err)
 		}
+	}
+
+	// A prune's bound is never stored, so it is read where it is made. The
+	// instant has trailing zeros, which is what a variable-width format drops.
+	cutoff := retentionCutoff(time.Date(2026, 9, 13, 10, 0, 0, 500000000, time.UTC), 30)
+	if _, err := time.Parse(stampLayout, cutoff); err != nil {
+		t.Errorf("retentionCutoff gave %q, which is not the one width: %v", cutoff, err)
 	}
 }
 
