@@ -9,6 +9,7 @@ package subagent
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -529,6 +530,12 @@ func (w *Worktree) Root() string { return w.h.root }
 // what another lane has already landed leaves the checkout exactly as it was
 // and says so with an error, rather than half-applying and leaving conflict
 // markers in files nobody has read.
+//
+// A patch the checkout has moved under since the copy was taken — an earlier
+// lane landed in the same files, somewhere else in them — is merged three
+// ways against the copy's base (mergeWorktree) and the merge is what lands,
+// by the same plain apply. A merge that leaves a conflict region lands
+// nothing and names the files.
 func (w *Worktree) Land() ([]string, error) {
 	patch, err := worktreePatch(w.h.dir)
 	if err != nil {
@@ -537,10 +544,24 @@ func (w *Worktree) Land() ([]string, error) {
 	if strings.TrimSpace(patch) == "" {
 		return nil, nil
 	}
-	if err := applyPatch(w.h.repoTop, patch); err != nil {
+	applyErr := applyPatch(w.h.repoTop, patch)
+	if applyErr == nil {
+		return PatchFiles(patch), nil
+	}
+	m, err := mergeWorktree(w.h.dir, w.h.repoTop)
+	switch {
+	case err != nil:
+		return nil, fmt.Errorf("%w; merging it over the checkout: %v", applyErr, err)
+	case len(m.Conflicts) > 0:
+		return nil, &MergeConflict{Files: m.Conflicts}
+	case m.Patch == "":
+		// The checkout already says everything the copy does.
+		return nil, nil
+	}
+	if err := applyPatch(w.h.repoTop, m.Patch); err != nil {
 		return nil, err
 	}
-	return PatchFiles(patch), nil
+	return PatchFiles(m.Patch), nil
 }
 
 // Remove tears the copy down. Best-effort, like every other teardown of one:
@@ -705,4 +726,263 @@ func (w *Worktree) Reseed(patch string) error {
 		return nil
 	}
 	return reseedWorktree(w.h.dir, patch)
+}
+
+// MergeConflict is a patch that would not apply plainly and whose three-way
+// merge left a conflict region: Files are where. Nothing was written.
+type MergeConflict struct{ Files []string }
+
+func (e *MergeConflict) Error() string {
+	return "the patch conflicts with the checkout, which moved since it started, in " + patchPaths(e.Files)
+}
+
+// patchMerge is a writer's patch that no longer applies plainly, merged three
+// ways over the checkout as it stands.
+type patchMerge struct {
+	// Patch is the merge as a patch against the checkout now, which is what
+	// is shown and what lands. Empty where the checkout already holds every
+	// change the writer made, and wherever there are conflicts.
+	Patch string
+	// Moved is the writer's files the checkout changed since the copy's base:
+	// the ones the merge went over.
+	Moved []string
+	// Conflicts is the files whose merge left a conflict region.
+	Conflicts []string
+}
+
+// checkPatch asks whether a patch applies to the checkout as it stands,
+// changing nothing: the question the landing's own all-or-nothing apply
+// answers, asked before a card is put up for a patch that could not land.
+func checkPatch(repoTop, patch string) error {
+	_, err := gitWithEnv(repoTop, nil, patch, "apply", "--check", "--whitespace=nowarn")
+	return err
+}
+
+// mergeSide is one file at one of a merge's three moments, as git would hold
+// it: absent, or content with a mode.
+type mergeSide struct {
+	exists bool
+	mode   string
+	sha    string // the blob, where git already holds it
+	text   string
+}
+
+func (a mergeSide) same(b mergeSide) bool {
+	if !a.exists || !b.exists {
+		return a.exists == b.exists
+	}
+	return a.mode == b.mode && a.text == b.text
+}
+
+// textual is whether a side can go through a line merge: a regular file with
+// no NUL in it. A link, a submodule or a binary has no lines to merge, so a
+// change on both sides of one is a conflict rather than a guess.
+func (a mergeSide) textual() bool {
+	return (a.mode == "100644" || a.mode == "100755") && !strings.Contains(a.text, "\x00")
+}
+
+// mergeWorktree merges a writer's work three ways over the checkout it came
+// from, file by file: the base is the file at the copy's HEAD — the seed, or
+// the last landing carried in — ours is the file in the checkout now, and
+// theirs is the writer's, as its copy's index holds it after worktreePatch.
+// A file the checkout has not moved is the writer's outright; one it has moved
+// goes through `git merge-file`.
+//
+// `git merge-file`, and not a three-way of shhh's own over internal/diff:
+// git is already what every writer's copy is built from, and its line merge
+// is the one the person would get resolving the same two changes by hand, so
+// a region it calls clean is one they would call clean. A second merge
+// algorithm would be a second answer to what "overlaps" means.
+//
+// It runs in a scratch directory with a scratch index — never in a worktree
+// of its own — and the person's checkout is only read: what comes back is a
+// patch against it, written only by the ordinary all-or-nothing apply once it
+// is approved. It is not `git apply --3way`, for the reason applyPatch gives.
+// See docs/capabilities/subagents.md#a-writer-starts-from-your-tree.
+func mergeWorktree(worktree, repoTop string) (patchMerge, error) {
+	var m patchMerge
+	raw, err := gitOutput(worktree, "diff", "--cached", "--raw", "--no-renames", "--no-abbrev", "-z")
+	if err != nil {
+		return m, err
+	}
+	scratch, err := os.MkdirTemp("", "shhh-merge-*")
+	if err != nil {
+		return m, err
+	}
+	defer func() { _ = os.RemoveAll(scratch) }()
+
+	type entry struct {
+		path         string
+		ours, result mergeSide
+	}
+	var entries []entry
+	fields := strings.Split(raw, "\x00")
+	for i := 0; i+1 < len(fields); i += 2 {
+		head, path := strings.Fields(strings.TrimPrefix(fields[i], ":")), fields[i+1]
+		if len(head) < 5 {
+			continue
+		}
+		base := mergeSide{exists: head[0] != "000000", mode: head[0], sha: head[2]}
+		theirs := mergeSide{exists: head[1] != "000000", mode: head[1], sha: head[3]}
+		for _, side := range []*mergeSide{&base, &theirs} {
+			if side.exists {
+				if side.text, err = gitOutput(worktree, "cat-file", "blob", side.sha); err != nil {
+					return m, err
+				}
+			}
+		}
+		ours, err := checkoutSide(filepath.Join(repoTop, filepath.FromSlash(path)))
+		if err != nil {
+			return m, err
+		}
+		if ours.same(base) {
+			entries = append(entries, entry{path, ours, theirs})
+			continue
+		}
+		m.Moved = append(m.Moved, path)
+		if ours.same(theirs) {
+			entries = append(entries, entry{path, ours, ours})
+			continue
+		}
+		merged, ok, err := mergeFile(scratch, base, ours, theirs)
+		if err != nil {
+			return m, err
+		}
+		if !ok {
+			m.Conflicts = append(m.Conflicts, path)
+			continue
+		}
+		entries = append(entries, entry{path, ours, merged})
+	}
+	if len(m.Conflicts) > 0 {
+		return m, nil
+	}
+
+	// The patch is the difference between two trees holding only these
+	// files: the checkout's side, then the merge. Both are built in a scratch
+	// index, so neither what the writer staged nor the checkout's own index
+	// is touched.
+	index := []string{"GIT_INDEX_FILE=" + filepath.Join(scratch, "index")}
+	tree := func(pick func(entry) mergeSide) (string, error) {
+		var lines strings.Builder
+		for _, e := range entries {
+			side := pick(e)
+			if !side.exists {
+				fmt.Fprintf(&lines, "0 %s\t%s\x00", strings.Repeat("0", 40), e.path)
+				continue
+			}
+			sha := side.sha
+			if sha == "" {
+				var err error
+				if sha, err = hashBlob(worktree, side.text); err != nil {
+					return "", err
+				}
+			}
+			fmt.Fprintf(&lines, "%s %s\t%s\x00", side.mode, sha, e.path)
+		}
+		if lines.Len() > 0 {
+			if _, err := gitWithEnv(worktree, index, lines.String(), "update-index", "-z", "--index-info"); err != nil {
+				return "", err
+			}
+		}
+		out, err := gitWithEnv(worktree, index, "", "write-tree")
+		return strings.TrimSpace(out), err
+	}
+	if _, err := gitWithEnv(worktree, index, "", "read-tree", "--empty"); err != nil {
+		return m, err
+	}
+	from, err := tree(func(e entry) mergeSide { return e.ours })
+	if err != nil {
+		return m, err
+	}
+	to, err := tree(func(e entry) mergeSide { return e.result })
+	if err != nil {
+		return m, err
+	}
+	m.Patch, err = gitOutput(worktree, "diff-tree", "-p", "--binary", "--no-renames", "--full-index", from, to)
+	if strings.TrimSpace(m.Patch) == "" {
+		m.Patch = ""
+	}
+	return m, err
+}
+
+// checkoutSide reads one file of the person's checkout as git would hold it.
+// A path that is not there is absent; one that is neither a file nor a link —
+// a directory where the writer has a file — is a side no merge can use, and
+// reads as a mode nothing else has, so it is never the same as either other
+// side and never textual.
+func checkoutSide(full string) (mergeSide, error) {
+	info, err := os.Lstat(full)
+	if os.IsNotExist(err) {
+		return mergeSide{}, nil
+	}
+	if err != nil {
+		return mergeSide{}, err
+	}
+	switch {
+	case info.Mode()&os.ModeSymlink != 0:
+		target, err := os.Readlink(full)
+		return mergeSide{exists: true, mode: "120000", text: target}, err
+	case info.Mode().IsRegular():
+		data, err := os.ReadFile(full)
+		mode := "100644"
+		if info.Mode().Perm()&0o111 != 0 {
+			mode = "100755"
+		}
+		return mergeSide{exists: true, mode: mode, text: string(data)}, err
+	}
+	return mergeSide{exists: true, mode: "?"}, nil
+}
+
+// mergeFile is one file's three-way line merge, answering with the merged
+// side and whether it came out clean. A file added or removed on either side,
+// or one that is not text, has no merge short of choosing a winner, so it is
+// not clean. The mode is whichever side changed it.
+func mergeFile(scratch string, base, ours, theirs mergeSide) (mergeSide, bool, error) {
+	if !base.exists || !ours.exists || !theirs.exists || !base.textual() || !ours.textual() || !theirs.textual() {
+		return mergeSide{}, false, nil
+	}
+	mode := ours.mode
+	switch {
+	case theirs.mode == base.mode:
+	case ours.mode == base.mode:
+		mode = theirs.mode
+	case ours.mode != theirs.mode:
+		return mergeSide{}, false, nil
+	}
+	names := make([]string, 3)
+	for i, side := range []mergeSide{ours, base, theirs} {
+		f, err := os.CreateTemp(scratch, "side-*")
+		if err != nil {
+			return mergeSide{}, false, err
+		}
+		_, werr := f.WriteString(side.text)
+		cerr := f.Close()
+		if werr != nil || cerr != nil {
+			return mergeSide{}, false, errors.Join(werr, cerr)
+		}
+		names[i] = f.Name()
+	}
+	cmd := exec.Command("git", append([]string{"merge-file", "-p"}, names...)...)
+	var out, errBuf bytes.Buffer
+	cmd.Stdout, cmd.Stderr = &out, &errBuf
+	err := cmd.Run()
+	var exit *exec.ExitError
+	switch {
+	case err == nil:
+		return mergeSide{exists: true, mode: mode, text: out.String()}, true, nil
+	case errors.As(err, &exit) && exit.ExitCode() > 0 && exit.ExitCode() < 128:
+		// The exit status is the number of conflict regions.
+		return mergeSide{}, false, nil
+	}
+	return mergeSide{}, false, fmt.Errorf("git merge-file: %s", strings.TrimSpace(errBuf.String()))
+}
+
+// hashBlob writes text into the repository's object store as a blob and
+// answers with its id. The store is the one the checkout and every copy of it
+// share, and nothing points at the blob until a landing commits it, so an
+// unlanded merge leaves only a dangling object git collects on its own.
+func hashBlob(dir, text string) (string, error) {
+	out, err := gitWithEnv(dir, nil, text, "hash-object", "-w", "--no-filters", "--stdin")
+	return strings.TrimSpace(out), err
 }

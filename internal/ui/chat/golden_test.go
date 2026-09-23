@@ -3793,6 +3793,8 @@ func TestGolden_ChildRequestRouted(t *testing.T) {
 				View: overList(grantable())},
 			{Label: "a writer's patch · your files, and the diff behind a counted tail",
 				View: build(longPatchAsk(dir), true)},
+			{Label: "a patch your checkout moved under · the merge is the diff, and the card says so",
+				View: build(mergedPatchAsk(dir), true)},
 		}
 	})
 }

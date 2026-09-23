@@ -1343,6 +1343,17 @@ rail's line under the same child carries the same words and, like its
 `handoff kept · [r] retry`, names the manager's key rather than acting on it
 ([a failed child leaves a handoff](../capabilities/subagents.md#a-failed-child-leaves-a-handoff)).
 
+**A patch your checkout moved under is shown merged.** Where a writer's patch
+no longer applies to your files as they stand, the card's diff is its merge
+over them, never the writer's original, and a `merged` row under `touches`
+says so — `merged    over 2 files that moved since it started` — because a
+reader who has watched the lane expects the writer's own lines and would
+otherwise be reading an unexplained difference. Approving it when the
+checkout has moved again since lands nothing: the card comes back with
+the merge redone. A patch whose changes meet yours on the same lines is
+not put on a card at all; it is kept, and its row offers `[p] review`
+([a writer starts from your tree](../capabilities/subagents.md#a-writer-starts-from-your-tree)).
+
 **A redirect is typed on the row, not in the child's session.** Over a child
 that is queued, running or blocked, `[s]` opens the one-line field the
 question card opens, under the row it will reach and labelled with that

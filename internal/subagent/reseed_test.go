@@ -305,11 +305,15 @@ func TestALandingThatCollidesSteersTheWriterAndLeavesItsCopy(t *testing.T) {
 	repo := reseedRepo(t)
 	mine := strings.Replace(reseedBase, "var x = 0", "var x = 2", 1)
 	w := &landingWriters{second: func(root string) { put(root, "main.go", mine) }}
-	sup, second := runLanding(t, w, repo, false)
-	<-second
+	// writer-2's own patch then conflicts with the landing over the same
+	// line, so it is kept rather than put on a card.
+	sup, _ := runLanding(t, w, repo, false)
 	waitState(t, sup, "writer-2", StateDone)
 
 	st := statusOf(t, sup, "writer-2")
+	if !st.PatchKept {
+		t.Fatal("writer-2's patch over the landed line should be kept")
+	}
 	if st.SteerFrom != SteerFromLanding {
 		t.Fatalf("the steer should come from the landing, got %q", st.SteerFrom)
 	}

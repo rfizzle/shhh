@@ -121,6 +121,24 @@
 │ [esc] back to your draft — the decision stays waiting, nothing is denied                                                   │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
+· a patch your checkout moved under · the merge is the diff, and the card says so
+╭─ writer-1 ▸ Apply patch ──────────────────────────────────────────────────────────────────────────────────────── ⚠ medium ─╮
+│ ✎ apply patch (+40 −40, 2 file(s))                                                                                         │
+│ ⚠ medium · writes 2 files under internal/agent/                                                                            │
+│                                                                                                                            │
+│ lands in  your workspace — the agent's worktree is separate; this is where its work arrives                                │
+│ touches   internal/agent/loop.go and 1 more — 2 files in your checkout                                                     │
+│ merged    over 2 files that moved since it started — the diff is the merge over your checkout, not the agent's original    │
+│ @@ -1,80 +1,80 @@                                                                                                          │
+│ -  1  line 0                                                                                                               │
+│ +  1  line 0 changed                                                                                                       │
+│    2  keep 0                                                                                                               │
+│ … 118 more lines · [shift+↓]                                                                                               │
+├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ [y] apply the patch to your workspace · [n] deny · [d] full diff · [g] attach to writer-1 · [alt+a] agents                 │
+│ [esc] back to your draft — the decision stays waiting, nothing is denied                                                   │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
 ── ansi ────────────────────────────────────────────────────
 · a child's command · resolved in the agent's own checkout
 ␛[91m╭─ ␛[m␛[1;97mwriter-1 ▸ Approve command ␛[m␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────␛[m␛[91m ⚠ HIGH ─╮␛[m
@@ -228,6 +246,24 @@
 ␛[38;5;214m│␛[m ␛[38;5;241m   2  ␛[m␛[38;5;245mkeep 0␛[m                                                                                                               ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[91m-␛[m␛[38;5;241m  3  ␛[m␛[91mline 1␛[m                                                                                                               ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;241m… 117 more lines · [shift+↓]␛[m                                                                                               ␛[38;5;214m│␛[m
+␛[38;5;214m├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
+␛[38;5;214m│␛[m ␛[94m[y]␛[m ␛[38;5;252mapply the patch to your workspace␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m ␛[38;5;252mdeny␛[m␛[38;5;241m · ␛[m␛[94m[d]␛[m ␛[38;5;252mfull diff␛[m␛[38;5;241m · ␛[m␛[94m[g]␛[m ␛[38;5;252mattach to writer-1␛[m␛[38;5;241m · ␛[m␛[94m[alt+a]␛[m ␛[38;5;252magents␛[m                 ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[92m[esc] back to your draft — the decision stays waiting, nothing is denied␛[m                                                   ␛[38;5;214m│␛[m
+␛[38;5;214m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
+
+· a patch your checkout moved under · the merge is the diff, and the card says so
+␛[38;5;214m╭─ ␛[m␛[1;97mwriter-1 ▸ Apply patch ␛[m␛[38;5;241m────────────────────────────────────────────────────────────────────────────────────────␛[m␛[38;5;214m ⚠ medium ─╮␛[m
+␛[38;5;214m│␛[m ␛[38;5;214m✎␛[m ␛[97mapply patch (+40 −40, 2 file(s))␛[m                                                                                         ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;214m⚠ medium␛[m␛[38;5;241m · writes 2 files under internal/agent/␛[m                                                                            ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m                                                                                                                            ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;243mlands in  ␛[m␛[38;5;214myour workspace␛[m␛[38;5;245m — the agent's worktree is separate; this is where its work arrives␛[m                                ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;243mtouches   ␛[m␛[38;5;252minternal/agent/loop.go and 1 more␛[m␛[38;5;245m — 2 files in your checkout␛[m                                                     ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;243mmerged    ␛[m␛[38;5;252mover 2 files that moved since it started␛[m␛[38;5;245m — the diff is the merge over your checkout, not the agent's original␛[m    ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[96m@@ -1,80 +1,80 @@␛[m                                                                                                          ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[91m-␛[m␛[38;5;241m  1  ␛[m␛[91mline 0␛[m                                                                                                               ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[92m+␛[m␛[38;5;241m  1  ␛[m␛[92mline 0␛[m␛[92;48;5;22m changed␛[m                                                                                                       ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;241m   2  ␛[m␛[38;5;245mkeep 0␛[m                                                                                                               ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;241m… 118 more lines · [shift+↓]␛[m                                                                                               ␛[38;5;214m│␛[m
 ␛[38;5;214m├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;214m│␛[m ␛[94m[y]␛[m ␛[38;5;252mapply the patch to your workspace␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m ␛[38;5;252mdeny␛[m␛[38;5;241m · ␛[m␛[94m[d]␛[m ␛[38;5;252mfull diff␛[m␛[38;5;241m · ␛[m␛[94m[g]␛[m ␛[38;5;252mattach to writer-1␛[m␛[38;5;241m · ␛[m␛[94m[alt+a]␛[m ␛[38;5;252magents␛[m                 ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[92m[esc] back to your draft — the decision stays waiting, nothing is denied␛[m                                                   ␛[38;5;214m│␛[m

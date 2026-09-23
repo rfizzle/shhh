@@ -125,6 +125,24 @@
 │ [esc] back to your draft — the decision stays waiting, nothing is denied │
 ╰──────────────────────────────────────────────────────────────────────────╯
 
+· a patch your checkout moved under · the merge is the diff, and the card says so
+╭─ writer-1 ▸ Apply patch ────────────────────────────────────── ⚠ medium ─╮
+│ ✎ apply patch (+40 −40, 2 file(s))                                       │
+│ ⚠ medium · writes 2 files under internal/agent/                          │
+│                                                                          │
+│ lands in  your workspace                                                 │
+│ touches   internal/agent/loop.go and 1 more — 2 files in your checkout   │
+│ merged    over 2 files that moved since it started                       │
+│ @@ -1,80 +1,80 @@                                                        │
+│ -  1  line 0                                                             │
+│ +  1  line 0 changed                                                     │
+│ … 119 more lines · [shift+↓]                                             │
+├──────────────────────────────────────────────────────────────────────────┤
+│ [y] apply the patch to your workspace · [n] deny · [d] full diff         │
+│ [g] attach to writer-1 · [alt+a] agents                                  │
+│ [esc] back to your draft — the decision stays waiting, nothing is denied │
+╰──────────────────────────────────────────────────────────────────────────╯
+
 ── ansi ────────────────────────────────────────────────────
 · a child's command · resolved in the agent's own checkout
 ␛[38;5;254m╭─ ␛[m␛[1;38;5;254mwriter-1 ▸ Approve command ␛[m␛[38;5;254m──────────────────────────────────── ⚠ HIGH ─╮␛[m
@@ -235,6 +253,24 @@
 ␛[38;5;254m│␛[m ␛[38;5;254m+␛[m␛[38;5;244m  1  ␛[m␛[38;5;254mline 0␛[m␛[38;5;254;48;5;237m changed␛[m                                                     ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m   2  ␛[m␛[38;5;244mkeep 0␛[m                                                             ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m… 118 more lines · [shift+↓]␛[m                                             ␛[38;5;254m│␛[m
+␛[38;5;254m├──────────────────────────────────────────────────────────────────────────┤␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mapply the patch to your workspace␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m ␛[38;5;254mfull diff␛[m         ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[g]␛[m ␛[38;5;254mattach to writer-1␛[m␛[38;5;244m · ␛[m␛[38;5;254m[alt+a]␛[m ␛[38;5;254magents␛[m                                  ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[esc] back to your draft — the decision stays waiting, nothing is denied␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m╰──────────────────────────────────────────────────────────────────────────╯␛[m
+
+· a patch your checkout moved under · the merge is the diff, and the card says so
+␛[38;5;254m╭─ ␛[m␛[1;38;5;254mwriter-1 ▸ Apply patch ␛[m␛[38;5;254m────────────────────────────────────── ⚠ medium ─╮␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m✎␛[m ␛[38;5;254mapply patch (+40 −40, 2 file(s))␛[m                                       ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m⚠ medium␛[m␛[38;5;244m · writes 2 files under internal/agent/␛[m                          ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m                                                                          ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244mlands in  ␛[m␛[38;5;254myour workspace␛[m                                                 ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244mtouches   ␛[m␛[38;5;254minternal/agent/loop.go and 1 more␛[m␛[38;5;244m — 2 files in your checkout␛[m   ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244mmerged    ␛[m␛[38;5;254mover 2 files that moved since it started␛[m                       ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m@@ -1,80 +1,80 @@␛[m                                                        ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m-␛[m␛[38;5;244m  1  ␛[m␛[38;5;254mline 0␛[m                                                             ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m+␛[m␛[38;5;244m  1  ␛[m␛[38;5;254mline 0␛[m␛[38;5;254;48;5;237m changed␛[m                                                     ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244m… 119 more lines · [shift+↓]␛[m                                             ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mapply the patch to your workspace␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m ␛[38;5;254mfull diff␛[m         ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[g]␛[m ␛[38;5;254mattach to writer-1␛[m␛[38;5;244m · ␛[m␛[38;5;254m[alt+a]␛[m ␛[38;5;254magents␛[m                                  ␛[38;5;254m│␛[m

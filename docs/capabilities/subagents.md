@@ -152,6 +152,22 @@ against one base, with the child between two rounds. By the time the child
 has finished it has written a whole patch against a tree that has moved,
 and what was a file to re-read is a conflict for you to reconcile.
 
+A landing is not the only way the tree moves, and a writer is not always
+between rounds when one lands: you save a file yourself, or a writer that has
+already written its answer is past the last boundary a landing could be
+carried in at. So a patch that no longer applies to your checkout as it
+stands is merged three ways — the tree the writer started from, your files as
+they are now, and the writer's — and the merge is what you are asked about
+and what lands. A card that showed the writer's own diff and then applied
+something else would be an approval of a change that is not the one that
+landed. The merge is worked out on the side, with your files only read, and
+lands by the same all-or-nothing apply as every other patch; if your checkout
+moves again while the card is up, nothing lands and the card comes back with
+the merge redone. Where the two changes meet on the same lines nothing is
+merged at all: which side wins is a judgement about your work and the
+writer's, and a merge has no standing to make it, so the patch is kept for you
+with the files named.
+
 ## Spawning is a decision
 
 Starting a child is an approval-gated call, like an edit or a command. It

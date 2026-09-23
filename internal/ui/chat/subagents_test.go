@@ -597,6 +597,14 @@ func longPatchAsk(root string) *subagent.Ask {
 	return ask
 }
 
+// mergedPatchAsk is the same patch as the supervisor routes one the checkout
+// moved under: merged over two of its files.
+func mergedPatchAsk(root string) *subagent.Ask {
+	ask := longPatchAsk(root)
+	ask.Merged = []string{"internal/agent/loop.go", "internal/agent/mode.go"}
+	return ask
+}
+
 // routedModel is a session with one child request on screen, holding the
 // keyboard the way a reader who answered the handover would.
 func routedModel(t *testing.T, ask *subagent.Ask) Model {
@@ -634,6 +642,19 @@ func TestChildAskPatchCardCarriesWhatTheSessionsCardCarries(t *testing.T) {
 	}
 	if !card.FullDiff {
 		t.Fatal("a patch with hunks offers [d] into the whole of it")
+	}
+}
+
+// A patch the checkout moved under is shown merged, and the card says so and
+// over how many files; one that applies as written says nothing of the kind.
+func TestChildAskPatchCardSaysItWasMerged(t *testing.T) {
+	dir := t.TempDir()
+	view := ansi.Strip(routedModel(t, mergedPatchAsk(dir)).View().Content)
+	if want := "merged    over 2 files that moved since it started"; !strings.Contains(view, want) {
+		t.Fatalf("the merged patch card should state %q:\n%s", want, view)
+	}
+	if plain := ansi.Strip(routedModel(t, longPatchAsk(dir)).View().Content); strings.Contains(plain, "merged") {
+		t.Fatalf("a patch that applies as written is not called merged:\n%s", plain)
 	}
 }
 

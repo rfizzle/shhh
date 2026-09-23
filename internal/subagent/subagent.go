@@ -923,6 +923,12 @@ type Ask struct {
 	// reader's workspace now and one that changes a copy they will be shown
 	// as a patch afterwards, and nothing else on the ask carries it.
 	Worktree bool
+	// Merged is the files an AskPatch was merged over: the checkout moved
+	// under the writer's patch in them since its copy was taken, and the
+	// hunks are the merge against the checkout as it stands rather than the
+	// writer's own diff. Empty for a patch that applies as written.
+	// See docs/interface/surfaces.md#the-agent-manager.
+	Merged []string
 	// Files are the paths an AskPatch writes in the parent's checkout, as
 	// git names them. They are the patch's blast radius: unlike an edit,
 	// whose diff is the whole of it, a patch's diff can be longer than the
@@ -4893,31 +4899,85 @@ func (s *Supervisor) reviewPatch(c *child) (landed bool) {
 		return false
 	}
 
-	ask, touched := s.patchAsk(c.name, c.repoTop, patch)
-	// What the patch names is the whole of what the parent has to know to
-	// integrate it, and it is already in hand here: a note that gave only a
-	// count sent the parent to `git status` for the names, one round and one
-	// approval after the patch had already landed.
-	held := "; the patch would have touched " + patchPaths(touched)
+	settle := func(note string) {
+		c.mu.Lock()
+		c.patchNote = note
+		c.mu.Unlock()
+	}
 
-	note := ""
-	approved, ok := s.await(c, ask)
-	switch {
-	case !ok:
-		note = "cancelled before the patch was reviewed; no files were changed" + c.keepPatch(patch) + held
-	case !approved:
-		note = "the user declined the patch; no files were changed" + c.keepPatch(patch) + held
-	default:
-		if applied, applyErr := s.landPatch(c, c.repoTop, patch, touched); applyErr != nil {
-			note = "the patch failed to apply cleanly: " + firstLine(applyErr.Error()) + c.keepPatch(patch) + held
-		} else {
-			note, landed = applied, true
+	// What the card shows and what lands are one patch, whichever it is: the
+	// writer's own where it applies to the checkout as it stands, and its
+	// merge over the checkout where the checkout has moved under it since the
+	// copy's base — another writer landed, or the person edited the file, or
+	// the writer ended on an answer and never reached the round boundary a
+	// landing is carried in at. A card that showed the writer's own diff and
+	// then applied a merge would be approving one change and landing
+	// another. The plain patch is always tried first; the merge is shhh's own
+	// (mergeWorktree) and never `git apply --3way`.
+	// See docs/capabilities/subagents.md#a-writer-starts-from-your-tree.
+	offer, merged := patch, []string(nil)
+	for {
+		if checkPatch(c.repoTop, offer) != nil {
+			held := "; the patch would have touched " + patchPaths(PatchFiles(patch))
+			m, err := mergeWorktree(c.worktree, c.repoTop)
+			if err == nil && m.Patch != "" && len(m.Conflicts) == 0 {
+				err = checkPatch(c.repoTop, m.Patch)
+			}
+			switch {
+			case err != nil:
+				settle("the patch no longer applies to the workspace and could not be merged over it: " +
+					firstLine(err.Error()) + "; no files were changed" + c.keepPatch(patch, nil) + held)
+				return false
+			case len(m.Conflicts) > 0:
+				// A conflict region is not settled here: which side wins is
+				// the one judgement this merge has no standing to make.
+				settle("the patch no longer applies to the workspace: " + patchPaths(m.Conflicts) +
+					" moved since it started and the changes conflict there; no files were changed" +
+					c.keepPatch(patch, nil) + held)
+				return false
+			case m.Patch == "":
+				settle("the workspace already holds every change the patch makes; no files were changed")
+				return false
+			}
+			offer, merged = m.Patch, m.Moved
+		}
+
+		ask, touched := s.patchAsk(c.name, c.repoTop, offer)
+		ask.Merged = merged
+		// What the patch names is the whole of what the parent has to know to
+		// integrate it, and it is already in hand here: a note that gave only
+		// a count sent the parent to `git status` for the names, one round and
+		// one approval after the patch had already landed.
+		held := "; the patch would have touched " + patchPaths(touched)
+		approved, ok := s.await(c, ask)
+		switch {
+		case !ok:
+			settle("cancelled before the patch was reviewed; no files were changed" + c.keepPatch(offer, merged) + held)
+			return false
+		case !approved:
+			settle("the user declined the patch; no files were changed" + c.keepPatch(offer, merged) + held)
+			return false
+		}
+		applied, applyErr := s.landPatch(c, c.repoTop, offer, touched)
+		if applyErr == nil {
+			if len(merged) > 0 {
+				applied += ", merged over " + patchPaths(merged) + ", which moved since it started"
+			}
+			settle(applied)
+			return true
+		}
+		// The landing is all-or-nothing, so a refusal changed nothing. Where
+		// the checkout moved while the card was up — a second writer landed,
+		// the person saved a file — the approval was of a patch that no
+		// longer describes what would land, so it goes back through the
+		// merge and to the card again rather than being forced. Where the
+		// patch still applies, the tree did not move and the failure is
+		// something else, which another card would only repeat.
+		if checkPatch(c.repoTop, offer) == nil {
+			settle("the patch failed to apply cleanly: " + firstLine(applyErr.Error()) + c.keepPatch(offer, merged) + held)
+			return false
 		}
 	}
-	c.mu.Lock()
-	c.patchNote = note
-	c.mu.Unlock()
-	return landed
 }
 
 // patchAsk is the card a writer's patch is put to the person on, whichever
@@ -5036,6 +5096,9 @@ type keptPatch struct {
 	// key hands back the same card rather than a second one over the same
 	// work.
 	review *Ask
+	// merged is the files a merge went over where the patch is one, so the
+	// card it is reviewed on from the row says so too.
+	merged []string
 }
 
 // keepPatch is the one fate of a writer's change that did not land, however
@@ -5043,9 +5106,9 @@ type keptPatch struct {
 // scrub, like every other copy that outlives a turn — and held on the child
 // for review from its row. It answers with the note fragment naming it.
 // See docs/capabilities/subagents.md#a-failed-child-leaves-a-handoff.
-func (c *child) keepPatch(patch string) string {
+func (c *child) keepPatch(patch string, merged []string) string {
 	c.mu.Lock()
-	k := &keptPatch{patch: patch, repoTop: c.repoTop}
+	k := &keptPatch{patch: patch, repoTop: c.repoTop, merged: merged}
 	c.mu.Unlock()
 	if c.env.Archive != nil {
 		if id, ok := c.env.Archive(keptPatchTool, patch); ok {
@@ -5079,7 +5142,7 @@ func (c *child) keepStoppedPatch() {
 	if err != nil || strings.TrimSpace(patch) == "" {
 		return
 	}
-	c.keepPatch(patch)
+	c.keepPatch(patch, nil)
 }
 
 // PatchToKeep reports whether ending this agent now would keep a patch: a
@@ -5133,6 +5196,7 @@ func (s *Supervisor) ReviewKept(name string) (*Ask, error) {
 		return pending, nil
 	}
 	ask, touched := s.patchAsk(c.name, k.repoTop, k.patch)
+	ask.Merged = k.merged
 	c.mu.Lock()
 	if c.kept != k {
 		c.mu.Unlock()

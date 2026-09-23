@@ -571,6 +571,18 @@ func (m Model) patchRadius(ask *subagent.Ask) blastRadius {
 	b.fields = append(b.fields, landsInField(ask), components.CardField{
 		Label: "touches", Value: value, Detail: detail, Tone: components.ToneNeutral,
 	})
+	// A patch the checkout moved under is shown merged, and the card says so:
+	// the diff above is not what the writer wrote, and a reader who knows the
+	// writer's change by heart should not be left to wonder why it reads
+	// differently here (docs/interface/surfaces.md#the-agent-manager).
+	if n := len(ask.Merged); n > 0 {
+		b.fields = append(b.fields, components.CardField{
+			Label:  "merged",
+			Value:  "over " + plural(n, "file") + " that moved since it started",
+			Detail: "the diff is the merge over your checkout, not the agent's original",
+			Tone:   components.ToneNeutral,
+		})
+	}
 	if m.changes == nil {
 		b.reversibility = "undo none — this session records no changeset"
 		return b
