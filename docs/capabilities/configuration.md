@@ -516,7 +516,7 @@ describing neither their file nor the default. A refusal says what it refused
 and the keyboard shhh ships runs instead — out loud, rather than swallowed: a
 session quietly running neither keyboard is the failure this guards against.
 
-Four things a file cannot do.
+Five things a file cannot do.
 
 **It cannot leave one surface answering a keystroke with two acts.** That is
 the rule the register of keyed surfaces exists to make checkable
@@ -532,6 +532,21 @@ capital and gave up the lower-case letter to do it
 ([the rule](../interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard)).
 A file that took the letter back would undo that decision from outside the
 program, where no review sees it.
+
+**It cannot put a bare key where the draft can take text.** The input is
+taking a sentence nearly all the time, so a key live there is a chord and
+never a letter: a file that moved the command palette onto `p` would take that
+letter out of every prompt the reader ever writes, and nothing on the screen
+would say why
+([the rule](../interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard)).
+Enter and esc are the rule's own two exceptions, since no sentence produces
+either, and a takeover's letters stay a file's to move, because a surface
+holding the keyboard alone has no sentence to take them from. The refusal
+names the keystroke, the act and the surface, and closes on the rule:
+
+```
+"p" is a letter while the draft can take text, so it cannot also be "the command palette" on the input; a key live at the input is a chord
+```
 
 **It cannot leave a key that moves both ways with one half.** A key offered
 as `j/k` or `↑↓` is a single act in two directions, and the keystrokes it

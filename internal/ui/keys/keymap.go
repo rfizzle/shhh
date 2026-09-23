@@ -13,7 +13,7 @@ package keys
 // of it happens once, at the top of the process, and the register is
 // ordinary package data from then on.
 //
-// Four things a file may not do, and each is a refusal of the whole file
+// Five things a file may not do, and each is a refusal of the whole file
 // rather than of a line. It may not move a key onto a chord the desktop, the
 // terminal or a multiplexer takes before shhh sees it (reserved.go): a hint
 // offering such a chord is a false offer on the machine the reader is
@@ -25,8 +25,10 @@ package keys
 // to make checkable
 // (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard),
 // and a file that broke it would put the first case of a switch silently in
-// front of the second. And it may not move a destructive act onto a movement
-// key: the reason the agent manager kills on a capital in the first place
+// front of the second. It may not give a key that moves both ways one half
+// of its pair: the keystrokes are read back first, then on, and a single one
+// is a pointer that walks up and never down. And it may not move a
+// destructive act onto a movement key: the reason the agent manager kills on a capital in the first place
 // (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard),
 // which a keymap would otherwise be a way around.
 //
