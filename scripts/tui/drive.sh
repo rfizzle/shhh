@@ -316,6 +316,20 @@ while IFS= read -r line || [ -n "$line" ]; do
 	[ "$failed" = 1 ] && break
 done < "$scene/steps.txt"
 
+# No capture holds a tab. A `.txt` is the screen's cells, and a blank cell is a
+# space; a `\t` in one is the renderer's hard-tab move getting past the
+# `stty -tabs` above, and it reads as a straight column that is crooked in the
+# text. Checked here rather than in the Makefile, because every capture is
+# written by this script — `tui-shot`, each scene of `tui-check` and the long
+# path alike — and the old captures were cleared at the start, so every `.txt`
+# under OUT is this run's. Each hit is named by file and line.
+tabbed=$(grep -Hn "$(printf '\t')" "$OUT"/*.txt 2>/dev/null)
+if [ -n "$tabbed" ]; then
+	echo "drive.sh: $name: a capture holds a tab where the screen has spaces:" >&2
+	printf '%s\n' "$tabbed" | sed 's/^/  /' >&2
+	failed=1
+fi
+
 # The pictures. Each snap's captured cells, with their colour, drawn as a
 # still beside the capture they came from: still.py wraps the `.ansi` as a
 # one-frame asciicast and agg draws it, since one frame is one picture.

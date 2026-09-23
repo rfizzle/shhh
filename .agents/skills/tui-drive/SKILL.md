@@ -63,6 +63,15 @@ afterwards; where one is missing the run fails and names it, rather than
 leaving a picture from an earlier run to be read as this one's. The cells are
 unaffected and are still the gate.
 
+**A `.txt` holds the screen's spaces, never a tab.** The pane's terminal
+reports real tabs, so the renderer crossed blank cells with a hard tab where
+that was cheaper, and tmux recorded the run it crossed as one `\t` — a draft
+reading `and check the exit` captured as `and check\tthe exit`, and a column
+straight on screen was crooked in the text. The pane now runs `stty -tabs`
+before the binary, so the renderer moves by spaces and cursor sequences and
+the kernel expands any tab a program writes. A run fails on a capture that
+holds a tab anyway, naming the file and the line.
+
 Read the `.txt` first: it is the layout, and a column that drifted shows
 there. Look at the picture for what text cannot carry — a colour that stopped
 meaning what it meant, a rail that is there but dim, a glyph that fell back.
