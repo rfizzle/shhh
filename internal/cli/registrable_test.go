@@ -22,7 +22,7 @@ import (
 // the server's, and registrableDefinitions does not hold them.
 func TestToolboxHasANoteForEveryToolThatCanBeRegistered(t *testing.T) {
 	defs := registrable(t)
-	box := prompt.Toolbox(defs)
+	box := prompt.Toolbox(defs, false)
 	for _, d := range defs {
 		if !strings.Contains(box, "- "+d.Name+" — ") {
 			t.Errorf("%s can be registered and has no note saying what it is for", d.Name)

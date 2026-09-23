@@ -86,7 +86,7 @@ func TestAskToolIsNotPartOfTheSharedRegistration(t *testing.T) {
 		if names := toolsetNames(session.toolDefs); containsString(names, ask.ToolName) {
 			t.Errorf("%s was offered %s by the shared registration: %v", surface, ask.ToolName, names)
 		}
-		if strings.Contains(prompt.Toolbox(session.toolDefs), ask.ToolName) {
+		if strings.Contains(prompt.Toolbox(session.toolDefs, false), ask.ToolName) {
 			t.Errorf("%s was told it has the question tool", surface)
 		}
 		ts.close()

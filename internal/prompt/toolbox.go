@@ -63,11 +63,27 @@ var toolboxNotes = []struct{ name, note string }{
 	{"ask", "put a question to the person at a fork you cannot decide, where the answers lead to materially different work. Anything the request, the tree or the project's documents answer is not a question: state the assumption and carry on."},
 }
 
+// The spawn_agent line's tail. spawnShape is how a delegation is written
+// whatever the policy; the other two are the policy, and exactly one of them
+// is said. The line says what to do and the reason is in
+// docs/capabilities/subagents.md#spawning-is-a-decision.
+const (
+	spawnShape     = "Give each agent one self-contained task, give writers that work at the same time paths that do not overlap, and collect several with one agent_report wait on the set rather than a wait per name."
+	spawnOnRequest = "A request for thoroughness or depth is not a request to delegate."
+	spawnProactive = "Work that divides into independent parts is to be divided: spawn an agent per part rather than doing the parts one after another yourself."
+)
+
 // Toolbox describes the optional tools this session registered, for the
 // system prompt. It names only tools that are actually present, and returns
 // "" when none of them are — a session with the base toolset alone has
 // nothing to add beyond what BuildAgent already says.
-func Toolbox(tools []provider.Tool) string {
+//
+// proactive is the session's delegation policy where it is not the default:
+// the spawn_agent line then says to divide work that divides, where
+// otherwise it says a request for depth is not a request to delegate. A
+// session whose policy is off registered no spawn_agent, so it has no line
+// to lean either way.
+func Toolbox(tools []provider.Tool, proactive bool) string {
 	have := make(map[string]bool, len(tools))
 	for _, t := range tools {
 		have[t.Name] = true
@@ -76,7 +92,15 @@ func Toolbox(tools []provider.Tool) string {
 	var lines []string
 	for _, n := range toolboxNotes {
 		if have[n.name] {
-			lines = append(lines, "- "+n.name+" — "+n.note)
+			note := n.note
+			if n.name == "spawn_agent" {
+				lean := spawnOnRequest
+				if proactive {
+					lean = spawnProactive
+				}
+				note += " " + spawnShape + " " + lean
+			}
+			lines = append(lines, "- "+n.name+" — "+note)
 		}
 	}
 	if len(lines) == 0 {

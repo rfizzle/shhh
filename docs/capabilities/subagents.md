@@ -159,6 +159,24 @@ same card again
 A writer's never is: a writer's patch is the decision that matters, and the
 spawn card is where the person learns what it will claim.
 
+The card is the person's side of the decision. `agents.delegation` is the
+model's side: when to ask at all. `explicit`, the default, tells it that a
+request for thoroughness or depth is not a request to delegate, because
+"look into this carefully" is the commonest way to ask for depth, and a model
+that reads it as a licence to spawn fills the queue with cards the person
+never meant to raise. `proactive` tells it the opposite: work that divides
+into independent parts is to be divided. It is for the person who would
+otherwise answer yes to every card and wants the model to raise them without
+being asked. Neither policy answers a card, so a spawn under either one is
+still put to the person. `off` takes the orchestration tools away. A session
+that is never to spawn is better off not being shown a tool it may not use
+than refusing every card that tool raises. Whatever the policy, the model is
+told how a delegation is written: one self-contained task per agent, writers
+working at the same time on paths that do not overlap, and several children
+collected with one wait on the set. `/status` and a scripted run's stderr name
+the policy, because a session that never spawned reads the same as one told
+not to until something says which it was.
+
 ## A child answers to the session
 
 A child's permission mode is clamped to its parent's and can never be looser,

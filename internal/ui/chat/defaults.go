@@ -39,6 +39,10 @@ type Defaults struct {
 	// one way this surface can succeed and still not work, so the row that
 	// writes it has to say so.
 	Outranked string
+	// Delegation is agents.delegation as /status states it, worded by the
+	// CLI so the line and a headless run's stderr say it the same way. Empty
+	// is a session that was told nothing, and /status then says nothing.
+	Delegation string
 }
 
 // WithDefaults installs the persisted-defaults surface.

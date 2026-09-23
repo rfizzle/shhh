@@ -61,7 +61,7 @@ const (
 // table of rows put to a call, and the only thing that differs is that the
 // call is the harness's own and no model is asked.
 func (k Kind) IsTable() bool {
-	return k == KindClassifier || k == KindSummary || k == KindInherit || k.Scripted()
+	return k == KindClassifier || k == KindSummary || k == KindInherit || k == KindDelegation || k.Scripted()
 }
 
 // Labels is the closed set this kind's answers come from. A row expecting
@@ -75,6 +75,8 @@ func (k Kind) Labels() []string {
 		return []string{LabelOnTarget, LabelSufficient, LabelOffTarget, LabelUnclear}
 	case KindInherit:
 		return []string{LabelActed, LabelReread, LabelMissed}
+	case KindDelegation:
+		return []string{LabelAlone, LabelSpawned, LabelDivided}
 	}
 	return scriptedLabels(k)
 }
@@ -156,6 +158,9 @@ type Row struct {
 	// not read again.
 	Inherit int
 	Files   map[string]string
+	// Delegation is the agents.delegation policy a delegation row's
+	// instruction is put under (delegation.go); Files is its workspace too.
+	Delegation string
 	// Config is the gate configuration the row's workspace is given, and
 	// Suite the suite the gate is asked for.
 	Config string
@@ -312,6 +317,8 @@ func askRow(ctx context.Context, p provider.Provider, model string, kind Kind, r
 		return askSummary(ctx, p, model, row)
 	case kind == KindInherit:
 		return askInherit(ctx, p, model, row)
+	case kind == KindDelegation:
+		return askDelegation(ctx, p, model, row)
 	case kind.Scripted():
 		return askScripted(ctx, kind, row)
 	}

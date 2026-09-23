@@ -437,3 +437,16 @@ func TestACommandWhoseEndingNobodyReadSaysSo(t *testing.T) {
 		t.Fatalf("got outcome %q failed %v", row.Outcome, row.Failed())
 	}
 }
+
+// /status names the delegation policy the CLI worded, and a session told
+// none says nothing about it.
+func TestStatusNamesTheDelegationPolicy(t *testing.T) {
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream)
+	if text, _ := m.statusCommand(); strings.Contains(text, "Delegation") {
+		t.Fatalf("a session told no policy states one:\n%s", text)
+	}
+	m = m.WithDefaults(Defaults{Delegation: "off — no sub-agents are offered (agents.delegation)"})
+	if text, _ := m.statusCommand(); !strings.Contains(text, "Delegation\noff — no sub-agents are offered") {
+		t.Fatalf("/status should name the policy:\n%s", text)
+	}
+}

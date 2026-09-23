@@ -789,7 +789,16 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	// user wrote; a profile that does not load stops the run naming the file,
 	// exactly as it stops a session.
 	// See docs/capabilities/headless.md#a-run-can-delegate.
+	//
+	// Where the run could delegate, the policy it delegates under is said on
+	// stderr before anything starts: off is the one answer that takes the
+	// tools away, and a script that passed --yes expecting children would
+	// otherwise read their absence as a model that chose not to.
 	var agents *agentProfiles
+	if session.agents {
+		fmt.Fprintf(os.Stderr, "» delegation: %s\n", delegationWords(ConfigFrom(cmd.Context()).AgentDelegation()))
+	}
+	applyDelegation(ConfigFrom(cmd.Context()), &session)
 	if session.agents {
 		agents, err = loadAgentProfiles(true)
 		if err != nil {
@@ -805,7 +814,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 
 	// …and what it has to work with, for the same reason: nobody is
 	// there to suggest the tool it did not know it had.
-	session.promptExtra = prompt.CombineExtra(session.promptExtra, prompt.Toolbox(session.toolDefs))
+	session.promptExtra = prompt.CombineExtra(session.promptExtra, prompt.Toolbox(session.toolDefs, session.proactive))
 
 	// Headless runs bill through the same gate the TUI does; a print run
 	// that under-reported would be the harder one to notice, because nobody

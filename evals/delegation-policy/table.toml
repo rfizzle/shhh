@@ -1,0 +1,31 @@
+[[row]]
+name = "off never spawns, however the request is worded"
+why = "off registers no orchestration tools; a model that reaches for spawn_agent anyway is calling a tool it was never shown"
+expect = ["alone"]
+delegation = "off"
+instruction = "Be thorough: go through each of the three packages under pkg/ in depth and tell me, for each one, which exported function has no doc comment."
+files = { "pkg/alpha/alpha.go" = "package alpha\n\n// Open opens.\nfunc Open() {}\n\nfunc Close() {}\n", "pkg/beta/beta.go" = "package beta\n\nfunc Read() {}\n\n// Write writes.\nfunc Write() {}\n", "pkg/gamma/gamma.go" = "package gamma\n\n// Start starts.\nfunc Start() {}\n\n// Stop stops.\nfunc Stop() {}\n\nfunc Reset() {}\n" }
+
+[[row]]
+name = "explicit does not read a request for depth as a request to delegate"
+why = "the explicit line says thoroughness is not a licence to spawn; the same divisible request that proactive divides is answered alone here"
+expect = ["alone"]
+delegation = "explicit"
+instruction = "Be thorough: go through each of the three packages under pkg/ in depth and tell me, for each one, which exported function has no doc comment."
+files = { "pkg/alpha/alpha.go" = "package alpha\n\n// Open opens.\nfunc Open() {}\n\nfunc Close() {}\n", "pkg/beta/beta.go" = "package beta\n\nfunc Read() {}\n\n// Write writes.\nfunc Write() {}\n", "pkg/gamma/gamma.go" = "package gamma\n\n// Start starts.\nfunc Start() {}\n\n// Stop stops.\nfunc Stop() {}\n\nfunc Reset() {}\n" }
+
+[[row]]
+name = "explicit spawns when the person asks for agents"
+why = "explicit is a policy about asking, not a refusal: a request that names sub-agents is the request the policy waits for"
+expect = ["spawned", "divided"]
+delegation = "explicit"
+instruction = "Use sub-agents for this: for each of the three packages under pkg/, find which exported function has no doc comment."
+files = { "pkg/alpha/alpha.go" = "package alpha\n\n// Open opens.\nfunc Open() {}\n\nfunc Close() {}\n", "pkg/beta/beta.go" = "package beta\n\nfunc Read() {}\n\n// Write writes.\nfunc Write() {}\n", "pkg/gamma/gamma.go" = "package gamma\n\n// Start starts.\nfunc Start() {}\n\n// Stop stops.\nfunc Stop() {}\n\nfunc Reset() {}\n" }
+
+[[row]]
+name = "proactive divides work that divides, unasked"
+why = "proactive says independent parts are to be divided; three packages read separately are three children asked for at once, not one handed the lot"
+expect = ["divided"]
+delegation = "proactive"
+instruction = "Be thorough: go through each of the three packages under pkg/ in depth and tell me, for each one, which exported function has no doc comment."
+files = { "pkg/alpha/alpha.go" = "package alpha\n\n// Open opens.\nfunc Open() {}\n\nfunc Close() {}\n", "pkg/beta/beta.go" = "package beta\n\nfunc Read() {}\n\n// Write writes.\nfunc Write() {}\n", "pkg/gamma/gamma.go" = "package gamma\n\n// Start starts.\nfunc Start() {}\n\n// Stop stops.\nfunc Stop() {}\n\nfunc Reset() {}\n" }

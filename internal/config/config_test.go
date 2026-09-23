@@ -510,6 +510,7 @@ func TestSetAgentAndReadOnlyKeys(t *testing.T) {
 		{"agents.max_concurrent", "5"},
 		{"agents.max_depth", "2"},
 		{"agents.max_children", "8"},
+		{"agents.delegation", "proactive"},
 		{"agents.depth.3.model", "cheap"},
 		{"behavior.read_only_commands", "make lint, bazel query"},
 		{"behavior.read_only_auto", "false"},
@@ -526,6 +527,9 @@ func TestSetAgentAndReadOnlyKeys(t *testing.T) {
 	}
 	if cfg.Agents.MaxChildren != 8 {
 		t.Errorf("max_children = %d, want 8", cfg.Agents.MaxChildren)
+	}
+	if cfg.AgentDelegation() != DelegationProactive {
+		t.Errorf("delegation = %q, want proactive", cfg.AgentDelegation())
 	}
 	if cfg.Agents.MaxDepth != 2 || cfg.Agents.Depths["3"].Model != "cheap" {
 		t.Errorf("the depth keys were not set: %+v", cfg.Agents)
@@ -1402,6 +1406,25 @@ func TestHookCeiling_DefaultsShortAndNeverOutlastsACommand(t *testing.T) {
 		cfg.Behavior.CommandTimeoutSeconds = c.command
 		if got := cfg.HookCeiling(); got != c.want {
 			t.Errorf("%s: HookCeiling() = %v, want %v", c.name, got, c.want)
+		}
+	}
+}
+
+// Unset is the default policy, and so is a word the table does not hold: a
+// hand-edited typo keeps the card asking as it always has rather than taking
+// the tools away or licensing the model to divide work nobody said to divide.
+func TestAgentDelegation_ReadsAnythingElseAsExplicit(t *testing.T) {
+	for _, tc := range []struct{ written, want string }{
+		{"", DelegationExplicit},
+		{"explicit", DelegationExplicit},
+		{"Off", DelegationOff},
+		{" proactive ", DelegationProactive},
+		{"of", DelegationExplicit},
+	} {
+		var cfg Config
+		cfg.Agents.Delegation = tc.written
+		if got := cfg.AgentDelegation(); got != tc.want {
+			t.Errorf("delegation %q reads as %q, want %q", tc.written, got, tc.want)
 		}
 	}
 }

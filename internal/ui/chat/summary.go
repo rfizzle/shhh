@@ -565,6 +565,13 @@ func (m *Model) statusCommand() (string, tea.Cmd) {
 	if hooks := m.hooksStatus(); hooks != "" {
 		text += "\n\n" + hooks
 	}
+	// And when this session starts sub-agents: the policy is the model's
+	// side of that decision, and a session that never spawns reads the same
+	// as one told not to unless something says which it is
+	// (docs/capabilities/subagents.md#spawning-is-a-decision).
+	if m.defaults.Delegation != "" {
+		text += "\n\nDelegation\n" + m.defaults.Delegation
+	}
 	// And what the checkout was not allowed to put here, for the same
 	// reason: a session is not only what it has, it is also what it is
 	// missing and why (trust.go).

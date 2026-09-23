@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/BurntSushi/toml"
+	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
@@ -140,7 +141,7 @@ func LoadCase(dir string) (Case, error) {
 			return Case{}, err
 		}
 		c.Site, c.Prompt, c.Facts = site, strings.TrimSpace(f.Prompt), facts
-	case KindClassifier, KindSummary, KindSteer, KindCompaction, KindSpawn, KindGate, KindInherit:
+	case KindClassifier, KindSummary, KindSteer, KindCompaction, KindSpawn, KindGate, KindInherit, KindDelegation:
 		rows, err := loadTable(filepath.Join(dir, TableFile), kind)
 		if err != nil {
 			return Case{}, err
@@ -161,7 +162,7 @@ func LoadCase(dir string) (Case, error) {
 func kindNames() []string {
 	return []string{string(KindWorkspace), string(KindResearch), string(KindClassifier),
 		string(KindSummary), string(KindSteer), string(KindCompaction), string(KindSpawn), string(KindGate),
-		string(KindInherit)}
+		string(KindInherit), string(KindDelegation)}
 }
 
 // tableFile is a table on disk: nothing but rows, and no top-level key beside
@@ -218,6 +219,9 @@ type rowFile struct {
 	// into, path to contents.
 	Inherit int               `toml:"inherit"`
 	Files   map[string]string `toml:"files"`
+
+	// The policy a delegation row is put under (delegation.go).
+	Delegation string `toml:"delegation"`
 }
 
 // loadTable reads a case's rows and refuses one that cannot be scored.
@@ -270,24 +274,25 @@ func loadTable(path string, kind Kind) ([]Row, error) {
 			Elapsed:      time.Duration(rf.ElapsedSecs) * time.Second,
 			Previous:     strings.TrimSpace(rf.Previous),
 
-			State:     strings.TrimSpace(rf.State),
-			Reason:    strings.TrimSpace(rf.Reason),
-			Needs:     rf.Needs,
-			Rounds:    rf.Rounds,
-			Finished:  rf.Finished,
-			Summary:   strings.TrimSpace(rf.Summary),
-			Window:    rf.Window,
-			Role:      strings.TrimSpace(rf.Role),
-			Task:      strings.TrimSpace(rf.Task),
-			Paths:     rf.Paths,
-			WritePath: strings.TrimSpace(rf.WritePath),
-			WriteBody: rf.WriteBody,
-			Reply:     strings.TrimSpace(rf.Reply),
-			Decline:   rf.Decline,
-			Inherit:   rf.Inherit,
-			Files:     rf.Files,
-			Config:    rf.Config,
-			Suite:     strings.TrimSpace(rf.Suite),
+			State:      strings.TrimSpace(rf.State),
+			Reason:     strings.TrimSpace(rf.Reason),
+			Needs:      rf.Needs,
+			Rounds:     rf.Rounds,
+			Finished:   rf.Finished,
+			Summary:    strings.TrimSpace(rf.Summary),
+			Window:     rf.Window,
+			Role:       strings.TrimSpace(rf.Role),
+			Task:       strings.TrimSpace(rf.Task),
+			Paths:      rf.Paths,
+			WritePath:  strings.TrimSpace(rf.WritePath),
+			WriteBody:  rf.WriteBody,
+			Reply:      strings.TrimSpace(rf.Reply),
+			Decline:    rf.Decline,
+			Inherit:    rf.Inherit,
+			Files:      rf.Files,
+			Delegation: strings.TrimSpace(rf.Delegation),
+			Config:     rf.Config,
+			Suite:      strings.TrimSpace(rf.Suite),
 		}
 		if err := checkScriptedRow(path, kind, row); err != nil {
 			return nil, err
@@ -348,6 +353,14 @@ func checkScriptedRow(path string, kind Kind, row Row) error {
 		}
 		if len(row.Paths) == 0 {
 			return fmt.Errorf("%s: %s: paths is required — it is what the turns already read, and what the child must not read again", path, row.Name)
+		}
+	case KindDelegation:
+		if row.Instruction == "" {
+			return fmt.Errorf("%s: %s: instruction is required — it is the request the policy is read against", path, row.Name)
+		}
+		policies := []string{config.DelegationOff, config.DelegationExplicit, config.DelegationProactive}
+		if !slices.Contains(policies, row.Delegation) {
+			return fmt.Errorf("%s: %s: delegation %q is not a policy — %s", path, row.Name, row.Delegation, strings.Join(policies, ", "))
 		}
 	}
 	return nil

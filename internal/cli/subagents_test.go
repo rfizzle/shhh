@@ -1436,3 +1436,34 @@ func TestAProfilesToolSectionNamesTheSharedToolsItHolds(t *testing.T) {
 		t.Errorf("the role's prompt no longer leads the blocks:\n%s", sysPrompt)
 	}
 }
+
+// agents.delegation off takes the orchestration tools away before anything
+// is registered, the way a session with nobody to answer the card never has
+// them; explicit and proactive keep them, and only proactive leans the
+// toolbox line. A surface that offered no agents is not given them by any
+// policy. See docs/capabilities/subagents.md#spawning-is-a-decision.
+func TestApplyDelegation(t *testing.T) {
+	for _, tc := range []struct {
+		policy          string
+		offered         bool
+		agents, leaning bool
+	}{
+		{"off", true, false, false},
+		{"", true, true, false},
+		{"explicit", true, true, false},
+		{"proactive", true, true, true},
+		{"proactive", false, false, true},
+	} {
+		var cfg config.Config
+		cfg.Agents.Delegation = tc.policy
+		session := chatSession{agents: tc.offered}
+		applyDelegation(cfg, &session)
+		if session.agents != tc.agents || session.proactive != tc.leaning {
+			t.Errorf("policy %q on a session offered=%v: agents=%v proactive=%v, want %v %v",
+				tc.policy, tc.offered, session.agents, session.proactive, tc.agents, tc.leaning)
+		}
+		if words := delegationWords(cfg.AgentDelegation()); !strings.HasPrefix(words, cfg.AgentDelegation()+" — ") {
+			t.Errorf("the policy %q is stated as %q, which does not lead with its word", tc.policy, words)
+		}
+	}
+}

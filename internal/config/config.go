@@ -649,6 +649,11 @@ type AgentsConfig struct {
 	// place in the count. Zero is unset and means the supervisor's default.
 	// See docs/capabilities/subagents.md#limits-are-about-attention-not-resources.
 	MaxChildren int `toml:"max_children"`
+	// Delegation is the session's policy on starting children: "off",
+	// "explicit" (the default) or "proactive". It is the model's side of the
+	// decision — when to ask — and the spawn card stays the person's.
+	// See docs/capabilities/subagents.md#spawning-is-a-decision.
+	Delegation string `toml:"delegation"`
 	// Depths override per level of delegation, keyed by the depth as the
 	// file writes it: "2" is a child of the session, "3" a child of that.
 	// It is a map keyed by a string rather than a slice indexed by the
@@ -685,6 +690,25 @@ func (c Config) AgentMaxDepth() int {
 		return DefaultMaxDepth
 	}
 	return c.Agents.MaxDepth
+}
+
+// The three delegation policies, as the settings table states them.
+const (
+	DelegationOff       = "off"
+	DelegationExplicit  = "explicit"
+	DelegationProactive = "proactive"
+)
+
+// AgentDelegation is the delegation policy in force. Unset reads as
+// explicit, and so does a word the table does not hold: `config set` refuses
+// one, and a hand-edited typo should leave the card asking as it always has
+// rather than take the tools away or hand the model a licence nobody wrote.
+func (c Config) AgentDelegation() string {
+	switch w := strings.ToLower(strings.TrimSpace(c.Agents.Delegation)); w {
+	case DelegationOff, DelegationProactive:
+		return w
+	}
+	return DelegationExplicit
 }
 
 // AgentModel resolves the model for a sub-agent role at a depth: the role

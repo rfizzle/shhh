@@ -369,13 +369,18 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 	// The roles this session can spawn, before the toolbox says what it has:
 	// the built-in two plus the user's own profiles, and a profile that does
 	// not load stops the session naming the file (subagents.go).
-	agents, err := loadAgentProfiles(true)
-	if err != nil {
-		return nil, err
+	// Unless agents.delegation is off, which offers none (subagents.go).
+	var agents *agentProfiles
+	applyDelegation(ConfigFrom(cmd.Context()), &session)
+	if session.agents {
+		var err error
+		if agents, err = loadAgentProfiles(true); err != nil {
+			return nil, err
+		}
+		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), subagent.Definitions(agents.profiles)...)
 	}
-	session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), subagent.Definitions(agents.profiles)...)
 	session.promptExtra = prompt.CombineExtra(session.promptExtra, scopePromptBlock(sc))
-	session.promptExtra = prompt.CombineExtra(session.promptExtra, prompt.Toolbox(session.toolDefs))
+	session.promptExtra = prompt.CombineExtra(session.promptExtra, prompt.Toolbox(session.toolDefs, session.proactive))
 
 	prices := loadPricing()
 	l.ledger = meter.New(prices)
@@ -523,13 +528,21 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 	// answering the parent's cards where it was not: a child that inherited
 	// neither would block on a request the protocol cannot carry.
 	// See docs/capabilities/subagents.md#a-child-answers-to-the-session.
+	//
+	// A session whose delegation policy is off builds none, so a spawn the
+	// model names anyway is an unknown tool rather than a card.
 	classifier := buildClassifier(cfg, env, l.ledger)
-	sup := buildSupervisor(cmd.Context(), cfg, session, env, agents, red, l.recorder, db, prices, classifier, sc, l.ledger, hooks, nil)
-	sup.SetParentMode(agent.ModeAuto)
-	sup.SetParentGrants(agent.Grants{AllEdits: true, AllCommands: true})
-	sup.SetConversation(a.Messages)
-	l.closers = append(l.closers, sup.Close)
-	l.agents = sup
+	var sup *subagent.Supervisor
+	exec := ts.executor(session)
+	if session.agents {
+		sup = buildSupervisor(cmd.Context(), cfg, session, env, agents, red, l.recorder, db, prices, classifier, sc, l.ledger, hooks, nil)
+		sup.SetParentMode(agent.ModeAuto)
+		sup.SetParentGrants(agent.Grants{AllEdits: true, AllCommands: true})
+		sup.SetConversation(a.Messages)
+		l.closers = append(l.closers, sup.Close)
+		l.agents = sup
+		exec = sup.WrapExecutor("", exec)
+	}
 
 	// The same line between the tier that runs on its own and the tier that
 	// has to be answered for that a scripted run draws (approvals.go).
@@ -543,7 +556,7 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 		func(name string, args json.RawMessage) bool {
 			return gate(provider.ToolCall{Name: name, Arguments: string(args)})
 		},
-		hook.Executor(repeats.WrapExecutor(sup.WrapExecutor("", ts.executor(session)))))))
+		hook.Executor(repeats.WrapExecutor(exec)))))
 
 	// The unattended run's approver, opted in, is what a call the client
 	// allowed is run through — so the deny list, the containment refusal, the

@@ -306,6 +306,33 @@ func withDelegation(sup *subagent.Supervisor, agents *agentProfiles, def config.
 	return defs, sup.WrapExecutor(spec.Name, base)
 }
 
+// applyDelegation puts agents.delegation on a session before anything is
+// registered. Off takes the orchestration tools away entirely, the way a
+// session with nobody to answer the spawn card never has them: a tool the
+// model may never use is one it should not be shown. The other two leave the
+// tools and the card where they were and differ only in the toolbox line,
+// because the policy is the model's side of the decision — when to ask — and
+// the card is the person's answer.
+// See docs/capabilities/subagents.md#spawning-is-a-decision.
+func applyDelegation(cfg config.Config, session *chatSession) {
+	policy := cfg.AgentDelegation()
+	session.agents = session.agents && policy != config.DelegationOff
+	session.proactive = policy == config.DelegationProactive
+}
+
+// delegationWords is the policy as a surface states it: the word the
+// settings file takes and what it does, so a reader of /status or a
+// headless run's stderr does not have to go and look the word up.
+func delegationWords(policy string) string {
+	switch policy {
+	case config.DelegationOff:
+		return "off — no sub-agents are offered (agents.delegation)"
+	case config.DelegationProactive:
+		return "proactive — work that divides is divided; each spawn still asks (agents.delegation)"
+	}
+	return "explicit — sub-agents when asked for; each spawn asks (agents.delegation)"
+}
+
 // withSessionTools puts on a child everything the session shares with every
 // child, whatever its role and whatever its profile granted: the navigation
 // toolset, the evidence tool, the skills catalog, the notebook, the servers
@@ -377,7 +404,7 @@ func withSessionTools(session chatSession, red *evidence.Reducer, signature, cro
 	for i, t := range defs {
 		names[i] = t.Name
 	}
-	return defs, base, prompt.CombineExtra(rolePrompt(names), sysPrompt, prompt.Toolbox(defs)), keepResult
+	return defs, base, prompt.CombineExtra(rolePrompt(names), sysPrompt, prompt.Toolbox(defs, session.proactive)), keepResult
 }
 
 // fixedPrompt is the role prompt of a built-in role, whose tool section is

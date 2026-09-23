@@ -770,6 +770,7 @@ own file could hold.
 | `max_concurrent` | number | `3` | How many children may run at once at one level of delegation; further spawns queue. |
 | `max_depth` | number | `3` | How deep delegation may go, counting this session as 1: `3` is this session, its children and theirs. |
 | `max_children` | number | `32` | How many children this session may start in all, wherever in the tree the spawn happened; a finished child keeps its slot. |
+| `delegation` | word: `off`, `explicit`, `proactive` | `explicit` | When the model starts sub-agents: `off` offers it no orchestration tools, `explicit` delegates when asked to, `proactive` divides work that splits into independent parts. The spawn card is drawn under all three. |
 
 **`[summary]`**
 

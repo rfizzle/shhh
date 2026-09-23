@@ -21,7 +21,7 @@ func toolList(names ...string) []provider.Tool {
 }
 
 func TestToolbox_NamesOnlyWhatIsRegistered(t *testing.T) {
-	got := Toolbox(toolList("read_file", "search", "definition", "references", "fd"))
+	got := Toolbox(toolList("read_file", "search", "definition", "references", "fd"), false)
 
 	for _, want := range []string{"definition", "references", "fd"} {
 		if !strings.Contains(got, "- "+want+" — ") {
@@ -38,17 +38,17 @@ func TestToolbox_NamesOnlyWhatIsRegistered(t *testing.T) {
 func TestToolbox_EmptyWithoutOptionalTools(t *testing.T) {
 	// The base toolset is described by BuildAgent itself; a session with
 	// nothing else has nothing to add.
-	if got := Toolbox(toolList("read_file", "list_directory", "glob", "search", "execute_command", "write_file", "edit_file")); got != "" {
+	if got := Toolbox(toolList("read_file", "list_directory", "glob", "search", "execute_command", "write_file", "edit_file"), false); got != "" {
 		t.Errorf("expected no toolbox section, got:\n%s", got)
 	}
-	if got := Toolbox(nil); got != "" {
+	if got := Toolbox(nil, false); got != "" {
 		t.Errorf("expected no toolbox section for no tools, got:\n%s", got)
 	}
 }
 
 func TestToolbox_StableOrder(t *testing.T) {
 	// Navigation leads: it is where a session wastes the most rounds.
-	got := Toolbox(toolList("remember", "fd", "definition"))
+	got := Toolbox(toolList("remember", "fd", "definition"), false)
 	def, fd, rem := strings.Index(got, "- definition"), strings.Index(got, "- fd"), strings.Index(got, "- remember")
 	if def >= fd || fd >= rem {
 		t.Errorf("expected definition < fd < remember, got:\n%s", got)
@@ -56,7 +56,7 @@ func TestToolbox_StableOrder(t *testing.T) {
 }
 
 func TestBuildAgent_CarriesTheToolboxAsExtra(t *testing.T) {
-	box := Toolbox(toolList("references"))
+	box := Toolbox(toolList("references"), false)
 	if box == "" {
 		t.Fatal("expected a toolbox section")
 	}
@@ -112,7 +112,7 @@ func TestFindingThings_KeepsTheThreeRules(t *testing.T) {
 // described that as a call per site would send a one-file rename to the
 // wrong tool.
 func TestToolbox_SplitsSdFromABatchedEdit(t *testing.T) {
-	got := Toolbox(toolList("sd"))
+	got := Toolbox(toolList("sd"), false)
 	for _, want := range []string{"spans files", "edits array"} {
 		if !strings.Contains(got, want) {
 			t.Errorf("the sd note should name the split, missing %q:\n%s", want, got)
@@ -125,7 +125,7 @@ func TestToolbox_SplitsSdFromABatchedEdit(t *testing.T) {
 // the formats it answers, so "what does the CI workflow run" lands on the
 // tool that can parse a workflow.
 func TestToolbox_SplitsTheStructuredQueryToolsByFormat(t *testing.T) {
-	got := Toolbox(toolList("jaq", "yq"))
+	got := Toolbox(toolList("jaq", "yq"), false)
 	if !strings.Contains(got, "- jaq — query JSON") {
 		t.Errorf("the jaq note should claim JSON, got:\n%s", got)
 	}
@@ -139,7 +139,7 @@ func TestToolbox_SplitsTheStructuredQueryToolsByFormat(t *testing.T) {
 // not told which tool is better than the one it already reaches for keeps
 // reaching for the one it already has.
 func TestToolbox_SteersTheLanguageServerAheadOfSearchAndRead(t *testing.T) {
-	got := Toolbox(toolList("fd", "hover", "document_symbol", "workspace_symbol"))
+	got := Toolbox(toolList("fd", "hover", "document_symbol", "workspace_symbol"), false)
 	for _, want := range []string{"where is X declared", "read_file", "without opening the file"} {
 		if !strings.Contains(got, want) {
 			t.Errorf("the language-server notes should steer with %q, got:\n%s", want, got)
@@ -157,7 +157,7 @@ func TestToolbox_SteersTheLanguageServerAheadOfSearchAndRead(t *testing.T) {
 // prompts and the model has no tool for is a message to the user about a
 // child the user was not watching.
 func TestToolboxSaysWhatARepeatedlySteeredAgentMeans(t *testing.T) {
-	got := Toolbox([]provider.Tool{{Name: "spawn_agent"}, {Name: "agent_report"}, {Name: "agent_steer"}})
+	got := Toolbox([]provider.Tool{{Name: "spawn_agent"}, {Name: "agent_report"}, {Name: "agent_steer"}}, false)
 	for _, want := range []string{"steered more than once", "agent_steer", "what it should do instead"} {
 		if !strings.Contains(got, want) {
 			t.Errorf("the toolbox does not state %q:\n%s", want, got)
@@ -169,7 +169,7 @@ func TestToolboxSaysWhatARepeatedlySteeredAgentMeans(t *testing.T) {
 	if !strings.Contains(got, "lane") {
 		t.Errorf("the toolbox does not say where a child is ended:\n%s", got)
 	}
-	if got := Toolbox([]provider.Tool{{Name: "read_file"}}); strings.Contains(got, "steer") {
+	if got := Toolbox([]provider.Tool{{Name: "read_file"}}, false); strings.Contains(got, "steer") {
 		t.Errorf("a session with no agents was told about one:\n%s", got)
 	}
 }
@@ -179,13 +179,13 @@ func TestToolboxSaysWhatARepeatedlySteeredAgentMeans(t *testing.T) {
 // that might not have registered it and said nothing to a coding session
 // that had.
 func TestToolboxStatesTheNotebook(t *testing.T) {
-	got := Toolbox([]provider.Tool{{Name: "write_note"}, {Name: "read_note"}})
+	got := Toolbox([]provider.Tool{{Name: "write_note"}, {Name: "read_note"}}, false)
 	for _, want := range []string{"write_note —", "read_note —", "shared notebook", "before delegating"} {
 		if !strings.Contains(got, want) {
 			t.Errorf("the toolbox does not state %q:\n%s", want, got)
 		}
 	}
-	if got := Toolbox([]provider.Tool{{Name: "read_file"}}); strings.Contains(got, "notebook") {
+	if got := Toolbox([]provider.Tool{{Name: "read_file"}}, false); strings.Contains(got, "notebook") {
 		t.Errorf("a session with no notebook was told about one:\n%s", got)
 	}
 }
@@ -196,7 +196,7 @@ func TestToolboxStatesTheNotebook(t *testing.T) {
 // on the edit's own result — so the note names that answer instead of asking
 // for a call after every clean edit.
 func TestToolbox_DiagnosticsIsAskedForOnTheUncheckedAnswer(t *testing.T) {
-	got := Toolbox(toolList("diagnostics"))
+	got := Toolbox(toolList("diagnostics"), false)
 	if !strings.Contains(got, "when an edit came back saying the file was not checked yet") {
 		t.Errorf("the diagnostics note should name the answer that asks for it:\n%s", got)
 	}
@@ -204,5 +204,30 @@ func TestToolbox_DiagnosticsIsAskedForOnTheUncheckedAnswer(t *testing.T) {
 		if strings.Contains(got, gone) {
 			t.Errorf("the note still carries the workaround sentence %q:\n%s", gone, got)
 		}
+	}
+}
+
+// The spawn line carries how a delegation is written whatever the policy,
+// and exactly one of the two policy sentences: explicit says a request for
+// depth is not a request to delegate, proactive says divisible work is
+// divided. See docs/capabilities/subagents.md#spawning-is-a-decision.
+func TestToolboxSpawnLineStatesTheDelegationPolicy(t *testing.T) {
+	spawn := []provider.Tool{{Name: "spawn_agent"}}
+	explicit, proactive := Toolbox(spawn, false), Toolbox(spawn, true)
+	for _, got := range []string{explicit, proactive} {
+		for _, want := range []string{"one self-contained task", "paths that do not overlap", "one agent_report wait on the set"} {
+			if !strings.Contains(got, want) {
+				t.Errorf("the spawn line does not state %q:\n%s", want, got)
+			}
+		}
+	}
+	if !strings.Contains(explicit, spawnOnRequest) || strings.Contains(explicit, spawnProactive) {
+		t.Errorf("the explicit line should carry only the on-request sentence:\n%s", explicit)
+	}
+	if !strings.Contains(proactive, spawnProactive) || strings.Contains(proactive, spawnOnRequest) {
+		t.Errorf("the proactive line should carry only the dividing sentence:\n%s", proactive)
+	}
+	if got := Toolbox([]provider.Tool{{Name: "fd"}}, true); strings.Contains(got, spawnProactive) {
+		t.Errorf("a session with no spawn_agent was told a policy:\n%s", got)
 	}
 }

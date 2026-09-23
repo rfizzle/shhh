@@ -142,6 +142,15 @@ has to carry. The label is what the child did: `acted` (carried every need and
 read none of `paths`), `reread` (read one of them again) or `missed` (a need is
 not in its report).
 
+`kind = "delegation"` is a table whose call is the coding prompt under a
+delegation policy: each row puts its `instruction` to the run's model with the
+read-only tools over a workspace of `files`, the orchestration tools unless
+`delegation` is `off`, and the toolbox the session would write for that
+policy. The read-only tools run; the first round that asks for a child ends
+the row. The label is what the model did: `alone` (answered, or read for six
+rounds, without asking for a child), `spawned` (one child) or `divided` (two
+or more in one round).
+
 ## Writing a scripted case
 
 A scripted case is a table too, and its kind names the mechanism:

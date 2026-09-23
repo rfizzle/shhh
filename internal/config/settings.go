@@ -494,6 +494,10 @@ var settings = []Setting{
 	}, {
 		Key: "agents.max_children", Kind: KindInt, Default: "32",
 		Desc: "How many children this session may start in all, wherever in the tree the spawn happened; a finished child keeps its slot.",
+	}, {
+		Key: "agents.delegation", Kind: KindEnum, Default: "explicit",
+		Values: []string{"off", "explicit", "proactive"},
+		Desc:   "When the model starts sub-agents: `off` offers it no orchestration tools, `explicit` delegates when asked to, `proactive` divides work that splits into independent parts. The spawn card is drawn under all three.",
 	},
 
 	{

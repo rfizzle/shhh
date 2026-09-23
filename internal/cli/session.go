@@ -100,6 +100,10 @@ type chatSession struct {
 	// agents registers the sub-agent orchestration tools and supervisor
 	//; `shhh code` interactive sessions only.
 	agents bool
+	// proactive is agents.delegation set to proactive: the spawn_agent line
+	// of every toolbox this session writes, a child's included, says to
+	// divide work that divides (applyDelegation, subagents.go).
+	proactive bool
 	// memory registers the confirm-gated remember tool, which proposes a
 	// durable memory for the user to save or decline: interactive sessions
 	// only, because a run with nobody in front of it has nobody to confirm a
@@ -749,6 +753,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	// user wrote to the agents directory; a profile that does not load is a
 	// startup error naming the file, not a role that quietly went missing.
 	var agents *agentProfiles
+	applyDelegation(ConfigFrom(cmd.Context()), &session)
 	if session.agents {
 		agents, err = loadAgentProfiles(!session.conversation)
 		if err != nil {
@@ -809,7 +814,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	// registered on a condition — a language server was found, a binary is on
 	// PATH, a key is configured — so this is the last point where the whole
 	// toolset is known, and it has to be said after the last one joins.
-	session.promptExtra = prompt.CombineExtra(session.promptExtra, prompt.Toolbox(session.toolDefs))
+	session.promptExtra = prompt.CombineExtra(session.promptExtra, prompt.Toolbox(session.toolDefs, session.proactive))
 
 	// The spend ledger is opened before the session's provider, because the
 	// provider is handed out through it: every request shhh makes is billed
@@ -1040,6 +1045,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 			Model:      cfg.Provider.Model,
 			AgentModel: cfg.Agents.Model,
 			Outranked:  outranking(resolve.ModelOutranks(*session.flags), proj, "provider.model"),
+			Delegation: delegationWords(cfg.AgentDelegation()),
 		}).
 		WithApprovalMode(mode, cycle).
 		WithSteering(steering(cfg, env.prompts)).
