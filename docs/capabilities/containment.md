@@ -495,6 +495,24 @@ the session's own directory, so a checkout removed under a contained session
 fails there, and a reader told the mechanism was missing would go looking for
 a fault in something that is fine.
 
+A missing shell is the one reason that can hide behind a mechanism. What is
+spawned for a contained command is the mechanism, and it starts; only inside
+the sandbox does its exec of the shell fail, so no spawn error carries the
+category, and the ending is an exit status like any command's. Neither
+mechanism sets a status aside for it — bubblewrap exits 1 and Seatbelt's
+`env` exits 127, which is also what a shell answers for a program that is not
+installed — so the status alone would file ordinary failed commands under a
+broken machine. What is read instead is the mechanism's own line, in one
+place beside the mechanisms: the whole of the output is a single line naming
+the very shell the wrap put there, in the words of the program that tried to
+exec it — `bwrap: execvp <shell>: …` with status 1, `env: <shell>: …` with
+status 127, or the host-list bridge's `shhh: network bridge: fork/exec
+<shell>: …` with 127 — and that is `did not start · execution shell`, the row
+the bare spawn draws. The two mechanisms do not produce it the same way, so
+each is matched in its own words and its own status and never in the
+other's. A command that ran cannot print that line alone: its shell would
+have had to start to print anything.
+
 A command that ran is never one of these. A shell answering `command not
 found` for a program that is not installed ran perfectly and printed a fact
 about the line, and a command whose ending nobody could read — it started,

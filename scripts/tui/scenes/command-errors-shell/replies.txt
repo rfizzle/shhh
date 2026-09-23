@@ -1,3 +1,4 @@
-# The reader's own commands ask the model nothing; this is only the reply a
-# stray request would get.
-Nothing to do here.
+# The reader's own commands ask the model nothing; the one request is the
+# assistant's command, which runs contained where the host has a mechanism.
+tool:execute_command:{"command":"ls"}
+The contained command could not start.

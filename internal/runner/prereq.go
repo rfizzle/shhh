@@ -102,6 +102,24 @@ func WrapFailure(err error) tools.ExecResult {
 	}
 }
 
+// ShellUnstarted is the result of a contained command whose mechanism started
+// and could not exec the execution shell inside the sandbox. The spawn the
+// runner made was the mechanism's and it succeeded, so no spawn error carries
+// the category; the mechanism's own line is what says it, and reading that
+// line is the sandbox package's, which knows each mechanism's words
+// (sandbox.ShellNotStarted). What it is filed under is decided here, beside
+// the spawn's own classification, so a missing shell is one category whether
+// or not a mechanism stood in front of it.
+// See docs/capabilities/containment.md#a-command-that-never-started-names-what-it-needed.
+func ShellUnstarted(detail string) tools.ExecResult {
+	return tools.ExecResult{
+		Output:   tools.ExecPrereqReport(tools.PrereqShell, detail),
+		ExitCode: -1,
+		Outcome:  tools.ExecDidNotStart,
+		Prereq:   tools.PrereqShell,
+	}
+}
+
 // inheritedDirFailure is the result of a command that was to run in this
 // process's own working directory when that directory has been removed. It is
 // answered before the spawn rather than read from it, because the spawn does

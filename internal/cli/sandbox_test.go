@@ -3,11 +3,13 @@ package cli
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
 	"slices"
 	"strings"
+	"syscall"
 	"testing"
 	"time"
 
@@ -17,6 +19,7 @@ import (
 	"github.com/rfizzle/shhh/internal/runner"
 	"github.com/rfizzle/shhh/internal/sandbox"
 	"github.com/rfizzle/shhh/internal/scope"
+	"github.com/rfizzle/shhh/internal/tools"
 )
 
 // A session whose commands are not contained says so in the log as well as on
@@ -285,5 +288,75 @@ func TestBuildContainment_AStartCarriesItsOwnEnv(t *testing.T) {
 	}
 	if !strings.Contains(out, "port=3001") {
 		t.Fatalf("the start's own env must reach the contained process:\n%s", out)
+	}
+}
+
+// fakeMechanismEnv makes the test binary a containment mechanism's last step
+// (TestMain): it execs the argv it is handed, and when that exec fails it
+// reports it in the words and with the status the named mechanism does.
+const fakeMechanismEnv = "SHHH_TEST_FAKE_MECHANISM"
+
+// fakeMechanism is bubblewrap's execvp, or the env Seatbelt runs in front of
+// the shell, with nothing contained: the exec is real, so a shell that cannot
+// be executed fails here exactly where it fails inside a sandbox, and only
+// the report is the stand-in's.
+func fakeMechanism(mechanism string, argv []string) int {
+	err := syscall.Exec(argv[0], argv, os.Environ())
+	if mechanism == "bwrap" {
+		fmt.Fprintf(os.Stderr, "bwrap: execvp %s: %v\n", argv[0], err)
+		return 1
+	}
+	fmt.Fprintf(os.Stderr, "env: %s: %v\n", argv[0], err)
+	return 127
+}
+
+// A contained command whose shell cannot be executed never started, and says
+// so in the category the bare spawn names: the mechanism started, so the
+// runner sees a process that exited, and the mechanism's own line is what
+// reads it back. A command that ran and exited with the same status is left
+// as the command's own failure.
+func TestAContainedShellThatCannotExecDidNotStart(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("no containment mechanism on windows")
+	}
+	bin := t.TempDir()
+	// The execution shell is looked up on PATH; this one's interpreter is
+	// gone, so an exec of it fails with the file plainly there.
+	missing := filepath.Join(bin, "bash")
+	if err := os.WriteFile(missing, []byte("#!/gone/interpreter\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", bin)
+
+	for _, mechanism := range []string{"bwrap", "sandbox-exec"} {
+		t.Run(mechanism, func(t *testing.T) {
+			t.Setenv(fakeMechanismEnv, mechanism)
+			argv := []string{os.Args[0], missing, "-c", "echo hi"}
+			got := readContained(mechanism, runner.RunCaptureArgvInResult(context.Background(), "", "echo hi", argv))
+			if got.Outcome != tools.ExecDidNotStart || got.Prereq != tools.PrereqShell {
+				t.Fatalf("got %+v, want an execution shell that did not start", got)
+			}
+			if !strings.Contains(got.Output, missing) {
+				t.Fatalf("the mechanism's words should name the shell:\n%s", got.Output)
+			}
+		})
+	}
+
+	// The same status from a command that ran is not the mechanism's: a
+	// shell answering "command not found" exits 127 too.
+	ran := tools.ExecResult{Output: "bash: nosuch: command not found\n", ExitCode: 127, Outcome: tools.ExecExited}
+	if got := readContained("sandbox-exec", ran); got.Outcome != tools.ExecExited {
+		t.Fatalf("a command that ran was read as unstarted: %+v", got)
+	}
+	// Nor is the mechanism's line after output a started shell printed, nor
+	// one mechanism's words under the other.
+	line := "env: " + missing + ": No such file or directory\n"
+	after := tools.ExecResult{Output: "hi\n" + line, ExitCode: 127, Outcome: tools.ExecExited}
+	if got := readContained("sandbox-exec", after); got.Outcome != tools.ExecExited {
+		t.Fatalf("output after a started shell was read as unstarted: %+v", got)
+	}
+	other := tools.ExecResult{Output: line, ExitCode: 127, Outcome: tools.ExecExited}
+	if got := readContained("bwrap", other); got.Outcome != tools.ExecExited {
+		t.Fatalf("Seatbelt's words were read under bubblewrap: %+v", got)
 	}
 }

@@ -199,16 +199,32 @@ func buildContainment(cfg config.Config, sc *scope.Scope, sup *process.Superviso
 		if err != nil {
 			return runner.WrapFailure(err)
 		}
-		return runner.RunCaptureArgvInResult(ctx, "", command, argv)
+		return readContained(avail.Mechanism, runner.RunCaptureArgvInResult(ctx, "", command, argv))
 	}
 	c.TailRun = func(ctx context.Context, command string, onLine func(string)) tools.ExecResult {
 		argv, err := wrap(command)
 		if err != nil {
 			return runner.WrapFailure(err)
 		}
-		return runner.RunCaptureArgvTailResult(ctx, command, argv, onLine)
+		return readContained(avail.Mechanism, runner.RunCaptureArgvTailResult(ctx, command, argv, onLine))
 	}
 	return c, nil
+}
+
+// readContained reads a contained command's ending for the one failure that
+// is the mechanism's rather than the command's: a shell it could not exec
+// inside the sandbox. The mechanism started, so the result is a process that
+// exited, and without this a missing shell is a command that ran and failed
+// the moment containment is on — where the bare spawn names it.
+// See docs/capabilities/containment.md#a-command-that-never-started-names-what-it-needed.
+func readContained(mechanism string, result tools.ExecResult) tools.ExecResult {
+	if result.Outcome != tools.ExecExited {
+		return result
+	}
+	if detail, ok := sandbox.ShellNotStarted(mechanism, result.Output, result.ExitCode); ok {
+		return runner.ShellUnstarted(detail)
+	}
+	return result
 }
 
 // reconcileOwnedSandboxes reaps expired sandbox containers and drops records

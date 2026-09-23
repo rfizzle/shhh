@@ -1,4 +1,5 @@
 # program test: TestProgram_ABangLineRunsOnItsConfirm,
+#   TestProgram_ABrokenCommandsRowSaysHowItEnded,
 #   TestProgram_TheQuitChordArmsThenLeaves
 #
 # The row that did not start is a shell this machine cannot execute, and
@@ -16,11 +17,21 @@ keys "!cp ~/spare/bash ~/bin/bash" Enter
 snap 02-shell-card "run it once"
 keys y
 snap 03-shell-replaced "cp ~/spare/bash"
+# The reader's own line is never contained, so this is the bare spawn.
 keys "!echo hi" Enter
 snap 04-echo-card "run it once"
 keys y
 snap 05-no-execution-shell "did not start · execution shell"
+# The assistant's command is the one containment wraps where the host has a
+# mechanism: the mechanism starts and only its exec of the shell fails, and
+# its row names the same category the bare spawn's did. On a host with none
+# (the Linux runner has no bubblewrap) it is the bare spawn again. A
+# read-only command is waved through, so there is no card before it; the
+# snap waits for the answer that follows the row, and the second row is read
+# in the cells.
+keys "list the files" Enter
+snap 06-contained-no-shell "The contained command could not start"
 keys C-c
-snap 06-quit-armed "again quits"
+snap 07-quit-armed "again quits"
 keys C-c
-snap 07-exit "that is everything the screen was holding"
+snap 08-exit "that is everything the screen was holding"

@@ -49,6 +49,9 @@ func TestMain(m *testing.M) {
 		serveFakeMCP()
 		return
 	}
+	if mechanism := os.Getenv(fakeMechanismEnv); mechanism != "" {
+		os.Exit(fakeMechanism(mechanism, os.Args[1:]))
+	}
 	time.Local = time.UTC
 	dir, err := os.MkdirTemp("", "shhh-cli-test")
 	if err != nil {
