@@ -169,6 +169,9 @@ func (m Model) todoRunBlocked() (tea.Model, tea.Cmd) {
 	// the screen and a sentence behind it is a sentence nobody read.
 	if st.Sprinting() {
 		if sp, live := run.Live(m.todos.Root); live {
+			// A blocked item's spend is the set's as much as a finished
+			// one's, which is how the unattended runner counts it too.
+			sp.Spent(int(m.turnCount), m.sessionSpend().Cost)
 			sp.Blocks(it.Slug, st.Blocked)
 			ended, _ := model.(Model).endTodoSprint(sp)
 			model = ended

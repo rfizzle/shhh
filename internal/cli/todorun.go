@@ -35,6 +35,7 @@ import (
 
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/evidence"
+	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/runner"
@@ -63,6 +64,9 @@ type todoRunFlags struct {
 	next     bool
 	noCommit bool
 	max      int
+	// costCap is the most the sprint may spend, in cents; 0 leaves the
+	// project's todo.sprint_cost_cap_cents in force.
+	costCap int64
 }
 
 func newTodoRunCmd() *cobra.Command {
@@ -73,7 +77,7 @@ func newTodoRunCmd() *cobra.Command {
 		Long: "Work one backlog item through research, implement, verify, review and commit, " +
 			"in a session of its own. With --all, work the ready list one item at a time — the " +
 			"sprint file's set where the backlog holds one — stopping when nothing is ready, when " +
-			"--max is reached, or on the first item that blocks.",
+			"--max or --cost-cap is reached, or on the first item that blocks.",
 		Args:              cobra.MaximumNArgs(1),
 		ValidArgsFunction: todoSlugs,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -88,6 +92,7 @@ func newTodoRunCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&flags.next, "next", false, "work the next ready item")
 	cmd.Flags().BoolVar(&flags.noCommit, "no-commit", false, "end each run after the review, leaving the change in the working tree")
 	cmd.Flags().IntVar(&flags.max, "max", 0, "with --all, how many items the sprint may start (0 for as many as are ready)")
+	cmd.Flags().Int64Var(&flags.costCap, "cost-cap", 0, "with --all, the most the sprint may spend in cents before it starts no further item (0 keeps todo.sprint_cost_cap_cents)")
 	return cmd
 }
 
@@ -105,6 +110,10 @@ func todoRunHeadless(cmd *cobra.Command, slug string, flags todoRunFlags) error 
 		return fmt.Errorf("--max bounds how many items a sprint works, so it needs --all")
 	case flags.max < 0:
 		return fmt.Errorf("--max %d: a sprint works whole items", flags.max)
+	case flags.costCap > 0 && !flags.all:
+		return fmt.Errorf("--cost-cap bounds what a sprint spends across its items, so it needs --all")
+	case flags.costCap < 0:
+		return fmt.Errorf("--cost-cap %d: a ceiling is an amount in cents, or 0 for the setting's", flags.costCap)
 	}
 	cfg := ConfigFrom(cmd.Context())
 	d, err := newTodoDriver(cmd.OutOrStdout(), todo.Root(todoCwd()), cfg, flags.noCommit)
@@ -112,6 +121,7 @@ func todoRunHeadless(cmd *cobra.Command, slug string, flags todoRunFlags) error 
 		return err
 	}
 	defer d.close()
+	d.costCapFlag = flags.costCap
 	// A profile may state no run at all, and its items are still items: what
 	// one needs is a person doing it, so the offer is the verb that files it
 	// rather than a run that would describe the work instead of doing it.
@@ -197,8 +207,20 @@ type todoDriver struct {
 	// that will not run over it is caught at verify.
 	checks      bool
 	itemTimeout time.Duration
-	noCommit    bool
-	repo        bool
+	// costCap is the setting's ceiling on a sprint and costCapFlag the one
+	// the command named, both in cents; Sprint.Bound decides between them
+	// and a continued sprint's own.
+	costCap, costCapFlag int64
+	noCommit             bool
+	// itemTurns and itemCost are what the item being worked has spent so
+	// far, one turn per stage process and its cost off that process's own
+	// record row. They are the item's half of the sprint's running total,
+	// added to the checkpoint when the item is over — the point a session
+	// crosses its boundary on the other surface — and read in between by
+	// the notes of a set that closes with this item.
+	itemTurns int
+	itemCost  float64
+	repo      bool
 	// wrote is what this run's own stages reported writing, gathered from
 	// each stage process's transcript. It is the run's changeset, in the one
 	// form a runner whose stages are separate processes has: the tree says
@@ -280,6 +302,15 @@ type todoTurn struct {
 	// so the run never composes a command for a slot it only guessed at.
 	// What becomes of them is settleChats.
 	chat, resume string
+	// cost is what the stage's process spent, off the record row its
+	// transcript names — the ledger's own total, which that process wrote
+	// there as it went. Zero where the run keeps no record.
+	cost float64
+	// overSpend is the session's cost cap refusing one of the stage's
+	// requests, with the ledger's figures. The process reports it as a
+	// failed turn, which is true of the process and not of the item: the
+	// item stopped at a ceiling somebody set, and it blocks on the figures.
+	overSpend *meter.CapError
 }
 
 func newTodoDriver(out io.Writer, root string, cfg config.Config, noCommit bool) (*todoDriver, error) {
@@ -295,6 +326,7 @@ func newTodoDriver(out io.Writer, root string, cfg config.Config, noCommit bool)
 		root: root, bin: bin, out: out,
 		session:     "todo-run-" + time.Now().UTC().Format("20060102-150405"),
 		itemTimeout: cfg.TodoItemTimeout(),
+		costCap:     cfg.TodoSprintCostCap(),
 		noCommit:    noCommit || !cfg.TodoCommitEnabled(),
 		repo:        project.InRepo(root),
 		wordings:    prompts.todo,
@@ -384,9 +416,11 @@ func (d *todoDriver) sprint(ctx context.Context, max int) bool {
 		if max > 0 {
 			sp.Max = max
 		}
+		sp.Bound(d.costCapFlag, d.costCap)
 		fmt.Fprintln(d.out, "continuing the sprint from its checkpoint — "+sp.Summary())
 	default:
 		sp = run.StartSprint(d.session, "", max, d.noCommit)
+		sp.Bound(d.costCapFlag, d.costCap)
 	}
 	for {
 		it, ok := d.sprintItem(sp)
@@ -399,11 +433,26 @@ func (d *todoDriver) sprint(ctx context.Context, max int) bool {
 			break
 		}
 		st := d.work(ctx, it, sp)
-		if st.Stage == run.StageBlocked {
+		// What the item cost joins the set's total whichever way it ended,
+		// and before anything reads the total again: the next item is taken
+		// against it, and a blocked item's spend is spend the ceiling has to
+		// see as much as a finished one's.
+		sp.Spent(d.itemTurns, d.itemCost)
+		blocked := st.Stage == run.StageBlocked
+		if blocked {
 			sp.Blocks(it.Slug, st.Blocked)
+		} else {
+			sp.Finished(it.Slug)
+		}
+		// The line between two items says what the set has spent against
+		// its ceiling in the words the board says it in, so a log read the
+		// next morning shows how close each item brought the set to it.
+		if words := run.SpendWords(sp.Cost, sp.CapCents); words != "" {
+			fmt.Fprintln(d.out, "sprint · "+sp.Count()+" · "+words)
+		}
+		if blocked {
 			break
 		}
-		sp.Finished(it.Slug)
 	}
 	run.DiscardSprint(d.root)
 	fmt.Fprintln(d.out, todoSprintEnding(sp))
@@ -441,6 +490,7 @@ func todoSprintEnding(sp *run.Sprint) string {
 // sp is the sprint driving it, or nil for a single item asked for by name.
 func (d *todoDriver) work(ctx context.Context, it todo.Item, sp *run.Sprint) *run.State {
 	d.wrote, d.chats, d.resume = nil, nil, ""
+	d.itemTurns, d.itemCost = 0, 0
 	d.item = it.Slug
 	d.openSpool(it.Slug)
 	st, step := d.begin(it, sp != nil)
@@ -471,7 +521,7 @@ func (d *todoDriver) work(ctx context.Context, it todo.Item, sp *run.Sprint) *ru
 		}
 		step = d.carry(ctx, deadline, st, it, step)
 	}
-	d.finish(st, it)
+	d.finish(st, it, sp)
 	d.settleChats(st)
 	return st
 }
@@ -576,6 +626,10 @@ func (d *todoDriver) carry(ctx context.Context, deadline time.Time, st *run.Stat
 		// reading the block.
 		d.wrote = append(d.wrote, t.written...)
 		d.keepChat(t)
+		d.spent(t)
+		if t.overSpend != nil {
+			return st.Block(run.OverSpend(step.Stage, t.overSpend.Spent, t.overSpend.Cap))
+		}
 		if err != nil {
 			return st.Block(err.Error())
 		}
@@ -699,6 +753,7 @@ func (d *todoDriver) ask(ctx context.Context, deadline time.Time, dir string, st
 		Gate      string   `json:"gate"`
 		Written   []string `json:"written"`
 		Chat      string   `json:"chat"`
+		Session   string   `json:"session"`
 		Resume    string   `json:"resume"`
 	}
 	_ = json.Unmarshal([]byte(out.String()), &t)
@@ -710,7 +765,16 @@ func (d *todoDriver) ask(ctx context.Context, deadline time.Time, dir string, st
 		written = nil
 	}
 	turn := todoTurn{code: code, truncated: t.Truncated, chat: t.Chat, resume: t.Resume,
-		gate: quality.Closing(t.Gate), written: todoWritten(d.root, written)}
+		gate: quality.Closing(t.Gate), written: todoWritten(d.root, written),
+		cost: d.stageCost(t.Session)}
+	// A refusal at the cap is read before the answer is, because the turn it
+	// ended is not one the machine may judge: whatever the stage wrote
+	// before the refusal is half of a step, the same way a reply cut at the
+	// output ceiling is.
+	if c, ok := meter.ReadCap(t.Error); ok {
+		turn.overSpend = c
+		return turn, nil
+	}
 	if strings.TrimSpace(t.Final) != "" {
 		turn.text = t.Final
 		return turn, nil
@@ -720,6 +784,46 @@ func (d *todoDriver) ask(ctx context.Context, deadline time.Time, dir string, st
 	}
 	return turn, fmt.Errorf("the %s turn produced no answer (exit %d): %s",
 		step.Stage, code, todoFirstProblem(t.Error, errOut.String(), errString(runErr)))
+}
+
+// stageCost is what one stage's process spent, read off the record row its
+// transcript named. The row is the join the transcript states that field
+// for (docs/capabilities/headless.md#the-run-says-where-it-left-off), and
+// the process wrote the ledger's own priced total into it, so the figure is
+// the one the process's cap was measured against rather than a second
+// pricing of its tokens. A run with no record, or a row it cannot read,
+// costs nothing here — the sprint's ceiling then sees less than was spent,
+// and each item's own session cap still stands.
+func (d *todoDriver) stageCost(session string) float64 {
+	id, err := strconv.ParseInt(session, 10, 64)
+	if err != nil || id <= 0 || d.db == nil {
+		return 0
+	}
+	s, ok, err := d.db.AgentSession(id)
+	if err != nil || !ok {
+		return 0
+	}
+	return s.Cost
+}
+
+// spent adds one stage process to what the item has cost. Every caller of
+// turn goes through it on the loop's own goroutine — a fan-out's lanes are
+// added after they are waited on — so the two fields need no lock.
+func (d *todoDriver) spent(t todoTurn) {
+	d.itemTurns++
+	d.itemCost += max(t.cost, 0)
+}
+
+// spendFigure is what the set has spent, for the notes of a sprint file this
+// item's archive closes: the checkpoint's total plus this item, which is not
+// added to it until the item is over, against the ceiling where the loop has
+// one. A single item run with no loop around it has no ceiling and no
+// earlier items, so its figure is its own.
+func (d *todoDriver) spendFigure(sp *run.Sprint) string {
+	if sp == nil {
+		return run.SpendFigure(d.itemCost, 0)
+	}
+	return run.SpendFigure(sp.Cost+d.itemCost, sp.CapCents)
 }
 
 // stageEnv is the environment one stage's process runs in: this run's, plus
@@ -1016,7 +1120,7 @@ func todoGit(root string, args ...string) (string, int) {
 // finish writes what the run ended as onto the item: the archive and the
 // report for one that is done, the evidence for one that blocked. Either way
 // the checkpoint goes, because a run that ended has nothing to continue.
-func (d *todoDriver) finish(st *run.State, it todo.Item) {
+func (d *todoDriver) finish(st *run.State, it todo.Item, sp *run.Sprint) {
 	if st.Stage == run.StageDone {
 		to, err := run.File(d.root, st, it)
 		if err != nil {
@@ -1026,7 +1130,7 @@ func (d *todoDriver) finish(st *run.State, it todo.Item) {
 			fmt.Fprintf(d.out, "✓ todo run %s finished, but the item could not be archived — %v. The report is on the item and it is open.\n", st.Slug, err)
 		} else {
 			fmt.Fprintln(d.out, todoRunDoneLine(st, to))
-			if closed, err := todo.CloseSprintIfDone(todoProfile(), d.root); err == nil && closed != "" {
+			if closed, err := todo.CloseSprintIfDone(todoProfile(), d.root, d.spendFigure(sp)); err == nil && closed != "" {
 				fmt.Fprintln(d.out, "sprint file closed → "+closed)
 			}
 		}
@@ -1085,6 +1189,13 @@ func (d *todoDriver) review(ctx context.Context, deadline time.Time, st *run.Sta
 	t, err := d.turn(ctx, deadline, d.root,
 		run.Step{Action: run.ActionPrompt, Stage: step.Stage, Mode: step.Mode, Prompt: task})
 	d.keepChat(t)
+	d.spent(t)
+	// A reader stopped by the cap is not a reader that is merely missing:
+	// the reading in this session would be one more request against a
+	// ceiling the item has already reached.
+	if t.overSpend != nil {
+		return st.Block(run.OverSpend(step.Stage, t.overSpend.Spent, t.overSpend.Cap))
+	}
 	// A reader that did not finish is a reader the run did not get, which is
 	// what SelfReview is for. Blocking on it stops a finished, verified piece
 	// of work over the one stage that was always allowed to be missing — the
@@ -1199,10 +1310,15 @@ func (d *todoDriver) fanOut(ctx context.Context, deadline time.Time, st *run.Sta
 		}(i)
 	}
 	wg.Wait()
+	for _, t := range turns {
+		d.spent(t)
+	}
 
 	next := run.Step{Action: run.ActionWait, Stage: st.Stage}
 	for i, lane := range lanes {
 		switch {
+		case turns[i].overSpend != nil:
+			return st.LaneFailed(lane.Agent, run.OverSpend(st.Stage, turns[i].overSpend.Spent, turns[i].overSpend.Cap))
 		case errs[i] != nil:
 			return st.LaneFailed(lane.Agent, todoFirstProblem(errs[i].Error()))
 		case turns[i].truncated:

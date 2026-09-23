@@ -603,6 +603,10 @@ var settings = []Setting{
 		Key: "todo.item_timeout_minutes", Kind: KindInt, Default: "0 (no cap)", Literal: "0",
 		Desc: "How long one item of a sprint may take before it is blocked and the sprint stops; zero leaves it uncapped.",
 	}, {
+		Key: "todo.sprint_cost_cap_cents", Kind: KindInt, Default: "0 (off)", Literal: "0",
+		Flag: "--cost-cap",
+		Desc: "Priced spend, in cents, across a whole sprint after which it starts no further item; provider.cost_cap_cents still bounds each item's own session.",
+	}, {
 		Key: "todo.groom_stale_commits", Kind: KindInt, Default: "the profile's own", Literal: "0",
 		Desc: "How far an item's last reading may fall behind — in whatever the profile measures staleness by — before the backlog says so; unset keeps the profile's own threshold, and a negative number turns the warning off.",
 	},

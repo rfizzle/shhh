@@ -1,0 +1,2 @@
+# No turn is taken: the board reads the sprint checkpoint the setup wrote.
+Nothing to do here.

@@ -680,8 +680,10 @@ func (s *Store) Unblocks(slug string) int {
 //
 // The reports are copied rather than pointed at because the sprint is the
 // record of a set of work and an archived item can be edited afterwards;
-// what the sprint says the set produced is what it said at the time.
-func CloseSprint(p Profile, root string) (string, error) {
+// what the sprint says the set produced is what it said at the time. spend
+// is what the set cost, as SprintNotes carries it, and empty where nothing
+// is known of it.
+func CloseSprint(p Profile, root, spend string) (string, error) {
 	s := Load(p, root)
 	if s.Sprint == nil {
 		return "", fmt.Errorf("there is no sprint")
@@ -701,7 +703,7 @@ func CloseSprint(p Profile, root string) (string, error) {
 	if err := SprintSetStatus(sp.Path, SprintClosed); err != nil {
 		return "", err
 	}
-	if err := Append(sp.Path, sprintClosingBlock(sp, s.SprintEntries())); err != nil {
+	if err := Append(sp.Path, sprintClosingBlock(sp, s.SprintEntries(), spend)); err != nil {
 		return "", err
 	}
 	if err := os.Rename(sp.Path, to); err != nil {
@@ -714,19 +716,19 @@ func CloseSprint(p Profile, root string) (string, error) {
 // accounted for, and reports where the file went. It answers "" when
 // there is no sprint or the set is still being worked, so a caller can
 // call it after every archive without asking first.
-func CloseSprintIfDone(p Profile, root string) (string, error) {
+func CloseSprintIfDone(p Profile, root, spend string) (string, error) {
 	s := Load(p, root)
 	if !s.Sprint.Open() || !s.SprintFinished() {
 		return "", nil
 	}
-	return CloseSprint(p, root)
+	return CloseSprint(p, root, spend)
 }
 
 // sprintClosingBlock is what is appended to the sprint on its way to the
 // archive: the notes, then each item's report under its slug.
-func sprintClosingBlock(sp *Sprint, entries []SprintEntry) string {
+func sprintClosingBlock(sp *Sprint, entries []SprintEntry, spend string) string {
 	var b strings.Builder
-	b.WriteString("## Notes\n" + SprintNotes(sp, entries) + "\n\n")
+	b.WriteString("## Notes\n" + SprintNotes(sp, entries, spend) + "\n\n")
 	b.WriteString("## Reports\n")
 	for _, e := range entries {
 		b.WriteString("\n### " + e.Slug + "\n")
@@ -747,8 +749,10 @@ func sprintClosingBlock(sp *Sprint, entries []SprintEntry) string {
 }
 
 // SprintNotes is the closed set as release notes: what it was for, every
-// item that landed with what was built and the commit that carries it, and
-// what was left as deferred.
+// item that landed with what was built and the commit that carries it, what
+// was left as deferred, and what the set spent — spend is the host's figure,
+// since the running total lives in the runner's checkpoint and not in the
+// sprint file, and empty leaves the line off.
 //
 // It is one flat block of plain text because that is what it is for. The
 // person's next act after a set closes is a tag, and a tag message is plain
@@ -756,7 +760,7 @@ func sprintClosingBlock(sp *Sprint, entries []SprintEntry) string {
 // making the tag stay theirs — a tool that offered to make one is a tool
 // that will one day make the wrong one.
 // See docs/capabilities/todo.md#a-sprint-is-what-ships-together.
-func SprintNotes(sp *Sprint, entries []SprintEntry) string {
+func SprintNotes(sp *Sprint, entries []SprintEntry, spend string) string {
 	var parts []string
 	// The goal leads, even where the surface around the notes already
 	// states it. The notes are pasted whole into a message that will be
@@ -800,7 +804,14 @@ func SprintNotes(sp *Sprint, entries []SprintEntry) string {
 		parts = append(parts, strings.TrimRight(b.String(), "\n"))
 	}
 	if len(parts) == 0 {
-		return "The set finished nothing and left nothing."
+		parts = append(parts, "The set finished nothing and left nothing.")
+	}
+	// What the set cost comes last and in the figure the board showed —
+	// against its ceiling where it had one — because the notes are the one
+	// account of the sprint that outlives its checkpoint, and a ceiling
+	// reached is the reason a set stopped short that nothing else records.
+	if spend = strings.TrimSpace(spend); spend != "" {
+		parts = append(parts, "Spend: "+spend)
 	}
 	return strings.Join(parts, "\n\n")
 }

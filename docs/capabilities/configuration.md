@@ -817,6 +817,7 @@ own file could hold.
 | `profile` | text | `code` | The profile this project's backlog is written in and worked under: what an item is called, which fields it carries, and which steps a run takes; it is looked for in this checkout, then beside your settings, then among the ones built in. |
 | `commit` | true/false | `on` | End a backlog run in a commit; off leaves the change in the working tree, which is the answer for a directory that is not a repository. |
 | `item_timeout_minutes` | number | 0 (no cap) | How long one item of a sprint may take before it is blocked and the sprint stops; zero leaves it uncapped. |
+| `sprint_cost_cap_cents` | number | 0 (off) | Priced spend, in cents, across a whole sprint after which it starts no further item; provider.cost_cap_cents still bounds each item's own session. `--cost-cap` is read ahead of the file. |
 | `groom_stale_commits` | number | the profile's own | How far an item's last reading may fall behind — in whatever the profile measures staleness by — before the backlog says so; unset keeps the profile's own threshold, and a negative number turns the warning off. |
 
 <!-- END generated settings reference -->

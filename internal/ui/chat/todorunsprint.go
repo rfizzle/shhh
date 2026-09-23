@@ -57,6 +57,7 @@ func (m Model) startTodoSprint(opt todoRunArgs) (tea.Model, tea.Cmd) {
 		if opt.max > 0 {
 			sp.Max = opt.max
 		}
+		sp.Bound(opt.costCap, m.todos.SprintCostCap)
 		model, _ := m.systemNotice("Continuing the sprint from its checkpoint — " + sp.Summary() + ".")
 		next := model.(Model)
 		if slug, ok := sp.Resume(); ok {
@@ -68,6 +69,7 @@ func (m Model) startTodoSprint(opt todoRunArgs) (tea.Model, tea.Cmd) {
 		return next.sprintNext(sp)
 	}
 	sp := run.StartSprint(m.sessionName, m.policy.mode.String(), opt.max, noCommit)
+	sp.Bound(opt.costCap, m.todos.SprintCostCap)
 	m.signal(observe.SignalRun, "sprint")
 	model, _ := m.systemNotice(todoSprintStartNote(sp, len(m.todoStore.Ready())))
 	return model.(Model).sprintNext(sp)
@@ -80,6 +82,9 @@ func todoSprintStartNote(sp *run.Sprint, ready int) string {
 	scope := plural(ready, "item") + " ready"
 	if sp.Max > 0 {
 		scope += fmt.Sprintf(", at most %d of them", sp.Max)
+	}
+	if sp.CapCents > 0 {
+		scope += ", spending at most " + run.CapDollars(sp.CapCents)
 	}
 	note := "Sprint started — " + scope + ", one item per session. /todo stop ends it."
 	if sp.NoCommit {
@@ -115,6 +120,7 @@ func (m Model) sprintRun(sp *run.Sprint, slug string) (tea.Model, tea.Cmd) {
 		ended, _ := started.endTodoSprint(sp)
 		return ended, cmd
 	}
+	started.todoRunner.sprintCost, started.todoRunner.sprintCap = sp.Cost, sp.CapCents
 	return started, cmd
 }
 

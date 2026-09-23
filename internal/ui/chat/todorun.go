@@ -30,6 +30,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/quality"
@@ -261,6 +262,7 @@ func (m Model) todoRunStep(step run.Step) (tea.Model, tea.Cmd) {
 		// Every stage gets its own continuation, and this is the stage
 		// starting.
 		m.todoRunner.continued, m.todoRunner.carried = false, ""
+		m.todoRunner.overSpend = nil
 		return m.sendUserMessageAs(step.Prompt, step.Shown)
 	case run.ActionVerify:
 		// The row already says the run is verifying; what a notice would add
@@ -326,6 +328,16 @@ func (m Model) todoRunAfter(prev Model) (Model, tea.Cmd) {
 		// cancel is the reader stopping the run, not evidence to grade.
 		m.todoRunner.cancelled = false
 		next, cmd := m.stopTodoRun()
+		return next.(Model), cmd
+	}
+	// A stage whose request the session's cost cap refused ended as a
+	// broken turn, and whatever it said before the refusal is half of a
+	// step. The item blocks on the ledger's figures rather than being graded
+	// on that half, which is the reading the unattended runner makes of the
+	// same refusal (run.OverSpend).
+	if c := m.todoRunner.overSpend; c != nil {
+		m.todoRunner.overSpend = nil
+		next, cmd := m.todoRunStep(st.Block(run.OverSpend(st.Stage, c.Spent, c.Cap)))
 		return next.(Model), cmd
 	}
 	if res, ok := m.todoStageStopped(); ok {
@@ -614,4 +626,14 @@ type todoRunState struct {
 	rowIdx int
 	// pause is the open pause card while a run waits on the person.
 	pause *components.NoteSelect
+	// sprintCost and sprintCap are the sprint's running total and ceiling as
+	// the checkpoint stood when this item was taken. The checkpoint does not
+	// move while an item is worked — its total is added to at the session
+	// boundary — so a copy taken there is the file's figure for as long as
+	// the rail draws it, without the rail reading a file every frame.
+	sprintCost float64
+	sprintCap  int64
+	// overSpend is the session's cost cap refusing the stage's request, with
+	// the ledger's figures, kept until the turn it broke is read.
+	overSpend *meter.CapError
 }

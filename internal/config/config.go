@@ -103,6 +103,13 @@ type TodoConfig struct {
 	// read.
 	// See docs/capabilities/todo.md#a-sprint-is-runs-with-a-session-between-them.
 	ItemTimeoutMinutes int `toml:"item_timeout_minutes"`
+	// SprintCostCapCents is the most a whole sprint may spend, in cents.
+	// Zero is no ceiling, which is the default. It is the set's bound and
+	// not a session's: provider.cost_cap_cents stops a request inside one
+	// item's session, and this stops the sprint taking another item once
+	// what the finished ones cost has reached it.
+	// See docs/capabilities/todo.md#a-sprint-is-runs-with-a-session-between-them.
+	SprintCostCapCents int `toml:"sprint_cost_cap_cents"`
 	// GroomStaleCommits is how far an item's last reading may fall behind
 	// before the surfaces say so. Zero — the unset value — leaves the
 	// threshold the profile states; a positive number replaces it, and a
@@ -1128,6 +1135,12 @@ func (c *Config) TodoItemTimeout() time.Duration {
 		return 0
 	}
 	return time.Duration(c.Todo.ItemTimeoutMinutes) * time.Minute
+}
+
+// TodoSprintCostCap is the ceiling on a sprint's spend in cents, and zero
+// where the project set none or set a negative.
+func (c *Config) TodoSprintCostCap() int64 {
+	return int64(max(c.Todo.SprintCostCapCents, 0))
 }
 
 // TodoGroomStale is how far behind a grooming may fall before the backlog

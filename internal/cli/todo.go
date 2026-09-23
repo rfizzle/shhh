@@ -780,7 +780,7 @@ func todoVerb(root string, args []string) (string, error) {
 		// Archiving by hand is one of the two ways a sprint's last
 		// slug is accounted for, so the close is checked here as well
 		// as at the end of a run.
-		if closed, err := todo.CloseSprintIfDone(todoProfile(), root); err != nil {
+		if closed, err := todo.CloseSprintIfDone(todoProfile(), root, liveSprintSpend(root)); err != nil {
 			rows = append(rows, report.Row{State: report.Warn, Subject: "the sprint could not be closed", Detail: err.Error()})
 		} else if closed != "" {
 			rows = append(rows, report.Done("sprint closed", closed))
@@ -823,6 +823,17 @@ func todoHeld(root, slug string) error {
 	}
 	return fmt.Errorf("the run in session %s holds %s at the %s stage; `/todo stop` there ends it, and `shhh todo run %s` carries it on here",
 		h.Session, slug, h.Stage, slug)
+}
+
+// liveSprintSpend is what a sprint loop still going has spent, in the figure
+// the closed set's notes carry, for a close made by hand rather than by the
+// loop. Empty where no loop is going: the sprint file itself keeps no
+// account of what its items cost.
+func liveSprintSpend(root string) string {
+	if sp, live := run.Live(root); live {
+		return run.SpendFigure(sp.Cost, sp.CapCents)
+	}
+	return ""
 }
 
 // todoSprintManage backs `/todo sprint` and its verbs. Every write is a
@@ -874,7 +885,7 @@ func todoSprintManage(root string, s *todo.Store, args []string) (string, error)
 		}
 		return report.Report{Sections: []report.Section{{Rows: []report.Row{report.Done("goal of "+sp.Name, "rewritten")}}}}.String(), nil
 	case "close":
-		to, err := todo.CloseSprint(todoProfile(), root)
+		to, err := todo.CloseSprint(todoProfile(), root, liveSprintSpend(root))
 		if err != nil {
 			return "", err
 		}

@@ -1108,6 +1108,22 @@ func CutAtCeiling(stage Stage) string {
 	return fmt.Sprintf("the %s answer was cut at the model's output ceiling twice; it was continued once and stopped short again, and half an answer is not the stage's answer", stage)
 }
 
+// OverSpend is the evidence a step blocks with when the session's own cost
+// cap refused one of its requests, with the ledger's figures in it. It is a
+// block and not a failed turn, because nothing about the provider or the
+// item went wrong: the session was told how much it may spend and spent it,
+// and a stage that stopped there has left work nothing has checked. The
+// figures are the reader's reason to raise the cap or not, so they are the
+// ledger's own and not a sentence about them.
+//
+// A function for the reason CutAtCeiling is one: the session sees its own
+// request refused and the unattended runner reads what a stage's process
+// reported, and the item should not be able to tell which stopped it.
+// See docs/capabilities/todo.md#a-sprint-is-runs-with-a-session-between-them.
+func OverSpend(stage Stage, spent, capped float64) string {
+	return fmt.Sprintf("the %s step reached the session's cost cap: %s spent of the %s a session may spend, so its next request was refused", stage, Dollars(spent), Dollars(capped))
+}
+
 // NothingVerifies is why a run stops at a command step that had nothing to
 // run. That step is the run's one executable definition of done — the
 // reading, the commit and the archive all happen because it passed — so a

@@ -239,7 +239,7 @@ func TestSprintNotes_NameWhatLandedAndItsCommit(t *testing.T) {
 		t.Fatal(err)
 	}
 	s := Load(BuiltinCode(), root)
-	notes := SprintNotes(s.Sprint, s.SprintEntries())
+	notes := SprintNotes(s.Sprint, s.SprintEntries(), "")
 	for _, want := range []string{
 		"Make an entry's lifetime mean something.",
 		"- Give the cache a lifetime (cache-ttl) — an entry carries its own deadline. (abc1234 feat(cache): give an entry a deadline)",
@@ -252,7 +252,7 @@ func TestSprintNotes_NameWhatLandedAndItsCommit(t *testing.T) {
 	}
 	// The deferred item goes back to the backlog untouched: closing a
 	// sprint early is a decision about the set, not about its items.
-	if _, err := CloseSprint(BuiltinCode(), root); err != nil {
+	if _, err := CloseSprint(BuiltinCode(), root, ""); err != nil {
 		t.Fatal(err)
 	}
 	after := Load(BuiltinCode(), root)
@@ -269,7 +269,17 @@ func TestSprintNotes_NameWhatLandedAndItsCommit(t *testing.T) {
 func TestSprintNotes_SayNothingHappenedRatherThanNothing(t *testing.T) {
 	sp := &Sprint{Name: "caching", Goal: GoalPlaceholder}
 	entries := []SprintEntry{{Slug: "cache-gone", State: SprintItemDropped}}
-	if got := SprintNotes(sp, entries); got != "The set finished nothing and left nothing." {
+	if got := SprintNotes(sp, entries, ""); got != "The set finished nothing and left nothing." {
+		t.Fatalf("notes = %q", got)
+	}
+}
+
+// What the set spent is the notes' last paragraph, in the figure the host
+// hands over — against the ceiling where there was one.
+func TestSprintNotes_CarryTheSpend(t *testing.T) {
+	sp := &Sprint{Name: "caching", Goal: "Make an entry's lifetime mean something."}
+	got := SprintNotes(sp, nil, "$4.10 of $20")
+	if !strings.HasSuffix(got, "\n\nSpend: $4.10 of $20") {
 		t.Fatalf("notes = %q", got)
 	}
 }

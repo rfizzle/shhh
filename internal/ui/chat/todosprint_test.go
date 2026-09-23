@@ -431,7 +431,7 @@ func TestSprintPlan_NamesTheSecondSprintOfADayApart(t *testing.T) {
 		t.Fatalf("sprint = %v %v", sp, err)
 	}
 	name := sp.Name
-	if _, err := todo.CloseSprint(todo.BuiltinCode(), root); err != nil {
+	if _, err := todo.CloseSprint(todo.BuiltinCode(), root, ""); err != nil {
 		t.Fatal(err)
 	}
 	m.reloadTodos()
@@ -446,7 +446,7 @@ func TestSprintPlan_NamesTheSecondSprintOfADayApart(t *testing.T) {
 	if again.Name == name {
 		t.Fatalf("both sprints are named %q; the second could never be filed", name)
 	}
-	if _, err := todo.CloseSprint(todo.BuiltinCode(), root); err != nil {
+	if _, err := todo.CloseSprint(todo.BuiltinCode(), root, ""); err != nil {
 		t.Fatalf("the second sprint could not be closed: %v", err)
 	}
 }
@@ -597,7 +597,7 @@ func TestSprintReport_IsAPageOfTheSameBlocks(t *testing.T) {
 		t.Fatal(err)
 	}
 	m.reloadTodos()
-	doc := sprintReportDoc(m.todoStore.Sprint, m.todoStore.SprintEntries(), 12, 1.42)
+	doc := sprintReportDoc(m.todoStore.Sprint, m.todoStore.SprintEntries(), 12, 1.42, 0)
 	if err := doc.Validate(); err != nil {
 		t.Fatalf("the page does not validate: %v", err)
 	}
@@ -713,5 +713,25 @@ func TestSprintPlan_GoalGoesOnTheProposal(t *testing.T) {
 	}
 	if taken.(Model).sprintPlan != nil {
 		t.Fatal("taking the card left the proposal on the session")
+	}
+}
+
+// The board's spend reading states the ceiling from the moment there is one,
+// joined to the turns, and keeps its own figure where there is none.
+func TestSprintSpendWords_StateTheCeiling(t *testing.T) {
+	for _, c := range []struct {
+		turns    int
+		cost     float64
+		capCents int64
+		want     string
+	}{
+		{0, 0, 0, ""},
+		{9, 1.42, 0, "9 turns · $1.42"},
+		{0, 0, 2000, "spend $0.00 of $20"},
+		{9, 4.1, 2000, "9 turns · spend $4.10 of $20"},
+	} {
+		if got := sprintSpendWords(c.turns, c.cost, c.capCents); got != c.want {
+			t.Errorf("sprintSpendWords(%d, %v, %d) = %q, want %q", c.turns, c.cost, c.capCents, got, c.want)
+		}
 	}
 }

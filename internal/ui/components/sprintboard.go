@@ -346,10 +346,19 @@ func (b *BacklogScreen) boardRows(width int) []string {
 	}
 	if meter, ok := SprintMeter(board.Done, board.Total, sprintMeterCells); ok {
 		line := meter.View()
-		if board.Spend != "" {
-			line += sty.Dim.Render("  ·  " + board.Spend)
+		// The spend joins the meter's row where the whole of it fits, and
+		// takes a row of its own where it would not: a figure stated against
+		// a ceiling is read for its last word, and clipping would take that
+		// word first.
+		joined := line + sty.Dim.Render("  ·  "+board.Spend)
+		switch {
+		case board.Spend == "":
+			rows = append(rows, Clip(line, width))
+		case lipgloss.Width(joined) <= width:
+			rows = append(rows, joined)
+		default:
+			rows = append(rows, Clip(line, width), sty.Dim.Render(Clip(board.Spend, width)))
 		}
-		rows = append(rows, Clip(line, width))
 	} else if board.Spend != "" {
 		rows = append(rows, sty.Dim.Render(Clip(board.Spend, width)))
 	}

@@ -29,6 +29,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -118,6 +119,13 @@ type retryTickMsg struct{ seq int }
 func (m Model) handleStreamFailure(msg streamErrMsg) (tea.Model, tea.Cmd) {
 	f := classifyFailure(msg.err, m.providerName)
 	partial := m.streaming
+	// The cap is noted for a backlog run before the failure takes its usual
+	// path, which draws the row and ends the turn broken. That is right for
+	// the session and wrong for the run's step: the run reads it when the
+	// turn has ended and blocks on the figures (todorun.go).
+	if c, ok := meter.AsCap(msg.err); ok && m.todoRunner.state != nil && !m.todoRunner.state.Over() {
+		m.todoRunner.overSpend = c
+	}
 	calls := provider.CompletedToolCalls(msg.calls)
 	// The thinking behind the calls that survived the drop survives with
 	// them: continuing the partial is what re-uses them, and the request it

@@ -1,0 +1,25 @@
+# program test: TestProgram_TheSprintTabSaysTheSpendAgainstItsCeiling
+#
+# The sprint board under a spend ceiling, at the width the backlog screen is
+# read at: a sprint file of three items, and the loop's checkpoint on disk
+# between two items, with $4.10 spent against a $20 ceiling.
+#
+# What the capture is for is the head of the sprint tab. While a ceiling is
+# set the set's spend is said against it, joined to the meter's figures, so a
+# reader who opens the board mid-sprint sees how near the set is to the point
+# where it starts nothing further. The checkpoint is written by the setup
+# rather than earned by running an item, because the figure is what the
+# board reads and a run's stages are not what this scene is about.
+setup mkdir -p .shhh/todo/done .shhh/todo/.run
+setup printf -- '---\ntitle: Give the cache a lifetime\nsize: S\n---\n## Tests\n- true\n' > .shhh/todo/cache-ttl.md
+setup printf -- '---\ntitle: Evict what the lifetime expired\nsize: S\n---\n## Tests\n- true\n' > .shhh/todo/cache-evict.md
+setup printf -- '---\ntitle: Say what the cache holds\nsize: S\n---\n## Tests\n- true\n' > .shhh/todo/cache-report.md
+setup printf -- '---\nname: caching\n---\nMake an entry'"'"'s lifetime mean something.\n\n## Items\n- cache-ttl\n- cache-evict\n- cache-report\n' > .shhh/todo/sprint.md
+setup printf '{"session":"scene","started":"2026-09-23T09:00:00Z","updated":"2026-09-23T09:40:00Z","turns":9,"cost":4.1,"cap_cents":2000}\n' > .shhh/todo/.run/sprint.json
+snap 01-start "Some things worth doing first"
+keys "/todo" Enter
+snap 02-backlog "cache-evict"
+keys Tab
+# The head: the goal, the meter with the spend against the ceiling beside it,
+# and the item the sprint takes next.
+snap 03-sprint-tab 'spend $4.10 of $20'

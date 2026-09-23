@@ -16,6 +16,7 @@ import (
 
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/changeset"
+	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/notebook"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/subagent"
@@ -1283,6 +1284,12 @@ func TestParseTodoRunArgs(t *testing.T) {
 		{[]string{"--all", "--max"}, todoRunArgs{}, false},
 		{[]string{"--all", "--max", "0"}, todoRunArgs{}, false},
 		{[]string{"--all", "--max", "two"}, todoRunArgs{}, false},
+		{[]string{"--all", "--cost-cap", "2000"}, todoRunArgs{all: true, costCap: 2000}, true},
+		{[]string{"--all", "--cost-cap=150"}, todoRunArgs{all: true, costCap: 150}, true},
+		{[]string{"--cost-cap", "2000"}, todoRunArgs{}, false},
+		{[]string{"--all", "--cost-cap", "0"}, todoRunArgs{}, false},
+		{[]string{"--all", "--cost-cap", "$20"}, todoRunArgs{}, false},
+		{[]string{"--all", "--cost-cap"}, todoRunArgs{}, false},
 	} {
 		got, ok := parseTodoRunArgs(c.args)
 		if got != c.want || ok != c.ok {
@@ -1950,5 +1957,95 @@ func TestTodoRun_ALongWriteUpIsCutRatherThanRefused(t *testing.T) {
 	if !ok || !strings.Contains(done.Body, "Written up in the session notebook as n") ||
 		strings.Count(done.Body, "Summary: a paragraph") != 200 {
 		t.Fatal("the archived item should carry the whole report and say where the note is")
+	}
+}
+
+// The ceiling is read before the next item is taken: the flag outranks the
+// setting, the first item is worked whole, and once the set's total reaches
+// the ceiling the sprint ends capped naming both figures.
+func TestTodoSprint_CostCapEndsItBetweenItems(t *testing.T) {
+	m, root := sprintRunModel(t)
+	m.todos.SprintCostCap = 99999
+	m.input.SetValue("/todo run --all --cost-cap 500")
+	updated, _ := m.submitInput()
+	m = updated.(Model)
+	sp, live := run.Live(root)
+	if !live || sp.CapCents != 500 {
+		t.Fatalf("the flag should have set the ceiling over the setting: %+v", sp)
+	}
+	said := false
+	for _, e := range m.transcript {
+		said = said || (strings.Contains(e.text, "Sprint started") && strings.Contains(e.text, "spending at most $5"))
+	}
+	if !said {
+		t.Fatal("the start note should name the ceiling")
+	}
+	// What the finished items cost is the checkpoint's; the item in flight
+	// is added to it at the boundary.
+	sp.Cost = 5.25
+	must(t, sp.Save(root))
+	// The item's own session spend joins the total at the boundary, so the
+	// figure the ending names is the two together.
+	want := fmt.Sprintf("capped: spent %s of the $5 the sprint was allowed", run.Dollars(5.25+m.sessionSpend().Cost))
+
+	m = finishSprintItem(t, m, root, "do-it")
+
+	if m.todoRunner.state != nil {
+		t.Fatalf("the ceiling should have ended the sprint: %+v", m.todoRunner.state)
+	}
+	if it, _ := todo.Load(todo.BuiltinCode(), root).Find("zz-later"); it.Archived || it.Status != todo.StatusOpen {
+		t.Fatalf("the second item should not have been started: %+v", it)
+	}
+	note := m.transcript[len(m.transcript)-1].text
+	if !strings.Contains(note, want) {
+		t.Fatalf("the end should name the ceiling and what was spent: %q", note)
+	}
+}
+
+// The rail's row for the item in flight says the spend against the ceiling,
+// and says nothing about spend where there is no ceiling.
+func TestTodoSprint_RailSaysTheSpendAgainstTheCeiling(t *testing.T) {
+	m, _ := sprintRunModel(t)
+	m.input.SetValue("/todo run --all --cost-cap 2000")
+	updated, _ := m.submitInput()
+	m = updated.(Model)
+	// The figure is the checkpoint's as the item was taken plus this
+	// session's ledger.
+	session := m.sessionSpend().Cost
+	if block := m.inspectorTodo(); block == nil || block.SprintStage != "research · "+run.SpendWords(session, 2000) {
+		t.Fatalf("rail = %+v", block)
+	}
+	m.todoRunner.sprintCost = 4.1
+	if block := m.inspectorTodo(); block.SprintStage != "research · "+run.SpendWords(4.1+session, 2000) {
+		t.Fatalf("rail = %q", block.SprintStage)
+	}
+	m.todoRunner.sprintCap = 0
+	if block := m.inspectorTodo(); block.SprintStage != "research" {
+		t.Fatalf("without a ceiling the row names only the stage: %q", block.SprintStage)
+	}
+}
+
+// A stage request the session's own cap refused blocks the item on the
+// ledger's figures — it is not graded on what the turn said before it broke,
+// and it is not left as a failed turn the run waits behind.
+func TestTodoRun_OverSpendBlocksTheItem(t *testing.T) {
+	m, root := runModel(t)
+	m.input.SetValue("/todo run do-it")
+	updated, _ := m.submitInput()
+	m = answer(t, updated.(Model), runPlan)
+	if m.todoRunner.state == nil || m.todoRunner.state.Stage != run.StageImplement || !m.working() {
+		t.Fatalf("implement should be in flight: %+v", m.todoRunner.state)
+	}
+	refused := fmt.Errorf("stream: %w", &meter.CapError{Cap: 2, Spent: 2.04})
+	updated, _ = m.Update(streamErrMsg{err: refused})
+	m = updated.(Model)
+
+	if m.todoRunner.state != nil {
+		t.Fatalf("the refusal should have ended the run: %+v", m.todoRunner.state)
+	}
+	it, _ := todo.Load(todo.BuiltinCode(), root).Find("do-it")
+	want := run.OverSpend(run.StageImplement, 2.04, 2)
+	if it.Status != todo.StatusBlocked || !strings.Contains(it.Body, want) {
+		t.Fatalf("the item should be blocked with %q:\n%s", want, it.Body)
 	}
 }

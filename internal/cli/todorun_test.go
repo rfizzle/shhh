@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/rfizzle/shhh/internal/config"
+	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/quality"
@@ -1403,5 +1404,95 @@ func TestTodoRunHeadless_AContinuedRunKeepsTheBaselineItStartedWith(t *testing.T
 	}
 	if files, _ := todoGit(root, "show", "--name-only", "--format=", "HEAD"); !strings.Contains(files, "a.go") {
 		t.Fatalf("the dead process's work was left behind, commit holds %q", files)
+	}
+}
+
+// The sprint's ceiling is read between items: the first item's spend reaches
+// it, so the second is never started and the sprint ends capped naming both
+// figures in dollars — and the line between the items says the same figure
+// the board does.
+func TestTodoRunHeadless_CostCapEndsTheSprintBetweenItems(t *testing.T) {
+	root := todoRepo(t, "a-one", "b-two")
+	answer := stageAnswers(root)
+	d, out := headlessDriver(t, root, answer)
+	d.turn = func(_ context.Context, _ time.Time, _ string, step run.Step) (todoTurn, error) {
+		return todoTurn{text: answer(step), code: exitDone, cost: 1.25}, nil
+	}
+	d.costCap = 200
+
+	if blocked := d.sprint(context.Background(), 0); blocked {
+		t.Fatalf("a ceiling reached is not a block:\n%s", out.String())
+	}
+	store := todo.Load(todo.BuiltinCode(), root)
+	if it, _ := store.Find("a-one"); !it.Archived {
+		t.Fatalf("the first item is bounded only by its session's cap and should finish:\n%s", out.String())
+	}
+	if it, _ := store.Find("b-two"); it.Archived || it.Status != todo.StatusOpen {
+		t.Fatalf("the second item should not have been started: %+v", it)
+	}
+	log := out.String()
+	if !strings.Contains(log, "sprint over") || !strings.Contains(log, run.SprintCapped+": spent $") ||
+		!strings.Contains(log, "of the $2 the sprint was allowed") {
+		t.Fatalf("the ending should be capped with both figures:\n%s", log)
+	}
+	if !strings.Contains(log, "sprint · 1 item done · spend $") || !strings.Contains(log, " of $2\n") {
+		t.Fatalf("the line between items should state the spend against the ceiling:\n%s", log)
+	}
+}
+
+// The setting seeds the ceiling and the flag, which needs --all, outranks it.
+func TestTodoRunHeadless_CostCapFlagWinsOverTheSetting(t *testing.T) {
+	root := todoRepo(t, "a-one")
+	withProjectTrust(t, project.Trust{})
+	cfg := config.Config{}
+	cfg.Todo.SprintCostCapCents = 500
+	d, err := newTodoDriver(&bytes.Buffer{}, root, cfg, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(d.close)
+	if d.costCap != 500 {
+		t.Fatalf("the setting should seed the ceiling, got %d", d.costCap)
+	}
+	for _, c := range []struct {
+		flags todoRunFlags
+		want  string
+	}{
+		{todoRunFlags{costCap: 100}, "needs --all"},
+		{todoRunFlags{all: true, costCap: -1}, "amount in cents"},
+	} {
+		if err := todoRunHeadless(newTodoRunCmd(), "", c.flags); err == nil || !strings.Contains(err.Error(), c.want) {
+			t.Fatalf("%+v: want a refusal naming %q, got %v", c.flags, c.want, err)
+		}
+	}
+}
+
+// A stage whose request the session's own cap refused is a block with the
+// ledger's figures, not a failed turn, and the refusal is read back out of
+// the error text the stage's transcript carries.
+func TestTodoRunHeadless_OverSpendBlocksTheItem(t *testing.T) {
+	root := todoRepo(t, "a-one")
+	d, out := headlessDriver(t, root, stageAnswers(root))
+	d.turn = func(_ context.Context, _ time.Time, _ string, step run.Step) (todoTurn, error) {
+		if step.Stage == run.StageResearch {
+			return todoTurn{text: headlessPlan, code: exitDone}, nil
+		}
+		refusal := "stream: " + (&meter.CapError{Cap: 2, Spent: 2.04}).Error()
+		c, ok := meter.ReadCap(refusal)
+		if !ok {
+			t.Fatalf("the refusal should read back out of %q", refusal)
+		}
+		return todoTurn{code: 4, overSpend: c}, nil
+	}
+
+	st := d.work(context.Background(), mustItem(t, root, "a-one"), nil)
+	if st.Stage != run.StageBlocked {
+		t.Fatalf("an over-spend should block, got %s:\n%s", st.Stage, out.String())
+	}
+	if want := run.OverSpend(run.StageImplement, 2.04, 2); st.Blocked != want {
+		t.Fatalf("blocked with %q, want %q", st.Blocked, want)
+	}
+	if it, _ := todo.Load(todo.BuiltinCode(), root).Find("a-one"); !strings.Contains(it.Body, "$2.04 spent of the $2.00") {
+		t.Fatalf("the figures should be the item's evidence:\n%s", it.Body)
 	}
 }

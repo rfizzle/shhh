@@ -2,6 +2,7 @@ package meter
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"testing"
 
@@ -135,8 +136,22 @@ func TestLedger_BudgetWarnsAndCapsFutureRequests(t *testing.T) {
 		t.Fatalf("$0.60 must remain below the $1.00 cap: %v", err)
 	}
 	ledger.Record(Origin{Source: SourceAgent}, "model", provider.Usage{PromptTokens: 40})
-	if err := ledger.AllowRequest(); err == nil {
+	err := ledger.AllowRequest()
+	if err == nil {
 		t.Fatal("the next request must be refused at the cap")
+	}
+	// A backlog run blocks on the figures, so they travel on the error and
+	// read back out of the text a stage's process reports it in.
+	c, ok := AsCap(fmt.Errorf("stream: %w", err))
+	if !ok || c.Cap != 1 || c.Spent != 1 {
+		t.Fatalf("AsCap = %+v, %v; want the ledger's $1.00 of $1.00", c, ok)
+	}
+	back, ok := ReadCap("the implement turn produced no answer (exit 4): stream: " + err.Error())
+	if !ok || back.Cap != 1 || back.Spent != 1 {
+		t.Fatalf("ReadCap = %+v, %v; want the refusal read back out of its text", back, ok)
+	}
+	if _, ok := ReadCap("rate limited"); ok {
+		t.Fatal("a different failure must not read as the cap")
 	}
 }
 

@@ -1144,10 +1144,11 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 			// Drafting an item from a sentence is the same judgement in one
 			// paragraph rather than over a whole session, so it goes to the
 			// same model and is metered against the same source.
-			Drafter:     todo.NewDrafter(ledger.For(env.prov, meter.SourceBacklog), reading, profile),
-			NoCommit:    !cfg.TodoCommitEnabled(),
-			ItemTimeout: cfg.TodoItemTimeout(),
-			GroomStale:  cfg.TodoGroomStale(),
+			Drafter:       todo.NewDrafter(ledger.For(env.prov, meter.SourceBacklog), reading, profile),
+			NoCommit:      !cfg.TodoCommitEnabled(),
+			ItemTimeout:   cfg.TodoItemTimeout(),
+			SprintCostCap: cfg.TodoSprintCostCap(),
+			GroomStale:    cfg.TodoGroomStale(),
 			// A closed sprint's report is a page, and it goes through the
 			// same publisher the model's own pages do — one report store,
 			// one server, one retention rule, whoever asked for the page.

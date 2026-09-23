@@ -187,3 +187,90 @@ func TestSprint_SummaryStatesWhereItIs(t *testing.T) {
 		t.Fatalf("ended summary = %q", got)
 	}
 }
+
+// A ceiling is read before an item is taken: under it the sprint takes the
+// next item, at it Peek has nothing to offer and Next ends the sprint capped
+// with both figures in dollars.
+func TestSprint_CostCapRefusesTheNextItem(t *testing.T) {
+	root := backlog(t, "a-one", "b-two")
+	store := todo.Load(todo.BuiltinCode(), root)
+	sp := StartSprint("s1", "manual", 0, false)
+	sp.CapCents = 2000
+
+	if _, ok := sp.Next(store); !ok {
+		t.Fatal("nothing spent yet, so the first item is taken")
+	}
+	sp.Finished("a-one")
+	sp.Spent(3, 19.99)
+	if next, ok := sp.Peek(store); !ok || next.Slug != "b-two" {
+		t.Fatalf("under the ceiling the next item is offered, got %q/%v", next.Slug, ok)
+	}
+	sp.Spent(1, 0.01)
+	if _, ok := sp.Peek(store); ok {
+		t.Fatal("at the ceiling nothing is offered")
+	}
+	if sp.Over() {
+		t.Fatal("peeking must not end the sprint")
+	}
+	if _, ok := sp.Next(store); ok {
+		t.Fatal("at the ceiling no item is taken")
+	}
+	if sp.Ended != SprintCapped || sp.Reason != "spent $20.00 of the $20 the sprint was allowed" {
+		t.Fatalf("ended %q: %q", sp.Ended, sp.Reason)
+	}
+	if len(sp.Attempts) != 1 {
+		t.Fatalf("the refused item was not attempted: %v", sp.Attempts)
+	}
+}
+
+// The ceiling rides the checkpoint, so a sprint picked up in a fresh process
+// is held to the ceiling it was started with.
+func TestSprint_CostCapSurvivesTheProcess(t *testing.T) {
+	root := backlog(t, "a-one")
+	sp := StartSprint("s1", "manual", 0, false)
+	sp.CapCents = 1550
+	sp.Spent(2, 4.1)
+	if err := sp.Save(root); err != nil {
+		t.Fatal(err)
+	}
+	back, live := Live(root)
+	if !live || back.CapCents != 1550 || back.Cost != 4.1 {
+		t.Fatalf("the ceiling and the total should come back: %+v", back)
+	}
+}
+
+func TestSprint_SpendWords(t *testing.T) {
+	for _, c := range []struct {
+		cost     float64
+		capCents int64
+		words    string
+		figure   string
+	}{
+		{4.1, 2000, "spend $4.10 of $20", "$4.10 of $20"},
+		{0, 2050, "spend $0.00 of $20.50", "$0.00 of $20.50"},
+		{4.1, 0, "", "$4.10"},
+		{0, 0, "", ""},
+	} {
+		if got := SpendWords(c.cost, c.capCents); got != c.words {
+			t.Errorf("SpendWords(%v, %d) = %q, want %q", c.cost, c.capCents, got, c.words)
+		}
+		if got := SpendFigure(c.cost, c.capCents); got != c.figure {
+			t.Errorf("SpendFigure(%v, %d) = %q, want %q", c.cost, c.capCents, got, c.figure)
+		}
+	}
+}
+
+// The flag outranks everything; a continued sprint keeps the ceiling it was
+// started under over the setting; a new one takes the setting, and a setting
+// below zero is no ceiling.
+func TestSprint_Bound(t *testing.T) {
+	for _, c := range []struct{ had, flag, setting, want int64 }{
+		{0, 0, 0, 0}, {0, 0, 500, 500}, {0, 100, 500, 100}, {0, 0, -5, 0},
+		{300, 0, 500, 300}, {300, 100, 500, 100},
+	} {
+		sp := &Sprint{CapCents: c.had}
+		if sp.Bound(c.flag, c.setting); sp.CapCents != c.want {
+			t.Errorf("a sprint at %d bound by flag %d, setting %d = %d, want %d", c.had, c.flag, c.setting, sp.CapCents, c.want)
+		}
+	}
+}

@@ -60,6 +60,10 @@ type Todos struct {
 	// setting's default: a cap that fires throws a run away, and what it
 	// should be is a fact about the project rather than about shhh.
 	ItemTimeout time.Duration
+	// SprintCostCap is the most a sprint may spend, in cents, from the
+	// config; `--cost-cap` on the command outranks it. The zero value is no
+	// ceiling, which is the setting's default.
+	SprintCostCap int64
 	// GroomStale is how many commits the tree may take after an item was
 	// read against it before the surfaces say the reading has fallen
 	// behind. The zero value is the setting's own default, which is what a
@@ -144,6 +148,14 @@ func (m Model) inspectorTodo() *components.InspectorTodo {
 	// whether it is moving.
 	if st := m.todoRunner.state; st.Sprinting() {
 		t.SprintItem, t.SprintStage = st.Slug, string(st.Stage)
+		// Under a ceiling the row says how near the set is to it, in the
+		// board's words. The figure is the checkpoint as the item was taken
+		// plus this session's ledger: the rail is drawn every frame and the
+		// checkpoint is a file, so it is read where the item starts and not
+		// here (todorunsprint.go).
+		if words := run.SpendWords(m.todoRunner.sprintCost+m.sessionSpend().Cost, m.todoRunner.sprintCap); words != "" {
+			t.SprintStage += " · " + words
+		}
 	}
 	for _, it := range todoRailOrder(s.Items, m.todoRunner.state) {
 		if len(t.Rows) == todoRailRows {
@@ -362,7 +374,7 @@ func todoWriteVerb(args []string) []string {
 
 // todoRunUsage is the one place the command's shape is written, so the
 // refusal and the help cannot come to describe different commands.
-const todoRunUsage = "Usage: /todo run [<slug>|--next|--all] [--no-commit] [--max <n>]"
+const todoRunUsage = "Usage: /todo run [<slug>|--next|--all] [--no-commit] [--max <n>] [--cost-cap <cents>]"
 
 // todoRunArgs is what follows `/todo run`: which item, and the answers the
 // person gave about how it is worked.
@@ -376,6 +388,9 @@ type todoRunArgs struct {
 	// max bounds how many items the sprint starts, 0 for as many as are
 	// ready.
 	max int
+	// costCap is the most the sprint may spend in cents, 0 for the
+	// project's setting.
+	costCap int64
 }
 
 // parseTodoRunArgs reads what follows `/todo run`. A word it does not know is
@@ -405,6 +420,20 @@ func parseTodoRunArgs(args []string) (todoRunArgs, bool) {
 				return todoRunArgs{}, false
 			}
 			out.max = n
+		case a == "--cost-cap" || strings.HasPrefix(a, "--cost-cap="):
+			value := strings.TrimPrefix(a, "--cost-cap=")
+			if value == "--cost-cap" {
+				i++
+				if i >= len(args) {
+					return todoRunArgs{}, false
+				}
+				value = args[i]
+			}
+			n, err := strconv.ParseInt(value, 10, 64)
+			if err != nil || n < 1 {
+				return todoRunArgs{}, false
+			}
+			out.costCap = n
 		case strings.HasPrefix(a, "-") && a != "--next":
 			return todoRunArgs{}, false
 		case out.arg == "":
@@ -420,7 +449,7 @@ func parseTodoRunArgs(args []string) (todoRunArgs, bool) {
 	if out.all && out.arg != "" {
 		return todoRunArgs{}, false
 	}
-	if out.max > 0 && !out.all {
+	if (out.max > 0 || out.costCap > 0) && !out.all {
 		return todoRunArgs{}, false
 	}
 	return out, true

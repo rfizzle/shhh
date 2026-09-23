@@ -987,6 +987,22 @@ and off by default, read at the boundary between two steps so that it ends
 an item rather than cutting a turn in half and leaving a tree nothing has
 read.
 
+**What a sprint may spend is bounded twice, and the two bounds end different
+things.** The session's own cost cap (`provider.cost_cap_cents`) is a
+ceiling on one item: each item is a session, so it is where a request is
+refused, and an item whose step was refused there ends blocked with the
+ledger's figures as its evidence — not as a turn that broke, because nothing
+broke and half a step is not the step's answer. The sprint's ceiling
+(`todo.sprint_cost_cap_cents`, or `--cost-cap` on the command, which wins) is
+a ceiling on the set: what the finished items cost is carried from one
+session to the next, and once that total reaches the ceiling the sprint
+starts nothing further and ends capped, naming what it spent against what it
+was allowed. It is read between items and never inside one, so it cannot cut
+a step in half; the item in flight is bounded by the session's cap alone.
+While a ceiling is set the board, the rail and the unattended runner's line
+between items all say `spend $4.10 of $20`, and the closed set's notes carry
+the figure.
+
 The sprint keeps a checkpoint of its own beside the items', so a sprint
 that dies with its process is picked up by the same command in a fresh one:
 it names the item it was on, and that item's checkpoint names the step.

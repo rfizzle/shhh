@@ -14,7 +14,9 @@ package meter
 // See docs/architecture.md#spend-is-counted-at-the-provider.
 
 import (
+	"errors"
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/rfizzle/shhh/internal/pricing"
@@ -183,9 +185,49 @@ func (l *Ledger) AllowRequest() error {
 	defer l.mu.Unlock()
 	t := l.totalLocked()
 	if l.budget.CapCents > 0 && t.Priced && t.Cost >= l.budget.cap() {
-		return fmt.Errorf("LLM cost cap of $%.2f reached (spent $%.2f)", l.budget.cap(), t.Cost)
+		return &CapError{Cap: l.budget.cap(), Spent: t.Cost}
 	}
 	return nil
+}
+
+// CapError is a request the cap refused, with the ledger's two figures on
+// it. It is a type rather than a sentence because a backlog run ends a step
+// on it — as blocked, with the figures as its evidence — where every other
+// failed request is a turn that broke.
+type CapError struct {
+	Cap, Spent float64
+}
+
+func (e *CapError) Error() string {
+	return fmt.Sprintf("LLM cost cap of $%.2f reached (spent $%.2f)", e.Cap, e.Spent)
+}
+
+// capFormat is the refusal as ReadCap parses it back, beside the place it is
+// written, because the unattended runner meets the refusal as a
+// stage process's error text and not as a value it can match on.
+const capFormat = "LLM cost cap of $%f reached (spent $%f)"
+
+// AsCap is the refusal inside err, where a request was refused at the cap.
+func AsCap(err error) (*CapError, bool) {
+	var c *CapError
+	if errors.As(err, &c) {
+		return c, true
+	}
+	return nil, false
+}
+
+// ReadCap finds the refusal in an error's text, however it was wrapped on
+// the way out of the process that met it.
+func ReadCap(text string) (*CapError, bool) {
+	i := strings.Index(text, "LLM cost cap of $")
+	if i < 0 {
+		return nil, false
+	}
+	var c CapError
+	if _, err := fmt.Sscanf(text[i:], capFormat, &c.Cap, &c.Spent); err != nil {
+		return nil, false
+	}
+	return &c, true
 }
 
 // Record folds one request's usage into the ledger, pricing it against the

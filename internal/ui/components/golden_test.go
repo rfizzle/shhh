@@ -2688,6 +2688,8 @@ func TestGolden_SprintBoard(t *testing.T) {
 		blocked.Next = ""
 		blocked.Rows[2].Note = "blocked"
 		blocked.Rows[2].State = BacklogBlocked
+		capped := goldenSprintBoard()
+		capped.Spend = "9 turns · spend $4.10 of $20"
 		closed := &SprintBoard{
 			Name: "the cockpit sprint", Goal: goldenSprintBoard().Goal, Closed: true,
 			Report: "http://127.0.0.1:8731/r/rp-4c1d90ab77e25f30",
@@ -2710,6 +2712,8 @@ func TestGolden_SprintBoard(t *testing.T) {
 		return []golden.Panel{
 			{Label: "the set being worked · the goal, the meter, and the stage of the one in flight",
 				View: goldenSprintScreen(goldenSprintBoard()).View(width)},
+			{Label: "under a spend ceiling · the spend said against it, under the meter where the row is too narrow",
+				View: goldenSprintScreen(capped).View(width)},
 			{Label: "stopped on a block · the block on the board with the item that wrote it",
 				View: goldenSprintScreen(blocked).View(width)},
 			{Label: "closed · the record, with the page it wrote as the last row",

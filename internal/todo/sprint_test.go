@@ -261,13 +261,13 @@ func TestCloseSprintIfDone_ArchivesTheLastSlugWithTheReports(t *testing.T) {
 	root := sprintRoot(t, "---\nname: caching\n---\ngoal\n\n## Items\n- cache-ttl\n- cache-keys\n- cache-gone\n")
 	// cache-gone is in the sprint and in no directory: a slug dropped from
 	// the backlog is accounted for rather than holding the set open.
-	if to, err := CloseSprintIfDone(BuiltinCode(), root); err != nil || to != "" {
+	if to, err := CloseSprintIfDone(BuiltinCode(), root, ""); err != nil || to != "" {
 		t.Fatalf("closed early: %q %v", to, err)
 	}
 	if _, err := Archive(root, "cache-ttl", "## Report\nSummary: the lifetime is a duration on the entry.\n"); err != nil {
 		t.Fatal(err)
 	}
-	to, err := CloseSprintIfDone(BuiltinCode(), root)
+	to, err := CloseSprintIfDone(BuiltinCode(), root, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -303,7 +303,7 @@ func TestCloseSprintIfDone_ArchivesTheLastSlugWithTheReports(t *testing.T) {
 
 func TestCloseSprint_EarlyListsWhatWasLeft(t *testing.T) {
 	root := sprintRoot(t, "---\nname: caching\n---\ngoal\n\n## Items\n- cache-ttl\n- cache-metrics\n")
-	to, err := CloseSprint(BuiltinCode(), root)
+	to, err := CloseSprint(BuiltinCode(), root, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -407,7 +407,7 @@ func TestCreateSprint_RefusesANameTheArchiveHolds(t *testing.T) {
 	if _, err := CreateSprint(root, sp); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := CloseSprint(BuiltinCode(), root); err != nil {
+	if _, err := CloseSprint(BuiltinCode(), root, ""); err != nil {
 		t.Fatal(err)
 	}
 	if !SprintNameTaken(root, "caching") {

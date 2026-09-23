@@ -438,7 +438,8 @@ func (m *Model) closeFinishedSprint() string {
 	// the file out from under every reader of it — the page is written from
 	// what the sprint said at the moment it stopped being a plan.
 	sp, entries := m.sprintAsClosed()
-	to, err := todo.CloseSprintIfDone(m.todos.Profile, m.todos.Root)
+	turns, cost, capCents := m.sprintSpendNow()
+	to, err := todo.CloseSprintIfDone(m.todos.Profile, m.todos.Root, run.SpendFigure(cost, capCents))
 	if err != nil {
 		return "\nThe sprint could not be closed — " + err.Error()
 	}
@@ -446,9 +447,8 @@ func (m *Model) closeFinishedSprint() string {
 		return ""
 	}
 	m.reloadTodos()
-	turns, cost := m.sprintSpendNow()
 	return "\nThat was the last item in the sprint; it is closed and archived to " + to + "." +
-		m.sprintReportPage(sp, entries, turns, cost)
+		m.sprintReportPage(sp, entries, turns, cost, capCents)
 }
 
 // closeSprintCommand is `/todo sprint close` from the session. The verb
@@ -458,11 +458,11 @@ func (m *Model) closeFinishedSprint() string {
 func (m Model) closeSprintCommand() (tea.Model, tea.Cmd) {
 	m.reloadTodos()
 	sp, entries := m.sprintAsClosed()
-	turns, cost := m.sprintSpendNow()
+	turns, cost, capCents := m.sprintSpendNow()
 	note := m.todos.Manage([]string{"sprint", "close"})
 	m.reloadTodos()
 	if m.todoStore.Sprint == nil {
-		note += m.sprintReportPage(sp, entries, turns, cost)
+		note += m.sprintReportPage(sp, entries, turns, cost, capCents)
 	}
 	m.refreshTodoScreen()
 	return m.systemNotice(note)
@@ -480,12 +480,14 @@ func (m Model) sprintAsClosed() (*todo.Sprint, []todo.SprintEntry) {
 // sprintSpendNow is what the set has cost, from the checkpoint where one is
 // still there and from this session alone where it is not — a sprint that
 // ended keeps no checkpoint, and the session that closed it is the only
-// account of the last item left.
-func (m Model) sprintSpendNow() (int, float64) {
+// account of the last item left. The ceiling comes with it, because a figure
+// stated against one is the figure the board showed.
+func (m Model) sprintSpendNow() (int, float64, int64) {
 	if sp, live := run.Live(m.todos.Root); live {
-		return m.sprintSpend(sp)
+		turns, cost := m.sprintSpend(sp)
+		return turns, cost, sp.CapCents
 	}
-	return int(m.turnCount), m.sessionSpend().Cost
+	return int(m.turnCount), m.sessionSpend().Cost, 0
 }
 
 // inspectorSprint is the sprint row above the backlog list: the set's name
@@ -557,7 +559,8 @@ func (m Model) openSprintBoard(s *todo.Store) *components.SprintBoard {
 		break
 	}
 	if sp, live := run.Live(m.todos.Root); live {
-		board.Spend = sprintSpendWords(m.sprintSpend(sp))
+		turns, cost := m.sprintSpend(sp)
+		board.Spend = sprintSpendWords(turns, cost, sp.CapCents)
 		if next, ok := sp.Peek(s); ok {
 			board.Next = next.Slug
 		}
@@ -612,7 +615,18 @@ func (m Model) sprintSpend(sp *run.Sprint) (turns int, cost float64) {
 // sprintSpendWords is the spend as the board says it. A set that has spent
 // nothing yet says nothing rather than "0 turns · $0.0000", because a board
 // opened before the first item started is not reporting a free sprint.
-func sprintSpendWords(turns int, cost float64) string {
+//
+// Under a ceiling the cost is said against it instead — `spend $4.10 of
+// $20`, from the first moment, because the ceiling is a fact about the set
+// before anything has been spent — and joined to the turns the way the rail
+// joins its figures.
+func sprintSpendWords(turns int, cost float64, capCents int64) string {
+	if capped := run.SpendWords(cost, capCents); capped != "" {
+		if turns == 0 {
+			return capped
+		}
+		return plural(turns, "turn") + " · " + capped
+	}
 	if turns == 0 && cost == 0 {
 		return ""
 	}
@@ -656,11 +670,11 @@ func (m Model) sprintTitle() string {
 // has a stat band, a table of its items and the prose of what stopped it,
 // and inventing a second vocabulary for it would give the product two report
 // designs to keep in step.
-func (m *Model) sprintReportPage(sp *todo.Sprint, entries []todo.SprintEntry, turns int, cost float64) string {
+func (m *Model) sprintReportPage(sp *todo.Sprint, entries []todo.SprintEntry, turns int, cost float64, capCents int64) string {
 	if m.todos.PublishReport == nil || sp == nil {
 		return ""
 	}
-	url, err := m.todos.PublishReport(sprintReportDoc(sp, entries, turns, cost))
+	url, err := m.todos.PublishReport(sprintReportDoc(sp, entries, turns, cost, capCents))
 	if err != nil {
 		return "\nThe sprint's report page could not be written — " + err.Error()
 	}
@@ -671,7 +685,7 @@ func (m *Model) sprintReportPage(sp *todo.Sprint, entries []todo.SprintEntry, tu
 // sprintReportDoc is the closed sprint as a report document: what the set
 // was for, what it cost, every item with what it produced, and what it did
 // not finish.
-func sprintReportDoc(sp *todo.Sprint, entries []todo.SprintEntry, turns int, cost float64) reports.Document {
+func sprintReportDoc(sp *todo.Sprint, entries []todo.SprintEntry, turns int, cost float64, capCents int64) reports.Document {
 	doc := reports.Document{Title: "Sprint " + sp.Name}
 	if goal := strings.TrimSpace(sp.Goal); goal != "" && goal != todo.GoalPlaceholder {
 		doc.Blocks = append(doc.Blocks, reports.Block{
@@ -707,7 +721,7 @@ func sprintReportDoc(sp *todo.Sprint, entries []todo.SprintEntry, turns int, cos
 	// what a tag message wants is this list, not the table above it or the
 	// reports below.
 	doc.Blocks = append(doc.Blocks, reports.Block{
-		Type: reports.BlockProse, Heading: "Notes", Text: todo.SprintNotes(sp, entries),
+		Type: reports.BlockProse, Heading: "Notes", Text: todo.SprintNotes(sp, entries, run.SpendFigure(cost, capCents)),
 	})
 	// The table's cell is one line because a cell is, and a run's report
 	// names its commit in prose further down — so the reports go on the

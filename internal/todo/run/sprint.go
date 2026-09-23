@@ -33,7 +33,8 @@ const (
 	// SprintEmpty is nothing left that can be started: every remaining item
 	// waits on another, is blocked, or the backlog is finished.
 	SprintEmpty = "empty"
-	// SprintCapped is --max reached.
+	// SprintCapped is a cap the sprint was asked for reached: --max items
+	// started, or the set's spend at or past its ceiling.
 	SprintCapped = "capped"
 	// SprintBlocked is an item that blocked. The sprint stops on the first
 	// one: a blocked item wrote a follow-up, and the next ready item may
@@ -79,6 +80,14 @@ type Sprint struct {
 	// in, and this file is the only thing that does.
 	Turns int     `json:"turns,omitempty"`
 	Cost  float64 `json:"cost,omitempty"`
+	// CapCents is the most the set may spend, in cents, and 0 for no
+	// ceiling. It is checked against Cost before an item is taken and never
+	// inside one: what stops a request mid-item is the session's own cap,
+	// and a sprint ceiling that cut a stage in half would leave a tree
+	// nothing has read. Cents rather than dollars so the ceiling asked for
+	// is the ceiling kept, the way every other spend setting is written.
+	// See docs/capabilities/todo.md#a-sprint-is-runs-with-a-session-between-them.
+	CapCents int64 `json:"cap_cents,omitempty"`
 	// Ended is one of the words above once the sprint is over, and Reason
 	// the evidence behind it.
 	Ended  string `json:"ended,omitempty"`
@@ -164,6 +173,10 @@ func (s *Sprint) Next(store *todo.Store) (todo.Item, bool) {
 		s.end(SprintCapped, fmt.Sprintf("%s attempted, which is the cap the sprint was asked for", plural(len(s.Attempts), "item")))
 		return todo.Item{}, false
 	}
+	if s.overCap() {
+		s.end(SprintCapped, fmt.Sprintf("spent %s of the %s the sprint was allowed", Dollars(s.Cost), CapDollars(s.CapCents)))
+		return todo.Item{}, false
+	}
 	it, ok := s.Peek(store)
 	if !ok {
 		s.end(SprintEmpty, "nothing is ready: every open item waits on another, or the backlog is empty")
@@ -183,7 +196,7 @@ func (s *Sprint) Next(store *todo.Store) (todo.Item, bool) {
 // "what is next" and getting nothing has the same answer the loop is about
 // to reach, without the ending being recorded twice.
 func (s *Sprint) Peek(store *todo.Store) (todo.Item, bool) {
-	if s.Over() || (s.Max > 0 && len(s.Attempts) >= s.Max) {
+	if s.Over() || (s.Max > 0 && len(s.Attempts) >= s.Max) || s.overCap() {
 		return todo.Item{}, false
 	}
 	for _, it := range store.Ready() {
@@ -202,6 +215,72 @@ func (s *Sprint) Spent(turns int, cost float64) {
 	if cost > 0 {
 		s.Cost += cost
 	}
+}
+
+// overCap reports the set's running total at or past its ceiling. The total
+// is the finished items' alone — the one in flight is added at its session
+// boundary — which is why the check is made before an item is taken and not
+// during one.
+func (s *Sprint) overCap() bool {
+	return s.CapCents > 0 && s.Cost >= float64(s.CapCents)/100
+}
+
+// Bound sets the sprint's ceiling from the places it is asked for: the
+// command's flag where one was given, the ceiling a checkpoint already
+// carries where the sprint is being continued, the setting otherwise — the
+// flag first, as every key with a flag above it resolves. A continued sprint
+// keeps its own ceiling over the setting because that ceiling is an answer
+// the sprint was started under, and a setting read again in a new process is
+// not somebody asking for a different one. Both drivers resolve it here, so a
+// session and a script given the same answers carry the same ceiling.
+func (s *Sprint) Bound(flag, setting int64) {
+	switch {
+	case flag > 0:
+		s.CapCents = flag
+	case s.CapCents <= 0:
+		s.CapCents = max(setting, 0)
+	}
+}
+
+// SpendWords is what the set has spent against its ceiling, in the words
+// every surface that states it uses — the board's head, the rail's row for
+// the item in flight, and the unattended runner's line between two items:
+// `spend $4.10 of $20`. cost is the caller's, because only the caller knows
+// whether the item in flight has been added to the checkpoint yet. It is
+// empty without a ceiling: a figure with nothing to measure it against is
+// the board's own spend reading, not this one.
+func SpendWords(cost float64, capCents int64) string {
+	if capCents <= 0 {
+		return ""
+	}
+	return "spend " + SpendFigure(cost, capCents)
+}
+
+// SpendFigure is the set's spend as the closed set's notes carry it: against
+// the ceiling where there was one, on its own where there was not, and empty
+// where nothing was spent and nothing was capped.
+func SpendFigure(cost float64, capCents int64) string {
+	switch {
+	case capCents > 0:
+		return Dollars(max(cost, 0)) + " of " + CapDollars(capCents)
+	case cost > 0:
+		return Dollars(cost)
+	}
+	return ""
+}
+
+// Dollars is an amount to the cent, which is what a ceiling in cents is
+// compared against.
+func Dollars(cost float64) string { return fmt.Sprintf("$%.2f", cost) }
+
+// CapDollars is a ceiling in the dollars it was asked for, without the cents
+// where it was a whole number: `$20` rather than `$20.00`, which reads as a
+// figure that was measured rather than one that was chosen.
+func CapDollars(cents int64) string {
+	if cents%100 == 0 {
+		return fmt.Sprintf("$%d", cents/100)
+	}
+	return fmt.Sprintf("$%d.%02d", cents/100, cents%100)
 }
 
 // Resume is the item a sprint picked up in a new process goes back to: the
