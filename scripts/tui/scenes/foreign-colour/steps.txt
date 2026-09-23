@@ -1,3 +1,9 @@
+# program test: TestProgram_ACardOnAnEmptyDraftAnswersToItsOwnKey,
+#   TestProgram_TheQuitChordArmsThenLeaves
+#
+# The re-painting itself is what the terminal is handed, which only a capture
+# shows.
+#
 # Output a program painted itself is re-painted into the palette on the way
 # in (docs/interface/principles.md#one-grid). A golden proves the fold; only a
 # terminal can say whether what reaches the cells is a colour the palette

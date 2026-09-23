@@ -1,3 +1,7 @@
+# program test: TestProgram_AnEditCardAppliesTheEdit,
+#   TestProgram_ACallRefusedBeforeItsCardIsItsOwnRow,
+#   TestProgram_TheQuitChordArmsThenLeaves
+#
 # An applied edit and a refused call, both as rows on the grid
 # (docs/interface/surfaces.md#the-activity-row). The edit is the archetypal
 # mutation and used to be the one row in the transcript with no rail on it:

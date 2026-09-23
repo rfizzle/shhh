@@ -1,3 +1,7 @@
+# program test: TestProgram_ACardOnAnEmptyDraftAnswersToItsOwnKey,
+#   TestProgram_ARunningCommandTailsIntoItsRow,
+#   TestProgram_TheQuitChordArmsThenLeaves
+#
 # What the prompt frame costs the transcript, on a terminal with rows to
 # spare (docs/interface/surfaces.md#the-input-frame). The pane is 52 rows and
 # the draft is empty in every snap here, so what each picture answers is the

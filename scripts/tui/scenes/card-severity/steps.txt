@@ -1,3 +1,6 @@
+# program test: TestProgram_ACardsNoRefusesTheCall,
+#   TestProgram_TheQuitChordArmsThenLeaves
+#
 # The severity ladder in three colours, and the decision run in one grammar
 # (docs/interface/surfaces.md#the-approval-card). Three command cards land in
 # one turn — low, medium and flagged — so the chip, the body row and the

@@ -1,3 +1,6 @@
+# program test: TestProgram_AHoldParksTheTurnAndTheChordEndsIt,
+#   TestProgram_TheQuitChordArmsThenLeaves
+#
 # Every key the frame's bottom rail offers is written in brackets, in the
 # tone an offered key wears, and a key that acts on its second press says so
 # before the first (docs/interface/surfaces.md#the-input-frame).

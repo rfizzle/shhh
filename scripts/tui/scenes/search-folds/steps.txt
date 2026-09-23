@@ -1,3 +1,6 @@
+# program test: TestProgram_TheSearchReachesInsideTheFolds,
+#   TestProgram_TheQuitChordArmsThenLeaves
+#
 # The transcript search reaches inside the folds
 # (docs/interface/surfaces.md#reading-mode). The turn leaves one step, folded
 # once it finished, with a run of four reads folded again inside it. The path

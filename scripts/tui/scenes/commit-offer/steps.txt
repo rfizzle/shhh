@@ -1,3 +1,6 @@
+# program test: TestProgram_TheCloseOffersTheCommitAndTheCardCommits,
+#   TestProgram_TheQuitChordArmsThenLeaves
+#
 # The turn's close offers the commit, and the commit is a card
 # (docs/interface/surfaces.md#the-turns-close). The workspace is a repository
 # with one commit in it, one tracked file the turn edits, and one the reader

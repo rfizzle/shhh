@@ -1,3 +1,6 @@
+# program test: none — the trust row is read by the command line before
+#   any program starts, and the sitting after is a second process
+#
 # A trusted checkout whose quality suite changed since the answer. The first
 # sitting after the change says so once on the start screen — the trust row
 # names `quality suites`, says it changed since you trusted it and offers

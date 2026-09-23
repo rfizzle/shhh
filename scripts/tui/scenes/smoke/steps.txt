@@ -1,3 +1,7 @@
+# program test: TestProgram_ATypedLineFetchesAReplyOntoTheFrame,
+#   TestProgram_ACardOnAnEmptyDraftAnswersToItsOwnKey,
+#   TestProgram_TheQuitChordArmsThenLeaves
+#
 # The path a first session takes: the start screen, a reply, an approval
 # card, the command's row, and the exit banner. Every snap names the text it
 # waits for, so this scene is the TUI gate as well as a tour.

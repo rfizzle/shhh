@@ -1,3 +1,6 @@
+# program test: TestProgram_TheApprovalCardsKeysRunTheCommand,
+#   TestProgram_TheQuitChordArmsThenLeaves
+#
 # A card landing on top of the input frame, with both shapes on the screen at
 # once: the card in its own tone, the frame in the mode's, and the same four
 # corners on each (docs/interface/surfaces.md#the-approval-card). The card

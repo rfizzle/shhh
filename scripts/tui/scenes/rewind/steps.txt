@@ -1,3 +1,6 @@
+# program test: TestProgram_TheRewindPutsTheFilesBackToATurn,
+#   TestProgram_TheQuitChordArmsThenLeaves
+#
 # The rewind, end to end (docs/interface/surfaces.md#the-rewind): three turns,
 # two of them mutating, then the timeline over them, the card that asks what
 # "back" means here, and the row the act lands as.

@@ -1,3 +1,6 @@
+# program test: TestProgram_TheGatesPassSettlesTheFailureBeforeIt,
+#   TestProgram_TheQuitChordArmsThenLeaves
+#
 # One turn watches its tests fail, fixes the code, and runs the repository's
 # own suite over what came out of it. Read the cells for one unambiguous final
 # verdict (docs/interface/surfaces.md#the-turns-close): at 03 the failing

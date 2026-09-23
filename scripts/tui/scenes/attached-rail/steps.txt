@@ -1,3 +1,8 @@
+# program test: TestProgram_ASpawnCardStartsTheChildrenAsLanes,
+#   TestProgram_AttachingMovesTheKeyboardIntoAChild,
+#   TestProgram_TheManagerSteersAndKillsAChild,
+#   TestProgram_TheQuitChordArmsThenLeaves
+#
 # The keyboard moved into a child, at 144 columns — past the rung where the
 # content splits, so the inspector rail is up beside the child's transcript
 # and the frame under it is the child's own

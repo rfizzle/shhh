@@ -1,3 +1,9 @@
+# program test: TestProgram_TheOneShotOpensItsAlternatives,
+#   TestProgram_TheOneShotNamesADestructiveCommand
+#
+# The piped run has no program at all: it is one line of shell on stdout,
+# which the command's own tests read.
+#
 # The one-shot draws the command as a command, and lays what it draws out
 # against the terminal (docs/interface/surfaces.md#the-one-shot-result). The
 # pane is 100 columns, which is what the artboard is drawn at; run it again at

@@ -1,3 +1,6 @@
+# program test: TestProgram_AQuestionCardIsAnsweredTabByTab,
+#   TestProgram_TheQuitChordArmsThenLeaves
+#
 # Several questions in one call are one card of tabs with a submit at the end,
 # and the marked row's long form is behind the full-view key
 # (docs/interface/surfaces.md#the-question-card).

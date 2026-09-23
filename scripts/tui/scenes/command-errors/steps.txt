@@ -1,3 +1,11 @@
+# program test: TestProgram_ABrokenCommandsRowSaysHowItEnded,
+#   TestProgram_TheCancelChordStopsARunningCommand,
+#   TestProgram_TheQuitChordArmsThenLeaves
+#
+# The row that did not start — a working directory the command removed — is
+# this machine's own failure and the real runner's to report; no program test
+# fakes one.
+#
 # A non-zero exit, the command ceiling, and a reader cancellation each leave a
 # distinct command row. Read the cells against the activity-row failure states;
 # inspect the picture for the failure and stopped tones.

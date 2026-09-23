@@ -1,3 +1,7 @@
+# program test: TestProgram_ACardOnAnEmptyDraftAnswersToItsOwnKey,
+#   TestProgram_TheGatesPassSettlesTheFailureBeforeIt,
+#   TestProgram_TheQuitChordArmsThenLeaves
+#
 # The rail separating what needs attention now from what the session has
 # already answered (docs/interface/surfaces.md#the-inspector-rail). Read the
 # cells for the block and its keying: at 06 the three runs of the formatter

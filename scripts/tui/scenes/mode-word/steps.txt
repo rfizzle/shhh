@@ -1,3 +1,9 @@
+# program test: TestProgram_ShiftTabWalksTheModes,
+#   TestProgram_APlanCardCarriesThePlanIntoANewSession,
+#   TestProgram_ASpawnCardStartsTheChildrenAsLanes,
+#   TestProgram_AttachingMovesTheKeyboardIntoAChild,
+#   TestProgram_TheQuitChordArmsThenLeaves
+#
 # The permission mode is the one field on the frame that is read before every
 # keystroke, so it is written in one closed vocabulary: the mode's own name,
 # under the mark that carries its class

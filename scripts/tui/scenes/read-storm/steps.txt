@@ -1,3 +1,6 @@
+# program test: TestProgram_AFoldedRunOfReadsOpensInPlace,
+#   TestProgram_TheQuitChordArmsThenLeaves
+#
 # A turn that reads its way into a task before it has anything to say about
 # it (docs/interface/surfaces.md#the-step). Twelve reads with no plan and no
 # prose over them: the run folds to one counted row all the same, and the

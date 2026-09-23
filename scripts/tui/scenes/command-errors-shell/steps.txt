@@ -1,3 +1,9 @@
+# program test: TestProgram_ABangLineRunsOnItsConfirm,
+#   TestProgram_TheQuitChordArmsThenLeaves
+#
+# The row that did not start is a shell this machine cannot execute, and
+# only the real runner can report one; no program test fakes it.
+#
 # A command that never starts because the execution shell is gone. A bash
 # whose interpreter is missing is put first on PATH by the reader's own
 # command, so the next command has no shell to run in, and the row names that

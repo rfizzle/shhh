@@ -1,3 +1,7 @@
+# program test: TestProgram_ShiftTabWalksTheModes,
+#   TestProgram_AJudgedRefusalIsARowTheReaderCanOpen,
+#   TestProgram_TheQuitChordArmsThenLeaves
+#
 # A refusal the classifier judged is a row in the feed and nothing on the
 # frame (docs/capabilities/approvals-and-safety.md#a-judged-denial-carries-its-reason).
 #

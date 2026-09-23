@@ -1,3 +1,7 @@
+# program test: TestProgram_ATypedLineFetchesAReplyOntoTheFrame,
+#   TestProgram_ACardsNoRefusesTheCall,
+#   TestProgram_TheQuitChordArmsThenLeaves
+#
 # The transcript reports rather than narrating
 # (docs/interface/surfaces.md#the-activity-row). What the reader sent is a ❯
 # row with a rule under it, what came back is prose with no label at all, and

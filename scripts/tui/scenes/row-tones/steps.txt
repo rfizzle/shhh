@@ -1,3 +1,7 @@
+# program test: TestProgram_ACardsNoRefusesTheCall,
+#   TestProgram_ABrokenCommandsRowSaysHowItEnded,
+#   TestProgram_TheQuitChordArmsThenLeaves
+#
 # The outcome column in four tones, and the subject beside it in body text
 # (docs/interface/surfaces.md#the-activity-row). One turn draws a read, a
 # command that finished, a command that broke and a command the reader

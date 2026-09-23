@@ -1,3 +1,5 @@
+# program test: TestProgram_TheNotebookIsReadAndCorrectedOnItsScreen
+#
 # The shared notebook at 120 columns: two children write into it, the turn's
 # close says so, and the screen the person reads it on is opened, walked and
 # corrected.

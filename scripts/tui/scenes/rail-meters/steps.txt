@@ -1,3 +1,6 @@
+# program test: TestProgram_TheCancelChordStopsARunningCommand,
+#   TestProgram_TheQuitChordArmsThenLeaves
+#
 # The two-pane cockpit with a turn still running, so the inspector rail is on
 # screen with its meters live (docs/interface/surfaces.md#the-inspector-rail).
 # What the capture is for: every bar's unfilled run is the same neutral grey

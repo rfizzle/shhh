@@ -1,3 +1,7 @@
+# program test: TestProgram_AYesOrNoQuestionTakesItsLetter,
+#   TestProgram_AQuestionCardIsAnsweredTabByTab,
+#   TestProgram_TheQuitChordArmsThenLeaves
+#
 # What a question's shape costs the screen
 # (docs/interface/surfaces.md#the-question-card).
 #

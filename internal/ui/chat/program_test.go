@@ -21,10 +21,10 @@ package chat
 // goldens' question.
 
 import (
-	"bytes"
 	"context"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -53,12 +53,18 @@ type programProvider struct {
 	mu    sync.Mutex
 	turns []programTurn
 	next  int
+	// asked is the last message of every request, in order: what the
+	// session put in front of the model at each round boundary.
+	asked []provider.Message
 }
 
 func (p *programProvider) Name() string { return "scripted" }
 
-func (p *programProvider) StreamCompletion(ctx context.Context, _ []provider.Message, _ provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+func (p *programProvider) StreamCompletion(ctx context.Context, msgs []provider.Message, _ provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
 	p.mu.Lock()
+	if len(msgs) > 0 {
+		p.asked = append(p.asked, msgs[len(msgs)-1])
+	}
 	turn := p.turns[min(p.next, len(p.turns)-1)]
 	p.next++
 	p.mu.Unlock()
@@ -98,40 +104,85 @@ func streamOf(p provider.Provider) StreamFunc {
 // runProgram starts the session under a real tea.Program at a stated size.
 // The size is sent as the WindowSizeMsg the program's first frame needs; the
 // model draws nothing until it has one (model_test.go).
-func runProgram(t *testing.T, m Model) *teatest.TestModel {
+func runProgram(t *testing.T, m Model) *program {
 	t.Helper()
-	tm := teatest.NewTestModel(t, m, teatest.WithInitialTermSize(120, 40))
-	t.Cleanup(func() { _ = tm.Quit() })
-	return tm
+	return runProgramAt(t, m, 120, 40)
+}
+
+// runProgramAt is runProgram at a terminal of a stated size, for the routes
+// whose surface is only drawn past a width.
+func runProgramAt(t *testing.T, m Model, cols, rows int) *program {
+	t.Helper()
+	p := &program{frame: new(atomic.Pointer[string])}
+	p.TestModel = teatest.NewTestModel(t, watched{Model: m, frame: p.frame}, teatest.WithInitialTermSize(cols, rows))
+	t.Cleanup(func() { _ = p.Quit() })
+	return p
+}
+
+// program is the running session and the last frame it drew.
+type program struct {
+	*teatest.TestModel
+	frame *atomic.Pointer[string]
+}
+
+// watched is the session with its View noted as the runtime draws it, so a
+// test waits on the screen and not on the byte stream the renderer wrote.
+// The stream is the terminal's repaints — a row that changed by one word is
+// written as that word, a run of spaces as a cursor move — so a phrase can be
+// on the screen and never contiguous in the stream.
+type watched struct {
+	Model
+	frame *atomic.Pointer[string]
+}
+
+func (w watched) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	next, cmd := w.Model.Update(msg)
+	if m, ok := next.(Model); ok {
+		w.Model = m
+		return w, cmd
+	}
+	return next, cmd
+}
+
+func (w watched) View() tea.View {
+	v := w.Model.View()
+	s := stripANSI(v.Content)
+	w.frame.Store(&s)
+	return v
 }
 
 // waitForText blocks until the program has drawn s, and says what it was
 // waiting for when it never does. The wait is on the frames rather than on a
 // clock: a sleep is a guess about a machine's speed, and this suite runs on
-// three of them.
-//
-// What it can wait for is a phrase the renderer wrote in one go — a row that
-// appeared, a reply that arrived. It is reading the output stream, which is
-// the terminal's repaints and not a screen, so a phrase that grew a
-// character at a time is in there split across repaints and will never match.
-// That is why the draft below is pasted rather than typed.
-func waitForText(t *testing.T, tm *teatest.TestModel, s string) {
+// three of them. It reads the last frame the runtime drew, so a phrase the
+// frame before already carried matches at once: wait for what the step being
+// waited on puts there.
+func waitForText(t *testing.T, tm *program, s string) {
 	t.Helper()
-	teatest.WaitFor(t, tm.Output(), func(b []byte) bool {
-		return bytes.Contains(b, []byte(s))
-	}, teatest.WithDuration(10*time.Second), teatest.WithCheckInterval(10*time.Millisecond))
+	deadline := time.Now().Add(10 * time.Second)
+	for time.Now().Before(deadline) {
+		if f := tm.frame.Load(); f != nil && strings.Contains(*f, s) {
+			return
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	last := ""
+	if f := tm.frame.Load(); f != nil {
+		last = *f
+	}
+	t.Fatalf("the program never drew %q; the last frame was:\n%s", s, last)
 }
 
 // finalFrame quits the program and returns the screen it ended on, stripped
 // of colour. It is the model's own last View rather than the accumulated
 // output, because the output is every frame the renderer emitted and the
 // question here is what the last one said.
-func finalFrame(t *testing.T, tm *teatest.TestModel) string {
+func finalFrame(t *testing.T, tm *program) string {
 	t.Helper()
 	if err := tm.Quit(); err != nil {
 		t.Fatalf("quitting the program: %v", err)
 	}
-	final, ok := tm.FinalModel(t, teatest.WithFinalTimeout(10*time.Second)).(Model)
+	final, ok := tm.FinalModel(t, teatest.WithFinalTimeout(10*time.Second)).(watched)
 	if !ok {
 		t.Fatal("the program did not end on the chat model")
 	}
@@ -169,7 +220,7 @@ func TestProgram_ATypedLineFetchesAReplyOntoTheFrame(t *testing.T) {
 // sentence in the draft when it lands. The sentence is what puts the card in
 // its arrival state — on screen, keys not live, the draft still holding the
 // keyboard — which is the state both keys below are asked about.
-func heldCommandProgram(t *testing.T, ran *[]string) *teatest.TestModel {
+func heldCommandProgram(t *testing.T, ran *[]string) *program {
 	t.Helper()
 	hold := make(chan struct{})
 	// Released once, whichever way the test leaves: a fixture that fails
@@ -194,9 +245,8 @@ func heldCommandProgram(t *testing.T, ran *[]string) *teatest.TestModel {
 	tm.Send(programEnter)
 	// Sent after the enter and therefore handled after it, so a frame
 	// carrying this sentence is a frame where the turn is away and the draft
-	// is not empty. It arrives as a paste because that lands in one repaint
-	// and can be waited for; typed, it would be spread over as many repaints
-	// as the renderer felt like.
+	// is not empty. It arrives as a paste, one message, so the first frame
+	// that carries it carries all of it.
 	tm.Send(tea.PasteMsg{Content: draftSentence})
 	waitForText(t, tm, draftSentence)
 

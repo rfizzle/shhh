@@ -1,3 +1,6 @@
+# program test: TestProgram_EscFoldsWhatThePointerOpened,
+#   TestProgram_TheQuitChordArmsThenLeaves
+#
 # Esc on an empty draft folds every row the reader opened
 # (docs/interface/surfaces.md#the-input-frame). The pane is read through the
 # pointer — the draft keeps the keyboard and every letter it has — and then

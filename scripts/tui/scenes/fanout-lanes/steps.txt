@@ -1,3 +1,7 @@
+# program test: TestProgram_ASpawnCardStartsTheChildrenAsLanes,
+#   TestProgram_AChildsRequestIsAnsweredFromItsCard,
+#   TestProgram_ASettledLaneOpensOnItsReport
+#
 # The fan-out block in the transcript at 120 columns, driven to the state the
 # Agents artboard's first window draws: three children, one still going, one
 # finished and one waiting on an answer.

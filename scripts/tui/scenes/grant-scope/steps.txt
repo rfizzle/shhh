@@ -1,3 +1,6 @@
+# program test: TestProgram_TheGrantKeyOffersGrantsAndLeavingGrantsNothing,
+#   TestProgram_TheQuitChordArmsThenLeaves
+#
 # The always-allow key is an offer now rather than a grant: it opens the
 # grants the card can make, each row naming what it covers and when it ends,
 # and leaving the list grants nothing

@@ -1,3 +1,6 @@
+# program test: TestProgram_ATypedLineFetchesAReplyOntoTheFrame,
+#   TestProgram_TheQuitChordArmsThenLeaves
+#
 # The four rungs of guidelines/layout-breakpoints, played at the four
 # terminals that name them:
 #

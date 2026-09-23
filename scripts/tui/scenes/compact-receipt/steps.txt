@@ -1,3 +1,6 @@
+# program test: TestProgram_CompactLeavesAReceiptOverTheTurnsItFolded,
+#   TestProgram_TheQuitChordArmsThenLeaves
+#
 # The receipt a compaction leaves
 # (docs/interface/surfaces.md#the-compaction-receipt): an act on the grid like
 # every other act, a fold under it counting what it holds, and the summary

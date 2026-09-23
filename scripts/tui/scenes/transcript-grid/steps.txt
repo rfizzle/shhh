@@ -1,3 +1,8 @@
+# program test: TestProgram_ALongTurnDrawsTheCheckIn,
+#   TestProgram_ACardOnAnEmptyDraftAnswersToItsOwnKey,
+#   TestProgram_TheTreeMovingUnderASessionIsANotice,
+#   TestProgram_TheQuitChordArmsThenLeaves
+#
 # The transcript's leading columns
 # (docs/interface/surfaces.md#the-leading-columns) through the built binary.
 # One session draws, in order: the reader's own `❯` message, the model's

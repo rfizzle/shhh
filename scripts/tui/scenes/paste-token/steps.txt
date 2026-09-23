@@ -1,3 +1,5 @@
+# program test: TestProgram_APasteTooBigForTheDraftIsAToken
+#
 # A log too big for the draft, pasted into the middle of a sentence: the fold
 # it leaves, what the vitals say it will cost, the reader the open key gets to,
 # and the row the send leaves behind (docs/interface/surfaces.md#the-input-frame).

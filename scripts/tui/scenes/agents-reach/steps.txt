@@ -1,3 +1,12 @@
+# program test: TestProgram_ShiftTabWalksTheModes,
+#   TestProgram_ASpawnCardStartsTheChildrenAsLanes,
+#   TestProgram_AChildsSpawnIsTheSessionsDecision,
+#   TestProgram_AChildsRequestIsAnsweredFromItsCard,
+#   TestProgram_TheManagerSteersAndKillsAChild,
+#   TestProgram_TheNextAgentChordWalksTheMap,
+#   TestProgram_AttachingMovesTheKeyboardIntoAChild,
+#   TestProgram_TheQuitChordArmsThenLeaves
+#
 # The rail's map with a fan-out under it, at 130 columns — the rung where the
 # content splits, so the AGENTS block is on screen beside the transcript
 # (docs/interface/surfaces.md#the-inspector-rail).

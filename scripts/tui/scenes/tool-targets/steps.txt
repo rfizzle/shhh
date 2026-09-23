@@ -1,3 +1,10 @@
+# program test: TestProgram_ACallRefusedBeforeItsCardIsItsOwnRow,
+#   TestProgram_TheGatesPassSettlesTheFailureBeforeIt,
+#   TestProgram_TheQuitChordArmsThenLeaves
+#
+# The git rows need the structural toolset, which the command line assembles
+# from what is on PATH.
+#
 # One turn of calls that have no file path to be about. Read the target column
 # down the feed against the Steps artboard's row anatomy (verb, target,
 # outcome): every row's target is what the call was about and none of them is

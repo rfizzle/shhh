@@ -1,3 +1,6 @@
+# program test: TestProgram_AMenuGreysWhatTheTurnCannotOffer,
+#   TestProgram_TheQuitChordArmsThenLeaves
+#
 # A menu greys what it cannot offer and says why
 # (docs/interface/surfaces.md#the-completion-menu). While the turn runs, both
 # menus that list commands keep /compact — behind the ⊘ that says it is out of

@@ -1,3 +1,7 @@
+# program test: TestProgram_ACardOnAnEmptyDraftAnswersToItsOwnKey,
+#   TestProgram_TheTreeMovingUnderASessionIsANotice,
+#   TestProgram_TheQuitChordArmsThenLeaves
+#
 # One turn writes a log under an ignored directory and a build cache under a
 # directory of its own making; then somebody else changes a tracked file
 # (launch). Read the cells for how many notices the run drew and what they

@@ -1,3 +1,8 @@
+# program test: TestProgram_ASpawnCardStartsTheChildrenAsLanes,
+#   TestProgram_AChildsRequestIsAnsweredFromItsCard,
+#   TestProgram_TheManagerAnswersAChildInPlace,
+#   TestProgram_TheManagerSteersAndKillsAChild
+#
 # The agent manager at 110 columns, over three children in three states — one
 # working, one finished, one waiting on an answer
 # (docs/interface/surfaces.md#the-agent-manager).

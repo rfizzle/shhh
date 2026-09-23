@@ -1,3 +1,7 @@
+# program test: TestProgram_AFoldedRunOfReadsOpensInPlace,
+#   TestProgram_ThePaletteAndTheModelPickerOpenFromTheDraft,
+#   TestProgram_TheQuitChordArmsThenLeaves
+#
 # One pointer, drawn one way. The scene walks the three places the mark can
 # appear on one screen — a list's cursor, the transcript's reading cursor, and
 # the draft's own glyph — at a width wide enough for two panes, so the scroll

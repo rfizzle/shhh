@@ -1,3 +1,7 @@
+# program test: TestProgram_AnEditRowOpensToEachDepth,
+#   TestProgram_TheCloseOpensTheReview,
+#   TestProgram_TheQuitChordArmsThenLeaves
+#
 # One applied edit opened to each of its three depths
 # (docs/interface/surfaces.md#the-diff-view), and then the fourth surface the
 # same edit reaches: review, off the row the turn closed on

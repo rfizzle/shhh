@@ -1,3 +1,10 @@
+# program test: TestProgram_ASilentRunIsAskedForItsStatus,
+#   TestProgram_ARunningCommandTailsIntoItsRow,
+#   TestProgram_TheQuitChordArmsThenLeaves
+#
+# The second sitting is a second process opening the conversation again,
+# which no program test can be.
+#
 # A scripted silent investigation crosses the default checkpoint threshold, so
 # the scene holds the two states the public status has to be read in: the note
 # on its own under the reader's prompt and over the calls it explains, and the

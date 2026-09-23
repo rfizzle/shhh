@@ -191,6 +191,16 @@ snap 04-exit "that is everything the screen was holding"
 A snap whose text never appears fails the run, so every scene is also a
 test, and the exit code of `make tui-shot` is its verdict.
 
+The first line of `steps.txt` names the program tests that walk the same
+route inside the gate — `# program test: TestProgram_A, TestProgram_B`,
+continued on `#   ` lines and closed by a bare `#` — or, where no program
+test can, `# program test: none — ` and why. The route is the keys to the
+surface and the stream that feeds it; a scene is run only where there is a
+terminal, and the program test in `internal/ui/chat` (or `internal/ui` for
+the one-shot) is what fails on every platform when the key stops reaching
+it. `TestScenes_EachNamesItsRoute` refuses a scene whose head names a
+test nobody declares, or says none with no reason.
+
 `size` is a file only a scene with a width to insist on needs — `144 40`,
 columns then rows — and `launch` is the other optional file, for a scene
 that is not a session:

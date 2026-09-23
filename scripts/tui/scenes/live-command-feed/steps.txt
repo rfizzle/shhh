@@ -1,3 +1,6 @@
+# program test: TestProgram_ARunningCommandTailsIntoItsRow,
+#   TestProgram_TheQuitChordArmsThenLeaves
+#
 # A long command in flight, on the two surfaces it occupies: the feed's row —
 # the command, its outcome, its own clock and the last line it printed — and
 # the frame's top rail, which states the phase and the turn's clock and
