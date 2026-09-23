@@ -84,7 +84,7 @@ func (m Model) resolveRadius(req *approvalRequest) blastRadius {
 	case approvalMemory:
 		return blastRadius{}
 	}
-	return m.genericRadius(req)
+	return m.genericRadius(req, false)
 }
 
 // radiusIn is the tree a command's radius is read in: the checkout its
@@ -309,7 +309,11 @@ func (m Model) editRadius(req *approvalRequest) blastRadius {
 // edit. A tool that described its own radius (GatedPreview.Fields) carries
 // that; a generic approval carrying a command — a process start — is
 // resolved as the command it is.
-func (m Model) genericRadius(req *approvalRequest) blastRadius {
+//
+// batched is a spawn card drawing a row per child: the scope field leaves the
+// block for those rows (applySpawnCard), so the reason names it as theirs
+// rather than as a row of the block the card no longer draws.
+func (m Model) genericRadius(req *approvalRequest, batched bool) blastRadius {
 	if req.command != "" {
 		return m.commandRadius(req.command, cardContainment{
 			assistant: true, mechanism: m.processContainment(),
@@ -317,12 +321,17 @@ func (m Model) genericRadius(req *approvalRequest) blastRadius {
 	}
 	b := blastRadius{severity: components.SeverityLow}
 	var open []string
+	rowsOpen := false
 	for _, f := range req.fields {
 		tone := components.ToneNeutral
 		if f.Open {
 			tone = components.ToneOpen
 			b.severity = components.SeverityMedium
-			open = append(open, f.Label)
+			if batched && f.Label == SpawnTouchesLabel {
+				rowsOpen = true
+			} else {
+				open = append(open, f.Label)
+			}
 		}
 		b.fields = append(b.fields, components.CardField{
 			Label: f.Label, Value: f.Value, Detail: f.Detail, Tone: tone,
@@ -332,6 +341,9 @@ func (m Model) genericRadius(req *approvalRequest) blastRadius {
 	// the whole of what the level can be stated with. A tool that declared
 	// nothing leaves the reason empty and the row says the level alone —
 	// there is no reading here to make one out of.
+	if rowsOpen {
+		open = append(open, "each child's "+SpawnTouchesLabel)
+	}
 	switch {
 	case len(open) > 0:
 		b.reason = strings.Join(open, " and ") + " open"

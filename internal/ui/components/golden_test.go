@@ -787,7 +787,7 @@ func TestGolden_SpawnCard(t *testing.T) {
 			{Label: "batch · three writers, one decision", View: card(func(c *ApprovalCard) {
 				c.Title = "Spawn 3 writers"
 				c.Answer, c.Decline = "start all 3", "deny all 3"
-				c.SeverityReason = "touches open"
+				c.SeverityReason = "each child's touches open"
 				c.Batch, c.BatchHint = true, "pick which of the 3 to start"
 				c.Spawns = []SpawnRow{
 					{Role: "writer", Name: "writer-1", Task: "say where the round counter is read",

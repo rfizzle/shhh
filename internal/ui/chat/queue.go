@@ -659,6 +659,11 @@ func (m *Model) takeQueueAnswer(req *approvalRequest) (allow, answered bool) {
 func (m *Model) armConfirm(req *approvalRequest) {
 	m.pendingQueue, m.pendingBatch = m.resolveQueue(req)
 	m.pendingSpawns = m.resolveSpawns(req, m.pendingBatch)
+	// The block was resolved before the set was known, and a card drawing a
+	// row per child states its reason from what it draws.
+	if len(m.pendingSpawns) > 1 {
+		m.pendingBlast = m.genericRadius(req, true)
+	}
 	// A fan-out card draws a row per child, so a strip over it listing the
 	// same children would put every decision on the screen twice inside a
 	// panel bounded to two fifths of the terminal

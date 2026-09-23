@@ -1173,6 +1173,35 @@ func TestSpawnCard_ARoundIsOneDecision(t *testing.T) {
 	}
 }
 
+// TestSpawnCard_ABatchStatesItsReasonFromTheRowsItDraws: a fan-out card takes
+// the scope off the block and puts it on each child's row, so the level's
+// reason names it as the rows' — not as a block row the card no longer draws —
+// while a single writer's card keeps the block's own wording.
+func TestSpawnCard_ABatchStatesItsReasonFromTheRowsItDraws(t *testing.T) {
+	m := spawnModel(t,
+		spawnCall("s1", `{"role":"writer","task":"add the flag","name":"writer-1","paths":["internal/cli/**"]}`),
+		spawnCall("s2", `{"role":"writer","task":"read the flag","name":"writer-2","paths":["internal/agent/**"]}`),
+	)
+	card := m.approvalCard()
+	if len(card.Spawns) != 2 {
+		t.Fatalf("two writers asked for together are one card of two rows: %+v", card.Spawns)
+	}
+	if want := "each child's touches open"; card.SeverityReason != want {
+		t.Errorf("batched reason = %q, want %q", card.SeverityReason, want)
+	}
+	for _, f := range card.Fields {
+		if f.Label == SpawnTouchesLabel {
+			t.Errorf("the block still draws the scope the rows carry: %+v", card.Fields)
+		}
+	}
+
+	single := spawnModel(t, spawnCall("s1",
+		`{"role":"writer","task":"add the flag","name":"writer-1","paths":["internal/cli/**"]}`))
+	if want := "touches open"; single.approvalCard().SeverityReason != want {
+		t.Errorf("single reason = %q, want %q", single.approvalCard().SeverityReason, want)
+	}
+}
+
 // TestSpawnCard_AnAnsweredChildIsNotAskedAgain: a row the queue list already
 // answered is neither drawn on the next card nor swept back into its set. A
 // hook can put a card in front of the reader again mid-round, and a batch
