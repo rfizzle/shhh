@@ -1,4 +1,7 @@
 # The first sitting earns a public status and quits; the second opens that
 # conversation again, so the note on screen is the one the store gave back
 # rather than the one the frame that drew it still remembers.
-$SHHH_BIN code; $SHHH_BIN code --continue
+# The pause between them is what lets the exit banner be captured: the
+# second sitting takes the screen the moment it starts, and on an idle host
+# that is sooner than the driver's next look at the pane.
+$SHHH_BIN code; sleep 2; $SHHH_BIN code --continue
