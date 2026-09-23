@@ -2041,6 +2041,36 @@ func TestTodoSprint_CostCapEndsItBetweenItems(t *testing.T) {
 	}
 }
 
+// A stage boundary puts the session's spend on the item in flight on the
+// sprint's checkpoint, so a session that dies mid-item leaves its stages
+// behind; and a sprint picked up from a session that did die counts the
+// figure it left once, into the total.
+func TestTodoSprint_EachStageBoundaryLeavesTheItemsSpend(t *testing.T) {
+	m, root := sprintRunModel(t)
+	m.input.SetValue("/todo run --all")
+	updated, _ := m.submitInput()
+	m = answer(t, updated.(Model), runPlan)
+	sp, live := run.Live(root)
+	if !live || sp.ItemLedger != m.sessionName || sp.ItemTurns < 1 || sp.ItemCost <= 0 || sp.Cost != 0 {
+		t.Fatalf("the boundary should leave this session's spend as the item's running figure: %+v", sp)
+	}
+
+	// The session dies here. Another picks the sprint up.
+	sp.ItemLedger, sp.ItemTurns, sp.ItemCost = "a-session-that-died", 2, 1.5
+	must(t, sp.Save(root))
+	next, _ := runModelAt(t, root)
+	next.input.SetValue("/todo run --all")
+	updated, _ = next.submitInput()
+	next = updated.(Model)
+	back, live := run.Live(root)
+	if !live || back.Cost != 1.5 || back.Turns != 2 || back.ItemLedger == "a-session-that-died" {
+		t.Fatalf("the dead session's figure should join the total once: %+v", back)
+	}
+	if next.todoRunner.state == nil || next.todoRunner.state.Slug != "do-it" {
+		t.Fatalf("the picked-up sprint should go back to its item: %+v", next.todoRunner.state)
+	}
+}
+
 // The rail's row for the item in flight says the spend against the ceiling,
 // and says nothing about spend where there is no ceiling.
 func TestTodoSprint_RailSaysTheSpendAgainstTheCeiling(t *testing.T) {

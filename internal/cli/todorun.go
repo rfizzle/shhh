@@ -216,11 +216,21 @@ type todoDriver struct {
 	// far, one turn per stage process and its cost off that process's own
 	// record row. They are the item's half of the sprint's running total,
 	// added to the checkpoint when the item is over — the point a session
-	// crosses its boundary on the other surface — and read in between by
-	// the notes of a set that closes with this item.
+	// crosses its boundary on the other surface — written beside it as the
+	// item's running figure at every stage boundary (Sprint.Running), and
+	// read in between by the notes of a set that closes with this item.
 	itemTurns int
 	itemCost  float64
-	repo      bool
+	// ledger names this process as the writer of the item's running figure
+	// on the sprint's checkpoint (Sprint.Running). It is never the sprint's
+	// Session, so a figure found when the sprint is picked up is always
+	// counted — rightly, since a runner picks a sprint up only before it has
+	// written a figure of its own, and one that looks like it was written by
+	// this process was written by a dead one: the session name is only as
+	// fine as a second, and a script restarting a runner that died can start
+	// the next one inside the same second.
+	ledger string
+	repo   bool
 	// wrote is what this run's own stages reported writing, gathered from
 	// each stage process's transcript. It is the run's changeset, in the one
 	// form a runner whose stages are separate processes has: the tree says
@@ -352,6 +362,7 @@ func newTodoDriver(out io.Writer, root string, cfg config.Config, noCommit bool)
 		d.db = db
 		d.rec = startObserveRecorder(db, "todo", cfg.Provider.Default, cfg.Provider.Model, nil)
 	}
+	d.ledger = d.session + "#" + strconv.Itoa(os.Getpid())
 	d.turn = d.ask
 	return d, nil
 }
@@ -510,6 +521,15 @@ func (d *todoDriver) work(ctx context.Context, it todo.Item, sp *run.Sprint) *ru
 		st.Paths = d.paths(st)
 		if err := st.Save(d.root); err != nil {
 			fmt.Fprintln(d.out, "the run's checkpoint could not be written — "+err.Error())
+		}
+		// What the item has spent so far goes on the sprint's checkpoint at
+		// the same boundary, so a process that dies mid-item leaves the
+		// stages it paid for where the next one picks the sprint up.
+		if sp != nil {
+			sp.Running(d.ledger, d.itemTurns, d.itemCost)
+			if err := sp.Save(d.root); err != nil {
+				fmt.Fprintln(d.out, "the sprint's checkpoint could not be written — "+err.Error())
+			}
 		}
 		d.say(st, step)
 		if st.Over() {

@@ -274,3 +274,55 @@ func TestSprint_Bound(t *testing.T) {
 		}
 	}
 }
+
+// The item in flight's running figure is counted once: a boundary written
+// twice replaces rather than adds, a sprint picked up in another session
+// takes the dead session's figure into the total, and the picking-up
+// session's own figure waits for the item's end.
+func TestSprint_TheItemInFlightIsCountedOnce(t *testing.T) {
+	sp := StartSprint("dead", "", 0, false)
+	sp.Current = "a-one"
+	sp.Running("dead", 1, 0.5)
+	sp.Running("dead", 2, 1.25)
+	if sp.Cost != 0 || sp.ItemCost != 1.25 || sp.ItemTurns != 2 {
+		t.Fatalf("a running figure replaces the last one and stays out of the total: %+v", sp)
+	}
+	// The same session asking again changes nothing: its ledger still holds
+	// the figure and the item's end adds it.
+	if _, ok := sp.Resume(); !ok || sp.Cost != 0 {
+		t.Fatalf("a session's own figure must wait for the item's end: %+v", sp)
+	}
+	sp.Session = "fresh"
+	if _, ok := sp.Resume(); !ok || sp.Cost != 1.25 || sp.Turns != 2 || sp.ItemCost != 0 {
+		t.Fatalf("a dead session's figure joins the total when the sprint is picked up: %+v", sp)
+	}
+	if _, ok := sp.Resume(); !ok || sp.Cost != 1.25 {
+		t.Fatalf("asking twice must not count twice: %+v", sp)
+	}
+	sp.Running("fresh", 1, 0.75)
+	sp.Spent(1, 0.75)
+	if sp.Cost != 2 || sp.Turns != 3 || sp.ItemCost != 0 || sp.ItemLedger != "" {
+		t.Fatalf("the item's end adds its whole figure and clears the running one: %+v", sp)
+	}
+}
+
+// A checkpoint written before the running figure existed reads as one with
+// nothing in flight.
+func TestSprint_AnOlderCheckpointStillReads(t *testing.T) {
+	root := backlog(t)
+	if err := os.MkdirAll(Dir(root), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	old := `{"session":"s1","current":"a-one","cost":1.5,"turns":3}`
+	if err := os.WriteFile(sprintPath(root), []byte(old), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	sp, live := Live(root)
+	if !live || sp.Cost != 1.5 || sp.ItemCost != 0 {
+		t.Fatalf("an older checkpoint should read as it was written: %+v", sp)
+	}
+	sp.Session = "s2"
+	if slug, ok := sp.Resume(); !ok || slug != "a-one" || sp.Cost != 1.5 || sp.Turns != 3 {
+		t.Fatalf("resuming an older checkpoint adds nothing: %+v", sp)
+	}
+}

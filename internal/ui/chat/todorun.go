@@ -246,6 +246,7 @@ func (m Model) todoRunStep(step run.Step) (tea.Model, tea.Cmd) {
 	if err := st.Save(m.todos.Root); err != nil {
 		m.appendEntry(entry{kind: entrySystem, text: "The run's checkpoint could not be written — " + err.Error()})
 	}
+	m.sprintRunning()
 	// One vocabulary for the record and for the row: the stage where the
 	// step is a turn in one, and the action everywhere else (run.Step.Name).
 	m.signal(observe.SignalRun, step.Name())

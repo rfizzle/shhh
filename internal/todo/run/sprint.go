@@ -80,6 +80,19 @@ type Sprint struct {
 	// in, and this file is the only thing that does.
 	Turns int     `json:"turns,omitempty"`
 	Cost  float64 `json:"cost,omitempty"`
+	// ItemTurns and ItemCost are what the item in flight has spent so far,
+	// read off the ledger ItemLedger names and written at every stage
+	// boundary, so a process that dies mid-item leaves the stages it paid for
+	// on disk. They are a running figure, replaced at each boundary rather
+	// than added to, and they are not part of Turns and Cost: the item's end
+	// adds its whole figure there and clears them (Spent), and a sprint picked
+	// up by anything but the writer adds them there first (Resume), because
+	// the writer is gone and its ledger with it. Either way a stage is
+	// counted once. A checkpoint written before these existed reads as
+	// nothing in flight.
+	ItemLedger string  `json:"item_ledger,omitempty"`
+	ItemTurns  int     `json:"item_turns,omitempty"`
+	ItemCost   float64 `json:"item_cost,omitempty"`
 	// CapCents is the most the set may spend, in cents, and 0 for no
 	// ceiling. It is checked against Cost before an item is taken and never
 	// inside one: what stops a request mid-item is the session's own cap,
@@ -209,12 +222,25 @@ func (s *Sprint) Peek(store *todo.Store) (todo.Item, bool) {
 
 // Spent adds one item's cost to the set's running total. It is called at the
 // session boundary, where what the item cost is still readable and about to
-// be reset.
+// be reset. The item's running figure is cleared with it, since what it was a
+// reading of is in the total now.
 func (s *Sprint) Spent(turns int, cost float64) {
 	s.Turns += max(turns, 0)
 	if cost > 0 {
 		s.Cost += cost
 	}
+	s.ItemLedger, s.ItemTurns, s.ItemCost = "", 0, 0
+}
+
+// Running records what the item in flight has spent so far on ledger, at a
+// stage boundary. It replaces the figure the last boundary wrote rather than
+// adding to it: the driver hands over the item's whole spend on that ledger
+// each time, so a boundary written twice is still a stage counted once. The
+// ledger is the session's name where the session's own ledger is read — the
+// name Resume compares with Session — and something else where the writer
+// can never be the one to pick the sprint up.
+func (s *Sprint) Running(ledger string, turns int, cost float64) {
+	s.ItemLedger, s.ItemTurns, s.ItemCost = ledger, max(turns, 0), max(cost, 0)
 }
 
 // overCap reports the set's running total at or past its ceiling. The total
@@ -286,9 +312,18 @@ func CapDollars(cents int64) string {
 // Resume is the item a sprint picked up in a new process goes back to: the
 // one it was working when the process died. Its own checkpoint says which
 // stage, so the sprint hands the slug back and lets the run continue itself.
+//
+// What the item had spent on a ledger other than the picking-up session's is
+// added to the set's total here: that ledger died with its session, so its
+// stages are counted from the running figure it left or not at all. A figure
+// the picking-up session wrote itself is left where it is, because that
+// session's ledger still holds it and the item's end will add it.
 func (s *Sprint) Resume() (string, bool) {
 	if s.Over() || s.Current == "" {
 		return "", false
+	}
+	if s.ItemLedger != s.Session {
+		s.Spent(s.ItemTurns, s.ItemCost)
 	}
 	return s.Current, true
 }

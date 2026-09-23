@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"slices"
 	"strconv"
 	"strings"
@@ -1437,6 +1438,46 @@ func TestTodoRunHeadless_CostCapEndsTheSprintBetweenItems(t *testing.T) {
 	}
 	if !strings.Contains(log, "sprint · 1 item done · spend $") || !strings.Contains(log, " of $2\n") {
 		t.Fatalf("the line between items should state the spend against the ceiling:\n%s", log)
+	}
+}
+
+// A process that dies mid-item leaves the stages it paid for on the sprint's
+// checkpoint, and the process that picks the sprint up counts them once: the
+// research stage the dead process spent is in the resumed sprint's total
+// though no later stage costs anything.
+func TestTodoRunHeadless_AResumedSprintCountsTheStagesADeadProcessSpent(t *testing.T) {
+	root := todoRepo(t, "a-one")
+	answer := stageAnswers(root)
+	dead, _ := headlessDriver(t, root, answer)
+	dead.turn = func(_ context.Context, _ time.Time, _ string, step run.Step) (todoTurn, error) {
+		if step.Stage != run.StageResearch {
+			// The process ends here, between reading one stage and spending
+			// the next, with nothing after it run: no item end, no Spent.
+			runtime.Goexit()
+		}
+		return todoTurn{text: answer(step), code: exitDone, cost: 1.25}, nil
+	}
+	died := make(chan struct{})
+	go func() {
+		defer close(died)
+		dead.sprint(context.Background(), 0)
+	}()
+	<-died
+	left, err := run.LoadSprint(root)
+	if err != nil || left.Current != "a-one" || left.ItemCost != 1.25 || left.Cost != 0 {
+		t.Fatalf("the dead process should have left its research stage as the item's running figure: %+v, %v", left, err)
+	}
+
+	d, out := headlessDriver(t, root, answer)
+	d.costCap = 10000
+	if blocked := d.sprint(context.Background(), 0); blocked {
+		t.Fatalf("the resumed sprint should finish:\n%s", out.String())
+	}
+	if it, _ := todo.Load(todo.BuiltinCode(), root).Find("a-one"); !it.Archived {
+		t.Fatalf("the resumed item should be archived:\n%s", out.String())
+	}
+	if !strings.Contains(out.String(), "sprint · 1 item done · spend $1.25 of $100") {
+		t.Fatalf("the resumed sprint's total should carry the dead process's stage, once:\n%s", out.String())
 	}
 }
 

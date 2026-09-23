@@ -229,6 +229,22 @@ func (m Model) sprintCap(step run.Step) (run.Step, bool) {
 	return st.Block(run.TimedOut(m.todos.ItemTimeout)), true
 }
 
+// sprintRunning puts what this session has spent on the sprint's item in
+// flight on the checkpoint, at a stage boundary. The ledger it is read from
+// dies with the session, so a session that ends mid-item without reaching
+// its boundary — a crash, a kill — would otherwise take the stages it paid
+// for with it; the figure is the session's whole spend each time, replacing
+// the last one, so a stage is never counted twice (run.Sprint.Running).
+func (m Model) sprintRunning() {
+	if !m.todoRunner.state.Sprinting() {
+		return
+	}
+	if sp, live := run.Live(m.todos.Root); live {
+		sp.Running(m.sessionName, int(m.turnCount), m.sessionSpend().Cost)
+		_ = sp.Save(m.todos.Root)
+	}
+}
+
 // sprintCloseWords name the item a sprint's turn was spent on and how far the
 // sprint has got, for the notification a finished turn raises. A reader who
 // left a sprint running and came back to one line about a turn would have to

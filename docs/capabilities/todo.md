@@ -1012,7 +1012,10 @@ the figure.
 The sprint keeps a checkpoint of its own beside the items', so a sprint
 that dies with its process is picked up by the same command in a fresh one:
 it names the item it was on, and that item's checkpoint names the step.
-Stopping it keeps that item's checkpoint too — the steps already done are
+What that item had spent goes with it: the checkpoint takes the item's
+running cost at every step boundary, and the process that picks the sprint
+up adds it to the set's total once, so the steps a dead process paid for
+still count against the ceiling. Stopping it keeps that item's checkpoint too — the steps already done are
 in the tree, and the stop was aimed at the loop.
 
 From a script it is the same machine with the screen taken away. Each step

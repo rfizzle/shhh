@@ -831,7 +831,7 @@ func todoHeld(root, slug string) error {
 // account of what its items cost.
 func liveSprintSpend(root string) string {
 	if sp, live := run.Live(root); live {
-		return run.SpendFigure(sp.Cost, sp.CapCents)
+		return run.SpendFigure(sp.Cost+sp.ItemCost, sp.CapCents)
 	}
 	return ""
 }
