@@ -8,6 +8,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -111,6 +112,37 @@ func TestCycleAgentWalksTheMap(t *testing.T) {
 		if m.attachedTo != want {
 			t.Fatalf("the reverse cycle should have reached %q, got %q", want, m.attachedTo)
 		}
+	}
+}
+
+// TestCycleAgentKeepsItsStopsAcrossAKill: a killed child stays where it was
+// spawned on the map, so the chord from the child before it still lands on it
+// and the one after it is still one further — two presses land where they
+// landed before the kill.
+func TestCycleAgentKeepsItsStopsAcrossAKill(t *testing.T) {
+	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
+	t.Cleanup(sup.Close)
+	m := newSubagentModel(t, sup)
+	spawnChild(t, sup, subagent.RoleResearcher, "researcher-1")
+	spawnChild(t, sup, subagent.RoleResearcher, "researcher-2")
+	spawnChild(t, sup, subagent.RoleResearcher, "researcher-3")
+
+	stops := func(m Model) []string {
+		t.Helper()
+		m.attach("researcher-1")
+		var got []string
+		for range 2 {
+			updated, _ := m.Update(tea.KeyPressMsg{Code: ']', Mod: tea.ModAlt})
+			m = updated.(Model)
+			got = append(got, m.attachedTo)
+		}
+		return got
+	}
+	before := stops(m)
+	killChild(t, sup, "researcher-2")
+	after := stops(m)
+	if want := []string{"researcher-2", "researcher-3"}; !slices.Equal(before, want) || !slices.Equal(after, want) {
+		t.Fatalf("the chord's stops from researcher-1 should be %v before and after the kill, got %v then %v", want, before, after)
 	}
 }
 

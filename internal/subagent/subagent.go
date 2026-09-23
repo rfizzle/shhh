@@ -995,7 +995,12 @@ type child struct {
 	// parent links on each reading because it decides which set of
 	// concurrency slots the child draws from, which is read on a path where
 	// the supervisor's lock is not held.
-	depth    int
+	depth int
+	// seq is the child's place in spawn order, taken with its name. It is
+	// what the supervisor's list is kept in, because two spawns in one batch
+	// finish setting up in whatever order they finish and a kill removes
+	// nothing, so neither may move a child along the map a chord walks.
+	seq      int
 	role     Role
 	task     string
 	profile  Profile  // what the role means: worktree, patch, mode, budgets
@@ -1851,6 +1856,9 @@ type Supervisor struct {
 	children []*child
 	byName   map[string]*child
 	counters map[Role]int
+	// spawned counts the spawns that were given a name, and is each child's
+	// place in spawn order (child.seq).
+	spawned int
 	// parentMode is the ceiling children are clamped to; parentGrants are the
 	// parent's session grants ([a] on a prompt, /mode allow), which children
 	// inherit for the same reason they inherit the mode.
@@ -2082,7 +2090,11 @@ func (s *Supervisor) ParentMode() agent.Mode {
 	return s.parentMode
 }
 
-// Snapshot returns every child's live status in spawn order.
+// Snapshot returns every child's live status in spawn order: the order the
+// names were given (child.seq), not the order the spawns finished setting up,
+// and a kill or a retry leaves a child where it was. The session map the
+// agent chords walk is this order, so two presses land where they landed
+// before (docs/interface/surfaces.md#the-inspector-rail).
 func (s *Supervisor) Snapshot() []Status {
 	s.mu.Lock()
 	kids := make([]*child, len(s.children))
@@ -3374,6 +3386,8 @@ func (s *Supervisor) spawnFrom(caller string, raw json.RawMessage) (string, erro
 		s.mu.Unlock()
 		return "", fmt.Errorf("an agent named %q already exists", name)
 	}
+	s.spawned++
+	seq := s.spawned
 	mode := s.parentMode
 	batch := s.batch
 	s.mu.Unlock()
@@ -3476,6 +3490,7 @@ func (s *Supervisor) spawnFrom(caller string, raw json.RawMessage) (string, erro
 		name:            name,
 		parent:          caller,
 		depth:           depth,
+		seq:             seq,
 		role:            args.role,
 		profile:         args.profile,
 		task:            args.Task,
@@ -3520,7 +3535,8 @@ func (s *Supervisor) spawnFrom(caller string, raw json.RawMessage) (string, erro
 	}
 
 	s.mu.Lock()
-	s.children = append(s.children, c)
+	at, _ := slices.BinarySearchFunc(s.children, c.seq, func(k *child, seq int) int { return k.seq - seq })
+	s.children = slices.Insert(s.children, at, c)
 	s.byName[name] = c
 	s.mu.Unlock()
 
