@@ -418,7 +418,7 @@ func (l *AgentList) steerRows(i, inner int) []string {
 // the right.
 //
 // That is where the manager and the transcript part company, and deliberately
-// (docs/interface/departures.md#a-fan-out-lane-keeps-its-kind-glyph-and-a-manager-row-does-not).
+// (docs/interface/surfaces.md#the-agent-manager).
 // Only the orchestrator's `●` is the list's own.
 func (r AgentRow) stateGlyph() string {
 	switch r.State {

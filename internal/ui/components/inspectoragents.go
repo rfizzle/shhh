@@ -396,6 +396,11 @@ func outcomeStyle(s FanoutState) lipgloss.Style {
 // detailRow is the line under a session. A session that has stopped moving
 // gets neither a bar nor a spinner: a bar against a finished child measures
 // nothing, and motion beside one is motion where there is none.
+//
+// The meter leads this line rather than sitting on the name row: its head is
+// the one slot saying how a child is moving, shared with the budget's bar and
+// the spinner, and the name row is what has to survive the rail's narrowest
+// width (docs/interface/departures.md#the-agents-blocks-meter-is-on-the-detail-row).
 func (a InspectorAgent) detailRow(frame, width int) string {
 	var parts []string
 	switch m, ok := AgentMeter(a.Step, a.Steps); {

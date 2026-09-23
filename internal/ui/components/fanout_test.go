@@ -163,8 +163,7 @@ func TestFanoutFinishedLaneKeepsItsResult(t *testing.T) {
 }
 
 // TestFanoutLaneKeepsItsKindGlyph is the rule the Agents artboard draws and
-// docs/interface/departures.md#a-fan-out-lane-keeps-its-kind-glyph-and-a-manager-row-does-not
-// argues: the lane's glyph column says what the child is in every state, and
+// docs/interface/surfaces.md#the-agent-manager states: the lane's glyph column says what the child is in every state, and
 // the state is said in the outcome field beside it, in words. A monochrome
 // terminal has to read the same lane, so the words are the assertion.
 func TestFanoutLaneKeepsItsKindGlyph(t *testing.T) {

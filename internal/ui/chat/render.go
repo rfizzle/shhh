@@ -516,7 +516,8 @@ func (m Model) renderStatusBar(width int) string {
 // because a segment read before every keystroke that draws another mode's
 // name is the drift a closed vocabulary exists to prevent
 // (docs/interface/surfaces.md#the-input-frame,
-// docs/interface/principles.md#closed-vocabularies).
+// docs/interface/principles.md#closed-vocabularies,
+// docs/interface/departures.md#the-mode-segment-names-the-mode-not-its-class).
 func modeWord(mode agent.Mode) string { return mode.Word() }
 
 // cockpitData assembles the cockpit segments. The frame's vitals rail

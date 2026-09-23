@@ -53,8 +53,7 @@ func (r InspectorRail) turnBlock(width int) (railBlock, bool) {
 		b.add(indentRow(m.View(), width))
 	}
 	// "3 files this turn" rather than "3 files": CHANGES counts files too, and
-	// the two are different questions, so both say their scope in words
-	//. A turn that wrote nothing still says so — that is the fact.
+	// the two are different questions, so both say their scope in words.
 	files := sty.Dim.Render(plural(t.Files, "file") + " this turn")
 	if t.Files > 0 {
 		files += " " + DiffStat(t.Added, t.Removed)
@@ -63,9 +62,9 @@ func (r InspectorRail) turnBlock(width int) (railBlock, bool) {
 	// A turn that called no tools reports no tool count: that zero was never
 	// measured, and a gap is legible as a gap where a fabricated zero is not
 	// (docs/interface/principles.md#a-stat-that-cannot-be-reported-is-left-out).
-	// The file count is the exception and says so in words — "0 files this
-	// turn" is the answer to a question the block is being asked, which is
-	// what CHANGES beneath it is being told apart from.
+	// The file count is kept at zero because that zero was measured, and
+	// "0 files this turn" is the answer the block is asked for
+	// (docs/interface/departures.md#a-turn-that-wrote-nothing-says-so).
 	if t.Tools > 0 {
 		stats = append(stats, sty.Dim.Render(plural(t.Tools, "tool")))
 	}

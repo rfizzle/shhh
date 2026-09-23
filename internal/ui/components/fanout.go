@@ -262,7 +262,7 @@ func headerLead() string {
 // outcome is the whole of what became of it; a lane is a child that will be
 // many acts before it is anything. A manager row *is* a row and does override
 // — see AgentRow.stateGlyph
-// (docs/interface/departures.md#a-fan-out-lane-keeps-its-kind-glyph-and-a-manager-row-does-not).
+// (docs/interface/surfaces.md#the-agent-manager).
 func (p AgentProgress) glyph() string { return p.kindTone().Render("◇") }
 
 // rowGlyph is the same child on a row rather than in a lane, and a row keeps
@@ -275,7 +275,7 @@ func (p AgentProgress) glyph() string { return p.kindTone().Render("◇") }
 // The manager, the rail's AGENTS block and a lane are the same child through
 // the same renderer, and this is the one place they differ — see glyph above
 // for why a lane is not a row
-// (docs/interface/departures.md#a-fan-out-lane-keeps-its-kind-glyph-and-a-manager-row-does-not).
+// (docs/interface/surfaces.md#the-agent-manager).
 func (p AgentProgress) rowGlyph() string {
 	switch p.State {
 	case FanoutBlocked:
@@ -293,7 +293,10 @@ func (p AgentProgress) rowGlyph() string {
 // kindTone is the colour the kind glyph carries: info while the child is
 // going, add once it has answered, del while it is stopped on something. A
 // queued or idle child is none of those and takes the grey everything waiting
-// takes.
+// takes. A failed lane and a waiting one are drawn on no artboard, so they
+// keep the lane's shape and change only this colour: a lane that changed shape
+// on the one state that went wrong would be a second grammar to learn
+// (docs/interface/departures.md#a-fan-out-lane-keeps-its-kind-glyph-and-a-manager-row-does-not).
 func (p AgentProgress) kindTone() lipgloss.Style {
 	switch p.State {
 	case FanoutBlocked, FanoutFailed:

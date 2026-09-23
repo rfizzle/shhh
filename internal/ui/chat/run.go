@@ -582,6 +582,12 @@ func (m Model) finishExplain(msg explainDoneMsg) (tea.Model, tea.Cmd) {
 // not about the command: nothing here reached the model that is waiting for
 // the decision. It asked to run this command, and it is still waiting for the
 // answer to that.
+//
+// It is the full view the dry run opens on, title rail and body tone
+// included, rather than a screen of its own: the three uses make one promise
+// about leaving, and a label or a fainter paragraph on one of them would say
+// they differ
+// (docs/interface/departures.md#the-explanations-screen-wears-the-full-views-title-not-a-rail-label).
 func explainView(msg explainDoneMsg) *components.OutputView {
 	v := msg.verdict
 	title := "explain — " + firstLine(msg.command)

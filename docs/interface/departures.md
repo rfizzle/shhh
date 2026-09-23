@@ -346,9 +346,15 @@ gives it back with the decision still waiting, and nothing on it enters the
 conversation. Giving one of its three uses a label the other two do not have
 would say the screens are different when the promise they make is the same,
 and the second half of the title says which use it is anyway. What the
-artboard settles and the binary keeps is the rest of it: the paragraph in
-dim, and a footer naming the model, what asking took, and that nothing here
-reached the model waiting on the answer.
+artboard settles and the binary keeps is the footer: the model, what asking
+took, and that nothing here reached the model waiting on the answer.
+
+The paragraph's tone follows the same reason. The artboard draws it in dim;
+the binary draws it in dimmer, which is the body of that viewer for all three
+of its uses. A paragraph a rung fainter than the dry run's output on the same
+screen would be the one difference between them, and dim is the faintest
+rung the ladder has — the tone of chrome, where this paragraph is the thing the
+screen was opened to read.
 
 ## The grant list's narrow row is drawn only where there is one
 
@@ -549,34 +555,20 @@ row is worded.
 
 ## A fan-out lane keeps its kind glyph, and a manager row does not
 
-*A gap the artboard fills two ways, and both are kept.* The states guideline
-closes its table with a rule — five of the state marks override the kind
-glyph, `✓` never does — and then says `✓` marks "the things that are not rows:
-a step header, a turn close, a fan-out lane, a check on the doctor screen". So
-a lane is named as one of the things the rule is not about, and the `Agents`
-artboard draws it that way: `◇` stands in every lane it draws and its colour
-carries the state, with the state itself in words in the outcome field —
-`▰▰▰▱▱ 2/5` running, `▰▰▰▰▰ ✓ 5/5` done, `⚠ needs you` blocked.
+*A gap.* The rule in the heading is not itself a departure. The states
+guideline names a fan-out lane among the things its overriding rule is not
+about, the `Agents` artboard draws a lane keeping `◇` and a manager row giving
+its lead column to `⚠`, and the binary draws both the way the artboard does.
+Why each surface takes the reading it does is stated with the manager
+([the agent manager](surfaces.md#the-agent-manager)).
 
-The same artboard's manager window draws the same three children the other
-way, and that is the rule rather than an inconsistency: a manager row is a
-row. Its blocked child leads with `⚠` and its done child keeps `◇` with `✓
-done` on the right, which is exactly "five override, `✓` does not".
-
-Both are implemented. The difference is what the two surfaces are lists of. A
-lane is a child, from the moment it is queued until it stops being one, and it
-will be many acts before it is anything — so the column that says *what this
-is* keeps saying it, and how the child is doing is the field that changes. A
-manager row is the child as one thing you are about to act on, in a list where
-`⚠` is what sorts to the top and what the key row is offering to answer; there
-the state is the reason the row is in front of you, and it takes the lead
-column the way it does on every other row in the product.
-
-Two states no artboard draws are extended from the lane's rule rather than the
-row's: a failed lane is `◇` in del with `✗ failed` in the outcome field, and a
-queued or idle one is `◇` in grey with its word. A lane that changed shape on
-the one state that went wrong would be the reader learning a second grammar
-for the case they are least able to spend attention on.
+What no artboard draws is two of a lane's states. A failed lane is `◇` in del
+with `✗ failed` in the outcome field, and a queued or idle one is `◇` in grey
+with its word. Both are extended from the lane's rule rather than the row's: a
+lane that changed shape on the one state that went wrong would be the reader
+learning a second grammar for the case they are least able to spend attention
+on. The gap is closed by drawing a lane in those two states, and where that
+artboard and this differ, the artboard wins.
 
 ## The current one is marked, and four other marks the pages do not list
 
@@ -743,3 +735,109 @@ checkout's declared files moved
 It is written in the notes' own voice — lower case, the value in body and the
 rest dim, joined with ` · `, no full stop — and a trusted, unchanged checkout
 draws nothing, so the screen the artboard draws is the one most sessions see.
+
+## A picture is drawn in its own colours
+
+*A disagreement.* No surface may reach for a colour outside the fifteen
+([the rule](principles.md#a-colour-is-three-values-and-a-ground)), and output
+that arrives painted is re-painted into the palette on the way in
+([one grid](principles.md#one-grid)). The staged attachment's picture is the
+one thing on screen drawn in colours none of the fifteen name: each half-block
+cell takes the two colours the rasteriser read out of the image, converted to
+the rung the terminal can carry.
+
+The reason is what the surface is for. It answers which of two screenshots is
+the one with the stack trace in it
+([a staged attachment](surfaces.md#a-staged-attachment)), and a photograph
+folded onto fifteen tokens stops being recognisable as the one somebody took.
+A program's colours are folded because they are markup about words, and the
+palette is what keeps the interface's words meaning one thing each. A
+picture's colours are the picture — content, like the text of a message — and
+they say nothing the interface has a word for.
+
+What the rule protects is kept everywhere around it. The card holding the
+picture — its frame, the name and the size — is drawn in tokens. A mono
+palette draws the picture in no colour at all, and so does a terminal below
+sixteen colours: both get the drawing kit's density ramp
+([the blocks](#two-surfaces-draw-with-blocks-rather-than-in-them)).
+
+## A turn with no round limit still draws a bound
+
+*A gap.* The `Frame` artboard draws the round segment with its bound —
+`round 7/25` — and nothing draws a turn that has none: a sub-agent, a session
+started with the limit off, or a turn the reader told to run on at the
+checkpoint. The binary keeps the counter's shape and puts `∞` where the bound
+would be, `round 7/∞`.
+
+Each other way of saying it says something else. `round 7` alone reads as a
+bound nobody has stated, which is not the same as a bound that does not exist;
+a number would be one nobody measured
+([the rule](principles.md#a-stat-that-cannot-be-reported-is-left-out)); and
+words cannot go on a rail whose segments are joined by the separator, where
+`round 7 · no bound` reads as two facts rather than one. `∞` is typography
+rather than a mark — it stands for a number, in the place a number goes — so
+the glyph set does not grow for it.
+
+The gap is closed by drawing the unbounded segment, and where that artboard
+and this differ, the artboard wins.
+
+## The working label arrives, and a light runs along it
+
+*A disagreement.* The readme knows one animation: the spinner. The binary
+moves the word beside it as well, in two ways. When a turn starts the label
+arrives a cell at a time, each cell still to come drawn as `·` in dim, over
+twelve ticks — a little under a second. While the turn lasts a three-cell
+crest in bright runs along the label, which is otherwise the spinner's colour,
+and rests between passes.
+
+Both are held to what the readme's rule is for. There is still one clock and
+one frame counter: the label reads the frame the spinner is on and keeps no
+state of its own, so nothing starts, stops or falls out of step with the
+glyph beside it. The entrance is a shape rather than a hue — the `·` is one
+cell wide, so the label never reflows, and it reads in mono exactly as in
+colour — and it is the half that says something a spinner cannot: that this
+turn has just started, rather than that one is still going. The crest costs
+the palette nothing. It is two tokens rather than a gradient, and under mono
+they are the same grey, so the swept label is byte for byte the still one and
+the motion is declined the way mono declines every colour it cannot carry.
+
+What departs is the count. A reader who has learned that one thing moves on
+this screen sees a second thing move, beside the first. The departure is
+closed by the readme naming the label's motion beside the spinner's.
+
+## A turn that wrote nothing says so
+
+*A gap.* No artboard draws the rail's THIS TURN block for a turn that has
+changed no files. The rule nearest to it points the other way at first
+reading: a turn that called no tools reports no tool count, because nothing
+is reported as a zero it did not measure
+([the rule](principles.md#a-stat-that-cannot-be-reported-is-left-out)).
+
+The binary follows the rule for the tools and states the files anyway: `0
+files this turn`. That zero was measured — the turn's changes are read whether
+or not there are any — and it is the answer to the question the block is
+there to be asked, which is what the session's count in CHANGES beneath it is
+being told apart from. A block that fell silent on a turn that wrote nothing
+would read as a turn nobody had counted. The rule forbids a zero standing in
+for a gap; this is the other case, a gap standing in for a zero.
+
+The gap is closed by drawing the block for a turn that wrote nothing, and
+where that artboard and this differ, the artboard wins.
+
+## The AGENTS block's meter is on the detail row
+
+*A disagreement.* The `Main` artboard draws a child's meter on its name row —
+`◇ writer-1  ▰▰▰▱▱ 2/5 · $0.02` over `docs/loop.md · 4 tools`. The binary
+draws the name row with the name, the word the child ended on and its spend,
+and puts the meter at the head of the line under it:
+`▰▰▰▱▱ 2/5 · docs/loop.md · 4 tools`.
+
+That head is one slot saying how the child is moving, and three things take
+it: the meter where the child declared a step count, the budget's bar where it
+declared none and is past half its ceiling, and the spinner where neither
+applies. A child that has stopped takes none of them. On the name row the
+meter would be the only one of the three with a place there, so one block
+would answer one question in two columns depending on what each child had
+declared. The name row is also the one that has to survive the rail's
+narrowest width, and a five-cell bar and its count beside a clipped name is a
+child whose progress you can see and whose name you cannot.

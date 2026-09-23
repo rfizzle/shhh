@@ -260,10 +260,10 @@ func pictureRow(cells []raster.Cell) string {
 }
 
 // pictureStyle is the style one cell is painted with. A picture's colours are
-// its own — the fifteen palette tokens are the interface's, and a photograph
-// is content, like the text of a message — so they are set literally and
-// converted to the profile's rung here, which is the job Token.Color does for
-// everything the palette does own.
+// its own, set literally and converted to the profile's rung here — the job
+// Token.Color does for everything the palette owns — because a photograph
+// folded onto fifteen tokens is no longer the one somebody took
+// (docs/interface/departures.md#a-picture-is-drawn-in-its-own-colours).
 func pictureStyle(c raster.Cell) lipgloss.Style {
 	s := lipgloss.NewStyle()
 	if c.Fg != nil {

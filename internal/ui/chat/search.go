@@ -28,6 +28,12 @@ package chat
 // match a fold is covering sits at that fold's own row, which is where it is
 // on screen. So `3/9` counts the six the reader can step through and the
 // three behind the fold in the order they are actually in.
+//
+// That is also why there is no filter view drawing only the matching rows: a
+// filter is a second render of the same entries, and a second content path
+// through the pane is where two readings of the session drift apart. Counting
+// what every fold covers and opening it onto the match is what a filter was
+// for (docs/interface/departures.md#the-transcript-search-has-no-filter-view).
 
 import (
 	"fmt"

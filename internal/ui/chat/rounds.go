@@ -141,11 +141,11 @@ func (m Model) roundCounter() string {
 	return s
 }
 
-// roundLabel is the counter on its own, shared with the close block's note
-// . A turn running without a ceiling keeps the counter's shape and puts
-// `∞` where the bound would be: the rail must not invent a number that does
-// not exist, and it cannot say so in words either — its segments are joined
-// with `·`, so `round 7 · no bound` would read as two facts rather than one.
+// roundLabel is the counter on its own, shared with the close block's note.
+// A turn running without a ceiling keeps the counter's shape and puts `∞`
+// where the bound would be, because the rail must not invent a number and
+// cannot say so in words between its separators
+// (docs/interface/departures.md#a-turn-with-no-round-limit-still-draws-a-bound).
 func (m Model) roundLabel() string {
 	if m.roundsUnbounded() {
 		return fmt.Sprintf("round %d/∞", m.agent.Rounds())
