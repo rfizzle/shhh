@@ -926,7 +926,7 @@ func TestChildAskAlwaysGrantsTheCommandForTheTurn(t *testing.T) {
 	updated, _ := m.Update(subagentEventMsg{ev: subagent.Event{Kind: subagent.EventAsk, Ask: ask}})
 	m = handover(t, updated.(Model))
 
-	const offer = `[a] allow "go test" for every agent, this turn`
+	const offer = `[a] allow "go test" for every agent until this turn ends`
 	if view := ansi.Strip(m.View().Content); !strings.Contains(view, offer) {
 		t.Fatalf("the routed command card offers the grant and names its end:\n%s", view)
 	}

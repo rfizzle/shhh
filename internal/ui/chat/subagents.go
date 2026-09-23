@@ -413,17 +413,10 @@ func (m Model) childAskCard(ask *subagent.Ask) *components.ApprovalCard {
 		//
 		// Flagged commands keep the exception they have everywhere: the key
 		// is absent and the footnote says why (radius.go).
-		//
-		// The end is `this turn` and not the grant list's own `until this
-		// turn ends`: an offer is one segment of a key row and a key row
-		// never cuts one (docs/interface/principles.md#fold-never-hide), so
-		// at sixty columns the longer spelling would lose the end it exists
-		// to state. The transcript keeps the length in the list's words,
-		// where there is a whole row for it (grantChildCommand).
 		if len(card.Warnings) == 0 {
 			if grant := agent.GrantPrefix(ask.Command); grant != "" {
 				card.AllowAlways = true
-				card.AlwaysHint = "allow " + strconv.Quote(grant) + " for every agent, this turn"
+				card.AlwaysHint = "allow " + strconv.Quote(grant) + " for every agent until this turn ends"
 			}
 		}
 	case subagent.AskEdit:
