@@ -1385,7 +1385,11 @@ agent — and it names its end, which is this turn: the length is fixed here
 rather than chosen from a list, because the reach is the thing being decided
 and a standing permission is wider than the card is about. A safety-flagged
 command is the one place the key is missing, here as everywhere, and the card
-says so where the key would have been.
+says so where the key would have been. The card does not gain the session
+card's list of lengths, so the key list printed while it waits names its `[a]`
+in its own words — this command, every agent, this turn — rather than in the
+session card's words, which promise a choice of how long that this card does
+not draw.
 
 **The manager does not open over one of the session's own decisions, and says
 so.** A command, a plan or a question waiting in the panel holds it — [one

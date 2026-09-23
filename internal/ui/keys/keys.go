@@ -1067,6 +1067,16 @@ type DecisionKeys struct {
 	PanRight   Binding
 }
 
+// AlwaysRouted is Decision.Always's words on a child's routed command card.
+// The keystroke is the same one and so is the surface, but the act is not:
+// that card makes one fixed grant — the command's shape, for every agent,
+// until this turn ends — and draws no list of lengths, so the register's own
+// words would promise a choice the card does not offer. It is words and not
+// a second binding, because one surface answering one keystroke with two
+// bindings is what the register refuses
+// (docs/interface/surfaces.md#the-agent-manager).
+const AlwaysRouted = "allow this command for every agent, this turn"
+
 var Decision = DecisionKeys{
 	Allow:      bind("y", "allow", "y", "enter"),
 	Deny:       bind("n", "deny", "n", "esc", "ctrl+c"),

@@ -22,6 +22,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
@@ -56,7 +57,7 @@ func helpText(m *Model) string {
 		}
 	}
 	b.WriteString("\n\n" + helpMidTurn(m))
-	return b.String() + "\n\n" + helpKeysText()
+	return b.String() + "\n\n" + m.helpKeys()
 }
 
 // helpHeadWidth is the command column, and helpHead the row's entry in it:
@@ -251,6 +252,36 @@ func helpKeysText() string {
 			b.WriteString("\n  " + head +
 				strings.Repeat(" ", helpKeyWidth-utf8.RuneCountInString(head)) + line)
 		}
+	}
+	return b.String()
+}
+
+// helpKeys is the key list as this moment has it: the input's keys, and —
+// while a child's routed command card waits beside the draft offering its
+// grant — a row for that card's [a] in the card's own words. The register's
+// words for the key promise a choice of how long, which that card does not
+// draw: it makes one grant, for this command, every agent, this turn
+// (docs/interface/surfaces.md#the-agent-manager).
+func (m Model) helpKeys() string {
+	list := helpKeysText()
+	ask := m.activeChildAsk()
+	if ask == nil || ask.Kind != subagent.AskCommand || !m.childAskCard(ask).AllowAlways {
+		return list
+	}
+	head := keys.Bracket(keys.Decision.Always)
+	lines := []string{
+		keys.AlwaysRouted + ",",
+		"on the agent's card waiting now — the one grant that card",
+		"makes; it has no list of lengths to choose from",
+	}
+	var b strings.Builder
+	b.WriteString(list)
+	for i, line := range lines {
+		if i > 0 {
+			head = ""
+		}
+		b.WriteString("\n  " + head +
+			strings.Repeat(" ", helpKeyWidth-utf8.RuneCountInString(head)) + line)
 	}
 	return b.String()
 }

@@ -388,7 +388,7 @@ func (m Model) updateKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 		// Attached, the keyboard is pointed at a child and the orchestrator's
 		// register is not what it is about, as with the palette above.
 		if m.inputLive() && m.attachedTo == "" {
-			return answered(m.systemNotice(helpKeysText()))
+			return answered(m.systemNotice(m.helpKeys()))
 		}
 	case keys.Is(pressed, keys.Draft.PageUp, keys.Draft.PageDown):
 		// The pager keys read the transcript and leave the keyboard in
