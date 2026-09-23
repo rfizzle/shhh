@@ -71,6 +71,16 @@ type SprintBoard struct {
 	// the backlog by the host. A row's Note is where it stands in the set,
 	// which is not the same reading as its status in the backlog.
 	Rows []BacklogRow
+	// Lanes are the items a sprint is working at once, each with the step
+	// it is at, in the order they were taken. None draws nothing: a sprint
+	// working one item at a time says which on that item's own row.
+	Lanes []SprintLane
+}
+
+// SprintLane is one item a sprint is working beside others, as the head
+// lists it.
+type SprintLane struct {
+	Slug, Stage string
 }
 
 // SprintPlanRow is one proposed item on the plan card.
@@ -365,6 +375,7 @@ func (b *BacklogScreen) boardRows(width int) []string {
 	if board.Stopped != "" {
 		rows = append(rows, wrapWarn("⚠ "+board.Stopped, width)...)
 	}
+	rows = append(rows, laneRows(board.Lanes, width)...)
 	if board.Next != "" {
 		rows = append(rows, sty.Dim.Render(Clip("next · ", width))+
 			sty.Body.Render(Clip(board.Next, max(width-7, 1))))
@@ -375,6 +386,33 @@ func (b *BacklogScreen) boardRows(width int) []string {
 	// cannot paste.
 	if board.Report != "" {
 		rows = append(rows, sty.Info.Render(Clip("→ "+board.Report, width)))
+	}
+	return rows
+}
+
+// laneRows is what the head says about the items being worked at once: how
+// many, then one row each with the step it is at, the slugs in a column so
+// the steps line up. The step is the field that gives ground, because a row
+// is found by its slug and not by its step.
+func laneRows(lanes []SprintLane, width int) []string {
+	if len(lanes) == 0 {
+		return nil
+	}
+	rows := []string{sty.Dim.Render(Clip(fmt.Sprintf("working · %d at once", len(lanes)), width))}
+	col := 0
+	for _, l := range lanes {
+		col = max(col, lipgloss.Width(l.Slug))
+	}
+	col = min(col, max(width/2, 1))
+	for _, l := range lanes {
+		slug := Clip(l.Slug, col)
+		lead := "  " + sty.Body.Render(slug) + strings.Repeat(" ", max(col-lipgloss.Width(slug), 0))
+		room := width - lipgloss.Width(lead) - 2
+		if room < 1 || l.Stage == "" {
+			rows = append(rows, Clip(lead, width))
+			continue
+		}
+		rows = append(rows, lead+"  "+sty.Dim.Render(Clip(l.Stage, room)))
 	}
 	return rows
 }

@@ -81,6 +81,13 @@ type Todos struct {
 	// host beside the vocabulary. The empty pipeline is the built-in one,
 	// the way the empty wordings are the built-in set.
 	Pipeline run.Pipeline
+	// Parallel starts a sprint that works several items at once, handed the
+	// arguments `todo run` would take, and answers with where its lines go.
+	// It is the unattended runner in a process of its own: each lane is a
+	// process already, and a sprint of them outlives the session that asked.
+	// Nil is a session that cannot start one, which says so.
+	// See docs/capabilities/todo.md#a-sprint-can-work-several-items-at-once.
+	Parallel func(args []string) (string, error)
 }
 
 // WithTodos enables /todo and the TODO block.
@@ -110,6 +117,13 @@ func (m *Model) reloadTodos() {
 		return
 	}
 	m.todoStore = todo.Load(m.todos.Profile, m.todos.Root)
+	// A parallel sprint is worked by another process, so what its lanes are
+	// doing is read off its checkpoint here, with the backlog, and not by
+	// the rail as it draws.
+	m.todoRunner.lanes = nil
+	if sp, live := run.Live(m.todos.Root); live && sp.Laned() {
+		m.todoRunner.lanes = sp.Lanes
+	}
 	// How far behind each item's last reading has fallen is a question for
 	// the repository, so it is asked here — where the backlog is read —
 	// rather than by the surfaces that draw it every frame (todogroom.go).
@@ -146,6 +160,14 @@ func (m Model) inspectorTodo() *components.InspectorTodo {
 	// who is not watching the transcript finds out which. The stage comes
 	// with it because a slug on its own says a sprint is going and not
 	// whether it is moving.
+	if lanes := m.todoRunner.lanes; len(lanes) > 0 && !m.todoRunner.state.Sprinting() {
+		// Several items at once are counted rather than named: the board
+		// lists them with their stages, and the rail has one row for it.
+		t.SprintItem = plural(len(lanes), "item")
+		if len(lanes) == 1 {
+			t.SprintItem, t.SprintStage = lanes[0].Slug, string(lanes[0].Stage)
+		}
+	}
 	if st := m.todoRunner.state; st.Sprinting() {
 		t.SprintItem, t.SprintStage = st.Slug, string(st.Stage)
 		// Under a ceiling the row says how near the set is to it, in the
@@ -374,7 +396,7 @@ func todoWriteVerb(args []string) []string {
 
 // todoRunUsage is the one place the command's shape is written, so the
 // refusal and the help cannot come to describe different commands.
-const todoRunUsage = "Usage: /todo run [<slug>|--next|--all] [--no-commit] [--max <n>] [--cost-cap <cents>]"
+const todoRunUsage = "Usage: /todo run [<slug>|--next|--all] [--no-commit] [--max <n>] [--cost-cap <cents>] [--parallel <n>]"
 
 // todoRunArgs is what follows `/todo run`: which item, and the answers the
 // person gave about how it is worked.
@@ -391,6 +413,9 @@ type todoRunArgs struct {
 	// costCap is the most the sprint may spend in cents, 0 for the
 	// project's setting.
 	costCap int64
+	// parallel is how many items the sprint works at once; one, and unset,
+	// are the sprint worked in this session one item at a time.
+	parallel int
 }
 
 // parseTodoRunArgs reads what follows `/todo run`. A word it does not know is
@@ -434,6 +459,20 @@ func parseTodoRunArgs(args []string) (todoRunArgs, bool) {
 				return todoRunArgs{}, false
 			}
 			out.costCap = n
+		case a == "--parallel" || strings.HasPrefix(a, "--parallel="):
+			value := strings.TrimPrefix(a, "--parallel=")
+			if value == "--parallel" {
+				i++
+				if i >= len(args) {
+					return todoRunArgs{}, false
+				}
+				value = args[i]
+			}
+			n, err := strconv.Atoi(value)
+			if err != nil || n < 1 {
+				return todoRunArgs{}, false
+			}
+			out.parallel = n
 		case strings.HasPrefix(a, "-") && a != "--next":
 			return todoRunArgs{}, false
 		case out.arg == "":
@@ -449,7 +488,7 @@ func parseTodoRunArgs(args []string) (todoRunArgs, bool) {
 	if out.all && out.arg != "" {
 		return todoRunArgs{}, false
 	}
-	if (out.max > 0 || out.costCap > 0) && !out.all {
+	if (out.max > 0 || out.costCap > 0 || out.parallel > 0) && !out.all {
 		return todoRunArgs{}, false
 	}
 	return out, true

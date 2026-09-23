@@ -564,6 +564,13 @@ func (m Model) openSprintBoard(s *todo.Store) *components.SprintBoard {
 		if next, ok := sp.Peek(s); ok {
 			board.Next = next.Slug
 		}
+		// The lanes a sprint is working at once, each with the step its
+		// item is at. The head lists them because they are the sprint's
+		// answer to "what is moving", which a row's note alone answers for
+		// one slug at a time.
+		for _, l := range sp.Lanes {
+			board.Lanes = append(board.Lanes, components.SprintLane{Slug: l.Slug, Stage: string(l.Stage)})
+		}
 	}
 	if c := m.sprintClosed; c != nil && c.report != "" && c.name == s.Sprint.Name {
 		board.Report = c.report
@@ -601,6 +608,11 @@ func (m Model) sprintBoardRow(s *todo.Store, e todo.SprintEntry) components.Back
 	if st := m.todoRunner.state; st.Sprinting() && !st.Over() && st.Slug == e.Slug {
 		row.Note = string(st.Stage)
 	}
+	for _, l := range m.todoRunner.lanes {
+		if l.Slug == e.Slug && l.Stage != "" {
+			row.Note = string(l.Stage)
+		}
+	}
 	return row
 }
 
@@ -609,6 +621,12 @@ func (m Model) sprintBoardRow(s *todo.Store, e todo.SprintEntry) components.Back
 // halves are separate because the ledger is reset at every session
 // boundary, and a sprint crosses one between each pair of items.
 func (m Model) sprintSpend(sp *run.Sprint) (turns int, cost float64) {
+	// A parallel sprint is spent by another process, and what its lanes
+	// have spent so far is on the checkpoint rather than on this ledger.
+	if sp.Laned() {
+		turns, cost = sp.InFlight()
+		return sp.Turns + turns, sp.Cost + cost
+	}
 	return sp.Turns + int(m.turnCount), sp.Cost + m.sessionSpend().Cost
 }
 

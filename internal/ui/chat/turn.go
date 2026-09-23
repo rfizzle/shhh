@@ -727,6 +727,9 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 	case todoCommitMsg:
 		return answered(m.finishTodoCommit(msg))
 
+	case todoLanesMsg:
+		return answered(m.followLanes())
+
 	case commitDoneMsg:
 		return answered(m.finishCommit(msg))
 

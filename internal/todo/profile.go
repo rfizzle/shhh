@@ -67,6 +67,15 @@ type Profile struct {
 	// release it reads as, and none for a profile whose work is not
 	// released — where the goal is a sentence and nothing else.
 	Releases []ReleaseWord
+	// Touches is the heading of the section an item declares the paths it
+	// will change under, and "" for a profile whose items declare none. It
+	// is optional on every item: a sprint working several items at once
+	// takes an item beside the others only where its declared paths meet
+	// none of theirs, and an item that declares nothing is worked alone
+	// rather than refused. The list is declared, never inferred, because it
+	// is what a reviewer of the item can check before anything runs.
+	// See docs/capabilities/todo.md#a-sprint-can-work-several-items-at-once.
+	Touches string
 }
 
 // Measure is how the distance between a reading and now is counted.
@@ -176,10 +185,11 @@ func BuiltinCode() Profile {
 				{Name: "L", Gloss: "days, many files, or design decisions still open", Glyph: "L"},
 			}},
 		},
-		Grade: "size",
-		Groom: builtinCodeGrooming,
-		Plan:  builtinCodePlanning,
-		Stale: Staleness{Measure: MeasureCommits, Threshold: DefaultStaleCommits},
+		Grade:   "size",
+		Groom:   builtinCodeGrooming,
+		Plan:    builtinCodePlanning,
+		Stale:   Staleness{Measure: MeasureCommits, Threshold: DefaultStaleCommits},
+		Touches: "Touches",
 		Releases: []ReleaseWord{
 			{Name: string(ReleasePatch), Gloss: "every item in the set is a bug fix"},
 			{Name: string(ReleaseMinor), Gloss: "a story is in it"},

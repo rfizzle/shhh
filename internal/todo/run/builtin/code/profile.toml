@@ -11,6 +11,11 @@ name = "code"
 noun = "item"
 grade = "size"
 
+# The section an item may declare the paths it will change under. A sprint
+# working several items at once takes an item beside the others only where
+# its list meets none of theirs, and works an item with no list alone.
+touches = "Touches"
+
 # A reading of an item is a reading against the tree, so what dates it is
 # the tree moving rather than the calendar. Fifty commits is a few days of a
 # busy checkout and a month of a quiet one.

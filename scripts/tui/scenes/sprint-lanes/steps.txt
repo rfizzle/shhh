@@ -1,0 +1,27 @@
+# program test: TestProgram_TheSprintTabListsTheLanesAtWork
+#
+# The sprint board under a sprint working three items at once, at the width
+# the item names: a sprint file of three items, and the loop's checkpoint on
+# disk with a lane for each, at three different steps.
+#
+# What the capture is for is the head of the sprint tab. A sprint working
+# several items at once is another process's, and the board is where a
+# reader sees what it is doing: how many items are being worked, each with
+# the step it is at, and each lane's row saying the same step. The
+# checkpoint is written by the setup rather than earned by running the
+# lanes, because the lanes are what the board reads and a run's stages are
+# not what this scene is about.
+setup mkdir -p .shhh/todo/done .shhh/todo/.run
+setup printf -- '---\ntitle: Give the cache a lifetime\nsize: S\n---\n## Tests\n- true\n\n## Touches\n- `cache/ttl.go`\n' > .shhh/todo/cache-ttl.md
+setup printf -- '---\ntitle: Evict what the lifetime expired\nsize: S\n---\n## Tests\n- true\n\n## Touches\n- `cache/evict.go`\n' > .shhh/todo/cache-evict.md
+setup printf -- '---\ntitle: Say what the cache holds\nsize: S\n---\n## Tests\n- true\n\n## Touches\n- `cache/report.go`\n' > .shhh/todo/cache-report.md
+setup printf -- '---\nname: caching\n---\nMake an entry'"'"'s lifetime mean something.\n\n## Items\n- cache-ttl\n- cache-evict\n- cache-report\n' > .shhh/todo/sprint.md
+setup printf '{"session":"scene","started":"2026-09-23T09:00:00Z","updated":"2026-09-23T09:40:00Z","parallel":3,"turns":5,"cost":1.2,"attempts":["cache-ttl","cache-evict","cache-report"],"lanes":[{"slug":"cache-ttl","stage":"implement"},{"slug":"cache-evict","stage":"verify"},{"slug":"cache-report","stage":"research"}]}\n' > .shhh/todo/.run/sprint.json
+snap 01-start "Some things worth doing first"
+keys "/todo" Enter
+snap 02-backlog "cache-evict" "cache-report"
+keys Tab
+# The head: the goal, the meter and the spend, then the lanes at work with
+# the step each item is at; under it the set's rows, each lane's saying its
+# step.
+snap 03-sprint-tab 'working · 3 at once' "cache-ttl     implement" "cache-evict   verify" "cache-report  research" "cache-evict  MS  verify"

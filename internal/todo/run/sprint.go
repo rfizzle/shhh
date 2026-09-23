@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -36,9 +37,11 @@ const (
 	// SprintCapped is a cap the sprint was asked for reached: --max items
 	// started, or the set's spend at or past its ceiling.
 	SprintCapped = "capped"
-	// SprintBlocked is an item that blocked. The sprint stops on the first
-	// one: a blocked item wrote a follow-up, and the next ready item may
-	// depend on the work that did not land.
+	// SprintBlocked is an item that blocked. A sprint working one item at a
+	// time stops on the first one: a blocked item wrote a follow-up, and the
+	// next ready item may depend on the work that did not land. One working
+	// several at once goes on with the items that do not, and ends on this
+	// word once nothing more can be taken.
 	SprintBlocked = "blocked"
 	// SprintStopped is the person ending it.
 	SprintStopped = "stopped"
@@ -101,10 +104,49 @@ type Sprint struct {
 	// is the ceiling kept, the way every other spend setting is written.
 	// See docs/capabilities/todo.md#a-sprint-is-runs-with-a-session-between-them.
 	CapCents int64 `json:"cap_cents,omitempty"`
+	// Parallel is how many items the sprint may work at once, and 0 or 1
+	// for one at a time, which is every sprint written before it existed.
+	// Above one the items in flight are Lanes rather than Current.
+	// See docs/capabilities/todo.md#a-sprint-can-work-several-items-at-once.
+	Parallel int `json:"parallel,omitempty"`
+	// Lanes are the items being worked at once, each in its own copy of the
+	// checkout. They are written by one writer under a lock (the driver's),
+	// the way every other field here is, so two lanes finishing together
+	// cannot each write a checkpoint that forgets the other.
+	Lanes []SprintLane `json:"lanes,omitempty"`
+	// Blocked are the items of a parallel sprint that blocked, one line
+	// each with the evidence. A blocked lane does not stop the sprint — the
+	// other lanes' items are not resting on it, or they would not have been
+	// ready — so what it stopped is remembered here until nothing more can
+	// be taken, and the sprint ends blocked on them then.
+	Blocked []string `json:"blocked,omitempty"`
 	// Ended is one of the words above once the sprint is over, and Reason
 	// the evidence behind it.
 	Ended  string `json:"ended,omitempty"`
 	Reason string `json:"reason,omitempty"`
+}
+
+// SprintLane is one item a parallel sprint is working: which, where, how far
+// it has got, and what it has spent so far. The spend is the lane's running
+// figure in the sense ItemTurns and ItemCost are the serial sprint's —
+// replaced at every stage boundary, added to the set's total once, when the
+// item ends or when the sprint is picked up by a process that is not the one
+// that wrote it.
+type SprintLane struct {
+	Slug string `json:"slug"`
+	// Paths are what the item declared it touches, and none for an item
+	// that declared nothing — which is worked alone.
+	Paths []string `json:"paths,omitempty"`
+	// Tree is the copy of the checkout the item is worked in, and
+	// Checkpoint the item's own run checkpoint, which names the stage.
+	Tree       string `json:"tree,omitempty"`
+	Checkpoint string `json:"checkpoint,omitempty"`
+	// Stage is the step the item's run is at, as the lane last wrote it.
+	Stage   Stage     `json:"stage,omitempty"`
+	Started time.Time `json:"started,omitempty"`
+	Ledger  string    `json:"ledger,omitempty"`
+	Turns   int       `json:"turns,omitempty"`
+	Cost    float64   `json:"cost,omitempty"`
 }
 
 // StartSprint begins a sprint. prevMode is the mode to put the session back
@@ -219,6 +261,191 @@ func (s *Sprint) Peek(store *todo.Store) (todo.Item, bool) {
 	}
 	return todo.Item{}, false
 }
+
+// Laned reports the sprint working several items at once.
+func (s *Sprint) Laned() bool { return s != nil && s.Parallel > 1 }
+
+// TakeLane is the item a free lane starts next, taken; false where no lane
+// may start one now. An item is taken beside the lanes already running only
+// where the paths it declares meet none of theirs, and an item that declares
+// none is taken only once every lane has drained, and then alone — it is
+// serialised, never refused. The ready list's order holds across that: an
+// undeclared item at the head of the list stops later items being taken
+// past it, so the lanes drain and it gets its turn, where a declared item
+// that overlaps a running lane only waits for that lane and the list moves on
+// past it, the way the parallel batch done by hand moves on.
+//
+// It ends the sprint only when nothing is running and nothing can be taken,
+// with the reason the serial loop gives — the cap, the ceiling, or an empty
+// ready list — or blocked where items blocked on the way: a lane that blocks
+// does not stop the sprint, and what it stopped is said at the end.
+func (s *Sprint) TakeLane(store *todo.Store) (todo.Item, bool) {
+	if s.Over() || len(s.Lanes) >= max(s.Parallel, 1) {
+		return todo.Item{}, false
+	}
+	switch {
+	case s.Max > 0 && len(s.Attempts) >= s.Max:
+		s.drained(SprintCapped, fmt.Sprintf("%s attempted, which is the cap the sprint was asked for", plural(len(s.Attempts), "item")))
+		return todo.Item{}, false
+	case s.overCap():
+		s.drained(SprintCapped, fmt.Sprintf("spent %s of the %s the sprint was allowed", Dollars(s.Cost), CapDollars(s.CapCents)))
+		return todo.Item{}, false
+	}
+	for _, l := range s.Lanes {
+		if len(l.Paths) == 0 {
+			return todo.Item{}, false
+		}
+	}
+	for _, it := range store.Ready() {
+		if s.attempted(it.Slug) {
+			continue
+		}
+		paths, declared := it.Touches()
+		if !declared && len(s.Lanes) > 0 {
+			break
+		}
+		if declared && s.overlapsLane(paths) {
+			continue
+		}
+		s.Attempts = append(s.Attempts, it.Slug)
+		s.Lanes = append(s.Lanes, SprintLane{Slug: it.Slug, Paths: paths, Started: time.Now()})
+		return it, true
+	}
+	if len(s.Blocked) > 0 {
+		s.drained(SprintBlocked, strings.Join(s.Blocked, "; "))
+	} else {
+		s.drained(SprintEmpty, "nothing is ready: every open item waits on another, or the backlog is empty")
+	}
+	return todo.Item{}, false
+}
+
+// drained ends the sprint for why, but only once no lane is running: a
+// parallel sprint that has stopped taking items still owes the ones in
+// flight their ending.
+func (s *Sprint) drained(word, why string) {
+	if len(s.Lanes) == 0 {
+		s.end(word, why)
+	}
+}
+
+// overlapsLane reports a declared path list meeting a running lane's, by the
+// rule a fan-out's lanes are held disjoint by (pathsOverlap).
+func (s *Sprint) overlapsLane(paths []string) bool {
+	for _, l := range s.Lanes {
+		for _, a := range l.Paths {
+			for _, b := range paths {
+				if pathsOverlap(a, b) {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
+// Lane is the running lane working slug, for the driver to write to.
+func (s *Sprint) Lane(slug string) (*SprintLane, bool) {
+	for i := range s.Lanes {
+		if s.Lanes[i].Slug == slug {
+			return &s.Lanes[i], true
+		}
+	}
+	return nil, false
+}
+
+// LaneEnded retires a lane whose item is over: its spend joins the set's
+// total, and the item is recorded as done or, with its evidence, as blocked.
+// Neither ends the sprint; TakeLane does that once nothing is left to take.
+// The spend handed over is the item's whole figure, which is why the lane's
+// running one goes with the lane rather than being added as well.
+func (s *Sprint) LaneEnded(slug string, done bool, why string, turns int, cost float64) {
+	for i, l := range s.Lanes {
+		if l.Slug == slug {
+			s.Lanes = append(s.Lanes[:i], s.Lanes[i+1:]...)
+			break
+		}
+	}
+	s.Turns += max(turns, 0)
+	if cost > 0 {
+		s.Cost += cost
+	}
+	if done {
+		if !slices.Contains(s.Done, slug) {
+			s.Done = append(s.Done, slug)
+		}
+		return
+	}
+	s.Blocked = append(s.Blocked, slug+" blocked — "+oneLine(why))
+}
+
+// Orphans takes the lanes a dead process left on the checkpoint off it and
+// hands them back for the driver to answer for. What each had spent on a
+// ledger other than the picking-up session's is added to the total here, for
+// the reason Resume adds the serial item's: that ledger died with its
+// process. The lanes themselves cannot be continued — each was working in a
+// copy of the checkout that belonged to the process that is gone.
+func (s *Sprint) Orphans() []SprintLane {
+	out := s.Lanes
+	s.Lanes = nil
+	for _, l := range out {
+		if l.Ledger != s.Session {
+			s.Turns += max(l.Turns, 0)
+			s.Cost += max(l.Cost, 0)
+		}
+	}
+	return out
+}
+
+// InFlight is what the items being worked have spent so far and not yet
+// added to the total: the serial item's running figure and every lane's.
+func (s *Sprint) InFlight() (turns int, cost float64) {
+	turns, cost = s.ItemTurns, s.ItemCost
+	for _, l := range s.Lanes {
+		turns += l.Turns
+		cost += l.Cost
+	}
+	return turns, cost
+}
+
+// Working is the slugs being worked now: the lanes of a parallel sprint in
+// the order they were taken, or the one item of a serial one.
+func (s *Sprint) Working() []string {
+	if len(s.Lanes) == 0 {
+		if s.Current != "" {
+			return []string{s.Current}
+		}
+		return nil
+	}
+	out := make([]string, 0, len(s.Lanes))
+	for _, l := range s.Lanes {
+		out = append(out, l.Slug)
+	}
+	return out
+}
+
+// stopFile is how a surface that is not the sprint's own process asks it to
+// stop: a file beside the checkpoint that the runner looks for, rather than a
+// signal to a process id the checkpoint recorded, which the machine may have
+// handed to something else since.
+const stopFile = "sprint.stop"
+
+// RequestStop asks the process working the sprint to stop.
+func RequestStop(root string) error {
+	if err := os.MkdirAll(Dir(root), 0o755); err != nil {
+		return err
+	}
+	return os.WriteFile(filepath.Join(Dir(root), stopFile), nil, 0o644)
+}
+
+// StopRequested reports a stop having been asked for.
+func StopRequested(root string) bool {
+	_, err := os.Stat(filepath.Join(Dir(root), stopFile))
+	return err == nil
+}
+
+// ClearStop takes the request away: once it has been answered, and before a
+// sprint starts that a request left over from an earlier one must not end.
+func ClearStop(root string) { _ = os.Remove(filepath.Join(Dir(root), stopFile)) }
 
 // Spent adds one item's cost to the set's running total. It is called at the
 // session boundary, where what the item cost is still readable and about to
@@ -408,6 +635,9 @@ func (s *Sprint) Summary() string {
 	}
 	if s.Current != "" {
 		b.WriteString(" · on " + s.Current)
+	}
+	if len(s.Lanes) > 0 {
+		b.WriteString(" · on " + strings.Join(s.Working(), ", "))
 	}
 	if s.Ended != "" {
 		b.WriteString(" · " + s.Ended + ": " + s.Reason)

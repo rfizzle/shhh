@@ -583,3 +583,29 @@ func TestCreate_WritesIntoTheGlobalBacklog(t *testing.T) {
 		t.Errorf("the item went to %s, want %s", path, want)
 	}
 }
+
+// An item declares the paths it will change in the section its profile
+// names, one path per bullet — the first code span, or the first word — and
+// an item that says nothing, or a profile with no such section, declares
+// nothing rather than an empty list.
+func TestItemTouches_ReadsTheDeclaredPaths(t *testing.T) {
+	body := "Prose.\n\n## Touches\n- `internal/todo/run/` — `sprint.go`, `lanes.go`\n- ./docs/capabilities/todo.md\n* `cmd/`\n\n## Tests\n- `true`\n"
+	it, err := Parse(BuiltinCode(), "/b/.shhh/todo/lanes.md", "---\ntitle: Lanes\n---\n"+body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	paths, ok := it.Touches()
+	if !ok || strings.Join(paths, " ") != "internal/todo/run/ docs/capabilities/todo.md cmd/" {
+		t.Fatalf("declared %v/%v", paths, ok)
+	}
+	bare, _ := Parse(BuiltinCode(), "/b/.shhh/todo/bare.md", "---\ntitle: Bare\n---\n## Tests\n- true\n")
+	if paths, ok := bare.Touches(); ok || paths != nil {
+		t.Fatalf("an item with no section declares nothing: %v", paths)
+	}
+	other := BuiltinCode()
+	other.Touches = ""
+	it.Profile = other
+	if _, ok := it.Touches(); ok {
+		t.Fatal("a profile with no touches section reads none")
+	}
+}

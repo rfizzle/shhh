@@ -1028,6 +1028,61 @@ a copy of the checkout where the work is a lane's — because neither of those
 needed a person, only somewhere else to put the work. The exit status is
 the run's own ending ([`headless.md`](headless.md#the-exit-code-is-the-contract)).
 
+## A sprint can work several items at once
+
+`--parallel N` on `todo run --all` (and on `/todo run --all`) works up to N
+items at the same time. One is the sprint above, unchanged. Above one, each
+item is taken into a lane of its own: a copy of the checkout, seeded with the
+checkout's uncommitted work the way a writer's copy is
+([`subagents.md`](subagents.md#a-writer-starts-from-your-tree)), and the whole
+run — research to commit — worked there as it would have been worked in
+place. The lanes are the parallel batch done by hand, made the sprint's own
+loop.
+
+**What an item claims is what it declares.** An item may list the paths it
+will change under a `## Touches` heading — one per bullet, a directory
+ending in a slash. A lane takes an item only where its list meets none of the
+running lanes' lists, and the ready list moves on past one that overlaps. An
+item with no list is not refused and not guessed at: it waits until the lanes
+have drained and is worked alone, and nothing is taken past it while it waits,
+so the list's order still holds. Declared rather than inferred, because a
+declaration is something a person reviewing the item can check before
+anything runs, and an inference is one more reading paid for on every item.
+
+**Landing is one lane at a time, in the order they finish.** A lane that
+reaches its commit puts its patch onto the checkout and commits it there
+while no other lane may write the branch, so two lanes never write it at
+once. Every other lane, told the branch moved, rebases its own copy onto the
+new commit before its next step, so what it verifies and what it is reviewed
+on is the tree it will land into. A rebase that conflicts blocks that lane's
+item with git's own words as the evidence and frees the lane, and the lane's
+copy is kept for whoever reads the block. A declaration that turned out to
+be wrong is caught there, not trusted. A sprint asked for without commits
+moves no branch, so there is nothing to rebase onto: each lane's patch is
+applied to the working tree as it finishes, whole or not at all, and one
+that no longer applies over what landed before it blocks that item instead.
+
+**A blocked lane does not stop the sprint.** The other lanes' items were
+ready, so none of them rests on the work that did not land. The sprint goes
+on taking items, and ends blocked — naming each item that blocked — only
+once nothing more can be taken. The cap and the ceiling end it the same way:
+no further item is started, and the lanes in flight are allowed to finish.
+
+The checkpoint carries the lanes: each item, its copy, its own checkpoint,
+the step it is at and what it has spent so far, written by one writer so two
+lanes finishing together cannot each leave a file that forgets the other. The
+board's sprint tab lists them with their steps, and the rail says `on 3
+items`. A sprint picked up after its process died cannot continue the lanes
+it left — each copy belonged to that process — so their items block naming
+where the copy was, and what they had spent is counted once.
+
+From a session, `/todo run --all --parallel N` starts the unattended runner
+in a process of its own, with its lines in a log beside the checkpoint: the
+lanes are processes already, and nobody approves their steps, exactly as from
+a script. The session stays free, and `/todo stop` asks the runner to stop —
+each lane is interrupted at the step it is on, its item goes back to open,
+and its copy is kept.
+
 ## Done is archived, not deleted
 
 A finished item moves into an archive beside the active ones, with the

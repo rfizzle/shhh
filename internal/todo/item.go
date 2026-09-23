@@ -277,3 +277,45 @@ func Less(a, b Item) bool {
 	}
 	return a.Slug < b.Slug
 }
+
+// Touches is the paths the item declares it will change, read from the
+// section its profile names (Profile.Touches), and false where it declares
+// none — a profile with no such section, an item without one, or a section
+// with no path in it. Each bullet names one path: the first code span on the
+// line where there is one, the first word otherwise, so a line that goes on
+// to say which files under a directory still claims the directory. A path
+// ending in a slash is the directory and everything under it.
+//
+// Nothing here guesses. An item that says nothing is not read as touching
+// nothing — it is read as not having said, which is what a sprint working
+// several items at once serialises it for.
+// See docs/capabilities/todo.md#a-sprint-can-work-several-items-at-once.
+func (it Item) Touches() ([]string, bool) {
+	if it.Profile.Touches == "" {
+		return nil, false
+	}
+	var out []string
+	for _, line := range strings.Split(itemSection(it.Body, "## "+it.Profile.Touches), "\n") {
+		t := strings.TrimSpace(line)
+		if !strings.HasPrefix(t, "- ") && !strings.HasPrefix(t, "* ") {
+			continue
+		}
+		if p := touchedPath(strings.TrimSpace(t[2:])); p != "" {
+			out = append(out, p)
+		}
+	}
+	return out, len(out) > 0
+}
+
+// touchedPath is the one path a bullet of the touches section names.
+func touchedPath(bullet string) string {
+	if i := strings.IndexByte(bullet, '`'); i >= 0 {
+		if j := strings.IndexByte(bullet[i+1:], '`'); j > 0 {
+			return strings.TrimPrefix(strings.TrimSpace(bullet[i+1:i+1+j]), "./")
+		}
+	}
+	if f := strings.Fields(bullet); len(f) > 0 {
+		return strings.TrimPrefix(strings.Trim(f[0], "`,;:"), "./")
+	}
+	return ""
+}

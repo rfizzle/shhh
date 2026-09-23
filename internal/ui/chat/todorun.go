@@ -510,6 +510,15 @@ func todoRunKeptNote(it todo.Item, st *run.State, why string) string {
 // open, and whatever was changed stays in the tree.
 func (m Model) stopTodoRun() (tea.Model, tea.Cmd) {
 	st := m.todoRunner.state
+	// A sprint working several items at once is another process's, and it
+	// is asked to stop rather than ended here: its lanes are interrupted at
+	// the step they are on and it writes its own ending.
+	if sp, live := run.Live(m.todos.Root); live && sp.Laned() && (st == nil || st.Over()) {
+		if err := run.RequestStop(m.todos.Root); err != nil {
+			return m.systemNotice("The sprint could not be asked to stop — " + err.Error())
+		}
+		return m.systemNotice("Asked the sprint to stop: each lane is interrupted at the step it is on and its item goes back to open, with its work kept in its copy of the checkout.")
+	}
 	// A sprint ends at its checkpoint rather than by abandoning the item in
 	// flight: the stages already done are in the tree, and the sprint is the
 	// one caller that started the item without being asked about it, so
@@ -634,6 +643,10 @@ type todoRunState struct {
 	// the rail draws it, without the rail reading a file every frame.
 	sprintCost float64
 	sprintCap  int64
+	// lanes are a parallel sprint's items in flight as its checkpoint last
+	// said, read where the backlog is read (reloadTodos). The sprint is
+	// another process's, so this is the only way the rail hears of it.
+	lanes []run.SprintLane
 	// overSpend is the session's cost cap refusing the stage's request, with
 	// the ledger's figures, kept until the turn it broke is read.
 	overSpend *meter.CapError

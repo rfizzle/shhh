@@ -1169,6 +1169,9 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 			PublishReport: sprintReportPublisher(ts.reports),
 			Wordings:      env.prompts.todo,
 			Pipeline:      todoPipeline(),
+			// A sprint working several items at once is this binary's own
+			// unattended runner, started in a process of its own.
+			Parallel: todoParallelStarter(root),
 		})
 	}
 	if session.ask {

@@ -18,6 +18,8 @@ package chat
 
 import (
 	"fmt"
+	"strconv"
+	"time"
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/agent"
@@ -48,6 +50,13 @@ func (m Model) startTodoSprint(opt todoRunArgs) (tea.Model, tea.Cmd) {
 	if ref, refused := steps.Refuse(m.todoRunCan(project.InRepo(m.todos.Root))); refused {
 		return m.systemNotice(m.todoRunRefusal(ref, ""))
 	}
+	if sp, live := run.Live(m.todos.Root); live && sp.Laned() {
+		return m.systemNotice("A sprint working several items at once is going — " + sp.Summary() +
+			". /todo stop ends it; if the process working it has gone, `shhh todo run --all` picks it up.")
+	}
+	if opt.parallel > 1 {
+		return m.startParallelSprint(opt, noCommit)
+	}
 	if sp, live := run.Live(m.todos.Root); live {
 		// The invocation's answers stand over the checkpoint's, the same way
 		// a continued run's do: asking for the sprint again is asking for it
@@ -73,6 +82,60 @@ func (m Model) startTodoSprint(opt todoRunArgs) (tea.Model, tea.Cmd) {
 	m.signal(observe.SignalRun, "sprint")
 	model, _ := m.systemNotice(todoSprintStartNote(sp, len(m.todoStore.Ready())))
 	return model.(Model).sprintNext(sp)
+}
+
+// startParallelSprint is `/todo run --all --parallel N`: the sprint handed to
+// the unattended runner, which works up to N items at once in copies of the
+// checkout and lands each on the branch as it finishes. The session is free
+// while it runs; the board and the rail follow it off its checkpoint.
+// See docs/capabilities/todo.md#a-sprint-can-work-several-items-at-once.
+func (m Model) startParallelSprint(opt todoRunArgs, noCommit bool) (tea.Model, tea.Cmd) {
+	if m.todos.Parallel == nil {
+		return m.systemNotice("This session cannot start a sprint that works several items at once; `shhh todo run --all --parallel N` does.")
+	}
+	args := []string{"--all", "--parallel", strconv.Itoa(opt.parallel)}
+	if opt.max > 0 {
+		args = append(args, "--max", strconv.Itoa(opt.max))
+	}
+	if opt.costCap > 0 {
+		args = append(args, "--cost-cap", strconv.FormatInt(opt.costCap, 10))
+	}
+	if noCommit {
+		args = append(args, "--no-commit")
+	}
+	log, err := m.todos.Parallel(args)
+	if err != nil {
+		return m.systemNotice("The sprint could not be started — " + err.Error())
+	}
+	m.signal(observe.SignalRun, "sprint")
+	note := fmt.Sprintf("Sprint started — up to %d items at once, each in its own copy of the checkout, landing on the branch as each finishes. "+
+		"It is the unattended runner, so nobody approves its steps; its lines go to %s, and the sprint tab and the rail follow it. /todo stop ends it.",
+		opt.parallel, log)
+	model, _ := m.systemNotice(note)
+	return model, todoLanesTick()
+}
+
+// todoLanesEvery is how often a session re-reads a parallel sprint's
+// checkpoint while one is going.
+const todoLanesEvery = 2 * time.Second
+
+// todoLanesMsg is the tick a session re-reads a parallel sprint's checkpoint
+// on. Nothing else would: the sprint is another process, and a session that
+// is idle has no event of its own to read the backlog again on.
+type todoLanesMsg struct{}
+
+func todoLanesTick() tea.Cmd {
+	return tea.Tick(todoLanesEvery, func(time.Time) tea.Msg { return todoLanesMsg{} })
+}
+
+// followLanes re-reads the backlog and the sprint's lanes, and ticks again
+// for as long as the sprint is going.
+func (m Model) followLanes() (tea.Model, tea.Cmd) {
+	m.reloadTodos()
+	if sp, live := run.Live(m.todos.Root); live && sp.Laned() {
+		return m, todoLanesTick()
+	}
+	return m, nil
 }
 
 // todoSprintStartNote says what the sprint is about to work and how it ends,

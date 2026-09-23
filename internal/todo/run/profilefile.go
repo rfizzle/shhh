@@ -58,6 +58,7 @@ type profileFile struct {
 	Noun       string        `toml:"noun"`
 	Grade      string        `toml:"grade"`
 	SlugRefuse string        `toml:"slug_refuse"`
+	Touches    string        `toml:"touches"`
 	Stale      staleFile     `toml:"stale"`
 	Field      []fieldFile   `toml:"field"`
 	Release    []releaseFile `toml:"release"`
@@ -236,7 +237,7 @@ func lineOf(text, needle string) int {
 
 // profile is the vocabulary half of the table.
 func (f profileFile) profile(src source) (todo.Profile, error) {
-	p := todo.Profile{Name: f.Name, Noun: f.Noun, Grade: f.Grade, SlugRefuse: f.SlugRefuse}
+	p := todo.Profile{Name: f.Name, Noun: f.Noun, Grade: f.Grade, SlugRefuse: f.SlugRefuse, Touches: f.Touches}
 	if p.Name == "" {
 		return p, src.at("", "a profile has no name")
 	}

@@ -67,6 +67,10 @@ type todoRunFlags struct {
 	// costCap is the most the sprint may spend, in cents; 0 leaves the
 	// project's todo.sprint_cost_cap_cents in force.
 	costCap int64
+	// parallel is how many items the sprint works at once. One is the loop
+	// as it always was; 0 is unset, which is one for a new sprint and the
+	// checkpoint's own number for a sprint being continued.
+	parallel int
 }
 
 func newTodoRunCmd() *cobra.Command {
@@ -93,6 +97,7 @@ func newTodoRunCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&flags.noCommit, "no-commit", false, "end each run after the review, leaving the change in the working tree")
 	cmd.Flags().IntVar(&flags.max, "max", 0, "with --all, how many items the sprint may start (0 for as many as are ready)")
 	cmd.Flags().Int64Var(&flags.costCap, "cost-cap", 0, "with --all, the most the sprint may spend in cents before it starts no further item (0 keeps todo.sprint_cost_cap_cents)")
+	cmd.Flags().IntVar(&flags.parallel, "parallel", 0, "with --all, how many items to work at once, each in its own copy of the checkout (default 1)")
 	return cmd
 }
 
@@ -114,6 +119,10 @@ func todoRunHeadless(cmd *cobra.Command, slug string, flags todoRunFlags) error 
 		return fmt.Errorf("--cost-cap bounds what a sprint spends across its items, so it needs --all")
 	case flags.costCap < 0:
 		return fmt.Errorf("--cost-cap %d: a ceiling is an amount in cents, or 0 for the setting's", flags.costCap)
+	case flags.parallel > 1 && !flags.all:
+		return fmt.Errorf("--parallel works several items of a sprint at once, so it needs --all")
+	case flags.parallel < 0:
+		return fmt.Errorf("--parallel %d: a sprint works at least one item at a time", flags.parallel)
 	}
 	cfg := ConfigFrom(cmd.Context())
 	d, err := newTodoDriver(cmd.OutOrStdout(), todo.Root(todoCwd()), cfg, flags.noCommit)
@@ -136,6 +145,15 @@ func todoRunHeadless(cmd *cobra.Command, slug string, flags todoRunFlags) error 
 		return todoRunRefusal(d.root, ref)
 	}
 	if flags.all {
+		if n := todoParallelism(d.root, flags.parallel); n > 1 {
+			// An item a serial sprint was working when it stopped is in the
+			// checkout itself, not in a copy of it, and a lane beside it would
+			// be seeded with its half-done work.
+			if sp, live := run.Live(d.root); live && sp.Current != "" {
+				return fmt.Errorf("the sprint on disk is working %s one item at a time; `shhh todo run --all` finishes that one, and --parallel applies to the sprint after it", sp.Current)
+			}
+			return exitOf(d.sprintParallel(cmd.Context(), flags.max, n))
+		}
 		return exitOf(d.sprint(cmd.Context(), flags.max))
 	}
 	store := todo.Load(todoProfile(), d.root)
@@ -186,7 +204,17 @@ func todoRunTarget(s *todo.Store, slug string) (todo.Item, error) {
 
 // todoDriver carries out the steps the machine hands back.
 type todoDriver struct {
+	// root is the checkout the backlog, its checkpoints and its record
+	// belong to, and tree is where the item's work is done: the same
+	// directory for a run in the checkout, and a lane's own copy of it for
+	// an item a parallel sprint is working beside others. Everything that
+	// reads or changes the work goes to tree; everything that reads or
+	// changes the backlog goes to root.
 	root string
+	tree string
+	// lane is the parallel sprint's hold on this driver where it is working
+	// one of its lanes, and nil otherwise.
+	lane *todoLane
 	// bin is this executable, which every stage's turn is one process of.
 	bin     string
 	out     io.Writer
@@ -284,7 +312,20 @@ type todoDriver struct {
 	// The directory is a parameter and not the driver's root because a lane
 	// is spent in a copy of the checkout rather than in it: same process,
 	// same reading of the answer, somewhere else (fanOut).
+	//
+	// Nil is the real one (ask), reached through spendTurn so that a lane's
+	// copy of the driver asks as itself rather than as the driver it was
+	// copied from.
 	turn func(ctx context.Context, deadline time.Time, dir string, step run.Step) (todoTurn, error)
+}
+
+// spendTurn spends one stage through the turn seam, or as a process where
+// nothing replaced it.
+func (d *todoDriver) spendTurn(ctx context.Context, deadline time.Time, dir string, step run.Step) (todoTurn, error) {
+	if d.turn != nil {
+		return d.turn(ctx, deadline, dir, step)
+	}
+	return d.ask(ctx, deadline, dir, step)
 }
 
 // todoTurn is what one stage's process produced: the answer it wrote, the
@@ -333,7 +374,7 @@ func newTodoDriver(out io.Writer, root string, cfg config.Config, noCommit bool)
 		return nil, err
 	}
 	d := &todoDriver{
-		root: root, bin: bin, out: out,
+		root: root, tree: root, bin: bin, out: out,
 		session:     "todo-run-" + time.Now().UTC().Format("20060102-150405"),
 		itemTimeout: cfg.TodoItemTimeout(),
 		costCap:     cfg.TodoSprintCostCap(),
@@ -363,7 +404,6 @@ func newTodoDriver(out io.Writer, root string, cfg config.Config, noCommit bool)
 		d.rec = startObserveRecorder(db, "todo", cfg.Provider.Default, cfg.Provider.Model, nil)
 	}
 	d.ledger = d.session + "#" + strconv.Itoa(os.Getpid())
-	d.turn = d.ask
 	return d, nil
 }
 
@@ -491,7 +531,9 @@ func (d *todoDriver) sprintItem(sp *run.Sprint) (todo.Item, bool) {
 // block leave the same quiet terminal, and only one of them is finished.
 func todoSprintEnding(sp *run.Sprint) string {
 	line := fmt.Sprintf("sprint over — %s · %s: %s", sp.Count(), sp.Ended, sp.Reason)
-	if sp.Ended == run.SprintBlocked {
+	// A sprint working several items at once went on past each block with
+	// the items that did not rest on it, so the sentence is the serial one's.
+	if sp.Ended == run.SprintBlocked && !sp.Laned() {
 		line += "\nnothing further was attempted: a sprint stops on the first block, because what comes next may rest on the work that did not land"
 	}
 	return line
@@ -531,6 +573,7 @@ func (d *todoDriver) work(ctx context.Context, it todo.Item, sp *run.Sprint) *ru
 				fmt.Fprintln(d.out, "the sprint's checkpoint could not be written — "+err.Error())
 			}
 		}
+		d.lane.boundary(d, st)
 		d.say(st, step)
 		if st.Over() {
 			break
@@ -539,7 +582,16 @@ func (d *todoDriver) work(ctx context.Context, it todo.Item, sp *run.Sprint) *ru
 			step = st.Block(run.TimedOut(d.itemTimeout))
 			continue
 		}
+		// A lane told the branch moved under it catches up before its next
+		// step, so the step reads the tree the lane will land into.
+		if why := d.lane.catchUp(); why != "" {
+			step = st.Block(why)
+			continue
+		}
 		step = d.carry(ctx, deadline, st, it, step)
+	}
+	if d.lane.end(ctx, d, st, it) {
+		return st
 	}
 	d.finish(st, it, sp)
 	d.settleChats(st)
@@ -592,7 +644,7 @@ func (d *todoDriver) keep(tool string, content string) string {
 func (d *todoDriver) begin(it todo.Item, inSprint bool) (*run.State, run.Step) {
 	opt := run.Options{
 		NoCommit: d.noCommit, Repo: d.repo, Sprint: d.sprintGoal(),
-		CloseGate: d.closeGate, InSprint: inSprint,
+		CloseGate: d.closeGate, InSprint: inSprint || d.lane != nil,
 		Groomed:  todo.GroomingBlock(d.root, it),
 		Wordings: d.wordings,
 		Pipeline: d.pipeline,
@@ -631,7 +683,7 @@ func (d *todoDriver) begin(it todo.Item, inSprint bool) (*run.State, run.Step) {
 	// a process died must subtract the baseline it began with, not the one
 	// its second process finds, which by then holds the first one's work.
 	// An empty baseline is a clean tree and is meant to stay empty.
-	st.Prestart = run.DirtyPaths(d.root)
+	st.Prestart = run.DirtyPaths(d.tree)
 	return st, st.First(it, "")
 }
 
@@ -639,7 +691,7 @@ func (d *todoDriver) begin(it todo.Item, inSprint bool) (*run.State, run.Step) {
 func (d *todoDriver) carry(ctx context.Context, deadline time.Time, st *run.State, it todo.Item, step run.Step) run.Step {
 	switch step.Action {
 	case run.ActionPrompt:
-		t, err := d.turn(ctx, deadline, d.root, step)
+		t, err := d.spendTurn(ctx, deadline, d.tree, step)
 		// What the stage wrote is the run's however the stage ended: a turn
 		// that was cut off still edited the files it edited, and they are
 		// what stays in the tree for the next process or for the person
@@ -700,7 +752,13 @@ func (d *todoDriver) carry(ctx context.Context, deadline time.Time, st *run.Stat
 	case run.ActionFanOut:
 		return d.fanOut(ctx, deadline, st, it, step)
 	case run.ActionCommit:
-		files, err := d.commit(st)
+		// A lane's commit is its landing: the patch goes onto the checkout
+		// and the commit is made there, one lane at a time.
+		commit := d.commit
+		if d.lane != nil {
+			commit = func(st *run.State) ([]string, error) { return d.lane.landCommit(d, st) }
+		}
+		files, err := commit(st)
 		if err != nil {
 			return st.Block("the commit could not be made: " + err.Error())
 		}
@@ -781,11 +839,11 @@ func (d *todoDriver) ask(ctx context.Context, deadline time.Time, dir string, st
 	// the run's root for every stage but a lane — and a lane's patch is
 	// recorded where it lands, not here.
 	written := t.Written
-	if dir != d.root {
+	if dir != d.tree {
 		written = nil
 	}
 	turn := todoTurn{code: code, truncated: t.Truncated, chat: t.Chat, resume: t.Resume,
-		gate: quality.Closing(t.Gate), written: todoWritten(d.root, written),
+		gate: quality.Closing(t.Gate), written: todoWritten(d.tree, written),
 		cost: d.stageCost(t.Session)}
 	// A refusal at the cap is read before the answer is, because the turn it
 	// ended is not one the machine may judge: whatever the stage wrote
@@ -840,6 +898,9 @@ func (d *todoDriver) spent(t todoTurn) {
 // one. A single item run with no loop around it has no ceiling and no
 // earlier items, so its figure is its own.
 func (d *todoDriver) spendFigure(sp *run.Sprint) string {
+	if d.lane != nil {
+		return d.lane.spendFigure(d.itemCost)
+	}
 	if sp == nil {
 		return run.SpendFigure(d.itemCost, 0)
 	}
@@ -880,7 +941,7 @@ func (d *todoDriver) stageEnv(dir string, step run.Step) []string {
 	if step.Stage != "" {
 		env = append(env, todoStageEnv+"="+string(step.Stage))
 	}
-	if d.spoolDir == "" || dir != d.root {
+	if d.spoolDir == "" || dir != d.tree {
 		return env
 	}
 	return append(env, evidenceStoreEnv+"="+d.spoolDir)
@@ -1027,12 +1088,12 @@ func (d *todoDriver) verify(ctx context.Context, st *run.State, named string) to
 	// project said what checking this work means, and the item's own tests
 	// and the workspace's suite are the answer for the step that did not.
 	if named != "" {
-		out, code := runner.RunCaptureIn(ctx, d.root, named)
+		out, code := runner.RunCaptureIn(ctx, d.tree, named)
 		passed := d.ran(&b, named, out, code)
 		return todoVerdict{ok: passed, output: strings.TrimRight(b.String(), "\n")}
 	}
 	for _, cmd := range st.Tests {
-		if out, code := runner.RunCaptureIn(ctx, d.root, cmd); !d.ran(&b, cmd, out, code) {
+		if out, code := runner.RunCaptureIn(ctx, d.tree, cmd); !d.ran(&b, cmd, out, code) {
 			ok = false
 		}
 	}
@@ -1060,7 +1121,7 @@ func (d *todoDriver) verify(ctx context.Context, st *run.State, named string) to
 			fmt.Fprintf(&b, "quality gate: %s\n", res.Reason)
 			silent = "the project has no " + quality.ConfigRelPath
 		case res.Verdict != quality.VerdictPass:
-			b.WriteString(res.Format(quality.TakeFingerprint(d.root)) + "\n")
+			b.WriteString(res.Format(quality.TakeFingerprint(d.tree)) + "\n")
 			ok, silent = false, ""
 		default:
 			fmt.Fprintf(&b, "quality gate %q: pass\n", res.Suite)
@@ -1109,7 +1170,7 @@ func (d *todoDriver) commit(st *run.State) ([]string, error) {
 // backlog is never committed on the project's behalf.
 // See docs/capabilities/todo.md#where-the-backlog-lives.
 func (d *todoDriver) paths(st *run.State) []string {
-	return run.Contents(st.Paths, d.wrote, run.DirtyPaths(d.root), st.Prestart)
+	return run.Contents(st.Paths, d.wrote, run.DirtyPaths(d.tree), st.Prestart)
 }
 
 // todoGitNotInstalled is the shell's own code for a command that never
@@ -1162,7 +1223,9 @@ func (d *todoDriver) finish(st *run.State, it todo.Item, sp *run.Sprint) {
 	_ = todo.Append(it.Path, fmt.Sprintf("## Blocked\n%s\n\n_run in session %s, stage %s, %s_",
 		st.Blocked, st.Session, st.Stage, time.Now().Format("2006-01-02 15:04")))
 	fmt.Fprintf(d.out, "✗ todo run %s blocked — %s\n", st.Slug, st.Blocked)
-	if paths := st.Paths; len(paths) > 0 {
+	// A lane's work is in its own copy of the checkout, and the lane says
+	// where that is itself (todoLane.end).
+	if paths := st.Paths; len(paths) > 0 && d.lane == nil {
 		fmt.Fprintln(d.out, "work so far stays in the tree, uncommitted: "+strings.Join(paths, ", "))
 	}
 	run.Discard(d.root, st.Slug)
@@ -1206,7 +1269,7 @@ func (d *todoDriver) review(ctx context.Context, deadline time.Time, st *run.Sta
 	if strings.TrimSpace(task) == "" {
 		return st.SelfReview(it)
 	}
-	t, err := d.turn(ctx, deadline, d.root,
+	t, err := d.spendTurn(ctx, deadline, d.tree,
 		run.Step{Action: run.ActionPrompt, Stage: step.Stage, Mode: step.Mode, Prompt: task})
 	d.keepChat(t)
 	d.spent(t)
@@ -1246,11 +1309,11 @@ func (d *todoDriver) review(ctx context.Context, deadline time.Time, st *run.Sta
 func (d *todoDriver) reviewDiff(st *run.State) []string {
 	var out []string
 	for _, rel := range st.Paths {
-		if d, code := todoGit(d.root, "diff", "--", rel); code == 0 && strings.HasPrefix(d, "diff --git") {
+		if d, code := todoGit(d.tree, "diff", "--", rel); code == 0 && strings.HasPrefix(d, "diff --git") {
 			out = append(out, d)
 			continue
 		}
-		if d, _ := todoGit(d.root, "diff", "--no-index", os.DevNull, rel); strings.HasPrefix(d, "diff --git") {
+		if d, _ := todoGit(d.tree, "diff", "--no-index", os.DevNull, rel); strings.HasPrefix(d, "diff --git") {
 			out = append(out, d)
 		}
 	}
@@ -1286,22 +1349,31 @@ func (d *todoDriver) fanOut(ctx context.Context, deadline time.Time, st *run.Sta
 	}
 
 	trees := make([]*subagent.Worktree, 0, len(lanes))
+	// Inside a sprint's lane the copies are made, landed and removed under
+	// the sprint's own worktree lock: several lanes can divide at once, and
+	// git's worktree administration is not safe run concurrently in one
+	// repository.
 	defer func() {
+		release := d.lane.admin()
+		defer release()
 		for _, t := range trees {
 			t.Remove()
 		}
 	}()
+	release := d.lane.admin()
 	for range lanes {
 		// Seeded with what the run has changed so far, the way a session
 		// seeds a writer from its changeset: the earlier stages' work is in
 		// this tree uncommitted, and a lane started without it writes its
 		// patch against text the checkout no longer has.
-		wt, err := subagent.NewWorktree(d.root, st.Paths)
+		wt, err := subagent.NewWorktree(d.tree, st.Paths)
 		if err != nil {
+			release()
 			return st.NoLanes(it, "no isolated copy of the checkout could be made: "+todoFirstProblem(err.Error()))
 		}
 		trees = append(trees, wt)
 	}
+	release()
 
 	// Every lane's step is built before any lane starts. The run's state is
 	// one value and the lanes run at once, so a task read inside a goroutine
@@ -1326,7 +1398,7 @@ func (d *todoDriver) fanOut(ctx context.Context, deadline time.Time, st *run.Sta
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
-			turns[i], errs[i] = d.turn(ctx, deadline, trees[i].Root(), steps[i])
+			turns[i], errs[i] = d.spendTurn(ctx, deadline, trees[i].Root(), steps[i])
 		}(i)
 	}
 	wg.Wait()
@@ -1344,7 +1416,9 @@ func (d *todoDriver) fanOut(ctx context.Context, deadline time.Time, st *run.Sta
 		case turns[i].truncated:
 			return st.LaneFailed(lane.Agent, run.CutAtCeiling(st.Stage))
 		}
+		release := d.lane.admin()
 		files, err := trees[i].Land()
+		release()
 		if err != nil {
 			return st.LaneFailed(lane.Agent, "its patch would not apply: "+todoFirstProblem(err.Error()))
 		}
