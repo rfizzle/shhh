@@ -88,6 +88,34 @@
 │ [tab] note/options · [enter] confirm · [esc] take none                                                                         │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
+· a save the loader refused · the draft stays, the refusal under it
+/agents new · a coding agent · researcher                                                                  [esc] discard the draft
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  ✓ brief   ✓ questions   ● draft
+
+  test-writer — adds table-driven tests for a package and runs them
+
+  permissions read + write + execute  it can change things
+  model       inherited from this session
+
+  ⚠ Could not save the profile — agent profile /repo/.shhh/agents/test-writer.toml: max_tokens: must be at least 300000. Refine
+    it, or Discard it.
+
+  ┄ the profile
+    You add table-driven tests for one package at a time. Read the package first, then the tests it already has, then write the
+    ⋮ 2 more lines · [shift+↓] read on
+
+╭─ Keep test-writer? ────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ ❯ 1. Save to this project  /repo/.shhh/agents                                                                                  │
+│   2. Save globally         /home/x/.config/shhh/agents                                                                         │
+│   3. Refine                say what to change in the note                                                                      │
+│   4. Discard                                                                                                                   │
+│ ┄ note (optional)                                                                                                              │
+│   (none)                                                                                                                       │
+│ [tab] note/options · [enter] confirm · [esc] take none                                                                         │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
 ── ansi ────────────────────────────────────────────────────
 · the brief · the roles this session already has are on the header
 ␛[1;38;5;254m/agents new␛[m␛[38;5;244m · a coding agent · researcher␛[m                                                                              ␛[38;5;244m[esc] leave␛[m
@@ -152,6 +180,34 @@
   ␛[38;5;244mbudget      ␛[m␛[38;5;254m8.0k tokens␛[m
 
   ␛[38;5;244mwhy  ␛[m␛[38;5;244ma writer that could not run the tests would be proposing them, not adding them␛[m
+
+  ␛[38;5;244m┄ the profile␛[m
+    ␛[38;5;244mYou add table-driven tests for one package at a time. Read the package first, then the tests it already has, then write the␛[m
+    ␛[38;5;244m⋮ 2 more lines · [shift+↓] read on␛[m
+
+␛[38;5;244m╭─ ␛[m␛[1;38;5;254mKeep test-writer? ␛[m␛[38;5;244m────────────────────────────────────────────────────────────────────────────────────────────────────────────╮␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m1. Save to this project  /repo/.shhh/agents                                                                                 ␛[m ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m   ␛[38;5;244m2. ␛[m␛[38;5;254mSave globally␛[m         ␛[38;5;244m/home/x/.config/shhh/agents␛[m                                                                         ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m   ␛[38;5;244m3. ␛[m␛[38;5;254mRefine␛[m                ␛[38;5;244msay what to change in the note␛[m                                                                      ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m   ␛[38;5;244m4. ␛[m␛[38;5;254mDiscard␛[m                                                                                                                   ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;244m┄ note (optional)␛[m                                                                                                              ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m   ␛[38;5;244m(none)␛[m                                                                                                                       ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m[tab]␛[m␛[38;5;244m note/options␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m confirm␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m take none␛[m                                                                         ␛[38;5;244m│␛[m
+␛[38;5;244m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
+
+· a save the loader refused · the draft stays, the refusal under it
+␛[1;38;5;254m/agents new␛[m␛[38;5;244m · a coding agent · researcher␛[m                                                                  ␛[38;5;244m[esc] discard the draft␛[m
+␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+
+  ␛[38;5;244m✓ brief␛[m␛[38;5;244m   ␛[m␛[38;5;244m✓ questions␛[m␛[38;5;244m   ␛[m␛[38;5;254m● draft␛[m
+
+  ␛[38;5;254mtest-writer — adds table-driven tests for a package and runs them␛[m
+
+  ␛[38;5;244mpermissions ␛[m␛[38;5;254mread + write + execute␛[m␛[38;5;244m  it can change things␛[m
+  ␛[38;5;244mmodel       ␛[m␛[38;5;254minherited from this session␛[m
+
+  ␛[38;5;254m⚠ Could not save the profile — agent profile /repo/.shhh/agents/test-writer.toml: max_tokens: must be at least 300000. Refine␛[m
+  ␛[38;5;254m  it, or Discard it.␛[m
 
   ␛[38;5;244m┄ the profile␛[m
     ␛[38;5;244mYou add table-driven tests for one package at a time. Read the package first, then the tests it already has, then write the␛[m

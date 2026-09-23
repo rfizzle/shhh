@@ -679,7 +679,17 @@ func (p *ProfileScreen) draftRows(width, budget int) []string {
 			rows = append(rows, "", Clip(indent(sty.Dim.Render("why  ")+sty.Status.Render(p.Draft.Why)), width))
 		}
 		if p.Warning != "" {
-			rows = append(rows, "", Clip(indent(sty.Warn.Render("⚠ "+p.Warning)), width))
+			// Wrapped rather than clipped: the warning is the loader's
+			// sentence about why the save was refused, and the part a clip
+			// would cut is the part that says what to change.
+			rows = append(rows, "")
+			for i, line := range wrapPlain(p.Warning, width-profileIndent-2) {
+				mark := "  "
+				if i == 0 {
+					mark = "⚠ "
+				}
+				rows = append(rows, Clip(indent(sty.Warn.Render(mark+line)), width))
+			}
 		}
 		if pane >= 0 {
 			rows = append(rows, "")

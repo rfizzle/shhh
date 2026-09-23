@@ -1310,11 +1310,20 @@ func TestGolden_ProfileDrafter(t *testing.T) {
 		m = pressOn(t, typeInto(t, m, "internal/agent"), tea.KeyPressMsg{Code: tea.KeyEnter})
 		second := pane(m)
 		m = pressOn(t, typeInto(t, m, "yes"), tea.KeyPressMsg{Code: tea.KeyEnter})
+		drafted := pane(m)
+		// The loader's own sentence for this draft's budget, with the path
+		// the project row names, so the fixture does not carry a scratch
+		// directory.
+		m.personas.Save = func(persona.Scope, persona.Draft, bool) (string, error) {
+			return "", errors.New("agent profile /repo/.shhh/agents/test-writer.toml: max_tokens: must be at least 300000")
+		}
+		m = pressOn(t, m, tea.KeyPressMsg{Code: tea.KeyEnter})
 		return []golden.Panel{
 			{Label: "the brief · the roles this session already has are on the header", View: brief},
 			{Label: "the drafter's first question, asked on its own", View: first},
 			{Label: "the second, with the first answer still above it", View: second},
-			{Label: "the draft · both places a coding agent's profile can live", View: pane(m)},
+			{Label: "the draft · both places a coding agent's profile can live", View: drafted},
+			{Label: "a save the loader refused · the draft stays, the refusal under it", View: pane(m)},
 		}
 	})
 }

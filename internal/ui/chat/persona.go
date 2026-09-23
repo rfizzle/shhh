@@ -493,7 +493,14 @@ func (m Model) savePersona(index int) (tea.Model, tea.Cmd) {
 			m.syncViewport()
 			return m, nil
 		}
-		return m.closePersona("Could not save the profile: " + err.Error())
+		// The loader refused the profile. The draft stays on the card with
+		// the refusal under it, because a refusal is usually something a
+		// Refine can fix, and closing the card would cost the person the
+		// draft they came to keep.
+		m.openPersonaCard()
+		m.personaScreen.Warn("Could not save the profile — " + err.Error() + ". Refine it, or Discard it.")
+		m.syncViewport()
+		return m, nil
 	}
 	name := f.draft.Name
 	return m.closePersona(fmt.Sprintf(

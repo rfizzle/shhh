@@ -457,3 +457,38 @@ func TestPersona_AgentManagerOffersTheDrafter(t *testing.T) {
 		t.Fatalf("request = %+v", *reqs)
 	}
 }
+
+// A profile the loader refuses at save keeps the card: the draft stays on it
+// with the loader's own sentence underneath, and Refine is still there to
+// fix it with, because a refusal a note could answer should not cost the
+// draft (docs/capabilities/subagents.md#a-profile-is-drafted-in-conversation).
+func TestPersona_ARefusedSaveKeepsTheDraftOnTheCard(t *testing.T) {
+	// Below the floor a child is admitted at, which only the loader knows.
+	draft := &persona.Draft{Name: "tiny", Description: "reads one file", MaxTokens: 8000, Prompt: "Read."}
+	m, reqs, _ := personaModel(t, persona.KindChat, persona.Outcome{Draft: draft})
+	dir := t.TempDir()
+	m.personas.Save = func(_ persona.Scope, d persona.Draft, overwrite bool) (string, error) {
+		return persona.Write(dir, d, persona.KindChat, overwrite)
+	}
+	m = submitLine(t, m, "/agents new something small")
+	m = pressOn(t, m, tea.KeyPressMsg{Code: tea.KeyEnter})
+	if m.persona == nil || m.personaScreen.Step != components.ProfileDraft {
+		t.Fatalf("a refused save closed the card: note=%q", lastNote(m))
+	}
+	card := personaView(m)
+	for _, want := range []string{"tiny", "Could not save the profile", "max_tokens: must be at least 300000", "Refine", "Discard"} {
+		if !strings.Contains(card, want) {
+			t.Fatalf("the card should hold %q:\n%s", want, card)
+		}
+	}
+	// Refine is live: a note sends the draft back to the drafter.
+	for _, k := range []tea.KeyPressMsg{{Code: tea.KeyDown}, {Code: tea.KeyTab}} {
+		updated, _ := m.Update(k)
+		m = updated.(Model)
+	}
+	m = typeInto(t, m, "leave the budget to the session")
+	m = pressOn(t, m, tea.KeyPressMsg{Code: tea.KeyEnter})
+	if len(*reqs) != 2 || (*reqs)[1].Feedback != "leave the budget to the session" || (*reqs)[1].Current == nil {
+		t.Fatalf("refine after a refusal: %+v", *reqs)
+	}
+}
