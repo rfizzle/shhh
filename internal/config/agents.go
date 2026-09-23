@@ -160,6 +160,13 @@ func KnownAgentTools() []string {
 	return out
 }
 
+// ToolTier is the permission tier a listed tool needs, and whether the
+// name is one a profile may list at all.
+func ToolTier(name string) (string, bool) {
+	tier, ok := knownAgentTools[strings.TrimSpace(name)]
+	return tier, ok
+}
+
 var validAgentName = regexp.MustCompile(`^[a-z0-9][a-z0-9-]{0,23}$`)
 
 // Has reports whether the profile grants a permission tier. Read is always

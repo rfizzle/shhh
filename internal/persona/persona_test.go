@@ -25,6 +25,29 @@ func TestNormaliseChatDropsWriting(t *testing.T) {
 	}
 }
 
+// A chat draft that names a writing tool is tidied the way its writing
+// tiers are: the tool comes off and the draft is still a card, with what
+// was dropped named for it, rather than a refusal the person cannot fix.
+func TestNormaliseChatDropsWritingTools(t *testing.T) {
+	o, ok := parse(`{"profile":{"name":"skeptic","description":"checks claims","permissions":["web","write"],
+		"tools":["read_file","write_file","web_fetch","execute_command"],"prompt":"Doubt."}}`, KindChat)
+	if !ok || o.Failed || o.Draft == nil {
+		t.Fatalf("chat draft with a writing tool = %+v ok=%v", o, ok)
+	}
+	d := *o.Draft
+	if strings.Join(d.Tools, ",") != "read_file,web_fetch" || d.Writes() {
+		t.Fatalf("tools = %v permissions = %v", d.Tools, d.Permissions)
+	}
+	if strings.Join(d.Dropped, ",") != "write_file,execute_command" {
+		t.Fatalf("dropped = %v", d.Dropped)
+	}
+	// The same list in a coding session is the author's to keep.
+	code := Draft{Name: "fixer", Description: "fixes", Permissions: []string{"write"}, Tools: []string{"write_file"}, Prompt: "Fix."}
+	if err := code.Normalise(KindCode); err != nil || len(code.Dropped) != 0 || strings.Join(code.Tools, ",") != "write_file" {
+		t.Fatalf("code draft tools = %v dropped = %v err = %v", code.Tools, code.Dropped, err)
+	}
+}
+
 func TestNormaliseCodeKeepsTiersInOrder(t *testing.T) {
 	d := Draft{Name: "test-writer", Description: "adds tests", Permissions: []string{"execute", "write"}, Prompt: "write tests"}
 	if err := d.Normalise(KindCode); err != nil {

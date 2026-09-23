@@ -168,6 +168,27 @@ func TestPersona_CardNamesANarrowedToolset(t *testing.T) {
 	}
 }
 
+// A chat draft whose tools the tidy cut is still a card, and the card says
+// which tools came off.
+func TestPersona_CardNamesDroppedTools(t *testing.T) {
+	draft := &persona.Draft{Name: "skeptic", Description: "checks claims",
+		Tools: []string{"read_file", "write_file"}, Prompt: "Doubt."}
+	if err := draft.Normalise(persona.KindChat); err != nil {
+		t.Fatal(err)
+	}
+	m, _, _ := personaModel(t, persona.KindChat, persona.Outcome{Draft: draft})
+	m = submitLine(t, m, "/agents new a skeptic")
+	card := personaView(m)
+	for _, want := range []string{"dropped", "write_file", "a chat persona only reads"} {
+		if !strings.Contains(card, want) {
+			t.Errorf("card lacks %q:\n%s", want, card)
+		}
+	}
+	if strings.Contains(card, "read_file write_file") {
+		t.Errorf("card still lists the dropped tool among the tools:\n%s", card)
+	}
+}
+
 func TestPersona_QuestionsAreAskedOneAtATime(t *testing.T) {
 	first := &persona.Draft{Name: "test-writer", Description: "adds tests", Permissions: []string{"write", "execute"}, Prompt: "Write tests."}
 	revised := &persona.Draft{Name: "test-writer", Description: "adds table tests", Permissions: []string{"write", "execute"}, Prompt: "Write table-driven tests."}

@@ -45,6 +45,10 @@ type Draft struct {
 	Prompt    string   `json:"prompt"`
 	MaxTokens int64    `json:"max_tokens,omitempty"`
 	Why       string   `json:"why,omitempty"`
+	// Dropped is the tools Normalise took off the list because the session
+	// cannot grant their tier, for the card to name. It is not part of the
+	// file, nor of the draft the drafter is shown again.
+	Dropped []string `json:"-"`
 }
 
 // Definition is the draft as the loader would read it.
@@ -82,9 +86,11 @@ var validName = regexp.MustCompile(`^[a-z0-9][a-z0-9-]{0,23}$`)
 // Normalise tidies a draft into what the loader accepts: a lowercase
 // dashed name, deduplicated permissions in tier order, the read tier
 // implied rather than listed, a deduplicated tool allowlist, and — for a
-// chat persona — nothing that writes, whatever the model proposed. It
-// returns an error only for what tidying cannot fix: a tool the tiers do
-// not grant, or the quality gate named beside write or execute, are
+// chat persona — nothing that writes, whatever the model proposed: the
+// write and execute tiers are taken away, and so are the tools that need
+// them, named in Dropped. It returns an error only for what tidying cannot
+// fix: a tool the tiers do not grant, or the quality gate named beside
+// write or execute, are
 // refusals of the loader's that a draft hears here instead — while it is
 // still a card the person can revise rather than a file that will not
 // load (docs/capabilities/subagents.md#a-profile-is-drafted-in-conversation).
@@ -124,7 +130,7 @@ func (d *Draft) Normalise(kind Kind) error {
 		perms = ro
 	}
 	d.Permissions = perms
-	var tools []string
+	var tools, dropped []string
 	listed := map[string]bool{}
 	for _, t := range d.Tools {
 		t = strings.ToLower(strings.TrimSpace(t))
@@ -132,9 +138,17 @@ func (d *Draft) Normalise(kind Kind) error {
 			continue
 		}
 		listed[t] = true
+		// A tool that needs a tier a chat persona cannot hold goes the way
+		// the tier did: the read-only guarantee is kept by taking it off,
+		// not by refusing a draft the person could not fix from the card.
+		if tier, _ := config.ToolTier(t); kind == KindChat &&
+			(tier == config.PermissionWrite || tier == config.PermissionExecute) {
+			dropped = append(dropped, t)
+			continue
+		}
 		tools = append(tools, t)
 	}
-	d.Tools = tools
+	d.Tools, d.Dropped = tools, dropped
 	d.Model = strings.TrimSpace(d.Model)
 	if strings.EqualFold(d.Model, "inherit") {
 		d.Model = ""

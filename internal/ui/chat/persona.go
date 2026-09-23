@@ -312,6 +312,13 @@ func (m *Model) openPersonaCard() {
 		// should see that it is three tools rather than all of them.
 		facts = append(facts, components.ProfileFact{Label: "tools", Value: strings.Join(d.Tools, " ")})
 	}
+	if len(d.Dropped) > 0 {
+		// The drafter named tools this session cannot grant and they were
+		// taken off; the person agreeing to the file should see that the
+		// file differs from what was proposed.
+		facts = append(facts, components.ProfileFact{
+			Label: "dropped", Value: strings.Join(d.Dropped, " "), Detail: "a chat persona only reads"})
+	}
 	model := d.Model
 	if model == "" {
 		model = "inherited from this session"

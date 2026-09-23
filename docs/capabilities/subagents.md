@@ -689,7 +689,9 @@ The same mechanism serves both sessions and drafts the same file, but what
 it is told to value is not the same. In a chat, a profile is a
 standpoint, a voice, a way of citing, and never a way of acting — the
 drafter is told so and the result is checked, so a chat profile cannot come
-out able to write. In a coding session, a profile is an engineer with one
+out able to write. A draft that grants a writing tier or names a tool that
+needs one is tidied rather than refused: the tier and the tool are taken
+off, and the card names the tools it dropped. In a coding session, a profile is an engineer with one
 job: what it changes, how it verifies, what its patch may contain. A single
 drafter hedging between the two would draft a profile that hedges too.
 
