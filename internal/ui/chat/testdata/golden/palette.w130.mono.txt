@@ -25,7 +25,7 @@
 │   internal/agent/loop.go  modified 4m ago                                                                                  │
 │   README.md               modified 2h ago                                                                                  │
 │ ↓ 17 more                                                                                                                  │
-│ [enter] run · [tab] complete · [↑↓] move · [esc] dismiss                                                                   │
+│ [enter] run · [tab] complete · [↑↓] move · [esc] close it                                                                  │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 · mid-turn, an idle-only command among the runnable ones
@@ -35,7 +35,7 @@
 │ ❯ /copy       Copy the last response (or just its code blocks)                                                             │
 │   /context    The window as a meter, itemised down to the tool                                                             │
 │   ⊘ /compact  Continue from a summary plus the most recent turns                                                 idle only │
-│ [enter] run · [tab] complete · [↑↓] move · [esc] dismiss                                                                   │
+│ [enter] run · [tab] complete · [↑↓] move · [esc] close it                                                                  │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 ── ansi ────────────────────────────────────────────────────
@@ -54,7 +54,7 @@
 ␛[38;5;244m│␛[m   ␛[38;5;254minternal/agent/loop.go␛[m  ␛[38;5;244mmodified 4m ago␛[m                                                                                  ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;254mREADME.md␛[m               ␛[38;5;244mmodified 2h ago␛[m                                                                                  ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;244m↓ 17 more␛[m                                                                                                                  ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m run␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m complete␛[m␛[38;5;244m · ␛[m␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m dismiss␛[m                                                                   ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m run␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m complete␛[m␛[38;5;244m · ␛[m␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m close it␛[m                                                                  ␛[38;5;244m│␛[m
 ␛[38;5;244m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · mid-turn, an idle-only command among the runnable ones
@@ -64,5 +64,5 @@
 ␛[38;5;244m│␛[m ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m/copy       Copy the last response (or just its code blocks)                                                            ␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;254m/␛[m␛[1;38;5;254mco␛[m␛[38;5;254mntext␛[m    ␛[38;5;244mThe window as a meter, itemised down to the tool␛[m                                                             ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m⊘ /compact␛[m  ␛[38;5;244mContinue from a summary plus the most recent turns␛[m                                                 ␛[38;5;244midle only␛[m ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m run␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m complete␛[m␛[38;5;244m · ␛[m␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m dismiss␛[m                                                                   ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m run␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m complete␛[m␛[38;5;244m · ␛[m␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m close it␛[m                                                                  ␛[38;5;244m│␛[m
 ␛[38;5;244m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m

@@ -199,6 +199,9 @@ type Select struct {
 	// for the joined run takes another row, and a row handed over pre-joined
 	// can only be cut in the middle of a clause — and because the key and
 	// the words beside it are painted apart, which a sentence cannot be.
+	// A host that also names CancelLabel leaves esc off its own offers: the
+	// card puts it last, in those words, so the way out is worded where every
+	// card in the family words it.
 	HintKeys []KeyOffer
 	// AltKey is a second way to take the focused option, and AltLabel is what
 	// it buys. They are for a card whose choice has two readings — /model's
@@ -604,6 +607,9 @@ func (s *Select) hasRowKeys() bool {
 
 func (s *Select) hintSegments(width int) []KeyOffer {
 	if len(s.HintKeys) > 0 {
+		if s.CancelLabel != "" {
+			return append(append([]KeyOffer(nil), s.HintKeys...), s.cancelOffer())
+		}
 		return s.HintKeys
 	}
 	if s.Filtering {

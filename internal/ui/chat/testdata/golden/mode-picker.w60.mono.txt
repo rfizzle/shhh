@@ -18,7 +18,7 @@
 │   4. read-only          nothing is written — edits … │
 │   5. plan               read-only, and the turn end… │
 │ [↑↓] move · [enter] select · [/] filter              │
-│ [esc] take none                                      │
+│ [esc] keep manual                                    │
 ╰──────────────────────────────────────────────────────╯
 
 · focused on read-only, the mode that is only a bound
@@ -29,7 +29,7 @@
 │ ❯ 4. read-only  (current)  nothing is written — edi… │
 │   5. plan                  read-only, and the turn … │
 │ [↑↓] move · [enter] select · [/] filter              │
-│ [esc] take none                                      │
+│ [esc] keep read-only                                 │
 ╰──────────────────────────────────────────────────────╯
 
 ── ansi ────────────────────────────────────────────────────
@@ -41,7 +41,7 @@
 ␛[38;5;244m│␛[m   ␛[38;5;244m4. ␛[m␛[38;5;254mread-only␛[m          ␛[38;5;244mnothing is written — edits …␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m5. ␛[m␛[38;5;254mplan␛[m               ␛[38;5;244mread-only, and the turn end…␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m select␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m              ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m take none␛[m                                      ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m keep manual␛[m                                    ␛[38;5;244m│␛[m
 ␛[38;5;244m╰──────────────────────────────────────────────────────╯␛[m
 
 · focused on read-only, the mode that is only a bound
@@ -52,5 +52,5 @@
 ␛[38;5;244m│␛[m ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m4. read-only  (current)  nothing is written — edi…␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m5. ␛[m␛[38;5;254mplan␛[m                  ␛[38;5;244mread-only, and the turn …␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m select␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m              ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m take none␛[m                                      ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m keep read-only␛[m                                 ␛[38;5;244m│␛[m
 ␛[38;5;244m╰──────────────────────────────────────────────────────╯␛[m

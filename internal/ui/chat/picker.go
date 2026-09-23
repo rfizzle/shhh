@@ -449,11 +449,16 @@ func (m Model) openModePick() (tea.Model, tea.Cmd) {
 		}
 		opts[i] = components.SelectOption{Label: label, Desc: mode.Describe()}
 	}
-	return m.openPicker("Permission mode", opts, focus, func(m *Model, idx int) string {
+	updated, cmd := m.openPicker("Permission mode", opts, focus, func(m *Model, idx int) string {
 		mode := cycle[idx]
 		m.applyMode(mode)
 		return fmt.Sprintf("Mode set to %s — %s.", mode, mode.Describe())
 	})
+	// Esc leaves the session on the mode it is in, and says which one
+	// (docs/interface/principles.md#esc-is-always-the-safe-answer).
+	next := updated.(Model)
+	next.picker.CancelLabel = "keep " + m.policy.mode.String()
+	return next, cmd
 }
 
 // --- session pickers ----------------------------------------------

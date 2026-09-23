@@ -77,6 +77,31 @@ func TestModelPick_EscSaysWhichModelItKeeps(t *testing.T) {
 	}
 }
 
+// The mode picker and the provider picker say what esc leaves the session on,
+// the way the model picker does
+// (docs/interface/principles.md#esc-is-always-the-safe-answer).
+func TestModeAndProviderPick_EscSaysWhatItKeeps(t *testing.T) {
+	m := readyModel(t)
+	opened, _ := m.openModePick()
+	mode := opened.(Model)
+	if mode.picker == nil {
+		t.Fatal("the mode picker should open in a coding session")
+	}
+	if view := ansi.Strip(mode.picker.View(110)); !strings.Contains(view, "[esc] keep manual") {
+		t.Fatalf("the mode picker should offer `[esc] keep manual`:\n%s", view)
+	}
+
+	m = readyModel(t).WithProvider("anthropic", nil, func(string) error { return nil })
+	opened, _ = m.openProviderPick()
+	prov := opened.(Model)
+	if prov.picker == nil {
+		t.Fatal("the provider picker should open")
+	}
+	if view := ansi.Strip(prov.picker.View(110)); !strings.Contains(view, "[esc] keep anthropic") {
+		t.Fatalf("the provider picker should offer `[esc] keep anthropic`:\n%s", view)
+	}
+}
+
 func TestModelPick_EscCancels(t *testing.T) {
 	var switched string
 	m := readyModel(t).

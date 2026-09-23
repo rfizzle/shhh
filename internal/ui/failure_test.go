@@ -192,6 +192,22 @@ func TestProviderSetup_PasteAKeyForTheProviderThatFailed(t *testing.T) {
 	}
 }
 
+// The wizard's provider list says what esc keeps: the provider the card is
+// about. A survey that resolved to none keeps the family's words
+// (docs/interface/principles.md#esc-is-always-the-safe-answer).
+func TestProviderSetup_EscSaysWhichProviderItKeeps(t *testing.T) {
+	m := NewProviderSetup(resolve.Survey{Provider: "openai"}, []string{"anthropic", "openai"})
+	m = setupKey(m, tea.KeyPressMsg{Code: tea.KeyEnter})
+	if got := ansi.Strip(m.View().Content); !strings.Contains(got, "[esc] keep openai") {
+		t.Fatalf("the provider list should offer `[esc] keep openai`:\n%s", got)
+	}
+	m = NewProviderSetup(resolve.Survey{}, []string{"anthropic", "openai"})
+	m = setupKey(m, tea.KeyPressMsg{Code: tea.KeyEnter})
+	if got := ansi.Strip(m.View().Content); !strings.Contains(got, "[esc] take none") {
+		t.Fatalf("with no provider resolved the list should offer `[esc] take none`:\n%s", got)
+	}
+}
+
 func TestProviderSetup_WizardPicksAProviderFirst(t *testing.T) {
 	m := NewProviderSetup(resolve.Survey{Provider: "openai"}, []string{"anthropic", "openai"})
 	m = setupKey(m, tea.KeyPressMsg{Code: tea.KeyEnter})

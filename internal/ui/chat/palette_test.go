@@ -234,6 +234,20 @@ func TestPalette_EnterOnAFileWritesItsPath(t *testing.T) {
 	}
 }
 
+// The palette's esc says it closes the card, and the card is where that is
+// worded: the host's own offers leave it off and CancelLabel puts it last
+// (docs/interface/principles.md#esc-is-always-the-safe-answer).
+func TestPalette_EscSaysItClosesIt(t *testing.T) {
+	m := openPaletteWith(t, paletteModel(t), "mo")
+	view := ansi.Strip(m.picker.View(110))
+	if !strings.Contains(view, "[esc] close it") {
+		t.Fatalf("the palette should offer `[esc] close it`:\n%s", view)
+	}
+	if strings.Count(view, "[esc]") != 1 {
+		t.Fatalf("esc should be offered once:\n%s", view)
+	}
+}
+
 func TestPalette_EscDismissesAndKeepsTheDraft(t *testing.T) {
 	m := paletteModel(t)
 	m.input.SetValue("half a sentence")

@@ -314,7 +314,7 @@ func (m Model) openProviderPick() (tea.Model, tea.Cmd) {
 		}
 		opts[i] = components.SelectOption{Label: label, Desc: providerDesc(name)}
 	}
-	return m.openPicker("Switch provider", opts, focus, func(m *Model, idx int) string {
+	updated, cmd := m.openPicker("Switch provider", opts, focus, func(m *Model, idx int) string {
 		name := choices[idx]
 		if name == m.providerName {
 			return "Already on " + name + "."
@@ -328,6 +328,14 @@ func (m Model) openProviderPick() (tea.Model, tea.Cmd) {
 		}
 		return "Switched to " + name + " on " + m.modelName + ". Ask again to use it."
 	})
+	// Esc leaves the session on the provider it is on, and says which one
+	// (docs/interface/principles.md#esc-is-always-the-safe-answer); a session
+	// that names none keeps the family's words.
+	next := updated.(Model)
+	if m.providerName != "" {
+		next.picker.CancelLabel = "keep " + m.providerName
+	}
+	return next, cmd
 }
 
 // providerDesc is the one-line description a provider row carries: the model

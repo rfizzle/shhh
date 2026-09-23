@@ -149,7 +149,14 @@ func (m ProviderSetup) key(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		}
 		switch result {
 		case components.ProviderWizard:
+			// Esc goes back to the card, which is still about the provider
+			// the session resolved to, so that is what it says it keeps; a
+			// survey that resolved to none takes the family's words
+			// (docs/interface/principles.md#esc-is-always-the-safe-answer).
 			m.pick = components.Select{Title: "Which provider", Options: providerOptions(m.providers)}
+			if m.survey.Provider != "" {
+				m.pick.CancelLabel = "keep " + m.survey.Provider
+			}
 			m.step = stepPickProvider
 			return m, nil
 		case components.ProviderPaste:

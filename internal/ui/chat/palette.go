@@ -92,8 +92,9 @@ type paletteEntry struct {
 // writes a live key in
 // (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 // The words are the palette's own: `tab` here writes the entry into the
-// input, which is completing it, and "run" and "dismiss" say what the two
-// halves of the surface do rather than what a list does.
+// input, which is completing it, and "run" says what enter does rather than
+// what a list does. Esc is not on it: the card adds it in paletteWayOut's
+// words, which is where every selector's way out is worded.
 //
 // It is a function and not a package var for the reason planHint is: a keymap
 // file is read after this package is initialised and before anything draws.
@@ -102,9 +103,13 @@ func paletteHint() []components.KeyOffer {
 		components.OfferAs(keys.Select.Palette.Run, "run"),
 		components.OfferAs(keys.Select.Palette.Write, "complete"),
 		{Key: keys.BracketPair(keys.Select.Palette.Prev, keys.Select.Palette.Next), Label: "move"},
-		components.OfferAs(keys.Select.Cancel, "dismiss"),
 	}
 }
+
+// paletteWayOut is what esc leaves on the palette. Nothing was chosen and the
+// palette holds nothing a reader would lose, so it says only that the card
+// goes away (docs/interface/principles.md#esc-is-always-the-safe-answer).
+const paletteWayOut = "close it"
 
 // paletteState is the open palette: what has been typed, every candidate
 // gathered when it opened, and the rows currently showing — one per option in
@@ -132,8 +137,9 @@ func (m Model) openPalette() (tea.Model, tea.Cmd) {
 		// it used to draw for itself is the card's own now, so the two cannot
 		// disagree about what a query line looks like. It keeps its own chip,
 		// which counts matches rather than a catalog.
-		Filtering: true,
-		HintKeys:  paletteHint(),
+		Filtering:   true,
+		HintKeys:    paletteHint(),
+		CancelLabel: paletteWayOut,
 	}
 	// The panel places the terminal's own cursor on the query row, so the
 	// card stops painting one (docs/interface/surfaces.md#selectors).

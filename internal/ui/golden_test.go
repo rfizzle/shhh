@@ -29,6 +29,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/colorprofile"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/resolve"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/golden"
 )
@@ -163,6 +164,18 @@ func TestGolden_Alternatives(t *testing.T) {
 			m := goldenArmed(t, goldenGeneration, width)
 			m, _ = m.openAlternatives()
 			return []golden.Panel{{View: m.View().Content}}
+		})
+}
+
+// The setup wizard's provider list, whose esc names the provider the card is
+// about.
+func TestGolden_ProviderPick(t *testing.T) {
+	captureGolden(t, "provider-pick", "the setup wizard's provider list",
+		func(width int) []golden.Panel {
+			m := NewProviderSetup(resolve.Survey{Provider: "anthropic"}, []string{"anthropic", "openai", "gemini"})
+			next, _ := m.Update(tea.WindowSizeMsg{Width: width, Height: 24})
+			next, _ = next.(ProviderSetup).Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+			return []golden.Panel{{View: next.(ProviderSetup).View().Content}}
 		})
 }
 

@@ -878,7 +878,9 @@ func tallyStates(states []FanoutState) (running, blocked, held, done, failed int
 // It goes between the two: a park is what the reader has just asked for and
 // what they are waiting to see land, and what is still running is the
 // remainder of it. The field never clips, so it says two things at most, and
-// where all three are true it is the two the reader is acting on.
+// where all three are true it is the two the reader is acting on. The
+// artboards state it running-first and in dim
+// (docs/interface/departures.md#the-childrens-tally-says-who-needs-you-first).
 func stateTally(states []FanoutState) string {
 	running, blocked, held, done, failed := tallyStates(states)
 	var parts []string

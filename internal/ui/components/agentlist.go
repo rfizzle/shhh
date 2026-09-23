@@ -743,7 +743,8 @@ func (l *AgentList) View(width int) string {
 	// Info, like every other card that is waiting to be answered rather than
 	// read: the manager attaches, answers, cancels and kills, and none of
 	// that is rated, so there is no severity to take the frame's colour from
-	// (CardTone).
+	// (CardTone). What the top border says beside it departs from the
+	// artboard (docs/interface/departures.md#the-childrens-tally-says-who-needs-you-first).
 	card := Card{Title: "Agents", Tone: CardDecision}
 	// The count goes in front of the tally because chips drop from the
 	// front: on a narrow terminal what still needs you outlasts how many

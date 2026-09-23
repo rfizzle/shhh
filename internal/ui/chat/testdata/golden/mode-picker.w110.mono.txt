@@ -17,7 +17,7 @@
 │   3. auto               edits apply; allowlisted commands run; the classifier judges the rest (or ask… │
 │   4. read-only          nothing is written — edits and non-inspection commands are refused             │
 │   5. plan               read-only, and the turn ends on a plan you can carry into a fresh session      │
-│ [↑↓/jk] move · [enter] select · [1–5] jump · [/] filter · [esc] take none                              │
+│ [↑↓/jk] move · [enter] select · [1–5] jump · [/] filter · [esc] keep manual                            │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 · focused on read-only, the mode that is only a bound
@@ -27,7 +27,7 @@
 │   3. auto                  edits apply; allowlisted commands run; the classifier judges the rest (or … │
 │ ❯ 4. read-only  (current)  nothing is written — edits and non-inspection commands are refused          │
 │   5. plan                  read-only, and the turn ends on a plan you can carry into a fresh session   │
-│ [↑↓/jk] move · [enter] select · [1–5] jump · [/] filter · [esc] take none                              │
+│ [↑↓/jk] move · [enter] select · [1–5] jump · [/] filter · [esc] keep read-only                         │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 ── ansi ────────────────────────────────────────────────────
@@ -38,7 +38,7 @@
 ␛[38;5;244m│␛[m   ␛[38;5;244m3. ␛[m␛[38;5;254mauto␛[m               ␛[38;5;244medits apply; allowlisted commands run; the classifier judges the rest (or ask…␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m4. ␛[m␛[38;5;254mread-only␛[m          ␛[38;5;244mnothing is written — edits and non-inspection commands are refused␛[m             ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m5. ␛[m␛[38;5;254mplan␛[m               ␛[38;5;244mread-only, and the turn ends on a plan you can carry into a fresh session␛[m      ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m select␛[m␛[38;5;244m · ␛[m␛[38;5;254m[1–5]␛[m␛[38;5;244m jump␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m take none␛[m                              ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m select␛[m␛[38;5;244m · ␛[m␛[38;5;254m[1–5]␛[m␛[38;5;244m jump␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m keep manual␛[m                            ␛[38;5;244m│␛[m
 ␛[38;5;244m╰────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · focused on read-only, the mode that is only a bound
@@ -48,5 +48,5 @@
 ␛[38;5;244m│␛[m   ␛[38;5;244m3. ␛[m␛[38;5;254mauto␛[m                  ␛[38;5;244medits apply; allowlisted commands run; the classifier judges the rest (or …␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m4. read-only  (current)  nothing is written — edits and non-inspection commands are refused         ␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m5. ␛[m␛[38;5;254mplan␛[m                  ␛[38;5;244mread-only, and the turn ends on a plan you can carry into a fresh session␛[m   ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m select␛[m␛[38;5;244m · ␛[m␛[38;5;254m[1–5]␛[m␛[38;5;244m jump␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m take none␛[m                              ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m select␛[m␛[38;5;244m · ␛[m␛[38;5;254m[1–5]␛[m␛[38;5;244m jump␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m keep read-only␛[m                         ␛[38;5;244m│␛[m
 ␛[38;5;244m╰────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m

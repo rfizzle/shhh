@@ -808,3 +808,34 @@ would answer one question in two columns depending on what each child had
 declared. The name row is also the one that has to survive the rail's
 narrowest width, and a five-cell bar and its count beside a clipped name is a
 child whose progress you can see and whose name you cannot.
+
+## The children's tally says who needs you first
+
+*A disagreement.* The `Agents` artboard heads the manager with
+`╭─ agents ─… 3 running · 1 needs you ─╮`, and the `Main` artboard heads the
+rail's map with `1 running`, both in dim. The binary states the same sentence
+the other way round, `1 needs you · 3 running`, with the count of running
+children in the spinner's tone; the fan-out header, the manager's top border
+and the rail's `AGENTS` heading all say it that way, because they are one
+sentence about the same children and are drawn by one function. The frame
+itself is the artboard's: Info, as every card waiting on an answer is.
+
+The clause that asks something of you is the only one of them the reader has
+to act on, so it is read first; running children are the remainder, and a
+hold that is landing reads `2 held · 1 running` in the same order — what was
+asked for, then what is still to arrive. The count of running children is in
+the tone every live thing in the product is drawn in, the spinner's, rather
+than in dim beside a clause in del, which would make the one line that says
+work is going on the quietest thing on the border.
+
+Three smaller differences on the manager's top border follow from the family
+rather than from this card. The title is `Agents`, capitalised like every
+card title the same artboard draws (`Approve edit`), because a lower-case word
+on a card's rail reads as a label rather than a heading. The count of
+children started, which no artboard draws, is a chip of its own in front of
+the tally (`4 of 32 spawned ─ 1 needs you · 1 running`) rather than joined to
+it with a separator: chips give up whole from the front as the terminal
+narrows, and a count joined into the tally could only be given up with it.
+And the run of rule between the title and the chips is in the chrome tone on
+every card, which is the card's own rule
+([the approval card](surfaces.md#the-approval-card)) and not a departure.

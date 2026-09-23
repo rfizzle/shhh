@@ -17,7 +17,7 @@
 │   3. auto               edits apply; allowlisted commands run; the clas… │
 │   4. read-only          nothing is written — edits and non-inspection c… │
 │   5. plan               read-only, and the turn ends on a plan you can … │
-│ [↑↓/jk] move · [enter] select · [/] filter · [esc] take none             │
+│ [↑↓/jk] move · [enter] select · [/] filter · [esc] keep manual           │
 ╰──────────────────────────────────────────────────────────────────────────╯
 
 · focused on read-only, the mode that is only a bound
@@ -27,7 +27,7 @@
 │   3. auto                  edits apply; allowlisted commands run; the c… │
 │ ❯ 4. read-only  (current)  nothing is written — edits and non-inspectio… │
 │   5. plan                  read-only, and the turn ends on a plan you c… │
-│ [↑↓/jk] move · [enter] select · [/] filter · [esc] take none             │
+│ [↑↓/jk] move · [enter] select · [/] filter · [esc] keep read-only        │
 ╰──────────────────────────────────────────────────────────────────────────╯
 
 ── ansi ────────────────────────────────────────────────────
@@ -38,7 +38,7 @@
 ␛[38;5;241m│␛[m   ␛[38;5;241m3. ␛[m␛[38;5;252mauto␛[m               ␛[38;5;241medits apply; allowlisted commands run; the clas…␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m4. ␛[m␛[38;5;252mread-only␛[m          ␛[38;5;241mnothing is written — edits and non-inspection c…␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m5. ␛[m␛[38;5;252mplan␛[m               ␛[38;5;241mread-only, and the turn ends on a plan you can …␛[m ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m select␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m take none␛[m             ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m select␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m keep manual␛[m           ␛[38;5;241m│␛[m
 ␛[38;5;241m╰──────────────────────────────────────────────────────────────────────────╯␛[m
 
 · focused on read-only, the mode that is only a bound
@@ -48,5 +48,5 @@
 ␛[38;5;241m│␛[m   ␛[38;5;241m3. ␛[m␛[38;5;252mauto␛[m                  ␛[38;5;241medits apply; allowlisted commands run; the c…␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[94m❯␛[m ␛[1;97;48;5;62m4. read-only  (current)  nothing is written — edits and non-inspectio…␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m5. ␛[m␛[38;5;252mplan␛[m                  ␛[38;5;241mread-only, and the turn ends on a plan you c…␛[m ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m select␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m take none␛[m             ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m select␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m keep read-only␛[m        ␛[38;5;241m│␛[m
 ␛[38;5;241m╰──────────────────────────────────────────────────────────────────────────╯␛[m
