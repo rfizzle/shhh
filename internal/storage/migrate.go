@@ -558,6 +558,14 @@ var migrations = []string{
 	// every slot written before it, which is a listing saying it does not
 	// know rather than guessing.
 	`ALTER TABLE chat_sessions ADD COLUMN root TEXT NOT NULL DEFAULT '';`,
+
+	// Which machine message a user-role row is, where a rebuilt transcript
+	// has to tell one from another: the progress request drew no row live,
+	// and a mark is what says so whatever words it was sent in
+	// (docs/interface/surfaces.md#the-progress-checkpoint). Nullable, and
+	// NULL on every other message and on every row written before it, which
+	// reads as unmarked.
+	`ALTER TABLE chat_messages ADD COLUMN machine_kind TEXT;`,
 }
 
 const (

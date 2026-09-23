@@ -441,11 +441,18 @@ func (db *DB) saveChatTx(tx *sql.Tx, name string, messages []provider.Message) (
 		// The turn and the round the message was written in ride with it,
 		// so a recorded event can be joined to the words it came from
 		// (docs/capabilities/sessions-and-memory.md#a-round-can-be-read-back).
+		// The machine message's kind is NULL where it has none, the way a
+		// row written before the column reads.
+		var machineKind *string
+		if msg.MachineKind != "" {
+			k := string(msg.MachineKind)
+			machineKind = &k
+		}
 		_, err := tx.Exec(
-			`INSERT INTO chat_messages (session_id, seq, role, content, tool_calls, tool_call_id, attachments, machine, turn, round, checkpoint)
-			 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			`INSERT INTO chat_messages (session_id, seq, role, content, tool_calls, tool_call_id, attachments, machine, turn, round, checkpoint, machine_kind)
+			 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 			sessionID, i, string(msg.Role), msg.Content, toolCallsJSON, msg.ToolCallID, attachmentsJSON, msg.Machine,
-			msg.Turn, msg.Round, msg.Checkpoint,
+			msg.Turn, msg.Round, msg.Checkpoint, machineKind,
 		)
 		if err != nil {
 			return 0, fmt.Errorf("insert message %d: %w", i, err)
@@ -501,7 +508,7 @@ func (db *DB) LoadChat(name string) ([]provider.Message, error) {
 // (docs/capabilities/sessions-and-memory.md#a-round-can-be-read-back).
 func (db *DB) chatMessages(sessionID int64) ([]provider.Message, error) {
 	rows, err := db.sql.Query(
-		`SELECT role, content, tool_calls, tool_call_id, attachments, machine, turn, round, checkpoint
+		`SELECT role, content, tool_calls, tool_call_id, attachments, machine, turn, round, checkpoint, machine_kind
 		 FROM chat_messages WHERE session_id = ? ORDER BY seq`, sessionID,
 	)
 	if err != nil {
@@ -514,11 +521,12 @@ func (db *DB) chatMessages(sessionID int64) ([]provider.Message, error) {
 		var (
 			role, content, toolCallID      string
 			toolCallsJSON, attachmentsJSON *string
+			machineKind                    *string
 			machine, checkpoint            bool
 			turn, round                    int64
 		)
 		if err := rows.Scan(&role, &content, &toolCallsJSON, &toolCallID, &attachmentsJSON, &machine,
-			&turn, &round, &checkpoint); err != nil {
+			&turn, &round, &checkpoint, &machineKind); err != nil {
 			return nil, err
 		}
 		msg := provider.Message{
@@ -534,6 +542,9 @@ func (db *DB) chatMessages(sessionID int64) ([]provider.Message, error) {
 			// And whether it was the run reporting on itself, so a reopened
 			// transcript draws the note at the rung it was written at.
 			Checkpoint: checkpoint,
+		}
+		if machineKind != nil {
+			msg.MachineKind = provider.MachineKind(*machineKind)
 		}
 		if toolCallsJSON != nil {
 			if err := json.Unmarshal([]byte(*toolCallsJSON), &msg.ToolCalls); err != nil {

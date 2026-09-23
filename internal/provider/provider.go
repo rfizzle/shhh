@@ -41,6 +41,15 @@ type Message struct {
 	// reader.
 	// See docs/capabilities/sessions-and-memory.md#a-message-the-session-wrote-stays-the-sessions.
 	Machine bool
+	// MachineKind says which machine message this is, for the one reader that
+	// has to tell them apart: the rebuild of a transcript, which draws each
+	// machine message the way the live transcript drew it, and the progress
+	// request drew nothing live. Empty is every other machine message, a
+	// person's message, and a message stored before the kind was — which is
+	// why the rebuild keeps a match on the built-in words behind it for those.
+	// Nothing on the wire reads it; it is stored beside the message.
+	// See docs/interface/surfaces.md#the-progress-checkpoint.
+	MachineKind MachineKind
 	// Turn and Round are where in the session the message was written: the
 	// user turn, and the tool round within it. Nothing on the wire reads
 	// them — they are stamped by the agent as it appends, stored beside the
@@ -62,6 +71,15 @@ type Message struct {
 	// See docs/interface/surfaces.md#the-progress-checkpoint.
 	Checkpoint bool
 }
+
+// MachineKind is the closed set of machine messages a surface reads the kind
+// of (Message.MachineKind).
+type MachineKind string
+
+// MachineProgress is the request for a public status a long silent run is
+// asked at a round boundary: the note that answers it is its row, so it has
+// none of its own.
+const MachineProgress MachineKind = "progress"
 
 type Tool struct {
 	Name        string

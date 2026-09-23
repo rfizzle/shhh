@@ -28,7 +28,7 @@ func (m *Model) injectProgressCheckpoint() {
 	if !ok {
 		return
 	}
-	m.agent.AppendMachine(prompt)
+	m.agent.AppendProgressRequest(prompt)
 }
 
 // noteProgressProse records the assistant prose that a tool round led with,

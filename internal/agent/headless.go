@@ -545,7 +545,7 @@ func (h *Headless) Run(prompt string) (string, error) {
 			}
 		}
 		if prompt, ok := h.Agent.TakeProgressCheckpoint(); ok {
-			h.Agent.AppendMachine(prompt)
+			h.Agent.AppendProgressRequest(prompt)
 		}
 		if iv, ok := h.Agent.NextIntervention(h.summaryTarget()); ok {
 			h.Agent.AppendMachine(iv.Message)

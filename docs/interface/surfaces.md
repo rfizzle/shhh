@@ -458,7 +458,10 @@ had a row of its own when it was written. The request never had one: the note
 that answered it is its row. Drawn on the rebuild, it would stand above the
 note as a prompt the reader never saw asked, in words that were the session's
 question and never theirs. It is still in the conversation, where the model
-reads it; only the row is left out.
+reads it; only the row is left out. What leaves it out is a mark the request
+carries in the record, not its wording, so a request sent in other words is
+left out the same way; a conversation stored before the mark existed is read
+by the built-in sentence instead, because that is all it recorded.
 
 A checkpoint short enough to title the batch of calls that follows it is drawn
 as that step's header instead. That is not an exception to any of this — the

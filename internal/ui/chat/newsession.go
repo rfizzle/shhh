@@ -361,12 +361,17 @@ func (m *Model) appendMessageEntries(msgs []provider.Message) {
 // had a row of its own when it was written, so it keeps one here: the
 // check-in and the steer, the tree notice, the close gate's verdict, the
 // output of a /run, a secret's announcement, the continue after a partial
-// reply, the summary a compaction restarts from and the carried plan. It is
-// matched on the words because the request is a fixed sentence and the
-// conversation stores nothing else about it; the reading a reopening puts in
-// front of the conversation never reaches here, since the load strips it first
-// (reopen.go).
+// reply, the summary a compaction restarts from and the carried plan. The
+// request is known by its mark (provider.MachineProgress), not its words, so
+// a wording that differs from the built-in one is still left out; the match
+// on the built-in sentence stays behind the mark for a slot saved before the
+// mark existed, whose request carries none. The reading a reopening puts in
+// front of the conversation never reaches here, since the load strips it
+// first (reopen.go).
 // See docs/interface/surfaces.md#the-progress-checkpoint.
 func rowlessOnRebuild(msg provider.Message) bool {
-	return msg.Machine && msg.Content == agent.ProgressPrompt
+	if !msg.Machine {
+		return false
+	}
+	return msg.MachineKind == provider.MachineProgress || msg.Content == agent.ProgressPrompt
 }

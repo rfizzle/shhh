@@ -3,6 +3,8 @@ package agent
 import (
 	"strings"
 	"time"
+
+	"github.com/rfizzle/shhh/internal/provider"
 )
 
 // Public progress is the bounded status a long, otherwise silent tool run asks
@@ -101,6 +103,15 @@ func (a *Agent) TakeProgressCheckpoint() (string, bool) {
 	}
 	a.progress.pending = true
 	return ProgressPrompt, true
+}
+
+// AppendProgressRequest adds the request TakeProgressCheckpoint handed back as
+// a machine message marked as the progress request, so a transcript rebuilt
+// from the record can leave it out by the mark rather than by its words
+// (provider.MachineProgress).
+func (a *Agent) AppendProgressRequest(prompt string) {
+	a.Append(provider.Message{Role: provider.RoleUser, Content: prompt, Machine: true,
+		MachineKind: provider.MachineProgress})
 }
 
 // ProgressPending reports whether the request about to open was asked to emit

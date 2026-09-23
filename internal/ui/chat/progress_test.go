@@ -328,6 +328,67 @@ func TestProgress_AReopenedTranscriptDrawsNoRowForTheRequest(t *testing.T) {
 	}
 }
 
+// reopenedSystemRows saves a conversation whose progress request is req to a
+// store on disk, reopens it into a fresh session, and returns the system rows
+// the rebuilt transcript drew.
+func reopenedSystemRows(t *testing.T, req provider.Message) []string {
+	t.Helper()
+	db := rewindTestDB(t)
+	msgs := []provider.Message{
+		{Role: provider.RoleSystem, Content: "system"},
+		{Role: provider.RoleUser, Content: "trace the checkpoint"},
+		{Role: provider.RoleAssistant, ToolCalls: []provider.ToolCall{{ID: "call-1", Name: "read_file"}}},
+		{Role: provider.RoleTool, ToolCallID: "call-1", Content: "lines"},
+		req,
+		{Role: provider.RoleAssistant, Content: checkpointNote, Checkpoint: true},
+	}
+	if err := db.SaveChat("progress-slot", msgs); err != nil {
+		t.Fatal(err)
+	}
+	loaded, err := db.LoadChat("progress-slot")
+	if err != nil {
+		t.Fatal(err)
+	}
+	m := frameModel(t, 110, 40)
+	m.loadConversation(loaded)
+	var systems []string
+	for _, e := range m.transcript {
+		if e.kind == entrySystem {
+			systems = append(systems, e.text)
+		}
+	}
+	return systems
+}
+
+// The request is known by its mark and not by its words: a request sent in a
+// wording other than the built-in one, saved and reopened, still draws no row.
+func TestProgress_AReopenedMarkedRequestDrawsNoRowWhateverItsWords(t *testing.T) {
+	a := agent.New(nil, nil)
+	a.AppendProgressRequest("Say where the run stands before the next call.")
+	req := a.Messages()[len(a.Messages())-1]
+	if req.MachineKind != provider.MachineProgress {
+		t.Fatalf("the progress request was appended unmarked: %+v", req)
+	}
+	if rows := reopenedSystemRows(t, req); len(rows) != 0 {
+		t.Fatalf("a marked request came back as rows %q", rows)
+	}
+}
+
+// A slot saved before the mark existed carries the request with no kind, and
+// the built-in words are what still leave it out; an unmarked machine message
+// in any other words keeps its row.
+func TestProgress_AReopenedUnmarkedRequestFallsBackToItsWords(t *testing.T) {
+	old := provider.Message{Role: provider.RoleUser, Content: agent.ProgressPrompt, Machine: true}
+	if rows := reopenedSystemRows(t, old); len(rows) != 0 {
+		t.Fatalf("an older slot's request came back as rows %q", rows)
+	}
+	const notice = "The tree moved under the session."
+	other := provider.Message{Role: provider.RoleUser, Content: notice, Machine: true}
+	if rows := reopenedSystemRows(t, other); len(rows) != 1 || rows[0] != notice {
+		t.Fatalf("an unmarked machine message's rows are %q, want the notice", rows)
+	}
+}
+
 // A checkpoint round can be the one the wire drops, and continuing it is the
 // one path that turns partial prose into a round without the round having
 // ended. The note has to keep its mark across that — and the request has to
