@@ -499,11 +499,8 @@ func (m Model) spawnableRoles() []SpawnableRole {
 
 // openRoleEditor hands a role's own file to the reader's editor, which is
 // what /memory edit does with an entry: the file is the profile, so there is
-// nothing to write out first and nothing to read back afterwards.
-//
-// What the session spawns was decided when it started, so an edit lands in
-// the next one — said on the way back rather than left for the reader to
-// discover from a child that behaved the old way.
+// nothing to write out first. What the editor leaves is read back on the way
+// out (roleEditorFinished), so the edit is the running session's.
 //
 // The manager opens over a running turn and the editor takes the terminal
 // with it, so the one refusal reachable from here is the turn's own. The list
@@ -537,13 +534,22 @@ type roleEditorDoneMsg struct {
 }
 
 // roleEditorFinished says what became of the edit. There is nothing to save:
-// the editor wrote the file, and the profiles this session spawns from were
-// read when it started.
+// the editor wrote the file. What is left is to read it again through the
+// same registration a drafted profile's save ends on, so the next spawn is
+// the role as the file now reads
+// (docs/capabilities/subagents.md#a-profile-is-a-file). A file the loader
+// refuses leaves the running role as it was, and the note says which of the
+// two the reader now has.
 func (m Model) roleEditorFinished(msg roleEditorDoneMsg) (tea.Model, tea.Cmd) {
 	if msg.err != nil {
 		return m.surfaceNotice("the editor exited with an error, so " + msg.name + " is as it was — " + msg.err.Error())
 	}
-	return m.systemNotice("Edited " + msg.path + ". A session started from here spawns " + msg.name + " as the file now reads.")
+	if m.personas.Reload != nil {
+		if err := m.personas.Reload(msg.path); err != nil {
+			return m.surfaceNotice("the edit did not load, so this session spawns " + msg.name + " as it was — " + err.Error())
+		}
+	}
+	return m.systemNotice("Edited " + msg.path + ". The next " + msg.name + " this session spawns is the file as it now reads.")
 }
 
 // pendingAskFor is the approval this agent is waiting on, if the session

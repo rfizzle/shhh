@@ -47,6 +47,11 @@ type Personas struct {
 	// Save writes the draft under scope and registers the role with the
 	// running session; it returns the path written.
 	Save func(scope persona.Scope, d persona.Draft, overwrite bool) (string, error)
+	// Reload reads a role's file again and registers what it now says with
+	// the running session, the way Save registers a file it has just
+	// written. It is what the manager's editor ends on, and an error is the
+	// loader's refusal, with the running role left as it was.
+	Reload func(path string) error
 	// ProjectDir and GlobalDir are the two places a file can go, for the
 	// card to name.
 	ProjectDir, GlobalDir string

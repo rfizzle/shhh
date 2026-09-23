@@ -411,21 +411,44 @@ func TestPersona_TheManagerListsTheRolesThisSessionCanSpawn(t *testing.T) {
 	}
 }
 
-// What the session spawns was settled when it started, so an edited role is
-// the next session's — said on the way back rather than left to be found out
-// from a child that behaved the old way.
-func TestPersona_AnEditedRoleIsTheNextSessions(t *testing.T) {
+// The editor's exit reads the role's file again through the session's own
+// registration, so an edited role is the running session's; a file the
+// loader refuses leaves the role as it was, and the note says which.
+func TestPersona_AnEditedRoleIsTheRunningSessions(t *testing.T) {
 	m, _, _ := personaModel(t, persona.KindCode, persona.Outcome{Draft: &persona.Draft{Name: "x"}})
+	var reloaded []string
+	m.personas.Reload = func(path string) error {
+		reloaded = append(reloaded, path)
+		return nil
+	}
 	next, _ := m.roleEditorFinished(roleEditorDoneMsg{name: "critic", path: "/repo/.shhh/agents/critic.toml"})
+	if len(reloaded) != 1 || reloaded[0] != "/repo/.shhh/agents/critic.toml" {
+		t.Fatalf("the editor's exit should reload the file it opened, reloaded %v", reloaded)
+	}
 	said := lastNote(next.(Model))
-	for _, want := range []string{"/repo/.shhh/agents/critic.toml", "critic"} {
+	for _, want := range []string{"/repo/.shhh/agents/critic.toml", "critic", "this session spawns"} {
 		if !strings.Contains(said, want) {
 			t.Fatalf("the note should name the file and the role, got %q", said)
 		}
 	}
+	if strings.Contains(said, "session started from here") {
+		t.Fatalf("an edit is no longer the next session's, got %q", said)
+	}
+
+	m.personas.Reload = func(string) error { return fmt.Errorf("agent profile critic.toml: unknown key colour") }
+	next, _ = m.roleEditorFinished(roleEditorDoneMsg{name: "critic", path: "/repo/.shhh/agents/critic.toml"})
+	if said := lastNote(next.(Model)); !strings.Contains(said, "as it was") || !strings.Contains(said, "unknown key colour") {
+		t.Fatalf("a refused file should say the role is as it was and why, got %q", said)
+	}
+
+	reloaded = nil
+	m.personas.Reload = func(path string) error { reloaded = append(reloaded, path); return nil }
 	next, _ = m.roleEditorFinished(roleEditorDoneMsg{name: "critic", err: fmt.Errorf("exit status 1")})
 	if said := lastNote(next.(Model)); !strings.Contains(said, "exit status 1") {
 		t.Fatalf("an editor that failed should say so, got %q", said)
+	}
+	if len(reloaded) != 0 {
+		t.Fatal("an editor that failed should leave the role unread")
 	}
 }
 

@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/rfizzle/shhh/internal/config"
@@ -50,23 +51,26 @@ func buildPersonas(session chatSession, env *sessionEnv, agents *agentProfiles, 
 		}
 		return persona.Existing(agents.definitions, builtins...)
 	}
-	p.Save = func(scope persona.Scope, d persona.Draft, overwrite bool) (string, error) {
-		if kind == persona.KindChat {
-			// Chat has no project state; the card never offers one, and
-			// this is the guarantee behind the card.
-			scope = persona.ScopeGlobal
-		}
-		path, err := persona.Write(persona.Dir(scope, cwd), d, kind, overwrite)
-		if err != nil {
-			return path, err
-		}
+	// register reads a profile file and makes the role it defines the one
+	// this session spawns: the drafter's save and the manager's editor both
+	// end here, so a role written either way reaches the supervisor, the
+	// spawn card and the spawn tool the same way. Nothing is changed until
+	// the file has loaded, so a file the loader refuses leaves the running
+	// role as it was.
+	register := func(path string) error {
 		def, err := config.LoadAgentFile(path)
 		if err != nil {
-			return path, err
+			return err
 		}
 		prof, err := profileFromDefinition(def)
 		if err != nil {
-			return path, err
+			return err
+		}
+		// A conversation spawns the roles that read, which is what it was
+		// started with; an edit that grants a writing tier is refused
+		// rather than let in (docs/capabilities/chat.md#colleagues-not-workers).
+		if kind == persona.KindChat && prof.Writes {
+			return fmt.Errorf("agent profile %s: grants a tier that writes, and a conversation spawns only roles that read", path)
 		}
 		agents.definitions[def.Name] = def
 		agents.profiles[prof.Name] = prof
@@ -88,7 +92,20 @@ func buildPersonas(session chatSession, env *sessionEnv, agents *agentProfiles, 
 			}
 			return out
 		})
-		return path, nil
+		return nil
 	}
+	p.Save = func(scope persona.Scope, d persona.Draft, overwrite bool) (string, error) {
+		if kind == persona.KindChat {
+			// Chat has no project state; the card never offers one, and
+			// this is the guarantee behind the card.
+			scope = persona.ScopeGlobal
+		}
+		path, err := persona.Write(persona.Dir(scope, cwd), d, kind, overwrite)
+		if err != nil {
+			return path, err
+		}
+		return path, register(path)
+	}
+	p.Reload = register
 	return p
 }

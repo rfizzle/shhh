@@ -712,6 +712,18 @@ was wrong with it. The alternative — skipping it — is a role that quietly
 went missing, and the model would be told a smaller set of roles than the
 person wrote, with no way for either to notice.
 
+A profile edited from the [agent manager](../interface/surfaces.md#the-agent-manager)
+is the running session's, not the next one's: the file is read again when the
+editor closes, through the same registration a drafted profile ends on, and
+the spawn tool the model holds is rebuilt with it — its roles and what each is
+for — so the model is told the role as the file now reads before it asks for
+one. A file that no longer loads mid-session does not stop anything: the role
+stays as it was and the refusal is said on the way back, because the session
+already has a working role and losing it to a half-finished edit would be the
+quiet disappearance the rule above exists to prevent. A conversation reads an
+edited profile on its own terms too: an edit that grants a tier that writes is
+refused there, as it would have been left out at the start.
+
 ## A profile that changes nothing can still run the checks
 
 A role that must never run an arbitrary command still has to be able to say

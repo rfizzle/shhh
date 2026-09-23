@@ -1425,9 +1425,11 @@ nowhere a reader could reach until here.
 A role's row says what it is called, what it is for, and where the file that
 says so lives — `project`, `global`, or `built-in` for the roles shhh ships,
 which live in no file — and `[enter]` opens that file in your editor, the way
-editing a memory hands you its text. What a session can spawn was settled when
-it started, so an edit is the next session's, and the way back from the editor
-says so rather than leaving it to be discovered from a child that behaved the
+editing a memory hands you its text. The way back from the editor reads the
+file again, so the next child of that role this session spawns is the file as
+you left it, and the note under the list says so. A file that no longer loads
+changes nothing: the role stays as it was and the note carries the loader's
+reason, rather than leaving it to be discovered from a child that behaved the
 old way. A role with no file behind it is offered no `[enter]`, because there
 would be nothing to open. The offer to draft stands only where drafting is
 wired, and the keys that act on an agent are silent over every row in this
