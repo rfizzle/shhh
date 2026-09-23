@@ -883,11 +883,12 @@ row on the notice rail names the new homes, once, and never again. A rebind
 paid for silently is a session of surfaces nobody asked for; a notice
 repeated on every launch is one nobody reads.
 
-A draft too long to compose in three rows leaves for your own editor and comes
-back: shhh writes what you have typed to a file, opens the editor on it where
-the cursor was, and takes whatever the file holds when the editor exits. An
-empty file is not an instruction to throw the draft away, so it leaves it
-standing. The editor has the terminal while it runs, which is why the key is
+The box rests at one row and grows to its ceiling as the draft does, so no
+length of draft is pushed out of it. A draft you would rather compose somewhere
+else can leave for your own editor and come back: shhh writes what you have
+typed to a file, opens the editor on it where the cursor was, and takes
+whatever the file holds when the editor exits. An empty file is not an
+instruction to throw the draft away, so it leaves it standing. The editor has the terminal while it runs, which is why the key is
 refused rather than queued while a turn is in flight or a decision is waiting
 — neither can be watched from inside somebody else's editor.
 

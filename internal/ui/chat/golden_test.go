@@ -2122,7 +2122,7 @@ func TestGolden_Screen(t *testing.T) {
 				*m = updated.(Model)
 			})
 		}
-		return []golden.Panel{
+		panels := []golden.Panel{
 			// One turn, one clock, and the whole screen is where that is
 			// legible: the row the turn left in the transcript states the
 			// span, the tools and the bill, the rail's THIS TURN counts what
@@ -2161,6 +2161,24 @@ func TestGolden_Screen(t *testing.T) {
 				m.summary.schedule.Read(24)
 			})},
 		}
+		// A full-screen surface leaves a hint where the draft box was, and
+		// the paste reader's is the widest of them: on a 60-column terminal
+		// it is wider than the row, so it wraps onto a second one, and that
+		// row is one the panel is paid for rather than one the edge cuts the
+		// way out off (docs/interface/surfaces.md#the-input-frame). Captured
+		// at the one golden width that is the case at, since a wider terminal
+		// draws the same hint on one row and says nothing new.
+		if width == 60 {
+			panels = append(panels, golden.Panel{
+				Label: "the paste reader · a hint wider than the terminal wraps onto a row the panel pays for",
+				View: build(func(m *Model) {
+					*m = stageText(t, *m, "paste-1.txt")
+					updated, _ := m.runPaste([]string{"/paste", "show", "paste-1.txt"})
+					*m = updated.(Model)
+				}),
+			})
+		}
+		return panels
 	})
 
 	// A lane states how long its child has been alive, and that is the one

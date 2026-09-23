@@ -123,6 +123,43 @@ func TestLayout_RetryWaitIsPaidForByTheRowsItTakes(t *testing.T) {
 	}
 }
 
+// TestLayout_AWrappingHintIsPaidForByTheRowsItTakes is the same defect in the
+// bottom panel: a full-screen surface's hint wider than the terminal wrapped
+// onto a row the split had not given it, and the frame was only held to the
+// terminal by the edge cutting the way out off. The paste reader's hint is
+// wider than a 60-column terminal, so it wraps there: the split has to pay
+// for the row, the panel has to be exactly the rows it was paid, and the
+// whole hint has to be on the screen.
+func TestLayout_AWrappingHintIsPaidForByTheRowsItTakes(t *testing.T) {
+	m := stageText(t, frameModel(t, 60, 30), "paste-1.txt")
+	updated, _ := m.runPaste([]string{"/paste", "show", "paste-1.txt"})
+	m = updated.(Model)
+	if m.state != statePasteView {
+		t.Fatalf("state = %v, want the paste reader", m.state)
+	}
+	hint := m.draftPanel()
+	if rows := lipgloss.Height(hint); rows < 2 {
+		t.Fatalf("the hint should wrap at 60 columns, it is %d row:\n%s", rows, hint)
+	}
+	s := m.surface()
+	if got, want := lipgloss.Height(m.takeoverPanel(s.bottom.Dx())), s.bottom.Dy(); got != want {
+		t.Fatalf("the takeover panel is %d rows, the split gave it %d", got, want)
+	}
+	view := m.View().Content
+	lines := strings.Split(view, "\n")
+	if len(lines) != m.height {
+		t.Fatalf("surface is %d rows, terminal is %d", len(lines), m.height)
+	}
+	for i, line := range lines {
+		if w := lipgloss.Width(line); w != m.width {
+			t.Errorf("row %d is %d columns, terminal is %d", i, w, m.width)
+		}
+	}
+	if screen := stripANSI(view); !strings.Contains(screen, "cursor where you left it") {
+		t.Fatalf("the hint's last words were cut off the screen:\n%s", screen)
+	}
+}
+
 // TestLayout_ColumnsMatchTheWidthLadder walks the rung the inspector rail
 // hangs on: below it the pane is the whole content, at or above
 // it the rail and its divider take their columns off the right, and the

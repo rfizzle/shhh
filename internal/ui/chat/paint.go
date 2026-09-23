@@ -294,8 +294,10 @@ func (m Model) takeoverPanel(width int) string {
 	body := p.view()
 	if p.lines == nil {
 		// Nothing took the panel over, so the draft box is what is under the
-		// status bar and it renders itself.
-		body = m.draftPanel()
+		// status bar and it renders itself — fitted, like every other body, to
+		// the rows the split gave it, so a hint that wrapped onto a row the
+		// split did not pay for cannot push the frame past the terminal.
+		body = padPanel(strings.Split(m.draftPanel(), "\n"), p.height)
 	}
 	return dividerStyle(width) + "\n" + m.renderStatusBar(width) + "\n" + body
 }
@@ -305,7 +307,7 @@ func (m Model) takeoverPanel(width int) string {
 // leaves in the box's place while it holds the keyboard.
 func (m Model) draftPanel() string {
 	if o := overlayFor(m.state); o != nil && o.hint != nil {
-		return o.hint(m)
+		return m.paneHint(o)
 	}
 	inputView := m.draftView()
 	// Below minFrameWidth there is no box, and the draft would otherwise be
@@ -321,6 +323,15 @@ func (m Model) draftPanel() string {
 		inputView += "\n" + strings.Join(m.completionMenuLines(), "\n")
 	}
 	return inputView
+}
+
+// paneHint is the hint a full-screen surface leaves in the draft's place,
+// wrapped at the panel's width. A hint is a run of offers, and a terminal
+// narrower than the run stacks the rest onto the next row rather than cutting
+// the way out off at the edge; the row it stacks onto is one the vertical
+// split pays for (resolvePanel), which is why both read this one rendering.
+func (m Model) paneHint(o *mode) string {
+	return lipgloss.Wrap(o.hint(m), m.contentWidth(), "")
 }
 
 // plainPrompt is the prompt glyph the frameless layout draws in the box's

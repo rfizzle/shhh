@@ -12,6 +12,7 @@ import (
 
 	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/ask"
 	"github.com/rfizzle/shhh/internal/changeset"
@@ -1557,8 +1558,14 @@ func (m Model) resolvePanel() panelBody {
 			// panel two rows open and let it shut again on the way out, which
 			// is the compact frame jumping on every diff, review and
 			// /sources. A grown draft comes back with the input, so its rows
-			// are not paid for here either.
-			return panelBody{lines: cover, height: minDraftRows}
+			// are not paid for here either. A hint wider than the terminal
+			// wraps, and the rows it wraps onto are paid for here, under the
+			// same ceiling every panel grows to.
+			rows := minDraftRows
+			if o.hint != nil {
+				rows = max(rows, lipgloss.Height(m.paneHint(o)))
+			}
+			return panelBody{lines: cover, height: min(rows, m.maxConfirmPanelHeight())}
 		}
 		// The bare draft box: its height follows its content (frame.go,
 		// syncInputHeight), so the panel reads the box rather than a
