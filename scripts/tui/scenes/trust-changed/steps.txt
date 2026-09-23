@@ -1,0 +1,22 @@
+# A trusted checkout whose quality suite changed since the answer. The first
+# sitting after the change says so once on the start screen — the trust row
+# names `quality suites`, says it changed since you trusted it and offers
+# `shhh trust off` — and the gate row names the suite as it is now, because a
+# change withholds nothing. That sitting records what it read, so the second
+# sitting draws no trust row at all. Read 01 against the start-screen
+# artboard: the rule, the facts line and the frame are the artboard's, and the
+# trust row is the one addition.
+setup mkdir -p .shhh
+setup printf '{"suites":{"default":{"checks":[{"name":"test","exe":"./checks/unit.sh"}]}}}\n' > .shhh/quality.json
+snap 01-changed "changed since you trusted it"
+keys C-c
+sleep 0.3
+keys C-c
+# The second sitting starts a second after the first one's exit (launch).
+# Wait for the frame to come back rather than for text the first sitting
+# already drew; its start screen has the gate row and no trust row.
+sleep 3
+snap 02-quiet "Some things worth doing first"
+keys C-c
+sleep 0.3
+keys C-c

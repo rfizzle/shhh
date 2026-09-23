@@ -226,7 +226,7 @@ func NewRootCmd() *cobra.Command {
 	addGrouped(cmd, groupRecords, newChatsCmd(), newHistoryCmd(), newLogsCmd(),
 		newReportsCmd(), newSnippetsCmd(), newMemoryCmd(), newMetricsCmd(),
 		newObserveCmd(), newRateCmd(), newTodoCmd())
-	addGrouped(cmd, groupSetup, newInitCmd(), newConfigCmd(), newDoctorCmd(),
+	addGrouped(cmd, groupSetup, newInitCmd(), newConfigCmd(), newDoctorCmd(), newTrustCmd(),
 		newProvidersCmd(), newSkillsCmd(), newMCPCmd(), newEvalCmd(), newUpdateCmd(),
 		newCompletionCmd(cmd))
 

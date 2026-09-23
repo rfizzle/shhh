@@ -105,12 +105,29 @@ Some things worth doing first:
 context  AGENTS.md — in the system prompt
 gate     withheld — this checkout is not trusted to run its own checks
 trust    withheld
-         skills, agent profiles, quality suites · /trust loads them
+         skills, agent profiles, quality suites · shhh trust loads them
 
 Some things worth doing first:
 ❯ ▸ pick up (last session) — 7 turns · $0.42 · 4m ago                        
   ⚙ explain what changed in the working tree — reads only, no writes
   ⚙ run go test ./... and triage the failures
+    one approval, then it reports back
+
+[↑↓]/[shift+↑↓] choose · [enter]/[shift+→] start · or just type what you want
+[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palette · [ctrl+x] mouse
+
+· a trusted checkout whose suites changed since the answer · said once
+~/src/shhh · go 1.24 · git main · 3 files changed · 41 packages
+
+context  AGENTS.md — in the system prompt
+gate     default — vet, test · runs without asking
+trust    quality suites
+         changed since you trusted it · shhh trust off withdraws it
+
+Some things worth doing first:
+❯ ▸ pick up (last session) — 7 turns · $0.42 · 4m ago                        
+  ⚙ explain what changed in the working tree — reads only, no writes
+  ⚙ run the default quality gate and triage what fails
     one approval, then it reports back
 
 [↑↓]/[shift+↑↓] choose · [enter]/[shift+→] start · or just type what you want
@@ -238,12 +255,29 @@ gate     default — vet, test · runs without asking
 ␛[38;5;244mcontext␛[m  ␛[38;5;254mAGENTS.md␛[m␛[38;5;244m — in the system prompt␛[m
 ␛[38;5;244mgate   ␛[m  ␛[38;5;254mwithheld␛[m␛[38;5;244m — this checkout is not trusted to run its own checks␛[m
 ␛[38;5;244mtrust  ␛[m  ␛[38;5;254mwithheld␛[m
-         ␛[38;5;244mskills, agent profiles, quality suites · /trust loads them␛[m
+         ␛[38;5;244mskills, agent profiles, quality suites · shhh trust loads them␛[m
 
 ␛[38;5;244mSome things worth doing first:␛[m
 ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m▸ pick up (last session) — 7 turns · $0.42 · 4m ago                        ␛[m
   ␛[38;5;254m⚙␛[m ␛[38;5;254mexplain what changed in the working tree␛[m␛[38;5;244m — reads only, no writes␛[m
   ␛[38;5;254m⚙␛[m ␛[38;5;254mrun go test ./... and triage the failures␛[m
+    ␛[38;5;244mone approval, then it reports back␛[m
+
+␛[38;5;254m[↑↓]/[shift+↑↓]␛[m␛[38;5;244m choose␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]/[shift+→]␛[m␛[38;5;244m start␛[m␛[38;5;244m · ␛[m␛[38;5;244mor just type what you want␛[m
+␛[38;5;254m[pgup]␛[m␛[38;5;244m scroll␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+o]␛[m␛[38;5;244m select rows␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+/]␛[m␛[38;5;244m palette␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+x]␛[m␛[38;5;244m mouse␛[m
+
+· a trusted checkout whose suites changed since the answer · said once
+␛[1;38;5;254m~/src/shhh␛[m␛[38;5;244m · ␛[m␛[38;5;254mgo 1.24␛[m␛[38;5;244m · ␛[m␛[38;5;254mgit main␛[m␛[38;5;244m · ␛[m␛[38;5;254m3 files changed␛[m␛[38;5;244m · ␛[m␛[38;5;254m41 packages␛[m
+
+␛[38;5;244mcontext␛[m  ␛[38;5;254mAGENTS.md␛[m␛[38;5;244m — in the system prompt␛[m
+␛[38;5;244mgate   ␛[m  ␛[38;5;254mdefault␛[m␛[38;5;244m — vet, test · runs without asking␛[m
+␛[38;5;244mtrust  ␛[m  ␛[38;5;254mquality suites␛[m
+         ␛[38;5;244mchanged since you trusted it · shhh trust off withdraws it␛[m
+
+␛[38;5;244mSome things worth doing first:␛[m
+␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m▸ pick up (last session) — 7 turns · $0.42 · 4m ago                        ␛[m
+  ␛[38;5;254m⚙␛[m ␛[38;5;254mexplain what changed in the working tree␛[m␛[38;5;244m — reads only, no writes␛[m
+  ␛[38;5;254m⚙␛[m ␛[38;5;254mrun the default quality gate and triage what fails␛[m
     ␛[38;5;244mone approval, then it reports back␛[m
 
 ␛[38;5;254m[↑↓]/[shift+↑↓]␛[m␛[38;5;244m choose␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]/[shift+→]␛[m␛[38;5;244m start␛[m␛[38;5;244m · ␛[m␛[38;5;244mor just type what you want␛[m

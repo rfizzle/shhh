@@ -1,0 +1,4 @@
+# The person trusts the checkout, a pull rewrites its suite, and two sittings
+# follow: the first after the change, the second after that. There is no key
+# that reaches outside a session, so the answer and the edit are made here.
+$SHHH_BIN trust && printf '{"suites":{"default":{"checks":[{"name":"test","exe":"./checks/unit.sh"},{"name":"vet","exe":"./checks/vet.sh"}]}}}\n' > .shhh/quality.json && $SHHH_BIN code; sleep 1; $SHHH_BIN code

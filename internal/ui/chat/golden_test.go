@@ -1075,6 +1075,9 @@ func TestGolden_StartScreen(t *testing.T) {
 				i.Gate = StartGate{Path: ".shhh/quality.json"}
 				i.Trust = Trust{Withheld: []string{"skills", "agent profiles", "quality suites"}}
 			})},
+			{Label: "a trusted checkout whose suites changed since the answer · said once", View: build(func(i *StartInfo) {
+				i.Trust = Trust{Granted: true, Changed: []string{"quality suites"}}
+			})},
 			{Label: "the checkout brought its own settings and its own wordings", View: build(func(i *StartInfo) {
 				i.Project.ConfigFile = ".shhh/config.toml"
 				i.Wordings = []string{"steer", "todo_standards", "todo_review"}

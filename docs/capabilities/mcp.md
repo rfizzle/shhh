@@ -120,9 +120,11 @@ and what it sends is the headers the definition names.
 A server definition in a project file is an instruction to run a command on
 the person's machine, and it arrived with a clone. So a project server is not
 started until the person has trusted the checkout it came with. The listing
-shows it as waiting, says why, and offers the answer on the row; an edit to
-any file the checkout declares — a different command here, a new skill next
-door — asks again, because what was trusted was the checkout as it stood.
+shows it as waiting, says why, and offers the answer on the row. Once given,
+the answer holds: an edit to the definition — a different command, a server
+added — starts what the file now says, and the next session names `MCP
+servers` among what changed, once, so a pull that rewrote a command line is
+said rather than refused.
 
 One answer rather than one per server, because a definition file is not the
 only thing in a repository that runs as the person who cloned it: the skills,

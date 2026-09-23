@@ -70,7 +70,10 @@ belongs in, the way an unknown key does.
 The checkout's file is read only where the checkout is trusted. Until then
 it is withheld with the rest of what the checkout declares and named on the
 start screen, in `/status` and in the doctor's trust row, and the session
-runs on the user's file alone.
+runs on the user's file alone. A write shhh makes to it — `config set
+--project`, `config init --project` — leaves a trusted checkout trusted and
+says the value is in force from the next session; in an untrusted one it
+says the file is not read here and that `shhh trust` loads it.
 
 Writes go to the user's file — `config set`, the config screen's `[w]`, the
 slash commands that save their answer — because that is the file that is

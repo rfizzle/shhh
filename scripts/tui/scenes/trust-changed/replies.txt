@@ -1,0 +1,3 @@
+# Nothing is asked of the model: the scene is the start screen of two
+# sittings. The line is here because every scene answers something.
+Nothing to do here.

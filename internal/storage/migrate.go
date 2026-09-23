@@ -531,6 +531,15 @@ var migrations = []string{
 	// stored before this one existed recorded no status notes, and reading
 	// its prose as ordinary prose is what it has always looked like.
 	`ALTER TABLE chat_messages ADD COLUMN checkpoint INTEGER NOT NULL DEFAULT 0;`,
+
+	// The trust answer holds while the checkout is edited, and an edit is
+	// told once instead, naming what moved — which takes a digest per kind
+	// rather than the one over everything
+	// (docs/capabilities/approvals-and-safety.md#a-checkout-declares-what-it-runs).
+	// A row written before this carries none, and that reads as trusted and
+	// unchanged: the person answered, and nothing can say what has moved
+	// since, so the next session stamps the digests and says nothing.
+	`ALTER TABLE project_trust ADD COLUMN kinds TEXT NOT NULL DEFAULT '';`,
 }
 
 const (

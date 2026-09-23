@@ -337,11 +337,6 @@ func TestAdmitProjectServersByTrust(t *testing.T) {
 	if s, _ := admit(def, Options{Project: ProjectTrust{Granted: true}}); s != "" {
 		t.Errorf("trusted: %s", s)
 	}
-	// The checkout was answered for and edited since: that is a different
-	// row and a different sentence, not a plain refusal.
-	if s, _ := admit(def, Options{Project: ProjectTrust{Changed: true}}); s != StatusChanged {
-		t.Errorf("changed: %s", s)
-	}
 	// The person's own definition needs no checkout's permission.
 	mine := def
 	mine.Scope = ScopeUser
@@ -352,6 +347,20 @@ func TestAdmitProjectServersByTrust(t *testing.T) {
 	s, names := admit(missing, Options{Lookup: func(string) (string, bool) { return "", false }})
 	if s != StatusMissingEnv || strings.Join(names, ",") != "NOPE_A,NOPE_B" {
 		t.Errorf("missing env: %s %v", s, names)
+	}
+}
+
+// A project server in a trusted checkout connects, whatever its definition
+// says now: the answer is the checkout's and an edit to the file is told once
+// rather than refused. The only question a connect asks of trust is the
+// answer itself.
+func TestATrustedCheckoutsServerConnects(t *testing.T) {
+	def := testDefinition(t)
+	def.Scope = ScopeProject
+	ts := Connect(context.Background(), &Catalog{Servers: []Definition{def}}, Options{Project: ProjectTrust{Granted: true}})
+	defer ts.Close()
+	if len(ts.Reports) != 1 || ts.Reports[0].Status != StatusConnected {
+		t.Fatalf("reports = %+v", ts.Reports)
 	}
 }
 

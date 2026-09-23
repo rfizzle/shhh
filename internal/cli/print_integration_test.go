@@ -501,8 +501,8 @@ func finished(t *testing.T, cmd *exec.Cmd, err error, out, errs *strings.Builder
 // with a clone, and an untrusted checkout gets no runner at all.
 func (s printSession) trust(t *testing.T) {
 	t.Helper()
-	if _, errs, code := s.run(t, "", "doctor", "trust"); code != 0 {
-		t.Fatalf("`shhh doctor trust` exited %d: %s", code, errs)
+	if _, errs, code := s.run(t, "", "trust"); code != 0 {
+		t.Fatalf("`shhh trust` exited %d: %s", code, errs)
 	}
 }
 

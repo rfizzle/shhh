@@ -21,6 +21,7 @@ import (
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/ui/chat"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/spf13/cobra"
 )
 
 // projectTrust is the checkout's standing for this process, read once and
@@ -42,6 +43,11 @@ var projectTrust = heldProjectTrust
 var trustHeld struct {
 	mu   sync.Mutex
 	read *project.Trust
+	// told marks that a session in this process has already said what
+	// changed and re-stamped the row. `shhh serve` opens many sessions over
+	// one held reading, and the notice is once per change, not once per
+	// session that reads the same stale reading.
+	told bool
 }
 
 // heldProjectTrust answers from what was already read, reading once.
@@ -69,7 +75,16 @@ func heldProjectTrust() project.Trust {
 func forgetProjectTrust() {
 	trustHeld.mu.Lock()
 	trustHeld.read = nil
+	trustHeld.told = false
 	trustHeld.mu.Unlock()
+}
+
+// changeTold reports whether a session in this process already said what
+// changed (restampProjectTrust).
+func changeTold() bool {
+	trustHeld.mu.Lock()
+	defer trustHeld.mu.Unlock()
+	return trustHeld.told
 }
 
 // readProjectTrust asks the store what was answered for this checkout.
@@ -110,18 +125,76 @@ func setProjectTrust(db *storage.DB, t project.Trust, trust bool) (string, error
 		}
 		return "This checkout is no longer trusted: " + declares(t) + " will not load.", nil
 	}
-	if err := db.TrustProject(t.Root, t.Fingerprint); err != nil {
+	if err := db.TrustProject(t.Root, t.Fingerprint, t.DigestNames()); err != nil {
 		return "", err
 	}
 	forgetProjectTrust()
-	return "This checkout is trusted at its current state: " + declares(t) +
-		" load. An edit to any of " + strings.Join(project.ResourceNames(), ", ") + " asks again.", nil
+	return "This checkout is trusted: " + declares(t) + " load, and go on loading as " +
+		strings.Join(project.ResourceNames(), ", ") + " change. A change is said once, at the next session; " +
+		"`shhh trust off` withdraws the answer.", nil
+}
+
+// restampProjectTrust moves a trusted checkout's record to the digests it
+// stands at now, once this session has read what changed. It is what makes
+// the notice a notice: the session that says a suite moved is the last one
+// that says so. It writes nothing for a checkout nobody trusted, and leaves
+// the held reading alone — this session's screens are still telling the
+// reader what it found.
+func restampProjectTrust() {
+	t := projectTrust()
+	if !t.Granted || !t.Outdated || t.Root == "" || changeTold() {
+		return
+	}
+	trustHeld.mu.Lock()
+	trustHeld.told = true
+	trustHeld.mu.Unlock()
+	db, err := openStore()
+	if err != nil {
+		return
+	}
+	defer db.Close()
+	// A re-stamp that fails costs the next session the same notice again,
+	// which is the safe way for it to fail.
+	_, _ = db.RestampProject(t.Root, t.Fingerprint, t.DigestNames())
+}
+
+// newTrustCmd is `shhh trust [off]`: the answer for a terminal that is not a
+// session, spelled the way `/trust [off]` spells it inside one. It is a verb
+// of its own rather than a line under the doctor because trust is a decision
+// about the repository, made once, and a decision is not a diagnostic.
+func newTrustCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "trust [off]",
+		Short: "Let this checkout's skills, agent profiles, quality suites and servers load",
+		Long: "Record that the checkout you are standing in may put what it declares into a session: its skills, " +
+			"agent profiles, quality suites, hooks, MCP servers, settings, wordings and backlog profile. They run as you. " +
+			"The answer is about the checkout, so it holds while those files change; the next session after a change " +
+			"says once what moved. `shhh trust off` withdraws it.",
+		Args: func(cmd *cobra.Command, args []string) error {
+			if len(args) == 0 || (len(args) == 1 && args[0] == "off") {
+				return nil
+			}
+			return errors.New("usage: shhh trust [off]")
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			db, err := openStore()
+			if err != nil {
+				return fmt.Errorf("the local store is unavailable, so trust cannot be recorded: %w", err)
+			}
+			defer db.Close()
+			note, err := setProjectTrust(db, projectTrust(), len(args) == 0)
+			if err != nil {
+				return err
+			}
+			fmt.Fprintln(cmd.OutOrStdout(), note)
+			return nil
+		},
+	}
 }
 
 // declares names what the checkout puts into a session, or says that it puts
 // nothing there yet — a repository that declares none of this is still worth
-// answering for, because writing one of those files later is the edit that
-// asks again.
+// answering for, because the answer covers what it writes later too.
 func declares(t project.Trust) string {
 	if names := kindNames(t.Present); len(names) > 0 {
 		return "its " + joinAnd(names)
@@ -180,26 +253,28 @@ func trustManager(db *storage.DB) func(args []string) string {
 // list for the start screen and /status, and the answer behind /trust.
 func chatTrust(db *storage.DB) chat.Trust {
 	t := projectTrust()
-	return chat.Trust{Withheld: t.WithheldNames(), Changed: t.Changed, Granted: t.Allows(), Manage: trustManager(db)}
+	return chat.Trust{Withheld: t.WithheldNames(), Changed: t.ChangedNames(), Granted: t.Allows(), Manage: trustManager(db)}
 }
 
 // trustStartupNote is the line a session prints before it starts when the
-// checkout was holding something back. It is one line on stderr for the same
-// reason a server that did not connect is: a session quietly missing the
-// skills and the gate the repository ships is a session whose behaviour
-// nobody can account for. Nothing when there was nothing to withhold.
+// checkout was holding something back, or when a checkout the person trusted
+// changed since a session last read it. It is one line on stderr for the
+// same reason a server that did not connect is: a session quietly missing
+// the skills and the gate the repository ships is a session whose behaviour
+// nobody can account for, and a suite whose command line a pull rewrote is
+// the one change worth telling even though it loads. Nothing when there was
+// nothing to say.
 func trustStartupNote() string {
 	t := projectTrust()
-	names := t.WithheldNames()
-	if len(names) == 0 {
-		return ""
+	if names := t.WithheldNames(); len(names) > 0 {
+		return "trust: this checkout is not trusted, so its " + joinAnd(names) +
+			" are not in this session — `shhh trust` loads them"
 	}
-	lead := "this checkout is not trusted"
-	if t.Changed {
-		lead = "this checkout changed since you trusted it"
+	if names := t.ChangedNames(); len(names) > 0 && !changeTold() {
+		return "trust: this checkout's " + joinAnd(names) +
+			" changed since you trusted it, and load as they are now — `shhh trust off` withdraws the answer"
 	}
-	return "trust: " + lead + ", so its " + joinAnd(names) +
-		" are not in this session — `shhh doctor trust` loads them"
+	return ""
 }
 
 // probeTrust is the doctor's reading of the checkout. The store is opened
@@ -232,7 +307,17 @@ func doctorTrust(t project.Trust, offer bool) doctorFinding {
 		if present := kindNames(t.Present); len(present) > 0 {
 			detail = strings.Join(present, " · ")
 		}
-		return doctorFinding{Subject: "trusted", Detail: detail, Outcome: "ok"}
+		f := doctorFinding{Subject: "trusted", Detail: detail, Outcome: "ok"}
+		// The standing a session will report, read and never written: the
+		// re-stamp is the session's, so the doctor can be run as often as
+		// anyone likes without swallowing the notice.
+		if changed := t.ChangedNames(); len(changed) > 0 {
+			f.Outcome = "changed"
+			f.Consequence = "its " + joinAnd(changed) + " changed since a session here last read them, and load as they are now"
+			f.Fix = []string{"shhh trust off   # if that change is not one you trust"}
+			f.FixLabel = "show the line"
+		}
+		return f
 	case len(names) == 0:
 		return doctorFinding{
 			Subject: "declares nothing that runs", Detail: strings.Join(project.ResourceNames(), " · "),
@@ -245,11 +330,7 @@ func doctorTrust(t project.Trust, offer bool) doctorFinding {
 		Outcome: "untrusted", State: components.DoctorSkipped,
 		Consequence: "this checkout's " + joinAnd(names) + " are not in a session here until you trust it",
 	}
-	if t.Changed {
-		f.Outcome = "changed"
-		f.Consequence = "it changed since you trusted it, so " + joinAnd(names) + " are not loaded"
-	}
-	f.Fix = []string{"shhh doctor trust   # or [a] on this row, or /trust in a session", "one answer covers the whole checkout, not one file"}
+	f.Fix = []string{"shhh trust   # or [a] on this row, or /trust in a session", "one answer covers the whole checkout, not one file"}
 	f.FixLabel = fmt.Sprintf("show the %s", countOf(len(f.Fix), "line", "lines"))
 	if !offer {
 		return f

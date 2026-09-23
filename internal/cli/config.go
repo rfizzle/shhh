@@ -96,16 +96,16 @@ func newConfigSetCmd() *cobra.Command {
 }
 
 // projectTrustNote is what a write to the checkout's file has to add about
-// whether that file is being read at all. Editing any file the checkout
-// declares is a change the person has not answered for, so a write made
-// through shhh takes the checkout's own settings out of the next session
-// until they answer again — and a confirmation that did not say so would
-// leave them reading a value that is written down and not in force.
+// whether that file is being read at all. A trusted checkout keeps its answer
+// through the write, so what is left to say is when the value takes hold; an
+// untrusted one does not read the file at all, and a confirmation that did not
+// say so would leave the person reading a value that is written down and not
+// in force.
 func projectTrustNote() string {
 	if projectTrust().Allows() {
-		return "this checkout changed, so it asks to be trusted again before its settings load — `shhh doctor trust`"
+		return "in force from the next session in this checkout"
 	}
-	return "this checkout is not trusted, so its settings do not load here — `shhh doctor trust`"
+	return "this checkout is not trusted, so its settings do not load here — `shhh trust` loads them"
 }
 
 // projectWritePath is the settings file of the checkout dir stands in,

@@ -728,3 +728,18 @@ folded entry — each would give an existing mark a second meaning, which is the
 cost the closed set exists to refuse. So the hook is added once, with the one
 meaning both sites already give it, and a third line that hangs from its
 parent takes this mark rather than inventing another.
+
+## The start screen's trust row has no artboard
+
+*A gap.* The start screen's artboard draws a checkout shhh has never seen and
+no trust row at all. The binary draws one in two states, as one of the
+labelled notes under the facts and last among them: `withheld`, with the
+kinds the checkout declared and `shhh trust loads them`, where nobody has
+answered for it; and the kinds that changed, with `changed since you trusted
+it · shhh trust off withdraws it`, in the one session after a trusted
+checkout's declared files moved
+([approvals-and-safety.md](../capabilities/approvals-and-safety.md#a-checkout-declares-what-it-runs)).
+
+It is written in the notes' own voice — lower case, the value in body and the
+rest dim, joined with ` · `, no full stop — and a trusted, unchanged checkout
+draws nothing, so the screen the artboard draws is the one most sessions see.

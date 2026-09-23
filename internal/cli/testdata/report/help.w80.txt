@@ -30,12 +30,13 @@
          
     completion <shell>                 Generate shell completion script
     config [command]                   View and edit configuration
-    doctor [command] [--flags]         Check this machine's shhh setup
+    doctor [--flags]                   Check this machine's shhh setup
     eval [suite] [--flags]             Run a suite of coding tasks and report what the session did
     init [shell] [--flags]             Output shell integration snippet or scaffold project config
     mcp [command] [--flags]            Connect each MCP server a session here would use, and report it
     providers [command] [--flags]      List providers and check gateway profiles
     skills [command]                   List the skills a session here would load
+    trust [off]                        Let this checkout's skills, agent profiles, quality suites and servers load
     update [--flags]                   Check for a newer shhh and refresh the model data
          
   FLAGS  

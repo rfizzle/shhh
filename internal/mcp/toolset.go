@@ -26,9 +26,6 @@ const (
 	StatusDisabled Status = "disabled"
 	// StatusUntrusted: a project server the person has not trusted yet.
 	StatusUntrusted Status = "untrusted"
-	// StatusChanged: a project server whose definition changed since it was
-	// trusted, so the trust no longer covers it.
-	StatusChanged Status = "changed"
 	// StatusMissingEnv: it references an environment variable that is unset.
 	StatusMissingEnv Status = "missing-env"
 	// StatusExcluded: the session's kind does not admit it — a conversation
@@ -55,20 +52,21 @@ type Report struct {
 }
 
 // ProjectTrust is the person's answer about the checkout a project server
-// was defined in: whether what it declares may load at all, and whether an
-// answer they gave was overtaken by an edit. It is a value the session reads
-// from its own store before the first dial; nothing in a checkout can set
-// it, and the zero value — nobody asked — starts nothing.
+// was defined in: whether what it declares may load at all. An edit to the
+// definition does not take the answer away — trust is about the checkout,
+// and the session says once what changed
+// (docs/capabilities/approvals-and-safety.md#a-checkout-declares-what-it-runs).
+// It is a value the session reads from its own store before the first dial;
+// nothing in a checkout can set it, and the zero value — nobody asked —
+// starts nothing.
 //
 // A server is not trusted by name any more. Every kind of thing a checkout
 // can name runs as whoever cloned it, so the question is asked once about
 // the checkout rather than five times about five files
 // (docs/capabilities/mcp.md#a-checkout-cannot-start-a-process).
 type ProjectTrust struct {
-	// Granted is trust recorded at the checkout as it stands now.
+	// Granted is the person's answer for the checkout.
 	Granted bool
-	// Changed is trust recorded at a different state of it.
-	Changed bool
 }
 
 // Options shape a connect.
@@ -335,10 +333,7 @@ func admit(def Definition, opts Options) (Status, []string) {
 		return StatusExcluded, nil
 	}
 	if def.Scope == ScopeProject {
-		switch {
-		case opts.Project.Changed:
-			return StatusChanged, nil
-		case !opts.Project.Granted:
+		if !opts.Project.Granted {
 			return StatusUntrusted, nil
 		}
 	}

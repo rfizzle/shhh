@@ -95,7 +95,7 @@ func mcpRoot() string {
 func mcpOptions(cfg config.Config, readOnlyOnly bool) mcp.Options {
 	t := projectTrust()
 	opts := mcp.Options{
-		Project:      mcp.ProjectTrust{Granted: t.Allows(), Changed: t.Changed},
+		Project:      mcp.ProjectTrust{Granted: t.Allows()},
 		ReadOnlyOnly: readOnlyOnly,
 	}
 	if cfg.MCPEnvMaskEnabled() {
@@ -160,8 +160,6 @@ func mcpOutcome(r mcp.Report) string {
 		return "disabled"
 	case mcp.StatusUntrusted:
 		return "untrusted"
-	case mcp.StatusChanged:
-		return "changed"
 	case mcp.StatusMissingEnv:
 		return "unset: " + strings.Join(r.Missing, ", ")
 	case mcp.StatusExcluded:
@@ -286,8 +284,6 @@ func mcpConsequence(r mcp.Report) string {
 		return "its tools are not in any session until it is enabled"
 	case mcp.StatusUntrusted:
 		return "a project server does not start until you trust the checkout"
-	case mcp.StatusChanged:
-		return "the checkout changed since you trusted it, so it did not start"
 	case mcp.StatusMissingEnv:
 		return "its tools are not in this session until the variable is set"
 	case mcp.StatusExcluded:
@@ -309,8 +305,8 @@ func mcpFix(r mcp.Report, root string) []string {
 			return []string{"[mcp.servers." + d.Name + "]", "disabled = false"}
 		}
 		return []string{"in " + d.Source + ": set \"disabled\": false"}
-	case mcp.StatusUntrusted, mcp.StatusChanged:
-		return []string{"shhh mcp show " + d.Name + "   # what it is, before you trust the checkout", "shhh doctor trust   # or [a] on this row"}
+	case mcp.StatusUntrusted:
+		return []string{"shhh mcp show " + d.Name + "   # what it is, before you trust the checkout", "shhh trust   # or [a] on this row"}
 	case mcp.StatusMissingEnv:
 		var lines []string
 		for _, name := range r.Missing {
@@ -553,7 +549,7 @@ func mcpFinding(r mcp.Report, root string, db *storage.DB) doctorFinding {
 	if len(f.Fix) > 0 {
 		f.FixLabel = fmt.Sprintf("show the %s", countOf(len(f.Fix), "line", "lines"))
 	}
-	if (r.Status == mcp.StatusUntrusted || r.Status == mcp.StatusChanged) && db != nil && root != "" {
+	if r.Status == mcp.StatusUntrusted && db != nil && root != "" {
 		t := projectTrust()
 		f.Action = "trust this checkout"
 		f.ActionPrompt = "Trust " + shortPath(t.Root) + "? " + d.Name + " starts from " + d.Source +
@@ -619,7 +615,7 @@ func newMCPCmd() *cobra.Command {
 		Long: "Read every MCP server definition visible from the current directory — your config file, mcp.json beside it, " +
 			"and the project's .shhh/mcp.json or .mcp.json — connect each one, and report it as a row: what it reaches, " +
 			"how many tools it offers, and, for one that did not connect, why and what would fix it. " +
-			"A project server does not start until you trust the checkout it came with; [a] on its row, or `shhh doctor trust`, does that.",
+			"A project server does not start until you trust the checkout it came with; [a] on its row, or `shhh trust`, does that.",
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg := ConfigFrom(cmd.Context())

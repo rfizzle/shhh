@@ -163,14 +163,15 @@ func TestConfigSetProject_WritesTheCheckoutsFileAndRoundTrips(t *testing.T) {
 	if cfg.Behavior.DefaultMode != "auto" || !proj.Sets("behavior.default_mode") {
 		t.Fatalf("what was written is not what is in force: %q %v", cfg.Behavior.DefaultMode, proj.Keys)
 	}
-	// The write changed a file the checkout declares, so the answer that
-	// covered it no longer does — and the confirmation says so rather than
-	// leaving the reader with a value written down and not in force.
-	if note := projectTrustNote(); !strings.Contains(note, "trusted again") {
-		t.Errorf("the write does not say the checkout has to be trusted again: %q", note)
+	// The write changed a file the checkout declares, and the answer that
+	// covered it still does: the confirmation says when the value takes
+	// hold, and an untrusted checkout is told the file is not read and how
+	// to load it.
+	if note := projectTrustNote(); !strings.Contains(note, "next session") || strings.Contains(note, "trust") {
+		t.Errorf("a trusted checkout's write does not say when it takes hold: %q", note)
 	}
 	trusting(t, root, false)
-	if note := projectTrustNote(); !strings.Contains(note, "not trusted") {
+	if note := projectTrustNote(); !strings.Contains(note, "not trusted") || !strings.Contains(note, "`shhh trust`") {
 		t.Errorf("an untrusted checkout is not told its settings do not load: %q", note)
 	}
 }

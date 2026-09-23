@@ -211,11 +211,9 @@ func (p initPlan) wrote() report.Report {
 		"edit one and it is what a session is told; delete it and the built-in words are back",
 	}
 	if p.project {
-		// Writing anything the checkout declares changes what the person
-		// answered for, so a write made through shhh takes the checkout's
-		// own files out of the next session until they answer again — and a
-		// confirmation that did not say so would leave them reading a file
-		// that is written down and not in force.
+		// Whether what was just written is read at all is the checkout's
+		// trust answer, and a confirmation that did not say so would leave
+		// the person reading a file that is written down and not in force.
 		wordings.Fix = append(wordings.Fix, projectTrustNote())
 	}
 	return report.Report{

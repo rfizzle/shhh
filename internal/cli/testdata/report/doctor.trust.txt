@@ -1,0 +1,14 @@
+  shhh doctor — 3 checks
+
+  ✓ trust     trusted · skills · quality suites  [ok]
+  ✓ trust     trusted · skills · quality suites  [changed]
+      its quality suites changed since a session here last read them, and load
+      as they are now
+        shhh trust off   # if that change is not one you trust
+  ⊘ trust     2 kinds withheld · skills · quality suites  [untrusted]
+      this checkout's skills and quality suites are not in a session here until
+      you trust it
+        shhh trust   # or [a] on this row, or /trust in a session
+        one answer covers the whole checkout, not one file
+
+  2 passed · 1 not checked

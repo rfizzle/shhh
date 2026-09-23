@@ -467,13 +467,16 @@ func buildSessionEnv(cmd *cobra.Command, session chatSession, ledger *meter.Ledg
 	cfg := withRequiredContainment(ConfigFrom(cmd.Context()), session.requireSandbox)
 	ledger.SetBudget(spendBudget(cfg))
 
-	// What the checkout was not allowed to put into this session, said once
-	// before it starts. Both the interactive and the headless session come
-	// through here, and the headless one has no screen to read it off later
+	// What the checkout was not allowed to put into this session, or what
+	// changed in a checkout trusted before, said once before it starts. Both
+	// the interactive and the headless session come through here, and the
+	// headless one has no screen to read it off later. The re-stamp is what
+	// makes it once: the next session reads the checkout as this one found it
 	// (trust.go).
 	if note := trustStartupNote(); note != "" {
 		_ = report.Fprintln(os.Stderr, report.Row{State: report.Warn, Subject: note})
 	}
+	restampProjectTrust()
 
 	flags := session.flags
 	flags.ConfigProvider = cfg.Provider.Default

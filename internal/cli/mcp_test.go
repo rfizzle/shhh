@@ -44,8 +44,7 @@ func TestMCPFindingReadsEachStatus(t *testing.T) {
 		outcome string
 		fix     string
 	}{
-		{mcp.Report{Definition: def, Status: mcp.StatusUntrusted}, components.DoctorWarned, "untrusted", "shhh doctor trust"},
-		{mcp.Report{Definition: def, Status: mcp.StatusChanged}, components.DoctorWarned, "changed", "shhh doctor trust"},
+		{mcp.Report{Definition: def, Status: mcp.StatusUntrusted}, components.DoctorWarned, "untrusted", "shhh trust"},
 		{mcp.Report{Definition: def, Status: mcp.StatusFailed, Error: "server gh: connect: boom"}, components.DoctorFailed, "failed", "boom"},
 		{mcp.Report{Definition: def, Status: mcp.StatusMissingEnv, Missing: []string{"TOKEN"}}, components.DoctorWarned, "unset: TOKEN", "export TOKEN=..."},
 		{mcp.Report{Definition: def, Status: mcp.StatusDisabled}, components.DoctorSkipped, "disabled", "\"disabled\": false"},
@@ -85,7 +84,6 @@ func TestMCPToolSourcesReadEachStatus(t *testing.T) {
 		{mcp.Report{Definition: def, Status: mcp.StatusConnected, Server: &mcp.Server{Tools: []mcp.Tool{{Name: "a"}, {Name: "b"}}}}, components.ToolSourceUp, "2 tools"},
 		{mcp.Report{Definition: def, Status: mcp.StatusFailed, Error: "server gh: connect: boom\n    at line 2"}, components.ToolSourceFailed, "server gh: connect: boom"},
 		{mcp.Report{Definition: def, Status: mcp.StatusUntrusted}, components.ToolSourceBlocked, "untrusted"},
-		{mcp.Report{Definition: def, Status: mcp.StatusChanged}, components.ToolSourceBlocked, "changed"},
 		{mcp.Report{Definition: def, Status: mcp.StatusMissingEnv, Missing: []string{"TOKEN"}}, components.ToolSourceBlocked, "unset: TOKEN"},
 		{mcp.Report{Definition: def, Status: mcp.StatusDisabled}, components.ToolSourceOff, ""},
 		{mcp.Report{Definition: def, Status: mcp.StatusExcluded}, components.ToolSourceOff, "not read-only"},
@@ -113,7 +111,7 @@ func TestMCPListingSaysWhatEachServerBecame(t *testing.T) {
 		{Definition: mcp.Definition{Name: "proj", Scope: mcp.ScopeProject, Transport: mcp.TransportStdio, Command: "npx"}, Status: mcp.StatusUntrusted},
 	}}
 	got := mcpListing(ts, &mcp.Catalog{Diagnostics: []string{"/repo/.mcp.json: server Bad Name: bad"}}, "/repo")
-	for _, want := range []string{"⚠ keyed", "unset: X_TOKEN", "export X_TOKEN=...", "⚠ proj", "shhh doctor trust", "Bad Name", "0 servers connected"} {
+	for _, want := range []string{"⚠ keyed", "unset: X_TOKEN", "export X_TOKEN=...", "⚠ proj", "shhh trust", "Bad Name", "0 servers connected"} {
 		if !strings.Contains(got, want) {
 			t.Errorf("listing lacks %q:\n%s", want, got)
 		}

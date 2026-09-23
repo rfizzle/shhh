@@ -618,15 +618,26 @@ with command text in them, hooks to run at the session's own seams
 settings that say which commands run without asking — and every one of those runs as whoever
 cloned it. None of them load until you have said so.
 
-It is one answer about the whole checkout, given once: `shhh doctor trust`,
-`[a]` on the doctor's trust row, or `/trust` in a session. It covers
+It is one answer about the whole checkout, given once: `shhh trust`, `[a]`
+on the doctor's trust row, or `/trust` in a session. It covers
 `.shhh/skills`, `.agents/skills`, `.claude/skills`, `.shhh/agents`,
 `.shhh/quality.json`, `.shhh/hooks.json`, `.shhh/mcp.json`, `.mcp.json`,
-`.shhh/config.toml`, `.shhh/prompts` and `.shhh/todo/profile`, and what is
-recorded is those files as they stand — so editing any of them, or writing
-one that was not there, asks again. The
-answer is kept outside the checkout, in the local store, because a file in
-the checkout is the thing being decided about.
+`.shhh/config.toml`, `.shhh/prompts` and `.shhh/todo/profile`. The answer
+is keyed on the checkout and held until you withdraw it — `shhh trust off`,
+or `/trust off` — so the files it covers are yours to edit, and editing them
+does not ask again. The answer is kept outside the checkout, in the local
+store, because a file in the checkout is the thing being decided about.
+
+A change is told once, never withheld. What a trusted checkout's files say
+can still move under you without your hand on them — a pull that rewrites a
+suite's command line is the case worth guarding — so beside the answer shhh
+keeps what each kind of file said when a session last read it. The first
+session after one of them moves names the kinds that changed — on the start
+screen, in `/status`, and in the line before a headless run begins — loads
+them as they are now, and records what it read, so the session after says
+nothing. That notice is the reading a person acts on, and `shhh trust off`
+is the act. The doctor's row reports the same standing and writes nothing,
+so running it does not use the notice up.
 
 Withholding is a diagnostic and never an error. The session starts; it starts
 smaller, and it says so — on the start screen, in `/status`, in a line before

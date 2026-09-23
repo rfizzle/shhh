@@ -134,6 +134,10 @@ profiles.
 
 - **Project context:** `shhh init --project` creates `.shhh/project.md` for
   project-specific instructions.
+- **Project trust:** the skills, agent profiles, quality suites, hooks, MCP
+  servers, settings and wordings a checkout carries load once you run
+  `shhh trust` in it. The answer holds while those files change — the next
+  session says once what moved — until `shhh trust off` withdraws it.
 - **Skills:** load reusable task guidance from project or user skill directories.
 - **MCP:** connect tools supplied by Model Context Protocol servers.
 - **Hooks:** run your own command before or after a tool, when a turn closes

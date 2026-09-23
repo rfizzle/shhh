@@ -17,7 +17,7 @@ func TestStartScreenNamesWhatWasWithheld(t *testing.T) {
 	m := startModel(t, info)
 
 	screen := m.renderStartScreen(110)
-	for _, want := range []string{"trust", "withheld", "skills, quality suites", "/trust"} {
+	for _, want := range []string{"trust", "withheld", "skills, quality suites", "shhh trust loads them"} {
 		if !strings.Contains(screen, want) {
 			t.Errorf("the screen does not say %q:\n%s", want, screen)
 		}
@@ -35,17 +35,23 @@ func TestStartScreenNamesWhatWasWithheld(t *testing.T) {
 	}
 }
 
-// An answer given once and overtaken by an edit reads differently from one
-// that was never given.
-func TestWithheldWordSeparatesEditedFromUnanswered(t *testing.T) {
-	if w := (Trust{Withheld: []string{"skills"}}).word(); w != "withheld" {
-		t.Errorf("unanswered = %q", w)
+// A trusted checkout that changed since a session last read it names the
+// kinds that moved, and withholds nothing: the gate that was configured is
+// the gate in force.
+func TestStartScreenNamesWhatChangedOnce(t *testing.T) {
+	info := startFixture()
+	info.Trust = Trust{Granted: true, Changed: []string{"quality suites"}}
+	screen := startModel(t, info).renderStartScreen(110)
+	for _, want := range []string{"trust", "quality suites", "changed since you trusted it", "shhh trust off"} {
+		if !strings.Contains(screen, want) {
+			t.Errorf("the screen does not say %q:\n%s", want, screen)
+		}
 	}
-	if w := (Trust{Withheld: []string{"skills"}, Changed: true}).word(); w != "changed" {
-		t.Errorf("edited = %q", w)
+	if strings.Contains(screen, "withheld") {
+		t.Errorf("a changed checkout read as withholding:\n%s", screen)
 	}
-	if (Trust{}).withholding() {
-		t.Error("a session with nothing withheld reported some")
+	if (Trust{Changed: []string{"skills"}}).withholding() {
+		t.Error("a change was read as something withheld")
 	}
 	if !(Trust{Withheld: []string{string(project.KindGate)}}).withholds(project.KindGate) {
 		t.Error("the gate is in the list and was not found")
@@ -56,12 +62,20 @@ func TestWithheldWordSeparatesEditedFromUnanswered(t *testing.T) {
 // start screen left once the session is under way.
 func TestStatusCommandNamesWhatWasWithheld(t *testing.T) {
 	info := startFixture()
-	info.Trust = Trust{Withheld: []string{"skills", "MCP servers"}, Changed: true}
+	info.Trust = Trust{Withheld: []string{"skills", "MCP servers"}}
 	m := startModel(t, info)
 	text, _ := m.statusCommand()
-	for _, want := range []string{"Withheld", "changed since you trusted it", "skills and MCP servers", "/trust"} {
+	for _, want := range []string{"Withheld", "not trusted", "skills and MCP servers", "/trust"} {
 		if !strings.Contains(text, want) {
 			t.Errorf("/status missing %q:\n%s", want, text)
+		}
+	}
+	info.Trust = Trust{Granted: true, Changed: []string{"quality suites"}}
+	cm := startModel(t, info)
+	changed, _ := cm.statusCommand()
+	for _, want := range []string{"Changed", "quality suites changed since you trusted it", "/trust off"} {
+		if !strings.Contains(changed, want) {
+			t.Errorf("/status missing %q:\n%s", want, changed)
 		}
 	}
 	quiet := startModel(t, startFixture())
@@ -87,7 +101,7 @@ func TestTrustCommandGoesToTheSessionsAnswer(t *testing.T) {
 		t.Errorf("args = %v", got)
 	}
 	bare := startModel(t, startFixture())
-	if out := bare.trustCommand(nil); !strings.Contains(out, "shhh doctor trust") {
+	if out := bare.trustCommand(nil); !strings.Contains(out, "`shhh trust`") {
 		t.Errorf("a session with no answer to give said %q", out)
 	}
 }

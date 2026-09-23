@@ -405,7 +405,7 @@ func startNotes(info StartInfo) []components.StartNote {
 	// about a checkout that configured one and was not trusted to run it
 	// would send the reader to write a file that is already there.
 	case info.Trust.withholds(project.KindGate):
-		gate.Value, gate.Detail = info.Trust.word(), "this checkout is not trusted to run its own checks"
+		gate.Value, gate.Detail = "withheld", "this checkout is not trusted to run its own checks"
 	case info.Gate.Err != "":
 		gate.Value, gate.Detail = "unreadable", info.Gate.Err
 	case info.Gate.Configured():
@@ -438,11 +438,20 @@ func startNotes(info StartInfo) []components.StartNote {
 	}
 	// Last, and only when there is something to say. A trusted checkout
 	// says nothing here: a row that reads "trusted" on every session is a
-	// row nobody reads by the third one.
-	if info.Trust.withholding() {
+	// row nobody reads by the third one. A trusted checkout whose files moved
+	// since a session here last read them says so once, naming the kinds:
+	// what it holds still loads, and this is the reading a person acts on
+	// (docs/capabilities/approvals-and-safety.md#a-checkout-declares-what-it-runs).
+	switch {
+	case info.Trust.withholding():
 		notes = append(notes, components.StartNote{
-			Label: "trust", Value: info.Trust.word(),
-			Detail: strings.Join(info.Trust.Withheld, ", ") + " · /trust loads them",
+			Label: "trust", Value: "withheld",
+			Detail: strings.Join(info.Trust.Withheld, ", ") + " · shhh trust loads them",
+		})
+	case len(info.Trust.Changed) > 0:
+		notes = append(notes, components.StartNote{
+			Label: "trust", Value: strings.Join(info.Trust.Changed, ", "),
+			Detail: "changed since you trusted it · shhh trust off withdraws it",
 		})
 	}
 	return notes

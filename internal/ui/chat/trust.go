@@ -1,10 +1,12 @@
 package chat
 
-// What the checkout was not allowed to put into this session. A repository
-// names skills, agent profiles, quality suites, hooks and servers, and none
-// of them load until the person has answered for the checkout, so a session
-// in a fresh clone is quietly smaller than the same session in a trusted one
-// — quietly being the failure this states out loud.
+// What the checkout was not allowed to put into this session, and what
+// changed in one that was. A repository names skills, agent profiles, quality
+// suites, hooks and servers, and none of them load until the person has
+// answered for the checkout, so a session in a fresh clone is quietly smaller
+// than the same session in a trusted one — quietly being the failure this
+// states out loud. A trusted checkout loads what it holds as it is now, and
+// the first session after a change says once what moved.
 // See
 // docs/capabilities/approvals-and-safety.md#a-checkout-declares-what-it-runs.
 
@@ -27,14 +29,14 @@ type Trust struct {
 	// Withheld names what this checkout declares and the session did not
 	// load, in the words the doctor uses for the same list.
 	Withheld []string
-	// Changed says the answer was given once and the checkout has been
-	// edited since, which is a different thing to tell the reader than never
-	// having been asked.
-	Changed bool
+	// Changed names the kinds that moved since a session here last read a
+	// trusted checkout. Nothing is withheld for it: it is the notice, and
+	// this is the one session that shows it.
+	Changed []string
 	// Manage backs the /trust slash command.
 	Manage func(args []string) string
-	// Granted is the answer itself: the checkout was trusted at exactly the
-	// state it is in now. Withheld is the list a reader is shown and is
+	// Granted is the answer itself: the checkout was trusted and the answer
+	// has not been withdrawn. Withheld is the list a reader is shown and is
 	// empty both for a trusted checkout and for one that declares nothing,
 	// so it cannot answer this question — and a commit hook is a program the
 	// checkout can point git at, which is a decision that needs the answer
@@ -75,29 +77,22 @@ func joinAnd(names []string) string {
 	return strings.Join(names[:len(names)-1], ", ") + " and " + names[len(names)-1]
 }
 
-// word is the state as one word: the answer was never given, or it was and
-// the checkout moved on.
-func (t Trust) word() string {
-	if t.Changed {
-		return "changed"
-	}
-	return "withheld"
-}
-
-// trustStatus is the withheld list in words for `/status`, and nothing at all
-// when the session lost nothing. It is on the same screen as the tool
-// sources because it is the same question — what is not here — asked of
-// the checkout rather than of the servers.
+// trustStatus is the withheld list in words for `/status`, or the kinds a
+// trusted checkout changed since it was last read, and nothing at all when
+// there is neither. It is on the same screen as the tool sources because it
+// is the same question — what is not here, or not as it was — asked of the
+// checkout rather than of the servers.
 func (m Model) trustStatus() string {
 	t := m.trust()
+	if len(t.Changed) > 0 {
+		return "Changed\nThis checkout's " + joinAnd(t.Changed) +
+			" changed since you trusted it, and are in this session as they are now.\n" +
+			"/trust off withdraws the answer from the next session on."
+	}
 	if !t.withholding() {
 		return ""
 	}
-	lead := "This checkout is not trusted"
-	if t.Changed {
-		lead = "This checkout changed since you trusted it"
-	}
-	return "Withheld\n" + lead + ", so its " + joinAnd(t.Withheld) +
+	return "Withheld\nThis checkout is not trusted, so its " + joinAnd(t.Withheld) +
 		" are not in this session.\n/trust loads them from the next session on."
 }
 
@@ -105,7 +100,7 @@ func (m Model) trustStatus() string {
 func (m Model) trustCommand(args []string) string {
 	manage := m.trust().Manage
 	if manage == nil {
-		return "Trust is not answered from this session; `shhh doctor trust` records it."
+		return "Trust is not answered from this session; `shhh trust` records it."
 	}
 	return manage(args)
 }

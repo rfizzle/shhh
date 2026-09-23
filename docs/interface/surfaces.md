@@ -1910,6 +1910,15 @@ what was read into the system prompt, and which check suite is in effect. A
 suite that is not configured names the file it looked for; one that exists and
 will not load says so, because a broken gate is not an absent one.
 
+A trust row follows them only when there is something to say about the
+checkout's answer
+([approvals-and-safety.md](../capabilities/approvals-and-safety.md#a-checkout-declares-what-it-runs)):
+what was withheld and `shhh trust`, where nobody has answered for it; or, in
+the one session after a trusted checkout's declared files moved, the kinds
+that changed and `shhh trust off`. A trusted checkout that has not moved
+draws no row, because a row that reads the same on every session is a row
+nobody reads by the third one.
+
 Three suggestions follow, ordered by what the working tree suggests — a
 session to resume, then something read-only, then something needing a single
 approval — and each says what it will cost you in permission.
@@ -1951,7 +1960,11 @@ card. Nothing new is introduced, and the gain is that a reader who knows the
 session already knows these. The MCP server listing is the doctor screen over
 servers rather than checks: a connect is a check, so it is the same row, and a
 server waiting on the person's trust offers it the way a pending migration
-offers the move. The saved-chat browser is the same cut over conversations:
+offers the move. The doctor's own trust row is the same reading as the start
+screen's — trusted, trusted and changed since a session last read it, or
+withheld with `[a]` on it — and it only reads: the session that shows a
+change is the one that records it, so a doctor run never uses the notice up.
+The saved-chat browser is the same cut over conversations:
 the list on the left, the one the pointer is on beside it, and the renaming
 and deleting the picker inside a session already offers
 (../capabilities/sessions-and-memory.md#housekeeping).
