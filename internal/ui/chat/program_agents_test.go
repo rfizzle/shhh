@@ -6,6 +6,7 @@ package chat
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"sync"
@@ -15,9 +16,11 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/notebook"
+	"github.com/rfizzle/shhh/internal/persona"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/tools"
+	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
 // children is what each child is answered with, by the name its spawn gave
@@ -100,6 +103,50 @@ func TestProgram_ASpawnCardStartsTheChildrenAsLanes(t *testing.T) {
 
 	frame := finalFrame(t, tm)
 	frameHas(t, frame, "reader-1", "reader-2", "2 agents")
+}
+
+// A conversation's colleague named from the @ menu: the menu offers the role
+// beside the files with its description, tab writes `@name` into the
+// sentence, and the sentence is what the model reads. The spawn the model
+// makes under that hint is an ordinary one, put on the ordinary card
+// (docs/capabilities/chat.md#colleagues-not-workers).
+func TestProgram_ANamedColleagueIsAHintAndItsSpawnIsCarded(t *testing.T) {
+	hold, release := quietHold(t)
+	root := fixtureDir(t, map[string]string{"auth.go": "package auth\n"})
+	lead := spawns("Asking the security reviewer.\n", "security-reviewer", "sec-1")
+	lead.hold = hold
+	m, sup := agentSession(t, root, nil, children{
+		"sec-1": {{text: "The token check compares in constant time."}},
+	}, lead, programTurn{text: "The reviewer has reported."})
+	sup.AddProfile(subagent.Profile{Name: "security-reviewer", Description: "reads a change for what it exposes"})
+	// The card is the one every spawn gets; only the roles it is judged
+	// against are the supervisor's, which is where the colleague lives.
+	m = m.WithGatedTools(map[string]GatedPreviewFunc{subagent.SpawnToolName: func(raw json.RawMessage) (GatedPreview, error) {
+		plan, err := subagent.SpawnPlan(sup.Profiles(), raw)
+		if err != nil {
+			return GatedPreview{}, err
+		}
+		return GatedPreview{Action: "spawn", Summary: "start a " + string(plan.Role), Title: "spawn " + plan.Name,
+			Spawn: &components.SpawnRow{Role: string(plan.Role), Name: plan.Name, About: plan.About, Task: plan.Task}}, nil
+	}})
+	m = m.WithPersonas(Personas{Kind: persona.KindChat, Roles: func() []SpawnableRole {
+		return []SpawnableRole{{Name: "security-reviewer", Description: "reads a change for what it exposes"}}
+	}})
+	tm := runProgramAt(t, m, 120, 44)
+
+	tm.Type("ask @sec")
+	waitForText(t, tm, "reads a change for what it exposes")
+	tm.Send(tea.KeyPressMsg{Code: tea.KeyTab})
+	tm.Type("about the token check")
+	tm.Send(programEnter)
+	waitForText(t, tm, "ask @security-reviewer about the token check")
+	release()
+	waitForText(t, tm, "Spawn security-reviewer")
+	tm.Send(programAllow)
+	waitForText(t, tm, "The reviewer has reported")
+
+	frame := finalFrame(t, tm)
+	frameHas(t, frame, "ask @security-reviewer about the token check", "sec-1")
 }
 
 // startChildren sends the line that makes the session spawn, answers the

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/shhh/internal/persona"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/provider"
 )
@@ -181,5 +182,102 @@ func TestMention_WalkRunsOncePerDraft(t *testing.T) {
 	m.syncCompletions()
 	if m.complete.mentionCache != nil {
 		t.Fatal("a draft that stopped being a mention should drop the cache")
+	}
+}
+
+// colleagueModel is a conversation whose roles are two readers, with the
+// mention model's files beside them.
+func colleagueModel(t *testing.T, kind persona.Kind) Model {
+	t.Helper()
+	m := mentionModel(t)
+	m.personas = Personas{Kind: kind, Roles: func() []SpawnableRole {
+		return []SpawnableRole{
+			{Name: "researcher", Description: "reads the web and the checkout"},
+			{Name: "security-reviewer", Description: "reads a change for what it exposes"},
+		}
+	}}
+	return m
+}
+
+func TestMention_ColleaguesAreRowsBesideTheFiles(t *testing.T) {
+	m := colleagueModel(t, persona.KindChat)
+	m.input.SetValue("@")
+	m.syncCompletions()
+
+	var names []string
+	for _, c := range m.complete.items {
+		names = append(names, c.name)
+	}
+	if len(names) != 5 || names[0] != "@researcher" || names[1] != "@security-reviewer" || names[2] != "go.mod" {
+		t.Fatalf("expected the two colleagues ahead of the three files, got %v", names)
+	}
+	if m.complete.items[1].desc != "reads a change for what it exposes" {
+		t.Fatalf("a colleague's second column is its description, got %q", m.complete.items[1].desc)
+	}
+
+	m.input.SetValue("@sec")
+	m.syncCompletions()
+	if len(m.complete.items) == 0 || m.complete.items[0].name != "@security-reviewer" {
+		t.Fatalf("@sec should put the colleague it prefixes first, got %v", m.complete.items)
+	}
+}
+
+func TestMention_ACodingSessionOffersNoColleagues(t *testing.T) {
+	m := colleagueModel(t, persona.KindCode)
+	m.input.SetValue("@")
+	m.syncCompletions()
+	for _, c := range m.complete.items {
+		if c.colleague {
+			t.Fatalf("a coding session's roles are not colleagues to address, got %q", c.name)
+		}
+	}
+}
+
+// Naming is a hint the model reads in the message and nothing else: the row
+// writes the name with its @ into the sentence, and the sentence is what is
+// sent (docs/capabilities/chat.md#colleagues-not-workers).
+func TestMention_AColleagueReachesTheModelAsWrittenInTheMessage(t *testing.T) {
+	m := colleagueModel(t, persona.KindChat)
+	m.input.SetValue("ask @sec")
+	m.syncCompletions()
+
+	updated, cmd := m.Update(tea.KeyPressMsg{Code: tea.KeyTab})
+	next := updated.(Model)
+	if cmd != nil {
+		t.Fatal("a colleague is a name, not a file to peek at or stage")
+	}
+	if got := next.input.Value(); got != "ask @security-reviewer " {
+		t.Fatalf("tab should write the colleague's name with its @, got %q", got)
+	}
+
+	next = typeChars(t, next, "about the diff")
+	updated, _ = next.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	next = updated.(Model)
+	msgs := next.agent.Messages()
+	last := msgs[len(msgs)-1]
+	if last.Role != provider.RoleUser || last.Content != "ask @security-reviewer about the diff" {
+		t.Fatalf("the message should carry the name as typed, got %s %q", last.Role, last.Content)
+	}
+}
+
+// Typed a letter at a time, the @ menu focuses what the letters rank first
+// rather than the row the bare @ opened on, so tab on `@sec` writes the
+// colleague it names.
+func TestMention_TypingNarrowsTheFocusToTheBestMatch(t *testing.T) {
+	m := typeChars(t, colleagueModel(t, persona.KindChat), "@sec")
+	if got := m.complete.items[m.complete.idx].name; got != "@security-reviewer" {
+		t.Fatalf("expected the focus on @security-reviewer, got %q", got)
+	}
+}
+
+// An arrowed-to row is a choice, and a letter typed after it keeps it.
+func TestMention_AnArrowedRowSurvivesTheNextLetter(t *testing.T) {
+	m := typeChars(t, colleagueModel(t, persona.KindChat), "@")
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyDown})
+	m = updated.(Model)
+	chosen := m.complete.items[m.complete.idx].name
+	m = typeChars(t, m, "e")
+	if got := m.complete.items[m.complete.idx].name; got != chosen {
+		t.Fatalf("the arrowed-to %q should keep the focus, got %q", chosen, got)
 	}
 }

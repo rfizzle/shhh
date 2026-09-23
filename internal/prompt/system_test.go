@@ -111,7 +111,10 @@ func TestBuildConversation(t *testing.T) {
 	if !strings.Contains(got, "Prefer explaining with examples") {
 		t.Error("expected extra prompt to be appended")
 	}
-	for _, want := range []string{"Everything you can reach is a read", "cannot run commands or edit files", "Cwd: /home/user"} {
+	// The @name sentence is how a colleague the person named reaches the
+	// model as a hint rather than a spawn
+	// (docs/capabilities/chat.md#colleagues-not-workers).
+	for _, want := range []string{"Everything you can reach is a read", "cannot run commands or edit files", "Cwd: /home/user", "When the user writes @ and a delegate's name"} {
 		if !strings.Contains(got, want) {
 			t.Errorf("conversation prompt missing %q", want)
 		}

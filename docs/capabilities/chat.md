@@ -110,6 +110,17 @@ level, and a prompt that is its standing instructions. A chat session with a
 few of these behaves like a small team of specialists that one generalist
 routes to, each answering in its own voice, each unable to change anything.
 
+A colleague can be named. `@` in the draft offers the session's colleagues
+beside its files, each with what it is for, and choosing one writes `@name`
+into the sentence. Naming is a hint and not an order: the model reads the name
+in the message and is told what `@name` means, and it still decides whether to
+delegate and to whom. Reaching the security reviewer then no longer depends on
+phrasing the question so the model picks her description — and the one who
+routes is still the one who routes, so a spawn made under the hint is an
+ordinary spawn, on an ordinary card, answered like any other. A name that
+spawned directly would be a second way to delegate that skipped the decision
+the orchestrator exists to make.
+
 ## What they share
 
 The session's notebook is the shared channel between a conversation and its

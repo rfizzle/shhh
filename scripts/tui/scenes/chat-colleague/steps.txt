@@ -1,0 +1,35 @@
+# program test: TestProgram_ANamedColleagueIsAHintAndItsSpawnIsCarded,
+#   TestProgram_TheQuitChordArmsThenLeaves
+#
+# A colleague named in a conversation, at 110 columns
+# (docs/capabilities/chat.md#colleagues-not-workers).
+#
+# What the capture is for: `@` in `shhh chat` offers the session's read-only
+# roles beside its files, each with its description in the second column, and
+# choosing one writes `@name` into the sentence. Naming is a hint: the model
+# reads the name in the message and still chooses, so what follows is an
+# ordinary spawn on the ordinary card, and the lane the child is drawn in is
+# the one every spawn gets.
+setup printf 'package auth\n\nfunc check(a, b string) bool { return a == b }\n' > auth.go
+setup printf 'package auth\n\ntype session struct{ token string }\n' > session.go
+snap 01-start "shhh chat"
+# The menu, narrowed by what follows the @: the colleague first, with what it
+# is for, and the files beside it.
+keys "ask @se"
+snap 02-menu "reads a change for what it exposes"
+keys Tab
+keys "about the token check"
+snap 03-named "@security-reviewer about the token check"
+keys Enter
+# The spawn the hint led to is put to the person like any other.
+snap 04-spawn-card "Spawn security-reviewer"
+# The card's keys go live a moment after it lands, so the answer waits for
+# them rather than falling into the draft.
+sleep 1
+keys y
+# And the child runs in the lane every spawn gets.
+snap 05-lane "The security reviewer is reading the token check."
+snap 06-working "running · 1 tool"
+keys C-d
+snap 07-quit-armed "again quits"
+keys C-d

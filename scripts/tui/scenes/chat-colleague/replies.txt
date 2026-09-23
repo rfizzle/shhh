@@ -1,0 +1,20 @@
+# One queue per agent: the conversation, and the colleague it spawns under the
+# name the person typed. The session's first reply is the spawn the hint led
+# to — an ordinary spawn_agent call, which the session puts on the ordinary
+# card — and its second is what it says once the child has started.
+[session]
+Asking the security reviewer to read the token check.
++tool:spawn_agent:{"role":"security-reviewer","task":"Read auth.go and say whether the token check leaks timing.","name":"sec-1"}
+The security reviewer is reading the token check.
+
+# The colleague reads the file and then holds its answer open for a while, so
+# its lane is still on screen, working, when the scene captures it.
+[sec-1]
+tool:read_file:{"path":"auth.go"}
+wait:30
++The token check compares in constant time.
+
+# The session's own readings of its run take a reply of their own rather than
+# one of anybody's rounds.
+[reading]
+The conversation has asked its security reviewer to read the token check.

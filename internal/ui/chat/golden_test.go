@@ -1989,10 +1989,28 @@ func TestGolden_CompletionMenu(t *testing.T) {
 			m.syncCompletions()
 			return promptSurface(m)
 		}
+		// A conversation's @ names its colleagues beside the files, each
+		// with what it is for (docs/capabilities/chat.md#colleagues-not-workers).
+		colleagues := func() string {
+			m := goldenModel(t, width)
+			m.recentFiles = func() []project.RecentFile {
+				return []project.RecentFile{
+					{Path: "internal/auth/session.go", Mod: time.Now().Add(-time.Minute)},
+					{Path: "docs/security.md", Mod: time.Now().Add(-9 * time.Minute)},
+				}
+			}
+			m.personas = Personas{Kind: persona.KindChat, Roles: func() []SpawnableRole {
+				return []SpawnableRole{{Name: "security-reviewer", Description: "reads a change for what it exposes"}}
+			}}
+			m.input.SetValue("@se")
+			m.syncCompletions()
+			return promptSurface(m)
+		}
 		return []golden.Panel{
 			{Label: "idle · every command on the list is runnable", View: menu("/co", false)},
 			{Label: "mid-turn · the greyed rows say why", View: menu("/co", true)},
 			{Label: "mid-turn · the one command the prefix names", View: menu("/comp", true)},
+			{Label: "a conversation's @ · a colleague among the files", View: colleagues()},
 		}
 	})
 }

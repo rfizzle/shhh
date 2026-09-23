@@ -88,6 +88,9 @@ type completionItem struct {
 	// (idleOnlyMeta). Empty means it can. The row is still completed and still
 	// run: running it is how the session says the longer reason out loud.
 	off string
+	// colleague marks an @ row that names a conversation's role rather than
+	// a file (mention.go): it is written with its @ and never peeked at.
+	colleague bool
 }
 
 var (
@@ -405,6 +408,7 @@ func (m *Model) syncCompletions() {
 	if m.complete.idx < len(m.complete.items) {
 		prev = m.complete.items[m.complete.idx].name
 	}
+	arrowed := m.complete.moved
 
 	prior, token, start, end := tokenAtCursor(val, m.inputCursor())
 	var matches []completionItem
@@ -456,8 +460,12 @@ func (m *Model) syncCompletions() {
 	// about this one.
 	m.complete.moved = false
 	// Keep the arrowed-to row focused across keystrokes — unless the typed
-	// text now names a candidate exactly, which always wins the focus.
-	if !exactlyNamed(m, token) {
+	// text now names a candidate exactly, which always wins the focus. An @
+	// menu keeps a row only when it was arrowed onto: its rows are ranked by
+	// what was typed, so the row the bare @ happened to open on is not a
+	// choice, and keeping it would have `@sec` insert whichever colleague or
+	// file sorted first before anything was typed (mention.go).
+	if !exactlyNamed(m, token) && (!files || arrowed) {
 		for i, c := range matches {
 			if c.name == prev {
 				m.complete.idx = i

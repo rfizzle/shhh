@@ -1,0 +1,6 @@
+# A conversation, not the coding session, because a colleague is a
+# conversation's read-only role (docs/capabilities/chat.md#colleagues-not-workers).
+# The profile is written into this run's own config directory before the
+# session starts, since the roles are read once at startup; \042 is a double
+# quote, which the launch line cannot carry as itself.
+mkdir -p $XDG_CONFIG_HOME/shhh/agents && printf 'description = \042reads a change for what it exposes\042\n' > $XDG_CONFIG_HOME/shhh/agents/security-reviewer.toml && $SHHH_BIN chat
