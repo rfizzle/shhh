@@ -427,7 +427,19 @@ type ModePolicy struct {
 	// inspection commands prompt like anything else
 	// (behavior.read_only_auto = false).
 	ReadOnlyDisabled bool
+	// Conversation is the policy of a session that registered nothing that
+	// acts. A fetch there is a read like a file read — nothing it brings back
+	// can change the tree or the machine — so it is allowed without a card,
+	// and only the host deny list, read ahead of it, still refuses one.
+	// See docs/capabilities/chat.md#a-conversation-has-one-mode.
+	Conversation bool
 }
+
+// ConversationReadReason is what a fetch a conversation allowed reports. It
+// is its own word rather than a grant's, because nobody granted anything: a
+// comparison of a conversation's reads with a coding session's grants has to
+// be able to tell the two apart.
+const ConversationReadReason = "conversation read"
 
 // TurnGrantReason is what a call allowed by a turn-scoped grant reports, in
 // the shape "session grant" and "session policy" already have. It is a
@@ -616,6 +628,12 @@ func (p ModePolicy) decide(a Action) (Decision, string) {
 	// think about it.
 	if a.Kind == ActionFetch && HostMatches(p.DenyHosts, a.Host) {
 		return Deny, DenyReasonHost
+	}
+	// A conversation's fetch is past the one list that refuses it, and
+	// nothing after this point could refuse it either: it has no mode to
+	// read and no grant to wait for.
+	if p.Conversation && a.Kind == ActionFetch {
+		return Allow, ConversationReadReason
 	}
 	if p.Mode.ReadOnly() {
 		// Both read-only modes grant inspection even with the read-only

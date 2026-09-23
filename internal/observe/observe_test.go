@@ -15,6 +15,7 @@ func TestReasonCode_Mapping(t *testing.T) {
 		"session policy":       "session-grant",
 		"session grant":        "session-scope",
 		"allowlist":            "allowlist",
+		"conversation read":    "conversation-read",
 		"plan mode":            "plan-mode",
 		"plan mode inspection": "plan-inspection",
 		// The other read-only mode keeps codes of its own: the two share a

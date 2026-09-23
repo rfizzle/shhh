@@ -85,7 +85,13 @@ func (m Model) WithReadOnlyCommands(extra []string, disabled bool) Model {
 
 // WithApprovalMode sets the session's starting permission mode and the
 // Shift+Tab cycle order; an empty cycle keeps the default order.
+//
+// A conversation keeps the one it was given (conversation.go): the setting
+// is for the sessions that have modes to choose between.
 func (m Model) WithApprovalMode(mode agent.Mode, cycle []agent.Mode) Model {
+	if m.conversation {
+		return m
+	}
 	m.policy.mode = mode
 	if len(cycle) > 0 {
 		m.policy.cycle = cycle
@@ -112,6 +118,7 @@ func (m Model) modePolicy() agent.ModePolicy {
 		DenyHosts:        m.policy.denyHosts,
 		ReadOnlyExtra:    m.policy.readOnlyExtra,
 		ReadOnlyDisabled: m.policy.readOnlyDisabled,
+		Conversation:     m.conversation,
 	}
 }
 
@@ -613,6 +620,9 @@ func (m Model) policyDecision(req *approvalRequest) (agent.Decision, string) {
 // modeStatus describes the active mode and cycle for /permissions with no
 // argument.
 func (m Model) modeStatus() string {
+	if m.conversation {
+		return conversationModeNote
+	}
 	cycle := m.policy.cycle
 	if len(cycle) == 0 {
 		cycle = agent.DefaultCycle()

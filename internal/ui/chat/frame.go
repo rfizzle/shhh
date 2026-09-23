@@ -478,6 +478,11 @@ func (m Model) frameHints(room int) string {
 			segAs(keys.Draft.Mode, "mode"),
 			twoPress(keys.Draft.Quit, "quit").givesUp(2),
 		}
+		// A conversation has no mode to cycle, so the rail does not offer
+		// the key for one (conversation.go).
+		if m.conversation {
+			hints = slices.DeleteFunc(hints, func(h hintSeg) bool { return h.label == "mode" })
+		}
 		// The key for the fold the draft is holding, offered only while
 		// there is one to open and named for the one it opens — `open the
 		// staged paste` beside a sentence carrying two of them is the rail

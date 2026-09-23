@@ -9,16 +9,11 @@ coding agent's surface with parts turned off.
 
 Everything chat can reach is a read: files in the working scope, the web,
 the session's own notes. There is no command runner and no file editor, and
-no way to conjure one from inside the session. The one decision the person
-is ever asked for is whether a request may leave the machine — a fetch, a
-search, a spawn — because that is the one act a read-only session still
-has that is not free.
-
-It is also the one thing a session can grant, and what it grants is a host.
-`[a]` on a fetch card answers for the site the card named and for nothing
-beside it, so a conversation that settles into one documentation set stops
-being a stream of cards
-([`approvals-and-safety.md`](approvals-and-safety.md#a-host-is-granted-once)).
+no way to conjure one from inside the session. A page read off the web is a
+read like a file read, so it is not put to the person either
+([below](#a-conversation-has-one-mode)); what is still asked is whether a
+colleague may be started, because a child spends the session's budget on
+work nobody reads until it reports.
 
 A read that leaves the machine is also the most expensive one, so a page is
 kept whole. What the conversation carries is the opening slice of it; the rest
@@ -33,6 +28,39 @@ That is what lets chat drop the machinery that exists to make mutation safe:
 the changeset and its undo, the review view, the quality gate, the git
 snapshots behind rewind, process supervision, containment. None of it has a
 job where nothing is written.
+
+## A conversation has one mode
+
+Read-only is a property of the session, so there is no mode to choose. The
+coding agent's five — manual, accept-edits, auto, read-only and plan — each
+decide how much of the acting is decided in advance, and a conversation has no
+acting to decide about. The frame says `read-only` and does not change;
+`shift+tab`, `/permissions` and a mode named to it answer that a conversation
+has one mode rather than opening a picker, and `--mode` on `shhh chat` is
+refused with the same sentence rather than taken and ignored. Plan mode goes
+with the rest: there is no plan card here, no plan record, and no new session
+carrying a plan, because a plan is a proposal about work this session cannot
+do.
+
+A fetch and a search run without a card. They leave the machine, but what
+leaves is an address and what comes back is a page; nothing either does can
+change the tree or the machine, so there is no answer the person could give
+that protects anything. What stays is the refusal the person wrote down:
+`web.deny_hosts` is read before the fetch is allowed, here as everywhere, and
+the fetcher still will not follow a redirect off a granted host to one nobody
+answered for ([`approvals-and-safety.md`](approvals-and-safety.md#a-host-is-granted-once)).
+Every page still lands in the ledger ([below](#what-was-read)). The session's
+children read the web the same way, since a card routed up from a colleague
+would be the same question asked one level down. The record files these reads
+under a reason of their own, so a comparison can tell a conversation's reads
+from the hosts a coding session was granted.
+
+Read-only means the tree and the machine are left as they were, not that
+nothing is produced. A conversation still writes three things, all of them
+shhh's own: a report page (`report`) into shhh's report store, served on
+loopback; a note into the session's notebook; and a durable memory, which the
+person confirms on a card before it is kept. None of them is a write to the
+checkout, so all three stay, and the first two run without asking.
 
 ## It starts where you are, not with what you have
 

@@ -428,7 +428,13 @@ func (m Model) openModelPick() (tea.Model, tea.Cmd) {
 
 // openModePick opens the interactive /permissions picker over the session's
 // mode cycle, focused on the active mode.
+//
+// A conversation has no picker to open: it answers with the one mode it has.
 func (m Model) openModePick() (tea.Model, tea.Cmd) {
+	if m.conversation {
+		m.noteOneMode()
+		return m, nil
+	}
 	cycle := m.policy.cycle
 	if len(cycle) == 0 {
 		cycle = agent.DefaultCycle()

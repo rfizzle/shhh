@@ -113,8 +113,11 @@ func TestBuildConversation(t *testing.T) {
 	}
 	// The @name sentence is how a colleague the person named reaches the
 	// model as a hint rather than a spawn
-	// (docs/capabilities/chat.md#colleagues-not-workers).
-	for _, want := range []string{"Everything you can reach is a read", "cannot run commands or edit files", "Cwd: /home/user", "When the user writes @ and a delegate's name"} {
+	// (docs/capabilities/chat.md#colleagues-not-workers). The permission
+	// sentence is what a conversation's policy does with a fetch, stated to
+	// the model so it does not wait for a card that never comes
+	// (docs/capabilities/chat.md#a-conversation-has-one-mode).
+	for _, want := range []string{"Everything you can reach is a read", "cannot run commands or edit files", "reading the web here needs nobody's permission", "Cwd: /home/user", "When the user writes @ and a delegate's name"} {
 		if !strings.Contains(got, want) {
 			t.Errorf("conversation prompt missing %q", want)
 		}

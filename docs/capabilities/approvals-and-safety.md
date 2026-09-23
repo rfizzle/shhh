@@ -44,6 +44,10 @@ session from](coding-agent.md#an-approved-plan-is-an-artifact).
 Neither is a safety mode with the volume turned up. A mode that refuses is not
 a stricter manual: manual asks, and being asked is how work gets through.
 
+A conversation has none of the five. Its toolset is the bound, so the one
+policy it runs in is fixed, and it reads the web without a card
+([`chat.md`](chat.md#a-conversation-has-one-mode)).
+
 ## A deny list is answered before anything can allow
 
 Two lists of command prefixes belong to the person and to nobody else. The
@@ -86,9 +90,10 @@ and may never take away a refusal the person holds everywhere.
 
 ## A host is granted once
 
-A fetch is the one act a read-only session still has that is not free, and
-the card that asks about it names one fact above the others: the host the
-request leaves for. So the host is what `[a]` grants. Pressing it on
+In a coding session a fetch is asked about like any act that leaves the
+machine (a conversation reads without asking, since nothing it does can change
+anything), and the card that asks about it names one fact above the others:
+the host the request leaves for. So the host is what `[a]` grants. Pressing it on
 `docs.python.org` means the twentieth page of that documentation site is not
 the twentieth card, and in auto mode it is not twenty classifier rounds
 either — the classifier is asked whether a URL is an outbound channel worth

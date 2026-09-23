@@ -1,0 +1,21 @@
+# program test: TestProgram_AConversationFetchesWithoutACard
+#
+# A conversation reading a page, at 110 columns
+# (docs/capabilities/chat.md#a-conversation-has-one-mode).
+#
+# What the capture is for: `shhh chat` has one mode, so the frame says
+# read-only from the first frame and offers no key for a mode. The model asks
+# for a page and the page is read without a card — the fetch's row says the
+# conversation's own rule allowed it — and the mode chord answers with the
+# sentence that says there is nothing to choose.
+snap 01-start "read-only"
+keys "what do the release notes say"
+keys Enter
+# The row, while the model is still writing its answer: allowed, and no card
+# was put in front of anybody for it.
+snap 02-read "conversation read"
+snap 03-answered "✓ Done"
+keys BTab
+snap 04-one-mode "A conversation has one mode"
+keys C-d
+keys C-d

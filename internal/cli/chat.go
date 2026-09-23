@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -29,6 +30,7 @@ func newChatCmd() *cobra.Command {
 	var schemaPath string
 	var addDirs []string
 	var secretFlags []string
+	var mode string
 
 	cmd := &cobra.Command{
 		Use:   "chat [prompt]",
@@ -36,6 +38,13 @@ func newChatCmd() *cobra.Command {
 		Long:  "Open a multi-turn conversation that answers questions, reads files and the web, and can delegate to read-only sub-agents. It changes nothing on the machine; use `shhh code` to edit and run.",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// A conversation has one mode, so a mode asked for is refused
+			// rather than taken and ignored: a person who typed one expected
+			// it to change something.
+			// See docs/capabilities/chat.md#a-conversation-has-one-mode.
+			if cmd.Flags().Changed("mode") {
+				return errConversationMode
+			}
 			// What the run will write, from the two spellings that say it.
 			// It is settled before a provider is resolved for the reason the
 			// coding agent settles it there: a shape nothing can honour is a
@@ -100,9 +109,17 @@ func newChatCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&popts.yes, "yes", false, "with --print, auto-approve the requests that leave the machine (a web fetch, a server not marked read-only)")
 	addDirFlag(cmd, &addDirs)
 	addSecretFlag(cmd, &secretFlags)
+	// Registered only to be refused in a sentence, and hidden so the help
+	// does not offer what the command will not take.
+	cmd.Flags().StringVar(&mode, "mode", "", "refused: a conversation has one mode")
+	_ = cmd.Flags().MarkHidden("mode")
 
 	return cmd
 }
+
+// errConversationMode is the refusal --mode on `shhh chat` answers with.
+var errConversationMode = errors.New("shhh chat has one mode, read-only: a conversation changes nothing in the tree or on the machine, " +
+	"so there is no permission to choose. Drop --mode, or use shhh code --mode for a session that acts")
 
 // conversationSession is `shhh chat`'s session, shared with `shhh chats`,
 // which is the same conversation opened on a saved one. The toolset is every

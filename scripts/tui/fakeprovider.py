@@ -57,6 +57,13 @@ A file with no header is one queue for everybody, which is what a scene
 written before this is. An agent no queue was written for is answered with a
 line that ends its turn, and the log says which.
 
+A page is served for a scene that fetches one. Anything under /site/ is
+answered with a small page whose text is its own path, so a fetch reaches
+something on this machine and nothing past it; `{port}` in a tool call's
+arguments is the port this endpoint took, which is how a reply names a URL
+on a port nobody knew when the scene was written. The session only reaches
+it with web.allow_private set, which a scene's launch line writes.
+
 It speaks the openai-compatible SSE dialect only, because that is the one
 dialect a base_url on its own redirects; the same choice the CLI's
 print-mode tests make.
@@ -225,6 +232,16 @@ class Handler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(body)
             return
+        if self.path.startswith("/site/"):
+            page = self.path[len("/site/"):].replace("-", " ")
+            body = ("<html><head><title>%s</title></head><body><p>%s</p></body></html>"
+                    % (page, page)).encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+            return
         self.send_response(404)
         self.end_headers()
 
@@ -253,6 +270,7 @@ class Handler(BaseHTTPRequestHandler):
                 continue
             if part.startswith("tool:"):
                 _, name, args = part.split(":", 2)
+                args = args.replace("{port}", str(self.server.server_address[1]))
                 if QUEUED and name == "spawn_agent":
                     remember_child(args)
                 self.wfile.write(chunk({"tool_calls": [{"index": calls, "id": "call-%d" % (calls + 1),

@@ -560,6 +560,9 @@ func (m Model) cockpitData(includeQueued bool) components.Cockpit {
 		c.Mode, c.ModeKind = "checking", components.CockpitChecking
 	} else {
 		c.Mode = modeWord(m.policy.mode)
+		if m.conversation {
+			c.Mode = conversationModeWord
+		}
 		switch m.policy.mode {
 		case agent.ModeAcceptEdits, agent.ModeAuto:
 			c.ModeKind = components.CockpitPermissive

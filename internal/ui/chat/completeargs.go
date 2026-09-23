@@ -297,10 +297,15 @@ func railArgs(m *Model) []argOption {
 
 // modeArgs offers the session's mode cycle plus /permissions' own
 // subcommands.
+//
+// A conversation is offered no modes, since it has none to switch to.
 func modeArgs(m *Model) []argOption {
 	cycle := m.policy.cycle
 	if len(cycle) == 0 {
 		cycle = agent.DefaultCycle()
+	}
+	if m.conversation {
+		cycle = nil
 	}
 	out := make([]argOption, 0, len(cycle)+1)
 	for _, mode := range cycle {

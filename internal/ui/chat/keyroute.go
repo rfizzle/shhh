@@ -272,7 +272,12 @@ func (m Model) updateKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 		return m, m.armPress(armQuit, keys.Shown(keys.Draft.Cancel)), true
 	case keys.Is(pressed, keys.Draft.Mode):
 		// Cycle the permission mode; attached, it cycles the
-		// child's mode clamped to the orchestrator's ceiling.
+		// child's mode clamped to the orchestrator's ceiling. A
+		// conversation has none to cycle, and says so.
+		if m.conversation {
+			m.noteOneMode()
+			return m, nil, true
+		}
 		if m.attachedTo != "" {
 			return answered(m.cycleAttachedMode())
 		}

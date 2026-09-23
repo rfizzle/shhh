@@ -30,6 +30,9 @@ func (m Model) WithSubagents(sup *subagent.Supervisor) Model {
 	m.childViews = map[string]*childView{}
 	sup.SetParentMode(m.policy.mode)
 	sup.SetParentGrants(m.liveGrants())
+	if m.conversation {
+		sup.SetConversationPolicy()
+	}
 	return m
 }
 

@@ -1,6 +1,10 @@
 package cli
 
-import "testing"
+import (
+	"io"
+	"strings"
+	"testing"
+)
 
 // The flags a conversation behind --print is driven by. They are asserted as
 // a set because the refusals the shared print path answers with name them:
@@ -30,5 +34,22 @@ func TestChatCmd_TheFlagsAnUnattendedRunIsDrivenBy(t *testing.T) {
 	}
 	if got := resume.Value.String(); got != "yesterday" {
 		t.Fatalf("--resume=yesterday named %q", got)
+	}
+}
+
+// A conversation has one mode, so --mode is refused with a sentence before
+// anything is resolved, rather than failing as a flag nobody has heard of or
+// being taken and ignored (docs/capabilities/chat.md#a-conversation-has-one-mode).
+func TestChatCmd_RefusesAMode(t *testing.T) {
+	cmd := newChatCmd()
+	cmd.SetArgs([]string{"--mode", "auto", "--print", "hello"})
+	cmd.SetOut(io.Discard)
+	cmd.SetErr(io.Discard)
+	err := cmd.Execute()
+	if err == nil || !strings.Contains(err.Error(), "one mode, read-only") {
+		t.Fatalf("--mode on shhh chat = %v; want the sentence that says it has one mode", err)
+	}
+	if f := cmd.Flags().Lookup("mode"); f == nil || !f.Hidden {
+		t.Error("--mode should be registered only to be refused, and hidden from the help")
 	}
 }

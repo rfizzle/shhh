@@ -1,0 +1,6 @@
+# A conversation, because the fetch without a card is a conversation's
+# (docs/capabilities/chat.md#a-conversation-has-one-mode). The page is served
+# by the scripted endpoint on loopback, which the fetcher refuses unless
+# web.allow_private is set; the setting is appended to this run's own config
+# before the session starts, so the scene reaches no network at all.
+printf '[web]\nallow_private = true\n' >> $XDG_CONFIG_HOME/shhh/config.toml && $SHHH_BIN chat

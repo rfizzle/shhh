@@ -531,6 +531,9 @@ func slashPermissions(m *Model, parts []string) string {
 	if err != nil {
 		return "Error: " + err.Error()
 	}
+	if m.conversation {
+		return conversationModeNote
+	}
 	m.applyMode(mode)
 	return fmt.Sprintf("Mode set to %s — %s.", mode, mode.Describe())
 }

@@ -1782,6 +1782,9 @@ type Supervisor struct {
 	// inherit for the same reason they inherit the mode.
 	parentMode   agent.Mode
 	parentGrants agent.Grants
+	// conversationPolicy is set when the parent is a conversation: its
+	// fetches are reads, and so are its children's (SetConversationPolicy).
+	conversationPolicy bool
 	// appliedFiles records which agent's patch last landed each file, so a
 	// later patch touching the same file is flagged before it is applied.
 	appliedFiles map[string]string
@@ -1923,6 +1926,17 @@ func (s *Supervisor) SetParentMode(m agent.Mode) {
 	s.mu.Unlock()
 }
 
+// SetConversationPolicy says the parent is a conversation, whose policy
+// answers a fetch without a card. A child is part of the conversation that spawned it,
+// so its fetches are answered the same way — a card routed up from a child
+// would be the question the parent no longer asks, asked one level down.
+// See docs/capabilities/chat.md#a-conversation-has-one-mode.
+func (s *Supervisor) SetConversationPolicy() {
+	s.mu.Lock()
+	s.conversationPolicy = true
+	s.mu.Unlock()
+}
+
 // SetParentGrants records the parent's grants ([a] on a confirm prompt,
 // /mode allow): what the user waved through is waved through for children
 // too, so one grant is not re-asked once per agent. The scoped grants travel
@@ -1946,6 +1960,7 @@ func (s *Supervisor) SetParentGrants(g agent.Grants) {
 func (s *Supervisor) childPolicy(c *child) agent.ModePolicy {
 	s.mu.Lock()
 	g := s.parentGrants
+	conversation := s.conversationPolicy
 	s.mu.Unlock()
 	allowlist := s.opts.CommandAllowlist
 	if len(g.Commands) > 0 {
@@ -1972,6 +1987,7 @@ func (s *Supervisor) childPolicy(c *child) agent.ModePolicy {
 		DenyHosts:        s.opts.DenyHosts,
 		ReadOnlyExtra:    s.opts.ReadOnlyExtra,
 		ReadOnlyDisabled: s.opts.ReadOnlyDisabled,
+		Conversation:     conversation,
 	}
 }
 

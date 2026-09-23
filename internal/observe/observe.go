@@ -119,6 +119,12 @@ const (
 	ReasonSessionGrant    = "session-grant"
 	ReasonSessionScope    = "session-scope"
 	ReasonAllowlist       = "allowlist"
+	// A fetch a conversation made, which it makes without a card because
+	// nothing it reads can change anything. It is its own code rather than a
+	// grant's, because nobody granted it: a comparison of a conversation's
+	// reads with a coding session's grants has to tell the two apart
+	// (docs/capabilities/chat.md#a-conversation-has-one-mode).
+	ReasonConversationRead = "conversation-read"
 	// A command the deny list refused. It is its own code rather than one
 	// of the mode's, because what a reader does about it is edit a list and
 	// not change a mode, and a rate that mixed the two would answer neither
@@ -801,6 +807,8 @@ func ReasonCode(raw string) string {
 		return ReasonSessionScope
 	case "allowlist":
 		return ReasonAllowlist
+	case agent.ConversationReadReason:
+		return ReasonConversationRead
 	case agent.DenyReasonDenylist, agent.DenyReasonHost:
 		// Both lists are the same fact for the metrics: a rule the person
 		// wrote answered before anything could allow.

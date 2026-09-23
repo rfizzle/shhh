@@ -842,6 +842,12 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	if err != nil {
 		return fmt.Errorf("config behavior.mode_cycle: %w", err)
 	}
+	// A conversation has one policy whatever the setting says, and the record
+	// stamps the mode it really runs under
+	// (docs/capabilities/chat.md#a-conversation-has-one-mode).
+	if session.conversation {
+		mode = agent.ModeManual
+	}
 
 	// Auto mode's permission classifier, built the way every surface that
 	// has one builds it (approvals.go).
@@ -1183,7 +1189,8 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	}
 	// web_fetch and spawn_agent go through the approval queue as generic
 	// external actions: manual and accept-edits prompt, auto defers to the
-	// classifier.
+	// classifier. A conversation's fetch never reaches the card: its policy
+	// allows one past the host deny list (docs/capabilities/chat.md#a-conversation-has-one-mode).
 	gatedPreviews := map[string]chat.GatedPreviewFunc{}
 	// What this session may fetch without asking, which a spawn card states
 	// and a host grant grows. It is read and written on the UI goroutine

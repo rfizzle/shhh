@@ -612,6 +612,33 @@ func TestDecideRefusesADeniedHostInEveryMode(t *testing.T) {
 	}
 }
 
+// A conversation's fetch is a read: it is allowed without a card, under a
+// reason of its own, whatever mode sits underneath — and the host deny list
+// is still read first. Nothing else a conversation asks about moves: a spawn
+// is the question it was.
+func TestDecideAllowsAConversationsFetchPastTheDenyList(t *testing.T) {
+	p := ModePolicy{Conversation: true, DenyHosts: []string{"paste.example.test"}}
+	for _, mode := range []Mode{ModeManual, ModeReadOnly, ModePlan} {
+		p.Mode = mode
+		decision, reason := p.Decide(Action{Kind: ActionFetch, Host: "docs.python.org"})
+		if decision != Allow || reason != ConversationReadReason {
+			t.Errorf("%v mode = %v (%q); want Allow as a conversation read", mode, decision, reason)
+		}
+		if decision, reason := p.Decide(Action{Kind: ActionFetch, Host: "paste.example.test"}); decision != Deny || reason != DenyReasonHost {
+			t.Errorf("%v mode, denied host = %v (%q); want the host list to refuse it", mode, decision, reason)
+		}
+	}
+	p.Mode = ModeManual
+	if decision, _ := p.Decide(Action{Kind: ActionOther}); decision != Ask {
+		t.Errorf("a conversation's spawn = %v; want Ask", decision)
+	}
+	// A coding session's fetch is untouched: the same host is a card.
+	p.Conversation = false
+	if decision, _ := p.Decide(Action{Kind: ActionFetch, Host: "docs.python.org"}); decision != Ask {
+		t.Errorf("a coding session's fetch = %v; want Ask", decision)
+	}
+}
+
 // What the model is told about a refused host says the refusal covers the
 // host rather than the URL, and names no key: the list is the person's, and
 // a refusal that came with editing instructions would hand over the way

@@ -1,0 +1,14 @@
+# The session's first reply fetches a page the scripted endpoint serves
+# itself, on whatever port it took; its second holds for a moment before it
+# answers, so the fetch's row is on screen, allowed and uncarded, when the
+# scene captures it.
+[session]
+Reading the release notes.
++tool:web_fetch:{"url":"http://127.0.0.1:{port}/site/the-cache-now-expires-after-an-hour"}
+wait:4
++The notes say the cache now expires after an hour.
+
+# The session's own readings of its run take a reply of their own rather than
+# one of anybody's rounds.
+[reading]
+The conversation read one page of release notes.
