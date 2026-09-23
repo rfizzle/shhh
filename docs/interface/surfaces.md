@@ -438,6 +438,16 @@ carries it: a reopened transcript draws the notes at the rung they were
 written at and retires all but the last of them the way the live one did, and
 a mirrored feed draws the child's notes at the rung the child wrote them at.
 
+The request does not come back as a row. A rebuild draws each message the
+session wrote the way the live transcript drew it, and every other one — a
+check-in, a steer, the tree notice, a close gate's verdict, a `/run`'s output,
+a secret's announcement, a continue, a compaction's summary, a carried plan —
+had a row of its own when it was written. The request never had one: the note
+that answered it is its row. Drawn on the rebuild, it would stand above the
+note as a prompt the reader never saw asked, in words that were the session's
+question and never theirs. It is still in the conversation, where the model
+reads it; only the row is left out.
+
 A checkpoint short enough to title the batch of calls that follows it is drawn
 as that step's header instead. That is not an exception to any of this — the
 outline is where a title belongs, and a note that is already a title is

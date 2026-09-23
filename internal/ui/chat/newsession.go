@@ -9,6 +9,7 @@ package chat
 
 import (
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/attachment"
 	"github.com/rfizzle/shhh/internal/plan"
 	"github.com/rfizzle/shhh/internal/provider"
@@ -294,7 +295,9 @@ func (m *Model) appendMessageEntries(msgs []provider.Message) {
 			// — a long row in the session's own voice is still true, and a
 			// short one over the reader's name is not.
 			if msg.Machine {
-				m.appendEntry(entry{kind: entrySystem, text: msg.Content})
+				if !rowlessOnRebuild(msg) {
+					m.appendEntry(entry{kind: entrySystem, text: msg.Content})
+				}
 				break
 			}
 			// A resumed turn keeps the names of what it attached:
@@ -341,4 +344,21 @@ func (m *Model) appendMessageEntries(msgs []provider.Message) {
 			}
 		}
 	}
+}
+
+// rowlessOnRebuild is the one rule for a machine message that comes back with
+// no row: the rebuild draws what the live transcript drew, and the progress
+// request is the only machine message that drew nothing live — the note that
+// answered it is the row it earns (progress.go). Every other machine message
+// had a row of its own when it was written, so it keeps one here: the
+// check-in and the steer, the tree notice, the close gate's verdict, the
+// output of a /run, a secret's announcement, the continue after a partial
+// reply, the summary a compaction restarts from and the carried plan. It is
+// matched on the words because the request is a fixed sentence and the
+// conversation stores nothing else about it; the reading a reopening puts in
+// front of the conversation never reaches here, since the load strips it first
+// (reopen.go).
+// See docs/interface/surfaces.md#the-progress-checkpoint.
+func rowlessOnRebuild(msg provider.Message) bool {
+	return msg.Machine && msg.Content == agent.ProgressPrompt
 }

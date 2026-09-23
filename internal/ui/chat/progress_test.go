@@ -275,6 +275,59 @@ func TestProgress_TheMarkSurvivesAReopenedConversation(t *testing.T) {
 	}
 }
 
+// The request is the session's question, and live it draws no row: the note
+// that answers it is the row. A reopened transcript is rebuilt from the
+// messages, so it has to leave the request out the same way — drawn, it would
+// sit above the note as a prompt the reader never saw asked. A machine message
+// that did have a row live keeps one, which is the other half of the rule.
+func TestProgress_AReopenedTranscriptDrawsNoRowForTheRequest(t *testing.T) {
+	const notice = "The tree moved under the session."
+	msgs := []provider.Message{
+		{Role: provider.RoleSystem, Content: "system"},
+		{Role: provider.RoleUser, Content: "trace the checkpoint"},
+		{Role: provider.RoleAssistant, ToolCalls: []provider.ToolCall{{ID: "call-1", Name: "read_file"}}},
+		{Role: provider.RoleTool, ToolCallID: "call-1", Content: "lines"},
+		{Role: provider.RoleUser, Content: agent.ProgressPrompt, Machine: true},
+		{Role: provider.RoleAssistant, Content: checkpointNote, Checkpoint: true,
+			ToolCalls: []provider.ToolCall{{ID: "call-2", Name: "read_file"}}},
+		{Role: provider.RoleTool, ToolCallID: "call-2", Content: "lines"},
+		{Role: provider.RoleUser, Content: notice, Machine: true},
+		{Role: provider.RoleAssistant, Content: "The ceiling is the session's."},
+	}
+
+	m := frameModel(t, 110, 40)
+	m.loadConversation(msgs)
+
+	note := -1
+	var systems []string
+	for i, e := range m.transcript {
+		if e.kind == entryAssistant && e.checkpoint {
+			note = i
+		}
+		if e.kind == entrySystem {
+			systems = append(systems, e.text)
+			if note < 0 {
+				t.Errorf("a system row is drawn above the note: %q", e.text)
+			}
+		}
+	}
+	if note < 0 {
+		t.Fatal("the reopened transcript lost the note")
+	}
+	if len(systems) != 1 || systems[0] != notice {
+		t.Fatalf("the reopened transcript's system rows are %q, want only the tree notice", systems)
+	}
+	// The request is still in the conversation — the row is what is left
+	// out, not the message — and the rewind list is read off the messages,
+	// so the reader's one turn is still the one checkpoint at its own index.
+	if got := m.agent.Messages()[4].Content; got != agent.ProgressPrompt {
+		t.Errorf("the request left the conversation: %q", got)
+	}
+	if len(m.checkpoints) != 1 || m.checkpoints[0].index != 1 {
+		t.Errorf("rewind checkpoints = %+v, want the one turn at index 1", m.checkpoints)
+	}
+}
+
 // A checkpoint round can be the one the wire drops, and continuing it is the
 // one path that turns partial prose into a round without the round having
 // ended. The note has to keep its mark across that — and the request has to
