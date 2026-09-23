@@ -285,7 +285,7 @@ an item on a checklist needs is a person doing it.
 
 **A profile composes; it does not invent.** A step is one of six kinds the
 program carries out, each with the answer it asks for and the reading of that
-answer — a turn, a sub-agent, a division into lanes, a command, a gate, a
+answer — a turn, a child, a division into lanes, a command, a gate, a
 finish ([above](#a-run-is-turns-with-gates-between-them)). A profile says
 which of them a run has, in what order, in which mode and with what the gate
 stops for; it cannot say what a step's answer looks like, because a step whose
@@ -536,7 +536,7 @@ There are six kinds of step and the program owns all six:
   which always says whether it could not do the work and says the grade and
   any open questions where the step asks for them — and where the step says
   its answer is the record, what it found is what the steps after it read;
-- an **agent**, a sub-agent that reads the work it did not do and answers
+- an **agent**, a child that reads the work it did not do and answers
   clean or with findings, falling back to a turn of the session's own where
   there is no supervisor to spawn one from;
 - a **fan-out**, writer children over paths they each declare, with the turn
@@ -681,8 +681,8 @@ cannot happen at all.
 
 That is what makes the backlog workable from a conversation as well as from
 the coding agent ([`chat.md`](chat.md#the-backlog-is-here-too)). A
-conversation can take a step that reads, a step that hands the work to one of
-its colleagues, a gate, and a finish that archives or writes the work up. It
+conversation can take a step that reads, a step that hands the work to a child
+that reads, a gate, and a finish that archives or writes the work up. It
 cannot take a step that changes the tree, a step whose verdict is a command's
 exit status, or a finish that commits, and it says which of them it was
 turned away by rather than saying it has no backlog.
@@ -784,7 +784,7 @@ program to use it.
 So the words come out of the program and into files. There is one wording per
 step of the run, named `todo_` and the step's own name, plus `todo_standards`
 for the one sentence the steps that change the tree all carry and
-`todo_<step>_task` for the task a step hands to a sub-agent. The run a
+`todo_<step>_task` for the task a step hands to a child. The run a
 checkout of code gets has seven of them — `todo_research`, `todo_implement`,
 `todo_review`, `todo_review_task`, `todo_remediate`, `todo_commit` and
 `todo_standards` — and a project whose run has other steps has a key per step
@@ -820,7 +820,7 @@ the run hands the model. A file may name `{{item}}`, `{{plan}}`,
 `{{answers}}`, `{{findings}}` or `{{diff}}` and put one exactly where it
 wants it, mid-sentence included; a block it does not name is taken after the
 instruction, in the order the built-in has them. `{{diff}}` is what changed:
-the diff itself for the reviewer sub-agent, which has no commands to go and
+the diff itself for the reviewing child, which has no commands to go and
 look, and for the review step the instruction that finds it. A substitution
 a step cannot fill — the findings in a research prompt, the change in a
 commit prompt — is refused when the file is read, because a mistyped one

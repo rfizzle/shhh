@@ -138,7 +138,10 @@ func (s *Store) Bind(session string) error {
 	// the backend now, after what the slot already had.
 	pending := s.notes
 	s.notes = loaded
-	for _, n := range loaded {
+	for i, n := range loaded {
+		if n.Author == legacyOrchestrator {
+			s.notes[i].Author = Orchestrator
+		}
 		if n.ID >= s.nextID {
 			s.nextID = n.ID + 1
 		}

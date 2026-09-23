@@ -4,6 +4,23 @@ A session can hand part of a job to a child agent. Children are how a large
 task gets parallelism and a clean context without the parent losing track of
 what is happening.
 
+Four words carry this document and every surface drawn from it. An
+**agent** is anything the session draws doing work, the root included — the
+root is the one agent with a name rather than a role, `orchestrator`, which
+is what the manager, the rail's map, the breadcrumb and the notebook's
+signature all call it. A **child** is an agent seen from what spawned it,
+and that agent is its **parent**; a child's own children are its
+descendants. A **profile** is the file that says what an agent may do and
+how it is told to do it. A **role** is the name a spawn asks for — a shipped
+one or a profile's — and the name a child is drawn under is made from it
+(`writer-1`). Nothing else is a word for an agent: *sub-agent* is the name of this
+capability and never of one of them, *delegate* is a verb and not a noun,
+and *colleague* and *persona* are what a read-only profile is to a
+conversation, in [`chat.md`](chat.md#colleagues-not-workers) and nowhere
+else. A *lane* and a *row* are not agents either but drawings of one: a
+fan-out gives each child a lane, and the manager and the map give each agent
+a row ([`surfaces.md`](../interface/surfaces.md#the-agent-manager)).
+
 ## Two kinds, and the difference is what they may touch
 
 - **Researchers** read and search. They have no way to change anything, so
@@ -377,7 +394,7 @@ three levels deep is reading one session and not three.
   bounds is one person's; concurrency slots are the depth's, for the reason
   above; and a descendant's fresh tokens count against its own budget and the
   session's spend cap and never against its parent's budget, since a parent
-  paying for its delegates would make delegating cost more than doing the work.
+  paying for its descendants would make delegating cost more than doing the work.
 - **What the person sees of a level they did not ask for.** The root's fan-out
   block grows a nested lane indented under its parent's, the way the rail's
   map already indents a grandchild, and the parent's own lane says how many
@@ -669,12 +686,12 @@ no questions, because someone who knows what they want should not be
 interviewed about it.
 
 The same mechanism serves both sessions and drafts the same file, but what
-it is told to value is not the same. In a chat, a profile is a colleague: a
+it is told to value is not the same. In a chat, a profile is a
 standpoint, a voice, a way of citing, and never a way of acting — the
-drafter is told so and the result is checked, so a chat persona cannot come
+drafter is told so and the result is checked, so a chat profile cannot come
 out able to write. In a coding session, a profile is an engineer with one
 job: what it changes, how it verifies, what its patch may contain. A single
-drafter hedging between the two would draft a persona that hedges too.
+drafter hedging between the two would draft a profile that hedges too.
 
 How a coding role verifies decides what it is granted, so the drafter is told
 the rule above: running the project's own suite is `quality_gate`, which the
@@ -690,14 +707,14 @@ Where the file lives follows from what it is. A coding agent's profile can
 belong to the work: the project's own `.shhh/agents/`, which travels with
 the repository, is read only by coding sessions, and shadows a global
 profile of the same name — or the config directory's `agents/`, which every
-session has. A chat persona is the person's, not any project's, so chat
+session has. A chat profile is the person's, not any project's, so chat
 reads and writes only the global directory. A project's directory is never
 assumed to be committed, and it is not read at all until the checkout has
 been trusted: a profile carries a permission set, a tool allowlist and a
 prompt, so a clone that could add one would be a clone deciding what a
 spawned agent may do
 ([`approvals-and-safety.md`](approvals-and-safety.md#a-checkout-declares-what-it-runs)).
-A drafted profile is spawnable in the session that drafted it — a persona you
+A drafted profile is spawnable in the session that drafted it — a profile you
 made for this conversation should not need a restart to join it.
 
 The drafting happens on [a surface of its

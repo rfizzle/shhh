@@ -25,11 +25,20 @@ const (
 	ReadToolName  = "read_note"
 )
 
-// Orchestrator is the author a session's own agent signs its notes with.
-// Every delegate signs with its own name, so this is the one string that
-// says "not a delegate" — which is what the turn's close counts against
-// when it reports what came back from a fan-out.
-const Orchestrator = "assistant"
+// Orchestrator is the author a session's own agent signs its notes with —
+// the root's name on every surface that draws agents, so /notes groups the
+// session's own notes under the word the manager and the rail use for it.
+// Every child signs with its own name, so this is the one string that says
+// "not a child" — which is what the turn's close counts against when it
+// reports what came back from a fan-out.
+// See docs/capabilities/subagents.md#sub-agents.
+const Orchestrator = "orchestrator"
+
+// legacyOrchestrator is the signature the session's own notes carried
+// before the root was called by the one name. A slot written then is read
+// back under the current one, or a resumed session's own notes would count
+// as a child's in the turn's close.
+const legacyOrchestrator = "assistant"
 
 // authorSep joins the agents of a lineage in a descendant's signature.
 const authorSep = "/"

@@ -70,6 +70,26 @@ func TestWriteReadAndFind(t *testing.T) {
 	}
 }
 
+// A slot written while the session's own notes were signed "assistant" is
+// read back under the root's one name, so a resumed session's own notes are
+// still its own to the turn's close and to /notes.
+func TestBindReadsTheOldSignatureAsTheOrchestrator(t *testing.T) {
+	b := &fakeBackend{}
+	_, _ = b.SaveNote("slot", Note{Author: "assistant", Title: "Mine", Body: "b", Turn: 3})
+	_, _ = b.SaveNote("slot", Note{Author: "researcher-1", Title: "Theirs", Body: "b", Turn: 3})
+	s := New(b)
+	if err := s.Bind("slot"); err != nil {
+		t.Fatal(err)
+	}
+	notes := s.List()
+	if notes[0].Author != Orchestrator || notes[1].Author != "researcher-1" {
+		t.Fatalf("authors = %q, %q", notes[0].Author, notes[1].Author)
+	}
+	if got := WrittenIn(notes, 3, Orchestrator); len(got) != 1 || got[0].Title != "Theirs" {
+		t.Fatalf("WrittenIn = %+v", got)
+	}
+}
+
 func TestBindLoadsAndWritesThrough(t *testing.T) {
 	b := &fakeBackend{}
 	_, _ = b.SaveNote("slot", Note{Author: "assistant", Title: "Earlier", Body: "left on Monday"})

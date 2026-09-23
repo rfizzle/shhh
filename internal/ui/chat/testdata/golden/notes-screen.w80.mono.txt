@@ -14,7 +14,7 @@
 /notes · 3 notes · 3 agents                              [?] keys · [q] back
 ────────────────────────────────────────────────────────────────────────────
 
-assistant
+orchestrator
   The freeze is the target               n1                           turn 3
 reviewer-1
   The deny list is read before the tier  n2                           turn 4
@@ -33,7 +33,7 @@ Where the goldens live                                          researcher-1
 /notes · 3 notes · 3 agents                              [?] keys · [q] back
 ────────────────────────────────────────────────────────────────────────────
 
-assistant
+orchestrator
   The freeze is the target               n1                           turn 3
 reviewer-1
 ❯ The deny list is read before the tier  n2                           turn 4
@@ -53,7 +53,7 @@ The deny list is read before the tier                             reviewer-1
 /notes · 3 notes · 3 agents                              [?] keys · [q] back
 ────────────────────────────────────────────────────────────────────────────
 
-assistant
+orchestrator
   The freeze is the target               n1                           turn 3
 reviewer-1
 ❯ The deny list is read before the tier  n2                           turn 4
@@ -72,7 +72,7 @@ Drop "The deny list is read before the tier"?  [y/N]
 /notes · 3 notes · 3 agents                              [?] keys · [q] back
 ────────────────────────────────────────────────────────────────────────────
 
-assistant
+orchestrator
   The freeze is the target               n1                           turn 3
 reviewer-1
   The deny list is read before the tier  n2                           turn 4
@@ -96,7 +96,7 @@ notes · [q] back to the prompt
 ␛[1;38;5;254m/notes␛[m␛[38;5;244m · 3 notes · 3 agents␛[m                              ␛[38;5;244m[?] keys · [q] back␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[1;38;5;254massistant␛[m
+␛[1;38;5;254morchestrator␛[m
   ␛[38;5;254mThe freeze is the target␛[m               ␛[38;5;254mn1␛[m                           ␛[38;5;254mturn 3␛[m
 ␛[1;38;5;254mreviewer-1␛[m
   ␛[38;5;254mThe deny list is read before the tier␛[m  ␛[38;5;254mn2␛[m                           ␛[38;5;254mturn 4␛[m
@@ -115,7 +115,7 @@ notes · [q] back to the prompt
 ␛[1;38;5;254m/notes␛[m␛[38;5;244m · 3 notes · 3 agents␛[m                              ␛[38;5;244m[?] keys · [q] back␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[1;38;5;254massistant␛[m
+␛[1;38;5;254morchestrator␛[m
   ␛[38;5;254mThe freeze is the target␛[m               ␛[38;5;254mn1␛[m                           ␛[38;5;254mturn 3␛[m
 ␛[1;38;5;254mreviewer-1␛[m
 ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mThe deny list is read before the tier  n2                           turn 4␛[m
@@ -135,7 +135,7 @@ notes · [q] back to the prompt
 ␛[1;38;5;254m/notes␛[m␛[38;5;244m · 3 notes · 3 agents␛[m                              ␛[38;5;244m[?] keys · [q] back␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[1;38;5;254massistant␛[m
+␛[1;38;5;254morchestrator␛[m
   ␛[38;5;254mThe freeze is the target␛[m               ␛[38;5;254mn1␛[m                           ␛[38;5;254mturn 3␛[m
 ␛[1;38;5;254mreviewer-1␛[m
 ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mThe deny list is read before the tier  n2                           turn 4␛[m
@@ -154,7 +154,7 @@ notes · [q] back to the prompt
 ␛[1;38;5;254m/notes␛[m␛[38;5;244m · 3 notes · 3 agents␛[m                              ␛[38;5;244m[?] keys · [q] back␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[1;38;5;254massistant␛[m
+␛[1;38;5;254morchestrator␛[m
   ␛[38;5;254mThe freeze is the target␛[m               ␛[38;5;254mn1␛[m                           ␛[38;5;254mturn 3␛[m
 ␛[1;38;5;254mreviewer-1␛[m
   ␛[38;5;254mThe deny list is read before the tier␛[m  ␛[38;5;254mn2␛[m                           ␛[38;5;254mturn 4␛[m

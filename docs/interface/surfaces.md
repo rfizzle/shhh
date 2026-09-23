@@ -338,6 +338,14 @@ plan, the questions, the lanes and their paths, the findings, the report and
 the files. The run's report is the row's final state rather than a paragraph
 pasted into the transcript, so what shipped folds like everything else.
 
+*Lane* is the fan-out's word, and the run borrows it for its division
+rather than coining one of its own because the two are one thing seen before
+and after a spawn: each part of the division is handed to one writer, and
+that writer is the child the fan-out block gives a lane. The row counts the
+parts with the meter the block draws its lanes with, so a second word would
+be two names for one count the reader sees twice
+([`subagents.md`](../capabilities/subagents.md)).
+
 The words on the row are the words the record keys the run's transitions on.
 There is one vocabulary and both readers of it draw from the same place, so a
 row and a record cannot describe the same transition differently.
@@ -1058,7 +1066,7 @@ An agent started by another agent is drawn one column in under the rest,
 behind the same corner every nested thing on this interface is drawn behind,
 so a run two levels deep reads as two levels rather than as five siblings.
 It is drawn directly under the agent that started it, and what floats is
-that whole branch: an agent whose own delegate is waiting floats with it,
+that whole branch: an agent whose own child is waiting floats with it,
 and nothing floating or folding lands between an agent and the one it
 started, since a corner under the wrong row names the wrong parent. That is
 the manager's order too; the chord keeps the started order here as well.
@@ -2058,7 +2066,7 @@ tool that reaches it. An empty notebook prints one line into the transcript
 instead of opening — there is nothing to point at.
 
 **What is new is said at the turn's close and not on the rail.** The close
-already carries the clause naming what the turn's delegates wrote, so the
+already carries the clause naming what the turn's children wrote, so the
 count of what has not been read since the screen was last opened rides on the
 end of it — `2 notes from writer-1, researcher-2 · 3 unread` — and it is
 stated only where it says something the count before it does not. A NOTES

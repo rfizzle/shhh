@@ -11,7 +11,7 @@ Everything chat can reach is a read: files in the working scope, the web,
 the session's own notes. There is no command runner and no file editor, and
 no way to conjure one from inside the session. The one decision the person
 is ever asked for is whether a request may leave the machine — a fetch, a
-search, a delegate — because that is the one act a read-only session still
+search, a spawn — because that is the one act a read-only session still
 has that is not free.
 
 It is also the one thing a session can grant, and what it grants is a host.
@@ -50,7 +50,7 @@ inventory.
 The rows that exist to account for work — the changed-files row on a turn's
 close, the plan checklist, the backlog, the diff — are not drawn. What
 remains is what a conversation has: the messages, the activity rows for the
-reads a turn made, the delegates it sent out and what they came back with,
+reads a turn made, the children it sent out and what they came back with,
 and the meter that says what it cost. The input frame, the inspector rail
 and the keys are the same ones the coding agent uses, so a person who knows
 one knows the other; they simply carry fewer blocks.
@@ -104,7 +104,7 @@ can write is not offered, rather than offered and refused — the model is
 told the roles it really has (see
 [`subagents.md`](subagents.md#a-profile-is-a-file)).
 
-The profiles are what give a delegate a persona: a name the person chose, a
+The profiles are what give a child a persona: a name the person chose, a
 description the orchestrating model chooses by, its own model and reasoning
 level, and a prompt that is its standing instructions. A chat session with a
 few of these behaves like a small team of specialists that one generalist
@@ -115,9 +115,9 @@ routes to, each answering in its own voice, each unable to change anything.
 The session's notebook is the shared channel between a conversation and its
 colleagues: what one researcher found on Monday is exactly what the next one
 should not have to find again. Any agent in the session — the orchestrator
-and every delegate — can write a short, titled, signed note and read the
+and every child — can write a short, titled, signed note and read the
 notes that exist. It persists with the session, so a resumed conversation
-resumes its notebook, and a delegate spawned later starts by reading what
+resumes its notebook, and a colleague spawned later starts by reading what
 the earlier ones left. A backlog run whose finish is a write-up rather than a
 commit puts the write-up here, which is where it is read.
 
@@ -138,7 +138,7 @@ its lifetime is the conversation's.
 
 ## What was read
 
-The other thing a session and its delegates share is the record of what they
+The other thing a session and its children share is the record of what they
 read. Every fetch and every search — the session's own and every child's —
 is one row: which agent made it, in which turn, the URL asked for and the
 URL that answered, the status, the size, whether the cache answered instead
@@ -205,8 +205,8 @@ done — a backlog of readings worked overnight would otherwise load a
 containment, a changeset and a command runner it will never touch
 ([`todo.md`](todo.md#a-run-is-turns-with-gates-between-them)).
 
-What it will not do is what it has nobody to ask. A delegate is a spawn and a
-spawn is an approval, so a run behind `--print` has no colleagues; durable
+What it will not do is what it has nobody to ask. A colleague is reached by a
+spawn and a spawn is an approval, so a run behind `--print` has no colleagues; durable
 memory proposes nothing, for the same reason. The one decision that is left —
 whether a request may leave the machine — is denied unless `--yes` gives the
 answer in advance. There is no flag for anything else because there is

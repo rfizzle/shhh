@@ -3579,7 +3579,7 @@ func goldenNotesModel(t *testing.T, width int) Model {
 	return m
 }
 
-// TestGolden_ChildAskCard pins the routed card with the real resolver behind
+// TestGolden_ChildRequestRouted pins the routed card with the real resolver behind
 // it: the command's paths stat-ed in the child's own directory, the
 // containment the session is running under, and a writer's finished patch —
 // the one child request that writes the reader's own files, and the card that
@@ -3594,7 +3594,7 @@ func goldenNotesModel(t *testing.T, width int) Model {
 // sentence somebody is still typing, where the draft holds the keyboard and
 // the card draws the one key that would take it and none of its own
 // (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
-func TestGolden_ChildAskCard(t *testing.T) {
+func TestGolden_ChildRequestRouted(t *testing.T) {
 	dir := t.TempDir()
 	if err := os.MkdirAll(filepath.Join(dir, "build"), 0o755); err != nil {
 		t.Fatal(err)
@@ -3607,7 +3607,7 @@ func TestGolden_ChildAskCard(t *testing.T) {
 	sup := subagent.New(context.Background(), subagent.Options{Root: dir, NewEnv: blockingEnv()})
 	t.Cleanup(sup.Close)
 
-	captureGolden(t, "child-ask-card", "a child agent's routed approval", goldenWidths, func(width int) []golden.Panel {
+	captureGolden(t, "child-request-routed", "a child's request routed to the person", goldenWidths, func(width int) []golden.Panel {
 		routed := func(ask *subagent.Ask, draft string) Model {
 			m := frameModel(t, width, 40)
 			m = m.WithSubagents(sup).WithChangeset(changeset.New(64), nil).WithContainment(Containment{

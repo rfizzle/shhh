@@ -1,5 +1,5 @@
-# golden:  child-ask-card.w80
-# surface: a child agent's routed approval
+# golden:  child-request-routed.w80
+# surface: a child's request routed to the person
 # width:   80 columns
 # palette: mono (two greys)
 # cursor:  none
