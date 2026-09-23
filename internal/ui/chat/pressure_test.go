@@ -185,6 +185,53 @@ func TestPressure_EnterCompactsAndNKeepsTheSessionSaved(t *testing.T) {
 	}
 }
 
+// The pressure card's [n] says it carries the plan in the plan card's own
+// words, so it carries it the same way: a session that approved a plan opens
+// the next one holding its record, and the row under the boundary says so.
+func TestPressure_NewSessionCarriesTheApprovedPlan(t *testing.T) {
+	m := planRecordModel(t, mockStream)
+	m = m.WithNewSession(func() SessionStart { return SessionStart{Prompt: "sys"} })
+	updated, _ := m.Update(doneMsg{})
+	m = handover(t, updated.(Model))
+	updated, _ = m.Update(tea.KeyPressMsg{Code: '1', Text: "1"})
+	m = updated.(Model)
+	if m.planned.Empty() {
+		t.Fatal("approving should have written the record the card carries")
+	}
+
+	// The approved execution runs to its end; the next turn fills the window,
+	// and ending there is what raises the card.
+	updated, _ = m.Update(doneMsg{})
+	m = updated.(Model)
+	big := strings.Repeat("y ", 30000)
+	m.agent.Append(provider.Message{Role: provider.RoleUser, Content: big})
+	m.agent.Append(provider.Message{Role: provider.RoleAssistant, Content: big})
+	m = endTurn(t, m, "carry on")
+	if m.state != statePressure {
+		t.Fatalf("the full window should raise the card, state=%d", m.state)
+	}
+
+	updated, _ = m.Update(tea.KeyPressMsg{Code: 'n', Text: "n"})
+	m = updated.(Model)
+
+	msgs := m.Messages()
+	if len(msgs) != 2 || msgs[0].Content != "sys" {
+		t.Fatalf("the new session should hold the prompt and the plan, got %d: %+v", len(msgs), msgs)
+	}
+	if seed := msgs[1]; seed.Role != provider.RoleUser || !seed.Machine || seed.Content != m.planned.Prologue() {
+		t.Fatalf("the first message of the new session should be the plan's record, got %+v", seed)
+	}
+	var rows []entry
+	for _, e := range m.transcript {
+		if e.notice != nil {
+			rows = append(rows, e)
+		}
+	}
+	if len(rows) != 2 || !isSessionBoundary(rows[0]) || rows[1].notice.Verb != carriedPlanVerb {
+		t.Fatalf("the boundary row should be followed by the carried plan, got %+v", rows)
+	}
+}
+
 // The card promises compaction keeps the most recent turns; this is the
 // promise being kept.
 func TestCompact_KeepsTheMostRecentTurnsVerbatim(t *testing.T) {

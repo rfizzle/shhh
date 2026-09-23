@@ -264,12 +264,20 @@ func (m Model) closePressure() (tea.Model, tea.Cmd) {
 // own slot, the record closed and another opened (model.go) — since a
 // recovery that leaves half the session behind is what a card offering it
 // would be trusted not to do.
+//
+// The key says it carries the plan, in the plan card's own words, so it
+// carries it the way that card's `[n]` does: an approved plan's record seeds
+// the new conversation. A session that never approved one crosses the bare
+// boundary (docs/capabilities/coding-agent.md#an-approved-plan-is-an-artifact).
 func (m Model) pressureNewSession() (tea.Model, tea.Cmd) {
 	notes, save := m.startNewSession()
 	// The window is empty again, so the next crossing is a new crossing —
 	// for the card and for the compaction a round tail asks for.
 	m.pressureShown, m.autoCompacted = false, false
 	m.appendEntries(notes)
+	if !m.planned.Empty() {
+		m.appendEntries(m.seedFromPlan(m.planned))
+	}
 	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()
 	return m, save

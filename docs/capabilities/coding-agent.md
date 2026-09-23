@@ -786,6 +786,11 @@ its own slot, this one saved — and the new conversation opens holding the
 record and nothing else. What the model is given is what the person approved,
 which is the whole of what the research was for.
 
+The two cards offer that boundary in the same words, so they do the same
+thing with it. Taking a new session from the context-pressure card after a
+plan was approved carries the last approved record across exactly as the plan
+card's does; a session that never approved one crosses with nothing to carry.
+
 The mode does not move. Every other answer on the card names the mode it
 enters, because approving a plan is never an unstated mode change; carrying it
 into a new session names none, so the new session is in the mode the old one
