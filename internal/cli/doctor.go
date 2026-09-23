@@ -1103,7 +1103,7 @@ func probeSandbox(_ context.Context, cfg config.Config) doctorFinding {
 			Fix:         []string{"shhh config set sandbox.profile workspace"},
 		}
 	}
-	return doctorSandbox(sandbox.Detect(), string(policy.Profile), runtime.GOOS)
+	return doctorSandbox(sandbox.Detect(), policy, runtime.GOOS)
 }
 
 // doctorSandbox reads the containment mechanism. This is the check the
@@ -1117,11 +1117,11 @@ func probeSandbox(_ context.Context, cfg config.Config) doctorFinding {
 // the private one is, and what a grant of the host's would change, is
 // docs/capabilities/containment.md#the-temporary-directory-is-the-sessions-own
 // and `/sandbox doctor`, which resolves the whole policy.
-func doctorSandbox(avail sandbox.Availability, profile, goos string) doctorFinding {
+func doctorSandbox(avail sandbox.Availability, policy sandbox.Policy, goos string) doctorFinding {
 	if avail.OK {
 		return doctorFinding{
 			Subject: avail.Mechanism,
-			Detail:  joinDetail(joinDetail(avail.Detail, profile+" profile"), "private tmpdir"),
+			Detail:  joinDetail(joinDetail(joinDetail(avail.Detail, string(policy.Profile)+" profile"), sandbox.NetworkWords(avail, policy)), "private tmpdir"),
 			Outcome: "contained",
 		}
 	}
@@ -1130,6 +1130,11 @@ func doctorSandbox(avail sandbox.Availability, profile, goos string) doctorFindi
 		Outcome: "uncontained", State: components.DoctorFailed,
 		Consequence: "every approval will show ⚠ UNCONTAINED, and an approved command runs as you",
 		FixLabel:    "show the fix for this host",
+	}
+	if len(policy.AllowHosts) > 0 {
+		// A list with no wall to hold it is a list nothing reads, and the
+		// row is where the reader who wrote one is looking.
+		f.Consequence += "; sandbox.allow_hosts is not in force, so every host is reachable"
 	}
 	switch goos {
 	case "linux":
@@ -1158,7 +1163,15 @@ func doctorSandbox(avail sandbox.Availability, profile, goos string) doctorFindi
 func probeEngine(_ context.Context, cfg config.Config) doctorFinding {
 	eng := sandbox.DetectEngine(cfg.Sandbox.ContainerEngine)
 	imageErr := sandbox.ValidateImage(cfg.Sandbox.ContainerImage, cfg.Sandbox.ImageAllowlist)
-	return doctorEngine(eng, cfg.Sandbox.ContainerImage, imageErr, ownedSandboxCount())
+	f := doctorEngine(eng, cfg.Sandbox.ContainerImage, imageErr, ownedSandboxCount())
+	if eng.OK && len(cfg.Sandbox.AllowHosts) > 0 {
+		// A container's network is a switch, so the list is not what a
+		// --sandbox run's commands are held to, and the row is where that
+		// is said rather than left for the reader to assume.
+		// See docs/capabilities/containment.md#a-contained-commands-network-can-be-a-list-of-hosts.
+		f.Detail = joinDetail(f.Detail, "sandbox.allow_hosts not held; a container's network is the profile's switch")
+	}
+	return f
 }
 
 // ownedSandboxCount is how many sandbox containers this machine still owns.

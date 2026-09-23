@@ -7,6 +7,7 @@ import (
 
 	"github.com/rfizzle/shhh/internal/cli"
 	"github.com/rfizzle/shhh/internal/config"
+	"github.com/rfizzle/shhh/internal/sandbox"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
@@ -14,6 +15,14 @@ import (
 // function's: an unattended run says what happened in a code a script can act
 // on, and everything else is a 1 (internal/cli.ExitCode).
 func main() {
+	// Inside a bubblewrap namespace confined to a host list, this binary is
+	// the bridge that carries the namespace's loopback to the proxy. It is
+	// answered before the keymap and the command tree because inside
+	// containment their files are behind the mask, and nothing of them is
+	// wanted.
+	if len(os.Args) > 1 && os.Args[1] == sandbox.BridgeArg {
+		os.Exit(sandbox.RunBridge(os.Args[2:]))
+	}
 	// The user's keymap moves a key before there is a command to answer one.
 	// Every hint and every handler reads the register, so a file applied
 	// after a program had started would be a screen offering keys it no

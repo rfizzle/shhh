@@ -157,7 +157,7 @@ func TestBuildContainment_RequireRefusesWhereNothingContains(t *testing.T) {
 	if !strings.Contains(c.Refusal, "requires containment") {
 		t.Fatalf("an unconfined required session must refuse, got %q", c.Refusal)
 	}
-	if !strings.Contains(c.Refusal, doctorSandbox(sandbox.Detect(), "", runtime.GOOS).Fix[0]) {
+	if !strings.Contains(c.Refusal, doctorSandbox(sandbox.Detect(), sandbox.Policy{}, runtime.GOOS).Fix[0]) {
 		t.Errorf("the refusal should carry the doctor's own fix, got %q", c.Refusal)
 	}
 }

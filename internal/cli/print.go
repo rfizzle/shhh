@@ -914,6 +914,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 		hookWrap = containment.Wrap
 		cmdEnv.Mechanism, cmdEnv.Profile = containment.Mechanism, containment.Profile
 		cmdEnv.Network, cmdEnv.Refused = containment.Network, containment.Refusal != ""
+		cmdEnv.Hosts = containment.Hosts
 	}
 	// A conversation reaches all of this and can run none of it, so it is
 	// told about the containment only where it has the tool the containment

@@ -29,11 +29,7 @@ func Report(avail Availability, p Policy, running int) string {
 	if profile == "" {
 		profile = ProfileWorkspace
 	}
-	network := "preserved"
-	if profile == ProfileWorkspaceNetless {
-		network = "disabled"
-	}
-	fmt.Fprintf(&b, "  profile:   %s (network %s)\n", profile, network)
+	fmt.Fprintf(&b, "  profile:   %s (%s)\n", profile, NetworkWords(avail, p))
 	fmt.Fprintf(&b, "  processes: %s\n", processLine(avail.OK, running))
 
 	s, err := resolvePolicy(p, avail.Mechanism)
@@ -47,7 +43,13 @@ func Report(avail Availability, p Policy, running int) string {
 
 	fmt.Fprintf(&b, "  writable:  %s\n", pathList(s.write))
 	fmt.Fprintf(&b, "  tmpdir:    %s\n", tmpLine(s))
-	fmt.Fprintf(&b, "  variables: %s\n", envList(s.env))
+	env := s.env
+	if len(s.hosts) > 0 {
+		// The proxy's address is known once a command starts it, and a
+		// report starts nothing; the names are what the row reports anyway.
+		env = withProxy(env, "")
+	}
+	fmt.Fprintf(&b, "  variables: %s\n", envList(env))
 	masked := append(append([]string{}, s.denyDirs...), s.denyFiles...)
 	if len(masked) == 0 {
 		b.WriteString("  masked:    (none of the deny-mask paths exist)\n")

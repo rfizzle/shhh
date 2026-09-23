@@ -26,7 +26,12 @@ type Containment struct {
 	Mechanism string
 	Profile   string
 	Network   bool
-	Detail    string
+	// Hosts narrows an open network to these hosts, the list the mechanism
+	// holds; empty is the network the profile gives. It is set only where
+	// the mechanism in force holds the list, so a card never names hosts
+	// that nothing is confining the command to.
+	Hosts  []string
+	Detail string
 	// Required says the session was told to contain the assistant's
 	// commands rather than to prefer it, which is what the chip reports: a
 	// mechanism that is in force and a mechanism that had to be are

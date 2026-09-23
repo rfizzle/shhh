@@ -118,6 +118,9 @@ type commandEnvironment struct {
 	// about it a command can fail on without any sign of why.
 	Profile string
 	Network bool
+	// Hosts narrows an open network to the hosts the mechanism holds it
+	// to; empty is the network the profile gives.
+	Hosts []string
 	// Refused is a session that requires containment on a host with none:
 	// nothing it asks for will run, so the block says that instead.
 	Refused bool
@@ -171,9 +174,18 @@ func commandEnvironmentBlock(e commandEnvironment) string {
 			fmt.Fprintf(&b, " under the %s profile", e.Profile)
 		}
 		b.WriteString(": a write lands inside the working scope above and is refused outside it")
-		if e.Network {
+		switch {
+		case e.Network && len(e.Hosts) > 0:
+			// The same wall as the netless one with a door in it, and the
+			// same waste if it is not stated: a refused host reads as a
+			// proxy fault to a model that was not told there is a list.
+			// See docs/capabilities/containment.md#a-contained-commands-network-can-be-a-list-of-hosts.
+			fmt.Fprintf(&b, ", and the network reaches only %s: HTTP_PROXY and HTTPS_PROXY point at a proxy that carries a connection to those hosts and refuses every other with a 403. "+
+				"A tool that ignores the proxy variables cannot connect at all — that is this session's host list and not a broken network or a bad resolver, so do not debug it as one. "+
+				"Say which host you needed and carry on with what the list allows.", strings.Join(e.Hosts, ", "))
+		case e.Network:
 			b.WriteString(", and the network is open.")
-		} else {
+		default:
 			b.WriteString(", and there is no network at all. A download, a package install or an API call fails on the connection itself — that is this profile and not a broken proxy or a bad resolver, so do not debug it as one. Say what you needed and carry on with what is already here.")
 		}
 		// The same failure as the netless one, from the filesystem's side: a

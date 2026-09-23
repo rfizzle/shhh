@@ -333,6 +333,9 @@ var settings = []Setting{
 		Values: []string{"workspace", "workspace-netless"},
 		Desc:   "What a contained command may reach: the workspace with the network untouched, or the same with the network closed.",
 	}, {
+		Key: "sandbox.allow_hosts", Kind: KindList, Default: "(empty — the profile's own answer)",
+		Desc: "The only hosts a contained command reaches under the `workspace` profile, through a proxy on loopback; an exact host, never a suffix. The netless profile does not read it.",
+	}, {
 		Key: "sandbox.deny_extra", Kind: KindList, Default: "(the built-in deny mask alone)",
 		Desc: "Paths added to the built-in deny mask; a contained command sees them as empty.",
 	}, {

@@ -200,6 +200,55 @@ and hostname namespaces, so it cannot see, signal or talk to the rest of the
 machine. None of this needs anything configured and none of it can be turned
 off.
 
+## A contained command's network can be a list of hosts
+
+The two profiles answer the network with a switch: every host, or none. Most
+work that needs the network needs very little of it — the package registry,
+the module proxy, the one API under test — and the switch makes the person
+choose between a command that can reach anything and one that cannot install
+a dependency.
+
+`sandbox.allow_hosts` is the third answer. Under the `workspace` profile a
+list names the only hosts a contained command reaches; an empty list is the
+profile's own answer, and the netless profile does not read it at all, since
+closing the network is the stronger statement and a list cannot weaken it. A
+host is matched exactly, the way the fetcher's own host list is:
+`registry.npmjs.org` does not cover `npmjs.org`, and a wildcard is refused
+rather than read as something near it.
+
+**Neither mechanism can name a host to the kernel, so the list is read by a
+proxy.** The command gets no network of its own — an empty namespace under
+bubblewrap, every socket denied under Seatbelt, whose network rules name
+`localhost` or any host and nothing between — and one way out: a proxy shhh
+runs outside containment, which the proxy variables in the command's
+environment point at. Under Seatbelt that is one loopback port the profile
+allows; under bubblewrap the namespace has no route to the host's loopback, so
+the proxy listens on a socket file bound into the namespace and a small bridge
+inside it carries a port there to the socket.
+
+The proxy checks the host a request names before it resolves anything, so a
+host that is not listed is never looked up; the command has no resolver of its
+own to look one up with. It never follows a redirect — a tunnel is opaque to
+it and a plain request is answered once and the connection closed — so a
+listed host that points elsewhere hands the command an address it has to ask
+for again, and is refused there. What is refused is refused in HTTP, with the
+list in the answer, so the tool that asked reports the proxy's reason rather
+than a dropped connection. A tool that ignores the proxy variables cannot
+connect at all, which is the list holding rather than failing.
+
+The loopback differs between the two, because the namespace is the command's
+own under bubblewrap and the host's under Seatbelt: a test server the command
+starts is reachable to it on Linux, and on macOS the command reaches the proxy
+and nothing else on the machine, the way the netless profile reaches nothing.
+
+**A mechanism that cannot hold the list runs the switch, and says so.** A host
+with no mechanism has no wall for a list to be a door in, and a disposable
+container's network is a switch; there the profile's answer is what runs,
+`shhh doctor` says the list is not held, and the approval card and the prompt
+describe the network that is actually open. Every surface that reports the
+network — the doctor's row, `/sandbox doctor`, the card's `network: 2 hosts`
+and the sentence the model is told — reads the same answer.
+
 ## Containment can be required
 
 Where no mechanism is available, an approved command runs as you, and every
@@ -375,6 +424,11 @@ resolver — and a model that was not told there is no network debugs DNS,
 retries against a second registry and asks for a proxy setting, three rounds
 spent on a wall that was never going to move. Told plainly, it says what it
 needed and works with what is already in the checkout.
+
+A host list is the same wall with a door in it, and it is stated the same way:
+the hosts are named, with the proxy that carries them, so a `curl` to any
+other host is a refusal the model has already read about rather than a
+surprise it goes on to debug.
 
 The ceiling is stated in the same place and for the same reason. What happens
 at it is not the same on every surface — a run whose commands are inside a

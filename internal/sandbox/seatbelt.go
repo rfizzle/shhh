@@ -3,6 +3,7 @@ package sandbox
 import (
 	"context"
 	"fmt"
+	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -122,6 +123,14 @@ func seatbeltProfile(s spec) string {
 	}
 	if !s.network {
 		b.WriteString("(deny network*)\n")
+		if _, port, err := net.SplitHostPort(s.proxy); err == nil {
+			// A host list. SBPL's network filter names `*` or `localhost`
+			// and never a host, so the list cannot be written here: what is
+			// written is the one port the proxy that reads it listens on,
+			// after the deny so SBPL's later rule is the one that holds.
+			// See docs/capabilities/containment.md#a-contained-commands-network-can-be-a-list-of-hosts.
+			fmt.Fprintf(&b, "(allow network-outbound\n  (remote tcp %s))\n", sbplQuote("localhost:"+port))
+		}
 	}
 	return b.String()
 }

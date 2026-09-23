@@ -879,6 +879,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 			Mechanism: containment.Mechanism,
 			Profile:   containment.Profile,
 			Network:   containment.Network,
+			Hosts:     containment.Hosts,
 			Refused:   containment.Refusal != "",
 			Ceiling:   cfg.CommandTimeout(),
 			// A ceiling backgrounds a command that is still printing only

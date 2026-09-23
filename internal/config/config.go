@@ -435,6 +435,11 @@ type SandboxConfig struct {
 	// Profile is "workspace" (network preserved, the default) or
 	// "workspace-netless".
 	Profile string `toml:"profile"`
+	// AllowHosts narrows the workspace profile's network to these exact
+	// hosts; empty is the profile's own answer, and the netless profile does
+	// not read it.
+	// See docs/capabilities/containment.md#a-contained-commands-network-can-be-a-list-of-hosts.
+	AllowHosts []string `toml:"allow_hosts"`
 	// DenyExtra paths join the built-in deny mask; contained commands see
 	// them as empty.
 	DenyExtra []string `toml:"deny_extra"`

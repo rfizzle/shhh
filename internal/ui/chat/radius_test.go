@@ -93,6 +93,23 @@ func TestBlastRadius_UnresolvedPathIsSaidNotGuessed(t *testing.T) {
 	}
 }
 
+// A network held to a host list is stated as the count, with the hosts
+// beside it where the card has the room.
+func TestBlastRadius_AHostListIsStatedAsItsHosts(t *testing.T) {
+	dir := t.TempDir()
+	m := radiusModel(t, dir, Containment{
+		Status: "contained: bwrap (workspace profile)", Mechanism: "bwrap",
+		Profile: "workspace", Network: true, Hosts: []string{"registry.npmjs.org", "proxy.golang.org"},
+	})
+	view := confirmFor(t, m, "npm run build")
+	if !strings.Contains(view, "network   2 hosts") {
+		t.Fatalf("the card should count the hosts:\n%s", view)
+	}
+	if strings.Contains(view, "network   open") {
+		t.Fatalf("a host list is not an open network:\n%s", view)
+	}
+}
+
 // A read-only command resolves, and says so.
 func TestBlastRadius_ReadOnlyCommandTouchesNothing(t *testing.T) {
 	dir := t.TempDir()

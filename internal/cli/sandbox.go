@@ -30,6 +30,10 @@ func sandboxPolicy(cfg config.Config, scopeDirs ...string) (sandbox.Policy, erro
 	if err != nil {
 		return sandbox.Policy{}, fmt.Errorf("config sandbox.profile: %w", err)
 	}
+	hosts, err := sandbox.ParseHosts(cfg.Sandbox.AllowHosts)
+	if err != nil {
+		return sandbox.Policy{}, fmt.Errorf("config sandbox.allow_hosts: %w", err)
+	}
 	ws, err := os.Getwd()
 	if err != nil {
 		return sandbox.Policy{}, err
@@ -38,6 +42,7 @@ func sandboxPolicy(cfg config.Config, scopeDirs ...string) (sandbox.Policy, erro
 	return sandbox.Policy{
 		Workspace:  ws,
 		Profile:    profile,
+		AllowHosts: hosts,
 		DenyExtra:  cfg.Sandbox.DenyExtra,
 		WriteExtra: write,
 		// The environment goes in with the paths, from the one place that
@@ -97,7 +102,7 @@ func uncontainedRefusal(avail sandbox.Availability) string {
 	var b strings.Builder
 	b.WriteString("error: this session requires containment and no mechanism is in force: ")
 	b.WriteString(avail.Detail)
-	for _, line := range doctorSandbox(avail, "", runtime.GOOS).Fix {
+	for _, line := range doctorSandbox(avail, sandbox.Policy{}, runtime.GOOS).Fix {
 		b.WriteString("\n  " + line)
 	}
 	return b.String()
@@ -147,6 +152,11 @@ func buildContainment(cfg config.Config, sc *scope.Scope, sup *process.Superviso
 	c.Status = fmt.Sprintf("contained: %s (%s profile)", avail.Mechanism, policy.Profile)
 	c.Mechanism, c.Profile, c.Required = avail.Mechanism, string(policy.Profile), cfg.Sandbox.Require
 	c.Network = policy.Profile != sandbox.ProfileWorkspaceNetless
+	if c.Network && sandbox.HoldsHosts(avail.Mechanism) {
+		// The list the wrap will hold, so the card and the prompt name the
+		// hosts in force rather than calling the network open.
+		c.Hosts = policy.AllowHosts
+	}
 	wrap := func(command string) ([]string, error) {
 		p, err := policyNow()
 		if err != nil {

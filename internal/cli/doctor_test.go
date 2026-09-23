@@ -307,7 +307,7 @@ func TestDoctorBytes(t *testing.T) {
 func TestDoctorSandbox_Contained(t *testing.T) {
 	f := doctorSandbox(sandbox.Availability{
 		OK: true, Mechanism: "bwrap", Detail: "bubblewrap with unprivileged user namespaces",
-	}, "workspace", "linux")
+	}, sandbox.Policy{Profile: sandbox.ProfileWorkspace}, "linux")
 	if f.State != components.DoctorPassed || f.Subject != "bwrap" {
 		t.Fatalf("a contained host does not say so: %+v", f)
 	}
@@ -323,13 +323,36 @@ func TestDoctorSandbox_Contained(t *testing.T) {
 	if f.Consequence != "" || len(f.Fix) != 0 {
 		t.Fatalf("a passing check offered a fix: %+v", f)
 	}
+	if !strings.Contains(f.Detail, "network preserved") {
+		t.Fatalf("the row does not say what the network is: %q", f.Detail)
+	}
+}
+
+// The row names a host list where the network is otherwise named, and says
+// when the list is not what is in force.
+func TestDoctorSandbox_NamesTheHostList(t *testing.T) {
+	list := sandbox.Policy{Profile: sandbox.ProfileWorkspace, AllowHosts: []string{"registry.npmjs.org", "proxy.golang.org"}}
+	f := doctorSandbox(sandbox.Availability{OK: true, Mechanism: "sandbox-exec", Detail: "Seatbelt"}, list, "darwin")
+	if !strings.Contains(f.Detail, "network: 2 hosts — registry.npmjs.org, proxy.golang.org") {
+		t.Fatalf("the row does not name the list: %q", f.Detail)
+	}
+	list.Profile = sandbox.ProfileWorkspaceNetless
+	f = doctorSandbox(sandbox.Availability{OK: true, Mechanism: "bwrap", Detail: "bubblewrap"}, list, "linux")
+	if !strings.Contains(f.Detail, "network disabled; sandbox.allow_hosts is not read") {
+		t.Fatalf("netless ignores the list and the row should say so: %q", f.Detail)
+	}
+	list.Profile = sandbox.ProfileWorkspace
+	f = doctorSandbox(sandbox.Availability{Detail: "bwrap not found"}, list, "linux")
+	if !strings.Contains(f.Consequence, "sandbox.allow_hosts is not in force") {
+		t.Fatalf("with nothing to hold the list the row should say so: %q", f.Consequence)
+	}
 }
 
 // The consequence is quoted from the surface the reader will actually meet it
 // on: the approval card promotes ⚠ UNCONTAINED to its title bar when nothing
 // wraps the command.
 func TestDoctorSandbox_UncontainedQuotesTheApprovalCard(t *testing.T) {
-	f := doctorSandbox(sandbox.Availability{Detail: "sandbox-exec not found"}, "workspace", "darwin")
+	f := doctorSandbox(sandbox.Availability{Detail: "sandbox-exec not found"}, sandbox.Policy{Profile: sandbox.ProfileWorkspace}, "darwin")
 	if f.State != components.DoctorFailed {
 		t.Fatalf("an uncontained host did not fail: %+v", f)
 	}
@@ -345,15 +368,15 @@ func TestDoctorSandbox_UncontainedQuotesTheApprovalCard(t *testing.T) {
 // is told what to do instead rather than told to install something that does
 // not exist for it.
 func TestDoctorSandbox_TheFixIsPerHost(t *testing.T) {
-	linux := doctorSandbox(sandbox.Availability{Detail: "bwrap not found"}, "workspace", "linux")
+	linux := doctorSandbox(sandbox.Availability{Detail: "bwrap not found"}, sandbox.Policy{Profile: sandbox.ProfileWorkspace}, "linux")
 	if !strings.Contains(strings.Join(linux.Fix, "\n"), "bubblewrap") {
 		t.Fatalf("linux is not told about bubblewrap: %v", linux.Fix)
 	}
-	darwin := doctorSandbox(sandbox.Availability{Detail: "not found"}, "workspace", "darwin")
+	darwin := doctorSandbox(sandbox.Availability{Detail: "not found"}, sandbox.Policy{Profile: sandbox.ProfileWorkspace}, "darwin")
 	if !strings.Contains(strings.Join(darwin.Fix, "\n"), "sandbox-exec") {
 		t.Fatalf("macOS is not told about sandbox-exec: %v", darwin.Fix)
 	}
-	other := doctorSandbox(sandbox.Availability{Detail: "unsupported"}, "workspace", "windows")
+	other := doctorSandbox(sandbox.Availability{Detail: "unsupported"}, sandbox.Policy{Profile: sandbox.ProfileWorkspace}, "windows")
 	fix := strings.Join(other.Fix, "\n")
 	if strings.Contains(fix, "apt install") || !strings.Contains(fix, "--sandbox") {
 		t.Fatalf("a platform with no mechanism is told to install one: %v", other.Fix)
@@ -622,7 +645,7 @@ func TestDoctorReport_CarriesTheWholeRun(t *testing.T) {
 	checks := []components.DoctorCheck{
 		doctorCheck("binary", doctorBinary("0.9.4", "linux", "amd64", ""), 0),
 		doctorCheck("sandbox", doctorSandbox(sandbox.Availability{Detail: "bwrap not found"},
-			"workspace", "linux"), 120*time.Millisecond),
+			sandbox.Policy{Profile: sandbox.ProfileWorkspace}, "linux"), 120*time.Millisecond),
 		doctorCheck("engine", doctorEngine(sandbox.Engine{Detail: "none"}, "", nil, 0), 0),
 	}
 	report := doctorReportOf("shhh doctor", "check", "checks", checks).String()
@@ -759,7 +782,7 @@ func TestDoctorModel_TheLastAnswerStopsTheRun(t *testing.T) {
 	m.markRunning(0)
 	for at := range containmentProbes() {
 		m.other(doctorDoneMsg{at: at,
-			finding: doctorSandbox(sandbox.Availability{OK: true, Mechanism: "bwrap"}, "workspace", "linux")})
+			finding: doctorSandbox(sandbox.Availability{OK: true, Mechanism: "bwrap"}, sandbox.Policy{Profile: sandbox.ProfileWorkspace}, "linux")})
 	}
 	if m.screen.Running {
 		t.Fatal("the run is still going after every check answered")
@@ -775,7 +798,7 @@ func TestDoctorModel_RerunStartsOver(t *testing.T) {
 	m := newDoctorModel(config.Config{}, containmentProbes())
 	m.markRunning(0)
 	m.other(doctorDoneMsg{at: 0,
-		finding: doctorSandbox(sandbox.Availability{OK: true, Mechanism: "bwrap"}, "workspace", "linux")})
+		finding: doctorSandbox(sandbox.Availability{OK: true, Mechanism: "bwrap"}, sandbox.Policy{Profile: sandbox.ProfileWorkspace}, "linux")})
 	m.other(doctorDoneMsg{at: 1,
 		finding: doctorEngine(sandbox.Engine{Detail: "none"}, "", nil, 0)})
 

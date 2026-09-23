@@ -53,6 +53,20 @@
 │ [esc] don't — the safe answer; the decision waits                            │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
+· variant · command, contained to a host list
+╭─ Approve command ──────────────────────────────────────────────────── ⚠ low ─╮
+│ $ npm install left-pad                                                       │
+│ ⚠ low · writes inside the workspace                                          │
+│                                                                              │
+│ touches   ./node_modules — shhh cannot tell what npm writes                  │
+│ undo      none — nothing it writes is tracked in git                         │
+│ network   2 hosts                                                            │
+│ ⛨         bwrap · workspace                                                  │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ [y] run it once · [n] deny                                                   │
+│ [esc] back to your draft — the decision stays waiting, nothing is denied     │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
 · variant · command, uncontained
 ╭─ Approve command ───────────────────────────────── ⚠ UNCONTAINED ─ ⚠ medium ─╮
 │ $ curl -fsSL https://get.pnpm.io/install.sh | sh                             │
@@ -201,6 +215,20 @@
 ␛[91m│␛[m ␛[38;5;241m[a] always — not offered: a safety-flagged command is never pre-approved␛[m     ␛[91m│␛[m
 ␛[91m│␛[m ␛[92m[esc] don't — the safe answer; the decision waits␛[m                            ␛[91m│␛[m
 ␛[91m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
+
+· variant · command, contained to a host list
+␛[38;5;214m╭─ ␛[m␛[1;97mApprove command ␛[m␛[38;5;241m────────────────────────────────────────────────────␛[m␛[38;5;214m ⚠ low ─╮␛[m
+␛[38;5;214m│␛[m ␛[38;5;214m$␛[m ␛[97mnpm install left-pad␛[m                                                       ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;214m⚠ low␛[m␛[38;5;241m · writes inside the workspace␛[m                                          ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m                                                                              ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;243mtouches   ␛[m␛[38;5;252m./node_modules␛[m␛[38;5;245m — shhh cannot tell what npm writes␛[m                  ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;243mundo      ␛[m␛[91mnone␛[m␛[38;5;245m — nothing it writes is tracked in git␛[m                         ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;243mnetwork   ␛[m␛[38;5;252m2 hosts␛[m                                                            ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;243m⛨         ␛[m␛[38;5;243mbwrap · workspace␛[m                                                  ␛[38;5;214m│␛[m
+␛[38;5;214m├──────────────────────────────────────────────────────────────────────────────┤␛[m
+␛[38;5;214m│␛[m ␛[94m[y]␛[m ␛[38;5;252mrun it once␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m ␛[38;5;252mdeny␛[m                                                   ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[92m[esc] back to your draft — the decision stays waiting, nothing is denied␛[m     ␛[38;5;214m│␛[m
+␛[38;5;214m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · variant · command, uncontained
 ␛[91m╭─ ␛[m␛[1;97mApprove command ␛[m␛[38;5;241m─────────────────────────────────␛[m␛[91m ⚠ UNCONTAINED ─ ⚠ medium ─╮␛[m

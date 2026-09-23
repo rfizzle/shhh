@@ -9,6 +9,7 @@ package sandbox
 import (
 	"errors"
 	"fmt"
+	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -78,6 +79,12 @@ type Policy struct {
 	// it to reach the command; nothing about the shape of a name is
 	// consulted, only what the vault was told.
 	SecretNames []string
+	// AllowHosts narrows the workspace profile's network to these hosts,
+	// matched exactly; empty is the profile's own answer, and the netless
+	// profile does not read it. A mechanism that cannot hold a list runs
+	// the profile's switch instead (HoldsHosts).
+	// See docs/capabilities/containment.md#a-contained-commands-network-can-be-a-list-of-hosts.
+	AllowHosts []string
 }
 
 // WithEnv returns the policy widened by pairs the caller is handing this one
@@ -166,6 +173,9 @@ func Wrap(avail Availability, p Policy, command string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
+	if err := s.attachProxy(avail.Mechanism); err != nil {
+		return nil, err
+	}
 	switch avail.Mechanism {
 	case "bwrap":
 		return bwrapArgv(s, command), nil
@@ -187,6 +197,9 @@ func WrapArgv(avail Availability, p Policy, argv []string) ([]string, error) {
 	}
 	s, err := resolvePolicy(p, avail.Mechanism)
 	if err != nil {
+		return nil, err
+	}
+	if err := s.attachProxy(avail.Mechanism); err != nil {
 		return nil, err
 	}
 	switch avail.Mechanism {
@@ -229,6 +242,16 @@ type spec struct {
 	tmpVisible     []string
 	privateGoCache bool
 	network        bool
+	// hosts are the only hosts the command may reach, through the proxy;
+	// empty is the network switch alone. network is false whenever they
+	// are set, because the proxy is then the command's whole network.
+	hosts []string
+	// proxy is where the running proxy listens — a loopback address under
+	// Seatbelt, a socket file under bubblewrap — and bridgeExe the program
+	// bubblewrap binds in to carry a port to that socket. Both are filled
+	// when a command is wrapped, never when a policy is only reported.
+	proxy     string
+	bridgeExe string
 }
 
 // DenyPaths is the deny mask that cannot be disabled, for the callers that
@@ -570,6 +593,15 @@ func resolvePolicy(p Policy, mechanism string) (spec, error) {
 	switch p.Profile {
 	case "", ProfileWorkspace:
 		s.network = true
+		hosts, err := ParseHosts(p.AllowHosts)
+		if err != nil {
+			return spec{}, fmt.Errorf("wrap unsupported: sandbox.allow_hosts: %v", err)
+		}
+		// A list is held only where the mechanism can hold one; elsewhere
+		// the profile's switch is what runs, and NetworkWords says so.
+		if len(hosts) > 0 && HoldsHosts(mechanism) {
+			s.hosts, s.network = hosts, false
+		}
 	case ProfileWorkspaceNetless:
 		s.network = false
 	default:
@@ -720,6 +752,75 @@ func (s *spec) privatiseTmp(mechanism string) error {
 		s.env = withGoCache(s.env, filepath.Join(s.tmpdir, "go-build"))
 	}
 	return nil
+}
+
+// attachProxy starts the proxy a host list is read by, or finds the one
+// already running, and points the command at it. It is here rather than in
+// resolvePolicy because a report resolves the policy too, and a doctor run
+// that opened a listener would be a report that changed what it reports.
+func (s *spec) attachProxy(mechanism string) error {
+	if len(s.hosts) == 0 {
+		return nil
+	}
+	if mechanism == "bwrap" && s.tmpdir == "" {
+		return fmt.Errorf("wrap unsupported: sandbox.allow_hosts needs a private /tmp to carry the proxy into the namespace, and this host has none")
+	}
+	var exe string
+	if mechanism == "bwrap" {
+		// Before the proxy starts, so a program that cannot be found leaves
+		// no listener behind it.
+		found, err := bridgeProgram()
+		if err == nil {
+			found, err = resolvePath(found)
+		}
+		if err != nil {
+			return fmt.Errorf("wrap unsupported: sandbox.allow_hosts needs the shhh program to bridge the namespace: %v", err)
+		}
+		exe = found
+	}
+	p, err := proxyFor(mechanism, s.hosts)
+	if err != nil {
+		return err
+	}
+	s.proxy = p.addr
+	switch mechanism {
+	case "sandbox-exec":
+		s.env = withProxy(s.env, p.addr)
+	case "bwrap":
+		s.bridgeExe = exe
+		s.env = withProxy(s.env, net.JoinHostPort("127.0.0.1", bridgePort))
+	}
+	return nil
+}
+
+// proxyVars are the variables a command reads its proxy from. Both cases,
+// because tools disagree about which they read: curl takes http_proxy only in
+// lower case, and most of the rest take either.
+var proxyVars = []string{"HTTP_PROXY", "HTTPS_PROXY", "http_proxy", "https_proxy"}
+
+// noProxyVars keep a command's own loopback off the proxy. Under bubblewrap
+// the namespace's loopback is the command's own — a test server it starts is
+// there — and the proxy would refuse it as a host nobody listed.
+var noProxyVars = []string{"NO_PROXY", "no_proxy"}
+
+// withProxy points the proxy variables at addr, replacing whatever the
+// environment said about them: the list is the boundary, and a variable that
+// sent a request elsewhere would only send it at the wall.
+func withProxy(env []string, addr string) []string {
+	out := make([]string, 0, len(env)+len(proxyVars)+len(noProxyVars))
+	for _, pair := range env {
+		if name, _, ok := strings.Cut(pair, "="); ok && (slices.Contains(proxyVars, name) || slices.Contains(noProxyVars, name)) {
+			continue
+		}
+		out = append(out, pair)
+	}
+	for _, name := range proxyVars {
+		out = append(out, name+"=http://"+addr)
+	}
+	for _, name := range noProxyVars {
+		out = append(out, name+"=localhost,127.0.0.1,::1")
+	}
+	return out
 }
 
 // withTmpdir points TMPDIR at the session's own scratch. The variable is on

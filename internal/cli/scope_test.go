@@ -153,6 +153,23 @@ func TestCommandEnvironmentBlock_NetlessSaysThereIsNoNetwork(t *testing.T) {
 	}
 }
 
+// A host list is told as the hosts, so a refused curl is something the model
+// has already read about rather than a network to debug.
+func TestCommandEnvironmentBlock_AHostListNamesTheHosts(t *testing.T) {
+	block := commandEnvironmentBlock(commandEnvironment{
+		Mechanism: "sandbox-exec", Profile: "workspace", Network: true,
+		Hosts: []string{"registry.npmjs.org", "proxy.golang.org"},
+	})
+	for _, want := range []string{"reaches only registry.npmjs.org, proxy.golang.org", "HTTPS_PROXY", "refuses every other", "do not debug it"} {
+		if !strings.Contains(block, want) {
+			t.Errorf("a session held to a host list should be told %q:\n%s", want, block)
+		}
+	}
+	if strings.Contains(block, "the network is open") {
+		t.Errorf("a host list is not an open network:\n%s", block)
+	}
+}
+
 func TestCommandEnvironmentBlock_AnUncontainedSessionHasNoDenialToExplain(t *testing.T) {
 	block := commandEnvironmentBlock(commandEnvironment{Mechanism: "", Ceiling: time.Minute})
 	if strings.Contains(block, "never says sandbox") {

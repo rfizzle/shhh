@@ -267,6 +267,7 @@ func TestCheckConfigValue_RefusesAWordOutsideItsKeysVocabulary(t *testing.T) {
 		{"provider.cache_ttl", "10m"},
 		{"appearance.rail_width", "wide"},
 		{"sandbox.profile", "wide-open"},
+		{"sandbox.allow_hosts", "registry.npmjs.org, *.pypi.org"},
 		{"sandbox.container_engine", "containerd"},
 		{"sandbox.require_isolation", "some"},
 	} {
@@ -289,6 +290,7 @@ func TestCheckConfigValue_RefusesAWordOutsideItsKeysVocabulary(t *testing.T) {
 		// resolved rather than refused here, so the write takes it.
 		{"appearance.rail_width", "40"},
 		{"sandbox.profile", "workspace-netless"},
+		{"sandbox.allow_hosts", "registry.npmjs.org, proxy.golang.org"},
 		{"sandbox.container_engine", "podman"},
 		{"sandbox.require_isolation", "container"},
 		// An empty value is a reset, which every one of these keys takes.

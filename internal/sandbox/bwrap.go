@@ -81,6 +81,18 @@ func bwrapPrefix(s spec) []string {
 		// path nothing is listening on would fail the whole wrap.
 		argv = append(argv, "--ro-bind", "/dev/null", s.agentSocket)
 	}
+	var bridge []string
+	if s.bridgeExe != "" {
+		// A host list: the namespace has no network, and the bridge and the
+		// proxy's socket are bound onto the private /tmp — last, after every
+		// mask, so neither the tmpfs nor a mask over the state directory the
+		// socket lives in can cover them. The bridge then runs in front of
+		// the command, listening on the namespace's own loopback.
+		// See docs/capabilities/containment.md#a-contained-commands-network-can-be-a-list-of-hosts.
+		exe, sock := bridgePaths(s.tmpdir)
+		argv = append(argv, "--ro-bind", s.bridgeExe, exe, "--bind", s.proxy, sock)
+		bridge = []string{exe, BridgeArg, sock, "--"}
+	}
 	if !s.network {
 		argv = append(argv, "--unshare-net")
 	}
@@ -93,7 +105,7 @@ func bwrapPrefix(s spec) []string {
 	if s.cwd != "" {
 		argv = append(argv, "--chdir", s.cwd)
 	}
-	return append(argv, "--")
+	return append(append(argv, "--"), bridge...)
 }
 
 // bwrapArgv runs a shell command string contained: it rides as one argv

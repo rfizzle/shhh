@@ -407,6 +407,7 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 		Mechanism: containment.Mechanism,
 		Profile:   containment.Profile,
 		Network:   containment.Network,
+		Hosts:     containment.Hosts,
 		Refused:   containment.Refusal != "",
 		Ceiling:   cfg.CommandTimeout(),
 		// A ceiling backgrounds a command that is still printing only where

@@ -217,6 +217,16 @@ func (m Model) networkField(mechanism string) components.CardField {
 	case mechanism == "":
 		f.Value, f.Detail = "open", "nothing contains this command, so nothing limits what it reaches"
 		f.Tone = components.ToneOpen
+	case m.containment.Network && len(m.containment.Hosts) > 0:
+		// A list is neither a door left open nor one closed: it is the
+		// hosts the command can reach, named, and nothing else.
+		// See docs/capabilities/containment.md#a-contained-commands-network-can-be-a-list-of-hosts.
+		f.Value = fmt.Sprintf("%d hosts", len(m.containment.Hosts))
+		if len(m.containment.Hosts) == 1 {
+			f.Value = "1 host"
+		}
+		f.Detail = "only " + strings.Join(m.containment.Hosts, ", ") + "; every other host is refused"
+		f.Tone = components.ToneNeutral
 	case m.containment.Network:
 		f.Value, f.Detail = "open", "the "+m.containment.Profile+" profile allows network access"
 		f.Tone = components.ToneOpen

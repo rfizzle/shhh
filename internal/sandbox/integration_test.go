@@ -820,3 +820,108 @@ func listenLocally(t *testing.T) string {
 	}()
 	return ln.Addr().String()
 }
+
+// TestMain lets this test binary stand in for shhh as the network bridge: a
+// bubblewrap wrap with a host list runs the program that built it inside the
+// namespace, and under test that program is this one.
+func TestMain(m *testing.M) {
+	if len(os.Args) > 1 && os.Args[1] == BridgeArg {
+		os.Exit(RunBridge(os.Args[2:]))
+	}
+	os.Exit(m.Run())
+}
+
+// The host list put to the kernel: a real command, through the real proxy,
+// reaches the listed host, is refused the unlisted one, and cannot reach
+// anything directly — the last half is what says the command's own network
+// is gone rather than merely pointed somewhere.
+func TestBubblewrapHoldsTheHostList(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skipf("bubblewrap is the Linux mechanism and this host is %s", runtime.GOOS)
+	}
+	avail := detectBwrap()
+	if !avail.OK {
+		t.Skipf("no bubblewrap containment here: %s", avail.Detail)
+	}
+	holdTheHostList(t, avail)
+}
+
+func TestSeatbeltHoldsTheHostList(t *testing.T) {
+	if runtime.GOOS != "darwin" {
+		t.Skipf("Seatbelt is the macOS mechanism and this host is %s", runtime.GOOS)
+	}
+	avail := detectSeatbelt()
+	if !avail.OK {
+		t.Skipf("no Seatbelt containment here: %s", avail.Detail)
+	}
+	holdTheHostList(t, avail)
+}
+
+// holdTheHostList stands a listener in for the one listed host, so the
+// allowed half cannot fail on somebody else's network: the proxy's dial is
+// pointed at it whatever address it was asked for, and the command's direct
+// connection to the same listener is the control that has to fail.
+func holdTheHostList(t *testing.T, avail Availability) {
+	t.Helper()
+	if filepath.Base(shellPath()) != "bash" {
+		t.Skipf("the execution shell here is %s, which has no /dev/tcp", shellPath())
+	}
+	testHome(t)
+	target := greetLocally(t)
+	oldDial := proxyDial
+	proxyDial = func(ctx context.Context, network, _ string) (net.Conn, error) {
+		var d net.Dialer
+		return d.DialContext(ctx, network, target)
+	}
+	t.Cleanup(func() {
+		proxyDial = oldDial
+		proxies.Lock()
+		clear(proxies.m)
+		proxies.Unlock()
+	})
+
+	policy, ws := workspacePolicy(t)
+	policy.Cwd = ws
+	policy.AllowHosts = []string{"allowed.test"}
+	command := `a=${HTTPS_PROXY#http://}; h=${a%:*}; p=${a##*:}
+exec 3<>/dev/tcp/$h/$p && printf 'CONNECT allowed.test:80 HTTP/1.1\r\n\r\n' >&3 && cat <&3; exec 3<&-
+exec 4<>/dev/tcp/$h/$p && printf 'CONNECT denied.test:80 HTTP/1.1\r\n\r\n' >&4 && cat <&4; exec 4<&-
+exec 5<>/dev/tcp/` + strings.Replace(target, ":", "/", 1) + ` && echo DIRECT`
+
+	argv, err := Wrap(avail, policy, command)
+	if err != nil {
+		t.Fatalf("Wrap under %s: %v", avail.Mechanism, err)
+	}
+	out, _ := capture(t, argv[0], argv[1:]...)
+	if !strings.Contains(out, "HTTP/1.1 200") || !strings.Contains(out, "HELLO") {
+		t.Fatalf("a listed host must be reachable through the proxy under %s:\n%s", avail.Mechanism, out)
+	}
+	if !strings.Contains(out, "HTTP/1.1 403") || !strings.Contains(out, "denied.test is not in sandbox.allow_hosts") {
+		t.Errorf("an unlisted host must be refused by the proxy under %s:\n%s", avail.Mechanism, out)
+	}
+	if strings.Contains(out, "DIRECT") {
+		t.Errorf("a command confined to a host list reached a listener directly under %s:\n%s", avail.Mechanism, out)
+	}
+}
+
+// greetLocally is listenLocally for the allowed half: every connection is
+// answered with HELLO and closed.
+func greetLocally(t *testing.T) string {
+	t.Helper()
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Skipf("no loopback listener here: %v", err)
+	}
+	t.Cleanup(func() { _ = ln.Close() })
+	go func() {
+		for {
+			conn, err := ln.Accept()
+			if err != nil {
+				return
+			}
+			_, _ = conn.Write([]byte("HELLO\n"))
+			_ = conn.Close()
+		}
+	}()
+	return ln.Addr().String()
+}

@@ -247,6 +247,7 @@ var configJudges = map[string]func(string) error{
 	"provider.cache_ttl":        func(v string) error { _, err := provider.ParseCacheTTL(v); return err },
 	"appearance.rail_width":     func(v string) error { _, err := components.ParseRailWidth(v); return err },
 	"sandbox.profile":           func(v string) error { _, err := sandbox.ParseProfile(v); return err },
+	"sandbox.allow_hosts":       func(v string) error { _, err := sandbox.ParseHosts(strings.Split(v, ",")); return err },
 	"sandbox.container_engine":  func(v string) error { _, err := sandbox.ParseEngine(v); return err },
 	"sandbox.require_isolation": func(v string) error { _, err := sandbox.ParseIsolation(v); return err },
 }

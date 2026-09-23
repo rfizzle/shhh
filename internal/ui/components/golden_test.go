@@ -617,6 +617,18 @@ func TestGolden_ApprovalCard(t *testing.T) {
 				c.Footnote = "[a] always — not offered: a safety-flagged command is never pre-approved"
 				c.Return = "don't — the safe answer; the decision waits"
 			})},
+			// A host list is neither open nor closed: the count is the value
+			// and the hosts are the detail, in the neutral tone of a fact.
+			{Label: "variant · command, contained to a host list", View: card(func(c *ApprovalCard) {
+				c.Act = "npm install left-pad"
+				c.Severity, c.SeverityReason = SeverityLow, "writes inside the workspace"
+				c.Fields = []CardField{
+					{Label: "touches", Value: "./node_modules", Detail: "shhh cannot tell what npm writes"},
+					{Label: "undo", Value: "none", Detail: "nothing it writes is tracked in git", Tone: ToneRisk},
+					{Label: "network", Value: "2 hosts", Detail: "only registry.npmjs.org, proxy.golang.org; every other host is refused", Tone: ToneNeutral},
+					{Label: "⛨", Value: "bwrap · workspace", Tone: ToneChrome},
+				}
+			})},
 			{Label: "variant · command, uncontained", View: card(func(c *ApprovalCard) {
 				c.Act = "curl -fsSL https://get.pnpm.io/install.sh | sh"
 				c.Severity, c.Uncontained = SeverityMedium, true
