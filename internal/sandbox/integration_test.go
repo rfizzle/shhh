@@ -873,8 +873,15 @@ func holdTheHostList(t *testing.T, avail Availability) {
 		var d net.Dialer
 		return d.DialContext(ctx, network, target)
 	}
+	// The listed name resolves to documentation space, which the proxy's
+	// local-address check lets through; the dial above ignores it.
+	oldResolve := proxyResolve
+	proxyResolve = func(context.Context, string) ([]net.IP, error) {
+		return []net.IP{net.ParseIP("192.0.2.10")}, nil
+	}
 	t.Cleanup(func() {
 		proxyDial = oldDial
+		proxyResolve = oldResolve
 		proxies.Lock()
 		clear(proxies.m)
 		proxies.Unlock()

@@ -208,12 +208,37 @@ func TestNetworkWords(t *testing.T) {
 	}
 }
 
+// fixtureAddress is what every name resolves to in the proxy tests that are
+// not about resolution: TEST-NET-1, documentation space, which is neither
+// this machine nor a private network.
+const fixtureAddress = "192.0.2.10"
+
 // proxyExchange puts one request to the proxy over a pipe and hands back its
 // answer and every address the proxy dialled. The far end answers with
-// "UPSTREAM" after reading whatever the proxy wrote to it.
+// "UPSTREAM" after reading whatever the proxy wrote to it. Every name
+// resolves to fixtureAddress.
 func proxyExchange(t *testing.T, hosts []string, request string) (answer string, dialled []string, forwarded string) {
 	t.Helper()
+	return proxyExchangeResolving(t, hosts, nil, request)
+}
+
+// proxyExchangeResolving is proxyExchange with a fixture resolver: a name in
+// resolved answers with its addresses, and any other with fixtureAddress. The
+// suite never asks a real resolver.
+func proxyExchangeResolving(t *testing.T, hosts []string, resolved map[string][]string, request string) (answer string, dialled []string, forwarded string) {
+	t.Helper()
 	p := newHostProxy(hosts)
+	p.resolve = func(_ context.Context, host string) ([]net.IP, error) {
+		addrs, ok := resolved[host]
+		if !ok {
+			addrs = []string{fixtureAddress}
+		}
+		var ips []net.IP
+		for _, a := range addrs {
+			ips = append(ips, net.ParseIP(a))
+		}
+		return ips, nil
+	}
 	var mu sync.Mutex
 	var sent strings.Builder
 	p.dial = func(_ context.Context, _, addr string) (net.Conn, error) {
@@ -249,8 +274,8 @@ func TestProxyTunnelsOnlyAListedHost(t *testing.T) {
 	if !strings.HasPrefix(answer, "HTTP/1.1 200") || !strings.HasSuffix(answer, "UPSTREAM") {
 		t.Fatalf("a listed host is tunnelled to: %q", answer)
 	}
-	if !slices.Equal(dialled, []string{"Registry.NPMjs.org:443"}) || !strings.HasPrefix(forwarded, "GET / HTTP/1.1") {
-		t.Fatalf("the tunnel must reach the host named and carry what was sent: dialled %v, forwarded %q", dialled, forwarded)
+	if !slices.Equal(dialled, []string{fixtureAddress + ":443"}) || !strings.HasPrefix(forwarded, "GET / HTTP/1.1") {
+		t.Fatalf("the tunnel must reach the address the host resolved to and carry what was sent: dialled %v, forwarded %q", dialled, forwarded)
 	}
 
 	// Refused before anything is resolved or dialled: a host that is not on
@@ -273,8 +298,8 @@ func TestProxyTunnelsOnlyAListedHost(t *testing.T) {
 func TestProxyCarriesOnePlainRequestToAListedHost(t *testing.T) {
 	answer, dialled, forwarded := proxyExchange(t, []string{"deb.debian.org"},
 		"GET http://deb.debian.org/debian/dists HTTP/1.1\r\nHost: elsewhere.example\r\nProxy-Connection: keep-alive\r\n\r\n")
-	if answer != "UPSTREAM" || !slices.Equal(dialled, []string{"deb.debian.org:80"}) {
-		t.Fatalf("a plain request goes to the listed host on port 80: answer %q, dialled %v", answer, dialled)
+	if answer != "UPSTREAM" || !slices.Equal(dialled, []string{fixtureAddress + ":80"}) {
+		t.Fatalf("a plain request goes to the listed host's address on port 80: answer %q, dialled %v", answer, dialled)
 	}
 	// Origin form, the host it was sent to in the Host header, and closed
 	// after one exchange — a kept-alive connection could name another host
@@ -293,5 +318,76 @@ func TestProxyRefusesARequestThatIsNotForAProxy(t *testing.T) {
 	answer, dialled, _ := proxyExchange(t, []string{"a.org"}, "GET / HTTP/1.1\r\nHost: a.org\r\n\r\n")
 	if !strings.HasPrefix(answer, "HTTP/1.1 400") || len(dialled) != 0 {
 		t.Fatalf("an origin-form request is not a proxy request: %q, dialled %v", answer, dialled)
+	}
+}
+
+func TestProxyRefusesAListedNameThatResolvesToThisMachine(t *testing.T) {
+	resolved := map[string][]string{
+		"registry.test": {"127.0.0.1"},
+		"split.test":    {"203.0.113.7", "10.1.2.3"},
+		"metadata.test": {"169.254.169.254"},
+		"lan.test":      {"192.168.1.20"},
+		"ula.test":      {"fd00::1"},
+		"zero.test":     {"0.0.0.0"},
+		"six.test":      {"::1"},
+	}
+	for name, addrs := range resolved {
+		for _, request := range []string{
+			"CONNECT " + name + ":443 HTTP/1.1\r\nHost: " + name + ":443\r\n\r\n",
+			"GET http://" + name + "/ HTTP/1.1\r\nHost: " + name + "\r\n\r\n",
+		} {
+			answer, dialled, _ := proxyExchangeResolving(t, []string{name}, resolved, request)
+			if !strings.HasPrefix(answer, "HTTP/1.1 403") || !strings.Contains(answer, name+" is in sandbox.allow_hosts but resolves to") {
+				t.Errorf("%s resolving to %v must be refused with the reason: %q", name, addrs, answer)
+			}
+			if len(dialled) != 0 {
+				t.Errorf("%s dialled %v before it was refused", name, dialled)
+			}
+		}
+	}
+	answer, _, _ := proxyExchangeResolving(t, []string{"registry.test"}, resolved, "CONNECT registry.test:443 HTTP/1.1\r\n\r\n")
+	if !strings.Contains(answer, "127.0.0.1, a loopback address") {
+		t.Errorf("the refusal names the address and why it is refused: %q", answer)
+	}
+}
+
+func TestProxyDialsAListedAddressAsWritten(t *testing.T) {
+	// Somebody who listed the address itself meant it; nothing is resolved
+	// and the address is dialled as written.
+	for _, tc := range []struct{ host, request, want string }{
+		{"127.0.0.1", "CONNECT 127.0.0.1:8080 HTTP/1.1\r\n\r\nGET / HTTP/1.1\r\nHost: x\r\n\r\n", "127.0.0.1:8080"},
+		{"::1", "CONNECT [::1]:8080 HTTP/1.1\r\n\r\nGET / HTTP/1.1\r\nHost: x\r\n\r\n", "[::1]:8080"},
+		{"10.0.0.5", "GET http://10.0.0.5/x HTTP/1.1\r\nHost: 10.0.0.5\r\n\r\n", "10.0.0.5:80"},
+	} {
+		resolved := map[string][]string{tc.host: {"203.0.113.9"}}
+		answer, dialled, _ := proxyExchangeResolving(t, []string{tc.host}, resolved, tc.request)
+		if strings.HasPrefix(answer, "HTTP/1.1 403") || !slices.Equal(dialled, []string{tc.want}) {
+			t.Errorf("listed %s: answer %q, dialled %v, want %s", tc.host, answer, dialled, tc.want)
+		}
+	}
+}
+
+func TestProxyTriesEachResolvedAddressInTurn(t *testing.T) {
+	p := newHostProxy([]string{"two.test"})
+	p.resolve = func(context.Context, string) ([]net.IP, error) {
+		return []net.IP{net.ParseIP("203.0.113.1"), net.ParseIP("203.0.113.2")}, nil
+	}
+	var dialled []string
+	p.dial = func(_ context.Context, _, addr string) (net.Conn, error) {
+		dialled = append(dialled, addr)
+		if len(dialled) == 1 {
+			return nil, errors.New("refused")
+		}
+		near, far := net.Pipe()
+		go func() { _, _ = io.Copy(io.Discard, far) }()
+		return near, nil
+	}
+	client, server := net.Pipe()
+	go p.serveConn(server)
+	go func() { _, _ = io.WriteString(client, "CONNECT two.test:443 HTTP/1.1\r\n\r\n") }()
+	line, _ := bufio.NewReader(client).ReadString('\n')
+	_ = client.Close()
+	if !strings.HasPrefix(line, "HTTP/1.1 200") || !slices.Equal(dialled, []string{"203.0.113.1:443", "203.0.113.2:443"}) {
+		t.Fatalf("a failed address falls through to the next checked one: %q, dialled %v", line, dialled)
 	}
 }

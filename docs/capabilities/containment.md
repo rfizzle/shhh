@@ -236,10 +236,27 @@ list in the answer, so the tool that asked reports the proxy's reason rather
 than a dropped connection. A tool that ignores the proxy variables cannot
 connect at all, which is the list holding rather than failing.
 
+**A listed name that resolves to this machine is refused.** The proxy runs
+outside containment, so whatever it dials is reached from the host's side of
+the wall. It resolves a listed name before it dials anything and checks every
+address the name answers with: loopback, the unspecified address, link-local —
+where a cloud host's metadata service answers — or private space (RFC 1918 and
+IPv6 unique-local) refuses the request with a 403 naming the address and why,
+and so does a name that answers with one public address and one private one,
+since either could be the one dialled. The connection then goes to an address
+that was checked rather than to the name again, so an answer that changes
+between the check and the dial is not the one used. Otherwise the list would
+be a way from a contained command onto the host's own services by way of a
+name somebody else's DNS answers for. An entry written as the address itself —
+`127.0.0.1`, `10.0.0.5` — is dialled as written, because somebody typing that
+address meant it.
+
 The loopback differs between the two, because the namespace is the command's
 own under bubblewrap and the host's under Seatbelt: a test server the command
 starts is reachable to it on Linux, and on macOS the command reaches the proxy
-and nothing else on the machine, the way the netless profile reaches nothing.
+and nothing else on the machine, the way the netless profile reaches nothing. On Linux the bridge holds port 3128 on that loopback, where the proxy
+variables point, so it is the one port a contained command under a host list
+cannot bind for a server of its own.
 
 **A mechanism that cannot hold the list runs the switch, and says so.** A host
 with no mechanism has no wall for a list to be a door in, and a disposable

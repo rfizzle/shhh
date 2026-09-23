@@ -29,12 +29,24 @@ import (
 // the command an address it has to ask for again, and is refused there. And
 // it matches exactly, the way the fetcher's own host list does: a listed
 // `npmjs.org` does not cover `registry.npmjs.org`.
+//
+// A listed name is also resolved here, before anything is dialled, and every
+// address it answers with is checked: one that is this machine or its local
+// network refuses the request, and the connection goes to an address that
+// was checked rather than to the name again. The proxy runs outside
+// containment, so without that a name that resolves to loopback — through
+// DNS nobody here controls — is a way from a contained command onto the
+// host's own services. An entry written as the address itself is dialled as
+// written: that is somebody saying so on purpose.
 // See docs/capabilities/containment.md#a-contained-commands-network-can-be-a-list-of-hosts.
 type hostProxy struct {
 	hosts []string
 	// dial is how an allowed request reaches its host, a field so a test
 	// can answer for one proxy without a network.
 	dial func(ctx context.Context, network, addr string) (net.Conn, error)
+	// resolve is how a listed name becomes the addresses that are checked
+	// and dialled, a field so a test can answer for a name without DNS.
+	resolve func(ctx context.Context, host string) ([]net.IP, error)
 	// addr is where the command reaches the proxy: a loopback address for
 	// Seatbelt, and a socket file for bubblewrap, whose namespace has no
 	// route to the host's loopback at all.
@@ -54,8 +66,58 @@ const proxyDialTimeout = 30 * time.Second
 // listener of their own rather than to the internet.
 var proxyDial = (&net.Dialer{Timeout: proxyDialTimeout}).DialContext
 
+// proxyResolve is how a new proxy resolves a listed name; a variable so the
+// containment checks can list a name no resolver knows.
+var proxyResolve = func(ctx context.Context, host string) ([]net.IP, error) {
+	return net.DefaultResolver.LookupIP(ctx, "ip", host)
+}
+
 func newHostProxy(hosts []string) *hostProxy {
-	return &hostProxy{hosts: hosts, dial: proxyDial}
+	return &hostProxy{hosts: hosts, dial: proxyDial, resolve: proxyResolve}
+}
+
+// localAddress names why an address is this machine or its local network —
+// loopback, the unspecified address (which reaches loopback when dialled),
+// link-local (where a cloud host's metadata service answers), or private
+// space (RFC 1918 and IPv6 unique-local) — and is empty for any other.
+func localAddress(ip net.IP) string {
+	switch {
+	case ip.IsLoopback():
+		return "loopback"
+	case ip.IsUnspecified():
+		return "the unspecified address"
+	case ip.IsLinkLocalUnicast():
+		return "link-local"
+	case ip.IsPrivate():
+		return "private"
+	}
+	return ""
+}
+
+// addresses is where a request for a listed host may be dialled: the host
+// itself where the entry is an address, and otherwise every address the name
+// resolves to, refused as a whole when any of them is local — a name that
+// answers with one public and one private address could be dialled at
+// either. The refusal is the sentence the 403 carries.
+func (p *hostProxy) addresses(ctx context.Context, host string) (addrs []string, refusal string, err error) {
+	host = normalHost(host)
+	if net.ParseIP(host) != nil {
+		return []string{host}, "", nil
+	}
+	ips, err := p.resolve(ctx, host)
+	if err != nil {
+		return nil, "", err
+	}
+	if len(ips) == 0 {
+		return nil, "", fmt.Errorf("%s resolves to no address", host)
+	}
+	for _, ip := range ips {
+		if why := localAddress(ip); why != "" {
+			return nil, fmt.Sprintf("shhh: %s is in sandbox.allow_hosts but resolves to %s, a %s address on this machine's side of containment; list the address itself to allow it", host, ip, why), nil
+		}
+		addrs = append(addrs, ip.String())
+	}
+	return addrs, "", nil
 }
 
 func (p *hostProxy) allowed(host string) bool {
@@ -97,7 +159,7 @@ func (p *hostProxy) serveConn(c net.Conn) {
 			target = net.JoinHostPort(normalHost(target), "80")
 		}
 	}
-	host, _, err := net.SplitHostPort(target)
+	host, port, err := net.SplitHostPort(target)
 	if err != nil {
 		refuse(c, http.StatusBadRequest, "shhh: a CONNECT names a host and a port")
 		return
@@ -106,7 +168,23 @@ func (p *hostProxy) serveConn(c net.Conn) {
 		refuse(c, http.StatusForbidden, fmt.Sprintf("shhh: %s is not in sandbox.allow_hosts; a contained command reaches only %s", normalHost(host), strings.Join(p.hosts, ", ")))
 		return
 	}
-	up, err := p.dial(context.Background(), "tcp", target)
+	ctx, cancel := context.WithTimeout(context.Background(), proxyDialTimeout)
+	addrs, refusal, err := p.addresses(ctx, host)
+	cancel()
+	if err != nil {
+		refuse(c, http.StatusBadGateway, "shhh: "+err.Error())
+		return
+	}
+	if refusal != "" {
+		refuse(c, http.StatusForbidden, refusal)
+		return
+	}
+	var up net.Conn
+	for _, a := range addrs {
+		if up, err = p.dial(context.Background(), "tcp", net.JoinHostPort(a, port)); err == nil {
+			break
+		}
+	}
 	if err != nil {
 		refuse(c, http.StatusBadGateway, "shhh: "+err.Error())
 		return
