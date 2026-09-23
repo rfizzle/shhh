@@ -85,6 +85,36 @@ type AgentProgress struct {
 	// at the same boundary either way, and the word says which of the two
 	// stopped it (docs/capabilities/subagents.md#a-writer-starts-from-your-tree).
 	Reseeding bool
+	// Planned marks Step and Steps as the child's own plan — steps it named
+	// and marks done itself — rather than a count the spawn declared, and
+	// StepTitle is the step it is on. A plan is stated in words, `3 of 7
+	// steps`, where a declared count keeps its bar: the words say whose
+	// count it is.
+	Planned   bool
+	StepTitle string
+	// BudgetPct is how much of its budget the child has taken in, as a whole
+	// percent. Zero says nothing, as every count on the row does.
+	// See docs/capabilities/subagents.md#how-far-along-is-three-numbers-not-one.
+	BudgetPct int
+}
+
+// BudgetPct is a child's intake as a whole share of its budget, rounded
+// down, and zero — which the row leaves out — for a child with no budget or
+// less than a percent of it taken in: rounding a sliver up to 1% would state
+// a share the child has not spent. It is not capped: a child past its budget
+// on the answer that tripped it has taken in more than it was given, and a
+// lane that said 100% would hide by how much.
+func BudgetPct(fresh, budget int64) int {
+	if budget <= 0 || fresh <= 0 {
+		return 0
+	}
+	return int(fresh * 100 / budget)
+}
+
+// stepsOf is a child's own plan in the words every surface states it in:
+// `3 of 7 steps`, the count it has marked and the steps it named.
+func stepsOf(done, total int) string {
+	return fmt.Sprintf("%d of %s", min(max(done, 0), total), plural(total, "step"))
 }
 
 // FanoutLane is one child of the batch.
@@ -108,8 +138,12 @@ type FanoutLane struct {
 	// that grows, and the only one that clips.
 	Task string
 	// Step and Steps are progress against a declared step count. Steps of
-	// zero means none was declared and the lane spins instead.
+	// zero means none was declared and the lane spins instead. Planned,
+	// StepTitle and BudgetPct are AgentProgress's.
 	Step, Steps int
+	Planned     bool
+	StepTitle   string
+	BudgetPct   int
 	// Tools is the call count so far; Spend is pre-formatted by the host
 	// (dollars where the pricing table knows the child's model, tokens
 	// otherwise); Elapsed is the 6-column duration field.
@@ -396,6 +430,15 @@ func (p AgentProgress) progress() string {
 	case FanoutFailed:
 		return sty.Err.Render("✗ failed")
 	}
+	if p.Planned && p.Steps > 0 {
+		text := stepsOf(p.Step, p.Steps)
+		if p.State == FanoutDone {
+			// What the child marked, not the whole: a child that reported
+			// with two of its steps unmarked says so here.
+			return p.withVerdict(sty.Add.Render("✓ " + text))
+		}
+		return sty.Info.Render(text)
+	}
 	if m, ok := AgentMeter(p.Step, p.Steps); ok {
 		m.Text = fmt.Sprintf("%d/%d", min(max(p.Step, 0), p.Steps), p.Steps)
 		if p.State == FanoutDone {
@@ -453,6 +496,17 @@ func (p AgentProgress) stats() string {
 // field, the way an activity row joins outcome and counts.
 func (p AgentProgress) outcomeField() string {
 	progress, stats := p.progress(), p.stats()
+	if p.BudgetPct > 0 {
+		// The budget's share rides beside the progress, not in the costs: it
+		// is the other half of how far along the child is, and the one half
+		// nobody had to declare.
+		share := sty.Dimmer.Render(fmt.Sprintf("%d%% of budget", p.BudgetPct))
+		if progress == "" {
+			progress = share
+		} else {
+			progress += sty.Dim.Render(" · ") + share
+		}
+	}
 	switch {
 	case progress == "":
 		return stats
@@ -467,7 +521,8 @@ func (p AgentProgress) outcomeField() string {
 func (l FanoutLane) progressOf() AgentProgress {
 	return AgentProgress{State: l.State, Step: l.Step, Steps: l.Steps,
 		Tools: l.Tools, Spend: l.Spend, Frame: l.Frame,
-		ReportVerdict: l.ReportVerdict, Inherited: l.Inherited, Reseeding: l.Reseeding}
+		ReportVerdict: l.ReportVerdict, Inherited: l.Inherited, Reseeding: l.Reseeding,
+		Planned: l.Planned, StepTitle: l.StepTitle, BudgetPct: l.BudgetPct}
 }
 
 func (l FanoutLane) glyph() string        { return l.progressOf().glyph() }
@@ -493,10 +548,15 @@ func (l FanoutLane) fittedOutcome(width int) string {
 	if p.Inherited > 0 && !fitsBesideName(width, p.outcomeField()) {
 		p.Inherited = 0
 	}
+	// The budget's share next: the manager's row states it for the same
+	// child, and the step count beside it is the child's own word.
+	if p.BudgetPct > 0 && !fitsBesideName(width, p.outcomeField()) {
+		p.BudgetPct = 0
+	}
 	if p.ReportVerdict == "" || fitsBesideName(width, p.outcomeField()) {
 		return p.outcomeField()
 	}
-	if bare := (AgentProgress{State: p.State, Step: p.Step, Steps: p.Steps,
+	if bare := (AgentProgress{State: p.State, Step: p.Step, Steps: p.Steps, Planned: p.Planned,
 		Frame: p.Frame, ReportVerdict: p.ReportVerdict}); fitsBesideName(width, bare.outcomeField()) {
 		return bare.outcomeField()
 	}
@@ -516,10 +576,25 @@ func fitsBesideName(width int, field string) bool {
 // column that is not there — the tasks under them never line up, because the
 // names are not one width.
 func (l FanoutLane) target() string {
-	if l.Task == "" {
-		return l.Name
+	target := l.Name
+	if l.Task != "" {
+		target += detailSep + l.Task
 	}
-	return l.Name + detailSep + l.Task
+	// The step the child is on goes last, so the field clips it before the
+	// task: it is the row's where-there-is-room fact.
+	if title := l.stepTitle(); title != "" {
+		target += detailSep + title
+	}
+	return target
+}
+
+// stepTitle is the step a running child with its own plan says it is on,
+// and empty for every other lane.
+func (l FanoutLane) stepTitle() string {
+	if !l.Planned || l.State.settled() {
+		return ""
+	}
+	return l.StepTitle
 }
 
 // paintTarget leads the field with the name in body text and dims the task

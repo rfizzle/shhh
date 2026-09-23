@@ -142,6 +142,43 @@ func (a *Agent) SetCheckInBudget(spend func() (spent, budget int64), written fun
 	a.markSpend()
 }
 
+// SetCheckInSteps names where the turn's progress through its own plan is
+// read, so every check-in says which step the turn said it was on: a turn
+// asked to take stock against the steps it named answers about those, rather
+// than describing its work in new words the plan cannot be held to. Nil, the
+// default, is a turn that named no plan and a check-in without the line.
+// See docs/capabilities/subagents.md#how-far-along-is-three-numbers-not-one.
+func (a *Agent) SetCheckInSteps(steps func() (done, total int, current string)) {
+	a.steps = steps
+}
+
+// checkIn is the check-in in the surface's wording with the turn's step line
+// under it, which is the one text all three ways of asking one send.
+func (a *Agent) checkIn() string {
+	prompt := a.steering.checkInPrompt(a.rounds)
+	if a.steps == nil {
+		return prompt
+	}
+	if note := stepNote(a.steps()); note != "" {
+		prompt += "\n\n" + note
+	}
+	return prompt
+}
+
+// stepNote is the sentence naming the step a turn is on, under the wording
+// for the reason budgetNote is: an operator who replaced the words did not
+// replace this. "" for a turn with no plan.
+func stepNote(done, total int, current string) string {
+	if total <= 0 {
+		return ""
+	}
+	if current == "" {
+		return fmt.Sprintf("By your own plan you have marked all %d %s done.", total, plural(total, "step"))
+	}
+	return fmt.Sprintf("By your own plan you have marked %d of %d %s done and are on: %s. Say whether that still holds, and mark each step done with its progress line as you finish it.",
+		min(max(done, 0), total), total, plural(total, "step"), current)
+}
+
 // checkInInterval is the number of rounds owed before the next check-in,
 // widened by how many this turn has already had.
 func (a *Agent) checkInInterval() int {
@@ -292,7 +329,7 @@ func (a *Agent) TakeCheckIn() (prompt string, ok bool) {
 	// different question with a reason behind it, and one turn's worth of
 	// them should not make the generic question rarer.
 	a.checkIns++
-	prompt = a.steering.checkInPrompt(a.rounds)
+	prompt = a.checkIn()
 	if onSpend {
 		prompt += "\n\n" + budgetNote(supplied(a.written))
 	}
@@ -306,7 +343,7 @@ func (a *Agent) TakeCheckIn() (prompt string, ok bool) {
 // session that has no reading to go on.
 func (a *Agent) ForceCheckIn() string {
 	a.NoteIntervention()
-	return a.steering.checkInPrompt(a.rounds)
+	return a.checkIn()
 }
 
 // CheckInInterval is the rounds owed before the next check-in, for a caller
@@ -327,7 +364,7 @@ func (a *Agent) CheckInInterval() int { return a.checkInInterval() }
 // round cap was the only route that named the report, so a child asked by its
 // clock was told to say so to nobody.
 func (a *Agent) CheckInMessage() string {
-	return a.steering.checkInPrompt(a.rounds)
+	return a.checkIn()
 }
 
 // NoteIntervention records that something has just asked the turn to take

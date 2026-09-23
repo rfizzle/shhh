@@ -543,6 +543,15 @@ func (r AgentRow) render(inner int, focused bool) []string {
 		left += sty.Dimmer.Render(detailSep + Clip(r.Task, max(inner/3, 8)))
 	}
 	right := r.rightField()
+	// The step a running child with its own plan is on, where there is room
+	// for it: it is the first thing on the row to give way, since the lane
+	// in the transcript carries it too.
+	if p := r.Progress; p != nil && p.Planned && p.StepTitle != "" && !r.PatchKept && !p.State.settled() {
+		titled := left + sty.Dimmer.Render(detailSep+Clip(p.StepTitle, max(inner/4, 8)))
+		if inner-2-lipgloss.Width(titled)-lipgloss.Width(right) >= 2 {
+			left = titled
+		}
+	}
 	// What a child inherited is the first part of the field to give way on a
 	// narrow card, before the name is clipped: it is how the child was
 	// started, and a name cut to an ellipsis is a row the reader cannot tell
@@ -550,6 +559,13 @@ func (r AgentRow) render(inner int, focused bool) []string {
 	if r.Progress != nil && r.Progress.Inherited > 0 && inner-2-lipgloss.Width(left)-lipgloss.Width(right) < 2 {
 		bare := *r.Progress
 		bare.Inherited = 0
+		r.Progress = &bare
+		right = r.rightField()
+	}
+	// The budget's share next, for the reason the lane drops it there.
+	if r.Progress != nil && r.Progress.BudgetPct > 0 && inner-2-lipgloss.Width(left)-lipgloss.Width(right) < 2 {
+		bare := *r.Progress
+		bare.BudgetPct = 0
 		r.Progress = &bare
 		right = r.rightField()
 	}

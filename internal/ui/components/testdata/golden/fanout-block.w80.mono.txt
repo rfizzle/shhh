@@ -65,6 +65,13 @@
     the rails and the frame are one component
     [alt+a] agents
 
+· writers on their own plans · steps in words and the budget's share, never one bar
+◇ fan-out    3 agents                                           2 running  2m05s
+   ◇ agent   writer-1 · docs/loop.md · …  3 of 7 steps · 11 tools · $0.04  2m05s
+   ◇ agent   writer-2 · internal/agen…  ✓ 5 of 7 steps · 19 tools · $0.06  1m52s
+    the round cap is a pause
+   ◇ agent   reader-3 · sur…  ⠹ working · 12% of budget · 4 tools · $0.01    58s
+
 ── ansi ────────────────────────────────────────────────────
 · mid-flight · one child is waiting on you, the session's spawn count on the header
 ␛[38;5;254m◇␛[m ␛[38;5;254mfan-out␛[m    ␛[38;5;244m4 agents · 4 of 32 spawned␛[m           ␛[38;5;254m1 needs you␛[m␛[38;5;244m · ␛[m␛[38;5;254m2 running␛[m  ␛[38;5;244m1m12s␛[m
@@ -120,3 +127,10 @@
    ␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mreader-2␛[m␛[38;5;244m · survey internal/ui␛[m       ␛[38;5;254m✓ done␛[m␛[38;5;244m · ␛[m␛[38;5;244m8 tools · $0.02␛[m    ␛[38;5;244m55s␛[m
     ␛[38;5;244mthe rails and the frame are one component␛[m
     ␛[38;5;254m[alt+a]␛[m␛[38;5;244m agents␛[m
+
+· writers on their own plans · steps in words and the budget's share, never one bar
+␛[38;5;254m◇␛[m ␛[38;5;254mfan-out␛[m    ␛[38;5;244m3 agents␛[m                                           ␛[38;5;254m2 running␛[m  ␛[38;5;244m2m05s␛[m
+   ␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mwriter-1␛[m␛[38;5;244m · docs/loop.md · …␛[m  ␛[38;5;254m3 of 7 steps␛[m␛[38;5;244m · ␛[m␛[38;5;244m11 tools · $0.04␛[m  ␛[38;5;244m2m05s␛[m
+   ␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mwriter-2␛[m␛[38;5;244m · internal/agen…␛[m  ␛[38;5;254m✓ 5 of 7 steps␛[m␛[38;5;244m · ␛[m␛[38;5;244m19 tools · $0.06␛[m  ␛[38;5;244m1m52s␛[m
+    ␛[38;5;244mthe round cap is a pause␛[m
+   ␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mreader-3␛[m␛[38;5;244m · sur…␛[m  ␛[38;5;254m⠹ working␛[m␛[38;5;244m · ␛[m␛[38;5;244m12% of budget␛[m␛[38;5;244m · ␛[m␛[38;5;244m4 tools · $0.01␛[m    ␛[38;5;244m58s␛[m

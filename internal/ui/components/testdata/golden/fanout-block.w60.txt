@@ -65,6 +65,13 @@
     the rails and the frame are one component
     [alt+a] agents
 
+· writers on their own plans · steps in words and the budget's share, never one bar
+◇ fan-out    3 agents                       2 running  2m05s
+   ◇ agent   writer…  3 of 7 steps · 11 tools · $0.04  2m05s
+   ◇ agent   writ…  ✓ 5 of 7 steps · 19 tools · $0.06  1m52s
+    the round cap is a pause
+   ◇ agent   reader-3 ·…  ⠹ working · 4 tools · $0.01    58s
+
 ── ansi ────────────────────────────────────────────────────
 · mid-flight · one child is waiting on you, the session's spawn count on the header
 ␛[94m◇␛[m ␛[38;5;252mfan-out␛[m    ␛[38;5;241m4 agents␛[m         ␛[91m1 needs you␛[m␛[38;5;241m · ␛[m␛[38;5;205m2 running␛[m  ␛[38;5;241m1m12s␛[m
@@ -120,3 +127,10 @@
    ␛[92m◇␛[m ␛[38;5;252magent␛[m   ␛[38;5;252mreader-2␛[m␛[38;5;241m · su…␛[m  ␛[92m✓ done␛[m␛[38;5;241m · ␛[m␛[38;5;245m8 tools · $0.02␛[m    ␛[38;5;241m55s␛[m
     ␛[38;5;245mthe rails and the frame are one component␛[m
     ␛[94m[alt+a]␛[m␛[38;5;241m agents␛[m
+
+· writers on their own plans · steps in words and the budget's share, never one bar
+␛[94m◇␛[m ␛[38;5;252mfan-out␛[m    ␛[38;5;241m3 agents␛[m                       ␛[38;5;205m2 running␛[m  ␛[38;5;241m2m05s␛[m
+   ␛[94m◇␛[m ␛[38;5;252magent␛[m   ␛[38;5;241mwriter…␛[m  ␛[94m3 of 7 steps␛[m␛[38;5;241m · ␛[m␛[38;5;245m11 tools · $0.04␛[m  ␛[38;5;241m2m05s␛[m
+   ␛[92m◇␛[m ␛[38;5;252magent␛[m   ␛[38;5;241mwrit…␛[m  ␛[92m✓ 5 of 7 steps␛[m␛[38;5;241m · ␛[m␛[38;5;245m19 tools · $0.06␛[m  ␛[38;5;241m1m52s␛[m
+    ␛[38;5;245mthe round cap is a pause␛[m
+   ␛[94m◇␛[m ␛[38;5;252magent␛[m   ␛[38;5;252mreader-3␛[m␛[38;5;241m ·…␛[m  ␛[38;5;205m⠹ working␛[m␛[38;5;241m · ␛[m␛[38;5;245m4 tools · $0.01␛[m    ␛[38;5;241m58s␛[m

@@ -26,6 +26,7 @@ import (
 	"github.com/rfizzle/shhh/internal/digest"
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/plan"
 	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/radius"
@@ -202,11 +203,12 @@ type Status struct {
 	// alive, frozen at the moment it finished.
 	Started time.Time
 	Elapsed time.Duration
-	// Step and Steps are progress against the step count the spawn declared.
-	// Steps is zero when nobody declared one, and a lane with no denominator
-	// gets a spinner rather than an invented ratio.
-	Step  int
-	Steps int
+	// Steps is how far the child is through its steps: the plan a writer
+	// named itself where it wrote one, and otherwise the count the spawn
+	// declared. Its Total is zero when neither exists, and a lane with no
+	// denominator gets a spinner rather than an invented ratio.
+	// See docs/capabilities/subagents.md#how-far-along-is-three-numbers-not-one.
+	Steps StepCount
 	// Summary is the first line of the child's final report — what a finished
 	// lane keeps once its progress stops meaning anything. Empty
 	// until the child reports.
@@ -1032,6 +1034,11 @@ type child struct {
 	started time.Time
 	ended   time.Time
 	step    int // announcements made, i.e. steps entered
+	// ownSteps is the plan a writer named itself before its first call, and
+	// stepsDone the step numbers its progress lines have marked (steps.go).
+	// Both are nil for a child that named no plan.
+	ownSteps  []plan.Step
+	stepsDone map[int]bool
 	// turns counts the turns this attempt has run, so a child's events are
 	// placed the way a session's are: a tool call in round 30 of turn 3 is a
 	// different fact from the same call in round 2 of turn 1.
@@ -1305,8 +1312,7 @@ func (c *child) status() Status {
 		Batch:             c.batch,
 		Started:           c.started,
 		Elapsed:           end.Sub(c.started),
-		Step:              min(c.step, c.steps),
-		Steps:             c.steps,
+		Steps:             c.stepCount(),
 		Summary:           summary,
 		CheckIns:          c.checkIns,
 		End:               c.endReason,
@@ -1379,6 +1385,7 @@ func (c *child) flushStreaming() {
 	c.mu.Lock()
 	if c.streaming != "" {
 		c.transcript = append(c.transcript, TranscriptEntry{Kind: EntryAssistant, Text: c.streaming})
+		c.noteSteps(c.streaming, false)
 		c.streaming = ""
 	}
 	c.mu.Unlock()
@@ -1393,6 +1400,7 @@ func (c *child) beginToolEntry(id, tool, args string) {
 	if c.streaming != "" {
 		c.transcript = append(c.transcript,
 			TranscriptEntry{Kind: EntryAssistant, Text: c.streaming, Checkpoint: c.checkpointNext})
+		c.noteSteps(c.streaming, true)
 		c.streaming = ""
 		c.step++
 	}
@@ -2366,7 +2374,12 @@ func (s *Supervisor) queueLanding(from, repoTop, patch string) {
 // See docs/capabilities/subagents.md#a-writer-starts-from-your-tree.
 func (s *Supervisor) reseed(c *child) {
 	c.mu.Lock()
-	if len(c.landings) == 0 || c.worktree == "" || c.reporting {
+	// A writer on the last step of its own plan is left alone as well: it is
+	// finishing the change the patch will carry, and moving the tree under
+	// that is the collision the reseed exists to avoid, spent where it costs
+	// most. What landed meanwhile stays queued, and the merge at its own
+	// landing is what meets it (docs/capabilities/subagents.md#how-far-along-is-three-numbers-not-one).
+	if len(c.landings) == 0 || c.worktree == "" || c.reporting || c.nearDone() {
 		c.mu.Unlock()
 		return
 	}
@@ -2827,6 +2840,8 @@ func (s *Supervisor) restart(c *child, detail string) error {
 	c.endReason, c.killed, c.cancelledBy = "", false, ""
 	c.turns = 0
 	c.toolCalls, c.step = 0, 0
+	// A retry is a fresh conversation, which names its own plan.
+	c.ownSteps, c.stepsDone = nil, nil
 	// A retry starts from a worktree of its own, so what the attempt it
 	// replaces wrote is not in the tree this one is reading.
 	c.wrote = nil
@@ -3218,6 +3233,9 @@ func (s *Supervisor) openWorkspace(c *child, ctx context.Context, maxRounds, att
 	// environment. Every attempt comes through here, which is the property
 	// newChildAgent exists for.
 	w.agent.SetCheckInBudget(c.budget, c.written)
+	// And the plan the child names itself, which every check-in names the
+	// step of — installed here for the reason the budget is.
+	w.agent.SetCheckInSteps(c.ownProgress)
 	// The mode recorded is the one in force — the profile's or the parent's
 	// after the clamp — not the one asked for; c.mode alone is the request.
 	if s.opts.Record != nil {
@@ -3828,6 +3846,7 @@ func (s *Supervisor) run(c *child) {
 		// summary.subagents turned the reading off.
 		Summary: agent.NewSummaryRun(c.env.Summarizer, agent.NewRecorder(0), c.task).
 			WithChanges(c.changed).
+			WithSteps(c.ownProgress).
 			WithSweeps(c.env.Sweeps),
 		// A child that recycled its conversation says so on its lane, which
 		// is the only place anyone is looking: a child whose answer came out
@@ -4483,6 +4502,7 @@ func (s *Supervisor) finalCheckIn(c *child) {
 	}
 	c.appendEntry(TranscriptEntry{Kind: EntryAssistant, Text: text})
 	c.mu.Lock()
+	c.noteSteps(text, false)
 	if c.report == "" {
 		c.report = text
 	}

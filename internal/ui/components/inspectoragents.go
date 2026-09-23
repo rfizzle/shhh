@@ -25,7 +25,10 @@ type InspectorAgent struct {
 	// Step and Steps drive the five-cell lane meter. Steps == 0 means the
 	// child declared no total, so the lane shows the spinner beside what it
 	// is doing instead of a bar drawn against a denominator nobody supplied.
+	// Planned marks them as the child's own plan, which the row states in
+	// words with the budget's share beside it (AgentProgress.Planned).
 	Step, Steps int
+	Planned     bool
 	// State is the session's lifecycle state, in the same vocabulary a
 	// fan-out lane and a manager row use, so one child cannot be drawn three
 	// ways on one screen.
@@ -458,6 +461,17 @@ func (a InspectorAgent) detailRow(frame, width int) string {
 	var parts []string
 	switch m, ok := AgentMeter(a.Step, a.Steps); {
 	case a.State == FanoutDone || a.State == FanoutFailed:
+		if a.Detail != "" {
+			parts = append(parts, sty.Dimmer.Render(a.Detail))
+		}
+	case a.Planned && a.Steps > 0:
+		// The child's own plan, in words, and the budget's share beside it:
+		// two denominators stated rather than one bar that merges them
+		// (docs/capabilities/subagents.md#how-far-along-is-three-numbers-not-one).
+		parts = append(parts, sty.Info.Render(stepsOf(a.Step, a.Steps)))
+		if pct := BudgetPct(a.Fresh, a.Budget); pct > 0 {
+			parts = append(parts, sty.Dimmer.Render(fmt.Sprintf("%d%% of budget", pct)))
+		}
 		if a.Detail != "" {
 			parts = append(parts, sty.Dimmer.Render(a.Detail))
 		}

@@ -235,6 +235,16 @@
     ⠹ survey internal/ui · 2 tools                                      
   alt+a manager · alt+] next · click to attach                          
 
+· a writer on its own plan · three of seven steps and its budget's share
+  AGENTS                                                       2 running
+❯ ◇ orchestrator                                                   $0.11
+    ⠹ round 6 · streaming…                                              
+  ◇ writer-1                                                       $0.04
+    3 of 7 steps · 41% of budget · docs/loop.md · 11 tools              
+  ◇ writer-2                                                       $0.02
+    ▰▱▱▱▱ step 1 of 4 · internal/agent/round.go · 5 tools               
+  alt+a manager · alt+] next · click to attach                          
+
 · a finished child taking a follow-up · running again, on the question
   AGENTS                                                       1 running
 ❯ ◇ orchestrator                                                   $0.09
@@ -548,6 +558,16 @@
     ␛[38;5;244m4 tools␛[m                                                             
   ␛[38;5;254m◇␛[m ␛[38;5;254mreader-3␛[m                                                       ␛[38;5;244m$0.01␛[m
     ␛[38;5;254m⠹ survey internal/ui␛[m␛[38;5;244m · ␛[m␛[38;5;244m2 tools␛[m                                      
+  ␛[38;5;244malt+a manager · alt+] next · click to attach␛[m                          
+
+· a writer on its own plan · three of seven steps and its budget's share
+  ␛[1;38;5;254mAGENTS␛[m                                                       ␛[38;5;254m2 running␛[m
+␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254m◇␛[m␛[48;5;237m ␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237morchestrator                                                   $0.11␛[m␛[m
+    ␛[38;5;254m⠹ round 6 · streaming…␛[m                                              
+  ␛[38;5;254m◇␛[m ␛[38;5;254mwriter-1␛[m                                                       ␛[38;5;244m$0.04␛[m
+    ␛[38;5;254m3 of 7 steps␛[m␛[38;5;244m · ␛[m␛[38;5;244m41% of budget␛[m␛[38;5;244m · ␛[m␛[38;5;244mdocs/loop.md␛[m␛[38;5;244m · ␛[m␛[38;5;244m11 tools␛[m              
+  ␛[38;5;254m◇␛[m ␛[38;5;254mwriter-2␛[m                                                       ␛[38;5;244m$0.02␛[m
+    ␛[38;5;254m▰␛[m␛[38;5;244m▱▱▱▱␛[m ␛[38;5;254mstep 1 of 4␛[m␛[38;5;244m · ␛[m␛[38;5;244minternal/agent/round.go␛[m␛[38;5;244m · ␛[m␛[38;5;244m5 tools␛[m               
   ␛[38;5;244malt+a manager · alt+] next · click to attach␛[m                          
 
 · a finished child taking a follow-up · running again, on the question

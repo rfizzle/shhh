@@ -112,6 +112,9 @@ type Agent struct {
 	// what they reach for guards itself.
 	spend   func() (spent, budget int64)
 	written func() []string
+	// steps is where the turn's progress through the plan it named itself
+	// is read, nil on a surface whose turn names none (checkin.go).
+	steps func() (done, total int, current string)
 	// lastSpend is the spend when something last asked the turn to take
 	// stock, which is what that clock's interval is measured from — the
 	// counterpart of lastIntervention, and kept for the same reason: a

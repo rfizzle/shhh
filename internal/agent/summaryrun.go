@@ -38,6 +38,9 @@ type SummaryRun struct {
 	// so it is outside the lock with the summarizer and the recorder; what
 	// it reaches for holds its own.
 	changes func() (files, added, removed int)
+	// steps is how far the run is through the plan it named itself, nil
+	// where the surface's run names none; read on the same terms as changes.
+	steps func() (done, total int, current string)
 	// alerts is the standing bad news — the checks that came back broken and
 	// have not come back green since — and plan the approved plan's steps
 	// with their states. Both are nil where the surface has no such thing to
@@ -136,6 +139,21 @@ func (r *SummaryRun) WithChanges(count func() (files, added, removed int)) *Summ
 		return nil
 	}
 	r.changes = count
+	return r
+}
+
+// WithSteps names where the run's progress through its own plan is read
+// from — the steps it named and how many it has marked done — so a reading
+// judging "on target" holds the run to what it said it would do as well as
+// to what it was asked. A surface whose run names no plan calls nothing, and
+// its digest carries no plan-progress field. It is the count rather than the
+// wording for the reason WithChanges is (SummarySteps). Safe on a nil runner.
+// See docs/capabilities/subagents.md#how-far-along-is-three-numbers-not-one.
+func (r *SummaryRun) WithSteps(count func() (done, total int, current string)) *SummaryRun {
+	if r == nil {
+		return nil
+	}
+	r.steps = count
 	return r
 }
 
@@ -444,6 +462,7 @@ func (r *SummaryRun) read(rounds int) {
 		Activity:      r.recorder.Rows(),
 		Assistant:     r.recorder.LastAssistant(),
 		Changes:       r.changed(),
+		Steps:         r.stepped(),
 		Alerts:        supplied(r.alerts),
 		Plan:          supplied(r.plan),
 		Sweeps:        supplied(r.sweeps),
@@ -527,6 +546,16 @@ func (r *SummaryRun) changed() string {
 		return ""
 	}
 	return SummaryChanges(r.changes())
+}
+
+// stepped is the run's plan progress for the digest, empty where the surface
+// names no source or the run named no plan. Called off the lock for the
+// reason changed is.
+func (r *SummaryRun) stepped() string {
+	if r.steps == nil {
+		return ""
+	}
+	return SummarySteps(r.steps())
 }
 
 // supplied is one of the list-valued digest fields, empty where the surface

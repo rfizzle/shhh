@@ -1280,6 +1280,13 @@ func TestGolden_AgentList(t *testing.T) {
 		reseeding := append([]AgentRow{}, rows...)
 		reseeding[2] = AgentRow{State: AgentRunning, Name: "writer-1", Task: "docs/loop.md",
 			Progress: progress(AgentProgress{State: FanoutHeld, Reseeding: true, Tools: 6, Spend: "$0.02"})}
+		// A writer counting its own plan: the steps it named and marked, the
+		// share of its budget beside them, and the step it is on after its
+		// task where the card has room for it — the first thing to go.
+		planned := append([]AgentRow{}, rows...)
+		planned[2] = AgentRow{State: AgentRunning, Name: "writer-1", Task: "docs/loop.md",
+			Progress: progress(AgentProgress{State: FanoutRunning, Step: 3, Steps: 7, Planned: true,
+				StepTitle: "wire the flag", BudgetPct: 41, Tools: 6, Spend: "$0.02"})}
 		return []golden.Panel{
 			{Label: "focus · the orchestrator · the session's spawn count beside the tally, given up first when narrow",
 				View: (&AgentList{Rows: rows, Spawned: 4, SpawnLimit: 32}).View(width)},
@@ -1305,6 +1312,8 @@ func TestGolden_AgentList(t *testing.T) {
 				View: (&AgentList{Rows: inheriting, Focus: 2}).View(width)},
 			{Label: "a writer reseeding · parked while another's landed patch is carried into its copy",
 				View: (&AgentList{Rows: reseeding, Focus: 2}).View(width)},
+			{Label: "a writer on its own plan · its steps and its budget's share, and the step it is on where there is room",
+				View: (&AgentList{Rows: planned, Focus: 2}).View(width)},
 		}
 	})
 }
@@ -1429,12 +1438,30 @@ func TestGolden_FanoutBlock(t *testing.T) {
 					Tools: 1, Spend: "$0.01", Elapsed: "9s", Frame: 2},
 			},
 		}
+		// Writers counting their own plans: one mid-way with the step it is on
+		// after its task, one finished having marked five of its seven, and a
+		// child with no plan whose budget's share stands alone beside the
+		// spinner.
+		planned := FanoutBlock{
+			Elapsed: "2m05s",
+			Lanes: []FanoutLane{
+				{State: FanoutRunning, Name: "writer-1", Task: "docs/loop.md",
+					Step: 3, Steps: 7, Planned: true, StepTitle: "wire the flag", BudgetPct: 41,
+					Tools: 11, Spend: "$0.04", Elapsed: "2m05s"},
+				{State: FanoutDone, Name: "writer-2", Task: "internal/agent/round.go",
+					Step: 5, Steps: 7, Planned: true, BudgetPct: 63,
+					Tools: 19, Spend: "$0.06", Elapsed: "1m52s", Summary: "the round cap is a pause"},
+				{State: FanoutRunning, Name: "reader-3", Task: "survey internal/ui",
+					BudgetPct: 12, Tools: 4, Spend: "$0.01", Elapsed: "58s", Frame: 2},
+			},
+		}
 		return []golden.Panel{
 			{Label: "mid-flight · one child is waiting on you, the session's spawn count on the header", View: flight.View(width)},
 			{Label: "settled · one lane open on its report, one carrying a verdict, and no spawn count once nothing is live", View: settled.View(width)},
 			{Label: "no declared step count · every lane spins", View: spinning.View(width)},
 			{Label: "held · two children parked where you stopped them", View: held.View(width)},
 			{Label: "a child that delegated · its lane says how many are under it", View: nested.View(width)},
+			{Label: "writers on their own plans · steps in words and the budget's share, never one bar", View: planned.View(width)},
 		}
 	})
 }
@@ -1759,6 +1786,21 @@ func TestGolden_InspectorRail(t *testing.T) {
 			AgentsHint: railAgentsHint,
 			Frame:      2,
 		}
+		// A writer counting its own plan: the steps in words, where a declared
+		// count draws its bar, and the share of its budget beside them.
+		planned := InspectorRail{
+			Agents: []InspectorAgent{
+				{Name: "orchestrator", Detail: "round 6 · streaming…", Spend: "$0.11",
+					Self: true, Focused: true, State: FanoutRunning},
+				{Name: "writer-1", Detail: "docs/loop.md", Spend: "$0.04", Tools: 11,
+					Step: 3, Steps: 7, Planned: true, Fresh: 123_000, Budget: 300_000,
+					Depth: 1, State: FanoutRunning},
+				{Name: "writer-2", Detail: "internal/agent/round.go", Spend: "$0.02", Tools: 5,
+					Step: 1, Steps: 4, Depth: 1, State: FanoutRunning},
+			},
+			AgentsHint: railAgentsHint,
+			Frame:      2,
+		}
 		// A reader that had answered, handed a follow-up: its row is running
 		// again, and the line under it is the question rather than the task.
 		following := InspectorRail{
@@ -1831,6 +1873,8 @@ func TestGolden_InspectorRail(t *testing.T) {
 				View: reach.View(width, 0)},
 			{Label: "the map while a hold lands · two children parked, one not yet",
 				View: parked.View(width, 0)},
+			{Label: "a writer on its own plan · three of seven steps and its budget's share",
+				View: planned.View(width, 0)},
 			{Label: "a finished child taking a follow-up · running again, on the question",
 				View: following.View(width, 0)},
 			{Label: "a failed sibling beside a nested pair · the subtree moves whole",

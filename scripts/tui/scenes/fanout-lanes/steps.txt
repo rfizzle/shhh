@@ -55,8 +55,10 @@ sleep 5
 keys Escape
 sleep 2
 # Waited for by the finished lane, the last of the three to arrive: `needs you`
-# has been on the screen since the step before.
-snap 05-three-states "✓ done ·" "⚠ needs you ·" "working ·"
+# has been on the screen since the step before. The lane still going counts
+# the plan its writer opened with — the step it marked of the steps it named,
+# with the step it is on after its task — where a lane with no plan spins.
+snap 05-three-states "✓ done ·" "⚠ needs you ·" "1 of 3 steps ·" "· Run the count"
 # The finished lane carries what the child actually wrote, folded: the count
 # of lines behind the fold, the assumptions it stated instead of asking on the
 # line above it, and the transcript's own key as the way in.

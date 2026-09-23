@@ -237,6 +237,16 @@
     ⠹ survey internal/ui · 2 tools            
   alt+a manager · alt+] next · click to attach
 
+· a writer on its own plan · three of seven steps and its budget's share
+  AGENTS                             2 running
+❯ ◇ orchestrator                         $0.11
+    ⠹ round 6 · streaming…                    
+  ◇ writer-1                             $0.04
+    3 of 7 steps · 41% of budget · docs/loop.…
+  ◇ writer-2                             $0.02
+    ▰▱▱▱▱ step 1 of 4 · internal/agent/round.…
+  alt+a manager · alt+] next · click to attach
+
 · a finished child taking a follow-up · running again, on the question
   AGENTS                             1 running
 ❯ ◇ orchestrator                         $0.09
@@ -552,6 +562,16 @@
     ␛[38;5;245m4 tools␛[m                                   
   ␛[94m◇␛[m ␛[38;5;252mreader-3␛[m                             ␛[38;5;241m$0.01␛[m
     ␛[38;5;205m⠹ survey internal/ui␛[m␛[38;5;245m · ␛[m␛[38;5;245m2 tools␛[m            
+  ␛[38;5;241malt+a manager · alt+] next · click to attach␛[m
+
+· a writer on its own plan · three of seven steps and its budget's share
+  ␛[1;94mAGENTS␛[m                             ␛[38;5;205m2 running␛[m
+␛[94m❯␛[m ␛[94m␛[m␛[38;5;252m␛[m␛[38;5;241m␛[m␛[48;5;62m␛[94m␛[m␛[48;5;62m␛[94m◇␛[m␛[48;5;62m ␛[38;5;252m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[97;48;5;62morchestrator                         $0.11␛[m␛[m
+    ␛[38;5;205m⠹ round 6 · streaming…␛[m                    
+  ␛[94m◇␛[m ␛[38;5;252mwriter-1␛[m                             ␛[38;5;241m$0.04␛[m
+    ␛[94m3 of 7 steps␛[m␛[38;5;245m · ␛[m␛[38;5;245m41% of budget␛[m␛[38;5;245m · ␛[m␛[38;5;245mdocs/loop.…␛[m␛[38;5;245m␛[m␛[38;5;245m␛[m
+  ␛[94m◇␛[m ␛[38;5;252mwriter-2␛[m                             ␛[38;5;241m$0.02␛[m
+    ␛[94m▰␛[m␛[38;5;241m▱▱▱▱␛[m ␛[94mstep 1 of 4␛[m␛[38;5;245m · ␛[m␛[38;5;245minternal/agent/round.…␛[m␛[38;5;245m␛[m␛[38;5;245m␛[m
   ␛[38;5;241malt+a manager · alt+] next · click to attach␛[m
 
 · a finished child taking a follow-up · running again, on the question

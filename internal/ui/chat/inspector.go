@@ -571,6 +571,7 @@ func (m Model) inspectorAgents() []components.InspectorAgent {
 			Tools:   p.Tools,
 			Step:    p.Step,
 			Steps:   p.Steps,
+			Planned: p.Planned,
 			State:   p.State,
 			Focused: st.Name == m.attachedTo,
 			// What the child has taken in against what it was given, so the

@@ -432,6 +432,23 @@ func alsoHeld(names string) string {
 // See docs/capabilities/subagents.md#a-writer-starts-from-your-tree.
 const writerCopyMoves = "The tree you started from can move while you work. When another writer's patch lands in the real checkout, the same change is carried into your copy between two of your rounds, without a message: a file you have not touched may read differently the next time you read it, and that is the checkout as it now stands, not something you did. If the landed change meets your own changes, your copy is left as it was and you are told, in a message naming the files that landed and the ones they collided on. Carry on with your task, and name those files in your final report so the reviewer knows where your change meets the other."
 
+// writerSteps asks a writer for the plan its lane counts: a numbered list of
+// its own steps before its first call, and a progress line as each is done,
+// in the grammar the plan card reads (internal/plan). The count is the one
+// denominator of the three a lane draws that the child names itself, which is
+// what lets its reader hold it to what it said it would do.
+// See docs/capabilities/subagents.md#how-far-along-is-three-numbers-not-one.
+const writerSteps = `Before your first tool call, write your plan as a numbered list of the steps the task breaks into, one line each, numbered from 1 — at most 20:
+
+1. <what this step does>
+2. <what this step does>
+
+When you finish a step, write a line of its own naming its number:
+
+progress: <step number>
+
+These lines are how the person watching sees how far along you are, and what your work is checked against: a step you have not marked reads as not done. Write the list once; if the work turns out different from it, say so in words and carry on rather than writing a new list.`
+
 // BuildWriter is the system prompt for writer sub-agents: the full
 // toolset against an isolated worktree whose changes return as a reviewable
 // patch.
@@ -464,12 +481,15 @@ Make changes with write_file and edit_file rather than pasting code into your me
 %s
 %s
 
+# Your steps
+%s
+
 # Your copy can move
 %s
 
 # Final report
 Your last message IS the deliverable. Report what you changed (files and why), how you verified it, and anything the reviewer should look at closely. %s Do not end on a question or a promise of further work.`,
-		info.Shell, os, info.Cwd, today(), executionDefault, findingThingsBrief, shellSyntaxRules(info.Shell), sudoRules(info.OS, info.IsRoot), osRules(info.OS), writerCopyMoves, assumptionsSection)
+		info.Shell, os, info.Cwd, today(), executionDefault, findingThingsBrief, shellSyntaxRules(info.Shell), sudoRules(info.OS, info.IsRoot), osRules(info.OS), writerSteps, writerCopyMoves, assumptionsSection)
 	if len(extra) > 0 && extra[0] != "" {
 		base += "\n\n" + extra[0]
 	}

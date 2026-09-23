@@ -295,6 +295,13 @@ type SummaryRequest struct {
 	Assistant string
 	// Changes is the session's changeset in words ("8 files · +96 −11").
 	Changes string
+	// Steps is how far the run is through the steps it named itself, in
+	// words ("3 of 7 steps done · on: add the tests"), and empty for a run
+	// that named none. It rides beside Changes because the two are read
+	// against each other: a run five files in that says it is on step one
+	// of seven has either misjudged its plan or left it.
+	// See docs/capabilities/subagents.md#how-far-along-is-three-numbers-not-one.
+	Steps string
 	// Sweeps are the places the run has been over a dozen times with nothing
 	// to show for it, as "search · ./internal/agent · 14 calls, nothing
 	// written". They are the detector's own count rather than something the
@@ -540,6 +547,9 @@ func (r SummaryRequest) digest() map[string]any {
 	if r.Changes != "" {
 		d["files_changed"] = clampField(r.Changes)
 	}
+	if r.Steps != "" {
+		d["own_plan_progress"] = clampField(r.Steps)
+	}
 	if len(r.Alerts) > 0 {
 		d["failing_checks"] = clampFields(r.Alerts)
 	}
@@ -723,6 +733,25 @@ func SummaryChanges(files, added, removed int) string {
 		return fmt.Sprintf("%d %s", files, plural(files, "file"))
 	}
 	return fmt.Sprintf("%d %s · +%d −%d", files, plural(files, "file"), added, removed)
+}
+
+// SummarySteps is a run's progress through its own plan in the words the
+// digest and the check-in state it in, and "" for a run that named no plan —
+// a field the digest then leaves out rather than stating zero of zero, which
+// would read as a plan with nothing in it.
+//
+// It is one function for the reason SummaryChanges is: the reading and the
+// check-in are both read against it, and two spellings of one count are two
+// dialects where the instruction was written for one.
+func SummarySteps(done, total int, current string) string {
+	if total <= 0 {
+		return ""
+	}
+	s := fmt.Sprintf("%d of %d %s done", min(max(done, 0), total), total, plural(total, "step"))
+	if current != "" {
+		s += " · on: " + current
+	}
+	return s
 }
 
 func plural(n int, word string) string {

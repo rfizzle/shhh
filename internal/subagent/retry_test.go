@@ -103,8 +103,8 @@ func TestRetryCarriesSpendAndResetsTheBudget(t *testing.T) {
 	if st.Spend.In != 300200 {
 		t.Fatalf("spend after the retry = %d, want 300200 (the earlier attempt is still counted)", st.Spend.In)
 	}
-	if st.ToolCalls != 0 || st.Step != 0 {
-		t.Fatalf("the retry must start its own progress, got %d tools / step %d", st.ToolCalls, st.Step)
+	if st.ToolCalls != 0 || st.Steps.Done != 0 {
+		t.Fatalf("the retry must start its own progress, got %d tools / step %d", st.ToolCalls, st.Steps.Done)
 	}
 }
 

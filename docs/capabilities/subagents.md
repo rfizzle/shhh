@@ -632,6 +632,50 @@ session is looking at, and every agent — the root included — is the same kin
 of thing. That equivalence is why the interactive surfaces did not need a
 second implementation for children.
 
+## How far along is three numbers, not one
+
+"How far along is it" has no single honest answer, because every percentage
+needs a denominator and a child has several, none of which is the whole of
+the work. A lane, the manager's row and the rail therefore draw the ones that
+exist, side by side, and never merge them into one bar: a number with no
+denominator is a lie, and a bar that blended two would be a number with no
+denominator anybody could name.
+
+The three are these. **Steps** are the child's own: a writer is asked to open
+its work with a numbered plan of the steps it means to take, and to write a
+progress line naming a step's number as each one is finished. The plan is read
+in the same grammar the plan card reads a planning answer in, so a step is the
+same thing on both surfaces, and a lane reads `3 of 7 steps` with the step the
+child is on beside its task where the row has room. **The budget's share** is
+what the child has taken in against what it was given, `41% of budget` — the
+one denominator nobody has to declare. **The reader's verdict** is the last
+reading of the child's work, which says whether the steps it is marking are the
+ones it was asked for.
+
+The steps are the one worth asking for, because the child names them itself
+and so can be held to them. The reading is handed the count beside the files
+the child has changed, and judges the work against what the child said it
+would do as well as against the task; every check-in names the step the child
+last said it was on, so a child asked to take stock answers about its own plan
+rather than describing its work in new words. The mark is a line the child
+writes in its own messages and never a tool: a count the model keeps is a
+record it could edit freely, and this is one it should write, in the same
+breath as the work it is counting.
+
+A plan is taken once, from the message a writer opens its work with, and a
+numbered list later on — a report listing what changed — is not mistaken for
+one. A plan that does not parse, or one too long to be a plan, is no plan: the
+lane then draws the budget's share with whatever count the spawn declared, and
+never zero of zero. A retry names its own plan, since it is a fresh
+conversation.
+
+The count also decides when a landed patch is carried into a writer's copy
+([a writer starts from your tree](#a-writer-starts-from-your-tree)). A writer on
+the last step of its own plan is finishing the change its patch will carry, and
+moving the tree under it then is the collision the reseed exists to avoid, at
+the moment it costs most; it is left alone until it has reported, and its own
+landing meets what landed meanwhile.
+
 ## Three can steer a child, and none of them can end it
 
 A child is given words by its own reader, by you — at its lane, or on its row

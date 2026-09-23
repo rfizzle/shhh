@@ -301,7 +301,7 @@ func TestAgentLineCarriesTheRecordALaneIsDrawnFrom(t *testing.T) {
 		Name: "writer-2", Role: subagent.RoleWriter, Task: "port the exporter",
 		Model: "some-model", Paths: []string{"internal/observe"},
 		State: subagent.StateRunning, Detail: "editing otel.go", ToolCalls: 7,
-		Budget: 300_000, Batch: 3, Step: 2, Steps: 5,
+		Budget: 300_000, Batch: 3, Steps: subagent.StepCount{Done: 2, Total: 5},
 		Elapsed: 90 * time.Second, Summary: "ported", Verdict: "on-target",
 		End: observe.ChildKilled, Steers: 1, SteerFrom: subagent.SteerFromLane, Held: true,
 	}

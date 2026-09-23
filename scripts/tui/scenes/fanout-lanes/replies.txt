@@ -26,9 +26,15 @@ The counter is read at the top of the loop, and nowhere else.
 # writer-1 is let through first. It runs its command and asks the model again,
 # and is kept waiting on the first token: its lane is the one still going
 # while the block is read.
+#
+# It opens with the numbered plan a writer is asked for and marks the first
+# step done on its next round, so the lane still going is the one that counts
+# its own steps: `1 of 3 steps`, with the step it is on after its task.
 [writer-1]
-tool:read_file:{"path":"loop.go"}
+1. Read the loop\n2. Run the count\n3. Report where it is read
++tool:read_file:{"path":"loop.go"}
 wait:1
++progress: 1
 +tool:execute_command:{"command":"echo counted"}
 wait:40
 +The counter is read at the top of the loop, and nowhere else.

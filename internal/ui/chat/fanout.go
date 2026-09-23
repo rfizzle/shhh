@@ -174,11 +174,18 @@ func (m Model) fanoutLive(e entry) bool {
 // disagree about what a child is doing.
 func (m Model) childProgress(st subagent.Status) components.AgentProgress {
 	p := components.AgentProgress{
-		Step:  st.Step,
-		Steps: st.Steps,
-		Tools: st.ToolCalls,
-		Spend: m.childSpendLabel(st),
-		Frame: m.spinFrame,
+		// Its steps — its own plan's, with the step it is on, where it named
+		// one — and the share of its budget it has taken in: two
+		// denominators stated side by side rather than merged into one bar
+		// (docs/capabilities/subagents.md#how-far-along-is-three-numbers-not-one).
+		Step:      st.Steps.Done,
+		Steps:     st.Steps.Total,
+		Planned:   st.Steps.Own,
+		StepTitle: st.Steps.Current,
+		BudgetPct: components.BudgetPct(st.Tokens.Fresh, st.Budget),
+		Tools:     st.ToolCalls,
+		Spend:     m.childSpendLabel(st),
+		Frame:     m.spinFrame,
 		// What it was handed of the parent's conversation, on the line that
 		// says what it has cost (docs/capabilities/subagents.md#what-they-share).
 		Inherited: st.Inheritance,
@@ -288,6 +295,9 @@ func (m Model) fanoutBlockFor(e entry) components.FanoutBlock {
 			Task:       firstLine(st.Task),
 			Step:       p.Step,
 			Steps:      p.Steps,
+			Planned:    p.Planned,
+			StepTitle:  p.StepTitle,
+			BudgetPct:  p.BudgetPct,
 			Tools:      p.Tools,
 			Spend:      p.Spend,
 			Elapsed:    turnDuration(st.Elapsed),

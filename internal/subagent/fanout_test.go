@@ -128,8 +128,8 @@ func TestStatusStepsAndElapsed(t *testing.T) {
 	c := &child{name: "writer-1", steps: 3, started: time.Now().Add(-2 * time.Second)}
 
 	st := c.status()
-	if st.Steps != 3 || st.Step != 0 {
-		t.Fatalf("fresh child = %d/%d, want 0/3", st.Step, st.Steps)
+	if st.Steps.Total != 3 || st.Steps.Done != 0 {
+		t.Fatalf("fresh child = %d/%d, want 0/3", st.Steps.Done, st.Steps.Total)
 	}
 	if st.Elapsed < time.Second {
 		t.Fatalf("elapsed = %v, want the time since it was spawned", st.Elapsed)
@@ -140,8 +140,8 @@ func TestStatusStepsAndElapsed(t *testing.T) {
 	c.beginToolEntry("t1", "read_file", `{"path":"loop.go"}`)
 	c.streaming = "now the tests"
 	c.beginToolEntry("t2", "read_file", `{"path":"loop_test.go"}`)
-	if st := c.status(); st.Step != 2 {
-		t.Fatalf("step = %d, want 2", st.Step)
+	if st := c.status(); st.Steps.Done != 2 {
+		t.Fatalf("step = %d, want 2", st.Steps.Done)
 	}
 
 	// A child that announces more than the spawn declared reports the
@@ -150,8 +150,8 @@ func TestStatusStepsAndElapsed(t *testing.T) {
 		c.streaming = "another"
 		c.beginToolEntry(fmt.Sprintf("t%d", i+3), "read_file", `{"path":"x.go"}`)
 	}
-	if st := c.status(); st.Step != 3 {
-		t.Fatalf("step = %d, want it clamped to the declared 3", st.Step)
+	if st := c.status(); st.Steps.Done != 3 {
+		t.Fatalf("step = %d, want it clamped to the declared 3", st.Steps.Done)
 	}
 
 	c.set(StateDone, "done · 7 tools")
