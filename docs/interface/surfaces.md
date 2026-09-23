@@ -1824,6 +1824,15 @@ taking a row means, because the picker is the one list in the product whose
 rows look like acts and are not: picking a turn opens the question, and the
 card behind it is what answers it.
 
+Picking turn N returns to how things stood when turn N ended: turns 1–N stay,
+and the turns after it are what the card offers to take back. Every surface
+of the rewind names that one moment — the row's number, `/rewind N`, the
+card's `Rewind to turn N` and its `turns N+1–M`, and the frame's `at turn N`
+— because a picker that meant the end of a turn beside a command that meant
+the start of it would put every figure one turn apart. The latest turn is
+where the session already stands, so taking it says so and moves nothing;
+`/rewind 0` is the start of the session, before anything was said.
+
 A row is a turn — the words that started it, what it changed, and how long
 ago. The turn's own number leads it, so a reader comparing a row with a close
 row's `turn 6` is comparing the same figure, and the rows read newest first
@@ -1837,14 +1846,14 @@ reader is scanning, and a blank in it reads as a row nobody measured. The age
 is the short field at the end, and a turn whose moment is not known reports
 none rather than an invented one.
 
-A turn past which the files cannot be restored stays in the list. It is drawn
+A turn whose end the files cannot be returned to stays in the list. It is drawn
 as any unavailable row is — behind `⊘`, with the reason where the diffstat
 would be — and it is still selectable, because choosing it is how the surface
 says why. Talk only still works past it: the conversation is shhh's to give
 back, and what the records never held never was. The boundary is a fact about
-the records rather than about the tree: a run of turns whose records were
-dropped to stay inside the changeset store's size limit, or a conversation
-that came back from the store without them at all.
+the records of the turns after it rather than about the tree: a run of turns
+whose records were dropped to stay inside the changeset store's size limit, or
+a conversation that came back from the store without them at all.
 
 The scope card is what a taken row opens. A rewind is two rewinds arriving as
 one word — the files a run of turns wrote, and the turns themselves — and the

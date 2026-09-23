@@ -492,23 +492,10 @@ The gap is closed by a guideline that names the case: a row whose glyph column
 has no kind in it states its outcome there. Where that guideline and this
 differ, the guideline wins.
 
-## A rewind returns to before a turn, and the picker's frame is a card's
+## The rewind picker's frame is a card's
 
-*A disagreement.* The `Rewind` artboard draws three things the binary does
-otherwise, and all three come from one place: what the product's own `/rewind`
-has always meant.
-
-**Picking a turn returns to before it, not to the end of it.** The artboard's
-caption reads *return to how things stood when this turn ended*, so its turn 5
-keeps turns 1–5 and folds 6–7. `/rewind 5` cuts the conversation at the start
-of turn 5 and keeps 1–4, which is what the numbered command has meant since it
-was written and what the surfaces around it say. Every figure the artboard
-draws is therefore one turn along from the binary's: the card is titled
-`Rewind to before turn 5`, the turns leaving the window are 5–7, and the
-frame's rail reads `at turn 4`. Changing the meaning would change the command
-as well as the picker, which is a product decision rather than a wording one;
-until it is taken, the two must agree, and it is the picker that was drawn
-against a different one.
+*A disagreement.* The `Rewind` artboard's timeline is drawn otherwise in three
+places, each decided by a guideline or by what the binary can see.
 
 **The picker is a card and not a bare rail.** The artboard draws the timeline
 frameless, rows under a labelled rule. Selectors are cards

@@ -69,11 +69,14 @@ in front of it — and the sentence explaining it was the product describing a
 gap rather than filling one.
 
 So a rewind asks which of the two is meant: the conversation, the files, or
-both. The conversation half is what it always was, tail and all, kept as a
-branch. The file half is every turn from the chosen point onwards, folded into
-one net change per file — where the run of turns found each file, and where it
-left it — and put back through the same question an undo asks: what it would
-restore, what it would delete, and which files have changed since and are
+both. A rewind to a turn returns to where that turn ended — the turns after it
+are the ones taken back, and turn 0 is the start of the session — so the
+number a person picks is the turn they keep, not the first one they lose. The
+conversation half is what it always was, tail and all, kept as a branch. The
+file half is every turn after the chosen one, folded into one net change per
+file — where the run of turns found each file, and where it left it — and put
+back through the same question an undo asks: what it would restore, what it
+would delete, and which files have changed since and are
 therefore left alone unless a deliberate second answer says otherwise. Putting
 them back is itself a change, recorded like any other, so a rewind's restore
 can be reviewed and undone in turn.

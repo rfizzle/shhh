@@ -654,11 +654,11 @@ func slashRewind(m *Model, parts []string) string {
 		return "No checkpoints to rewind to yet."
 	}
 	if len(parts) != 2 {
-		return fmt.Sprintf("Usage: /rewind [<turn 1-%d>] — bare /rewind opens the picker", len(m.checkpoints))
+		return fmt.Sprintf("Usage: /rewind [<turn 0-%d>] — bare /rewind opens the picker", len(m.checkpoints))
 	}
 	n, err := strconv.Atoi(parts[1])
 	if err != nil {
-		return fmt.Sprintf("Usage: /rewind [<turn 1-%d>]", len(m.checkpoints))
+		return m.rewindUsage()
 	}
 	return m.rewindToTurn(n)
 }

@@ -80,8 +80,8 @@ func TestCheckpoints_GitSnapshotRecorded(t *testing.T) {
 // A conversation that came back from the store is rebuilt from its messages,
 // and the ones the session wrote for itself are the session's: they come back
 // as system rows and they are not turns. Counting one would number the check-
-// in among the reader's turns, and "before turn 4" would then cut the
-// conversation in the middle of the turn the check-in interrupted.
+// in among the reader's turns, and "turn 3" would then cut the conversation
+// in the middle of the turn the check-in interrupted.
 func TestCheckpoints_RebuiltSkipTheMessagesTheSessionWrote(t *testing.T) {
 	steer := "You are editing a file the task did not ask about. Say why or go back."
 	m := resumedModel(t, []provider.Message{
@@ -125,7 +125,7 @@ func TestRewindNumbered_TruncatesAndBranches(t *testing.T) {
 	m = completeExchange(t, m, "second question", "answer two")
 	root := m.sessionName
 
-	m = sendText(t, m, "/rewind 2")
+	m = sendText(t, m, "/rewind 1")
 
 	if got := len(m.Messages()); got != 3 {
 		t.Fatalf("expected 3 messages after rewind (sys+turn1), got %d", got)
@@ -167,7 +167,7 @@ func TestRewind_WithoutDB_SaysTailDiscarded(t *testing.T) {
 	m := newRewindModel(t)
 	m = completeExchange(t, m, "only turn", "reply")
 
-	note := m.rewindToTurn(1)
+	note := m.rewindToTurn(0)
 	if !strings.Contains(note, "discarded") {
 		t.Fatalf("no-DB rewind must say the tail was not preserved, got %q", note)
 	}
@@ -185,6 +185,34 @@ func TestRewind_OutOfRange(t *testing.T) {
 	}
 	if len(m.Messages()) != 3 {
 		t.Fatal("out-of-range rewind must not change the conversation")
+	}
+}
+
+// A rewind to turn N returns to where turn N ended, so the latest turn is
+// where the session already stands and turn 0 is the start of it
+// (docs/interface/surfaces.md#the-rewind).
+func TestRewind_TurnNIsWhereTurnNEnded(t *testing.T) {
+	m := newRewindModel(t)
+	m = completeExchange(t, m, "first", "one")
+	m = completeExchange(t, m, "second", "two")
+
+	if note := m.rewindToTurn(2); !strings.Contains(note, "already stands at the end of turn 2") {
+		t.Fatalf("the latest turn has nothing after it to take back, got %q", note)
+	}
+	if len(m.Messages()) != 5 {
+		t.Fatal("a rewind to where the session stands must not change the conversation")
+	}
+	if note := m.rewindToTurn(1); !strings.Contains(note, `Rewound to the end of turn 1 ("first")`) {
+		t.Fatalf("the message should name the turn the session now stands at, got %q", note)
+	}
+	if got := m.frameActivity(40); !strings.Contains(got, "at turn 1") {
+		t.Fatalf("the frame should name the same turn the command did, got %q", got)
+	}
+	if note := m.rewindToTurn(0); !strings.Contains(note, "Rewound to the start of the session") {
+		t.Fatalf("turn 0 is the start of the session, got %q", note)
+	}
+	if len(m.Messages()) != 1 {
+		t.Fatalf("the start of the session is the system prompt alone, got %d messages", len(m.Messages()))
 	}
 }
 
@@ -219,15 +247,16 @@ func TestRewind_BarePicker_SelectRewinds(t *testing.T) {
 	root := m.sessionName
 
 	m = sendText(t, m, "/rewind")
-	// The focused row is the latest turn (options are latest-first).
-	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
-	m = updated.(Model)
+	// The rows are latest-first, so the second is turn 1: returning to where
+	// it ended takes turn 2 back.
+	m = press(t, m, "down")
+	m = press(t, m, "enter")
 
 	if m.state != stateInput {
 		t.Fatal("picker should close after selecting")
 	}
 	if got := len(m.Messages()); got != 3 {
-		t.Fatalf("selecting the latest turn should drop it, got %d messages", got)
+		t.Fatalf("returning to the end of turn 1 should drop turn 2, got %d messages", got)
 	}
 	if branches, _ := db.ListChatBranches(root); len(branches) != 2 {
 		t.Fatalf("picker rewind should preserve the tail as a branch, got %d family members", len(branches))
@@ -257,7 +286,7 @@ func TestRewind_GitDivergenceReported(t *testing.T) {
 	})
 	m = completeExchange(t, m, "change stuff", "done")
 
-	note := m.rewindToTurn(1)
+	note := m.rewindToTurn(0)
 	if !strings.Contains(note, "HEAD has moved") || !strings.Contains(note, "aaaaaaaaaaaa → bbbbbbbbbbbb") {
 		t.Fatalf("expected HEAD divergence in the rewind message, got %q", note)
 	}
@@ -269,7 +298,7 @@ func TestBranches_ListAndSwitch(t *testing.T) {
 	m = completeExchange(t, m, "first question", "answer one")
 	m = completeExchange(t, m, "second question", "answer two")
 	root := m.sessionName
-	m = sendText(t, m, "/rewind 2")
+	m = sendText(t, m, "/rewind 1")
 
 	// Bare /branches is the picker's; the text path never answers with a
 	// list of rows to read a number off.
@@ -447,7 +476,7 @@ func TestRewind_OffersConversationFilesOrBoth(t *testing.T) {
 		t.Fatalf("a rewind with records after it should ask what to put back, got state %v", m.state)
 	}
 	card := m.rewindScope.card
-	if !strings.Contains(card.Title, "before turn 1") {
+	if card.Title != "Rewind to turn 1" {
 		t.Fatalf("the card should name the point it would return to, got %q", card.Title)
 	}
 	if !strings.Contains(card.Code.Value, "2 files") {
@@ -457,7 +486,7 @@ func TestRewind_OffersConversationFilesOrBoth(t *testing.T) {
 	if !strings.Contains(card.Code.Detail, "command") {
 		t.Fatalf("the card should say a command's changes are not recorded, got %q", card.Code.Detail)
 	}
-	if !strings.Contains(card.Talk.Value, "leave the window") || !strings.Contains(card.Talk.Detail, "ctx ") {
+	if !strings.Contains(card.Talk.Value, "turn 2 leaves the window") || !strings.Contains(card.Talk.Detail, "ctx ") {
 		t.Fatalf("the talk field should say what leaves and what it costs, got %q / %q",
 			card.Talk.Value, card.Talk.Detail)
 	}
@@ -477,7 +506,7 @@ func TestRewind_WithNothingRecordedGoesStraightBack(t *testing.T) {
 	m := rewindChangeModel(t, db, changeset.New(0), "nothing recorded")
 	m = completeExchange(t, m, "only turn", "reply")
 
-	m = sendText(t, m, "/rewind 1")
+	m = sendText(t, m, "/rewind 0")
 	if m.state != stateInput {
 		t.Fatalf("no records means no question to ask, got state %v", m.state)
 	}
@@ -514,8 +543,8 @@ func TestRewind_FilesRestoresTheRunAndLeavesDrift(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if string(content) != "one\n" {
-		t.Fatalf("both turns should have been put back, got %q", content)
+	if string(content) != "two\n" {
+		t.Fatalf("the file should be where turn 1 left it, got %q", content)
 	}
 	if drifted, err := os.ReadFile(added); err != nil || string(drifted) != "mine\n" {
 		t.Fatalf("a file changed since must be left alone, got %q (%v)", drifted, err)
@@ -529,7 +558,7 @@ func TestRewind_FilesRestoresTheRunAndLeavesDrift(t *testing.T) {
 		t.Fatalf("the files answer must leave the conversation alone, got %d messages", len(m.Messages()))
 	}
 	// And the restore is a turn of its own, so it can be undone in turn.
-	if note := lastClose(t, m).Note; !strings.Contains(note, "rewind to before turn 1") {
+	if note := lastClose(t, m).Note; !strings.Contains(note, "rewind to turn 1") {
 		t.Fatalf("the restore should close with a row naming what it took back, got %q", note)
 	}
 }
@@ -542,14 +571,14 @@ func TestRewind_BothRewindsAndThenAsksAboutTheFiles(t *testing.T) {
 	m = sendText(t, m, "/rewind 1")
 	m = press(t, m, keys.Shown(keys.Rewind.Both))
 
-	if got := len(m.Messages()); got != 1 {
-		t.Fatalf("both should have rewound the conversation, got %d messages", got)
+	if got := len(m.Messages()); got != 3 {
+		t.Fatalf("both should have rewound the conversation to the end of turn 1, got %d messages", got)
 	}
 	if m.state != stateUndoConfirm {
 		t.Fatalf("both should then ask about the files, got state %v", m.state)
 	}
 	m = press(t, m, "y")
-	if content, err := os.ReadFile(kept); err != nil || string(content) != "one\n" {
+	if content, err := os.ReadFile(kept); err != nil || string(content) != "two\n" {
 		t.Fatalf("both should have put the files back, got %q (%v)", content, err)
 	}
 }
@@ -582,7 +611,7 @@ func TestRewind_ARebuiltCheckpointOffersNoFiles(t *testing.T) {
 	m = completeExchange(t, m, "first", "one")
 	m.loadConversation(m.Messages())
 
-	m = sendText(t, m, "/rewind 1")
+	m = sendText(t, m, "/rewind 0")
 	if m.state != stateInput {
 		t.Fatalf("a rebuilt checkpoint has no turn to restore, got state %v", m.state)
 	}
@@ -710,7 +739,7 @@ func TestRewind_ATreePastTheBoundStillOffersTheRestore(t *testing.T) {
 	recordEdit(t, m, kept, "one\n", "two\n")
 	m = completeReply(t, m, "did it")
 
-	m = sendText(t, m, "/rewind 1")
+	m = sendText(t, m, "/rewind 0")
 	if m.state != stateRewindScope || m.rewindScope == nil {
 		t.Fatalf("an unreadable tree must still be offered all three answers, got state %v", m.state)
 	}
@@ -726,14 +755,16 @@ func TestRewind_ATreePastTheBoundStillOffersTheRestore(t *testing.T) {
 
 // --- the timeline -------------------------------------------------
 
-// rewindPickerModel is three turns of one session: one that read only, one
-// that wrote, and one whose records came back without a turn number of their
-// own — which is the boundary a restore cannot cross. The ages are fixed so
-// the rows say the same thing on every run.
+// rewindPickerModel is four turns of one session: one returning to whose end
+// would take back a turn whose records were dropped — which is the boundary a
+// restore cannot cross — that dropped turn, one that read only, and one that
+// wrote. The ages are fixed so the rows say the same thing on every run.
 func rewindPickerModel(t *testing.T, width int) Model {
 	t.Helper()
 	db := rewindTestDB(t)
-	m := rewindChangeModel(t, db, changeset.New(0), "timeline")
+	// The bound holds the last turn's records and not the second's, so the
+	// last turn's write is what drops the second.
+	m := rewindChangeModel(t, db, changeset.New(1024), "timeline")
 	m.width, m.height = width, 40
 	m.syncInputWidth()
 	dir := t.TempDir()
@@ -747,6 +778,11 @@ func rewindPickerModel(t *testing.T, width int) Model {
 	m = sendText(t, m, "clear the tmp dir")
 	m = completeReply(t, m, "cleared")
 
+	fixtures := filepath.Join(dir, "fixtures.txt")
+	m = sendText(t, m, "regenerate the fixtures")
+	recordEdit(t, m, fixtures, "", strings.Repeat("fixture\n", 200))
+	m = completeReply(t, m, "regenerated")
+
 	m = sendText(t, m, "find where rounds are counted")
 	m = completeReply(t, m, "in the loop")
 
@@ -755,9 +791,9 @@ func rewindPickerModel(t *testing.T, width int) Model {
 	recordEdit(t, m, rounds, strings.Repeat("one\n", 6), strings.Repeat("two\n", 10))
 	m = completeReply(t, m, "done")
 
-	// A conversation that came back from the store carries no turn number on
-	// its earliest checkpoint, which is the boundary the oldest row states.
-	m.checkpoints[0].turn = 0
+	if got := m.changes.Evicted(); len(got) != 1 || got[0] != 2 {
+		t.Fatalf("the fixture wants turn 2's records dropped, got %v", got)
+	}
 	for i := range m.checkpoints {
 		m.checkpoints[i].at = time.Now().Add(-time.Duration(30-9*i) * time.Minute)
 	}
@@ -780,12 +816,12 @@ func TestRewindPicker_RowsCarryTheTurnAndWhatItChanged(t *testing.T) {
 		t.Fatalf("the rail should be the first line drawn, got %q", m.pickerLines()[0])
 	}
 	opts := m.picker.Options
-	if len(opts) != 3 {
-		t.Fatalf("three turns, three rows, got %d", len(opts))
+	if len(opts) != 4 {
+		t.Fatalf("four turns, four rows, got %d", len(opts))
 	}
 	// Newest first, and the number on the row is the turn's own.
-	if opts[0].Number != 3 || opts[2].Number != 1 {
-		t.Fatalf("rows should be numbered by turn, newest first: %d … %d", opts[0].Number, opts[2].Number)
+	if opts[0].Number != 4 || opts[3].Number != 1 {
+		t.Fatalf("rows should be numbered by turn, newest first: %d … %d", opts[0].Number, opts[3].Number)
 	}
 	if detail := detailPlain(opts[0]); !strings.HasPrefix(detail, mutationMark) ||
 		!strings.Contains(detail, "2 files") || !strings.Contains(detail, "+18") {
@@ -794,7 +830,7 @@ func TestRewindPicker_RowsCarryTheTurnAndWhatItChanged(t *testing.T) {
 	if detail := detailPlain(opts[1]); detail != readsOnlyPhrase {
 		t.Fatalf("a turn that changed nothing should say so, got %q", detail)
 	}
-	if opts[1].Meta != "21m" {
+	if opts[1].Meta != "12m" {
 		t.Fatalf("the age is the short field at the end of the row, got %q", opts[1].Meta)
 	}
 }
@@ -804,7 +840,7 @@ func TestRewindPicker_RowsCarryTheTurnAndWhatItChanged(t *testing.T) {
 func TestRewindPicker_AnUnreachableTurnStatesWhyAndStillRewindsTheTalk(t *testing.T) {
 	m := rewindPickerModel(t, 120)
 	m = sendText(t, m, "/rewind")
-	oldest := m.picker.Options[2]
+	oldest := m.picker.Options[3]
 	if !oldest.Dim {
 		t.Fatalf("a turn no restore can cross should be drawn as unavailable: %+v", oldest)
 	}
@@ -815,12 +851,25 @@ func TestRewindPicker_AnUnreachableTurnStatesWhyAndStillRewindsTheTalk(t *testin
 	// back: what the records never held never was.
 	m = press(t, m, "down")
 	m = press(t, m, "down")
+	m = press(t, m, "down")
 	m = press(t, m, "enter")
 	if m.state == stateRewindScope {
 		t.Fatal("there is no file half to ask about past the boundary")
 	}
 	if note := lastSystem(t, m); !strings.Contains(note, "Only the conversation was rewound") {
 		t.Fatalf("talk only should still have run, got %q", note)
+	}
+}
+
+// The latest row of a conversation rebuilt from the store has no turn after
+// it to be blocked by, and no number of its own to ask the records about, so
+// it reports nothing rather than some other turn's change.
+func TestRewindPicker_ARebuiltTurnReportsNoChange(t *testing.T) {
+	m := rewindPickerModel(t, 120)
+	m.checkpoints[len(m.checkpoints)-1].turn = 0
+	m = sendText(t, m, "/rewind")
+	if latest := m.picker.Options[0]; len(latest.Detail) != 0 || latest.Dim {
+		t.Fatalf("a rebuilt turn's row should say nothing about what it changed: %+v", latest)
 	}
 }
 
@@ -844,7 +893,7 @@ func TestRewind_LandsAsARowAndTheFrameSaysWhereYouStand(t *testing.T) {
 	m.width, m.height = 120, 40
 	m.syncInputWidth()
 
-	m = sendText(t, m, "/rewind 2")
+	m = sendText(t, m, "/rewind 1")
 	m = press(t, m, keys.Shown(keys.Rewind.Talk))
 
 	row := lastRewindRow(t, m)
@@ -894,7 +943,7 @@ func TestRewind_BothLandsOneRowCountingWhatCameBack(t *testing.T) {
 	if !strings.Contains(row.Counts, "file") {
 		t.Fatalf("the row should count what came back, got %q", row.Counts)
 	}
-	if !strings.Contains(row.Target, "files back to before turn 1") ||
+	if !strings.Contains(row.Target, "files back to turn 1") ||
 		!strings.Contains(row.Target, "out of the window") {
 		t.Fatalf("the row should state both halves, got %q", row.Target)
 	}
@@ -955,7 +1004,7 @@ func TestGolden_RewindPicker(t *testing.T) {
 func TestGolden_RewindRow(t *testing.T) {
 	captureGolden(t, "rewind-row", "the rewind's return row", goldenWidths,
 		func(width int) []golden.Panel {
-			ret := rewindReturn{turn: 5, first: 5, last: 7, was: 62, now: 41, at: time.Now()}
+			ret := rewindReturn{turn: 5, first: 6, last: 7, was: 62, now: 41, at: time.Now()}
 			rec := func(path string, before, after int) changeset.Record {
 				return changeset.Record{
 					Path:         path,

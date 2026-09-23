@@ -8,8 +8,14 @@ package chat
 // checkpoint records the git HEAD + dirty status at the time so the message
 // can show what diverged since.
 //
-// A rewind offers the files as well as the conversation. Going back to before
-// a turn and leaving on disk everything that turn wrote is a state neither the
+// A rewind to turn N returns to how things stood when turn N ended: turns
+// 1–N stay and every turn after it is taken back. The picker's rows, the
+// numbered command, the card's figures and the frame's `at turn N` all name
+// that one moment. Turn 0 is the start of the session, before anything was
+// said.
+//
+// A rewind offers the files as well as the conversation. Going back past a
+// turn and leaving on disk everything that turn wrote is a state neither the
 // person nor the model asked for, so the card asks which of the two — or both
 // — is meant, and the file half is the session's own records put back through
 // the confirm an undo goes through: the same drift check, and the same
@@ -99,10 +105,9 @@ func (m *Model) recordCheckpoint(text string) {
 //
 // A message the session wrote for itself is not a turn
 // (provider.Message.Machine). Counting one would put a check-in in the list
-// under the reader's name, and — because the list is numbered and "before
-// turn 4" cuts the conversation at the fourth of these — it would also
-// truncate a resumed conversation in the middle of the turn the check-in
-// interrupted.
+// under the reader's name, and — because the list is numbered and "turn 3"
+// cuts the conversation at the fourth of these — it would also truncate a
+// resumed conversation in the middle of the turn the check-in interrupted.
 func checkpointsFromMessages(msgs []provider.Message) []checkpoint {
 	var cps []checkpoint
 	for i, msg := range msgs {
@@ -142,7 +147,14 @@ func (m Model) openRewindPick() (tea.Model, tea.Cmd) {
 	opts := make([]components.SelectOption, 0, len(m.checkpoints))
 	for i := len(m.checkpoints) - 1; i >= 0; i-- {
 		cp := m.checkpoints[i]
-		blocked := m.restoreBlocked(cp)
+		// Returning to the end of turn i+1 takes back the turns after it, so
+		// whether the files can come back is a question about the next
+		// checkpoint's records and not this one's. The latest turn has none
+		// after it and is never blocked.
+		blocked := ""
+		if cut, ok := m.cutAt(i + 1); ok {
+			blocked = m.restoreBlocked(cut)
+		}
 		opts = append(opts, components.SelectOption{
 			Number: i + 1,
 			Label:  cp.preview,
@@ -195,6 +207,13 @@ func (m Model) checkpointDetail(cp checkpoint, blocked string) []components.Deta
 	// and a reader comparing two rows is comparing what each turn did. What
 	// the run adds up to is the scope card's field, where it is what the
 	// answer would actually restore.
+	if cp.turn == 0 {
+		// A turn rebuilt from a stored conversation has no number to ask the
+		// records about, so what it changed is not reported rather than
+		// borrowed from some other turn
+		// (docs/interface/principles.md#a-stat-that-cannot-be-reported-is-left-out).
+		return nil
+	}
 	folded, _ := m.changes.Recall(cp.turn)
 	if folded.Files() == 0 {
 		// A turn that touched nothing says so in words rather than in an
@@ -258,15 +277,45 @@ func checkpointAge(cp checkpoint) string {
 	return fmt.Sprintf("%dd", int(d.Hours())/24)
 }
 
-// rewindToTurn asks what a rewind to before turn n (1-based) should put back,
-// and answers it directly when there is only one thing it could mean. Nothing
-// is written here where the offer opens: the card is the question, and for the
-// files the confirm behind it is a second one.
-func (m *Model) rewindToTurn(n int) string {
-	if n < 1 || n > len(m.checkpoints) {
-		return fmt.Sprintf("Usage: /rewind [1-%d]", len(m.checkpoints))
+// cutAt is the checkpoint a rewind to turn n cuts the conversation at: the
+// start of turn n+1, which is the first turn the rewind takes back. False
+// where turn n is the latest, and nothing comes after it to take back.
+func (m Model) cutAt(n int) (checkpoint, bool) {
+	if n < 0 || n >= len(m.checkpoints) {
+		return checkpoint{}, false
 	}
-	cp := m.checkpoints[n-1]
+	return m.checkpoints[n], true
+}
+
+// turnPoint names the moment a rewind to turn n returns to: the end of that
+// turn, or the start of the session for turn 0.
+func turnPoint(n int) string {
+	if n == 0 {
+		return "the start of the session"
+	}
+	return fmt.Sprintf("turn %d", n)
+}
+
+// rewindUsage is the refusal for a turn number the session does not have.
+func (m Model) rewindUsage() string {
+	return fmt.Sprintf("Usage: /rewind [0-%d]", len(m.checkpoints))
+}
+
+// rewindToTurn asks what a rewind to the end of turn n (turn 0 being the
+// start of the session) should put back, and answers it directly when there
+// is only one thing it could mean. Nothing is written here where the offer
+// opens: the card is the question, and for the files the confirm behind it
+// is a second one.
+func (m *Model) rewindToTurn(n int) string {
+	if n == len(m.checkpoints) && n > 0 {
+		// The latest turn's end is where the session already stands, so
+		// there is nothing after it for a rewind to take back.
+		return fmt.Sprintf("The session already stands at the end of turn %d — there is nothing after it to rewind.", n)
+	}
+	cp, ok := m.cutAt(n)
+	if !ok {
+		return m.rewindUsage()
+	}
 	if blocked := m.restoreBlocked(cp); blocked != "" {
 		// Talk only still works past the boundary, and it is the whole of
 		// what a rewind can mean here, so it is done rather than asked
@@ -320,7 +369,7 @@ type rewindScope struct {
 // the two halves of one act land as one row rather than as two
 // (docs/interface/surfaces.md#the-rewind).
 type rewindReturn struct {
-	// turn is the rewind point: the session stands at the turn before it.
+	// turn is the rewind point: the session stands at the end of it.
 	turn int
 	// first and last are the turns that left the window; zero where none
 	// did, which is the code-only answer.
@@ -340,7 +389,7 @@ func (m *Model) openRewindScope(n int, turns []changeset.Turn) {
 	folded := changeset.Fold(turns)
 	scope := &rewindScope{turn: n, turns: turns, ret: m.rewindReturnFor(n)}
 	scope.card = components.RewindCard{
-		Title: fmt.Sprintf("Rewind to before turn %d", n),
+		Title: "Rewind to " + turnPoint(n),
 		Code: components.CardField{
 			Label: "code", Tone: components.ToneNeutral,
 			Value: fmt.Sprintf("%s restored %s", plural(folded.Files(), "file"),
@@ -354,7 +403,7 @@ func (m *Model) openRewindScope(n int, turns []changeset.Turn) {
 		},
 		Talk: components.CardField{
 			Label: "talk", Tone: components.ToneNeutral,
-			Value:  turnSpanPhrase(scope.ret.first, scope.ret.last) + " leave the window",
+			Value:  turnSpanPhrase(scope.ret.first, scope.ret.last) + leaveVerb(scope.ret.first, scope.ret.last),
 			Detail: fmt.Sprintf("ctx %d%% → %d%% · kept as a branch, /branches to switch back", scope.ret.was, scope.ret.now),
 		},
 		Undo: components.CardField{
@@ -367,13 +416,13 @@ func (m *Model) openRewindScope(n int, turns []changeset.Turn) {
 	m.syncViewport()
 }
 
-// rewindReturnFor reads what the conversation half of a rewind to before
-// turn n would do, before it does it: which turns leave the window, and what
-// the window's occupancy is either side of them.
+// rewindReturnFor reads what the conversation half of a rewind to turn n
+// would do, before it does it: which turns leave the window, and what the
+// window's occupancy is either side of them.
 func (m Model) rewindReturnFor(n int) rewindReturn {
-	r := rewindReturn{turn: n, first: n, last: len(m.checkpoints), was: m.contextPercent(), at: time.Now()}
+	r := rewindReturn{turn: n, first: n + 1, last: len(m.checkpoints), was: m.contextPercent(), at: time.Now()}
 	r.now = r.was
-	cp := m.checkpoints[n-1]
+	cp := m.checkpoints[n]
 	msgs := m.agent.Messages()
 	window, raw := m.contextWindow(), m.contextEstimate().total()
 	if window <= 0 || raw <= 0 || cp.index > len(msgs) {
@@ -407,6 +456,15 @@ func turnSpanPhrase(first, last int) string {
 		return fmt.Sprintf("turn %d", first)
 	}
 	return fmt.Sprintf("turns %d–%d", first, last)
+}
+
+// leaveVerb agrees with turnSpanPhrase: returning to the turn before the
+// latest is the usual rewind, and it takes one turn back rather than several.
+func leaveVerb(first, last int) string {
+	if first >= last {
+		return " leaves the window"
+	}
+	return " leave the window"
 }
 
 // updateRewindScope routes keys while the scope card is up. Every letter on
@@ -484,8 +542,8 @@ func (m Model) rewindScopeLines() []string {
 // with nothing on record after it, and one past the boundary a restore
 // cannot cross — so what it does and what it leaves behind is written once.
 func (m *Model) rewindTalkOnly(n int, filesNote string) string {
-	if n < 1 || n > len(m.checkpoints) {
-		return fmt.Sprintf("Usage: /rewind [1-%d]", len(m.checkpoints))
+	if _, ok := m.cutAt(n); !ok {
+		return m.rewindUsage()
 	}
 	ret := m.rewindReturnFor(n)
 	note := m.rewindConversation(n, filesNote)
@@ -521,21 +579,21 @@ func (m *Model) appendRewindRow(r rewindReturn, folded changeset.Turn) {
 	if folded.Files() > 0 {
 		row.Kind = components.ActivityEdit
 		row.Counts = fmt.Sprintf("%s · +%d −%d", plural(folded.Files(), "file"), folded.Added, folded.Removed)
-		parts = append(parts, fmt.Sprintf("files back to before turn %d", r.turn))
+		parts = append(parts, "files back to "+turnPoint(r.turn))
 	}
 	if r.first > 0 {
 		parts = append(parts, turnSpanPhrase(r.first, r.last)+" out of the window",
 			fmt.Sprintf("ctx %d%% → %d%%", r.was, r.now))
 	}
 	if len(parts) == 0 {
-		parts = append(parts, fmt.Sprintf("back to before turn %d", r.turn))
+		parts = append(parts, "back to "+turnPoint(r.turn))
 	}
 	row.Target = strings.Join(parts, " · ")
 	m.appendEntry(entry{kind: entrySystem, notice: &components.ActivityNotice{Act: row}})
 	// The frame's top rail says where the reader stands until the next turn
 	// makes it true by default.
 	if r.first > 0 {
-		m.rewoundTo = r.turn - 1
+		m.rewoundTo = r.turn
 	}
 }
 
@@ -557,15 +615,15 @@ func (m *Model) armRewindRestore(n int, turns []changeset.Turn, ret *rewindRetur
 		}
 		return
 	}
-	// The confirm names the turn the workspace is being returned to the far
-	// side of, which for a run of several is the first of them. It reads as
-	// an understatement where the run is long — the card that offered this
-	// has just said how many turns it covers, and the close row names the
-	// rewind rather than a turn — and it is where a wording for a run of
-	// turns would go if the confirm ever grew one.
+	// The confirm names the first turn being taken back, which for a run of
+	// several is the earliest of them. It reads as an understatement where
+	// the run is long — the card that offered this has just said how many
+	// turns it covers, and the close row names the rewind rather than a turn
+	// — and it is where a wording for a run of turns would go if the confirm
+	// ever grew one.
 	of := undoSubject{
 		since: "the rewind point",
-		note:  fmt.Sprintf("rewind to before turn %d", n),
+		note:  "rewind to " + turnPoint(n),
 		again: fmt.Sprintf("/rewind %d", n),
 	}
 	if ret == nil {
@@ -578,17 +636,17 @@ func (m *Model) armRewindRestore(n int, turns []changeset.Turn, ret *rewindRetur
 	m.armUndo(plan, of, folded.N, stateInput)
 }
 
-// rewindConversation truncates the conversation back to just before turn n
-// (1-based), preserving the abandoned tail as a branch, and returns the
-// message for the transcript. filesNote is what the message says about the
-// files, and is empty where a restore of them is about to be put to the user:
-// the card asks the question and a flat statement under it would answer it
-// first.
+// rewindConversation truncates the conversation back to the end of turn n
+// (0 being the start of the session), preserving the abandoned tail as a
+// branch, and returns the message for the transcript. filesNote is what the
+// message says about the files, and is empty where a restore of them is about
+// to be put to the user: the card asks the question and a flat statement under
+// it would answer it first.
 func (m *Model) rewindConversation(n int, filesNote string) string {
-	if n < 1 || n > len(m.checkpoints) {
-		return fmt.Sprintf("Usage: /rewind [1-%d]", len(m.checkpoints))
+	cp, ok := m.cutAt(n)
+	if !ok {
+		return m.rewindUsage()
 	}
-	cp := m.checkpoints[n-1]
 	msgs := m.agent.Messages()
 	if cp.index > len(msgs) {
 		return "Rewind failed: the checkpoint no longer matches the conversation."
@@ -609,17 +667,18 @@ func (m *Model) rewindConversation(n int, filesNote string) string {
 
 	// loadConversation rebuilds checkpoints from the messages alone; restore
 	// the live ones so their git snapshots survive the rewind.
-	kept := append([]checkpoint(nil), m.checkpoints[:n-1]...)
+	kept := append([]checkpoint(nil), m.checkpoints[:n]...)
 	m.loadConversation(full[:cp.index])
 	m.checkpoints = kept
 	// The rewound conversation is not the one the provider reported on.
 	m.contextTokens = 0
 	m.resetRounds()
 
-	lines := []string{
-		fmt.Sprintf("Rewound to before turn %d (%q).", n, cp.preview),
-		branchNote,
+	back := "Rewound to the start of the session."
+	if n > 0 {
+		back = fmt.Sprintf("Rewound to the end of turn %d (%q).", n, kept[n-1].preview)
 	}
+	lines := []string{back, branchNote}
 	if filesNote != "" {
 		lines = append(lines, filesNote)
 	}

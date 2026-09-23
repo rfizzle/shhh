@@ -332,7 +332,7 @@ func buildSlashCommands() []slashCommand {
 			idleOnly: "it writes files the running turn may be editing"},
 		{name: "/compact", desc: "Continue from a summary plus the most recent turns",
 			idleOnly: "it rewrites the conversation into a summary"},
-		{name: "/rewind", args: "[n]", desc: "Rewind to before a user turn — the conversation, the files, or both",
+		{name: "/rewind", args: "[n]", desc: "Rewind to the end of a turn — the conversation, the files, or both",
 			argSpecs: []argSpec{{dynamic: checkpointArgs}},
 			idleOnly: "it rewinds the conversation and can write files back"},
 		{name: "/branches", args: "[n|name]", desc: "Switch this session's branches (bare /branches picks)",

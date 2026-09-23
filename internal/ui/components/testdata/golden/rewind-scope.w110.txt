@@ -11,10 +11,10 @@
 
 ── layout ──────────────────────────────────────────────────
 · a run of turns · code, talk and both
-╭─ Rewind to before turn 5 ────────────────────────────────────────────────────────────────────────── ⚠ low ─╮
+╭─ Rewind to turn 5 ───────────────────────────────────────────────────────────────────────────────── ⚠ low ─╮
 │                                                                                                            │
-│ code      3 files restored +4 −30 — the reverse of turns 5–7; what a command changed was never recorded    │
-│ talk      turns 5–7 leave the window — ctx 62% → 41% · kept as a branch, /branches to switch back          │
+│ code      3 files restored +4 −30 — the reverse of turns 6–7; what a command changed was never recorded    │
+│ talk      turns 6–7 leave the window — ctx 62% → 41% · kept as a branch, /branches to switch back          │
 │ undo      yes — a rewind is a turn, and [u] takes it back                                                  │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
 │ [b] both — the usual meaning of going back · [c] code only · [t] talk only                                 │
@@ -22,7 +22,7 @@
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 · one turn · the same three answers
-╭─ Rewind to before turn 7 ────────────────────────────────────────────────────────────────────────── ⚠ low ─╮
+╭─ Rewind to turn 6 ───────────────────────────────────────────────────────────────────────────────── ⚠ low ─╮
 │                                                                                                            │
 │ code      1 file restored +0 −12 — the reverse of turn 7; what a command changed was never recorded        │
 │ talk      turn 7 leaves the window — ctx 62% → 58% · kept as a branch, /branches to switch back            │
@@ -34,10 +34,10 @@
 
 ── ansi ────────────────────────────────────────────────────
 · a run of turns · code, talk and both
-␛[38;5;214m╭─ ␛[m␛[1;97mRewind to before turn 5 ␛[m␛[38;5;241m──────────────────────────────────────────────────────────────────────────␛[m␛[38;5;214m ⚠ low ─╮␛[m
+␛[38;5;214m╭─ ␛[m␛[1;97mRewind to turn 5 ␛[m␛[38;5;241m─────────────────────────────────────────────────────────────────────────────────␛[m␛[38;5;214m ⚠ low ─╮␛[m
 ␛[38;5;214m│␛[m                                                                                                            ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;243mcode      ␛[m␛[38;5;252m3 files restored ␛[92m+4␛[m ␛[91m−30␛[m␛[m␛[38;5;245m — the reverse of turns 5–7; what a command changed was never recorded␛[m    ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;243mtalk      ␛[m␛[38;5;252mturns 5–7 leave the window␛[m␛[38;5;245m — ctx 62% → 41% · kept as a branch, /branches to switch back␛[m          ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;243mcode      ␛[m␛[38;5;252m3 files restored ␛[92m+4␛[m ␛[91m−30␛[m␛[m␛[38;5;245m — the reverse of turns 6–7; what a command changed was never recorded␛[m    ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;243mtalk      ␛[m␛[38;5;252mturns 6–7 leave the window␛[m␛[38;5;245m — ctx 62% → 41% · kept as a branch, /branches to switch back␛[m          ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mundo      ␛[m␛[92myes␛[m␛[38;5;245m — a rewind is a turn, and [u] takes it back␛[m                                                  ␛[38;5;214m│␛[m
 ␛[38;5;214m├────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;214m│␛[m ␛[94m[b]␛[m ␛[38;5;252mboth — the usual meaning of going back␛[m␛[38;5;241m · ␛[m␛[94m[c]␛[m ␛[38;5;252mcode only␛[m␛[38;5;241m · ␛[m␛[94m[t]␛[m ␛[38;5;252mtalk only␛[m                                 ␛[38;5;214m│␛[m
@@ -45,7 +45,7 @@
 ␛[38;5;214m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · one turn · the same three answers
-␛[38;5;214m╭─ ␛[m␛[1;97mRewind to before turn 7 ␛[m␛[38;5;241m──────────────────────────────────────────────────────────────────────────␛[m␛[38;5;214m ⚠ low ─╮␛[m
+␛[38;5;214m╭─ ␛[m␛[1;97mRewind to turn 6 ␛[m␛[38;5;241m─────────────────────────────────────────────────────────────────────────────────␛[m␛[38;5;214m ⚠ low ─╮␛[m
 ␛[38;5;214m│␛[m                                                                                                            ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mcode      ␛[m␛[38;5;252m1 file restored ␛[92m+0␛[m ␛[91m−12␛[m␛[m␛[38;5;245m — the reverse of turn 7; what a command changed was never recorded␛[m        ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mtalk      ␛[m␛[38;5;252mturn 7 leaves the window␛[m␛[38;5;245m — ctx 62% → 58% · kept as a branch, /branches to switch back␛[m            ␛[38;5;214m│␛[m

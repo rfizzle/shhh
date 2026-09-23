@@ -23,7 +23,7 @@ import (
 // whether any of it can be taken back.
 type RewindCard struct {
 	// Title names the point the session would return to, e.g. `Rewind to
-	// before turn 5`.
+	// turn 5`.
 	Title string
 	// Code is what a file restore would put back, and Talk what a
 	// conversation rewind would fold out of the window. Both are CardFields

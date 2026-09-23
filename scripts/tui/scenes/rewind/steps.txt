@@ -42,11 +42,12 @@ snap 07-moved "accounting moved to rounds.go"
 # turn number, its mutation mark and diffstat, and its age.
 keys "/rewind" Enter
 snap 08-picker "pick a turn to return to"
-# Down one row and take it: the scope card is what a taken row opens.
+# Down one row and take it: turn 2, whose end is where the session goes back
+# to, so turn 3 is what the scope card offers to take back.
 keys Down
 sleep 0.3
 keys Enter
-snap 09-scope "code only"
+snap 09-scope "Rewind to turn 2"
 # Both is the usual reading of going back. The file half is answered at the
 # undo confirm behind it, and the row waits for that answer.
 keys b
@@ -54,8 +55,8 @@ snap 10-confirm "Undo turn"
 keys y
 # One act, one row: the mutation rail, what came back, what left the window,
 # and what the window costs now. The frame's top rail says where the session
-# now stands.
-snap 11-row "out of the window"
+# now stands — the same turn the card named.
+snap 11-row "files back to turn 2"
 # The prompt has the keyboard, so the first cancel arms the pair and the
 # second takes it.
 keys C-c

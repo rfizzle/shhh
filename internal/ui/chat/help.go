@@ -220,9 +220,9 @@ Also [v] on a turn's changeset row. Nothing is applied.`,
 (not git). Asks first, names anything that changed since,
 and is itself recorded as a turn. Also [u] on the row.`,
 	"/compact": `Continue from a summary plus the most recent turns`,
-	"/rewind": `Rewind to before a user turn (bare /rewind picks interactively);
-the abandoned tail is kept as a branch. Conversation only —
-files on disk are not restored.`,
+	"/rewind": `Rewind to the end of turn [n], 0 being the start (bare
+/rewind picks interactively); the abandoned tail is kept as a
+branch, and a card asks whether the files come back too.`,
 	"/branches": `Switch this session's branches: [n] by number, [name] by
 name, bare opens a picker`,
 	"/save": `Save this chat`,

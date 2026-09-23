@@ -366,7 +366,7 @@ func branchPickModel(t *testing.T) Model {
 	m := newRewindModel(t).WithDB(rewindTestDB(t))
 	m = completeExchange(t, m, "first question", "answer one")
 	m = completeExchange(t, m, "second question", "answer two")
-	return sendText(t, m, "/rewind 2")
+	return sendText(t, m, "/rewind 1")
 }
 
 func TestBranchPick_BareBranchesOpensPickerAndSwitches(t *testing.T) {

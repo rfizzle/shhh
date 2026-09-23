@@ -10,10 +10,10 @@ import (
 
 func rewindCardFixture() RewindCard {
 	return RewindCard{
-		Title: "Rewind to before turn 5",
+		Title: "Rewind to turn 5",
 		Code: CardField{Label: "code", Value: "3 files restored " + DiffStat(4, 30),
-			Detail: "the reverse of turns 5–7; what a command changed was never recorded"},
-		Talk: CardField{Label: "talk", Value: "turns 5–7 leave the window",
+			Detail: "the reverse of turns 6–7; what a command changed was never recorded"},
+		Talk: CardField{Label: "talk", Value: "turns 6–7 leave the window",
 			Detail: "ctx 62% → 41% · kept as a branch, /branches to switch back"},
 		Undo: CardField{Label: "undo", Value: "yes", Tone: ToneSafe,
 			Detail: "a rewind is a turn, and [u] takes it back"},
@@ -49,7 +49,7 @@ func TestGolden_RewindScope(t *testing.T) {
 	captureBoundedGolden(t, "rewind-scope", "the rewind scope card", goldenWidths,
 		func(width int) []golden.Panel {
 			one := rewindCardFixture()
-			one.Title = "Rewind to before turn 7"
+			one.Title = "Rewind to turn 6"
 			one.Code = CardField{Label: "code", Value: "1 file restored " + DiffStat(0, 12),
 				Detail: "the reverse of turn 7; what a command changed was never recorded"}
 			one.Talk = CardField{Label: "talk", Value: "turn 7 leaves the window",

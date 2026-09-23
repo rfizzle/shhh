@@ -79,9 +79,9 @@ Commands:
                  proposes the corrections) · run [slug|--next] works an item
                  through its profile's run · sprint · status · stop
   /compact       Continue from a summary plus the most recent turns
-  /rewind [n]    Rewind to before a user turn (bare /rewind picks interactively);
-                 the abandoned tail is kept as a branch. Conversation only —
-                 files on disk are not restored.
+  /rewind [n]    Rewind to the end of turn [n], 0 being the start (bare
+                 /rewind picks interactively); the abandoned tail is kept as a
+                 branch, and a card asks whether the files come back too.
   /exit          Quit (also /quit, /q)
 
 Commands run while the agent is working — including while sub-agents are in
@@ -173,9 +173,9 @@ Commands:
                  (not git). Asks first, names anything that changed since,
                  and is itself recorded as a turn. Also [u] on the row.
   /compact       Continue from a summary plus the most recent turns
-  /rewind [n]    Rewind to before a user turn (bare /rewind picks interactively);
-                 the abandoned tail is kept as a branch. Conversation only —
-                 files on disk are not restored.
+  /rewind [n]    Rewind to the end of turn [n], 0 being the start (bare
+                 /rewind picks interactively); the abandoned tail is kept as a
+                 branch, and a card asks whether the files come back too.
   /exit          Quit (also /quit, /q)
 
 Commands run while the agent is working — including while sub-agents are in
@@ -255,9 +255,9 @@ Commands:
                  proposes the corrections) · run [slug|--next] works an item
                  through its profile's run · sprint · status · stop
   /compact       Continue from a summary plus the most recent turns
-  /rewind [n]    Rewind to before a user turn (bare /rewind picks interactively);
-                 the abandoned tail is kept as a branch. Conversation only —
-                 files on disk are not restored.
+  /rewind [n]    Rewind to the end of turn [n], 0 being the start (bare
+                 /rewind picks interactively); the abandoned tail is kept as a
+                 branch, and a card asks whether the files come back too.
   /exit          Quit (also /quit, /q)
 
 Commands run while the agent is working — including while sub-agents are in
@@ -349,9 +349,9 @@ Commands:
                  (not git). Asks first, names anything that changed since,
                  and is itself recorded as a turn. Also [u] on the row.
   /compact       Continue from a summary plus the most recent turns
-  /rewind [n]    Rewind to before a user turn (bare /rewind picks interactively);
-                 the abandoned tail is kept as a branch. Conversation only —
-                 files on disk are not restored.
+  /rewind [n]    Rewind to the end of turn [n], 0 being the start (bare
+                 /rewind picks interactively); the abandoned tail is kept as a
+                 branch, and a card asks whether the files come back too.
   /exit          Quit (also /quit, /q)
 
 Commands run while the agent is working — including while sub-agents are in
