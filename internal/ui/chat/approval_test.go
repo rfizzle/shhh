@@ -17,6 +17,7 @@ import (
 	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/digest"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/runner"
 	"github.com/rfizzle/shhh/internal/structural"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/tools"
@@ -210,7 +211,7 @@ func TestGatedTool_QueueMixedWithExec(t *testing.T) {
 	m := gatedModel(t, executor, map[string]GatedPreviewFunc{
 		"write_file": writeFilePreview(""),
 	})
-	m = m.WithRunner(func(ctx context.Context, cmd string) (string, int) { return "ran", 0 })
+	m = m.WithRunner(legacyRunner(func(ctx context.Context, cmd string) (string, int) { return "ran", 0 }))
 
 	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
 		{ID: "call_x", Name: "execute_command", Arguments: `{"command":"echo hi"}`},
@@ -787,6 +788,30 @@ func TestApprovalCard_DryRunRunsTheDerivedFormAndDecidesNothing(t *testing.T) {
 	}
 }
 
+// A derived form that never started says why the way the real command's row
+// would, on its row and on the screen's title, and never as a negative exit.
+func TestApprovalCard_DryRunThatDidNotStartKeepsItsCategory(t *testing.T) {
+	var bare, contained []string
+	m := containedModel(t, &bare, &contained, "contained: bwrap")
+	m.containment.Run = func(context.Context, string) tools.ExecResult {
+		return runner.WrapFailure(errors.New("wrap unsupported: bwrap vanished"))
+	}
+	m = execApproval(t, m, "rsync --delete src/ dst/")
+	updated, cmd := m.Update(tea.KeyPressMsg{Code: 't', Text: "t"})
+	m = updated.(Model)
+	updated, _ = m.Update(drainDryRun(t, cmd))
+	m = updated.(Model)
+
+	view := m.View().Content
+	if !strings.Contains(view, "did not start · ") || strings.Contains(view, "exit -1") {
+		t.Fatalf("the screen should name how the form ended, never as an exit status:\n%s", view)
+	}
+	last := m.transcript[len(m.transcript)-1]
+	if last.commandResult.Prereq == "" {
+		t.Fatalf("the dry run's row should keep the prerequisite, got %+v", last.commandResult)
+	}
+}
+
 func TestApprovalCard_DryRunNotOfferedWithoutAHarmlessForm(t *testing.T) {
 	var bare, contained []string
 	m := containedModel(t, &bare, &contained, "contained: bwrap")
@@ -847,7 +872,7 @@ func runOnce(t *testing.T, m Model, command string) (Model, string) {
 // detector reaches it only because the session hands the model its own.
 func TestApproval_ARepeatedCommandSaysSo(t *testing.T) {
 	m := gatedModel(t, nil, nil).
-		WithRunner(func(context.Context, string) (string, int) { return "FAIL\tinternal/calc", 1 }).
+		WithRunner(legacyRunner(func(context.Context, string) (string, int) { return "FAIL\tinternal/calc", 1 })).
 		WithRepeats(agent.NewRepeatDetector())
 
 	m, first := runOnce(t, m, "go test ./internal/calc")
@@ -869,7 +894,7 @@ func TestApproval_ARepeatedCommandSaysSo(t *testing.T) {
 // just did.
 func TestApproval_FailedCommandIsAnErrorResultForEveryConsumer(t *testing.T) {
 	m := gatedModel(t, nil, nil).
-		WithRunner(func(context.Context, string) (string, int) { return "compiler: undefined symbol", 1 }).
+		WithRunner(legacyRunner(func(context.Context, string) (string, int) { return "compiler: undefined symbol", 1 })).
 		WithRepeats(agent.NewRepeatDetector())
 
 	_, result := runOnce(t, m, "go test ./internal/chat")
@@ -887,7 +912,7 @@ func TestApproval_FailedCommandIsAnErrorResultForEveryConsumer(t *testing.T) {
 func TestApproval_ALocalRunIsNeverARepeat(t *testing.T) {
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
 	m := New(msgs, mockStream).
-		WithRunner(func(context.Context, string) (string, int) { return "ok", 0 }).
+		WithRunner(legacyRunner(func(context.Context, string) (string, int) { return "ok", 0 })).
 		WithRepeats(agent.NewRepeatDetector())
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)

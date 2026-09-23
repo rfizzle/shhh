@@ -1437,9 +1437,9 @@ func runCapableModel(response string) Model {
 		{Role: provider.RoleUser, Content: "how?"},
 		{Role: provider.RoleAssistant, Content: response},
 	}
-	m := New(msgs, mockStream).WithRunner(func(ctx context.Context, cmd string) (string, int) {
+	m := New(msgs, mockStream).WithRunner(legacyRunner(func(ctx context.Context, cmd string) (string, int) {
 		return "ran: " + cmd, 0
-	})
+	}))
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	return updated.(Model)
 }
@@ -1614,9 +1614,9 @@ func TestExecTool_ApprovalFlow(t *testing.T) {
 		{Role: provider.RoleSystem, Content: "sys"},
 		{Role: provider.RoleUser, Content: "create a file"},
 	}
-	m := New(msgs, mockStream).WithRunner(func(ctx context.Context, cmd string) (string, int) {
+	m := New(msgs, mockStream).WithRunner(legacyRunner(func(ctx context.Context, cmd string) (string, int) {
 		return "done: " + cmd, 0
-	})
+	}))
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
 	m.state = stateStreaming
@@ -1676,10 +1676,10 @@ func TestExecTool_Declined(t *testing.T) {
 		{Role: provider.RoleUser, Content: "wipe it"},
 	}
 	m := New(msgs, mockStream).WithWorkspace(t.TempDir()).
-		WithRunner(func(ctx context.Context, cmd string) (string, int) {
+		WithRunner(legacyRunner(func(ctx context.Context, cmd string) (string, int) {
 			t.Fatal("runner must not be called on decline")
 			return "", 0
-		})
+		}))
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
 	m.state = stateStreaming
@@ -1711,7 +1711,7 @@ func TestExecTool_MixedWithReadOnly(t *testing.T) {
 		{Role: provider.RoleUser, Content: "check then fix"},
 	}
 	m := New(msgs, mockStream).WithToolExecutor(executor).
-		WithRunner(func(ctx context.Context, cmd string) (string, int) { return "ok", 0 })
+		WithRunner(legacyRunner(func(ctx context.Context, cmd string) (string, int) { return "ok", 0 }))
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
 	m.state = stateStreaming
@@ -1751,7 +1751,7 @@ func TestExecTool_InvalidArgsSkipped(t *testing.T) {
 		{Role: provider.RoleSystem, Content: "sys"},
 		{Role: provider.RoleUser, Content: "go"},
 	}
-	m := New(msgs, mockStream).WithRunner(func(ctx context.Context, cmd string) (string, int) { return "", 0 })
+	m := New(msgs, mockStream).WithRunner(legacyRunner(func(ctx context.Context, cmd string) (string, int) { return "", 0 }))
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
 	m.state = stateStreaming
@@ -2201,7 +2201,7 @@ func TestToolLoop_RoundCapAfterApprovedCommand(t *testing.T) {
 		{Role: provider.RoleUser, Content: "list files"},
 	}
 	m := New(msgs, mockStream).
-		WithRunner(func(ctx context.Context, cmd string) (string, int) { return "ok", 0 }).
+		WithRunner(legacyRunner(func(ctx context.Context, cmd string) (string, int) { return "ok", 0 })).
 		WithMaxToolRounds(1)
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)

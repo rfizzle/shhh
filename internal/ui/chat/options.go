@@ -10,7 +10,6 @@ package chat
 // (docs/architecture.md#one-agent-several-front-ends).
 
 import (
-	"context"
 	"path/filepath"
 
 	"github.com/rfizzle/shhh/internal/agent"
@@ -101,7 +100,7 @@ func (m Model) WithRepeats(d *agent.RepeatDetector) Model {
 }
 
 // WithRunner enables /run with the given command executor.
-func (m Model) WithRunner(run func(context.Context, string) (string, int)) Model {
+func (m Model) WithRunner(run RunFunc) Model {
 	m.runFn = run
 	return m
 }

@@ -393,6 +393,43 @@ is worse than a tool with none, because it is believed. Where containment is
 unavailable, the honest answer changes the user's behaviour; a reassuring one
 does not.
 
+## A command that never started names what it needed
+
+A command can fail before it is a process at all, for a reason that has
+nothing to do with the line the model wrote. There are five such reasons,
+and they are a closed set:
+
+| Category | What was missing | Recorded as |
+|---|---|---|
+| working directory | the directory the command was to run in — usually a worktree or checkout removed under a running session | `harness-working-directory` |
+| execution shell | the shell every command is run through | `harness-execution-shell` |
+| containment | the mechanism that was to contain it, or a wrap it could not build; the command is never run bare instead | `harness-containment` |
+| permission | the operating system's permission to run it | `harness-permission` |
+| spawn | anything else the spawn refused, so that the four above never have to guess | `harness-spawn` |
+
+The category is decided once, where the failure is still an error rather than
+text, and it travels with the result from there. The command's row names it
+in the outcome field — `did not start · working directory` — in words rather
+than in colour alone, with a dash where the duration would be because nothing
+ran. The operating system's own words and the one thing still possible are
+folded beneath the row. The model reads the same category on its result's
+first line, and the session record files the call under the class in the
+right-hand column, so a run of them in the record says which part of the
+machine was wrong rather than only that something was.
+
+The working directory is asked about before anything else, including before
+blaming containment: the policy a contained command runs under starts from
+the session's own directory, so a checkout removed under a contained session
+fails there, and a reader told the mechanism was missing would go looking for
+a fault in something that is fine.
+
+A command that ran is never one of these. A shell answering `command not
+found` for a program that is not installed ran perfectly and printed a fact
+about the line, and a command whose ending nobody could read — it started,
+printed, and the wait for it failed — says `did not complete` on its row
+rather than `stopped`, which is the reader's own cancel, or `did not start`,
+which its output would contradict.
+
 ## Related
 
 - [`approvals-and-safety.md`](approvals-and-safety.md) — deciding whether it runs

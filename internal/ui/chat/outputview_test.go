@@ -186,7 +186,7 @@ func TestApprovalCard_ScrollResetsWhenTheCardChanges(t *testing.T) {
 		{Role: provider.RoleSystem, Content: "sys"},
 		{Role: provider.RoleUser, Content: "run it"},
 	}
-	m := New(msgs, mockStream).WithRunner(func(_ context.Context, _ string) (string, int) { return "", 0 })
+	m := New(msgs, mockStream).WithRunner(legacyRunner(func(_ context.Context, _ string) (string, int) { return "", 0 }))
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 100, Height: 30})
 	m = updated.(Model)
 	m.state = stateStreaming
@@ -205,10 +205,10 @@ func TestApprovalCard_FullViewForCommands(t *testing.T) {
 		{Role: provider.RoleSystem, Content: "sys"},
 		{Role: provider.RoleUser, Content: "run it"},
 	}
-	m := New(msgs, mockStream).WithRunner(func(_ context.Context, cmd string) (string, int) {
+	m := New(msgs, mockStream).WithRunner(legacyRunner(func(_ context.Context, cmd string) (string, int) {
 		ran = append(ran, cmd)
 		return "", 0
-	})
+	}))
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 100, Height: 30})
 	m = updated.(Model)
 	m.state = stateStreaming

@@ -184,10 +184,10 @@ func heldCommandProgram(t *testing.T, ran *[]string) *teatest.TestModel {
 		{text: "and that is done"},
 	}}
 	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, streamOf(p)).
-		WithRunner(func(_ context.Context, cmd string) (string, int) {
+		WithRunner(legacyRunner(func(_ context.Context, cmd string) (string, int) {
 			*ran = append(*ran, cmd)
 			return "hi", 0
-		})
+		}))
 	tm := runProgram(t, m)
 
 	tm.Type("run it")

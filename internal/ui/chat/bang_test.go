@@ -109,7 +109,7 @@ func TestBang_MidSentenceIsALetter(t *testing.T) {
 
 func TestBang_RefusedWhileWorking(t *testing.T) {
 	m := steeringModel(t, mockStream)
-	m.runFn = func(ctx context.Context, cmd string) (string, int) { return "", 0 }
+	m.runFn = legacyRunner(func(ctx context.Context, cmd string) (string, int) { return "", 0 })
 
 	m = sendText(t, m, "!ls")
 	if m.state != stateStreaming {

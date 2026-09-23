@@ -27,10 +27,10 @@ func amendModel(t *testing.T, command string, ran *[]string) Model {
 	t.Helper()
 	m := gatedModel(t, nil, nil).
 		WithWorkspace(t.TempDir()).
-		WithRunner(func(_ context.Context, cmd string) (string, int) {
+		WithRunner(legacyRunner(func(_ context.Context, cmd string) (string, int) {
 			*ran = append(*ran, cmd)
 			return "ok", 0
-		})
+		}))
 	return execApproval(t, m, command)
 }
 
@@ -194,10 +194,10 @@ func TestAmend_ALineThatLeavesTheScopeIsPutBackToTheReader(t *testing.T) {
 	}
 	var ran []string
 	m := gatedModel(t, nil, nil).WithWorkspace(root).WithScope(sc).
-		WithRunner(func(_ context.Context, cmd string) (string, int) {
+		WithRunner(legacyRunner(func(_ context.Context, cmd string) (string, int) {
 			ran = append(ran, cmd)
 			return "ok", 0
-		})
+		}))
 	m = execApproval(t, m, "echo hi > "+filepath.Join(root, "one.txt"))
 	if m.pendingScope.any() {
 		t.Fatalf("the fixture wants a line inside the scope, got %v", m.pendingScope.dirs)
@@ -277,10 +277,10 @@ func TestAmend_AHeavierLineDrawsTheHeavierCard(t *testing.T) {
 func TestAmend_TheBatchMarkIsTakenAgainstTheLineTheReaderWrote(t *testing.T) {
 	var ran []string
 	m := gatedModel(t, nil, nil).WithWorkspace(t.TempDir()).
-		WithRunner(func(_ context.Context, cmd string) (string, int) {
+		WithRunner(legacyRunner(func(_ context.Context, cmd string) (string, int) {
 			ran = append(ran, cmd)
 			return "ok", 0
-		})
+		}))
 	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
 		{ID: "call_a", Name: tools.ExecCommandName, Arguments: `{"command":"echo one"}`},
 		{ID: "call_b", Name: tools.ExecCommandName, Arguments: `{"command":"echo two"}`},

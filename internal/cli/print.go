@@ -882,7 +882,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 			return err
 		}
 		if containment.Run != nil {
-			run = containment.Run
+			run = runner.LegacyRunner(containment.Run)
 			sandboxProfile = containment.Profile
 		}
 		containRefusal = containment.Refusal

@@ -1062,8 +1062,8 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		// and undo, git snapshots behind rewind, and the start screen's
 		// survey of the checkout. A conversation has no act to account for.
 		model = model.
-			WithRunner(scrubRunner(session.vault, runner.RunCapture)).
-			WithTailRunner(scrubTailRunner(session.vault, runner.RunCaptureTail)).
+			WithRunner(scrubResultRunner(session.vault, runner.RunCaptureResult)).
+			WithTailRunner(scrubTailRunner(session.vault, runner.RunCaptureTailResult)).
 			WithContainment(scrubContainment(session.vault, containment)).
 			WithCommandAllowlist(cfg.Behavior.CommandAllowlist).
 			WithCommandDenylist(cfg.Behavior.CommandDenylist).

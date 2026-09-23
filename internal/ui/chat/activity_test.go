@@ -393,7 +393,7 @@ func TestActivityCounts_CountsWhatWasFound(t *testing.T) {
 // (docs/interface/principles.md#two-denials-are-not-one-denial).
 func TestActivityRow_ACardYouAnsweredNamesYou(t *testing.T) {
 	m := gatedModel(t, nil, nil).
-		WithRunner(func(context.Context, string) (string, int) { return "ok", 0 })
+		WithRunner(legacyRunner(func(context.Context, string) (string, int) { return "ok", 0 }))
 	m, _ = runOnce(t, m, "go test ./internal/agent/...")
 
 	answered := lastCommandRow(t, m, 110)
@@ -547,15 +547,15 @@ func TestRunningCommandRow_LiveTail(t *testing.T) {
 func TestExecuteRun_FeedsTailRunner(t *testing.T) {
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
 	m := New(msgs, mockStream).
-		WithRunner(func(ctx context.Context, cmd string) (string, int) {
+		WithRunner(legacyRunner(func(ctx context.Context, cmd string) (string, int) {
 			t.Fatal("the tail runner should take precedence")
 			return "", 0
-		}).
-		WithTailRunner(func(ctx context.Context, cmd string, onLine func(string)) (string, int) {
+		})).
+		WithTailRunner(legacyTailRunner(func(ctx context.Context, cmd string, onLine func(string)) (string, int) {
 			onLine("first line")
 			onLine("second line")
 			return "first line\nsecond line", 0
-		})
+		}))
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
 	m.pendingRun = "echo hi"
@@ -1178,5 +1178,22 @@ func TestActivityRow_TheGateRowCountsItsChecks(t *testing.T) {
 		toolArgs: `{"action":"run"}`, toolResult: fell.Format(fell.Fingerprint)})
 	if want := "quality gate · fast · 1 check"; row.Target != want {
 		t.Errorf("gate row that named no suite: target = %q, want %q", row.Target, want)
+	}
+}
+
+// legacyRunner lets a test state a runner as the output and status it
+// prints, which is all most of them care about: the session's runner seam
+// takes the typed result, and a status of -1 reads as a command that never
+// started, as it did before the seam carried the category.
+func legacyRunner(run func(context.Context, string) (string, int)) RunFunc {
+	return func(ctx context.Context, command string) tools.ExecResult {
+		return tools.InferExecResult(run(ctx, command))
+	}
+}
+
+// legacyTailRunner is legacyRunner for the tailed form.
+func legacyTailRunner(run func(context.Context, string, func(string)) (string, int)) TailFunc {
+	return func(ctx context.Context, command string, onLine func(string)) tools.ExecResult {
+		return tools.InferExecResult(run(ctx, command, onLine))
 	}
 }

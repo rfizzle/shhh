@@ -72,6 +72,42 @@ func startFailure(dir string, kind spawnKind, err error) tools.ExecResult {
 	}
 }
 
+// WrapFailure is the result of a contained command whose wrap could not be
+// built, so nothing was spawned at all. It is a spawn failure one step
+// earlier — the mechanism in front of the command was never reached — and it
+// is classified here beside the spawn's own for the reason that one is: the
+// category is decided once, where the failure is still an error and not yet
+// text.
+//
+// The working directory is asked about first, as classifyStart asks about
+// it: the policy a wrap is built from starts at the process's working
+// directory, so a checkout removed under the session fails the wrap rather
+// than the spawn, and a reader told the containment was missing would go
+// looking for a mechanism that is perfectly fine. It is asked whether the
+// directory is still there and not only whether it can be named, because a
+// platform can go on naming one that has been removed. Everything else a wrap can
+// refuse is the containment's own — a mechanism gone, or a policy it cannot
+// express — and a contained command is never run bare instead.
+// See docs/capabilities/containment.md#a-command-that-never-started-names-what-it-needed.
+func WrapFailure(err error) tools.ExecResult {
+	prereq := tools.PrereqContainment
+	if wd, cwdErr := getwd(); cwdErr != nil || !isDir(wd) {
+		prereq = tools.PrereqWorkingDir
+	}
+	return tools.ExecResult{
+		Output:   tools.ExecPrereqReport(prereq, errorText(err)),
+		ExitCode: -1,
+		Outcome:  tools.ExecDidNotStart,
+		Prereq:   prereq,
+	}
+}
+
+// getwd is how WrapFailure asks after the working directory. It is a
+// variable because a test that removed its own working directory to find out
+// would have to change into one first, and a test here never changes
+// directory.
+var getwd = os.Getwd
+
 // classifyStart names the prerequisite behind a spawn error.
 //
 // The working directory is asked about rather than inferred, and it is asked

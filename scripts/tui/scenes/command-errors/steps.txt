@@ -19,7 +19,28 @@ snap 09-running "running…"
 keys C-c
 snap 10-stopped "stopped"
 snap 11-answered "The stopped command is recorded"
+# Two commands that never start. The checkout the session stands in is
+# removed under it, so the next command has no working directory; then a
+# bash whose interpreter is gone is put first on PATH, so the reader's own
+# command has no execution shell. Each row names its category in the outcome
+# field, with the operating system's words and the next action beneath it.
+keys "clear the checkout away" Enter
+snap 12-remove-card "run it once"
+keys y
+snap 13-removed "The checkout is removed"
+# A read-only command is waved through, so there is no card before it.
+keys "list what is left" Enter
+snap 14-no-working-directory "did not start · working directory"
+snap 15-no-working-directory-answer "The command could not start"
+keys "!cp ~/spare/bash ~/bin/bash" Enter
+snap 16-shell-card "run it once"
+keys y
+snap 17-shell-replaced "cp ~/spare/bash"
+keys "!echo hi" Enter
+snap 18-echo-card "run it once"
+keys y
+snap 19-no-execution-shell "did not start · execution shell"
 keys C-c
-snap 12-quit-armed "again quits"
+snap 20-quit-armed "again quits"
 keys C-c
-snap 13-exit "that is everything the screen was holding"
+snap 21-exit "that is everything the screen was holding"

@@ -72,10 +72,17 @@ func parseVerbosity(s string) (verbosity, error) {
 	return verbosityNormal, fmt.Errorf("unknown verbosity %q (low, normal, high)", s)
 }
 
+// RunFunc runs one command line and answers with how it ended. It is the
+// typed result rather than an output and a status so that a command that
+// never started reaches the row with the prerequisite it was missing
+// (tools.ExecPrereq) instead of an exit code of -1 and the category composed
+// into its text.
+type RunFunc func(ctx context.Context, command string) tools.ExecResult
+
 // TailFunc runs a command like the plain runner while reporting each
 // completed output line, so the row can show a live tail. onLine may be
 // called from other goroutines.
-type TailFunc func(ctx context.Context, command string, onLine func(string)) (string, int)
+type TailFunc func(ctx context.Context, command string, onLine func(string)) tools.ExecResult
 
 // WithTailRunner sets the tail-capable runner used for assistant commands and
 // /run; without one, commands run with no live tail.
@@ -411,6 +418,27 @@ func approvalAccount(req *approvalRequest) string {
 	return components.ApprovedBy(decidedByYou)
 }
 
+// prereqWord is a harness prerequisite as the command row names it: the
+// category in the reader's words, after `did not start ·`. The codes are the
+// record's and the event stream's spelling (tools.ExecPrereq); these are the
+// same five, spaced for a person. An unclassified failure has none, and the
+// row then says only that the command did not start.
+func prereqWord(p tools.ExecPrereq) string {
+	switch p {
+	case tools.PrereqWorkingDir:
+		return "working directory"
+	case tools.PrereqShell:
+		return "execution shell"
+	case tools.PrereqContainment:
+		return "containment"
+	case tools.PrereqPermission:
+		return "permission"
+	case tools.PrereqSpawn:
+		return "spawn"
+	}
+	return ""
+}
+
 // commandEnd is how a command ended where its exit code cannot say: the word
 // from the outcome vocabulary, and the number that qualifies it. It is empty
 // on every command that exited on its own, which is nearly all of them.
@@ -526,14 +554,35 @@ func (m Model) activityRowDetail(e entry, stepDetail bool, width int) components
 		row.Kind = components.ActivityCommand
 		row.Verb = "run"
 		row.Target = firstLine(e.text)
-		result := e.commandResult
-		if result.Outcome == "" {
-			result = tools.InferExecResult(e.toolResult, e.exitCode)
+		ended := e.commandResult
+		if ended.Outcome == "" {
+			ended = tools.InferExecResult(e.toolResult, e.exitCode)
 		}
 		switch {
-		case result.Outcome == tools.ExecDidNotStart:
+		case ended.Outcome == tools.ExecDidNotStart:
+			// Nothing ran, so the row says which prerequisite was missing in
+			// the outcome field itself — a word, not only the del the row is
+			// drawn in — and a dash where the duration would be. The
+			// operating system's words and the one thing still possible are
+			// the body, wrapped because the second half is a sentence
+			// (docs/interface/principles.md#fold-never-hide).
+			// See docs/capabilities/containment.md#a-command-that-never-started-names-what-it-needed.
 			row.State = components.ActivityFailed
 			row.Outcome = components.OutcomeDidNotStart
+			if word := prereqWord(ended.Prereq); word != "" {
+				row.Outcome += " · " + word
+			}
+			row.Duration = components.NoDuration
+			if width > 0 {
+				row.Detail = m.detailLines(result, width)
+				result = ""
+			}
+		case ended.Outcome == tools.ExecDidNotComplete:
+			// It ran and nobody could read how it ended. Not `stopped`,
+			// which is the reader's own cancel, and not `killed`, which
+			// would name a signal nobody saw.
+			row.State = components.ActivityFailed
+			row.Outcome = components.OutcomeDidNotComplete
 		case e.end.outcome == components.OutcomeStopped:
 			// The reader stopped it themselves, so the row is as quiet as
 			// their refusal is: ⊘ and dim, not ✗ and del. Nothing broke —

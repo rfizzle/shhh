@@ -614,7 +614,7 @@ type Model struct {
 	db               *storage.DB
 	persistenceError string
 	copyFn           func(string) clipboard.Result
-	runFn            func(context.Context, string) (string, int)
+	runFn            RunFunc
 	switchFn         func(string)
 	// newSession is the half of a session boundary that lives outside this
 	// model: the record closed and reopened, and the system prompt built

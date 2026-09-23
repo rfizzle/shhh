@@ -8,6 +8,8 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/tools"
+	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
 // containedModel is a session with both a plain runner and a containment
@@ -19,15 +21,15 @@ func containedModel(t *testing.T, bare, contained *[]string, status string) Mode
 		{Role: provider.RoleUser, Content: "run it"},
 	}
 	m := New(msgs, mockStream).
-		WithRunner(func(ctx context.Context, cmd string) (string, int) {
+		WithRunner(legacyRunner(func(ctx context.Context, cmd string) (string, int) {
 			*bare = append(*bare, cmd)
 			return "bare", 0
-		}).
+		})).
 		WithContainment(Containment{
-			Run: func(ctx context.Context, cmd string) (string, int) {
+			Run: legacyRunner(func(ctx context.Context, cmd string) (string, int) {
 				*contained = append(*contained, cmd)
 				return "contained", 0
-			},
+			}),
 			Status:    status,
 			Mechanism: "bwrap",
 			Profile:   "workspace",
@@ -80,10 +82,10 @@ func TestConfirmPromptShowsUnconfinedState(t *testing.T) {
 		{Role: provider.RoleUser, Content: "run it"},
 	}
 	m := New(msgs, mockStream).
-		WithRunner(func(ctx context.Context, cmd string) (string, int) {
+		WithRunner(legacyRunner(func(ctx context.Context, cmd string) (string, int) {
 			bare = append(bare, cmd)
 			return "bare", 0
-		}).
+		})).
 		WithContainment(Containment{
 			Status:  "unconfined — bubblewrap (bwrap) not found on PATH",
 			Detail:  "bubblewrap (bwrap) not found on PATH",
@@ -274,10 +276,10 @@ func TestRequiredContainmentRefusesWithoutACard(t *testing.T) {
 		{Role: provider.RoleSystem, Content: "sys"},
 		{Role: provider.RoleUser, Content: "run it"},
 	}, mockStream).
-		WithRunner(func(ctx context.Context, cmd string) (string, int) {
+		WithRunner(legacyRunner(func(ctx context.Context, cmd string) (string, int) {
 			bare = append(bare, cmd)
 			return "bare", 0
-		}).
+		})).
 		WithContainment(Containment{
 			Status:  "unconfined — bubblewrap (bwrap) not found on PATH",
 			Detail:  "bubblewrap (bwrap) not found on PATH",
@@ -363,10 +365,10 @@ func TestContainmentStatusWithoutTheKnob(t *testing.T) {
 func TestRequiredContainmentNeverRefusesTheUsersOwnCommand(t *testing.T) {
 	var bare []string
 	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).
-		WithRunner(func(ctx context.Context, cmd string) (string, int) {
+		WithRunner(legacyRunner(func(ctx context.Context, cmd string) (string, int) {
 			bare = append(bare, cmd)
 			return "bare", 0
-		}).
+		})).
 		WithContainment(Containment{
 			Status:  "unconfined — bubblewrap (bwrap) not found on PATH",
 			Detail:  "bubblewrap (bwrap) not found on PATH",
@@ -385,5 +387,53 @@ func TestRequiredContainmentNeverRefusesTheUsersOwnCommand(t *testing.T) {
 	drainCmdDone(t, m, cmd)
 	if len(bare) != 1 || bare[0] != "echo mine" {
 		t.Fatalf("/run is never contained and never refused, got %v", bare)
+	}
+}
+
+// A contained command whose wrap could not be built reaches the row and the
+// model with its category, not as an exit status of -1 with the category
+// composed into its text
+// (docs/capabilities/containment.md#a-command-that-never-started-names-what-it-needed).
+func TestAContainmentThatWouldNotWrapKeepsItsCategory(t *testing.T) {
+	var bare, contained []string
+	m := containedModel(t, &bare, &contained, "contained: bwrap")
+	report := tools.ExecPrereqReport(tools.PrereqContainment, "wrap unsupported: bwrap vanished")
+	m.containment.Run = func(context.Context, string) tools.ExecResult {
+		return tools.ExecResult{Output: report, ExitCode: -1, Outcome: tools.ExecDidNotStart, Prereq: tools.PrereqContainment}
+	}
+	m = runExecApproval(t, m)
+	updated, cmd := m.Update(tea.KeyPressMsg{Code: 'y', Text: "y"})
+	m = updated.(Model)
+	updated, _ = m.Update(drainCmdDone(t, m, cmd))
+	m = updated.(Model)
+
+	var row components.ActivityRow
+	for _, e := range m.transcript {
+		if e.kind == entryCommand {
+			row = m.activityRowDetail(e, false, 100)
+		}
+	}
+	if row.Outcome != "did not start · containment" || row.Duration != components.NoDuration {
+		t.Fatalf("the row should name the category and no duration, got outcome %q duration %q", row.Outcome, row.Duration)
+	}
+	if body := strings.Join(row.Detail, "\n"); !strings.Contains(body, "bwrap vanished") || !strings.Contains(body, "shhh doctor") {
+		t.Fatalf("the body should carry the operating system's words and the next action:\n%s", body)
+	}
+	last := m.Messages()[len(m.Messages())-1]
+	if tools.ExecPrereqOf(last.Content) != tools.PrereqContainment ||
+		!strings.HasPrefix(last.Content, "error: command did not start: containment unavailable") {
+		t.Fatalf("the model should read the category on the status line, got %q", last.Content)
+	}
+}
+
+// A command that ran and whose ending nobody could read has its own word; it
+// is neither the reader's `stopped` nor a `killed` naming a signal nobody saw.
+func TestACommandWhoseEndingNobodyReadSaysSo(t *testing.T) {
+	m := frameModel(t, 110, 40)
+	row := m.activityRowFor(entry{kind: entryCommand, text: "make", exitCode: -1,
+		toolResult: "wait: read |0: file already closed", end: commandEnd{outcome: components.OutcomeKilled},
+		commandResult: tools.ExecResult{ExitCode: -1, Outcome: tools.ExecDidNotComplete}})
+	if row.Outcome != components.OutcomeDidNotComplete || !row.Failed() {
+		t.Fatalf("got outcome %q failed %v", row.Outcome, row.Failed())
 	}
 }

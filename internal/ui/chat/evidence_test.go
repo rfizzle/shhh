@@ -49,7 +49,7 @@ func TestEvidence_UserRunNotReduced(t *testing.T) {
 		{Role: provider.RoleAssistant, Content: "```\necho hi\n```"},
 	}
 	m := New(msgs, mockStream).
-		WithRunner(func(ctx context.Context, cmd string) (string, int) { return "ok", 0 }).
+		WithRunner(legacyRunner(func(ctx context.Context, cmd string) (string, int) { return "ok", 0 })).
 		WithEvidence(Evidence{Reduce: markerReduce})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)

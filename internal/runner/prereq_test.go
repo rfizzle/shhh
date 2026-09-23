@@ -143,3 +143,41 @@ func TestAWorkingDirectoryThatIsAFileIsAWorkingDirectoryFailure(t *testing.T) {
 		t.Fatalf("prereq = %q, want %q; output:\n%s", got.Prereq, tools.PrereqWorkingDir, got.Output)
 	}
 }
+
+// A wrap that could not be built is a command that never started: the
+// containment's own failure, unless what failed under it was the working
+// directory the policy starts from, which is a checkout removed under the
+// session and not a missing mechanism. The pair a legacy caller reads keeps
+// the category in its text.
+func TestAWrapFailureIsClassifiedLikeASpawn(t *testing.T) {
+	restore := getwd
+	t.Cleanup(func() { getwd = restore })
+
+	here := t.TempDir()
+	getwd = func() (string, error) { return here, nil }
+	contained := WrapFailure(errors.New("wrap unsupported: bwrap vanished"))
+	if contained.Outcome != tools.ExecDidNotStart || contained.Prereq != tools.PrereqContainment || contained.ExitCode != -1 {
+		t.Fatalf("got %+v, want a containment failure that did not start", contained)
+	}
+	if !strings.Contains(contained.Output, "bwrap vanished") {
+		t.Fatalf("the operating system's words should be kept:\n%s", contained.Output)
+	}
+
+	getwd = func() (string, error) { return "", errors.New("getwd: no such file or directory") }
+	gone := WrapFailure(errors.New("getwd: no such file or directory"))
+	if gone.Prereq != tools.PrereqWorkingDir {
+		t.Fatalf("prereq = %q, want %q", gone.Prereq, tools.PrereqWorkingDir)
+	}
+	// A directory the platform still names after it was removed is gone too.
+	removed := filepath.Join(here, "removed-checkout")
+	getwd = func() (string, error) { return removed, nil }
+	if got := WrapFailure(errors.New("cannot resolve workspace")); got.Prereq != tools.PrereqWorkingDir {
+		t.Fatalf("prereq = %q, want %q", got.Prereq, tools.PrereqWorkingDir)
+	}
+
+	out, code := LegacyRunner(func(context.Context, string) tools.ExecResult { return contained })(context.Background(), "x")
+	if code != -1 || !strings.HasPrefix(out, "error: containment unavailable: ") ||
+		tools.ExecPrereqOf("error: command did not start\noutput:\n"+out) != tools.PrereqContainment {
+		t.Fatalf("the pair should carry the category in its text, got %d %q", code, out)
+	}
+}

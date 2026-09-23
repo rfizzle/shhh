@@ -51,10 +51,10 @@ func TestAllowlistMatches(t *testing.T) {
 func execModel(t *testing.T, ran *[]string) Model {
 	t.Helper()
 	m := gatedModel(t, nil, nil)
-	return m.WithRunner(func(ctx context.Context, cmd string) (string, int) {
+	return m.WithRunner(legacyRunner(func(ctx context.Context, cmd string) (string, int) {
 		*ran = append(*ran, cmd)
 		return "ok", 0
-	})
+	}))
 }
 
 // driveCmdDone extracts the cmdDoneMsg produced by an exec approval cmd.

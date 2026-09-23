@@ -16,6 +16,7 @@ import (
 	"github.com/rfizzle/shhh/internal/runner"
 	"github.com/rfizzle/shhh/internal/sandbox"
 	"github.com/rfizzle/shhh/internal/scope"
+	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/chat"
 )
 
@@ -178,19 +179,24 @@ func buildContainment(cfg config.Config, sc *scope.Scope, sup *process.Superviso
 		})
 	}
 	c.Wrap = wrap
-	c.Run = func(ctx context.Context, command string) (string, int) {
+	// A wrap that cannot be built is a command that never started, and the
+	// result says which prerequisite it was missing rather than composing a
+	// prefix into the output: the row reads the category off the result, and
+	// an exit code of -1 is not one (runner.WrapFailure).
+	// See docs/capabilities/containment.md#a-command-that-never-started-names-what-it-needed.
+	c.Run = func(ctx context.Context, command string) tools.ExecResult {
 		argv, err := wrap(command)
 		if err != nil {
-			return "sandbox: " + err.Error(), -1
+			return runner.WrapFailure(err)
 		}
-		return runner.RunCaptureArgv(ctx, command, argv)
+		return runner.RunCaptureArgvInResult(ctx, "", command, argv)
 	}
-	c.TailRun = func(ctx context.Context, command string, onLine func(string)) (string, int) {
+	c.TailRun = func(ctx context.Context, command string, onLine func(string)) tools.ExecResult {
 		argv, err := wrap(command)
 		if err != nil {
-			return "sandbox: " + err.Error(), -1
+			return runner.WrapFailure(err)
 		}
-		return runner.RunCaptureArgvTail(ctx, command, argv, onLine)
+		return runner.RunCaptureArgvTailResult(ctx, command, argv, onLine)
 	}
 	return c, nil
 }

@@ -396,7 +396,7 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 		return nil, err
 	}
 	if containment.Run != nil {
-		run = containment.Run
+		run = runner.LegacyRunner(containment.Run)
 		sandboxProfile = containment.Profile
 	}
 	// What the model is told about it, beside where it was told the work is

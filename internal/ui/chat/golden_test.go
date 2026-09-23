@@ -1390,7 +1390,7 @@ func TestGolden_DecisionNote(t *testing.T) {
 func amendGoldenModel(t *testing.T, width int, command string) Model {
 	t.Helper()
 	m := gatedModel(t, nil, nil).WithWorkspace(t.TempDir()).
-		WithRunner(func(context.Context, string) (string, int) { return "", 0 })
+		WithRunner(legacyRunner(func(context.Context, string) (string, int) { return "", 0 }))
 	m.width, m.height = width, 40
 	m.syncInputWidth()
 	m = execApproval(t, m, command)
@@ -2371,7 +2371,11 @@ func TestGolden_ClassifierDenial(t *testing.T) {
 
 // TestGolden_CommandErrors captures the command-result states. Failed command
 // rows open their retained evidence, and no negative process status is painted
-// as a normal exit status.
+// as a normal exit status. A command that never started is one panel per
+// prerequisite it can be missing, each naming the category on the row with
+// the operating system's words and the next action folded beneath it, and a
+// command whose ending nobody could read has a panel of its own
+// (docs/capabilities/containment.md#a-command-that-never-started-names-what-it-needed).
 func TestGolden_CommandErrors(t *testing.T) {
 	captureBoundedGolden(t, "command-errors", "command result outcomes", goldenWidths, func(width int) []golden.Panel {
 		m := frameModel(t, width, 40)
@@ -2387,7 +2391,32 @@ func TestGolden_CommandErrors(t *testing.T) {
 			{kind: entryCommand, text: "watch", toolResult: `process "watch"`, duration: 1 * time.Second},
 		}
 		m.invalidateRenderCache()
-		return []golden.Panel{{Label: "success, exit status, signal, timeout, spawn failure and handoff", View: m.renderHistory()}}
+		panels := []golden.Panel{{Label: "success, exit status, signal, timeout, spawn failure and handoff", View: m.renderHistory()}}
+		for _, c := range []struct {
+			command string
+			prereq  tools.ExecPrereq
+			detail  string
+		}{
+			{"go test ./...", tools.PrereqWorkingDir, "/work/.claude/worktrees/gone — chdir /bin/bash: no such file or directory"},
+			{"go test ./...", tools.PrereqShell, "fork/exec /usr/local/bin/bash: no such file or directory"},
+			{"go test ./...", tools.PrereqContainment, "fork/exec /usr/bin/bwrap: no such file or directory"},
+			{"./deploy.sh", tools.PrereqPermission, "fork/exec ./deploy.sh: permission denied"},
+			{"go test ./...", tools.PrereqSpawn, "fork/exec /bin/bash: resource temporarily unavailable"},
+		} {
+			m := frameModel(t, width, 40)
+			report := tools.ExecPrereqReport(c.prereq, c.detail)
+			m.transcript = []entry{{kind: entryCommand, text: c.command, toolResult: report, exitCode: -1,
+				commandResult: tools.ExecResult{Output: report, ExitCode: -1, Outcome: tools.ExecDidNotStart, Prereq: c.prereq}}}
+			m.invalidateRenderCache()
+			panels = append(panels, golden.Panel{Label: "did not start · " + string(c.prereq), View: m.renderHistory()})
+		}
+		m = frameModel(t, width, 40)
+		m.transcript = []entry{{kind: entryCommand, text: "make release", exitCode: -1, duration: 4 * time.Second,
+			toolResult:    "packaging…\nwait: read |0: file already closed",
+			commandResult: tools.ExecResult{ExitCode: -1, Outcome: tools.ExecDidNotComplete}}}
+		m.invalidateRenderCache()
+		panels = append(panels, golden.Panel{Label: "ran, and nobody could read how it ended", View: m.renderHistory()})
+		return panels
 	})
 }
 

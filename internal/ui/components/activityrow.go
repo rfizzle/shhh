@@ -90,10 +90,10 @@ const (
 	OutcomeLocal = "local"
 )
 
-// A command that never exited has no exit status to report, and three
+// A command that never exited has no exit status to report, and four
 // different things end one. The words are separate because the reader's next
-// act is: nothing, wait for the machine, or raise the ceiling
-// (docs/interface/principles.md#closed-vocabularies).
+// act is: nothing, wait for the machine, raise the ceiling, or look at what
+// the command left behind (docs/interface/principles.md#closed-vocabularies).
 const (
 	// OutcomeStopped is the reader's own cancel — the chord, the quit, a
 	// session boundary that took the command with it. It is their decision
@@ -114,15 +114,26 @@ const (
 	// distinct from a signal death: retrying may be appropriate once the
 	// unavailable runner or containment mechanism is restored.
 	OutcomeDidNotStart = "did not start"
+	// OutcomeDidNotComplete is a command that ran and whose ending nobody
+	// could read: the wait itself failed, so there is no status and no signal
+	// to name it by. It is its own word because every neighbour would be a
+	// claim the row cannot make — `stopped` says somebody stopped it,
+	// `killed` names a signal that was never seen, and `did not start` is
+	// untrue of a command whose output is right there under the row.
+	OutcomeDidNotComplete = "did not complete"
 )
 
 // OutcomeExit is the terminal outcome of a shell command that exited on its
 // own. A negative code is not one — no program returns -1; it is what Go
 // reports for a process a signal ended, and what internal/runner passes on —
 // so it is never rendered as an exit status. A caller that knows what ended
-// the command says so with one of the three words above; one that has only
-// the code left gets the reading that is true of all three, since every one
-// of them is a command that stopped rather than a command that failed.
+// the command says so with one of the words above: `stopped`, `killed` and
+// `timed out` for the three things that end a command, and the fourth
+// reading, `did not complete`, for a command whose ending nobody could read
+// at all — which is only knowable from the typed result, never from the
+// code, since the code is the same -1 either way. One that has only the code
+// left gets `stopped`, which is the reading true of the first three: a
+// command that stopped rather than a command that failed.
 func OutcomeExit(code int) string {
 	if code < 0 {
 		return OutcomeStopped

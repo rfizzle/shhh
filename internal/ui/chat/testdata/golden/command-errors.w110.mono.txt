@@ -18,9 +18,52 @@
     compiler stopped
   ▎✗ run     go test ./...                                                         timed out · 1s   1.0s
     partial output
-  ▎✗ run     missing containment binary                                             did not start
+  ▎✗ run     missing containment binary                                             did not start      —
     fork/exec bwrap: no such file
   ▎$ run     watch                                                                    ok · 1 line   1.0s
+
+
+· did not start · working-directory
+  ▎✗ run     go test ./...                                      did not start · working directory      —
+    working directory unavailable: /work/.claude/worktrees/gone — chdir /bin/bash: no such file or
+    directory
+    Nothing ran: a command's working directory has to be there when it starts. Find out where it went —
+    a worktree or checkout removed under a running session is the usual cause — and run the command
+    somewhere that still exists.
+
+
+· did not start · execution-shell
+  ▎✗ run     go test ./...                                        did not start · execution shell      —
+    execution shell unavailable: fork/exec /usr/local/bin/bash: no such file or directory
+    Nothing ran, and nothing will until that shell is back: every command here goes through it, so
+    another spelling of the same command reaches the same missing program. Report it.
+
+
+· did not start · containment
+  ▎✗ run     go test ./...                                            did not start · containment      —
+    containment unavailable: fork/exec /usr/bin/bwrap: no such file or directory
+    Nothing ran, and it was not run uncontained — that is the one substitution this session will not
+    make. Report the mechanism as missing; `shhh doctor` says what this host needs.
+
+
+· did not start · permission
+  ▎✗ run     ./deploy.sh                                               did not start · permission      —
+    permission denied: fork/exec ./deploy.sh: permission denied
+    Nothing ran. The refusal is the operating system's and not a decision this session made or can undo,
+    so use a program and a path the current user is already allowed, or report what is refusing it.
+
+
+· did not start · spawn
+  ▎✗ run     go test ./...                                                  did not start · spawn      —
+    spawn refused: fork/exec /bin/bash: resource temporarily unavailable
+    Nothing ran, and the reason above is the host's rather than the command's. Retry only if that reason
+    names something that has since changed; otherwise report it.
+
+
+· ran, and nobody could read how it ended
+  ▎✗ run     make release                                                        did not complete   4.0s
+    packaging…
+    wait: read |0: file already closed
 
 
 ── ansi ────────────────────────────────────────────────────
@@ -32,7 +75,50 @@
     ␛[38;5;244mcompiler stopped␛[m
   ␛[38;5;254m▎␛[m␛[38;5;254m✗␛[m ␛[38;5;254mrun␛[m     ␛[38;5;254mgo test ./...␛[m                                                         ␛[38;5;254mtimed out␛[m␛[38;5;244m · ␛[m␛[38;5;244m1s␛[m   ␛[38;5;244m1.0s␛[m
     ␛[38;5;244mpartial output␛[m
-  ␛[38;5;254m▎␛[m␛[38;5;254m✗␛[m ␛[38;5;254mrun␛[m     ␛[38;5;254mmissing containment binary␛[m                                             ␛[38;5;254mdid not start␛[m
+  ␛[38;5;254m▎␛[m␛[38;5;254m✗␛[m ␛[38;5;254mrun␛[m     ␛[38;5;254mmissing containment binary␛[m                                             ␛[38;5;254mdid not start␛[m      ␛[38;5;244m—␛[m
     ␛[38;5;244mfork/exec bwrap: no such file␛[m
   ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m ␛[38;5;254mrun␛[m     ␛[38;5;254mwatch␛[m                                                                    ␛[38;5;254mok␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 line␛[m   ␛[38;5;244m1.0s␛[m
+
+
+· did not start · working-directory
+  ␛[38;5;254m▎␛[m␛[38;5;254m✗␛[m ␛[38;5;254mrun␛[m     ␛[38;5;254mgo test ./...␛[m                                      ␛[38;5;254mdid not start · working directory␛[m      ␛[38;5;244m—␛[m
+    ␛[38;5;244mworking directory unavailable: /work/.claude/worktrees/gone — chdir /bin/bash: no such file or␛[m
+    ␛[38;5;244mdirectory␛[m
+    ␛[38;5;244mNothing ran: a command's working directory has to be there when it starts. Find out where it went —␛[m
+    ␛[38;5;244ma worktree or checkout removed under a running session is the usual cause — and run the command␛[m
+    ␛[38;5;244msomewhere that still exists.␛[m
+
+
+· did not start · execution-shell
+  ␛[38;5;254m▎␛[m␛[38;5;254m✗␛[m ␛[38;5;254mrun␛[m     ␛[38;5;254mgo test ./...␛[m                                        ␛[38;5;254mdid not start · execution shell␛[m      ␛[38;5;244m—␛[m
+    ␛[38;5;244mexecution shell unavailable: fork/exec /usr/local/bin/bash: no such file or directory␛[m
+    ␛[38;5;244mNothing ran, and nothing will until that shell is back: every command here goes through it, so␛[m
+    ␛[38;5;244manother spelling of the same command reaches the same missing program. Report it.␛[m
+
+
+· did not start · containment
+  ␛[38;5;254m▎␛[m␛[38;5;254m✗␛[m ␛[38;5;254mrun␛[m     ␛[38;5;254mgo test ./...␛[m                                            ␛[38;5;254mdid not start · containment␛[m      ␛[38;5;244m—␛[m
+    ␛[38;5;244mcontainment unavailable: fork/exec /usr/bin/bwrap: no such file or directory␛[m
+    ␛[38;5;244mNothing ran, and it was not run uncontained — that is the one substitution this session will not␛[m
+    ␛[38;5;244mmake. Report the mechanism as missing; `shhh doctor` says what this host needs.␛[m
+
+
+· did not start · permission
+  ␛[38;5;254m▎␛[m␛[38;5;254m✗␛[m ␛[38;5;254mrun␛[m     ␛[38;5;254m./deploy.sh␛[m                                               ␛[38;5;254mdid not start · permission␛[m      ␛[38;5;244m—␛[m
+    ␛[38;5;244mpermission denied: fork/exec ./deploy.sh: permission denied␛[m
+    ␛[38;5;244mNothing ran. The refusal is the operating system's and not a decision this session made or can undo,␛[m
+    ␛[38;5;244mso use a program and a path the current user is already allowed, or report what is refusing it.␛[m
+
+
+· did not start · spawn
+  ␛[38;5;254m▎␛[m␛[38;5;254m✗␛[m ␛[38;5;254mrun␛[m     ␛[38;5;254mgo test ./...␛[m                                                  ␛[38;5;254mdid not start · spawn␛[m      ␛[38;5;244m—␛[m
+    ␛[38;5;244mspawn refused: fork/exec /bin/bash: resource temporarily unavailable␛[m
+    ␛[38;5;244mNothing ran, and the reason above is the host's rather than the command's. Retry only if that reason␛[m
+    ␛[38;5;244mnames something that has since changed; otherwise report it.␛[m
+
+
+· ran, and nobody could read how it ended
+  ␛[38;5;254m▎␛[m␛[38;5;254m✗␛[m ␛[38;5;254mrun␛[m     ␛[38;5;254mmake release␛[m                                                        ␛[38;5;254mdid not complete␛[m   ␛[38;5;244m4.0s␛[m
+    ␛[38;5;244mpackaging…␛[m
+    ␛[38;5;244mwait: read |0: file already closed␛[m
 

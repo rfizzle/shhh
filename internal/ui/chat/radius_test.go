@@ -25,7 +25,7 @@ func radiusModel(t *testing.T, dir string, c Containment) Model {
 	}
 	m := New(msgs, mockStream).
 		WithWorkspace(dir).
-		WithRunner(func(ctx context.Context, cmd string) (string, int) { return "ran", 0 }).
+		WithRunner(legacyRunner(func(ctx context.Context, cmd string) (string, int) { return "ran", 0 })).
 		WithContainment(c)
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 130, Height: 40})
 	m = updated.(Model)

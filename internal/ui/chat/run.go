@@ -254,11 +254,9 @@ func (m Model) executeRun() (tea.Model, tea.Cmd) {
 		var result tools.ExecResult
 		// The tail-capable runner feeds the live row when wired.
 		if tailFn != nil {
-			out, code := tailFn(ctx, command, tail.Set)
-			result = tools.InferExecResult(out, code)
+			result = tailFn(ctx, command, tail.Set)
 		} else {
-			out, code := runFn(ctx, command)
-			result = tools.InferExecResult(out, code)
+			result = runFn(ctx, command)
 		}
 		end := commandEnding(ctx.Err(), result.ExitCode, limit)
 		switch end.outcome {
@@ -379,9 +377,10 @@ func (m Model) dryRunKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 		ctx, cancel := context.WithTimeout(context.Background(), limit)
 		defer cancel()
 		start := time.Now()
-		out, code := run(ctx, command)
+		result := run(ctx, command)
+		out, code := result.Output, result.ExitCode
 		return dryRunDoneMsg{runID: runID, call: call, command: command,
-			output: out, exitCode: code, duration: time.Since(start),
+			output: out, exitCode: code, result: result, duration: time.Since(start),
 			end: commandEnding(ctx.Err(), code, limit)}
 	}, true
 }
@@ -395,6 +394,10 @@ type dryRunDoneMsg struct {
 	command  string
 	output   string
 	exitCode int
+	// result is how the form ended as the runner said it, so a form that
+	// never started keeps the prerequisite it was missing on its row, the
+	// way the real command's does (activity.go).
+	result   tools.ExecResult
 	duration time.Duration
 	// end is how the form ended where its exit code cannot say — a derived
 	// form has a ceiling of its own, and reaching it is the one thing the
@@ -421,8 +424,9 @@ func (m Model) finishDryRun(msg dryRunDoneMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 	out := strings.TrimRight(msg.output, "\n")
-	m.appendEntry(entry{kind: entryCommand, text: msg.command, toolResult: out,
-		exitCode: msg.exitCode, localRun: true, duration: msg.duration, end: msg.end})
+	row := entry{kind: entryCommand, text: msg.command, toolResult: out,
+		exitCode: msg.exitCode, commandResult: msg.result, localRun: true, duration: msg.duration, end: msg.end}
+	m.appendEntry(row)
 	req := m.pendingApproval
 	// The command as well as the call: the reader can have amended the line
 	// while the form was running, and a screen reporting on a command the
@@ -441,17 +445,21 @@ func (m Model) finishDryRun(msg dryRunDoneMsg) (tea.Model, tea.Cmd) {
 	// The screen came from the press rather than from a row, like the card's
 	// own full view: leaving it leaves, and the row it left behind is where
 	// the output is read from a second time.
-	return m.openOutputFull(dryRunView(msg, out), noOutputEntry, stateConfirmRun)
+	return m.openOutputFull(dryRunView(msg, out, m.activityRowFor(row)), noOutputEntry, stateConfirmRun)
 }
 
 // dryRunView is the full screen the answer opens on: what the derived form
 // was, what it printed, and — where it printed nothing or stopped badly — the
 // sentence that says so, since a blank screen is not an answer to a question
 // somebody pressed a key to ask.
-func dryRunView(msg dryRunDoneMsg, out string) *components.OutputView {
+//
+// How it ended is the row's own outcome rather than the code: a code below
+// zero is not an exit status, and the row already has the word for each way a
+// command can end without one.
+func dryRunView(msg dryRunDoneMsg, out string, row components.ActivityRow) *components.OutputView {
 	title := "dry run — " + firstLine(msg.command)
-	if msg.exitCode != 0 {
-		title += fmt.Sprintf(" (exit %d)", msg.exitCode)
+	if row.Failed() || row.State == components.ActivityDenied {
+		title += " (" + strings.TrimSuffix(row.Outcome, " · "+components.OutcomeLocal) + ")"
 	}
 	lines := strings.Split(out, "\n")
 	if strings.TrimSpace(out) == "" {

@@ -15,6 +15,7 @@ import (
 	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/secret"
+	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/chat"
 )
 
@@ -151,27 +152,41 @@ func scrubRunner(v *secret.Vault, run func(context.Context, string) (string, int
 	}
 }
 
-// scrubTailRunner is scrubRunner for the tailed form: each live line is
-// scrubbed on its own, so a value split across lines is caught by the
-// whole-output scrub at the end rather than the line one.
-func scrubTailRunner(v *secret.Vault, run func(context.Context, string, func(string)) (string, int)) func(context.Context, string, func(string)) (string, int) {
+// scrubResultRunner is scrubRunner for the session's typed runner: the output
+// is scrubbed and how the command ended is passed on as it was.
+func scrubResultRunner(v *secret.Vault, run chat.RunFunc) chat.RunFunc {
 	if run == nil || v == nil {
 		return run
 	}
-	return func(ctx context.Context, command string, onLine func(string)) (string, int) {
+	return func(ctx context.Context, command string) tools.ExecResult {
+		result := run(ctx, command)
+		result.Output = v.Scrub(result.Output)
+		return result
+	}
+}
+
+// scrubTailRunner is scrubResultRunner for the tailed form: each live line is
+// scrubbed on its own, so a value split across lines is caught by the
+// whole-output scrub at the end rather than the line one.
+func scrubTailRunner(v *secret.Vault, run chat.TailFunc) chat.TailFunc {
+	if run == nil || v == nil {
+		return run
+	}
+	return func(ctx context.Context, command string, onLine func(string)) tools.ExecResult {
 		if onLine != nil {
 			inner := onLine
 			onLine = func(line string) { inner(v.Scrub(line)) }
 		}
-		out, code := run(ctx, command, onLine)
-		return v.Scrub(out), code
+		result := run(ctx, command, onLine)
+		result.Output = v.Scrub(result.Output)
+		return result
 	}
 }
 
 // scrubContainment wraps a containment's runners, which replace the plain
 // ones when a mechanism is available.
 func scrubContainment(v *secret.Vault, c chat.Containment) chat.Containment {
-	c.Run = scrubRunner(v, c.Run)
+	c.Run = scrubResultRunner(v, c.Run)
 	c.TailRun = scrubTailRunner(v, c.TailRun)
 	return c
 }

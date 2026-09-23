@@ -1,7 +1,5 @@
 package chat
 
-import "context"
-
 // Containment is the process-containment setup for assistant commands.
 // When Run is set, approved and waved-through execute_command calls run
 // through it (the sandbox-wrapped runner) instead of the plain runner; /run —
@@ -9,10 +7,15 @@ import "context"
 // one-line state shown on the exec confirm prompt, and Report is the full
 // doctor text behind /sandbox.
 type Containment struct {
-	Run func(context.Context, string) (string, int)
+	// Run answers with the typed result rather than an output and a status,
+	// because a wrap that could not be built is a command that never started
+	// and the category of that is a fact the row has to be handed, not read
+	// back out of text.
+	// See docs/capabilities/containment.md#a-command-that-never-started-names-what-it-needed.
+	Run RunFunc
 	// TailRun is Run with live per-line output reporting for the activity
 	// feed's running row; nil runs contained commands with no tail.
-	TailRun func(ctx context.Context, command string, onLine func(string)) (string, int)
+	TailRun TailFunc
 	Status  string
 	Report  string
 	// Mechanism, Profile and Network are the same state in the pieces the
