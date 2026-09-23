@@ -13,6 +13,14 @@ import (
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
+// A review stopped at its cap still ends on the line the reviewer's prompt
+// asks for, since the lane reads the verdict off that label.
+func TestTheReportDirectiveNamesTheVerdictLine(t *testing.T) {
+	if !strings.Contains(reviewReportDirective, "`Verdict: <word>`") {
+		t.Fatalf("the report directive does not name the verdict line:\n%s", reviewReportDirective)
+	}
+}
+
 // count is how many times a message with exactly this text was put in front
 // of the child. The whole conversation is re-sent every round, so the answer
 // is the most any single request carried and never the sum across them.

@@ -89,7 +89,7 @@ func TestAReviewingProfileIsInstructedAsAReviewer(t *testing.T) {
 	// the four things the reader's prompt never says.
 	for _, want := range []string{
 		"arrives ahead of your task", "Rank by severity",
-		"inspection pass is bounded by a round cap", "the verdict line the task asks for",
+		"inspection pass is bounded by a round cap", "`Verdict: <word>`",
 	} {
 		if !strings.Contains(got, want) {
 			t.Errorf("a reviewing profile's prompt lacks %q:\n%s", want, got)

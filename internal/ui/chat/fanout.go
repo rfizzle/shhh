@@ -298,10 +298,12 @@ const (
 )
 
 // reportVerdict is the word a review ended on, or empty where its last line
-// is not a verdict at all. A reviewing child is told its last message is the
-// deliverable and to end it with the verdict line the task asked for
-// (internal/subagent's review directive), so where the verdict is is settled
-// and what is left is whether the line is one.
+// is not a verdict at all. A reviewing child is told to end its report on a
+// line of its own, `Verdict: <word>` (the reviewer's prompt and
+// internal/subagent's review directive), so the label is read first and
+// trusted: it is the shape the child was asked for. The unlabelled reading
+// below is for a report written before the contract named the label, or by a
+// child that did not follow it.
 //
 // The word is lower-cased. It stands in the outcome field beside `✓ done` and
 // `⚠ needs you`, which is a field of lower-case words, and a verdict that

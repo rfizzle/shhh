@@ -165,7 +165,11 @@ does not need the reader, and one that could stop for a question would need
 watching.
 A child that would have asked states the assumption it made instead, in its
 report, where the session — and the person — can read it and disagree
-([`coding-agent.md`](coding-agent.md#nobody-to-ask)).
+([`coding-agent.md`](coding-agent.md#nobody-to-ask)). Its report contract names
+the place: one item per assumption under a heading of its own, *Assumptions*,
+left out when it assumed nothing — named rather than left to the child,
+because the lane counts what is under it and a list titled some other way is
+one nothing can count.
 
 ## A review is bounded by what it is given
 
@@ -217,7 +221,13 @@ rather than by attaching to a child nobody has a reason to attach to
 What the lane states without being opened is the count of assumptions the
 report lists and, for a review, the verdict it ends on: the two things a
 reader would otherwise have to open every report to find, and the two the
-first line almost never carries.
+first line almost never carries. Both are read off a shape the child was asked
+for. The assumptions are the items under the report's *Assumptions* heading,
+and the verdict is its last line, `Verdict: <word>` — the word the review's
+task names, or where it names none one of *approve*, *approve with changes*
+or *request changes*. The label is what is trusted: an unlabelled last line
+counts as a verdict only where it is plainly not a sentence, so a report that
+ends on *Ship it.* shows no verdict rather than one the child never drew.
 
 A writing child's report also says what became of its patch and which files
 were in it. What a patch touched is the whole of what the parent needs to

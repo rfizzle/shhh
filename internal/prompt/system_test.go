@@ -230,6 +230,32 @@ func TestBuildResearcher_Instructions(t *testing.T) {
 	}
 }
 
+// Every child's final report names the heading its assumptions go under, and
+// a reviewer's names its verdict line: the lane counts the one and states the
+// other, and both are read off the shape asked for here.
+func TestTheFinalReportNamesItsSections(t *testing.T) {
+	info := shell.Info{Shell: "bash", OS: "linux", Cwd: "/w"}
+	for name, got := range map[string]string{
+		"researcher": BuildResearcher(info, WebTools{}),
+		"writer":     BuildWriter(info),
+		"reviewer":   BuildReviewer(info, ProfileSpec{}),
+	} {
+		report := got[strings.Index(got, "# Final report"):]
+		if !strings.Contains(report, "`## Assumptions`") {
+			t.Errorf("the %s's final report does not name the Assumptions heading:\n%s", name, report)
+		}
+		hasVerdict := strings.Contains(report, "`Verdict: <word>`")
+		if hasVerdict != (name == "reviewer") {
+			t.Errorf("the %s's final report asks for a verdict line: %v, want %v", name, hasVerdict, name == "reviewer")
+		}
+	}
+	for _, word := range reviewVerdicts {
+		if !strings.Contains(BuildReviewer(info, ProfileSpec{}), word) {
+			t.Errorf("the reviewer's prompt does not name the verdict %q", word)
+		}
+	}
+}
+
 func TestBuildWriter_Instructions(t *testing.T) {
 	info := shell.Info{Shell: "bash", OS: "linux", Cwd: "/tmp/worktree/proj"}
 	got := BuildWriter(info, "EXTRA CONTEXT")
@@ -343,7 +369,7 @@ You are reviewing a change, not making one. Report, in this order:
 Rank by severity. Say "no findings" for an empty section rather than inventing one. Never propose a rewrite of something that works. Your inspection pass is bounded by a round cap, not by your own judgement of when to stop: once you have examined the declared evidence and its direct tests, report rather than broadening the survey. If the pass ends before you have, you are told to report on what you examined and you say what you did not reach.
 
 # Final report
-Your last message IS the deliverable. End it with the verdict line the task asks for.`
+Your last message IS the deliverable. If you assumed anything you would otherwise have asked about, list each assumption as a bullet under a heading of its own, ` + "`## Assumptions`" + `; leave the heading out when you assumed nothing. End it with a last line of its own, ` + "`Verdict: <word>`" + `: the verdict word the task names, or where it names none, one of approve, approve with changes, request changes.`
 
 	if got := BuildReviewer(shell.Info{OS: "linux", Cwd: "/w"}, ProfileSpec{}); got != want {
 		t.Errorf("the built-in reviewer's prompt moved:\ngot:\n%s\nwant:\n%s", got, want)
@@ -367,7 +393,7 @@ func TestAReviewingProfileKeepsItsNameAndItsTools(t *testing.T) {
 		"read-only access to the workspace (read_file, list_directory, search, glob)",
 		"quality_gate runs the project's own configured checks",
 		"the gate is the only command you can run",
-		"# Reviewing", "the verdict line the task asks for",
+		"# Reviewing", "`Verdict: <word>`",
 	} {
 		if !strings.Contains(withGate, want) {
 			t.Errorf("a reviewing profile holding the gate lacks %q:\n%s", want, withGate)

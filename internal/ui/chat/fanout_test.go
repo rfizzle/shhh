@@ -529,6 +529,9 @@ func TestReportVerdictReadsTheLastLine(t *testing.T) {
 		{"labelled", "Read it all.\n\nVerdict: request changes", "request changes"},
 		{"bold label", "Read it all.\n\n**Verdict:** approve", "approve"},
 		{"a label makes a sentence one", "Read it all.\n\nVerdict: ship it.", "ship it"},
+		// The contract's own shape: an assumptions section, then the label.
+		{"the contract's shape", "Read it all.\n\n## Assumptions\n- the flag is new\n\nVerdict: Approve.", "approve"},
+		{"a label past its field", "Read it all.\n\nVerdict: approve once the three renames land", ""},
 		{"trailing blanks", "approve\n\n\n", "approve"},
 		{"prose", "The change is fine but the test names are wrong and I would rename them.", ""},
 		{"two statements", "Findings: three of them", ""},

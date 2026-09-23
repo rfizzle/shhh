@@ -45,7 +45,7 @@ const (
 // nothing further it is allowed to do.
 const reviewReportDirective = `Your inspection pass is over. Do not open any file you have not already read, and do not start a new line of inquiry.
 
-Write your report now from the evidence you have examined. Rank the findings by severity, cite file:line for each, say "no findings" for an empty section, and name anything you did not get to rather than implying you covered it.`
+Write your report now from the evidence you have examined. Rank the findings by severity, cite file:line for each, say "no findings" for an empty section, name anything you did not get to rather than implying you covered it, and end on the verdict line your instructions name: ` + "`Verdict: <word>`" + `, on a line of its own.`
 
 // declaredEvidence is what a bounded review's first turn opens with: the
 // paths the spawn declared and the workspace diff under them, so the child

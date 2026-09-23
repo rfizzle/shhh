@@ -243,6 +243,24 @@ func (w WebTools) researcherTools() string {
 	return base + ", and no web tools at all this session — the answer is in the workspace or in what the task gives you."
 }
 
+// assumptionsSection is the part of a child's final report that says what it
+// took for granted. A child is never offered the tool that asks, so where it
+// would have asked it assumes instead, and the heading is named exactly so the
+// lane can count what is under it rather than guess at which paragraph was
+// the list (docs/capabilities/subagents.md#a-child-answers-to-the-session).
+const assumptionsSection = "If you assumed anything you would otherwise have asked about, list each assumption as a bullet under a heading of its own, `## Assumptions`; leave the heading out when you assumed nothing."
+
+// reviewVerdicts is the reviewer's verdict set where the task names none. It
+// is small and closed because the word stands in the lane's outcome field
+// beside the child's state, which is a field of short words
+// (docs/capabilities/subagents.md#what-comes-back-says-what-happened-to-it).
+var reviewVerdicts = []string{"approve", "approve with changes", "request changes"}
+
+// verdictLine is the reviewer's last line. It is labelled because the label is
+// what tells a verdict from a short sentence the report happened to end on.
+var verdictLine = "End it with a last line of its own, `Verdict: <word>`: the verdict word the task names, or where it names none, one of " +
+	strings.Join(reviewVerdicts, ", ") + "."
+
 // BuildResearcher is the system prompt for researcher sub-agents:
 // read-only tools plus whichever half of the web the session registered,
 // ending in a final report — the only thing the orchestrator receives.
@@ -265,8 +283,8 @@ Date: %s
 %s
 
 # Final report
-Your last message IS the deliverable. Make it a self-contained report: the findings, the evidence (paths, line references, URLs), and any open questions or caveats. Do not end on a question or a promise of further work.`,
-		os, info.Cwd, today(), web.researcherTools(), findingThingsBrief)
+Your last message IS the deliverable. Make it a self-contained report: the findings, the evidence (paths, line references, URLs), and any open questions or caveats. %s Do not end on a question or a promise of further work.`,
+		os, info.Cwd, today(), web.researcherTools(), findingThingsBrief, assumptionsSection)
 	if len(extra) > 0 && extra[0] != "" {
 		base += "\n\n" + extra[0]
 	}
@@ -304,8 +322,8 @@ You are reviewing a change, not making one. Report, in this order:
 Rank by severity. Say "no findings" for an empty section rather than inventing one. Never propose a rewrite of something that works. Your inspection pass is bounded by a round cap, not by your own judgement of when to stop: once you have examined the declared evidence and its direct tests, report rather than broadening the survey. If the pass ends before you have, you are told to report on what you examined and you say what you did not reach.
 
 # Final report
-Your last message IS the deliverable. End it with the verdict line the task asks for.`,
-		reviewerOpening(spec), os, info.Cwd, today(), reviewerTools(spec))
+Your last message IS the deliverable. %s %s`,
+		reviewerOpening(spec), os, info.Cwd, today(), reviewerTools(spec), assumptionsSection, verdictLine)
 	if len(extra) > 0 && extra[0] != "" {
 		base += "\n\n" + extra[0]
 	}
@@ -413,8 +431,8 @@ Make changes with write_file and edit_file rather than pasting code into your me
 %s
 
 # Final report
-Your last message IS the deliverable. Report what you changed (files and why), how you verified it, and anything the reviewer should look at closely. Do not end on a question or a promise of further work.`,
-		info.Shell, os, info.Cwd, today(), executionDefault, findingThingsBrief, shellSyntaxRules(info.Shell), sudoRules(info.OS, info.IsRoot), osRules(info.OS))
+Your last message IS the deliverable. Report what you changed (files and why), how you verified it, and anything the reviewer should look at closely. %s Do not end on a question or a promise of further work.`,
+		info.Shell, os, info.Cwd, today(), executionDefault, findingThingsBrief, shellSyntaxRules(info.Shell), sudoRules(info.OS, info.IsRoot), osRules(info.OS), assumptionsSection)
 	if len(extra) > 0 && extra[0] != "" {
 		base += "\n\n" + extra[0]
 	}
