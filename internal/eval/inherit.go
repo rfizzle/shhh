@@ -143,7 +143,9 @@ func (c *inheritChild) factory() subagent.EnvFactory {
 			ExecuteGated: func(name string, _ json.RawMessage) (string, error) {
 				return "", errors.New(name + " is not available to this child")
 			},
-			RunCommand: func(context.Context, string) (string, int) { return "not available", 1 },
+			RunCommand: func(context.Context, string) tools.ExecResult {
+				return tools.ExecResult{Output: "not available", ExitCode: 1, Outcome: tools.ExecExited}
+			},
 		}, nil
 	}
 }

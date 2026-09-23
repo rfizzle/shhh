@@ -227,13 +227,14 @@ func TestChildCommandRunner_RequiredContainmentRefusesToo(t *testing.T) {
 	}
 
 	run := childCommandRunnerUnbounded(config.Config{}, dir, sc)
-	if out, code := run(context.Background(), "echo ran"); code != 0 || !strings.Contains(out, "ran") {
-		t.Fatalf("without the knob a child's command still runs: %q (%d)", out, code)
+	if got := run(context.Background(), "echo ran"); got.ExitCode != 0 || !strings.Contains(got.Output, "ran") {
+		t.Fatalf("without the knob a child's command still runs: %q (%d)", got.Output, got.ExitCode)
 	}
 
 	run = childCommandRunnerUnbounded(config.Config{Sandbox: config.SandboxConfig{Require: true}}, dir, sc)
-	out, code := run(context.Background(), "echo ran")
-	if code == 0 || strings.Contains(out, "ran") {
+	got := run(context.Background(), "echo ran")
+	out, code := got.Output, got.ExitCode
+	if code == 0 || strings.Contains(out, "ran") || got.Outcome != tools.ExecDidNotStart {
 		t.Fatalf("a required session must refuse a child's command, got %q (%d)", out, code)
 	}
 	if !strings.Contains(out, "requires containment") {
@@ -358,5 +359,38 @@ func TestAContainedShellThatCannotExecDidNotStart(t *testing.T) {
 	other := tools.ExecResult{Output: line, ExitCode: 127, Outcome: tools.ExecExited}
 	if got := readContained("bwrap", other); got.Outcome != tools.ExecExited {
 		t.Fatalf("Seatbelt's words were read under bubblewrap: %+v", got)
+	}
+}
+
+// A child's contained command reads its ending the way the session's does: a
+// shell the mechanism could not exec is a command that never started, not one
+// that ran and exited. It runs under whichever mechanism the host has, and
+// skips by name where there is none.
+func TestAChildsContainedShellThatCannotExecDidNotStart(t *testing.T) {
+	avail := sandbox.Detect()
+	if !avail.OK {
+		t.Skipf("no containment mechanism here: %s", avail.Detail)
+	}
+	t.Setenv("XDG_DATA_HOME", t.TempDir())
+	dir := t.TempDir()
+	sc, errs := scope.New(dir)
+	if len(errs) > 0 {
+		t.Fatalf("scope: %v", errs)
+	}
+	// Inside the workspace, so the mechanism's own reads reach it: the file
+	// is plainly there and only its interpreter is gone.
+	bin := filepath.Join(dir, "bin")
+	if err := os.MkdirAll(bin, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	missing := filepath.Join(bin, "bash")
+	if err := os.WriteFile(missing, []byte("#!/gone/interpreter\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+
+	got := childCommandRunnerUnbounded(config.Config{}, dir, sc)(context.Background(), "echo hi")
+	if got.Outcome != tools.ExecDidNotStart || got.Prereq != tools.PrereqShell {
+		t.Fatalf("got %+v, want an execution shell that did not start", got)
 	}
 }

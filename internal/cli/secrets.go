@@ -138,22 +138,11 @@ func secretsListing(v *secret.Vault) string {
 	return r.String()
 }
 
-// scrubRunner scrubs a command runner's output. The runner's output is
-// also the transcript row and the live tail on screen, which is why the
-// scrub is here and not only on the tool result: a value on the screen is
-// in the scrollback, the copy buffer and the recording.
-func scrubRunner(v *secret.Vault, run func(context.Context, string) (string, int)) func(context.Context, string) (string, int) {
-	if run == nil || v == nil {
-		return run
-	}
-	return func(ctx context.Context, command string) (string, int) {
-		out, code := run(ctx, command)
-		return v.Scrub(out), code
-	}
-}
-
-// scrubResultRunner is scrubRunner for the session's typed runner: the output
-// is scrubbed and how the command ended is passed on as it was.
+// scrubResultRunner scrubs a command runner's output and passes on how the
+// command ended as it was. The runner's output is also the transcript row
+// and the live tail on screen, which is why the scrub is here and not only
+// on the tool result: a value on the screen is in the scrollback, the copy
+// buffer and the recording.
 func scrubResultRunner(v *secret.Vault, run chat.RunFunc) chat.RunFunc {
 	if run == nil || v == nil {
 		return run

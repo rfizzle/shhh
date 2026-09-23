@@ -85,9 +85,8 @@ func TestASpawnFailureNamesThePrerequisiteThatFailed(t *testing.T) {
 				t.Errorf("the operating system's own detail is gone from:\n%s", got.Output)
 			}
 			// The same category reaches the surfaces that read the formatted
-			// result and the ones still on the older output/status pair —
-			// the chat's command path, a contained runner, a child's own
-			// command.
+			// result and the captured forms still on the older output/status
+			// pair.
 			if p := tools.ExecPrereqOf(tools.FormatExecResult(got)); p != tc.prereq {
 				t.Errorf("the formatted result reads as %q, want %q", p, tc.prereq)
 			}
@@ -175,7 +174,7 @@ func TestAWrapFailureIsClassifiedLikeASpawn(t *testing.T) {
 		t.Fatalf("prereq = %q, want %q", got.Prereq, tools.PrereqWorkingDir)
 	}
 
-	out, code := LegacyRunner(func(context.Context, string) tools.ExecResult { return contained })(context.Background(), "x")
+	out, code := legacyResult(contained)
 	if code != -1 || !strings.HasPrefix(out, "error: containment unavailable: ") ||
 		tools.ExecPrereqOf("error: command did not start\noutput:\n"+out) != tools.PrereqContainment {
 		t.Fatalf("the pair should carry the category in its text, got %d %q", code, out)

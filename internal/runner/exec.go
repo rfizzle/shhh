@@ -257,18 +257,6 @@ func resultCode(err error) int {
 	return -1
 }
 
-// LegacyRunner is a typed runner as the older output/status pair, for the
-// callers that still take one. A command that never started keeps its
-// category in the output text, which is the one place the pair has for it.
-func LegacyRunner(run func(context.Context, string) tools.ExecResult) func(context.Context, string) (string, int) {
-	if run == nil {
-		return nil
-	}
-	return func(ctx context.Context, command string) (string, int) {
-		return legacyResult(run(ctx, command))
-	}
-}
-
 // legacyResult preserves the older tuple API. A caller that does not have the
 // typed command result still sees a spawn failure in its output, as before.
 func legacyResult(result tools.ExecResult) (string, int) {

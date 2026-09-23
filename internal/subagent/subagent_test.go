@@ -16,6 +16,7 @@ import (
 
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/evidence"
+	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/web"
@@ -52,9 +53,12 @@ type scriptedEnv struct {
 	// the loop needs the loop to take some time for the reading to land in.
 	delay time.Duration
 
-	gated      map[string]bool
-	execOut    string
-	execCode   int
+	gated    map[string]bool
+	execOut  string
+	execCode int
+	// exec, when set, is the typed result the command answers with in place
+	// of execOut and execCode, for an ending the pair cannot state.
+	exec       *tools.ExecResult
 	ranCommand atomic.Bool
 	// reduce is the reduction pipeline the child's command output goes
 	// through, as a session hands one in. Nil is a child whose surface has
@@ -155,9 +159,12 @@ func (s *scriptedEnv) factory() EnvFactory {
 			ExecuteGated: func(name string, args json.RawMessage) (string, error) {
 				return "gated:" + name, nil
 			},
-			RunCommand: func(ctx context.Context, command string) (string, int) {
+			RunCommand: func(ctx context.Context, command string) tools.ExecResult {
 				s.ranCommand.Store(true)
-				return s.execOut, s.execCode
+				if s.exec != nil {
+					return *s.exec
+				}
+				return tools.InferExecResult(s.execOut, s.execCode)
 			},
 			Reduce: s.reduce,
 			Keep:   s.keep,
@@ -383,6 +390,57 @@ func TestApprovalRoutingApprove(t *testing.T) {
 	}
 	if !env.ranCommand.Load() {
 		t.Fatal("approved command never ran")
+	}
+}
+
+// A child's command keeps how it ended on the result line the child reads and
+// its transcript row holds: a command that never started names what it
+// needed, and one whose ending nobody read says that rather than that it
+// never started.
+// See docs/capabilities/containment.md#a-command-that-never-started-names-what-it-needed.
+func TestAChildsCommandKeepsHowItEnded(t *testing.T) {
+	for _, c := range []struct {
+		name  string
+		exec  tools.ExecResult
+		lead  string
+		class string
+	}{
+		{"prereq", tools.ExecResult{
+			Output:   tools.ExecPrereqReport(tools.PrereqContainment, "wrap unsupported: bwrap vanished"),
+			ExitCode: -1, Outcome: tools.ExecDidNotStart, Prereq: tools.PrereqContainment,
+		}, "error: command did not start: containment unavailable", observe.ClassHarnessContainment},
+		{"did-not-complete", tools.ExecResult{
+			Output: "partial\nwait: i/o timeout", ExitCode: -1, Outcome: tools.ExecDidNotComplete,
+		}, "error: command ran but did not report how it ended", observe.ClassDidNotComplete},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			env := &scriptedEnv{
+				steps: gatedCommandSteps("go build ./..."),
+				gated: map[string]bool{tools.ExecCommandName: true},
+				exec:  &c.exec,
+			}
+			sup := newTestSupervisor(t, env)
+			execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"build it"}`)
+			nextAsk(t, sup).Respond(true)
+			execTool(t, sup, ReportToolName, `{"name":"researcher-1"}`)
+
+			result := env.lastToolResult()
+			if !strings.HasPrefix(result, c.lead) {
+				t.Fatalf("the child read %q, want it to lead with %q", result, c.lead)
+			}
+			if _, class := observe.ToolOutcome(result); class != c.class {
+				t.Fatalf("class = %q, want %q", class, c.class)
+			}
+			var row string
+			for _, e := range sup.Transcript("researcher-1") {
+				if e.Kind == EntryTool {
+					row = e.Result
+				}
+			}
+			if !strings.HasPrefix(row, c.lead) {
+				t.Fatalf("the transcript row holds %q, want it to lead with %q", row, c.lead)
+			}
+		})
 	}
 }
 

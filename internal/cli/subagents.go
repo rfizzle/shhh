@@ -746,7 +746,7 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 			Stream:       stream,
 			Executor:     session.vault.WrapExecutor(subagent.RootedExecutor(croot, autoExec)),
 			ExecuteGated: session.vault.WrapExecutor(gatedExec),
-			RunCommand:   scrubRunner(session.vault, childCommandRunner(cfg, croot, sc)),
+			RunCommand:   scrubResultRunner(session.vault, childCommandRunner(cfg, croot, sc)),
 			// The same pipeline the parent's own commands go through, and
 			// the same store behind it: a child's evidence entries land
 			// beside the session's, so the id in a reduction notice is one
@@ -1118,28 +1118,35 @@ func childSandboxProfile(cfg config.Config) string {
 // Every form is bounded. A child has nobody in front of it, so a command that
 // never finishes takes the child with it — and the parent is left waiting on
 // a report that is not coming.
-func childCommandRunner(cfg config.Config, dir string, sc *scope.Scope) func(context.Context, string) (string, int) {
+func childCommandRunner(cfg config.Config, dir string, sc *scope.Scope) func(context.Context, string) tools.ExecResult {
 	return boundedRunner(childCommandRunnerUnbounded(cfg, dir, sc), cfg.CommandTimeout())
 }
 
-func childCommandRunnerUnbounded(cfg config.Config, dir string, sc *scope.Scope) func(context.Context, string) (string, int) {
+// childCommandRunnerUnbounded answers with the typed result the session's own
+// runner does, so a child's command that never started names what it needed
+// and one whose ending nobody read says so, on the child's own result line.
+// The contained form reads its ending as the session's does (readContained):
+// a shell the mechanism could not exec is a command that never started, not
+// one that ran and exited.
+// See docs/capabilities/containment.md#a-command-that-never-started-names-what-it-needed.
+func childCommandRunnerUnbounded(cfg config.Config, dir string, sc *scope.Scope) func(context.Context, string) tools.ExecResult {
 	if _, err := sandboxPolicy(cfg); err == nil {
 		avail := sandbox.Detect()
 		if avail.OK {
-			return func(ctx context.Context, command string) (string, int) {
+			return func(ctx context.Context, command string) tools.ExecResult {
 				// The policy is rebuilt per command so a directory the parent
 				// added mid-session is writable in the child too.
 				p, pErr := sandboxPolicy(cfg, sc.Dirs()...)
 				if pErr != nil {
-					return "sandbox: " + pErr.Error(), -1
+					return runner.WrapFailure(pErr)
 				}
 				p.Workspace = dir
 				p.Cwd = dir
 				argv, wErr := sandbox.Wrap(avail, p, command)
 				if wErr != nil {
-					return "sandbox: " + wErr.Error(), -1
+					return runner.WrapFailure(wErr)
 				}
-				return runner.RunCaptureArgvIn(ctx, dir, command, argv)
+				return readContained(avail.Mechanism, runner.RunCaptureArgvInResult(ctx, dir, command, argv))
 			}
 		}
 		// A child's command is the assistant's, and a child is the one place
@@ -1149,11 +1156,13 @@ func childCommandRunnerUnbounded(cfg config.Config, dir string, sc *scope.Scope)
 		// See docs/capabilities/containment.md#containment-can-be-required.
 		if cfg.Sandbox.Require {
 			refusal := uncontainedRefusal(avail)
-			return func(context.Context, string) (string, int) { return refusal, -1 }
+			return func(context.Context, string) tools.ExecResult {
+				return tools.ExecResult{Output: refusal, ExitCode: -1, Outcome: tools.ExecDidNotStart}
+			}
 		}
 	}
-	return func(ctx context.Context, command string) (string, int) {
-		return runner.RunCaptureIn(ctx, dir, command)
+	return func(ctx context.Context, command string) tools.ExecResult {
+		return runner.RunCaptureInResult(ctx, dir, command)
 	}
 }
 

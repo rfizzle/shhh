@@ -211,9 +211,6 @@ type printOpts struct {
 	// wrote.
 	// See docs/capabilities/headless.md#an-answer-can-be-held-to-a-schema.
 	schema *answerSchema
-	// execResult preserves command-ending facts for the headless formatter.
-	// Test and compatibility callers continue to supply the legacy tuple runner.
-	execResult func(context.Context, string) tools.ExecResult
 }
 
 // parseUnattendedMode reads --mode for a surface with nobody in front of it.
@@ -863,7 +860,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	// --sandbox goes further: a disposable container is created for
 	// the run and approved commands exec inside it; if the sandbox cannot be
 	// created and verified, the run fails instead of downgrading.
-	run := runner.RunCapture
+	run := runner.RunCaptureResult
 	// hookWrap is what contains a hook, which is what contains a command:
 	// filled in below beside the runner it belongs to (hooks.go).
 	var hookWrap func(string) ([]string, error)
@@ -929,7 +926,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 			return err
 		}
 		if containment.Run != nil {
-			run = runner.LegacyRunner(containment.Run)
+			run = containment.Run
 			sandboxProfile = containment.Profile
 		}
 		containRefusal = containment.Refusal
@@ -944,13 +941,11 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	if offersCommands(session.toolDefs) {
 		env.addBuiltPrompt(commandEnvironmentBlock(cmdEnv))
 	}
-	run = scrubRunner(session.vault, run)
+	run = scrubResultRunner(session.vault, run)
 	// The ceiling matters most here. A session has a reader who can cancel a
 	// command that is never going to finish; a headless run has nobody, and
 	// the executor it is holding is held until something outside kills it.
-	rawRun := run
-	run = boundedRunner(rawRun, cfg.CommandTimeout())
-	opts.execResult = boundedExecResultRunner(rawRun, cfg.CommandTimeout())
+	run = boundedRunner(run, cfg.CommandTimeout())
 
 	// The person's own commands at this run's seams (hooks.go), assembled
 	// after the containment because what contains this run's commands is what
@@ -1853,7 +1848,7 @@ func headlessWrites(session chatSession, own *writtenByCalls) *structural.Writes
 // un is what this run has beyond its flags: the supervisor a spawn is handed
 // to, and the judge a call the flags did not answer is put to (approvals.go).
 // A zero value is the surface exactly as it was — flags, or a refusal.
-func headlessApprover(ctx context.Context, opts printOpts, allowlist, denylist []string, run func(context.Context, string) (string, int), containRefusal string, red *evidence.Reducer, record func(decision, reason string), webTools *web.Toolset, procSup *process.Supervisor, mutationHook chat.MutationHook, sc *scope.Scope, mcpTools *mcp.Toolset, structTools *structural.Toolset, un unattended) func(provider.ToolCall) string {
+func headlessApprover(ctx context.Context, opts printOpts, allowlist, denylist []string, run func(context.Context, string) tools.ExecResult, containRefusal string, red *evidence.Reducer, record func(decision, reason string), webTools *web.Toolset, procSup *process.Supervisor, mutationHook chat.MutationHook, sc *scope.Scope, mcpTools *mcp.Toolset, structTools *structural.Toolset, un unattended) func(provider.ToolCall) string {
 	note := func(decision, reason string) {
 		if record != nil {
 			record(decision, reason)
@@ -2039,13 +2034,12 @@ func headlessApprover(ctx context.Context, opts printOpts, allowlist, denylist [
 				return deny
 			}
 			note(observe.DecisionAllow, reason)
-			var result tools.ExecResult
-			if opts.execResult != nil {
-				result = opts.execResult(ctx, args.Command)
-			} else {
-				out, code := run(ctx, args.Command)
-				result = tools.InferExecResult(out, code)
-			}
+			// The typed result, not an output/status pair: a command that
+			// never started keeps its category and one whose ending nobody
+			// read keeps that, on the status line the transcript, the stream
+			// and the record all read.
+			// See docs/capabilities/headless.md#the-stream-is-the-record-as-it-happens.
+			result := run(ctx, args.Command)
 			result.Output = red.Process(tools.ExecCommandName, result.Output)
 			// The store is handed to the formatter as well as to the
 			// reduction: the pipeline fails open on a result it would barely

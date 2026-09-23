@@ -37,10 +37,104 @@ func execCall(command string) provider.ToolCall {
 }
 
 // fakeRun records executed commands and returns a fixed result.
-func fakeRun(ran *[]string) func(context.Context, string) (string, int) {
-	return func(_ context.Context, command string) (string, int) {
+func fakeRun(ran *[]string) func(context.Context, string) tools.ExecResult {
+	return func(_ context.Context, command string) tools.ExecResult {
 		*ran = append(*ran, command)
-		return "ok", 0
+		return tools.ExecResult{Output: "ok", Outcome: tools.ExecSucceeded}
+	}
+}
+
+// commandEndings are the two endings the output/status pair could not state,
+// and what the result a headless surface carries says about each: the first
+// line the transcript's tool message and the stream's result line both hold,
+// and the class the stream files it under.
+// See docs/capabilities/headless.md#the-stream-is-the-record-as-it-happens.
+var commandEndings = []struct {
+	name  string
+	exec  tools.ExecResult
+	lead  string
+	class string
+}{
+	{"prereq", tools.ExecResult{
+		Output:   tools.ExecPrereqReport(tools.PrereqContainment, "wrap unsupported: bwrap vanished"),
+		ExitCode: -1, Outcome: tools.ExecDidNotStart, Prereq: tools.PrereqContainment,
+	}, "error: command did not start: containment unavailable", observe.ClassHarnessContainment},
+	{"did-not-complete", tools.ExecResult{
+		Output: "partial\nwait: i/o timeout", ExitCode: -1, Outcome: tools.ExecDidNotComplete,
+	}, "error: command ran but did not report how it ended", observe.ClassDidNotComplete},
+}
+
+// commandTurn is an agent that asks for one command and then answers.
+func commandTurn(t *testing.T) *agent.Agent {
+	t.Helper()
+	rounds := [][]provider.StreamEvent{
+		{{ToolCalls: []provider.ToolCall{{ID: "c1", Name: tools.ExecCommandName, Arguments: `{"command":"go build ./..."}`}}}},
+		{{Token: "done"}, {Done: true}},
+	}
+	var next int
+	return agent.New(nil, func([]provider.Message, string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		if next >= len(rounds) {
+			t.Fatalf("unexpected stream request #%d", next+1)
+		}
+		ch := make(chan provider.StreamEvent, len(rounds[next]))
+		for _, ev := range rounds[next] {
+			ch <- ev
+		}
+		close(ch)
+		next++
+		return ch, func() {}, nil
+	})
+}
+
+// streamedResult is the one result line a stream wrote.
+func streamedResult(t *testing.T, lines string) jsonEvent {
+	t.Helper()
+	for _, line := range strings.Split(strings.TrimSpace(lines), "\n") {
+		var ev jsonEvent
+		if json.Unmarshal([]byte(line), &ev) == nil && ev.Kind == observe.EventToolResult {
+			return ev
+		}
+	}
+	t.Fatalf("the stream wrote no result line:\n%s", lines)
+	return jsonEvent{}
+}
+
+// A `-p` run carries how a command ended, not the output/status pair's
+// reading of it: a command that never started names what it needed, and one
+// whose ending nobody read says so rather than that it never started — in the
+// transcript's tool message and on the stream's result line alike.
+func TestAHeadlessRunKeepsHowACommandEnded(t *testing.T) {
+	for _, c := range commandEndings {
+		t.Run(c.name, func(t *testing.T) {
+			a := commandTurn(t)
+			var lines strings.Builder
+			obs := headlessObserver{rounds: a.Rounds, stream: newJSONLStream(&lines)}
+			run := func(context.Context, string) tools.ExecResult { return c.exec }
+			h := &agent.Headless{
+				Agent:        a,
+				Gate:         func(tc provider.ToolCall) bool { return tc.Name == tools.ExecCommandName },
+				Resolve:      headlessApprover(context.Background(), printOpts{yes: true}, nil, nil, run, "", nil, nil, nil, nil, nil, nil, nil, nil, unattended{}),
+				OnToolResult: obs.toolResult,
+			}
+			if _, err := h.Run("build it"); err != nil {
+				t.Fatalf("run: %v", err)
+			}
+
+			var message string
+			for _, m := range jsonMessages(a.Messages()) {
+				if m.Role == string(provider.RoleTool) {
+					message = m.Content
+				}
+			}
+			if !strings.HasPrefix(message, c.lead) {
+				t.Fatalf("the transcript's tool message is %q, want it to lead with %q", message, c.lead)
+			}
+			ev := streamedResult(t, lines.String())
+			if !strings.HasPrefix(ev.Result, c.lead) || ev.Outcome != observe.OutcomeError || ev.Class != c.class {
+				t.Fatalf("the result line is %q (%s, %s), want %q (%s, %s)",
+					ev.Result, ev.Outcome, ev.Class, c.lead, observe.OutcomeError, c.class)
+			}
+		})
 	}
 }
 
@@ -71,7 +165,9 @@ func TestHeadlessApprover_YesRunsCommand(t *testing.T) {
 }
 
 func TestHeadlessApprover_FailedCommandIsAnErrorResult(t *testing.T) {
-	run := func(context.Context, string) (string, int) { return "stderr: broken", 1 }
+	run := func(context.Context, string) tools.ExecResult {
+		return tools.ExecResult{Output: "stderr: broken", ExitCode: 1, Outcome: tools.ExecExited}
+	}
 	resolve := headlessApprover(context.Background(), printOpts{yes: true}, nil, nil, run, "", nil, nil, nil, nil, nil, nil, nil, nil, unattended{})
 
 	result := resolve(execCall("go test ./..."))

@@ -35,6 +35,7 @@ import (
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/subagent"
+	"github.com/rfizzle/shhh/internal/tools"
 )
 
 // spawnSeedFile is the one file the scripted checkout starts from. A writer's
@@ -239,7 +240,7 @@ func (s *scriptedChild) factory() subagent.EnvFactory {
 			ExecuteGated: func(name string, args json.RawMessage) (string, error) {
 				return runScriptedCall(root, name, args)
 			},
-			RunCommand: func(context.Context, string) (string, int) { return "", 0 },
+			RunCommand: func(context.Context, string) tools.ExecResult { return tools.ExecResult{Outcome: tools.ExecSucceeded} },
 		}
 		if s.reader != nil {
 			// The interval is one round and the wall-clock floor is off: the

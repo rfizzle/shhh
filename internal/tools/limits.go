@@ -187,6 +187,11 @@ const (
 // does not open with it.
 const didNotStart = "error: command did not start"
 
+// didNotComplete is the first line of a result for a command that ran and
+// whose ending nobody could read (ExecDidNotComplete). It is a constant for
+// the reason didNotStart is: ExecDidNotCompleteOf reads it back.
+const didNotComplete = "error: command ran but did not report how it ended"
+
 // ExecPrereq is the harness prerequisite a command needed and did not have.
 // It is the closed vocabulary of ways a command can fail for a reason that is
 // not the command's: the directory it was to run in, the shell that runs it,
@@ -276,8 +281,8 @@ func prereqAdvice(p ExecPrereq) string {
 //
 // It is composed here rather than where the classification is made because
 // every route a command's result takes reads it — the typed result the tool
-// formatter builds, and the older output/status pair the chat, a child and a
-// contained runner still hand back — and a wording that existed twice would
+// formatter builds, and the older output/status pair the remaining captured
+// forms still hand back — and a wording that existed twice would
 // be two wordings within a release.
 //
 // The detail leads because it is the fact: a model that already knows what a
@@ -313,6 +318,14 @@ func ExecPrereqOf(result string) ExecPrereq {
 		}
 	}
 	return ""
+}
+
+// ExecDidNotCompleteOf reports whether a formatted result is a command that
+// ran and whose ending nobody could read, for the consumers ExecPrereqOf is
+// for: they are handed the text, and have to file it under a code rather than
+// under the command that did not start it is the far end of.
+func ExecDidNotCompleteOf(result string) bool {
+	return strings.HasPrefix(result, didNotComplete)
 }
 
 // ExecResult is one command's output and the fact of how it ended. ExitCode is
@@ -402,7 +415,7 @@ func execStatusLine(result ExecResult) string {
 	case ExecStopped:
 		return "error: command was stopped before it finished"
 	case ExecDidNotComplete:
-		return "error: command ran but did not report how it ended"
+		return didNotComplete
 	case ExecDidNotStart:
 		if label := prereqLabel(result.Prereq); label != "" {
 			return didNotStart + ": " + label

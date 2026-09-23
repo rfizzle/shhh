@@ -677,6 +677,13 @@ const (
 	ClassHarnessContainment = "harness-containment"
 	ClassHarnessPermission  = "harness-permission"
 	ClassHarnessSpawn       = "harness-spawn"
+	// ClassDidNotComplete is a command that ran and whose ending nobody
+	// could read (tools.ExecDidNotComplete): it is not a harness class,
+	// because something did run, and not an exit status, because there is
+	// none. Without a class of its own it would be filed under whatever the
+	// keyword ladder made of the error the wait failed with.
+	// See docs/capabilities/headless.md#the-stream-is-the-record-as-it-happens.
+	ClassDidNotComplete = "did-not-complete"
 )
 
 // The two halves of one reading: the tools a session finds its way around
@@ -847,6 +854,9 @@ func ClassFromResult(result string) string {
 	// ladder reads as a stale path or a denied tool.
 	if prereq := harnessClass(tools.ExecPrereqOf(result)); prereq != "" {
 		return prereq
+	}
+	if tools.ExecDidNotCompleteOf(result) {
+		return ClassDidNotComplete
 	}
 	r := strings.ToLower(result)
 	switch {

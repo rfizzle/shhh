@@ -57,8 +57,10 @@ func agentSession(t *testing.T, root string, nb *notebook.Store, kids children, 
 			// commands: both reach the session as a decision of its own.
 			Executor:     withNotebook(nb, spec.Name, sup.WrapExecutor(spec.Name, subagent.RootedExecutor(spec.Root, tools.Execute))),
 			ExecuteGated: sup.WrapExecutor(spec.Name, subagent.RootedExecutor(spec.Root, tools.Execute)),
-			RunCommand:   func(context.Context, string) (string, int) { return "counted", 0 },
-			Gated:        map[string]bool{tools.ExecCommandName: true, subagent.SpawnToolName: true},
+			RunCommand: func(context.Context, string) tools.ExecResult {
+				return tools.ExecResult{Output: "counted", Outcome: tools.ExecSucceeded}
+			},
+			Gated: map[string]bool{tools.ExecCommandName: true, subagent.SpawnToolName: true},
 		}, nil
 	}})
 	t.Cleanup(sup.Close)

@@ -19,31 +19,18 @@ import (
 )
 
 // boundedRunner returns run with a per-command deadline. A limit of zero or
-// less returns run unchanged, so removing the ceiling costs no wrapper.
-func boundedRunner(run func(context.Context, string) (string, int), limit time.Duration) func(context.Context, string) (string, int) {
+// less returns run unchanged, so removing the ceiling costs no wrapper. The
+// deadline remains live until the runner returns, so a timeout is not
+// mistaken for an ordinary signal death by a later formatter.
+func boundedRunner(run func(context.Context, string) tools.ExecResult, limit time.Duration) func(context.Context, string) tools.ExecResult {
 	if limit <= 0 {
 		return run
 	}
-	return func(ctx context.Context, command string) (string, int) {
-		result := boundedExecResultRunner(run, limit)(ctx, command)
-		return result.Output, result.ExitCode
-	}
-}
-
-// boundedExecResultRunner is boundedRunner for execute_command's result
-// protocol. The deadline remains live until the runner returns, so a timeout
-// is not mistaken for an ordinary signal death by a later formatter.
-func boundedExecResultRunner(run func(context.Context, string) (string, int), limit time.Duration) func(context.Context, string) tools.ExecResult {
 	return func(ctx context.Context, command string) tools.ExecResult {
-		if limit <= 0 {
-			out, code := run(ctx, command)
-			return tools.InferExecResult(out, code)
-		}
 		ctx, cancel := context.WithTimeout(ctx, limit)
 		defer cancel()
-		out, code := run(ctx, command)
-		result := tools.InferExecResult(out, code)
-		if code != 0 && ctx.Err() == context.DeadlineExceeded {
+		result := run(ctx, command)
+		if result.ExitCode != 0 && ctx.Err() == context.DeadlineExceeded {
 			result.Outcome = tools.ExecTimedOut
 		}
 		return result

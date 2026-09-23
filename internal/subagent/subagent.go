@@ -390,8 +390,10 @@ type Env struct {
 	// web_fetch); the supervisor roots the arguments before calling it.
 	ExecuteGated agent.ToolExecutor
 	// RunCommand executes an approved shell command in the child's workspace
-	// (contained when a mechanism is available).
-	RunCommand func(ctx context.Context, command string) (output string, exitCode int)
+	// (contained when a mechanism is available). It answers with how the
+	// command ended as well as what it printed, so a command that never
+	// started keeps its category and one whose ending nobody read says so.
+	RunCommand func(ctx context.Context, command string) tools.ExecResult
 	// Reduce runs a command's output through the session's reduction
 	// pipeline before it becomes the child's tool result: a head, a tail,
 	// every line that names an error or a failure, and an id that pages the
@@ -569,11 +571,11 @@ func (e Env) autoExecutor(s Seam) agent.ToolExecutor {
 // from a child's command to the formatter runs through here, so every child
 // command enters the same error-result convention as its parent after
 // reduction — and the same offer of the whole output back.
-func (e Env) execResult(output string, exitCode int) string {
+func (e Env) execResult(result tools.ExecResult) string {
 	if e.Reduce != nil {
-		output = e.Reduce(tools.ExecCommandName, output)
+		result.Output = e.Reduce(tools.ExecCommandName, result.Output)
 	}
-	return tools.FormatExecResultKeeping(tools.InferExecResult(output, exitCode), e.Keep)
+	return tools.FormatExecResultKeeping(result, e.Keep)
 }
 
 // childCompactor is a child's window-recovery step, or nothing where the
@@ -4519,11 +4521,11 @@ func (s *Supervisor) resolveGated(c *child, tc provider.ToolCall) string {
 		if c.env.RunCommand == nil {
 			return "error: command execution is not available to this agent"
 		}
-		out, code := c.env.RunCommand(c.ctx, action.Command)
+		result := c.env.RunCommand(c.ctx, action.Command)
 		// The runner has already scrubbed the output, so the reduction — and
 		// the copy the evidence store keeps of it — is over the text the
 		// child is allowed to see, as it is on the parent.
-		return c.env.execResult(out, code)
+		return c.env.execResult(result)
 	}
 	return agent.ExecuteWith(c.env.ExecuteGated, provider.ToolCall{ID: tc.ID, Name: tc.Name, Arguments: string(rooted)})
 }

@@ -115,6 +115,17 @@ func TestClassFromResult_HarnessFailures(t *testing.T) {
 	if got := ClassFromResult(ran); got != ClassNotFound {
 		t.Errorf("ClassFromResult(%q) = %q, want %q", ran, got, ClassNotFound)
 	}
+	// A command whose ending nobody read is neither: it ran, so it is not a
+	// harness failure, and the wait's own words ("no such file", "timeout")
+	// are not what went wrong with it.
+	unread := tools.FormatExecResult(tools.ExecResult{
+		Output:   "partial\nwait: read |0: no such file or directory",
+		ExitCode: -1,
+		Outcome:  tools.ExecDidNotComplete,
+	})
+	if got := ClassFromResult(unread); got != ClassDidNotComplete {
+		t.Errorf("ClassFromResult(%q) = %q, want %q", unread, got, ClassDidNotComplete)
+	}
 }
 
 // ToolOutcome is the one call a surface makes to report a result, so it has

@@ -98,8 +98,10 @@ func (s *scriptedChildren) factory() subagent.EnvFactory {
 			Stream:       stream,
 			Executor:     func(name string, _ json.RawMessage) (string, error) { return "auto:" + name, nil },
 			ExecuteGated: func(name string, _ json.RawMessage) (string, error) { return "gated:" + name, nil },
-			RunCommand:   func(context.Context, string) (string, int) { return "ok", 0 },
-			Gated:        map[string]bool{tools.ExecCommandName: true},
+			RunCommand: func(context.Context, string) tools.ExecResult {
+				return tools.ExecResult{Output: "ok", Outcome: tools.ExecSucceeded}
+			},
+			Gated: map[string]bool{tools.ExecCommandName: true},
 		}, nil
 	}
 }
@@ -413,5 +415,40 @@ func TestServedClosingReadingIsFiledUnderItsOwnTurn(t *testing.T) {
 	})
 	if turn != 1 || round != 2 {
 		t.Fatalf("the closing reading was filed at turn %d round %d, want turn 1 round 2", turn, round)
+	}
+}
+
+// A served session carries how a command ended the way a `-p` run does: the
+// result line a client reads names the category of a command that never
+// started, and says of one whose ending nobody read that it did not complete.
+func TestAServedSessionKeepsHowACommandEnded(t *testing.T) {
+	for _, c := range commandEndings {
+		t.Run(c.name, func(t *testing.T) {
+			a := commandTurn(t)
+			lines := &syncLines{}
+			l := &serveLoop{
+				agent:  a,
+				events: newJSONLStream(lines),
+				own:    &writtenByCalls{},
+				saved:  &headlessChat{},
+			}
+			l.obs = headlessObserver{rounds: a.Rounds, turn: l.turnNow, stream: l.events}
+			run := func(context.Context, string) tools.ExecResult { return c.exec }
+			l.headless = &agent.Headless{
+				Agent: a,
+				Gate:  func(tc provider.ToolCall) bool { return tc.Name == tools.ExecCommandName },
+				// What a call the client allowed is run through (serve.go).
+				Resolve: headlessApprover(context.Background(), printOpts{yes: true}, nil, nil, run, "",
+					nil, nil, nil, nil, nil, nil, nil, nil, unattended{at: l.obs.pos}),
+				OnToolResult: l.obs.toolResult,
+			}
+			if _, err := l.Run(1, "build it"); err != nil {
+				t.Fatalf("the turn: %v", err)
+			}
+			ev := streamedResult(t, lines.String())
+			if !strings.HasPrefix(ev.Result, c.lead) || ev.Class != c.class {
+				t.Fatalf("the client read %q (%s), want %q (%s)", ev.Result, ev.Class, c.lead, c.class)
+			}
+		})
 	}
 }

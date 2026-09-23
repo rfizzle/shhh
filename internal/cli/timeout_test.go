@@ -10,13 +10,13 @@ import (
 )
 
 func TestBoundedRunnerLeavesAFinishingCommandAlone(t *testing.T) {
-	run := boundedRunner(func(context.Context, string) (string, int) {
-		return "done\n", 0
+	run := boundedRunner(func(context.Context, string) tools.ExecResult {
+		return tools.ExecResult{Output: "done\n", Outcome: tools.ExecSucceeded}
 	}, time.Minute)
 
-	out, code := run(context.Background(), "echo done")
-	if out != "done\n" || code != 0 {
-		t.Fatalf("an ordinary command should pass through untouched: %q %d", out, code)
+	got := run(context.Background(), "echo done")
+	if got.Output != "done\n" || got.ExitCode != 0 || got.Outcome != tools.ExecSucceeded {
+		t.Fatalf("an ordinary command should pass through untouched: %+v", got)
 	}
 }
 
@@ -25,14 +25,14 @@ func TestBoundedRunnerLeavesAFinishingCommandAlone(t *testing.T) {
 // what a command that reaches it deserves.
 func TestBoundedRunnerPutsTheLimitOnTheContext(t *testing.T) {
 	var limit time.Duration
-	run := boundedRunner(func(ctx context.Context, _ string) (string, int) {
+	run := boundedRunner(func(ctx context.Context, _ string) tools.ExecResult {
 		deadline, ok := ctx.Deadline()
 		if !ok {
 			t.Error("a bounded command must carry a deadline")
-			return "", -1
+			return tools.ExecResult{ExitCode: -1, Outcome: tools.ExecDidNotStart}
 		}
 		limit = time.Until(deadline)
-		return "", 0
+		return tools.ExecResult{Outcome: tools.ExecSucceeded}
 	}, time.Minute)
 
 	run(context.Background(), "sleep 30")
@@ -43,10 +43,10 @@ func TestBoundedRunnerPutsTheLimitOnTheContext(t *testing.T) {
 
 // Removing the ceiling leaves the command genuinely unbounded rather than
 // bounded by something very large.
-func TestBoundedExecResultRunner_ClassifiesTimeout(t *testing.T) {
-	run := boundedExecResultRunner(func(ctx context.Context, _ string) (string, int) {
+func TestBoundedRunner_ClassifiesTimeout(t *testing.T) {
+	run := boundedRunner(func(ctx context.Context, _ string) tools.ExecResult {
 		<-ctx.Done()
-		return "partial output", -9
+		return tools.ExecResult{Output: "partial output", ExitCode: -9, Outcome: tools.ExecSignaled}
 	}, 10*time.Millisecond)
 
 	result := run(context.Background(), "sleep 30")
@@ -61,14 +61,13 @@ func TestBoundedExecResultRunner_ClassifiesTimeout(t *testing.T) {
 
 func TestBoundedRunnerImposesNoDeadlineWithoutALimit(t *testing.T) {
 	var deadlineSet bool
-	run := boundedRunner(func(ctx context.Context, _ string) (string, int) {
+	run := boundedRunner(func(ctx context.Context, _ string) tools.ExecResult {
 		_, deadlineSet = ctx.Deadline()
-		return "x", 0
+		return tools.ExecResult{Output: "x", Outcome: tools.ExecSucceeded}
 	}, 0)
 
-	out, _ := run(context.Background(), "anything")
-	if out != "x" {
-		t.Fatalf("got %q", out)
+	if got := run(context.Background(), "anything"); got.Output != "x" {
+		t.Fatalf("got %q", got.Output)
 	}
 	if deadlineSet {
 		t.Error("a removed ceiling must not put a deadline on the context")
@@ -80,10 +79,10 @@ func TestBoundedRunnerImposesNoDeadlineWithoutALimit(t *testing.T) {
 // different answers at the other end.
 func TestBoundedRunnerPassesACancellationThrough(t *testing.T) {
 	var cause error
-	run := boundedRunner(func(ctx context.Context, _ string) (string, int) {
+	run := boundedRunner(func(ctx context.Context, _ string) tools.ExecResult {
 		<-ctx.Done()
 		cause = ctx.Err()
-		return "stopped", -1
+		return tools.ExecResult{Output: "stopped", ExitCode: -1, Outcome: tools.ExecStopped}
 	}, time.Hour)
 
 	ctx, cancel := context.WithCancel(context.Background())

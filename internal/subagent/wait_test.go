@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/tools"
 )
 
 // heldEnv is an EnvFactory whose children each answer only once the test lets
@@ -59,7 +60,7 @@ func (h *heldEnv) factory() EnvFactory {
 			ExecuteGated: func(name string, _ json.RawMessage) (string, error) {
 				return "gated:" + name, nil
 			},
-			RunCommand: func(context.Context, string) (string, int) { return "", 0 },
+			RunCommand: func(context.Context, string) tools.ExecResult { return tools.ExecResult{Outcome: tools.ExecSucceeded} },
 		}, nil
 	}
 }

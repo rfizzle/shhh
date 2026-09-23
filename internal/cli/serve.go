@@ -394,14 +394,14 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 	// long-lived process and has no disposable container of its own: a
 	// sandbox is created for one run and torn down with it, which is not what
 	// a session that outlives every one of its turns is.
-	run := runner.RunCapture
+	run := runner.RunCaptureResult
 	sandboxProfile := ""
 	containment, err := buildContainment(cfg, sc, procSup)
 	if err != nil {
 		return nil, err
 	}
 	if containment.Run != nil {
-		run = runner.LegacyRunner(containment.Run)
+		run = containment.Run
 		sandboxProfile = containment.Profile
 	}
 	// What the model is told about it, beside where it was told the work is
@@ -419,12 +419,10 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 		// there is a supervisor to hand it to (process.go).
 		Backgrounds: procSup != nil,
 	}))
-	run = scrubRunner(session.vault, run)
+	run = scrubResultRunner(session.vault, run)
 	// Nobody is at a keyboard to cancel a command that will not finish, which
 	// is the same reason an unattended run bounds one.
-	rawRun := run
-	run = boundedRunner(rawRun, cfg.CommandTimeout())
-	execResult := boundedExecResultRunner(rawRun, cfg.CommandTimeout())
+	run = boundedRunner(run, cfg.CommandTimeout())
 
 	hookCwd, _ := os.Getwd()
 	hooked := hookSet(cfg)
@@ -564,7 +562,7 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 	// `--yes` run. An answer is a decision, and a decision cannot outrank a
 	// standing refusal, which is why the answer chooses an approver rather
 	// than replacing one.
-	allowed := headlessApprover(cmd.Context(), printOpts{yes: true, execResult: execResult}, cfg.Behavior.CommandAllowlist,
+	allowed := headlessApprover(cmd.Context(), printOpts{yes: true}, cfg.Behavior.CommandAllowlist,
 		cfg.Behavior.CommandDenylist, run, containment.Refusal, red, answeredByClient(record),
 		session.web, procSup, chainMutation(lspMutationHook(session.lsp), hookPostMutation(hooks)), sc, session.mcpTools, session.structural,
 		unattended{sup: sup, at: l.obs.pos, seen: l.seen})
@@ -573,7 +571,7 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 	// been, and a refusal wherever it cannot approve.
 	var judged func(provider.ToolCall) string
 	if opts.autoMode {
-		judged = headlessApprover(cmd.Context(), printOpts{execResult: execResult}, cfg.Behavior.CommandAllowlist,
+		judged = headlessApprover(cmd.Context(), printOpts{}, cfg.Behavior.CommandAllowlist,
 			cfg.Behavior.CommandDenylist, run, containment.Refusal, red, record,
 			session.web, procSup, chainMutation(lspMutationHook(session.lsp), hookPostMutation(hooks)), sc, session.mcpTools, session.structural,
 			unattended{sup: sup, at: l.obs.pos, seen: l.seen,

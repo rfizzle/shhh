@@ -269,6 +269,19 @@ future hook receiving the same shapes on stdin needs no second dictionary. No
 field that names a kind, an outcome or a reason ever holds prose the run
 composed: a code you have to parse a sentence out of is not a code.
 
+**A command's ending is a class, not a sentence to parse.** A result line's
+`class` is where a command that never started names what it needed —
+`harness-working-directory`, `harness-execution-shell`, `harness-containment`,
+`harness-permission` or `harness-spawn`, the record's own codes
+([`containment.md`](containment.md#a-command-that-never-started-names-what-it-needed))
+— and where a command that ran and whose ending nobody could read is
+`did-not-complete`. The two are kept apart because they send a reader to
+different places: nothing ran in the first, so the machine is what to look
+at, while in the second something did run and what it printed before the
+wait broke is evidence about the command. The transcript's tool message says
+the same on its first line, and so does the result a child reads and its lane
+keeps, whether or not a mechanism contains the command.
+
 Replaying the events rebuilds the conversation the transcript states at the
 end — the same messages, the same calls, the same results. The two are
 readings of one run rather than two accounts of it, so nothing has to read

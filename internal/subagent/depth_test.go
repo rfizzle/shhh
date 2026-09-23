@@ -669,7 +669,7 @@ func TestDepth_AKillTakesTheSubtreeAndTheWorktreeGoesLast(t *testing.T) {
 				return env, err
 			}
 			env.Gated = map[string]bool{tools.ExecCommandName: true}
-			env.RunCommand = func(context.Context, string) (string, int) { return "", 0 }
+			env.RunCommand = func(context.Context, string) tools.ExecResult { return tools.ExecResult{Outcome: tools.ExecSucceeded} }
 			return env, nil
 		},
 		Record: func(spec Spec, _ string) Recorder {
