@@ -1681,9 +1681,10 @@ func TestGolden_InspectorRail(t *testing.T) {
 			Frame:      2,
 		}
 		// The same map with a queued child added and the rail three rows
-		// short of it: the trailer goes first, then the child that stopped,
-		// then the one that never started, and every working row is still
-		// there.
+		// short of it: the trailer goes first, then the child that never
+		// started, then the line under the child that stopped — its name row
+		// stays, because the working child it started hangs off it — and
+		// every working row is still there.
 		reachShort := reach
 		reachShort.Agents = append(append([]InspectorAgent{}, reach.Agents...),
 			InspectorAgent{Name: "reader-6", Detail: "waiting for a slot", Depth: 1,

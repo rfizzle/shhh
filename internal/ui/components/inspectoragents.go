@@ -140,11 +140,32 @@ const giveFirst = -1
 // what a rail short of height can afford to lose is not a property of the
 // state: a finished child's outcome has been read once already and is still
 // in the transcript, and a queued child has nothing to report yet.
+//
+// A session is never given up while anything it started is still drawn: a
+// nested row hangs off its parent behind a corner, and with the parent taken
+// that corner would hang off whichever stranger was drawn above — the hazard
+// the fold already answers in mappedAgents. So a session goes after its whole
+// subtree, a session over one that is not settled waits for the second pass,
+// and a session over a pinned one has its name row pinned with it — the row
+// the corner hangs off, and not the line under it, which is the parent's own
+// news and goes before anything the pinned child is doing.
 func orderGiving(agents []InspectorAgent, rows [][]railLine) {
+	settled := make([]bool, len(agents))
+	for i, a := range agents {
+		settled[i] = a.State.settled()
+	}
+	for i := len(agents) - 1; i >= 0; i-- {
+		for j := i + 1; j < len(agents) && agents[j].Depth > agents[i].Depth; j++ {
+			settled[i] = settled[i] && settled[j]
+			if len(rows[i]) > 0 && len(rows[j]) > 0 && rows[j][0].pinned {
+				rows[i][0].pinned = true
+			}
+		}
+	}
 	give := 0
-	for _, settled := range []bool{true, false} {
-		for i, a := range agents {
-			if a.State.settled() != settled {
+	for _, pass := range []bool{true, false} {
+		for _, i := range subtreeFirst(agents) {
+			if settled[i] != pass {
 				continue
 			}
 			for j := len(rows[i]) - 1; j >= 0; j-- {
@@ -153,6 +174,26 @@ func orderGiving(agents []InspectorAgent, rows [][]railLine) {
 			}
 		}
 	}
+}
+
+// subtreeFirst is the map's sessions with every session after everything it
+// started and siblings still in the order drawn — the order a subtree can be
+// given up in without leaving a corner under nothing.
+func subtreeFirst(agents []InspectorAgent) []int {
+	order := make([]int, 0, len(agents))
+	var open []int
+	for i, a := range agents {
+		for len(open) > 0 && agents[open[len(open)-1]].Depth >= a.Depth {
+			order = append(order, open[len(open)-1])
+			open = open[:len(open)-1]
+		}
+		open = append(open, i)
+	}
+	for len(open) > 0 {
+		order = append(order, open[len(open)-1])
+		open = open[:len(open)-1]
+	}
+	return order
 }
 
 // hasChild reports whether the map has a session under the orchestrator. The

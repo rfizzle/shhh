@@ -358,3 +358,57 @@ func TestInspectorRail_AgentsMapMovesASubtreeWhole(t *testing.T) {
 		})
 	}
 }
+
+// TestInspectorRail_AgentsMapShedsAChildWithItsParent: a rail short of
+// height gives up a nested session before the session that started it, so at
+// a height with room for one of the pair but not both, the one left is the
+// parent and the corner never hangs under a stranger. A finished parent over
+// a child still working is kept with it, and wherever a session has gone the
+// marker counts it.
+func TestInspectorRail_AgentsMapShedsAChildWithItsParent(t *testing.T) {
+	self := InspectorAgent{Name: "orchestrator", Detail: "round 3", Self: true, State: FanoutRunning}
+	cases := []struct {
+		name   string
+		agents []InspectorAgent
+	}{
+		{
+			name: "a finished pair",
+			agents: []InspectorAgent{self,
+				{Name: "writer-1", Detail: "wrote two files", Outcome: "done", Depth: 1, State: FanoutDone},
+				{Name: "reader-1a", Detail: "read the loop", Outcome: "done", Depth: 2, State: FanoutDone},
+				{Name: "writer-2", Detail: "internal/agent/loop.go", Depth: 1, State: FanoutRunning},
+			},
+		},
+		{
+			name: "a finished parent over a child still working",
+			agents: []InspectorAgent{self,
+				{Name: "writer-1", Detail: "wrote two files", Outcome: "done", Depth: 1, State: FanoutDone},
+				{Name: "reader-1a", Detail: "read the loop", Depth: 2, State: FanoutRunning},
+				{Name: "writer-2", Detail: "wrote a test", Outcome: "failed", Depth: 1, State: FanoutFailed},
+			},
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			r := InspectorRail{Agents: tc.agents, Frame: 2}
+			full := len(r.Lines(InspectorMaxWidth, 0))
+			childShed := false
+			for h := full; h >= 3; h-- {
+				v := stripANSI(strings.Join(r.Lines(InspectorMaxWidth, h), "\n"))
+				child, parent := strings.Contains(v, "reader-1a"), strings.Contains(v, "writer-1")
+				if child && !parent {
+					t.Fatalf("at height %d the child is drawn without its parent:\n%s", h, v)
+				}
+				if parent && !child {
+					childShed = true
+					if !strings.Contains(v, "… ") {
+						t.Fatalf("at height %d a session went and no marker counts it:\n%s", h, v)
+					}
+				}
+			}
+			if !childShed {
+				t.Fatalf("no height kept the parent and shed the child")
+			}
+		})
+	}
+}
