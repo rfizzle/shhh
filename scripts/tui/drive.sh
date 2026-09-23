@@ -218,7 +218,17 @@ fi
 # The environment is exported rather than prefixed with env(1), because a
 # launch line is a whole shell line and a prefix would reach only its first
 # command.
-run="export $envs SHHH_BIN=$SHHH_BIN; $launch"
+#
+# `stty -tabs` first, because a capture is cells and a hard tab is not one.
+# The renderer moves the cursor across blank cells with a tab wherever the
+# pty's TABDLY says tabs are real, and tmux marks every blank cell a tab
+# crosses so that capture-pane prints one `\t` for the run — a draft that
+# holds `and check the exit` then captures as `and check\tthe exit` on the
+# frames where a stop happened to land on that space, and a snap waiting for
+# the sentence never sees it. With the tab delay set the renderer moves by
+# spaces and cursor sequences instead, and the kernel expands any tab a
+# program writes, so what is captured is what is on the screen.
+run="stty -tabs; export $envs SHHH_BIN=$SHHH_BIN; $launch"
 # The recorder wraps the binary inside the pane, so the cast is the pane's own
 # size and every cell tmux sees is a cell it saw. -q keeps asciinema's
 # diagnostics off the screen, where a snap would otherwise read them.
