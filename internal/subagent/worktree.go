@@ -17,6 +17,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/rfizzle/shhh/internal/diff"
 )
@@ -37,6 +38,28 @@ func runGitContext(ctx context.Context, dir string, args ...string) (string, err
 		return string(out), fmt.Errorf("git %s: %s", strings.Join(args, " "), strings.TrimSpace(string(out)))
 	}
 	return string(out), nil
+}
+
+// worktreeLocks holds one lock per repository toplevel. Two `git worktree
+// add` calls in one repository can each read the other's half-written entry
+// under .git/worktrees and fail with "failed to read …/commondir", so every
+// add, remove and prune in a repository waits its turn. The lock is the
+// package's rather than a supervisor's because the exported NewWorktree and
+// Remove make and tear down worktrees too, and a lock only some callers take
+// closes nothing. It is a channel so a stopping writer can stop waiting.
+var worktreeLocks sync.Map // repoTop → chan struct{}
+
+// lockWorktrees waits for the repository's worktree administration, or for
+// ctx to end; the function it returns releases the turn.
+func lockWorktrees(ctx context.Context, repoTop string) (func(), error) {
+	v, _ := worktreeLocks.LoadOrStore(repoTop, make(chan struct{}, 1))
+	turn := v.(chan struct{})
+	select {
+	case turn <- struct{}{}:
+		return func() { <-turn }, nil
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
 }
 
 // worktreeHandle is a writer's isolated checkout: the worktree directory,
@@ -79,7 +102,13 @@ func addWorktreeContext(ctx context.Context, root string, untracked []string) (w
 	if err = os.Remove(h.dir); err != nil {
 		return worktreeHandle{}, err
 	}
-	if _, err = runGitContext(ctx, h.repoTop, "worktree", "add", "--detach", h.dir, "HEAD"); err != nil {
+	unlock, err := lockWorktrees(ctx, h.repoTop)
+	if err != nil {
+		return worktreeHandle{}, err
+	}
+	_, err = runGitContext(ctx, h.repoTop, "worktree", "add", "--detach", h.dir, "HEAD")
+	unlock()
+	if err != nil {
 		// The git error is the one worth reporting; a directory left behind
 		// by a failed add is cleaned up as far as it can be.
 		_ = os.RemoveAll(h.dir)
@@ -275,8 +304,10 @@ func removeWorktree(repoTop, worktree string) {
 		return
 	}
 	if repoTop != "" {
+		unlock, _ := lockWorktrees(context.Background(), repoTop)
 		_, _ = runGit(repoTop, "worktree", "remove", "--force", worktree)
 		_, _ = runGit(repoTop, "worktree", "prune")
+		unlock()
 	}
 	_ = os.RemoveAll(worktree)
 }

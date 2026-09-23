@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/rfizzle/shhh/internal/diff"
@@ -581,7 +582,15 @@ func chmodCarried(t *testing.T, path string, mode os.FileMode) bool {
 // one of the copies.
 func linkedWorktrees(t *testing.T, repo string) int {
 	t.Helper()
+	// Listing while a writer's copy is being removed reads a half-removed
+	// entry and fails, so the reading takes its turn like the removal does.
+	top, err := runGit(repo, "rev-parse", "--show-toplevel")
+	if err != nil {
+		t.Fatal(err)
+	}
+	unlock, _ := lockWorktrees(context.Background(), strings.TrimSpace(top))
 	out, err := exec.Command("git", "-C", repo, "worktree", "list", "--porcelain").CombinedOutput()
+	unlock()
 	if err != nil {
 		t.Fatalf("git worktree list: %v\n%s", err, out)
 	}
@@ -618,5 +627,37 @@ func TestWriterWorkspaceFailureLandsOnTheChild(t *testing.T) {
 	}
 	if st.Seeded != 0 {
 		t.Fatalf("a writer that never got a worktree reports %d seeded paths", st.Seeded)
+	}
+}
+
+// Three writers starting together in one repository add their worktrees at
+// once, and two concurrent `git worktree add` calls can each read the other's
+// half-written entry under .git/worktrees and fail on its commondir. The
+// administration takes turns, so none of them does.
+func TestAddWorktree_ThreeWritersAtOnceInOneRepository(t *testing.T) {
+	repo := initTestRepo(t)
+	for round := 0; round < 50; round++ {
+		var wg sync.WaitGroup
+		handles := make([]worktreeHandle, 3)
+		errs := make([]error, 3)
+		for i := range handles {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				handles[i], errs[i] = addWorktreeContext(context.Background(), repo, nil)
+			}()
+		}
+		wg.Wait()
+		for i, h := range handles {
+			if errs[i] != nil {
+				t.Fatalf("round %d, writer %d: %v", round, i, errs[i])
+			}
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				removeWorktree(h.repoTop, h.dir)
+			}()
+		}
+		wg.Wait()
 	}
 }

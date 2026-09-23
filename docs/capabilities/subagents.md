@@ -115,7 +115,10 @@ would hold a whole checkout on disk for that whole wait, and would begin from
 your tree as it stood when the fan-out was planned rather than as it stands
 when it begins. A writer that cannot be given a copy at all fails as a child,
 with the reason on its own lane — by then the turn that asked for it has long
-since answered, and there is nowhere else for the failure to go.
+since answered, and there is nowhere else for the failure to go. Writers that
+start together are given their copies one at a time, because git making two
+copies of one repository at once can trip over its own half-written
+bookkeeping; only the making waits, and the children then work side by side.
 
 This changes what a child starts from and nothing about what comes back.
 Approval is still the only way anything reaches your checkout, the lane says
