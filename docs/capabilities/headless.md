@@ -321,6 +321,15 @@ refusal, and a safety-flagged command is refused whatever the flags say
 to everything the flags did not name" and "yes to everything" is auto mode,
 below.
 
+A conversation's reads never needed `--yes`. A fetch in `shhh chat --print`
+is answered the way the conversation on screen answers it: a host on the deny
+list is refused, and every other page is read unasked, because nothing it
+brings back can change the tree or the machine
+([`chat.md`](chat.md#a-conversation-has-one-mode)). A run that refused the
+read the screen beside it allows would be the same session with two answers.
+The flag is still accepted there, so a script that passes it keeps running; a
+coding run's fetch is an external action and still takes it.
+
 A flag the run cannot honour is a usage error rather than a silent no-op.
 `--resume` with no chat named opens a picker, and a run with nobody in front
 of it can neither draw one nor be answered — so it says so, instead of

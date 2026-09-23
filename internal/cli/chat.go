@@ -101,12 +101,12 @@ func newChatCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&popts.json, "json", false, "with --print, emit a structured JSON transcript instead of streaming text (implies --print; the same as --output json)")
 	cmd.Flags().StringVar(&popts.output, "output", "", "with --print, what the run writes: text (the answer as it is written), json (the transcript at the end) or jsonl (one event per line while it runs) (implies --print)")
 	addOutputSchemaFlag(cmd, &schemaPath)
-	// The one opt-in a conversation has anything to spend. Nothing here
-	// edits a file or runs a command, so the only decision a read-only
-	// session ever puts to a person is whether a request may leave the
-	// machine, and this is that answer given in advance.
-	// See docs/capabilities/chat.md#chat-changes-nothing.
-	cmd.Flags().BoolVar(&popts.yes, "yes", false, "with --print, auto-approve the requests that leave the machine (a web fetch, a server not marked read-only)")
+	// Accepted and never needed. Nothing here edits a file or runs a
+	// command, and a fetch is a read the conversation answers without asking
+	// — the host deny list, then yes — so there is no decision left for this
+	// to give in advance. It stays so a script that passes it keeps running.
+	// See docs/capabilities/headless.md#everything-the-session-has-unless-somebody-has-to-answer.
+	cmd.Flags().BoolVar(&popts.yes, "yes", false, "with --print, not needed: a conversation's reads run unasked (a fetch unless its host is on web.deny_hosts); accepted so scripts that pass it still run")
 	addDirFlag(cmd, &addDirs)
 	addSecretFlag(cmd, &secretFlags)
 	// Registered only to be refused in a sentence, and hidden so the help

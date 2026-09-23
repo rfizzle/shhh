@@ -205,6 +205,14 @@ type unattended struct {
 	judge *autoJudge
 	// seen is the read record the run's own askers answer from.
 	seen *tools.Recorder
+	// conversation is the host deny list of a run that registered nothing
+	// that acts, and nil on every other run. A fetch there is answered the
+	// way the conversation on screen answers it — the deny list, then a read
+	// nobody is asked about — because a surface that asks nobody on screen
+	// has no reason to refuse the same read with nobody watching, and --yes
+	// is a yes to acts a conversation cannot make.
+	// See docs/capabilities/chat.md#a-conversation-has-one-mode.
+	conversation *agent.ModePolicy
 	// at is where the run has got to, for the line a refusal leaves in the
 	// diagnostic log. It is a function and not a position because the
 	// approver is built once and asked on every round, and it is here rather
@@ -221,4 +229,14 @@ func (u unattended) pos() observe.Pos {
 		return observe.Pos{}
 	}
 	return u.at()
+}
+
+// conversationReads is the policy an unattended conversation answers a fetch
+// with, and nil for a run that is not one — a coding run's fetch is answered
+// by its flags and its judge as it always was.
+func conversationReads(conversation bool, denyHosts []string) *agent.ModePolicy {
+	if !conversation {
+		return nil
+	}
+	return &agent.ModePolicy{Conversation: true, DenyHosts: denyHosts}
 }

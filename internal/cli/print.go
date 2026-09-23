@@ -1207,7 +1207,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	verdict := &lastVerdict{}
 	resolve := headlessApprover(cmd.Context(), opts, allowlist, cfg.Behavior.CommandDenylist, run, containRefusal, red, verdict.wrap(obs.decision),
 		session.web, procSup, chainMutation(lspMutationHook(session.lsp), hookPostMutation(hooks)), sc, session.mcpTools, session.structural,
-		unattended{sup: sup, judge: judge, at: obs.pos})
+		unattended{sup: sup, judge: judge, at: obs.pos, conversation: conversationReads(session.conversation, cfg.Web.DenyHosts)})
 	// The gated tier is where an unattended run circles: the test command
 	// that fails the same way every round, the edit a policy refuses every
 	// time it is proposed. Neither reaches the executor chain — the approver
@@ -1976,10 +1976,25 @@ func headlessApprover(ctx context.Context, opts printOpts, allowlist, denylist [
 			if plan, err := webTools.FetchPlan(json.RawMessage(tc.Arguments)); err == nil {
 				fetchAction.Host = plan.Host
 			}
-			reason, ok := answer(tc, fetchAction,
-				opts.yes, observe.ReasonHeadlessYes, "web fetch", "external actions by default (run with --yes)")
-			if !ok {
-				return reason
+			var reason string
+			if un.conversation != nil {
+				// The conversation's policy is the whole answer: it refuses a
+				// host on the deny list and allows every other read, so no
+				// flag and no classifier is asked. It writes its own refusal
+				// line, which is why this does not go through refuse.
+				decision, why := un.conversation.Decide(fetchAction)
+				if decision != agent.Allow {
+					note(observe.DecisionDeny, observe.ReasonCode(why))
+					return agent.DeniedHostResult
+				}
+				reason = observe.ReasonCode(why)
+			} else {
+				var ok bool
+				reason, ok = answer(tc, fetchAction,
+					opts.yes, observe.ReasonHeadlessYes, "web fetch", "external actions by default (run with --yes)")
+				if !ok {
+					return reason
+				}
 			}
 			note(observe.DecisionAllow, reason)
 			fetch := func(name string, args json.RawMessage) (string, error) {

@@ -498,6 +498,82 @@ func TestHeadlessApprover_WebFetchRunsWithYes(t *testing.T) {
 	}
 }
 
+// A conversation run behind --print reads the web the way the conversation on
+// screen does: the fetch runs with no --yes and is recorded as a read, a host
+// on the deny list is still refused, and a coding run given the same call and
+// the same flags still refuses it
+// (docs/capabilities/headless.md#everything-the-session-has-unless-somebody-has-to-answer).
+func TestHeadlessConversation_FetchesWithoutYes(t *testing.T) {
+	var fixtures testhttp.Registry
+	srv := fixtures.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/plain")
+		fmt.Fprint(w, "fetched body")
+	}))
+	defer srv.Close()
+	host := strings.TrimPrefix(strings.TrimPrefix(srv.URL, "http://"), "https://")
+	host = strings.SplitN(host, ":", 2)[0]
+
+	cases := []struct {
+		name         string
+		conversation bool
+		deny         []string
+		ran          bool
+		reason       string
+	}{
+		{name: "conversation", conversation: true, ran: true, reason: observe.ReasonConversationRead},
+		{name: "denied host", conversation: true, deny: []string{host}, reason: observe.ReasonCode(agent.DenyReasonHost)},
+		{name: "coding run", reason: observe.ReasonHeadlessDefault},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			rounds := [][]provider.StreamEvent{
+				{{ToolCalls: []provider.ToolCall{{ID: "f1", Name: web.FetchToolName,
+					Arguments: `{"url":"` + srv.URL + `"}`}}}},
+				{{Token: "read it"}, {Done: true}},
+			}
+			var next int
+			a := agent.New(nil, func([]provider.Message, string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+				if next >= len(rounds) {
+					t.Fatalf("unexpected stream request #%d", next+1)
+				}
+				ch := make(chan provider.StreamEvent, len(rounds[next]))
+				for _, ev := range rounds[next] {
+					ch <- ev
+				}
+				close(ch)
+				next++
+				return ch, func() {}, nil
+			})
+			webTools := web.NewToolset(web.NewFetcherWithClient(web.Policy{AllowPrivate: true}, fixtures.Client()), nil)
+			var lines strings.Builder
+			obs := headlessObserver{rounds: a.Rounds, stream: newJSONLStream(&lines)}
+			h := &agent.Headless{
+				Agent: a,
+				Gate:  unattendedGate(webTools, nil, nil, nil),
+				Resolve: headlessApprover(context.Background(), printOpts{}, nil, nil, fakeRun(&[]string{}), "", nil, obs.decision,
+					webTools, nil, nil, nil, nil, nil,
+					unattended{at: obs.pos, conversation: conversationReads(c.conversation, c.deny)}),
+			}
+			if _, err := h.Run("read the page"); err != nil {
+				t.Fatalf("run: %v", err)
+			}
+
+			var result string
+			for _, m := range jsonMessages(a.Messages()) {
+				if m.Role == string(provider.RoleTool) {
+					result = m.Content
+				}
+			}
+			if got := strings.Contains(result, "fetched body"); got != c.ran {
+				t.Fatalf("the fetch ran = %v, want %v; the tool message is %q", got, c.ran, result)
+			}
+			if !strings.Contains(lines.String(), `"reason":"`+c.reason+`"`) {
+				t.Fatalf("the decision should be recorded as %q:\n%s", c.reason, lines.String())
+			}
+		})
+	}
+}
+
 func TestHeadlessApprover_WebFetchUnregisteredWithoutToolset(t *testing.T) {
 	resolve := headlessApprover(context.Background(), printOpts{yes: true}, nil, nil, fakeRun(&[]string{}), "", nil, nil, nil, nil, nil, nil, nil, nil, unattended{})
 	tc := provider.ToolCall{ID: "c1", Name: web.FetchToolName, Arguments: `{"url":"https://example.com/"}`}

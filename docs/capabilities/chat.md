@@ -246,10 +246,11 @@ containment, a changeset and a command runner it will never touch
 
 What it will not do is what it has nobody to ask. A colleague is reached by a
 spawn and a spawn is an approval, so a run behind `--print` has no colleagues; durable
-memory proposes nothing, for the same reason. The one decision that is left —
-whether a request may leave the machine — is denied unless `--yes` gives the
-answer in advance. There is no flag for anything else because there is
-nothing else: a tool name this session never offered is answered as unknown
+memory proposes nothing, for the same reason. A fetch is not one of those
+decisions: it is a read here as on the screen, refused only for a host on the
+deny list, so `--yes` has nothing left to answer
+([`headless.md`](headless.md#everything-the-session-has-unless-somebody-has-to-answer)).
+There is no flag for anything else because there is nothing else: a tool name this session never offered is answered as unknown
 rather than resolved, so a run cannot be talked into an edit through a tool it
 does not have.
 
