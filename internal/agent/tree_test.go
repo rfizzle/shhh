@@ -863,3 +863,45 @@ func TestTree_AFailedSnapshotIsSaidOncePerReason(t *testing.T) {
 		t.Errorf("one machine line per distinct reason, got %q", logged)
 	}
 }
+
+// A checkout whose index is already broken when the reading is turned on is
+// said at the first boundary, the way a later failure is, and a snapshot git
+// gives once the index is back is the baseline rather than a change.
+func TestTree_AFailedFirstSnapshotIsSaidAtTheFirstBoundary(t *testing.T) {
+	ws, git := treeFixture(t)
+	write(t, ws, ".git/index", "not an index")
+	var logged []string
+	a := New(nil, nil)
+	a.SetTreeCheck(TreeCheck{Dir: ws, Log: func(s string) { logged = append(logged, s) }})
+	if !a.TreeChecking() {
+		t.Fatal("a repository whose status fails keeps the reading on")
+	}
+
+	n, ok := a.NextTreeNotice(true)
+	if !ok || !n.Unavailable || !strings.HasPrefix(n.Notice, "tree check unavailable · ") {
+		t.Fatalf("the first boundary owes the unavailable notice, got ok=%v %+v", ok, n)
+	}
+	if !strings.Contains(n.Message, "[tree: check unavailable · ") {
+		t.Errorf("the model is told too: %q", n.Message)
+	}
+	if len(logged) != 1 || !strings.Contains(logged[0], "git status failed") {
+		t.Fatalf("one machine line, got %q", logged)
+	}
+
+	if err := os.Remove(filepath.Join(ws, ".git", "index")); err != nil {
+		t.Fatal(err)
+	}
+	git("reset", "-q")
+	if n, ok := a.NextTreeNotice(false); ok {
+		t.Fatalf("the first snapshot git gives is the baseline, got %+v", n)
+	}
+	write(t, ws, "b.txt", "new\n")
+	n, ok = a.NextTreeNotice(false)
+	if !ok || n.Unavailable || n.Paths != 1 {
+		t.Fatalf("a readable tree reports movement again, got ok=%v %+v", ok, n)
+	}
+	write(t, ws, ".git/index", "not an index")
+	if _, ok := a.NextTreeNotice(false); !ok {
+		t.Error("the reason is said again after a snapshot cleared it")
+	}
+}

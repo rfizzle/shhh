@@ -175,9 +175,13 @@ func (n TreeNotice) Signal() string {
 
 // treeState is what an Agent knows about the tree between two boundaries.
 type treeState struct {
-	cfg      TreeCheck
-	top      string
-	last     TreeSnapshot
+	cfg  TreeCheck
+	top  string
+	last TreeSnapshot
+	// based is whether last holds a snapshot. It does not when git would not
+	// give one as the reading was turned on; the first boundary that gets
+	// one takes it as the baseline.
+	based    bool
 	commands int
 	// degraded is set once a reading blew the budget; from then on only the
 	// turn boundary reads, until a reading there comes back well inside it.
@@ -247,12 +251,13 @@ func (a *Agent) SetTreeCheck(c TreeCheck) {
 		top = resolved
 	}
 	t := &treeState{cfg: c, top: top}
-	snap, err := TakeTreeSnapshot(t.top)
-	if err != nil {
-		a.tree = nil
-		return
+	// A repository whose status will not read — a broken index — keeps the
+	// reading on with no baseline, so the first boundary says why through
+	// unavailable rather than the check being off from the first round with
+	// nothing to show for it.
+	if snap, err := TakeTreeSnapshot(t.top); err == nil {
+		t.last, t.based = snap, true
 	}
-	t.last = snap
 	t.instructions = map[string]bool{}
 	for _, p := range c.Instructions {
 		if rel, ok := t.relative(p); ok {
@@ -310,6 +315,12 @@ func (a *Agent) NextTreeNotice(turnStart bool) (TreeNotice, bool) {
 	}
 	t.failed = ""
 	t.spent("git status")
+	if !t.based {
+		// The first snapshot git would give is the baseline, not a change:
+		// there is nothing before it to have moved from.
+		t.last, t.based, t.commands = now, true, 0
+		return TreeNotice{}, false
+	}
 	own := t.ownPaths()
 	commands := t.commands
 	last := t.last
