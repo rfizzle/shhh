@@ -45,7 +45,7 @@ var gitWriteTool = provider.Tool{
 	Parameters: json.RawMessage(`{
 		"type": "object",
 		"properties": {
-			"verb": {"type": "string", "enum": ["add", "commit", "branch", "switch"], "description": "Which write to make"},
+			"verb": {"type": "string", "enum": ["add", "commit", "branch", "switch"], "description": "Which write to make to the repository"},
 			"paths": {"type": "array", "items": {"type": "string"}, "description": "add only: the files to stage, named one by one, relative to the workspace root"},
 			"message": {"type": "string", "description": "commit only: the whole commit message, written verbatim"},
 			"branch": {"type": "string", "description": "branch/switch only: the branch name"},

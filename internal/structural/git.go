@@ -72,7 +72,7 @@ var gitTool = provider.Tool{
 	Parameters: json.RawMessage(`{
 		"type": "object",
 		"properties": {
-			"verb": {"type": "string", "enum": ["status", "log", "show", "diff", "blame"], "description": "Which history question to ask"},
+			"verb": {"type": "string", "enum": ["status", "log", "show", "diff", "blame"], "description": "Which history question to ask of the repository"},
 			"ref": {"type": "string", "description": "A branch, tag or commit: log starts there, show displays it, diff compares against it, blame reads the file as of it"},
 			"to_ref": {"type": "string", "description": "diff only: the second side of the comparison"},
 			"paths": {"type": "array", "items": {"type": "string"}, "description": "Limit to these paths, relative to the workspace root; blame needs exactly one"},

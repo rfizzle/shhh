@@ -273,30 +273,32 @@ func fieldLines(p Profile, clause map[string]string) string {
 // parser that clamps every section anyway.
 func extractSchema(p Profile) json.RawMessage {
 	const item = "\t\t\t\t\t"
-	props := []string{item + `"title": {"type": "string"},`}
+	props := []string{item + `"title": {"type": "string", "description": "One line, imperative and specific"},`}
 	names := []string{"title"}
 	for _, f := range p.Fields {
 		words := make([]string, 0, len(f.Values))
 		for _, v := range f.Values {
 			words = append(words, strconv.Quote(v.Name))
 		}
-		props = append(props, fmt.Sprintf(`%s%q: {"type": "string", "enum": [%s]},`,
-			item, f.Name, strings.Join(words, ", ")))
+		desc, _ := json.Marshal("The item's " + f.Name + ": " + f.Sentence())
+		props = append(props, fmt.Sprintf(`%s%q: {"type": "string", "enum": [%s], "description": %s},`,
+			item, f.Name, strings.Join(words, ", "), desc))
 		names = append(names, f.Name)
 	}
 	props = append(props,
-		item+`"story": {"type": "string"},`,
-		item+`"acceptance_criteria": {"type": "array", "items": {"type": "string"}},`,
-		item+`"tasks": {"type": "array", "items": {"type": "string"}},`,
-		item+`"tests": {"type": "array", "items": {"type": "string"}},`,
-		item+`"notes": {"type": "array", "items": {"type": "string"}},`,
-		item+`"depends_on": {"type": "array", "items": {"type": "string"}}`)
+		item+`"story": {"type": "string", "description": "One sentence saying who the work is for and why"},`,
+		item+`"acceptance_criteria": {"type": "array", "items": {"type": "string"}, "description": "The checks that prove it is done, each one testable"},`,
+		item+`"tasks": {"type": "array", "items": {"type": "string"}, "description": "The concrete steps to do it, in order"},`,
+		item+`"tests": {"type": "array", "items": {"type": "string"}, "description": "The test commands or cases that verify it"},`,
+		item+`"notes": {"type": "array", "items": {"type": "string"}, "description": "Decisions already made that must be honoured, and open questions"},`,
+		item+`"depends_on": {"type": "array", "items": {"type": "string"}, "description": "Titles in this list, or backlog slugs, that must land first"}`)
 	names = append(names, "story", "acceptance_criteria", "tasks", "tests", "notes", "depends_on")
 	return json.RawMessage(`{
 	"type": "object",
 	"properties": {
 		"items": {
 			"type": "array",
+			"description": "Every item the session leaves behind, one entry each",
 			"items": {
 				"type": "object",
 				"properties": {
@@ -381,6 +383,15 @@ func (e *Extractor) Extract(ctx context.Context, req ExtractRequest) ExtractResu
 	return finish(r)
 }
 
+// ExtractTool is the tool a reading is offered, in the profile's own words.
+func ExtractTool(profile Profile) provider.Tool {
+	return provider.Tool{
+		Name:        ExtractToolName,
+		Description: "Propose the backlog items a session leaves behind.",
+		Parameters:  extractSchema(profile),
+	}
+}
+
 // readProposals runs the one reading. The instruction and the digest travel
 // in separate messages, so the dialect's own instruction channel is what
 // keeps the untrusted half out of the instructions rather than the sentence
@@ -414,12 +425,8 @@ func readProposals(ctx context.Context, p provider.Provider, cfg ExtractConfig, 
 		// reading that was always taken there.
 		// See docs/capabilities/providers.md#a-bounded-call-asks-for-the-shape-of-its-answer.
 		ResponseSchema: &provider.ResponseSchema{Name: ExtractToolName, Schema: schema},
-		Tools: []provider.Tool{{
-			Name:        ExtractToolName,
-			Description: "Propose the backlog items a session leaves behind.",
-			Parameters:  schema,
-		}},
-		ToolChoice: "auto",
+		Tools:          []provider.Tool{ExtractTool(profile)},
+		ToolChoice:     "auto",
 	})
 	if err != nil {
 		return nil, nil, err

@@ -60,6 +60,7 @@ var toolboxNotes = []struct{ name, note string }{
 	{"skill", "load the full instructions of a skill from the Skills list when the task matches one. Do it before starting the work, not after."},
 	{"backlog_proposals", "hand back the backlog items read out of a session — every one of them, in a single call. It is offered on its own, for a request whose whole answer is that list."},
 	{"draft_profile", "hand back a drafted agent profile, or the few short questions a draft would need answered first. It is offered on its own, for a request whose whole answer is the draft."},
+	{"ask", "put a question to the person at a fork you cannot decide, where the answers lead to materially different work. Anything the request, the tree or the project's documents answer is not a question: state the assumption and carry on."},
 }
 
 // Toolbox describes the optional tools this session registered, for the

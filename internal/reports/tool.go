@@ -54,24 +54,24 @@ func (p *Publisher) ToolDefinition() provider.Tool {
 				"blocks": {"type": "array", "description": "Sections of the page, in reading order", "items": {
 					"type": "object",
 					"properties": {
-						"type": {"type": "string", "enum": ["stats", "table", "bar_chart", "line_chart", "diff", "tree", "prose", "sources", "freehand"]},
-						"heading": {"type": "string", "description": "Optional section heading"},
-						"stats": {"type": "array", "items": {"type": "object", "properties": {
-							"label": {"type": "string"}, "value": {"type": "string"}, "delta": {"type": "string", "description": "Optional secondary line under the value"}},
+						"type": {"type": "string", "enum": ["stats", "table", "bar_chart", "line_chart", "diff", "tree", "prose", "sources", "freehand"], "description": "Which kind of block this is; each field below names the kind that reads it"},
+						"heading": {"type": "string", "description": "Optional heading shown above this section"},
+						"stats": {"type": "array", "description": "stats: the large numbers of the band, in order", "items": {"type": "object", "properties": {
+							"label": {"type": "string", "description": "What the number measures, shown under it"}, "value": {"type": "string", "description": "The number itself, written as it should read"}, "delta": {"type": "string", "description": "Optional secondary line under the value"}},
 							"required": ["label", "value"]}},
-						"columns": {"type": "array", "items": {"type": "string"}},
-						"rows": {"type": "array", "items": {"type": "array", "items": {"type": "string"}}},
+						"columns": {"type": "array", "items": {"type": "string"}, "description": "table: the column headings, left to right"},
+						"rows": {"type": "array", "items": {"type": "array", "items": {"type": "string"}}, "description": "table: one array of cells per row, in column order"},
 						"x_labels": {"type": "array", "items": {"type": "string"}, "description": "Chart x-axis labels, one per point"},
-						"series": {"type": "array", "items": {"type": "object", "properties": {
-							"name": {"type": "string"}, "values": {"type": "array", "items": {"type": "number"}}},
+						"series": {"type": "array", "description": "bar_chart and line_chart: the data series, colored in order", "items": {"type": "object", "properties": {
+							"name": {"type": "string", "description": "The series' name in the legend, which a chart of two or more series draws"}, "values": {"type": "array", "items": {"type": "number"}, "description": "One number per x-axis label, in the same order"}},
 							"required": ["values"]}},
-						"diff": {"type": "string", "description": "Unified diff text"},
-						"tree": {"type": "array", "items": {"type": "object", "properties": {
-							"label": {"type": "string"}, "depth": {"type": "integer"}},
+						"diff": {"type": "string", "description": "diff: the unified diff text to render"},
+						"tree": {"type": "array", "description": "tree: the rows of the tree, top to bottom", "items": {"type": "object", "properties": {
+							"label": {"type": "string", "description": "The text shown on this row of the tree"}, "depth": {"type": "integer", "description": "How far this row is indented, 0 to 12; 0 is the top level"}},
 							"required": ["label"]}},
 						"text": {"type": "string", "description": "Prose; blank lines separate paragraphs"},
-						"sources": {"type": "array", "items": {"type": "object", "properties": {
-							"url": {"type": "string"}, "title": {"type": "string"},
+						"sources": {"type": "array", "description": "sources: the pages a claim in this report rests on", "items": {"type": "object", "properties": {
+							"url": {"type": "string", "description": "The page's address, as it was fetched or cited"}, "title": {"type": "string", "description": "The page's own title, shown under its address"},
 							"read": {"type": "boolean", "description": "True for a page that was actually fetched; false lists it under \"cited, not read\""}},
 							"required": ["url"]}},
 						"html": {"type": "string", "description": "Freehand static HTML and inline SVG; colors only as var(--token)"}

@@ -268,27 +268,28 @@ func TestDraft_DisabledAndEmptyAnswer(t *testing.T) {
 }
 
 // codeSchema is the shape a reading of a code backlog is asked for, written
-// out as it stood before the fields were the profile's. The generator has to
-// produce it byte for byte: one vocabulary through the seam draws what the
-// constants drew, which is the only way to know the seam changed nothing.
+// out by hand. The generator has to produce it byte for byte: one vocabulary
+// through the seam draws what a hand-written schema says, which is the only
+// way to know the seam changed nothing.
 const codeSchema = `{
 	"type": "object",
 	"properties": {
 		"items": {
 			"type": "array",
+			"description": "Every item the session leaves behind, one entry each",
 			"items": {
 				"type": "object",
 				"properties": {
-					"title": {"type": "string"},
-					"kind": {"type": "string", "enum": ["story", "bug", "chore"]},
-					"priority": {"type": "string", "enum": ["high", "medium", "low"]},
-					"size": {"type": "string", "enum": ["S", "M", "L"]},
-					"story": {"type": "string"},
-					"acceptance_criteria": {"type": "array", "items": {"type": "string"}},
-					"tasks": {"type": "array", "items": {"type": "string"}},
-					"tests": {"type": "array", "items": {"type": "string"}},
-					"notes": {"type": "array", "items": {"type": "string"}},
-					"depends_on": {"type": "array", "items": {"type": "string"}}
+					"title": {"type": "string", "description": "One line, imperative and specific"},
+					"kind": {"type": "string", "enum": ["story", "bug", "chore"], "description": "The item's kind: story, bug or chore"},
+					"priority": {"type": "string", "enum": ["high", "medium", "low"], "description": "The item's priority: high, medium or low"},
+					"size": {"type": "string", "enum": ["S", "M", "L"], "description": "The item's size: S (an hour, one or two files, no design decisions), M (an afternoon, a few files, some judgement) or L (days, many files, or design decisions still open)"},
+					"story": {"type": "string", "description": "One sentence saying who the work is for and why"},
+					"acceptance_criteria": {"type": "array", "items": {"type": "string"}, "description": "The checks that prove it is done, each one testable"},
+					"tasks": {"type": "array", "items": {"type": "string"}, "description": "The concrete steps to do it, in order"},
+					"tests": {"type": "array", "items": {"type": "string"}, "description": "The test commands or cases that verify it"},
+					"notes": {"type": "array", "items": {"type": "string"}, "description": "Decisions already made that must be honoured, and open questions"},
+					"depends_on": {"type": "array", "items": {"type": "string"}, "description": "Titles in this list, or backlog slugs, that must land first"}
 				},
 				"required": ["title", "kind", "priority", "size", "story",
 					"acceptance_criteria", "tasks", "tests", "notes", "depends_on"],

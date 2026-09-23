@@ -21,7 +21,7 @@ var jaqTool = provider.Tool{
 			"paths": {"type": "array", "items": {"type": "string"}, "description": "JSON files to query, relative to the workspace root (at least one)"},
 			"slurp": {"type": "boolean", "description": "Read all inputs into one array before filtering"},
 			"raw_output": {"type": "boolean", "description": "Output strings without JSON quotes"},
-			"compact": {"type": "boolean", "description": "Compact single-line output"},
+			"compact": {"type": "boolean", "description": "Print each result on one line instead of indented"},
 			"indent": {"type": "integer", "description": "Indentation width for pretty output"}
 		},
 		"required": ["expression", "paths"]

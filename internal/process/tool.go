@@ -27,7 +27,7 @@ func Definition() provider.Tool {
 		Parameters: json.RawMessage(`{
 			"type": "object",
 			"properties": {
-				"action": {"type": "string", "enum": ["start", "status", "read", "input", "stop"], "description": "What to do"},
+				"action": {"type": "string", "enum": ["start", "status", "read", "input", "stop"], "description": "What to do with the named process; each field below says which action reads it"},
 				"name": {"type": "string", "description": "Process name (letters, digits, . _ -); required except for status of all processes"},
 				"command": {"type": "string", "description": "start: the shell command to run"},
 				"cwd": {"type": "string", "description": "start: working directory, relative to the workspace root (default: the root)"},

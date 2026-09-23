@@ -29,7 +29,7 @@ func ToolDefinition(c *Catalog) provider.Tool {
 		Parameters: json.RawMessage(fmt.Sprintf(`{
 			"type": "object",
 			"properties": {
-				"name": {"type": "string", "enum": %s, "description": "The skill to load"}
+				"name": {"type": "string", "enum": %s, "description": "The skill to load, by its name in the Skills list"}
 			},
 			"required": ["name"]
 		}`, names)),

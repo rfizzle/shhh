@@ -140,8 +140,8 @@ func TestProfile_ValuesAreReadCaseInsensitively(t *testing.T) {
 func TestProfile_ExtractionSpeaksTheProfile(t *testing.T) {
 	schema := string(extractSchema(research()))
 	for _, want := range []string{
-		`"kind": {"type": "string", "enum": ["question", "reading"]}`,
-		`"depth": {"type": "string", "enum": ["quick", "deep"]}`,
+		`"kind": {"type": "string", "enum": ["question", "reading"], "description": "The item's kind: question or reading"}`,
+		`"depth": {"type": "string", "enum": ["quick", "deep"], "description": "The item's depth: quick (`,
 		`"required": ["title", "kind", "priority", "depth", "story",`,
 	} {
 		if !strings.Contains(schema, want) {

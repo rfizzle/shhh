@@ -21,11 +21,11 @@ var sdTool = provider.Tool{
 			"replacement": {"type": "string", "description": "Replacement text; may reference capture groups ($1, $name). Empty deletes the match"},
 			"paths": {"type": "array", "items": {"type": "string"}, "description": "Files to preview the replacement in, relative to the workspace root (at least one)"},
 			"fixed_strings": {"type": "boolean", "description": "Treat pattern and replacement as literal strings"},
-			"ignore_case": {"type": "boolean", "description": "Match case-insensitively"},
+			"ignore_case": {"type": "boolean", "description": "Match the pattern without regard to letter case"},
 			"multiline": {"type": "boolean", "description": "Let ^ and $ match line boundaries"},
-			"dot_all": {"type": "boolean", "description": "Let . match newlines"},
-			"word_boundary": {"type": "boolean", "description": "Match full words only"},
-			"max_replacements": {"type": "integer", "description": "Limit replacements per file"}
+			"dot_all": {"type": "boolean", "description": "Let . match newlines, so a pattern can span lines"},
+			"word_boundary": {"type": "boolean", "description": "Match the pattern only where it is a whole word"},
+			"max_replacements": {"type": "integer", "description": "Stop after this many replacements in each file"}
 		},
 		"required": ["pattern", "replacement", "paths"]
 	}`),

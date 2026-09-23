@@ -77,7 +77,7 @@ func Definitions(profiles Profiles) []provider.Tool {
 			Parameters: json.RawMessage(`{
 				"type": "object",
 				"properties": {
-					"role": {"type": "string", "enum": ` + string(names) + `, "description": "Which agent profile to run"},
+					"role": {"type": "string", "enum": ` + string(names) + `, "description": "Which agent profile to run, from the roles listed above"},
 					"task": {"type": "string", "description": "Complete, self-contained task prompt for the agent"},
 					"name": {"type": "string", "description": "Optional short name (letters, digits, dashes); auto-generated like researcher-1 when omitted"},
 					"paths": {"type": "array", "items": {"type": "string"}, "description": "The paths or globs this agent's work is scoped to (e.g. [\"internal/ui/**\", \"README.md\"]). For an agent that changes files, they are what it may change: two concurrent writing agents may not claim overlapping paths, so declare them whenever you fan out more than one. For a reviewing agent, they are the evidence: it is handed those paths and their diff before its task and reports once it has examined them, so declaring them is what keeps a review from surveying the repository to find the change.", "maxItems": 32},
@@ -107,7 +107,7 @@ func Definitions(profiles Profiles) []provider.Tool {
 			Parameters: json.RawMessage(`{
 				"type": "object",
 				"properties": {
-					"name": {"type": "string", "description": "Agent to redirect"},
+					"name": {"type": "string", "description": "Name of the agent to redirect or follow up with"},
 					"message": {"type": "string", "description": "What it should do instead, in your own words — a complete instruction, since the agent cannot see this conversation"}
 				},
 				"required": ["name", "message"]
@@ -119,7 +119,7 @@ func Definitions(profiles Profiles) []provider.Tool {
 			Parameters: json.RawMessage(`{
 				"type": "object",
 				"properties": {
-					"name": {"type": "string", "description": "The failed agent to run again"}
+					"name": {"type": "string", "description": "Name of the failed agent to run again"}
 				},
 				"required": ["name"]
 			}`),

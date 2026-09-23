@@ -21,7 +21,7 @@ var fdTool = provider.Tool{
 			"pattern": {"type": "string", "description": "Name pattern to match (regex by default). Omit to list everything under path, bounded by limit"},
 			"path": {"type": "string", "description": "Directory to search, relative to the workspace root (default: the workspace root)"},
 			"extension": {"type": "string", "description": "Only files with this extension, e.g. \"go\" (no leading dot)"},
-			"type": {"type": "string", "enum": ["file", "directory"], "description": "Only entries of this type"},
+			"type": {"type": "string", "enum": ["file", "directory"], "description": "Only entries of this type: files or directories"},
 			"glob": {"type": "boolean", "description": "Treat pattern as a glob instead of a regex"},
 			"literal": {"type": "boolean", "description": "Treat pattern as a fixed string instead of a regex"},
 			"ignore_case": {"type": "boolean", "description": "Match case-insensitively (default: smart case)"},

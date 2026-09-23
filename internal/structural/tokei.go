@@ -19,7 +19,7 @@ var tokeiTool = provider.Tool{
 			"exclude": {"type": "array", "items": {"type": "string"}, "description": "Glob patterns to exclude, e.g. [\"*.min.js\"]"},
 			"hidden": {"type": "boolean", "description": "Include hidden files and directories"},
 			"no_ignore": {"type": "boolean", "description": "Include files that .gitignore excludes"},
-			"sort": {"type": "string", "enum": ["files", "lines", "code", "comments", "blanks"], "description": "Sort languages by this column"}
+			"sort": {"type": "string", "enum": ["files", "lines", "code", "comments", "blanks"], "description": "Which column the languages are sorted by"}
 		}
 	}`),
 }

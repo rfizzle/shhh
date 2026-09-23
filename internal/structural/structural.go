@@ -263,6 +263,19 @@ func (t *Toolset) Definitions() []provider.Tool {
 	return defs
 }
 
+// Registrable is every definition a toolset can register, whichever binaries
+// this machine has and whether or not this is a repository: what a toolset
+// that found everything would offer, the writing half of git included. It
+// spawns and probes nothing, which is what lets a test hold every one of
+// them to what the model is told about it.
+func Registrable() []provider.Tool {
+	bins := map[string]string{GitToolName: "", GitWriteToolName: ""}
+	for _, name := range toolOrder {
+		bins[name] = ""
+	}
+	return (&Toolset{bins: bins}).Definitions()
+}
+
 // Has reports whether name is a structural tool this session registered.
 func (t *Toolset) Has(name string) bool {
 	_, ok := t.bins[name]

@@ -23,7 +23,7 @@ func ToolDefinition() provider.Tool {
 			"type": "object",
 			"properties": {
 				"text": {"type": "string", "description": "The memory itself: one or two short sentences, stated generally"},
-				"kind": {"type": "string", "enum": ["preference", "convention", "correction", "lesson"], "description": "What kind of memory this is"},
+				"kind": {"type": "string", "enum": ["preference", "convention", "correction", "lesson"], "description": "What kind of memory this is: a preference, convention, correction or lesson"},
 				"scope": {"type": "string", "enum": ["project", "global"], "description": "Suggested scope: project (this workspace, the default) or global (every workspace)"}
 			},
 			"required": ["text", "kind"]

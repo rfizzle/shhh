@@ -112,8 +112,8 @@ const draftSchemaTemplate = `{
 				"name": {"type": "string", "description": "Role name: lowercase letters, digits, dashes; at most 24 characters; not one that already exists"},
 				"description": {"type": "string", "description": "One line, under 120 characters, written for the model that will choose this role among others: what it is for and when to pick it"},
 				"model": {"type": "string", "description": "A model from the list, or omit to inherit the session's"},
-				"reasoning": {"type": "string", "enum": ["off", "low", "medium", "high", "inherit"]},
-				"permissions": {"type": "array", "items": {"type": "string", "enum": ["web", "write", "execute"]}, "description": "Tiers beyond read"},
+				"reasoning": {"type": "string", "enum": ["off", "low", "medium", "high", "inherit"], "description": "How deeply the role reasons; inherit takes the session's level"},
+				"permissions": {"type": "array", "items": {"type": "string", "enum": ["web", "write", "execute"]}, "description": "Tiers granted beyond read: web, write or execute"},
 				"tools": {"type": "array", "items": {"type": "string", "enum": %s}, "description": "Optional: narrow the toolset to these names, within the tiers you granted. Omit unless narrowing is the point of the role"},
 				"prompt": {"type": "string", "description": "The standing instructions, second person, 80-300 words"},
 				"max_tokens": {"type": "integer", "description": "Token budget for one task; omit for the default"},
@@ -129,6 +129,15 @@ const draftSchemaTemplate = `{
 		}
 	}
 }`
+
+// DraftTool is the tool a drafting turn answers through.
+func DraftTool() provider.Tool {
+	return provider.Tool{
+		Name:        DraftToolName,
+		Description: "Return the drafted profile, or the questions you need answered first.",
+		Parameters:  draftSchema,
+	}
+}
 
 // Draft runs one drafting turn.
 func (d *Drafter) Draft(ctx context.Context, req Request) Outcome {
@@ -150,7 +159,7 @@ func (d *Drafter) Draft(ctx context.Context, req Request) Outcome {
 	}, provider.CompletionOpts{
 		Model:      d.cfg.Model,
 		MaxTokens:  d.cfg.maxTokens(),
-		Tools:      []provider.Tool{{Name: DraftToolName, Description: "Return the drafted profile, or the questions you need answered first.", Parameters: draftSchema}},
+		Tools:      []provider.Tool{DraftTool()},
 		ToolChoice: "auto",
 	})
 	if err != nil {

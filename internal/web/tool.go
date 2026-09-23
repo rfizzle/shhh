@@ -176,7 +176,7 @@ func (t *Toolset) Definitions() []provider.Tool {
 			Parameters: json.RawMessage(`{
 				"type": "object",
 				"properties": {
-					"query": {"type": "string", "description": "Search query"},
+					"query": {"type": "string", "description": "What to search the web for, as you would type it"},
 					"count": {"type": "integer", "description": "Number of results (1-10, default 10)"},
 					"freshness": {"type": "string", "enum": ["day", "week", "month", "year"], "description": "Only results published within the last day, week, month or year"},
 					"site": {"type": "string", "description": "Only pages on this host, e.g. go.dev"},
