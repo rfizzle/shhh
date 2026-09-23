@@ -982,7 +982,14 @@ func largeRunModel(t *testing.T, env subagent.EnvFactory) (Model, *subagent.Supe
 	}
 	git("add", "a.go")
 	git("commit", "-q", "-m", "seed")
-	sup := subagent.New(context.Background(), subagent.Options{Root: root, NewEnv: env})
+	// One slot, so the lanes' writers take their worktrees one after the
+	// other. Two `git worktree add` calls in one repository at once can
+	// each read the other's half-written entry under .git/worktrees and
+	// fail with "failed to read …/commondir", which the run reads as a
+	// writer that did not finish. These tests are about how the run reads
+	// its lanes, not about how many writers run at once; a finished writer
+	// gives its slot up before it reports, so the second lane still runs.
+	sup := subagent.New(context.Background(), subagent.Options{Root: root, NewEnv: env, MaxConcurrent: 1})
 	t.Cleanup(sup.Close)
 	m = m.WithSubagents(sup)
 	m.input.SetValue("/todo run do-it")
@@ -1032,11 +1039,17 @@ func writingEnv(content string) subagent.EnvFactory {
 	}
 }
 
+// laneDeadline is how long a lane test waits for its writers before it calls
+// the run hung. It guards against a hang and measures nothing: the writers
+// take their slot one at a time (largeRunModel), and on a loaded host one
+// `git worktree add` has been seen to take five seconds by itself.
+const laneDeadline = 30 * time.Second
+
 // pumpSubagents feeds supervisor events to the model until every lane has
 // reported or the deadline passes.
 func pumpSubagents(t *testing.T, m Model, sup *subagent.Supervisor, until func(Model) bool) Model {
 	t.Helper()
-	deadline := time.After(10 * time.Second)
+	deadline := time.After(laneDeadline)
 	for !until(m) {
 		select {
 		case ev := <-sup.Events():
@@ -1109,7 +1122,7 @@ func TestTodoRun_LargeItemLanesIntegrateOnReportsNotPatches(t *testing.T) {
 	crossed := func(m Model) bool {
 		return m.todoRunner.state != nil && laneNamed(t, m, "alpha").Done && laneNamed(t, m, "beta").Agent == ""
 	}
-	deadline := time.After(10 * time.Second)
+	deadline := time.After(laneDeadline)
 	for !crossed(m) {
 		select {
 		case ev := <-sup.Events():
