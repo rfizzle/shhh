@@ -122,6 +122,36 @@ Approval is still the only way anything reaches your checkout, the lane says
 how many of your files the child started from, and a checkout with nothing
 uncommitted in it starts a child exactly where it always did.
 
+Your tree does not stand still while a fan-out works, and the copy does not
+either. When one writer's patch lands in your checkout, every other writer
+still working is owed it: its copy was taken from a tree that patch has just
+moved, and a patch written against the older text is the second landing that
+does not apply. So the landed change is carried into each of their copies and
+becomes part of what each one started from — its own work stays where it is,
+on top, and what comes back for your approval is still that work alone. It is
+done for the writer rather than by it: a child never runs git on its copy,
+and one that did would be rebasing work it cannot see against a tree it
+cannot see either.
+
+It happens at the child's own round boundary and nowhere else — the same
+boundary a hold parks it at, and for the same reason: a round in flight is a
+request the provider is still answering and a call still writing, and a tree
+that changed under either would be a tree the child's next edit was not
+written for. The child is parked for the moment it takes, and its row reads
+`reseeding` while it is. Its model is told nothing about a change that carried,
+because there is nothing to act on; its prompt says the tree can move, so a
+file that reads differently next time is the checkout as it stands rather than
+a mistake of its own. A landed change that meets the child's own work is not
+forced into its copy. The copy is left exactly as it was, and the child is
+told what landed and which files the two met on, so its final report can say
+where its patch and the other writer's overlap.
+
+Reseeding, and not waiting to merge at the end, because the moment a patch
+lands is the one moment the difference is small and known: one landed patch,
+against one base, with the child between two rounds. By the time the child
+has finished it has written a whole patch against a tree that has moved,
+and what was a file to re-read is a conflict for you to reconcile.
+
 ## Spawning is a decision
 
 Starting a child is an approval-gated call, like an edit or a command. It
@@ -613,6 +643,15 @@ something you typed
 ([`hooks.md`](hooks.md#a-child-starts-and-ends-at-a-seam)). It is your rule,
 written before the run, and like the other three it can redirect a child and
 cannot end one.
+
+And a writer can be told something by a landing: when another writer's patch
+lands in your checkout and will not carry into this writer's copy over its own
+work, the writer is told which files landed and which the two met on
+([a writer starts from your tree](#a-writer-starts-from-your-tree)). The lane,
+the roster and the record name it as the landing's, because it is nobody's
+message — the machinery wrote it from what landed — and like the reading's
+it is words and nothing more: it changes neither the task nor what the child
+may touch.
 
 Ending a child is yours alone, from the manager, which is where the keys that
 act on one child are. It has one name there and no second one anywhere else: a

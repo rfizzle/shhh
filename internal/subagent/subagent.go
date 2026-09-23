@@ -285,12 +285,24 @@ type Status struct {
 	// started yet — a queued one has no copy of the tree to have been
 	// seeded from, because the copy is taken when its slot comes free.
 	Seeded int
+	// Reseeds is how many patches that landed in the parent's checkout while
+	// this writer worked have been carried into its copy since the seed, at
+	// its own round boundaries. Zero is every child the landing of another
+	// did not reach, which is almost every child.
+	// See docs/capabilities/subagents.md#a-writer-starts-from-your-tree.
+	Reseeds int
 	// Held is whether the child has reached its own round boundary while the
 	// parent's hold stands. It rides beside the state rather than replacing
 	// it because a held child is still a running one — it keeps its slot,
 	// its worktree and its conversation, and one release puts it back to
 	// work with the round it was about to ask for.
-	Held bool
+	//
+	// A child whose copy is being moved past a landed patch is held too, for
+	// the moment that takes, and Reseeding says that is why: it is parked at
+	// the same boundary for the same reason — nothing is asked of the model
+	// while its tree changes under it.
+	Held      bool
+	Reseeding bool
 	// FollowUp is the first words of the follow-up a finished child was
 	// handed and is working on now, and empty for every other child.
 	// TakesFollowUp is whether a finished child can still be spoken to —
@@ -1184,6 +1196,22 @@ type child struct {
 	// child un-marked by the release before it, and the rail would report a
 	// child as running that is going nowhere.
 	heldOn chan struct{}
+	// landings are patches other writers have landed in the parent's
+	// checkout since this writer's copy was taken, waiting for its next round
+	// boundary to be carried in (reseed). reseeding names the writer whose
+	// patch is being carried in now, and is empty otherwise; reseeds is how
+	// many have been. All three belong to the attempt's copy, so a retry,
+	// which takes a fresh copy of the tree as it stands, starts them again.
+	landings  []landing
+	reseeding string
+	reseeds   int
+}
+
+// landing is a patch that landed in the parent's checkout, and which writer
+// it was.
+type landing struct {
+	from  string
+	patch string
 }
 
 func (c *child) set(state State, detail string) {
@@ -1244,6 +1272,9 @@ func (c *child) status() Status {
 	if c.heldOn != nil {
 		detail = "held · waiting for release"
 	}
+	if c.reseeding != "" {
+		detail = "reseeding · carrying " + c.reseeding + "'s landed patch into its copy"
+	}
 	tokens := observe.ChildTokens{
 		Inherited: c.inheritedTokens,
 		Setup:     c.setupTokens,
@@ -1282,8 +1313,10 @@ func (c *child) status() Status {
 		Verdict:           c.verdict,
 		SteerFrom:         c.steerFrom,
 		Seeded:            c.seeded,
+		Reseeds:           c.reseeds,
 		Inheritance:       c.inheritTokens,
-		Held:              c.heldOn != nil,
+		Held:              c.heldOn != nil || c.reseeding != "",
+		Reseeding:         c.reseeding != "",
 		FollowUp:          c.followUp,
 		TakesFollowUp:     c.state == StateDone && c.listening,
 	}
@@ -1566,8 +1599,14 @@ func (c *child) drainSteering() []string {
 	for _, q := range queued {
 		msgs = append(msgs, q.text)
 		c.transcript = append(c.transcript, TranscriptEntry{Kind: EntryUser, Text: q.text})
-		if q.from == SteerFromParent {
+		switch q.from {
+		case SteerFromParent:
 			c.parentSteers++
+			continue
+		case SteerFromLanding:
+			// Nobody's message, and so nobody's share and no receipt: the
+			// machinery wrote it at the boundary it is delivered at, and the
+			// source on the status is what names it.
 			continue
 		}
 		c.laneSteers++
@@ -2268,7 +2307,12 @@ func (s *Supervisor) Holding() bool {
 // are one locked step so a release that lands between them cannot leave a
 // child marked held with nothing left to un-mark it — the release either sees
 // the mark and clears it, or has already emptied the hold and hands back nil.
+//
+// It is also where a landed patch reaches a live writer (reseed): the round
+// tail is the one moment nothing is being asked of the child's model and no
+// call of its own is writing, so it is the one moment its tree may move.
 func (s *Supervisor) holdFor(c *child) <-chan struct{} {
+	s.reseed(c)
 	s.mu.Lock()
 	ch := s.held
 	if ch != nil {
@@ -2279,6 +2323,89 @@ func (s *Supervisor) holdFor(c *child) <-chan struct{} {
 		s.emitUpdate(c)
 	}
 	return ch
+}
+
+// queueLanding hands a patch that has just landed in the parent's checkout to
+// every other live writer whose copy was taken from that checkout, to be
+// carried in at each one's own next round boundary. A writer still queued has
+// no copy yet, and takes the tree with this patch in it when it starts; a
+// failed one's copy is gone or going.
+func (s *Supervisor) queueLanding(from, repoTop, patch string) {
+	s.mu.Lock()
+	kids := append([]*child(nil), s.children...)
+	s.mu.Unlock()
+	for _, k := range kids {
+		if k.name == from || !k.profile.Writes {
+			continue
+		}
+		k.mu.Lock()
+		if k.worktree != "" && k.repoTop == repoTop && k.state != StateFailed {
+			k.landings = append(k.landings, landing{from: from, patch: patch})
+		}
+		k.mu.Unlock()
+	}
+}
+
+// reseed carries every patch that has landed since the child's last boundary
+// into its copy of the checkout, on the child's own goroutine at its round
+// tail — the hold's boundary, and never mid-round. The child is parked for
+// the moment it takes and reads `reseeding` while it is. A patch that carries
+// is silent to the child's model; one that meets the child's own work is not
+// forced: the copy is left as it was and the child is steered with where the
+// two met, from the landing, through the one door into its conversation.
+//
+// A review's report turn is left alone. It is reporting on the evidence it
+// was handed, and its tree moving under the report would make the report
+// about a different change; a writer never has one.
+// See docs/capabilities/subagents.md#a-writer-starts-from-your-tree.
+func (s *Supervisor) reseed(c *child) {
+	c.mu.Lock()
+	if len(c.landings) == 0 || c.worktree == "" || c.reporting {
+		c.mu.Unlock()
+		return
+	}
+	pending, worktree := c.landings, c.worktree
+	c.landings = nil
+	c.reseeding = pending[0].from
+	c.mu.Unlock()
+	s.emitUpdate(c)
+	carried := 0
+	for _, l := range pending {
+		c.mu.Lock()
+		c.reseeding = l.from
+		c.mu.Unlock()
+		err := reseedWorktree(worktree, l.patch)
+		if err == nil {
+			carried++
+			c.appendEntry(TranscriptEntry{Kind: EntrySystem,
+				Text: "↳ " + l.from + "'s landed patch carried into this copy · " + patchPaths(PatchFiles(l.patch))})
+			continue
+		}
+		var clash *ReseedCollision
+		if !errors.As(err, &clash) {
+			// git itself would not do it. The copy is as it was either way,
+			// so the child is told the same thing a collision tells it.
+			landed := PatchFiles(l.patch)
+			clash = &ReseedCollision{Landed: landed, Files: landed, Reason: firstLine(err.Error())}
+		}
+		_ = s.Steer(c.name, landingSteer(l.from, clash), SteerFromLanding)
+	}
+	c.mu.Lock()
+	c.reseeding = ""
+	c.reseeds += carried
+	c.mu.Unlock()
+	s.emitUpdate(c)
+}
+
+// landingSteer is what a writer is told when a landed patch will not carry
+// into its copy: which writer landed what, where it met the writer's own
+// work, and what that means for the writer's own patch. It is advice and
+// carries no authority — the writer's task is unchanged.
+func landingSteer(from string, clash *ReseedCollision) string {
+	return fmt.Sprintf("%s's patch has landed in the real checkout (%s) and could not be carried into your copy: it collides with your copy over %s. "+
+		"Your copy still has the older text there, so your own patch to those files will be reviewed against a checkout that has moved. "+
+		"Carry on with your task, and name those files in your final report so the reviewer knows where your change meets %s's.",
+		from, patchPaths(clash.Landed), patchPaths(clash.Files), from)
 }
 
 // CancelTurn interrupts a child's current turn: the in-flight stream
@@ -3103,6 +3230,7 @@ func (s *Supervisor) openWorkspace(c *child, ctx context.Context, maxRounds, att
 // installs into a child no other goroutine can reach yet.
 func (c *child) install(w workspace) {
 	c.root, c.worktree, c.repoTop, c.seeded = w.root, w.wt.dir, w.wt.repoTop, w.wt.seeded
+	c.landings, c.reseeds = nil, 0
 	c.agent, c.env, c.headless, c.rec = w.agent, w.env, nil, w.rec
 }
 
@@ -4811,6 +4939,9 @@ func (s *Supervisor) landPatch(c *child, repoTop, patch string, touched []string
 		return "", err
 	}
 	s.recordApplied(c.name, touched)
+	// And every other writer still working is owed it, at its own next
+	// boundary: its copy was taken from a tree this patch has just moved.
+	s.queueLanding(c.name, repoTop, patch)
 	s.emit(Event{
 		Kind:   EventPatch,
 		Status: c.status(),

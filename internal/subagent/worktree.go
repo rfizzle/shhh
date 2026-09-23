@@ -546,3 +546,163 @@ func (w *Worktree) Land() ([]string, error) {
 // Remove tears the copy down. Best-effort, like every other teardown of one:
 // a directory that is already gone must not stop a run from ending.
 func (w *Worktree) Remove() { removeWorktree(w.h.repoTop, w.h.dir) }
+
+// reseededBaseMessage is the base commit a live writer's copy takes when a
+// patch another writer landed is carried into it.
+const reseededBaseMessage = "patch landed in the parent session by another writer"
+
+// ReseedCollision is a landed patch that would not carry into a writer's copy
+// over the work the writer has there. Landed is every path the patch touched
+// and Files the ones it collided on: the landed paths the writer has itself
+// changed, or all of them where the patch would not apply to the copy's base
+// at all, which is a tree the parent moved some other way since the copy was
+// taken. The copy is left exactly as it was.
+type ReseedCollision struct {
+	Landed []string
+	Files  []string
+	Reason string
+}
+
+func (e *ReseedCollision) Error() string {
+	return "the landed patch does not carry into the copy over " + strings.Join(e.Files, ", ") + ": " + e.Reason
+}
+
+// reseedWorktree carries a patch that has landed in the parent's checkout into
+// a live writer's copy and makes it part of the copy's base, so the tree the
+// writer is working in is the parent's tree again and the patch it hands back
+// is still its own work alone.
+//
+// It is a reseed and not a rebase: the writer's own work is never committed,
+// moved or replayed. The landed patch is applied twice — once to a scratch
+// index read from the base, which is what is committed on top of it, and once
+// to the working tree, over whatever the writer has there — so HEAD moves by
+// exactly the landed change and `git diff --cached` after `add -A` (what
+// worktreePatch returns) still answers with the writer's own work. Both
+// applies are checked before either touches a file, and the working-tree apply
+// is the plain all-or-nothing one (applyPatch), so a patch that meets the
+// writer's work leaves every file in the copy as it was and comes back as a
+// *ReseedCollision naming where.
+// See docs/capabilities/subagents.md#a-writer-starts-from-your-tree.
+func reseedWorktree(worktree, patch string) error {
+	landed := PatchFiles(patch)
+	collide := func(reason string) error {
+		return &ReseedCollision{Landed: landed, Files: collidedPaths(worktree, landed), Reason: firstReseedLine(reason)}
+	}
+	scratch, err := os.MkdirTemp("", "shhh-reseed-*")
+	if err != nil {
+		return err
+	}
+	defer func() { _ = os.RemoveAll(scratch) }()
+	// A scratch index, so the writer's own index — which it may have staged
+	// into with a command of its own — is not what the base is built from.
+	index := []string{"GIT_INDEX_FILE=" + filepath.Join(scratch, "index")}
+	if _, err := gitWithEnv(worktree, index, "", "read-tree", "HEAD"); err != nil {
+		return err
+	}
+	if _, err := gitWithEnv(worktree, index, patch, "apply", "--cached", "--whitespace=nowarn"); err != nil {
+		return collide(err.Error())
+	}
+	if _, err := gitWithEnv(worktree, nil, patch, "apply", "--check", "--whitespace=nowarn"); err != nil {
+		return collide(err.Error())
+	}
+	if err := applyPatch(worktree, patch); err != nil {
+		return collide(err.Error())
+	}
+	// From here the files have moved and the base has not. A step that fails
+	// takes the files back, because a copy whose tree holds the landed change
+	// over a base that does not would hand it back as the writer's own work.
+	undo := func(err error) error {
+		_, _ = gitWithEnv(worktree, nil, patch, "apply", "-R", "--whitespace=nowarn")
+		return err
+	}
+	tree, err := gitWithEnv(worktree, index, "", "write-tree")
+	if err != nil {
+		return undo(err)
+	}
+	// The identity and the signing flag are commitBase's, for its reasons;
+	// commit-tree runs no hooks.
+	commit, err := gitWithEnv(worktree, nil, "",
+		"-c", "user.name=shhh", "-c", "user.email=shhh@localhost",
+		"commit-tree", strings.TrimSpace(tree), "-p", "HEAD", "--no-gpg-sign", "-m", reseededBaseMessage)
+	if err != nil {
+		return undo(err)
+	}
+	if _, err := runGit(worktree, "update-ref", "--no-deref", "HEAD", strings.TrimSpace(commit)); err != nil {
+		return undo(err)
+	}
+	// The writer's index is put back on the new base and the working tree
+	// left alone: an index still on the old base would read the landed change
+	// as the writer's own to anything that asked it.
+	_, err = runGit(worktree, "reset", "--quiet")
+	return err
+}
+
+// collidedPaths is which of the landed paths the writer has changed in its
+// copy — the files a landing met the writer's own work on. Where it has
+// changed none of them the whole landing is named, because then it was the
+// copy's base the patch would not apply to, and every landed path is as
+// likely a place to look as any other.
+func collidedPaths(worktree string, landed []string) []string {
+	changed := map[string]bool{}
+	for _, args := range [][]string{{"diff", "HEAD", "--name-only"}, {"ls-files", "--others", "--exclude-standard"}} {
+		out, err := gitOutput(worktree, args...)
+		if err != nil {
+			continue
+		}
+		for _, p := range strings.Split(out, "\n") {
+			changed[strings.TrimSpace(p)] = true
+		}
+	}
+	var out []string
+	for _, p := range landed {
+		if changed[p] {
+			out = append(out, p)
+		}
+	}
+	if len(out) == 0 {
+		return landed
+	}
+	return out
+}
+
+// firstReseedLine is the part of git's refusal worth carrying: its first
+// line, which names the file and the line the patch failed at.
+func firstReseedLine(s string) string {
+	s = strings.TrimSpace(s)
+	if i := strings.IndexByte(s, '\n'); i >= 0 {
+		s = s[:i]
+	}
+	return s
+}
+
+// gitWithEnv runs one git command with extra environment and, where it is not
+// empty, the given text on its standard input, answering with its standard
+// output. It exists for the scratch index a reseed builds its base in.
+func gitWithEnv(dir string, env []string, stdin string, args ...string) (string, error) {
+	cmd := exec.Command("git", append([]string{"-C", dir}, args...)...)
+	if len(env) > 0 {
+		cmd.Env = append(os.Environ(), env...)
+	}
+	if stdin != "" {
+		cmd.Stdin = strings.NewReader(stdin)
+	}
+	var out, errBuf bytes.Buffer
+	cmd.Stdout, cmd.Stderr = &out, &errBuf
+	if err := cmd.Run(); err != nil {
+		return "", fmt.Errorf("git %s: %s", strings.Join(args, " "), strings.TrimSpace(errBuf.String()))
+	}
+	return out.String(), nil
+}
+
+// Reseed carries a patch that has landed in the checkout this copy was taken
+// from into the copy, under whatever is being built here, and makes it part
+// of the copy's base — so the next Land hands back only this copy's own work,
+// measured against the checkout as it now stands. A patch that meets the work
+// here is refused as a *ReseedCollision and the copy is left exactly as it
+// was (reseedWorktree).
+func (w *Worktree) Reseed(patch string) error {
+	if strings.TrimSpace(patch) == "" {
+		return nil
+	}
+	return reseedWorktree(w.h.dir, patch)
+}

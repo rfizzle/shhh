@@ -597,6 +597,11 @@ func (m Model) inspectorAgents() []components.InspectorAgent {
 			// the hold was pressed to end
 			// (docs/capabilities/subagents.md#a-hold-reaches-the-whole-fan-out).
 			a.Outcome = "held"
+			if p.Reseeding {
+				// The same park, taken for a landed patch rather than by the
+				// reader (docs/capabilities/subagents.md#a-writer-starts-from-your-tree).
+				a.Outcome = "reseeding"
+			}
 		}
 		switch st.State {
 		case subagent.StateDone, subagent.StateFailed:

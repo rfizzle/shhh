@@ -79,6 +79,12 @@ type AgentProgress struct {
 	// account of it would read as a child that started expensive
 	// (docs/capabilities/subagents.md#what-they-share).
 	Inherited int64
+	// Reseeding says a held child is parked because a patch another writer
+	// landed is being carried into its copy, rather than because the hold
+	// was pressed. It is only read beside FanoutHeld: the child is stopped
+	// at the same boundary either way, and the word says which of the two
+	// stopped it (docs/capabilities/subagents.md#a-writer-starts-from-your-tree).
+	Reseeding bool
 }
 
 // FanoutLane is one child of the batch.
@@ -151,6 +157,11 @@ type FanoutLane struct {
 	// the repository was started from. Zero says nothing — a child that
 	// started from the last commit has nothing to explain.
 	Seeded int
+	// Reseeds is how many patches other writers landed have been carried
+	// into the child's copy since then, and Reseeding whether one is being
+	// carried in now (AgentProgress.Reseeding).
+	Reseeds   int
+	Reseeding bool
 	// Inherited is the child's inherited turns in tokens, carried to the
 	// progress the lane and the manager's row both draw.
 	Inherited int64
@@ -376,6 +387,11 @@ func (p AgentProgress) progress() string {
 		// child that lost its turn
 		// (docs/capabilities/subagents.md#a-hold-reaches-the-whole-fan-out).
 		// The mark is the one the mode chip and the hold's own chip wear.
+		// A child parked while a landed patch is carried into its copy wears
+		// it too: it is the same park, and the word says it was not yours.
+		if p.Reseeding {
+			return sty.Dim.Render("⏸ reseeding")
+		}
 		return sty.Dim.Render("⏸ held")
 	case FanoutFailed:
 		return sty.Err.Render("✗ failed")
@@ -451,7 +467,7 @@ func (p AgentProgress) outcomeField() string {
 func (l FanoutLane) progressOf() AgentProgress {
 	return AgentProgress{State: l.State, Step: l.Step, Steps: l.Steps,
 		Tools: l.Tools, Spend: l.Spend, Frame: l.Frame,
-		ReportVerdict: l.ReportVerdict, Inherited: l.Inherited}
+		ReportVerdict: l.ReportVerdict, Inherited: l.Inherited, Reseeding: l.Reseeding}
 }
 
 func (l FanoutLane) glyph() string        { return l.progressOf().glyph() }
@@ -609,10 +625,17 @@ func (l FanoutLane) note() string {
 		// (docs/capabilities/subagents.md#a-child-may-delegate-to-a-configured-depth).
 		return plural(l.Under, "agent") + " under it"
 	}
+	// Where its files came from, and how often the tree has been moved under
+	// it since: a writer whose copy took another's landed patch is reading
+	// text it did not start from, and that is context in the same sense.
+	var seed []string
 	if l.Seeded > 0 {
-		return "started from " + plural(l.Seeded, "uncommitted file") + " in your tree"
+		seed = append(seed, "started from "+plural(l.Seeded, "uncommitted file")+" in your tree")
 	}
-	return ""
+	if l.Reseeds > 0 {
+		seed = append(seed, "reseeded ×"+strconv.Itoa(l.Reseeds))
+	}
+	return strings.Join(seed, detailSep)
 }
 
 // settledNote is a stopped child's line: the first line of what it reported,

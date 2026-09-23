@@ -65,6 +65,13 @@ const (
 	// the orchestrator did not send it, and nothing read the child to earn it.
 	// See docs/capabilities/hooks.md#a-child-starts-and-ends-at-a-seam.
 	SteerFromHook SteerSource = "hook"
+	// SteerFromLanding: another writer's patch landed in the parent's
+	// checkout and would not carry into this writer's copy over its own
+	// work, so the copy was left as it was and the writer told where the two
+	// met. Like the reading it is nobody's message, and it is text only: it
+	// changes nothing about the task.
+	// See docs/capabilities/subagents.md#a-writer-starts-from-your-tree.
+	SteerFromLanding SteerSource = "landing"
 )
 
 // Definitions returns the orchestration tool definitions the parent session

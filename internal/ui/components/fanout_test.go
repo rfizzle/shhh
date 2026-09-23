@@ -427,6 +427,17 @@ func TestFanoutLaneSaysWhatItStartedFrom(t *testing.T) {
 		t.Fatalf("one file is one file: %q", view)
 	}
 
+	// And how often the tree has been moved under it since, beside where it
+	// started; a reseeding lane says so where a held one says held.
+	moved := FanoutLane{State: FanoutRunning, Name: "writer-1", Seeded: 5, Reseeds: 2}
+	if view := ansi.Strip(moved.View(110)); !strings.Contains(view, "started from 5 uncommitted files in your tree · reseeded ×2") {
+		t.Fatalf("a reseeded lane should count its reseeds beside its seed: %q", view)
+	}
+	parked := FanoutLane{State: FanoutHeld, Reseeding: true, Name: "writer-1"}
+	if view := ansi.Strip(parked.View(110)); !strings.Contains(view, "⏸ reseeding") {
+		t.Fatalf("a lane parked for a reseed should say reseeding: %q", view)
+	}
+
 	none := FanoutLane{State: FanoutRunning, Name: "writer-1", Task: "docs/loop.md"}
 	if view := ansi.Strip(none.View(110)); strings.Contains(view, "started from") {
 		t.Fatalf("a child started from the last commit should say nothing: %q", view)

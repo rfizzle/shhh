@@ -254,7 +254,9 @@ const (
 	// typed) or "parent" (the orchestrator that wrote the task redirected
 	// it) — because a fan-out has two of them and a rate that cannot tell
 	// them apart cannot say whether the orchestrator is answering what it
-	// sees. The supervisor owns those words, the way SignalIntervene's are
+	// sees. "landing" is the third: a patch another writer landed would not
+	// carry into this writer's copy, and the writer was told where the two
+	// met. The supervisor owns those words, the way SignalIntervene's are
 	// the loop's. A child's own reading is not among them: an interruption
 	// the machinery delivered is SignalIntervene's "steer" below, and a
 	// second record here would count one steer twice.

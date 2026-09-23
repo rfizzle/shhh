@@ -748,6 +748,39 @@ func TestHeadlessRun_InterruptEndsAHold(t *testing.T) {
 	}
 }
 
+// What was said to a held run while it was parked joins the conversation at
+// the boundary it was parked at, not one round after it was let go: the
+// hold is asked before the steering is drained.
+func TestHeadlessRun_ASteerGivenDuringAHoldJoinsAtThatBoundary(t *testing.T) {
+	t.Parallel()
+	a := New(nil, scriptedStream(t,
+		toolCallRound(provider.ToolCall{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}),
+		doneRound("carried on"),
+	))
+	a.SetExecutor(func(string, json.RawMessage) (string, error) { return "contents", nil })
+
+	var queued []string
+	h := &Headless{Agent: a}
+	h.Hold = func() <-chan struct{} {
+		queued = append(queued, "the tree moved")
+		return nil
+	}
+	h.Steer = func() []string {
+		msgs := queued
+		queued = nil
+		return msgs
+	}
+	if _, err := h.Run("go"); err != nil {
+		t.Fatalf("run: %v", err)
+	}
+	msgs := a.Messages()
+	// go, the call, its result, the steer, the answer: the steer is in front
+	// of the request that produced the answer.
+	if len(msgs) < 2 || msgs[len(msgs)-2].Content != "the tree moved" {
+		t.Fatalf("the steer given while held should join before the next request, got %+v", msgs)
+	}
+}
+
 // A run nothing holds never waits: the hook is the child loop's, and a
 // scripted run has no keyboard to ask for one.
 func TestHeadlessRun_NoHoldNoWait(t *testing.T) {

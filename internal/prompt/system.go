@@ -424,6 +424,14 @@ func alsoHeld(names string) string {
 	return fmt.Sprintf("You also hold %s — each one's own description, and the sections below, say when it is the right one.", names)
 }
 
+// writerCopyMoves tells a writer that the tree it started from is not fixed:
+// other writers' patches land in the real checkout while it works, and each
+// one is carried into its copy between its rounds. A writer that believed its
+// copy frozen would take a file changing under it for its own mistake, and
+// would not know a collision message was about its patch rather than its task.
+// See docs/capabilities/subagents.md#a-writer-starts-from-your-tree.
+const writerCopyMoves = "The tree you started from can move while you work. When another writer's patch lands in the real checkout, the same change is carried into your copy between two of your rounds, without a message: a file you have not touched may read differently the next time you read it, and that is the checkout as it now stands, not something you did. If the landed change meets your own changes, your copy is left as it was and you are told, in a message naming the files that landed and the ones they collided on. Carry on with your task, and name those files in your final report so the reviewer knows where your change meets the other."
+
 // BuildWriter is the system prompt for writer sub-agents: the full
 // toolset against an isolated worktree whose changes return as a reviewable
 // patch.
@@ -456,9 +464,12 @@ Make changes with write_file and edit_file rather than pasting code into your me
 %s
 %s
 
+# Your copy can move
+%s
+
 # Final report
 Your last message IS the deliverable. Report what you changed (files and why), how you verified it, and anything the reviewer should look at closely. %s Do not end on a question or a promise of further work.`,
-		info.Shell, os, info.Cwd, today(), executionDefault, findingThingsBrief, shellSyntaxRules(info.Shell), sudoRules(info.OS, info.IsRoot), osRules(info.OS), assumptionsSection)
+		info.Shell, os, info.Cwd, today(), executionDefault, findingThingsBrief, shellSyntaxRules(info.Shell), sudoRules(info.OS, info.IsRoot), osRules(info.OS), writerCopyMoves, assumptionsSection)
 	if len(extra) > 0 && extra[0] != "" {
 		base += "\n\n" + extra[0]
 	}

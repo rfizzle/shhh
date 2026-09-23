@@ -466,6 +466,23 @@ func (h *Headless) Run(prompt string) (string, error) {
 			return "", ErrInterrupted
 		}
 
+		// A hold parks the run here and nowhere else. The round's results
+		// are in the conversation and nothing has been asked of the model
+		// yet, so the wait holds no stream, owes no results and leaves the
+		// conversation exactly as the round left it. An open stream cannot
+		// be paused — a reader that stops reading backs the socket up until
+		// the provider gives up on the request — which is why a hold waits
+		// for the boundary rather than taking effect where it is asked for.
+		//
+		// It comes before the steering below, so that what arrived while the
+		// run was parked — a person's redirect, or what the hold had to say
+		// about a tree it moved — joins the conversation at this boundary
+		// rather than one round after the run is let go.
+		if !h.waitOnHold() {
+			h.Agent.CancelTurn()
+			return "", ErrInterrupted
+		}
+
 		// Steering messages queued mid-turn join the conversation between tool
 		// rounds; they count as fresh user input, so they also reset the round
 		// counter (matching the TUI's injectSteering).
@@ -500,18 +517,6 @@ func (h *Headless) Run(prompt string) (string, error) {
 		// interrupt.
 		if h.Agent.CapReached() {
 			return "", fmt.Errorf("%w after %d rounds", ErrRoundCap, h.Agent.Rounds())
-		}
-
-		// A hold parks the run here and nowhere else. The round's results
-		// are in the conversation and nothing has been asked of the model
-		// yet, so the wait holds no stream, owes no results and leaves the
-		// conversation exactly as the round left it. An open stream cannot
-		// be paused — a reader that stops reading backs the socket up until
-		// the provider gives up on the request — which is why a hold waits
-		// for the boundary rather than taking effect where it is asked for.
-		if !h.waitOnHold() {
-			h.Agent.CancelTurn()
-			return "", ErrInterrupted
 		}
 
 		// The tree first, then the question: a check-in asked against a tree

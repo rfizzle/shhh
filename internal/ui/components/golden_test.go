@@ -1196,9 +1196,12 @@ func TestGolden_ReviewMode(t *testing.T) {
 // [s] as a follow-up, the question typed under it, and the same row moved
 // back to running with the question's first words under it.
 //
-// The last is a child spawned with the parent's last turns: what it was
-// handed is stated first on the line that says what it has cost, since it is
-// spent before the child has done anything.
+// Then a child spawned with the parent's last turns: what it was handed is
+// stated first on the line that says what it has cost, since it is spent
+// before the child has done anything.
+//
+// The last is a writer parked while another writer's landed patch is carried
+// into its copy, which wears the hold's mark under its own word.
 func TestGolden_AgentList(t *testing.T) {
 	captureGolden(t, "agent-list", "agent list", goldenWidths, func(width int) []golden.Panel {
 		progress := func(p AgentProgress) *AgentProgress { return &p }
@@ -1271,6 +1274,12 @@ func TestGolden_AgentList(t *testing.T) {
 		inheriting := append([]AgentRow{}, rows...)
 		inheriting[2] = AgentRow{State: AgentRunning, Name: "reviewer-1", Task: "review the round change",
 			Progress: progress(AgentProgress{State: FanoutRunning, Tools: 4, Spend: "$0.02", Inherited: 12_400})}
+		// A writer parked at its boundary while another writer's landed patch
+		// is carried into its copy: the hold's mark, and the word that says
+		// the reader did not press it.
+		reseeding := append([]AgentRow{}, rows...)
+		reseeding[2] = AgentRow{State: AgentRunning, Name: "writer-1", Task: "docs/loop.md",
+			Progress: progress(AgentProgress{State: FanoutHeld, Reseeding: true, Tools: 6, Spend: "$0.02"})}
 		return []golden.Panel{
 			{Label: "focus · the orchestrator · the session's spawn count beside the tally, given up first when narrow",
 				View: (&AgentList{Rows: rows, Spawned: 4, SpawnLimit: 32}).View(width)},
@@ -1294,6 +1303,8 @@ func TestGolden_AgentList(t *testing.T) {
 				View: (&AgentList{Rows: following, Focus: 3}).View(width)},
 			{Label: "a child handed the last turns · what it inherited leads the line of what it cost, and gives way first when the card is narrow",
 				View: (&AgentList{Rows: inheriting, Focus: 2}).View(width)},
+			{Label: "a writer reseeding · parked while another's landed patch is carried into its copy",
+				View: (&AgentList{Rows: reseeding, Focus: 2}).View(width)},
 		}
 	})
 }

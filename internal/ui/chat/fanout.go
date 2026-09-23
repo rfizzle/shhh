@@ -204,6 +204,7 @@ func (m Model) childProgress(st subagent.Status) components.AgentProgress {
 	// that way is a child that reads as having lost its turn.
 	if st.Held {
 		p.State = components.FanoutHeld
+		p.Reseeding = st.Reseeding
 		return p
 	}
 	switch st.State {
@@ -291,6 +292,8 @@ func (m Model) fanoutBlockFor(e entry) components.FanoutBlock {
 			Spend:      p.Spend,
 			Elapsed:    turnDuration(st.Elapsed),
 			Seeded:     st.Seeded,
+			Reseeds:    st.Reseeds,
+			Reseeding:  st.Reseeding,
 			Inherited:  p.Inherited,
 			Steers:     st.Steers,
 			Yours:      st.LaneSteers,

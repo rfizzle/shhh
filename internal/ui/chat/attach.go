@@ -1167,6 +1167,9 @@ func (m Model) childModeStatus(name string) string {
 // and the key is named on the orchestrator's frame where it is live
 // (docs/interface/surfaces.md#the-agent-manager).
 func attachedDetail(st subagent.Status) string {
+	if st.Reseeding {
+		return "reseeding"
+	}
 	if st.Held {
 		return "held"
 	}

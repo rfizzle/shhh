@@ -304,6 +304,8 @@ func TestBuildWriter_Instructions(t *testing.T) {
 		"EXTRA CONTEXT",
 		"Implementation, bug-fix, and diagnosis requests",
 		"A failed tool call is evidence",
+		"The tree you started from can move while you work",
+		"naming the files that landed and the ones they collided on",
 	} {
 		if !strings.Contains(got, want) {
 			t.Errorf("expected writer prompt to contain %q, got:\n%s", want, got)
