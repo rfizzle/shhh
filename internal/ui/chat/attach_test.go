@@ -1197,3 +1197,26 @@ func TestAgentsOverAParkedCardSaysWhatHoldsThePanel(t *testing.T) {
 		}
 	}
 }
+
+// Reading mode holds the panel but is no decision: the manager's chord leaves
+// it and opens the list, rather than doing nothing at all.
+func TestAgentsFromReadingModeOpensTheManager(t *testing.T) {
+	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
+	t.Cleanup(sup.Close)
+	m := newSubagentModel(t, sup)
+	m.appendEntry(entry{kind: entryCommand, text: "go test ./...", toolResult: "ok"})
+	m.viewport.SetLines(m.renderHistoryLines())
+	updated, _ := m.Update(readingChord())
+	m = updated.(Model)
+	if m.state != stateFocus {
+		t.Fatalf("the reading chord should enter reading mode, got state %d", m.state)
+	}
+	updated, _ = m.Update(tea.KeyPressMsg{Code: 'a', Mod: tea.ModAlt})
+	m = updated.(Model)
+	if m.agentList == nil {
+		t.Fatal("alt+a in reading mode must open the agent manager")
+	}
+	if m.state == stateFocus {
+		t.Fatal("the manager opens once reading mode is left, not under it")
+	}
+}

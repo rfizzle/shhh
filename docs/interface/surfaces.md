@@ -1377,7 +1377,9 @@ refused rather than obeyed. The refusal is a notice naming what is holding the
 panel and the two keys that free it, because a chord that does nothing at all
 is indistinguishable from a chord that is broken. A child's routed card is not
 one of these: it steps aside while the list is open and comes back when it
-closes.
+closes. Nor is reading mode: it holds the panel, but as a way of looking
+rather than a question, so the chord leaves it the way a typed character does
+and the list opens.
 
 **Attached, another agent waiting is not left off the screen.** The card is
 narrowed to the agent whose transcript is on screen, so a request from any

@@ -423,6 +423,14 @@ func (m Model) updateFocus(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			return next, cmd
 		}
 		return m, nil
+	case keys.Is(pressed, keys.Draft.Agents):
+		// The manager's chord answers here as it does at the draft: with a
+		// supervisor it opens the list, which leaves this mode first
+		// (openAgentList); without one it keeps its line-editor meaning.
+		if m.subagents != nil {
+			return m.openAgentList()
+		}
+		return m.returnToInput(msg)
 	case keys.Is(pressed, keys.Reading.Collapse):
 		// The explicit half of [enter]'s toggle. Where the row under
 		// the cursor has nothing open, [-] is a character like any other and

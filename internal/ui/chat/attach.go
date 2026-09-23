@@ -358,6 +358,17 @@ func (m Model) openAgentList() (tea.Model, tea.Cmd) {
 		m.viewport.GotoBottom()
 		return m, nil
 	}
+	// Reading mode holds the panel too, and its keys are answered ahead of any
+	// cover (overlay.go), so a manager drawn over it could not be typed into.
+	// But it is a way of looking rather than a decision: nothing in it waits
+	// for an answer, so the chord leaves it, the way a typed character does,
+	// and the manager opens over whatever the turn was showing underneath —
+	// which is still refused below if that is a decision
+	// (docs/interface/surfaces.md#the-agent-manager).
+	if m.state == stateFocus {
+		left, _ := m.exitFocusMode()
+		m = left.(Model)
+	}
 	// A decision of this session's own holds the panel, and the manager is a
 	// takeover: one panel holds one thing
 	// (docs/interface/principles.md#one-interaction-panel). The key used to
@@ -370,9 +381,6 @@ func (m Model) openAgentList() (tea.Model, tea.Cmd) {
 			", and the panel holds one thing at a time. Answer it or press esc, then the agents open."})
 		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoBottom()
-		return m, nil
-	}
-	if m.state == stateFocus {
 		return m, nil
 	}
 	if m.agentList != nil {
