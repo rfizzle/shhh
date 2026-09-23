@@ -68,6 +68,16 @@ type agentProfiles struct {
 // reads only the global ones, because a persona is the person's and not any
 // project's (docs/capabilities/subagents.md#a-profile-is-drafted-in-conversation).
 func loadAgentProfiles(projectScoped bool) (*agentProfiles, error) {
+	cwd, err := os.Getwd()
+	if err != nil {
+		cwd = "."
+	}
+	return loadAgentProfilesIn(cwd, projectScoped)
+}
+
+// loadAgentProfilesIn is loadAgentProfiles for a named directory, which is
+// what `shhh agents` and its test hand it.
+func loadAgentProfilesIn(cwd string, projectScoped bool) (*agentProfiles, error) {
 	var (
 		defs map[string]config.AgentDefinition
 		err  error
@@ -77,10 +87,6 @@ func loadAgentProfiles(projectScoped bool) (*agentProfiles, error) {
 	// that could add one would be a clone choosing what a spawned agent may
 	// do (docs/capabilities/subagents.md#a-profile-is-a-file).
 	if projectScoped && projectTrust().Allows() {
-		cwd, wdErr := os.Getwd()
-		if wdErr != nil {
-			cwd = "."
-		}
 		defs, err = config.LoadAgentsFor(cwd)
 	} else {
 		defs, err = config.LoadAgents()

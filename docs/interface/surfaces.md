@@ -2446,6 +2446,14 @@ The same rule applies to what a flag's help *says*: where the answer is a set
 the program already holds, help states the set rather than a copy of it that
 was accurate once.
 
+What a session here would load is readable without opening one. `shhh
+skills` lists the skills and `shhh agents` the roles a coding session could
+spawn — name, what it is for, and where it lives, a shipped role saying
+`built-in` — in the same listing shape. Both read what a session reads, so a
+checkout nobody has trusted contributes nothing to either, and the listing
+says what it held back rather than looking as though the repository wrote
+none.
+
 The exit banner exists because a session on the alternate screen leaves
 nothing behind. What it drew is gone in one frame, and with it the answer to
 which conversation that was, what it cost, and whether any of it was written

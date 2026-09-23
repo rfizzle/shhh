@@ -28,6 +28,7 @@
          
   SETUP  
          
+    agents                             List the roles a session here would spawn
     completion <shell>                 Generate shell completion script
     config [command]                   View and edit configuration
     doctor [--flags]                   Check this machine's shhh setup

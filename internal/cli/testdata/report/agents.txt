@@ -1,0 +1,8 @@
+  shhh agents — 4 roles
+
+  ✓ auditor     reads a change for the licences it pulls in  [project]
+  ✓ researcher  the session's own read-only toolset plus web; use f…  [built-in]
+  ✓ reviewer    reviews a change for correctness and clarity; reads…  [built-in]
+  ✓ writer      full tools against an isolated copy of the workspac…  [built-in]
+
+  a session spawns one by name; a file of the same name replaces a built-in

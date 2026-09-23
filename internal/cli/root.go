@@ -227,7 +227,7 @@ func NewRootCmd() *cobra.Command {
 		newReportsCmd(), newSnippetsCmd(), newMemoryCmd(), newMetricsCmd(),
 		newObserveCmd(), newRateCmd(), newTodoCmd())
 	addGrouped(cmd, groupSetup, newInitCmd(), newConfigCmd(), newDoctorCmd(), newTrustCmd(),
-		newProvidersCmd(), newSkillsCmd(), newMCPCmd(), newEvalCmd(), newUpdateCmd(),
+		newProvidersCmd(), newSkillsCmd(), newAgentsCmd(), newMCPCmd(), newEvalCmd(), newUpdateCmd(),
 		newCompletionCmd(cmd))
 
 	// `help` is how cobra spells `--help`, and listing it beside the commands
