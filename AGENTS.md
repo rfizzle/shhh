@@ -82,6 +82,35 @@ System` project in Claude Design, read with the DesignSync tool. Don't re-draw
 an artboard in Markdown — it becomes a second source of truth that disagrees
 with the first.
 
+### Where the model reads it
+
+What the model knows about a tool, an argument, a refusal or a mode reaches it
+through three channels, and through nothing else it can read:
+
+- **the definition's schema or description** — the tool's own description and
+  each argument's, which is where *when to pass it* goes, not only what it is;
+- **the toolbox line** — the one sentence `prompt.Toolbox` writes for each
+  tool that was registered, appended once the last one joins, saying when
+  that tool is the right answer;
+- **a prompt paragraph** — a section of a system prompt, for a behaviour that
+  spans tools or a refusal the model should expect before it meets one.
+
+**The base prompt names no tool.** The optional toolset is assembled from what
+the machine turned out to have — a language server was detected, a binary is
+on PATH, a key is configured — so a paragraph that names a tool promises one
+the session may not have, and a model promised a tool tries to use it. A tool
+is named in its own definition and in its toolbox line, and both exist only
+where it was registered.
+
+**The reason for a line goes in the doc the line cites, not in the line.** The
+model reads the line and nothing behind it, so the line says what to do; why
+it says so is prose in `docs/capabilities/`, cited from the comment beside it.
+A change that moves what the model reads says which of the three moved and
+which section holds the reason — in a work item, as a criterion beginning
+`The model is told:` — and a change that moves none of them says so in one
+line. Why there are three and not one:
+[`docs/capabilities/coding-agent.md#the-agent-knows-what-this-machine-has`](docs/capabilities/coding-agent.md#the-agent-knows-what-this-machine-has).
+
 ### Never reference a story or a plan
 
 **No comment, document or test name may refer to a story, a sprint, a backlog
@@ -1451,7 +1480,7 @@ Config is TOML at `~/.config/shhh/config.toml` (or `$XDG_CONFIG_HOME/shhh/`), th
 - **Colours are resolved when styles are built, not when they are drawn**: a `lipgloss.Style` holds one `color.Color`, so a `components.Token` picks its truecolor/256/16 rung through `Token.Color()` at `newStyles` time. Changing the palette *or* the profile means rebuilding every derived style — both go through `applyPalette`.
 - **Golden file deletion**: `golden.Run(m)` removes any `.txt` file in `testdata/golden/` that wasn't asserted during the run. Don't manually create golden files; let the test framework generate them.
 - **The investigation rules in `BuildAgent` are load-bearing**: the "Finding things" section — batch independent calls, make one search answer the question, never repeat a call you already made — is there because a real session spent all 150 rounds re-running the same searches. It reads like padding and is not; see the comment on `BuildAgent` and [`docs/capabilities/coding-agent.md#finding-things`](docs/capabilities/coding-agent.md#finding-things).
-- **Never name a tool in a base system prompt**: the optional toolset is assembled from what the machine turned out to have (a language server was detected, a binary is on PATH, a key is configured), so a prompt that names one promises a tool the session may not have. `prompt.Toolbox` describes the tools actually registered and is appended as prompt extra after the last one joins.
+- **Never name a tool in a base system prompt**: the rule and its reason are [Where the model reads it](#where-the-model-reads-it), beside the other two channels the model learns a tool from.
 - **Gemini pairs tool results by function *name*, not by id**: `FunctionResponse.Name` must be the name of the function called, and the Gemini API sends no `functionCall.id` at all — the ids in `provider.ToolCall` are ours. Don't "simplify" `toGeminiContents` back to putting `ToolCallID` in that field; it addresses every result to a function the model never called, and the model just calls again. Gemini 3 thought signatures ride the same parts and must go back on the part they arrived on.
 - **Only the current chain's thinking goes back on the wire, and the cut may only move forward**: `replayFrom` (`internal/provider/reasoning.go`) is where the Messages API and the Responses API both ask which messages may still send their `ReasoningBlock`s — the last user turn, or the last assistant turn where that comes first, because a round boundary can append a user message of its own after an assistant turn that asked for a tool and cutting there would send the `tool_use` with none of the thinking behind it. Two failures live here. A converter that ignores the boundary compiles and passes its own tests, and quietly bills the whole session's thinking as input on every round for the life of the conversation — the one category `TrimOldToolResults` cannot reach, because it rewrites tool results and never an assistant turn. And a cut that is not a prefix is a 400: a thinking block records which block came before it, so blocks may be removed from the *front* of a history, oldest first, while removing one from the middle invalidates every block after it. Moving the cut also costs the prompt cache from that position on, which is why it is the user turn and not the round — within a turn it does not move, and a turn is where the rounds are. Gemini replays all of it on purpose (the signature rides the call), which is why `EstimateMessageTokens` counts every message's reasoning rather than only the replayed part — exact there, an over-count on the other two, and over-counting is the direction that trims early rather than sending the request that overflows. See [`docs/capabilities/providers.md#only-the-chain-being-worked-on-now-goes-back`](docs/capabilities/providers.md#only-the-chain-being-worked-on-now-goes-back).
 - **A chat-completions tool call is addressed by its id, never by its `index`**: `toolCallSet` (`internal/provider/openai_stream.go`) keys a round's calls by id and keeps them in the order the stream opened them, because a gateway is free to number its calls from 1, to leave a gap where one was abandoned, or to omit the index from the continuation chunks entirely — an accumulator keyed by index answered all three by folding two calls into one, so the model got a result for one tool it asked for and the turn ran on owing an answer for the other. The index survives only as the address for chunks that carry no id, and a chunk carrying neither ends the round rather than being read as call 0: its arguments would otherwise land inside a call the model wrote separately.

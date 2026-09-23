@@ -1104,6 +1104,24 @@ has joined.
 A prompt that names a tool promises a capability the session may not have, and
 a model that has been promised a tool will try to use it.
 
+What the model knows about any tool reaches it through three channels, and
+each carries a different kind of sentence. The tool's own definition — its
+description and the description of each argument — is read at the moment of
+the call, so it says what the tool does and *when* each argument is worth
+passing; an argument described only by what it is gets passed always or
+never. The toolbox line is one sentence per registered tool in the system
+prompt, read before any call, and it says when that tool is the right answer
+rather than the one beside it. A prompt paragraph carries what no one tool
+owns: a behaviour that spans several, or a refusal the model should expect
+before it meets one — and it names no tool, for the reason above.
+
+A change to what the model can do that moves none of the three is one the
+model finds out about by tripping over it. So a change of that kind says
+which channel moved, and the reason a line reads the way it does is written
+here, in prose, rather than in the line: the model reads the line and nothing
+behind it, and a line that argues its own case is paid for in every request
+it rides in.
+
 ### Two programs answer to `yq`
 
 Structured queries are split by format. One tool answers JSON, another answers

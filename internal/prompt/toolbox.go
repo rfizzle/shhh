@@ -20,7 +20,10 @@ import (
 // So the prompt is told what was registered, and only that: a line per tool
 // saying when it is the right answer. Nothing here describes a tool the
 // session does not have, because the far worse failure is a prompt that
-// promises one.
+// promises one. The line is one of three places the model learns a tool
+// from, beside its definition and a prompt paragraph, and it carries the
+// "when" and never the "why".
+// See docs/capabilities/coding-agent.md#the-agent-knows-what-this-machine-has.
 
 // toolboxNotes is what each optional tool is for, in the order they are
 // worth being told about: navigation first, since that is where a session

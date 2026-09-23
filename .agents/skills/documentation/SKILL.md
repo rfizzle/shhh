@@ -119,8 +119,33 @@ test output or an error message; in a golden fixture's label it becomes
 committed expected output, which couples editing a heading to regenerating
 goldens. This is a real bug this repo had. `make docs-check` fails on it.
 
+## Where the model reads it
+
+A tool, an argument, a refusal or a mode is something the model has to be
+told, and it is told through three channels: the definition's schema or
+description, the toolbox line, and a prompt paragraph. The rule for which one
+carries what, and why the base prompt names no tool, is `AGENTS.md` →
+Documentation → *Where the model reads it*; the product reason is
+`docs/capabilities/coding-agent.md#the-agent-knows-what-this-machine-has`.
+
+The line the model reads says what to do. The reason it says so goes in the
+doc the line cites, like any other decision. The commonest failure is the
+first channel written as a label — a property the model can see and cannot
+judge when to pass:
+
+```go
+// Before: says what it is. The model passes it always or never.
+"steps": {"type": "integer", "description": "Optional number of steps"},
+
+// After: says when to pass it, and when not to.
+"steps": {"type": "integer", "description": "Optional number of steps this task breaks into (max 20). Pass it when you can name the steps up front: the agent's lane then shows progress against it instead of a spinner. Leave it out rather than guessing — an invented denominator is worse than none."},
+```
+
 ## Before you finish
 
 - `make docs-check` — citations resolve, nothing uncited, no story or spec
   references in code, strings or goldens.
 - Comments wrap at ~78 columns, like the code around them.
+- Does the change move what the model reads — a definition's schema or
+  description, a toolbox line, a prompt paragraph? Then say which, and cite
+  the section that holds the reason; if it moves none, say that.
