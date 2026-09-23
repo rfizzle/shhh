@@ -2061,6 +2061,9 @@ func (m *Model) loadChatByName(name string) string {
 		tools.NoteRestoredReads(msgs)
 	}
 	m.resumeConversation(name, msgs)
+	// An approved plan belongs to the conversation that approved it, and the
+	// loaded one did not (docs/capabilities/coding-agent.md#an-approved-plan-is-an-artifact).
+	m.planned = plan.Record{}
 	// The loaded conversation brought its own system prompt, written in a
 	// sitting that may be days old; the checkout in front of it is this one
 	// (context.go).

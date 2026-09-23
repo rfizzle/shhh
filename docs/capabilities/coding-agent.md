@@ -794,6 +794,13 @@ thing with it. Taking a new session from the context-pressure card after a
 plan was approved carries the last approved record across exactly as the plan
 card's does; a session that never approved one crosses with nothing to carry.
 
+A record is carried once. Whichever card takes it across, the boundary leaves
+it behind, as it does on `/new` and when a saved conversation is loaded over
+the one on screen: a plan was approved for the work it was researched for, and
+the session after the one it seeded, or a conversation that never saw it, is
+not that work. A later new session starts bare unless a plan is approved
+again.
+
 The mode does not move. Every other answer on the card names the mode it
 enters, because approving a plan is never an unstated mode change; carrying it
 into a new session names none, so the new session is in the mode the old one

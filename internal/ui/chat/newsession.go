@@ -122,6 +122,11 @@ func (m *Model) startNewSession() (notes []entry, save tea.Cmd) {
 	// a different one: carried across, the new slot would open on a summary of
 	// work its transcript never mentions (reopen.go).
 	m.compactSummary = ""
+	// So does an approved plan's record. A card that carries it across reads
+	// it before calling this, so it is carried once; left standing, the next
+	// boundary would seed a session the plan was never approved for
+	// (docs/capabilities/coding-agent.md#an-approved-plan-is-an-artifact).
+	m.planned = plan.Record{}
 	// The edits belong to the conversation that made them: with the turns
 	// renumbered, a review or an undo would otherwise reach into the
 	// conversation before this one.

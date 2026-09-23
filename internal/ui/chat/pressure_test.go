@@ -211,6 +211,7 @@ func TestPressure_NewSessionCarriesTheApprovedPlan(t *testing.T) {
 		t.Fatalf("the full window should raise the card, state=%d", m.state)
 	}
 
+	approved := m.planned
 	updated, _ = m.Update(tea.KeyPressMsg{Code: 'n', Text: "n"})
 	m = updated.(Model)
 
@@ -218,7 +219,7 @@ func TestPressure_NewSessionCarriesTheApprovedPlan(t *testing.T) {
 	if len(msgs) != 2 || msgs[0].Content != "sys" {
 		t.Fatalf("the new session should hold the prompt and the plan, got %d: %+v", len(msgs), msgs)
 	}
-	if seed := msgs[1]; seed.Role != provider.RoleUser || !seed.Machine || seed.Content != m.planned.Prologue() {
+	if seed := msgs[1]; seed.Role != provider.RoleUser || !seed.Machine || seed.Content != approved.Prologue() {
 		t.Fatalf("the first message of the new session should be the plan's record, got %+v", seed)
 	}
 	var rows []entry
@@ -229,6 +230,49 @@ func TestPressure_NewSessionCarriesTheApprovedPlan(t *testing.T) {
 	}
 	if len(rows) != 2 || !isSessionBoundary(rows[0]) || rows[1].notice.Verb != carriedPlanVerb {
 		t.Fatalf("the boundary row should be followed by the carried plan, got %+v", rows)
+	}
+}
+
+// A record is carried once: the session the plan card's [n] opened is the
+// plan's, and a further new session from the pressure card is not, so it
+// opens bare.
+func TestPressure_ACarriedPlanIsNotCarriedAgain(t *testing.T) {
+	m := planRecordModel(t, mockStream)
+	m = m.WithNewSession(func() SessionStart { return SessionStart{Prompt: "sys"} })
+	updated, _ := m.Update(doneMsg{})
+	m = handover(t, updated.(Model))
+	updated, _ = m.Update(tea.KeyPressMsg{Code: 'n', Text: "n"})
+	m = updated.(Model)
+	if !m.planned.Empty() {
+		t.Fatal("the record should be left behind once it has been carried")
+	}
+	carried := false
+	for _, e := range m.transcript {
+		if e.notice != nil && e.notice.Verb == carriedPlanVerb {
+			carried = true
+		}
+	}
+	if !carried {
+		t.Fatal("the plan card's [n] should have carried the plan")
+	}
+
+	big := strings.Repeat("y ", 30000)
+	m.agent.Append(provider.Message{Role: provider.RoleUser, Content: big})
+	m.agent.Append(provider.Message{Role: provider.RoleAssistant, Content: big})
+	m = endTurn(t, m, "carry on")
+	if m.state != statePressure {
+		t.Fatalf("the full window should raise the card, state=%d", m.state)
+	}
+	updated, _ = m.Update(tea.KeyPressMsg{Code: 'n', Text: "n"})
+	m = updated.(Model)
+
+	if msgs := m.Messages(); len(msgs) != 1 || msgs[0].Content != "sys" {
+		t.Fatalf("the further session should hold the prompt alone, got %d: %+v", len(msgs), msgs)
+	}
+	for _, e := range m.transcript {
+		if e.notice != nil && e.notice.Verb == carriedPlanVerb {
+			t.Fatalf("a plan carried once should not be carried again, got %+v", e.notice)
+		}
 	}
 }
 
