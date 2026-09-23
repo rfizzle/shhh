@@ -10,6 +10,7 @@ import (
 	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/preflight"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/resolve"
 )
 
 var errTest = errors.New("test error")
@@ -1146,26 +1147,97 @@ func TestGenerate_SilentExplainGoesStraightToAction(t *testing.T) {
 }
 
 // A frame drawn inline owns every cell of every row it draws, so a narrower
-// frame after a wider one leaves nothing of the wider one on screen. The
-// alternatives card is the narrow frame this surface has: it is drawn at the
-// width it wants or the terminal's, whichever is less, and in a terminal
-// wider than the card the cells to its right were the result surface's.
-func TestGenerate_ANarrowerFrameLeavesNoneOfTheWiderOne(t *testing.T) {
+// frame after a wider one leaves nothing of the wider one on screen. Each
+// inline surface has a step that narrows: the one-shot's alternatives card is
+// drawn at the width it wants or the terminal's, whichever is less; the
+// missing-provider card gives way to the provider list, and the key prompt
+// to the one-line confirm. In a terminal wider than the narrow step, the
+// cells to its right were the wide one's.
+func TestInlineFrames_ANarrowerFrameLeavesNoneOfTheWiderOne(t *testing.T) {
 	const width = 100
-	wide := sized(withAlternatives(t, twoOthers), width)
-	rowsAre(t, "the result surface", wide.View().Content, width)
+	type frame struct {
+		screen string
+		view   tea.View
+	}
+	setup := func(steps ...tea.KeyPressMsg) frame {
+		var m tea.Model = NewProviderSetup(resolve.Survey{Provider: "anthropic"}, []string{"anthropic", "openai"})
+		m, _ = m.Update(tea.WindowSizeMsg{Width: width, Height: 24})
+		for _, k := range steps {
+			m, _ = m.Update(k)
+		}
+		return frame{m.(ProviderSetup).screen(), m.View()}
+	}
+	enter := tea.KeyPressMsg{Code: tea.KeyEnter}
+	for _, tc := range []struct {
+		name         string
+		wide, narrow func(t *testing.T) frame
+	}{
+		{
+			name: "the one-shot's alternatives",
+			wide: func(t *testing.T) frame {
+				m := sized(withAlternatives(t, twoOthers), width)
+				return frame{m.screen(), m.View()}
+			},
+			narrow: func(t *testing.T) frame {
+				m := press(t, sized(withAlternatives(t, twoOthers), width), "a")
+				if m.Phase() != phasePick {
+					t.Fatalf("`a` did not open the picker: phase %v", m.Phase())
+				}
+				return frame{m.screen(), m.View()}
+			},
+		},
+		{
+			name:   "the provider card's list",
+			wide:   func(*testing.T) frame { return setup() },
+			narrow: func(*testing.T) frame { return setup(enter) },
+		},
+		{
+			name: "the inline confirm",
+			wide: func(*testing.T) frame { return setup(pressRune('p')) },
+			narrow: func(*testing.T) frame {
+				return setup(pressRune('p'), pressRune('k'), enter)
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			wide, narrow := tc.wide(t), tc.narrow(t)
+			rowsAre(t, "the wide frame", wide.view.Content, width)
+			// The narrow step is narrower than the terminal — otherwise there
+			// is nothing for a row to cover and the check below passes for the
+			// wrong reason.
+			if card := ansi.StringWidth(widestRow(narrow.screen)); card >= width {
+				t.Fatalf("the narrow step is %d columns of a %d-column terminal; it fills the row on its own", card, width)
+			}
+			rowsAre(t, "the narrow frame", narrow.view.Content, width)
+		})
+	}
+}
 
-	narrow := press(t, wide, "a")
-	if narrow.Phase() != phasePick {
-		t.Fatalf("`a` did not open the picker: phase %v", narrow.Phase())
+// The frame a surface quits on stays in the scrollback, which is where the
+// reader copies the answer out of, so it carries none of the pad the live
+// frames do: no row of it ends in a space.
+func TestInlineFrames_TheLastFrameLeavesTheScrollbackClean(t *testing.T) {
+	const width = 100
+	oneShot := press(t, sized(armed(t, "ls -la", nil), width), "enter")
+	if oneShot.Phase() != phaseDone {
+		t.Fatalf("enter on the result did not end the one-shot: phase %v", oneShot.Phase())
 	}
-	// The card itself is narrower than the terminal — otherwise there is
-	// nothing for a row to cover and the check below passes for the wrong
-	// reason.
-	if card := ansi.StringWidth(widestRow(narrow.screen())); card >= width {
-		t.Fatalf("the picker is %d columns of a %d-column terminal; it fills the row on its own", card, width)
+	var setup tea.Model = NewProviderSetup(resolve.Survey{Provider: "openai"}, []string{"openai"})
+	setup, _ = setup.Update(tea.WindowSizeMsg{Width: width, Height: 24})
+	setup, _ = setup.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
+	for name, view := range map[string]string{
+		"the one-shot":       oneShot.View().Content,
+		"the provider setup": setup.View().Content,
+	} {
+		for i, line := range strings.Split(ansi.Strip(view), "\n") {
+			if strings.TrimRight(line, " ") != line {
+				t.Errorf("%s: row %d of the last frame ends in spaces: %q", name, i+1, line)
+			}
+		}
 	}
-	rowsAre(t, "the picker", narrow.View().Content, width)
+	if !strings.Contains(ansi.Strip(oneShot.View().Content), "ls -la") {
+		t.Errorf("the one-shot's last frame should still show the command, got:\n%s", oneShot.View().Content)
+	}
 }
 
 // rowsAre asserts every row of a frame is exactly the terminal's width.

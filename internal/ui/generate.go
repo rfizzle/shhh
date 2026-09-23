@@ -1305,8 +1305,18 @@ func prefixLines(s, pad string) string {
 // content and no state — but inline is still inside a terminal, and the last
 // thing a frame does is fit the one it is in: fold what runs past the last
 // column, and paint out to it what stops short of one.
+//
+// The frame the surface quits on is the exception to the pad. The runtime
+// draws it once more as it exits and leaves it in the scrollback, where
+// nothing will be drawn over it and the reader selects the answer out of it:
+// a pad there is trailing spaces on every row they copy. The frame before it
+// was padded, so it covers every cell that one owned all the same.
 func (m GenerateModel) View() tea.View {
-	return tea.NewView(padToWidth(foldToWidth(m.screen(), m.width), m.width))
+	frame := foldToWidth(m.screen(), m.width)
+	if m.phase == phaseDone {
+		return tea.NewView(frame)
+	}
+	return tea.NewView(padToWidth(frame, m.width))
 }
 
 // fieldView is a one-shot field's render, in the palette as it stands now.

@@ -229,9 +229,18 @@ func (m ProviderSetup) finish() (tea.Model, tea.Cmd) {
 }
 
 // View is the frame. The setup card draws inline on stderr and asks the
-// terminal for nothing, so the view carries content and no state.
+// terminal for nothing, so the view carries content and no state. It pads
+// every row out to the terminal the way the one-shot's frame does, because
+// its steps narrow as they go — the card, the provider list, the key prompt,
+// then the one-line confirm — and a row a narrower step ends early would
+// otherwise keep the wider one's tail beside it. The frame it quits on is
+// empty and stays that way: a pad there would be a row of spaces left in
+// the scrollback.
 func (m ProviderSetup) View() tea.View {
-	return tea.NewView(m.screen())
+	if m.quitting {
+		return tea.NewView(m.screen())
+	}
+	return tea.NewView(padToWidth(m.screen(), m.width))
 }
 
 func (m ProviderSetup) screen() string {
