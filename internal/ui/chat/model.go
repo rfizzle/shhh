@@ -637,6 +637,11 @@ type Model struct {
 	// the two commands — the conversation still starts over, on the prompt
 	// it already had.
 	newSession NewSession
+	// sessions backs /sessions: the sessions running on this machine, as the
+	// row `shhh sessions` prints. The reading is the store's and the report
+	// the CLI's, so the host hands both over as one call; nil where there is
+	// no store to read.
+	sessions func() string
 	// workspaceBlock is the checkout read again, as the prompt section that
 	// states it. Nil in a host that cannot survey one, which leaves a
 	// rebuilt conversation on the reading it already carried.
@@ -1565,7 +1570,7 @@ func (m Model) autosaveCmd() tea.Cmd {
 		// read here, at the save, so the slot says where the tree was when
 		// this conversation was last written down rather than where it was
 		// when the process started.
-		_ = db.SetChatResume(slot, storage.ChatResume{Summary: summary, Head: project.Head(dir)})
+		_ = db.SetChatResume(slot, storage.ChatResume{Summary: summary, Head: project.Head(dir), Root: project.Root(dir)})
 		if slot != name {
 			return autosaveMovedMsg{from: name, to: slot}
 		}

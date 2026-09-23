@@ -463,6 +463,7 @@ func buildSlashHandlers() map[string]slashHandler {
 		"/save":        slashSave,
 		"/load":        slashLoad,
 		"/chats":       slashChats,
+		"/sessions":    slashSessions,
 	}
 }
 
@@ -611,6 +612,13 @@ func slashMCP(m *Model, parts []string) string {
 	return m.mcp.Manage(parts[1:])
 }
 
+func slashSessions(m *Model, _ []string) string {
+	if m.sessions == nil {
+		return "The sessions on this machine are not readable from here; `shhh sessions` lists them."
+	}
+	return m.sessions()
+}
+
 func slashSkills(m *Model, _ []string) string {
 	if m.skills == nil {
 		return "No skills loaded in this session. A skill is a directory holding a SKILL.md under .shhh/skills, .agents/skills or .claude/skills, in the project or your home directory."
@@ -733,7 +741,7 @@ func slashSave(m *Model, parts []string) string {
 	// conversation, and one that came back unable to say which commit it
 	// was written on would be the one copy that could not (reopen.go).
 	_ = m.db.SetChatResume(name, storage.ChatResume{
-		Summary: m.compactSummary, Head: project.Head(m.workspace)})
+		Summary: m.compactSummary, Head: project.Head(m.workspace), Root: project.Root(m.workspace)})
 	// Future rewind branches hang off the named session.
 	m.adoptSlot(name)
 	return fmt.Sprintf("Chat saved as %q", name)

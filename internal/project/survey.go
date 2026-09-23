@@ -343,6 +343,22 @@ func Head(dir string) string {
 	return strings.TrimSpace(out)
 }
 
+// Branch is the branch checked out in dir, or empty where there is none to
+// name: a detached HEAD, outside a repository, or without a git binary. It
+// is Head's sibling for the same reason — a listing of the sessions on this
+// machine names each one's branch, and a whole survey per row would count
+// every dirty file in every checkout to print one word.
+func Branch(dir string) string {
+	out, err := gitOutput(dir, "rev-parse", "--abbrev-ref", "HEAD")
+	if err != nil {
+		return ""
+	}
+	if b := strings.TrimSpace(out); b != "HEAD" {
+		return b
+	}
+	return ""
+}
+
 func gitOutput(dir string, args ...string) (string, error) {
 	out, err := exec.Command("git", append([]string{"-C", dir}, args...)...).Output()
 	if err != nil {

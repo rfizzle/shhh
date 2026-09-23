@@ -120,6 +120,14 @@ func (m Model) WithNewSession(fn NewSession) Model {
 	return m
 }
 
+// WithSessions wires /sessions. Without it the command says where the list
+// can be read instead of printing an empty one.
+// See docs/capabilities/sessions-and-memory.md#a-session-knows-it-is-not-alone.
+func (m Model) WithSessions(fn func() string) Model {
+	m.sessions = fn
+	return m
+}
+
 // WithWorkspaceBlock wires the checkout reading a rebuilt conversation is
 // given: fn answers with the workspace section of the system prompt as the
 // tree stands when it is called. A compaction and a load replace the block

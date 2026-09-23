@@ -12,6 +12,7 @@
     cmd [prompt] [--flags]             Generate one shell command
     code [command] [prompt] [--flags]  Start a coding agent session
     serve [--flags]                    Serve the coding agent over JSON-RPC for another client to drive
+    sessions [--flags]                 List the sessions running on this machine
            
   RECORDS  
            

@@ -247,6 +247,38 @@ func TestHead_NamesTheCommitAndMovesWithIt(t *testing.T) {
 	}
 }
 
+func TestBranch_NamesTheBranchAndNothingWhenDetached(t *testing.T) {
+	git, err := exec.LookPath("git")
+	if err != nil {
+		t.Skip("git is not on PATH")
+	}
+	dir := t.TempDir()
+	run := func(args ...string) {
+		t.Helper()
+		cmd := exec.Command(git, append([]string{"-C", dir}, args...)...)
+		cmd.Env = append(os.Environ(), "GIT_CONFIG_GLOBAL=/dev/null", "GIT_CONFIG_SYSTEM=/dev/null")
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("git %s: %v\n%s", strings.Join(args, " "), err, out)
+		}
+	}
+	run("init", "--initial-branch=trunk")
+	run("config", "user.email", "t@example.com")
+	run("config", "user.name", "t")
+	writeFiles(t, dir, map[string]string{"a.txt": "one\n"})
+	run("add", "a.txt")
+	run("commit", "-m", "first")
+	if b := Branch(dir); b != "trunk" {
+		t.Fatalf("branch = %q, want trunk", b)
+	}
+	run("checkout", "--detach")
+	if b := Branch(dir); b != "" {
+		t.Fatalf("branch = %q on a detached head, want empty", b)
+	}
+	if b := Branch(t.TempDir()); b != "" {
+		t.Fatalf("branch = %q outside a repository, want empty", b)
+	}
+}
+
 func TestHead_EmptyOutsideARepository(t *testing.T) {
 	if head := Head(t.TempDir()); head != "" {
 		t.Fatalf("head = %q outside a repository, want empty", head)

@@ -1016,6 +1016,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		WithWorkspace(cwd).
 		WithObserver(recorder.observer()).
 		WithNewSession(newSession).
+		WithSessions(sessionsFor(db)).
 		WithWorkspaceBlock(env.workspaceBlock).
 		WithToolDefinitions(toolDefTokens(session.toolDefs)).
 		WithProjectContextTokens(env.projectTokens).

@@ -712,7 +712,7 @@ func (c *headlessChat) save(msgs []provider.Message) {
 	// And what the conversation is opened again on. The commit is read here,
 	// at the save, so the slot says where the tree was when the conversation
 	// was last written down rather than where it was when the run started.
-	_ = c.db.SetChatResume(slot, storage.ChatResume{Summary: c.summary, Head: project.Head("")})
+	_ = c.db.SetChatResume(slot, storage.ChatResume{Summary: c.summary, Head: project.Head(""), Root: project.Root(".")})
 }
 
 // runPrintSession runs the agent loop to completion without the TUI:

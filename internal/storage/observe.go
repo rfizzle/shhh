@@ -254,9 +254,18 @@ func (db *DB) LinkAgentSession(id int64, chatSession string) (bool, error) {
 
 // UpdateAgentSession sets a session's cumulative totals (idempotent: callers
 // pass running totals, not deltas).
+//
+// It beats the row as well. Totals arrive with every request the provider
+// answered, which is the one signal every surface already sends while a turn
+// is under way — the turn close alone would leave a session forty rounds into
+// a turn reading as one nobody has touched since the last one ended, and
+// `shhh sessions` tells working from idle by exactly this column
+// (docs/capabilities/sessions-and-memory.md#a-session-knows-it-is-not-alone).
 func (db *DB) UpdateAgentSession(id, turns, tokensIn, tokensOut int64, estCost float64) error {
 	_, err := db.sql.Exec(
-		`UPDATE agent_sessions SET turns = ?, tokens_in = ?, tokens_out = ?, est_cost = ? WHERE id = ?`,
+		`UPDATE agent_sessions SET turns = ?, tokens_in = ?, tokens_out = ?, est_cost = ?,
+		        heartbeat = strftime('%Y-%m-%dT%H:%M:%fZ','now')
+		 WHERE id = ?`,
 		turns, tokensIn, tokensOut, estCost, id,
 	)
 	return err
@@ -388,6 +397,175 @@ func (db *DB) LiveSibling(project string, now time.Time) (LiveSession, bool, err
 		return LiveSession{Since: since}, true, rows.Err()
 	}
 	return LiveSession{}, false, rows.Err()
+}
+
+// agentWorkingWindow is how recently a session must have beaten to be read
+// as working rather than idle. A beat is taken at every answered request and
+// every turn close, so a turn that is making progress beats every few
+// seconds; five minutes leaves room for one long tool call — a build, a test
+// suite — without calling the session idle in the middle of it.
+const agentWorkingWindow = 5 * time.Minute
+
+// RunningSession is one session a person has open on this machine, as
+// `shhh sessions` lists it: a conversation or a coding session with no
+// parent, whose process answers and whose beat is inside the window.
+// See docs/capabilities/sessions-and-memory.md#a-session-knows-it-is-not-alone.
+type RunningSession struct {
+	ID   int64
+	Kind string
+	PID  int
+	// Slot is the saved conversation the session is writing, empty until
+	// its first save links one.
+	Slot string
+	// Root is the checkout the slot was last written down in, read from the
+	// slot rather than the record, which stores no paths. Empty where the
+	// session has not saved yet, or its slot predates the column.
+	Root string
+	// Project is the row's checkout fingerprint, which is what a caller that
+	// knows its own checkout can name an unsaved session's directory by.
+	Project string
+	Started time.Time
+	Beat    time.Time
+	// Working is a beat inside agentWorkingWindow, the session's own or one
+	// of its children's; anything older is idle.
+	Working bool
+	// Own is this process's row.
+	Own bool
+	// Children are the open rows hanging under this one at any depth — its
+	// sub-agents and the unattended runs it started — in the order they
+	// started. None of them is a session a person can open, so none is
+	// listed as a row of its own.
+	Children []RunningChild
+}
+
+// RunningChild is a sub-agent or a headless run under a running session.
+type RunningChild struct {
+	// Name is the agent's name as the supervisor knows it, empty for a row
+	// that carries none (a headless run), which a listing names by Kind.
+	Name    string
+	Kind    string
+	Started time.Time
+	Working bool
+}
+
+// LiveSessions lists the sessions running on this machine, oldest first,
+// read the way LiveSibling reads one: an open row, a beat inside the
+// heartbeat window, and a process that answers. Only a chat or a code row
+// with no parent is a session of its own; every other open row is listed
+// under the top-level row it descends from, and one that descends from none
+// of them — an unattended run nobody opened a session around — is left out,
+// because nobody can open it.
+// See docs/capabilities/sessions-and-memory.md#a-session-knows-it-is-not-alone.
+func (db *DB) LiveSessions(now time.Time) ([]RunningSession, error) {
+	rows, err := db.sql.Query(
+		`SELECT a.id, a.kind, a.pid, a.chat_session, COALESCE(c.root, ''), a.project,
+		        a.started_at, a.heartbeat, COALESCE(a.parent_id, 0), COALESCE(a.name, '')
+		 FROM agent_sessions a LEFT JOIN chat_sessions c ON c.id = a.chat_session_id
+		 WHERE a.ended_at IS NULL AND a.pid > 0 AND a.heartbeat >= ?
+		 ORDER BY a.started_at, a.id`,
+		heartbeatCutoff(now),
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	type openRow struct {
+		RunningSession
+		parent int64
+		name   string
+	}
+	var all []openRow
+	for rows.Next() {
+		var (
+			o             openRow
+			started, beat string
+		)
+		if err := rows.Scan(&o.ID, &o.Kind, &o.PID, &o.Slot, &o.Root, &o.Project,
+			&started, &beat, &o.parent, &o.name); err != nil {
+			return nil, err
+		}
+		if !pidRunning(o.PID) {
+			continue
+		}
+		o.Started, _ = time.Parse(observeTimeFormat, started)
+		o.Beat, _ = time.Parse(observeTimeFormat, beat)
+		// The first beat is written with the row, so a beat that is still
+		// the start time is a session that has not been answered once yet —
+		// sitting at its start screen, not working.
+		o.Working = beat != started && now.Sub(o.Beat) < agentWorkingWindow
+		o.Own = o.PID == os.Getpid()
+		all = append(all, o)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	parentOf := make(map[int64]int64, len(all))
+	for _, o := range all {
+		parentOf[o.ID] = o.parent
+	}
+	// top walks a row up to the top-level row it hangs under, or answers 0
+	// where the chain leaves the open rows (a parent that ended) or loops,
+	// which the schema does not rule out.
+	top := func(id int64) int64 {
+		seen := map[int64]bool{}
+		for !seen[id] {
+			seen[id] = true
+			up := parentOf[id]
+			if up == 0 {
+				return id
+			}
+			if _, ok := parentOf[up]; !ok {
+				return 0
+			}
+			id = up
+		}
+		return 0
+	}
+	var out []RunningSession
+	index := map[int64]int{}
+	for _, o := range all {
+		if o.parent == 0 && (o.Kind == "chat" || o.Kind == "code") {
+			index[o.ID] = len(out)
+			out = append(out, o.RunningSession)
+		}
+	}
+	for _, o := range all {
+		if _, isTop := index[o.ID]; isTop {
+			continue
+		}
+		i, ok := index[top(o.ID)]
+		if !ok {
+			continue
+		}
+		out[i].Children = append(out[i].Children, RunningChild{
+			Name: o.name, Kind: o.Kind, Started: o.Started, Working: o.Working})
+		// A session waiting on its children is not idle: the work is
+		// theirs, and their beats are what say it is going on.
+		if o.Working {
+			out[i].Working = true
+		}
+	}
+	return out, nil
+}
+
+// LiveSessionPID is the process running the session that is writing slot,
+// found the way LiveSessions finds it. It is the one lookup from a name a
+// person types to a process on this machine, so anything that has to reach
+// a running session by its slot asks here.
+func (db *DB) LiveSessionPID(slot string, now time.Time) (int, bool, error) {
+	if slot == "" {
+		return 0, false, nil
+	}
+	sessions, err := db.LiveSessions(now)
+	if err != nil {
+		return 0, false, err
+	}
+	for _, s := range sessions {
+		if s.Slot == slot {
+			return s.PID, true, nil
+		}
+	}
+	return 0, false, nil
 }
 
 // CloseCrashedAgentSessions ends every open row whose process is gone and

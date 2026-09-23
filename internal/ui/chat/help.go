@@ -147,6 +147,8 @@ high is the same thing for every step at once)`,
 	"/status": `Where this session is: what it is working on, what it has
 spent, and whether the last few turns are still on the
 target you set it`,
+	"/sessions": `The sessions running on this machine: the conversation each
+saves to, its checkout and branch, and whether it is working`,
 	"/trust": `Let this checkout's own skills, agent profiles, wordings and
 quality suites load. A clone can carry instructions, so
 nothing of a checkout's runs until you say so; "off"

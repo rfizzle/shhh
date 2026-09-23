@@ -548,6 +548,16 @@ var migrations = []string{
 	// headless run and a one-shot have no name to carry, and a row written
 	// before this column existed is a child nobody wrote a name down for.
 	`ALTER TABLE agent_sessions ADD COLUMN name TEXT;`,
+
+	// The checkout a conversation was last written down in, beside the
+	// commit that save recorded, so a listing of the sessions running on
+	// this machine can say where each one is standing
+	// (docs/capabilities/sessions-and-memory.md#a-session-knows-it-is-not-alone).
+	// It is the slot's and not the record's: agent_sessions stores no paths,
+	// and a slot is already a conversation — content by definition. Empty on
+	// every slot written before it, which is a listing saying it does not
+	// know rather than guessing.
+	`ALTER TABLE chat_sessions ADD COLUMN root TEXT NOT NULL DEFAULT '';`,
 }
 
 const (

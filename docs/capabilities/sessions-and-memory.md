@@ -219,9 +219,9 @@ that somebody is there to ask.
 The record is what answers the question. A session's row has always said when
 it started and when it ended, and an unfinished row has always meant two
 different things — still running, or killed with its ending never written.
-The process id tells those apart, and a beat written at every turn boundary
-guards the id, since ids are reused and a dead session's number can come to
-belong to something else. A row whose process is gone is closed at the next
+The process id tells those apart, and a beat written at every answered
+request and every turn boundary guards the id, since ids are reused and a
+dead session's number can come to belong to something else. A row whose process is gone is closed at the next
 session's start, the way an abandoned sandbox container is reaped: the record
 outlives the thing it describes, so something has to bring the two back in
 line.
@@ -232,6 +232,27 @@ and a lease in a committed directory is a merge conflict waiting for a bad
 afternoon. The checkout is matched on the fingerprint the row already
 carries, which is also what keeps the reading clear of the record's one rule:
 it stores no paths.
+
+The same reading, taken over every checkout instead of this one, is how a
+person with three sessions in three worktrees finds the one they mean.
+`shhh sessions` — and `/sessions` inside a session, as a row in the
+transcript — lists the sessions running on this machine: the kind, the
+conversation each is saving to, when it started, the checkout and branch it
+is standing in, whether it is working or idle, and a mark on the one asking.
+Working is a beat in the last five minutes; a beat rides every answered
+request, so a turn that is getting anywhere keeps its session working, and
+one that has been waiting on nobody for longer — or has not been answered
+once yet — reads idle. Only a session a
+person can open is a row. A sub-agent, and an unattended run a session
+started, is listed under the session it belongs to, and a session waiting on
+its children reads as working while they are; an unattended run with no
+session around it is not listed, because there is nothing to open. The
+checkout comes from the saved conversation rather than the record, which
+still stores no paths: each save writes the directory beside the commit it
+already wrote, and the branch is read from that directory when the list is
+asked for. A session that has not saved yet has nowhere to say it is, so it
+is named only where it shares a checkout with the one asking, and otherwise
+says it does not know.
 
 The last place it shows is the saved conversations. A slot a running session
 is still autosaving into is marked wherever conversations are listed, and no

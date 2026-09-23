@@ -11,7 +11,7 @@
 
 ── layout ──────────────────────────────────────────────────
 · nothing typed yet
-╭─ ctrl+/ ──────────────────────────────────────────────────── 25 matches ─╮
+╭─ ctrl+/ ──────────────────────────────────────────────────── 26 matches ─╮
 │ ▸                                                                        │
 │ COMMANDS                                                                 │
 │ ❯ /help                   Show commands, keys, and the approval policy   │
@@ -24,12 +24,12 @@
 │ FILES                                                                    │
 │   internal/agent/loop.go  modified 4m ago                                │
 │   README.md               modified 2h ago                                │
-│ ↓ 16 more                                                                │
+│ ↓ 17 more                                                                │
 │ [enter] run · [tab] complete · [↑↓] move · [esc] dismiss                 │
 ╰──────────────────────────────────────────────────────────────────────────╯
 
 · mid-turn, an idle-only command among the runnable ones
-╭─ ctrl+/ ─────────────────────────────────────────────── 3 of 25 matches ─╮
+╭─ ctrl+/ ─────────────────────────────────────────────── 3 of 26 matches ─╮
 │ ▸ co                                                                     │
 │ COMMANDS                                                                 │
 │ ❯ /copy       Copy the last response (or just its code blocks)           │
@@ -40,7 +40,7 @@
 
 ── ansi ────────────────────────────────────────────────────
 · nothing typed yet
-␛[38;5;244m╭─ ␛[m␛[1;38;5;254mctrl+/ ␛[m␛[38;5;244m──────────────────────────────────────────────────── 25 matches ─╮␛[m
+␛[38;5;244m╭─ ␛[m␛[1;38;5;254mctrl+/ ␛[m␛[38;5;244m──────────────────────────────────────────────────── 26 matches ─╮␛[m
 ␛[38;5;244m│␛[m ␛[38;5;254m▸ ␛[m␛[38;5;254m ␛[m                                                                      ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[1;38;5;254mCOMMANDS␛[m                                                                 ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m/help                   Show commands, keys, and the approval policy  ␛[m ␛[38;5;244m│␛[m
@@ -53,12 +53,12 @@
 ␛[38;5;244m│␛[m ␛[1;38;5;254mFILES␛[m                                                                    ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;254minternal/agent/loop.go␛[m  ␛[38;5;244mmodified 4m ago␛[m                                ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;254mREADME.md␛[m               ␛[38;5;244mmodified 2h ago␛[m                                ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[38;5;244m↓ 16 more␛[m                                                                ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;244m↓ 17 more␛[m                                                                ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m run␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m complete␛[m␛[38;5;244m · ␛[m␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m dismiss␛[m                 ␛[38;5;244m│␛[m
 ␛[38;5;244m╰──────────────────────────────────────────────────────────────────────────╯␛[m
 
 · mid-turn, an idle-only command among the runnable ones
-␛[38;5;244m╭─ ␛[m␛[1;38;5;254mctrl+/ ␛[m␛[38;5;244m─────────────────────────────────────────────── 3 of 25 matches ─╮␛[m
+␛[38;5;244m╭─ ␛[m␛[1;38;5;254mctrl+/ ␛[m␛[38;5;244m─────────────────────────────────────────────── 3 of 26 matches ─╮␛[m
 ␛[38;5;244m│␛[m ␛[38;5;254m▸ ␛[m␛[38;5;254mco ␛[m                                                                    ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[1;38;5;254mCOMMANDS␛[m                                                                 ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m/copy       Copy the last response (or just its code blocks)          ␛[m ␛[38;5;244m│␛[m

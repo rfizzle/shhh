@@ -1,0 +1,10 @@
+  shhh sessions — 3 sessions
+
+  ▸ code  2026-08-31 09:12:40 · started 3h ago  [working]
+      /work/shhh-b · rebase-onto-main
+      ↳ writer-1 · working · started 20m ago
+      ↳ print run · idle · started 5m ago
+  ✓ chat  not saved yet · started 2m ago  [idle · this session]
+      /work/shhh · main
+  ✓ code  not saved yet · started 1m ago  [idle]
+      checkout unknown until it saves

@@ -1015,6 +1015,11 @@ func (db *DB) ChatTitle(name string) (string, error) {
 type ChatResume struct {
 	Summary string
 	Head    string
+	// Root is the checkout the conversation was written down in. It is not
+	// read on the way back in; it is what `shhh sessions` names a running
+	// session's directory by, since the record beside it stores no paths
+	// (docs/capabilities/sessions-and-memory.md#a-session-knows-it-is-not-alone).
+	Root string
 }
 
 // SetChatResume stores what the slot is opened again on. It is the title's
@@ -1022,7 +1027,7 @@ type ChatResume struct {
 // slot can never carry a summary from one sitting and a commit from another.
 func (db *DB) SetChatResume(name string, r ChatResume) error {
 	res, err := db.sql.Exec(
-		`UPDATE chat_sessions SET summary = ?, head = ? WHERE name = ?`, r.Summary, r.Head, name)
+		`UPDATE chat_sessions SET summary = ?, head = ?, root = ? WHERE name = ?`, r.Summary, r.Head, r.Root, name)
 	if err != nil {
 		return err
 	}
@@ -1038,7 +1043,7 @@ func (db *DB) SetChatResume(name string, r ChatResume) error {
 func (db *DB) ChatResume(name string) (ChatResume, error) {
 	var r ChatResume
 	err := db.sql.QueryRow(
-		`SELECT summary, head FROM chat_sessions WHERE name = ?`, name).Scan(&r.Summary, &r.Head)
+		`SELECT summary, head, root FROM chat_sessions WHERE name = ?`, name).Scan(&r.Summary, &r.Head, &r.Root)
 	if err == sql.ErrNoRows {
 		return ChatResume{}, nil
 	}
