@@ -16,12 +16,14 @@ import (
 	"testing"
 	"time"
 
+	sdk "github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/evidence"
 	"github.com/rfizzle/shhh/internal/hook"
 	"github.com/rfizzle/shhh/internal/lsp"
+	"github.com/rfizzle/shhh/internal/mcp"
 	"github.com/rfizzle/shhh/internal/memory"
 	"github.com/rfizzle/shhh/internal/notebook"
 	"github.com/rfizzle/shhh/internal/observe"
@@ -83,7 +85,7 @@ func TestAReviewingProfileIsInstructedAsAReviewer(t *testing.T) {
 		Name: "critic", Description: "audits diffs", Reviews: true,
 		Prompt: "Audit ruthlessly across three axes.",
 	}
-	got, _, _ := profileEnv(def, subagent.Spec{}, info, "", nil, nil, map[string]bool{})
+	got := composed(profileEnv(def, subagent.Spec{}, info, "", nil, nil, map[string]bool{}))
 
 	// Reading the evidence first, ranking, the bounded pass, the verdict:
 	// the four things the reader's prompt never says.
@@ -113,7 +115,7 @@ func TestAReviewingProfileIsInstructedAsAReviewer(t *testing.T) {
 	// than a fork of them.
 	plain := def
 	plain.Reviews = false
-	reader, _, _ := profileEnv(plain, subagent.Spec{}, info, "", nil, nil, map[string]bool{})
+	reader := composed(profileEnv(plain, subagent.Spec{}, info, "", nil, nil, map[string]bool{}))
 	if !strings.Contains(reader, `"critic" sub-agent`) || strings.Contains(reader, "Rank by severity") {
 		t.Errorf("a profile that does not review should get the generic reader's prompt:\n%s", reader)
 	}
@@ -125,7 +127,7 @@ func TestAReviewingProfileIsInstructedAsAReviewer(t *testing.T) {
 	// prompt_mode = "replace" still owns the whole prompt, review or not.
 	replaced := def
 	replaced.PromptMode = config.PromptReplace
-	if own, _, _ := profileEnv(replaced, subagent.Spec{}, info, "", nil, nil, map[string]bool{}); own != def.Prompt {
+	if own := composed(profileEnv(replaced, subagent.Spec{}, info, "", nil, nil, map[string]bool{})); own != def.Prompt {
 		t.Errorf("replace no longer sends the profile's instructions alone:\n%s", own)
 	}
 }
@@ -168,7 +170,7 @@ func TestAReviewingProfilesPromptNamesTheGateItHolds(t *testing.T) {
 	def := config.AgentDefinition{Name: "critic", Description: "audits diffs", Reviews: true}
 	info := shell.Info{OS: "linux", Cwd: "/w"}
 
-	held, _, _ := profileEnv(def, subagent.Spec{}, info, "", nil, &quality.Runner{Workspace: t.TempDir()}, map[string]bool{})
+	held := composed(profileEnv(def, subagent.Spec{}, info, "", nil, &quality.Runner{Workspace: t.TempDir()}, map[string]bool{}))
 	if !strings.Contains(held, config.QualityGateTool) {
 		t.Errorf("a reviewing profile holding the gate is not told so:\n%s", held)
 	}
@@ -177,7 +179,7 @@ func TestAReviewingProfilesPromptNamesTheGateItHolds(t *testing.T) {
 	}
 	// No runner in the session is no gate in the toolset, and the prompt
 	// says the same.
-	without, _, _ := profileEnv(def, subagent.Spec{}, info, "", nil, nil, map[string]bool{})
+	without := composed(profileEnv(def, subagent.Spec{}, info, "", nil, nil, map[string]bool{}))
 	if strings.Contains(without, config.QualityGateTool) {
 		t.Errorf("a reviewing profile without the gate was told it has one:\n%s", without)
 	}
@@ -193,14 +195,14 @@ func TestAReadOnlyProfilesPromptNamesTheGateItHolds(t *testing.T) {
 	def := config.AgentDefinition{Name: "auditor", Description: "reads the tree"}
 	info := shell.Info{OS: "linux", Cwd: "/w"}
 
-	held, _, _ := profileEnv(def, subagent.Spec{}, info, "", nil, &quality.Runner{Workspace: t.TempDir()}, map[string]bool{})
+	held := composed(profileEnv(def, subagent.Spec{}, info, "", nil, &quality.Runner{Workspace: t.TempDir()}, map[string]bool{}))
 	if !strings.Contains(held, "the gate is the only command you can run") {
 		t.Errorf("a read-only profile holding the gate is not told so:\n%s", held)
 	}
 	if strings.Contains(held, "You cannot edit files or run commands") {
 		t.Errorf("a read-only profile holding the gate is told it can run nothing:\n%s", held)
 	}
-	without, _, _ := profileEnv(def, subagent.Spec{}, info, "", nil, nil, map[string]bool{})
+	without := composed(profileEnv(def, subagent.Spec{}, info, "", nil, nil, map[string]bool{}))
 	if strings.Contains(without, config.QualityGateTool) {
 		t.Errorf("a read-only profile without the gate was told it has one:\n%s", without)
 	}
@@ -580,7 +582,7 @@ func TestAChildGetsTheNavigationToolsetAndTheBlockThatExplainsIt(t *testing.T) {
 	}
 
 	defs, exec, sysPrompt, _ := withSessionTools(
-		session, red, "researcher-1", cwd, tools.Definitions(), tools.Execute, "# Environment")
+		session, red, "researcher-1", cwd, tools.Definitions(), tools.Execute, fixedPrompt("# Environment"))
 	names := toolsetNames(defs)
 
 	for _, want := range []string{
@@ -1344,5 +1346,84 @@ func TestModelForLayersTheCallTheRoleTheDepthAndTheSession(t *testing.T) {
 	bare := &agentProfiles{}
 	if got := bare.modelFor(config.Config{}, subagent.RoleWriter, 2, "", "session-model"); got != "session-model" {
 		t.Errorf("an unconfigured child runs on %q, want the session model", got)
+	}
+}
+
+// composed is a profile's prompt over the profile's own grants: what
+// profileEnv's composer says before the session's shared tools are added.
+func composed(compose func([]string) string, defs []provider.Tool, _ agent.ToolExecutor) string {
+	return compose(toolsetNames(defs))
+}
+
+// fakeMCPEnv turns this test binary into a stdio MCP server with one tool,
+// the way fakeLSPEnv turns it into a language server: the toolset's
+// constructors are package-private to internal/mcp, so a server reachable
+// from here is a real process. TestMain reads the variable (logs_test.go).
+const fakeMCPEnv = "SHHH_TEST_FAKE_MCP"
+
+func serveFakeMCP() {
+	server := sdk.NewServer(&sdk.Implementation{Name: "docs", Version: "1"}, nil)
+	sdk.AddTool(server, &sdk.Tool{Name: "lookup", Description: "Look a page up."},
+		func(context.Context, *sdk.CallToolRequest, struct{}) (*sdk.CallToolResult, any, error) {
+			return &sdk.CallToolResult{Content: []sdk.Content{&sdk.TextContent{Text: "a page"}}}, nil, nil
+		})
+	if err := server.Run(context.Background(), &sdk.StdioTransport{}); err != nil {
+		os.Exit(1)
+	}
+}
+
+// A profile's tool section is read off the names it is handed, and a child
+// holds more than its grants: the notebook and a server the person marked
+// read-only go on with everything the session shares. Composed over the
+// grants alone, the section told the child it had neither while the toolbox
+// under it listed the notebook.
+func TestAProfilesToolSectionNamesTheSharedToolsItHolds(t *testing.T) {
+	exe, err := os.Executable()
+	if err != nil {
+		t.Fatal(err)
+	}
+	ts := mcp.Connect(t.Context(), &mcp.Catalog{Servers: []mcp.Definition{{
+		Name: "docs", Scope: mcp.ScopeUser, Transport: mcp.TransportStdio,
+		Command: exe, Env: map[string]string{fakeMCPEnv: "1"}, ReadOnly: true,
+	}}}, mcp.Options{Timeout: 20 * time.Second})
+	t.Cleanup(ts.Close)
+	reads := ts.ReadOnlyDefinitions()
+	if len(reads) == 0 {
+		t.Fatalf("the fake server offered no read: %+v", ts.Reports)
+	}
+	session := chatSession{notebook: notebook.New(nil), mcpTools: ts}
+
+	info := shell.Info{OS: "linux", Cwd: "/w"}
+	def := config.AgentDefinition{Name: "auditor", Description: "reads the tree"}
+	compose, defs, base := profileEnv(def, subagent.Spec{}, info, "", nil, nil, map[string]bool{})
+	grantsOnly := composed(compose, defs, base)
+	_, _, sysPrompt, _ := withSessionTools(session, nil, "auditor-1", t.TempDir(), defs, base, compose)
+
+	section := func(p string) string {
+		_, rest, ok := strings.Cut(p, "\n\n# Tools\n")
+		if !ok {
+			t.Fatalf("no tool section in:\n%s", p)
+		}
+		body, _, _ := strings.Cut(rest, "\n\n#")
+		return body
+	}
+	want := []string{notebook.WriteToolName, notebook.ReadToolName}
+	for _, d := range reads {
+		want = append(want, d.Name)
+	}
+	got := section(sysPrompt)
+	for _, name := range want {
+		if !strings.Contains(got, name) {
+			t.Errorf("the tool section does not name %s:\n%s", name, got)
+		}
+		// The grants alone are not these, which is why the section is
+		// composed over the finished set.
+		if strings.Contains(section(grantsOnly), name) {
+			t.Errorf("the grants-only section names %s, which only the session adds", name)
+		}
+	}
+	// The blocks describing them still follow the role's own prompt.
+	if !strings.HasPrefix(sysPrompt, `You are the "auditor" sub-agent`) || !strings.Contains(sysPrompt, "# Toolbox") {
+		t.Errorf("the role's prompt no longer leads the blocks:\n%s", sysPrompt)
 	}
 }

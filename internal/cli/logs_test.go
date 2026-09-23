@@ -45,6 +45,10 @@ func TestMain(m *testing.M) {
 		serveFakeLSP(os.Stdin, os.Stdout)
 		return
 	}
+	if os.Getenv(fakeMCPEnv) != "" {
+		serveFakeMCP()
+		return
+	}
 	time.Local = time.UTC
 	dir, err := os.MkdirTemp("", "shhh-cli-test")
 	if err != nil {

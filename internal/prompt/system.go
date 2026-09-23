@@ -2,6 +2,7 @@ package prompt
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -369,6 +370,10 @@ func reviewerTools(spec ProfileSpec) string {
 		}
 		parts = append(parts, s)
 	}
+	if also := unnamed(spec.Tools, "read_file", "list_directory", "search", "glob",
+		"web_fetch", "web_search", "quality_gate"); also != "" {
+		parts = append(parts, alsoHeld(also))
+	}
 	if have["quality_gate"] {
 		parts = append(parts,
 			"quality_gate runs the project's own configured checks by suite name, so whether the change builds and its tests pass is something you check rather than infer.",
@@ -396,6 +401,27 @@ func toolNames(tools []string) (map[string]bool, func(...string) string) {
 		}
 		return strings.Join(out, ", ")
 	}
+}
+
+// unnamed is the registered names a tool paragraph has no sentence of its
+// own for, in the order they were registered. A child holds far more than
+// its tiers — navigation, the notebook, a server's reads, what it may
+// delegate — and a paragraph naming only the tiers tells it the rest are
+// not there. The names come from the toolset and never from here, so
+// nothing is named that the child does not hold.
+func unnamed(tools []string, named ...string) string {
+	var out []string
+	for _, t := range tools {
+		if !slices.Contains(named, t) && !slices.Contains(out, t) {
+			out = append(out, t)
+		}
+	}
+	return strings.Join(out, ", ")
+}
+
+// alsoHeld is the sentence that names them.
+func alsoHeld(names string) string {
+	return fmt.Sprintf("You also hold %s — each one's own description, and the sections below, say when it is the right one.", names)
 }
 
 // BuildWriter is the system prompt for writer sub-agents: the full
@@ -670,6 +696,16 @@ func BuildProfile(info shell.Info, spec ProfileSpec, extra ...string) string {
 	}
 	if gated := names("execute_command", "write_file", "edit_file"); gated != "" {
 		fmt.Fprintf(&b, "%s may require the human's approval per call.\n", gated)
+	}
+	// The gate has a sentence of its own only where the switch below reaches
+	// it, which is a profile that changes nothing.
+	named := []string{"read_file", "list_directory", "search", "glob",
+		"web_fetch", "web_search", "execute_command", "write_file", "edit_file"}
+	if !spec.Write && !spec.Execute {
+		named = append(named, "quality_gate")
+	}
+	if also := unnamed(spec.Tools, named...); also != "" {
+		fmt.Fprintf(&b, "%s\n", alsoHeld(also))
 	}
 	switch {
 	case spec.Write:

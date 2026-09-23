@@ -317,8 +317,11 @@ func withDelegation(sup *subagent.Supervisor, agents *agentProfiles, def config.
 // page through the parent's own report call, the same way it reaches the
 // transcript.
 func withSessionTools(session chatSession, red *evidence.Reducer, signature, croot string,
-	defs []provider.Tool, base agent.ToolExecutor, sysPrompt string) (
+	defs []provider.Tool, base agent.ToolExecutor, rolePrompt func(names []string) string) (
 	[]provider.Tool, agent.ToolExecutor, string, func(string) bool) {
+	// The blocks below follow the role's own prompt, which is composed last
+	// for the same reason the toolbox is.
+	var sysPrompt string
 	defs, base = withNavigation(session.lsp, childStructural(session.structural, croot), defs, base)
 	if red != nil {
 		defs = append(defs, evidence.ToolDefinition())
@@ -357,7 +360,23 @@ func withSessionTools(session chatSession, red *evidence.Reducer, signature, cro
 	// schemas, which is the tool you reach for last if at all — the evidence
 	// tool among them, whose whole job is to answer a reduction notice the
 	// child had nothing telling it what to do about.
-	return defs, base, prompt.CombineExtra(sysPrompt, prompt.Toolbox(defs)), keepResult
+	//
+	// The role's prompt goes in front, and it is composed here, over the same
+	// finished set: a profile's tool section is read off the names it is
+	// handed, and handed only what its grants registered it would tell a
+	// child holding the notebook, a server's reads and the delegation tools
+	// that it holds none of them.
+	names := make([]string, len(defs))
+	for i, t := range defs {
+		names[i] = t.Name
+	}
+	return defs, base, prompt.CombineExtra(rolePrompt(names), sysPrompt, prompt.Toolbox(defs)), keepResult
+}
+
+// fixedPrompt is the role prompt of a built-in role, whose tool section is
+// written for the role rather than read off what it holds.
+func fixedPrompt(sysPrompt string) func([]string) string {
+	return func([]string) string { return sysPrompt }
 }
 
 // withNavigation puts the session's navigation toolset on a child: the six
@@ -563,11 +582,12 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 			session.memoryBlock, env.workspaceBlock(), spec.Worktree)
 
 		var sysPrompt string
+		var rolePrompt func([]string) string
 		var defs []provider.Tool
 		gated := map[string]bool{}
 		base := agent.ToolExecutor(tools.Execute)
 		if def, ok := agents.definitions[string(role)]; ok {
-			sysPrompt, defs, base = profileEnv(def, spec, info, extra, session.web, session.gateRunner, gated)
+			rolePrompt, defs, base = profileEnv(def, spec, info, extra, session.web, session.gateRunner, gated)
 		} else {
 			switch role {
 			case subagent.RoleReviewer:
@@ -592,6 +612,7 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 				base = session.web.WrapExecutor(spec.Name, tools.Execute)
 				gated[web.FetchToolName] = true
 			}
+			rolePrompt = fixedPrompt(sysPrompt)
 		}
 		// And what this child may delegate, if anything. It goes on after
 		// both role branches because the web branch replaces the executor
@@ -601,7 +622,7 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 		// the quality gate's own ordering already answers.
 		defs, base = withDelegation(sup, agents, agents.definitions[string(role)], spec, defs, base, gated)
 		defs, base, sysPrompt, keepResult := withSessionTools(
-			session, red, notebookSignature(sup, spec), croot, defs, base, sysPrompt)
+			session, red, notebookSignature(sup, spec), croot, defs, base, rolePrompt)
 
 		// Approved non-exec gated calls: file mutations dispatch through their
 		// own path (never the auto-run executor), everything else falls back to
@@ -928,8 +949,13 @@ func worktreeNote(worktree bool) string {
 // them appended when the profile reviews, or the file's instructions alone
 // when it asked to replace the base. Gated is filled with the
 // approval-routed tools that made it in.
+//
+// The prompt comes back as a function of the names the child ends up
+// holding rather than as text, because these are not all of them: the
+// delegation tools and everything the session shares with every child go on
+// afterwards, and withSessionTools composes the prompt over the finished set.
 func profileEnv(def config.AgentDefinition, spec subagent.Spec, info shell.Info, extra string,
-	webTools *web.Toolset, gate *quality.Runner, gated map[string]bool) (string, []provider.Tool, agent.ToolExecutor) {
+	webTools *web.Toolset, gate *quality.Runner, gated map[string]bool) (func(names []string) string, []provider.Tool, agent.ToolExecutor) {
 	var defs []provider.Tool
 	for _, t := range tools.Definitions() {
 		if def.Allows(t.Name) {
@@ -981,11 +1007,14 @@ func profileEnv(def config.AgentDefinition, spec subagent.Spec, info shell.Info,
 		defs = append(defs, quality.ToolDefinition())
 		base = gate.WrapExecutor(base)
 	}
+	return func(names []string) string { return profilePrompt(def, spec, info, extra, names) }, defs, base
+}
 
-	names := make([]string, len(defs))
-	for i, t := range defs {
-		names[i] = t.Name
-	}
+// profilePrompt is a profile's prompt over the names the child holds. The
+// tool section is read off those names, so it is only as true as the list:
+// handed the profile's grants alone, it would tell a child with the notebook
+// and a server's reads that it has neither.
+func profilePrompt(def config.AgentDefinition, spec subagent.Spec, info shell.Info, extra string, names []string) string {
 	var sysPrompt string
 	switch {
 	case strings.EqualFold(strings.TrimSpace(def.PromptMode), config.PromptReplace):
@@ -1024,7 +1053,7 @@ func profileEnv(def config.AgentDefinition, spec subagent.Spec, info shell.Info,
 	if def.Writes() {
 		sysPrompt += scopeNote(spec.Paths)
 	}
-	return sysPrompt, defs, base
+	return sysPrompt
 }
 
 // childSandboxProfile is the profile a child's commands run under: the

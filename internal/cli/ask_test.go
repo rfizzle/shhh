@@ -51,7 +51,7 @@ func TestAskToolNeverReachesAChild(t *testing.T) {
 			defs = tools.DefinitionsFull()
 		}
 		defs, _, sysPrompt, _ := withSessionTools(session, nil, "child-1", t.TempDir(), defs,
-			tools.Execute, "you are a child")
+			tools.Execute, fixedPrompt("you are a child"))
 		if names := toolsetNames(defs); containsString(names, ask.ToolName) {
 			t.Errorf("%s was offered %s: %v", role, ask.ToolName, names)
 		}

@@ -433,6 +433,36 @@ func TestAReviewingProfileKeepsItsNameAndItsTools(t *testing.T) {
 	}
 }
 
+// A child holds more than its tiers, and the paragraph names the rest from
+// the list it is handed, once each, and never a tier's tool twice. With
+// nothing past the tiers there is no such sentence at all, which is what
+// keeps every prompt built from the tiers alone unchanged.
+func TestAProfilesToolParagraphNamesWhatItsTiersDoNot(t *testing.T) {
+	info := shell.Info{OS: "linux", Cwd: "/w"}
+	held := []string{"read_file", "search", "write_note", "read_note", "docs__lookup", "read_note"}
+	for name, got := range map[string]string{
+		"profile":  BuildProfile(info, ProfileSpec{Name: "auditor", Tools: held}),
+		"reviewer": BuildReviewer(info, ProfileSpec{Name: "critic", Tools: held}),
+	} {
+		if !strings.Contains(got, "You also hold write_note, read_note, docs__lookup — ") {
+			t.Errorf("the %s paragraph does not name what its tiers do not:\n%s", name, got)
+		}
+	}
+	for name, got := range map[string]string{
+		"profile":  BuildProfile(info, ProfileSpec{Name: "auditor", Tools: []string{"read_file", "quality_gate"}}),
+		"reviewer": BuildReviewer(info, ProfileSpec{Name: "critic", Tools: []string{"read_file", "quality_gate"}}),
+	} {
+		if strings.Contains(got, "You also hold") {
+			t.Errorf("the %s paragraph names a tool its own sentences already name:\n%s", name, got)
+		}
+	}
+	// A profile that changes things has no gate sentence, so a gate it held
+	// would be named with the rest rather than not at all.
+	if got := BuildProfile(info, ProfileSpec{Name: "fixer", Write: true, Tools: []string{"write_file", "quality_gate"}}); !strings.Contains(got, "You also hold quality_gate") {
+		t.Errorf("a gate the paragraph has no sentence for went unnamed:\n%s", got)
+	}
+}
+
 func TestBuildProfileFollowsPermissions(t *testing.T) {
 	info := shell.Info{Shell: "bash", OS: "linux", Cwd: "/w"}
 	reader := BuildProfile(info, ProfileSpec{Name: "reviewer", Description: "judges diffs", Tools: []string{"read_file", "search"}}, "Be terse.")
