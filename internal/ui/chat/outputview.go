@@ -35,6 +35,11 @@ func (m Model) openOutputFull(v *components.OutputView, idx int, ret state) (tea
 // words as the title, and the whole stored result — already bounded upstream
 // by the evidence store — as the lines.
 func (m Model) rowOutputView(e entry) *components.OutputView {
+	if e.kind == entryFanout {
+		// A fan-out block's body is its children's reports, which live on
+		// the supervisor rather than on the row (fanout.go).
+		return m.fanoutOutputView(e)
+	}
 	if len(e.pastes) > 0 {
 		// A sent message's body is the paste it folded, and it is on the
 		// row rather than in the store: nothing trimmed it and nothing can

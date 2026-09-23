@@ -651,3 +651,59 @@ func TestReportContract_TheLaneReadsTheReportUnderTheFence(t *testing.T) {
 		t.Fatalf("the fence is the model's, not the lane's:\n%s", view)
 	}
 }
+
+// A report longer than the opened fold's bound has a third depth: the key
+// that opened the fold opens the whole of it on its own screen, and a click
+// on the body does the same, so the lines the bound held back are reachable.
+func TestFanoutLongReportOpensFullScreen(t *testing.T) {
+	var lines []string
+	for i := 1; i <= 40; i++ {
+		lines = append(lines, "line "+strconv.Itoa(i))
+	}
+	sup := subagent.New(context.Background(), subagent.Options{
+		Root: t.TempDir(), NewEnv: reportingEnv(strings.Join(lines, "\n"))})
+	t.Cleanup(sup.Close)
+	m := newSubagentModel(t, sup)
+
+	m.beginSpawnBatch()
+	for _, task := range []string{"one", "two"} {
+		spawnInto(t, sup, `{"role":"researcher","task":"`+task+`"}`)
+		m.appendSpawnEntry(spawnRowEntry(task))
+	}
+	waitFor(t, func() bool { a, _ := sup.ActiveCounts(); return a == 0 })
+
+	idx := -1
+	for i, e := range m.transcript {
+		if e.kind == entryFanout {
+			idx = i
+		}
+	}
+	if idx < 0 {
+		t.Fatal("the two spawns did not become a block")
+	}
+	m.focusIdx = idx
+	updated, _ := m.openCursorRow(stateFocus)
+	m = updated.(Model)
+	open := ansi.Strip(m.renderHistory())
+	if !strings.Contains(open, "… 8 more lines, [enter] opens the whole of it") {
+		t.Fatalf("the bounded report should offer the rest:\n%s", open)
+	}
+	if strings.Contains(open, "line 40") {
+		t.Fatalf("the opened fold should stop at its bound:\n%s", open)
+	}
+
+	// The pointer on the body asks for the same depth the key reaches.
+	if claimed, _, output := m.toggleRow(idx, gestureBody); !claimed || !output {
+		t.Fatalf("a click on the bounded report should open it whole: claimed=%v output=%v", claimed, output)
+	}
+
+	updated, _ = m.openCursorRow(stateFocus)
+	m = updated.(Model)
+	if m.state != stateOutputFull || m.fullOutput == nil {
+		t.Fatalf("the key should open the whole report: state %v", m.state)
+	}
+	got := m.fullOutput.Lines
+	if len(got) == 0 || got[len(got)-1] != "line 40" {
+		t.Fatalf("the full view should end on the report's last line: %q", got)
+	}
+}

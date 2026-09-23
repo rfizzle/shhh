@@ -535,9 +535,12 @@ func (l FanoutLane) reportFold(width int) []string {
 		lines = append(lines, indented(line, detailIndent, width))
 	}
 	if dropped > 0 {
-		// The bound is a fold like any other, so it counts what it swallowed.
+		// The bound is a fold like any other, so it counts what it swallowed,
+		// and names the key that opens the whole of it on its own screen, the
+		// way a paste's bound does.
 		lines = append(lines, strings.Repeat(" ", detailIndent)+
-			sty.Dim.Render(Clip(countedTail(dropped), max(width-detailIndent, 1))))
+			sty.Dim.Render(Clip(countedTail(dropped)+", "+keys.Bracket(keys.Reading.Expand)+
+				" opens the whole of it", max(width-detailIndent, 1))))
 	}
 	return lines
 }

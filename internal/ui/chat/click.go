@@ -326,6 +326,25 @@ func (m *Model) toggleRow(idx int, g rowGesture) (claimed bool, full *components
 		}
 		return true, nil, false
 	}
+	if es[idx].kind == entryFanout && m.fanoutOpens(es[idx]) {
+		// A settled fan-out block folds its children's reports, bounded when
+		// open, and cycles the three depths a paste does: the whole report
+		// full screen is offered only where the bound held some of it back
+		// (fanout.go).
+		switch {
+		case g == gestureBody:
+			if es[idx].expanded && m.fanoutOverflows(es[idx]) {
+				return true, nil, true
+			}
+		case !es[idx].expanded:
+			es[idx].expanded = true
+		case g == gestureCycle && m.fanoutOverflows(es[idx]):
+			return true, nil, true
+		default:
+			es[idx].expanded = false
+		}
+		return true, nil, false
+	}
 	if lines := outputLines(es[idx]); len(lines) > 0 {
 		// A tool or command row with a body cycles the diff's three depths
 		// too (docs/interface/surfaces.md#the-activity-row): closed, the

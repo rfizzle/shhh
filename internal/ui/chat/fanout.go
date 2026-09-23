@@ -104,6 +104,56 @@ func (m Model) fanoutOpens(e entry) bool {
 // and the bar cannot disagree about which rows do.
 func (m Model) rowExpands(e entry) bool { return expandable(e) || m.fanoutOpens(e) }
 
+// fanoutReports is every settled child's report in the block, in the order
+// the block nests its lanes, each as the lines its fold counts.
+func (m Model) fanoutReports(e entry) (names []string, reports [][]string) {
+	nested, _ := m.nestAgents(m.fanoutStatuses(e.fanout))
+	for _, st := range nested {
+		if report := m.childReport(st); report != "" {
+			names = append(names, st.Name)
+			reports = append(reports, strings.Split(report, "\n"))
+		}
+	}
+	return names, reports
+}
+
+// fanoutOverflows reports whether any report in the block held lines back at
+// the opened fold's bound, which is when the block has a third depth: the
+// whole report on its own screen, the depth a tool body and a paste open
+// into (docs/interface/surfaces.md#the-activity-row).
+func (m Model) fanoutOverflows(e entry) bool {
+	_, reports := m.fanoutReports(e)
+	for _, r := range reports {
+		if len(r) > maxExpandedResultLines {
+			return true
+		}
+	}
+	return false
+}
+
+// fanoutOutputView is the block's reports on their own screen, unbounded.
+// Several are one view with each named where it starts, the shape several
+// pastes on one message take (attachments.go), because the reader opened the
+// block and not one lane of it.
+func (m Model) fanoutOutputView(e entry) *components.OutputView {
+	names, reports := m.fanoutReports(e)
+	var lines []string
+	for i, r := range reports {
+		if len(reports) > 1 {
+			if i > 0 {
+				lines = append(lines, "")
+			}
+			lines = append(lines, strings.ToUpper(names[i]))
+		}
+		lines = append(lines, r...)
+	}
+	title := plural(len(reports), "report")
+	if len(reports) == 1 {
+		title = names[0] + " report"
+	}
+	return &components.OutputView{Title: title, Lines: lines}
+}
+
 // fanoutLive reports whether any child of the entry's batch is still working.
 // A block with a live child can never be frozen into the render cache — its
 // lanes have to keep moving.

@@ -540,8 +540,8 @@ func TestFanoutSettledLaneFoldsItsReport(t *testing.T) {
 	long.Report = []string{"one", "two", "three", "four"}
 	long.ReportOpen, long.MaxReport = true, 2
 	lview := ansi.Strip(long.View(110))
-	if !strings.Contains(lview, "… 2 more lines") {
-		t.Fatalf("a bounded report should count what it held back: %q", lview)
+	if !strings.Contains(lview, "… 2 more lines, [enter] opens the whole of it") {
+		t.Fatalf("a bounded report should count what it held back and offer the rest: %q", lview)
 	}
 	if strings.Contains(lview, "three") {
 		t.Fatalf("a bounded report should stop at its bound: %q", lview)

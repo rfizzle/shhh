@@ -1266,7 +1266,11 @@ reason.
 **A lane that has stopped folds open on the report its child wrote.** The
 first line of it stays on the lane's detail line, and under that is the fold
 every other body in the transcript wears — `▸ report · 14 lines · [enter]
-expand` — opened by the reading key that opens all of them. A child's report
+expand` — opened by the reading key that opens all of them. Open, it is
+bounded the way a tool's output is, and a report longer than the bound has the
+same third depth: the tail counts what it held back and says `[enter] opens
+the whole of it`, and that key or a click on the report takes the whole of it
+full screen, the block's reports one after another. A child's report
 used to reach the model and nobody else; the person holding the approval keys
 got the first line and the option of attaching to a child they had no reason
 to think was holding anything. The fold is the transcript's alone, because the
