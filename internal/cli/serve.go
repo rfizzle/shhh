@@ -717,7 +717,6 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 		OnToolCall:   l.obs.call,
 		OnIntervene:  l.obs.intervene,
 		OnWithheld:   l.obs.withheld,
-		OnSummary:    l.obs.summary,
 		OnCompact:    l.obs.compact,
 		OnTree:       l.obs.tree,
 		OnRetry:      l.obs.retry,
@@ -1032,6 +1031,13 @@ func (l *serveLoop) Run(turn int64, prompt string) (string, error) {
 		WithChanges(l.own.changed).
 		WithAlerts(gate.alerts).
 		WithSweeps(l.repeats.Sweeps)
+	// Its readings are filed under this turn, and the hook is set here with
+	// the run rather than once with the loop for the reason the gate is held
+	// in a local: the closing reading lands on the summariser's goroutine
+	// after Run has returned, by which time a client may have started the
+	// next turn, and an observer asking the loop which turn is running would
+	// file this turn's reading beside the next one's interruptions.
+	l.headless.OnSummary = l.obs.inTurn(turn).summary
 
 	started := time.Now()
 	final, runErr := l.headless.Run(prompt)

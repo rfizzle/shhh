@@ -17,6 +17,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/rpc"
@@ -317,5 +318,100 @@ func TestAgentLineCarriesTheRecordALaneIsDrawnFrom(t *testing.T) {
 	wantJSON, _ := json.Marshal(want)
 	if string(got) != string(wantJSON) {
 		t.Errorf("the agent line is\n%s\nwant\n%s", got, wantJSON)
+	}
+}
+
+// heldSummaries answers a reading only once the test lets it, so a closing
+// reading can be kept in flight across the start of the next turn.
+type heldSummaries struct {
+	asked   chan struct{}
+	release chan struct{}
+}
+
+func (p *heldSummaries) StreamCompletion(context.Context, []provider.Message, provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+	p.asked <- struct{}{}
+	<-p.release
+	ch := make(chan provider.StreamEvent, 1)
+	ch <- provider.StreamEvent{
+		ToolCalls: []provider.ToolCall{{ID: "s1", Name: agent.SummaryToolName,
+			Arguments: `{"summary":"reading","state":"on_target","reason":"a reason"}`}},
+		Done: true,
+	}
+	close(ch)
+	return ch, nil
+}
+
+func (p *heldSummaries) Name() string { return "held" }
+
+// A served turn's closing reading lands after Run has returned, and a client
+// may have started the next turn by then. The reading is about the turn it
+// read, so its row is filed there and not beside the next turn's events.
+func TestServedClosingReadingIsFiledUnderItsOwnTurn(t *testing.T) {
+	rounds := [][]provider.StreamEvent{
+		{{ToolCalls: []provider.ToolCall{{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}}}},
+		{{ToolCalls: []provider.ToolCall{{ID: "c2", Name: "read_file", Arguments: `{"path":"y"}`}}}},
+		{{Token: "first"}, {Done: true}},
+		{{Token: "second"}, {Done: true}},
+	}
+	var next int
+	a := agent.New(nil, func([]provider.Message, string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		if next >= len(rounds) {
+			t.Fatalf("unexpected stream request #%d", next+1)
+		}
+		ch := make(chan provider.StreamEvent, len(rounds[next]))
+		for _, ev := range rounds[next] {
+			ch <- ev
+		}
+		close(ch)
+		next++
+		return ch, func() {}, nil
+	})
+	a.SetExecutor(func(string, json.RawMessage) (string, error) { return "contents", nil })
+
+	held := &heldSummaries{asked: make(chan struct{}, 1), release: make(chan struct{})}
+	lines := &syncLines{}
+	l := &serveLoop{
+		agent:  a,
+		events: newJSONLStream(lines),
+		own:    &writtenByCalls{},
+		saved:  &headlessChat{},
+		// A negative floor removes the wall clock from the schedule, which a
+		// test does not wait out.
+		summarizer: agent.NewSummarizer(held, agent.SummaryConfig{Model: "fast", MinGap: -1}),
+	}
+	l.obs = headlessObserver{rounds: a.Rounds, turn: l.turnNow, stream: l.events}
+	l.headless = &agent.Headless{Agent: a, OnSummary: l.obs.summary}
+
+	if _, err := l.Run(1, "read two files"); err != nil {
+		t.Fatalf("the first turn: %v", err)
+	}
+	select {
+	case <-held.asked:
+	case <-time.After(10 * time.Second):
+		t.Fatal("the first turn closed without asking for a reading")
+	}
+	if _, err := l.Run(2, "and answer"); err != nil {
+		t.Fatalf("the second turn: %v", err)
+	}
+	close(held.release)
+
+	var turn, round int64
+	waitFor(t, "the closing reading to be filed", func() bool {
+		for _, line := range strings.Split(strings.TrimSpace(lines.String()), "\n") {
+			var ev struct {
+				Kind  string `json:"kind"`
+				Code  string `json:"code"`
+				Turn  int64  `json:"turn"`
+				Round int64  `json:"round"`
+			}
+			if json.Unmarshal([]byte(line), &ev) == nil && ev.Kind == observe.EventSignal && ev.Code == observe.SignalSummary {
+				turn, round = ev.Turn, ev.Round
+				return true
+			}
+		}
+		return false
+	})
+	if turn != 1 || round != 2 {
+		t.Fatalf("the closing reading was filed at turn %d round %d, want turn 1 round 2", turn, round)
 	}
 }

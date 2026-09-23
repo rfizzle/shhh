@@ -322,6 +322,13 @@ func (h headlessObserver) at(round int) observe.Pos {
 	return observe.Pos{Turn: turn, Round: int64(round)}
 }
 
+// inTurn is the observer with its turn fixed, for a report that can arrive
+// after the turn it is about has ended.
+func (h headlessObserver) inTurn(turn int64) headlessObserver {
+	h.turn = func() int64 { return turn }
+	return h
+}
+
 // signal records one of the loop's own safeguards firing, and puts it on the
 // stream under the same code. Every signal below goes through here, so a code
 // cannot reach one and not the other.
@@ -394,7 +401,11 @@ func (h headlessObserver) usage(u provider.Usage) {
 // It is filed at the round the reading states rather than at h.pos(): a
 // closing reading is delivered on the summariser's own goroutine after Run
 // has returned, where the agent's round counter is the next turn's to write,
-// and the verdict is about the round its evidence was taken at anyway.
+// and the verdict is about the round its evidence was taken at anyway. The
+// turn is the same question on a surface with more than one: a served
+// session hands the run an observer fixed to the turn it was built for
+// (inTurn), since by the time a closing reading lands the loop may be
+// counting the next.
 func (h headlessObserver) summary(v agent.SummaryVerdict) {
 	h.signalAt(h.at(v.Round), observe.SignalSummary, observe.SummaryCode(v.State))
 }
