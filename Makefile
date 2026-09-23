@@ -235,12 +235,12 @@ tui-shot: ## Drive one scene and capture every step; with agg, draw them too (SC
 		SHHH_BIN=$(TUI_BIN) scripts/tui/drive.sh scripts/tui/scenes/$(SCENE); \
 	fi
 
-tui-check: ## Drive every scene through the built binary and fail on the first step that never draws what it waits for
+# TUI_JOBS scenes run at once; scripts/tui/check.sh holds each scene's output
+# until it is done, drives every scene whatever fails, and ends on a summary.
+TUI_JOBS ?= 3
+tui-check: ## Drive every scene, TUI_JOBS at a time, and fail naming each step that never draws what it waits for
 	@$(tui_build)
-	@for scene in $(SCENES); do \
-		echo "${MAGENTA}Driving $$(basename $$scene)...${RESET}"; \
-		SHHH_BIN=$(TUI_BIN) scripts/tui/drive.sh "$$scene" || exit 1; \
-	done
+	@SHHH_BIN=$$PWD/$(TUI_BIN) TUI_JOBS=$(TUI_JOBS) scripts/tui/check.sh $(SCENES)
 	@$(MAKE) --no-print-directory tui-longpath
 
 # A Unix socket's path is capped at 104 bytes, and a checkout under

@@ -19,7 +19,7 @@ are in `AGENTS.md` under *Driving the binary*; this is how to do it.
 ## Run it
 
 ```
-make tui-check                       # every scene; the gate, part of make ci
+make tui-check                       # every scene, TUI_JOBS (3) at once; part of make ci
 make tui-shot SCENE=smoke COLS=110   # capture every step of one scene at a width
 make tui-longpath                    # one scene from a checkout path past the socket cap
 SHHH_BIN=$PWD/bin/tui/shhh scripts/tui/drive.sh --attach scripts/tui/scenes/smoke
@@ -220,6 +220,14 @@ snap 04-exit "that is everything the screen was holding"
 A snap whose text never appears, or whose capture lacks a compared string,
 fails the run, so every scene is also a test, and the exit code of
 `make tui-shot` is its verdict.
+
+`make tui-check` drives the scenes `TUI_JOBS` at a time (default 3;
+`TUI_JOBS=1` is the serial run) through `scripts/tui/check.sh`, which prints
+each scene's output whole once it is done, drives every scene whatever fails,
+and ends on one line — `47/48 scenes passed · esc-fold failed at 05-rewind` —
+with a non-zero exit on any failure. On a loaded host, lower `TUI_JOBS` before
+reading a timed-out snap as a broken scene: every scene is a binary, a tmux
+server and a scripted model, and a snap waits a fixed time for its text.
 
 **A step that counts on the screen's order waits for the order first.** A
 scene that presses `j` three times to reach a row is betting the rows are
