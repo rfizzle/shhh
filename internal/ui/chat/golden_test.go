@@ -3935,8 +3935,11 @@ func TestGolden_TreeMoved(t *testing.T) {
 //
 // Both ways the middle call ends, because they are two different rows in the
 // same place: the ⊘ of a write the reader refused, and the skipped row of one
-// whose arguments the preview could not read. Four widths, because a row that
-// gives up its account on a narrow terminal must not give up its place.
+// whose arguments the preview could not read. And a command the auto-mode
+// classifier could not judge: its notice takes the call's place too, with
+// the refused row under it, rather than landing after the read that ran
+// while it was asked. Four widths, because a row that gives up its account
+// on a narrow terminal must not give up its place.
 func TestGolden_BatchOrder(t *testing.T) {
 	captureGolden(t, "batch-order", "a round's rows in the order it asked", goldenWidths, func(width int) []golden.Panel {
 		open := func(middle provider.ToolCall) Model {
@@ -3952,11 +3955,15 @@ func TestGolden_BatchOrder(t *testing.T) {
 		refused := answered.(Model)
 		skipped := open(provider.ToolCall{ID: "call_2", Name: "write_file",
 			Arguments: `{"path":"internal/agent/round.go"}`})
+		answered, _ = handover(t, classifierDownRound(t, width)).Update(keyN())
+		unjudged := answered.(Model)
 		return []golden.Panel{
 			{Label: "the write refused at the card, between the reads that ran while it waited",
 				View: refused.renderHistory()},
 			{Label: "the write skipped for arguments the preview could not read",
 				View: skipped.renderHistory()},
+			{Label: "the classifier unavailable: its notice and the refused command in the command's place",
+				View: unjudged.renderHistory()},
 		}
 	})
 }

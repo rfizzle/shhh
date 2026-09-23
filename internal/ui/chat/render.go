@@ -39,16 +39,28 @@ func (m *Model) appendEntry(e entry) int {
 		m.transcript = append(m.transcript, e)
 		return at
 	}
+	// A live selection is a pair of rendered lines, so the render it was
+	// taken against is read before the row goes in: the lines after the
+	// insert are what move, and only the two renders side by side say by
+	// how much.
+	var drawn []string
+	if m.sel.on {
+		drawn = slices.Clone(m.renderHistoryRawLines())
+	}
 	m.transcript = slices.Insert(m.transcript, at, e)
 	// Only the round's own later rows move — placeCall walks back over those
 	// and nothing else — so the indices kept into the transcript outside a
 	// round (the think row, the run's row, an approved plan's start) still
-	// name what they named. Two readers do have to be told: the stable-prefix
-	// caches have frozen the rows behind this one at the index they had, and
-	// the reading cursor names the row a reader is standing on.
+	// name what they named. Three readers do have to be told: the
+	// stable-prefix caches have frozen the rows behind this one at the index
+	// they had, the reading cursor names the row a reader is standing on, and
+	// a selection names the lines it covers (select.go).
 	m.invalidateRenderCache()
 	if m.focusIdx >= at {
 		m.focusIdx++
+	}
+	if m.sel.on {
+		m.shiftSelection(drawn, m.renderHistoryRawLines())
 	}
 	return at
 }

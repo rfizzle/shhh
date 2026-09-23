@@ -3,6 +3,7 @@ package chat
 import (
 	"context"
 	"errors"
+	"slices"
 	"strings"
 	"testing"
 
@@ -364,5 +365,90 @@ func TestClassifierFlow_ADenyListRefusalIsNotAJudgement(t *testing.T) {
 	}
 	if got := m.activityRowDetail(row, false, m.contentWidth()); got.Keys != "/permissions why" {
 		t.Fatalf("a matched rule's row still offers the longer answer, got %q", got.Keys)
+	}
+}
+
+// classifierDownRound is a round of three in auto mode whose middle call is a
+// command the classifier could not judge. The reads on either side need no
+// decision and land while the classifier is being asked, so the failed
+// verdict arrives with the call after it already on screen — the case where
+// a notice filed at the end of the feed reads as being about the wrong call.
+func classifierDownRound(t *testing.T, width int) Model {
+	t.Helper()
+	ledger := meter.New(nil)
+	m := batchModel(t).
+		WithRunner(legacyRunner(func(ctx context.Context, cmd string) (string, int) {
+			t.Fatalf("nothing may run on a verdict that never came, but %q did", cmd)
+			return "", 0
+		})).
+		WithLedger(ledger).
+		WithClassifier(agent.NewClassifier(ledger.For(&verdictProvider{err: errors.New("api down")}, meter.SourceClassifier),
+			agent.ClassifierConfig{Model: "judge"}))
+	m.policy.mode = agent.ModeAuto
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: width, Height: 48})
+	m = updated.(Model)
+	updated, cmd := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+		readCall("call_1", "internal/agent/loop.go"),
+		execCall("call_2", "go test ./internal/agent"),
+		readCall("call_3", "internal/ui/chat/turn.go"),
+	}})
+	m = updated.(Model)
+	var verdict *classifierDoneMsg
+	pending := unwrapBatch(cmd)
+	for len(pending) > 0 {
+		c := pending[0]
+		pending = pending[1:]
+		switch msg := c().(type) {
+		case toolResultsMsg:
+			updated, cmd = m.Update(msg)
+			m = updated.(Model)
+			pending = append(pending, unwrapBatch(cmd)...)
+		case classifierDoneMsg:
+			verdict = &msg
+		}
+	}
+	if verdict == nil {
+		t.Fatalf("the command should have been put to the classifier, state %d, %d rows", m.state, len(m.transcript))
+	}
+	updated, _ = m.Update(*verdict)
+	m = updated.(Model)
+	if m.state != stateConfirmRun {
+		t.Fatalf("a failed classifier must fall back to asking, got state %d", m.state)
+	}
+	return m
+}
+
+// TestClassifierFlow_TheFailureNoticeTakesTheCallsPlace holds the notice to
+// the call it is about. It is filed at the call's place in the round — after
+// the read asked for before it, in front of the read asked for after it — and
+// the row the card's answer files goes directly under it, so the two read as
+// one account of one call (docs/interface/principles.md#one-grid).
+func TestClassifierFlow_TheFailureNoticeTakesTheCallsPlace(t *testing.T) {
+	m := classifierDownRound(t, 80)
+	rows := func(m Model) []string {
+		var out []string
+		for _, e := range m.transcript {
+			switch {
+			case e.kind == entrySystem && strings.Contains(e.text, "Classifier unavailable"):
+				out = append(out, "notice")
+			case e.kind == entryTool || e.kind == entryCommand:
+				out = append(out, m.activityRowFor(e).Target)
+			}
+		}
+		return out
+	}
+	want := []string{"internal/agent/loop.go", "notice", "internal/ui/chat/turn.go"}
+	if got := rows(m); !slices.Equal(got, want) {
+		t.Fatalf("the notice should sit in the command's place, want %v, got %v", want, got)
+	}
+
+	updated, _ := handover(t, m).Update(keyN())
+	m = updated.(Model)
+	got := rows(m)
+	if len(got) != 4 || got[0] != want[0] || got[1] != "notice" || got[3] != want[2] {
+		t.Fatalf("the answer's row should land under the notice, between the reads, got %v", got)
+	}
+	if !strings.Contains(got[2], "go test") {
+		t.Fatalf("the row under the notice should be the refused command, got %q", got[2])
 	}
 }

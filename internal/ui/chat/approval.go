@@ -664,7 +664,11 @@ func (m Model) finishClassifierCheck(v agent.ClassifierVerdict) (tea.Model, tea.
 	// user decides, never a silent allow.
 	if v.Failed {
 		m.recordDecision(observe.DecisionAsk, observe.ReasonClassifierFailed)
-		m.appendEntry(entry{kind: entrySystem, text: "Classifier unavailable (" + v.Reason + "); asking you instead."})
+		// The notice is about this call, so it goes where the call's row
+		// will: in the call's place in its round, just in front of the row
+		// the card's answer files there, rather than at the end of the feed
+		// under the calls that ran while this one waited (queue.go).
+		m.appendCallRow(req.call.ID, entry{kind: entrySystem, text: "Classifier unavailable (" + v.Reason + "); asking you instead."})
 		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoBottom()
 	} else {

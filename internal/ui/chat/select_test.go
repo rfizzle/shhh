@@ -777,6 +777,84 @@ func TestSelection_SurvivesStreaming(t *testing.T) {
 	}
 }
 
+// A row put back at its call's place in the round (queue.go) is the one
+// change that lands new lines above lines already drawn. A selection moves
+// with the text it was lit over, the way the reading cursor moves with the
+// row it stands on: one below the placed row still copies what the reader
+// dragged over, one across it takes the row in between, and one above it is
+// untouched. One on lines the placed row redrew has nothing to follow and is
+// dropped, the way a width change drops it.
+func TestSelection_MovesWithARowPlacedAboveIt(t *testing.T) {
+	read := func(id, path string) entry {
+		call := readCall(id, path)
+		return entry{kind: entryTool, toolName: call.Name, toolArgs: call.Arguments, toolResult: "one line"}
+	}
+	command := entry{kind: entryCommand, text: "go test ./second", toolResult: "ok"}
+	build := func(t *testing.T) Model {
+		m := selectModel(t, &clip{}, entry{kind: entryUser, text: "read the three files"})
+		m.openCallBatch([]provider.ToolCall{
+			readCall("call_1", "first.go"), execCall("call_2", "go test ./second"), readCall("call_3", "third.go"),
+		})
+		m.appendCallRow("call_1", read("call_1", "first.go"))
+		m.appendCallRow("call_3", read("call_3", "third.go"))
+		m.viewport.SetLines(m.renderHistoryLines())
+		return m
+	}
+	placeRow := func(m Model, e entry) Model {
+		if at := m.appendCallRow("call_2", e); at != len(m.transcript)-2 {
+			t.Fatalf("the late row should go back in front of the third read, landed at %d of %d", at, len(m.transcript))
+		}
+		return m
+	}
+	place := func(m Model) Model { return placeRow(m, command) }
+
+	t.Run("below", func(t *testing.T) {
+		m := build(t)
+		line := lineOf(t, m, "third.go")
+		m = dragLines(t, m, line, line)
+		want := m.selectedText()
+		m = place(m)
+		if got := m.selectedText(); got != want {
+			t.Fatalf("the selection should still cover the third read: %q → %q", want, got)
+		}
+	})
+
+	t.Run("across", func(t *testing.T) {
+		m := build(t)
+		m = dragLines(t, m, lineOf(t, m, "first.go"), lineOf(t, m, "third.go"))
+		m = place(m)
+		got := m.selectedText()
+		for _, path := range []string{"first.go", "go test ./second", "third.go"} {
+			if !strings.Contains(got, path) {
+				t.Fatalf("a selection across the placed row should reach from the first read to the third, got %q", got)
+			}
+		}
+	})
+
+	t.Run("above", func(t *testing.T) {
+		m := build(t)
+		line := lineOf(t, m, "read the three files")
+		m = dragLines(t, m, line, line)
+		span := m.sel
+		m = place(m)
+		if m.sel != span {
+			t.Fatalf("a selection above the placed row names the same lines: %+v → %+v", span, m.sel)
+		}
+	})
+
+	t.Run("redrawn", func(t *testing.T) {
+		// A third read between the two completes a run the step folds into
+		// one counted row, so the line the selection was on is gone.
+		m := build(t)
+		line := lineOf(t, m, "third.go")
+		m = dragLines(t, m, line, line)
+		m = placeRow(m, read("call_2", "second.go"))
+		if m.sel.on {
+			t.Fatalf("a selection on lines the placed row redrew should be dropped, still covers %q", m.selectedText())
+		}
+	})
+}
+
 // A width change reflows every line, so the coordinates stop meaning
 // anything. The documented policy is to drop them rather than remap by guess.
 func TestSelection_ResizePolicy(t *testing.T) {

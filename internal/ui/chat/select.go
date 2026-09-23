@@ -30,7 +30,9 @@ package chat
 //
 // What it is *not* stable under is a change of pane width: every line reflows
 // and the coordinates name different text. There is no honest remapping, so a
-// width change clears the selection outright (resizeSelection).
+// width change clears the selection outright (resizeSelection). A row put
+// back at its call's place in a round lands above lines already drawn, and
+// the selection is carried across it (shiftSelection).
 //
 // Screen cells are used for one thing only — the pointer — and are converted
 // on arrival (transcriptPoint). Nothing here holds a screen row across a
@@ -415,6 +417,44 @@ func (m *Model) resizeSelection(width int) {
 		m.sel.dragging = false
 		m.stopEdgeScroll()
 	}
+}
+
+// shiftSelection carries a selection across a row put back among the rows
+// already drawn (render.go's appendEntry). Streaming only ever appends, so the
+// coordinates are stable under it; a placed row is the one change that puts
+// new lines above lines a selection may cover, and a selection left where it
+// was would light, and copy, whatever slid under it.
+//
+// before and after are the render either side of the insert. What they share
+// at the top stays where it was; what they share at the bottom moved by the
+// difference in length, and a point there moves with it. A point on a line
+// the insert redrew — a run of reads the placed row completed and the step
+// folded into one counted row — has no text on the other side to follow, so
+// the selection goes, the way a width change drops it (resizeSelection).
+func (m *Model) shiftSelection(before, after []string) {
+	head := 0
+	for head < len(before) && head < len(after) && before[head] == after[head] {
+		head++
+	}
+	tail := 0
+	for tail < len(before)-head && tail < len(after)-head &&
+		before[len(before)-1-tail] == after[len(after)-1-tail] {
+		tail++
+	}
+	moved := len(before) - tail
+	redrawn := func(p selPoint) bool { return p.line >= head && p.line < moved }
+	if redrawn(m.sel.anchor) || redrawn(m.sel.end) {
+		m.cancelSelection()
+		return
+	}
+	delta := len(after) - len(before)
+	shift := func(p *selPoint) {
+		if p.line >= moved {
+			p.line += delta
+		}
+	}
+	shift(&m.sel.anchor)
+	shift(&m.sel.end)
 }
 
 // selectionScrollCmd schedules the next edge-scroll tick.
