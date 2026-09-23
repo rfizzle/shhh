@@ -8,6 +8,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 	"sync"
 	"testing"
@@ -463,7 +464,7 @@ func TestTheParentCanRetryAFailedChildWithoutSpendingASlot(t *testing.T) {
 	if !strings.Contains(report, "the loop lives in internal/agent") {
 		t.Fatalf("the retried child's report never reached the parent:\n%s", report)
 	}
-	if !strings.Contains(execTool(t, sup, ReportToolName, `{}`), "1 of 16 agent slots used") {
+	if !strings.Contains(execTool(t, sup, ReportToolName, `{}`), fmt.Sprintf("1 of %d agent slots used", MaxChildren)) {
 		t.Fatal("a retried child holds the one slot it always held")
 	}
 }

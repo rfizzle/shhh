@@ -58,8 +58,11 @@ const (
 	// (docs/capabilities/subagents.md#a-wait-only-ever-points-down-the-tree).
 	DefaultMaxConcurrent = 3
 	// MaxChildren caps how many children one session may spawn in total,
-	// wherever in the tree they were spawned.
-	MaxChildren = 16
+	// wherever in the tree they were spawned. It counts starts, and a batch
+	// run of a backlog starts one child per item: a measured run started 31
+	// in one sitting, which sixteen would have stopped halfway.
+	// See docs/capabilities/subagents.md#limits-are-about-attention-not-resources.
+	MaxChildren = 32
 	// DefaultMaxDepth is how deep delegation goes when nothing configures
 	// it, counting the session as depth 1: the orchestrator, its children,
 	// and theirs. SessionDepth is the session's own.
@@ -3002,7 +3005,9 @@ func (s *Supervisor) spawnFrom(caller string, raw json.RawMessage) (string, erro
 	s.mu.Lock()
 	if len(s.children) >= MaxChildren {
 		s.mu.Unlock()
-		return "", fmt.Errorf("agent limit reached (%d per session)", MaxChildren)
+		// The count is of starts, so a refusal with three children live must
+		// not read as a concurrency limit, which is max_concurrent's.
+		return "", fmt.Errorf("agent limit reached: this session has started %d of %d agents; the limit counts agents started, not agents running, so a finished agent still holds its slot — steer or retry the agents it has", len(s.children), MaxChildren)
 	}
 	name := args.Name
 	if name == "" {

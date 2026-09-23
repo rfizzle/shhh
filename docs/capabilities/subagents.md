@@ -275,6 +275,15 @@ reader assumes the other way round, so the line says it. It is also why a
 failed child is retried rather than replaced: a replacement costs a slot the
 session may not have.
 
+The cap is thirty-two starts. A finished child costs no attention, so the
+figure is set by what one session legitimately starts rather than by what one
+person can watch: a batch run of the backlog starts one child per item, and a
+measured run started thirty-one in one sitting of under two hours. Sixteen
+stopped that run at its sixteenth spawn with fifteen ready items still queued.
+A spawn past the cap is refused with the count of starts and says it is one,
+because `16 of 16` read with three children live looks like a concurrency
+limit, and that is `max_concurrent`'s.
+
 Children run without a round budget by default, because a child has nobody to
 ask when it reaches a checkpoint. The parent is the one with a human attached.
 
@@ -389,7 +398,7 @@ three levels deep is reading one session and not three.
   command`); a blocked grandchild floats to directly under its own parent's
   row rather than to the top of a flat list, and the waiting tally counts it
   like any other.
-- **Whose slots and whose budget.** The sixteen-per-session spawn cap is the
+- **Whose slots and whose budget.** The thirty-two-per-session spawn cap is the
   session's wherever in the tree a spawn happened, because the attention it
   bounds is one person's; concurrency slots are the depth's, for the reason
   above; and a descendant's fresh tokens count against its own budget and the
@@ -441,7 +450,7 @@ defaults is three at depth 2 and three more at depth 3 — **six agents running
 at once, not three**, and the same six however the delegation is arranged.
 That is worth saying plainly, because `max_concurrent = 3` reads like a
 promise about the whole session and is not one. What bounds the whole session
-is the sixteen total spawns and the spend cap; what `max_concurrent` bounds is
+is the thirty-two total spawns and the spend cap; what `max_concurrent` bounds is
 how many things are moving at one level of the same job.
 
 The alternatives were considered and are worse. Making a child's

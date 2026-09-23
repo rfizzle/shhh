@@ -2466,6 +2466,27 @@ func TestRosterSaysHowManyAgentSlotsAreUsed(t *testing.T) {
 	}
 }
 
+// A refusal at the cap with three children still running would otherwise read
+// as a concurrency limit, which is max_concurrent's, so it counts what was
+// started and says the count is of starts.
+func TestSpawnPastTheCapSaysItCountsStarts(t *testing.T) {
+	sup := newTestSupervisor(t, &scriptedEnv{})
+	sup.mu.Lock()
+	for range MaxChildren {
+		sup.children = append(sup.children, &child{})
+	}
+	sup.mu.Unlock()
+
+	_, err := sup.Spawn(json.RawMessage(`{"role":"researcher","task":"one more"}`))
+	if err == nil {
+		t.Fatal("a spawn past the cap must be refused")
+	}
+	want := fmt.Sprintf("started %d of %d agents", MaxChildren, MaxChildren)
+	if !strings.Contains(err.Error(), want) || !strings.Contains(err.Error(), "not agents running") {
+		t.Fatalf("the refusal must count starts and say the cap is on them, got %q", err)
+	}
+}
+
 // writingChild is a child whose first round writes files inside its own
 // workspace and whose second answers. It is scripted where a real writer's
 // model is, and real everywhere else: the files are on disk, the patch is the
