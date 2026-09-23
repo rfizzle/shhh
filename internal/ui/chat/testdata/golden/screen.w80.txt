@@ -77,16 +77,15 @@
 · a fan-out · one row a child above the input
    shhh chat                                                                    
   ────────────────────────────────────────────────────────────────────────────  
-                                                                                
-  ▸ 1  Locate the round accounting ───────────────────────── ✓ 4 tools  1.2s    
+  ▾ 2  Thread the sentinel through the loop ──────────────── ✗ 2 tools   22s    
+    ▎✎ edit    internal/agent/loop.go                          1 line   1.1s    
+    ▎✗ run     go test ./internal/agent/...                    exit 1    21s    
+      --- FAIL: TestRoundLimit                                                  
                                                                             ┃   
-  ▾ 2  Thread the sentinel through the loop ──────────────── ✗ 2 tools   22s┃   
-    ▎✎ edit    internal/agent/loop.go                          1 line   1.1s┃   
-    ▎✗ run     go test ./internal/agent/...                    exit 1    21s┃   
-      --- FAIL: TestRoundLimit                                              ┃   
-                                                                            ┃   
-  ◇ fan-out    3 agents                                   3 needs you       ┃   
+  ◇ fan-out    4 agents                                   4 needs you       ┃   
      ◇ agent   researcher-1 · Say where the ro…  ⚠ needs you · 1 tool       ┃   
+      waiting approval: run echo hi                                         ┃   
+    └◇ agent   researcher-4 · Say who calls th…  ⚠ needs you · 1 tool       ┃   
       waiting approval: run echo hi                                         ┃   
      ◇ agent   researcher-2 · Say where the ro…  ⚠ needs you · 1 tool       ┃   
       waiting approval: run echo hi                                         ┃   
@@ -99,23 +98,24 @@
      ✗ go test ./internal/agent/... failing · exit 1 · 21s                  ┃   
                                                                             ┃   
   ⚠ researcher-1 · Say where the round coun…     waiting approval: run echo hi  
+  └⚠ researcher-4 · Say who calls the loop.      waiting approval: run echo hi  
   ⚠ researcher-2 · Say where the round limi…     waiting approval: run echo hi  
   ⚠ researcher-3 · Say where the loop exits.     waiting approval: run echo hi  
-  ⚠ 3 agents waiting approval                                                   
+  ⚠ 4 agents waiting approval                                                   
   ╭─ ✓ done ─────────────────────────────────────────────────────────────────╮  
   │ ▸                                                                        │  
-  ╰─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · ↑41.2k ↓9.8k · $0.51 · ◇ 3 agents ⚠3 ─────╯  
+  ╰─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · ↑41.2k ↓9.8k · $0.51 · ◇ 4 agents ⚠4 ─────╯  
 
 · …and that child's request on the card · the rows go
    shhh chat                                                                    
   ────────────────────────────────────────────────────────────────────────────  
-                                                                                
-  ◇ fan-out    3 agents                                   3 needs you           
      ◇ agent   researcher-1 · Say where the ro…  ⚠ needs you · 1 tool           
+      waiting approval: run echo hi                                             
+    └◇ agent   researcher-4 · Say who calls th…  ⚠ needs you · 1 tool           
       waiting approval: run echo hi                                             
      ◇ agent   researcher-2 · Say where the ro…  ⚠ needs you · 1 tool           
       waiting approval: run echo hi                                             
-     ◇ agent   researcher-3 · Say where the lo…  ⚠ needs you · 1 tool       ┃   
+     ◇ agent   researcher-3 · Say where the lo…  ⚠ needs you · 1 tool           
       waiting approval: run echo hi                                         ┃   
       [alt+a] agents                                                        ┃   
                                                                             ┃   
@@ -124,7 +124,7 @@
      ✗ go test ./internal/agent/... failing · exit 1 · 21s                  ┃   
                                                                             ┃   
   ────────────────────────────────────────────────────────────────────────────  
-  ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · ↑41.2k ↓9.8k · $0.51 · ◇ 3 agents ⚠3    gpt-4o  
+  ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · ↑41.2k ↓9.8k · $0.51 · ◇ 4 agents ⚠4    gpt-4o  
   ──── DECISION 1/1 ──────────────────────────────────────────────────────────  
   ╭─ researcher-2 ▸ Approve command ───────────────────────────────── ⚠ low ─╮  
   │ $ run echo hi                                                            │  
@@ -238,16 +238,15 @@
 · a fan-out · one row a child above the input
   ␛[97;1m shhh chat␛[m                                                                    
   ␛[38;5;241m────────────────────────────────────────────────────────────────────────────␛[m  
-                                                                                
-  ␛[38;5;241m▸␛[m ␛[38;5;252m1 ␛[m ␛[38;5;252mLocate the round accounting␛[m ␛[38;5;241m─────────────────────────␛[m ␛[92m✓␛[m ␛[38;5;241m4 tools␛[m  ␛[38;5;241m1.2s␛[m    
+  ␛[38;5;241m▾␛[m ␛[38;5;252m2 ␛[m ␛[38;5;252mThread the sentinel through the loop␛[m ␛[38;5;241m────────────────␛[m ␛[91m✗␛[m ␛[38;5;241m2 tools␛[m   ␛[38;5;241m22s␛[m    
+    ␛[38;5;214m▎✎␛[m ␛[38;5;252medit␛[m    ␛[38;5;252minternal/agent/loop.go␛[m                          ␛[38;5;245m1 line␛[m   ␛[38;5;241m1.1s␛[m    
+    ␛[91m▎✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgo test ./internal/agent/...␛[m                    ␛[91mexit 1␛[m    ␛[38;5;241m21s␛[m    
+      ␛[38;5;245m--- FAIL: TestRoundLimit␛[m                                                  
                                                                             ␛[38;5;241m┃␛[m   
-  ␛[38;5;241m▾␛[m ␛[38;5;252m2 ␛[m ␛[38;5;252mThread the sentinel through the loop␛[m ␛[38;5;241m────────────────␛[m ␛[91m✗␛[m ␛[38;5;241m2 tools␛[m   ␛[38;5;241m22s┃␛[m   
-    ␛[38;5;214m▎✎␛[m ␛[38;5;252medit␛[m    ␛[38;5;252minternal/agent/loop.go␛[m                          ␛[38;5;245m1 line␛[m   ␛[38;5;241m1.1s┃␛[m   
-    ␛[91m▎✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgo test ./internal/agent/...␛[m                    ␛[91mexit 1␛[m    ␛[38;5;241m21s┃␛[m   
-      ␛[38;5;245m--- FAIL: TestRoundLimit␛[m                                              ␛[38;5;241m┃␛[m   
-                                                                            ␛[38;5;241m┃␛[m   
-  ␛[94m◇␛[m ␛[38;5;252mfan-out␛[m    ␛[38;5;241m3 agents␛[m                                   ␛[91m3 needs you␛[m       ␛[38;5;241m┃␛[m   
+  ␛[94m◇␛[m ␛[38;5;252mfan-out␛[m    ␛[38;5;241m4 agents␛[m                                   ␛[91m4 needs you␛[m       ␛[38;5;241m┃␛[m   
      ␛[91m◇␛[m ␛[38;5;252magent␛[m   ␛[38;5;252mresearcher-1␛[38;5;241m · Say where the ro…␛[m  ␛[91m⚠ needs you␛[38;5;241m · ␛[38;5;245m1 tool␛[m       ␛[38;5;241m┃␛[m   
+      ␛[38;5;245mwaiting approval: run echo hi␛[m                                         ␛[38;5;241m┃␛[m   
+    ␛[38;5;245m└␛[91m◇␛[m ␛[38;5;252magent␛[m   ␛[38;5;252mresearcher-4␛[38;5;241m · Say who calls th…␛[m  ␛[91m⚠ needs you␛[38;5;241m · ␛[38;5;245m1 tool␛[m       ␛[38;5;241m┃␛[m   
       ␛[38;5;245mwaiting approval: run echo hi␛[m                                         ␛[38;5;241m┃␛[m   
      ␛[91m◇␛[m ␛[38;5;252magent␛[m   ␛[38;5;252mresearcher-2␛[38;5;241m · Say where the ro…␛[m  ␛[91m⚠ needs you␛[38;5;241m · ␛[38;5;245m1 tool␛[m       ␛[38;5;241m┃␛[m   
       ␛[38;5;245mwaiting approval: run echo hi␛[m                                         ␛[38;5;241m┃␛[m   
@@ -260,23 +259,24 @@
      ␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/... failing␛[38;5;241m · exit 1 · 21s␛[m                  ␛[38;5;241m┃␛[m   
                                                                             ␛[38;5;241m┃␛[m   
   ␛[91m⚠␛[m researcher-1␛[38;5;241m · Say where the round coun…␛[m     ␛[91mwaiting approval: run echo hi␛[m  
+  ␛[38;5;245m└␛[91m⚠␛[m researcher-4␛[38;5;241m · Say who calls the loop.␛[m      ␛[91mwaiting approval: run echo hi␛[m  
   ␛[91m⚠␛[m researcher-2␛[38;5;241m · Say where the round limi…␛[m     ␛[91mwaiting approval: run echo hi␛[m  
   ␛[91m⚠␛[m researcher-3␛[38;5;241m · Say where the loop exits.␛[m     ␛[91mwaiting approval: run echo hi␛[m  
-  ␛[91m⚠ 3 agents waiting approval␛[m                                                   
+  ␛[91m⚠ 4 agents waiting approval␛[m                                                   
   ␛[38;5;214m╭─␛[m ␛[92m✓ done␛[m ␛[38;5;214m─────────────────────────────────────────────────────────────────╮␛[m  
   ␛[38;5;214m│␛[m ␛[38;5;241m▸␛[m ␛[38;5;252m                                                                      ␛[m ␛[38;5;214m│␛[m  
-  ␛[38;5;214m╰─␛[m ␛[38;5;214m⏸ manual␛[38;5;243m · ␛[92mctx 32%␛[m ␛[92m▰▰␛[38;5;241m▱▱▱▱▱▱␛[38;5;243m · ↑41.2k ↓9.8k · $0.51 · ␛[94m◇ 3 agents␛[m ␛[91m⚠3␛[m ␛[38;5;214m─────╯␛[m  
+  ␛[38;5;214m╰─␛[m ␛[38;5;214m⏸ manual␛[38;5;243m · ␛[92mctx 32%␛[m ␛[92m▰▰␛[38;5;241m▱▱▱▱▱▱␛[38;5;243m · ↑41.2k ↓9.8k · $0.51 · ␛[94m◇ 4 agents␛[m ␛[91m⚠4␛[m ␛[38;5;214m─────╯␛[m  
 
 · …and that child's request on the card · the rows go
   ␛[97;1m shhh chat␛[m                                                                    
   ␛[38;5;241m────────────────────────────────────────────────────────────────────────────␛[m  
-                                                                                
-  ␛[94m◇␛[m ␛[38;5;252mfan-out␛[m    ␛[38;5;241m3 agents␛[m                                   ␛[91m3 needs you␛[m           
      ␛[91m◇␛[m ␛[38;5;252magent␛[m   ␛[38;5;252mresearcher-1␛[38;5;241m · Say where the ro…␛[m  ␛[91m⚠ needs you␛[38;5;241m · ␛[38;5;245m1 tool␛[m           
+      ␛[38;5;245mwaiting approval: run echo hi␛[m                                             
+    ␛[38;5;245m└␛[91m◇␛[m ␛[38;5;252magent␛[m   ␛[38;5;252mresearcher-4␛[38;5;241m · Say who calls th…␛[m  ␛[91m⚠ needs you␛[38;5;241m · ␛[38;5;245m1 tool␛[m           
       ␛[38;5;245mwaiting approval: run echo hi␛[m                                             
      ␛[91m◇␛[m ␛[38;5;252magent␛[m   ␛[38;5;252mresearcher-2␛[38;5;241m · Say where the ro…␛[m  ␛[91m⚠ needs you␛[38;5;241m · ␛[38;5;245m1 tool␛[m           
       ␛[38;5;245mwaiting approval: run echo hi␛[m                                             
-     ␛[91m◇␛[m ␛[38;5;252magent␛[m   ␛[38;5;252mresearcher-3␛[38;5;241m · Say where the lo…␛[m  ␛[91m⚠ needs you␛[38;5;241m · ␛[38;5;245m1 tool␛[m       ␛[38;5;241m┃␛[m   
+     ␛[91m◇␛[m ␛[38;5;252magent␛[m   ␛[38;5;252mresearcher-3␛[38;5;241m · Say where the lo…␛[m  ␛[91m⚠ needs you␛[38;5;241m · ␛[38;5;245m1 tool␛[m           
       ␛[38;5;245mwaiting approval: run echo hi␛[m                                         ␛[38;5;241m┃␛[m   
       ␛[94m[alt+a]␛[38;5;241m agents␛[m                                                        ␛[38;5;241m┃␛[m   
                                                                             ␛[38;5;241m┃␛[m   
@@ -285,7 +285,7 @@
      ␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/... failing␛[38;5;241m · exit 1 · 21s␛[m                  ␛[38;5;241m┃␛[m   
                                                                             ␛[38;5;241m┃␛[m   
   ␛[38;5;241m────────────────────────────────────────────────────────────────────────────␛[m  
-  ␛[38;5;214m⏸ manual␛[38;5;243m · ␛[92mctx 32%␛[m ␛[92m▰▰␛[38;5;241m▱▱▱▱▱▱␛[38;5;243m · ↑41.2k ↓9.8k · $0.51 · ␛[94m◇ 3 agents␛[m ␛[91m⚠3␛[m    ␛[38;5;252mgpt-4o␛[m  
+  ␛[38;5;214m⏸ manual␛[38;5;243m · ␛[92mctx 32%␛[m ␛[92m▰▰␛[38;5;241m▱▱▱▱▱▱␛[38;5;243m · ↑41.2k ↓9.8k · $0.51 · ␛[94m◇ 4 agents␛[m ␛[91m⚠4␛[m    ␛[38;5;252mgpt-4o␛[m  
   ␛[38;5;241m────␛[m ␛[94;1mDECISION 1/1␛[m ␛[38;5;241m──────────────────────────────────────────────────────────␛[m  
   ␛[38;5;214m╭─ ␛[97;1mresearcher-2 ▸ Approve command ␛[38;5;241;22m─────────────────────────────────␛[38;5;214m ⚠ low ─╮␛[m  
   ␛[38;5;214m│␛[m ␛[38;5;214m$␛[m ␛[97mrun echo hi␛[m                                                            ␛[38;5;214m│␛[m  

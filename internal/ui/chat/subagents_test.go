@@ -200,6 +200,36 @@ func TestAgentRowsAndBadge(t *testing.T) {
 	}
 }
 
+// TestAgentRowsNestAGrandchildUnderItsParent: the compact rows above the
+// input draw the tree the fan-out block above them draws — a child a child
+// spawned sits directly under its parent, whatever order the supervisor
+// started it in, behind the same corner the lanes, the manager and the rail's
+// map hang it off (docs/interface/surfaces.md#the-agent-manager).
+func TestAgentRowsNestAGrandchildUnderItsParent(t *testing.T) {
+	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
+	t.Cleanup(sup.Close)
+	m := newSubagentModel(t, sup)
+
+	for _, task := range []string{"one", "two"} {
+		spawnInto(t, sup, `{"role":"researcher","task":"`+task+`"}`)
+	}
+	waitFor(t, func() bool { running, _ := sup.ActiveCounts(); return running == 2 })
+	// Spawned last, so in the supervisor's own order it would be the bottom
+	// row, beside its parent's sibling rather than under the agent that
+	// asked for it.
+	spawnUnder(t, sup, "researcher-1", subagent.RoleReviewer, "reviewer-1")
+
+	rows := strings.Split(ansi.Strip(m.renderAgentRows(100)), "\n")
+	if len(rows) != 3 {
+		t.Fatalf("rows = %d, want 3:\n%s", len(rows), strings.Join(rows, "\n"))
+	}
+	for i, want := range []string{"◇ researcher-1 · one", "└◇ reviewer-1 · long survey", "◇ researcher-2 · two"} {
+		if !strings.HasPrefix(rows[i], want) {
+			t.Fatalf("row %d = %q, want it to start %q", i, rows[i], want)
+		}
+	}
+}
+
 // A child asking is drawn twice already: the card that routes its request
 // names it on its title rail, and its lane in the transcript says what it is
 // waiting on. The compact row between the two is a third drawing of one

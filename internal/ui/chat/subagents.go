@@ -784,9 +784,12 @@ func (m Model) agentRowsHeight() int {
 }
 
 // renderAgentRows renders one compact row per working child: state glyph,
-// name, task, live status, and spend.
+// name, task, live status, and spend. The rows are in the tree order the
+// fan-out block above them draws its lanes in, and a child a child spawned
+// sits behind the same corner, so the two surfaces one screen apart agree
+// about who spawned whom.
 func (m Model) renderAgentRows(width int) string {
-	statuses := m.activeAgentStatuses()
+	statuses, depth := m.nestAgents(m.activeAgentStatuses())
 	if len(statuses) == 0 {
 		return ""
 	}
@@ -807,7 +810,7 @@ func (m Model) renderAgentRows(width int) string {
 		// with, and not a gap: two spaces read as a column that is not
 		// there, because the names are not one width and so the tasks under
 		// them never line up (docs/interface/principles.md#one-grid).
-		left := glyph + " " + st.Name
+		left := components.AgentNesting(depth[st.Name]) + glyph + " " + st.Name
 		if task := firstLine(st.Task); task != "" {
 			left += sty.ToolArgs.Render(" · " + clipText(task, max(width/3, 8)))
 		}

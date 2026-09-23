@@ -228,20 +228,21 @@ func laneNesting(depth int) string {
 	if depth < 2 {
 		return strings.Repeat(" ", ptrWidth+railWidth)
 	}
-	return strings.Repeat(" ", ptrWidth+railWidth-1) + agentNesting(2)
+	return strings.Repeat(" ", ptrWidth+railWidth-1) + AgentNesting(2)
 }
 
-// agentNesting is the column a child spawned by another child is drawn in
+// AgentNesting is the column a child spawned by another child is drawn in
 // behind: one space per level below the first, then the corner. The corner is
 // the frame's own, so a nested row borrows a mark the reader has already
 // learned rather than adding one to the set
 // (docs/interface/principles.md#closed-vocabularies). Depth counts the
 // session as 0, so nothing under 2 is nested and nothing under 2 is drawn.
 //
-// A lane, a manager row and the rail's map are the same child through the
-// same renderer, and this is what keeps the three of them indenting it by the
-// same rule (docs/interface/surfaces.md#the-agent-manager).
-func agentNesting(depth int) string {
+// A lane, a manager row, the rail's map and the session's compact agent rows
+// are the same child through the same renderer, and this is what keeps them
+// all indenting it by the same rule
+// (docs/interface/surfaces.md#the-agent-manager).
+func AgentNesting(depth int) string {
 	if depth < 2 {
 		return ""
 	}

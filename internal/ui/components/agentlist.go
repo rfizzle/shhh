@@ -531,7 +531,7 @@ func (r AgentRow) render(inner int, focused bool) []string {
 	// The corner takes the column before the glyph, which is where the rail's
 	// map puts it on the same agent: the row is what moves, so the whole of
 	// it moves.
-	left := agentNesting(r.Depth) + r.stateGlyph() + " " + r.Name
+	left := AgentNesting(r.Depth) + r.stateGlyph() + " " + r.Name
 	if r.Task != "" {
 		// The separator and not a gap, which is what the lane above this row
 		// in the transcript joins the same two facts with: two spaces read as

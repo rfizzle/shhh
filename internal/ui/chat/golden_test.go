@@ -2041,6 +2041,15 @@ func TestGolden_Screen(t *testing.T) {
 		spawnInto(t, sup, `{"role":"researcher","task":"`+task+`"}`)
 	}
 	waitFor(t, func() bool { _, blocked := sup.ActiveCounts(); return blocked == 3 })
+	// And one level the session did not ask for: the first child hands part
+	// of its task down, so the lanes and the compact rows under them both
+	// have a grandchild to draw behind the corner, in the same place in the
+	// tree (docs/capabilities/subagents.md#a-child-may-delegate-to-a-configured-depth).
+	if _, err := sup.WrapExecutor("researcher-1", nil)(subagent.SpawnToolName,
+		json.RawMessage(`{"role":"researcher","task":"Say who calls the loop."}`)); err != nil {
+		t.Fatal(err)
+	}
+	waitFor(t, func() bool { _, blocked := sup.ActiveCounts(); return blocked == 4 })
 	// The request the card is built from is the one the second lane says it
 	// is waiting on, because the point of the pair below is that the two
 	// drawings are of one child.
