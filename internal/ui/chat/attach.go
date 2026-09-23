@@ -246,10 +246,11 @@ func (m *Model) attach(name string) {
 
 // sessionMap is every session the keyboard can be in: the orchestrator ("")
 // first, then every child in the supervisor's own spawn order. That is the
-// order the rail's AGENTS block draws them in (inspector.go) with one
-// exception — a child waiting on an answer floats to the top of the map — so
-// one step on the keyboard is one row on screen everywhere except past a
-// blocked child.
+// order the rail's AGENTS block draws them in (inspector.go) except where the
+// map follows the tree — a child waiting on an answer floats to the top of the
+// map, and a child's child is drawn under its parent — so one step on the
+// keyboard is one row on screen everywhere except past a blocked child or a
+// nested one.
 //
 // The chord keeps spawn order rather than following the float: the map is
 // read and the chord is aimed, and a key whose destination moved every time

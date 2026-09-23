@@ -196,6 +196,20 @@ func (r InspectorRail) mappedAgents() (shown, folded []InspectorAgent) {
 		}
 		drop[i] = true
 	}
+	// A session keeps its row while anything under it is still drawn: the
+	// nested row hangs off it behind a corner, and with the parent folded
+	// away that corner would hang off whichever stranger was drawn above.
+	for i := range ordered {
+		if !drop[i] {
+			continue
+		}
+		for j := i + 1; j < len(ordered) && ordered[j].Depth > ordered[i].Depth; j++ {
+			if !drop[j] {
+				delete(drop, i)
+				break
+			}
+		}
+	}
 	for i, a := range ordered {
 		if drop[i] {
 			folded = append(folded, a)
@@ -208,33 +222,52 @@ func (r InspectorRail) mappedAgents() (shown, folded []InspectorAgent) {
 
 // mapOrder is the order the map draws its sessions in: the orchestrator, then
 // every child waiting on an answer, then everything else — each group in the
-// spawn order the host handed over. A child that wants something from you is
+// tree order the host handed over. A child that wants something from you is
 // the only row on this block that is a job rather than a reading, and a run
 // of six leaves those rows wherever the fan-out happened to reach them.
 //
+// What floats is the subtree and not the row, the way the manager and a
+// fan-out lane float theirs: a nested row hangs off the row above it, so a
+// row lifted out on its own — or one floating up between a parent and the
+// session it started — would leave a corner under a stranger. A subtree
+// floats when anything in it is waiting, because a parent whose delegate is
+// waiting on you is a parent waiting on you
+// (docs/capabilities/subagents.md#a-child-may-delegate-to-a-configured-depth).
+//
 // The chord does not float with them: it walks spawn order whole, which is
-// the one rule by which the map and the chord may differ
+// where the map and the chord may differ
 // (docs/interface/surfaces.md#the-inspector-rail). A key whose destination
 // moved every time a child blocked or was answered would be a key nobody
 // could aim, and the map is read rather than aimed.
 func (r InspectorRail) mapOrder() []InspectorAgent {
 	ordered := make([]InspectorAgent, 0, len(r.Agents))
+	var children []InspectorAgent
 	for _, a := range r.Agents {
 		if a.Self {
 			ordered = append(ordered, a)
+		} else {
+			children = append(children, a)
 		}
 	}
-	for _, a := range r.Agents {
-		if !a.Self && a.State == FanoutBlocked {
-			ordered = append(ordered, a)
+	depths := make([]int, len(children))
+	for i, a := range children {
+		depths[i] = a.Depth
+	}
+	var rest []InspectorAgent
+	for _, g := range depthGroups(depths) {
+		waiting := false
+		for _, i := range g {
+			waiting = waiting || children[i].State == FanoutBlocked
+		}
+		for _, i := range g {
+			if waiting {
+				ordered = append(ordered, children[i])
+			} else {
+				rest = append(rest, children[i])
+			}
 		}
 	}
-	for _, a := range r.Agents {
-		if !a.Self && a.State != FanoutBlocked {
-			ordered = append(ordered, a)
-		}
-	}
-	return ordered
+	return append(ordered, rest...)
 }
 
 // childTally is the heading's own sentence: what the children still owe you,

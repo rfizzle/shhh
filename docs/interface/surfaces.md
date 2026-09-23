@@ -1038,14 +1038,19 @@ agent waiting on an answer floats to directly under the root, and the ones
 waiting keep the started order among themselves. Everything the run needs
 from a person is in those rows, so they are where the eye lands rather than
 wherever the run happened to reach them. The chord does not float with them.
-It walks the started order whole, folded rows included, and that is the one
-place the map and the chord are allowed to differ: a key that reordered
+It walks the started order whole, folded rows included, and that is where
+the map and the chord are allowed to differ: a key that reordered
 itself under the reader's hand every time an agent blocked or was answered
 would be a key nobody could aim.
 
 An agent started by another agent is drawn one column in under the rest,
 behind the same corner every nested thing on this interface is drawn behind,
 so a run two levels deep reads as two levels rather than as five siblings.
+It is drawn directly under the agent that started it, and what floats is
+that whole branch: an agent whose own delegate is waiting floats with it,
+and nothing floating or folding lands between an agent and the one it
+started, since a corner under the wrong row names the wrong parent. That is
+the manager's order too; the chord keeps the started order here as well.
 Leaving a session still goes to whatever started it rather than to the root.
 
 When the rail runs short of height the map gives up its rows in the order it

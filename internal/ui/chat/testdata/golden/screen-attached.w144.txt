@@ -24,10 +24,10 @@
       --- FAIL: TestRoundLimit                                                              │    ready                                          
                                                                                             │  ◇ researcher-1                            $0.05  
      ✓ Done · 2 steps · 6 tools · 24.7s · $0.14                                 round 2/25  │    ⠋ running                                      
-    ▎✎ 1 file changed +12 −4 · [alt+w] review · [alt+z] undo turn       all tracked in git  │  ✗ reviewer-1                      failed  $0.05  
-     ✗ go test ./internal/agent/... failing · exit 1 · 21s                                  │    cancelled                                      
-                                                                                            │  └◇ reviewer-2                             $0.05  
-                                                                                            │     ⠋ running                                     
+    ▎✎ 1 file changed +12 −4 · [alt+w] review · [alt+z] undo turn       all tracked in git  │  └◇ reviewer-2                             $0.05  
+     ✗ go test ./internal/agent/... failing · exit 1 · 21s                                  │     ⠋ running                                     
+                                                                                            │  ✗ reviewer-1                      failed  $0.05  
+                                                                                            │    cancelled                                      
                                                                                             │  alt+a manager · alt+] next · click to attach     
                                                                                             │                                                   
                                                                                             │  CONTEXT                             32% of 128k  
@@ -56,10 +56,10 @@
      ⚙ exec_co…go test ./internal/agent -run TestRound     1 line · approved by you         │    ready                                          
      ⠋ read    internal/agent/round.go                                     running…         │❯ ◇ researcher-1                            $0.05  
                                                                                             │    ⠋ running                                      
-                                                                                            │  ✗ reviewer-1                      failed  $0.05  
-                                                                                            │    cancelled                                      
                                                                                             │  └◇ reviewer-2                             $0.05  
                                                                                             │     ⠋ running                                     
+                                                                                            │  ✗ reviewer-1                      failed  $0.05  
+                                                                                            │    cancelled                                      
                                                                                             │  alt+a manager · alt+] next · click to attach     
                                                                                             │                                                   
                                                                                             │  CONTEXT                             32% of 128k  
@@ -88,10 +88,10 @@
                                                                                             │    ready                                          
                                                                                             │  ◇ researcher-1                            $0.05  
                                                                                             │    ⠋ running                                      
-                                                                                            │  ✗ reviewer-1                      failed  $0.05  
-                                                                                            │    cancelled                                      
                                                                                             │❯ └◇ reviewer-2                             $0.05  
                                                                                             │     ⠋ running                                     
+                                                                                            │  ✗ reviewer-1                      failed  $0.05  
+                                                                                            │    cancelled                                      
                                                                                             │  alt+a manager · alt+] next · click to attach     
                                                                                             │                                                   
                                                                                             │  CONTEXT                             32% of 128k  
@@ -120,10 +120,10 @@
      ⚙ exec_co…go test ./internal/agent -run TestRound     1 line · approved by you         │    ready                                          
      ⠋ read    internal/agent/round.go                                     running…         │❯ ◇ researcher-1                            $0.05  
                                                                                             │    ⠋ running                                      
-                                                                                            │  ✗ reviewer-1                      failed  $0.05  
-                                                                                            │    cancelled                                      
                                                                                             │  └◇ reviewer-2                             $0.05  
                                                                                             │     ⠋ running                                     
+                                                                                            │  ✗ reviewer-1                      failed  $0.05  
+                                                                                            │    cancelled                                      
                                                                                             │  alt+a manager · alt+] next · click to attach     
                                                                                             │                                                   
                                                                                             │  CONTEXT                             32% of 128k  
@@ -153,10 +153,10 @@
       ␛[38;5;245m--- FAIL: TestRoundLimit␛[m                                                              ␛[38;5;241m│␛[m    ␛[38;5;245mready␛[m                                          
                                                                                             ␛[38;5;241m│␛[m  ␛[94m◇␛[m ␛[38;5;252mresearcher-1␛[m                            ␛[38;5;241m$0.05␛[m  
      ␛[92m✓␛[m ␛[38;5;252mDone␛[38;5;241m · 2 steps · 6 tools · 24.7s · $0.14␛[m                                 ␛[38;5;241mround 2/25␛[m  ␛[38;5;241m│␛[m    ␛[38;5;205m⠋ running␛[m                                      
-    ␛[38;5;214m▎✎␛[m ␛[38;5;252m1 file changed ␛[92m+12␛[m ␛[91m−4␛[38;5;241m · ␛[94m[alt+w]␛[38;5;241m review · ␛[94m[alt+z]␛[38;5;241m undo turn␛[m       ␛[38;5;241mall tracked in git␛[m  ␛[38;5;241m│␛[m  ␛[91m✗␛[m ␛[38;5;252mreviewer-1␛[m                      ␛[91mfailed␛[m  ␛[38;5;241m$0.05␛[m  
-     ␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/... failing␛[38;5;241m · exit 1 · 21s␛[m                                  ␛[38;5;241m│␛[m    ␛[38;5;245mcancelled␛[m                                      
-                                                                                            ␛[38;5;241m│␛[m  ␛[38;5;245m└␛[94m◇␛[m ␛[38;5;252mreviewer-2␛[m                             ␛[38;5;241m$0.05␛[m  
-                                                                                            ␛[38;5;241m│␛[m     ␛[38;5;205m⠋ running␛[m                                     
+    ␛[38;5;214m▎✎␛[m ␛[38;5;252m1 file changed ␛[92m+12␛[m ␛[91m−4␛[38;5;241m · ␛[94m[alt+w]␛[38;5;241m review · ␛[94m[alt+z]␛[38;5;241m undo turn␛[m       ␛[38;5;241mall tracked in git␛[m  ␛[38;5;241m│␛[m  ␛[38;5;245m└␛[94m◇␛[m ␛[38;5;252mreviewer-2␛[m                             ␛[38;5;241m$0.05␛[m  
+     ␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/... failing␛[38;5;241m · exit 1 · 21s␛[m                                  ␛[38;5;241m│␛[m     ␛[38;5;205m⠋ running␛[m                                     
+                                                                                            ␛[38;5;241m│␛[m  ␛[91m✗␛[m ␛[38;5;252mreviewer-1␛[m                      ␛[91mfailed␛[m  ␛[38;5;241m$0.05␛[m  
+                                                                                            ␛[38;5;241m│␛[m    ␛[38;5;245mcancelled␛[m                                      
                                                                                             ␛[38;5;241m│␛[m  ␛[38;5;241malt+a manager · alt+] next · click to attach␛[m     
                                                                                             ␛[38;5;241m│␛[m                                                   
                                                                                             ␛[38;5;241m│␛[m  ␛[94;1mCONTEXT␛[m                             ␛[92m32% of 128k␛[m  
@@ -185,10 +185,10 @@
      ␛[38;5;214m⚙␛[m ␛[38;5;252mexec_co…go test ./internal/agent -run TestRound␛[m     ␛[38;5;245m1 line␛[38;5;241m · ␛[92mapproved␛[38;5;241m by you␛[m         ␛[38;5;241m│␛[m    ␛[38;5;245mready␛[m                                          
      ␛[38;5;205m⠋␛[m ␛[97mread␛[m    ␛[97minternal/agent/round.go␛[m                                     ␛[38;5;205mrunning…␛[m         ␛[38;5;241m│␛[94m❯␛[m ␛[94;48;5;62m◇␛[39m ␛[97mresearcher-1                            $0.05␛[m  
                                                                                             ␛[38;5;241m│␛[m    ␛[38;5;205m⠋ running␛[m                                      
-                                                                                            ␛[38;5;241m│␛[m  ␛[91m✗␛[m ␛[38;5;252mreviewer-1␛[m                      ␛[91mfailed␛[m  ␛[38;5;241m$0.05␛[m  
-                                                                                            ␛[38;5;241m│␛[m    ␛[38;5;245mcancelled␛[m                                      
                                                                                             ␛[38;5;241m│␛[m  ␛[38;5;245m└␛[94m◇␛[m ␛[38;5;252mreviewer-2␛[m                             ␛[38;5;241m$0.05␛[m  
                                                                                             ␛[38;5;241m│␛[m     ␛[38;5;205m⠋ running␛[m                                     
+                                                                                            ␛[38;5;241m│␛[m  ␛[91m✗␛[m ␛[38;5;252mreviewer-1␛[m                      ␛[91mfailed␛[m  ␛[38;5;241m$0.05␛[m  
+                                                                                            ␛[38;5;241m│␛[m    ␛[38;5;245mcancelled␛[m                                      
                                                                                             ␛[38;5;241m│␛[m  ␛[38;5;241malt+a manager · alt+] next · click to attach␛[m     
                                                                                             ␛[38;5;241m│␛[m                                                   
                                                                                             ␛[38;5;241m│␛[m  ␛[94;1mCONTEXT␛[m                             ␛[92m32% of 128k␛[m  
@@ -217,10 +217,10 @@
                                                                                             ␛[38;5;241m│␛[m    ␛[38;5;245mready␛[m                                          
                                                                                             ␛[38;5;241m│␛[m  ␛[94m◇␛[m ␛[38;5;252mresearcher-1␛[m                            ␛[38;5;241m$0.05␛[m  
                                                                                             ␛[38;5;241m│␛[m    ␛[38;5;205m⠋ running␛[m                                      
-                                                                                            ␛[38;5;241m│␛[m  ␛[91m✗␛[m ␛[38;5;252mreviewer-1␛[m                      ␛[91mfailed␛[m  ␛[38;5;241m$0.05␛[m  
-                                                                                            ␛[38;5;241m│␛[m    ␛[38;5;245mcancelled␛[m                                      
                                                                                             ␛[38;5;241m│␛[94m❯␛[m ␛[38;5;245;48;5;62m└␛[94m◇␛[39m ␛[97mreviewer-2                             $0.05␛[m  
                                                                                             ␛[38;5;241m│␛[m     ␛[38;5;205m⠋ running␛[m                                     
+                                                                                            ␛[38;5;241m│␛[m  ␛[91m✗␛[m ␛[38;5;252mreviewer-1␛[m                      ␛[91mfailed␛[m  ␛[38;5;241m$0.05␛[m  
+                                                                                            ␛[38;5;241m│␛[m    ␛[38;5;245mcancelled␛[m                                      
                                                                                             ␛[38;5;241m│␛[m  ␛[38;5;241malt+a manager · alt+] next · click to attach␛[m     
                                                                                             ␛[38;5;241m│␛[m                                                   
                                                                                             ␛[38;5;241m│␛[m  ␛[94;1mCONTEXT␛[m                             ␛[92m32% of 128k␛[m  
@@ -249,10 +249,10 @@
      ␛[38;5;214m⚙␛[m ␛[38;5;252mexec_co…go test ./internal/agent -run TestRound␛[m     ␛[38;5;245m1 line␛[38;5;241m · ␛[92mapproved␛[38;5;241m by you␛[m         ␛[38;5;241m│␛[m    ␛[38;5;245mready␛[m                                          
      ␛[38;5;205m⠋␛[m ␛[97mread␛[m    ␛[97minternal/agent/round.go␛[m                                     ␛[38;5;205mrunning…␛[m         ␛[38;5;241m│␛[94m❯␛[m ␛[94;48;5;62m◇␛[39m ␛[97mresearcher-1                            $0.05␛[m  
                                                                                             ␛[38;5;241m│␛[m    ␛[38;5;205m⠋ running␛[m                                      
-                                                                                            ␛[38;5;241m│␛[m  ␛[91m✗␛[m ␛[38;5;252mreviewer-1␛[m                      ␛[91mfailed␛[m  ␛[38;5;241m$0.05␛[m  
-                                                                                            ␛[38;5;241m│␛[m    ␛[38;5;245mcancelled␛[m                                      
                                                                                             ␛[38;5;241m│␛[m  ␛[38;5;245m└␛[94m◇␛[m ␛[38;5;252mreviewer-2␛[m                             ␛[38;5;241m$0.05␛[m  
                                                                                             ␛[38;5;241m│␛[m     ␛[38;5;205m⠋ running␛[m                                     
+                                                                                            ␛[38;5;241m│␛[m  ␛[91m✗␛[m ␛[38;5;252mreviewer-1␛[m                      ␛[91mfailed␛[m  ␛[38;5;241m$0.05␛[m  
+                                                                                            ␛[38;5;241m│␛[m    ␛[38;5;245mcancelled␛[m                                      
                                                                                             ␛[38;5;241m│␛[m  ␛[38;5;241malt+a manager · alt+] next · click to attach␛[m     
                                                                                             ␛[38;5;241m│␛[m                                                   
                                                                                             ␛[38;5;241m│␛[m  ␛[94;1mCONTEXT␛[m                             ␛[92m32% of 128k␛[m  

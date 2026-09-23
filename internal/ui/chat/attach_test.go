@@ -221,7 +221,7 @@ func TestEscPopsOneLevelOfTheSpawnTree(t *testing.T) {
 	if got, want := m.breadcrumb(), "orchestrator ▸ researcher-1 ▸ reviewer-1"; got != want {
 		t.Fatalf("breadcrumb = %q, want %q", got, want)
 	}
-	if got := m.sessionDepth("reviewer-1", len(sup.Snapshot())); got != 2 {
+	if got := railDepth(m, "reviewer-1"); got != 2 {
 		t.Fatalf("the map puts the grandchild at depth %d, want 2", got)
 	}
 
@@ -518,9 +518,29 @@ func TestManagerRowsFollowTheSpawnTree(t *testing.T) {
 	}
 	// The same depth the rail's map indents the same session by, so the two
 	// drawings of one tree cannot come to disagree.
-	if got := m.sessionDepth("reviewer-1", len(rows)); got != rows[2].Depth {
+	if got := railDepth(m, "reviewer-1"); got != rows[2].Depth {
 		t.Fatalf("the map puts the grandchild at depth %d and the manager at %d", got, rows[2].Depth)
 	}
+	// And in the same order: the map is the manager's tree, so the corner the
+	// grandchild draws hangs off its own parent's row.
+	var mapped []string
+	for _, a := range m.inspectorAgents() {
+		mapped = append(mapped, a.Name)
+	}
+	if got, want := strings.Join(mapped[1:], ","), strings.Join(names[1:4], ","); got != want {
+		t.Fatalf("the map draws %q, the manager lists %q", got, want)
+	}
+}
+
+// railDepth is the depth the rail's map draws a session at, or -1 where the
+// map has no row for it.
+func railDepth(m Model, name string) int {
+	for _, a := range m.inspectorAgents() {
+		if a.Name == name {
+			return a.Depth
+		}
+	}
+	return -1
 }
 
 // gatedDescendantEnv runs a child of the session forever and parks anything

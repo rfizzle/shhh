@@ -289,3 +289,72 @@ func TestInspectorRail_AgentsMapNestsAChildsChild(t *testing.T) {
 		t.Fatalf("the nested session's own line moves in with it: %q", under)
 	}
 }
+
+// TestInspectorRail_AgentsMapMovesASubtreeWhole: a session another session
+// started stays directly under its parent whatever floats. A failed sibling
+// keeps its place, a blocked one floats over the pair rather than into it,
+// a grandchild's request floats its parent with it, and a finished parent
+// with a live descendant is not folded out from over the corner.
+func TestInspectorRail_AgentsMapMovesASubtreeWhole(t *testing.T) {
+	names := func(r InspectorRail) string {
+		shown, _ := r.mappedAgents()
+		var got []string
+		for _, a := range shown {
+			got = append(got, a.Name)
+		}
+		return strings.Join(got, ",")
+	}
+	self := InspectorAgent{Name: "orchestrator", Self: true, State: FanoutRunning}
+	cases := []struct {
+		name   string
+		agents []InspectorAgent
+		want   string
+	}{
+		{
+			name: "a failed sibling stays beside the pair",
+			agents: []InspectorAgent{self,
+				{Name: "writer-1", Outcome: "failed", Depth: 1, State: FanoutFailed},
+				{Name: "writer-3", Depth: 1, State: FanoutRunning},
+				{Name: "reader-3a", Depth: 2, State: FanoutRunning},
+			},
+			want: "orchestrator,writer-1,writer-3,reader-3a",
+		},
+		{
+			name: "a blocked sibling floats over the pair, not into it",
+			agents: []InspectorAgent{self,
+				{Name: "writer-3", Depth: 1, State: FanoutRunning},
+				{Name: "reader-3a", Depth: 2, State: FanoutRunning},
+				{Name: "writer-1", Outcome: "failed", Depth: 1, State: FanoutFailed},
+				{Name: "writer-4", Depth: 1, State: FanoutBlocked},
+			},
+			want: "orchestrator,writer-4,writer-3,reader-3a,writer-1",
+		},
+		{
+			name: "a grandchild's request floats its parent with it",
+			agents: []InspectorAgent{self,
+				{Name: "writer-1", Outcome: "failed", Depth: 1, State: FanoutFailed},
+				{Name: "writer-3", Depth: 1, State: FanoutRunning},
+				{Name: "reader-3a", Depth: 2, State: FanoutBlocked},
+			},
+			want: "orchestrator,writer-3,reader-3a,writer-1",
+		},
+		{
+			name: "a finished parent is not folded from over a live child",
+			agents: []InspectorAgent{self,
+				{Name: "writer-1", Outcome: "done", Depth: 1, State: FanoutDone},
+				{Name: "reader-1a", Depth: 2, State: FanoutRunning},
+				{Name: "writer-2", Outcome: "done", Depth: 1, State: FanoutDone},
+				{Name: "writer-3", Outcome: "failed", Depth: 1, State: FanoutFailed},
+				{Name: "writer-4", Outcome: "done", Depth: 1, State: FanoutDone},
+			},
+			want: "orchestrator,writer-1,reader-1a,writer-3,writer-4",
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := names(InspectorRail{Agents: tc.agents}); got != tc.want {
+				t.Fatalf("the map draws %s, want %s", got, tc.want)
+			}
+		})
+	}
+}

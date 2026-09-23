@@ -119,9 +119,9 @@ func TestInspectorAgents_TheMapFloatsAndTheChordDoesNot(t *testing.T) {
 		got[0] != "" || got[1] != "researcher-1" || got[2] != "reviewer-1" {
 		t.Fatalf("the chord walks spawn order: %v", got)
 	}
-	// The rail is handed the children in spawn order and does the floating
-	// itself, so the two orders are one reading of the supervisor rather than
-	// two that have to be kept in step.
+	// Where nothing nests, the rail is handed the children in spawn order,
+	// so the two orders are one reading of the supervisor rather than two
+	// that have to be kept in step.
 	agents := m.inspectorAgents()
 	if agents[1].Name != "researcher-1" || agents[2].Name != "reviewer-1" {
 		t.Fatalf("the host hands the map spawn order: %+v", agents)

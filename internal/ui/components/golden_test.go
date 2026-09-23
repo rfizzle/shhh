@@ -1655,6 +1655,26 @@ func TestGolden_InspectorRail(t *testing.T) {
 			AgentsHint: railAgentsHint,
 			Frame:      2,
 		}
+		// A failed sibling beside a nested pair whose grandchild is waiting on
+		// an answer. The request floats the pair to the top as one subtree,
+		// so the grandchild's corner still hangs off its own parent and the
+		// failure stays in its place below them rather than between them.
+		subtree := InspectorRail{
+			Agents: []InspectorAgent{
+				{Name: "orchestrator", Detail: "round 5 · streaming…", Spend: "$0.18",
+					Self: true, Focused: true, State: FanoutRunning},
+				{Name: "writer-1", Detail: "its worktree was dirty", Spend: "$0.02",
+					Outcome: "failed", Depth: 1, State: FanoutFailed},
+				{Name: "writer-2", Detail: "internal/agent/loop.go", Spend: "$0.04",
+					Tools: 5, Depth: 1, State: FanoutRunning},
+				{Name: "writer-3", Detail: "docs/loop.md", Spend: "$0.03",
+					Tools: 3, Depth: 1, State: FanoutRunning},
+				{Name: "reader-3a", Detail: "waiting approval: read ../plugins", Spend: "$0.01",
+					Depth: 2, State: FanoutBlocked},
+			},
+			AgentsHint: railAgentsHint,
+			Frame:      2,
+		}
 		// The block on its own, at the three shapes it has: one thing broken
 		// and nothing behind it; the cap, with an older live alert and eight
 		// answered ones behind the marker; and a session whose failures have
@@ -1713,6 +1733,8 @@ func TestGolden_InspectorRail(t *testing.T) {
 				View: reach.View(width, 0)},
 			{Label: "the map while a hold lands · two children parked, one not yet",
 				View: parked.View(width, 0)},
+			{Label: "a failed sibling beside a nested pair · the subtree moves whole",
+				View: subtree.View(width, 0)},
 			{Label: "the same map three rows short · what it gives up, in order",
 				View: reachShort.View(width, len(reachShort.Lines(width, 0))-3)},
 			{Label: "one command broken · the block above the changeset", View: alerting.View(width, 0)},
