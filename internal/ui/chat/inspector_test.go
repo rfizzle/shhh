@@ -890,3 +890,19 @@ func TestAlertMemo_TwoFramesWithNoMutationScanOnce(t *testing.T) {
 		t.Fatalf("a recorded revision makes the next reader scan, got %+v", live)
 	}
 }
+
+// Every rewrite in place already drops the render caches, and that call is
+// what records the revision — so a path nobody wrote a bump for (the mouse
+// opening a row, the output view, a backlog run's row) carries one anyway.
+func TestInvalidateRenderCache_RecordsATranscriptRevision(t *testing.T) {
+	m := alertMemoModel(t)
+	was := m.transcriptReading()
+	clearBehindTheMemo(&m)
+	m.invalidateRenderCache()
+	if m.transcriptReading() == was {
+		t.Fatal("dropping the render caches recorded no transcript revision")
+	}
+	if live := m.inspectorAlerts().Live(); len(live) != 0 {
+		t.Fatalf("the rail answered from before the rewrite, got %+v", live)
+	}
+}

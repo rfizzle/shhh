@@ -1355,3 +1355,39 @@ func TestCompact_AMessageNobodyTypedIsNotATurnTheFoldCountsBack(t *testing.T) {
 		t.Fatal("the kept turn's row is in the window")
 	}
 }
+
+// Taking the compacting notice back off shortens the transcript, and the
+// drop has to tell the render caches itself: the rebuild a compaction goes on
+// to do would mask a drop that did not, and nothing here performs one.
+func TestDropCompactingNotice_TheNextRenderHasNoRowForIt(t *testing.T) {
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream)
+	m.width, m.height = 110, 40
+	read := func(path string) entry {
+		return entry{kind: entryTool, toolName: "read_file", toolArgs: `{"path":"` + path + `"}`, toolResult: "x"}
+	}
+	m.appendEntry(read("a.go"))
+	m.appendEntry(read("b.go"))
+	m.appendEntry(entry{kind: entrySystem, text: compactingNotice})
+	m.renderHistoryLines()
+
+	m.dropCompactingNotice()
+	// The rows in front of a trailing notice are not frozen today (steps.go
+	// keeps the block before it open), so the render below would come out
+	// right either way; the drop dropping the caches itself is what keeps it
+	// right if that ever changes.
+	if m.cached.count != 0 || m.cached.lines != nil {
+		t.Fatal("the drop shortened the transcript and left the render cache standing")
+	}
+	m.appendEntry(read("c.go"))
+	got := strings.Join(m.renderHistoryLines(), "\n")
+
+	fresh := m
+	fresh.cached, fresh.gutter = lineCache{}, gutterCache{}
+	want := strings.Join(fresh.renderHistoryLines(), "\n")
+	if got != want {
+		t.Fatalf("the render kept what the transcript said before the drop:\ngot\n%s\nwant\n%s", got, want)
+	}
+	if strings.Contains(got, compactingNotice) {
+		t.Fatal("the dropped notice is still drawn")
+	}
+}

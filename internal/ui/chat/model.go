@@ -682,9 +682,9 @@ type Model struct {
 	// means a failure the close row has already answered coming back red
 	// (inspector.go).
 	//
-	// Anything that rewrites an entry in place belongs here. A row landing
-	// does not: the count says that, and says it without a bump nobody
-	// remembered to write.
+	// Only invalidateRenderCache moves it (render.go): a rewrite in place
+	// has to drop the render caches anyway, so that one call is the signal
+	// and no site keeps a second one.
 	transcriptRev int64
 	// Incremental render cache: the rendered lines of entries
 	// [0, cached.count), always a whole number of step blocks, with

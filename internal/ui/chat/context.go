@@ -266,11 +266,10 @@ func (m *Model) elideTranscript(was []string) {
 	}
 	// Rows were rewritten where they lie and there are exactly as many of
 	// them as there were, so nothing counting them can tell. What reads off
-	// a body the trim has just taken has to be told (model.go): the rail's
-	// alert scan reads the gate's verdict out of these rows, and a scan kept
-	// from before the trim would go on reporting a failure the gate answered
-	// (inspector.go).
-	m.transcriptRev++
+	// a body the trim has just taken has to be told, and the invalidation is
+	// what records the revision (render.go): the rail's alert scan reads the
+	// gate's verdict out of these rows, and a scan kept from before the trim
+	// would go on reporting a failure the gate answered (inspector.go).
 	m.invalidateRenderCache()
 }
 
@@ -352,6 +351,10 @@ func (m *Model) dropCompactingNotice() {
 	n := len(m.transcript)
 	if n > 0 && m.transcript[n-1].kind == entrySystem && m.transcript[n-1].text == compactingNotice {
 		m.transcript = m.transcript[:n-1]
+		// A shorter transcript is a change to what the caches drew, and a
+		// compaction's rebuild is not what should be telling them: the drop
+		// says so itself, as every other change to a row does.
+		m.invalidateRenderCache()
 	}
 }
 

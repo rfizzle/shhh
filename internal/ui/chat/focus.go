@@ -254,14 +254,9 @@ func (m Model) openCursorRow(ret state) (tea.Model, tea.Cmd) {
 	// An entry's rendering changed in place, and the row may belong to a
 	// block both caches have frozen. Moving the cursor away is what would
 	// show it: the frozen lines are from before the press, so the row the
-	// reader just opened would close itself behind them.
-	//
-	// The same rewrite is a transcript revision, for the readings memoised
-	// on one (model.go). A fold or an expansion changes nothing the rail's
-	// alerts read, and while a child is attached it is not even this
-	// session's rows being opened — so the bump costs one rescan and buys
-	// the rule that a row rewritten in place says so.
-	m.transcriptRev++
+	// reader just opened would close itself behind them. The invalidation
+	// is also the transcript revision (render.go), which costs the rail one
+	// rescan for a fold its alerts do not read.
 	m.invalidateRenderCache()
 	m.refreshCursorView()
 	return m, nil

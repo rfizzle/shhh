@@ -118,7 +118,14 @@ func (m *Model) flushStream() {
 // entry (used when an entry's rendering changes in place, e.g. focus-mode
 // expansion). Both caches go: the feed's lines and the gutter's units are
 // two renders of the same entries, and an entry that changed changed in both.
+//
+// It is also the transcript revision (model.go), because every rewrite of a
+// row where it lies already has to come through here — a row the caches kept
+// would otherwise go on drawing what it said before. Recording the revision
+// anywhere else is a second call each site has to remember, and the readings
+// memoised on it drift on the first site that forgets.
 func (m *Model) invalidateRenderCache() {
+	m.transcriptRev++
 	m.cached.reset()
 	m.gutter.reset()
 }
@@ -670,7 +677,12 @@ func (m *Model) renderHistoryRawLines() []string {
 	w := m.transcriptWidth()
 	if w != m.cached.width {
 		m.cached.width = w
-		m.invalidateRenderCache()
+		// A new width re-wraps every row and rewrites none of them, so the
+		// caches go and the transcript revision stays: this runs inside a
+		// render, and a revision moved here would make the readings memoised
+		// on it scan again for a resize.
+		m.cached.reset()
+		m.gutter.reset()
 	}
 	// History renders as step blocks. Every block but the last
 	// is frozen — the grouping scan is left to right, so a block that already
