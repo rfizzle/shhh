@@ -4,6 +4,7 @@
 #   TestProgram_AChildsRequestIsAnsweredFromItsCard,
 #   TestProgram_TheManagerSteersAndKillsAChild,
 #   TestProgram_TheNextAgentChordWalksTheMap,
+#   TestProgram_TheChordMovesOnItsFirstPressAfterTheManager,
 #   TestProgram_AttachingMovesTheKeyboardIntoAChild,
 #   TestProgram_TheQuitChordArmsThenLeaves
 #
@@ -81,15 +82,26 @@ snap 09-killed "[p] review"
 # with the map whole: the block floated to the top, the failure under it, the
 # grandchild indented under its own parent, and the trailer naming the way
 # out. The session attached to here is the grandchild itself, so the frame's
-# breadcrumb is the lineage as well — named rather than walked to down the
-# manager's list, whose rows the kill has just moved. The capture is the rail
-# at the scene's own 130; below that the rail is gone, and below the frame's
-# 110 rung the path keeps its nearest two segments (`… ▸ writer-3 ▸
-# reader-3a`), so the snap is one per side of each and `make tui-shot
-# COLS=80` runs the scene to its end.
+# breadcrumb is the lineage as well — walked to with the chord rather than
+# down the manager's list, whose rows the kill has just moved. The chord walks
+# the tree, which a kill does not move: from the session, the three writers
+# and then the grandchild under the third, so four presses from the manager
+# land on it. The first of them reaches the request the manager closed over,
+# which holds the keyboard by arriving: the chord is not one of its answers,
+# so the card gives the keyboard back and the press still moves.
+# The capture is the rail at the scene's own 130; below that the rail is gone,
+# and below the frame's 110 rung the path keeps its nearest two segments (`… ▸
+# writer-3 ▸ reader-3a`), so the snap is one per side of each and `make
+# tui-shot COLS=80` runs the scene to its end.
 keys Escape
 sleep 1
-keys "/attach reader-3a" Enter
+keys M-]
+sleep 1
+keys M-]
+sleep 1
+keys M-]
+sleep 1
+keys M-]
 sleep 1
 wide 130 snap 10-map "alt+a manager" "alt+] next" "orchestrator ▸ writer-3 ▸ reader-3a" "└◇ reader-3a" "✗ writer-1"
 narrow 130 wide 110 snap 10-map "orchestrator ▸ writer-3 ▸ reader-3a"

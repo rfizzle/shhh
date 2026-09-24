@@ -322,6 +322,35 @@ func TestProgram_TheNextAgentChordWalksTheMap(t *testing.T) {
 	frameHas(t, finalFrame(t, tm), "[enter] send")
 }
 
+// The chord moves on its first press after the manager closes over a child's
+// request. The request holds the keyboard by arriving on an empty draft, and
+// the chord is not one of its answers, so the card gives the keyboard back —
+// and the press is still the chord: it used to be spent on the release alone.
+func TestProgram_TheChordMovesOnItsFirstPressAfterTheManager(t *testing.T) {
+	hold, release := quietHold(t)
+	root := programRepo(t, nil)
+	lead := spawns("One writer on the round accounting.\n", "writer", "writer-1")
+	lead.hold = hold
+	m, _ := agentSession(t, root, nil, children{
+		"writer-1": {
+			{calls: []provider.ToolCall{call("w1", tools.ExecCommandName, `{"command":"echo counted"}`)}},
+			{text: "The counter is read at the top of the loop."},
+		},
+	}, lead, programTurn{text: "The writer is on it."})
+	tm := runProgramAt(t, m, 130, 44)
+
+	startChildren(t, tm, release, "Spawn writer", "The writer is on it")
+	waitForText(t, tm, "writer-1 ▸ Approve command")
+	programPress(t, tm, "alt+a")
+	waitForText(t, tm, "[enter] attach")
+	programPress(t, tm, "esc")
+	waitForGone(t, tm, "[enter] attach")
+	programPress(t, tm, "alt+]")
+	waitForText(t, tm, "orchestrator ▸ writer-1")
+
+	frameHas(t, finalFrame(t, tm), "❯ ⚠ writer-1")
+}
+
 // The manager answers a child's request in place: the pointer on the
 // waiting child, its answer key, and the card that opens over the list.
 func TestProgram_TheManagerAnswersAChildInPlace(t *testing.T) {

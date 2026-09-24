@@ -326,9 +326,20 @@ func (m Model) arrivalGates(s state) bool {
 // key it has no answer for: the reader never asked for the keyboard, so the
 // letter they typed is the start of a sentence and belongs in the box, not
 // dropped on the floor while they look at a card.
+//
+// The key is the draft's in full, chords included, so it goes through the
+// draft's own route before the box sees it: a chord like the one that walks
+// the session map means nothing to the textarea, and handing it straight
+// there spent the press on releasing the card and did nothing else. Only
+// what no route claims is typed into the box. The card cannot take the key
+// back on the way through: it no longer holds the keyboard.
 func (m Model) releaseToDraft(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	m.releaseDecision()
-	var cmd tea.Cmd
+	next, cmd, handled := m.updateKey(msg)
+	if handled {
+		return next, cmd
+	}
+	m = next.(Model)
 	m.input, cmd = m.input.Update(msg)
 	m.syncCompletions()
 	m.syncViewport()
