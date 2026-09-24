@@ -1109,17 +1109,23 @@ func waitState(t *testing.T, sup *Supervisor, name string, want State) {
 	t.Fatalf("agent %s never reached %s (last: %s)", name, want, st.State)
 }
 
-// resumableEnv blocks the first stream until cancelled (respecting the
-// per-request cancel func, like a real provider), then serves scripted final
-// responses.
+// resumableEnv blocks a request on the task's own turn until cancelled
+// (respecting the per-request cancel func, like a real provider), then serves
+// scripted final responses once a later message has opened another turn. The
+// turn decides it rather than the count of requests: a turn cancelled before
+// its first request makes none, so the first request can be the next turn's.
 func resumableEnv(finals ...string) EnvFactory {
 	var mu sync.Mutex
-	first := true
 	return func(ctx context.Context, spec Spec) (Env, error) {
 		stream := func(msgs []provider.Message, _ string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+			users := 0
+			for _, m := range msgs {
+				if m.Role == provider.RoleUser {
+					users++
+				}
+			}
 			mu.Lock()
-			if first {
-				first = false
+			if users <= 1 {
 				mu.Unlock()
 				ch := make(chan provider.StreamEvent)
 				sctx, cancel := context.WithCancel(ctx)

@@ -1266,6 +1266,12 @@ type child struct {
 	steering  []queuedSteer
 	intCh     chan struct{}
 	intClosed bool
+	// intPending is a cancel that arrived for a turn whose interrupt channel
+	// was not armed yet: the child reads running from the moment it starts,
+	// well before its first turn is, and a cancel in that gap — or between a
+	// turn and the one steering starts after it — would otherwise close a
+	// channel beginTurn is about to replace. beginTurn carries it over.
+	intPending bool
 	// heldOn is the hold this child is parked on, and nil when it is not
 	// parked. It is separate from state and detail rather than a state of its
 	// own, because a held child is still running in every sense the lifecycle
@@ -1324,6 +1330,12 @@ func (c *child) set(state State, detail string) {
 	// and a finished lane still reading "held · waiting for release" would
 	// be offering a release that can no longer do anything.
 	c.heldOn = nil
+	// A cancel waiting for the next turn is only for a child still running;
+	// one that went idle or finished first has no turn left for it, and the
+	// turn a steer or a follow-up starts later is not the one it was for.
+	if state != StateRunning && state != StateBlocked {
+		c.intPending = false
+	}
 	// A finished child's elapsed stops moving: its lane reports what the work
 	// took, not how long ago it happened.
 	switch state {
@@ -1736,6 +1748,11 @@ func (c *child) beginTurn() {
 	c.mu.Lock()
 	c.intCh = make(chan struct{})
 	c.intClosed = false
+	if c.intPending {
+		close(c.intCh)
+		c.intClosed = true
+		c.intPending = false
+	}
 	c.turns++
 	c.round = 0
 	// A turn is steered about the instruction it was given. The next one has
@@ -1816,15 +1833,38 @@ func (c *child) signalAt(round int, code, reason string) {
 	}
 }
 
-// interruptTurn closes the current turn's interrupt channel (idempotent),
-// unblocking any approval wait.
-func (c *child) interruptTurn() {
-	c.mu.Lock()
+// interruptTurnLocked closes the current turn's interrupt channel
+// (idempotent), unblocking any approval wait, and keeps the cancel for the
+// turn beginTurn arms next in case this one is not armed yet. The caller
+// holds c.mu.
+func (c *child) interruptTurnLocked() {
 	if c.intCh != nil && !c.intClosed {
 		close(c.intCh)
 		c.intClosed = true
 	}
-	c.mu.Unlock()
+	c.intPending = true
+}
+
+// interruptible is the child's stream with a cancelled turn's interrupt
+// delivered again at every request. Headless.Run clears an interrupt as it
+// starts a turn, so one that arrived between beginTurn and that reset would be
+// lost and the turn would run on as if nobody had asked; the request is the
+// first point after the reset the child can answer at, and the runner checks
+// for an interrupt as soon as the stream is open. The request itself is never
+// made — a cancelled turn has nothing to ask the provider.
+func (c *child) interruptible(open agent.StreamFunc) agent.StreamFunc {
+	return func(msgs []provider.Message, choice string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		c.mu.Lock()
+		cancelled, h := c.intClosed, c.headless
+		c.mu.Unlock()
+		if cancelled && h != nil {
+			h.Interrupt()
+			ch := make(chan provider.StreamEvent)
+			close(ch)
+			return ch, func() {}, nil
+		}
+		return open(msgs, choice)
+	}
 }
 
 // stop cancels the current attempt. A retry replaces cancel, so it is read
@@ -2573,16 +2613,20 @@ func (s *Supervisor) CancelTurn(name string) error {
 	if s.isClosed() {
 		return ErrClosed
 	}
+	// The state is read and the cancel marked under one lock, so a child
+	// that goes idle in between is not left holding a cancel for a turn it
+	// has not started.
 	c.mu.Lock()
 	state := c.state
 	h := c.headless
-	c.mu.Unlock()
 	switch state {
 	case StateRunning, StateBlocked:
 	default:
+		c.mu.Unlock()
 		return fmt.Errorf("agent %s has no turn in progress (%s)", name, state)
 	}
-	c.interruptTurn()
+	c.interruptTurnLocked()
+	c.mu.Unlock()
 	if h != nil {
 		h.Interrupt()
 	}
@@ -3380,7 +3424,9 @@ func (s *Supervisor) openWorkspace(c *child, ctx context.Context, maxRounds, att
 	}
 	// Its checks take the session's slots, whatever the surface built.
 	w.env = s.throttled(ctx, c, w.env)
-	w.agent = newChildAgent(w.env, maxRounds)
+	turnEnv := w.env
+	turnEnv.Stream = c.interruptible(w.env.Stream)
+	w.agent = newChildAgent(turnEnv, maxRounds)
 	// The auto-run executor is the env's rooted, reduced chain, inside
 	// whatever the surface puts on its own dispatchers.
 	w.agent.SetExecutor(w.env.autoExecutor(c.seam()))
@@ -4446,6 +4492,10 @@ func (s *Supervisor) run(c *child) {
 		c.beginTurn()
 		turnStart = time.Now()
 		report, err := h.Run(turn)
+		// A cancel is for the turn it arrived in, and that turn is over.
+		c.mu.Lock()
+		c.intPending = false
+		c.mu.Unlock()
 		c.flushStreaming()
 
 		if err == nil && c.ctx.Err() != nil {
