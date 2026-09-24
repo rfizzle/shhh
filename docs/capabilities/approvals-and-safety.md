@@ -787,10 +787,12 @@ named integration target on a prepared CI runner. Keeping that target out of
 an on-close suite makes a test result repeatable inside a session while still
 letting CI certify the operating-system boundary itself.
 
-Go quality checks use a fresh build cache inside the session's private scratch
-directory. The module cache remains the granted dependency cache, so an
-ordinary test run neither writes its compilation products to the host's cache
-nor needs to download its dependencies again.
+Go quality checks use the session's own build cache, inside its private
+scratch directory and shared with the builds its sub-agents run
+([what they share](subagents.md#what-they-share)). The module cache remains
+the granted dependency cache, so an ordinary test run neither writes its
+compilation products to the host's cache nor needs to download its
+dependencies again.
 
 An integration target is explicit about its prerequisites and fails its
 selected runner when they are absent. A skip is useful on another platform;

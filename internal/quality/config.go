@@ -162,6 +162,19 @@ func (c Config) SuiteNames() []string {
 	return names
 }
 
+// Commands is every check of every suite as the command line it runs, the
+// executable and its arguments joined — what a session reads as the project's
+// own word for which commands are checks, whoever runs them.
+func (c Config) Commands() []string {
+	var out []string
+	for _, name := range c.SuiteNames() {
+		for _, check := range c.Suites[name].Checks {
+			out = append(out, strings.TrimSpace(strings.Join(append([]string{check.Exe}, check.Args...), " ")))
+		}
+	}
+	return out
+}
+
 // effectiveParallel is the run's concurrency ceiling.
 func (c Config) effectiveParallel() int {
 	switch {

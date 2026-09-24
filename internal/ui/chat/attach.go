@@ -1207,6 +1207,12 @@ func attachedDetail(st subagent.Status) string {
 	if st.Reseeding {
 		return "reseeding"
 	}
+	// A child waiting for a check slot was not parked by the reader, and
+	// nothing here releases it: the sentence says what it waits for, as its
+	// lane and its rail row do (docs/capabilities/subagents.md#what-they-share).
+	if st.SlotWait > 0 {
+		return st.Detail
+	}
 	if st.Held {
 		return "held"
 	}

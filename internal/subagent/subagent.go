@@ -311,8 +311,17 @@ type Status struct {
 	// the moment that takes, and Reseeding says that is why: it is parked at
 	// the same boundary for the same reason — nothing is asked of the model
 	// while its tree changes under it.
+	//
+	// A child waiting for one of the session's check slots is held as well,
+	// and SlotWait says that is why: how many checks were running when its
+	// wait began, and zero for every child not waiting for one. It is the
+	// same park at a different seam — the child stops before the check it
+	// asked for rather than at its round boundary — and it is released by the
+	// check ahead of it finishing, never by the person.
+	// See docs/capabilities/subagents.md#what-they-share.
 	Held      bool
 	Reseeding bool
+	SlotWait  int
 	// WaitsOn names the writer a queued child's claim is waiting behind: it
 	// was spawned with wait_for_claim, its paths overlap that writer's, and
 	// it starts — with a copy of the tree as it stands then — once no writer
@@ -849,6 +858,16 @@ type Options struct {
 	// or applying their bytes. Nil declares none.
 	// See docs/capabilities/subagents.md#a-writer-starts-from-your-tree.
 	Generators Regenerator
+	// CheckSlots is how many checks may run at once across the session — a
+	// child's quality gate run, a child's command that is a check, and the
+	// session's own gate through CheckSlot; <= 0 uses DefaultCheckSlots.
+	// CheckCommands answers the command lines the project's quality config
+	// declares, asked at each command, so a child's run of one of them takes
+	// a slot as the gate's own run of it would; nil declares none, which
+	// leaves HeavyCommands.
+	// See docs/capabilities/subagents.md#what-they-share.
+	CheckSlots    int
+	CheckCommands func() []string
 }
 
 // EventKind tags a supervisor event.
@@ -1268,6 +1287,12 @@ type child struct {
 	// now, empty once it has none.
 	waitClaim bool
 	waitsOn   string
+	// slotWait is how many checks were running when this child began to wait
+	// for a check slot, and zero while it is not waiting for one
+	// (takeCheckSlot); slotWaiters is how many of its checks are waiting,
+	// since one round can ask for several.
+	slotWait    int
+	slotWaiters int
 }
 
 // landing is a patch that landed in the parent's checkout, and which writer
@@ -1338,6 +1363,9 @@ func (c *child) status() Status {
 	if c.reseeding != "" {
 		detail = "reseeding · carrying " + c.reseeding + "'s landed patch into its copy"
 	}
+	if c.slotWait > 0 {
+		detail = slotWaitDetail(c.slotWait)
+	}
 	tokens := observe.ChildTokens{
 		Inherited: c.inheritedTokens,
 		Setup:     c.setupTokens,
@@ -1379,8 +1407,9 @@ func (c *child) status() Status {
 		Seeded:            c.seeded,
 		Reseeds:           c.reseeds,
 		Inheritance:       c.inheritTokens,
-		Held:              c.heldOn != nil || c.reseeding != "",
+		Held:              c.heldOn != nil || c.reseeding != "" || c.slotWait > 0,
 		Reseeding:         c.reseeding != "",
+		SlotWait:          c.slotWait,
 		WaitsOn:           c.waitsOn,
 		FollowUp:          c.followUp,
 		TakesFollowUp:     c.state == StateDone && c.listening,
@@ -1879,6 +1908,9 @@ type Supervisor struct {
 	// (docs/capabilities/subagents.md#a-wait-only-ever-points-down-the-tree).
 	semsMu sync.Mutex
 	sems   map[int]chan struct{}
+	// checks is the session's throttle on checks, shared by every child and
+	// by the session's own gate (CheckSlot).
+	checks *CheckSlots
 
 	mu       sync.Mutex
 	children []*child
@@ -1977,7 +2009,20 @@ func New(ctx context.Context, opts Options) *Supervisor {
 		parentMode:   agent.ModeManual,
 		appliedFiles: map[string]string{},
 		claimsFreed:  make(chan struct{}),
+		checks:       NewCheckSlots(opts.CheckSlots),
 	}
+}
+
+// CheckSlot takes one of the session's check slots for a check that is not a
+// child's — the session's own gate — so the person's run and a child's never
+// load the machine at once. It answers the release, and false where ctx or
+// the supervisor ended first.
+func (s *Supervisor) CheckSlot(ctx context.Context) (func(), bool) {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	stop := context.AfterFunc(s.ctx, cancel)
+	defer stop()
+	return s.checks.Take(ctx, nil)
 }
 
 // Events is the supervisor's notification stream for the parent front-end.
@@ -3297,6 +3342,8 @@ func (s *Supervisor) openWorkspace(c *child, ctx context.Context, maxRounds, att
 		removeWorktree(w.wt.repoTop, w.wt.dir)
 		return workspace{}, fmt.Errorf("the agent's environment could not be built: %w", err)
 	}
+	// Its checks take the session's slots, whatever the surface built.
+	w.env = s.throttled(ctx, c, w.env)
 	w.agent = newChildAgent(w.env, maxRounds)
 	// The auto-run executor is the env's rooted, reduced chain, inside
 	// whatever the surface puts on its own dispatchers.

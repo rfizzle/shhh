@@ -70,6 +70,11 @@ type InspectorAgent struct {
 	// the checkout. Like Handoff it names the manager's key and does nothing
 	// itself.
 	PatchKept bool
+	// SlotWait marks a parked child waiting for one of the session's check
+	// slots (AgentProgress.SlotWait). Its detail row keeps the supervisor's
+	// sentence where a held row's goes blank: the wait is not the reader's
+	// hold, and what it waits for is the part worth reading.
+	SlotWait int
 	// Depth is how far under the orchestrator the session sits — 0 for the
 	// orchestrator, 1 for a child it spawned, 2 for that child's own child.
 	// A depth past 1 draws the row one column in behind a corner, so a run
@@ -450,7 +455,7 @@ func outcomeStyle(s FanoutState) lipgloss.Style {
 // the spinner, and the name row is what has to survive the rail's narrowest
 // width (docs/interface/departures.md#the-agents-blocks-meter-is-on-the-detail-row).
 func (a InspectorAgent) detailRow(frame, width int) string {
-	if a.State == FanoutHeld {
+	if a.State == FanoutHeld && a.SlotWait == 0 {
 		// A parked row says `held` once, in the outcome field on its name
 		// row. The detail a host has for a parked child is the supervisor's
 		// sentence saying the same thing, and the release it waits on is

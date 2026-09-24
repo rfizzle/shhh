@@ -1280,6 +1280,12 @@ func TestGolden_AgentList(t *testing.T) {
 		reseeding := append([]AgentRow{}, rows...)
 		reseeding[2] = AgentRow{State: AgentRunning, Name: "writer-1", Task: "docs/loop.md",
 			Progress: progress(AgentProgress{State: FanoutHeld, Reseeding: true, Tools: 6, Spend: "$0.02"})}
+		// A writer parked in front of its test run while two checks hold
+		// the session's check slots: the hold's mark, and what it waits for.
+		slotted := append([]AgentRow{}, rows...)
+		slotted[2] = AgentRow{State: AgentRunning, Name: "writer-1", Task: "docs/loop.md",
+			Progress: progress(AgentProgress{State: FanoutHeld, SlotWait: 2, Tools: 6, Spend: "$0.02"}),
+			Note:     SlotWaitNote(2)}
 		// A writer spawned to wait for a claim another writer holds: no slot
 		// and no copy yet, and the row names whom it waits behind.
 		queued := append([]AgentRow{}, rows...)
@@ -1319,6 +1325,8 @@ func TestGolden_AgentList(t *testing.T) {
 				View: (&AgentList{Rows: reseeding, Focus: 2}).View(width)},
 			{Label: "a writer queued behind a claim · no slot and no copy until the writer it overlaps is done",
 				View: (&AgentList{Rows: queued, Focus: 2}).View(width)},
+			{Label: "a writer waiting for a check slot · parked in front of its test run, not failed",
+				View: (&AgentList{Rows: slotted, Focus: 2}).View(width)},
 			{Label: "a writer on its own plan · its steps and its budget's share, and the step it is on where there is room",
 				View: (&AgentList{Rows: planned, Focus: 2}).View(width)},
 		}
@@ -1473,6 +1481,21 @@ func TestGolden_FanoutBlock(t *testing.T) {
 				{State: FanoutQueued, Name: "writer-3", Task: "docs/loop.md", Elapsed: "31s", Behind: "writer-2"},
 			},
 		}
+		// Four writers' test runs under two check slots: two run, and the
+		// other two hold in front of theirs until a slot comes back.
+		slotted := FanoutBlock{
+			Elapsed: "1m12s",
+			Lanes: []FanoutLane{
+				{State: FanoutRunning, Name: "writer-1", Task: "internal/agent/loop.go",
+					Tools: 9, Spend: "$0.03", Elapsed: "1m12s", Frame: 2},
+				{State: FanoutRunning, Name: "writer-2", Task: "internal/agent/round.go",
+					Tools: 7, Spend: "$0.02", Elapsed: "1m10s", Frame: 2},
+				{State: FanoutHeld, Name: "writer-3", Task: "docs/loop.md", SlotWait: 2,
+					Tools: 5, Spend: "$0.02", Elapsed: "1m08s"},
+				{State: FanoutHeld, Name: "writer-4", Task: "internal/ui/rail.go", SlotWait: 2,
+					Tools: 4, Spend: "$0.01", Elapsed: "1m05s"},
+			},
+		}
 		return []golden.Panel{
 			{Label: "mid-flight · one child is waiting on you, the session's spawn count on the header", View: flight.View(width)},
 			{Label: "settled · one lane open on its report, one carrying a verdict, and no spawn count once nothing is live", View: settled.View(width)},
@@ -1481,6 +1504,7 @@ func TestGolden_FanoutBlock(t *testing.T) {
 			{Label: "a child that delegated · its lane says how many are under it", View: nested.View(width)},
 			{Label: "writers on their own plans · steps in words and the budget's share, never one bar", View: planned.View(width)},
 			{Label: "writers queued behind a claim · each waits for the writer it overlaps, in spawn order", View: claimed.View(width)},
+			{Label: "writers taking turns at the check slots · two run their tests, two hold for a slot", View: slotted.View(width)},
 		}
 	})
 }
@@ -1785,6 +1809,23 @@ func TestGolden_InspectorRail(t *testing.T) {
 			AgentsHint: railAgentsHint,
 			Frame:      2,
 		}
+		// Two writers' test runs holding the session's two check slots and a
+		// third parked in front of its own: the row says it is waiting, and
+		// the line under it says for what.
+		slotted := InspectorRail{
+			Agents: []InspectorAgent{
+				{Name: "orchestrator", Detail: "round 3 · streaming…", Spend: "$0.12",
+					Self: true, Focused: true, State: FanoutRunning},
+				{Name: "writer-1", Detail: "go test ./internal/agent", Spend: "$0.04", Tools: 9,
+					Depth: 1, State: FanoutRunning},
+				{Name: "writer-2", Detail: "go test ./internal/ui", Spend: "$0.03", Tools: 7,
+					Depth: 1, State: FanoutRunning},
+				{Name: "writer-3", Detail: "waiting for a check slot (2 running)", Spend: "$0.02", Tools: 5,
+					Outcome: "waiting", SlotWait: 2, Depth: 1, State: FanoutHeld},
+			},
+			AgentsHint: railAgentsHint,
+			Frame:      2,
+		}
 		// A failed sibling beside a nested pair whose grandchild is waiting on
 		// an answer. The request floats the pair to the top as one subtree,
 		// so the grandchild's corner still hangs off its own parent and the
@@ -1892,6 +1933,8 @@ func TestGolden_InspectorRail(t *testing.T) {
 				View: reach.View(width, 0)},
 			{Label: "the map while a hold lands · two children parked, one not yet",
 				View: parked.View(width, 0)},
+			{Label: "a writer waiting for a check slot · two checks run, and its row says what it waits for",
+				View: slotted.View(width, 0)},
 			{Label: "a writer on its own plan · three of seven steps and its budget's share",
 				View: planned.View(width, 0)},
 			{Label: "a finished child taking a follow-up · running again, on the question",

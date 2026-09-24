@@ -146,6 +146,71 @@ func TestFanoutHeldChildIsDrawnHeldAndNotIdle(t *testing.T) {
 	}
 }
 
+// checkRunEnv scripts children whose first act is a test run that holds
+// until the child's context ends, so one of them keeps the session's only
+// check slot while the rest wait for it. Each says on ran when its run
+// begins.
+func checkRunEnv(ran chan<- string) subagent.EnvFactory {
+	return func(ctx context.Context, spec subagent.Spec) (subagent.Env, error) {
+		stream := func([]provider.Message, string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+			ch := make(chan provider.StreamEvent, 1)
+			ch <- provider.StreamEvent{ToolCalls: []provider.ToolCall{{ID: "c1",
+				Name: tools.ExecCommandName, Arguments: `{"command":"go test ./..."}`}}}
+			close(ch)
+			return ch, func() {}, nil
+		}
+		return subagent.Env{
+			SystemPrompt: "sys",
+			Stream:       stream,
+			Executor:     func(string, json.RawMessage) (string, error) { return "", nil },
+			Gated:        map[string]bool{tools.ExecCommandName: true},
+			RunCommand: func(ctx context.Context, _ string) tools.ExecResult {
+				ran <- spec.Name
+				<-ctx.Done()
+				return tools.InferExecResult("", 1)
+			},
+		}, nil
+	}
+}
+
+// A child waiting for one of the session's check slots is parked in front of
+// its test run, and every surface says what for — the lane under its word,
+// the rail's map row beside its detail — rather than drawing it failed, idle
+// or held by the reader (docs/capabilities/subagents.md#what-they-share).
+func TestFanoutChildWaitingForACheckSlotSaysSo(t *testing.T) {
+	ran := make(chan string, 2)
+	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: checkRunEnv(ran),
+		CheckSlots: 1, CommandAllowlist: []string{"go test"}})
+	t.Cleanup(sup.Close)
+	m := newSubagentModel(t, sup)
+
+	m.beginSpawnBatch()
+	spawnInto(t, sup, `{"role":"researcher","task":"run the loop tests"}`)
+	m.appendSpawnEntry(spawnRowEntry("run the loop tests"))
+	if first := <-ran; first != "researcher-1" {
+		t.Fatalf("%s ran first", first)
+	}
+	spawnInto(t, sup, `{"role":"researcher","task":"run the rail tests"}`)
+	m.appendSpawnEntry(spawnRowEntry("run the rail tests"))
+	waitFor(t, func() bool { st, _ := sup.Get("researcher-2"); return st.SlotWait == 1 })
+
+	view := ansi.Strip(m.renderHistory())
+	if !strings.Contains(view, "⏸ waiting") || !strings.Contains(view, "waiting for a check slot (1 running)") {
+		t.Fatalf("the waiting lane should say what it waits for:\n%s", view)
+	}
+	for _, a := range m.inspectorAgents() {
+		if a.Name != "researcher-2" {
+			continue
+		}
+		if a.State != components.FanoutHeld || a.Outcome != "waiting" || a.Detail != "waiting for a check slot (1 running)" {
+			t.Fatalf("the rail's map row should say the child waits for a check slot: %+v", a)
+		}
+	}
+	if st, _ := sup.Get("researcher-2"); attachedDetail(st) != "waiting for a check slot (1 running)" {
+		t.Fatalf("the attached frame should say what the child waits for, not %q", attachedDetail(st))
+	}
+}
+
 // TestSecondRoundIsItsOwnBlock keeps two fan-outs apart: a batch is a round,
 // so the children of a later round never join an earlier block.
 func TestSecondRoundIsItsOwnBlock(t *testing.T) {

@@ -39,3 +39,17 @@ func TestBuildWriter_SaysAGeneratedFileIsRegeneratedNotMerged(t *testing.T) {
 		t.Fatal("the base prompt should not carry the writer's paragraph")
 	}
 }
+
+// A writer is told its check may wait for a slot and that the wait is not a
+// failure, under the verify step it would otherwise read the pause against;
+// the session's own prompt, which shares no slots with a sibling, is not.
+func TestBuildWriter_SaysACheckMayWaitForASlot(t *testing.T) {
+	info := shell.Info{Shell: "bash", OS: "linux", Cwd: "/w"}
+	got := BuildWriter(info)
+	if !strings.Contains(got, "when one is available.\n"+writerCheckSlots+"\n") {
+		t.Fatalf("the writer's prompt should say a check may wait for a slot, under its verify step:\n%s", got)
+	}
+	if strings.Contains(BuildAgent(info), "check slot") {
+		t.Fatal("the base prompt should not carry the writer's paragraph")
+	}
+}

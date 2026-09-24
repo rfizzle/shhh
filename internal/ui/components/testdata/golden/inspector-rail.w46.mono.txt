@@ -237,6 +237,18 @@
     ⠹ survey internal/ui · 2 tools            
   alt+a manager · alt+] next · click to attach
 
+· a writer waiting for a check slot · two checks run, and its row says what it waits for
+  AGENTS                    1 held · 2 running
+❯ ◇ orchestrator                         $0.12
+    ⠹ round 3 · streaming…                    
+  ◇ writer-1                             $0.04
+    ⠹ go test ./internal/agent · 9 tools      
+  ◇ writer-2                             $0.03
+    ⠹ go test ./internal/ui · 7 tools         
+  ◇ writer-3                    waiting  $0.02
+    waiting for a check slot (2 running) · 5 …
+  alt+a manager · alt+] next · click to attach
+
 · a writer on its own plan · three of seven steps and its budget's share
   AGENTS                             2 running
 ❯ ◇ orchestrator                         $0.11
@@ -562,6 +574,18 @@
     ␛[38;5;244m4 tools␛[m                                   
   ␛[38;5;254m◇␛[m ␛[38;5;254mreader-3␛[m                             ␛[38;5;244m$0.01␛[m
     ␛[38;5;254m⠹ survey internal/ui␛[m␛[38;5;244m · ␛[m␛[38;5;244m2 tools␛[m            
+  ␛[38;5;244malt+a manager · alt+] next · click to attach␛[m
+
+· a writer waiting for a check slot · two checks run, and its row says what it waits for
+  ␛[1;38;5;254mAGENTS␛[m                    ␛[38;5;244m1 held␛[m␛[38;5;244m · ␛[m␛[38;5;254m2 running␛[m
+␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254m◇␛[m␛[48;5;237m ␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237morchestrator                         $0.12␛[m␛[m
+    ␛[38;5;254m⠹ round 3 · streaming…␛[m                    
+  ␛[38;5;254m◇␛[m ␛[38;5;254mwriter-1␛[m                             ␛[38;5;244m$0.04␛[m
+    ␛[38;5;254m⠹ go test ./internal/agent␛[m␛[38;5;244m · ␛[m␛[38;5;244m9 tools␛[m      
+  ␛[38;5;254m◇␛[m ␛[38;5;254mwriter-2␛[m                             ␛[38;5;244m$0.03␛[m
+    ␛[38;5;254m⠹ go test ./internal/ui␛[m␛[38;5;244m · ␛[m␛[38;5;244m7 tools␛[m         
+  ␛[38;5;244m◇␛[m ␛[38;5;254mwriter-3␛[m                    ␛[38;5;244mwaiting␛[m  ␛[38;5;244m$0.02␛[m
+    ␛[38;5;244mwaiting for a check slot (2 running)␛[m␛[38;5;244m · ␛[m␛[38;5;244m5 …␛[m
   ␛[38;5;244malt+a manager · alt+] next · click to attach␛[m
 
 · a writer on its own plan · three of seven steps and its budget's share

@@ -434,6 +434,13 @@ func alsoHeld(names string) string {
 // See docs/capabilities/subagents.md#a-writer-starts-from-your-tree.
 const writerCopyMoves = "The tree you started from can move while you work. When another writer's patch lands in the real checkout, the same change is carried into your copy between two of your rounds, without a message: a file you have not touched may read differently the next time you read it, and that is the checkout as it now stands, not something you did. If the landed change meets your own changes, your copy is left as it was and you are told, in a message naming the files that landed and the ones they collided on. Carry on with your task, and name those files in your final report so the reviewer knows where your change meets the other. A file the project declares as generated (a golden test fixture, a generated section of a document) is regenerated from the source by its generator when your patch lands and when another writer's lands in your copy: change the source it is generated from, and never hand-merge a generated file on a collision."
 
+// writerCheckSlots tells a writer that its build or test run can wait before
+// it starts: the session's checks take turns on the machine, so other agents'
+// runs may be ahead of its own. A writer that read the pause as a hang or a
+// failure would cancel, retry or route around the check it was told to run.
+// See docs/capabilities/subagents.md#what-they-share.
+const writerCheckSlots = "- A build or test run may wait for a check slot before it starts, while other agents' checks finish first. Waiting is not a failure: let it run, and do not retry it, cancel it or skip the check because it was slow to begin."
+
 // writerSteps asks a writer for the plan its lane counts: a numbered list of
 // its own steps before its first call, and a progress line as each is done,
 // in the grammar the plan card reads (internal/plan). The count is the one
@@ -476,6 +483,7 @@ Make changes with write_file and edit_file rather than pasting code into your me
 %s
 - Read a file before editing it, and match the style and conventions you find there.
 - After editing, verify: re-read the modified section and run the project's build or tests with execute_command when one is available.
+%s
 - Never run destructive commands (rm -rf, dropping databases, force-pushing) unless the task explicitly asked for that exact action.
 
 # Shell commands
@@ -491,7 +499,7 @@ Make changes with write_file and edit_file rather than pasting code into your me
 
 # Final report
 Your last message IS the deliverable. Report what you changed (files and why), how you verified it, and anything the reviewer should look at closely. %s Do not end on a question or a promise of further work.`,
-		info.Shell, os, info.Cwd, today(), executionDefault, findingThingsBrief, shellSyntaxRules(info.Shell), sudoRules(info.OS, info.IsRoot), osRules(info.OS), writerSteps, writerCopyMoves, assumptionsSection)
+		info.Shell, os, info.Cwd, today(), executionDefault, findingThingsBrief, writerCheckSlots, shellSyntaxRules(info.Shell), sudoRules(info.OS, info.IsRoot), osRules(info.OS), writerSteps, writerCopyMoves, assumptionsSection)
 	if len(extra) > 0 && extra[0] != "" {
 		base += "\n\n" + extra[0]
 	}

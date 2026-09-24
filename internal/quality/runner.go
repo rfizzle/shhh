@@ -174,6 +174,15 @@ type Runner struct {
 	// nobody has to remember to give.
 	// See docs/capabilities/sessions-and-memory.md#whether-it-worked.
 	Observe func(suite string, v Verdict)
+	// Slot, when set, is taken before a run's checks start and given back
+	// when they have finished: the session's throttle on checks, which a
+	// child's build or test run takes too, so the person's run and a child's
+	// never load the machine at once. False is a run given up before a slot
+	// came free, which ends cancelled. A run under a context marked by
+	// WithSlotHeld takes none, because its caller already holds one. Set
+	// before the first run and never reassigned, as Observe is.
+	// See docs/capabilities/subagents.md#what-they-share.
+	Slot func(ctx context.Context) (release func(), ok bool)
 
 	mu sync.Mutex
 	// scrub rewrites a check's captured output before any of it is kept;
@@ -247,6 +256,20 @@ func (r *Runner) Status() string {
 		return "No gate runs this session yet. Suites are defined in " + ConfigRelPath + "."
 	}
 	return last.Format(TakeFingerprint(r.Workspace))
+}
+
+// slotHeldKey marks a context whose caller holds a check slot already.
+type slotHeldKey struct{}
+
+// WithSlotHeld marks ctx as belonging to a caller that has already taken one
+// of the session's check slots, so a run under it does not wait for a second.
+func WithSlotHeld(ctx context.Context) context.Context {
+	return context.WithValue(ctx, slotHeldKey{}, true)
+}
+
+func slotHeld(ctx context.Context) bool {
+	held, _ := ctx.Value(slotHeldKey{}).(bool)
+	return held
 }
 
 func orDefault(suite string) string {
@@ -336,6 +359,18 @@ func (r *Runner) execute(ctx context.Context, suiteName string) *Result {
 			}
 		}
 		argvs[i] = argv
+	}
+
+	if r.Slot != nil && !slotHeld(ctx) {
+		release, ok := r.Slot(ctx)
+		if !ok {
+			res.Verdict = VerdictCancelled
+			res.Reason = "the run was cancelled while it waited for a check slot"
+			res.Fingerprint = TakeFingerprint(r.Workspace)
+			res.Duration = time.Since(start)
+			return res
+		}
+		defer release()
 	}
 
 	before := TakeFingerprint(r.Workspace)

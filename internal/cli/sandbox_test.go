@@ -395,6 +395,43 @@ func TestAChildsContainedShellThatCannotExecDidNotStart(t *testing.T) {
 	}
 }
 
+// Two children's contained commands, each in its own copy of the tree, build
+// into one cache: the session's, in its own scratch, which is the directory
+// the quality gate's checks use too. It runs under whichever mechanism the
+// host has, and skips by name where there is none.
+// See docs/capabilities/subagents.md#what-they-share.
+func TestChildrensContainedCommandsShareTheSessionsBuildCache(t *testing.T) {
+	avail := sandbox.Detect()
+	if !avail.OK {
+		t.Skipf("no containment mechanism here: %s", avail.Detail)
+	}
+	state := t.TempDir()
+	t.Setenv("XDG_DATA_HOME", state)
+	var caches []string
+	for range 2 {
+		dir := t.TempDir()
+		sc, errs := scope.New(dir)
+		if len(errs) > 0 {
+			t.Fatalf("scope: %v", errs)
+		}
+		got := childCommandRunnerUnbounded(config.Config{}, dir, sc)(context.Background(), `printf %s "$GOCACHE"`)
+		if got.Outcome != tools.ExecSucceeded {
+			t.Fatalf("the command did not run: %+v", got)
+		}
+		caches = append(caches, strings.TrimSpace(got.Output))
+	}
+	if caches[0] == "" || caches[0] != caches[1] || filepath.Base(caches[0]) != "go-build" {
+		t.Fatalf("two children built into %q, want one session cache", caches)
+	}
+	// Under Seatbelt the command sees the host's path, which is the state
+	// directory's; bubblewrap binds the same directory over its private /tmp.
+	if avail.Mechanism == "sandbox-exec" {
+		if resolved, err := filepath.EvalSymlinks(state); err == nil && !strings.HasPrefix(caches[0], resolved) {
+			t.Fatalf("the cache %q is not under the state directory %q", caches[0], resolved)
+		}
+	}
+}
+
 // A child's worktree removed under it is the child's working directory gone,
 // not a containment the host is missing: the wrap fails because its policy
 // cannot be built over a directory that is not there, and what is asked about

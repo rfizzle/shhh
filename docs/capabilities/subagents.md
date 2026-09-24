@@ -889,6 +889,34 @@ parent's requests wrote depends on the provider and the model, and has not
 been measured. What the turns are known to cost is what the admission floor
 counts.
 
+The machine is shared too, and it is the one thing a fan-out can run out of
+without any agent noticing. Five writers that each finish an edit and run the
+tests start five builds and five test runs at once, and a host at five times
+its load produces the timeouts and races each writer then spends rounds
+chasing — five writers slower than one. So the session's checks take turns:
+`agents.check_slots` (two by default) is how many may run at once across the
+whole session. A child's quality gate run takes a slot, a child's command
+takes one when it is one of the checks the project's quality config declares
+or one of a short list of builds and test runs (`go test`, `go build`, `make
+test` and their like), and the session's own gate takes one too, so your
+`/gate run` and a child's never load the machine together. A check that finds
+every slot held waits its turn in the order it asked; the child is parked in
+front of it, not failed and not polling, and its lane and its row on the rail
+say `waiting for a check slot (2 running)` until a slot comes back. A writer's
+prompt says a check may wait and that the wait is not a failure, so it does
+not retry, cancel or skip the check because it was slow to start. A command
+that is not a check — a read, a `git status`, a formatter — never waits.
+
+The checks share a build cache as well. Every contained command of the
+session that builds Go — each check the gate runs and each command a child
+runs — points `GOCACHE` at one directory in the session's own scratch under
+the state directory, so five copies of the tree compile the standard library
+once between them rather than five times. The cache is a cache: Go keys every
+entry by its inputs, and a test that passes only because of what is in it is
+not a test the project has, so nothing a check concludes depends on it. A
+command that runs uncontained uses the machine's own cache, which is already
+one directory. The directory goes when the session's scratch does.
+
 ## A hold reaches the whole fan-out
 
 Holding the session's own turn holds every child with it. Nothing stops where

@@ -78,6 +78,15 @@
    ◇ agent   writer-2 · docs/loop.md                                             queued behind writer-1    31s
    ◇ agent   writer-3 · docs/loop.md                                             queued behind writer-2    31s
 
+· writers taking turns at the check slots · two run their tests, two hold for a slot
+◇ fan-out    4 agents                                                                2 held · 2 running  1m12s
+   ◇ agent   writer-1 · internal/agent/loop.go                              ⠹ working · 9 tools · $0.03  1m12s
+   ◇ agent   writer-2 · internal/agent/round.go                             ⠹ working · 7 tools · $0.02  1m10s
+   ◇ agent   writer-3 · docs/loop.md                                        ⏸ waiting · 5 tools · $0.02  1m08s
+    waiting for a check slot (2 running)
+   ◇ agent   writer-4 · internal/ui/rail.go                                 ⏸ waiting · 4 tools · $0.01  1m05s
+    waiting for a check slot (2 running)
+
 ── ansi ────────────────────────────────────────────────────
 · mid-flight · one child is waiting on you, the session's spawn count on the header
 ␛[94m◇␛[m ␛[38;5;252mfan-out␛[m    ␛[38;5;241m4 agents · 4 of 32 spawned␛[m                                         ␛[91m1 needs you␛[m␛[38;5;241m · ␛[m␛[38;5;205m2 running␛[m  ␛[38;5;241m1m12s␛[m
@@ -146,3 +155,12 @@
    ␛[94m◇␛[m ␛[38;5;252magent␛[m   ␛[38;5;252mwriter-1␛[m␛[38;5;241m · docs/loop.md␛[m                                        ␛[38;5;205m⠹ working␛[m␛[38;5;241m · ␛[m␛[38;5;245m5 tools · $0.02␛[m    ␛[38;5;241m31s␛[m
    ␛[38;5;241m◇␛[m ␛[38;5;252magent␛[m   ␛[38;5;252mwriter-2␛[m␛[38;5;241m · docs/loop.md␛[m                                             ␛[38;5;241mqueued behind writer-1␛[m    ␛[38;5;241m31s␛[m
    ␛[38;5;241m◇␛[m ␛[38;5;252magent␛[m   ␛[38;5;252mwriter-3␛[m␛[38;5;241m · docs/loop.md␛[m                                             ␛[38;5;241mqueued behind writer-2␛[m    ␛[38;5;241m31s␛[m
+
+· writers taking turns at the check slots · two run their tests, two hold for a slot
+␛[94m◇␛[m ␛[38;5;252mfan-out␛[m    ␛[38;5;241m4 agents␛[m                                                                ␛[38;5;241m2 held␛[m␛[38;5;241m · ␛[m␛[38;5;205m2 running␛[m  ␛[38;5;241m1m12s␛[m
+   ␛[94m◇␛[m ␛[38;5;252magent␛[m   ␛[38;5;252mwriter-1␛[m␛[38;5;241m · internal/agent/loop.go␛[m                              ␛[38;5;205m⠹ working␛[m␛[38;5;241m · ␛[m␛[38;5;245m9 tools · $0.03␛[m  ␛[38;5;241m1m12s␛[m
+   ␛[94m◇␛[m ␛[38;5;252magent␛[m   ␛[38;5;252mwriter-2␛[m␛[38;5;241m · internal/agent/round.go␛[m                             ␛[38;5;205m⠹ working␛[m␛[38;5;241m · ␛[m␛[38;5;245m7 tools · $0.02␛[m  ␛[38;5;241m1m10s␛[m
+   ␛[38;5;241m◇␛[m ␛[38;5;252magent␛[m   ␛[38;5;252mwriter-3␛[m␛[38;5;241m · docs/loop.md␛[m                                        ␛[38;5;241m⏸ waiting␛[m␛[38;5;241m · ␛[m␛[38;5;245m5 tools · $0.02␛[m  ␛[38;5;241m1m08s␛[m
+    ␛[38;5;245mwaiting for a check slot (2 running)␛[m
+   ␛[38;5;241m◇␛[m ␛[38;5;252magent␛[m   ␛[38;5;252mwriter-4␛[m␛[38;5;241m · internal/ui/rail.go␛[m                                 ␛[38;5;241m⏸ waiting␛[m␛[38;5;241m · ␛[m␛[38;5;245m4 tools · $0.01␛[m  ␛[38;5;241m1m05s␛[m
+    ␛[38;5;245mwaiting for a check slot (2 running)␛[m

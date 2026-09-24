@@ -43,13 +43,17 @@ type toolArgs struct {
 
 // ExecuteTool dispatches one quality_gate tool call.
 func (r *Runner) ExecuteTool(args json.RawMessage) (string, error) {
+	return r.executeTool(context.Background(), args)
+}
+
+func (r *Runner) executeTool(ctx context.Context, args json.RawMessage) (string, error) {
 	var a toolArgs
 	if err := json.Unmarshal(args, &a); err != nil {
 		return "", fmt.Errorf("invalid arguments: %w", err)
 	}
 	switch a.Action {
 	case "run":
-		res, err := r.Run(context.Background(), a.Suite)
+		res, err := r.Run(ctx, a.Suite)
 		if err != nil {
 			return "", err
 		}
@@ -66,6 +70,19 @@ func (r *Runner) WrapExecutor(next func(name string, args json.RawMessage) (stri
 	return func(name string, args json.RawMessage) (string, error) {
 		if name == ToolName {
 			return r.ExecuteTool(args)
+		}
+		return next(name, args)
+	}
+}
+
+// WrapExecutorHolding is WrapExecutor for a caller that takes one of the
+// session's check slots itself before it dispatches a run — a child, whose
+// wait for one is drawn on its own lane — so the run under it does not wait
+// for a second slot behind its own.
+func (r *Runner) WrapExecutorHolding(next func(name string, args json.RawMessage) (string, error)) func(string, json.RawMessage) (string, error) {
+	return func(name string, args json.RawMessage) (string, error) {
+		if name == ToolName {
+			return r.executeTool(WithSlotHeld(context.Background()), args)
 		}
 		return next(name, args)
 	}

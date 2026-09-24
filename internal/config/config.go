@@ -661,6 +661,12 @@ type AgentsConfig struct {
 	// place in the count. Zero is unset and means the supervisor's default.
 	// See docs/capabilities/subagents.md#limits-are-about-attention-not-resources.
 	MaxChildren int `toml:"max_children"`
+	// CheckSlots is how many checks may run at once across the session: a
+	// child's build or test run, a child's quality gate run and the
+	// session's own gate each take one. Zero is unset and means the
+	// supervisor's default.
+	// See docs/capabilities/subagents.md#what-they-share.
+	CheckSlots int `toml:"check_slots"`
 	// Delegation is the session's policy on starting children: "off",
 	// "explicit" (the default) or "proactive". It is the model's side of the
 	// decision — when to ask — and the spawn card stays the person's.

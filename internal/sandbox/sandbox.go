@@ -65,9 +65,14 @@ type Policy struct {
 	// toolchain-cache paths stay writable so builds and test runners keep
 	// working.
 	ReadOnlyWorkspace bool
-	// PrivateGoCache puts Go's build cache below the command's private
-	// temporary directory. Quality gates use it so a read-only workspace never
-	// needs a writable host build cache merely to compile tests.
+	// PrivateGoCache puts Go's build cache in the session's own scratch
+	// directory under the state dir — one directory for every contained
+	// command of the session that asks for it, so the quality gate's checks
+	// and every writer's builds compile the standard library once between
+	// them rather than once each. Quality gates use it so a read-only
+	// workspace never needs a writable host build cache merely to compile
+	// tests.
+	// See docs/capabilities/subagents.md#what-they-share.
 	PrivateGoCache bool
 	// Env is the NAME=value set the contained command's environment is
 	// drawn from before the allowlist narrows it — the session's own, which
@@ -241,7 +246,13 @@ type spec struct {
 	// privatised tmpdir on its own.
 	tmpVisible     []string
 	privateGoCache bool
-	network        bool
+	// goCacheHost is the session's build cache as the host names it, bound
+	// over the private tmpfs's go-build directory under bubblewrap, where
+	// the tmpfs is new for every command; empty where the tmpdir already is
+	// the session's own directory, or where that directory could not be
+	// made, which leaves the command a cache of its own.
+	goCacheHost string
+	network     bool
 	// hosts are the only hosts the command may reach, through the proxy;
 	// empty is the network switch alone. network is false whenever they
 	// are set, because the proxy is then the command's whole network.
@@ -750,6 +761,14 @@ func (s *spec) privatiseTmp(mechanism string) error {
 	s.env = withTmpdir(s.env, s.tmpdir)
 	if s.privateGoCache {
 		s.env = withGoCache(s.env, filepath.Join(s.tmpdir, "go-build"))
+		if mechanism == "bwrap" {
+			if dir, err := sessionTmpDir(); err == nil {
+				host := filepath.Join(dir, "go-build")
+				if os.MkdirAll(host, 0o700) == nil {
+					s.goCacheHost = host
+				}
+			}
+		}
 	}
 	return nil
 }

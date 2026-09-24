@@ -212,6 +212,7 @@ func (m Model) childProgress(st subagent.Status) components.AgentProgress {
 	if st.Held {
 		p.State = components.FanoutHeld
 		p.Reseeding = st.Reseeding
+		p.SlotWait = st.SlotWait
 		return p
 	}
 	switch st.State {
@@ -240,6 +241,11 @@ func childNote(st subagent.Status) string {
 	case subagent.StateBlocked:
 		return st.Detail
 	case subagent.StateRunning, subagent.StateQueued:
+		// A child parked in front of a check says what it waits for: its
+		// progress says only that it is waiting.
+		if st.SlotWait > 0 {
+			return components.SlotWaitNote(st.SlotWait)
+		}
 		// A child answering a follow-up is working on something other than
 		// the task its row names, and the row says which question.
 		if st.FollowUp != "" {
@@ -305,6 +311,7 @@ func (m Model) fanoutBlockFor(e entry) components.FanoutBlock {
 			Seeded:     st.Seeded,
 			Reseeds:    st.Reseeds,
 			Reseeding:  st.Reseeding,
+			SlotWait:   p.SlotWait,
 			Behind:     p.Behind,
 			Inherited:  p.Inherited,
 			Steers:     st.Steers,

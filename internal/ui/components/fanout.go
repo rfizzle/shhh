@@ -85,6 +85,12 @@ type AgentProgress struct {
 	// at the same boundary either way, and the word says which of the two
 	// stopped it (docs/capabilities/subagents.md#a-writer-starts-from-your-tree).
 	Reseeding bool
+	// SlotWait says a held child is parked in front of a check it asked to
+	// run, waiting for one of the session's check slots, and how many checks
+	// were running when it began to wait. Zero for every other child. Like
+	// Reseeding it is only read beside FanoutHeld
+	// (docs/capabilities/subagents.md#what-they-share).
+	SlotWait int
 	// Behind names the writer a queued child waits behind: it asked to wait
 	// for a claim that writer holds, rather than for a slot. It is only read
 	// beside FanoutQueued, and it is what the word says instead of the bare
@@ -114,6 +120,16 @@ func BudgetPct(fresh, budget int64) int {
 		return 0
 	}
 	return int(fresh * 100 / budget)
+}
+
+// SlotWaitNote is the line a child waiting for one of the session's check
+// slots is drawn with — under its lane, under its manager row and on the
+// rail — naming how many checks hold the slots. The supervisor states the
+// same sentence as the child's detail; it is spelled here too because this
+// package draws a lane without importing the one that runs it.
+// See docs/capabilities/subagents.md#what-they-share.
+func SlotWaitNote(running int) string {
+	return fmt.Sprintf("waiting for a check slot (%d running)", running)
 }
 
 // stepsOf is a child's own plan in the words every surface states it in:
@@ -201,6 +217,8 @@ type FanoutLane struct {
 	// carried in now (AgentProgress.Reseeding).
 	Reseeds   int
 	Reseeding bool
+	// SlotWait is AgentProgress.SlotWait.
+	SlotWait int
 	// Behind is the writer a queued child waits behind (AgentProgress.Behind).
 	Behind string
 	// Inherited is the child's inherited turns in tokens, carried to the
@@ -436,6 +454,13 @@ func (p AgentProgress) progress() string {
 		if p.Reseeding {
 			return sty.Dim.Render("⏸ reseeding")
 		}
+		// And one waiting its turn at the session's check slots, which is
+		// the same park in front of a check rather than at a boundary. The
+		// word is short because the field is shared with the name; the line
+		// under the lane says what it waits for (SlotWaitNote).
+		if p.SlotWait > 0 {
+			return sty.Dim.Render("⏸ waiting")
+		}
 		return sty.Dim.Render("⏸ held")
 	case FanoutFailed:
 		return sty.Err.Render("✗ failed")
@@ -531,7 +556,7 @@ func (p AgentProgress) outcomeField() string {
 func (l FanoutLane) progressOf() AgentProgress {
 	return AgentProgress{State: l.State, Step: l.Step, Steps: l.Steps,
 		Tools: l.Tools, Spend: l.Spend, Frame: l.Frame,
-		ReportVerdict: l.ReportVerdict, Inherited: l.Inherited, Reseeding: l.Reseeding, Behind: l.Behind,
+		ReportVerdict: l.ReportVerdict, Inherited: l.Inherited, Reseeding: l.Reseeding, SlotWait: l.SlotWait, Behind: l.Behind,
 		Planned: l.Planned, StepTitle: l.StepTitle, BudgetPct: l.BudgetPct}
 }
 
@@ -697,6 +722,12 @@ func (l FanoutLane) note() string {
 	}
 	if l.State.settled() {
 		return l.settledNote()
+	}
+	if l.State == FanoutHeld && l.SlotWait > 0 {
+		// What a lane parked in front of its check is waiting for, ahead of
+		// everything else a working lane might say: it is why the lane is
+		// not moving, and the one thing that reads as trouble if unsaid.
+		return SlotWaitNote(l.SlotWait)
 	}
 	if note := l.steerNote(); note != "" {
 		return note

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -80,6 +81,12 @@ func bwrapPrefix(s spec) []string {
 		// cannot create a mount point on the read-only root, so a bind at a
 		// path nothing is listening on would fail the whole wrap.
 		argv = append(argv, "--ro-bind", "/dev/null", s.agentSocket)
+	}
+	if s.goCacheHost != "" {
+		// The session's build cache, over the fresh tmpfs's own: last, after
+		// every mask, for the reason the proxy's socket below is — it lives
+		// under the state directory the mask covers.
+		argv = append(argv, "--bind", s.goCacheHost, filepath.Join(s.tmpdir, "go-build"))
 	}
 	var bridge []string
 	if s.bridgeExe != "" {

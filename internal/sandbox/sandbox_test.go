@@ -340,6 +340,20 @@ func TestResolvePrivateGoCacheLivesInTheSessionScratch(t *testing.T) {
 			t.Fatalf("the inherited build cache must not reach the check: env=%v", s.env)
 		}
 	}
+	// Under bubblewrap the tmpfs is new for every command, so the session's
+	// own directory is bound over its go-build: one cache every contained
+	// command of the session shares.
+	scratch, err := sessionTmpDir()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := filepath.Join(scratch, "go-build"); s.goCacheHost != want {
+		t.Fatalf("session build cache = %q, want %q", s.goCacheHost, want)
+	}
+	argv := strings.Join(bwrapPrefix(s), " ")
+	if bind := "--bind " + s.goCacheHost + " " + filepath.Join(s.tmpdir, "go-build"); !strings.Contains(argv, bind) {
+		t.Fatalf("bwrap argv lacks %q: %s", bind, argv)
+	}
 }
 
 func TestContainedEnvKeepsTheDeclaredLinterCache(t *testing.T) {

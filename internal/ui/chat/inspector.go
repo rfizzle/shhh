@@ -603,6 +603,13 @@ func (m Model) inspectorAgents() []components.InspectorAgent {
 				// reader (docs/capabilities/subagents.md#a-writer-starts-from-your-tree).
 				a.Outcome = "reseeding"
 			}
+			if p.SlotWait > 0 {
+				// The same park again, in front of a check waiting for one of
+				// the session's slots; the detail row says so in full
+				// (docs/capabilities/subagents.md#what-they-share).
+				a.Outcome = "waiting"
+				a.SlotWait = p.SlotWait
+			}
 		}
 		switch st.State {
 		case subagent.StateDone, subagent.StateFailed:

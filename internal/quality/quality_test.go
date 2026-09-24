@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -1051,5 +1052,51 @@ func TestConfig_CloseRetriesTakesZeroAsAnAnswer(t *testing.T) {
 	neg := -3
 	if got := (Config{OnCloseRetries: &neg}).CloseRetries(); got != 0 {
 		t.Errorf("a negative budget reads as %d, want 0", got)
+	}
+}
+
+// A run takes the session's check slot before its checks start and gives it
+// back once they have finished; a run under a caller that already holds one —
+// a child, which takes its own in front of the tool — takes none; and a run
+// given up while it waited is cancelled, never a pass.
+// See docs/capabilities/subagents.md#what-they-share.
+func TestRun_TakesTheSessionsCheckSlot(t *testing.T) {
+	ws := t.TempDir()
+	writeConfig(t, ws, shSuite("echo fine"))
+	var taken, given int
+	r := &Runner{Workspace: ws, Slot: func(ctx context.Context) (func(), bool) {
+		if ctx.Err() != nil {
+			return nil, false
+		}
+		taken++
+		return func() { given++ }, true
+	}}
+	if res := mustRun(t, r, "default"); res.Verdict != VerdictPass || taken != 1 || given != 1 {
+		t.Fatalf("verdict %s, slot taken %d and given back %d times", res.Verdict, taken, given)
+	}
+	held := r.WrapExecutorHolding(func(string, json.RawMessage) (string, error) { return "", nil })
+	if out, err := held(ToolName, json.RawMessage(`{"action": "run"}`)); err != nil || !strings.Contains(out, "PASS") {
+		t.Fatalf("held run = %q, %v", out, err)
+	}
+	if taken != 1 {
+		t.Fatalf("a run whose caller holds a slot took another: %d", taken)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	res, err := r.Run(ctx, "default")
+	if err != nil || res.Verdict != VerdictCancelled {
+		t.Fatalf("a run given up waiting = %v, %v", res, err)
+	}
+}
+
+// A suite's checks are the project's word for which command lines are
+// checks, in the order the suites are named.
+func TestConfig_CommandsAreEveryChecksLine(t *testing.T) {
+	cfg := Config{Suites: map[string]Suite{
+		"quick":   {Checks: []Check{{Exe: "make", Args: []string{"vet"}}}},
+		"default": {Checks: []Check{{Exe: "make", Args: []string{"test"}}, {Exe: "golangci-lint"}}},
+	}}
+	if got, want := cfg.Commands(), []string{"make test", "golangci-lint", "make vet"}; !slices.Equal(got, want) {
+		t.Fatalf("commands = %v, want %v", got, want)
 	}
 }

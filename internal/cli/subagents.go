@@ -891,6 +891,10 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 		MaxConcurrent: cfg.Agents.MaxConcurrent,
 		MaxDepth:      cfg.AgentMaxDepth(),
 		MaxChildren:   cfg.Agents.MaxChildren,
+		// One throttle on checks for the whole session: a child's build or
+		// test run, a child's gate run and the session's own gate below.
+		CheckSlots:    cfg.Agents.CheckSlots,
+		CheckCommands: gateCommands(session.gateRunner),
 		// Children answer to the parent's working scope on top of
 		// their own worktree, which is where their file edits are already
 		// pinned (RootArgs). This is what stops a child *command* writing
@@ -911,7 +915,28 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 			return err == nil
 		},
 	})
+	// The session's own gate takes a slot from the same throttle, so the
+	// person's run and a child's never load the machine at once.
+	if session.gateRunner != nil {
+		session.gateRunner.Slot = sup.CheckSlot
+	}
 	return sup
+}
+
+// gateCommands answers the command lines the project's trusted quality config
+// declares as checks, read fresh at each command the way a run reads it; nil
+// where the checkout has no runner, which an untrusted one never does.
+func gateCommands(r *quality.Runner) func() []string {
+	if r == nil {
+		return nil
+	}
+	return func() []string {
+		cfg, err := quality.LoadConfig(r.Workspace)
+		if err != nil {
+			return nil
+		}
+		return cfg.Commands()
+	}
 }
 
 // sessionUntracked lists the files the session itself created that git does
@@ -1056,7 +1081,10 @@ func profileEnv(def config.AgentDefinition, spec subagent.Spec, info shell.Info,
 	// See docs/capabilities/subagents.md#a-profile-that-changes-nothing-can-still-run-the-checks.
 	if gate != nil && !def.Writes() && def.Allows(config.QualityGateTool) {
 		defs = append(defs, quality.ToolDefinition())
-		base = gate.WrapExecutor(base)
+		// Holding, because the supervisor takes the child's check slot in
+		// front of this call and draws the wait on its lane; the runner
+		// taking a second one behind it would wait on itself.
+		base = gate.WrapExecutorHolding(base)
 	}
 	return func(names []string) string { return profilePrompt(def, spec, info, extra, names) }, defs, base
 }
@@ -1154,6 +1182,11 @@ func childCommandRunnerUnbounded(cfg config.Config, dir string, sc *scope.Scope)
 				}
 				p.Workspace = dir
 				p.Cwd = dir
+				// The session's build cache, the one its gate's checks use:
+				// five writers in five copies of the tree compile the
+				// standard library once between them rather than five times.
+				// See docs/capabilities/subagents.md#what-they-share.
+				p.PrivateGoCache = true
 				argv, wErr := sandbox.Wrap(avail, p, command)
 				if wErr != nil {
 					return runner.WrapFailure(dir, wErr)
