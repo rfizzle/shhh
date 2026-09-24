@@ -2859,6 +2859,17 @@ func (s *Supervisor) restart(c *child, detail string) error {
 	if s.ctx.Err() != nil {
 		return ErrClosed
 	}
+	// A retry comes back minutes later, and a writer spawned in between may
+	// hold the files this one claims. It is asked the question a spawn is
+	// asked, before it takes a slot or a copy of the tree: refused naming
+	// the writer, or — where the spawn asked to wait for a claim — queued
+	// behind it by run, as the first attempt would have been.
+	// See docs/capabilities/subagents.md#a-failed-child-can-be-run-again.
+	if c.profile.Writes && !c.waitClaim {
+		if holder, claim, clash := s.claimAround(c); clash {
+			return fmt.Errorf("cannot set up the retry: %s now holds %s, which overlaps this agent's paths; wait for it with agent_report, then retry", holder, claim)
+		}
+	}
 	// Read before anything is replaced: the handoff a child stopped by its
 	// budget was asked for is sitting in the report field this attempt is
 	// about to clear, and every retry that did not carry it threw away the
@@ -2935,6 +2946,9 @@ func (s *Supervisor) restart(c *child, detail string) error {
 	c.maxRounds = maxRounds
 	c.done = make(chan struct{})
 	c.state, c.detail = StateQueued, "queued · retry"
+	// Whom the replaced attempt waited behind is that attempt's; this one
+	// asks again, and its lane names whoever it finds.
+	c.waitsOn = ""
 	c.started, c.ended = time.Now(), time.Time{}
 	c.maxTokens = budget
 	// The attempt is told what the one before it hit and handed over. A
@@ -3713,23 +3727,49 @@ func (s *Supervisor) claimConflict(paths []string) (holder, claim string, confli
 // the one a lane saying whom it waits behind should name. A seq of zero
 // counts every live writer and names the earliest.
 func (s *Supervisor) claimAhead(paths []string, seq int) (holder, claim string, conflict bool) {
+	return s.claimHeld(paths, seq > 0, func(k *child, _ Status) bool { return seq == 0 || k.seq < seq })
+}
+
+// claimAround is the claim a retried writer meets. Spawn order does not
+// bound it: a retry comes back after writers spawned since may have taken
+// its files, so every live writer but itself counts — except one spawned
+// after it that is itself queued behind a claim, which will queue behind
+// this one in turn (claimAhead counts the retried writer as ahead of it), so
+// the two never wait on each other.
+func (s *Supervisor) claimAround(c *child) (holder, claim string, conflict bool) {
+	return s.claimHeld(c.paths, false, func(k *child, st Status) bool {
+		return k != c && (k.seq < c.seq || st.WaitsOn == "")
+	})
+}
+
+// claimInWay is the claim a writer queued with wait_for_claim waits behind:
+// the writers spawned ahead of it on its first attempt, every live one on a
+// retry.
+func (s *Supervisor) claimInWay(c *child) (holder, claim string, conflict bool) {
+	c.mu.Lock()
+	retried := c.attempt > 1
+	c.mu.Unlock()
+	if retried {
+		return s.claimAround(c)
+	}
+	return s.claimAhead(c.paths, c.seq)
+}
+
+// claimHeld is the one walk of the live writers' claims: the first that
+// counts and overlaps paths, in spawn order, or nearest first.
+func (s *Supervisor) claimHeld(paths []string, nearest bool, counts func(*child, Status) bool) (holder, claim string, conflict bool) {
 	if len(paths) == 0 {
 		return "", "", false
 	}
 	s.mu.Lock()
-	kids := make([]*child, 0, len(s.children))
-	for _, c := range s.children {
-		if seq == 0 || c.seq < seq {
-			kids = append(kids, c)
-		}
-	}
+	kids := slices.Clone(s.children)
 	s.mu.Unlock()
-	if seq > 0 {
+	if nearest {
 		slices.Reverse(kids)
 	}
 	for _, c := range kids {
 		st := c.status()
-		if !c.profile.Writes || len(st.Paths) == 0 {
+		if !c.profile.Writes || len(st.Paths) == 0 || !counts(c, st) {
 			continue
 		}
 		// A killed child holds its claim until its goroutine notices the
@@ -3783,7 +3823,7 @@ func (s *Supervisor) awaitClaim(ctx context.Context, c *child) bool {
 		s.mu.Lock()
 		freed := s.claimsFreed
 		s.mu.Unlock()
-		holder, _, clash := s.claimAhead(c.paths, c.seq)
+		holder, _, clash := s.claimInWay(c)
 		c.mu.Lock()
 		moved := c.waitsOn != holder
 		c.waitsOn = holder

@@ -1153,6 +1153,15 @@ still letting go. The wait is bounded, because a teardown that never finishes
 must not leave a child queued behind it forever; past the bound the child is
 failed again, with the same offer still standing.
 
+A writer's retry is asked the question its spawn was asked. It comes back
+minutes later, and a writer spawned in the meantime may now hold the files it
+claims; two live writers over one file is what refusing an overlapping spawn
+exists to prevent, and a retry is not a way round it. So the retry is refused
+naming the writer in its way, or — where the spawn asked to wait for a claim —
+queued behind that writer as the first attempt would have been, holding no
+slot and no copy of the tree until the claim is released
+([a writer starts from your tree](#a-writer-starts-from-your-tree)).
+
 Which of the two a caller wants follows from how the child ended. A failed
 child is retried: its conversation is what failed, so the second attempt
 starts a new one and does not accept a steer. A finished child is sent a
