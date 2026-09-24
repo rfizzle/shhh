@@ -311,6 +311,24 @@ func TestFanoutHeaderCountsTheParksAsTheyLand(t *testing.T) {
 	}
 }
 
+// A child parked in front of its own check is waiting for a check slot, not
+// held: nobody parked it, so the header counts it apart from a park.
+func TestFanoutHeaderCountsASlotWaitAsWaiting(t *testing.T) {
+	block := FanoutBlock{Lanes: []FanoutLane{
+		{State: FanoutHeld, Name: "a", SlotWait: 2}, {State: FanoutHeld, Name: "b", SlotWait: 2},
+		{State: FanoutRunning, Name: "c"},
+	}}
+	header := plainLines(block.View(110))[0]
+	if !strings.Contains(header, "2 waiting · 1 running") || strings.Contains(header, "held") {
+		t.Fatalf("a slot wait should be counted as waiting, not held: %q", header)
+	}
+	block.Lanes[2] = FanoutLane{State: FanoutHeld, Name: "c"}
+	header = plainLines(block.View(110))[0]
+	if !strings.Contains(header, "1 held · 2 waiting") {
+		t.Fatalf("a park and a slot wait should be counted apart, the park first: %q", header)
+	}
+}
+
 // A child the machinery has had to steer says so under its lane, where the
 // seed line goes and where nothing has to give way for it — the right-hand
 // field is what the child's name is clipped for, and a name clipped to an

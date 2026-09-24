@@ -79,7 +79,7 @@
    ◇ agent   writer-3 · docs/loop.md                                                                 queued behind writer-2    31s
 
 · writers taking turns at the check slots · two run their tests, two hold for a slot
-◇ fan-out    4 agents                                                                                    2 held · 2 running  1m12s
+◇ fan-out    4 agents                                                                                 2 waiting · 2 running  1m12s
    ◇ agent   writer-1 · internal/agent/loop.go                                                  ⠹ working · 9 tools · $0.03  1m12s
    ◇ agent   writer-2 · internal/agent/round.go                                                 ⠹ working · 7 tools · $0.02  1m10s
    ◇ agent   writer-3 · docs/loop.md                                                            ⏸ waiting · 5 tools · $0.02  1m08s
@@ -157,7 +157,7 @@
    ␛[38;5;244m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mwriter-3␛[m␛[38;5;244m · docs/loop.md␛[m                                                                 ␛[38;5;244mqueued behind writer-2␛[m    ␛[38;5;244m31s␛[m
 
 · writers taking turns at the check slots · two run their tests, two hold for a slot
-␛[38;5;254m◇␛[m ␛[38;5;254mfan-out␛[m    ␛[38;5;244m4 agents␛[m                                                                                    ␛[38;5;244m2 held␛[m␛[38;5;244m · ␛[m␛[38;5;254m2 running␛[m  ␛[38;5;244m1m12s␛[m
+␛[38;5;254m◇␛[m ␛[38;5;254mfan-out␛[m    ␛[38;5;244m4 agents␛[m                                                                                 ␛[38;5;244m2 waiting␛[m␛[38;5;244m · ␛[m␛[38;5;254m2 running␛[m  ␛[38;5;244m1m12s␛[m
    ␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mwriter-1␛[m␛[38;5;244m · internal/agent/loop.go␛[m                                                  ␛[38;5;254m⠹ working␛[m␛[38;5;244m · ␛[m␛[38;5;244m9 tools · $0.03␛[m  ␛[38;5;244m1m12s␛[m
    ␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mwriter-2␛[m␛[38;5;244m · internal/agent/round.go␛[m                                                 ␛[38;5;254m⠹ working␛[m␛[38;5;244m · ␛[m␛[38;5;244m7 tools · $0.02␛[m  ␛[38;5;244m1m10s␛[m
    ␛[38;5;244m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mwriter-3␛[m␛[38;5;244m · docs/loop.md␛[m                                                            ␛[38;5;244m⏸ waiting␛[m␛[38;5;244m · ␛[m␛[38;5;244m5 tools · $0.02␛[m  ␛[38;5;244m1m08s␛[m

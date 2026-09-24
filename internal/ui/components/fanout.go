@@ -922,14 +922,27 @@ func tallyStates(states []FanoutState) (running, blocked, held, done, failed int
 // where all three are true it is the two the reader is acting on. The
 // artboards state it running-first and in dim
 // (docs/interface/departures.md#the-childrens-tally-says-who-needs-you-first).
-func stateTally(states []FanoutState) string {
+func stateTally(states []FanoutState) string { return waitingTally(states, 0) }
+
+// waitingTally is stateTally with slotWaits of the held children counted as
+// waiting instead. A child parked in front of a check it asked to run is
+// waiting for one of the session's check slots and nobody parked it, so
+// calling it held would say the reader stopped children they never touched.
+// It is said after the held clause and in the same dim, since it too is a
+// child stopped at its boundary, and the lane under it says what it waits for.
+func waitingTally(states []FanoutState, slotWaits int) string {
 	running, blocked, held, done, failed := tallyStates(states)
+	waiting := min(slotWaits, held)
+	held -= waiting
 	var parts []string
 	if blocked > 0 {
 		parts = append(parts, sty.Err.Render(fmt.Sprintf("%d needs you", blocked)))
 	}
 	if held > 0 {
 		parts = append(parts, sty.Dim.Render(fmt.Sprintf("%d held", held)))
+	}
+	if waiting > 0 {
+		parts = append(parts, sty.Dim.Render(fmt.Sprintf("%d waiting", waiting)))
 	}
 	if running > 0 {
 		parts = append(parts, sty.SpinText.Render(fmt.Sprintf("%d running", running)))
@@ -968,7 +981,18 @@ func (b FanoutBlock) counts() (running, blocked, held, done, failed int) {
 }
 
 // headerOutcome states what the batch still owes you.
-func (b FanoutBlock) headerOutcome() string { return stateTally(b.states()) }
+func (b FanoutBlock) headerOutcome() string { return waitingTally(b.states(), b.slotWaits()) }
+
+// slotWaits counts the held lanes whose hold is a wait for a check slot.
+func (b FanoutBlock) slotWaits() int {
+	n := 0
+	for _, l := range b.Lanes {
+		if l.State == FanoutHeld && l.SlotWait > 0 {
+			n++
+		}
+	}
+	return n
+}
 
 // View renders the block at the given width: the header, then every lane in
 // sort order, then the offers a blocked lane makes.
