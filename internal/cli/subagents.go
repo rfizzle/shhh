@@ -914,6 +914,12 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 			}
 			return db.LoadChildHandoff(handle)
 		},
+		SettleHandoff: func(handle string, content []byte) error {
+			if db == nil {
+				return nil
+			}
+			return db.UpdateChildHandoff(handle, content)
+		},
 		EvidenceExists: func(handle string) bool {
 			if red == nil || red.Store() == nil {
 				return false

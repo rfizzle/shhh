@@ -33,3 +33,27 @@ func (db *DB) LoadChildHandoff(handle string) ([]byte, error) {
 	}
 	return content, nil
 }
+
+// UpdateChildHandoff replaces a stored handoff's content under the handle it
+// already has, so a record that no longer describes the work — its kept patch
+// has since landed — is corrected where every holder of the handle reads it
+// rather than superseded by a second handle nobody was given. A handle that
+// names nothing is refused.
+func (db *DB) UpdateChildHandoff(handle string, content []byte) error {
+	var rows int64
+	err := retryBusy(func() error {
+		res, err := db.sql.Exec(`UPDATE child_handoffs SET content = ? WHERE handle = ?`, content, handle)
+		if err != nil {
+			return err
+		}
+		rows, err = res.RowsAffected()
+		return err
+	})
+	if err != nil {
+		return fmt.Errorf("update child handoff: %w", err)
+	}
+	if rows == 0 {
+		return fmt.Errorf("update child handoff: no handoff %q", handle)
+	}
+	return nil
+}

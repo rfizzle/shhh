@@ -1173,7 +1173,12 @@ The handoff names that handle rather than carrying the patch a second time, and
 the patch stays outside the replacement instruction: a valid handle is all a
 replacement can receive. Retrying the writer is asking for the work again, so
 the attempt it replaces stops offering its patch; the handle stays in the
-store. A reader has no copy or patch to preserve. In every case the failed
+store. Once the kept patch lands — from its row's card, as a clean merge
+through that card, or through an integration writer — the handoff is
+rewritten under the same handle: it no longer names the patch, and the paths
+the writer changed are marked as applied, so a replacement resumed from it is
+told that work is already done rather than handed it again. A reader has no
+copy or patch to preserve. In every case the failed
 child has released its concurrent slot before the failure is reported, so kept
 work never blocks the fan-out.
 

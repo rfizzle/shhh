@@ -53,6 +53,11 @@ type Handoff struct {
 	Progress          []string       `json:"progress,omitempty"`
 	Evidence          []string       `json:"evidence,omitempty"`
 	PatchEvidence     string         `json:"patch_evidence,omitempty"`
+	// Landed says WrittenPaths have since reached the parent's workspace:
+	// the kept patch was applied from the row, whichever way it landed, and
+	// PatchEvidence was cleared with it so no replacement is offered the
+	// same work as outstanding.
+	Landed bool `json:"landed,omitempty"`
 }
 
 // HandoffTokens keeps the phase accounting independent of the observability
@@ -199,6 +204,34 @@ func (s *Supervisor) persistHandoff(c *child, reason, detail string, lastRound i
 	c.mu.Unlock()
 }
 
+// settleHandoff rewrites the child's handoff once the kept patch it names has
+// landed, under the handle it already has: the patch's handle is cleared and
+// the written paths are marked landed, so a resume from that handle reads the
+// work as done instead of offering it as outstanding. It is called from every
+// way a kept patch lands — the row's card, a clean re-merge through the same
+// card, an integration writer's landing — and never on a decline, which
+// leaves the patch kept and the record as it was.
+// See docs/capabilities/subagents.md#a-failed-child-leaves-a-handoff.
+func (s *Supervisor) settleHandoff(c *child, k *keptPatch) {
+	c.mu.Lock()
+	h := c.handoff
+	// Only the record written beside this patch: a handoff a retry cleared,
+	// or one naming another patch, is not this landing's to settle.
+	if h.Task == "" || h.Landed || h.PatchEvidence != k.id {
+		c.mu.Unlock()
+		return
+	}
+	h.PatchEvidence, h.Landed = "", true
+	c.handoff = h
+	c.mu.Unlock()
+	if h.Handle == "" || s.opts.SettleHandoff == nil {
+		return
+	}
+	if data, err := MarshalHandoff(h); err == nil {
+		_ = s.opts.SettleHandoff(h.Handle, data)
+	}
+}
+
 func resumePrologue(h Handoff, validEvidence func(string) bool) string {
 	evidence := make([]string, 0, len(h.Evidence)+1)
 	for _, id := range h.Evidence {
@@ -222,7 +255,9 @@ func resumePrologue(h Handoff, validEvidence func(string) bool) string {
 	if len(h.ReadPaths) > 0 {
 		b.WriteString("Already read: " + strings.Join(h.ReadPaths, ", ") + ".\n")
 	}
-	if len(h.WrittenPaths) > 0 {
+	if len(h.WrittenPaths) > 0 && h.Landed {
+		b.WriteString("Changed by it and since applied to the workspace, so already done: " + strings.Join(h.WrittenPaths, ", ") + ".\n")
+	} else if len(h.WrittenPaths) > 0 {
 		b.WriteString("Changed in its isolated workspace: " + strings.Join(h.WrittenPaths, ", ") + ".\n")
 	}
 	if len(h.Progress) > 0 {

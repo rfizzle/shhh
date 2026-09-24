@@ -309,6 +309,144 @@ func TestAKilledWriterKeepsItsPatchAndTheHandoffNamesIt(t *testing.T) {
 	}
 }
 
+// handoffStore stands in for the session's durable handoff table: a record
+// saved under a handle, read back by it, and rewritten under the same one.
+type handoffStore struct {
+	mu      sync.Mutex
+	records map[string][]byte
+}
+
+func (h *handoffStore) save(content []byte) (string, error) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	handle := fmt.Sprintf("handoff-%d", len(h.records)+1)
+	h.records[handle] = append([]byte(nil), content...)
+	return handle, nil
+}
+
+func (h *handoffStore) load(handle string) ([]byte, error) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	data, ok := h.records[handle]
+	if !ok {
+		return nil, fmt.Errorf("no handoff %q", handle)
+	}
+	return data, nil
+}
+
+func (h *handoffStore) update(handle string, content []byte) error {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	if _, ok := h.records[handle]; !ok {
+		return fmt.Errorf("no handoff %q", handle)
+	}
+	h.records[handle] = append([]byte(nil), content...)
+	return nil
+}
+
+func (h *handoffStore) read(t *testing.T, handle string) Handoff {
+	t.Helper()
+	data, err := h.load(handle)
+	if err != nil {
+		t.Fatal(err)
+	}
+	out, err := UnmarshalHandoff(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return out
+}
+
+// A killed writer's handoff names its kept patch as outstanding work. Once
+// that patch is applied from the row the record is rewritten under the same
+// handle, so a resume from it reads the work as done rather than being handed
+// the patch to do again; a declined review changes nothing.
+// See docs/capabilities/subagents.md#a-failed-child-leaves-a-handoff.
+func TestAnAppliedKeptPatchSettlesTheHandoff(t *testing.T) {
+	repo := initTestRepo(t)
+	ctx, cancel := context.WithCancel(context.Background())
+	store := &handoffStore{records: map[string][]byte{}}
+	w := &keptWriter{writing: make(chan struct{})}
+	sup := New(ctx, Options{
+		Root: repo, NewEnv: w.factory(),
+		Record:        func(Spec, string) Recorder { return Recorder{Handoff: store.save} },
+		LoadHandoff:   store.load,
+		SettleHandoff: store.update,
+	})
+	t.Cleanup(sup.Close)
+	t.Cleanup(cancel)
+	go func() {
+		for {
+			select {
+			case <-sup.Events():
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+
+	if _, err := spawnRaw(sup, `{"role":"writer","task":"add kept.go"}`); err != nil {
+		t.Fatal(err)
+	}
+	select {
+	case <-w.writing:
+	case <-time.After(5 * time.Second):
+		t.Fatal("the writer never reached its second round")
+	}
+	if err := sup.Kill("writer-1"); err != nil {
+		t.Fatal(err)
+	}
+	waitState(t, sup, "writer-1", StateFailed)
+	handle := statusOf(t, sup, "writer-1").Handoff
+	if handle == "" {
+		t.Fatal("the killed writer left no handoff")
+	}
+	if h := store.read(t, handle); h.PatchEvidence != "ev-0000000000000001" || h.Landed {
+		t.Fatalf("the stored handoff should name the kept patch as outstanding, got %+v", h)
+	}
+
+	ask, err := sup.ReviewKept("writer-1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	ask.Respond(false)
+	deadline := time.Now().Add(5 * time.Second)
+	for {
+		if next, err := sup.ReviewKept("writer-1"); err == nil && next != ask {
+			ask = next
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("a declined review took the kept patch with it")
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	if h := store.read(t, handle); h.PatchEvidence != "ev-0000000000000001" || h.Landed {
+		t.Fatalf("a declined review should leave the handoff as it was, got %+v", h)
+	}
+
+	ask.Respond(true)
+	deadline = time.Now().Add(5 * time.Second)
+	var h Handoff
+	for {
+		if h = store.read(t, handle); h.Landed {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("the applied patch left the handoff unsettled: %+v", h)
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	if h.PatchEvidence != "" || !slices.Contains(h.WrittenPaths, "kept.go") {
+		t.Fatalf("the settled handoff should name no patch and keep what was written, got %+v", h)
+	}
+	prologue := resumePrologue(h, nil)
+	if strings.Contains(prologue, "ev-0000000000000001") || strings.Contains(prologue, "isolated workspace") ||
+		!strings.Contains(prologue, "already done: kept.go") {
+		t.Fatalf("a resume should read the landed work as done:\n%s", prologue)
+	}
+}
+
 func TestResumePrologueDropsMissingEvidence(t *testing.T) {
 	h := Handoff{Failure: HandoffFailure{Category: "provider"}, Evidence: []string{"ev-1234567890abcdef"}}
 	got := resumePrologue(h, func(string) bool { return false })

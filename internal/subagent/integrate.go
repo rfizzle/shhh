@@ -451,6 +451,7 @@ func (s *Supervisor) integrationLanded(c *child) {
 	}
 	src.mu.Unlock()
 	if spent {
+		s.settleHandoff(src, in.kept)
 		src.appendEntry(TranscriptEntry{Kind: EntrySystem, Text: note})
 		s.emitUpdate(src)
 	}
