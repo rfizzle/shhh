@@ -606,11 +606,40 @@ func (c *ApprovalCard) spawnBody(inner int) []string {
 			}
 			continue
 		}
-		if s.Touches != "" {
-			rows = append(rows, sty.Dimmer.Render(spawnRowIndent+s.Touches))
+		for _, line := range spawnScopeLines(s.Touches, inner) {
+			rows = append(rows, sty.Dimmer.Render(line))
 		}
 	}
 	return rows
+}
+
+// spawnScopeLines lays a child's scope under its row, breaking between
+// clauses where the whole line would run past the frame. The scope's last
+// clause is the one that names a sibling sharing the claim, which is the
+// part a clip would cut first, so a narrow card puts it on a line of its own
+// rather than leaving it to a pan nobody knows to make. A single clause wider
+// than the frame is still panned, as every other row is.
+func spawnScopeLines(scope string, inner int) []string {
+	if scope == "" {
+		return nil
+	}
+	if lipgloss.Width(spawnRowIndent+scope) <= inner {
+		return []string{spawnRowIndent + scope}
+	}
+	var lines []string
+	line := ""
+	for _, clause := range strings.Split(scope, detailSep) {
+		switch {
+		case line == "":
+			line = spawnRowIndent + clause
+		case lipgloss.Width(line+detailSep+clause) <= inner:
+			line += detailSep + clause
+		default:
+			lines = append(lines, line)
+			line = spawnRowIndent + clause
+		}
+	}
+	return append(lines, line)
 }
 
 // buildRows lays the card out as its two halves: the body — the act,

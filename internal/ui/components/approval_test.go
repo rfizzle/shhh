@@ -796,3 +796,21 @@ func TestApprovalCard_HeldOnArrivalOffersOnlyItsTwoKeys(t *testing.T) {
 		}
 	}
 }
+
+// TestSpawnScopeLines_BreakBetweenClauses: a scope that fits stays one line,
+// and one that does not breaks between clauses, so the last clause — the
+// sibling a shared claim names — is on screen rather than past a clip.
+func TestSpawnScopeLines_BreakBetweenClauses(t *testing.T) {
+	scope := "its own worktree · claims a/loop.go · shares a/loop.go with writer-1"
+	if got := spawnScopeLines(scope, 80); len(got) != 1 || got[0] != "  "+scope {
+		t.Fatalf("a scope that fits is one line: %q", got)
+	}
+	got := spawnScopeLines(scope, 40)
+	want := []string{"  its own worktree · claims a/loop.go", "  shares a/loop.go with writer-1"}
+	if strings.Join(got, "\n") != strings.Join(want, "\n") {
+		t.Fatalf("a narrow scope breaks between clauses:\ngot  %q\nwant %q", got, want)
+	}
+	if got := spawnScopeLines("", 40); got != nil {
+		t.Fatalf("no scope is no line: %q", got)
+	}
+}

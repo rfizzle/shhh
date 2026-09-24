@@ -13,9 +13,11 @@
 · two writers · the second shares the first's claim
 ╭─ Spawn 2 writers ───────────────────────── ⚠ medium ─╮
 │ ◇ writer-1 · add the flag                            │
-│   its own worktree · claims internal/agent/loop.go … │
+│   its own worktree · claims internal/agent/loop.go   │
+│   overlap allowed                                    │
 │ ◇ writer-2 · read the flag                           │
-│   its own worktree · claims internal/agent/loop.go … │
+│   its own worktree · claims internal/agent/loop.go   │
+│   shares internal/agent/loop.go with writer-1        │
 │ ⚠ medium · each child's touches open                 │
 │                                                      │
 │ budget    no round limit, ~1200k new tokens          │
@@ -30,9 +32,11 @@
 · two writers · the second shares the first's claim
 ␛[38;5;214m╭─ ␛[m␛[1;97mSpawn 2 writers ␛[m␛[38;5;241m─────────────────────────␛[m␛[38;5;214m ⚠ medium ─╮␛[m
 ␛[38;5;214m│␛[m ␛[38;5;214m◇␛[m ␛[97mwriter-1␛[m␛[38;5;241m · ␛[m␛[38;5;252madd the flag␛[m                            ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;245m  its own worktree · claims internal/agent/loop.go ␛[m␛[38;5;241m…␛[m ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;245m  its own worktree · claims internal/agent/loop.go␛[m   ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;245m  overlap allowed␛[m                                    ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;214m◇␛[m ␛[97mwriter-2␛[m␛[38;5;241m · ␛[m␛[38;5;252mread the flag␛[m                           ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;245m  its own worktree · claims internal/agent/loop.go ␛[m␛[38;5;241m…␛[m ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;245m  its own worktree · claims internal/agent/loop.go␛[m   ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;245m  shares internal/agent/loop.go with writer-1␛[m        ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;214m⚠ medium␛[m␛[38;5;241m · each child's touches open␛[m                 ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m                                                      ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mbudget    ␛[m␛[38;5;252mno round limit, ~1200k new tokens␛[m          ␛[38;5;214m│␛[m

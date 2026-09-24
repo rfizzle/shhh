@@ -15,7 +15,8 @@
 │ ◇ writer-1 · add the flag                                                │
 │   its own worktree · claims internal/agent/loop.go · overlap allowed     │
 │ ◇ writer-2 · read the flag                                               │
-│   its own worktree · claims internal/agent/loop.go · shares internal/ag… │
+│   its own worktree · claims internal/agent/loop.go                       │
+│   shares internal/agent/loop.go with writer-1                            │
 │ ⚠ medium · each child's touches open                                     │
 │                                                                          │
 │ budget    no round limit, ~1200k new tokens                              │
@@ -31,7 +32,8 @@
 ␛[38;5;254m│␛[m ␛[38;5;254m◇␛[m ␛[38;5;254mwriter-1␛[m␛[38;5;244m · ␛[m␛[38;5;254madd the flag␛[m                                                ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m  its own worktree · claims internal/agent/loop.go · overlap allowed␛[m     ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m◇␛[m ␛[38;5;254mwriter-2␛[m␛[38;5;244m · ␛[m␛[38;5;254mread the flag␛[m                                               ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244m  its own worktree · claims internal/agent/loop.go · shares internal/ag␛[m␛[38;5;244m…␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244m  its own worktree · claims internal/agent/loop.go␛[m                       ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244m  shares internal/agent/loop.go with writer-1␛[m                            ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m⚠ medium␛[m␛[38;5;244m · each child's touches open␛[m                                     ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m                                                                          ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mbudget    ␛[m␛[38;5;254mno round limit, ~1200k new tokens␛[m                              ␛[38;5;254m│␛[m
