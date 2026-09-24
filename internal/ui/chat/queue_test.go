@@ -22,6 +22,7 @@ import (
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/golden"
 )
 
 // keyA presses the batch key.
@@ -860,4 +861,47 @@ func TestBatchOrder_ALateRowStaysInsideItsOwnRound(t *testing.T) {
 	if got := batchTargets(m); !slices.Equal(got, want) {
 		t.Fatalf("a late row goes back only among its own round's rows, wanted %v, got %v", want, got)
 	}
+}
+
+// TestSpawnCard_ASiblingSharingAClaimIsNamed: two writers in one round that
+// both allow overlap on one file are read against each other, so the later
+// row names whose claim it shares — the name a live writer's row would get —
+// while the first keeps its own wording, and a writer that did not allow
+// overlap is named by nobody.
+func TestSpawnCard_ASiblingSharingAClaimIsNamed(t *testing.T) {
+	m := spawnModel(t,
+		spawnCall("s1", `{"role":"writer","task":"add the flag","name":"writer-1","paths":["internal/agent/loop.go"],"overlap":"allowed"}`),
+		spawnCall("s2", `{"role":"writer","task":"read the flag","name":"writer-2","paths":["internal/agent/loop.go"],"overlap":"allowed"}`),
+		spawnCall("s3", `{"role":"writer","task":"log the flag","name":"writer-3","paths":["internal/agent/**"]}`),
+	)
+	rows := m.approvalCard().Spawns
+	if len(rows) != 3 {
+		t.Fatalf("three writers asked for together are one card of three rows: %+v", rows)
+	}
+	want := []string{
+		"its own worktree · claims internal/agent/loop.go · overlap allowed",
+		"its own worktree · claims internal/agent/loop.go · shares internal/agent/loop.go with writer-1",
+		"its own worktree · claims internal/agent/**",
+	}
+	for i, w := range want {
+		if rows[i].Touches != w {
+			t.Errorf("row %d touches = %q, want %q", i+1, rows[i].Touches, w)
+		}
+	}
+}
+
+// TestGolden_SpawnCardSharedClaim captures a batch card whose second writer
+// shares the first one's file, through the session's own path to the card.
+func TestGolden_SpawnCardSharedClaim(t *testing.T) {
+	captureGolden(t, "spawn-card", "a batch whose writers share a file", goldenWidths, func(width int) []golden.Panel {
+		m := spawnModel(t,
+			spawnCall("s1", `{"role":"writer","task":"add the flag","name":"writer-1","paths":["internal/agent/loop.go"],"overlap":"allowed"}`),
+			spawnCall("s2", `{"role":"writer","task":"read the flag","name":"writer-2","paths":["internal/agent/loop.go"],"overlap":"allowed"}`),
+		)
+		updated, _ := m.Update(tea.WindowSizeMsg{Width: width, Height: 48})
+		m = updated.(Model)
+		return []golden.Panel{
+			{Label: "two writers · the second shares the first's claim", View: strings.Join(m.confirmLines(), "\n")},
+		}
+	})
 }

@@ -20,8 +20,9 @@ snap 01-start "Some things worth doing first"
 # a card of its own: the cards this scene reads are the patches.
 keys BTab
 keys "change the loop's condition two ways" Enter
-# One card with a row per writer, each claiming loop.go with overlap allowed.
-snap 02-spawn-card "Spawn 2 writers" "overlap allowed"
+# One card with a row per writer, each claiming loop.go with overlap allowed;
+# the second row names the first as the writer whose claim it shares.
+snap 02-spawn-card "Spawn 2 writers" "overlap allowed" "shares loop.go with writer-1"
 keys y
 snap 03-lanes "2 agents"
 # writer-1's patch is the first card, routed to this session. Taking it

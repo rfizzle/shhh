@@ -24,6 +24,7 @@ package chat
 // the edits would change, and View runs on every frame.
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"path/filepath"
@@ -38,6 +39,7 @@ import (
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/radius"
+	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
@@ -348,15 +350,70 @@ func (m Model) resolveSpawns(cur *approvalRequest, batch []string) []components.
 		marked[id] = true
 	}
 	rows := []components.SpawnRow{*cur.spawn}
+	calls := []provider.ToolCall{cur.call}
 	for _, tc := range m.agent.PendingApprovals() {
 		if !marked[tc.ID] {
 			continue
 		}
 		if req := m.previewQueued(tc); req.spawn != nil {
 			rows = append(rows, *req.spawn)
+			calls = append(calls, tc)
 		}
 	}
+	nameSharedSiblings(rows, calls)
 	return rows
+}
+
+// overlapAllowedScope is the clause a writer's scope ends on when its call
+// allows overlap and nobody has been named as sharing its claim.
+const overlapAllowedScope = " · overlap allowed"
+
+// nameSharedSiblings reads a batch's rows against each other: a later writer
+// that allows overlap and claims a path an earlier one in the same batch
+// claims, that allowed it too, says whose claim it shares — what the session
+// says of a live writer, which in a batch has nobody running to name yet. The
+// first row of the pair keeps its wording, since the sharing is stated once,
+// on the row that joins the claim. A row a live writer already named keeps
+// that name, and a sibling the call left unnamed is not named for it: the
+// supervisor has not chosen its name yet.
+// See docs/capabilities/subagents.md#spawning-is-a-decision.
+func nameSharedSiblings(rows []components.SpawnRow, calls []provider.ToolCall) {
+	type claim struct {
+		name  string
+		paths []string
+	}
+	var earlier []claim
+	for i := range rows {
+		if !rows[i].Writer {
+			continue
+		}
+		var args struct {
+			Name    string   `json:"name"`
+			Paths   []string `json:"paths"`
+			Overlap string   `json:"overlap"`
+		}
+		if json.Unmarshal([]byte(calls[i].Arguments), &args) != nil || args.Overlap != subagent.OverlapAllowed {
+			continue
+		}
+		paths := make([]string, 0, len(args.Paths))
+		for _, p := range args.Paths {
+			if p = strings.TrimSpace(p); p != "" {
+				paths = append(paths, filepath.ToSlash(p))
+			}
+		}
+		if strings.HasSuffix(rows[i].Touches, overlapAllowedScope) {
+			for _, e := range earlier {
+				if held, ok := subagent.ClaimOverlap(paths, e.paths); ok {
+					rows[i].Touches = strings.TrimSuffix(rows[i].Touches, overlapAllowedScope) +
+						" · shares " + held + " with " + e.name
+					break
+				}
+			}
+		}
+		if args.Name != "" {
+			earlier = append(earlier, claim{name: args.Name, paths: paths})
+		}
+	}
 }
 
 // batchCategory is the class a session grant ([a]) would cover, which is
