@@ -53,6 +53,8 @@
     ▰▰▰▱▱ step 2 of 3 · go test ./...         
   ◇ writer-1                             $0.02
     ⠋ docs/loop.md · 4 tools                  
+  ✗ writer-3                     killed  $0.03
+    cancelled · patch kept · handoff kept     
   alt+a manager · alt+] next · click to attach
 
   TOOLS                              2 of 3 up
@@ -216,11 +218,11 @@
   ⚠ reviewer-3                           $0.02
     waiting approval: apply patch             
   ◇ writer-1                             $0.09
-    ▰▰▰▱▱ 210k of 300k · docs/loop.md · 4 too…
+    ▰▰▰▱▱ 210k of 300k · docs/loop.md         
   ◇ runner-2                             $0.04
     ⠹ go test ./internal/agent/... · ⚠ off ta…
   ✗ writer-4                     failed  $0.07
-    token budget exceeded · handoff kept · [r…
+    token budget exceeded · handoff kept      
   └◇ reader-5                            $0.01
      ⠹ internal/agent/round.go · 3 tools      
   alt+a manager · alt+] next · click to attach
@@ -246,7 +248,7 @@
   ◇ writer-2                             $0.03
     ⠹ go test ./internal/ui · 7 tools         
   ◇ writer-3                    waiting  $0.02
-    waiting for a check slot (2 running) · 5 …
+    waiting for a check slot (2 running)      
   alt+a manager · alt+] next · click to attach
 
 · a writer on its own plan · three of seven steps and its budget's share
@@ -288,7 +290,7 @@
 ❯ ◇ orchestrator                         $0.21
     ⠹ round 6 · streaming…                    
   ✗ writer-1                     failed  $0.03
-    cancelled · patch kept · [p] review · 4 t…
+    cancelled · patch kept · handoff kept     
   ◇ writer-2                             $0.02
     ⠹ internal/agent/round.go · 3 tools       
   alt+a manager · alt+] next · click to attach
@@ -300,7 +302,7 @@
   ⚠ reviewer-3                           $0.02
     waiting approval: apply patch             
   ◇ writer-1                             $0.09
-    ▰▰▰▱▱ 210k of 300k · docs/loop.md · 4 too…
+    ▰▰▰▱▱ 210k of 300k · docs/loop.md         
   ◇ runner-2                             $0.04
     ⠹ go test ./internal/agent/... · ⚠ off ta…
   ✗ writer-4                     failed  $0.07
@@ -392,6 +394,8 @@
     ␛[94m▰▰▰␛[m␛[38;5;241m▱▱␛[m ␛[94mstep 2 of 3␛[m␛[38;5;245m · ␛[m␛[38;5;245mgo test ./...␛[m         
   ␛[94m◇␛[m ␛[38;5;252mwriter-1␛[m                             ␛[38;5;241m$0.02␛[m
     ␛[38;5;205m⠋ docs/loop.md␛[m␛[38;5;245m · ␛[m␛[38;5;245m4 tools␛[m                  
+  ␛[91m✗␛[m ␛[38;5;252mwriter-3␛[m                     ␛[91mkilled␛[m  ␛[38;5;241m$0.03␛[m
+    ␛[38;5;245mcancelled␛[m␛[38;5;245m · ␛[m␛[38;5;245mpatch kept␛[m␛[38;5;245m · ␛[m␛[38;5;245mhandoff kept␛[m     
   ␛[38;5;241malt+a manager · alt+] next · click to attach␛[m
 
   ␛[1;94mTOOLS␛[m                              ␛[38;5;241m2 of 3 up␛[m
@@ -555,11 +559,11 @@
   ␛[91m⚠␛[m ␛[38;5;252mreviewer-3␛[m                           ␛[38;5;241m$0.02␛[m
     ␛[38;5;245mwaiting approval: apply patch␛[m             
   ␛[94m◇␛[m ␛[38;5;252mwriter-1␛[m                             ␛[38;5;241m$0.09␛[m
-    ␛[94m▰▰▰␛[m␛[38;5;241m▱▱␛[m ␛[94m210k of 300k␛[m␛[38;5;245m · ␛[m␛[38;5;245mdocs/loop.md␛[m␛[38;5;245m · ␛[m␛[38;5;245m4 too…␛[m
+    ␛[94m▰▰▰␛[m␛[38;5;241m▱▱␛[m ␛[94m210k of 300k␛[m␛[38;5;245m · ␛[m␛[38;5;245mdocs/loop.md␛[m         
   ␛[94m◇␛[m ␛[38;5;252mrunner-2␛[m                             ␛[38;5;241m$0.04␛[m
-    ␛[38;5;205m⠹ go test ./internal/agent/...␛[m␛[38;5;245m · ␛[m␛[91m⚠ off ta…␛[m␛[38;5;245m␛[m␛[38;5;245m␛[m
+    ␛[38;5;205m⠹ go test ./internal/agent/...␛[m␛[38;5;245m · ␛[m␛[91m⚠ off ta…␛[m
   ␛[91m✗␛[m ␛[38;5;252mwriter-4␛[m                     ␛[91mfailed␛[m  ␛[38;5;241m$0.07␛[m
-    ␛[38;5;245mtoken budget exceeded␛[m␛[38;5;245m · ␛[m␛[38;5;245mhandoff kept␛[m␛[38;5;245m · ␛[m␛[38;5;241m[r…␛[m
+    ␛[38;5;245mtoken budget exceeded␛[m␛[38;5;245m · ␛[m␛[38;5;245mhandoff kept␛[m      
   ␛[38;5;245m└␛[m␛[94m◇␛[m ␛[38;5;252mreader-5␛[m                            ␛[38;5;241m$0.01␛[m
      ␛[38;5;205m⠹ internal/agent/round.go␛[m␛[38;5;245m · ␛[m␛[38;5;245m3 tools␛[m      
   ␛[38;5;241malt+a manager · alt+] next · click to attach␛[m
@@ -585,7 +589,7 @@
   ␛[94m◇␛[m ␛[38;5;252mwriter-2␛[m                             ␛[38;5;241m$0.03␛[m
     ␛[38;5;205m⠹ go test ./internal/ui␛[m␛[38;5;245m · ␛[m␛[38;5;245m7 tools␛[m         
   ␛[38;5;241m◇␛[m ␛[38;5;252mwriter-3␛[m                    ␛[38;5;241mwaiting␛[m  ␛[38;5;241m$0.02␛[m
-    ␛[38;5;245mwaiting for a check slot (2 running)␛[m␛[38;5;245m · ␛[m␛[38;5;245m5 …␛[m
+    ␛[38;5;245mwaiting for a check slot (2 running)␛[m      
   ␛[38;5;241malt+a manager · alt+] next · click to attach␛[m
 
 · a writer on its own plan · three of seven steps and its budget's share
@@ -593,9 +597,9 @@
 ␛[94m❯␛[m ␛[94m␛[m␛[38;5;252m␛[m␛[38;5;241m␛[m␛[48;5;62m␛[94m␛[m␛[48;5;62m␛[94m◇␛[m␛[48;5;62m ␛[38;5;252m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[97;48;5;62morchestrator                         $0.11␛[m␛[m
     ␛[38;5;205m⠹ round 6 · streaming…␛[m                    
   ␛[94m◇␛[m ␛[38;5;252mwriter-1␛[m                             ␛[38;5;241m$0.04␛[m
-    ␛[94m3 of 7 steps␛[m␛[38;5;245m · ␛[m␛[38;5;245m41% of budget␛[m␛[38;5;245m · ␛[m␛[38;5;245mdocs/loop.…␛[m␛[38;5;245m␛[m␛[38;5;245m␛[m
+    ␛[94m3 of 7 steps␛[m␛[38;5;245m · ␛[m␛[38;5;245m41% of budget␛[m␛[38;5;245m · ␛[m␛[38;5;245mdocs/loop.…␛[m
   ␛[94m◇␛[m ␛[38;5;252mwriter-2␛[m                             ␛[38;5;241m$0.02␛[m
-    ␛[94m▰␛[m␛[38;5;241m▱▱▱▱␛[m ␛[94mstep 1 of 4␛[m␛[38;5;245m · ␛[m␛[38;5;245minternal/agent/round.…␛[m␛[38;5;245m␛[m␛[38;5;245m␛[m
+    ␛[94m▰␛[m␛[38;5;241m▱▱▱▱␛[m ␛[94mstep 1 of 4␛[m␛[38;5;245m · ␛[m␛[38;5;245minternal/agent/round.…␛[m
   ␛[38;5;241malt+a manager · alt+] next · click to attach␛[m
 
 · a finished child taking a follow-up · running again, on the question
@@ -603,7 +607,7 @@
 ␛[94m❯␛[m ␛[94m␛[m␛[38;5;252m␛[m␛[38;5;241m␛[m␛[48;5;62m␛[94m␛[m␛[48;5;62m␛[94m◇␛[m␛[48;5;62m ␛[38;5;252m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[97;48;5;62morchestrator                         $0.09␛[m␛[m
     ␛[38;5;205m⠹ round 4 · streaming…␛[m                    
   ␛[94m◇␛[m ␛[38;5;252mreader-1␛[m                             ␛[38;5;241m$0.04␛[m
-    ␛[38;5;205m⠹ follow-up · which component owns the ra…␛[m␛[38;5;245m␛[m␛[38;5;245m␛[m
+    ␛[38;5;205m⠹ follow-up · which component owns the ra…␛[m
   ␛[92m◇␛[m ␛[38;5;252mwriter-2␛[m                       ␛[92mdone␛[m  ␛[38;5;241m$0.06␛[m
     ␛[38;5;245mwrote the loop's two files␛[m                
   ␛[38;5;241malt+a manager · alt+] next · click to attach␛[m
@@ -627,7 +631,7 @@
 ␛[94m❯␛[m ␛[94m␛[m␛[38;5;252m␛[m␛[38;5;241m␛[m␛[48;5;62m␛[94m␛[m␛[48;5;62m␛[94m◇␛[m␛[48;5;62m ␛[38;5;252m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[97;48;5;62morchestrator                         $0.21␛[m␛[m
     ␛[38;5;205m⠹ round 6 · streaming…␛[m                    
   ␛[91m✗␛[m ␛[38;5;252mwriter-1␛[m                     ␛[91mfailed␛[m  ␛[38;5;241m$0.03␛[m
-    ␛[38;5;245mcancelled␛[m␛[38;5;245m · ␛[m␛[38;5;245mpatch kept␛[m␛[38;5;245m · ␛[m␛[38;5;241m[p] review␛[m␛[38;5;245m · ␛[m␛[38;5;245m4 t…␛[m␛[38;5;245m␛[m␛[38;5;245m␛[m␛[38;5;245m␛[m␛[38;5;241m␛[m
+    ␛[38;5;245mcancelled␛[m␛[38;5;245m · ␛[m␛[38;5;245mpatch kept␛[m␛[38;5;245m · ␛[m␛[38;5;245mhandoff kept␛[m     
   ␛[94m◇␛[m ␛[38;5;252mwriter-2␛[m                             ␛[38;5;241m$0.02␛[m
     ␛[38;5;205m⠹ internal/agent/round.go␛[m␛[38;5;245m · ␛[m␛[38;5;245m3 tools␛[m       
   ␛[38;5;241malt+a manager · alt+] next · click to attach␛[m
@@ -639,9 +643,9 @@
   ␛[91m⚠␛[m ␛[38;5;252mreviewer-3␛[m                           ␛[38;5;241m$0.02␛[m
     ␛[38;5;245mwaiting approval: apply patch␛[m             
   ␛[94m◇␛[m ␛[38;5;252mwriter-1␛[m                             ␛[38;5;241m$0.09␛[m
-    ␛[94m▰▰▰␛[m␛[38;5;241m▱▱␛[m ␛[94m210k of 300k␛[m␛[38;5;245m · ␛[m␛[38;5;245mdocs/loop.md␛[m␛[38;5;245m · ␛[m␛[38;5;245m4 too…␛[m
+    ␛[94m▰▰▰␛[m␛[38;5;241m▱▱␛[m ␛[94m210k of 300k␛[m␛[38;5;245m · ␛[m␛[38;5;245mdocs/loop.md␛[m         
   ␛[94m◇␛[m ␛[38;5;252mrunner-2␛[m                             ␛[38;5;241m$0.04␛[m
-    ␛[38;5;205m⠹ go test ./internal/agent/...␛[m␛[38;5;245m · ␛[m␛[91m⚠ off ta…␛[m␛[38;5;245m␛[m␛[38;5;245m␛[m
+    ␛[38;5;205m⠹ go test ./internal/agent/...␛[m␛[38;5;245m · ␛[m␛[91m⚠ off ta…␛[m
   ␛[91m✗␛[m ␛[38;5;252mwriter-4␛[m                     ␛[91mfailed␛[m  ␛[38;5;241m$0.07␛[m
   ␛[38;5;245m└␛[m␛[94m◇␛[m ␛[38;5;252mreader-5␛[m                            ␛[38;5;241m$0.01␛[m
      ␛[38;5;205m⠹ internal/agent/round.go␛[m␛[38;5;245m · ␛[m␛[38;5;245m3 tools␛[m      

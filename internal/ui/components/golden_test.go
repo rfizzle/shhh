@@ -1574,6 +1574,11 @@ func TestGolden_InspectorRail(t *testing.T) {
 				{Name: "writer-1", Detail: "docs/loop.md", Spend: "$0.02", Tools: 4, State: FanoutRunning},
 				{Name: "runner-2", Detail: "go test ./...", Spend: "$0.01", Step: 2, Steps: 3,
 					State: FanoutBlocked},
+				// Killed holding both a patch and a handoff: at the rail's
+				// narrowest the line gives up the tool count and then the
+				// keys, and keeps both kept things whole.
+				{Name: "writer-3", Detail: "cancelled", Outcome: "killed", Spend: "$0.03", Tools: 3,
+					State: FanoutFailed, PatchKept: true, Handoff: true},
 			},
 			AgentsHint: railAgentsHint,
 			Context: &InspectorContext{

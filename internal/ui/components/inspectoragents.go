@@ -469,29 +469,33 @@ func (a InspectorAgent) detailRow(frame, width int) string {
 		// no key reaches it (docs/interface/surfaces.md#the-agent-manager).
 		a.Detail = ""
 	}
-	var parts []string
+	var parts []detailField
 	switch m, ok := AgentMeter(a.Step, a.Steps); {
 	case a.State == FanoutDone || a.State == FanoutFailed:
 		if a.Detail != "" {
-			parts = append(parts, sty.Dimmer.Render(a.Detail))
+			field := detailField{text: sty.Dimmer.Render(a.Detail)}
+			if a.PatchKept || a.Handoff {
+				field.drop = dropReason
+			}
+			parts = append(parts, field)
 		}
 	case a.Planned && a.Steps > 0:
 		// The child's own plan, in words, and the budget's share beside it:
 		// two denominators stated rather than one bar that merges them
 		// (docs/capabilities/subagents.md#how-far-along-is-three-numbers-not-one).
-		parts = append(parts, sty.Info.Render(stepsOf(a.Step, a.Steps)))
+		parts = append(parts, detailField{text: sty.Info.Render(stepsOf(a.Step, a.Steps))})
 		if pct := BudgetPct(a.Fresh, a.Budget); pct > 0 {
-			parts = append(parts, sty.Dimmer.Render(fmt.Sprintf("%d%% of budget", pct)))
+			parts = append(parts, detailField{text: sty.Dimmer.Render(fmt.Sprintf("%d%% of budget", pct))})
 		}
 		if a.Detail != "" {
-			parts = append(parts, sty.Dimmer.Render(a.Detail))
+			parts = append(parts, detailField{text: sty.Dimmer.Render(a.Detail)})
 		}
 	case ok:
 		// A declared step count earns a bar; the lane is info whatever
 		// the child's health, and states its count beside it.
-		parts = append(parts, m.View())
+		parts = append(parts, detailField{text: m.View()})
 		if a.Detail != "" {
-			parts = append(parts, sty.Dimmer.Render(a.Detail))
+			parts = append(parts, detailField{text: sty.Dimmer.Render(a.Detail)})
 		}
 	case a.State == FanoutRunning && a.pastHalfItsBudget():
 		// Nobody declared a step count, but somebody set a ceiling, and the
@@ -499,26 +503,29 @@ func (a InspectorAgent) detailRow(frame, width int) string {
 		// is the budget's rather than a step count's, and it takes the
 		// spinner's place: a child near its ceiling is doing one thing worth
 		// watching, and it is not the fact that it is still moving.
-		parts = append(parts, a.budgetMeter().View())
+		parts = append(parts, detailField{text: a.budgetMeter().View()})
 		if a.Detail != "" {
-			parts = append(parts, sty.Dimmer.Render(a.Detail))
+			parts = append(parts, detailField{text: sty.Dimmer.Render(a.Detail)})
 		}
 	case a.Detail == "":
 	case a.State != FanoutRunning:
 		// Waiting on an answer, waiting for a slot, or waiting to be
 		// steered: none of them is running, so none of them gets motion.
-		parts = append(parts, sty.Dimmer.Render(a.Detail))
+		parts = append(parts, detailField{text: sty.Dimmer.Render(a.Detail)})
 	default:
 		// No declared total: motion beside the word naming what is
 		// running, never a fabricated ratio.
-		parts = append(parts, Spinner{Frame: frame, Label: a.Detail}.View())
+		parts = append(parts, detailField{text: Spinner{Frame: frame, Label: a.Detail}.View()})
 	}
 	if a.PatchKept {
 		// The same words the manager's row carries for the same child, and
 		// straight after why it stopped: a change that never reached the
 		// checkout is the one thing on the line that is somebody's work, so
-		// it is not the part a narrow rail clips away.
-		parts = append(parts, keptPatchOffer())
+		// it is not the part a narrow rail gives up. Its key is split from
+		// it so that the key can go first.
+		parts = append(parts, detailField{text: sty.Dimmer.Render("patch kept")},
+			detailField{text: sty.Hint.Render(keys.Bracket(keys.Agent.Review) + " " + keys.Words(keys.Agent.Review)),
+				drop: dropReviewKey})
 	}
 	if a.Steers >= inspectorSteersWorthSaying {
 		// The count and not a flag: one steer is the machinery working, and a
@@ -526,23 +533,78 @@ func (a InspectorAgent) detailRow(frame, width int) string {
 		// finding the same departure — which is the thing worth knowing forty
 		// rounds before the report says it
 		// (docs/capabilities/subagents.md#they-are-visible-while-they-run).
-		parts = append(parts, sty.Del.Render(fmt.Sprintf("⚠ off task ×%d", a.Steers)))
+		parts = append(parts, detailField{text: sty.Del.Render(fmt.Sprintf("⚠ off task ×%d", a.Steers))})
 	}
 	if a.Tools > 0 {
-		parts = append(parts, sty.Dimmer.Render(plural(a.Tools, "tool")))
+		parts = append(parts, detailField{text: sty.Dimmer.Render(plural(a.Tools, "tool")), drop: dropTools})
 	}
 	if a.Handoff {
 		// The row ends on what can still be done about it, and does nothing
 		// about it: the key is the manager's, and the trailer under the block
 		// is how a reader gets there
 		// (docs/interface/surfaces.md#the-inspector-rail).
-		parts = append(parts, sty.Dimmer.Render("handoff kept"),
-			sty.Hint.Render(keys.Bracket(keys.Agent.Retry)+" "+keys.Words(keys.Agent.Retry)))
+		parts = append(parts, detailField{text: sty.Dimmer.Render("handoff kept")},
+			detailField{text: sty.Hint.Render(keys.Bracket(keys.Agent.Retry) + " " + keys.Words(keys.Agent.Retry)),
+				drop: dropRetryKey})
 	}
 	if len(parts) == 0 {
 		return ""
 	}
-	return railRow(strings.Join(parts, sty.Dimmer.Render(" · ")), "", width, a.detailIndent())
+	return railRow(fitDetail(parts, railRoom(width, "", a.detailIndent())), "", width, a.detailIndent())
+}
+
+// detailField is one clause of the line under a session, with the rank it is
+// given up at when the line is wider than the rail. Zero is never: an
+// unranked clause stays, and only what is still too wide once every ranked
+// clause has gone is clipped.
+type detailField struct {
+	text string
+	drop int
+}
+
+// The line under a session gives up whole clauses, least said first — the
+// kit's rule for a left-hand field, which is dropped rather than cut
+// mid-word. The tool count goes first: it tallies work already done and asks
+// nothing of the reader. The keys go next, retry before review: both are the
+// manager's, the block's trailer names the way there, and a change that never
+// reached the checkout is somebody's work where a handoff is a record. Why a
+// child stopped goes last, and only on a row that kept something, since the
+// name row's outcome word still says how it ended. `patch kept` and `handoff
+// kept` are never ranked, so a narrow rail cannot give up one kept thing to
+// fit the other (docs/interface/surfaces.md#the-inspector-rail).
+const (
+	dropTools = iota + 1
+	dropRetryKey
+	dropReviewKey
+	dropReason
+)
+
+// fitDetail joins the clauses, giving up the ranked ones in rank order
+// until the line fits the room it has.
+func fitDetail(parts []detailField, room int) string {
+	sep := sty.Dimmer.Render(detailSep)
+	join := func() string {
+		texts := make([]string, 0, len(parts))
+		for _, p := range parts {
+			texts = append(texts, p.text)
+		}
+		return strings.Join(texts, sep)
+	}
+	line := join()
+	for lipgloss.Width(line) > room {
+		next := -1
+		for i, p := range parts {
+			if p.drop > 0 && (next < 0 || p.drop < parts[next].drop) {
+				next = i
+			}
+		}
+		if next < 0 {
+			break
+		}
+		parts = append(parts[:next:next], parts[next+1:]...)
+		line = join()
+	}
+	return line
 }
 
 // inspectorSteersWorthSaying is the steer count the map draws a warning at.

@@ -52,6 +52,8 @@
     ▰▰▰▱▱ step 2 of 3 · go test ./...                                   
   ◇ writer-1                                                       $0.02
     ⠋ docs/loop.md · 4 tools                                            
+  ✗ writer-3                                               killed  $0.03
+    cancelled · patch kept · [p] review · handoff kept · [r] retry      
   alt+a manager · alt+] next · click to attach                          
 
   TOOLS                                                        2 of 3 up
@@ -286,7 +288,7 @@
 ❯ ◇ orchestrator                                                   $0.21
     ⠹ round 6 · streaming…                                              
   ✗ writer-1                                               failed  $0.03
-    cancelled · patch kept · [p] review · 4 tools · handoff kept · [r] …
+    cancelled · patch kept · [p] review · handoff kept · [r] retry      
   ◇ writer-2                                                       $0.02
     ⠹ internal/agent/round.go · 3 tools                                 
   alt+a manager · alt+] next · click to attach                          
@@ -389,6 +391,8 @@
     ␛[38;5;254m▰▰▰␛[m␛[38;5;244m▱▱␛[m ␛[38;5;254mstep 2 of 3␛[m␛[38;5;244m · ␛[m␛[38;5;244mgo test ./...␛[m                                   
   ␛[38;5;254m◇␛[m ␛[38;5;254mwriter-1␛[m                                                       ␛[38;5;244m$0.02␛[m
     ␛[38;5;254m⠋ docs/loop.md␛[m␛[38;5;244m · ␛[m␛[38;5;244m4 tools␛[m                                            
+  ␛[38;5;254m✗␛[m ␛[38;5;254mwriter-3␛[m                                               ␛[38;5;254mkilled␛[m  ␛[38;5;244m$0.03␛[m
+    ␛[38;5;244mcancelled␛[m␛[38;5;244m · ␛[m␛[38;5;244mpatch kept␛[m␛[38;5;244m · ␛[m␛[38;5;244m[p] review␛[m␛[38;5;244m · ␛[m␛[38;5;244mhandoff kept␛[m␛[38;5;244m · ␛[m␛[38;5;244m[r] retry␛[m      
   ␛[38;5;244malt+a manager · alt+] next · click to attach␛[m                          
 
   ␛[1;38;5;254mTOOLS␛[m                                                        ␛[38;5;244m2 of 3 up␛[m
@@ -623,7 +627,7 @@
 ␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254m◇␛[m␛[48;5;237m ␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237morchestrator                                                   $0.21␛[m␛[m
     ␛[38;5;254m⠹ round 6 · streaming…␛[m                                              
   ␛[38;5;254m✗␛[m ␛[38;5;254mwriter-1␛[m                                               ␛[38;5;254mfailed␛[m  ␛[38;5;244m$0.03␛[m
-    ␛[38;5;244mcancelled␛[m␛[38;5;244m · ␛[m␛[38;5;244mpatch kept␛[m␛[38;5;244m · ␛[m␛[38;5;244m[p] review␛[m␛[38;5;244m · ␛[m␛[38;5;244m4 tools␛[m␛[38;5;244m · ␛[m␛[38;5;244mhandoff kept␛[m␛[38;5;244m · ␛[m␛[38;5;244m[r] …␛[m
+    ␛[38;5;244mcancelled␛[m␛[38;5;244m · ␛[m␛[38;5;244mpatch kept␛[m␛[38;5;244m · ␛[m␛[38;5;244m[p] review␛[m␛[38;5;244m · ␛[m␛[38;5;244mhandoff kept␛[m␛[38;5;244m · ␛[m␛[38;5;244m[r] retry␛[m      
   ␛[38;5;254m◇␛[m ␛[38;5;254mwriter-2␛[m                                                       ␛[38;5;244m$0.02␛[m
     ␛[38;5;254m⠹ internal/agent/round.go␛[m␛[38;5;244m · ␛[m␛[38;5;244m3 tools␛[m                                 
   ␛[38;5;244malt+a manager · alt+] next · click to attach␛[m                          

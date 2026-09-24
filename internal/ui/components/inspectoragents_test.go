@@ -258,6 +258,38 @@ func TestInspectorRail_AgentsMapNamesTheHandoffAndItsKey(t *testing.T) {
 	}
 }
 
+// TestInspectorRail_AgentsMapDropsClausesWholeKeepingBothKept: the line under
+// a killed writer that kept a patch and a handoff gives up the tool count and
+// then the keys when the rail is narrow, never clips a clause mid-word, and
+// never gives up one kept thing to fit the other.
+func TestInspectorRail_AgentsMapDropsClausesWholeKeepingBothKept(t *testing.T) {
+	r := InspectorRail{
+		Agents: []InspectorAgent{
+			{Name: "writer-1", Detail: "cancelled", Outcome: "killed", Tools: 3,
+				State: FanoutFailed, PatchKept: true, Handoff: true},
+		},
+	}
+	for _, tc := range []struct {
+		width int
+		want  string
+	}{
+		{InspectorWidth, "cancelled · patch kept · handoff kept"},
+		{InspectorMaxWidth, "cancelled · patch kept · [p] review · handoff kept · [r] retry"},
+	} {
+		view := stripANSI(r.View(tc.width, 0))
+		if !strings.Contains(view, tc.want) || strings.Contains(view, "…") {
+			t.Fatalf("at %d the line reads %q, whole:\n%s", tc.width, tc.want, view)
+		}
+	}
+	// A reason too long to share the line with both kept things is the last
+	// clause given up.
+	r.Agents[0].Detail = "token budget exceeded after the third check-in"
+	view := stripANSI(r.View(InspectorWidth, 0))
+	if !strings.Contains(view, "patch kept · handoff kept") || strings.Contains(view, "token budget") {
+		t.Fatalf("the reason goes before either kept thing:\n%s", view)
+	}
+}
+
 // TestInspectorRail_AgentsMapNestsAChildsChild: a session another session
 // started is drawn one column in, behind the frame's own corner, and its
 // second line moves in with it.
