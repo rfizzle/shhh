@@ -101,14 +101,15 @@ func Definitions(profiles Profiles) []provider.Tool {
 					"role": {"type": "string", "enum": ` + string(names) + `, "description": "Which agent profile to run, from the roles listed above"},
 					"task": {"type": "string", "description": "Complete, self-contained task prompt for the agent"},
 					"name": {"type": "string", "description": "Optional short name (letters, digits, dashes); auto-generated like researcher-1 when omitted"},
-					"paths": {"type": "array", "items": {"type": "string"}, "description": "The paths or globs this agent's work is scoped to (e.g. [\"internal/ui/**\", \"README.md\"]). For an agent that changes files, they are what it may change: two concurrent writing agents may not claim overlapping paths, so declare them whenever you fan out more than one. For a reviewing agent, they are the evidence: it is handed those paths and their diff before its task and reports once it has examined them, so declaring them is what keeps a review from surveying the repository to find the change.", "maxItems": 32},
+					"paths": {"type": "array", "items": {"type": "string"}, "description": "The paths or globs this agent's work is scoped to (e.g. [\"internal/ui/**\", \"README.md\"]). For an agent that changes files, they are what it may change: two concurrent writing agents may not claim overlapping paths unless both allow overlap, so declare them whenever you fan out more than one. For a reviewing agent, they are the evidence: it is handed those paths and their diff before its task and reports once it has examined them, so declaring them is what keeps a review from surveying the repository to find the change.", "maxItems": 32},
 					"model": {"type": "string", "description": "Optional model for this agent (defaults to the profile's model, then the configured agent model, then the session model). Use a smaller, cheaper model for wide mechanical work and the session model for reasoning-heavy work."},
 					"steps": {"type": "integer", "description": "Optional number of steps this task breaks into (max 20). Pass it when you can name the steps up front: the agent's lane then shows progress against it instead of a spinner. Leave it out rather than guessing — an invented denominator is worse than none."},
 					"max_rounds": {"type": "integer", "description": "Optional: make the agent pause every N tool rounds to take stock — what it has done, what is left, what it is doing next — before carrying on with a larger budget. Omitted (the default) it runs to completion without pausing, which is what you want for most tasks. Pass it for long open-ended work where an agent quietly drifting off the task would otherwise go unnoticed. It is a pacing choice, not a limit: it never stops the agent, and the token budget is what bounds it."},
 					"max_tokens": {"type": "integer", "description": "Optional token budget (default 1200000, what one writer measured on one backlog item; minimum 200000 before prompt admission; at most 2400000). It counts new tokens — the part of each prompt the provider did not serve from its cache, plus the completion. It must cover the admission floor: the inherited prompt and tool definitions, the declared task, the inherited turns where any, and the context the first turn opens on (review evidence, a resume or retry prologue), plus a 200000-token working reserve; a spawn or retry under it is refused with that floor stated."},
 					"resume_handoff": {"type": "string", "description": "Optional opaque handoff handle from a failed child. The replacement keeps that handoff's original task and declared scope, and receives only its bounded verified context."},
 					"inherit": {"type": "integer", "minimum": 0, "description": "Optional number of your most recent turns to hand the agent ahead of its task: your user's words and yours whole, tool results elided to ids it can read back. Pass it for a subtask of the work in hand, where the agent should read what you read rather than your summary of it — a review of the change you just made, a check of a conclusion you just reached. Leave it out (0, the default unless the role sets one) for a wide independent hunt: an agent that starts from its task alone is cheaper, and the turns count against its budget. It is a count of turns, not of bytes."},
-					"wait_for_claim": {"type": "boolean", "description": "Optional, for an agent that changes files: when its paths overlap a writer that is still running, queue it behind that writer instead of refusing the spawn. It then holds no slot and no copy of the workspace until every overlapping claim spawned before it is released, and starts from the tree as it stands then, with the earlier writer's patch already landed or declined. Pass it when you hand a whole batch of writers over at once and some of them touch the same files. Leave it out (false, the default) otherwise, and never add it to retry a spawn that was refused for overlapping: that refusal is telling you the work was split along the wrong line."}
+					"wait_for_claim": {"type": "boolean", "description": "Optional, for an agent that changes files: when its paths overlap a writer that is still running, queue it behind that writer instead of refusing the spawn. It then holds no slot and no copy of the workspace until every overlapping claim spawned before it is released, and starts from the tree as it stands then, with the earlier writer's patch already landed or declined. Pass it when you hand a whole batch of writers over at once and some of them touch the same files. Leave it out (false, the default) otherwise, and never add it to retry a spawn that was refused for overlapping: that refusal is telling you the work was split along the wrong line."},
+					"overlap": {"type": "string", "enum": ["allowed", "refused"], "description": "Optional, for an agent that changes files: allowed lets it claim a file another running writer claims, when both were spawned with allowed, and they then work side by side. Pass it only for a change two agents must make to the same file on purpose, on both of the spawns. Both patches are merged as they land, and where the two change the same lines a further writer is started to reconcile them and its patch comes back for review. refused (the default) keeps a claim to one writer. It is never a way around a spawn refused for overlapping: a writer already running that was not spawned with allowed keeps its files to itself."}
 				},
 				"required": ["role", "task"]
 			}`),
@@ -150,6 +151,14 @@ func Definitions(profiles Profiles) []provider.Tool {
 		},
 	}
 }
+
+// The two words spawn_agent's overlap takes. Refused is the default, and a
+// word of its own so a caller can say so.
+// See docs/capabilities/subagents.md#a-conflict-is-a-task-for-a-writer.
+const (
+	OverlapAllowed = "allowed"
+	OverlapRefused = "refused"
+)
 
 // steerArgs is an agent_steer call. Both fields are required: a steer with
 // no name has nowhere to go, and one with no message is a round spent saying
@@ -221,8 +230,13 @@ type spawnArgs struct {
 	// WaitForClaim queues a writer whose paths overlap a live writer's
 	// behind that claim instead of refusing it.
 	WaitForClaim bool `json:"wait_for_claim"`
+	// Overlap is "allowed" for a writer that may share its claim with
+	// another writer that allowed it too; "refused" or nothing is the
+	// default, a claim no other writer may overlap.
+	Overlap string `json:"overlap"`
 
 	role          Role
+	overlap       bool
 	profile       Profile
 	paths         []string
 	steps         int
@@ -294,6 +308,18 @@ func parseSpawnArgs(profiles Profiles, raw json.RawMessage) (spawnArgs, error) {
 	// never going to meet.
 	if args.WaitForClaim && !profile.Writes {
 		return args, fmt.Errorf("wait_for_claim applies to agents that change files; a %s claims nothing, so there is nothing for it to wait behind", args.role)
+	}
+	switch strings.TrimSpace(args.Overlap) {
+	case "", OverlapRefused:
+	case OverlapAllowed:
+		// The same reasoning as the wait: a claim is a writer's, so a
+		// shared one is too.
+		if !profile.Writes {
+			return args, fmt.Errorf("overlap applies to agents that change files; a %s claims nothing, so there is nothing for it to share", args.role)
+		}
+		args.overlap = true
+	default:
+		return args, fmt.Errorf("overlap %q is not one of %q or %q", args.Overlap, OverlapAllowed, OverlapRefused)
 	}
 	// A step count outside the useful range is dropped rather than clamped:
 	// the lane's rule is that a denominator nobody supplied is not invented,
@@ -441,6 +467,13 @@ func SpawnPlan(profiles Profiles, raw json.RawMessage) (Spawn, error) {
 		// own read as paths on this checkout, which is the one thing a
 		// writer's spawn must not be taken for.
 		p.Scope = "its own worktree · claims " + strings.Join(args.paths, ", ")
+		// A shared claim is part of what is being approved: the person is
+		// agreeing to two writers in one file. Whose claim it shares is the
+		// supervisor's to say (Supervisor.SharedClaim), since only it knows
+		// who is running.
+		if args.overlap {
+			p.Scope += " · overlap allowed"
+		}
 	case p.Writer:
 		p.Scope = "unknown — this agent claimed no paths"
 	default:

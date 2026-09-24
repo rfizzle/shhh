@@ -1248,6 +1248,12 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 			if err != nil {
 				return chat.GatedPreview{}, err
 			}
+			// A writer that allows overlap and meets a running one that
+			// allowed it too says whose claim it shares: that is the other
+			// half of what a yes agrees to.
+			if holder, claim := sup.SharedClaim(args); holder != "" {
+				plan.Scope = strings.TrimSuffix(plan.Scope, " · overlap allowed") + " · shares " + claim + " with " + holder
+			}
 			// A child edits in its own worktree; nothing reaches the checkout
 			// until its patch is approved on a card of its own.
 			undo := "the child changes nothing on this checkout"

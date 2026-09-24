@@ -648,6 +648,13 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 			}
 			rolePrompt = fixedPrompt(sysPrompt)
 		}
+		// An integration writer is the conflicting writer's own profile with
+		// one more paragraph: what its copy holds and how to say it could not
+		// reconcile the two (docs/capabilities/subagents.md#a-conflict-is-a-task-for-a-writer).
+		if spec.Integrates != "" {
+			inner := rolePrompt
+			rolePrompt = func(names []string) string { return inner(names) + "\n\n" + prompt.IntegrationWriter }
+		}
 		// And what this child may delegate, if anything. It goes on after
 		// both role branches because the web branch replaces the executor
 		// rather than wrapping it and the gate branch wraps what the web

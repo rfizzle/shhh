@@ -1,0 +1,45 @@
+# program test: TestProgram_ASpawnCardStartsTheChildrenAsLanes,
+#   TestProgram_AChildsRequestIsAnsweredFromItsCard
+#
+# fanout-lanes' second run at 120 columns: two writers sharing a file on
+# purpose, and the integration writer their conflict is handed to
+# (docs/capabilities/subagents.md#a-conflict-is-a-task-for-a-writer).
+#
+# What the captures are for: the spawn card's scope row saying the claim may
+# be shared, the integration writer as a lane of the same fan-out block, and
+# the card its patch comes back on — the reconciliation, not either side.
+setup printf 'package agent\n\nfunc loop() {\n    for round := 0; round < limit; round++ {\n        step()\n    }\n}\n' > loop.go
+# Committed, so each writer's copy holds the file: a copy carries the session's
+# own new files and not every file git has never heard of.
+setup git add loop.go
+setup git config user.email tui@shhh
+setup git config user.name tui
+setup git commit -q -m 'seed the repository'
+snap 01-start "Some things worth doing first"
+# Accept edits, so each writer's edit inside its own copy goes through without
+# a card of its own: the cards this scene reads are the patches.
+keys BTab
+keys "change the loop's condition two ways" Enter
+# One card with a row per writer, each claiming loop.go with overlap allowed.
+snap 02-spawn-card "Spawn 2 writers" "overlap allowed"
+keys y
+snap 03-lanes "2 agents"
+# writer-1's patch is the first card, routed to this session. Taking it
+# lands writer-1's condition on the checkout.
+snap 04-first-patch "apply patch"
+keys C-Space
+sleep 1
+keys y
+# writer-2 answers once that has landed, and its change meets writer-1's on
+# the same line: its patch is kept and an integration writer is started for
+# it, a lane of the same block. writer-2 holds its answer for most of half a
+# minute (replies.txt), longer than a snap waits.
+sleep 15
+snap 05-integration-lane "integrator-1 · Reconcile writer-2's patch"
+# The integration writer's patch is the card: the condition that does both,
+# over the checkout as writer-1 left it.
+snap 06-integration-card "round <= limit && !stopped"
+keys C-Space
+sleep 1
+keys y
+snap 07-landed "✓ done"

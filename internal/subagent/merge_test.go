@@ -418,6 +418,9 @@ func TestAPatchThatConflictsIsKeptWithTheFilesNamed(t *testing.T) {
 			write:     func(root string) { put(root, "main.go", ours(mergeBase)) },
 			answering: func() { close(wrote2); <-landed },
 		},
+		// The conflict is handed to an integration writer, whose card is
+		// declined below: what this test reads is writer-2's own row.
+		"integrator-1": {write: func(root string) { put(root, "main.go", strings.Replace(first, "var y = 1", "var y = 1 + 2", 1)) }},
 	})})
 	t.Cleanup(sup.Close)
 	execTool(t, sup, SpawnToolName, `{"role":"writer","task":"y is 1"}`)
@@ -432,6 +435,8 @@ func TestAPatchThatConflictsIsKeptWithTheFilesNamed(t *testing.T) {
 			switch {
 			case ev.Kind == EventAsk && ev.Ask.Agent == "writer-2":
 				t.Errorf("a conflicting patch should not be put on a card: %s", ev.Ask.Title)
+				ev.Ask.Respond(false)
+			case ev.Kind == EventAsk && ev.Ask.Agent == "integrator-1":
 				ev.Ask.Respond(false)
 			case ev.Kind == EventAsk:
 				ev.Ask.Respond(true)

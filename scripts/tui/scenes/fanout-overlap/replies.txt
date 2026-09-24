@@ -1,0 +1,39 @@
+# One queue per agent: the session, the two writers it puts in one file on
+# purpose, and the integration writer the supervisor starts when their
+# changes meet on the same line.
+#
+# The sentence and the two spawns are one reply, so the transcript titles the
+# step with the sentence. Both spawns allow overlap, which is what lets the
+# second claim loop.go beside the first.
+[session]
+Two writers over the loop's condition, sharing the file on purpose.
++tool:spawn_agent:{"role":"writer","task":"Stop the loop when it is stopped.","name":"writer-1","paths":["loop.go"],"overlap":"allowed"}
++tool:spawn_agent:{"role":"writer","task":"Run the last round too.","name":"writer-2","paths":["loop.go"],"overlap":"allowed"}
+Both writers are working on loop.go.
+
+# writer-1 changes the loop's condition and answers at once, so its patch is
+# the first card and lands first.
+[writer-1]
+tool:read_file:{"path":"loop.go"}
+tool:write_file:{"path":"loop.go","content":"package agent\n\nfunc loop() {\n    for round := 0; round < limit && !stopped; round++ {\n        step()\n    }\n}\n"}
+The loop now stops when it is stopped.
+
+# writer-2 changes the same condition another way and holds its answer open
+# until writer-1's patch has landed. It is past its last round boundary by
+# then, so the landing is not carried into its copy: its patch meets the
+# landed one on the same line, which no merge can settle.
+[writer-2]
+tool:read_file:{"path":"loop.go"}
+tool:write_file:{"path":"loop.go","content":"package agent\n\nfunc loop() {\n    for round := 0; round <= limit; round++ {\n        step()\n    }\n}\n"}
+wait:25
++The loop now runs the last round too.
+
+# The integration writer's copy is the checkout with writer-1's change in it,
+# and it writes the condition that does both.
+[integrator]
+tool:read_file:{"path":"loop.go"}
+tool:write_file:{"path":"loop.go","content":"package agent\n\nfunc loop() {\n    for round := 0; round <= limit && !stopped; round++ {\n        step()\n    }\n}\n"}
+Both kept: the loop runs the last round and stops when it is stopped.
+
+[reading]
+Two writers share loop.go on purpose.

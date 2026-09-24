@@ -747,6 +747,12 @@ type Spec struct {
 	// cannot see the conversation while holding some of it would doubt the
 	// turns, and one told nothing would go looking for the rest.
 	Inherit int
+	// Integrates names the writer whose conflicting patch this child was
+	// started to reconcile, and is empty for every other child. The prompt
+	// turns on it: an integration writer is told what its copy holds and
+	// how to say it could not reconcile the two.
+	// See docs/capabilities/subagents.md#a-conflict-is-a-task-for-a-writer.
+	Integrates string
 }
 
 // EnvFactory builds a child's Env; ctx is the child's context (cancelling it
@@ -1287,6 +1293,12 @@ type child struct {
 	// now, empty once it has none.
 	waitClaim bool
 	waitsOn   string
+	// overlap is a writer spawned with overlap: allowed, whose claim may be
+	// shared with another writer that allowed it too (claimHeld).
+	overlap bool
+	// integrates is what an integration writer is reconciling; nil for
+	// every other child (integrate.go).
+	integrates *integration
 	// slotWait is how many checks were running when this child began to wait
 	// for a check slot, and zero while it is not waiting for one
 	// (takeCheckSlot); slotWaiters is how many of its checks are waiting,
@@ -2302,7 +2314,7 @@ func (s *Supervisor) Steer(name, text string, from SteerSource) error {
 	// no live writer has taken in the meantime. It is asked before the child
 	// is locked, because the check reads every child's status.
 	if st := c.status(); st.State == StateDone && c.profile.Writes {
-		if holder, claim, conflict := s.claimConflict(st.Paths); conflict {
+		if holder, claim, conflict := s.claimConflict(st.Paths, c.overlap); conflict {
 			return fmt.Errorf("agent %s cannot take a follow-up: %s now holds %s, which overlaps its paths", name, holder, claim)
 		}
 	}
@@ -3348,10 +3360,20 @@ func (s *Supervisor) openWorkspace(c *child, ctx context.Context, maxRounds, att
 			return workspace{}, fmt.Errorf("cannot create an isolated worktree for a writer agent: %w", err)
 		}
 		w.root = w.wt.root
+		// An integration writer's copy starts holding everything of the
+		// patch it reconciles that merges cleanly, taken against the tree
+		// as it stands now rather than as it stood at the conflict.
+		if c.integrates != nil {
+			if err = c.integrates.seed(w.wt); err != nil {
+				removeWorktree(w.wt.repoTop, w.wt.dir)
+				return workspace{}, err
+			}
+		}
 	}
 	w.env, err = s.opts.NewEnv(ctx, Spec{Name: c.name, Role: c.role, Root: w.root, Model: c.model, Paths: c.paths,
 		Parent: c.parent, Depth: c.depth,
-		Worktree: w.wt.dir != "", MaxTokens: c.maxTokens, AdmissionFloor: c.admissionFloor, Inherit: c.inheritTurns})
+		Worktree: w.wt.dir != "", MaxTokens: c.maxTokens, AdmissionFloor: c.admissionFloor, Inherit: c.inheritTurns,
+		Integrates: c.integrates.sourceName()})
 	if err != nil {
 		removeWorktree(w.wt.repoTop, w.wt.dir)
 		return workspace{}, fmt.Errorf("the agent's environment could not be built: %w", err)
@@ -3427,6 +3449,15 @@ func admissionRefusal(budget, floor int64, inheritTurns int, inheritTokens int64
 // it may be given (never more than its spawner has), and what is written as
 // its parent.
 func (s *Supervisor) spawnFrom(caller string, raw json.RawMessage) (string, error) {
+	return s.spawn(caller, raw, nil)
+}
+
+// spawn is spawnFrom with what only the supervisor can hand a child: integ is
+// the conflict an integration writer is started to reconcile (integrate.go),
+// nil for every spawn a model asked for. It rides this path rather than one
+// of its own so an integration writer is admitted, claimed, counted and
+// slotted exactly as any other writer is.
+func (s *Supervisor) spawn(caller string, raw json.RawMessage, integ *integration) (string, error) {
 	args, err := parseSpawnArgs(s.Profiles(), raw)
 	if err != nil {
 		return "", err
@@ -3501,6 +3532,11 @@ func (s *Supervisor) spawnFrom(caller string, raw json.RawMessage) (string, erro
 	mode := s.parentMode
 	batch := s.batch
 	s.mu.Unlock()
+	// An integration writer joins the round its writer was spawned in, so
+	// its lane is drawn in the fan-out it is reconciling.
+	if integ != nil {
+		batch = integ.batch
+	}
 	// A descendant's ceiling is the agent that spawned it, not the session:
 	// the session's mode is already the ceiling on that agent, so taking the
 	// spawner's carries the clamp down the tree and a child in plan mode
@@ -3533,14 +3569,20 @@ func (s *Supervisor) spawnFrom(caller string, raw json.RawMessage) (string, erro
 	// See docs/capabilities/subagents.md#a-writer-starts-from-your-tree.
 	waitsOn, waitsFor := "", ""
 	if args.profile.Writes {
-		if holder, claim, clash := s.claimConflict(args.paths); clash {
+		if holder, claim, clash := s.claimConflict(args.paths, args.overlap); clash {
 			if !args.WaitForClaim {
+				// Allowing overlap on one side only is not a shared claim:
+				// the writer already holding the file was spawned to have
+				// it to itself.
+				if args.overlap {
+					return "", fmt.Errorf("%s already claims %s, which overlaps this agent's paths, and was not spawned with overlap: allowed, so the claim is not shared; wait for it with agent_report, or narrow the paths so the two do not share files", holder, claim)
+				}
 				return "", fmt.Errorf("%s already claims %s, which overlaps this agent's paths; wait for it with agent_report, or narrow the paths so the two do not share files", holder, claim)
 			}
 			// Named as the writer it follows rather than the first of the
 			// claims ahead of it, the way its lane goes on naming it.
 			waitsOn, waitsFor = holder, claim
-			if h, c, ok := s.claimAhead(args.paths, seq); ok {
+			if h, c, ok := s.claimAhead(args.paths, seq, args.overlap); ok {
 				waitsOn, waitsFor = h, c
 			}
 		}
@@ -3555,7 +3597,15 @@ func (s *Supervisor) spawnFrom(caller string, raw json.RawMessage) (string, erro
 	// built, because the prompt that environment carries says how many it
 	// was given; they are rendered after, because the scrub and the store an
 	// elided result goes into are the environment's.
-	turns, inheritTurns := lastTurns(s.conversationOf(caller), args.inherit)
+	//
+	// Read only where there are turns to hand over: an integration writer is
+	// spawned from a child's goroutine, and the session's conversation is
+	// only ever read on the goroutine that approved a spawn.
+	var turns []provider.Message
+	inheritTurns := 0
+	if args.inherit > 0 {
+		turns, inheritTurns = lastTurns(s.conversationOf(caller), args.inherit)
+	}
 
 	// The context is the child's from here, whether or not it has anywhere
 	// to work yet: a writer queued behind a full set of slots is one a kill
@@ -3565,7 +3615,8 @@ func (s *Supervisor) spawnFrom(caller string, raw json.RawMessage) (string, erro
 	// worktree or record. A doomed budget must not consume either resource.
 	preflight, preflightErr := s.opts.NewEnv(cctx, Spec{Name: name, Role: args.role, Root: s.opts.Root,
 		Parent: caller, Depth: depth,
-		Model: model, Paths: args.paths, Worktree: args.profile.Writes, MaxTokens: args.maxTokens, Inherit: inheritTurns})
+		Model: model, Paths: args.paths, Worktree: args.profile.Writes, MaxTokens: args.maxTokens, Inherit: inheritTurns,
+		Integrates: integ.sourceName()})
 	if preflightErr != nil {
 		cancel()
 		return "", fmt.Errorf("the agent's environment could not be built: %w", preflightErr)
@@ -3575,7 +3626,12 @@ func (s *Supervisor) spawnFrom(caller string, raw json.RawMessage) (string, erro
 	// budget that cannot start this review, and finding that out after the
 	// slot is open is the thing admission exists to prevent.
 	evidence := ""
-	if args.profile.Reviews {
+	switch {
+	case integ != nil:
+		// An integration writer's evidence is the conflict itself, and it is
+		// admitted for it the way a review is for its diff.
+		evidence = integ.evidence
+	case args.profile.Reviews:
 		evidence = declaredEvidence(s.opts.Root, args.paths)
 	}
 	// The evidence goes ahead of everything else the first turn opens with,
@@ -3642,6 +3698,8 @@ func (s *Supervisor) spawnFrom(caller string, raw json.RawMessage) (string, erro
 		state:           StateQueued,
 		detail:          queuedDetail(waitsOn),
 		waitClaim:       args.WaitForClaim && args.profile.Writes,
+		overlap:         args.overlap,
+		integrates:      integ,
 		waitsOn:         waitsOn,
 		started:         time.Now(),
 		attempt:         1,
@@ -3676,6 +3734,13 @@ func (s *Supervisor) spawnFrom(caller string, raw json.RawMessage) (string, erro
 		note = " It edits an isolated copy of the workspace; its changes come back as a single patch the user reviews."
 		if len(args.paths) > 0 {
 			note += " It claims " + strings.Join(args.paths, ", ") + "; another writer cannot claim overlapping paths while it runs."
+			if args.overlap {
+				note = " It edits an isolated copy of the workspace; its changes come back as a single patch the user reviews. It claims " +
+					strings.Join(args.paths, ", ") + " and allows overlap: another writer spawned with overlap: allowed may claim the same files, both patches land through the merge, and where the two change the same lines an integration writer is started to reconcile them."
+				if holder, claim, ok := s.claimShared(args.paths); ok && holder != name {
+					note += fmt.Sprintf(" It shares %s with %s.", claim, holder)
+				}
+			}
 		} else {
 			note += " It declared no paths, so nothing stops a second writer from touching the same files — pass paths when you fan out writers."
 		}
@@ -3715,9 +3780,12 @@ func (s *Supervisor) spawnFrom(caller string, raw json.RawMessage) (string, erro
 // claimConflict reports whether a writer's declared paths overlap those of a
 // live writer. Two claims that both declare paths and share any file are a
 // conflict; an undeclared claim conflicts with nothing (it is flagged at
-// patch time instead), so existing callers keep working.
-func (s *Supervisor) claimConflict(paths []string) (holder, claim string, conflict bool) {
-	return s.claimAhead(paths, 0)
+// patch time instead), so existing callers keep working. shares is a writer
+// spawned with overlap: allowed, which a writer that allowed it too does not
+// stand in the way of.
+// See docs/capabilities/subagents.md#a-conflict-is-a-task-for-a-writer.
+func (s *Supervisor) claimConflict(paths []string, shares bool) (holder, claim string, conflict bool) {
+	return s.claimAhead(paths, 0, shares)
 }
 
 // claimAhead is claimConflict asked on behalf of a writer queued behind a
@@ -3726,8 +3794,10 @@ func (s *Supervisor) claimConflict(paths []string) (holder, claim string, confli
 // and the one named is the nearest ahead — the writer it follows, which is
 // the one a lane saying whom it waits behind should name. A seq of zero
 // counts every live writer and names the earliest.
-func (s *Supervisor) claimAhead(paths []string, seq int) (holder, claim string, conflict bool) {
-	return s.claimHeld(paths, seq > 0, func(k *child, _ Status) bool { return seq == 0 || k.seq < seq })
+func (s *Supervisor) claimAhead(paths []string, seq int, shares bool) (holder, claim string, conflict bool) {
+	return s.claimHeld(paths, seq > 0, func(k *child, _ Status) bool {
+		return (seq == 0 || k.seq < seq) && (!shares || !k.overlap)
+	})
 }
 
 // claimAround is the claim a retried writer meets. Spawn order does not
@@ -3738,7 +3808,7 @@ func (s *Supervisor) claimAhead(paths []string, seq int) (holder, claim string, 
 // the two never wait on each other.
 func (s *Supervisor) claimAround(c *child) (holder, claim string, conflict bool) {
 	return s.claimHeld(c.paths, false, func(k *child, st Status) bool {
-		return k != c && (k.seq < c.seq || st.WaitsOn == "")
+		return k != c && (k.seq < c.seq || st.WaitsOn == "") && (!c.overlap || !k.overlap)
 	})
 }
 
@@ -3752,7 +3822,27 @@ func (s *Supervisor) claimInWay(c *child) (holder, claim string, conflict bool) 
 	if retried {
 		return s.claimAround(c)
 	}
-	return s.claimAhead(c.paths, c.seq)
+	return s.claimAhead(c.paths, c.seq, c.overlap)
+}
+
+// claimShared is the live writer whose claim a writer spawned with overlap:
+// allowed would share, and the path it would share: the first that overlaps
+// and allowed overlap too. It is what the spawn's card and its answer name,
+// so the person approving the second writer knows whose file it works beside.
+func (s *Supervisor) claimShared(paths []string) (holder, claim string, ok bool) {
+	return s.claimHeld(paths, false, func(k *child, _ Status) bool { return k.overlap })
+}
+
+// SharedClaim is claimShared for a spawn_agent call a card is being drawn
+// for: empty unless the call allows overlap and a live writer that allowed it
+// too claims one of its paths.
+func (s *Supervisor) SharedClaim(raw json.RawMessage) (holder, claim string) {
+	args, err := parseSpawnArgs(s.Profiles(), raw)
+	if err != nil || !args.overlap {
+		return "", ""
+	}
+	holder, claim, _ = s.claimShared(args.paths)
+	return holder, claim
 }
 
 // claimHeld is the one walk of the live writers' claims: the first that
@@ -5206,6 +5296,20 @@ func (s *Supervisor) reviewPatch(c *child) (landed bool) {
 		c.mu.Unlock()
 		return false
 	}
+	// An integration writer's patch is the one result only where it holds a
+	// reconciliation of every conflicting file. One that left a file as the
+	// workspace had it, or wrote a conflict marker, lands nothing, and both
+	// patches stay kept for the person.
+	// See docs/capabilities/subagents.md#a-conflict-is-a-task-for-a-writer.
+	if c.integrates != nil {
+		if files := c.integrates.unreconciled(c.worktree, patch); len(files) > 0 {
+			note := s.unreconciledNote(c, files, patch)
+			c.mu.Lock()
+			c.patchNote = note
+			c.mu.Unlock()
+			return false
+		}
+	}
 	if strings.TrimSpace(patch) == "" {
 		c.mu.Lock()
 		c.patchNote = "no file changes were made"
@@ -5237,7 +5341,7 @@ func (s *Supervisor) reviewPatch(c *child) (landed bool) {
 	// what the card shows and what lands. A clean-looking merge of a golden
 	// file is still a file no generator would write.
 	held := "; the patch would have touched " + patchPaths(PatchFiles(patch))
-	generated := generatedPaths(s.opts.Generators, PatchFiles(patch))
+	generated := c.integrates.withGenerated(generatedPaths(s.opts.Generators, PatchFiles(patch)))
 	source := withoutFiles(patch, generated)
 	offer, merged := source, []string(nil)
 	for {
@@ -5253,10 +5357,13 @@ func (s *Supervisor) reviewPatch(c *child) (landed bool) {
 				return false
 			case len(m.Conflicts) > 0:
 				// A conflict region is not settled here: which side wins is
-				// the one judgement this merge has no standing to make.
+				// the one judgement this merge has no standing to make. It
+				// is a writer's, in a copy of its own, under review.
+				// See docs/capabilities/subagents.md#a-conflict-is-a-task-for-a-writer.
+				kept := c.keepWriterPatch(patch, s.opts.Generators)
 				settle("the patch no longer applies to the workspace: " + patchPaths(m.Conflicts) +
 					" moved since it started and the changes conflict there; no files were changed" +
-					c.keepWriterPatch(patch, s.opts.Generators) + held)
+					kept + s.integrateKept(c, m.Conflicts) + held)
 				return false
 			case m.Patch == "" && len(generated) == 0:
 				settle("the workspace already holds every change the patch makes; no files were changed")
@@ -5320,6 +5427,9 @@ func (s *Supervisor) reviewPatch(c *child) (landed bool) {
 				applied += ", with " + patchPaths(generated) + " regenerated by " + strings.Join(ran, ", ") + " rather than merged"
 			}
 			settle(applied)
+			if c.integrates != nil {
+				s.integrationLanded(c)
+			}
 			return true
 		}
 		// The landing is all-or-nothing, so a refusal changed nothing. Where
@@ -5455,6 +5565,20 @@ type keptPatch struct {
 	// merged is the files a merge went over where the patch is one, so the
 	// card it is reviewed on from the row says so too.
 	merged []string
+	// base is the commit the writer's copy stood on, where the patch is the
+	// writer's own against it rather than a merge over the checkout. The
+	// commit outlives the copy in the object store every copy shares, which
+	// is what lets the patch be merged again from its row (mergeKept). Empty
+	// for a patch that lands only as it is.
+	base string
+	// generated is the files the project declares generated that the patch
+	// was kept without; they are regenerated when it lands from the row.
+	generated []string
+	// integrated marks a patch an integration writer has been started for.
+	// The row's [p] then puts the patch itself to the person rather than
+	// starting another: the person is the last resort, asked with both
+	// patches in hand.
+	integrated bool
 }
 
 // keepPatch is the one fate of a writer's change that did not land, however
@@ -5463,11 +5587,21 @@ type keptPatch struct {
 // for review from its row. It answers with the note fragment naming it.
 // See docs/capabilities/subagents.md#a-failed-child-leaves-a-handoff.
 func (c *child) keepPatch(patch string, merged []string) string {
+	return c.keep(&keptPatch{patch: patch, merged: merged})
+}
+
+// keep is keepPatch for a kept patch that says more about itself than the
+// patch: the base it was written against and the generated files left out.
+func (c *child) keep(k *keptPatch) string {
 	c.mu.Lock()
-	k := &keptPatch{patch: patch, repoTop: c.repoTop, merged: merged}
+	k.repoTop = c.repoTop
+	// An integration writer's own patch never starts another integration
+	// from its row, however it came to be kept: a second attempt at the same
+	// conflict is the person's.
+	k.integrated = k.integrated || c.integrates != nil
 	c.mu.Unlock()
 	if c.env.Archive != nil {
-		if id, ok := c.env.Archive(keptPatchTool, patch); ok {
+		if id, ok := c.env.Archive(keptPatchTool, k.patch); ok {
 			k.id = id
 		}
 	}
@@ -5502,24 +5636,35 @@ func (c *child) keepStoppedPatch(gen Regenerator) {
 }
 
 // keepWriterPatch keeps a writer's own patch, as it wrote it, less the files
-// the project declares generated. A kept patch is reviewed from its row and
-// landed by the plain apply, with no copy left to regenerate in, so the
-// writer's bytes for a generated file would land exactly as written — the
-// hand-merge the landing exists to refuse. They are dropped instead and the
-// note says so: those files stay as the checkout has them until their
-// generator is run.
+// the project declares generated. The writer's bytes for a generated file are
+// never what lands — that is the hand-merge the landing exists to refuse — so
+// they are dropped and named on the kept patch, and regenerated over it in a
+// copy of the checkout when it lands from the row (awaitKept). A patch that
+// was nothing but generated files keeps nothing, and those files stay as the
+// checkout has them until their generator is run.
 // See docs/capabilities/subagents.md#a-writer-starts-from-your-tree.
 func (c *child) keepWriterPatch(patch string, gen Regenerator) string {
 	generated := generatedPaths(gen, PatchFiles(patch))
 	source := withoutFiles(patch, generated)
+	c.mu.Lock()
+	worktree := c.worktree
+	c.mu.Unlock()
+	// The copy's base, read while the copy is still there: the patch is the
+	// writer's own against it, so the two are what a later merge needs.
+	base := ""
+	if worktree != "" {
+		if out, err := gitOutput(worktree, "rev-parse", "HEAD"); err == nil {
+			base = strings.TrimSpace(out)
+		}
+	}
 	if len(generated) == 0 {
-		return c.keepPatch(patch, nil)
+		return c.keep(&keptPatch{patch: patch, base: base})
 	}
-	left := "; " + patchPaths(generated) + " are generated and left to their generator"
+	left := "; " + patchPaths(generated) + " are generated and are regenerated when it lands"
 	if source == "" {
-		return left
+		return "; " + patchPaths(generated) + " are generated and left to their generator"
 	}
-	return c.keepPatch(source, nil) + left
+	return c.keep(&keptPatch{patch: source, base: base, generated: generated}) + left
 }
 
 // PatchToKeep reports whether ending this agent now would keep a patch: a
@@ -5572,8 +5717,43 @@ func (s *Supervisor) ReviewKept(name string) (*Ask, error) {
 	if pending != nil {
 		return pending, nil
 	}
-	ask, touched := s.patchAsk(c.name, k.repoTop, k.patch)
-	ask.Merged = k.merged
+	// A kept patch that no longer applies is merged again from its row, the
+	// way a finishing writer's is, where it records the base it was written
+	// against: a merge that comes out clean is what the card shows and what
+	// lands, and one that leaves a conflict region is an integration
+	// writer's to reconcile rather than a card for a patch that cannot land.
+	// Once one has been tried the card is put to the person as the patch
+	// stands: they are the last resort, asked with both patches in hand.
+	// See docs/capabilities/subagents.md#a-conflict-is-a-task-for-a-writer.
+	land, merged := k.patch, k.merged
+	c.mu.Lock()
+	integrated := k.integrated
+	c.mu.Unlock()
+	if k.base != "" && checkPatch(k.repoTop, k.patch) != nil {
+		m, err := mergeKept(k.repoTop, k.base, k.patch, nil)
+		switch {
+		case err != nil:
+			// The card as the patch stands, whose landing then says why.
+		case len(m.Conflicts) > 0 && !integrated:
+			agentName, err := s.spawnIntegration(c, k, m.Conflicts)
+			if err != nil {
+				return nil, fmt.Errorf("the kept patch conflicts with the workspace in %s, and no integration writer could be started: %s",
+					patchPaths(m.Conflicts), firstLine(err.Error()))
+			}
+			return nil, &IntegrationStarted{Agent: agentName, Files: m.Conflicts}
+		case len(m.Conflicts) == 0 && m.Patch == "":
+			return nil, fmt.Errorf("the workspace already holds every change agent %s's kept patch makes", name)
+		case len(m.Conflicts) == 0:
+			land, merged = m.Patch, m.Moved
+		}
+	}
+	ask, touched := s.patchAsk(c.name, k.repoTop, land)
+	ask.Merged = merged
+	// What the patch was kept without is regenerated over it as it lands,
+	// in a copy of the checkout as it stands then (awaitKept).
+	if len(k.generated) > 0 {
+		ask.Warnings = append(ask.Warnings, patchPaths(k.generated)+" are generated and are regenerated by their generator as this lands")
+	}
 	c.mu.Lock()
 	if c.kept != k {
 		c.mu.Unlock()
@@ -5592,7 +5772,7 @@ func (s *Supervisor) ReviewKept(name string) (*Ask, error) {
 	// waits for an apply already under way rather than closing the event
 	// stream under it.
 	s.wg.Add(1)
-	go s.awaitKept(c, k, ask, touched)
+	go s.awaitKept(c, k, ask, land, touched)
 	return ask, nil
 }
 
@@ -5600,7 +5780,7 @@ func (s *Supervisor) ReviewKept(name string) (*Ask, error) {
 // while it is still the one the child holds: a retry in the meantime is the
 // person asking for the work again, and the patch it replaced is not what
 // they are now approving.
-func (s *Supervisor) awaitKept(c *child, k *keptPatch, ask *Ask, touched []string) {
+func (s *Supervisor) awaitKept(c *child, k *keptPatch, ask *Ask, land string, touched []string) {
 	defer s.wg.Done()
 	var approved bool
 	select {
@@ -5617,12 +5797,38 @@ func (s *Supervisor) awaitKept(c *child, k *keptPatch, ask *Ask, touched []strin
 	if !approved || !current {
 		return
 	}
-	note, err := s.landPatch(c, k.repoTop, k.patch, touched)
+	// The generated files the patch was kept without are regenerated over it
+	// in a copy of the checkout as it stands, as a finishing writer's are
+	// (regenerateOver); a generator that fails lands nothing, since the card
+	// promised the regenerated files with it.
+	var ran []string
+	if len(k.generated) > 0 {
+		out, cmds, err := regenerateOver(s.ctx, s.opts.Generators, s.opts.Root, s.parentUntracked(), land, k.generated)
+		if err != nil || out == "" {
+			note := "the workspace already holds every change the kept patch makes"
+			if err != nil {
+				note = "the kept patch's generated files could not be regenerated: " + firstLine(err.Error()) + "; no files were changed and it is still kept"
+			}
+			c.mu.Lock()
+			c.patchNote = note
+			c.mu.Unlock()
+			c.appendEntry(TranscriptEntry{Kind: EntrySystem, Text: note})
+			s.emitUpdate(c)
+			return
+		}
+		land, touched, ran = out, PatchFiles(out), cmds
+	}
+	note, err := s.landPatch(c, k.repoTop, land, touched)
 	c.mu.Lock()
 	if err != nil {
 		note = "the kept patch failed to apply cleanly: " + firstLine(err.Error()) + "; it is still kept"
-	} else if c.kept == k {
-		c.kept = nil
+	} else {
+		if len(ran) > 0 {
+			note += ", with " + patchPaths(k.generated) + " regenerated by " + strings.Join(ran, ", ")
+		}
+		if c.kept == k {
+			c.kept = nil
+		}
 	}
 	c.patchNote = note
 	c.mu.Unlock()

@@ -585,12 +585,21 @@ func (w *Worktree) Root() string { return w.h.root }
 // generators are run there, and what lands is that copy's difference
 // (regenerateOver). A generator that fails lands nothing.
 func (w *Worktree) Land() ([]string, error) {
+	landed, err := w.LandPatch()
+	return PatchFiles(landed), err
+}
+
+// LandPatch is Land answering with the patch it applied rather than its file
+// list: the writer's own where it applied plainly, the merge where the
+// checkout had moved, and with the regenerated files where there were any —
+// what the checkout moved by, which is what every other copy is owed.
+func (w *Worktree) LandPatch() (string, error) {
 	patch, err := worktreePatch(w.h.dir)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	if strings.TrimSpace(patch) == "" {
-		return nil, nil
+		return "", nil
 	}
 	generated := generatedPaths(w.gen, PatchFiles(patch))
 	offer := withoutFiles(patch, generated)
@@ -599,26 +608,26 @@ func (w *Worktree) Land() ([]string, error) {
 			m, err := mergeWorktree(w.h.dir, w.h.repoTop, generated)
 			switch {
 			case err != nil:
-				return nil, fmt.Errorf("%w; merging it over the checkout: %v", applyErr, err)
+				return "", fmt.Errorf("%w; merging it over the checkout: %v", applyErr, err)
 			case len(m.Conflicts) > 0:
-				return nil, &MergeConflict{Files: m.Conflicts}
+				return "", &MergeConflict{Files: m.Conflicts}
 			}
 			offer = m.Patch
 		}
 	}
 	if len(generated) > 0 {
 		if offer, _, err = regenerateOver(context.Background(), w.gen, w.root, w.untracked, offer, generated); err != nil {
-			return nil, err
+			return "", err
 		}
 	}
 	if offer == "" {
 		// The checkout already says everything the copy does.
-		return nil, nil
+		return "", nil
 	}
 	if err := applyPatch(w.h.repoTop, offer); err != nil {
-		return nil, err
+		return "", err
 	}
-	return PatchFiles(offer), nil
+	return offer, nil
 }
 
 // Remove tears the copy down. Best-effort, like every other teardown of one:
@@ -844,6 +853,11 @@ type patchMerge struct {
 	Moved []string
 	// Conflicts is the files whose merge left a conflict region.
 	Conflicts []string
+	// Resolved is, where there are conflicts, the merge of every other file
+	// as a patch against the checkout now: what an integration writer's
+	// copy starts from, so the files it is not asked to reconcile arrive
+	// already merged and cannot be left out of the one result.
+	Resolved string
 }
 
 // checkPatch asks whether a patch applies to the checkout as it stands,
@@ -900,11 +914,57 @@ func (a mergeSide) textual() bool {
 // is regenerated over the merge rather than merged (regenerateOver).
 // See docs/capabilities/subagents.md#a-writer-starts-from-your-tree.
 func mergeWorktree(worktree, repoTop string, skip []string) (patchMerge, error) {
-	var m patchMerge
 	raw, err := gitOutput(worktree, "diff", "--cached", "--raw", "--no-renames", "--no-abbrev", "-z")
 	if err != nil {
-		return m, err
+		return patchMerge{}, err
 	}
+	return mergeRaw(worktree, repoTop, raw, skip)
+}
+
+// mergeKept is mergeWorktree for a patch whose copy may be gone: base is the
+// commit the copy stood on, which lives in the object store the checkout and
+// every copy share, and the writer's side is that commit with the patch
+// applied, built in a scratch index. It is what lets a kept patch reviewed
+// from its row be merged the way a finishing writer's is.
+func mergeKept(repoTop, base, patch string, skip []string) (patchMerge, error) {
+	theirs, err := keptTree(repoTop, base, patch)
+	if err != nil {
+		return patchMerge{}, err
+	}
+	raw, err := gitOutput(repoTop, "diff-tree", "-r", "--raw", "--no-renames", "--no-abbrev", "-z", base+"^{tree}", theirs)
+	if err != nil {
+		return patchMerge{}, err
+	}
+	return mergeRaw(repoTop, repoTop, raw, skip)
+}
+
+// keptTree is base with patch applied, as a tree in the shared object store,
+// built in a scratch index so neither the checkout's index nor a copy's is
+// touched.
+func keptTree(repoTop, base, patch string) (string, error) {
+	scratch, err := os.MkdirTemp("", "shhh-kept-*")
+	if err != nil {
+		return "", err
+	}
+	defer func() { _ = os.RemoveAll(scratch) }()
+	index := []string{"GIT_INDEX_FILE=" + filepath.Join(scratch, "index")}
+	if _, err := gitWithEnv(repoTop, index, "", "read-tree", base); err != nil {
+		return "", err
+	}
+	if strings.TrimSpace(patch) != "" {
+		if _, err := gitWithEnv(repoTop, index, patch, "apply", "--cached", "--whitespace=nowarn"); err != nil {
+			return "", err
+		}
+	}
+	tree, err := gitWithEnv(repoTop, index, "", "write-tree")
+	return strings.TrimSpace(tree), err
+}
+
+// mergeRaw is the merge over a raw diff from the base to the writer's side:
+// worktree is where the sides' blobs are read and the scratch trees built,
+// repoTop the checkout whose files are ours.
+func mergeRaw(worktree, repoTop, raw string, skip []string) (patchMerge, error) {
+	var m patchMerge
 	skipped := map[string]bool{}
 	for _, p := range skip {
 		skipped[p] = true
@@ -958,9 +1018,6 @@ func mergeWorktree(worktree, repoTop string, skip []string) (patchMerge, error) 
 		}
 		entries = append(entries, entry{path, ours, merged})
 	}
-	if len(m.Conflicts) > 0 {
-		return m, nil
-	}
 
 	// The patch is the difference between two trees holding only these
 	// files: the checkout's side, then the merge. Both are built in a scratch
@@ -1003,9 +1060,14 @@ func mergeWorktree(worktree, repoTop string, skip []string) (patchMerge, error) 
 	if err != nil {
 		return m, err
 	}
-	m.Patch, err = gitOutput(worktree, "diff-tree", "-p", "--binary", "--no-renames", "--full-index", from, to)
-	if strings.TrimSpace(m.Patch) == "" {
-		m.Patch = ""
+	patch, err := gitOutput(worktree, "diff-tree", "-p", "--binary", "--no-renames", "--full-index", from, to)
+	if strings.TrimSpace(patch) == "" {
+		patch = ""
+	}
+	if len(m.Conflicts) > 0 {
+		m.Resolved = patch
+	} else {
+		m.Patch = patch
 	}
 	return m, err
 }

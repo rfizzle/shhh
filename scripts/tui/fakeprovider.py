@@ -52,6 +52,9 @@ answered from the queue of its own name rather than all of them from one:
     [reading]     the session's own readings of its run — the summariser, the
                   classifier, the title — which otherwise take the scene's
                   next reply and leave the turn one short
+    [integrator]  the integration writer the supervisor starts itself when
+                  two writers' changes conflict: no spawn_agent call names
+                  it, so it is known by the conflict its first turn opens on
 
 A file with no header is one queue for everybody, which is what a scene
 written before this is. An agent no queue was written for is answered with a
@@ -88,6 +91,10 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 HEADER = re.compile(r"^\[([a-z0-9][a-z0-9 _-]*)\]$")
 SESSION = "session"
 READING = "reading"
+INTEGRATOR = "integrator"
+# What an integration writer's first turn opens on. Its task quotes the
+# conflicting writer's, so without this it would be taken for that writer.
+CONFLICT = "# The conflict"
 # What an agent no queue was written for is answered with. It has to end a
 # turn rather than ask for anything, and to read correctly to a child, a
 # summariser and a classifier alike.
@@ -161,6 +168,8 @@ def route(body):
         if message.get("role") == "user":
             first = str(message.get("content") or "")
             break
+    if first.startswith(CONFLICT) and INTEGRATOR in QUEUES:
+        return INTEGRATOR
     with lock:
         known = list(children)
     for task, name in known:

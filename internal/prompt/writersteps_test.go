@@ -26,6 +26,29 @@ func TestBuildWriter_AsksForThePlanInTheGrammarItIsReadIn(t *testing.T) {
 	}
 }
 
+// An integration writer is told what its copy holds, what reads as not
+// reconciled, and how to stop with both patches kept — in a paragraph that
+// names no tool, since it rides whatever profile the conflicting writer ran.
+func TestIntegrationWriter_SaysHowToReconcileAndHowToStop(t *testing.T) {
+	for _, said := range []string{
+		"every other file of that writer's patch already merged into it",
+		"Leave no conflict markers",
+		"leave the conflicting files as you found them and say so in your report",
+	} {
+		if !strings.Contains(IntegrationWriter, said) {
+			t.Errorf("the integration paragraph should say %q", said)
+		}
+	}
+	for _, tool := range []string{"write_file", "edit_file", "execute_command", "read_file", "quality_gate"} {
+		if strings.Contains(IntegrationWriter, tool) {
+			t.Errorf("the integration paragraph should name no tool, found %q", tool)
+		}
+	}
+	if strings.Contains(BuildWriter(shell.Info{Shell: "bash", OS: "linux", Cwd: "/w"}), "# Reconciling two changes") {
+		t.Fatal("an ordinary writer's prompt should not carry the integration paragraph")
+	}
+}
+
 // A writer is told its generated files are regenerated at landing, so it
 // changes the source rather than hand-merging one; the session's own prompt,
 // which lands nothing, is not.

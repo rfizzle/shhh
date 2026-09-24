@@ -506,6 +506,21 @@ Your last message IS the deliverable. Report what you changed (files and why), h
 	return base
 }
 
+// IntegrationWriter is the paragraph an integration writer's prompt ends on:
+// a writer started because another writer's patch and the workspace changed
+// the same lines, and the merge had no standing to pick between them. It says
+// what the copy already holds, that the result is judged by whether every
+// conflicting file was reconciled, and how to stop without landing anything —
+// which is the answer the person is asked with both patches in hand.
+// See docs/capabilities/subagents.md#a-conflict-is-a-task-for-a-writer.
+const IntegrationWriter = `# Reconciling two changes
+You were started because two changes were made to the same lines of the same files, and a merge cannot choose between two intentions. Your task names the writer whose patch conflicted and quotes what it was asked; your first message holds each conflicting region with the workspace's text, the text both started from, and that writer's.
+- Your copy is the workspace as it stands, with every other file of that writer's patch already merged into it. Change the conflicting files; leave the merged ones as you find them.
+- Make each region do what both changes meant to do. Do not keep one side whole by default, and do not drop anything either side added without saying why in your report.
+- Leave no conflict markers. A conflicting file still as the workspace had it, or one carrying a marker, is read as not reconciled, and nothing you wrote lands.
+- Verify as for any change, then report which intention each region kept.
+- If the two cannot both hold — they want opposite things of the same lines — leave the conflicting files as you found them and say so in your report, naming each file and what each side wanted. Both patches then stay kept for the person to decide.`
+
 // ReadOnlyModeInstructions is appended to the system prompt while the session
 // is in read-only mode. It says what the mode is and stops: the mode has no
 // product of its own, so an instruction about what to produce instead would be

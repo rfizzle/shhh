@@ -39,7 +39,6 @@ import (
 	"time"
 
 	"github.com/rfizzle/shhh/internal/quality"
-	"github.com/rfizzle/shhh/internal/runner"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/todo"
 	"github.com/rfizzle/shhh/internal/todo/run"
@@ -375,8 +374,7 @@ func (l *todoLane) catchUp() string {
 // that leaves a conflict region lands nothing and is answered by
 // integrateConflict.
 func (l *todoLane) land() ([]string, error) {
-	before, beforeErr := todoCheckoutTree(l.set.top)
-	files, err := l.wt.Land()
+	patch, err := l.wt.LandPatch()
 	if err != nil {
 		var conflict *subagent.MergeConflict
 		if errors.As(err, &conflict) {
@@ -384,22 +382,13 @@ func (l *todoLane) land() ([]string, error) {
 		}
 		return nil, fmt.Errorf("the lane's patch would not apply onto the checkout: %s", todoFirstProblem(err.Error()))
 	}
+	files := subagent.PatchFiles(patch)
 	if len(files) > 0 {
 		l.landed = true
-		// What landed, read back off the checkout rather than off the lane's
-		// patch: a merge or a regenerated file lands something other than
-		// what the lane wrote, and the other copies are owed what the
-		// checkout now holds.
-		patch, perr := "", beforeErr
-		if perr == nil {
-			patch, perr = todoLandedPatch(l.set.top, before, files)
-		}
-		if perr != nil {
-			fmt.Fprintf(l.set.out, "what lane %s landed could not be read back for the other lanes, so they meet it at their own landing: %s\n",
-				l.slug, todoFirstProblem(perr.Error()))
-		} else {
-			l.set.landings = append(l.set.landings, todoLanding{slug: l.slug, patch: patch})
-		}
+		// What landed is the patch the landing applied rather than the one
+		// the lane wrote: a merge or a regenerated file lands something else,
+		// and the other copies are owed what the checkout now holds.
+		l.set.landings = append(l.set.landings, todoLanding{slug: l.slug, patch: patch})
 	}
 	// The lane's own landing is not one it has to carry.
 	l.seen = len(l.set.landings)
@@ -408,76 +397,19 @@ func (l *todoLane) land() ([]string, error) {
 
 // integrateConflict answers a landing whose three-way merge left a conflict
 // region. Reconciling two intentions over one file is a model's judgement
-// under review, and never the merge's; until the runner has a writer to hand
-// that to, the ending is the session's when an integration cannot reconcile:
-// both patches kept — the one that landed first on the checkout, this lane's
-// in its copy — nothing committed with conflict markers, and the item blocked
-// with the files named. This is the one place a lane's conflict is answered,
-// so an integration step replaces this body and nothing else.
-// See docs/capabilities/subagents.md#a-writer-starts-from-your-tree.
+// under review, and never the merge's. A session hands it to an integration
+// writer its supervisor starts and puts its patch to the person; an
+// unattended run has neither a supervisor to host that writer nor a person to
+// review what it wrote, so the ending here is the session's when an
+// integration cannot reconcile: both patches kept — the one that landed first
+// on the checkout, this lane's in its copy — nothing committed with conflict
+// markers, and the item blocked with the files named for the person to
+// reconcile. This is the one place a lane's conflict is answered.
+// See docs/capabilities/subagents.md#a-conflict-is-a-task-for-a-writer.
 func (l *todoLane) integrateConflict(conflict *subagent.MergeConflict) error {
 	l.kept = true
 	return fmt.Errorf("the lane's patch conflicts with what landed on the checkout before it, in %s; nothing was written, the landed work stays on the checkout and this lane's is kept in %s",
 		strings.Join(conflict.Files, ", "), l.wt.Root())
-}
-
-// todoCheckoutTree writes the checkout's working tree as it stands to a tree
-// object, through a scratch copy of its index, so the person's own index is
-// never touched and only the files that moved are hashed again.
-func todoCheckoutTree(top string) (string, error) {
-	scratch, err := os.MkdirTemp("", "shhh-landing-*")
-	if err != nil {
-		return "", err
-	}
-	defer func() { _ = os.RemoveAll(scratch) }()
-	index := filepath.Join(scratch, "index")
-	git := func(args ...string) (string, error) {
-		cmd := exec.Command("git", append([]string{"-C", top}, args...)...)
-		cmd.Env = append(runner.Environ(), "GIT_INDEX_FILE="+index)
-		out, err := cmd.Output()
-		if err != nil {
-			var ee *exec.ExitError
-			if errors.As(err, &ee) {
-				return "", fmt.Errorf("git %s: %s", args[0], strings.TrimSpace(string(ee.Stderr)))
-			}
-			return "", err
-		}
-		return string(out), nil
-	}
-	own, code := todoGit(top, "rev-parse", "--git-path", "index")
-	if code == 0 && !filepath.IsAbs(own) {
-		own = filepath.Join(top, own)
-	}
-	if data, err := os.ReadFile(own); code == 0 && err == nil {
-		if err := os.WriteFile(index, data, 0o600); err != nil {
-			return "", err
-		}
-	} else if _, err := git("read-tree", "HEAD"); err != nil {
-		return "", err
-	}
-	if _, err := git("add", "-A"); err != nil {
-		return "", err
-	}
-	tree, err := git("write-tree")
-	return strings.TrimSpace(tree), err
-}
-
-// todoLandedPatch is the difference a landing made to the checkout over the
-// files it landed, as a patch another copy can carry: the tree before it
-// against the tree after, limited to those files, so nothing the backlog's
-// own bookkeeping moved meanwhile is part of it.
-func todoLandedPatch(top, before string, files []string) (string, error) {
-	after, err := todoCheckoutTree(top)
-	if err != nil {
-		return "", err
-	}
-	cmd := exec.Command("git", append([]string{"-C", top, "diff-tree", "-r", "-p", "--binary", before, after, "--"}, files...)...)
-	cmd.Env = runner.Environ()
-	out, err := cmd.Output()
-	if err != nil {
-		return "", fmt.Errorf("git diff-tree: %v", err)
-	}
-	return string(out), nil
 }
 
 // landCommit is a lane's commit: its patch applied to the checkout and

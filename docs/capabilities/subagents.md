@@ -189,8 +189,8 @@ lands by the same all-or-nothing apply as every other patch; if your checkout
 moves again while the card is up, nothing lands and the card comes back with
 the merge redone. Where the two changes meet on the same lines nothing is
 merged at all: which side wins is a judgement about your work and the
-writer's, and a merge has no standing to make it, so the patch is kept for you
-with the files named.
+writer's, and a merge has no standing to make it, so the patch is kept with
+the files named and handed to a writer of its own (below).
 
 A generated file is never merged, and never carried in as the writer wrote it.
 A golden fixture or a generated section of a document is the output of a
@@ -210,9 +210,9 @@ evidence. One that fails lands nothing on its own: the card comes up with the
 change and without the generated files, saying which generator failed and
 where its output is, and your files have not been touched. A patch kept for
 you to review from the writer's row is kept without its generated files and
-says so: it lands later by the plain apply, with no copy left to regenerate
-in, so those files are left to their generator rather than landed as the
-writer wrote them. A landing carried
+names them: when you land it from the row, their generators run over it in a
+copy of your checkout the way they do for a finishing writer, and the card
+says so before you answer. A landing carried
 into a live writer's copy follows the same rule: the copy's base takes the
 landed bytes, and the writer's own copy of each generated file is regenerated
 there, over its own work, rather than patched — so two writers who both
@@ -223,6 +223,69 @@ merged as above. The rule is declared, never guessed from a file's name. The
 writer's prompt says so too, so a writer that meets a collision over a
 generated file changes the source and leaves the file to its generator rather
 than merging it by hand.
+
+## A conflict is a task for a writer
+
+Where two changes meet on the same lines, one of three things can happen: the
+merge picks a winner, you are handed conflict markers, or somebody works out
+what both changes meant and writes that. The first throws away work nobody
+looked at, and the second hands you a chore at the moment you are least
+placed to do it — two intentions you did not write, over lines you may not
+have read. So a conflict is the third: a model's judgement, in isolation,
+under review.
+
+When a writer's patch leaves a conflict region, the patch is kept on its row
+and an integration writer is started for it. It is a writer like any other —
+the same slots, the same limits on how many and how deep, the same admission,
+a claim on the conflicting files that waits behind the writer it reconciles —
+and it works in a copy of its own. That copy is your checkout as it stands,
+with every file of the conflicting patch that did merge cleanly already
+written in, so the only thing left for it is the conflict. It opens on the
+conflict itself, the way a review opens on its diff: each region with your
+text, the text both started from and the writer's, and the writer's own task
+beside them, so the intention on that side is in its own words. Its prompt
+adds one paragraph: what its copy holds, that markers are not a result, and
+how to stop.
+
+Its patch then goes where every writer's goes: the checks, the card, and the
+merge again if your checkout has moved meanwhile. It is the one result. When
+it lands, the kept patch it reconciled is spent — offering that patch again
+from its row would be the same work twice.
+
+An integration writer that cannot reconcile the two says so and lands
+nothing. Its patch is read, not trusted: a conflicting file still as your
+checkout had it, or one carrying a conflict marker, is not a reconciliation,
+whatever the report says. Both patches then stay kept — the writer's and the
+integration's — each on its own row with the files named, and nothing is
+written with markers. That is where you come in, and only there: the person
+is the last resort, asked with both patches in hand, never the first. A kept
+patch's row starts at most one integration writer; after that, reviewing it
+puts the patch itself in front of you.
+
+A kept patch reviewed from its row is merged again the same way, because the
+tree has usually moved by the time you get to it. It records the commit its
+copy stood on, which outlives the copy, so the merge can be redone once the
+copy is gone: a patch that merges cleanly is put on the card merged, and one
+that conflicts starts its integration writer rather than a card for a patch
+that cannot land.
+
+A backlog run working several items at once cannot do this. It has no
+supervisor to start the integration writer under and nobody to review what one
+wrote, so a lane whose landing conflicts is blocked with both patches kept —
+the first on the checkout, the lane's in its copy — and the files named.
+
+Two writers can also be put in one file on purpose. A claim is a writer's to
+itself by default, and a spawn that overlaps a running writer's is refused,
+because an overlap nobody planned is usually work divided along the wrong
+line. But some changes are one file's business for two agents — two features
+that each add to one registry, two fixes to one long function — and splitting
+them would only move the conflict somewhere less visible. So a spawn can say
+its claim may be shared, and when both writers said so the second is started
+beside the first: its card says whose claim it shares, both patches land
+through the merge, and where the two meet on the same lines the second's goes
+to an integration writer like any other conflict. Only both sides saying so
+counts. A writer already running that did not allow it keeps its files to
+itself, so allowing overlap is never a way around a refused claim.
 
 ## Spawning is a decision
 
