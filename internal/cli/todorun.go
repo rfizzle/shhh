@@ -39,6 +39,7 @@ import (
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/runner"
+	"github.com/rfizzle/shhh/internal/sandbox"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/todo"
@@ -389,6 +390,20 @@ func newTodoDriver(out io.Writer, root string, cfg config.Config, noCommit bool)
 	if projectTrust().Allows() {
 		d.gate = &quality.Runner{Workspace: root}
 		_, _, d.closeGate = onCloseGate(d.gate)
+		// A generated file is regenerated in the copy it lands through
+		// rather than merged, and the generator writes that copy — so it is
+		// contained there, under the policy a session's gate stands in a
+		// writer's copy.
+		if avail := sandbox.Detect(); avail.OK {
+			if policy, err := sandboxPolicy(cfg); err == nil {
+				policy.PrivateGoCache = true
+				d.gate.WrapIn = func(dir string, argv []string) ([]string, error) {
+					p := policy
+					p.Workspace, p.ReadOnlyWorkspace = dir, false
+					return sandbox.WrapArgv(avail, p, argv)
+				}
+			}
+		}
 	}
 	// A config that is present but broken is still the project saying what
 	// checking means, and the gate says what is wrong with it where it runs.
@@ -1370,6 +1385,9 @@ func (d *todoDriver) fanOut(ctx context.Context, deadline time.Time, st *run.Sta
 		if err != nil {
 			release()
 			return st.NoLanes(it, "no isolated copy of the checkout could be made: "+todoFirstProblem(err.Error()))
+		}
+		if d.gate != nil {
+			wt.UseGenerators(d.gate)
 		}
 		trees = append(trees, wt)
 	}

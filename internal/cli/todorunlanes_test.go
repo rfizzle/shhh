@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/todo"
 	"github.com/rfizzle/shhh/internal/todo/run"
 )
@@ -203,10 +204,11 @@ func removeLaneCopies(t *testing.T, root string) {
 	})
 }
 
-// A lane told the branch moved rebases its own copy before its next step,
-// and where its work does not rebase the item blocks with git's words as the
-// evidence — and the sprint goes on with the other lanes rather than stopping.
-func TestTodoRunHeadless_ALaneWhoseRebaseConflictsBlocksAndTheSprintGoesOn(t *testing.T) {
+// A lane carries what another lane landed into its copy before its next
+// step, and where the landing meets the lane's own work the item blocks with
+// the collision as the evidence — nobody is there to be steered — and the
+// sprint goes on with the other lanes rather than stopping.
+func TestTodoRunHeadless_ALaneALandingWillNotCarryIntoBlocksAndTheSprintGoesOn(t *testing.T) {
 	root := todoRepo(t)
 	laneItem(t, root, "a-one", "a-one.go")
 	laneItem(t, root, "b-two", "b-two.go")
@@ -218,7 +220,7 @@ func TestTodoRunHeadless_ALaneWhoseRebaseConflictsBlocksAndTheSprintGoesOn(t *te
 	a := &laneAnswers{
 		// b-two's declared paths said nothing about a-one's file, and it
 		// writes one anyway: the declaration is what a reviewer checks, and
-		// the rebase is what catches a lane that strayed from it.
+		// the reseed is what catches a lane that strayed from it.
 		write: func(slug string) (string, string) {
 			if slug == "b-two" {
 				return "a-one.go", "package other\n"
@@ -248,8 +250,8 @@ func TestTodoRunHeadless_ALaneWhoseRebaseConflictsBlocksAndTheSprintGoesOn(t *te
 		t.Fatalf("a-one landed and is archived:\n%s", out.String())
 	}
 	it, _ := store.Find("b-two")
-	if it.Status != todo.StatusBlocked || !strings.Contains(it.Body, "does not rebase onto it") {
-		t.Fatalf("b-two blocks with the rebase as its evidence: %s\n%s", it.Status, it.Body)
+	if it.Status != todo.StatusBlocked || !strings.Contains(it.Body, "does not carry into this lane's copy over a-one.go") {
+		t.Fatalf("b-two blocks with the collision as its evidence: %s\n%s", it.Status, it.Body)
 	}
 	if !strings.Contains(out.String(), "sprint over — 1 item done · "+run.SprintBlocked+": b-two blocked") {
 		t.Fatalf("the ending names the item that blocked:\n%s", out.String())
@@ -259,6 +261,96 @@ func TestTodoRunHeadless_ALaneWhoseRebaseConflictsBlocksAndTheSprintGoesOn(t *te
 	}
 	if content, _ := os.ReadFile(filepath.Join(root, "a-one.go")); string(content) != "package aone\n" {
 		t.Fatalf("the blocked lane wrote nothing onto the checkout: %q", content)
+	}
+}
+
+// A lane carries what another lane landed into its copy at its next stage
+// boundary, so the stages after it read the tree the lane will land into, and
+// its own landing is still its own work alone.
+func TestTodoRunHeadless_ALaneCarriesAnotherLanesLandingAtItsNextBoundary(t *testing.T) {
+	root := todoRepo(t)
+	laneItem(t, root, "a-one", "a-one.go")
+	laneItem(t, root, "b-two", "b-two.go")
+	landed := func() bool {
+		log, _ := todoGit(root, "log", "--format=%s")
+		return strings.Contains(log, "Build a-one")
+	}
+	var carried []byte
+	a := &laneAnswers{hold: func(slug string, stage run.Stage, dir string) {
+		if slug != "b-two" {
+			return
+		}
+		switch stage {
+		case run.StageImplement:
+			deadline := time.Now().Add(30 * time.Second)
+			for !landed() && time.Now().Before(deadline) {
+				time.Sleep(20 * time.Millisecond)
+			}
+		case run.StageReview:
+			carried, _ = os.ReadFile(filepath.Join(dir, "a-one.go"))
+		}
+	}}
+	d, out := laneDriverFor(t, root, a)
+
+	if blocked := d.sprintParallel(context.Background(), 0, 2); blocked {
+		t.Fatalf("the sprint should have finished:\n%s", out.String())
+	}
+	if string(carried) != "package aone\n" {
+		t.Fatalf("b-two's copy should hold what a-one landed by its review: %q\n%s", carried, out.String())
+	}
+	files, _ := todoGit(root, "show", "--name-only", "--format=", "HEAD")
+	if strings.TrimSpace(files) != "b-two.go" {
+		t.Fatalf("b-two's commit holds its own work alone: %q", files)
+	}
+}
+
+// A landing that meets what landed before it in the same lines is not
+// reconciled by the merge: nothing is written, both patches are kept — the
+// first on the checkout, the lane's in its copy — and the answer names the
+// file. The window it happens in is a landing between a lane's last boundary
+// and its own landing, which no stage can be held in, so the lane is driven
+// directly.
+func TestTodoLane_ALandingThatConflictsKeepsBothPatches(t *testing.T) {
+	root := todoRepo(t)
+	shared := filepath.Join(root, "shared.txt")
+	if err := os.WriteFile(shared, []byte("one\ntwo\nthree\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	for _, args := range [][]string{{"add", "shared.txt"}, {"commit", "-q", "-m", "shared"}} {
+		if out, code := todoGit(root, args...); code != 0 {
+			t.Fatalf("git %v: %s", args, out)
+		}
+	}
+	wt, err := subagent.NewWorktree(root, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(wt.Remove)
+	if err := os.WriteFile(filepath.Join(wt.Root(), "shared.txt"), []byte("one\nB\nthree\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	// What an earlier lane landed, on the checkout since the copy was made.
+	if err := os.WriteFile(shared, []byte("one\nA\nthree\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	set := &todoLanes{root: root, out: &strings.Builder{}, top: todoRepoTop(root)}
+	lane := &todoLane{set: set, slug: "b-two", wt: wt}
+
+	files, err := lane.land()
+	if err == nil || !strings.Contains(err.Error(), "conflicts with what landed on the checkout before it, in shared.txt") {
+		t.Fatalf("the landing names the conflicting file: %v (landed %v)", err, files)
+	}
+	if !lane.kept || lane.landed {
+		t.Fatalf("the lane's copy is kept and nothing landed: kept %v, landed %v", lane.kept, lane.landed)
+	}
+	if content, _ := os.ReadFile(shared); string(content) != "one\nA\nthree\n" {
+		t.Fatalf("the checkout keeps what landed first, with no conflict markers: %q", content)
+	}
+	if content, _ := os.ReadFile(filepath.Join(wt.Root(), "shared.txt")); string(content) != "one\nB\nthree\n" {
+		t.Fatalf("the lane's patch is kept in its copy: %q", content)
+	}
+	if len(set.landings) != 0 {
+		t.Fatal("a landing that wrote nothing is nothing for the other lanes to carry")
 	}
 }
 

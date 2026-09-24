@@ -1049,18 +1049,24 @@ so the list's order still holds. Declared rather than inferred, because a
 declaration is something a person reviewing the item can check before
 anything runs, and an inference is one more reading paid for on every item.
 
-**Landing is one lane at a time, in the order they finish.** A lane that
-reaches its commit puts its patch onto the checkout and commits it there
-while no other lane may write the branch, so two lanes never write it at
-once. Every other lane, told the branch moved, rebases its own copy onto the
-new commit before its next step, so what it verifies and what it is reviewed
-on is the tree it will land into. A rebase that conflicts blocks that lane's
-item with git's own words as the evidence and frees the lane, and the lane's
-copy is kept for whoever reads the block. A declaration that turned out to
-be wrong is caught there, not trusted. A sprint asked for without commits
-moves no branch, so there is nothing to rebase onto: each lane's patch is
-applied to the working tree as it finishes, whole or not at all, and one
-that no longer applies over what landed before it blocks that item instead.
+**Landing is one lane at a time, in the order they finish, and it is the
+session's landing.** A lane is a writer, and its patch lands the way a
+writer's does ([`subagents.md`](subagents.md#a-writer-starts-from-your-tree)):
+merged against its base where the checkout moved under it, a generated file
+regenerated rather than merged, and what landed carried into every other
+lane's copy at that lane's next step — a step is what a round is to a
+writer — so what it verifies and what it is reviewed on is the tree it will
+land into. A lane that reaches its commit lands and commits while no other
+lane may write the checkout; a sprint asked for without commits lands the
+same way and leaves the change uncommitted. Two endings differ from the
+session's, because an unattended run has nobody to steer: a landing that
+will not carry into a lane's copy blocks that lane's item with the collision
+as the evidence, and a merge that leaves a conflict blocks it with both
+patches kept — the one that landed first on the checkout, the lane's in its
+copy — and the files named, never a commit with conflict markers in it.
+Either way the lane is freed and its copy is kept for whoever reads the
+block. A declaration that turned out to be wrong is caught there, not
+trusted.
 
 **A blocked lane does not stop the sprint.** The other lanes' items were
 ready, so none of them rests on the work that did not land. The sprint goes
