@@ -238,7 +238,7 @@ func TestAttachCommand_UnknownAgent(t *testing.T) {
 	if m.attachedTo != "" {
 		t.Fatal("an unknown agent must not attach")
 	}
-	if !transcriptContains(m, "No agent named nobody-1") {
+	if !transcriptContains(m, "no agent named nobody-1") {
 		t.Fatal("expected a notice naming the missing agent")
 	}
 }
@@ -282,7 +282,7 @@ func TestAttachCommand_HopsBetweenAgentsWhileAttached(t *testing.T) {
 	}
 	var found bool
 	for _, te := range sup.Transcript("researcher-2") {
-		if strings.Contains(te.Text, "No agent named nobody-1") {
+		if strings.Contains(te.Text, "no agent named nobody-1") {
 			found = true
 		}
 	}

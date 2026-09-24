@@ -352,7 +352,7 @@ func TestHistorySearch_AnEmptyRingSaysSo(t *testing.T) {
 	if m.historySearching() {
 		t.Fatal("the search opened over nothing to search")
 	}
-	if view := stripANSI(m.renderHistory()); !strings.Contains(view, "No input history") {
+	if view := stripANSI(m.renderHistory()); !strings.Contains(view, "no input history") {
 		t.Errorf("the refusal did not say why:\n%s", view)
 	}
 }
@@ -366,7 +366,7 @@ func TestKeyList_TheChordPrintsTheKeysAndAQuestionMarkIsALetter(t *testing.T) {
 	if got := m.input.Value(); got != "?" {
 		t.Fatalf("? is a letter at the draft, got %q", got)
 	}
-	if view := stripANSI(m.renderHistory()); strings.Contains(view, "Keys:") {
+	if view := stripANSI(m.renderHistory()); strings.Contains(view, "[ctrl+n]") {
 		t.Errorf("? printed the key list:\n%s", view)
 	}
 
@@ -375,7 +375,7 @@ func TestKeyList_TheChordPrintsTheKeysAndAQuestionMarkIsALetter(t *testing.T) {
 		t.Fatalf("the chord took the draft with it, got %q", got)
 	}
 	view := stripANSI(m.renderHistory())
-	if !strings.Contains(view, "Keys:") || !strings.Contains(view, "reading mode") {
+	if !strings.Contains(view, "[ctrl+n]") || !strings.Contains(view, "reading mode") {
 		t.Errorf("the chord did not print the key section as a system row:\n%s", view)
 	}
 }

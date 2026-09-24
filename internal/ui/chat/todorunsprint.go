@@ -34,25 +34,25 @@ import (
 // it was on, and that item's own checkpoint names the stage.
 func (m Model) startTodoSprint(opt todoRunArgs) (tea.Model, tea.Cmd) {
 	if m.todoRunner.state != nil && !m.todoRunner.state.Over() {
-		return m.systemNotice(fmt.Sprintf("A run is already going: %s. /todo status shows it; /todo stop ends it.", m.todoRunner.state.Summary()))
+		return m.systemNotice(fmt.Sprintf("a run is already going: %s. /todo status shows it; /todo stop ends it", m.todoRunner.state.Summary()))
 	}
 	if m.todoStore == nil {
-		return m.systemNotice("No backlog to run from.")
+		return m.systemNotice("no backlog to run from")
 	}
 	if m.turnState() != stateInput {
-		return m.systemNotice("Answer the open decision first; a sprint starts from an idle session.")
+		return m.systemNotice("answer the open decision first; a sprint starts from an idle session")
 	}
 	noCommit := opt.noCommit || m.todos.NoCommit
 	steps := run.Options{NoCommit: noCommit, Pipeline: m.todos.Pipeline, Notebook: m.notebook != nil}.Steps()
 	if !steps.Runs() {
-		return m.systemNotice(fmt.Sprintf("The %s profile has no run, so there is no set to work: its items are worked by hand.", m.todos.Profile.Name))
+		return m.systemNotice(fmt.Sprintf("the %s profile has no run, so there is no set to work: its items are worked by hand", m.todos.Profile.Name))
 	}
 	if ref, refused := steps.Refuse(m.todoRunCan(project.InRepo(m.todos.Root))); refused {
 		return m.systemNotice(m.todoRunRefusal(ref, ""))
 	}
 	if sp, live := run.Live(m.todos.Root); live && sp.Laned() {
-		return m.systemNotice("A sprint working several items at once is going — " + sp.Summary() +
-			". /todo stop ends it; if the process working it has gone, `shhh todo run --all` picks it up.")
+		return m.systemNotice("a sprint working several items at once is going — " + sp.Summary() +
+			". /todo stop ends it; if the process working it has gone, `shhh todo run --all` picks it up")
 	}
 	if opt.parallel > 1 {
 		return m.startParallelSprint(opt, noCommit)
@@ -67,11 +67,11 @@ func (m Model) startTodoSprint(opt todoRunArgs) (tea.Model, tea.Cmd) {
 			sp.Max = opt.max
 		}
 		sp.Bound(opt.costCap, m.todos.SprintCostCap)
-		model, _ := m.systemNotice("Continuing the sprint from its checkpoint — " + sp.Summary() + ".")
+		model, _ := m.systemNotice("continuing the sprint from its checkpoint — " + sp.Summary())
 		next := model.(Model)
 		if slug, ok := sp.Resume(); ok {
 			if err := sp.Save(next.todos.Root); err != nil {
-				return next.systemNotice("The sprint's checkpoint could not be written — " + err.Error())
+				return next.systemNotice("the sprint's checkpoint could not be written — " + err.Error())
 			}
 			return next.sprintRun(sp, slug)
 		}
@@ -91,7 +91,7 @@ func (m Model) startTodoSprint(opt todoRunArgs) (tea.Model, tea.Cmd) {
 // See docs/capabilities/todo.md#a-sprint-can-work-several-items-at-once.
 func (m Model) startParallelSprint(opt todoRunArgs, noCommit bool) (tea.Model, tea.Cmd) {
 	if m.todos.Parallel == nil {
-		return m.systemNotice("This session cannot start a sprint that works several items at once; `shhh todo run --all --parallel N` does.")
+		return m.systemNotice("this session cannot start a sprint that works several items at once; `shhh todo run --all --parallel N` does")
 	}
 	args := []string{"--all", "--parallel", strconv.Itoa(opt.parallel)}
 	if opt.max > 0 {
@@ -105,11 +105,11 @@ func (m Model) startParallelSprint(opt todoRunArgs, noCommit bool) (tea.Model, t
 	}
 	log, err := m.todos.Parallel(args)
 	if err != nil {
-		return m.systemNotice("The sprint could not be started — " + err.Error())
+		return m.systemNotice("the sprint could not be started — " + err.Error())
 	}
 	m.signal(observe.SignalRun, "sprint")
-	note := fmt.Sprintf("Sprint started — up to %d items at once, each in its own copy of the checkout, landing on the branch as each finishes. "+
-		"It is the unattended runner, so nobody approves its steps; its lines go to %s, and the sprint tab and the rail follow it. /todo stop ends it.",
+	note := fmt.Sprintf("sprint started — up to %d items at once, each in its own copy of the checkout, landing on the branch as each finishes. "+
+		"It is the unattended runner, so nobody approves its steps; its lines go to %s, and the sprint tab and the rail follow it. /todo stop ends it",
 		opt.parallel, log)
 	// The runner may not have written its checkpoint yet, so the session
 	// that started it arms the re-read without asking the file first.
@@ -180,7 +180,7 @@ func todoSprintStartNote(sp *run.Sprint, ready int) string {
 	if sp.CapCents > 0 {
 		scope += ", spending at most " + run.CapDollars(sp.CapCents)
 	}
-	note := "Sprint started — " + scope + ", one item per session. /todo stop ends it."
+	note := "sprint started — " + scope + ", one item per session. /todo stop ends it"
 	if sp.NoCommit {
 		note += " No run in it makes a commit."
 	}
@@ -196,7 +196,7 @@ func (m Model) sprintNext(sp *run.Sprint) (tea.Model, tea.Cmd) {
 	}
 	if err := sp.Save(m.todos.Root); err != nil {
 		sp.Stop()
-		model, _ := m.systemNotice("The sprint's checkpoint could not be written — " + err.Error())
+		model, _ := m.systemNotice("the sprint's checkpoint could not be written — " + err.Error())
 		return model.(Model).endTodoSprint(sp)
 	}
 	return m.sprintRun(sp, it.Slug)
@@ -238,7 +238,7 @@ func (m Model) advanceSprint(done string) (tea.Model, tea.Cmd) {
 	sp.Spent(int(m.turnCount), m.sessionSpend().Cost)
 	if err := sp.Save(m.todos.Root); err != nil {
 		sp.Stop()
-		model, _ := m.systemNotice("The sprint's checkpoint could not be written — " + err.Error())
+		model, _ := m.systemNotice("the sprint's checkpoint could not be written — " + err.Error())
 		return model.(Model).endTodoSprint(sp)
 	}
 	// The same boundary /new crosses, through the same function: one
@@ -265,9 +265,9 @@ func (m Model) advanceSprint(done string) (tea.Model, tea.Cmd) {
 // that follows it cannot name different items.
 func sprintNextNote(sp *run.Sprint, store *todo.Store) string {
 	if next, ok := sp.Peek(store); ok {
-		return "Next in the sprint: " + next.Slug + " · " + next.Title
+		return "next in the sprint: " + next.Slug + " · " + next.Title
 	}
-	return "Nothing is left that the sprint can start; it ends here."
+	return "nothing is left that the sprint can start; it ends here"
 }
 
 // endTodoSprint retires the sprint: the mode the session was in before it

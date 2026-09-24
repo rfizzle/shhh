@@ -75,7 +75,7 @@ snap 13-row "files back to turn 2" "▸ turn 3 · rewound" "╭─ at turn 2"
 # comes back, and the files come back through the undo confirm every undo
 # goes through.
 keys M-r
-snap 14-reapply-confirm "Reapplied turn 3"
+snap 14-reapply-confirm "reapplied turn 3"
 keys y
 snap 15-reapplied "undo of turn" "turn 3 · rewound, then reapplied below"
 # The prompt has the keyboard, so the first cancel arms the pair and the

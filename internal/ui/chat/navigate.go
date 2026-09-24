@@ -553,18 +553,18 @@ func (m Model) mouseStatus() string {
 // default nobody can reach.
 func (m *Model) mouseCommand(parts []string) string {
 	if len(parts) == 2 {
-		return "Mouse reporting: " + m.mouseStatus() +
-			".\nUsage: /ui mouse <on|off> — on, the wheel scrolls the transcript, click-drag selects it and a click opens the row or card key under it; off, the terminal keeps its own click-drag selection."
+		return "mouse reporting: " + m.mouseStatus() +
+			"\nusage: /ui mouse <on|off> — on, the wheel scrolls the transcript, click-drag selects it and a click opens the row or card key under it; off, the terminal keeps its own click-drag selection"
 	}
 	if len(parts) != 3 {
-		return "Usage: /ui mouse <on|off>"
+		return "usage: /ui mouse <on|off>"
 	}
 	on, ok := parseToggle(parts[2])
 	if !ok {
-		return fmt.Sprintf("Error: unknown mouse setting %q (on, off)", parts[2])
+		return failed("ui", fmt.Sprintf("unknown mouse setting %q (on, off)", parts[2]))
 	}
 	if on == m.mouseOn {
-		return "Mouse reporting is already " + m.mouseStatus() + "."
+		return "mouse reporting is already " + m.mouseStatus()
 	}
 	return m.setMouse(on)
 }
@@ -601,7 +601,7 @@ func (m *Model) setMouse(on bool) string {
 // off-side names what the terminal gives back.
 func mouseNote(on bool) string {
 	if on {
-		return "Mouse reporting on — the wheel scrolls the transcript, click-drag selects it (the drag scrolls past the edge of the pane, esc cancels, and releasing copies), and a click opens the activity row or answers the approval key under it."
+		return "mouse reporting on — the wheel scrolls the transcript, click-drag selects it (the drag scrolls past the edge of the pane, esc cancels, and releasing copies), and a click opens the activity row or answers the approval key under it"
 	}
-	return "Mouse reporting off — the terminal keeps click-drag selection for what is on screen; pgup, ctrl+o and j/k read the transcript."
+	return "mouse reporting off — the terminal keeps click-drag selection for what is on screen; pgup, ctrl+o and j/k read the transcript"
 }

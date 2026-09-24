@@ -515,7 +515,7 @@ func TestSlashUI_VerbositySetting(t *testing.T) {
 	if m.verbosity != verbosityHigh {
 		t.Fatal("invalid level must not change the setting")
 	}
-	if _, result = m.handleSlashCommand("/ui bogus"); !strings.Contains(result, "Usage") {
+	if _, result = m.handleSlashCommand("/ui bogus"); !strings.Contains(result, "usage") {
 		t.Fatalf("unknown /ui subcommand shows usage, got %q", result)
 	}
 }
@@ -728,7 +728,7 @@ func TestUITerminal_NeverAskedIsNotANo(t *testing.T) {
 			t.Errorf("%q reads as an answer the terminal never gave: %q", no, got)
 		}
 	}
-	if !strings.Contains(m.uiCommand([]string{"/ui"}), "Terminal: not asked") {
+	if !strings.Contains(m.uiCommand([]string{"/ui"}), "terminal: not asked") {
 		t.Error("the bare /ui summary should name the terminal, or say it was not asked")
 	}
 }
@@ -744,19 +744,19 @@ func TestUITerminal_ReportsWhatCameBack(t *testing.T) {
 
 	got := m.uiCommand([]string{"/ui", "terminal"})
 	for _, want := range []string{
-		"Terminal: ghostty 1.2.0.",
-		"Inline images: kitty graphics.",
-		"Desktop notifications: OSC 99.",
-		"Focus events: reported.",
+		"terminal: ghostty 1.2.0",
+		"inline images: kitty graphics",
+		"desktop notifications: OSC 99",
+		"focus events: reported",
 		// 720/80 and 570/30 — the terminal's pixels over the session's own
 		// columns and rows, which is the only place the two meet.
-		"Cell size: 9×19 px.",
+		"cell size: 9×19 px",
 	} {
 		if !strings.Contains(got, want) {
 			t.Errorf("missing %q in:\n%s", want, got)
 		}
 	}
-	if !strings.Contains(m.uiCommand([]string{"/ui"}), "Terminal: ghostty 1.2.0") {
+	if !strings.Contains(m.uiCommand([]string{"/ui"}), "terminal: ghostty 1.2.0") {
 		t.Error("the bare /ui summary should name the terminal it asked")
 	}
 }
@@ -768,14 +768,14 @@ func TestUITerminal_HeldQuestionsSayWhy(t *testing.T) {
 	m.caps.FocusEvents = true
 
 	got := m.uiCommand([]string{"/ui", "terminal"})
-	if !strings.Contains(got, "Inline images: not asked.") {
+	if !strings.Contains(got, "inline images: not asked") {
 		t.Errorf("a held question is not a no, got %q", got)
 	}
 	if !strings.Contains(got, "over ssh") {
 		t.Errorf("the readout has to name the reason it held back, got %q", got)
 	}
 	// The safe questions went out either way, so their answers stand.
-	if !strings.Contains(got, "Focus events: reported.") {
+	if !strings.Contains(got, "focus events: reported") {
 		t.Errorf("holding the graphics questions must not withhold the rest, got %q", got)
 	}
 }

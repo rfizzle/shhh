@@ -10,7 +10,7 @@ package chat
 import "fmt"
 
 // modelUsage is the one-line usage shown by /model and /help.
-const modelUsage = "Usage: /model <name> · /model default [name] · /model agents [name|inherit]"
+const modelUsage = "usage: /model <name> · /model default [name] · /model agents [name|inherit]"
 
 // ConfigWriter persists one config key/value to the user's config file. It
 // belongs to the session rather than to any one setting: the model defaults
@@ -54,50 +54,50 @@ func (m Model) WithDefaults(d Defaults) Model {
 // setModelDefault handles `/model default [name]` and `/model agents [name]`.
 // With no name it reports the current setting; with one it persists it.
 func (m *Model) setModelDefault(which string, rest []string) string {
-	key, label := "provider.model", "Default model"
+	key, label := "provider.model", "default model"
 	current := m.defaults.Model
 	if which == "agents" {
-		key, label = "agents.model", "Sub-agent model"
+		key, label = "agents.model", "sub-agent model"
 		current = m.defaults.AgentModel
 	}
 	if len(rest) == 0 {
 		note := fmt.Sprintf("%s: %s", label, current)
 		if current == "" {
-			note = fmt.Sprintf("%s: not set (%s).", label, m.defaultFallback(which))
+			note = fmt.Sprintf("%s: not set (%s)", label, m.defaultFallback(which))
 		}
 		// Reporting a setting that is being overruled without saying so is
 		// the same lie as writing one, told more quietly.
 		if which == "default" && m.defaults.Outranked != "" {
-			note += fmt.Sprintf("\nOverruled: %s, which outranks the config file.", m.defaults.Outranked)
+			note += fmt.Sprintf("\noverruled: %s, which outranks the config file", m.defaults.Outranked)
 		}
 		return note + "\n" + modelUsage
 	}
 	if len(rest) > 1 {
-		return "Model names cannot contain spaces. " + modelUsage
+		return "model names cannot contain spaces. " + modelUsage
 	}
 	if m.writeConfig == nil {
-		return "This session cannot write the config file, so the default was not saved."
+		return "this session cannot write the config file, so the default was not saved"
 	}
 	name := rest[0]
 	if err := m.writeConfig(key, name); err != nil {
-		return "Error: could not save the default: " + err.Error()
+		return failed("model", "could not save the default: "+err.Error())
 	}
 	if which == "agents" {
 		m.defaults.AgentModel = name
 		if name == "inherit" {
-			return "Sub-agents now follow the session model. Agents already running keep the model they started on."
+			return "sub-agents now follow the session model. Agents already running keep the model they started on"
 		}
-		return fmt.Sprintf("Sub-agents now run on %s. Agents already running keep the model they started on.", name)
+		return fmt.Sprintf("sub-agents now run on %s. Agents already running keep the model they started on", name)
 	}
 	m.defaults.Model = name
-	note := fmt.Sprintf("Default model set to %s for new sessions; this session stays on %s (/model %s switches it now).", name, m.modelName, name)
+	note := fmt.Sprintf("default model set to %s for new sessions; this session stays on %s (/model %s switches it now)", name, m.modelName, name)
 	if name == m.modelName {
-		note = fmt.Sprintf("Default model set to %s (this session already uses it).", name)
+		note = fmt.Sprintf("default model set to %s (this session already uses it)", name)
 	}
 	// A default that something else overrules was written and will still be
 	// ignored, which is the one outcome a success message must not claim.
 	if m.defaults.Outranked != "" {
-		note += fmt.Sprintf("\nIt will not take effect while %s — that outranks the config file.", m.defaults.Outranked)
+		note += fmt.Sprintf("\nit will not take effect while %s — that outranks the config file", m.defaults.Outranked)
 	}
 	return note
 }

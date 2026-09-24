@@ -48,7 +48,7 @@ func runDraft(t *testing.T, m Model) Model {
 	if cmd == nil || !next.todoDrafting {
 		t.Fatal("/todo new <sentence> should start a drafting")
 	}
-	if last := next.transcript[len(next.transcript)-1].text; !strings.HasPrefix(last, "Drafting the item") {
+	if last := next.transcript[len(next.transcript)-1].text; !strings.HasPrefix(last, "drafting the item") {
 		t.Fatalf("start note = %q", last)
 	}
 	updated, _ = next.Update(cmd())
@@ -106,7 +106,7 @@ func TestTodoNew_TheCardWritesTheItem(t *testing.T) {
 		t.Fatalf("enter should close the card, state=%d", m.state)
 	}
 	note := m.transcript[len(m.transcript)-1].text
-	if !strings.HasPrefix(note, "Wrote give-the-cache-a-lifetime to") {
+	if !strings.HasPrefix(note, "wrote give-the-cache-a-lifetime to") {
 		t.Fatalf("note = %q", note)
 	}
 
@@ -146,7 +146,7 @@ func TestTodoNew_AMissingDependencyIsAWarningAndIsNotWritten(t *testing.T) {
 	}
 	m = pressKeys(t, m, keyEnter)
 	note := m.transcript[len(m.transcript)-1].text
-	if !strings.Contains(note, "Dropped dependencies that name nothing in the backlog: nothing-like-this.") {
+	if !strings.Contains(note, "dropped dependencies that name nothing in the backlog: nothing-like-this") {
 		t.Fatalf("note = %q", note)
 	}
 	it, _ := todo.Load(todo.BuiltinCode(), root).Find("give-the-cache-a-lifetime")
@@ -163,7 +163,7 @@ func TestTodoNew_EscapeWritesNothing(t *testing.T) {
 	if m.state != stateInput || m.todoDraft != nil {
 		t.Fatalf("esc should close the card, state=%d", m.state)
 	}
-	if last := m.transcript[len(m.transcript)-1].text; !strings.Contains(last, "Nothing written") {
+	if last := m.transcript[len(m.transcript)-1].text; !strings.Contains(last, "nothing written") {
 		t.Fatalf("note = %q", last)
 	}
 	if _, err := os.Stat(filepath.Join(todo.Dir(root), "give-the-cache-a-lifetime.md")); !os.IsNotExist(err) {
@@ -270,7 +270,7 @@ func TestTodoNew_UsageNoDrafterAndDoubleStart(t *testing.T) {
 	}
 	m.input.SetValue("/todo new something")
 	updated, cmd = m.submitInput()
-	if cmd != nil || !strings.Contains(lastNote(updated.(Model)), "No model is configured") {
+	if cmd != nil || !strings.Contains(lastNote(updated.(Model)), "no model is configured") {
 		t.Fatalf("without a drafter the by-hand form should be offered: %q", lastNote(updated.(Model)))
 	}
 
@@ -280,7 +280,7 @@ func TestTodoNew_UsageNoDrafterAndDoubleStart(t *testing.T) {
 	m = updated.(Model)
 	m.input.SetValue("/todo new two")
 	updated, cmd = m.submitInput()
-	if cmd != nil || !strings.Contains(lastNote(updated.(Model)), "Still drafting") {
+	if cmd != nil || !strings.Contains(lastNote(updated.(Model)), "still drafting") {
 		t.Fatal("a second drafting must not start over a first")
 	}
 	// A drafting the session has moved past is dropped.
@@ -401,7 +401,7 @@ func TestTodo_TheRecordSaysHowTheBacklogGrew(t *testing.T) {
 	if len(signals) != 1 || signals[0] != observe.SignalTodo+":"+observe.TodoEdit {
 		t.Fatalf("editing an item = %v", signals)
 	}
-	if !strings.HasPrefix(lastNote(updated.(Model)), "Saved a-high") {
+	if !strings.HasPrefix(lastNote(updated.(Model)), "saved a-high") {
 		t.Fatalf("the editor's own sentence should be unchanged: %q", lastNote(updated.(Model)))
 	}
 }
@@ -434,7 +434,7 @@ func TestTodoNew_AnEmptyBacklogSaysWhyTheRowDoesNotOpen(t *testing.T) {
 	if m.todoDraft == nil || m.todoDraft.picker != nil {
 		t.Fatal("there is no backlog to pick from, and the card should still be up")
 	}
-	if !strings.Contains(lastNote(m), "Nothing in the backlog to wait on") {
+	if !strings.Contains(lastNote(m), "nothing in the backlog to wait on") {
 		t.Fatalf("note = %q", lastNote(m))
 	}
 }

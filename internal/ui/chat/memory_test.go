@@ -37,7 +37,7 @@ func memoryModel(t *testing.T, mode agent.Mode) (Model, *[]savedMemory) {
 			Manage: func(args []string) string { return "managed:" + strings.Join(args, ",") },
 			Save: func(scope, kind, text string) (string, error) {
 				saves = append(saves, savedMemory{scope, kind, text})
-				return "Saved memory [m1] (" + memory.ScopeLabel(scope) + " " + kind + "): " + text, nil
+				return "saved memory [m1] (" + memory.ScopeLabel(scope) + " " + kind + "): " + text, nil
 			},
 			ProjectScope: "/proj",
 		})
@@ -108,7 +108,7 @@ func TestRemember_SaveProjectScope(t *testing.T) {
 		t.Fatal("prompt state should be cleared after saving")
 	}
 	last := m.Messages()[len(m.Messages())-1]
-	if last.Role != provider.RoleTool || last.ToolCallID != "call_m" || !strings.Contains(last.Content, "Saved memory [m1]") {
+	if last.Role != provider.RoleTool || last.ToolCallID != "call_m" || !strings.Contains(last.Content, "saved memory [m1]") {
 		t.Fatalf("expected the saved-entry tool result, got %+v", last)
 	}
 	if m.state != stateStreaming {
@@ -252,8 +252,8 @@ func TestMemoryEdit_RefusesWhatItCannotOpen(t *testing.T) {
 	before := *stored
 
 	for _, tc := range []struct{ input, want string }{
-		{"/memory edit", "Usage: /memory edit <id>"},
-		{"/memory edit m1 and more", "Usage: /memory edit <id>"},
+		{"/memory edit", "usage: /memory edit <id>"},
+		{"/memory edit m1 and more", "usage: /memory edit <id>"},
 		{"/memory edit banana", "invalid memory id"},
 		{"/memory edit m9", "not found"},
 	} {

@@ -47,12 +47,12 @@ func (m Model) bangDraft() bool {
 // queued, in the same words the registry gives /run.
 func (m Model) runBang(cmd string, local bool) (tea.Model, tea.Cmd) {
 	if m.runFn == nil {
-		return m.surfaceNotice("Command execution is not available in this session.")
+		return m.surfaceNotice("command execution is not available in this session")
 	}
 	if m.working() || m.decisionUngated() {
 		reason, _ := idleOnlyReason("/run")
 		return m.surfaceNotice("! needs the turn to be finished — " + reason +
-			". The agent is still working; nothing was queued. Ctrl+C ends the turn.")
+			". The agent is still working; nothing was queued. ctrl+c ends the turn")
 	}
 	m.pendingRun = cmd
 	m.pendingRunLocal = local

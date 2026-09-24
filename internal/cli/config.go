@@ -365,7 +365,7 @@ func (m *configModel) answered(done bool, result components.ConfigResult) string
 	m.answer(done, result)
 	switch {
 	case m.err != nil:
-		return "Error: could not write " + shortPath(config.WritePath()) + ": " + m.err.Error()
+		return "✗ config  could not write " + shortPath(config.WritePath()) + ": " + m.err.Error()
 	case m.saved:
 		note := "Wrote " + shortPath(config.WritePath()) + "."
 		if m.note != "" {

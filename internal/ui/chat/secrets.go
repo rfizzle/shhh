@@ -42,7 +42,7 @@ func (m Model) WithSecrets(s Secrets) Model {
 // name is one it cannot use, and it has no other way to learn the name.
 func (m Model) secretCommand(args []string) (tea.Model, tea.Cmd) {
 	if m.secrets.Manage == nil {
-		return m.surfaceNotice("Secrets are unavailable in this session.")
+		return m.surfaceNotice("secrets are unavailable in this session")
 	}
 	note, announce := m.secrets.Manage(args)
 	if announce != "" {

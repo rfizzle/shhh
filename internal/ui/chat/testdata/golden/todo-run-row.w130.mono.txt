@@ -36,7 +36,7 @@
     report
       Summary: entries now expire.
     files
-      internal/cache/cache.go, internal/cache/cache_test.go
+      internal/cache/cache.go · internal/cache/cache_test.go
 
 
 · the same run after the round it spent · what it cost stays on the row
@@ -100,7 +100,7 @@
     ␛[38;5;254mreport␛[m
       ␛[38;5;244mSummary: entries now expire.␛[m
     ␛[38;5;254mfiles␛[m
-      ␛[38;5;244minternal/cache/cache.go, internal/cache/cache_test.go␛[m
+      ␛[38;5;244minternal/cache/cache.go · internal/cache/cache_test.go␛[m
 
 
 · the same run after the round it spent · what it cost stays on the row

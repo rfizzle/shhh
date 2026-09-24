@@ -28,17 +28,17 @@ import (
 // several-blocks case is routed to the picker before it gets here.
 func (m *Model) startRun(parts []string) (result string, entersConfirm bool) {
 	if m.runFn == nil {
-		return "Command execution is not available in this session.", false
+		return "command execution is not available in this session", false
 	}
 	blocks := extractCodeBlocks(m.lastAssistantText())
 	if len(blocks) == 0 {
-		return "No code blocks in the last response to run.", false
+		return "no code blocks in the last response to run", false
 	}
 	idx := 0
 	if len(parts) > 1 {
 		n, err := strconv.Atoi(parts[1])
 		if err != nil || n < 1 || n > len(blocks) {
-			return fmt.Sprintf("Usage: /run [1-%d]", len(blocks)), false
+			return fmt.Sprintf("usage: /run [1-%d]", len(blocks)), false
 		}
 		idx = n - 1
 	}
@@ -185,7 +185,7 @@ func (m Model) updateConfirmRun(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		m.pendingRunLocal = false
 		m.setTurnState(stateInput)
 		m.syncViewport()
-		m.appendEntry(entry{kind: entrySystem, text: "Run cancelled."})
+		m.appendEntry(entry{kind: entrySystem, text: "run cancelled"})
 		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoBottom()
 		return m, nil

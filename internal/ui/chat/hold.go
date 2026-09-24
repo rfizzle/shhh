@@ -95,7 +95,7 @@ func (m Model) toggleHold() (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 	}
-	return m.systemNotice("Nothing is running to hold.")
+	return m.systemNotice("nothing is running to hold")
 }
 
 // holdTurn parks the turn. It is the round-limit pause without the row: the
@@ -188,7 +188,7 @@ func (m Model) holdChip() string {
 // the mark carries and the screen has nowhere else to put — the Agent's round
 // counter belongs to this process and starts at nothing.
 func (m Model) heldNotice() string {
-	return fmt.Sprintf("This conversation was held mid-turn after %s — %s lets it go on.",
+	return fmt.Sprintf("this conversation was held mid-turn after %s — %s lets it go on",
 		plural(m.hold.rounds, "round"), keys.Bracket(keys.Draft.Pause))
 }
 

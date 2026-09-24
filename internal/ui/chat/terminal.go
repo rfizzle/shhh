@@ -314,18 +314,18 @@ func (m Model) windowStatus() string {
 // turn off half of what whoever flipped it meant.
 func (m *Model) windowCommand(parts []string) string {
 	if len(parts) == 2 {
-		return "Window title: " + m.windowStatus() +
-			".\nUsage: /ui window <on|off> — on, the terminal's tab says which shhh this is and marks a waiting decision; off, the tab keeps whatever your terminal puts there."
+		return "window title: " + m.windowStatus() +
+			"\nusage: /ui window <on|off> — on, the terminal's tab says which shhh this is and marks a waiting decision; off, the tab keeps whatever your terminal puts there"
 	}
 	if len(parts) != 3 {
-		return "Usage: /ui window <on|off>"
+		return "usage: /ui window <on|off>"
 	}
 	on, ok := parseToggle(parts[2])
 	if !ok {
-		return fmt.Sprintf("Error: unknown window setting %q (on, off)", parts[2])
+		return failed("ui", fmt.Sprintf("unknown window setting %q (on, off)", parts[2]))
 	}
 	if on == m.windowTitleOn {
-		return "The window title is already " + m.windowStatus() + "."
+		return "the window title is already " + m.windowStatus()
 	}
 	return m.setWindowTitleOn(on)
 }
@@ -351,9 +351,9 @@ func (m *Model) setWindowTitleOn(on bool) string {
 // it costs is a tab title you chose yourself.
 func windowNote(on bool) string {
 	if on {
-		return "Window title on — the terminal's tab says which shhh this is: the command, the directory it is running in, and ⏸ while a decision is waiting."
+		return "window title on — the terminal's tab says which shhh this is: the command, the directory it is running in, and ⏸ while a decision is waiting"
 	}
-	return "Window title off — the tab keeps whatever your terminal puts there."
+	return "window title off — the tab keeps whatever your terminal puts there"
 }
 
 // WithWindowTitle sets whether the session names the terminal's tab

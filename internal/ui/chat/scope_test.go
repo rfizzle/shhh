@@ -84,7 +84,7 @@ func TestApprovingAnOutOfScopeEditAddsTheDirectory(t *testing.T) {
 	if !m.scope.Contains(filepath.Join(outside, "other.toml")) {
 		t.Fatal("approving should have put the directory in the working scope")
 	}
-	if !strings.Contains(transcriptText(m), "Added to the working scope") {
+	if !strings.Contains(transcriptText(m), "added to the working scope") {
 		t.Fatalf("the grant must be said in the transcript, got:\n%s", transcriptText(m))
 	}
 	// And the next edit in the same directory no longer leaves the scope.
@@ -142,10 +142,10 @@ func TestScopeCommandAddsListsAndDrops(t *testing.T) {
 	if out := m.scopeCommand([]string{"/add-dir", outside}); !strings.Contains(out, "already") {
 		t.Fatalf("adding it twice should say so, got:\n%s", out)
 	}
-	if out := m.scopeCommand([]string{"/add-dir", filepath.Join(outside, "nope")}); !strings.Contains(out, "Error") {
+	if out := m.scopeCommand([]string{"/add-dir", filepath.Join(outside, "nope")}); !strings.HasPrefix(out, "✗ add-dir  ") {
 		t.Fatalf("a path that is not there should be an error, got:\n%s", out)
 	}
-	if out := m.scopeCommand([]string{"/add-dir", "drop", outside}); !strings.Contains(out, "Dropped") {
+	if out := m.scopeCommand([]string{"/add-dir", "drop", outside}); !strings.Contains(out, "dropped") {
 		t.Fatalf("/add-dir drop should take it back, got:\n%s", out)
 	}
 	if m.scope.Contains(filepath.Join(outside, "x")) {
@@ -199,7 +199,7 @@ func TestGrantsAndHelpNameTheScope(t *testing.T) {
 	if out := m.grantStatus(); !strings.Contains(out, "scope") {
 		t.Fatalf("/permissions grants should list the working scope, got:\n%s", out)
 	}
-	if out := m.policyHelp(); !strings.Contains(out, "scope:") || !strings.Contains(out, "/add-dir") {
+	if out := m.policyHelp(); !strings.Contains(out, "  scope      ") || !strings.Contains(out, "/add-dir") {
 		t.Fatalf("/help should describe the scope and how to change it, got:\n%s", out)
 	}
 }

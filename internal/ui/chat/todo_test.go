@@ -263,7 +263,7 @@ func TestTodoEditor_ReloadsAndReportsTheFile(t *testing.T) {
 	updated, _ := m.todoEditorFinished(todoEditorDoneMsg{slug: "d-ready", path: path})
 	next := updated.(Model)
 	last := next.transcript[len(next.transcript)-1].text
-	if !strings.HasPrefix(last, "Saved d-ready: Ready now (medium, open).") || !strings.Contains(last, `unknown size "xl"`) {
+	if !strings.HasPrefix(last, "saved d-ready: Ready now (medium, open).") || !strings.Contains(last, `unknown size "xl"`) {
 		t.Fatalf("note = %q", last)
 	}
 	if it, _ := next.todoStore.Find("d-ready"); it.Title != "Ready now" {
@@ -301,7 +301,7 @@ func TestTodoCommand_MutationsRefusedMidTurn(t *testing.T) {
 		updated, cmd := m.submitInput()
 		next := updated.(Model)
 		last := next.transcript[len(next.transcript)-1].text
-		if cmd != nil || !strings.Contains(last, "Not while the turn is running") {
+		if cmd != nil || !strings.Contains(last, "not while the turn is running") {
 			t.Fatalf("%s mid-turn: note = %q", text, last)
 		}
 	}
@@ -314,7 +314,7 @@ func TestTodoCommand_MutationsRefusedMidTurn(t *testing.T) {
 
 func TestTodoCommand_EditArityAndUnknownSlug(t *testing.T) {
 	m := todoModel(t, todoTestRoot(t))
-	for text, want := range map[string]string{"/todo edit": "Usage: /todo edit <slug>", "/todo edit a b": "Usage: /todo edit <slug>", "/todo edit nope": `No backlog item "nope"`} {
+	for text, want := range map[string]string{"/todo edit": "usage: /todo edit <slug>", "/todo edit a b": "usage: /todo edit <slug>", "/todo edit nope": `no backlog item "nope"`} {
 		m.input.SetValue(text)
 		updated, cmd := m.submitInput()
 		last := updated.(Model).transcript[len(updated.(Model).transcript)-1].text

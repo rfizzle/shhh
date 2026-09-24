@@ -443,9 +443,9 @@ func TestProgram_TheNotebookIsReadAndCorrectedOnItsScreen(t *testing.T) {
 	programPress(t, tm, "k", "d")
 	waitForText(t, tm, "Drop \"")
 	programPress(t, tm, "y")
-	waitForText(t, tm, "Dropped note")
+	waitForText(t, tm, "dropped note")
 
-	frameHas(t, finalFrame(t, tm), "Dropped note")
+	frameHas(t, finalFrame(t, tm), "dropped note")
 }
 
 // A child that delegates asks the session first: its spawn is a card routed

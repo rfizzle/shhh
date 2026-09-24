@@ -330,7 +330,7 @@ func TestPersona_CancelAndFailure(t *testing.T) {
 	}
 	off := frameModel(t, 130, 40)
 	off = submitLine(t, off, "/agents new")
-	if !strings.Contains(lastNote(off), "No model is configured") {
+	if !strings.Contains(lastNote(off), "no model is configured") {
 		t.Fatalf("disabled: %q", lastNote(off))
 	}
 }

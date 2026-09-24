@@ -159,7 +159,7 @@ func (m Model) commitKey(pressed string) (tea.Model, tea.Cmd, bool) {
 func (m Model) openCommitCard(row int, turn int64) (tea.Model, tea.Cmd) {
 	t, ok := m.changes.Recall(turn)
 	if !ok || t.Files() == 0 {
-		return m.systemNotice(fmt.Sprintf("Turn %d changed no files; there is nothing to commit.", turn))
+		return m.systemNotice(fmt.Sprintf("turn %d changed no files; there is nothing to commit", turn))
 	}
 	root := m.workspace
 	// A path the reader has edited since the turn wrote it is left out
@@ -193,11 +193,11 @@ func (m Model) openCommitCard(row int, turn int64) (tea.Model, tea.Cmd) {
 	if len(staging) == 0 {
 		if len(left) > 0 {
 			return m.systemNotice(fmt.Sprintf(
-				"Every file turn %d wrote has changed since; there is nothing of the turn's own left to commit: %s.",
+				"every file turn %d wrote has changed since; there is nothing of the turn's own left to commit: %s",
 				turn, strings.Join(left, ", ")))
 		}
 		return m.systemNotice(fmt.Sprintf(
-			"Turn %d changed nothing under %s, so there is nothing here to commit.", turn, root))
+			"turn %d changed nothing under %s, so there is nothing here to commit", turn, root))
 	}
 	branch, ahead := commitBranch(root)
 	st := &commitState{

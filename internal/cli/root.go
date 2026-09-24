@@ -4,11 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"image/color"
 	"os"
 	"runtime"
 	"strings"
 
 	"charm.land/fang/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/mattn/go-isatty"
 	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/config"
@@ -76,7 +78,37 @@ func ExitCode(err error) int {
 // so a test can render a page exactly as the binary prints it rather than
 // against cobra's undressed template.
 func execute(ctx context.Context, cmd *cobra.Command) error {
-	return fang.Execute(ctx, cmd, fang.WithVersion(version))
+	return fang.Execute(ctx, cmd, fang.WithVersion(version), fang.WithColorSchemeFunc(helpColors))
+}
+
+// helpColors is the dressing in the product's own palette rather than fang's.
+// `--help` and a failed command's exit are the first things somebody reads of
+// shhh, and a page in somebody else's colours is a page that does not read as
+// the product that printed it (docs/interface/surfaces.md#outside-the-tui).
+// The roles follow the listings': headings in info, what you type in info,
+// prose in body, everything that is chrome in dim, and a failure in del. No
+// code block is filled: the palette has no fill for one, and a slab of a
+// colour it never issued is the one thing on the page it would disown.
+func helpColors(lipgloss.LightDarkFunc) fang.ColorScheme {
+	p := components.Palette
+	return fang.ColorScheme{
+		Base:           p.Body.Color(),
+		Title:          p.Info.Color(),
+		Description:    p.Body.Color(),
+		Codeblock:      lipgloss.NoColor{},
+		Program:        p.Bright.Color(),
+		DimmedArgument: p.Dim.Color(),
+		Comment:        p.Dim.Color(),
+		Flag:           p.Info.Color(),
+		FlagDefault:    p.Dim.Color(),
+		Command:        p.Info.Color(),
+		QuotedString:   p.Accent.Color(),
+		Argument:       p.Body.Color(),
+		Help:           p.Dim.Color(),
+		Dash:           p.Dim.Color(),
+		ErrorHeader:    [2]color.Color{p.Del.Color(), lipgloss.NoColor{}},
+		ErrorDetails:   p.Body.Color(),
+	}
 }
 
 func NewRootCmd() *cobra.Command {

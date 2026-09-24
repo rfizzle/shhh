@@ -115,7 +115,7 @@ func TestTodoManager(t *testing.T) {
 	if !ok || it.Title != "Fix the #12 parser crash" || it.Priority != todo.PriorityMedium || it.Created == "" || !strings.Contains(it.Body, "## Acceptance criteria") {
 		t.Errorf("added item = %+v", it)
 	}
-	if out := manage([]string{"add", "Fix the #12 parser crash"}); !strings.HasPrefix(out, "Error:") || !strings.Contains(out, "already exists") {
+	if out := manage([]string{"add", "Fix the #12 parser crash"}); !strings.HasPrefix(out, "✗ todo  ") || !strings.Contains(out, "already exists") {
 		t.Errorf("add collision = %q", out)
 	}
 	if out := manage([]string{"add"}); !strings.HasPrefix(out, "Usage:") {
@@ -138,7 +138,7 @@ func TestTodoManager(t *testing.T) {
 	if out := manage([]string{"done", "first"}); !strings.Contains(out, "✓ archived first → ") {
 		t.Errorf("done = %q", out)
 	}
-	if out := manage([]string{"done", "first"}); !strings.HasPrefix(out, "Error:") {
+	if out := manage([]string{"done", "first"}); !strings.HasPrefix(out, "✗ todo  ") {
 		t.Errorf("done twice = %q", out)
 	}
 	if out := manage([]string{"drop", "second"}); !strings.Contains(out, "✓ dropped second · the file is deleted") {
@@ -147,7 +147,7 @@ func TestTodoManager(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(todo.Dir(root), "second.md")); !os.IsNotExist(err) {
 		t.Error("dropped file still there")
 	}
-	if out := manage([]string{"drop", "gone"}); !strings.HasPrefix(out, "Error:") {
+	if out := manage([]string{"drop", "gone"}); !strings.HasPrefix(out, "✗ todo  ") {
 		t.Errorf("drop archived = %q", out)
 	}
 	if out := manage([]string{"wat"}); !strings.HasPrefix(out, "Usage:") {
@@ -439,7 +439,7 @@ func TestTodoVerb_RefusesAHeldItem(t *testing.T) {
 	}
 	// The session says it in its own words, and a script gets the sentence
 	// in the exit status instead.
-	if out := todoManager(root)([]string{"drop", "first"}); !strings.Contains(out, "Error: ") ||
+	if out := todoManager(root)([]string{"drop", "first"}); !strings.HasPrefix(out, "✗ todo  ") ||
 		!strings.Contains(out, "todo-run-19700101-000000") {
 		t.Errorf("session refusal = %q", out)
 	}

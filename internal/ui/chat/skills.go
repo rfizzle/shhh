@@ -21,11 +21,11 @@ import (
 func (m Model) activateSkill(name, task string) (tea.Model, tea.Cmd) {
 	s, ok := m.skills.Find(name)
 	if !ok {
-		return m.surfaceNotice("No skill named " + name + ". /skills lists this session's skills.")
+		return m.surfaceNotice("no skill named " + name + ". /skills lists this session's skills")
 	}
 	content, err := skill.UserMessage(s, task)
 	if err != nil {
-		return m.surfaceNotice("Could not read skill " + name + ": " + err.Error())
+		return m.surfaceNotice("could not read skill " + name + ": " + err.Error())
 	}
 	m.signal(observe.SignalSkill, s.Name)
 	shown := "/skill " + name
@@ -35,7 +35,7 @@ func (m Model) activateSkill(name, task string) (tea.Model, tea.Cmd) {
 	if m.working() || m.decisionUngated() {
 		m.steering = append(m.steering, steeringItem{text: content})
 		m.syncViewport()
-		return m.surfaceNotice("Skill " + name + " queued for the next round.")
+		return m.surfaceNotice("skill " + name + " queued for the next round")
 	}
 	return m.sendUserMessageAs(content, shown)
 }

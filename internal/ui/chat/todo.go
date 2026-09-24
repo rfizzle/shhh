@@ -277,7 +277,7 @@ func (m Model) todoStaleRow(row components.InspectorTodoRow) components.Inspecto
 // changed a file.
 func (m Model) todoCommand(parts []string) (tea.Model, tea.Cmd) {
 	if !m.todosEnabled() {
-		return m.systemNotice("The backlog is unavailable in this session.")
+		return m.systemNotice("the backlog is unavailable in this session")
 	}
 	// A session standing outside every project reads a backlog that is not
 	// under the directory it was opened in, and it says so the first time
@@ -304,8 +304,8 @@ func (m *Model) namedTodoRoot() string {
 	if root, found := project.RootFound(m.workspace); found && root == m.todos.Root {
 		return ""
 	}
-	return "This directory is part of no project, so the backlog is the one at " +
-		project.Abbreviate(m.todos.Root) + "."
+	return "this directory is part of no project, so the backlog is the one at " +
+		project.Abbreviate(m.todos.Root)
 }
 
 // todoCommandFor is the verb itself.
@@ -317,8 +317,8 @@ func (m Model) todoCommandFor(parts []string) (tea.Model, tea.Cmd) {
 		return m.todoRunStatus()
 	}
 	if len(parts) >= 2 && m.working() && todoWrites(parts[1:]) {
-		return m.systemNotice("Not while the turn is running: /todo " + strings.Join(todoWriteVerb(parts[1:]), " ") +
-			" changes the backlog files the model may be working from. /todo, /todo show and /todo sprint still read.")
+		return m.systemNotice("not while the turn is running: /todo " + strings.Join(todoWriteVerb(parts[1:]), " ") +
+			" changes the backlog files the model may be working from. /todo, /todo show and /todo sprint still read")
 	}
 	if len(parts) == 2 && parts[1] == "add" {
 		return m.startTodoExtract()
@@ -365,7 +365,7 @@ func (m Model) todoCommandFor(parts []string) (tea.Model, tea.Cmd) {
 	}
 	if len(parts) >= 2 && parts[1] == "edit" {
 		if len(parts) != 3 {
-			return m.systemNotice("Usage: /todo edit <slug>")
+			return m.systemNotice("usage: /todo edit <slug>")
 		}
 		return m.openTodoEditor(parts[2])
 	}
@@ -400,7 +400,7 @@ func todoWriteVerb(args []string) []string {
 
 // todoRunUsage is the one place the command's shape is written, so the
 // refusal and the help cannot come to describe different commands.
-const todoRunUsage = "Usage: /todo run [<slug>|--next|--all] [--no-commit] [--max <n>] [--cost-cap <cents>] [--parallel <n>]"
+const todoRunUsage = "usage: /todo run [<slug>|--next|--all] [--no-commit] [--max <n>] [--cost-cap <cents>] [--parallel <n>]"
 
 // todoRunArgs is what follows `/todo run`: which item, and the answers the
 // person gave about how it is worked.
@@ -515,7 +515,7 @@ func (m Model) openTodoEditor(slug string) (tea.Model, tea.Cmd) {
 	}
 	it, ok := m.todoStore.Find(slug)
 	if !ok {
-		return m.systemNotice(fmt.Sprintf("No backlog item %q; /todo lists them.", slug))
+		return m.systemNotice(fmt.Sprintf("no backlog item %q; /todo lists them", slug))
 	}
 	argv := editorArgv(editorCommand(), it.Path, 1, 1)
 	proc := exec.Command(argv[0], argv[1:]...)
@@ -534,14 +534,14 @@ func (m Model) todoEditorFinished(msg todoEditorDoneMsg) (tea.Model, tea.Cmd) {
 		return m.surfaceNotice("the editor exited with an error — " + msg.err.Error())
 	}
 	if _, err := os.Stat(msg.path); err != nil {
-		return m.systemNotice(fmt.Sprintf("%s is gone; the backlog no longer has %s.", filepath.Base(msg.path), msg.slug))
+		return m.systemNotice(fmt.Sprintf("%s is gone; the backlog no longer has %s", filepath.Base(msg.path), msg.slug))
 	}
 	it, err := todo.LoadFile(m.todos.Profile, msg.path)
 	if err != nil {
-		return m.systemNotice(fmt.Sprintf("%s does not load as an item now — %v. It stays on disk; fix the header and it comes back.", filepath.Base(msg.path), err))
+		return m.systemNotice(fmt.Sprintf("%s does not load as an item now — %v. It stays on disk; fix the header and it comes back", filepath.Base(msg.path), err))
 	}
 	m.signal(observe.SignalTodo, observe.TodoEdit)
-	note := fmt.Sprintf("Saved %s: %s (%s, %s", it.Slug, it.Title, it.Priority, it.Status)
+	note := fmt.Sprintf("saved %s: %s (%s, %s", it.Slug, it.Title, it.Priority, it.Status)
 	if grade := it.Grade(); grade != "" {
 		note += ", " + grade
 	}
@@ -584,7 +584,7 @@ const todoScreenWhy = "the turn is running; these change the files it may be wor
 // until the turn is over.
 func (m Model) openTodoScreen() (tea.Model, tea.Cmd) {
 	if !m.todosEnabled() {
-		return m.systemNotice("The backlog is unavailable in this session.")
+		return m.systemNotice("the backlog is unavailable in this session")
 	}
 	m.backlog = &components.BacklogScreen{Prose: todoProse, Plan: m.sprintPlan, Noun: m.todos.Profile.Noun}
 	m.backlog.Priority, m.backlog.Fields = todoScreenFieldSet(m.todos.Profile)
@@ -670,7 +670,7 @@ func (m Model) todoScreenAct(cmd components.BacklogCommand) (tea.Model, tea.Cmd)
 	case components.BacklogSprintCancel:
 		m.backlog.Plan, m.sprintPlan = nil, nil
 		m.refreshTodoScreen()
-		return m.systemNotice("Nothing written; no sprint was planned.")
+		return m.systemNotice("nothing written; no sprint was planned")
 	case components.BacklogSprintGoal:
 		// A goal is a sentence and the card has nowhere to type one, so the
 		// key hands the keyboard back with the command already in the box —
@@ -698,7 +698,7 @@ func (m Model) todoScreenAct(cmd components.BacklogCommand) (tea.Model, tea.Cmd)
 // with nothing in it. A draft already in the box is not thrown away for it.
 func (m Model) composeTodoNew() (tea.Model, tea.Cmd) {
 	if strings.TrimSpace(m.input.Value()) != "" {
-		return m.systemNotice("There is a draft in the input; " + todoNewUsage + " once it is sent or cleared.")
+		return m.systemNotice("there is a draft in the input; " + todoNewUsage + " once it is sent or cleared")
 	}
 	m.input.SetValue(todoNewPrefix)
 	m.input.MoveToEnd()
@@ -742,9 +742,9 @@ func (m Model) todoReopen(slug string) string {
 	if it, ok := m.todoStore.Find(slug); ok && it.Archived {
 		to, err := todo.Reopen(m.todos.Root, slug)
 		if err != nil {
-			return "Error: " + err.Error()
+			return failed("todo", err.Error())
 		}
-		return fmt.Sprintf("Reopened %s; the file is back in the backlog at %s.", slug, to)
+		return fmt.Sprintf("reopened %s; the file is back in the backlog at %s", slug, to)
 	}
 	return m.todos.Manage([]string{"open", slug})
 }

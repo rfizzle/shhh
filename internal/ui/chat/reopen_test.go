@@ -280,7 +280,7 @@ func TestSwitchToBranch_TakesTheBranchesOwnSummary(t *testing.T) {
 
 	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).WithDB(db)
 	m.compactSummary = "a summary of somewhere else entirely"
-	if note := m.switchToBranch("root (branch 1)"); !strings.Contains(note, "Switched to branch") {
+	if note := m.switchToBranch("root (branch 1)"); !strings.Contains(note, "switched to branch") {
 		t.Fatalf("switch failed: %q", note)
 	}
 	if m.compactSummary != "the branch's own handoff" {
@@ -290,7 +290,7 @@ func TestSwitchToBranch_TakesTheBranchesOwnSummary(t *testing.T) {
 	// And a branch with none of its own opens with none rather than with the
 	// one the session was carrying.
 	m.compactSummary = "a summary of somewhere else entirely"
-	if note := m.switchToBranch("root"); !strings.Contains(note, "Switched to branch") {
+	if note := m.switchToBranch("root"); !strings.Contains(note, "switched to branch") {
 		t.Fatalf("switch back failed: %q", note)
 	}
 	if m.compactSummary != "" {

@@ -227,12 +227,12 @@ func TestTodoRun_Guards(t *testing.T) {
 	m, _ := runModel(t)
 	m.input.SetValue("/todo run nope")
 	updated, _ := m.submitInput()
-	if note := updated.(Model).transcript[len(updated.(Model).transcript)-1].text; !strings.Contains(note, `No active backlog item "nope"`) {
+	if note := updated.(Model).transcript[len(updated.(Model).transcript)-1].text; !strings.Contains(note, `no active backlog item "nope"`) {
 		t.Fatalf("unknown slug: %q", note)
 	}
 	m.input.SetValue("/todo status")
 	updated, _ = m.submitInput()
-	if note := updated.(Model).transcript[len(updated.(Model).transcript)-1].text; !strings.HasPrefix(note, "No run is going") {
+	if note := updated.(Model).transcript[len(updated.(Model).transcript)-1].text; !strings.HasPrefix(note, "no run is going") {
 		t.Fatalf("status idle: %q", note)
 	}
 	m.input.SetValue("/todo run do-it")
@@ -240,7 +240,7 @@ func TestTodoRun_Guards(t *testing.T) {
 	m = updated.(Model)
 	m.input.SetValue("/todo run do-it")
 	updated, _ = m.submitInput()
-	if note := updated.(Model).transcript[len(updated.(Model).transcript)-1].text; !strings.Contains(note, "Not while the turn is running") {
+	if note := updated.(Model).transcript[len(updated.(Model).transcript)-1].text; !strings.Contains(note, "not while the turn is running") {
 		t.Fatalf("second run mid-turn: %q", note)
 	}
 	// Mid-run, status is the run's row opened rather than a sentence about
@@ -388,7 +388,7 @@ func TestTodoRun_TextIsRefusedAndStaleResultsIgnored(t *testing.T) {
 	m.input.SetValue("also check the tests")
 	updated, _ = m.submitInput()
 	m = updated.(Model)
-	if len(m.steering) != 0 || !strings.Contains(m.transcript[len(m.transcript)-1].text, "Not sent: a backlog run is going") {
+	if len(m.steering) != 0 || !strings.Contains(m.transcript[len(m.transcript)-1].text, "not sent: a backlog run is going") {
 		t.Fatal("text mid-run should be refused, not queued as steering")
 	}
 	m = answer(t, m, runPlan)
@@ -2020,7 +2020,7 @@ func TestTodoSprint_CostCapEndsItBetweenItems(t *testing.T) {
 	}
 	said := false
 	for _, e := range m.transcript {
-		said = said || (strings.Contains(e.text, "Sprint started") && strings.Contains(e.text, "spending at most $5"))
+		said = said || (strings.Contains(e.text, "sprint started") && strings.Contains(e.text, "spending at most $5"))
 	}
 	if !said {
 		t.Fatal("the start note should name the ceiling")

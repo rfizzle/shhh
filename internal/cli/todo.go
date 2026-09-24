@@ -649,7 +649,7 @@ func todoManager(root string) func(args []string) string {
 		case errors.As(err, &usage):
 			return usage.text
 		}
-		return "Error: " + err.Error()
+		return "✗ todo  " + err.Error()
 	}
 }
 

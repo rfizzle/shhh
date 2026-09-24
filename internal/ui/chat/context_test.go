@@ -271,7 +271,7 @@ func TestTrimContext_TheRoundThatJustLandedCounts(t *testing.T) {
 	if len(m.Messages()[7].Content) != 60000 {
 		t.Fatal("the round's own result is in the current turn and must be kept")
 	}
-	if last := m.transcript[len(m.transcript)-1]; !strings.Contains(last.text, "Context trimmed") {
+	if last := m.transcript[len(m.transcript)-1]; !strings.Contains(last.text, "context trimmed") {
 		t.Fatalf("the trim should be noted in the transcript, got %q", last.text)
 	}
 }
@@ -292,7 +292,7 @@ func TestSendUserMessage_TrimsAndNotes(t *testing.T) {
 	}
 	var noted bool
 	for _, e := range m.transcript {
-		if e.kind == entrySystem && strings.Contains(e.text, "Context trimmed") {
+		if e.kind == entrySystem && strings.Contains(e.text, "context trimmed") {
 			noted = true
 		}
 	}
@@ -454,7 +454,7 @@ func TestCompact_NothingToCompact(t *testing.T) {
 		t.Fatalf("nothing to compact should stay at input, compacting=%v state=%d", m.compacting, m.state)
 	}
 	last := m.transcript[len(m.transcript)-1]
-	if last.kind != entrySystem || !strings.Contains(last.text, "Nothing to compact") {
+	if last.kind != entrySystem || !strings.Contains(last.text, "nothing to compact") {
 		t.Fatalf("expected a nothing-to-compact notice, got %+v", last)
 	}
 }
@@ -504,7 +504,7 @@ func TestCompact_CancelKeepsConversation(t *testing.T) {
 	}
 	var cancelled bool
 	for _, e := range m.transcript {
-		if e.kind == entrySystem && strings.Contains(e.text, "Compaction cancelled") {
+		if e.kind == entrySystem && strings.Contains(e.text, "compaction cancelled") {
 			cancelled = true
 		}
 	}

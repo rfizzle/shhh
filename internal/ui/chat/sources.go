@@ -66,7 +66,7 @@ func (m *Model) bindSources() {
 // answering a question they had stopped asking.
 func (m Model) openSources() (tea.Model, tea.Cmd) {
 	if m.sourceLedger == nil {
-		return m.systemNotice("This session has no web tools, so nothing has been read.")
+		return m.systemNotice("this session has no web tools, so nothing has been read")
 	}
 	screen := m.sourcesScreenData()
 	m.sources = &screen

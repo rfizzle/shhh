@@ -44,4 +44,4 @@ keys y
 # And the screen stays up over the notebook it just corrected: the reader is
 # walking a list and fixing it, and leaving after each correction would take
 # the list away.
-snap 07-dropped "Dropped note" "/notes · 1 note · 1 agent"
+snap 07-dropped "dropped note" "/notes · 1 note · 1 agent"

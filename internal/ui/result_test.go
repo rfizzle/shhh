@@ -459,7 +459,7 @@ func TestResult_AReviseSpinsWhileItsStreamOpens(t *testing.T) {
 	if !m.opening {
 		t.Error("the surface does not know it is waiting on a stream")
 	}
-	if !strings.Contains(m.View().Content, "Thinking") {
+	if !strings.Contains(m.View().Content, "thinking…") {
 		t.Errorf("the wait for the new stream says nothing:\n%s", m.View().Content)
 	}
 

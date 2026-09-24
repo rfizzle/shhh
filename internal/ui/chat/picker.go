@@ -342,10 +342,10 @@ func (m Model) finishModelList(msg modelListMsg) (tea.Model, tea.Cmd) {
 	m.leaveSurface()
 	switch {
 	case msg.err != nil:
-		m.appendEntry(entry{kind: entrySystem, text: fmt.Sprintf("Could not list models: %v", msg.err)})
+		m.appendEntry(entry{kind: entrySystem, text: fmt.Sprintf("could not list models: %v", msg.err)})
 	case len(msg.names) == 0:
 		m.modelListed = true
-		m.appendEntry(entry{kind: entrySystem, text: "The provider reported no models."})
+		m.appendEntry(entry{kind: entrySystem, text: "the provider reported no models"})
 	default:
 		m.modelListed = true
 		m.modelOptions = msg.names
@@ -406,9 +406,9 @@ func (m Model) openModelPick() (tea.Model, tea.Cmd) {
 		}
 		if !makeDefault {
 			if !switched {
-				return fmt.Sprintf("Already using %s.", name), nil
+				return fmt.Sprintf("already using %s", name), nil
 			}
-			return fmt.Sprintf("Switched to %s for this session. In the picker, [%s] then [%s] makes a choice the default.",
+			return fmt.Sprintf("switched to %s for this session. In the picker, [%s] then [%s] makes a choice the default",
 				name, keys.Shown(keys.Select.ClearQ), keys.Shown(keys.Select.Alt)), nil
 		}
 		// setModelDefault owns the writing and everything true about it —
@@ -419,7 +419,7 @@ func (m Model) openModelPick() (tea.Model, tea.Cmd) {
 		if !switched {
 			return saved, nil
 		}
-		return fmt.Sprintf("Switched to %s. %s", name, saved), nil
+		return fmt.Sprintf("switched to %s. %s", name, saved), nil
 	})
 	next := updated.(Model)
 	next.picker.CancelLabel = "keep " + keep
@@ -452,7 +452,7 @@ func (m Model) openModePick() (tea.Model, tea.Cmd) {
 	updated, cmd := m.openPicker("Permission mode", opts, focus, func(m *Model, idx int) string {
 		mode := cycle[idx]
 		m.applyMode(mode)
-		return fmt.Sprintf("Mode set to %s — %s.", mode, mode.Describe())
+		return fmt.Sprintf("mode set to %s — %s", mode, mode.Describe())
 	})
 	// Esc leaves the session on the mode it is in, and says which one
 	// (docs/interface/principles.md#esc-is-always-the-safe-answer).
@@ -466,7 +466,7 @@ func (m Model) openModePick() (tea.Model, tea.Cmd) {
 // sessionDesc is the description row shared by every saved-chat and branch
 // listing: how many turns it holds and when it was last written.
 func sessionDesc(turns int, updated time.Time) string {
-	return fmt.Sprintf("%d turns, %s", turns, updated.Local().Format("Jan 2 15:04"))
+	return plural(turns, "turn") + " · " + updated.Local().Format("Jan 2 15:04")
 }
 
 // currentBranchPhrase marks the row the session is already on. It is the

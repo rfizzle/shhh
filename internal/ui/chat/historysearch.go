@@ -41,7 +41,7 @@ func (m Model) historySearching() bool { return m.histSearch != nil }
 // keystroke would come to nothing.
 func (m Model) openHistorySearch() (tea.Model, tea.Cmd) {
 	if len(m.inputHistory) == 0 {
-		return m.systemNotice("No input history to search yet.")
+		return m.systemNotice("no input history to search yet")
 	}
 	m.histSearch = &historySearch{saved: m.input.Value()}
 	m.syncViewport()

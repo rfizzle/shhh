@@ -129,7 +129,7 @@ func TestSprintPlan_CardIsTheReadingsSetInItsOwnOrder(t *testing.T) {
 	if strings.Contains(sp.Goal, "the cause the next one closes") {
 		t.Fatalf("a reasoning line was written into the file: %q", sp.Goal)
 	}
-	if !strings.Contains(done.transcript[len(done.transcript)-1].text, "Wrote "+sp.Name) {
+	if !strings.Contains(done.transcript[len(done.transcript)-1].text, "wrote "+sp.Name) {
 		t.Fatalf("note = %q", done.transcript[len(done.transcript)-1].text)
 	}
 }
@@ -261,11 +261,11 @@ func TestSprintPlan_RefusalsWriteNothing(t *testing.T) {
 
 	bare, _ := sprintModel(t, "")
 	updated, _ = bare.startTodoSprintPlan([]string{"--sze", "S=1"})
-	if last := updated.(Model).transcript[len(updated.(Model).transcript)-1].text; !strings.HasPrefix(last, "Usage: /todo sprint plan") {
+	if last := updated.(Model).transcript[len(updated.(Model).transcript)-1].text; !strings.HasPrefix(last, "usage: /todo sprint plan") {
 		t.Fatalf("mistyped flag = %q", last)
 	}
 	updated, _ = bare.startTodoSprintPlan([]string{"--size", "L=2"})
-	if last := updated.(Model).transcript[len(updated.(Model).transcript)-1].text; !strings.Contains(last, "No ready item fits that budget") {
+	if last := updated.(Model).transcript[len(updated.(Model).transcript)-1].text; !strings.Contains(last, "no ready item fits that budget") {
 		t.Fatalf("budget nothing fits = %q", last)
 	}
 	if updated.(Model).todoGroomer.going() {
@@ -294,7 +294,7 @@ func TestSprintPlan_RefusedMidTurn(t *testing.T) {
 	m.input.SetValue("/todo sprint plan")
 	updated, cmd := m.submitInput()
 	last := updated.(Model).transcript[len(updated.(Model).transcript)-1].text
-	if cmd != nil || !strings.Contains(last, "Not while the turn is running") {
+	if cmd != nil || !strings.Contains(last, "not while the turn is running") {
 		t.Fatalf("note = %q", last)
 	}
 }
@@ -478,7 +478,7 @@ func TestSprintPlan_AndProposalsAnswerTheirOwnLists(t *testing.T) {
 	if _, err := os.Stat(todo.SprintPath(root)); !os.IsNotExist(err) {
 		t.Fatal("accepting the proposals card wrote a sprint")
 	}
-	if last := final.(Model).transcript[len(final.(Model).transcript)-1].text; !strings.Contains(last, "Wrote 1 backlog item") {
+	if last := final.(Model).transcript[len(final.(Model).transcript)-1].text; !strings.Contains(last, "wrote 1 backlog item") {
 		t.Fatalf("note = %q", last)
 	}
 	if got := strings.Join(planSlugs(final.(Model)), ","); got == "" {
@@ -496,7 +496,7 @@ func TestSprintPlan_WaitsForAReadingInFlight(t *testing.T) {
 	if next.state == stateTodoPropose {
 		t.Fatal("the plan card opened over a reading in flight")
 	}
-	if last := next.transcript[len(next.transcript)-1].text; !strings.Contains(last, "Still reading the session") {
+	if last := next.transcript[len(next.transcript)-1].text; !strings.Contains(last, "still reading the session") {
 		t.Fatalf("note = %q", last)
 	}
 }
@@ -576,12 +576,12 @@ func TestSprintCloseWords_NameTheItemThatFinished(t *testing.T) {
 func TestSprintNextNote_NamesTheItemComingUp(t *testing.T) {
 	m, _ := sprintModel(t, "")
 	sp := run.StartSprint("sess", "manual", 0, true)
-	if got := sprintNextNote(sp, m.todoStore); !strings.Contains(got, "Next in the sprint: a-high · High one") {
+	if got := sprintNextNote(sp, m.todoStore); !strings.Contains(got, "next in the sprint: a-high · High one") {
 		t.Fatalf("note = %q", got)
 	}
 	capped := run.StartSprint("sess", "manual", 1, true)
 	capped.Attempts = []string{"a-high"}
-	if got := sprintNextNote(capped, m.todoStore); !strings.Contains(got, "Nothing is left") {
+	if got := sprintNextNote(capped, m.todoStore); !strings.Contains(got, "nothing is left") {
 		t.Fatalf("capped note = %q", got)
 	}
 }

@@ -161,7 +161,7 @@ func (m Model) approvePlan(execMode agent.Mode) (tea.Model, tea.Cmd) {
 	m.setTurnState(stateStreaming)
 	m.streaming = ""
 	m.atBottom = true
-	m.appendEntry(entry{kind: entrySystem, text: fmt.Sprintf("Plan approved — executing in %s mode.", execMode)})
+	m.appendEntry(entry{kind: entrySystem, text: fmt.Sprintf("plan approved — executing in %s mode", execMode)})
 	m.recordCheckpoint(planApprovedMessage)
 	m.agent.StartTurn(planApprovedMessage)
 	m.appendEntry(entry{kind: entryUser, text: planApprovedMessage})
@@ -280,7 +280,7 @@ var evidenceHandle = regexp.MustCompile(`\bev-[0-9a-f]{16}\b`)
 func (m Model) carryPlanToNewSession() (tea.Model, tea.Cmd) {
 	rec := m.writePlanRecord(m.planDoc)
 	if rec.Empty() {
-		m.appendEntry(entry{kind: entrySystem, text: "No plan to carry — the response has no plan in it to write down."})
+		m.appendEntry(entry{kind: entrySystem, text: "no plan to carry — the response has no plan in it to write down"})
 		m.syncViewport()
 		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoBottom()
@@ -305,7 +305,7 @@ func (m Model) keepPlanning() (tea.Model, tea.Cmd) {
 	m.clearPlan()
 	m.setTurnState(stateInput)
 	m.syncViewport()
-	m.appendEntry(entry{kind: entrySystem, text: "Keep planning — describe what to change and the agent will revise the plan."})
+	m.appendEntry(entry{kind: entrySystem, text: "keep planning — describe what to change and the agent will revise the plan"})
 	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()
 	return m, nil
@@ -318,7 +318,7 @@ func (m Model) rejectPlan() (tea.Model, tea.Cmd) {
 	m.clearPlan()
 	m.setTurnState(stateInput)
 	m.syncViewport()
-	m.appendEntry(entry{kind: entrySystem, text: "Plan rejected. Still in plan mode — give new directions, or switch modes with Shift+Tab or /mode."})
+	m.appendEntry(entry{kind: entrySystem, text: "plan rejected. Still in plan mode — give new directions, or switch modes with shift+tab or /mode"})
 	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()
 	return m, nil
@@ -333,11 +333,11 @@ func (m Model) savePlanFromCard() (tea.Model, tea.Cmd) {
 		text = m.lastAssistantText()
 	}
 	if strings.TrimSpace(text) == "" {
-		m.appendEntry(entry{kind: entrySystem, text: "No plan to save yet."})
+		m.appendEntry(entry{kind: entrySystem, text: "no plan to save yet"})
 	} else if path, err := savePlan(m.workspace, text, ""); err != nil {
-		m.appendEntry(entry{kind: entrySystem, text: "Error saving plan: " + err.Error()})
+		m.appendEntry(entry{kind: entrySystem, text: failed("plan", "could not save it: "+err.Error())})
 	} else {
-		m.appendEntry(entry{kind: entrySystem, text: "Plan saved to " + path})
+		m.appendEntry(entry{kind: entrySystem, text: "plan saved to " + path})
 	}
 	m.syncViewport()
 	m.viewport.SetLines(m.renderHistoryLines())
@@ -563,7 +563,7 @@ func sanitizePlanName(name string) string {
 
 // planUsage is what /plan answers to when it is given something it does not
 // know; the checklist itself is the bare form.
-const planUsage = "Usage: /plan · /plan save [name] · /plan drop"
+const planUsage = "usage: /plan · /plan save [name] · /plan drop"
 
 // planHintRail is the PLAN block's last row. It names the command rather than
 // a bracketed key because the rail's keys are the host's, and the input
@@ -763,9 +763,9 @@ func (m Model) planStatus() string {
 	run := m.planRun
 	if run == nil {
 		if m.policy.mode == agent.ModePlan {
-			return "No plan approved yet — the card offers the checklist once one is.\n" + planUsage
+			return "no plan approved yet — the card offers the checklist once one is.\n" + planUsage
 		}
-		return "No approved plan is running.\n" + planUsage
+		return "no approved plan is running.\n" + planUsage
 	}
 	steps := m.planChecklist()
 	var b strings.Builder

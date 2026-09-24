@@ -144,10 +144,11 @@ func partingLine(width int) string {
 	return sty.Dim.Render(Clip(partingWords, width))
 }
 
-// row lays one labelled line out: the label dim in its column, the value in
+// row lays one labelled line out: the label in Status in its column, as a
+// card's field label is, and the value in
 // the tone the row is read for.
 func (b ExitBanner) row(label, value string, style lipgloss.Style) string {
-	return sty.Dim.Render(padRight(label, exitLabelWidth)) + "  " + style.Render(value)
+	return sty.Status.Render(padRight(label, exitLabelWidth)) + "  " + style.Render(value)
 }
 
 // spendLine is what the sitting cost and whose spend that is. The scope

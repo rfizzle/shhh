@@ -167,7 +167,7 @@ func TestClassifierFlow_FailureFallsBackToPrompt(t *testing.T) {
 	}
 	found := false
 	for _, e := range m.transcript {
-		if e.kind == entrySystem && strings.Contains(e.text, "Classifier unavailable") {
+		if e.kind == entrySystem && strings.Contains(e.text, "classifier unavailable") {
 			found = true
 		}
 	}
@@ -429,7 +429,7 @@ func TestClassifierFlow_TheFailureNoticeTakesTheCallsPlace(t *testing.T) {
 		var out []string
 		for _, e := range m.transcript {
 			switch {
-			case e.kind == entrySystem && strings.Contains(e.text, "Classifier unavailable"):
+			case e.kind == entrySystem && strings.Contains(e.text, "classifier unavailable"):
 				out = append(out, "notice")
 			case e.kind == entryTool || e.kind == entryCommand:
 				out = append(out, m.activityRowFor(e).Target)

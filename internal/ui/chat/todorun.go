@@ -117,7 +117,7 @@ func (m Model) todoRunRefusal(ref run.Refusal, slug string) string {
 	case run.NeedChecks:
 		return todoNoChecksNotice(project.Abbreviate(m.todos.Root), ref.Step)
 	}
-	return "This backlog's run cannot start here: " + ref.Why + "."
+	return "this backlog's run cannot start here: " + ref.Why
 }
 
 // startTodoRun begins a run on an item. It refuses a second run, an item
@@ -146,29 +146,29 @@ func (m Model) beginTodoRun(arg string, noCommit, inSprint bool) (tea.Model, tea
 	// be the surprise worth avoiding.
 	noCommit = noCommit || m.todos.NoCommit
 	if m.todoRunner.state != nil && !m.todoRunner.state.Over() {
-		return m.systemNotice(fmt.Sprintf("A run is already going: %s. /todo status shows it; /todo stop ends it.", m.todoRunner.state.Summary()))
+		return m.systemNotice(fmt.Sprintf("a run is already going: %s. /todo status shows it; /todo stop ends it", m.todoRunner.state.Summary()))
 	}
 	s := m.todoStore
 	if s == nil {
-		return m.systemNotice("No backlog to run from.")
+		return m.systemNotice("no backlog to run from")
 	}
 	var it todo.Item
 	var ok bool
 	if arg == "" || arg == "--next" {
 		if it, ok = s.Next(); !ok {
-			return m.systemNotice("Nothing is ready: every open item waits on another, or the backlog is empty.")
+			return m.systemNotice("nothing is ready: every open item waits on another, or the backlog is empty")
 		}
 	} else if it, ok = s.Find(arg); !ok || it.Archived {
-		return m.systemNotice(fmt.Sprintf("No active backlog item %q; /todo lists them.", arg))
+		return m.systemNotice(fmt.Sprintf("no active backlog item %q; /todo lists them", arg))
 	}
 	if waiting := s.Waiting(it); len(waiting) > 0 {
-		return m.systemNotice(fmt.Sprintf("%s waits on %s; run those first, or take the dependency out of the file.", it.Slug, strings.Join(waiting, ", ")))
+		return m.systemNotice(fmt.Sprintf("%s waits on %s; run those first, or take the dependency out of the file", it.Slug, strings.Join(waiting, ", ")))
 	}
 	if it.Status == todo.StatusBlocked {
-		return m.systemNotice(fmt.Sprintf("%s is blocked; /todo open %s reopens it once the block is settled.", it.Slug, it.Slug))
+		return m.systemNotice(fmt.Sprintf("%s is blocked; /todo open %s reopens it once the block is settled", it.Slug, it.Slug))
 	}
 	if m.turnState() != stateInput {
-		return m.systemNotice("Answer the open decision first; a run starts from an idle session.")
+		return m.systemNotice("answer the open decision first; a run starts from an idle session")
 	}
 	repo := project.InRepo(m.todos.Root)
 	opt := run.Options{NoCommit: noCommit, Repo: repo, Sprint: m.sprintGoal(),
@@ -186,7 +186,7 @@ func (m Model) beginTodoRun(arg string, noCommit, inSprint bool) (tea.Model, tea
 	// it needs is a person doing it, so the offer is the one verb that files
 	// it rather than a run that would describe the work instead of doing it.
 	if !opt.Steps().Runs() {
-		return m.systemNotice(fmt.Sprintf("The %s profile has no run: its items are worked by hand. /todo done %s files this one.", m.todos.Profile.Name, it.Slug))
+		return m.systemNotice(fmt.Sprintf("the %s profile has no run: its items are worked by hand. /todo done %s files this one", m.todos.Profile.Name, it.Slug))
 	}
 	// What this session must be able to do is what the run's steps ask for,
 	// step by step: a pipeline that never writes wants no changeset and one
@@ -216,13 +216,13 @@ func (m Model) beginTodoRun(arg string, noCommit, inSprint bool) (tea.Model, tea
 			m.todoRunner.state = st
 			m.todoRunner.item = it
 			m.openTodoRunRow()
-			model, _ := m.systemNotice(fmt.Sprintf("Continuing the run on %s from its %s stage (checkpoint from session %s).", it.Slug, st.Stage, orDash(from)))
+			model, _ := m.systemNotice(fmt.Sprintf("continuing the run on %s from its %s stage (checkpoint from session %s)", it.Slug, st.Stage, orDash(from)))
 			return model.(Model).todoRunStep(st.Continue(it))
 		}
-		return m.systemNotice(fmt.Sprintf("%s is in progress with no checkpoint to continue from; /todo open %s puts it back to open and a run can start over.", it.Slug, it.Slug))
+		return m.systemNotice(fmt.Sprintf("%s is in progress with no checkpoint to continue from; /todo open %s puts it back to open and a run can start over", it.Slug, it.Slug))
 	}
 	if err := todo.SetStatus(it.Path, todo.StatusInProgress); err != nil {
-		return m.systemNotice("Could not mark the item in progress: " + err.Error())
+		return m.systemNotice("could not mark the item in progress: " + err.Error())
 	}
 	m.todoRunner.state = run.Start(it, m.sessionName, m.policy.mode.String(), int(m.turnCount)+1, opt)
 	// The tree as this item found it. Only what moves after this is the
@@ -244,7 +244,7 @@ func (m Model) todoRunStep(step run.Step) (tea.Model, tea.Cmd) {
 	}
 	st.Paths = m.todoRunPaths()
 	if err := st.Save(m.todos.Root); err != nil {
-		m.appendEntry(entry{kind: entrySystem, text: "The run's checkpoint could not be written — " + err.Error()})
+		m.appendEntry(entry{kind: entrySystem, text: "the run's checkpoint could not be written — " + err.Error()})
 	}
 	m.sprintRunning()
 	// One vocabulary for the record and for the row: the stage where the
@@ -503,7 +503,7 @@ func (m *Model) keepTodoRun(why string) string {
 // todoRunKeptNote is what a run let go of at its checkpoint says: where it
 // stopped, why, and the command that picks it up from there.
 func todoRunKeptNote(it todo.Item, st *run.State, why string) string {
-	return fmt.Sprintf("Paused the run on %s at %s — %s. /todo run %s continues it from there.", it.Slug, st.Stage, why, it.Slug)
+	return fmt.Sprintf("paused the run on %s at %s — %s. /todo run %s continues it from there", it.Slug, st.Stage, why, it.Slug)
 }
 
 // stopTodoRun is /todo stop: the run is abandoned, the item goes back to
@@ -515,9 +515,9 @@ func (m Model) stopTodoRun() (tea.Model, tea.Cmd) {
 	// the step they are on and it writes its own ending.
 	if sp, live := run.Live(m.todos.Root); live && sp.Laned() && (st == nil || st.Over()) {
 		if err := run.RequestStop(m.todos.Root); err != nil {
-			return m.systemNotice("The sprint could not be asked to stop — " + err.Error())
+			return m.systemNotice("the sprint could not be asked to stop — " + err.Error())
 		}
-		return m.systemNotice("Asked the sprint to stop: each lane is interrupted at the step it is on and its item goes back to open, with its work kept in its copy of the checkout.")
+		return m.systemNotice("asked the sprint to stop: each lane is interrupted at the step it is on and its item goes back to open, with its work kept in its copy of the checkout")
 	}
 	// A sprint ends at its checkpoint rather than by abandoning the item in
 	// flight: the stages already done are in the tree, and the sprint is the
@@ -537,14 +537,14 @@ func (m Model) stopTodoRun() (tea.Model, tea.Cmd) {
 		return next.(Model).systemNotice(kept)
 	}
 	if st == nil || st.Over() {
-		return m.systemNotice("No run is going.")
+		return m.systemNotice("no run is going")
 	}
 	it := m.todoRunner.item
 	_ = todo.SetStatus(it.Path, todo.StatusOpen)
 	m.signal(observe.SignalRun, "stopped")
 	m.closeTodoRunRow("stopped")
 	m.endTodoRun()
-	return m.systemNotice(fmt.Sprintf("Stopped the run on %s at %s; the item is open again and the tree is as the run left it.", it.Slug, st.Stage))
+	return m.systemNotice(fmt.Sprintf("stopped the run on %s at %s; the item is open again and the tree is as the run left it", it.Slug, st.Stage))
 }
 
 // todoRunStatus is /todo status: the run's row, opened, with the keyboard on
@@ -564,7 +564,7 @@ func (m Model) todoRunStatus() (tea.Model, tea.Cmd) {
 	}
 	idx := lastTodoRunRow(m.transcript)
 	if idx < 0 {
-		return m.systemNotice("No run is going. /todo run [slug|--next] starts one.")
+		return m.systemNotice("no run is going. /todo run [slug|--next] starts one")
 	}
 	if m.attachedTo != "" {
 		// The keyboard is in a child's transcript, and the row is in this

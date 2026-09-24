@@ -379,14 +379,29 @@ func (d *DoctorScreen) checkRows(i, width int) []string {
 	}
 	if check.hasFix() && d.fix[i] {
 		for _, line := range check.Fix {
-			rows = append(rows, indentBy(sty.Body.Render(
-				Clip(line, max(width-doctorFixIndent, 1))), doctorFixIndent, width))
+			rows = append(rows, indentBy(fixLine(Clip(line, max(width-doctorFixIndent, 1))),
+				doctorFixIndent, width))
 		}
 	}
 	if row := d.fixKeyRow(i, width); row != "" {
 		rows = append(rows, row)
 	}
 	return rows
+}
+
+// fixLine paints one line of a fix. A line that opens on a field label — one
+// word, then the gap that lines its value up under the others' — carries the
+// label in Status and the value in body, as a card's fields do: the label is
+// the furniture the value is read against, and painting the two alike made
+// the label read as part of the value.
+func fixLine(line string) string {
+	word, rest, ok := strings.Cut(line, "  ")
+	if !ok || word == "" || strings.ContainsAny(word, " \t") {
+		return sty.Body.Render(line)
+	}
+	value := strings.TrimLeft(rest, " ")
+	gap := line[len(word) : len(line)-len(value)]
+	return sty.Status.Render(word) + gap + sty.Body.Render(value)
 }
 
 // fixKeyRow is the offer under a check that has something to do on it: `[f]`

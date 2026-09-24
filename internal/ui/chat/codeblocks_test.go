@@ -107,7 +107,7 @@ func TestSlashCopy_CopiesLastResponse(t *testing.T) {
 	m := copyCommandModel(t, msgs, &copied)
 
 	m, _ = runCopy(t, m, "/copy")
-	if note := lastSystemText(m); !strings.Contains(note, "Copied") {
+	if note := lastSystemText(m); !strings.Contains(note, "copied") {
 		t.Fatalf("expected copy confirmation, got %q", note)
 	}
 	if !strings.Contains(copied, "ls -la") {
@@ -115,7 +115,7 @@ func TestSlashCopy_CopiesLastResponse(t *testing.T) {
 	}
 
 	m, _ = runCopy(t, m, "/copy code")
-	if note := lastSystemText(m); !strings.Contains(note, "Copied") {
+	if note := lastSystemText(m); !strings.Contains(note, "copied") {
 		t.Fatalf("expected copy confirmation, got %q", note)
 	}
 	if copied != "ls -la" {
@@ -128,7 +128,7 @@ func TestSlashCopy_NothingToCopy(t *testing.T) {
 	m := copyCommandModel(t, []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, &copied)
 
 	m, _ = runCopy(t, m, "/copy")
-	if note := lastSystemText(m); !strings.Contains(note, "Nothing to copy") {
+	if note := lastSystemText(m); !strings.Contains(note, "nothing to copy") {
 		t.Fatalf("expected 'Nothing to copy', got %q", note)
 	}
 }
@@ -161,7 +161,7 @@ func TestSlashCopy_TheTerminalTakesItWithNoToolOnPath(t *testing.T) {
 	if got := notifyRaw(t, cmd); got != want {
 		t.Errorf("wrote %q, want %q", got, want)
 	}
-	if note := lastSystemText(m); !strings.Contains(note, "Copied") {
+	if note := lastSystemText(m); !strings.Contains(note, "copied") {
 		t.Fatalf("expected copy confirmation, got %q", note)
 	}
 }

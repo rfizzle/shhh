@@ -911,23 +911,23 @@ func (m Model) runningCommandRow(width int) string {
 // window is called, and what the terminal itself can do.
 func (m *Model) uiCommand(parts []string) string {
 	if len(parts) == 1 {
-		return fmt.Sprintf("Activity feed verbosity: %s.\nTheme: %s.\nScreen ground: %s.\nMonochrome: %s.\nMouse reporting: %s.\nDesktop notifications: %s.\nSession titles: %s.\nWindow title: %s.\nLayout: %s.\nTerminal: %s.\n"+uiUsage, m.verbosity, m.themeStatus(), groundStatus(), monoStatus(), m.mouseStatus(), m.notifyStatus(), m.titleStatus(), m.windowStatus(), m.inspectorStatus(), terminalName(m.caps))
+		return fmt.Sprintf("activity feed verbosity: %s\ntheme: %s\nscreen ground: %s\nmonochrome: %s\nmouse reporting: %s\ndesktop notifications: %s\nsession titles: %s\nwindow title: %s\nlayout: %s\nterminal: %s\n"+uiUsage, m.verbosity, m.themeStatus(), groundStatus(), monoStatus(), m.mouseStatus(), m.notifyStatus(), m.titleStatus(), m.windowStatus(), m.inspectorStatus(), terminalName(m.caps))
 	}
 	switch parts[1] {
 	case "verbosity":
 		if len(parts) == 2 {
-			return fmt.Sprintf("Activity feed verbosity: %s.\nUsage: /ui verbosity <low|normal|high> — low shows step headers only and drops think rows, normal folds read-only groups, high expands every row.\nFor one step rather than all of them, /step opens the detail of the step in flight.", m.verbosity)
+			return fmt.Sprintf("activity feed verbosity: %s\nusage: /ui verbosity <low|normal|high> — low shows step headers only and drops think rows, normal folds read-only groups, high expands every row\nfor one step rather than all of them, /step opens the detail of the step in flight", m.verbosity)
 		}
 		if len(parts) != 3 {
-			return "Usage: /ui verbosity <low|normal|high>"
+			return "usage: /ui verbosity <low|normal|high>"
 		}
 		v, err := parseVerbosity(parts[2])
 		if err != nil {
-			return "Error: " + err.Error()
+			return failed("ui", err.Error())
 		}
 		m.verbosity = v
 		m.invalidateRenderCache()
-		return fmt.Sprintf("Activity feed verbosity set to %s.", v)
+		return fmt.Sprintf("activity feed verbosity set to %s", v)
 	case "theme":
 		return m.themeCommand(parts)
 	case "ground":
@@ -953,7 +953,7 @@ func (m *Model) uiCommand(parts []string) string {
 // uiUsage is the one line naming everything /ui answers for. It is a constant
 // because the bare readout and the unknown-subcommand reply are the same
 // list, and a list written twice is a list that drifts.
-const uiUsage = "Usage: /ui verbosity <low|normal|high> · /ui theme <auto|dark|light|charm> · /ui ground <on|off> · /ui mono <on|off> · /ui mouse <on|off> · /ui notify <on|off> · /ui title <on|off> · /ui window <on|off> · /ui rail <auto|columns> · /ui terminal"
+const uiUsage = "usage: /ui verbosity <low|normal|high> · /ui theme <auto|dark|light|charm> · /ui ground <on|off> · /ui mono <on|off> · /ui mouse <on|off> · /ui notify <on|off> · /ui title <on|off> · /ui window <on|off> · /ui rail <auto|columns> · /ui terminal"
 
 // terminalName is the one-line answer the bare /ui gives: what the terminal
 // called itself when shhh asked. A terminal that was asked
@@ -979,29 +979,29 @@ func terminalName(t caps.Terminal) string {
 func (m Model) terminalReport() string {
 	t := m.caps
 	if !t.Asked {
-		return "Terminal: not asked — " + t.Held + ".\nNothing was queried, so nothing here would be an answer."
+		return "terminal: not asked — " + t.Held + "\nnothing was queried, so nothing here would be an answer"
 	}
 	if t.Dumb {
-		return "Terminal: dumb — TERM says so.\nNothing was asked of it and nothing is sent to it: no title on the tab, no progress state beside it, no notification."
+		return "terminal: dumb — TERM says so\nnothing was asked of it and nothing is sent to it: no title on the tab, no progress state beside it, no notification"
 	}
 	lines := []string{
-		"Terminal: " + terminalName(t) + ".",
-		"Inline images: " + imageSupport(t) + ".",
-		"Desktop notifications: " + pick(t.Notifications, "OSC 99", "no OSC 99 answer — OSC 777 is the blind fallback") + ".",
-		"Focus events: " + pick(t.FocusEvents, "reported", "not reported") + ".",
+		"terminal: " + terminalName(t),
+		"inline images: " + imageSupport(t),
+		"desktop notifications: " + pick(t.Notifications, "OSC 99", "no OSC 99 answer — OSC 777 is the blind fallback"),
+		"focus events: " + pick(t.FocusEvents, "reported", "not reported"),
 		// The progress state has no query to answer, the way OSC 777 has
 		// none: it is written and either understood or ignored, and a
 		// readout that listed it beside the answered capabilities would be
 		// claiming an answer nobody gave (terminal.go).
-		"Progress indicator: sent blind — the sequence has no query, so silence here is not a no.",
+		"progress indicator: sent blind — the sequence has no query, so silence here is not a no",
 	}
 	// The cell size is the terminal's pixels over the session's own columns
 	// and rows, which is why it is measured here rather than kept there.
 	if w, h := t.CellSize(m.width, m.height); w > 0 && h > 0 {
-		lines = append(lines, fmt.Sprintf("Cell size: %d×%d px.", w, h))
+		lines = append(lines, fmt.Sprintf("cell size: %d×%d px", w, h))
 	}
 	if t.Held != "" {
-		lines = append(lines, "Graphics and name were not asked for: "+t.Held+".")
+		lines = append(lines, "graphics and name were not asked for: "+t.Held)
 	}
 	return strings.Join(lines, "\n")
 }
@@ -1062,32 +1062,32 @@ func (m Model) themeStatus() string {
 // (docs/interface/principles.md#a-colour-is-three-values-and-a-ground).
 func (m *Model) themeCommand(parts []string) string {
 	if len(parts) == 2 {
-		return fmt.Sprintf("Theme: %s.\n%s", m.themeStatus(), themeUsage)
+		return fmt.Sprintf("theme: %s\n%s", m.themeStatus(), themeUsage)
 	}
 	if len(parts) != 3 {
 		return themeUsage
 	}
 	if err := components.SetTheme(parts[2]); err != nil {
-		return "Error: " + err.Error()
+		return failed("theme", err.Error())
 	}
 	m.invalidateRenderCache()
-	note := fmt.Sprintf("Theme: %s.", m.themeStatus())
+	note := fmt.Sprintf("theme: %s", m.themeStatus())
 	if components.Mono() {
-		note += " Monochrome is on, so it takes effect when that goes off."
+		note += " · monochrome is on, so it takes effect when that goes off"
 	}
 	if m.writeConfig == nil {
-		return note + "\nThis session cannot write the config file, so it is for this session only."
+		return note + "\nthis session cannot write the config file, so it is for this session only"
 	}
 	if err := m.writeConfig("appearance.theme", parts[2]); err != nil {
-		return note + "\nIt could not be saved: " + err.Error()
+		return note + "\n" + failed("theme", "could not save it: "+err.Error())
 	}
-	return note + " Saved — new sessions start this way."
+	return note + " · saved — new sessions start this way"
 }
 
 // themeUsage is the one line /ui theme answers with, built from the tables
 // that ship rather than from a list written twice.
-var themeUsage = "Usage: /ui theme <" + strings.Join(components.ThemeNames(), "|") +
-	"> — auto takes the table chosen for the background this terminal reports; the others name one."
+var themeUsage = "usage: /ui theme <" + strings.Join(components.ThemeNames(), "|") +
+	"> — auto takes the table chosen for the background this terminal reports; the others name one"
 
 // groundStatus describes what the screen behind the surfaces is painted with.
 func groundStatus() string {
@@ -1103,26 +1103,26 @@ func groundStatus() string {
 // is what every other program on that screen sits on.
 func (m *Model) groundCommand(parts []string) string {
 	if len(parts) == 2 {
-		return fmt.Sprintf("Screen ground: %s.\n%s", groundStatus(), groundUsage)
+		return fmt.Sprintf("screen ground: %s\n%s", groundStatus(), groundUsage)
 	}
 	if len(parts) != 3 {
 		return groundUsage
 	}
 	on, ok := parseToggle(parts[2])
 	if !ok {
-		return fmt.Sprintf("Error: unknown ground setting %q (on, off)", parts[2])
+		return failed("ui", fmt.Sprintf("unknown ground setting %q (on, off)", parts[2]))
 	}
 	if !components.PaintGround(on) {
-		return fmt.Sprintf("Screen ground already %s.", groundStatus())
+		return fmt.Sprintf("screen ground already %s", groundStatus())
 	}
 	m.invalidateRenderCache()
 	if on {
-		return "Screen ground: the theme's own — shhh paints the background it was drawn against, for this session."
+		return "screen ground: the theme's own — shhh paints the background it was drawn against, for this session"
 	}
-	return "Screen ground: the terminal's own — shhh paints no background, which is where it starts."
+	return "screen ground: the terminal's own — shhh paints no background, which is where it starts"
 }
 
-const groundUsage = "Usage: /ui ground <on|off> — on paints the whole screen with the background the theme was chosen against; off leaves the terminal's own. It lasts for this session."
+const groundUsage = "usage: /ui ground <on|off> — on paints the whole screen with the background the theme was chosen against; off leaves the terminal's own. It lasts for this session"
 
 // monoStatus describes the current monochrome state, naming the environment
 // when it is what turned mono on.
@@ -1144,27 +1144,27 @@ func monoStatus() string {
 // turned back off from inside — the environment asked, not the user.
 func (m *Model) monoCommand(parts []string) string {
 	if len(parts) == 2 {
-		return fmt.Sprintf("Monochrome: %s.\nUsage: /ui mono <on|off> — strips every surface to two greys; glyphs, words and layout carry the states.", monoStatus())
+		return fmt.Sprintf("monochrome: %s\nusage: /ui mono <on|off> — strips every surface to two greys; glyphs, words and layout carry the states", monoStatus())
 	}
 	if len(parts) != 3 {
-		return "Usage: /ui mono <on|off>"
+		return "usage: /ui mono <on|off>"
 	}
 	on, ok := parseToggle(parts[2])
 	if !ok {
-		return fmt.Sprintf("Error: unknown mono setting %q (on, off)", parts[2])
+		return failed("ui", fmt.Sprintf("unknown mono setting %q (on, off)", parts[2]))
 	}
 	if !on && components.MonoForced() {
-		return "Monochrome is on because NO_COLOR is set in this environment; it cannot be turned off from here."
+		return "monochrome is on because NO_COLOR is set in this environment; it cannot be turned off from here"
 	}
 	if on == components.Mono() {
-		return fmt.Sprintf("Monochrome already %s.", monoStatus())
+		return fmt.Sprintf("monochrome already %s", monoStatus())
 	}
 	components.SetMono(on)
 	m.invalidateRenderCache()
 	if on {
-		return "Monochrome on — every surface renders in two greys."
+		return "monochrome on — every surface renders in two greys"
 	}
-	return "Monochrome off — the full palette is back."
+	return "monochrome off — the full palette is back"
 }
 
 // The compose row

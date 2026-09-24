@@ -306,7 +306,7 @@ func TestPlanDrop_ReturnsTheOutlineToInferredSteps(t *testing.T) {
 	announce(t, &m, "Locate the round accounting", time.Second, false)
 
 	handled, result := m.handleSlashCommand("/plan drop")
-	if !handled || !strings.Contains(result, "Dropped the approved plan") {
+	if !handled || !strings.Contains(result, "dropped the approved plan") {
 		t.Fatalf("/plan drop should drop it, got %q", result)
 	}
 	if m.planRun != nil {

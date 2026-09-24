@@ -90,10 +90,10 @@ func secretsManager(v *secret.Vault) func(args []string) (note, announce string)
 			}
 			name, val, err := secretFromSpec(args[1])
 			if err != nil {
-				return "Error: " + err.Error(), ""
+				return "✗ secret  " + err.Error(), ""
 			}
 			if err := v.Add(name, val); err != nil {
-				return "Error: " + err.Error(), ""
+				return "✗ secret  " + err.Error(), ""
 			}
 			return report.Report{Sections: []report.Section{{Rows: []report.Row{
 					report.Done("set secret", name),

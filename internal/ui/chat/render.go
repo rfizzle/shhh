@@ -258,7 +258,7 @@ func (m Model) renderEntryDetail(e entry, width int, keysLive, stepDetail bool) 
 			row += m.pasteFoldBlock(p, e.expanded, width)
 		}
 		if len(e.attached) > 0 {
-			row += sty.SystemMsg.Render(clipRow("attached: "+strings.Join(e.attached, ", "), width)) + "\n"
+			row += sty.SystemMsg.Render(clipRow("attached: "+strings.Join(e.attached, " · "), width)) + "\n"
 		}
 		return row + promptRule(width) + "\n"
 	case entryAssistant:
@@ -350,10 +350,16 @@ func (m Model) renderEntryDetail(e entry, width int, keysLive, stepDetail bool) 
 		// error the session is reporting about itself is prose in the
 		// transcript, not a kind of text with an edge of its own
 		// (docs/interface/surfaces.md#the-leading-columns).
-		return m.marginProse(sty.Error, "Error: "+e.text, width) + "\n"
+		return m.marginProse(sty.Error, "✗ "+e.text, width) + "\n"
 	}
 	return ""
 }
+
+// failed is a notice for an act that did not happen, in the failure
+// vocabulary every row uses: the ✗, the act's own word, then what went
+// wrong. It replaced an `Error: ` prefix, which named the category of the
+// sentence instead of the thing that failed.
+func failed(act, what string) string { return "✗ " + act + "  " + what }
 
 // systemRow renders a notice: its one line, and — for the notices that carry
 // one — the body a reader opened it for, indented under the line the way
@@ -377,6 +383,13 @@ func (m Model) systemRow(e entry, width int) string {
 			row.Detail = m.noticeBody(e, width)
 		}
 		return row.View(width)
+	}
+	if e.help != nil {
+		lines := e.help.lines(max(width-components.GridPointerWidth, 1), true)
+		for i, l := range lines {
+			lines[i] = marginPaint(plainStyle, l)
+		}
+		return strings.Join(lines, "\n")
 	}
 	row := m.wrapped(e.text, width)
 	if !e.expanded {

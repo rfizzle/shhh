@@ -609,17 +609,17 @@ func (m Model) toolSourceStatus() string {
 func (m *Model) summaryStatus() (string, tea.Cmd) {
 	if !m.summaryEnabled() {
 		if m.summarizer.Config().Disabled {
-			return "The session summary is off (summary.disabled). Turn it back on in ~/.config/shhh/config.toml.", nil
+			return "the session summary is off (summary.disabled). Turn it back on in ~/.config/shhh/config.toml", nil
 		}
-		return "The session summary is not configured — no model resolved for it.", nil
+		return "the session summary is not configured — no model resolved for it", nil
 	}
 	cmd := m.forceSummaryCmd()
 	v := m.summary.last
 	if v == nil {
 		if cmd != nil {
-			return "Reading the session now — the summary lands in a moment.", cmd
+			return "reading the session now — the summary lands in a moment", cmd
 		}
-		return "A reading is already in flight; the summary lands in a moment.", nil
+		return "a reading is already in flight; the summary lands in a moment", nil
 	}
 
 	var sb strings.Builder

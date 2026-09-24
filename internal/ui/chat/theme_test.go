@@ -194,14 +194,14 @@ func TestUICommand_ThemeSwapsTheTableAndSaysSo(t *testing.T) {
 	if components.Palette != components.LightPalette {
 		t.Fatal("the light table was asked for and is not the one being drawn with")
 	}
-	if !strings.Contains(result, "Theme: light") || !strings.Contains(result, "Saved") {
+	if !strings.Contains(result, "theme: light") || !strings.Contains(result, "saved") {
 		t.Fatalf("the reply should say what changed and that it will last, got %q", result)
 	}
 	if written["appearance.theme"] != "light" {
 		t.Errorf("the answer was not persisted: %v", written)
 	}
 
-	if _, result = m.handleSlashCommand("/ui"); !strings.Contains(result, "Theme: light") {
+	if _, result = m.handleSlashCommand("/ui"); !strings.Contains(result, "theme: light") {
 		t.Fatalf("bare /ui should report the theme alongside the rest, got %q", result)
 	}
 	if _, result = m.handleSlashCommand("/ui theme solarized"); !strings.Contains(result, "unknown theme") {

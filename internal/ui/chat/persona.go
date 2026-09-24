@@ -126,10 +126,10 @@ func (m Model) personaDrafting() bool {
 // sentence yet.
 func (m Model) startPersona(brief string) (tea.Model, tea.Cmd) {
 	if !m.personas.Enabled {
-		return m.systemNotice("No model is configured to draft a profile. The reference in docs/agents/README.md says how to write one by hand.")
+		return m.systemNotice("no model is configured to draft a profile. The reference in docs/agents/README.md says how to write one by hand")
 	}
 	if m.persona != nil && m.persona.drafting {
-		return m.systemNotice("Still drafting — the card opens when it is done.")
+		return m.systemNotice("still drafting — the card opens when it is done")
 	}
 	m.persona = &personaFlow{}
 	m.personaScreen = components.NewProfileScreen(personaCommandName)

@@ -94,7 +94,7 @@ func TestSkillCommand_QueuesWhileWorking(t *testing.T) {
 func TestSkillCommand_UnknownAndListing(t *testing.T) {
 	m := skillModel(t)
 	m = sendText(t, m, "/skill nope")
-	if !transcriptContains(m, "No skill named nope") {
+	if !transcriptContains(m, "no skill named nope") {
 		t.Fatal("an unknown skill is answered, not sent")
 	}
 	m = sendText(t, m, "/skills")
@@ -105,7 +105,7 @@ func TestSkillCommand_UnknownAndListing(t *testing.T) {
 	bare := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream)
 	updated, _ := bare.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	bare = sendText(t, updated.(Model), "/skills")
-	if !transcriptContains(bare, "No skills loaded") {
+	if !transcriptContains(bare, "no skills loaded") {
 		t.Fatal("a session without skills says so")
 	}
 }

@@ -128,7 +128,7 @@ func TestConversation_TheRailOffersNoModeKey(t *testing.T) {
 // does — through the chord that prints it and through /help's key section,
 // which are one list — and keeps it in a coding session.
 func TestConversation_TheKeyListOffersNoModeKey(t *testing.T) {
-	const row = "Cycle the permission mode"
+	const row = "cycle the permission mode"
 	coding := gatedModel(t, nil, nil)
 	if !strings.Contains(coding.helpKeys(), row) {
 		t.Fatal("the control is wrong: a coding session's key list has no mode row")
@@ -140,7 +140,7 @@ func TestConversation_TheKeyListOffersNoModeKey(t *testing.T) {
 	}
 	updated, _ := chat.Update(tea.KeyPressMsg{Code: ']', Mod: tea.ModCtrl})
 	chat = updated.(Model)
-	if !transcriptContains(chat, "Keys:") {
+	if !transcriptContains(chat, "[ctrl+n]") {
 		t.Fatal("the key-list chord printed no key list")
 	}
 	if transcriptContains(chat, row) {

@@ -199,8 +199,8 @@ func (s *SourcesScreen) previewRows(width int) []string {
 	}
 	rows = append(rows, "")
 	for _, f := range s.fields(*row) {
-		rows = append(rows, "  "+sty.Dimmer.Render(f.label+" ")+
-			sty.Dim.Render(Clip(f.value, max(width-lipgloss.Width(f.label)-3, 1))))
+		rows = append(rows, "  "+sty.Status.Render(f.label+" ")+
+			sty.Body.Render(Clip(f.value, max(width-lipgloss.Width(f.label)-3, 1))))
 	}
 	if len(row.Head) > 0 {
 		rows = append(rows, "", sty.Dimmer.Render(Clip("  the page as it was kept", width)))

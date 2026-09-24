@@ -539,10 +539,10 @@ func TestUIWindow_SwitchesAndExplainsItself(t *testing.T) {
 	if m.windowTitle() != "" {
 		t.Error("the tab kept its name after the switch went off")
 	}
-	if out := m.uiCommand([]string{"/ui", "window", "sideways"}); !strings.Contains(out, "Error") {
+	if out := m.uiCommand([]string{"/ui", "window", "sideways"}); !strings.HasPrefix(out, "✗ ui  ") {
 		t.Errorf("an unknown setting was accepted: %q", out)
 	}
-	if out := m.uiCommand([]string{"/ui"}); !strings.Contains(out, "Window title: off") {
+	if out := m.uiCommand([]string{"/ui"}); !strings.Contains(out, "window title: off") {
 		t.Errorf("the bare readout does not carry the window title: %q", out)
 	}
 	dumb := windowModel(t)

@@ -122,10 +122,10 @@ func (m StreamModel) Update(msg tea.Msg) (StreamModel, tea.Cmd) {
 
 func (m StreamModel) View() string {
 	if m.err != nil {
-		return sty.Error.Render("Error: " + m.err.Error())
+		return sty.Error.Render("✗ model  " + m.err.Error())
 	}
 	if m.output == "" && !m.done {
-		return m.spinner.View() + " Thinking…"
+		return m.spinner.View() + " thinking…"
 	}
 	return commandLine(m.output)
 }

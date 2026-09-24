@@ -240,7 +240,7 @@ func scopeDropArgs(m *Model) []argOption {
 	dirs := m.scopeDirs()
 	out := make([]argOption, 0, len(dirs))
 	for _, d := range dirs {
-		out = append(out, argOption{value: d, desc: "Stop the session writing here"})
+		out = append(out, argOption{value: d, desc: "stop the session writing here"})
 	}
 	return out
 }
@@ -253,7 +253,7 @@ func attachmentDropArgs(m *Model) []argOption {
 	out := make([]argOption, 0, len(m.attachments))
 	for _, a := range m.attachments {
 		out = append(out, argOption{value: a.Name,
-			desc: "Drop this attachment · " + attachment.HumanSize(len(a.Data))})
+			desc: "drop this attachment · " + attachment.HumanSize(len(a.Data))})
 	}
 	return out
 }
@@ -285,14 +285,14 @@ func attachmentShowArgs(m *Model) []argOption {
 // person on a 144-column screen who is offered 72 has been offered a number
 // the layout will cut down.
 func railArgs(m *Model) []argOption {
-	out := []argOption{{value: components.RailWidthAuto, desc: "Widen the rail with the terminal"}}
+	out := []argOption{{value: components.RailWidthAuto, desc: "widen the rail with the terminal"}}
 	here := components.InspectorWidthFor(m.contentWidth())
 	if here > components.InspectorWidth {
 		out = append(out, argOption{value: strconv.Itoa(here),
-			desc: "As wide as this terminal allows"})
+			desc: "as wide as this terminal allows"})
 	}
 	return append(out, argOption{value: strconv.Itoa(components.InspectorWidth),
-		desc: "The narrowest rail — the most transcript"})
+		desc: "the narrowest rail — the most transcript"})
 }
 
 // modeArgs offers the session's mode cycle plus /permissions' own
@@ -316,10 +316,10 @@ func modeArgs(m *Model) []argOption {
 		out = append(out, argOption{value: mode.String(), desc: desc})
 	}
 	return append(out,
-		argOption{value: "why", desc: "Explain the last approval decision"},
-		argOption{value: "grants", desc: "What this session has stopped asking about"},
-		argOption{value: "allow", desc: "Grant a whole category, for the session"},
-		argOption{value: "revoke", desc: "Take the session's grants back"})
+		argOption{value: "why", desc: "explain the last approval decision"},
+		argOption{value: "grants", desc: "what this session has stopped asking about"},
+		argOption{value: "allow", desc: "grant a whole category, for the session"},
+		argOption{value: "revoke", desc: "take the session's grants back"})
 }
 
 // agentArgs offers this session's sub-agents for /attach, blocked ones

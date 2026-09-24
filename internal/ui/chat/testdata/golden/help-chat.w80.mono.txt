@@ -11,360 +11,358 @@
 
 ── layout ──────────────────────────────────────────────────
 · a conversation
-Commands:
-  /help          Show this help
-  /clear         End this session and start another (also /new)
-  /paste         Attach the clipboard — a screenshot, or files copied in a
-                 file manager — to your next message; /paste <path> attaches
-                 a file by name, /paste show <name> opens a staged image or
-                 paste full-pane, /paste drop <name> takes one back out and
-                 /paste clear drops what is staged (Ctrl+V)
-  /copy [code]   Copy the last response (or just its code blocks)
-  /model [name]  Switch the model (bare /model opens an interactive picker)
-                 default [name]   show or persist the default model for new
-                                  sessions
-                 agents [name]    show or persist the model sub-agents run on
-                                  ("inherit" follows the session model)
-  /permissions   What runs without asking, and the permission mode that
-                 frames it (also /perms; was /mode)
-                 [name]   bare opens a picker over the five modes:
-                          manual asks about every consequential call
-                          accept-edits applies the edits and asks for the rest
-                          auto adds the allowlist and lets the classifier judge
-                          read-only writes nothing — a write is refused, not asked
-                          plan is read-only, ending on a plan you can approve here
-                          or carry into a fresh session
-                 why      the latest auto-mode denial's reason
-                 grants   what this session has stopped asking about
-                 allow <commands|edits>   grant a whole category
-                 revoke [commands|edits|hosts|agents]  take the grants back
-  /reasoning     How much thinking the model does before it answers: off (the
-                 default), low, medium, high, xhigh or max — ctrl+t cycles them
-                 [level]           set it for this session (also /think)
-                 default [level]   show or persist the level new sessions
-                                   start on (provider.reasoning)
-  /context       The window as a meter, by category, with the tools itemised
-  /stats         Context occupancy breakdown and cumulative session spend
-  /step          Open the in-flight step's detail: every row in it shows its
-                 output body, bounded; run it again to close (/ui verbosity
-                 high is the same thing for every step at once)
-  /status        Where this session is: what it is working on, what it has
-                 spent, and whether the last few turns are still on the
-                 target you set it
-  /sessions      The sessions running on this machine: the conversation each
-                 saves to, its checkout and branch, and whether it is working
-  /trust         Let this checkout's own skills, agent profiles, wordings and
-                 quality suites load. A clone can carry instructions, so
-                 nothing of a checkout's runs until you say so; "off"
-                 withdraws it and the next session starts without them
-  /ui            Activity feed density, pane layout, monochrome and mouse:
-                 /ui verbosity <low|normal|high> · /ui mono <on|off> · /ui mouse <on|off>
-                 (low hides counts, med collapses rows, high expands rows;
-                  mouse is on by default so the wheel scrolls the transcript,
-                  click-drag selects it, and clicks open rows or answer keys.
-                  Off hands selection back to the terminal. Ctrl+X flips it and saves it)
-                 terminal  what this terminal answered when shhh asked what
-                           it can do: inline images, desktop notifications,
-                           focus events, cell size
-  /skills        The skills this session loaded (SKILL.md directories), and
-                 why any did not
-  /mcp           The MCP servers this session connected, and why any did not.
-                 trust <name> lets a server this checkout declares start from
-                 the next session on; distrust <name> withdraws that
-  /notes         The session's shared notebook — what the agents wrote for
-                 each other, and what a backlog run wrote up, listed by author.
-                 Dropping is yours alone: drop <n> removes one, clear empties it
-  /todo          The project's backlog: bare opens a picker · show|edit <slug> ·
-                 add (reads this session into proposed items you accept or drop) ·
-                 add <text> · block <slug> [why] · open|done|drop <slug> ·
-                 new <text> · groom <slug> (reads an item against the tree and
-                 proposes the corrections) · run [slug|--next] works an item
-                 through its profile's run · sprint · status · stop
-  /compact       Continue from a summary plus the most recent turns
-  /rewind [n]    Rewind to the end of turn [n], 0 being the start (bare
-                 /rewind picks interactively); the abandoned tail is kept as a
-                 branch, and a card asks whether the files come back too.
-  /exit          Quit (also /quit, /q)
-
-Commands run while the agent is working — including while sub-agents are in
-flight, which is the only time they exist. The exceptions are the ones that
-rewrite the running conversation, or write into the tree the turn is working
-in (/model, /compact, /rewind); they say so and wait for the turn.
-/clear asks instead: ending the session over a turn that is not over cancels
-it, which is a question rather than a wait.
+  commands
+    /help          show this help
+    /clear         end this session and start another (also /new)
+    /paste         attach the clipboard — a screenshot, or files copied in a
+                   file manager — to your next message; /paste <path> attaches a
+                   file by name, /paste show <name> opens a staged image or
+                   paste full-pane, /paste drop <name> takes one back out and
+                   /paste clear drops what is staged (ctrl+v)
+    /copy [code]   copy the last response (or just its code blocks)
+    /model [name]  switch the model (bare /model opens an interactive picker)
+                   default [name]   show or persist the default model for new
+                                    sessions
+                   agents [name]    show or persist the model sub-agents run on
+                                    ("inherit" follows the session model)
+    /permissions   what runs without asking, and the permission mode that frames
+                   it (also /perms; was /mode)
+                   [name]   bare opens a picker over the five modes:
+                            manual asks about every consequential call
+                            accept-edits applies the edits and asks for the rest
+                            auto adds the allowlist and lets the classifier
+                            judge
+                            read-only writes nothing — a write is refused, not
+                            asked
+                            plan is read-only, ending on a plan you can approve
+                            here or carry into a fresh session
+                   why      the latest auto-mode denial's reason
+                   grants   what this session has stopped asking about
+                   allow <commands|edits>   grant a whole category
+                   revoke [commands|edits|hosts|agents]   take the grants back
+    /reasoning     how much thinking the model does before it answers: off (the
+                   default), low, medium, high, xhigh or max — ctrl+t cycles
+                   them
+                   [level]           set it for this session (also /think)
+                   default [level]   show or persist the level new sessions
+                                     start on (provider.reasoning)
+    /context       the window as a meter, by category, with the tools itemised
+    /stats         context occupancy breakdown and cumulative session spend
+    /step          open the in-flight step's detail: every row in it shows its
+                   output body, bounded; run it again to close (/ui verbosity
+                   high is the same thing for every step at once)
+    /status        where this session is: what it is working on, what it has
+                   spent, and whether the last few turns are still on the target
+                   you set it
+    /sessions      the sessions running on this machine: the conversation each
+                   saves to, its checkout and branch, and whether it is working
+    /trust         let this checkout's own skills, agent profiles, wordings and
+                   quality suites load. A clone can carry instructions, so
+                   nothing of a checkout's runs until you say so; "off"
+                   withdraws it and the next session starts without them
+    /ui            activity feed density, pane layout, monochrome and mouse: /ui
+                   verbosity <low|normal|high> · /ui mono <on|off> · /ui mouse
+                   <on|off>
+                   low hides counts, normal collapses rows, high expands rows.
+                   The mouse is on by default so the wheel scrolls the
+                   transcript, click-drag selects it, and clicks open rows or
+                   answer keys; off hands selection back to the terminal, and
+                   ctrl+x flips it and saves it
+                   terminal   what this terminal answered when shhh asked what
+                              it can do: inline images, desktop notifications,
+                              focus events, cell size
+    /skills        the skills this session loaded (SKILL.md directories), and
+                   why any did not
+    /mcp           the MCP servers this session connected, and why any did not.
+                   trust <name> lets a server this checkout declares start from
+                   the next session on; distrust <name> withdraws that
+    /notes         the session's shared notebook — what the agents wrote for
+                   each other, and what a backlog run wrote up, listed by
+                   author. Dropping is yours alone: drop <n> removes one, clear
+                   empties it
+    /todo          the project's backlog: bare opens a picker · show|edit <slug>
+                   · add (reads this session into proposed items you accept or
+                   drop) · add <text> · block <slug> [why] · open|done|drop
+                   <slug> · new <text> · groom <slug> (reads an item against the
+                   tree and proposes the corrections) · run [slug|--next] works
+                   an item through its profile's run · sprint · status · stop
+    /compact       continue from a summary plus the most recent turns
+    /rewind [n]    rewind to the end of turn [n], 0 being the start (bare
+                   /rewind picks interactively); the abandoned tail is kept as a
+                   branch, and a card asks whether the files come back too
+    /exit          quit (also /quit, /q)
 
 · a coding session
-Commands:
-  /help          Show this help
-  /clear         End this session and start another (also /new)
-  /paste         Attach the clipboard — a screenshot, or files copied in a
-                 file manager — to your next message; /paste <path> attaches
-                 a file by name, /paste show <name> opens a staged image or
-                 paste full-pane, /paste drop <name> takes one back out and
-                 /paste clear drops what is staged (Ctrl+V)
-  /copy [code]   Copy the last response (or just its code blocks)
-  /model [name]  Switch the model (bare /model opens an interactive picker)
-                 default [name]   show or persist the default model for new
-                                  sessions
-                 agents [name]    show or persist the model sub-agents run on
-                                  ("inherit" follows the session model)
-  /permissions   What runs without asking, and the permission mode that
-                 frames it (also /perms; was /mode)
-                 [name]   bare opens a picker over the five modes:
-                          manual asks about every consequential call
-                          accept-edits applies the edits and asks for the rest
-                          auto adds the allowlist and lets the classifier judge
-                          read-only writes nothing — a write is refused, not asked
-                          plan is read-only, ending on a plan you can approve here
-                          or carry into a fresh session
-                 why      the latest auto-mode denial's reason
-                 grants   what this session has stopped asking about
-                 allow <commands|edits>   grant a whole category
-                 revoke [commands|edits|hosts|agents]  take the grants back
-  /reasoning     How much thinking the model does before it answers: off (the
-                 default), low, medium, high, xhigh or max — ctrl+t cycles them
-                 [level]           set it for this session (also /think)
-                 default [level]   show or persist the level new sessions
-                                   start on (provider.reasoning)
-  /context       The window as a meter, by category, with the tools itemised
-  /stats         Context occupancy breakdown and cumulative session spend
-  /step          Open the in-flight step's detail: every row in it shows its
-                 output body, bounded; run it again to close (/ui verbosity
-                 high is the same thing for every step at once)
-  /status        Where this session is: what it is working on, what it has
-                 spent, and whether the last few turns are still on the
-                 target you set it
-  /sessions      The sessions running on this machine: the conversation each
-                 saves to, its checkout and branch, and whether it is working
-  /trust         Let this checkout's own skills, agent profiles, wordings and
-                 quality suites load. A clone can carry instructions, so
-                 nothing of a checkout's runs until you say so; "off"
-                 withdraws it and the next session starts without them
-  /ui            Activity feed density, pane layout, monochrome and mouse:
-                 /ui verbosity <low|normal|high> · /ui mono <on|off> · /ui mouse <on|off>
-                 (low hides counts, med collapses rows, high expands rows;
-                  mouse is on by default so the wheel scrolls the transcript,
-                  click-drag selects it, and clicks open rows or answer keys.
-                  Off hands selection back to the terminal. Ctrl+X flips it and saves it)
-                 terminal  what this terminal answered when shhh asked what
-                           it can do: inline images, desktop notifications,
-                           focus events, cell size
-  /sandbox       Containment status and container sandboxes (doctor|scope|list|status|destroy <id>|prune)
-  /skills        The skills this session loaded (SKILL.md directories), and
-                 why any did not
-  /mcp           The MCP servers this session connected, and why any did not.
-                 trust <name> lets a server this checkout declares start from
-                 the next session on; distrust <name> withdraws that
-  /notes         The session's shared notebook — what the agents wrote for
-                 each other, and what a backlog run wrote up, listed by author.
-                 Dropping is yours alone: drop <n> removes one, clear empties it
-  /todo          The project's backlog: bare opens a picker · show|edit <slug> ·
-                 add (reads this session into proposed items you accept or drop) ·
-                 add <text> · block <slug> [why] · open|done|drop <slug> ·
-                 new <text> · groom <slug> (reads an item against the tree and
-                 proposes the corrections) · run [slug|--next] works an item
-                 through its profile's run · sprint · status · stop
-  /plan          The approved plan as a checklist, with anything that has
-                 departed from it · save [name] writes the last plan/response
-                 to .shhh/plans/ · drop forgets an approved plan
-  /diff [path]   Show what this session changed, full screen, or one file's —
-                 read from the session's own changeset, so it works outside a
-                 git repository
-  /review [turn] Review what a turn changed: file list, hunks, staging per
-                 hunk (bare reviews the last turn that changed anything).
-                 Also [v] on a turn's changeset row. Nothing is applied.
-  /undo [turn]   Put back what a turn changed, from the session's own records
-                 (not git). Asks first, names anything that changed since,
-                 and is itself recorded as a turn. Also [u] on the row.
-  /compact       Continue from a summary plus the most recent turns
-  /rewind [n]    Rewind to the end of turn [n], 0 being the start (bare
-                 /rewind picks interactively); the abandoned tail is kept as a
-                 branch, and a card asks whether the files come back too.
-  /exit          Quit (also /quit, /q)
-
-Commands run while the agent is working — including while sub-agents are in
-flight, which is the only time they exist. The exceptions are the ones that
-rewrite the running conversation, or write into the tree the turn is working
-in (/model, /undo, /compact, /rewind); they say so and wait for the turn.
-/clear asks instead: ending the session over a turn that is not over cancels
-it, which is a question rather than a wait.
+  commands
+    /help          show this help
+    /clear         end this session and start another (also /new)
+    /paste         attach the clipboard — a screenshot, or files copied in a
+                   file manager — to your next message; /paste <path> attaches a
+                   file by name, /paste show <name> opens a staged image or
+                   paste full-pane, /paste drop <name> takes one back out and
+                   /paste clear drops what is staged (ctrl+v)
+    /copy [code]   copy the last response (or just its code blocks)
+    /model [name]  switch the model (bare /model opens an interactive picker)
+                   default [name]   show or persist the default model for new
+                                    sessions
+                   agents [name]    show or persist the model sub-agents run on
+                                    ("inherit" follows the session model)
+    /permissions   what runs without asking, and the permission mode that frames
+                   it (also /perms; was /mode)
+                   [name]   bare opens a picker over the five modes:
+                            manual asks about every consequential call
+                            accept-edits applies the edits and asks for the rest
+                            auto adds the allowlist and lets the classifier
+                            judge
+                            read-only writes nothing — a write is refused, not
+                            asked
+                            plan is read-only, ending on a plan you can approve
+                            here or carry into a fresh session
+                   why      the latest auto-mode denial's reason
+                   grants   what this session has stopped asking about
+                   allow <commands|edits>   grant a whole category
+                   revoke [commands|edits|hosts|agents]   take the grants back
+    /reasoning     how much thinking the model does before it answers: off (the
+                   default), low, medium, high, xhigh or max — ctrl+t cycles
+                   them
+                   [level]           set it for this session (also /think)
+                   default [level]   show or persist the level new sessions
+                                     start on (provider.reasoning)
+    /context       the window as a meter, by category, with the tools itemised
+    /stats         context occupancy breakdown and cumulative session spend
+    /step          open the in-flight step's detail: every row in it shows its
+                   output body, bounded; run it again to close (/ui verbosity
+                   high is the same thing for every step at once)
+    /status        where this session is: what it is working on, what it has
+                   spent, and whether the last few turns are still on the target
+                   you set it
+    /sessions      the sessions running on this machine: the conversation each
+                   saves to, its checkout and branch, and whether it is working
+    /trust         let this checkout's own skills, agent profiles, wordings and
+                   quality suites load. A clone can carry instructions, so
+                   nothing of a checkout's runs until you say so; "off"
+                   withdraws it and the next session starts without them
+    /ui            activity feed density, pane layout, monochrome and mouse: /ui
+                   verbosity <low|normal|high> · /ui mono <on|off> · /ui mouse
+                   <on|off>
+                   low hides counts, normal collapses rows, high expands rows.
+                   The mouse is on by default so the wheel scrolls the
+                   transcript, click-drag selects it, and clicks open rows or
+                   answer keys; off hands selection back to the terminal, and
+                   ctrl+x flips it and saves it
+                   terminal   what this terminal answered when shhh asked what
+                              it can do: inline images, desktop notifications,
+                              focus events, cell size
+    /sandbox       containment status and container sandboxes
+                   (doctor|scope|list|status|destroy <id>|prune)
+    /skills        the skills this session loaded (SKILL.md directories), and
+                   why any did not
+    /mcp           the MCP servers this session connected, and why any did not.
+                   trust <name> lets a server this checkout declares start from
+                   the next session on; distrust <name> withdraws that
+    /notes         the session's shared notebook — what the agents wrote for
+                   each other, and what a backlog run wrote up, listed by
+                   author. Dropping is yours alone: drop <n> removes one, clear
+                   empties it
+    /todo          the project's backlog: bare opens a picker · show|edit <slug>
+                   · add (reads this session into proposed items you accept or
+                   drop) · add <text> · block <slug> [why] · open|done|drop
+                   <slug> · new <text> · groom <slug> (reads an item against the
+                   tree and proposes the corrections) · run [slug|--next] works
+                   an item through its profile's run · sprint · status · stop
+    /plan          the approved plan as a checklist, with anything that has
+                   departed from it · save [name] writes the last plan/response
+                   to .shhh/plans/ · drop forgets an approved plan
+    /diff [path]   show what this session changed, full screen, or one file's —
+                   read from the session's own changeset, so it works outside a
+                   git repository
+    /review [turn] review what a turn changed: file list, hunks, staging per
+                   hunk (bare reviews the last turn that changed anything). Also
+                   [v] on a turn's changeset row. Nothing is applied
+    /undo [turn]   put back what a turn changed, from the session's own records
+                   (not git). Asks first, names anything that changed since, and
+                   is itself recorded as a turn. Also [u] on the row
+    /compact       continue from a summary plus the most recent turns
+    /rewind [n]    rewind to the end of turn [n], 0 being the start (bare
+                   /rewind picks interactively); the abandoned tail is kept as a
+                   branch, and a card asks whether the files come back too
+    /exit          quit (also /quit, /q)
 
 ── ansi ────────────────────────────────────────────────────
 · a conversation
-Commands:
-  /help          Show this help
-  /clear         End this session and start another (also /new)
-  /paste         Attach the clipboard — a screenshot, or files copied in a
-                 file manager — to your next message; /paste <path> attaches
-                 a file by name, /paste show <name> opens a staged image or
-                 paste full-pane, /paste drop <name> takes one back out and
-                 /paste clear drops what is staged (Ctrl+V)
-  /copy [code]   Copy the last response (or just its code blocks)
-  /model [name]  Switch the model (bare /model opens an interactive picker)
-                 default [name]   show or persist the default model for new
-                                  sessions
-                 agents [name]    show or persist the model sub-agents run on
-                                  ("inherit" follows the session model)
-  /permissions   What runs without asking, and the permission mode that
-                 frames it (also /perms; was /mode)
-                 [name]   bare opens a picker over the five modes:
-                          manual asks about every consequential call
-                          accept-edits applies the edits and asks for the rest
-                          auto adds the allowlist and lets the classifier judge
-                          read-only writes nothing — a write is refused, not asked
-                          plan is read-only, ending on a plan you can approve here
-                          or carry into a fresh session
-                 why      the latest auto-mode denial's reason
-                 grants   what this session has stopped asking about
-                 allow <commands|edits>   grant a whole category
-                 revoke [commands|edits|hosts|agents]  take the grants back
-  /reasoning     How much thinking the model does before it answers: off (the
-                 default), low, medium, high, xhigh or max — ctrl+t cycles them
-                 [level]           set it for this session (also /think)
-                 default [level]   show or persist the level new sessions
-                                   start on (provider.reasoning)
-  /context       The window as a meter, by category, with the tools itemised
-  /stats         Context occupancy breakdown and cumulative session spend
-  /step          Open the in-flight step's detail: every row in it shows its
-                 output body, bounded; run it again to close (/ui verbosity
-                 high is the same thing for every step at once)
-  /status        Where this session is: what it is working on, what it has
-                 spent, and whether the last few turns are still on the
-                 target you set it
-  /sessions      The sessions running on this machine: the conversation each
-                 saves to, its checkout and branch, and whether it is working
-  /trust         Let this checkout's own skills, agent profiles, wordings and
-                 quality suites load. A clone can carry instructions, so
-                 nothing of a checkout's runs until you say so; "off"
-                 withdraws it and the next session starts without them
-  /ui            Activity feed density, pane layout, monochrome and mouse:
-                 /ui verbosity <low|normal|high> · /ui mono <on|off> · /ui mouse <on|off>
-                 (low hides counts, med collapses rows, high expands rows;
-                  mouse is on by default so the wheel scrolls the transcript,
-                  click-drag selects it, and clicks open rows or answer keys.
-                  Off hands selection back to the terminal. Ctrl+X flips it and saves it)
-                 terminal  what this terminal answered when shhh asked what
-                           it can do: inline images, desktop notifications,
-                           focus events, cell size
-  /skills        The skills this session loaded (SKILL.md directories), and
-                 why any did not
-  /mcp           The MCP servers this session connected, and why any did not.
-                 trust <name> lets a server this checkout declares start from
-                 the next session on; distrust <name> withdraws that
-  /notes         The session's shared notebook — what the agents wrote for
-                 each other, and what a backlog run wrote up, listed by author.
-                 Dropping is yours alone: drop <n> removes one, clear empties it
-  /todo          The project's backlog: bare opens a picker · show|edit <slug> ·
-                 add (reads this session into proposed items you accept or drop) ·
-                 add <text> · block <slug> [why] · open|done|drop <slug> ·
-                 new <text> · groom <slug> (reads an item against the tree and
-                 proposes the corrections) · run [slug|--next] works an item
-                 through its profile's run · sprint · status · stop
-  /compact       Continue from a summary plus the most recent turns
-  /rewind [n]    Rewind to the end of turn [n], 0 being the start (bare
-                 /rewind picks interactively); the abandoned tail is kept as a
-                 branch, and a card asks whether the files come back too.
-  /exit          Quit (also /quit, /q)
-
-Commands run while the agent is working — including while sub-agents are in
-flight, which is the only time they exist. The exceptions are the ones that
-rewrite the running conversation, or write into the tree the turn is working
-in (/model, /compact, /rewind); they say so and wait for the turn.
-/clear asks instead: ending the session over a turn that is not over cancels
-it, which is a question rather than a wait.
+  ␛[38;5;244mcommands␛[m
+    ␛[38;5;254m/help␛[m          ␛[38;5;244mshow this help␛[m
+    ␛[38;5;254m/clear␛[m         ␛[38;5;244mend this session and start another (also /new)␛[m
+    ␛[38;5;254m/paste␛[m         ␛[38;5;244mattach the clipboard — a screenshot, or files copied in a␛[m
+                   ␛[38;5;244mfile manager — to your next message; /paste <path> attaches a␛[m
+                   ␛[38;5;244mfile by name, /paste show <name> opens a staged image or␛[m
+                   ␛[38;5;244mpaste full-pane, /paste drop <name> takes one back out and␛[m
+                   ␛[38;5;244m/paste clear drops what is staged (ctrl+v)␛[m
+    ␛[38;5;254m/copy [code]␛[m   ␛[38;5;244mcopy the last response (or just its code blocks)␛[m
+    ␛[38;5;254m/model [name]␛[m  ␛[38;5;244mswitch the model (bare /model opens an interactive picker)␛[m
+                   ␛[38;5;244mdefault [name]   show or persist the default model for new␛[m
+                   ␛[38;5;244m                 sessions␛[m
+                   ␛[38;5;244magents [name]    show or persist the model sub-agents run on␛[m
+                   ␛[38;5;244m                 ("inherit" follows the session model)␛[m
+    ␛[38;5;254m/permissions␛[m   ␛[38;5;244mwhat runs without asking, and the permission mode that frames␛[m
+                   ␛[38;5;244mit (also /perms; was /mode)␛[m
+                   ␛[38;5;244m[name]   bare opens a picker over the five modes:␛[m
+                   ␛[38;5;244m         manual asks about every consequential call␛[m
+                   ␛[38;5;244m         accept-edits applies the edits and asks for the rest␛[m
+                   ␛[38;5;244m         auto adds the allowlist and lets the classifier␛[m
+                   ␛[38;5;244m         judge␛[m
+                   ␛[38;5;244m         read-only writes nothing — a write is refused, not␛[m
+                   ␛[38;5;244m         asked␛[m
+                   ␛[38;5;244m         plan is read-only, ending on a plan you can approve␛[m
+                   ␛[38;5;244m         here or carry into a fresh session␛[m
+                   ␛[38;5;244mwhy      the latest auto-mode denial's reason␛[m
+                   ␛[38;5;244mgrants   what this session has stopped asking about␛[m
+                   ␛[38;5;244mallow <commands|edits>   grant a whole category␛[m
+                   ␛[38;5;244mrevoke [commands|edits|hosts|agents]   take the grants back␛[m
+    ␛[38;5;254m/reasoning␛[m     ␛[38;5;244mhow much thinking the model does before it answers: off (the␛[m
+                   ␛[38;5;244mdefault), low, medium, high, xhigh or max — ctrl+t cycles␛[m
+                   ␛[38;5;244mthem␛[m
+                   ␛[38;5;244m[level]           set it for this session (also /think)␛[m
+                   ␛[38;5;244mdefault [level]   show or persist the level new sessions␛[m
+                   ␛[38;5;244m                  start on (provider.reasoning)␛[m
+    ␛[38;5;254m/context␛[m       ␛[38;5;244mthe window as a meter, by category, with the tools itemised␛[m
+    ␛[38;5;254m/stats␛[m         ␛[38;5;244mcontext occupancy breakdown and cumulative session spend␛[m
+    ␛[38;5;254m/step␛[m          ␛[38;5;244mopen the in-flight step's detail: every row in it shows its␛[m
+                   ␛[38;5;244moutput body, bounded; run it again to close (/ui verbosity␛[m
+                   ␛[38;5;244mhigh is the same thing for every step at once)␛[m
+    ␛[38;5;254m/status␛[m        ␛[38;5;244mwhere this session is: what it is working on, what it has␛[m
+                   ␛[38;5;244mspent, and whether the last few turns are still on the target␛[m
+                   ␛[38;5;244myou set it␛[m
+    ␛[38;5;254m/sessions␛[m      ␛[38;5;244mthe sessions running on this machine: the conversation each␛[m
+                   ␛[38;5;244msaves to, its checkout and branch, and whether it is working␛[m
+    ␛[38;5;254m/trust␛[m         ␛[38;5;244mlet this checkout's own skills, agent profiles, wordings and␛[m
+                   ␛[38;5;244mquality suites load. A clone can carry instructions, so␛[m
+                   ␛[38;5;244mnothing of a checkout's runs until you say so; "off"␛[m
+                   ␛[38;5;244mwithdraws it and the next session starts without them␛[m
+    ␛[38;5;254m/ui␛[m            ␛[38;5;244mactivity feed density, pane layout, monochrome and mouse: /ui␛[m
+                   ␛[38;5;244mverbosity <low|normal|high> · /ui mono <on|off> · /ui mouse␛[m
+                   ␛[38;5;244m<on|off>␛[m
+                   ␛[38;5;244mlow hides counts, normal collapses rows, high expands rows.␛[m
+                   ␛[38;5;244mThe mouse is on by default so the wheel scrolls the␛[m
+                   ␛[38;5;244mtranscript, click-drag selects it, and clicks open rows or␛[m
+                   ␛[38;5;244manswer keys; off hands selection back to the terminal, and␛[m
+                   ␛[38;5;244mctrl+x flips it and saves it␛[m
+                   ␛[38;5;244mterminal   what this terminal answered when shhh asked what␛[m
+                   ␛[38;5;244m           it can do: inline images, desktop notifications,␛[m
+                   ␛[38;5;244m           focus events, cell size␛[m
+    ␛[38;5;254m/skills␛[m        ␛[38;5;244mthe skills this session loaded (SKILL.md directories), and␛[m
+                   ␛[38;5;244mwhy any did not␛[m
+    ␛[38;5;254m/mcp␛[m           ␛[38;5;244mthe MCP servers this session connected, and why any did not.␛[m
+                   ␛[38;5;244mtrust <name> lets a server this checkout declares start from␛[m
+                   ␛[38;5;244mthe next session on; distrust <name> withdraws that␛[m
+    ␛[38;5;254m/notes␛[m         ␛[38;5;244mthe session's shared notebook — what the agents wrote for␛[m
+                   ␛[38;5;244meach other, and what a backlog run wrote up, listed by␛[m
+                   ␛[38;5;244mauthor. Dropping is yours alone: drop <n> removes one, clear␛[m
+                   ␛[38;5;244mempties it␛[m
+    ␛[38;5;254m/todo␛[m          ␛[38;5;244mthe project's backlog: bare opens a picker · show|edit <slug>␛[m
+                   ␛[38;5;244m· add (reads this session into proposed items you accept or␛[m
+                   ␛[38;5;244mdrop) · add <text> · block <slug> [why] · open|done|drop␛[m
+                   ␛[38;5;244m<slug> · new <text> · groom <slug> (reads an item against the␛[m
+                   ␛[38;5;244mtree and proposes the corrections) · run [slug|--next] works␛[m
+                   ␛[38;5;244man item through its profile's run · sprint · status · stop␛[m
+    ␛[38;5;254m/compact␛[m       ␛[38;5;244mcontinue from a summary plus the most recent turns␛[m
+    ␛[38;5;254m/rewind [n]␛[m    ␛[38;5;244mrewind to the end of turn [n], 0 being the start (bare␛[m
+                   ␛[38;5;244m/rewind picks interactively); the abandoned tail is kept as a␛[m
+                   ␛[38;5;244mbranch, and a card asks whether the files come back too␛[m
+    ␛[38;5;254m/exit␛[m          ␛[38;5;244mquit (also /quit, /q)␛[m
 
 · a coding session
-Commands:
-  /help          Show this help
-  /clear         End this session and start another (also /new)
-  /paste         Attach the clipboard — a screenshot, or files copied in a
-                 file manager — to your next message; /paste <path> attaches
-                 a file by name, /paste show <name> opens a staged image or
-                 paste full-pane, /paste drop <name> takes one back out and
-                 /paste clear drops what is staged (Ctrl+V)
-  /copy [code]   Copy the last response (or just its code blocks)
-  /model [name]  Switch the model (bare /model opens an interactive picker)
-                 default [name]   show or persist the default model for new
-                                  sessions
-                 agents [name]    show or persist the model sub-agents run on
-                                  ("inherit" follows the session model)
-  /permissions   What runs without asking, and the permission mode that
-                 frames it (also /perms; was /mode)
-                 [name]   bare opens a picker over the five modes:
-                          manual asks about every consequential call
-                          accept-edits applies the edits and asks for the rest
-                          auto adds the allowlist and lets the classifier judge
-                          read-only writes nothing — a write is refused, not asked
-                          plan is read-only, ending on a plan you can approve here
-                          or carry into a fresh session
-                 why      the latest auto-mode denial's reason
-                 grants   what this session has stopped asking about
-                 allow <commands|edits>   grant a whole category
-                 revoke [commands|edits|hosts|agents]  take the grants back
-  /reasoning     How much thinking the model does before it answers: off (the
-                 default), low, medium, high, xhigh or max — ctrl+t cycles them
-                 [level]           set it for this session (also /think)
-                 default [level]   show or persist the level new sessions
-                                   start on (provider.reasoning)
-  /context       The window as a meter, by category, with the tools itemised
-  /stats         Context occupancy breakdown and cumulative session spend
-  /step          Open the in-flight step's detail: every row in it shows its
-                 output body, bounded; run it again to close (/ui verbosity
-                 high is the same thing for every step at once)
-  /status        Where this session is: what it is working on, what it has
-                 spent, and whether the last few turns are still on the
-                 target you set it
-  /sessions      The sessions running on this machine: the conversation each
-                 saves to, its checkout and branch, and whether it is working
-  /trust         Let this checkout's own skills, agent profiles, wordings and
-                 quality suites load. A clone can carry instructions, so
-                 nothing of a checkout's runs until you say so; "off"
-                 withdraws it and the next session starts without them
-  /ui            Activity feed density, pane layout, monochrome and mouse:
-                 /ui verbosity <low|normal|high> · /ui mono <on|off> · /ui mouse <on|off>
-                 (low hides counts, med collapses rows, high expands rows;
-                  mouse is on by default so the wheel scrolls the transcript,
-                  click-drag selects it, and clicks open rows or answer keys.
-                  Off hands selection back to the terminal. Ctrl+X flips it and saves it)
-                 terminal  what this terminal answered when shhh asked what
-                           it can do: inline images, desktop notifications,
-                           focus events, cell size
-  /sandbox       Containment status and container sandboxes (doctor|scope|list|status|destroy <id>|prune)
-  /skills        The skills this session loaded (SKILL.md directories), and
-                 why any did not
-  /mcp           The MCP servers this session connected, and why any did not.
-                 trust <name> lets a server this checkout declares start from
-                 the next session on; distrust <name> withdraws that
-  /notes         The session's shared notebook — what the agents wrote for
-                 each other, and what a backlog run wrote up, listed by author.
-                 Dropping is yours alone: drop <n> removes one, clear empties it
-  /todo          The project's backlog: bare opens a picker · show|edit <slug> ·
-                 add (reads this session into proposed items you accept or drop) ·
-                 add <text> · block <slug> [why] · open|done|drop <slug> ·
-                 new <text> · groom <slug> (reads an item against the tree and
-                 proposes the corrections) · run [slug|--next] works an item
-                 through its profile's run · sprint · status · stop
-  /plan          The approved plan as a checklist, with anything that has
-                 departed from it · save [name] writes the last plan/response
-                 to .shhh/plans/ · drop forgets an approved plan
-  /diff [path]   Show what this session changed, full screen, or one file's —
-                 read from the session's own changeset, so it works outside a
-                 git repository
-  /review [turn] Review what a turn changed: file list, hunks, staging per
-                 hunk (bare reviews the last turn that changed anything).
-                 Also [v] on a turn's changeset row. Nothing is applied.
-  /undo [turn]   Put back what a turn changed, from the session's own records
-                 (not git). Asks first, names anything that changed since,
-                 and is itself recorded as a turn. Also [u] on the row.
-  /compact       Continue from a summary plus the most recent turns
-  /rewind [n]    Rewind to the end of turn [n], 0 being the start (bare
-                 /rewind picks interactively); the abandoned tail is kept as a
-                 branch, and a card asks whether the files come back too.
-  /exit          Quit (also /quit, /q)
-
-Commands run while the agent is working — including while sub-agents are in
-flight, which is the only time they exist. The exceptions are the ones that
-rewrite the running conversation, or write into the tree the turn is working
-in (/model, /undo, /compact, /rewind); they say so and wait for the turn.
-/clear asks instead: ending the session over a turn that is not over cancels
-it, which is a question rather than a wait.
+  ␛[38;5;244mcommands␛[m
+    ␛[38;5;254m/help␛[m          ␛[38;5;244mshow this help␛[m
+    ␛[38;5;254m/clear␛[m         ␛[38;5;244mend this session and start another (also /new)␛[m
+    ␛[38;5;254m/paste␛[m         ␛[38;5;244mattach the clipboard — a screenshot, or files copied in a␛[m
+                   ␛[38;5;244mfile manager — to your next message; /paste <path> attaches a␛[m
+                   ␛[38;5;244mfile by name, /paste show <name> opens a staged image or␛[m
+                   ␛[38;5;244mpaste full-pane, /paste drop <name> takes one back out and␛[m
+                   ␛[38;5;244m/paste clear drops what is staged (ctrl+v)␛[m
+    ␛[38;5;254m/copy [code]␛[m   ␛[38;5;244mcopy the last response (or just its code blocks)␛[m
+    ␛[38;5;254m/model [name]␛[m  ␛[38;5;244mswitch the model (bare /model opens an interactive picker)␛[m
+                   ␛[38;5;244mdefault [name]   show or persist the default model for new␛[m
+                   ␛[38;5;244m                 sessions␛[m
+                   ␛[38;5;244magents [name]    show or persist the model sub-agents run on␛[m
+                   ␛[38;5;244m                 ("inherit" follows the session model)␛[m
+    ␛[38;5;254m/permissions␛[m   ␛[38;5;244mwhat runs without asking, and the permission mode that frames␛[m
+                   ␛[38;5;244mit (also /perms; was /mode)␛[m
+                   ␛[38;5;244m[name]   bare opens a picker over the five modes:␛[m
+                   ␛[38;5;244m         manual asks about every consequential call␛[m
+                   ␛[38;5;244m         accept-edits applies the edits and asks for the rest␛[m
+                   ␛[38;5;244m         auto adds the allowlist and lets the classifier␛[m
+                   ␛[38;5;244m         judge␛[m
+                   ␛[38;5;244m         read-only writes nothing — a write is refused, not␛[m
+                   ␛[38;5;244m         asked␛[m
+                   ␛[38;5;244m         plan is read-only, ending on a plan you can approve␛[m
+                   ␛[38;5;244m         here or carry into a fresh session␛[m
+                   ␛[38;5;244mwhy      the latest auto-mode denial's reason␛[m
+                   ␛[38;5;244mgrants   what this session has stopped asking about␛[m
+                   ␛[38;5;244mallow <commands|edits>   grant a whole category␛[m
+                   ␛[38;5;244mrevoke [commands|edits|hosts|agents]   take the grants back␛[m
+    ␛[38;5;254m/reasoning␛[m     ␛[38;5;244mhow much thinking the model does before it answers: off (the␛[m
+                   ␛[38;5;244mdefault), low, medium, high, xhigh or max — ctrl+t cycles␛[m
+                   ␛[38;5;244mthem␛[m
+                   ␛[38;5;244m[level]           set it for this session (also /think)␛[m
+                   ␛[38;5;244mdefault [level]   show or persist the level new sessions␛[m
+                   ␛[38;5;244m                  start on (provider.reasoning)␛[m
+    ␛[38;5;254m/context␛[m       ␛[38;5;244mthe window as a meter, by category, with the tools itemised␛[m
+    ␛[38;5;254m/stats␛[m         ␛[38;5;244mcontext occupancy breakdown and cumulative session spend␛[m
+    ␛[38;5;254m/step␛[m          ␛[38;5;244mopen the in-flight step's detail: every row in it shows its␛[m
+                   ␛[38;5;244moutput body, bounded; run it again to close (/ui verbosity␛[m
+                   ␛[38;5;244mhigh is the same thing for every step at once)␛[m
+    ␛[38;5;254m/status␛[m        ␛[38;5;244mwhere this session is: what it is working on, what it has␛[m
+                   ␛[38;5;244mspent, and whether the last few turns are still on the target␛[m
+                   ␛[38;5;244myou set it␛[m
+    ␛[38;5;254m/sessions␛[m      ␛[38;5;244mthe sessions running on this machine: the conversation each␛[m
+                   ␛[38;5;244msaves to, its checkout and branch, and whether it is working␛[m
+    ␛[38;5;254m/trust␛[m         ␛[38;5;244mlet this checkout's own skills, agent profiles, wordings and␛[m
+                   ␛[38;5;244mquality suites load. A clone can carry instructions, so␛[m
+                   ␛[38;5;244mnothing of a checkout's runs until you say so; "off"␛[m
+                   ␛[38;5;244mwithdraws it and the next session starts without them␛[m
+    ␛[38;5;254m/ui␛[m            ␛[38;5;244mactivity feed density, pane layout, monochrome and mouse: /ui␛[m
+                   ␛[38;5;244mverbosity <low|normal|high> · /ui mono <on|off> · /ui mouse␛[m
+                   ␛[38;5;244m<on|off>␛[m
+                   ␛[38;5;244mlow hides counts, normal collapses rows, high expands rows.␛[m
+                   ␛[38;5;244mThe mouse is on by default so the wheel scrolls the␛[m
+                   ␛[38;5;244mtranscript, click-drag selects it, and clicks open rows or␛[m
+                   ␛[38;5;244manswer keys; off hands selection back to the terminal, and␛[m
+                   ␛[38;5;244mctrl+x flips it and saves it␛[m
+                   ␛[38;5;244mterminal   what this terminal answered when shhh asked what␛[m
+                   ␛[38;5;244m           it can do: inline images, desktop notifications,␛[m
+                   ␛[38;5;244m           focus events, cell size␛[m
+    ␛[38;5;254m/sandbox␛[m       ␛[38;5;244mcontainment status and container sandboxes␛[m
+                   ␛[38;5;244m(doctor|scope|list|status|destroy <id>|prune)␛[m
+    ␛[38;5;254m/skills␛[m        ␛[38;5;244mthe skills this session loaded (SKILL.md directories), and␛[m
+                   ␛[38;5;244mwhy any did not␛[m
+    ␛[38;5;254m/mcp␛[m           ␛[38;5;244mthe MCP servers this session connected, and why any did not.␛[m
+                   ␛[38;5;244mtrust <name> lets a server this checkout declares start from␛[m
+                   ␛[38;5;244mthe next session on; distrust <name> withdraws that␛[m
+    ␛[38;5;254m/notes␛[m         ␛[38;5;244mthe session's shared notebook — what the agents wrote for␛[m
+                   ␛[38;5;244meach other, and what a backlog run wrote up, listed by␛[m
+                   ␛[38;5;244mauthor. Dropping is yours alone: drop <n> removes one, clear␛[m
+                   ␛[38;5;244mempties it␛[m
+    ␛[38;5;254m/todo␛[m          ␛[38;5;244mthe project's backlog: bare opens a picker · show|edit <slug>␛[m
+                   ␛[38;5;244m· add (reads this session into proposed items you accept or␛[m
+                   ␛[38;5;244mdrop) · add <text> · block <slug> [why] · open|done|drop␛[m
+                   ␛[38;5;244m<slug> · new <text> · groom <slug> (reads an item against the␛[m
+                   ␛[38;5;244mtree and proposes the corrections) · run [slug|--next] works␛[m
+                   ␛[38;5;244man item through its profile's run · sprint · status · stop␛[m
+    ␛[38;5;254m/plan␛[m          ␛[38;5;244mthe approved plan as a checklist, with anything that has␛[m
+                   ␛[38;5;244mdeparted from it · save [name] writes the last plan/response␛[m
+                   ␛[38;5;244mto .shhh/plans/ · drop forgets an approved plan␛[m
+    ␛[38;5;254m/diff [path]␛[m   ␛[38;5;244mshow what this session changed, full screen, or one file's —␛[m
+                   ␛[38;5;244mread from the session's own changeset, so it works outside a␛[m
+                   ␛[38;5;244mgit repository␛[m
+    ␛[38;5;254m/review [turn]␛[m ␛[38;5;244mreview what a turn changed: file list, hunks, staging per␛[m
+                   ␛[38;5;244mhunk (bare reviews the last turn that changed anything). Also␛[m
+                   ␛[38;5;244m[v] on a turn's changeset row. Nothing is applied␛[m
+    ␛[38;5;254m/undo [turn]␛[m   ␛[38;5;244mput back what a turn changed, from the session's own records␛[m
+                   ␛[38;5;244m(not git). Asks first, names anything that changed since, and␛[m
+                   ␛[38;5;244mis itself recorded as a turn. Also [u] on the row␛[m
+    ␛[38;5;254m/compact␛[m       ␛[38;5;244mcontinue from a summary plus the most recent turns␛[m
+    ␛[38;5;254m/rewind [n]␛[m    ␛[38;5;244mrewind to the end of turn [n], 0 being the start (bare␛[m
+                   ␛[38;5;244m/rewind picks interactively); the abandoned tail is kept as a␛[m
+                   ␛[38;5;244mbranch, and a card asks whether the files come back too␛[m
+    ␛[38;5;254m/exit␛[m          ␛[38;5;244mquit (also /quit, /q)␛[m

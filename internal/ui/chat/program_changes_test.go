@@ -189,7 +189,7 @@ func TestProgram_TheRewoundTurnsFoldAndReapply(t *testing.T) {
 	programPress(t, tm, "y")
 	waitForText(t, tm, "turn 3 · rewound")
 	programPress(t, tm, "alt+r")
-	waitForText(t, tm, "Reapplied turn 3")
+	waitForText(t, tm, "reapplied turn 3")
 	programPress(t, tm, "y")
 	waitForText(t, tm, "undo of turn")
 

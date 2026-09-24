@@ -61,20 +61,20 @@ type todoPlanState struct {
 func (m Model) startTodoSprintPlan(args []string) (tea.Model, tea.Cmd) {
 	s := m.todoStore
 	if s == nil {
-		return m.systemNotice("The backlog is unavailable in this session.")
+		return m.systemNotice("the backlog is unavailable in this session")
 	}
 	if !m.todos.Profile.Plans() {
-		return m.systemNotice(fmt.Sprintf("The %s profile does not plan sets: it says nothing about what makes its items belong together, so a proposal would be a reading of nothing.", m.todos.Profile.Name))
+		return m.systemNotice(fmt.Sprintf("the %s profile does not plan sets: it says nothing about what makes its items belong together, so a proposal would be a reading of nothing", m.todos.Profile.Name))
 	}
 	if s.Sprint.Open() {
-		return m.systemNotice(fmt.Sprintf("%s is still open — one sprint at a time. /todo sprint shows it; /todo sprint close ends it.", s.Sprint.Name))
+		return m.systemNotice(fmt.Sprintf("%s is still open — one sprint at a time. /todo sprint shows it; /todo sprint close ends it", s.Sprint.Name))
 	}
 	// A reading in flight lands as its own card whenever it finishes. Two
 	// cards cannot hold the surface, and the one that arrived second would
 	// be the one the person answers — so the plan waits rather than being
 	// replaced by proposals a moment after it is on screen.
 	if m.todoExtracting {
-		return m.systemNotice("Still reading the session for items — the proposals card opens when it is done, and /todo sprint plan works after it.")
+		return m.systemNotice("still reading the session for items — the proposals card opens when it is done, and /todo sprint plan works after it")
 	}
 	if note, held := m.planHeld(); held {
 		return m.systemNotice(note)
@@ -85,10 +85,10 @@ func (m Model) startTodoSprintPlan(args []string) (tea.Model, tea.Cmd) {
 	}
 	candidates := s.Ready()
 	if len(candidates) == 0 {
-		return m.systemNotice("Nothing is ready, so there is no set to propose. /todo shows what each item waits on.")
+		return m.systemNotice("nothing is ready, so there is no set to propose. /todo shows what each item waits on")
 	}
 	if !budget.Fits(candidates) {
-		return m.systemNotice("No ready item fits that budget. /todo sprint plan with no budget reads the whole ready list.")
+		return m.systemNotice("no ready item fits that budget. /todo sprint plan with no budget reads the whole ready list")
 	}
 	// The candidates are read against the tree before they are grouped. A
 	// recommendation over items that state what the code did last month
@@ -103,7 +103,7 @@ func (m Model) startTodoSprintPlan(args []string) (tea.Model, tea.Cmd) {
 			queue: unread, prevMode: m.policy.mode.String(), stale: m.todoGroomer.stale,
 			planAfter: &sprintPlanRequest{budget: budget},
 		}
-		next, _ := m.systemNotice(fmt.Sprintf("Reading %s against the tree first; the proposal comes after the readings.", plural(len(unread), "item")))
+		next, _ := m.systemNotice(fmt.Sprintf("reading %s against the tree first; the proposal comes after the readings", plural(len(unread), "item")))
 		return next.(Model).groomNext()
 	}
 	return m.startSprintPlanTurn(budget)
@@ -151,7 +151,7 @@ func (m Model) startSprintPlanTurn(budget todo.SprintBudget) (tea.Model, tea.Cmd
 	s := m.todoStore
 	candidates := s.Ready()
 	if len(candidates) == 0 {
-		return m.systemNotice("Nothing is ready, so there is no set to propose. /todo shows what each item waits on.")
+		return m.systemNotice("nothing is ready, so there is no set to propose. /todo shows what each item waits on")
 	}
 	m.todoPlanner = todoPlanState{
 		going: true, budget: budget, candidates: candidates,
@@ -302,7 +302,7 @@ func (m Model) openWithPlan(plan *components.SprintPlan) (tea.Model, tea.Cmd) {
 func (m Model) sprintGoalCommand(goal string) (tea.Model, tea.Cmd) {
 	goal = strings.TrimSpace(goal)
 	if goal == "" {
-		return m.systemNotice("Usage: " + strings.TrimSpace(sprintGoalPrefix) + " <what the set is for>")
+		return m.systemNotice("usage: " + strings.TrimSpace(sprintGoalPrefix) + " <what the set is for>")
 	}
 	plan := m.sprintPlan
 	plan.Goal = goal
@@ -352,9 +352,9 @@ func parseSprintPlanArgs(profile todo.Profile, args []string) (todo.SprintBudget
 func sprintPlanUsage(profile todo.Profile) string {
 	name, shape, graded := todo.BudgetFlag(profile)
 	if !graded {
-		return "Usage: /todo sprint plan"
+		return "usage: /todo sprint plan"
 	}
-	return fmt.Sprintf("Usage: /todo sprint plan [--%s %s]", name, shape)
+	return fmt.Sprintf("usage: /todo sprint plan [--%s %s]", name, shape)
 }
 
 // writeSprintPlan writes the accepted set as the sprint file, in the order
@@ -363,7 +363,7 @@ func sprintPlanUsage(profile todo.Profile) string {
 // each, and reordering is what an editor is for.
 func (m *Model) writeSprintPlan(chosen []string, goal string) string {
 	if len(chosen) == 0 {
-		return "Nothing was kept; no sprint was written."
+		return "nothing was kept; no sprint was written"
 	}
 	created := time.Now().Format("2006-01-02")
 	sp := todo.Sprint{
@@ -381,11 +381,11 @@ func (m *Model) writeSprintPlan(chosen []string, goal string) string {
 	}
 	path, err := todo.CreateSprint(m.todos.Root, sp)
 	if err != nil {
-		return "The sprint could not be written — " + err.Error()
+		return "the sprint could not be written — " + err.Error()
 	}
 	m.reloadTodos()
 	var b strings.Builder
-	fmt.Fprintf(&b, "Wrote %s to %s: %s in this order.", sp.Name, path, plural(len(chosen), "item"))
+	fmt.Fprintf(&b, "wrote %s to %s: %s in this order", sp.Name, path, plural(len(chosen), "item"))
 	for _, slug := range chosen {
 		b.WriteString("\n  " + slug)
 	}
@@ -847,8 +847,8 @@ const sprintGoalPrefix = "/todo sprint goal "
 // sentence. A draft already in the box is not thrown away for it.
 func (m Model) composeSprintGoal() (tea.Model, tea.Cmd) {
 	if strings.TrimSpace(m.input.Value()) != "" {
-		return m.systemNotice("There is a draft in the input; " + strings.TrimSpace(sprintGoalPrefix) +
-			" <text> writes the goal once it is sent or cleared.")
+		return m.systemNotice("there is a draft in the input; " + strings.TrimSpace(sprintGoalPrefix) +
+			" <text> writes the goal once it is sent or cleared")
 	}
 	m.input.SetValue(sprintGoalPrefix)
 	m.input.MoveToEnd()

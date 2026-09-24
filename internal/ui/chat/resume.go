@@ -393,7 +393,7 @@ func (m Model) dropKey(key string) (tea.Model, tea.Cmd, bool) {
 // instead of re-asking a question that was already half answered.
 func (m Model) continueStream(res *streamResume) (tea.Model, tea.Cmd) {
 	if m.working() {
-		return m.systemNotice("The turn is already running again.")
+		return m.systemNotice("the turn is already running again")
 	}
 	m.clearRetryChain()
 	res.spent = true
@@ -465,7 +465,7 @@ func (m Model) continueStream(res *streamResume) (tea.Model, tea.Cmd) {
 		m.appendEntry(e)
 	}
 	m.agent.AppendMachine(prompt)
-	m.appendEntry(entry{kind: entrySystem, text: "Continuing from the partial reply."})
+	m.appendEntry(entry{kind: entrySystem, text: "continuing from the partial reply"})
 	m.trimForRequest()
 	m.syncViewport()
 	m.viewport.SetLines(m.renderHistoryLines())
@@ -611,7 +611,7 @@ func (m Model) updateRetryWait(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 func (m Model) finishOnFallback(name string) (tea.Model, tea.Cmd) {
 	from := m.modelName
 	if m.switchFn == nil {
-		return m.systemNotice("This session cannot switch models.")
+		return m.systemNotice("this session cannot switch models")
 	}
 	m.switchFn(name)
 	m.modelName = name
@@ -624,7 +624,7 @@ func (m Model) finishOnFallback(name string) (tea.Model, tea.Cmd) {
 	}
 	m.vitals.noteModel(name)
 	m.appendEntry(entry{kind: entrySystem, text: fmt.Sprintf(
-		"Finishing this turn on %s — %s was %s. /stats reports what each of them cost.",
+		"finishing this turn on %s — %s was %s. /stats reports what each of them cost",
 		name, from, m.retry.fail.Class)})
 	return m.resumeAfterWait()
 }

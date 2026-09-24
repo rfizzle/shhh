@@ -30,7 +30,7 @@ import (
 
 // todoGroomUsage is the one place the command's shape is written, so the
 // refusal and the help cannot describe different commands.
-const todoGroomUsage = "Usage: /todo groom [<slug>|--all]"
+const todoGroomUsage = "usage: /todo groom [<slug>|--all]"
 
 // todoGroomState is a grooming pass while it is going: the items still to
 // read, the one being read, and the reading its card is showing.
@@ -73,23 +73,23 @@ func (g todoGroomState) going() bool { return g.slug != "" }
 // reading is a turn, and a turn started under another turn is not this one's.
 func (m Model) startTodoGroom(args []string) (tea.Model, tea.Cmd) {
 	if !m.todosEnabled() {
-		return m.systemNotice("The backlog is unavailable in this session.")
+		return m.systemNotice("the backlog is unavailable in this session")
 	}
 	if !m.todos.Profile.Grooms() {
-		return m.systemNotice(fmt.Sprintf("The %s profile does not groom: it says nothing about what one of its items claims, so there is nothing to read one against.", m.todos.Profile.Name))
+		return m.systemNotice(fmt.Sprintf("the %s profile does not groom: it says nothing about what one of its items claims, so there is nothing to read one against", m.todos.Profile.Name))
 	}
 	if m.todoGroomer.going() {
-		return m.systemNotice(fmt.Sprintf("Already reading %s; the card opens when the turn is over.", m.todoGroomer.slug))
+		return m.systemNotice(fmt.Sprintf("already reading %s; the card opens when the turn is over", m.todoGroomer.slug))
 	}
 	if st := m.todoRunner.state; st != nil && !st.Over() {
-		return m.systemNotice(fmt.Sprintf("A run is going (%s · %s); /todo stop ends it, and grooming reads files that run is working from.", st.Slug, st.Stage))
+		return m.systemNotice(fmt.Sprintf("a run is going (%s · %s); /todo stop ends it, and grooming reads files that run is working from", st.Slug, st.Stage))
 	}
 	if m.turnState() != stateInput || m.working() {
-		return m.systemNotice("A reading starts from an idle session; this turn has to finish first.")
+		return m.systemNotice("a reading starts from an idle session; this turn has to finish first")
 	}
 	s := m.todoStore
 	if s == nil || s.Len() == 0 {
-		return m.systemNotice("No backlog to read.")
+		return m.systemNotice("no backlog to read")
 	}
 	queue, note := todoGroomQueue(s, args)
 	if note != "" {
@@ -112,7 +112,7 @@ func todoGroomQueue(s *todo.Store, args []string) ([]string, string) {
 			out = append(out, it.Slug)
 		}
 		if len(out) == 0 {
-			return nil, "Nothing to read: the backlog has no active items."
+			return nil, "nothing to read: the backlog has no active items"
 		}
 		return out, ""
 	case len(args) > 1 || strings.HasPrefix(args[0], "-"):
@@ -120,7 +120,7 @@ func todoGroomQueue(s *todo.Store, args []string) ([]string, string) {
 	}
 	it, ok := s.Find(args[0])
 	if !ok || it.Archived {
-		return nil, fmt.Sprintf("No active backlog item %q; /todo lists them.", args[0])
+		return nil, fmt.Sprintf("no active backlog item %q; /todo lists them", args[0])
 	}
 	return []string{it.Slug}, ""
 }
@@ -234,7 +234,7 @@ func (m Model) openTodoGroomCard(r todo.Reading) (tea.Model, tea.Cmd) {
 		// saying out loud: the alternative is a card of one row that reads
 		// as an item nothing was found wrong with.
 		m.todoGroomer.slug = ""
-		model, _ := m.systemNotice("The reading of " + r.Slug + " answered in no shape that could be read as verdicts; nothing was changed.")
+		model, _ := m.systemNotice("the reading of " + r.Slug + " answered in no shape that could be read as verdicts; nothing was changed")
 		return model.(Model).groomAfterCard()
 	}
 	m.todoGroomer.reading = r
@@ -408,7 +408,7 @@ func (m *Model) writeGrooming(r todo.Reading, accepted []int) string {
 	it := m.todoGroomer.item
 	n, skipped, err := todo.Accept(it.Path, take, stamp)
 	if err != nil {
-		return "Could not write " + r.Slug + " — " + err.Error() + "."
+		return "could not write " + r.Slug + " — " + err.Error()
 	}
 	m.todoGroomer.lines += n
 	if n > 0 {
@@ -419,13 +419,13 @@ func (m *Model) writeGrooming(r todo.Reading, accepted []int) string {
 	// the one they declined.
 	if stamp != "" {
 		if err := todo.SaveReading(m.todos.Root, r); err != nil {
-			m.appendEntry(entry{kind: entrySystem, text: "The reading of " + r.Slug + " could not be written down — " + err.Error()})
+			m.appendEntry(entry{kind: entrySystem, text: "the reading of " + r.Slug + " could not be written down — " + err.Error()})
 		}
 	}
 	m.signal(observe.SignalTodo, observe.GroomReason(n))
 	m.reloadTodos()
 	var b strings.Builder
-	fmt.Fprintf(&b, "Wrote %s to %s.", plural(n, "line"), it.Path)
+	fmt.Fprintf(&b, "wrote %s to %s", plural(n, "line"), it.Path)
 	for _, f := range take {
 		if wasSkipped(skipped, f) {
 			continue

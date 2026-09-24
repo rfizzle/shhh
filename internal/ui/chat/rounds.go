@@ -313,7 +313,7 @@ func (m Model) roundPauseKey(key string) (tea.Model, tea.Cmd, bool) {
 // changeset for [u] to take back.
 func (m Model) grantRounds(p *roundPause) (tea.Model, tea.Cmd) {
 	if m.working() {
-		return m.systemNotice("The turn is already running again.")
+		return m.systemNotice("the turn is already running again")
 	}
 	m.roundGrant += p.grant()
 	m.signal(observe.SignalRounds, "granted")
@@ -332,7 +332,7 @@ func (m Model) grantRounds(p *roundPause) (tea.Model, tea.Cmd) {
 // until the checkpoint has already stopped the turn once.
 func (m Model) uncapRounds(p *roundPause) (tea.Model, tea.Cmd) {
 	if m.working() {
-		return m.systemNotice("The turn is already running again.")
+		return m.systemNotice("the turn is already running again")
 	}
 	m.roundsUncapped = true
 	m.signal(observe.SignalRounds, "uncapped")

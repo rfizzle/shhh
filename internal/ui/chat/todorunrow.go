@@ -451,7 +451,7 @@ func (r *todoRunRow) answers() []runRowLine {
 	if len(r.st.Lanes) > 0 {
 		head("lanes")
 		for _, lane := range r.st.Lanes {
-			body(lane.Name + "  " + strings.Join(lane.Paths, ", "))
+			body(lane.Name + "  " + strings.Join(lane.Paths, " · "))
 		}
 	}
 	if r.st.Findings != "" {
@@ -468,7 +468,7 @@ func (r *todoRunRow) answers() []runRowLine {
 	}
 	if len(r.st.Files) > 0 {
 		head("files")
-		body(strings.Join(r.st.Files, ", "))
+		body(strings.Join(r.st.Files, " · "))
 	}
 	return out
 }
@@ -592,19 +592,19 @@ func (m Model) todoRunReopen(idx int) (tea.Model, tea.Cmd, bool) {
 	}
 	slug := r.st.Slug
 	if m.todoRunner.state != nil && !m.todoRunner.state.Over() && m.todoRunner.state.Slug == slug {
-		next, cmd := m.systemNotice(fmt.Sprintf("%s is being run again; /todo stop ends that run first.", slug))
+		next, cmd := m.systemNotice(fmt.Sprintf("%s is being run again; /todo stop ends that run first", slug))
 		return next, cmd, true
 	}
 	it, ok := m.todoStore.Find(slug)
 	if !ok {
-		next, cmd := m.systemNotice(fmt.Sprintf("No backlog item %q; it may have been archived or renamed since the run blocked.", slug))
+		next, cmd := m.systemNotice(fmt.Sprintf("no backlog item %q; it may have been archived or renamed since the run blocked", slug))
 		return next, cmd, true
 	}
 	if err := todo.SetStatus(it.Path, todo.StatusOpen); err != nil {
-		next, cmd := m.systemNotice("Could not reopen " + slug + " — " + err.Error())
+		next, cmd := m.systemNotice("could not reopen " + slug + " — " + err.Error())
 		return next, cmd, true
 	}
 	m.reloadTodos()
-	next, cmd := m.systemNotice(fmt.Sprintf("%s is open again; /todo run %s starts it over.", slug, slug))
+	next, cmd := m.systemNotice(fmt.Sprintf("%s is open again; /todo run %s starts it over", slug, slug))
 	return next, cmd, true
 }

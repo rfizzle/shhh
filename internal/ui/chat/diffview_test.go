@@ -271,7 +271,7 @@ func TestSessionDiff_Empty(t *testing.T) {
 	}
 	found := false
 	for _, e := range m.transcript {
-		if e.kind == entrySystem && strings.Contains(e.text, "No files have been changed this session") {
+		if e.kind == entrySystem && strings.Contains(e.text, "no files have been changed this session") {
 			found = true
 		}
 	}

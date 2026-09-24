@@ -15,6 +15,10 @@ repeats once the file is used up. A line is one of:
     tool:<name>:<json args>   one tool call, e.g.
     tool:execute_command:{"command":"echo hi"}
     wait:<seconds>            hold the request open before answering it
+    status:<code>:<message>   refuse the request with that HTTP status and
+                              error message, as a provider that will not
+                              answer does — the way a scene reaches a
+                              failure row
 
 `wait` is how a scene reaches a phase that is otherwise a moment wide. A
 turn is thinking from the request leaving to the first token arriving, and
@@ -266,6 +270,18 @@ class Handler(BaseHTTPRequestHandler):
         self.log_message("reply %d%s%s: %s", count, " [%s]" % queue if queue else "",
                          "" if scripted else " (no queue written for it)",
                          " + ".join(parts)[:60])
+        if parts and parts[0].startswith("status:"):
+            # The request refused outright, in the shape the dialect's own
+            # errors take, so the session classifies it as it would the real
+            # provider's refusal.
+            _, code, message = parts[0].split(":", 2)
+            body = json.dumps({"error": {"message": message, "type": "scripted", "code": None}}).encode()
+            self.send_response(int(code))
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+            return
         self.send_response(200)
         self.send_header("Content-Type", "text/event-stream")
         self.end_headers()

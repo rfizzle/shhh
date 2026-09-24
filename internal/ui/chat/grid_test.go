@@ -147,7 +147,7 @@ func TestTranscriptGrid_EveryKindSharesOneLeftEdge(t *testing.T) {
 		"the check-in":           "Check-in —",
 		"the steer":              "Steered —",
 		"the tree reading":       "tree moved —",
-		"the error":              "Error: the notebook",
+		"the error":              "✗ the notebook",
 		"the arriving reply":     "Re-running the suite",
 		"the changed-files rail": "▎",
 	}

@@ -43,12 +43,12 @@ const reviewVerdictDetail = 3
 // that changed anything, a number reviews that turn.
 func (m Model) reviewCommand(parts []string) (tea.Model, tea.Cmd) {
 	if len(parts) > 2 {
-		return m.systemNotice("Usage: /review [turn]")
+		return m.systemNotice("usage: /review [turn]")
 	}
 	if len(parts) == 2 {
 		var n int64
 		if _, err := fmt.Sscanf(parts[1], "%d", &n); err != nil || n <= 0 {
-			return m.systemNotice("Usage: /review [turn] — the turn number from its close row.")
+			return m.systemNotice("usage: /review [turn] — the turn number from its close row")
 		}
 		return m.openReview(n)
 	}
@@ -71,9 +71,9 @@ func (m Model) openReview(n int64) (tea.Model, tea.Cmd) {
 	if !ok {
 		if m.changes.WasEvicted(n) {
 			return m.systemNotice(fmt.Sprintf(
-				"Turn %d's records were dropped to stay inside the changeset store's size limit; there is nothing left to review.", n))
+				"turn %d's records were dropped to stay inside the changeset store's size limit; there is nothing left to review", n))
 		}
-		return m.systemNotice(fmt.Sprintf("Turn %d changed no files.", n))
+		return m.systemNotice(fmt.Sprintf("turn %d changed no files", n))
 	}
 	v := &components.ReviewView{
 		Title: fmt.Sprintf("turn %d", n),

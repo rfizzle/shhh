@@ -283,7 +283,7 @@ func (m *Model) trimForRequest() {
 		return
 	}
 	m.appendEntry(entry{kind: entrySystem, text: fmt.Sprintf(
-		"Context trimmed: %d older tool result(s) elided.", n)})
+		"context trimmed: %s elided", plural(n, "older tool result"))})
 	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()
 }
@@ -364,7 +364,7 @@ func (m *Model) dropCompactingNotice() {
 // is handled by finishCompact instead of joining the conversation.
 func (m Model) startCompact() (tea.Model, tea.Cmd) {
 	if len(m.agent.Messages()) <= 1 {
-		m.appendEntry(entry{kind: entrySystem, text: "Nothing to compact yet."})
+		m.appendEntry(entry{kind: entrySystem, text: "nothing to compact yet"})
 		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoBottom()
 		return m, nil
@@ -429,7 +429,7 @@ func (m Model) finishPreCompact(msg preCompactMsg) (tea.Model, tea.Cmd) {
 	if msg.verdict.Denied() {
 		m.compacting, m.compactRun = false, nil
 		m.appendEntry(entry{kind: entrySystem,
-			text: "Compaction " + hook.StartRefused(msg.verdict) + "; conversation unchanged."})
+			text: "compaction " + hook.StartRefused(msg.verdict) + "; conversation unchanged"})
 		m.releaseAfterCompact()
 		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoBottom()
@@ -470,7 +470,7 @@ func (m Model) finishCompact() (tea.Model, tea.Cmd) {
 	m.cancel = nil
 	m.releaseAfterCompact()
 	if summary == "" {
-		m.appendEntry(entry{kind: entryError, text: "compaction produced no summary; conversation unchanged"})
+		m.appendEntry(entry{kind: entryError, text: "compact  produced no summary · the conversation is unchanged"})
 		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoBottom()
 		return m.resumeAfterCompact(nil)
@@ -1083,7 +1083,7 @@ func (m Model) abortCompact() (tea.Model, tea.Cmd) {
 	m.streaming = ""
 	m.events = nil
 	m.cancel = nil
-	m.appendEntry(entry{kind: entryError, text: "compaction failed: the model called a tool on a request that forbade one; conversation unchanged"})
+	m.appendEntry(entry{kind: entryError, text: "compact  the model called a tool on a request that forbade one · the conversation is unchanged"})
 	m.releaseAfterCompact()
 	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()

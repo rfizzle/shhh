@@ -76,7 +76,7 @@ func TestSecretsManager(t *testing.T) {
 	if !strings.Contains(note, "$SHHH_TEST_TOKEN") || strings.Contains(note, "tok-tok") {
 		t.Fatalf("list: %q", note)
 	}
-	if note, _ = manage([]string{"set", "NOPE_NOT_SET"}); !strings.HasPrefix(note, "Error:") {
+	if note, _ = manage([]string{"set", "NOPE_NOT_SET"}); !strings.HasPrefix(note, "✗ secret  ") {
 		t.Fatalf("unset: %q", note)
 	}
 	if _, announce = manage([]string{"forget", "SHHH_TEST_TOKEN"}); announce == "" || v.Len() != 0 {

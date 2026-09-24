@@ -149,7 +149,7 @@ func (m Model) stagePaste(text string) (tea.Model, tea.Cmd) {
 		return m.surfaceNotice(fmt.Sprintf(
 			"nothing attached — that paste is %s, and a paste rides in the prompt "+
 				"itself, so the limit is %s. Save it to a file and ask for it by name; "+
-				"the agent reads one with a tool.",
+				"the agent reads one with a tool",
 			attachment.HumanSize(len(text)), attachment.HumanSize(attachment.MaxTextBytes)))
 	}
 	a, err := attachment.FromBytes(nextPasteName(m.attachments), []byte(text))

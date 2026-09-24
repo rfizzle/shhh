@@ -164,7 +164,7 @@ func TestFollowUp_RefusesACommandDraft(t *testing.T) {
 		if len(next.followUps) != 0 {
 			t.Fatalf("%q must not queue as a message, got %v", draft, next.followUps)
 		}
-		if !strings.Contains(lastSystemText(next), "Not queued") {
+		if !strings.Contains(lastSystemText(next), "not queued") {
 			t.Fatalf("%q should be refused out loud, got %q", draft, lastSystemText(next))
 		}
 	}

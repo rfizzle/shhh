@@ -42,7 +42,7 @@ func (m Model) startTodoReview() (tea.Model, tea.Cmd) {
 		"task": st.ReviewTask(it, run.BoundDiff(m.todoRunDiff(), run.ReviewDiffLines, run.ReviewFileFloor)),
 	})
 	if _, err := m.subagents.Spawn(args); err != nil {
-		model, _ := m.systemNotice("No reviewer agent could be spawned — " + err.Error())
+		model, _ := m.systemNotice("no reviewer agent could be spawned — " + err.Error())
 		return model.(Model).todoRunStep(st.SelfReview(it))
 	}
 	_ = st.Save(m.todos.Root)
@@ -183,7 +183,7 @@ func (m Model) todoReviewDone(status subagent.Status) (tea.Model, tea.Cmd, bool)
 		// to be missing — a session with no supervisor has never had a
 		// reader either — and the step label is what says which reading
 		// this was.
-		model, _ := m.systemNotice(fmt.Sprintf("The reviewer %s did not finish (%s) — reading the change in this session instead.",
+		model, _ := m.systemNotice(fmt.Sprintf("the reviewer %s did not finish (%s) — reading the change in this session instead",
 			st.Reviewer, status.Detail))
 		next, cmd := model.(Model).todoRunStep(st.SelfReview(m.todoRunner.item))
 		return next, cmd, true

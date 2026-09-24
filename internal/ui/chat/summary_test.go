@@ -556,7 +556,7 @@ func TestStatusCommand_BeforeTheFirstReading(t *testing.T) {
 	if cmd == nil {
 		t.Fatal("/status starts a reading when there is none")
 	}
-	if !strings.Contains(note, "Reading the session") {
+	if !strings.Contains(note, "reading the session") {
 		t.Fatalf("/status says a reading is coming:\n%s", note)
 	}
 }

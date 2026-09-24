@@ -1586,7 +1586,7 @@ func TestRun_NoBlocks(t *testing.T) {
 	if m.state != stateInput {
 		t.Fatal("should stay in input state")
 	}
-	if len(m.transcript) == 0 || !strings.Contains(m.transcript[len(m.transcript)-1].text, "No code blocks") {
+	if len(m.transcript) == 0 || !strings.Contains(m.transcript[len(m.transcript)-1].text, "no code blocks") {
 		t.Fatal("expected 'No code blocks' message")
 	}
 }
@@ -2050,7 +2050,7 @@ func TestSlashLoad_NoArg_ListsChats(t *testing.T) {
 	if !handled {
 		t.Fatal("/load should be handled")
 	}
-	if !strings.Contains(result, "my-session") || !strings.Contains(result, "Usage: /load <name>") {
+	if !strings.Contains(result, "my-session") || !strings.Contains(result, "usage: /load <name>") {
 		t.Fatalf("bare /load should list chats with usage hint, got %q", result)
 	}
 }
@@ -2063,7 +2063,7 @@ func TestSlashModel_ShowsCurrentModel(t *testing.T) {
 	if !handled {
 		t.Fatal("/model should be handled")
 	}
-	if !strings.Contains(result, "gpt-4o") || !strings.Contains(result, "Usage: /model <name>") {
+	if !strings.Contains(result, "gpt-4o") || !strings.Contains(result, "usage: /model <name>") {
 		t.Fatalf("bare /model should show current model and usage, got %q", result)
 	}
 }
@@ -2076,7 +2076,7 @@ func TestSlashModel_Switches(t *testing.T) {
 		WithModelSwitcher(func(name string) { switched = name })
 
 	handled, result := m.handleSlashCommand("/model claude-opus-5")
-	if !handled || !strings.Contains(result, "Switched model to claude-opus-5") {
+	if !handled || !strings.Contains(result, "switched model to claude-opus-5") {
 		t.Fatalf("expected switch confirmation, got handled=%v result=%q", handled, result)
 	}
 	if switched != "claude-opus-5" {
@@ -2106,7 +2106,7 @@ func TestSlashModel_EdgeCases(t *testing.T) {
 	m = m.WithModelSwitcher(func(string) { calls++ })
 
 	// Same model is a no-op.
-	if _, result := m.handleSlashCommand("/model gpt-4o"); !strings.Contains(result, "Already using") {
+	if _, result := m.handleSlashCommand("/model gpt-4o"); !strings.Contains(result, "already using") {
 		t.Fatalf("expected 'Already using', got %q", result)
 	}
 	if calls != 0 {

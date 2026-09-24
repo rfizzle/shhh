@@ -180,7 +180,7 @@ func TestRewind_OutOfRange(t *testing.T) {
 	m := newRewindModel(t)
 	m = completeExchange(t, m, "hi", "yo")
 
-	if note := m.rewindToTurn(5); !strings.Contains(note, "Usage: /rewind") {
+	if note := m.rewindToTurn(5); !strings.Contains(note, "usage: /rewind") {
 		t.Fatalf("out-of-range turn should show usage, got %q", note)
 	}
 	if len(m.Messages()) != 3 {
@@ -202,13 +202,13 @@ func TestRewind_TurnNIsWhereTurnNEnded(t *testing.T) {
 	if len(m.Messages()) != 5 {
 		t.Fatal("a rewind to where the session stands must not change the conversation")
 	}
-	if note := m.rewindToTurn(1); !strings.Contains(note, `Rewound to the end of turn 1 ("first")`) {
+	if note := m.rewindToTurn(1); !strings.Contains(note, `rewound to the end of turn 1 ("first")`) {
 		t.Fatalf("the message should name the turn the session now stands at, got %q", note)
 	}
 	if got := m.frameActivity(40); !strings.Contains(got, "at turn 1") {
 		t.Fatalf("the frame should name the same turn the command did, got %q", got)
 	}
-	if note := m.rewindToTurn(0); !strings.Contains(note, "Rewound to the start of the session") {
+	if note := m.rewindToTurn(0); !strings.Contains(note, "rewound to the start of the session") {
 		t.Fatalf("turn 0 is the start of the session, got %q", note)
 	}
 	if len(m.Messages()) != 1 {
@@ -274,7 +274,7 @@ func TestRewind_NoCheckpoints(t *testing.T) {
 		t.Fatal("no checkpoints → no picker")
 	}
 	last := m.transcript[len(m.transcript)-1]
-	if !strings.Contains(last.text, "No checkpoints") {
+	if !strings.Contains(last.text, "no checkpoints") {
 		t.Fatalf("expected no-checkpoints notice, got %q", last.text)
 	}
 }
@@ -317,7 +317,7 @@ func TestBranches_ListAndSwitch(t *testing.T) {
 	}
 
 	handled, result := m.handleSlashCommand("/branches 2")
-	if !handled || !strings.Contains(result, "Switched to branch") {
+	if !handled || !strings.Contains(result, "switched to branch") {
 		t.Fatalf("expected a branch switch, got %q", result)
 	}
 	if got := len(m.Messages()); got != 5 {
@@ -346,7 +346,7 @@ func TestBranches_ListAndSwitch(t *testing.T) {
 	if m.sessionName != "named-branch" {
 		t.Fatal("/save should move the session to the new name")
 	}
-	if handled, res := m.handleSlashCommand("/load " + root); !handled || !strings.Contains(res, "Loaded chat") {
+	if handled, res := m.handleSlashCommand("/load " + root); !handled || !strings.Contains(res, "loaded chat") {
 		t.Fatalf("/load on a branch failed: %q", res)
 	}
 	// The branch's three messages, plus the reading /load puts in front of

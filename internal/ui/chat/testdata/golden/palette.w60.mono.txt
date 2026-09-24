@@ -14,13 +14,13 @@
 ╭─ ctrl+/ ──────────────────────────────── 26 matches ─╮
 │ ▸                                                    │
 │ COMMANDS                                             │
-│ ❯ /help                   Show commands, keys, and … │
-│   /clear                  Start a new session        │
-│   /paste                  Attach the clipbo…  ctrl+v │
-│   /copy                   Copy the last response (o… │
-│   /model                  Switch the model (bare /m… │
-│   /permissions            What runs with…  shift+tab │
-│   /reasoning              How much the mode…  ctrl+t │
+│ ❯ /help                   show commands, keys, and … │
+│   /clear                  start a new session        │
+│   /paste                  attach the clipbo…  ctrl+v │
+│   /copy                   copy the last response (o… │
+│   /model                  switch the model (bare /m… │
+│   /permissions            what runs with…  shift+tab │
+│   /reasoning              how much the mode…  ctrl+t │
 │ FILES                                                │
 │   internal/agent/loop.go  modified 4m ago            │
 │ ↓ 1 more                                             │
@@ -32,9 +32,9 @@
 ╭─ ctrl+/ ─────────────────────────── 3 of 26 matches ─╮
 │ ▸ co                                                 │
 │ COMMANDS                                             │
-│ ❯ /copy       Copy the last response (or just its c… │
-│   /context    The window as a meter, itemised down … │
-│   ⊘ /compact  Continue from a summary pl…  idle only │
+│ ❯ /copy       copy the last response (or just its c… │
+│   /context    the window as a meter, itemised down … │
+│   ⊘ /compact  continue from a summary pl…  idle only │
 │ [enter] run · [tab] complete · [↑↓] move             │
 │ [esc] close it                                       │
 ╰──────────────────────────────────────────────────────╯
@@ -44,13 +44,13 @@
 ␛[38;5;244m╭─ ␛[m␛[1;38;5;254mctrl+/ ␛[m␛[38;5;244m──────────────────────────────── 26 matches ─╮␛[m
 ␛[38;5;244m│␛[m ␛[38;5;254m▸ ␛[m␛[38;5;254m ␛[m                                                  ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[1;38;5;254mCOMMANDS␛[m                                             ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m/help                   Show commands, keys, and …␛[m ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m   ␛[38;5;254m/clear␛[m                  ␛[38;5;244mStart a new session␛[m        ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m   ␛[38;5;254m/paste␛[m                  ␛[38;5;244mAttach the clipbo…␛[m  ␛[38;5;254mctrl+v␛[m ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m   ␛[38;5;254m/copy␛[m                   ␛[38;5;244mCopy the last response (o…␛[m ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m   ␛[38;5;254m/model␛[m                  ␛[38;5;244mSwitch the model (bare /m…␛[m ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m   ␛[38;5;254m/permissions␛[m            ␛[38;5;244mWhat runs with…␛[m  ␛[38;5;254mshift+tab␛[m ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m   ␛[38;5;254m/reasoning␛[m              ␛[38;5;244mHow much the mode…␛[m  ␛[38;5;254mctrl+t␛[m ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m/help                   show commands, keys, and …␛[m ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m   ␛[38;5;254m/clear␛[m                  ␛[38;5;244mstart a new session␛[m        ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m   ␛[38;5;254m/paste␛[m                  ␛[38;5;244mattach the clipbo…␛[m  ␛[38;5;254mctrl+v␛[m ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m   ␛[38;5;254m/copy␛[m                   ␛[38;5;244mcopy the last response (o…␛[m ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m   ␛[38;5;254m/model␛[m                  ␛[38;5;244mswitch the model (bare /m…␛[m ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m   ␛[38;5;254m/permissions␛[m            ␛[38;5;244mwhat runs with…␛[m  ␛[38;5;254mshift+tab␛[m ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m   ␛[38;5;254m/reasoning␛[m              ␛[38;5;244mhow much the mode…␛[m  ␛[38;5;254mctrl+t␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[1;38;5;254mFILES␛[m                                                ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;254minternal/agent/loop.go␛[m  ␛[38;5;244mmodified 4m ago␛[m            ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;244m↓ 1 more␛[m                                             ␛[38;5;244m│␛[m
@@ -62,9 +62,9 @@
 ␛[38;5;244m╭─ ␛[m␛[1;38;5;254mctrl+/ ␛[m␛[38;5;244m─────────────────────────── 3 of 26 matches ─╮␛[m
 ␛[38;5;244m│␛[m ␛[38;5;254m▸ ␛[m␛[38;5;254mco ␛[m                                                ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[1;38;5;254mCOMMANDS␛[m                                             ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m/copy       Copy the last response (or just its c…␛[m ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m   ␛[38;5;254m/␛[m␛[1;38;5;254mco␛[m␛[38;5;254mntext␛[m    ␛[38;5;244mThe window as a meter, itemised down …␛[m ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m   ␛[38;5;244m⊘ /compact␛[m  ␛[38;5;244mContinue from a summary pl…␛[m  ␛[38;5;244midle only␛[m ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m/copy       copy the last response (or just its c…␛[m ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m   ␛[38;5;254m/␛[m␛[1;38;5;254mco␛[m␛[38;5;254mntext␛[m    ␛[38;5;244mthe window as a meter, itemised down …␛[m ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m   ␛[38;5;244m⊘ /compact␛[m  ␛[38;5;244mcontinue from a summary pl…␛[m  ␛[38;5;244midle only␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m run␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m complete␛[m␛[38;5;244m · ␛[m␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m             ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m close it␛[m                                       ␛[38;5;244m│␛[m
 ␛[38;5;244m╰──────────────────────────────────────────────────────╯␛[m

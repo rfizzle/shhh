@@ -519,6 +519,10 @@ type entry struct {
 	// it does on every other notice. Nil on a notice that is only prose,
 	// which is most of them.
 	notice *components.ActivityNotice
+	// help is the sheet a /help or key-list notice is drawn from, laid out
+	// at the pane's width (helpsheet.go); text is the same sheet as text, for
+	// a copy and a search. Nil on every other notice.
+	help helpSheet
 	// allowedBy names what let a gated call run without the reader being
 	// asked — the mode or grant that allowed it, "classifier", or the batch —
 	// and renders in the act's own outcome field. The feed states an act
@@ -1625,7 +1629,7 @@ type autosaveFailedMsg struct {
 // See docs/capabilities/sessions-and-memory.md#a-save-that-could-not-be-made-says-so.
 func (m *Model) noteAutosaveFailed(msg autosaveFailedMsg) {
 	m.appendEntry(entry{kind: entrySystem, text: fmt.Sprintf(
-		"This conversation could not be saved to %q: %v. It is still here to read, and the next save tries again — but quitting now would leave the turns since the last save behind.",
+		"this conversation could not be saved to %q: %v. It is still here to read, and the next save tries again — but quitting now would leave the turns since the last save behind",
 		msg.slot, msg.err)})
 	m.syncViewport()
 }
@@ -1652,7 +1656,7 @@ func (m *Model) noteSlotMove(msg autosaveMovedMsg) {
 	// is that session's row now. The reading starts over here.
 	m.resetTitle()
 	m.appendEntry(entry{kind: entrySystem, text: fmt.Sprintf(
-		"Another session has written to %q, so this conversation moved to %q. Nothing there was overwritten.",
+		"another session has written to %q, so this conversation moved to %q. Nothing there was overwritten",
 		msg.from, msg.to)})
 	m.syncViewport()
 }
@@ -1776,7 +1780,7 @@ func copyFailure(res clipboard.Result) string {
 		// No terminal took the write and there is no tool runner to fall
 		// back to: a front end built without one, which is a different
 		// thing from a machine that is missing the program.
-		return "Copying is not available in this session."
+		return "copying is not available in this session"
 	}
 	return ""
 }
@@ -2115,7 +2119,7 @@ func (m *Model) handleSlashCommand(text string) (handled bool, result string) {
 	// A lone "/word" is almost certainly a mistyped command; a path like
 	// /etc/hosts contains another slash and falls through to the LLM.
 	if strings.HasPrefix(parts[0], "/") && !strings.Contains(parts[0][1:], "/") {
-		return true, fmt.Sprintf("Unknown command %s. Type /help for available commands.", parts[0])
+		return true, fmt.Sprintf("unknown command %s. Type /help for available commands", parts[0])
 	}
 	return false, ""
 }
@@ -2125,7 +2129,7 @@ func (m *Model) handleSlashCommand(text string) (handled bool, result string) {
 func (m *Model) loadChatByName(name string) string {
 	msgs, err := m.db.LoadChat(name)
 	if err != nil {
-		return "Error: " + err.Error()
+		return failed("load", err.Error())
 	}
 	// What the model was shown belongs to the conversation it was shown in.
 	// Another conversation read other files, so its record would let a full
@@ -2147,7 +2151,7 @@ func (m *Model) loadChatByName(name string) string {
 	// sitting that may be days old; the checkout in front of it is this one
 	// (context.go).
 	m.regenerateWorkspace()
-	return fmt.Sprintf("Loaded chat %q (%d messages)", name, len(msgs))
+	return fmt.Sprintf("loaded chat %q (%d messages)", name, len(msgs))
 }
 
 // lastAssistantText returns the content of the most recent assistant message

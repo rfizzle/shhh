@@ -476,7 +476,7 @@ func TestReadingRail_NamesThePaneWithTheKeyboard(t *testing.T) {
 func TestUICommand_MouseTogglesReporting(t *testing.T) {
 	m := readyModel(t)
 
-	if _, result := m.handleSlashCommand("/ui"); !strings.Contains(result, "Mouse reporting: on") {
+	if _, result := m.handleSlashCommand("/ui"); !strings.Contains(result, "mouse reporting: on") {
 		t.Fatalf("bare /ui should report the mouse state, got %q", result)
 	}
 	if _, result := m.handleSlashCommand("/ui mouse off"); !strings.Contains(result, "click-drag selection") {
@@ -485,7 +485,7 @@ func TestUICommand_MouseTogglesReporting(t *testing.T) {
 	if m.mouseOn {
 		t.Fatal("/ui mouse off should turn reporting off")
 	}
-	if _, result := m.handleSlashCommand("/ui mouse"); !strings.Contains(result, "Mouse reporting: off") {
+	if _, result := m.handleSlashCommand("/ui mouse"); !strings.Contains(result, "mouse reporting: off") {
 		t.Fatalf("bare /ui mouse should report the state, got %q", result)
 	}
 	if _, result := m.handleSlashCommand("/ui mouse on"); !strings.Contains(result, "wheel scrolls") {

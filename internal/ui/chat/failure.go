@@ -279,7 +279,7 @@ func (m Model) failureKey(key string) (tea.Model, tea.Cmd, bool) {
 // question, not asking twice.
 func (m Model) retryTurn() (tea.Model, tea.Cmd) {
 	if m.working() {
-		return m.systemNotice("The turn is already running again.")
+		return m.systemNotice("the turn is already running again")
 	}
 	// The failed request never reached the conversation, so asking again is
 	// asking the same question rather than asking twice. What restarts is the
@@ -326,7 +326,7 @@ func (m Model) openProviderPick() (tea.Model, tea.Cmd) {
 		if model := provider.Defaults(name).Model; model != "" {
 			m.modelName = model
 		}
-		return "Switched to " + name + " on " + m.modelName + ". Ask again to use it."
+		return "switched to " + name + " on " + m.modelName + ". Ask again to use it"
 	})
 	// Esc leaves the session on the provider it is on, and says which one
 	// (docs/interface/principles.md#esc-is-always-the-safe-answer); a session
@@ -353,7 +353,7 @@ func providerDesc(name string) string {
 // which variable the replacement stands in for.
 func (m Model) openKeyEntry(f *provider.Failure) (tea.Model, tea.Cmd) {
 	if m.replaceKeyFn == nil {
-		return m.systemNotice("This session cannot replace its key.")
+		return m.systemNotice("this session cannot replace its key")
 	}
 	m.keyAsk = &components.SecretPrompt{
 		Prompt:  "Paste a key for " + m.providerName,
@@ -384,13 +384,13 @@ func (m *Model) answerKeyEntry(msg tea.KeyPressMsg) (bool, overlayAction) {
 func (m *Model) closeKeyEntry(secret string) overlayAction {
 	m.keyAsk = nil
 	if strings.TrimSpace(secret) == "" {
-		return overlayAction{close: true, note: "Key unchanged."}
+		return overlayAction{close: true, note: "key unchanged"}
 	}
 	if err := m.replaceKeyFn(secret); err != nil {
-		return overlayAction{close: true, note: "That key was not accepted: " + err.Error()}
+		return overlayAction{close: true, note: "that key was not accepted: " + err.Error()}
 	}
-	return overlayAction{close: true, note: "Key ···" + lastFour(secret) +
-		" is in use for this session. Ask again to try it, or /config set provider.api_key to keep it."}
+	return overlayAction{close: true, note: "key ···" + lastFour(secret) +
+		" is in use for this session. Ask again to try it, or /config set provider.api_key to keep it"}
 }
 
 // keyEntryLines renders the prompt for the bottom panel.

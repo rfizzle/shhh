@@ -51,7 +51,7 @@ func (m Model) todoRunDone() (tea.Model, tea.Cmd) {
 		if st.NoCommit {
 			did = fmt.Sprintf("made no commit and left %s in the working tree", plural(len(st.Files), "file"))
 		}
-		note = fmt.Sprintf("✓ todo run %s %s, but the item could not be archived — %v. The report is on the item and it is open; /todo done %s archives it once that is settled.", st.Slug, did, err, st.Slug)
+		note = fmt.Sprintf("✓ todo run %s %s, but the item could not be archived — %v. The report is on the item and it is open; /todo done %s archives it once that is settled", st.Slug, did, err, st.Slug)
 	}
 	sprinting, slug := st.Sprinting(), st.Slug
 	m.endTodoRun()

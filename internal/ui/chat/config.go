@@ -64,11 +64,11 @@ func (m Model) WithConfigScreen(open ConfigOpener) Model {
 // openConfigScreen puts the surface up.
 func (m Model) openConfigScreen() (tea.Model, tea.Cmd) {
 	if m.openConfig == nil {
-		return m.systemNotice("This session cannot reach the config file. `shhh config` opens the same screen.")
+		return m.systemNotice("this session cannot reach the config file. `shhh config` opens the same screen")
 	}
 	session, err := m.openConfig()
 	if err != nil {
-		return m.systemNotice("Error: could not read the config: " + err.Error())
+		return m.systemNotice(failed("config", "could not read the config: "+err.Error()))
 	}
 	m.configScreen = &session
 	m.enterSurface(stateConfig)

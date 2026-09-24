@@ -45,7 +45,7 @@ func TestMemoryManager_ListAddForget(t *testing.T) {
 	if out := manage([]string{"forget", "m1"}); !strings.Contains(out, "✓ forgot m1") {
 		t.Fatalf("forget: %q", out)
 	}
-	if out := manage([]string{"forget", "m1"}); !strings.Contains(out, "Error") {
+	if out := manage([]string{"forget", "m1"}); !strings.HasPrefix(out, "✗ memory  ") {
 		t.Fatalf("forgetting a missing entry should error: %q", out)
 	}
 	if out := manage([]string{"forget", "banana"}); !strings.Contains(out, "invalid memory id") {

@@ -233,7 +233,7 @@ func (m *Model) finishStreaming() {
 		m.streaming = ""
 		m.events = nil
 		m.cancel = nil
-		m.appendEntry(entry{kind: entrySystem, text: "Compaction cancelled; conversation unchanged."})
+		m.appendEntry(entry{kind: entrySystem, text: "compaction cancelled; conversation unchanged"})
 		m.setTurnState(stateInput)
 		return
 	}

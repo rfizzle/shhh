@@ -37,7 +37,7 @@ func (m Model) queueFollowUp() (tea.Model, tea.Cmd, bool) {
 		return m, nil, false
 	}
 	if reason, held := m.todoRunHoldsInput(); held {
-		next, cmd := m.systemNotice("Not queued: " + reason + ".")
+		next, cmd := m.systemNotice("not queued: " + reason)
 		return next, cmd, true
 	}
 	// A command is not a message, and a queued one would go out as raw
@@ -45,7 +45,7 @@ func (m Model) queueFollowUp() (tea.Model, tea.Cmd, bool) {
 	// queue does not run. Refused rather than reinterpreted: run it when
 	// the turn is finished.
 	if _, _, bang := bangCommand(text); bang || commandName(text) != "" {
-		next, cmd := m.systemNotice("Not queued: a command is not a message — run it once the turn is finished.")
+		next, cmd := m.systemNotice("not queued: a command is not a message — run it once the turn is finished")
 		return next, cmd, true
 	}
 	if !secretInput(text) {

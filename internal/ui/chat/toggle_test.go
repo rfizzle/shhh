@@ -38,12 +38,12 @@ func TestToggleCommandsRefuseAnUnknownWord(t *testing.T) {
 		line string
 		want string
 	}{
-		{line: "/ui mouse maybe", want: `Error: unknown mouse setting "maybe" (on, off)`},
-		{line: "/ui mono maybe", want: `Error: unknown mono setting "maybe" (on, off)`},
-		{line: "/ui ground maybe", want: `Error: unknown ground setting "maybe" (on, off)`},
-		{line: "/ui notify maybe", want: `Error: unknown notify setting "maybe" (on, off)`},
-		{line: "/ui title maybe", want: `Error: unknown title setting "maybe" (on, off)`},
-		{line: "/ui window maybe", want: `Error: unknown window setting "maybe" (on, off)`},
+		{line: "/ui mouse maybe", want: `✗ ui  unknown mouse setting "maybe" (on, off)`},
+		{line: "/ui mono maybe", want: `✗ ui  unknown mono setting "maybe" (on, off)`},
+		{line: "/ui ground maybe", want: `✗ ui  unknown ground setting "maybe" (on, off)`},
+		{line: "/ui notify maybe", want: `✗ ui  unknown notify setting "maybe" (on, off)`},
+		{line: "/ui title maybe", want: `✗ ui  unknown title setting "maybe" (on, off)`},
+		{line: "/ui window maybe", want: `✗ ui  unknown window setting "maybe" (on, off)`},
 	} {
 		handled, note := m.handleSlashCommand(tc.line)
 		if !handled || note != tc.want {

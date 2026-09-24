@@ -523,7 +523,7 @@ func (m GenerateModel) explainReady(msg explainReadyMsg) (GenerateModel, tea.Cmd
 		// keys are what the reader came for.
 		m.explaining = false
 		if msg.long {
-			m.explainStream = m.explainStream.WithOutput("Error: " + msg.err.Error())
+			m.explainStream = m.explainStream.WithOutput("✗ explain  " + msg.err.Error())
 			m.explainStream.done = true
 			m.phase = phaseAction
 			return m, nil

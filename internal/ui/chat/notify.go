@@ -209,9 +209,9 @@ func (m *Model) setNotify(on bool) string {
 // "shhh will tell you the one thing, and only when you cannot see it".
 func notifyNote(on bool) string {
 	if on {
-		return "Desktop notifications on: when a turn stops and your terminal has said the window is not in front, shhh raises one notification saying what it stopped on."
+		return "desktop notifications on: when a turn stops and your terminal has said the window is not in front, shhh raises one notification saying what it stopped on"
 	}
-	return "Desktop notifications off: a turn that stops while you are elsewhere waits silently."
+	return "desktop notifications off: a turn that stops while you are elsewhere waits silently"
 }
 
 // notifyCommand handles /ui notify. It is a setting rather than a default
@@ -220,18 +220,18 @@ func notifyNote(on bool) string {
 // is a thing you are owed a switch for.
 func (m *Model) notifyCommand(parts []string) string {
 	if len(parts) == 2 {
-		return "Desktop notifications: " + m.notifyStatus() +
-			".\nUsage: /ui notify <on|off> — on, a turn that stops while the window is not in front raises one notification; nothing fires while you are looking at the screen."
+		return "desktop notifications: " + m.notifyStatus() +
+			"\nusage: /ui notify <on|off> — on, a turn that stops while the window is not in front raises one notification; nothing fires while you are looking at the screen"
 	}
 	if len(parts) != 3 {
-		return "Usage: /ui notify <on|off>"
+		return "usage: /ui notify <on|off>"
 	}
 	on, ok := parseToggle(parts[2])
 	if !ok {
-		return fmt.Sprintf("Error: unknown notify setting %q (on, off)", parts[2])
+		return failed("ui", fmt.Sprintf("unknown notify setting %q (on, off)", parts[2]))
 	}
 	if on == m.notifyOn {
-		return "Desktop notifications are already " + m.notifyStatus() + "."
+		return "desktop notifications are already " + m.notifyStatus()
 	}
 	return m.setNotify(on)
 }

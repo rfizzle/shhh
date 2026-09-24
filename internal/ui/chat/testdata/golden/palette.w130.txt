@@ -14,13 +14,13 @@
 ╭─ ctrl+/ ────────────────────────────────────────────────────────────────────────────────────────────────────── 26 matches ─╮
 │ ▸                                                                                                                          │
 │ COMMANDS                                                                                                                   │
-│ ❯ /help                   Show commands, keys, and the approval policy                                                     │
-│   /clear                  Start a new session                                                                              │
-│   /paste                  Attach the clipboard, or a file, to your next message                                     ctrl+v │
-│   /copy                   Copy the last response (or just its code blocks)                                                 │
-│   /model                  Switch the model (bare /model opens a picker)                                                    │
-│   /permissions            What runs without asking, and the mode that frames it                                  shift+tab │
-│   /reasoning              How much the model thinks before it answers                                               ctrl+t │
+│ ❯ /help                   show commands, keys, and the approval policy                                                     │
+│   /clear                  start a new session                                                                              │
+│   /paste                  attach the clipboard, or a file, to your next message                                     ctrl+v │
+│   /copy                   copy the last response (or just its code blocks)                                                 │
+│   /model                  switch the model (bare /model opens a picker)                                                    │
+│   /permissions            what runs without asking, and the mode that frames it                                  shift+tab │
+│   /reasoning              how much the model thinks before it answers                                               ctrl+t │
 │ FILES                                                                                                                      │
 │   internal/agent/loop.go  modified 4m ago                                                                                  │
 │   README.md               modified 2h ago                                                                                  │
@@ -32,9 +32,9 @@
 ╭─ ctrl+/ ───────────────────────────────────────────────────────────────────────────────────────────────── 3 of 26 matches ─╮
 │ ▸ co                                                                                                                       │
 │ COMMANDS                                                                                                                   │
-│ ❯ /copy       Copy the last response (or just its code blocks)                                                             │
-│   /context    The window as a meter, itemised down to the tool                                                             │
-│   ⊘ /compact  Continue from a summary plus the most recent turns                                                 idle only │
+│ ❯ /copy       copy the last response (or just its code blocks)                                                             │
+│   /context    the window as a meter, itemised down to the tool                                                             │
+│   ⊘ /compact  continue from a summary plus the most recent turns                                                 idle only │
 │ [enter] run · [tab] complete · [↑↓] move · [esc] close it                                                                  │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
@@ -43,13 +43,13 @@
 ␛[38;5;241m╭─ ␛[m␛[1;97mctrl+/ ␛[m␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────␛[m␛[38;5;241m 26 matches ─╮␛[m
 ␛[38;5;241m│␛[m ␛[94m▸ ␛[m␛[97m ␛[m                                                                                                                        ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[1;94mCOMMANDS␛[m                                                                                                                   ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[94m❯␛[m ␛[1;97;48;5;62m/help                   Show commands, keys, and the approval policy                                                    ␛[m ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m   ␛[38;5;252m/clear␛[m                  ␛[38;5;241mStart a new session␛[m                                                                              ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m   ␛[38;5;252m/paste␛[m                  ␛[38;5;241mAttach the clipboard, or a file, to your next message␛[m                                     ␛[38;5;252mctrl+v␛[m ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m   ␛[38;5;252m/copy␛[m                   ␛[38;5;241mCopy the last response (or just its code blocks)␛[m                                                 ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m   ␛[38;5;252m/model␛[m                  ␛[38;5;241mSwitch the model (bare /model opens a picker)␛[m                                                    ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m   ␛[38;5;252m/permissions␛[m            ␛[38;5;241mWhat runs without asking, and the mode that frames it␛[m                                  ␛[38;5;252mshift+tab␛[m ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m   ␛[38;5;252m/reasoning␛[m              ␛[38;5;241mHow much the model thinks before it answers␛[m                                               ␛[38;5;252mctrl+t␛[m ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[94m❯␛[m ␛[1;97;48;5;62m/help                   show commands, keys, and the approval policy                                                    ␛[m ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m   ␛[38;5;252m/clear␛[m                  ␛[38;5;241mstart a new session␛[m                                                                              ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m   ␛[38;5;252m/paste␛[m                  ␛[38;5;241mattach the clipboard, or a file, to your next message␛[m                                     ␛[38;5;252mctrl+v␛[m ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m   ␛[38;5;252m/copy␛[m                   ␛[38;5;241mcopy the last response (or just its code blocks)␛[m                                                 ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m   ␛[38;5;252m/model␛[m                  ␛[38;5;241mswitch the model (bare /model opens a picker)␛[m                                                    ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m   ␛[38;5;252m/permissions␛[m            ␛[38;5;241mwhat runs without asking, and the mode that frames it␛[m                                  ␛[38;5;252mshift+tab␛[m ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m   ␛[38;5;252m/reasoning␛[m              ␛[38;5;241mhow much the model thinks before it answers␛[m                                               ␛[38;5;252mctrl+t␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[1;94mFILES␛[m                                                                                                                      ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;252minternal/agent/loop.go␛[m  ␛[38;5;241mmodified 4m ago␛[m                                                                                  ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;252mREADME.md␛[m               ␛[38;5;241mmodified 2h ago␛[m                                                                                  ␛[38;5;241m│␛[m
@@ -61,8 +61,8 @@
 ␛[38;5;241m╭─ ␛[m␛[1;97mctrl+/ ␛[m␛[38;5;241m─────────────────────────────────────────────────────────────────────────────────────────────────␛[m␛[38;5;241m 3 of 26 matches ─╮␛[m
 ␛[38;5;241m│␛[m ␛[94m▸ ␛[m␛[97mco ␛[m                                                                                                                      ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[1;94mCOMMANDS␛[m                                                                                                                   ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[94m❯␛[m ␛[1;97;48;5;62m/copy       Copy the last response (or just its code blocks)                                                            ␛[m ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m   ␛[38;5;252m/␛[m␛[1;38;5;252mco␛[m␛[38;5;252mntext␛[m    ␛[38;5;241mThe window as a meter, itemised down to the tool␛[m                                                             ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m   ␛[38;5;245m⊘ /compact␛[m  ␛[38;5;245mContinue from a summary plus the most recent turns␛[m                                                 ␛[38;5;245midle only␛[m ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[94m❯␛[m ␛[1;97;48;5;62m/copy       copy the last response (or just its code blocks)                                                            ␛[m ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m   ␛[38;5;252m/␛[m␛[1;38;5;252mco␛[m␛[38;5;252mntext␛[m    ␛[38;5;241mthe window as a meter, itemised down to the tool␛[m                                                             ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m   ␛[38;5;245m⊘ /compact␛[m  ␛[38;5;245mcontinue from a summary plus the most recent turns␛[m                                                 ␛[38;5;245midle only␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[94m[enter]␛[m␛[38;5;241m run␛[m␛[38;5;241m · ␛[m␛[94m[tab]␛[m␛[38;5;241m complete␛[m␛[38;5;241m · ␛[m␛[94m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m close it␛[m                                                                  ␛[38;5;241m│␛[m
 ␛[38;5;241m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m

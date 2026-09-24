@@ -207,16 +207,16 @@ func (m Model) titleStatus() string {
 // titleCommand handles /ui title [on|off].
 func (m *Model) titleCommand(parts []string) string {
 	if len(parts) == 2 {
-		return "Session titles: " + m.titleStatus() +
-			".\nUsage: /ui title <on|off> — on, a cheap model names an unnamed session after its first turn; a name you give it always wins."
+		return "session titles: " + m.titleStatus() +
+			"\nusage: /ui title <on|off> — on, a cheap model names an unnamed session after its first turn; a name you give it always wins"
 	}
 	if len(parts) != 3 {
-		return "Usage: /ui title <on|off>"
+		return "usage: /ui title <on|off>"
 	}
 	on, ok := parseToggle(parts[2])
 	if !ok {
-		return fmt.Sprintf("Error: unknown title setting %q (on, off)", parts[2])
+		return failed("ui", fmt.Sprintf("unknown title setting %q (on, off)", parts[2]))
 	}
 	m.titles.on = on
-	return "Session titles: " + m.titleStatus() + "."
+	return "session titles: " + m.titleStatus()
 }

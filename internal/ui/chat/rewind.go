@@ -134,7 +134,7 @@ func checkpointsFromMessages(msgs []provider.Message) []checkpoint {
 // second render to keep in step with the family's.
 func (m Model) openRewindPick() (tea.Model, tea.Cmd) {
 	if len(m.checkpoints) == 0 {
-		m.appendEntry(entry{kind: entrySystem, text: "No checkpoints to rewind to yet."})
+		m.appendEntry(entry{kind: entrySystem, text: "no checkpoints to rewind to yet"})
 		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoBottom()
 		return m, nil
@@ -357,7 +357,7 @@ func turnPoint(n int) string {
 
 // rewindUsage is the refusal for a turn number the session does not have.
 func (m Model) rewindUsage() string {
-	return fmt.Sprintf("Usage: /rewind [0-%d]", len(m.checkpoints))
+	return fmt.Sprintf("usage: /rewind [0-%d]", len(m.checkpoints))
 }
 
 // rewindToTurn asks what a rewind to the end of turn n (turn 0 being the
@@ -369,7 +369,7 @@ func (m *Model) rewindToTurn(n int) string {
 	if n == len(m.checkpoints) && n > 0 {
 		// The latest turn's end is where the session already stands, so
 		// there is nothing after it for a rewind to take back.
-		return fmt.Sprintf("The session already stands at the end of turn %d — there is nothing after it to rewind.", n)
+		return fmt.Sprintf("the session already stands at the end of turn %d — there is nothing after it to rewind", n)
 	}
 	cp, ok := m.cutAt(n)
 	if !ok {
@@ -673,7 +673,7 @@ func (m *Model) armRewindRestore(n int, turns []changeset.Turn, ret *rewindRetur
 	plan := changeset.PlanUndo(folded, nil)
 	if plan.Empty() {
 		m.appendEntry(entry{kind: entrySystem, text: fmt.Sprintf(
-			"Nothing on record was written after turn %d, so there are no files to put back.", n)})
+			"nothing on record was written after turn %d, so there are no files to put back", n)})
 		if ret != nil {
 			m.appendRewindRow(m.settled(*ret), changeset.Turn{})
 		}
@@ -713,7 +713,7 @@ func (m *Model) rewindConversation(n int, filesNote string) string {
 	}
 	msgs := m.agent.Messages()
 	if cp.index > len(msgs) {
-		return "Rewind failed: the checkpoint no longer matches the conversation."
+		return "rewind failed: the checkpoint no longer matches the conversation"
 	}
 	full := make([]provider.Message, len(msgs))
 	copy(full, msgs)
@@ -735,13 +735,13 @@ func (m *Model) rewindConversation(n int, filesNote string) string {
 	}
 	keptRows, rows, split := m.rewoundSplit(len(m.checkpoints) - n)
 
-	branchNote := "Chat persistence is unavailable, so the abandoned tail was discarded."
+	branchNote := "chat persistence is unavailable, so the abandoned tail was discarded"
 	if m.db != nil {
 		branch := branchName(m.sessionName, n)
 		if err := m.db.SaveChatBranch(m.sessionName, branch, stripResumeContext(full)); err != nil {
-			branchNote = "Failed to preserve the abandoned tail as a branch: " + err.Error()
+			branchNote = "could not keep the abandoned tail as a branch: " + err.Error()
 		} else {
-			branchNote = fmt.Sprintf("The abandoned tail (%d message(s)) is kept as branch %q — /branches to switch back.", dropped, branch)
+			branchNote = fmt.Sprintf("the abandoned tail (%s) is kept as branch %q — /branches to switch back", plural(dropped, "message"), branch)
 		}
 	}
 
@@ -775,9 +775,9 @@ func (m *Model) rewindConversation(n int, filesNote string) string {
 	m.contextTokens = 0
 	m.resetRounds()
 
-	back := "Rewound to the start of the session."
+	back := "rewound to the start of the session"
 	if n > 0 {
-		back = fmt.Sprintf("Rewound to the end of turn %d (%q).", n, kept[n-1].preview)
+		back = fmt.Sprintf("rewound to the end of turn %d (%q)", n, kept[n-1].preview)
 	}
 	lines := []string{back, branchNote}
 	if filesNote != "" {
@@ -802,16 +802,16 @@ func (m Model) gitDivergence(cp checkpoint) string {
 		return ""
 	}
 	if !cp.hasGit {
-		return "Git: no snapshot was recorded for this checkpoint, so divergence is unknown."
+		return "git: no snapshot was recorded for this checkpoint, so divergence is unknown"
 	}
 	now := m.gitSnapshot()
 	switch {
 	case !cp.git.Repo || !now.Repo:
 		return ""
 	case cp.git.Head != now.Head:
-		return fmt.Sprintf("Git: HEAD has moved since this checkpoint (%s → %s).", shortHead(cp.git.Head), shortHead(now.Head))
+		return fmt.Sprintf("git: HEAD has moved since this checkpoint (%s → %s)", shortHead(cp.git.Head), shortHead(now.Head))
 	case cp.git.StatusHash != now.StatusHash:
-		return fmt.Sprintf("Git: the working tree has changed since this checkpoint (%d dirty path(s) then, %d now).", cp.git.DirtyPaths, now.DirtyPaths)
+		return fmt.Sprintf("git: the working tree has changed since this checkpoint (%s then, %d now)", plural(cp.git.DirtyPaths, "dirty path"), now.DirtyPaths)
 	// Two hashes that differ differ over something real, so the line above
 	// stands whether or not the content was digested. Equality is the one
 	// reading a partial digest cannot support: past the bound the hash covers
@@ -823,9 +823,9 @@ func (m Model) gitDivergence(cp checkpoint) string {
 	// what the sentence under it could not check.
 	// See docs/capabilities/coding-agent.md#a-rewind-can-put-the-files-back.
 	case cp.git.Unhashed || now.Unhashed:
-		return fmt.Sprintf("Git: the tree holds more changed content than can be digested (past the %s bound), so whether it still matches this checkpoint cannot be read — check the files a restore would write before taking it.", quality.ContentBound())
+		return fmt.Sprintf("git: the tree holds more changed content than can be digested (past the %s bound), so whether it still matches this checkpoint cannot be read — check the files a restore would write before taking it", quality.ContentBound())
 	default:
-		return fmt.Sprintf("Git: HEAD %s and the working tree match this checkpoint.", shortHead(now.Head))
+		return fmt.Sprintf("git: HEAD %s and the working tree match this checkpoint", shortHead(now.Head))
 	}
 }
 
@@ -842,14 +842,14 @@ func shortHead(h string) string {
 // not one, is defined once.
 func (m Model) branchFamily() ([]storage.ChatBranch, string) {
 	if m.db == nil {
-		return nil, "Chat persistence is unavailable."
+		return nil, "chat persistence is unavailable"
 	}
 	branches, err := m.db.ListChatBranches(m.sessionName)
 	if err != nil {
-		return nil, "Error: " + err.Error()
+		return nil, failed("branches", err.Error())
 	}
 	if len(branches) < 2 {
-		return nil, "This session has no branches yet — /rewind creates one."
+		return nil, "this session has no branches yet — /rewind creates one"
 	}
 	return branches, ""
 }
@@ -862,7 +862,7 @@ func (m *Model) switchBranch(branches []storage.ChatBranch, arg string) string {
 	target := ""
 	if n, err := strconv.Atoi(arg); err == nil {
 		if n < 1 || n > len(branches) {
-			return fmt.Sprintf("Usage: /branches [1-%d]", len(branches))
+			return fmt.Sprintf("usage: /branches [1-%d]", len(branches))
 		}
 		target = branches[n-1].Name
 	} else {
@@ -873,7 +873,7 @@ func (m *Model) switchBranch(branches []storage.ChatBranch, arg string) string {
 			}
 		}
 		if target == "" {
-			return fmt.Sprintf("No branch %q in this session's family.", arg)
+			return fmt.Sprintf("no branch %q in this session's family", arg)
 		}
 	}
 	return m.switchToBranch(target)
@@ -889,12 +889,12 @@ func (m *Model) switchToBranch(target string) string {
 	}
 	if len(m.agent.Messages()) > 1 {
 		if err := m.db.SaveChat(m.sessionName, stripResumeContext(m.agent.Messages())); err != nil {
-			return "Error saving the current branch before switching: " + err.Error()
+			return failed("branches", "could not save the current branch before switching: "+err.Error())
 		}
 	}
 	msgs, err := m.db.LoadChat(target)
 	if err != nil {
-		return "Error: " + err.Error()
+		return failed("branches", err.Error())
 	}
 	m.loadConversation(msgs)
 	m.adoptSlot(target)
@@ -911,7 +911,7 @@ func (m *Model) switchToBranch(target string) string {
 	m.compactSummary = storedChatSummary(m.db, target)
 	m.contextTokens = 0
 	m.resetRounds()
-	return fmt.Sprintf("Switched to branch %q (%d messages).", target, len(msgs))
+	return fmt.Sprintf("switched to branch %q (%s)", target, plural(len(msgs), "message"))
 }
 
 // rewoundFold is what a rewind took back, held on the transcript as one fold
@@ -1201,7 +1201,7 @@ func (m Model) reapplyRewind(idx int) (tea.Model, tea.Cmd) {
 		m.appendEntry(r)
 	}
 	m.appendEntry(entry{kind: entrySystem, text: fmt.Sprintf(
-		"Reapplied %s — the rewind is undone, and the conversation stands at the end of turn %d again.",
+		"reapplied %s — the rewind is undone, and the conversation stands at the end of turn %d again",
 		turnSpanPhrase(f.first, f.last), f.last)})
 	m.invalidateRenderCache()
 	if m.state == stateFocus {

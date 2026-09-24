@@ -248,7 +248,7 @@ type mcpPromptMsg struct {
 // that is slow to answer must not be able to stop the screen redrawing.
 func (m Model) runMCPPrompt(p mcp.Prompt, words []string) (tea.Model, tea.Cmd) {
 	if m.mcp.Render == nil {
-		return m.surfaceNotice("/" + p.Name + " cannot be rendered in this session.")
+		return m.surfaceNotice("/" + p.Name + " cannot be rendered in this session")
 	}
 	args, err := mcpPromptValues(p, words)
 	if err != nil {
@@ -300,9 +300,9 @@ func mcpPromptValues(p mcp.Prompt, words []string) (map[string]string, error) {
 
 func mcpPromptUsageLine(p mcp.Prompt) string {
 	if usage := p.Usage(); usage != "" {
-		return "Usage: /" + p.Name + " " + usage
+		return "usage: /" + p.Name + " " + usage
 	}
-	return "Usage: /" + p.Name
+	return "usage: /" + p.Name
 }
 
 // applyMCPPrompt lands a rendered prompt. It is the person's turn — they
@@ -315,12 +315,12 @@ func (m Model) applyMCPPrompt(msg mcpPromptMsg) (tea.Model, tea.Cmd) {
 	}
 	text := strings.TrimSpace(msg.text)
 	if text == "" {
-		return m.surfaceNotice(msg.shown + " came back empty; the server rendered no messages.")
+		return m.surfaceNotice(msg.shown + " came back empty; the server rendered no messages")
 	}
 	if m.working() || m.decisionUngated() {
 		m.steering = append(m.steering, steeringItem{text: text})
 		m.syncViewport()
-		return m.surfaceNotice(msg.shown + " queued for the next round.")
+		return m.surfaceNotice(msg.shown + " queued for the next round")
 	}
 	return m.sendUserMessageAs(text, msg.shown)
 }

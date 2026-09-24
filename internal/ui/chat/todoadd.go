@@ -45,13 +45,13 @@ func (m *Model) todoExtractEnabled() bool {
 // the Model from another goroutine.
 func (m Model) startTodoExtract() (tea.Model, tea.Cmd) {
 	if !m.todoExtractEnabled() {
-		return m.systemNotice("No model is configured to read the session into items. /todo add <text> adds one by hand.")
+		return m.systemNotice("no model is configured to read the session into items. /todo add <text> adds one by hand")
 	}
 	if m.todoExtracting {
-		return m.systemNotice("Still reading the session — the proposals card opens when it is done.")
+		return m.systemNotice("still reading the session — the proposals card opens when it is done")
 	}
 	if len(m.transcript) == 0 {
-		return m.systemNotice("Nothing to read yet: the session has no conversation.")
+		return m.systemNotice("nothing to read yet: the session has no conversation")
 	}
 	m.todoExtracting = true
 	m.todoExtractRun++
@@ -60,7 +60,7 @@ func (m Model) startTodoExtract() (tea.Model, tea.Cmd) {
 	req := m.todoExtractRequest()
 	ctx, cancel := context.WithCancel(context.Background())
 	m.todoExtractCancel = cancel
-	model, _ := m.systemNotice("Reading the session for backlog items…")
+	model, _ := m.systemNotice("reading the session for backlog items…")
 	return model, func() tea.Msg {
 		defer cancel()
 		return todoProposalsMsg{runID: runID, result: extractor.Extract(ctx, req)}
@@ -115,7 +115,7 @@ func (m Model) finishTodoExtract(msg todoProposalsMsg) (tea.Model, tea.Cmd) {
 	m.todoExtractCancel = nil
 	r := msg.result
 	if r.Failed {
-		return m.systemNotice("The session could not be read into items — " + r.Err + ". /todo add <text> adds one by hand.")
+		return m.systemNotice("the session could not be read into items — " + r.Err + ". /todo add <text> adds one by hand")
 	}
 	return m.openTodoProposals(r.Proposals, plural(len(r.Proposals), "backlog item")+" proposed")
 }
@@ -193,7 +193,7 @@ func (m *Model) answerTodoPropose(msg tea.KeyPressMsg) (bool, overlayAction) {
 	m.todoProposals = nil
 	m.todoRunner.followUpRow = 0
 	if res.Canceled {
-		return true, overlayAction{close: true, note: "Nothing written; the proposals are dropped."}
+		return true, overlayAction{close: true, note: "nothing written; the proposals are dropped"}
 	}
 	note, written := m.writeProposals(proposals, res.Indices)
 	if len(written) > 0 {
@@ -273,13 +273,13 @@ func (m *Model) writeProposals(proposals []todo.Proposal, accepted []int) (strin
 		fmt.Fprintf(&b, "\n  %s  %s · %s · %s", a.slug, it.Priority, gradeOrDash(it), it.Title)
 	}
 	m.reloadTodos()
-	head := fmt.Sprintf("Wrote %s to %s.", plural(written, "backlog item"), todo.Dir(m.todos.Root))
+	head := fmt.Sprintf("wrote %s to %s", plural(written, "backlog item"), todo.Dir(m.todos.Root))
 	if written == 0 {
-		head = "Wrote nothing."
+		head = "wrote nothing"
 	}
 	out := head + b.String()
 	if len(dropped) > 0 {
-		out += "\nDropped dependencies that name nothing in the backlog: " + strings.Join(dropped, "; ") + "."
+		out += "\ndropped dependencies that name nothing in the backlog: " + strings.Join(dropped, "; ")
 	}
 	if written > 0 {
 		out += "\n/todo edit <slug> opens one to refine it."
@@ -356,7 +356,7 @@ func (m Model) todoProposeLines() []string {
 
 // todoNewUsage is the one place the command's shape is written, so a refusal
 // and the help cannot come to describe different commands.
-const todoNewUsage = "Usage: /todo new <what the work is, in a sentence>"
+const todoNewUsage = "usage: /todo new <what the work is, in a sentence>"
 
 // todoNewPrefix is what the backlog screen's `n` leaves in the draft box. A
 // draft is made from a sentence and the screen has nowhere to type one, so
@@ -588,10 +588,10 @@ func (m Model) startTodoDraft(sentence string) (tea.Model, tea.Cmd) {
 		return m.systemNotice(todoNewUsage)
 	}
 	if !m.todoDraftEnabled() {
-		return m.systemNotice("No model is configured to draft an item. /todo add <text> adds one by hand.")
+		return m.systemNotice("no model is configured to draft an item. /todo add <text> adds one by hand")
 	}
 	if m.todoDrafting {
-		return m.systemNotice("Still drafting — the card opens when it is done.")
+		return m.systemNotice("still drafting — the card opens when it is done")
 	}
 	m.todoDrafting = true
 	m.todoDraftRun++
@@ -599,7 +599,7 @@ func (m Model) startTodoDraft(sentence string) (tea.Model, tea.Cmd) {
 	req := todo.DraftRequest{Sentence: sentence, Existing: m.todoDraftExisting()}
 	ctx, cancel := context.WithCancel(context.Background())
 	m.todoDraftStop = cancel
-	model, _ := m.systemNotice("Drafting the item…")
+	model, _ := m.systemNotice("drafting the item…")
 	return model, func() tea.Msg {
 		defer cancel()
 		return todoDraftMsg{runID: runID, result: drafter.Draft(ctx, req)}
@@ -637,8 +637,8 @@ func (m Model) finishTodoDraft(msg todoDraftMsg) (tea.Model, tea.Cmd) {
 	m.todoDrafting = false
 	m.todoDraftStop = nil
 	if msg.result.Failed {
-		return m.systemNotice("The item could not be drafted — " + msg.result.Err +
-			". /todo add <text> adds one by hand.")
+		return m.systemNotice("the item could not be drafted — " + msg.result.Err +
+			". /todo add <text> adds one by hand")
 	}
 	m.openTodoDraft(msg.result.Proposals[0], -1)
 	return m, nil
@@ -751,7 +751,7 @@ func (m *Model) answerTodoDraft(msg tea.KeyPressMsg) (bool, overlayAction) {
 			// A key that cannot act says why rather than doing nothing: an
 			// empty backlog is the one state where this row has no list to
 			// open, and silence there reads as a broken key.
-			return true, overlayAction{note: "Nothing in the backlog to wait on yet. The item is written without dependencies."}
+			return true, overlayAction{note: "nothing in the backlog to wait on yet. The item is written without dependencies"}
 		}
 		d.openPicker(m.maxConfirmPanelHeight())
 		return false, overlayAction{}
@@ -768,7 +768,7 @@ func (m *Model) answerTodoDraft(msg tea.KeyPressMsg) (bool, overlayAction) {
 		return true, m.leaveTodoDraft()
 	case res.Canceled:
 		m.todoDraft = nil
-		return true, overlayAction{close: true, note: "Nothing written; the draft is dropped."}
+		return true, overlayAction{close: true, note: "nothing written; the draft is dropped"}
 	}
 	return true, m.takeTodoDraft()
 }
@@ -846,15 +846,15 @@ func (m *Model) writeTodoDraft(d *todoDraft) (string, bool) {
 	it.DependsOn = deps
 	path, err := todo.Create(d.profile, m.todos.Root, it)
 	if err != nil {
-		return fmt.Sprintf("Could not write %s: %v", slug, err), false
+		return fmt.Sprintf("could not write %s: %v", slug, err), false
 	}
 	m.reloadTodos()
-	out := fmt.Sprintf("Wrote %s to %s.\n  %s  %s · %s · %s",
+	out := fmt.Sprintf("wrote %s to %s\n  %s  %s · %s · %s",
 		slug, path, slug, it.Priority, gradeOrDash(it), it.Title)
 	if len(dropped) > 0 {
-		out += "\nDropped dependencies that name nothing in the backlog: " + strings.Join(dropped, ", ") + "."
+		out += "\ndropped dependencies that name nothing in the backlog: " + strings.Join(dropped, ", ")
 	}
-	return out + "\n/todo edit " + slug + " opens it to refine it.", true
+	return out + "\n/todo edit " + slug + " opens it to refine it", true
 }
 
 // editTodoDraft hands the item as it stands to the editor. It is the handoff
@@ -868,11 +868,11 @@ func (m *Model) writeTodoDraft(d *todoDraft) (string, bool) {
 // under a program nobody is rendering comes back as a ghost.
 func (m *Model) editTodoDraft() overlayAction {
 	if m.working() || m.frameWorking() {
-		return overlayAction{note: "Not while the turn is running — the editor takes the terminal with it. The draft is still on the card."}
+		return overlayAction{note: "not while the turn is running — the editor takes the terminal with it. The draft is still on the card"}
 	}
 	path, err := writeTodoDraftFile(m.todoDraft.profile, m.todoDraft.proposal, m.todoDraft.body)
 	if err != nil {
-		return overlayAction{note: "Could not write the draft out — " + err.Error() + ". The draft is still on the card."}
+		return overlayAction{note: "could not write the draft out — " + err.Error() + ". The draft is still on the card"}
 	}
 	argv := editorArgv(editorCommand(), path, 1, 1)
 	proc := exec.Command(argv[0], argv[1:]...)

@@ -36,7 +36,7 @@ import (
 // reasoningUsage is the one-line usage shown by /reasoning and /help. The
 // cycling key is read off the register, so the usage line cannot keep
 // naming a key the dispatch stopped answering.
-var reasoningUsage = "Usage: /reasoning <off|low|medium|high|xhigh|max> · /reasoning default [level] (" +
+var reasoningUsage = "usage: /reasoning <off|low|medium|high|xhigh|max> · /reasoning default [level] (" +
 	keys.Bracket(keys.Draft.Reasoning) + " cycles)"
 
 // WithReasoning installs the session's reasoning level and the hook that
@@ -94,23 +94,23 @@ func (m Model) reasoningNote(e provider.Effort) string {
 // reasoningCommand handles /reasoning and its arguments.
 func (m *Model) reasoningCommand(parts []string) string {
 	if len(parts) == 0 {
-		return fmt.Sprintf("Reasoning: %s — %s.\n%s", m.effort, m.effort.Describe(), reasoningUsage)
+		return fmt.Sprintf("reasoning: %s — %s.\n%s", m.effort, m.effort.Describe(), reasoningUsage)
 	}
 	if parts[0] == "default" {
 		return m.setReasoningDefault(parts[1:])
 	}
 	if len(parts) > 1 {
-		return "One level at a time. " + reasoningUsage
+		return "one level at a time. " + reasoningUsage
 	}
 	e, err := provider.ParseEffort(parts[0])
 	if err != nil {
-		return "Error: " + err.Error()
+		return failed("reasoning", err.Error())
 	}
 	if m.effortFn == nil {
-		return "This session cannot change the reasoning level."
+		return "this session cannot change the reasoning level"
 	}
 	if e == m.effort {
-		return fmt.Sprintf("Already reasoning %s.", e)
+		return fmt.Sprintf("already reasoning %s", e)
 	}
 	m.applyEffort(e)
 	return m.reasoningNote(e)
@@ -135,13 +135,13 @@ func (m *Model) setReasoningDefault(rest []string) string {
 	}
 	e, err := provider.ParseEffort(rest[0])
 	if err != nil {
-		return "Error: " + err.Error()
+		return failed("reasoning", err.Error())
 	}
 	if m.writeConfig == nil {
 		return "This session cannot write the config file, so the default was not saved."
 	}
 	if err := m.writeConfig("provider.reasoning", e.String()); err != nil {
-		return "Error: could not save the default: " + err.Error()
+		return failed("reasoning", "could not save the default: "+err.Error())
 	}
 	m.effortDefault = e.String()
 	note := fmt.Sprintf("Default reasoning set to %s for new sessions", e)
@@ -178,7 +178,7 @@ func reasoningArgs(m *Model) []argOption {
 		}
 		out = append(out, argOption{value: e.String(), desc: desc})
 	}
-	return append(out, argOption{value: "default", desc: "Show or persist the level new sessions start on"})
+	return append(out, argOption{value: "default", desc: "show or persist the level new sessions start on"})
 }
 
 // reasoningLevelArgs are the levels alone, for the position after "default".

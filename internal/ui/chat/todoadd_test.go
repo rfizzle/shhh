@@ -62,7 +62,7 @@ func runExtract(t *testing.T, m Model) Model {
 	if cmd == nil || !next.todoExtracting {
 		t.Fatal("a bare /todo add should start a reading")
 	}
-	if last := next.transcript[len(next.transcript)-1].text; !strings.HasPrefix(last, "Reading the session") {
+	if last := next.transcript[len(next.transcript)-1].text; !strings.HasPrefix(last, "reading the session") {
 		t.Fatalf("start note = %q", last)
 	}
 	msg := cmd()
@@ -110,7 +110,7 @@ func TestTodoAdd_ProposalsCardWritesTheCheckedOnes(t *testing.T) {
 		t.Fatalf("enter should close the card, state=%d", m.state)
 	}
 	note := m.transcript[len(m.transcript)-1].text
-	if !strings.HasPrefix(note, "Wrote 2 backlog items to") || !strings.Contains(note, "show-the-backlog-in-the-rail") || !strings.Contains(note, "  high-one  low") {
+	if !strings.HasPrefix(note, "wrote 2 backlog items to") || !strings.Contains(note, "show-the-backlog-in-the-rail") || !strings.Contains(note, "  high-one  low") {
 		t.Fatalf("note = %q", note)
 	}
 	if !strings.Contains(note, `show-the-backlog-in-the-rail → "Build the store"`) || !strings.Contains(note, `→ "nothing-like-this"`) {
@@ -134,7 +134,7 @@ func TestTodoAdd_CancelWritesNothing(t *testing.T) {
 	m := runExtract(t, extractModel(t, root, &scriptedProvider{args: proposalsFixture}))
 	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	m = updated.(Model)
-	if m.state != stateInput || !strings.Contains(m.transcript[len(m.transcript)-1].text, "Nothing written") {
+	if m.state != stateInput || !strings.Contains(m.transcript[len(m.transcript)-1].text, "nothing written") {
 		t.Fatal("esc should drop the proposals")
 	}
 	if todo.Load(todo.BuiltinCode(), root).Len() != 5 {
@@ -156,7 +156,7 @@ func TestTodoAdd_NoExtractorAndDoubleStart(t *testing.T) {
 	m := extractModel(t, todoTestRoot(t), nil)
 	m.input.SetValue("/todo add")
 	updated, cmd := m.submitInput()
-	if cmd != nil || !strings.Contains(updated.(Model).transcript[len(updated.(Model).transcript)-1].text, "No model is configured") {
+	if cmd != nil || !strings.Contains(updated.(Model).transcript[len(updated.(Model).transcript)-1].text, "no model is configured") {
 		t.Fatal("without an extractor the by-hand form should be offered")
 	}
 
@@ -166,7 +166,7 @@ func TestTodoAdd_NoExtractorAndDoubleStart(t *testing.T) {
 	m = updated.(Model)
 	m.input.SetValue("/todo add")
 	updated, cmd = m.submitInput()
-	if cmd != nil || !strings.Contains(updated.(Model).transcript[len(updated.(Model).transcript)-1].text, "Still reading") {
+	if cmd != nil || !strings.Contains(updated.(Model).transcript[len(updated.(Model).transcript)-1].text, "still reading") {
 		t.Fatal("a second reading must not start over a first")
 	}
 	// A result from a run the session has moved past is dropped.
@@ -206,7 +206,7 @@ func TestWriteProposals_DuplicateTitlesAndHostileFields(t *testing.T) {
 		t.Fatalf("fixture: %v %d", ok, len(ps))
 	}
 	note, _ := m.writeProposals(ps, []int{0, 1, 2})
-	if !strings.HasPrefix(note, "Wrote 3 backlog items") {
+	if !strings.HasPrefix(note, "wrote 3 backlog items") {
 		t.Fatalf("note = %q", note)
 	}
 	s := todo.Load(todo.BuiltinCode(), root)

@@ -261,7 +261,7 @@ func (m Model) withdrawSteer(key string) (tea.Model, tea.Cmd, bool) {
 func withdrawnNotice(iv agent.Intervention) string {
 	const tail = "The message left the conversation unanswered, and no further reading steers this turn."
 	if reason := strings.TrimSpace(iv.Reason); reason != "" {
-		return fmt.Sprintf("Steer withdrawn — %s. %s", reason, tail)
+		return fmt.Sprintf("steer withdrawn — %s. %s", reason, tail)
 	}
-	return "Steer withdrawn — " + tail
+	return "steer withdrawn — " + tail
 }

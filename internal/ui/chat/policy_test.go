@@ -642,7 +642,7 @@ func TestMode_SlashModeShowsAndSets(t *testing.T) {
 	}
 
 	handled, result := m.handleSlashCommand("/mode auto")
-	if !handled || !strings.Contains(result, "Mode set to auto") {
+	if !handled || !strings.Contains(result, "mode set to auto") {
 		t.Fatalf("/mode auto should set the mode, got %q", result)
 	}
 	if m.policy.mode != agent.ModeAuto {
@@ -658,7 +658,7 @@ func TestMode_SlashModeShowsAndSets(t *testing.T) {
 	}
 
 	_, help := m.handleSlashCommand("/help")
-	if !strings.Contains(help, "mode:      auto") {
+	if !strings.Contains(help, "  mode       auto") {
 		t.Fatalf("/help should show the active mode, got:\n%s", help)
 	}
 }
@@ -669,7 +669,7 @@ func TestPolicy_StatusBarAndHelpReflectPolicy(t *testing.T) {
 		t.Fatalf("default policy should show no status segment, got %q", m.policyLabel())
 	}
 	_, help := m.handleSlashCommand("/help")
-	if !strings.Contains(help, "Approval policy:") || !strings.Contains(help, "edits:     ask") {
+	if !strings.Contains(help, "\napproval policy\n") || !strings.Contains(help, "  edits      ask") {
 		t.Fatalf("/help should describe the default ask-everything policy, got:\n%s", help)
 	}
 
@@ -679,8 +679,8 @@ func TestPolicy_StatusBarAndHelpReflectPolicy(t *testing.T) {
 		t.Fatalf("status bar should show the active policy, got %q", m.renderStatusBar(80))
 	}
 	_, help = m.handleSlashCommand("/help")
-	if !strings.Contains(help, "edits:     auto-allow (this session)") ||
-		!strings.Contains(help, "1 command pattern(s)") {
+	if !strings.Contains(help, "  edits      auto-allow (this session)") ||
+		!strings.Contains(help, "1 command pattern from") {
 		t.Fatalf("/help should reflect the loosened policy, got:\n%s", help)
 	}
 }
@@ -944,7 +944,7 @@ func TestDenylist_WhyNamesTheListThatAnswered(t *testing.T) {
 	if !strings.Contains(m.grantStatus(), "behavior.command_denylist") {
 		t.Errorf("/permissions grants does not name the deny list:\n%s", m.grantStatus())
 	}
-	if !strings.Contains(m.policyHelp(), "denylist:") {
+	if !strings.Contains(m.policyHelp(), "  denylist   ") {
 		t.Errorf("/help does not name the deny list:\n%s", m.policyHelp())
 	}
 }

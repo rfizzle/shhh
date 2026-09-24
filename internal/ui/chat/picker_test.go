@@ -48,7 +48,7 @@ func TestModelPick_BareModelOpensPicker(t *testing.T) {
 		t.Fatalf("expected switch to m2, got switched=%q modelName=%q", switched, m.modelName)
 	}
 	last := m.transcript[len(m.transcript)-1]
-	if !strings.Contains(last.text, "Switched to m2 for this session") {
+	if !strings.Contains(last.text, "switched to m2 for this session") {
 		t.Fatalf("transcript should note the switch, got %q", last.text)
 	}
 }
@@ -148,7 +148,7 @@ func TestModelPick_FallsBackWithoutCatalog(t *testing.T) {
 		t.Fatal("without a catalog bare /model should not open a picker")
 	}
 	last := m.transcript[len(m.transcript)-1]
-	if !strings.Contains(last.text, "Current model: m1") {
+	if !strings.Contains(last.text, "current model: m1") {
 		t.Fatalf("expected the usage text fallback, got %q", last.text)
 	}
 }
@@ -176,7 +176,7 @@ func TestModePick_BareModeOpensPickerAndApplies(t *testing.T) {
 		t.Fatalf("expected accept-edits, got %v", m.policy.mode)
 	}
 	last := m.transcript[len(m.transcript)-1]
-	if !strings.Contains(last.text, "Mode set to accept-edits") {
+	if !strings.Contains(last.text, "mode set to accept-edits") {
 		t.Fatalf("transcript should note the mode change, got %q", last.text)
 	}
 }
@@ -310,7 +310,7 @@ func TestChatPick_BareLoadOpensPickerAndLoads(t *testing.T) {
 		t.Fatalf("expected both saved chats, got %v", m.picker.Options)
 	}
 	idx := pickIndex(t, m, "alpha")
-	if !strings.HasPrefix(m.picker.Options[idx].Desc, "1 turns, ") {
+	if !strings.HasPrefix(m.picker.Options[idx].Desc, "1 turn · ") {
 		t.Fatalf("description should carry turn count and time, got %q", m.picker.Options[idx].Desc)
 	}
 
@@ -321,7 +321,7 @@ func TestChatPick_BareLoadOpensPickerAndLoads(t *testing.T) {
 	if m.sessionName != "alpha" {
 		t.Fatalf("selecting should load alpha, got session %q", m.sessionName)
 	}
-	if last := m.transcript[len(m.transcript)-1]; !strings.Contains(last.text, `Loaded chat "alpha"`) {
+	if last := m.transcript[len(m.transcript)-1]; !strings.Contains(last.text, `loaded chat "alpha"`) {
 		t.Fatalf("transcript should note the load, got %q", last.text)
 	}
 	if got := m.Messages()[len(m.Messages())-1].Content; got != "a for alpha" {
@@ -369,7 +369,7 @@ func TestChatPick_NoSavedChatsKeepsTextMessage(t *testing.T) {
 		if m.picker != nil {
 			t.Fatalf("%s should not open an empty picker", cmd)
 		}
-		if last := m.transcript[len(m.transcript)-1]; !strings.Contains(last.text, "No saved chats.") {
+		if last := m.transcript[len(m.transcript)-1]; !strings.Contains(last.text, "no saved chats") {
 			t.Fatalf("%s with nothing saved should keep the text message, got %q", cmd, last.text)
 		}
 	}
@@ -423,7 +423,7 @@ func TestBranchPick_BareBranchesOpensPickerAndSwitches(t *testing.T) {
 	if name := root + strings.TrimPrefix(label, "…"); m.sessionName != name {
 		t.Fatalf("expected a switch to %q, got session %q", name, m.sessionName)
 	}
-	if last := m.transcript[len(m.transcript)-1]; !strings.Contains(last.text, "Switched to branch") {
+	if last := m.transcript[len(m.transcript)-1]; !strings.Contains(last.text, "switched to branch") {
 		t.Fatalf("transcript should note the switch, got %q", last.text)
 	}
 	if got := len(m.Messages()); got != 5 {
@@ -834,10 +834,10 @@ func TestModelList_ErrorFallsBackToUsageText(t *testing.T) {
 		m.transcript[len(m.transcript)-2].text,
 		m.transcript[len(m.transcript)-1].text,
 	}
-	if !strings.Contains(texts[0], "Could not list models: connection refused") {
+	if !strings.Contains(texts[0], "could not list models: connection refused") {
 		t.Fatalf("the failure should be reported, got %q", texts[0])
 	}
-	if !strings.Contains(texts[1], "Current model: llama3") {
+	if !strings.Contains(texts[1], "current model: llama3") {
 		t.Fatalf("expected the usage text fallback, got %q", texts[1])
 	}
 }
@@ -1153,7 +1153,7 @@ func TestModelPick_MakeDefaultSwitchesAndPersists(t *testing.T) {
 		t.Fatalf("persisted %v, want provider.model=m2", wrote)
 	}
 	last := next.transcript[len(next.transcript)-1]
-	if !strings.Contains(last.text, "m2") || !strings.Contains(last.text, "Default model set") {
+	if !strings.Contains(last.text, "m2") || !strings.Contains(last.text, "default model set") {
 		t.Fatalf("the note should say both things it did, got %q", last.text)
 	}
 }
@@ -1193,7 +1193,7 @@ func TestModelDefault_NamesWhatOutranksIt(t *testing.T) {
 	}
 	// And reading the setting back is the same claim, told more quietly.
 	_, out = m.handleSlashCommand("/model default")
-	if !strings.Contains(out, "Overruled") {
+	if !strings.Contains(out, "overruled") {
 		t.Fatalf("reporting the setting should say it too, got %q", out)
 	}
 }

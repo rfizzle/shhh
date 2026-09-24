@@ -202,10 +202,10 @@ shhh doctor · 3 checks                                                         
    ␛[38;5;254m✓␛[m ␛[38;5;254mconfig␛[m  ␛[38;5;254m~/.config/shhh/config.toml␛[m␛[38;5;244m · 6 settings set␛[m                                                                 ␛[38;5;244mok␛[m
 ␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m ␛[38;5;254m✗␛[m␛[48;5;237m ␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254;48;5;237mmodel   anthropic · claude-opus-5 · no key in any of the four places                                            no key       ␛[m␛[m
     ␛[38;5;244mno session will start until a key is found — every one exits on "no provider"␛[m
-      ␛[38;5;254menv       SHHH_API_KEY, ANTHROPIC_API_KEY — unset␛[m
-      ␛[38;5;254mconfig    ~/.config/shhh/config.toml — no provider api_key␛[m
-      ␛[38;5;254mprofiles  no .toml in ~/.config/shhh/providers␛[m
-      ␛[38;5;254mlocal     localhost:11434 — nothing listening␛[m
+      ␛[38;5;244menv␛[m       ␛[38;5;254mSHHH_API_KEY, ANTHROPIC_API_KEY — unset␛[m
+      ␛[38;5;244mconfig␛[m    ␛[38;5;254m~/.config/shhh/config.toml — no provider api_key␛[m
+      ␛[38;5;244mprofiles␛[m  ␛[38;5;254mno .toml in ~/.config/shhh/providers␛[m
+      ␛[38;5;244mlocal␛[m     ␛[38;5;254mlocalhost:11434 — nothing listening␛[m
     ␛[38;5;254m[f]␛[m␛[38;5;244m hide it␛[m
    ␛[38;5;254m✓␛[m ␛[38;5;254mstore␛[m   ␛[38;5;254m~/.local/share/shhh/shhh.db␛[m␛[38;5;244m · opened · migrations current · 56 kB␛[m                                           ␛[38;5;244mok␛[m
    ␛[38;5;254m✗␛[m ␛[38;5;254msandbox␛[m ␛[38;5;254mno containment mechanism␛[m␛[38;5;244m · sandbox-exec not found␛[m                                                  ␛[38;5;254muncontained␛[m   ␛[38;5;244m0.1s␛[m

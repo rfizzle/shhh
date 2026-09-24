@@ -50,7 +50,7 @@ func (m Model) startTodoFanOut() (tea.Model, tea.Cmd) {
 			for i := range st.Lanes {
 				st.Lanes[i].Agent = ""
 			}
-			model, _ := m.systemNotice(fmt.Sprintf("Lane %s could not be spawned — %s", lane.Name, err.Error()))
+			model, _ := m.systemNotice(fmt.Sprintf("lane %s could not be spawned — %s", lane.Name, err.Error()))
 			return model.(Model).todoRunStep(st.NoLanes(it, "writers refused; building in this session"))
 		}
 		spawned = append(spawned, lane.Agent)

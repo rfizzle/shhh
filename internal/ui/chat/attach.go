@@ -390,7 +390,7 @@ func (m Model) openAgentList() (tea.Model, tea.Cmd) {
 	// session has, and "nothing yet, and here is how to make one" is an
 	// answer. It is only unavailable when there is neither.
 	if m.subagents == nil && !m.personas.Enabled {
-		m.appendEntry(entry{kind: entrySystem, text: "Sub-agents are unavailable in this session."})
+		m.appendEntry(entry{kind: entrySystem, text: "sub-agents are unavailable in this session"})
 		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoBottom()
 		return m, nil
@@ -415,7 +415,7 @@ func (m Model) openAgentList() (tea.Model, tea.Cmd) {
 	// (docs/interface/surfaces.md#the-agent-manager).
 	if holder := m.panelHolder(); holder != "" {
 		m.appendEntry(entry{kind: entrySystem, text: holder +
-			", and the panel holds one thing at a time. Answer it or press esc, then the agents open."})
+			", and the panel holds one thing at a time. Answer it or press esc, then the agents open"})
 		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoBottom()
 		return m, nil
@@ -587,7 +587,7 @@ func (m Model) roleEditorFinished(msg roleEditorDoneMsg) (tea.Model, tea.Cmd) {
 			return m.surfaceNotice("the edit did not load, so this session spawns " + msg.name + " as it was — " + err.Error())
 		}
 	}
-	return m.systemNotice("Edited " + msg.path + ". The next " + msg.name + " this session spawns is the file as it now reads.")
+	return m.systemNotice("edited " + msg.path + ". The next " + msg.name + " this session spawns is the file as it now reads")
 }
 
 // pendingAskFor is the approval this agent is waiting on, if the session
@@ -798,7 +798,7 @@ func (m Model) updateAgentList(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			return m, nil // the session's own turn is steered by typing at it
 		}
 		if err := m.subagents.Steer(name, res.Text, subagent.SteerFromLane); err != nil {
-			m.noteChild(name, "Cannot steer: "+err.Error())
+			m.noteChild(name, "cannot steer: "+err.Error())
 		}
 		m.syncViewport()
 		return m, nil
@@ -812,7 +812,7 @@ func (m Model) updateAgentList(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			// A review of the attempt the retry replaced is a decision about
 			// work nobody is asking for any more, so it goes with it.
 			m.purgeChildAsks(name)
-			m.appendEntry(entry{kind: entrySystem, text: "Retrying " + name + " on its original task."})
+			m.appendEntry(entry{kind: entrySystem, text: "retrying " + name + " on its original task"})
 			m.viewport.SetLines(m.renderHistoryLines())
 			m.viewport.GotoBottom()
 		}
@@ -982,7 +982,7 @@ func (m Model) attachedSubmit() (tea.Model, tea.Cmd) {
 		return m.attachedCommand(parts)
 	}
 	if err := m.subagents.Steer(m.attachedTo, text, subagent.SteerFromLane); err != nil {
-		m.noteChild(m.attachedTo, "Cannot steer: "+err.Error())
+		m.noteChild(m.attachedTo, "cannot steer: "+err.Error())
 	}
 	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()
@@ -1000,9 +1000,9 @@ func (m Model) attachedCommand(parts []string) (tea.Model, tea.Cmd) {
 		// quits the whole session everywhere else in the product — so a
 		// reader who typed it to leave a child's surface ended the child
 		// instead (docs/capabilities/subagents.md#three-can-steer-a-child-and-none-of-them-can-end-it).
-		m.noteChild(name, "Ending an agent is "+keys.Bracket(keys.Agent.Kill)+
+		m.noteChild(name, "ending an agent is "+keys.Bracket(keys.Agent.Kill)+
 			" in the agent manager ("+keys.Shown(keys.Draft.Agents)+
-			"). Esc detaches without ending anything.")
+			"). Esc detaches without ending anything")
 	case "/stats":
 		m.noteChild(name, m.childStatsReport(name))
 	case "/diff":
@@ -1018,7 +1018,7 @@ func (m Model) attachedCommand(parts []string) (tea.Model, tea.Cmd) {
 	case "/detach":
 		m.detachOne()
 	default:
-		m.noteChild(name, "Commands while attached: /stats, /diff, /permissions [name], /agents, /attach <name>, /detach. Plain text steers the agent; esc detaches. Ending it is "+keys.Bracket(keys.Agent.Kill)+" in the agent manager.")
+		m.noteChild(name, "commands while attached: /stats, /diff, /permissions [name], /agents, /attach <name>, /detach. Plain text steers the agent; esc detaches. Ending it is "+keys.Bracket(keys.Agent.Kill)+" in the agent manager")
 	}
 	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()
@@ -1034,7 +1034,7 @@ func (m *Model) attachedDiff(name string) {
 		return
 	}
 	if strings.TrimSpace(patch) == "" {
-		m.noteChild(name, "No changes in the agent's workspace yet.")
+		m.noteChild(name, "no changes in the agent's workspace yet")
 		return
 	}
 	hunks, files := subagent.PatchHunks(patch)
@@ -1043,7 +1043,7 @@ func (m *Model) attachedDiff(name string) {
 		Kind:   subagent.EntryTool,
 		Tool:   "diff",
 		Args:   fmt.Sprintf(`{"agent":%q}`, name),
-		Result: fmt.Sprintf("+%d −%d across %d file(s)\n%s", adds, dels, files, strings.TrimRight(patch, "\n")),
+		Result: fmt.Sprintf("+%d −%d across %s\n%s", adds, dels, plural(files, "file"), strings.TrimRight(patch, "\n")),
 	})
 }
 
@@ -1057,20 +1057,20 @@ func (m *Model) attachedModeCommand(parts []string) {
 	}
 	mode, err := agent.ParseMode(parts[1])
 	if err != nil {
-		m.noteChild(name, "Error: "+err.Error())
+		m.noteChild(name, failed("mode", err.Error()))
 		return
 	}
 	ceiling := m.subagents.ParentMode()
 	if agent.ClampMode(mode, ceiling) != mode {
-		m.noteChild(name, fmt.Sprintf("Mode %s is disabled: it exceeds the orchestrator's ceiling (%s).", mode, ceiling))
+		m.noteChild(name, fmt.Sprintf("mode %s is disabled: it exceeds the orchestrator's ceiling (%s)", mode, ceiling))
 		return
 	}
 	eff, setErr := m.subagents.SetAgentMode(name, mode)
 	if setErr != nil {
-		m.noteChild(name, "Error: "+setErr.Error())
+		m.noteChild(name, failed("mode", setErr.Error()))
 		return
 	}
-	m.noteChild(name, fmt.Sprintf("Mode set to %s — %s.", eff, eff.Describe()))
+	m.noteChild(name, fmt.Sprintf("mode set to %s — %s", eff, eff.Describe()))
 }
 
 // cycleAttachedMode is Shift+Tab while attached: the next mode in the cycle
@@ -1105,11 +1105,11 @@ func (m Model) cycleAttachedMode() (tea.Model, tea.Cmd) {
 		disabled = append(disabled, cand.String())
 	}
 	if len(disabled) > 0 {
-		m.noteChild(name, fmt.Sprintf("Disabled (exceeds the orchestrator's ceiling %s): %s.", ceiling, strings.Join(disabled, ", ")))
+		m.noteChild(name, fmt.Sprintf("disabled (exceeds the orchestrator's ceiling %s): %s", ceiling, strings.Join(disabled, " · ")))
 	}
 	if next != cur {
 		if _, err := m.subagents.SetAgentMode(name, next); err == nil {
-			m.noteChild(name, fmt.Sprintf("Mode set to %s — %s.", next, next.Describe()))
+			m.noteChild(name, fmt.Sprintf("mode set to %s — %s", next, next.Describe()))
 		}
 	}
 	m.viewport.SetLines(m.renderHistoryLines())
@@ -1147,7 +1147,7 @@ func (m Model) attachedCancel() (tea.Model, tea.Cmd) {
 func (m Model) childStatsReport(name string) string {
 	st, ok := m.subagents.Get(name)
 	if !ok {
-		return "No agent named " + name + "."
+		return "no agent named " + name
 	}
 	mode, _ := m.subagents.AgentMode(name)
 	var sb strings.Builder
@@ -1157,7 +1157,7 @@ func (m Model) childStatsReport(name string) string {
 		fmt.Fprintf(&sb, "  model:      %s\n", st.Model)
 	}
 	if len(st.Paths) > 0 {
-		fmt.Fprintf(&sb, "  paths:      %s\n", strings.Join(st.Paths, ", "))
+		fmt.Fprintf(&sb, "  paths:      %s\n", strings.Join(st.Paths, " · "))
 	}
 	fmt.Fprintf(&sb, "  mode:       %s (ceiling: %s)\n", mode, m.subagents.ParentMode())
 	fmt.Fprintf(&sb, "  tool calls: %d\n", st.ToolCalls)
@@ -1177,7 +1177,7 @@ func (m Model) childStatsReport(name string) string {
 func (m Model) childModeStatus(name string) string {
 	mode, ok := m.subagents.AgentMode(name)
 	if !ok {
-		return "No agent named " + name + "."
+		return "no agent named " + name
 	}
 	ceiling := m.subagents.ParentMode()
 	cycle := m.policy.cycle

@@ -24,8 +24,8 @@
 
 · the classifier unavailable: its notice and the refused command in the command's place
    ⚙ read    internal/agent/loop.go      1 line
-  Classifier unavailable (the classifier could not
-  evaluate this action: api down); asking you instead.
+  classifier unavailable (the classifier could not
+  evaluate this action: api down); asking you instead
   ▎⊘ run     go test ./internal/…  denied · you      —
    ⚙ read    internal/ui/chat/turn.go    1 line
 
@@ -45,8 +45,8 @@
 
 · the classifier unavailable: its notice and the refused command in the command's place
    ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/loop.go␛[m      ␛[38;5;245m1 line␛[m
-  ␛[38;5;241mClassifier unavailable (the classifier could not␛[m
-  ␛[38;5;241mevaluate this action: api down); asking you instead.␛[m
+  ␛[38;5;241mclassifier unavailable (the classifier could not␛[m
+  ␛[38;5;241mevaluate this action: api down); asking you instead␛[m
   ␛[38;5;214m▎␛[m␛[38;5;241m⊘␛[m ␛[38;5;241mrun␛[m     ␛[38;5;241mgo test ./internal/…␛[m  ␛[38;5;241mdenied · you␛[m      ␛[38;5;241m—␛[m
    ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/ui/chat/turn.go␛[m    ␛[38;5;245m1 line␛[m
 

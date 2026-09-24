@@ -190,7 +190,7 @@ func (m Model) enterFocusMode() (tea.Model, tea.Cmd) {
 			// would be noise and would spend the screen to say it.
 			return m, nil
 		}
-		const notice = "Nothing to focus yet — tool and command rows become expandable."
+		const notice = "READING has nothing to open yet — tool and command rows become expandable"
 		if m.attachedTo != "" {
 			m.noteChild(m.attachedTo, notice)
 		} else {

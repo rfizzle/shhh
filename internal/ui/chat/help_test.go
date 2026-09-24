@@ -26,7 +26,7 @@ import (
 func TestHelpNamesEveryDraftKey(t *testing.T) {
 	m := frameModel(t, 80, 30)
 	help := strings.ToLower(helpText(&m))
-	section := help[strings.Index(help, "keys:"):]
+	section := help[strings.Index(help, "\nkeys\n"):]
 	if section == "" {
 		t.Fatal("/help has no key section")
 	}
@@ -108,7 +108,7 @@ func TestHelpKeyColumnsComeFromTheRegister(t *testing.T) {
 			continue
 		}
 		for _, col := range r.column() {
-			if !strings.Contains(helpKeysText(), "\n  "+col+" ") {
+			if list := helpKeysText() + "\n"; !strings.Contains(list, "\n  "+col+" ") && !strings.Contains(list, "\n  "+col+"\n") {
 				t.Errorf("the rendered list has no row headed %q", col)
 			}
 		}

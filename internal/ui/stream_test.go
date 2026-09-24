@@ -39,7 +39,7 @@ func TestStreamModel_SpinnerBeforeFirstToken(t *testing.T) {
 	m := NewStreamModel(ch, noopCancel)
 
 	view := m.View()
-	if !strings.Contains(view, "Thinking") {
+	if !strings.Contains(view, "thinking…") {
 		t.Errorf("expected spinner/thinking text before first token, got: %q", view)
 	}
 	close(ch)
@@ -133,7 +133,7 @@ func TestStreamModel_ViewShowsOutputAfterTokens(t *testing.T) {
 	if !strings.Contains(view, "find . -name '*.go'") {
 		t.Errorf("expected command in view, got: %q", view)
 	}
-	if strings.Contains(view, "Thinking") {
+	if strings.Contains(view, "thinking…") {
 		t.Error("spinner should be gone after first token")
 	}
 }

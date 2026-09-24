@@ -80,7 +80,7 @@ func (m *Model) nextTurn() {
 // only route to it (docs/capabilities/subagents.md#what-they-share).
 func (m Model) notesCommand(args []string) (tea.Model, tea.Cmd) {
 	if m.notebook == nil {
-		return m.surfaceNotice("This session has no notebook.")
+		return m.surfaceNotice("this session has no notebook")
 	}
 	empty := m.notebook.Len() == 0
 	switch {
@@ -101,7 +101,7 @@ func (m Model) notesCommand(args []string) (tea.Model, tea.Cmd) {
 	case args[0] == "drop":
 		return m.surfaceNotice(m.dropNoteByName(args[1:]))
 	}
-	return m.surfaceNotice("Usage: /notes [drop <n>|clear]")
+	return m.surfaceNotice("usage: /notes [drop <n>|clear]")
 }
 
 // dropNoteByName is `/notes drop <n>` from the prompt, which goes on
@@ -109,16 +109,16 @@ func (m Model) notesCommand(args []string) (tea.Model, tea.Cmd) {
 // its number should not have to open one.
 func (m Model) dropNoteByName(args []string) string {
 	if len(args) == 0 {
-		return "Usage: /notes drop <n>"
+		return "usage: /notes drop <n>"
 	}
 	id, err := strconv.ParseInt(strings.TrimPrefix(args[0], "n"), 10, 64)
 	if err != nil {
-		return "Usage: /notes drop <n>"
+		return "usage: /notes drop <n>"
 	}
 	if err := m.notebook.Delete(id); err != nil {
-		return "Error: " + err.Error()
+		return failed("notes", err.Error())
 	}
-	return fmt.Sprintf("Dropped note n%d.", id)
+	return fmt.Sprintf("dropped note n%d", id)
 }
 
 // openNotes puts the screen up and marks what the notebook holds as read:
@@ -183,9 +183,9 @@ func (m Model) dropNotes(ids []string) (tea.Model, tea.Cmd) {
 	case 0:
 		m.notes.Notice = "Nothing was dropped."
 	case 1:
-		m.notes.Notice = "Dropped note " + dropped[0] + "."
+		m.notes.Notice = "dropped note " + dropped[0]
 	default:
-		m.notes.Notice = fmt.Sprintf("Dropped %d notes.", len(dropped))
+		m.notes.Notice = fmt.Sprintf("dropped %d notes", len(dropped))
 	}
 	m.notesSeen = notebook.Newest(m.notebook.List())
 	return m, nil

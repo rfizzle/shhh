@@ -47,6 +47,12 @@ func (m Model) systemNotice(text string) (tea.Model, tea.Cmd) {
 	return m.systemEntries([]entry{{kind: entrySystem, text: text}})
 }
 
+// helpNotice appends a help sheet as a notice: drawn from the sheet at the
+// pane's width, carrying the sheet as text for a copy and a search.
+func (m Model) helpNotice(sheet helpSheet) (tea.Model, tea.Cmd) {
+	return m.systemEntries([]entry{{kind: entrySystem, text: sheet.text(), help: sheet}})
+}
+
 // systemEntries is systemNotice for the rows a single act left behind, where
 // the act has already built them: the session boundary's own row is on the
 // grid rather than written as a sentence, so what it hands back is entries
@@ -77,7 +83,7 @@ func (m Model) openSessionDiff() (tea.Model, tea.Cmd) {
 	// Eviction is a gap in the record, so it goes where the header keeps it
 	// rather than into the title, which is what a narrow list clips first.
 	if dropped := m.changes.Evicted(); len(dropped) > 0 {
-		review.Note = fmt.Sprintf("%d turn(s) dropped", len(dropped))
+		review.Note = plural(len(dropped), "turn") + " dropped"
 	}
 	// The rows are read from the session's own files rather than from the
 	// diff it collapses to, because a file whose whole change is its mode has
@@ -95,9 +101,9 @@ func (m Model) openSessionDiff() (tea.Model, tea.Cmd) {
 // one whose records were evicted — the second is a gap, not a quiet session.
 func sessionDiffEmptyNotice(store *changeset.Store) string {
 	if dropped := store.Evicted(); len(dropped) > 0 {
-		return fmt.Sprintf("No changes are still recorded: %d earlier turn(s) were dropped to stay inside the changeset store's size limit.", len(dropped))
+		return fmt.Sprintf("no changes are still recorded: %s dropped to stay inside the changeset store's size limit", plural(len(dropped), "earlier turn"))
 	}
-	return "No files have been changed this session."
+	return "no files have been changed this session"
 }
 
 // noteEvictedTurns says which turns the changeset store dropped to stay
@@ -119,7 +125,7 @@ func (m *Model) noteEvictedTurns(evicted []int64) {
 		fate = "They are still on record, so they can still be reviewed and undone."
 	}
 	m.appendEntry(entry{kind: entrySystem, text: fmt.Sprintf(
-		"The changeset store is full: turn %s dropped from memory. %s",
+		"the changeset store is full: turn %s dropped from memory. %s",
 		strings.Join(labels, ", "), fate)})
 }
 
@@ -152,7 +158,7 @@ func (m Model) openFileDiff(path string) (tea.Model, tea.Cmd) {
 	// Nothing opened, so nothing is holding the cell a rail click was
 	// answered from.
 	m.railDiff = pointerPress{}
-	return m.systemNotice(fmt.Sprintf("%s has not been changed by this session. /diff shows every file that has.", path))
+	return m.systemNotice(fmt.Sprintf("%s has not been changed by this session. /diff shows every file that has", path))
 }
 
 // openDiffFull takes the given viewer full screen; esc returns to ret.

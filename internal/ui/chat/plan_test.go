@@ -149,7 +149,7 @@ func TestPlan_ApproveExecutesInChosenMode(t *testing.T) {
 	}
 	noted := false
 	for _, e := range m.transcript {
-		if e.kind == entrySystem && strings.Contains(e.text, "Plan approved — executing in accept-edits mode") {
+		if e.kind == entrySystem && strings.Contains(e.text, "plan approved — executing in accept-edits mode") {
 			noted = true
 		}
 	}
@@ -195,7 +195,7 @@ func TestPlan_KeepPlanningReturnsToInput(t *testing.T) {
 	}
 	found := false
 	for _, e := range m.transcript {
-		if e.kind == entrySystem && strings.Contains(e.text, "Keep planning") {
+		if e.kind == entrySystem && strings.Contains(e.text, "keep planning") {
 			found = true
 		}
 	}
@@ -217,7 +217,7 @@ func TestPlan_RejectStaysInPlanMode(t *testing.T) {
 	}
 	found := false
 	for _, e := range m.transcript {
-		if e.kind == entrySystem && strings.Contains(e.text, "Plan rejected") {
+		if e.kind == entrySystem && strings.Contains(e.text, "plan rejected") {
 			found = true
 		}
 	}
@@ -332,7 +332,7 @@ func TestPlan_SlashPlanSave(t *testing.T) {
 	m := runCapableModel("1. edit a.go\n2. run tests").WithWorkspace(dir)
 
 	handled, result := m.handleSlashCommand("/plan save my plan")
-	if !handled || !strings.Contains(result, "Plan saved to") {
+	if !handled || !strings.Contains(result, "plan saved to") {
 		t.Fatalf("/plan save should save, got %q", result)
 	}
 	path := filepath.Join(".shhh", "plans", "my-plan.md")
@@ -346,14 +346,14 @@ func TestPlan_SlashPlanSave(t *testing.T) {
 
 	// A default name is generated when none is given.
 	_, result = m.handleSlashCommand("/plan save")
-	if !strings.Contains(result, "Plan saved to") {
+	if !strings.Contains(result, "plan saved to") {
 		t.Fatalf("/plan save without a name should still save, got %q", result)
 	}
 
 	// Bare /plan is the checklist now; with no plan approved it says
 	// so, and still names the save form it replaced as the bare command.
 	_, bare := m.handleSlashCommand("/plan")
-	if !strings.Contains(bare, "No approved plan is running") || !strings.Contains(bare, "/plan save [name]") {
+	if !strings.Contains(bare, "no approved plan is running") || !strings.Contains(bare, "/plan save [name]") {
 		t.Fatalf("/plan with no approved plan should say so and name the forms, got %q", bare)
 	}
 }
@@ -362,7 +362,7 @@ func TestPlan_SlashPlanSaveWithoutPlan(t *testing.T) {
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
 	m := New(msgs, mockStream).WithWorkspace(t.TempDir())
 	_, result := m.handleSlashCommand("/plan save x")
-	if !strings.Contains(result, "No plan to save yet") {
+	if !strings.Contains(result, "no plan to save yet") {
 		t.Fatalf("saving with no assistant response should refuse, got %q", result)
 	}
 }
@@ -569,8 +569,8 @@ func TestPlanCard_SaveKeyWritesThePlanAndKeepsTheCard(t *testing.T) {
 	}
 	saved := ""
 	for _, e := range m.transcript {
-		if e.kind == entrySystem && strings.HasPrefix(e.text, "Plan saved to ") {
-			saved = strings.TrimPrefix(e.text, "Plan saved to ")
+		if e.kind == entrySystem && strings.HasPrefix(e.text, "plan saved to ") {
+			saved = strings.TrimPrefix(e.text, "plan saved to ")
 		}
 	}
 	if saved == "" {
@@ -780,7 +780,7 @@ func TestPlan_CarryRefusesWhenThereIsNoPlan(t *testing.T) {
 		t.Fatal("a card with no plan on it must not cross the session boundary")
 	}
 	last := m.transcript[len(m.transcript)-1]
-	if last.kind != entrySystem || !strings.Contains(last.text, "No plan to carry") {
+	if last.kind != entrySystem || !strings.Contains(last.text, "no plan to carry") {
 		t.Fatalf("the refusal should say why nothing happened, got %+v", last)
 	}
 }

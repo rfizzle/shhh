@@ -70,7 +70,7 @@ func TestChatPick_DeleteConfirmedRemovesTheChatAndKeepsThePicker(t *testing.T) {
 	if len(m.picker.Options) != 1 || m.picker.Options[0].Label != "beta" {
 		t.Fatalf("the rows should be rebuilt without alpha, got %+v", m.picker.Options)
 	}
-	if !strings.Contains(lastNote(m), `Deleted chat "alpha"`) {
+	if !strings.Contains(lastNote(m), `deleted chat "alpha"`) {
 		t.Fatalf("the transcript should note the delete, got %q", lastNote(m))
 	}
 }
@@ -248,10 +248,10 @@ func TestChatPick_TitleLeadsTheDescription(t *testing.T) {
 	}
 	m = sendText(t, m, "/chats")
 	desc := m.picker.Options[pickIndex(t, m, "alpha")].Desc
-	if !strings.HasPrefix(desc, "Greeting the tests · 1 turns, ") {
+	if !strings.HasPrefix(desc, "Greeting the tests · 1 turn · ") {
 		t.Fatalf("the title should lead the row, got %q", desc)
 	}
-	if desc := m.picker.Options[pickIndex(t, m, "beta")].Desc; !strings.HasPrefix(desc, "1 turns, ") {
+	if desc := m.picker.Options[pickIndex(t, m, "beta")].Desc; !strings.HasPrefix(desc, "1 turn · ") {
 		t.Fatalf("an untitled row keeps the plain description, got %q", desc)
 	}
 }

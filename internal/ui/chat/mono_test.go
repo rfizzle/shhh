@@ -36,10 +36,10 @@ func TestUICommand_MonoTogglesThePalette(t *testing.T) {
 		t.Fatalf("the reply should say what changed, got %q", result)
 	}
 
-	if _, result = m.handleSlashCommand("/ui mono"); !strings.Contains(result, "Monochrome: on") {
+	if _, result = m.handleSlashCommand("/ui mono"); !strings.Contains(result, "monochrome: on") {
 		t.Fatalf("bare /ui mono should report the state, got %q", result)
 	}
-	if _, result = m.handleSlashCommand("/ui"); !strings.Contains(result, "Monochrome: on") {
+	if _, result = m.handleSlashCommand("/ui"); !strings.Contains(result, "monochrome: on") {
 		t.Fatalf("bare /ui should report mono alongside verbosity, got %q", result)
 	}
 
@@ -59,7 +59,7 @@ func TestUICommand_VerbositySurvivesTheMonoArgument(t *testing.T) {
 	if _, result := m.handleSlashCommand("/ui verbosity"); !strings.Contains(result, "verbosity: high") {
 		t.Fatalf("bare /ui verbosity should report the level, got %q", result)
 	}
-	if _, result := m.handleSlashCommand("/ui density low"); !strings.Contains(result, "Usage:") {
+	if _, result := m.handleSlashCommand("/ui density low"); !strings.Contains(result, "usage:") {
 		t.Fatalf("an unknown subcommand should show usage, got %q", result)
 	}
 }

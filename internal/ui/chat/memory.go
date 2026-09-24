@@ -182,18 +182,18 @@ type memoryEditorDoneMsg struct {
 // a turn or a decision in flight would be lost behind it (editor.go).
 func (m Model) openMemoryEditor(arg string) (tea.Model, tea.Cmd) {
 	if m.memory.EntryText == nil || m.memory.Rewrite == nil {
-		return m.systemNotice("Durable memory is unavailable in this session.")
+		return m.systemNotice("durable memory is unavailable in this session")
 	}
 	if reason, refused := m.editorRefusal(); refused {
 		return m.surfaceNotice(reason)
 	}
 	id, err := memory.ParseID(arg)
 	if err != nil {
-		return m.systemNotice("Error: " + err.Error())
+		return m.systemNotice(failed("memory", err.Error()))
 	}
 	text, err := m.memory.EntryText(id)
 	if err != nil {
-		return m.systemNotice("Error: " + err.Error())
+		return m.systemNotice(failed("memory", err.Error()))
 	}
 	path, err := writeDraftFile(text)
 	if err != nil {
@@ -224,11 +224,11 @@ func (m Model) memoryEditorFinished(msg memoryEditorDoneMsg) (tea.Model, tea.Cmd
 		// it is also what a quit on a file the editor never wrote looks like
 		// from here. Neither is a request to delete the memory, and there is
 		// a command that is.
-		return m.systemNotice(fmt.Sprintf("The editor came back empty, so the memory is as it was; /memory forget m%d drops one.", msg.id))
+		return m.systemNotice(fmt.Sprintf("the editor came back empty, so the memory is as it was; /memory forget m%d drops one", msg.id))
 	}
 	note, err := m.memory.Rewrite(msg.id, text)
 	if err != nil {
-		return m.systemNotice("Error: " + err.Error())
+		return m.systemNotice(failed("memory", err.Error()))
 	}
 	return m.systemNotice(note)
 }

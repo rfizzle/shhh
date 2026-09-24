@@ -59,7 +59,7 @@ func (m Model) scaffoldOffered() bool {
 // scaffoldCommand is /init: the card, or the reason there is none.
 func (m Model) scaffoldCommand() (tea.Model, tea.Cmd) {
 	if m.scaffold.Write == nil {
-		return m.systemNotice("This session has no checkout to scaffold.")
+		return m.systemNotice("this session has no checkout to scaffold")
 	}
 	return m.openScaffold()
 }
@@ -135,11 +135,11 @@ func (m *Model) declineScaffold() string {
 	m.scaffold.Offer = false
 	if m.scaffold.Decline != nil {
 		if err := m.scaffold.Decline(); err != nil {
-			return "Nothing written. The refusal could not be remembered: " + err.Error()
+			return "nothing written. The refusal could not be remembered: " + err.Error()
 		}
 	}
-	return "Nothing written. This checkout will not be offered again; " +
-		scaffoldCommandName + " asks any time."
+	return "nothing written. This checkout will not be offered again; " +
+		scaffoldCommandName + " asks any time"
 }
 
 // writeScaffold takes the offer.
@@ -149,7 +149,7 @@ func (m *Model) writeScaffold() string {
 		return "Could not scaffold this project: " + err.Error()
 	}
 	m.scaffold.Offer = false
-	return "Wrote " + path + ". Describe this project's tooling and conventions in it; " +
+	return "wrote " + path + ". Describe this project's tooling and conventions in it; " +
 		"it is read into the system prompt from the next session on."
 }
 

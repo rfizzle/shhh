@@ -385,9 +385,9 @@ func (m Model) updateChatRename(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) 
 // transcript, which stays visible above the picker.
 func (m *Model) deleteChat(name string) {
 	if err := m.db.DeleteChat(name); err != nil {
-		m.appendEntry(entry{kind: entrySystem, text: "Could not delete: " + err.Error()})
+		m.appendEntry(entry{kind: entrySystem, text: "could not delete: " + err.Error()})
 	} else {
-		m.appendEntry(entry{kind: entrySystem, text: fmt.Sprintf("Deleted chat %q.", name)})
+		m.appendEntry(entry{kind: entrySystem, text: fmt.Sprintf("deleted chat %q", name)})
 	}
 	m.refreshChatPick()
 }
@@ -400,11 +400,11 @@ func (m *Model) renameChat(oldName, newName string) {
 	var exists storage.ChatExistsError
 	switch {
 	case errors.As(err, &exists):
-		m.appendEntry(entry{kind: entrySystem, text: fmt.Sprintf("Could not rename: a chat named %q already exists.", exists.Name)})
+		m.appendEntry(entry{kind: entrySystem, text: fmt.Sprintf("could not rename: a chat named %q already exists", exists.Name)})
 	case err != nil:
-		m.appendEntry(entry{kind: entrySystem, text: "Could not rename: " + err.Error()})
+		m.appendEntry(entry{kind: entrySystem, text: "could not rename: " + err.Error()})
 	default:
-		m.appendEntry(entry{kind: entrySystem, text: fmt.Sprintf("Renamed chat %q to %q.", oldName, newName)})
+		m.appendEntry(entry{kind: entrySystem, text: fmt.Sprintf("renamed chat %q to %q", oldName, newName)})
 	}
 	m.refreshChatPick()
 }
@@ -419,7 +419,7 @@ func (m *Model) refreshChatPick() {
 	if err != nil || len(entries) == 0 {
 		m.closePicker()
 		if err == nil {
-			m.appendEntry(entry{kind: entrySystem, text: "No saved chats."})
+			m.appendEntry(entry{kind: entrySystem, text: "no saved chats"})
 			m.viewport.SetLines(m.renderHistoryLines())
 			m.viewport.GotoBottom()
 		}

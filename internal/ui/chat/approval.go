@@ -395,7 +395,7 @@ func (m Model) advanceApprovalQueue() (tea.Model, tea.Cmd) {
 		m.agent.ResolveApproval(m.refusedResult(req.call, refusal))
 		m.appendCallRow(req.call.ID, entry{
 			kind: entrySystem,
-			text: "Refused — nothing is containing commands in this session: " + req.summary,
+			text: "refused — nothing is containing commands in this session: " + req.summary,
 			// The expansion is what the model was told, verbatim, including
 			// the fix for this host: the reader is the one who can act on it.
 			toolResult: refusal,
@@ -685,7 +685,7 @@ func (m Model) finishClassifierCheck(v agent.ClassifierVerdict) (tea.Model, tea.
 		// will: in the call's place in its round, just in front of the row
 		// the card's answer files there, rather than at the end of the feed
 		// under the calls that ran while this one waited (queue.go).
-		m.appendCallRow(req.call.ID, entry{kind: entrySystem, text: "Classifier unavailable (" + v.Reason + "); asking you instead."})
+		m.appendCallRow(req.call.ID, entry{kind: entrySystem, text: "classifier unavailable (" + v.Reason + "); asking you instead"})
 		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoBottom()
 	} else {

@@ -266,7 +266,7 @@ func TestReview_NumberedTurnAndUsage(t *testing.T) {
 	if m.state == stateReview {
 		t.Fatal("a non-numeric turn should not open a surface")
 	}
-	if got := m.transcript[len(m.transcript)-1].text; !strings.Contains(got, "Usage: /review") {
+	if got := m.transcript[len(m.transcript)-1].text; !strings.Contains(got, "usage: /review") {
 		t.Fatalf("a bad argument should answer with the usage, got %q", got)
 	}
 }

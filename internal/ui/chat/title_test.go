@@ -237,7 +237,7 @@ func TestTitle_UICommandTogglesAndReports(t *testing.T) {
 	p := &titleProvider{title: "Nope"}
 	m, _ := titledModel(t, p)
 
-	if out := m.uiCommand([]string{"/ui", "title"}); !strings.Contains(out, "Session titles: on (fast)") {
+	if out := m.uiCommand([]string{"/ui", "title"}); !strings.Contains(out, "session titles: on (fast)") {
 		t.Fatalf("the readout should say on and with what, got %q", out)
 	}
 	if out := m.uiCommand([]string{"/ui", "title", "off"}); !strings.Contains(out, "off") {
@@ -247,10 +247,10 @@ func TestTitle_UICommandTogglesAndReports(t *testing.T) {
 	if _, ok := driveTitle(t, cmd); ok || p.calls != 0 {
 		t.Fatalf("off means no request, calls=%d", p.calls)
 	}
-	if out := m.uiCommand([]string{"/ui"}); !strings.Contains(out, "Session titles: off") {
+	if out := m.uiCommand([]string{"/ui"}); !strings.Contains(out, "session titles: off") {
 		t.Fatalf("the bare /ui should name the setting, got %q", out)
 	}
-	if out := m.uiCommand([]string{"/ui", "title", "sideways"}); !strings.Contains(out, "Error") {
+	if out := m.uiCommand([]string{"/ui", "title", "sideways"}); !strings.HasPrefix(out, "✗ ui  ") {
 		t.Fatalf("an unknown value is an error, got %q", out)
 	}
 

@@ -1,0 +1,14 @@
+# program test: TestProgram_NoticesSpeakInTheReadmesVoice
+#
+# The session speaking in its own voice: a notice in lower case with no full
+# stop, the key list laid out on the grid at the pane's width in the bracket
+# grammar, and a request the provider refused drawn as a failure row — the
+# ✗, the act, and the provider's own words under it — where it used to be a
+# line starting `Error:`.
+snap 01-start "Some things worth doing first"
+keys "/copy" Enter
+snap 02-notice "nothing to copy yet"
+keys C-]
+snap 03-keys "approval prompts: allow / deny" "[y/n/a]" "print this key list"
+keys "why does the loop stop" Enter
+snap 04-refused "401 unauthorized" "Incorrect API key provided" "✗ model"

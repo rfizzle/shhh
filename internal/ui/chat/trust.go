@@ -100,7 +100,7 @@ func (m Model) trustStatus() string {
 func (m Model) trustCommand(args []string) string {
 	manage := m.trust().Manage
 	if manage == nil {
-		return "Trust is not answered from this session; `shhh trust` records it."
+		return "trust is not answered from this session; `shhh trust` records it"
 	}
 	return manage(args)
 }

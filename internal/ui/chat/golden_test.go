@@ -730,12 +730,14 @@ func TestGolden_DraftGrammar(t *testing.T) {
 	})
 }
 
-// TestGolden_HelpKeys pins the key section as the key list prints it — one
-// width, because the row wraps like any system row and the words are what is
-// under test: a rebind that reaches the dispatch without reaching this sheet
-// is the drift the register exists to stop.
+// TestGolden_HelpKeys pins the key section as the key list prints it, at
+// every width and bounded: the list is laid out at the pane's width, so a row
+// that ran past the right edge fails here rather than being written into the
+// file it is checked against. The words are under test too: a rebind that
+// reaches the dispatch without reaching this sheet is the drift the register
+// exists to stop.
 func TestGolden_HelpKeys(t *testing.T) {
-	captureGolden(t, "help-keys", "the /help key section as a system row", []int{80}, func(width int) []golden.Panel {
+	captureBoundedGolden(t, "help-keys", "the /help key section as a system row", goldenWidths, func(width int) []golden.Panel {
 		m := frameModel(t, width, 40)
 		mm, _ := m.Update(tea.KeyPressMsg{Code: ']', Mod: tea.ModCtrl})
 		m = mm.(Model)
@@ -752,10 +754,11 @@ func TestGolden_HelpKeys(t *testing.T) {
 // can be typed here, and none for one that would answer that it is not part
 // of this session.
 //
-// One width, because the rows wrap like any system row and the words are what
-// is under test.
+// Every width, bounded, and drawn as the transcript draws it — the command
+// column in body, the prose in the notice's grey — so the sheet's colour is
+// under test as well as its words.
 func TestGolden_HelpChat(t *testing.T) {
-	captureGolden(t, "help-chat", "the /help command list in each session", []int{80}, func(width int) []golden.Panel {
+	captureBoundedGolden(t, "help-chat", "the /help command list in each session", goldenWidths, func(width int) []golden.Panel {
 		root := t.TempDir()
 		if err := os.MkdirAll(todo.Dir(root), 0o755); err != nil {
 			t.Fatal(err)
@@ -765,7 +768,7 @@ func TestGolden_HelpChat(t *testing.T) {
 			Detail: func(*todo.Store, todo.Item) string { return "" }}
 		build := func(m Model) string {
 			m = m.WithTodos(backlog).WithNotebook(notebook.New(nil))
-			return strings.Join(strings.Split(helpText(&m), "\n\nKeys:")[:1], "")
+			return m.systemRow(entry{kind: entrySystem, help: helpSheet{m.helpSheet()[0]}}, width)
 		}
 		return []golden.Panel{
 			{Label: "a conversation", View: build(frameModel(t, width, 40).WithConversation())},

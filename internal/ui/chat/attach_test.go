@@ -371,7 +371,7 @@ func TestAttachedScopedCommands(t *testing.T) {
 	m.input.SetValue("/save")
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
-	if !childTranscriptContains(sup, "researcher-1", "Commands while attached") {
+	if !childTranscriptContains(sup, "researcher-1", "commands while attached") {
 		t.Fatal("scoped-command hint missing")
 	}
 }
@@ -391,7 +391,7 @@ func TestAttachedModeClampedToCeiling(t *testing.T) {
 	if mode, _ := sup.AgentMode("researcher-1"); mode != agent.ModeReadOnly {
 		t.Fatalf("child mode = %s, want read-only", mode)
 	}
-	if !childTranscriptContains(sup, "researcher-1", "Disabled") {
+	if !childTranscriptContains(sup, "researcher-1", "disabled") {
 		t.Fatal("disabled over-ceiling modes not surfaced")
 	}
 
@@ -834,7 +834,7 @@ func TestRetryFailedChildFromTheList(t *testing.T) {
 	if st, _ := sup.Get("researcher-1"); st.Task != "long survey" {
 		t.Fatalf("the retry must keep the original task, got %q", st.Task)
 	}
-	if !transcriptContains(m, "Retrying researcher-1 on its original task.") {
+	if !transcriptContains(m, "retrying researcher-1 on its original task") {
 		t.Fatal("transcript missing the retry entry")
 	}
 }
@@ -1256,7 +1256,7 @@ func TestAgentsOverAParkedCardSaysWhatHoldsThePanel(t *testing.T) {
 		if !transcriptContains(m, tc.names) {
 			t.Fatalf("%v: the refusal names what holds the panel", tc.state)
 		}
-		if !transcriptContains(m, "Answer it or press esc, then the agents open.") {
+		if !transcriptContains(m, "Answer it or press esc, then the agents open") {
 			t.Fatalf("%v: the refusal names the way out", tc.state)
 		}
 	}

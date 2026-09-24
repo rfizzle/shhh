@@ -7,11 +7,17 @@ package cli
 import (
 	"bytes"
 	"context"
+	"fmt"
+	"image/color"
 	"sort"
 	"strings"
 	"testing"
 
+	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/colorprofile"
+	"github.com/charmbracelet/x/exp/charmtone"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/spf13/cobra"
 )
 
@@ -32,6 +38,54 @@ func renderHelp(t *testing.T, path ...string) string {
 		t.Fatalf("shhh %s --help: %v", strings.Join(path, " "), err)
 	}
 	return out.String()
+}
+
+// The page is dressed in the product's palette rather than fang's own. This
+// is the one assertion here that reads colour, so it is the one render that
+// does not force NO_COLOR: it forces colour on instead, at 256 colours, and
+// looks for a heading in the palette's info token.
+func TestHelpIsDrawnInThePalette(t *testing.T) {
+	t.Setenv("__FANG_TEST_WIDTH", "80")
+	t.Setenv("NO_COLOR", "")
+	t.Setenv("CLICOLOR_FORCE", "1")
+	t.Setenv("TERM", "xterm-256color")
+	t.Setenv("COLORTERM", "")
+	// The palette's rung is settled against stdout at start, which is not a
+	// terminal under go test; the binary on a terminal has one.
+	was := components.Profile()
+	components.SetProfile(colorprofile.ANSI256)
+	t.Cleanup(func() { components.SetProfile(was) })
+	cmd := NewRootCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs([]string{"--help"})
+	if err := execute(context.Background(), cmd); err != nil {
+		t.Fatalf("shhh --help: %v", err)
+	}
+	want, fangs := foregroundSGR(components.Palette.Info.Color()), foregroundSGR(charmtone.Charple)
+	if want == fangs {
+		t.Fatal("the control is wrong: the palette's info token and fang's title colour are the same escape")
+	}
+	page := out.String()
+	i := strings.Index(page, "USAGE")
+	if i < 0 {
+		t.Fatalf("--help has no USAGE heading:\n%q", page)
+	}
+	sgr := strings.TrimSuffix(strings.TrimPrefix(page[strings.LastIndex(page[:i], "\x1b["):i], "\x1b["), "m")
+	if sgr != want && !strings.HasSuffix(sgr, ";"+want) {
+		t.Errorf("--help's heading is drawn with %q, not the palette's info token %q", sgr, want)
+	}
+}
+
+// foregroundSGR is the parameters a 256-colour terminal is sent for a
+// foreground colour — `94`, or `38;5;<n>` — without the escape around them.
+func foregroundSGR(c color.Color) string {
+	var b strings.Builder
+	w := colorprofile.NewWriter(&b, []string{"TERM=xterm-256color", "CLICOLOR_FORCE=1"})
+	fmt.Fprint(w, lipgloss.NewStyle().Foreground(c).Render("x"))
+	params, _, _ := strings.Cut(strings.TrimPrefix(b.String(), "\x1b["), "m")
+	return params
 }
 
 // modelFlags are the four that decide where a request goes. A command either

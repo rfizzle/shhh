@@ -34,8 +34,8 @@
     alt needs Option as Meta — shhh doctor
   tree moved — 14 paths changed outside this session ·
   5,811 ignored
-  Error: the notebook is read-only, so nothing was
-  written down
+  ✗ the notebook is read-only, so nothing was written
+  down
    ≡ summary   ▸ on target · 2 lines · [enter]…
 
    ✓ Done · 2 steps · 6 tools · 24.7s · $0.14
@@ -63,8 +63,8 @@
       alt needs Option as Meta — shhh doctor            ┃   
     tree moved — 14 paths changed outside this session ·┃   
     5,811 ignored                                       ┃   
-    Error: the notebook is read-only, so nothing was    ┃   
-    written down                                        ┃   
+    ✗ the notebook is read-only, so nothing was written ┃   
+    down                                                ┃   
      ≡ summary   ▸ on target · 2 lines · [enter]…       ┃   
                                                         ┃   
      ✓ Done · 2 steps · 6 tools · 24.7s · $0.14         ┃   
@@ -101,8 +101,8 @@
     alt needs Option as Meta — shhh doctor
   tree moved — 14 paths changed outside this session ·
   5,811 ignored
-  Error: the notebook is read-only, so nothing was
-  written down
+  ✗ the notebook is read-only, so nothing was written
+  down
    ≡ summary   ▸ on target · 2 lines · [enter]…
 
    ✓ Done · 2 steps · 6 tools · 24.7s · $0.14
@@ -135,8 +135,8 @@
     ␛[38;5;244malt needs Option as Meta — shhh doctor␛[m
   ␛[38;5;244mtree moved — 14 paths changed outside this session ·␛[m
   ␛[38;5;244m5,811 ignored␛[m
-  ␛[38;5;254mError: the notebook is read-only, so nothing was␛[m
-  ␛[38;5;254mwritten down␛[m
+  ␛[38;5;254m✗ the notebook is read-only, so nothing was written␛[m
+  ␛[38;5;254mdown␛[m
    ␛[38;5;244m≡␛[m ␛[38;5;254msummary␛[m ␛[38;5;254m␛[m  ␛[38;5;244m▸ on target␛[m␛[38;5;244m · ␛[m␛[38;5;244m2 lines␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]…␛[m
 
    ␛[38;5;254m✓␛[m ␛[38;5;254mDone␛[m␛[38;5;244m · 2 steps · 6 tools · 24.7s · $0.14␛[m
@@ -164,8 +164,8 @@
       ␛[38;5;244malt needs Option as Meta — shhh doctor␛[m            ␛[38;5;244m┃␛[m   
     ␛[38;5;244mtree moved — 14 paths changed outside this session ·┃␛[m   
     ␛[38;5;244m5,811 ignored␛[m                                       ␛[38;5;244m┃␛[m   
-    ␛[38;5;254mError: the notebook is read-only, so nothing was␛[m    ␛[38;5;244m┃␛[m   
-    ␛[38;5;254mwritten down␛[m                                        ␛[38;5;244m┃␛[m   
+    ␛[38;5;254m✗ the notebook is read-only, so nothing was written␛[m ␛[38;5;244m┃␛[m   
+    ␛[38;5;254mdown␛[m                                                ␛[38;5;244m┃␛[m   
      ␛[38;5;244m≡␛[m ␛[38;5;254msummary␛[m   ␛[38;5;244m▸ on target · 2 lines · ␛[38;5;254m[enter]…␛[m       ␛[38;5;244m┃␛[m   
                                                         ␛[38;5;244m┃␛[m   
      ␛[38;5;254m✓␛[m ␛[38;5;254mDone␛[38;5;244m · 2 steps · 6 tools · 24.7s · $0.14␛[m         ␛[38;5;244m┃␛[m   
@@ -202,8 +202,8 @@
     ␛[38;5;244malt needs Option as Meta — shhh doctor␛[m
   ␛[38;5;244mtree moved — 14 paths changed outside this session ·␛[m
   ␛[38;5;244m5,811 ignored␛[m
-  ␛[38;5;254mError: the notebook is read-only, so nothing was␛[m
-  ␛[38;5;254mwritten down␛[m
+  ␛[38;5;254m✗ the notebook is read-only, so nothing was written␛[m
+  ␛[38;5;254mdown␛[m
    ␛[38;5;244m≡␛[m ␛[38;5;254msummary␛[m ␛[38;5;254m␛[m  ␛[38;5;244m▸ on target␛[m␛[38;5;244m · ␛[m␛[38;5;244m2 lines␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]…␛[m
 
    ␛[38;5;254m✓␛[m ␛[38;5;254mDone␛[m␛[38;5;244m · 2 steps · 6 tools · 24.7s · $0.14␛[m

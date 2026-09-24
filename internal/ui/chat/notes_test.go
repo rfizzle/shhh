@@ -128,7 +128,7 @@ func TestNotes_DropAsksAndKeepsTheScreen(t *testing.T) {
 	if m.notebook.Len() != 2 {
 		t.Fatalf("the confirmed drop left %d notes", m.notebook.Len())
 	}
-	if !strings.Contains(strings.Join(m.notesLines(), "\n"), "Dropped note n1.") {
+	if !strings.Contains(strings.Join(m.notesLines(), "\n"), "dropped note n1") {
 		t.Error("the screen did not say what went")
 	}
 }
@@ -167,7 +167,7 @@ func TestNotes_ClearAsksBeforeItEmptiesTheNotebook(t *testing.T) {
 	if m.notebook.Len() != 0 {
 		t.Fatalf("the confirmed clear left %d notes", m.notebook.Len())
 	}
-	if !strings.Contains(strings.Join(m.notesLines(), "\n"), "Dropped 3 notes.") {
+	if !strings.Contains(strings.Join(m.notesLines(), "\n"), "dropped 3 notes") {
 		t.Error("the screen did not say what went")
 	}
 }
@@ -195,20 +195,20 @@ func TestNotes_EnterReadsTheNoteWhole(t *testing.T) {
 // are the whole of it.
 func TestNotes_DropByNumberStillWorksFromThePrompt(t *testing.T) {
 	m := notesModel(t, 100)
-	if got := m.dropNoteByName([]string{"n2"}); got != "Dropped note n2." {
+	if got := m.dropNoteByName([]string{"n2"}); got != "dropped note n2" {
 		t.Fatalf("drop said %q", got)
 	}
 	if m.notebook.Len() != 2 {
 		t.Fatalf("drop left %d notes", m.notebook.Len())
 	}
-	if got := m.dropNoteByName([]string{"n2"}); !strings.HasPrefix(got, "Error:") {
+	if got := m.dropNoteByName([]string{"n2"}); !strings.HasPrefix(got, "✗ notes  ") {
 		t.Fatalf("dropping a note twice said %q", got)
 	}
-	if got := m.dropNoteByName(nil); !strings.HasPrefix(got, "Usage:") {
+	if got := m.dropNoteByName(nil); !strings.HasPrefix(got, "usage:") {
 		t.Fatalf("a bare drop said %q", got)
 	}
 	m = sendText(t, m, "/notes burn")
-	if !strings.Contains(strings.Join(m.renderHistoryLines(), "\n"), "Usage:") {
+	if !strings.Contains(strings.Join(m.renderHistoryLines(), "\n"), "usage:") {
 		t.Error("an unknown word said nothing about the usage")
 	}
 }

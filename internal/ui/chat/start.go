@@ -450,7 +450,7 @@ func startNotes(info StartInfo) []components.StartNote {
 		})
 	case len(info.Trust.Changed) > 0:
 		notes = append(notes, components.StartNote{
-			Label: "trust", Value: strings.Join(info.Trust.Changed, ", "),
+			Label: "trust", Value: strings.Join(info.Trust.Changed, " · "),
 			Detail: "changed since you trusted it · shhh trust off withdraws it",
 		})
 	}

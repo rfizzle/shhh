@@ -696,50 +696,65 @@ func (m Model) policyLabel() string {
 	return "auto: " + strings.Join(parts, "+")
 }
 
-// policyHelp describes the active approval policy, appended to /help output.
-func (m Model) policyHelp() string {
+// policyHelp is the approval policy as text, the way /help lays it out.
+func (m Model) policyHelp() string { return helpSheet{m.policySection()}.text() }
+
+// policySection describes the active approval policy, the last section of
+// /help: a field a row, in the head column, with what it is set to beside
+// it.
+func (m Model) policySection() helpSection {
 	status := func(on bool) string {
 		if on {
 			return "auto-allow (this session)"
 		}
 		return "ask"
 	}
-	var sb strings.Builder
-	sb.WriteString("Approval policy:\n")
-	fmt.Fprintf(&sb, "  mode:      %s (%s)\n", m.policy.mode, m.policy.mode.Describe())
+	s := helpSection{title: "approval policy", head: policyHeadWidth}
+	row := func(head, text string) {
+		r := helpRow{paras: []string{text}}
+		if head != "" {
+			r.head = []string{head}
+		}
+		s.rows = append(s.rows, r)
+	}
+	row("mode", fmt.Sprintf("%s (%s)", m.policy.mode, m.policy.mode.Describe()))
 	live := m.liveGrants()
-	sb.WriteString("  edits:     " + status(live.AllEdits) + scopeSuffix(len(live.EditDirs)+len(live.EditPaths), "place", "places") + "\n")
-	sb.WriteString("  commands:  " + status(live.AllCommands) + scopeSuffix(len(live.Commands)+len(live.ExactCommands), "command shape", "command shapes") + "\n")
+	row("edits", status(live.AllEdits)+scopeSuffix(len(live.EditDirs)+len(live.EditPaths), "place", "places"))
+	row("commands", status(live.AllCommands)+scopeSuffix(len(live.Commands)+len(live.ExactCommands), "command shape", "command shapes"))
 	if n := len(live.Hosts); n > 0 || len(m.policy.allowHosts) > 0 {
-		fmt.Fprintf(&sb, "  hosts:     %s fetched without asking (%d granted, %d from config)\n",
-			plural(n+len(m.policy.allowHosts), "host"), n, len(m.policy.allowHosts))
+		row("hosts", fmt.Sprintf("%s fetched without asking (%d granted, %d from config)",
+			plural(n+len(m.policy.allowHosts), "host"), n, len(m.policy.allowHosts)))
 	}
 	if n := len(m.policy.allowlist); n > 0 {
-		fmt.Fprintf(&sb, "  allowlist: %d command pattern(s) from config auto-approve\n", n)
+		row("allowlist", plural(n, "command pattern")+" from config auto-approve")
 	}
 	if n := len(m.policy.denylist); n > 0 {
-		fmt.Fprintf(&sb, "  denylist:  %d command pattern(s) from config are refused in every mode\n", n)
+		row("denylist", plural(n, "command pattern")+" from config are refused in every mode")
 	}
 	if live.Any() {
-		sb.WriteString("  /permissions grants names them; /permissions revoke takes them back.\n")
+		row("", "/permissions grants names them; /permissions revoke takes them back")
 	}
 	if m.policy.readOnlyDisabled {
-		sb.WriteString("  read-only: prompts (behavior.read_only_auto = false)\n")
+		row("read-only", "prompts (behavior.read_only_auto = false)")
 	} else {
-		fmt.Fprintf(&sb, "  read-only: %d inspection command(s) run without asking", len(agent.ReadOnlyCommands())+len(m.policy.readOnlyExtra))
-		sb.WriteString(" (ls, cat, grep, git status, …)\n")
+		row("read-only", plural(len(agent.ReadOnlyCommands())+len(m.policy.readOnlyExtra), "inspection command")+
+			" run without asking (ls, cat, grep, git status, …)")
 	}
 	if n := len(m.scopeDirs()); n > 0 {
-		fmt.Fprintf(&sb, "  scope:     the session directory and %d added %s (/add-dir)\n", n, plural2(n, "directory", "directories"))
+		row("scope", fmt.Sprintf("the session directory and %d added %s (/add-dir)", n, plural2(n, "directory", "directories")))
 	} else if m.scope != nil {
-		sb.WriteString("  scope:     the session directory; anything outside it asks (/add-dir)\n")
+		row("scope", "the session directory; anything outside it asks (/add-dir)")
 	}
 	if m.subagents != nil {
-		sb.WriteString("  sub-agents inherit this mode, these grants, and the classifier.\n")
+		row("", "sub-agents inherit this mode, these grants, and the classifier")
 	}
-	sb.WriteString("  Safety-flagged commands, and anything outside the working scope, always ask.")
-	return sb.String()
+	row("", "safety-flagged commands, and anything outside the working scope, always ask")
+	return s
 }
+
+// policyHeadWidth is the policy's field column: its longest name,
+// `allowlist`, and the gap after it.
+const policyHeadWidth = 11
 
 // scopeDirs is what the session has added to its working scope, or nothing
 // when the session has no scope wired (older tests, `shhh chat` without one).
@@ -775,8 +790,8 @@ func (m Model) grantStatus() string {
 	g := m.grants()
 	if !g.Any() && !m.policy.turn.Any() && len(m.policy.roles) == 0 && len(m.policy.allowlist) == 0 && len(m.policy.denylist) == 0 &&
 		len(m.policy.allowHosts) == 0 && len(m.policy.denyHosts) == 0 && len(m.scopeDirs()) == 0 {
-		return "Nothing is granted — every gated call asks.\n" +
-			"[a] on a confirm prompt offers the grants that call can make, each with when it ends; /permissions allow <commands|edits> grants the category."
+		return "nothing is granted — every gated call asks.\n" +
+			"[a] on a confirm prompt offers the grants that call can make, each with when it ends; /permissions allow <commands|edits> grants the category"
 	}
 	var sb strings.Builder
 	sb.WriteString("Grants:\n")
@@ -806,10 +821,10 @@ func (m Model) grantStatus() string {
 		sb.WriteString("  scope      " + displayDir(d) + " — in the working scope (/add-dir drop takes it back)\n")
 	}
 	if n := len(m.policy.allowlist); n > 0 {
-		fmt.Fprintf(&sb, "  config     %d command pattern(s) from behavior.command_allowlist — not this session's to revoke\n", n)
+		fmt.Fprintf(&sb, "  config     %s from behavior.command_allowlist — not this session's to revoke\n", plural(n, "command pattern"))
 	}
 	if n := len(m.policy.denylist); n > 0 {
-		fmt.Fprintf(&sb, "  config     %d command pattern(s) from behavior.command_denylist — refused before anything here can allow them\n", n)
+		fmt.Fprintf(&sb, "  config     %s from behavior.command_denylist — refused before anything here can allow them\n", plural(n, "command pattern"))
 	}
 	for _, h := range m.policy.allowHosts {
 		sb.WriteString("  config     " + h + " from web.allow_hosts — not this session's to revoke\n")
@@ -857,25 +872,25 @@ func writeGrants(sb *strings.Builder, g agent.Grants, ends string) {
 // taken once, in front of no particular one of them.
 func (m *Model) allowCommand(args []string) string {
 	if len(args) != 1 {
-		return "Usage: /permissions allow <commands|edits> — the blanket grants. For one shape of call, [a] on its confirm prompt."
+		return "usage: /permissions allow <commands|edits> — the blanket grants. For one shape of call, [a] on its confirm prompt"
 	}
 	switch args[0] {
 	case "commands", "cmds":
 		if m.policy.allCommands {
-			return "Commands already run without asking. /permissions revoke commands takes it back."
+			return "commands already run without asking. /permissions revoke commands takes it back"
 		}
 		m.policy.allCommands = true
 		m.syncGrants()
-		return "Every command will now run without asking, except the safety-flagged ones, which always ask.\n/permissions revoke commands takes it back."
+		return "every command will now run without asking, except the safety-flagged ones, which always ask.\n/permissions revoke commands takes it back"
 	case "edits":
 		if m.policy.allEdits {
-			return "Edits already apply without asking. /permissions revoke edits takes it back."
+			return "edits already apply without asking. /permissions revoke edits takes it back"
 		}
 		m.policy.allEdits = true
 		m.syncGrants()
-		return "Every edit will now apply without asking, anywhere in the workspace.\n/permissions revoke edits takes it back."
+		return "every edit will now apply without asking, anywhere in the workspace.\n/permissions revoke edits takes it back"
 	}
-	return "Usage: /permissions allow <commands|edits>"
+	return "usage: /permissions allow <commands|edits>"
 }
 
 // revokeCommand is `/permissions revoke`: the way back a session grant never
@@ -884,7 +899,7 @@ func (m *Model) allowCommand(args []string) string {
 // which refuses everything — undid that.
 func (m *Model) revokeCommand(args []string) string {
 	if len(args) > 1 {
-		return "Usage: /permissions revoke [edits|commands|hosts|agents]"
+		return "usage: /permissions revoke [edits|commands|hosts|agents]"
 	}
 	scope := "all"
 	if len(args) == 1 {
@@ -939,13 +954,13 @@ func (m *Model) revokeCommand(args []string) string {
 	case "agents", "roles":
 		gone = m.revokeRoles()
 	default:
-		return "Usage: /permissions revoke [edits|commands|hosts|agents]"
+		return "usage: /permissions revoke [edits|commands|hosts|agents]"
 	}
 	m.syncGrants()
 	if len(gone) == 0 {
-		return "Nothing was granted; everything already asks."
+		return "nothing was granted; everything already asks"
 	}
-	return "Revoked, and asking again: " + strings.Join(gone, ", ") + "."
+	return "revoked, and asking again: " + strings.Join(gone, " · ")
 }
 
 // policyState is what the session has stopped asking about, and the mode that

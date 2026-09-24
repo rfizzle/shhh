@@ -28,12 +28,12 @@ import (
 // changed anything, a number undoes that turn.
 func (m Model) undoCommand(parts []string) (tea.Model, tea.Cmd) {
 	if len(parts) > 2 {
-		return m.systemNotice("Usage: /undo [turn]")
+		return m.systemNotice("usage: /undo [turn]")
 	}
 	if len(parts) == 2 {
 		var n int64
 		if _, err := fmt.Sscanf(parts[1], "%d", &n); err != nil || n <= 0 {
-			return m.systemNotice("Usage: /undo [turn] — the turn number from its close row.")
+			return m.systemNotice("usage: /undo [turn] — the turn number from its close row")
 		}
 		return m.undoTurn(n, nil)
 	}
@@ -83,14 +83,14 @@ func (m Model) undoTurn(n int64, files []string) (tea.Model, tea.Cmd) {
 	t, ok := m.changes.Recall(n)
 	if !ok && m.changes.WasEvicted(n) {
 		return m.systemNotice(fmt.Sprintf(
-			"Turn %d's records were dropped to stay inside the changeset store's size limit; it can no longer be undone.", n))
+			"turn %d's records were dropped to stay inside the changeset store's size limit; it can no longer be undone", n))
 	}
 	if !ok {
-		return m.systemNotice(fmt.Sprintf("Turn %d changed no files; there is nothing to undo.", n))
+		return m.systemNotice(fmt.Sprintf("turn %d changed no files; there is nothing to undo", n))
 	}
 	plan := changeset.PlanUndo(t, files)
 	if plan.Empty() {
-		return m.systemNotice(fmt.Sprintf("Nothing in turn %d matched what was selected; nothing to undo.", n))
+		return m.systemNotice(fmt.Sprintf("nothing in turn %d matched what was selected; nothing to undo", n))
 	}
 	ret := m.state
 	if ret.isSurface() && ret != stateFocus {

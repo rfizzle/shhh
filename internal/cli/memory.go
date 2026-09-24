@@ -87,7 +87,7 @@ func memoryManager(store *memory.Store) func(args []string) string {
 			}
 			e, err := store.Add(scope, kind, text, memory.ProvenanceUser)
 			if err != nil {
-				return "Error: " + err.Error()
+				return "✗ memory  " + err.Error()
 			}
 			return memoryAdded(e).String()
 		case "forget":
@@ -96,10 +96,10 @@ func memoryManager(store *memory.Store) func(args []string) string {
 			}
 			id, err := memory.ParseID(args[1])
 			if err != nil {
-				return "Error: " + err.Error()
+				return "✗ memory  " + err.Error()
 			}
 			if err := store.Forget(id); err != nil {
-				return "Error: " + err.Error()
+				return "✗ memory  " + err.Error()
 			}
 			return report.Report{Sections: []report.Section{{Rows: []report.Row{
 				report.Done("forgot", memoryID(id))}}}}.String()
@@ -174,7 +174,7 @@ func memoryRewriter(store *memory.Store) func(id int64, text string) (string, er
 func memoryListing(store *memory.Store, wayOut string) string {
 	entries, err := store.List()
 	if err != nil {
-		return "Error: " + err.Error()
+		return "✗ memory  " + err.Error()
 	}
 	return memoryReport(store, entries, wayOut, time.Now()).String()
 }

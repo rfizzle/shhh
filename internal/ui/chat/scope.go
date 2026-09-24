@@ -109,8 +109,8 @@ func (m *Model) grantScope(reach scopeReach) string {
 	if len(added) == 0 {
 		return ""
 	}
-	return "Added to the working scope: " + strings.Join(added, ", ") +
-		". Contained commands can write there now; /add-dir drop takes it back."
+	return "added to the working scope: " + strings.Join(added, ", ") +
+		". Contained commands can write there now; /add-dir drop takes it back"
 }
 
 // scopeCommand is /add-dir: the grant made in front of no particular
@@ -118,30 +118,30 @@ func (m *Model) grantScope(reach scopeReach) string {
 // one back.
 func (m *Model) scopeCommand(parts []string) string {
 	if m.scope == nil {
-		return "This session has no working scope."
+		return "this session has no working scope"
 	}
 	if len(parts) < 2 {
 		return m.scopeStatus()
 	}
 	if parts[1] == "drop" {
 		if len(parts) != 3 {
-			return "Usage: /add-dir drop <path>"
+			return "usage: /add-dir drop <path>"
 		}
 		dir, ok := m.scope.Drop(parts[2])
 		if !ok {
-			return "Not in the working scope: " + parts[2] + ". /add-dir lists what is."
+			return "not in the working scope: " + parts[2] + ". /add-dir lists what is"
 		}
-		return "Dropped " + dir + " from the working scope. Contained commands can no longer write there."
+		return "dropped " + dir + " from the working scope. Contained commands can no longer write there"
 	}
 	if len(parts) > 2 {
-		return "Usage: /add-dir [<path>|drop <path>]  — one directory at a time; a path with spaces needs no quotes here."
+		return "usage: /add-dir [<path>|drop <path>]  — one directory at a time; a path with spaces needs no quotes here"
 	}
 	dir, err := m.scope.Add(parts[1])
 	switch {
 	case err == scope.ErrAlreadyInScope:
-		return dir + " is already in the working scope."
+		return dir + " is already in the working scope"
 	case err != nil:
-		return "Error: " + err.Error()
+		return failed("add-dir", err.Error())
 	}
 	class, reason := scope.Classify(dir)
 	note := "Added " + dir + " to the working scope: edits there no longer ask about leaving it, and contained commands can write there."
@@ -155,7 +155,7 @@ func (m *Model) scopeCommand(parts []string) string {
 // commands that change it.
 func (m Model) scopeStatus() string {
 	if m.scope == nil {
-		return "This session has no working scope."
+		return "this session has no working scope"
 	}
 	var sb strings.Builder
 	sb.WriteString("Working scope:\n")

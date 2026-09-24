@@ -81,10 +81,10 @@ sources · [q] back to the prompt
 ␛[38;5;241m────────────────────────────────────────────────────────␛[m
 ␛[1;97mhttps://example.com/gone␛[m                  ␛[38;5;241mweb-researcher␛[m
 
-  ␛[38;5;245mkind ␛[m␛[38;5;241mfetch␛[m
-  ␛[38;5;245murl ␛[m␛[38;5;241mhttps://example.com/gone␛[m
-  ␛[38;5;245mstatus ␛[m␛[38;5;241m404␛[m
-  ␛[38;5;245mwhen ␛[m␛[38;5;241mturn 2␛[m
+  ␛[38;5;243mkind ␛[m␛[38;5;252mfetch␛[m
+  ␛[38;5;243murl ␛[m␛[38;5;252mhttps://example.com/gone␛[m
+  ␛[38;5;243mstatus ␛[m␛[38;5;252m404␛[m
+  ␛[38;5;243mwhen ␛[m␛[38;5;252mturn 2␛[m
 
 ␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m
 
@@ -103,13 +103,13 @@ sources · [q] back to the prompt
 ␛[1;97mhttps://docs.rs/tokio/latest/tokio/␛[m         ␛[38;5;241morchestrator␛[m
   ␛[38;5;241mtokio — Rust␛[m
 
-  ␛[38;5;245mkind ␛[m␛[38;5;241mfetch␛[m
-  ␛[38;5;245murl ␛[m␛[38;5;241mhttps://docs.rs/tokio/latest/tokio/␛[m
-  ␛[38;5;245masked for ␛[m␛[38;5;241mhttps://docs.rs/tokio␛[m
-  ␛[38;5;245mstatus ␛[m␛[38;5;241m200␛[m
-  ␛[38;5;245mread ␛[m␛[38;5;241m60 KB␛[m
-  ␛[38;5;245mwhen ␛[m␛[38;5;241mturn 1␛[m
-  ␛[38;5;245mkept as ␛[m␛[38;5;241mev-1␛[m
+  ␛[38;5;243mkind ␛[m␛[38;5;252mfetch␛[m
+  ␛[38;5;243murl ␛[m␛[38;5;252mhttps://docs.rs/tokio/latest/tokio/␛[m
+  ␛[38;5;243masked for ␛[m␛[38;5;252mhttps://docs.rs/tokio␛[m
+  ␛[38;5;243mstatus ␛[m␛[38;5;252m200␛[m
+  ␛[38;5;243mread ␛[m␛[38;5;252m60 KB␛[m
+  ␛[38;5;243mwhen ␛[m␛[38;5;252mturn 1␛[m
+  ␛[38;5;243mkept as ␛[m␛[38;5;252mev-1␛[m
 
 ␛[38;5;245m  the page as it was kept␛[m
   ␛[38;5;241mTokio is an asynchronous runtime.␛[m

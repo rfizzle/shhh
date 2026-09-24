@@ -123,7 +123,7 @@ func TestFocusMode_NoExpandableRows(t *testing.T) {
 		t.Fatalf("without expandable rows ctrl+o should stay in input state, got %d", m.state)
 	}
 	last := m.transcript[len(m.transcript)-1]
-	if last.kind != entrySystem || !strings.Contains(last.text, "Nothing to focus") {
+	if last.kind != entrySystem || !strings.Contains(last.text, "READING has nothing to open") {
 		t.Fatalf("expected a notice about nothing to focus, got %+v", last)
 	}
 }

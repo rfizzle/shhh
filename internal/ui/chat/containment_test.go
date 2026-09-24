@@ -355,7 +355,7 @@ func TestContainmentStatusWithoutTheKnob(t *testing.T) {
 	}
 
 	empty := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream)
-	if text, _ := empty.statusCommand(); strings.Contains(text, "Containment") {
+	if text, _ := empty.statusCommand(); strings.Contains(text, "containment") {
 		t.Fatalf("a session with no containment wiring says nothing:\n%s", text)
 	}
 }

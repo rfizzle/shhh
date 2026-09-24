@@ -216,8 +216,8 @@ gate     default — vet, test · runs without asking
 
 ␛[1;97m~/src/shhh␛[m␛[38;5;241m · ␛[m␛[38;5;252mgo 1.24␛[m␛[38;5;241m · ␛[m␛[38;5;252mgit main␛[m␛[38;5;241m · ␛[m␛[38;5;214m3 files changed␛[m␛[38;5;241m · ␛[m␛[38;5;252m41 packages␛[m
 
-␛[38;5;241mcontext␛[m  ␛[38;5;252mAGENTS.md␛[m␛[38;5;241m — in the system prompt␛[m
-␛[38;5;241mgate   ␛[m  ␛[38;5;252mdefault␛[m␛[38;5;241m — vet, test · runs without asking␛[m
+␛[38;5;243mcontext␛[m  ␛[38;5;252mAGENTS.md␛[m␛[38;5;241m — in the system prompt␛[m
+␛[38;5;243mgate   ␛[m  ␛[38;5;252mdefault␛[m␛[38;5;241m — vet, test · runs without asking␛[m
 
 ␛[38;5;241mSome things worth doing first:␛[m
 ␛[94m❯␛[m ␛[1;97;48;5;62m▸ pick up (last session) — 7 turns · $0.42 · 4m ago                     ␛[m
@@ -236,8 +236,8 @@ gate     default — vet, test · runs without asking
 
 ␛[1;97m~/src/shhh␛[m␛[38;5;241m · ␛[m␛[38;5;252mgo 1.24␛[m␛[38;5;241m · ␛[m␛[38;5;252mgit main␛[m␛[38;5;241m · ␛[m␛[38;5;214m3 files changed␛[m␛[38;5;241m · ␛[m␛[38;5;252m41 packages␛[m
 
-␛[38;5;241mcontext␛[m  ␛[38;5;252mAGENTS.md␛[m␛[38;5;241m — in the system prompt␛[m
-␛[38;5;241mgate   ␛[m  ␛[38;5;252mdefault␛[m␛[38;5;241m — vet, test · runs without asking␛[m
+␛[38;5;243mcontext␛[m  ␛[38;5;252mAGENTS.md␛[m␛[38;5;241m — in the system prompt␛[m
+␛[38;5;243mgate   ␛[m  ␛[38;5;252mdefault␛[m␛[38;5;241m — vet, test · runs without asking␛[m
 
 ␛[38;5;241mSome things worth doing first:␛[m
   ␛[38;5;214m▸␛[m ␛[38;5;252mpick up (last session)␛[m␛[38;5;241m — 7 turns · $0.42 · 4m ago␛[m
@@ -256,8 +256,8 @@ gate     default — vet, test · runs without asking
 
 ␛[1;97m~/src/shhh␛[m␛[38;5;241m · ␛[m␛[38;5;252mgo 1.24␛[m␛[38;5;241m · ␛[m␛[38;5;252mgit main␛[m␛[38;5;241m · ␛[m␛[92mclean tree␛[m␛[38;5;241m · ␛[m␛[38;5;252m41 packages␛[m
 
-␛[38;5;241mcontext␛[m  ␛[38;5;252mnothing read␛[m␛[38;5;241m — no .shhh/project.md, AGENTS.md or CLAUDE.md␛[m
-␛[38;5;241mgate   ␛[m  ␛[38;5;252mnot configured␛[m␛[38;5;241m — .shhh/quality.json␛[m
+␛[38;5;243mcontext␛[m  ␛[38;5;252mnothing read␛[m␛[38;5;241m — no .shhh/project.md, AGENTS.md or CLAUDE.md␛[m
+␛[38;5;243mgate   ␛[m  ␛[38;5;252mnot configured␛[m␛[38;5;241m — .shhh/quality.json␛[m
 
 ␛[38;5;241mSome things worth doing first:␛[m
 ␛[94m❯␛[m ␛[1;97;48;5;62m⚙ walk me through what this project does — reads only, no writes        ␛[m
@@ -276,8 +276,8 @@ gate     default — vet, test · runs without asking
 
 ␛[1;97m~/src/shhh␛[m␛[38;5;241m · ␛[m␛[38;5;252mgo 1.24␛[m␛[38;5;241m · ␛[m␛[38;5;214mnot a git repository␛[m␛[38;5;241m · ␛[m␛[38;5;252m41+ packages␛[m
 
-␛[38;5;241mcontext␛[m  ␛[38;5;252mAGENTS.md␛[m␛[38;5;241m — in the system prompt␛[m
-␛[38;5;241mgate   ␛[m  ␛[38;5;252mdefault␛[m␛[38;5;241m — vet, test · runs without asking␛[m
+␛[38;5;243mcontext␛[m  ␛[38;5;252mAGENTS.md␛[m␛[38;5;241m — in the system prompt␛[m
+␛[38;5;243mgate   ␛[m  ␛[38;5;252mdefault␛[m␛[38;5;241m — vet, test · runs without asking␛[m
 
 ␛[38;5;241mSome things worth doing first:␛[m
 ␛[94m❯␛[m ␛[1;97;48;5;62m▸ pick up (last session) — 7 turns · $0.42 · 4m ago                     ␛[m
@@ -296,8 +296,8 @@ gate     default — vet, test · runs without asking
 
 ␛[1;97m~/src/shhh␛[m␛[38;5;241m · ␛[m␛[38;5;252mgo 1.24␛[m␛[38;5;241m · ␛[m␛[38;5;252mgit main␛[m␛[38;5;241m · ␛[m␛[38;5;214m3 files changed␛[m␛[38;5;241m · ␛[m␛[38;5;252m41 packages␛[m
 
-␛[38;5;241mcontext␛[m  ␛[38;5;252mnothing read␛[m␛[38;5;241m — no .shhh/project.md, AGENTS.md or CLAUDE.md␛[m
-␛[38;5;241mgate   ␛[m  ␛[38;5;252mdefault␛[m␛[38;5;241m — vet, test · runs without asking␛[m
+␛[38;5;243mcontext␛[m  ␛[38;5;252mnothing read␛[m␛[38;5;241m — no .shhh/project.md, AGENTS.md or CLAUDE.md␛[m
+␛[38;5;243mgate   ␛[m  ␛[38;5;252mdefault␛[m␛[38;5;241m — vet, test · runs without asking␛[m
 
 ␛[38;5;241mSome things worth doing first:␛[m
 ␛[94m❯␛[m ␛[1;97;48;5;62m▸ pick up (last session) — 7 turns · $0.42 · 4m ago                     ␛[m
@@ -315,8 +315,8 @@ gate     default — vet, test · runs without asking
 
 ␛[1;97m~/src/shhh␛[m␛[38;5;241m · ␛[m␛[38;5;214manother session open here since 10:32␛[m␛[38;5;241m · ␛[m␛[38;5;252mgo 1.24␛[m␛[38;5;241m · ␛[m␛[38;5;252mgit main␛[m
 
-␛[38;5;241mcontext␛[m  ␛[38;5;252mAGENTS.md␛[m␛[38;5;241m — in the system prompt␛[m
-␛[38;5;241mgate   ␛[m  ␛[38;5;252mdefault␛[m␛[38;5;241m — vet, test · runs without asking␛[m
+␛[38;5;243mcontext␛[m  ␛[38;5;252mAGENTS.md␛[m␛[38;5;241m — in the system prompt␛[m
+␛[38;5;243mgate   ␛[m  ␛[38;5;252mdefault␛[m␛[38;5;241m — vet, test · runs without asking␛[m
 
 ␛[38;5;241mSome things worth doing first:␛[m
 ␛[94m❯␛[m ␛[1;97;48;5;62m▸ pick up (last session) — 7 turns · $0.42 · 4m ago                     ␛[m
@@ -335,9 +335,9 @@ gate     default — vet, test · runs without asking
 
 ␛[1;97m~/src/shhh␛[m␛[38;5;241m · ␛[m␛[38;5;252mgo 1.24␛[m␛[38;5;241m · ␛[m␛[38;5;252mgit main␛[m␛[38;5;241m · ␛[m␛[38;5;214m3 files changed␛[m␛[38;5;241m · ␛[m␛[38;5;252m41 packages␛[m
 
-␛[38;5;241mcontext␛[m  ␛[38;5;252mAGENTS.md␛[m␛[38;5;241m — in the system prompt␛[m
-␛[38;5;241mgate   ␛[m  ␛[38;5;252mwithheld␛[m␛[38;5;241m — this checkout is not trusted to run its own checks␛[m
-␛[38;5;241mtrust  ␛[m  ␛[38;5;252mwithheld␛[m
+␛[38;5;243mcontext␛[m  ␛[38;5;252mAGENTS.md␛[m␛[38;5;241m — in the system prompt␛[m
+␛[38;5;243mgate   ␛[m  ␛[38;5;252mwithheld␛[m␛[38;5;241m — this checkout is not trusted to run its own checks␛[m
+␛[38;5;243mtrust  ␛[m  ␛[38;5;252mwithheld␛[m
          ␛[38;5;241mskills, agent profiles, quality suites · shhh trust loads them␛[m
 
 ␛[38;5;241mSome things worth doing first:␛[m
@@ -357,9 +357,9 @@ gate     default — vet, test · runs without asking
 
 ␛[1;97m~/src/shhh␛[m␛[38;5;241m · ␛[m␛[38;5;252mgo 1.24␛[m␛[38;5;241m · ␛[m␛[38;5;252mgit main␛[m␛[38;5;241m · ␛[m␛[38;5;214m3 files changed␛[m␛[38;5;241m · ␛[m␛[38;5;252m41 packages␛[m
 
-␛[38;5;241mcontext␛[m  ␛[38;5;252mAGENTS.md␛[m␛[38;5;241m — in the system prompt␛[m
-␛[38;5;241mgate   ␛[m  ␛[38;5;252mdefault␛[m␛[38;5;241m — vet, test · runs without asking␛[m
-␛[38;5;241mtrust  ␛[m  ␛[38;5;252mquality suites␛[m
+␛[38;5;243mcontext␛[m  ␛[38;5;252mAGENTS.md␛[m␛[38;5;241m — in the system prompt␛[m
+␛[38;5;243mgate   ␛[m  ␛[38;5;252mdefault␛[m␛[38;5;241m — vet, test · runs without asking␛[m
+␛[38;5;243mtrust  ␛[m  ␛[38;5;252mquality suites␛[m
          ␛[38;5;241mchanged since you trusted it · shhh trust off withdraws it␛[m
 
 ␛[38;5;241mSome things worth doing first:␛[m
@@ -379,10 +379,10 @@ gate     default — vet, test · runs without asking
 
 ␛[1;97m~/src/shhh␛[m␛[38;5;241m · ␛[m␛[38;5;252mgo 1.24␛[m␛[38;5;241m · ␛[m␛[38;5;252mgit main␛[m␛[38;5;241m · ␛[m␛[38;5;214m3 files changed␛[m␛[38;5;241m · ␛[m␛[38;5;252m41 packages␛[m
 
-␛[38;5;241mcontext ␛[m  ␛[38;5;252mAGENTS.md␛[m␛[38;5;241m — in the system prompt␛[m
-␛[38;5;241mgate    ␛[m  ␛[38;5;252mdefault␛[m␛[38;5;241m — vet, test · runs without asking␛[m
-␛[38;5;241msettings␛[m  ␛[38;5;252m.shhh/config.toml␛[m␛[38;5;241m — this checkout's own, over yours␛[m
-␛[38;5;241mwordings␛[m  ␛[38;5;252m.shhh/prompts/␛[m
+␛[38;5;243mcontext ␛[m  ␛[38;5;252mAGENTS.md␛[m␛[38;5;241m — in the system prompt␛[m
+␛[38;5;243mgate    ␛[m  ␛[38;5;252mdefault␛[m␛[38;5;241m — vet, test · runs without asking␛[m
+␛[38;5;243msettings␛[m  ␛[38;5;252m.shhh/config.toml␛[m␛[38;5;241m — this checkout's own, over yours␛[m
+␛[38;5;243mwordings␛[m  ␛[38;5;252m.shhh/prompts/␛[m
           ␛[38;5;241mthis checkout's own, over yours · steer, todo_standards, todo_r…␛[m
 
 ␛[38;5;241mSome things worth doing first:␛[m
@@ -402,7 +402,7 @@ gate     default — vet, test · runs without asking
 
 ␛[1;97m~/src/shhh␛[m␛[38;5;241m · ␛[m␛[38;5;252mgo 1.24␛[m␛[38;5;241m · ␛[m␛[38;5;252mgit main␛[m␛[38;5;241m · ␛[m␛[38;5;214m3 files changed␛[m␛[38;5;241m · ␛[m␛[38;5;252m41 packages␛[m
 
-␛[38;5;241mcontext␛[m  ␛[38;5;252mAGENTS.md␛[m␛[38;5;241m — in the system prompt␛[m
-␛[38;5;241mgate   ␛[m  ␛[38;5;252mdefault␛[m␛[38;5;241m — vet, test · runs without asking␛[m
+␛[38;5;243mcontext␛[m  ␛[38;5;252mAGENTS.md␛[m␛[38;5;241m — in the system prompt␛[m
+␛[38;5;243mgate   ␛[m  ␛[38;5;252mdefault␛[m␛[38;5;241m — vet, test · runs without asking␛[m
 
 ␛[94m[pgup]␛[m␛[38;5;241m scroll␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+o]␛[m␛[38;5;241m select rows␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+/]␛[m␛[38;5;241m palette␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+x]␛[m␛[38;5;241m mouse␛[m

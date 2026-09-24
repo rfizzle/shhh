@@ -432,11 +432,11 @@ func sandboxManage(cfg config.Config, sc *scope.Scope, sup *process.Supervisor) 
 func sandboxList(ctx context.Context) string {
 	store, err := sandbox.OpenStore()
 	if err != nil {
-		return "Error: " + err.Error()
+		return "✗ sandbox  " + err.Error()
 	}
 	recs, err := store.List()
 	if err != nil {
-		return "Error: " + err.Error()
+		return "✗ sandbox  " + err.Error()
 	}
 	out := report.Report{Title: "/sandbox list", Subject: countOf(len(recs), "container", "containers")}
 	if len(recs) == 0 {
@@ -471,18 +471,18 @@ func sandboxList(ctx context.Context) string {
 func sandboxDestroy(ctx context.Context, id string) string {
 	store, err := sandbox.OpenStore()
 	if err != nil {
-		return "Error: " + err.Error()
+		return "✗ sandbox  " + err.Error()
 	}
 	rec, err := store.Get(id)
 	if err != nil {
-		return "Error: " + err.Error()
+		return "✗ sandbox  " + err.Error()
 	}
 	path, err := exec.LookPath(rec.Engine)
 	if err != nil {
-		return fmt.Sprintf("Error: engine %s not found for sandbox %s", rec.Engine, id)
+		return fmt.Sprintf("✗ sandbox  engine %s not found for sandbox %s", rec.Engine, id)
 	}
 	if err := sandbox.DestroyContainer(ctx, path, store, rec); err != nil {
-		return "Error: " + err.Error()
+		return "✗ sandbox  " + err.Error()
 	}
 	return report.Report{Sections: []report.Section{{Rows: []report.Row{
 		report.Done("destroyed sandbox", id)}}}}.String()
@@ -491,7 +491,7 @@ func sandboxDestroy(ctx context.Context, id string) string {
 func sandboxPrune(ctx context.Context) string {
 	store, err := sandbox.OpenStore()
 	if err != nil {
-		return "Error: " + err.Error()
+		return "✗ sandbox  " + err.Error()
 	}
 	res := sandbox.Reconcile(ctx, store, time.Now().UTC())
 	out := report.Report{Sections: []report.Section{{Rows: []report.Row{

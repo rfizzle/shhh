@@ -800,14 +800,14 @@ func (m Model) railSource() string {
 // `auto` hands it back to the width ladder.
 func (m *Model) railCommand(parts []string) string {
 	if len(parts) == 2 {
-		return fmt.Sprintf("Layout: %s.\n%s", m.inspectorStatus(), railUsage)
+		return fmt.Sprintf("layout: %s.\n%s", m.inspectorStatus(), railUsage)
 	}
 	if len(parts) != 3 {
 		return railUsage
 	}
 	cols, err := components.ParseRailWidth(parts[2])
 	if err != nil {
-		return "Error: " + err.Error()
+		return failed("ui", err.Error())
 	}
 	m.railCols = cols
 	m.invalidateRenderCache()
@@ -820,10 +820,10 @@ func (m *Model) railCommand(parts []string) string {
 		// Nothing on screen changes at this width, so the reply has to carry
 		// the whole answer: the setting took, and the rung is why it is not
 		// visible.
-		return fmt.Sprintf("Inspector rail %s — this terminal is too narrow to split, so nothing changes until it is %d columns wide.",
+		return fmt.Sprintf("inspector rail %s — this terminal is too narrow to split, so nothing changes until it is %d columns wide",
 			railSetting(cols), components.InspectorMinContentWidth+horizontalPadding*2)
 	}
-	return fmt.Sprintf("Inspector rail %s — %s.", railSetting(cols), m.inspectorStatus())
+	return fmt.Sprintf("inspector rail %s — %s", railSetting(cols), m.inspectorStatus())
 }
 
 // railSetting is the setting in the words the reply leads with.
@@ -836,4 +836,4 @@ func railSetting(cols int) string {
 
 // railUsage is the one line /ui rail answers with, on its own and when the
 // value is not one it takes.
-const railUsage = "Usage: /ui rail <auto|columns> — auto widens the rail with the terminal; a number fixes it, held to what the terminal has room for."
+const railUsage = "usage: /ui rail <auto|columns> — auto widens the rail with the terminal; a number fixes it, held to what the terminal has room for"

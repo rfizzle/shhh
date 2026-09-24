@@ -69,7 +69,7 @@ func (m Model) submitInput() (tea.Model, tea.Cmd) {
 		return m.runCommand(text, name)
 	}
 	if reason, held := m.todoRunHoldsInput(); held {
-		return m.systemNotice("Not sent: " + reason + ".")
+		return m.systemNotice("not sent: " + reason)
 	}
 	// A draft in bang form is a command for the machine, not a message for
 	// the model: `!cmd` rides the /run confirm, `!!cmd` the same with its
@@ -122,7 +122,7 @@ func (m Model) runCommand(text, name string) (tea.Model, tea.Cmd) {
 	if m.working() {
 		if reason, ok := idleOnlyReason(name); ok {
 			note := name + " needs the turn to be finished — " + reason +
-				". The agent is still working; nothing was queued. Ctrl+C ends the turn."
+				". The agent is still working; nothing was queued. ctrl+c ends the turn"
 			if active, _ := m.activeAgents(); active > 0 {
 				note += " /agents steers what is running."
 			}
@@ -130,7 +130,7 @@ func (m Model) runCommand(text, name string) (tea.Model, tea.Cmd) {
 		}
 	}
 	if m.unavailableCommand(name) {
-		return m.surfaceNotice(name + " is not part of this session.")
+		return m.surfaceNotice(name + " is not part of this session")
 	}
 	parts := strings.Fields(text)
 	switch {
@@ -160,13 +160,13 @@ func (m Model) runCommand(text, name string) (tea.Model, tea.Cmd) {
 		// Explicit activation. Not idleOnly: while the agent works the
 		// content queues as steering, like any typed text.
 		if len(parts) < 2 {
-			return m.surfaceNotice("Usage: /skill <name> [task]. /skills lists what can be activated.")
+			return m.surfaceNotice("usage: /skill <name> [task]. /skills lists what can be activated")
 		}
 		return m.activateSkill(parts[1], strings.Join(parts[2:], " "))
 
 	case name == "/detach":
 		if m.attachedTo == "" {
-			return m.surfaceNotice("Not attached to an agent. /attach <name> or /agents to pick one.")
+			return m.surfaceNotice("not attached to an agent. /attach <name> or /agents to pick one")
 		}
 		m.detachOne()
 		return m, nil
@@ -297,6 +297,11 @@ func (m Model) runCommand(text, name string) (tea.Model, tea.Cmd) {
 			return picked, cmd
 		}
 
+	case text == "/help":
+		// The help is a sheet laid out at the pane's width rather than a
+		// sentence (helpsheet.go), so it is appended as one.
+		return m.helpNotice(m.helpSheet())
+
 	case name == "/ui":
 		// /ui mouse flips the terminal's own reporting. That is
 		// a field on the View rather than a command back to the program, so
@@ -324,7 +329,7 @@ func (m Model) runCommand(text, name string) (tea.Model, tea.Cmd) {
 		// /memory edit hands the entry's text to the editor; every other
 		// /memory subcommand is textual and goes through handleSlashCommand.
 		if len(parts) != 3 {
-			return m.systemNotice("Usage: /memory edit <id>")
+			return m.systemNotice("usage: /memory edit <id>")
 		}
 		return m.openMemoryEditor(parts[2])
 
@@ -385,7 +390,7 @@ func (m Model) activeAgents() (active, blocked int) {
 // named, it jumps straight into that agent's session.
 func (m Model) attachCommand(parts []string) (tea.Model, tea.Cmd) {
 	if m.subagents == nil {
-		return m.systemNotice("Sub-agents are unavailable in this session.")
+		return m.systemNotice("sub-agents are unavailable in this session")
 	}
 	if len(parts) < 2 {
 		return m.openAgentList()
@@ -396,10 +401,10 @@ func (m Model) attachCommand(parts []string) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 	if _, ok := m.subagents.Get(name); !ok {
-		return m.surfaceNotice("No agent named " + name + ". /agents lists this session's agents.")
+		return m.surfaceNotice("no agent named " + name + ". /agents lists this session's agents")
 	}
 	if name == m.attachedTo {
-		return m.surfaceNotice("Already attached to " + name + ".")
+		return m.surfaceNotice("already attached to " + name)
 	}
 	m.attach(name)
 	return m, nil
@@ -468,13 +473,13 @@ func buildSlashHandlers() map[string]slashHandler {
 }
 
 func slashHelp(m *Model, _ []string) string {
-	return helpText(m) + "\n\n" + m.policyHelp()
+	return helpText(m)
 }
 
 func slashModel(m *Model, parts []string) string {
 	if len(parts) < 2 {
 		if m.modelName != "" {
-			return fmt.Sprintf("Current model: %s\n%s", m.modelName, modelUsage)
+			return fmt.Sprintf("current model: %s\n%s", m.modelName, modelUsage)
 		}
 		return modelUsage
 	}
@@ -484,18 +489,18 @@ func slashModel(m *Model, parts []string) string {
 		return m.setModelDefault(parts[1], parts[2:])
 	}
 	if m.switchFn == nil {
-		return "Model switching is not available in this session."
+		return "model switching is not available in this session"
 	}
 	if len(parts) > 2 {
-		return "Model names cannot contain spaces. " + modelUsage
+		return "model names cannot contain spaces. " + modelUsage
 	}
 	name := parts[1]
 	if name == m.modelName {
-		return fmt.Sprintf("Already using %s.", name)
+		return fmt.Sprintf("already using %s", name)
 	}
 	m.switchFn(name)
 	m.modelName = name
-	return fmt.Sprintf("Switched model to %s. (/model default %s makes it the default for new sessions.)", name, name)
+	return fmt.Sprintf("switched model to %s. (/model default %s makes it the default for new sessions.)", name, name)
 }
 
 // /permissions was /mode until the name was the problem: one letter from
@@ -519,23 +524,23 @@ func slashPermissions(m *Model, parts []string) string {
 		return m.revokeCommand(parts[2:])
 	}
 	if len(parts) > 2 {
-		return "Usage: /permissions [manual|accept-edits|auto|read-only|plan|why|grants|allow|revoke]"
+		return "usage: /permissions [manual|accept-edits|auto|read-only|plan|why|grants|allow|revoke]"
 	}
 	if parts[1] == "why" {
 		if m.lastDenial == "" {
-			return "No auto-mode denials this session."
+			return "no auto-mode denials this session"
 		}
-		return "Last auto-mode denial:\n  " + m.lastDenial
+		return "last auto-mode denial:\n  " + m.lastDenial
 	}
 	mode, err := agent.ParseMode(parts[1])
 	if err != nil {
-		return "Error: " + err.Error()
+		return failed("permissions", err.Error())
 	}
 	if m.conversation {
 		return conversationModeNote
 	}
 	m.applyMode(mode)
-	return fmt.Sprintf("Mode set to %s — %s.", mode, mode.Describe())
+	return fmt.Sprintf("mode set to %s — %s", mode, mode.Describe())
 }
 
 func slashReasoning(m *Model, parts []string) string {
@@ -570,23 +575,23 @@ func slashSandbox(m *Model, parts []string) string {
 	// static report; everything else is unavailable.
 	if len(args) == 1 && args[0] == "doctor" {
 		if m.containment.Report == "" {
-			return "Command containment is not configured in this session."
+			return "command containment is not configured in this session"
 		}
 		return m.containment.Report
 	}
-	return "Container sandbox management is unavailable in this session."
+	return "container sandbox management is unavailable in this session"
 }
 
 func slashEvidence(m *Model, parts []string) string {
 	if m.evidence.Manage == nil {
-		return "The evidence store is unavailable in this session."
+		return "the evidence store is unavailable in this session"
 	}
 	return m.evidence.Manage(parts[1:])
 }
 
 func slashGate(m *Model, parts []string) string {
 	if m.gate.Manage == nil {
-		return "The quality gate is unavailable in this session."
+		return "the quality gate is unavailable in this session"
 	}
 	if handled, note := m.gateToggle(parts[1:]); handled {
 		return note
@@ -596,35 +601,35 @@ func slashGate(m *Model, parts []string) string {
 
 func slashProcesses(m *Model, parts []string) string {
 	if m.processes.Manage == nil {
-		return "The process supervisor is unavailable in this session."
+		return "the process supervisor is unavailable in this session"
 	}
 	return m.processes.Manage(parts[1:])
 }
 
 func slashMemory(m *Model, parts []string) string {
 	if m.memory.Manage == nil {
-		return "Durable memory is unavailable in this session."
+		return "durable memory is unavailable in this session"
 	}
 	return m.memory.Manage(parts[1:])
 }
 
 func slashMCP(m *Model, parts []string) string {
 	if m.mcp.Manage == nil {
-		return "No MCP servers in this session. Define one under [mcp.servers] in your config, or in mcp.json beside it; `shhh mcp` lists what a session here would connect."
+		return "no MCP servers in this session. Define one under [mcp.servers] in your config, or in mcp.json beside it; `shhh mcp` lists what a session here would connect"
 	}
 	return m.mcp.Manage(parts[1:])
 }
 
 func slashSessions(m *Model, _ []string) string {
 	if m.sessions == nil {
-		return "The sessions on this machine are not readable from here; `shhh sessions` lists them."
+		return "the sessions on this machine are not readable from here; `shhh sessions` lists them"
 	}
 	return m.sessions()
 }
 
 func slashSkills(m *Model, _ []string) string {
 	if m.skills == nil {
-		return "No skills loaded in this session. A skill is a directory holding a SKILL.md under .shhh/skills, .agents/skills or .claude/skills, in the project or your home directory."
+		return "no skills loaded in this session. A skill is a directory holding a SKILL.md under .shhh/skills, .agents/skills or .claude/skills, in the project or your home directory"
 	}
 	return m.skillsList(m.skills)
 }
@@ -640,20 +645,20 @@ func slashPlan(m *Model, parts []string) string {
 	case "save":
 		planText := m.lastAssistantText()
 		if strings.TrimSpace(planText) == "" {
-			return "No plan to save yet — there is no assistant response."
+			return "no plan to save yet — there is no assistant response"
 		}
 		path, err := savePlan(m.workspace, planText, strings.Join(parts[2:], "-"))
 		if err != nil {
-			return "Error saving plan: " + err.Error()
+			return failed("plan", "could not save it: "+err.Error())
 		}
-		return "Plan saved to " + path
+		return "plan saved to " + path
 	case "drop":
 		if m.planRun == nil {
-			return "No approved plan is running."
+			return "no approved plan is running"
 		}
 		m.planRun = nil
 		m.invalidateRenderCache()
-		return "Dropped the approved plan — the outline goes back to inferring its steps."
+		return "dropped the approved plan — the outline goes back to inferring its steps"
 	}
 	return planUsage
 }
@@ -662,10 +667,10 @@ func slashRewind(m *Model, parts []string) string {
 	// Only the numbered form arrives here; bare /rewind opens the picker
 	// from the enter handler.
 	if len(m.checkpoints) == 0 {
-		return "No checkpoints to rewind to yet."
+		return "no checkpoints to rewind to yet"
 	}
 	if len(parts) != 2 {
-		return fmt.Sprintf("Usage: /rewind [<turn 0-%d>] — bare /rewind opens the picker", len(m.checkpoints))
+		return fmt.Sprintf("usage: /rewind [<turn 0-%d>] — bare /rewind opens the picker", len(m.checkpoints))
 	}
 	n, err := strconv.Atoi(parts[1])
 	if err != nil {
@@ -704,13 +709,13 @@ func slashBranches(m *Model, parts []string) string {
 func (m Model) copyCommand(parts []string) (tea.Model, tea.Cmd) {
 	text := m.lastAssistantText()
 	if text == "" {
-		return m.systemNotice("Nothing to copy yet.")
+		return m.systemNotice("nothing to copy yet")
 	}
 	what := "response"
 	if len(parts) > 1 && parts[1] == "code" {
 		blocks := extractCodeBlocks(text)
 		if len(blocks) == 0 {
-			return m.systemNotice("No code blocks in the last response.")
+			return m.systemNotice("no code blocks in the last response")
 		}
 		text = strings.Join(blocks, "\n")
 		what = "code"
@@ -719,20 +724,20 @@ func (m Model) copyCommand(parts []string) (tea.Model, tea.Cmd) {
 	if note := copyFailure(res); note != "" {
 		return m.systemNotice(note)
 	}
-	next, cmd := m.systemNotice("Copied last " + what + " to clipboard.")
+	next, cmd := m.systemNotice("copied last " + what + " to clipboard")
 	return next, tea.Batch(cmd, write)
 }
 
 func slashSave(m *Model, parts []string) string {
 	if m.db == nil {
-		return "Chat persistence is unavailable."
+		return "chat persistence is unavailable"
 	}
 	name := "unnamed"
 	if len(parts) > 1 {
 		name = strings.Join(parts[1:], " ")
 	}
 	if err := m.db.SaveChat(name, stripResumeContext(m.agent.Messages())); err != nil {
-		return "Error saving: " + err.Error()
+		return failed("save", err.Error())
 	}
 	// The generated title goes with the conversation into its named
 	// slot; the name is what the listing leads with from now on.
@@ -747,35 +752,35 @@ func slashSave(m *Model, parts []string) string {
 		Summary: m.compactSummary, Head: project.Head(m.workspace), Root: project.Root(m.workspace)})
 	// Future rewind branches hang off the named session.
 	m.adoptSlot(name)
-	return fmt.Sprintf("Chat saved as %q", name)
+	return fmt.Sprintf("chat saved as %q", name)
 }
 
 func slashLoad(m *Model, parts []string) string {
 	if m.db == nil {
-		return "Chat persistence is unavailable."
+		return "chat persistence is unavailable"
 	}
 	if len(parts) < 2 {
 		// Only reached when there is nothing to pick; otherwise bare
 		// /load opens the picker from the enter handler.
 		_, listing := m.handleSlashCommand("/chats")
-		return listing + "\n\nUsage: /load <name>"
+		return listing + "\n\nusage: /load <name>"
 	}
 	return m.loadChatByName(strings.Join(parts[1:], " "))
 }
 
 func slashChats(m *Model, _ []string) string {
 	if m.db == nil {
-		return "Chat persistence is unavailable."
+		return "chat persistence is unavailable"
 	}
 	entries, err := m.db.ListChats()
 	if err != nil {
-		return "Error: " + err.Error()
+		return failed("chats", err.Error())
 	}
 	if len(entries) == 0 {
-		return "No saved chats."
+		return "no saved chats"
 	}
 	var sb strings.Builder
-	sb.WriteString("Saved chats:\n")
+	sb.WriteString("saved chats:\n")
 	for _, e := range entries {
 		fmt.Fprintf(&sb, "  %s  (%s)\n", e.Name, chatDesc(e))
 	}

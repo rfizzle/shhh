@@ -342,7 +342,7 @@ func TestUICommand_RailSetsTheSplit(t *testing.T) {
 	if m.railCols != 0 {
 		t.Fatalf("auto leaves no setting behind, got %d", m.railCols)
 	}
-	if reply := m.uiCommand([]string{"/ui", "rail", "wide"}); !strings.Contains(reply, "Error") {
+	if reply := m.uiCommand([]string{"/ui", "rail", "wide"}); !strings.HasPrefix(reply, "✗ ui  ") {
 		t.Fatalf("a value that is neither auto nor a count is refused: %q", reply)
 	}
 }
