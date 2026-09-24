@@ -327,14 +327,20 @@ func (r InspectorRail) mapOrder() []InspectorAgent {
 // in the words the fan-out header and the manager's title rail state about
 // the same children. The orchestrator is not a child and is left out of it,
 // or a session with nothing running would head its map with "1 running".
+// A child parked in front of a check is counted as waiting, as the fan-out
+// header counts it, since nobody held it.
 func (r InspectorRail) childTally() string {
 	var states []FanoutState
+	waits := 0
 	for _, a := range r.Agents {
 		if !a.Self {
 			states = append(states, a.State)
+			if a.State == FanoutHeld && a.SlotWait > 0 {
+				waits++
+			}
 		}
 	}
-	return stateTally(states)
+	return waitingTally(states, waits)
 }
 
 // agentsFold is the marker the map folds behind: a count of sessions, which

@@ -238,7 +238,7 @@
   alt+a manager · alt+] next · click to attach
 
 · a writer waiting for a check slot · two checks run, and its row says what it waits for
-  AGENTS                    1 held · 2 running
+  AGENTS                 1 waiting · 2 running
 ❯ ◇ orchestrator                         $0.12
     ⠹ round 3 · streaming…                    
   ◇ writer-1                             $0.04
@@ -577,7 +577,7 @@
   ␛[38;5;244malt+a manager · alt+] next · click to attach␛[m
 
 · a writer waiting for a check slot · two checks run, and its row says what it waits for
-  ␛[1;38;5;254mAGENTS␛[m                    ␛[38;5;244m1 held␛[m␛[38;5;244m · ␛[m␛[38;5;254m2 running␛[m
+  ␛[1;38;5;254mAGENTS␛[m                 ␛[38;5;244m1 waiting␛[m␛[38;5;244m · ␛[m␛[38;5;254m2 running␛[m
 ␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254m◇␛[m␛[48;5;237m ␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237morchestrator                         $0.12␛[m␛[m
     ␛[38;5;254m⠹ round 3 · streaming…␛[m                    
   ␛[38;5;254m◇␛[m ␛[38;5;254mwriter-1␛[m                             ␛[38;5;244m$0.04␛[m

@@ -132,7 +132,13 @@ func (m Model) handleSubagentEvent(ev subagent.Event) (tea.Model, tea.Cmd) {
 		// one thing that says it finished
 		// (docs/interface/surfaces.md#the-input-frame).
 		if !m.childHasLane(ev.Status) {
-			m.appendEntry(entry{kind: entrySystem, text: fmt.Sprintf("Agent %s: %s", ev.Status.Name, ev.Status.Detail)})
+			text := fmt.Sprintf("Agent %s: %s", ev.Status.Name, ev.Status.Detail)
+			if ev.Status.Handoff != "" {
+				// The transcript has the room the rail has not, so the
+				// handle a replacement resumes from is said in full.
+				text += " · handoff " + ev.Status.Handoff
+			}
+			m.appendEntry(entry{kind: entrySystem, text: text})
 		}
 		// A reviewer the backlog runner spawned answers its review stage.
 		if next, cmd, ok := m.todoReviewDone(ev.Status); ok {

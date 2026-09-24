@@ -495,3 +495,35 @@ func TestAgentListFitsItsWidth(t *testing.T) {
 		}
 	}
 }
+
+// A check-slot wait is counted as waiting on the manager's title rail, the
+// way the fan-out header counts it: nobody held that child.
+func TestAgentListTallyCountsASlotWaitAsWaiting(t *testing.T) {
+	rows := []AgentRow{
+		{State: AgentCurrent, Name: "orchestrator", Status: "ready"},
+		{State: AgentRunning, Name: "a", Progress: &AgentProgress{State: FanoutHeld, SlotWait: 2}},
+		{State: AgentRunning, Name: "b", Progress: &AgentProgress{State: FanoutHeld}},
+	}
+	block := FanoutBlock{Lanes: []FanoutLane{
+		{State: FanoutHeld, SlotWait: 2}, {State: FanoutHeld},
+	}}
+	got, want := ansi.Strip((&AgentList{Rows: rows}).tally()), ansi.Strip(block.headerOutcome())
+	if got != want || !strings.Contains(got, "1 held · 1 waiting") {
+		t.Fatalf("manager tally %q, fan-out header %q", got, want)
+	}
+}
+
+// A failed child's handle is drawn under the row after the reason, and
+// alone where there is no reason to put it after.
+func TestAgentListNamesTheHandoffUnderTheRow(t *testing.T) {
+	row := AgentRow{State: AgentFailed, Name: "writer-5", Task: "docs/round.md",
+		Progress: &AgentProgress{State: FanoutFailed}, Note: "cancelled", Handoff: "handoff-7"}
+	view := ansi.Strip((&AgentList{Rows: []AgentRow{row}}).View(96))
+	if !strings.Contains(view, "cancelled · handoff handoff-7") {
+		t.Fatalf("the line under the row should name the handle after the reason:\n%s", view)
+	}
+	row.Note = ""
+	if got := row.noteLine(); got != "handoff handoff-7" {
+		t.Fatalf("a row with no reason should still name the handle: %q", got)
+	}
+}

@@ -173,6 +173,11 @@ type FanoutLane struct {
 	Elapsed string
 	// Summary is the first line of a finished child's report.
 	Summary string
+	// Handoff is the handle of the record a failed child left for a
+	// replacement to resume from. The lane is the parent transcript's
+	// account of the child, so it says the handle in full after the reason
+	// (docs/capabilities/subagents.md#a-failed-child-leaves-a-handoff).
+	Handoff string
 	// Report is the whole of that report, line by line — the child's own
 	// words, folded under the lane's detail line once it has settled. A
 	// child's report used to reach the model and nobody else; the person
@@ -765,14 +770,17 @@ func (l FanoutLane) note() string {
 // is one key away under this line, and a lane that spelled them out would be
 // a lane that had stopped being a line.
 func (l FanoutLane) settledNote() string {
-	if l.Assumptions == 0 {
-		return l.Summary
+	var parts []string
+	if l.Summary != "" {
+		parts = append(parts, l.Summary)
 	}
-	stated := plural(l.Assumptions, "assumption")
-	if l.Summary == "" {
-		return stated
+	if l.Handoff != "" {
+		parts = append(parts, "handoff "+l.Handoff)
 	}
-	return l.Summary + detailSep + stated
+	if l.Assumptions > 0 {
+		parts = append(parts, plural(l.Assumptions, "assumption"))
+	}
+	return strings.Join(parts, detailSep)
 }
 
 // steerNote is the steering half of the line: how often the child has been
@@ -906,12 +914,12 @@ func tallyStates(states []FanoutState) (running, blocked, held, done, failed int
 	return running, blocked, held, done, failed
 }
 
-// stateTally states what a set of children still owes you. Whoever needs an
+// waitingTally states what a set of children still owes you. Whoever needs an
 // answer is said first and in del, because it is the only part of the line
 // that asks anything of you; the tally of finished children is left to the
 // rows until nothing is running, when it becomes the whole story. The fan-out
-// header and the manager's title rail are the same sentence about the same
-// children, so they are the same function.
+// header, the manager's title rail and the rail's map are the same sentence
+// about the same children, so they are the same function.
 //
 // A hold parks each child at its own boundary, so the parks land one at a
 // time and the line is what says how far through that is — `2 held · 1
@@ -922,14 +930,13 @@ func tallyStates(states []FanoutState) (running, blocked, held, done, failed int
 // where all three are true it is the two the reader is acting on. The
 // artboards state it running-first and in dim
 // (docs/interface/departures.md#the-childrens-tally-says-who-needs-you-first).
-func stateTally(states []FanoutState) string { return waitingTally(states, 0) }
-
-// waitingTally is stateTally with slotWaits of the held children counted as
-// waiting instead. A child parked in front of a check it asked to run is
-// waiting for one of the session's check slots and nobody parked it, so
-// calling it held would say the reader stopped children they never touched.
-// It is said after the held clause and in the same dim, since it too is a
-// child stopped at its boundary, and the lane under it says what it waits for.
+//
+// slotWaits of the held children are counted as waiting instead. A child
+// parked in front of a check it asked to run is waiting for one of the
+// session's check slots and nobody parked it, so calling it held would say
+// the reader stopped children they never touched. It is said after the held
+// clause and in the same dim, since it too is a child stopped at its
+// boundary, and the lane under it says what it waits for.
 func waitingTally(states []FanoutState, slotWaits int) string {
 	running, blocked, held, done, failed := tallyStates(states)
 	waiting := min(slotWaits, held)

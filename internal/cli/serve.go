@@ -859,6 +859,7 @@ func agentLine(st subagent.Status, parent string) jsonAgent {
 		Task:      st.Task,
 		Model:     st.Model,
 		Detail:    st.Detail,
+		Handoff:   st.Handoff,
 		Paths:     st.Paths,
 		Batch:     st.Batch,
 		Step:      st.Steps.Done,

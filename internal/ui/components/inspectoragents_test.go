@@ -3,6 +3,8 @@ package components
 import (
 	"strings"
 	"testing"
+
+	"github.com/charmbracelet/x/ansi"
 )
 
 // TestInspectorRail_AgentsMapFloatsBlockedChildrenUnderTheRoot: a child that
@@ -410,5 +412,18 @@ func TestInspectorRail_AgentsMapShedsAChildWithItsParent(t *testing.T) {
 				t.Fatalf("no height kept the parent and shed the child")
 			}
 		})
+	}
+}
+
+// A check-slot wait is counted as waiting in the map's heading, the way the
+// fan-out header counts it: nobody held that child.
+func TestInspectorRail_TallyCountsASlotWaitAsWaiting(t *testing.T) {
+	r := InspectorRail{Agents: []InspectorAgent{
+		{Name: "orchestrator", Self: true, State: FanoutRunning},
+		{Name: "a", State: FanoutHeld, SlotWait: 2},
+		{Name: "b", State: FanoutHeld},
+	}}
+	if got := ansi.Strip(r.childTally()); !strings.Contains(got, "1 held · 1 waiting") {
+		t.Fatalf("the map's tally = %q", got)
 	}
 }

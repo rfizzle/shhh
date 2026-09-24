@@ -2520,6 +2520,10 @@ type jsonAgent struct {
 	// one field here that is prose. It is not a code and nothing matches on
 	// it; the state above is what a reader acts on.
 	Detail string `json:"detail,omitempty"`
+	// Handoff is the handle of the record a failed child left, the one
+	// resume_handoff takes. It is a field of its own rather than a clause
+	// of the detail, so a client decides whether it has room to draw it.
+	Handoff string `json:"handoff,omitempty"`
 	// Paths is a writer's declared write scope, empty for an unscoped child.
 	Paths []string `json:"paths,omitempty"`
 	// Batch groups the children one parent tool round spawned, so a fan-out

@@ -472,6 +472,7 @@ func (m Model) buildAgentRows() ([]components.AgentRow, []string) {
 			Status:   st.Detail,
 			Progress: &progress,
 			Note:     childNote(st),
+			Handoff:  st.Handoff,
 			// A blocked child can be answered here only while its request is
 			// still queued; a failed one can be run again on its task.
 			Answerable: st.State == subagent.StateBlocked && m.pendingAskFor(st.Name) != nil,

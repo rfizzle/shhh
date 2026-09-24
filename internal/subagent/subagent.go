@@ -4075,13 +4075,11 @@ func (s *Supervisor) run(c *child) {
 			// What the attempt wrote is kept before anything is torn down,
 			// and before the handoff that names it is written.
 			c.keepStoppedPatch(s.opts.Generators)
+			// The detail stays the reason alone. The handle is on
+			// Status.Handoff, and each surface says it as far as it has room:
+			// a line that carried it would be trimmed back out by every
+			// surface too narrow for an identifier.
 			s.persistHandoff(c, reason, detail, c.endRound())
-			c.mu.Lock()
-			handoffID := c.handoffID
-			c.mu.Unlock()
-			if handoffID != "" {
-				detail += " · handoff " + handoffID
-			}
 		}
 		c.set(state, detail)
 		// An ending is a claim released, so a writer queued behind it asks
@@ -6315,6 +6313,11 @@ func rosterLine(st Status) string {
 		// agent has answered and can be asked again, on everything it
 		// already read.
 		detail = "done · takes a follow-up · " + strings.TrimPrefix(detail, "done · ")
+	}
+	if st.Handoff != "" {
+		// The roster is where the handle is read back from for
+		// resume_handoff, so it is said here in full.
+		detail += " · handoff " + st.Handoff
 	}
 	return fmt.Sprintf("%s (%s): %s%s — %s", st.Name, label, detail, steerMark(st), firstLine(st.Task))
 }

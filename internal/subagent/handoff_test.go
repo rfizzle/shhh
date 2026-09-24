@@ -428,3 +428,39 @@ func requiredMinimum(t *testing.T, err error) int64 {
 	}
 	return n
 }
+
+// A failed child's detail is the reason it stopped and nothing else. The
+// handle is on Status.Handoff, where each surface decides how much of it it
+// has room for; the roster says it in full because it is where resume_handoff
+// is read back from, and the report says it once.
+func TestAFailedChildsDetailIsTheReasonAlone(t *testing.T) {
+	env := &scriptedEnv{steps: []streamStep{{fail: &provider.Failure{Class: provider.ClassAuth}}}}
+	sup := New(context.Background(), Options{
+		Root: t.TempDir(), NewEnv: env.factory(),
+		Record: func(Spec, string) Recorder {
+			return Recorder{Handoff: func([]byte) (string, error) { return "handoff-7", nil }}
+		},
+	})
+	t.Cleanup(sup.Close)
+
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"survey the parser"}`)
+	waitState(t, sup, "researcher-1", StateFailed)
+
+	st := statusOf(t, sup, "researcher-1")
+	if st.Handoff != "handoff-7" {
+		t.Fatalf("the handle should be on the status, got %q", st.Handoff)
+	}
+	if strings.Contains(st.Detail, "handoff") {
+		t.Fatalf("the detail should carry the reason alone: %q", st.Detail)
+	}
+	if line := rosterLine(st); !strings.Contains(line, st.Detail+" · handoff handoff-7") {
+		t.Fatalf("the roster should name the handle after the reason: %s", line)
+	}
+	c, err := sup.lookup("researcher-1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n := strings.Count(c.reportText(), "handoff-7"); n != 1 {
+		t.Fatalf("the report should name the handle once, named it %d times:\n%s", n, c.reportText())
+	}
+}

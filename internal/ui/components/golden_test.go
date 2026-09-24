@@ -1221,11 +1221,12 @@ func TestGolden_AgentList(t *testing.T) {
 		}
 		// A writer killed with work in its copy of the checkout, in the failed
 		// child's place: the patch is kept, and the outcome field says so
-		// where `⚠ needs you` stands on a blocked row.
+		// where `⚠ needs you` stands on a blocked row. It left a handoff too,
+		// and the line under it names the handle after the reason.
 		killed := append(append([]AgentRow{}, rows[:4]...),
 			AgentRow{State: AgentFailed, Name: "writer-5", Task: "docs/round.md", Retryable: true, PatchKept: true,
 				Progress: progress(AgentProgress{State: FanoutFailed, Tools: 4, Spend: "$0.03"}),
-				Note:     "cancelled"})
+				Note:     "cancelled", Handoff: "handoff-130ebba38aed7"})
 		// The section that is not agents: the roles this session can spawn,
 		// one read from a file and one shhh ships — which lives nowhere and
 		// so has nothing for enter to open — with the offer to draft another
@@ -1303,7 +1304,7 @@ func TestGolden_AgentList(t *testing.T) {
 				View: (&AgentList{Rows: rows, Spawned: 4, SpawnLimit: 32}).View(width)},
 			{Label: "focus · the blocked child, [a] answers it here", View: (&AgentList{Rows: rows, Focus: 1}).View(width)},
 			{Label: "focus · the failed child, [r] runs it again", View: (&AgentList{Rows: rows, Focus: 4}).View(width)},
-			{Label: "focus · a killed writer whose patch is kept, [p] reviews it",
+			{Label: "focus · a killed writer whose patch is kept, [p] reviews it, and the handoff it left",
 				View: (&AgentList{Rows: killed, Focus: 4}).View(width)},
 			{Label: "the rows that are not agents · the session's roles, and the offer to draft another",
 				View: (&AgentList{Rows: offered, Focus: len(offered) - 1}).View(width)},
@@ -1398,7 +1399,8 @@ func TestGolden_FanoutBlock(t *testing.T) {
 						"approve with changes",
 					}},
 				{State: FanoutFailed, Name: "patcher-3", Task: "apply the patch",
-					Tools: 12, Spend: "$0.05", Elapsed: "2m04s", Summary: "round limit (25) reached"},
+					Tools: 12, Spend: "$0.05", Elapsed: "2m04s", Summary: "round limit (25) reached",
+					Handoff: "handoff-130ebba38aed7"},
 			},
 		}
 		// The second lane's count is a mixed one: one steer the reader typed
@@ -1498,7 +1500,7 @@ func TestGolden_FanoutBlock(t *testing.T) {
 		}
 		return []golden.Panel{
 			{Label: "mid-flight · one child is waiting on you, the session's spawn count on the header", View: flight.View(width)},
-			{Label: "settled · one lane open on its report, one carrying a verdict, and no spawn count once nothing is live", View: settled.View(width)},
+			{Label: "settled · one lane open on its report, one carrying a verdict, one failed naming its handoff, and no spawn count once nothing is live", View: settled.View(width)},
 			{Label: "no declared step count · every lane spins", View: spinning.View(width)},
 			{Label: "held · two children parked where you stopped them", View: held.View(width)},
 			{Label: "a child that delegated · its lane says how many are under it", View: nested.View(width)},

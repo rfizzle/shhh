@@ -55,7 +55,7 @@
 │ [K] kill all · every level · [esc] back to the turn      │
 ╰──────────────────────────────────────────────────────────╯
 
-· focus · a killed writer whose patch is kept, [p] reviews it
+· focus · a killed writer whose patch is kept, [p] reviews it, and the handoff it left
 ╭─ Agents ─────────────────────── 1 needs you · 1 running ─╮
 │   ● orchestrator · this se…  round 7 · streaming…  $0.12 │
 │   ⚠ runner-2 · go test .…  ⚠ needs you · 3 tools · $0.01 │
@@ -64,7 +64,7 @@
 │   ◇ reader-3 · survey intern…  ✓ done · 12 tools · $0.04 │
 │     the rails and the frame are one component            │
 │ ❯ ✗ writer-5…  patch kept · [p] review · 4 tools · $0.03 │
-│     cancelled                                            │
+│     cancelled · handoff handoff-130ebba38aed7            │
 │ [enter] attach · [a] answer without attaching            │
 │ [r] retry · [p] review · [x] cancel · [X] kill           │
 │ [K] kill all · every level · [esc] back to the turn      │
@@ -223,7 +223,7 @@
 ╰──────────────────────────────────────────────────────────╯
 
 · a writer waiting for a check slot · parked in front of its test run, not failed
-╭─ Agents ────────────────────────── 1 needs you · 1 held ─╮
+╭─ Agents ─────────────────────── 1 needs you · 1 waiting ─╮
 │   ● orchestrator · this se…  round 7 · streaming…  $0.12 │
 │   ⚠ runner-2 · go test .…  ⚠ needs you · 3 tools · $0.01 │
 │     waiting approval: run go test ./internal/agent/...   │
@@ -299,7 +299,7 @@
 ␛[38;5;254m│␛[m ␛[38;5;254m[K]␛[m␛[38;5;244m kill all · every level␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the turn␛[m      ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────╯␛[m
 
-· focus · a killed writer whose patch is kept, [p] reviews it
+· focus · a killed writer whose patch is kept, [p] reviews it, and the handoff it left
 ␛[38;5;254m╭─ ␛[m␛[1;38;5;254mAgents ␛[m␛[38;5;254m─────────────────────── ␛[38;5;254m1 needs you␛[m␛[38;5;244m · ␛[m␛[38;5;254m1 running␛[m ─╮␛[m
 ␛[38;5;254m│␛[m   ␛[1;38;5;254m●␛[m orchestrator␛[38;5;244m · this se…␛[m  ␛[38;5;244mround 7 · streaming…␛[m  ␛[38;5;244m$0.12␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;254m⚠␛[m runner-2␛[38;5;244m · go test .…␛[m  ␛[38;5;254m⚠ needs you␛[m␛[38;5;244m · ␛[m␛[38;5;244m3 tools · $0.01␛[m ␛[38;5;254m│␛[m
@@ -308,7 +308,7 @@
 ␛[38;5;254m│␛[m   ␛[38;5;254m◇␛[m reader-3␛[38;5;244m · survey intern…␛[m  ␛[38;5;254m✓ done␛[m␛[38;5;244m · ␛[m␛[38;5;244m12 tools · $0.04␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m     ␛[38;5;244mthe rails and the frame are one component␛[m            ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;244m␛[m␛[38;5;244m␛[m␛[38;5;244m␛[m␛[38;5;244m␛[m␛[38;5;244m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m✗␛[m␛[48;5;237m ␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237mwriter-5…  patch kept · [p] review · 4 tools · $0.03␛[m␛[m ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m     ␛[38;5;244mcancelled␛[m                                            ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m     ␛[38;5;244mcancelled · handoff handoff-130ebba38aed7␛[m            ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m attach␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m answer without attaching␛[m            ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[r]␛[m␛[38;5;244m retry␛[m␛[38;5;244m · ␛[m␛[38;5;254m[p]␛[m␛[38;5;244m review␛[m␛[38;5;244m · ␛[m␛[38;5;254m[x]␛[m␛[38;5;244m cancel␛[m␛[38;5;244m · ␛[m␛[38;5;254m[X]␛[m␛[38;5;244m kill␛[m           ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[K]␛[m␛[38;5;244m kill all · every level␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the turn␛[m      ␛[38;5;254m│␛[m
@@ -467,7 +467,7 @@
 ␛[38;5;254m╰──────────────────────────────────────────────────────────╯␛[m
 
 · a writer waiting for a check slot · parked in front of its test run, not failed
-␛[38;5;254m╭─ ␛[m␛[1;38;5;254mAgents ␛[m␛[38;5;254m────────────────────────── ␛[38;5;254m1 needs you␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 held␛[m ─╮␛[m
+␛[38;5;254m╭─ ␛[m␛[1;38;5;254mAgents ␛[m␛[38;5;254m─────────────────────── ␛[38;5;254m1 needs you␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 waiting␛[m ─╮␛[m
 ␛[38;5;254m│␛[m   ␛[1;38;5;254m●␛[m orchestrator␛[38;5;244m · this se…␛[m  ␛[38;5;244mround 7 · streaming…␛[m  ␛[38;5;244m$0.12␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;254m⚠␛[m runner-2␛[38;5;244m · go test .…␛[m  ␛[38;5;254m⚠ needs you␛[m␛[38;5;244m · ␛[m␛[38;5;244m3 tools · $0.01␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m     ␛[38;5;244mwaiting approval: run go test ./internal/agent/...␛[m   ␛[38;5;254m│␛[m

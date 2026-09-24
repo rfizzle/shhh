@@ -690,3 +690,17 @@ func TestFanoutLaneFoldsTheReportAFollowUpReplaced(t *testing.T) {
 		t.Fatalf("the replaced report should stay folded:\n%s", text)
 	}
 }
+
+// A failed lane is the parent transcript's account of the child, so it names
+// the handoff's handle in full after the reason.
+func TestFanoutFailedLaneNamesItsHandoff(t *testing.T) {
+	lane := FanoutLane{State: FanoutFailed, Name: "patcher-3", Summary: "round limit (25) reached",
+		Handoff: "handoff-130ebba38aed7"}
+	if got := lane.note(); got != "round limit (25) reached · handoff handoff-130ebba38aed7" {
+		t.Fatalf("the failed lane's note = %q", got)
+	}
+	lane.Handoff = ""
+	if got := lane.note(); got != "round limit (25) reached" {
+		t.Fatalf("a lane with no handoff says the reason alone: %q", got)
+	}
+}

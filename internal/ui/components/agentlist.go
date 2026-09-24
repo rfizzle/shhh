@@ -62,6 +62,11 @@ type AgentRow struct {
 	// why a failed one failed. `⚠ needs you` without saying what for sends
 	// the reader looking, and so does `failed`.
 	Note string
+	// Handoff is the handle of the record a failed child left for a
+	// replacement. The manager has the width the rail has not, so the line
+	// under the row names it after the reason
+	// (docs/capabilities/subagents.md#a-failed-child-leaves-a-handoff).
+	Handoff string
 	// Answerable marks a blocked row whose pending approval can be answered
 	// here; Retryable marks a failed row that can be run again on its
 	// original task; Editable marks a role row with a file behind it, which
@@ -584,12 +589,24 @@ func (r AgentRow) render(inner int, focused bool) []string {
 		row = PointerColumn() + row
 	}
 	rows := []string{row}
-	if r.Note != "" {
+	if note := r.noteLine(); note != "" {
 		// Under the row's own name rather than under a sibling of its
 		// parent's: the line belongs to the row above it, and the row moved.
-		rows = append(rows, indented(r.Note, detailIndent+max(r.Depth-1, 0), inner))
+		rows = append(rows, indented(note, detailIndent+max(r.Depth-1, 0), inner))
 	}
 	return rows
+}
+
+// noteLine is the line under the row: the note, and the handoff's handle
+// after it where the child left one.
+func (r AgentRow) noteLine() string {
+	if r.Handoff == "" {
+		return r.Note
+	}
+	if r.Note == "" {
+		return "handoff " + r.Handoff
+	}
+	return r.Note + detailSep + "handoff " + r.Handoff
 }
 
 // followUpWord is what the steer key does over a child that has answered:
@@ -669,18 +686,23 @@ func (l *AgentList) hints() []KeyOffer {
 
 // tally is the manager's title-rail summary: the same sentence the fan-out
 // header states, about the children this list holds. The orchestrator is not
-// a child and is left out of it.
+// a child and is left out of it. A child parked in front of a check is
+// counted as waiting, as the fan-out header counts it, since nobody held it.
 func (l *AgentList) tally() string {
 	var states []FanoutState
+	waits := 0
 	for _, r := range l.Rows {
 		if r.State != AgentOffer && r.Progress != nil {
 			states = append(states, r.Progress.State)
+			if r.Progress.State == FanoutHeld && r.Progress.SlotWait > 0 {
+				waits++
+			}
 		}
 	}
 	if len(states) == 0 {
 		return ""
 	}
-	return stateTally(states)
+	return waitingTally(states, waits)
 }
 
 // visibleRows renders the scrolling half of the list windowed to a body
@@ -700,7 +722,7 @@ func (l *AgentList) visibleRows(width, budget int, scrolling []int) []string {
 	l.list.Items, l.list.Focus = scrolling, focus
 	l.list.Rows = func(pos int) int {
 		lines := 1
-		if l.Rows[scrolling[pos]].Note != "" {
+		if l.Rows[scrolling[pos]].noteLine() != "" {
 			lines++
 		}
 		// The open field is part of the row it is aimed at, so the window

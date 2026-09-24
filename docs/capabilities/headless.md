@@ -431,6 +431,11 @@ are three counts rather than one because a total cannot be split back: a
 client that is to say "1 yours" of a child steered once by the person and once
 by the check needs the shares, not the sum.
 
+**A failed child's line names its handoff apart from its reason.** The agent
+object's `handoff` is the handle `resume_handoff` takes, and `detail` beside it
+is why the child stopped and nothing else, so a client decides for itself
+whether it has the room to draw an identifier.
+
 ## Something else can drive it
 
 A script starts a run, waits, and reads what it left behind. That is the whole

@@ -772,3 +772,72 @@ func TestFanoutLongReportOpensFullScreen(t *testing.T) {
 		t.Fatalf("the full view should end on the report's last line: %q", got)
 	}
 }
+
+// A failed child's handle is on its status and not in its detail, and each
+// surface says as much of it as it has room for: the rail's map says the
+// record was kept, the manager's line names the handle after the reason, and
+// the parent transcript's lane — or, for a child that ran alone, its closing
+// row — says it in full
+// (docs/capabilities/subagents.md#a-failed-child-leaves-a-handoff).
+func TestAFailedChildsHandoffIsSaidOncePerSurface(t *testing.T) {
+	sup := subagent.New(context.Background(), subagent.Options{
+		Root: t.TempDir(), NewEnv: blockingEnv(),
+		Record: func(subagent.Spec, string) subagent.Recorder {
+			return subagent.Recorder{Handoff: func([]byte) (string, error) { return "handoff-7", nil }}
+		},
+	})
+	t.Cleanup(sup.Close)
+	m := newSubagentModel(t, sup)
+
+	m.beginSpawnBatch()
+	for _, task := range []string{"one", "two"} {
+		spawnInto(t, sup, `{"role":"researcher","task":"`+task+`"}`)
+		m.appendSpawnEntry(spawnRowEntry(task))
+	}
+	if err := sup.Kill("researcher-1"); err != nil {
+		t.Fatal(err)
+	}
+	waitFor(t, func() bool {
+		st, ok := sup.Get("researcher-1")
+		return ok && st.State == subagent.StateFailed && st.Handoff != ""
+	})
+	st, _ := sup.Get("researcher-1")
+	if strings.Contains(st.Detail, "handoff") {
+		t.Fatalf("the detail should be the reason alone: %q", st.Detail)
+	}
+
+	for _, a := range m.inspectorAgents() {
+		if a.Name != "researcher-1" {
+			continue
+		}
+		if !a.Handoff || strings.Contains(a.Detail, "handoff-7") {
+			t.Fatalf("the rail should say the record was kept and not name it: %+v", a)
+		}
+	}
+
+	rows, _ := m.buildAgentRows()
+	var row *components.AgentRow
+	for i := range rows {
+		if rows[i].Name == "researcher-1" {
+			row = &rows[i]
+		}
+	}
+	if row == nil || row.Handoff != "handoff-7" || strings.Contains(row.Note, "handoff") {
+		t.Fatalf("the manager's row should carry the handle beside its note: %+v", row)
+	}
+
+	view := ansi.Strip(m.renderHistory())
+	if !strings.Contains(view, "handoff handoff-7") {
+		t.Fatalf("the lane should name the handle in full:\n%s", view)
+	}
+
+	// A child with no lane closes on a row of its own, which says it too.
+	alone := subagent.Status{Name: "researcher-9", State: subagent.StateFailed,
+		Detail: "cancelled", Handoff: "handoff-9"}
+	updated, _ := m.Update(subagentEventMsg{ev: subagent.Event{Kind: subagent.EventDone, Status: alone}})
+	m = updated.(Model)
+	last := m.transcript[len(m.transcript)-1]
+	if last.text != "Agent researcher-9: cancelled · handoff handoff-9" {
+		t.Fatalf("the closing row should name the handle after the reason: %q", last.text)
+	}
+}

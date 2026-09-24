@@ -618,14 +618,6 @@ func (m Model) inspectorAgents() []components.InspectorAgent {
 			// says what it found or why it broke, rather than repeating the
 			// word with a tool count on it.
 			a.Outcome, a.Detail = st.State.String(), childNote(st)
-			// The supervisor writes the record's handle into the same line,
-			// for a surface with room to print it. This row has none: it is
-			// forty-odd columns and it says the record was kept in words,
-			// with the key that uses it, so the handle here would be a
-			// truncated identifier crowding out the offer.
-			if a.Handoff {
-				a.Detail = strings.TrimSuffix(a.Detail, " · handoff "+st.Handoff)
-			}
 		}
 		agents = append(agents, a)
 	}

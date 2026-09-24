@@ -320,6 +320,7 @@ func (m Model) fanoutBlockFor(e entry) components.FanoutBlock {
 			Verdict:    st.Verdict,
 			SteerFrom:  string(st.SteerFrom),
 			Frame:      p.Frame,
+			Handoff:    st.Handoff,
 		}
 		if note := childNote(st); note != "" {
 			if st.State == subagent.StateBlocked {

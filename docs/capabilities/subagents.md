@@ -1137,7 +1137,10 @@ own runtime failed — leaves a durable handoff before it releases its slot or,
 for a writer, its isolated copy. A completed child keeps its ordinary final
 report. A failed child’s report names the failure handoff and the replacement
 budget the parent should use; the parent transcript and the session record
-carry the same closed failure category.
+carry the same closed failure category. The line that says why the child
+stopped says only that, and each surface says as much of the handle as it has
+room for: the rail says the handoff was kept, while the agent manager and the
+parent transcript name the handle after the reason.
 
 The handoff preserves the original task and declared paths, effective budget,
 phase spend, end category and detail, completed round, paths read and written,

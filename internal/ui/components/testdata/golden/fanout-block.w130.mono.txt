@@ -21,7 +21,7 @@
    ◇ agent   reader-4 · survey internal/ui                                                                           queued   1.0s
     [alt+a] agents
 
-· settled · one lane open on its report, one carrying a verdict, and no spawn count once nothing is live
+· settled · one lane open on its report, one carrying a verdict, one failed naming its handoff, and no spawn count once nothing is live
 ◇ fan-out    3 agents                                                                                     2 done · 1 failed  2m04s
    ◇ agent   writer-1 · docs/loop.md                                                              ✓ done · 11 tools · $0.04  1m38s
     documented the sentinel and linked the test · 2 assumptions
@@ -39,7 +39,7 @@
     two findings, both in the round accounting
     ▸ report · 3 lines · [enter] expand
    ◇ agent   patcher-3 · apply the patch                                                        ✗ failed · 12 tools · $0.05  2m04s
-    round limit (25) reached
+    round limit (25) reached · handoff handoff-130ebba38aed7
 
 · no declared step count · every lane spins
 ◇ fan-out    2 agents                                                                                             2 running    22s
@@ -99,7 +99,7 @@
    ␛[38;5;244m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mreader-4␛[m␛[38;5;244m · survey internal/ui␛[m                                                                           ␛[38;5;244mqueued␛[m   ␛[38;5;244m1.0s␛[m
     ␛[38;5;254m[alt+a]␛[m␛[38;5;244m agents␛[m
 
-· settled · one lane open on its report, one carrying a verdict, and no spawn count once nothing is live
+· settled · one lane open on its report, one carrying a verdict, one failed naming its handoff, and no spawn count once nothing is live
 ␛[38;5;254m◇␛[m ␛[38;5;254mfan-out␛[m    ␛[38;5;244m3 agents␛[m                                                                                     ␛[38;5;254m2 done␛[m␛[38;5;244m · ␛[m␛[38;5;254m1 failed␛[m  ␛[38;5;244m2m04s␛[m
    ␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mwriter-1␛[m␛[38;5;244m · docs/loop.md␛[m                                                              ␛[38;5;254m✓ done␛[m␛[38;5;244m · ␛[m␛[38;5;244m11 tools · $0.04␛[m  ␛[38;5;244m1m38s␛[m
     ␛[38;5;244mdocumented the sentinel and linked the test · 2 assumptions␛[m
@@ -117,7 +117,7 @@
     ␛[38;5;244mtwo findings, both in the round accounting␛[m
     ␛[38;5;244m▸ report · 3 lines · ␛[m␛[38;5;244m[enter] expand␛[m
    ␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mpatcher-3␛[m␛[38;5;244m · apply the patch␛[m                                                        ␛[38;5;254m✗ failed␛[m␛[38;5;244m · ␛[m␛[38;5;244m12 tools · $0.05␛[m  ␛[38;5;244m2m04s␛[m
-    ␛[38;5;244mround limit (25) reached␛[m
+    ␛[38;5;244mround limit (25) reached · handoff handoff-130ebba38aed7␛[m
 
 · no declared step count · every lane spins
 ␛[38;5;254m◇␛[m ␛[38;5;254mfan-out␛[m    ␛[38;5;244m2 agents␛[m                                                                                             ␛[38;5;254m2 running␛[m    ␛[38;5;244m22s␛[m
