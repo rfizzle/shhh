@@ -459,7 +459,7 @@ func (l *todoLane) end(ctx context.Context, d *todoDriver, st *run.State, it tod
 		run.Discard(d.root, it.Slug)
 		run.ClearSpool(d.root, it.Slug)
 		l.kept = len(run.DirtyPaths(d.tree)) > 0
-		line := fmt.Sprintf("■ todo run %s stopped at %s; the item is open again", it.Slug, st.Stage)
+		line := fmt.Sprintf("⊘ todo run %s stopped at %s; the item is open again", it.Slug, st.Stage)
 		if l.kept {
 			line += " and its work so far is kept in " + d.tree
 		}

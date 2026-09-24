@@ -446,7 +446,7 @@ func newCmdCmd() *cobra.Command {
 					if warnings := safety.Check(result.Command); len(warnings) > 0 {
 						fmt.Fprintln(os.Stderr, "\n⚠ Safety warning:")
 						for _, w := range warnings {
-							fmt.Fprintf(os.Stderr, "  • %s\n", w.Risk)
+							fmt.Fprintf(os.Stderr, "  ⚠ %s\n", w.Risk)
 						}
 						fmt.Fprint(os.Stderr, "\nProceed? [y/N] ")
 						reader := bufio.NewReader(os.Stdin)

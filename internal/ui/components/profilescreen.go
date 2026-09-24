@@ -501,7 +501,9 @@ func (p *ProfileScreen) railRow(width int) string {
 			// nobody was asked would be the rail claiming an exchange that
 			// never happened
 			// (docs/interface/departures.md#the-drafters-rail-marks-a-step-nothing-was-asked-at).
-			parts = append(parts, sty.Dimmer.Render("⊘ "+name))
+			// It takes Dim, the tone the kit gives ⊘, so a skipped step
+			// does not share the Dimmer of a step still ahead.
+			parts = append(parts, sty.Dim.Render("⊘ "+name))
 		case i < at:
 			parts = append(parts, sty.Dim.Render("✓ "+name))
 		case i == at:

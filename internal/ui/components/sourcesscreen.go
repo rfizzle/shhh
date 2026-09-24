@@ -436,6 +436,12 @@ const (
 // any other kind came from a server, and a server's call is a command unless
 // somebody said otherwise
 // (docs/capabilities/mcp.md#a-call-is-a-command-unless-you-said-otherwise).
+//
+// Nothing files such a row yet. The ledger is written by the fetcher alone,
+// and a server's tool reaches the session through the MCP toolset, which
+// neither holds the ledger nor can tell a tool that reads a page from one
+// that does anything else, so this branch and the ⇄ it draws are waiting for
+// a producer rather than answering one.
 func (r SourcesRow) unvouched() bool {
 	return r.Kind != sourceKindFetch && r.Kind != sourceKindSearch
 }

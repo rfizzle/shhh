@@ -221,7 +221,7 @@
 ␛[1;97m/agents new␛[m␛[38;5;241m · a coding agent · reviewer tester␛[m                                                             ␛[38;5;241m[esc] discard the draft␛[m
 ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;241m✓ brief␛[m␛[38;5;245m   ␛[m␛[38;5;245m⊘ questions␛[m␛[38;5;245m   ␛[m␛[94m● draft␛[m
+  ␛[38;5;241m✓ brief␛[m␛[38;5;245m   ␛[m␛[38;5;241m⊘ questions␛[m␛[38;5;245m   ␛[m␛[94m● draft␛[m
 
   ␛[38;5;252mtest-writer — adds table-driven tests for a package and runs them␛[m
 
@@ -251,7 +251,7 @@
 ␛[1;97m/agents new␛[m␛[38;5;241m · a coding agent · reviewer tester␛[m                                                             ␛[38;5;241m[esc] discard the draft␛[m
 ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;241m✓ brief␛[m␛[38;5;245m   ␛[m␛[38;5;245m⊘ questions␛[m␛[38;5;245m   ␛[m␛[94m● draft␛[m
+  ␛[38;5;241m✓ brief␛[m␛[38;5;245m   ␛[m␛[38;5;241m⊘ questions␛[m␛[38;5;245m   ␛[m␛[94m● draft␛[m
 
   ␛[38;5;252mtest-writer — adds table-driven tests for a package and runs them␛[m
 
@@ -269,7 +269,7 @@
 ␛[1;97m/agents new␛[m␛[38;5;241m · a coding agent · reviewer tester␛[m                                                             ␛[38;5;241m[esc] discard the draft␛[m
 ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;241m✓ brief␛[m␛[38;5;245m   ␛[m␛[38;5;245m⊘ questions␛[m␛[38;5;245m   ␛[m␛[94m● draft␛[m
+  ␛[38;5;241m✓ brief␛[m␛[38;5;245m   ␛[m␛[38;5;241m⊘ questions␛[m␛[38;5;245m   ␛[m␛[94m● draft␛[m
 
   ␛[38;5;252mtest-writer — adds table-driven tests for a package and runs them␛[m
 

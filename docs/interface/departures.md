@@ -688,6 +688,29 @@ cost the closed set exists to refuse. So the hook is added once, with the one
 meaning both sites already give it, and a third line that hangs from its
 parent takes this mark rather than inventing another.
 
+## An unattended run's activity lines lead with a chevron
+
+*A gap.* No artboard draws what an unattended run writes to stderr, and no
+guideline page lists `»`. The binary leads every line of a run's activity
+there with it — a call being made, `» read_file internal/cli/print.go`; a
+notice the loop delivered, a steer, a compaction, a moved tree, a retry; the
+on-close suite's verdict; and a setting the run is working under or could not
+honour, `» hooks: …`, `» delegation: …` — so a person reading the terminal can
+tell the run's own account of itself from the answer written to stdout
+beside it, and a script can take one or the other with a single pattern.
+
+The kit's marks are each a state or a kind of act, and this is neither: the
+lines under it are a call, a notice, a verdict and a setting, and one prefix
+has to lead all four. `▸` was the alternative and is the kit's *running* — true
+of the call line and false of the rest, and a reader who learned it in the
+transcript would read every notice as something still going on. A per-kind
+mark (`⚙` for a read, `✎` for a write) would need the stderr line to say what
+the transcript row says, which is a second rendering of the row for a surface
+with no grid to put it in. So the chevron is added once, with the one meaning
+every site already gives it — *this line is the run speaking, not the
+answer* — and the failure that answers a call hangs from its line with `↳`,
+as [above](#a-line-that-answers-the-one-above-hangs-from-it).
+
 ## The start screen's trust row has no artboard
 
 *A gap.* The start screen's artboard draws a checkout shhh has never seen and

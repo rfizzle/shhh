@@ -123,18 +123,20 @@ var additions = map[rune]string{
 	'▒': "departures.md#two-surfaces-draw-with-blocks-rather-than-in-them",
 	'▓': "departures.md#two-surfaces-draw-with-blocks-rather-than-in-them",
 	'↳': "departures.md#a-line-that-answers-the-one-above-hangs-from-it",
+	'»': "departures.md#an-unattended-runs-activity-lines-lead-with-a-chevron",
 }
 
 // screenSources is every tree this test reads, relative to internal/ui. The
 // whole of internal/ui is read: every package under it draws, including the
 // one-shot's own surface, the markdown renderer and the image rasteriser. A
-// package outside it is listed when it composes text a surface draws as it
+// package outside it is listed when it composes text a reader sees as it
 // stands — the sub-agent supervisor writes a child's transcript rows, which
-// the attached view renders without rewording — because a mark written one
-// package away from the renderer is still a mark the reader has to learn. A
-// package that writes screen text and is not listed is one whose marks
-// nobody has decided.
-var screenSources = []string{".", "../subagent"}
+// the attached view renders without rewording; the CLI writes an unattended
+// run's stderr and every listing; the reports package draws a page — because
+// a mark written one package away from the renderer is still a mark the
+// reader has to learn. A package that writes screen text and is not listed
+// is one whose marks nobody has decided.
+var screenSources = []string{".", "../subagent", "../cli", "../reports"}
 
 func TestTheGlyphSetIsClosed(t *testing.T) {
 	fset := token.NewFileSet()
