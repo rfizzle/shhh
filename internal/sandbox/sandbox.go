@@ -420,7 +420,7 @@ func defaultWritePaths() []string {
 // See docs/capabilities/containment.md#the-temporary-directory-is-the-sessions-own.
 func hostTempDirs() []string {
 	var out []string
-	for _, p := range []string{"/tmp", os.TempDir()} {
+	for _, p := range hostTempCandidates() {
 		rp, err := resolvePath(p)
 		if err != nil {
 			continue
@@ -434,6 +434,12 @@ func hostTempDirs() []string {
 	}
 	return out
 }
+
+// hostTempCandidates are the paths hostTempDirs resolves. It is a variable so
+// a test can name directories of its own: under an outer Seatbelt profile —
+// the quality gate's — the host's /private/tmp cannot even be lstat'd, so a
+// test that resolved the literal /tmp would be testing the runner it is in.
+var hostTempCandidates = func() []string { return []string{"/tmp", os.TempDir()} }
 
 // sessionTmpDir is the scratch directory TMPDIR points at where the mechanism
 // cannot give the command a filesystem of its own — Seatbelt, which says what

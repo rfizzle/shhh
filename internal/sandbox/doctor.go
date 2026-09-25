@@ -87,6 +87,11 @@ func tmpLine(s spec) string {
 	if s.tmpdir == "" {
 		return "the host's — nothing is containing these commands"
 	}
+	if len(s.tmpHidden) > 0 && s.tmpdir != s.tmpHidden[0] {
+		// Seatbelt: TMPDIR is the session's own, and the literal /tmp is the
+		// host's, hidden, because nothing here can remap a path.
+		return fmt.Sprintf("%s (private to this session; the host's is not reachable, and a write to the literal /tmp is refused)", s.tmpdir)
+	}
 	return fmt.Sprintf("%s (private to this session; the host's is not reachable)", s.tmpdir)
 }
 

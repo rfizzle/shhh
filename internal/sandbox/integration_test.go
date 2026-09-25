@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -420,6 +421,50 @@ func refuseTheHostTmpdir(t *testing.T, avail Availability) {
 	}
 	if out, err := capture(t, argv[0], argv[1:]...); err != nil || !strings.Contains(out, "IN-THE-WORKSPACE") {
 		t.Errorf("a read-only workspace inside the host tmpdir must still be readable under %s: %v:\n%s", avail.Mechanism, err, out)
+	}
+	policy.ReadOnlyWorkspace = false
+	writeTheLiteralTmp(t, avail, policy)
+}
+
+// writeTheLiteralTmp puts the literal /tmp to the kernel, for the tools that
+// name it instead of asking TMPDIR. Both mechanisms must let the path resolve
+// — /tmp is a link to /private/tmp on macOS, and a refused lstat there is an
+// error about a directory that plainly exists. Bubblewrap's /tmp is the
+// private tmpfs, so a write there succeeds and never reaches the host.
+// Seatbelt cannot remap a path, so the literal /tmp stays the host's and a
+// write to it is refused: the shared directory is not reopened for the tools
+// that skip TMPDIR.
+// See docs/capabilities/containment.md#the-temporary-directory-is-the-sessions-own.
+func writeTheLiteralTmp(t *testing.T, avail Availability, policy Policy) {
+	t.Helper()
+	leaf := "shhh-literal-tmp-" + strconv.Itoa(os.Getpid())
+	landed := filepath.Join("/tmp", leaf)
+	t.Cleanup(func() { _ = os.Remove(landed) })
+	command := "cd /tmp && pwd -P && echo RESOLVED; echo scratch > /tmp/" + leaf + " && echo WROTE"
+	argv, err := Wrap(avail, policy, command)
+	if err != nil {
+		t.Fatalf("Wrap under %s: %v", avail.Mechanism, err)
+	}
+	out, _ := capture(t, argv[0], argv[1:]...)
+	if !strings.Contains(out, "RESOLVED") {
+		t.Errorf("the literal /tmp must resolve under %s:\n%s", avail.Mechanism, out)
+	}
+	if avail.Mechanism == "sandbox-exec" && runtime.GOOS == "darwin" && !strings.Contains(out, "/private/tmp") {
+		t.Errorf("the literal /tmp must resolve through /private/tmp under Seatbelt:\n%s", out)
+	}
+	wrote := strings.Contains(out, "WROTE")
+	switch avail.Mechanism {
+	case "bwrap":
+		if !wrote {
+			t.Errorf("the literal /tmp is the private tmpfs under bubblewrap and must be writable:\n%s", out)
+		}
+	case "sandbox-exec":
+		if wrote {
+			t.Errorf("a write to the literal /tmp reached the host's shared directory under Seatbelt:\n%s", out)
+		}
+	}
+	if _, err := os.Stat(landed); err == nil {
+		t.Errorf("a contained write to the literal /tmp landed on the host under %s: %s", avail.Mechanism, landed)
 	}
 }
 

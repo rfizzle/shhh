@@ -184,6 +184,14 @@ func tmpReadable(s spec) []string {
 // The ancestors get file-read-metadata and nothing else, which is what an
 // lstat asks for: it says the directory is there and says nothing about what
 // is in it, because listing one is file-read-data and stays denied.
+//
+// Each hidden temporary root answers the same question on its own account,
+// whatever is allowed inside it. /tmp is a symbolic link to /private/tmp on
+// macOS, so anything that resolves the literal path — realpath, a Go
+// filepath.EvalSymlinks, a tool asking where its scratch really is — lstat's
+// the target, and refusing that is an error about a directory that plainly
+// exists. Saying it exists reopens nothing: its entries stay unreadable and
+// unwritable, which is the whole of what hiding it is for.
 // See docs/capabilities/containment.md#a-denial-arrives-as-the-commands-own-error.
 func traversable(s spec) []string {
 	denied := make([]string, 0, len(s.tmpHidden)+len(s.denyDirs))
@@ -193,7 +201,7 @@ func traversable(s spec) []string {
 	if s.tmpdir != "" {
 		allowed = append(allowed, s.tmpdir)
 	}
-	var out []string
+	out := slices.Clone(s.tmpHidden)
 	for _, a := range allowed {
 		for _, d := range denied {
 			if a == d || !within(a, d) {

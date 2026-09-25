@@ -114,6 +114,7 @@ func TestWrapBwrapBridgesAHostList(t *testing.T) {
 
 	policy, _ := workspacePolicy(t)
 	policy.AllowHosts = []string{"registry.npmjs.org", "proxy.golang.org"}
+	tmp := stubHostTemp(t)
 	argv, err := Wrap(Availability{Mechanism: "bwrap", OK: true}, policy, "npm install")
 	if err != nil {
 		t.Fatal(err)
@@ -121,7 +122,6 @@ func TestWrapBwrapBridgesAHostList(t *testing.T) {
 	if !slices.Contains(argv, "--unshare-net") {
 		t.Fatalf("a host list is a namespace with no network of its own: %v", argv)
 	}
-	tmp := resolvedPath(t, "/tmp")
 	inExe, inSock := bridgePaths(tmp)
 	if i := slices.Index(argv, resolvedPath(t, exe)); i < 1 || argv[i-1] != "--ro-bind" || argv[i+1] != inExe {
 		t.Fatalf("the bridge program must be bound onto the private /tmp: %v", argv)

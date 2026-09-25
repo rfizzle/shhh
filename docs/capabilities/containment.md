@@ -146,6 +146,21 @@ notice: two commands that pass a file to each other through `/tmp` are two
 commands that now have to pass it through the workspace. `/sandbox doctor`
 names the directory in force, so the answer is where the question is asked.
 
+**On macOS the literal `/tmp` is not the scratch.** Seatbelt says what a
+process may reach and cannot put a different directory at a path, so the only
+way to make the literal `/tmp` writable there is to open the host's shared
+one — the channel this section exists to close, and a door into every other
+session's leftovers. It stays hidden: a tool that asks `TMPDIR` gets the
+session's own directory, and a tool that writes to `/tmp` by name is refused
+and needs the path granted or its own temporary-directory setting pointed at
+`TMPDIR`. What the hidden directory still answers is that it exists. `/tmp` is
+a link to `/private/tmp`, and a program that resolves a path before using it
+asks about the target; refusing that question would be an error about a
+directory that plainly is there, raised in programs that never meant to write
+to it. Its contents stay unreadable and unwritable. Where the mechanism gives
+the command a filesystem of its own, `/tmp` itself is the private one and a
+write there simply works.
+
 ## Apple toolchain shims stay compatible
 
 On macOS, `/usr/bin/git` is an Xcode command-line-tool shim. It resolves the

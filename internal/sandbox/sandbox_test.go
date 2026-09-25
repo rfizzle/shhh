@@ -47,6 +47,19 @@ func resolvedPath(t *testing.T, path string) string {
 	return p
 }
 
+// stubHostTemp stands a directory of the test's own in for the host's /tmp
+// and returns it resolved. A test that resolved the real /tmp would be asking
+// the runner it is in rather than the code: under an outer Seatbelt profile
+// (the quality gate's) that lstat of /private/tmp is itself refused.
+func stubHostTemp(t *testing.T) string {
+	t.Helper()
+	tmp := resolvedPath(t, mkdir(t, filepath.Join(t.TempDir(), "tmp")))
+	old := hostTempCandidates
+	hostTempCandidates = func() []string { return []string{tmp} }
+	t.Cleanup(func() { hostTempCandidates = old })
+	return tmp
+}
+
 func workspacePolicy(t *testing.T) (Policy, string) {
 	t.Helper()
 	ws := t.TempDir()
@@ -505,6 +518,38 @@ func TestSeatbeltProfileLetsAMaskedAncestorAnswerAnLstat(t *testing.T) {
 	}
 	if strings.Contains(block, "subpath") {
 		t.Errorf("a subpath here would make every masked file's metadata readable:\n%s", block)
+	}
+}
+
+// /tmp is a link to /private/tmp on macOS, and a program that resolves the
+// literal path lstat's the target. The hidden root answers that one question
+// as a literal — that it exists — and nothing inside it is allowed back, so
+// a write to the literal /tmp is still refused rather than reaching the
+// host's shared directory.
+// See docs/capabilities/containment.md#the-temporary-directory-is-the-sessions-own.
+func TestSeatbeltLetsTheHiddenTmpRootResolveAndNothingInIt(t *testing.T) {
+	testHome(t)
+	tmp := stubHostTemp(t)
+	policy, _ := workspacePolicy(t)
+
+	s, err := resolvePolicy(policy, "sandbox-exec")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Equal(s.tmpHidden, []string{tmp}) {
+		t.Fatalf("the stubbed host tmp must be the one hidden: %v", s.tmpHidden)
+	}
+	if !slices.Contains(traversable(s), tmp) {
+		t.Fatalf("the hidden root must answer an lstat: %v", traversable(s))
+	}
+	profile := seatbeltProfile(s)
+	deny := strings.Index(profile, "(deny file-read* file-write*\n  (subpath "+sbplQuote(tmp)+")")
+	meta := strings.Index(profile, "(allow file-read-metadata")
+	if deny < 0 || meta < deny || !strings.Contains(profile[meta:], "(literal "+sbplQuote(tmp)+")") {
+		t.Fatalf("the root is denied as a subtree and answers metadata as a literal after it:\n%s", profile)
+	}
+	if len(tmpReadable(s)) != 0 || within(s.tmpdir, tmp) {
+		t.Fatalf("nothing inside the host tmp may be allowed back: tmpdir=%s readable=%v", s.tmpdir, tmpReadable(s))
 	}
 }
 
