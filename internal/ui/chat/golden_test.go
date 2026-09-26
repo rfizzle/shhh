@@ -1410,8 +1410,13 @@ func TestGolden_Interrupt(t *testing.T) {
 		grace.lastKeypress = time.Now()
 		grace.armDecision(stateConfirmRun)
 		grace.syncViewport()
+		// The same arrival on the first session after a rebinding release:
+		// below the wide breakpoint the notice rail is where the handover is
+		// named, and the keys-changed row yields it that rail (frame.go).
+		noticed := ungated.WithKeysNotice(KeysChangedNotice())
 		return []golden.Panel{
 			{Label: "ungated · the draft still has the keyboard", View: interruptSurface(ungated)},
+			{Label: "ungated · the keys-changed notice due, the handover keeps the rail", View: interruptSurface(noticed)},
 			{Label: "gated · the handover, and the card has it", View: interruptSurface(gated)},
 			{Label: "grace · held on a warm keyboard, keys a moment away", View: interruptSurface(grace)},
 		}

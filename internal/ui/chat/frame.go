@@ -712,6 +712,17 @@ func questionNoticeFor(n int, sayTheKey bool) string {
 	return label
 }
 
+// handoverNotice reports that the notice rail carries the handover below the
+// wide breakpoint: a card is waiting, the draft holds the keyboard, and the
+// frame has no hint rail to name the chord that hands it over. The chord is
+// the one offer the design gives that rail while a card waits
+// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard),
+// so it leads the rail and is never the clause the edge cuts. A question set
+// aside is not this state: its count already says how to get back to it.
+func (m Model) handoverNotice() bool {
+	return m.frameLayout() != frameWide && m.decisionUngated() && !m.questionAside()
+}
+
 // noticeLine assembles the notice rail: update notice, queued
 // steering, blocked sub-agents, and the latest auto-mode denial. Empty —
 // rail hidden — when there is nothing to say; orchestrator-scoped, so it
@@ -725,9 +736,13 @@ func (m Model) noticeLine() string {
 	// two-press window says what the next press does here — the invariant
 	// that the surface says what a key will do cannot depend on the
 	// terminal being wide (cancel.go).
+	handover := m.handoverNotice()
 	if m.frameLayout() != frameWide {
 		if note, ok := m.armedHint(); ok {
 			parts = append(parts, note.render())
+		}
+		if handover {
+			parts = append(parts, segAs(keys.Draft.Answer, keys.Words(keys.Draft.Answer)).render())
 		}
 	}
 	// What the last esc folded, or why it folded nothing (readinghint.go).
@@ -741,10 +756,13 @@ func (m Model) noticeLine() string {
 	if m.foldNotice != "" {
 		parts = append(parts, sty.Frame.NoticeInfo.Render(m.foldNotice))
 	}
-	if m.keysNotice != "" {
+	if m.keysNotice != "" && !handover {
 		// The rebind notice (keysnotice.go): shown for one session after a
 		// release that moved keys, ahead of the counts below because it
-		// explains what a reflex just failed to do.
+		// explains what a reflex just failed to do. It yields while the
+		// handover holds this rail: the notice is a row wide on its own, so
+		// beside the chord it would be cut mid-clause, and unlike the chord
+		// it is still true once the card is answered — it comes back then.
 		parts = append(parts, sty.Frame.NoticeInfo.Render(m.keysNotice))
 	}
 	if m.updateNotice != "" {
