@@ -1424,11 +1424,15 @@ func renderObserveSession(cmd *cobra.Command, db *storage.DB, id int64, transcri
 // through a different path must still land on the same page.
 func observeSessionReport(s storage.AgentSessionSummary, events []storage.AgentExportEvent,
 	firstWrite storage.AgentFirstWrite, calls []storage.AgentSessionCall, transcript bool) report.Report {
-	pairs := []report.Pair{
-		{Key: "started", Value: s.StartedAt.Local().Format("Jan 2 15:04")},
-		{Key: "model", Value: joinDetail(s.Provider, s.Model)},
-		{Key: "turns", Value: strconv.FormatInt(s.Turns, 10)},
+	pairs := []report.Pair{{Key: "started", Value: s.StartedAt.Local().Format("Jan 2 15:04")}}
+	// A row that asked no model — a backlog run's driver, whose stages each
+	// record their own — prints no model line, the way a setting that was not
+	// in force prints none: the provider alone under "model" would read as
+	// the model's name, and a blank as a write that went missing.
+	if s.Model != "" {
+		pairs = append(pairs, report.Pair{Key: "model", Value: joinDetail(s.Provider, s.Model)})
 	}
+	pairs = append(pairs, report.Pair{Key: "turns", Value: strconv.FormatInt(s.Turns, 10)})
 	for _, p := range []report.Pair{
 		{Key: "outcome", Value: s.Outcome},
 		// The rating sits next to the outcome because that is what it is for:

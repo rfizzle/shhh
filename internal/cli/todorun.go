@@ -413,10 +413,13 @@ func newTodoDriver(out io.Writer, root string, cfg config.Config, noCommit bool)
 	// The record is opened last and never refuses the run: a sprint that
 	// would not start because a table could not be written is a runner whose
 	// bookkeeping outranks the work. A nil store is a run with no record,
-	// which is what every stage already falls back to on its own.
+	// which is what every stage already falls back to on its own. The row
+	// names no model: the driver asks none, and each stage's own row carries
+	// the model its surface resolved, so a comparison split on the model
+	// counts the stages and never a guess made on the driver's behalf.
 	if db, err := openStore(); err == nil {
 		d.db = db
-		d.rec = startObserveRecorder(db, "todo", cfg.Provider.Default, cfg.Provider.Model, nil)
+		d.rec = startObserveRecorder(db, "todo", cfg.Provider.Default, "", nil)
 	}
 	d.ledger = d.session + "#" + strconv.Itoa(os.Getpid())
 	return d, nil

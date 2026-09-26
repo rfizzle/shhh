@@ -22,6 +22,7 @@ import (
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/quality"
+	"github.com/rfizzle/shhh/internal/resolve"
 	"github.com/rfizzle/shhh/internal/todo"
 	"github.com/rfizzle/shhh/internal/todo/run"
 )
@@ -1535,5 +1536,46 @@ func TestTodoRunHeadless_OverSpendBlocksTheItem(t *testing.T) {
 	}
 	if it, _ := todo.Load(todo.BuiltinCode(), root).Find("a-one"); !strings.Contains(it.Body, "$2.04 spent of the $2.00") {
 		t.Fatalf("the figures should be the item's evidence:\n%s", it.Body)
+	}
+}
+
+// The driver's own row names no model: it asks none, and a comparison split
+// on the model column must count the stages, each of which records the model
+// the surface it runs as resolved — a writing stage is `shhh code` and reads
+// provider.code_model, a reading one is `shhh chat` and reads
+// provider.chat_model, and neither falls to provider.model while its own key
+// is set.
+func TestTodoRunHeadless_TheDriverRowNamesNoModel(t *testing.T) {
+	t.Setenv("SHHH_PROVIDER", "")
+	t.Setenv("SHHH_MODEL", "")
+	root := todoRepo(t, "a-one")
+	withProjectTrust(t, project.Trust{})
+	cfg := surfaceModels()
+	d, err := newTodoDriver(&bytes.Buffer{}, root, cfg, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(d.close)
+	if d.rec == nil {
+		t.Fatal("the driver should open its record row")
+	}
+	row, ok, err := d.db.AgentSession(d.rec.id)
+	if err != nil || !ok {
+		t.Fatalf("the driver's row should read back: ok=%v err=%v", ok, err)
+	}
+	if row.Kind != "todo" || row.Model != "" {
+		t.Fatalf("the driver's row is kind %q on model %q, want todo on none", row.Kind, row.Model)
+	}
+
+	for _, c := range []struct {
+		writes bool
+		want   string
+	}{{true, "code-model"}, {false, "chat-model"}} {
+		surface := todoStageArgs(c.writes, run.ModePlan)[0]
+		var flags resolve.Opts
+		fillConfigHalf(&flags, cfg, surface)
+		if got := resolve.Resolve(flags).Model; got != c.want {
+			t.Errorf("a stage that writes=%v runs as %s on %q, want %q", c.writes, surface, got, c.want)
+		}
 	}
 }

@@ -1597,3 +1597,22 @@ func TestObserveResult_IsBoundedTheWayTheFeedBoundsIt(t *testing.T) {
 		t.Fatalf("the tally line = %q", got[len(got)-1])
 	}
 }
+
+// A row that asked no model prints no model line, the way a setting that was
+// not in force prints none: the provider alone under "model" would read as
+// the model's name, and an empty value as a write that went missing.
+func TestObserveSessionReport_ARowWithNoModelDrawsNoModelLine(t *testing.T) {
+	row := goldenObserveSessionRow()
+	row.Kind, row.Model, row.Settings = "todo", "", nil
+	got := observeSessionReport(row, nil, storage.AgentFirstWrite{}, nil, false).Render(80)
+	if strings.Contains(got, "model:") {
+		t.Errorf("a row with no model drew a model line:\n%s", got)
+	}
+	if !strings.Contains(got, "turns:") {
+		t.Errorf("the rest of the provenance went with it:\n%s", got)
+	}
+	named := observeSessionReport(goldenObserveSessionRow(), nil, storage.AgentFirstWrite{}, nil, false).Render(80)
+	if !strings.Contains(named, "anthropic · claude-sonnet-5") {
+		t.Errorf("a row with a model lost its model line:\n%s", named)
+	}
+}
