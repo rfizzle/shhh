@@ -760,10 +760,17 @@ func SplitName(name string) (server string, ok bool) {
 // reports it the way it reports every other failed tool: a model that
 // cannot see that a call failed cannot correct it.
 func (s *Server) Call(ctx context.Context, tool Tool, args json.RawMessage) (string, error) {
+	text, _, err := s.call(ctx, tool, args)
+	return text, err
+}
+
+// call is Call with the pages the result says it read beside the text, for
+// the toolset that files them in the session's sources ledger.
+func (s *Server) call(ctx context.Context, tool Tool, args json.RawMessage) (string, []pageRead, error) {
 	var arguments map[string]any
 	if len(bytes.TrimSpace(args)) > 0 {
 		if err := json.Unmarshal(args, &arguments); err != nil {
-			return "", fmt.Errorf("invalid arguments: %w", err)
+			return "", nil, fmt.Errorf("invalid arguments: %w", err)
 		}
 	}
 	if arguments == nil {
@@ -771,20 +778,68 @@ func (s *Server) Call(ctx context.Context, tool Tool, args json.RawMessage) (str
 	}
 	session := s.liveSession()
 	if session == nil {
-		return "", s.closedErr()
+		return "", nil, s.closedErr()
 	}
 	res, err := session.CallTool(ctx, &sdk.CallToolParams{Name: tool.Remote, Arguments: arguments})
 	if err != nil {
-		return "", s.noticeIfDead("call "+tool.Remote, err)
+		return "", nil, s.noticeIfDead("call "+tool.Remote, err)
 	}
 	text := Flatten(res)
 	if res.IsError {
 		if text == "" {
 			text = "the tool reported an error"
 		}
-		return "", fmt.Errorf("%s: %s", tool.Remote, text)
+		return "", nil, fmt.Errorf("%s: %s", tool.Remote, text)
 	}
-	return text, nil
+	return text, pagesRead(res), nil
+}
+
+// pageRead is one web page a tool result carried: the address it came from
+// and how much of it arrived.
+type pageRead struct {
+	URI   string
+	Bytes int
+}
+
+// pagesRead is how a server's tool is told to be a page read: by the shape
+// of what it returned, not by a list of tool names. A result that embeds a
+// resource whose uri is an http or https address is the server handing back
+// the contents of that address, which is what reading a page is; the
+// protocol has no other way to say "this text is that page". A resource
+// link is not one — it points at an address without carrying anything from
+// it, which is what a search result does — and neither is text that merely
+// mentions a URL. Reading the shape rather than asking the person to declare
+// which tools fetch means a server the session has never seen files its
+// reads the first time it makes one
+// (docs/capabilities/chat.md#what-was-read).
+func pagesRead(res *sdk.CallToolResult) []pageRead {
+	if res == nil {
+		return nil
+	}
+	var out []pageRead
+	for _, c := range res.Content {
+		v, ok := c.(*sdk.EmbeddedResource)
+		if !ok || v.Resource == nil || !webAddress(v.Resource.URI) {
+			continue
+		}
+		n := len(v.Resource.Text)
+		if n == 0 {
+			n = len(v.Resource.Blob)
+		}
+		out = append(out, pageRead{URI: v.Resource.URI, Bytes: n})
+	}
+	return out
+}
+
+// webAddress reports whether a uri names a page on the web rather than
+// something in the server's own addressing space.
+func webAddress(uri string) bool {
+	scheme, _, ok := strings.Cut(strings.TrimSpace(uri), "://")
+	if !ok {
+		return false
+	}
+	scheme = strings.ToLower(scheme)
+	return scheme == "http" || scheme == "https"
 }
 
 // Render asks the server for one prompt's messages, filled in with args,

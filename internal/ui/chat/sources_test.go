@@ -6,6 +6,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/web"
 )
 
@@ -162,5 +163,17 @@ func TestRunSources_TheLedgerFirstAndTheInventedSecond(t *testing.T) {
 		if strings.Contains(s.URL, "example.com/gone") && s.Read {
 			t.Error("a fetch that 404ed was listed as read")
 		}
+	}
+}
+
+// A page a server's tool handed back has no status of shhh's own: the row
+// says where it came through instead, and is not drawn as a fetch that got
+// no answer.
+func TestSources_AServersReadSaysWhereItCameThrough(t *testing.T) {
+	var m Model
+	row := m.sourcesRow(web.Source{Kind: web.KindServer,
+		Requested: "https://example.com/guide", FinalURL: "https://example.com/guide", Bytes: 8192})
+	if row.Status != "via mcp" || row.State == components.ActivityFailed || row.Group != "example.com" {
+		t.Errorf("row = %+v", row)
 	}
 }

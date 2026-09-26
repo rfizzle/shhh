@@ -938,7 +938,12 @@ model for one. And **`web.Pages` is what was read, not what was tried**: it
 drops a fetch that did not answer 2xx and folds two reads of one URL through
 `web.CanonicalURL`, which is the same comparison `web.CitedURLs` runs a
 write-up's own addresses through — change one of them and *cited, not read*
-starts listing pages that were read.
+starts listing pages that were read. The one other writer is the MCP
+toolset: `mcp.Toolset.UseLedger` (wired in `openSourceLedger`) and its
+`WrapExecutor(agent, next)`/`WrapReadOnlyExecutor(agent, next)` file a
+`web.KindServer` row when a server's result embeds a resource at an http(s)
+address (`pagesRead` in `internal/mcp/client.go`), and `web.Pages` leaves
+those rows out, since no request of shhh's answered for them.
 
 `internal/web/pdf.go` shells out to `pdftotext`, resolved once by
 `DetectPDFText` in `openWebTools` (`internal/cli/web.go`) the way the

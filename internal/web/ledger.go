@@ -12,10 +12,15 @@ import (
 // returned is a fact, which is what makes a citation checkable.
 // See docs/capabilities/chat.md#what-was-read.
 
-// The two kinds of read a row records.
+// The kinds of read a row records. The fetcher writes the first two; a page
+// an MCP server's tool handed back is the third, filed by the MCP toolset,
+// and it is never one of Pages: shhh made no request for it, so there is no
+// status it answered with and nothing here can vouch that the text is what
+// the address holds.
 const (
 	KindFetch  = "fetch"
 	KindSearch = "search"
+	KindServer = "mcp"
 )
 
 // Orchestrator is the agent a session's own reads are recorded under. A

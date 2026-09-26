@@ -186,8 +186,15 @@ func (m Model) sourcesRow(s web.Source) components.SourcesRow {
 		row.Group = "unresolved"
 	}
 	row.Label = sourcePath(s)
-	row.Status = fetchStatus(s.Status)
 	row.Bytes = sourceBytes(s.Bytes)
+	// A page a server handed back has no status of shhh's own to state: no
+	// request left for the host, so the outcome says where the page came
+	// through rather than reading its absent status as no answer.
+	if s.Kind == web.KindServer {
+		row.Status = "via mcp"
+		return row
+	}
+	row.Status = fetchStatus(s.Status)
 	if s.Status == 0 || s.Status >= 400 {
 		row.State = components.ActivityFailed
 	}

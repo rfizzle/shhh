@@ -206,6 +206,16 @@ Nothing the model can call reaches the ledger. There is no tool that writes
 a row and none that removes one: a record an agent could edit would answer
 the question it exists to answer with whatever the agent preferred.
 
+A page can also arrive through an MCP server's tool, and that is a row too,
+of its own kind and marked `⇄` on the screen: the page came through a
+boundary shhh did not fetch across, so it has no status of shhh's own and
+nothing here can vouch that the text is what the address holds. Which calls
+count is read off the result rather than declared: a result that embeds a
+resource at an `http` or `https` address is the server handing back that
+page, and a bare link or a URL mentioned in text is not. Such a row is never
+one of the pages a write-up's *Sources* block is built from, for the same
+reason.
+
 ## The backlog is here too
 
 The backlog is not a coding surface. One file per item, four statuses, ready

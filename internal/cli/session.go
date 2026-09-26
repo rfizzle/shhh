@@ -180,7 +180,7 @@ type chatSession struct {
 	// by openNotebook; nil registers no notebook tools.
 	notebook *notebook.Store
 	// sources is the session's record of what it read, opened by
-	// openSourceLedger; nil is a session with no web tools.
+	// openSourceLedger; nil is a session with no web tools and no servers.
 	sources *web.Ledger
 	// mcp connects the MCP servers the catalog names; mcpTools and
 	// mcpCatalog are what came of it. A conversation takes only servers
@@ -248,18 +248,19 @@ func (s *chatSession) openNotebook(db *storage.DB) {
 	s.toolDefs = append(append([]provider.Tool{}, s.toolDefs...), notebook.Definitions()...)
 }
 
-// openSourceLedger gives the web toolset the session's sources ledger: one
-// row per fetch and per search, persisted under the session slot where
-// storage is open and living for the session otherwise. It registers no
-// tool — nothing the model calls reaches it, because a record the model
-// could write is a record it could write anything into.
+// openSourceLedger gives the web toolset and the MCP toolset the session's
+// sources ledger: one row per fetch, per search and per page a server's tool
+// handed back, persisted under the session slot where storage is open and
+// living for the session otherwise. It registers no tool — nothing the model
+// calls reaches it, because a record the model could write is a record it
+// could write anything into.
 //
 // It runs after the secrets are open, for the notebook's reason: a URL
 // carries whatever the model put in its query string, and a row outlives
 // the turn that made it.
 // See docs/capabilities/chat.md#what-was-read.
 func (s *chatSession) openSourceLedger(db *storage.DB) {
-	if s.web == nil {
+	if s.web == nil && s.mcpTools == nil {
 		return
 	}
 	var backend web.LedgerBackend
@@ -268,7 +269,12 @@ func (s *chatSession) openSourceLedger(db *storage.DB) {
 	}
 	s.sources = web.NewLedger(backend)
 	s.sources.SetScrub(s.vault.Scrub)
-	s.web.UseLedger(s.sources)
+	if s.web != nil {
+		s.web.UseLedger(s.sources)
+	}
+	if s.mcpTools != nil {
+		s.mcpTools.UseLedger(s.sources)
+	}
 }
 
 // sessionEnv is the provider-and-prompt setup shared by the interactive chat

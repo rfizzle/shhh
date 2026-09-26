@@ -380,7 +380,7 @@ func withSessionTools(session chatSession, red *evidence.Reducer, signature, cro
 	if session.mcpTools != nil {
 		if ro := session.mcpTools.ReadOnlyDefinitions(); len(ro) > 0 {
 			defs = append(defs, ro...)
-			base = session.mcpTools.WrapReadOnlyExecutor(base)
+			base = session.mcpTools.WrapReadOnlyExecutor(signature, base)
 			sysPrompt = prompt.CombineExtra(sysPrompt, mcp.ReadOnlyPromptBlock(session.mcpTools))
 		}
 	}

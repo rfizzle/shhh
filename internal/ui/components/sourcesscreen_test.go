@@ -7,6 +7,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/rfizzle/shhh/internal/ui/golden"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
@@ -130,4 +131,26 @@ func TestSourcesScreen_NarrowStacksThePanes(t *testing.T) {
 			t.Errorf("a row ran past the terminal: %q", line)
 		}
 	}
+}
+
+// TestGolden_SourcesScreen captures `/sources` over a session that read a page
+// through a server's tool as well as through the fetcher: the server's row
+// leads with ⇄ in the open tone, and the preview says it came through a
+// server rather than stating a status nobody answered with.
+func TestGolden_SourcesScreen(t *testing.T) {
+	rows := append(sourceRows(), SourcesRow{
+		ID: "s4", Group: "example.com", Kind: "mcp", Label: "/guide",
+		Requested: "https://example.com/guide", FinalURL: "https://example.com/guide",
+		Status: "via mcp", Bytes: "8 KB", Turn: "turn 2", Agent: "orchestrator",
+		State: ActivityDone,
+	})
+	captureGolden(t, "sources-screen", "the sources screen", goldenWidths, func(width int) []golden.Panel {
+		screen := func(focus int) string {
+			return (&SourcesScreen{Rows: rows, Subject: "2 pages · 1 host · 1 search", Focus: focus, MaxLines: 16}).View(width)
+		}
+		return []golden.Panel{
+			{Label: "a fetch · the fetcher's own read, under ⚙", View: screen(1)},
+			{Label: "a server's read · ⇄, and the way it came in place of a status", View: screen(3)},
+		}
+	})
 }

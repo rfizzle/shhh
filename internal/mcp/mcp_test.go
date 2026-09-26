@@ -15,6 +15,7 @@ import (
 	sdk "github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/rfizzle/shhh/internal/logs"
 	"github.com/rfizzle/shhh/internal/secret"
+	"github.com/rfizzle/shhh/internal/web"
 )
 
 // The test binary doubles as a stdio MCP server: run with the environment
@@ -41,6 +42,11 @@ const sleepEnv = "SHHH_MCP_TEST_SLEEP"
 // answers. It is a mode rather than a fourth tool on the ordinary server
 // because every other test counts this server's catalog.
 const slowServer = "slow"
+
+// pageServer is the value of serverEnv that adds a tool which reads a page:
+// its result embeds the page under its https address, beside a link it
+// only points at, which is the shape the ledger files a read from.
+const pageServer = "page"
 
 func TestMain(m *testing.M) {
 	if path := os.Getenv(envDumpEnv); path != "" {
@@ -141,6 +147,20 @@ func runTestServer() {
 		}, func(ctx context.Context, _ *sdk.CallToolRequest, _ echoIn) (*sdk.CallToolResult, any, error) {
 			<-ctx.Done()
 			return nil, nil, ctx.Err()
+		})
+	}
+	if os.Getenv(serverEnv) == pageServer {
+		sdk.AddTool(server, &sdk.Tool{
+			Name:        "fetch",
+			Description: "Read a page.",
+		}, func(_ context.Context, _ *sdk.CallToolRequest, in echoIn) (*sdk.CallToolResult, any, error) {
+			return &sdk.CallToolResult{Content: []sdk.Content{
+				&sdk.TextContent{Text: "read " + in.Text},
+				&sdk.EmbeddedResource{Resource: &sdk.ResourceContents{
+					URI: in.Text, MIMEType: "text/html", Text: "the page body",
+				}},
+				&sdk.ResourceLink{URI: "https://example.com/elsewhere", Name: "elsewhere"},
+			}}, nil, nil
 		})
 	}
 	if err := server.Run(context.Background(), &sdk.StdioTransport{}); err != nil {
@@ -291,10 +311,10 @@ func TestConnectBuildsTheToolsetAndReports(t *testing.T) {
 		t.Errorf("execute = %q, %v", out, err)
 	}
 	next := func(name string, _ json.RawMessage) (string, error) { return "next:" + name, nil }
-	if out, _ := ts.WrapExecutor(next)("read_file", nil); out != "next:read_file" {
+	if out, _ := ts.WrapExecutor("orchestrator", next)("read_file", nil); out != "next:read_file" {
 		t.Errorf("chain passed through = %q", out)
 	}
-	if out, err := ts.WrapReadOnlyExecutor(next)("echo__echo", json.RawMessage(`{"text":"ro"}`)); err != nil || out != "echo: ro" {
+	if out, err := ts.WrapReadOnlyExecutor("orchestrator", next)("echo__echo", json.RawMessage(`{"text":"ro"}`)); err != nil || out != "echo: ro" {
 		t.Errorf("read-only chain = %q, %v", out, err)
 	}
 	p, err := ts.Preview("echo__echo", json.RawMessage(`{"text":"a\nb"}`))
@@ -321,10 +341,10 @@ func TestWrapReadOnlyExecutorRefusesGatedTools(t *testing.T) {
 		t.Fatalf("toolset = %d tools, %d read-only", ts.Len(), len(ts.ReadOnlyDefinitions()))
 	}
 	next := func(name string, _ json.RawMessage) (string, error) { return "next:" + name, nil }
-	if _, err := ts.WrapReadOnlyExecutor(next)("echo__echo", json.RawMessage(`{"text":"x"}`)); err == nil || !strings.Contains(err.Error(), "not marked read-only") {
+	if _, err := ts.WrapReadOnlyExecutor("orchestrator", next)("echo__echo", json.RawMessage(`{"text":"x"}`)); err == nil || !strings.Contains(err.Error(), "not marked read-only") {
 		t.Errorf("gated tool dispatched through the read-only chain: %v", err)
 	}
-	if out, _ := ts.WrapReadOnlyExecutor(next)("read_file", nil); out != "next:read_file" {
+	if out, _ := ts.WrapReadOnlyExecutor("orchestrator", next)("read_file", nil); out != "next:read_file" {
 		t.Errorf("chain passed through = %q", out)
 	}
 }
@@ -611,7 +631,7 @@ func TestResourcesAreReadsOnAServerNobodyMarkedReadOnly(t *testing.T) {
 	// A child was handed the read-only servers and nothing else, so the same
 	// uri through its chain is refused rather than read.
 	next := func(name string, _ json.RawMessage) (string, error) { return "next:" + name, nil }
-	_, err = ts.WrapReadOnlyExecutor(next)(ResourceToolName, json.RawMessage(`{"uri":"docs://guide"}`))
+	_, err = ts.WrapReadOnlyExecutor("orchestrator", next)(ResourceToolName, json.RawMessage(`{"uri":"docs://guide"}`))
 	if err == nil || !strings.Contains(err.Error(), "not marked read-only") {
 		t.Fatalf("a child read a resource off a server it was not handed: %v", err)
 	}
@@ -1352,4 +1372,64 @@ func TestBinaryBlocksBecomeANotice(t *testing.T) {
 			})
 		}
 	})
+}
+
+// A page a server's tool hands back is a row of the server's own kind in the
+// session's sources ledger, signed by the agent whose chain made the call;
+// the link beside it and the plain echo are not reads and file nothing.
+func TestAPageAServerReadIsFiledInTheLedger(t *testing.T) {
+	def := testDefinition(t)
+	def.Env[serverEnv] = pageServer
+	ts := Connect(context.Background(), &Catalog{Servers: []Definition{def}}, Options{})
+	defer ts.Close()
+	if len(ts.Reports) != 1 || ts.Reports[0].Status != StatusConnected {
+		t.Fatalf("connect = %+v", ts.Reports[0])
+	}
+	ledger := web.NewLedger(nil)
+	ts.UseLedger(ledger)
+	next := func(name string, _ json.RawMessage) (string, error) { return "next:" + name, nil }
+
+	if _, err := ts.WrapExecutor(web.Orchestrator, next)("echo__echo", json.RawMessage(`{"text":"x"}`)); err != nil {
+		t.Fatal(err)
+	}
+	if n := ledger.Len(); n != 0 {
+		t.Fatalf("an echo filed %d rows", n)
+	}
+	out, err := ts.WrapReadOnlyExecutor("web-researcher", next)("echo__fetch",
+		json.RawMessage(`{"text":"https://example.com/a"}`))
+	if err != nil || !strings.Contains(out, "the page body") {
+		t.Fatalf("fetch = %q, %v", out, err)
+	}
+	rows := ledger.List()
+	if len(rows) != 1 {
+		t.Fatalf("rows = %+v, want the one page", rows)
+	}
+	r := rows[0]
+	if r.Kind != web.KindServer || r.Agent != "web-researcher" || r.FinalURL != "https://example.com/a" ||
+		r.Requested != r.FinalURL || r.Bytes != len("the page body") || r.Status != 0 {
+		t.Errorf("row = %+v", r)
+	}
+	// It is not one of the fetcher's reads: shhh made no request for it.
+	if pages := web.Pages(rows); len(pages) != 0 {
+		t.Errorf("Pages counted a server's read: %+v", pages)
+	}
+}
+
+// The shape is the rule: only an embedded resource at a web address is a
+// page read.
+func TestPagesReadIsAnEmbeddedWebResource(t *testing.T) {
+	res := &sdk.CallToolResult{Content: []sdk.Content{
+		&sdk.TextContent{Text: "see https://example.com/text"},
+		&sdk.ResourceLink{URI: "https://example.com/link"},
+		&sdk.EmbeddedResource{Resource: &sdk.ResourceContents{URI: "docs://guide", Text: "local"}},
+		&sdk.EmbeddedResource{Resource: &sdk.ResourceContents{URI: "HTTP://example.com/b", Blob: make([]byte, 5)}},
+		&sdk.EmbeddedResource{},
+	}}
+	got := pagesRead(res)
+	if len(got) != 1 || got[0].URI != "HTTP://example.com/b" || got[0].Bytes != 5 {
+		t.Errorf("pagesRead = %+v", got)
+	}
+	if pagesRead(nil) != nil {
+		t.Error("a nil result read a page")
+	}
 }

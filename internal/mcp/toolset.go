@@ -12,6 +12,7 @@ import (
 
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/tools"
+	"github.com/rfizzle/shhh/internal/web"
 )
 
 // Status is what became of one definition when the session tried to use it.
@@ -127,6 +128,19 @@ type Toolset struct {
 	// deaths are the servers that stopped answering, taken at a refresh and
 	// drained by the surface that says so.
 	deaths []Death
+	// ledger is the session's sources ledger, installed by UseLedger; nil is
+	// a session that keeps none.
+	ledger *web.Ledger
+}
+
+// UseLedger points the toolset at the session's sources ledger, so a page a
+// server's tool read is a row of its own kind beside the fetcher's. The row
+// is filed from the result the server returned and never from anything the
+// model said about it (docs/capabilities/chat.md#what-was-read).
+func (ts *Toolset) UseLedger(l *web.Ledger) {
+	ts.mu.Lock()
+	ts.ledger = l
+	ts.mu.Unlock()
 }
 
 type toolRef struct {
@@ -623,6 +637,12 @@ func ResourceDefinition() provider.Tool {
 // Execute runs one registered tool. Unknown names are an error rather than
 // a pass-through: the executor chain asks Has first.
 func (ts *Toolset) Execute(name string, args json.RawMessage) (string, error) {
+	return ts.execute(web.Orchestrator, name, args)
+}
+
+// execute runs one registered tool for the named agent, which is who a page
+// the result carried is filed under in the ledger.
+func (ts *Toolset) execute(agent, name string, args json.RawMessage) (string, error) {
 	if name == ResourceToolName {
 		return ts.readResource(args, false)
 	}
@@ -632,11 +652,25 @@ func (ts *Toolset) Execute(name string, args json.RawMessage) (string, error) {
 	}
 	ctx, timeout, end := ts.dispatch(ref.server.Definition)
 	defer end()
-	out, err := ref.server.Call(ctx, ref.tool, args)
+	out, pages, err := ref.server.call(ctx, ref.tool, args)
 	if err != nil {
 		return "", givenUp(ref.server.Definition, ref.tool.Remote, timeout, err)
 	}
+	ts.recordPages(agent, pages)
 	return bound(out), nil
+}
+
+// recordPages files each page a server's result carried as a row of the
+// server kind, which the sources screen draws as a call nobody vouched for:
+// the page came through a boundary shhh did not fetch across, so it has no
+// status of its own and is not one of the fetcher's reads.
+func (ts *Toolset) recordPages(agent string, pages []pageRead) {
+	ts.mu.Lock()
+	l := ts.ledger
+	ts.mu.Unlock()
+	for _, p := range pages {
+		l.Record(agent, web.Source{Kind: web.KindServer, Requested: p.URI, FinalURL: p.URI, Bytes: p.Bytes})
+	}
 }
 
 // begin takes the reference behind a name and marks a call in flight, so a
@@ -785,11 +819,12 @@ func bound(out string) string {
 }
 
 // WrapExecutor puts the toolset on an executor chain: its own tools are
-// dispatched here, everything else passes to next.
-func (ts *Toolset) WrapExecutor(next func(name string, args json.RawMessage) (string, error)) func(string, json.RawMessage) (string, error) {
+// dispatched here, everything else passes to next. agent is who a page the
+// call read is filed under in the ledger.
+func (ts *Toolset) WrapExecutor(agent string, next func(name string, args json.RawMessage) (string, error)) func(string, json.RawMessage) (string, error) {
 	return func(name string, args json.RawMessage) (string, error) {
 		if ts.Has(name) {
-			return ts.Execute(name, args)
+			return ts.execute(agent, name, args)
 		}
 		return next(name, args)
 	}
@@ -801,7 +836,7 @@ func (ts *Toolset) WrapExecutor(next func(name string, args json.RawMessage) (st
 // on, and a name it learned from its task text must not be a way around
 // the card the parent would have shown
 // (docs/capabilities/mcp.md#what-a-conversation-may-reach).
-func (ts *Toolset) WrapReadOnlyExecutor(next func(name string, args json.RawMessage) (string, error)) func(string, json.RawMessage) (string, error) {
+func (ts *Toolset) WrapReadOnlyExecutor(agent string, next func(name string, args json.RawMessage) (string, error)) func(string, json.RawMessage) (string, error) {
 	return func(name string, args json.RawMessage) (string, error) {
 		if ts.Has(name) {
 			if name == ResourceToolName {
@@ -810,7 +845,7 @@ func (ts *Toolset) WrapReadOnlyExecutor(next func(name string, args json.RawMess
 			if !ts.ReadOnly(name) {
 				return "", fmt.Errorf("%s is not available to this agent: its server is not marked read-only", name)
 			}
-			return ts.Execute(name, args)
+			return ts.execute(agent, name, args)
 		}
 		return next(name, args)
 	}

@@ -243,7 +243,7 @@ func (t *toolset) executor(session chatSession) agent.ToolExecutor {
 		exec = session.structural.WrapExecutor(exec)
 	}
 	if session.mcpTools != nil {
-		exec = session.mcpTools.WrapExecutor(exec)
+		exec = session.mcpTools.WrapExecutor(web.Orchestrator, exec)
 	}
 	if t.gate != nil {
 		exec = t.gate.WrapExecutor(exec)
