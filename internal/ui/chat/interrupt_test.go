@@ -16,6 +16,7 @@ import (
 	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/subagent"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // handover hands the keyboard to the decision on screen, which is what the
@@ -90,7 +91,7 @@ func TestInterrupt_TheCardOffersOnlyTheKeyThatIsLive(t *testing.T) {
 	m := interruptedModel(t, "also add a --max-rounds flag")
 
 	view := ansi.Strip(m.View().Content)
-	for _, want := range []string{"[ctrl+space] answer it", "you are still typing into the draft"} {
+	for _, want := range []string{keys.Bracket(keys.Draft.Answer) + " answer it", "you are still typing into the draft"} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("the ungated card should say %q:\n%s", want, view)
 		}
@@ -264,7 +265,7 @@ func TestInterrupt_ARoutedChildApprovalIsInertUntilItHoldsTheKeyboard(t *testing
 		t.Fatal("a routed approval arrives the way every other decision does")
 	}
 	view := ansi.Strip(m.View().Content)
-	if !strings.Contains(view, "[ctrl+space] answer it") || !strings.Contains(view, "DRAFT") {
+	if !strings.Contains(view, keys.Bracket(keys.Draft.Answer)+" answer it") || !strings.Contains(view, "DRAFT") {
 		t.Fatalf("the routed card should render as not-yet-live:\n%s", view)
 	}
 	// A child's card is the one a reader has least context for, and it draws
@@ -504,7 +505,7 @@ func TestArrival_TheKeysASentenceCouldHaveMeantWaitForTheHandover(t *testing.T) 
 			t.Fatalf("an arrival-held card offers %q:\n%s", want, view)
 		}
 	}
-	if !strings.Contains(view, "[ctrl+space] for [a]/[d]") {
+	if !strings.Contains(view, keys.Bracket(keys.Draft.Answer)+" for [a]/[d]") {
 		t.Fatalf("the card should say what the handover still buys:\n%s", view)
 	}
 	if !strings.Contains(view, "any other key goes to your draft") {

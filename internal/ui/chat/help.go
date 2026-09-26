@@ -276,6 +276,16 @@ func (r helpKeyRow) column() []string {
 	case "":
 		return shown[:1]
 	case "\n":
+		// A row about one binding that answers to more than one chord —
+		// the handover, whose spelling names the alias the desktop cannot
+		// take — gives each chord a line, because the two together are
+		// wider than the column and a key in the column is never cut.
+		if len(r.binds) == 1 {
+			shown = shown[:0]
+			for _, k := range r.binds[0].Keys() {
+				shown = append(shown, keys.Bracketed(k))
+			}
+		}
 		return shown
 	default:
 		return []string{strings.Join(shown, r.sep)}
@@ -416,7 +426,8 @@ bare /todo opens the same screen; it opens over a running turn, and the keys tha
 	},
 	{
 		binds: []keys.Binding{keys.Draft.Answer},
-		text:  `hand the keyboard to a decision waiting on screen. An approval that lands while you are typing does not take your keys with it: its y, n and a are not live until this chord gives them the keyboard, and until then every letter goes into the draft. Esc leaves the decision waiting; n is how you say no. ctrl+y does the same thing, for terminals and desktops that never deliver ctrl+space — macOS binds it to the input-source switcher and takes it first`,
+		sep:   "\n",
+		text:  `hand the keyboard to a decision waiting on screen. An approval that lands while you are typing does not take your keys with it: its y, n and a are not live until one of these chords gives them the keyboard, and until then every letter goes into the draft. Esc leaves the decision waiting; n is how you say no. The two are the same act, and a waiting card names both: ctrl+y is for terminals and desktops that never deliver ctrl+space — macOS binds it to the input-source switcher and takes it first`,
 	},
 	{
 		binds: []keys.Binding{keys.Draft.KeyList},

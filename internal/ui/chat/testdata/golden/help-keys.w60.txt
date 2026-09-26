@@ -289,20 +289,21 @@
                      over. The draft, the history and
                      any selection are untouched
     [ctrl+space]     hand the keyboard to a decision
-                     waiting on screen. An approval
+    [ctrl+y]         waiting on screen. An approval
                      that lands while you are typing
                      does not take your keys with it:
                      its y, n and a are not live until
-                     this chord gives them the
-                     keyboard, and until then every
-                     letter goes into the draft. Esc
-                     leaves the decision waiting; n is
-                     how you say no. ctrl+y does the
-                     same thing, for terminals and
-                     desktops that never deliver
-                     ctrl+space — macOS binds it to
-                     the input-source switcher and
-                     takes it first
+                     one of these chords gives them
+                     the keyboard, and until then
+                     every letter goes into the draft.
+                     Esc leaves the decision waiting;
+                     n is how you say no. The two are
+                     the same act, and a waiting card
+                     names both: ctrl+y is for
+                     terminals and desktops that never
+                     deliver ctrl+space — macOS binds
+                     it to the input-source switcher
+                     and takes it first
     [ctrl+]]         print this key list. It is a
                      chord and not the ? it used to
                      be, because a bare key at the
@@ -653,20 +654,21 @@
                      ␛[38;5;241mover. The draft, the history and␛[m
                      ␛[38;5;241many selection are untouched␛[m
     ␛[94m[ctrl+space]␛[m     ␛[38;5;241mhand the keyboard to a decision␛[m
-                     ␛[38;5;241mwaiting on screen. An approval␛[m
+    ␛[94m[ctrl+y]␛[m         ␛[38;5;241mwaiting on screen. An approval␛[m
                      ␛[38;5;241mthat lands while you are typing␛[m
                      ␛[38;5;241mdoes not take your keys with it:␛[m
                      ␛[38;5;241mits y, n and a are not live until␛[m
-                     ␛[38;5;241mthis chord gives them the␛[m
-                     ␛[38;5;241mkeyboard, and until then every␛[m
-                     ␛[38;5;241mletter goes into the draft. Esc␛[m
-                     ␛[38;5;241mleaves the decision waiting; n is␛[m
-                     ␛[38;5;241mhow you say no. ctrl+y does the␛[m
-                     ␛[38;5;241msame thing, for terminals and␛[m
-                     ␛[38;5;241mdesktops that never deliver␛[m
-                     ␛[38;5;241mctrl+space — macOS binds it to␛[m
-                     ␛[38;5;241mthe input-source switcher and␛[m
-                     ␛[38;5;241mtakes it first␛[m
+                     ␛[38;5;241mone of these chords gives them␛[m
+                     ␛[38;5;241mthe keyboard, and until then␛[m
+                     ␛[38;5;241mevery letter goes into the draft.␛[m
+                     ␛[38;5;241mEsc leaves the decision waiting;␛[m
+                     ␛[38;5;241mn is how you say no. The two are␛[m
+                     ␛[38;5;241mthe same act, and a waiting card␛[m
+                     ␛[38;5;241mnames both: ctrl+y is for␛[m
+                     ␛[38;5;241mterminals and desktops that never␛[m
+                     ␛[38;5;241mdeliver ctrl+space — macOS binds␛[m
+                     ␛[38;5;241mit to the input-source switcher␛[m
+                     ␛[38;5;241mand takes it first␛[m
     ␛[94m[ctrl+]]␛[m         ␛[38;5;241mprint this key list. It is a␛[m
                      ␛[38;5;241mchord and not the ? it used to␛[m
                      ␛[38;5;241mbe, because a bare key at the␛[m

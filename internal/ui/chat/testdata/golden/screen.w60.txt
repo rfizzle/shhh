@@ -135,7 +135,7 @@
   │ … 2 more lines · [shift+↓]                           │  
   ├──────────────────────────────────────────────────────┤  
   │ [y] run it once · [n] deny                           │  
-  │ [ctrl+space] for [a]                                 │  
+  │ [ctrl+space/ctrl+y] for [a]                          │  
   │ [esc] back to your draft                             │  
 
 · working · a reading of the session leads the rail
@@ -328,7 +328,7 @@
   ␛[38;5;214m│␛[m ␛[38;5;241m… 2 more lines · [shift+↓]␛[m                           ␛[38;5;214m│␛[m  
   ␛[38;5;214m├──────────────────────────────────────────────────────┤␛[m  
   ␛[38;5;214m│␛[m ␛[94m[y]␛[m ␛[38;5;252mrun it once␛[38;5;241m · ␛[94m[n]␛[m ␛[38;5;252mdeny␛[m                           ␛[38;5;214m│␛[m  
-  ␛[38;5;214m│␛[m ␛[38;5;241m[ctrl+space] for [a]␛[m                                 ␛[38;5;214m│␛[m  
+  ␛[38;5;214m│␛[m ␛[38;5;241m[ctrl+space/ctrl+y] for [a]␛[m                          ␛[38;5;214m│␛[m  
   ␛[38;5;214m│␛[m ␛[92m[esc] back to your draft␛[m                             ␛[38;5;214m│␛[m  
 
 · working · a reading of the session leads the rail

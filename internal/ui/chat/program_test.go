@@ -31,6 +31,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/exp/teatest/v2"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // programTurn is one answer the provider gives, in the order the turns are
@@ -194,6 +195,7 @@ func finalFrame(t *testing.T, tm *program) string {
 var (
 	programEnter    = tea.KeyPressMsg{Code: tea.KeyEnter}
 	programHandover = tea.KeyPressMsg{Code: tea.KeySpace, Mod: tea.ModCtrl}
+	programAlias    = tea.KeyPressMsg{Code: 'y', Mod: tea.ModCtrl}
 	programAllow    = tea.KeyPressMsg{Code: 'y', Text: "y"}
 )
 
@@ -315,5 +317,36 @@ func TestProgram_ACardsKeyIsInertUntilTheHandover(t *testing.T) {
 	}
 	if strings.Contains(frame, "[y]") {
 		t.Fatalf("the card drew a key the draft would answer:\n%s", frame)
+	}
+}
+
+// The handover's cover, through the whole program. macOS takes ctrl+space for
+// its input-source switcher before the terminal sees it, so the card names
+// ctrl+y beside it, and ctrl+y has to do everything the first chord does: a
+// bare y typed before it is still a letter of the sentence, the alias gives
+// the card the keyboard, the card's y then runs the command, and the draft
+// comes back holding every character typed into it
+// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+func TestProgram_TheHandoversCoverAnswersFromAHalfTypedLine(t *testing.T) {
+	var ran []string
+	tm := heldCommandProgram(t, &ran)
+	waitForText(t, tm, keys.Bracket(keys.Draft.Answer)+" answer it")
+
+	tm.Send(programAllow)
+	waitForText(t, tm, draftSentence+"y")
+	if len(ran) != 0 {
+		t.Fatalf("a bare y beside a live draft ran the command: %v", ran)
+	}
+
+	tm.Send(programAlias)
+	tm.Send(programAllow)
+	waitForText(t, tm, "and that is done")
+
+	frame := finalFrame(t, tm)
+	if len(ran) != 1 || ran[0] != "echo hi" {
+		t.Fatalf("the command did not run after the alias handed the card the keyboard, got %v\n%s", ran, frame)
+	}
+	if !strings.Contains(frame, draftSentence+"y") {
+		t.Fatalf("the draft did not keep what was typed into it:\n%s", frame)
 	}
 }

@@ -144,7 +144,7 @@ func TestPlanCard_NotYetLiveOffersTheHandoverAlone(t *testing.T) {
 	c := planFixture()
 	c.NotYetLive, c.Handover = true, keys.Shown(keys.Draft.Answer)
 	view := planView(c, 100)
-	if !strings.Contains(view, "[ctrl+space] answer it") {
+	if !strings.Contains(view, keys.Bracket(keys.Draft.Answer)+" answer it") {
 		t.Errorf("the one live key is not offered:\n%s", view)
 	}
 	for _, gone := range []string{"[s] save", "[enter] select", "[esc] keep planning"} {

@@ -177,14 +177,15 @@
                      for a display something else wrote over. The draft, the
                      history and any selection are untouched
     [ctrl+space]     hand the keyboard to a decision waiting on screen. An
-                     approval that lands while you are typing does not take
-                     your keys with it: its y, n and a are not live until
-                     this chord gives them the keyboard, and until then every
-                     letter goes into the draft. Esc leaves the decision
-                     waiting; n is how you say no. ctrl+y does the same
-                     thing, for terminals and desktops that never deliver
-                     ctrl+space — macOS binds it to the input-source switcher
-                     and takes it first
+    [ctrl+y]         approval that lands while you are typing does not take
+                     your keys with it: its y, n and a are not live until one
+                     of these chords gives them the keyboard, and until then
+                     every letter goes into the draft. Esc leaves the
+                     decision waiting; n is how you say no. The two are the
+                     same act, and a waiting card names both: ctrl+y is for
+                     terminals and desktops that never deliver ctrl+space —
+                     macOS binds it to the input-source switcher and takes it
+                     first
     [ctrl+]]         print this key list. It is a chord and not the ? it used
                      to be, because a bare key at the draft is a letter of
                      whatever you are typing — every key live here is a chord
@@ -398,14 +399,15 @@
                      ␛[38;5;241mfor a display something else wrote over. The draft, the␛[m
                      ␛[38;5;241mhistory and any selection are untouched␛[m
     ␛[94m[ctrl+space]␛[m     ␛[38;5;241mhand the keyboard to a decision waiting on screen. An␛[m
-                     ␛[38;5;241mapproval that lands while you are typing does not take␛[m
-                     ␛[38;5;241myour keys with it: its y, n and a are not live until␛[m
-                     ␛[38;5;241mthis chord gives them the keyboard, and until then every␛[m
-                     ␛[38;5;241mletter goes into the draft. Esc leaves the decision␛[m
-                     ␛[38;5;241mwaiting; n is how you say no. ctrl+y does the same␛[m
-                     ␛[38;5;241mthing, for terminals and desktops that never deliver␛[m
-                     ␛[38;5;241mctrl+space — macOS binds it to the input-source switcher␛[m
-                     ␛[38;5;241mand takes it first␛[m
+    ␛[94m[ctrl+y]␛[m         ␛[38;5;241mapproval that lands while you are typing does not take␛[m
+                     ␛[38;5;241myour keys with it: its y, n and a are not live until one␛[m
+                     ␛[38;5;241mof these chords gives them the keyboard, and until then␛[m
+                     ␛[38;5;241mevery letter goes into the draft. Esc leaves the␛[m
+                     ␛[38;5;241mdecision waiting; n is how you say no. The two are the␛[m
+                     ␛[38;5;241msame act, and a waiting card names both: ctrl+y is for␛[m
+                     ␛[38;5;241mterminals and desktops that never deliver ctrl+space —␛[m
+                     ␛[38;5;241mmacOS binds it to the input-source switcher and takes it␛[m
+                     ␛[38;5;241mfirst␛[m
     ␛[94m[ctrl+]]␛[m         ␛[38;5;241mprint this key list. It is a chord and not the ? it used␛[m
                      ␛[38;5;241mto be, because a bare key at the draft is a letter of␛[m
                      ␛[38;5;241mwhatever you are typing — every key live here is a chord␛[m

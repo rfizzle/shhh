@@ -77,14 +77,14 @@ Should the migration be reversible?  [y/N]
 │   4. Something else …  answer in your own words                                                        │
 │ ┄ note (optional)                                                                                      │
 │   (none)                                                                                               │
-│ [ctrl+space] answer it — until then you are still typing into the draft                                │
+│ [ctrl+space/ctrl+y] answer it — until then you are still typing into the draft                         │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 · the yes-or-no on the same sentence · the answer pair goes with the letters
 Should the migration be reversible?
 ┄ note (optional)
   (none)
-[ctrl+space] answer it — until then you are still typing into the draft
+[ctrl+space/ctrl+y] answer it — until then you are still typing into the draft
 
 · the free answer on the same sentence · the field draws no cursor until the handover
 ╭─ Question ──────────────────────────────────────────────────────────────────────────────────── 1 of 1 ─╮
@@ -92,7 +92,7 @@ Should the migration be reversible?
 │                                                                                                        │
 │ ┄ note (required)                                                                                      │
 │   (none)                                                                                               │
-│ [ctrl+space] answer it — until then you are still typing into the draft                                │
+│ [ctrl+space/ctrl+y] answer it — until then you are still typing into the draft                         │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 · pick several with a required note on the same sentence · the field draws no cursor until the handover
@@ -105,14 +105,14 @@ Should the migration be reversible?
 │   [ ] Something else …                                                                                 │
 │ ┄ note (required)                                                                                      │
 │   (none)                                                                                               │
-│ [ctrl+space] answer it — until then you are still typing into the draft                                │
+│ [ctrl+space/ctrl+y] answer it — until then you are still typing into the draft                         │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 · yes or no with a required note on the same sentence · the field draws no cursor until the handover
 Should the migration be reversible?
 ┄ note (required)
   (none)
-[ctrl+space] answer it — until then you are still typing into the draft
+[ctrl+space/ctrl+y] answer it — until then you are still typing into the draft
 
 ── ansi ────────────────────────────────────────────────────
 · pick one · the recommendation leads and says so, and the ⊘ row says why not
@@ -182,14 +182,14 @@ Should the migration be reversible?
 ␛[38;5;254m│␛[m   ␛[38;5;244m4. ␛[m␛[38;5;254mSomething else …␛[m  ␛[38;5;244manswer in your own words␛[m                                                        ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m┄ note (optional)␛[m                                                                                      ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;244m(none)␛[m                                                                                               ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[ctrl+space]␛[m␛[38;5;254m answer it␛[m␛[38;5;244m — until then you are still typing into the draft␛[m                                ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[ctrl+space/ctrl+y]␛[m␛[38;5;254m answer it␛[m␛[38;5;244m — until then you are still typing into the draft␛[m                         ␛[38;5;254m│␛[m
 ␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · the yes-or-no on the same sentence · the answer pair goes with the letters
 ␛[38;5;254mShould the migration be reversible?␛[m
 ␛[38;5;244m┄ note (optional)␛[m
   ␛[38;5;244m(none)␛[m
-␛[38;5;254m[ctrl+space]␛[m␛[38;5;254m answer it␛[m␛[38;5;244m — until then you are still typing into the draft␛[m
+␛[38;5;254m[ctrl+space/ctrl+y]␛[m␛[38;5;254m answer it␛[m␛[38;5;244m — until then you are still typing into the draft␛[m
 
 · the free answer on the same sentence · the field draws no cursor until the handover
 ␛[38;5;254m╭─ ␛[m␛[1;38;5;254mQuestion ␛[m␛[38;5;254m──────────────────────────────────────────────────────────────────────────────────── 1 of 1 ─╮␛[m
@@ -197,7 +197,7 @@ Should the migration be reversible?
 ␛[38;5;254m│␛[m                                                                                                        ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m┄ note (required)␛[m                                                                                      ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;244m(none)␛[m                                                                                               ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[ctrl+space]␛[m␛[38;5;254m answer it␛[m␛[38;5;244m — until then you are still typing into the draft␛[m                                ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[ctrl+space/ctrl+y]␛[m␛[38;5;254m answer it␛[m␛[38;5;244m — until then you are still typing into the draft␛[m                         ␛[38;5;254m│␛[m
 ␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · pick several with a required note on the same sentence · the field draws no cursor until the handover
@@ -210,11 +210,11 @@ Should the migration be reversible?
 ␛[38;5;254m│␛[m   ␛[38;5;244m[ ]␛[m Something else …                                                                                 ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m┄ note (required)␛[m                                                                                      ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;244m(none)␛[m                                                                                               ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[ctrl+space]␛[m␛[38;5;254m answer it␛[m␛[38;5;244m — until then you are still typing into the draft␛[m                                ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[ctrl+space/ctrl+y]␛[m␛[38;5;254m answer it␛[m␛[38;5;244m — until then you are still typing into the draft␛[m                         ␛[38;5;254m│␛[m
 ␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · yes or no with a required note on the same sentence · the field draws no cursor until the handover
 ␛[38;5;254mShould the migration be reversible?␛[m
 ␛[38;5;244m┄ note (required)␛[m
   ␛[38;5;244m(none)␛[m
-␛[38;5;254m[ctrl+space]␛[m␛[38;5;254m answer it␛[m␛[38;5;244m — until then you are still typing into the draft␛[m
+␛[38;5;254m[ctrl+space/ctrl+y]␛[m␛[38;5;254m answer it␛[m␛[38;5;244m — until then you are still typing into the draft␛[m

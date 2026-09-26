@@ -54,7 +54,7 @@
 │ network   closed — the workspace profile removes it                                                    │
 │ ⛨         bwrap · workspace                                                                            │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ [ctrl+space] answer it — until then you are still typing into the draft                                │
+│ [ctrl+space/ctrl+y] answer it — until then you are still typing into the draft                         │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 · a command nothing flags · [a] grants it to every agent for the turn
@@ -204,7 +204,7 @@
 ␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[m␛[38;5;254mclosed␛[m␛[38;5;244m — the workspace profile removes it␛[m                                                    ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m⛨         ␛[m␛[38;5;244mbwrap · workspace␛[m                                                                            ␛[38;5;254m│␛[m
 ␛[38;5;254m├────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[ctrl+space]␛[m␛[38;5;254m answer it␛[m␛[38;5;244m — until then you are still typing into the draft␛[m                                ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[ctrl+space/ctrl+y]␛[m␛[38;5;254m answer it␛[m␛[38;5;244m — until then you are still typing into the draft␛[m                         ␛[38;5;254m│␛[m
 ␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · a command nothing flags · [a] grants it to every agent for the turn

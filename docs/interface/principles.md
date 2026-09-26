@@ -109,6 +109,16 @@ two kinds of bracket apart in the one moment they are least free to look. They
 come back whole the instant the card has the keyboard, which is the only state
 in which they are true.
 
+That one key is drawn as every chord that reaches it. The handover's own chord
+is one a desktop can take before the terminal sees it — macOS spends it on the
+input-source switcher, and the [reserved list](reserved-keys.md) says so — and
+nothing the program can read says the press was taken rather than never made,
+so the card cannot choose the spelling that will arrive. It names both, the
+chord that works everywhere else first and its cover beside it, because the
+card is where somebody whose first chord did nothing is already looking; a
+cover named only in the key list is found after the sentence it was for has
+been abandoned.
+
 A row of the transcript is the other shape this takes, and it answers
 differently because a row is not waiting for anything. A card is one decision
 that will be answered and then gone; a row's offers stand for the rest of the

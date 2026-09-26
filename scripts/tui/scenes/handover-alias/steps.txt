@@ -1,0 +1,33 @@
+# program test: TestProgram_TheHandoversCoverAnswersFromAHalfTypedLine,
+#   TestProgram_ACardsKeyIsInertUntilTheHandover
+#
+# A decision that lands mid-sentence names both chords that hand it the
+# keyboard, and the cover works: macOS takes ctrl+space for its input-source
+# switcher before the terminal sees it, so the card says ctrl+y beside it
+# (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+# tmux sends ctrl+y here; what this cannot show is whether a Mac delivered a
+# physical ctrl+space, which is the desktop's decision and not the program's.
+#
+# Driven at 60 columns, the narrowest the card is drawn at, where the two
+# chords and the imperative still fit on the one row the card keeps for them.
+snap 01-start "Some things worth doing first"
+keys "write down what we settled on" Enter
+snap 02-card "notes.md"
+# A card that has just landed holds its keys for a beat, so the typing waits
+# for the grace window rather than racing it. The sentence carries a bare y:
+# beside a live draft it is a letter, not the card's allow.
+sleep 1
+keys "and say y"
+snap 03-draft-keeps-the-keyboard "and say y" "[ctrl+space/ctrl+y] answer it"
+keys C-y
+snap 04-card-holds-the-keyboard "[y] apply" "notes.md"
+keys y
+# Answered, the keyboard goes back to the draft, which still holds every
+# character typed into it while the card waited.
+snap 05-answered "The note is written" "and say y"
+keys C-c
+sleep 0.5
+keys C-c
+snap 06-quit-armed "again quits"
+keys C-c
+snap 07-exit "that is everything the screen was holding"

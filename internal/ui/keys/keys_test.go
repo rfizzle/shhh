@@ -502,11 +502,11 @@ func TestTheKeyListIsReachedWithoutTheOptionSetting(t *testing.T) {
 
 // The handover answers to two chords, not one, because the canonical one is
 // taken by the desktop on macOS. Both must reach the same act, and the hint
-// must still print only the canonical spelling — a hint that offers two
-// chords teaches neither.
+// must print both — the card is where somebody whose ctrl+space did nothing
+// is looking, so the alias has to be named there and not only in /help.
 func TestHandoverHasASecondChord(t *testing.T) {
-	if got := Shown(Draft.Answer); got != "ctrl+space" {
-		t.Errorf("hint spelling = %q, want ctrl+space", got)
+	if got := Shown(Draft.Answer); got != "ctrl+space/ctrl+y" {
+		t.Errorf("hint spelling = %q, want ctrl+space/ctrl+y", got)
 	}
 	for _, chord := range []string{"ctrl+space", "ctrl+y"} {
 		if !Is(chord, Draft.Answer) {

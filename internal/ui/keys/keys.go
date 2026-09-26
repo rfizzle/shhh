@@ -356,15 +356,22 @@ var Draft = DraftKeys{
 	// leaves the one load-bearing chord in the mid-sentence rule dead on the
 	// most common desktop shhh runs on, with no way for the user to move it.
 	//
-	// The spelling stays ctrl+space, because it is the one that works
-	// everywhere else and a hint offering two chords teaches neither. The
-	// alias is in the key list and in /help, which is where somebody whose
-	// chord does nothing goes looking.
+	// The spelling names both, ctrl+space first because it is the one that
+	// works everywhere else. It named only ctrl+space once, on the reasoning
+	// that a hint offering two chords teaches neither, and that left the
+	// person it was for — typing on a Mac when a card arrives, pressing the
+	// chord the card named and getting nothing — with no way to learn the
+	// alias from the card that needed it. Nothing shhh can read tells it the
+	// desktop took the press (the decoder reads a delivered NUL or a kitty
+	// ctrl+space as this key, so a miss is the chord never arriving), so the
+	// card cannot swap one spelling for the other on evidence; it says both.
+	// It is the spelling a keymap file's rebind prints as well, presses
+	// joined by a slash.
 	//
 	// ctrl+y is free rather than merely unused: it is not in the bubbles
 	// textarea keymap, and it is not one of the readline chords the draft
 	// deliberately leaves to the line editor (see DraftKeys).
-	Answer: bind("ctrl+space", "answer it", "ctrl+space", "ctrl+y"),
+	Answer: bind("ctrl+space/ctrl+y", "answer it", "ctrl+space", "ctrl+y"),
 
 	// Esc goes back and never stops anything. It clears the draft, drops a
 	// selection, dismisses the completion menu, detaches a level, folds every

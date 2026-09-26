@@ -687,7 +687,7 @@ func TestGolden_ApprovalCard(t *testing.T) {
 				c.Severity, c.SeverityReason = SeverityMedium, "edits one file under internal/agent/"
 				c.Hunks, c.FullDiff = goldenHunks(), true
 				c.AllowAlways, c.AlwaysHint = true, "allow edits in internal/agent without asking"
-				c.NotYetLive, c.Handover = true, "ctrl+space"
+				c.NotYetLive, c.Handover = true, keys.Shown(keys.Draft.Answer)
 			})},
 			// The one card here with no reading behind its level: a tool that
 			// declared nothing shhh can rate leaves the row stating the level
@@ -818,7 +818,7 @@ func TestGolden_SpawnCard(t *testing.T) {
 					{Role: "writer", Name: "writer-3", Task: "say where the loop exits",
 						Touches: "unknown — this agent claimed no paths", Writer: true},
 				}
-				c.NotYetLive, c.Handover = true, "ctrl+space"
+				c.NotYetLive, c.Handover = true, keys.Shown(keys.Draft.Answer)
 			})},
 		}
 	})
