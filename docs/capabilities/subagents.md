@@ -450,9 +450,24 @@ list stops being read and starts being summarised.
 
 ## A child inherits its scope, not more
 
-A writer sees its own working copy plus whatever the parent has already been
-granted. Spawning is not an escape hatch: a child cannot reach somewhere the
-parent could not.
+A writer's scope is its own working copy plus the directories the person
+*added* to the session — with `/add-dir`, `--add-dir`, `behavior.scope_dirs`
+or a card that reached outside. The parent's own checkout is not among them
+unless the person added a directory that holds it: a writer's work reaches
+your tree through its patch, and a command of its that writes into the
+checkout directly is put to you as out of scope, in every mode. A permissive
+mode and the classifier cannot wave it through, because what they were
+granted over is the work, and a writer's isolation is not theirs to give up.
+Spawning is not an escape hatch: a child cannot reach somewhere the parent
+could not.
+
+This is a check at the approval layer, over a best-effort reading of the
+command — which paths it writes, measured from the directory the child runs
+in and from any it changes into. A command whose paths the reading cannot
+account for is not flagged by it. Containment is what enforces the boundary:
+a contained writer's command can write to the same set and nowhere else, and
+`sandbox.require` is how a session insists on it
+([containment can be required](containment.md#containment-can-be-required)).
 
 ## Limits are about attention, not resources
 

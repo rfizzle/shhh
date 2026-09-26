@@ -5249,10 +5249,14 @@ func actionFor(name string, args json.RawMessage) (agent.Action, error) {
 }
 
 // scopedAction fills in what a child's command reaches outside the working
-// scope: its own worktree plus whatever the parent session has put in
-// scope. A child's file edits never need this — RootArgs already refuses a
+// scope: its own worktree plus the directories the person added to the
+// parent session — the set its contained runner may write to. The parent's
+// own checkout is not in it unless the person added a directory holding it,
+// because a writer's work reaches the checkout through its patch and nothing
+// else. A child's file edits never need this — RootArgs already refuses a
 // path outside the worktree — so it applies to commands, which can name any
 // path they like.
+// See docs/capabilities/subagents.md#a-child-inherits-its-scope-not-more.
 func (s *Supervisor) scopedAction(c *child, a agent.Action) agent.Action {
 	if s.opts.ScopeDirs == nil || a.Kind != agent.ActionCommand || c.root == "" {
 		return a
@@ -5261,13 +5265,23 @@ func (s *Supervisor) scopedAction(c *child, a agent.Action) agent.Action {
 	if sc == nil {
 		return a
 	}
-	dirs := sc.Outside(radius.WritePaths(a.Command)...)
+	dirs := sc.Outside(childWritePaths(c.root, a.Command)...)
 	if len(dirs) == 0 {
 		return a
 	}
 	a.OutOfScope = dirs
+	// The parent's checkout is the person's to open to a child, never a
+	// permissive mode's or the classifier's: marking it sensitive is what
+	// turns an auto-mode yes back into the parent's card.
+	var checkout *scope.Scope
+	if s.opts.Root != "" {
+		checkout, _ = scope.New(s.opts.Root)
+	}
 	for _, d := range dirs {
 		class, reason := scope.Classify(d)
+		if class == scope.Ordinary && checkout.Contains(d) {
+			class, reason = scope.Sensitive, parentCheckoutReason
+		}
 		switch class {
 		case scope.Refused:
 			a.ScopeRefused, a.ScopeReason = true, reason
@@ -5278,6 +5292,58 @@ func (s *Supervisor) scopedAction(c *child, a agent.Action) agent.Action {
 		}
 	}
 	return a
+}
+
+// parentCheckoutReason is why a child's command into the parent's own
+// checkout is put to the person.
+const parentCheckoutReason = "the parent session's own checkout, which a writer's work reaches through its patch"
+
+// childWritePaths is what a child's command writes, measured from where the
+// command runs rather than from where shhh runs. The resolver reads text, so
+// a relative path means nothing until it is given a directory, and measured
+// from shhh's own directory every file a writer creates in its copy would
+// read as a write into the parent's checkout. A relative path is checked from
+// the child's directory and from each directory the line changes into, so
+// `cd <elsewhere> && touch f` answers for elsewhere; checking it from every
+// one of them over-reads a line that changes back, which costs a card.
+func childWritePaths(root, command string) []string {
+	writes := radius.WritePaths(command)
+	if len(writes) == 0 {
+		return nil
+	}
+	bases := []string{root}
+	base := root
+	for _, cmd := range safety.Commands(command) {
+		fields := strings.Fields(cmd)
+		if len(fields) < 2 || (fields[0] != "cd" && fields[0] != "pushd") {
+			continue
+		}
+		target := strings.Trim(fields[1], `'"`)
+		if target == "" || target[0] == '-' || strings.ContainsAny(target, "$`") {
+			continue
+		}
+		if !filepath.IsAbs(target) && !isHomePath(target) {
+			target = filepath.Join(base, target)
+		}
+		base = target
+		bases = append(bases, target)
+	}
+	var out []string
+	for _, p := range writes {
+		if filepath.IsAbs(p) || isHomePath(p) {
+			out = append(out, p)
+			continue
+		}
+		for _, b := range bases {
+			out = append(out, filepath.Join(b, p))
+		}
+	}
+	return out
+}
+
+// isHomePath is a path the scope expands against the home directory itself.
+func isHomePath(p string) bool {
+	return p == "~" || strings.HasPrefix(p, "~/")
 }
 
 // buildAsk assembles the approval request the parent user reviews, and stamps

@@ -902,11 +902,16 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 		// test run, a child's gate run and the session's own gate below.
 		CheckSlots:    cfg.Agents.CheckSlots,
 		CheckCommands: gateCommands(session.gateRunner),
-		// Children answer to the parent's working scope on top of
+		// Children answer to the directories the person added on top of
 		// their own worktree, which is where their file edits are already
 		// pinned (RootArgs). This is what stops a child *command* writing
-		// somewhere the parent never put in scope.
-		ScopeDirs: sc.All,
+		// somewhere the parent never put in scope. It is Dirs and not All:
+		// the parent's own checkout is the one directory a writer must not
+		// reach except through its patch, and Dirs is also the set the
+		// child's contained runner may write to, so the card and the
+		// containment agree about what a child's scope is.
+		// See docs/capabilities/subagents.md#a-child-inherits-its-scope-not-more.
+		ScopeDirs: sc.Dirs,
 		Untracked: untracked,
 		LoadHandoff: func(handle string) ([]byte, error) {
 			if db == nil {
