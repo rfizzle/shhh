@@ -150,6 +150,13 @@ func buildToolset(cmd *cobra.Command, session *chatSession, kind string, opts to
 			t.evidence.Exempt(d.Name)
 		}
 		t.evidence.ExemptWhen(structural.GitToolName, structural.GitCallBounded)
+		// The calls the pipeline does bound are spawned under the store's
+		// cap rather than the tool's own, so the original it keeps is the
+		// whole patch. Only where there is a store: without one the patch
+		// would reach the conversation at that size.
+		if t.evidence != nil {
+			session.structural.ReducedBy(evidence.MaxStoredBytes)
+		}
 	}
 	// The quality gate: the model runs the project's own checks by suite
 	// name, and command text only ever comes from trusted config.

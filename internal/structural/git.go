@@ -35,10 +35,12 @@ const (
 //
 // show and diff are deliberately unbounded here, because they have no such
 // argument — the content is however large the commit is. Bounding them would
-// drop the tail somewhere no one can reach it, so they are left to the byte
-// cap on the spawn and to the reduction pipeline, which keeps a head, a tail
-// and the flagged lines, stores the whole original as evidence, and hands
-// back the id to retrieve it.
+// drop the tail somewhere no one can reach it, so they are left to the
+// reduction pipeline, which keeps a head, a tail and the flagged lines,
+// stores the whole original as evidence, and hands back the id to retrieve
+// it. Their spawn cap is the store's where a surface declared the pipeline
+// (ReducedBy), so the original it stores is the patch and not its first
+// 64 KiB.
 //
 // The split is what GitCallBounded answers, so the pipeline reduces the two
 // verbs it is the bound for and leaves the three that already bounded
@@ -70,7 +72,8 @@ const (
 // The description teaches a staged, bounded read — a stat before the patch,
 // paths to narrow it, a limit rather than a pipe — because a read-only
 // session refuses the chained and piped command lines that would otherwise do
-// that job, and a patch past the spawn cap cannot all be recovered.
+// that job, and a whole patch read back from evidence costs rounds a narrowed
+// one does not.
 // See docs/capabilities/approvals-and-safety.md#a-closed-verb-set-is-what-makes-a-read-a-read.
 var gitTool = provider.Tool{
 	Name: GitToolName,
@@ -443,7 +446,11 @@ func (t *Toolset) executeGit(raw json.RawMessage) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	out, err := t.run(GitToolName, argv)
+	limit := MaxOutputBytes
+	if max, _ := gitBounds(args); max == 0 && t.reducedCap > limit {
+		limit = t.reducedCap
+	}
+	out, err := t.runCapped(GitToolName, argv, limit)
 	if err != nil {
 		return "", err
 	}

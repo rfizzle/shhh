@@ -69,7 +69,9 @@ const (
 	// bound the model reads: a surface declares these tools self-bounding as
 	// it registers them, so the evidence pipeline does not cut a head and a
 	// tail out of a match set on top of it. git's show and diff are the
-	// exception and are reduced, because their size is the commit's.
+	// exception and are reduced, because their size is the commit's — and
+	// where a surface says a pipeline takes them (ReducedBy), their cap is
+	// what the store keeps rather than this.
 	MaxOutputBytes = 64 << 10
 
 	// MaxStderrBytes caps captured stderr embedded in error results.
@@ -131,6 +133,28 @@ type Toolset struct {
 	// answer. Nil is a toolset that reads git and cannot write it, which is
 	// every toolset until a surface says otherwise (AllowWrites).
 	writes *Writes
+	// reducedCap is the spawn cap for the git calls a reduction pipeline
+	// takes, set by ReducedBy; zero leaves them at MaxOutputBytes.
+	reducedCap int
+}
+
+// ReducedBy declares that a reduction pipeline takes every git call
+// GitCallBounded does not answer for, and keeps up to stored bytes of each.
+// Those calls' spawn cap becomes stored, so the one cut a large patch meets
+// is the store's own and the id the reduction notice names holds the whole
+// of it; a cap below the store's would drop the tail before anything could
+// keep it, and the notice would promise bytes nobody has.
+//
+// It is a declaration a surface makes and not a default, because the cap is
+// only safe with a pipeline behind it: without one, a patch of this size
+// would land in the conversation as it came. The calls that bound themselves
+// keep MaxOutputBytes, since their size is set by their arguments. Safe on a
+// nil toolset.
+// See docs/capabilities/evidence.md#reduction-is-for-unbounded-output.
+func (t *Toolset) ReducedBy(stored int) {
+	if t != nil {
+		t.reducedCap = stored
+	}
 }
 
 // Detect probes PATH for the wrapped binaries and returns the session
@@ -213,7 +237,7 @@ func (t *Toolset) Rooted(root string) *Toolset {
 		}
 		bins[name] = path
 	}
-	return &Toolset{root: resolved, bins: bins, timeout: t.timeout}
+	return &Toolset{root: resolved, bins: bins, timeout: t.timeout, reducedCap: t.reducedCap}
 }
 
 // insideRepo reports whether root is inside a git working tree; a variable so
@@ -400,6 +424,12 @@ func (w *capWriter) overflowed() bool { return w.total > w.limit }
 // toolset's timeout and output caps. Timeouts, cancellation, and non-zero
 // exits all come back as clean errors.
 func (t *Toolset) run(name string, argv []string) (string, error) {
+	return t.runCapped(name, argv, MaxOutputBytes)
+}
+
+// runCapped is run with the stdout cap stated by the caller, which is how a
+// git call the pipeline reduces is spawned under the store's cap.
+func (t *Toolset) runCapped(name string, argv []string, limit int) (string, error) {
 	bin, ok := t.bins[name]
 	if !ok {
 		return "", fmt.Errorf("%s is not available: the %q binary was not found on PATH", name, binaryNames[name])
@@ -411,7 +441,7 @@ func (t *Toolset) run(name string, argv []string) (string, error) {
 	cmd := exec.CommandContext(ctx, bin, argv...)
 	cmd.Dir = t.root
 	cmd.Env = spawnEnv(name)
-	stdout := &capWriter{limit: MaxOutputBytes, cancel: cancel}
+	stdout := &capWriter{limit: limit, cancel: cancel}
 	stderr := &capWriter{limit: MaxStderrBytes}
 	cmd.Stdout = stdout
 	cmd.Stderr = stderr
@@ -420,7 +450,7 @@ func (t *Toolset) run(name string, argv []string) (string, error) {
 	err := cmd.Run()
 	if stdout.overflowed() {
 		// The process was killed for flooding; what we kept is the result.
-		return fmt.Sprintf("%s\n… (output truncated at %d bytes; narrow the query to see more)", stdout.buf.String(), MaxOutputBytes), nil
+		return fmt.Sprintf("%s\n… (output truncated at %d bytes; narrow the query to see more)", stdout.buf.String(), limit), nil
 	}
 	if errors.Is(ctx.Err(), context.DeadlineExceeded) {
 		return "", fmt.Errorf("%s timed out after %s", name, t.timeout)

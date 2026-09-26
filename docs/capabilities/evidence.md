@@ -58,7 +58,11 @@ by count, a blame by its line window — and deliberately leaves showing a
 commit and diffing two of them unbounded, because the content is however
 large the commit is and there is no argument that would return less. So that
 one is declared per call: the window the reader narrowed to arrives whole,
-and the patch that could be anything is what the pipeline is for.
+and the patch that could be anything is what the pipeline is for. Its cap on
+what the tool may print is therefore raised to what the store keeps rather
+than left below the reducer, because a cut made before the pipeline sees the
+patch drops a tail nothing kept, and the id the notice names would hold a
+truncated original.
 
 ## The reader can always get the whole thing back
 

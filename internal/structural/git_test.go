@@ -2,12 +2,15 @@ package structural
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
 	"testing"
+
+	"github.com/rfizzle/shhh/internal/evidence"
 )
 
 // stubInsideRepo decides the repository question for the duration of a test.
@@ -725,6 +728,79 @@ func TestGitRangeComparisonIsSeparateCalls(t *testing.T) {
 		got := gitArgvFor(t, ts, tc.args)
 		if !strings.HasSuffix(strings.Join(got, " "), strings.Join(tc.tail, " ")) {
 			t.Errorf("%s: argv %v should end with %v", tc.args, got, tc.tail)
+		}
+	}
+}
+
+// reducedGit dispatches one git call through a reduction pipeline over a
+// fresh store, the way a session's chain does, and returns what the model
+// reads and the whole of what the store kept under the notice's id ("" when
+// the result was not reduced).
+func reducedGit(t *testing.T, ts *Toolset, raw string) (string, string) {
+	t.Helper()
+	store, err := evidence.OpenAt(t.TempDir(), "test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	red := evidence.NewReducer(store)
+	red.ExemptWhen(GitToolName, GitCallBounded)
+	out, err := red.WrapExecutor(ts.Execute)(GitToolName, json.RawMessage(raw))
+	if err != nil {
+		t.Fatal(err)
+	}
+	m := regexp.MustCompile(`evidence (ev-[0-9a-f]+)`).FindStringSubmatch(out)
+	if m == nil {
+		return out, ""
+	}
+	kept, _, err := store.Read(m[1], 0, evidence.MaxStoredBytes)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return out, string(kept)
+}
+
+// A diff past the tool's own cap reaches the store whole where the surface
+// declared the pipeline, so the id the reduction notice names holds the
+// patch's tail; without the declaration the spawn cuts it first and the
+// store keeps the cut. The script stands in for git: a 300 KB patch whose
+// last line is the only one that says END.
+func TestReducedGitDiffReachesTheStoreWhole(t *testing.T) {
+	script := writeScript(t, `yes '+	line of a large patch' | head -c 300000
+printf '+	END OF PATCH\n'`)
+
+	cut := newTestToolset(t, map[string]string{GitToolName: script})
+	if _, kept := reducedGit(t, cut, `{"verb":"diff"}`); kept == "" || strings.Contains(kept, "END OF PATCH") {
+		t.Fatalf("with no pipeline declared the spawn should cut the patch before the store, kept %d bytes", len(kept))
+	}
+
+	whole := newTestToolset(t, map[string]string{GitToolName: script})
+	whole.ReducedBy(evidence.MaxStoredBytes)
+	out, kept := reducedGit(t, whole, `{"verb":"diff"}`)
+	if !strings.HasPrefix(out, "[output reduced:") {
+		t.Fatalf("a patch this size should still be reduced for the model, got %d bytes", len(out))
+	}
+	if !strings.HasSuffix(kept, "+\tEND OF PATCH") || strings.Contains(kept, "output truncated") {
+		t.Fatalf("the store should keep the whole patch, kept %d bytes ending %q", len(kept), kept[max(0, len(kept)-40):])
+	}
+
+	// A child's toolset is the session's rooted elsewhere, and the pipeline
+	// behind it is the session's, so the declaration travels with it.
+	if child := whole.Rooted(whole.root); child.reducedCap != evidence.MaxStoredBytes {
+		t.Fatalf("a rooted toolset should keep the reduced cap, got %d", child.reducedCap)
+	}
+}
+
+// The verbs that bound themselves keep the tool's own cap with a pipeline
+// declared: their size is their arguments', and the reducer passes them by.
+// Three 100 KB lines, so the line bound leaves the byte cap's notice standing.
+func TestSelfBoundedGitCallsKeepTheSpawnCap(t *testing.T) {
+	script := writeScript(t, `for i in 1 2 3; do head -c 100000 /dev/zero | tr '\0' x; printf '\n'; done`)
+	ts := newTestToolset(t, map[string]string{GitToolName: script})
+	ts.ReducedBy(evidence.MaxStoredBytes)
+	for _, raw := range []string{`{"verb":"status"}`, `{"verb":"diff","names":true}`} {
+		out, kept := reducedGit(t, ts, raw)
+		if kept != "" || !strings.Contains(out, fmt.Sprintf("output truncated at %d bytes", MaxOutputBytes)) {
+			t.Errorf("%s should be cut at the tool's own cap and not reduced, got %d bytes, stored %d", raw, len(out), len(kept))
 		}
 	}
 }
