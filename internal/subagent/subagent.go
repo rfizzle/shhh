@@ -989,6 +989,13 @@ type Ask struct {
 	// bytes. Empty where the patch touched none.
 	// See docs/capabilities/subagents.md#a-writer-starts-from-your-tree.
 	Regenerated []string
+	// Reconciles is, on an integration writer's AskPatch, whose applied
+	// change the patch settles in the files it was handed — "writer-1's
+	// change to loop.go with writer-2's" — and empty everywhere else. Those
+	// files carry no clash warning: overwriting both sides is the patch's
+	// job, and the card states it as a fact rather than a risk.
+	// See docs/capabilities/subagents.md#a-conflict-is-a-task-for-a-writer.
+	Reconciles string
 	// Files are the paths an AskPatch writes in the parent's checkout, as
 	// git names them. They are the patch's blast radius: unlike an edit,
 	// whose diff is the whole of it, a patch's diff can be longer than the
@@ -5517,7 +5524,7 @@ func (s *Supervisor) reviewPatch(c *child) (landed bool) {
 			return false
 		}
 
-		ask, touched := s.patchAsk(c.name, c.repoTop, land)
+		ask, touched := s.patchAsk(c, c.repoTop, land)
 		ask.Merged = merged
 		ask.Regenerated = ran
 		if regenErr != nil {
@@ -5569,7 +5576,8 @@ func (s *Supervisor) reviewPatch(c *child) (landed bool) {
 // door it arrives by: a writer finishing, or a patch kept from one that did
 // not land being reviewed from its row. The two are one path so that what
 // the card warns about and where it measures are the same either way.
-func (s *Supervisor) patchAsk(name, repoTop, patch string) (*Ask, []string) {
+func (s *Supervisor) patchAsk(c *child, repoTop, patch string) (*Ask, []string) {
+	name := c.name
 	hunks, files := PatchHunks(patch)
 	adds, dels := diff.Stats(hunks)
 	title := fmt.Sprintf("apply patch (+%d −%d, %d file(s))", adds, dels, files)
@@ -5582,9 +5590,17 @@ func (s *Supervisor) patchAsk(name, repoTop, patch string) (*Ask, []string) {
 	ask.Root, ask.Files = repoTop, touched
 	// Two writers can hold the same file in separate worktrees; the collision
 	// only becomes visible when the second patch lands on top of the first.
-	// Say so on the card, before it is applied.
-	if clashes := s.patchClashes(name, touched); len(clashes) > 0 {
+	// Say so on the card, before it is applied — except where the patch is an
+	// integration writer's over the files it was started to reconcile, whose
+	// whole job is to overwrite both sides; there the card says whose change
+	// it settles instead, so the warning keeps its weight everywhere else.
+	// See docs/capabilities/subagents.md#a-conflict-is-a-task-for-a-writer.
+	clashes, reconciled := s.patchClashes(c, touched)
+	if len(clashes) > 0 {
 		ask.Warnings = append(ask.Warnings, "overwrites changes already applied by "+strings.Join(clashes, ", "))
+	}
+	if len(reconciled) > 0 {
+		ask.Reconciles = strings.Join(reconciled, ", ") + " with " + c.integrates.sourceName() + "'s"
 	}
 	return ask, touched
 }
@@ -5636,21 +5652,38 @@ func patchPaths(files []string) string {
 }
 
 // patchClashes names the other agents whose applied patches already touched
-// any of these files, most recent writer per file.
-func (s *Supervisor) patchClashes(name string, files []string) []string {
+// any of these files, most recent writer per file. A clash in a file an
+// integration writer (Spec.Integrates) was handed to reconcile is answered in
+// reconciled instead, as that writer's change to the file: overwriting it is
+// what the integration was started for.
+func (s *Supervisor) patchClashes(c *child, files []string) (clashes, reconciled []string) {
+	handed := map[string]bool{}
+	if in := c.integrates; in != nil {
+		in.mu.Lock()
+		for _, f := range in.conflicts {
+			handed[f] = true
+		}
+		in.mu.Unlock()
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	var out []string
 	seen := map[string]bool{}
 	for _, f := range files {
 		other := s.appliedFiles[f]
-		if other == "" || other == name || seen[other] {
+		if other == "" || other == c.name {
+			continue
+		}
+		if handed[f] {
+			reconciled = append(reconciled, other+"'s change to "+f)
+			continue
+		}
+		if seen[other] {
 			continue
 		}
 		seen[other] = true
-		out = append(out, other+" ("+f+")")
+		clashes = append(clashes, other+" ("+f+")")
 	}
-	return out
+	return clashes, reconciled
 }
 
 // recordApplied remembers which agent's patch last touched each file.
@@ -5866,7 +5899,7 @@ func (s *Supervisor) ReviewKept(name string) (*Ask, error) {
 			land, merged = m.Patch, m.Moved
 		}
 	}
-	ask, touched := s.patchAsk(c.name, k.repoTop, land)
+	ask, touched := s.patchAsk(c, k.repoTop, land)
 	ask.Merged = merged
 	// What the patch was kept without is regenerated over it as it lands,
 	// in a copy of the checkout as it stands then (awaitKept).

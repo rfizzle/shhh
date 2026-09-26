@@ -614,6 +614,17 @@ func regeneratedPatchAsk(root string) *subagent.Ask {
 	return ask
 }
 
+// reconcilingPatchAsk is an integration writer's patch as the supervisor
+// routes one: over the file it was handed, whose clash with the writer that
+// landed first is the reconciliation rather than a warning.
+func reconcilingPatchAsk(root string) *subagent.Ask {
+	ask := longPatchAsk(root)
+	ask.Agent = "integrator-1"
+	ask.Files = []string{"internal/agent/loop.go"}
+	ask.Reconciles = "writer-1's change to internal/agent/loop.go with writer-2's"
+	return ask
+}
+
 // routedModel is a session with one child request on screen, holding the
 // keyboard the way a reader who answered the handover would.
 func routedModel(t *testing.T, ask *subagent.Ask) Model {
@@ -664,6 +675,20 @@ func TestChildAskPatchCardSaysItWasMerged(t *testing.T) {
 	}
 	if plain := ansi.Strip(routedModel(t, longPatchAsk(dir)).View().Content); strings.Contains(plain, "merged") {
 		t.Fatalf("a patch that applies as written is not called merged:\n%s", plain)
+	}
+}
+
+// An integration writer's patch names whose change it reconciles, at the rung
+// of a fact: nothing flagged it, so the card is not raised to high.
+func TestChildAskPatchCardSaysWhatItReconciles(t *testing.T) {
+	dir := t.TempDir()
+	m := routedModel(t, reconcilingPatchAsk(dir))
+	view := ansi.Strip(m.View().Content)
+	if want := "settles   writer-1's change to internal/agent/loop.go"; !strings.Contains(view, want) {
+		t.Fatalf("the integration card should state %q:\n%s", want, view)
+	}
+	if card := m.childAskCard(m.activeChildAsk()); card.Severity == components.SeverityHigh {
+		t.Fatalf("a reconciliation is not a high-severity clash:\n%s", view)
 	}
 }
 

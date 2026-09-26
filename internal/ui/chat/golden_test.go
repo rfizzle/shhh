@@ -3824,6 +3824,8 @@ func TestGolden_ChildRequestRouted(t *testing.T) {
 				View: build(mergedPatchAsk(dir), true)},
 			{Label: "a patch that touched a golden file · its generator wrote it, and the card names the command",
 				View: build(regeneratedPatchAsk(dir), true)},
+			{Label: "an integration writer's patch · the reconciliation is a fact, not a clash",
+				View: build(reconcilingPatchAsk(dir), true)},
 		}
 	})
 }

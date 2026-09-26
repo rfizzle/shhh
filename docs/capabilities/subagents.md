@@ -248,9 +248,13 @@ adds one paragraph: what its copy holds, that markers are not a result, and
 how to stop.
 
 Its patch then goes where every writer's goes: the checks, the card, and the
-merge again if your checkout has moved meanwhile. It is the one result. When
-it lands, the kept patch it reconciled is spent — offering that patch again
-from its row would be the same work twice.
+merge again if your checkout has moved meanwhile. It is the one result. The
+card does not warn that it overwrites the other writer's change in the files
+it was handed, because overwriting both sides is the whole of its job; it says
+whose change it settles instead, so the warning keeps its weight on every card
+where the overwrite is an accident. When it lands, the kept patch it
+reconciled is spent — offering that patch again from its row would be the same
+work twice.
 
 An integration writer that cannot reconcile the two says so and lands
 nothing. Its patch is read, not trusted: a conflicting file still as your

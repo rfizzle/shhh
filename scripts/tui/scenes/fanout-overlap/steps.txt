@@ -38,8 +38,9 @@ keys y
 sleep 15
 snap 05-integration-lane "integrator-1 · Reconcile writer-2's patch"
 # The integration writer's patch is the card: the condition that does both,
-# over the checkout as writer-1 left it.
-snap 06-integration-card "round <= limit && !stopped"
+# over the checkout as writer-1 left it. Overwriting writer-1's change is the
+# reconciliation, so the card says whose change it settles and stays medium.
+snap 06-integration-card "round <= limit && !stopped" "settles   writer-1's change to loop.go"
 keys C-Space
 sleep 1
 keys y

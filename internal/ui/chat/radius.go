@@ -583,6 +583,18 @@ func (m Model) patchRadius(ask *subagent.Ask) blastRadius {
 			Tone:   components.ToneNeutral,
 		})
 	}
+	// An integration writer's patch overwrites both sides of the conflict it
+	// was handed, which is the reconciliation and not a clash: the card says
+	// whose change it settles, at the rung of a fact
+	// (docs/capabilities/subagents.md#a-conflict-is-a-task-for-a-writer).
+	if ask.Reconciles != "" {
+		b.fields = append(b.fields, components.CardField{
+			Label:  "settles",
+			Value:  ask.Reconciles,
+			Detail: "the agent was started to settle both changes into one",
+			Tone:   components.ToneNeutral,
+		})
+	}
 	// And a patch that touched generated files carries what their generators
 	// wrote, not what the writer did, so the card names the command that
 	// wrote them (docs/capabilities/subagents.md#a-writer-starts-from-your-tree).

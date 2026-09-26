@@ -186,6 +186,11 @@ func TestAConflictIsHandedToAnIntegrationWriterWhosePatchLandsOnce(t *testing.T)
 	if len(card.Files) != 1 || card.Files[0] != "main.go" || !strings.Contains(hunkText(card.Hunks), "+var y = 1 + 2") {
 		t.Fatalf("the card should be the reconciliation over the workspace:\n%s", hunkText(card.Hunks))
 	}
+	// Overwriting writer-1's change is the reconciliation's job, so the card
+	// states it as a fact rather than warning of a clash.
+	if len(card.Warnings) != 0 || card.Reconciles != "writer-1's change to main.go with writer-2's" {
+		t.Fatalf("the card should name what it reconciles and warn of nothing, got %q, %q", card.Reconciles, card.Warnings)
+	}
 	if got := take(repo, "main.go"); got != yIsOne {
 		t.Fatalf("nothing lands before the card is answered:\n%s", got)
 	}
@@ -200,6 +205,28 @@ func TestAConflictIsHandedToAnIntegrationWriterWhosePatchLandsOnce(t *testing.T)
 	}
 	if !transcriptHas(sup.Transcript("writer-2"), EntrySystem, "its patch landed through integrator-1") {
 		t.Fatal("writer-2's row should say its patch landed through the integration")
+	}
+}
+
+// An integration writer's patch is not warned about the files it was handed:
+// overwriting those is what it was started for, and the card says whose change
+// it settles. A file outside that set is a clash like any other writer's.
+func TestPatchClashesAnswersAnIntegrationsHandedFilesAsReconciled(t *testing.T) {
+	sup := New(context.Background(), Options{Root: t.TempDir()})
+	t.Cleanup(sup.Close)
+	sup.recordApplied("writer-1", []string{"loop.go", "mode.go"})
+	integrator := &child{name: "integrator-1", integrates: &integration{source: "writer-2", conflicts: []string{"loop.go"}}}
+	clashes, reconciled := sup.patchClashes(integrator, []string{"loop.go", "mode.go"})
+	if got := strings.Join(clashes, "; "); got != "writer-1 (mode.go)" {
+		t.Fatalf("a file outside the handed set keeps the warning, got %q", got)
+	}
+	if got := strings.Join(reconciled, "; "); got != "writer-1's change to loop.go" {
+		t.Fatalf("the handed file should be reconciled, got %q", got)
+	}
+	writer := &child{name: "writer-3"}
+	clashes, reconciled = sup.patchClashes(writer, []string{"loop.go"})
+	if len(clashes) != 1 || len(reconciled) != 0 {
+		t.Fatalf("an ordinary writer's patch keeps the warning, got %q, %q", clashes, reconciled)
 	}
 }
 
