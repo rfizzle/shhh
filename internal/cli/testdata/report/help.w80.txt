@@ -36,6 +36,7 @@
     doctor [--flags]                   Check this machine's shhh setup
     eval [suite] [--flags]             Run a suite of coding tasks and report what the session did
     init [shell] [--flags]             Output shell integration snippet or scaffold project config
+    keys [command] [--flags]           List every key, with a mark on the ones your keymap moved
     mcp [command] [--flags]            Connect each MCP server a session here would use, and report it
     providers [command] [--flags]      List providers and check gateway profiles
     skills [command]                   List the skills a session here would load

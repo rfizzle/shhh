@@ -617,6 +617,289 @@ which is where a file that needs a third key should look.
 Modal editing is not this. A file moves keys inside the keyboard that already
 exists; it does not add a mode with a keyboard of its own.
 
+A file that moves the copy key in reading mode and the pair every
+supporting screen moves its pointer with is four lines:
+
+```toml
+[reading]
+copy = "c"
+[screen]
+move = ["shift+up", "shift+down"]
+```
+
+**The shipped keyboard is a file to start from.** `shhh config init`, when it
+writes your own pair, writes `keybindings.toml` beside them: every key below
+at the keystrokes it ships with, one table per group, each line commented out
+so the file changes nothing until one is uncommented. A checkout's pair gets
+none, since a checkout does not layer one, and its confirmation says so.
+`shhh keys defaults` prints the same file for the person who already has one.
+`shhh keys` lists the keyboard this process is running, with a mark on every
+key your file moved and the keystrokes it shipped with beside it; `shhh keys
+check` reads a file the way a session start will and says `ok` or the
+refusal, without starting one. A refused file is also on the doctor's
+`keymap` row, which names the file and quotes the refusal, so a keyboard that
+quietly reverted to the shipped one has somewhere to be explained beyond the
+line printed as the process started.
+
+The names a file uses are the register's own, and this table is written from
+it. A group marked as not a file's to move is declared in the register and not
+yet reachable from a file: a line naming one of its keys is refused as naming
+no key.
+
+<!-- BEGIN generated keymap reference — written by `make docs` from the register in internal/ui/keys; edit the register, not this. -->
+
+| Key | Ships as | Does | A file moves it |
+|---|---|---|---|
+| `draft.send` | `enter` | send the message | yes |
+| `draft.newline` | `shift+enter`, `ctrl+j` | insert a newline | yes |
+| `draft.queue` | `ctrl+n` | queue the draft for after the turn; on an empty draft, pull the newest queued message back | yes |
+| `draft.editor` | `ctrl+g` | open the draft in $EDITOR | yes |
+| `draft.attach` | `ctrl+v` | attach the clipboard | yes |
+| `draft.complete` | `tab` | complete a slash command | yes |
+| `draft.palette` | `ctrl+/`, `ctrl+_` | the command palette | yes |
+| `draft.reasoning` | `ctrl+t`, `alt+t` | cycle the reasoning level | yes |
+| `draft.mode` | `shift+tab` | cycle the permission mode | yes |
+| `draft.pause` | `ctrl+p` | hold the turn between rounds, or let a held one go | yes |
+| `draft.history_prev` | `up` | recall the previous input | yes |
+| `draft.history_next` | `down` | the next one | yes |
+| `draft.history_search` | `ctrl+r` | search the input history | yes |
+| `draft.point_up` | `shift+up` | move the pointer up a row of the pane | yes |
+| `draft.point_down` | `shift+down` | down a row | yes |
+| `draft.open` | `shift+right` | open or run the pointed row | yes |
+| `draft.close` | `shift+left` | close it | yes |
+| `draft.page_up` | `pgup` | page the transcript | yes |
+| `draft.page_down` | `pgdown` | page it back | yes |
+| `draft.reading` | `ctrl+o` | reading mode | yes |
+| `draft.open_paste` | `alt+v` | open the staged paste | yes |
+| `draft.agents` | `alt+a` | the agent manager | yes |
+| `draft.backlog` | `ctrl+f` | the backlog screen | yes |
+| `draft.next_agent` | `alt+]` | the next session in the rail's map | yes |
+| `draft.prev_agent` | `alt+[` | the previous one | yes |
+| `draft.mouse` | `ctrl+x` | mouse reporting on or off | yes |
+| `draft.key_list` | `ctrl+]` | the keys | yes |
+| `draft.suspend` | `ctrl+z` | suspend shhh (idle only) | yes |
+| `draft.redraw` | `ctrl+l` | redraw the screen | yes |
+| `draft.answer` | `ctrl+space`, `ctrl+y` | answer it | yes |
+| `draft.clear` | `esc` | clear the input, or fold what is open | yes |
+| `draft.cancel` | `ctrl+c` | cancel the turn (press twice), then the input | yes |
+| `draft.quit` | `ctrl+d` | quit (press twice; a live turn asks) | yes |
+| `search.older` | `ctrl+r` | an older match | yes |
+| `search.keep` | `enter` | keep it in the draft | yes |
+| `search.cancel` | `esc`, `ctrl+c` | put the draft back | yes |
+| `reading.move` | `k`, `j`, `up`, `down` | move | yes |
+| `reading.expand` | `enter` | expand | yes |
+| `reading.collapse` | `-` | collapse | yes |
+| `reading.copy` | `y` | copy the row | yes |
+| `reading.search` | `/` | search | yes |
+| `reading.match` | `N`, `n` | match | yes |
+| `reading.half` | `u`, `d` | half page | yes |
+| `reading.page_up` | `pgup` | page up | yes |
+| `reading.page_down` | `pgdown` | page down | yes |
+| `reading.list` | `?` | keys | yes |
+| `reading.back` | `q`, `esc`, `ctrl+c` | back to the prompt | yes |
+| `find.keep` | `enter` | keep the search | yes |
+| `find.clear` | `esc`, `ctrl+c` | clear it | yes |
+| `paste.scroll` | `k`, `j`, `up`, `down` | scroll | yes |
+| `paste.remove` | `x` | remove the paste | yes |
+| `paste.leave` | `q`, `ctrl+c` | back to the draft, cursor where you left it | yes |
+| `paste.back` | `esc` | back to the draft | yes |
+| `context.move` | `up`, `down`, `k`, `j` | move | yes |
+| `context.expand` | `enter` | expand or fold | yes |
+| `context.list` | `?` | keys | yes |
+| `context.back` | `q`, `esc`, `ctrl+c` | back to the prompt | yes |
+| `row.undo` | `u` | undo turn | yes |
+| `row.retry` | `r` | try again | yes |
+| `row.continue` | `c` | continue from here | yes |
+| `row.key` | `e` | enter a new key | yes |
+| `row.provider` | `p` | switch provider | yes |
+| `row.rounds` | `+` | more rounds | yes |
+| `row.uncap` | `!` | let it run | yes |
+| `row.reopen` | `o` | reopen the item | yes |
+| `row.commit` | `g` | commit | yes |
+| `row.rerun` | `t` | run the checks again | yes |
+| `rowchord.undo` | `alt+z` | undo turn | yes |
+| `rowchord.retry` | `alt+r` | try again | yes |
+| `rowchord.continue` | `alt+n` | continue from here | yes |
+| `rowchord.key` | `alt+e` | enter a new key | yes |
+| `rowchord.provider` | `alt+p` | switch provider | yes |
+| `rowchord.rounds` | `alt+m` | more rounds | yes |
+| `rowchord.uncap` | `alt+x` | let it run | yes |
+| `rowchord.reopen` | `alt+o` | reopen the item | yes |
+| `rowchord.commit` | `alt+g` | commit | yes |
+| `rowchord.rerun` | `alt+k` | run the checks again | yes |
+| `decision.allow` | `y`, `enter` | allow | yes |
+| `decision.deny` | `n`, `esc`, `ctrl+c` | deny | yes |
+| `decision.always` | `a` | allow without asking — choose how long | yes |
+| `decision.batch` | `A` | open the queue | yes |
+| `decision.diff` | `d`, `D` | full diff | yes |
+| `decision.allow_noted` | `Y` | allow, and say what to do next | yes |
+| `decision.deny_noted` | `N` | deny, and say why | yes |
+| `decision.dry_run` | `t` | try the harmless form | yes |
+| `decision.explain` | `x` | explain what the command does | yes |
+| `decision.amend` | `e` | edit the command before it runs | yes |
+| `decision.accept` | `y`, `Y`, `enter` | yes | yes |
+| `decision.refuse` | `n`, `N` | no, and stop offering | yes |
+| `decision.scroll_up` | `shift+up` | scroll the card up | yes |
+| `decision.scroll_down` | `shift+down` | scroll the card | yes |
+| `decision.pan_left` | `shift+left` | pan a wide body back | yes |
+| `decision.pan_right` | `shift+right` | pan a wide body | yes |
+| `confirm.yes` | `y`, `Y` | yes | yes |
+| `confirm.no` | `n`, `N`, `enter`, `esc`, `ctrl+c` | no — the default | yes |
+| `confirm.force` | `f`, `F` | force | yes |
+| `select.move` | `up`, `down` | move | yes |
+| `select.move_jk` | `up`, `down`, `k`, `j` | move | yes |
+| `select.take` | `enter` | select | yes |
+| `select.alt` | `d` | make it the default | yes |
+| `select.filter` | `/` | filter | yes |
+| `select.clear_q` | `ctrl+u` | clear the filter | yes |
+| `select.toggle` | `" "`, `space` | toggle | yes |
+| `select.all` | `a` | all or none | yes |
+| `select.note` | `tab` | note or options | yes |
+| `select.tab` | `left`, `right` | the next question | yes |
+| `select.long` | `d` | the full answer | yes |
+| `select.delete` | `x` | delete | yes |
+| `select.rename` | `r` | rename | yes |
+| `select.cancel` | `esc`, `ctrl+c` | cancel | yes |
+| `select.quit` | `ctrl+d` | quit | yes |
+| `select.palette.prev` | `up`, `ctrl+p` | move | yes |
+| `select.palette.next` | `down`, `ctrl+n` | move | yes |
+| `select.palette.run` | `enter` | run it | yes |
+| `select.palette.write` | `tab` | write it into the input | yes |
+| `review.move_file` | `k`, `j`, `up`, `down` | file | yes |
+| `review.move_hunk` | `p`, `n` | hunk | yes |
+| `review.stage_hunk` | `s`, `" "`, `space` | stage hunk | yes |
+| `review.stage_file` | `S` | file | yes |
+| `review.stage_all` | `a`, `A` | all | yes |
+| `review.side_by_side` | `\` | side by side | yes |
+| `review.page_up` | `pgup` | page up | yes |
+| `review.page_down` | `pgdown` | page down | yes |
+| `review.apply` | `enter` | take the staged hunks | yes |
+| `review.back` | `esc`, `ctrl+c` | back | yes |
+| `agent.move` | `k`, `j`, `up`, `down` | move | yes |
+| `agent.attach` | `enter` | attach | yes |
+| `agent.go` | `g` | go to the agent that asked | yes |
+| `agent.answer` | `a` | answer | yes |
+| `agent.steer` | `s` | steer | yes |
+| `agent.retry` | `r` | retry | yes |
+| `agent.review` | `p` | review | yes |
+| `agent.cancel` | `x` | cancel | yes |
+| `agent.kill` | `X` | kill | yes |
+| `agent.kill_all` | `K` | kill all | yes |
+| `agent.back` | `esc`, `ctrl+c` | back | yes |
+| `agent.detach` | `esc` | back to your own session | yes |
+| `profile.move` | `up`, `down` | move | yes |
+| `profile.take` | `enter` | take it | yes |
+| `profile.note` | `tab` | note or options | yes |
+| `profile.scroll_up` | `shift+up` | scroll the profile up | yes |
+| `profile.scroll_down` | `shift+down` | scroll the profile | yes |
+| `profile.back` | `esc`, `ctrl+c` | back a step | yes |
+| `wait.fallback` | `m` | finish this turn on the fallback model | yes |
+| `wait.stop` | `esc` | stop waiting | yes |
+| `wait.compact` | `enter` | compact now | yes |
+| `wait.new_session` | `n` | new session | yes |
+| `wait.keep_going` | `esc` | keep going | yes |
+| `wait.use_key` | `enter` | use it for this session | yes |
+| `wait.keep_key` | `esc` | keep the current key | yes |
+| `diff.scroll` | `k`, `j`, `up`, `down` | scroll | yes |
+| `diff.side_by_side` | `s` | side-by-side | yes |
+| `diff.hunk` | `p`, `n` | hunk | yes |
+| `diff.back` | `esc` | back | yes |
+| `diff.leave` | `q`, `ctrl+c` | back | yes |
+| `output.scroll` | `k`, `j`, `up`, `down` | scroll | yes |
+| `output.page_up` | `pgup` | page up | yes |
+| `output.page_down` | `pgdown` | page down | yes |
+| `output.collapse` | `enter` | close the row | yes |
+| `output.back` | `esc` | back | yes |
+| `output.leave` | `q`, `ctrl+c` | back | yes |
+| `preview.back` | `esc` | back | yes |
+| `preview.leave` | `q`, `ctrl+c` | back | yes |
+| `screen.move` | `up`, `down`, `k`, `j` | move | yes |
+| `screen.take` | `enter` | take it | yes |
+| `screen.filter` | `/` | filter | yes |
+| `screen.clear_q` | `ctrl+u` | clear the filter | yes |
+| `screen.list` | `?` | keys | yes |
+| `screen.quit` | `q`, `esc`, `ctrl+c` | quit | yes |
+| `screen.reset` | `r` | reset to default | yes |
+| `screen.write` | `w` | write the file | yes |
+| `screen.keep` | `esc` | keep the current value | yes |
+| `screen.copy` | `c` | copy it | yes |
+| `screen.rerun` | `enter` | re-run it | yes |
+| `screen.snippet` | `s` | save it as a snippet | yes |
+| `screen.delete` | `x` | delete it | yes |
+| `screen.rename` | `r` | rename it | yes |
+| `screen.fix` | `f` | show the fix | yes |
+| `screen.again` | `r` | run the checks again | yes |
+| `screen.apply` | `a` | apply it | yes |
+| `screen.worked` | `y` | worked | yes |
+| `screen.failed` | `n` | did not | yes |
+| `screen.skip` | `s` | skip | yes |
+| `plan.jump` | `1`, `2`, `3`, `4`, `5` | jump to a row | yes |
+| `plan.save` | `s`, `S` | save the plan | yes |
+| `query.rub` | `backspace` | take a rune back | yes |
+| `oneshot.run` | `enter` | run | yes |
+| `oneshot.confirm` | `y` | run it | yes |
+| `oneshot.step` | `t` | step by step | yes |
+| `oneshot.dry_run` | `d` | dry run | yes |
+| `oneshot.edit` | `e` | edit | yes |
+| `oneshot.revise` | `r` | revise | yes |
+| `oneshot.back` | `u` | back | yes |
+| `oneshot.alternatives` | `a` | the other commands | yes |
+| `oneshot.explain` | `x` | explain | yes |
+| `oneshot.copy` | `c` | copy | yes |
+| `oneshot.save` | `s` | save | yes |
+| `oneshot.quit` | `esc`, `q` | quit | yes |
+| `setup.wizard` | `enter` | setup wizard | yes |
+| `setup.paste` | `p` | paste a key | yes |
+| `setup.local` | `o` | a local model | yes |
+| `sources.move` | `up`, `down`, `k`, `j` | move | no |
+| `sources.open` | `enter` | read the page that was kept | no |
+| `sources.list` | `?` | keys | no |
+| `sources.back` | `q`, `esc`, `ctrl+c` | back to the prompt | no |
+| `notes.move` | `up`, `down`, `k`, `j` | move | no |
+| `notes.read` | `enter` | read the whole note | no |
+| `notes.drop` | `d` | drop it | no |
+| `notes.list` | `?` | keys | no |
+| `notes.back` | `q`, `esc`, `ctrl+c` | back to the prompt | no |
+| `backlog.move` | `up`, `down` | move | no |
+| `backlog.read` | `enter` | read the body | no |
+| `backlog.page` | `pgup`, `pgdown` | page the body | no |
+| `backlog.tab` | `tab` | the backlog or the archive | no |
+| `backlog.filter` | `/` | filter by text | no |
+| `backlog.clear_q` | `ctrl+u` | clear the filter | no |
+| `backlog.status` | `s` | cycle the status filter | no |
+| `backlog.priority` | `p` | cycle the priority filter | no |
+| `backlog.kind` | `k` | cycle the kind filter | no |
+| `backlog.ready` | `r` | only what can be started now | no |
+| `backlog.depends` | `w` | jump to what it waits on | no |
+| `backlog.edit` | `e` | open it in $EDITOR | no |
+| `backlog.run` | `R` | run it | no |
+| `backlog.block` | `b` | block it | no |
+| `backlog.reopen` | `o` | reopen it | no |
+| `backlog.archive` | `d` | archive it | no |
+| `backlog.drop` | `x` | drop it, deleting the file | no |
+| `backlog.new` | `n` | a new item | no |
+| `backlog.sprint` | `S` | add it to the sprint, or drop it from one | no |
+| `backlog.groom` | `g` | read it against the tree | no |
+| `backlog.list` | `?` | keys | no |
+| `backlog.back` | `q`, `esc`, `ctrl+c` | back to the prompt | no |
+| `sprint.move` | `up`, `down`, `k`, `j` | move | no |
+| `sprint.toggle` | `" "`, `space` | drop it, or put it back | no |
+| `sprint.left` | `o` | what was left out, and why | no |
+| `sprint.goal` | `g` | write what the set is for | no |
+| `sprint.take` | `enter` | write the sprint | no |
+| `sprint.cancel` | `esc` | write nothing | no |
+| `commit.take` | `enter` | commit | no |
+| `commit.edit` | `e` | edit the message | no |
+| `commit.hunks` | `s` | pick hunks | no |
+| `commit.cancel` | `esc` | don't | no |
+| `rewind.both` | `b` | both | no |
+| `rewind.code` | `c` | code only | no |
+| `rewind.talk` | `t` | talk only | no |
+| `rewind.cancel` | `esc` | don't | no |
+| `rewind.diff` | `d` | what the turns after it changed | no |
+
+<!-- END generated keymap reference -->
+
 ## Which search a session has
 
 `web.search_provider` names the backend the `web_search` tool asks, and each

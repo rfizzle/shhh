@@ -66,24 +66,34 @@ func cell(s string) string { return strings.ReplaceAll(s, "|", "\\|") }
 // and whether that changed anything. A document with no markers is an error
 // rather than an append.
 func ReservedReferenceIn(doc string) (string, bool, error) {
-	i := strings.Index(doc, reservedBegin)
-	j := strings.Index(doc, reservedEnd)
-	if i < 0 || j < i {
-		return "", false, fmt.Errorf("the reserved keys markers are not in the document")
-	}
-	out := doc[:i] + ReservedReference() + doc[j+len(reservedEnd):]
-	return out, out != doc, nil
+	return regionIn(doc, reservedBegin, reservedEnd, ReservedReference(), "reserved keys")
 }
 
 // WriteReservedReference rewrites the generated region of the document at
 // path and reports whether it had drifted; `make docs` writes, the test
 // checks.
 func WriteReservedReference(path string, write bool) (stale bool, err error) {
+	return writeRegion(path, write, ReservedReferenceIn)
+}
+
+// regionIn replaces the text between two markers with body.
+func regionIn(doc, begin, end, body, what string) (string, bool, error) {
+	i := strings.Index(doc, begin)
+	j := strings.Index(doc, end)
+	if i < 0 || j < i {
+		return "", false, fmt.Errorf("the %s markers are not in the document", what)
+	}
+	out := doc[:i] + body + doc[j+len(end):]
+	return out, out != doc, nil
+}
+
+// writeRegion rewrites a document through one of the In functions.
+func writeRegion(path string, write bool, in func(string) (string, bool, error)) (stale bool, err error) {
 	raw, err := os.ReadFile(path)
 	if err != nil {
 		return false, err
 	}
-	out, changed, err := ReservedReferenceIn(string(raw))
+	out, changed, err := in(string(raw))
 	if err != nil {
 		return false, fmt.Errorf("%s: %w", path, err)
 	}
@@ -98,4 +108,140 @@ func WriteReservedReference(path string, write bool) (stale bool, err error) {
 		mode = info.Mode().Perm()
 	}
 	return true, os.WriteFile(path, []byte(out), mode)
+}
+
+// The keymap's reference and its scaffold, written from the register for the
+// reason the reserved inventory is: the names a keymap file uses are the
+// register's field names, and a list of them typed out by hand is a list that
+// is wrong the first time a key is added
+// (docs/capabilities/configuration.md#the-keymap-file).
+
+const (
+	keymapBegin = "<!-- BEGIN generated keymap reference — written by `make docs` from the register in internal/ui/keys; edit the register, not this. -->"
+	keymapEnd   = "<!-- END generated keymap reference -->"
+)
+
+// KeymapReference is every key the register declares as a table: the name a
+// file writes it by, the keystrokes it ships with, what it does, and whether
+// a file may move it. It is written from the declarations rather than from
+// this process's keyboard, so a keymap on the machine that ran `make docs`
+// cannot reach the document, and a test that has moved a key does not find
+// it stale.
+func KeymapReference() string {
+	var b strings.Builder
+	b.WriteString(keymapBegin + "\n\n")
+	b.WriteString("| Key | Ships as | Does | A file moves it |\n|---|---|---|---|\n")
+	for _, g := range keyboard(true) {
+		for _, a := range g.Acts {
+			moves := "yes"
+			if !a.Movable {
+				moves = "no"
+			}
+			fmt.Fprintf(&b, "| `%s` | %s | %s | %s |\n", a.Name, keystrokes(a.Shipped), cell(a.Words), moves)
+		}
+	}
+	b.WriteString("\n" + keymapEnd)
+	return b.String()
+}
+
+// keystrokes is a list of keys as the reference prints them. A space is
+// quoted, because a code span holding one space draws as nothing.
+func keystrokes(keys []string) string {
+	shown := make([]string, len(keys))
+	for i, k := range keys {
+		if k == " " {
+			k = `" "`
+		}
+		shown[i] = "`" + cell(k) + "`"
+	}
+	return strings.Join(shown, ", ")
+}
+
+// KeymapReferenceIn is the document with the keymap region replaced.
+func KeymapReferenceIn(doc string) (string, bool, error) {
+	return regionIn(doc, keymapBegin, keymapEnd, KeymapReference(), "keymap reference")
+}
+
+// WriteKeymapReference rewrites the keymap region of the document at path
+// and reports whether it had drifted.
+func WriteKeymapReference(path string, write bool) (stale bool, err error) {
+	return writeRegion(path, write, KeymapReferenceIn)
+}
+
+// Scaffold is a keymap file holding every key shhh ships, at the keystrokes
+// it ships with, each line commented out — so the file as written changes
+// nothing, and uncommenting a line is how a key moves. It is the register's
+// own shape, one table per group, and the groups a file cannot reach are
+// named in the opening comment rather than written as lines that would be
+// refused.
+func Scaffold() string {
+	var b strings.Builder
+	b.WriteString(`# shhh keybindings.
+#
+# Every key shhh ships, one table per group of keys, at the keystrokes it
+# ships with. Each line is commented out, so this file changes nothing until
+# you uncomment one. A value is one keystroke or a list of them; the words
+# after a line are what the key does, and they stay the program's.
+#
+# The file is applied whole or refused whole, and the keyboard shhh ships runs
+# instead of a refused one. It is refused if it would:
+#   - leave one surface answering a keystroke with two acts;
+#   - put a destructive act on a movement key;
+#   - put a bare key where the draft can take text;
+#   - give a key that moves both ways one half of its pair (back first, then on);
+#   - move a key onto a chord the desktop or the terminal takes.
+# ` + "`shhh keys check`" + ` reads this file the way a session will, without starting one.
+# See docs/capabilities/configuration.md#the-keymap-file.
+`)
+	var fixedNames []string
+	for _, g := range keyboard(true) {
+		if !g.Movable {
+			for _, a := range g.Acts {
+				fixedNames = append(fixedNames, a.Name)
+			}
+			continue
+		}
+		table := ""
+		for _, a := range g.Acts {
+			if t := a.Name[:strings.LastIndex(a.Name, ".")]; t != table {
+				table = t
+				fmt.Fprintf(&b, "\n[%s]\n", table)
+			}
+			fmt.Fprintf(&b, "# %s = %s  # %s\n", a.Name[len(table)+1:], tomlKeys(a.Shipped), a.Words)
+		}
+	}
+	if len(fixedNames) > 0 {
+		b.WriteString("\n# These are declared and are not a file's to move: a line naming one is\n# refused as naming no key.\n")
+		b.WriteString(wrapComment(strings.Join(fixedNames, ", "), 78))
+	}
+	return b.String()
+}
+
+// tomlKeys is a binding's keystrokes as a TOML value: one as a string, several
+// as a list.
+func tomlKeys(keys []string) string {
+	quoted := make([]string, len(keys))
+	for i, k := range keys {
+		quoted[i] = fmt.Sprintf("%q", k)
+	}
+	if len(quoted) == 1 {
+		return quoted[0]
+	}
+	return "[" + strings.Join(quoted, ", ") + "]"
+}
+
+// wrapComment breaks a line of names into indented comment lines no wider
+// than width.
+func wrapComment(text string, width int) string {
+	var b strings.Builder
+	line := "#  "
+	for _, word := range strings.Fields(text) {
+		if len(line)+1+len(word) > width && line != "#  " {
+			b.WriteString(line + "\n")
+			line = "#  "
+		}
+		line += " " + word
+	}
+	b.WriteString(line + "\n")
+	return b.String()
 }

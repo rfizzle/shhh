@@ -1,6 +1,11 @@
-  shhh doctor — 5 checks
+  shhh doctor — 6 checks
 
   ✓ binary    shhh 0.9.4 · linux/amd64  [ok]
+  ⚠ keymap    /home/dev/.config/shhh/keybindings.toml  [refused]
+      the keyboard shhh ships runs instead of this file
+        "p" is a letter while the draft can take text, so it cannot also be "the
+        command palette" on the input; a key live at the input is a chord
+        shhh keys check reads it again the way a session will
   ✓ otel      http://localhost:4318 · content-free  [ok]
   ✗ sandbox   bwrap not found  [UNCONTAINED]
       commands run with your own permissions, in your own filesystem
@@ -15,4 +20,4 @@
         summary — config prompts.summary
         todo_commit — ~/.config/shhh/prompts/todo_commit.md
 
-  1 failed · 3 passed · 1 not checked
+  1 failed · 1 warning · 3 passed · 1 not checked

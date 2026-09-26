@@ -11,6 +11,7 @@ package cli
 // else, without the ANSI block the TUI goldens carry.
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -25,6 +26,7 @@ import (
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // reportGoldenDir is where the fixtures live, relative to this package — `go
@@ -111,6 +113,7 @@ func TestReportGoldens(t *testing.T) {
 		{"config.init", goldenConfigInit().Render(80)},
 		{"config.init.project", goldenConfigInitProject().Render(80)},
 		{"config.scaffold", goldenScaffoldOpening()},
+		{"keys", goldenKeys().Render(80)},
 	} {
 		t.Run(c.name, func(t *testing.T) { assertReportGolden(t, c.name, c.body) })
 	}
@@ -146,6 +149,8 @@ func TestReportGoldens_FitTheirWidth(t *testing.T) {
 func goldenChecks() []components.DoctorCheck {
 	return []components.DoctorCheck{
 		{Name: "binary", Subject: "shhh 0.9.4", Detail: "linux/amd64", Outcome: "ok"},
+		doctorCheck("keymap", doctorKeymap("/home/dev/.config/shhh/keybindings.toml", 0,
+			errors.New(`/home/dev/.config/shhh/keybindings.toml: "p" is a letter while the draft can take text, so it cannot also be "the command palette" on the input; a key live at the input is a chord`)), 0),
 		{Name: "otel", Subject: "http://localhost:4318", Detail: "content-free", Outcome: "ok"},
 		{Name: "sandbox", Subject: "bwrap not found", Outcome: "UNCONTAINED",
 			State:       components.DoctorFailed,
@@ -463,6 +468,7 @@ func goldenConfigInit() report.Report {
 	return initPlan{
 		settings: "/home/dev/.config/shhh/config.toml",
 		prompts:  "/home/dev/.config/shhh/prompts",
+		keymap:   "/home/dev/.config/shhh/keybindings.toml",
 		files:    make([]initFile, len(wordingKeys())),
 	}.wrote()
 }
@@ -634,4 +640,18 @@ func goldenObserveCompareEmpty() observeCompareData {
 	return observeCompared(observeCompareData{
 		Window: "30d", Split: "prompt_hash", Sessions: 11, MinSessions: compareMinSessions,
 	})
+}
+
+// goldenKeys is the keyboard with one key a file moved, which is the row the
+// listing is read for: marked, and carrying what it shipped as.
+func goldenKeys() report.Report {
+	kb := keys.Keyboard()
+	for gi, g := range kb {
+		for ai, a := range g.Acts {
+			if a.Name == "reading.copy" {
+				kb[gi].Acts[ai].Keys = []string{"c"}
+			}
+		}
+	}
+	return keysReport(kb, "/home/dev/.config/shhh/keybindings.toml", nil)
 }

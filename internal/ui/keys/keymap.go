@@ -44,6 +44,7 @@ import (
 	"reflect"
 	"slices"
 	"strings"
+	"unicode"
 
 	"charm.land/bubbles/v2/key"
 	"github.com/BurntSushi/toml"
@@ -57,6 +58,13 @@ import (
 // No file is not an error: most people never write one, and the register is
 // the answer for all of them.
 func Load(paths ...string) error {
+	appliedPath, appliedErr = load(paths...)
+	return appliedErr
+}
+
+// load is Load without the record: the path it read, "" where none of them
+// exists, and the refusal.
+func load(paths ...string) (string, error) {
 	for _, path := range paths {
 		moves, err := readKeymap(path)
 		if errors.Is(err, fs.ErrNotExist) {
@@ -66,11 +74,44 @@ func Load(paths ...string) error {
 			err = apply(moves)
 		}
 		if err != nil {
-			return fmt.Errorf("%s: %w", path, err)
+			return path, fmt.Errorf("%s: %w", path, err)
 		}
-		return nil
+		return path, nil
 	}
-	return nil
+	return "", nil
+}
+
+// appliedPath and appliedErr are what the last Load read and what it said,
+// which in the binary is the one call at the top of the process. They are
+// kept because the refusal is said once, on stderr, before anything draws —
+// and a person whose keyboard reverted to the shipped one finds out why
+// later, from the doctor and from `shhh keys`, which read this rather than
+// applying the file again under a screen that is drawing from the register.
+var (
+	appliedPath string
+	appliedErr  error
+)
+
+// Applied is the file this process's keyboard was read from and the reason
+// it was refused, if it was. An empty path is a machine with no file.
+func Applied() (path string, err error) { return appliedPath, appliedErr }
+
+// Check is whether a session started now would run the file at path, or the
+// first of paths that exists: the path it read ("" where none exists) and
+// the refusal a session would print. It is asked of the keyboard shhh ships,
+// not of the one this process is already running, so a file is judged the way
+// a fresh start judges it.
+//
+// The register is package data, so the file is applied to it and the
+// register this process held is put back before Check returns, whatever the
+// file said. It is for a process that draws nothing — `shhh keys check` —
+// and never for one with a screen up: a surface drawing while Check ran would
+// read the file's keys for as long as it took.
+func Check(paths ...string) (string, error) {
+	held := snapshot()
+	defer settle(held)
+	settle(declared)
+	return load(paths...)
 }
 
 // readKeymap reads one file into the moves it asks for: the dotted name of a
@@ -332,31 +373,195 @@ func checkBareAtTheDraft() error {
 // because somebody adding a binding did not know there was a list to add it
 // to.
 func groups() map[string]reflect.Value {
-	return map[string]reflect.Value{
-		"draft":    reflect.ValueOf(&Draft).Elem(),
-		"search":   reflect.ValueOf(&Search).Elem(),
-		"reading":  reflect.ValueOf(&Reading).Elem(),
-		"find":     reflect.ValueOf(&Find).Elem(),
-		"context":  reflect.ValueOf(&Context).Elem(),
-		"row":      reflect.ValueOf(&Row).Elem(),
-		"rowchord": reflect.ValueOf(&RowChord).Elem(),
-		"decision": reflect.ValueOf(&Decision).Elem(),
-		"confirm":  reflect.ValueOf(&Confirm).Elem(),
-		"select":   reflect.ValueOf(&Select).Elem(),
-		"review":   reflect.ValueOf(&Review).Elem(),
-		"agent":    reflect.ValueOf(&Agent).Elem(),
-		"profile":  reflect.ValueOf(&Profile).Elem(),
-		"wait":     reflect.ValueOf(&Wait).Elem(),
-		"diff":     reflect.ValueOf(&Diff).Elem(),
-		"output":   reflect.ValueOf(&Output).Elem(),
-		"preview":  reflect.ValueOf(&Preview).Elem(),
-		"paste":    reflect.ValueOf(&Paste).Elem(),
-		"screen":   reflect.ValueOf(&Screen).Elem(),
-		"oneshot":  reflect.ValueOf(&OneShot).Elem(),
-		"setup":    reflect.ValueOf(&Setup).Elem(),
-		"plan":     reflect.ValueOf(&Plan).Elem(),
-		"query":    reflect.ValueOf(&Query).Elem(),
+	out := map[string]reflect.Value{}
+	for _, g := range movable() {
+		out[g.name] = g.value
 	}
+	return out
+}
+
+// namedGroup is one group of the register under the name a file writes it
+// by.
+type namedGroup struct {
+	name  string
+	value reflect.Value
+}
+
+// movable is groups in the order a reader meets them, which is the order the
+// scaffold and the reference are written in: the input, then what takes the
+// keyboard from it, then the rows and the cards, then the screens and the
+// programs of their own.
+func movable() []namedGroup {
+	return []namedGroup{
+		{"draft", reflect.ValueOf(&Draft).Elem()},
+		{"search", reflect.ValueOf(&Search).Elem()},
+		{"reading", reflect.ValueOf(&Reading).Elem()},
+		{"find", reflect.ValueOf(&Find).Elem()},
+		{"paste", reflect.ValueOf(&Paste).Elem()},
+		{"context", reflect.ValueOf(&Context).Elem()},
+		{"row", reflect.ValueOf(&Row).Elem()},
+		{"rowchord", reflect.ValueOf(&RowChord).Elem()},
+		{"decision", reflect.ValueOf(&Decision).Elem()},
+		{"confirm", reflect.ValueOf(&Confirm).Elem()},
+		{"select", reflect.ValueOf(&Select).Elem()},
+		{"review", reflect.ValueOf(&Review).Elem()},
+		{"agent", reflect.ValueOf(&Agent).Elem()},
+		{"profile", reflect.ValueOf(&Profile).Elem()},
+		{"wait", reflect.ValueOf(&Wait).Elem()},
+		{"diff", reflect.ValueOf(&Diff).Elem()},
+		{"output", reflect.ValueOf(&Output).Elem()},
+		{"preview", reflect.ValueOf(&Preview).Elem()},
+		{"screen", reflect.ValueOf(&Screen).Elem()},
+		{"plan", reflect.ValueOf(&Plan).Elem()},
+		{"query", reflect.ValueOf(&Query).Elem()},
+		{"oneshot", reflect.ValueOf(&OneShot).Elem()},
+		{"setup", reflect.ValueOf(&Setup).Elem()},
+	}
+}
+
+// fixed is the groups the register declares and no file can name: binding()
+// does not resolve them, so a line for one of their keys is refused as naming
+// no key. They are listed so the scaffold and the reference can say so
+// rather than leave a reader to find it out from a refusal.
+func fixed() []namedGroup {
+	return []namedGroup{
+		{"sources", reflect.ValueOf(&Sources).Elem()},
+		{"notes", reflect.ValueOf(&Notes).Elem()},
+		{"backlog", reflect.ValueOf(&Backlog).Elem()},
+		{"sprint", reflect.ValueOf(&Sprint).Elem()},
+		{"commit", reflect.ValueOf(&Commit).Elem()},
+		{"rewind", reflect.ValueOf(&Rewind).Elem()},
+	}
+}
+
+// snapshot copies every group a file can move, so the copy can be put back
+// with settle. A move replaces a whole Binding and never edits the one it
+// replaced, so a copy of the structs is a copy of the keyboard.
+func snapshot() []reflect.Value {
+	var out []reflect.Value
+	for _, g := range movable() {
+		was := reflect.New(g.value.Type()).Elem()
+		was.Set(g.value)
+		out = append(out, was)
+	}
+	return out
+}
+
+// settle puts a snapshot back over the register.
+func settle(saved []reflect.Value) {
+	for i, g := range movable() {
+		g.value.Set(saved[i])
+	}
+}
+
+// declared is the register as shhh ships it, taken before any file is read,
+// which is what a listing measures a moved key against and what Check
+// applies a file to.
+var declared = snapshot()
+
+// Act is one key as a listing names it.
+type Act struct {
+	// Name is the dotted name a file writes it by: `reading.copy`.
+	Name string
+	// Words are what the key does, the words beside it in every hint.
+	Words string
+	// Keys are the keystrokes it answers in this process, and Shipped the
+	// ones it was declared with.
+	Keys    []string
+	Shipped []string
+	// Movable says a file may name it at all.
+	Movable bool
+}
+
+// Moved says a file changed what the key answers.
+func (a Act) Moved() bool { return !slices.Equal(a.Keys, a.Shipped) }
+
+// Group is one group of the register's keys, in the order it declares them.
+type Group struct {
+	Name    string
+	Movable bool
+	Acts    []Act
+}
+
+// Keyboard is the register as this process holds it, one group per table a
+// file can write and then the groups it cannot, each key beside the
+// keystrokes it shipped with.
+func Keyboard() []Group { return keyboard(false) }
+
+// keyboard reads the register as this process holds it, or as it was
+// declared: the reference and the scaffold are the shipped keyboard whatever
+// file the process that writes them was started under, and reading the
+// declared copy means neither has to move the register to get it.
+func keyboard(asShipped bool) []Group {
+	shipped := map[string][]string{}
+	for i, g := range movable() {
+		walk(g.name, declared[i], func(name string, b Binding) { shipped[name] = b.Keys() })
+	}
+	var out []Group
+	for i, g := range movable() {
+		v := g.value
+		if asShipped {
+			v = declared[i]
+		}
+		group := Group{Name: g.name, Movable: true}
+		walk(g.name, v, func(name string, b Binding) {
+			group.Acts = append(group.Acts, Act{
+				Name: name, Words: Words(b), Keys: b.Keys(), Shipped: shipped[name], Movable: true,
+			})
+		})
+		out = append(out, group)
+	}
+	for _, g := range fixed() {
+		group := Group{Name: g.name}
+		walk(g.name, g.value, func(name string, b Binding) {
+			group.Acts = append(group.Acts, Act{Name: name, Words: Words(b), Keys: b.Keys(), Shipped: b.Keys()})
+		})
+		out = append(out, group)
+	}
+	return out
+}
+
+// walk visits every binding under a group, by the dotted name a file writes
+// it as: the group's own keys in the order the struct declares them, then
+// each nested group as a table of its own — which is the order a TOML file
+// has to put them in, since a key after a sub-table belongs to the sub-table.
+func walk(prefix string, v reflect.Value, visit func(name string, b Binding)) {
+	t := v.Type()
+	var nested []int
+	for i := range t.NumField() {
+		if !t.Field(i).IsExported() {
+			continue
+		}
+		f := v.Field(i)
+		if f.Type() == reflect.TypeOf(Binding{}) {
+			visit(prefix+"."+snake(t.Field(i).Name), f.Interface().(Binding))
+			continue
+		}
+		if f.Kind() == reflect.Struct {
+			nested = append(nested, i)
+		}
+	}
+	for _, i := range nested {
+		walk(prefix+"."+snake(t.Field(i).Name), v.Field(i), visit)
+	}
+}
+
+// snake is a Go field name as a file would write it — HistoryPrev as
+// history_prev, MoveJK as move_jk — which fieldNamed reads back.
+func snake(name string) string {
+	r := []rune(name)
+	var b strings.Builder
+	for i, c := range r {
+		if unicode.IsUpper(c) && i > 0 {
+			afterLower := unicode.IsLower(r[i-1])
+			endsAcronym := unicode.IsUpper(r[i-1]) && i+1 < len(r) && unicode.IsLower(r[i+1])
+			if afterLower || endsAcronym {
+				b.WriteByte('_')
+			}
+		}
+		b.WriteRune(unicode.ToLower(c))
+	}
+	return b.String()
 }
 
 // binding resolves a dotted name from a keymap file to the declaration it

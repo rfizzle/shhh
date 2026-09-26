@@ -12,6 +12,12 @@ package cli
 // directory whose files are the override
 // (docs/capabilities/configuration.md#the-mechanism-is-code-its-wording-is-configuration).
 //
+// Your own pair also gets the keyboard: `keybindings.toml` beside the
+// settings, every key at its shipped keystrokes and every line commented, so
+// a rebinding starts from the names rather than from a guess at them. A
+// checkout's pair gets none, because a checkout does not layer a keymap
+// (docs/capabilities/configuration.md#the-keymap-file).
+//
 // It is the one command that writes every key at once, and it refuses a file
 // that is already there. `--stdout` is what the person with a file already
 // gets: the same scaffold with their own values filled in, to read and paste
@@ -28,6 +34,7 @@ import (
 	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/project"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 	"github.com/spf13/cobra"
 )
 
@@ -38,12 +45,13 @@ func newConfigInitCmd() *cobra.Command {
 		Short: "Write the settings file and the wordings at their defaults",
 		Long: "Write a settings file holding every key, commented out at its default with the sentence " +
 			"that says what it decides, and a prompts directory holding every wording the machinery " +
-			"sends, each the built-in text ready to edit.\n" +
+			"sends, each the built-in text ready to edit — and, for your own pair, a keybindings.toml " +
+			"holding every key at its shipped keystrokes, commented out.\n" +
 			"Run in a checkout, it writes the checkout's own pair — " + project.ConfigFile + " and " +
 			project.PromptsDir + "/ — with the keys a checkout may not decide left out; run anywhere else, " +
 			"or in your home directory, it writes yours. `--global` writes yours wherever it is run. " +
 			"`--stdout` prints the settings file instead of writing it, with the values that file already " +
-			"holds filled in.",
+			"holds filled in; `shhh keys defaults` prints the keymap.",
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			plan, err := configInit(global, workingDir())
@@ -81,7 +89,10 @@ type initPlan struct {
 	// the wordings go under, both stated whether or not they exist.
 	settings string
 	prompts  string
-	files    []initFile
+	// keymap is the keybindings file beside the settings, and "" for a
+	// checkout's pair, which has none.
+	keymap string
+	files  []initFile
 	// held is what the settings file already holds, which is what `--stdout`
 	// fills in. It is the zero Config where there is no file, which is a
 	// scaffold with every line commented.
@@ -92,6 +103,7 @@ type initPlan struct {
 	// decide whether to keep it; they are named by key rather than by path,
 	// so eleven of them are a clause and not a screen of directory.
 	settingsHeld bool
+	keymapHeld   bool
 	wordingsHeld []string
 }
 
@@ -118,6 +130,9 @@ func configInit(global bool, dir string) (initPlan, error) {
 	} else {
 		plan.settings = config.WritePath()
 		plan.prompts = userPromptsDir()
+		// Beside the settings file, which is where a session looks for it
+		// (config.KeymapPaths).
+		plan.keymap = filepath.Join(filepath.Dir(plan.settings), "keybindings.toml")
 	}
 	// The wordings are written in the order the settings state them, so the
 	// directory listing and the `[prompts]` table read the same way down.
@@ -135,6 +150,11 @@ func configInit(global bool, dir string) (initPlan, error) {
 	for _, f := range plan.files {
 		if _, err := os.Stat(f.path); err == nil {
 			plan.wordingsHeld = append(plan.wordingsHeld, f.key)
+		}
+	}
+	if plan.keymap != "" {
+		if _, err := os.Stat(plan.keymap); err == nil {
+			plan.keymapHeld = true
 		}
 	}
 	return plan, nil
@@ -157,6 +177,9 @@ func (p initPlan) refusal() error {
 	if len(p.wordingsHeld) > 0 {
 		held = append(held, fmt.Sprintf("%s under %s%c",
 			strings.Join(p.wordingsHeld, ", "), shortPath(p.prompts), filepath.Separator))
+	}
+	if p.keymapHeld {
+		held = append(held, shortPath(p.keymap))
 	}
 	if len(held) == 0 {
 		return nil
@@ -198,6 +221,11 @@ func (p initPlan) write() error {
 	if err := os.MkdirAll(filepath.Dir(p.settings), dirMode); err != nil {
 		return err
 	}
+	if p.keymap != "" {
+		if err := os.WriteFile(p.keymap, []byte(keys.Scaffold()), mode); err != nil {
+			return err
+		}
+	}
 	return os.WriteFile(p.settings, []byte(config.Scaffold(config.Config{}, p.project)), mode)
 }
 
@@ -229,9 +257,34 @@ func (p initPlan) wrote() report.Report {
 		// the person reading a file that is written down and not in force.
 		wordings.Fix = append(wordings.Fix, projectTrustNote())
 	}
+	rows := []report.Row{settings, wordings}
+	if p.keymap != "" {
+		keymap := report.Done("wrote", shortPath(p.keymap))
+		keymap.Outcome = pair
+		keymap.Detail = countOf(keymapKeys(), "key", "keys") + ", each commented out"
+		keymap.Fix = []string{"uncomment a line to move a key; shhh keys check reads it the way a session will"}
+		rows = append(rows, keymap)
+	} else {
+		// One line, because the reader of a checkout's confirmation may be
+		// looking for the file their own init wrote.
+		rows = append(rows, report.Row{State: report.Skip, Subject: "no keybindings.toml",
+			Detail: "a keymap is yours alone; --global writes it"})
+	}
 	return report.Report{
 		Title:    "shhh config init",
 		Subject:  shortPath(filepath.Dir(p.settings)),
-		Sections: []report.Section{{Rows: []report.Row{settings, wordings}}},
+		Sections: []report.Section{{Rows: rows}},
 	}
+}
+
+// keymapKeys is how many keys the keymap scaffold writes as lines: the ones a
+// file can move.
+func keymapKeys() int {
+	n := 0
+	for _, g := range keys.Keyboard() {
+		if g.Movable {
+			n += len(g.Acts)
+		}
+	}
+	return n
 }

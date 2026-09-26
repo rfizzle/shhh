@@ -10,9 +10,13 @@ package keys
 // file was applied to is the register shhh declared, keystroke for keystroke.
 
 import (
+	"go/ast"
+	"go/parser"
+	"go/token"
 	"os"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -356,5 +360,144 @@ func TestLoad_AMovedPairKeepsItsDirections(t *testing.T) {
 	}
 	if Is("j", Screen.Move) {
 		t.Errorf("the old keystrokes are still answered: %v", Screen.Move.Keys())
+	}
+}
+
+// The scaffold is the shipped keyboard written out, and as written it moves
+// nothing: every line is commented. Uncommenting every one of them is the
+// shipped keyboard stated by hand, which the file's own rules must accept —
+// a scaffold that was refused the moment somebody uncommented it whole would
+// be a starting point nobody could start from.
+func TestScaffold_IsANoOpUntilALineIsUncommented(t *testing.T) {
+	restoreRegister(t)
+	before := Keyboard()
+	text := Scaffold()
+	if err := Load(keymapFile(t, text)); err != nil {
+		t.Fatalf("the scaffold as written was refused: %v", err)
+	}
+	if !reflect.DeepEqual(Keyboard(), before) {
+		t.Fatal("the scaffold as written moved a key")
+	}
+	var lines []string
+	for _, line := range strings.Split(text, "\n") {
+		if rest, ok := strings.CutPrefix(line, "# "); ok && strings.Contains(rest, " = ") {
+			line = rest
+		}
+		lines = append(lines, line)
+	}
+	if err := Load(keymapFile(t, strings.Join(lines, "\n"))); err != nil {
+		t.Fatalf("the scaffold with every line uncommented was refused: %v", err)
+	}
+	for _, g := range Keyboard() {
+		for _, a := range g.Acts {
+			if a.Moved() {
+				t.Errorf("%s answers %v after the shipped keys were stated, want %v", a.Name, a.Keys, a.Shipped)
+			}
+		}
+	}
+}
+
+// Every line the scaffold writes names a key a file can reach, and every key
+// it lists as fixed is one a file cannot: the scaffold and binding() read
+// the register through two walks, and they have to agree on every name.
+func TestScaffold_NamesWhatAFileCanReach(t *testing.T) {
+	text := Scaffold()
+	for _, g := range Keyboard() {
+		for _, a := range g.Acts {
+			if got := binding(a.Name) != nil; got != a.Movable {
+				t.Errorf("%s: a file reaches it %v, the listing says %v", a.Name, got, a.Movable)
+			}
+			if !strings.Contains(text, a.Name[strings.LastIndex(a.Name, ".")+1:]) {
+				t.Errorf("the scaffold does not name %s", a.Name)
+			}
+		}
+	}
+	for _, rule := range []string{"two acts", "destructive", "bare key", "pair", "desktop or the terminal", "configuration.md#the-keymap-file"} {
+		if !strings.Contains(text, rule) {
+			t.Errorf("the scaffold's opening does not state %q", rule)
+		}
+	}
+}
+
+// Every group the package declares is either one a file can write or one the
+// listing names as fixed, so a group added later reaches the scaffold and the
+// reference one way or the other rather than being left out of both.
+func TestEveryDeclaredGroupIsListed(t *testing.T) {
+	file, err := parser.ParseFile(token.NewFileSet(), "keys.go", nil, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	listed := map[string]bool{}
+	for _, g := range append(movable(), fixed()...) {
+		listed[g.value.Type().Name()] = true
+	}
+	for _, decl := range file.Decls {
+		gen, ok := decl.(*ast.GenDecl)
+		if !ok || gen.Tok != token.VAR {
+			continue
+		}
+		for _, spec := range gen.Specs {
+			for _, v := range spec.(*ast.ValueSpec).Values {
+				lit, ok := v.(*ast.CompositeLit)
+				if !ok {
+					continue
+				}
+				if id, ok := lit.Type.(*ast.Ident); ok && strings.HasSuffix(id.Name, "Keys") && !listed[id.Name] {
+					t.Errorf("%s is declared and neither a file's group nor listed as fixed", id.Name)
+				}
+			}
+		}
+	}
+}
+
+// Check judges a file against the shipped keyboard and leaves the register
+// as the process held it, whatever the file said.
+func TestCheck_LeavesTheRegisterAsItWas(t *testing.T) {
+	restoreRegister(t)
+	if err := Load(keymapFile(t, "[reading]\ncopy = \"c\"\n")); err != nil {
+		t.Fatal(err)
+	}
+	held := Keyboard()
+
+	good := keymapFile(t, "[reading]\ncopy = \"alt+pgup\"\n")
+	if path, err := Check(good); err != nil || path != good {
+		t.Fatalf("a valid file: %q, %v", path, err)
+	}
+	if path, err := Check(keymapFile(t, "[draft]\npalette = \"p\"\n")); err == nil || path == "" {
+		t.Fatalf("a refused file came back %q, %v", path, err)
+	}
+	if path, err := Check(filepath.Join(t.TempDir(), "none.toml")); err != nil || path != "" {
+		t.Fatalf("no file is not a refusal: %q, %v", path, err)
+	}
+	if !reflect.DeepEqual(Keyboard(), held) {
+		t.Fatal("Check left the register moved")
+	}
+}
+
+// The listing marks what a file moved, beside what it shipped as, and Load
+// keeps what it read and what it said for the surfaces that ask later.
+func TestKeyboard_MarksAMovedKey(t *testing.T) {
+	restoreRegister(t)
+	path := keymapFile(t, "[reading]\ncopy = \"c\"\n")
+	if err := Load(path); err != nil {
+		t.Fatal(err)
+	}
+	if got, err := Applied(); got != path || err != nil {
+		t.Fatalf("Applied is %q, %v", got, err)
+	}
+	moved := 0
+	for _, g := range Keyboard() {
+		for _, a := range g.Acts {
+			if !a.Moved() {
+				continue
+			}
+			moved++
+			if a.Name != "reading.copy" || !slices.Equal(a.Keys, []string{"c"}) || !slices.Equal(a.Shipped, []string{"y"}) {
+				t.Errorf("the mark is on %s: %v shipped as %v", a.Name, a.Keys, a.Shipped)
+			}
+		}
+	}
+	if moved != 1 {
+		t.Errorf("%d keys are marked moved, want 1", moved)
 	}
 }

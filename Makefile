@@ -134,9 +134,12 @@ test-integration: ## Run the containment tier (needs the host's sandbox mechanis
 # that goes stale, because nothing fails when it does. The generator is a test
 # so that it lives beside the table; running it without the variable is the
 # staleness check, and `make ci` therefore performs it too.
+# `docs` writes one package at a time: the settings table and the keymap
+# reference are two regions of one document, and two packages rewriting it
+# at once would each write back the other's region as it found it.
 docs: ## Rewrite the documentation sections generated from the code
 	@echo "${MAGENTA}Writing the generated documentation sections...${RESET}"
-	@SHHH_UPDATE_DOCS=1 $(GOTEST) -count=1 -run TestReference ./internal/config ./internal/ui/keys
+	@SHHH_UPDATE_DOCS=1 $(GOTEST) -p 1 -count=1 -run TestReference ./internal/config ./internal/ui/keys
 
 docs-check: ## Verify every docs/ citation resolves and every generated section is current
 	@echo "${MAGENTA}Checking documentation citations...${RESET}"

@@ -58,6 +58,7 @@ import (
 	"github.com/rfizzle/shhh/internal/structural"
 	"github.com/rfizzle/shhh/internal/todo/run"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 	"github.com/rfizzle/shhh/internal/update"
 	"github.com/rfizzle/shhh/internal/web"
 	"github.com/spf13/cobra"
@@ -229,6 +230,7 @@ func doctorProbes() []doctorProbe {
 	return []doctorProbe{
 		{name: "binary", run: probeBinary},
 		{name: "keys", run: probeOptionKey},
+		{name: "keymap", run: probeKeymap},
 		{name: "config", run: probeConfig},
 		{name: "migrate", run: probeMigrate},
 		{name: "model", run: probeModel},
@@ -1050,6 +1052,46 @@ func doctorBytes(n int64) string {
 		return fmt.Sprintf("%.0f kB", float64(n)/(1<<10))
 	}
 	return fmt.Sprintf("%.1f MB", float64(n)/(1<<20))
+}
+
+// probeKeymap reads what the top of this process made of the keymap file
+// (cmd/shhh/main.go) rather than reading the file again: the doctor draws
+// its screen from the register while it probes, and applying a file under
+// it would be a screen offering keys for as long as the check took.
+func probeKeymap(context.Context, config.Config) doctorFinding {
+	path, err := keys.Applied()
+	moved := 0
+	for _, g := range keys.Keyboard() {
+		for _, a := range g.Acts {
+			if a.Moved() {
+				moved++
+			}
+		}
+	}
+	return doctorKeymap(path, moved, err)
+}
+
+// doctorKeymap is the keymap row. A refused file is said once on stderr as
+// the process starts and the keyboard shhh ships runs instead, so this row is
+// the place somebody whose keys went back to the defaults finds out why:
+// it names the file and quotes the refusal
+// (docs/capabilities/configuration.md#the-keymap-file).
+func doctorKeymap(path string, moved int, err error) doctorFinding {
+	switch {
+	case err != nil:
+		return doctorFinding{
+			Subject: shortPath(path), Outcome: "refused", State: components.DoctorWarned,
+			Consequence: "the keyboard shhh ships runs instead of this file",
+			FixLabel:    "fix the file",
+			Fix: []string{
+				strings.TrimPrefix(err.Error(), path+": "),
+				"shhh keys check reads it again the way a session will",
+			},
+		}
+	case path == "":
+		return doctorFinding{Subject: "no keybindings.toml", Detail: "the keyboard shhh ships", Outcome: "ok"}
+	}
+	return doctorFinding{Subject: shortPath(path), Detail: countOf(moved, "key", "keys") + " moved", Outcome: "ok"}
 }
 
 func probeLogs(context.Context, config.Config) doctorFinding {
@@ -1879,6 +1921,8 @@ func doctorQueuedSubject(name string) string {
 		return "which shhh this is"
 	case "keys":
 		return "whether the terminal delivers every chord the keyboard offers"
+	case "keymap":
+		return "the keybindings file and whether it was applied"
 	case "config":
 		return "the config file and what it sets"
 	case "migrate":

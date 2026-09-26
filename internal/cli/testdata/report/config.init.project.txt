@@ -7,3 +7,4 @@
         words are back
         this checkout is not trusted, so its settings do not load here — `shhh
         trust` loads them
+  ⊘ no keybindings.toml · a keymap is yours alone; --global writes it

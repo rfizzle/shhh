@@ -190,3 +190,16 @@ func TestReference_HoldsEveryTierAndEveryKeptChord(t *testing.T) {
 		}
 	}
 }
+
+// keymapDoc is the document the keymap reference lives in, from this package.
+const keymapDoc = "../../../docs/capabilities/configuration.md"
+
+func TestReference_KeymapIsCurrent(t *testing.T) {
+	stale, err := WriteKeymapReference(keymapDoc, updatingDocs())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if stale && !updatingDocs() {
+		t.Errorf("%s no longer matches the register — run: make docs", keymapDoc)
+	}
+}

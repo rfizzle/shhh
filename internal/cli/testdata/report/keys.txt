@@ -1,0 +1,337 @@
+  shhh keys — /home/dev/.config/shhh/keybindings.toml
+
+  DRAFT
+
+  · send            enter · send the message  [shipped]
+  · newline         shift+enter ctrl+j · insert a newline  [shipped]
+  · queue           ctrl+n · queue the draft for after the turn; on …  [shipped]
+  · editor          ctrl+g · open the draft in $EDITOR  [shipped]
+  · attach          ctrl+v · attach the clipboard  [shipped]
+  · complete        tab · complete a slash command  [shipped]
+  · palette         ctrl+/ ctrl+_ · the command palette  [shipped]
+  · reasoning       ctrl+t alt+t · cycle the reasoning level  [shipped]
+  · mode            shift+tab · cycle the permission mode  [shipped]
+  · pause           ctrl+p · hold the turn between rounds, or let a …  [shipped]
+  · history_prev    up · recall the previous input  [shipped]
+  · history_next    down · the next one  [shipped]
+  · history_search  ctrl+r · search the input history  [shipped]
+  · point_up        shift+up · move the pointer up a row of the pane  [shipped]
+  · point_down      shift+down · down a row  [shipped]
+  · open            shift+right · open or run the pointed row  [shipped]
+  · close           shift+left · close it  [shipped]
+  · page_up         pgup · page the transcript  [shipped]
+  · page_down       pgdown · page it back  [shipped]
+  · reading         ctrl+o · reading mode  [shipped]
+  · open_paste      alt+v · open the staged paste  [shipped]
+  · agents          alt+a · the agent manager  [shipped]
+  · backlog         ctrl+f · the backlog screen  [shipped]
+  · next_agent      alt+] · the next session in the rail's map  [shipped]
+  · prev_agent      alt+[ · the previous one  [shipped]
+  · mouse           ctrl+x · mouse reporting on or off  [shipped]
+  · key_list        ctrl+] · the keys  [shipped]
+  · suspend         ctrl+z · suspend shhh (idle only)  [shipped]
+  · redraw          ctrl+l · redraw the screen  [shipped]
+  · answer          ctrl+space ctrl+y · answer it  [shipped]
+  · clear           esc · clear the input, or fold what is open  [shipped]
+  · cancel          ctrl+c · cancel the turn (press twice), then the…  [shipped]
+  · quit            ctrl+d · quit (press twice; a live turn asks)  [shipped]
+
+  SEARCH
+
+  · older   ctrl+r · an older match  [shipped]
+  · keep    enter · keep it in the draft  [shipped]
+  · cancel  esc ctrl+c · put the draft back  [shipped]
+
+  READING
+
+  · move       k j up down · move  [shipped]
+  · expand     enter · expand  [shipped]
+  · collapse   - · collapse  [shipped]
+  ✓ copy       c · copy the row · shipped as y  [moved]
+  · search     / · search  [shipped]
+  · match      N n · match  [shipped]
+  · half       u d · half page  [shipped]
+  · page_up    pgup · page up  [shipped]
+  · page_down  pgdown · page down  [shipped]
+  · list       ? · keys  [shipped]
+  · back       q esc ctrl+c · back to the prompt  [shipped]
+
+  FIND
+
+  · keep   enter · keep the search  [shipped]
+  · clear  esc ctrl+c · clear it  [shipped]
+
+  PASTE
+
+  · scroll  k j up down · scroll  [shipped]
+  · remove  x · remove the paste  [shipped]
+  · leave   q ctrl+c · back to the draft, cursor where you left it  [shipped]
+  · back    esc · back to the draft  [shipped]
+
+  CONTEXT
+
+  · move    up down k j · move  [shipped]
+  · expand  enter · expand or fold  [shipped]
+  · list    ? · keys  [shipped]
+  · back    q esc ctrl+c · back to the prompt  [shipped]
+
+  ROW
+
+  · undo      u · undo turn  [shipped]
+  · retry     r · try again  [shipped]
+  · continue  c · continue from here  [shipped]
+  · key       e · enter a new key  [shipped]
+  · provider  p · switch provider  [shipped]
+  · rounds    + · more rounds  [shipped]
+  · uncap     ! · let it run  [shipped]
+  · reopen    o · reopen the item  [shipped]
+  · commit    g · commit  [shipped]
+  · rerun     t · run the checks again  [shipped]
+
+  ROWCHORD
+
+  · undo      alt+z · undo turn  [shipped]
+  · retry     alt+r · try again  [shipped]
+  · continue  alt+n · continue from here  [shipped]
+  · key       alt+e · enter a new key  [shipped]
+  · provider  alt+p · switch provider  [shipped]
+  · rounds    alt+m · more rounds  [shipped]
+  · uncap     alt+x · let it run  [shipped]
+  · reopen    alt+o · reopen the item  [shipped]
+  · commit    alt+g · commit  [shipped]
+  · rerun     alt+k · run the checks again  [shipped]
+
+  DECISION
+
+  · allow        y enter · allow  [shipped]
+  · deny         n esc ctrl+c · deny  [shipped]
+  · always       a · allow without asking — choose how long  [shipped]
+  · batch        A · open the queue  [shipped]
+  · diff         d D · full diff  [shipped]
+  · allow_noted  Y · allow, and say what to do next  [shipped]
+  · deny_noted   N · deny, and say why  [shipped]
+  · dry_run      t · try the harmless form  [shipped]
+  · explain      x · explain what the command does  [shipped]
+  · amend        e · edit the command before it runs  [shipped]
+  · accept       y Y enter · yes  [shipped]
+  · refuse       n N · no, and stop offering  [shipped]
+  · scroll_up    shift+up · scroll the card up  [shipped]
+  · scroll_down  shift+down · scroll the card  [shipped]
+  · pan_left     shift+left · pan a wide body back  [shipped]
+  · pan_right    shift+right · pan a wide body  [shipped]
+
+  CONFIRM
+
+  · yes    y Y · yes  [shipped]
+  · no     n N enter esc ctrl+c · no — the default  [shipped]
+  · force  f F · force  [shipped]
+
+  SELECT
+
+  · move           up down · move  [shipped]
+  · move_jk        up down k j · move  [shipped]
+  · take           enter · select  [shipped]
+  · alt            d · make it the default  [shipped]
+  · filter         / · filter  [shipped]
+  · clear_q        ctrl+u · clear the filter  [shipped]
+  · toggle         " " space · toggle  [shipped]
+  · all            a · all or none  [shipped]
+  · note           tab · note or options  [shipped]
+  · tab            left right · the next question  [shipped]
+  · long           d · the full answer  [shipped]
+  · delete         x · delete  [shipped]
+  · rename         r · rename  [shipped]
+  · cancel         esc ctrl+c · cancel  [shipped]
+  · quit           ctrl+d · quit  [shipped]
+  · palette.prev   up ctrl+p · move  [shipped]
+  · palette.next   down ctrl+n · move  [shipped]
+  · palette.run    enter · run it  [shipped]
+  · palette.write  tab · write it into the input  [shipped]
+
+  REVIEW
+
+  · move_file     k j up down · file  [shipped]
+  · move_hunk     p n · hunk  [shipped]
+  · stage_hunk    s " " space · stage hunk  [shipped]
+  · stage_file    S · file  [shipped]
+  · stage_all     a A · all  [shipped]
+  · side_by_side  \ · side by side  [shipped]
+  · page_up       pgup · page up  [shipped]
+  · page_down     pgdown · page down  [shipped]
+  · apply         enter · take the staged hunks  [shipped]
+  · back          esc ctrl+c · back  [shipped]
+
+  AGENT
+
+  · move      k j up down · move  [shipped]
+  · attach    enter · attach  [shipped]
+  · go        g · go to the agent that asked  [shipped]
+  · answer    a · answer  [shipped]
+  · steer     s · steer  [shipped]
+  · retry     r · retry  [shipped]
+  · review    p · review  [shipped]
+  · cancel    x · cancel  [shipped]
+  · kill      X · kill  [shipped]
+  · kill_all  K · kill all  [shipped]
+  · back      esc ctrl+c · back  [shipped]
+  · detach    esc · back to your own session  [shipped]
+
+  PROFILE
+
+  · move         up down · move  [shipped]
+  · take         enter · take it  [shipped]
+  · note         tab · note or options  [shipped]
+  · scroll_up    shift+up · scroll the profile up  [shipped]
+  · scroll_down  shift+down · scroll the profile  [shipped]
+  · back         esc ctrl+c · back a step  [shipped]
+
+  WAIT
+
+  · fallback     m · finish this turn on the fallback model  [shipped]
+  · stop         esc · stop waiting  [shipped]
+  · compact      enter · compact now  [shipped]
+  · new_session  n · new session  [shipped]
+  · keep_going   esc · keep going  [shipped]
+  · use_key      enter · use it for this session  [shipped]
+  · keep_key     esc · keep the current key  [shipped]
+
+  DIFF
+
+  · scroll        k j up down · scroll  [shipped]
+  · side_by_side  s · side-by-side  [shipped]
+  · hunk          p n · hunk  [shipped]
+  · back          esc · back  [shipped]
+  · leave         q ctrl+c · back  [shipped]
+
+  OUTPUT
+
+  · scroll     k j up down · scroll  [shipped]
+  · page_up    pgup · page up  [shipped]
+  · page_down  pgdown · page down  [shipped]
+  · collapse   enter · close the row  [shipped]
+  · back       esc · back  [shipped]
+  · leave      q ctrl+c · back  [shipped]
+
+  PREVIEW
+
+  · back   esc · back  [shipped]
+  · leave  q ctrl+c · back  [shipped]
+
+  SCREEN
+
+  · move     up down k j · move  [shipped]
+  · take     enter · take it  [shipped]
+  · filter   / · filter  [shipped]
+  · clear_q  ctrl+u · clear the filter  [shipped]
+  · list     ? · keys  [shipped]
+  · quit     q esc ctrl+c · quit  [shipped]
+  · reset    r · reset to default  [shipped]
+  · write    w · write the file  [shipped]
+  · keep     esc · keep the current value  [shipped]
+  · copy     c · copy it  [shipped]
+  · rerun    enter · re-run it  [shipped]
+  · snippet  s · save it as a snippet  [shipped]
+  · delete   x · delete it  [shipped]
+  · rename   r · rename it  [shipped]
+  · fix      f · show the fix  [shipped]
+  · again    r · run the checks again  [shipped]
+  · apply    a · apply it  [shipped]
+  · worked   y · worked  [shipped]
+  · failed   n · did not  [shipped]
+  · skip     s · skip  [shipped]
+
+  PLAN
+
+  · jump  1 2 3 4 5 · jump to a row  [shipped]
+  · save  s S · save the plan  [shipped]
+
+  QUERY
+
+  · rub  backspace · take a rune back  [shipped]
+
+  ONESHOT
+
+  · run           enter · run  [shipped]
+  · confirm       y · run it  [shipped]
+  · step          t · step by step  [shipped]
+  · dry_run       d · dry run  [shipped]
+  · edit          e · edit  [shipped]
+  · revise        r · revise  [shipped]
+  · back          u · back  [shipped]
+  · alternatives  a · the other commands  [shipped]
+  · explain       x · explain  [shipped]
+  · copy          c · copy  [shipped]
+  · save          s · save  [shipped]
+  · quit          esc q · quit  [shipped]
+
+  SETUP
+
+  · wizard  enter · setup wizard  [shipped]
+  · paste   p · paste a key  [shipped]
+  · local   o · a local model  [shipped]
+
+  SOURCES
+
+  · move  up down k j · move  [fixed]
+  · open  enter · read the page that was kept  [fixed]
+  · list  ? · keys  [fixed]
+  · back  q esc ctrl+c · back to the prompt  [fixed]
+
+  NOTES
+
+  · move  up down k j · move  [fixed]
+  · read  enter · read the whole note  [fixed]
+  · drop  d · drop it  [fixed]
+  · list  ? · keys  [fixed]
+  · back  q esc ctrl+c · back to the prompt  [fixed]
+
+  BACKLOG
+
+  · move      up down · move  [fixed]
+  · read      enter · read the body  [fixed]
+  · page      pgup pgdown · page the body  [fixed]
+  · tab       tab · the backlog or the archive  [fixed]
+  · filter    / · filter by text  [fixed]
+  · clear_q   ctrl+u · clear the filter  [fixed]
+  · status    s · cycle the status filter  [fixed]
+  · priority  p · cycle the priority filter  [fixed]
+  · kind      k · cycle the kind filter  [fixed]
+  · ready     r · only what can be started now  [fixed]
+  · depends   w · jump to what it waits on  [fixed]
+  · edit      e · open it in $EDITOR  [fixed]
+  · run       R · run it  [fixed]
+  · block     b · block it  [fixed]
+  · reopen    o · reopen it  [fixed]
+  · archive   d · archive it  [fixed]
+  · drop      x · drop it, deleting the file  [fixed]
+  · new       n · a new item  [fixed]
+  · sprint    S · add it to the sprint, or drop it from one  [fixed]
+  · groom     g · read it against the tree  [fixed]
+  · list      ? · keys  [fixed]
+  · back      q esc ctrl+c · back to the prompt  [fixed]
+
+  SPRINT
+
+  · move    up down k j · move  [fixed]
+  · toggle  " " space · drop it, or put it back  [fixed]
+  · left    o · what was left out, and why  [fixed]
+  · goal    g · write what the set is for  [fixed]
+  · take    enter · write the sprint  [fixed]
+  · cancel  esc · write nothing  [fixed]
+
+  COMMIT
+
+  · take    enter · commit  [fixed]
+  · edit    e · edit the message  [fixed]
+  · hunks   s · pick hunks  [fixed]
+  · cancel  esc · don't  [fixed]
+
+  REWIND
+
+  · both    b · both  [fixed]
+  · code    c · code only  [fixed]
+  · talk    t · talk only  [fixed]
+  · cancel  esc · don't  [fixed]
+  · diff    d · what the turns after it changed  [fixed]
+
+  247 keys · 1 moved
