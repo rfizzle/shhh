@@ -23,18 +23,29 @@ const (
 
 // ToolDefinition is the evidence tool the agent registers alongside the
 // session toolset when a store is available.
+//
+// The definition says which action to try first, because a reduced result
+// has usually lost exactly the line the question is about, and paging the
+// original to find it costs a call per few kilobytes where one search answers
+// it. It also says what the store cannot give back: output a tool cut off
+// before the reduction saw it was never stored.
+// See docs/capabilities/evidence.md#the-reader-can-always-get-the-whole-thing-back
+// and docs/capabilities/evidence.md#reduction-is-for-unbounded-output.
 func ToolDefinition() provider.Tool {
 	return provider.Tool{
-		Name:        ToolName,
-		Description: "Inspect the full original of a reduced tool result. Reduced results carry an opaque evidence id (e.g. ev-1a2b3c4d5e6f7089); pass it here with action \"info\" (metadata), \"read\" (page through the original bytes with offset/limit), or \"search\" (find a literal substring, case-insensitive). Ids are session-scoped tokens, never file paths.",
+		Name: ToolName,
+		Description: "Get back what a reduced tool result left out. A reduced result carries an opaque evidence id (e.g. ev-1a2b3c4d5e6f7089); ids are session-scoped tokens, never file paths. " +
+			"When you know a term the answer contains — a test name, an error message, a path — use action \"search\" first: it returns every line containing that literal text (case-insensitive, not a regular expression) with its line number and byte offset. " +
+			"Use \"read\" to see the lines around a match, starting a little before its offset, or to browse from the start when there is nothing to search for; it pages the stored bytes with offset/limit. " +
+			"\"info\" gives the entry's size and whether the store kept all of it. The entry holds what the tool returned: output the tool had already cut off before it was stored is not in it.",
 		Parameters: json.RawMessage(`{
 			"type": "object",
 			"properties": {
-				"action": {"type": "string", "enum": ["info", "read", "search"], "description": "What to do with the evidence entry"},
+				"action": {"type": "string", "enum": ["info", "read", "search"], "description": "search for a term you know the answer contains; read for the context around a match or to browse; info for the entry's size"},
 				"id": {"type": "string", "description": "Evidence id from a reduction notice, e.g. ev-1a2b3c4d5e6f7089"},
-				"offset": {"type": "integer", "description": "read: byte offset to start from (default 0)"},
+				"offset": {"type": "integer", "description": "read: byte offset to start from (default 0); for the context of a search match, start a little before the offset it reported"},
 				"limit": {"type": "integer", "description": "read: max bytes to return (default 4096, max 16384)"},
-				"query": {"type": "string", "description": "search: literal substring to find (case-insensitive)"}
+				"query": {"type": "string", "description": "search: literal text to find, case-insensitive and not a regular expression; each matching line comes back with its line number and byte offset"}
 			},
 			"required": ["action", "id"]
 		}`),
@@ -114,7 +125,7 @@ func (s *Store) ExecuteTool(raw json.RawMessage) (string, error) {
 			fmt.Fprintf(&b, " (showing first %d)", len(matches))
 		}
 		for _, m := range matches {
-			fmt.Fprintf(&b, "\nL%d: %s", m.Line, clipLine(sanitize(m.Text)))
+			fmt.Fprintf(&b, "\nL%d (offset %d): %s", m.Line, m.Offset, clipLine(sanitize(m.Text)))
 		}
 		return b.String(), nil
 	}

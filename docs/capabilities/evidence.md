@@ -66,7 +66,9 @@ The store is not an archive; it is the other half of the reduced view. Every
 reduction names the entry that holds its original, and the model can ask that
 entry for its metadata, page through its bytes, or search it for a literal
 string — which is usually what it wanted from the elided middle in the first
-place.
+place. So a search is the first thing to try when the reader knows a word the
+answer contains, and it answers with where each matching line starts, so a
+read can be pointed at the lines around it instead of paging from the top.
 
 The ids are opaque session-scoped tokens rather than paths. A retrieval
 mechanism that took a filename would be a file read with no scope check

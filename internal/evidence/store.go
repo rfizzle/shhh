@@ -148,15 +148,17 @@ func (s *Store) Read(id string, offset, limit int) ([]byte, Meta, error) {
 	return data[offset:end], meta, nil
 }
 
-// SearchMatch is one matching line from a stored original.
+// SearchMatch is one matching line from a stored original. Offset is the
+// byte offset the line starts at, which is what a read is addressed by.
 type SearchMatch struct {
-	Line int
-	Text string
+	Line   int
+	Offset int
+	Text   string
 }
 
 // Search scans an entry for a literal substring (case-insensitive) and
-// returns matching lines with their line numbers, at most max of them, plus
-// the total match count.
+// returns matching lines with their line numbers and byte offsets, at most max
+// of them, plus the total match count.
 func (s *Store) Search(id, query string, max int) ([]SearchMatch, int, error) {
 	if _, err := s.lookup(id); err != nil {
 		return nil, 0, err
@@ -167,14 +169,16 @@ func (s *Store) Search(id, query string, max int) ([]SearchMatch, int, error) {
 	}
 	needle := strings.ToLower(query)
 	var out []SearchMatch
-	total := 0
+	total, offset := 0, 0
 	for i, line := range strings.Split(string(data), "\n") {
+		start := offset
+		offset += len(line) + 1
 		if !strings.Contains(strings.ToLower(line), needle) {
 			continue
 		}
 		total++
 		if len(out) < max {
-			out = append(out, SearchMatch{Line: i + 1, Text: line})
+			out = append(out, SearchMatch{Line: i + 1, Offset: start, Text: line})
 		}
 	}
 	return out, total, nil
