@@ -16,6 +16,7 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/provider"
@@ -690,4 +691,40 @@ func modPrefix(s string) (prefix string, mod tea.KeyMod, ok bool) {
 		}
 	}
 	return "", 0, false
+}
+
+// A notice rail wider than the terminal gives up whole parts from the right
+// and says so, keeps the keys-changed notice's door to the full list, and
+// never cuts a change in half.
+func TestNoticeLine_DropsWholePartsNeverClipsOne(t *testing.T) {
+	full := stripANSI(KeysChangedNotice())
+	changes, _, _ := strings.Cut(strings.TrimPrefix(full, "keys changed: "), noticeDoorSep)
+	whole := map[string]bool{}
+	for _, c := range strings.Split(changes, noticeSep) {
+		whole[c] = true
+	}
+	for _, width := range goldenWidths {
+		m := frameModel(t, width, 40).WithKeysNotice(KeysChangedNotice())
+		m.denialNotice = "the classifier refused this call"
+		line := stripANSI(m.noticeLine())
+		if w := lipgloss.Width(line); w > m.contentWidth() {
+			t.Errorf("at %d columns the rail is %d wide, past its %d", width, w, m.contentWidth())
+		}
+		if strings.Contains(line, "auto denied") {
+			t.Errorf("at %d columns the rail should have given up the part at its right end whole: %q", width, line)
+		}
+		body, door, ok := strings.Cut(line, noticeDoorSep)
+		if !ok || door != "/help keys" {
+			t.Errorf("at %d columns the rail lost the door to the full list: %q", width, line)
+		}
+		kept, dropped := strings.CutSuffix(strings.TrimPrefix(body, "keys changed: "), strings.TrimSpace(noticeMore))
+		if !dropped {
+			t.Errorf("at %d columns the rail gave up parts without saying so: %q", width, line)
+		}
+		for _, c := range strings.Split(strings.TrimSpace(kept), noticeSep) {
+			if !whole[c] {
+				t.Errorf("at %d columns the rail cut into a change: %q in %q", width, c, line)
+			}
+		}
+	}
 }

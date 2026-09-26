@@ -731,7 +731,7 @@ func (m Model) noticeLine() string {
 	if m.attachedTo != "" {
 		return ""
 	}
-	var parts []string
+	var parts []noticePart
 	// Below the wide breakpoint the frame has no hint rail, so an open
 	// two-press window says what the next press does here — the invariant
 	// that the surface says what a key will do cannot depend on the
@@ -739,10 +739,10 @@ func (m Model) noticeLine() string {
 	handover := m.handoverNotice()
 	if m.frameLayout() != frameWide {
 		if note, ok := m.armedHint(); ok {
-			parts = append(parts, note.render())
+			parts = append(parts, noticePart{text: note.render()})
 		}
 		if handover {
-			parts = append(parts, segAs(keys.Draft.Answer, keys.Words(keys.Draft.Answer)).render())
+			parts = append(parts, noticePart{text: segAs(keys.Draft.Answer, keys.Words(keys.Draft.Answer)).render()})
 		}
 	}
 	// What the last esc folded, or why it folded nothing (readinghint.go).
@@ -754,7 +754,7 @@ func (m Model) noticeLine() string {
 	// reason the copy caption does — appending a row would scroll the reader
 	// away from what they just put back.
 	if m.foldNotice != "" {
-		parts = append(parts, sty.Frame.NoticeInfo.Render(m.foldNotice))
+		parts = append(parts, noticePart{text: sty.Frame.NoticeInfo.Render(m.foldNotice)})
 	}
 	if m.keysNotice != "" && !handover {
 		// The rebind notice (keysnotice.go): shown for one session after a
@@ -763,38 +763,53 @@ func (m Model) noticeLine() string {
 		// handover holds this rail: the notice is a row wide on its own, so
 		// beside the chord it would be cut mid-clause, and unlike the chord
 		// it is still true once the card is answered — it comes back then.
-		parts = append(parts, sty.Frame.NoticeInfo.Render(m.keysNotice))
+		// Its changes are parts of the rail rather than one part, so a
+		// terminal too narrow for the whole list gives up its oldest changes
+		// whole instead of losing the row; the door to the full list is kept
+		// whatever goes, because it is where the dropped changes are still
+		// written down (fitNotice).
+		changes, door, _ := strings.Cut(m.keysNotice, noticeDoorSep)
+		for _, change := range strings.Split(changes, noticeSep) {
+			parts = append(parts, noticePart{text: sty.Frame.NoticeInfo.Render(change)})
+		}
+		if door != "" {
+			parts = append(parts, noticePart{
+				text: sty.Frame.NoticeInfo.Render(door),
+				glue: sty.Frame.NoticeInfo.Render(noticeDoorSep),
+				keep: true,
+			})
+		}
 	}
 	if m.updateNotice != "" {
-		parts = append(parts, sty.UpdateNotice.Render(m.updateNotice))
+		parts = append(parts, noticePart{text: sty.UpdateNotice.Render(m.updateNotice)})
 	}
 	// A question the reader handed to the draft leads the three counts,
 	// because it is the one that claims the next message: the draft holds
 	// the keyboard and nothing is on the screen to say a question is
 	// waiting, so this rail is the only thing that can (question.go).
 	if note := m.questionNotice(); note != "" {
-		parts = append(parts, sty.Frame.NoticeInfo.Render(note))
+		parts = append(parts, noticePart{text: sty.Frame.NoticeInfo.Render(note)})
 	}
 	if n := len(m.steering); n > 0 {
-		parts = append(parts, sty.Frame.NoticeInfo.Render(fmt.Sprintf("%d steering queued", n)))
+		parts = append(parts, noticePart{text: sty.Frame.NoticeInfo.Render(fmt.Sprintf("%d steering queued", n))})
 	}
 	// Follow-ups count separately from steering: one joins the running
 	// turn, the other waits for it to end (followup.go).
 	if note := m.followUpNotice(); note != "" {
-		parts = append(parts, sty.Frame.NoticeInfo.Render(note))
+		parts = append(parts, noticePart{text: sty.Frame.NoticeInfo.Render(note)})
 	}
 	// Scrolled off the live end, so the transcript has stopped following the
 	// turn (navigate.go). The draft still holds the keyboard, so this
 	// rail is the only thing that can say so.
 	if note := m.followNotice(); note != "" {
-		parts = append(parts, sty.Frame.NoticeInfo.Render(note))
+		parts = append(parts, noticePart{text: sty.Frame.NoticeInfo.Render(note)})
 	}
 	// What the last mouse selection put on the clipboard (select.go).
 	// It rides here rather than in the transcript because a copy is not part
 	// of the conversation, and because appending a row would scroll the pane
 	// away from the selection the reader is still looking at.
 	if m.selNotice != "" {
-		parts = append(parts, sty.Frame.NoticeInfo.Render(m.selNotice))
+		parts = append(parts, noticePart{text: sty.Frame.NoticeInfo.Render(m.selNotice)})
 	}
 	if m.subagents != nil {
 		if _, blocked := m.subagents.ActiveCounts(); blocked > 0 {
@@ -802,16 +817,99 @@ func (m Model) noticeLine() string {
 			if blocked == 1 {
 				label = "⚠ 1 agent waiting approval"
 			}
-			parts = append(parts, sty.Frame.NoticeAlert.Render(label))
+			parts = append(parts, noticePart{text: sty.Frame.NoticeAlert.Render(label)})
 		}
 	}
 	if m.denialNotice != "" {
-		parts = append(parts, sty.Frame.NoticeAlert.Render("✗ auto denied: "+firstLine(m.denialNotice)+" (/permissions why)"))
+		parts = append(parts, noticePart{text: sty.Frame.NoticeAlert.Render("✗ auto denied: " + firstLine(m.denialNotice) + " (/permissions why)")})
 	}
 	if len(parts) == 0 {
 		return ""
 	}
-	return clipRow(strings.Join(parts, sty.SystemMsg.Render(" · ")), m.contentWidth())
+	return fitNotice(parts, m.contentWidth())
+}
+
+// noticeSep joins the notice rail's parts, and the keys-changed notice's
+// changes with it, which is what lets the rail take that notice apart at the
+// same seams it joins everything else at. noticeDoorSep is what stands in
+// front of that notice's door to the full list.
+const (
+	noticeSep     = " · "
+	noticeDoorSep = " — "
+)
+
+// noticeMore stands where a notice rail gave up parts: the row says it has
+// more to say rather than ending as if it had finished.
+const noticeMore = " …"
+
+// noticePart is one part of the notice rail: its text, what joins it to the
+// part before (noticeSep when empty), and whether it is kept whatever else
+// goes.
+type noticePart struct {
+	text string
+	glue string
+	keep bool
+}
+
+// fitNotice joins the rail's parts into the one row it has, giving up whole
+// parts from the right until what is left fits and putting noticeMore where
+// the first of them stood — a part is dropped, never cut into. The parts
+// are already in the order the rail would rather keep them, so the fit is
+// the take-over screens' SectionFitter, each part costing its columns and
+// its glue, taking the rightmost part not marked keep. The fitter reserves
+// one column for its marker once anything goes; this marker is wider than
+// one, so the budget it is handed is short by the difference. A row whose
+// kept parts are wider than the terminal on their own is the one case left
+// to the edge, since there is nothing further to give up.
+func fitNotice(parts []noticePart, room int) string {
+	sep := sty.SystemMsg.Render(noticeSep)
+	glue := func(i int) string {
+		switch {
+		case i == 0:
+			return ""
+		case parts[i].glue != "":
+			return parts[i].glue
+		}
+		return sep
+	}
+	var b strings.Builder
+	for i, p := range parts {
+		b.WriteString(glue(i) + p.text)
+	}
+	if room <= 0 || lipgloss.Width(b.String()) <= room {
+		return clipRow(b.String(), room)
+	}
+	fitter := components.SectionFitter{
+		Rows: func(i int) int { return lipgloss.Width(glue(i) + parts[i].text) },
+		Next: func(kept []int) int {
+			for at := len(kept) - 1; at >= 0; at-- {
+				if !parts[kept[at]].keep {
+					return at
+				}
+			}
+			return len(kept) - 1
+		},
+	}
+	kept := fitter.Fit(len(parts), room-(lipgloss.Width(noticeMore)-1))
+	shown := make(map[int]bool, len(kept))
+	for _, i := range kept {
+		shown[i] = true
+	}
+	b.Reset()
+	marked := false
+	for i, p := range parts {
+		switch {
+		case shown[i]:
+			if b.Len() > 0 {
+				b.WriteString(glue(i))
+			}
+			b.WriteString(p.text)
+		case !marked:
+			b.WriteString(sty.SystemMsg.Render(noticeMore))
+			marked = true
+		}
+	}
+	return clipRow(b.String(), room)
 }
 
 // railSlots splits a border row into the five rectangles it is drawn from:
