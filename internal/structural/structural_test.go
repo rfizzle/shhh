@@ -876,3 +876,33 @@ func TestSdPreviewOfALargeChangeIsCutAtTheCap(t *testing.T) {
 		t.Fatalf("a directory should be refused by name, got %v", err)
 	}
 }
+
+// The preview's text is the unified diff internal/diff renders, byte for
+// byte: the file header, each hunk's header and its marked lines, and the
+// one sentence for a change a line diff cannot show.
+func TestSdPreviewSpellsTheUnifiedDiffExactly(t *testing.T) {
+	script := writeScript(t, `for last; do :; done; sed 's/Foo/Bar/' "$last"`)
+	ts := newTestToolset(t, map[string]string{SdToolName: script})
+	if err := os.WriteFile(filepath.Join(ts.root, "a.go"), []byte("one\ntwo Foo\nthree\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	got, err := ts.sdFileDiff(sdArgs{Pattern: "Foo", Replacement: "Bar"}, filepath.Join(ts.root, "a.go"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := "--- a/a.go\n+++ b/a.go\n@@ -1,3 +1,3 @@\n one\n-two Foo\n+two Bar\n three\n"; got != want {
+		t.Errorf("preview =\n%q\nwant\n%q", got, want)
+	}
+
+	ts = newTestToolset(t, map[string]string{SdToolName: writeScript(t, `printf 'x'`)})
+	if err := os.WriteFile(filepath.Join(ts.root, "b.go"), []byte("x\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	got, err = ts.sdFileDiff(sdArgs{Pattern: "x", Replacement: "x"}, filepath.Join(ts.root, "b.go"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := "--- a/b.go\n+++ b/b.go\n(only the final newline changes)\n"; got != want {
+		t.Errorf("preview =\n%q\nwant\n%q", got, want)
+	}
+}

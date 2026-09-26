@@ -4,7 +4,10 @@
 // session-level /diff view.
 package diff
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 // Kind classifies one line of a hunk.
 type Kind int
@@ -53,6 +56,30 @@ func (h Hunk) Header() string {
 		ns = h.NewStart - 1
 	}
 	return fmt.Sprintf("@@ -%d,%d +%d,%d @@", os, h.OldCount, ns, h.NewCount)
+}
+
+// Unified renders hunks as unified-diff text under a "--- old" / "+++ new"
+// file header, each hunk its header then its lines marked ' ', '+' or '-'.
+// The names are written as given, so a caller says "a/<path>" or
+// "/dev/null" itself.
+func Unified(oldName, newName string, hunks []Hunk) string {
+	var b strings.Builder
+	fmt.Fprintf(&b, "--- %s\n+++ %s\n", oldName, newName)
+	for _, h := range hunks {
+		b.WriteString(h.Header() + "\n")
+		for _, l := range h.Lines {
+			switch l.Kind {
+			case Add:
+				b.WriteByte('+')
+			case Del:
+				b.WriteByte('-')
+			default:
+				b.WriteByte(' ')
+			}
+			b.WriteString(l.Text + "\n")
+		}
+	}
+	return b.String()
 }
 
 // Stats totals added and deleted lines across hunks.

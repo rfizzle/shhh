@@ -165,27 +165,12 @@ func (t *Toolset) sdFileDiff(args sdArgs, path string) (string, error) {
 	if after == string(before) {
 		return "", nil
 	}
-	var b strings.Builder
-	fmt.Fprintf(&b, "--- a/%s\n+++ b/%s\n", rel, rel)
 	hunks := diff.Compute(string(before), after)
+	out := diff.Unified("a/"+rel, "b/"+rel, hunks)
 	if len(hunks) == 0 {
 		// The lines are the same and the texts are not: only the file's
 		// final newline moved, which a line diff cannot show.
-		b.WriteString("(only the final newline changes)\n")
+		out += "(only the final newline changes)\n"
 	}
-	for _, h := range hunks {
-		b.WriteString(h.Header() + "\n")
-		for _, l := range h.Lines {
-			switch l.Kind {
-			case diff.Add:
-				b.WriteByte('+')
-			case diff.Del:
-				b.WriteByte('-')
-			default:
-				b.WriteByte(' ')
-			}
-			b.WriteString(l.Text + "\n")
-		}
-	}
-	return b.String(), nil
+	return out, nil
 }

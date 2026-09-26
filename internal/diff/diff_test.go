@@ -7,6 +7,19 @@ import (
 	"testing"
 )
 
+// Unified writes the names as given, then each hunk's header and its lines
+// with their markers; with no hunks it is the file header alone.
+func TestUnified(t *testing.T) {
+	got := Unified("a/x.go", "b/x.go", Compute("one\ntwo\nthree\n", "one\nTWO\nthree\nfour\n"))
+	want := "--- a/x.go\n+++ b/x.go\n@@ -1,3 +1,4 @@\n one\n-two\n+TWO\n three\n+four\n"
+	if got != want {
+		t.Errorf("Unified =\n%q\nwant\n%q", got, want)
+	}
+	if got := Unified("/dev/null", "b/x.go", nil); got != "--- /dev/null\n+++ b/x.go\n" {
+		t.Errorf("Unified with no hunks = %q", got)
+	}
+}
+
 // flatten renders hunks the way a unified diff prints them, for compact
 // comparisons.
 func flatten(t *testing.T, hunks []Hunk) []string {

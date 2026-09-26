@@ -127,7 +127,6 @@ func (m Model) todoRunDiff() []string {
 
 // recordDiff renders one record as a unified diff.
 func recordDiff(rel string, r changeset.Record) string {
-	var b strings.Builder
 	old, now := "a/"+rel, "b/"+rel
 	if !r.BeforeExists {
 		old = "/dev/null"
@@ -135,21 +134,7 @@ func recordDiff(rel string, r changeset.Record) string {
 	if !r.AfterExists {
 		now = "/dev/null"
 	}
-	fmt.Fprintf(&b, "--- %s\n+++ %s\n", old, now)
-	for _, h := range diff.Compute(r.Before, r.After) {
-		b.WriteString(h.Header() + "\n")
-		for _, l := range h.Lines {
-			prefix := " "
-			switch l.Kind {
-			case diff.Add:
-				prefix = "+"
-			case diff.Del:
-				prefix = "-"
-			}
-			b.WriteString(prefix + l.Text + "\n")
-		}
-	}
-	return b.String()
+	return diff.Unified(old, now, diff.Compute(r.Before, r.After))
 }
 
 // runRelPath is a record's path relative to the root, or "" when it is
