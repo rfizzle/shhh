@@ -294,7 +294,7 @@ The `internal/agent` package is a **passive state machine** — front-ends (the 
 
 Tools are split into three permission tiers that must never be mixed:
 
-1. **Read-only** (`ReadOnly()`): `read_file`, `list_directory`, `search`, `glob_files` — auto-execute without approval
+1. **Read-only** (`ReadOnly()`): `read_file`, `list_directory`, `search`, `glob` — auto-execute without approval
 2. **Execute** (`ExecCommandTool()`): `execute_command` — requires user approval or policy match
 3. **Mutating** (`Mutating()`): `write_file`, `edit_file` — require approval in manual mode, auto-apply in accept-edits/auto
 
