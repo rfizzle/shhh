@@ -481,10 +481,59 @@ func (m Model) marginProse(style lipgloss.Style, text string, width int) string 
 		return strings.Join(lines, "\n")
 	}
 	var out []string
-	for _, l := range strings.Split(m.wordWrap(text, inner), "\n") {
+	for _, l := range strings.Split(m.wrapAfterHead(text, inner), "\n") {
 		out = append(out, marginLine(style, l, inner, width))
 	}
 	return strings.Join(out, "\n")
+}
+
+// actGap is the gap a notice's head — the glyph and the act, or the glyph
+// and the agent it is about (failed, the child verdict rows) — leaves before
+// what it says: the two columns every row on the grid leaves after its act.
+const actGap = "  "
+
+// wrapAfterHead is wordWrap for a notice that leads with a head: the text up
+// to its first two-space gap is kept whole, gap included, and only the detail
+// after it is re-flowed. wordWrap re-tokenises the line on whitespace, so a
+// notice that had to wrap came back with its gap collapsed to one space and
+// its act a column out of line with every row around it. A line that fits,
+// one with no gap, and one whose head leaves the detail no column on the
+// first line wrap as plain prose.
+func (m Model) wrapAfterHead(text string, width int) string {
+	head, detail, ok := strings.Cut(text, actGap)
+	words := strings.Fields(detail)
+	lead := lipgloss.Width(head) + len(actGap)
+	if !ok || lipgloss.Width(text) <= width || strings.TrimSpace(head) == "" ||
+		len(words) == 0 || lead >= width {
+		return m.wordWrap(text, width)
+	}
+	var b strings.Builder
+	b.WriteString(head + actGap)
+	lineLen := lead
+	for i, word := range words {
+		wLen := lipgloss.Width(word)
+		sep := 1
+		if i == 0 {
+			sep = 0
+		}
+		switch {
+		case lineLen+sep+wLen > width:
+			b.WriteByte('\n')
+			lineLen = 0
+		case sep == 1:
+			b.WriteByte(' ')
+			lineLen++
+		}
+		b.WriteString(word)
+		lineLen += wLen
+	}
+	// A first word that did not fit beside the head left the gap at the end
+	// of the head's line, where nothing follows it.
+	first, rest, wrapped := strings.Cut(b.String(), "\n")
+	if !wrapped {
+		return first
+	}
+	return strings.TrimRight(first, " ") + "\n" + rest
 }
 
 // marginPaint is one line on the content column: the gutter, then the words.

@@ -170,6 +170,40 @@ func TestWordWrap_PreservesNewlines(t *testing.T) {
 	}
 }
 
+// TestMarginProse_AWrappedNoticeKeepsTheGapAfterItsHead holds the grid's gap
+// after a notice's act when the notice has to wrap: the head is kept whole,
+// and only the detail after it is re-flowed.
+func TestMarginProse_AWrappedNoticeKeepsTheGapAfterItsHead(t *testing.T) {
+	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	m := New(msgs, mockStream)
+	for _, tc := range []struct{ text, head string }{
+		{"✓ writer-1  approved ▸ apply patch (+40 −40, 2 files)", "✓ writer-1  approved"},
+		{failed("fetch", "the host refused the connection after three attempts"), "✗ fetch  the"},
+	} {
+		for _, width := range []int{24, 40, 53} {
+			lines := strings.Split(ansi.Strip(m.marginProse(plainStyle, tc.text, width)), "\n")
+			if len(lines) < 2 {
+				t.Fatalf("%q at %d: want it wrapped, got %q", tc.text, width, lines)
+			}
+			if !strings.HasPrefix(lines[0], "  "+tc.head) {
+				t.Errorf("%q at %d: first line %q does not keep the head %q whole", tc.text, width, lines[0], tc.head)
+			}
+			if got, want := strings.Join(strings.Fields(strings.Join(lines, " ")), " "),
+				strings.Join(strings.Fields(tc.text), " "); got != want {
+				t.Errorf("%q at %d: words %q, want %q", tc.text, width, got, want)
+			}
+			for _, l := range lines {
+				if w := ansi.StringWidth(l); w > width {
+					t.Errorf("%q at %d: line %q is %d wide", tc.text, width, l, w)
+				}
+			}
+		}
+	}
+	if got := ansi.Strip(m.marginProse(plainStyle, "✓ writer-1  done", 60)); got != "  ✓ writer-1  done" {
+		t.Errorf("a notice that fits: %q", got)
+	}
+}
+
 func TestEmptyHistory_ShowsWelcome(t *testing.T) {
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
 	m := New(msgs, mockStream)
