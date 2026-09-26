@@ -1529,3 +1529,59 @@ func TestAnUnattendedRunTakesNeitherReadOnlyMode(t *testing.T) {
 		}
 	}
 }
+
+// A built-in reviewer runs in read-only mode, which refuses every fetch, so it
+// is not handed the web at all; the researcher keeps both tools, and a
+// profile file's own tools list decides for itself.
+func TestTheBuiltInReviewerIsNotHandedTheWeb(t *testing.T) {
+	session := codeToolset()
+	for _, tc := range []struct {
+		role subagent.Role
+		web  bool
+	}{
+		{subagent.RoleReviewer, false},
+		{subagent.RoleResearcher, true},
+		{subagent.RoleWriter, true},
+	} {
+		t.Run(string(tc.role), func(t *testing.T) {
+			gated := map[string]bool{}
+			sysPrompt, defs, exec := builtinEnv(tc.role, subagent.Spec{Name: "child"}, shell.Info{}, "", session.web, gated)
+			names := toolsetNames(defs)
+			if got := containsString(names, web.FetchToolName); got != tc.web {
+				t.Errorf("%s holds %s = %v, want %v: %v", tc.role, web.FetchToolName, got, tc.web, names)
+			}
+			if gated[web.FetchToolName] != tc.web {
+				t.Errorf("%s gates %s = %v, want %v", tc.role, web.FetchToolName, gated[web.FetchToolName], tc.web)
+			}
+			if tc.web {
+				return
+			}
+			for _, d := range session.web.Definitions() {
+				if containsString(names, d.Name) {
+					t.Errorf("reviewer holds %s", d.Name)
+				}
+				if strings.Contains(sysPrompt, d.Name) {
+					t.Errorf("reviewer's prompt names %s", d.Name)
+				}
+			}
+			// The metadata address is refused by the fetcher's own policy
+			// before any dial, so a regression fails here without a request
+			// leaving the machine.
+			if _, err := exec(web.FetchToolName, json.RawMessage(`{"url":"http://169.254.169.254/latest/meta-data/"}`)); err == nil ||
+				!strings.Contains(err.Error(), "unknown tool") {
+				t.Errorf("reviewer's executor dispatched %s: %v", web.FetchToolName, err)
+			}
+		})
+	}
+}
+
+// A profile file named reviewer replaces the built-in role, and its own
+// permissions decide whether it has the web.
+func TestAReviewerProfileKeepsTheWebItNames(t *testing.T) {
+	session := codeToolset()
+	def := config.AgentDefinition{Name: "reviewer", Permissions: []string{config.PermissionWeb}}
+	_, defs, _ := profileEnv(def, subagent.Spec{}, shell.Info{}, "", session.web, nil, map[string]bool{})
+	if !containsString(toolsetNames(defs), web.FetchToolName) {
+		t.Errorf("a reviewer profile naming the web lost it: %v", toolsetNames(defs))
+	}
+}

@@ -650,33 +650,11 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 		var rolePrompt func([]string) string
 		var defs []provider.Tool
 		gated := map[string]bool{}
-		base := agent.ToolExecutor(tools.Execute)
+		var base agent.ToolExecutor
 		if def, ok := agents.definitions[string(role)]; ok {
 			rolePrompt, defs, base = profileEnv(def, spec, info, extra, session.web, session.gateRunner, gated)
 		} else {
-			switch role {
-			case subagent.RoleReviewer:
-				sysPrompt = prompt.BuildReviewer(info, prompt.ProfileSpec{}, extra)
-				defs = tools.Definitions()
-			case subagent.RoleWriter:
-				sysPrompt = prompt.BuildWriter(info, extra)
-				sysPrompt += scopeNote(spec.Paths)
-				defs = tools.DefinitionsFull()
-				gated[tools.ExecCommandName] = true
-				gated[tools.WriteFileName] = true
-				gated[tools.EditFileName] = true
-			default:
-				// The child is told which half of the web it has before it
-				// is registered below, because the sentence is part of the
-				// prompt and the prompt is built once.
-				sysPrompt = prompt.BuildResearcher(info, webToolsFor(session.web), extra)
-				defs = tools.Definitions()
-			}
-			if session.web != nil {
-				defs = append(defs, session.web.Definitions()...)
-				base = session.web.WrapExecutor(spec.Name, tools.Execute)
-				gated[web.FetchToolName] = true
-			}
+			sysPrompt, defs, base = builtinEnv(role, spec, info, extra, session.web, gated)
 			rolePrompt = fixedPrompt(sysPrompt)
 		}
 		// An integration writer is the conflicting writer's own profile with
@@ -1151,6 +1129,45 @@ func profileEnv(def config.AgentDefinition, spec subagent.Spec, info shell.Info,
 		base = gate.WrapExecutorHolding(base)
 	}
 	return func(names []string) string { return profilePrompt(def, spec, info, extra, names) }, defs, base
+}
+
+// builtinEnv is the environment of a built-in role no profile file
+// replaced: its prompt, its tool definitions and the executor they dispatch
+// through. Gated is filled with the approval-routed tools it holds.
+//
+// The reviewer is not handed the web. Its mode is read-only, which refuses
+// every fetch whatever host it names, and a review judges a diff against the
+// tree it lands in rather than against a page; offered the tools, it would
+// spend a round learning the refusal its prompt never warned of.
+// See docs/capabilities/subagents.md#two-kinds-and-the-difference-is-what-they-may-touch.
+func builtinEnv(role subagent.Role, spec subagent.Spec, info shell.Info, extra string,
+	webTools *web.Toolset, gated map[string]bool) (string, []provider.Tool, agent.ToolExecutor) {
+	var sysPrompt string
+	var defs []provider.Tool
+	base := agent.ToolExecutor(tools.Execute)
+	switch role {
+	case subagent.RoleReviewer:
+		return prompt.BuildReviewer(info, prompt.ProfileSpec{}, extra), tools.Definitions(), base
+	case subagent.RoleWriter:
+		sysPrompt = prompt.BuildWriter(info, extra)
+		sysPrompt += scopeNote(spec.Paths)
+		defs = tools.DefinitionsFull()
+		gated[tools.ExecCommandName] = true
+		gated[tools.WriteFileName] = true
+		gated[tools.EditFileName] = true
+	default:
+		// The child is told which half of the web it has before it is
+		// registered below, because the sentence is part of the prompt and
+		// the prompt is built once.
+		sysPrompt = prompt.BuildResearcher(info, webToolsFor(webTools), extra)
+		defs = tools.Definitions()
+	}
+	if webTools != nil {
+		defs = append(defs, webTools.Definitions()...)
+		base = webTools.WrapExecutor(spec.Name, tools.Execute)
+		gated[web.FetchToolName] = true
+	}
+	return sysPrompt, defs, base
 }
 
 // profilePrompt is a profile's prompt over the names the child holds. The

@@ -28,9 +28,16 @@ a row ([`surfaces.md`](../interface/surfaces.md#the-agent-manager)).
 - **Writers** have the full toolset, pointed at their own isolated copy of the
   repository. What comes back is a patch the parent reviews.
 - **Reviewers** read a change they did not make and judge it. They have the
-  researcher's tools and the read-only mode, so the restriction is visible
-  to the child itself; the change is handed to them as a diff, and what
-  comes back is a report ending in a verdict.
+  researcher's tools less the web, and the read-only mode, so the
+  restriction is visible to the child itself; the change is handed to them
+  as a diff, and what comes back is a report ending in a verdict.
+
+A reviewer judges a change against the tree it lands in, not against a page,
+and its mode refuses every fetch whatever host it names. Offered the web
+anyway, it would learn that refusal by spending a round on it — the tool in
+its list, and nothing in its prompt saying it could not be used. So the web
+tools leave its list rather than joining its prompt. A profile file that
+replaces the reviewer decides its own tools, the web included.
 
 A writer working in the parent's tree would produce changes nobody chose,
 interleaved with changes from other children, in a working directory the user
