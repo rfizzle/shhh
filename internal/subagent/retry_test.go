@@ -545,3 +545,46 @@ func TestARetryAndASpawnAreRefusedAtAdmissionInOneSentence(t *testing.T) {
 		}
 	}
 }
+
+// Every environment built for an attempt is told which attempt it is: the
+// spawn's preflight and its workspace say 1, and a retry's preflight and its
+// workspace say the number the retry claimed. An environment keyed on the
+// attempt would otherwise read every first attempt, and every workspace, as
+// attempt zero.
+func TestTheEnvironmentIsToldTheAttemptItIsBuiltFor(t *testing.T) {
+	env := &scriptedEnv{}
+	factory := env.factory()
+	var mu sync.Mutex
+	var attempts []int
+	sup := New(context.Background(), Options{Root: t.TempDir(), NewEnv: func(ctx context.Context, spec Spec) (Env, error) {
+		mu.Lock()
+		attempts = append(attempts, spec.Attempt)
+		mu.Unlock()
+		return factory(ctx, spec)
+	}})
+	t.Cleanup(sup.Close)
+
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"survey the loop"}`)
+	waitState(t, sup, "researcher-1", StateFailed)
+	mu.Lock()
+	first := append([]int(nil), attempts...)
+	attempts = nil
+	mu.Unlock()
+	if fmt.Sprint(first) != "[1 1]" {
+		t.Fatalf("the spawn's preflight and workspace must both be told attempt 1, got %v", first)
+	}
+
+	env.mu.Lock()
+	env.steps = []streamStep{{text: "the loop lives in internal/agent"}}
+	env.mu.Unlock()
+	if err := sup.Retry("researcher-1"); err != nil {
+		t.Fatalf("retry: %v", err)
+	}
+	waitState(t, sup, "researcher-1", StateDone)
+	mu.Lock()
+	second := append([]int(nil), attempts...)
+	mu.Unlock()
+	if fmt.Sprint(second) != "[2 2]" {
+		t.Fatalf("the retry's preflight and workspace must both be told attempt 2, got %v", second)
+	}
+}

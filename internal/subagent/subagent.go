@@ -3420,8 +3420,8 @@ func (s *Supervisor) openWorkspace(c *child, ctx context.Context, maxRounds, att
 	}
 	w.env, err = s.opts.NewEnv(ctx, Spec{Name: c.name, Role: c.role, Root: w.root, Model: c.model, Paths: c.paths,
 		Parent: c.parent, Depth: c.depth,
-		Worktree: w.wt.dir != "", MaxTokens: c.maxTokens, AdmissionFloor: c.admissionFloor, Inherit: c.inheritTurns,
-		Integrates: c.integrates.sourceName()})
+		Worktree: w.wt.dir != "", MaxTokens: c.maxTokens, AdmissionFloor: c.admissionFloor, Attempt: attempt,
+		Inherit: c.inheritTurns, Integrates: c.integrates.sourceName()})
 	if err != nil {
 		removeWorktree(w.wt.repoTop, w.wt.dir)
 		return workspace{}, fmt.Errorf("the agent's environment could not be built: %w", err)
@@ -3663,10 +3663,11 @@ func (s *Supervisor) spawn(caller string, raw json.RawMessage, integ *integratio
 	cctx, cancel := context.WithCancel(s.ctx)
 	// Construct the role environment before admitting the child, but never its
 	// worktree or record. A doomed budget must not consume either resource.
+	// A spawn is the first attempt, and says so as a retry's preflight does.
 	preflight, preflightErr := s.opts.NewEnv(cctx, Spec{Name: name, Role: args.role, Root: s.opts.Root,
 		Parent: caller, Depth: depth,
-		Model: model, Paths: args.paths, Worktree: args.profile.Writes, MaxTokens: args.maxTokens, Inherit: inheritTurns,
-		Integrates: integ.sourceName()})
+		Model: model, Paths: args.paths, Worktree: args.profile.Writes, MaxTokens: args.maxTokens, Attempt: 1,
+		Inherit: inheritTurns, Integrates: integ.sourceName()})
 	if preflightErr != nil {
 		cancel()
 		return "", fmt.Errorf("the agent's environment could not be built: %w", preflightErr)
