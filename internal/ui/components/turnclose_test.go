@@ -91,6 +91,47 @@ func TestTurnClose_TheNoteDropsBeforeTheStatement(t *testing.T) {
 	}
 }
 
+// Every offer a selected close acts on is drawn whole at every width the
+// design names, however many rows that costs: an offer clipped off the edge
+// is a key that acts with nothing on the screen saying so.
+func TestTurnClose_EveryOfferTheRowActsOnIsDrawnWhole(t *testing.T) {
+	chords := []TurnKey{
+		{Key: "[enter]", Chord: "[enter]", Label: "review turn"},
+		{Key: "[g]", Chord: "[alt+g]", Label: "commit"},
+		{Key: "[u]", Chord: "[alt+z]", Label: "undo turn"},
+	}
+	for _, tc := range []struct {
+		name    string
+		waiting bool
+		want    []string
+	}{
+		{"letters live", false, []string{"[enter] review turn", "[g] commit", "[u] undo turn"}},
+		{"chords live", true, []string{"[enter] review turn", "[alt+g] commit", "[alt+z] undo turn"}},
+	} {
+		c := closeFixture()
+		c.Changes.Keys = chords
+		c.KeysWaiting = tc.waiting
+		c.Checks.Keys = []TurnKey{{Key: "[t]", Chord: "[alt+t]", Label: "run the checks again"}}
+		again := "[t] run the checks again"
+		if tc.waiting {
+			again = "[alt+t] run the checks again"
+		}
+		for _, width := range []int{60, 80, 110, 130} {
+			view := ansi.Strip(c.View(width))
+			for _, offer := range append(tc.want, again) {
+				if !strings.Contains(view, offer) {
+					t.Errorf("%s at %d: %q is not drawn whole:\n%s", tc.name, width, offer, view)
+				}
+			}
+			for _, line := range strings.Split(view, "\n") {
+				if strings.Contains(line, "…") && strings.Contains(line, "[") {
+					t.Errorf("%s at %d: a row of offers was clipped: %q", tc.name, width, line)
+				}
+			}
+		}
+	}
+}
+
 func TestTurnClose_StateAndVerdictAreWordsAsWellAsGlyphs(t *testing.T) {
 	for state, word := range map[TurnState]string{
 		TurnDone: "Done", TurnCancelled: "Cancelled", TurnFailed: "Failed",

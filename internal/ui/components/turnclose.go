@@ -259,6 +259,35 @@ func closeLine(lead, text, note string, width int) string {
 	return strings.TrimRight(Clip(left, width), " ")
 }
 
+// closeOfferRows lays out a close row that carries offers. Where the row and
+// its run fit on one line they share it. Where they do not, the keys that are
+// not live yet give up the width first and the key that makes them live is
+// the last to go (keyRunNarrow): one is an offer, the others are not offers
+// yet. Where even that does not fit, the statement keeps its row and the
+// offers take rows of their own under it, packed the way KeyFooter packs a
+// screen's keys beside its lead — an offer the row acts on goes to the next
+// row whole, never clipped off the edge of this one
+// (docs/interface/principles.md#fold-never-hide).
+func closeOfferRows(lead, stated string, keys []TurnKey, waiting bool, handover, note string, width int) []string {
+	run := keyRun(keys, waiting, handover)
+	if run == "" {
+		return []string{closeLine(lead, stated, note, width)}
+	}
+	sep := sty.Dim.Render(" · ")
+	if text := stated + sep + run; lipgloss.Width(lead+text) <= width {
+		return []string{closeLine(lead, text, note, width)}
+	}
+	if text := stated + sep + keyRunNarrow(keys, waiting, handover); lipgloss.Width(lead+text) <= width {
+		return []string{closeLine(lead, text, note, width)}
+	}
+	under := closeLead("", " ")
+	rows := []string{closeLine(lead, stated, note, width)}
+	for _, r := range keyRunRows(keys, waiting, handover, width-lipgloss.Width(under)) {
+		rows = append(rows, closeLine(under, r, "", width))
+	}
+	return rows
+}
+
 // View renders the close block at the given width, one line per row.
 func (c TurnClose) View(width int) string {
 	glyph, word := c.stateGlyph()
@@ -274,19 +303,7 @@ func (c TurnClose) View(width int) string {
 		}
 		stated := sty.Body.Render(plural(ch.Files, "file")+" changed ") + stats
 		lead := closeLead(sty.Accent.Render("▎"), sty.Accent.Render("✎"))
-		text := stated
-		if run := keyRun(ch.Keys, c.KeysWaiting, c.Handover); run != "" {
-			text = stated + sty.Dim.Render(" · ") + run
-		}
-		// The keys that are not live yet are the first thing to give up the
-		// width, and the key that makes them live is the last: one is an
-		// offer, the others are not offers yet.
-		if lipgloss.Width(lead+text) > width {
-			if run := keyRunNarrow(ch.Keys, c.KeysWaiting, c.Handover); run != "" {
-				text = stated + sty.Dim.Render(" · ") + run
-			}
-		}
-		lines = append(lines, closeLine(lead, text, sty.Dim.Render(ch.Note), width))
+		lines = append(lines, closeOfferRows(lead, stated, ch.Keys, c.KeysWaiting, c.Handover, sty.Dim.Render(ch.Note), width)...)
 		// And, the first time a session offers a chord, what alt costs on a
 		// stock macOS terminal. It takes a line under the row rather than a
 		// clause on it: the row is already the widest line in the block, and
@@ -335,10 +352,7 @@ func (c TurnClose) View(width int) string {
 		// which keys are live (invariant 5). The handover is not repeated
 		// here: it is one key for the whole block and the row above already
 		// names it, and a chord printed twice in four lines reads as two.
-		if run := keyRun(ck.Keys, c.KeysWaiting, ""); run != "" {
-			text += sty.Dim.Render(" · ") + run
-		}
-		lines = append(lines, closeLine(closeLead("", glyph), text, note, width))
+		lines = append(lines, closeOfferRows(closeLead("", glyph), text, ck.Keys, c.KeysWaiting, "", note, width)...)
 		// The Option sentence belongs to whichever row in the block offers a
 		// chord first, and the changed-files row above has already said it
 		// where there is one: a turn that changed nothing and ran its checks

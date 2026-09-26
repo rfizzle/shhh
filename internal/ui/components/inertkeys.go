@@ -168,6 +168,26 @@ func keyRunNarrow(keys []TurnKey, waiting bool, handover string) string {
 	return handoverOffer(handover, handoverWord)
 }
 
+// keyRunRows is the run once even keyRunNarrow is wider than the room: the
+// offers packed into as few rows as room allows, the way KeyFooter packs a
+// screen's, so a narrow terminal gets another row rather than an offer cut
+// off at the edge (docs/interface/principles.md#fold-never-hide). Whether
+// they are painted live is the question keyRun answers. A waiting run with a
+// handover has already narrowed to that one key, which keeps its row whole.
+func keyRunRows(keys []TurnKey, waiting bool, handover string, room int) []string {
+	switch {
+	case len(keys) == 0:
+		return nil
+	case !waiting:
+		return packOffersIn(keys, room, true)
+	case chorded(keys):
+		return packOffersIn(asChords(keys), room, true)
+	case handover == "":
+		return packOffersIn(keys, room, false)
+	}
+	return []string{keyRunNarrow(keys, waiting, handover)}
+}
+
 // KeyRun is that run for a row drawn outside this package. The step outline
 // and the backlog run's row live in internal/ui/chat because they group
 // history rather than render a widget (AGENTS.md), and invariant 5 is not a
