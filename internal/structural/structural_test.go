@@ -686,3 +686,106 @@ func TestJaqNarrowQueryAnswersWhereTheWholeDocumentIsCut(t *testing.T) {
 		t.Fatalf("a selecting expression should come back whole, got %q", narrow)
 	}
 }
+
+// A broad structural search or a replacement preview over many files runs past
+// MaxOutputBytes, and what is cut is kept nowhere, so both definitions have to
+// say how to narrow and must not let a truncated result pass for the whole.
+// sd's preview prints each named file whole, so its guidance is the files it
+// is handed, and max_replacements must not be sold as a way to shorten it.
+func TestStructuralPreviewDefinitionsTeachNarrowing(t *testing.T) {
+	for _, tool := range []struct {
+		name   string
+		desc   string
+		schema string
+		want   []string
+		args   []string
+	}{
+		{AstGrepToolName, astGrepTool.Description, string(astGrepTool.Parameters),
+			[]string{"PREVIEW", "point path at the directory or file", "set lang", "leave context off", "cut off and lost", "not every match", "not the whole diff", "narrower path"},
+			[]string{"name the narrowest one", "keeps other languages' files out", "leave it unset"}},
+		{SdToolName, sdTool.Description, string(sdTool.Parameters),
+			[]string{"PREVIEW", "never modifies files", "in full", "name only the files that hold a match", "does not shorten the preview", "cut off and lost", "not every file", "smaller batches"},
+			[]string{"name only files that hold a match", "still printed whole"}},
+	} {
+		for _, want := range tool.want {
+			if !strings.Contains(tool.desc, want) {
+				t.Errorf("%s description should say %q:\n%s", tool.name, want, tool.desc)
+			}
+		}
+		for _, want := range tool.args {
+			if !strings.Contains(tool.schema, want) {
+				t.Errorf("%s arguments should say %q:\n%s", tool.name, want, tool.schema)
+			}
+		}
+		if strings.Contains(tool.desc, "evidence") {
+			t.Errorf("%s description must not send a truncated result to evidence:\n%s", tool.name, tool.desc)
+		}
+	}
+}
+
+// The failure the ast_grep guidance is for: a pattern run over the whole
+// workspace floods past the cap and comes back cut off, while the same
+// pattern pointed at the directory that holds the matches comes back whole.
+// The script stands in for ast-grep: it floods when handed the workspace root
+// and answers two matches for anything narrower.
+func TestAstGrepNarrowPathAnswersWhereTheWholeTreeIsCut(t *testing.T) {
+	script := writeScript(t, `for last; do :; done
+if [ "$last" = "$ROOT" ]; then yes 'pkg/a.go:1:	if err != nil { return err }' | head -c 300000
+else printf 'internal/x/a.go:3:	if err != nil { return err }\ninternal/x/b.go:9:	if err != nil { return err }\n'; fi`)
+	ts := newTestToolset(t, map[string]string{AstGrepToolName: script})
+	t.Setenv("ROOT", ts.root)
+	if err := os.MkdirAll(filepath.Join(ts.root, "internal", "x"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	whole, err := ts.Execute(AstGrepToolName, json.RawMessage(`{"pattern": "if err != nil { return $$$R }", "lang": "go"}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(whole, "output truncated") || !strings.Contains(whole, "narrow the query") {
+		t.Fatalf("a search over the whole tree should be cut at the cap, got %d bytes ending %q", len(whole), whole[max(0, len(whole)-80):])
+	}
+
+	narrow, err := ts.Execute(AstGrepToolName, json.RawMessage(`{"pattern": "if err != nil { return $$$R }", "lang": "go", "path": "internal/x"}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "internal/x/a.go:3:\tif err != nil { return err }\ninternal/x/b.go:9:\tif err != nil { return err }"
+	if narrow != want {
+		t.Fatalf("a search over the directory holding the matches should come back whole, got %q", narrow)
+	}
+}
+
+// The failure the sd guidance is for: the preview prints every named file
+// whole, so naming many files runs past the cap whatever max_replacements
+// says, while naming only the file that holds the match comes back whole. The
+// script stands in for sd's preview: a header and a 20 KB body per file.
+func TestSdPreviewOfOnlyTheMatchingFilesComesBackWhole(t *testing.T) {
+	script := writeScript(t, `while [ "$1" != "--" ]; do shift; done
+shift 3
+for f; do printf -- '----- FILE %s -----\n' "$f"; head -c 20000 /dev/zero | tr '\0' x; printf '\n'; done`)
+	ts := newTestToolset(t, map[string]string{SdToolName: script})
+	var names []string
+	for _, n := range []string{"a.go", "b.go", "c.go", "d.go", "e.go"} {
+		if err := os.WriteFile(filepath.Join(ts.root, n), []byte("package x\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		names = append(names, `"`+n+`"`)
+	}
+
+	broad, err := ts.Execute(SdToolName, json.RawMessage(`{"pattern": "Foo", "replacement": "Bar", "max_replacements": 1, "paths": [`+strings.Join(names, ",")+`]}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(broad, "output truncated") {
+		t.Fatalf("a preview naming every file should be cut at the cap even with max_replacements, got %d bytes", len(broad))
+	}
+
+	narrow, err := ts.Execute(SdToolName, json.RawMessage(`{"pattern": "Foo", "replacement": "Bar", "paths": ["c.go"]}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(narrow, "output truncated") || !strings.HasPrefix(narrow, "Preview only") || !strings.Contains(narrow, "----- FILE ") || !strings.HasSuffix(narrow, strings.Repeat("x", 100)) {
+		t.Fatalf("a preview naming only the matching file should come back whole, got %d bytes starting %q", len(narrow), narrow[:min(len(narrow), 120)])
+	}
+}

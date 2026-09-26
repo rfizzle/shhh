@@ -113,7 +113,7 @@ func TestFindingThings_KeepsTheThreeRules(t *testing.T) {
 // wrong tool.
 func TestToolbox_SplitsSdFromABatchedEdit(t *testing.T) {
 	got := Toolbox(toolList("sd"), false)
-	for _, want := range []string{"spans files", "edits array"} {
+	for _, want := range []string{"- sd — preview", "spans files", "edits array"} {
 		if !strings.Contains(got, want) {
 			t.Errorf("the sd note should name the split, missing %q:\n%s", want, got)
 		}

@@ -37,7 +37,7 @@ var toolboxNotes = []struct{ name, note string }{
 	{"diagnostics", "the language server's current errors and warnings for one file, or for every file this session has had checked. Ask it when an edit came back saying the file was not checked yet."},
 	{"ast_grep", "structural search by syntax pattern (e.g. `if $A != nil { return $A }`). For shapes a regex cannot describe."},
 	{"fd", "find files by name, fast. Use it instead of `execute_command find`."},
-	{"sd", "find-and-replace across many files at once. For a mechanical rename that spans files — several places inside one file are one edit_file call carrying its edits array."},
+	{"sd", "preview a find-and-replace across several files at once, to check it before applying it. For a mechanical rename that spans files — several places inside one file are one edit_file call carrying its edits array."},
 	{"jaq", "query JSON without writing a script for it. Use it rather than reading a large JSON file whole when the question needs only part of it."},
 	{"yq", "query YAML and XML without writing a script for it — a CI workflow, a manifest, a linter config. It answers at the nesting level you asked about, where search returns whichever indentation matched. Use it rather than reading a large file whole when the question needs only part of it."},
 	{"tokei", "counts of code by language — the shape and size of an unfamiliar repository in one call."},

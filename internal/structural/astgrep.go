@@ -9,20 +9,28 @@ import (
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
+// The how of a bounded answer lives here, beside the tool: output past
+// MaxOutputBytes is cut off and not kept anywhere, because this tool is exempt
+// from the evidence pipeline, and a common pattern over a whole repository
+// runs to hundreds of kilobytes, so the path, the language and the context
+// are what bound the answer.
+// See docs/capabilities/evidence.md#reduction-is-for-unbounded-output.
 var astGrepTool = provider.Tool{
 	Name: AstGrepToolName,
 	Description: "Language-aware structural code search with ast-grep. Prefer this over regex search for structural questions " +
 		"(find every call of a function, match a syntax shape regardless of formatting). The pattern is code with metavariables, " +
 		"e.g. \"foo($$$ARGS)\" or \"if $COND { $$$BODY }\". With rewrite set, returns a PREVIEW diff of the proposed transform — " +
-		"it never modifies files; apply changes with edit_file.",
+		"it never modifies files; apply changes with edit_file. " +
+		"Scope the search to the question: point path at the directory or file that holds the matches and set lang, and leave context off unless the lines around a match are what you need. " +
+		"Output past 64 KiB is cut off and lost, so a result that says it was truncated is not every match and a truncated rewrite is not the whole diff: run it again over a narrower path rather than acting on the part you saw.",
 	Parameters: json.RawMessage(`{
 		"type": "object",
 		"properties": {
 			"pattern": {"type": "string", "description": "Structural pattern to search for (code with $META and $$$MULTI metavariables)"},
 			"rewrite": {"type": "string", "description": "Optional rewrite template; the result is a preview diff, no file is changed"},
-			"lang": {"type": "string", "description": "Language to parse, e.g. \"go\", \"ts\", \"py\" (recommended; inferred from extensions otherwise)"},
-			"path": {"type": "string", "description": "File or directory to search, relative to the workspace root (default: the workspace root)"},
-			"context": {"type": "integer", "description": "Lines of context to show around each match"}
+			"lang": {"type": "string", "description": "Language to parse, e.g. \"go\", \"ts\", \"py\" (recommended; inferred from extensions otherwise); it also keeps other languages' files out of the result"},
+			"path": {"type": "string", "description": "File or directory to search, relative to the workspace root (default: the workspace root); name the narrowest one that holds the matches"},
+			"context": {"type": "integer", "description": "Lines of context to show around each match; each line multiplies the output, so leave it unset unless the surrounding lines are needed"}
 		},
 		"required": ["pattern"]
 	}`),
