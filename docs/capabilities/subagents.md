@@ -462,6 +462,10 @@ your tree through its patch, and a command of its that writes into the
 checkout directly is put to you as out of scope, in every mode. A permissive
 mode and the classifier cannot wave it through, because what they were
 granted over is the work, and a writer's isolation is not theirs to give up.
+The same holds for any directory outside a child's scope, not only the
+checkout: in auto mode it comes to you rather than to the classifier, because
+nothing a classifier approves is added to what the child may write, and a
+contained command would fail after being told it was allowed.
 Spawning is not an escape hatch: a child cannot reach somewhere the parent
 could not.
 

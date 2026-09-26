@@ -155,3 +155,52 @@ func TestReadOnlyChildActionsAreUnchangedByTheScope(t *testing.T) {
 		}
 	}
 }
+
+// In auto mode a child's reach outside its scope goes to the person and not
+// to the classifier, whatever the directory: a yes from the classifier adds
+// nothing to what the child may write, so the contained runner would refuse
+// the command it had just been told was approved. A command inside the scope
+// is still the classifier's.
+// See docs/capabilities/subagents.md#a-child-inherits-its-scope-not-more.
+func TestChildOutOfScopeCommandSkipsTheClassifierInAutoMode(t *testing.T) {
+	root, other := t.TempDir(), t.TempDir()
+	sc, problems := scope.New(root)
+	if len(problems) > 0 {
+		t.Fatal(problems)
+	}
+	run := func(command string) (*Supervisor, *scriptedEnv, *verdictProvider) {
+		env := &scriptedEnv{
+			steps:   gatedCommandSteps(command),
+			gated:   map[string]bool{tools.ExecCommandName: true},
+			execOut: "ok",
+		}
+		judge := &verdictProvider{decision: "allow", reason: "the task asked for it"}
+		sup := New(context.Background(), Options{
+			Root:       root,
+			ScopeDirs:  sc.Dirs,
+			NewEnv:     env.factory(),
+			Classifier: agent.NewClassifier(judge, agent.ClassifierConfig{Model: "judge"}),
+		})
+		t.Cleanup(sup.Close)
+		sup.SetParentMode(agent.ModeAuto)
+		execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"write the file"}`)
+		return sup, env, judge
+	}
+
+	sup, env, judge := run("echo x > " + filepath.Join(other, "f"))
+	ask := nextAsk(t, sup)
+	if judge.calls.Load() != 0 {
+		t.Fatalf("the classifier was asked about a command outside the child's scope (%d calls)", judge.calls.Load())
+	}
+	ask.Respond(false)
+	execTool(t, sup, ReportToolName, `{"name":"researcher-1"}`)
+	if env.ranCommand.Load() {
+		t.Fatal("a declined out-of-scope command ran")
+	}
+
+	sup, env, judge = run("echo x > " + filepath.Join(root, "f"))
+	execTool(t, sup, ReportToolName, `{"name":"researcher-1"}`)
+	if judge.calls.Load() == 0 || !env.ranCommand.Load() {
+		t.Fatalf("an in-scope command was not the classifier's: calls=%d ran=%v", judge.calls.Load(), env.ranCommand.Load())
+	}
+}

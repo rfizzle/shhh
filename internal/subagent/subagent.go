@@ -5166,6 +5166,14 @@ func (s *Supervisor) classify(c *child, mode agent.Mode, tc provider.ToolCall, a
 	if mode != agent.ModeAuto || s.opts.Classifier == nil || action.SafetyFlagged {
 		return agent.Ask, 0, ""
 	}
+	// A reach outside the child's scope is the person's, whatever the
+	// directory: nothing the classifier says widens what the child may write,
+	// so its yes would be spent on a command the contained runner refuses
+	// anyway, and the child would read that failure as an approved call.
+	// See docs/capabilities/subagents.md#a-child-inherits-its-scope-not-more.
+	if len(action.OutOfScope) > 0 {
+		return agent.Ask, 0, ""
+	}
 	v := s.opts.Classifier.Judge(c.ctx, agent.ClassifierRequest{
 		Tool:      tc.Name,
 		Arguments: tc.Arguments,
