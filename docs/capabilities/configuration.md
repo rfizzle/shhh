@@ -141,9 +141,12 @@ keys sit in `[provider]` beside the model they narrow, the way
 them as it may set `provider.model`.
 
 Which key chose the model is said wherever the model is: `/model` states it
-beside the current model, `/model default` says when the surface's key
-outranks what it writes, and the doctor's model row names each surface key
-that is set. The bounded mechanisms keep a key each, for the same reason —
+beside the current model, in its answer and on its picker alike,
+`/model default` says when the surface's key outranks what it writes, and
+the doctor's model row names each surface key that is set. A key the
+checkout's own file set is named with that file —
+`provider.code_model in .shhh/config.toml` — because a project's choice read
+as the person's own sends them to a file that did not decide it. The bounded mechanisms keep a key each, for the same reason —
 the classifier, the card's explanation, the readings, a snippet's
 description, the backlog's readings and the profile drafter — and each one
 left unset uses the model it used before it had one.

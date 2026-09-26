@@ -168,7 +168,7 @@ func doctorCommand(use, short, long string, probes []doctorProbe) *cobra.Command
 					doctorReportOf("shhh doctor", "check", "checks",
 						runDoctorChecks(cmd.Context(), cfg, probes)))
 			}
-			return runDoctorScreen(cfg, probes)
+			return runDoctorScreen(cmd.Context(), cfg, probes)
 		},
 	}
 
@@ -700,14 +700,18 @@ func probeModel(ctx context.Context, cfg config.Config) doctorFinding {
 	// is set beside it by name, because a surface that reads its own key runs
 	// on a model this row would otherwise never mention.
 	// See docs/capabilities/configuration.md#each-surface-can-have-a-model-of-its-own.
+	//
+	// A key the checkout's own file set is named with that file, in the words
+	// `/model` uses, so a project's choice is not read as the person's own.
+	proj := ProjectConfigFrom(ctx)
 	var set []string
 	if cfg.Provider.Model != "" {
-		set = append(set, "provider.model = "+cfg.Provider.Model)
+		set = append(set, "provider.model = "+cfg.Provider.Model+setInProject("provider.model", proj))
 	}
 	var surfaces []string
 	for _, s := range []string{config.SurfaceCmd, config.SurfaceChat, config.SurfaceCode} {
 		if key, model := cfg.SurfaceModel(s); model != "" {
-			surfaces = append(surfaces, key+" = "+model)
+			surfaces = append(surfaces, key+" = "+model+setInProject(key, proj))
 		}
 	}
 	over := resolve.ModelOutranks(resolve.Opts{ConfigModel: cfg.Provider.Model})
@@ -1859,8 +1863,13 @@ func joinDetail(head, tail string) string {
 // between them, so a run in progress is something the reader can watch rather
 // than a blank terminal that resolves all at once.
 type doctorModel struct {
-	cfg     config.Config
-	probes  []doctorProbe
+	cfg    config.Config
+	probes []doctorProbe
+	// ctx is the command's context, handed to every probe, because it
+	// carries what the checkout's own settings file contributed — which the
+	// model row needs to name the file that set a key. Nil is a background
+	// context: a screen nobody built from a command.
+	ctx     context.Context
 	started time.Time
 	at      int
 
@@ -1975,10 +1984,13 @@ func (m *doctorModel) runNext() tea.Cmd {
 	if m.at >= len(m.probes) {
 		return nil
 	}
-	at, probe, cfg := m.at, m.probes[m.at], m.cfg
+	at, probe, cfg, ctx := m.at, m.probes[m.at], m.cfg, m.ctx
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	return func() tea.Msg {
 		started := time.Now()
-		finding := probe.run(context.Background(), cfg)
+		finding := probe.run(ctx, cfg)
 		return doctorDoneMsg{at: at, finding: finding, took: time.Since(started)}
 	}
 }
@@ -2102,9 +2114,9 @@ func (m *doctorModel) applied(msg doctorAppliedMsg) tea.Cmd {
 // the terminal and the calling command settled stays: the row budget, the
 // screen's title and the nouns its report counts in are not findings.
 func (m *doctorModel) rerun() tea.Cmd {
-	rows, title, nouns := m.screen.MaxLines, m.screen.Title, m.nouns
+	rows, title, nouns, ctx := m.screen.MaxLines, m.screen.Title, m.nouns, m.ctx
 	*m = *newDoctorModel(m.cfg, m.probes)
-	m.screen.MaxLines, m.screen.Title, m.nouns = rows, title, nouns
+	m.screen.MaxLines, m.screen.Title, m.nouns, m.ctx = rows, title, nouns, ctx
 	m.started = time.Now()
 	m.markRunning(0)
 	return m.begin()
@@ -2128,15 +2140,20 @@ func doctorElapsed(d time.Duration) string {
 	return fmt.Sprintf("%ds", int(d.Seconds()))
 }
 
-func runDoctorScreen(cfg config.Config, probes []doctorProbe) error {
-	return runDoctorScreenTitled(cfg, probes, "", [2]string{})
+func runDoctorScreen(ctx context.Context, cfg config.Config, probes []doctorProbe) error {
+	return runDoctorScreenIn(ctx, cfg, probes, "", [2]string{})
 }
 
 // runDoctorScreenTitled is the screen under another command's name, with
 // the nouns its header and report count in. Empty means doctor's own.
 func runDoctorScreenTitled(cfg config.Config, probes []doctorProbe, title string, nouns [2]string) error {
+	return runDoctorScreenIn(context.Background(), cfg, probes, title, nouns)
+}
+
+// runDoctorScreenIn is the screen with the context its probes are handed.
+func runDoctorScreenIn(ctx context.Context, cfg config.Config, probes []doctorProbe, title string, nouns [2]string) error {
 	m := newDoctorModel(cfg, probes)
-	m.screen.Title, m.nouns = title, nouns
+	m.ctx, m.screen.Title, m.nouns = ctx, title, nouns
 	m.started = time.Now()
 	m.markRunning(0)
 	host := newScreenModel(&m.screen, defaultDoctorWidth, m.answer)

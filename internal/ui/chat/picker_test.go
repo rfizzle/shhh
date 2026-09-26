@@ -1228,6 +1228,33 @@ func TestModel_NamesTheKeyThatChoseIt(t *testing.T) {
 	}
 }
 
+// The picker is the other path `/model` takes, and its title carries the same
+// clause as the text answer — the file included, where the checkout set the
+// key — so the two cannot tell the story two ways.
+// See docs/capabilities/configuration.md#each-surface-can-have-a-model-of-its-own.
+func TestModelPick_TitleNamesTheKeyThatChoseIt(t *testing.T) {
+	m := readyModel(t).
+		WithModelSwitcher(func(string) {}).
+		WithModelOptions([]string{"o3", "gpt-5"}).
+		WithDefaults(Defaults{Started: "o3", StartedBy: "provider.code_model in .shhh/config.toml"})
+	m.modelName = "o3"
+
+	if _, out := m.handleSlashCommand("/model"); !strings.Contains(out, "current model: o3 (chosen by provider.code_model in .shhh/config.toml)") {
+		t.Fatalf("the text answer should name the checkout's file, got %q", out)
+	}
+	opened, _ := m.openModelPick()
+	title := opened.(Model).picker.Title
+	if title != "Switch model · current (chosen by provider.code_model in .shhh/config.toml)" {
+		t.Fatalf("the picker's title should carry /model's clause, got %q", title)
+	}
+
+	m.modelName = "gpt-5"
+	opened, _ = m.openModelPick()
+	if title := opened.(Model).picker.Title; title != "Switch model" {
+		t.Fatalf("a model switched to here was chosen by no key, got %q", title)
+	}
+}
+
 // A card that opens over a catalog opens as a search: the first keystroke
 // names what the reader is after rather than being spent opening the row it
 // would have gone into.

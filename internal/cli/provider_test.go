@@ -89,8 +89,25 @@ func TestProbeModel_NamesTheSurfaceKeys(t *testing.T) {
 		t.Fatalf("the variable should be said to overrule every key it beats, got %q", f.Detail)
 	}
 
-	// A file with no surface key reads as it always did.
+	// A key the checkout's own file set is named with that file, the way
+	// `/model` names it, so a project's choice is not read as the person's.
 	t.Setenv("SHHH_MODEL", "")
+	proj := config.Project{Path: "/repo/.shhh/config.toml", Display: ".shhh/config.toml", Keys: []string{"provider.code_model"}}
+	f = probeModel(withProjectConfig(context.Background(), proj), cfg)
+	if !strings.Contains(f.Detail, "provider.code_model = code-model in .shhh/config.toml ahead of provider.model") {
+		t.Fatalf("a project-set key should name the file that set it, got %q", f.Detail)
+	}
+	if strings.Contains(f.Detail, "shared-model in") {
+		t.Fatalf("provider.model came from the person's file, yet the row names the checkout's: %q", f.Detail)
+	}
+	if got := setInProject("provider.code_model", proj); got != " in .shhh/config.toml" {
+		t.Fatalf("/model's clause should name the checkout's file, got %q", got)
+	}
+	if got := setInProject("--model", proj); got != "" {
+		t.Fatalf("a rank the file did not set names no file, got %q", got)
+	}
+
+	// A file with no surface key reads as it always did.
 	cfg.Provider.CodeModel = ""
 	if f = probeModel(context.Background(), cfg); strings.Contains(f.Detail, "_model") {
 		t.Fatalf("no surface key is set, yet the row names one: %q", f.Detail)

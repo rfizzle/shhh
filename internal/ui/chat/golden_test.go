@@ -506,6 +506,30 @@ func TestGolden_ModePicker(t *testing.T) {
 	})
 }
 
+// TestGolden_ModelPicker captures the /model picker's title, which names the
+// rank that chose the current model in the words the text answer uses — the
+// checkout's file included where it set the key — and names none once the
+// session has been switched off the model it started on.
+// See docs/capabilities/configuration.md#each-surface-can-have-a-model-of-its-own.
+func TestGolden_ModelPicker(t *testing.T) {
+	captureGolden(t, "model-picker", "the /model picker's title", goldenWidths, func(width int) []golden.Panel {
+		open := func(current, by string) string {
+			m := frameModel(t, width, 40).
+				WithModelSwitcher(func(string) {}).
+				WithModelOptions([]string{"o3", "gpt-5"}).
+				WithDefaults(Defaults{Started: "o3", StartedBy: by})
+			m.modelName = current
+			opened, _ := m.openModelPick()
+			return strings.Join(opened.(Model).pickerLines(), "\n")
+		}
+		return []golden.Panel{
+			{Label: "chosen by a key the checkout's file set", View: open("o3", "provider.code_model in .shhh/config.toml")},
+			{Label: "chosen by the person's own key", View: open("o3", "provider.code_model")},
+			{Label: "switched here, so chosen by no key", View: open("gpt-5", "provider.code_model")},
+		}
+	})
+}
+
 // tallScreenHeight is the terminal the height fixture is taken on: tall
 // enough that a bottom panel reading the terminal rather than its own
 // content would be unmissable, and a round number so the panels can be

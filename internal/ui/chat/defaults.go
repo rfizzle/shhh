@@ -42,7 +42,10 @@ type Defaults struct {
 	// Started is the model the session started on and StartedBy the rank
 	// that chose it — `--model`, `SHHH_MODEL`, the surface's own key,
 	// `provider.model` or the provider's default — which `/model` states
-	// beside the current model while the session is still on it.
+	// beside the current model while the session is still on it. A key the
+	// checkout's own settings file set carries that file after it
+	// (`provider.code_model in .shhh/config.toml`), so a project's choice is
+	// not read as the person's own.
 	// See docs/capabilities/configuration.md#each-surface-can-have-a-model-of-its-own.
 	Started   string
 	StartedBy string
@@ -117,10 +120,12 @@ func (m Model) defaultFallback(which string) string {
 	return "new sessions use the provider's built-in default"
 }
 
-// modelChosenBy is the clause `/model` puts after the current model: which
-// rank chose it, while the session is still on the model it started on. A
-// session switched since is on the model somebody picked here, and naming a
-// key for it would send the reader to a file that did not decide it.
+// modelChosenBy is the clause `/model` puts after the current model — in the
+// text answer and in the picker's title, one function so the two cannot
+// drift: which rank chose it, while the session is still on the model it
+// started on. A session switched since is on the model somebody picked here,
+// and naming a key for it would send the reader to a file that did not
+// decide it.
 // See docs/capabilities/configuration.md#each-surface-can-have-a-model-of-its-own.
 func (m Model) modelChosenBy() string {
 	if m.defaults.StartedBy == "" || m.modelName != m.defaults.Started {

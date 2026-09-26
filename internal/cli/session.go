@@ -837,6 +837,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	}
 	cfg := env.cfg
 	proj := ProjectConfigFrom(cmd.Context())
+	startedBy := resolve.ModelFrom(*session.flags)
 
 	// Permission mode: starting mode and Shift+Tab cycle come from
 	// config; the default is manual (everything prompts).
@@ -1060,7 +1061,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 			AgentModel: cfg.Agents.Model,
 			Outranked:  outranking(resolve.ModelOutranks(*session.flags), proj, "provider.model"),
 			Started:    env.modelName,
-			StartedBy:  resolve.ModelFrom(*session.flags),
+			StartedBy:  startedBy + setInProject(startedBy, proj),
 			Delegation: delegationWords(cfg.AgentDelegation()),
 		}).
 		WithApprovalMode(mode, cycle).
@@ -1869,6 +1870,19 @@ func outranking(above string, proj config.Project, key string) string {
 		return ""
 	}
 	return proj.Display + " in this checkout sets " + key
+}
+
+// setInProject is what follows a key named as the one that decided
+// something: the checkout's settings file when that file set it, and nothing
+// otherwise. A project's choice read as the person's own sends them to edit a
+// file that did not decide it. `/model` and the doctor's model row both
+// word it here, so the two cannot name the file differently.
+// See docs/capabilities/configuration.md#two-files-one-resolution-order.
+func setInProject(key string, proj config.Project) string {
+	if !proj.Sets(key) {
+		return ""
+	}
+	return " in " + proj.Display
 }
 
 // gitWriteGatedPreview is the card a git write asks through. Its fields are

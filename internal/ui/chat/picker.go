@@ -397,7 +397,13 @@ func (m Model) openModelPick() (tea.Model, tea.Cmd) {
 	// one thing the word `cancel` cannot say
 	// (docs/interface/principles.md#esc-is-always-the-safe-answer).
 	keep := m.modelName
-	updated, cmd := m.openPickerWith("Switch model", opts, focus, alt, true, func(m *Model, idx int, makeDefault bool) (string, tea.Cmd) {
+	// The title names what chose the current model in the words the text
+	// answer uses, so the two paths `/model` takes tell one story.
+	title := "Switch model"
+	if by := m.modelChosenBy(); by != "" {
+		title += " · current" + by
+	}
+	updated, cmd := m.openPickerWith(title, opts, focus, alt, true, func(m *Model, idx int, makeDefault bool) (string, tea.Cmd) {
 		name := choices[idx]
 		switched := name != m.modelName
 		if switched {
