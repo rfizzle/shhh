@@ -676,7 +676,7 @@ func (e todoUsage) Error() string { return e.text }
 // a verb changes the fact it names and nothing else in the file.
 // See docs/capabilities/todo.md#an-item-is-a-file-you-can-edit.
 func todoVerb(root string, args []string) (string, error) {
-	usage := todoUsage{"Usage: /todo [list] · /todo show <slug> · /todo add <text> · /todo block <slug> [why] · /todo open <slug> · /todo done <slug> · /todo drop <slug> · /todo edit <slug> · /todo sprint"}
+	usage := todoUsage{"usage: /todo [list] · /todo show <slug> · /todo add <text> · /todo block <slug> [why] · /todo open <slug> · /todo done <slug> · /todo drop <slug> · /todo edit <slug> · /todo sprint"}
 	s := todo.Load(todoProfile(), root)
 	if len(args) == 0 || (len(args) == 1 && args[0] == "list") {
 		return todoListing(s), nil
@@ -841,20 +841,20 @@ func liveSprintSpend(root string) string {
 // changes the fact it names and leaves the goal and the order alone.
 // See docs/capabilities/todo.md#a-sprint-is-a-file-that-names-its-items.
 func todoSprintManage(root string, s *todo.Store, args []string) (string, error) {
-	usage := todoUsage{"Usage: /todo sprint · /todo sprint add <slug> · /todo sprint drop <slug> · /todo sprint goal <text> · /todo sprint close"}
+	usage := todoUsage{"usage: /todo sprint · /todo sprint add <slug> · /todo sprint drop <slug> · /todo sprint goal <text> · /todo sprint close"}
 	if len(args) == 0 {
 		return todoSprintReport(s).String(), nil
 	}
 	sp := s.Sprint
 	if sp == nil {
-		return "There is no sprint. /todo sprint plan proposes one from the ready items.", nil
+		return "there is no sprint · /todo sprint plan proposes one from the ready items", nil
 	}
 	rest := strings.TrimSpace(strings.Join(args[1:], " "))
 	// A file marked closed by hand is a record that was never filed, and
 	// editing a record is the one thing the archive exists to prevent.
 	// Close is still offered, because filing it is the way out.
 	if !sp.Open() && args[0] != "close" {
-		return fmt.Sprintf("%s is closed; /todo sprint close files it in the archive and /todo sprint plan starts the next one.", sp.Name), nil
+		return fmt.Sprintf("%s is closed · /todo sprint close files it in the archive and /todo sprint plan starts the next one", sp.Name), nil
 	}
 	switch args[0] {
 	case "add":

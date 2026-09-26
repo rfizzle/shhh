@@ -106,7 +106,7 @@ func TestChildAskApprove(t *testing.T) {
 	if m.activeChildAsk() != nil {
 		t.Fatal("answered ask should be popped")
 	}
-	if !transcriptContains(m, "Approved writer-1") {
+	if !transcriptContains(m, "✓ writer-1  approved") {
 		t.Fatal("transcript missing the approval entry")
 	}
 }
@@ -139,7 +139,7 @@ func TestChildAskDecline(t *testing.T) {
 	if !ok || approved {
 		t.Fatalf("[n] should decline: approved=%v ok=%v", approved, ok)
 	}
-	if !transcriptContains(m, "Declined researcher-1") {
+	if !transcriptContains(m, "⊘ researcher-1  declined") {
 		t.Fatal("transcript missing the decline entry")
 	}
 }
@@ -167,7 +167,7 @@ func TestEventDoneAddsTranscriptEntry(t *testing.T) {
 	ev := subagent.Event{Kind: subagent.EventDone, Status: subagent.Status{Name: "researcher-1", Detail: "done · 3 tools"}}
 	updated, _ := m.Update(subagentEventMsg{ev: ev})
 	m = updated.(Model)
-	if !transcriptContains(m, "Agent researcher-1: done · 3 tools") {
+	if !transcriptContains(m, "✓ researcher-1  done · 3 tools") {
 		t.Fatal("transcript missing the completion entry")
 	}
 }
@@ -324,7 +324,7 @@ func TestDoneNoticeIsTheLanelessChildsAlone(t *testing.T) {
 		m.appendSpawnEntry(spawnRowEntry(task))
 	}
 	m = finish(m, "researcher-1")
-	if transcriptContains(m, "Agent researcher-1") {
+	if transcriptContains(m, "✓ researcher-1  done") {
 		t.Fatal("a child with a lane had its ending said twice")
 	}
 
@@ -332,7 +332,7 @@ func TestDoneNoticeIsTheLanelessChildsAlone(t *testing.T) {
 	spawnInto(t, sup, `{"role":"researcher","task":"survey the folds"}`)
 	m.appendSpawnEntry(spawnRowEntry("survey the folds"))
 	m = finish(m, "researcher-3")
-	if !transcriptContains(m, "Agent researcher-3: done · 3 tools") {
+	if !transcriptContains(m, "✓ researcher-3  done · 3 tools") {
 		t.Fatal("a child with no lane lost the only account of how it ended")
 	}
 }
@@ -590,7 +590,7 @@ func longPatchAsk(root string) *subagent.Ask {
 		fmt.Fprintf(&before, "line %d\nkeep %d\n", i, i)
 		fmt.Fprintf(&after, "line %d changed\nkeep %d\n", i, i)
 	}
-	ask := subagent.NewAsk("writer-1", subagent.AskPatch, "apply patch (+40 −40, 2 file(s))")
+	ask := subagent.NewAsk("writer-1", subagent.AskPatch, "apply patch (+40 −40, 2 files)")
 	ask.Hunks = diff.Compute(before.String(), after.String())
 	ask.Root = root
 	ask.Files = []string{"internal/agent/loop.go", "internal/agent/mode.go"}

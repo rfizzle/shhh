@@ -103,7 +103,7 @@ keys a
 sleep 1
 keys n
 sleep 2
-snap 11-declined "Declined writer-2"
+snap 11-declined "writer-2  declined"
 # The redirect, typed on the row it is aimed at. The manager is a takeover, so
 # the letter is live here the way every other letter on this surface is; the
 # field opens under the row it will reach and is named for it, and while it

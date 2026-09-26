@@ -132,7 +132,10 @@ func (m Model) handleSubagentEvent(ev subagent.Event) (tea.Model, tea.Cmd) {
 		// one thing that says it finished
 		// (docs/interface/surfaces.md#the-input-frame).
 		if !m.childHasLane(ev.Status) {
-			text := fmt.Sprintf("Agent %s: %s", ev.Status.Name, ev.Status.Detail)
+			text := "✓ " + ev.Status.Name + "  " + ev.Status.Detail
+			if ev.Status.State == subagent.StateFailed {
+				text = failed(ev.Status.Name, ev.Status.Detail)
+			}
 			if ev.Status.Handoff != "" {
 				// The transcript has the room the rail has not, so the
 				// handle a replacement resumes from is said in full.
@@ -348,11 +351,11 @@ func (m Model) updateChildAsk(msg tea.KeyPressMsg, ask *subagent.Ask) (tea.Model
 	m.cardScroll, m.cardPan = 0, 0
 	m.forgetChildBlast(ask)
 	ask.Respond(approved)
-	verdict := "Declined"
+	verdict := "⊘ " + ask.Agent + "  declined ▸ " + ask.Title
 	if approved {
-		verdict = "Approved"
+		verdict = "✓ " + ask.Agent + "  approved ▸ " + ask.Title
 	}
-	m.appendEntry(entry{kind: entrySystem, text: verdict + " " + ask.Agent + " ▸ " + ask.Title})
+	m.appendEntry(entry{kind: entrySystem, text: verdict})
 	m.syncViewport()
 	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()

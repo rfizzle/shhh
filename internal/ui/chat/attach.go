@@ -955,11 +955,11 @@ func (m Model) updateListAnswer(msg tea.KeyPressMsg, ask *subagent.Ask) (tea.Mod
 	}
 	m.forgetChildBlast(ask)
 	ask.Respond(approved)
-	verdict := "Declined"
+	verdict := "⊘ " + ask.Agent + "  declined ▸ " + ask.Title
 	if approved {
-		verdict = "Approved"
+		verdict = "✓ " + ask.Agent + "  approved ▸ " + ask.Title
 	}
-	m.appendEntry(entry{kind: entrySystem, text: verdict + " " + ask.Agent + " ▸ " + ask.Title})
+	m.appendEntry(entry{kind: entrySystem, text: verdict})
 	m.syncViewport()
 	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()

@@ -3792,6 +3792,39 @@ func goldenNotesModel(t *testing.T, width int) Model {
 	return m
 }
 
+// TestGolden_ChildAskVerdicts pins the rows a routed request and a laneless
+// child leave once they are settled, in the notice's reporting voice: the
+// agent's name after the glyph, then what happened, lower case — `✓` for a
+// request approved and a child that finished, `⊘` for one declined (the
+// person's decision, not a break) and `✗` for a child that ended short.
+func TestGolden_ChildAskVerdicts(t *testing.T) {
+	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
+	t.Cleanup(sup.Close)
+
+	captureGolden(t, "child-ask-verdicts", "a child's request answered and its ending said", goldenWidths, func(width int) []golden.Panel {
+		m := frameModel(t, width, 40)
+		m = m.WithSubagents(sup).WithChangeset(changeset.New(64), nil)
+		answer := func(ask *subagent.Ask, key rune) {
+			t.Helper()
+			updated, _ := m.Update(subagentEventMsg{ev: subagent.Event{Kind: subagent.EventAsk, Ask: ask}})
+			m = handover(t, updated.(Model))
+			updated, _ = m.Update(tea.KeyPressMsg{Code: key, Text: string(key)})
+			m = updated.(Model)
+		}
+		answer(subagent.NewAsk("writer-1", subagent.AskPatch, "apply patch (+40 −40, 2 files)"), 'y')
+		answer(subagent.NewAsk("researcher-2", subagent.AskGeneric, "use web_fetch"), 'n')
+		for _, st := range []subagent.Status{
+			{Name: "researcher-3", State: subagent.StateDone, Detail: "done · 3 tools"},
+			{Name: "researcher-4", State: subagent.StateFailed, Detail: "cancelled", Handoff: "handoff-4"},
+		} {
+			updated, _ := m.Update(subagentEventMsg{ev: subagent.Event{Kind: subagent.EventDone, Status: st}})
+			m = updated.(Model)
+		}
+		m.invalidateRenderCache()
+		return []golden.Panel{{Label: "approved, declined, finished and ended short", View: m.renderHistory()}}
+	})
+}
+
 // TestGolden_ChildRequestRouted pins the routed card with the real resolver behind
 // it: the command's paths stat-ed in the child's own directory, the
 // containment the session is running under, and a writer's finished patch —

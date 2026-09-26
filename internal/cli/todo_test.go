@@ -118,7 +118,7 @@ func TestTodoManager(t *testing.T) {
 	if out := manage([]string{"add", "Fix the #12 parser crash"}); !strings.HasPrefix(out, "✗ todo  ") || !strings.Contains(out, "already exists") {
 		t.Errorf("add collision = %q", out)
 	}
-	if out := manage([]string{"add"}); !strings.HasPrefix(out, "Usage:") {
+	if out := manage([]string{"add"}); !strings.HasPrefix(out, "usage:") {
 		t.Errorf("add without text = %q", out)
 	}
 
@@ -150,7 +150,7 @@ func TestTodoManager(t *testing.T) {
 	if out := manage([]string{"drop", "gone"}); !strings.HasPrefix(out, "✗ todo  ") {
 		t.Errorf("drop archived = %q", out)
 	}
-	if out := manage([]string{"wat"}); !strings.HasPrefix(out, "Usage:") {
+	if out := manage([]string{"wat"}); !strings.HasPrefix(out, "usage:") {
 		t.Errorf("unknown = %q", out)
 	}
 }
@@ -227,7 +227,7 @@ func TestTodoManager_SprintVerbs(t *testing.T) {
 	if len(sp.Extra) != 1 || sp.Extra[0].Key != "crew" {
 		t.Errorf("extra = %v; an unknown field has to survive the verbs", sp.Extra)
 	}
-	if out := manage([]string{"sprint", "wat"}); !strings.HasPrefix(out, "Usage:") {
+	if out := manage([]string{"sprint", "wat"}); !strings.HasPrefix(out, "usage:") {
 		t.Errorf("unknown verb = %q", out)
 	}
 
@@ -238,7 +238,7 @@ func TestTodoManager_SprintVerbs(t *testing.T) {
 	if _, err := os.Stat(todo.SprintPath(root)); !os.IsNotExist(err) {
 		t.Error("the sprint file is still in place after close")
 	}
-	if out := manage([]string{"sprint", "add", "third"}); !strings.Contains(out, "There is no sprint") {
+	if out := manage([]string{"sprint", "add", "third"}); !strings.Contains(out, "there is no sprint") {
 		t.Errorf("verb with no sprint = %q", out)
 	}
 }

@@ -183,7 +183,7 @@ func TestProgram_AChildsRequestIsAnsweredFromItsCard(t *testing.T) {
 	waitForText(t, tm, "writer-1 ▸ Approve command")
 	tm.Send(programHandover)
 	tm.Send(programAllow)
-	waitForText(t, tm, "Agent writer-1: done")
+	waitForText(t, tm, "writer-1  done")
 
 	frame := finalFrame(t, tm)
 	frameHas(t, frame, "writer-1")
@@ -261,7 +261,7 @@ func TestProgram_TheManagerAsksAFinishedChildAFollowUp(t *testing.T) {
 	tm := runProgramAt(t, m, 110, 44)
 
 	startChildren(t, tm, release, "Spawn researcher", "The reader is on it")
-	waitForText(t, tm, "Agent reader-1: done")
+	waitForText(t, tm, "reader-1  done")
 	programPress(t, tm, "alt+a")
 	waitForText(t, tm, "[enter] attach")
 	programPress(t, tm, "j")
@@ -376,9 +376,9 @@ func TestProgram_TheManagerAnswersAChildInPlace(t *testing.T) {
 	programPress(t, tm, "a")
 	waitForText(t, tm, "back to the agents")
 	programPress(t, tm, "n")
-	waitForText(t, tm, "Declined writer-1")
+	waitForText(t, tm, "writer-1  declined")
 
-	frameHas(t, finalFrame(t, tm), "Declined writer-1")
+	frameHas(t, finalFrame(t, tm), "writer-1  declined")
 }
 
 // A settled lane folds open on the child's own report from reading mode.
@@ -469,9 +469,9 @@ func TestProgram_AChildsSpawnIsTheSessionsDecision(t *testing.T) {
 	waitForText(t, tm, "reader-1 ▸")
 	tm.Send(programHandover)
 	tm.Send(programAllow)
-	waitForText(t, tm, "Agent reader-1a: done")
+	waitForText(t, tm, "reader-1a  done")
 
-	frameHas(t, finalFrame(t, tm), "Approved reader-1 ▸ use spawn_agent", "└◇ reader-1a")
+	frameHas(t, finalFrame(t, tm), "reader-1  approved ▸ use spawn_agent", "└◇ reader-1a")
 }
 
 // withNotebook signs a child's notebook calls with its name when the session

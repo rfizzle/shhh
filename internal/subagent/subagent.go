@@ -5588,7 +5588,7 @@ func (s *Supervisor) patchAsk(c *child, repoTop, patch string) (*Ask, []string) 
 	name := c.name
 	hunks, files := PatchHunks(patch)
 	adds, dels := diff.Stats(hunks)
-	title := fmt.Sprintf("apply patch (+%d −%d, %d file(s))", adds, dels, files)
+	title := fmt.Sprintf("apply patch (+%d −%d, %s)", adds, dels, plural(files, "file"))
 	touched := PatchFiles(patch)
 	ask := NewAsk(name, AskPatch, title)
 	ask.Hunks = hunks
@@ -5640,7 +5640,7 @@ func (s *Supervisor) landPatch(c *child, repoTop, patch string, touched []string
 	})
 	hunks, files := PatchHunks(patch)
 	adds, dels := diff.Stats(hunks)
-	return fmt.Sprintf("patch applied to the workspace (+%d −%d, %d file(s)): %s", adds, dels, files, patchPaths(touched)), nil
+	return fmt.Sprintf("patch applied to the workspace (+%d −%d, %s): %s", adds, dels, plural(files, "file"), patchPaths(touched)), nil
 }
 
 // maxNotedPatchPaths bounds the file list a patch note carries. The file

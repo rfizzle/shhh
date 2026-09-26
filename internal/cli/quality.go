@@ -127,6 +127,6 @@ func gateManager(r *quality.Runner) func(args []string) string {
 		case len(args) == 1 && args[0] == "result":
 			return r.Status()
 		}
-		return "Usage: /gate run [suite] | /gate result | /gate on | /gate off"
+		return "usage: /gate run [suite] · /gate result · /gate on · /gate off"
 	}
 }

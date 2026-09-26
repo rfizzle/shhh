@@ -862,3 +862,23 @@ narrows, and a count joined into the tally could only be given up with it.
 And the run of rule between the title and the chips is in the chrome tone on
 every card, which is the card's own rule
 ([the approval card](surfaces.md#the-approval-card)) and not a departure.
+
+## A confirm prompt and a card title keep their capital
+
+*A disagreement.* The voice every notice is written in is lower case almost
+everywhere, with no closing full stop and a failure named after a `✗`. Four
+surfaces keep a sentence's capital instead: the backlog screen's confirms
+(`Block <slug>?`, `Archive <slug>?`, `Drop <slug>? The file is deleted, not
+archived.`), the saved-chat browser's `Delete …? Files on disk are
+untouched.`, the config screen's `Write 2 changes to <path>?`, `Discard 2
+changes?` and `Paste a value for <field>`, and the commit card's `Commit this
+turn`.
+
+The reason is what each of them is. A notice is the product reporting what
+happened, and the reporting voice is the shape of a receipt. A confirm prompt
+is a question put to the reader that waits for their answer, and a card title
+is the heading of a decision; neither is a report, and writing either as one
+would make the one line the reader has to answer look like the lines they may
+skip. It is also what every other card already does — `Approve command`,
+`Apply patch`, `Agents` — so a lower-case prompt on these four would be the
+exception rather than the voice.

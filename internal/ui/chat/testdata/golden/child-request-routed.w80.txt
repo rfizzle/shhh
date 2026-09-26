@@ -110,7 +110,7 @@
 
 · a writer's patch · your files, and the diff behind a counted tail
 ╭─ writer-1 ▸ Apply patch ────────────────────────────────────── ⚠ medium ─╮
-│ ✎ apply patch (+40 −40, 2 file(s))                                       │
+│ ✎ apply patch (+40 −40, 2 files)                                         │
 │ ⚠ medium · writes 2 files under internal/agent/                          │
 │                                                                          │
 │ lands in  your workspace                                                 │
@@ -128,7 +128,7 @@
 
 · a patch your checkout moved under · the merge is the diff, and the card says so
 ╭─ writer-1 ▸ Apply patch ────────────────────────────────────── ⚠ medium ─╮
-│ ✎ apply patch (+40 −40, 2 file(s))                                       │
+│ ✎ apply patch (+40 −40, 2 files)                                         │
 │ ⚠ medium · writes 2 files under internal/agent/                          │
 │                                                                          │
 │ lands in  your workspace                                                 │
@@ -146,7 +146,7 @@
 
 · a patch that touched a golden file · its generator wrote it, and the card names the command
 ╭─ writer-1 ▸ Apply patch ────────────────────────────────────── ⚠ medium ─╮
-│ ✎ apply patch (+40 −40, 2 file(s))                                       │
+│ ✎ apply patch (+40 −40, 2 files)                                         │
 │ ⚠ medium · writes 3 files                                                │
 │                                                                          │
 │ lands in  your workspace                                                 │
@@ -164,7 +164,7 @@
 
 · an integration writer's patch · the reconciliation is a fact, not a clash
 ╭─ integrator-1 ▸ Apply patch ────────────────────────────────── ⚠ medium ─╮
-│ ✎ apply patch (+40 −40, 2 file(s))                                       │
+│ ✎ apply patch (+40 −40, 2 files)                                         │
 │ ⚠ medium · writes 1 file under internal/agent/                           │
 │                                                                          │
 │ lands in  your workspace                                                 │
@@ -281,7 +281,7 @@
 
 · a writer's patch · your files, and the diff behind a counted tail
 ␛[38;5;214m╭─ ␛[m␛[1;97mwriter-1 ▸ Apply patch ␛[m␛[38;5;241m──────────────────────────────────────␛[m␛[38;5;214m ⚠ medium ─╮␛[m
-␛[38;5;214m│␛[m ␛[38;5;214m✎␛[m ␛[97mapply patch (+40 −40, 2 file(s))␛[m                                       ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;214m✎␛[m ␛[97mapply patch (+40 −40, 2 files)␛[m                                         ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;214m⚠ medium␛[m␛[38;5;241m · writes 2 files under internal/agent/␛[m                          ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m                                                                          ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mlands in  ␛[m␛[38;5;214myour workspace␛[m                                                 ␛[38;5;214m│␛[m
@@ -299,7 +299,7 @@
 
 · a patch your checkout moved under · the merge is the diff, and the card says so
 ␛[38;5;214m╭─ ␛[m␛[1;97mwriter-1 ▸ Apply patch ␛[m␛[38;5;241m──────────────────────────────────────␛[m␛[38;5;214m ⚠ medium ─╮␛[m
-␛[38;5;214m│␛[m ␛[38;5;214m✎␛[m ␛[97mapply patch (+40 −40, 2 file(s))␛[m                                       ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;214m✎␛[m ␛[97mapply patch (+40 −40, 2 files)␛[m                                         ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;214m⚠ medium␛[m␛[38;5;241m · writes 2 files under internal/agent/␛[m                          ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m                                                                          ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mlands in  ␛[m␛[38;5;214myour workspace␛[m                                                 ␛[38;5;214m│␛[m
@@ -317,7 +317,7 @@
 
 · a patch that touched a golden file · its generator wrote it, and the card names the command
 ␛[38;5;214m╭─ ␛[m␛[1;97mwriter-1 ▸ Apply patch ␛[m␛[38;5;241m──────────────────────────────────────␛[m␛[38;5;214m ⚠ medium ─╮␛[m
-␛[38;5;214m│␛[m ␛[38;5;214m✎␛[m ␛[97mapply patch (+40 −40, 2 file(s))␛[m                                       ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;214m✎␛[m ␛[97mapply patch (+40 −40, 2 files)␛[m                                         ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;214m⚠ medium␛[m␛[38;5;241m · writes 3 files␛[m                                                ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m                                                                          ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mlands in  ␛[m␛[38;5;214myour workspace␛[m                                                 ␛[38;5;214m│␛[m
@@ -335,7 +335,7 @@
 
 · an integration writer's patch · the reconciliation is a fact, not a clash
 ␛[38;5;214m╭─ ␛[m␛[1;97mintegrator-1 ▸ Apply patch ␛[m␛[38;5;241m──────────────────────────────────␛[m␛[38;5;214m ⚠ medium ─╮␛[m
-␛[38;5;214m│␛[m ␛[38;5;214m✎␛[m ␛[97mapply patch (+40 −40, 2 file(s))␛[m                                       ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;214m✎␛[m ␛[97mapply patch (+40 −40, 2 files)␛[m                                         ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;214m⚠ medium␛[m␛[38;5;241m · writes 1 file under internal/agent/␛[m                           ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m                                                                          ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mlands in  ␛[m␛[38;5;214myour workspace␛[m                                                 ␛[38;5;214m│␛[m

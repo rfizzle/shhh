@@ -474,9 +474,9 @@ func mcpManager(ts *mcp.Toolset, cat *mcp.Catalog) func(args []string) string {
 		}
 		switch args[0] {
 		case "trust", "distrust":
-			return "Trust is the checkout's, not one server's: /trust answers for its servers, skills, agent profiles and quality suites together."
+			return "trust is the checkout's, not one server's: /trust answers for its servers, skills, agent profiles and quality suites together"
 		}
-		return "Usage: /mcp"
+		return "usage: /mcp"
 	}
 }
 

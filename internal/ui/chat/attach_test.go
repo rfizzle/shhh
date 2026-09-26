@@ -742,7 +742,7 @@ func TestAnswerBlockedChildFromTheList(t *testing.T) {
 
 	updated, _ = m.Update(key('y'))
 	m = updated.(Model)
-	if !transcriptContains(m, "Approved researcher-1 ▸ run echo hi") {
+	if !transcriptContains(m, "✓ researcher-1  approved ▸ run echo hi") {
 		t.Fatal("transcript missing the approval entry")
 	}
 	if len(m.childAsks) != 0 {
@@ -781,7 +781,7 @@ func TestAnswerFromTheListLeavesTheDecisionWaitingOnEsc(t *testing.T) {
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	m = updated.(Model)
 
-	if transcriptContains(m, "Declined researcher-1 ▸ run echo hi") {
+	if transcriptContains(m, "⊘ researcher-1  declined ▸ run echo hi") {
 		t.Fatal("esc is a way back, not a denial")
 	}
 	if m.agentList == nil || m.answerAgent != "" {

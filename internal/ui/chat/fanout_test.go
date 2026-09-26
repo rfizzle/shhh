@@ -837,7 +837,7 @@ func TestAFailedChildsHandoffIsSaidOncePerSurface(t *testing.T) {
 	updated, _ := m.Update(subagentEventMsg{ev: subagent.Event{Kind: subagent.EventDone, Status: alone}})
 	m = updated.(Model)
 	last := m.transcript[len(m.transcript)-1]
-	if last.text != "Agent researcher-9: cancelled · handoff handoff-9" {
+	if last.text != "✗ researcher-9  cancelled · handoff handoff-9" {
 		t.Fatalf("the closing row should name the handle after the reason: %q", last.text)
 	}
 }
