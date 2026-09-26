@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/rfizzle/shhh/internal/logs"
+	"github.com/rfizzle/shhh/internal/prompt"
 	"github.com/rfizzle/shhh/internal/web"
 )
 
@@ -98,6 +99,22 @@ func (m Mode) Word() string {
 // not.
 // See docs/capabilities/approvals-and-safety.md#the-five-modes.
 func (m Mode) ReadOnly() bool { return m == ModeReadOnly || m == ModePlan }
+
+// ModeInstructions is the paragraph a mode adds to a request's system prompt,
+// or empty for the modes that add none. Every other mode is a statement about
+// what runs without asking, which the model has no part in. It is the one
+// selector the session and a sub-agent both read, so the two cannot come to
+// tell a model in the same mode different things.
+// See docs/capabilities/approvals-and-safety.md#the-five-modes.
+func ModeInstructions(m Mode) string {
+	switch m {
+	case ModeReadOnly:
+		return prompt.ReadOnlyModeInstructions
+	case ModePlan:
+		return prompt.PlanModeInstructions
+	}
+	return ""
+}
 
 // ParseMode maps a config or /permissions name to its Mode.
 func ParseMode(s string) (Mode, error) {

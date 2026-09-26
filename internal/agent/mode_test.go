@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/rfizzle/shhh/internal/logs"
+	"github.com/rfizzle/shhh/internal/prompt"
 )
 
 func TestParseMode(t *testing.T) {
@@ -688,5 +689,24 @@ func TestDecide_ARefusalIsWrittenDownWithItsRule(t *testing.T) {
 	}
 	if n := strings.Count(line, "call refused"); n != 1 {
 		t.Errorf("one refusal wrote %d lines, want 1:\n%s", n, line)
+	}
+}
+
+// The two modes that bound the session are the two that say so to the model;
+// the rest are about what runs without asking and add nothing.
+func TestModeInstructions(t *testing.T) {
+	for _, tc := range []struct {
+		mode Mode
+		want string
+	}{
+		{ModeReadOnly, prompt.ReadOnlyModeInstructions},
+		{ModePlan, prompt.PlanModeInstructions},
+		{ModeManual, ""},
+		{ModeAcceptEdits, ""},
+		{ModeAuto, ""},
+	} {
+		if got := ModeInstructions(tc.mode); got != tc.want {
+			t.Errorf("%s: got %q, want %q", tc.mode, got, tc.want)
+		}
 	}
 }

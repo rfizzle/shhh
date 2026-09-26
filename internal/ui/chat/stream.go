@@ -14,7 +14,6 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
-	"github.com/rfizzle/shhh/internal/prompt"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
@@ -76,23 +75,10 @@ func (m Model) requestStream() tea.Cmd {
 	// stops the injection. The two blocks differ because the modes do: plan
 	// mode asks for a plan, and read-only mode says only what the bound is,
 	// which is the whole of the difference between them.
-	if block := modeInstructions(m.policy.mode); block != "" && len(msgs) > 0 && msgs[0].Role == provider.RoleSystem {
+	if block := agent.ModeInstructions(m.policy.mode); block != "" && len(msgs) > 0 && msgs[0].Role == provider.RoleSystem {
 		msgs[0].Content += "\n\n" + block
 	}
 	return m.requestStreamFor(msgs, provider.ToolChoiceAuto)
-}
-
-// modeInstructions is the block a mode adds to the request's system prompt,
-// or empty for the modes that add none. Every other mode is a statement about
-// what runs without asking, which the model has no part in.
-func modeInstructions(mode agent.Mode) string {
-	switch mode {
-	case agent.ModeReadOnly:
-		return prompt.ReadOnlyModeInstructions
-	case agent.ModePlan:
-		return prompt.PlanModeInstructions
-	}
-	return ""
 }
 
 // requestStreamFor starts a stream over an explicit message list (callers

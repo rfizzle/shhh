@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 
@@ -566,6 +567,36 @@ func childToolTokens(defs []provider.Tool) int64 {
 	return total
 }
 
+// holdsRefusable reports a toolset holding a call a read-only mode refuses
+// outright: a file write or a command. A child with neither is a researcher,
+// a reviewer or a profile that changes nothing, and its own prompt already
+// says it cannot edit or run anything, which is the whole of what the mode's
+// paragraph would tell it.
+func holdsRefusable(defs []provider.Tool) bool {
+	for _, d := range defs {
+		if d.Name == tools.ExecCommandName || tools.IsMutating(d.Name) {
+			return true
+		}
+	}
+	return false
+}
+
+// withModeInstructions is a child's request with its mode's paragraph on the
+// system prompt, the way a session's request carries it: a child in
+// read-only or plan mode that is not told so spends its rounds on edits and
+// commands the mode refuses one at a time. The conversation is left as it
+// was, so a child whose mode is lifted stops being told.
+// See docs/capabilities/subagents.md#a-child-answers-to-the-session.
+func withModeInstructions(msgs []provider.Message, mode agent.Mode) []provider.Message {
+	block := agent.ModeInstructions(mode)
+	if block == "" || len(msgs) == 0 || msgs[0].Role != provider.RoleSystem {
+		return msgs
+	}
+	out := slices.Clone(msgs)
+	out[0].Content += "\n\n" + block
+	return out
+}
+
 // buildSupervisor assembles a surface's sub-agent supervisor. untracked comes
 // in because a writer starts from the parent's tree, and the files git has
 // never heard of are the half of that tree only the surface itself can name:
@@ -723,6 +754,11 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 		// enough answer to which of them spent it.
 		childProvider := ledger.ForOrigin(env.prov, meter.Origin{Source: meter.SourceSubagent, Label: spec.Name})
 
+		// Whether a read-only mode's paragraph is this child's to read: only
+		// a child that holds a write or a command is, since every other
+		// role's own prompt already says it can do neither.
+		refusable := holdsRefusable(streamDefs)
+
 		stream := agent.StreamFunc(func(msgs []provider.Message, choice string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
 			sctx, cancel := context.WithCancel(cctx)
 			// Children think as hard as the session does unless their
@@ -735,6 +771,16 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 			}
 			effort = agents.effortFor(role, effort)
 			msgs = session.vault.ScrubMessages(msgs)
+			// The mode is read at each request rather than taken from the
+			// spawn, because a child's mode moves under it: the parent's
+			// ceiling changes, or the person sets it from the lane.
+			if refusable && choice != provider.ToolChoiceNone {
+				mode := spec.Mode
+				if m, ok := sup.AgentMode(spec.Name); ok {
+					mode = m
+				}
+				msgs = withModeInstructions(msgs, mode)
+			}
 			ev, sErr := childProvider.StreamCompletion(sctx, msgs, provider.CompletionOpts{
 				Model:      childModel,
 				Tools:      streamDefs,

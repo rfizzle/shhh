@@ -354,6 +354,15 @@ session is waved through for its children, so one grant is not re-asked once
 per agent. A profile may start a child stricter — a reviewer in read-only mode
 under an auto session — and that is the only direction the clamp allows.
 
+A child that can write or run a command and finds itself in read-only or plan
+mode — started there by its profile, or clamped there when the session's mode
+or its own lane's changed — is told so the way the session's model is, with the
+same paragraph on each request, read from the mode it is in at that request.
+Without it the child learns the bound one refused call at a time, out of
+sight. A child that can do neither is not told, because its own prompt already
+says it cannot edit or run anything, and plan mode's request for a plan would
+name a job it was not given.
+
 What a child cannot do is ask somebody the session cannot reach. In a session
 its request becomes a card in front of you. Where there is nobody — a scripted
 run, or a served session whose protocol draws cards for the turn it is running

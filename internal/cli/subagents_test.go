@@ -1467,3 +1467,65 @@ func TestApplyDelegation(t *testing.T) {
 		}
 	}
 }
+
+// A child in read-only or plan mode reads the paragraph a session in that
+// mode reads, on the request and never in its conversation; the other modes
+// send the prompt as it was.
+func TestAChildInAReadOnlyModeIsToldTheMode(t *testing.T) {
+	conversation := []provider.Message{
+		{Role: provider.RoleSystem, Content: "sys"},
+		{Role: provider.RoleUser, Content: "task"},
+	}
+	for _, tc := range []struct {
+		mode agent.Mode
+		want string
+	}{
+		{agent.ModeReadOnly, prompt.ReadOnlyModeInstructions},
+		{agent.ModePlan, prompt.PlanModeInstructions},
+		{agent.ModeManual, ""},
+		{agent.ModeAcceptEdits, ""},
+		{agent.ModeAuto, ""},
+	} {
+		got := withModeInstructions(conversation, tc.mode)
+		want := "sys"
+		if tc.want != "" {
+			want += "\n\n" + tc.want
+		}
+		if got[0].Content != want {
+			t.Errorf("%s: the request's system prompt is %q, want %q", tc.mode, got[0].Content, want)
+		}
+		if conversation[0].Content != "sys" {
+			t.Fatalf("%s: the paragraph was written into the conversation: %q", tc.mode, conversation[0].Content)
+		}
+	}
+}
+
+// Only a child holding a write or a command is told: a researcher's and a
+// reviewer's own prompt already says it can do neither, which is the whole of
+// what the paragraph would add.
+func TestOnlyAChildThatCanWriteOrRunIsToldTheMode(t *testing.T) {
+	if !holdsRefusable(tools.DefinitionsFull()) {
+		t.Error("a writer's toolset holds edits and commands and was not counted")
+	}
+	if holdsRefusable(tools.Definitions()) {
+		t.Error("the read-only toolset holds nothing a read-only mode refuses outright")
+	}
+	for _, sys := range []string{
+		prompt.BuildResearcher(shell.Info{}, prompt.WebTools{}),
+		prompt.BuildReviewer(shell.Info{}, prompt.ProfileSpec{}),
+	} {
+		if !strings.Contains(sys, "You cannot edit files or run commands") {
+			t.Errorf("a read-only role's prompt no longer says it can neither edit nor run:\n%s", sys)
+		}
+	}
+}
+
+// An unattended run and a served session take auto or no mode at all, so
+// neither can be in one of the two modes that carry a paragraph.
+func TestAnUnattendedRunTakesNeitherReadOnlyMode(t *testing.T) {
+	for _, name := range []string{"read-only", "plan"} {
+		if _, err := parseUnattendedMode(name); err == nil {
+			t.Errorf("--mode %s was taken by a run with nobody to prompt", name)
+		}
+	}
+}
