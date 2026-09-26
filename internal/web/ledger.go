@@ -272,6 +272,28 @@ func Pages(rows []Source) []Source {
 	return out
 }
 
+// ServerPages returns the pages a ledger says a server handed back, one row
+// per address, the first read of each kept. They are counted beside Pages
+// and never inside it: nothing here fetched them, so they are pages a
+// person reading the screen was shown and not pages a write-up's citations
+// can be checked against.
+func ServerPages(rows []Source) []Source {
+	seen := map[string]bool{}
+	var out []Source
+	for _, s := range rows {
+		if s.Kind != KindServer || s.FinalURL == "" {
+			continue
+		}
+		key := CanonicalURL(s.FinalURL)
+		if seen[key] {
+			continue
+		}
+		seen[key] = true
+		out = append(out, s)
+	}
+	return out
+}
+
 // CanonicalURL is the form two citations of one page are compared in: the
 // scheme and host case-folded, a default port and a trailing slash dropped,
 // and a fragment removed. It is deliberately not a normalisation of the path

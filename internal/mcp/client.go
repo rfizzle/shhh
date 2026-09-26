@@ -864,15 +864,43 @@ func (s *Server) Render(ctx context.Context, p Prompt, args map[string]string) (
 // returns what the server holds and changes nothing, whatever the server
 // says about itself (docs/capabilities/mcp.md#a-resource-is-a-read).
 func (s *Server) Read(ctx context.Context, uri string) (string, error) {
+	text, _, err := s.read(ctx, uri)
+	return text, err
+}
+
+// read is Read with the page the read was beside the text, for the toolset
+// that files it in the session's sources ledger: a uri at an http or https
+// address is a page, whatever the server's own resources are otherwise.
+func (s *Server) read(ctx context.Context, uri string) (string, []pageRead, error) {
 	session := s.liveSession()
 	if session == nil {
-		return "", s.closedErr()
+		return "", nil, s.closedErr()
 	}
 	res, err := session.ReadResource(ctx, &sdk.ReadResourceParams{URI: uri})
 	if err != nil {
-		return "", s.noticeIfDead("read "+uri, err)
+		return "", nil, s.noticeIfDead("read "+uri, err)
 	}
-	return FlattenResource(res), nil
+	return FlattenResource(res), resourcePage(uri, res), nil
+}
+
+// resourcePage is the page a resource read was, if its uri is a web address:
+// one row for the address asked for, sized by everything that came back.
+func resourcePage(uri string, res *sdk.ReadResourceResult) []pageRead {
+	if res == nil || !webAddress(uri) {
+		return nil
+	}
+	n := 0
+	for _, c := range res.Contents {
+		if c == nil {
+			continue
+		}
+		if c.Text != "" {
+			n += len(c.Text)
+		} else {
+			n += len(c.Blob)
+		}
+	}
+	return []pageRead{{URI: uri, Bytes: n}}
 }
 
 // FlattenPrompt renders a prompt's messages as the one turn they become.

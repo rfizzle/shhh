@@ -231,7 +231,9 @@ func (m Model) readEvidence(id string, limit int) (string, bool) {
 
 // sourcesSubject is what the header says the screen is over: the pages, the
 // hosts they came from and the searches. A page read twice is one page, the
-// way the write-up's own sources block counts it.
+// way the write-up's own sources block counts it. A page a server handed
+// back is a figure of its own beside the fetcher's, worded as its rows are,
+// because only the fetcher's are pages a citation is checked against.
 func sourcesSubject(rows []web.Source) string {
 	searches := 0
 	for _, s := range rows {
@@ -243,13 +245,20 @@ func sourcesSubject(rows []web.Source) string {
 	// fetch that came back 404 is a row on the screen and not a page, and
 	// the host it did not answer from is not a host this session read.
 	pages := web.Pages(rows)
+	served := web.ServerPages(rows)
 	hosts := map[string]bool{}
-	for _, s := range pages {
-		if h := s.Host(); h != "" {
-			hosts[h] = true
+	for _, read := range [][]web.Source{pages, served} {
+		for _, s := range read {
+			if h := s.Host(); h != "" {
+				hosts[h] = true
+			}
 		}
 	}
-	parts := []string{plural(len(pages), "page"), plural(len(hosts), "host")}
+	parts := []string{plural(len(pages), "page")}
+	if len(served) > 0 {
+		parts = append(parts, fmt.Sprintf("%d via mcp", len(served)))
+	}
+	parts = append(parts, plural(len(hosts), "host"))
 	if searches > 0 {
 		parts = append(parts, searchCount(searches))
 	}

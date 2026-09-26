@@ -192,7 +192,7 @@ The page itself lives in the evidence store, which has its own retention and
 its own purge ([`evidence.md`](evidence.md#a-page-is-kept-whole)); this is
 the index, and it is small enough to keep.
 
-**It is recorded by the fetch and never by the model.** That is the whole
+**It is recorded by the tool that read the page and never by the model.** That is the whole
 point of it. A sources list a model writes is a claim like any other — a
 model that remembers reading a page writes the same sentence whether or not
 it did. So a backlog run that ends in a write-up gets its *Sources* block
@@ -212,9 +212,12 @@ boundary shhh did not fetch across, so it has no status of shhh's own and
 nothing here can vouch that the text is what the address holds. Which calls
 count is read off the result rather than declared: a result that embeds a
 resource at an `http` or `https` address is the server handing back that
-page, and a bare link or a URL mentioned in text is not. Such a row is never
-one of the pages a write-up's *Sources* block is built from, for the same
-reason.
+page, and a bare link or a URL mentioned in text is not. Reading one of a
+server's resources at such an address is the same act and files the same
+row. Such a row is never one of the pages a write-up's *Sources* block is
+built from, for the same reason; the screen's header counts them as a figure
+of their own beside the pages, so a session that read everything through a
+server does not report having read nothing.
 
 ## The backlog is here too
 

@@ -11,7 +11,7 @@
 
 ── layout ──────────────────────────────────────────────────
 · a fetch · the fetcher's own read, under ⚙
-/sources · 2 pages · 1 host · 1 search                                                     [?] keys · [q] back
+/sources · 2 pages · 1 via mcp · 2 hosts · 1 search                                        [?] keys · [q] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 searches                                                │ https://docs.rs/tokio/latest/tokio/     orchestrator
@@ -26,10 +26,10 @@ example.com                                             │   asked for https://
                                                         │   kept as ev-1
                                                         │ 
 
-[enter] read the page that was kept · [esc] back to the prompt         recorded by the fetch, not by the model
+[enter] read the page that was kept · [esc] back to the prompt          recorded by the tool, not by the model
 
 · a server's read · ⇄, and the way it came in place of a status
-/sources · 2 pages · 1 host · 1 search                                                     [?] keys · [q] back
+/sources · 2 pages · 1 via mcp · 2 hosts · 1 search                                        [?] keys · [q] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 searches                                                │ https://example.com/guide               orchestrator
@@ -40,11 +40,11 @@ docs.rs                                                 │   kind mcp
 example.com                                             │   read 8 KB
 ❯ ⇄ /guide                     via mcp · orchest…  8 KB │   when turn 2
 
-[↑↓/jk] move · [esc] back to the prompt                                recorded by the fetch, not by the model
+[↑↓/jk] move · [esc] back to the prompt                                 recorded by the tool, not by the model
 
 ── ansi ────────────────────────────────────────────────────
 · a fetch · the fetcher's own read, under ⚙
-␛[1;38;5;254m/sources␛[m␛[38;5;244m · 2 pages · 1 host · 1 search␛[m                                                     ␛[38;5;244m[?] keys · [q] back␛[m
+␛[1;38;5;254m/sources␛[m␛[38;5;244m · 2 pages · 1 via mcp · 2 hosts · 1 search␛[m                                        ␛[38;5;244m[?] keys · [q] back␛[m
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[1;38;5;254msearches␛[m                                               ␛[38;5;244m │ ␛[m␛[1;38;5;254mhttps://docs.rs/tokio/latest/tokio/␛[m     ␛[38;5;244morchestrator␛[m
@@ -59,10 +59,10 @@ example.com                                             │   read 8 KB
                                                        ␛[38;5;244m │ ␛[m  ␛[38;5;244mkept as ␛[m␛[38;5;254mev-1␛[m
                                                        ␛[38;5;244m │ ␛[m
 
-␛[38;5;254m[enter]␛[m␛[38;5;244m read the page that was kept␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m         ␛[38;5;244mrecorded by the fetch, not by the model␛[m
+␛[38;5;254m[enter]␛[m␛[38;5;244m read the page that was kept␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m          ␛[38;5;244mrecorded by the tool, not by the model␛[m
 
 · a server's read · ⇄, and the way it came in place of a status
-␛[1;38;5;254m/sources␛[m␛[38;5;244m · 2 pages · 1 host · 1 search␛[m                                                     ␛[38;5;244m[?] keys · [q] back␛[m
+␛[1;38;5;254m/sources␛[m␛[38;5;244m · 2 pages · 1 via mcp · 2 hosts · 1 search␛[m                                        ␛[38;5;244m[?] keys · [q] back␛[m
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[1;38;5;254msearches␛[m                                               ␛[38;5;244m │ ␛[m␛[1;38;5;254mhttps://example.com/guide␛[m               ␛[38;5;244morchestrator␛[m
@@ -73,4 +73,4 @@ example.com                                             │   read 8 KB
 ␛[1;38;5;254mexample.com␛[m                                            ␛[38;5;244m │ ␛[m  ␛[38;5;244mread ␛[m␛[38;5;254m8 KB␛[m
 ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m⇄ /guide                     via mcp · orchest…  8 KB␛[m␛[38;5;244m │ ␛[m  ␛[38;5;244mwhen ␛[m␛[38;5;254mturn 2␛[m
 
-␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m                                ␛[38;5;244mrecorded by the fetch, not by the model␛[m
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m                                 ␛[38;5;244mrecorded by the tool, not by the model␛[m

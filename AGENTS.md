@@ -942,8 +942,12 @@ starts listing pages that were read. The one other writer is the MCP
 toolset: `mcp.Toolset.UseLedger` (wired in `openSourceLedger`) and its
 `WrapExecutor(agent, next)`/`WrapReadOnlyExecutor(agent, next)` file a
 `web.KindServer` row when a server's result embeds a resource at an http(s)
-address (`pagesRead` in `internal/mcp/client.go`), and `web.Pages` leaves
-those rows out, since no request of shhh's answered for them.
+address (`pagesRead` in `internal/mcp/client.go`) or when `mcp_resource`
+reads one (`resourcePage`, both through `Toolset.recordPages`), and
+`web.Pages` leaves those rows out, since no request of shhh's answered for
+them — the `/sources` header counts them through `web.ServerPages` instead.
+Only `openSourceLedger` makes a ledger, so a `-p` run and a served session
+file no rows at all.
 
 `internal/web/pdf.go` shells out to `pdftotext`, resolved once by
 `DetectPDFText` in `openWebTools` (`internal/cli/web.go`) the way the

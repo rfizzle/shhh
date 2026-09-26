@@ -644,7 +644,7 @@ func (ts *Toolset) Execute(name string, args json.RawMessage) (string, error) {
 // the result carried is filed under in the ledger.
 func (ts *Toolset) execute(agent, name string, args json.RawMessage) (string, error) {
 	if name == ResourceToolName {
-		return ts.readResource(args, false)
+		return ts.readResource(agent, args, false)
 	}
 	ref, ok := ts.begin(name)
 	if !ok {
@@ -731,8 +731,11 @@ func givenUp(def Definition, tool string, timeout time.Duration, err error) erro
 
 // readResource answers the resource tool. readOnlyServers is the child
 // agent's chain: it was handed the read-only servers and nothing else, so a
-// URI on any other server is refused there rather than read.
-func (ts *Toolset) readResource(args json.RawMessage, readOnlyServers bool) (string, error) {
+// URI on any other server is refused there rather than read. A read at an
+// http or https address is the server handing back that page, the same as a
+// tool result that embeds one, so it is filed under agent through the same
+// recordPages a tool call's pages take (docs/capabilities/chat.md#what-was-read).
+func (ts *Toolset) readResource(agent string, args json.RawMessage, readOnlyServers bool) (string, error) {
 	var a struct {
 		URI string `json:"uri"`
 	}
@@ -749,10 +752,11 @@ func (ts *Toolset) readResource(args json.RawMessage, readOnlyServers bool) (str
 	}
 	ctx, timeout, end := ts.dispatch(server.Definition)
 	defer end()
-	out, err := server.Read(ctx, uri)
+	out, pages, err := server.read(ctx, uri)
 	if err != nil {
 		return "", givenUp(server.Definition, ResourceToolName, timeout, err)
 	}
+	ts.recordPages(agent, pages)
 	return bound(out), nil
 }
 
@@ -840,7 +844,7 @@ func (ts *Toolset) WrapReadOnlyExecutor(agent string, next func(name string, arg
 	return func(name string, args json.RawMessage) (string, error) {
 		if ts.Has(name) {
 			if name == ResourceToolName {
-				return ts.readResource(args, true)
+				return ts.readResource(agent, args, true)
 			}
 			if !ts.ReadOnly(name) {
 				return "", fmt.Errorf("%s is not available to this agent: its server is not marked read-only", name)

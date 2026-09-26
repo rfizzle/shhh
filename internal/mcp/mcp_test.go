@@ -162,6 +162,15 @@ func runTestServer() {
 				&sdk.ResourceLink{URI: "https://example.com/elsewhere", Name: "elsewhere"},
 			}}, nil, nil
 		})
+		// A resource published at a web address: reading it is the server
+		// handing back that page, the same as the tool above.
+		server.AddResource(&sdk.Resource{
+			URI: "https://example.com/doc", Name: "doc", MIMEType: "text/html",
+		}, func(_ context.Context, req *sdk.ReadResourceRequest) (*sdk.ReadResourceResult, error) {
+			return &sdk.ReadResourceResult{Contents: []*sdk.ResourceContents{
+				{URI: req.Params.URI, MIMEType: "text/html", Text: "the doc body"},
+			}}, nil
+		})
 	}
 	if err := server.Run(context.Background(), &sdk.StdioTransport{}); err != nil {
 		os.Exit(1)
@@ -1410,6 +1419,46 @@ func TestAPageAServerReadIsFiledInTheLedger(t *testing.T) {
 		t.Errorf("row = %+v", r)
 	}
 	// It is not one of the fetcher's reads: shhh made no request for it.
+	if pages := web.Pages(rows); len(pages) != 0 {
+		t.Errorf("Pages counted a server's read: %+v", pages)
+	}
+}
+
+// A resource read at a web address is a page read too, filed through the
+// same path a tool call's pages take and signed by the agent whose chain
+// made it; a read in the server's own addressing space files nothing, and
+// neither row is one of the fetcher's pages.
+func TestAResourceReadAtAWebAddressIsFiledInTheLedger(t *testing.T) {
+	def := testDefinition(t)
+	def.Env[serverEnv] = pageServer
+	ts := Connect(context.Background(), &Catalog{Servers: []Definition{def}}, Options{})
+	defer ts.Close()
+	if len(ts.Reports) != 1 || ts.Reports[0].Status != StatusConnected {
+		t.Fatalf("connect = %+v", ts.Reports[0])
+	}
+	ledger := web.NewLedger(nil)
+	ts.UseLedger(ledger)
+	next := func(name string, _ json.RawMessage) (string, error) { return "next:" + name, nil }
+
+	if _, err := ts.WrapExecutor(web.Orchestrator, next)(ResourceToolName, json.RawMessage(`{"uri":"docs://guide"}`)); err != nil {
+		t.Fatal(err)
+	}
+	if n := ledger.Len(); n != 0 {
+		t.Fatalf("a docs:// read filed %d rows", n)
+	}
+	out, err := ts.WrapExecutor("web-researcher", next)(ResourceToolName, json.RawMessage(`{"uri":"https://example.com/doc"}`))
+	if err != nil || !strings.Contains(out, "the doc body") {
+		t.Fatalf("read = %q, %v", out, err)
+	}
+	rows := ledger.List()
+	if len(rows) != 1 {
+		t.Fatalf("rows = %+v, want the one page", rows)
+	}
+	r := rows[0]
+	if r.Kind != web.KindServer || r.Agent != "web-researcher" || r.FinalURL != "https://example.com/doc" ||
+		r.Requested != r.FinalURL || r.Bytes != len("the doc body") || r.Status != 0 {
+		t.Errorf("row = %+v", r)
+	}
 	if pages := web.Pages(rows); len(pages) != 0 {
 		t.Errorf("Pages counted a server's read: %+v", pages)
 	}

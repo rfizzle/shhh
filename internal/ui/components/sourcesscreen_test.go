@@ -84,7 +84,7 @@ func TestSourcesScreen_AnEmptyLedgerSaysSo(t *testing.T) {
 	if !strings.Contains(view, "nothing has been read") {
 		t.Errorf("an empty screen says nothing:\n%s", view)
 	}
-	if strings.Contains(view, "recorded by the fetch") {
+	if strings.Contains(view, "recorded by") {
 		t.Error("the foot annotates a key row over no rows")
 	}
 }
@@ -146,7 +146,7 @@ func TestGolden_SourcesScreen(t *testing.T) {
 	})
 	captureGolden(t, "sources-screen", "the sources screen", goldenWidths, func(width int) []golden.Panel {
 		screen := func(focus int) string {
-			return (&SourcesScreen{Rows: rows, Subject: "2 pages · 1 host · 1 search", Focus: focus, MaxLines: 16}).View(width)
+			return (&SourcesScreen{Rows: rows, Subject: "2 pages · 1 via mcp · 2 hosts · 1 search", Focus: focus, MaxLines: 16}).View(width)
 		}
 		return []golden.Panel{
 			{Label: "a fetch · the fetcher's own read, under ⚙", View: screen(1)},

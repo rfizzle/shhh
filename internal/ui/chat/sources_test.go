@@ -177,3 +177,27 @@ func TestSources_AServersReadSaysWhereItCameThrough(t *testing.T) {
 		t.Errorf("row = %+v", row)
 	}
 }
+
+// A page a server handed back is counted in the header as a figure of its
+// own beside the fetcher's, and its host is one the session read; it stays
+// out of web.Pages, which is the set a write-up's citations are checked
+// against, so the header and the cited-not-read comparison each count what
+// they are about.
+func TestSources_TheHeaderCountsAServersReadsBesideTheFetchers(t *testing.T) {
+	rows := []web.Source{
+		{Kind: web.KindFetch, FinalURL: "https://docs.rs/tokio/", Status: 200},
+		{Kind: web.KindServer, Requested: "https://example.com/guide", FinalURL: "https://example.com/guide"},
+		{Kind: web.KindServer, Requested: "https://example.com/guide/", FinalURL: "https://example.com/guide/"},
+		{Kind: web.KindServer, Requested: "https://example.org/b", FinalURL: "https://example.org/b"},
+	}
+	if got, want := sourcesSubject(rows), "1 page · 2 via mcp · 3 hosts"; got != want {
+		t.Errorf("subject = %q, want %q", got, want)
+	}
+	if pages := web.Pages(rows); len(pages) != 1 || pages[0].Kind != web.KindFetch {
+		t.Errorf("Pages = %+v, want the fetch alone", pages)
+	}
+	// A session with no server reads says nothing about them.
+	if got, want := sourcesSubject(rows[:1]), "1 page · 1 host"; got != want {
+		t.Errorf("subject = %q, want %q", got, want)
+	}
+}

@@ -317,13 +317,16 @@ func (s *SourcesScreen) keyList() []KeyOffer {
 }
 
 // footField annotates the key row. What it says is the thing this screen
-// exists to say: the rows are the fetcher's own record, not the model's
-// account of it.
+// exists to say: every row, the fetcher's and a server's alike, was filed by
+// the tool that read the page, never from the model's account of it
+// (docs/capabilities/chat.md#what-was-read). It is kept within the length
+// the fetch-only wording had, because a longer field costs the key row an
+// offer at 80 columns.
 func (s *SourcesScreen) footField() string {
 	if len(s.Rows) == 0 {
 		return ""
 	}
-	return "recorded by the fetch, not by the model"
+	return "recorded by the tool, not by the model"
 }
 
 // sync rebuilds the list from Rows. It runs before every Update and every
