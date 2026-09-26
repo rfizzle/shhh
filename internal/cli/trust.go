@@ -257,7 +257,7 @@ func trustManager(db *storage.DB) func(args []string) string {
 			}
 			return trustLine(row) + " — it takes effect in the next session."
 		}
-		return "Usage: /trust [off]"
+		return "usage: /trust · /trust off"
 	}
 }
 

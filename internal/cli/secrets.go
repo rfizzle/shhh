@@ -78,7 +78,7 @@ func secretFromSpec(spec string) (name, value string, err error) {
 // added mid-session is unusable until the model knows its name, and the
 // system prompt was written before it existed.
 func secretsManager(v *secret.Vault) func(args []string) (note, announce string) {
-	const usage = "Usage: /secret [list] · /secret set NAME (from the environment) · /secret set NAME=value · /secret forget NAME"
+	const usage = "usage: /secret [list] · /secret set NAME (from the environment) · /secret set NAME=value · /secret forget NAME"
 	return func(args []string) (string, string) {
 		if len(args) == 0 || (len(args) == 1 && args[0] == "list") {
 			return secretsListing(v), ""

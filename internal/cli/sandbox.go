@@ -405,7 +405,7 @@ func scopeReport(sc *scope.Scope) string {
 func sandboxManage(cfg config.Config, sc *scope.Scope, sup *process.Supervisor) func(args []string) string {
 	return func(args []string) string {
 		if len(args) == 0 {
-			return "Usage: /sandbox [doctor|scope|list|status|destroy <id>|prune]"
+			return "usage: /sandbox doctor · /sandbox scope · /sandbox list · /sandbox status · /sandbox destroy <id> · /sandbox prune"
 		}
 		ctx := context.Background()
 		switch args[0] {
@@ -419,13 +419,13 @@ func sandboxManage(cfg config.Config, sc *scope.Scope, sup *process.Supervisor) 
 			return sandboxList(ctx)
 		case "destroy":
 			if len(args) != 2 {
-				return "Usage: /sandbox destroy <id>"
+				return "usage: /sandbox destroy <id>"
 			}
 			return sandboxDestroy(ctx, args[1])
 		case "prune":
 			return sandboxPrune(ctx)
 		}
-		return "Usage: /sandbox [doctor|scope|list|status|destroy <id>|prune]"
+		return "usage: /sandbox doctor · /sandbox scope · /sandbox list · /sandbox status · /sandbox destroy <id> · /sandbox prune"
 	}
 }
 

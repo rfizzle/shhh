@@ -75,7 +75,7 @@ func recallMemory(cmd *cobra.Command, session *chatSession, db *storage.DB) *mem
 // it.
 func memoryManager(store *memory.Store) func(args []string) string {
 	return func(args []string) string {
-		const usage = "Usage: /memory [list] · /memory add [global] [preference|convention|correction|lesson] <text> · /memory edit <id> · /memory forget <id>"
+		const usage = "usage: /memory [list] · /memory add [global] [preference|convention|correction|lesson] <text> · /memory edit <id> · /memory forget <id>"
 		if len(args) == 0 || (len(args) == 1 && args[0] == "list") {
 			return memoryListing(store, "/memory add [global] [kind] <text>")
 		}

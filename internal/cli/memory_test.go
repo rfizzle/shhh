@@ -57,7 +57,7 @@ func TestMemoryManager_Usage(t *testing.T) {
 	manage, _ := testMemoryManager(t)
 	for _, args := range [][]string{{"add"}, {"add", "global"}, {"forget"}, {"bogus"}} {
 		out := manage(args)
-		if !strings.Contains(out, "Usage:") {
+		if !strings.Contains(out, "usage:") {
 			t.Errorf("%v should print usage, got %q", args, out)
 		}
 		// edit is answered by the chat surface, which opens the reader's

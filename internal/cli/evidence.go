@@ -78,6 +78,6 @@ func evidenceManager(red *evidence.Reducer) func(args []string) string {
 			}
 			return "Evidence store purged: the stored originals are deleted; ids already in the transcript can no longer be retrieved."
 		}
-		return "Usage: /evidence [purge]"
+		return "usage: /evidence · /evidence purge"
 	}
 }

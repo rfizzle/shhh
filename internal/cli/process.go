@@ -51,7 +51,7 @@ func openProcessSupervisor(red *evidence.Reducer) *process.Supervisor {
 func processManager(sup *process.Supervisor) func(args []string) string {
 	return func(args []string) string {
 		if len(args) > 0 {
-			return "Usage: /ps — lists the processes this session owns"
+			return "usage: /ps · lists the processes this session owns"
 		}
 		return sup.List()
 	}
