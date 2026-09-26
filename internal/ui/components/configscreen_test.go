@@ -173,6 +173,28 @@ func TestConfigScreen_WriteIsOfferedOnlyWhenSomethingIsStaged(t *testing.T) {
 	}
 }
 
+// The scope key is offered only where there are two files to write, and
+// pressing it hands the switch to the host rather than moving anything
+// itself: the screen owns no idea of which file is which.
+func TestConfigScreen_TheScopeKeyIsOfferedOnlyInACheckout(t *testing.T) {
+	c := configFixture()
+	if strings.Contains(c.View(110), "[g]") {
+		t.Fatalf("a screen with one file to write offers a switch:\n%s", c.View(110))
+	}
+	if _, result := c.Update(key("g")); result.Scope {
+		t.Fatal("g switched the write on a screen with one file")
+	}
+
+	c.Scoped = true
+	view := c.View(110)
+	if !strings.Contains(view, "the checkout's file") || !strings.Contains(view, "[g] write yours") {
+		t.Fatalf("a screen in a checkout names whose file it writes and offers the other:\n%s", view)
+	}
+	if _, result := c.Update(key("g")); !result.Scope {
+		t.Fatal("g did not ask the host to switch the write")
+	}
+}
+
 // [w] asks before it writes, in the shared inline confirm, and the confirm
 // defaults to no.
 func TestConfigScreen_WriteConfirms(t *testing.T) {

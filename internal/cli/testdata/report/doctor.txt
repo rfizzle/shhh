@@ -6,7 +6,11 @@
         "p" is a letter while the draft can take text, so it cannot also be "the
         command palette" on the input; a key live at the input is a chord
         shhh keys check reads it again the way a session will
-  ✓ otel      http://localhost:4318 · content-free  [ok]
+  ⚠ otel      the collector endpoint is not a URL · the endpoint ne…  [unusable]
+      sessions are recorded locally and nothing is exported
+        shhh config set --global otel.endpoint http://localhost:4318
+        the scheme decides whether the record crosses the network in the clear,
+        so it is never guessed
   ✗ sandbox   bwrap not found  [UNCONTAINED]
       commands run with your own permissions, in your own filesystem
         sudo apt install bubblewrap
@@ -20,4 +24,4 @@
         summary — config prompts.summary
         todo_commit — ~/.config/shhh/prompts/todo_commit.md
 
-  1 failed · 1 warning · 3 passed · 1 not checked
+  1 failed · 2 warnings · 2 passed · 1 not checked

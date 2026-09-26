@@ -9,6 +9,7 @@ import (
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // scopeCase is one place a bare write can be run from, and whether it lands
@@ -196,7 +197,64 @@ func TestConfigScreen_InACheckoutRefusesAKeyItMayNotDecide(t *testing.T) {
 	session.Answer(false, components.ConfigResult{
 		Change: &components.ConfigChange{Key: "provider.api_key", Value: "sk-test"},
 	})
-	if !strings.Contains(session.Screen.Notice, "--global") {
-		t.Fatalf("the screen staged a key the checkout may not decide: %q", session.Screen.Notice)
+	notice := session.Screen.Notice
+	if !strings.Contains(notice, keys.Bracket(keys.Screen.Scope)) || strings.Contains(notice, "--global") {
+		t.Fatalf("the refusal should name the screen's scope key and no flag the screen cannot pass: %q", notice)
+	}
+}
+
+// The screen's scope key moves the write between the checkout's file and the
+// person's own, so a key the checkout may not decide can be written from
+// inside a session; `--global` only chooses which file it opens on, and the
+// write cannot be moved back to the checkout over an edit it would refuse.
+func TestConfigScreen_TheScopeKeyMovesTheWrite(t *testing.T) {
+	userPath, checkout := scopeFixture(t, scopeCases[0])
+	session, err := configSessionOpener()()
+	must(t, err)
+	screen := session.Screen
+	if !screen.Scoped || screen.Yours {
+		t.Fatalf("in a checkout the screen should open on the checkout's file with the switch offered: scoped %v yours %v",
+			screen.Scoped, screen.Yours)
+	}
+	session.Answer(false, components.ConfigResult{Scope: true})
+	if !screen.Yours || screen.Path != shortPath(userPath) {
+		t.Fatalf("the scope key left the write at %q (yours %v), want %q", screen.Path, screen.Yours, shortPath(userPath))
+	}
+	session.Answer(false, components.ConfigResult{
+		Change: &components.ConfigChange{Key: "provider.api_key", Value: "sk-test"},
+	})
+	if screen.Notice != "" || screen.Changed != 1 {
+		t.Fatalf("writing to the person's file, the key should stage: notice %q, changed %d", screen.Notice, screen.Changed)
+	}
+	session.Answer(false, components.ConfigResult{Scope: true})
+	if !screen.Yours || !strings.Contains(screen.Notice, "provider.api_key") {
+		t.Fatalf("the write moved back to the checkout over a key it may not decide: yours %v, notice %q",
+			screen.Yours, screen.Notice)
+	}
+	if note := session.Answer(true, components.ConfigResult{Write: true}); !strings.Contains(note, "Wrote") {
+		t.Fatalf("the write did not land: %s", note)
+	}
+	if got, err := os.ReadFile(userPath); err != nil || !strings.Contains(string(got), "sk-test") {
+		t.Fatalf("the key did not reach %s: %v %s", userPath, err, got)
+	}
+	if exists(filepath.Join(checkout, ".shhh", "config.toml")) {
+		t.Fatal("the checkout's file was written")
+	}
+
+	m := newConfigModel(config.Config{}, config.Project{})
+	m.standIn(true, checkout)
+	if !m.screen.Scoped || !m.screen.Yours || m.toProject {
+		t.Fatalf("--global in a checkout should open on the person's file with the switch still offered")
+	}
+}
+
+// Outside a checkout there is one file, and nothing to switch to.
+func TestConfigScreen_OutsideACheckoutOffersNoScope(t *testing.T) {
+	scopeFixture(t, scopeCases[1])
+	m := newConfigModel(config.Config{}, config.Project{})
+	m.standIn(false, workingDir())
+	m.answer(false, components.ConfigResult{Scope: true})
+	if m.screen.Scoped || m.toProject {
+		t.Fatalf("a screen outside a checkout offered a second file")
 	}
 }

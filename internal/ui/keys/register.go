@@ -555,7 +555,7 @@ func Programs() []Surface {
 			Reached:  "shhh config",
 			Bindings: []Binding{
 				Screen.Move, Screen.Take, Screen.Filter, Screen.ClearQ, Query.Rub,
-				Screen.Reset, Screen.Write, Screen.List, Screen.Quit,
+				Screen.Reset, Screen.Write, Screen.Scope, Screen.List, Screen.Quit,
 			},
 		},
 		{

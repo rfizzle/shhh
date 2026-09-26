@@ -19,6 +19,7 @@ import (
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/ui/chat"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 	"github.com/rfizzle/shhh/internal/web"
 	"github.com/spf13/cobra"
 )
@@ -371,16 +372,54 @@ func newConfigModel(cfg config.Config, proj config.Project) *configModel {
 
 // standIn points the screen's write at the file a write from dir lands in,
 // the same resolution `config set` makes, so what the header names and what
-// the source column says of a staged row are both about that file.
+// the source column says of a staged row are both about that file. Standing
+// in a checkout, the screen has two files to write and a key that moves the
+// write between them — `--global` only chooses which one it opens on, since a
+// key the checkout may not decide is otherwise one the screen cannot write
+// from inside a session.
 func (m *configModel) standIn(global bool, dir string) {
-	if !writesCheckout(global, dir) {
+	if !writesCheckout(false, dir) {
 		return
 	}
-	m.toProject, m.dir, m.path = true, dir, config.ProjectPath(dir)
-	// Named from the checkout, as `config set` names it: the absolute form
-	// is the half of the header that clips.
-	m.screen.Path = project.ConfigFile
+	m.dir = dir
+	m.screen.Scoped = true
+	m.writeTo(!global)
+}
+
+// writeTo moves the write to the checkout's file or to the person's own, and
+// says so in the header and in every row's source.
+func (m *configModel) writeTo(checkout bool) {
+	m.toProject = checkout
+	m.screen.Yours = !checkout
+	if checkout {
+		// Named from the checkout, as `config set` names it: the absolute
+		// form is the half of the header that clips.
+		m.path, m.screen.Path = config.ProjectPath(m.dir), project.ConfigFile
+	} else {
+		m.path = config.WritePath()
+		m.screen.Path = shortPath(m.path)
+	}
 	m.refresh()
+}
+
+// switchScope is the screen's scope key. Moving the write to the checkout's
+// file is refused while an edit is staged that the checkout may not decide,
+// for the reason apply refuses one: the screen never holds an edit its write
+// would stop on.
+func (m *configModel) switchScope() {
+	if m.dir == "" {
+		return
+	}
+	if !m.toProject {
+		for _, e := range m.edits() {
+			if config.RefusedInProject(e.Key) != "" {
+				m.screen.Notice = fmt.Sprintf("%s is staged, and a checkout's file may not decide it — "+
+					"write it to %s first", e.Key, m.screen.Path)
+				return
+			}
+		}
+	}
+	m.writeTo(!m.toProject)
 }
 
 // answer stages the edit a key made and, on the write the screen closes with,
@@ -389,6 +428,9 @@ func (m *configModel) answer(done bool, result components.ConfigResult) tea.Cmd 
 	m.screen.Notice = ""
 	if result.Change != nil {
 		m.apply(*result.Change)
+	}
+	if result.Scope {
+		m.switchScope()
 	}
 	if !done {
 		return nil
@@ -467,9 +509,12 @@ func (m *configModel) apply(change components.ConfigChange) {
 	}
 	if m.toProject {
 		// Refused as it is staged rather than at [w], so the screen never
-		// holds an edit its write would then stop on.
-		if _, err := projectWritePath(change.Key, m.dir); err != nil {
-			m.screen.Notice = err.Error()
+		// holds an edit its write would then stop on — and the way to the
+		// person's own file is the screen's key, not the command's flag.
+		if reason := config.RefusedInProject(change.Key); reason != "" {
+			m.screen.Notice = fmt.Sprintf("config key %s is not read from a checkout's file — %s; "+
+				"%s moves the write to %s", change.Key, reason, keys.Bracket(keys.Screen.Scope),
+				shortPath(config.WritePath()))
 			return
 		}
 	}

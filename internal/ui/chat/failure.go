@@ -390,7 +390,7 @@ func (m *Model) closeKeyEntry(secret string) overlayAction {
 		return overlayAction{close: true, note: "that key was not accepted: " + err.Error()}
 	}
 	return overlayAction{close: true, note: "key ···" + lastFour(secret) +
-		" is in use for this session. Ask again to try it, or /config set provider.api_key to keep it"}
+		" is in use for this session. Ask again to try it, or set provider.api_key in /config to keep it"}
 }
 
 // keyEntryLines renders the prompt for the bottom panel.

@@ -1,0 +1,21 @@
+# program test: none — the screen's host is the command package's config
+#   model, which the chat program test does not build; the scope key is held
+#   by TestConfigScreen_TheScopeKeyMovesTheWrite
+#
+# /config in a session standing in a checkout, at 110 columns. The scene's
+# directory is a fresh repository, so the screen opens writing the
+# checkout's own .shhh/config.toml and says whose file that is in the header,
+# with the key that moves the write offered on the key row. Pressing it moves
+# the write to the person's own file: the header names it, and the key row
+# now offers the way back. That is what lets a key the checkout may not
+# decide — an api key, sandbox.require — be written from inside a session
+# rather than by leaving it for a flag the screen cannot pass.
+snap 01-start "Some things worth doing first"
+keys "/config" Enter
+snap 02-checkout "/config · the checkout's file · .shhh/config.toml" "[g] write yours"
+keys g
+snap 03-yours "/config · your file" "[g] write the checkout's"
+keys g
+snap 04-back "/config · the checkout's file" "[g] write yours"
+keys Escape
+sleep 0.5

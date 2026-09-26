@@ -151,7 +151,11 @@ func goldenChecks() []components.DoctorCheck {
 		{Name: "binary", Subject: "shhh 0.9.4", Detail: "linux/amd64", Outcome: "ok"},
 		doctorCheck("keymap", doctorKeymap("/home/dev/.config/shhh/keybindings.toml", 0,
 			errors.New(`/home/dev/.config/shhh/keybindings.toml: "p" is a letter while the draft can take text, so it cannot also be "the command palette" on the input; a key live at the input is a chord`)), 0),
-		{Name: "otel", Subject: "http://localhost:4318", Detail: "content-free", Outcome: "ok"},
+		// Built from the check itself, so the fixture carries one of the
+		// `shhh config set --global` fix lines word for word: each names a
+		// key about this machine, and the flag is what keeps it out of a
+		// checkout's file when the line is pasted in one.
+		doctorCheck("otel", doctorOtel("localhost:4318"), 0),
 		{Name: "sandbox", Subject: "bwrap not found", Outcome: "UNCONTAINED",
 			State:       components.DoctorFailed,
 			Consequence: "commands run with your own permissions, in your own filesystem",

@@ -2617,6 +2617,41 @@ func TestGolden_ConfigScreen(t *testing.T) {
 	})
 }
 
+// TestGolden_ConfigScreenScope captures the config screen standing in a
+// checkout, where a write has two files to reach: the header says whose file
+// the path is, the key row offers the switch worded as where it would send
+// the write, and a key the checkout may not decide is refused with that key
+// named rather than a flag the screen cannot pass.
+func TestGolden_ConfigScreenScope(t *testing.T) {
+	captureGolden(t, "config-screen-scope", "the config screen in a checkout", goldenWidths, func(width int) []golden.Panel {
+		screen := func(yours bool) *ConfigScreen {
+			c := &ConfigScreen{
+				Path: ".shhh/config.toml", Rows: goldenConfigRows(), MaxLines: 12,
+				Scoped: true, Yours: yours,
+			}
+			if yours {
+				c.Path = "~/.config/shhh/config.toml"
+			}
+			return c
+		}
+		return []golden.Panel{
+			{Label: "the checkout's file · [g] offers yours", View: screen(false).View(width)},
+			{Label: "your file · [g] offers the checkout's", View: screen(true).View(width)},
+			{Label: "a key the checkout may not decide · refused naming [g]", View: func() string {
+				c := screen(false)
+				c.Notice = "config key provider.api_key is not read from a checkout's file — " +
+					"a credential is yours, not the repository's; [g] moves the write to ~/.config/shhh/config.toml"
+				return c.View(width)
+			}()},
+			{Label: "[?] · the switch is in the register", View: func() string {
+				c := screen(false)
+				c.Update(key("?"))
+				return c.View(width)
+			}()},
+		}
+	})
+}
+
 // historyWidths are the three the history browser is drawn at: the stacked
 // layout, and the two-pane split at the working width and at the width the
 // `Tools` artboard draws it at.

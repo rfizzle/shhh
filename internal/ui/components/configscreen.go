@@ -101,6 +101,10 @@ type ConfigResult struct {
 	Write    bool
 	Canceled bool
 	Change   *ConfigChange
+	// Scope is the toggle between the checkout's file and the person's own:
+	// the host moves the write, and hands back the Path, Yours and Rows that
+	// describe the file it moved it to.
+	Scope bool
 }
 
 // ConfigScreen is `shhh config`: a takeover surface, full width, no inspector
@@ -108,6 +112,15 @@ type ConfigResult struct {
 type ConfigScreen struct {
 	// Path is the file `[w]` writes, stated in the header.
 	Path string
+	// Scoped is a screen standing in a checkout, where a write has two files
+	// it could reach: the checkout's own and the person's. It is what offers
+	// the key that switches between them, and what makes the header say
+	// whose file Path is — outside a checkout there is only the one, and
+	// naming its owner would answer a question nobody asked. Yours is which
+	// of the two the write reaches now
+	// (docs/capabilities/configuration.md#two-files-one-resolution-order).
+	Scoped bool
+	Yours  bool
 	// Rows are the settings in the order they are shown.
 	Rows []ConfigRow
 	// Focus is an index into Rows and survives the host rebuilding them.
@@ -212,6 +225,10 @@ func (c *ConfigScreen) updateMenu(msg tea.KeyPressMsg) (bool, ConfigResult) {
 	case keys.Is(pressed, keys.Screen.Reset):
 		if row := c.current(); row != nil {
 			return false, ConfigResult{Change: &ConfigChange{Key: row.Key, Reset: true}}
+		}
+	case keys.Is(pressed, keys.Screen.Scope):
+		if c.Scoped {
+			return false, ConfigResult{Scope: true}
 		}
 	case keys.Is(pressed, keys.Screen.Write):
 		if c.Changed > 0 {
@@ -471,6 +488,12 @@ func (c *ConfigScreen) header() ScreenHeader {
 		title, headerKeys = "/config", screenBackKeys()
 	}
 	h := ScreenHeader{Left: []RailSegment{screenTitle(title)}, Keys: headerKeys}
+	if c.Scoped {
+		// Whose file it is outlives the path: a long path is the first field
+		// this header gives up, and which of the two files the write reaches
+		// is the thing the scope key changes.
+		h.Left = append(h.Left, RailSegment{Text: sty.Dim.Render(" · " + c.owner() + "file"), Drop: RailNormal})
+	}
 	if c.Path != "" {
 		h.Left = append(h.Left, screenField(c.Path))
 	}
@@ -481,6 +504,28 @@ func (c *ConfigScreen) header() ScreenHeader {
 		})
 	}
 	return h
+}
+
+// owner is whose file the header's path is, where there are two it could
+// be, as the word in front of it.
+func (c *ConfigScreen) owner() string {
+	switch {
+	case !c.Scoped:
+		return ""
+	case c.Yours:
+		return "your "
+	}
+	return "the checkout's "
+}
+
+// scopeOffer is the switch between the two files, worded as where it would
+// send the write rather than where the write is now — the header already
+// says that.
+func (c *ConfigScreen) scopeOffer() KeyOffer {
+	if c.Yours {
+		return keyOfferAs(keys.Screen.Scope, "write the checkout's")
+	}
+	return keyOfferAs(keys.Screen.Scope, "write yours")
 }
 
 // footer is the keys the screen offers and the field that annotates them.
@@ -524,6 +569,9 @@ func (c *ConfigScreen) offers() []KeyOffer {
 		offers = append(offers, keyOffer(keys.Screen.ClearQ))
 	} else {
 		offers = append(offers, keyOffer(keys.Screen.Filter), keyOffer(keys.Screen.Reset))
+		if c.Scoped {
+			offers = append(offers, c.scopeOffer())
+		}
 	}
 	if c.Changed > 0 {
 		// With something staged the way out is a discard, and it says so with
@@ -548,17 +596,19 @@ func (c *ConfigScreen) keyList() []KeyOffer {
 		out, quit = "leave the picker, or ask before discarding the lot",
 			"ask before discarding the lot and leaving"
 	}
-	return []KeyOffer{
+	list := []KeyOffer{
 		keyOfferAs(keys.Screen.Move, "move between settings"),
 		keyOfferAs(keys.Screen.Take, "change the setting under the pointer"),
 		keyOfferAs(keys.Screen.Filter, "filter the settings by name"),
 		keyOfferAs(keys.Screen.ClearQ, "clear the filter, or the field being typed into"),
 		keyOfferAs(keys.Query.Rub, "take a rune back out of either"),
 		keyOfferAs(keys.Screen.Reset, "reset this setting to its default"),
-		keyOfferAs(keys.Screen.Write, "write every staged change to "+c.Path),
-		wayOut(out),
-		keyOfferAs(keys.Screen.Quit, quit),
+		keyOfferAs(keys.Screen.Write, "write every staged change to "+c.owner()+c.Path),
 	}
+	if c.Scoped {
+		list = append(list, keyOfferAs(keys.Screen.Scope, "switch the write between the checkout's file and yours"))
+	}
+	return append(list, wayOut(out), keyOfferAs(keys.Screen.Quit, quit))
 }
 
 // footField annotates the key row. It is the count of settings until

@@ -88,7 +88,14 @@ dotfiles is still where the person's own settings are written from — the
 bare command writes the person's file. In a checkout a key from the set
 above is refused before anything is created, with the reason and the
 `--global` that reaches the file the key belongs in; the screen refuses it
-as it is staged. The slash commands that save their answer — `/model
+as it is staged and names its own key instead of the flag. Standing in a
+checkout, the screen has both files to write and a key that moves the
+write between them, with the header saying whose file the write reaches:
+`/config` is reached from inside a session, where there is no flag to
+pass, and a key only the person's file may hold — a credential, a
+requirement for containment — would otherwise be one nobody could write
+without leaving the session. `--global` on `shhh config` only chooses
+which file the screen opens on. The slash commands that save their answer — `/model
 default`, `/reasoning`, the `/ui` toggles — write the person's file, because
 what they save is a preference about the session rather than about the tree.
 A write to the person's file for a key the checkout overrides is made and
@@ -833,6 +840,7 @@ rules above are what refuse a move, not a list of keys held back from it.
 | `screen.reset` | `r` | reset to default | yes |
 | `screen.write` | `w` | write the file | yes |
 | `screen.keep` | `esc` | keep the current value | yes |
+| `screen.scope` | `g` | switch the file | yes |
 | `screen.copy` | `c` | copy it | yes |
 | `screen.rerun` | `enter` | re-run it | yes |
 | `screen.snippet` | `s` | save it as a snippet | yes |

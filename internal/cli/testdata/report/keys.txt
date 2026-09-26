@@ -243,6 +243,7 @@
   · reset    r · reset to default  [shipped]
   · write    w · write the file  [shipped]
   · keep     esc · keep the current value  [shipped]
+  · scope    g · switch the file  [shipped]
   · copy     c · copy it  [shipped]
   · rerun    enter · re-run it  [shipped]
   · snippet  s · save it as a snippet  [shipped]
@@ -334,4 +335,4 @@
   · paste   p · paste a key  [shipped]
   · local   o · a local model  [shipped]
 
-  247 keys · 1 moved
+  248 keys · 1 moved

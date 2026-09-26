@@ -1469,6 +1469,10 @@ type ScreenKeys struct {
 	Reset Binding
 	Write Binding
 	Keep  Binding
+	// Scope moves the config screen's write between the checkout's own file
+	// and the person's, where the screen stands in a checkout and so has
+	// two to choose from. It is the screen's `--global`, as a toggle.
+	Scope Binding
 
 	Copy    Binding
 	Rerun   Binding
@@ -1505,6 +1509,7 @@ var Screen = ScreenKeys{
 	Reset: bind("r", "reset to default", "r"),
 	Write: bind("w", "write the file", "w"),
 	Keep:  bind("esc", "keep the current value", "esc"),
+	Scope: bind("g", "switch the file", "g"),
 
 	Copy:    bind("c", "copy it", "c"),
 	Rerun:   bind("enter", "re-run it", "enter"),
