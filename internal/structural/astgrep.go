@@ -15,6 +15,11 @@ import (
 // runs to hundreds of kilobytes, so the path, the language and the context
 // are what bound the answer.
 // See docs/capabilities/evidence.md#reduction-is-for-unbounded-output.
+//
+// The pattern's description names the Go shape that parses as something other
+// than the call it was written as, because an empty result from it reads as
+// proof there are no call sites and one search is meant to answer the question.
+// See docs/capabilities/coding-agent.md#finding-things.
 var astGrepTool = provider.Tool{
 	Name: AstGrepToolName,
 	Description: "Language-aware structural code search with ast-grep. Prefer this over regex search for structural questions " +
@@ -26,7 +31,8 @@ var astGrepTool = provider.Tool{
 	Parameters: json.RawMessage(`{
 		"type": "object",
 		"properties": {
-			"pattern": {"type": "string", "description": "Structural pattern to search for (code with $META and $$$MULTI metavariables)"},
+			"pattern": {"type": "string", "description": "Structural pattern to search for (code with $META and $$$MULTI metavariables). In Go a call written alone with one argument, such as errors.New($A) or fmt.Errorf($$$ARGS), parses as a type conversion and matches nothing: write it inside a function body, \"func _() { errors.New($A) }\", and set selector to \"call_expression\""},
+			"selector": {"type": "string", "description": "Syntax node kind inside the pattern that is the actual match, e.g. \"call_expression\"; set it when the pattern wraps the code in more code only so that it parses"},
 			"rewrite": {"type": "string", "description": "Optional rewrite template; the result is a preview diff, no file is changed"},
 			"lang": {"type": "string", "description": "Language to parse, e.g. \"go\", \"ts\", \"py\" (recommended; inferred from extensions otherwise); it also keeps other languages' files out of the result"},
 			"path": {"type": "string", "description": "File or directory to search, relative to the workspace root (default: the workspace root); name the narrowest one that holds the matches"},
@@ -42,15 +48,16 @@ var astGrepTool = provider.Tool{
 const NoMatches = "No matches."
 
 type astGrepArgs struct {
-	Pattern string `json:"pattern"`
-	Rewrite string `json:"rewrite"`
-	Lang    string `json:"lang"`
-	Path    string `json:"path"`
-	Context int    `json:"context"`
+	Pattern  string `json:"pattern"`
+	Rewrite  string `json:"rewrite"`
+	Lang     string `json:"lang"`
+	Selector string `json:"selector"`
+	Path     string `json:"path"`
+	Context  int    `json:"context"`
 }
 
 // buildAstGrepArgv constructs ast-grep's argv. Invariants: pattern, rewrite,
-// and lang always ride attached as --flag=value so a leading "-" can never
+// lang and selector always ride attached as --flag=value so a leading "-" can never
 // inject an option; the search path follows a literal "--" delimiter; and
 // -U/--update-all is never passed, so rewrite only ever previews a diff.
 func buildAstGrepArgv(a astGrepArgs, searchPath string) []string {
@@ -60,6 +67,9 @@ func buildAstGrepArgv(a astGrepArgs, searchPath string) []string {
 	}
 	if a.Lang != "" {
 		argv = append(argv, "--lang="+a.Lang)
+	}
+	if a.Selector != "" {
+		argv = append(argv, "--selector="+a.Selector)
 	}
 	if a.Context > 0 {
 		argv = append(argv, "--context="+strconv.Itoa(a.Context))

@@ -223,10 +223,10 @@ func TestBuildFdArgvInvariants(t *testing.T) {
 }
 
 func TestBuildAstGrepArgvInvariants(t *testing.T) {
-	argv := buildAstGrepArgv(astGrepArgs{Pattern: "-U", Rewrite: "--update-all", Lang: "-x", Context: 3}, "/ws/pkg")
+	argv := buildAstGrepArgv(astGrepArgs{Pattern: "-U", Rewrite: "--update-all", Lang: "-x", Selector: "-y", Context: 3}, "/ws/pkg")
 
 	// Model-supplied values ride attached, so they can never become options.
-	for _, want := range []string{"--pattern=-U", "--rewrite=--update-all", "--lang=-x", "--context=3"} {
+	for _, want := range []string{"--pattern=-U", "--rewrite=--update-all", "--lang=-x", "--selector=-y", "--context=3"} {
 		if !contains(argv, want) {
 			t.Fatalf("missing %s in %v", want, argv)
 		}
@@ -728,6 +728,30 @@ func TestStructuralPreviewDefinitionsTeachNarrowing(t *testing.T) {
 		if strings.Contains(sdTool.Description, stale) || strings.Contains(string(sdTool.Parameters), stale) {
 			t.Errorf("sd's definition still says %q, which the diff preview made untrue", stale)
 		}
+	}
+}
+
+// tree-sitter-go reads a qualified call with one argument, written alone, as
+// a conversion to the type pkg.Name, so errors.New($A) matches no call in
+// ast-grep 0.45.3 while strings.Contains($A, $B), which no conversion can be,
+// matches. The one shape that finds every such call is the call inside a
+// function body with the selector naming the call, so the pattern's
+// description has to say so and the selector has to exist for it to name.
+func TestAstGrepPatternTeachesTheOneArgumentGoCall(t *testing.T) {
+	schema := string(astGrepTool.Parameters)
+	for _, want := range []string{"errors.New($A)", "parses as a type conversion and matches nothing", `func _() { errors.New($A) }`, `set selector to \"call_expression\"`} {
+		if !strings.Contains(schema, want) {
+			t.Errorf("ast_grep's pattern description should say %q:\n%s", want, schema)
+		}
+	}
+	var params struct {
+		Properties map[string]json.RawMessage `json:"properties"`
+	}
+	if err := json.Unmarshal(astGrepTool.Parameters, &params); err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := params.Properties["selector"]; !ok {
+		t.Fatalf("the pattern description names a selector the definition does not offer:\n%s", schema)
 	}
 }
 
