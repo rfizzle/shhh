@@ -12,7 +12,10 @@ Four keys have the top two ranks, and they are the ones a single run is most
 often started with a different answer to: which provider, which model, its
 key and its reasoning level, all under `[provider]`. The provider's base URL
 has the environment rank and no flag. Every other key is a file or the
-default — there is no flag and no environment variable for it.
+default — there is no flag and no environment variable for it. The model has
+one rank more: each surface's own model key sits between the environment
+and `provider.model` (see
+[below](#each-surface-can-have-a-model-of-its-own)).
 
 No setting reverses this order. That uniformity is worth more than the
 flexibility of special-casing, because it is what makes a wrong value
@@ -102,6 +105,39 @@ see why — the one failure this arrangement exists to prevent — and a warning
 is not enough, because a warning on the alternate screen is painted over and
 one on stderr before a headless run lands in a log nobody tails. The doctor's
 config row carries the same refusal, so that is where to read it.
+
+## Each surface can have a model of its own
+
+A one-shot command, a conversation and a coding agent are different work.
+The command a person wants back in a second is not what a reasoning model is
+for, and a session that edits a repository is not what the fastest model is
+for — so one `provider.model` for all three makes one of them pay for the
+other's choice. Each surface therefore reads a key of its own:
+`provider.cmd_model` for `shhh cmd` and the shell hotkey,
+`provider.chat_model` for `shhh chat`, `provider.code_model` for `shhh code`.
+
+The model resolves `--model`, then `SHHH_MODEL`, then the surface's own key,
+then `provider.model`, then the provider's default. A file that names none
+of the three runs exactly as it did before they existed. The flag and the
+variable still decide every surface's model at once, because they are the
+answer for one run and a run is one surface.
+
+A surface is the command a session is, whichever way it was started: a
+`--print` run and a served session take the key of the session they are, a
+backlog run's stages take `code_model` in a run whose steps write and
+`chat_model` in one that only reads — those are the commands they run — and
+`shhh eval` takes `code_model`, since its cases are `shhh code` runs. The
+keys sit in `[provider]` beside the model they narrow, the way
+`behavior.classifier_model` narrows one mechanism's, and a checkout may set
+them as it may set `provider.model`.
+
+Which key chose the model is said wherever the model is: `/model` states it
+beside the current model, `/model default` says when the surface's key
+outranks what it writes, and the doctor's model row names each surface key
+that is set. The bounded mechanisms keep a key each, for the same reason —
+the classifier, the card's explanation, the readings, a snippet's
+description, the backlog's readings and the profile drafter — and each one
+left unset uses the model it used before it had one.
 
 ## One layout everywhere
 
@@ -626,7 +662,10 @@ own file could hold.
 | Key | Takes | Default | What it decides |
 |---|---|---|---|
 | `default` | text | `openai-responses` | Which provider a request goes to: a built-in one, or a gateway profile from `shhh providers`. `--provider` and `SHHH_PROVIDER` are read ahead of the file. |
-| `model` | text | (the provider's own default) | The model a session runs on. `--model` and `SHHH_MODEL` are read ahead of the file. |
+| `model` | text | (the provider's own default) | The model every surface runs on where its own key — `cmd_model`, `chat_model` or `code_model` — names none. `--model` and `SHHH_MODEL` are read ahead of the file. |
+| `cmd_model` | text | (provider.model) | The model `shhh cmd` and the shell hotkey generate a command on, read ahead of `provider.model`. `--model` and `SHHH_MODEL` are read ahead of the file. |
+| `chat_model` | text | (provider.model) | The model `shhh chat` runs on, a `--print` conversation and the stages of a backlog run that only reads included, read ahead of `provider.model`. `--model` and `SHHH_MODEL` are read ahead of the file. |
+| `code_model` | text | (provider.model) | The model `shhh code` runs on — a `--print` run, `shhh serve`, `shhh eval` and the stages of a backlog run that writes included — read ahead of `provider.model`. `--model` and `SHHH_MODEL` are read ahead of the file. |
 | `api_key` | text | (from the environment) | The provider key itself, which puts a copy of it in every copy of this file; `api_key_env` is the form to prefer. `--api-key` and `SHHH_API_KEY` are read ahead of the file. It is a credential: the listing says whether it is set, never what it is. |
 | `api_key_env` | variable | (the provider's own variable) | The environment variable the provider key is read from at start, so the file names the key instead of holding it. It is read ahead of `api_key`. |
 | `base_url` | text | (the provider's own) | Where the provider's API is, for a gateway or a self-hosted endpoint. `SHHH_BASE_URL` is read ahead of the file. |
@@ -660,6 +699,8 @@ own file could hold.
 | `classifier_timeout_seconds` | number | `30` | How long one classifier request may take. |
 | `classifier_max_tokens` | number | `8192` | The ceiling on a classifier response, the reasoning it does before answering included. |
 | `classifier_retries` | number | `1` | How many extra attempts an invalid or failed classifier response gets before it fails closed. |
+| `explainer_model` | text | (the classifier's model) | The model an approval card's explanation of a command is asked of. |
+| `description_model` | text | (the provider's small model, or the one-shot's own) | The model that writes the one-line description a command saved from `shhh cmd` is listed under. |
 | `memory_disabled` | true/false | `off` | Turn durable memory off: nothing is injected and the remember tool is not registered. |
 | `memory_max_entries` | number | `20` | How many memories are injected into one session's system prompt. |
 | `memory_max_tokens` | number | `1200` | The token budget for the injected memory block. |
@@ -772,6 +813,7 @@ own file could hold.
 | Key | Takes | Default | What it decides |
 |---|---|---|---|
 | `model` | text | `inherit` | The model every sub-agent runs, unless its role says otherwise; `inherit` is the session's own. |
+| `drafter_model` | text | (the session's own) | The model `/agents new` drafts a profile on. |
 | `profiles.<role>.model` | text | (the sub-agent model) | The model one role runs — the role is the key's own segment, so any role a spawn names can have one. |
 | `depth.<depth>.model` | text | (the sub-agent model) | The model one level of delegation runs — `2` is a child of this session, `3` a child of that. A role that names its own model outranks it. |
 | `max_concurrent` | number | `3` | How many children may run at once at one level of delegation; further spawns queue. |
@@ -842,6 +884,7 @@ own file could hold.
 |---|---|---|---|
 | `root` | path | (the project you are in, else the global backlog) | Where the backlog lives when the working directory is part of no project; a session inside a project always reads that project's backlog. |
 | `profile` | text | `code` | The profile this project's backlog is written in and worked under: what an item is called, which fields it carries, and which steps a run takes; it is looked for in this checkout, then beside your settings, then among the ones built in. |
+| `model` | text | (the session's own) | The model `/todo add` reads a session into items with and `/todo new` drafts an item on; grooming and sprint planning are turns of the session and run on its model. |
 | `commit` | true/false | `on` | End a backlog run in a commit; off leaves the change in the working tree, which is the answer for a directory that is not a repository. |
 | `item_timeout_minutes` | number | 0 (no cap) | How long one item of a sprint may take before it is blocked and the sprint stops; zero leaves it uncapped. |
 | `sprint_cost_cap_cents` | number | 0 (off) | Priced spend, in cents, across a whole sprint after which it starts no further item; provider.cost_cap_cents still bounds each item's own session. `--cost-cap` is read ahead of the file. |

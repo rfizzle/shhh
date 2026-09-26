@@ -182,16 +182,22 @@ func TestSettings_RoleWildcard(t *testing.T) {
 	}
 }
 
-// The keys with a rank above the file are the five the documentation names,
-// and no others: a key that claimed an environment variable nothing reads
-// would put a source in the listing that never happens.
+// The keys with a rank above the file are the provider keys the
+// documentation names, and no others: a key that claimed an environment
+// variable nothing reads
+// would put a source in the listing that never happens. The surface model
+// keys share the model's two ranks, because the flag and the variable decide
+// every surface's model ahead of them.
 func TestSettings_OnlyTheProviderKeysOutrankTheFile(t *testing.T) {
 	want := map[string]string{
-		"provider.default":   "SHHH_PROVIDER",
-		"provider.model":     "SHHH_MODEL",
-		"provider.api_key":   "SHHH_API_KEY",
-		"provider.base_url":  "SHHH_BASE_URL",
-		"provider.reasoning": "SHHH_REASONING",
+		"provider.default":    "SHHH_PROVIDER",
+		"provider.model":      "SHHH_MODEL",
+		"provider.cmd_model":  "SHHH_MODEL",
+		"provider.chat_model": "SHHH_MODEL",
+		"provider.code_model": "SHHH_MODEL",
+		"provider.api_key":    "SHHH_API_KEY",
+		"provider.base_url":   "SHHH_BASE_URL",
+		"provider.reasoning":  "SHHH_REASONING",
 	}
 	for _, s := range settings {
 		if s.Env == "" {

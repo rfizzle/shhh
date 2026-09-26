@@ -203,7 +203,19 @@ var settings = []Setting{
 	}, {
 		Key: "provider.model", Kind: KindString, Default: "(the provider's own default)",
 		Env: "SHHH_MODEL", Flag: "--model",
-		Desc: "The model a session runs on.",
+		Desc: "The model every surface runs on where its own key — `cmd_model`, `chat_model` or `code_model` — names none.",
+	}, {
+		Key: "provider.cmd_model", Kind: KindString, Default: "(provider.model)",
+		Env: "SHHH_MODEL", Flag: "--model",
+		Desc: "The model `shhh cmd` and the shell hotkey generate a command on, read ahead of `provider.model`.",
+	}, {
+		Key: "provider.chat_model", Kind: KindString, Default: "(provider.model)",
+		Env: "SHHH_MODEL", Flag: "--model",
+		Desc: "The model `shhh chat` runs on, a `--print` conversation and the stages of a backlog run that only reads included, read ahead of `provider.model`.",
+	}, {
+		Key: "provider.code_model", Kind: KindString, Default: "(provider.model)",
+		Env: "SHHH_MODEL", Flag: "--model",
+		Desc: "The model `shhh code` runs on — a `--print` run, `shhh serve`, `shhh eval` and the stages of a backlog run that writes included — read ahead of `provider.model`.",
 	}, {
 		Key: "provider.api_key", Kind: KindString, Default: "(from the environment)", Secret: true,
 		Env: "SHHH_API_KEY", Flag: "--api-key",
@@ -298,6 +310,12 @@ var settings = []Setting{
 	}, {
 		Key: "behavior.classifier_retries", Kind: KindInt, Default: "1",
 		Desc: "How many extra attempts an invalid or failed classifier response gets before it fails closed.",
+	}, {
+		Key: "behavior.explainer_model", Kind: KindString, Default: "(the classifier's model)",
+		Desc: "The model an approval card's explanation of a command is asked of.",
+	}, {
+		Key: "behavior.description_model", Kind: KindString, Default: "(the provider's small model, or the one-shot's own)",
+		Desc: "The model that writes the one-line description a command saved from `shhh cmd` is listed under.",
 	}, {
 		Key: "behavior.memory_disabled", Kind: KindBool, Default: "off",
 		Desc: "Turn durable memory off: nothing is injected and the remember tool is not registered.",
@@ -488,6 +506,9 @@ var settings = []Setting{
 		Key: "agents.model", Kind: KindString, Default: "inherit",
 		Desc: "The model every sub-agent runs, unless its role says otherwise; `inherit` is the session's own.",
 	}, {
+		Key: "agents.drafter_model", Kind: KindString, Default: "(the session's own)",
+		Desc: "The model `/agents new` drafts a profile on.",
+	}, {
 		Key: "agents.profiles." + RoleWildcard + ".model", Kind: KindString, Wild: WildRole,
 		Default: "(the sub-agent model)",
 		Desc:    "The model one role runs — the role is the key's own segment, so any role a spawn names can have one.",
@@ -622,6 +643,9 @@ var settings = []Setting{
 	}, {
 		Key: "todo.profile", Kind: KindString, Default: "code",
 		Desc: "The profile this project's backlog is written in and worked under: what an item is called, which fields it carries, and which steps a run takes; it is looked for in this checkout, then beside your settings, then among the ones built in.",
+	}, {
+		Key: "todo.model", Kind: KindString, Default: "(the session's own)",
+		Desc: "The model `/todo add` reads a session into items with and `/todo new` drafts an item on; grooming and sprint planning are turns of the session and run on its model.",
 	}, {
 		Key: "todo.commit", Kind: KindBool, Default: "on",
 		Desc: "End a backlog run in a commit; off leaves the change in the working tree, which is the answer for a directory that is not a repository.",

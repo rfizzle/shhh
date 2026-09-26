@@ -15,6 +15,7 @@ import (
 	"github.com/mattn/go-isatty"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/clipboard"
+	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/pricing"
@@ -122,9 +123,10 @@ func newCmdCmd() *cobra.Command {
 			// The config half of a resolution, the way every other command
 			// that reaches a provider fills it in (session.go): the root
 			// carries no model flags to fill in for anyone now.
-			flags.ConfigProvider = cfg.Provider.Default
-			flags.ConfigModel = cfg.Provider.Model
-			flags.ConfigReasoning = cfg.Provider.Reasoning
+			// The one-shot reads its own model key ahead of provider.model:
+			// the command a person wants back in a second is not the work
+			// the coding agent's model was chosen for.
+			fillConfigHalf(&flags, cfg, config.SurfaceCmd)
 
 			maxChars := cfg.EffectiveContextMaxTokens() * 4
 
@@ -520,7 +522,7 @@ func newCmdCmd() *cobra.Command {
 						fmt.Fprintf(os.Stderr, "Error saving snippet: %v\n", err)
 					} else {
 						fmt.Fprintf(os.Stderr, "Saved snippet %q.\n", result.SaveName)
-						if desc := snippetDescription(cmd.Context(), p, resolved.Model, result.Command, result.Explanation); desc != "" {
+						if desc := snippetDescription(cmd.Context(), p, resolved.Model, cfg.Behavior.DescriptionModel, result.Command, result.Explanation); desc != "" {
 							_ = db.UpdateSnippetDescription(result.SaveName, desc)
 							fmt.Fprintf(os.Stderr, "Description: %s\n", desc)
 						}

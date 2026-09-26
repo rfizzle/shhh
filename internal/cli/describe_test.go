@@ -17,7 +17,7 @@ func TestSnippetDescriptionReusesTheSentenceOnScreen(t *testing.T) {
 	var asked []time.Time
 	p := oneShotProvider{answer: "summary nobody should have paid for", asked: &asked}
 
-	got := snippetDescription(context.Background(), p, "gpt-5", "lsof -i -P -n", "Lists every open network port and the process holding it")
+	got := snippetDescription(context.Background(), p, "gpt-5", "", "lsof -i -P -n", "Lists every open network port and the process holding it")
 	if want := "Lists every open network port and the process holding it"; got != want {
 		t.Errorf("description = %q, want %q", got, want)
 	}
@@ -33,7 +33,7 @@ func TestSnippetDescriptionAsksWhenNothingWasShown(t *testing.T) {
 	var asked []time.Time
 	p := oneShotProvider{answer: "  list open network ports  ", asked: &asked}
 
-	got := snippetDescription(context.Background(), p, "gpt-5", "lsof -i -P -n", "")
+	got := snippetDescription(context.Background(), p, "gpt-5", "", "lsof -i -P -n", "")
 	if want := "list open network ports"; got != want {
 		t.Errorf("description = %q, want %q", got, want)
 	}
@@ -48,7 +48,7 @@ func TestSnippetDescriptionIsEmptyWhenTheRequestFails(t *testing.T) {
 	var asked []time.Time
 	p := oneShotProvider{asked: &asked}
 
-	if got := snippetDescription(context.Background(), p, "gpt-5", "lsof -i -P -n", ""); got != "" {
+	if got := snippetDescription(context.Background(), p, "gpt-5", "", "lsof -i -P -n", ""); got != "" {
 		t.Errorf("a refused request produced %q", got)
 	}
 }
@@ -57,14 +57,14 @@ func TestSnippetDescriptionIsEmptyWhenTheRequestFails(t *testing.T) {
 // column, so it arrives wrapped and it arrives long. Both are the store's
 // problem before they are the listing's.
 func TestSnippetDescriptionIsClampedToTheColumn(t *testing.T) {
-	wrapped := snippetDescription(context.Background(), nil, "gpt-5", "", "Lists every open port\nand the process holding it")
+	wrapped := snippetDescription(context.Background(), nil, "gpt-5", "", "", "Lists every open port\nand the process holding it")
 	if want := "Lists every open port and the process holding it"; wrapped != want {
 		t.Errorf("wrapped explanation = %q, want %q", wrapped, want)
 	}
 
 	// A multi-byte character straddling the cut is the case a byte slice
 	// gets wrong: the row comes back with half a rune in it.
-	long := snippetDescription(context.Background(), nil, "gpt-5", "", strings.Repeat("é", 200))
+	long := snippetDescription(context.Background(), nil, "gpt-5", "", "", strings.Repeat("é", 200))
 	if n := utf8.RuneCountInString(long); n > descriptionChars {
 		t.Errorf("clamped explanation is %d runes, want at most %d", n, descriptionChars)
 	}
@@ -97,7 +97,7 @@ func TestSavedSnippetHoldsTheDescription(t *testing.T) {
 			if err := db.SaveSnippet(c.name, command); err != nil {
 				t.Fatalf("save the snippet: %v", err)
 			}
-			desc := snippetDescription(context.Background(), p, "gpt-5", command, c.explanation)
+			desc := snippetDescription(context.Background(), p, "gpt-5", "", command, c.explanation)
 			if err := db.UpdateSnippetDescription(c.name, desc); err != nil {
 				t.Fatalf("write the description: %v", err)
 			}
@@ -143,7 +143,7 @@ func TestSnippetDescriptionIsAskedAsABoundedCall(t *testing.T) {
 	var opts provider.CompletionOpts
 	p := describeProvider{name: "anthropic", opts: &opts}
 
-	if got := snippetDescription(context.Background(), p, "claude-opus-5", "lsof -i -P -n", ""); got != "list open network ports" {
+	if got := snippetDescription(context.Background(), p, "claude-opus-5", "", "lsof -i -P -n", ""); got != "list open network ports" {
 		t.Fatalf("description = %q", got)
 	}
 	if want := provider.Defaults("anthropic").CheapModel; opts.Model != want {
@@ -163,10 +163,24 @@ func TestSnippetDescriptionFallsBackToTheSessionModel(t *testing.T) {
 	var opts provider.CompletionOpts
 	p := describeProvider{name: "no-cheap-model-of-its-own", opts: &opts}
 
-	if got := snippetDescription(context.Background(), p, "llama3", "lsof -i -P -n", ""); got == "" {
+	if got := snippetDescription(context.Background(), p, "llama3", "", "lsof -i -P -n", ""); got == "" {
 		t.Fatal("the description should still be asked for")
 	}
 	if opts.Model != "llama3" {
 		t.Errorf("model = %q, want the session's own", opts.Model)
+	}
+}
+
+// behavior.description_model outranks both halves of that rule when a person
+// named one, and a blank one leaves the rule as it was.
+func TestSnippetDescriptionTakesTheConfiguredModel(t *testing.T) {
+	var opts provider.CompletionOpts
+	p := describeProvider{name: "anthropic", opts: &opts}
+
+	if got := snippetDescription(context.Background(), p, "claude-opus-5", "my-describer", "lsof -i -P -n", ""); got == "" {
+		t.Fatal("the description should still be asked for")
+	}
+	if opts.Model != "my-describer" {
+		t.Errorf("model = %q, want the configured one", opts.Model)
 	}
 }

@@ -483,9 +483,11 @@ func buildSessionEnv(cmd *cobra.Command, session chatSession, ledger *meter.Ledg
 	restampProjectTrust()
 
 	flags := session.flags
-	flags.ConfigProvider = cfg.Provider.Default
-	flags.ConfigModel = cfg.Provider.Model
-	flags.ConfigReasoning = cfg.Provider.Reasoning
+	// A session reads the model key of the command it is — `chat` or
+	// `code` — ahead of provider.model, and so does its `--print` run and a
+	// served one. A backlog run's stages are these commands, so each stage
+	// takes the key of the command it was started as.
+	fillConfigHalf(flags, cfg, session.kind)
 
 	resolved := resolve.Resolve(*flags)
 
@@ -1051,6 +1053,8 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 			Model:      cfg.Provider.Model,
 			AgentModel: cfg.Agents.Model,
 			Outranked:  outranking(resolve.ModelOutranks(*session.flags), proj, "provider.model"),
+			Started:    env.modelName,
+			StartedBy:  resolve.ModelFrom(*session.flags),
 			Delegation: delegationWords(cfg.AgentDelegation()),
 		}).
 		WithApprovalMode(mode, cycle).
@@ -1144,7 +1148,9 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		// What the reading is a reading of, in the words the person would
 		// use for it. A prompt that called a conversation a coding session
 		// would be asking the model to read something that did not happen.
-		reading := todo.ExtractConfig{Model: env.modelName, Session: todo.CodingSession}
+		// todo.model moves the two backlog readings below off the session's
+		// model where a person named one, and leaves them on it otherwise.
+		reading := todo.ExtractConfig{Model: modelOr(cfg.Todo.Model, env.modelName), Session: todo.CodingSession}
 		if session.conversation {
 			reading.Session = todo.Conversation
 		}

@@ -35,6 +35,15 @@ type Opts struct {
 	ConfigProvider  string
 	ConfigModel     string
 	ConfigReasoning string
+
+	// SurfaceKey and SurfaceModel are the key the resolving surface reads
+	// its own model from — `provider.code_model` for `shhh code` — and what
+	// that key holds. The model resolves flag, environment, this, then
+	// ConfigModel, so a surface that names no key of its own resolves as it
+	// always did.
+	// See docs/capabilities/configuration.md#each-surface-can-have-a-model-of-its-own.
+	SurfaceKey   string
+	SurfaceModel string
 }
 
 type Resolved struct {
@@ -49,7 +58,7 @@ type Resolved struct {
 
 func Resolve(opts Opts) Resolved {
 	provider := First(opts.FlagProvider, os.Getenv("SHHH_PROVIDER"), opts.ConfigProvider, DefaultProvider)
-	model := First(opts.FlagModel, os.Getenv("SHHH_MODEL"), opts.ConfigModel, defaultModels[provider])
+	model := First(opts.FlagModel, os.Getenv("SHHH_MODEL"), opts.SurfaceModel, opts.ConfigModel, defaultModels[provider])
 	return Resolved{
 		Provider:  provider,
 		Model:     model,
@@ -57,14 +66,15 @@ func Resolve(opts Opts) Resolved {
 	}
 }
 
-// ModelOutranks names what is deciding the model ahead of the config file, or
+// ModelOutranks names what is deciding the model ahead of provider.model, or
 // "" when nothing is. The order above is a precedence nobody can see, and a
 // setting overruled by something invisible is indistinguishable from one that
 // was never saved — which is exactly how `/model default` came to look broken
 // while writing the file correctly every time.
 //
-// Only the two ranks above the config file count. Below it there is nothing
-// to report: a config value that is set is the answer.
+// Only the three ranks above provider.model count: the flag, the
+// environment, and the surface's own key. Below it there is nothing to
+// report: a provider.model that is set is the answer.
 func ModelOutranks(opts Opts) string {
 	if opts.FlagModel != "" {
 		return "--model " + opts.FlagModel + " is on the command line"
@@ -72,7 +82,29 @@ func ModelOutranks(opts Opts) string {
 	if v := os.Getenv("SHHH_MODEL"); v != "" {
 		return "SHHH_MODEL is set to " + v
 	}
+	if opts.SurfaceModel != "" {
+		return opts.SurfaceKey + " is set to " + opts.SurfaceModel
+	}
 	return ""
+}
+
+// ModelFrom names the rank that decided the model Resolve answers with, in
+// the words a reader would type to change it: the flag, the variable, the
+// surface's own key, provider.model, or the provider's default. It is the
+// same order as Resolve and read off the same values, so the surface that
+// says which key chose the model cannot disagree with the one that chose it.
+func ModelFrom(opts Opts) string {
+	switch {
+	case opts.FlagModel != "":
+		return "--model"
+	case os.Getenv("SHHH_MODEL") != "":
+		return "SHHH_MODEL"
+	case opts.SurfaceModel != "":
+		return opts.SurfaceKey
+	case opts.ConfigModel != "":
+		return "provider.model"
+	}
+	return "the provider's default"
 }
 
 // ReasoningOutranks is ModelOutranks for the reasoning level, and exists for

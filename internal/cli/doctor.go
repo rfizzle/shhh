@@ -693,8 +693,27 @@ func probeModel(ctx context.Context, cfg config.Config) doctorFinding {
 	// by the config file, which is how `/model default` came to look broken
 	// while writing the file correctly. The row that reports the
 	// model is the row that has to say who chose it.
-	if over := resolve.ModelOutranks(resolve.Opts{ConfigModel: cfg.Provider.Model}); over != "" && cfg.Provider.Model != "" {
-		f.Detail = joinDetail(f.Detail, over+", overruling provider.model = "+cfg.Provider.Model)
+	//
+	// The row reports provider.model's resolution, and each surface key that
+	// is set beside it by name, because a surface that reads its own key runs
+	// on a model this row would otherwise never mention.
+	// See docs/capabilities/configuration.md#each-surface-can-have-a-model-of-its-own.
+	var set []string
+	if cfg.Provider.Model != "" {
+		set = append(set, "provider.model = "+cfg.Provider.Model)
+	}
+	var surfaces []string
+	for _, s := range []string{config.SurfaceCmd, config.SurfaceChat, config.SurfaceCode} {
+		if key, model := cfg.SurfaceModel(s); model != "" {
+			surfaces = append(surfaces, key+" = "+model)
+		}
+	}
+	over := resolve.ModelOutranks(resolve.Opts{ConfigModel: cfg.Provider.Model})
+	switch {
+	case over != "" && len(set)+len(surfaces) > 0:
+		f.Detail = joinDetail(f.Detail, over+", overruling "+strings.Join(append(set, surfaces...), ", "))
+	case len(surfaces) > 0:
+		f.Detail = joinDetail(f.Detail, strings.Join(surfaces, ", ")+" ahead of provider.model")
 	}
 	// A reasoning level is the other half of what a request asks for,
 	// and an unreadable one is a session that will fail to start rather than

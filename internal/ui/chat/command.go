@@ -479,7 +479,7 @@ func slashHelp(m *Model, _ []string) string {
 func slashModel(m *Model, parts []string) string {
 	if len(parts) < 2 {
 		if m.modelName != "" {
-			return fmt.Sprintf("current model: %s\n%s", m.modelName, modelUsage)
+			return fmt.Sprintf("current model: %s%s\n%s", m.modelName, m.modelChosenBy(), modelUsage)
 		}
 		return modelUsage
 	}

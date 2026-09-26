@@ -16,11 +16,34 @@
 # outrank this.
 #default = "openai-responses"
 
-# The model a session runs on.
+# The model every surface runs on where its own key — `cmd_model`,
+# `chat_model` or `code_model` — names none.
 # The default is the provider's own default.
 # --model on the command line, then SHHH_MODEL in the environment, outrank
 # this.
 #model = ""
+
+# The model `shhh cmd` and the shell hotkey generate a command on, read ahead
+# of `provider.model`.
+# The default is provider.model.
+# --model on the command line, then SHHH_MODEL in the environment, outrank
+# this.
+#cmd_model = ""
+
+# The model `shhh chat` runs on, a `--print` conversation and the stages of a
+# backlog run that only reads included, read ahead of `provider.model`.
+# The default is provider.model.
+# --model on the command line, then SHHH_MODEL in the environment, outrank
+# this.
+#chat_model = ""
+
+# The model `shhh code` runs on — a `--print` run, `shhh serve`, `shhh eval`
+# and the stages of a backlog run that writes included — read ahead of
+# `provider.model`.
+# The default is provider.model.
+# --model on the command line, then SHHH_MODEL in the environment, outrank
+# this.
+#code_model = ""
 
 # The provider key itself, which puts a copy of it in every copy of this file;
 # `api_key_env` is the form to prefer.

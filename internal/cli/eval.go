@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/rfizzle/shhh/internal/cli/report"
+	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/eval"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/resolve"
@@ -80,9 +81,10 @@ func newEvalCmd() *cobra.Command {
 			}
 
 			cfg := ConfigFrom(cmd.Context())
-			flags.ConfigProvider = cfg.Provider.Default
-			flags.ConfigModel = cfg.Provider.Model
-			flags.ConfigReasoning = cfg.Provider.Reasoning
+			// The suite's sessions are `shhh code` runs, so it measures the
+			// model that command would run on rather than a second answer
+			// to the same question.
+			fillConfigHalf(&flags, cfg, config.SurfaceCode)
 			resolved := resolve.Resolve(flags)
 
 			// A run of scripted cases alone measured no model, and the name a

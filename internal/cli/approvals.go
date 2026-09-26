@@ -124,6 +124,10 @@ func gateModel(cfg config.Config, env *sessionEnv) string {
 // and this one is how long a person will look at a card that says "asking".
 // A reader who lengthened the first did not ask for the second.
 //
+// behavior.explainer_model is the one way to part the two models, and it is
+// a person's choice: unset, the explanation reads with the classifier's
+// model, for the reason gateModel gives.
+//
 // The words are the one-shot's, handed down rather than restated: what an
 // explanation of a command says and how long it is was settled for `shhh cmd`
 // and `[x]` there, and a second wording here would be the same rule in two
@@ -131,7 +135,7 @@ func gateModel(cfg config.Config, env *sessionEnv) string {
 // nothing else on it is for.
 func buildExplainer(cfg config.Config, env *sessionEnv, ledger *meter.Ledger) *agent.Explainer {
 	return agent.NewExplainer(ledger.For(env.prov, meter.SourceExplanation), agent.ExplainConfig{
-		Model:  gateModel(cfg, env),
+		Model:  modelOr(cfg.Behavior.ExplainerModel, gateModel(cfg, env)),
 		Prompt: prompt.BuildExplain(true),
 	})
 }

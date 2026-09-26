@@ -85,6 +85,11 @@ type TodoConfig struct {
 	// that order.
 	// See docs/capabilities/todo.md#a-profile-says-what-the-work-is.
 	Profile string `toml:"profile"`
+	// Model is the model `/todo add` reads a session into items with and
+	// `/todo new` drafts one from a sentence on. Empty means the session's
+	// own: both are a judgement about the work, not a status line. Grooming
+	// and sprint planning are turns of the session and run on its model.
+	Model string `toml:"model"`
 	// Commit says whether a run ends in a commit. Unset is a commit,
 	// because a commit is what the runner treats as done and an item
 	// archived beside an uncommitted tree is an item that says it landed
@@ -484,6 +489,16 @@ type SandboxConfig struct {
 type ProviderConfig struct {
 	Default string `toml:"default"`
 	Model   string `toml:"model"`
+	// CmdModel, ChatModel and CodeModel are each surface's own model, read
+	// ahead of Model and behind the flag and the environment: a one-shot, a
+	// conversation and a coding agent are different enough work that one
+	// model for all three makes the one-shot pay for the coding agent's
+	// model or the agent run on the one-shot's. Empty falls through to
+	// Model, so a file that names none of them runs as it always did.
+	// See docs/capabilities/configuration.md#each-surface-can-have-a-model-of-its-own.
+	CmdModel  string `toml:"cmd_model"`
+	ChatModel string `toml:"chat_model"`
+	CodeModel string `toml:"code_model"`
 	// APIKey holds the key itself, so every copy of this file — a backup, a
 	// dotfiles commit, a screen share — is a copy of the key. APIKeyEnv is
 	// the form to prefer, and this one is here for the machines that were
@@ -589,6 +604,14 @@ type BehaviorConfig struct {
 	// Empty means the provider's own small model, and the session model
 	// where the provider names none.
 	ClassifierModel string `toml:"classifier_model"`
+	// ExplainerModel is the model the approval card's explanation is asked
+	// of. Empty means what the classifier runs on, which is what the
+	// explanation used before it had a key of its own.
+	ExplainerModel string `toml:"explainer_model"`
+	// DescriptionModel is the model a saved snippet's one-line description
+	// is written by. Empty means the provider's own small model, and the
+	// one-shot's where the provider names none.
+	DescriptionModel string `toml:"description_model"`
 	// ClassifierTimeoutSeconds bounds each classifier request (default 30).
 	ClassifierTimeoutSeconds int `toml:"classifier_timeout_seconds"`
 	// ClassifierMaxTokens caps the classifier's response, the reasoning it
@@ -644,6 +667,9 @@ type BehaviorConfig struct {
 type AgentsConfig struct {
 	// Model is the default model for every sub-agent.
 	Model string `toml:"model"`
+	// DrafterModel is the model `/agents new` drafts a profile on. Empty
+	// means the session's own: a profile is a judgement about the work.
+	DrafterModel string `toml:"drafter_model"`
 	// Profiles override per role ("researcher", "writer"), keyed by role name.
 	Profiles map[string]AgentProfile `toml:"profiles"`
 	// MaxConcurrent bounds simultaneously running children at one level of
@@ -1181,6 +1207,32 @@ func keyFromEnvOrFile(name, literal string) string {
 // ProviderBaseURL returns the configured base URL.
 func (c Config) ProviderBaseURL() string {
 	return c.Provider.BaseURL
+}
+
+// The surfaces that have a model key of their own, spelled the way the
+// command is and the way the record's session kind is.
+const (
+	SurfaceCmd  = "cmd"
+	SurfaceChat = "chat"
+	SurfaceCode = "code"
+)
+
+// SurfaceModel is the model a surface's own key names and the key's name,
+// for the resolution that puts it between the environment and
+// provider.model. An unknown surface, or a surface whose key is unset,
+// answers with an empty model and the key still named, so a caller can pass
+// both through without asking which case it is.
+// See docs/capabilities/configuration.md#each-surface-can-have-a-model-of-its-own.
+func (c Config) SurfaceModel(surface string) (key, model string) {
+	switch surface {
+	case SurfaceCmd:
+		return "provider.cmd_model", c.Provider.CmdModel
+	case SurfaceChat:
+		return "provider.chat_model", c.Provider.ChatModel
+	case SurfaceCode:
+		return "provider.code_model", c.Provider.CodeModel
+	}
+	return "", ""
 }
 
 // ProviderDisplayName returns the configured custom display name.

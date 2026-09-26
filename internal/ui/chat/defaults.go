@@ -34,11 +34,18 @@ type Defaults struct {
 	// "inherit" means children follow the session model.
 	AgentModel string
 	// Outranked names what beats provider.model when a new session resolves
-	// one — an env var, or a flag on the command line. It is empty when
-	// nothing does. Writing a default that something else overrules is the
-	// one way this surface can succeed and still not work, so the row that
-	// writes it has to say so.
+	// one — a flag on the command line, an env var, or this surface's own
+	// model key. It is empty when nothing does. Writing a default that
+	// something else overrules is the one way this surface can succeed and
+	// still not work, so the row that writes it has to say so.
 	Outranked string
+	// Started is the model the session started on and StartedBy the rank
+	// that chose it — `--model`, `SHHH_MODEL`, the surface's own key,
+	// `provider.model` or the provider's default — which `/model` states
+	// beside the current model while the session is still on it.
+	// See docs/capabilities/configuration.md#each-surface-can-have-a-model-of-its-own.
+	Started   string
+	StartedBy string
 	// Delegation is agents.delegation as /status states it, worded by the
 	// CLI so the line and a headless run's stderr say it the same way. Empty
 	// is a session that was told nothing, and /status then says nothing.
@@ -68,7 +75,7 @@ func (m *Model) setModelDefault(which string, rest []string) string {
 		// Reporting a setting that is being overruled without saying so is
 		// the same lie as writing one, told more quietly.
 		if which == "default" && m.defaults.Outranked != "" {
-			note += fmt.Sprintf("\noverruled: %s, which outranks the config file", m.defaults.Outranked)
+			note += fmt.Sprintf("\noverruled: %s, which outranks your provider.model", m.defaults.Outranked)
 		}
 		return note + "\n" + modelUsage
 	}
@@ -97,7 +104,7 @@ func (m *Model) setModelDefault(which string, rest []string) string {
 	// A default that something else overrules was written and will still be
 	// ignored, which is the one outcome a success message must not claim.
 	if m.defaults.Outranked != "" {
-		note += fmt.Sprintf("\nit will not take effect while %s — that outranks the config file", m.defaults.Outranked)
+		note += fmt.Sprintf("\nit will not take effect while %s — that outranks your provider.model", m.defaults.Outranked)
 	}
 	return note
 }
@@ -108,4 +115,16 @@ func (m Model) defaultFallback(which string) string {
 		return "sub-agents follow the session model"
 	}
 	return "new sessions use the provider's built-in default"
+}
+
+// modelChosenBy is the clause `/model` puts after the current model: which
+// rank chose it, while the session is still on the model it started on. A
+// session switched since is on the model somebody picked here, and naming a
+// key for it would send the reader to a file that did not decide it.
+// See docs/capabilities/configuration.md#each-surface-can-have-a-model-of-its-own.
+func (m Model) modelChosenBy() string {
+	if m.defaults.StartedBy == "" || m.modelName != m.defaults.Started {
+		return ""
+	}
+	return " (chosen by " + m.defaults.StartedBy + ")"
 }

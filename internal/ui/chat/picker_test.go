@@ -1198,6 +1198,36 @@ func TestModelDefault_NamesWhatOutranksIt(t *testing.T) {
 	}
 }
 
+// The surface's own key is a rank the reader cannot see, so /model names the
+// key that chose the model while the session is still on it, and names none
+// once the session has been switched here — that model was nobody's key.
+// See docs/capabilities/configuration.md#each-surface-can-have-a-model-of-its-own.
+func TestModel_NamesTheKeyThatChoseIt(t *testing.T) {
+	m := New(nil, mockStream).
+		WithConfigWriter(func(string, string) error { return nil }).
+		WithModelSwitcher(func(string) {}).
+		WithDefaults(Defaults{
+			Outranked: "provider.code_model is set to o3",
+			Started:   "o3", StartedBy: "provider.code_model",
+		})
+	m.modelName = "o3"
+
+	_, out := m.handleSlashCommand("/model")
+	if !strings.Contains(out, "current model: o3 (chosen by provider.code_model)") {
+		t.Fatalf("/model should name the key that chose the model, got %q", out)
+	}
+	_, out = m.handleSlashCommand("/model default gpt-5")
+	if !strings.Contains(out, "provider.code_model") || !strings.Contains(out, "outranks your provider.model") {
+		t.Fatalf("a default the surface key overrules should say so, got %q", out)
+	}
+
+	m.modelName = "gpt-5"
+	_, out = m.handleSlashCommand("/model")
+	if strings.Contains(out, "chosen by") {
+		t.Fatalf("a model switched to here was chosen by no key, got %q", out)
+	}
+}
+
 // A card that opens over a catalog opens as a search: the first keystroke
 // names what the reader is after rather than being spent opening the row it
 // would have gone into.

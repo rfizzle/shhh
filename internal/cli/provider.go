@@ -66,6 +66,19 @@ func addModelFlags(cmd *cobra.Command, flags *resolve.Opts) {
 		"reasoning effort: off, low, medium, high, xhigh, max (default medium; fitted to the model)")
 }
 
+// fillConfigHalf is the config half of a resolution, filled in the one way
+// every command that reaches a provider fills it: the provider, provider.model,
+// the reasoning level, and the model key of the surface the command is. It is
+// one function so the three commands that resolve a model cannot come to read
+// the surface key in two different orders.
+// See docs/capabilities/configuration.md#each-surface-can-have-a-model-of-its-own.
+func fillConfigHalf(flags *resolve.Opts, cfg config.Config, surface string) {
+	flags.ConfigProvider = cfg.Provider.Default
+	flags.ConfigModel = cfg.Provider.Model
+	flags.ConfigReasoning = cfg.Provider.Reasoning
+	flags.SurfaceKey, flags.SurfaceModel = cfg.SurfaceModel(surface)
+}
+
 // tryProvider is the resolution on its own: the provider the request names,
 // or the error saying why there is none.
 //

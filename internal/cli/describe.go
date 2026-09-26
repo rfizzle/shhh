@@ -40,15 +40,16 @@ const descriptionTimeout = 15 * time.Second
 // See docs/capabilities/generation.md#explanation-is-on-request-not-by-default.
 //
 // model is the session's own, which the request falls back to only where the
-// provider names no small one of its own (summarizer.go).
-func snippetDescription(ctx context.Context, p provider.Provider, model, command, explanation string) string {
+// provider names no small one of its own (summarizer.go). configured is
+// behavior.description_model, which outranks both when a person named one.
+func snippetDescription(ctx context.Context, p provider.Provider, model, configured, command, explanation string) string {
 	if explanation != "" {
 		return clampDescription(explanation)
 	}
-	return generateDescription(ctx, p, model, command)
+	return generateDescription(ctx, p, model, configured, command)
 }
 
-func generateDescription(ctx context.Context, p provider.Provider, model, command string) string {
+func generateDescription(ctx context.Context, p provider.Provider, model, configured, command string) string {
 	ctx, cancel := context.WithTimeout(ctx, descriptionTimeout)
 	defer cancel()
 
@@ -62,7 +63,7 @@ func generateDescription(ctx context.Context, p provider.Provider, model, comman
 	// thinks whether or not it was asked.
 	// See docs/capabilities/providers.md#a-bounded-call-runs-on-the-small-model.
 	events, err := p.StreamCompletion(ctx, msgs, provider.CompletionOpts{
-		Model:     auxiliaryModel(p.Name(), model),
+		Model:     modelOr(configured, auxiliaryModel(p.Name(), model)),
 		MaxTokens: descriptionMaxTokens,
 		Effort:    provider.EffortLow,
 	})

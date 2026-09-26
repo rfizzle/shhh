@@ -94,6 +94,14 @@ func TestCheckInFor(t *testing.T) {
 // settingsAllowlist is every config key the stamp keeps whole. A key not on
 // it reaches the store only through the hash, and a key added to the config
 // is off it until someone adds it here and in sessionSettings both.
+//
+// The surface model keys (Provider.CmdModel, ChatModel, CodeModel) stay off
+// on purpose: the model a surface resolved is already the session row's own
+// `model` column, which a comparison splits on, and stamping the key beside
+// it would be a second column for the same answer. The bounded mechanisms'
+// newer keys (Behavior.ExplainerModel, DescriptionModel, Todo.Model,
+// Agents.DrafterModel) stay off because none of them shapes a session's
+// turns — they reach the store through the hash, which still splits on them.
 var settingsAllowlist = map[string]bool{
 	"Summary.Model":                  true,
 	"Summary.IntervalRounds":         true,

@@ -1,9 +1,12 @@
-  shhh config list provider — 11 settings · ~/.config/shhh/config.toml · .shhh/…
+  shhh config list provider — 14 settings · ~/.config/shhh/config.toml · .shhh/…
 
   PROVIDER
 
   ✓ default              anthropic  [project]
   ✓ model                gpt-4o  [user]
+  · cmd_model            (provider.model)  [default]
+  · chat_model           (provider.model)  [default]
+  · code_model           (provider.model)  [default]
   · api_key              (from the environment)  [default]
   · api_key_env          (the provider's own variable)  [default]
   · base_url             (the provider's own)  [default]
@@ -14,4 +17,4 @@
   · cost_cap_cents       0 (off)  [default]
   · stream_idle_seconds  120 seconds  [default]
 
-  3 set · 8 at their default
+  3 set · 11 at their default
