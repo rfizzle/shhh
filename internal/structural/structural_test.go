@@ -630,3 +630,59 @@ func TestRootedIsTheSameToolsElsewhereWithoutTheWriteHalf(t *testing.T) {
 		t.Errorf("a session with no tools handed a child some: %+v", got)
 	}
 }
+
+// A structured query's output past MaxOutputBytes is cut off and kept
+// nowhere, so the definitions have to teach selecting the answer in the
+// expression and must not promise a truncated result can be got back.
+func TestStructuredQueryDefinitionsTeachSelectingTheAnswer(t *testing.T) {
+	for _, tool := range []struct {
+		name   string
+		schema string
+		desc   string
+	}{
+		{JaqToolName, string(jaqTool.Parameters), jaqTool.Description},
+		{YqToolName, string(yqTool.Parameters), yqTool.Description},
+	} {
+		for _, want := range []string{"select the fields the question needs", "shape first", "cut off and lost", "narrower expression"} {
+			if !strings.Contains(tool.desc, want) {
+				t.Errorf("%s description should say %q:\n%s", tool.name, want, tool.desc)
+			}
+		}
+		if strings.Contains(tool.desc, "evidence") {
+			t.Errorf("%s description must not send a truncated result to evidence:\n%s", tool.name, tool.desc)
+		}
+		for _, want := range []string{"selects only what the question needs", "name only the files that hold the answer"} {
+			if !strings.Contains(tool.schema, want) {
+				t.Errorf("%s arguments should say %q:\n%s", tool.name, want, tool.schema)
+			}
+		}
+	}
+}
+
+// The failure the guidance is for: printing a large document with "." runs
+// into the cap and comes back cut off, while an expression that selects the
+// answer comes back whole. The script stands in for jaq so the tier needs no
+// binary: it floods for "." and answers one value for anything else.
+func TestJaqNarrowQueryAnswersWhereTheWholeDocumentIsCut(t *testing.T) {
+	script := writeScript(t, `if [ "$2" = "." ]; then yes '{"version": "1.0.0"},' | head -c 300000; else printf '"1.42.0"\n'; fi`)
+	ts := newTestToolset(t, map[string]string{JaqToolName: script})
+	if err := os.WriteFile(filepath.Join(ts.root, "big.json"), []byte("{}"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	whole, err := ts.Execute(JaqToolName, json.RawMessage(`{"expression": ".", "paths": ["big.json"]}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(whole, "output truncated") || !strings.Contains(whole, "narrow the query") {
+		t.Fatalf("printing the whole document should be cut at the cap, got %d bytes ending %q", len(whole), whole[max(0, len(whole)-80):])
+	}
+
+	narrow, err := ts.Execute(JaqToolName, json.RawMessage(`{"expression": ".packages.pkg42.version", "paths": ["big.json"]}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if narrow != `"1.42.0"` {
+		t.Fatalf("a selecting expression should come back whole, got %q", narrow)
+	}
+}

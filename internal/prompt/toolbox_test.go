@@ -134,6 +134,21 @@ func TestToolbox_SplitsTheStructuredQueryToolsByFormat(t *testing.T) {
 	}
 }
 
+// The structured-query notes say when to take a part of a large file rather
+// than read it whole; how to select that part is the tools' own definitions'.
+// A session without either tool is told nothing of the kind.
+func TestToolbox_SendsAPartOfALargeFileToTheStructuredQueryTools(t *testing.T) {
+	for _, name := range []string{"jaq", "yq"} {
+		got := Toolbox(toolList(name), false)
+		if !strings.Contains(got, "rather than reading a large") || !strings.Contains(got, "needs only part of it") {
+			t.Errorf("the %s note should say when to query rather than read a large file, got:\n%s", name, got)
+		}
+	}
+	if got := Toolbox(toolList("fd"), false); strings.Contains(got, "needs only part of it") {
+		t.Errorf("a session without jaq or yq should not be told to query part of a file:\n%s", got)
+	}
+}
+
 // The three questions beyond definition and references exist to replace a
 // search and a whole-file read, so the notes have to say so: a model that is
 // not told which tool is better than the one it already reaches for keeps

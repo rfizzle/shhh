@@ -13,17 +13,22 @@ import (
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
+// As for jaq: output past MaxOutputBytes is cut off and not kept anywhere, so
+// the expression is what has to select the answer.
+// See docs/capabilities/evidence.md#reduction-is-for-unbounded-output.
 var yqTool = provider.Tool{
 	Name: YqToolName,
 	Description: "Query YAML and XML files with yq. Give a yq expression — jq-style path syntax — and the files to run it over. " +
 		"This is the structured tool for YAML and XML: CI workflows, manifests, linter configuration. Use jaq for JSON. " +
 		"Prefer it over improvising shell pipelines for structured-data questions: it answers at the right nesting level, where a text search returns whichever indentation happened to match. " +
+		"Ask for the answer, not the document: select the fields the question needs in the expression, and on an unfamiliar file ask for its shape first (\"keys\", \"length\", \"type\") rather than printing it with \".\". " +
+		"Output past 64 KiB is cut off and lost, so a result that says it was truncated is answered by a narrower expression, not by the same one again. " +
 		"Read-only: it cannot modify files.",
 	Parameters: json.RawMessage(`{
 		"type": "object",
 		"properties": {
-			"expression": {"type": "string", "description": "yq expression, e.g. \".jobs | keys\""},
-			"paths": {"type": "array", "items": {"type": "string"}, "description": "YAML or XML files to query, relative to the workspace root (at least one)"},
+			"expression": {"type": "string", "description": "yq expression that selects only what the question needs, e.g. \".jobs | keys\" or \".jobs.build.steps[].name\""},
+			"paths": {"type": "array", "items": {"type": "string"}, "description": "YAML or XML files to query, relative to the workspace root (at least one); name only the files that hold the answer"},
 			"all_documents": {"type": "boolean", "description": "Evaluate every document of every file as one input, rather than each on its own"},
 			"input_format": {"type": "string", "enum": ["yaml", "json", "xml", "props", "csv", "tsv"], "description": "Parse the input as this rather than guessing from the extension"},
 			"output_format": {"type": "string", "enum": ["yaml", "json", "xml", "props", "csv", "tsv"], "description": "Print the result in this format"},
