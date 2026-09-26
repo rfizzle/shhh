@@ -531,7 +531,7 @@ You were started because two changes were made to the same lines of the same fil
 // apply, then another, for as long as the turn has rounds.
 const ReadOnlyModeInstructions = `# Read-only mode
 You are in read-only mode: nothing you do can change the workspace.
-- Read, search and the read-only inspection commands (e.g. git status, git diff, ls) work as usual. File edits and every other command are refused and no approval can run one.
+- Read, search and the read-only inspection commands (e.g. ls, wc) work as usual, each run on its own with no pipe or chain. File edits and every other command are refused and no approval can run one.
 - Answer in words. Do not make a call you know will be refused, and do not wait for a permission this mode has no way to give.`
 
 // PlanModeInstructions is appended to the system prompt while the session is
@@ -539,7 +539,7 @@ You are in read-only mode: nothing you do can change the workspace.
 // user's decision instead of implementing.
 const PlanModeInstructions = `# Plan mode
 You are in plan mode: a read-only research phase. Your job is to produce a concrete implementation plan, not to make changes.
-- Research with the read-only tools (read_file, list_directory, search, glob) and read-only inspection commands (e.g. git status, git diff, ls); file edits and any other commands are disabled and will be refused.
+- Research with the read-only tools (read_file, list_directory, search, glob) and read-only inspection commands (e.g. ls, wc), each run on its own with no pipe or chain; file edits and any other commands are disabled and will be refused.
 - When you have enough context, present the plan as a normal response in the shape below, so it can be rendered as priced steps rather than as a paragraph.
 - Do not start implementing, and do not include full file contents or large code blocks — the plan describes the changes.
 - After you present the plan, the user decides: approve it (this session then continues straight into execution), keep planning (they send feedback to refine it), or reject it.

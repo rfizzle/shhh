@@ -231,3 +231,41 @@ func TestToolboxSpawnLineStatesTheDelegationPolicy(t *testing.T) {
 		t.Errorf("a session with no spawn_agent was told a policy:\n%s", got)
 	}
 }
+
+// A read-only or plan session is refused a chained or piped git command, so
+// what it is told must lead to the git tool where the session has one and to
+// no git command at all: the mode paragraphs name no git command, and only
+// the toolbox line — present only beside the tool — says to use the tool.
+// A read-only child with no execute_command is the case the paragraphs used
+// to get most wrong.
+func TestReadOnlyAndPlanPromptsSendHistoryReadsToTheGitTool(t *testing.T) {
+	toolsets := []struct {
+		name  string
+		tools []string
+		git   bool
+	}{
+		{"session with git", []string{"read_file", "search", "execute_command", "git"}, true},
+		{"session without git", []string{"read_file", "search", "execute_command"}, false},
+		{"read-only child with git", []string{"read_file", "list_directory", "search", "glob", "git"}, true},
+		{"read-only child without git", []string{"read_file", "list_directory", "search", "glob"}, false},
+	}
+	modes := map[string]string{"read-only": ReadOnlyModeInstructions, "plan": PlanModeInstructions}
+
+	for mode, block := range modes {
+		if strings.Contains(strings.ToLower(block), "git") {
+			t.Errorf("the %s paragraph names git, which the session may not have:\n%s", mode, block)
+		}
+		for _, ts := range toolsets {
+			got := BuildAgent(testShell(), Toolbox(toolList(ts.tools...), false)) + "\n\n" + block
+			for _, cmd := range []string{"git status", "git diff", "git log"} {
+				if strings.Contains(got, cmd) {
+					t.Errorf("%s, %s: the prompt suggests %q", mode, ts.name, cmd)
+				}
+			}
+			line := strings.Contains(got, "- git — ") && strings.Contains(got, "Prefer it over Git shell commands and pipelines")
+			if line != ts.git {
+				t.Errorf("%s, %s: the git toolbox line present = %v, want %v", mode, ts.name, line, ts.git)
+			}
+		}
+	}
+}

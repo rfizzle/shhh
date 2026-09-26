@@ -589,6 +589,67 @@ func TestExecuteGitDoesNotRunTheRepositorysHookProgram(t *testing.T) {
 	}
 }
 
+// The definition is where the model learns how to read a large history
+// without a pipeline: a stat before the patch, the patch narrowed by paths,
+// and a limit instead of a pipe to head. It must not offer a flag the tool
+// has no field for, since a model told of one tries to pass it.
+func TestGitDefinitionTeachesStagedBoundedReads(t *testing.T) {
+	var schema struct {
+		Properties map[string]struct {
+			Description string `json:"description"`
+		} `json:"properties"`
+	}
+	if err := json.Unmarshal(gitTool.Parameters, &schema); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, want := range []string{"stat: true first", "narrowed with paths", "upstream/main...HEAD", "set limit", "separate calls in the same round"} {
+		if !strings.Contains(gitTool.Description, want) {
+			t.Errorf("the description should say %q:\n%s", want, gitTool.Description)
+		}
+	}
+	for field, want := range map[string]string{
+		"stat":  "first on a broad comparison",
+		"paths": "After a stat",
+		"limit": "default 20, max 100",
+		"ref":   "upstream/main...HEAD",
+	} {
+		if !strings.Contains(schema.Properties[field].Description, want) {
+			t.Errorf("%s's description should say %q, got %q", field, want, schema.Properties[field].Description)
+		}
+	}
+
+	all := gitTool.Description
+	for _, p := range schema.Properties {
+		all += "\n" + p.Description
+	}
+	for _, absent := range []string{"name-status", "--graph", "--decorate", "execute_command"} {
+		if strings.Contains(all, absent) {
+			t.Errorf("the definition names %q, which this tool cannot take or a session may not have", absent)
+		}
+	}
+}
+
+// The comparison a read-only session was refused as a chained and piped
+// command is three plain calls here, and each one builds.
+func TestGitRangeComparisonIsSeparateCalls(t *testing.T) {
+	ts := newTestToolset(t, nil)
+	cases := []struct {
+		args string
+		tail []string
+	}{
+		{`{"verb":"diff","ref":"upstream/main...HEAD","stat":true}`, []string{"--stat", "upstream/main...HEAD", "--"}},
+		{`{"verb":"diff","ref":"upstream/main...HEAD","paths":["main.go"]}`, []string{"upstream/main...HEAD", "--", filepath.Join(ts.root, "main.go")}},
+		{`{"verb":"log","ref":"upstream/main...HEAD","limit":50}`, []string{"--max-count=50", "upstream/main...HEAD", "--"}},
+	}
+	for _, tc := range cases {
+		got := gitArgvFor(t, ts, tc.args)
+		if !strings.HasSuffix(strings.Join(got, " "), strings.Join(tc.tail, " ")) {
+			t.Errorf("%s: argv %v should end with %v", tc.args, got, tc.tail)
+		}
+	}
+}
+
 func withoutGitConfig(env []string) []string {
 	kept := env[:0]
 	for _, pair := range env {

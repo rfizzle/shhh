@@ -63,22 +63,29 @@ const (
 	MaxGitBlameLines = 400
 )
 
+// The description teaches a staged, bounded read — a stat before the patch,
+// paths to narrow it, a limit rather than a pipe — because a read-only
+// session refuses the chained and piped command lines that would otherwise do
+// that job, and a patch past the spawn cap cannot all be recovered.
+// See docs/capabilities/approvals-and-safety.md#a-closed-verb-set-is-what-makes-a-read-a-read.
 var gitTool = provider.Tool{
 	Name: GitToolName,
-	Description: "Read this repository's history: status, log, show, diff, blame. " +
-		"Ask history questions here rather than running git through execute_command — this tool is read-only, so it answers without an approval. " +
+	Description: "Read this repository's history: status, log, show, diff, blame. It is read-only, so it answers without an approval. " +
+		"Read a broad comparison in stages: diff or show with stat: true first for the per-file summary, then the patch narrowed with paths to the files that matter. " +
+		"A range such as upstream/main...HEAD is one ref. log returns 20 commits unless limit asks for more or fewer — set limit rather than cutting the output short. " +
+		"Questions that do not depend on each other, such as the log and the diff of one range, are separate calls in the same round. " +
 		"log takes search for git's pickaxe: the commits that added or removed a given string. blame says who last touched each line and when. " +
-		"Only these five verbs exist; anything that changes the repository (commit, checkout, reset, push, clean) is not reachable here and stays with execute_command.",
+		"Only these five verbs and the arguments below exist — git's other flags have no field here — and anything that changes the repository (commit, checkout, reset, push, clean) is not reachable.",
 	Parameters: json.RawMessage(`{
 		"type": "object",
 		"properties": {
 			"verb": {"type": "string", "enum": ["status", "log", "show", "diff", "blame"], "description": "Which history question to ask of the repository"},
-			"ref": {"type": "string", "description": "A branch, tag or commit: log starts there, show displays it, diff compares against it, blame reads the file as of it"},
+			"ref": {"type": "string", "description": "A branch, tag or commit, or for log and diff a range such as upstream/main...HEAD: log starts there or walks the range, show displays it, diff compares against it, blame reads the file as of it"},
 			"to_ref": {"type": "string", "description": "diff only: the second side of the comparison"},
-			"paths": {"type": "array", "items": {"type": "string"}, "description": "Limit to these paths, relative to the workspace root; blame needs exactly one"},
-			"limit": {"type": "integer", "description": "log only: how many commits (default 20, max 100)"},
+			"paths": {"type": "array", "items": {"type": "string"}, "description": "Limit to these paths, relative to the workspace root; blame needs exactly one. After a stat, name the files whose patch you need"},
+			"limit": {"type": "integer", "description": "log only: how many commits (default 20, max 100); set it instead of cutting the output short"},
 			"search": {"type": "string", "description": "log only: only commits that changed the number of occurrences of this string"},
-			"stat": {"type": "boolean", "description": "show/diff only: a per-file summary instead of the patch"},
+			"stat": {"type": "boolean", "description": "show/diff only: per-file counts of changed lines instead of the patch; ask for it first on a broad comparison, then for the patch narrowed by paths"},
 			"staged": {"type": "boolean", "description": "diff only: compare the index rather than the working tree; not together with to_ref"},
 			"start_line": {"type": "integer", "description": "blame only: first line to attribute"},
 			"end_line": {"type": "integer", "description": "blame only: last line to attribute"}

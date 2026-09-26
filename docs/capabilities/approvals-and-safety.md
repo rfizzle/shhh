@@ -603,6 +603,19 @@ program named in someone's configuration is not a reader. Those flags have no
 field to arrive in, and refs are restricted to a plain branch, tag or commit
 so a value cannot become an option on its way through.
 
+That leaves the reader without the shell's way of keeping a big answer small.
+The inspection allowlist refuses any line carrying shell punctuation, so in
+the two read-only modes `git diff --stat … && git diff …` and `git log … |
+head` are refused before the analysis starts. The tool's own arguments do the
+same work as separate calls: a per-file summary first, then the patch
+narrowed to the paths that matter, and a commit count instead of a pipe. That
+is why the model is taught the staged read in the tool's own description and
+told to prefer the tool over git on a command line in its toolbox line — and
+why the read-only and plan paragraphs name no git command, since a paragraph
+cannot know whether the session it lands in has the tool or any command at
+all. A per-file summary is not a list of which files were added, deleted or
+renamed; nothing here pretends it is.
+
 It also reaches past the arguments, because a repository carries configuration
 and some of that configuration names a program to run. A repository you
 cloned this morning can ask git to run something on every status. The reader
