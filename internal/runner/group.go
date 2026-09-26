@@ -170,3 +170,33 @@ func awaitGroups(groups []*group, window time.Duration) {
 		}
 	}
 }
+
+// RunGrouped runs cmd in a process group of its own and makes its
+// cancellation kill that whole group, outright, rather than the one process
+// the context would have killed. It is the configuration a captured command
+// gets, for a caller that owns the rest of its command — its directory, its
+// environment, its output — and so cannot go through prepare. cmd must have
+// been made with exec.CommandContext, since the context is what cancels it.
+//
+// The kill is immediate rather than an interrupt with a grace: a caller that
+// wants this has already decided the command is over (a check past its
+// timeout), and what it had before was an immediate kill of the leader alone.
+// The command never joins the live list, so a leaving session's drain does
+// not signal it; its context is what ends it.
+//
+// On Windows there is no group to make, so this is the single-process kill
+// the context would have done anyway.
+func RunGrouped(cmd *exec.Cmd) error {
+	g := &group{cmd: cmd, exited: make(chan struct{})}
+	cmd.SysProcAttr = sysProcAttr()
+	cmd.Cancel = func() error {
+		killGroup(g)
+		return nil
+	}
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+	err := cmd.Wait()
+	g.once.Do(func() { close(g.exited) })
+	return err
+}

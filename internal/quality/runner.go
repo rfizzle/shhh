@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/runner"
 	"github.com/rfizzle/shhh/internal/tools"
 )
 
@@ -429,7 +430,12 @@ func (r *Runner) runCheck(ctx context.Context, dir, suite string, check Check, a
 	cmd.WaitDelay = 2 * time.Second
 
 	start := time.Now()
-	err := cmd.Run()
+	// The check leads a process group of its own and a timeout kills the
+	// group: a check is usually a build or a test runner, and the work is
+	// what it started. Killing the leader alone released the slot with that
+	// work still running under it. On Windows there is no group, and this
+	// stays the single-process kill it always was.
+	err := runner.RunGrouped(cmd)
 	cr.Duration = time.Since(start)
 
 	switch {
