@@ -548,43 +548,81 @@ func TestARetryAndASpawnAreRefusedAtAdmissionInOneSentence(t *testing.T) {
 
 // Every environment built for an attempt is told which attempt it is: the
 // spawn's preflight and its workspace say 1, and a retry's preflight and its
-// workspace say the number the retry claimed. An environment keyed on the
-// attempt would otherwise read every first attempt, and every workspace, as
-// attempt zero.
+// workspace say the number the retry claimed. A budget stop builds a third,
+// for the handoff it asks for, and that one is told the same number. An
+// environment keyed on the attempt would otherwise read every first attempt,
+// and every workspace, as attempt zero.
 func TestTheEnvironmentIsToldTheAttemptItIsBuiltFor(t *testing.T) {
-	env := &scriptedEnv{}
-	factory := env.factory()
-	var mu sync.Mutex
-	var attempts []int
-	sup := New(context.Background(), Options{Root: t.TempDir(), NewEnv: func(ctx context.Context, spec Spec) (Env, error) {
-		mu.Lock()
-		attempts = append(attempts, spec.Attempt)
-		mu.Unlock()
-		return factory(ctx, spec)
-	}})
-	t.Cleanup(sup.Close)
-
-	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"survey the loop"}`)
-	waitState(t, sup, "researcher-1", StateFailed)
-	mu.Lock()
-	first := append([]int(nil), attempts...)
-	attempts = nil
-	mu.Unlock()
-	if fmt.Sprint(first) != "[1 1]" {
-		t.Fatalf("the spawn's preflight and workspace must both be told attempt 1, got %v", first)
+	// A budget trips mid-round, on a response that asked for a tool; that is
+	// the stop that asks for a handoff.
+	overrun := func(prompt int) streamStep {
+		return streamStep{
+			calls: []provider.ToolCall{{ID: "r1", Name: "read_file", Arguments: `{"path":"x"}`}},
+			usage: &provider.Usage{PromptTokens: prompt},
+		}
 	}
+	for _, tc := range []struct {
+		name          string
+		spawn         string
+		first, retry  []streamStep
+		want1, want2  string
+		retryEndState State
+	}{
+		{
+			name:          "a failure",
+			spawn:         `{"role":"researcher","task":"survey the loop"}`,
+			retry:         []streamStep{{text: "the loop lives in internal/agent"}},
+			want1:         "[1 1]",
+			want2:         "[2 2]",
+			retryEndState: StateDone,
+		},
+		{
+			// The retry's budget grows to 600k, so it is overrun past that.
+			name:          "a budget stop",
+			spawn:         `{"role":"researcher","task":"survey the loop","max_tokens":300000}`,
+			first:         []streamStep{overrun(300100), {text: "read the parser"}},
+			retry:         []streamStep{overrun(600100), {text: "read the lexer"}},
+			want1:         "[1 1 1]",
+			want2:         "[2 2 2]",
+			retryEndState: StateFailed,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			env := &scriptedEnv{steps: tc.first}
+			factory := env.factory()
+			var mu sync.Mutex
+			var attempts []int
+			sup := New(context.Background(), Options{Root: t.TempDir(), NewEnv: func(ctx context.Context, spec Spec) (Env, error) {
+				mu.Lock()
+				attempts = append(attempts, spec.Attempt)
+				mu.Unlock()
+				return factory(ctx, spec)
+			}})
+			t.Cleanup(sup.Close)
 
-	env.mu.Lock()
-	env.steps = []streamStep{{text: "the loop lives in internal/agent"}}
-	env.mu.Unlock()
-	if err := sup.Retry("researcher-1"); err != nil {
-		t.Fatalf("retry: %v", err)
-	}
-	waitState(t, sup, "researcher-1", StateDone)
-	mu.Lock()
-	second := append([]int(nil), attempts...)
-	mu.Unlock()
-	if fmt.Sprint(second) != "[2 2]" {
-		t.Fatalf("the retry's preflight and workspace must both be told attempt 2, got %v", second)
+			execTool(t, sup, SpawnToolName, tc.spawn)
+			waitState(t, sup, "researcher-1", StateFailed)
+			mu.Lock()
+			first := append([]int(nil), attempts...)
+			attempts = nil
+			mu.Unlock()
+			if fmt.Sprint(first) != tc.want1 {
+				t.Fatalf("every environment the first attempt builds must be told attempt 1: want %s, got %v", tc.want1, first)
+			}
+
+			env.mu.Lock()
+			env.steps = tc.retry
+			env.mu.Unlock()
+			if err := sup.Retry("researcher-1"); err != nil {
+				t.Fatalf("retry: %v", err)
+			}
+			waitState(t, sup, "researcher-1", tc.retryEndState)
+			mu.Lock()
+			second := append([]int(nil), attempts...)
+			mu.Unlock()
+			if fmt.Sprint(second) != tc.want2 {
+				t.Fatalf("every environment the retry builds must be told attempt 2: want %s, got %v", tc.want2, second)
+			}
+		})
 	}
 }

@@ -4900,7 +4900,7 @@ Write a short handoff for whoever picks this up: what you established or changed
 // look like it failed for a different reason because the handoff also failed.
 func (s *Supervisor) finalCheckIn(c *child) {
 	c.mu.Lock()
-	hit, root, model, paths := c.budgetHit, c.root, c.model, c.paths
+	hit, root, model, paths, attempt := c.budgetHit, c.root, c.model, c.paths, c.attempt
 	worktree := c.worktree != ""
 	c.mu.Unlock()
 	if !hit {
@@ -4910,7 +4910,7 @@ func (s *Supervisor) finalCheckIn(c *child) {
 	ctx, cancel := context.WithTimeout(context.Background(), finalCheckInTimeout)
 	defer cancel()
 	env, err := s.opts.NewEnv(ctx, Spec{Name: c.name, Role: c.role, Root: root, Model: model, Paths: paths,
-		Parent: c.parent, Depth: c.depth, Worktree: worktree})
+		Parent: c.parent, Depth: c.depth, Worktree: worktree, Attempt: attempt})
 	if err != nil {
 		return
 	}
