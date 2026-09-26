@@ -85,6 +85,23 @@ func currentAdopter() AdoptFunc {
 	return adopter
 }
 
+type handedOffExitKey struct{}
+
+// OnHandedOffExit returns ctx carrying exited, which a command run under it
+// calls once if it is handed over at its ceiling and then exits in its
+// taker's hands. A command that returns without being handed over never
+// calls it. It is how something held for the length of a command — a check
+// slot — is kept for as long as the command actually runs, when the command
+// outlives the call that started it.
+func OnHandedOffExit(ctx context.Context, exited func()) context.Context {
+	return context.WithValue(ctx, handedOffExitKey{}, exited)
+}
+
+func handedOffExit(ctx context.Context) func() {
+	fn, _ := ctx.Value(handedOffExitKey{}).(func())
+	return fn
+}
+
 // captureWriter is where a captured command's combined output goes: bounded
 // in memory, reported line by line for a live tail, and redirectable in one
 // step when the command changes hands.
@@ -263,7 +280,7 @@ func capture(ctx context.Context, dir, command string, argv []string, kind spawn
 			default:
 			}
 			limit := ceilingOf(ctx, started)
-			if name, out, ok := handOver(w, g, command, started, done, cancel); ok {
+			if name, out, ok := handOver(w, g, command, started, done, cancel, handedOffExit(ctx)); ok {
 				return tools.ExecResult{Output: appendNotice(out, backgroundedNotice(name, limit)), Outcome: tools.ExecHandedOff}
 			}
 			cancel()
@@ -300,7 +317,7 @@ func completedExecResult(output string, err error) tools.ExecResult {
 // It reports false when there is nobody to take it, when it has printed
 // nothing, or when the taker declines — each of which leaves the command to
 // be stopped.
-func handOver(w *captureWriter, g *group, command string, started time.Time, done chan error, cancel context.CancelFunc) (string, string, bool) {
+func handOver(w *captureWriter, g *group, command string, started time.Time, done chan error, cancel context.CancelFunc, exited func()) (string, string, bool) {
 	adopt := currentAdopter()
 	if adopt == nil || !w.printed() || g.cmd.Process == nil {
 		return "", "", false
@@ -312,8 +329,16 @@ func handOver(w *captureWriter, g *group, command string, started time.Time, don
 		// The run's own wait is already in flight and os/exec allows only
 		// one, so the taker is handed that one. Releasing the command's
 		// context afterwards is what keeps a handed-on command from holding
-		// it for the life of the process.
-		Wait: func() error { err := <-done; cancel(); return err },
+		// it for the life of the process. The wait returning is the command
+		// exiting, so it is where the caller's exit hook is answered.
+		Wait: func() error {
+			err := <-done
+			cancel()
+			if exited != nil {
+				exited()
+			}
+			return err
+		},
 	})
 	if err != nil || sink == nil {
 		return "", "", false

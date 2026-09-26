@@ -4,13 +4,19 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"os"
+	"os/exec"
+	"path/filepath"
 	"slices"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/process"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/quality"
+	"github.com/rfizzle/shhh/internal/runner"
 	"github.com/rfizzle/shhh/internal/tools"
 )
 
@@ -258,4 +264,77 @@ func TestAChildWithTwoChecksWaitingStillReadsAsWaiting(t *testing.T) {
 	if st := c.status(); st.Held || st.SlotWait != 0 {
 		t.Fatalf("no check waits, yet the child reads held: %+v", st)
 	}
+}
+
+// A check still printing at the command ceiling is handed to the process
+// supervisor and goes on running, so its slot stays held until that process
+// exits: a second child's check waits meanwhile, its lane counting the
+// adopted one as running, and runs once it has exited.
+// See docs/capabilities/subagents.md#what-they-share.
+func TestAHandedOverCheckKeepsItsSlotUntilItExits(t *testing.T) {
+	if _, err := exec.LookPath("sh"); err != nil {
+		t.Skip("no shell")
+	}
+	t.Setenv("SHELL", "/bin/sh")
+	dir := t.TempDir()
+	gate := filepath.Join(dir, "gate")
+	script := "echo checking; while [ ! -f " + gate + " ]; do sleep 0.05; done"
+	if err := os.WriteFile(filepath.Join(dir, "check.sh"), []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	procs, err := process.New(dir, nil)
+	if err != nil {
+		t.Fatalf("process.New: %v", err)
+	}
+	runner.SetAdopter(func(h runner.Handover) (string, io.Writer, error) {
+		return procs.Adopt(process.Adoption{Command: h.Command, PID: h.PID, Started: h.Started, Wait: h.Wait})
+	})
+	t.Cleanup(func() {
+		runner.SetAdopter(nil)
+		procs.Close()
+	})
+
+	sup := New(context.Background(), Options{Root: dir, CheckSlots: 1,
+		CheckCommands: func() []string { return []string{"sh check.sh"} }})
+	t.Cleanup(sup.Close)
+	first := &child{name: "writer-1"}
+	adopting := sup.throttled(context.Background(), first, Env{
+		RunCommand: func(ctx context.Context, command string) tools.ExecResult {
+			ctx, cancel := context.WithTimeout(ctx, 300*time.Millisecond)
+			defer cancel()
+			return runner.RunCaptureInResult(ctx, dir, command)
+		},
+	})
+	if got := adopting.RunCommand(context.Background(), "sh check.sh"); got.Outcome != tools.ExecHandedOff {
+		t.Fatalf("the check was not handed over at its ceiling: %+v", got)
+	}
+
+	second := &child{name: "writer-2"}
+	ran := make(chan struct{})
+	waiting := sup.throttled(context.Background(), second, Env{
+		RunCommand: func(context.Context, string) tools.ExecResult {
+			close(ran)
+			return tools.InferExecResult("ok", 0)
+		},
+	})
+	go waiting.RunCommand(context.Background(), "sh check.sh")
+	waitFor(t, func() bool {
+		st := second.status()
+		return st.Held && st.Detail == "waiting for a check slot (1 running)"
+	})
+	select {
+	case <-ran:
+		t.Fatal("a second check ran while the handed-over one was still running")
+	case <-time.After(200 * time.Millisecond):
+	}
+
+	if err := os.WriteFile(gate, nil, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	select {
+	case <-ran:
+	case <-time.After(10 * time.Second):
+		t.Fatal("the slot did not come back when the handed-over check exited")
+	}
+	waitFor(t, func() bool { st := second.status(); return !st.Held && st.SlotWait == 0 })
 }

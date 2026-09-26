@@ -9,6 +9,7 @@ import (
 
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/quality"
+	"github.com/rfizzle/shhh/internal/runner"
 	"github.com/rfizzle/shhh/internal/tools"
 )
 
@@ -175,8 +176,16 @@ func (s *Supervisor) throttled(ctx context.Context, c *child, env Env) Env {
 			if !ok {
 				return tools.ExecResult{Output: slotStopped, ExitCode: -1, Outcome: tools.ExecStopped}
 			}
-			defer release()
-			return run(cctx, command)
+			// A check still printing at the command ceiling is handed to the
+			// process supervisor and goes on running after this returns, so
+			// its slot goes back when that process exits rather than here —
+			// the throttle counts the builds that are running, not the calls
+			// that started them.
+			result := run(runner.OnHandedOffExit(cctx, release), command)
+			if result.Outcome != tools.ExecHandedOff {
+				release()
+			}
+			return result
 		}
 	}
 	if exec := env.Executor; exec != nil {

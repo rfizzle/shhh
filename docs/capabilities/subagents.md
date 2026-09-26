@@ -982,8 +982,12 @@ every slot held waits its turn in the order it asked; the child is parked in
 front of it, not failed and not polling, and its lane and its row on the rail
 say `waiting for a check slot (2 running)` until a slot comes back. A writer's
 prompt says a check may wait and that the wait is not a failure, so it does
-not retry, cancel or skip the check because it was slow to start. A command
-that is not a check — a read, a `git status`, a formatter — never waits.
+not retry, cancel or skip the check because it was slow to start. A check
+still printing when it reaches the command ceiling, and moved to the
+background rather than stopped, is still a build running: it keeps its slot
+until that process exits, and the lanes waiting behind it count it among the
+running. A command that is not a check — a read, a `git status`, a
+formatter — never waits.
 
 The checks share a build cache as well. Every contained command of the
 session that builds Go — each check the gate runs and each command a child
