@@ -35,7 +35,8 @@
   5,811 ignored
   ✗ the notebook is read-only, so nothing was written
   down
-   ≡ summary   ▸ on target · 2 lines · [enter]…
+   ≡ summary round 36     ▸ on target · 2 lines
+    [enter] expand
 
    ✓ Done · 2 steps · 6 tools · 24.7s · $0.14
   ▎✎ 1 file changed +12 −4          all tracked in git
@@ -47,14 +48,13 @@
 · the whole surface · the same edge in the pane it sits in
    shhh chat                                                
   ────────────────────────────────────────────────────────  
-      --- FAIL: TestRoundLimit                              
                                                             
     The objective is one home for the round limit. The      
     evidence is the failure above, which reads the          
     constant from the loop and not from the caller. Next    
       … 1 more line                                         
-                                                        ┃   
-    Check-in — 36 rounds used. Taking stock, then       ┃   
+                                                            
+    Check-in — 36 rounds used. Taking stock, then           
     carrying on.                                        ┃   
     Steered — the reading says the edits have moved     ┃   
     outside the round loop. Say what you meant if that  ┃   
@@ -64,7 +64,8 @@
     5,811 ignored                                       ┃   
     ✗ the notebook is read-only, so nothing was written ┃   
     down                                                ┃   
-     ≡ summary   ▸ on target · 2 lines · [enter]…       ┃   
+     ≡ summary round 36     ▸ on target · 2 lines       ┃   
+      [enter] expand                                    ┃   
                                                         ┃   
      ✓ Done · 2 steps · 6 tools · 24.7s · $0.14         ┃   
     ▎✎ 1 file changed +12 −4          all tracked in git┃   
@@ -101,7 +102,8 @@
   5,811 ignored
   ✗ the notebook is read-only, so nothing was written
   down
-   ≡ summary   ▸ on target · 2 lines · [enter]…
+   ≡ summary round 36     ▸ on target · 2 lines
+    [enter] expand
 
    ✓ Done · 2 steps · 6 tools · 24.7s · $0.14
   ▎✎ 1 file changed +12 −4          all tracked in git
@@ -134,7 +136,8 @@
   ␛[38;5;244m5,811 ignored␛[m
   ␛[38;5;254m✗ the notebook is read-only, so nothing was written␛[m
   ␛[38;5;254mdown␛[m
-   ␛[38;5;244m≡␛[m ␛[38;5;254msummary␛[m ␛[38;5;254m␛[m  ␛[38;5;244m▸ on target␛[m␛[38;5;244m · ␛[m␛[38;5;244m2 lines␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]…␛[m
+   ␛[38;5;244m≡␛[m ␛[38;5;254msummary␛[m ␛[38;5;254mround 36␛[m     ␛[38;5;244m▸ on target␛[m␛[38;5;244m · ␛[m␛[38;5;244m2 lines␛[m
+    ␛[38;5;254m[enter] expand␛[m
 
    ␛[38;5;254m✓␛[m ␛[38;5;254mDone␛[m␛[38;5;244m · 2 steps · 6 tools · 24.7s · $0.14␛[m
   ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m1 file changed ␛[m␛[38;5;254m+12␛[m ␛[38;5;254m−4␛[m          ␛[38;5;244mall tracked in git␛[m
@@ -146,14 +149,13 @@
 · the whole surface · the same edge in the pane it sits in
   ␛[38;5;254;1m shhh chat␛[m                                                
   ␛[38;5;244m────────────────────────────────────────────────────────␛[m  
-      ␛[38;5;244m--- FAIL: TestRoundLimit␛[m                              
                                                             
     ␛[38;5;244;3mThe objective is one home for the round limit. The␛[m      
     ␛[38;5;244;3mevidence is the failure above, which reads the␛[m          
     ␛[38;5;244;3mconstant from the loop and not from the caller. Next␛[m    
       ␛[38;5;244m… 1 more line␛[m                                         
-                                                        ␛[38;5;244m┃␛[m   
-    ␛[38;5;244mCheck-in — 36 rounds used. Taking stock, then␛[m       ␛[38;5;244m┃␛[m   
+                                                            
+    ␛[38;5;244mCheck-in — 36 rounds used. Taking stock, then␛[m           
     ␛[38;5;244mcarrying on.␛[m                                        ␛[38;5;244m┃␛[m   
     ␛[38;5;244mSteered — the reading says the edits have moved␛[m     ␛[38;5;244m┃␛[m   
     ␛[38;5;244moutside the round loop. Say what you meant if that␛[m  ␛[38;5;244m┃␛[m   
@@ -163,7 +165,8 @@
     ␛[38;5;244m5,811 ignored␛[m                                       ␛[38;5;244m┃␛[m   
     ␛[38;5;254m✗ the notebook is read-only, so nothing was written␛[m ␛[38;5;244m┃␛[m   
     ␛[38;5;254mdown␛[m                                                ␛[38;5;244m┃␛[m   
-     ␛[38;5;244m≡␛[m ␛[38;5;254msummary␛[m   ␛[38;5;244m▸ on target · 2 lines · ␛[38;5;254m[enter]…␛[m       ␛[38;5;244m┃␛[m   
+     ␛[38;5;244m≡␛[m ␛[38;5;254msummary␛[m ␛[38;5;254mround 36␛[m     ␛[38;5;244m▸ on target · 2 lines␛[m       ␛[38;5;244m┃␛[m   
+      ␛[38;5;254m[enter] expand␛[m                                    ␛[38;5;244m┃␛[m   
                                                         ␛[38;5;244m┃␛[m   
      ␛[38;5;254m✓␛[m ␛[38;5;254mDone␛[38;5;244m · 2 steps · 6 tools · 24.7s · $0.14␛[m         ␛[38;5;244m┃␛[m   
     ␛[38;5;254m▎✎␛[m ␛[38;5;254m1 file changed +12␛[m ␛[38;5;254m−4␛[m          ␛[38;5;244mall tracked in git┃␛[m   
@@ -200,7 +203,8 @@
   ␛[38;5;244m5,811 ignored␛[m
   ␛[38;5;254m✗ the notebook is read-only, so nothing was written␛[m
   ␛[38;5;254mdown␛[m
-   ␛[38;5;244m≡␛[m ␛[38;5;254msummary␛[m ␛[38;5;254m␛[m  ␛[38;5;244m▸ on target␛[m␛[38;5;244m · ␛[m␛[38;5;244m2 lines␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]…␛[m
+   ␛[38;5;244m≡␛[m ␛[38;5;254msummary␛[m ␛[38;5;254mround 36␛[m     ␛[38;5;244m▸ on target␛[m␛[38;5;244m · ␛[m␛[38;5;244m2 lines␛[m
+    ␛[38;5;254m[enter] expand␛[m
 
    ␛[38;5;254m✓␛[m ␛[38;5;254mDone␛[m␛[38;5;244m · 2 steps · 6 tools · 24.7s · $0.14␛[m
   ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m1 file changed ␛[m␛[38;5;254m+12␛[m ␛[38;5;254m−4␛[m          ␛[38;5;244mall tracked in git␛[m

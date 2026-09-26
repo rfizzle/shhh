@@ -47,11 +47,11 @@ sleep 0.5
 keys Escape
 sleep 0.5
 # A half-typed line, then a click on the older close's changed-files row —
-# row 13 at this size — as the SGR press and release a terminal reports. The
+# row 14 at this size — as the SGR press and release a terminal reports. The
 # review it opens is turn 1's, the change from 25 to 50.
 keys "and then"
 snap 08-draft "and then"
-keys -l $'\e[<0;12;13M' $'\e[<0;12;13m'
+keys -l $'\e[<0;12;14M' $'\e[<0;12;14m'
 snap 09-review-turn-1 "leave, change nothing" "REVIEW turn 1" "const limit = 25"
 keys Escape
 snap 10-draft-kept "and then"

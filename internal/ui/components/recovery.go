@@ -281,7 +281,10 @@ func (w RetryWait) View(width int) string {
 		head += sty.Dim.Render(" · " + w.Note)
 	}
 	lines := []string{detailLine(head, width)}
-	if keys := keyOffers(w.Keys); keys != "" {
+	// The offers wrap rather than clip, as the row's own do (keyLines): a
+	// fallback model's name is long enough to push esc off a narrow
+	// terminal, and esc is the way out of the wait.
+	for _, keys := range packOffers(w.Keys, max(width-detailIndent, 1)) {
 		lines = append(lines, detailLine(keys, width))
 	}
 	return strings.Join(lines, "\n")

@@ -204,3 +204,90 @@ func TestRetryWait_Drains(t *testing.T) {
 		t.Error("a partly drained countdown should show the cells it has given up")
 	}
 }
+
+// Every offer a recovery row acts on is drawn whole at every width the design
+// names, whether its keys are live, drawn as the chords that reach them or
+// waiting behind a handover: an offer clipped off the edge is a key that acts
+// with nothing on the screen saying so.
+func TestRecoveryRow_EveryOfferTheRowActsOnIsDrawnWhole(t *testing.T) {
+	letters := func(offers []KeyOffer) []KeyOffer {
+		out := append([]KeyOffer(nil), offers...)
+		for i := range out {
+			out[i].Chord = ""
+		}
+		return out
+	}
+	rows := map[string]RecoveryRow{
+		"failure": {State: RecoveryBroken, Verb: VerbModel, Subject: "gpt-4o", Qualifier: "400 context_length_exceeded",
+			Outcome: "over the window", Duration: "0.4s", Note: "compacting keeps the plan and the recent turns",
+			Keys: []KeyOffer{
+				{Key: "[e]", Chord: "[alt+e]", Label: "enter a new key"},
+				{Key: "[p]", Chord: "[alt+p]", Label: "switch provider"},
+				{Key: "[n]", Chord: "[alt+n]", Label: "compact now"},
+				{Key: "[r]", Chord: "[alt+r]", Label: "then try again"},
+			}},
+		"round pause": {State: RecoveryStalled, Verb: VerbRounds, Subject: "150 of 150 used", Qualifier: "100 already granted",
+			Outcome: "stopped", Duration: "4m12s", Detail: []string{"3 files changed +40 −12"},
+			Keys: []KeyOffer{
+				{Key: "[+100]", Chord: "[alt+=]", Label: "more rounds"},
+				{Key: "[x]", Chord: "[alt+x]", Label: "lift the bound for this turn"},
+				{Key: "[u]", Chord: "[alt+z]", Label: "undo the turn"},
+			}},
+		"stream drop": {State: RecoveryStalled, Verb: VerbStream, Subject: "dropped mid-reply", Qualifier: "~1.2k tokens kept",
+			Outcome: "partial", Duration: "12.0s", Note: "the partial reply stays",
+			Keys: []KeyOffer{
+				{Key: "[c]", Chord: "[alt+c]", Label: "continue"},
+				{Key: "[r]", Chord: "[alt+r]", Label: "ask again from scratch"},
+			}},
+	}
+	// The wait a stalled row grows carries offers of its own, and esc — the
+	// way out of the wait — stands after a fallback model's long name.
+	wait := RetryWait{Pct: 60, Text: "retry in 12s", Note: "attempt 2 of 3", Keys: []KeyOffer{
+		{Key: "[m]", Label: "finish this turn on claude-haiku-4-5-20251001"},
+		{Key: "[esc]", Label: "stop and keep the 3 edits"},
+	}}
+	for _, width := range []int{60, 80, 110, 130} {
+		view := ansi.Strip(wait.View(width))
+		for _, k := range wait.Keys {
+			if offer := k.Key + " " + k.Label; !strings.Contains(view, offer) {
+				t.Errorf("retry wait at %d: %q is not drawn whole:\n%s", width, offer, view)
+			}
+		}
+	}
+	for name, row := range rows {
+		for _, tc := range []struct {
+			how      string
+			keys     []KeyOffer
+			waiting  bool
+			handover string
+			spelled  func(KeyOffer) string
+		}{
+			{"live", row.Keys, false, "", func(k KeyOffer) string { return k.Key + " " + k.Label }},
+			{"chords", row.Keys, true, "ctrl+o", func(k KeyOffer) string { return k.Chord + " " + k.Label }},
+			{"waiting on a handover", letters(row.Keys), true, "ctrl+o", func(k KeyOffer) string { return k.Key + " " + k.Label }},
+		} {
+			r := row
+			r.Keys, r.KeysWaiting, r.Handover, r.Option = tc.keys, tc.waiting, tc.handover, tc.waiting
+			want := make([]string, 0, len(tc.keys)+1)
+			for _, k := range tc.keys {
+				want = append(want, tc.spelled(k))
+			}
+			if tc.handover != "" && !chorded(tc.keys) {
+				want = append(want, "["+tc.handover+"]")
+			}
+			for _, width := range []int{60, 80, 110, 130} {
+				view := ansi.Strip(r.View(width))
+				for _, offer := range want {
+					if !strings.Contains(view, offer) {
+						t.Errorf("%s, %s, at %d: %q is not drawn whole:\n%s", name, tc.how, width, offer, view)
+					}
+				}
+				for _, line := range strings.Split(view, "\n") {
+					if strings.Contains(line, "…") && strings.Contains(line, "[") {
+						t.Errorf("%s, %s, at %d: a row of offers was clipped: %q", name, tc.how, width, line)
+					}
+				}
+			}
+		}
+	}
+}

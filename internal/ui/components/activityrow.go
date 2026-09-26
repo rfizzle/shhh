@@ -775,14 +775,15 @@ func gridLineWith(lead, target string, paint func(string) string, outcome, durat
 // View renders the row (plus tail and detail lines) at the given width.
 func (r ActivityRow) View(width int) string {
 	lead := r.pointer() + r.railCell() + r.glyph() + verbFieldIn(r.Verb, r.subjectStyle())
-	first := gridLineWith(lead, r.Target, r.paintTarget, r.fittedOutcome(width), r.Duration, width)
+	row, under := r.foldKeys(width)
+	first := gridLineWith(lead, row.Target, row.paintTarget, row.fittedOutcome(width), row.Duration, width)
 	if r.Selected {
 		// The reading cursor lights the row it is on: the background runs the row's
 		// width and its words go bright, while the rail and the glyph keep the
 		// colours that say what the row did. The pointer stays outside it.
 		first = LitRow(first, ptrWidth, width)
 	}
-	lines := []string{first}
+	lines := append([]string{first}, under...)
 
 	if r.State == ActivityRunning && r.Tail != "" {
 		lines = append(lines, indented(r.Tail, tailIndent, width))
@@ -808,6 +809,31 @@ func (r ActivityRow) View(width int) string {
 		}
 	}
 	return strings.Join(lines, "\n")
+}
+
+// foldKeys is the row's offer laid out the way a turn close lays out its
+// own (closeOfferRows): on the row where the row still has room for what it
+// is about, and otherwise on a row of its own under it, in the detail body's
+// column. Clipping the outcome field would cut the offer off the edge, since
+// it stands last in the field, and the offer is the one part of the row that
+// acts (docs/interface/principles.md#fold-never-hide). An offer wider than
+// even its own row wraps onto the next, the way packOffersIn wraps one.
+func (r ActivityRow) foldKeys(width int) (ActivityRow, []string) {
+	if r.Keys == "" {
+		return r, nil
+	}
+	room := width - leadWidth - durGap - durWidth - lipgloss.Width(r.fittedOutcome(width)) - 2
+	if room >= min(lipgloss.Width(r.Target), minTargetWidth) {
+		return r, nil
+	}
+	offer := r.Keys
+	r.Keys = ""
+	inner := max(width-detailIndent, 1)
+	var under []string
+	for _, line := range strings.Split(lipgloss.Wrap(offer, inner, ""), "\n") {
+		under = append(under, strings.Repeat(" ", detailIndent)+sty.Info.Render(line))
+	}
+	return r, under
 }
 
 // countedTail is the row under a bounded body: what the cap swallowed, in

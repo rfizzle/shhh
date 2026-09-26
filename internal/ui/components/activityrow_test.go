@@ -567,6 +567,41 @@ func TestActivityRow_AReadingsVerdictIsNotASuccess(t *testing.T) {
 	}
 }
 
+// Every offer a row carries is drawn whole at every width the design names:
+// where the row has no room left for what it is about, the offer takes a row
+// of its own under it rather than being clipped off the end of the outcome
+// field, and where it has room the row stays one line.
+func TestActivityRow_EveryOfferTheRowActsOnIsDrawnWhole(t *testing.T) {
+	rows := map[string]ActivityRow{
+		"summary": {Kind: ActivitySummary, Verb: "summary", Target: "round 1",
+			Outcome: SummaryGlyph(SummaryUnclear) + " " + SummaryWord(SummaryUnclear), Counts: "1 line", Keys: GroupExpandKey},
+		"think": {Kind: ActivityThink, Verb: "think", Target: "weighing the cap against the tests",
+			Counts: "12 lines", Duration: "3.1s", Keys: GroupExpandKey},
+		"denied": {Kind: ActivityCommand, State: ActivityDenied, ByRule: true, Verb: "run", Target: "rm -rf build",
+			Outcome: OutcomeBlocked, Allowed: "auto", Keys: "/permissions why"},
+	}
+	for name, r := range rows {
+		for _, width := range []int{60, 80, 110, 130} {
+			view := stripANSI(r.View(width))
+			if !strings.Contains(view, r.Keys) {
+				t.Errorf("%s at %d: %q is not drawn whole:\n%s", name, width, r.Keys, view)
+			}
+			first := strings.Split(view, "\n")[0]
+			if strings.Contains(first, r.Keys[:2]) && !strings.Contains(first, r.Keys) {
+				t.Errorf("%s at %d: the offer was clipped: %q", name, width, first)
+			}
+			if !strings.Contains(first, r.Target[:min(len(r.Target), 5)]) {
+				t.Errorf("%s at %d: the row lost what it is about: %q", name, width, first)
+			}
+		}
+	}
+	// Where it fits, the offer stays on the row it belongs to.
+	wide := stripANSI(rows["summary"].View(130))
+	if lines := strings.Split(wide, "\n"); len(lines) != 1 || !strings.Contains(lines[0], GroupExpandKey) {
+		t.Errorf("a row with room keeps its offer on one line:\n%s", wide)
+	}
+}
+
 // The outcome gives way to nothing but the pane. A row whose lead, outcome
 // and duration are already wider than the terminal has nothing left to spend
 // on the target, so the outcome's own tail clips — the word that says what
