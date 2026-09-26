@@ -317,9 +317,63 @@ func TestEveryDeclaredGroupIsReachable(t *testing.T) {
 		"AgentKeys", "ProfileKeys", "WaitKeys", "DiffKeys", "OutputKeys",
 		"PreviewKeys", "PasteKeys", "ScreenKeys", "OneShotKeys", "SetupKeys",
 		"PlanKeys", "QueryKeys",
+		"SourcesKeys", "NotesKeys", "BacklogKeys", "SprintKeys", "CommitKeys", "RewindKeys",
 	} {
 		if !named[want] {
 			t.Errorf("%s is declared and no keymap file can reach it", want)
+		}
+	}
+	for _, g := range fixed() {
+		t.Errorf("%s is listed as fixed; a group is fixed only where a rule forbids moving it", g.name)
+	}
+}
+
+// The six screens and cards a file could not reach before are moved like any
+// other group: one key from each lands on the register, and the rules hold
+// them the way they hold the rest — a pair stays a pair, and a key that
+// deletes something stays off a movement key.
+func TestLoad_TheScreenGroupsMove(t *testing.T) {
+	restoreRegister(t)
+	path := keymapFile(t, `
+[sources]
+list = "i"
+[notes]
+drop = "x"
+[backlog]
+new = "a"
+[sprint]
+goal = "G"
+[commit]
+edit = "m"
+[rewind]
+talk = "a"
+`)
+	if err := Load(path); err != nil {
+		t.Fatalf("a file moving one key from each group was refused: %v", err)
+	}
+	for _, c := range []struct {
+		name string
+		b    Binding
+		key  string
+	}{
+		{"sources.list", Sources.List, "i"},
+		{"notes.drop", Notes.Drop, "x"},
+		{"backlog.new", Backlog.New, "a"},
+		{"sprint.goal", Sprint.Goal, "G"},
+		{"commit.edit", Commit.Edit, "m"},
+		{"rewind.talk", Rewind.Talk, "a"},
+	} {
+		if !slices.Equal(c.b.Keys(), []string{c.key}) {
+			t.Errorf("%s answers %v, want [%s]", c.name, c.b.Keys(), c.key)
+		}
+	}
+
+	for _, refused := range []struct{ body, says string }{
+		{"[backlog]\nmove = \"up\"\n", "pairs"},
+		{"[backlog]\ndrop = \"j\"\n", "moves the cursor"},
+	} {
+		if err := Load(keymapFile(t, refused.body)); err == nil || !strings.Contains(err.Error(), refused.says) {
+			t.Errorf("%q: want a refusal saying %q, got %v", refused.body, refused.says, err)
 		}
 	}
 }

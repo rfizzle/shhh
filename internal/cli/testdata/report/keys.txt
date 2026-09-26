@@ -161,6 +161,21 @@
   · apply         enter · take the staged hunks  [shipped]
   · back          esc ctrl+c · back  [shipped]
 
+  COMMIT
+
+  · take    enter · commit  [shipped]
+  · edit    e · edit the message  [shipped]
+  · hunks   s · pick hunks  [shipped]
+  · cancel  esc · don't  [shipped]
+
+  REWIND
+
+  · both    b · both  [shipped]
+  · code    c · code only  [shipped]
+  · talk    t · talk only  [shipped]
+  · cancel  esc · don't  [shipped]
+  · diff    d · what the turns after it changed  [shipped]
+
   AGENT
 
   · move      k j up down · move  [shipped]
@@ -240,6 +255,55 @@
   · failed   n · did not  [shipped]
   · skip     s · skip  [shipped]
 
+  SOURCES
+
+  · move  up down k j · move  [shipped]
+  · open  enter · read the page that was kept  [shipped]
+  · list  ? · keys  [shipped]
+  · back  q esc ctrl+c · back to the prompt  [shipped]
+
+  NOTES
+
+  · move  up down k j · move  [shipped]
+  · read  enter · read the whole note  [shipped]
+  · drop  d · drop it  [shipped]
+  · list  ? · keys  [shipped]
+  · back  q esc ctrl+c · back to the prompt  [shipped]
+
+  BACKLOG
+
+  · move      up down · move  [shipped]
+  · read      enter · read the body  [shipped]
+  · page      pgup pgdown · page the body  [shipped]
+  · tab       tab · the backlog or the archive  [shipped]
+  · filter    / · filter by text  [shipped]
+  · clear_q   ctrl+u · clear the filter  [shipped]
+  · status    s · cycle the status filter  [shipped]
+  · priority  p · cycle the priority filter  [shipped]
+  · kind      k · cycle the kind filter  [shipped]
+  · ready     r · only what can be started now  [shipped]
+  · depends   w · jump to what it waits on  [shipped]
+  · edit      e · open it in $EDITOR  [shipped]
+  · run       R · run it  [shipped]
+  · block     b · block it  [shipped]
+  · reopen    o · reopen it  [shipped]
+  · archive   d · archive it  [shipped]
+  · drop      x · drop it, deleting the file  [shipped]
+  · new       n · a new item  [shipped]
+  · sprint    S · add it to the sprint, or drop it from one  [shipped]
+  · groom     g · read it against the tree  [shipped]
+  · list      ? · keys  [shipped]
+  · back      q esc ctrl+c · back to the prompt  [shipped]
+
+  SPRINT
+
+  · move    up down k j · move  [shipped]
+  · toggle  " " space · drop it, or put it back  [shipped]
+  · left    o · what was left out, and why  [shipped]
+  · goal    g · write what the set is for  [shipped]
+  · take    enter · write the sprint  [shipped]
+  · cancel  esc · write nothing  [shipped]
+
   PLAN
 
   · jump  1 2 3 4 5 · jump to a row  [shipped]
@@ -269,69 +333,5 @@
   · wizard  enter · setup wizard  [shipped]
   · paste   p · paste a key  [shipped]
   · local   o · a local model  [shipped]
-
-  SOURCES
-
-  · move  up down k j · move  [fixed]
-  · open  enter · read the page that was kept  [fixed]
-  · list  ? · keys  [fixed]
-  · back  q esc ctrl+c · back to the prompt  [fixed]
-
-  NOTES
-
-  · move  up down k j · move  [fixed]
-  · read  enter · read the whole note  [fixed]
-  · drop  d · drop it  [fixed]
-  · list  ? · keys  [fixed]
-  · back  q esc ctrl+c · back to the prompt  [fixed]
-
-  BACKLOG
-
-  · move      up down · move  [fixed]
-  · read      enter · read the body  [fixed]
-  · page      pgup pgdown · page the body  [fixed]
-  · tab       tab · the backlog or the archive  [fixed]
-  · filter    / · filter by text  [fixed]
-  · clear_q   ctrl+u · clear the filter  [fixed]
-  · status    s · cycle the status filter  [fixed]
-  · priority  p · cycle the priority filter  [fixed]
-  · kind      k · cycle the kind filter  [fixed]
-  · ready     r · only what can be started now  [fixed]
-  · depends   w · jump to what it waits on  [fixed]
-  · edit      e · open it in $EDITOR  [fixed]
-  · run       R · run it  [fixed]
-  · block     b · block it  [fixed]
-  · reopen    o · reopen it  [fixed]
-  · archive   d · archive it  [fixed]
-  · drop      x · drop it, deleting the file  [fixed]
-  · new       n · a new item  [fixed]
-  · sprint    S · add it to the sprint, or drop it from one  [fixed]
-  · groom     g · read it against the tree  [fixed]
-  · list      ? · keys  [fixed]
-  · back      q esc ctrl+c · back to the prompt  [fixed]
-
-  SPRINT
-
-  · move    up down k j · move  [fixed]
-  · toggle  " " space · drop it, or put it back  [fixed]
-  · left    o · what was left out, and why  [fixed]
-  · goal    g · write what the set is for  [fixed]
-  · take    enter · write the sprint  [fixed]
-  · cancel  esc · write nothing  [fixed]
-
-  COMMIT
-
-  · take    enter · commit  [fixed]
-  · edit    e · edit the message  [fixed]
-  · hunks   s · pick hunks  [fixed]
-  · cancel  esc · don't  [fixed]
-
-  REWIND
-
-  · both    b · both  [fixed]
-  · code    c · code only  [fixed]
-  · talk    t · talk only  [fixed]
-  · cancel  esc · don't  [fixed]
-  · diff    d · what the turns after it changed  [fixed]
 
   247 keys · 1 moved

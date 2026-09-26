@@ -252,7 +252,8 @@ func check() error {
 func pairs() []Binding {
 	return []Binding{
 		Reading.Move, Reading.Match, Reading.Half,
-		Context.Move, Backlog.Move, Backlog.Page, Sprint.Move,
+		Context.Move, Sources.Move, Notes.Move,
+		Backlog.Move, Backlog.Page, Sprint.Move,
 		Select.Move, Select.MoveJK, Select.Tab,
 		Review.MoveFile, Review.MoveHunk,
 		Agent.Move, Profile.Move,
@@ -313,6 +314,7 @@ func destructive() []Binding {
 	return []Binding{
 		Agent.Cancel, Agent.Kill, Agent.KillAll,
 		Select.Delete, Screen.Delete,
+		Notes.Drop, Backlog.Drop,
 		Confirm.Force,
 	}
 }
@@ -405,6 +407,8 @@ func movable() []namedGroup {
 		{"confirm", reflect.ValueOf(&Confirm).Elem()},
 		{"select", reflect.ValueOf(&Select).Elem()},
 		{"review", reflect.ValueOf(&Review).Elem()},
+		{"commit", reflect.ValueOf(&Commit).Elem()},
+		{"rewind", reflect.ValueOf(&Rewind).Elem()},
 		{"agent", reflect.ValueOf(&Agent).Elem()},
 		{"profile", reflect.ValueOf(&Profile).Elem()},
 		{"wait", reflect.ValueOf(&Wait).Elem()},
@@ -412,6 +416,10 @@ func movable() []namedGroup {
 		{"output", reflect.ValueOf(&Output).Elem()},
 		{"preview", reflect.ValueOf(&Preview).Elem()},
 		{"screen", reflect.ValueOf(&Screen).Elem()},
+		{"sources", reflect.ValueOf(&Sources).Elem()},
+		{"notes", reflect.ValueOf(&Notes).Elem()},
+		{"backlog", reflect.ValueOf(&Backlog).Elem()},
+		{"sprint", reflect.ValueOf(&Sprint).Elem()},
 		{"plan", reflect.ValueOf(&Plan).Elem()},
 		{"query", reflect.ValueOf(&Query).Elem()},
 		{"oneshot", reflect.ValueOf(&OneShot).Elem()},
@@ -423,15 +431,13 @@ func movable() []namedGroup {
 // does not resolve them, so a line for one of their keys is refused as naming
 // no key. They are listed so the scaffold and the reference can say so
 // rather than leave a reader to find it out from a refusal.
+//
+// It is empty. A group belongs here only where one of the five rules above
+// forbids a file from moving it at all — a rule that refuses one keystroke
+// is a check on the move, not a reason to take the whole group away from
+// the person whose keyboard it is.
 func fixed() []namedGroup {
-	return []namedGroup{
-		{"sources", reflect.ValueOf(&Sources).Elem()},
-		{"notes", reflect.ValueOf(&Notes).Elem()},
-		{"backlog", reflect.ValueOf(&Backlog).Elem()},
-		{"sprint", reflect.ValueOf(&Sprint).Elem()},
-		{"commit", reflect.ValueOf(&Commit).Elem()},
-		{"rewind", reflect.ValueOf(&Rewind).Elem()},
-	}
+	return nil
 }
 
 // snapshot copies every group a file can move, so the copy can be put back

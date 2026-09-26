@@ -645,9 +645,8 @@ quietly reverted to the shipped one has somewhere to be explained beyond the
 line printed as the process started.
 
 The names a file uses are the register's own, and this table is written from
-it. A group marked as not a file's to move is declared in the register and not
-yet reachable from a file: a line naming one of its keys is refused as naming
-no key.
+it. Every group is a file's to move, the screens and cards included: the
+rules above are what refuse a move, not a list of keys held back from it.
 
 <!-- BEGIN generated keymap reference — written by `make docs` from the register in internal/ui/keys; edit the register, not this. -->
 
@@ -778,6 +777,15 @@ no key.
 | `review.page_down` | `pgdown` | page down | yes |
 | `review.apply` | `enter` | take the staged hunks | yes |
 | `review.back` | `esc`, `ctrl+c` | back | yes |
+| `commit.take` | `enter` | commit | yes |
+| `commit.edit` | `e` | edit the message | yes |
+| `commit.hunks` | `s` | pick hunks | yes |
+| `commit.cancel` | `esc` | don't | yes |
+| `rewind.both` | `b` | both | yes |
+| `rewind.code` | `c` | code only | yes |
+| `rewind.talk` | `t` | talk only | yes |
+| `rewind.cancel` | `esc` | don't | yes |
+| `rewind.diff` | `d` | what the turns after it changed | yes |
 | `agent.move` | `k`, `j`, `up`, `down` | move | yes |
 | `agent.attach` | `enter` | attach | yes |
 | `agent.go` | `g` | go to the agent that asked | yes |
@@ -836,6 +844,43 @@ no key.
 | `screen.worked` | `y` | worked | yes |
 | `screen.failed` | `n` | did not | yes |
 | `screen.skip` | `s` | skip | yes |
+| `sources.move` | `up`, `down`, `k`, `j` | move | yes |
+| `sources.open` | `enter` | read the page that was kept | yes |
+| `sources.list` | `?` | keys | yes |
+| `sources.back` | `q`, `esc`, `ctrl+c` | back to the prompt | yes |
+| `notes.move` | `up`, `down`, `k`, `j` | move | yes |
+| `notes.read` | `enter` | read the whole note | yes |
+| `notes.drop` | `d` | drop it | yes |
+| `notes.list` | `?` | keys | yes |
+| `notes.back` | `q`, `esc`, `ctrl+c` | back to the prompt | yes |
+| `backlog.move` | `up`, `down` | move | yes |
+| `backlog.read` | `enter` | read the body | yes |
+| `backlog.page` | `pgup`, `pgdown` | page the body | yes |
+| `backlog.tab` | `tab` | the backlog or the archive | yes |
+| `backlog.filter` | `/` | filter by text | yes |
+| `backlog.clear_q` | `ctrl+u` | clear the filter | yes |
+| `backlog.status` | `s` | cycle the status filter | yes |
+| `backlog.priority` | `p` | cycle the priority filter | yes |
+| `backlog.kind` | `k` | cycle the kind filter | yes |
+| `backlog.ready` | `r` | only what can be started now | yes |
+| `backlog.depends` | `w` | jump to what it waits on | yes |
+| `backlog.edit` | `e` | open it in $EDITOR | yes |
+| `backlog.run` | `R` | run it | yes |
+| `backlog.block` | `b` | block it | yes |
+| `backlog.reopen` | `o` | reopen it | yes |
+| `backlog.archive` | `d` | archive it | yes |
+| `backlog.drop` | `x` | drop it, deleting the file | yes |
+| `backlog.new` | `n` | a new item | yes |
+| `backlog.sprint` | `S` | add it to the sprint, or drop it from one | yes |
+| `backlog.groom` | `g` | read it against the tree | yes |
+| `backlog.list` | `?` | keys | yes |
+| `backlog.back` | `q`, `esc`, `ctrl+c` | back to the prompt | yes |
+| `sprint.move` | `up`, `down`, `k`, `j` | move | yes |
+| `sprint.toggle` | `" "`, `space` | drop it, or put it back | yes |
+| `sprint.left` | `o` | what was left out, and why | yes |
+| `sprint.goal` | `g` | write what the set is for | yes |
+| `sprint.take` | `enter` | write the sprint | yes |
+| `sprint.cancel` | `esc` | write nothing | yes |
 | `plan.jump` | `1`, `2`, `3`, `4`, `5` | jump to a row | yes |
 | `plan.save` | `s`, `S` | save the plan | yes |
 | `query.rub` | `backspace` | take a rune back | yes |
@@ -854,52 +899,6 @@ no key.
 | `setup.wizard` | `enter` | setup wizard | yes |
 | `setup.paste` | `p` | paste a key | yes |
 | `setup.local` | `o` | a local model | yes |
-| `sources.move` | `up`, `down`, `k`, `j` | move | no |
-| `sources.open` | `enter` | read the page that was kept | no |
-| `sources.list` | `?` | keys | no |
-| `sources.back` | `q`, `esc`, `ctrl+c` | back to the prompt | no |
-| `notes.move` | `up`, `down`, `k`, `j` | move | no |
-| `notes.read` | `enter` | read the whole note | no |
-| `notes.drop` | `d` | drop it | no |
-| `notes.list` | `?` | keys | no |
-| `notes.back` | `q`, `esc`, `ctrl+c` | back to the prompt | no |
-| `backlog.move` | `up`, `down` | move | no |
-| `backlog.read` | `enter` | read the body | no |
-| `backlog.page` | `pgup`, `pgdown` | page the body | no |
-| `backlog.tab` | `tab` | the backlog or the archive | no |
-| `backlog.filter` | `/` | filter by text | no |
-| `backlog.clear_q` | `ctrl+u` | clear the filter | no |
-| `backlog.status` | `s` | cycle the status filter | no |
-| `backlog.priority` | `p` | cycle the priority filter | no |
-| `backlog.kind` | `k` | cycle the kind filter | no |
-| `backlog.ready` | `r` | only what can be started now | no |
-| `backlog.depends` | `w` | jump to what it waits on | no |
-| `backlog.edit` | `e` | open it in $EDITOR | no |
-| `backlog.run` | `R` | run it | no |
-| `backlog.block` | `b` | block it | no |
-| `backlog.reopen` | `o` | reopen it | no |
-| `backlog.archive` | `d` | archive it | no |
-| `backlog.drop` | `x` | drop it, deleting the file | no |
-| `backlog.new` | `n` | a new item | no |
-| `backlog.sprint` | `S` | add it to the sprint, or drop it from one | no |
-| `backlog.groom` | `g` | read it against the tree | no |
-| `backlog.list` | `?` | keys | no |
-| `backlog.back` | `q`, `esc`, `ctrl+c` | back to the prompt | no |
-| `sprint.move` | `up`, `down`, `k`, `j` | move | no |
-| `sprint.toggle` | `" "`, `space` | drop it, or put it back | no |
-| `sprint.left` | `o` | what was left out, and why | no |
-| `sprint.goal` | `g` | write what the set is for | no |
-| `sprint.take` | `enter` | write the sprint | no |
-| `sprint.cancel` | `esc` | write nothing | no |
-| `commit.take` | `enter` | commit | no |
-| `commit.edit` | `e` | edit the message | no |
-| `commit.hunks` | `s` | pick hunks | no |
-| `commit.cancel` | `esc` | don't | no |
-| `rewind.both` | `b` | both | no |
-| `rewind.code` | `c` | code only | no |
-| `rewind.talk` | `t` | talk only | no |
-| `rewind.cancel` | `esc` | don't | no |
-| `rewind.diff` | `d` | what the turns after it changed | no |
 
 <!-- END generated keymap reference -->
 
