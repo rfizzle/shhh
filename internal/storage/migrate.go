@@ -13,6 +13,11 @@ import (
 	sqlite3 "modernc.org/sqlite/lib"
 )
 
+// migrations is append-only: a new step goes at the end, and a released step
+// is never inserted before, removed or edited, because the recorded version
+// is a count and a store already past a position records whatever is put
+// there as done without running it.
+// See docs/capabilities/sessions-and-memory.md#an-upgrade-is-appended-never-inserted.
 var migrations = []string{
 	`CREATE TABLE IF NOT EXISTS chat_sessions (
 		id         INTEGER PRIMARY KEY,
@@ -428,13 +433,7 @@ var migrations = []string{
 	ALTER TABLE agent_sessions ADD COLUMN steers INTEGER;
 	ALTER TABLE agent_sessions ADD COLUMN attempt INTEGER;`,
 
-	`ALTER TABLE agent_sessions ADD COLUMN child_budget INTEGER;
-	ALTER TABLE agent_sessions ADD COLUMN child_admission_floor INTEGER;
-	ALTER TABLE agent_sessions ADD COLUMN child_tokens_inherited INTEGER;
-	ALTER TABLE agent_sessions ADD COLUMN child_tokens_setup INTEGER;
-	ALTER TABLE agent_sessions ADD COLUMN child_tokens_tools INTEGER;
-	ALTER TABLE agent_sessions ADD COLUMN child_tokens_analysis INTEGER;
-	ALTER TABLE agent_sessions ADD COLUMN child_tokens_handoff INTEGER;`,
+	migrationChildBudget,
 
 	// Where in the session a message was written. The record already places
 	// every event at a turn and a round; the conversation placed nothing at
@@ -566,12 +565,37 @@ var migrations = []string{
 	// NULL on every other message and on every row written before it, which
 	// reads as unmarked.
 	`ALTER TABLE chat_messages ADD COLUMN machine_kind TEXT;`,
+
+	// The child-budget columns again, for the stores that recorded them
+	// without adding them. That step was inserted at position 30 rather than
+	// appended, so a store already past 29 took it as done and ran what
+	// followed, and every query over agent_sessions then failed on
+	// child_budget. This one runs through addMissingColumns, which adds only
+	// the columns a store lacks — none on a store that ran step 30, all
+	// seven on one that did not — so both end at the same schema.
+	migrationChildBudget,
 }
 
 const (
 	// chatSessionIDMigration is one-indexed because schema_version records
 	// migration numbers, not slice offsets.
 	chatSessionIDMigration = 32
+
+	// childBudgetRepairMigration is migration 30 appended again, run only
+	// for the columns a store does not already have.
+	childBudgetRepairMigration = 41
+
+	// migrationChildBudget is migration 30 and, repeated, migration 41: the
+	// columns a child's end is budgeted and attributed by. Nullable for the
+	// reason the settings columns are — a row written before they existed
+	// ran under a budget nobody recorded.
+	migrationChildBudget = `ALTER TABLE agent_sessions ADD COLUMN child_budget INTEGER;
+	ALTER TABLE agent_sessions ADD COLUMN child_admission_floor INTEGER;
+	ALTER TABLE agent_sessions ADD COLUMN child_tokens_inherited INTEGER;
+	ALTER TABLE agent_sessions ADD COLUMN child_tokens_setup INTEGER;
+	ALTER TABLE agent_sessions ADD COLUMN child_tokens_tools INTEGER;
+	ALTER TABLE agent_sessions ADD COLUMN child_tokens_analysis INTEGER;
+	ALTER TABLE agent_sessions ADD COLUMN child_tokens_handoff INTEGER;`
 
 	migrationChatSessionID = `ALTER TABLE agent_sessions ADD COLUMN chat_session_id INTEGER REFERENCES chat_sessions(id) ON DELETE SET NULL;
 	UPDATE agent_sessions SET chat_session_id =
@@ -653,11 +677,16 @@ func (db *DB) migrate() error {
 	}
 }
 
-// migrationStatement repairs the one released partial application of
-// migration 32: it added the column but did not record the migration. Trying
-// the ALTER again leaves that store unable to open, so run its safe backfill
-// and record the step instead.
+// migrationStatement repairs the two released faults in the list. Migration
+// 32 was once partially applied: it added the column but did not record the
+// migration, and trying the ALTER again leaves that store unable to open, so
+// its safe backfill runs and the step is recorded instead. Migration 41 is
+// migration 30 appended again for the stores that recorded 30 without
+// running it, and adds only the columns a store is missing.
 func migrationStatement(ctx context.Context, conn *sql.Conn, current int) (string, error) {
+	if current+1 == childBudgetRepairMigration {
+		return addMissingColumns(ctx, conn, migrations[current])
+	}
 	if current+1 != chatSessionIDMigration {
 		return skipAddedColumn(ctx, conn, migrations[current])
 	}
@@ -700,6 +729,37 @@ func skipAddedColumn(ctx context.Context, conn *sql.Conn, statement string) (str
 		return `SELECT 1`, nil
 	}
 	return statement, nil
+}
+
+// addMissingColumns keeps each ADD COLUMN of a step made only of them and
+// drops the ones whose column the table already has, since SQLite has no
+// `ADD COLUMN IF NOT EXISTS`. Unlike skipAddedColumn it takes several
+// statements, which is safe only because each is a column and nothing else;
+// a step carrying anything else is refused rather than run half-checked.
+func addMissingColumns(ctx context.Context, conn *sql.Conn, statement string) (string, error) {
+	var keep []string
+	for _, part := range strings.Split(statement, ";") {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+		m := addColumnStep.FindStringSubmatch(part)
+		if m == nil {
+			return "", fmt.Errorf("not a single ADD COLUMN: %q", part)
+		}
+		var present bool
+		if err := conn.QueryRowContext(ctx,
+			`SELECT EXISTS (SELECT 1 FROM pragma_table_info(?) WHERE name = ?)`, m[1], m[2]).Scan(&present); err != nil {
+			return "", fmt.Errorf("check column %s.%s: %w", m[1], m[2], err)
+		}
+		if !present {
+			keep = append(keep, part+";")
+		}
+	}
+	if len(keep) == 0 {
+		return `SELECT 1`, nil
+	}
+	return strings.Join(keep, "\n"), nil
 }
 
 // openRetries bounds how many times a fresh opener tries the migration again

@@ -1095,6 +1095,19 @@ down a collector to send it to, and then it is the session record and only
 the session record — the half that has no prompt, no path and no command in
 it — that leaves.
 
+### An upgrade is appended, never inserted
+
+The file is brought up to date when it is opened, one step at a time, and
+what it records about itself is how many steps it has taken — a count, not a
+list of which. So a new step goes at the end of the list and nowhere else. A
+step put in below the end is recorded as done on every file that had already
+counted past that position, and never runs there: the file reads as current
+and is missing what the step added. That happened once, to the columns a
+sub-agent's budget is recorded in, and every reading of the record failed on
+the files it happened to until a step appended at the end added the columns
+wherever they were missing. The list is now held to its released order, so
+inserting a step fails before it can ship.
+
 ## Related
 
 - [`generation.md`](generation.md) — what produces history entries
