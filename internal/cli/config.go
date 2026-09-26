@@ -24,15 +24,18 @@ import (
 )
 
 func newConfigCmd() *cobra.Command {
+	var global bool
 	cmd := &cobra.Command{
 		Use:   "config",
 		Short: "View and edit configuration",
 		Long: "Interactive configuration screen. `config list` prints every setting with the value in force " +
 			"and where it came from, `config get <key>` prints one, and `config set <key> <value>` changes one " +
-			"without opening the screen.",
+			"without opening the screen. In a checkout the screen and `config set` write the checkout's own " +
+			project.ConfigFile + "; `--global` writes yours.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg := ConfigFrom(cmd.Context())
 			m := newConfigModel(cfg, ProjectConfigFrom(cmd.Context()))
+			m.standIn(global, workingDir())
 			host := newScreenModel(&m.screen, defaultConfigWidth, m.answer)
 			if _, err := newProgram(host).Run(); err != nil {
 				return err
@@ -41,7 +44,7 @@ func newConfigCmd() *cobra.Command {
 				return m.err
 			}
 			if m.saved {
-				wrote := report.Done("wrote", config.WritePath())
+				wrote := report.Done("wrote", m.path)
 				if m.note != "" {
 					wrote.Body = []string{m.note}
 				}
@@ -51,22 +54,26 @@ func newConfigCmd() *cobra.Command {
 		},
 	}
 
+	cmd.Flags().BoolVar(&global, "global", false,
+		"write your own settings file rather than the checkout's")
 	cmd.AddCommand(newConfigSetCmd(), newConfigListCmd(), newConfigGetCmd(), newConfigInitCmd())
 	return cmd
 }
 
 func newConfigSetCmd() *cobra.Command {
-	var toProject bool
+	var global bool
 	cmd := &cobra.Command{
 		Use:   "set <key> <value>",
 		Short: "Set a config value",
 		Long: "Set a configuration key. Example: shhh config set provider.default openai\n" +
-			"`--project` writes the checkout's own file instead of yours, for what is true of the repository rather than of you.",
+			"Run in a checkout, it writes the checkout's own " + project.ConfigFile + ", for what is true of " +
+			"the repository rather than of you; run anywhere else, or in your home directory, it writes yours. " +
+			"`--global` writes yours wherever it is run.",
 		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			edit := config.Edit{Key: args[0], Value: args[1]}
-			if toProject {
-				path, err := projectWritePath(edit.Key, workingDir())
+			if dir := workingDir(); writesCheckout(global, dir) {
+				path, err := projectWritePath(edit.Key, dir)
 				if err != nil {
 					return err
 				}
@@ -91,8 +98,8 @@ func newConfigSetCmd() *cobra.Command {
 			return report.Fprintln(cmd.OutOrStdout(), done)
 		},
 	}
-	cmd.Flags().BoolVar(&toProject, "project", false,
-		"write this checkout's "+project.ConfigFile+" rather than your own file")
+	cmd.Flags().BoolVar(&global, "global", false,
+		"write your own settings file rather than the checkout's")
 	return cmd
 }
 
@@ -115,7 +122,7 @@ func projectTrustNote() string {
 // writes a file that then stops every command in the repository.
 func projectWritePath(key, dir string) (string, error) {
 	if reason := config.RefusedInProject(key); reason != "" {
-		return "", fmt.Errorf("config key %s is not read from a checkout's file — %s; set it in %s",
+		return "", fmt.Errorf("config key %s is not read from a checkout's file — %s; `--global` sets it in %s",
 			key, reason, shortPath(config.WritePath()))
 	}
 	if dir == "" {
@@ -124,10 +131,49 @@ func projectWritePath(key, dir string) (string, error) {
 	return config.ProjectPath(dir), nil
 }
 
+// writesCheckout is which of the two settings files a write lands in when
+// the command is not told: the checkout's, where dir stands in one, and the
+// person's own where it does not, where global asks for theirs, or where dir
+// or the checkout it found is the home directory itself — a home that is a
+// repository of dotfiles is still where the person's own settings are
+// written from. `config init`, `config set` and the config screen all ask
+// it, so the command and the screen's source column agree on the file
+// (docs/capabilities/configuration.md#two-files-one-resolution-order).
+func writesCheckout(global bool, dir string) bool {
+	if global || dir == "" {
+		return false
+	}
+	root, found := project.RootFound(dir)
+	if !found {
+		return false
+	}
+	home, err := os.UserHomeDir()
+	if err != nil || home == "" {
+		return true
+	}
+	return !samePlace(dir, home) && !samePlace(root, home)
+}
+
+// samePlace says two paths name one directory, by what they are rather than
+// how they are spelled: a working directory reached through a symlink is
+// still the home directory it points at.
+func samePlace(a, b string) bool {
+	ai, err := os.Stat(a)
+	if err != nil {
+		return false
+	}
+	bi, err := os.Stat(b)
+	if err != nil {
+		return false
+	}
+	return os.SameFile(ai, bi)
+}
+
 // workingDir is the directory a checkout is looked for from, and "" where
 // the process cannot say — which finds no checkout rather than answering
-// about somewhere else.
-func workingDir() string {
+// about somewhere else. It is a variable so a test can stand a command
+// somewhere without changing the process's directory.
+var workingDir = func() string {
 	dir, err := os.Getwd()
 	if err != nil {
 		return ""
@@ -290,8 +336,15 @@ type configModel struct {
 	cfg  config.Config
 	// proj is what the checkout's own file set, which decides a row's source
 	// field and what a write to the user's file has to say for itself.
-	proj  config.Project
-	saved bool
+	proj config.Project
+	// path is the file [w] writes, and toProject says it is the checkout's
+	// rather than the person's — standIn's answer, which is writesCheckout's.
+	// dir is the directory the checkout was found from, which a key the
+	// checkout may not decide is refused against before it is staged.
+	path      string
+	toProject bool
+	dir       string
+	saved     bool
 	// note is what the checkout's file had to say about the keys just
 	// written, kept until the screen has closed: the screen quits on the
 	// write, so there is no row left to put it on.
@@ -310,10 +363,24 @@ type configModel struct {
 const defaultConfigWidth = 110
 
 func newConfigModel(cfg config.Config, proj config.Project) *configModel {
-	m := &configModel{base: cfg, cfg: cfg, proj: proj, staged: map[string]string{}}
-	m.screen.Path = shortPath(config.WritePath())
+	m := &configModel{base: cfg, cfg: cfg, proj: proj, staged: map[string]string{}, path: config.WritePath()}
+	m.screen.Path = shortPath(m.path)
 	m.refresh()
 	return m
+}
+
+// standIn points the screen's write at the file a write from dir lands in,
+// the same resolution `config set` makes, so what the header names and what
+// the source column says of a staged row are both about that file.
+func (m *configModel) standIn(global bool, dir string) {
+	if !writesCheckout(global, dir) {
+		return
+	}
+	m.toProject, m.dir, m.path = true, dir, config.ProjectPath(dir)
+	// Named from the checkout, as `config set` names it: the absolute form
+	// is the half of the header that clips.
+	m.screen.Path = project.ConfigFile
+	m.refresh()
 }
 
 // answer stages the edit a key made and, on the write the screen closes with,
@@ -327,7 +394,17 @@ func (m *configModel) answer(done bool, result components.ConfigResult) tea.Cmd 
 		return nil
 	}
 	if result.Write {
-		note, err := writeConfigEdits(m.proj, config.WritePath(), m.edits()...)
+		if m.toProject {
+			// The checkout's own file overrides nothing of itself, so what
+			// is left to say is whether it is read at all.
+			if _, err := writeConfigEdits(config.Project{}, m.path, m.edits()...); err != nil {
+				m.err = err
+			} else {
+				m.saved, m.note = true, projectTrustNote()
+			}
+			return tea.Quit
+		}
+		note, err := writeConfigEdits(m.proj, m.path, m.edits()...)
 		if err != nil {
 			m.err = err
 		} else {
@@ -352,6 +429,7 @@ func configSessionOpener() chat.ConfigOpener {
 			return chat.ConfigSession{}, err
 		}
 		m := newConfigModel(cfg, proj)
+		m.standIn(false, workingDir())
 		m.screen.InSession = true
 		return chat.ConfigSession{Screen: &m.screen, Answer: m.answered}, nil
 	}
@@ -365,9 +443,9 @@ func (m *configModel) answered(done bool, result components.ConfigResult) string
 	m.answer(done, result)
 	switch {
 	case m.err != nil:
-		return "✗ config  could not write " + shortPath(config.WritePath()) + ": " + m.err.Error()
+		return "✗ config  could not write " + m.screen.Path + ": " + m.err.Error()
 	case m.saved:
-		note := "Wrote " + shortPath(config.WritePath()) + "."
+		note := "Wrote " + m.screen.Path + "."
 		if m.note != "" {
 			note += "\n" + m.note
 		}
@@ -386,6 +464,14 @@ func (m *configModel) apply(change components.ConfigChange) {
 	if err := checkConfigValue(change.Key, value); err != nil {
 		m.screen.Notice = err.Error()
 		return
+	}
+	if m.toProject {
+		// Refused as it is staged rather than at [w], so the screen never
+		// holds an edit its write would then stop on.
+		if _, err := projectWritePath(change.Key, m.dir); err != nil {
+			m.screen.Notice = err.Error()
+			return
+		}
 	}
 	if err := config.Set(&m.cfg, change.Key, value); err != nil {
 		m.screen.Notice = err.Error()
@@ -421,7 +507,7 @@ func (m configModel) edits() []config.Edit {
 // refresh rebuilds every row from the staged config and recounts what is
 // standing against the file.
 func (m *configModel) refresh() {
-	m.screen.Rows = configRows(m.cfg, m.base, m.proj)
+	m.screen.Rows = configRowsTo(m.cfg, m.base, m.proj, m.toProject)
 	changed := 0
 	for _, s := range configSettings(m.cfg, m.base) {
 		staged, _ := config.Value(m.cfg, s.Key)
@@ -460,6 +546,13 @@ type configSetting struct {
 // because "why is this on" is the only question a config screen is ever
 // asked.
 func configRows(cfg, base config.Config, proj config.Project) []components.ConfigRow {
+	return configRowsTo(cfg, base, proj, false)
+}
+
+// configRowsTo is configRows for a screen whose write lands in the file
+// toProject names, which is what decides whether a staged edit to a key the
+// checkout set is about to collide with it.
+func configRowsTo(cfg, base config.Config, proj config.Project, toProject bool) []components.ConfigRow {
 	settings := configSettings(cfg, base)
 	rows := make([]components.ConfigRow, 0, len(settings))
 	for _, s := range settings {
@@ -481,7 +574,7 @@ func configRows(cfg, base config.Config, proj config.Project) []components.Confi
 			row.Value = raw
 		}
 		loaded, _ := config.Value(base, s.Key)
-		row.Source, row.SourceTone = configSource(raw, loaded, proj.Sets(s.Key))
+		row.Source, row.SourceTone = configSource(raw, loaded, proj.Sets(s.Key), toProject)
 		if s.Key == "provider.model" {
 			if n := len(row.Options); n > 0 {
 				row.Source += fmt.Sprintf(" · %d available", n)
@@ -565,9 +658,9 @@ func (s configSetting) answers(cfg config.Config) []components.SelectOption {
 // that looks unset — a list emptied, a flag turned off — was still that
 // checkout's decision, and a row reading `default` there would send the
 // reader hunting through their own file for it.
-func configSource(staged, loaded string, fromProject bool) (string, components.FieldTone) {
+func configSource(staged, loaded string, fromProject, toProject bool) (string, components.FieldTone) {
 	switch {
-	case staged != loaded && fromProject:
+	case staged != loaded && fromProject && !toProject:
 		// Both facts, because they are about to collide: the write goes to
 		// the person's file and the checkout's is what this directory will
 		// keep reading. Saying only "unwritten" would let them press [w] on

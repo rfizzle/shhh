@@ -1,0 +1,9 @@
+  shhh config init — /home/dev/src/app/.shhh
+
+  ✓ wrote /home/dev/src/app/.shhh/config.toml · 100 settings, each c…  [project]
+        uncomment a line to change one; above each key is what it decides
+  ✓ wrote /home/dev/src/app/.shhh/prompts/ · 12 wordings, each the b…  [project]
+        edit one and it is what a session is told; delete it and the built-in
+        words are back
+        this checkout is not trusted, so its settings do not load here — `shhh
+        trust` loads them

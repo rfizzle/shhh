@@ -963,7 +963,7 @@ func TestDoctorConfig_TwoHeldKeysAreOneRowThatReads(t *testing.T) {
 		t.Fatalf("two keys do not read as two: %+v", both)
 	}
 	fix := strings.Join(both.Fix, "\n")
-	if !strings.Contains(fix, "shhh config set web.search_api_key_env ") {
+	if !strings.Contains(fix, "shhh config set --global web.search_api_key_env ") {
 		t.Fatalf("the fix does not name the second key's companion: %+v", both)
 	}
 }

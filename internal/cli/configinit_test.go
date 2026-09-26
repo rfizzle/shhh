@@ -151,7 +151,7 @@ func TestConfigInit_ProjectWritesTheCheckoutsPair(t *testing.T) {
 	root := t.TempDir()
 	must(t, os.MkdirAll(filepath.Join(root, ".git"), 0o755))
 
-	plan, err := configInit(true, root)
+	plan, err := configInit(false, root)
 	must(t, err)
 	must(t, plan.write())
 

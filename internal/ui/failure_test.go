@@ -27,7 +27,7 @@ func TestFailureReport_ClassifiesAndOffersACommand(t *testing.T) {
 	got := ansi.Strip(report)
 	for _, want := range []string{
 		"model", "gpt-4o", "401 unauthorized", "key ···4f9c rejected",
-		"Incorrect API key provided", "shhh config set provider.api_key",
+		"Incorrect API key provided", "shhh config set --global provider.api_key",
 	} {
 		if !strings.Contains(got, want) {
 			t.Errorf("the report should say %q, got:\n%s", want, got)

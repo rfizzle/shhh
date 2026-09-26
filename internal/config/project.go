@@ -29,7 +29,7 @@ import (
 // ProjectPath is where a checkout keeps its settings: the shhh directory at
 // the root this project's state is keyed on — the repository root, or the
 // nearest ancestor already holding one. It is stated whether or not the file
-// is there, because it is also the path a `--project` write creates.
+// is there, because it is also the path a write to the checkout creates.
 func ProjectPath(dir string) string {
 	return filepath.Join(project.Root(dir), filepath.FromSlash(project.ConfigFile))
 }
@@ -124,7 +124,7 @@ var projectRefusals = []projectRefusal{
 }
 
 // RefusedInProject is the reason a checkout may not set a key, and "" for
-// every key it may. It is what a `--project` write asks before it writes, so
+// every key it may. It is what a write to the checkout asks before it writes, so
 // the refusal a write gets and the refusal a load gives are the same
 // sentence about the same set.
 func RefusedInProject(key string) string {

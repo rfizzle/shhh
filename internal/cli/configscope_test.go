@@ -1,0 +1,202 @@
+package cli
+
+import (
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+
+	"github.com/rfizzle/shhh/internal/config"
+	"github.com/rfizzle/shhh/internal/project"
+	"github.com/rfizzle/shhh/internal/ui/components"
+)
+
+// scopeCase is one place a bare write can be run from, and whether it lands
+// in the checkout's file. The four are the whole rule: a checkout, not a
+// checkout, the home directory — here a home that is itself a repository,
+// the case the rule is for — and a checkout with `--global`.
+type scopeCase struct {
+	name      string
+	global    bool
+	toProject bool
+	// where answers the directory the command stands in, given the home
+	// directory and a checkout elsewhere.
+	where func(t *testing.T, home, checkout string) string
+}
+
+var scopeCases = []scopeCase{
+	{"in a checkout", false, true, func(_ *testing.T, _, checkout string) string { return checkout }},
+	{"outside a checkout", false, false, func(t *testing.T, _, _ string) string { return t.TempDir() }},
+	{"in the home directory", false, false, func(_ *testing.T, home, _ string) string { return home }},
+	{"--global in a checkout", true, false, func(_ *testing.T, _, checkout string) string { return checkout }},
+}
+
+// scopeFixture is a home directory holding the user's config under
+// XDG_CONFIG_HOME and a .git of its own, and a checkout beside it, with the
+// commands stood in where the case says.
+func scopeFixture(t *testing.T, c scopeCase) (userPath, checkout string) {
+	t.Helper()
+	userPath = pointConfigAt(t, "")
+	home := filepath.Dir(filepath.Dir(userPath))
+	must(t, os.MkdirAll(filepath.Join(home, ".git"), 0o755))
+	checkout = t.TempDir()
+	must(t, os.MkdirAll(filepath.Join(checkout, ".git"), 0o755))
+	trusting(t, checkout, true)
+	standIn(t, c.where(t, home, checkout))
+	return userPath, checkout
+}
+
+// exists reports whether a path is there.
+func exists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil
+}
+
+func TestConfigInit_WritesThePairOfWhereItIsRun(t *testing.T) {
+	for _, c := range scopeCases {
+		t.Run(c.name, func(t *testing.T) {
+			userPath, checkout := scopeFixture(t, c)
+			args := []string{"config", "init"}
+			if c.global {
+				args = append(args, "--global")
+			}
+			out := runRoot(t, args...)
+
+			projectPath := filepath.Join(checkout, filepath.FromSlash(project.ConfigFile))
+			wantHere, wantAbsent := userPath, projectPath
+			pair := "[user]"
+			if c.toProject {
+				wantHere, wantAbsent, pair = projectPath, userPath, "[project]"
+			}
+			if !exists(wantHere) {
+				t.Fatalf("the settings were not written to %s:\n%s", wantHere, out)
+			}
+			if exists(wantAbsent) {
+				t.Fatalf("the other pair's file was written: %s", wantAbsent)
+			}
+			// The confirmation says which pair, since the bare command
+			// decided it from where it was run.
+			if !strings.Contains(out, pair) {
+				t.Errorf("the confirmation does not say it wrote the %s pair:\n%s", pair, out)
+			}
+		})
+	}
+}
+
+func TestConfigSet_WritesTheFileOfWhereItIsRun(t *testing.T) {
+	for _, c := range scopeCases {
+		t.Run(c.name, func(t *testing.T) {
+			userPath, checkout := scopeFixture(t, c)
+			args := []string{"config", "set", "behavior.default_mode", "plan"}
+			if c.global {
+				args = append(args, "--global")
+			}
+			runRoot(t, args...)
+
+			projectPath := filepath.Join(checkout, filepath.FromSlash(project.ConfigFile))
+			wantHere, wantAbsent := userPath, projectPath
+			if c.toProject {
+				wantHere, wantAbsent = projectPath, userPath
+			}
+			got, err := os.ReadFile(wantHere)
+			if err != nil {
+				t.Fatalf("the write did not land in %s: %v", wantHere, err)
+			}
+			if !strings.Contains(string(got), `default_mode = "plan"`) {
+				t.Fatalf("%s does not hold the value:\n%s", wantHere, got)
+			}
+			if exists(wantAbsent) {
+				t.Fatalf("the other file was written: %s", wantAbsent)
+			}
+		})
+	}
+}
+
+// In a checkout a key the checkout may not decide is refused with the
+// sentence that says why, and the way to the person's own file is the flag.
+func TestConfigSet_InACheckoutRefusesAKeyItMayNotDecideAndNamesGlobal(t *testing.T) {
+	userPath, checkout := scopeFixture(t, scopeCases[0])
+	err := runRootErr(t, "config", "set", "provider.api_key", "sk-test")
+	if !strings.Contains(err.Error(), config.RefusedInProject("provider.api_key")) ||
+		!strings.Contains(err.Error(), "--global") {
+		t.Fatalf("the refusal does not say why and name --global: %v", err)
+	}
+	if exists(filepath.Join(checkout, filepath.FromSlash(project.ConfigFile))) || exists(userPath) {
+		t.Fatal("a refused key reached a file")
+	}
+}
+
+// `--stdout` prints the pair the bare command would write, with that file's
+// values filled in, and a refusal offers the command that prints the pair
+// that is in the way.
+func TestConfigInit_StdoutAndTheRefusalFollowTheScope(t *testing.T) {
+	_, checkout := scopeFixture(t, scopeCases[0])
+	must(t, os.MkdirAll(filepath.Join(checkout, ".shhh"), 0o755))
+	must(t, os.WriteFile(filepath.Join(checkout, filepath.FromSlash(project.ConfigFile)),
+		[]byte("[behavior]\ndefault_mode = \"plan\"\n"), 0o644))
+
+	out := runRoot(t, "config", "init", "--stdout")
+	if !strings.Contains(out, `default_mode = "plan"`) || strings.Contains(out, "[sandbox]") {
+		t.Fatalf("--stdout in a checkout is not the checkout's scaffold with its values:\n%s", out)
+	}
+	if err := runRootErr(t, "config", "init").Error(); strings.Contains(err, "--global") ||
+		!strings.Contains(err, "`shhh config init --stdout`") {
+		t.Fatalf("the checkout's refusal does not offer the bare command: %s", err)
+	}
+}
+
+func TestConfigInit_RefusalForTheUsersFileNamesGlobal(t *testing.T) {
+	pointConfigAt(t, "[provider]\nmodel = \"claude-sonnet-5\"\n")
+	if err := runRootErr(t, "config", "init").Error(); !strings.Contains(err, "`shhh config init --global --stdout`") {
+		t.Fatalf("the refusal does not offer the command that prints the user's pair: %s", err)
+	}
+}
+
+// The screen, `shhh config` and `/config` alike, writes where `config set`
+// would, and a staged edit to a key the checkout set is not called a
+// collision when the write goes to that same file.
+func TestConfigScreen_WritesTheFileOfWhereItIsRun(t *testing.T) {
+	for _, c := range scopeCases {
+		t.Run(c.name, func(t *testing.T) {
+			userPath, checkout := scopeFixture(t, c)
+			proj := config.Project{Path: filepath.Join(checkout, ".shhh", "config.toml"),
+				Display: ".shhh/config.toml", Keys: []string{"behavior.default_mode"}}
+			m := newConfigModel(config.Config{}, proj)
+			m.standIn(c.global, workingDir())
+			m.apply(components.ConfigChange{Key: "behavior.default_mode", Value: "plan"})
+
+			source := rowFor(m.screen.Rows, "behavior.default_mode").Source
+			if want := map[bool]string{true: "unwritten", false: "unwritten · project"}[c.toProject]; source != want {
+				t.Errorf("the staged row says %q, want %q", source, want)
+			}
+			m.answer(true, components.ConfigResult{Write: true})
+			if m.err != nil {
+				t.Fatal(m.err)
+			}
+			wantHere := userPath
+			if c.toProject {
+				wantHere = proj.Path
+			}
+			if got, err := os.ReadFile(wantHere); err != nil || !strings.Contains(string(got), `default_mode = "plan"`) {
+				t.Fatalf("the screen's write did not land in %s: %v %s", wantHere, err, got)
+			}
+		})
+	}
+}
+
+// In a checkout the screen refuses to stage a key the checkout may not
+// decide, rather than holding an edit its write would stop on.
+func TestConfigScreen_InACheckoutRefusesAKeyItMayNotDecide(t *testing.T) {
+	scopeFixture(t, scopeCases[0])
+	session, err := configSessionOpener()()
+	must(t, err)
+	if session.Screen.Path != project.ConfigFile {
+		t.Fatalf("/config in a checkout names %q as the file it writes", session.Screen.Path)
+	}
+	session.Answer(false, components.ConfigResult{
+		Change: &components.ConfigChange{Key: "provider.api_key", Value: "sk-test"},
+	})
+	if !strings.Contains(session.Screen.Notice, "--global") {
+		t.Fatalf("the screen staged a key the checkout may not decide: %q", session.Screen.Notice)
+	}
+}

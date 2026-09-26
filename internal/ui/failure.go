@@ -120,7 +120,7 @@ func failureRemedy(f *provider.Failure) string {
 		if hint == "" {
 			hint = "SHHH_API_KEY"
 		}
-		return "export " + hint + ", or shhh config set provider.api_key <key>"
+		return "export " + hint + ", or shhh config set --global provider.api_key <key>"
 	case provider.ClassQuota:
 		return "waiting will not clear this — shhh providers lists the alternatives"
 	case provider.ClassRateLimit, provider.ClassOverloaded, provider.ClassNetwork:

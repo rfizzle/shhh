@@ -135,7 +135,7 @@ func TestConfigGet_SaysTheCheckoutSetItAndHowListsMerge(t *testing.T) {
 	}
 }
 
-// `config set --project` writes the checkout's file through the same
+// `config set` in a checkout writes the checkout's file through the same
 // targeted rewrite the user's gets, so it keeps every line it did not touch,
 // and what it wrote is what the next load has in force.
 func TestConfigSetProject_WritesTheCheckoutsFileAndRoundTrips(t *testing.T) {

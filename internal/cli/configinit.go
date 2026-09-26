@@ -32,24 +32,26 @@ import (
 )
 
 func newConfigInitCmd() *cobra.Command {
-	var toProject, toStdout bool
+	var global, toStdout bool
 	cmd := &cobra.Command{
 		Use:   "init",
 		Short: "Write the settings file and the wordings at their defaults",
 		Long: "Write a settings file holding every key, commented out at its default with the sentence " +
 			"that says what it decides, and a prompts directory holding every wording the machinery " +
 			"sends, each the built-in text ready to edit.\n" +
-			"`--project` writes the checkout's own pair instead of yours, with the keys a checkout may " +
-			"not decide left out. `--stdout` prints the settings file instead of writing it, with the " +
-			"values your file already holds filled in.",
+			"Run in a checkout, it writes the checkout's own pair — " + project.ConfigFile + " and " +
+			project.PromptsDir + "/ — with the keys a checkout may not decide left out; run anywhere else, " +
+			"or in your home directory, it writes yours. `--global` writes yours wherever it is run. " +
+			"`--stdout` prints the settings file instead of writing it, with the values that file already " +
+			"holds filled in.",
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			plan, err := configInit(toProject, workingDir())
+			plan, err := configInit(global, workingDir())
 			if err != nil {
 				return err
 			}
 			if toStdout {
-				_, err := io.WriteString(cmd.OutOrStdout(), config.Scaffold(plan.held, toProject))
+				_, err := io.WriteString(cmd.OutOrStdout(), config.Scaffold(plan.held, plan.project))
 				return err
 			}
 			if err := plan.refusal(); err != nil {
@@ -61,10 +63,10 @@ func newConfigInitCmd() *cobra.Command {
 			return report.Fprint(cmd.OutOrStdout(), plan.wrote())
 		},
 	}
-	cmd.Flags().BoolVar(&toProject, "project", false,
-		"write this checkout's "+project.ConfigFile+" and "+project.PromptsDir+"/ rather than your own")
+	cmd.Flags().BoolVar(&global, "global", false,
+		"write your own settings file and wordings, even in a checkout")
 	cmd.Flags().BoolVar(&toStdout, "stdout", false,
-		"print the settings file instead of writing it, with the values your file already holds filled in")
+		"print the settings file instead of writing it, with the values that file already holds filled in")
 	return cmd
 }
 
@@ -104,13 +106,12 @@ type initFile struct {
 }
 
 // configInit works out that plan. dir is where a checkout is looked for
-// from, and is only consulted for a `--project` write.
-func configInit(toProject bool, dir string) (initPlan, error) {
+// from, and writesCheckout decides from it and global which pair the plan
+// is for, the same answer `config set` and the config screen take.
+func configInit(global bool, dir string) (initPlan, error) {
+	toProject := writesCheckout(global, dir)
 	plan := initPlan{project: toProject}
 	if toProject {
-		if dir == "" {
-			return plan, fmt.Errorf("there is no working directory here, so there is no checkout to write")
-		}
 		root := project.Root(dir)
 		plan.settings = config.ProjectPath(dir)
 		plan.prompts = filepath.Join(root, filepath.FromSlash(project.PromptsDir))
@@ -160,9 +161,12 @@ func (p initPlan) refusal() error {
 	if len(held) == 0 {
 		return nil
 	}
+	// The command the refusal offers is the one that prints this same pair:
+	// bare in the checkout it was run in, and `--global` for the person's
+	// own, which reaches it from anywhere.
 	scope := ""
-	if p.project {
-		scope = " --project"
+	if !p.project {
+		scope = " --global"
 	}
 	return fmt.Errorf("nothing was written, to leave what is already here: %s; `shhh config init%s --stdout` prints the settings with your own values filled in, to read and paste",
 		strings.Join(held, ", "), scope)
@@ -202,10 +206,19 @@ func (p initPlan) write() error {
 // hundred commented keys and eleven files of prose needs the sentence that
 // says which of them is the override.
 func (p initPlan) wrote() report.Report {
+	// Which pair was written is said on the rows in the word the config
+	// listing's source column uses for the same file, because the bare
+	// command decides it from where it was run and the reader may not have.
+	pair := "user"
+	if p.project {
+		pair = "project"
+	}
 	settings := report.Done("wrote", shortPath(p.settings))
+	settings.Outcome = pair
 	settings.Fix = []string{"uncomment a line to change one; above each key is what it decides"}
 	settings.Detail = countOf(config.ScaffoldKeys(p.project), "setting", "settings") + ", each commented out"
 	wordings := report.Done("wrote", shortPath(p.prompts)+string(filepath.Separator))
+	wordings.Outcome = pair
 	wordings.Detail = countOf(len(p.files), "wording", "wordings") + ", each the built-in text"
 	wordings.Fix = []string{
 		"edit one and it is what a session is told; delete it and the built-in words are back",

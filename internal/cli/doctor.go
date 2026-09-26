@@ -461,7 +461,7 @@ func withLiteralKeyWarning(f doctorFinding, cfg config.Config) doctorFinding {
 	for _, k := range held {
 		f.Fix = append(f.Fix,
 			"export "+k.envVar+"=… in your shell profile",
-			"shhh config set "+k.envKey+" "+k.envVar,
+			"shhh config set --global "+k.envKey+" "+k.envVar,
 			"then remove "+k.key+" from the file",
 		)
 	}
@@ -840,8 +840,8 @@ func doctorSearchBrave(haveKey bool) doctorFinding {
 			Consequence: "web_search is not registered; a session reads the URLs it is given and the workspace",
 			FixLabel:    "show the two backends",
 			Fix: []string{
-				"shhh config set web.search_api_key_env BRAVE_API_KEY   a paid key, named rather than held",
-				"shhh config set web.search_provider searxng            an instance you run, which takes none",
+				"shhh config set --global web.search_api_key_env BRAVE_API_KEY   a paid key, named rather than held",
+				"shhh config set --global web.search_provider searxng            an instance you run, which takes none",
 			},
 		}
 	}
@@ -854,7 +854,7 @@ func doctorSearchNoInstance() doctorFinding {
 		State:       components.DoctorWarned,
 		Consequence: "web_search is not registered, and the session reads only URLs it is given",
 		FixLabel:    "show the setting to fill in",
-		Fix:         []string{"shhh config set web.search_url https://searx.example.org/search"},
+		Fix:         []string{"shhh config set --global web.search_url https://searx.example.org/search"},
 	}
 }
 
@@ -897,8 +897,8 @@ func doctorSearchUnknown(name string) doctorFinding {
 		Consequence: "web_search is not registered at all",
 		FixLabel:    "show the backends there are",
 		Fix: []string{
-			"shhh config set web.search_provider " + web.ProviderBrave + "     a paid key",
-			"shhh config set web.search_provider " + web.ProviderSearXNG + "   an instance you run",
+			"shhh config set --global web.search_provider " + web.ProviderBrave + "     a paid key",
+			"shhh config set --global web.search_provider " + web.ProviderSearXNG + "   an instance you run",
 		},
 	}
 }
@@ -1170,7 +1170,7 @@ func doctorOtel(endpoint string) doctorFinding {
 			Consequence: "sessions are recorded locally and nothing is exported",
 			FixLabel:    "show the shape it takes",
 			Fix: []string{
-				"shhh config set otel.endpoint http://localhost:4318",
+				"shhh config set --global otel.endpoint http://localhost:4318",
 				"the scheme decides whether the record crosses the network in the clear, so it is never guessed",
 			},
 		}
@@ -1190,7 +1190,7 @@ func probeSandbox(_ context.Context, cfg config.Config) doctorFinding {
 			Outcome: "misconfigured", State: components.DoctorFailed,
 			Consequence: "every contained command will fail until the policy is fixed; none of them runs bare",
 			FixLabel:    "show the setting to fix",
-			Fix:         []string{"shhh config set sandbox.profile workspace"},
+			Fix:         []string{"shhh config set --global sandbox.profile workspace"},
 		}
 	}
 	return doctorSandbox(sandbox.Detect(), policy, runtime.GOOS)
@@ -1292,7 +1292,7 @@ func doctorEngine(eng sandbox.Engine, image string, imageErr error, owned int) d
 			FixLabel:    "show what a sandbox needs",
 			Fix: []string{
 				"install podman (rootless, preferred) or docker",
-				"shhh config set sandbox.container_image <name>@sha256:<digest>",
+				"shhh config set --global sandbox.container_image <name>@sha256:<digest>",
 			},
 		}
 	}
@@ -1306,7 +1306,7 @@ func doctorEngine(eng sandbox.Engine, image string, imageErr error, owned int) d
 		f.State = components.DoctorWarned
 		f.Consequence = "the engine is there, so only the image stands between this host and a sandbox"
 		f.FixLabel = "show the setting to fix"
-		f.Fix = []string{"shhh config set sandbox.container_image <name>@sha256:<digest>"}
+		f.Fix = []string{"shhh config set --global sandbox.container_image <name>@sha256:<digest>"}
 		return f
 	}
 	f.Detail = joinDetail(f.Detail, "image "+shortImage(image))

@@ -23,19 +23,31 @@ mouse = false   # I select with the terminal
 `
 
 // pointConfigAt makes path the config file every command reads and writes,
-// and returns it.
+// and returns it. The commands stand in the home directory it makes, so a
+// bare write lands in that file rather than in whatever checkout the test
+// process happens to run from.
 func pointConfigAt(t *testing.T, text string) string {
 	t.Helper()
 	dir := t.TempDir()
 	t.Setenv("XDG_CONFIG_HOME", dir)
 	t.Setenv("HOME", dir)
 	t.Setenv("XDG_DATA_HOME", t.TempDir())
+	standIn(t, dir)
 	must(t, os.MkdirAll(filepath.Join(dir, "shhh"), 0o755))
 	path := filepath.Join(dir, "shhh", "config.toml")
 	if text != "" {
 		must(t, os.WriteFile(path, []byte(text), 0o644))
 	}
 	return path
+}
+
+// standIn is the directory the commands take as the one they were run in,
+// set rather than changed to: a chdir makes the package uncacheable.
+func standIn(t *testing.T, dir string) {
+	t.Helper()
+	back := workingDir
+	workingDir = func() string { return dir }
+	t.Cleanup(func() { workingDir = back })
 }
 
 func runRoot(t *testing.T, args ...string) string {

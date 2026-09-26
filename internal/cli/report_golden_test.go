@@ -22,6 +22,7 @@ import (
 	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/memory"
+	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
@@ -71,6 +72,10 @@ func TestReportGoldens(t *testing.T) {
 	for _, key := range []string{"SHHH_PROVIDER", "SHHH_MODEL", "SHHH_API_KEY", "SHHH_BASE_URL", "SHHH_REASONING"} {
 		t.Setenv(key, "")
 	}
+	// The checkout's confirmation says whether its files are read, which is
+	// this process's trust answer: stated, so the fixture does not depend on
+	// the store of the machine it runs on.
+	withProjectTrust(t, project.Trust{})
 	for _, c := range []struct {
 		name string
 		body string
@@ -104,6 +109,7 @@ func TestReportGoldens(t *testing.T) {
 		{"config.list.w60", goldenConfigList().Render(60)},
 		{"config.get", goldenConfigGet().Render(80)},
 		{"config.init", goldenConfigInit().Render(80)},
+		{"config.init.project", goldenConfigInitProject().Render(80)},
 		{"config.scaffold", goldenScaffoldOpening()},
 	} {
 		t.Run(c.name, func(t *testing.T) { assertReportGolden(t, c.name, c.body) })
@@ -457,6 +463,18 @@ func goldenConfigInit() report.Report {
 	return initPlan{
 		settings: "/home/dev/.config/shhh/config.toml",
 		prompts:  "/home/dev/.config/shhh/prompts",
+		files:    make([]initFile, len(wordingKeys())),
+	}.wrote()
+}
+
+// goldenConfigInitProject is the same confirmation for the checkout's pair,
+// which is what the bare command writes in a checkout: it says so, and says
+// whether the checkout's files are read at all.
+func goldenConfigInitProject() report.Report {
+	return initPlan{
+		project:  true,
+		settings: "/home/dev/src/app/.shhh/config.toml",
+		prompts:  "/home/dev/src/app/.shhh/prompts",
 		files:    make([]initFile, len(wordingKeys())),
 	}.wrote()
 }

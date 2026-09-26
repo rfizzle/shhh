@@ -73,19 +73,28 @@ belongs in, the way an unknown key does.
 The checkout's file is read only where the checkout is trusted. Until then
 it is withheld with the rest of what the checkout declares and named on the
 start screen, in `/status` and in the doctor's trust row, and the session
-runs on the user's file alone. A write shhh makes to it — `config set
---project`, `config init --project` — leaves a trusted checkout trusted and
+runs on the user's file alone. A write shhh makes to it — `config set` or
+`config init` run in the checkout — leaves a trusted checkout trusted and
 says the value is in force from the next session; in an untrusted one it
 says the file is not read here and that `shhh trust` loads it.
 
-Writes go to the user's file — `config set`, the config screen's `[w]`, the
-slash commands that save their answer — because that is the file that is
-the person's. `config set --project` writes the checkout's, refusing a key
-from the set above before it creates anything. A write to a key the checkout
-overrides is made and says so: the user's file is read in every other
-checkout, so refusing it would punish them for where they were standing,
-and a confirmation that let them believe the value took effect here is the
-one thing it must not do.
+A write lands in the file of where it is run. `config set`, `config init`
+and the config screen's `[w]` — `shhh config` and `/config` alike — write
+the checkout's file when run in one, because standing in a repository and
+setting something up is the common case, and the person's own file is the
+one they name: `--global` writes theirs from anywhere. Run outside a
+checkout, or in the home directory itself — a home that is a repository of
+dotfiles is still where the person's own settings are written from — the
+bare command writes the person's file. In a checkout a key from the set
+above is refused before anything is created, with the reason and the
+`--global` that reaches the file the key belongs in; the screen refuses it
+as it is staged. The slash commands that save their answer — `/model
+default`, `/reasoning`, the `/ui` toggles — write the person's file, because
+what they save is a preference about the session rather than about the tree.
+A write to the person's file for a key the checkout overrides is made and
+says so: that file is read in every other checkout, so refusing it would
+punish them for where they were standing, and a confirmation that let them
+believe the value took effect here is the one thing it must not do.
 
 Two keys name a value rather than holding one. `provider.api_key_env` and
 `web.search_api_key_env` are the name of an environment variable, read at
@@ -402,8 +411,10 @@ creates a settings file holding every key, commented out at its default with
 the sentence that says what it decides above it, and a `prompts/` directory
 holding every wording as a file already carrying the built-in text. Editing a
 prompt is then opening a file, rather than finding the built-in prose in the
-program and a key to point at it. `--project` writes the checkout's pair
-instead, with the keys a checkout may not decide left out.
+program and a key to point at it. Run in a checkout it writes the
+checkout's pair — `.shhh/config.toml` and `.shhh/prompts/` — with the keys a
+checkout may not decide left out, and says on each row which pair it wrote;
+outside one, in the home directory, or with `--global`, it writes yours.
 
 It is the one deliberate write-everything act, and it is not the flattening
 the targeted rewrite exists to prevent: a commented default is not a value in
@@ -411,7 +422,9 @@ the file. It also never writes over anything. A file already there — the
 settings, or one wording — stops the whole command, which names what is in
 the way and offers `--stdout`: the same scaffold printed with your own values
 filled in uncommented, so expanding a three-line file is a print and a paste
-and never a rewrite behind you.
+and never a rewrite behind you. `--stdout` prints the pair the bare command
+would write, and the refusal offers it with the same scope — `shhh config
+init --global --stdout` where the file in the way is yours.
 
 The placeholders a wording takes are named in the comment above its key in
 the settings file and never in the wording's own file, because that file is

@@ -32,7 +32,7 @@
          
     agents                             List the roles a session here would spawn
     completion <shell>                 Generate shell completion script
-    config [command]                   View and edit configuration
+    config [command] [--flags]         View and edit configuration
     doctor [--flags]                   Check this machine's shhh setup
     eval [suite] [--flags]             Run a suite of coding tasks and report what the session did
     init [shell] [--flags]             Output shell integration snippet or scaffold project config

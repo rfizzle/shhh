@@ -326,7 +326,7 @@ func PlainProviderReport(s resolve.Survey) string {
 	// somewhere it will be committed.
 	// See docs/capabilities/secrets.md#where-a-value-comes-from.
 	b.WriteString("\nRun shhh in a terminal for the setup wizard, or export SHHH_API_KEY — " +
-		"`shhh config set provider.api_key_env SHHH_API_KEY` makes the file read it.\n")
+		"`shhh config set --global provider.api_key_env SHHH_API_KEY` makes the file read it.\n")
 	return b.String()
 }
 
