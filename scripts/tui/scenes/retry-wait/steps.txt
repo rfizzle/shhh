@@ -1,0 +1,17 @@
+# program test: none — no program test sends a request the provider refuses
+# as a stall; resume_test.go holds the wait's block in-process, and this
+# scene is the route through the built binary
+#
+# A stall on a narrow terminal: the scripted endpoint refuses two requests
+# with a 503, so the session draws the failure row stalled and the retry wait
+# under it — the draining meter, the attempt against the bound and the `[esc]`
+# offer, whole at 60 columns — waits the stall out twice, and the third
+# request is answered. The first wait is two seconds or so of wall clock, so
+# each snap waits on the attempt only that wait carries. `[m]` is not on the
+# block: the scripted model has no price, and the session offers no cheaper
+# model it cannot name one for.
+snap 01-start "Some things worth doing first"
+keys "why does the loop stop" Enter
+snap 02-wait "attempt 1 of 3" "⚠ model" "the provider's side" "retry in" "[esc] stop the turn"
+snap 03-again "attempt 2 of 3" "retry in" "[esc] stop the turn"
+snap 04-answered "and nowhere else" "nothing in the turn was lost" "✓ Done"

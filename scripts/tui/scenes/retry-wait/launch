@@ -1,0 +1,4 @@
+# The harness writes provider_retries = 0 into this run's config so that no
+# other scene sits out a wait; this one is about the wait, so the file is
+# written again with the built-in bound of three before the session starts.
+printf '[behavior]\nprovider_retries = 3\n' > $XDG_CONFIG_HOME/shhh/config.toml && $SHHH_BIN code
