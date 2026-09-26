@@ -1131,9 +1131,9 @@ with `stateConfirmRun` as the return, both are routed in `updateConfirmRun`
 neither is in `KeyRun`, so `KeyAt` and a click are untouched. Three things
 bite. The offer must be absent where it cannot be answered — no derived form,
 no configured model — because `TestDecisionCards_EveryOfferedKeyDoesSomething`
-presses everything a card advertises. `agent.Explainer` takes its wording
-from `prompt.BuildExplain`, which is the one-shot's, so `internal/agent`
-imports `internal/prompt` and must not be imported by it. And the explanation
+presses everything a card advertises. `agent.ModeInstructions` (`internal/agent/mode.go`) wraps the two mode
+paragraphs `internal/prompt` holds, so `internal/agent` imports
+`internal/prompt` and must not be imported by it. And the explanation
 leaves **no** transcript row where the dry run leaves one: nothing ran on
 this machine, and a row is how output reaches the screen a second time, not
 how a reading is recorded. Its spend is `meter.SourceExplanation`, built in
