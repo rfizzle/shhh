@@ -187,13 +187,13 @@ func Surfaces() []Surface {
 			Position: Beside,
 			Reached:  Shown(Draft.Reading) + ", then the cursor on the row",
 			Bindings: []Binding{
-				Row.Review, Row.Commit, Row.Undo, Row.Retry, Row.Continue,
+				Row.Commit, Row.Undo, Row.Retry, Row.Continue,
 				Row.Key, Row.Provider, Row.Rounds, Row.Uncap, Row.Reopen,
 				Row.Rerun,
 			},
 		},
 		{
-			// The same eleven offers, from the draft. They are a surface of
+			// The same ten offers, from the draft. They are a surface of
 			// their own and positioned Home because that is where they are
 			// answered: a chord is live while the input holds the keyboard,
 			// which is the only position in the register that means that.
@@ -203,7 +203,7 @@ func Surfaces() []Surface {
 			Name:     "a transcript row's offers, from the draft",
 			Section:  "docs/interface/surfaces.md#the-turns-close, docs/interface/surfaces.md#the-recovery-row, docs/interface/surfaces.md#the-backlog-runs-row",
 			Position: Home,
-			Reached:  "the input has the keyboard; the chord acts on the row the pointer names, or the newest row that offers it",
+			Reached:  "the input has the keyboard; the chord acts on the row the pointer names, and on nothing when no row is selected",
 			Bindings: RowChord.All(),
 		},
 		{
@@ -459,7 +459,7 @@ func Surfaces() []Surface {
 			Name:     "review mode",
 			Section:  "docs/interface/surfaces.md#the-turns-close",
 			Position: Takeover,
-			Reached:  Bracket(Row.Review) + ", /review, /diff",
+			Reached:  "a turn's changed-files row, clicked or opened with " + Bracket(Reading.Expand) + ", /review, /diff",
 			Bindings: []Binding{
 				Review.MoveFile, Review.MoveHunk, Review.StageHunk,
 				Review.StageFile, Review.StageAll, Review.SideBySide,

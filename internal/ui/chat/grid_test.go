@@ -61,7 +61,7 @@ func gridTranscript() []entry {
 			Steps: 2, Tools: 6, Elapsed: "24.7s", Spend: "$0.14", Note: "round 36/50",
 			Changes: &components.TurnChanges{
 				Files: 1, Added: 12, Removed: 4,
-				Keys: []components.TurnKey{rowOffer(keys.Row.Review, "review"), rowOffer(keys.Row.Undo, "undo turn")},
+				Keys: []components.TurnKey{rowOffer(keys.Row.Undo, "undo turn")},
 				Note: "all tracked in git",
 			},
 			Checks: &components.TurnChecks{Failed: true, Label: "go test ./internal/agent/...", Counts: "exit 1 · 21s"},

@@ -44,8 +44,10 @@ func pauseEntry(t *testing.T, m Model) entry {
 	return m.transcript[indexOfKind(t, m, entryRoundPause)]
 }
 
+// pauseView is the row as reading mode's cursor draws it: every offer it
+// makes live, enter's own act on it included.
 func pauseView(m Model, e entry) string {
-	return ansi.Strip(m.roundPauseRow(e).View(110))
+	return ansi.Strip(m.renderEntryKeys(e, 110, rowUnderCursor))
 }
 
 func TestRoundLimit_PausesWithRoundsUsedAndWhatChanged(t *testing.T) {
@@ -66,7 +68,7 @@ func TestRoundLimit_PausesWithRoundsUsedAndWhatChanged(t *testing.T) {
 	if !strings.Contains(view, "the suite has not been re-run since") {
 		t.Errorf("an unchecked edit should be named:\n%s", view)
 	}
-	for _, want := range []string{"[v] review what it did", firstGrantOffer + " more rounds", "[u] undo the turn"} {
+	for _, want := range []string{"[enter] " + reviewTurnWords, firstGrantOffer + " more rounds", "[u] undo the turn"} {
 		if !strings.Contains(view, want) {
 			t.Errorf("the row should offer %q:\n%s", want, view)
 		}
@@ -207,7 +209,7 @@ func TestRoundLimit_AFreshMessageSpendsTheStandingOffer(t *testing.T) {
 	if view := pauseView(m, e); strings.Contains(view, firstGrantOffer) {
 		t.Errorf("the row keeps its words and loses the key:\n%s", view)
 	}
-	if !strings.Contains(pauseView(m, e), "[v] review what it did") {
+	if !strings.Contains(pauseView(m, e), "[enter] "+reviewTurnWords) {
 		t.Error("reviewing what it did survives: the changeset is still there")
 	}
 }
@@ -216,17 +218,19 @@ func TestRoundLimit_ReviewAndUndoActOnThePausedTurn(t *testing.T) {
 	m, path := pausedModel(t)
 	m.focusIdx = indexOfKind(t, m, entryRoundPause)
 
-	updated, _, claimed := m.roundPauseKey(keys.Shown(keys.Row.Review))
-	if !claimed {
-		t.Fatal("[v] should be claimed by the pause row")
+	// Review is the row's own open, the way it is on the close the pause
+	// stands in for, and not a key of its own.
+	if _, _, claimed := m.roundPauseKey("v"); claimed {
+		t.Fatal("the pause row offers no [v]; enter on it opens the review")
 	}
+	updated, _ := m.openCursorRow(stateFocus)
 	reviewed := updated.(Model)
 	if reviewed.state != stateReview || reviewed.reviewTurnN != m.turnCount {
-		t.Fatalf("[v] opens the paused turn in review, got state %v turn %d",
+		t.Fatalf("enter opens the paused turn in review, got state %v turn %d",
 			reviewed.state, reviewed.reviewTurnN)
 	}
 
-	updated, _, claimed = m.roundPauseKey(keys.Shown(keys.Row.Undo))
+	updated, _, claimed := m.roundPauseKey(keys.Shown(keys.Row.Undo))
 	if !claimed {
 		t.Fatal("[u] should be claimed by the pause row")
 	}

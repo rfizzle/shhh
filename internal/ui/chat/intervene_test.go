@@ -429,7 +429,7 @@ func TestWithdrawSteer_TheNoticeIsAReadingModeStop(t *testing.T) {
 	}
 	// And the row itself draws it, live under the cursor and grey beside a
 	// live draft (inertkeys.go).
-	if line := m.steerOfferLine(m.transcript[idx], true); !strings.Contains(line, "take the steer back") {
+	if line := m.steerOfferLine(m.transcript[idx], rowUnderCursor); !strings.Contains(line, "take the steer back") {
 		t.Errorf("the row should draw its offer, got %q", line)
 	}
 }

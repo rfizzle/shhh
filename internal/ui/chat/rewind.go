@@ -1048,7 +1048,7 @@ func (m Model) rewoundOffers(e entry) []components.TurnKey {
 // themselves. It sits on the grid a field short, as the compaction's fold
 // line does, so the transcript's two folds of turns line up
 // (docs/interface/principles.md#fold-never-hide).
-func (m Model) rewoundBlock(e entry, width int, keysLive bool) string {
+func (m Model) rewoundBlock(e entry, width int, sel rowSel) string {
 	f := e.rewound
 	const sep = " · "
 	lead := strings.Repeat(" ", components.GridVerbColumn-2)
@@ -1072,7 +1072,7 @@ func (m Model) rewoundBlock(e entry, width int, keysLive bool) string {
 	}
 	enter := sty.Hint.Key.Render(keys.Bracket(keys.Reading.Expand) + " " + label)
 	offers := m.rewoundOffers(e)
-	run := components.KeyRun(offers, !keysLive, m.rowHandover(keysLive))
+	run := components.KeyRun(selOffers(offers, sel), !sel.lettersLive(), m.rowHandover(sel.lettersLive()))
 	room := width - lipgloss.Width(lead)
 	fits := func(parts ...string) bool {
 		w := 0
@@ -1104,7 +1104,7 @@ func (m Model) rewoundBlock(e entry, width int, keysLive bool) string {
 	}
 	// Where this is the session's first chord, what alt costs on a stock
 	// macOS terminal — a line of its own, as on every other row.
-	if option := components.KeyRunOption(offers, !keysLive, m.namesOptionRow(e)); option != "" {
+	if option := components.KeyRunOption(selOffers(offers, sel), !sel.lettersLive(), m.namesOptionRow(e)); option != "" {
 		lines = append(lines, lead+option)
 	}
 	if !open {

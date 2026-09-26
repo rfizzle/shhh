@@ -219,22 +219,25 @@
     [alt+…]          a transcript row's own offers,
                      taken from the prompt with the
                      draft still holding the keyboard:
-                     alt+w review · alt+g commit ·
-                     alt+z undo turn · alt+r try again
-                     · alt+n continue from here ·
-                     alt+e enter a new key · alt+p
-                     switch provider · alt+m more
-                     rounds · alt+x let it run · alt+o
-                     reopen the item · alt+k run the
-                     checks again
+                     alt+g commit · alt+z undo turn ·
+                     alt+r try again · alt+n continue
+                     from here · alt+e enter a new key
+                     · alt+p switch provider · alt+m
+                     more rounds · alt+x let it run ·
+                     alt+o reopen the item · alt+k run
+                     the checks again
                      in reading mode each is the bare
                      letter instead, on the row under
-                     the cursor; the row draws
-                     whichever of the two works where
-                     you are. From the prompt the
-                     chord acts on the row the pointer
-                     names, or on the newest row that
-                     offers it. On a Mac an alt chord
+                     the cursor; the selected row
+                     draws whichever of the two works
+                     where you are. From the prompt
+                     the chord acts on the row the
+                     pointer names and on nothing when
+                     no row is selected. A turn's
+                     changed-files row opens that
+                     turn's review when it is clicked
+                     or selected and opened with
+                     enter. On a Mac an alt chord
                      needs the Option key setting
                      above
     [ctrl+f]         the backlog screen: the project's
@@ -584,22 +587,25 @@
     ␛[94m[alt+…]␛[m          ␛[38;5;241ma transcript row's own offers,␛[m
                      ␛[38;5;241mtaken from the prompt with the␛[m
                      ␛[38;5;241mdraft still holding the keyboard:␛[m
-                     ␛[38;5;241malt+w review · alt+g commit ·␛[m
-                     ␛[38;5;241malt+z undo turn · alt+r try again␛[m
-                     ␛[38;5;241m· alt+n continue from here ·␛[m
-                     ␛[38;5;241malt+e enter a new key · alt+p␛[m
-                     ␛[38;5;241mswitch provider · alt+m more␛[m
-                     ␛[38;5;241mrounds · alt+x let it run · alt+o␛[m
-                     ␛[38;5;241mreopen the item · alt+k run the␛[m
-                     ␛[38;5;241mchecks again␛[m
+                     ␛[38;5;241malt+g commit · alt+z undo turn ·␛[m
+                     ␛[38;5;241malt+r try again · alt+n continue␛[m
+                     ␛[38;5;241mfrom here · alt+e enter a new key␛[m
+                     ␛[38;5;241m· alt+p switch provider · alt+m␛[m
+                     ␛[38;5;241mmore rounds · alt+x let it run ·␛[m
+                     ␛[38;5;241malt+o reopen the item · alt+k run␛[m
+                     ␛[38;5;241mthe checks again␛[m
                      ␛[38;5;241min reading mode each is the bare␛[m
                      ␛[38;5;241mletter instead, on the row under␛[m
-                     ␛[38;5;241mthe cursor; the row draws␛[m
-                     ␛[38;5;241mwhichever of the two works where␛[m
-                     ␛[38;5;241myou are. From the prompt the␛[m
-                     ␛[38;5;241mchord acts on the row the pointer␛[m
-                     ␛[38;5;241mnames, or on the newest row that␛[m
-                     ␛[38;5;241moffers it. On a Mac an alt chord␛[m
+                     ␛[38;5;241mthe cursor; the selected row␛[m
+                     ␛[38;5;241mdraws whichever of the two works␛[m
+                     ␛[38;5;241mwhere you are. From the prompt␛[m
+                     ␛[38;5;241mthe chord acts on the row the␛[m
+                     ␛[38;5;241mpointer names and on nothing when␛[m
+                     ␛[38;5;241mno row is selected. A turn's␛[m
+                     ␛[38;5;241mchanged-files row opens that␛[m
+                     ␛[38;5;241mturn's review when it is clicked␛[m
+                     ␛[38;5;241mor selected and opened with␛[m
+                     ␛[38;5;241menter. On a Mac an alt chord␛[m
                      ␛[38;5;241mneeds the Option key setting␛[m
                      ␛[38;5;241mabove␛[m
     ␛[94m[ctrl+f]␛[m         ␛[38;5;241mthe backlog screen: the project's␛[m

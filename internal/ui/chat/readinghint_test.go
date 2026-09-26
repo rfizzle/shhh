@@ -209,10 +209,18 @@ func TestReadingHint_RowKeysAreASecondLineUnderTheRowsOwnRail(t *testing.T) {
 	if !strings.HasPrefix(line, "▎this row · ") {
 		t.Fatalf("the row's keys carry the row's own rail, got %q", line)
 	}
-	for _, want := range []string{"[v] review", "[u] undo turn", "[esc] nothing"} {
+	for _, want := range []string{"[u] undo turn", "[esc] nothing"} {
 		if !strings.Contains(line, want) {
 			t.Fatalf("the row should offer %q, got %q", want, line)
 		}
+	}
+	// Review is enter's act on the row, so it is on the mode's own line
+	// rather than a second time here.
+	if strings.Contains(line, "review") {
+		t.Fatalf("the row's line repeats enter's act, got %q", line)
+	}
+	if bar := ansi.Strip(m.readingKeyLine(m.contentWidth())); !strings.Contains(bar, "[enter] "+reviewTurnWords) {
+		t.Fatalf("enter on a changed-files row says it reviews the turn, got %q", bar)
 	}
 
 	m.moveFocus(-1)

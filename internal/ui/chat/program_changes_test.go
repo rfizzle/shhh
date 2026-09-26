@@ -9,9 +9,13 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
+	"strconv"
 	"strings"
 	"testing"
+	"time"
 
+	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/provider"
 )
@@ -78,6 +82,10 @@ func TestProgram_TheCloseOffersTheCommitAndTheCardCommits(t *testing.T) {
 
 	send(tm, "cap rounds at the limit instead of erroring")
 	allowEdit(t, tm, "const limit = 50")
+	// The close offers nothing until it is selected; the pointer's first
+	// press lands on it, the newest row.
+	waitForText(t, tm, "1 file changed")
+	programPress(t, tm, "shift+up")
 	waitForText(t, tm, "[alt+g] commit")
 	programPress(t, tm, "alt+g")
 	waitForText(t, tm, "Commit this turn")
@@ -98,23 +106,203 @@ func TestProgram_TheCloseOffersTheCommitAndTheCardCommits(t *testing.T) {
 	}
 }
 
-// The close's review key opens the review of the turn's files, and leaving
-// it changes nothing.
-func TestProgram_TheCloseOpensTheReview(t *testing.T) {
-	root := programRepo(t, nil)
-	tm := runProgram(t, changesSession(root,
-		programTurn{calls: reads("loop.go")},
+// twoEditTurns is a session whose two turns each edit loop.go, so the
+// transcript holds two turns' closes with the same words on them.
+func twoEditTurns(root string, after ...programTurn) Model {
+	turns := []programTurn{
 		editTurn(root, "loop.go", "const limit = 25", "const limit = 50"),
-		programTurn{text: "The rounds are capped at the limit now."},
-	))
+		{text: "Capped at fifty now."},
+		editTurn(root, "loop.go", "const limit = 50", "const limit = 100"),
+		{text: "Raised again."},
+	}
+	return changesSession(root, append(turns, after...)...).WithMouse(true)
+}
 
-	send(tm, "cap rounds at the limit instead of erroring")
+// runTwoTurns drives both turns to their closes.
+func runTwoTurns(t *testing.T, tm *program) {
+	t.Helper()
+	send(tm, "cap rounds at the limit")
 	allowEdit(t, tm, "const limit = 50")
-	waitForText(t, tm, "[alt+w] review")
-	programPress(t, tm, "alt+w")
-	waitForText(t, tm, "leave, change nothing")
+	waitForText(t, tm, "Capped at fifty now")
+	send(tm, "raise the cap")
+	allowEdit(t, tm, "const limit = 100")
+	waitForText(t, tm, "Raised again")
+}
 
-	frameHas(t, finalFrame(t, tm), "loop.go", "leave, change nothing")
+// closeLines is the frame's lines that state a turn's change, oldest first:
+// the two closes carry the same words, so which one is which is where it is.
+func closeLines(frame string) []int {
+	var at []int
+	for i, l := range strings.Split(frame, "\n") {
+		if strings.Contains(l, "1 file changed") {
+			at = append(at, i)
+		}
+	}
+	return at
+}
+
+// waitForFrame blocks until the frame answers a question, the way waitForText
+// waits for a phrase.
+func waitForFrame(t *testing.T, tm *program, what string, ok func(string) bool) string {
+	t.Helper()
+	deadline := time.Now().Add(10 * time.Second)
+	for time.Now().Before(deadline) {
+		if f := tm.frame.Load(); f != nil && ok(*f) {
+			return *f
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	last := ""
+	if f := tm.frame.Load(); f != nil {
+		last = *f
+	}
+	t.Fatalf("the program never drew %s; the last frame was:\n%s", what, last)
+	return ""
+}
+
+// readingPosition is where reading mode's rail says the cursor stands, as
+// the "READING 3/6" the frame draws, or 0 where it draws none.
+var readingPosition = regexp.MustCompile(`READING (\d+)/(\d+)`)
+
+// stepUp walks reading mode's cursor up a row at a time until the frame
+// answers the question, waiting at each press for the rail to say the
+// cursor moved: a press queued behind one that already answered it would
+// walk the cursor past the row it was looking for.
+func stepUp(t *testing.T, tm *program, what string, ok func(string) bool) {
+	t.Helper()
+	for i := 0; i < 40; i++ {
+		f := waitForFrame(t, tm, "reading mode's position", readingPosition.MatchString)
+		if ok(f) {
+			return
+		}
+		pos := readingPosition.FindStringSubmatch(f)
+		n, _ := strconv.Atoi(pos[1])
+		if n <= 1 {
+			break
+		}
+		programPress(t, tm, "k")
+		waitForText(t, tm, fmt.Sprintf("READING %d/%s", n-1, pos[2]))
+	}
+	waitForFrame(t, tm, what, ok)
+}
+
+// cursorOnFirstClose reports that reading mode's cursor stands on the older
+// of the two closes: the pointer mark leads the block's first line, which is
+// the line above the one stating the change.
+func cursorOnFirstClose(frame string) bool {
+	at := closeLines(frame)
+	lines := strings.Split(frame, "\n")
+	return len(at) == 2 && at[0] > 0 && strings.HasPrefix(strings.TrimLeft(lines[at[0]-1], " "), "❯")
+}
+
+// The two historical closes are two targets. Selected and opened with enter,
+// each opens its own turn's review — the older one included, which a key
+// that fell to the newest row could not reach.
+func TestProgram_EnterOnASelectedCloseOpensThatTurnsReview(t *testing.T) {
+	root := programRepo(t, nil)
+	tm := runProgramAt(t, twoEditTurns(root), 120, 50)
+	runTwoTurns(t, tm)
+
+	// The pointer lights on the newest close, and enter on it reviews turn 2.
+	programPress(t, tm, "shift+up")
+	waitForText(t, tm, "[enter] review turn")
+	programPress(t, tm, "enter")
+	waitForAll(t, tm, "leave, change nothing", "turn 2")
+	programPress(t, tm, "esc")
+	waitForText(t, tm, "Raised again")
+
+	// Reading mode's cursor walked back to the older close, and enter there
+	// reviews turn 1.
+	programPress(t, tm, "ctrl+o")
+	stepUp(t, tm, "the cursor on turn 1's close", cursorOnFirstClose)
+	programPress(t, tm, "enter")
+	waitForAll(t, tm, "leave, change nothing", "turn 1")
+
+	frame := finalFrame(t, tm)
+	frameHas(t, frame, "turn 1")
+	if strings.Contains(frame, "turn 2") {
+		t.Fatalf("enter on turn 1's close opened another turn:\n%s", frame)
+	}
+}
+
+// A click on a close opens the turn clicked, from a half-typed line: the
+// keyboard is never handed over for it, and the sentence is still there when
+// the review is left.
+func TestProgram_AClickOnACloseOpensThatTurnsReview(t *testing.T) {
+	root := programRepo(t, nil)
+	tm := runProgramAt(t, twoEditTurns(root), 120, 50)
+	runTwoTurns(t, tm)
+	tm.Send(tea.PasteMsg{Content: draftSentence})
+	frame := waitForFrame(t, tm, "both closes", func(f string) bool {
+		return len(closeLines(f)) == 2 && strings.Contains(f, draftSentence)
+	})
+
+	y := closeLines(frame)[0]
+	x := strings.Index(strings.Split(frame, "\n")[y], "1 file changed")
+	x = len([]rune(strings.Split(frame, "\n")[y][:x]))
+	tm.Send(tea.MouseClickMsg{Button: tea.MouseLeft, X: x, Y: y})
+	tm.Send(tea.MouseReleaseMsg{Button: tea.MouseNone, X: x, Y: y})
+	waitForAll(t, tm, "leave, change nothing", "turn 1")
+	programPress(t, tm, "esc")
+	waitForText(t, tm, draftSentence)
+
+	frameHas(t, finalFrame(t, tm), draftSentence)
+}
+
+// With a sentence in the draft, enter sends it — the pointer on a close does
+// not take enter from the draft — and the pointer's own open still reaches
+// the review without emptying it.
+func TestProgram_ADraftKeepsEnterWhileACloseIsSelected(t *testing.T) {
+	root := programRepo(t, nil)
+	tm := runProgramAt(t, twoEditTurns(root, programTurn{text: "Sent from beside the pointer."}), 120, 50)
+	runTwoTurns(t, tm)
+
+	programPress(t, tm, "shift+up")
+	waitForText(t, tm, "[enter] review turn")
+	tm.Send(tea.PasteMsg{Content: draftSentence})
+	waitForText(t, tm, draftSentence)
+	programPress(t, tm, "shift+right")
+	waitForAll(t, tm, "leave, change nothing", "turn 2")
+	programPress(t, tm, "esc")
+	waitForText(t, tm, draftSentence)
+	programPress(t, tm, "enter")
+	waitForText(t, tm, "Sent from beside the pointer")
+
+	frame := finalFrame(t, tm)
+	if strings.Contains(frame, "leave, change nothing") {
+		t.Fatalf("enter with a sentence in the draft opened the review:\n%s", frame)
+	}
+}
+
+// A selected row that makes no offer keeps the chord: the undo a close under
+// it offers is not reached from an edit row the cursor stands on. Enter on
+// that edit row is its own — it cycles the edit's diff rather than opening a
+// turn's review.
+func TestProgram_ASelectedEditRowKeepsItsOwnEnter(t *testing.T) {
+	root := programRepo(t, nil)
+	tm := runProgramAt(t, twoEditTurns(root), 120, 50)
+	runTwoTurns(t, tm)
+
+	programPress(t, tm, "ctrl+o")
+	onEdit := func(f string) bool {
+		for _, l := range strings.Split(f, "\n") {
+			if strings.HasPrefix(strings.TrimLeft(l, " "), "❯") && strings.Contains(l, "edit") {
+				return true
+			}
+		}
+		return false
+	}
+	stepUp(t, tm, "the cursor on an edit row", onEdit)
+	programPress(t, tm, "alt+z")
+	programPress(t, tm, "enter")
+	waitForText(t, tm, "@@ -1,3 +1,3 @@")
+
+	frame := finalFrame(t, tm)
+	for _, never := range []string{"Undo turn", "leave, change nothing"} {
+		if strings.Contains(frame, never) {
+			t.Fatalf("the edit row answered with another row's act (%q):\n%s", never, frame)
+		}
+	}
 }
 
 // /rewind opens the timeline, a turn is picked, the card asks what back
@@ -188,6 +376,12 @@ func TestProgram_TheRewoundTurnsFoldAndReapply(t *testing.T) {
 	waitForText(t, tm, "Undo turn")
 	programPress(t, tm, "y")
 	waitForText(t, tm, "turn 3 · rewound")
+	// The reapply is the fold's own offer, so it is live once the pointer
+	// selects the fold: the first press lands on the newest close, the rewind's
+	// own, and the second on the fold above it. Selected, the fold draws the
+	// chord live on its own line.
+	programPress(t, tm, "shift+up", "shift+up")
+	waitForText(t, tm, "read them · [alt+r] reapply")
 	programPress(t, tm, "alt+r")
 	waitForText(t, tm, "reapplied turn 3")
 	programPress(t, tm, "y")

@@ -57,7 +57,7 @@ search: loop.go · 1 of 3
     --- FAIL: TestRoundLimit                                              ┃ 
                                                                           ┃ 
    ✓ Done · 2 steps · 6 tools · 24.7s · $0.14                   round 2/25  
-  ▎✎ 1 file changed +12 −4 · [alt+w] review · [alt+z] undo turn             
+  ▎✎ 1 file changed +12 −4                              all tracked in git  
 ────────────────────────────────────────────────────────────────────────────
 search: context.go · 0 of 1
 [enter] keep the search · [esc] clear it
@@ -130,7 +130,7 @@ search: context.go · 0 of 1
     ␛[38;5;244m--- FAIL: TestRoundLimit␛[m                                              ␛[38;5;244m┃␛[m 
                                                                           ␛[38;5;244m┃␛[m 
    ␛[38;5;254m✓␛[m ␛[38;5;254mDone␛[m␛[38;5;244m · 2 steps · 6 tools · 24.7s · $0.14␛[m                   ␛[38;5;244mround 2/25␛[m  
-  ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m1 file changed ␛[m␛[38;5;254m+12␛[m ␛[38;5;254m−4␛[m␛[38;5;244m · ␛[m␛[38;5;254m[alt+w]␛[m␛[38;5;244m review␛[m␛[38;5;244m · ␛[m␛[38;5;254m[alt+z]␛[m␛[38;5;244m undo turn␛[m             
+  ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m1 file changed ␛[m␛[38;5;254m+12␛[m ␛[38;5;254m−4␛[m                              ␛[38;5;244mall tracked in git␛[m  
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────␛[m
 ␛[1;38;5;254msearch␛[m␛[38;5;244m: ␛[m␛[38;5;254mcontext.go␛[m␛[38;5;244m · 0 of 1␛[m
 ␛[38;5;254m[enter]␛[m␛[38;5;244m keep the search␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m clear it␛[m

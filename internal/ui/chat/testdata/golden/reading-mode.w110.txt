@@ -23,12 +23,12 @@
     --- FAIL: TestRoundLimit
 
 ❯  ✓ Done · 2 steps · 6 tools · 24.7s · $0.14                                                 round 2/25
-  ▎✎ 1 file changed +12 −4 · [v] review · [u] undo turn                               all tracked in git
+  ▎✎ 1 file changed +12 −4 · [enter] review turn · [u] undo turn                      all tracked in git
    ✗ go test ./internal/agent/... failing · exit 1 · 21s
 
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────
-[j/k] move · [enter] expand — nothing on this row expands · [/] search · [q] back to the prompt     5 of 5
-▎this row · [v] review · [u] undo turn · [esc] nothing
+[j/k] move · [enter] review turn · [/] search · [?] keys · [q] back to the prompt               row 5 of 5
+▎this row · [u] undo turn · [esc] nothing
 
 
 · the input has it · plain rail, no row lit, the frame is accented
@@ -44,7 +44,7 @@
     --- FAIL: TestRoundLimit
 
    ✓ Done · 2 steps · 6 tools · 24.7s · $0.14                                                 round 2/25
-  ▎✎ 1 file changed +12 −4 · [alt+w] review · [alt+z] undo turn                       all tracked in git
+  ▎✎ 1 file changed +12 −4                                                            all tracked in git
    ✗ go test ./internal/agent/... failing · exit 1 · 21s
 
 ╭─ idle ─────────────────────────────────────────────────────────────────────────────────────────────────╮
@@ -65,7 +65,7 @@
     --- FAIL: TestRoundLimit
 
    ✓ Done · 2 steps · 6 tools · 24.7s · $0.14                                                 round 2/25
-  ▎✎ 1 file changed +12 −4 · [alt+w] review · [alt+z] undo turn                       all tracked in git
+  ▎✎ 1 file changed +12 −4                                                            all tracked in git
    ✗ go test ./internal/agent/... failing · exit 1 · 21s
 
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -87,7 +87,7 @@
     --- FAIL: TestRoundLimit
 
    ✓ Done · 2 steps · 6 tools · 24.7s · $0.14                                                 round 2/25
-  ▎✎ 1 file changed +12 −4 · [alt+w] review · [alt+z] undo turn                       all tracked in git
+  ▎✎ 1 file changed +12 −4                                                            all tracked in git
    ✗ go test ./internal/agent/... failing · exit 1 · 21s
 
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -108,7 +108,7 @@
     --- FAIL: TestRoundLimit
 
 ❯  ✓ Done · 2 steps · 6 tools · 24.7s · $0.14                                                 round 2/25
-  ▎✎ 1 file changed +12 −4 · [v] review · [u] undo turn                               all tracked in git
+  ▎✎ 1 file changed +12 −4 · [enter] review turn · [u] undo turn                      all tracked in git
    ✗ go test ./internal/agent/... failing · exit 1 · 21s
 
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -123,7 +123,6 @@
 [pgdn] page down
 [?] hide the keys
 [q] back to the prompt
-▎[v] review
 ▎[u] undo turn
 
 · prose · the cursor on a message: [y] copies its markdown source
@@ -153,12 +152,12 @@
     ␛[38;5;245m--- FAIL: TestRoundLimit␛[m
 
 ␛[94m❯␛[m ␛[92m␛[m␛[38;5;252m␛[m␛[38;5;241m␛[m␛[38;5;241m␛[m␛[48;5;62m ␛[92m✓␛[m␛[48;5;62m ␛[38;5;252m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[97;48;5;62mDone · 2 steps · 6 tools · 24.7s · $0.14                                                 round 2/25␛[m␛[m
-  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m1 file changed ␛[m␛[92m+12␛[m ␛[91m−4␛[m␛[38;5;241m · ␛[m␛[94m[v]␛[m␛[38;5;241m review␛[m␛[38;5;241m · ␛[m␛[94m[u]␛[m␛[38;5;241m undo turn␛[m                               ␛[38;5;241mall tracked in git␛[m
+  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m1 file changed ␛[m␛[92m+12␛[m ␛[91m−4␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m review turn␛[m␛[38;5;241m · ␛[m␛[94m[u]␛[m␛[38;5;241m undo turn␛[m                      ␛[38;5;241mall tracked in git␛[m
    ␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/... failing␛[m␛[38;5;241m · exit 1 · 21s␛[m
 
 ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
-␛[94m[j/k]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[38;5;241m[enter] expand — nothing on this row expands␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m search␛[m␛[38;5;241m · ␛[m␛[94m[q]␛[m␛[38;5;241m back to the prompt␛[m     ␛[38;5;241m5 of 5␛[m
-␛[38;5;214m▎␛[m␛[38;5;241mthis row · ␛[m␛[94m[v]␛[m␛[38;5;241m review␛[m␛[38;5;241m · ␛[m␛[94m[u]␛[m␛[38;5;241m undo turn␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m nothing␛[m
+␛[94m[j/k]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m review turn␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m search␛[m␛[38;5;241m · ␛[m␛[94m[?]␛[m␛[38;5;241m keys␛[m␛[38;5;241m · ␛[m␛[94m[q]␛[m␛[38;5;241m back to the prompt␛[m               ␛[38;5;241mrow 5 of 5␛[m
+␛[38;5;214m▎␛[m␛[38;5;241mthis row · ␛[m␛[94m[u]␛[m␛[38;5;241m undo turn␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m nothing␛[m
 
 
 · the input has it · plain rail, no row lit, the frame is accented
@@ -174,7 +173,7 @@
     ␛[38;5;245m--- FAIL: TestRoundLimit␛[m
 
    ␛[92m✓␛[m ␛[38;5;252mDone␛[m␛[38;5;241m · 2 steps · 6 tools · 24.7s · $0.14␛[m                                                 ␛[38;5;241mround 2/25␛[m
-  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m1 file changed ␛[m␛[92m+12␛[m ␛[91m−4␛[m␛[38;5;241m · ␛[m␛[94m[alt+w]␛[m␛[38;5;241m review␛[m␛[38;5;241m · ␛[m␛[94m[alt+z]␛[m␛[38;5;241m undo turn␛[m                       ␛[38;5;241mall tracked in git␛[m
+  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m1 file changed ␛[m␛[92m+12␛[m ␛[91m−4␛[m                                                            ␛[38;5;241mall tracked in git␛[m
    ␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/... failing␛[m␛[38;5;241m · exit 1 · 21s␛[m
 
 ␛[38;5;214m╭─␛[m ␛[38;5;241midle␛[m ␛[38;5;214m─────────────────────────────────────────────────────────────────────────────────────────────────╮␛[m
@@ -195,7 +194,7 @@
     ␛[38;5;245m--- FAIL: TestRoundLimit␛[m
 
    ␛[92m✓␛[m ␛[38;5;252mDone␛[m␛[38;5;241m · 2 steps · 6 tools · 24.7s · $0.14␛[m                                                 ␛[38;5;241mround 2/25␛[m
-  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m1 file changed ␛[m␛[92m+12␛[m ␛[91m−4␛[m␛[38;5;241m · ␛[m␛[94m[alt+w]␛[m␛[38;5;241m review␛[m␛[38;5;241m · ␛[m␛[94m[alt+z]␛[m␛[38;5;241m undo turn␛[m                       ␛[38;5;241mall tracked in git␛[m
+  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m1 file changed ␛[m␛[92m+12␛[m ␛[91m−4␛[m                                                            ␛[38;5;241mall tracked in git␛[m
    ␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/... failing␛[m␛[38;5;241m · exit 1 · 21s␛[m
 
 ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
@@ -217,7 +216,7 @@
     ␛[38;5;245m--- FAIL: TestRoundLimit␛[m
 
    ␛[92m✓␛[m ␛[38;5;252mDone␛[m␛[38;5;241m · 2 steps · 6 tools · 24.7s · $0.14␛[m                                                 ␛[38;5;241mround 2/25␛[m
-  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m1 file changed ␛[m␛[92m+12␛[m ␛[91m−4␛[m␛[38;5;241m · ␛[m␛[94m[alt+w]␛[m␛[38;5;241m review␛[m␛[38;5;241m · ␛[m␛[94m[alt+z]␛[m␛[38;5;241m undo turn␛[m                       ␛[38;5;241mall tracked in git␛[m
+  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m1 file changed ␛[m␛[92m+12␛[m ␛[91m−4␛[m                                                            ␛[38;5;241mall tracked in git␛[m
    ␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/... failing␛[m␛[38;5;241m · exit 1 · 21s␛[m
 
 ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
@@ -238,7 +237,7 @@
     ␛[38;5;245m--- FAIL: TestRoundLimit␛[m
 
 ␛[94m❯␛[m ␛[92m␛[m␛[38;5;252m␛[m␛[38;5;241m␛[m␛[38;5;241m␛[m␛[48;5;62m ␛[92m✓␛[m␛[48;5;62m ␛[38;5;252m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[97;48;5;62mDone · 2 steps · 6 tools · 24.7s · $0.14                                                 round 2/25␛[m␛[m
-  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m1 file changed ␛[m␛[92m+12␛[m ␛[91m−4␛[m␛[38;5;241m · ␛[m␛[94m[v]␛[m␛[38;5;241m review␛[m␛[38;5;241m · ␛[m␛[94m[u]␛[m␛[38;5;241m undo turn␛[m                               ␛[38;5;241mall tracked in git␛[m
+  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m1 file changed ␛[m␛[92m+12␛[m ␛[91m−4␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m review turn␛[m␛[38;5;241m · ␛[m␛[94m[u]␛[m␛[38;5;241m undo turn␛[m                      ␛[38;5;241mall tracked in git␛[m
    ␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/... failing␛[m␛[38;5;241m · exit 1 · 21s␛[m
 
 ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
@@ -253,7 +252,6 @@
 ␛[94m[pgdn]␛[m␛[38;5;241m page down␛[m
 ␛[94m[?]␛[m␛[38;5;241m hide the keys␛[m
 ␛[94m[q]␛[m␛[38;5;241m back to the prompt␛[m
-␛[38;5;214m▎␛[m␛[94m[v]␛[m␛[38;5;241m review␛[m
 ␛[38;5;214m▎␛[m␛[94m[u]␛[m␛[38;5;241m undo turn␛[m
 
 · prose · the cursor on a message: [y] copies its markdown source

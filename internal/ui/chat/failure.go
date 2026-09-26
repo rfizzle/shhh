@@ -29,7 +29,7 @@ import (
 // Provider, declared in the register rather than inline so the dispatch
 // and the offers cannot drift apart.
 //
-// They are handled by focus mode on the row, the way the changeset row's [v]
+// They are handled by focus mode on the row, the way the changeset row's [g]
 // and [u] are, so the input keeps all four letters for typing — which
 // matters more here than anywhere else, since "run the tests again" and
 // "check what it did" are exactly what gets typed after a failure. That is

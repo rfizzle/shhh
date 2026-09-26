@@ -1,7 +1,7 @@
 package chat
 
 // Review mode (docs/interface/surfaces.md#the-turns-close): the
-// surface `/review` and `[v]` on a turn's changeset row open — every file the
+// surface `/review` and a turn's changeset row, opened, open — every file the
 // turn touched with its hunks, the staging that says what to put back, and
 // the turn's verdict pinned beside the files.
 //

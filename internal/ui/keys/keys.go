@@ -702,9 +702,14 @@ var Sprint = SprintKeys{
 // awkward corner and its own subject: passive entries whose keys are answered
 // by reading mode standing on the row, which is why the input keeps every one
 // of these letters for typing.
+//
+// There is no review among them. A turn's review is opened by the row that
+// states what the turn changed — clicked, or selected and opened with enter —
+// because that is the one gesture that names which turn is meant. A letter or
+// a chord for it was the same act on a second key, and drawn on every turn's
+// close it was a key that did not say which turn it would open
+// (docs/interface/surfaces.md#the-turns-close).
 type RowKeys struct {
-	Review Binding
-
 	// Undo is `[u]`, which two rows offer with different words, the way
 	// Retry below does: a turn's changeset row puts the files back, and the
 	// notice an automatic steer left takes that message out of the
@@ -765,8 +770,7 @@ type RowKeys struct {
 }
 
 var Row = RowKeys{
-	Review: bind("v", "review", "v"),
-	Undo:   bind("u", "undo turn", "u"),
+	Undo: bind("u", "undo turn", "u"),
 
 	Retry:    bind("r", "try again", "r"),
 	Continue: bind("c", "continue from here", "c"),
@@ -782,32 +786,34 @@ var Row = RowKeys{
 	Rerun:  bind("t", "run the checks again", "t"),
 }
 
-// RowChordKeys are the same eleven offers, reached from the draft. A row is
+// RowChordKeys are the same ten offers, reached from the draft. A row is
 // drawn beside a live input nearly all the time, and a letter drawn there is
 // a letter of the sentence being typed: pressing `g` under `[g] commit` typed
 // a g (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
-// So each offer has a chord as well, live wherever the row's letter is not,
-// and the row draws whichever of the two is true where it stands — the chord
-// while the draft has the keyboard, the letter under reading mode's cursor.
+// So each offer has a chord as well, live wherever the row's letter is not.
+// Either spelling acts on one row, the one that is visibly selected — the
+// pointer lit from the prompt, or reading mode's cursor — and the row draws
+// the spelling that is live only while it is that row: the chord under the
+// pointer, the letter under the cursor. A row nobody has selected draws no
+// live key, and a chord pressed with nothing selected acts on nothing rather
+// than on whichever row happens to be newest
+// (docs/interface/surfaces.md#the-turns-close).
 //
 // Every one of them is on alt, and that is not a preference. Each ctrl letter
 // a terminal delivers is spent or the line editor's, and the free set is
-// function keys and modified navigation keys — eleven offers do not come out
+// function keys and modified navigation keys — ten offers do not come out
 // of it (docs/interface/reserved-keys.md#what-is-left). What alt costs is the
 // Option key on the two stock macOS terminals, which compose a character
 // until the profile is told to send the escape prefix; `shhh doctor`'s keys
 // row reads that setting and says which box, and the first row in a session
 // to offer one of these names it.
 //
-// The letter each chord carries is the row's own where alt still had it. Six
-// did not: `alt+v` is the staged paste's, `alt+t` the reasoning level's, and
+// The letter each chord carries is the row's own where alt still had it.
+// Some did not: `alt+t` is the reasoning level's, and
 // `alt+u`, `alt+c`, `alt+l` and `alt+b` are the textarea's own word and case
 // chords, which the draft leaves to it the way it leaves the readline chords
 // (DraftKeys). Each replacement says below which letter it took and why.
 type RowChordKeys struct {
-	// Review is `alt+w`, the last letter of the word: `alt+v` opens the
-	// staged paste, and a chord is declared once.
-	Review Binding
 	// Undo is `alt+z`, the chord an editor has meant by undo for thirty
 	// years; `alt+u` is the textarea's uppercase-word.
 	Undo  Binding
@@ -840,13 +846,12 @@ type RowChordKeys struct {
 // All is the chords in the order the rows offer them, which is the order Row
 // declares the letters in.
 func (k RowChordKeys) All() []Binding {
-	return []Binding{k.Review, k.Commit, k.Undo, k.Retry, k.Continue,
+	return []Binding{k.Commit, k.Undo, k.Retry, k.Continue,
 		k.Key, k.Provider, k.Rounds, k.Uncap, k.Reopen, k.Rerun}
 }
 
 var RowChord = RowChordKeys{
-	Review: bind("alt+w", "review", "alt+w"),
-	Undo:   bind("alt+z", "undo turn", "alt+z"),
+	Undo: bind("alt+z", "undo turn", "alt+z"),
 
 	Retry:    bind("alt+r", "try again", "alt+r"),
 	Continue: bind("alt+n", "continue from here", "alt+n"),
@@ -868,7 +873,6 @@ var RowChord = RowChordKeys{
 // then decide which of them to print.
 func rowPairs() [][2]Binding {
 	return [][2]Binding{
-		{Row.Review, RowChord.Review},
 		{Row.Commit, RowChord.Commit},
 		{Row.Undo, RowChord.Undo},
 		{Row.Retry, RowChord.Retry},

@@ -105,9 +105,11 @@ func TestCommitOffer_TheChangedFilesRowOffersReviewCommitAndUndo(t *testing.T) {
 	if c.Changes == nil {
 		t.Fatal("a turn that wrote a file gets a changeset row")
 	}
-	view := ansi.Strip(c.View(120))
+	// Selected, as the offers are only drawn on the row the reader has
+	// chosen (inertkeys.go).
+	view := ansi.Strip(m.closeFor(*c, rowUnderCursor).View(120))
 	for _, want := range []string{
-		keys.Bracket(keys.Row.Review) + " review",
+		"[enter] " + reviewTurnWords,
 		keys.Bracket(keys.Row.Commit) + " commit",
 		keys.Bracket(keys.Row.Undo) + " undo turn",
 	} {
@@ -117,7 +119,7 @@ func TestCommitOffer_TheChangedFilesRowOffersReviewCommitAndUndo(t *testing.T) {
 	}
 	// The order is review, keep, take back: the three things a changeset can
 	// become, in the order a reader meets them.
-	vi := strings.Index(view, keys.Bracket(keys.Row.Review))
+	vi := strings.Index(view, "[enter]")
 	gi := strings.Index(view, keys.Bracket(keys.Row.Commit))
 	ui := strings.Index(view, keys.Bracket(keys.Row.Undo))
 	if vi >= gi || gi >= ui {
@@ -294,14 +296,14 @@ func TestCommit_TheReceiptLandsOnTheCloseRowAndWithdrawsUndo(t *testing.T) {
 	if !strings.Contains(c.Commit.Receipt, "committed 1 file as ") {
 		t.Fatalf("the receipt is the tool's own wording, got %q", c.Commit.Receipt)
 	}
-	view := ansi.Strip(c.View(120))
+	view := ansi.Strip(m.closeFor(*c, rowUnderCursor).View(120))
 	if strings.Contains(view, keys.Bracket(keys.Row.Undo)) {
 		t.Fatalf("a committed changeset offers no undo key, got:\n%s", view)
 	}
 	if strings.Contains(view, keys.Bracket(keys.Row.Commit)) {
 		t.Fatalf("the commit key has been spent, got:\n%s", view)
 	}
-	if !strings.Contains(view, keys.Bracket(keys.Row.Review)) {
+	if !strings.Contains(view, "[enter] "+reviewTurnWords) {
 		t.Fatalf("review survives a commit, got:\n%s", view)
 	}
 	// And the rail says what was banked and what is still floating.

@@ -686,9 +686,9 @@ func (m *Model) bankTurnClose(msg commitDoneMsg) {
 			// The two offers a committed changeset no longer has: undo,
 			// because the honest way back from a commit is `git revert` and
 			// the receipt row says so, and the commit key, which is spent.
-			e.close.Changes.Keys = []components.TurnKey{
-				rowOffer(keys.Row.Review, keys.Words(keys.Row.Review)),
-			}
+			// What it keeps is the row's own open, its turn's review, which
+			// is not an offer the row carries (inertkeys.go).
+			e.close.Changes.Keys = nil
 		}
 		return
 	}

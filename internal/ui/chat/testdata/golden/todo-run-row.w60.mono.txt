@@ -72,8 +72,7 @@
     · commit
     blocked  research produced no numbered plan
     follow-up  cache-ttl-plan
-    [alt+o] reopen the item
-    alt needs Option as Meta — shhh doctor
+    [alt+o] reopen the item · [ctrl+o] to use them
 
 
 · picked up from a checkpoint · the stages it skipped are restored, not passed
@@ -146,8 +145,7 @@
     ␛[38;5;244m·␛[m ␛[38;5;244mcommit␛[m
     ␛[38;5;244mblocked  research produced no numbered plan␛[m
     ␛[38;5;244mfollow-up  cache-ttl-plan␛[m
-    ␛[38;5;254m[alt+o]␛[m␛[38;5;244m reopen the item␛[m
-    ␛[38;5;244malt needs Option as Meta — shhh doctor␛[m
+    ␛[38;5;244m[alt+o]␛[m␛[38;5;244m reopen the item␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+o]␛[m␛[38;5;254m to use them␛[m
 
 
 · picked up from a checkpoint · the stages it skipped are restored, not passed

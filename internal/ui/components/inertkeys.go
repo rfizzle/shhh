@@ -9,7 +9,7 @@ package components
 // underneath. A transcript row cannot spend three lines saying it. It is one
 // line on the column grid, and its keys are live only while reading mode's
 // cursor is standing on it — which is most of the time not the case, because
-// most of the time the draft below has the keyboard and `v` is a letter.
+// most of the time the draft below has the keyboard and `u` is a letter.
 //
 // So a row says the same two things in the space it has: the keys grey, then
 // the one key that hands the keyboard over, live, carrying the words that say
@@ -109,9 +109,19 @@ const optionRow = "alt needs Option as Meta — shhh doctor"
 func optionLine() string { return sty.Dim.Render(optionRow) }
 
 // namesTheOption reports that this run is the one that says it: the offers
-// are being drawn as chords, and this row is the session's first to do it.
+// are being drawn as chords, at least one of them is a chord rather than a
+// key spelled the same either way (enter is), and this row is the session's
+// first to do it.
 func namesTheOption(keys []TurnKey, waiting, option bool) bool {
-	return option && waiting && chorded(keys)
+	if !option || !waiting || !chorded(keys) {
+		return false
+	}
+	for _, k := range keys {
+		if k.Chord != k.Key {
+			return true
+		}
+	}
+	return false
 }
 
 // keyRun renders a row's offers in the state the keyboard puts them in.

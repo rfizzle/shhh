@@ -26,16 +26,15 @@ import (
 
 // rowChordKey answers a transcript row's offer pressed as the chord that
 // reaches it while the row's own letters are not live (keys.RowChord). One
-// press, one row: the pointer names it where the reader has lit one — it is
-// reading mode's cursor seen from the prompt, and a reader standing on a row
-// means that row — and otherwise it is the newest row on screen that offers
-// the key, which is where the cursor would open (pointer.go, openingCursor).
+// press, one row, and the row is the one the reader can see is selected: the
+// pointer lit from the prompt — reading mode's cursor seen from the prompt —
+// or that cursor itself.
 //
-// It finds that row by asking the rows rather than by keeping a second list
-// of what each one offers: the dispatch a row answers with is the whole
-// answer to whether it offers a key, and a list beside it is a list that
-// drifts. Walking back from the newest, the first row that claims the offer
-// is the row that has it.
+// With nothing selected the chord acts on nothing, and a selected row that
+// does not make the offer does not hand the chord on to one that does. It
+// used to walk back to the newest row offering the key, which drawn on every
+// turn a session had closed was a chord that named no turn and then acted on
+// whichever was newest (docs/interface/surfaces.md#the-turns-close).
 func (m Model) rowChordKey(pressed string) (tea.Model, tea.Cmd, bool) {
 	letter, ok := keys.RowLetter(pressed)
 	// Attached, the keyboard is pointed at a child and the rows in the pane
@@ -43,25 +42,10 @@ func (m Model) rowChordKey(pressed string) (tea.Model, tea.Cmd, bool) {
 	if !ok || m.attachedTo != "" {
 		return m, nil, false
 	}
-	es := *m.entries()
-	at := make([]int, 0, len(es)+1)
-	if m.pointerLit() || m.state == stateFocus {
-		at = append(at, m.focusIdx)
+	if !m.pointerLit() && m.state != stateFocus {
+		return m, nil, false
 	}
-	for i := len(es) - 1; i >= 0; i-- {
-		at = append(at, i)
-	}
-	for _, i := range at {
-		if i < 0 || i >= len(es) {
-			continue
-		}
-		row := m
-		row.focusIdx = i
-		if next, cmd, claimed := row.rowKey(letter); claimed {
-			return next, cmd, true
-		}
-	}
-	return m, nil, false
+	return m.rowKey(letter)
 }
 
 // updateKey routes one key press. handled is false when nothing on the
@@ -696,7 +680,8 @@ func (m Model) updateKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 		if next, cmd, claimed := m.rowChordKey(pressed); claimed {
 			return next, cmd, true
 		}
-		// A chord no row on screen answers is claimed all the same: nothing
+		// A chord the selected row does not answer — or pressed with no row
+		// selected — is claimed all the same: nothing
 		// else in the register wants it, and the textarea underneath binds
 		// its own alt chords to words and case — a chord the input declares
 		// must not fall through to a meaning nothing offered, the way the

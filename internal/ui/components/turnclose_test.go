@@ -14,7 +14,7 @@ func closeFixture() TurnClose {
 		Steps: 4, Tools: 18, Elapsed: "1m 04s", Spend: "$0.14", Note: "round 7/25",
 		Changes: &TurnChanges{
 			Files: 3, Added: 30, Removed: 4,
-			Keys: []TurnKey{{Key: "[v]", Label: "review"}, {Key: "[u]", Label: "undo turn"}},
+			Keys: []TurnKey{{Key: "[enter]", Label: "review turn"}, {Key: "[u]", Label: "undo turn"}},
 			Note: "all tracked in git",
 		},
 		Checks: &TurnChecks{Label: "go test ./internal/agent/...", Counts: "41 packages · 12.8s"},
@@ -28,7 +28,7 @@ func TestTurnClose_ThreeRowsAnswerThreeQuestions(t *testing.T) {
 	}
 	for i, want := range []string{
 		"✓ Done · 4 steps · 18 tools · 1m 04s · $0.14",
-		"▎✎ 3 files changed +30 −4 · [v] review · [u] undo turn",
+		"▎✎ 3 files changed +30 −4 · [enter] review turn · [u] undo turn",
 		"✓ go test ./internal/agent/... passing · 41 packages · 12.8s",
 	} {
 		if !strings.Contains(lines[i], want) {

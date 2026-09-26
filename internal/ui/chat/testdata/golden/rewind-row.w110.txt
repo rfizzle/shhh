@@ -19,8 +19,8 @@
 
 
 · as it lands · the turns folded above the row
-   ▸ turns 2–3 · rewound · 2 turns, nothing written · [enter] read them · [alt+r] reapply — undo the rewind
-   alt needs Option as Meta — shhh doctor
+   ▸ turns 2–3 · rewound · 2 turns, nothing written · [enter] read them
+   [alt+r] reapply — undo the rewind · [ctrl+o] to use them
    ✓ rewind  turns 2–3 out of the window · ctx 0% → 0%
 
 ── ansi ────────────────────────────────────────────────────
@@ -33,6 +33,6 @@
 
 
 · as it lands · the turns folded above the row
-   ␛[38;5;241m▸ turns 2–3 · rewound · 2 turns, nothing written · ␛[m␛[94m[enter] read them␛[m␛[38;5;241m · ␛[m␛[94m[alt+r]␛[m␛[38;5;241m reapply — undo the rewind␛[m
-   ␛[38;5;241malt needs Option as Meta — shhh doctor␛[m
+   ␛[38;5;241m▸ turns 2–3 · rewound · 2 turns, nothing written · ␛[m␛[94m[enter] read them␛[m
+   ␛[38;5;245m[alt+r]␛[m␛[38;5;241m reapply — undo the rewind␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+o]␛[m␛[38;5;252m to use them␛[m
    ␛[92m✓␛[m ␛[38;5;252mrewind␛[m  ␛[38;5;252mturns 2–3 out of the window · ctx 0% → 0%␛[m

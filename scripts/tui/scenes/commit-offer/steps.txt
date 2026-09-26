@@ -27,21 +27,30 @@ sleep 1
 keys C-Space
 sleep 0.3
 keys y
-# The row the scene is for: review, keep, take back — drawn as the chords
-# that reach them, because the draft below still has the keyboard and a
-# letter offered there is a letter of the sentence being typed.
-snap 03-close "[alt+g] commit" "[alt+w] review" "[alt+z] undo turn"
-# So the offer is taken from the prompt, mid-sentence, and the sentence is
-# still in the box behind the card.
+# The close offers nothing until it is selected: the same keys on every turn
+# a session closes would not say which turn they meant.
+snap 03-close "≡ summary" "1 file changed"
+# The pointer selects it from the prompt, mid-sentence: its first press lands
+# on the newest row, the session's reading of its own run, and the second on
+# the close above it, which then draws its offers — review, keep, take back — as the chords that reach
+# them, because the draft below still has the keyboard and a letter offered
+# there is a letter of the sentence being typed.
 keys "and while you are at it"
 sleep 0.3
+keys S-Up S-Up
+snap 03b-selected "[alt+g] commit" "[enter] review turn" "[alt+z] undo turn"
+# So the offer is taken from the prompt, and the sentence is still in the
+# box behind the card.
 keys M-g
 snap 04-card-from-the-draft "Commit this turn" "README.md changed by you, never staged"
 sleep 0.5
 keys Escape
 sleep 0.5
 # Esc leaves the changeset standing, and the draft with it; the second one
-# clears the box, so what follows is the other route to the same card.
+# drops the pointer and the third clears the box, so what follows is the
+# other route to the same card.
+keys Escape
+sleep 0.3
 keys Escape
 sleep 0.3
 keys C-o

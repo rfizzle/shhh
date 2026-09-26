@@ -642,12 +642,18 @@ func (m Model) blockUnits(blk transcriptBlock, es []entry, width int, focus bool
 	}
 	addEntry := func(i int, detail bool) {
 		e := es[i]
-		// A row's own keys are live only under reading mode's cursor;
-		// anywhere else — including under the pointer lit from the prompt,
-		// where every letter is text — they render beside the key that
-		// hands the keyboard to the transcript.
-		keysLive := focus && i == focusIdx && m.state == stateFocus
-		add(i, e, e, m.renderEntryDetail(e, entryWidth(e), keysLive, detail), m.selectableRow(e), onGrid(e))
+		// A row's own offers are live only on the selected row: its letters
+		// under reading mode's cursor, its chords under the pointer lit from
+		// the prompt, where every letter is text. Every other row renders
+		// them beside the key that hands the keyboard to the transcript.
+		sel := rowUnselected
+		if focus && i == focusIdx {
+			sel = rowPointed
+			if m.state == stateFocus {
+				sel = rowUnderCursor
+			}
+		}
+		add(i, e, e, m.renderEntryDetail(e, entryWidth(e), sel, detail), m.selectableRow(e), onGrid(e))
 	}
 
 	// A block's rows render through its slots, so a folded run of read-only

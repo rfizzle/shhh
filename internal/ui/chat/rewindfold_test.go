@@ -297,7 +297,11 @@ func TestGolden_RewindFold(t *testing.T) {
 			}
 			view := func(m Model, idx int, live bool) string {
 				m.invalidateRenderCache()
-				return strings.TrimRight(m.renderEntryKeys(m.transcript[idx], width, live), "\n")
+				sel := rowUnselected
+				if live {
+					sel = rowUnderCursor
+				}
+				return strings.TrimRight(m.renderEntryKeys(m.transcript[idx], width, sel), "\n")
 			}
 			m, idx := fold()
 			waiting := view(m, idx, false)

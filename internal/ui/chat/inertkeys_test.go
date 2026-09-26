@@ -49,8 +49,9 @@ type keyedSurface struct {
 	// chords are the same offers as the chords that reach them without the
 	// handover, on the surfaces that have them: a transcript row is drawn
 	// beside a live draft nearly all the time, so its offers exist twice
-	// (keys.RowChord). A takeover has none — it holds the keyboard, so its
-	// letters are already live.
+	// (keys.RowChord), and the chord acts once the pointer has selected the
+	// row. A takeover has none — it holds the keyboard, so its letters are
+	// already live.
 	chords []keys.Binding
 	// row is the kind of transcript entry the surface is, for reading back
 	// what it drew. Zero on the surfaces that are not rows.
@@ -128,13 +129,15 @@ func register(t *testing.T) []keyedSurface {
 		},
 		{
 			name: "the changeset row a turn closes with",
-			keys: []string{"v", "u"},
+			// [v] is on the list as the letter it now only is: review is
+			// the row's own open, not a key it offers.
+			keys: []string{"u", "v"},
 			open: func(t *testing.T) Model {
 				m, _ := undoModel(t)
 				return typeChars(t, m, draftLead)
 			},
 			hold:   readingCursorOn(entryTurnClose),
-			chords: []keys.Binding{keys.RowChord.Review, keys.RowChord.Undo},
+			chords: []keys.Binding{keys.RowChord.Undo},
 			row:    entryTurnClose,
 		},
 		{
@@ -163,13 +166,13 @@ func register(t *testing.T) []keyedSurface {
 		},
 		{
 			name: "a round-limit pause's row",
-			keys: []string{"v", "u", keys.Shown(keys.Row.Rounds), keys.Shown(keys.Row.Uncap)},
+			keys: []string{"u", keys.Shown(keys.Row.Rounds), keys.Shown(keys.Row.Uncap), "v"},
 			open: func(t *testing.T) Model {
 				m, _ := pausedModel(t)
 				return typeChars(t, m, draftLead)
 			},
 			hold:   readingCursorOn(entryRoundPause),
-			chords: []keys.Binding{keys.RowChord.Review, keys.RowChord.Undo, keys.RowChord.Rounds},
+			chords: []keys.Binding{keys.RowChord.Undo, keys.RowChord.Rounds},
 			row:    entryRoundPause,
 		},
 		{
@@ -308,17 +311,32 @@ func pressChord(t *testing.T, m Model, b keys.Binding) Model {
 	return updated.(Model)
 }
 
+// pointAt lights the pointer on the first row of a kind, the way shift+up
+// does from the prompt: the draft keeps the keyboard and the row is selected.
+func pointAt(t *testing.T, m Model, kind entryKind) Model {
+	t.Helper()
+	m.pointer = true
+	m.focusIdx = indexOfKind(t, m, kind)
+	m.refreshCursorView()
+	if !m.pointerLit() {
+		t.Fatalf("the pointer should be lit on the %v row", kind)
+	}
+	return m
+}
+
 // TestRowChords_ARowOffersOnlyWhatCanBePressedFromWhereItIsDrawn is the
 // story the row offers tell together with the test above. That one presses
 // the letter and watches it land in the sentence, which is what a letter
-// beside a live draft has to do. This one presses the chord the row actually
-// draws there, and watches it act — from the prompt, with the sentence still
-// in the box.
+// beside a live draft has to do. This one presses the chord, and watches it
+// act on the row the pointer has selected — from the prompt, with the
+// sentence still in the box — and act on nothing when no row is selected,
+// because a chord that fell to whichever row was newest named no row at all
+// (docs/interface/surfaces.md#the-turns-close).
 //
 // The third part is what the row has on screen while the draft holds the
-// keyboard: every offer it prints is a chord. A bare letter drawn there would
-// be the failure both halves are about, an offer that types a letter instead
-// of doing what it says.
+// keyboard: nothing it prints there is a bare letter. A letter drawn there
+// would be the failure both halves are about, an offer that types a letter
+// instead of doing what it says.
 func TestRowChords_ARowOffersOnlyWhatCanBePressedFromWhereItIsDrawn(t *testing.T) {
 	for _, s := range register(t) {
 		if len(s.chords) == 0 {
@@ -333,25 +351,63 @@ func TestRowChords_ARowOffersOnlyWhatCanBePressedFromWhereItIsDrawn(t *testing.T
 					t.Fatalf("%q is a chord and cannot reach the sentence: draft is %q",
 						keys.Shown(chord), got)
 				}
-				// Beyond the cursor: the chord leaves the reading cursor on
-				// the row it acted on, so the cursor having moved is not on
-				// its own evidence that anything happened.
+				if after := snapshot(next); after != before {
+					t.Fatalf("%q acted with no row selected:\n before %s\n after  %s",
+						keys.Shown(chord), before, after)
+				}
+
+				m = pointAt(t, s.open(t), s.row)
+				before = snapshot(m)
+				next = pressChord(t, m, chord)
+				if got := next.input.Value(); got != draftLead {
+					t.Fatalf("%q is a chord and cannot reach the sentence: draft is %q",
+						keys.Shown(chord), got)
+				}
 				if after := withoutFocus(snapshot(next)); after == withoutFocus(before) {
-					t.Fatalf("%q did nothing from the draft; the row draws it, so it has to act\n %s",
+					t.Fatalf("%q did nothing on the row the pointer selected\n %s",
 						keys.Shown(chord), before)
 				}
 			}
 
 			m := s.open(t)
 			e := m.transcript[indexOfKind(t, m, s.row)]
-			drawn := ansi.Strip(m.renderEntryKeys(e, 110, false))
-			for _, offer := range bracketed.FindAllStringSubmatch(drawn, -1) {
-				if len([]rune(offer[1])) == 1 {
-					t.Fatalf("the row draws %q beside a live draft, which is a letter of the sentence:\n%s",
-						offer[1], drawn)
+			for _, sel := range []rowSel{rowUnselected, rowPointed} {
+				drawn := ansi.Strip(m.renderEntryKeys(e, 110, sel))
+				for _, offer := range bracketed.FindAllStringSubmatch(drawn, -1) {
+					if len([]rune(offer[1])) == 1 {
+						t.Fatalf("the row draws %q beside a live draft, which is a letter of the sentence:\n%s",
+							offer[1], drawn)
+					}
 				}
 			}
 		})
+	}
+}
+
+// TestRowChords_ASelectedRowThatDoesNotOfferAChordKeepsIt is the other half
+// of acting on the selected row: the chord is not handed on to a newer row
+// that does make the offer. Here the pointer stands on a tool row, which
+// offers nothing, with a turn's close under it offering undo.
+func TestRowChords_ASelectedRowThatDoesNotOfferAChordKeepsIt(t *testing.T) {
+	m, _ := undoModel(t)
+	m = typeChars(t, m, draftLead)
+	idxs := m.expandableIndices()
+	at := -1
+	for _, i := range idxs {
+		if m.transcript[i].kind != entryTurnClose {
+			at = i
+		}
+	}
+	if at < 0 {
+		t.Fatal("the fixture should have a row other than the close to point at")
+	}
+	m.pointer, m.focusIdx = true, at
+	m.refreshCursorView()
+	before := snapshot(m)
+	next := pressChord(t, m, keys.RowChord.Undo)
+	if after := snapshot(next); after != before {
+		t.Fatalf("the chord fell through to a row the pointer was not on:\n before %s\n after  %s",
+			before, after)
 	}
 }
 
@@ -384,13 +440,15 @@ func TestRowChords_OneRowInASessionNamesTheOptionSetting(t *testing.T) {
 		return entry{kind: entryTurnClose, turn: 1, close: &components.TurnClose{
 			State: components.TurnDone,
 			Changes: &components.TurnChanges{Files: 1, Added: 1, Removed: 1,
-				Keys: []components.TurnKey{rowOffer(keys.Row.Review, "review")}},
+				Keys: []components.TurnKey{rowOffer(keys.Row.Undo, "undo turn")}},
 			Option: m.firstRowOffer(),
 		}}
 	}
+	// A row's chords are live only under the pointer, so that is where the
+	// sentence about them is read.
 	says := func(t *testing.T, m Model, at int) bool {
 		t.Helper()
-		return strings.Contains(ansi.Strip(m.renderEntryKeys(m.transcript[at], 110, false)), "Option")
+		return strings.Contains(ansi.Strip(m.renderEntryKeys(m.transcript[at], 110, rowPointed)), "Option")
 	}
 
 	t.Run("the steer notice is first", func(t *testing.T) {
@@ -466,40 +524,79 @@ func TestInertKeys_EveryTakeoverHoldsTheKeyboardExclusively(t *testing.T) {
 }
 
 // TestInertKeys_ARowDrawsTheKeyThatIsLiveWhereItStands is invariant 1 applied
-// to the state of a key. A transcript row is drawn beside a live draft nearly
-// all the time, and the offer it prints there is the chord, because the
-// letter would be a letter of the sentence being typed. Under reading mode's
-// cursor the letters are live and the row prints those. Either way the row
-// prints the key that works from where the reader is, and nothing waits.
+// to the state of a key. A turn's close offers its keys only once it is
+// selected: under the pointer lit from the prompt it prints the chords,
+// because a letter there would be a letter of the sentence being typed, and
+// under reading mode's cursor it prints the letters. Either way it leads with
+// what enter does on it, which is its turn's review. Unselected it offers
+// nothing — the same keys on every turn a session has closed told the reader
+// nothing about which turn they would act on.
 func TestInertKeys_ARowDrawsTheKeyThatIsLiveWhereItStands(t *testing.T) {
 	m, _ := undoModel(t)
 	e := m.transcript[indexOfKind(t, m, entryTurnClose)]
 
-	waiting := ansi.Strip(m.renderEntryKeys(e, 110, false))
-	for _, want := range []string{
-		keys.Bracket(keys.RowChord.Review) + " review",
-		keys.Bracket(keys.RowChord.Undo) + " undo turn",
-	} {
-		if !strings.Contains(waiting, want) {
-			t.Fatalf("a row beside a live draft offers its chords, want %q in:\n%s", want, waiting)
+	plain := ansi.Strip(m.renderEntryKeys(e, 110, rowUnselected))
+	for _, never := range []string{"undo turn", "review turn", "alt+", "to use them"} {
+		if strings.Contains(plain, never) {
+			t.Fatalf("an unselected close offers nothing, found %q in:\n%s", never, plain)
 		}
 	}
-	if strings.Contains(waiting, "to use them") {
-		t.Fatalf("nothing on the row is waiting for the keyboard any more:\n%s", waiting)
+
+	pointed := ansi.Strip(m.renderEntryKeys(e, 110, rowPointed))
+	for _, want := range []string{
+		"[enter] " + reviewTurnWords,
+		keys.Bracket(keys.RowChord.Undo) + " undo turn",
+	} {
+		if !strings.Contains(pointed, want) {
+			t.Fatalf("the row under the pointer offers its chords, want %q in:\n%s", want, pointed)
+		}
+	}
+	if strings.Contains(pointed, "to use them") {
+		t.Fatalf("nothing on the selected row is waiting for the keyboard:\n%s", pointed)
 	}
 
 	// Under the cursor the keys are the letters again, and there is nothing
 	// left to hand over.
 	held := readingCursorOn(entryTurnClose)(t, m)
-	live := ansi.Strip(held.renderEntryKeys(e, 110, true))
-	if !strings.Contains(live, "[v] review") {
-		t.Fatalf("the row under the cursor keeps its letters:\n%s", live)
+	live := ansi.Strip(held.renderEntryKeys(e, 110, rowUnderCursor))
+	for _, want := range []string{"[enter] " + reviewTurnWords, "[u] undo turn"} {
+		if !strings.Contains(live, want) {
+			t.Fatalf("the row under the cursor keeps its letters, want %q in:\n%s", want, live)
+		}
 	}
 	if strings.Contains(live, keys.Shown(keys.Draft.Reading)) {
 		t.Fatalf("a row that holds the keyboard has nothing to hand over:\n%s", live)
 	}
 	if strings.Contains(live, "alt+") {
 		t.Fatalf("the chord is the draft's spelling, not the cursor's:\n%s", live)
+	}
+}
+
+// TestInertKeys_AnUnselectedRecoveryRowDrawsItsChordsWaiting is the recovery
+// rows' half. A failure's offers are how the reader gets out of it, so the
+// row keeps saying what they are when nothing selects it — but grey, beside
+// the key that hands the keyboard over, because a chord acts on the selected
+// row and this one is not it.
+func TestInertKeys_AnUnselectedRecoveryRowDrawsItsChordsWaiting(t *testing.T) {
+	m := failureModel(t)
+	updated, _ := m.Update(streamErrMsg{err: authFailure()})
+	m = updated.(Model)
+	e := m.transcript[indexOfKind(t, m, entryFailure)]
+
+	plain := m.renderEntryKeys(e, 110, rowUnselected)
+	pointed := m.renderEntryKeys(e, 110, rowPointed)
+	want := keys.Bracket(keys.RowChord.Key) + " enter a new key"
+	if !strings.Contains(ansi.Strip(plain), want) || !strings.Contains(ansi.Strip(pointed), want) {
+		t.Fatalf("both states name the chord, want %q in:\n%s\n%s", want, ansi.Strip(plain), ansi.Strip(pointed))
+	}
+	if !strings.Contains(ansi.Strip(plain), keys.Shown(keys.Draft.Reading)+"] to use them") {
+		t.Fatalf("an unselected row names the key that makes its offers live:\n%s", ansi.Strip(plain))
+	}
+	if strings.Contains(ansi.Strip(pointed), "to use them") {
+		t.Fatalf("the selected row's chords are live already:\n%s", ansi.Strip(pointed))
+	}
+	if plain == pointed {
+		t.Fatal("a waiting chord and a live one have to be told apart")
 	}
 }
 
@@ -521,8 +618,8 @@ func TestInertKeys_WaitingAndLiveNeverPaintAlike(t *testing.T) {
 
 			m, _ := undoModel(t)
 			e := m.transcript[indexOfKind(t, m, entryTurnClose)]
-			waiting := m.renderEntryKeys(e, 110, false)
-			live := m.renderEntryKeys(e, 110, true)
+			waiting := m.renderEntryKeys(e, 110, rowPointed)
+			live := m.renderEntryKeys(e, 110, rowUnderCursor)
 			if waiting == live {
 				t.Fatal("the two states of a row's keys have to be told apart")
 			}

@@ -1,0 +1,14 @@
+# One reply per request. The last line repeats once these run out.
+# Two turns that each edit the same tracked file, so the transcript holds two
+# turns' closes stating the same change in the same words — which one a key
+# or a click reaches is the whole question the scene asks.
+[session]
+tool:read_file:{"path":"loop.go"}
+tool:edit_file:{"path":"loop.go","old_text":"const limit = 25","new_text":"const limit = 50"}
+Capped at fifty now.
+tool:edit_file:{"path":"loop.go","old_text":"const limit = 50","new_text":"const limit = 100"}
+Raised again.
+# The session's own readings of its run — a title, a summary — take their
+# answers from here rather than from the turns above.
+[reading]
+Two turns, each raising the round cap.

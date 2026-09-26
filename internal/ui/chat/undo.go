@@ -12,7 +12,7 @@ package chat
 //
 // An undo is an edit like any other, so it is recorded as its own changeset
 // and closes with the same row a turn does. That is what makes it appear in
-// the transcript, reviewable with `[v]`, and undoable in turn.
+// the transcript, reviewable from its own row, and undoable in turn.
 
 import (
 	"fmt"
@@ -231,7 +231,7 @@ func (m Model) applyUndo(plan changeset.UndoPlan, of undoSubject, force bool) (t
 }
 
 // undoCloseData is the close block the undo appends: the same rows a turn
-// ends with, so `[v]` and `[u]` work on it exactly as they do on the turn it
+// ends with, so its review and `[u]` work on it exactly as they do on the turn it
 // took back. The note says what that was.
 func (m Model) undoCloseData(note string) *components.TurnClose {
 	return &components.TurnClose{

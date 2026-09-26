@@ -266,9 +266,10 @@
                    outside a git repository
     /review [turn] review what a turn changed: file list,
                    hunks, staging per hunk (bare reviews the
-                   last turn that changed anything). Also
-                   [v] on a turn's changeset row. Nothing is
-                   applied
+                   last turn that changed anything). Also a
+                   turn's changed-files row, clicked or
+                   selected and opened with enter. Nothing
+                   is applied
     /undo [turn]   put back what a turn changed, from the
                    session's own records (not git). Asks
                    first, names anything that changed since,
@@ -540,9 +541,10 @@
                    ␛[38;5;241moutside a git repository␛[m
     ␛[38;5;252m/review [turn]␛[m ␛[38;5;241mreview what a turn changed: file list,␛[m
                    ␛[38;5;241mhunks, staging per hunk (bare reviews the␛[m
-                   ␛[38;5;241mlast turn that changed anything). Also␛[m
-                   ␛[38;5;241m[v] on a turn's changeset row. Nothing is␛[m
-                   ␛[38;5;241mapplied␛[m
+                   ␛[38;5;241mlast turn that changed anything). Also a␛[m
+                   ␛[38;5;241mturn's changed-files row, clicked or␛[m
+                   ␛[38;5;241mselected and opened with enter. Nothing␛[m
+                   ␛[38;5;241mis applied␛[m
     ␛[38;5;252m/undo [turn]␛[m   ␛[38;5;241mput back what a turn changed, from the␛[m
                    ␛[38;5;241msession's own records (not git). Asks␛[m
                    ␛[38;5;241mfirst, names anything that changed since,␛[m

@@ -49,7 +49,7 @@ func expandable(e entry) bool {
 
 // selectable reports whether focus mode can put its cursor on an entry. It is
 // expandable plus the rows that offer keys without expanding: a turn's close
-// block is passive, but [v] and [u] are handled on it, and so are
+// block is passive, but its review and [u] are handled on it, and so are
 // a provider failure's own keys and a round-limit pause's — and an assistant
 // message, which expands nothing but is what [y] copies as markdown source
 // (docs/interface/surfaces.md#reading-mode).
@@ -241,6 +241,13 @@ func (m Model) enterFocusMode() (tea.Model, tea.Cmd) {
 // plain body flag. ret is the surface a full-screen body comes back to,
 // which is the mode here and the prompt from the pointer.
 func (m Model) openCursorRow(ret state) (tea.Model, tea.Cmd) {
+	// A row that states what a turn changed opens that turn's review: the
+	// row is the turn, so opening it is the one gesture that says which
+	// turn is meant (docs/interface/surfaces.md#the-turns-close). Review is
+	// a takeover and esc comes back to where it was opened from.
+	if turn, ok := m.reviewableRow(m.focusIdx); ok {
+		return m.openReview(turn)
+	}
 	claimed, full, output := m.toggleRow(m.focusIdx, gestureCycle)
 	if full != nil {
 		return m.openDiffFull(full, ret)
@@ -291,18 +298,13 @@ func (m Model) rowKey(pressed string) (tea.Model, tea.Cmd, bool) {
 	if next, cmd, claimed := m.withdrawSteer(pressed); claimed {
 		return next, cmd, true
 	}
-	// The offers on a turn's changeset row, which are [v] and [u] and no
-	// others. The switch names them both rather than treating "not [v]" as
-	// [u]: the pause's other two keys reach this line whenever the cursor is
-	// on a close row, and a key a row does not offer has to fall through,
-	// not land on whichever offer happened to be last.
-	if e, ok := m.focusedClose(); ok && e.close.Changes != nil {
-		switch {
-		case keys.Is(pressed, keys.Row.Review):
-			// Review mode is a takeover opened from the row; esc comes back
-			// here, to the row that offered it.
-			return answered(m.openReview(e.turn))
-		case keys.Is(pressed, keys.Row.Undo):
+	// The changeset row's own [u]. Its review is the row's open rather than
+	// an offer (openCursorRow). The key is matched by name rather than taken
+	// as whatever the row offers: the pause's other keys reach this line
+	// whenever the cursor is on a close row, and a key a row does not offer
+	// has to fall through, not land on whichever offer happened to be last.
+	if e, ok := m.focusedClose(); ok && e.close.Changes != nil && len(e.close.Changes.Keys) > 0 {
+		if keys.Is(pressed, keys.Row.Undo) {
 			// Undo asks before it writes. The confirm borrows the bottom
 			// panel and the screen is kept, so the cursor stays on the row
 			// that offered it and esc comes back here.
@@ -387,7 +389,7 @@ func (m Model) updateFocus(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		m.syncViewport()
 		m.refreshFocusView()
 		return m, nil
-	case keys.Is(pressed, keys.Row.Review, keys.Row.Undo, keys.Row.Rounds, keys.Row.Uncap):
+	case keys.Is(pressed, keys.Row.Undo, keys.Row.Rounds, keys.Row.Uncap):
 		if next, cmd, claimed := m.rowKey(pressed); claimed {
 			return next, cmd
 		}
@@ -420,12 +422,10 @@ func (m Model) updateFocus(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		}
 		return m.returnToInput(msg)
 	case keys.Is(pressed, keys.RowChord.All()...):
-		// The same offers as chords. A row draws them wherever its own
-		// letters are not live, and that includes this mode standing on some
-		// other row — so the chord answers here too, on the row the cursor is
-		// on if it offers it and on the newest row that does otherwise
-		// (keyroute.go). A chord no row answers is nothing: no sentence can
-		// produce it, so there is no letter to hand back.
+		// The same offers as chords, answered on the row the cursor is on
+		// and nowhere else (keyroute.go). A chord that row does not answer
+		// is nothing: no sentence can produce it, so there is no letter to
+		// hand back.
 		if next, cmd, claimed := m.rowChordKey(pressed); claimed {
 			return next, cmd
 		}

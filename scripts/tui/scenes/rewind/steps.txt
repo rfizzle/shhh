@@ -71,9 +71,13 @@ keys y
 # out of the window, with the key that puts it back. The frame's top rail
 # says where the session now stands — the same turn the card named.
 snap 13-row "files back to turn 2" "▸ turn 3 · rewound" "╭─ at turn 2"
-# The fold's reapply, reached from the draft by its chord: the conversation
-# comes back, and the files come back through the undo confirm every undo
-# goes through.
+# The fold's reapply, reached from the draft by its chord once the pointer
+# has selected the fold — the first press lands on the rewind's own close,
+# the second on the fold above it, which then draws the chord live. The
+# conversation comes back, and the files come back through the undo confirm
+# every undo goes through.
+keys S-Up S-Up
+snap 13b-fold-selected "read them · [alt+r] reapply"
 keys M-r
 snap 14-reapply-confirm "reapplied turn 3"
 keys y

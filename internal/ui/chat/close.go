@@ -24,9 +24,10 @@ import (
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
-// The offers the changeset row makes are keys.Row.Review and keys.Row.Undo
-//. Focus mode on the row consumes them, so the input keeps every other
-// key.
+// The offers the changeset row makes are keys.Row.Commit and keys.Row.Undo,
+// and the row itself is the door to its turn's review: clicked, or selected
+// and opened with enter (inertkeys.go). The selected row answers them, so the
+// input keeps every other key.
 
 // appendTurnClose closes the turn with its summary rows. It runs where the
 // turn's accounting is closed — one place, so a turn cannot end without
@@ -54,7 +55,7 @@ func (m *Model) appendTurnClose() {
 	m.recordTurn(outcome)
 	// A turn that stopped at its round limit has already closed, with the
 	// pause row: it states the rounds it used, what it changed, and
-	// the three ways on, and a second block offering [v] and [u] beside it
+	// the three ways on, and a second block offering review and [u] beside it
 	// would be the same answer twice. Granting the rounds spends the pause,
 	// so the turn it continues into closes here in the ordinary way.
 	if m.pausedAtRoundLimit() {
@@ -144,7 +145,7 @@ func (m Model) roundNote() string {
 // turnChangesRow is the changed-files row, read from the turn's changeset.
 // A turn that changed nothing has no row — the summary row stands alone.
 //
-// A turn that committed keeps the review offer and loses the undo one. Undo
+// A turn that committed still opens its review and loses the undo offer. Undo
 // puts files back out of the session's own records, which still works, but
 // offering it beside a commit would read as an offer to take the commit back,
 // and the honest key for that is `git revert` — a sentence somebody types,
@@ -215,14 +216,13 @@ func (m Model) turnChangesFor(t changeset.Turn, committed bool) *components.Turn
 	if t.Files() == 0 {
 		return nil
 	}
-	offers := []components.TurnKey{
-		rowOffer(keys.Row.Review, keys.Words(keys.Row.Review)),
-	}
+	// Review, keep, or take back — the three things a changeset can become,
+	// on one line and in that order. Review is the row's own open and is
+	// drawn in front of these once the row is selected (inertkeys.go). The
+	// commit offer stands for as long as the changeset is uncommitted and
+	// goes when it is not: banking work twice is not one of the three.
+	var offers []components.TurnKey
 	if !committed {
-		// Review, keep, or take back — the three things a changeset can
-		// become, on one line and in that order. The commit offer stands for
-		// as long as the changeset is uncommitted and goes when it is not:
-		// banking work twice is not one of the three.
 		offers = append(offers,
 			rowOffer(keys.Row.Commit, keys.Words(keys.Row.Commit)),
 			rowOffer(keys.Row.Undo, keys.Words(keys.Row.Undo)))

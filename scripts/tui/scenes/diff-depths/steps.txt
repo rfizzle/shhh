@@ -1,5 +1,5 @@
 # program test: TestProgram_AnEditRowOpensToEachDepth,
-#   TestProgram_TheCloseOpensTheReview,
+#   TestProgram_EnterOnASelectedCloseOpensThatTurnsReview,
 #   TestProgram_TheQuitChordArmsThenLeaves
 #
 # One applied edit opened to each of its three depths
@@ -55,12 +55,13 @@ keys Escape
 sleep 0.3
 snap 08-back-in-place "@@ -4,7 +4,7 @@"
 # The same edit a fourth time, staged rather than read: the cursor walks down
-# to the row the turn closed on, two rows below the edit, and review is that
-# row's own key. Two lists on one surface — the files, and the focused file's
-# hunks — and the row each cursor is on is lit under its pointer.
+# to the row the turn closed on, two rows below the edit, and enter on that
+# row opens its turn's review. Two lists on one surface — the files, and the
+# focused file's hunks — and the row each cursor is on is lit under its
+# pointer.
 keys j j
-sleep 0.3
-keys v
+snap 08b-on-the-close "[enter] review turn"
+keys Enter
 snap 09-review "leave, change nothing" "❯ [x] @@ -4,7 +4,7 @@"
 # Esc leaves review with nothing staged and nothing done, which is what the
 # surface says about itself the whole time it is up; the second drops the

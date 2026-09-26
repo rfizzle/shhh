@@ -191,6 +191,32 @@ func TestClick_ReadingModeMovesTheCursor(t *testing.T) {
 	}
 }
 
+// A turn's close is a target on the line that states what the turn changed,
+// which opens that turn's review; its first line states what the turn cost
+// and opens nothing.
+func TestClick_TheChangedFilesLineOpensItsTurnsReview(t *testing.T) {
+	m, _ := undoModel(t)
+	m = m.WithMouse(true)
+	m.viewport.SetLines(m.renderHistoryLines())
+	m.viewport.GotoBottom()
+	m.input.SetValue("half a sentence")
+
+	x, y := rowCell(t, m, "✓ Done")
+	if got := click(t, m, x, y); got.state == stateReview {
+		t.Fatal("the close's first line opened a review")
+	}
+	x, y = rowCell(t, m, "file changed")
+	got := click(t, m, x, y)
+	turn := m.transcript[indexOfKind(t, m, entryTurnClose)].turn
+	if got.state != stateReview || got.reviewTurnN != turn {
+		t.Fatalf("a click on the changed-files line should review turn %d, got state %v turn %d",
+			turn, got.state, got.reviewTurnN)
+	}
+	if got.input.Value() != "half a sentence" {
+		t.Fatalf("the click took the sentence: %q", got.input.Value())
+	}
+}
+
 // --- the decision run -----------------------------------------------------
 
 // cardKeyCell is the screen cell a decision key is drawn in, found the way a

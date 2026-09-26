@@ -441,7 +441,7 @@ type entry struct {
 	diff *components.DiffView
 	// close is the entryTurnClose block: the raw counts a turn ended
 	// with, so the rows re-render at any width like every other entry, and
-	// turn is the turn it closed — what [v] and [u] act on.
+	// turn is the turn it closed — what its review and [u] act on.
 	close *components.TurnClose
 	turn  int64
 	// fail is the classified provider failure behind an entryFailure row

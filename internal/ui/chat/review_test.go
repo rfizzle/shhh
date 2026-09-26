@@ -336,10 +336,10 @@ func TestReview_ReturnsToFocusMode(t *testing.T) {
 	m, _ := reviewModel(t)
 	updated, _ := m.enterFocusMode()
 	m = updated.(Model)
-	updated, _ = m.updateFocus(tea.KeyPressMsg{Code: []rune(keys.Shown(keys.Row.Review))[0], Text: keys.Shown(keys.Row.Review)})
+	updated, _ = m.updateFocus(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 	if m.state != stateReview {
-		t.Fatalf("[v] should open review mode, got state %v", m.state)
+		t.Fatalf("enter on the changeset row should open review mode, got state %v", m.state)
 	}
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	m = updated.(Model)

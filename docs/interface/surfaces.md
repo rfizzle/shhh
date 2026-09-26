@@ -255,21 +255,40 @@ on the row rather than a sentence typed in another window, because the moment
 a person knows whether the work is worth keeping is the moment they have just
 read what it changed.
 
-Each of those three is drawn in the spelling that works from where the reader
-is standing. The row sits above a live draft nearly all the time, and a letter
-offered there is a letter of the sentence being typed, so what the row prints
-while the draft can take text is the chord — pressed from the prompt, with the
-half-written sentence still in the box. Under reading mode's cursor the letter
-is live and the row prints that instead. It is one offer either way, and the
-row never draws both
+Review is the row itself. The row states what one turn changed, so clicking
+it, or selecting it and pressing enter, opens that turn's review — its files,
+the verdict beside them, and the selection an undo would restore. It is the
+one door to that surface that names which turn is meant by where the reader
+put the pointer, which is why it replaced a review key: a key printed on every
+turn a session closed told nobody which turn it would open, and it opened the
+newest. Review is its own surface and not a second way to read a diff — the
+rail's changed files open one file's diff across the session, and an edit's
+row opens that one edit — so it keeps a door of its own, and `/review` with a
+turn number is the other one. Selected, enter on the row says so: `review
+turn`. That is a label for what enter does once the row holds the keyboard,
+not a promise that enter reaches the transcript while a sentence in the draft
+owns it; there, enter sends the sentence and the pointer's own open is the
+key. A click reaches the row from a half-typed line without handing the
+keyboard over at all.
+
+Keep and take back are drawn only on the selected close. The same keys on
+every closed turn were keys that did not say which turn they meant, so an
+unselected close states what the turn did and offers nothing, and selecting
+it — the pointer from the prompt, or reading mode's cursor — is what draws its
+offers. The selected row draws each in the spelling that works from where the
+reader is standing: under the pointer the draft can still take text and a
+letter offered there is a letter of the sentence being typed, so it prints the
+chord, pressed from the prompt with the half-written sentence still in the
+box; under reading mode's cursor the letter is live and it prints that
+instead. It is one offer either way, and the row never draws both
 ([why](principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard)).
 
-The chord acts on one row: the one the pointer names, or the newest row that
-makes the offer where no pointer is lit. That is the row reading mode would
-open on, so the two doors reach the same place. And the first row in a session
-to offer a chord says beside it that alt needs the Option setting on a stock
-macOS terminal, with the doctor row that reads it — once, because it is a fact
-about the terminal and not about that row.
+The chord acts on the selected row and on no other: pressed with nothing
+selected it does nothing, and a selected row that does not make the offer
+does not hand it to one that does. And the first row in a session to offer a
+chord says under it, once it is drawing one, that alt needs the Option setting
+on a stock macOS terminal, with the doctor row that reads it — once, because it
+is a fact about the terminal and not about that row.
 
 The key opens a card, for the reason every act that cannot be taken back gets
 one. It states the message that will be written, what will be staged, what
@@ -287,7 +306,7 @@ stays on the card, the index goes back the way it was found, and the changeset
 is still there to be offered again.
 
 The receipt is the row the turn's close already draws for a commit. Once a
-changeset is committed the row keeps review and loses the other two: the
+changeset is committed the row still opens its review and loses the other two: the
 commit key has been spent, and undo restores files from the session's own
 records without reaching history, so offering it beside a commit would read as
 an offer to take the commit back.
@@ -368,10 +387,14 @@ appear underneath, bounded — which is why "unclassified" is a class rather
 than an error path. A message we could not name still gets said.
 
 The offered key is drawn the way [a turn's close](#the-turns-close) draws its
-three: as a chord while the draft below can take text, as the letter under
-reading mode's cursor. A failure row is the one row a reader most often meets
-mid-sentence — the turn broke while they were typing the next thing — so it is
-the row where a key that only worked after a handover was least useful.
+own once selected: as a chord under the pointer, as the letter under reading
+mode's cursor, and live only there. Unlike a close, a recovery row keeps
+saying what its keys are when nothing selects it — grey, beside the key that
+hands the keyboard over — because they are how the reader gets out of it. A
+failure row is the one row a reader most often meets mid-sentence — the turn
+broke while they were typing the next thing — and the pointer's first press
+from the prompt lands on it, so its chord is one selection away rather than a
+handover away.
 
 Two failures earn a card instead, and only two: the ones that stop the session
 dead.
@@ -489,8 +512,9 @@ the arrows was never a chord shhh could keep ([reserved keys](reserved-keys.md))
 
 It is also where rows that offer keys without expanding are answered — a
 turn's changeset, a provider failure. Both are passive renderers; holding
-their keys here is what keeps `v`, `u`, `r`, `c`, `e` and `p` available for
-typing.
+their keys here is what keeps `g`, `u`, `r`, `c`, `e` and `p` available for
+typing. Enter on a turn's changeset opens that turn's review, which is the
+one row where enter does something other than expand, and the bar says so.
 
 One key copies the row under the cursor, shaped by what the row is: a message
 as its markdown source, a command as the command over its output, an edit as

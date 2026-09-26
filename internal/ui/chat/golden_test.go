@@ -152,7 +152,7 @@ func goldenTranscript() []entry {
 			Steps: 2, Tools: 6, Elapsed: "24.7s", Spend: "$0.14", Note: "round 2/25",
 			Changes: &components.TurnChanges{
 				Files: 1, Added: 12, Removed: 4,
-				Keys: []components.TurnKey{rowOffer(keys.Row.Review, "review"), rowOffer(keys.Row.Undo, "undo turn")},
+				Keys: []components.TurnKey{rowOffer(keys.Row.Undo, "undo turn")},
 				Note: "all tracked in git",
 			},
 			Checks: &components.TurnChecks{
@@ -2665,7 +2665,6 @@ func TestGolden_GitWriteRows(t *testing.T) {
 				entry{kind: entryTurnClose, turn: 1, close: &components.TurnClose{
 					State: components.TurnDone, Steps: 4, Tools: 18, Elapsed: "1m 04s", Spend: "$0.14",
 					Changes: &components.TurnChanges{Files: 3, Added: 30, Removed: 4,
-						Keys: []components.TurnKey{rowOffer(keys.Row.Review, "review")},
 						Note: "all tracked in git"},
 					Commit: &components.TurnCommit{Receipt: "committed 3 files as a41f2c9 on master"},
 				}},
@@ -2899,7 +2898,6 @@ func TestGolden_ResumedChanges(t *testing.T) {
 				State: components.TurnDone, Steps: 2, Tools: 6, Elapsed: "24.7s", Spend: "$0.14",
 				Changes: &components.TurnChanges{Files: 1, Added: 1, Removed: 1,
 					Keys: []components.TurnKey{
-						rowOffer(keys.Row.Review, "review"),
 						rowOffer(keys.Row.Commit, "commit"),
 						rowOffer(keys.Row.Undo, "undo turn"),
 					},
@@ -2919,8 +2917,47 @@ func TestGolden_ResumedChanges(t *testing.T) {
 			},
 		}
 		return []golden.Panel{
-			{Label: "the restored close · review, keep, take back", View: closeRow()},
+			{Label: "the restored close · unselected, it states the change and offers nothing", View: closeRow()},
 			{Label: "the rail · owned file, drifted file named separately", View: rail.View(components.InspectorWidth, 0)},
+		}
+	})
+}
+
+// TestGolden_TurnCloseSelection captures two turns' closes stating the same
+// change, in the three places the selection can stand
+// (docs/interface/surfaces.md#the-turns-close): nowhere, where neither offers
+// a key; the pointer lit from the prompt on the older one, which then leads
+// with enter's review and draws its chords live; and reading mode's cursor on
+// the same row, which draws its letters.
+func TestGolden_TurnCloseSelection(t *testing.T) {
+	captureGolden(t, "turn-close-selection", "two turns' closes and where the selection stands", goldenWidths, func(width int) []golden.Panel {
+		closes := func(sel rowSel) string {
+			m := frameModel(t, width, 40)
+			for turn := int64(1); turn <= 2; turn++ {
+				m.appendEntry(entry{kind: entryAssistant, turn: turn, text: fmt.Sprintf("Turn %d raised the cap.", turn)})
+				m.appendEntry(entry{kind: entryTurnClose, turn: turn, close: &components.TurnClose{
+					State: components.TurnDone, Tools: 1, Elapsed: "2.1s",
+					Changes: &components.TurnChanges{Files: 1, Added: 1, Removed: 1,
+						Keys: []components.TurnKey{
+							rowOffer(keys.Row.Commit, "commit"),
+							rowOffer(keys.Row.Undo, "undo turn"),
+						},
+						Note: "all tracked in git"},
+				}})
+			}
+			switch sel {
+			case rowPointed:
+				m.pointer, m.focusIdx = true, 1
+			case rowUnderCursor:
+				m.state, m.focusIdx = stateFocus, 1
+			}
+			m.invalidateRenderCache()
+			return m.renderHistory()
+		}
+		return []golden.Panel{
+			{Label: "nothing selected · neither close offers a key", View: closes(rowUnselected)},
+			{Label: "the pointer on turn 1 · enter reviews it, its chords are live", View: closes(rowPointed)},
+			{Label: "reading mode's cursor on turn 1 · its letters are live", View: closes(rowUnderCursor)},
 		}
 	})
 }
@@ -3205,7 +3242,7 @@ func TestGolden_OnCloseGate(t *testing.T) {
 				Elapsed: "41.3s", Spend: "$0.12", Note: "round 4/25",
 				Changes: &components.TurnChanges{
 					Files: 2, Added: 31, Removed: 7,
-					Keys: []components.TurnKey{rowOffer(keys.Row.Review, "review"), rowOffer(keys.Row.Undo, "undo turn")},
+					Keys: []components.TurnKey{rowOffer(keys.Row.Undo, "undo turn")},
 					Note: "all tracked in git",
 				},
 				// Read off the row above, the way the live close reads it.
@@ -3273,7 +3310,7 @@ func TestGolden_ResolvedVerification(t *testing.T) {
 				Elapsed: "1m 12s", Spend: "$0.18", Note: "round 5/25",
 				Changes: &components.TurnChanges{
 					Files: 1, Added: 12, Removed: 3,
-					Keys: []components.TurnKey{rowOffer(keys.Row.Review, "review"), rowOffer(keys.Row.Undo, "undo turn")},
+					Keys: []components.TurnKey{rowOffer(keys.Row.Undo, "undo turn")},
 					Note: "all tracked",
 				},
 				// Read off the rows above, the way the live close reads them.
@@ -3368,7 +3405,6 @@ func TestGolden_InspectorAlerts(t *testing.T) {
 							Elapsed: "1m 12s", Spend: "$0.18", Note: "round 5/25",
 							Changes: &components.TurnChanges{
 								Files: 1, Added: 12, Removed: 3, Note: "all tracked",
-								Keys: []components.TurnKey{rowOffer(keys.Row.Review, "review")},
 							},
 							Checks: turnChecksRow(m.transcript, false),
 						}})

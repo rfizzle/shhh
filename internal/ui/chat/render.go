@@ -215,24 +215,25 @@ func (m *Model) anchorTo(idx int, follow bool) {
 // an entry's business — separatorBefore owns it, so every caller that
 // concatenates entries gets the same rhythm.
 func (m Model) renderEntry(e entry, width int) string {
-	return m.renderEntryKeys(e, width, false)
+	return m.renderEntryKeys(e, width, rowUnselected)
 }
 
-// renderEntryKeys is the same, told whether the row's own keys are live —
-// which they are only while reading mode's cursor is standing on this row
+// renderEntryKeys is the same, told where the row stands against the
+// selection — which decides whether its own keys are live
 // (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
-// Everywhere else the row is beside a live draft, `v` is a letter, and the
-// row says so: its keys go grey and the key that hands the keyboard over is
-// offered in the live treatment beside them.
-func (m Model) renderEntryKeys(e entry, width int, keysLive bool) string {
-	return m.renderEntryDetail(e, width, keysLive, false)
+// Its letters are live only under reading mode's cursor and its chords only
+// under the pointer; everywhere else the row is beside a live draft, `g` is a
+// letter, and the row says so: its keys go grey and the key that hands the
+// keyboard over is offered in the live treatment beside them (inertkeys.go).
+func (m Model) renderEntryKeys(e entry, width int, sel rowSel) string {
+	return m.renderEntryDetail(e, width, sel, false)
 }
 
 // renderEntryDetail is the same again, told whether the step this row belongs
 // to has its detail open. Only the activity rows can answer to
 // it; every other kind of entry renders the same inside an opened step as
 // outside one, because a step opens the bodies of its calls and nothing else.
-func (m Model) renderEntryDetail(e entry, width int, keysLive, stepDetail bool) string {
+func (m Model) renderEntryDetail(e entry, width int, sel rowSel, stepDetail bool) string {
 	switch e.kind {
 	case entryUser:
 		// The same renderer the model's prose gets. A sent message is not a
@@ -287,7 +288,7 @@ func (m Model) renderEntryDetail(e entry, width int, keysLive, stepDetail bool) 
 		if e.rewound == nil {
 			return ""
 		}
-		return m.rewoundBlock(e, width, keysLive) + "\n"
+		return m.rewoundBlock(e, width, sel) + "\n"
 	case entryTool, entryCommand:
 		// Compact one-row activity rendering; focus mode expands it,
 		// and so does the step around it.
@@ -310,15 +311,20 @@ func (m Model) renderEntryDetail(e entry, width int, keysLive, stepDetail bool) 
 		if e.close == nil {
 			return ""
 		}
-		c := *e.close
-		c.KeysWaiting, c.Handover = !keysLive, m.rowHandover(keysLive)
+		c := m.closeFor(*e.close, sel)
 		return c.View(width) + "\n"
 	case entryFailure:
-		return m.gateRow(m.failureRow(e), keysLive).View(width) + "\n"
+		return m.gateRow(m.failureRow(e), sel).View(width) + "\n"
 	case entryStreamDrop:
-		return m.gateRow(m.dropRow(e), keysLive).View(width) + "\n"
+		return m.gateRow(m.dropRow(e), sel).View(width) + "\n"
 	case entryRoundPause:
-		return m.gateRow(m.roundPauseRow(e), keysLive).View(width) + "\n"
+		row := m.roundPauseRow(e)
+		if sel != rowUnselected && e.pause != nil && e.pause.files > 0 {
+			// Selected, the pause opens the turn's review the way the
+			// close it stands in for does, and leads with it.
+			row.Keys = append([]components.KeyOffer{reviewTurnOffer()}, row.Keys...)
+		}
+		return m.gateRow(row, sel).View(width) + "\n"
 	case entryFanout:
 		block := m.fanoutBlockFor(e)
 		if len(block.Lanes) == 0 {
@@ -329,7 +335,7 @@ func (m Model) renderEntryDetail(e entry, width int, keysLive, stepDetail bool) 
 		if e.todorun == nil {
 			return ""
 		}
-		return m.todoRunRowView(e, width, keysLive) + "\n"
+		return m.todoRunRowView(e, width, sel) + "\n"
 	case entryDiff:
 		if e.diff == nil {
 			return ""
@@ -344,7 +350,7 @@ func (m Model) renderEntryDetail(e entry, width int, keysLive, stepDetail bool) 
 		// The offer an interruption's notice carries, where it carries one:
 		// the machinery wrote a message into this conversation, and `[u]` is
 		// how the reader takes it back (intervene.go).
-		return m.systemRow(e, width) + m.steerOfferLine(e, keysLive) + "\n"
+		return m.systemRow(e, width) + m.steerOfferLine(e, sel) + "\n"
 	case entryError:
 		// On the content column with the notices, and for the same reason: an
 		// error the session is reporting about itself is prose in the

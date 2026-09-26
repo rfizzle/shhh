@@ -134,17 +134,19 @@
                      Profiles › Keys › Left Option key: Esc+. shhh doctor's
                      keys row reads yours
     [alt+…]          a transcript row's own offers, taken from the prompt
-                     with the draft still holding the keyboard: alt+w review
-                     · alt+g commit · alt+z undo turn · alt+r try again ·
-                     alt+n continue from here · alt+e enter a new key · alt+p
-                     switch provider · alt+m more rounds · alt+x let it run ·
-                     alt+o reopen the item · alt+k run the checks again
+                     with the draft still holding the keyboard: alt+g commit
+                     · alt+z undo turn · alt+r try again · alt+n continue
+                     from here · alt+e enter a new key · alt+p switch
+                     provider · alt+m more rounds · alt+x let it run · alt+o
+                     reopen the item · alt+k run the checks again
                      in reading mode each is the bare letter instead, on the
-                     row under the cursor; the row draws whichever of the two
-                     works where you are. From the prompt the chord acts on
-                     the row the pointer names, or on the newest row that
-                     offers it. On a Mac an alt chord needs the Option key
-                     setting above
+                     row under the cursor; the selected row draws whichever
+                     of the two works where you are. From the prompt the
+                     chord acts on the row the pointer names and on nothing
+                     when no row is selected. A turn's changed-files row
+                     opens that turn's review when it is clicked or selected
+                     and opened with enter. On a Mac an alt chord needs the
+                     Option key setting above
     [ctrl+f]         the backlog screen: the project's items on the left and
                      the one under the pointer on the right, / and s/p/k/r
                      narrow the list, enter reads the body, e edits the file,
@@ -356,17 +358,19 @@
                      ␛[38;5;241mProfiles › Keys › Left Option key: Esc+. shhh doctor's␛[m
                      ␛[38;5;241mkeys row reads yours␛[m
     ␛[94m[alt+…]␛[m          ␛[38;5;241ma transcript row's own offers, taken from the prompt␛[m
-                     ␛[38;5;241mwith the draft still holding the keyboard: alt+w review␛[m
-                     ␛[38;5;241m· alt+g commit · alt+z undo turn · alt+r try again ·␛[m
-                     ␛[38;5;241malt+n continue from here · alt+e enter a new key · alt+p␛[m
-                     ␛[38;5;241mswitch provider · alt+m more rounds · alt+x let it run ·␛[m
-                     ␛[38;5;241malt+o reopen the item · alt+k run the checks again␛[m
+                     ␛[38;5;241mwith the draft still holding the keyboard: alt+g commit␛[m
+                     ␛[38;5;241m· alt+z undo turn · alt+r try again · alt+n continue␛[m
+                     ␛[38;5;241mfrom here · alt+e enter a new key · alt+p switch␛[m
+                     ␛[38;5;241mprovider · alt+m more rounds · alt+x let it run · alt+o␛[m
+                     ␛[38;5;241mreopen the item · alt+k run the checks again␛[m
                      ␛[38;5;241min reading mode each is the bare letter instead, on the␛[m
-                     ␛[38;5;241mrow under the cursor; the row draws whichever of the two␛[m
-                     ␛[38;5;241mworks where you are. From the prompt the chord acts on␛[m
-                     ␛[38;5;241mthe row the pointer names, or on the newest row that␛[m
-                     ␛[38;5;241moffers it. On a Mac an alt chord needs the Option key␛[m
-                     ␛[38;5;241msetting above␛[m
+                     ␛[38;5;241mrow under the cursor; the selected row draws whichever␛[m
+                     ␛[38;5;241mof the two works where you are. From the prompt the␛[m
+                     ␛[38;5;241mchord acts on the row the pointer names and on nothing␛[m
+                     ␛[38;5;241mwhen no row is selected. A turn's changed-files row␛[m
+                     ␛[38;5;241mopens that turn's review when it is clicked or selected␛[m
+                     ␛[38;5;241mand opened with enter. On a Mac an alt chord needs the␛[m
+                     ␛[38;5;241mOption key setting above␛[m
     ␛[94m[ctrl+f]␛[m         ␛[38;5;241mthe backlog screen: the project's items on the left and␛[m
                      ␛[38;5;241mthe one under the pointer on the right, / and s/p/k/r␛[m
                      ␛[38;5;241mnarrow the list, enter reads the body, e edits the file,␛[m

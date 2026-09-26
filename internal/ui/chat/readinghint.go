@@ -96,7 +96,11 @@ func joinSegs(segs []hintSeg) string {
 // (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 func (m Model) readingModeKeys() []hintSeg {
 	segs := []hintSeg{seg(keys.Reading.Move)}
-	if m.focusedExpands() {
+	if _, ok := m.reviewableRow(m.focusIdx); ok {
+		// The row states what a turn changed, and enter opens that turn's
+		// review rather than a body (openCursorRow).
+		segs = append(segs, segAs(keys.Reading.Expand, reviewTurnWords))
+	} else if m.focusedExpands() {
 		segs = append(segs, seg(keys.Reading.Expand))
 		if m.focusedRowOpen() {
 			segs = append(segs, seg(keys.Reading.Collapse))

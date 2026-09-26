@@ -32,6 +32,13 @@ func TestMain(m *testing.M) { os.Exit(golden.Run(m)) }
 // the draft answers, which is what the row draws while the draft can take
 // text (keys.RowChord). A capture that spelled the pair by hand would go on
 // drawing a letter the register had moved.
+// reviewTurnOffer is what a selected changed-files row leads with: enter
+// opens the turn's review, and it is spelled the same from either door.
+func reviewTurnOffer() TurnKey {
+	k := keys.Bracket(keys.Reading.Expand)
+	return TurnKey{Key: k, Chord: k, Label: "review turn"}
+}
+
 func rowOffer(b keys.Binding, label string) TurnKey {
 	o := TurnKey{Key: keys.Bracket(b), Label: label}
 	if c, ok := keys.ChordFor(b); ok {
@@ -333,7 +340,7 @@ func TestGolden_TurnClose(t *testing.T) {
 					Files: 3, Added: 30, Removed: 4,
 					// Review, keep, or take back — the three things a
 					// changeset can become, on one line and in that order.
-					Keys: []TurnKey{rowOffer(keys.Row.Review, "review"),
+					Keys: []TurnKey{reviewTurnOffer(),
 						rowOffer(keys.Row.Commit, "commit"), rowOffer(keys.Row.Undo, "undo turn")},
 					Note: "all tracked in git",
 				},
@@ -360,10 +367,10 @@ func TestGolden_TurnClose(t *testing.T) {
 				c.Spend, c.Changes, c.Checks = "~48.1k tok", nil, nil
 			})},
 			// The changeset row in the two spellings invariant 5 puts it in.
-			// Its [v], [g] and [u] are reading mode's, on the row; beside a
-			// live draft each of those is a letter of the sentence being
-			// typed, so what the row draws there is the chord that reaches
-			// the same offer without the handover.
+			// Its [g] and [u] are reading mode's, on the row; under the
+			// pointer lit beside a live draft each of those is a letter of the
+			// sentence being typed, so what the row draws there is the chord
+			// that reaches the same offer without the handover.
 			{Label: "keys waiting · beside a live draft, the row offers its chords", View: closed(func(c *TurnClose) {
 				c.KeysWaiting, c.Handover = true, "ctrl+o"
 			})},
@@ -379,7 +386,7 @@ func TestGolden_TurnClose(t *testing.T) {
 			// been spent.
 			{Label: "committed · the receipt, and what undo does not reach", View: closed(func(c *TurnClose) {
 				c.Commit = &TurnCommit{Receipt: "committed 3 files as a41f2c9 on master"}
-				c.Changes.Keys = []TurnKey{rowOffer(keys.Row.Review, "review")}
+				c.Changes.Keys = []TurnKey{reviewTurnOffer()}
 			})},
 			// What the turn's delegates left in the shared notebook, and
 			// what is still waiting unread on the screen that holds it. No

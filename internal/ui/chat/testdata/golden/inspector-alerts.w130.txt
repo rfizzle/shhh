@@ -162,7 +162,7 @@
     ▎$ run     quality gate · default · 5 checks                 2 lines       ┃ │                                                
                                                                                ┃ │                                                
      ✓ Done · 2 steps · 5 tools · 1m 12s · $0.18                     round 5/25┃ │                                                
-    ▎✎ 1 file changed +12 −3 · [alt+w] review                       all tracked┃ │                                                
+    ▎✎ 1 file changed +12 −3                                        all tracked┃ │                                                
      ✓ quality gate default passing · 5/5 checks · 1.4s                        ┃ │                                                
                                                                                ┃ │                                                
   ╭─ ✓ done ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮  
@@ -323,7 +323,7 @@
     ␛[38;5;214m▎$␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mquality gate · default · 5 checks␛[m                 ␛[38;5;245m2 lines␛[m       ␛[38;5;241m┃␛[m ␛[38;5;241m│␛[m                                                
                                                                                ␛[38;5;241m┃␛[m ␛[38;5;241m│␛[m                                                
      ␛[92m✓␛[m ␛[38;5;252mDone␛[38;5;241m · 2 steps · 5 tools · 1m 12s · $0.18␛[m                     ␛[38;5;241mround 5/25┃␛[m ␛[38;5;241m│␛[m                                                
-    ␛[38;5;214m▎✎␛[m ␛[38;5;252m1 file changed ␛[92m+12␛[m ␛[91m−3␛[38;5;241m · ␛[94m[alt+w]␛[38;5;241m review␛[m                       ␛[38;5;241mall tracked┃␛[m ␛[38;5;241m│␛[m                                                
+    ␛[38;5;214m▎✎␛[m ␛[38;5;252m1 file changed ␛[92m+12␛[m ␛[91m−3␛[m                                        ␛[38;5;241mall tracked┃␛[m ␛[38;5;241m│␛[m                                                
      ␛[92m✓␛[m ␛[38;5;252mquality gate default passing␛[38;5;241m · 5/5 checks · 1.4s␛[m                        ␛[38;5;241m┃␛[m ␛[38;5;241m│␛[m                                                
                                                                                ␛[38;5;241m┃␛[m ␛[38;5;241m│␛[m                                                
   ␛[38;5;214m╭─␛[m ␛[92m✓ done␛[m ␛[38;5;214m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮␛[m  

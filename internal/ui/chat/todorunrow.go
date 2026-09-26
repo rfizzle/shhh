@@ -485,7 +485,7 @@ func (r *todoRunRow) offers() []components.TurnKey {
 
 // todoRunRowView renders the row: its header, the strip, the notes each
 // stage adds, and — opened — the answers the stages gave.
-func (m Model) todoRunRowView(e entry, width int, keysLive bool) string {
+func (m Model) todoRunRowView(e entry, width int, sel rowSel) string {
 	r := e.todorun
 	indent := strings.Repeat(" ", components.GridDetailIndent)
 	inner := max(width-components.GridDetailIndent, 1)
@@ -521,10 +521,10 @@ func (m Model) todoRunRowView(e entry, width int, keysLive bool) string {
 			wrapped(answer)
 		}
 	}
-	if offers := components.KeyRun(r.offers(), !keysLive, m.rowHandover(keysLive)); offers != "" {
+	if offers := components.KeyRun(selOffers(r.offers(), sel), !sel.lettersLive(), m.rowHandover(sel.lettersLive())); offers != "" {
 		clipped(offers)
 	}
-	if option := components.KeyRunOption(r.offers(), !keysLive, m.namesOptionRow(e)); option != "" {
+	if option := components.KeyRunOption(selOffers(r.offers(), sel), !sel.lettersLive(), m.namesOptionRow(e)); option != "" {
 		clipped(option)
 	}
 	return strings.Join(lines, "\n")

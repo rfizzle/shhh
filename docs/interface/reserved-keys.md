@@ -35,22 +35,25 @@ says which box. Every surface that offers an alt chord names that row beside
 it. The key list, which is where a reader goes to be told the setting exists,
 is on a ctrl chord for exactly that reason.
 
-### The eleven a transcript row spends
+### The ten a transcript row spends
 
 The offers a transcript row makes are the largest single claim on the free
-set, because there are eleven of them and each is drawn beside a live draft
+set, because there are ten of them and each is drawn beside a live draft
 ([the row's side of it](surfaces.md#the-turns-close)). They are all on alt:
 every ctrl letter a terminal delivers is spent or the line editor's, and the
 free set at the end of this page is function keys and modified navigation
-keys, which eleven acts named after words do not come out of. The first row in
+keys, which ten acts named after words do not come out of. The first row in
 a session to offer one names the doctor's Option row beside it.
 
-The letter each takes is the row's own where alt still had it. Six letters
+A turn's review is not among them. It is the changed-files row's own open —
+clicked, or selected and opened with enter — because that is the gesture that
+names the turn, and it gave back `alt+w`.
+
+The letter each takes is the row's own where alt still had it. Five letters
 were already spent, and this is where each replacement is recorded:
 
 | Offer | On the row | The chord | Why not the row's own letter |
 |---|---|---|---|
-| review | `v` | `alt+w` | `alt+v` opens the staged paste; `w` ends the word |
 | commit | `g` | `alt+g` | — (`ctrl+g` is the editor's, which is why this is on alt) |
 | undo turn | `u` | `alt+z` | `alt+u` is the textarea's uppercase-word; `z` is undo everywhere else |
 | try again | `r` | `alt+r` | — |

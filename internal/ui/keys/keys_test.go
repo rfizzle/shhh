@@ -177,7 +177,7 @@ func TestEveryDeclaredBindingIsOnASurface(t *testing.T) {
 		{"Context", Context.All()},
 		{"Backlog", Backlog.All()},
 		{"Sprint", Sprint.All()},
-		{"Row", []Binding{Row.Review, Row.Commit, Row.Undo, Row.Retry, Row.Continue,
+		{"Row", []Binding{Row.Commit, Row.Undo, Row.Retry, Row.Continue,
 			Row.Key, Row.Provider, Row.Rounds, Row.Uncap, Row.Reopen, Row.Rerun}},
 		{"RowChord", RowChord.All()},
 		{"Commit", Commit.All()},
@@ -443,7 +443,7 @@ func handoversNamedBy(s Surface) []Binding {
 // from and what the dispatch reads back, so it has to be total in both
 // directions: every letter has a chord, and every chord names its letter.
 func TestEveryRowOfferHasAChordThatIsOne(t *testing.T) {
-	for _, b := range []Binding{Row.Review, Row.Commit, Row.Undo, Row.Retry,
+	for _, b := range []Binding{Row.Commit, Row.Undo, Row.Retry,
 		Row.Continue, Row.Key, Row.Provider, Row.Rounds, Row.Uncap, Row.Reopen,
 		Row.Rerun} {
 		chord, ok := ChordFor(b)

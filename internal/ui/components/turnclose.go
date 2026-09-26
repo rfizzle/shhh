@@ -127,7 +127,7 @@ type TurnClose struct {
 	Notes string
 	// KeysWaiting says the changeset row does not hold the keyboard, so its
 	// keys render grey rather than in the colour that means "you can press
-	// this": while the draft has it, `v` is a letter and belongs in the
+	// this": while the draft has it, `u` is a letter and belongs in the
 	// sentence (invariant 5). A host that claims nothing keeps the live
 	// treatment the row always had.
 	KeysWaiting bool

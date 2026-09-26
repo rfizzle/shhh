@@ -14,7 +14,7 @@
   ▎$ run     quality gate · fast · 2 checks                 5 lines
 
    ✓ Done · 2 steps · 5 tools · 41.3s · $0.12                   round 4/25
-  ▎✎ 2 files changed +31 −7 · [alt+w] review · [alt+z] undo turn
+  ▎✎ 2 files changed +31 −7                             all tracked in git
    ✓ quality gate fast passing · 2/2 checks · 1.7s
 
 
@@ -22,7 +22,7 @@
   ▎$ run     quality gate · fast · 2 checks                 6 lines
 
    ✓ Done · 2 steps · 5 tools · 41.3s · $0.12                   round 4/25
-  ▎✎ 2 files changed +31 −7 · [alt+w] review · [alt+z] undo turn
+  ▎✎ 2 files changed +31 −7                             all tracked in git
    ✗ quality gate fast failing · 1/2 checks · 2.1s
 
 
@@ -31,7 +31,7 @@
   ␛[38;5;214m▎␛[m␛[38;5;214m$␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mquality gate · fast · 2 checks␛[m                 ␛[38;5;245m5 lines␛[m
 
    ␛[92m✓␛[m ␛[38;5;252mDone␛[m␛[38;5;241m · 2 steps · 5 tools · 41.3s · $0.12␛[m                   ␛[38;5;241mround 4/25␛[m
-  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m2 files changed ␛[m␛[92m+31␛[m ␛[91m−7␛[m␛[38;5;241m · ␛[m␛[94m[alt+w]␛[m␛[38;5;241m review␛[m␛[38;5;241m · ␛[m␛[94m[alt+z]␛[m␛[38;5;241m undo turn␛[m
+  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m2 files changed ␛[m␛[92m+31␛[m ␛[91m−7␛[m                             ␛[38;5;241mall tracked in git␛[m
    ␛[92m✓␛[m ␛[38;5;252mquality gate fast passing␛[m␛[38;5;241m · 2/2 checks · 1.7s␛[m
 
 
@@ -39,6 +39,6 @@
   ␛[38;5;214m▎␛[m␛[38;5;214m$␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mquality gate · fast · 2 checks␛[m                 ␛[38;5;245m6 lines␛[m
 
    ␛[92m✓␛[m ␛[38;5;252mDone␛[m␛[38;5;241m · 2 steps · 5 tools · 41.3s · $0.12␛[m                   ␛[38;5;241mround 4/25␛[m
-  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m2 files changed ␛[m␛[92m+31␛[m ␛[91m−7␛[m␛[38;5;241m · ␛[m␛[94m[alt+w]␛[m␛[38;5;241m review␛[m␛[38;5;241m · ␛[m␛[94m[alt+z]␛[m␛[38;5;241m undo turn␛[m
+  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m2 files changed ␛[m␛[92m+31␛[m ␛[91m−7␛[m                             ␛[38;5;241mall tracked in git␛[m
    ␛[91m✗␛[m ␛[38;5;252mquality gate fast failing␛[m␛[38;5;241m · 1/2 checks · 2.1s␛[m
 

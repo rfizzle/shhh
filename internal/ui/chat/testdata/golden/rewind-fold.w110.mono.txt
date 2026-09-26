@@ -12,16 +12,14 @@
 ── layout ──────────────────────────────────────────────────
 · closed · the reapply reached from the draft
    ▸ turns 2–3 · rewound · 2 turns, 3 files' worth of work · [enter] read them
-   [alt+r] reapply — undo the rewind
-   alt needs Option as Meta — shhh doctor
+   [alt+r] reapply — undo the rewind · [ctrl+o] to use them
 
 · closed · reading mode's cursor on it
    ▸ turns 2–3 · rewound · 2 turns, 3 files' worth of work · [enter] read them · [r] reapply — undo the rewind
 
 · open · the turns it holds, out of the window
    ▾ turns 2–3 · rewound · 2 turns, 3 files' worth of work · [enter] fold them back up
-   [alt+r] reapply — undo the rewind
-   alt needs Option as Meta — shhh doctor
+   [alt+r] reapply — undo the rewind · [ctrl+o] to use them
 
 ❯ second question
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -46,16 +44,14 @@
 ── ansi ────────────────────────────────────────────────────
 · closed · the reapply reached from the draft
    ␛[38;5;244m▸ turns 2–3 · rewound · 2 turns, 3 files' worth of work · ␛[m␛[38;5;254m[enter] read them␛[m
-   ␛[38;5;254m[alt+r]␛[m␛[38;5;244m reapply — undo the rewind␛[m
-   ␛[38;5;244malt needs Option as Meta — shhh doctor␛[m
+   ␛[38;5;244m[alt+r]␛[m␛[38;5;244m reapply — undo the rewind␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+o]␛[m␛[38;5;254m to use them␛[m
 
 · closed · reading mode's cursor on it
    ␛[38;5;244m▸ turns 2–3 · rewound · 2 turns, 3 files' worth of work · ␛[m␛[38;5;254m[enter] read them␛[m␛[38;5;244m · ␛[m␛[38;5;254m[r]␛[m␛[38;5;244m reapply — undo the rewind␛[m
 
 · open · the turns it holds, out of the window
    ␛[38;5;244m▾ turns 2–3 · rewound · 2 turns, 3 files' worth of work · ␛[m␛[38;5;254m[enter] fold them back up␛[m
-   ␛[38;5;254m[alt+r]␛[m␛[38;5;244m reapply — undo the rewind␛[m
-   ␛[38;5;244malt needs Option as Meta — shhh doctor␛[m
+   ␛[38;5;244m[alt+r]␛[m␛[38;5;244m reapply — undo the rewind␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+o]␛[m␛[38;5;254m to use them␛[m
 
 ␛[38;5;254m❯␛[m second question
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m

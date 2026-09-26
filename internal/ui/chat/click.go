@@ -18,7 +18,9 @@ package chat
 //
 //   - An activity row. Its whole width is one row, and [enter] under reading
 //     mode's cursor already opens it. The row line opens and closes it; the
-//     body under the row opens that body whole (clickRow).
+//     body under the row opens that body whole (clickRow). A turn's close
+//     is one too: the line stating what the turn changed opens that turn's
+//     review, which enter on the selected close opens as well.
 //   - The approval card's decision run. Each key owns its own cells inside
 //     `[y/N/a]`, and the click is delivered as the keystroke.
 //   - A file on the rail. It names one path, and `/diff <path>` opens that
@@ -166,10 +168,11 @@ func (m Model) unitAtLine(line int) (idx, offset int, ok bool) {
 // keyboard left it.
 //
 // The rows a click can open are narrower than the rows reading mode can put
-// its cursor on. A turn's close block and a provider failure are selectable
-// because they *offer keys*, not because they expand, and a
-// pointer has no way to say which of `[v]` and `[u]` it meant. So those keep
-// their cursor and lose nothing: the keys are still where they were.
+// its cursor on. A provider failure is selectable because it *offers keys*,
+// not because it expands, and a pointer has no way to say which of them it
+// meant, so a click leaves it where it is. A turn's close is the exception:
+// its changed-files line names one turn, and the turn's review is what
+// enter on the block opens too (openCursorRow) — its other offers stay keys.
 func (m Model) clickRow(line int) (tea.Model, tea.Cmd) {
 	idx, offset, ok := m.unitAtLine(line)
 	if !ok {
@@ -189,6 +192,13 @@ func (m Model) clickRow(line int) (tea.Model, tea.Cmd) {
 		// than after, because a body that takes the screen returns to this
 		// cursor when it closes.
 		m.focusIdx = idx
+	}
+	// The turn clicked, not the newest one: the changed-files line is its own
+	// target, and a click reaches it without taking the keyboard from the
+	// draft. It is the line under the close's first, so it is the block's
+	// body, and a body opens whole — here, as the turn's review.
+	if turn, ok := m.reviewableRow(idx); ok && es[idx].kind == entryTurnClose && offset == 1 {
+		return m.openReview(turn)
 	}
 	claimed, full, output := m.toggleRow(idx, g)
 	if !claimed {

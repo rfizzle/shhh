@@ -12,7 +12,7 @@ package chat
 //
 // The row stands in for the turn's close block rather than sitting above one.
 // It already says what the turn did, what it changed and what the ways on
-// are, and a second block offering [v] and [u] beside it would be the same
+// are, and a second block offering review and [u] beside it would be the same
 // answer twice.
 
 import (
@@ -54,7 +54,7 @@ const uncapRoundsLabel = "let it run"
 // where the turn got to — a granted turn goes on changing files, and a record
 // that rewrites itself underneath you is worse than a stale one.
 type roundPause struct {
-	// turn is the turn that stopped; [v] and [u] act on it.
+	// turn is the turn that stopped; its review and [u] act on it.
 	turn int64
 	// used and limit are the counter as the rail reported it.
 	used, limit int
@@ -216,9 +216,6 @@ func (p roundPause) grant() int { return p.granted + roundGrantBlock }
 // stop asking is the more useful of the two answers.
 func (p roundPause) keys() []components.KeyOffer {
 	var offers []components.KeyOffer
-	if p.files > 0 {
-		offers = append(offers, rowOffer(keys.Row.Review, "review what it did"))
-	}
 	if !p.spent {
 		offers = append(offers, rowOfferAs(keys.Row.Rounds, fmt.Sprintf("[+%d]", p.grant()), "more rounds"))
 		if p.granted > 0 {
@@ -238,9 +235,6 @@ func (p roundPause) keys() []components.KeyOffer {
 // carries the number the row's bracket did.
 func roundPauseOffers(p *roundPause) []components.KeyOffer {
 	var offers []components.KeyOffer
-	if p.files > 0 {
-		offers = append(offers, rowOffer(keys.Row.Review, "review what it did"))
-	}
 	if !p.spent {
 		offers = append(offers, rowOffer(keys.Row.Rounds, fmt.Sprintf("%d more rounds", p.grant())))
 		if p.granted > 0 {
@@ -268,8 +262,8 @@ func (m Model) focusedRoundPause() (entry, bool) {
 }
 
 // roundPauseKey routes a keystroke to the focused pause row, reporting false
-// when the row is not claiming it — which leaves the changeset row's own [v]
-// and [u] exactly as they were.
+// when the row is not claiming it — which leaves the changeset row's own [u]
+// exactly as it was.
 func (m Model) roundPauseKey(key string) (tea.Model, tea.Cmd, bool) {
 	e, ok := m.focusedRoundPause()
 	if !ok {
@@ -277,12 +271,6 @@ func (m Model) roundPauseKey(key string) (tea.Model, tea.Cmd, bool) {
 	}
 	p := e.pause
 	switch key {
-	case keys.Shown(keys.Row.Review):
-		if p.files == 0 {
-			return m, nil, false
-		}
-		next, cmd := m.openReview(e.turn)
-		return next, cmd, true
 	case keys.Shown(keys.Row.Undo):
 		if p.files == 0 {
 			return m, nil, false

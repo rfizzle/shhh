@@ -186,12 +186,12 @@ func (m Model) steerOffers(e entry) []components.TurnKey {
 // where the row makes no offer. It is indented under the notice the way every
 // other detail body is, and it goes grey unless reading mode's cursor is
 // standing here (inertkeys.go).
-func (m Model) steerOfferLine(e entry, keysLive bool) string {
+func (m Model) steerOfferLine(e entry, sel rowSel) string {
 	offers := m.steerOffers(e)
 	if len(offers) == 0 {
 		return ""
 	}
-	run := components.KeyRun(offers, !keysLive, m.rowHandover(keysLive))
+	run := components.KeyRun(selOffers(offers, sel), !sel.lettersLive(), m.rowHandover(sel.lettersLive()))
 	if run == "" {
 		return ""
 	}
@@ -199,7 +199,7 @@ func (m Model) steerOfferLine(e entry, keysLive bool) string {
 	line := indent + run
 	// And, where this is the session's first chord, what alt costs on a stock
 	// macOS terminal — a line of its own, like every other row's.
-	if option := components.KeyRunOption(offers, !keysLive, m.namesOptionRow(e)); option != "" {
+	if option := components.KeyRunOption(selOffers(offers, sel), !sel.lettersLive(), m.namesOptionRow(e)); option != "" {
 		line += indent + option
 	}
 	return line

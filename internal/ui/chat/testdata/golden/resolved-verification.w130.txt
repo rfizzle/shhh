@@ -20,7 +20,7 @@
   ▎$ run     quality gate · default · 2 checks                 4 lines
 
    ✓ Done · 2 steps · 6 tools · 1m 12s · $0.18                     round 5/25
-  ▎✎ 1 file changed +12 −3 · [alt+w] review · [alt+z] undo turn   all tracked
+  ▎✎ 1 file changed +12 −3                                        all tracked
    ✓ quality gate default passing · 2/2 checks · 12.8s
 
 
@@ -33,7 +33,7 @@
         loop_test.go:214: want 3 rounds, got 4
 
    ✓ Done · 2 steps · 6 tools · 1m 12s · $0.18                     round 5/25
-  ▎✎ 1 file changed +12 −3 · [alt+w] review · [alt+z] undo turn   all tracked
+  ▎✎ 1 file changed +12 −3                                        all tracked
    ✗ go test ./internal/agent/... failing · exit 1 · 4.2s
 
 
@@ -48,7 +48,7 @@
   ␛[38;5;214m▎␛[m␛[38;5;214m$␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mquality gate · default · 2 checks␛[m                 ␛[38;5;245m4 lines␛[m
 
    ␛[92m✓␛[m ␛[38;5;252mDone␛[m␛[38;5;241m · 2 steps · 6 tools · 1m 12s · $0.18␛[m                     ␛[38;5;241mround 5/25␛[m
-  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m1 file changed ␛[m␛[92m+12␛[m ␛[91m−3␛[m␛[38;5;241m · ␛[m␛[94m[alt+w]␛[m␛[38;5;241m review␛[m␛[38;5;241m · ␛[m␛[94m[alt+z]␛[m␛[38;5;241m undo turn␛[m   ␛[38;5;241mall tracked␛[m
+  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m1 file changed ␛[m␛[92m+12␛[m ␛[91m−3␛[m                                        ␛[38;5;241mall tracked␛[m
    ␛[92m✓␛[m ␛[38;5;252mquality gate default passing␛[m␛[38;5;241m · 2/2 checks · 12.8s␛[m
 
 
@@ -61,6 +61,6 @@
     ␛[38;5;245m    loop_test.go:214: want 3 rounds, got 4␛[m
 
    ␛[92m✓␛[m ␛[38;5;252mDone␛[m␛[38;5;241m · 2 steps · 6 tools · 1m 12s · $0.18␛[m                     ␛[38;5;241mround 5/25␛[m
-  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m1 file changed ␛[m␛[92m+12␛[m ␛[91m−3␛[m␛[38;5;241m · ␛[m␛[94m[alt+w]␛[m␛[38;5;241m review␛[m␛[38;5;241m · ␛[m␛[94m[alt+z]␛[m␛[38;5;241m undo turn␛[m   ␛[38;5;241mall tracked␛[m
+  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m1 file changed ␛[m␛[92m+12␛[m ␛[91m−3␛[m                                        ␛[38;5;241mall tracked␛[m
    ␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/... failing␛[m␛[38;5;241m · exit 1 · 4.2s␛[m
 

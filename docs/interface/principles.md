@@ -125,16 +125,23 @@ that will be answered and then gone; a row's offers stand for the rest of the
 session, and a row that spent them all on "press ctrl+o first" would be a
 screen full of keys nobody presses. So each of those offers exists twice: the
 letter, live under reading mode's cursor, and a chord that reaches the same
-act from the prompt. The row draws whichever of the two is true where it
-stands — the chord while the draft can take text, the letter once the cursor
-is on it — and never both, because two spellings of one act on one line is the
-notation problem the paragraph above is about.
+act from the prompt with the pointer on the row. The selected row draws
+whichever of the two is true where it stands — the chord under the pointer,
+the letter under the cursor — and never both, because two spellings of one act
+on one line is the notation problem the paragraph above is about.
 
-One press goes to one row, and which row is the pointer's answer: the row it
-names where the reader has lit one, and the newest row that makes the offer
-where they have not. That is the same row reading mode would open on, which is
-what makes the chord and the letter one gesture seen from two places rather
-than two keyboards to learn.
+One press goes to one row, and the row is the one the reader can see is
+selected. With nothing selected a row's chord acts on nothing, and a selected
+row that does not make an offer does not pass the key on to one that does.
+An offer that fell to the newest row was a key drawn on every turn a session
+had closed, each copy promising to act on a turn it would not have acted on;
+a key that names its target by where the reader has put the selection cannot
+be read two ways. So a row nobody has selected draws nothing live: a
+recovery row keeps its offers grey beside the key that hands the keyboard
+over, because they are how the reader gets out of it, and a turn's close draws
+none, because the same keys on every turn said nothing about which turn they
+meant. The pointer is what makes that cheap: it selects a row from the prompt
+without taking the keyboard from the sentence being typed.
 
 Invariant 3 depends on this one: Esc can only be the safe answer if it reaches
 the surface you believe you are answering. The same rule is what stops a
@@ -217,7 +224,7 @@ Anything rendered into history is stored as data and re-rendered on resize.
 Only the selected row responds to keys, and selecting is an explicit mode.
 
 This is why the input keeps every letter. A transcript that answered keys
-directly would take `v`, `u`, `r` and `e` away from the sentence being typed —
+directly would take `g`, `u`, `r` and `e` away from the sentence being typed —
 and the sentence is the primary thing the user is doing.
 
 ### One grid

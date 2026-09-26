@@ -12,6 +12,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/notebook"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/structural"
@@ -89,8 +90,9 @@ func TestTurnClose_TheChangesRowStatesTheFilesAndOffersTheKeys(t *testing.T) {
 	if c.Changes.Files != 1 || c.Changes.Added != 1 || c.Changes.Removed != 0 {
 		t.Fatalf("expected 1 file +1 −0, got %+v", c.Changes)
 	}
-	view := plainView(c, 100)
-	for _, want := range []string{"1 file changed", "+1", "−0", "[v] review", "[u] undo turn"} {
+	// Its offers are drawn once the row is selected (inertkeys.go).
+	view := ansi.Strip(m.closeFor(*c, rowUnderCursor).View(100))
+	for _, want := range []string{"1 file changed", "+1", "−0", "[enter] review turn", "[u] undo turn"} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("the changeset row should state %q, got:\n%s", want, view)
 		}
@@ -137,7 +139,7 @@ func TestTurnClose_ACommittedTurnNamesTheShaAndDropsTheUndoOffer(t *testing.T) {
 		Changes: turnChangesRowFor(3, 30, 4, true),
 		Commit:  &components.TurnCommit{Receipt: receipt},
 	}, 110)
-	for _, want := range []string{receipt, components.CommitUndoNote, "[v] review"} {
+	for _, want := range []string{receipt, components.CommitUndoNote, "[enter] review turn"} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("the close should state %q, got:\n%s", want, view)
 		}
@@ -151,7 +153,8 @@ func TestTurnClose_ACommittedTurnNamesTheShaAndDropsTheUndoOffer(t *testing.T) {
 // assertion above is about the row's shape rather than about a changeset
 // store it had to fill first.
 func turnChangesRowFor(files, added, removed int, committed bool) *components.TurnChanges {
-	offers := []components.TurnKey{rowOffer(keys.Row.Review, "review")}
+	// Enter's own act leads, as it does on the selected row.
+	offers := []components.TurnKey{reviewTurnOffer()}
 	if !committed {
 		offers = append(offers, rowOffer(keys.Row.Undo, "undo turn"))
 	}
@@ -346,16 +349,16 @@ func TestTurnClose_ReachableFromFocusMode(t *testing.T) {
 		t.Fatalf("focus should land on the close rows, but idx %d is kind %v",
 			m.focusIdx, m.transcript[m.focusIdx].kind)
 	}
-	if !strings.Contains(ansi.Strip(m.panelView()), "[v] review") {
-		t.Fatalf("the hint should offer what the row offers, got %q", ansi.Strip(m.panelView()))
+	if !strings.Contains(ansi.Strip(m.panelView()), "[enter] review turn") {
+		t.Fatalf("the hint should say what enter does on the row, got %q", ansi.Strip(m.panelView()))
 	}
 
-	// [v] opens review mode over the turn's changeset; the surface
+	// Enter opens review mode over the turn's changeset; the surface
 	// names the turn it is reviewing.
-	updated, _ = m.updateFocus(tea.KeyPressMsg{Code: []rune(keys.Shown(keys.Row.Review))[0], Text: keys.Shown(keys.Row.Review)})
+	updated, _ = m.updateFocus(tea.KeyPressMsg{Code: tea.KeyEnter})
 	review := updated.(Model)
 	if review.state != stateReview || review.review == nil {
-		t.Fatalf("[v] should open what the turn changed, got state %v", review.state)
+		t.Fatalf("enter should open what the turn changed, got state %v", review.state)
 	}
 	if review.review.Title != "turn 1" {
 		t.Fatalf("the surface should name the turn it is reviewing, got %q", review.review.Title)
@@ -474,5 +477,40 @@ func TestTurnClose_TheNotebookIsToldWhichTurnIsOpen(t *testing.T) {
 	}
 	if n.Turn != m.turnCount {
 		t.Fatalf("a note written during turn %d was stamped %d", m.turnCount, n.Turn)
+	}
+}
+
+// The summary fold beside a turn's close is a fold, not the turn: selected
+// and opened it expands in place, and only the row that states what the turn
+// changed opens the turn's review. The two sat side by side each offering a
+// key, and which of them a key reached was a question the screen did not
+// answer.
+func TestTurnClose_ASummaryFoldBesideItExpandsRatherThanReviews(t *testing.T) {
+	m, _ := undoModel(t)
+	m.appendEntry(summaryRowEntry(agent.SummaryVerdict{
+		Text: "Capped the rounds and nothing else.", State: agent.SummaryOnTarget, Round: 3}, ""))
+	at := len(m.transcript) - 1
+	m.pointer, m.focusIdx = true, at
+	m.refreshCursorView()
+
+	if _, ok := m.reviewableRow(at); ok {
+		t.Fatal("a summary fold names no turn to review")
+	}
+	updated, _ := m.openCursorRow(m.state)
+	opened := updated.(Model)
+	if opened.state == stateReview {
+		t.Fatal("enter on the summary fold opened a review")
+	}
+	if !opened.transcript[at].expanded {
+		t.Fatal("enter on the summary fold should expand it")
+	}
+
+	// And the close beside it is what opens the review.
+	closeAt := indexOfKind(t, m, entryTurnClose)
+	m.focusIdx = closeAt
+	updated, _ = m.openCursorRow(m.state)
+	if r := updated.(Model); r.state != stateReview || r.reviewTurnN != m.transcript[closeAt].turn {
+		t.Fatalf("enter on the close should review its own turn, got state %v turn %d",
+			r.state, r.reviewTurnN)
 	}
 }

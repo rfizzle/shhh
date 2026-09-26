@@ -137,7 +137,8 @@
     /diff [path]   show what this session changed, full screen, or one file's — read from the session's own
                    changeset, so it works outside a git repository
     /review [turn] review what a turn changed: file list, hunks, staging per hunk (bare reviews the last turn
-                   that changed anything). Also [v] on a turn's changeset row. Nothing is applied
+                   that changed anything). Also a turn's changed-files row, clicked or selected and opened
+                   with enter. Nothing is applied
     /undo [turn]   put back what a turn changed, from the session's own records (not git). Asks first, names
                    anything that changed since, and is itself recorded as a turn. Also [u] on the row
     /compact       continue from a summary plus the most recent turns
@@ -273,7 +274,8 @@
     ␛[38;5;252m/diff [path]␛[m   ␛[38;5;241mshow what this session changed, full screen, or one file's — read from the session's own␛[m
                    ␛[38;5;241mchangeset, so it works outside a git repository␛[m
     ␛[38;5;252m/review [turn]␛[m ␛[38;5;241mreview what a turn changed: file list, hunks, staging per hunk (bare reviews the last turn␛[m
-                   ␛[38;5;241mthat changed anything). Also [v] on a turn's changeset row. Nothing is applied␛[m
+                   ␛[38;5;241mthat changed anything). Also a turn's changed-files row, clicked or selected and opened␛[m
+                   ␛[38;5;241mwith enter. Nothing is applied␛[m
     ␛[38;5;252m/undo [turn]␛[m   ␛[38;5;241mput back what a turn changed, from the session's own records (not git). Asks first, names␛[m
                    ␛[38;5;241manything that changed since, and is itself recorded as a turn. Also [u] on the row␛[m
     ␛[38;5;252m/compact␛[m       ␛[38;5;241mcontinue from a summary plus the most recent turns␛[m

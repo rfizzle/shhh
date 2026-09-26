@@ -161,7 +161,7 @@
     ▎$ run     quality gate · default · 5 checks                                            2 lines       ┃   
                                                                                                           ┃   
      ✓ Done · 2 steps · 5 tools · 1m 12s · $0.18                                                round 5/25┃   
-    ▎✎ 1 file changed +12 −3 · [alt+w] review                                                  all tracked┃   
+    ▎✎ 1 file changed +12 −3                                                                   all tracked┃   
      ✓ quality gate default passing · 5/5 checks · 1.4s                      3 earlier failures superseded┃   
                                                                                                           ┃   
   session · +3 −1                                                                                             
@@ -322,7 +322,7 @@
     ␛[38;5;254m▎$␛[m ␛[38;5;254mrun␛[m     ␛[38;5;254mquality gate · default · 5 checks␛[m                                            ␛[38;5;244m2 lines␛[m       ␛[38;5;244m┃␛[m   
                                                                                                           ␛[38;5;244m┃␛[m   
      ␛[38;5;254m✓␛[m ␛[38;5;254mDone␛[38;5;244m · 2 steps · 5 tools · 1m 12s · $0.18␛[m                                                ␛[38;5;244mround 5/25┃␛[m   
-    ␛[38;5;254m▎✎␛[m ␛[38;5;254m1 file changed +12␛[m ␛[38;5;254m−3␛[38;5;244m · ␛[38;5;254m[alt+w]␛[38;5;244m review␛[m                                                  ␛[38;5;244mall tracked┃␛[m   
+    ␛[38;5;254m▎✎␛[m ␛[38;5;254m1 file changed +12␛[m ␛[38;5;254m−3␛[m                                                                   ␛[38;5;244mall tracked┃␛[m   
      ␛[38;5;254m✓␛[m ␛[38;5;254mquality gate default passing␛[38;5;244m · 5/5 checks · 1.4s␛[m                      ␛[38;5;244m3 earlier failures superseded┃␛[m   
                                                                                                           ␛[38;5;244m┃␛[m   
   ␛[38;5;244msession · ␛[38;5;254m+3␛[m ␛[38;5;254m−1␛[m                                                                                             

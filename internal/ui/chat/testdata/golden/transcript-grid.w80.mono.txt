@@ -26,14 +26,13 @@
   Check-in — 36 rounds used. Taking stock, then carrying on.
   Steered — the reading says the edits have moved outside the round loop.
   Say what you meant if that is wrong.
-    [alt+z] take the steer back
-    alt needs Option as Meta — shhh doctor
+    [alt+z] take the steer back · [ctrl+o] to use them
   tree moved — 14 paths changed outside this session · 5,811 ignored
   ✗ the notebook is read-only, so nothing was written down
    ≡ summary round 36         ▸ on target · 1 line · [enter] expand
 
    ✓ Done · 2 steps · 6 tools · 24.7s · $0.14                  round 36/50
-  ▎✎ 1 file changed +12 −4 · [alt+w] review · [alt+z] undo turn
+  ▎✎ 1 file changed +12 −4                              all tracked in git
    ✗ go test ./internal/agent/... failing · exit 1 · 21s
 
   Re-running the suite now that the constant has one home.
@@ -41,31 +40,31 @@
 · the whole surface · the same edge in the pane it sits in
    shhh chat                                                                    
   ────────────────────────────────────────────────────────────────────────────  
+  ❯ hold the round limit in one place and run the tests                         
   ──────────────────────────────────────────────────────────────────────────    
-                                                                            ┃   
-  ▾ 1  The constant is declared in three files, so the l… ─ ✗ 2 tools    21s┃   
-     ⚙ read    internal/agent/loop.go                         3 lines       ┃   
-    ▎✗ run     go test ./internal/agent/...                    exit 1    21s┃   
-      --- FAIL: TestRoundLimit                                              ┃   
-                                                                            ┃   
-    The objective is one home for the round limit. The evidence is the      ┃   
-    failure above, which reads the constant from the loop and not from the  ┃   
-    caller. Next I will move the declaration and run the suite again.       ┃   
-                                                                            ┃   
-    Check-in — 36 rounds used. Taking stock, then carrying on.              ┃   
-    Steered — the reading says the edits have moved outside the round loop. ┃   
-    Say what you meant if that is wrong.                                    ┃   
-      [alt+z] take the steer back                                           ┃   
-      alt needs Option as Meta — shhh doctor                                ┃   
-    tree moved — 14 paths changed outside this session · 5,811 ignored      ┃   
-    ✗ the notebook is read-only, so nothing was written down                ┃   
-     ≡ summary round 36         ▸ on target · 1 line · [enter] expand       ┃   
-                                                                            ┃   
-     ✓ Done · 2 steps · 6 tools · 24.7s · $0.14                  round 36/50┃   
-    ▎✎ 1 file changed +12 −4 · [alt+w] review · [alt+z] undo turn           ┃   
-     ✗ go test ./internal/agent/... failing · exit 1 · 21s                  ┃   
-                                                                            ┃   
-    Re-running the suite now that the constant has one home.                ┃   
+                                                                                
+  ▾ 1  The constant is declared in three files, so the l… ─ ✗ 2 tools    21s    
+     ⚙ read    internal/agent/loop.go                         3 lines           
+    ▎✗ run     go test ./internal/agent/...                    exit 1    21s    
+      --- FAIL: TestRoundLimit                                                  
+                                                                                
+    The objective is one home for the round limit. The evidence is the          
+    failure above, which reads the constant from the loop and not from the      
+    caller. Next I will move the declaration and run the suite again.           
+                                                                                
+    Check-in — 36 rounds used. Taking stock, then carrying on.                  
+    Steered — the reading says the edits have moved outside the round loop.     
+    Say what you meant if that is wrong.                                        
+      [alt+z] take the steer back · [ctrl+o] to use them                        
+    tree moved — 14 paths changed outside this session · 5,811 ignored          
+    ✗ the notebook is read-only, so nothing was written down                    
+     ≡ summary round 36         ▸ on target · 1 line · [enter] expand           
+                                                                                
+     ✓ Done · 2 steps · 6 tools · 24.7s · $0.14                  round 36/50    
+    ▎✎ 1 file changed +12 −4                              all tracked in git    
+     ✗ go test ./internal/agent/... failing · exit 1 · 21s                      
+                                                                                
+    Re-running the suite now that the constant has one home.                    
   ╭─ ⠋ streaming… ───────────────────────────────────────────────────────────╮  
   │ ▸                                                                        │  
   ╰─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · ↑41,200 ↓9,814 · $0.51 · gpt-4o ──────────╯  
@@ -87,13 +86,12 @@
   Steered — the reading says the edits have moved outside the round loop.
   Say what you meant if that is wrong.
     [alt+z] take the steer back
-    alt needs Option as Meta — shhh doctor
   tree moved — 14 paths changed outside this session · 5,811 ignored
   ✗ the notebook is read-only, so nothing was written down
    ≡ summary round 36         ▸ on target · 1 line · [enter] expand
 
    ✓ Done · 2 steps · 6 tools · 24.7s · $0.14                  round 36/50
-  ▎✎ 1 file changed +12 −4 · [alt+w] review · [alt+z] undo turn
+  ▎✎ 1 file changed +12 −4                              all tracked in git
    ✗ go test ./internal/agent/... failing · exit 1 · 21s
 
 
@@ -114,14 +112,13 @@
   ␛[38;5;244mCheck-in — 36 rounds used. Taking stock, then carrying on.␛[m
   ␛[38;5;244mSteered — the reading says the edits have moved outside the round loop.␛[m
   ␛[38;5;244mSay what you meant if that is wrong.␛[m
-    ␛[38;5;254m[alt+z]␛[m␛[38;5;244m take the steer back␛[m
-    ␛[38;5;244malt needs Option as Meta — shhh doctor␛[m
+    ␛[38;5;244m[alt+z]␛[m␛[38;5;244m take the steer back␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+o]␛[m␛[38;5;254m to use them␛[m
   ␛[38;5;244mtree moved — 14 paths changed outside this session · 5,811 ignored␛[m
   ␛[38;5;254m✗ the notebook is read-only, so nothing was written down␛[m
    ␛[38;5;244m≡␛[m ␛[38;5;254msummary␛[m ␛[38;5;254mround 36␛[m         ␛[38;5;244m▸ on target␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 line␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter] expand␛[m
 
    ␛[38;5;254m✓␛[m ␛[38;5;254mDone␛[m␛[38;5;244m · 2 steps · 6 tools · 24.7s · $0.14␛[m                  ␛[38;5;244mround 36/50␛[m
-  ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m1 file changed ␛[m␛[38;5;254m+12␛[m ␛[38;5;254m−4␛[m␛[38;5;244m · ␛[m␛[38;5;254m[alt+w]␛[m␛[38;5;244m review␛[m␛[38;5;244m · ␛[m␛[38;5;254m[alt+z]␛[m␛[38;5;244m undo turn␛[m
+  ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m1 file changed ␛[m␛[38;5;254m+12␛[m ␛[38;5;254m−4␛[m                              ␛[38;5;244mall tracked in git␛[m
    ␛[38;5;254m✗␛[m ␛[38;5;254mgo test ./internal/agent/... failing␛[m␛[38;5;244m · exit 1 · 21s␛[m
 
   Re-running the suite now that the constant has one home.
@@ -129,31 +126,31 @@
 · the whole surface · the same edge in the pane it sits in
   ␛[38;5;254;1m shhh chat␛[m                                                                    
   ␛[38;5;244m────────────────────────────────────────────────────────────────────────────␛[m  
+  ␛[38;5;254m❯␛[m hold the round limit in one place and run the tests                         
   ␛[38;5;244m──────────────────────────────────────────────────────────────────────────␛[m    
-                                                                            ␛[38;5;244m┃␛[m   
-  ␛[38;5;244m▾␛[m ␛[38;5;254m1 ␛[m ␛[38;5;254mThe constant is declared in three files, so the l…␛[m ␛[38;5;244m─␛[m ␛[38;5;254m✗␛[m ␛[38;5;244m2 tools␛[m    ␛[38;5;244m21s┃␛[m   
-     ␛[38;5;254m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254minternal/agent/loop.go␛[m                         ␛[38;5;244m3 lines␛[m       ␛[38;5;244m┃␛[m   
-    ␛[38;5;254m▎✗␛[m ␛[38;5;254mrun␛[m     ␛[38;5;254mgo test ./internal/agent/...␛[m                    ␛[38;5;254mexit 1␛[m    ␛[38;5;244m21s┃␛[m   
-      ␛[38;5;244m--- FAIL: TestRoundLimit␛[m                                              ␛[38;5;244m┃␛[m   
-                                                                            ␛[38;5;244m┃␛[m   
-    ␛[38;5;244;3mThe objective is one home for the round limit. The evidence is the␛[m      ␛[38;5;244m┃␛[m   
-    ␛[38;5;244;3mfailure above, which reads the constant from the loop and not from the␛[m  ␛[38;5;244m┃␛[m   
-    ␛[38;5;244;3mcaller. Next I will move the declaration and run the suite again.␛[m       ␛[38;5;244m┃␛[m   
-                                                                            ␛[38;5;244m┃␛[m   
-    ␛[38;5;244mCheck-in — 36 rounds used. Taking stock, then carrying on.␛[m              ␛[38;5;244m┃␛[m   
-    ␛[38;5;244mSteered — the reading says the edits have moved outside the round loop.␛[m ␛[38;5;244m┃␛[m   
-    ␛[38;5;244mSay what you meant if that is wrong.␛[m                                    ␛[38;5;244m┃␛[m   
-      ␛[38;5;254m[alt+z]␛[38;5;244m take the steer back␛[m                                           ␛[38;5;244m┃␛[m   
-      ␛[38;5;244malt needs Option as Meta — shhh doctor␛[m                                ␛[38;5;244m┃␛[m   
-    ␛[38;5;244mtree moved — 14 paths changed outside this session · 5,811 ignored␛[m      ␛[38;5;244m┃␛[m   
-    ␛[38;5;254m✗ the notebook is read-only, so nothing was written down␛[m                ␛[38;5;244m┃␛[m   
-     ␛[38;5;244m≡␛[m ␛[38;5;254msummary␛[m ␛[38;5;254mround 36␛[m         ␛[38;5;244m▸ on target · 1 line · ␛[38;5;254m[enter] expand␛[m       ␛[38;5;244m┃␛[m   
-                                                                            ␛[38;5;244m┃␛[m   
-     ␛[38;5;254m✓␛[m ␛[38;5;254mDone␛[38;5;244m · 2 steps · 6 tools · 24.7s · $0.14␛[m                  ␛[38;5;244mround 36/50┃␛[m   
-    ␛[38;5;254m▎✎␛[m ␛[38;5;254m1 file changed +12␛[m ␛[38;5;254m−4␛[38;5;244m · ␛[38;5;254m[alt+w]␛[38;5;244m review · ␛[38;5;254m[alt+z]␛[38;5;244m undo turn␛[m           ␛[38;5;244m┃␛[m   
-     ␛[38;5;254m✗␛[m ␛[38;5;254mgo test ./internal/agent/... failing␛[38;5;244m · exit 1 · 21s␛[m                  ␛[38;5;244m┃␛[m   
-                                                                            ␛[38;5;244m┃␛[m   
-    Re-running the suite now that the constant has one home.                ␛[38;5;244m┃␛[m   
+                                                                                
+  ␛[38;5;244m▾␛[m ␛[38;5;254m1 ␛[m ␛[38;5;254mThe constant is declared in three files, so the l…␛[m ␛[38;5;244m─␛[m ␛[38;5;254m✗␛[m ␛[38;5;244m2 tools␛[m    ␛[38;5;244m21s␛[m    
+     ␛[38;5;254m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254minternal/agent/loop.go␛[m                         ␛[38;5;244m3 lines␛[m           
+    ␛[38;5;254m▎✗␛[m ␛[38;5;254mrun␛[m     ␛[38;5;254mgo test ./internal/agent/...␛[m                    ␛[38;5;254mexit 1␛[m    ␛[38;5;244m21s␛[m    
+      ␛[38;5;244m--- FAIL: TestRoundLimit␛[m                                                  
+                                                                                
+    ␛[38;5;244;3mThe objective is one home for the round limit. The evidence is the␛[m          
+    ␛[38;5;244;3mfailure above, which reads the constant from the loop and not from the␛[m      
+    ␛[38;5;244;3mcaller. Next I will move the declaration and run the suite again.␛[m           
+                                                                                
+    ␛[38;5;244mCheck-in — 36 rounds used. Taking stock, then carrying on.␛[m                  
+    ␛[38;5;244mSteered — the reading says the edits have moved outside the round loop.␛[m     
+    ␛[38;5;244mSay what you meant if that is wrong.␛[m                                        
+      ␛[38;5;244m[alt+z] take the steer back · ␛[38;5;254m[ctrl+o] to use them␛[m                        
+    ␛[38;5;244mtree moved — 14 paths changed outside this session · 5,811 ignored␛[m          
+    ␛[38;5;254m✗ the notebook is read-only, so nothing was written down␛[m                    
+     ␛[38;5;244m≡␛[m ␛[38;5;254msummary␛[m ␛[38;5;254mround 36␛[m         ␛[38;5;244m▸ on target · 1 line · ␛[38;5;254m[enter] expand␛[m           
+                                                                                
+     ␛[38;5;254m✓␛[m ␛[38;5;254mDone␛[38;5;244m · 2 steps · 6 tools · 24.7s · $0.14␛[m                  ␛[38;5;244mround 36/50␛[m    
+    ␛[38;5;254m▎✎␛[m ␛[38;5;254m1 file changed +12␛[m ␛[38;5;254m−4␛[m                              ␛[38;5;244mall tracked in git␛[m    
+     ␛[38;5;254m✗␛[m ␛[38;5;254mgo test ./internal/agent/... failing␛[38;5;244m · exit 1 · 21s␛[m                      
+                                                                                
+    Re-running the suite now that the constant has one home.                    
   ␛[38;5;254m╭─␛[m ␛[38;5;254m⠋ streaming…␛[m ␛[38;5;254m───────────────────────────────────────────────────────────╮␛[m  
   ␛[38;5;254m│␛[m ␛[38;5;254;1m▸␛[m ␛[38;5;254m                                                                      ␛[m ␛[38;5;254m│␛[m  
   ␛[38;5;254m╰─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mctx 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · ↑41,200 ↓9,814 · $0.51 · ␛[38;5;254mgpt-4o␛[m ␛[38;5;254m──────────╯␛[m  
@@ -174,13 +171,12 @@
   ␛[38;5;244mCheck-in — 36 rounds used. Taking stock, then carrying on.␛[m
   ␛[38;5;244mSteered — the reading says the edits have moved outside the round loop.␛[m
   ␛[38;5;244mSay what you meant if that is wrong.␛[m
-    ␛[38;5;254m[alt+z]␛[m␛[38;5;244m take the steer back␛[m
-    ␛[38;5;244malt needs Option as Meta — shhh doctor␛[m
+    ␛[38;5;244m[alt+z]␛[m␛[38;5;244m take the steer back␛[m
   ␛[38;5;244mtree moved — 14 paths changed outside this session · 5,811 ignored␛[m
   ␛[38;5;254m✗ the notebook is read-only, so nothing was written down␛[m
    ␛[38;5;244m≡␛[m ␛[38;5;254msummary␛[m ␛[38;5;254mround 36␛[m         ␛[38;5;244m▸ on target␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 line␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter] expand␛[m
 
    ␛[38;5;254m✓␛[m ␛[38;5;254mDone␛[m␛[38;5;244m · 2 steps · 6 tools · 24.7s · $0.14␛[m                  ␛[38;5;244mround 36/50␛[m
-  ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m1 file changed ␛[m␛[38;5;254m+12␛[m ␛[38;5;254m−4␛[m␛[38;5;244m · ␛[m␛[38;5;254m[alt+w]␛[m␛[38;5;244m review␛[m␛[38;5;244m · ␛[m␛[38;5;254m[alt+z]␛[m␛[38;5;244m undo turn␛[m
+  ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m1 file changed ␛[m␛[38;5;254m+12␛[m ␛[38;5;254m−4␛[m                              ␛[38;5;244mall tracked in git␛[m
    ␛[38;5;254m✗␛[m ␛[38;5;254mgo test ./internal/agent/... failing␛[m␛[38;5;244m · exit 1 · 21s␛[m
 

@@ -15,8 +15,8 @@ package chat
 // about: the changeset row a turn closes with, a provider failure's row
 //, a dropped stream's, and a round-limit pause's. They are transcript
 // entries, not takeovers. Their keys are handled by reading mode on the row
-// (focus.go), so while the draft below has the keyboard `v` is a letter, `[v]
-// review` is an offer nothing accepts, and the row was painting it in info —
+// (focus.go), so while the draft below has the keyboard `u` is a letter, `[u]
+// undo turn` is an offer nothing accepts, and the row was painting it in info —
 // the colour that means "you can press this".
 //
 // So a transcript row renders its keys live only while reading mode's cursor
@@ -154,11 +154,114 @@ func (m Model) rowHandover(keysLive bool) string {
 	return keys.Shown(keys.Draft.Reading)
 }
 
+// rowSel is where a transcript row stands against the selection, which is
+// the whole of what decides whether its offers are live
+// (docs/interface/surfaces.md#the-turns-close). A row offer acts on one row,
+// the one the reader can see is selected, so a row nobody has selected draws
+// nothing live: its offers go grey beside the key that hands the keyboard
+// over, and the chords stay off it. That is also what keeps the same live
+// chord from being printed on every turn a session has closed, each of them
+// promising to act on a turn it would not have acted on.
+type rowSel int
+
+const (
+	// rowUnselected is every row in the plain feed, and every row but one
+	// under the gutter.
+	rowUnselected rowSel = iota
+	// rowPointed is the row the pointer lit from the prompt names. The draft
+	// still has the keyboard, so the row's letters are text and its chords
+	// are what is live.
+	rowPointed
+	// rowUnderCursor is the row reading mode's cursor stands on, where the
+	// letters are live because nothing else is listening.
+	rowUnderCursor
+)
+
+// lettersLive reports whether the row's own letters answer where it stands.
+func (s rowSel) lettersLive() bool { return s == rowUnderCursor }
+
+// selOffers is a row's offers as the selection lets it draw them. A row that
+// is not selected draws its chords grey, beside the handover, rather than
+// live: a chord acts only on the selected row, and a live chord on any other
+// would be an offer the dispatch does not answer. It keeps the chord's
+// spelling rather than going back to the letter, because a letter drawn
+// beside a live draft is a letter of the sentence being typed.
+func selOffers(offers []components.KeyOffer, sel rowSel) []components.KeyOffer {
+	if sel != rowUnselected || len(offers) == 0 {
+		return offers
+	}
+	out := make([]components.KeyOffer, len(offers))
+	for i, o := range offers {
+		if o.Chord != "" {
+			o.Key = o.Chord
+		}
+		o.Chord = ""
+		out[i] = o
+	}
+	return out
+}
+
+// reviewTurnWords are what enter does on a row that states what a turn
+// changed: it opens that turn's review.
+const reviewTurnWords = "review turn"
+
+// reviewTurnOffer is that act drawn on the selected row. It is enter under
+// either spelling — the pointer's open and the cursor's are the same key —
+// so the chord it carries is itself, which keeps a run of chords a run of
+// chords. It is a label for what the row does once it is selected, like the
+// `[enter] expand` a fold draws, and not a promise that enter reaches the
+// transcript while a sentence in the draft owns it.
+func reviewTurnOffer() components.KeyOffer {
+	k := keys.Bracket(keys.Reading.Expand)
+	return components.KeyOffer{Key: k, Chord: k, Label: reviewTurnWords}
+}
+
+// reviewableRow is the turn a row opens a review of: a turn's close that
+// changed files, or the round-limit pause that stands where that close will
+// be. It is the session's own transcript only, like every row offer.
+func (m Model) reviewableRow(idx int) (int64, bool) {
+	if m.attachedTo != "" || idx < 0 || idx >= len(m.transcript) {
+		return 0, false
+	}
+	e := m.transcript[idx]
+	switch {
+	case e.kind == entryTurnClose && e.close != nil && e.close.Changes != nil:
+		return e.turn, true
+	case e.kind == entryRoundPause && e.pause != nil && e.pause.files > 0:
+		return e.turn, true
+	}
+	return 0, false
+}
+
+// closeFor is a turn's close block as the selection lets it draw. Its offers
+// are drawn only on the selected block: the same keys on every turn a
+// session has closed told the reader nothing about which turn they would
+// act on. Selected, the changed-files row leads with enter's own act.
+func (m Model) closeFor(c components.TurnClose, sel rowSel) components.TurnClose {
+	live := sel.lettersLive()
+	c.KeysWaiting, c.Handover = !live, ""
+	if ch := c.Changes; ch != nil {
+		cp := *ch
+		cp.Keys = nil
+		if sel != rowUnselected {
+			cp.Keys = append([]components.KeyOffer{reviewTurnOffer()}, ch.Keys...)
+		}
+		c.Changes = &cp
+	}
+	if ck := c.Checks; ck != nil && sel == rowUnselected {
+		cp := *ck
+		cp.Keys = nil
+		c.Checks = &cp
+	}
+	return c
+}
+
 // gateRow stamps a recovery row with the state the keyboard puts it in. It is
 // one place for the same reason applyNotYetLive is: no surface gets to decide
 // on its own that its keys are live.
-func (m Model) gateRow(row components.RecoveryRow, keysLive bool) components.RecoveryRow {
-	row.KeysWaiting = !keysLive
-	row.Handover = m.rowHandover(keysLive)
+func (m Model) gateRow(row components.RecoveryRow, sel rowSel) components.RecoveryRow {
+	row.Keys = selOffers(row.Keys, sel)
+	row.KeysWaiting = !sel.lettersLive()
+	row.Handover = m.rowHandover(sel.lettersLive())
 	return row
 }

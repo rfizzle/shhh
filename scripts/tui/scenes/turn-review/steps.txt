@@ -1,0 +1,63 @@
+# program test: TestProgram_EnterOnASelectedCloseOpensThatTurnsReview,
+#   TestProgram_AClickOnACloseOpensThatTurnsReview,
+#   TestProgram_TheQuitChordArmsThenLeaves
+#
+# A turn's changed-files row is the door to that turn's review
+# (docs/interface/surfaces.md#the-turns-close). Two turns close on the same
+# words, and nothing on either offers a key until it is selected: the pointer
+# selects the newer from the prompt, its row says what enter does there, and
+# enter opens turn 2. Then a click on the older one's row opens turn 1 — the
+# row clicked, not the newest — from a half-typed line that is still in the
+# box once the review is left.
+#
+# Driven at 60 columns, the narrowest the close is drawn at.
+setup printf 'package agent\n\nconst limit = 25\n' > loop.go
+setup git add loop.go
+setup git config user.email tui@shhh
+setup git config user.name tui
+setup git commit -q -m 'seed the repository'
+snap 01-start "Some things worth doing first"
+keys "cap rounds at the limit" Enter
+# The edit is gated; the answer waits out the card's grace window and hands
+# the keyboard over before pressing.
+snap 02-first-card "const limit = 50"
+sleep 1
+keys C-Space
+sleep 0.3
+keys y
+snap 03-first-close "Capped at fifty now" "1 file changed"
+keys "raise the cap" Enter
+snap 04-second-card "const limit = 100"
+sleep 1
+keys C-Space
+sleep 0.3
+keys y
+# Two closes, each stating what its turn changed and neither offering a key.
+# The session's first reading of its run landed in turn 1 as a summary row,
+# which is part of the layout the click below is aimed at.
+snap 05-two-closes "Raised again" "≡ summary"
+# The pointer's first press lands on the newest close, which then says what
+# enter does on it and draws its own offers as the chords that reach them.
+keys S-Up
+snap 06-selected "[enter] review turn"
+keys Enter
+snap 07-review-turn-2 "leave, change nothing" "REVIEW turn 2" "const limit = 100"
+keys Escape
+sleep 0.5
+keys Escape
+sleep 0.5
+# A half-typed line, then a click on the older close's changed-files row —
+# row 13 at this size — as the SGR press and release a terminal reports. The
+# review it opens is turn 1's, the change from 25 to 50.
+keys "and then"
+snap 08-draft "and then"
+keys -l $'\e[<0;12;13M' $'\e[<0;12;13m'
+snap 09-review-turn-1 "leave, change nothing" "REVIEW turn 1" "const limit = 25"
+keys Escape
+snap 10-draft-kept "and then"
+keys C-c
+sleep 0.3
+keys C-c
+snap 11-quit-armed "again quits"
+keys C-c
+snap 12-exit "that is everything the screen was holding"

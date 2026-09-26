@@ -56,7 +56,7 @@ type InspectorPlan struct {
 
 // planBlock is the PLAN checklist. It sits under THIS TURN because it
 // is that block's detail: THIS TURN says how far through, PLAN says through
-// what. The keys it prints are the host's, like [v] and [u] on CHANGES.
+// what. The keys it prints are the host's, like [g] and [u] on CHANGES.
 func (r InspectorRail) planBlock(width int) (railBlock, bool) {
 	p := r.Plan
 	if p == nil || len(p.Steps) == 0 {

@@ -17,8 +17,8 @@
    ✗ model   gpt-4o · 401 unauthorized            key ···4f9c rejected
     Incorrect API key provided
     [alt+e] enter a new key · [alt+p] switch provider
+    [ctrl+o] to use them
     nothing in the turn was lost
-    alt needs Option as Meta — shhh doctor
 
 
 · rate limit · a stall, with the wait the provider named
@@ -28,8 +28,8 @@
    ⚠ model   gpt-4o · 429 rate limited                    retry in 38s
     Rate limit reached for gpt-4o. Please try again in 38s.
     [alt+r] try again · [alt+p] switch provider
+    [ctrl+o] to use them
     nothing in the turn was lost
-    alt needs Option as Meta — shhh doctor
 
 
 · context length · the only class with a remedy of its own
@@ -39,8 +39,8 @@
    ✗ model   gpt-4o · 400 context too long             over the window
     This model's maximum context length is 128000 tokens
     [alt+n] compact now · [alt+r] then try again
+    [ctrl+o] to use them
     compacting keeps the plan and the recent turns
-    alt needs Option as Meta — shhh doctor
 
 
 · unclassified · the message is the whole point of the row
@@ -50,8 +50,8 @@
    ✗ model   gpt-4o · 400 unclassified                   message below
     Unknown parameter: 'reasoning.effort'
     [alt+r] try again · [alt+p] switch provider
+    [ctrl+o] to use them
     nothing in the turn was lost
-    alt needs Option as Meta — shhh doctor
 
 
 ── ansi ────────────────────────────────────────────────────
@@ -61,9 +61,9 @@
 
    ␛[38;5;254m✗␛[m ␛[38;5;254mmodel␛[m   ␛[38;5;254mgpt-4o␛[m␛[38;5;244m · 401 unauthorized␛[m            ␛[38;5;254mkey ···4f9c rejected␛[m
     ␛[38;5;244mIncorrect API key provided␛[m
-    ␛[38;5;254m[alt+e]␛[m␛[38;5;244m enter a new key␛[m␛[38;5;244m · ␛[m␛[38;5;254m[alt+p]␛[m␛[38;5;244m switch provider␛[m
+    ␛[38;5;244m[alt+e]␛[m␛[38;5;244m enter a new key␛[m␛[38;5;244m · ␛[m␛[38;5;244m[alt+p]␛[m␛[38;5;244m switch provider␛[m
+    ␛[38;5;254m[ctrl+o]␛[m␛[38;5;254m to use them␛[m
     ␛[38;5;244mnothing in the turn was lost␛[m
-    ␛[38;5;244malt needs Option as Meta — shhh doctor␛[m
 
 
 · rate limit · a stall, with the wait the provider named
@@ -72,9 +72,9 @@
 
    ␛[38;5;254m⚠␛[m ␛[38;5;254mmodel␛[m   ␛[38;5;254mgpt-4o␛[m␛[38;5;244m · 429 rate limited␛[m                    ␛[38;5;254mretry in 38s␛[m
     ␛[38;5;244mRate limit reached for gpt-4o. Please try again in 38s.␛[m
-    ␛[38;5;254m[alt+r]␛[m␛[38;5;244m try again␛[m␛[38;5;244m · ␛[m␛[38;5;254m[alt+p]␛[m␛[38;5;244m switch provider␛[m
+    ␛[38;5;244m[alt+r]␛[m␛[38;5;244m try again␛[m␛[38;5;244m · ␛[m␛[38;5;244m[alt+p]␛[m␛[38;5;244m switch provider␛[m
+    ␛[38;5;254m[ctrl+o]␛[m␛[38;5;254m to use them␛[m
     ␛[38;5;244mnothing in the turn was lost␛[m
-    ␛[38;5;244malt needs Option as Meta — shhh doctor␛[m
 
 
 · context length · the only class with a remedy of its own
@@ -83,9 +83,9 @@
 
    ␛[38;5;254m✗␛[m ␛[38;5;254mmodel␛[m   ␛[38;5;254mgpt-4o␛[m␛[38;5;244m · 400 context too long␛[m             ␛[38;5;254mover the window␛[m
     ␛[38;5;244mThis model's maximum context length is 128000 tokens␛[m
-    ␛[38;5;254m[alt+n]␛[m␛[38;5;244m compact now␛[m␛[38;5;244m · ␛[m␛[38;5;254m[alt+r]␛[m␛[38;5;244m then try again␛[m
+    ␛[38;5;244m[alt+n]␛[m␛[38;5;244m compact now␛[m␛[38;5;244m · ␛[m␛[38;5;244m[alt+r]␛[m␛[38;5;244m then try again␛[m
+    ␛[38;5;254m[ctrl+o]␛[m␛[38;5;254m to use them␛[m
     ␛[38;5;244mcompacting keeps the plan and the recent turns␛[m
-    ␛[38;5;244malt needs Option as Meta — shhh doctor␛[m
 
 
 · unclassified · the message is the whole point of the row
@@ -94,7 +94,7 @@
 
    ␛[38;5;254m✗␛[m ␛[38;5;254mmodel␛[m   ␛[38;5;254mgpt-4o␛[m␛[38;5;244m · 400 unclassified␛[m                   ␛[38;5;254mmessage below␛[m
     ␛[38;5;244mUnknown parameter: 'reasoning.effort'␛[m
-    ␛[38;5;254m[alt+r]␛[m␛[38;5;244m try again␛[m␛[38;5;244m · ␛[m␛[38;5;254m[alt+p]␛[m␛[38;5;244m switch provider␛[m
+    ␛[38;5;244m[alt+r]␛[m␛[38;5;244m try again␛[m␛[38;5;244m · ␛[m␛[38;5;244m[alt+p]␛[m␛[38;5;244m switch provider␛[m
+    ␛[38;5;254m[ctrl+o]␛[m␛[38;5;254m to use them␛[m
     ␛[38;5;244mnothing in the turn was lost␛[m
-    ␛[38;5;244malt needs Option as Meta — shhh doctor␛[m
 

@@ -113,7 +113,7 @@ func TestTodoRunRow_DrawnFromStartToDone(t *testing.T) {
 		t.Errorf("the report belongs to the row, not under the notice: %q", note)
 	}
 	opened := strings.Join(strings.Split(stripANSI(m.todoRunRowView(
-		entry{kind: entryTodoRun, todorun: r, expanded: true}, 130, false)), "\n"), "\n")
+		entry{kind: entryTodoRun, todorun: r, expanded: true}, 130, rowUnselected)), "\n"), "\n")
 	for _, want := range []string{"1. Change a.go", "report", "Summary: did it.", "a.go"} {
 		if !strings.Contains(opened, want) {
 			t.Errorf("the opened row does not carry %q:\n%s", want, opened)
