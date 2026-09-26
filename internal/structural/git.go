@@ -61,6 +61,10 @@ const (
 	// MaxGitBlameLines caps the blame verb; past it the answer is a window,
 	// which is what start_line/end_line are for.
 	MaxGitBlameLines = 400
+
+	// MaxGitNameLines caps a show or diff asked for names — one line per
+	// changed path, like status, and narrowed the same way.
+	MaxGitNameLines = 300
 )
 
 // The description teaches a staged, bounded read — a stat before the patch,
@@ -72,6 +76,7 @@ var gitTool = provider.Tool{
 	Name: GitToolName,
 	Description: "Read this repository's history: status, log, show, diff, blame. It is read-only, so it answers without an approval. " +
 		"Read a broad comparison in stages: diff or show with stat: true first for the per-file summary, then the patch narrowed with paths to the files that matter. " +
+		"stat counts how much moved in each file; names: true says what moved — each path with its status letter (A added, D deleted, M modified, R renamed, a rename being one row) — so reach for names when the question is which files were added, deleted or renamed. " +
 		"A range such as upstream/main...HEAD is one ref. log returns 20 commits unless limit asks for more or fewer — set limit rather than cutting the output short. " +
 		"Questions that do not depend on each other, such as the log and the diff of one range, are separate calls in the same round. " +
 		"log takes search for git's pickaxe: the commits that added or removed a given string. blame says who last touched each line and when. " +
@@ -86,6 +91,7 @@ var gitTool = provider.Tool{
 			"limit": {"type": "integer", "description": "log only: how many commits (default 20, max 100); set it instead of cutting the output short"},
 			"search": {"type": "string", "description": "log only: only commits that changed the number of occurrences of this string"},
 			"stat": {"type": "boolean", "description": "show/diff only: per-file counts of changed lines instead of the patch; ask for it first on a broad comparison, then for the patch narrowed by paths"},
+			"names": {"type": "boolean", "description": "show/diff only: each changed path with its status letter (A, D, M, R for a rename) instead of the patch; for what moved rather than how much, and not together with stat"},
 			"staged": {"type": "boolean", "description": "diff only: compare the index rather than the working tree; not together with to_ref"},
 			"start_line": {"type": "integer", "description": "blame only: first line to attribute"},
 			"end_line": {"type": "integer", "description": "blame only: last line to attribute"}
@@ -102,6 +108,7 @@ type gitArgs struct {
 	Limit     int      `json:"limit"`
 	Search    string   `json:"search"`
 	Stat      bool     `json:"stat"`
+	Names     bool     `json:"names"`
 	Staged    bool     `json:"staged"`
 	StartLine int      `json:"start_line"`
 	EndLine   int      `json:"end_line"`
@@ -113,8 +120,8 @@ type gitArgs struct {
 var gitFields = map[string][]string{
 	gitStatus: {"paths"},
 	gitLog:    {"ref", "paths", "limit", "search"},
-	gitShow:   {"ref", "paths", "stat"},
-	gitDiff:   {"ref", "to_ref", "paths", "stat", "staged"},
+	gitShow:   {"ref", "paths", "stat", "names"},
+	gitDiff:   {"ref", "to_ref", "paths", "stat", "names", "staged"},
 	gitBlame:  {"ref", "paths", "start_line", "end_line"},
 }
 
@@ -138,6 +145,9 @@ func (a gitArgs) setFields() []string {
 	}
 	if a.Stat {
 		f = append(f, "stat")
+	}
+	if a.Names {
+		f = append(f, "names")
 	}
 	if a.Staged {
 		f = append(f, "staged")
@@ -261,6 +271,9 @@ func buildGitArgv(a gitArgs, paths []string) ([]string, error) {
 	if err := checkGitRef("to_ref", a.ToRef); err != nil {
 		return nil, err
 	}
+	if a.Stat && a.Names {
+		return nil, fmt.Errorf("stat and names are two readings of one change; ask for one of them")
+	}
 
 	argv := []string{"--no-pager", "--no-optional-locks", a.Verb}
 	switch a.Verb {
@@ -300,6 +313,11 @@ func buildGitArgv(a gitArgs, paths []string) ([]string, error) {
 		if a.Stat {
 			argv = append(argv, "--stat")
 		}
+		if a.Names {
+			// -M so a rename is one R row rather than a D and an A; stated
+			// rather than left to diff.renames, which is the user's setting.
+			argv = append(argv, "--name-status", "-M")
+		}
 		argv = append(argv, a.Ref)
 
 	case gitDiff:
@@ -317,6 +335,9 @@ func buildGitArgv(a gitArgs, paths []string) ([]string, error) {
 		}
 		if a.Stat {
 			argv = append(argv, "--stat")
+		}
+		if a.Names {
+			argv = append(argv, "--name-status", "-M")
 		}
 		if a.Ref != "" {
 			argv = append(argv, a.Ref)
@@ -426,16 +447,16 @@ func (t *Toolset) executeGit(raw json.RawMessage) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return shapeGitOutput(args.Verb, out), nil
+	return shapeGitOutput(args, out), nil
 }
 
 // shapeGitOutput bounds one verb's output where a bound has a narrower
 // question to point at, and turns the several ways git says "nothing" into one
 // sentence per verb — an empty result otherwise reads as a failure.
-func shapeGitOutput(verb, out string) string {
+func shapeGitOutput(a gitArgs, out string) string {
 	out = strings.TrimRight(out, "\n")
 	if out == "" {
-		switch verb {
+		switch a.Verb {
 		case gitLog:
 			return "No commits matched."
 		case gitDiff:
@@ -443,7 +464,7 @@ func shapeGitOutput(verb, out string) string {
 		}
 		return "(no output)"
 	}
-	max, hint := gitBounds(verb)
+	max, hint := gitBounds(a)
 	if max == 0 {
 		return out
 	}
@@ -465,15 +486,19 @@ func GitCallBounded(args json.RawMessage) bool {
 	if err := json.Unmarshal(args, &a); err != nil {
 		return false
 	}
-	max, _ := gitBounds(a.Verb)
+	max, _ := gitBounds(a)
 	return max != 0
 }
 
-// gitBounds is the line bound for a verb and the sentence that says how to get
-// under it. A zero bound means the verb has no narrower question to offer, so
-// the reduction pipeline handles its size instead.
-func gitBounds(verb string) (int, string) {
-	switch verb {
+// gitBounds is the line bound for a call and the sentence that says how to get
+// under it. A zero bound means the call has no narrower question to offer, so
+// the reduction pipeline handles its size instead. A show or diff asked for
+// names is bounded like status: one line per path, narrowed by naming paths.
+func gitBounds(a gitArgs) (int, string) {
+	if a.Names && (a.Verb == gitShow || a.Verb == gitDiff) {
+		return MaxGitNameLines, "name paths to narrow it"
+	}
+	switch a.Verb {
 	case gitStatus:
 		return MaxGitStatusLines, "name paths to narrow it"
 	case gitLog:

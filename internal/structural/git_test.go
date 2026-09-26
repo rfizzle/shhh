@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -428,30 +429,30 @@ func TestShapeGitOutputBoundsTheVerbsWithANarrowerQuestion(t *testing.T) {
 	// patch somewhere nothing can retrieve it.
 	long := strings.Repeat("line\n", 5000)
 	for _, verb := range []string{gitShow, gitDiff} {
-		if got := shapeGitOutput(verb, long); got != strings.TrimRight(long, "\n") {
+		if got := shapeGitOutput(gitArgs{Verb: verb}, long); got != strings.TrimRight(long, "\n") {
 			t.Fatalf("%s should pass its output through whole, got %d bytes of %d",
 				verb, len(got), len(long))
 		}
 	}
 	blame := strings.Repeat("a1b2c3d (Someone 2026-01-01 1) x\n", MaxGitBlameLines+10)
-	if got := shapeGitOutput(gitBlame, blame); !strings.Contains(got, "start_line") {
+	if got := shapeGitOutput(gitArgs{Verb: gitBlame}, blame); !strings.Contains(got, "start_line") {
 		t.Fatalf("a long blame should point at its window, got the tail %q", tail(got))
 	}
 	status := strings.Repeat(" M file\n", MaxGitStatusLines+10)
-	if got := shapeGitOutput(gitStatus, status); !strings.Contains(got, "truncated at 300 lines") {
+	if got := shapeGitOutput(gitArgs{Verb: gitStatus}, status); !strings.Contains(got, "truncated at 300 lines") {
 		t.Fatalf("a long status should be bounded, got the tail %q", tail(got))
 	}
 	short := "## main\n M internal/structural/git.go"
-	if got := shapeGitOutput(gitStatus, short); got != short {
+	if got := shapeGitOutput(gitArgs{Verb: gitStatus}, short); got != short {
 		t.Fatalf("output under the bound should pass through, got %q", got)
 	}
-	if got := shapeGitOutput(gitLog, ""); got != "No commits matched." {
+	if got := shapeGitOutput(gitArgs{Verb: gitLog}, ""); got != "No commits matched." {
 		t.Fatalf("empty log should read as a result, got %q", got)
 	}
-	if got := shapeGitOutput(gitDiff, ""); got != "No changes." {
+	if got := shapeGitOutput(gitArgs{Verb: gitDiff}, ""); got != "No changes." {
 		t.Fatalf("empty diff should read as a result, got %q", got)
 	}
-	if got := shapeGitOutput(gitShow, ""); got != "(no output)" {
+	if got := shapeGitOutput(gitArgs{Verb: gitShow}, ""); got != "(no output)" {
 		t.Fatalf("empty show should read as a result, got %q", got)
 	}
 }
@@ -471,11 +472,70 @@ func TestGitCallBoundedMatchesTheVerbsWithABound(t *testing.T) {
 			t.Errorf("%s has no bound of its own; the pipeline is it", verb)
 		}
 	}
+	// Asked for names, show and diff are one line per path like status, so
+	// they carry the same kind of bound and the pipeline leaves them alone.
+	for _, verb := range []string{gitShow, gitDiff} {
+		if !GitCallBounded(json.RawMessage(`{"verb":"` + verb + `","names":true}`)) {
+			t.Errorf("%s with names bounds its own output; the pipeline must leave it alone", verb)
+		}
+	}
 	if GitCallBounded(json.RawMessage(`not json`)) {
 		t.Error("arguments that do not parse are not a bounded call")
 	}
 	if GitCallBounded(json.RawMessage(`{"verb":"bisect"}`)) {
 		t.Error("a verb this tool does not have is not a bounded call")
+	}
+}
+
+// names is its own reading, stated in the verb's own branch: the same flag
+// in the common prefix would reach status, log and blame, which refuse it.
+func TestBuildGitArgvNamesIsPerVerb(t *testing.T) {
+	ts := newTestToolset(t, nil)
+	cases := []struct {
+		args string
+		want []string
+	}{
+		{`{"verb":"diff","ref":"upstream/main...HEAD","names":true}`, []string{
+			"--no-pager", "--no-optional-locks", "diff", "--no-color", "--no-ext-diff", "--no-textconv",
+			"--unified=3", "--name-status", "-M", "upstream/main...HEAD", "--",
+		}},
+		{`{"verb":"show","ref":"HEAD","names":true}`, []string{
+			"--no-pager", "--no-optional-locks", "show", "--no-color", "--no-ext-diff",
+			"--no-textconv", "--no-show-signature", "--unified=3", "--date=short",
+			"--name-status", "-M", "HEAD", "--",
+		}},
+	}
+	for _, tc := range cases {
+		if got := gitArgvFor(t, ts, tc.args); strings.Join(got, " ") != strings.Join(tc.want, " ") {
+			t.Errorf("%s:\n got %v\nwant %v", tc.args, got, tc.want)
+		}
+	}
+	// Nothing names it where it was not asked for, so it cannot have drifted
+	// into the prefix every verb shares.
+	for _, raw := range []string{`{"verb":"status"}`, `{"verb":"log"}`, `{"verb":"diff"}`, `{"verb":"show","ref":"HEAD"}`} {
+		if argv := gitArgvFor(t, ts, raw); contains(argv, "--name-status") || contains(argv, "-M") {
+			t.Errorf("%s: names was not asked for, got %v", raw, argv)
+		}
+	}
+	for _, raw := range []string{`{"verb":"log","names":true}`, `{"verb":"status","names":true}`} {
+		var a gitArgs
+		if err := json.Unmarshal([]byte(raw), &a); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := buildGitArgv(a, nil); err == nil || !strings.Contains(err.Error(), "does not take names") {
+			t.Errorf("%s: expected the field to be refused, got %v", raw, err)
+		}
+	}
+	if _, err := buildGitArgv(gitArgs{Verb: gitDiff, Stat: true, Names: true}, nil); err == nil {
+		t.Error("stat and names together should be refused rather than one silently winning")
+	}
+}
+
+func TestShapeGitOutputBoundsANamesReading(t *testing.T) {
+	long := strings.Repeat("M\tfile.go\n", MaxGitNameLines+10)
+	got := shapeGitOutput(gitArgs{Verb: gitDiff, Names: true}, long)
+	if !strings.Contains(got, "truncated at 300 lines; name paths") {
+		t.Fatalf("a long names reading should be bounded, got the tail %q", tail(got))
 	}
 }
 
@@ -534,6 +594,25 @@ func TestExecuteGitEndToEnd(t *testing.T) {
 	// patch from here reads like a patch from anywhere else.
 	if !strings.Contains(out, "@@ ") || !strings.Contains(out, "+func main() {}") {
 		t.Fatalf("diff should be a unified patch, got %q", out)
+	}
+
+	// A rename is one R row, on show over one commit and on diff over a range.
+	gitIn(t, root, "mv", "main.go", "app.go")
+	gitIn(t, root, "commit", "-q", "-m", "rename")
+	for _, args := range []string{
+		`{"verb":"show","ref":"HEAD","names":true}`,
+		`{"verb":"diff","ref":"HEAD~1","to_ref":"HEAD","names":true}`,
+	} {
+		out, err = ts.Execute(GitToolName, json.RawMessage(args))
+		if err != nil {
+			t.Fatalf("%s: %v", args, err)
+		}
+		if !regexp.MustCompile(`(?m)^R\d*\tmain\.go\tapp\.go$`).MatchString(out) {
+			t.Fatalf("%s: a rename should be one R row, got %q", args, out)
+		}
+		if regexp.MustCompile(`(?m)^[AD]\t`).MatchString(out) {
+			t.Fatalf("%s: a rename should not read as a delete and an add, got %q", args, out)
+		}
 	}
 
 	if _, err := ts.Execute(GitToolName, json.RawMessage(`{"verb":"push"}`)); err == nil {
@@ -603,7 +682,7 @@ func TestGitDefinitionTeachesStagedBoundedReads(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	for _, want := range []string{"stat: true first", "narrowed with paths", "upstream/main...HEAD", "set limit", "separate calls in the same round"} {
+	for _, want := range []string{"stat: true first", "narrowed with paths", "stat counts how much moved", "names: true says what moved", "upstream/main...HEAD", "set limit", "separate calls in the same round"} {
 		if !strings.Contains(gitTool.Description, want) {
 			t.Errorf("the description should say %q:\n%s", want, gitTool.Description)
 		}
@@ -658,6 +737,20 @@ func withoutGitConfig(env []string) []string {
 		}
 	}
 	return kept
+}
+
+// gitIn runs one git command in a test repository, as the author newGitRepo
+// commits as.
+func gitIn(t *testing.T, root string, argv ...string) {
+	t.Helper()
+	cmd := exec.Command("git", append([]string{"-C", root}, argv...)...)
+	cmd.Env = append(os.Environ(),
+		"GIT_AUTHOR_NAME=Test", "GIT_AUTHOR_EMAIL=test@example.com",
+		"GIT_COMMITTER_NAME=Test", "GIT_COMMITTER_EMAIL=test@example.com",
+		"GIT_CONFIG_GLOBAL=/dev/null", "GIT_CONFIG_SYSTEM=/dev/null")
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("git %v: %v: %s", argv, err, out)
+	}
 }
 
 // newGitRepo builds a one-commit repository and returns its resolved root.
