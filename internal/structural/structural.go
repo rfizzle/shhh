@@ -430,9 +430,26 @@ func (t *Toolset) run(name string, argv []string) (string, error) {
 // runCapped is run with the stdout cap stated by the caller, which is how a
 // git call the pipeline reduces is spawned under the store's cap.
 func (t *Toolset) runCapped(name string, argv []string, limit int) (string, error) {
+	out, overflowed, err := t.spawn(name, argv, limit)
+	if overflowed {
+		// The process was killed for flooding; what we kept is the result.
+		return truncated(out, limit), nil
+	}
+	return out, err
+}
+
+// truncated is the notice a result cut at limit carries, so every cut this
+// package makes reads the same to the model.
+func truncated(out string, limit int) string {
+	return fmt.Sprintf("%s\n… (output truncated at %d bytes; narrow the query to see more)", out, limit)
+}
+
+// spawn is runCapped without the notice: it reports whether stdout ran past
+// limit, for a caller that reads the output as data rather than showing it.
+func (t *Toolset) spawn(name string, argv []string, limit int) (string, bool, error) {
 	bin, ok := t.bins[name]
 	if !ok {
-		return "", fmt.Errorf("%s is not available: the %q binary was not found on PATH", name, binaryNames[name])
+		return "", false, fmt.Errorf("%s is not available: the %q binary was not found on PATH", name, binaryNames[name])
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), t.timeout)
@@ -449,14 +466,13 @@ func (t *Toolset) runCapped(name string, argv []string, limit int) (string, erro
 
 	err := cmd.Run()
 	if stdout.overflowed() {
-		// The process was killed for flooding; what we kept is the result.
-		return fmt.Sprintf("%s\n… (output truncated at %d bytes; narrow the query to see more)", stdout.buf.String(), limit), nil
+		return stdout.buf.String(), true, nil
 	}
 	if errors.Is(ctx.Err(), context.DeadlineExceeded) {
-		return "", fmt.Errorf("%s timed out after %s", name, t.timeout)
+		return "", false, fmt.Errorf("%s timed out after %s", name, t.timeout)
 	}
 	if ctx.Err() != nil {
-		return "", fmt.Errorf("%s was cancelled", name)
+		return "", false, fmt.Errorf("%s was cancelled", name)
 	}
 	if err != nil {
 		detail := strings.TrimSpace(stderr.buf.String())
@@ -464,10 +480,10 @@ func (t *Toolset) runCapped(name string, argv []string, limit int) (string, erro
 			detail = strings.TrimSpace(stdout.buf.String())
 		}
 		if detail == "" {
-			return "", fmt.Errorf("%s failed: %v", name, err)
+			return "", false, fmt.Errorf("%s failed: %v", name, err)
 		}
 		detail, _ = tools.TruncateOutput(detail, MaxStderrBytes)
-		return "", fmt.Errorf("%s failed: %v: %s", name, err, detail)
+		return "", false, fmt.Errorf("%s failed: %v: %s", name, err, detail)
 	}
-	return stdout.buf.String(), nil
+	return stdout.buf.String(), false, nil
 }

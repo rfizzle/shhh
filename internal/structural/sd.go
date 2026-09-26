@@ -3,43 +3,52 @@ package structural
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
+	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
-// The how of a bounded answer lives here, beside the tool: sd's preview
-// prints every named file whole, as it would read after the replacement,
-// whether or not anything in it matched, so the preview is as large as the
-// files named and only naming fewer of them shrinks it — max_replacements
-// changes what is replaced, not what is printed. Output past MaxOutputBytes is
-// cut off and not kept anywhere, because this tool is exempt from the
-// evidence pipeline.
+// The preview is a diff, computed here rather than printed by sd: with no
+// terminal, sd's --preview prints every named file whole as it would read
+// after the replacement, matched or not, so a five-occurrence rename across
+// five files came back as the five files and was cut at MaxOutputBytes. Each
+// file is previewed on its own and diffed against the file as read, so the
+// result follows the change and a file with no match adds nothing. Output
+// past MaxOutputBytes is still cut off and kept nowhere, because this tool is
+// exempt from the evidence pipeline.
 // See docs/capabilities/evidence.md#reduction-is-for-unbounded-output.
 var sdTool = provider.Tool{
 	Name: SdToolName,
 	Description: "PREVIEW a find-and-replace across files with sd. This tool never modifies files: it always runs sd with --preview " +
-		"and returns each named file in full as it would read after the replacement, under a \"----- FILE <path> -----\" line. Use it to check a transform across several files, then apply the changes you want with edit_file. " +
+		"and returns a unified diff of the lines that would change, under a \"--- a/<path>\" header per file; a named file with no match adds nothing. Use it to check a transform across several files, then apply the changes you want with edit_file. " +
 		"The pattern is a regular expression unless fixed_strings is set; the replacement may use capture groups like $1. " +
-		"Every named file is printed whole, matched or not, so name only the files that hold a match (find them with a search first); max_replacements does not shorten the preview. " +
 		"Output past 64 KiB is cut off and lost, so a result that says it was truncated is not every file: preview the rest in smaller batches rather than acting on the part you saw.",
 	Parameters: json.RawMessage(`{
 		"type": "object",
 		"properties": {
 			"pattern": {"type": "string", "description": "Regex (or fixed string) to find"},
 			"replacement": {"type": "string", "description": "Replacement text; may reference capture groups ($1, $name). Empty deletes the match"},
-			"paths": {"type": "array", "items": {"type": "string"}, "description": "Files to preview the replacement in, relative to the workspace root (at least one); each is printed whole, so name only files that hold a match"},
+			"paths": {"type": "array", "items": {"type": "string"}, "description": "Files to preview the replacement in, relative to the workspace root (at least one); a file with no match adds nothing to the diff"},
 			"fixed_strings": {"type": "boolean", "description": "Treat pattern and replacement as literal strings"},
 			"ignore_case": {"type": "boolean", "description": "Match the pattern without regard to letter case"},
 			"multiline": {"type": "boolean", "description": "Let ^ and $ match line boundaries"},
 			"dot_all": {"type": "boolean", "description": "Let . match newlines, so a pattern can span lines"},
 			"word_boundary": {"type": "boolean", "description": "Match the pattern only where it is a whole word"},
-			"max_replacements": {"type": "integer", "description": "Stop after this many replacements in each file; the file is still printed whole"}
+			"max_replacements": {"type": "integer", "description": "Stop after this many replacements in each file"}
 		},
 		"required": ["pattern", "replacement", "paths"]
 	}`),
 }
+
+// MaxSdFileBytes bounds one file's preview. The preview of a file is the
+// whole file as sd would write it, held only to be diffed, so this is a bound
+// on memory rather than on what the model reads: a file larger than this, or
+// one the replacement grows past it, is refused by name.
+const MaxSdFileBytes = 4 << 20
 
 type sdArgs struct {
 	Pattern         string   `json:"pattern"`
@@ -100,13 +109,83 @@ func (t *Toolset) executeSd(raw json.RawMessage) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	out, err := t.run(SdToolName, buildSdArgv(args, resolved))
-	if err != nil {
-		return "", err
+	var b strings.Builder
+	for _, path := range resolved {
+		fileDiff, err := t.sdFileDiff(args, path)
+		if err != nil {
+			return "", err
+		}
+		b.WriteString(fileDiff)
+		if b.Len() > MaxOutputBytes {
+			break
+		}
 	}
-	out = strings.TrimRight(out, "\n")
+	out := strings.TrimRight(b.String(), "\n")
 	if out == "" {
 		return "No replacements: the pattern did not match.", nil
 	}
+	if len(out) > MaxOutputBytes {
+		out = truncated(out[:MaxOutputBytes], MaxOutputBytes)
+	}
 	return "Preview only — no file was changed. Apply wanted changes with edit_file.\n\n" + out, nil
+}
+
+// sdFileDiff previews the replacement in one resolved file and returns the
+// unified diff of the file as read against sd's preview of it, or "" when
+// nothing in it changes. sd is handed one path at a time because, given one,
+// it prints the file's new content bare, with no header to parse out of text
+// that could itself contain one.
+func (t *Toolset) sdFileDiff(args sdArgs, path string) (string, error) {
+	rel, err := filepath.Rel(t.root, path)
+	if err != nil {
+		rel = path
+	}
+	rel = filepath.ToSlash(rel)
+	info, err := os.Stat(path)
+	if err != nil {
+		return "", fmt.Errorf("cannot read %s: %w", rel, err)
+	}
+	if info.IsDir() {
+		return "", fmt.Errorf("%s is a directory: name the files to preview", rel)
+	}
+	if info.Size() > MaxSdFileBytes {
+		return "", fmt.Errorf("%s is %d bytes, past the %d-byte preview bound", rel, info.Size(), MaxSdFileBytes)
+	}
+	before, err := os.ReadFile(path)
+	if err != nil {
+		return "", fmt.Errorf("cannot read %s: %w", rel, err)
+	}
+	after, overflowed, err := t.spawn(SdToolName, buildSdArgv(args, []string{path}), MaxSdFileBytes)
+	if err != nil {
+		return "", err
+	}
+	if overflowed {
+		return "", fmt.Errorf("the replacement grows %s past the %d-byte preview bound", rel, MaxSdFileBytes)
+	}
+	if after == string(before) {
+		return "", nil
+	}
+	var b strings.Builder
+	fmt.Fprintf(&b, "--- a/%s\n+++ b/%s\n", rel, rel)
+	hunks := diff.Compute(string(before), after)
+	if len(hunks) == 0 {
+		// The lines are the same and the texts are not: only the file's
+		// final newline moved, which a line diff cannot show.
+		b.WriteString("(only the final newline changes)\n")
+	}
+	for _, h := range hunks {
+		b.WriteString(h.Header() + "\n")
+		for _, l := range h.Lines {
+			switch l.Kind {
+			case diff.Add:
+				b.WriteByte('+')
+			case diff.Del:
+				b.WriteByte('-')
+			default:
+				b.WriteByte(' ')
+			}
+			b.WriteString(l.Text + "\n")
+		}
+	}
+	return b.String(), nil
 }

@@ -533,10 +533,13 @@ func TestExecuteFdEndToEnd(t *testing.T) {
 
 func TestExecuteEmptyResultsMessages(t *testing.T) {
 	script := writeScript(t, `:`)
+	// sd previews one file at a time and prints it as it would read, so a
+	// file with no match comes back as it was.
+	unchanged := writeScript(t, `for last; do :; done; cat "$last"`)
 	ts := newTestToolset(t, map[string]string{
 		FdToolName:      script,
 		AstGrepToolName: script,
-		SdToolName:      script,
+		SdToolName:      unchanged,
 		JaqToolName:     script,
 		YqToolName:      script,
 	})
@@ -690,8 +693,8 @@ func TestJaqNarrowQueryAnswersWhereTheWholeDocumentIsCut(t *testing.T) {
 // A broad structural search or a replacement preview over many files runs past
 // MaxOutputBytes, and what is cut is kept nowhere, so both definitions have to
 // say how to narrow and must not let a truncated result pass for the whole.
-// sd's preview prints each named file whole, so its guidance is the files it
-// is handed, and max_replacements must not be sold as a way to shorten it.
+// sd's preview is a diff of the change, so it must say so and must not go
+// on telling the model every named file comes back whole.
 func TestStructuralPreviewDefinitionsTeachNarrowing(t *testing.T) {
 	for _, tool := range []struct {
 		name   string
@@ -704,8 +707,8 @@ func TestStructuralPreviewDefinitionsTeachNarrowing(t *testing.T) {
 			[]string{"PREVIEW", "point path at the directory or file", "set lang", "leave context off", "cut off and lost", "not every match", "not the whole diff", "narrower path"},
 			[]string{"name the narrowest one", "keeps other languages' files out", "leave it unset"}},
 		{SdToolName, sdTool.Description, string(sdTool.Parameters),
-			[]string{"PREVIEW", "never modifies files", "in full", "name only the files that hold a match", "does not shorten the preview", "cut off and lost", "not every file", "smaller batches"},
-			[]string{"name only files that hold a match", "still printed whole"}},
+			[]string{"PREVIEW", "never modifies files", "unified diff of the lines that would change", "no match adds nothing", "cut off and lost", "not every file", "smaller batches"},
+			[]string{"no match adds nothing to the diff"}},
 	} {
 		for _, want := range tool.want {
 			if !strings.Contains(tool.desc, want) {
@@ -719,6 +722,11 @@ func TestStructuralPreviewDefinitionsTeachNarrowing(t *testing.T) {
 		}
 		if strings.Contains(tool.desc, "evidence") {
 			t.Errorf("%s description must not send a truncated result to evidence:\n%s", tool.name, tool.desc)
+		}
+	}
+	for _, stale := range []string{"in full", "printed whole"} {
+		if strings.Contains(sdTool.Description, stale) || strings.Contains(string(sdTool.Parameters), stale) {
+			t.Errorf("sd's definition still says %q, which the diff preview made untrue", stale)
 		}
 	}
 }
@@ -756,36 +764,91 @@ else printf 'internal/x/a.go:3:	if err != nil { return err }\ninternal/x/b.go:9:
 	}
 }
 
-// The failure the sd guidance is for: the preview prints every named file
-// whole, so naming many files runs past the cap whatever max_replacements
-// says, while naming only the file that holds the match comes back whole. The
-// script stands in for sd's preview: a header and a 20 KB body per file.
-func TestSdPreviewOfOnlyTheMatchingFilesComesBackWhole(t *testing.T) {
-	script := writeScript(t, `while [ "$1" != "--" ]; do shift; done
-shift 3
-for f; do printf -- '----- FILE %s -----\n' "$f"; head -c 20000 /dev/zero | tr '\0' x; printf '\n'; done`)
+// sd's own preview prints every named file whole, so five 16 KB files with one
+// occurrence each ran past the cap. The preview is now the diff of the change:
+// one hunk per changed file whatever the file's size, nothing for a file with
+// no match. The script stands in for sd handed one path, which prints that
+// file as it would read after the replacement.
+func TestSdPreviewIsTheDiffOfTheChange(t *testing.T) {
+	script := writeScript(t, `for last; do :; done; sed 's/Foo/Bar/' "$last"`)
 	ts := newTestToolset(t, map[string]string{SdToolName: script})
+	fileOf := func(lines int) string {
+		var b strings.Builder
+		for i := range lines {
+			if i == lines/2 {
+				b.WriteString("line Foo\n")
+				continue
+			}
+			b.WriteString("line padding padding padding\n")
+		}
+		return b.String()
+	}
 	var names []string
 	for _, n := range []string{"a.go", "b.go", "c.go", "d.go", "e.go"} {
-		if err := os.WriteFile(filepath.Join(ts.root, n), []byte("package x\n"), 0o644); err != nil {
+		if err := os.WriteFile(filepath.Join(ts.root, n), []byte(fileOf(550)), 0o644); err != nil {
 			t.Fatal(err)
 		}
 		names = append(names, `"`+n+`"`)
 	}
+	if err := os.WriteFile(filepath.Join(ts.root, "big.go"), []byte(fileOf(5500)), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(ts.root, "none.go"), []byte("package x\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	names = append(names, `"big.go"`, `"none.go"`)
 
-	broad, err := ts.Execute(SdToolName, json.RawMessage(`{"pattern": "Foo", "replacement": "Bar", "max_replacements": 1, "paths": [`+strings.Join(names, ",")+`]}`))
+	out, err := ts.Execute(SdToolName, json.RawMessage(`{"pattern": "Foo", "replacement": "Bar", "paths": [`+strings.Join(names, ",")+`]}`))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(broad, "output truncated") {
-		t.Fatalf("a preview naming every file should be cut at the cap even with max_replacements, got %d bytes", len(broad))
+	if !strings.HasPrefix(out, "Preview only") || strings.Contains(out, "output truncated") {
+		t.Fatalf("a five-occurrence rename should come back whole, got %d bytes starting %q", len(out), out[:min(len(out), 120)])
 	}
+	if len(out) > 4<<10 {
+		t.Fatalf("the preview should follow the change, not the %d bytes of files named: got %d bytes", 5*len(fileOf(550))+len(fileOf(5500)), len(out))
+	}
+	for _, n := range []string{"a.go", "b.go", "c.go", "d.go", "e.go", "big.go"} {
+		if !strings.Contains(out, "--- a/"+n+"\n+++ b/"+n+"\n@@ ") {
+			t.Errorf("%s should have a diff of its own:\n%s", n, out)
+		}
+	}
+	if strings.Contains(out, "none.go") {
+		t.Errorf("a file with no match should add nothing:\n%s", out)
+	}
+	if got := strings.Count(out, "\n@@ "); got != 6 {
+		t.Errorf("one change per file should be one hunk per file, got %d:\n%s", got, out)
+	}
+	if got := strings.Count(out, "\n-line Foo\n+line Bar\n"); got != 6 {
+		t.Errorf("each hunk should carry the changed line, got %d:\n%s", got, out)
+	}
+	if !strings.Contains(out, "@@ -2748,7 +2748,7 @@") {
+		t.Errorf("the large file's hunk should sit where its change is:\n%s", out)
+	}
+}
 
-	narrow, err := ts.Execute(SdToolName, json.RawMessage(`{"pattern": "Foo", "replacement": "Bar", "paths": ["c.go"]}`))
+// A change that really is large is still cut at the cap, with the notice the
+// rest of the package's cuts carry, and a file sd cannot be handed is refused
+// before anything is spawned.
+func TestSdPreviewOfALargeChangeIsCutAtTheCap(t *testing.T) {
+	script := writeScript(t, `for last; do :; done; sed 's/Foo/Bar/' "$last"`)
+	ts := newTestToolset(t, map[string]string{SdToolName: script})
+	body := strings.Repeat("line Foo padding padding\n", 3000)
+	if err := os.WriteFile(filepath.Join(ts.root, "a.go"), []byte(body), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	out, err := ts.Execute(SdToolName, json.RawMessage(`{"pattern": "Foo", "replacement": "Bar", "paths": ["a.go"]}`))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if strings.Contains(narrow, "output truncated") || !strings.HasPrefix(narrow, "Preview only") || !strings.Contains(narrow, "----- FILE ") || !strings.HasSuffix(narrow, strings.Repeat("x", 100)) {
-		t.Fatalf("a preview naming only the matching file should come back whole, got %d bytes starting %q", len(narrow), narrow[:min(len(narrow), 120)])
+	if !strings.Contains(out, "output truncated at 65536 bytes") {
+		t.Fatalf("a diff past the cap should be cut with the notice, got %d bytes ending %q", len(out), out[max(0, len(out)-80):])
+	}
+
+	if err := os.Mkdir(filepath.Join(ts.root, "dir"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ts.Execute(SdToolName, json.RawMessage(`{"pattern": "Foo", "replacement": "Bar", "paths": ["dir"]}`)); err == nil || !strings.Contains(err.Error(), "is a directory") {
+		t.Fatalf("a directory should be refused by name, got %v", err)
 	}
 }
