@@ -705,12 +705,12 @@ func TestNoticeLine_DropsWholePartsNeverClipsOne(t *testing.T) {
 	}
 	for _, width := range goldenWidths {
 		m := frameModel(t, width, 40).WithKeysNotice(KeysChangedNotice())
-		m.denialNotice = "the classifier refused this call"
+		m.steering = []steeringItem{{text: "one"}, {text: "two"}}
 		line := stripANSI(m.noticeLine())
 		if w := lipgloss.Width(line); w > m.contentWidth() {
 			t.Errorf("at %d columns the rail is %d wide, past its %d", width, w, m.contentWidth())
 		}
-		if strings.Contains(line, "auto denied") {
+		if strings.Contains(line, "steering queued") {
 			t.Errorf("at %d columns the rail should have given up the part at its right end whole: %q", width, line)
 		}
 		body, door, ok := strings.Cut(line, noticeDoorSep)
@@ -724,6 +724,44 @@ func TestNoticeLine_DropsWholePartsNeverClipsOne(t *testing.T) {
 		for _, c := range strings.Split(strings.TrimSpace(kept), noticeSep) {
 			if !whole[c] {
 				t.Errorf("at %d columns the rail cut into a change: %q in %q", width, c, line)
+			}
+		}
+	}
+}
+
+// The auto-mode denial carries the refused call's first line, which has no
+// bound. However long it is, and whatever else is on the rail, the part is
+// kept and its pointer to the full reading is drawn whole: the call gives
+// up words from its end, and a word is dropped whole rather than cut.
+func TestNoticeLine_KeepsTheDenialsPointerWhole(t *testing.T) {
+	call := strings.TrimSpace(strings.Repeat("rm -rf ./build/cache/intermediate ", 12))
+	words := map[string]bool{}
+	for _, w := range strings.Fields(call) {
+		words[w] = true
+	}
+	for _, width := range goldenWidths {
+		for _, keysNotice := range []bool{false, true} {
+			m := frameModel(t, width, 40)
+			if keysNotice {
+				m = m.WithKeysNotice(KeysChangedNotice())
+			}
+			m.denialNotice = call
+			line := stripANSI(m.noticeLine())
+			if w := lipgloss.Width(line); w > m.contentWidth() {
+				t.Errorf("at %d columns the rail is %d wide, past its %d", width, w, m.contentWidth())
+			}
+			_, denial, ok := strings.Cut(line, "✗ auto denied: ")
+			if !ok {
+				t.Fatalf("at %d columns the rail gave up the denial: %q", width, line)
+			}
+			fitted, ok := strings.CutSuffix(denial, "… (/permissions why)")
+			if !ok {
+				t.Fatalf("at %d columns the denial lost its pointer or did not say it gave up words: %q", width, line)
+			}
+			for _, w := range strings.Fields(fitted) {
+				if !words[w] {
+					t.Errorf("at %d columns the denial cut into a word: %q in %q", width, w, line)
+				}
 			}
 		}
 	}

@@ -820,8 +820,12 @@ func (m Model) noticeLine() string {
 			parts = append(parts, noticePart{text: sty.Frame.NoticeAlert.Render(label)})
 		}
 	}
+	// The denial carries the refused call's first line, which has no bound,
+	// and the pointer after it is the way to the whole reading. So it is kept
+	// whatever else goes, and where the row is still too narrow it is the
+	// call that gives ground, a word at a time, never the pointer.
 	if m.denialNotice != "" {
-		parts = append(parts, noticePart{text: sty.Frame.NoticeAlert.Render("✗ auto denied: " + firstLine(m.denialNotice) + " (/permissions why)")})
+		parts = append(parts, denialPart(firstLine(m.denialNotice)))
 	}
 	if len(parts) == 0 {
 		return ""
@@ -843,12 +847,35 @@ const (
 const noticeMore = " …"
 
 // noticePart is one part of the notice rail: its text, what joins it to the
-// part before (noticeSep when empty), and whether it is kept whatever else
-// goes.
+// part before (noticeSep when empty), whether it is kept whatever else goes,
+// and, for a kept part whose text has no bound, how to draw it again in
+// fewer columns once nothing else is left to give up.
 type noticePart struct {
 	text string
 	glue string
 	keep bool
+	fit  func(cols int) string
+}
+
+// denialPart is the auto-mode denial as a rail part: the label, the refused
+// call's first line, and the pointer to /permissions why. Asked to fit fewer
+// columns it drops the call's words from the end and says so with an
+// ellipsis; the label and the pointer are drawn whole at any width.
+func denialPart(call string) noticePart {
+	const label, pointer = "✗ auto denied: ", " (/permissions why)"
+	render := func(words string) string { return sty.Frame.NoticeAlert.Render(label + words + pointer) }
+	return noticePart{
+		text: render(call),
+		keep: true,
+		fit: func(cols int) string {
+			room := cols - lipgloss.Width(label+pointer)
+			words := strings.Fields(call)
+			for len(words) > 0 && lipgloss.Width(strings.Join(words, " ")+"…") > room {
+				words = words[:len(words)-1]
+			}
+			return render(strings.Join(words, " ") + "…")
+		},
+	}
 }
 
 // fitNotice joins the rail's parts into the one row it has, giving up whole
@@ -858,9 +885,11 @@ type noticePart struct {
 // the take-over screens' SectionFitter, each part costing its columns and
 // its glue, taking the rightmost part not marked keep. The fitter reserves
 // one column for its marker once anything goes; this marker is wider than
-// one, so the budget it is handed is short by the difference. A row whose
-// kept parts are wider than the terminal on their own is the one case left
-// to the edge, since there is nothing further to give up.
+// one, so the budget it is handed is short by the difference. A part that
+// can be drawn narrower (the denial's call) gives up its own text first and
+// is drawn into whatever the row leaves it; a row wider than the terminal
+// even then is the one case left to the edge, since there is nothing further
+// to give up.
 func fitNotice(parts []noticePart, room int) string {
 	sep := sty.SystemMsg.Render(noticeSep)
 	glue := func(i int) string {
@@ -879,8 +908,18 @@ func fitNotice(parts []noticePart, room int) string {
 	if room <= 0 || lipgloss.Width(b.String()) <= room {
 		return clipRow(b.String(), room)
 	}
+	budget := room - (lipgloss.Width(noticeMore) - 1)
+	// A part that can be drawn narrower is charged its narrowest drawing, so
+	// its unbounded text gives ground before any whole part is given up —
+	// the handover chord beside it says what a key does, which the call's
+	// tail does not — and the narrower drawing below takes what is left.
 	fitter := components.SectionFitter{
-		Rows: func(i int) int { return lipgloss.Width(glue(i) + parts[i].text) },
+		Rows: func(i int) int {
+			if parts[i].fit != nil {
+				return lipgloss.Width(glue(i) + parts[i].fit(0))
+			}
+			return lipgloss.Width(glue(i) + parts[i].text)
+		},
 		Next: func(kept []int) int {
 			for at := len(kept) - 1; at >= 0; at-- {
 				if !parts[kept[at]].keep {
@@ -890,26 +929,39 @@ func fitNotice(parts []noticePart, room int) string {
 			return len(kept) - 1
 		},
 	}
-	kept := fitter.Fit(len(parts), room-(lipgloss.Width(noticeMore)-1))
+	kept := fitter.Fit(len(parts), budget)
 	shown := make(map[int]bool, len(kept))
 	for _, i := range kept {
 		shown[i] = true
 	}
-	b.Reset()
-	marked := false
-	for i, p := range parts {
-		switch {
-		case shown[i]:
-			if b.Len() > 0 {
-				b.WriteString(glue(i))
+	row := func() string {
+		b.Reset()
+		marked := false
+		for i, p := range parts {
+			switch {
+			case shown[i]:
+				if b.Len() > 0 {
+					b.WriteString(glue(i))
+				}
+				b.WriteString(p.text)
+			case !marked:
+				b.WriteString(sty.SystemMsg.Render(noticeMore))
+				marked = true
 			}
-			b.WriteString(p.text)
-		case !marked:
-			b.WriteString(sty.SystemMsg.Render(noticeMore))
-			marked = true
+		}
+		return b.String()
+	}
+	line := row()
+	if over := lipgloss.Width(line) - room; over > 0 {
+		for _, i := range kept {
+			if parts[i].fit != nil {
+				parts[i].text = parts[i].fit(lipgloss.Width(parts[i].text) - over)
+				line = row()
+				break
+			}
 		}
 	}
-	return clipRow(b.String(), room)
+	return clipRow(line, room)
 }
 
 // railSlots splits a border row into the five rectangles it is drawn from:

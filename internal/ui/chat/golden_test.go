@@ -1438,9 +1438,16 @@ func TestGolden_Interrupt(t *testing.T) {
 		// below the wide breakpoint the notice rail is where the handover is
 		// named, and the keys-changed row yields it that rail (frame.go).
 		noticed := ungated.WithKeysNotice(KeysChangedNotice())
+		// A rule refused an earlier call whose first line runs past any
+		// terminal: the denial is kept on the rail beside the handover, and
+		// the call gives up words so the pointer to the full reading stands
+		// whole (frame.go).
+		denied := ungated
+		denied.denialNotice = "rm -rf ./build/cache ./build/intermediate ./build/objects ./dist ./coverage ./node_modules/.cache ./tmp/scratch"
 		return []golden.Panel{
 			{Label: "ungated · the draft still has the keyboard", View: interruptSurface(ungated)},
 			{Label: "ungated · the keys-changed notice due, the handover keeps the rail", View: interruptSurface(noticed)},
+			{Label: "ungated · a long refused call, the pointer kept whole", View: interruptSurface(denied)},
 			{Label: "gated · the handover, and the card has it", View: interruptSurface(gated)},
 			{Label: "grace · held on a warm keyboard, keys a moment away", View: interruptSurface(grace)},
 		}
