@@ -365,7 +365,8 @@ func TestFanoutBlockedLaneStatesWhatItNeeds(t *testing.T) {
 // A fan-out scrolled out of the pane takes its lanes with it, and the frame's
 // title is what still says a child needs you: it counts a routed child ask
 // among the decisions waiting, and it is on screen at every width. The vitals
-// segment beside it is a count and says nothing of the ask
+// segment beside it is a count and says nothing of the ask, and the notice
+// rail over the draft does not say it a second time
 // (docs/interface/departures.md#the-childrens-tally-says-who-needs-you-first).
 func TestFanoutScrolledAwayLeavesTheAskToTheFrameTitle(t *testing.T) {
 	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: gatedEnv()})
@@ -392,6 +393,9 @@ func TestFanoutScrolledAwayLeavesTheAskToTheFrameTitle(t *testing.T) {
 		}
 		if strings.Contains(view, "⚠1") {
 			t.Fatalf("width %d: the vitals should count the child, not badge its ask:\n%s", width, view)
+		}
+		if strings.Contains(view, "agent waiting approval") {
+			t.Fatalf("width %d: the notice rail should leave the ask to the frame's title:\n%s", width, view)
 		}
 	}
 }

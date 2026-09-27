@@ -800,15 +800,10 @@ func (m Model) noticeLine() string {
 	if m.selNotice != "" {
 		parts = append(parts, noticePart{text: sty.Frame.NoticeInfo.Render(m.selNotice)})
 	}
-	if m.subagents != nil {
-		if _, blocked := m.subagents.ActiveCounts(); blocked > 0 {
-			label := fmt.Sprintf("⚠ %d agents waiting approval", blocked)
-			if blocked == 1 {
-				label = "⚠ 1 agent waiting approval"
-			}
-			parts = append(parts, noticePart{text: sty.Frame.NoticeAlert.Render(label)})
-		}
-	}
+	// A child waiting on the reader has no part here. Its lane says so, and
+	// the frame's title counts its ask among the decisions waiting
+	// (waitingCount) at every width, so a row over the draft would be the
+	// same fact a fourth time one row below the title.
 	// The denial carries the refused call's first line, which has no bound,
 	// and the pointer after it is the way to the whole reading. So it is kept
 	// whatever else goes, and where the row is still too narrow it is the
