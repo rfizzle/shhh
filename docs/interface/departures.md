@@ -1020,3 +1020,16 @@ would make the one line the reader has to answer look like the lines they may
 skip. It is also what every other card already does — `Approve command`,
 `Apply patch`, `Agents` — so a lower-case prompt on these four would be the
 exception rather than the voice.
+
+## A close offers its keys when it is the newest or selected
+
+*A gap.* `Changeset` and `Commit` draw one turn's close with review, keep and
+take back on the row, and the binary draws the newest close exactly so, with
+keep and take back labelled as the last turn's. What no artboard draws is a
+transcript holding more than one close. There the binary draws the offers on
+the newest close or on the selected one, never on both and never on the rest:
+the same keys printed on every turn a session had closed did not say which
+turn they meant, and the chord that answered them acted on whichever was
+newest ([the turn's close](surfaces.md#the-turns-close)). An older close states
+what its turn did and offers nothing until the pointer or reading mode's
+cursor selects it.

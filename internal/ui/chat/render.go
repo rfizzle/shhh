@@ -311,8 +311,7 @@ func (m Model) renderEntryDetail(e entry, width int, sel rowSel, stepDetail bool
 		if e.close == nil {
 			return ""
 		}
-		c := m.closeFor(*e.close, sel)
-		return c.View(width) + "\n"
+		return m.closeRowFor(e, sel).View(width) + "\n"
 	case entryFailure:
 		return m.gateRecovery(e, m.failureRow(e), sel).View(width) + "\n"
 	case entryStreamDrop:
@@ -777,8 +776,12 @@ func (m *Model) renderHistoryRawLines() []string {
 	// still the last failure (inertkeys.go), and that row is usually in a
 	// block that froze long before the turn after it moved on. So the target
 	// keys the cache the way the width does: a different one drops it.
-	if _, t := m.latestRecovery(); t != m.cached.latest {
-		m.cached.latest = t
+	// The newest close draws its offers on the same terms, and keys the cache
+	// the same way.
+	_, t := m.latestRecovery()
+	_, c := m.latestClose()
+	if t != m.cached.latest || c != m.cached.latestClose {
+		m.cached.latest, m.cached.latestClose = t, c
 		m.cached.reset()
 	}
 	// History renders as step blocks. Every block but the last

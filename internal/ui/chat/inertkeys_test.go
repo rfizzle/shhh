@@ -387,11 +387,12 @@ func rowChordsActOnTheSelectedRow(t *testing.T) {
 					t.Fatalf("%q is a chord and cannot reach the sentence: draft is %q",
 						keys.Shown(chord), got)
 				}
-				// The one exception: the newest failure's retry and provider
-				// switch, drawn live and labelled as the last failure's.
+				// The two exceptions: the newest failure's retry and provider
+				// switch, and the newest close's commit and undo, drawn live
+				// and labelled with the row they act on.
 				if latest {
 					if after := snapshot(next); after == before {
-						t.Fatalf("%q is drawn live on the last failure and did nothing\n %s",
+						t.Fatalf("%q is drawn live on the newest row and did nothing\n %s",
 							keys.Shown(chord), before)
 					}
 				} else if after := snapshot(next); after != before {
@@ -428,8 +429,13 @@ func rowChordsActOnTheSelectedRow(t *testing.T) {
 }
 
 // labelledLatest reports that chord is one the row of kind draws live and
-// labelled with nothing selected, as the last failure's (inertkeys.go).
+// labelled with nothing selected, as the last failure's or the last turn's
+// (inertkeys.go).
 func labelledLatest(m Model, kind entryKind, chord keys.Binding) bool {
+	if keys.Is(keys.Shown(chord), keys.RowChord.Commit, keys.RowChord.Undo) {
+		idx, c := m.latestClose()
+		return c != nil && m.transcript[idx].kind == kind
+	}
 	if !keys.Is(keys.Shown(chord), keys.RowChord.Retry, keys.RowChord.Provider) {
 		return false
 	}
@@ -609,17 +615,35 @@ func TestInertKeys_EveryTakeoverHoldsTheKeyboardExclusively(t *testing.T) {
 // selected: under the pointer lit from the prompt it prints the chords,
 // because a letter there would be a letter of the sentence being typed, and
 // under reading mode's cursor it prints the letters. Either way it leads with
-// what enter does on it, which is its turn's review. Unselected it offers
-// nothing — the same keys on every turn a session has closed told the reader
-// nothing about which turn they would act on.
+// what enter does on it, which is its turn's review. Unselected, only the
+// newest close offers anything, and its keep and take back say they act on
+// the last turn; a close the session has moved past offers nothing — the same
+// keys on every turn a session has closed told the reader nothing about which
+// turn they would act on.
 func TestInertKeys_ARowDrawsTheKeyThatIsLiveWhereItStands(t *testing.T) {
 	m, _ := undoModel(t)
 	e := m.transcript[indexOfKind(t, m, entryTurnClose)]
 
-	plain := ansi.Strip(m.renderEntryKeys(e, 110, rowUnselected))
-	for _, never := range []string{"undo turn", "review turn", "alt+", "to use them"} {
+	newest := ansi.Strip(m.renderEntryKeys(e, 110, rowUnselected))
+	for _, want := range []string{
+		"[enter] " + reviewTurnWords,
+		keys.Bracket(keys.RowChord.Commit) + " " + latestCommitWords,
+		keys.Bracket(keys.RowChord.Undo) + " " + latestUndoWords,
+	} {
+		if !strings.Contains(newest, want) {
+			t.Fatalf("the newest close offers its keys unselected, want %q in:\n%s", want, newest)
+		}
+	}
+	if strings.Contains(newest, "to use them") {
+		t.Fatalf("nothing on the newest close is waiting for the keyboard:\n%s", newest)
+	}
+
+	past := m
+	past.turnCount++
+	plain := ansi.Strip(past.renderEntryKeys(e, 110, rowUnselected))
+	for _, never := range []string{"undo", "review turn", "alt+", "to use them"} {
 		if strings.Contains(plain, never) {
-			t.Fatalf("an unselected close offers nothing, found %q in:\n%s", never, plain)
+			t.Fatalf("a close the session has moved past offers nothing, found %q in:\n%s", never, plain)
 		}
 	}
 

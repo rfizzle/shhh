@@ -102,9 +102,10 @@ type RecoveryRow struct {
 	// Latest are the offers the row makes as the session's newest failure
 	// while nothing is selected: live chords whose words name the row they
 	// act on (`retry the last failure`), drawn ahead of Keys, which stay in
-	// whatever state the keyboard puts them in. They are the one exception to
-	// a row offer acting only on the selected row, and the label is what
-	// makes the exception honest
+	// whatever state the keyboard puts them in. They are one of the two
+	// exceptions to a row offer acting only on the selected row — the newest
+	// turn close is the other — and the label is what makes the exception
+	// honest
 	// (docs/interface/surfaces.md#the-recovery-row).
 	Latest []KeyOffer
 	// Note trails the keys in dim, and is where the row says what survived —

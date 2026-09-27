@@ -271,11 +271,23 @@ owns it; there, enter sends the sentence and the pointer's own open is the
 key. A click reaches the row from a half-typed line without handing the
 keyboard over at all.
 
-Keep and take back are drawn only on the selected close. The same keys on
-every closed turn were keys that did not say which turn they meant, so an
-unselected close states what the turn did and offers nothing, and selecting
-it — the pointer from the prompt, or reading mode's cursor — is what draws its
-offers. The selected row draws each in the spelling that works from where the
+Keep and take back are drawn on the newest close and on a selected one, and
+on no other. The same keys on every closed turn were keys that did not say
+which turn they meant, so an older close states what the turn did and offers
+nothing, and selecting it — the pointer from the prompt, or reading mode's
+cursor — is what draws its offers. The newest close is the answer to that
+objection rather than an exception to it: there is only one newest, and a
+turn that has just ended is the moment a reader decides what its change
+becomes. So while nothing is selected, the close the last turn ended on
+draws review, keep and take back live, as the chords that reach them from the
+prompt, and keep and take back say in their words which turn they act on:
+`commit the last turn`, `undo the last turn`. Selecting any other close draws
+that row's offers and quiets the newest, so never more than one close is
+offering; a close the session has moved past — a later turn, or a commit
+that spent the offer — offers nothing until it is selected. Nothing about a
+turn ending moves the pointer: it moves on the reader's key or click and on
+nothing else, and the newest close's offers are how the row is reached
+without it. The selected row draws each in the spelling that works from where the
 reader is standing: under the pointer the draft can still take text and a
 letter offered there is a letter of the sentence being typed, so it prints the
 chord, pressed from the prompt with the half-written sentence still in the
@@ -283,10 +295,13 @@ box; under reading mode's cursor the letter is live and it prints that
 instead. It is one offer either way, and the row never draws both
 ([why](principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard)).
 
-The chord acts on the selected row and on no other: pressed with nothing
-selected it does nothing, and a selected row that does not make the offer
-does not hand it to one that does. The one exception is a broken turn's
-retry, and it says so in its words ([the recovery row](#the-recovery-row)). And the first row in a session to offer an
+The chord acts on the selected row and on no other, and a selected row that
+does not make the offer does not hand it to one that does. Pressed with
+nothing selected it acts on the row that is drawing it live and says so in
+its words: the newest close's keep and take back, or a broken turn's retry
+([the recovery row](#the-recovery-row)). Where both rows are live, the newer
+of the two in the transcript draws its offers and the other stays inert, so
+a chord with nothing selected never has two rows to choose between. And the first row in a session to offer an
 alt chord says under it, once it is drawing one, that alt needs the Option
 setting on a stock macOS terminal, with the doctor row that reads it — once,
 because it is a fact about the terminal and not about that row. A Mac ships
@@ -405,9 +420,11 @@ dropped stream the last turn ended on draws its retry and its provider switch
 live, as the chords that reach them from the prompt, and labels them with the
 row they act on: `retry the last failure`, `switch provider for the last
 failure`. Pressed with the sentence still in the box, the chord acts on that
-row and on no other. It is the one exception to a row offer acting only on the
-selected row, because retrying a turn that just broke is the commonest
-recovery there is and selecting the row first made it two keys. The words are
+row and on no other. It is one of two rows whose offers act with nothing
+selected — [the newest close](#the-turns-close) is the other — because
+retrying a turn that just broke is the commonest recovery there is and
+selecting the row first made it two keys; where a close is newer than the
+failure, the close is the one that offers. The words are
 what keep it from being the key the rule replaced — a bare `retry` that picked
 the newest row named no row at all. Its other offers stay grey until the row
 is selected, a failure the session has moved past — a retry that went
@@ -527,6 +544,13 @@ because at the prompt a letter is text; that is what the handover is still
 for, and ctrl+o opens the mode on the pointed row. Line scrolling from the
 prompt went with this: pgup/pgdn and the wheel are the scroll, and ctrl on
 the arrows was never a chord shhh could keep ([reserved keys](reserved-keys.md)).
+
+Selected looks like one thing wherever the pointer reaches. The row under it
+— reading mode's cursor, the pointer from the prompt, a list's cursor in a
+picker or the palette, the start screen's offers — takes the same focus
+ground across its width with its words in bright, and the pointer mark stands
+outside that ground in the column before it. A surface that drew its own
+kind of selected would be asking the reader to learn a second one.
 
 It is also where rows that offer keys without expanding are answered — a
 turn's changeset, a provider failure. Both are passive renderers; holding

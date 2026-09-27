@@ -3036,14 +3036,17 @@ func TestGolden_ResumedChanges(t *testing.T) {
 
 // TestGolden_TurnCloseSelection captures two turns' closes stating the same
 // change, in the three places the selection can stand
-// (docs/interface/surfaces.md#the-turns-close): nowhere, where neither offers
-// a key; the pointer lit from the prompt on the older one, which then leads
-// with enter's review and draws its chords live; and reading mode's cursor on
-// the same row, which draws its letters.
+// (docs/interface/surfaces.md#the-turns-close): nowhere, where the newest
+// close offers review, keep and take back as live chords labelled as the last
+// turn's and the older offers nothing; the pointer lit from the prompt on the
+// older one, which then leads with enter's review and draws its chords live
+// while the newest goes quiet; and reading mode's cursor on the same row,
+// which draws its letters.
 func TestGolden_TurnCloseSelection(t *testing.T) {
 	captureGolden(t, "turn-close-selection", "two turns' closes and where the selection stands", goldenWidths, func(width int) []golden.Panel {
 		closes := func(sel rowSel) string {
 			m := frameModel(t, width, 40)
+			m.turnCount = 2
 			for turn := int64(1); turn <= 2; turn++ {
 				m.appendEntry(entry{kind: entryAssistant, turn: turn, text: fmt.Sprintf("Turn %d raised the cap.", turn)})
 				m.appendEntry(entry{kind: entryTurnClose, turn: turn, close: &components.TurnClose{
@@ -3066,8 +3069,8 @@ func TestGolden_TurnCloseSelection(t *testing.T) {
 			return m.renderHistory()
 		}
 		return []golden.Panel{
-			{Label: "nothing selected · neither close offers a key", View: closes(rowUnselected)},
-			{Label: "the pointer on turn 1 · enter reviews it, its chords are live", View: closes(rowPointed)},
+			{Label: "nothing selected · the newest close offers its keys as the last turn's, the older none", View: closes(rowUnselected)},
+			{Label: "the pointer on turn 1 · enter reviews it, its chords are live, the newest is quiet", View: closes(rowPointed)},
 			{Label: "reading mode's cursor on turn 1 · its letters are live", View: closes(rowUnderCursor)},
 		}
 	})

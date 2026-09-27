@@ -18,6 +18,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // programRepo is a repository with loop.go and README.md committed in it,
@@ -82,8 +83,8 @@ func TestProgram_TheCloseOffersTheCommitAndTheCardCommits(t *testing.T) {
 
 	send(tm, "cap rounds at the limit instead of erroring")
 	allowEdit(t, tm, "const limit = 50")
-	// The close offers nothing until it is selected; the pointer's first
-	// press lands on it, the newest row.
+	// The pointer's first press lands on the close, the newest row, which
+	// then draws its chords as the selected row's.
 	waitForText(t, tm, "1 file changed")
 	programPress(t, tm, "shift+up")
 	waitForText(t, tm, "[alt+g] commit")
@@ -97,6 +98,46 @@ func TestProgram_TheCloseOffersTheCommitAndTheCardCommits(t *testing.T) {
 	waitForText(t, tm, "committed 1 file as")
 
 	frameHas(t, finalFrame(t, tm), "committed 1 file as")
+	out, err := exec.Command("git", "-C", root, "status", "--porcelain").CombinedOutput()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := strings.TrimSpace(string(out)); got != "M README.md" {
+		t.Fatalf("the commit should carry the turn's file and leave the reader's, status is %q", got)
+	}
+}
+
+// The newest close offers its commit with nothing selected, labelled as the
+// last turn's, so the chord pressed from a half-typed line opens the card for
+// that turn and the card commits it — without the pointer having been lit,
+// and with the sentence still in the draft behind it
+// (docs/interface/surfaces.md#the-turns-close).
+func TestProgram_TheNewestCloseIsCommittedFromAHalfTypedLine(t *testing.T) {
+	root := programRepo(t, map[string]string{"README.md": "# project\n\nnotes of my own\n"})
+	tm := runProgram(t, changesSession(root,
+		editTurn(root, "loop.go", "const limit = 25", "const limit = 50"),
+		programTurn{text: "The rounds are capped at the limit now."},
+	))
+
+	send(tm, "cap rounds at the limit instead of erroring")
+	allowEdit(t, tm, "const limit = 50")
+	offer := keys.Bracket(keys.RowChord.Commit) + " commit the last turn"
+	waitForText(t, tm, offer)
+
+	tm.Type(draftSentence)
+	waitForText(t, tm, draftSentence)
+	tm.Send(chordMsg(t, keys.RowChord.Commit))
+	waitForText(t, tm, "Commit this turn")
+	programPress(t, tm, "enter")
+	waitForText(t, tm, "committed 1 file as")
+
+	frame := finalFrame(t, tm)
+	if !strings.Contains(frame, draftSentence) {
+		t.Errorf("the commit took the half-typed line with it:\n%s", frame)
+	}
+	if strings.Contains(frame, offer) {
+		t.Errorf("a committed close still offers its commit:\n%s", frame)
+	}
 	out, err := exec.Command("git", "-C", root, "status", "--porcelain").CombinedOutput()
 	if err != nil {
 		t.Fatal(err)

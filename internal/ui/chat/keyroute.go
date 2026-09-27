@@ -30,11 +30,16 @@ import (
 // pointer lit from the prompt — reading mode's cursor seen from the prompt —
 // or that cursor itself.
 //
-// With nothing selected the chord acts on nothing, and a selected row that
-// does not make the offer does not hand the chord on to one that does. It
+// A selected row that does not make the offer does not hand the chord on to
+// one that does. With nothing selected the chord acts on nothing but the two
+// rows that draw their offers live and say which row they mean: the newest
+// failure's retry and provider switch, and the newest close's commit and
+// undo. The second reopens, on purpose, what was removed here: the chord
 // used to walk back to the newest row offering the key, which drawn on every
 // turn a session had closed was a chord that named no turn and then acted on
-// whichever was newest (docs/interface/surfaces.md#the-turns-close).
+// whichever was newest. It now reaches the newest close only, only while
+// that close is drawing the chord labelled as the last turn's, and never an
+// older one (docs/interface/surfaces.md#the-turns-close).
 func (m Model) rowChordKey(pressed string) (tea.Model, tea.Cmd, bool) {
 	letter, ok := keys.RowLetter(pressed)
 	// Attached, the keyboard is pointed at a child and the rows in the pane
@@ -43,9 +48,43 @@ func (m Model) rowChordKey(pressed string) (tea.Model, tea.Cmd, bool) {
 		return m, nil, false
 	}
 	if !m.pointerLit() && m.state != stateFocus {
+		if keys.Is(letter, keys.Row.Commit, keys.Row.Undo) {
+			return m.latestCloseKey(letter)
+		}
 		return m.latestRecoveryKey(letter)
 	}
 	return m.rowKey(letter)
+}
+
+// latestCloseKey is the commit or undo the newest close draws live and
+// labelled as the last turn's with nothing selected (inertkeys.go). It
+// reaches that close and no other, through the same acts its selected row
+// answers with, and with no such close it acts on nothing. The pointer is
+// not moved: the row is reached by index, and the cursor the reader left is
+// where it was.
+func (m Model) latestCloseKey(letter string) (tea.Model, tea.Cmd, bool) {
+	idx, c := m.latestClose()
+	if c == nil {
+		return m, nil, false
+	}
+	row := m
+	row.focusIdx = idx
+	var next tea.Model
+	var cmd tea.Cmd
+	claimed := true
+	if keys.Is(letter, keys.Row.Undo) {
+		next, cmd = row.undoTurn(m.transcript[idx].turn, nil)
+	} else {
+		next, cmd, claimed = row.commitKey(letter)
+	}
+	if !claimed {
+		return m, nil, false
+	}
+	if nm, ok := next.(Model); ok {
+		nm.focusIdx = m.focusIdx
+		next = nm
+	}
+	return next, cmd, true
 }
 
 // latestRecoveryKey is the one chord that acts with nothing selected: the
