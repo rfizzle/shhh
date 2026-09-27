@@ -239,6 +239,13 @@ type State struct {
 	// driver fills them in before the run is filed, because what a session
 	// fetched is the session's record and not this package's.
 	Sources []Source `json:"sources,omitempty"`
+	// Consulted is whether any stage's ledger held a row at all — a search,
+	// a fetch that answered with an error, a page a server handed back —
+	// where Sources holds only the pages read. It is what tells a run that
+	// looked and read nothing, whose write-up says so, from one that never
+	// looked, whose write-up gets no block, the distinction a session reads
+	// off its ledger directly.
+	Consulted bool `json:"consulted,omitempty"`
 	// Paths are the repository paths the run has changed so far, kept in
 	// the checkpoint because a session's own change records die with it
 	// and a run continued in a new session must still know what it may

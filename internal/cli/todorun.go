@@ -1486,6 +1486,9 @@ func ledgerRows(rows []jsonSource) []web.Source {
 // the reason web.Pages leaves it out.
 // See docs/capabilities/todo.md#a-write-up-says-what-it-read.
 func readSources(st *run.State, rows []web.Source) {
+	if len(rows) > 0 {
+		st.Consulted = true
+	}
 	listed := map[string]bool{}
 	for _, s := range st.Sources {
 		listed[web.CanonicalURL(s.URL)] = true
@@ -1502,11 +1505,14 @@ func readSources(st *run.State, rows []web.Source) {
 
 // citeSources adds, under what the stages read, each address the report
 // cites that none of them did — the second list SourcesSection draws. It is
-// asked only of a run that read something, as a session asks it only of a
-// ledger with rows in it: a run with no web at all has no reading to hold
-// its citations to, and a block saying so on every item would be noise.
+// asked only of a run whose stages' ledgers held a row, as a session asks it
+// only of a ledger with rows in it: a run that searched and read nothing says
+// so over the addresses it cites, the way the session's block does, while a
+// run with no web at all has no reading to hold its citations to, and a
+// block saying so on every item would be noise.
+// See docs/capabilities/todo.md#a-write-up-says-what-it-read.
 func citeSources(st *run.State) {
-	if len(st.Sources) == 0 {
+	if !st.Consulted && len(st.Sources) == 0 {
 		return
 	}
 	listed := map[string]bool{}

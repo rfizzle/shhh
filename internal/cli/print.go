@@ -326,8 +326,10 @@ func newSourceFeed(l *web.Ledger) *sourceFeed {
 }
 
 // fresh is the rows the stream has not been told about yet, oldest first.
-// An unattended ledger is never bound to a slot, so its rows only ever
-// append and the count already written is where the next one starts.
+// An unattended ledger is bound to its slot only once the run has stated
+// everything it read (headlessChat.keepSources), so while a feed is asked its
+// rows only ever append and the count already written is where the next one
+// starts.
 func (f *sourceFeed) fresh() []web.Source {
 	if f == nil {
 		return nil
@@ -764,6 +766,22 @@ func (c *headlessChat) handles(rec *observeRecorder) headlessHandles {
 // it (pubs.opengroup.org/onlinepubs/9699919799/utilities/V3_chap02.html).
 func shellWord(s string) string {
 	return "'" + strings.ReplaceAll(s, "'", `'\''`) + "'"
+}
+
+// keepSources files the run's sources ledger under the slot the save
+// settled on, the way a session's ledger lives under its slot, so a
+// conversation resumed from it opens with what this run read on /sources.
+// It is asked after the save because the slot is not settled until then — a
+// name another run had taken is written to with a suffix — and it says so on
+// stderr when it cannot, for the reason save does.
+// See docs/capabilities/chat.md#what-was-read.
+func (c *headlessChat) keepSources(l *web.Ledger) {
+	if c == nil || c.db == nil || c.slot == "" || l == nil {
+		return
+	}
+	if err := l.Bind(c.slot); err != nil {
+		fmt.Fprintf(os.Stderr, "» what this run read could not be kept with its conversation: %v\n", err)
+	}
 }
 
 // save writes the conversation to this run's slot, however the run ended: a
@@ -1517,6 +1535,11 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 		obs.sourcesRead()
 		events.closed(obs.pos(), outcome, code, final, answer, usage, left, out)
 	}
+	// What the run read goes with its conversation, so the session that
+	// resumes the slot has it on /sources. It is bound here and not beside the
+	// save: binding loads what the slot already held in front of this run's
+	// rows, and both shapes above state this run's reading and nobody else's.
+	saved.keepSources(session.sources)
 	// Nothing to report and nothing to report it as: every code above zero
 	// has an error behind it, which is what carries it out to the process.
 	if out == nil {

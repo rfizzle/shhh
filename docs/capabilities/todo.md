@@ -1113,10 +1113,12 @@ between two stages the way the rest of the checkpoint does.
 What counts as read is the same rule on both surfaces: a fetch that answered
 with a success. A search, a fetch that came back with an error page, and a
 page a server's tool handed back are not pages a citation can be checked
-against, so none of them is listed as read. A run that read nothing is given
-no block at all, as a session whose ledger is empty is given none — a
-*nothing was read* on every item of a backlog that never touches the web
-would be noise rather than a finding.
+against, so none of them is listed as read. A run whose stages searched and
+read nothing says *nothing was read* over the addresses it cites, as a session
+whose ledger holds only searches does. A run that never looked is given no
+block at all, as a session whose ledger is empty is given none — a *nothing
+was read* on every item of a backlog that never touches the web would be
+noise rather than a finding.
 
 Nothing else about a run moves. The stage prompts do not mention it and the
 model is told nothing: the list is a reading of what the tools recorded.

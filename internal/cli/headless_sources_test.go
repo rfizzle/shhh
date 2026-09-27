@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -14,6 +15,7 @@ import (
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/testhttp"
 	"github.com/rfizzle/shhh/internal/todo"
 	"github.com/rfizzle/shhh/internal/todo/run"
@@ -125,6 +127,52 @@ func TestHeadlessRun_TheTranscriptListsWhatItRead(t *testing.T) {
 	}
 	if strings.Contains(none.String(), `"sources"`) {
 		t.Fatalf("a run that read nothing should leave the field out:\n%s", none.String())
+	}
+}
+
+// A run's ledger goes with its conversation: once the save has settled the
+// slot, the rows are filed under it in the store, so a session that resumes
+// the slot has them on /sources (docs/capabilities/chat.md#what-was-read).
+func TestHeadlessRun_TheLedgerFollowsTheSlot(t *testing.T) {
+	db, err := storage.OpenPath(filepath.Join(t.TempDir(), "test.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = db.Close() })
+	webTools, _, url := ledgeredWeb(t)
+	ledger := web.NewLedger(db)
+	webTools.UseLedger(ledger)
+	a := fetchTurn(t, url)
+	h := &agent.Headless{
+		Agent: a,
+		Gate:  unattendedGate(webTools, nil, nil, nil),
+		Resolve: headlessApprover(context.Background(), printOpts{yes: true}, nil, nil, fakeRun(&[]string{}), "", nil, nil,
+			webTools, nil, nil, nil, nil, nil, unattended{}),
+	}
+	if _, err := h.Run("read the style guide"); err != nil {
+		t.Fatalf("run: %v", err)
+	}
+	slot, err := db.ClaimChatSlot("unattended")
+	if err != nil {
+		t.Fatal(err)
+	}
+	saved := &headlessChat{db: db, slot: slot, kind: "code"}
+	saved.save(a.Messages())
+	saved.keepSources(ledger)
+
+	rows, err := db.LoadSources(saved.slot)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(rows) != 1 || rows[0].Kind != web.KindFetch || rows[0].FinalURL != url || rows[0].Title != "Style guide" {
+		t.Fatalf("the slot should hold the page the run read, got %+v", rows)
+	}
+	resumed := web.NewLedger(db)
+	if err := resumed.Bind(saved.slot); err != nil {
+		t.Fatal(err)
+	}
+	if got := resumed.List(); len(got) != 1 || got[0].FinalURL != url {
+		t.Fatalf("a session resuming the slot should list the run's reading, got %+v", got)
 	}
 }
 
@@ -273,5 +321,24 @@ func TestCiteSources_ListsWhatTheReportCitesAndNobodyRead(t *testing.T) {
 	citeSources(unread)
 	if len(unread.Sources) != 0 {
 		t.Fatalf("a run that read nothing should be handed no sources, got %+v", unread.Sources)
+	}
+
+	// A run whose stages searched and read nothing says so over what it
+	// cites, as a session whose ledger holds only searches does; with
+	// nothing cited, both give no block.
+	searched := &run.State{Report: "See https://example.com/never-opened."}
+	readSources(searched, []web.Source{{Kind: web.KindSearch, Query: "tabs or spaces", Results: 3}})
+	citeSources(searched)
+	block := run.SourcesSection(searched.Sources)
+	for _, line := range []string{"Nothing was read", "Cited, not read:\n\n- https://example.com/never-opened"} {
+		if !strings.Contains(block, line) {
+			t.Fatalf("a run that only searched should carry %q:\n%s", line, block)
+		}
+	}
+	quiet := &run.State{Report: "Nothing cited."}
+	readSources(quiet, []web.Source{{Kind: web.KindSearch, Query: "tabs or spaces"}})
+	citeSources(quiet)
+	if block := run.SourcesSection(quiet.Sources); block != "" {
+		t.Fatalf("a run that searched and cites nothing should get no block, as a session does:\n%s", block)
 	}
 }
