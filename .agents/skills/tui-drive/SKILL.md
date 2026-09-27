@@ -280,6 +280,20 @@ Keep it to single quotes — the line is re-quoted for `--record` — and put a
 `clear` between runs of a surface that draws inline, because the one-shot
 clears nothing on the way out and a capture would otherwise hold two screens.
 
+`launch` is also where a scene changes a setting. `drive.sh` writes the
+run's own `$XDG_CONFIG_HOME/shhh/config.toml` before the pane starts, and it
+holds `[behavior]` with `provider_retries = 0`, so that no scene sits out a
+retry wait it did not ask for. A scene that needs another value rewrites
+that file whole from its `launch`, ahead of the binary — appending a second
+`[behavior]` table is invalid TOML, and the file no longer loads.
+`retry-wait` is the example: it writes `printf '[behavior]\nprovider_retries
+= 3\n' > $XDG_CONFIG_HOME/shhh/config.toml && $SHHH_BIN code` to give the
+built-in bound back. A table the harness does not write can be appended with
+`>>` instead, which is what `chat-reads-web` does with
+`[web]\nallow_private = true` so its fetch can reach the loopback fixture;
+the moment the harness writes that table too, the append has to become a
+rewrite.
+
 Pick the width. `COLS` is the terminal, and the four the goldens use are 60,
 80, 110 and 130 — the breakpoints in `docs/interface/principles.md#one-grid`.
 Capture at the width the item names, or at the narrowest the surface must
