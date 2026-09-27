@@ -11,8 +11,8 @@ Inventory of 2026-09-05, read from the vendors' own lists (sources at the
 end). The tables are written by `make docs` from the table in
 `internal/ui/keys/reserved.go`, which is the declaration the register's test
 and the keymap file's refusal both read; this page is it printed, and
-`make docs-check` fails when the two drift. One row of the prose is marked
-*verify*: a default known from use, not from a page.
+`make docs-check` fails when the two drift. Two places in the prose are
+marked *verify*: a default known from use, not from a page.
 
 ## The draft spends chords only
 
@@ -53,8 +53,10 @@ A turn's review is not among them. It is the changed-files row's own open —
 clicked, or selected and opened with enter — because that is the gesture that
 names the turn, and it gave back `alt+w`.
 
-On alt, the letter each takes is the row's own where alt still had it. Five
-letters were already spent, and this is where each replacement is recorded:
+The table below is the Linux and Windows keyboard. On alt, the letter each
+takes is the row's own where alt still had it. Five letters were already
+spent, and this is where each replacement is recorded; the Mac's spelling of
+each offer is the generated table [below](#a-mac-ships-without-alt):
 
 | Offer | On the row | The chord | Why not the row's own letter |
 |---|---|---|---|
@@ -282,13 +284,16 @@ the tables above do not name — `alt+pgup`, `alt+pgdown`, `alt+home`,
 `ctrl+alt+pgup`, `ctrl+alt+pgdown`. Every ctrl letter the terminal delivers
 is spent or the line editor's (`ctrl+a`, `ctrl+e`, `ctrl+k`, `ctrl+u`,
 `ctrl+w` stay with the textarea), which is why the agent manager went to
-alt. `ctrl+]` left that set for the key list, which could not: it is the
+alt on Linux and Windows. `ctrl+]` left that set for the key list, which could not: it is the
 door a lost reader opens, and a door behind the Option setting is a door
 that is shut on the desktop where the setting is off. A Mac spends
 `f2` … `f9` and `f12` from the same set, and shift on them.
 
-What is left on alt on Linux and Windows, after the eleven a transcript row
-spends and the family the agent manager took: `alt+h`, `alt+i`, `alt+j`, `alt+q`, `alt+s`, `alt+y`.
+What is left on alt on Linux and Windows — the Linux table; a Mac ships no
+alt chord of its own — after the ten a
+transcript row spends, the family the agent manager took, the staged paste
+and the reasoning level's alias: `alt+h`, `alt+i`, `alt+j`, `alt+q`, `alt+s`,
+`alt+w`, `alt+y`.
 The six the textarea holds and `alt+0` … `alt+9`, which GNOME Terminal
 switches tabs with, are not among them.
 

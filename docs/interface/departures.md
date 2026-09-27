@@ -332,6 +332,37 @@ order put it.
 When there is an artboard, these five decisions are what it has to reconcile
 with, and where the two differ the artboard wins.
 
+## The safety reading's layout was decided in the binary
+
+*A gap.* No artboard draws `/safety`; it is the family's chrome over sections
+that wrap rather than clip, read through a pager whose two ends name the
+sections they fold ([the safety reading](surfaces.md#the-safety-reading)).
+Most of it needed no decision — the header and its rule, the key row, the
+`[?]` behind it and the way back to the prompt are the supporting screens'
+own, drawn already. Three things it could not take from anywhere, and they
+were decided here:
+
+**A section wraps rather than clips.** Its body is lists of paths, hosts and
+names, and a path cut at the pane's edge is a different path. So a line that
+does not fit continues on the next row, and the screen is as tall as what it
+has to say.
+
+**The pane scrolls, and its ends say what they fold.** The diagnostic and
+the metrics screen drop whole blocks until the rest fits, which would
+misstate a boundary — a section folded away reads as a section that is not
+there. This screen keeps every section and is read through a pager instead,
+and the marker at each end names the sections whose headings it hides,
+counting rows only where it hides none, so the part not showing is an answer
+before the reader moves to it.
+
+**A missing capability is a section, drawn dim.** Containment that is not
+available, a checkout whose trust was withheld and no servers are each a
+section that says so rather than a section left out, because a boundary
+drawn without them would look wider than it is.
+
+When there is an artboard, these three decisions are what it has to
+reconcile with, and where the two differ the artboard wins.
+
 ## The explanation's screen wears the full view's title, not a rail label
 
 *A disagreement.* The artboard draws the command explanation with a rail
