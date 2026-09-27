@@ -1309,7 +1309,7 @@ func LoadFrom(paths ...string) (Config, error) {
 			}
 			return Config{}, err
 		}
-		if err := unknownKeys(p, meta.Undecoded()); err != nil {
+		if err := unknownKeys(p, UpdateUser, meta.Undecoded()); err != nil {
 			return Config{}, err
 		}
 		return cfg, nil

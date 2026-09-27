@@ -2665,6 +2665,11 @@ func TestGolden_ConfigScreenScope(t *testing.T) {
 		return []golden.Panel{
 			{Label: "the checkout's file · [g] offers yours", View: screen(false).View(width)},
 			{Label: "your file · [g] offers the checkout's", View: screen(true).View(width)},
+			{Label: "your file behind the table · one word beside the path, outliving it", View: func() string {
+				c := screen(true)
+				c.Behind = true
+				return c.View(width)
+			}()},
 			{Label: "a key the checkout may not decide · refused naming [g]", View: func() string {
 				c := screen(false)
 				c.Notice = "config key provider.api_key is not read from a checkout's file — " +

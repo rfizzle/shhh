@@ -351,7 +351,79 @@ func probeConfig(_ context.Context, _ config.Config) doctorFinding {
 			read = config.ProjectPath(workingDir())
 		}
 	}
-	return doctorConfig(read, paths, cfg, proj, err)
+	f := doctorConfig(read, paths, cfg, proj, err)
+	if read == "" {
+		return f
+	}
+	// The file the row is about is the one read above: the person's own,
+	// or the checkout's where that is the one that stopped the load.
+	plan, perr := configInit(read != config.ProjectPath(workingDir()), workingDir())
+	if perr != nil {
+		return f
+	}
+	behind, berr := behindOf(plan)
+	if berr != nil {
+		return f
+	}
+	return withBehind(f, behind, plan)
+}
+
+// withBehind warns on the config row when the file is behind the table —
+// keys added since it was written, a key that has moved, a wording with no
+// file — and offers to bring it up to date the way the migrate row offers
+// its move: asked first, and made by the same code `config init --update`
+// runs. The offer is the row's own rather than a migration's, because what
+// it updates is the file this row names, and the migrate row is about the
+// machine's layout
+// (docs/capabilities/configuration.md#an-older-file-is-brought-up-to-date).
+//
+// A file whose load was refused keeps its failure; only an offer is added,
+// and only where every key it was refused for is one that moved. A file that
+// is already warned for something else keeps that warning's outcome and
+// consequence, since a credential in the file matters more than a row it
+// lacks.
+func withBehind(f doctorFinding, b configBehind, plan initPlan) doctorFinding {
+	if !b.due() {
+		return f
+	}
+	command := config.UpdateUser
+	if plan.project {
+		command = config.UpdateProject
+	}
+	// Offered only where the update would go through: a file holding a key
+	// that is neither a setting nor a rename is refused by the update too,
+	// and an offer that cannot be honoured is worse than none.
+	if _, _, err := config.Updated(plan.settings, plan.project); err == nil {
+		f.Action = "update the file"
+		f.ActionPrompt = "Update " + shortPath(plan.settings) + " now? Every value it sets is kept."
+		f.Apply = func() ([]string, error) {
+			done, err := plan.update()
+			return done.lines(plan), err
+		}
+	}
+	if f.State == components.DoctorFailed {
+		return f
+	}
+	// The counts lead the detail: they are what the row is warning about,
+	// and the detail clips from its end.
+	f.Detail = joinDetail(b.phrase(), f.Detail)
+	if f.State != components.DoctorWarned {
+		f.State, f.Outcome = components.DoctorWarned, "behind"
+		f.Consequence = behindConsequence(b)
+		f.FixLabel = "bring it up to date"
+	}
+	f.Fix = append(f.Fix, command+"   keeps every value the file sets")
+	return f
+}
+
+// behindConsequence is what leaving the file behind costs: a key that
+// arrived since is not in the file to be found, and a key that moved stops
+// every command once a session reads the file.
+func behindConsequence(b configBehind) string {
+	if len(b.Renamed) > 0 {
+		return "a moved key stops every command until it is written under its new name"
+	}
+	return "what arrived since the file was written is not in it to find"
 }
 
 // doctorConfig says which file was read and what it set. No file at all is
@@ -379,9 +451,12 @@ func doctorConfig(read string, paths []string, cfg config.Config, proj config.Pr
 			f.Fix = f.Fix[:0]
 			for i, k := range unknown.Keys {
 				names[i] = fmt.Sprintf("%q", k.Key)
-				if k.Nearest != "" {
+				switch {
+				case k.Renamed != "":
+					f.Fix = append(f.Fix, k.Key+" moved to "+k.Renamed+": "+unknown.Update+" moves it")
+				case k.Nearest != "":
 					f.Fix = append(f.Fix, "rename "+k.Key+" to "+k.Nearest)
-				} else {
+				default:
 					f.Fix = append(f.Fix, "remove "+k.Key+": no setting reads it")
 				}
 			}

@@ -153,7 +153,7 @@ func NewRootCmd() *cobra.Command {
 			// would answer differently from the screen that says where a
 			// value came from (config.go).
 			cfg, proj, err := loadLayeredConfig(workingDir())
-			if err != nil && cmd.Annotations[ownsConfigError] == "" {
+			if err != nil && cmd.Annotations[ownsConfigError] == "" && !movesRenamedKeys(cmd, err) {
 				return err
 			}
 

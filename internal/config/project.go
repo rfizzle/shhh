@@ -202,7 +202,7 @@ func LayerProject(cfg Config, path string) (Config, Project, error) {
 		}
 		return cfg, Project{}, err
 	}
-	if err := unknownKeys(path, meta.Undecoded()); err != nil {
+	if err := unknownKeys(path, UpdateProject, meta.Undecoded()); err != nil {
 		return cfg, Project{}, err
 	}
 	if err := refusedKeys(path, meta); err != nil {

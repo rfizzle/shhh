@@ -1,4 +1,4 @@
-  shhh doctor — 6 checks
+  shhh doctor — 7 checks
 
   ✓ binary    shhh 0.9.4 · linux/amd64  [ok]
   ⚠ keymap    /home/dev/.config/shhh/keybindings.toml  [refused]
@@ -11,6 +11,9 @@
         shhh config set --global otel.endpoint http://localhost:4318
         the scheme decides whether the record crosses the network in the clear,
         so it is never guessed
+  ⚠ config    ~/.config/shhh/config.toml · behind by 4 keys · 1 renam…  [behind]
+      a moved key stops every command until it is written under its new name
+        shhh config init --global --update   keeps every value the file sets
   ✗ sandbox   bwrap not found  [UNCONTAINED]
       commands run with your own permissions, in your own filesystem
         sudo apt install bubblewrap
@@ -24,4 +27,4 @@
         summary — config prompts.summary
         todo_commit — ~/.config/shhh/prompts/todo_commit.md
 
-  1 failed · 2 warnings · 2 passed · 1 not checked
+  1 failed · 3 warnings · 2 passed · 1 not checked

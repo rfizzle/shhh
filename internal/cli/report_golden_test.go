@@ -112,6 +112,7 @@ func TestReportGoldens(t *testing.T) {
 		{"config.get", goldenConfigGet().Render(80)},
 		{"config.init", goldenConfigInit().Render(80)},
 		{"config.init.project", goldenConfigInitProject().Render(80)},
+		{"config.init.update", goldenConfigUpdate().Render(80)},
 		{"config.scaffold", goldenScaffoldOpening()},
 		{"keys", goldenKeys().Render(80)},
 	} {
@@ -156,6 +157,19 @@ func goldenChecks() []components.DoctorCheck {
 		// key about this machine, and the flag is what keeps it out of a
 		// checkout's file when the line is pasted in one.
 		doctorCheck("otel", doctorOtel("localhost:4318"), 0),
+		// The settings file behind the table, built from the reading itself:
+		// the three counts are what the row is opened for.
+		doctorCheck("config", withBehind(
+			doctorConfig("~/.config/shhh/config.toml", nil, config.Config{}, config.Project{}, nil),
+			configBehind{
+				Behind: config.Behind{
+					New:     []string{"a.b", "a.c", "a.d", "a.e"},
+					Renamed: config.Renames()[:1],
+					Listed:  true,
+				},
+				wordings: []string{"steer", "summary"}, wordingsListed: true,
+			},
+			initPlan{settings: "/nonexistent/shhh/config.toml"}), 0),
 		{Name: "sandbox", Subject: "bwrap not found", Outcome: "UNCONTAINED",
 			State:       components.DoctorFailed,
 			Consequence: "commands run with your own permissions, in your own filesystem",
@@ -487,6 +501,20 @@ func goldenConfigInitProject() report.Report {
 		prompts:  "/home/dev/src/app/.shhh/prompts",
 		files:    make([]initFile, len(wordingKeys())),
 	}.wrote()
+}
+
+// goldenConfigUpdate is what `config init --update` says after bringing an
+// older file up to date: what it added to the settings, and the wordings it
+// wrote files for.
+func goldenConfigUpdate() report.Report {
+	return initUpdate{
+		settings: "updated",
+		behind:   config.Behind{New: []string{"a.b", "a.c", "a.d", "a.e"}, Renamed: config.Renames()[:1], Listed: true},
+		wordings: []string{"steer", "summary"},
+	}.report(initPlan{
+		settings: "/home/dev/.config/shhh/config.toml",
+		prompts:  "/home/dev/.config/shhh/prompts",
+	})
 }
 
 // goldenScaffoldOpening is the head of the file that command writes: what it

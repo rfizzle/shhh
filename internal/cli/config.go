@@ -366,6 +366,7 @@ const defaultConfigWidth = 110
 func newConfigModel(cfg config.Config, proj config.Project) *configModel {
 	m := &configModel{base: cfg, cfg: cfg, proj: proj, staged: map[string]string{}, path: config.WritePath()}
 	m.screen.Path = shortPath(m.path)
+	m.screen.Behind = pairBehind(true, "")
 	m.refresh()
 	return m
 }
@@ -399,7 +400,21 @@ func (m *configModel) writeTo(checkout bool) {
 		m.path = config.WritePath()
 		m.screen.Path = shortPath(m.path)
 	}
+	m.screen.Behind = pairBehind(!checkout, m.dir)
 	m.refresh()
+}
+
+// pairBehind is whether the pair a write from dir reaches is behind the
+// table, read the way the doctor's config row reads it. Anything that stops
+// the reading is no answer rather than a warning: the screen is not where a
+// file that will not parse is reported.
+func pairBehind(global bool, dir string) bool {
+	plan, err := configInit(global, dir)
+	if err != nil {
+		return false
+	}
+	b, err := behindOf(plan)
+	return err == nil && b.due()
 }
 
 // switchScope is the screen's scope key. Moving the write to the checkout's

@@ -19,28 +19,50 @@ import (
 type UnknownKeyError struct {
 	Path string
 	Keys []UnknownKey
+	// Update is the command that moves a renamed key in this file — the
+	// checkout's pair and the person's own are updated by different
+	// spellings of it, and a refusal naming the wrong one would update the
+	// other file.
+	Update string
 }
 
 // UnknownKey is one refused key and, when a known key is within an edit or
-// two of it, the one it was probably meant to be.
+// two of it, the one it was probably meant to be. Renamed is the key it moved
+// to, where it is a key that moved rather than one that never was: the
+// person wrote nothing wrong, and "did you mean" would say they had.
 type UnknownKey struct {
 	Key     string
 	Nearest string
+	Renamed string
 }
 
 func (e *UnknownKeyError) Error() string {
 	parts := make([]string, len(e.Keys))
+	renamed := false
 	for i, k := range e.Keys {
 		parts[i] = fmt.Sprintf("%q", k.Key)
-		if k.Nearest != "" {
+		switch {
+		case k.Renamed != "":
+			parts[i] += fmt.Sprintf(" (renamed %q)", k.Renamed)
+			renamed = true
+		case k.Nearest != "":
 			parts[i] += fmt.Sprintf(" (did you mean %q?)", k.Nearest)
 		}
 	}
-	noun := "unknown key "
-	if len(e.Keys) > 1 {
-		noun = "unknown keys "
+	if renamed && e.Update != "" {
+		// The one command is named once, after the keys, because it moves
+		// every renamed key in the file in one go.
+		return "config " + e.Path + ": " + unknownNoun(len(e.Keys)) + strings.Join(parts, ", ") +
+			"; `" + e.Update + "` moves a renamed key and keeps its value"
 	}
-	return "config " + e.Path + ": " + noun + strings.Join(parts, ", ")
+	return "config " + e.Path + ": " + unknownNoun(len(e.Keys)) + strings.Join(parts, ", ")
+}
+
+func unknownNoun(n int) string {
+	if n > 1 {
+		return "unknown keys "
+	}
+	return "unknown key "
 }
 
 // keyDistance is how far a misspelling may be from a known key and still be
@@ -63,7 +85,10 @@ func keyDistance(seg string) int {
 // `behaviour.silent_mode` beside `behaviour` would suggest two mistakes where
 // there is one, and a `[behaviour.deep]` written above its `[behaviour]`
 // would otherwise be named before the table that explains it.
-func unknownKeys(path string, undecoded []toml.Key) error {
+//
+// update is the command that moves a renamed key in this file, named by the
+// refusal when one of the keys is in the rename table.
+func unknownKeys(path, update string, undecoded []toml.Key) error {
 	sorted := slices.Clone(undecoded)
 	slices.SortStableFunc(sorted, func(a, b toml.Key) int {
 		if d := len(a) - len(b); d != 0 {
@@ -76,12 +101,16 @@ func unknownKeys(path string, undecoded []toml.Key) error {
 		if underRefused(keys, k) {
 			continue
 		}
-		keys = append(keys, UnknownKey{Key: k.String(), Nearest: nearestKey(k)})
+		u := UnknownKey{Key: k.String(), Nearest: nearestKey(k)}
+		if r, ok := renameOf(u.Key); ok {
+			u.Renamed = r.To
+		}
+		keys = append(keys, u)
 	}
 	if len(keys) == 0 {
 		return nil
 	}
-	return &UnknownKeyError{Path: path, Keys: keys}
+	return &UnknownKeyError{Path: path, Keys: keys, Update: update}
 }
 
 func underRefused(refused []UnknownKey, k toml.Key) bool {

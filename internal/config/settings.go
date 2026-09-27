@@ -714,6 +714,9 @@ func matchWild(pattern, key string) bool {
 // that any role can have one; a person who types the old spelling is told the
 // new one rather than told it is unknown.
 func RenamedKey(key string) string {
+	if r, ok := renameOf(key); ok {
+		return r.To
+	}
 	role, ok := strings.CutPrefix(key, "agents.")
 	if !ok {
 		return ""

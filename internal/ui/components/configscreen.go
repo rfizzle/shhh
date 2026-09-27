@@ -112,6 +112,12 @@ type ConfigResult struct {
 type ConfigScreen struct {
 	// Path is the file `[w]` writes, stated in the header.
 	Path string
+	// Behind is that file read against the settings the table has now and
+	// found wanting — keys added since it was written, a key that moved, a
+	// wording with no file. The header says so in one word beside the path
+	// and nothing more: the doctor's row is where the counts and the offer
+	// are (docs/capabilities/configuration.md#an-older-file-is-brought-up-to-date).
+	Behind bool
 	// Scoped is a screen standing in a checkout, where a write has two files
 	// it could reach: the checkout's own and the person's. It is what offers
 	// the key that switches between them, and what makes the header say
@@ -496,6 +502,12 @@ func (c *ConfigScreen) header() ScreenHeader {
 	}
 	if c.Path != "" {
 		h.Left = append(h.Left, screenField(c.Path))
+	}
+	if c.Behind {
+		// Kept longer than the path it qualifies: a long path is the first
+		// field to go, and the word is the one thing here the reader would
+		// not otherwise learn.
+		h.Left = append(h.Left, RailSegment{Text: sty.Warn.Render(" · behind"), Drop: RailNormal})
 	}
 	if c.Changed > 0 {
 		h.Left = append(h.Left, RailSegment{

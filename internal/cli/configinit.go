@@ -23,12 +23,21 @@ package cli
 // gets: the same scaffold with their own values filled in, to read and paste
 // rather than have shhh rewrite the file behind them
 // (docs/capabilities/configuration.md#a-write-changes-one-line).
+//
+// `--update` is the other answer for a file that is already there: the keys
+// that have arrived since it was written are added as commented rows, a key
+// that has moved is written under its new name, and a wording with no file
+// gets one — every value the file sets kept as it is, and nothing already
+// there written over
+// (docs/capabilities/configuration.md#an-older-file-is-brought-up-to-date).
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/rfizzle/shhh/internal/cli/report"
@@ -39,7 +48,7 @@ import (
 )
 
 func newConfigInitCmd() *cobra.Command {
-	var global, toStdout bool
+	var global, toStdout, update bool
 	cmd := &cobra.Command{
 		Use:   "init",
 		Short: "Write the settings file and the wordings at their defaults",
@@ -51,12 +60,34 @@ func newConfigInitCmd() *cobra.Command {
 			project.PromptsDir + "/ — with the keys a checkout may not decide left out; run anywhere else, " +
 			"or in your home directory, it writes yours. `--global` writes yours wherever it is run. " +
 			"`--stdout` prints the settings file instead of writing it, with the values that file already " +
-			"holds filled in; `shhh keys defaults` prints the keymap.",
+			"holds filled in; `shhh keys defaults` prints the keymap. " +
+			"`--update` brings files that are already there up to date instead of refusing them: the keys " +
+			"added since the settings were written are added commented out, a renamed key is written under " +
+			"its new name with its value, a wording with no file gets one, and every value the file sets is " +
+			"kept; with `--stdout` it prints the settings file it would write.",
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			plan, err := configInit(global, workingDir())
 			if err != nil {
 				return err
+			}
+			if update {
+				if toStdout {
+					text, _, err := config.Updated(plan.settings, plan.project)
+					if err != nil {
+						return err
+					}
+					_, err = io.WriteString(cmd.OutOrStdout(), text)
+					return err
+				}
+				done, err := plan.update()
+				if err != nil {
+					return err
+				}
+				return report.Fprint(cmd.OutOrStdout(), done.report(plan))
+			}
+			if plan.heldErr != nil {
+				return plan.heldErr
 			}
 			if toStdout {
 				_, err := io.WriteString(cmd.OutOrStdout(), config.Scaffold(plan.held, plan.project))
@@ -75,6 +106,8 @@ func newConfigInitCmd() *cobra.Command {
 		"write your own settings file and wordings, even in a checkout")
 	cmd.Flags().BoolVar(&toStdout, "stdout", false,
 		"print the settings file instead of writing it, with the values that file already holds filled in")
+	cmd.Flags().BoolVar(&update, "update", false,
+		"bring the files already there up to date: add the keys and wordings they lack, move renamed keys, keep every value")
 	return cmd
 }
 
@@ -95,8 +128,11 @@ type initPlan struct {
 	files  []initFile
 	// held is what the settings file already holds, which is what `--stdout`
 	// fills in. It is the zero Config where there is no file, which is a
-	// scaffold with every line commented.
-	held config.Config
+	// scaffold with every line commented. heldErr is why the file would not
+	// load, kept rather than returned because `--update` is how a file
+	// holding a renamed key is made to load again.
+	held    config.Config
+	heldErr error
 	// settingsHeld says the settings file is already there, and wordingsHeld
 	// names the wordings that are. They are named rather than counted
 	// because the reader's next act is to look at one of these files and
@@ -142,10 +178,13 @@ func configInit(global bool, dir string) (initPlan, error) {
 	if _, err := os.Stat(plan.settings); err == nil {
 		plan.settingsHeld = true
 		held, err := config.LoadFrom(plan.settings)
-		if err != nil {
-			return plan, err
+		var unknown *config.UnknownKeyError
+		if errors.As(err, &unknown) && toProject {
+			// The load names the person's own update; this file is the
+			// checkout's, which the bare command reaches.
+			unknown.Update = config.UpdateProject
 		}
-		plan.held = held
+		plan.held, plan.heldErr = held, err
 	}
 	for _, f := range plan.files {
 		if _, err := os.Stat(f.path); err == nil {
@@ -287,4 +326,241 @@ func keymapKeys() int {
 		}
 	}
 	return n
+}
+
+// initUpdate is what `--update` did: how the settings file was written —
+// brought up to date, written new where there was none, or left alone as
+// already current — and the wordings it wrote.
+type initUpdate struct {
+	behind   config.Behind
+	settings string
+	wordings []string
+}
+
+// update brings the pair up to date. The settings go first here, unlike a
+// fresh init: the file is already there, a second run is the same command
+// either way, and the wordings the settings name are read off the file only
+// once it loads.
+//
+// A wording file already there is never written, and nor is one the person's
+// settings point somewhere else — a file of the built-in words beside a key
+// naming another would be a file nothing reads. The keymap is left as it is:
+// it is a file of its own with a command of its own.
+func (p initPlan) update() (initUpdate, error) {
+	var done initUpdate
+	mode, dirMode := os.FileMode(0o600), os.FileMode(0o700)
+	if p.project {
+		mode, dirMode = 0o644, 0o755
+	}
+	if p.settingsHeld {
+		behind, err := config.Outdated(p.settings, p.project)
+		if err != nil {
+			return done, err
+		}
+		wrote, err := config.UpdateFile(p.settings, p.project)
+		if err != nil {
+			return done, err
+		}
+		if wrote {
+			done.settings, done.behind = "updated", behind
+		}
+	} else {
+		if err := os.MkdirAll(filepath.Dir(p.settings), dirMode); err != nil {
+			return done, err
+		}
+		if err := os.WriteFile(p.settings, []byte(config.Scaffold(config.Config{}, p.project)), mode); err != nil {
+			return done, err
+		}
+		done.settings = "wrote"
+	}
+	var named config.PromptsConfig
+	if !p.project {
+		held, err := config.LoadFrom(p.settings)
+		if err != nil {
+			return done, err
+		}
+		named = held.Prompts
+	}
+	missing, _ := wordingsBehind(p.prompts, p.project, named)
+	if len(missing) == 0 {
+		return done, nil
+	}
+	if err := os.MkdirAll(p.prompts, dirMode); err != nil {
+		return done, err
+	}
+	for _, f := range p.files {
+		if !slices.Contains(missing, f.key) {
+			continue
+		}
+		if err := os.WriteFile(f.path, []byte(f.text+"\n"), mode); err != nil {
+			return done, err
+		}
+		done.wordings = append(done.wordings, f.key)
+	}
+	return done, nil
+}
+
+// lines is what the update did, one line per file touched, for the doctor
+// row that ran it; empty for a pair that was already current.
+func (u initUpdate) lines(p initPlan) []string {
+	var out []string
+	switch u.settings {
+	case "updated":
+		out = append(out, "updated "+shortPath(p.settings)+": "+behindPhrase(u.behind, 0, false))
+	case "wrote":
+		out = append(out, "wrote "+shortPath(p.settings))
+	}
+	if n := len(u.wordings); n > 0 {
+		out = append(out, "wrote "+countOf(n, "wording", "wordings")+" under "+shortPath(p.prompts)+string(filepath.Separator))
+	}
+	return out
+}
+
+// report is the confirmation `--update` prints: a row for the settings and
+// a row for the wordings, each saying what changed or that nothing had to.
+func (u initUpdate) report(p initPlan) report.Report {
+	pair := "user"
+	if p.project {
+		pair = "project"
+	}
+	var settings report.Row
+	switch u.settings {
+	case "updated":
+		settings = report.Done("updated", shortPath(p.settings))
+		settings.Detail = behindPhrase(u.behind, 0, false)
+		settings.Fix = []string{"every value the file set is kept; a moved key says so on the line above it"}
+	case "wrote":
+		settings = report.Done("wrote", shortPath(p.settings))
+		settings.Detail = countOf(config.ScaffoldKeys(p.project), "setting", "settings") + ", each commented out"
+	default:
+		settings = report.Row{State: report.Skip, Subject: shortPath(p.settings), Detail: "already up to date"}
+	}
+	settings.Outcome = pair
+	wordings := report.Row{State: report.Skip, Subject: shortPath(p.prompts) + string(filepath.Separator),
+		Detail: "every wording already has a file", Outcome: pair}
+	if n := len(u.wordings); n > 0 {
+		wordings = report.Done("wrote", shortPath(p.prompts)+string(filepath.Separator))
+		wordings.Detail = countOf(n, "wording", "wordings") + ", each the built-in text"
+		wordings.Outcome = pair
+	}
+	return report.Report{
+		Title:    "shhh config init --update",
+		Subject:  shortPath(filepath.Dir(p.settings)),
+		Sections: []report.Section{{Rows: []report.Row{settings, wordings}}},
+	}
+}
+
+// wordingsBehind is the wordings with no file under dir, in the order the
+// settings state them, and whether dir holds a file for any wording at all.
+// A wording the person's settings point at a file of their own is not
+// missing from the directory: the key outranks the directory, so a file
+// there would be one nothing reads.
+func wordingsBehind(dir string, project bool, named config.PromptsConfig) ([]string, bool) {
+	var missing []string
+	listed := false
+	for _, w := range wordingKeys() {
+		if !project && w.named(named) != "" {
+			continue
+		}
+		if _, err := os.Stat(filepath.Join(dir, w.key+".md")); err == nil {
+			listed = true
+			continue
+		}
+		missing = append(missing, w.key)
+	}
+	return missing, listed
+}
+
+// configBehind is how far one pair is behind: the settings file against the
+// table, and the prompts directory against the wordings. It is what the
+// doctor row and the config screen's header both read, so the two cannot
+// disagree about whether a file is behind.
+type configBehind struct {
+	config.Behind
+	wordings []string
+	// wordingsListed says the directory holds a file for at least one
+	// wording — `config init` wrote it — which is what makes a missing one
+	// missing rather than never wanted: the rule the settings file's own
+	// commented rows follow.
+	wordingsListed bool
+}
+
+// behindOf reads the pair a plan names.
+func behindOf(p initPlan) (configBehind, error) {
+	b, err := config.Outdated(p.settings, p.project)
+	if err != nil {
+		return configBehind{}, err
+	}
+	out := configBehind{Behind: b}
+	out.wordings, out.wordingsListed = wordingsBehind(p.prompts, p.project, p.held.Prompts)
+	return out, nil
+}
+
+// wordingsBehindBy is how many missing wordings count against the pair.
+func (b configBehind) wordingsBehindBy() int {
+	if !b.wordingsListed {
+		return 0
+	}
+	return len(b.wordings)
+}
+
+// due says the pair is behind in a way worth a warning.
+func (b configBehind) due() bool { return b.Due() || b.wordingsBehindBy() > 0 }
+
+// phrase is the row's words for it: `behind by 4 keys · 1 renamed · 2
+// wordings`, each count left out where it is zero.
+func (b configBehind) phrase() string {
+	return behindPhrase(b.Behind, b.wordingsBehindBy(), true)
+}
+
+// behindPhrase names the counts. counted says the keys are the ones that
+// count against the file — the doctor's reading, in which a file listing no
+// commented row is behind by none — rather than every key the update added,
+// which is what the update's own confirmation says.
+func behindPhrase(b config.Behind, wordings int, counted bool) string {
+	keys := len(b.New)
+	if counted {
+		keys = b.KeysBehind()
+	}
+	var parts []string
+	if keys > 0 {
+		parts = append(parts, countOf(keys, "key", "keys"))
+	}
+	if n := len(b.Renamed); n > 0 {
+		parts = append(parts, fmt.Sprintf("%d renamed", n))
+	}
+	if wordings > 0 {
+		parts = append(parts, countOf(wordings, "wording", "wordings"))
+	}
+	if !counted {
+		if len(parts) == 0 {
+			return "nothing to add"
+		}
+		return "added " + strings.Join(parts, " · ")
+	}
+	return "behind by " + strings.Join(parts, " · ")
+}
+
+// movesRenamedKeys is the one refusal at startup `config init --update` is
+// let past: a file that will not load only because it holds keys that have
+// moved. That command is what moves them, and a refusal pointing at a command
+// that is itself refused would be a loop with no way out. A file holding a
+// key that never was is still refused here, as it is by the update itself.
+func movesRenamedKeys(cmd *cobra.Command, err error) bool {
+	if cmd.Name() != "init" || cmd.Parent() == nil || cmd.Parent().Name() != "config" {
+		return false
+	}
+	if update, ferr := cmd.Flags().GetBool("update"); ferr != nil || !update {
+		return false
+	}
+	var unknown *config.UnknownKeyError
+	if !errors.As(err, &unknown) {
+		return false
+	}
+	for _, k := range unknown.Keys {
+		if k.Renamed == "" {
+			return false
+		}
+	}
+	return true
 }

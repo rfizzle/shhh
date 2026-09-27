@@ -216,7 +216,8 @@ to you; applying it is a separate act on a screen built to ask. A diagnostic
 tool that silently repairs things is one you cannot use to find out what is
 wrong.
 
-A pending migration is the single exception, and it is one because it is not a
+A pending migration is the exception, and so is a settings file behind the
+table (below); each is one because it is not a
 repair: nothing is broken, the machine is merely shaped an older way, and the
 change is mechanical rather than a judgement about what you meant. It is still
 offered rather than made — the same confirm the editor uses, on the row that
@@ -242,6 +243,63 @@ The file never holds a zero the person did not type.
 A file that does not exist is created holding only what was written, under
 its section header. A file that does not parse is refused untouched: the
 person is told, and the write is theirs to make once the file reads.
+
+## An older file is brought up to date
+
+There is no version number in the settings file. The settings table is the
+version, and a file is *behind* it in three ways, read off the file's own
+text:
+
+- **a key it neither sets nor lists** — one that arrived after the file was
+  written, which the file therefore has no commented row for to find;
+- **a key it holds under an old name** — the one kind of change the table
+  alone cannot describe, since the old spelling is no longer a key at all;
+- **a wording with no file** in the pair's prompts directory, for the pair
+  `config init` wrote (a wording your settings point at a file of your own is
+  not missing: the key outranks the directory).
+
+A file that lists no key as a commented row was never a list of every key —
+it is three lines somebody wrote on purpose — so no key counts as new to it,
+and a prompts directory holding none of the wordings is read the same way. A
+key that moved counts whatever the file looks like.
+
+`shhh config init --update` brings the pair up to date instead of refusing
+the files that are already there. It follows the same scope as the bare
+command: in a checkout it updates the checkout's pair, without the keys a
+checkout may not decide, and `--global` updates yours. It edits the file the
+way every other write does, one line at a time:
+
+- every key the file does not mention is added as a commented row at its
+  default, under the sentence that says what it decides — exactly as a fresh
+  `config init` writes it, and at the place the scaffold's order puts it
+  among the rows the file already has;
+- a key that moved is written under its new name, with its value and any
+  comment trailing it on the line carried byte for byte, and a comment above
+  it saying where it came from and when it moved;
+- a wording with no file gets one, holding the built-in text; a file already
+  there is never written over, and the keymap is left alone.
+
+**Values are never changed by an update.** Every value the file sets stays
+where the person wrote it, with every comment, blank line, MCP server and
+hook around it; the only line that moves is a renamed key's. The result is
+decoded before it is written and must hold exactly the values the file held,
+with each moved key under its new name — anything else refuses the update
+and writes nothing. So does a file naming a key that is neither a setting nor
+a rename, which is a typo to settle first, and a file setting a key under
+both its old and new names, which only the person can choose between. What
+the writer cannot carry is a comment on the lines *above* a renamed key: it
+stays where it was, because nothing says whether it described that key or
+the section it opened. The write goes through a temporary file and a rename,
+so a failure leaves the file as it was, and a file already current is not
+written at all. `--stdout --update` prints what would be written.
+
+A key that moved stops every command, like any key the table does not read,
+but the refusal names the new key and the command that moves it, and that
+command is the one let past it. `shhh doctor`'s `config` row warns when the
+file is behind — `behind by 4 keys · 1 renamed · 2 wordings` — and offers
+`[a]` to run the update, asking first as a migration does; the offer is the
+row's own, since the row names the file. The config screen's header says
+`behind` beside the path, and nothing more.
 
 ## A value is refused before it is written
 
