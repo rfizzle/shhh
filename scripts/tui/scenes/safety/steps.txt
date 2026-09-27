@@ -19,11 +19,13 @@ snap 02-reading "/safety · manual" "WHERE IT MAY WRITE" "changed with /permissi
 keys Down Down Down Down Down Down Down Down Down Down Down Down
 snap 03-scrolled "↑ 1 more · mode and policy" "↓"
 # Containment is the session's own mechanism read against the scope as it
-# stands, and the last section is the toolset in its tiers.
+# stands, and the last section is the toolset in its tiers. The fold count
+# above the last page depends on how much the host's containment section
+# says, so the snap waits on the fold mark and not on its number.
 keys Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down
 snap 03b-containment "sandbox.require is off" "Command containment:"
 keys Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down
-snap 03c-end "which decides which tiers" "↑ 4 more"
+snap 03c-end "which decides which tiers" "↑"
 # The way back is [q] rather than esc: an escape followed at once by typing
 # reaches the terminal as an alt chord.
 keys q
