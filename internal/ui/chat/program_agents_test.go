@@ -146,6 +146,9 @@ func TestProgram_ANamedColleagueIsAHintAndItsSpawnIsCarded(t *testing.T) {
 	waitForText(t, tm, "Spawn security-reviewer")
 	tm.Send(programAllow)
 	waitForText(t, tm, "The reviewer has reported")
+	// The session's reply does not wait for the child, so the child's own row
+	// can land a frame after it; wait on the row the final read asserts.
+	waitForText(t, tm, "sec-1  done")
 
 	frame := finalFrame(t, tm)
 	frameHas(t, frame, "ask @security-reviewer about the token check", "sec-1")
