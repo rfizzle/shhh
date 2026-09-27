@@ -401,6 +401,15 @@ than leaving it out.
   `[f3] commit` and `[f2] undo turn` and press `F3` where it presses `M-g`.
   The Mac's spellings are the generated table in
   `docs/interface/reserved-keys.md`.
+- **A card that lands just after a keypress drops the next key.** An
+  approval card arriving within 400 ms of the last key opens a grace window,
+  and a decision key pressed inside it is discarded by design
+  (docs/interface/surfaces.md#the-approval-card). A spawn card lands a moment
+  after the Enter that sent the sentence, so on a fast host its snap is taken
+  inside the window and a `y` straight after it is thrown away: the card
+  stays up and the scene reads as flaky. A scene sleeps a second before
+  answering such a card — `snap`, `sleep 1`, then `keys y`, as `fanout-lanes`
+  does.
 - **The start screen is the first frame.** A scene that types straight away
   is typing over the pick list, which is fine — the draft takes it — but the
   first snap should be the start screen, so a change to it is seen.

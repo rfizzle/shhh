@@ -21,6 +21,7 @@ keys "survey the round accounting" Enter
 # Spawning is a decision, and a round that asked for two children is one card
 # with a row per child: one key starts the pair.
 snap 02-spawn-card "Spawn 2 writers"
+sleep 1
 keys y
 sleep 10
 # The close of the session's own turn: the line naming what the children left

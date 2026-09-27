@@ -21,6 +21,7 @@ keys "survey the round accounting" Enter
 # Spawning is gated, and the round asked for both children together, so it is
 # one card with a row per child.
 snap 02-spawn-card "Spawn 2 writers"
+sleep 1
 keys y
 snap 03-lanes "2 agents"
 # The hold, pressed while the session's own turn is still going. The children
