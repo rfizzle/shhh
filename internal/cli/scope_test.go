@@ -222,3 +222,25 @@ func TestOffersCommands_AConversationIsToldNothingAboutRunningOne(t *testing.T) 
 		t.Error("a toolset with execute_command does")
 	}
 }
+
+// A session boundary builds its prompt with the scope as it stands, so a
+// grant announced to the conversation it drops is not lost with it.
+// See docs/capabilities/containment.md#scope-is-the-set-of-directories-the-work-may-reach.
+func TestRescopePromptSaysTheScopeAsItStands(t *testing.T) {
+	root, outside := t.TempDir(), t.TempDir()
+	sc := testScope(t, root)
+	said := scopePromptBlock(sc)
+	text := "# Instructions\nquoted: " + said + "\n\n" + said + "\n\n# Toolbox"
+	if got := rescopePrompt(text, said, sc); got != text {
+		t.Fatalf("an unmoved scope should leave the prompt alone, got:\n%s", got)
+	}
+	dir, err := sc.Add(outside)
+	if err != nil {
+		t.Fatalf("Add: %v", err)
+	}
+	got := rescopePrompt(text, said, sc)
+	want := "# Instructions\nquoted: " + said + "\n\n" + scopePromptBlock(sc) + "\n\n# Toolbox"
+	if got != want || !strings.Contains(got, ", "+dir+".") {
+		t.Fatalf("the prompt should say the grant in the scope block, got:\n%s", got)
+	}
+}

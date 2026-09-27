@@ -20,6 +20,16 @@ when an action reaches outside. What the scope holds is what OS-level
 containment makes writable and what edits may touch without asking again — one
 list, not several that agree by convention.
 
+A grant reaches the model when it is made. The system prompt names the scope
+once, at the start of a session, and it is not rewritten mid-session, because
+that would pay for the cached prompt again; so a directory added or dropped
+with `/add-dir` is said to the model as a message of the session's own, at the
+next round boundary if it is working. Otherwise the model goes on asking for a
+directory it already has, or steering around one it may now use. A grant made
+on the card is not announced: it answered the model's own call, and that call
+running is the answer. The next session is told the scope as it stands in its
+prompt, so a grant is said once.
+
 ### Two classes of directory never come along
 
 - **Refused.** A path behind the deny mask cannot be granted at all, by any

@@ -45,14 +45,24 @@ func (m Model) secretCommand(args []string) (tea.Model, tea.Cmd) {
 		return m.surfaceNotice("secrets are unavailable in this session")
 	}
 	note, announce := m.secrets.Manage(args)
-	if announce != "" {
-		if m.working() || m.decisionUngated() {
-			m.steering = append(m.steering, steeringItem{text: announce, machine: true})
-		} else {
-			m.agent.AppendMachine(announce)
-		}
-	}
+	m.announce(announce)
 	return m.surfaceNotice(note)
+}
+
+// announce tells the model about a change the system prompt was written
+// before: queued as machine steering while the agent works, so it lands at
+// the next round boundary, and appended to the conversation when it is idle.
+// The prompt is not rewritten instead, because that pays for the cached
+// prefix again. Empty text says nothing.
+func (m *Model) announce(text string) {
+	if text == "" {
+		return
+	}
+	if m.working() || m.decisionUngated() {
+		m.steering = append(m.steering, steeringItem{text: text, machine: true})
+	} else {
+		m.agent.AppendMachine(text)
+	}
 }
 
 // secretInput reports whether a submitted line carries a secret value —

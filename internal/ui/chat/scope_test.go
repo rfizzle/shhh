@@ -272,3 +272,83 @@ func TestPermissionsNameACheckoutGrantForWriters(t *testing.T) {
 		t.Fatalf("/add-dir drop should still offer the checkout's grant, got %v", got)
 	}
 }
+
+// machineMessagesNaming is every message the session wrote for the model that
+// names dir.
+func machineMessagesNaming(m Model, dir string) []provider.Message {
+	var out []provider.Message
+	for _, msg := range m.Messages() {
+		if msg.Machine && strings.Contains(msg.Content, dir) {
+			out = append(out, msg)
+		}
+	}
+	return out
+}
+
+// A grant typed mid-session is said to the model once, because the system
+// prompt that named the scope was written before it; the next session's
+// prompt is built with the grant, so the new conversation carries no
+// announcement of its own.
+// See docs/capabilities/containment.md#scope-is-the-set-of-directories-the-work-may-reach.
+func TestAddDirMidSessionIsAnnouncedToTheModelOnce(t *testing.T) {
+	root, outside := t.TempDir(), t.TempDir()
+	m := scopedModel(t, root, agent.ModeManual).
+		WithNewSession(func() SessionStart { return SessionStart{Prompt: "sys"} })
+	m.state = stateInput
+
+	m.scopeCommand([]string{"/add-dir", outside})
+	dir := m.scope.Dirs()[0]
+	said := machineMessagesNaming(m, dir)
+	if len(said) != 1 || said[0].Role != provider.RoleUser || !strings.Contains(said[0].Content, "/add-dir") {
+		t.Fatalf("/add-dir should put one announcement naming %s into the conversation, got %+v", dir, said)
+	}
+
+	m.startNewSession()
+	if got := machineMessagesNaming(m, dir); len(got) != 0 {
+		t.Fatalf("a new session is told the grant by its prompt, not again by a message, got %+v", got)
+	}
+
+	m.scopeCommand([]string{"/add-dir", "drop", dir})
+	if got := machineMessagesNaming(m, dir); len(got) != 1 || !strings.Contains(got[0].Content, "dropped") {
+		t.Fatalf("/add-dir drop should be said to the model, got %+v", got)
+	}
+}
+
+// While the agent works, the announcement waits for the round boundary as
+// machine steering, the way a /secret change does.
+func TestAddDirWhileWorkingIsQueuedAsMachineSteering(t *testing.T) {
+	root, outside := t.TempDir(), t.TempDir()
+	m := scopedModel(t, root, agent.ModeManual)
+	m.state = stateStreaming
+
+	m.scopeCommand([]string{"/add-dir", outside})
+	if len(m.steering) != 1 || !m.steering[0].machine || !strings.Contains(m.steering[0].text, m.scope.Dirs()[0]) {
+		t.Fatalf("the grant should be queued as one machine steering item, got %+v", m.steering)
+	}
+}
+
+// The routes that do not move what the prompt describes say nothing: a card
+// grant answered the model's own call, and a grant of the checkout is for
+// writers.
+func TestScopeGrantsTheModelAlreadyKnowsAreNotAnnounced(t *testing.T) {
+	root, outside := t.TempDir(), t.TempDir()
+	m := scopedModel(t, root, agent.ModeManual)
+	m.scopeCommand([]string{"/add-dir", root})
+	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{writeCall("out", filepath.Join(outside, "config.toml"), "new\n")}})
+	m = handover(t, updated.(Model))
+	updated, _ = m.Update(tea.KeyPressMsg{Code: 'y', Text: "y"})
+	m = updated.(Model)
+	if len(m.scope.Dirs()) != 2 {
+		t.Fatalf("both grants should have been recorded, got %v", m.scope.Dirs())
+	}
+	for _, msg := range m.Messages() {
+		if msg.Machine && strings.Contains(msg.Content, "working scope") {
+			t.Fatalf("neither grant should be announced, got %+v", msg)
+		}
+	}
+	for _, s := range m.steering {
+		if strings.Contains(s.text, "working scope") {
+			t.Fatalf("neither grant should be queued for the model, got %+v", s)
+		}
+	}
+}

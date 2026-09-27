@@ -787,7 +787,8 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 
 	// The model is told where the work is, so an out-of-scope path is
 	// a question it asks rather than a call the user refuses.
-	session.promptExtra = prompt.CombineExtra(session.promptExtra, scopePromptBlock(sc))
+	scopeSaid := scopePromptBlock(sc)
+	session.promptExtra = prompt.CombineExtra(session.promptExtra, scopeSaid)
 
 	// …and what it has to work with. Every optional tool above is
 	// registered on a condition — a language server was found, a binary is on
@@ -949,6 +950,9 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	resume := "shhh " + session.kind + " --continue"
 	newSession := func() chat.SessionStart {
 		text, projectTokens, _ := session.systemPrompt(cfg.Behavior.SystemPromptExtra)
+		// The scope may have moved under /add-dir since launch, and the grant
+		// was announced to the conversation this boundary drops.
+		text = rescopePrompt(text, scopeSaid, sc)
 		if recorder.restart() {
 			recorder.stamp(env.prompts.fingerprintOf(text), session.skills.Len(), projectFingerprintRoot(), settings)
 		}

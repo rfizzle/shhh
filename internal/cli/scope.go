@@ -104,6 +104,23 @@ func scopePromptBlock(sc *scope.Scope) string {
 	return b.String()
 }
 
+// rescopePrompt puts the working scope as it stands into a system prompt
+// built at a session boundary, in place of the block said at launch. The
+// block is folded into the session's standing extra once, and a grant made
+// since was announced to the conversation the boundary drops, so a new
+// session that still said the old set would never hear of it. The last
+// occurrence is replaced because the block follows the instruction files,
+// which are free to quote it.
+// See docs/capabilities/containment.md#scope-is-the-set-of-directories-the-work-may-reach.
+func rescopePrompt(text, said string, sc *scope.Scope) string {
+	now := scopePromptBlock(sc)
+	i := strings.LastIndex(text, said)
+	if said == "" || now == said || i < 0 {
+		return text
+	}
+	return text[:i] + now + text[i+len(said):]
+}
+
 // commandEnvironment is what a session resolved about the commands it will
 // run, in the pieces the model has to be told: what wraps one, what that
 // wrap allows, and how long one may take. It is resolved once, where the

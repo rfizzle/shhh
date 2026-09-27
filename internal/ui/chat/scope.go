@@ -131,6 +131,9 @@ func (m *Model) scopeCommand(parts []string) string {
 		if !ok {
 			return "not in the working scope: " + parts[2] + ". /add-dir lists what is"
 		}
+		if !m.scope.InRoot(dir) {
+			m.announce(scopeDroppedAnnouncement(dir))
+		}
 		return "dropped " + dir + " from the working scope. Contained commands can no longer write there"
 	}
 	if len(parts) > 2 {
@@ -154,7 +157,31 @@ func (m *Model) scopeCommand(parts []string) string {
 	if class == scope.Sensitive {
 		note += "\nThis is a sensitive directory — " + reason + ". Nothing else would have granted it; /add-dir drop " + dir + " takes it back."
 	}
+	if !m.scope.InRoot(dir) {
+		m.announce(scopeAddedAnnouncement(dir))
+	}
 	return note
+}
+
+// scopeAddedAnnouncement is what the model is told of an /add-dir grant, and
+// scopeDroppedAnnouncement of an /add-dir drop.
+//
+// The model is told the working scope once, in the system prompt, so a grant
+// typed afterwards would leave it steering around a directory it now has, or
+// asking for /add-dir again. A grant made with /add-dir, and one taken back
+// with /add-dir drop, is therefore said to the model when it is made; the next
+// session boundary builds the prompt from the scope as it stands, so it is
+// said once. A grant made on the card is not announced: it answered the
+// model's own call, and that call running is the model's answer. Nor is a
+// grant of the checkout for writers, since the session's own scope — all the
+// prompt describes — did not move.
+// See docs/capabilities/containment.md#scope-is-the-set-of-directories-the-work-may-reach.
+func scopeAddedAnnouncement(dir string) string {
+	return "The user added " + dir + " to this session's working scope with /add-dir. Writing there no longer needs their approval for leaving the scope, and contained commands can write there."
+}
+
+func scopeDroppedAnnouncement(dir string) string {
+	return "The user dropped " + dir + " from this session's working scope. Writing there needs their approval again, and contained commands can no longer write there."
 }
 
 // scopeStatus is bare /add-dir: what the session may reach, and the two
