@@ -40,7 +40,8 @@ func requireSandboxOff() config.Config {
 
 // A writer's commands are contained by default: on a host with a mechanism
 // they take the contained path whatever the session requires, on a host
-// without one they are refused with the doctor's fix, agents.require_sandbox
+// without one they are refused with the doctor's fix — by the gate, the child
+// being given no runner at all — agents.require_sandbox
 // off hands the writer back to the session's own rule, and sandbox.require on
 // the session still wins. A child that is not a writer keeps the session's
 // rule — a researcher and a reviewer hold no command at all.
@@ -75,7 +76,19 @@ func TestAWritersCommandsAreContainedByDefault(t *testing.T) {
 			if len(errs) > 0 {
 				t.Fatalf("scope: %v", errs)
 			}
-			got := childCommandRunnerUnbounded(tc.cfg, dir, sc, tc.writer)(context.Background(), "echo ran")
+			run := childCommandRunnerUnbounded(tc.cfg, dir, sc, tc.writer)
+			if tc.want != "ran" && tc.want != "contained" {
+				// The refusal is the gate's, so the child has no runner.
+				if run != nil {
+					t.Fatal("a child whose every command is refused was given a runner")
+				}
+				refusal := childCommandRefusal(tc.cfg, tc.writer, tc.avail)
+				if !strings.Contains(refusal, tc.want) || !strings.Contains(refusal, fix) {
+					t.Fatalf("the refusal should lead %q and carry the doctor's fix %q, got %q", tc.want, fix, refusal)
+				}
+				return
+			}
+			got := run(context.Background(), "echo ran")
 			switch tc.want {
 			case "ran":
 				if got.Outcome != tools.ExecSucceeded || !strings.Contains(got.Output, "ran") {
@@ -88,13 +101,6 @@ func TestAWritersCommandsAreContainedByDefault(t *testing.T) {
 				if got.Outcome != tools.ExecDidNotStart || got.Prereq != tools.PrereqContainment ||
 					!strings.Contains(got.Output, "unknown mechanism") {
 					t.Fatalf("the command did not take the contained path: %+v", got)
-				}
-			default:
-				if got.Outcome != tools.ExecDidNotStart || strings.Contains(got.Output, "\nran") {
-					t.Fatalf("the command was not refused: %+v", got)
-				}
-				if !strings.Contains(got.Output, tc.want) || !strings.Contains(got.Output, fix) {
-					t.Fatalf("the refusal should lead %q and carry the doctor's fix %q, got %q", tc.want, fix, got.Output)
 				}
 			}
 		})
@@ -249,13 +255,16 @@ func TestEveryContainmentRefusalIsFiledAsContainment(t *testing.T) {
 	}
 }
 
-// The refusal a child's gate answers with ahead of the card is the one its
-// runner answers with behind an approval, and only where the command must be
-// contained and nothing can contain it: with a mechanism, with the writer
-// default off, or for a child that is not a writer, the gate is handed
-// nothing and the card is raised as before.
+// A child's gate refuses only where the command must be contained and nothing
+// can contain it, and it answers ahead of every seam in the one spelling every
+// surface shares — so exactly there the child is given no runner, rather than
+// one refusing again behind an approval in a second spelling the record would
+// file by its third line. With a mechanism, with the writer default off, or
+// for a child that is not a writer, the gate is handed nothing and the child
+// has a runner as before. The bounded form is asked, since the bound would
+// otherwise wrap a missing runner into one.
 // See docs/capabilities/containment.md#containment-can-be-required.
-func TestAChildsGateAndRunnerRefuseTheSameCommands(t *testing.T) {
+func TestAChildIsGivenNoRunnerWhereItsGateRefuses(t *testing.T) {
 	t.Setenv("XDG_DATA_HOME", t.TempDir())
 	required := config.Config{Sandbox: config.SandboxConfig{Require: true}}
 	for _, tc := range []struct {
@@ -276,17 +285,13 @@ func TestAChildsGateAndRunnerRefuseTheSameCommands(t *testing.T) {
 			if (gate != "") != tc.refused {
 				t.Fatalf("the gate's refusal is %q, want refused = %v", gate, tc.refused)
 			}
-			if !tc.refused {
-				return
-			}
 			dir := t.TempDir()
 			sc, errs := scope.New(dir)
 			if len(errs) > 0 {
 				t.Fatalf("scope: %v", errs)
 			}
-			got := childCommandRunnerIn(tc.cfg, dir, sc, tc.writer, tc.avail)(context.Background(), "echo ran")
-			if got.Output != gate {
-				t.Fatalf("the runner refused with %q, the gate with %q", got.Output, gate)
+			if got := childCommandRunner(tc.cfg, dir, sc, tc.writer, tc.avail); (got == nil) != tc.refused {
+				t.Fatalf("runner given = %v, want %v", got != nil, !tc.refused)
 			}
 		})
 	}

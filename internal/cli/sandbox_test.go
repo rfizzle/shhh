@@ -235,13 +235,13 @@ func TestChildCommandRunner_RequiredContainmentRefusesToo(t *testing.T) {
 		t.Fatalf("with the writer default off a child's command still runs: %q (%d)", got.Output, got.ExitCode)
 	}
 
-	run = childCommandRunnerUnbounded(config.Config{Sandbox: config.SandboxConfig{Require: true}}, dir, sc, true)
-	got := run(context.Background(), "echo ran")
-	out, code := got.Output, got.ExitCode
-	if code == 0 || strings.Contains(out, "ran") || got.Outcome != tools.ExecDidNotStart {
-		t.Fatalf("a required session must refuse a child's command, got %q (%d)", out, code)
+	// The refusal is the gate's, answered ahead of every seam, so the child
+	// is given no runner to fall back to at all.
+	required := config.Config{Sandbox: config.SandboxConfig{Require: true}}
+	if run = childCommandRunnerUnbounded(required, dir, sc, true); run != nil {
+		t.Fatal("a required session must give a child no runner to fall back to")
 	}
-	if !strings.Contains(out, "requires containment") {
+	if out := childCommandRefusal(required, true, sandbox.Detect()); !strings.Contains(out, "requires containment") {
 		t.Fatalf("the refusal should say why, got %q", out)
 	}
 }

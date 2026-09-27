@@ -822,9 +822,9 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 			Executor:     session.vault.WrapExecutor(subagent.RootedExecutor(croot, autoExec)),
 			ExecuteGated: session.vault.WrapExecutor(gatedExec),
 			RunCommand:   scrubResultRunner(session.vault, childCommandRunner(cfg, croot, sc, writer, avail)),
-			// The same refusal, answered ahead of the card: a command the
-			// runner would refuse whatever the person said is never put to
-			// them.
+			// The refusal, answered ahead of the card: a command that could
+			// run nowhere whatever the person said is never put to them. A
+			// child it is set for is given no runner above.
 			CommandRefusal: childCommandRefusal(cfg, writer, avail),
 			// The same pipeline the parent's own commands go through, and
 			// the same store behind it: a child's evidence entries land
@@ -1282,9 +1282,14 @@ func childSandboxProfile(cfg config.Config) string {
 //
 // Every form is bounded. A child has nobody in front of it, so a command that
 // never finishes takes the child with it — and the parent is left waiting on
-// a report that is not coming.
+// a report that is not coming. A child whose every command is refused is
+// given no runner at all, which the bound must not wrap into one.
 func childCommandRunner(cfg config.Config, dir string, sc *scope.Scope, writer bool, avail sandbox.Availability) func(context.Context, string) tools.ExecResult {
-	return boundedRunner(childCommandRunnerIn(cfg, dir, sc, writer, avail), cfg.CommandTimeout())
+	run := childCommandRunnerIn(cfg, dir, sc, writer, avail)
+	if run == nil {
+		return nil
+	}
+	return boundedRunner(run, cfg.CommandTimeout())
 }
 
 // childRequiresContainment reports whether a child's commands must run
@@ -1402,7 +1407,8 @@ func childCommandRunnerUnbounded(cfg config.Config, dir string, sc *scope.Scope,
 	return childCommandRunnerIn(cfg, dir, sc, writer, childContainment())
 }
 
-// childCommandRunnerIn is the runner over a host already asked what it has.
+// childCommandRunnerIn is the runner over a host already asked what it has,
+// or nil for a child whose every command is refused (childCommandRefusal).
 func childCommandRunnerIn(cfg config.Config, dir string, sc *scope.Scope, writer bool, avail sandbox.Availability) func(context.Context, string) tools.ExecResult {
 	required := childRequiresContainment(cfg, writer)
 	if _, err := sandboxPolicy(cfg); err != nil {
@@ -1441,11 +1447,16 @@ func childCommandRunnerIn(cfg config.Config, dir string, sc *scope.Scope, writer
 		// to be contained by default whatever the session requires of its
 		// own commands, because nobody watches a writer's commands as they
 		// happen.
+		//
+		// The refusal itself is the gate's (Env.CommandRefusal), answered
+		// ahead of every seam in the one spelling every surface shares, so
+		// no command of this child can reach a runner. It is given none
+		// rather than one that refuses in a second spelling, and none rather
+		// than the plain runner below: a call that did get past the gate
+		// would meet the supervisor's own "not available" and still not run.
 		// See docs/capabilities/containment.md#containment-can-be-required.
-		if refusal := childCommandRefusal(cfg, writer, avail); refusal != "" {
-			return func(context.Context, string) tools.ExecResult {
-				return tools.ExecResult{Output: refusal, ExitCode: -1, Outcome: tools.ExecDidNotStart}
-			}
+		if childCommandRefusal(cfg, writer, avail) != "" {
+			return nil
 		}
 	}
 	return func(ctx context.Context, command string) tools.ExecResult {
