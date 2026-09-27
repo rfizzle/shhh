@@ -30,16 +30,18 @@ keys C-c
 snap 10-stopped "stopped · "
 snap 11-answered "The stopped command is recorded"
 # A command that never starts. The checkout the session stands in is removed
-# under it, so the next command has no working directory, and the row names
-# that category in the outcome field, with the operating system's words and
-# the next action beneath it. It is the last thing this scene does: nothing
-# after it can run, since every command inherits the removed directory. The
-# execution shell's own failure needs a directory to fail in, so it is the
-# command-errors-shell scene.
-keys "clear the checkout away" Enter
-snap 12-remove-card "run it once"
-keys y
-snap 13-removed "The checkout is removed"
+# under it — from outside the session, the way a colleague's `rm` or a branch
+# switch would — so the next command has no working directory, and the row
+# names that category in the outcome field, with the operating system's words
+# and the next action beneath it. The removal is a host-side step and not a
+# command the model runs: under bubblewrap the checkout is a bind-mount point
+# inside the namespace, so a contained `rm -rf "$PWD"` empties it and is
+# refused on the directory itself (`Device or resource busy`), and the next
+# command then runs in a directory that is still there. It is the last thing
+# this scene does: nothing after it can run, since every command inherits the
+# removed directory. The execution shell's own failure needs a directory to
+# fail in, so it is the command-errors-shell scene.
+shell cd .. && rm -rf ws
 # A read-only command is waved through, so there is no card before it.
 keys "list what is left" Enter
 snap 14-no-working-directory "did not start · working dir" "Nothing ran: a command's working directory has to be there when it starts."
