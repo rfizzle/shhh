@@ -229,6 +229,31 @@ func mcpToolSources(ts *mcp.Toolset) []components.InspectorToolSource {
 	return out
 }
 
+// safetyServers is /safety's reading of the servers: the rail's own reading
+// of each, beside the person's read-only word for it, which is the one fact
+// that decides whether its calls ask. It reads the reports again on every
+// call, so a server that died since the start is read as dead. Nil is a
+// session with no servers.
+func safetyServers(ts *mcp.Toolset) func() []chat.SafetyServer {
+	if ts == nil {
+		return nil
+	}
+	return func() []chat.SafetyServer {
+		sources := mcpToolSources(ts)
+		out := make([]chat.SafetyServer, 0, len(sources))
+		for i, src := range sources {
+			status := src.Note
+			if src.State == components.ToolSourceFailed && status != mcpDeadNote {
+				status = "failed: " + status
+			}
+			out = append(out, chat.SafetyServer{
+				Name: src.Name, ReadOnly: ts.Reports[i].Definition.ReadOnly, Status: status,
+			})
+		}
+		return out
+	}
+}
+
 // mcpDeadNote is the rail's word for a server that stopped answering. It is
 // the state rather than the reason because the reason is a transport's, and
 // what the reader of a four-row block needs is that the tools have gone.

@@ -1,0 +1,36 @@
+# program test: TestProgram_TheSafetyReadingReadsTheLiveSession
+#
+# /safety at 60 columns, the narrowest it has to fit. The session's whole
+# boundary is one screen: the mode and grants, where it may write, what
+# contains its commands and the rest, each section ending on the command that
+# changes it. Nothing on it changes anything — the keys are scroll, [?] and
+# the way back.
+#
+# The scene then widens the boundary with the command that owns the scope and
+# opens the reading again, under its other name, to show the directory it
+# just added: the screen is built from the session as it stands when it is
+# opened, never from a copy taken at the start.
+setup mkdir -p ../shared-assets
+snap 01-start "Some things worth doing first"
+keys "/safety" Enter
+snap 02-reading "/safety · manual" "WHERE IT MAY WRITE" "changed with /permissions"
+# Scrolled, the top of the pane names the section it folded away and the
+# foot the ones still below — sections by name, not a count of rows.
+keys Down Down Down Down Down Down Down Down Down Down Down Down
+snap 03-scrolled "↑ 1 more · mode and policy" "↓"
+# Containment is the session's own mechanism read against the scope as it
+# stands, and the last section is the toolset in its tiers.
+keys Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down
+snap 03b-containment "sandbox.require is off" "Command containment:"
+keys Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down Down
+snap 03c-end "which decides which tiers" "↑ 4 more"
+# The way back is [q] rather than esc: an escape followed at once by typing
+# reaches the terminal as an alt chord.
+keys q
+snap 04-closed "Some things worth doing first"
+keys "/add-dir ../shared-assets" Enter
+snap 05-added "to the working scope: edits there"
+keys "/security" Enter
+snap 06-again "/safety · manual" "shared-assets"
+keys Escape
+sleep 0.5

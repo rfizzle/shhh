@@ -433,6 +433,13 @@ func buildOverlays() map[state]*mode {
 			hint: (Model).renderSourcesHint,
 			keys: (Model).updateSources,
 		},
+		stateSafety: {
+			place:   placePane,
+			borrows: true,
+			lines:   (Model).safetyLines,
+			hint:    (Model).renderSafetyHint,
+			keys:    (Model).updateSafety,
+		},
 		stateNotes: {
 			place:   placePane,
 			borrows: true,

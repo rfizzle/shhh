@@ -821,6 +821,34 @@ key in the same trusted file, so turning it on is an edit to a file you own,
 and a name that matches no suite is refused when the file is read rather than
 at the close of the turn that was counting on it.
 
+## One reading of the boundary
+
+Everything a session may do without asking, and everything it is fenced off
+from, is decided in several places and was reported in as many: the mode and
+the grants under `/permissions`, the working scope under `/add-dir`,
+containment under `/sandbox`, the checkout's standing under `/trust`, the
+servers under `/mcp`, the vault under `/secret`, and a granted host only on
+the card that granted it. Each of those is the right owner for its fact. None
+of them answers the question a person asks before trusting a session with
+more, which is the whole boundary at once.
+
+So there is one reading of it, `/safety`, and it owns nothing. Each section is
+the answer its owning command already gives, asked of the same function, and
+ends by naming that command. It computes no answer of its own, because a
+second computation of one fact is a second answer to one question, and the
+day the two disagree the reading is the one that is wrong. It has no key that
+changes anything, for the same reason: a place to read a fact and a place to
+change it that are not the same place would be two places to change it.
+
+What a session does not have is stated rather than omitted. A boundary read
+by what is listed is read wrong when something is missing from the list —
+containment that is unavailable, a checkout whose trust was withheld, no
+servers — so each of those is a section saying so. It is the session's
+boundary and not the machine's: which mechanisms this host could offer is
+`shhh doctor`'s question, and a command-line `shhh safety` would have no
+session to read. The layout is in
+[the interface](../interface/surfaces.md#the-safety-reading).
+
 ## Related
 
 - [`hooks.md`](hooks.md) — your own commands at the same seams, and what one

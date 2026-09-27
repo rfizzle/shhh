@@ -71,6 +71,11 @@
                    terminal   what this terminal answered when shhh asked what
                               it can do: inline images, desktop notifications,
                               focus events, cell size
+    /safety        the session's whole boundary on one screen (also /security):
+                   the mode and grants, where it may write, what contains its
+                   commands, the hosts it reaches, what the checkout was let
+                   load, its servers, secrets and tools — each section naming
+                   the command that changes it. It reads and changes nothing
     /skills        the skills this session loaded (SKILL.md directories), and
                    why any did not
     /mcp           the MCP servers this session connected, and why any did not.
@@ -155,6 +160,11 @@
                               focus events, cell size
     /sandbox       containment status and container sandboxes
                    (doctor|scope|list|status|destroy <id>|prune)
+    /safety        the session's whole boundary on one screen (also /security):
+                   the mode and grants, where it may write, what contains its
+                   commands, the hosts it reaches, what the checkout was let
+                   load, its servers, secrets and tools — each section naming
+                   the command that changes it. It reads and changes nothing
     /skills        the skills this session loaded (SKILL.md directories), and
                    why any did not
     /mcp           the MCP servers this session connected, and why any did not.
@@ -251,6 +261,11 @@
                    ␛[38;5;241mterminal   what this terminal answered when shhh asked what␛[m
                    ␛[38;5;241m           it can do: inline images, desktop notifications,␛[m
                    ␛[38;5;241m           focus events, cell size␛[m
+    ␛[38;5;252m/safety␛[m        ␛[38;5;241mthe session's whole boundary on one screen (also /security):␛[m
+                   ␛[38;5;241mthe mode and grants, where it may write, what contains its␛[m
+                   ␛[38;5;241mcommands, the hosts it reaches, what the checkout was let␛[m
+                   ␛[38;5;241mload, its servers, secrets and tools — each section naming␛[m
+                   ␛[38;5;241mthe command that changes it. It reads and changes nothing␛[m
     ␛[38;5;252m/skills␛[m        ␛[38;5;241mthe skills this session loaded (SKILL.md directories), and␛[m
                    ␛[38;5;241mwhy any did not␛[m
     ␛[38;5;252m/mcp␛[m           ␛[38;5;241mthe MCP servers this session connected, and why any did not.␛[m
@@ -335,6 +350,11 @@
                    ␛[38;5;241m           focus events, cell size␛[m
     ␛[38;5;252m/sandbox␛[m       ␛[38;5;241mcontainment status and container sandboxes␛[m
                    ␛[38;5;241m(doctor|scope|list|status|destroy <id>|prune)␛[m
+    ␛[38;5;252m/safety␛[m        ␛[38;5;241mthe session's whole boundary on one screen (also /security):␛[m
+                   ␛[38;5;241mthe mode and grants, where it may write, what contains its␛[m
+                   ␛[38;5;241mcommands, the hosts it reaches, what the checkout was let␛[m
+                   ␛[38;5;241mload, its servers, secrets and tools — each section naming␛[m
+                   ␛[38;5;241mthe command that changes it. It reads and changes nothing␛[m
     ␛[38;5;252m/skills␛[m        ␛[38;5;241mthe skills this session loaded (SKILL.md directories), and␛[m
                    ␛[38;5;241mwhy any did not␛[m
     ␛[38;5;252m/mcp␛[m           ␛[38;5;241mthe MCP servers this session connected, and why any did not.␛[m

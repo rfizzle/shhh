@@ -179,6 +179,11 @@ const (
 	// it. A takeover like the context surface: full width, the rail hidden,
 	// esc returns, and it changes nothing.
 	stateSources
+	// stateSafety: the safety reading is up — the session's whole boundary,
+	// each section in its owning command's words. A takeover like the
+	// sources screen: full width, the rail hidden, esc returns, and it
+	// changes nothing (safety.go).
+	stateSafety
 	// stateNotes: the notes screen is up — the session's shared notebook,
 	// grouped by the agent that wrote each note, with the note the pointer
 	// is on beside it. A takeover like the sources screen: full width, the
@@ -1471,6 +1476,10 @@ type Model struct {
 	// the session had read when the reader asked.
 	sourceLedger *web.Ledger
 	sources      *components.SourcesScreen
+	// The safety reading: the readings only the command package can make,
+	// and the screen while it is up, built once per opening (safety.go).
+	safety       Safety
+	safetyScreen *components.SafetyScreen
 	// The settings surface: what a session may open the config screen with,
 	// and the staged pass over the file while one is up. Both come from the
 	// CLI — the chat package owns no config semantics, the way it owns none

@@ -2150,12 +2150,13 @@ the list on the left, the one the pointer is on beside it, and the renaming
 and deleting the picker inside a session already offers
 (../capabilities/sessions-and-memory.md#housekeeping).
 
-Eleven surfaces take the whole terminal this way — those seven, the reading of
+Twelve surfaces take the whole terminal this way — those seven, the reading of
 what is in the session's context, the ledger of what the session read
 (`/sources`, [what was read](../capabilities/chat.md#what-was-read)), the
-session's shared notebook (`/notes`, below) and the
+session's shared notebook (`/notes`, below), the reading of the session's
+boundary (`/safety`, [the safety reading](#the-safety-reading)) and the
 drafting flow for a new agent profile — and they are one family rather than
-eleven screens: the same header, the same
+twelve screens: the same header, the same
 ground given up in the same order as the terminal narrows, the same key row at
 the foot and the same `[?]` behind it. The two that arrived last had each been
 drawing a chrome of their own, and the way that showed was not in either of
@@ -2169,7 +2170,7 @@ act in one word: `quit` where the screen was opened from a command line,
 under the key a reader reaches for without thinking, and there it is a phrase:
 **back to the shell** on doctor, metrics, history, snippets and the saved-chat
 browser, **back to the prompt** on the context reading, the sources ledger, the
-notebook and the backlog, which is drawn on this chrome too ([the backlog screen](#the-backlog-screen)).
+safety reading, the notebook and the backlog, which is drawn on this chrome too ([the backlog screen](#the-backlog-screen)).
 For leaving a screen and changing nothing there is no third wording.
 
 Three of them leave by doing something rather than nothing, and each says what
@@ -2468,6 +2469,51 @@ the surface that decides what to do about a full window is the card, and this
 one only says what filled it. Because it changes nothing, it is also the one
 occupancy surface that can be opened in the middle of a turn: a window filling
 up while the agent works is exactly when the question gets asked.
+
+### The safety reading
+
+`/safety` (also `/security`) is the session's whole boundary on one screen:
+the mode and what it grants, where the session may write and which
+directories only a person's own `/add-dir` will open, what contains its
+commands and what that mechanism masks and lets through, which hosts it
+reaches without a card and which are refused, whether the checkout was
+trusted and what it was not let load, each server and whether its calls ask,
+the names of the secrets it holds and whether the environment mask is on, and
+the registered tools in their tiers. Every one of those already had a command
+that answers it; this is the eight answers in one place, in each command's
+own words, because a boundary pieced together from eight commands is one the
+reader has usually stopped assembling by the fourth
+([one reading of the boundary](../capabilities/approvals-and-safety.md#one-reading-of-the-boundary)).
+
+It is a take-over screen in the family rather than a report in the
+transcript, and the width decided it: eight sections, several of them lists
+of paths or hosts, stop being readable as one transcript row at sixty
+columns, and a row the reader has to scroll the whole transcript to get past
+is a row that pushed the conversation off the screen to say something the
+reader asked for once. On the screen it scrolls instead, and each end of the
+pane names the sections it is sitting on rather than only counting rows, so
+the part not showing is an answer before the reader moves to it.
+
+Each section ends on the command that changes it — `changed with /add-dir` —
+and the screen has no other key than scrolling, `[?]` and the way back to the
+prompt. That is the whole of what keeps it from becoming a second place to
+edit a fact another command owns: it points at the owner instead. A grant is
+listed with when it ends in the same words its card offered it under. What a
+session does not have is a section that says so, dim, rather than a section
+left out: containment that is unavailable, a checkout whose trust was
+withheld, no servers. In a conversation the mode section says there is one
+mode and no card, and the web section says a fetch runs without asking,
+because a mode drawn there would be one the session does not run under
+([a conversation has one mode](../capabilities/chat.md#a-conversation-has-one-mode)).
+
+It reads the session as it stands when it is opened, the way the sources
+ledger does, and is built again at the next opening: a directory added or a
+mode changed while it was closed is on it the next time. Machine-level
+containment — which mechanisms this host has, the probe that found them —
+stays with `/sandbox doctor` and `shhh doctor`; this screen reads the one the
+session already found. No artboard in the design system draws it yet, so its
+layout is this family's chrome over sections that wrap rather than clip, and
+that is a gap for the design to close rather than a disagreement with it.
 
 ### A staged attachment
 

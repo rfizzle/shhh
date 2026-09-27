@@ -139,6 +139,20 @@ docs.rs                                                          │
 
 [↑↓/jk] move · [enter] read the page that was kept · [esc] back to the prompt               recorded by the tool, not by the model
 
+· safety · the reading, its subject beside the title and the way back on the right
+/safety · manual · sandbox-exec                                                                                [?] keys · [q] back
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+MODE AND POLICY
+  Mode: manual — every consequential call asks.
+
+  Grants:
+    commands   "go test", that line alone — until this turn ends
+    config     2 command patterns from behavior.command_allowlist — not this session's to revoke
+↓ 7 more · where it may write · containment · web · what the checkout was let load · mcp · secrets · tools
+
+[↑↓/jk] scroll · [esc] back to the prompt                                                      a reading · nothing here changes it
+
 ── ansi ────────────────────────────────────────────────────
 · doctor · the count on the left, the clock and the keys on the right
 ␛[1;97mshhh doctor␛[m␛[38;5;241m · 10 checks␛[m                                                                                 ␛[38;5;245m1.4s␛[m␛[38;5;241m · [?] keys · [q] quit␛[m
@@ -268,3 +282,17 @@ docs.rs                                                          │
                                                                 ␛[38;5;241m │ ␛[m  ␛[38;5;243mstatus ␛[m␛[38;5;252m200␛[m
 
 ␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m read the page that was kept␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m               ␛[38;5;241mrecorded by the tool, not by the model␛[m
+
+· safety · the reading, its subject beside the title and the way back on the right
+␛[1;97m/safety␛[m␛[38;5;241m · manual · sandbox-exec␛[m                                                                                ␛[38;5;241m[?] keys · [q] back␛[m
+␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+
+␛[38;5;243mMODE AND POLICY␛[m
+␛[38;5;252m  Mode: manual — every consequential call asks.␛[m
+␛[38;5;252m␛[m
+␛[38;5;252m  Grants:␛[m
+␛[38;5;252m    commands   "go test", that line alone — until this turn ends␛[m
+␛[38;5;252m    config     2 command patterns from behavior.command_allowlist — not this session's to revoke␛[m
+␛[38;5;241m↓ 7 more · where it may write · containment · web · what the checkout was let load · mcp · secrets · tools␛[m
+
+␛[94m[↑↓/jk]␛[m␛[38;5;241m scroll␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m                                                      ␛[38;5;241ma reading · nothing here changes it␛[m

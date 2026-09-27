@@ -82,8 +82,12 @@ func joinAnd(names []string) string {
 // there is neither. It is on the same screen as the tool sources because it
 // is the same question — what is not here, or not as it was — asked of the
 // checkout rather than of the servers.
-func (m Model) trustStatus() string {
-	t := m.trust()
+func (m Model) trustStatus() string { return m.trust().status() }
+
+// status is trustStatus of a standing handed over rather than read off the
+// start screen, which is what /safety holds in a conversation: that session
+// draws no start screen, and its checkout was answered for all the same.
+func (t Trust) status() string {
 	if len(t.Changed) > 0 {
 		return "Changed\nThis checkout's " + joinAnd(t.Changed) +
 			" changed since you trusted it, and are in this session as they are now.\n" +

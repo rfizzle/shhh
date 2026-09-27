@@ -136,6 +136,7 @@ revoke [commands|edits|hosts|agents]   take the grants back`,
 	"/reasoning": `how much thinking the model does before it answers: off (the default), low, medium, high, xhigh or max — ctrl+t cycles them
 [level]           set it for this session (also /think)
 default [level]   show or persist the level new sessions start on (provider.reasoning)`,
+	"/safety":   `the session's whole boundary on one screen (also /security): the mode and grants, where it may write, what contains its commands, the hosts it reaches, what the checkout was let load, its servers, secrets and tools — each section naming the command that changes it. It reads and changes nothing`,
 	"/sources":  `what this session read: every fetch and every search, its own and its children's, grouped by host — with the whole page under [enter] where the fetch kept one`,
 	"/context":  `the window as a meter, by category, with the tools itemised`,
 	"/stats":    `context occupancy breakdown and cumulative session spend`,

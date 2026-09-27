@@ -3532,6 +3532,10 @@ func TestGolden_ScreenFamily(t *testing.T) {
 					View: (&SourcesScreen{
 						Rows: sourceRows(), Subject: "2 pages · 1 host · 1 search", Focus: 1, MaxLines: 12,
 					}).View(width)},
+				{Label: "safety · the reading, its subject beside the title and the way back on the right",
+					View: (&SafetyScreen{
+						Sections: safetySections(), Subject: "manual · sandbox-exec", MaxLines: 12,
+					}).View(width)},
 			}
 		})
 }

@@ -16,6 +16,7 @@ var _ = []Sized{
 	(*DoctorScreen)(nil), (*MetricsScreen)(nil), (*ConfigScreen)(nil),
 	(*HistoryScreen)(nil), (*RateScreen)(nil), (*ContextScreen)(nil),
 	(*ProfileScreen)(nil), (*SnippetScreen)(nil), (*ChatScreen)(nil),
+	(*SafetyScreen)(nil),
 	(*ReviewView)(nil), (*DiffView)(nil),
 	(*OutputView)(nil), (*AttachmentView)(nil),
 }
@@ -65,6 +66,9 @@ func TestScreenHeader_TheTallyDropsBeforeTheWayOut(t *testing.T) {
 		{"profile", 44, "[esc] leave", "reviewer tester", func(w int) string { return profile().View(w) }},
 		{"snippets", 44, "[q] quit", "3 snippets", func(w int) string { return snippetScreen().View(w) }},
 		{"chats", 44, "[q] quit", "3 conversations", func(w int) string { return chatScreen().View(w) }},
+		{"safety", 36, "[q] back", "sandbox-exec", func(w int) string {
+			return (&SafetyScreen{Sections: safetySections(), Subject: "manual · sandbox-exec", MaxLines: 12}).View(w)
+		}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			head := headerOf(tc.view(tc.narrow))

@@ -57,6 +57,10 @@
                    keys; off hands selection back to the terminal, and ctrl+x flips it and saves it
                    terminal   what this terminal answered when shhh asked what it can do: inline images,
                               desktop notifications, focus events, cell size
+    /safety        the session's whole boundary on one screen (also /security): the mode and grants, where it
+                   may write, what contains its commands, the hosts it reaches, what the checkout was let
+                   load, its servers, secrets and tools — each section naming the command that changes it. It
+                   reads and changes nothing
     /skills        the skills this session loaded (SKILL.md directories), and why any did not
     /mcp           the MCP servers this session connected, and why any did not. trust <name> lets a server
                    this checkout declares start from the next session on; distrust <name> withdraws that
@@ -121,6 +125,10 @@
                    terminal   what this terminal answered when shhh asked what it can do: inline images,
                               desktop notifications, focus events, cell size
     /sandbox       containment status and container sandboxes (doctor|scope|list|status|destroy <id>|prune)
+    /safety        the session's whole boundary on one screen (also /security): the mode and grants, where it
+                   may write, what contains its commands, the hosts it reaches, what the checkout was let
+                   load, its servers, secrets and tools — each section naming the command that changes it. It
+                   reads and changes nothing
     /skills        the skills this session loaded (SKILL.md directories), and why any did not
     /mcp           the MCP servers this session connected, and why any did not. trust <name> lets a server
                    this checkout declares start from the next session on; distrust <name> withdraws that
@@ -194,6 +202,10 @@
                    ␛[38;5;244mkeys; off hands selection back to the terminal, and ctrl+x flips it and saves it␛[m
                    ␛[38;5;244mterminal   what this terminal answered when shhh asked what it can do: inline images,␛[m
                    ␛[38;5;244m           desktop notifications, focus events, cell size␛[m
+    ␛[38;5;254m/safety␛[m        ␛[38;5;244mthe session's whole boundary on one screen (also /security): the mode and grants, where it␛[m
+                   ␛[38;5;244mmay write, what contains its commands, the hosts it reaches, what the checkout was let␛[m
+                   ␛[38;5;244mload, its servers, secrets and tools — each section naming the command that changes it. It␛[m
+                   ␛[38;5;244mreads and changes nothing␛[m
     ␛[38;5;254m/skills␛[m        ␛[38;5;244mthe skills this session loaded (SKILL.md directories), and why any did not␛[m
     ␛[38;5;254m/mcp␛[m           ␛[38;5;244mthe MCP servers this session connected, and why any did not. trust <name> lets a server␛[m
                    ␛[38;5;244mthis checkout declares start from the next session on; distrust <name> withdraws that␛[m
@@ -258,6 +270,10 @@
                    ␛[38;5;244mterminal   what this terminal answered when shhh asked what it can do: inline images,␛[m
                    ␛[38;5;244m           desktop notifications, focus events, cell size␛[m
     ␛[38;5;254m/sandbox␛[m       ␛[38;5;244mcontainment status and container sandboxes (doctor|scope|list|status|destroy <id>|prune)␛[m
+    ␛[38;5;254m/safety␛[m        ␛[38;5;244mthe session's whole boundary on one screen (also /security): the mode and grants, where it␛[m
+                   ␛[38;5;244mmay write, what contains its commands, the hosts it reaches, what the checkout was let␛[m
+                   ␛[38;5;244mload, its servers, secrets and tools — each section naming the command that changes it. It␛[m
+                   ␛[38;5;244mreads and changes nothing␛[m
     ␛[38;5;254m/skills␛[m        ␛[38;5;244mthe skills this session loaded (SKILL.md directories), and why any did not␛[m
     ␛[38;5;254m/mcp␛[m           ␛[38;5;244mthe MCP servers this session connected, and why any did not. trust <name> lets a server␛[m
                    ␛[38;5;244mthis checkout declares start from the next session on; distrust <name> withdraws that␛[m

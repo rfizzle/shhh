@@ -18,6 +18,11 @@ type Containment struct {
 	TailRun TailFunc
 	Status  string
 	Report  string
+	// Now is Report resolved again against the working scope as it stands,
+	// on the mechanism the session already found — no probe — which is what
+	// /safety reads, so a directory granted mid-session is on the page.
+	// Nil leaves the reading on Report.
+	Now func() string
 	// Mechanism, Profile and Network are the same state in the pieces the
 	// approval card's blast-radius block needs: the chip on the title
 	// rail, and the honest answer to "is the network open". An empty

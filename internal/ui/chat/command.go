@@ -256,6 +256,12 @@ func (m Model) runCommand(text, name string) (tea.Model, tea.Cmd) {
 		// came from.
 		return m.openSources()
 
+	case text == "/safety" || text == "/security":
+		// The session's whole boundary, full screen. It reads and changes
+		// nothing, so it is not idleOnly: a turn that just asked for
+		// something is when a person wants to see what it may do (safety.go).
+		return m.openSafety()
+
 	case text == "/context":
 		// The occupancy surface, full screen. It reads the conversation
 		// and changes nothing in it, so it is not idleOnly: a window filling

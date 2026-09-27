@@ -1317,6 +1317,17 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 			Abandon: mcpTools.AbandonCalls,
 		})
 	}
+	// The readings /safety needs that the chat cannot make itself, each the
+	// one its owning command already makes: the trust the start screen is
+	// handed, the servers as /mcp reports them, and the vault's names. It is
+	// wired in both sessions, because a conversation has a boundary too
+	// (docs/capabilities/approvals-and-safety.md#one-reading-of-the-boundary).
+	model = model.WithSafety(chat.Safety{
+		Trust:   chatTrust(db),
+		Servers: safetyServers(session.mcpTools),
+		Secrets: session.vault.Names,
+		EnvMask: cfg.SecretsEnvMaskEnabled(),
+	})
 	if len(gatedPreviews) > 0 {
 		model = model.WithGatedTools(gatedPreviews)
 	}

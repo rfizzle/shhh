@@ -152,6 +152,7 @@ func buildContainment(cfg config.Config, sc *scope.Scope, sup *process.Superviso
 		Report:  sandbox.Report(avail, policy, runningProcesses(sup)),
 		Manage:  sandboxManage(cfg, sc, sup),
 		Writers: writerContainment(cfg, avail).line(),
+		Now:     func() string { return sandboxReportOn(avail, cfg, sc, sup) },
 	}
 	if !avail.OK {
 		c.Status = "unconfined — " + avail.Detail
@@ -378,7 +379,13 @@ func ownedSummary() string {
 // reason: at session start there are none, and the interesting number is the
 // one the reader is asking about.
 func sandboxReportNow(cfg config.Config, sc *scope.Scope, sup *process.Supervisor) string {
-	avail := sandbox.Detect()
+	return sandboxReportOn(sandbox.Detect(), cfg, sc, sup)
+}
+
+// sandboxReportOn is that report on a mechanism already found, which is what
+// /safety reads: the session's own containment as it stands, without asking
+// the machine again what it has (chat.Containment.Now).
+func sandboxReportOn(avail sandbox.Availability, cfg config.Config, sc *scope.Scope, sup *process.Supervisor) string {
 	policy, err := sandboxPolicy(cfg, sc.Beyond()...)
 	if err != nil {
 		return "Command containment: policy unreadable — " + err.Error()

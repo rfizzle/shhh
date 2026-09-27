@@ -104,6 +104,14 @@
                               do: inline images, desktop
                               notifications, focus events,
                               cell size
+    /safety        the session's whole boundary on one
+                   screen (also /security): the mode and
+                   grants, where it may write, what contains
+                   its commands, the hosts it reaches, what
+                   the checkout was let load, its servers,
+                   secrets and tools — each section naming
+                   the command that changes it. It reads and
+                   changes nothing
     /skills        the skills this session loaded (SKILL.md
                    directories), and why any did not
     /mcp           the MCP servers this session connected,
@@ -233,6 +241,14 @@
                    sandboxes
                    (doctor|scope|list|status|destroy
                    <id>|prune)
+    /safety        the session's whole boundary on one
+                   screen (also /security): the mode and
+                   grants, where it may write, what contains
+                   its commands, the hosts it reaches, what
+                   the checkout was let load, its servers,
+                   secrets and tools — each section naming
+                   the command that changes it. It reads and
+                   changes nothing
     /skills        the skills this session loaded (SKILL.md
                    directories), and why any did not
     /mcp           the MCP servers this session connected,
@@ -379,6 +395,14 @@
                    ␛[38;5;244m           do: inline images, desktop␛[m
                    ␛[38;5;244m           notifications, focus events,␛[m
                    ␛[38;5;244m           cell size␛[m
+    ␛[38;5;254m/safety␛[m        ␛[38;5;244mthe session's whole boundary on one␛[m
+                   ␛[38;5;244mscreen (also /security): the mode and␛[m
+                   ␛[38;5;244mgrants, where it may write, what contains␛[m
+                   ␛[38;5;244mits commands, the hosts it reaches, what␛[m
+                   ␛[38;5;244mthe checkout was let load, its servers,␛[m
+                   ␛[38;5;244msecrets and tools — each section naming␛[m
+                   ␛[38;5;244mthe command that changes it. It reads and␛[m
+                   ␛[38;5;244mchanges nothing␛[m
     ␛[38;5;254m/skills␛[m        ␛[38;5;244mthe skills this session loaded (SKILL.md␛[m
                    ␛[38;5;244mdirectories), and why any did not␛[m
     ␛[38;5;254m/mcp␛[m           ␛[38;5;244mthe MCP servers this session connected,␛[m
@@ -508,6 +532,14 @@
                    ␛[38;5;244msandboxes␛[m
                    ␛[38;5;244m(doctor|scope|list|status|destroy␛[m
                    ␛[38;5;244m<id>|prune)␛[m
+    ␛[38;5;254m/safety␛[m        ␛[38;5;244mthe session's whole boundary on one␛[m
+                   ␛[38;5;244mscreen (also /security): the mode and␛[m
+                   ␛[38;5;244mgrants, where it may write, what contains␛[m
+                   ␛[38;5;244mits commands, the hosts it reaches, what␛[m
+                   ␛[38;5;244mthe checkout was let load, its servers,␛[m
+                   ␛[38;5;244msecrets and tools — each section naming␛[m
+                   ␛[38;5;244mthe command that changes it. It reads and␛[m
+                   ␛[38;5;244mchanges nothing␛[m
     ␛[38;5;254m/skills␛[m        ␛[38;5;244mthe skills this session loaded (SKILL.md␛[m
                    ␛[38;5;244mdirectories), and why any did not␛[m
     ␛[38;5;254m/mcp␛[m           ␛[38;5;244mthe MCP servers this session connected,␛[m
