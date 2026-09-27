@@ -44,6 +44,7 @@ import (
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/todo"
 	"github.com/rfizzle/shhh/internal/todo/run"
+	"github.com/rfizzle/shhh/internal/web"
 	"github.com/spf13/cobra"
 )
 
@@ -349,6 +350,9 @@ type todoTurn struct {
 	gate quality.Closing
 	// written is the paths the stage's own calls wrote.
 	written []string
+	// sources is what the stage's process read, off its transcript's
+	// sources field — that process's own ledger, never the answer's prose.
+	sources []web.Source
 	// chat is the slot the stage's process left its conversation in, and
 	// resume the command that opens it again — both off the same transcript,
 	// so the run never composes a command for a slot it only guessed at.
@@ -717,6 +721,7 @@ func (d *todoDriver) carry(ctx context.Context, deadline time.Time, st *run.Stat
 		d.wrote = append(d.wrote, t.written...)
 		d.keepChat(t)
 		d.spent(t)
+		readSources(st, t.sources)
 		if t.overSpend != nil {
 			return st.Block(run.OverSpend(step.Stage, t.overSpend.Spent, t.overSpend.Cap))
 		}
@@ -843,14 +848,15 @@ func (d *todoDriver) ask(ctx context.Context, deadline time.Time, dir string, st
 		code = ee.ExitCode()
 	}
 	var t struct {
-		Final     string   `json:"final"`
-		Error     string   `json:"error"`
-		Truncated bool     `json:"truncated"`
-		Gate      string   `json:"gate"`
-		Written   []string `json:"written"`
-		Chat      string   `json:"chat"`
-		Session   string   `json:"session"`
-		Resume    string   `json:"resume"`
+		Final     string       `json:"final"`
+		Error     string       `json:"error"`
+		Truncated bool         `json:"truncated"`
+		Gate      string       `json:"gate"`
+		Written   []string     `json:"written"`
+		Chat      string       `json:"chat"`
+		Session   string       `json:"session"`
+		Resume    string       `json:"resume"`
+		Sources   []jsonSource `json:"sources"`
 	}
 	_ = json.Unmarshal([]byte(out.String()), &t)
 	// The paths are relative to the directory the stage stood in, which is
@@ -862,7 +868,7 @@ func (d *todoDriver) ask(ctx context.Context, deadline time.Time, dir string, st
 	}
 	turn := todoTurn{code: code, truncated: t.Truncated, chat: t.Chat, resume: t.Resume,
 		gate: quality.Closing(t.Gate), written: todoWritten(d.tree, written),
-		cost: d.stageCost(t.Session)}
+		sources: ledgerRows(t.Sources), cost: d.stageCost(t.Session)}
 	// A refusal at the cap is read before the answer is, because the turn it
 	// ended is not one the machine may judge: whatever the stage wrote
 	// before the refusal is half of a step, the same way a reply cut at the
@@ -1221,6 +1227,7 @@ func todoGit(root string, args ...string) (string, int) {
 // the checkpoint goes, because a run that ended has nothing to continue.
 func (d *todoDriver) finish(st *run.State, it todo.Item, sp *run.Sprint) {
 	if st.Stage == run.StageDone {
+		citeSources(st)
 		to, err := run.File(d.root, st, it)
 		if err != nil {
 			// The work is finished and the run package has already put the
@@ -1291,6 +1298,7 @@ func (d *todoDriver) review(ctx context.Context, deadline time.Time, st *run.Sta
 		run.Step{Action: run.ActionPrompt, Stage: step.Stage, Mode: step.Mode, Prompt: task})
 	d.keepChat(t)
 	d.spent(t)
+	readSources(st, t.sources)
 	// A reader stopped by the cap is not a reader that is merely missing:
 	// the reading in this session would be one more request against a
 	// ceiling the item has already reached.
@@ -1425,6 +1433,7 @@ func (d *todoDriver) fanOut(ctx context.Context, deadline time.Time, st *run.Sta
 	wg.Wait()
 	for _, t := range turns {
 		d.spent(t)
+		readSources(st, t.sources)
 	}
 
 	next := run.Step{Action: run.ActionWait, Stage: st.Stage}
@@ -1455,4 +1464,61 @@ func (d *todoDriver) fanOut(ctx context.Context, deadline time.Time, st *run.Sta
 		}
 	}
 	return next
+}
+
+// ledgerRows reads a stage's transcript rows back into the ledger's own
+// shape, so the pages among them are chosen by web.Pages — the one
+// definition of a page that was read — rather than by a second rule here.
+func ledgerRows(rows []jsonSource) []web.Source {
+	out := make([]web.Source, 0, len(rows))
+	for _, r := range rows {
+		out = append(out, web.Source{Kind: r.Kind, FinalURL: r.URL, Query: r.Query, Title: r.Title,
+			Agent: r.Agent, Status: r.Status, Results: r.Results, Bytes: r.Bytes, Evidence: r.Evidence})
+	}
+	return out
+}
+
+// readSources folds the pages one stage read into the run's list, the first
+// read of each page kept. Every stage is its own process with its own
+// ledger, so the run's list is the union the checkpoint carries from stage
+// to stage — and across a process that died between them — and not any one
+// stage's answer. A page a server's tool handed back is not among them, for
+// the reason web.Pages leaves it out.
+// See docs/capabilities/todo.md#a-write-up-says-what-it-read.
+func readSources(st *run.State, rows []web.Source) {
+	listed := map[string]bool{}
+	for _, s := range st.Sources {
+		listed[web.CanonicalURL(s.URL)] = true
+	}
+	for _, s := range web.Pages(rows) {
+		key := web.CanonicalURL(s.FinalURL)
+		if listed[key] {
+			continue
+		}
+		listed[key] = true
+		st.Sources = append(st.Sources, run.Source{URL: s.FinalURL, Title: s.Title, Read: true})
+	}
+}
+
+// citeSources adds, under what the stages read, each address the report
+// cites that none of them did — the second list SourcesSection draws. It is
+// asked only of a run that read something, as a session asks it only of a
+// ledger with rows in it: a run with no web at all has no reading to hold
+// its citations to, and a block saying so on every item would be noise.
+func citeSources(st *run.State) {
+	if len(st.Sources) == 0 {
+		return
+	}
+	listed := map[string]bool{}
+	for _, s := range st.Sources {
+		listed[web.CanonicalURL(s.URL)] = true
+	}
+	for _, url := range web.CitedURLs(st.Report) {
+		key := web.CanonicalURL(url)
+		if listed[key] {
+			continue
+		}
+		listed[key] = true
+		st.Sources = append(st.Sources, run.Source{URL: url})
+	}
 }

@@ -249,6 +249,35 @@ there is one vocabulary and a separate process reads one of the two.
 The three are absent together on a run whose store never opened, because a
 handle that opens nothing is worse than none.
 
+### A run says what it read
+
+An unattended run keeps the ledger a session keeps — one row per fetch, per
+search and per page a server's tool handed back, recorded by the tool that did
+the reading and never by the model ([`chat.md`](chat.md#what-was-read)) — and
+both JSON shapes state it. The transcript gains a `sources` field holding the
+rows in the order they were recorded; the stream writes each row as a `source`
+line of its own as it lands, so a reader of the stream alone has the same
+list. A row is the fields the sources screen draws one from: its `kind`
+(`fetch`, `search`, or `mcp` for a page a server's tool handed back), the
+`url` that answered, the search's `query`, the page's `title`, the `agent`
+that read it, the `status` the address answered with, a search's `results`,
+the `bytes` it brought back and the `evidence` entry holding the page.
+
+It is there for the write-up nobody watched being written. A URL the answer
+cites that no fetch row answered for with a success is cited and not read, and
+a caller can now say so without having been in the room. A server's page
+travels as `mcp` and never as a fetch: shhh made no request for it, so it is a
+page the run was shown and not one a citation can be checked against.
+
+**The field is an addition, not a change.** It is absent on a run that read
+nothing — which is every run that has no web tools and no servers — so every
+reader of the transcript written before it reads the same bytes it always
+did, and a reader that ignores unknown fields reads a run that did read the
+same way. A served session carries the same `source` line on its client's
+stream, because what a client is sent is the line `--output jsonl` prints
+([below](#something-else-can-drive-it)). The model is told nothing about any
+of it: the ledger has no tool, and this is a reading of the ledger.
+
 ## The stream is the record as it happens
 
 `jsonl` exists for the thing that has to act before the run is over: a lane in
@@ -258,8 +287,9 @@ started doing something it should not.
 Every line carries its kind, where in the run it happened, and its payload:
 the answer arriving in pieces, a call the model asked for, what that call came
 back with, an approval verdict, one of the loop's own safeguards firing, the
-running totals, a child the run delegated to starting and ending, and a close
-line stating how the turn ended and the code the process is about to exit with.
+running totals, a child the run delegated to starting and ending, a page or a
+search the run read ([above](#a-run-says-what-it-read)), and a close line
+stating how the turn ended and the code the process is about to exit with.
 
 **A child is two `agent` lines: one as it starts, one as it ends.** They are
 the line a served session writes at every state change of a child, spelled the
@@ -598,7 +628,10 @@ a repository the run reads and builds in its own turn instead, with the step
 label saying so.
 
 Everything else is unchanged — shhh runs the verification, shhh makes the
-commit, and only paths the run itself changed are staged.
+commit, and only paths the run itself changed are staged. A write-up's
+*Sources* block is built from what each stage's own process said it read, in
+the transcript field above, and never from the write-up's prose
+([`todo.md`](todo.md#a-write-up-says-what-it-read)).
 
 **A sprint is one thing in the record and one thing in the store.** The runner
 opens a session row of its own and every stage's row hangs under it, so a

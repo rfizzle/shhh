@@ -1097,6 +1097,30 @@ or meter — only the lanes, what the sprint has spent, what it takes next,
 and a row for each item in flight — and that is still the screen behind the
 rail's row.
 
+## A write-up says what it read
+
+A run's *Sources* block is the pages the run actually fetched, and under them
+the addresses the report cites that none of them were
+([`chat.md`](chat.md#what-was-read)). In a session the list is the session's
+own ledger. Worked from a script, every stage is a process with a ledger of
+its own, gone when the process is — so each stage's transcript states its
+rows ([`headless.md`](headless.md#a-run-says-what-it-read)), and the runner
+folds the pages among them into the item's checkpoint as each stage returns.
+The first read of a page is the one kept, because that is the one the
+write-up's claims were formed from, and the list outlives a process that died
+between two stages the way the rest of the checkpoint does.
+
+What counts as read is the same rule on both surfaces: a fetch that answered
+with a success. A search, a fetch that came back with an error page, and a
+page a server's tool handed back are not pages a citation can be checked
+against, so none of them is listed as read. A run that read nothing is given
+no block at all, as a session whose ledger is empty is given none — a
+*nothing was read* on every item of a backlog that never touches the web
+would be noise rather than a finding.
+
+Nothing else about a run moves. The stage prompts do not mention it and the
+model is told nothing: the list is a reading of what the tools recorded.
+
 ## Done is archived, not deleted
 
 A finished item moves into an archive beside the active ones, with the

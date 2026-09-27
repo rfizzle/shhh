@@ -303,6 +303,61 @@ type headlessObserver struct {
 	// that reaches the table and not the stream is how the two vocabularies
 	// come apart, and nothing fails when they do.
 	stream *jsonlStream
+	// sources is the run's sources ledger as the stream is told about it:
+	// each row once, as it lands. Nil is a run that keeps no ledger.
+	sources *sourceFeed
+}
+
+// sourceFeed is how far the stream has been told about a ledger. It is a
+// pointer on the observer, not a count in it, because the observer is a value
+// handed out by copy (inTurn) and every copy is reporting the one ledger.
+type sourceFeed struct {
+	mu     sync.Mutex
+	ledger *web.Ledger
+	sent   int
+}
+
+// newSourceFeed follows a ledger; nil for a run that keeps none.
+func newSourceFeed(l *web.Ledger) *sourceFeed {
+	if l == nil {
+		return nil
+	}
+	return &sourceFeed{ledger: l}
+}
+
+// fresh is the rows the stream has not been told about yet, oldest first.
+// An unattended ledger is never bound to a slot, so its rows only ever
+// append and the count already written is where the next one starts.
+func (f *sourceFeed) fresh() []web.Source {
+	if f == nil {
+		return nil
+	}
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	rows := f.ledger.List()
+	if f.sent >= len(rows) {
+		return nil
+	}
+	out := rows[f.sent:]
+	f.sent = len(rows)
+	return out
+}
+
+// sourcesRead puts every ledger row recorded since the last call on the
+// stream, one line each. It is asked after each tool result and once more
+// before the close line: the orchestrator's own reads land inside the call
+// that made them, and a child's — it fetches through this run's toolset —
+// by the time the call that waited on it returns, or by the close at the
+// latest. The record is not told: a row carries an address, and the record
+// is content-free by construction.
+// See docs/capabilities/headless.md#a-run-says-what-it-read.
+func (h headlessObserver) sourcesRead() {
+	if h.stream == nil {
+		return
+	}
+	for _, s := range h.sources.fresh() {
+		h.stream.source(h.pos(), jsonSourceOf(s))
+	}
 }
 
 // pos is where the run is now.
@@ -403,6 +458,7 @@ func (h headlessObserver) toolResult(r agent.ToolResult) {
 	if agent.IsRepeatNotice(r.Result) {
 		h.signal(observe.SignalRepeat, r.Call.Name)
 	}
+	h.sourcesRead()
 }
 
 // decision records what the approver resolved a gated call to. A headless
@@ -801,6 +857,10 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	if session.mcp {
 		defer session.attachMCP(cmd.Context(), db, session.conversation)()
 	}
+	// What the run read, kept the way a session keeps it and stated in both
+	// JSON shapes, because a write-up nobody watched is judged against it.
+	// See docs/capabilities/headless.md#a-run-says-what-it-read.
+	session.openSourceLedger(db)
 
 	registerSkills(&session)
 
@@ -1161,7 +1221,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	if opts.output == outputJSONL {
 		events = newJSONLStream(os.Stdout)
 	}
-	obs := headlessObserver{rec: recorder, rounds: a.Rounds, stream: events}
+	obs := headlessObserver{rec: recorder, rounds: a.Rounds, stream: events, sources: newSourceFeed(session.sources)}
 	// The reading a run closes on is not waited for, so it can land after
 	// the loop has returned — and a one-shot has nowhere to put it by then:
 	// the stream's last line has been written, the record is being closed,
@@ -1448,11 +1508,13 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 			// Under a schema a cut answer is a miss rather than a label: the
 			// check above refused it, so what is quoted is never half a value.
 			truncated: h.TruncatedReply() && shape == nil,
-			usage:     usage, gate: closing.state(), written: own.paths(), left: left, err: out,
+			usage:     usage, gate: closing.state(), written: own.paths(), sources: session.sources.List(),
+			left: left, err: out,
 		}); err != nil {
 			return err
 		}
 	case outputJSONL:
+		obs.sourcesRead()
 		events.closed(obs.pos(), outcome, code, final, answer, usage, left, out)
 	}
 	// Nothing to report and nothing to report it as: every code above zero
@@ -2259,9 +2321,17 @@ type jsonTranscript struct {
 	// to what it cost in `shhh observe`, and it is spelled as the hook
 	// payload spells the same id.
 	// See docs/capabilities/headless.md#the-run-says-where-it-left-off.
-	Chat     string        `json:"chat,omitempty"`
-	Session  string        `json:"session,omitempty"`
-	Resume   string        `json:"resume,omitempty"`
+	Chat    string `json:"chat,omitempty"`
+	Session string `json:"session,omitempty"`
+	Resume  string `json:"resume,omitempty"`
+	// Sources is what the run read, from its sources ledger and never from
+	// the answer's prose: one row per fetch, per search and per page a
+	// server's tool handed back, in the order they were recorded. It is here
+	// so a write-up nobody watched being written can be held to what was
+	// actually read — a URL the answer cites that no fetch row answered for
+	// is cited and not read. It is absent for a run that read nothing.
+	// See docs/capabilities/headless.md#a-run-says-what-it-read.
+	Sources  []jsonSource  `json:"sources,omitempty"`
 	Usage    jsonUsage     `json:"usage"`
 	Messages []jsonMessage `json:"messages"`
 
@@ -2279,6 +2349,50 @@ func (t jsonTranscript) MarshalJSON() ([]byte, error) {
 		plain
 		Final json.RawMessage `json:"final"`
 	}{plain(t), t.answer})
+}
+
+// jsonSource is one ledger row as both JSON shapes state it: the fields the
+// sources screen draws a row from, in the ledger's own words. Kind is the
+// ledger's closed set — a fetch, a search, or "mcp" for a page a server's
+// tool handed back, which shhh made no request for and which is therefore
+// never one of the pages a citation is checked against. URL is the address
+// that answered, or the one asked for where nothing did; Status is what it
+// answered with, and is what tells a page that was read from an error page.
+// Title is the extraction's own title — half of how a page is cited — and
+// the one field here that came from the page.
+type jsonSource struct {
+	Kind     string `json:"kind"`
+	URL      string `json:"url,omitempty"`
+	Query    string `json:"query,omitempty"`
+	Title    string `json:"title,omitempty"`
+	Agent    string `json:"agent"`
+	Status   int    `json:"status,omitempty"`
+	Results  int    `json:"results,omitempty"`
+	Bytes    int    `json:"bytes,omitempty"`
+	Evidence string `json:"evidence,omitempty"`
+}
+
+// jsonSourceOf is the one reading of a ledger row into that shape.
+func jsonSourceOf(s web.Source) jsonSource {
+	url := s.FinalURL
+	if url == "" {
+		url = s.Requested
+	}
+	return jsonSource{Kind: s.Kind, URL: url, Query: s.Query, Title: s.Title, Agent: s.Agent,
+		Status: s.Status, Results: s.Results, Bytes: s.Bytes, Evidence: s.Evidence}
+}
+
+// jsonSources is a ledger's rows in that shape; nil for none, so the field
+// stays absent on a run that read nothing.
+func jsonSources(rows []web.Source) []jsonSource {
+	if len(rows) == 0 {
+		return nil
+	}
+	out := make([]jsonSource, 0, len(rows))
+	for _, s := range rows {
+		out = append(out, jsonSourceOf(s))
+	}
+	return out
 }
 
 // jsonUsage is what the run cost, as every JSON shape reports it. The cached
@@ -2353,6 +2467,8 @@ type jsonRun struct {
 	usage     provider.Usage
 	gate      quality.Closing
 	written   []string
+	// sources is the run's sources ledger, oldest row first.
+	sources []web.Source
 	// left is where the run can be picked up from: the slot, the record row
 	// and the command.
 	left headlessHandles
@@ -2393,6 +2509,7 @@ func writeJSONTranscript(w io.Writer, r jsonRun) error {
 		Chat:      r.left.chat,
 		Session:   r.left.session,
 		Resume:    r.left.resume,
+		Sources:   jsonSources(r.sources),
 		Usage:     usageOf(r.usage),
 		Messages:  jsonMessages(r.messages),
 		answer:    r.answer,
@@ -2461,6 +2578,9 @@ type jsonEvent struct {
 	// Agent belongs to the agent line alone: one child of this session as it
 	// stands right now.
 	Agent *jsonAgent `json:"agent,omitempty"`
+	// Source belongs to the source line alone: one row of the sources
+	// ledger, in the shape the transcript's sources field holds.
+	Source *jsonSource `json:"source,omitempty"`
 	// Exit and Final belong to the close line alone. Exit is a pointer so
 	// that the code the run is about to exit with is stated even when it is
 	// zero, which is the one value a reader most needs to see written down.
@@ -2655,6 +2775,14 @@ func (s *jsonlStream) agent(at observe.Pos, a jsonAgent) {
 		return
 	}
 	s.write(jsonEvent{Kind: observe.EventAgent, Turn: at.Turn, Round: at.Round, Agent: &a})
+}
+
+// source puts one row of the run's sources ledger on the stream.
+func (s *jsonlStream) source(at observe.Pos, row jsonSource) {
+	if s == nil {
+		return
+	}
+	s.write(jsonEvent{Kind: observe.EventSource, Turn: at.Turn, Round: at.Round, Source: &row})
 }
 
 func (s *jsonlStream) usage(at observe.Pos, u provider.Usage) {

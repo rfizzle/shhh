@@ -356,6 +356,10 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 		l.closers = append(l.closers, session.attachMCP(cmd.Context(), db, false))
 		l.mcp = session.mcpTools
 	}
+	// What the session reads, kept the way a terminal session keeps it and
+	// put on the client's stream a row at a time.
+	// See docs/capabilities/headless.md#a-run-says-what-it-read.
+	session.openSourceLedger(db)
 	registerSkills(&session)
 	// The durable memories this project has accumulated, recalled the way a
 	// session recalls them (memory.go). The remember tool does not come with
@@ -511,7 +515,7 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 	// encoder to a writer that hands each finished line to the protocol
 	// instead of to stdout.
 	l.events = newJSONLStream(&eventLines{emit: seams.Emit})
-	l.obs = headlessObserver{rec: l.recorder, rounds: a.Rounds, turn: l.turnNow, stream: l.events}
+	l.obs = headlessObserver{rec: l.recorder, rounds: a.Rounds, turn: l.turnNow, stream: l.events, sources: newSourceFeed(session.sources)}
 	l.verdict.Store(&lastVerdict{})
 	record := func(decision, reason string) { l.verdict.Load().wrap(l.obs.decision)(decision, reason) }
 
@@ -1113,6 +1117,7 @@ func (l *serveLoop) Run(turn int64, prompt string) (string, error) {
 	// because that is the order the two happen in: a hook told about a turn
 	// after the close line had gone out would be closing nothing.
 	l.hookNote(l.hooks.TurnClose(l.hookCtx, l.hookPos(), final))
+	l.obs.sourcesRead()
 	l.events.closed(l.obs.pos(), outcome, headlessExitCode(outcome, gateErr != nil, refused), final, nil, usage,
 		l.saved.handles(l.recorder), out)
 	return final, out

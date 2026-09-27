@@ -946,8 +946,19 @@ address (`pagesRead` in `internal/mcp/client.go`) or when `mcp_resource`
 reads one (`resourcePage`, both through `Toolset.recordPages`), and
 `web.Pages` leaves those rows out, since no request of shhh's answered for
 them — the `/sources` header counts them through `web.ServerPages` instead.
-Only `openSourceLedger` makes a ledger, so a `-p` run and a served session
-file no rows at all.
+`openSourceLedger` (`internal/cli/toolset.go`) is the one place a ledger is
+made, and all three surfaces call it — the session, `runPrintSession` and
+the served assembly — after `attachMCP`
+([`docs/capabilities/headless.md#a-run-says-what-it-read`](docs/capabilities/headless.md#a-run-says-what-it-read)).
+An unattended one is never bound to a slot. It leaves as `jsonSource` rows:
+the transcript's `sources` field, and one `observe.EventSource` line per row
+from `headlessObserver.sourcesRead`, asked after every tool result and once
+before the close line — `sourceFeed` is a pointer on the observer because the
+observer is copied (`inTurn`) and every copy reports one ledger. `todoDriver`
+reads each stage's rows back through `ledgerRows`, folds `web.Pages` of them
+into `State.Sources` (`readSources`, in `carry`, `review` and `fanOut`) and adds
+the report's unread citations at `finish` (`citeSources`), so the checkpoint
+carries the list across a stage's process dying.
 
 `internal/web/pdf.go` shells out to `pdftotext`, resolved once by
 `DetectPDFText` in `openWebTools` (`internal/cli/web.go`) the way the

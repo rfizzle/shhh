@@ -19,6 +19,7 @@ import (
 	"github.com/rfizzle/shhh/internal/reports"
 	"github.com/rfizzle/shhh/internal/scope"
 	"github.com/rfizzle/shhh/internal/skill"
+	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/structural"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/web"
@@ -204,6 +205,41 @@ func buildToolset(cmd *cobra.Command, session *chatSession, kind string, opts to
 		return nil, err
 	}
 	return t, nil
+}
+
+// openSourceLedger gives the web toolset and the MCP toolset the session's
+// sources ledger: one row per fetch, per search and per page a server's tool
+// handed back, persisted under the session slot where storage is open and
+// living for the session otherwise. It registers no tool — nothing the model
+// calls reaches it, because a record the model could write is a record it
+// could write anything into.
+//
+// Every surface opens one, the two unattended ones as well as the screen: a
+// write-up nobody watched being written is the one whose citations most need
+// checking against what was read, and a run that kept no ledger could only
+// quote the write-up back to itself.
+// See docs/capabilities/headless.md#a-run-says-what-it-read.
+//
+// It runs after the secrets are open, for the notebook's reason: a URL
+// carries whatever the model put in its query string, and a row outlives
+// the turn that made it.
+// See docs/capabilities/chat.md#what-was-read.
+func (s *chatSession) openSourceLedger(db *storage.DB) {
+	if s.web == nil && s.mcpTools == nil {
+		return
+	}
+	var backend web.LedgerBackend
+	if db != nil {
+		backend = db
+	}
+	s.sources = web.NewLedger(backend)
+	s.sources.SetScrub(s.vault.Scrub)
+	if s.web != nil {
+		s.web.UseLedger(s.sources)
+	}
+	if s.mcpTools != nil {
+		s.mcpTools.UseLedger(s.sources)
+	}
 }
 
 // toolNames is the names of a set of definitions, which is what the

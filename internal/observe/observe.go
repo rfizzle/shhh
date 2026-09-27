@@ -596,6 +596,11 @@ const (
 	// wherever the run has a reader that cannot see the progress rows a
 	// terminal draws, and carries the record those rows are drawn from.
 	EventAgent = "agent"
+	// EventSource: one row of the run's sources ledger — a page fetched, a
+	// search made, or a page a server's tool handed back — written as the
+	// row is recorded rather than read off the transcript at the end, so a
+	// reader of the stream alone can still judge a write-up's citations.
+	EventSource = "source"
 	// EventClose: the turn ending, carrying the turn outcome above. It is the
 	// last line of every stream and the only one that is always written.
 	EventClose = "close"
