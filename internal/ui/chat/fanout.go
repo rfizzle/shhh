@@ -362,9 +362,12 @@ func (m Model) fanoutBlockFor(e entry) components.FanoutBlock {
 	// The batch's own span is its longest-lived child: a fan-out is over when
 	// the last of them stops.
 	block.Elapsed = turnDuration(longest)
-	// The manager is where a blocked child is answered, and it opens mid-turn
-	//; the answer happens in the list itself, without a
-	// detour through the child's session.
+	// The manager is where a blocked child is answered, and it opens
+	// mid-turn; the answer happens in the list itself, without a detour
+	// through the child's session. The block draws the offer under the lane
+	// that needs you. It is the one spelling from the pointer and from
+	// reading mode's cursor alike, because the manager has a chord and no
+	// letter — the chord answers in both places (focus.go).
 	block.Keys = []components.TurnKey{{Key: keys.Bracket(keys.Draft.Agents), Label: "agents"}}
 	block.Spawned, block.SpawnLimit = m.subagents.Spawned()
 	return block

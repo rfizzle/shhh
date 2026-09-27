@@ -976,6 +976,21 @@ And the run of rule between the title and the chips is in the chrome tone on
 every card, which is the card's own rule
 ([the approval card](surfaces.md#the-approval-card)) and not a departure.
 
+## A fan-out offers the manager, not the answer
+
+*A disagreement.* The `Agents` artboard draws a dim line under the blocked
+lane — `⚠ needs you`, the reason under it, then `[ctrl+b] agents · [a] answer
+it here · the other two keep running`. The binary draws that line in that
+place, with the manager's own chord, and leaves `[a] answer it here` out.
+
+A child's routed ask is a card over the frame, and the card owns the answer:
+it is the one surface holding the keyboard while the ask waits, and it says
+which request its keys are for. A key on the lane that answered the same ask
+would be dead where it is drawn — the card is up whenever there is anything to
+answer — and a second place to answer one request is a second place to wonder
+which request a key meant. The manager is still offered, because it is where
+the other lanes are read and steered while one waits on you.
+
 ## A confirm prompt and a card title keep their capital
 
 *A disagreement.* The voice every notice is written in is lower case almost

@@ -280,7 +280,8 @@ type FanoutBlock struct {
 	// Elapsed is the batch's own duration field: the longest-lived lane's.
 	Elapsed string
 	// Keys are the offers the block makes while a child is waiting on you.
-	// They render once, under the lanes, and wrap rather than clip on a
+	// They render once, under the last lane that needs you, followed by how
+	// many of the others are still running, and wrap rather than clip on a
 	// narrow terminal (packOffers).
 	Keys []TurnKey
 	// Spawned and SpawnLimit are the session's spawn count against its cap,
@@ -1057,13 +1058,47 @@ func (b FanoutBlock) View(width int) string {
 		headerLead(),
 		target,
 		outcome, b.Elapsed, width)}
-	for _, l := range lanes {
-		lines = append(lines, l.View(width))
+	// The offers go under the lane that needs you and nowhere else: a key
+	// under the block's header would sit beside lanes with nothing to
+	// answer. Blocked lanes float to the top, so where several need you the
+	// line closes their run rather than repeating under each.
+	last := -1
+	for i, l := range lanes {
+		if l.State == FanoutBlocked {
+			last = i
+		}
 	}
-	if _, blocked, _, _, _ := b.counts(); blocked > 0 {
-		for _, keys := range packOffers(b.Keys, max(width-detailIndent, 1)) {
-			lines = append(lines, detailLine(keys, width))
+	for i, l := range lanes {
+		lines = append(lines, l.View(width))
+		if i == last {
+			lines = append(lines, b.keyLines(width)...)
 		}
 	}
 	return strings.Join(lines, "\n")
+}
+
+// keyLines is the line under the lane that needs you: the offers, then how
+// many of the other lanes are still working. The answer itself is not offered
+// here — a routed ask is a card over the frame and the card owns it
+// (docs/interface/departures.md#a-fan-out-offers-the-manager-not-the-answer).
+func (b FanoutBlock) keyLines(width int) []string {
+	room := max(width-detailIndent, 1)
+	rows := packOffers(b.Keys, room)
+	if running, _, _, _, _ := b.counts(); running > 0 {
+		rest := "the other " + spellNumber(running) + " keep running"
+		if running == 1 {
+			rest = "the other one keeps running"
+		}
+		switch sep := sty.Dim.Render(" · "); {
+		case len(rows) > 0 && lipgloss.Width(rows[len(rows)-1]+sep+rest) <= room:
+			rows[len(rows)-1] += sep + sty.Dim.Render(rest)
+		default:
+			rows = append(rows, sty.Dim.Render(rest))
+		}
+	}
+	out := make([]string, len(rows))
+	for i, r := range rows {
+		out[i] = detailLine(r, width)
+	}
+	return out
 }

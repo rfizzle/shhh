@@ -1389,6 +1389,13 @@ says less than no corner at all, and the deepest column of the lane's gutter
 is one column wide, so how far down a tree runs is a question the rail's map
 answers and a lane does not.
 
+A fan-out offers the manager once, on a line under the lane that needs you —
+`[alt+a] agents · the other two keep running`, the chord from the pointer and
+from reading mode's cursor alike, since the manager has no letter — and
+nowhere at all while no lane is waiting, so the key sits where there is
+something to answer
+([and not the answer itself](departures.md#a-fan-out-offers-the-manager-not-the-answer)).
+
 **A row joins the child's name to its task the way every row joins two
 facts**, with the separator, not with a gap: `writer-1 · docs/loop.md`. The
 artboard draws the manager's two as adjacent columns and the manager does not

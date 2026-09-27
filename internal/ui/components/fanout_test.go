@@ -95,6 +95,31 @@ func TestFanoutOffersOnlyWhileBlocked(t *testing.T) {
 	if !strings.Contains(ansi.Strip(blocked.View(110)), "[ctrl+a] agents") {
 		t.Fatal("a blocked block should offer the manager")
 	}
+	// The offer sits under the lane that needs you — its row, then its
+	// reason, then the keys — and says how many of the others run on. The
+	// answer itself is the routed card's, so no key here offers it
+	// (docs/interface/departures.md#a-fan-out-offers-the-manager-not-the-answer).
+	lines := strings.Split(ansi.Strip(blocked.View(110)), "\n")
+	lane := -1
+	for i, l := range lines {
+		if strings.Contains(l, "scout-3") {
+			lane = i
+		}
+	}
+	if lane < 0 || lane+2 >= len(lines) {
+		t.Fatalf("no blocked lane with room under it:\n%s", strings.Join(lines, "\n"))
+	}
+	if got := strings.TrimSpace(lines[lane+2]); got != "[ctrl+a] agents · the other two keep running" {
+		t.Fatalf("the line under the blocked lane's reason = %q", got)
+	}
+	if strings.Contains(strings.Join(lines, "\n"), "answer it here") {
+		t.Fatal("the block offered the answer the routed card owns")
+	}
+	one := fanoutFixture()
+	one.Lanes = one.Lanes[1:]
+	if !strings.Contains(ansi.Strip(one.View(110)), "the other one keeps running") {
+		t.Fatalf("one running lane should be said in the singular:\n%s", ansi.Strip(one.View(110)))
+	}
 
 	var running FanoutBlock
 	running.Keys = blocked.Keys
