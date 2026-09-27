@@ -82,6 +82,12 @@ func (m *Model) injectTreeNotice(turnStart bool) {
 	}
 	m.agent.AppendMachine(n.Message)
 	m.appendEntry(entry{kind: entrySystem, text: n.Notice})
+	// The reading has already paid for knowing the branch moved — a switch
+	// made by a command, an editor or another terminal — so the header is
+	// asked again only then.
+	if n.BranchMoved {
+		m.rereadHeaderBranch()
+	}
 	if !n.Unavailable {
 		m.signal(observe.SignalTree, n.Signal())
 	}

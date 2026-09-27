@@ -589,6 +589,9 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 		m.pendingApproval = nil
 		m.agent.ResolveApproval(msg.result)
 		m.recordToolResult(req.call.Name, msg.duration, msg.result)
+		// A git write is gated at the write tier, so this is the one place a
+		// switch lands.
+		m.noteBranchSwitch(req.call.Name, req.call.Arguments)
 		if agent.IsRepeatNotice(msg.result) {
 			m.signal(observe.SignalRepeat, req.call.Name)
 		}

@@ -14,6 +14,9 @@ import (
 	"charm.land/lipgloss/v2"
 	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/charmbracelet/ultraviolet/layout"
+	"github.com/rfizzle/shhh/internal/digest"
+	"github.com/rfizzle/shhh/internal/project"
+	"github.com/rfizzle/shhh/internal/structural"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -179,6 +182,36 @@ func (m Model) headerFacts() []headerFact {
 		facts = append(facts, headerFact{text: level})
 	}
 	return facts
+}
+
+// rereadHeaderBranch asks git again which branch the checkout is on and puts
+// the answer in the header. The header's facts come from the start survey,
+// read once, so without this a session that switched branches goes on being
+// headed by the branch it started on. It is asked only where the branch is
+// known to have moved — a switch the session made, or a tree reading that saw
+// the branch change — so an ordinary turn pays for no git call here.
+//
+// Only the branch is taken from the new reading: the rest of the survey is
+// what the start screen stated about the checkout as it was opened, and the
+// header states nothing else of it.
+func (m *Model) rereadHeaderBranch() {
+	if m.start == nil || m.start.Project.Dir == "" {
+		return
+	}
+	now := project.RereadGit(m.start.Project)
+	// A copy rather than a write through the pointer: the model is a value,
+	// and every copy of it shares the one StartInfo.
+	info := *m.start
+	info.Project.Repo, info.Project.Branch, info.Project.Detached = now.Repo, now.Branch, now.Detached
+	m.start = &info
+}
+
+// noteBranchSwitch rereads the header's branch when the call that just
+// landed was the git tool switching branches.
+func (m *Model) noteBranchSwitch(tool, args string) {
+	if tool == structural.GitWriteToolName && digest.GitVerb(args) == "switch" {
+		m.rereadHeaderBranch()
+	}
 }
 
 // shedHeaderFact drops the rightmost fact that is not the model, and the
