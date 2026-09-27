@@ -10,7 +10,6 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
-	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 func pressAll(b *BacklogScreen, text string) (done bool, result BacklogResult) {
@@ -232,7 +231,7 @@ func TestBacklogScreen_StateKeysAreInertWhileATurnWorks(t *testing.T) {
 	if !strings.Contains(view, b.whyInert()) {
 		t.Errorf("the footer never says why the keys are grey:\n%s", view)
 	}
-	for _, offer := range b.offers() {
+	for _, offer := range b.offers(110) {
 		if strings.Contains(offer.Key, "[x]") {
 			t.Error("a key that cannot act is still being offered")
 		}
@@ -240,6 +239,45 @@ func TestBacklogScreen_StateKeysAreInertWhileATurnWorks(t *testing.T) {
 	// Reading is untouched: the filters and the pointer change no file.
 	if _, r := pressAll(b, "/"); r.Do != nil || !b.filtering {
 		t.Error("the filter should stay live while a turn works")
+	}
+}
+
+// The foot is one row at every width, and `[?]` is where the rest are: the
+// row carries the keys pressed every time, the header keeps the way out, and
+// the register still lists every key the screen answers.
+func TestBacklogScreen_FootIsOneRow(t *testing.T) {
+	for _, width := range append([]int{40}, goldenWidths...) {
+		b := goldenBacklogScreen()
+		b.sync()
+		rows := b.footRows(width)
+		if len(rows) != 1 {
+			t.Fatalf("at %d columns the foot is %d rows:\n%s", width, len(rows), strings.Join(rows, "\n"))
+		}
+		foot := ansi.Strip(rows[0])
+		for _, want := range []string{"[↑↓] move", "[enter] read"} {
+			if !strings.Contains(foot, want) {
+				t.Errorf("at %d columns the foot sheds %q: %s", width, want, foot)
+			}
+		}
+		if width >= 80 {
+			for _, want := range []string{"[/] filter", "[e] edit", "[n] new", "[esc] back"} {
+				if !strings.Contains(foot, want) {
+					t.Errorf("at %d columns the foot sheds %q: %s", width, want, foot)
+				}
+			}
+		}
+		if strings.Contains(foot, "[q]") {
+			t.Errorf("at %d columns the foot says [q] a second time: %s", width, foot)
+		}
+	}
+
+	b := goldenBacklogScreen()
+	pressAll(b, "?")
+	register := ansi.Strip(strings.Join(b.footRows(110), "\n"))
+	for _, want := range []string{"[s] cycle the status filter", "[tab] the backlog, or what shipped", "[R] work it through", "[x] delete the file"} {
+		if !strings.Contains(register, want) {
+			t.Errorf("[?] never lists %q:\n%s", want, register)
+		}
 	}
 }
 
@@ -254,13 +292,18 @@ func TestBacklogScreen_ArchiveTab(t *testing.T) {
 		t.Fatalf("the tab should carry no status filter, archive=%v status=%d", b.archived(), b.status)
 	}
 	view := ansi.Strip(b.View(110))
-	for _, want := range []string{"backlog · done", "2 items", "the one place a key is written down", "[o] put it back in the backlog"} {
+	for _, want := range []string{"backlog · done", "2 items", "the one place a key is written down"} {
 		if !strings.Contains(view, want) {
 			t.Errorf("the archive never says %q:\n%s", want, view)
 		}
 	}
 	if strings.Contains(view, "[R] run it") || strings.Contains(view, "[x] drop it") {
 		t.Errorf("the archive offers a key it cannot answer:\n%s", view)
+	}
+	// Reopening is behind `[?]` with the rest of the verbs; the archive's
+	// own words for it are the ones a turn greys out.
+	if got := keyOffers(b.stateOffers()); !strings.Contains(ansi.Strip(got), "[o] put it back in the backlog") {
+		t.Errorf("the archive's verbs lost the reopen: %s", ansi.Strip(got))
 	}
 	if _, r := pressAll(b, "o"); r.Do == nil || r.Do.Act != BacklogReopen {
 		t.Fatalf("[o] in the archive resolved to %+v", r.Do)
@@ -360,7 +403,7 @@ func TestBacklogScreen_StartingAnItemWorksOnAnEmptyList(t *testing.T) {
 	if r.Do == nil || r.Do.Act != BacklogNew {
 		t.Fatalf("[n] on an empty list resolved to %+v", r.Do)
 	}
-	if !strings.Contains(view, ansi.Strip(keyOffers([]KeyOffer{keyOffer(keys.Backlog.New)}))) {
+	if !strings.Contains(view, ansi.Strip(keyOffers(b.fileOffers()))) {
 		t.Errorf("the empty list does not offer the key it answers:\n%s", view)
 	}
 }

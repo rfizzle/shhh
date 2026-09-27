@@ -7,7 +7,7 @@ package components
 // the failure collecting them here avoids.
 
 import (
-	"strings"
+	"charm.land/lipgloss/v2"
 
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
@@ -16,7 +16,7 @@ import (
 // is not live and the sentence saying why.
 func (b *BacklogScreen) footRows(width int) []string {
 	f := KeyFooter{
-		Offers:   b.offers(),
+		Offers:   b.offers(width),
 		Register: b.keyList(),
 		Showing:  b.keys,
 	}
@@ -53,7 +53,7 @@ func (b *BacklogScreen) whyInert() string {
 // offers is the key row for whichever surface holds the keyboard. While the
 // query line is open the row keys are letters, so they are not offered: a
 // key that cannot act is not an offer (invariant 5).
-func (b *BacklogScreen) offers() []KeyOffer {
+func (b *BacklogScreen) offers(width int) []KeyOffer {
 	if b.planning() {
 		return sprintOffers(b.Plan)
 	}
@@ -71,18 +71,70 @@ func (b *BacklogScreen) offers() []KeyOffer {
 		return []KeyOffer{
 			keyOfferAs(keys.Backlog.Move, "scroll"),
 			keyOffer(keys.Backlog.Page),
-			keyOfferAs(keys.Backlog.Back, "back to the list"),
+			// esc and not `q`: the header already spells `[q] back`, and
+			// both answer this step back to the list.
+			wayOut("back to the list"),
 		}
 	}
+	return b.listOffers(width)
+}
+
+// listOffers is the list's key row, and it is one row at every width: the
+// keys a reader presses every time the screen is open — move, read, filter,
+// edit, a new item and the way out. Every other key is behind the header's
+// `[?] keys`, which the header keeps at every width, so a foot that also
+// listed the filters, the tabs and every verb was offering the register twice
+// (docs/interface/departures.md#the-backlog-screens-layout-was-decided-in-the-binary).
+//
+// Where even those will not fit, whole segments give ground, the way the
+// history browser's row does (invariant 4): the way out first, because the
+// header states it at every width; then the two verbs, which `[?]` carries in
+// full. The pointer's keys are never shed — this list moves on the arrows
+// alone, which no other list in the product teaches.
+func (b *BacklogScreen) listOffers(width int) []KeyOffer {
 	out := []KeyOffer{keyOffer(keys.Backlog.Move)}
 	if b.current() != nil {
-		out = append(out, keyOffer(keys.Backlog.Read))
+		out = append(out, keyOfferAs(keys.Backlog.Read, "read"))
 	}
-	out = append(out, keyOffer(keys.Backlog.Filter), b.narrowOffer(), b.tabOffer())
+	out = append(out, keyOfferAs(keys.Backlog.Filter, "filter"))
 	if !b.ReadOnly {
-		out = append(out, b.stateOffers()...)
+		// While a turn works these two are in the grey run under the
+		// sentence instead: a key that cannot act is not an offer.
+		out = append(out, b.fileOffers()...)
 	}
-	return append(out, wayOut(backToPrompt))
+	out = append(out, wayOut("back"))
+
+	way := keys.Bracket(keys.Select.Cancel)
+	edit, fresh := keys.Bracket(keys.Backlog.Edit), keys.Bracket(keys.Backlog.New)
+	rungs := [][]KeyOffer{
+		out,
+		without(out, way),
+		without(out, way, fresh),
+		without(out, way, fresh, edit),
+	}
+	for _, rung := range rungs {
+		if lipgloss.Width(keyOffers(rung)) <= width {
+			return rung
+		}
+	}
+	return rungs[len(rungs)-1]
+}
+
+// fileOffers are the two verbs the list's row carries: the editor on the row
+// under the pointer, and starting a new item — which is about the backlog
+// rather than the row, so an empty list offers it too.
+func (b *BacklogScreen) fileOffers() []KeyOffer {
+	fresh := keyOfferAs(keys.Backlog.New, "new")
+	row := b.current()
+	if row == nil {
+		return []KeyOffer{fresh}
+	}
+	edit := keyOfferAs(keys.Backlog.Edit, "edit")
+	if row.State == BacklogUnreadable {
+		// None of the verbs is a line edit this file's header could take.
+		edit = keyOfferAs(keys.Backlog.Edit, "fix the header")
+	}
+	return []KeyOffer{edit, fresh}
 }
 
 // stateOffers are the keys that change a file: the run the footer greys out
@@ -123,33 +175,6 @@ func (b *BacklogScreen) stateOffers() []KeyOffer {
 	// and on a file that will not load, which is where a reader who has just
 	// found something missing is.
 	return append(out, keyOffer(keys.Backlog.New))
-}
-
-// narrowOffer is the four cycle keys as one offer. They are one segment
-// because four offers reading "cycle the … filter" would be most of the key
-// row for four keys that do one thing, and they are an offer rather than the
-// footer's annotation because an annotation gives ground as the terminal
-// narrows: a screen whose filters are only findable behind `[?]` is a screen
-// whose filters nobody finds.
-//
-// The archive drops two of them. Every item there has the same status and
-// none of them is ready, so those two keys would narrow a list to nothing —
-// and a key that cannot act is not an offer (invariant 5).
-func (b *BacklogScreen) narrowOffer() KeyOffer {
-	shown := []string{keys.Shown(keys.Backlog.Priority)}
-	if !b.archived() {
-		shown = []string{keys.Shown(keys.Backlog.Status), keys.Shown(keys.Backlog.Priority)}
-	}
-	// A project whose items carry nothing but a priority has no field
-	// cycle, and a key that cannot narrow anything is not an offer
-	// (invariant 5).
-	if len(b.Fields) > 0 {
-		shown = append(shown, keys.Shown(keys.Backlog.Kind))
-	}
-	if !b.archived() {
-		shown = append(shown, keys.Shown(keys.Backlog.Ready))
-	}
-	return KeyOffer{Key: "[" + strings.Join(shown, "/") + "]", Label: "narrow it"}
 }
 
 // keyList is every key the screen has, for `[?]`. While the plan card holds

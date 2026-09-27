@@ -18,21 +18,19 @@ backlog · the cockpit sprint   6 items · [?] keys · [q] back
   · screen-over-items  HL  waits on rail-todo-block +1
   · prose-renderer  MS  ready  One renderer for every piece…
   ! sprint-file  MM  blocked  The sprint is a file that nam…
-↓ 2 below
+  · drop-loses-the-file  L-  ready  Dropping an item says w…
+  ⚠ half-written  will not load
 ────────────────────────────────────────────────────────────
 rail-todo-block
 The backlog block on the inspector rail
 story · high · size M · in progress · written 2026-08-28 · …
 1 item waits on this: screen-over-items
-… (+8 more rows)
+────────────────────────────────────────────────────────────
 
-[↑↓] move · [enter] read the body · [/] filter by text
-[s/p/k/r] narrow it · [tab] what shipped
-[e] open it in $EDITOR · [R] run it
-[g] read it against the tree · [b] block it · [d] archive it
-[x] drop it, deleting the file
-[S] drop it from the cockpit sprint · [n] a new item
-[esc] back to the prompt
+**As a** reader, **I want** the queue beside the turn.
+… (+5 more rows)
+
+[↑↓] move · [enter] read · [/] filter · [e] edit · [n] new
 
 · a waiting item · both ends of the edge on its header row
 backlog · the cockpit sprint   6 items · [?] keys · [q] back
@@ -42,21 +40,19 @@ backlog · the cockpit sprint   6 items · [?] keys · [q] back
 ❯ · screen-over-items  HL  waits on rail-todo-block +1      
   · prose-renderer  MS  ready  One renderer for every piece…
   ! sprint-file  MM  blocked  The sprint is a file that nam…
-↓ 2 below
+  · drop-loses-the-file  L-  ready  Dropping an item says w…
+  ⚠ half-written  will not load
 ────────────────────────────────────────────────────────────
 screen-over-items
 A screen over the whole backlog, with the body beside the
 list
 story · high · size L · open · written 2026-08-30
-… (+7 more rows)
+waits on rail-todo-block, prose-renderer · [w] goes there
+────────────────────────────────────────────────────────────
 
-[↑↓] move · [enter] read the body · [/] filter by text
-[s/p/k/r] narrow it · [tab] what shipped
-[e] open it in $EDITOR · [R] run it
-[g] read it against the tree · [b] block it · [d] archive it
-[x] drop it, deleting the file
-[S] add it to the cockpit sprint · [n] a new item
-[esc] back to the prompt
+… (+4 more rows)
+
+[↑↓] move · [enter] read · [/] filter · [e] edit · [n] new
 
 · a file that will not parse · a row in warning tone, the reason as its body
 backlog · the cockpit sprint   6 items · [?] keys · [q] back
@@ -75,10 +71,7 @@ half-written
 no title in the header
 .shhh/todo/half-written.md is still on disk; [e] opens it
 
-[↑↓] move · [enter] read the body · [/] filter by text
-[s/p/k/r] narrow it · [tab] what shipped
-[e] fix the header · [n] a new item
-[esc] back to the prompt
+[↑↓] move · [enter] read · [/] filter · [e] fix the header
 
 · [/] · the query row, with the header saying what it left
 backlog                   1 of 6 items · [?] keys · [q] back
@@ -107,7 +100,8 @@ backlog · open            4 of 6 items · [?] keys · [q] back
 
 ❯ · screen-over-items  HL  waits on rail-todo-block +1      
   · prose-renderer  MS  ready  One renderer for every piece…
-↓ 2 below
+  · drop-loses-the-file  L-  ready  Dropping an item says w…
+  ⚠ half-written  will not load
 ────────────────────────────────────────────────────────────
 2 hidden · [ctrl+u] clear it
 ────────────────────────────────────────────────────────────
@@ -115,15 +109,12 @@ screen-over-items
 A screen over the whole backlog, with the body beside the
 list
 story · high · size L · open · written 2026-08-30
-… (+7 more rows)
+waits on rail-todo-block, prose-renderer · [w] goes there
+────────────────────────────────────────────────────────────
 
-[↑↓] move · [enter] read the body · [/] filter by text
-[s/p/k/r] narrow it · [tab] what shipped
-[e] open it in $EDITOR · [R] run it
-[g] read it against the tree · [b] block it · [d] archive it
-[x] drop it, deleting the file
-[S] add it to the cockpit sprint · [n] a new item
-[esc] back to the prompt
+… (+4 more rows)
+
+[↑↓] move · [enter] read · [/] filter · [e] edit · [n] new
 
 · [enter] · the body with the surface to itself
 backlog · the cockpit sprint   6 items · [?] keys · [q] back
@@ -143,7 +134,7 @@ story · high · size M · in progress · written 2026-08-28 · …
 - [ ] the running item first
 
 [↑↓] scroll · [pgup/pgdn] page the body
-[q] back to the list
+[esc] back to the list
 
 · [tab] · the archive, each item's report as its body
 backlog · done                 2 items · [?] keys · [q] back
@@ -157,12 +148,10 @@ Every key is declared once
 chore · high · size M · done · written 2026-08-20
 ────────────────────────────────────────────────────────────
 
-… (+2 more rows)
+Sixty-eight literals came out of twenty files; the register
+is the one place a key is written down.
 
-[↑↓] move · [enter] read the body · [/] filter by text
-[p/k] narrow it · [tab] the backlog
-[o] put it back in the backlog · [e] open it in $EDITOR
-[n] a new item · [esc] back to the prompt
+[↑↓] move · [enter] read · [/] filter · [e] edit · [n] new
 
 · [x] · the one confirm that names what it loses
 backlog · the cockpit sprint   6 items · [?] keys · [q] back
@@ -194,16 +183,16 @@ backlog · the cockpit sprint   6 items · [?] keys · [q] back
   · screen-over-items  HL  waits on rail-todo-block +1
   · prose-renderer  MS  ready  One renderer for every piece…
   ! sprint-file  MM  blocked  The sprint is a file that nam…
-↓ 2 below
+  · drop-loses-the-file  L-  ready  Dropping an item says w…
+  ⚠ half-written  will not load
 ────────────────────────────────────────────────────────────
 rail-todo-block
 The backlog block on the inspector rail
 story · high · size M · in progress · written 2026-08-28 · …
-… (+9 more rows)
+1 item waits on this: screen-over-items
+… (+8 more rows)
 
-[↑↓] move · [enter] read the body · [/] filter by text
-[s/p/k/r] narrow it · [tab] what shipped
-[esc] back to the prompt
+[↑↓] move · [enter] read · [/] filter · [esc] back
 the turn is running; these change the files it may be worki…
 [e] open it in $EDITOR · [R] run it
 [g] read it against the tree · [b] block it · [d] archive it
@@ -250,21 +239,19 @@ backlog               6 items · [?] hide the keys · [q] back
   ␛[38;5;241m·␛[m ␛[38;5;241mscreen-over-items␛[m  ␛[38;5;241mHL␛[m␛[38;5;241m  waits on rail-todo-block +1␛[m
   ␛[38;5;241m·␛[m ␛[38;5;252mprose-renderer␛[m  ␛[38;5;241mMS␛[m␛[38;5;241m  ready  One renderer for every piece…␛[m
   ␛[91m!␛[m ␛[38;5;252msprint-file␛[m  ␛[38;5;241mMM␛[m␛[38;5;241m  blocked  The sprint is a file that nam…␛[m
-␛[38;5;241m↓ 2 below␛[m
+  ␛[38;5;241m·␛[m ␛[38;5;252mdrop-loses-the-file␛[m  ␛[38;5;241mL-␛[m␛[38;5;241m  ready  Dropping an item says w…␛[m
+  ␛[91m⚠␛[m ␛[91mhalf-written␛[m␛[38;5;241m  will not load␛[m
 ␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 ␛[1;97mrail-todo-block␛[m
 ␛[38;5;241mThe backlog block on the inspector rail␛[m
 ␛[38;5;241mstory · high · size M · in progress · written 2026-08-28 · …␛[m
 ␛[38;5;241m1 item waits on this: screen-over-items␛[m
-␛[38;5;241m… (+8 more rows)␛[m
+␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
-␛[94m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m read the body␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter by text␛[m
-␛[94m[s/p/k/r]␛[m␛[38;5;241m narrow it␛[m␛[38;5;241m · ␛[m␛[94m[tab]␛[m␛[38;5;241m what shipped␛[m
-␛[94m[e]␛[m␛[38;5;241m open it in $EDITOR␛[m␛[38;5;241m · ␛[m␛[94m[R]␛[m␛[38;5;241m run it␛[m
-␛[94m[g]␛[m␛[38;5;241m read it against the tree␛[m␛[38;5;241m · ␛[m␛[94m[b]␛[m␛[38;5;241m block it␛[m␛[38;5;241m · ␛[m␛[94m[d]␛[m␛[38;5;241m archive it␛[m
-␛[94m[x]␛[m␛[38;5;241m drop it, deleting the file␛[m
-␛[94m[S]␛[m␛[38;5;241m drop it from the cockpit sprint␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m␛[38;5;241m a new item␛[m
-␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m
+␛[38;5;241m**As a** reader, **I want** the queue beside the turn.␛[m
+␛[38;5;241m… (+5 more rows)␛[m
+
+␛[94m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m read␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[94m[e]␛[m␛[38;5;241m edit␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m␛[38;5;241m new␛[m
 
 · a waiting item · both ends of the edge on its header row
 ␛[1;97mbacklog␛[m␛[38;5;241m · the cockpit sprint␛[m   ␛[38;5;241m6 items␛[m␛[38;5;241m · [?] keys · [q] back␛[m
@@ -274,21 +261,19 @@ backlog               6 items · [?] hide the keys · [q] back
 ␛[94m❯ ␛[m␛[38;5;241m␛[m␛[1;97m␛[m␛[38;5;241m␛[m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;241m·␛[m␛[48;5;62m ␛[1;97m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[97;48;5;62mscreen-over-items  HL  waits on rail-todo-block +1      ␛[m␛[m
   ␛[38;5;241m·␛[m ␛[38;5;252mprose-renderer␛[m  ␛[38;5;241mMS␛[m␛[38;5;241m  ready  One renderer for every piece…␛[m
   ␛[91m!␛[m ␛[38;5;252msprint-file␛[m  ␛[38;5;241mMM␛[m␛[38;5;241m  blocked  The sprint is a file that nam…␛[m
-␛[38;5;241m↓ 2 below␛[m
+  ␛[38;5;241m·␛[m ␛[38;5;252mdrop-loses-the-file␛[m  ␛[38;5;241mL-␛[m␛[38;5;241m  ready  Dropping an item says w…␛[m
+  ␛[91m⚠␛[m ␛[91mhalf-written␛[m␛[38;5;241m  will not load␛[m
 ␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 ␛[1;97mscreen-over-items␛[m
 ␛[38;5;241mA screen over the whole backlog, with the body beside the␛[m
 ␛[38;5;241mlist␛[m
 ␛[38;5;241mstory · high · size L · open · written 2026-08-30␛[m
-␛[38;5;241m… (+7 more rows)␛[m
+␛[38;5;241mwaits on rail-todo-block, prose-renderer · [w] goes there␛[m
+␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
-␛[94m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m read the body␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter by text␛[m
-␛[94m[s/p/k/r]␛[m␛[38;5;241m narrow it␛[m␛[38;5;241m · ␛[m␛[94m[tab]␛[m␛[38;5;241m what shipped␛[m
-␛[94m[e]␛[m␛[38;5;241m open it in $EDITOR␛[m␛[38;5;241m · ␛[m␛[94m[R]␛[m␛[38;5;241m run it␛[m
-␛[94m[g]␛[m␛[38;5;241m read it against the tree␛[m␛[38;5;241m · ␛[m␛[94m[b]␛[m␛[38;5;241m block it␛[m␛[38;5;241m · ␛[m␛[94m[d]␛[m␛[38;5;241m archive it␛[m
-␛[94m[x]␛[m␛[38;5;241m drop it, deleting the file␛[m
-␛[94m[S]␛[m␛[38;5;241m add it to the cockpit sprint␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m␛[38;5;241m a new item␛[m
-␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m
+␛[38;5;241m… (+4 more rows)␛[m
+
+␛[94m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m read␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[94m[e]␛[m␛[38;5;241m edit␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m␛[38;5;241m new␛[m
 
 · a file that will not parse · a row in warning tone, the reason as its body
 ␛[1;97mbacklog␛[m␛[38;5;241m · the cockpit sprint␛[m   ␛[38;5;241m6 items␛[m␛[38;5;241m · [?] keys · [q] back␛[m
@@ -307,10 +292,7 @@ backlog               6 items · [?] hide the keys · [q] back
 ␛[91mno title in the header␛[m
 ␛[38;5;241m.shhh/todo/half-written.md is still on disk; [e] opens it␛[m
 
-␛[94m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m read the body␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter by text␛[m
-␛[94m[s/p/k/r]␛[m␛[38;5;241m narrow it␛[m␛[38;5;241m · ␛[m␛[94m[tab]␛[m␛[38;5;241m what shipped␛[m
-␛[94m[e]␛[m␛[38;5;241m fix the header␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m␛[38;5;241m a new item␛[m
-␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m
+␛[94m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m read␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[94m[e]␛[m␛[38;5;241m fix the header␛[m
 
 · [/] · the query row, with the header saying what it left
 ␛[1;97mbacklog␛[m                   ␛[38;5;241m1 of 6 items␛[m␛[38;5;241m · [?] keys · [q] back␛[m
@@ -339,7 +321,8 @@ backlog               6 items · [?] hide the keys · [q] back
 
 ␛[94m❯ ␛[m␛[38;5;241m␛[m␛[1;97m␛[m␛[38;5;241m␛[m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;241m·␛[m␛[48;5;62m ␛[1;97m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[97;48;5;62mscreen-over-items  HL  waits on rail-todo-block +1      ␛[m␛[m
   ␛[38;5;241m·␛[m ␛[38;5;252mprose-renderer␛[m  ␛[38;5;241mMS␛[m␛[38;5;241m  ready  One renderer for every piece…␛[m
-␛[38;5;241m↓ 2 below␛[m
+  ␛[38;5;241m·␛[m ␛[38;5;252mdrop-loses-the-file␛[m  ␛[38;5;241mL-␛[m␛[38;5;241m  ready  Dropping an item says w…␛[m
+  ␛[91m⚠␛[m ␛[91mhalf-written␛[m␛[38;5;241m  will not load␛[m
 ␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 ␛[38;5;241m2 hidden · ␛[m␛[94m[ctrl+u]␛[m␛[38;5;241m clear it␛[m
 ␛[38;5;241m────────────────────────────────────────────────────────────␛[m
@@ -347,15 +330,12 @@ backlog               6 items · [?] hide the keys · [q] back
 ␛[38;5;241mA screen over the whole backlog, with the body beside the␛[m
 ␛[38;5;241mlist␛[m
 ␛[38;5;241mstory · high · size L · open · written 2026-08-30␛[m
-␛[38;5;241m… (+7 more rows)␛[m
+␛[38;5;241mwaits on rail-todo-block, prose-renderer · [w] goes there␛[m
+␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
-␛[94m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m read the body␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter by text␛[m
-␛[94m[s/p/k/r]␛[m␛[38;5;241m narrow it␛[m␛[38;5;241m · ␛[m␛[94m[tab]␛[m␛[38;5;241m what shipped␛[m
-␛[94m[e]␛[m␛[38;5;241m open it in $EDITOR␛[m␛[38;5;241m · ␛[m␛[94m[R]␛[m␛[38;5;241m run it␛[m
-␛[94m[g]␛[m␛[38;5;241m read it against the tree␛[m␛[38;5;241m · ␛[m␛[94m[b]␛[m␛[38;5;241m block it␛[m␛[38;5;241m · ␛[m␛[94m[d]␛[m␛[38;5;241m archive it␛[m
-␛[94m[x]␛[m␛[38;5;241m drop it, deleting the file␛[m
-␛[94m[S]␛[m␛[38;5;241m add it to the cockpit sprint␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m␛[38;5;241m a new item␛[m
-␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m
+␛[38;5;241m… (+4 more rows)␛[m
+
+␛[94m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m read␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[94m[e]␛[m␛[38;5;241m edit␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m␛[38;5;241m new␛[m
 
 · [enter] · the body with the surface to itself
 ␛[1;97mbacklog␛[m␛[38;5;241m · the cockpit sprint␛[m   ␛[38;5;241m6 items␛[m␛[38;5;241m · [?] keys · [q] back␛[m
@@ -375,7 +355,7 @@ backlog               6 items · [?] hide the keys · [q] back
 ␛[38;5;241m- [ ] the running item first␛[m
 
 ␛[94m[↑↓]␛[m␛[38;5;241m scroll␛[m␛[38;5;241m · ␛[m␛[94m[pgup/pgdn]␛[m␛[38;5;241m page the body␛[m
-␛[94m[q]␛[m␛[38;5;241m back to the list␛[m
+␛[92m[esc]␛[m␛[38;5;241m back to the list␛[m
 
 · [tab] · the archive, each item's report as its body
 ␛[1;97mbacklog␛[m␛[38;5;241m · done␛[m                 ␛[38;5;241m2 items␛[m␛[38;5;241m · [?] keys · [q] back␛[m
@@ -389,12 +369,10 @@ backlog               6 items · [?] hide the keys · [q] back
 ␛[38;5;241mchore · high · size M · done · written 2026-08-20␛[m
 ␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
-␛[38;5;241m… (+2 more rows)␛[m
+␛[38;5;241mSixty-eight literals came out of twenty files; the register␛[m
+␛[38;5;241mis the one place a key is written down.␛[m
 
-␛[94m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m read the body␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter by text␛[m
-␛[94m[p/k]␛[m␛[38;5;241m narrow it␛[m␛[38;5;241m · ␛[m␛[94m[tab]␛[m␛[38;5;241m the backlog␛[m
-␛[94m[o]␛[m␛[38;5;241m put it back in the backlog␛[m␛[38;5;241m · ␛[m␛[94m[e]␛[m␛[38;5;241m open it in $EDITOR␛[m
-␛[94m[n]␛[m␛[38;5;241m a new item␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m
+␛[94m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m read␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[94m[e]␛[m␛[38;5;241m edit␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m␛[38;5;241m new␛[m
 
 · [x] · the one confirm that names what it loses
 ␛[1;97mbacklog␛[m␛[38;5;241m · the cockpit sprint␛[m   ␛[38;5;241m6 items␛[m␛[38;5;241m · [?] keys · [q] back␛[m
@@ -426,16 +404,16 @@ backlog               6 items · [?] hide the keys · [q] back
   ␛[38;5;241m·␛[m ␛[38;5;241mscreen-over-items␛[m  ␛[38;5;241mHL␛[m␛[38;5;241m  waits on rail-todo-block +1␛[m
   ␛[38;5;241m·␛[m ␛[38;5;252mprose-renderer␛[m  ␛[38;5;241mMS␛[m␛[38;5;241m  ready  One renderer for every piece…␛[m
   ␛[91m!␛[m ␛[38;5;252msprint-file␛[m  ␛[38;5;241mMM␛[m␛[38;5;241m  blocked  The sprint is a file that nam…␛[m
-␛[38;5;241m↓ 2 below␛[m
+  ␛[38;5;241m·␛[m ␛[38;5;252mdrop-loses-the-file␛[m  ␛[38;5;241mL-␛[m␛[38;5;241m  ready  Dropping an item says w…␛[m
+  ␛[91m⚠␛[m ␛[91mhalf-written␛[m␛[38;5;241m  will not load␛[m
 ␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 ␛[1;97mrail-todo-block␛[m
 ␛[38;5;241mThe backlog block on the inspector rail␛[m
 ␛[38;5;241mstory · high · size M · in progress · written 2026-08-28 · …␛[m
-␛[38;5;241m… (+9 more rows)␛[m
+␛[38;5;241m1 item waits on this: screen-over-items␛[m
+␛[38;5;241m… (+8 more rows)␛[m
 
-␛[94m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m read the body␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter by text␛[m
-␛[94m[s/p/k/r]␛[m␛[38;5;241m narrow it␛[m␛[38;5;241m · ␛[m␛[94m[tab]␛[m␛[38;5;241m what shipped␛[m
-␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m
+␛[94m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m read␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back␛[m
 ␛[38;5;241mthe turn is running; these change the files it may be worki…␛[m
 ␛[38;5;245m[e]␛[m␛[38;5;241m open it in $EDITOR␛[m␛[38;5;241m · ␛[m␛[38;5;245m[R]␛[m␛[38;5;241m run it␛[m
 ␛[38;5;245m[g]␛[m␛[38;5;241m read it against the tree␛[m␛[38;5;241m · ␛[m␛[38;5;245m[b]␛[m␛[38;5;241m block it␛[m␛[38;5;241m · ␛[m␛[38;5;245m[d]␛[m␛[38;5;241m archive it␛[m

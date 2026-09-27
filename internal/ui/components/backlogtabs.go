@@ -58,20 +58,6 @@ func (b *BacklogScreen) sprintRows(width, budget int) []string {
 	return append(head, b.panes(width, budget-len(head))...)
 }
 
-// tabOffer names the tab the key would go to rather than the tab it is on,
-// because a key is named for what it does.
-func (b *BacklogScreen) tabOffer() KeyOffer {
-	switch {
-	case b.archived():
-		return keyOfferAs(keys.Backlog.Tab, "the backlog")
-	case b.sprinting():
-		return keyOfferAs(keys.Backlog.Tab, "what shipped")
-	case b.sprintTab():
-		return keyOfferAs(keys.Backlog.Tab, "the sprint")
-	}
-	return keyOfferAs(keys.Backlog.Tab, "what shipped")
-}
-
 // sprintOffer is the one key here whose words depend on the row: the same
 // act reads as adding or as dropping according to whether the set already
 // names this item.

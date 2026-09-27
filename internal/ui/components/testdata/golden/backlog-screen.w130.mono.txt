@@ -27,9 +27,7 @@ backlog · the cockpit sprint                                                   
                                                      │ - [x] four rows and a count
                                                      │ - [ ] the running item first
 
-[↑↓] move · [enter] read the body · [/] filter by text · [s/p/k/r] narrow it · [tab] what shipped · [e] open it in $EDITOR
-[R] run it · [g] read it against the tree · [b] block it · [d] archive it · [x] drop it, deleting the file
-[S] drop it from the cockpit sprint · [n] a new item · [esc] back to the prompt
+[↑↓] move · [enter] read · [/] filter · [e] edit · [n] new · [esc] back
 
 · a waiting item · both ends of the edge on its header row
 backlog · the cockpit sprint                                                                         6 items · [?] keys · [q] back
@@ -46,9 +44,7 @@ backlog · the cockpit sprint                                                   
                                                      │ - [ ] the list on the left
                                                      │ - [ ] the body on the right
 
-[↑↓] move · [enter] read the body · [/] filter by text · [s/p/k/r] narrow it · [tab] what shipped · [e] open it in $EDITOR
-[R] run it · [g] read it against the tree · [b] block it · [d] archive it · [x] drop it, deleting the file
-[S] add it to the cockpit sprint · [n] a new item · [esc] back to the prompt
+[↑↓] move · [enter] read · [/] filter · [e] edit · [n] new · [esc] back
 
 · a file that will not parse · a row in warning tone, the reason as its body
 backlog · the cockpit sprint                                                                         6 items · [?] keys · [q] back
@@ -61,8 +57,7 @@ backlog · the cockpit sprint                                                   
   · drop-loses-the-file  L-  ready  Dropping an ite… │ .shhh/todo/half-written.md is still on disk; [e] opens it
 ❯ ⚠ half-written  will not load                      │ 
 
-[↑↓] move · [enter] read the body · [/] filter by text · [s/p/k/r] narrow it · [tab] what shipped · [e] fix the header
-[n] a new item · [esc] back to the prompt
+[↑↓] move · [enter] read · [/] filter · [e] fix the header · [n] new · [esc] back
 
 · [/] · the query row, with the header saying what it left
 backlog · matching sprint · the cockpit sprint                                                  1 of 6 items · [?] keys · [q] back
@@ -94,9 +89,7 @@ backlog · open · the cockpit sprint                                           
                                                      │ - [ ] the list on the left
                                                      │ - [ ] the body on the right
 
-[↑↓] move · [enter] read the body · [/] filter by text · [s/p/k/r] narrow it · [tab] what shipped · [e] open it in $EDITOR
-[R] run it · [g] read it against the tree · [b] block it · [d] archive it · [x] drop it, deleting the file
-[S] add it to the cockpit sprint · [n] a new item · [esc] back to the prompt
+[↑↓] move · [enter] read · [/] filter · [e] edit · [n] new · [esc] back
 
 · [enter] · the body with the surface to itself
 backlog · the cockpit sprint                                                                         6 items · [?] keys · [q] back
@@ -115,7 +108,7 @@ story · high · size M · in progress · written 2026-08-28 · in the cockpit s
 - [x] four rows and a count
 - [ ] the running item first
 
-[↑↓] scroll · [pgup/pgdn] page the body · [q] back to the list
+[↑↓] scroll · [pgup/pgdn] page the body · [esc] back to the list
 
 · [tab] · the archive, each item's report as its body
 backlog · done                                                                                       2 items · [?] keys · [q] back
@@ -129,8 +122,7 @@ backlog · done                                                                 
                                                      │ Sixty-eight literals came out of twenty files; the register is the one
                                                      │ place a key is written down.
 
-[↑↓] move · [enter] read the body · [/] filter by text · [p/k] narrow it · [tab] the backlog · [o] put it back in the backlog
-[e] open it in $EDITOR · [n] a new item · [esc] back to the prompt
+[↑↓] move · [enter] read · [/] filter · [e] edit · [n] new · [esc] back
 
 · [x] · the one confirm that names what it loses
 backlog · the cockpit sprint                                                                         6 items · [?] keys · [q] back
@@ -168,7 +160,7 @@ backlog · the cockpit sprint                                                   
                                                      │ - [x] four rows and a count
                                                      │ - [ ] the running item first
 
-[↑↓] move · [enter] read the body · [/] filter by text · [s/p/k/r] narrow it · [tab] what shipped · [esc] back to the prompt
+[↑↓] move · [enter] read · [/] filter · [esc] back
 the turn is running; these change the files it may be working from
 [e] open it in $EDITOR · [R] run it · [g] read it against the tree · [b] block it · [d] archive it
 [x] drop it, deleting the file · [S] drop it from the cockpit sprint · [n] a new item
@@ -221,9 +213,7 @@ backlog · the cockpit sprint                                                   
                                                     ␛[38;5;244m │ ␛[m␛[38;5;244m- [x] four rows and a count␛[m
                                                     ␛[38;5;244m │ ␛[m␛[38;5;244m- [ ] the running item first␛[m
 
-␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m read the body␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter by text␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s/p/k/r]␛[m␛[38;5;244m narrow it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m what shipped␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m open it in $EDITOR␛[m
-␛[38;5;254m[R]␛[m␛[38;5;244m run it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[g]␛[m␛[38;5;244m read it against the tree␛[m␛[38;5;244m · ␛[m␛[38;5;254m[b]␛[m␛[38;5;244m block it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m archive it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[x]␛[m␛[38;5;244m drop it, deleting the file␛[m
-␛[38;5;254m[S]␛[m␛[38;5;244m drop it from the cockpit sprint␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;244m a new item␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m
+␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m read␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m edit␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;244m new␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
 
 · a waiting item · both ends of the edge on its header row
 ␛[1;38;5;254mbacklog␛[m␛[38;5;244m · the cockpit sprint␛[m                                                                         ␛[38;5;244m6 items␛[m␛[38;5;244m · [?] keys · [q] back␛[m
@@ -240,9 +230,7 @@ backlog · the cockpit sprint                                                   
                                                     ␛[38;5;244m │ ␛[m␛[38;5;244m- [ ] the list on the left␛[m
                                                     ␛[38;5;244m │ ␛[m␛[38;5;244m- [ ] the body on the right␛[m
 
-␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m read the body␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter by text␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s/p/k/r]␛[m␛[38;5;244m narrow it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m what shipped␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m open it in $EDITOR␛[m
-␛[38;5;254m[R]␛[m␛[38;5;244m run it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[g]␛[m␛[38;5;244m read it against the tree␛[m␛[38;5;244m · ␛[m␛[38;5;254m[b]␛[m␛[38;5;244m block it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m archive it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[x]␛[m␛[38;5;244m drop it, deleting the file␛[m
-␛[38;5;254m[S]␛[m␛[38;5;244m add it to the cockpit sprint␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;244m a new item␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m
+␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m read␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m edit␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;244m new␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
 
 · a file that will not parse · a row in warning tone, the reason as its body
 ␛[1;38;5;254mbacklog␛[m␛[38;5;244m · the cockpit sprint␛[m                                                                         ␛[38;5;244m6 items␛[m␛[38;5;244m · [?] keys · [q] back␛[m
@@ -255,8 +243,7 @@ backlog · the cockpit sprint                                                   
   ␛[38;5;244m·␛[m ␛[38;5;254mdrop-loses-the-file␛[m  ␛[38;5;244mL-␛[m␛[38;5;244m  ready  Dropping an ite…␛[m␛[38;5;244m │ ␛[m␛[38;5;244m.shhh/todo/half-written.md is still on disk; [e] opens it␛[m
 ␛[38;5;254m❯ ␛[m␛[38;5;254m␛[m␛[1;38;5;254m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m⚠␛[m␛[48;5;237m ␛[1;38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237mhalf-written  will not load                     ␛[m␛[m␛[38;5;244m │ ␛[m
 
-␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m read the body␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter by text␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s/p/k/r]␛[m␛[38;5;244m narrow it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m what shipped␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m fix the header␛[m
-␛[38;5;254m[n]␛[m␛[38;5;244m a new item␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m
+␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m read␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m fix the header␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;244m new␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
 
 · [/] · the query row, with the header saying what it left
 ␛[1;38;5;254mbacklog␛[m␛[38;5;244m · matching sprint␛[m␛[38;5;244m · the cockpit sprint␛[m                                                  ␛[38;5;244m1 of 6 items␛[m␛[38;5;244m · [?] keys · [q] back␛[m
@@ -288,9 +275,7 @@ backlog · the cockpit sprint                                                   
                                                     ␛[38;5;244m │ ␛[m␛[38;5;244m- [ ] the list on the left␛[m
                                                     ␛[38;5;244m │ ␛[m␛[38;5;244m- [ ] the body on the right␛[m
 
-␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m read the body␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter by text␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s/p/k/r]␛[m␛[38;5;244m narrow it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m what shipped␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m open it in $EDITOR␛[m
-␛[38;5;254m[R]␛[m␛[38;5;244m run it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[g]␛[m␛[38;5;244m read it against the tree␛[m␛[38;5;244m · ␛[m␛[38;5;254m[b]␛[m␛[38;5;244m block it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m archive it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[x]␛[m␛[38;5;244m drop it, deleting the file␛[m
-␛[38;5;254m[S]␛[m␛[38;5;244m add it to the cockpit sprint␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;244m a new item␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m
+␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m read␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m edit␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;244m new␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
 
 · [enter] · the body with the surface to itself
 ␛[1;38;5;254mbacklog␛[m␛[38;5;244m · the cockpit sprint␛[m                                                                         ␛[38;5;244m6 items␛[m␛[38;5;244m · [?] keys · [q] back␛[m
@@ -309,7 +294,7 @@ backlog · the cockpit sprint                                                   
 ␛[38;5;244m- [x] four rows and a count␛[m
 ␛[38;5;244m- [ ] the running item first␛[m
 
-␛[38;5;254m[↑↓]␛[m␛[38;5;244m scroll␛[m␛[38;5;244m · ␛[m␛[38;5;254m[pgup/pgdn]␛[m␛[38;5;244m page the body␛[m␛[38;5;244m · ␛[m␛[38;5;254m[q]␛[m␛[38;5;244m back to the list␛[m
+␛[38;5;254m[↑↓]␛[m␛[38;5;244m scroll␛[m␛[38;5;244m · ␛[m␛[38;5;254m[pgup/pgdn]␛[m␛[38;5;244m page the body␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the list␛[m
 
 · [tab] · the archive, each item's report as its body
 ␛[1;38;5;254mbacklog␛[m␛[38;5;244m · done␛[m                                                                                       ␛[38;5;244m2 items␛[m␛[38;5;244m · [?] keys · [q] back␛[m
@@ -323,8 +308,7 @@ backlog · the cockpit sprint                                                   
                                                     ␛[38;5;244m │ ␛[m␛[38;5;244mSixty-eight literals came out of twenty files; the register is the one␛[m
                                                     ␛[38;5;244m │ ␛[m␛[38;5;244mplace a key is written down.␛[m
 
-␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m read the body␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter by text␛[m␛[38;5;244m · ␛[m␛[38;5;254m[p/k]␛[m␛[38;5;244m narrow it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m the backlog␛[m␛[38;5;244m · ␛[m␛[38;5;254m[o]␛[m␛[38;5;244m put it back in the backlog␛[m
-␛[38;5;254m[e]␛[m␛[38;5;244m open it in $EDITOR␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;244m a new item␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m
+␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m read␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m edit␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;244m new␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
 
 · [x] · the one confirm that names what it loses
 ␛[1;38;5;254mbacklog␛[m␛[38;5;244m · the cockpit sprint␛[m                                                                         ␛[38;5;244m6 items␛[m␛[38;5;244m · [?] keys · [q] back␛[m
@@ -362,7 +346,7 @@ backlog · the cockpit sprint                                                   
                                                     ␛[38;5;244m │ ␛[m␛[38;5;244m- [x] four rows and a count␛[m
                                                     ␛[38;5;244m │ ␛[m␛[38;5;244m- [ ] the running item first␛[m
 
-␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m read the body␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter by text␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s/p/k/r]␛[m␛[38;5;244m narrow it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m what shipped␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m
+␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m read␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back␛[m
 ␛[38;5;244mthe turn is running; these change the files it may be working from␛[m
 ␛[38;5;244m[e]␛[m␛[38;5;244m open it in $EDITOR␛[m␛[38;5;244m · ␛[m␛[38;5;244m[R]␛[m␛[38;5;244m run it␛[m␛[38;5;244m · ␛[m␛[38;5;244m[g]␛[m␛[38;5;244m read it against the tree␛[m␛[38;5;244m · ␛[m␛[38;5;244m[b]␛[m␛[38;5;244m block it␛[m␛[38;5;244m · ␛[m␛[38;5;244m[d]␛[m␛[38;5;244m archive it␛[m
 ␛[38;5;244m[x]␛[m␛[38;5;244m drop it, deleting the file␛[m␛[38;5;244m · ␛[m␛[38;5;244m[S]␛[m␛[38;5;244m drop it from the cockpit sprint␛[m␛[38;5;244m · ␛[m␛[38;5;244m[n]␛[m␛[38;5;244m a new item␛[m

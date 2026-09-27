@@ -675,8 +675,9 @@ func TestSprintClose_PublishesThePageAndTheBoardOffersIt(t *testing.T) {
 		t.Fatalf("board = %+v", board)
 	}
 	opened, _ := m.openTodoScreen()
-	view := ansi.Strip(opened.(Model).backlogPane(110, 24))
-	if !strings.Contains(view, "[tab] the sprint") {
+	stepped, _ := opened.(Model).updateTodoScreen(tea.KeyPressMsg{Code: tea.KeyTab})
+	view := ansi.Strip(stepped.(Model).backlogPane(110, 24))
+	if !strings.Contains(view, "rp-0123456789abcdef") {
 		t.Fatalf("the closed sprint has no tab to step onto:\n%s", view)
 	}
 }

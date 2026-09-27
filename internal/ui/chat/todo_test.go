@@ -173,6 +173,16 @@ func TestTodoScreen_KeysGoThroughTheSameVerbs(t *testing.T) {
 	}
 }
 
+// The row under the screen names it and offers nothing: the screen's header
+// carries `[q] back`, and one frame draws the key once.
+func TestTodoScreen_TheRowUnderItOffersNoKey(t *testing.T) {
+	m := todoModel(t, todoTestRoot(t))
+	opened, _ := m.openTodoScreen()
+	if hint := ansi.Strip(opened.(Model).renderTodoScreenHint()); hint != "backlog" {
+		t.Fatalf("the row under the backlog screen = %q", hint)
+	}
+}
+
 // The archive is the other tab, its bodies are the reports, and an item can
 // come back out of it.
 func TestTodoScreen_DoneTabShowsTheReportAndReopens(t *testing.T) {

@@ -220,9 +220,26 @@ it are what the command is opened for, and a card cannot hold them, so the
 picker was superseded rather than disagreed with — the screen is the
 supporting screens' own shape over backlog items, and an artboard for it is
 owed. Most of it needed no decision: the header and its rule, the two panes
-and the divider, the key row, the windowed list and the counted overflow
-markers were all drawn already. Four things it could not take from anywhere,
-and they were decided here:
+and the divider, the windowed list and the counted overflow markers were all
+drawn already. Five things it could not take from anywhere, and they were
+decided here:
+
+**The foot is one row, and `[?]` holds the rest.** The picker's own key row
+is one row — `[↑↓] choose · [enter] read it · [esc] close` — and a key hint is
+one row of at most six. The screen has more than twenty keys, and a foot that
+printed them all ran to three rows under the list while the header offered
+`[?] keys` beside it: the register twice. So the foot offers the keys pressed
+every time the screen is open — move, read, filter, edit, a new item and the
+way out — and the filters, the tabs and the other verbs are behind `[?]`.
+Where even those do not fit, whole offers give ground: the way out first,
+because the header's `[q] back` states it at every width, then the new item
+and the editor. The pointer's keys never go, since no other list teaches that
+this one moves on the arrows alone. While a turn runs, the keys that change a
+file leave the row and are drawn grey under the sentence saying why — that
+block is a reading of the screen's state, not the foot's offers, so it keeps
+every such key. `[q] back` is drawn once, on the header: the frame's row under
+the screen says `backlog` and offers nothing, and reading an item offers
+`[esc]` rather than a second `[q]`.
 
 **The row's field order, and which field gives ground.** The name and the two
 grade letters are kept, the state clips, and the title goes first. The pane
@@ -242,7 +259,7 @@ the second, because no surface has ever shown it.
 own threshold, arrived at the same way: below it the pane beside the list is
 prose in a column too narrow to read a sentence in.
 
-When there is an artboard, these four decisions are what it has to reconcile
+When there is an artboard, these five decisions are what it has to reconcile
 with, and where the two differ the artboard wins.
 
 ## The item draft card's layout was decided in the binary
