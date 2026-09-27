@@ -36,14 +36,27 @@
 │ [A] answer 3 like this as a list · [esc] leave it waiting, nothing is denied │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
+· variant · command, a quiet card · values alone
+╭─ Approve command ──────────────────────────────────────────────────── ⚠ low ─╮
+│ $ sed -n 1p go.mod                                                           │
+│ ⚠ low · writes nothing                                                       │
+│                                                                              │
+│ touches   nothing                                                            │
+│ undo      n/a                                                                │
+│ network   open                                                               │
+│ ⛨         bwrap · workspace                                                  │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ [y] run it once · [n] deny · [esc] leave it waiting, nothing is denied       │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
 · variant · command, flagged, contained, blast radius
 ╭─ Approve command (2 of 5) ────────────────────────────────────────── ⚠ HIGH ─╮
 │ $ rm -rf ./build && npm run build                                            │
 │ ⚠ HIGH · deletes files recursively (rm -rf)                                  │
 │                                                                              │
 │ touches   ./build — 412 files, 84.0 MB; shhh cannot tell what npm writes     │
-│ undo      none — nothing it writes is tracked in git                         │
-│ network   open — the workspace profile allows network access                 │
+│ undo      none                                                               │
+│ network   open                                                               │
 │ ⛨         bwrap · workspace                                                  │
 ├──────────────────────────────────────────────────────────────────────────────┤
 │ [y] run it once · [n] deny                                                   │
@@ -57,7 +70,7 @@
 │ ⚠ low · writes inside the workspace                                          │
 │                                                                              │
 │ touches   ./node_modules — shhh cannot tell what npm writes                  │
-│ undo      none — nothing it writes is tracked in git                         │
+│ undo      none                                                               │
 │ network   2 hosts                                                            │
 │ ⛨         bwrap · workspace                                                  │
 ├──────────────────────────────────────────────────────────────────────────────┤
@@ -85,7 +98,7 @@
 │ ⚠ medium · runs a repository script; shhh cannot see inside it               │
 │                                                                              │
 │ touches   ./dist — the script rewrites the release tree                      │
-│ undo      none — nothing it writes is tracked in git                         │
+│ undo      none                                                               │
 │ … 2 more lines · [shift+↓]                                                   │
 ├──────────────────────────────────────────────────────────────────────────────┤
 │ [y] run it once · [n] deny · [esc] leave it waiting, nothing is denied       │
@@ -94,7 +107,7 @@
 │ … 2 lines above · [shift+↑]                                                  │
 │                                                                              │
 │ touches   ./dist — the script rewrites the release tree                      │
-│ undo      none — nothing it writes is tracked in git                         │
+│ undo      none                                                               │
 │ network   open — it pushes the artefacts it builds                           │
 │ ⛨         bwrap — workspace profile                                          │
 ├──────────────────────────────────────────────────────────────────────────────┤
@@ -193,14 +206,27 @@
 ␛[38;5;254m│␛[m ␛[38;5;254m[A]␛[m ␛[38;5;254manswer 3 like this as a list␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc] leave it waiting, nothing is denied␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
 
+· variant · command, a quiet card · values alone
+␛[38;5;254m╭─ ␛[m␛[1;38;5;254mApprove command ␛[m␛[38;5;254m──────────────────────────────────────────────────── ⚠ low ─╮␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m$␛[m ␛[38;5;254msed -n 1p go.mod␛[m                                                           ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m⚠ low␛[m␛[38;5;244m · writes nothing␛[m                                                       ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m                                                                              ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244mtouches   ␛[m␛[38;5;254mnothing␛[m                                                            ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244mundo      ␛[m␛[38;5;254mn/a␛[m                                                                ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[m␛[38;5;254mopen␛[m                                                               ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244m⛨         ␛[m␛[38;5;244mbwrap · workspace␛[m                                                  ␛[38;5;254m│␛[m
+␛[38;5;254m├──────────────────────────────────────────────────────────────────────────────┤␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mrun it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc] leave it waiting, nothing is denied␛[m       ␛[38;5;254m│␛[m
+␛[38;5;254m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
+
 · variant · command, flagged, contained, blast radius
 ␛[38;5;254m╭─ ␛[m␛[1;38;5;254mApprove command (2 of 5) ␛[m␛[38;5;254m────────────────────────────────────────── ⚠ HIGH ─╮␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m$␛[m ␛[38;5;254mrm -rf ./build && npm run build␛[m                                            ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m⚠ HIGH␛[m␛[38;5;244m · deletes files recursively (rm -rf)␛[m                                  ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m                                                                              ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mtouches   ␛[m␛[38;5;254m./build␛[m␛[38;5;244m — 412 files, 84.0 MB; shhh cannot tell what npm writes␛[m     ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244mundo      ␛[m␛[38;5;254mnone␛[m␛[38;5;244m — nothing it writes is tracked in git␛[m                         ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[m␛[38;5;254mopen␛[m␛[38;5;244m — the workspace profile allows network access␛[m                 ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244mundo      ␛[m␛[38;5;254mnone␛[m                                                               ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[m␛[38;5;254mopen␛[m                                                               ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m⛨         ␛[m␛[38;5;244mbwrap · workspace␛[m                                                  ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mrun it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m                                                   ␛[38;5;254m│␛[m
@@ -214,7 +240,7 @@
 ␛[38;5;254m│␛[m ␛[38;5;254m⚠ low␛[m␛[38;5;244m · writes inside the workspace␛[m                                          ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m                                                                              ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mtouches   ␛[m␛[38;5;254m./node_modules␛[m␛[38;5;244m — shhh cannot tell what npm writes␛[m                  ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244mundo      ␛[m␛[38;5;254mnone␛[m␛[38;5;244m — nothing it writes is tracked in git␛[m                         ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244mundo      ␛[m␛[38;5;254mnone␛[m                                                               ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[m␛[38;5;254m2 hosts␛[m                                                            ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m⛨         ␛[m␛[38;5;244mbwrap · workspace␛[m                                                  ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────────────────────────┤␛[m
@@ -242,7 +268,7 @@
 ␛[38;5;254m│␛[m ␛[38;5;254m⚠ medium␛[m␛[38;5;244m · runs a repository script; shhh cannot see inside it␛[m               ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m                                                                              ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mtouches   ␛[m␛[38;5;254m./dist␛[m␛[38;5;244m — the script rewrites the release tree␛[m                      ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244mundo      ␛[m␛[38;5;254mnone␛[m␛[38;5;244m — nothing it writes is tracked in git␛[m                         ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244mundo      ␛[m␛[38;5;254mnone␛[m                                                               ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m… 2 more lines · [shift+↓]␛[m                                                   ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mrun it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc] leave it waiting, nothing is denied␛[m       ␛[38;5;254m│␛[m
@@ -251,7 +277,7 @@
 ␛[38;5;254m│␛[m ␛[38;5;244m… 2 lines above · [shift+↑]␛[m                                                  ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m                                                                              ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mtouches   ␛[m␛[38;5;254m./dist␛[m␛[38;5;244m — the script rewrites the release tree␛[m                      ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244mundo      ␛[m␛[38;5;254mnone␛[m␛[38;5;244m — nothing it writes is tracked in git␛[m                         ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244mundo      ␛[m␛[38;5;254mnone␛[m                                                               ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[m␛[38;5;254mopen␛[m␛[38;5;244m — it pushes the artefacts it builds␛[m                           ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m⛨         ␛[m␛[38;5;254mbwrap␛[m␛[38;5;244m — workspace profile␛[m                                          ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────────────────────────┤␛[m

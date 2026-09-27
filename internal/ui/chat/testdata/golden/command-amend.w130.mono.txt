@@ -18,7 +18,7 @@
 │                                                                                                                            │
 │ touches   unknown — shhh cannot tell what npm writes                                                                       │
 │ undo      unknown — shhh could not resolve what this writes                                                                │
-│ network   open — nothing contains this command, so nothing limits what it reaches                                          │
+│ network   open                                                                                                             │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
 │ [y] run it once · [Y] and say what next · [n] deny · [N] and say why not · [a] allow "npm test" without asking             │
 │ [d] full view                                                                              these letters go into the field │
@@ -36,7 +36,7 @@
 ␛[38;5;254m│␛[m                                                                                                                            ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mtouches   ␛[m␛[38;5;254munknown␛[m␛[38;5;244m — shhh cannot tell what npm writes␛[m                                                                       ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mundo      ␛[m␛[38;5;254munknown␛[m␛[38;5;244m — shhh could not resolve what this writes␛[m                                                                ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[m␛[38;5;254mopen␛[m␛[38;5;244m — nothing contains this command, so nothing limits what it reaches␛[m                                          ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[m␛[38;5;254mopen␛[m                                                                                                             ␛[38;5;254m│␛[m
 ␛[38;5;254m├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m[y] run it once␛[m␛[38;5;244m · ␛[m␛[38;5;244m[Y] and say what next␛[m␛[38;5;244m · ␛[m␛[38;5;244m[n] deny␛[m␛[38;5;244m · ␛[m␛[38;5;244m[N] and say why not␛[m␛[38;5;244m · ␛[m␛[38;5;244m[a] allow "npm test" without asking␛[m             ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m[d] full view␛[m                                                                              ␛[38;5;244mthese letters go into the field␛[m ␛[38;5;254m│␛[m

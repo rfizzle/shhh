@@ -406,6 +406,22 @@ func TestGitWriteGatedPreview_StatesTheBoundariesOfTheAct(t *testing.T) {
 		t.Fatalf("a trusted checkout runs its hooks: %+v", trusted.Fields)
 	}
 
+	// The rows whose sentence is the same on every git write are drawn as
+	// their value alone, and a skipped hook keeps its gloss because it is
+	// about this checkout's standing
+	// (docs/interface/departures.md#a-card-rows-gloss-is-a-fact-about-the-call-or-nothing).
+	standing := func(f chat.GatedField) bool {
+		return components.CardField{Label: f.Label, Value: f.Value, Detail: f.Detail}.Standing()
+	}
+	for _, label := range []string{"stages", "push", "hooks"} {
+		if !standing(labels(trusted)[label]) {
+			t.Fatalf("the %s row's sentence is fixed and should be standing: %+v", label, trusted.Fields)
+		}
+	}
+	if standing(fields["hooks"]) {
+		t.Fatalf("a skipped hook's gloss is about this checkout and should be drawn: %+v", commit.Fields)
+	}
+
 	// The other two verbs that move something: a branch created and a branch
 	// stood on both have a way back, and it is a line the person types.
 	for _, tc := range []struct{ call, undo string }{

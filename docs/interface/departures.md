@@ -1033,3 +1033,33 @@ turn they meant, and the chord that answered them acted on whichever was
 newest ([the turn's close](surfaces.md#the-turns-close)). An older close states
 what its turn did and offers nothing until the pointer or reading mode's
 cursor selects it.
+
+## A card row's gloss is a fact about the call, or nothing
+
+*A disagreement.* The `Approvals` and `Commit` artboards gloss every row of a
+card's body, and every gloss they draw is a fact about the call in front of
+the reader — *reads 41 packages, writes only /tmp test binaries*, *README.md
+was changed by you, never staged*, *will be 2 ahead of origin/main*. The
+binary's glosses on the same rows were mostly the same sentence on every card
+— *the command resolved to reads only*, *no workspace file is modified*, *the
+workspace profile allows network access*, *shhh never pushes; the remote is
+yours* — so a read-only command's card was four sentences of which none said
+anything about the command.
+
+The binary draws a gloss where it states something the value alone does not
+say about this call: a path and its size, the hosts on a list, a file changed
+by you, `unknown` with what could not be read — the card stays honest about
+its limits ([the approval card](surfaces.md#the-approval-card)) — `skipped`
+with the `/trust` door, and the reason beside `HIGH`. A row whose sentence
+would read the same on every card with that value is drawn as the value
+alone, on the command card (touches, undo, network, the containment row), the
+commit card (leaves, branch, hooks, push) and the card a git write asks
+through (stages, push, hooks). Which sentences are fixed is one table beside
+the rows rather than a judgement at each site that words them. The words
+stay where they are written, and a command card's full view draws every row
+with its sentence. The commit card and a git write's card have no full view;
+what their fixed sentences said — nothing is pushed, a failing hook changes
+nothing, only this session's files are staged — is what the values there
+already say. The departure is closed by the artboards
+agreeing that a gloss is drawn only where it is about the call — which every
+gloss they draw already is.

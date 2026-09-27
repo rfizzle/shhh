@@ -627,6 +627,19 @@ func TestGolden_ApprovalCard(t *testing.T) {
 				c.Batch, c.BatchHint = true, "answer 3 like this as a list"
 				c.Severity, c.SeverityReason = SeverityLow, "writes nothing"
 			})},
+			// A command that resolved to reads only, contained: every row's
+			// sentence would read the same on the next such card, so the
+			// card is its values alone and the full view keeps the words.
+			{Label: "variant · command, a quiet card · values alone", View: card(func(c *ApprovalCard) {
+				c.Act = "sed -n 1p go.mod"
+				c.Severity, c.SeverityReason = SeverityLow, "writes nothing"
+				c.Fields = []CardField{
+					{Label: "touches", Value: "nothing", Detail: "the command resolved to reads only", Tone: ToneSafe},
+					{Label: "undo", Value: "n/a", Detail: "no workspace file is modified", Tone: ToneSafe},
+					{Label: "network", Value: "open", Detail: "the workspace profile allows network access", Tone: ToneOpen},
+					{Label: "⛨", Value: "bwrap · workspace", Tone: ToneChrome},
+				}
+			})},
 			{Label: "variant · command, flagged, contained, blast radius", View: card(func(c *ApprovalCard) {
 				c.QueuePos = "2 of 5"
 				c.Act = "rm -rf ./build && npm run build"

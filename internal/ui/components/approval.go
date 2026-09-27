@@ -180,6 +180,63 @@ type CardField struct {
 	Tone   FieldTone
 }
 
+// standingGlosses is every row whose gloss is a fixed sentence: the value
+// already says what the sentence says, or the sentence is the same on every
+// card that draws the value, so it says nothing about the call in front of
+// the reader. A card draws those rows as the value alone, and the command
+// card's full view keeps the sentence. Every other gloss is drawn, because
+// it states something about this call — a path and its size, the hosts on a
+// list, the files changed by you, what could not be resolved, the /trust
+// door on a skipped hook
+// (docs/interface/departures.md#a-card-rows-gloss-is-a-fact-about-the-call-or-nothing).
+//
+// A row is standing only when its label, its value and its sentence all
+// match, so a row that shares a label and a value with one of these but says
+// something of its own keeps it. A `*` stands for the part a sentence takes
+// from the session — the containment profile's name, the detector's reason —
+// and matches any run of text. The sites that word the rows keep their words;
+// this table is the one place that decides which of them a card body draws.
+var standingGlosses = map[[2]string][]string{
+	// The command card.
+	{"touches", "nothing"}: {"the command resolved to reads only"},
+	{"undo", "n/a"}:        {"no workspace file is modified"},
+	{"undo", "git"}:        {"every path it writes is tracked, so git can restore them"},
+	{"undo", "none"}: {
+		"this is not a git work tree and shhh does not record commands",
+		"nothing it writes is tracked in git",
+	},
+	{"network", "open"}: {
+		"nothing contains this command, so nothing limits what it reaches",
+		"the * profile allows network access",
+	},
+	{"network", "closed"}: {"the * profile removes it"},
+	// The detector's reason is the session's; the footnote names the door.
+	{"⛨", "no sandbox"}: {"*; the command runs as you"},
+	// The commit card and the git write's card.
+	{"leaves", "nothing"}:                   {"your tree holds no other uncommitted work"},
+	{"branch", "detached"}:                  {"HEAD is on no branch"},
+	{"hooks", "pre-commit runs"}:            {"a hook failure cancels the commit and changes nothing"},
+	{"hooks", "run"}:                        {"the checkout's own commit hooks; a failure cancels and changes nothing"},
+	{"stages", "this session's files only"}: {"work that was already in the tree is never staged"},
+	{"push", "no"}:                          {"shhh never pushes; the remote is yours"},
+}
+
+// Standing reports whether the row's gloss is a fixed sentence
+// (standingGlosses): the row a card body draws as its value alone.
+func (f CardField) Standing() bool {
+	for _, shape := range standingGlosses[[2]string{f.Label, f.Value}] {
+		head, tail, wild := strings.Cut(shape, "*")
+		switch {
+		case !wild && f.Detail == shape:
+			return true
+		case wild && len(f.Detail) > len(head)+len(tail) &&
+			strings.HasPrefix(f.Detail, head) && strings.HasSuffix(f.Detail, tail):
+			return true
+		}
+	}
+	return false
+}
+
 // fieldLabelWidth is the blast-radius block's label column, matching the
 // `touches / undo / network` gutter in the Approvals artboard of the shhh
 // Design System project.
@@ -1467,7 +1524,8 @@ func (c *ApprovalCard) chips() []string {
 
 // render lays one blast-radius field into its label column. The detail is
 // dropped rather than clipped when the terminal cannot carry it, so what is
-// left is a whole statement instead of half of one.
+// left is a whole statement instead of half of one. A standing gloss is not
+// drawn at any width (standingGlosses).
 //
 // The label column is Status and not Dim. Dim is what a key nobody can press
 // and a row nobody can act on are drawn in, and a field name is neither: it
@@ -1477,7 +1535,7 @@ func (f CardField) render(inner int) string {
 	label := padRight(f.Label, fieldLabelWidth-1) + " "
 	value := f.Tone.style().Render(f.Value)
 	head := sty.Status.Render(label) + value
-	if f.Detail == "" {
+	if f.Detail == "" || f.Standing() {
 		return head
 	}
 	detail := " — " + f.Detail

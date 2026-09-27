@@ -1655,6 +1655,19 @@ card's own tone, which drew a statement about containment in the colour of a
 flagged command. The one containment fact that does reach the rail is the
 absence of a sandbox, because that changes what the decision is.
 
+A row of the body is a label and a value, and the sentence after the dash is
+drawn only where it says something the value does not about *this* call — a
+path and its size, the hosts a list allows, a file of yours the commit leaves
+behind, what could not be resolved, a skipped hook with the `/trust` that runs
+it. A sentence that would read the same on the next card with the same value —
+*the command resolved to reads only*, *no workspace file is modified*, *the
+profile allows network access*, *shhh never pushes* — is left off, so a quiet
+card is its values and the one row with something to say stands out from
+them. Which sentences are fixed is one table beside the rows, not a judgement
+each card makes, and a command card's full view keeps every one of them:
+they are moved, not lost. This is a departure from the artboards, which gloss every row
+([a card row's gloss is a fact about the call, or nothing](departures.md#a-card-rows-gloss-is-a-fact-about-the-call-or-nothing)).
+
 The card's border carries how much the decision on it weighs, and the run of
 its top edge between the title and the chips carries nothing — so that run is
 drawn as chrome, in the tone a screen's rule is drawn in, while the corners,

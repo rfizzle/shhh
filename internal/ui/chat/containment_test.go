@@ -70,8 +70,18 @@ func TestConfirmPromptShowsContainmentState(t *testing.T) {
 	if !strings.Contains(view, "⛨") || !strings.Contains(view, "bwrap · workspace") {
 		t.Fatalf("confirm prompt should carry the containment row:\n%s", view)
 	}
-	if !strings.Contains(view, "the workspace profile allows network access") {
+	if !strings.Contains(view, "network   open") {
 		t.Fatalf("confirm prompt should say what the profile allows:\n%s", view)
+	}
+	// The profile's sentence is the same on every card of the session, so
+	// the card draws the value alone and the full view keeps the sentence
+	// (docs/interface/departures.md#a-card-rows-gloss-is-a-fact-about-the-call-or-nothing).
+	if strings.Contains(view, "allows network access") {
+		t.Fatalf("the card should not repeat the profile's standing sentence:\n%s", view)
+	}
+	full := strings.Join(m.commandCardView().Lines, "\n")
+	if !strings.Contains(full, "network  open — the workspace profile allows network access") {
+		t.Fatalf("the full view should keep the sentence the card dropped:\n%s", full)
 	}
 }
 
@@ -119,8 +129,14 @@ func TestConfirmPromptShowsUnconfinedState(t *testing.T) {
 		updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyDown, Mod: tea.ModShift})
 		m = updated.(Model)
 	}
-	if view := m.View().Content; !strings.Contains(view, "bubblewrap (bwrap) not found on PATH") {
+	// The row states the value alone: the detector's reason is the same on
+	// every card of the session, so the footnote's door and the full view
+	// carry it (docs/interface/departures.md#a-card-rows-gloss-is-a-fact-about-the-call-or-nothing).
+	if view := m.View().Content; !strings.Contains(view, "no sandbox") {
 		t.Fatalf("shift+↓ should bring the missing-mechanism row into view:\n%s", view)
+	}
+	if full := strings.Join(m.commandCardView().Lines, "\n"); !strings.Contains(full, "bubblewrap (bwrap) not found on PATH") {
+		t.Fatalf("the full view should keep the detector's reason:\n%s", full)
 	}
 
 	// With no containment runner, approval falls through to the plain runner.

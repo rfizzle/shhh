@@ -18,7 +18,7 @@
 │                                                                                                                            │
 │ touches   unknown — shhh cannot tell what npm writes                                                                       │
 │ undo      unknown — shhh could not resolve what this writes                                                                │
-│ network   open — nothing contains this command, so nothing limits what it reaches                                          │
+│ network   open                                                                                                             │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
 │ [y] run it once · [Y] and say what next · [n] deny · [N] and say why not · [a] allow "npm test" without asking             │
 │ [d] full view · [e] edit the command · [esc] leave it waiting, nothing is denied                                           │
@@ -32,8 +32,8 @@
 │ ⚠ HIGH · recursive forced deletion — may destroy files irrecoverably                                                       │
 │                                                                                                                            │
 │ touches   ./build — does not exist yet — the command creates it; removed with everything under it                          │
-│ undo      none — this is not a git work tree and shhh does not record commands                                             │
-│ network   open — nothing contains this command, so nothing limits what it reaches                                          │
+│ undo      none                                                                                                             │
+│ network   open                                                                                                             │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
 │ [y] run it once · [Y] and say what next · [n] deny · [N] and say why not · [d] full view · [e] edit the command            │
 │ [esc] don't — the safe answer; the decision waits                                                                          │
@@ -49,7 +49,7 @@
 ␛[38;5;214m│␛[m                                                                                                                            ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mtouches   ␛[m␛[91munknown␛[m␛[38;5;245m — shhh cannot tell what npm writes␛[m                                                                       ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mundo      ␛[m␛[91munknown␛[m␛[38;5;245m — shhh could not resolve what this writes␛[m                                                                ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;243mnetwork   ␛[m␛[38;5;214mopen␛[m␛[38;5;245m — nothing contains this command, so nothing limits what it reaches␛[m                                          ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;243mnetwork   ␛[m␛[38;5;214mopen␛[m                                                                                                             ␛[38;5;214m│␛[m
 ␛[38;5;214m├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;214m│␛[m ␛[94m[y]␛[m ␛[38;5;252mrun it once␛[m␛[38;5;241m · ␛[m␛[94m[Y]␛[m ␛[38;5;252mand say what next␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m ␛[38;5;252mdeny␛[m␛[38;5;241m · ␛[m␛[94m[N]␛[m ␛[38;5;252mand say why not␛[m␛[38;5;241m · ␛[m␛[94m[a]␛[m ␛[38;5;252mallow "npm test" without asking␛[m             ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[94m[d]␛[m ␛[38;5;252mfull view␛[m␛[38;5;241m · ␛[m␛[94m[e]␛[m ␛[38;5;252medit the command␛[m␛[38;5;241m · ␛[m␛[92m[esc] leave it waiting, nothing is denied␛[m                                           ␛[38;5;214m│␛[m
@@ -63,8 +63,8 @@
 ␛[91m│␛[m ␛[91m⚠ HIGH␛[m␛[38;5;241m · recursive forced deletion — may destroy files irrecoverably␛[m                                                       ␛[91m│␛[m
 ␛[91m│␛[m                                                                                                                            ␛[91m│␛[m
 ␛[91m│␛[m ␛[38;5;243mtouches   ␛[m␛[38;5;252m./build␛[m␛[38;5;245m — does not exist yet — the command creates it; removed with everything under it␛[m                          ␛[91m│␛[m
-␛[91m│␛[m ␛[38;5;243mundo      ␛[m␛[91mnone␛[m␛[38;5;245m — this is not a git work tree and shhh does not record commands␛[m                                             ␛[91m│␛[m
-␛[91m│␛[m ␛[38;5;243mnetwork   ␛[m␛[38;5;214mopen␛[m␛[38;5;245m — nothing contains this command, so nothing limits what it reaches␛[m                                          ␛[91m│␛[m
+␛[91m│␛[m ␛[38;5;243mundo      ␛[m␛[91mnone␛[m                                                                                                             ␛[91m│␛[m
+␛[91m│␛[m ␛[38;5;243mnetwork   ␛[m␛[38;5;214mopen␛[m                                                                                                             ␛[91m│␛[m
 ␛[91m├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[91m│␛[m ␛[94m[y]␛[m ␛[38;5;252mrun it once␛[m␛[38;5;241m · ␛[m␛[94m[Y]␛[m ␛[38;5;252mand say what next␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m ␛[38;5;252mdeny␛[m␛[38;5;241m · ␛[m␛[94m[N]␛[m ␛[38;5;252mand say why not␛[m␛[38;5;241m · ␛[m␛[94m[d]␛[m ␛[38;5;252mfull view␛[m␛[38;5;241m · ␛[m␛[94m[e]␛[m ␛[38;5;252medit the command␛[m            ␛[91m│␛[m
 ␛[91m│␛[m ␛[92m[esc] don't — the safe answer; the decision waits␛[m                                                                          ␛[91m│␛[m

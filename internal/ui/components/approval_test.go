@@ -221,6 +221,39 @@ func TestApprovalCard_BlastRadiusBlockAndRule(t *testing.T) {
 	}
 }
 
+// A row is drawn as its value alone only when its sentence is one of the
+// table's fixed ones; a row sharing the label and the value but saying
+// something about this call keeps its gloss
+// (docs/interface/departures.md#a-card-rows-gloss-is-a-fact-about-the-call-or-nothing).
+func TestCardField_OnlyAFixedSentenceIsStanding(t *testing.T) {
+	for _, tc := range []struct {
+		field    CardField
+		standing bool
+	}{
+		{CardField{Label: "touches", Value: "nothing", Detail: "the command resolved to reads only"}, true},
+		{CardField{Label: "network", Value: "open", Detail: "the workspace profile allows network access"}, true},
+		{CardField{Label: "network", Value: "closed", Detail: "the workspace-netless profile removes it"}, true},
+		{CardField{Label: "⛨", Value: "no sandbox", Detail: "bubblewrap (bwrap) not found on PATH; the command runs as you"}, true},
+		{CardField{Label: "push", Value: "no", Detail: "shhh never pushes; the remote is yours"}, true},
+		// The same label and value, with a sentence of its own.
+		{CardField{Label: "network", Value: "open", Detail: "it pushes the artefacts it builds"}, false},
+		{CardField{Label: "undo", Value: "none", Detail: "rm bypasses the changeset"}, false},
+		// A wildcard needs something to stand for.
+		{CardField{Label: "network", Value: "closed", Detail: "the  profile removes it"}, false},
+		// Values the table does not name keep whatever they say.
+		{CardField{Label: "hooks", Value: "skipped", Detail: "this checkout is not trusted to run its own programs — /trust runs them"}, false},
+		{CardField{Label: "touches", Value: "unknown", Detail: "piped into sh; what it runs is not inspected first"}, false},
+	} {
+		if got := tc.field.Standing(); got != tc.standing {
+			t.Errorf("%+v: standing %v, want %v", tc.field, got, tc.standing)
+		}
+		line := ansi.Strip(tc.field.render(120))
+		if drawn := strings.Contains(line, tc.field.Detail); drawn == tc.standing {
+			t.Errorf("%+v: drew the gloss %v on %q", tc.field, drawn, line)
+		}
+	}
+}
+
 // A detail that cannot fit is dropped, leaving a whole statement rather than
 // half of one.
 func TestApprovalCard_FieldDropsDetailBeforeClipping(t *testing.T) {

@@ -18,7 +18,7 @@
 │ lands in  the agent's worktree                                           │
 │ touches   build — 2 files, 14 B; removed with everything under it        │
 │ undo      none                                                           │
-│ network   closed — the workspace profile removes it                      │
+│ network   closed                                                         │
 │ ⛨         bwrap · workspace                                              │
 ├──────────────────────────────────────────────────────────────────────────┤
 │ [y] run it once · [n] deny · [g] attach to writer-1 · [f12] agents       │
@@ -34,7 +34,7 @@
 │ lands in  the agent's worktree                                           │
 │ touches   build — 2 files, 14 B; removed with everything under it        │
 │ undo      none                                                           │
-│ network   closed — the workspace profile removes it                      │
+│ network   closed                                                         │
 │ ⛨         bwrap · workspace                                              │
 ├──────────────────────────────────────────────────────────────────────────┤
 │ [y] run it once · [n] deny                                               │
@@ -50,7 +50,7 @@
 │ lands in  the agent's worktree                                           │
 │ touches   build — 2 files, 14 B; removed with everything under it        │
 │ undo      none                                                           │
-│ network   closed — the workspace profile removes it                      │
+│ network   closed                                                         │
 │ ⛨         bwrap · workspace                                              │
 ├──────────────────────────────────────────────────────────────────────────┤
 │ [ctrl+space/ctrl+y] answer it · other keys type into the draft           │
@@ -64,7 +64,7 @@
 │ lands in  the agent's worktree                                           │
 │ touches   unknown — shhh cannot tell what go writes                      │
 │ undo      unknown — shhh could not resolve what this writes              │
-│ network   closed — the workspace profile removes it                      │
+│ network   closed                                                         │
 │ ⛨         bwrap · workspace                                              │
 ├──────────────────────────────────────────────────────────────────────────┤
 │ [y] run it once · [n] deny                                               │
@@ -80,7 +80,7 @@
 │ lands in  the agent's worktree                                           │
 │ touches   unknown — shhh cannot tell what go writes                      │
 │ undo      unknown — shhh could not resolve what this writes              │
-│ network   closed — the workspace profile removes it                      │
+│ network   closed                                                         │
 │ ⛨         bwrap · workspace                                              │
 ├──────────────────────────────────────────────────────────────────────────┤
 │ [y] run it once · [n] deny                                               │
@@ -97,7 +97,7 @@
 │ lands in  the agent's worktree                                           │
 │ touches   unknown — shhh cannot tell what go writes                      │
 │ undo      unknown — shhh could not resolve what this writes              │
-│ network   closed — the workspace profile removes it                      │
+│ network   closed                                                         │
 │ ⛨         bwrap · workspace                                              │
 ├──────────────────────────────────────────────────────────────────────────┤
 │ [y] run it once · [n] deny                                               │
@@ -186,7 +186,7 @@
 ␛[38;5;254m│␛[m ␛[38;5;244mlands in  ␛[m␛[38;5;254mthe agent's worktree␛[m                                           ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mtouches   ␛[m␛[38;5;254mbuild␛[m␛[38;5;244m — 2 files, 14 B; removed with everything under it␛[m        ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mundo      ␛[m␛[38;5;254mnone␛[m                                                           ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[m␛[38;5;254mclosed␛[m␛[38;5;244m — the workspace profile removes it␛[m                      ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[m␛[38;5;254mclosed␛[m                                                         ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m⛨         ␛[m␛[38;5;244mbwrap · workspace␛[m                                              ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mrun it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m␛[38;5;244m · ␛[m␛[38;5;254m[g]␛[m ␛[38;5;254mattach to writer-1␛[m␛[38;5;244m · ␛[m␛[38;5;254m[f12]␛[m ␛[38;5;254magents␛[m       ␛[38;5;254m│␛[m
@@ -202,7 +202,7 @@
 ␛[38;5;254m│␛[m ␛[38;5;244mlands in  ␛[m␛[38;5;254mthe agent's worktree␛[m                                           ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mtouches   ␛[m␛[38;5;254mbuild␛[m␛[38;5;244m — 2 files, 14 B; removed with everything under it␛[m        ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mundo      ␛[m␛[38;5;254mnone␛[m                                                           ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[m␛[38;5;254mclosed␛[m␛[38;5;244m — the workspace profile removes it␛[m                      ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[m␛[38;5;254mclosed␛[m                                                         ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m⛨         ␛[m␛[38;5;244mbwrap · workspace␛[m                                              ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mrun it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m                                               ␛[38;5;254m│␛[m
@@ -218,7 +218,7 @@
 ␛[38;5;254m│␛[m ␛[38;5;244mlands in  ␛[m␛[38;5;254mthe agent's worktree␛[m                                           ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mtouches   ␛[m␛[38;5;254mbuild␛[m␛[38;5;244m — 2 files, 14 B; removed with everything under it␛[m        ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mundo      ␛[m␛[38;5;254mnone␛[m                                                           ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[m␛[38;5;254mclosed␛[m␛[38;5;244m — the workspace profile removes it␛[m                      ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[m␛[38;5;254mclosed␛[m                                                         ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m⛨         ␛[m␛[38;5;244mbwrap · workspace␛[m                                              ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[ctrl+space/ctrl+y]␛[m␛[38;5;254m answer it␛[m␛[38;5;244m · other keys type into the draft␛[m           ␛[38;5;254m│␛[m
@@ -232,7 +232,7 @@
 ␛[38;5;254m│␛[m ␛[38;5;244mlands in  ␛[m␛[38;5;254mthe agent's worktree␛[m                                           ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mtouches   ␛[m␛[38;5;254munknown␛[m␛[38;5;244m — shhh cannot tell what go writes␛[m                      ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mundo      ␛[m␛[38;5;254munknown␛[m␛[38;5;244m — shhh could not resolve what this writes␛[m              ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[m␛[38;5;254mclosed␛[m␛[38;5;244m — the workspace profile removes it␛[m                      ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[m␛[38;5;254mclosed␛[m                                                         ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m⛨         ␛[m␛[38;5;244mbwrap · workspace␛[m                                              ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mrun it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m                                               ␛[38;5;254m│␛[m
@@ -248,7 +248,7 @@
 ␛[38;5;254m│␛[m ␛[38;5;244mlands in  ␛[m␛[38;5;254mthe agent's worktree␛[m                                           ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mtouches   ␛[m␛[38;5;254munknown␛[m␛[38;5;244m — shhh cannot tell what go writes␛[m                      ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mundo      ␛[m␛[38;5;254munknown␛[m␛[38;5;244m — shhh could not resolve what this writes␛[m              ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[m␛[38;5;254mclosed␛[m␛[38;5;244m — the workspace profile removes it␛[m                      ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[m␛[38;5;254mclosed␛[m                                                         ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m⛨         ␛[m␛[38;5;244mbwrap · workspace␛[m                                              ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mrun it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m                                               ␛[38;5;254m│␛[m
@@ -265,7 +265,7 @@
 ␛[38;5;254m│␛[m ␛[38;5;244mlands in  ␛[m␛[38;5;254mthe agent's worktree␛[m                                           ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mtouches   ␛[m␛[38;5;254munknown␛[m␛[38;5;244m — shhh cannot tell what go writes␛[m                      ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mundo      ␛[m␛[38;5;254munknown␛[m␛[38;5;244m — shhh could not resolve what this writes␛[m              ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[m␛[38;5;254mclosed␛[m␛[38;5;244m — the workspace profile removes it␛[m                      ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[m␛[38;5;254mclosed␛[m                                                         ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m⛨         ␛[m␛[38;5;244mbwrap · workspace␛[m                                              ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mrun it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m                                               ␛[38;5;254m│␛[m

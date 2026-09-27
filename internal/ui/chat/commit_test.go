@@ -145,10 +145,18 @@ func TestCommitCard_StatesTheTurnsOwnFilesAndLeavesTheReadersAlone(t *testing.T)
 	view := ansi.Strip(m.commitCard().View(120))
 	for _, want := range []string{
 		"Commit this turn", "stages", "1 file", "leaves", "README.md",
-		"branch", "hooks", "push", "no", "shhh never pushes",
+		"branch", "hooks", "push", "no", "changed by you, never staged",
 	} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("the card should state %q, got:\n%s", want, view)
+		}
+	}
+	// The rows whose sentence is the same on every commit card draw their
+	// value alone; the leaves row keeps its gloss because it names the file
+	// (docs/interface/departures.md#a-card-rows-gloss-is-a-fact-about-the-call-or-nothing).
+	for _, standing := range []string{"shhh never pushes", "a hook failure cancels"} {
+		if strings.Contains(view, standing) {
+			t.Fatalf("the card should not draw the standing sentence %q:\n%s", standing, view)
 		}
 	}
 }

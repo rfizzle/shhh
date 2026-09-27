@@ -17,8 +17,8 @@
 │ stages    3 files +30 −4 — exactly what this turn changed                                                                      │
 │ leaves    your 1 uncommitted edit — README.md changed by you, never staged                                                     │
 │ branch    loop-refactor — will be 2 ahead of origin/main                                                                       │
-│ hooks     pre-commit runs — a hook failure cancels the commit and changes nothing                                              │
-│ push      no — shhh never pushes; the remote is yours                                                                          │
+│ hooks     pre-commit runs                                                                                                      │
+│ push      no                                                                                                                   │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
 │ [enter] commit · [e] edit the message · [s] pick hunks — the review surface                                                    │
 │ [esc] don't — the changeset stays, and so does the offer                                                                       │
@@ -29,10 +29,10 @@
 │ $ agent: cap rounds at the limit instead of erroring                                                                           │
 │                                                                                                                                │
 │ stages    3 files +30 −4 — exactly what this turn changed                                                                      │
-│ leaves    nothing — your tree holds no other uncommitted work                                                                  │
+│ leaves    nothing                                                                                                              │
 │ branch    loop-refactor — will be 2 ahead of origin/main                                                                       │
-│ hooks     pre-commit runs — a hook failure cancels the commit and changes nothing                                              │
-│ push      no — shhh never pushes; the remote is yours                                                                          │
+│ hooks     pre-commit runs                                                                                                      │
+│ push      no                                                                                                                   │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
 │ [enter] commit · [e] edit the message · [s] pick hunks — the review surface                                                    │
 │ [esc] don't — the changeset stays, and so does the offer                                                                       │
@@ -46,7 +46,7 @@
 │ leaves    your 1 uncommitted edit — README.md changed by you, never staged                                                     │
 │ branch    loop-refactor — will be 2 ahead of origin/main                                                                       │
 │ hooks     skipped — this checkout is not trusted to run its own programs — /trust runs them                                    │
-│ push      no — shhh never pushes; the remote is yours                                                                          │
+│ push      no                                                                                                                   │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
 │ [enter] commit · [e] edit the message · [s] pick hunks — the review surface                                                    │
 │ [esc] don't — the changeset stays, and so does the offer                                                                       │
@@ -59,8 +59,8 @@
 │ stages    3 files +30 −4 — exactly what this turn changed                                                                      │
 │ leaves    your 1 uncommitted edit — README.md changed by you, never staged                                                     │
 │ branch    loop-refactor — will be 2 ahead of origin/main                                                                       │
-│ hooks     pre-commit runs — a hook failure cancels the commit and changes nothing                                              │
-│ push      no — shhh never pushes; the remote is yours                                                                          │
+│ hooks     pre-commit runs                                                                                                      │
+│ push      no                                                                                                                   │
 │                                                                                                                                │
 │ ✗ git commit: pre-commit hook failed: gofmt -l found 2 files                                                                   │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
@@ -76,8 +76,8 @@
 │ leaves    your 1 uncommitted edit — README.md changed by you, never staged                                                     │
 │ drifted   1 file left out — internal/agent/round.go changed since the turn wrote it                                            │
 │ branch    loop-refactor — will be 2 ahead of origin/main                                                                       │
-│ hooks     pre-commit runs — a hook failure cancels the commit and changes nothing                                              │
-│ push      no — shhh never pushes; the remote is yours                                                                          │
+│ hooks     pre-commit runs                                                                                                      │
+│ push      no                                                                                                                   │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
 │ [enter] commit · [e] edit the message · [s] pick hunks — the review surface                                                    │
 │ [esc] don't — the changeset stays, and so does the offer                                                                       │
@@ -90,8 +90,8 @@
 │ stages    3 files +30 −4 — exactly what this turn changed                                                                      │
 │ leaves    your 1 uncommitted edit — README.md changed by you, never staged                                                     │
 │ branch    loop-refactor — will be 2 ahead of origin/main                                                                       │
-│ hooks     pre-commit runs — a hook failure cancels the commit and changes nothing                                              │
-│ push      no — shhh never pushes; the remote is yours                                                                          │
+│ hooks     pre-commit runs                                                                                                      │
+│ push      no                                                                                                                   │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
 │ [enter] commit · [e] edit the message · [s] pick hunks                                                 committing — git has it │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
@@ -120,8 +120,8 @@
 ␛[38;5;214m│␛[m ␛[38;5;243mstages    ␛[m␛[38;5;252m3 files ␛[m␛[92m+30␛[m ␛[91m−4␛[m␛[38;5;245m — exactly what this turn changed␛[m                                                                      ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mleaves    ␛[m␛[38;5;214myour 1 uncommitted edit␛[m␛[38;5;245m — README.md changed by you, never staged␛[m                                                     ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mbranch    ␛[m␛[38;5;252mloop-refactor␛[m␛[38;5;245m — will be 2 ahead of origin/main␛[m                                                                       ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;243mhooks     ␛[m␛[38;5;252mpre-commit runs␛[m␛[38;5;245m — a hook failure cancels the commit and changes nothing␛[m                                              ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;243mpush      ␛[m␛[92mno␛[m␛[38;5;245m — shhh never pushes; the remote is yours␛[m                                                                          ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;243mhooks     ␛[m␛[38;5;252mpre-commit runs␛[m                                                                                                      ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;243mpush      ␛[m␛[92mno␛[m                                                                                                                   ␛[38;5;214m│␛[m
 ␛[38;5;214m├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;214m│␛[m ␛[94m[enter]␛[m ␛[38;5;252mcommit␛[m␛[38;5;241m · ␛[m␛[94m[e]␛[m ␛[38;5;252medit the message␛[m␛[38;5;241m · ␛[m␛[94m[s]␛[m ␛[38;5;252mpick hunks — the review surface␛[m                                                    ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[92m[esc] don't — the changeset stays, and so does the offer␛[m                                                                       ␛[38;5;214m│␛[m
@@ -132,10 +132,10 @@
 ␛[38;5;214m│␛[m ␛[38;5;214m$␛[m ␛[97magent: cap rounds at the limit instead of erroring␛[m                                                                           ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m                                                                                                                                ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mstages    ␛[m␛[38;5;252m3 files ␛[m␛[92m+30␛[m ␛[91m−4␛[m␛[38;5;245m — exactly what this turn changed␛[m                                                                      ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;243mleaves    ␛[m␛[92mnothing␛[m␛[38;5;245m — your tree holds no other uncommitted work␛[m                                                                  ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;243mleaves    ␛[m␛[92mnothing␛[m                                                                                                              ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mbranch    ␛[m␛[38;5;252mloop-refactor␛[m␛[38;5;245m — will be 2 ahead of origin/main␛[m                                                                       ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;243mhooks     ␛[m␛[38;5;252mpre-commit runs␛[m␛[38;5;245m — a hook failure cancels the commit and changes nothing␛[m                                              ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;243mpush      ␛[m␛[92mno␛[m␛[38;5;245m — shhh never pushes; the remote is yours␛[m                                                                          ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;243mhooks     ␛[m␛[38;5;252mpre-commit runs␛[m                                                                                                      ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;243mpush      ␛[m␛[92mno␛[m                                                                                                                   ␛[38;5;214m│␛[m
 ␛[38;5;214m├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;214m│␛[m ␛[94m[enter]␛[m ␛[38;5;252mcommit␛[m␛[38;5;241m · ␛[m␛[94m[e]␛[m ␛[38;5;252medit the message␛[m␛[38;5;241m · ␛[m␛[94m[s]␛[m ␛[38;5;252mpick hunks — the review surface␛[m                                                    ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[92m[esc] don't — the changeset stays, and so does the offer␛[m                                                                       ␛[38;5;214m│␛[m
@@ -149,7 +149,7 @@
 ␛[38;5;214m│␛[m ␛[38;5;243mleaves    ␛[m␛[38;5;214myour 1 uncommitted edit␛[m␛[38;5;245m — README.md changed by you, never staged␛[m                                                     ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mbranch    ␛[m␛[38;5;252mloop-refactor␛[m␛[38;5;245m — will be 2 ahead of origin/main␛[m                                                                       ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mhooks     ␛[m␛[38;5;243mskipped␛[m␛[38;5;245m — this checkout is not trusted to run its own programs — /trust runs them␛[m                                    ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;243mpush      ␛[m␛[92mno␛[m␛[38;5;245m — shhh never pushes; the remote is yours␛[m                                                                          ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;243mpush      ␛[m␛[92mno␛[m                                                                                                                   ␛[38;5;214m│␛[m
 ␛[38;5;214m├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;214m│␛[m ␛[94m[enter]␛[m ␛[38;5;252mcommit␛[m␛[38;5;241m · ␛[m␛[94m[e]␛[m ␛[38;5;252medit the message␛[m␛[38;5;241m · ␛[m␛[94m[s]␛[m ␛[38;5;252mpick hunks — the review surface␛[m                                                    ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[92m[esc] don't — the changeset stays, and so does the offer␛[m                                                                       ␛[38;5;214m│␛[m
@@ -162,8 +162,8 @@
 ␛[38;5;214m│␛[m ␛[38;5;243mstages    ␛[m␛[38;5;252m3 files ␛[m␛[92m+30␛[m ␛[91m−4␛[m␛[38;5;245m — exactly what this turn changed␛[m                                                                      ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mleaves    ␛[m␛[38;5;214myour 1 uncommitted edit␛[m␛[38;5;245m — README.md changed by you, never staged␛[m                                                     ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mbranch    ␛[m␛[38;5;252mloop-refactor␛[m␛[38;5;245m — will be 2 ahead of origin/main␛[m                                                                       ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;243mhooks     ␛[m␛[38;5;252mpre-commit runs␛[m␛[38;5;245m — a hook failure cancels the commit and changes nothing␛[m                                              ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;243mpush      ␛[m␛[92mno␛[m␛[38;5;245m — shhh never pushes; the remote is yours␛[m                                                                          ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;243mhooks     ␛[m␛[38;5;252mpre-commit runs␛[m                                                                                                      ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;243mpush      ␛[m␛[92mno␛[m                                                                                                                   ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m                                                                                                                                ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[91m✗ git commit: pre-commit hook failed: gofmt -l found 2 files␛[m                                                                   ␛[38;5;214m│␛[m
 ␛[38;5;214m├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
@@ -179,8 +179,8 @@
 ␛[38;5;214m│␛[m ␛[38;5;243mleaves    ␛[m␛[38;5;214myour 1 uncommitted edit␛[m␛[38;5;245m — README.md changed by you, never staged␛[m                                                     ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mdrifted   ␛[m␛[38;5;214m1 file left out␛[m␛[38;5;245m — internal/agent/round.go changed since the turn wrote it␛[m                                            ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mbranch    ␛[m␛[38;5;252mloop-refactor␛[m␛[38;5;245m — will be 2 ahead of origin/main␛[m                                                                       ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;243mhooks     ␛[m␛[38;5;252mpre-commit runs␛[m␛[38;5;245m — a hook failure cancels the commit and changes nothing␛[m                                              ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;243mpush      ␛[m␛[92mno␛[m␛[38;5;245m — shhh never pushes; the remote is yours␛[m                                                                          ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;243mhooks     ␛[m␛[38;5;252mpre-commit runs␛[m                                                                                                      ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;243mpush      ␛[m␛[92mno␛[m                                                                                                                   ␛[38;5;214m│␛[m
 ␛[38;5;214m├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;214m│␛[m ␛[94m[enter]␛[m ␛[38;5;252mcommit␛[m␛[38;5;241m · ␛[m␛[94m[e]␛[m ␛[38;5;252medit the message␛[m␛[38;5;241m · ␛[m␛[94m[s]␛[m ␛[38;5;252mpick hunks — the review surface␛[m                                                    ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[92m[esc] don't — the changeset stays, and so does the offer␛[m                                                                       ␛[38;5;214m│␛[m
@@ -193,8 +193,8 @@
 ␛[38;5;214m│␛[m ␛[38;5;243mstages    ␛[m␛[38;5;252m3 files ␛[m␛[92m+30␛[m ␛[91m−4␛[m␛[38;5;245m — exactly what this turn changed␛[m                                                                      ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mleaves    ␛[m␛[38;5;214myour 1 uncommitted edit␛[m␛[38;5;245m — README.md changed by you, never staged␛[m                                                     ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mbranch    ␛[m␛[38;5;252mloop-refactor␛[m␛[38;5;245m — will be 2 ahead of origin/main␛[m                                                                       ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;243mhooks     ␛[m␛[38;5;252mpre-commit runs␛[m␛[38;5;245m — a hook failure cancels the commit and changes nothing␛[m                                              ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;243mpush      ␛[m␛[92mno␛[m␛[38;5;245m — shhh never pushes; the remote is yours␛[m                                                                          ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;243mhooks     ␛[m␛[38;5;252mpre-commit runs␛[m                                                                                                      ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;243mpush      ␛[m␛[92mno␛[m                                                                                                                   ␛[38;5;214m│␛[m
 ␛[38;5;214m├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;214m│␛[m ␛[38;5;245m[enter] commit␛[m␛[38;5;241m · ␛[m␛[38;5;245m[e] edit the message␛[m␛[38;5;241m · ␛[m␛[38;5;245m[s] pick hunks␛[m                                                 ␛[38;5;241mcommitting — git has it␛[m ␛[38;5;214m│␛[m
 ␛[38;5;214m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m

@@ -131,8 +131,8 @@
   │ ⚠ low · writes nothing                                         │  
   │                                                                │  
   │ lands in  your workspace                                       │  
-  │ touches   nothing — the command resolved to reads only         │  
-  │ undo      n/a — no workspace file is modified                  │  
+  │ touches   nothing                                              │  
+  │ undo      n/a                                                  │  
   │ network   open                                                 │  
   ├────────────────────────────────────────────────────────────────┤  
   │ [y] run it once · [n] deny · [esc] leave it waiting            │  
@@ -356,8 +356,8 @@
   ␛[38;5;214m│␛[m ␛[38;5;214m⚠ low␛[38;5;241m · writes nothing␛[m                                         ␛[38;5;214m│␛[m  
   ␛[38;5;214m│␛[m                                                                ␛[38;5;214m│␛[m  
   ␛[38;5;214m│␛[m ␛[38;5;243mlands in  ␛[38;5;214myour workspace␛[m                                       ␛[38;5;214m│␛[m  
-  ␛[38;5;214m│␛[m ␛[38;5;243mtouches   ␛[92mnothing␛[38;5;245m — the command resolved to reads only␛[m         ␛[38;5;214m│␛[m  
-  ␛[38;5;214m│␛[m ␛[38;5;243mundo      ␛[92mn/a␛[38;5;245m — no workspace file is modified␛[m                  ␛[38;5;214m│␛[m  
+  ␛[38;5;214m│␛[m ␛[38;5;243mtouches   ␛[92mnothing␛[m                                              ␛[38;5;214m│␛[m  
+  ␛[38;5;214m│␛[m ␛[38;5;243mundo      ␛[92mn/a␛[m                                                  ␛[38;5;214m│␛[m  
   ␛[38;5;214m│␛[m ␛[38;5;243mnetwork   ␛[38;5;214mopen␛[m                                                 ␛[38;5;214m│␛[m  
   ␛[38;5;214m├────────────────────────────────────────────────────────────────┤␛[m  
   ␛[38;5;214m│␛[m ␛[94m[y]␛[m ␛[38;5;252mrun it once␛[38;5;241m · ␛[94m[n]␛[m ␛[38;5;252mdeny␛[38;5;241m · ␛[92m[esc] leave it waiting␛[m            ␛[38;5;214m│␛[m  

@@ -124,6 +124,34 @@ func TestBlastRadius_ReadOnlyCommandTouchesNothing(t *testing.T) {
 			t.Fatalf("read-only card should contain %q:\n%s", want, view)
 		}
 	}
+	// A quiet card is its values: every sentence here would read the same on
+	// the next read-only card, so none is drawn
+	// (docs/interface/departures.md#a-card-rows-gloss-is-a-fact-about-the-call-or-nothing).
+	for _, standing := range []string{"resolved to reads only", "no workspace file is modified", "profile removes it"} {
+		if strings.Contains(view, standing) {
+			t.Fatalf("a quiet card should draw no standing gloss, found %q:\n%s", standing, view)
+		}
+	}
+}
+
+// What the card body leaves out, the full view keeps: the sentences are
+// moved, not lost.
+func TestBlastRadius_TheFullViewKeepsTheStandingGlosses(t *testing.T) {
+	dir := t.TempDir()
+	m := radiusModel(t, dir, Containment{Status: "contained: bwrap (workspace-netless profile)",
+		Mechanism: "bwrap", Profile: "workspace-netless"})
+	m.pendingRun = "sed -n 1p go.mod"
+	m.pendingBlast = m.commandRadius(m.pendingRun, cardContainment{assistant: true, mechanism: "bwrap"})
+	full := strings.Join(m.commandCardView().Lines, "\n")
+	for _, want := range []string{
+		"touches  nothing — the command resolved to reads only",
+		"undo  n/a — no workspace file is modified",
+		"network  closed — the workspace-netless profile removes it",
+	} {
+		if !strings.Contains(full, want) {
+			t.Fatalf("the full view should keep %q:\n%s", want, full)
+		}
+	}
 }
 
 // A flagged command leads with the severity word, withholds [a], and says
@@ -162,12 +190,21 @@ func TestBlastRadius_UncontainedPromotesAndExplains(t *testing.T) {
 	for _, want := range []string{
 		"⚠ UNCONTAINED",
 		"⛨         no sandbox",
-		"bubblewrap (bwrap) not found on PATH",
 		"/sandbox doctor",
 	} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("uncontained card should contain %q:\n%s", want, view)
 		}
+	}
+	// The detector's reason is the same on every card of the session: the
+	// footnote names the door and the full view keeps the words.
+	if strings.Contains(view, "bubblewrap (bwrap) not found on PATH") {
+		t.Fatalf("the card body should not repeat the detector's reason:\n%s", view)
+	}
+	m.pendingRun = "make install"
+	m.pendingBlast = m.commandRadius(m.pendingRun, cardContainment{assistant: true})
+	if full := strings.Join(m.commandCardView().Lines, "\n"); !strings.Contains(full, "bubblewrap (bwrap) not found on PATH; the command runs as you") {
+		t.Fatalf("the full view should keep the detector's reason:\n%s", full)
 	}
 }
 
@@ -316,7 +353,7 @@ func TestBlastRadius_ProcessStartRowReadsTheSupervisor(t *testing.T) {
 	}
 
 	view := confirmForStart(t, withSupervisor("bwrap"), "web", "npm run dev")
-	for _, want := range []string{"start process web", "⛨         bwrap · workspace", "the workspace profile allows network access"} {
+	for _, want := range []string{"start process web", "⛨         bwrap · workspace", "network   open"} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("a contained start's card should contain %q:\n%s", want, view)
 		}

@@ -131,9 +131,9 @@
   │ ⚠ low · writes nothing                                                                                                                   │  
   │                                                                                                                                          │  
   │ lands in  your workspace — this agent has no worktree of its own                                                                         │  
-  │ touches   nothing — the command resolved to reads only                                                                                   │  
-  │ undo      n/a — no workspace file is modified                                                                                            │  
-  │ network   open — nothing contains this command, so nothing limits what it reaches                                                        │  
+  │ touches   nothing                                                                                                                        │  
+  │ undo      n/a                                                                                                                            │  
+  │ network   open                                                                                                                           │  
   ├──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤  
   │ [y] run it once · [n] deny · [esc] leave it waiting, nothing is denied                                                                   │  
   │ [ctrl+space/ctrl+y] answer it · other keys type into the draft                                                                           │  
@@ -356,9 +356,9 @@
   ␛[38;5;254m│␛[m ␛[38;5;254m⚠ low␛[38;5;244m · writes nothing␛[m                                                                                                                   ␛[38;5;254m│␛[m  
   ␛[38;5;254m│␛[m                                                                                                                                          ␛[38;5;254m│␛[m  
   ␛[38;5;254m│␛[m ␛[38;5;244mlands in  ␛[38;5;254myour workspace␛[38;5;244m — this agent has no worktree of its own␛[m                                                                         ␛[38;5;254m│␛[m  
-  ␛[38;5;254m│␛[m ␛[38;5;244mtouches   ␛[38;5;254mnothing␛[38;5;244m — the command resolved to reads only␛[m                                                                                   ␛[38;5;254m│␛[m  
-  ␛[38;5;254m│␛[m ␛[38;5;244mundo      ␛[38;5;254mn/a␛[38;5;244m — no workspace file is modified␛[m                                                                                            ␛[38;5;254m│␛[m  
-  ␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[38;5;254mopen␛[38;5;244m — nothing contains this command, so nothing limits what it reaches␛[m                                                        ␛[38;5;254m│␛[m  
+  ␛[38;5;254m│␛[m ␛[38;5;244mtouches   ␛[38;5;254mnothing␛[m                                                                                                                        ␛[38;5;254m│␛[m  
+  ␛[38;5;254m│␛[m ␛[38;5;244mundo      ␛[38;5;254mn/a␛[m                                                                                                                            ␛[38;5;254m│␛[m  
+  ␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[38;5;254mopen␛[m                                                                                                                           ␛[38;5;254m│␛[m  
   ␛[38;5;254m├──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m  
   ␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mrun it once␛[38;5;244m · ␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[38;5;244m · ␛[38;5;254m[esc] leave it waiting, nothing is denied␛[m                                                                   ␛[38;5;254m│␛[m  
   ␛[38;5;254m│␛[m ␛[38;5;244m[ctrl+space/ctrl+y] answer it · other keys type into the draft␛[m                                                                           ␛[38;5;254m│␛[m  
