@@ -13,8 +13,9 @@ GOVET=$(GOCMD) vet
 HERMETIC_ENV=env -u SHHH_API_KEY -u SHHH_BASE_URL -u NO_COLOR GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.fsmonitor GIT_CONFIG_VALUE_0= TMPDIR=$${TMPDIR:-/tmp} XDG_CACHE_HOME=$${TMPDIR:-/tmp}/shhh-cache GOLANGCI_LINT_CACHE=$${TMPDIR:-/tmp}/shhh-golangci-lint
 # The build tags the other test tiers live behind. vet reads them so a
 # contract or integration file that stopped compiling fails here, in the
-# gate, rather than in the one CI job that selects it.
-TIER_TAGS=contract,integration
+# gate, rather than in the one CI job that selects it. hostlists is the
+# snapshot-age check host-lists-check selects.
+TIER_TAGS=contract,integration,hostlists
 # gofmt ships with the toolchain but is not always on PATH — a Go installed
 # through a version manager leaves it in GOROOT and nowhere else. Falling back
 # to GOROOT is what keeps `make fmt` and the gofmt gate from quietly doing
@@ -54,7 +55,7 @@ else
 	RESET   :=
 endif
 
-.PHONY: all build fmt fmt-check vet lint test test-contract test-integration docs docs-check cross ci eval eval-baseline cache-check model-data host-lists tui-shot tui-check tui-longpath help
+.PHONY: all build fmt fmt-check vet lint test test-contract test-integration docs docs-check cross ci eval eval-baseline cache-check model-data host-lists host-lists-check tui-shot tui-check tui-longpath help
 
 all: help
 
@@ -164,7 +165,7 @@ cross: ## Check every released platform still compiles
 # spelling a person runs is the one the runner runs. The quality gate
 # (.shhh/quality.json) is the first five; cross and the driven scenes are what
 # CI adds, because a scene wants a terminal a contained session has not got.
-ci: cross fmt-check docs-check test vet lint tui-check ## Run the CI pipeline
+ci: cross fmt-check docs-check test vet lint host-lists-check tui-check ## Run the CI pipeline
 
 ## Live:
 # Costs real requests: ten of the fourteen cases put a task or a question to
@@ -206,6 +207,15 @@ model-data: ## Regenerate the built-in model-data snapshot from the public table
 host-lists: ## Regenerate the built-in host-list snapshots from the public lists
 	@echo "${MAGENTA}Regenerating internal/web/hosts/...${RESET}"
 	@python3 scripts/host-lists.py
+
+# The shipped snapshots are the floor under the per-list download, and this
+# fails when either is older than its bound (snapshot_age_test.go states it).
+# CI and the release workflow run it; the quality gate does not, because a
+# date is not a fact about the change under test. -count=1 because a cached
+# PASS would be a date read on some earlier day.
+host-lists-check: ## Fail if a shipped host-list snapshot is older than its bound
+	@echo "${MAGENTA}Checking the age of internal/web/hosts/...${RESET}"
+	@$(HERMETIC_ENV) $(GOTEST) -mod=readonly -tags=hostlists -count=1 -run TestShippedHostSnapshotsAreFresh ./internal/web
 
 ## TUI:
 # The golden tests render a surface in-process. These drive the built binary

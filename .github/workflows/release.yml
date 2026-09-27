@@ -20,6 +20,10 @@ jobs:
         with:
           go-version-file: go.mod
 
+      # The shipped host-list snapshots are the floor under the download; a
+      # release does not go out carrying one past its bound.
+      - run: make host-lists-check
+
       - uses: goreleaser/goreleaser-action@v6
         with:
           version: "~> v2"
