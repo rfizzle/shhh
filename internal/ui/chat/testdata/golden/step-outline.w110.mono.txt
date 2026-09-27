@@ -169,16 +169,16 @@
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;244m▾␛[m ␛[38;5;254m1 ␛[m ␛[38;5;254mLocate the round accounting␛[m ␛[38;5;244m─────────────────────────────────────────────␛[m ␛[38;5;254m✓␛[m ␛[38;5;244m4 tools · detail␛[m   ␛[38;5;244m1.2s␛[m
-   ␛[38;5;254m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254minternal/agent/loop.go␛[m                                                       ␛[38;5;244m3 lines␛[m
+   ␛[38;5;244m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254minternal/agent/loop.go␛[m                                                       ␛[38;5;244m3 lines␛[m
     ␛[38;5;244ma␛[m
     ␛[38;5;244mb␛[m
     ␛[38;5;244mc␛[m
-   ␛[38;5;254m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254minternal/agent/tools.go␛[m                                                      ␛[38;5;244m2 lines␛[m
+   ␛[38;5;244m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254minternal/agent/tools.go␛[m                                                      ␛[38;5;244m2 lines␛[m
     ␛[38;5;244ma␛[m
     ␛[38;5;244mb␛[m
-   ␛[38;5;254m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254minternal/agent/context.go␛[m                                                     ␛[38;5;244m1 line␛[m
+   ␛[38;5;244m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254minternal/agent/context.go␛[m                                                     ␛[38;5;244m1 line␛[m
     ␛[38;5;244ma␛[m
-   ␛[38;5;254m⚙␛[m ␛[38;5;254msearch␛[m  ␛[38;5;254mErrRoundLimit␛[m                                                              ␛[38;5;244m2 matches␛[m
+   ␛[38;5;244m⚙␛[m ␛[38;5;254msearch␛[m  ␛[38;5;254mErrRoundLimit␛[m                                                              ␛[38;5;244m2 matches␛[m
     ␛[38;5;244minternal/agent/loop.go:88:         return ErrRoundLimit␛[m
     ␛[38;5;244minternal/agent/agent.go:12: // ErrRoundLimit ends a turn.␛[m
 
@@ -227,10 +227,10 @@
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;254m▾␛[m ␛[38;5;254m1 ␛[m ␛[38;5;254mLocate the round accounting␛[m ␛[38;5;244m──────────────────────────────────────────────────────␛[m ␛[38;5;254m▸␛[m ␛[38;5;244m3 tools␛[m   ␛[38;5;254m0.9s␛[m
-   ␛[38;5;254m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254minternal/agent/loop.go␛[m                                                       ␛[38;5;244m3 lines␛[m
+   ␛[38;5;244m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254minternal/agent/loop.go␛[m                                                       ␛[38;5;244m3 lines␛[m
   ␛[38;5;244mauto-allowed by policy: read_file␛[m
-   ␛[38;5;254m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254minternal/agent/round.go␛[m                                                      ␛[38;5;244m2 lines␛[m
-   ␛[38;5;254m⚙␛[m ␛[38;5;254msearch␛[m  ␛[38;5;254mErrRoundLimit␛[m                                                              ␛[38;5;244m2 matches␛[m
+   ␛[38;5;244m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254minternal/agent/round.go␛[m                                                      ␛[38;5;244m2 lines␛[m
+   ␛[38;5;244m⚙␛[m ␛[38;5;254msearch␛[m  ␛[38;5;254mErrRoundLimit␛[m                                                              ␛[38;5;244m2 matches␛[m
 
 
 · row by row · a think row mid-step, opened (the calls after it stay in the step)
@@ -238,10 +238,10 @@
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;254m▾␛[m ␛[38;5;254m1 ␛[m ␛[38;5;254mLocate the round accounting␛[m ␛[38;5;244m──────────────────────────────────────────────────────␛[m ␛[38;5;254m▸␛[m ␛[38;5;244m3 tools␛[m   ␛[38;5;254m0.9s␛[m
-   ␛[38;5;254m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254minternal/agent/loop.go␛[m                                                       ␛[38;5;244m3 lines␛[m
+   ␛[38;5;244m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254minternal/agent/loop.go␛[m                                                       ␛[38;5;244m3 lines␛[m
    ␛[38;5;244m✻␛[m ␛[38;5;254mthink␛[m   ␛[38;5;254m␛[m                                                             ␛[38;5;244m1 line␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter] expand␛[m
-   ␛[38;5;254m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254minternal/agent/round.go␛[m                                                      ␛[38;5;244m2 lines␛[m
-   ␛[38;5;254m⚙␛[m ␛[38;5;254msearch␛[m  ␛[38;5;254mErrRoundLimit␛[m                                                              ␛[38;5;244m2 matches␛[m
+   ␛[38;5;244m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254minternal/agent/round.go␛[m                                                      ␛[38;5;244m2 lines␛[m
+   ␛[38;5;244m⚙␛[m ␛[38;5;254msearch␛[m  ␛[38;5;254mErrRoundLimit␛[m                                                              ␛[38;5;244m2 matches␛[m
 
 
 · row by row · a think row mid-step, folded (the thought folds with the step)

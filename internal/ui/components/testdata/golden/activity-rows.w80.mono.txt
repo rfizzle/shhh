@@ -117,10 +117,10 @@
 
 ── ansi ────────────────────────────────────────────────────
 · kind · tool (read-only, no rail)
-   ␛[38;5;254m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254minternal/agent/loop.go␛[m                             ␛[38;5;244m218 lines␛[m   ␛[38;5;244m0.6s␛[m
+   ␛[38;5;244m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254minternal/agent/loop.go␛[m                             ␛[38;5;244m218 lines␛[m   ␛[38;5;244m0.6s␛[m
 
 · kind · search, its place behind its pattern
-   ␛[38;5;254m⚙␛[m ␛[38;5;254msearch␛[m  ␛[38;5;254mErrRoundLimit␛[m␛[38;5;244m ./internal␛[m                 ␛[38;5;244m6 matches␛[m␛[38;5;244m · ␛[m␛[38;5;244m4 files␛[m   ␛[38;5;244m0.3s␛[m
+   ␛[38;5;244m⚙␛[m ␛[38;5;254msearch␛[m  ␛[38;5;254mErrRoundLimit␛[m␛[38;5;244m ./internal␛[m                 ␛[38;5;244m6 matches␛[m␛[38;5;244m · ␛[m␛[38;5;244m4 files␛[m   ␛[38;5;244m0.3s␛[m
 
 · kind · command
   ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m ␛[38;5;254mrun␛[m     ␛[38;5;254mgo test ./internal/agent/...␛[m                          ␛[38;5;254mexit 0␛[m  ␛[38;5;244m12.4s␛[m
@@ -132,10 +132,10 @@
   ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m ␛[38;5;254mrun␛[m     ␛[38;5;254mquality gate · default · 5 checks␛[m                   ␛[38;5;244m43 lines␛[m ␛[38;5;244m1m 52s␛[m
 
 · target · a history read is the command it stands for
-   ␛[38;5;254m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254mgit status␛[m                                          ␛[38;5;244m14 lines␛[m   ␛[38;5;244m0.2s␛[m
+   ␛[38;5;244m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254mgit status␛[m                                          ␛[38;5;244m14 lines␛[m   ␛[38;5;244m0.2s␛[m
 
 · target · and the side it was pointed at
-   ␛[38;5;254m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254mgit diff HEAD␛[m                                      ␛[38;5;244m212 lines␛[m   ␛[38;5;244m0.4s␛[m
+   ␛[38;5;244m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254mgit diff HEAD␛[m                                      ␛[38;5;244m212 lines␛[m   ␛[38;5;244m0.4s␛[m
 
 · target · a refusal that came before the call had a subject
   ␛[38;5;254m▎␛[m␛[38;5;244m⊘␛[m ␛[38;5;244medit␛[m    ␛[38;5;244m(no path)␛[m                        ␛[38;5;244mskipped␛[m␛[38;5;244m · ␛[m␛[38;5;244minvalid arguments␛[m      ␛[38;5;244m—␛[m
@@ -148,7 +148,7 @@
    ␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mwriter-1 · docs/loop.md␛[m                                   ␛[38;5;254mok␛[m  ␛[38;5;244m48.0s␛[m
 
 · kind · report page
-   ␛[38;5;254m⛁␛[m ␛[38;5;254mreport␛[m  ␛[38;5;254msuite timin…␛[m  ␛[38;5;254m→ http://127.0.0.1:52104/r/rp-8f3a11c04b2d9e61␛[m   ␛[38;5;244m0.8s␛[m
+   ␛[38;5;244m⛁␛[m ␛[38;5;254mreport␛[m  ␛[38;5;254msuite timin…␛[m  ␛[38;5;254m→ http://127.0.0.1:52104/r/rp-8f3a11c04b2d9e61␛[m   ␛[38;5;244m0.8s␛[m
 
 · kind · think, folded
    ␛[38;5;244m✻␛[m ␛[38;5;254mthink␛[m   ␛[38;5;254m␛[m                                   ␛[38;5;244m42 lines␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter] expand␛[m
@@ -210,13 +210,13 @@
   ␛[38;5;254m▎␛[m␛[38;5;254m⊘␛[m ␛[38;5;254mrun␛[m     ␛[38;5;254mrm -rf ./build␛[m         ␛[38;5;254mblocked␛[m␛[38;5;244m · ␛[m␛[38;5;244mclassifier 2.1s␛[m␛[38;5;244m · ␛[m␛[38;5;254m/mode why␛[m      ␛[38;5;244m—␛[m
 
 · state · auto-allowed
-   ␛[38;5;254m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254minternal/agent/loop.go␛[m  ␛[38;5;244m218 lines␛[m␛[38;5;244m · ␛[m␛[38;5;244mauto-allowed · read-only␛[m   ␛[38;5;244m0.6s␛[m
+   ␛[38;5;244m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254minternal/agent/loop.go␛[m  ␛[38;5;244m218 lines␛[m␛[38;5;244m · ␛[m␛[38;5;244mauto-allowed · read-only␛[m   ␛[38;5;244m0.6s␛[m
 
 · state · approved at the card, by you
   ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m ␛[38;5;254mrun␛[m     ␛[38;5;254mgo test ./internal/agent/...␛[m   ␛[38;5;254mok␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 line␛[m␛[38;5;244m · ␛[m␛[38;5;254mapproved␛[m␛[38;5;244m by you␛[m  ␛[38;5;244m12.4s␛[m
 
 · focus · selected
-␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m ␛[38;5;254m⚙␛[m␛[48;5;237m ␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237mread    internal/agent/loop.go                             218 lines   0.6s␛[m␛[m
+␛[38;5;254m❯␛[m ␛[38;5;244m␛[m␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m ␛[38;5;244m⚙␛[m␛[48;5;237m ␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237mread    internal/agent/loop.go                             218 lines   0.6s␛[m␛[m
 
 · overflow · target clips, outcome does not
   ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254medit␛[m    ␛[38;5;254minternal/ui/components/a/very/deeply/ne…␛[m  ␛[38;5;254m+128␛[m ␛[38;5;254m−64␛[m␛[38;5;244m · ␛[m␛[38;5;244m9 hunks␛[m   ␛[38;5;244m3.2s␛[m

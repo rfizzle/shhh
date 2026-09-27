@@ -189,15 +189,16 @@ const (
 	// (docs/capabilities/mcp.md#a-call-is-a-command-unless-you-said-otherwise).
 	ActivityRemote
 	// ActivityThink is the model's own reasoning: ✻, and the only kind that
-	// touched nothing at all. It is drawn dim rather than in the accent every
-	// other kind glyph carries, because weight tracks risk and this row is the
-	// bottom of that order — it read nothing, wrote nothing and ran nothing.
-	// See docs/interface/principles.md#weight-tracks-risk.
+	// touched nothing at all. It is drawn dim, because weight tracks risk and
+	// this row is the bottom of that order — it read nothing, wrote nothing
+	// and ran nothing. See docs/interface/principles.md#weight-tracks-risk.
 	ActivityThink
 	// ActivityReport is a published report page: ⛁, a stack with a page on
 	// top, because the row's outcome is a link into a store. No mutation
 	// rail — the store is shhh's own state, not the workspace
-	// (docs/capabilities/reports.md#a-report-outlives-its-session).
+	// (docs/capabilities/reports.md#a-report-outlives-its-session) — and so
+	// no accent on the glyph either: the accent sits beside a rail or on a
+	// decision, and this row is neither.
 	ActivityReport
 	// ActivitySummary is a reading of the session by the summariser: ≡, three
 	// stacked lines for the digest it is. Like ActivityThink it is drawn dim
@@ -408,7 +409,7 @@ func (r ActivityRow) glyph() string {
 		case ActivityThink:
 			g = sty.Dim.Render("✻")
 		case ActivityReport:
-			g = sty.Accent.Render("⛁")
+			g = sty.Dim.Render("⛁")
 		case ActivitySummary:
 			g = sty.Dim.Render("≡")
 		case ActivityCompaction:
@@ -417,7 +418,12 @@ func (r ActivityRow) glyph() string {
 			// from the state switch above.
 			g = sty.Add.Render("✓")
 		default:
-			g = sty.Accent.Render("⚙")
+			// A read is chrome, so its glyph is too: the accent is kept for
+			// the glyphs beside a rail and for what asks a decision, and one
+			// on every read would teach the eye to skip it. The verb beside
+			// the glyph still says which read it was.
+			// See docs/interface/principles.md#weight-tracks-risk.
+			g = sty.Dim.Render("⚙")
 		}
 	}
 	return g + " "

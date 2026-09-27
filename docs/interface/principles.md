@@ -44,6 +44,15 @@ so it assumes it did — a build and a test are marked alike, and the
 conservative reading is the one that holds. Denials carry it too, because a
 denial is a decision you took, and the rail is for finding decisions.
 
+The accent follows the same order, and means *decide*. It is on screen where a
+rail is — the rail itself and the glyph of the act beside it — where a card
+puts a decision to you, on the gated mode's word, on an offer to start
+something, and on the context meter once it is worth acting on. A read's glyph
+is chrome, as is the glyph of any row that carries no rail; the verb beside it
+still says which read it was, so nothing is lost but the colour. An accent on
+every read is the over-weighted read above, repeated down the whole
+transcript until the eye stops looking for the accent at all.
+
 ### Esc is always the safe answer
 
 Wherever the safe answer is not obvious, the surface says what Esc will do —

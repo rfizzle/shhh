@@ -122,8 +122,8 @@
   ␛[3;38;5;244mThe objective is where the tool-round ceiling is read. The evidence is that␛[m
     ␛[38;5;244m… 3 more lines␛[m
 
-   ␛[38;5;254m⚙␛[m ␛[38;5;254msearch␛[m  ␛[38;5;254mresumeToolLoop␛[m                                  ␛[38;5;244m0 matches␛[m
-   ␛[38;5;254m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254minternal/ui/chat/stream.go␛[m                         ␛[38;5;244m1 line␛[m
+   ␛[38;5;244m⚙␛[m ␛[38;5;254msearch␛[m  ␛[38;5;254mresumeToolLoop␛[m                                  ␛[38;5;244m0 matches␛[m
+   ␛[38;5;244m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254minternal/ui/chat/stream.go␛[m                         ␛[38;5;244m1 line␛[m
 
   ␛[3;38;5;244mThe objective is unchanged and the pause row is now the evidence: it␛[m
   ␛[3;38;5;244mcarries the grant and spends it where it is drawn. Next I will run the␛[m
@@ -144,7 +144,7 @@
   ␛[3;38;5;244mThe objective is where the tool-round ceiling is read. The evidence is that␛[m
     ␛[38;5;244m… 3 more lines␛[m
 
-   ␛[38;5;254m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254minternal/ui/chat/stream.go␛[m                         ␛[38;5;244m1 line␛[m
+   ␛[38;5;244m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254minternal/ui/chat/stream.go␛[m                         ␛[38;5;244m1 line␛[m
 
   ␛[3;38;5;244mThe objective is unchanged and the pause row is now the evidence: it␛[m
   ␛[3;38;5;244mcarries the grant and spends it where it is drawn. Next I will run the␛[m

@@ -92,7 +92,7 @@ type ColorTokens struct {
 	AddBg   Token // intraline emphasis background for additions
 	DelBg   Token // intraline emphasis background for deletions
 	Hunk    Token // @@ hunk headers and nothing else
-	Accent  Token // tool glyphs, ⚠ warnings, gated modes, ctx ≥70%, and the mutation rail
+	Accent  Token // the mutation rail and the glyphs beside it, ⚠ warnings, gated modes, ctx ≥70%
 	Info    Token // sub-agents, block headings, and every key the interface offers
 	FocusBg Token // selected option/row background, the cursor block
 	Dim     Token // chrome, counts, hints, faint rules, empty meter cells, the scroll gutter's thumb
