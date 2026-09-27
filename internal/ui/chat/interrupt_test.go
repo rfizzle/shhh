@@ -449,6 +449,57 @@ func TestArrival_TheGraceWindowEndsAtItsCap(t *testing.T) {
 	}
 }
 
+// A fan-out asked for by the sentence just sent lands on a keyboard still
+// warm from its enter, and the spawn card takes the keyboard with the grace
+// window open like any other card: a `y` pressed the moment the card is drawn
+// is discarded while the card says so, and the same key once the keyboard
+// has been quiet starts every child. Three writers on a host whose writer
+// commands are refused is the combination a Linux box with no bubblewrap
+// draws; the refused commands row is a statement on the card, not something
+// that stands between the key and the children.
+func TestSpawnCard_AYTheSendHadInFlightWaitsForTheKeys(t *testing.T) {
+	refused := func(raw json.RawMessage) (GatedPreview, error) {
+		p, err := spawnPreview(raw)
+		p.Fields = append(p.Fields, GatedField{Label: "commands", Value: "refused",
+			Detail: "no containment mechanism is in force: bubblewrap (bwrap) not found on PATH"})
+		return p, err
+	}
+	m := tallPanel(t, gatedModel(t, func(string, json.RawMessage) (string, error) {
+		return "started", nil
+	}, map[string]GatedPreviewFunc{subagent.SpawnToolName: refused}))
+	m.lastKeypress = time.Now() // the enter that sent the sentence
+	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+		spawnCall("s1", `{"role":"writer","task":"find every place an entry is read","name":"writer-1"}`),
+		spawnCall("s2", `{"role":"writer","task":"find where a lifetime is set","name":"writer-2"}`),
+		spawnCall("s3", `{"role":"writer","task":"find where entries are evicted","name":"writer-3"}`),
+	}})
+	m = updated.(Model)
+	if !m.heldOnArrival || !m.graceShowing() {
+		t.Fatal("fixture: a card landing a moment after the send takes the keyboard with the grace window open")
+	}
+	view := ansi.Strip(m.View().Content)
+	for _, want := range []string{"Spawn 3 writers", "refused", "keys live in a moment"} {
+		if !strings.Contains(view, want) {
+			t.Fatalf("the card inside its grace window does not say %q:\n%s", want, view)
+		}
+	}
+
+	updated, _ = m.Update(tea.KeyPressMsg{Code: 'y', Text: "y"})
+	m = updated.(Model)
+	if m.state != stateConfirmRun || m.pendingApproval == nil || len(m.batchAnswered) != 0 {
+		t.Fatal("a y in flight at the card's arrival must start nothing")
+	}
+
+	m.lastKeypress = time.Now().Add(-2 * graceQuiet)
+	updated, _ = m.Update(tea.KeyPressMsg{Code: 'y', Text: "y"})
+	m = updated.(Model)
+	for _, id := range []string{"s2", "s3"} {
+		if allow, ok := m.batchAnswered[id]; !ok || !allow {
+			t.Fatalf("once the keys are live, [y] starts every child, %s included: %v", id, m.batchAnswered)
+		}
+	}
+}
+
 // A reader who was quiet before the card landed waits for nothing: no window
 // opens, and the first key answers.
 func TestArrival_AQuietKeyboardOpensNoWindow(t *testing.T) {

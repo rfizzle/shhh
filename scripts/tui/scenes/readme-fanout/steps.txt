@@ -10,6 +10,7 @@ setup printf 'package cache\n\ntype entry struct {\n\tvalue []byte\n}\n\ntype Ca
 snap 01-start "Some things worth doing first"
 keys "entries never expire; survey how the cache reads, stores and evicts them" Enter
 snap 02-spawn-card "Spawn 3 writers"
+sleep 1
 keys y
 sleep 4
 snap 03-lanes "3 agents"
