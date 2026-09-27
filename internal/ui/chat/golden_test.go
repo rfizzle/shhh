@@ -1168,7 +1168,13 @@ func TestGolden_HeaderRow(t *testing.T) {
 		return []golden.Panel{
 			{Label: "a coding session · directory, branch, model, level", View: header(&coding, provider.EffortMedium)},
 			{Label: "outside a repository, asking for no reasoning", View: header(&outside, provider.EffortOff)},
-			{Label: "a conversation · no survey of the checkout", View: header(nil, provider.EffortHigh)},
+			{Label: "a host with no survey of the checkout", View: header(nil, provider.EffortHigh)},
+			{Label: "a conversation · directory, branch, model, level", View: frameModel(t, width, 40).
+				WithPricing(nil, "claude-sonnet-4-5").
+				WithReasoning(provider.EffortHigh, func(provider.Effort) {}).
+				WithConversation().
+				WithCheckout(coding.Project).
+				headerRow(width - 2*horizontalPadding)},
 		}
 	})
 }

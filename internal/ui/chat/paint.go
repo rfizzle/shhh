@@ -161,13 +161,12 @@ type headerFact struct {
 }
 
 // headerFacts is what the header states after the title, in reading order.
-// Each is left out where the session cannot state it: a conversation has no
-// survey of the checkout, a directory outside a repository has no branch,
-// and a session asking for no reasoning names no level.
+// Each is left out where the session cannot state it: a host that handed
+// over no survey of the checkout, a directory outside a repository has no
+// branch, and a session asking for no reasoning names no level.
 func (m Model) headerFacts() []headerFact {
 	var facts []headerFact
-	if m.start != nil {
-		p := m.start.Project
+	if p, ok := m.headerCheckout(); ok {
 		if p.Display != "" {
 			facts = append(facts, headerFact{text: p.Display})
 		}
@@ -182,6 +181,20 @@ func (m Model) headerFacts() []headerFact {
 		facts = append(facts, headerFact{text: level})
 	}
 	return facts
+}
+
+// headerCheckout is the survey the header's directory and branch are read
+// from: the start screen's where the session has one, and otherwise the one
+// a conversation is handed, since a conversation opened in a checkout is in
+// that checkout as much as a coding session is.
+func (m Model) headerCheckout() (project.Info, bool) {
+	switch {
+	case m.start != nil:
+		return m.start.Project, true
+	case m.checkout != nil:
+		return *m.checkout, true
+	}
+	return project.Info{}, false
 }
 
 // rereadHeaderBranch asks git again which branch the checkout is on and puts

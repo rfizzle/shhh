@@ -18,6 +18,7 @@ import (
 	"github.com/rfizzle/shhh/internal/clipboard"
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/pricing"
+	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -375,5 +376,14 @@ func (m Model) WithHeldTurn(rounds, granted int) Model {
 	m.roundGrant = granted
 	m.appendEntry(entry{kind: entrySystem, text: m.heldNotice()})
 	m.syncViewport()
+	return m
+}
+
+// WithCheckout hands a session with no start screen the survey its header
+// names the directory and branch from. A conversation draws no start screen
+// but is still opened in a checkout, and a header naming only the model
+// leaves the reader to ask where they are.
+func (m Model) WithCheckout(info project.Info) Model {
+	m.checkout = &info
 	return m
 }

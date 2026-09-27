@@ -16,8 +16,11 @@
 · outside a repository, asking for no reasoning
  shhh chat · ~/src/shhh · claude-sonnet-4-5
 
-· a conversation · no survey of the checkout
+· a host with no survey of the checkout
  shhh chat · claude-sonnet-4-5 · think high
+
+· a conversation · directory, branch, model, level
+ shhh chat · ~/src/shhh · main · claude-sonnet-4-5 · think high
 
 ── ansi ────────────────────────────────────────────────────
 · a coding session · directory, branch, model, level
@@ -26,5 +29,8 @@
 · outside a repository, asking for no reasoning
 ␛[1;97m shhh chat␛[m␛[38;5;241m · ␛[m␛[38;5;241m~/src/shhh␛[m␛[38;5;241m · ␛[m␛[38;5;241mclaude-sonnet-4-5␛[m
 
-· a conversation · no survey of the checkout
+· a host with no survey of the checkout
 ␛[1;97m shhh chat␛[m␛[38;5;241m · ␛[m␛[38;5;241mclaude-sonnet-4-5␛[m␛[38;5;241m · ␛[m␛[38;5;241mthink high␛[m
+
+· a conversation · directory, branch, model, level
+␛[1;97m shhh chat␛[m␛[38;5;241m · ␛[m␛[38;5;241m~/src/shhh␛[m␛[38;5;241m · ␛[m␛[38;5;241mmain␛[m␛[38;5;241m · ␛[m␛[38;5;241mclaude-sonnet-4-5␛[m␛[38;5;241m · ␛[m␛[38;5;241mthink high␛[m

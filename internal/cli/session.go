@@ -1073,7 +1073,9 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		WithEndpointWindows(endpointWindowsFor(env.prov))
 	model = model.WithNotebook(session.notebook).WithSources(session.sources)
 	if session.conversation {
-		model = model.WithConversation()
+		// No start screen, but the header still names the checkout the
+		// conversation was opened in, from the survey the prompt was built on.
+		model = model.WithConversation().WithCheckout(env.survey)
 	} else {
 		// The coding agent's machinery for acting and accounting for it:
 		// the command runners, containment, the changeset behind review

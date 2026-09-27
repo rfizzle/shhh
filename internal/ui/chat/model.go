@@ -1398,6 +1398,10 @@ type Model struct {
 	// whether the screen has been spent — a session that has said something
 	// to the model is not new again just because /clear emptied it.
 	start *StartInfo
+	// checkout is the survey a session with no start screen is headed by —
+	// a conversation's directory and branch, which the header states the way
+	// a coding session's start survey lets it (WithCheckout).
+	checkout *project.Info
 	// todoRootSaid records that this session has already named the root its
 	// backlog was keyed on, which it does once and only where that root is
 	// not this directory's project (todo.go).
