@@ -289,9 +289,12 @@ end:
 clear; echo 'list open ports' | $SHHH_BIN cmd; $SHHH_BIN cmd 'find what is listening'
 ```
 
-Keep it to single quotes — the line is re-quoted for `--record` — and put a
-`clear` between runs of a surface that draws inline, because the one-shot
-clears nothing on the way out and a capture would otherwise hold two screens.
+The line is read by one shell, inside the run, under every mode — a plain
+drive, `--attach` and `--record` alike — so `$HOME`, `$XDG_CONFIG_HOME` and
+`$PWD` in it are the run's own home, settings directory and workspace, and
+either kind of quote means what it means in `sh`. Put a `clear` between runs
+of a surface that draws inline, because the one-shot clears nothing on the
+way out and a capture would otherwise hold two screens.
 
 `launch` is also where a scene changes a setting. `drive.sh` writes the
 run's own `$XDG_CONFIG_HOME/shhh/config.toml` before the pane starts, and it

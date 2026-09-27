@@ -6,7 +6,5 @@
 # The workspace is the harness's scratch directory, whose path is a temporary
 # name the start screen would print in full. A link to it under the run's own
 # home — the directory beside it — entered by that name, is printed the way a
-# person's checkout is: ~/src/fetch. The paths are relative because the line
-# is re-quoted for the recorder, where a variable would be expanded by the
-# shell outside the run's environment.
-mkdir -p ../home/src && ln -s ../../ws ../home/src/fetch && cd ../home/src/fetch && SHHH_MODEL=example-model $SHHH_BIN code
+# person's checkout is: ~/src/fetch.
+mkdir -p $HOME/src && ln -s $PWD $HOME/src/fetch && cd $HOME/src/fetch && SHHH_MODEL=example-model $SHHH_BIN code

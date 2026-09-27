@@ -274,7 +274,6 @@ envs="$envs SHHH_KEYS_PLATFORM=${PLATFORM:-linux}"
 # one-shot cannot get there with keys. A `launch` file is that scene's own
 # line: ordinary shell, with $SHHH_BIN the built binary, so a scene can also
 # pipe into a surface to see what it does with no terminal on the other end.
-# Keep it to single quotes: the line is re-quoted for the recorder below.
 launch="\$SHHH_BIN code"
 if [ -f "$scene/launch" ]; then
 	launch=$(grep -v '^[[:space:]]*#' "$scene/launch" | grep -m1 .)
@@ -293,11 +292,18 @@ fi
 # the sentence never sees it. With the tab delay set the renderer moves by
 # spaces and cursor sequences instead, and the kernel expands any tab a
 # program writes, so what is captured is what is on the screen.
-run="stty -tabs; export $envs SHHH_BIN=$SHHH_BIN; $launch"
+#
+# The line goes to a file and the pane runs the file, so the launch line is
+# read by one shell, the one inside the run: `$HOME` or `$XDG_CONFIG_HOME` in
+# it is the run's own under every mode. Handed to the recorder as a quoted
+# string instead, it was expanded by the shell outside the run first, with the
+# developer's own environment.
+printf 'stty -tabs; export %s SHHH_BIN=%s\n%s\n' "$envs" "$SHHH_BIN" "$launch" >"$work/launch.sh"
+run="sh '$work/launch.sh'"
 # The recorder wraps the binary inside the pane, so the cast is the pane's own
 # size and every cell tmux sees is a cell it saw. -q keeps asciinema's
 # diagnostics off the screen, where a snap would otherwise read them.
-[ "$record" = 1 ] && run="asciinema rec -q --overwrite -c \"$run\" \"$cast\""
+[ "$record" = 1 ] && run="asciinema rec -q --overwrite -c \"$run\" '$cast'"
 
 tmux -L "$SOCK" kill-server 2>/dev/null
 # The pane outlives the binary so the exit banner can be captured too.
