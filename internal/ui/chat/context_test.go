@@ -1391,3 +1391,77 @@ func TestDropCompactingNotice_TheNextRenderHasNoRowForIt(t *testing.T) {
 		t.Fatal("the dropped notice is still drawn")
 	}
 }
+
+// ctxPercent reads the rail's occupancy figure off a frame.
+func ctxPercent(t *testing.T, frame string) int {
+	t.Helper()
+	_, after, ok := strings.Cut(frame, "ctx ")
+	if !ok {
+		t.Fatalf("the frame has no ctx figure:\n%s", frame)
+	}
+	digits, _, _ := strings.Cut(after, "%")
+	n, err := strconv.Atoi(digits)
+	if err != nil {
+		t.Fatalf("the ctx figure %q is not a percentage:\n%s", digits, frame)
+	}
+	return n
+}
+
+// TestProgram_TheContextMeterHoldsWhenAReportUndercounts: a model nothing
+// knows the window of, answered by an endpoint whose usage counts a sliver
+// of the prompt — a runtime reporting only what it had not cached, the
+// driven scenes' fake answering every request with ten tokens. Mid-stream
+// the meter is the estimate over the default window; the report must not
+// then drop it to nothing, because a figure that falls from half full to
+// empty inside one turn is two readings of one window disagreeing.
+func TestProgram_TheContextMeterHoldsWhenAReportUndercounts(t *testing.T) {
+	hold := make(chan struct{})
+	p := &programProvider{turns: []programTurn{{
+		text:  "the scripted answer",
+		hold:  hold,
+		usage: &provider.Usage{PromptTokens: 10, CompletionTokens: 3},
+	}}}
+	sys := strings.Repeat("s", 64000)
+	tm := runProgram(t, New([]provider.Message{{Role: provider.RoleSystem, Content: sys}}, streamOf(p)).
+		WithPricing(pricing.NewTable(nil), "example-model"))
+
+	tm.Type("say something")
+	tm.Send(programEnter)
+	waitForText(t, tm, "ctx ")
+	streaming := ctxPercent(t, *tm.frame.Load())
+	if streaming == 0 {
+		t.Fatal("mid-stream the estimate of a 16k-token prompt should fill part of the default window")
+	}
+
+	close(hold)
+	waitForText(t, tm, "the scripted answer")
+	if settled := ctxPercent(t, finalFrame(t, tm)); settled < streaming {
+		t.Fatalf("the meter fell within one turn: ctx %d%% mid-stream, %d%% once the report landed", streaming, settled)
+	}
+}
+
+// TestAccumulateUsage_AnUndercountingReportIsNotTheAnchor: the occupancy
+// falls back on the estimate for a count too small to be the messages, keeps
+// a plausible report before it as the anchor, and a plausible report is
+// anchored as it always was.
+func TestAccumulateUsage_AnUndercountingReportIsNotTheAnchor(t *testing.T) {
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: strings.Repeat("s", 40000)}}, mockStream).
+		WithPricing(pricing.NewTable(nil), "example-model")
+	est := m.contextEstimate().total()
+
+	m.accumulateUsage(&provider.Usage{PromptTokens: 10})
+	if b := m.contextAccounting(); b.Reported || b.total() != est {
+		t.Fatalf("an undercounting report must leave the estimate standing, got %+v totalling %d against %d", b, b.total(), est)
+	}
+	if m.TotalTokensIn != 10 {
+		t.Fatalf("the report is still what was billed: ↑%d", m.TotalTokensIn)
+	}
+
+	m.accumulateUsage(&provider.Usage{PromptTokens: int(est)})
+	m.agent.Append(provider.Message{Role: provider.RoleUser, Content: strings.Repeat("u", 400)})
+	anchored := m.contextAccounting().total()
+	m.accumulateUsage(&provider.Usage{PromptTokens: 10})
+	if b := m.contextAccounting(); !b.Reported || b.total() != anchored {
+		t.Fatalf("the plausible report before stays the anchor: %+v totalling %d against %d", b, b.total(), anchored)
+	}
+}

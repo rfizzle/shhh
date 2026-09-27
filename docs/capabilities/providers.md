@@ -395,6 +395,19 @@ None of this touches a reported figure. Where a report has arrived it is used
 as it arrived — it is the measurement the factor is derived from, and scaling
 it would be converting a number into itself.
 
+The one report that is not used is one below the same floor: a prompt count
+under half of what four bytes to the token made of the messages it describes
+is not a tokenizer disagreeing with the estimate, it is a count of something
+else — a local runtime reporting only the part of the prompt it had not
+already cached, or a scripted endpoint answering every request with the same
+small number. Taken as the occupancy it drops the meter from half full to
+empty between one frame and the next, and it is the dangerous direction to
+be wrong in: a window read as emptier than it is trims late. So such a report
+leaves the occupancy on the estimate it would otherwise have replaced, and
+the report before it, where there was one, stays the anchor, and the factor
+learns nothing from it. It is still what was billed, and the session's
+account still says so.
+
 A report also stops where its request stopped. It counts the messages that
 request carried, and it arrives before the round's answer and the results of
 the tools it called join the conversation. So it is held against the list it

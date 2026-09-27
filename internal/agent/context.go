@@ -251,6 +251,19 @@ const (
 	calibrationCeiling = 2.0
 )
 
+// ReportUndercounts reports whether a provider's prompt count is too small
+// to describe the messages estimated at estimated: under the factor's floor,
+// which is a count of something other than those messages — a runtime
+// reporting only what it had not already cached, an endpoint answering every
+// request with one number. The factor already refuses to follow such a
+// ratio; an occupancy anchored on it would read the window as emptier than it
+// is, which is the direction that trims late, and the factor learns nothing
+// from one. Nothing to compare, or nothing reported, is not an undercount.
+// See docs/capabilities/providers.md#how-full-the-window-is-corrected-by-what-it-cost.
+func ReportUndercounts(reported, estimated int64) bool {
+	return reported > 0 && estimated > 0 && float64(reported) < calibrationFloor*float64(estimated)
+}
+
 // Observe folds one response into the factor: reported is the provider's
 // prompt count and estimated is what this estimator made of the same
 // messages. A response that reported nothing, or one there was no
@@ -266,6 +279,13 @@ func (c *Calibration) Observe(model string, reported, estimated int64) {
 		*c = Calibration{model: model}
 	}
 	if reported <= 0 || estimated <= 0 {
+		return
+	}
+	// A count too small to be these messages is left out rather than folded
+	// in and clamped: one such report would otherwise pull the factor to the
+	// floor at once and halve every estimate after it, which is the meter
+	// falling within a turn on a report that never described the window.
+	if ReportUndercounts(reported, estimated) {
 		return
 	}
 	f := c.Factor()

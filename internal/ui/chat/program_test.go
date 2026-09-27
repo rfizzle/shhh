@@ -45,6 +45,9 @@ type programTurn struct {
 	// sentence arrives ungated, and a test that cannot say when it lands
 	// cannot say which of the two branches it is testing (interrupt.go).
 	hold chan struct{}
+	// usage, when set, is what the turn's closing event reports the request
+	// cost, the way an endpoint's final chunk does.
+	usage *provider.Usage
 }
 
 // programProvider is a provider.Provider that answers each request with the
@@ -83,7 +86,7 @@ func (p *programProvider) StreamCompletion(ctx context.Context, msgs []provider.
 		if turn.text != "" {
 			ch <- provider.StreamEvent{Token: turn.text}
 		}
-		ch <- provider.StreamEvent{ToolCalls: turn.calls, Done: true}
+		ch <- provider.StreamEvent{ToolCalls: turn.calls, Usage: turn.usage, Done: true}
 	}()
 	return ch, nil
 }

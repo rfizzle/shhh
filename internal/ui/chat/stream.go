@@ -186,7 +186,8 @@ func (m *Model) accumulateUsage(u *provider.Usage) {
 	// list — the compaction instruction, the plan-mode preamble — is a few
 	// dozen tokens against a whole conversation, and no single round can move
 	// the factor far in any case.
-	m.calibration.Observe(m.modelName, int64(u.PromptTokens), m.contextEstimate().total())
+	reported, estimated := int64(u.PromptTokens), m.contextEstimate().total()
+	m.calibration.Observe(m.modelName, reported, estimated)
 	cost, priced := m.usageCost(*u)
 	m.vitals.record(m.modelName, *u, cost, priced)
 	m.TotalTokensIn, m.TotalTokensOut = m.vitals.totalIn, m.vitals.totalOut
@@ -197,7 +198,14 @@ func (m *Model) accumulateUsage(u *provider.Usage) {
 	// the count and the accounting estimates whatever arrives after it. The
 	// prompt alone is the anchor, not prompt plus completion — the completion
 	// becomes a message a moment later, and the estimate counts it then.
-	m.contextTokens, m.contextReportedAt = m.vitals.lastIn, len(m.agent.Messages())
+	//
+	// A count too small to be these messages is billed and not anchored: the
+	// occupancy stays on the estimate, or on the report before it, rather
+	// than falling from half full to empty between two frames of one turn.
+	// See docs/capabilities/providers.md#how-full-the-window-is-corrected-by-what-it-cost.
+	if !agent.ReportUndercounts(reported, estimated) {
+		m.contextTokens, m.contextReportedAt = m.vitals.lastIn, len(m.agent.Messages())
+	}
 	m.notifyUsage()
 }
 

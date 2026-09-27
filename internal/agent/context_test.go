@@ -211,10 +211,21 @@ func TestCalibration_ConvergesAndIsBounded(t *testing.T) {
 		t.Fatalf("factor ran to %v, want the ceiling %v", got, calibrationCeiling)
 	}
 	for range 20 {
-		c.Observe("gpt-5.2", 300, 3000)
+		c.Observe("gpt-5.2", 1500, 3000)
 	}
-	if got := c.Factor(); got != calibrationFloor {
-		t.Fatalf("factor ran to %v, want the floor %v", got, calibrationFloor)
+	if got := c.Factor(); got < calibrationFloor || got > calibrationFloor+0.001 {
+		t.Fatalf("factor ran to %v, want it at the floor %v", got, calibrationFloor)
+	}
+	// Under the floor the report is left out altogether: a count of a tenth
+	// of the messages is a count of something else, and folding it in would
+	// move the factor however it was clamped afterwards.
+	for range 20 {
+		c.Observe("gpt-5.2", 4000, 3000)
+	}
+	was := c.Factor()
+	c.Observe("gpt-5.2", 300, 3000)
+	if got := c.Factor(); got != was {
+		t.Fatalf("an undercounting report moved the factor from %v to %v", was, got)
 	}
 }
 
