@@ -99,8 +99,24 @@ func withRequiredContainment(cfg config.Config, flag bool) config.Config {
 // one that asked, and it can say what it was going to do instead.
 // See docs/capabilities/containment.md#containment-can-be-required.
 func uncontainedRefusal(avail sandbox.Availability) string {
+	return refusalFor("error: this session requires containment and no mechanism is in force: ", avail)
+}
+
+// writerUncontainedRefusal is the same refusal for a writer whose commands
+// must be contained where the session's own need not be: the fix is the
+// doctor's, and only the first sentence says whose requirement it is, so a
+// session that runs its own commands unconfined is not told it required
+// anything.
+// See docs/capabilities/containment.md#containment-can-be-required.
+func writerUncontainedRefusal(avail sandbox.Availability) string {
+	return refusalFor("error: a writer's commands require containment and no mechanism is in force: ", avail)
+}
+
+// refusalFor is a refusal's lead with the host's reason and the doctor's fix
+// under it.
+func refusalFor(lead string, avail sandbox.Availability) string {
 	var b strings.Builder
-	b.WriteString("error: this session requires containment and no mechanism is in force: ")
+	b.WriteString(lead)
 	b.WriteString(avail.Detail)
 	for _, line := range doctorSandbox(avail, sandbox.Policy{}, runtime.GOOS).Fix {
 		b.WriteString("\n  " + line)
@@ -133,8 +149,9 @@ func buildContainment(cfg config.Config, sc *scope.Scope, sup *process.Superviso
 	reconcileOwnedSandboxes()
 	avail := sandbox.Detect()
 	c := chat.Containment{
-		Report: sandbox.Report(avail, policy, runningProcesses(sup)),
-		Manage: sandboxManage(cfg, sc, sup),
+		Report:  sandbox.Report(avail, policy, runningProcesses(sup)),
+		Manage:  sandboxManage(cfg, sc, sup),
+		Writers: writerContainment(cfg, avail).line(),
 	}
 	if !avail.OK {
 		c.Status = "unconfined — " + avail.Detail

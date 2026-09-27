@@ -303,6 +303,21 @@ nobody in front of it to draw one for, which makes it the path a requirement
 that stopped at the session would be walked around by — one fan-out and the
 work is running bare again.
 
+**A writer's commands are required to be contained, whatever the session
+requires of its own.** A session's own commands are each put to you on a card,
+or run under a mode you chose while watching; a writer's run in a copy of the
+tree while you read something else, and nothing is in front of any one of
+them. Where the host has a mechanism a writer's commands run contained anyway;
+where it has none, they are refused with the doctor's fix, and the spawn card
+says so before you approve the writer, so nobody learns it from a report of
+refused builds. The writer is told in its own prompt that its commands will be
+refused, and asked to name the ones that would verify its change instead of
+spending its rounds finding out. Researchers and reviewers run no command, so
+nothing changes for them. `agents.require_sandbox = false` hands a writer back
+to the session's rule; `sandbox.require` on the session still wins where it is
+set. Neither can be set by a checkout, because either decides the containment
+itself.
+
 **A command you typed is never refused by it.** `/run` and `!` are yours, they
 are never contained, and a requirement about the assistant's commands has
 nothing to say about them. The requirement is off by default: a machine with

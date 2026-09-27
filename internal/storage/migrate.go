@@ -574,6 +574,12 @@ var migrations = []string{
 	// the columns a store lacks — none on a store that ran step 30, all
 	// seven on one that did not — so both end at the same schema.
 	migrationChildBudget,
+
+	// Whether a writer's commands had to run contained, beside the profile
+	// they ran under, so a comparison can split on the one setting that
+	// decides whether a writer on a host with no mechanism runs anything at
+	// all. Nullable for the reason the other settings columns are.
+	`ALTER TABLE agent_sessions ADD COLUMN agents_require_sandbox INTEGER;`,
 }
 
 const (

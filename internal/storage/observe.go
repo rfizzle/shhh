@@ -127,6 +127,10 @@ type AgentSettings struct {
 	// force rather than the one configured: a child's is its own, shorter,
 	// because a child has none of what makes a session's long interval safe.
 	CheckInInterval int `json:"check_in_interval,omitempty"`
+	// AgentsRequireSandbox is agents.require_sandbox as it stood: whether a
+	// writer's commands had to run contained, refused where nothing could
+	// contain them.
+	AgentsRequireSandbox bool `json:"agents_require_sandbox"`
 	// ClassifierModel is the model auto mode's classifier asks, empty on a
 	// surface that has none.
 	ClassifierModel string `json:"classifier_model,omitempty"`
@@ -201,10 +205,11 @@ func (db *DB) StartChildAgentSession(parentID int64, kind, provider, model, name
 // what an unstamped row holds and what the reader takes for "none".
 func (db *DB) StampAgentSession(id int64, p AgentProvenance) error {
 	c := p.Settings
-	settings := []any{nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil}
+	settings := []any{nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil}
 	if c.ConfigHash != "" {
 		settings = []any{c.Mode, c.Reasoning, c.MaxRounds, c.SummaryModel, c.SummaryInterval, c.SummaryEnabled,
-			c.ClassifierModel, c.SandboxProfile, c.Item, c.Stage, c.ConfigHash, c.CheckInInterval}
+			c.ClassifierModel, c.SandboxProfile, c.Item, c.Stage, c.ConfigHash, c.CheckInInterval,
+			c.AgentsRequireSandbox}
 	}
 	args := append([]any{p.Version, p.PromptHash, p.Skills, p.Project}, settings...)
 	_, err := db.sql.Exec(
@@ -212,7 +217,7 @@ func (db *DB) StampAgentSession(id int64, p AgentProvenance) error {
 		        mode = ?, reasoning = ?, max_rounds = ?,
 		        summary_model = ?, summary_interval = ?, summary_enabled = ?,
 		        classifier_model = ?, sandbox_profile = ?, item = ?, stage = ?, config_hash = ?,
-		        check_in_interval = ?
+		        check_in_interval = ?, agents_require_sandbox = ?
 		 WHERE id = ?`,
 		append(args, id)...,
 	)
@@ -745,7 +750,7 @@ var agentSplitColumns = []string{
 	"mode", "reasoning", "max_rounds",
 	"summary_model", "summary_interval", "summary_enabled",
 	"classifier_model", "sandbox_profile",
-	"item", "stage", "check_in_interval",
+	"item", "stage", "check_in_interval", "agents_require_sandbox",
 }
 
 // AgentSplitKeys lists what a comparison can split on, for the flag that
@@ -1554,7 +1559,8 @@ const agentSessionColumns = `id, started_at, ended_at, kind, provider, model, tu
 		        classifier_model, sandbox_profile, item, stage, config_hash, outcome, rating,
 		        check_in_interval, end_reason, verdict, steers, attempt,
 		        child_budget, child_admission_floor, child_tokens_inherited, child_tokens_setup,
-		        child_tokens_tools, child_tokens_analysis, child_tokens_handoff, child_tokens_fresh, name`
+		        child_tokens_tools, child_tokens_analysis, child_tokens_handoff, child_tokens_fresh, name,
+		        agents_require_sandbox`
 
 func scanAgentSession(rows interface{ Scan(...any) error }) (AgentSessionSummary, error) {
 	var (
@@ -1566,7 +1572,7 @@ func scanAgentSession(rows interface{ Scan(...any) error }) (AgentSessionSummary
 		mode, reasoning, summaryModel, classifierModel, sandboxProfile, configHash sql.NullString
 		item, stage                                                                sql.NullString
 		maxRounds, summaryInterval                                                 sql.NullInt64
-		summaryEnabled                                                             sql.NullBool
+		summaryEnabled, requireSandbox                                             sql.NullBool
 		// The outcome column is NULL on a row older than it is and on a
 		// session that never closed a turn; both read as no outcome.
 		outcome sql.NullString
@@ -1589,7 +1595,7 @@ func scanAgentSession(rows interface{ Scan(...any) error }) (AgentSessionSummary
 		&classifierModel, &sandboxProfile, &item, &stage, &configHash, &outcome, &rating,
 		&checkInInterval, &endReason, &verdict, &steers, &attempt,
 		&budget, &admissionFloor, &inherited, &setup, &tools, &analysis, &handoff,
-		&fresh, &name); err != nil {
+		&fresh, &name, &requireSandbox); err != nil {
 		return s, err
 	}
 	s.Outcome = outcome.String
@@ -1603,8 +1609,9 @@ func scanAgentSession(rows interface{ Scan(...any) error }) (AgentSessionSummary
 			SummaryModel: summaryModel.String, SummaryInterval: int(summaryInterval.Int64),
 			SummaryEnabled: summaryEnabled.Bool, ClassifierModel: classifierModel.String,
 			SandboxProfile: sandboxProfile.String, Item: item.String, Stage: stage.String,
-			ConfigHash:      configHash.String,
-			CheckInInterval: int(checkInInterval.Int64),
+			ConfigHash:           configHash.String,
+			CheckInInterval:      int(checkInInterval.Int64),
+			AgentsRequireSandbox: requireSandbox.Bool,
 		}
 	}
 	if endReason.Valid && endReason.String != "" {

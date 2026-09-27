@@ -36,6 +36,8 @@ func TestSessionSettings_FieldByField(t *testing.T) {
 		ClassifierModel: "session-model",
 		SandboxProfile:  "workspace-netless",
 		ConfigHash:      got.ConfigHash,
+		// Unset, so on: a writer's commands are contained by default.
+		AgentsRequireSandbox: true,
 	}
 	if got != want {
 		t.Fatalf("settings:\ngot  %+v\nwant %+v", got, want)
@@ -107,6 +109,9 @@ var settingsAllowlist = map[string]bool{
 	"Summary.IntervalRounds":         true,
 	"Behavior.ClassifierModel":       true,
 	"Behavior.CheckInIntervalRounds": true,
+	// A switch, stamped so a cohort comparison can split on whether a
+	// writer's commands had to be contained.
+	"Agents.RequireSandbox": true,
 }
 
 // Nothing off the allowlist reaches the stamp. Every config field is filled

@@ -1239,7 +1239,38 @@ func probeSandbox(_ context.Context, cfg config.Config) doctorFinding {
 			Fix:         []string{"shhh config set --global sandbox.profile workspace"},
 		}
 	}
-	return doctorSandbox(sandbox.Detect(), policy, runtime.GOOS)
+	avail := sandbox.Detect()
+	return withWriterDefault(doctorSandbox(avail, policy, runtime.GOOS), writerContainment(cfg, avail))
+}
+
+// withWriterDefault names on the sandbox row what a writer's commands run
+// under, because a writer's rule is not the session's: on a host with no
+// mechanism a session may run its own commands unconfined while every
+// writer's is refused. It is added here rather than in doctorSandbox, whose
+// fix lines are the refusal's own.
+// See docs/capabilities/containment.md#containment-can-be-required.
+func withWriterDefault(f doctorFinding, w writerCommands) doctorFinding {
+	switch w.state {
+	case writerContained:
+		words := "writers must be contained"
+		if !w.required {
+			words = "writers contained, not required (agents.require_sandbox off)"
+		}
+		f.Detail = joinDetail(f.Detail, words)
+	case writerRefused:
+		f.Consequence = joinConsequence(f.Consequence, "a writer's commands are refused until one is")
+	case writerUncontained:
+		f.Consequence = joinConsequence(f.Consequence, "a writer's commands run as you too (agents.require_sandbox off)")
+	}
+	return f
+}
+
+// joinConsequence adds a clause to a finding's consequence.
+func joinConsequence(head, tail string) string {
+	if head == "" {
+		return tail
+	}
+	return head + "; " + tail
 }
 
 // doctorSandbox reads the containment mechanism. This is the check the

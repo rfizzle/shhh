@@ -1223,6 +1223,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		}
 	}
 	if sup != nil {
+		writerCommands := writerContainment(cfg, childContainment()).field()
 		gatedPreviews[subagent.SpawnToolName] = func(args json.RawMessage) (chat.GatedPreview, error) {
 			summary, err := subagent.SpawnSummary(agents.profiles, args)
 			if err != nil {
@@ -1261,6 +1262,11 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 					Label: "reaches", Value: reach.value(),
 					Detail: reach.detail(), Open: true,
 				})
+			}
+			// What a writer's commands run under is decided before the
+			// spawn, so the person reads it on the card they approve it on.
+			if plan.Writer && agents.runsCommands(plan.Role) {
+				fields = append(fields, writerCommands)
 			}
 			return chat.GatedPreview{
 				Action: "spawn", Summary: summary, Fields: fields,

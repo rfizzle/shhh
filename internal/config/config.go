@@ -704,6 +704,12 @@ type AgentsConfig struct {
 	// number because the file writes `[agents.depth.2]` — a named table,
 	// the same shape Profiles has and read by the same key walk.
 	Depths map[string]AgentDepth `toml:"depth"`
+	// RequireSandbox makes a writer's commands run contained or not at all:
+	// on a host with no mechanism they are refused rather than run as the
+	// person. Unset means on — a writer's commands are the ones nobody
+	// watches as they happen. sandbox.require still wins where it is set.
+	// See docs/capabilities/containment.md#containment-can-be-required.
+	RequireSandbox *bool `toml:"require_sandbox"`
 }
 
 // DefaultMaxDepth is the depth that stands when agents.max_depth is unset:
@@ -1048,6 +1054,13 @@ func (c *Config) SecretsEnvMaskEnabled() bool {
 // See docs/capabilities/mcp.md#a-server-sees-the-masked-environment.
 func (c *Config) MCPEnvMaskEnabled() bool {
 	return c.MCP.EnvMask == nil || *c.MCP.EnvMask
+}
+
+// AgentsRequireSandboxEnabled reports whether a writer's commands must run
+// contained: what agents.require_sandbox says, or — unset — yes.
+// See docs/capabilities/containment.md#containment-can-be-required.
+func (c *Config) AgentsRequireSandboxEnabled() bool {
+	return c.Agents.RequireSandbox == nil || *c.Agents.RequireSandbox
 }
 
 // HeadlessSummaryEnabled reports whether a non-interactive run takes readings:

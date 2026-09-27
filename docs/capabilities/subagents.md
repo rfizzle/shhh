@@ -494,8 +494,11 @@ command — which paths it writes, measured from the directory the child runs
 in and from any it changes into. A command whose paths the reading cannot
 account for is not flagged by it. Containment is what enforces the boundary:
 a contained writer's command can write to the same set and nowhere else, and
-`sandbox.require` is how a session insists on it
-([containment can be required](containment.md#containment-can-be-required)).
+a writer's commands are required to be contained by default: on a host with no
+mechanism they are refused rather than run as you, and the spawn card says
+which before you approve it. `agents.require_sandbox` turns that off, and
+`sandbox.require` is how a session insists on containment for its own commands
+too ([containment can be required](containment.md#containment-can-be-required)).
 
 ## Limits are about attention, not resources
 

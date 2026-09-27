@@ -44,6 +44,14 @@ type Containment struct {
 	// something that cannot happen.
 	// See docs/capabilities/containment.md#containment-can-be-required.
 	Refusal string
+	// Writers is what a writer's commands run under on this host, as one
+	// line: contained, refused because a writer must be contained and
+	// nothing here can, or uncontained because the person turned that off.
+	// It is its own line because a writer's rule is not the session's —
+	// a session running its own commands unconfined still refuses a
+	// writer's by default. Empty says nothing.
+	// See docs/capabilities/containment.md#containment-can-be-required.
+	Writers string
 	// Manage handles the /sandbox subcommands (doctor, list, status,
 	// destroy, prune) for container sandboxes and returns the text to
 	// show. Nil means container sandbox management is not wired up.
@@ -78,6 +86,15 @@ func (m Model) containmentStatus() string {
 	if m.containment.Status == "" {
 		return ""
 	}
+	line := m.sessionContainmentStatus()
+	if m.containment.Writers != "" {
+		line += "\n" + m.containment.Writers
+	}
+	return line
+}
+
+// sessionContainmentStatus is the session's own half of containmentStatus.
+func (m Model) sessionContainmentStatus() string {
 	if m.containment.Mechanism == "" {
 		if m.containment.Refusal != "" {
 			// The session was told to require one, so "unconfined" is not

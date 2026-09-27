@@ -369,6 +369,11 @@ func sessionSettings(cfg config.Config, run runSettings) storage.AgentSettings {
 		Item:            run.item,
 		Stage:           run.stage,
 		ConfigHash:      configHash(cfg),
+		// Whether a writer's commands had to be contained is a switch, not
+		// a path or a command, and it decides whether a writer on a host
+		// with no mechanism runs anything at all — a cohort worth telling
+		// apart (docs/capabilities/containment.md#containment-can-be-required).
+		AgentsRequireSandbox: cfg.AgentsRequireSandboxEnabled(),
 	}
 	if run.summary {
 		out.SummaryModel = modelOr(cfg.Summary.Model, run.model)

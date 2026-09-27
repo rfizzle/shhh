@@ -746,6 +746,10 @@ func TestGolden_SpawnCard(t *testing.T) {
 		}
 		budget := CardField{Label: "budget", Value: "no round limit, ~300k new tokens",
 			Detail: "counted in the session totals"}
+		// What a writer's commands run under, decided before the spawn
+		// (docs/capabilities/containment.md#containment-can-be-required).
+		contained := CardField{Label: "commands", Value: "contained · sandbox-exec",
+			Detail: "required · workspace profile · network preserved"}
 		return []golden.Panel{
 			// One child: the row, the profile's clause under it, and the
 			// scope back in the block where every other card answers it.
@@ -765,6 +769,29 @@ func TestGolden_SpawnCard(t *testing.T) {
 					{Label: "undo", Value: "reviewed",
 						Detail: "its patch is a decision of its own before anything lands"},
 					budget,
+					contained,
+				}
+			})},
+			// The same writer on a host with nothing to contain its commands:
+			// the card says they will be refused before the spawn is approved.
+			{Label: "single · a writer whose commands will be refused", View: card(func(c *ApprovalCard) {
+				c.Title = "Spawn writer"
+				c.Answer = "start it"
+				c.SeverityReason = "touches open"
+				c.Spawns = []SpawnRow{{
+					Role: "writer", Name: "writer-1",
+					About:   "full tools against an isolated copy of the workspace",
+					Task:    "add a --max-rounds flag to the loop",
+					Touches: "its own worktree · claims internal/agent/**",
+					Writer:  true,
+				}}
+				c.Fields = []CardField{
+					{Label: "touches", Value: "its own worktree · claims internal/agent/**", Tone: ToneOpen},
+					{Label: "undo", Value: "reviewed",
+						Detail: "its patch is a decision of its own before anything lands"},
+					budget,
+					{Label: "commands", Value: "refused",
+						Detail: "no containment mechanism is in force: bubblewrap (bwrap) not found on PATH"},
 				}
 			})},
 			// A read-only role is the one that can be waved through for the
@@ -808,6 +835,7 @@ func TestGolden_SpawnCard(t *testing.T) {
 					{Label: "undo", Value: "reviewed",
 						Detail: "its patch is a decision of its own before anything lands"},
 					budget,
+					contained,
 				}
 			})},
 			// The state every card is in beside a live draft: the decision

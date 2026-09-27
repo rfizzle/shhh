@@ -226,6 +226,7 @@ func TestAgentObservability_TurnsSignalsAndProvenance(t *testing.T) {
 		Mode: "auto", Reasoning: "high", MaxRounds: 60,
 		SummaryModel: "small-model", SummaryInterval: 10, SummaryEnabled: true,
 		ClassifierModel: "small-model", SandboxProfile: "workspace", ConfigHash: "cfg0",
+		AgentsRequireSandbox: true,
 	}
 	if err := db.StampAgentSession(id, AgentProvenance{Version: "1.2.3", PromptHash: "abc123", Skills: 2, Project: "p0", Settings: settings}); err != nil {
 		t.Fatalf("stamp: %v", err)
@@ -890,7 +891,7 @@ func TestAgentCohorts_SplitEveryKeyTheStoreOffers(t *testing.T) {
 		Mode: "auto", Reasoning: "high", MaxRounds: 40, CheckInInterval: 40,
 		SummaryModel: "sum-b", SummaryInterval: 20, SummaryEnabled: true,
 		ClassifierModel: "cls-b", SandboxProfile: "readonly",
-		Item: "b-two", Stage: "review", ConfigHash: "h2"}})
+		Item: "b-two", Stage: "review", ConfigHash: "h2", AgentsRequireSandbox: true}})
 
 	since := time.Now().Add(-time.Hour)
 	for _, key := range AgentSplitKeys() {

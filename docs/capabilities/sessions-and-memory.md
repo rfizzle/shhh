@@ -847,7 +847,8 @@ value. So every session is stamped with the settings that were in force when
 it started: the permission mode, the reasoning level, the round cap, how many
 rounds pass before a turn is asked to take stock, whether the summariser was
 taking readings and on which model and at what interval, the classifier's
-model, and the containment profile. These are values, not
+model, the containment profile, and whether a writer's commands had to be
+contained. These are values, not
 merely fingerprints, because the question a tuning loop asks is "sessions at
 interval 10 against sessions at interval 20", and a hash has no order and no
 meaning to group by.

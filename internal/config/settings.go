@@ -532,6 +532,9 @@ var settings = []Setting{
 		Key: "agents.delegation", Kind: KindEnum, Default: "explicit",
 		Values: []string{"off", "explicit", "proactive"},
 		Desc:   "When the model starts sub-agents: `off` offers it no orchestration tools, `explicit` delegates when asked to, `proactive` divides work that splits into independent parts. The spawn card is drawn under all three.",
+	}, {
+		Key: "agents.require_sandbox", Kind: KindBool, Default: "on",
+		Desc: "Run a writer's commands contained, and refuse them where no containment mechanism is in force rather than running them unconfined. Off, a writer follows sandbox.require as the session's own commands do.",
 	},
 
 	{

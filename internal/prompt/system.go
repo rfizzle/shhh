@@ -521,6 +521,17 @@ You were started because two changes were made to the same lines of the same fil
 - Verify as for any change, then report which intention each region kept.
 - If the two cannot both hold — they want opposite things of the same lines — leave the conflicting files as you found them and say so in your report, naming each file and what each side wanted. Both patches then stay kept for the person to decide.`
 
+// UncontainedWriterInstructions is appended to a writer's request on a host
+// where nothing can contain its commands and containment is required of it,
+// so every command it runs is refused before it starts. Told nothing, it
+// would spend its rounds on a build and a test one refusal at a time and
+// report the refusals as failures of the change.
+// See docs/capabilities/containment.md#containment-can-be-required.
+const UncontainedWriterInstructions = `# Commands are refused here
+Your commands are required to run contained, and this machine has no containment mechanism, so every command you run is refused before it starts; no approval can run one.
+- Make the change with file reads and edits alone. Do not run a command to build, test or inspect.
+- In your report, name the commands that would verify the change, so the session can run them where it can.`
+
 // ReadOnlyModeInstructions is appended to the system prompt while the session
 // is in read-only mode. It says what the mode is and stops: the mode has no
 // product of its own, so an instruction about what to produce instead would be

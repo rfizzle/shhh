@@ -450,3 +450,19 @@ func TestStatusNamesTheDelegationPolicy(t *testing.T) {
 		t.Fatalf("/status should name the policy:\n%s", text)
 	}
 }
+
+// /status says what a writer's commands run under beside the session's own
+// containment, because the two rules differ: a session running its own
+// commands unconfined still refuses a writer's by default.
+func TestContainmentStatusNamesTheWriterRule(t *testing.T) {
+	const writers = "a writer's commands: refused — no containment mechanism is in force: bwrap not found"
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).
+		WithContainment(Containment{
+			Status: "unconfined — bwrap not found", Detail: "bwrap not found", Network: true,
+			Writers: writers,
+		})
+	text, _ := m.statusCommand()
+	if !strings.Contains(text, "Containment\nunconfined — bwrap not found; the command runs as you\n"+writers) {
+		t.Fatalf("/status should name the writer rule under the session's:\n%s", text)
+	}
+}

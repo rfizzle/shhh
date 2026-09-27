@@ -581,6 +581,22 @@ func holdsRefusable(defs []provider.Tool) bool {
 	return false
 }
 
+// holdsCommand reports a toolset holding execute_command.
+func holdsCommand(defs []provider.Tool) bool {
+	return slices.ContainsFunc(defs, func(d provider.Tool) bool { return d.Name == tools.ExecCommandName })
+}
+
+// runsCommands reports whether a child of role is handed execute_command:
+// a profile file that grants execute and does not list it away, or the
+// built-in writer. It is what the spawn card asks before it states what a
+// writer's commands run under, since a writer that may only edit has none.
+func (a *agentProfiles) runsCommands(role subagent.Role) bool {
+	if def, ok := a.definitions[string(role)]; ok {
+		return def.Has(config.PermissionExecute) && def.Allows(tools.ExecCommandName)
+	}
+	return role == subagent.RoleWriter
+}
+
 // withModeInstructions is a child's request with its mode's paragraph on the
 // system prompt, the way a session's request carries it: a child in
 // read-only or plan mode that is not told so spends its rounds on edits and
@@ -588,7 +604,22 @@ func holdsRefusable(defs []provider.Tool) bool {
 // was, so a child whose mode is lifted stops being told.
 // See docs/capabilities/subagents.md#a-child-answers-to-the-session.
 func withModeInstructions(msgs []provider.Message, mode agent.Mode) []provider.Message {
-	block := agent.ModeInstructions(mode)
+	return withSystemParagraph(msgs, agent.ModeInstructions(mode))
+}
+
+// withRefusedCommands is a writer's request with the paragraph saying its
+// commands are refused on this host, on the system prompt the way the mode's
+// paragraph rides: a writer that must be contained on a machine with nothing
+// to contain it would otherwise spend its rounds learning that one refused
+// build at a time and report the refusals as the change failing.
+// See docs/capabilities/containment.md#containment-can-be-required.
+func withRefusedCommands(msgs []provider.Message) []provider.Message {
+	return withSystemParagraph(msgs, prompt.UncontainedWriterInstructions)
+}
+
+// withSystemParagraph appends block to a request's system prompt without
+// touching the conversation it was read from.
+func withSystemParagraph(msgs []provider.Message, block string) []provider.Message {
 	if block == "" || len(msgs) == 0 || msgs[0].Role != provider.RoleSystem {
 		return msgs
 	}
@@ -736,6 +767,16 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 		// a child that holds a write or a command is, since every other
 		// role's own prompt already says it can do neither.
 		refusable := holdsRefusable(streamDefs)
+		// Whether this child's commands are refused outright: a writer that
+		// must be contained on a host with nothing to contain it. The host
+		// is asked once, here, and the runner below is handed the same
+		// answer, so the paragraph the child reads and the refusal its
+		// commands get cannot disagree.
+		writer := agents.profiles[role].Writes
+		avail := childContainment()
+		// A profile that may write and not execute holds no command, and a
+		// paragraph about refused commands would describe a tool it never had.
+		commandsRefused := childCommandsRefused(cfg, writer, avail) && holdsCommand(streamDefs)
 
 		stream := agent.StreamFunc(func(msgs []provider.Message, choice string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
 			sctx, cancel := context.WithCancel(cctx)
@@ -759,6 +800,9 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 				}
 				msgs = withModeInstructions(msgs, mode)
 			}
+			if commandsRefused && choice != provider.ToolChoiceNone {
+				msgs = withRefusedCommands(msgs)
+			}
 			ev, sErr := childProvider.StreamCompletion(sctx, msgs, provider.CompletionOpts{
 				Model:      childModel,
 				Tools:      streamDefs,
@@ -777,7 +821,7 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 			Stream:       stream,
 			Executor:     session.vault.WrapExecutor(subagent.RootedExecutor(croot, autoExec)),
 			ExecuteGated: session.vault.WrapExecutor(gatedExec),
-			RunCommand:   scrubResultRunner(session.vault, childCommandRunner(cfg, croot, sc)),
+			RunCommand:   scrubResultRunner(session.vault, childCommandRunner(cfg, croot, sc, writer, avail)),
 			// The same pipeline the parent's own commands go through, and
 			// the same store behind it: a child's evidence entries land
 			// beside the session's, so the id in a reduction notice is one
@@ -1235,8 +1279,95 @@ func childSandboxProfile(cfg config.Config) string {
 // Every form is bounded. A child has nobody in front of it, so a command that
 // never finishes takes the child with it — and the parent is left waiting on
 // a report that is not coming.
-func childCommandRunner(cfg config.Config, dir string, sc *scope.Scope) func(context.Context, string) tools.ExecResult {
-	return boundedRunner(childCommandRunnerUnbounded(cfg, dir, sc), cfg.CommandTimeout())
+func childCommandRunner(cfg config.Config, dir string, sc *scope.Scope, writer bool, avail sandbox.Availability) func(context.Context, string) tools.ExecResult {
+	return boundedRunner(childCommandRunnerIn(cfg, dir, sc, writer, avail), cfg.CommandTimeout())
+}
+
+// childRequiresContainment reports whether a child's commands must run
+// contained or not at all: where the session requires it of every command,
+// and — unless agents.require_sandbox turns it off — for a writer, whose
+// commands are the ones nobody watches as they happen.
+// See docs/capabilities/containment.md#containment-can-be-required.
+func childRequiresContainment(cfg config.Config, writer bool) bool {
+	return cfg.Sandbox.Require || (writer && cfg.AgentsRequireSandboxEnabled())
+}
+
+// childCommandsRefused reports a child whose every command will be refused:
+// a writer that must be contained on a host with nothing to contain it. It
+// is what earns the child the paragraph saying so; a researcher and a
+// reviewer hold no command to refuse.
+func childCommandsRefused(cfg config.Config, writer bool, avail sandbox.Availability) bool {
+	return writer && !avail.OK && childRequiresContainment(cfg, writer)
+}
+
+// childRefusal is what a child's command is answered with where it must be
+// contained and nothing can contain it: the session's own refusal where the
+// session requires containment, and the writer's where only the writer
+// default does. Both carry the doctor's fix.
+func childRefusal(cfg config.Config, avail sandbox.Availability) string {
+	if cfg.Sandbox.Require {
+		return uncontainedRefusal(avail)
+	}
+	return writerUncontainedRefusal(avail)
+}
+
+// writerCommands is what a writer's commands run under on this host, in the
+// words the spawn card, `/status` and the doctor state it in: contained, and
+// by what; refused, because they must be and nothing here can; or
+// uncontained, because the person turned the writer default off.
+type writerCommands struct {
+	// state is contained, refused or uncontained; mechanism names what
+	// contains them, and is empty for the other two.
+	state, mechanism, detail string
+	// required is whether containment is demanded of them rather than
+	// merely in force.
+	required bool
+}
+
+// Writer command states.
+const (
+	writerContained   = "contained"
+	writerRefused     = "refused"
+	writerUncontained = "uncontained"
+)
+
+// writerContainment reads the writer default against the host. It is one
+// function so the card a spawn is approved on, the session's status and the
+// doctor say the same thing about the same child.
+// See docs/capabilities/containment.md#containment-can-be-required.
+func writerContainment(cfg config.Config, avail sandbox.Availability) writerCommands {
+	required := childRequiresContainment(cfg, true)
+	switch {
+	case avail.OK:
+		detail := ""
+		if required {
+			detail = "required"
+		}
+		if p, err := sandboxPolicy(cfg); err == nil {
+			detail = joinDetail(joinDetail(detail, string(p.Profile)+" profile"), sandbox.NetworkWords(avail, p))
+		}
+		return writerCommands{state: writerContained, mechanism: avail.Mechanism, detail: detail, required: required}
+	case required:
+		return writerCommands{state: writerRefused, detail: "no containment mechanism is in force: " + avail.Detail, required: true}
+	}
+	return writerCommands{state: writerUncontained, detail: "agents.require_sandbox is off; they run as you"}
+}
+
+// value is the state with the mechanism beside it, which is the part of the
+// answer a narrow card must not shed.
+func (w writerCommands) value() string {
+	return joinDetail(w.state, w.mechanism)
+}
+
+// line is the state as one line of `/status`.
+func (w writerCommands) line() string {
+	return "a writer's commands: " + w.value() + " — " + w.detail
+}
+
+// field is the state as the spawn card's row. An uncontained writer is an
+// open door, which is what the card's level is read off.
+func (w writerCommands) field() chat.GatedField {
+	return chat.GatedField{Label: "commands", Value: w.value(), Detail: w.detail, Open: w.state == writerUncontained}
 }
 
 // childCommandRunnerUnbounded answers with the typed result the session's own
@@ -1250,9 +1381,20 @@ func childCommandRunner(cfg config.Config, dir string, sc *scope.Scope) func(con
 // It is a variable so a test can stand a mechanism in on a host that has none.
 var childContainment = sandbox.Detect
 
-func childCommandRunnerUnbounded(cfg config.Config, dir string, sc *scope.Scope) func(context.Context, string) tools.ExecResult {
-	if _, err := sandboxPolicy(cfg); err == nil {
-		avail := childContainment()
+func childCommandRunnerUnbounded(cfg config.Config, dir string, sc *scope.Scope, writer bool) func(context.Context, string) tools.ExecResult {
+	return childCommandRunnerIn(cfg, dir, sc, writer, childContainment())
+}
+
+// childCommandRunnerIn is the runner over a host already asked what it has.
+func childCommandRunnerIn(cfg config.Config, dir string, sc *scope.Scope, writer bool, avail sandbox.Availability) func(context.Context, string) tools.ExecResult {
+	required := childRequiresContainment(cfg, writer)
+	if _, err := sandboxPolicy(cfg); err != nil {
+		// A command that must be contained never falls back to running
+		// bare because the policy could not be read.
+		if required {
+			return func(context.Context, string) tools.ExecResult { return runner.WrapFailure(dir, err) }
+		}
+	} else {
 		if avail.OK {
 			return func(ctx context.Context, command string) tools.ExecResult {
 				// The policy is rebuilt per command so a directory the parent
@@ -1278,10 +1420,13 @@ func childCommandRunnerUnbounded(cfg config.Config, dir string, sc *scope.Scope)
 		// A child's command is the assistant's, and a child is the one place
 		// with no card to refuse on and nobody to refuse to: a session that
 		// requires containment has to refuse here as well, or the
-		// requirement is one a fan-out walks around.
+		// requirement is one a fan-out walks around. A writer is required
+		// to be contained by default whatever the session requires of its
+		// own commands, because nobody watches a writer's commands as they
+		// happen.
 		// See docs/capabilities/containment.md#containment-can-be-required.
-		if cfg.Sandbox.Require {
-			refusal := uncontainedRefusal(avail)
+		if required {
+			refusal := childRefusal(cfg, avail)
 			return func(context.Context, string) tools.ExecResult {
 				return tools.ExecResult{Output: refusal, ExitCode: -1, Outcome: tools.ExecDidNotStart}
 			}

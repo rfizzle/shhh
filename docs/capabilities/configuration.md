@@ -1127,6 +1127,7 @@ own file could hold.
 | `max_children` | number | `32` | How many children this session may start in all, wherever in the tree the spawn happened; a finished child keeps its slot. |
 | `check_slots` | number | `2` | How many checks may run at once across this session — a child's build or test run, a child's quality gate run, and your own gate each take one; the rest wait their turn. |
 | `delegation` | word: `off`, `explicit`, `proactive` | `explicit` | When the model starts sub-agents: `off` offers it no orchestration tools, `explicit` delegates when asked to, `proactive` divides work that splits into independent parts. The spawn card is drawn under all three. |
+| `require_sandbox` | true/false | `on` | Run a writer's commands contained, and refuse them where no containment mechanism is in force rather than running them unconfined. Off, a writer follows sandbox.require as the session's own commands do. |
 
 **`[summary]`**
 

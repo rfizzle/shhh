@@ -24,6 +24,7 @@ var releasedMigrations = []string{
 	"3f92de38008719b0", "460f5f7aff01708c", "4263bb5d44fa1db5", "6a110a7e2db15cf4", "b51d7450e2fd2f1b", // 31–35
 	"c910ea96aa088b4f", "a28fe39f63ad2151", "f8eb46457110934a", "8e7a066f412525ac", "340dfeffcaf2f4a0", // 36–40
 	"f7677565891a2bd3", // 41: migration 30 again, for the stores that recorded it unrun
+	"ba718793e0d302bc", // 42: agents_require_sandbox
 }
 
 func migrationDigest(m string) string {

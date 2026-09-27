@@ -226,12 +226,12 @@ func TestChildCommandRunner_RequiredContainmentRefusesToo(t *testing.T) {
 		t.Skip("this host contains commands anyway, so there is no fallback to refuse")
 	}
 
-	run := childCommandRunnerUnbounded(config.Config{}, dir, sc)
+	run := childCommandRunnerUnbounded(config.Config{Agents: config.AgentsConfig{RequireSandbox: new(bool)}}, dir, sc, true)
 	if got := run(context.Background(), "echo ran"); got.ExitCode != 0 || !strings.Contains(got.Output, "ran") {
-		t.Fatalf("without the knob a child's command still runs: %q (%d)", got.Output, got.ExitCode)
+		t.Fatalf("with the writer default off a child's command still runs: %q (%d)", got.Output, got.ExitCode)
 	}
 
-	run = childCommandRunnerUnbounded(config.Config{Sandbox: config.SandboxConfig{Require: true}}, dir, sc)
+	run = childCommandRunnerUnbounded(config.Config{Sandbox: config.SandboxConfig{Require: true}}, dir, sc, true)
 	got := run(context.Background(), "echo ran")
 	out, code := got.Output, got.ExitCode
 	if code == 0 || strings.Contains(out, "ran") || got.Outcome != tools.ExecDidNotStart {
@@ -389,7 +389,7 @@ func TestAChildsContainedShellThatCannotExecDidNotStart(t *testing.T) {
 	}
 	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
 
-	got := childCommandRunnerUnbounded(config.Config{}, dir, sc)(context.Background(), "echo hi")
+	got := childCommandRunnerUnbounded(config.Config{}, dir, sc, true)(context.Background(), "echo hi")
 	if got.Outcome != tools.ExecDidNotStart || got.Prereq != tools.PrereqShell {
 		t.Fatalf("got %+v, want an execution shell that did not start", got)
 	}
@@ -414,7 +414,7 @@ func TestChildrensContainedCommandsShareTheSessionsBuildCache(t *testing.T) {
 		if len(errs) > 0 {
 			t.Fatalf("scope: %v", errs)
 		}
-		got := childCommandRunnerUnbounded(config.Config{}, dir, sc)(context.Background(), `printf %s "$GOCACHE"`)
+		got := childCommandRunnerUnbounded(config.Config{}, dir, sc, true)(context.Background(), `printf %s "$GOCACHE"`)
 		if got.Outcome != tools.ExecSucceeded {
 			t.Fatalf("the command did not run: %+v", got)
 		}
@@ -453,7 +453,7 @@ func TestAChildsRemovedWorktreeIsItsWorkingDirectory(t *testing.T) {
 	if len(errs) > 0 {
 		t.Fatalf("scope: %v", errs)
 	}
-	run := childCommandRunnerUnbounded(config.Config{}, dir, sc)
+	run := childCommandRunnerUnbounded(config.Config{}, dir, sc, true)
 	if err := os.RemoveAll(dir); err != nil {
 		t.Fatal(err)
 	}
@@ -483,7 +483,7 @@ func TestChildContainedCommandWritesIntoAGrantedCheckout(t *testing.T) {
 		t.Fatalf("scope: %v", errs)
 	}
 	target := filepath.Join(root, "f")
-	run := childCommandRunnerUnbounded(config.Config{}, worktree, sc)
+	run := childCommandRunnerUnbounded(config.Config{}, worktree, sc, true)
 	run(context.Background(), "echo x > "+target)
 	if _, err := os.Stat(target); err == nil {
 		t.Fatal("a contained writer wrote into the parent's checkout before it was granted")
