@@ -12,6 +12,7 @@ import (
 	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/logs"
+	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/process"
 	"github.com/rfizzle/shhh/internal/runner"
 	"github.com/rfizzle/shhh/internal/sandbox"
@@ -99,7 +100,7 @@ func withRequiredContainment(cfg config.Config, flag bool) config.Config {
 // one that asked, and it can say what it was going to do instead.
 // See docs/capabilities/containment.md#containment-can-be-required.
 func uncontainedRefusal(avail sandbox.Availability) string {
-	return refusalFor("error: this session requires containment and no mechanism is in force: ", avail)
+	return refusalFor("this session requires", avail)
 }
 
 // writerUncontainedRefusal is the same refusal for a writer whose commands
@@ -109,14 +110,17 @@ func uncontainedRefusal(avail sandbox.Availability) string {
 // anything.
 // See docs/capabilities/containment.md#containment-can-be-required.
 func writerUncontainedRefusal(avail sandbox.Availability) string {
-	return refusalFor("error: a writer's commands require containment and no mechanism is in force: ", avail)
+	return refusalFor("a writer's commands require", avail)
 }
 
-// refusalFor is a refusal's lead with the host's reason and the doctor's fix
-// under it.
-func refusalFor(lead string, avail sandbox.Availability) string {
+// refusalFor is a refusal's lead — whose requirement it is, then the clause
+// the record files it by — with the host's reason and the doctor's fix under
+// it. It is the one function that words a containment refusal, so the clause
+// cannot fall out of one surface's refusals and leave them filed as
+// something else.
+func refusalFor(whose string, avail sandbox.Availability) string {
 	var b strings.Builder
-	b.WriteString(lead)
+	b.WriteString("error: " + whose + " " + observe.ContainmentRequired + ": ")
 	b.WriteString(avail.Detail)
 	for _, line := range doctorSandbox(avail, sandbox.Policy{}, runtime.GOOS).Fix {
 		b.WriteString("\n  " + line)

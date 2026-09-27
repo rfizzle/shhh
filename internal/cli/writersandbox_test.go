@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/rfizzle/shhh/internal/config"
+	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/prompt"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/sandbox"
@@ -216,6 +217,35 @@ func TestOnlyAWriterThatRunsCommandsIsToldAboutThem(t *testing.T) {
 	}
 	if holdsCommand(tools.Definitions()) || !holdsCommand(tools.DefinitionsFull()) {
 		t.Error("holdsCommand should find execute_command in the full toolset alone")
+	}
+}
+
+// Every surface's containment refusal is filed under the containment class:
+// the session's and a headless run's (both are buildContainment's Refusal,
+// worded by uncontainedRefusal) and a child's, whether the session or the
+// writer default required it. Before the clause was read, the host's own
+// reason decided the class — "not found" on Linux and macOS, "other"
+// elsewhere — so the record could not say how often the harness, not the
+// model, stopped a command.
+// See docs/capabilities/containment.md#containment-can-be-required.
+func TestEveryContainmentRefusalIsFiledAsContainment(t *testing.T) {
+	t.Setenv("XDG_DATA_HOME", t.TempDir())
+	required := config.Config{Sandbox: config.SandboxConfig{Require: true}}
+	for _, detail := range []string{
+		"bubblewrap (bwrap) not found on PATH",
+		"sandbox-exec not found at /usr/bin/sandbox-exec",
+		"no containment mechanism for windows",
+	} {
+		avail := sandbox.Availability{Detail: detail}
+		for surface, refusal := range map[string]string{
+			"session":                     uncontainedRefusal(avail),
+			"child of a required session": childCommandRefusal(required, false, avail),
+			"writer":                      childCommandRefusal(config.Config{}, true, avail),
+		} {
+			if got := observe.ClassFromResult(refusal); got != observe.ClassHarnessContainment {
+				t.Errorf("%s, %q: filed as %q, want %q", surface, detail, got, observe.ClassHarnessContainment)
+			}
+		}
 	}
 }
 

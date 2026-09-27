@@ -137,6 +137,27 @@ func TestClassFromResult_HarnessFailures(t *testing.T) {
 	}
 }
 
+// A command refused because it must be contained and nothing can contain it
+// is the harness stopping it, whoever required the containment: it is filed
+// by the clause every such refusal carries on its first line, ahead of the
+// host's reason beside it, whose "not found" the ladder would read as a stale
+// path. The clause further down a result is somebody's output, not a refusal.
+// See docs/capabilities/containment.md#containment-can-be-required.
+func TestClassFromResult_ContainmentRefusal(t *testing.T) {
+	for _, in := range []string{
+		"error: this session requires " + ContainmentRequired + ": bubblewrap (bwrap) not found on PATH\n  install bubblewrap",
+		"error: a writer's commands require " + ContainmentRequired + ": no containment mechanism for windows",
+	} {
+		if got := ClassFromResult(in); got != ClassHarnessContainment {
+			t.Errorf("ClassFromResult(%q) = %q, want %q", in, got, ClassHarnessContainment)
+		}
+	}
+	printed := "error: command exited with status 1\noutput:\nshhh said: " + ContainmentRequired
+	if got := ClassFromResult(printed); got != ClassOther {
+		t.Errorf("ClassFromResult(%q) = %q, want %q", printed, got, ClassOther)
+	}
+}
+
 // ToolOutcome is the one call a surface makes to report a result, so it has
 // to agree with the two functions it is made of on every shape of result.
 func TestToolOutcome(t *testing.T) {

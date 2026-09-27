@@ -15,6 +15,7 @@ import (
 
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/logs"
+	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/process"
 	"github.com/rfizzle/shhh/internal/runner"
 	"github.com/rfizzle/shhh/internal/sandbox"
@@ -159,6 +160,9 @@ func TestBuildContainment_RequireRefusesWhereNothingContains(t *testing.T) {
 	}
 	if !strings.Contains(c.Refusal, "requires containment") {
 		t.Fatalf("an unconfined required session must refuse, got %q", c.Refusal)
+	}
+	if got := observe.ClassFromResult(c.Refusal); got != observe.ClassHarnessContainment {
+		t.Errorf("the session's refusal is filed as %q, want %q", got, observe.ClassHarnessContainment)
 	}
 	if !strings.Contains(c.Refusal, doctorSandbox(sandbox.Detect(), sandbox.Policy{}, runtime.GOOS).Fix[0]) {
 		t.Errorf("the refusal should carry the doctor's own fix, got %q", c.Refusal)

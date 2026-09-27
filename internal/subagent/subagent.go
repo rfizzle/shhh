@@ -525,7 +525,9 @@ type Env struct {
 	// was handed, so a surface that installs nothing changes nothing. The
 	// gated wrap goes around the whole resolution — the policy, the
 	// classifier and the card included — which is where a session's own
-	// approver meets the same seam, and which keeps the tier rule: a call is
+	// approver meets the same seam; only the containment refusal
+	// (CommandRefusal) stands in front of it, as it stands in front of a
+	// session's pre-tool hook. That keeps the tier rule: a call is
 	// dispatched by the kind of call it is, whatever a seam said about it.
 	// Nil leaves the dispatcher exactly as this Env built it.
 	WrapAuto  func(Seam, agent.ToolExecutor) agent.ToolExecutor
@@ -4274,9 +4276,20 @@ func (s *Supervisor) run(c *child) {
 	// it. It is built once for the attempt rather than per call: the wrap is
 	// a chain of closures, and a child's rounds are the last place to be
 	// rebuilding one.
-	resolve := func(tc provider.ToolCall) string { return s.resolveGated(c, tc) }
+	//
+	// The containment refusal stands in front of the wrap rather than inside
+	// it, where a session answers its own: a call no decision can let run is
+	// not handed to a seam that fires the person's pre-tool hook for it.
+	// See docs/capabilities/containment.md#containment-can-be-required.
+	gated := func(tc provider.ToolCall) string { return s.resolveGated(c, tc) }
 	if c.env.WrapGated != nil {
-		resolve = c.env.WrapGated(c.seam(), resolve)
+		gated = c.env.WrapGated(c.seam(), gated)
+	}
+	resolve := func(tc provider.ToolCall) string {
+		if refusal, refused := s.refuseUncontained(c, tc); refused {
+			return refusal
+		}
+		return gated(tc)
 	}
 	compact := childCompactor(c.model, c.env)
 	if compact != nil && c.env.Compaction != nil {
@@ -5031,6 +5044,33 @@ func (s *Supervisor) failReason(c *child, err error) string {
 	}
 }
 
+// refuseUncontained answers a command that must be contained where nothing
+// can contain it, ahead of the policy, the classifier, the card and the
+// surface's seams, as a session that requires containment answers its own:
+// every answer the person could give ends in the same refusal, so there is no
+// decision to put to them and none is filed. The refusal is the call's
+// result, which is where the child can act on it. A call whose arguments do
+// not parse is left to resolveGated, which says so.
+// See docs/capabilities/containment.md#containment-can-be-required.
+func (s *Supervisor) refuseUncontained(c *child, tc provider.ToolCall) (string, bool) {
+	if tc.Name != tools.ExecCommandName || c.env.CommandRefusal == "" {
+		return "", false
+	}
+	rooted, err := RootArgs(c.root, tc.Name, json.RawMessage(tc.Arguments))
+	if err != nil {
+		return "", false
+	}
+	action, err := actionFor(tc.Name, rooted)
+	if err != nil {
+		return "", false
+	}
+	title := askTitle(tc.Name, s.scopedAction(c, action))
+	c.appendEntry(TranscriptEntry{Kind: EntrySystem,
+		Text:   "Refused: " + title + " — nothing is containing this agent's commands",
+		Result: c.env.CommandRefusal})
+	return c.env.CommandRefusal, true
+}
+
 // resolveGated is the child's approval path: the child's clamped mode policy
 // decides, and anything it would ask about routes to the parent user. Every
 // verdict along the way is recorded at the codes a session records its own
@@ -5049,19 +5089,6 @@ func (s *Supervisor) resolveGated(c *child, tc provider.ToolCall) string {
 	}
 	action = s.scopedAction(c, action)
 	title := askTitle(tc.Name, action)
-	// A command that must be contained where nothing can contain it is
-	// answered here, ahead of the policy, the classifier and the card, as a
-	// session that requires containment answers its own: every answer the
-	// person could give ends in the same refusal, so there is no decision to
-	// put to them and none is filed. The refusal is the call's result, which
-	// is where the child can act on it.
-	// See docs/capabilities/containment.md#containment-can-be-required.
-	if tc.Name == tools.ExecCommandName && c.env.CommandRefusal != "" {
-		c.appendEntry(TranscriptEntry{Kind: EntrySystem,
-			Text:   "Refused: " + title + " — nothing is containing this agent's commands",
-			Result: c.env.CommandRefusal})
-		return c.env.CommandRefusal
-	}
 	policy := s.childPolicy(c)
 	decision, reason := policy.Decide(action)
 	// The policy's reason is free text until it goes through ReasonCode,

@@ -892,6 +892,15 @@ func AskReason(a agent.Action) string {
 	return ReasonPolicy
 }
 
+// ContainmentRequired is the clause every refusal of a command that must be
+// contained, on a host with nothing to contain it, carries after whose
+// requirement it is. One function words those refusals — the session's, a
+// headless run's and a child's alike — round this clause, so ClassFromResult
+// files all of them under ClassHarnessContainment without the sentence the
+// model reads growing a marker.
+// See docs/capabilities/containment.md#containment-can-be-required.
+const ContainmentRequired = "containment and no mechanism is in force"
+
 // ClassFromResult names the class of a failed result, or "empty" for a
 // search that found nothing, by matching the shape of the text. The text
 // itself never leaves this function.
@@ -912,6 +921,12 @@ func ClassFromResult(result string) string {
 	}
 	if tools.ExecDidNotCompleteOf(result) {
 		return ClassDidNotComplete
+	}
+	// A refusal for want of containment is read on its first line and before
+	// the ladder, for the reason above: the host's reason beside it names a
+	// program "not found", which the ladder would file as a stale path.
+	if first, _, _ := strings.Cut(result, "\n"); strings.Contains(first, ContainmentRequired) {
+		return ClassHarnessContainment
 	}
 	r := strings.ToLower(result)
 	switch {
