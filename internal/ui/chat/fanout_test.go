@@ -355,8 +355,44 @@ func TestFanoutBlockedLaneStatesWhatItNeeds(t *testing.T) {
 	if !strings.Contains(view, "echo hi") {
 		t.Fatalf("a blocked child's lane does not say what it is waiting for:\n%s", view)
 	}
-	if !strings.Contains(view, "2 needs you") {
-		t.Fatalf("the header does not carry the blocked count:\n%s", view)
+	// The header counts the two with the running and leaves the ask to the
+	// lanes (docs/interface/departures.md#the-childrens-tally-says-who-needs-you-first).
+	if !strings.Contains(view, "2 running") || strings.Contains(view, "2 needs you") {
+		t.Fatalf("the header should count the blocked lanes, not restate the ask:\n%s", view)
+	}
+}
+
+// A fan-out scrolled out of the pane takes its lanes with it, and the frame's
+// title is what still says a child needs you: it counts a routed child ask
+// among the decisions waiting, and it is on screen at every width. The vitals
+// segment beside it is a count and says nothing of the ask
+// (docs/interface/departures.md#the-childrens-tally-says-who-needs-you-first).
+func TestFanoutScrolledAwayLeavesTheAskToTheFrameTitle(t *testing.T) {
+	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: gatedEnv()})
+	t.Cleanup(sup.Close)
+	m := newSubagentModel(t, sup)
+
+	m.beginSpawnBatch()
+	spawnInto(t, sup, `{"role":"researcher","task":"one"}`)
+	m.appendSpawnEntry(spawnRowEntry("one"))
+	waitFor(t, func() bool { _, blocked := sup.ActiveCounts(); return blocked == 1 })
+	for i := range 60 {
+		m.transcript = append(m.transcript, entry{kind: entryAssistant, text: "filler line " + strconv.Itoa(i)})
+	}
+	m.childAsks = []*subagent.Ask{subagent.NewAsk("researcher-1", subagent.AskCommand, "run echo hi")}
+
+	for _, width := range []int{60, 80, 130} {
+		updated, _ := m.Update(tea.WindowSizeMsg{Width: width, Height: 30})
+		view := ansi.Strip(updated.(Model).View().Content)
+		if strings.Contains(view, "⚠ needs you") {
+			t.Fatalf("width %d: the block should be scrolled out of the pane:\n%s", width, view)
+		}
+		if !strings.Contains(view, "⏸ 1 waiting") {
+			t.Fatalf("width %d: the frame's title should count the child's ask:\n%s", width, view)
+		}
+		if strings.Contains(view, "⚠1") {
+			t.Fatalf("width %d: the vitals should count the child, not badge its ask:\n%s", width, view)
+		}
 	}
 }
 

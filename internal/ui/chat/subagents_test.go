@@ -187,7 +187,7 @@ func TestAgentRowsAndBadge(t *testing.T) {
 	if !strings.Contains(view, "researcher-1") {
 		t.Fatalf("view missing the agent progress row:\n%s", view)
 	}
-	if bar := m.renderStatusBar(120); !strings.Contains(bar, "1 agent") {
+	if bar := m.renderStatusBar(120); !strings.Contains(bar, "◇1") {
 		t.Fatalf("status bar missing the agent badge: %q", bar)
 	}
 	if m.agentRowsHeight() != 1 {
@@ -284,7 +284,7 @@ func TestAgentRowsGoUnderARoutedCard(t *testing.T) {
 	if got := m.agentRowsHeight(); got != 0 {
 		t.Fatalf("agentRowsHeight = %d under a routed card, want 0", got)
 	}
-	if bar := ansi.Strip(m.renderStatusBar(120)); !strings.Contains(bar, "1 agent") {
+	if bar := ansi.Strip(m.renderStatusBar(120)); !strings.Contains(bar, "◇1") {
 		t.Fatalf("the vitals chip stopped counting the session's agents: %q", bar)
 	}
 	if got := m.waitingCount(); got != 1 {

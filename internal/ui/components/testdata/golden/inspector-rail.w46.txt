@@ -46,7 +46,7 @@
   ▎✎ internal/agent/loop.go          +18 −3 3t
   ▎✎ internal/ui/chat/model.go           +9 −1
 
-  AGENTS               1 needs you · 1 running
+  AGENTS                             2 running
 ❯ ◇ orchestrator                         $0.12
     ⠋ round 3 · streaming…                    
   ⚠ runner-2                             $0.01
@@ -181,7 +181,7 @@
   ⚠ memory                       3 did not fit
 
 · the session map · the keyboard is in writer-2
-  AGENTS               1 needs you · 2 running
+  AGENTS                             3 running
   ⚠ orchestrator                         $0.12
     round 3 · waiting on you                  
   ⚠ reviewer-5                           $0.03
@@ -198,7 +198,7 @@
   … 2 more                                    
 
 · the map with the rail shorter than it (height 12)
-  AGENTS               1 needs you · 2 running
+  AGENTS                             3 running
   ⚠ orchestrator                         $0.12
     round 3 · waiting on you                  
   ⚠ reviewer-5                           $0.03
@@ -212,7 +212,7 @@
   … 3 more                                    
 
 · a fan-out of five · blocked, near its budget, off task, failed, nested
-  AGENTS               1 needs you · 3 running
+  AGENTS                             4 running
 ❯ ◇ orchestrator                         $0.21
     ⠹ round 6 · streaming…                    
   ⚠ reviewer-3                           $0.02
@@ -272,7 +272,7 @@
   alt+a manager · alt+] next · click to attach
 
 · a failed sibling beside a nested pair · the subtree moves whole
-  AGENTS               1 needs you · 2 running
+  AGENTS                             3 running
 ❯ ◇ orchestrator                         $0.18
     ⠹ round 5 · streaming…                    
   ◇ writer-3                             $0.03
@@ -296,7 +296,7 @@
   alt+a manager · alt+] next · click to attach
 
 · the same map three rows short · what it gives up, in order
-  AGENTS               1 needs you · 4 running
+  AGENTS                             5 running
 ❯ ◇ orchestrator                         $0.21
     ⠹ round 6 · streaming…                    
   ⚠ reviewer-3                           $0.02
@@ -387,7 +387,7 @@
   ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252minternal/agent/loop.go␛[m          ␛[92m+18␛[m ␛[91m−3␛[m ␛[38;5;241m3t␛[m
   ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252minternal/ui/chat/model.go␛[m           ␛[92m+9␛[m ␛[91m−1␛[m
 
-  ␛[1;94mAGENTS␛[m               ␛[91m1 needs you␛[m␛[38;5;241m · ␛[m␛[38;5;205m1 running␛[m
+  ␛[1;94mAGENTS␛[m                             ␛[38;5;205m2 running␛[m
 ␛[94m❯␛[m ␛[94m␛[m␛[38;5;252m␛[m␛[38;5;241m␛[m␛[48;5;62m␛[94m␛[m␛[48;5;62m␛[94m◇␛[m␛[48;5;62m ␛[38;5;252m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[97;48;5;62morchestrator                         $0.12␛[m␛[m
     ␛[38;5;205m⠋ round 3 · streaming…␛[m                    
   ␛[91m⚠␛[m ␛[38;5;252mrunner-2␛[m                             ␛[38;5;241m$0.01␛[m
@@ -522,7 +522,7 @@
   ␛[38;5;214m⚠␛[m ␛[38;5;252mmemory␛[m                       ␛[38;5;241m3 did not fit␛[m
 
 · the session map · the keyboard is in writer-2
-  ␛[1;94mAGENTS␛[m               ␛[91m1 needs you␛[m␛[38;5;241m · ␛[m␛[38;5;205m2 running␛[m
+  ␛[1;94mAGENTS␛[m                             ␛[38;5;205m3 running␛[m
   ␛[91m⚠␛[m ␛[38;5;252morchestrator␛[m                         ␛[38;5;241m$0.12␛[m
     ␛[38;5;245mround 3 · waiting on you␛[m                  
   ␛[91m⚠␛[m ␛[38;5;252mreviewer-5␛[m                           ␛[38;5;241m$0.03␛[m
@@ -539,7 +539,7 @@
   ␛[38;5;241m… 2 more␛[m                                    
 
 · the map with the rail shorter than it (height 12)
-  ␛[1;94mAGENTS␛[m               ␛[91m1 needs you␛[m␛[38;5;241m · ␛[m␛[38;5;205m2 running␛[m
+  ␛[1;94mAGENTS␛[m                             ␛[38;5;205m3 running␛[m
   ␛[91m⚠␛[m ␛[38;5;252morchestrator␛[m                         ␛[38;5;241m$0.12␛[m
     ␛[38;5;245mround 3 · waiting on you␛[m                  
   ␛[91m⚠␛[m ␛[38;5;252mreviewer-5␛[m                           ␛[38;5;241m$0.03␛[m
@@ -553,7 +553,7 @@
   ␛[38;5;241m… 3 more␛[m                                    
 
 · a fan-out of five · blocked, near its budget, off task, failed, nested
-  ␛[1;94mAGENTS␛[m               ␛[91m1 needs you␛[m␛[38;5;241m · ␛[m␛[38;5;205m3 running␛[m
+  ␛[1;94mAGENTS␛[m                             ␛[38;5;205m4 running␛[m
 ␛[94m❯␛[m ␛[94m␛[m␛[38;5;252m␛[m␛[38;5;241m␛[m␛[48;5;62m␛[94m␛[m␛[48;5;62m␛[94m◇␛[m␛[48;5;62m ␛[38;5;252m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[97;48;5;62morchestrator                         $0.21␛[m␛[m
     ␛[38;5;205m⠹ round 6 · streaming…␛[m                    
   ␛[91m⚠␛[m ␛[38;5;252mreviewer-3␛[m                           ␛[38;5;241m$0.02␛[m
@@ -613,7 +613,7 @@
   ␛[38;5;241malt+a manager · alt+] next · click to attach␛[m
 
 · a failed sibling beside a nested pair · the subtree moves whole
-  ␛[1;94mAGENTS␛[m               ␛[91m1 needs you␛[m␛[38;5;241m · ␛[m␛[38;5;205m2 running␛[m
+  ␛[1;94mAGENTS␛[m                             ␛[38;5;205m3 running␛[m
 ␛[94m❯␛[m ␛[94m␛[m␛[38;5;252m␛[m␛[38;5;241m␛[m␛[48;5;62m␛[94m␛[m␛[48;5;62m␛[94m◇␛[m␛[48;5;62m ␛[38;5;252m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[97;48;5;62morchestrator                         $0.18␛[m␛[m
     ␛[38;5;205m⠹ round 5 · streaming…␛[m                    
   ␛[94m◇␛[m ␛[38;5;252mwriter-3␛[m                             ␛[38;5;241m$0.03␛[m
@@ -637,7 +637,7 @@
   ␛[38;5;241malt+a manager · alt+] next · click to attach␛[m
 
 · the same map three rows short · what it gives up, in order
-  ␛[1;94mAGENTS␛[m               ␛[91m1 needs you␛[m␛[38;5;241m · ␛[m␛[38;5;205m4 running␛[m
+  ␛[1;94mAGENTS␛[m                             ␛[38;5;205m5 running␛[m
 ␛[94m❯␛[m ␛[94m␛[m␛[38;5;252m␛[m␛[38;5;241m␛[m␛[48;5;62m␛[94m␛[m␛[48;5;62m␛[94m◇␛[m␛[48;5;62m ␛[38;5;252m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[97;48;5;62morchestrator                         $0.21␛[m␛[m
     ␛[38;5;205m⠹ round 6 · streaming…␛[m                    
   ␛[91m⚠␛[m ␛[38;5;252mreviewer-3␛[m                           ␛[38;5;241m$0.02␛[m

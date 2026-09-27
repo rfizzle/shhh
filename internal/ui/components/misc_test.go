@@ -12,12 +12,18 @@ import (
 func TestCockpit_Segments(t *testing.T) {
 	c := Cockpit{Mode: "accept edits", ModeKind: CockpitPermissive, Round: "round 7/25",
 		CtxPct: 62, Tokens: "↑41.2k ↓9.8k", Spend: "$0.14", Model: "gpt-5.2",
-		Agents: 2, AgentsBlocked: 1}
+		Agents: 2}
 	view := c.View(120)
-	for _, want := range []string{"⏵⏵ accept edits", "round 7/25", "ctx", "62%", "▰", "$0.14", "◇ 2 agents", "⚠1", "gpt-5.2"} {
+	for _, want := range []string{"⏵⏵ accept edits", "round 7/25", "ctx", "62%", "▰", "$0.14", "◇2", "gpt-5.2"} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("cockpit should contain %q:\n%s", want, view)
 		}
+	}
+	// The agents segment is a count: a child waiting on the user says so on
+	// its own lane and in the frame's title, not here as well
+	// (docs/interface/departures.md#the-childrens-tally-says-who-needs-you-first).
+	if strings.Contains(view, "⚠") {
+		t.Fatalf("the agents segment should carry no blocked badge:\n%s", view)
 	}
 	gated := Cockpit{Mode: "read-only", ModeKind: CockpitGated, CtxPct: -1}
 	if !strings.Contains(gated.View(80), "⏸ read-only") {
@@ -195,7 +201,7 @@ func TestDropToFit_GivesUpTheLastFieldWhole(t *testing.T) {
 // ever, and it loops inside the render path of a narrow terminal.
 func TestCockpit_ViewTerminatesAtEveryWidth(t *testing.T) {
 	c := Cockpit{Mode: "accept edits", ModeKind: CockpitPermissive, Round: "round 7/25",
-		CtxPct: 62, Tokens: "↑41.2k ↓9.8k", Spend: "$0.14", Agents: 2, AgentsBlocked: 1,
+		CtxPct: 62, Tokens: "↑41.2k ↓9.8k", Spend: "$0.14", Agents: 2,
 		Extra: []string{"1 queued"}, Reasoning: "think medium", Model: "claude-opus-5"}
 	for w := 0; w <= 120; w++ {
 		if got := lipgloss.Width(c.View(w)); got > w && w > 0 {

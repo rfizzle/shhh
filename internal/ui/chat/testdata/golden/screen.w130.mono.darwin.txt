@@ -81,9 +81,9 @@
     ▎✗ run     go test ./internal/agent/...                       exit 1    21s  │  0 files this turn · 6 tools                   
       --- FAIL: TestRoundLimit                                                   │                                                
                                                                                  │  ALERTS                            1 standing  
-  ◇ fan-out    4 agents · 4 of 32 spawned                    4 needs you         │   ✗ go test  exit 1                    turn 1  
+  ◇ fan-out    4 agents · 4 of 32 spawned                      4 running         │   ✗ go test  exit 1                    turn 1  
      ◇ agent   researcher-1 · Say where the round…  ⚠ needs you · 1 tool       ┃ │                                                
-      waiting approval: run echo hi                                            ┃ │  AGENTS                           4 needs you  
+      waiting approval: run echo hi                                            ┃ │  AGENTS                             4 running  
     └◇ agent   researcher-4 · Say who calls the l…  ⚠ needs you · 1 tool       ┃ │❯ ⊘ orchestrator                         $0.51  
       waiting approval: run echo hi                                            ┃ │    ready                                       
      ◇ agent   researcher-2 · Say where the round…  ⚠ needs you · 1 tool       ┃ │  ⚠ researcher-1                                
@@ -103,7 +103,7 @@
   ⚠ 4 agents waiting approval                                                                                                     
   ╭─ ✓ done ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮  
   │ ▸                                                                                                                          │  
-  ├─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · ↑41.2k ↓9.8k · $0.51 · ◇ 4 agents ⚠4 · gpt-4o ──────────────────────────────────────────────┤  
+  ├─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · ↑41.2k ↓9.8k · $0.51 · ◇4 · gpt-4o ─────────────────────────────────────────────────────────┤  
   ╰─ [enter] send · [ctrl+g] editor · [ctrl+v] attach · [ctrl+/] palette · [shift+tab] mode · [ctrl+d] ×2 quit ────────────────╯  
 
 · …and that child's request on the card · the rows go
@@ -124,7 +124,7 @@
      ✗ go test ./internal/agent/... failing · exit 1 · 21s                                                                    ┃   
                                                                                                                               ┃   
   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────  
-  ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · ↑41.2k ↓9.8k · $0.51 · ◇ 4 agents ⚠4                                                      gpt-4o  
+  ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · ↑41.2k ↓9.8k · $0.51 · ◇4                                                                 gpt-4o  
   ──── DECISION 1/1 ────────────────────────────────────────────────────────────────────────────────────────────────────────────  
   ╭─ researcher-2 ▸ Approve command ─────────────────────────────────────────────────────────────────────────────────── ⚠ low ─╮  
   │ $ run echo hi                                                                                                              │  
@@ -242,9 +242,9 @@
     ␛[38;5;254m▎✗␛[m ␛[38;5;254mrun␛[m     ␛[38;5;254mgo test ./internal/agent/...␛[m                       ␛[38;5;254mexit 1␛[m    ␛[38;5;244m21s␛[m  ␛[38;5;244m│␛[m  ␛[38;5;244m0 files this turn · 6 tools␛[m                   
       ␛[38;5;244m--- FAIL: TestRoundLimit␛[m                                                   ␛[38;5;244m│␛[m                                                
                                                                                  ␛[38;5;244m│␛[m  ␛[38;5;254;1mALERTS␛[m                            ␛[38;5;254m1 standing␛[m  
-  ␛[38;5;254m◇␛[m ␛[38;5;254mfan-out␛[m    ␛[38;5;244m4 agents · 4 of 32 spawned␛[m                    ␛[38;5;254m4 needs you␛[m         ␛[38;5;244m│␛[m   ␛[38;5;254m✗␛[m ␛[38;5;254mgo test␛[m  ␛[38;5;244mexit 1␛[m                    ␛[38;5;244mturn 1␛[m  
+  ␛[38;5;254m◇␛[m ␛[38;5;254mfan-out␛[m    ␛[38;5;244m4 agents · 4 of 32 spawned␛[m                      ␛[38;5;254m4 running␛[m         ␛[38;5;244m│␛[m   ␛[38;5;254m✗␛[m ␛[38;5;254mgo test␛[m  ␛[38;5;244mexit 1␛[m                    ␛[38;5;244mturn 1␛[m  
      ␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mresearcher-1␛[38;5;244m · Say where the round…␛[m  ␛[38;5;254m⚠ needs you␛[38;5;244m · 1 tool␛[m       ␛[38;5;244m┃␛[m ␛[38;5;244m│␛[m                                                
-      ␛[38;5;244mwaiting approval: run echo hi␛[m                                            ␛[38;5;244m┃␛[m ␛[38;5;244m│␛[m  ␛[38;5;254;1mAGENTS␛[m                           ␛[38;5;254m4 needs you␛[m  
+      ␛[38;5;244mwaiting approval: run echo hi␛[m                                            ␛[38;5;244m┃␛[m ␛[38;5;244m│␛[m  ␛[38;5;254;1mAGENTS␛[m                             ␛[38;5;254m4 running␛[m  
     ␛[38;5;244m└␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mresearcher-4␛[38;5;244m · Say who calls the l…␛[m  ␛[38;5;254m⚠ needs you␛[38;5;244m · 1 tool␛[m       ␛[38;5;244m┃␛[m ␛[38;5;244m│␛[38;5;254m❯␛[m ␛[38;5;244;48;5;237m⊘␛[39m ␛[38;5;254morchestrator                         $0.51␛[m  
       ␛[38;5;244mwaiting approval: run echo hi␛[m                                            ␛[38;5;244m┃␛[m ␛[38;5;244m│␛[m    ␛[38;5;244mready␛[m                                       
      ␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mresearcher-2␛[38;5;244m · Say where the round…␛[m  ␛[38;5;254m⚠ needs you␛[38;5;244m · 1 tool␛[m       ␛[38;5;244m┃␛[m ␛[38;5;244m│␛[m  ␛[38;5;254m⚠␛[m ␛[38;5;254mresearcher-1␛[m                                
@@ -264,7 +264,7 @@
   ␛[38;5;254m⚠ 4 agents waiting approval␛[m                                                                                                     
   ␛[38;5;244m╭─␛[m ␛[38;5;254m✓ done␛[m ␛[38;5;244m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮␛[m  
   ␛[38;5;244m│␛[m ␛[38;5;244m▸␛[m ␛[38;5;254m                                                                                                                        ␛[m ␛[38;5;244m│␛[m  
-  ␛[38;5;244m├─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mctx 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · ↑41.2k ↓9.8k · $0.51 · ␛[38;5;254m◇ 4 agents␛[m ␛[38;5;254m⚠4␛[38;5;244m · ␛[38;5;254mgpt-4o␛[m ␛[38;5;244m──────────────────────────────────────────────┤␛[m  
+  ␛[38;5;244m├─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mctx 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · ↑41.2k ↓9.8k · $0.51 · ␛[38;5;254m◇4␛[38;5;244m · ␛[38;5;254mgpt-4o␛[m ␛[38;5;244m─────────────────────────────────────────────────────────┤␛[m  
   ␛[38;5;244m╰─␛[m ␛[38;5;254m[enter]␛[38;5;244m send · ␛[38;5;254m[ctrl+g]␛[38;5;244m editor · ␛[38;5;254m[ctrl+v]␛[38;5;244m attach · ␛[38;5;254m[ctrl+/]␛[38;5;244m palette · ␛[38;5;254m[shift+tab]␛[38;5;244m mode · ␛[38;5;254m[ctrl+d]␛[38;5;244m ×2 quit␛[m ␛[38;5;244m────────────────╯␛[m  
 
 · …and that child's request on the card · the rows go
@@ -285,7 +285,7 @@
      ␛[38;5;254m✗␛[m ␛[38;5;254mgo test ./internal/agent/... failing␛[38;5;244m · exit 1 · 21s␛[m                                                                    ␛[38;5;244m┃␛[m   
                                                                                                                               ␛[38;5;244m┃␛[m   
   ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m  
-  ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mctx 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · ↑41.2k ↓9.8k · $0.51 · ␛[38;5;254m◇ 4 agents␛[m ␛[38;5;254m⚠4␛[m                                                      ␛[38;5;254mgpt-4o␛[m  
+  ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mctx 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · ↑41.2k ↓9.8k · $0.51 · ␛[38;5;254m◇4␛[m                                                                 ␛[38;5;254mgpt-4o␛[m  
   ␛[38;5;244m────␛[m ␛[38;5;254;1mDECISION 1/1␛[m ␛[38;5;244m────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m  
   ␛[38;5;254m╭─ ␛[1mresearcher-2 ▸ Approve command ␛[22m─────────────────────────────────────────────────────────────────────────────────── ⚠ low ─╮␛[m  
   ␛[38;5;254m│␛[m ␛[38;5;254m$␛[m ␛[38;5;254mrun echo hi␛[m                                                                                                              ␛[38;5;254m│␛[m  

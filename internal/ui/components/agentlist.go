@@ -684,9 +684,10 @@ func (l *AgentList) hints() []KeyOffer {
 	return append(segments, keyOfferAs(keys.Agent.Back, managerWayOut))
 }
 
-// tally is the manager's title-rail summary: the same sentence the fan-out
-// header states, about the children this list holds. The orchestrator is not
-// a child and is left out of it. A child parked in front of a check is
+// tally is the manager's title-rail summary: the counts the fan-out header
+// states, about the children this list holds, led by who needs you — the
+// border is the one place outside a lane that says so. The orchestrator is
+// not a child and is left out of it. A child parked in front of a check is
 // counted as waiting, as the fan-out header counts it, since nobody held it.
 func (l *AgentList) tally() string {
 	var states []FanoutState
@@ -702,7 +703,7 @@ func (l *AgentList) tally() string {
 	if len(states) == 0 {
 		return ""
 	}
-	return waitingTally(states, waits)
+	return waitingTally(states, waits, true)
 }
 
 // visibleRows renders the scrolling half of the list windowed to a body

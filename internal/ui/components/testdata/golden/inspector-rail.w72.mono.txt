@@ -45,7 +45,7 @@
   ▎✎ internal/agent/loop.go                                    +18 −3 3t
   ▎✎ internal/ui/chat/model.go                                     +9 −1
 
-  AGENTS                                         1 needs you · 1 running
+  AGENTS                                                       2 running
 ❯ ◇ orchestrator                                                   $0.12
     ⠋ round 3 · streaming…                                              
   ⚠ runner-2                                                       $0.01
@@ -179,7 +179,7 @@
   ⚠ memory                                                 3 did not fit
 
 · the session map · the keyboard is in writer-2
-  AGENTS                                         1 needs you · 2 running
+  AGENTS                                                       3 running
   ⚠ orchestrator                                                   $0.12
     round 3 · waiting on you                                            
   ⚠ reviewer-5                                                     $0.03
@@ -196,7 +196,7 @@
   … 2 more                                                              
 
 · the map with the rail shorter than it (height 12)
-  AGENTS                                         1 needs you · 2 running
+  AGENTS                                                       3 running
   ⚠ orchestrator                                                   $0.12
     round 3 · waiting on you                                            
   ⚠ reviewer-5                                                     $0.03
@@ -210,7 +210,7 @@
   … 3 more                                                              
 
 · a fan-out of five · blocked, near its budget, off task, failed, nested
-  AGENTS                                         1 needs you · 3 running
+  AGENTS                                                       4 running
 ❯ ◇ orchestrator                                                   $0.21
     ⠹ round 6 · streaming…                                              
   ⚠ reviewer-3                                                     $0.02
@@ -270,7 +270,7 @@
   alt+a manager · alt+] next · click to attach                          
 
 · a failed sibling beside a nested pair · the subtree moves whole
-  AGENTS                                         1 needs you · 2 running
+  AGENTS                                                       3 running
 ❯ ◇ orchestrator                                                   $0.18
     ⠹ round 5 · streaming…                                              
   ◇ writer-3                                                       $0.03
@@ -294,7 +294,7 @@
   alt+a manager · alt+] next · click to attach                          
 
 · the same map three rows short · what it gives up, in order
-  AGENTS                                         1 needs you · 4 running
+  AGENTS                                                       5 running
 ❯ ◇ orchestrator                                                   $0.21
     ⠹ round 6 · streaming…                                              
   ⚠ reviewer-3                                                     $0.02
@@ -384,7 +384,7 @@
   ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254minternal/agent/loop.go␛[m                                    ␛[38;5;254m+18␛[m ␛[38;5;254m−3␛[m ␛[38;5;244m3t␛[m
   ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254minternal/ui/chat/model.go␛[m                                     ␛[38;5;254m+9␛[m ␛[38;5;254m−1␛[m
 
-  ␛[1;38;5;254mAGENTS␛[m                                         ␛[38;5;254m1 needs you␛[m␛[38;5;244m · ␛[m␛[38;5;254m1 running␛[m
+  ␛[1;38;5;254mAGENTS␛[m                                                       ␛[38;5;254m2 running␛[m
 ␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254m◇␛[m␛[48;5;237m ␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237morchestrator                                                   $0.12␛[m␛[m
     ␛[38;5;254m⠋ round 3 · streaming…␛[m                                              
   ␛[38;5;254m⚠␛[m ␛[38;5;254mrunner-2␛[m                                                       ␛[38;5;244m$0.01␛[m
@@ -518,7 +518,7 @@
   ␛[38;5;254m⚠␛[m ␛[38;5;254mmemory␛[m                                                 ␛[38;5;244m3 did not fit␛[m
 
 · the session map · the keyboard is in writer-2
-  ␛[1;38;5;254mAGENTS␛[m                                         ␛[38;5;254m1 needs you␛[m␛[38;5;244m · ␛[m␛[38;5;254m2 running␛[m
+  ␛[1;38;5;254mAGENTS␛[m                                                       ␛[38;5;254m3 running␛[m
   ␛[38;5;254m⚠␛[m ␛[38;5;254morchestrator␛[m                                                   ␛[38;5;244m$0.12␛[m
     ␛[38;5;244mround 3 · waiting on you␛[m                                            
   ␛[38;5;254m⚠␛[m ␛[38;5;254mreviewer-5␛[m                                                     ␛[38;5;244m$0.03␛[m
@@ -535,7 +535,7 @@
   ␛[38;5;244m… 2 more␛[m                                                              
 
 · the map with the rail shorter than it (height 12)
-  ␛[1;38;5;254mAGENTS␛[m                                         ␛[38;5;254m1 needs you␛[m␛[38;5;244m · ␛[m␛[38;5;254m2 running␛[m
+  ␛[1;38;5;254mAGENTS␛[m                                                       ␛[38;5;254m3 running␛[m
   ␛[38;5;254m⚠␛[m ␛[38;5;254morchestrator␛[m                                                   ␛[38;5;244m$0.12␛[m
     ␛[38;5;244mround 3 · waiting on you␛[m                                            
   ␛[38;5;254m⚠␛[m ␛[38;5;254mreviewer-5␛[m                                                     ␛[38;5;244m$0.03␛[m
@@ -549,7 +549,7 @@
   ␛[38;5;244m… 3 more␛[m                                                              
 
 · a fan-out of five · blocked, near its budget, off task, failed, nested
-  ␛[1;38;5;254mAGENTS␛[m                                         ␛[38;5;254m1 needs you␛[m␛[38;5;244m · ␛[m␛[38;5;254m3 running␛[m
+  ␛[1;38;5;254mAGENTS␛[m                                                       ␛[38;5;254m4 running␛[m
 ␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254m◇␛[m␛[48;5;237m ␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237morchestrator                                                   $0.21␛[m␛[m
     ␛[38;5;254m⠹ round 6 · streaming…␛[m                                              
   ␛[38;5;254m⚠␛[m ␛[38;5;254mreviewer-3␛[m                                                     ␛[38;5;244m$0.02␛[m
@@ -609,7 +609,7 @@
   ␛[38;5;244malt+a manager · alt+] next · click to attach␛[m                          
 
 · a failed sibling beside a nested pair · the subtree moves whole
-  ␛[1;38;5;254mAGENTS␛[m                                         ␛[38;5;254m1 needs you␛[m␛[38;5;244m · ␛[m␛[38;5;254m2 running␛[m
+  ␛[1;38;5;254mAGENTS␛[m                                                       ␛[38;5;254m3 running␛[m
 ␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254m◇␛[m␛[48;5;237m ␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237morchestrator                                                   $0.18␛[m␛[m
     ␛[38;5;254m⠹ round 5 · streaming…␛[m                                              
   ␛[38;5;254m◇␛[m ␛[38;5;254mwriter-3␛[m                                                       ␛[38;5;244m$0.03␛[m
@@ -633,7 +633,7 @@
   ␛[38;5;244malt+a manager · alt+] next · click to attach␛[m                          
 
 · the same map three rows short · what it gives up, in order
-  ␛[1;38;5;254mAGENTS␛[m                                         ␛[38;5;254m1 needs you␛[m␛[38;5;244m · ␛[m␛[38;5;254m4 running␛[m
+  ␛[1;38;5;254mAGENTS␛[m                                                       ␛[38;5;254m5 running␛[m
 ␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254m◇␛[m␛[48;5;237m ␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237morchestrator                                                   $0.21␛[m␛[m
     ␛[38;5;254m⠹ round 6 · streaming…␛[m                                              
   ␛[38;5;254m⚠␛[m ␛[38;5;254mreviewer-3␛[m                                                     ␛[38;5;244m$0.02␛[m

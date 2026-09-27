@@ -914,12 +914,25 @@ func tallyStates(states []FanoutState) (running, blocked, held, done, failed int
 	return running, blocked, held, done, failed
 }
 
-// waitingTally states what a set of children still owes you. Whoever needs an
-// answer is said first and in del, because it is the only part of the line
-// that asks anything of you; the tally of finished children is left to the
-// rows until nothing is running, when it becomes the whole story. The fan-out
-// header, the manager's title rail and the rail's map are the same sentence
-// about the same children, so they are the same function.
+// waitingTally states a set of children in a few words, and it is the one
+// function that does, so the fan-out header, the manager's top border and the
+// rail's map cannot come to disagree about a count.
+//
+// owed says whether the line is also the place a child waiting on you is
+// said. It is only on the manager's border: the artboards draw the header and
+// the map's heading as counts, and a child that needs you is already said on
+// its own lane and row, and in the frame's title, which counts it among the
+// decisions waiting — a fourth and fifth telling was the same fact on every
+// surface at once
+// (docs/interface/departures.md#the-childrens-tally-says-who-needs-you-first).
+// Where it is said, it is said first and in del, because it is the only part
+// of the line that asks anything of you. A child waiting on you is still a
+// live child, so it is counted among the running in both forms, which is what
+// the artboard's `3 running · 1 needs you` over three children counts and
+// what the vitals' `◇3` counts too.
+//
+// The tally of finished children is left to the rows until nothing is
+// running, when it becomes the whole story.
 //
 // A hold parks each child at its own boundary, so the parks land one at a
 // time and the line is what says how far through that is — `2 held · 1
@@ -927,9 +940,7 @@ func tallyStates(states []FanoutState) (running, blocked, held, done, failed int
 // It goes between the two: a park is what the reader has just asked for and
 // what they are waiting to see land, and what is still running is the
 // remainder of it. The field never clips, so it says two things at most, and
-// where all three are true it is the two the reader is acting on. The
-// artboards state it running-first and in dim
-// (docs/interface/departures.md#the-childrens-tally-says-who-needs-you-first).
+// where all three are true it is the two the reader is acting on.
 //
 // slotWaits of the held children are counted as waiting instead. A child
 // parked in front of a check it asked to run is waiting for one of the
@@ -937,12 +948,13 @@ func tallyStates(states []FanoutState) (running, blocked, held, done, failed int
 // the reader stopped children they never touched. It is said after the held
 // clause and in the same dim, since it too is a child stopped at its
 // boundary, and the lane under it says what it waits for.
-func waitingTally(states []FanoutState, slotWaits int) string {
+func waitingTally(states []FanoutState, slotWaits int, owed bool) string {
 	running, blocked, held, done, failed := tallyStates(states)
 	waiting := min(slotWaits, held)
 	held -= waiting
+	running += blocked
 	var parts []string
-	if blocked > 0 {
+	if owed && blocked > 0 {
 		parts = append(parts, sty.Err.Render(fmt.Sprintf("%d needs you", blocked)))
 	}
 	if held > 0 {
@@ -987,8 +999,11 @@ func (b FanoutBlock) counts() (running, blocked, held, done, failed int) {
 	return tallyStates(b.states())
 }
 
-// headerOutcome states what the batch still owes you.
-func (b FanoutBlock) headerOutcome() string { return waitingTally(b.states(), b.slotWaits()) }
+// headerOutcome counts the batch. It is a count and not the tally the
+// manager's border carries: the lane that needs you says so itself.
+func (b FanoutBlock) headerOutcome() string {
+	return waitingTally(b.states(), b.slotWaits(), false)
+}
 
 // slotWaits counts the held lanes whose hold is a wait for a check slot.
 func (b FanoutBlock) slotWaits() int {

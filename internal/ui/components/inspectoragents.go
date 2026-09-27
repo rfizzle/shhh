@@ -323,9 +323,9 @@ func (r InspectorRail) mapOrder() []InspectorAgent {
 	return append(ordered, rest...)
 }
 
-// childTally is the heading's own sentence: what the children still owe you,
-// in the words the fan-out header and the manager's title rail state about
-// the same children. The orchestrator is not a child and is left out of it,
+// childTally is the heading's own count: the children, in the counts the
+// fan-out header and the manager's title rail state about the same children.
+// It does not say who needs you — the child's own row does. The orchestrator is not a child and is left out of it,
 // or a session with nothing running would head its map with "1 running".
 // A child parked in front of a check is counted as waiting, as the fan-out
 // header counts it, since nobody held it.
@@ -340,7 +340,7 @@ func (r InspectorRail) childTally() string {
 			}
 		}
 	}
-	return waitingTally(states, waits)
+	return waitingTally(states, waits, false)
 }
 
 // agentsFold is the marker the map folds behind: a count of sessions, which

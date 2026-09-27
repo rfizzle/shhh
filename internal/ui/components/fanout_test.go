@@ -80,8 +80,11 @@ func TestFanoutBlockedSortsToTheTop(t *testing.T) {
 	if !strings.Contains(lines[2], "waiting approval") {
 		t.Fatalf("the blocked lane does not say what it is waiting for: %q", lines[2])
 	}
-	if !strings.Contains(lines[0], "1 needs you") {
-		t.Fatalf("the header does not carry the blocked count: %q", lines[0])
+	// The header is a count, the blocked lane among the running: the lane is
+	// what says it needs you
+	// (docs/interface/departures.md#the-childrens-tally-says-who-needs-you-first).
+	if !strings.Contains(lines[0], "3 running") || strings.Contains(lines[0], "needs you") {
+		t.Fatalf("the header should count the live lanes and leave the ask to the lane: %q", lines[0])
 	}
 }
 
@@ -301,13 +304,12 @@ func TestFanoutHeaderCountsTheParksAsTheyLand(t *testing.T) {
 	if !strings.Contains(header, "2 held · 1 running") {
 		t.Fatalf("the header should count the parks beside what is still going: %q", header)
 	}
-	// A child that asks for an answer while the parks land is what the field
-	// keeps instead of the remainder: the tally says two things at most, and
-	// the two are the ones the reader is acting on.
+	// A child that asks for an answer while the parks land is a live child,
+	// and the header counts it with the running: the ask is said on its lane.
 	block.Lanes = append(block.Lanes, FanoutLane{State: FanoutBlocked, Name: "d"})
 	header = plainLines(block.View(110))[0]
-	if !strings.Contains(header, "1 needs you · 2 held") || strings.Contains(header, "running") {
-		t.Fatalf("the tally should keep the two clauses the reader acts on: %q", header)
+	if !strings.Contains(header, "2 held · 2 running") || strings.Contains(header, "needs you") {
+		t.Fatalf("the header should count the parks beside the live children: %q", header)
 	}
 }
 

@@ -689,9 +689,9 @@ func (m Model) cockpitData(includeQueued bool) components.Cockpit {
 	if p := m.policyLabel(); p != "" {
 		c.Extra = append(c.Extra, p)
 	}
-	// Working sub-agents, with blocked-on-approval count.
+	// Working sub-agents, a child blocked on an approval among them.
 	if m.subagents != nil {
-		c.Agents, c.AgentsBlocked = m.subagents.ActiveCounts()
+		c.Agents, _ = m.subagents.ActiveCounts()
 	}
 	return c
 }

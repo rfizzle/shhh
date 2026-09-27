@@ -11,7 +11,7 @@
 
 ── layout ──────────────────────────────────────────────────
 · mid-flight · one child is waiting on you, the session's spawn count on the header
-◇ fan-out    4 agents · 4 of 32 spawned           1 needs you · 2 running  1m12s
+◇ fan-out    4 agents · 4 of 32 spawned                         3 running  1m12s
    ◇ agent   scout-3 · other ErrRoundLimi…  ⚠ needs you · 3 tools · $0.01    18s
     waiting approval: read ../shhh-plugins/registry.go
    ◇ agent   writer-1 · docs/loop.md          ▰▰▱▱▱ 2/5 · 6 tools · $0.02    12s
@@ -55,7 +55,7 @@
    ◇ agent   reader-3 · survey internal/ui    ⠹ working · 2 tools · $0.01    39s
 
 · a child that delegated · its lane says how many are under it
-◇ fan-out    4 agents                             1 needs you · 2 running  1m40s
+◇ fan-out    4 agents                                           3 running  1m40s
    ◇ agent   writer-1 · docs/loop.md         ▰▰▰▱▱ 3/5 · 14 tools · $0.05  1m40s
     2 agents under it
   └◇ agent   reviewer-1a · read the round…  ⚠ needs you · 2 tools · $0.01    22s
@@ -89,7 +89,7 @@
 
 ── ansi ────────────────────────────────────────────────────
 · mid-flight · one child is waiting on you, the session's spawn count on the header
-␛[38;5;254m◇␛[m ␛[38;5;254mfan-out␛[m    ␛[38;5;244m4 agents · 4 of 32 spawned␛[m           ␛[38;5;254m1 needs you␛[m␛[38;5;244m · ␛[m␛[38;5;254m2 running␛[m  ␛[38;5;244m1m12s␛[m
+␛[38;5;254m◇␛[m ␛[38;5;254mfan-out␛[m    ␛[38;5;244m4 agents · 4 of 32 spawned␛[m                         ␛[38;5;254m3 running␛[m  ␛[38;5;244m1m12s␛[m
    ␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mscout-3␛[m␛[38;5;244m · other ErrRoundLimi…␛[m  ␛[38;5;254m⚠ needs you␛[m␛[38;5;244m · ␛[m␛[38;5;244m3 tools · $0.01␛[m    ␛[38;5;244m18s␛[m
     ␛[38;5;244mwaiting approval: read ../shhh-plugins/registry.go␛[m
    ␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mwriter-1␛[m␛[38;5;244m · docs/loop.md␛[m          ␛[38;5;254m▰▰␛[m␛[38;5;244m▱▱▱␛[m ␛[38;5;254m2/5␛[m␛[38;5;244m · ␛[m␛[38;5;244m6 tools · $0.02␛[m    ␛[38;5;244m12s␛[m
@@ -133,7 +133,7 @@
    ␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mreader-3␛[m␛[38;5;244m · survey internal/ui␛[m    ␛[38;5;254m⠹ working␛[m␛[38;5;244m · ␛[m␛[38;5;244m2 tools · $0.01␛[m    ␛[38;5;244m39s␛[m
 
 · a child that delegated · its lane says how many are under it
-␛[38;5;254m◇␛[m ␛[38;5;254mfan-out␛[m    ␛[38;5;244m4 agents␛[m                             ␛[38;5;254m1 needs you␛[m␛[38;5;244m · ␛[m␛[38;5;254m2 running␛[m  ␛[38;5;244m1m40s␛[m
+␛[38;5;254m◇␛[m ␛[38;5;254mfan-out␛[m    ␛[38;5;244m4 agents␛[m                                           ␛[38;5;254m3 running␛[m  ␛[38;5;244m1m40s␛[m
    ␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mwriter-1␛[m␛[38;5;244m · docs/loop.md␛[m         ␛[38;5;254m▰▰▰␛[m␛[38;5;244m▱▱␛[m ␛[38;5;254m3/5␛[m␛[38;5;244m · ␛[m␛[38;5;244m14 tools · $0.05␛[m  ␛[38;5;244m1m40s␛[m
     ␛[38;5;244m2 agents under it␛[m
   ␛[38;5;244m└␛[m␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mreviewer-1a␛[m␛[38;5;244m · read the round…␛[m  ␛[38;5;254m⚠ needs you␛[m␛[38;5;244m · ␛[m␛[38;5;244m2 tools · $0.01␛[m    ␛[38;5;244m22s␛[m

@@ -38,10 +38,9 @@ type Cockpit struct {
 	// rail.
 	Tokens string
 	Spend  string
-	// Agents is the running sub-agent count; AgentsBlocked adds the ⚠ badge
-	// for children waiting on the user.
-	Agents        int
-	AgentsBlocked int
+	// Agents is the live sub-agent count, a child waiting on the user among
+	// them.
+	Agents int
 	// Extra segments (queued steering, policy label, …) render after the
 	// built-ins.
 	Extra []string
@@ -110,25 +109,23 @@ func (c Cockpit) ctxMeter() string {
 	return CtxMeter(c.CtxPct, c.WarnPct, c.AlertPct)
 }
 
-// agentsSegment renders the sub-agent count with the blocked badge, which
-// marks children waiting on the user.
+// agentsSegment renders the sub-agent count, `◇3`. It is a count and carries
+// no badge for a child waiting on the user: that child says so on its own
+// lane, and the frame's title counts its ask among the decisions waiting
+// (docs/interface/departures.md#the-childrens-tally-says-who-needs-you-first).
 func (c Cockpit) agentsSegment() string {
-	seg := sty.Info.Render(fmt.Sprintf("◇ %s", plural(c.Agents, "agent")))
-	if c.AgentsBlocked > 0 {
-		seg += " " + sty.Err.Render(fmt.Sprintf("⚠%d", c.AgentsBlocked))
-	}
-	return seg
+	return sty.Info.Render(fmt.Sprintf("◇%d", c.Agents))
 }
 
 // Rail drop ranks (docs/interface/surfaces.md#the-input-frame): when a
 // frame rail overflows, the highest rank present is dropped first.
 // Model/provider detail goes first, then token counts; context pressure,
-// spend, and error/blocked state are never the first fields removed, and the
+// spend, and error state are never the first fields removed, and the
 // mode segment is never dropped.
 const (
 	RailKeep   = iota // mode — never dropped
-	RailVital         // context meter, spend, blocked-agent state
-	RailNormal        // round counter, extras, idle agent count
+	RailVital         // context meter, spend
+	RailNormal        // round counter, extras, agent count
 	RailTokens        // token counts — dropped second
 	RailDetail        // model/provider detail — dropped first
 )
@@ -161,11 +158,7 @@ func (c Cockpit) RailSegments() []RailSegment {
 		segs = append(segs, RailSegment{Text: sty.Status.Render(e), Drop: RailNormal})
 	}
 	if c.Agents > 0 {
-		drop := RailNormal
-		if c.AgentsBlocked > 0 {
-			drop = RailVital
-		}
-		segs = append(segs, RailSegment{Text: c.agentsSegment(), Drop: drop})
+		segs = append(segs, RailSegment{Text: c.agentsSegment(), Drop: RailNormal})
 	}
 	// The level and the model are separate segments so the rail can drop the
 	// model and keep the level: the model is the detail rank the field-drop

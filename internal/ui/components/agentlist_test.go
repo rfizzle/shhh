@@ -402,15 +402,27 @@ func TestAgentListKeepsTodaysSemantics(t *testing.T) {
 	}
 }
 
-// TestAgentListTallyIsTheFanoutHeader: the manager's title rail and the
-// fan-out header are the same sentence about the same children.
+// TestAgentListTallyIsTheFanoutHeader: the manager's title rail, the fan-out
+// header and the rail's map heading count the same children the same way, and
+// only the manager's border leads with who needs you
+// (docs/interface/departures.md#the-childrens-tally-says-who-needs-you-first).
 func TestAgentListTallyIsTheFanoutHeader(t *testing.T) {
 	rows := managerRows()
 	block := FanoutBlock{Lanes: []FanoutLane{
 		{State: FanoutBlocked}, {State: FanoutRunning}, {State: FanoutFailed},
 	}}
-	if got, want := (&AgentList{Rows: rows}).tally(), block.headerOutcome(); got != want {
-		t.Fatalf("manager tally %q, fan-out header %q", got, want)
+	rail := InspectorRail{Agents: []InspectorAgent{
+		{Name: "orchestrator", Self: true, State: FanoutRunning},
+		{Name: "a", State: FanoutBlocked}, {Name: "b", State: FanoutRunning}, {Name: "c", State: FanoutFailed},
+	}}
+	if got := ansi.Strip((&AgentList{Rows: rows}).tally()); got != "1 needs you · 2 running" {
+		t.Fatalf("manager tally = %q, want the ask first and the live children counted", got)
+	}
+	if got := ansi.Strip(block.headerOutcome()); got != "2 running" {
+		t.Fatalf("fan-out header = %q, want the count alone", got)
+	}
+	if got := ansi.Strip(rail.childTally()); got != "2 running" {
+		t.Fatalf("rail heading = %q, want the count alone", got)
 	}
 	if view := ansi.Strip((&AgentList{Rows: rows}).View(96)); !strings.Contains(view, "1 needs you") {
 		t.Fatalf("the title rail must state who needs you:\n%s", view)

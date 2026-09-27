@@ -908,28 +908,38 @@ child whose progress you can see and whose name you cannot.
 ## The children's tally says who needs you first
 
 *A disagreement.* The `Agents` artboard heads the manager with
-`╭─ agents ─… 3 running · 1 needs you ─╮`, and the `Main` artboard heads the
-rail's map with `1 running`, both in dim. The binary states the same sentence
-the other way round, `1 needs you · 3 running`, with the count of running
-children in the spinner's tone; the fan-out header, the manager's top border
-and the rail's `AGENTS` heading all say it that way, because they are one
-sentence about the same children and are drawn by one function. The frame
-itself is the artboard's: Info, as every card waiting on an answer is.
+`╭─ agents ─… 3 running · 1 needs you ─╮`, in dim. The binary states the same
+two clauses the other way round, `1 needs you · 3 running`, with the count of
+running children in the spinner's tone. The frame itself is the artboard's:
+Info, as every card waiting on an answer is.
 
-The clause that asks something of you is the only one of them the reader has
-to act on, so it is read first; running children are the remainder, and a
-hold that is landing reads `2 held · 1 running` in the same order — what was
-asked for, then what is still to arrive. The count of running children is in
-the tone every live thing in the product is drawn in, the spinner's, rather
-than in dim beside a clause in del, which would make the one line that says
-work is going on the quietest thing on the border.
+The manager's border is the one place outside a child's own lane or row that
+says a child needs you, and the frame's title (`⏸ 1 waiting`, counting the
+child's routed ask among the decisions waiting) is the other. Everywhere else
+the artboards draw a count and the binary follows them: the rail's `AGENTS`
+heading (`3 running`, the `Main` artboard's), the vitals' `◇3`, and the
+fan-out header, which the `Agents` artboard draws as `▸ 3 agents · 1m 12s`
+and the binary as the same with `3 running` in the outcome field — the field
+is what says how far a hold has landed (`2 held · 1 running`,
+[a hold](../capabilities/subagents.md#a-hold-reaches-the-whole-fan-out)), and
+it stays a count. A child waiting on you is a live one, so every count takes
+it in with the running, as the artboard's `3 running · 1 needs you` over three
+children does. The header, the heading and the manager's border are drawn by
+one function, so they cannot disagree about a count.
+
+On the border the clause that asks something of you is the only one the
+reader has to act on, so it is read first; running children are the
+remainder. The count of running children is in the tone every live thing in
+the product is drawn in, the spinner's, rather than in dim beside a clause in
+del, which would make the one clause that says work is going on the quietest
+thing on the border.
 
 Three smaller differences on the manager's top border follow from the family
 rather than from this card. The title is `Agents`, capitalised like every
 card title the same artboard draws (`Approve edit`), because a lower-case word
 on a card's rail reads as a label rather than a heading. The count of
 children started, which no artboard draws, is a chip of its own in front of
-the tally (`4 of 32 spawned ─ 1 needs you · 1 running`) rather than joined to
+the tally (`4 of 32 spawned ─ 1 needs you · 2 running`) rather than joined to
 it with a separator: chips give up whole from the front as the terminal
 narrows, and a count joined into the tally could only be given up with it.
 And the run of rule between the title and the chips is in the chrome tone on
