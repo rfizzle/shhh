@@ -153,6 +153,24 @@ func TestScopeCommandAddsListsAndDrops(t *testing.T) {
 	}
 }
 
+// Granting the session's own checkout is recorded for writers, and the
+// notice says so rather than claiming the session's scope grew.
+// See docs/capabilities/subagents.md#a-child-inherits-its-scope-not-more.
+func TestScopeCommandGrantsTheCheckoutToWriters(t *testing.T) {
+	root := t.TempDir()
+	m := scopedModel(t, root, agent.ModeManual)
+	out := m.scopeCommand([]string{"/add-dir", root})
+	if !strings.Contains(out, "Granted") || !strings.Contains(out, "to writers") || strings.Contains(out, "Added") {
+		t.Fatalf("/add-dir <root> should say it grants the checkout to writers, got:\n%s", out)
+	}
+	if len(m.scope.Dirs()) != 1 {
+		t.Fatalf("the grant was not recorded: %v", m.scope.Dirs())
+	}
+	if out := m.scopeCommand([]string{"/add-dir"}); !strings.Contains(out, "for writers") {
+		t.Fatalf("bare /add-dir should mark the checkout's grant as a writer's, got:\n%s", out)
+	}
+}
+
 func TestScopeCommandNamesASensitiveGrant(t *testing.T) {
 	home, err := os.UserHomeDir()
 	if err != nil {

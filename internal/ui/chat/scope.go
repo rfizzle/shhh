@@ -145,6 +145,12 @@ func (m *Model) scopeCommand(parts []string) string {
 	}
 	class, reason := scope.Classify(dir)
 	note := "Added " + dir + " to the working scope: edits there no longer ask about leaving it, and contained commands can write there."
+	if m.scope.InRoot(dir) {
+		// The session always had its own checkout; what the grant changes
+		// is a writer's scope, which is its copy plus what was added.
+		// See docs/capabilities/subagents.md#a-child-inherits-its-scope-not-more.
+		note = "Granted " + dir + " to writers: it was already in this session's working scope, and now a writer's commands may write there directly rather than only through its patch. /add-dir drop " + dir + " takes it back."
+	}
 	if class == scope.Sensitive {
 		note += "\nThis is a sensitive directory — " + reason + ". Nothing else would have granted it; /add-dir drop " + dir + " takes it back."
 	}
@@ -164,7 +170,10 @@ func (m Model) scopeStatus() string {
 	for _, d := range dirs {
 		class, reason := scope.Classify(d)
 		line := "  added      " + d
-		if class == scope.Sensitive {
+		switch {
+		case m.scope.InRoot(d):
+			line += " — for writers; the session already had it"
+		case class == scope.Sensitive:
 			line += " — sensitive: " + reason
 		}
 		sb.WriteString(line + "\n")

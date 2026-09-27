@@ -79,7 +79,12 @@ func (s *Scope) Root() string {
 	return s.root
 }
 
-// Dirs are the granted directories, in the order they were added.
+// Dirs are the granted directories, in the order they were added — the root
+// or a directory inside it included, when the person granted one by name.
+// Those change nothing for the session, whose root was always in scope, and
+// everything for a writer: a writer's scope is its own copy plus these, so a
+// grant of the checkout is how a person lets a writer's commands write there
+// directly (docs/capabilities/subagents.md#a-child-inherits-its-scope-not-more).
 func (s *Scope) Dirs() []string {
 	if s == nil {
 		return nil
@@ -89,14 +94,52 @@ func (s *Scope) Dirs() []string {
 	return append([]string(nil), s.added...)
 }
 
-// All is the whole scope: the root first, then everything granted since.
+// Beyond are the granted directories that widen the session's own scope:
+// Dirs without the ones inside the root. It is what the session's containment
+// and its prompt read, so a grant of the checkout for a writer's sake cannot
+// turn the root into a write grant of its own — which would undo a read-only
+// check's withheld workspace.
+func (s *Scope) Beyond() []string {
+	if s == nil {
+		return nil
+	}
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.beyond()
+}
+
+// beyond is Beyond for a caller that holds the lock.
+func (s *Scope) beyond() []string {
+	var out []string
+	for _, d := range s.added {
+		if !within(d, s.root) {
+			out = append(out, d)
+		}
+	}
+	return out
+}
+
+// All is the whole scope: the root first, then everything granted since that
+// lies outside it.
 func (s *Scope) All() []string {
 	if s == nil {
 		return nil
 	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	return append([]string{s.root}, s.added...)
+	return append([]string{s.root}, s.beyond()...)
+}
+
+// InRoot reports whether an already-resolved directory is the root or inside
+// it — a grant of one was always in the session's scope and is recorded for
+// the writers that answer to Dirs.
+func (s *Scope) InRoot(dir string) bool {
+	if s == nil {
+		return false
+	}
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return within(dir, s.root)
 }
 
 // Contains reports whether path is inside the scope. A path that does not
@@ -154,8 +197,12 @@ func (s *Scope) Outside(paths ...string) []string {
 }
 
 // Add grants a directory to the scope and returns it as resolved. A path
-// inside the deny mask is refused outright; a path already in scope is
-// reported as such rather than added twice.
+// inside the deny mask is refused outright; a path a granted directory
+// already holds is reported as such rather than added twice. The root and a
+// directory inside it are recorded rather than reported: the session always
+// had them, but a writer answers to the granted directories alone, and a
+// person naming the checkout is the only way it comes into a writer's scope
+// without granting whatever encloses it.
 func (s *Scope) Add(path string) (string, error) {
 	if s == nil {
 		return "", fmt.Errorf("this session has no working scope")
@@ -178,8 +225,10 @@ func (s *Scope) Add(path string) (string, error) {
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if s.holds(dir) {
-		return dir, ErrAlreadyInScope
+	for _, d := range s.added {
+		if within(dir, d) {
+			return dir, ErrAlreadyInScope
+		}
 	}
 	s.added = append(s.added, dir)
 	return dir, nil

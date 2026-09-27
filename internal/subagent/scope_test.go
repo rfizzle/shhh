@@ -114,6 +114,37 @@ func TestWriterCommandIntoAnAddedCheckoutIsInScope(t *testing.T) {
 	}
 }
 
+// A grant of the checkout itself — /add-dir <root>, --add-dir or
+// behavior.scope_dirs naming it — brings it into a writer's scope, as a
+// directory that encloses it does, without granting anything above it.
+func TestWriterCommandIntoAGrantedCheckoutIsInScope(t *testing.T) {
+	root := t.TempDir()
+	sc, problems := scope.New(root)
+	if len(problems) > 0 {
+		t.Fatal(problems)
+	}
+	sup := New(context.Background(), Options{Root: root, ScopeDirs: sc.Dirs})
+	t.Cleanup(sup.Close)
+	worktree := t.TempDir()
+	writer := &child{role: RoleWriter, root: worktree, worktree: worktree}
+	command := "echo x > " + filepath.Join(root, "f")
+	if got := sup.scopedAction(writer, commandAction(t, command)); len(got.OutOfScope) == 0 {
+		t.Fatalf("before the grant the checkout is in a writer's scope: %+v", got)
+	}
+
+	if _, err := sc.Add(root); err != nil {
+		t.Fatalf("granting the checkout: %v", err)
+	}
+	for _, command := range []string{command, "cd " + root + " && touch f"} {
+		if got := sup.scopedAction(writer, commandAction(t, command)); len(got.OutOfScope) > 0 {
+			t.Errorf("%q: a checkout the person granted is out of a writer's scope: %v", command, got.OutOfScope)
+		}
+	}
+	if got := sup.scopedAction(writer, commandAction(t, "echo x > "+filepath.Join(filepath.Dir(root), "f"))); len(got.OutOfScope) == 0 {
+		t.Errorf("a grant of the checkout brought its parent into a writer's scope: %+v", got)
+	}
+}
+
 // The command reaches the parent's card before the mode is read: in auto
 // mode, where the gap let a call through with nobody asked, the static policy
 // asks and a classifier yes does not stand.

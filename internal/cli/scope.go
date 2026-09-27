@@ -95,7 +95,7 @@ func scopePromptBlock(sc *scope.Scope) string {
 	}
 	var b strings.Builder
 	b.WriteString("# Working scope\nThis session works in " + sc.Root())
-	for _, d := range sc.Dirs() {
+	for _, d := range sc.Beyond() {
 		b.WriteString(", " + d)
 	}
 	b.WriteString(".\nPaths outside it need the user's approval before anything writes to them, whatever the permission mode says, ")

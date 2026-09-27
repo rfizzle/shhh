@@ -47,7 +47,7 @@ func openQualityGate(cfg config.Config, red *evidence.Reducer, sc *scope.Scope) 
 	// and keeps no durable copy either; the method is safe on the nil one.
 	r.SetScrub(red.Scrub)
 	if avail := sandbox.Detect(); avail.OK {
-		if policy, err := sandboxPolicy(cfg, sc.Dirs()...); err == nil {
+		if policy, err := sandboxPolicy(cfg, sc.Beyond()...); err == nil {
 			policy.PrivateGoCache = true
 			r.Mechanism = avail.Mechanism
 			r.Wrap = func(argv []string, allowWrite bool) ([]string, error) {

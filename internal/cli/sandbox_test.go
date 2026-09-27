@@ -463,3 +463,42 @@ func TestAChildsRemovedWorktreeIsItsWorkingDirectory(t *testing.T) {
 		t.Fatalf("got %+v, want a working directory that was not there", got)
 	}
 }
+
+// A child's contained runner reads the same granted directories the
+// approval check does: the parent's checkout is not writable to a writer's
+// command until the person grants it by name, and then it is. The session's
+// own containment reads Beyond, which a grant of its root leaves empty, so the
+// grant widens nothing for the session. It runs under whichever mechanism the
+// host has, and skips by name where there is none.
+// See docs/capabilities/subagents.md#a-child-inherits-its-scope-not-more.
+func TestChildContainedCommandWritesIntoAGrantedCheckout(t *testing.T) {
+	avail := sandbox.Detect()
+	if !avail.OK {
+		t.Skipf("no containment mechanism here: %s", avail.Detail)
+	}
+	t.Setenv("XDG_DATA_HOME", t.TempDir())
+	root, worktree := t.TempDir(), t.TempDir()
+	sc, errs := scope.New(root)
+	if len(errs) > 0 {
+		t.Fatalf("scope: %v", errs)
+	}
+	target := filepath.Join(root, "f")
+	run := childCommandRunnerUnbounded(config.Config{}, worktree, sc)
+	run(context.Background(), "echo x > "+target)
+	if _, err := os.Stat(target); err == nil {
+		t.Fatal("a contained writer wrote into the parent's checkout before it was granted")
+	}
+
+	if _, err := sc.Add(root); err != nil {
+		t.Fatalf("granting the checkout: %v", err)
+	}
+	if got := run(context.Background(), "echo x > "+target); got.Outcome != tools.ExecSucceeded {
+		t.Fatalf("a contained writer could not write into a checkout the person granted: %+v", got)
+	}
+	if _, err := os.Stat(target); err != nil {
+		t.Fatalf("the granted write did not land: %v", err)
+	}
+	if got := sc.Beyond(); len(got) != 0 {
+		t.Fatalf("the session's containment would take the root as a grant of its own: %v", got)
+	}
+}

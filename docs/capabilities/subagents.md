@@ -473,9 +473,13 @@ list stops being read and starts being summarised.
 A writer's scope is its own working copy plus the directories the person
 *added* to the session — with `/add-dir`, `--add-dir`, `behavior.scope_dirs`
 or a card that reached outside. The parent's own checkout is not among them
-unless the person added a directory that holds it: a writer's work reaches
-your tree through its patch, and a command of its that writes into the
-checkout directly is put to you as out of scope, in every mode. A permissive
+unless the person added it — by name, or a directory that holds it: a
+writer's work reaches your tree through its patch, and a command of its that
+writes into the checkout directly is put to you as out of scope, in every
+mode. Naming the checkout itself (or a directory inside it) is recorded as a
+grant for writers and changes nothing for the session, which always had it;
+it is the way to let one writer work in your tree on purpose without also
+granting whatever encloses it. A permissive
 mode and the classifier cannot wave it through, because what they were
 granted over is the work, and a writer's isolation is not theirs to give up.
 The same holds for any directory outside a child's scope, not only the

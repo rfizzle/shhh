@@ -125,7 +125,7 @@ func buildContainment(cfg config.Config, sc *scope.Scope, sup *process.Superviso
 	// working scope grows mid-session, and a closure holding the
 	// policy it was built with would keep refusing writes to a directory the
 	// user has since granted.
-	policyNow := func() (sandbox.Policy, error) { return sandboxPolicy(cfg, sc.Dirs()...) }
+	policyNow := func() (sandbox.Policy, error) { return sandboxPolicy(cfg, sc.Beyond()...) }
 	policy, err := policyNow()
 	if err != nil {
 		return chat.Containment{}, err
@@ -362,7 +362,7 @@ func ownedSummary() string {
 // one the reader is asking about.
 func sandboxReportNow(cfg config.Config, sc *scope.Scope, sup *process.Supervisor) string {
 	avail := sandbox.Detect()
-	policy, err := sandboxPolicy(cfg, sc.Dirs()...)
+	policy, err := sandboxPolicy(cfg, sc.Beyond()...)
 	if err != nil {
 		return "Command containment: policy unreadable — " + err.Error()
 	}

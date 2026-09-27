@@ -42,9 +42,6 @@ func TestContainsRootAndAddedDirs(t *testing.T) {
 func TestAddReportsAlreadyInScope(t *testing.T) {
 	root := t.TempDir()
 	s := newScope(t, root)
-	if _, err := s.Add(root); err != ErrAlreadyInScope {
-		t.Fatalf("adding the root again = %v, want ErrAlreadyInScope", err)
-	}
 	side := t.TempDir()
 	if _, err := s.Add(side); err != nil {
 		t.Fatalf("Add = %v", err)
@@ -54,6 +51,59 @@ func TestAddReportsAlreadyInScope(t *testing.T) {
 	}
 	if got := len(s.Dirs()); got != 1 {
 		t.Fatalf("the scope holds %d directories, want 1", got)
+	}
+}
+
+// A grant of the root, or of a directory inside it, is recorded: the session
+// always had it, so its own scope reads exactly as before, but a writer answers
+// to the granted directories alone and this is how the checkout reaches one
+// (docs/capabilities/subagents.md#a-child-inherits-its-scope-not-more).
+func TestAddRecordsTheRootForWritersWithoutWideningTheSession(t *testing.T) {
+	root := t.TempDir()
+	sub := filepath.Join(root, "sub")
+	if err := os.Mkdir(sub, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	s := newScope(t, root)
+	before := s.All()
+	for _, dir := range []string{sub, root} {
+		got, err := s.Add(dir)
+		if err != nil {
+			t.Fatalf("Add(%q) = %v; want it recorded", dir, err)
+		}
+		if !s.InRoot(got) {
+			t.Errorf("InRoot(%q) = false", got)
+		}
+		if _, err := s.Add(dir); err != ErrAlreadyInScope {
+			t.Fatalf("adding %q twice = %v, want ErrAlreadyInScope", dir, err)
+		}
+	}
+	if got := s.Dirs(); len(got) != 2 {
+		t.Fatalf("Dirs = %v; want the root and the directory inside it", got)
+	}
+	if got := s.All(); strings.Join(got, "\n") != strings.Join(before, "\n") {
+		t.Errorf("All = %v; want it unchanged from %v", got, before)
+	}
+	if got := s.Beyond(); len(got) != 0 {
+		t.Errorf("Beyond = %v; a grant inside the root widens nothing for the session", got)
+	}
+	if got := s.Describe(); !strings.Contains(got, "2 added directories") {
+		t.Errorf("Describe = %q; want it to count the grants", got)
+	}
+
+	// A directory the person already granted that holds the root answers for
+	// it: the root is in a writer's scope already, and nothing is recorded.
+	base := t.TempDir()
+	inner := filepath.Join(base, "checkout")
+	if err := os.Mkdir(inner, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	enclosed := newScope(t, inner, base)
+	if _, err := enclosed.Add(inner); err != ErrAlreadyInScope {
+		t.Fatalf("adding a root an added directory holds = %v, want ErrAlreadyInScope", err)
+	}
+	if got := enclosed.Beyond(); len(got) != 1 || got[0] != enclosed.Dirs()[0] {
+		t.Errorf("Beyond = %v; want the enclosing grant", got)
 	}
 }
 
