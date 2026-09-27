@@ -40,7 +40,11 @@ sleep 4
 # decision wherever in the tree it is taken
 # (docs/capabilities/subagents.md#a-child-may-delegate-to-a-configured-depth).
 # Every other agent is still reading here, so this card is the one at the
-# front of the queue rather than one of four racing for it.
+# front of the queue rather than one of four racing for it. It is first only
+# while the session's own command is still on its clock: on a loaded host
+# writer-3 starts last, about 15 s after the spawn is answered, so the clocks
+# in replies.txt are what keep this card in front — a longer wait here would
+# only wait out a card queued behind the session's.
 #
 # The snap waits on the card's own title, not on `spawn_agent`: the lane's
 # `waiting approval: use spawn_agent` note can draw a frame before the card

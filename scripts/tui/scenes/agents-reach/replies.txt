@@ -8,8 +8,18 @@
 # the front when a snap is taken, and reads are far too fast to arrange it
 # with. So the three agents that must not interrupt hold their connection open
 # instead (`wait:`), and writer-3's delegation is its very first round: it is
-# the only gated call in flight for the next several seconds, so it is the
-# card the scene answers.
+# the only gated call in flight until the session's clock runs out, so it is
+# the card the scene answers.
+#
+# The clocks are sized for a loaded host, not an idle one. On a loaded host
+# the writers start one after another, about five seconds apart, so writer-3
+# asks for its delegation about 15 s after the spawn is answered where an idle
+# host has it asking within a tenth of a second. The session's
+# clock starts at once either way, so it has to outlast that, or its own card
+# reaches the queue first and the delegation waits behind it where no snap can
+# see it. The writers' clocks start as they do and have to outlast the
+# session's on an idle host, where all three start together; writer-3's starts
+# only once its delegation is answered, and it stays the last of the three.
 #
 # The sentence and the three spawns are one reply, so the transcript titles
 # the step with the sentence rather than closing a turn before the calls were
@@ -24,8 +34,10 @@ tool:read_file:{"path":"loop.go"}
 # The session's own request to run something — a card of its own rather than a
 # routed one, and the one the scene declines. It is held back until the
 # delegation below has been answered, and let go first of the four so the
-# queue behind it is the three routed ones.
-wait:12
+# queue behind it is the three routed ones. Twenty-two seconds outlasts
+# writer-3's start on a loaded host and still lands inside the routed snap's
+# wait on an idle one.
+wait:22
 +tool:execute_command:{"command":"go test ./internal/agent/..."}
 The counter is read at the top of the loop, and nowhere else.
 
@@ -34,14 +46,14 @@ The counter is read at the top of the loop, and nowhere else.
 [writer-1]
 tool:read_file:{"path":"loop.go"}
 tool:write_file:{"path":"round.md","content":"The counter is read at the top of the loop.\n"}
-wait:15
+wait:26
 +tool:execute_command:{"command":"go test ./internal/agent/..."}
 The counter is read at the top of the loop.
 
 [writer-2]
 tool:read_file:{"path":"loop.go"}
 tool:read_file:{"path":"loop.go"}
-wait:15
+wait:26
 +tool:execute_command:{"command":"go test ./internal/agent/..."}
 The limit is set where the session builds the agent.
 
@@ -54,7 +66,7 @@ The limit is set where the session builds the agent.
 [writer-3]
 tool:spawn_agent:{"role":"researcher","task":"Say which package the loop's exit condition lives in.","name":"reader-3a"}
 tool:read_file:{"path":"loop.go"}
-wait:15
+wait:23
 +tool:execute_command:{"command":"go test ./internal/agent/..."}
 The loop exits on the counter reaching the limit.
 
