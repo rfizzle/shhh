@@ -234,6 +234,113 @@ func TestAServedSessionsClientIsToldWhatItRead(t *testing.T) {
 	}
 }
 
+// A served session saves every turn, and what it read goes with the
+// conversation: once the turn's save has settled the slot, the rows are filed
+// under it in the store, and the client is still told the row once
+// (docs/capabilities/chat.md#what-was-read).
+func TestAServedSessionsLedgerFollowsItsSlot(t *testing.T) {
+	db, err := storage.OpenPath(filepath.Join(t.TempDir(), "test.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = db.Close() })
+	webTools, _, url := ledgeredWeb(t)
+	ledger := web.NewLedger(db)
+	webTools.UseLedger(ledger)
+	slot, err := db.ClaimChatSlot("served")
+	if err != nil {
+		t.Fatal(err)
+	}
+	a := fetchTurn(t, url)
+	lines := &syncLines{}
+	l := &serveLoop{
+		agent:  a,
+		events: newJSONLStream(lines),
+		own:    &writtenByCalls{},
+		saved:  &headlessChat{db: db, slot: slot, kind: "code"},
+	}
+	l.obs = headlessObserver{rounds: a.Rounds, turn: l.turnNow, stream: l.events, sources: newSourceFeed(ledger)}
+	l.headless = &agent.Headless{
+		Agent: a,
+		Gate:  unattendedGate(webTools, nil, nil, nil),
+		Resolve: headlessApprover(context.Background(), printOpts{yes: true}, nil, nil, fakeRun(&[]string{}), "",
+			nil, nil, webTools, nil, nil, nil, nil, nil, unattended{at: l.obs.pos}),
+		OnToolResult: l.obs.toolResult,
+	}
+	if _, err := l.Run(1, "read the style guide"); err != nil {
+		t.Fatalf("the turn: %v", err)
+	}
+	rows, err := db.LoadSources(l.saved.slot)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(rows) != 1 || rows[0].Kind != web.KindFetch || rows[0].FinalURL != url || rows[0].Title != "Style guide" {
+		t.Fatalf("the slot should hold the page the session read, got %+v", rows)
+	}
+	if n := strings.Count(lines.String(), `"kind":"source"`); n != 1 {
+		t.Fatalf("the client should be told the row exactly once, was told %d times:\n%s", n, lines.String())
+	}
+}
+
+// A feed bound onto a slot that already holds rows tells the stream only
+// what this session read: the slot's older rows are loaded in front of this
+// session's by the bind, and neither they nor a row already told are put on
+// the stream again.
+func TestSourceFeed_ABindOntoAHeldSlotTellsOnlyTheNewRows(t *testing.T) {
+	db, err := storage.OpenPath(filepath.Join(t.TempDir(), "test.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = db.Close() })
+	slot, err := db.ClaimChatSlot("resumed")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, u := range []string{"https://old.example/a", "https://old.example/b"} {
+		if _, err := db.SaveSource(slot, web.Source{Kind: web.KindFetch, FinalURL: u, Agent: web.Orchestrator}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	ledger := web.NewLedger(db)
+	feed := newSourceFeed(ledger)
+	urls := func(rows []web.Source) []string {
+		var out []string
+		for _, s := range rows {
+			out = append(out, s.FinalURL)
+		}
+		return out
+	}
+
+	ledger.Record(web.Orchestrator, web.Source{Kind: web.KindFetch, FinalURL: "https://new.example/told"})
+	if got := urls(feed.fresh()); len(got) != 1 || got[0] != "https://new.example/told" {
+		t.Fatalf("before the bind the feed should tell the one row, told %v", got)
+	}
+	ledger.Record(web.Orchestrator, web.Source{Kind: web.KindFetch, FinalURL: "https://new.example/untold"})
+	if err := feed.bind(slot, db); err != nil {
+		t.Fatal(err)
+	}
+	if n := ledger.Len(); n != 4 {
+		t.Fatalf("the bind should load the slot's two rows in front of this session's two, holds %d", n)
+	}
+	if got := urls(feed.fresh()); len(got) != 1 || got[0] != "https://new.example/untold" {
+		t.Fatalf("after the bind the feed should tell only the row it had not, told %v", got)
+	}
+	ledger.Record(web.Orchestrator, web.Source{Kind: web.KindFetch, FinalURL: "https://new.example/later"})
+	if got := urls(feed.fresh()); len(got) != 1 || got[0] != "https://new.example/later" {
+		t.Fatalf("a row recorded after the bind should be told once, told %v", got)
+	}
+	if got := feed.fresh(); len(got) != 0 {
+		t.Fatalf("nothing is left to tell, told %v", urls(got))
+	}
+	stored, err := db.LoadSources(slot)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(stored) != 5 {
+		t.Fatalf("the slot should hold its two rows and this session's three, holds %v", urls(stored))
+	}
+}
+
 // The runner hands the write-up's Sources block what each stage's own
 // process read: a stage's sources join the checkpoint's State.Sources, the
 // first read of a page kept, and a server's page and an error page left out

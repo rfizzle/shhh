@@ -191,7 +191,9 @@ An unattended run keeps the same ledger, and states it in both of its JSON
 shapes ([`headless.md`](headless.md#a-run-says-what-it-read)). Once the run
 has saved its conversation, the rows are filed under the slot it saved to, so
 a session that resumes that slot has what the run read on `/sources` beside
-what it reads itself.
+what it reads itself. A served session does the same at every turn's save,
+and its client is told only what the session read — never the rows a
+resumed slot already held.
 
 It is content-free beyond the address, the query and the page's own title.
 The page itself lives in the evidence store, which has its own retention and

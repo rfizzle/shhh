@@ -1097,6 +1097,11 @@ func (l *serveLoop) Run(turn int64, prompt string) (string, error) {
 	l.recorder.turn(turn, rounds, time.Since(started), outcome)
 	l.saved.save(l.agent.Messages())
 	l.recorder.link(l.saved.slot)
+	// What the session read goes with its conversation, bound once the save
+	// has settled the slot and again wherever a save moved it. The feed does
+	// the binding so the rows a resumed slot already held are not streamed to
+	// the client as this turn's.
+	l.saved.keepFed(l.obs.sources)
 	l.snapshot()
 
 	gateErr := l.gate.err()

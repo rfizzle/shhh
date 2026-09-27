@@ -311,10 +311,18 @@ type headlessObserver struct {
 // sourceFeed is how far the stream has been told about a ledger. It is a
 // pointer on the observer, not a count in it, because the observer is a value
 // handed out by copy (inTurn) and every copy is reporting the one ledger.
+//
+// What it has told is a set of row ids rather than a count, because a ledger
+// is not append-only across a bind: the slot's older rows are loaded in front
+// of this session's, and a count would take the tail of those for rows the
+// stream had not been told about.
 type sourceFeed struct {
 	mu     sync.Mutex
 	ledger *web.Ledger
-	sent   int
+	sent   map[int64]bool
+	// slot is the slot the feed last bound the ledger to, so a save that left
+	// the slot where it was binds nothing.
+	slot string
 }
 
 // newSourceFeed follows a ledger; nil for a run that keeps none.
@@ -322,27 +330,66 @@ func newSourceFeed(l *web.Ledger) *sourceFeed {
 	if l == nil {
 		return nil
 	}
-	return &sourceFeed{ledger: l}
+	return &sourceFeed{ledger: l, sent: map[int64]bool{}}
 }
 
 // fresh is the rows the stream has not been told about yet, oldest first.
-// An unattended ledger is bound to its slot only once the run has stated
-// everything it read (headlessChat.keepSources), so while a feed is asked its
-// rows only ever append and the count already written is where the next one
-// starts.
 func (f *sourceFeed) fresh() []web.Source {
 	if f == nil {
 		return nil
 	}
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	rows := f.ledger.List()
-	if f.sent >= len(rows) {
+	var out []web.Source
+	for _, s := range f.ledger.List() {
+		if f.sent[s.ID] {
+			continue
+		}
+		f.sent[s.ID] = true
+		out = append(out, s)
+	}
+	return out
+}
+
+// bind files the ledger under slot and carries what the stream has been told
+// across the bind. The rows the slot already held are its history and were
+// never this session's to report, so they count as told. This session's own
+// rows are written through again under the slot, in the order they were
+// recorded and with the ids the store gives them, so each keeps what the
+// stream had been told about it by position: held is asked first for how
+// many rows the bind will load in front, which is where this session's begin.
+func (f *sourceFeed) bind(slot string, held web.LedgerBackend) error {
+	if f == nil || held == nil || slot == "" {
 		return nil
 	}
-	out := rows[f.sent:]
-	f.sent = len(rows)
-	return out
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if slot == f.slot {
+		return nil
+	}
+	loaded, err := held.LoadSources(slot)
+	if err != nil {
+		return err
+	}
+	before := f.ledger.List()
+	bindErr := f.ledger.Bind(slot)
+	f.slot = slot
+	after := f.ledger.List()
+	sent := make(map[int64]bool, len(after))
+	for i, s := range after {
+		switch mine := i - len(loaded); {
+		case mine < 0:
+			sent[s.ID] = true
+		case mine < len(before):
+			if f.sent[before[mine].ID] {
+				sent[s.ID] = true
+			}
+		}
+		// Anything past those was recorded while the bind ran, and is
+		// left for the next fresh to tell.
+	}
+	f.sent = sent
+	return bindErr
 }
 
 // sourcesRead puts every ledger row recorded since the last call on the
@@ -781,6 +828,22 @@ func (c *headlessChat) keepSources(l *web.Ledger) {
 	}
 	if err := l.Bind(c.slot); err != nil {
 		fmt.Fprintf(os.Stderr, "» what this run read could not be kept with its conversation: %v\n", err)
+	}
+}
+
+// keepFed is keepSources for a session that saves every turn and streams its
+// rows as they land: it binds through the feed, so what the slot already held
+// is never put on the stream as this session's reading. It is asked after
+// each save, which is where the slot settles and where a slot another run
+// took over moves the conversation, and the ledger with it, to one of this
+// session's own.
+// See docs/capabilities/chat.md#what-was-read.
+func (c *headlessChat) keepFed(f *sourceFeed) {
+	if c == nil || c.db == nil || c.slot == "" {
+		return
+	}
+	if err := f.bind(c.slot, c.db); err != nil {
+		fmt.Fprintf(os.Stderr, "» what this session read could not be kept with its conversation: %v\n", err)
 	}
 }
 
