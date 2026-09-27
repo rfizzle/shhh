@@ -39,6 +39,7 @@ import (
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/resolve"
 	"github.com/rfizzle/shhh/internal/runner"
+	"github.com/rfizzle/shhh/internal/scope"
 	"github.com/rfizzle/shhh/internal/secret"
 	"github.com/rfizzle/shhh/internal/shell"
 	"github.com/rfizzle/shhh/internal/skill"
@@ -141,6 +142,9 @@ type chatSession struct {
 	// runs a command. Both `shhh chat` and `shhh code`, headless included.
 	secretFlags []string
 	vault       *secret.Vault
+	// secretsSaid is the secrets block as the prompt said it at launch, so a
+	// session boundary can put the vault as it stands in its place.
+	secretsSaid string
 	// promptExtra is appended to the system prompt after config and project
 	// context (e.g. the recalled-memory block).
 	promptExtra string
@@ -222,8 +226,20 @@ func (s *chatSession) openSecrets(cmd *cobra.Command, red *evidence.Reducer, pro
 		procSup.SetScrub(v.Scrub)
 	}
 	scrubWebCache(s.web, v.Scrub)
-	s.promptExtra = prompt.CombineExtra(s.promptExtra, secret.PromptBlock(v))
+	s.secretsSaid = secret.PromptBlock(v)
+	s.promptExtra = prompt.CombineExtra(s.promptExtra, s.secretsSaid)
 	return nil
+}
+
+// boundaryPrompt brings the blocks folded into the standing extra at launch
+// up to date in a prompt built at a session boundary. The vault may have moved
+// under /secret and the scope under /add-dir since then, and each change was
+// announced to the conversation the boundary drops. The secrets block goes
+// first because an empty one is placed ahead of the scope block as it was
+// said at launch.
+func (s *chatSession) boundaryPrompt(text, scopeSaid string, sc *scope.Scope) string {
+	text = resecretPrompt(text, s.secretsSaid, s.vault, scopeSaid)
+	return rescopePrompt(text, scopeSaid, sc)
 }
 
 // openNotebook opens the session's shared notebook and registers its two
@@ -950,9 +966,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	resume := "shhh " + session.kind + " --continue"
 	newSession := func() chat.SessionStart {
 		text, projectTokens, _ := session.systemPrompt(cfg.Behavior.SystemPromptExtra)
-		// The scope may have moved under /add-dir since launch, and the grant
-		// was announced to the conversation this boundary drops.
-		text = rescopePrompt(text, scopeSaid, sc)
+		text = session.boundaryPrompt(text, scopeSaid, sc)
 		if recorder.restart() {
 			recorder.stamp(env.prompts.fingerprintOf(text), session.skills.Len(), projectFingerprintRoot(), settings)
 		}

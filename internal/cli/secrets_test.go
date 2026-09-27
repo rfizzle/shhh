@@ -15,6 +15,7 @@ import (
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/evidence"
 	"github.com/rfizzle/shhh/internal/project"
+	"github.com/rfizzle/shhh/internal/prompt"
 	"github.com/rfizzle/shhh/internal/runner"
 	"github.com/rfizzle/shhh/internal/secret"
 	"github.com/rfizzle/shhh/internal/web"
@@ -200,5 +201,67 @@ func TestOpenSecrets_HandsTheScrubToTheWebCache(t *testing.T) {
 	}
 	if want := "key=" + secret.Placeholder("WEBCACHE_TEST_KEY"); string(got.Body) != want {
 		t.Errorf("body = %q, want %q", got.Body, want)
+	}
+}
+
+// A session boundary builds its prompt with the vault as it stands, so a
+// secret declared with /secret is named to the next conversation and not
+// only announced to the one the boundary drops. With the mask off and nothing
+// declared the launch block was empty, and the new one goes where the join
+// would have put it: ahead of the scope block.
+// See docs/capabilities/secrets.md#a-secret-is-an-environment-variable.
+func TestBoundaryPromptSaysTheVaultAsItStands(t *testing.T) {
+	t.Cleanup(func() {
+		runner.SetSessionEnv(nil)
+		runner.SetEnvMask(nil)
+	})
+	off := false
+	for _, tc := range []struct {
+		name string
+		cfg  config.Config
+	}{
+		{"masked", config.Config{}},
+		{"nothing said at launch", config.Config{Secrets: config.SecretsConfig{EnvMask: &off}}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			session := &chatSession{}
+			cmd := &cobra.Command{}
+			cmd.SetErr(io.Discard)
+			cmd.SetContext(withConfig(context.Background(), tc.cfg))
+			if err := session.openSecrets(cmd, nil, nil); err != nil {
+				t.Fatal(err)
+			}
+			sc := testScope(t, t.TempDir())
+			scopeSaid := scopePromptBlock(sc)
+			// The prompt as launch leaves it: the secrets block in the
+			// standing extra, then the scope block, then the toolbox.
+			launched := prompt.CombineExtra("# Instructions", session.promptExtra, scopeSaid, "# Toolbox")
+
+			manage := secretsManager(session.vault)
+			if _, announce := manage([]string{"set", "MID_SESSION_KEY=sk-mid-0123456789"}); announce == "" {
+				t.Fatal("the set should be announced to the running conversation")
+			}
+			// A boundary builds its prompt from that standing extra, which
+			// still says the launch-time set: the announcement went with the
+			// old conversation.
+			if strings.Contains(launched, "$MID_SESSION_KEY") {
+				t.Fatalf("the launch-time extra cannot name a secret declared after it:\n%s", launched)
+			}
+
+			got := session.boundaryPrompt(launched, scopeSaid, sc)
+			want := prompt.CombineExtra("# Instructions", secret.PromptBlock(session.vault), scopeSaid, "# Toolbox")
+			if got != want {
+				t.Fatalf("the boundary prompt should carry the vault as it stands\ngot:\n%s\nwant:\n%s", got, want)
+			}
+			if strings.Count(got, "`$MID_SESSION_KEY`") != 1 {
+				t.Fatalf("the secret should be named once:\n%s", got)
+			}
+
+			// Forgetting it before the next boundary takes it back out.
+			manage([]string{"forget", "MID_SESSION_KEY"})
+			if back := session.boundaryPrompt(launched, scopeSaid, sc); back != launched {
+				t.Fatalf("a vault back where it started should leave the prompt as launched\ngot:\n%s\nwant:\n%s", back, launched)
+			}
+		})
 	}
 }

@@ -108,17 +108,42 @@ func scopePromptBlock(sc *scope.Scope) string {
 // built at a session boundary, in place of the block said at launch. The
 // block is folded into the session's standing extra once, and a grant made
 // since was announced to the conversation the boundary drops, so a new
-// session that still said the old set would never hear of it. The last
-// occurrence is replaced because the block follows the instruction files,
-// which are free to quote it.
+// session that still said the old set would never hear of it.
 // See docs/capabilities/containment.md#scope-is-the-set-of-directories-the-work-may-reach.
 func rescopePrompt(text, said string, sc *scope.Scope) string {
-	now := scopePromptBlock(sc)
-	i := strings.LastIndex(text, said)
-	if said == "" || now == said || i < 0 {
+	if said == "" {
 		return text
 	}
-	return text[:i] + now + text[i+len(said):]
+	return resayBlock(text, said, scopePromptBlock(sc), "")
+}
+
+// resayBlock replaces a block said at launch with what it says now, in a
+// system prompt built again at a session boundary. The last occurrence is
+// replaced because these blocks follow the instruction files, which are free
+// to quote them. A block that was empty at launch left no text to replace,
+// so it goes where the join of the standing extra would have put it: ahead
+// of next, the block that followed it, with the separator between them. A
+// block that is empty now takes its separator with it.
+func resayBlock(text, said, now, next string) string {
+	if now == said {
+		return text
+	}
+	if said == "" {
+		i := strings.LastIndex(text, next)
+		if next == "" || i < 0 {
+			return text
+		}
+		return text[:i] + now + "\n\n" + text[i:]
+	}
+	i := strings.LastIndex(text, said)
+	if i < 0 {
+		return text
+	}
+	end := i + len(said)
+	if now == "" && strings.HasPrefix(text[end:], "\n\n") {
+		end += 2
+	}
+	return text[:i] + now + text[end:]
 }
 
 // commandEnvironment is what a session resolved about the commands it will

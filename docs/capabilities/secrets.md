@@ -229,7 +229,10 @@ the form that matters most: the model has just asked for a key it does not
 have, and the answer is one command away rather than a restart. A secret
 added this way is announced to the model as a user message, because the
 system prompt that named the others was written before this one existed
-and the model has no other way to learn the name. `/secret set NAME=value`
+and the model has no other way to learn the name. The announcement goes with
+the conversation it was made in, so a new session — `/new`, or the pressure
+card's — names the secrets in its system prompt as the vault stands, not as
+it stood at launch. `/secret set NAME=value`
 is accepted and kept out of input recall, so an up-arrow never puts the
 value back on screen. `/secret forget NAME` removes one; what was already
 scrubbed stays scrubbed, since the placeholders in the conversation are

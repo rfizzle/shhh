@@ -120,6 +120,20 @@ func secretsManager(v *secret.Vault) func(args []string) (note, announce string)
 	}
 }
 
+// resecretPrompt puts the secrets block as the vault stands into a system
+// prompt built at a session boundary, in place of the one said at launch. A
+// /secret change was announced to the conversation the boundary drops, so a
+// new session still naming the launch-time set would never hear of it. next
+// is the block that followed the secrets block at launch, which is where one
+// that was empty then goes.
+// See docs/capabilities/secrets.md#a-secret-is-an-environment-variable.
+func resecretPrompt(text, said string, v *secret.Vault, next string) string {
+	if v == nil {
+		return text
+	}
+	return resayBlock(text, said, secret.PromptBlock(v), next)
+}
+
 // secretsListing is the /secret list text: names only, never lengths or
 // prefixes that would narrow a guess.
 func secretsListing(v *secret.Vault) string {
