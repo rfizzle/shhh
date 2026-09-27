@@ -58,7 +58,9 @@ func TestPipedPromptNamesTheCommandThatReadsIt(t *testing.T) {
 	var stdout, stderr bytes.Buffer
 	cmd.SetOut(&stdout)
 	cmd.SetErr(&stderr)
-	cmd.SetArgs(nil)
+	// An empty slice and not nil: cobra reads nil as "use os.Args", which
+	// hands the root the test binary's own flags (-update-golden among them).
+	cmd.SetArgs([]string{})
 	if err := execute(context.Background(), cmd); err == nil {
 		t.Fatal("a piped `shhh` should be refused, not answered with the help page")
 	}
