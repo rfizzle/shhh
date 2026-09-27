@@ -3235,6 +3235,9 @@ func TestGolden_MetricsScreen(t *testing.T) {
 			{Label: "nothing recorded · a heading over nothing says so", View: (&MetricsScreen{
 				Subject: "all time · 0 requests · 0 models",
 			}).View(width)},
+			{Label: "[?] · the screen's keys and the glyph legend in the foot", View: screen(func(m *MetricsScreen) {
+				m.Update(tea.KeyPressMsg{Code: '?', Text: "?"})
+			}).View(width)},
 		}
 	})
 }

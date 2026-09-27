@@ -135,7 +135,7 @@
   │ undo      n/a                                                            │  
   │ network   open                                                           │  
   ├──────────────────────────────────────────────────────────────────────────┤  
-  │ [y] run it once · [n] deny · [esc] leave it waiting, nothing is denied   │  
+  │ [y] run it once · [n] deny · [?] keys · [esc] leave it waiting           │  
   │ [ctrl+space/ctrl+y] answer it · other keys type into the draft           │  
 
 · working · a reading of the session leads the rail
@@ -360,7 +360,7 @@
   ␛[38;5;254m│␛[m ␛[38;5;244mundo      ␛[38;5;254mn/a␛[m                                                            ␛[38;5;254m│␛[m  
   ␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[38;5;254mopen␛[m                                                           ␛[38;5;254m│␛[m  
   ␛[38;5;254m├──────────────────────────────────────────────────────────────────────────┤␛[m  
-  ␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mrun it once␛[38;5;244m · ␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[38;5;244m · ␛[38;5;254m[esc] leave it waiting, nothing is denied␛[m   ␛[38;5;254m│␛[m  
+  ␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mrun it once␛[38;5;244m · ␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[38;5;244m · ␛[38;5;254m[?]␛[m ␛[38;5;254mkeys␛[38;5;244m · ␛[38;5;254m[esc] leave it waiting␛[m           ␛[38;5;254m│␛[m  
   ␛[38;5;254m│␛[m ␛[38;5;244m[ctrl+space/ctrl+y] answer it · other keys type into the draft␛[m           ␛[38;5;254m│␛[m  
 
 · working · a reading of the session leads the rail

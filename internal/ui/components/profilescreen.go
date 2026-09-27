@@ -206,6 +206,9 @@ type ProfileScreen struct {
 	// the moment the request went out would be promising a step the flow has
 	// not reached.
 	from ProfileStep
+	// keys reports that `?` has the register and the glyph legend showing
+	// under the step.
+	keys bool
 }
 
 // NewProfileScreen builds the surface with its text field. The field is one
@@ -313,6 +316,10 @@ func (p *ProfileScreen) resetField() {
 
 // Update routes one keystroke to the step that is up.
 func (p *ProfileScreen) Update(msg tea.KeyPressMsg) (done bool, result ProfileResult) {
+	if keys.Is(msg.String(), keys.Screen.List) && p.listLive() {
+		p.keys = !p.keys
+		return false, ProfileResult{}
+	}
 	switch p.Step {
 	case ProfileBrief:
 		return p.updateBrief(msg)
@@ -407,6 +414,31 @@ func (p *ProfileScreen) updateDraft(msg tea.KeyPressMsg) (bool, ProfileResult) {
 	return true, ProfileResult{Action: ProfileDiscard}
 }
 
+// listLive reports that `?` is a key here rather than a character: a step
+// with no field holding the keyboard. The brief's field, a question's answer
+// and the draft card's open note all take it as text.
+func (p *ProfileScreen) listLive() bool {
+	switch p.Step {
+	case ProfileBrief:
+		return p.focus >= 0
+	case ProfileQuestions:
+		return false
+	case ProfileWorking:
+		return true
+	default:
+		return p.decide != nil && !p.decide.FocusNote
+	}
+}
+
+// keyList is every key the drafter has, for `?`.
+func (p *ProfileScreen) keyList() []KeyOffer {
+	return []KeyOffer{
+		keyOffer(keys.Profile.Move), keyOffer(keys.Profile.Take),
+		keyOffer(keys.Profile.Note), keyOffer(keys.Profile.ScrollUp),
+		keyOffer(keys.Profile.ScrollDown), keyOffer(keys.Profile.Back),
+	}
+}
+
 // taken is what enter takes on the brief step: what has been typed, or the
 // starting point the pointer is on.
 func (p *ProfileScreen) taken() string {
@@ -446,11 +478,18 @@ func (p *ProfileScreen) View(width int) string {
 	// is is a fact of the render, and a host that guessed it would be the
 	// reason a line ends in an ellipsis on a terminal wide enough to hold it.
 	p.promptLines = wrapBlock(p.Draft.Prompt, width-profileIndent-2)
-	return ScreenChrome{
+	chrome := ScreenChrome{
 		Header:   p.header(),
 		Head:     []string{p.railRow(width), ""},
 		MaxLines: p.MaxLines,
-	}.View(width, func(budget int) []string { return p.bodyRows(width, budget) })
+	}
+	// The register takes the foot only while it is asked for and only where
+	// `?` is still a key: a step that has since put a field in front of the
+	// reader has taken the character back.
+	if p.keys && p.listLive() {
+		chrome.Foot = KeyFooter{Register: p.keyList(), Showing: true}.Rows(width)
+	}
+	return chrome.View(width, func(budget int) []string { return p.bodyRows(width, budget) })
 }
 
 // header names the surface, what it is drafting into, and the way out.
@@ -458,6 +497,9 @@ func (p *ProfileScreen) header() ScreenHeader {
 	h := ScreenHeader{
 		Left: []RailSegment{screenTitle(p.Name)},
 		Keys: words(keys.Profile.Back, p.wayOutWords()),
+	}
+	if p.listLive() {
+		h.Keys = keys.Bracket(keys.Screen.List) + " " + keys.Words(keys.Screen.List) + " · " + h.Keys
 	}
 	if p.Subject != "" {
 		h.Left = append(h.Left, screenField(p.Subject))

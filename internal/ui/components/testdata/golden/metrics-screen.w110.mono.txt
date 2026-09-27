@@ -11,7 +11,7 @@
 
 ── layout ──────────────────────────────────────────────────
 · the surface · the table, the spend split, and the ratios under it
-shhh metrics · last 30 days · 251 requests · 4 models                                        $18.42 · [q] quit
+shhh metrics · last 30 days · 251 requests · 4 models                             $18.42 · [?] keys · [q] quit
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
   MODEL              REQUESTS  ↑ TOK  ↓ TOK   SPEND   TTFT   P95  TOK · 7d
@@ -38,7 +38,7 @@ shhh metrics · last 30 days · 251 requests · 4 models                        
 [esc] back to the shell
 
 · nothing priced · the split is over tokens and says so
-shhh metrics · last 30 days · 251 requests · 4 models                                                 [q] quit
+shhh metrics · last 30 days · 251 requests · 4 models                                      [?] keys · [q] quit
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
   MODEL              REQUESTS  ↑ TOK  ↓ TOK  SPEND   TTFT   P95  TOK · 7d
@@ -65,7 +65,7 @@ shhh metrics · last 30 days · 251 requests · 4 models                        
 [esc] back to the shell
 
 · a short terminal · what fits is drawn, what went is named
-shhh metrics · last 30 days · 251 requests · 4 models                                        $18.42 · [q] quit
+shhh metrics · last 30 days · 251 requests · 4 models                             $18.42 · [?] keys · [q] quit
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
   MODEL              REQUESTS  ↑ TOK  ↓ TOK   SPEND   TTFT   P95  TOK · 7d
@@ -78,7 +78,7 @@ shhh metrics · last 30 days · 251 requests · 4 models                        
 [esc] back to the shell
 
 · a shorter one · the table windows last and says what it holds back
-shhh metrics · last 30 days · 251 requests · 4 models                                        $18.42 · [q] quit
+shhh metrics · last 30 days · 251 requests · 4 models                             $18.42 · [?] keys · [q] quit
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
   MODEL              REQUESTS  ↑ TOK  ↓ TOK   SPEND   TTFT   P95  TOK · 7d
@@ -89,7 +89,7 @@ shhh metrics · last 30 days · 251 requests · 4 models                        
 [esc] back to the shell
 
 · nothing recorded · a heading over nothing says so
-shhh metrics · all time · 0 requests · 0 models                                                       [q] quit
+shhh metrics · all time · 0 requests · 0 models                                            [?] keys · [q] quit
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
   MODEL  REQUESTS  ↑ TOK  ↓ TOK  SPEND  TTFT  P95  TOK · 7d
@@ -97,9 +97,53 @@ shhh metrics · all time · 0 requests · 0 models                              
 
 [esc] back to the shell
 
+· [?] · the screen's keys and the glyph legend in the foot
+shhh metrics · last 30 days · 251 requests · 4 models                             $18.42 · [?] keys · [q] quit
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  MODEL              REQUESTS  ↑ TOK  ↓ TOK   SPEND   TTFT   P95  TOK · 7d
+  gpt-5.2                 184   2.9M   318k  $12.80  640ms  1.4s  ▃▄▄▅▆▅█
+  claude-sonnet-4.6        46   1.1M    96k   $4.71  910ms  2.1s  ▂▃▆▄▃█▅
+  gemini-3-flash           12    88k     7k  <$0.01  310ms  0.5s  ▁▁▄▁▁▁█
+  house-model               9    42k     3k       —   1.2s     —  ▁▁▁▁█▁▁
+
+  where the money went                                                                            last 30 days
+  $ run              ▰▰▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱ $9.94 · 54%                                           203 requests
+  copied             ▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ $5.11 · 28%                                            31 requests
+  ⊘ dismissed        ▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ $2.41 · 13%                                            19 requests
+  ✗ no answer        ▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ $0.96 · 5%                                              9 requests
+
+  how the answers came back                                                                       251 requests
+  gpt-5.2            ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▱▱ 94% answered                                            173 of 184
+  claude-sonnet-4.6  ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰ 100% answered                                             46 of 46
+  gemini-3-flash     ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱ 75% answered                                               9 of 12
+  house-model        ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰ 100% answered                                               9 of 9
+
+  how the commands ran                                                                                203 runs
+  gpt-5.2            ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▱▱▱▱▱ 81% exited 0                                            164 of 203
+
+[esc] back to the shell
+
+glyphs
+⚙  a read: a file, a search, a listing
+$  a shell command
+✎  an edit, a write, a patch or a memory
+◇  a sub-agent
+⇄  a call to a server not marked read-only
+✻  the model's own reasoning
+⛁  a published report page
+≡  a reading of the session
+✓  a compaction that brought the window back
+·  accepted, not started
+▸  running
+✦  the classifier is deciding
+✗  failed
+⊘  refused: dim by you, red by a rule
+[?] hide the keys
+
 ── ansi ────────────────────────────────────────────────────
 · the surface · the table, the spend split, and the ratios under it
-␛[1;38;5;254mshhh metrics␛[m␛[38;5;244m · last 30 days · 251 requests · 4 models␛[m                                        ␛[38;5;254m$18.42␛[m␛[38;5;244m · [q] quit␛[m
+␛[1;38;5;254mshhh metrics␛[m␛[38;5;244m · last 30 days · 251 requests · 4 models␛[m                             ␛[38;5;254m$18.42␛[m␛[38;5;244m · [?] keys · [q] quit␛[m
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[1;38;5;254mMODEL              REQUESTS  ↑ TOK  ↓ TOK   SPEND   TTFT   P95  TOK · 7d␛[m
@@ -126,7 +170,7 @@ shhh metrics · all time · 0 requests · 0 models                              
 ␛[38;5;254m[esc]␛[m␛[38;5;244m back to the shell␛[m
 
 · nothing priced · the split is over tokens and says so
-␛[1;38;5;254mshhh metrics␛[m␛[38;5;244m · last 30 days · 251 requests · 4 models␛[m                                                 ␛[38;5;244m[q] quit␛[m
+␛[1;38;5;254mshhh metrics␛[m␛[38;5;244m · last 30 days · 251 requests · 4 models␛[m                                      ␛[38;5;244m[?] keys · [q] quit␛[m
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[1;38;5;254mMODEL              REQUESTS  ↑ TOK  ↓ TOK  SPEND   TTFT   P95  TOK · 7d␛[m
@@ -153,7 +197,7 @@ shhh metrics · all time · 0 requests · 0 models                              
 ␛[38;5;254m[esc]␛[m␛[38;5;244m back to the shell␛[m
 
 · a short terminal · what fits is drawn, what went is named
-␛[1;38;5;254mshhh metrics␛[m␛[38;5;244m · last 30 days · 251 requests · 4 models␛[m                                        ␛[38;5;254m$18.42␛[m␛[38;5;244m · [q] quit␛[m
+␛[1;38;5;254mshhh metrics␛[m␛[38;5;244m · last 30 days · 251 requests · 4 models␛[m                             ␛[38;5;254m$18.42␛[m␛[38;5;244m · [?] keys · [q] quit␛[m
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[1;38;5;254mMODEL              REQUESTS  ↑ TOK  ↓ TOK   SPEND   TTFT   P95  TOK · 7d␛[m
@@ -166,7 +210,7 @@ shhh metrics · all time · 0 requests · 0 models                              
 ␛[38;5;254m[esc]␛[m␛[38;5;244m back to the shell␛[m
 
 · a shorter one · the table windows last and says what it holds back
-␛[1;38;5;254mshhh metrics␛[m␛[38;5;244m · last 30 days · 251 requests · 4 models␛[m                                        ␛[38;5;254m$18.42␛[m␛[38;5;244m · [q] quit␛[m
+␛[1;38;5;254mshhh metrics␛[m␛[38;5;244m · last 30 days · 251 requests · 4 models␛[m                             ␛[38;5;254m$18.42␛[m␛[38;5;244m · [?] keys · [q] quit␛[m
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[1;38;5;254mMODEL              REQUESTS  ↑ TOK  ↓ TOK   SPEND   TTFT   P95  TOK · 7d␛[m
@@ -177,10 +221,54 @@ shhh metrics · all time · 0 requests · 0 models                              
 ␛[38;5;254m[esc]␛[m␛[38;5;244m back to the shell␛[m
 
 · nothing recorded · a heading over nothing says so
-␛[1;38;5;254mshhh metrics␛[m␛[38;5;244m · all time · 0 requests · 0 models␛[m                                                       ␛[38;5;244m[q] quit␛[m
+␛[1;38;5;254mshhh metrics␛[m␛[38;5;244m · all time · 0 requests · 0 models␛[m                                            ␛[38;5;244m[?] keys · [q] quit␛[m
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[1;38;5;254mMODEL  REQUESTS  ↑ TOK  ↓ TOK  SPEND  TTFT  P95  TOK · 7d␛[m
   ␛[38;5;244mno models to show␛[m
 
 ␛[38;5;254m[esc]␛[m␛[38;5;244m back to the shell␛[m
+
+· [?] · the screen's keys and the glyph legend in the foot
+␛[1;38;5;254mshhh metrics␛[m␛[38;5;244m · last 30 days · 251 requests · 4 models␛[m                             ␛[38;5;254m$18.42␛[m␛[38;5;244m · [?] keys · [q] quit␛[m
+␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+
+  ␛[1;38;5;254mMODEL              REQUESTS  ↑ TOK  ↓ TOK   SPEND   TTFT   P95  TOK · 7d␛[m
+  ␛[38;5;254mgpt-5.2                 184   2.9M   318k  $12.80  640ms  1.4s␛[m  ␛[38;5;244m▃▄▄▅▆▅█␛[m
+  ␛[38;5;254mclaude-sonnet-4.6        46   1.1M    96k   $4.71  910ms  2.1s␛[m  ␛[38;5;244m▂▃▆▄▃█▅␛[m
+  ␛[38;5;254mgemini-3-flash           12    88k     7k  <$0.01  310ms  0.5s␛[m  ␛[38;5;244m▁▁▄▁▁▁█␛[m
+  ␛[38;5;254mhouse-model               9    42k     3k       —   1.2s     —␛[m  ␛[38;5;244m▁▁▁▁█▁▁␛[m
+
+  ␛[38;5;244mwhere the money went␛[m                                                                            ␛[38;5;244mlast 30 days␛[m
+  ␛[38;5;244m$ run            ␛[m  ␛[38;5;254m▰▰▰▰▰▰▰▰▰▰▰␛[m␛[38;5;244m▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[38;5;254m$9.94 · 54%␛[m                                           ␛[38;5;254m203 requests␛[m
+  ␛[38;5;244mcopied           ␛[m  ␛[38;5;254m▰▰▰▰▰▰␛[m␛[38;5;244m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[38;5;254m$5.11 · 28%␛[m                                            ␛[38;5;254m31 requests␛[m
+  ␛[38;5;244m⊘ dismissed      ␛[m  ␛[38;5;254m▰▰␛[m␛[38;5;244m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[38;5;254m$2.41 · 13%␛[m                                            ␛[38;5;254m19 requests␛[m
+  ␛[38;5;244m✗ no answer      ␛[m  ␛[38;5;254m▰␛[m␛[38;5;244m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[38;5;254m$0.96 · 5%␛[m                                              ␛[38;5;254m9 requests␛[m
+
+  ␛[38;5;244mhow the answers came back␛[m                                                                       ␛[38;5;244m251 requests␛[m
+  ␛[38;5;244mgpt-5.2          ␛[m  ␛[38;5;254m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m␛[38;5;244m▱▱␛[m ␛[38;5;254m94% answered␛[m                                            ␛[38;5;254m173 of 184␛[m
+  ␛[38;5;244mclaude-sonnet-4.6␛[m  ␛[38;5;254m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m ␛[38;5;254m100% answered␛[m                                             ␛[38;5;254m46 of 46␛[m
+  ␛[38;5;244mgemini-3-flash   ␛[m  ␛[38;5;254m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m␛[38;5;244m▱▱▱▱▱▱␛[m ␛[38;5;254m75% answered␛[m                                               ␛[38;5;254m9 of 12␛[m
+  ␛[38;5;244mhouse-model      ␛[m  ␛[38;5;254m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m ␛[38;5;254m100% answered␛[m                                               ␛[38;5;254m9 of 9␛[m
+
+  ␛[38;5;244mhow the commands ran␛[m                                                                                ␛[38;5;244m203 runs␛[m
+  ␛[38;5;244mgpt-5.2          ␛[m  ␛[38;5;254m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m␛[38;5;244m▱▱▱▱▱␛[m ␛[38;5;254m81% exited 0␛[m                                            ␛[38;5;254m164 of 203␛[m
+
+␛[38;5;254m[esc]␛[m␛[38;5;244m back to the shell␛[m
+
+␛[38;5;244mglyphs␛[m
+␛[38;5;244m⚙␛[m  ␛[38;5;244ma read: a file, a search, a listing␛[m
+␛[38;5;254m$␛[m  ␛[38;5;244ma shell command␛[m
+␛[38;5;254m✎␛[m  ␛[38;5;244man edit, a write, a patch or a memory␛[m
+␛[38;5;254m◇␛[m  ␛[38;5;244ma sub-agent␛[m
+␛[38;5;254m⇄␛[m  ␛[38;5;244ma call to a server not marked read-only␛[m
+␛[38;5;244m✻␛[m  ␛[38;5;244mthe model's own reasoning␛[m
+␛[38;5;244m⛁␛[m  ␛[38;5;244ma published report page␛[m
+␛[38;5;244m≡␛[m  ␛[38;5;244ma reading of the session␛[m
+␛[38;5;254m✓␛[m  ␛[38;5;244ma compaction that brought the window back␛[m
+␛[38;5;244m·␛[m  ␛[38;5;244maccepted, not started␛[m
+␛[38;5;254m▸␛[m  ␛[38;5;244mrunning␛[m
+␛[38;5;254m✦␛[m  ␛[38;5;244mthe classifier is deciding␛[m
+␛[38;5;254m✗␛[m  ␛[38;5;244mfailed␛[m
+␛[38;5;244m⊘␛[m  ␛[38;5;244mrefused: dim by you, red by a rule␛[m
+␛[38;5;254m[?]␛[m␛[38;5;244m hide the keys␛[m

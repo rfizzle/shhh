@@ -215,7 +215,7 @@ func Surfaces() []Surface {
 			Section:  "docs/interface/surfaces.md#the-turns-close, docs/capabilities/approvals-and-safety.md#the-writing-half-of-git-is-a-tool-too",
 			Position: Takeover,
 			Reached:  Bracket(Row.Commit) + " on a turn's changed-files row",
-			Bindings: Commit.All(),
+			Bindings: append(Commit.All(), Screen.List),
 		},
 		{
 			// The card the /rewind picker opens once a turn has been taken.
@@ -226,7 +226,7 @@ func Surfaces() []Surface {
 			Section:  "docs/interface/surfaces.md#the-rewind",
 			Position: Takeover,
 			Reached:  "a turn taken in the /rewind picker",
-			Bindings: Rewind.All(),
+			Bindings: append(Rewind.All(), Screen.List),
 		},
 		{
 			// The proposed message as a draft, which is a row of its own for
@@ -252,7 +252,7 @@ func Surfaces() []Surface {
 				Decision.Batch, Decision.Diff, Decision.DryRun,
 				Decision.Explain, Decision.Amend, Agent.Go,
 				Decision.ScrollUp, Decision.ScrollDown,
-				Decision.PanLeft, Decision.PanRight,
+				Decision.PanLeft, Decision.PanRight, Screen.List,
 			},
 		},
 		{
@@ -297,7 +297,7 @@ func Surfaces() []Surface {
 			Reached:  Bracket(Decision.Batch) + " on a card with a queue behind it",
 			Bindings: []Binding{
 				Select.MoveJK, Select.Toggle, Select.All,
-				Select.Take, Select.Cancel,
+				Select.Take, Select.Cancel, Screen.List,
 			},
 		},
 		{
@@ -312,7 +312,7 @@ func Surfaces() []Surface {
 			Section:  "docs/interface/surfaces.md#the-approval-card, docs/capabilities/approvals-and-safety.md#a-grant-says-when-it-ends",
 			Position: Takeover,
 			Reached:  Bracket(Decision.Always) + " on a card that offers a grant",
-			Bindings: []Binding{Select.MoveJK, Select.Take, Select.Cancel},
+			Bindings: []Binding{Select.MoveJK, Select.Take, Select.Cancel, Screen.List},
 		},
 		{
 			// A row of its own, because the card is a list and answers a
@@ -336,7 +336,7 @@ func Surfaces() []Surface {
 				// And the same boundary with the execution turn started on
 				// the far side of it, in the mode its words name.
 				Plan.Implement,
-				Select.Cancel,
+				Select.Cancel, Screen.List,
 			},
 		},
 		{
@@ -362,7 +362,7 @@ func Surfaces() []Surface {
 			Reached:  Shown(Draft.Answer),
 			Bindings: []Binding{
 				Select.MoveJK, Select.Take, Select.Toggle, Select.All,
-				Select.Note, Select.Long, Select.Tab, Select.Cancel,
+				Select.Note, Select.Long, Select.Tab, Select.Cancel, Screen.List,
 			},
 		},
 		{
@@ -376,7 +376,7 @@ func Surfaces() []Surface {
 			Section:  "docs/interface/surfaces.md#the-question-card, docs/interface/surfaces.md#the-inline-confirm",
 			Position: Beside,
 			Reached:  Shown(Draft.Answer),
-			Bindings: []Binding{Confirm.Yes, Confirm.No, Select.Note, Select.Tab},
+			Bindings: []Binding{Confirm.Yes, Confirm.No, Select.Note, Select.Tab, Screen.List},
 		},
 		{
 			// The one approval card the reader asks for rather than is
@@ -387,14 +387,14 @@ func Surfaces() []Surface {
 			Section:  "docs/interface/surfaces.md#the-approval-card",
 			Position: Takeover,
 			Reached:  "/init, or the start screen's scaffold offer",
-			Bindings: []Binding{Decision.Accept, Decision.Refuse, Select.Cancel},
+			Bindings: []Binding{Decision.Accept, Decision.Refuse, Select.Cancel, Screen.List},
 		},
 		{
 			Name:     "the inline confirm and the undo confirm",
 			Section:  "docs/interface/surfaces.md#the-inline-confirm",
 			Position: Takeover,
 			Reached:  "the key that opens it",
-			Bindings: []Binding{Confirm.Yes, Confirm.Force, Confirm.No},
+			Bindings: []Binding{Confirm.Yes, Confirm.Force, Confirm.No, Screen.List},
 		},
 		{
 			// A line from another session has no default answer: passing a
@@ -404,7 +404,7 @@ func Surfaces() []Surface {
 			Section:  "docs/capabilities/sessions-and-memory.md#a-session-can-hand-another-a-line",
 			Position: Takeover,
 			Reached:  "a line another session sent, where sessions.inbound holds it",
-			Bindings: []Binding{Confirm.Yes, Decision.Refuse},
+			Bindings: []Binding{Confirm.Yes, Decision.Refuse, Screen.List},
 		},
 		{
 			Name:     "the selector family, the model and rewind pickers",
@@ -477,7 +477,7 @@ func Surfaces() []Surface {
 			Bindings: []Binding{
 				Agent.Move, Agent.Attach, Agent.Answer, Agent.Steer,
 				Agent.Retry, Agent.Review, Agent.Cancel, Agent.Kill,
-				Agent.KillAll, Agent.Back,
+				Agent.KillAll, Agent.Back, Screen.List,
 			},
 		},
 		{
@@ -491,7 +491,7 @@ func Surfaces() []Surface {
 			Reached:  "/agents new, or the manager's own row",
 			Bindings: []Binding{
 				Profile.Move, Profile.Take, Profile.Note,
-				Profile.ScrollUp, Profile.ScrollDown, Profile.Back,
+				Profile.ScrollUp, Profile.ScrollDown, Screen.List, Profile.Back,
 			},
 		},
 		{
@@ -521,6 +521,17 @@ func Surfaces() []Surface {
 			Bindings: []Binding{Preview.Back, Preview.Leave},
 		},
 		{
+			// The list `?` opens over a card or reading mode. It holds the
+			// keyboard while it is up, and every key it answers takes the
+			// reader back to the surface it was opened over, except the
+			// arrows that read a list longer than the pane.
+			Name:     "the key list",
+			Section:  "docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard",
+			Position: Takeover,
+			Reached:  Bracket(Screen.List) + " on a card that holds the keyboard, or in reading mode",
+			Bindings: []Binding{Screen.Move, Screen.List, Screen.Quit},
+		},
+		{
 			Name:     "the retry countdown",
 			Section:  "docs/interface/surfaces.md#the-recovery-row",
 			Position: Takeover,
@@ -532,7 +543,7 @@ func Surfaces() []Surface {
 			Section:  "docs/interface/surfaces.md#the-recovery-row",
 			Position: Takeover,
 			Reached:  "it opens on its own and takes the keyboard",
-			Bindings: []Binding{Wait.Compact, Wait.NewSession, Wait.KeepGoing},
+			Bindings: []Binding{Wait.Compact, Wait.NewSession, Wait.KeepGoing, Screen.List},
 		},
 		{
 			Name:     "the masked key prompt",
@@ -597,7 +608,7 @@ func Programs() []Surface {
 			Section:  "docs/interface/surfaces.md#the-supporting-screens",
 			Position: Takeover,
 			Reached:  "shhh metrics",
-			Bindings: []Binding{Screen.Quit},
+			Bindings: []Binding{Screen.List, Screen.Quit},
 		},
 		{
 			// The one supporting screen that asks rather than reports, which

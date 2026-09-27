@@ -1461,7 +1461,9 @@ var Paste = PasteKeys{
 // ScreenKeys are the supporting TUIs': `shhh config`, `shhh history`,
 // `shhh metrics`, `shhh doctor`, `shhh snippets` and the saved-chat browser.
 // They are where `?` was invented — the compact key row swapped for the whole
-// list, in place — which is the idiom reading mode borrows.
+// list, in place — which is the idiom reading mode borrows. List is also the
+// `?` every card that holds the keyboard answers, and the profile drafter's:
+// one key, the same answer on every surface.
 type ScreenKeys struct {
 	Move   Binding
 	Take   Binding

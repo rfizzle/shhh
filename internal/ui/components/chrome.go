@@ -242,11 +242,7 @@ func (f KeyFooter) Rows(width int) []string {
 		return []string{Clip(f.Taken, width)}
 	}
 	if f.Showing {
-		rows := make([]string, 0, len(f.Register)+1)
-		for _, offer := range f.Register {
-			rows = append(rows, packOffers([]KeyOffer{offer}, width)...)
-		}
-		return append(rows, packOffers([]KeyOffer{hideKeysOffer()}, width)...)
+		return append(KeyListRows(f.Register, width), packOffers([]KeyOffer{hideKeysOffer()}, width)...)
 	}
 	if f.Lead != "" {
 		if len(f.Offers) == 0 {
@@ -269,6 +265,21 @@ func (f KeyFooter) Rows(width int) []string {
 		rows[0] += strings.Repeat(" ", pad) + painted
 	}
 	return rows
+}
+
+// KeyListRows is what `?` shows on every surface that holds the keyboard:
+// the surface's whole register, one key per row, and under it the glyph
+// legend (GlyphLegend). It is one function because it is one answer — a
+// screen's footer, a card's key list and reading mode's all draw it — so a
+// reader who has learned where the legend is on one surface finds it in the
+// same place on the next
+// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+func KeyListRows(register []KeyOffer, width int) []string {
+	rows := make([]string, 0, len(register)+16)
+	for _, offer := range register {
+		rows = append(rows, packOffers([]KeyOffer{offer}, width)...)
+	}
+	return append(append(rows, ""), GlyphLegend(width)...)
 }
 
 // packOffers lays the key offers out in as few rows as the width allows.

@@ -382,13 +382,9 @@ func (m Model) updateFocus(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		// TUIs have long offered, answering the same question about
 		// the surface that holds the keyboard — and it is live here for the
 		// reason every bare letter on this bar is: nothing else is listening.
-		m.readingKeyList = !m.readingKeyList
-		// The list is taller than the bar it replaced, so the panel takes
-		// rows from the transcript and gives them back — the same accounting
-		// every other bottom panel does.
-		m.syncViewport()
-		m.refreshFocusView()
-		return m, nil
+		// It is the list every card's `?` opens, with the row under the
+		// cursor's own offers beside the mode's (keylist.go).
+		return m.openKeyList("reading mode", m.readingRowOffers())
 	case keys.Is(pressed, keys.Row.Undo, keys.Row.Rounds, keys.Row.Uncap):
 		if next, cmd, claimed := m.rowKey(pressed); claimed {
 			return next, cmd
@@ -571,10 +567,8 @@ func (m Model) focusedClose() (entry, bool) {
 // exitFocusMode returns to the input, keeping expansion state; the render
 // cache is rebuilt without the selection gutter.
 func (m Model) exitFocusMode() (tea.Model, tea.Cmd) {
-	// The register closes with the mode: it is a reading of this surface, and
-	// the next time reading mode opens the question has not been asked yet.
-	// The copy caption goes with it — it captions a mode that is ending.
-	m.readingKeyList = false
+	// The copy caption closes with the mode — it captions a mode that is
+	// ending.
 	m.readingCopied = ""
 	// So does the search. Its marks are painted on the pane the feed uses
 	// too, and the keys that walk them are this mode's: a query left standing
@@ -1013,9 +1007,6 @@ func (m Model) focusHintLines() []string {
 	// nothing else on the surface can be honoured while it is up.
 	if m.viewport.SearchOpen() {
 		return m.transcriptSearchLines(width)
-	}
-	if m.readingKeyList {
-		return m.readingKeyListLines(width, m.maxConfirmPanelHeight())
 	}
 	lines := []string{m.readingKeyLine(width)}
 	return append(lines, m.readingRowLines(width, minPanelHeight-1)...)

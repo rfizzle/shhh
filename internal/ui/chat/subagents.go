@@ -388,6 +388,9 @@ func (m Model) childAskCard(ask *subagent.Ask) *components.ApprovalCard {
 	// It carries the risks too, so the card states severity and warnings from
 	// one source rather than two.
 	m.childBlastFor(ask).applyTo(card)
+	// The routed card answers `?` with the approval card's register, as the
+	// session's own does (childAskMode, keylist.go).
+	card.KeyList = true
 	prefix := ask.Agent + " ▸ "
 	if m.attachedTo == ask.Agent {
 		prefix = ""

@@ -402,8 +402,8 @@ func TestGrantList_AFetchCardHasNoNarrowRow(t *testing.T) {
 }
 
 // The register's own row for the list, walked the way the inert-key register
-// walks every other surface: the three keys it declares are the three it
-// answers, and the always-allow key is what reaches it.
+// walks every other surface: the keys it declares are the keys it answers,
+// and the always-allow key is what reaches it.
 func TestGrantList_TheRegisterRowIsTheKeysItAnswers(t *testing.T) {
 	var found *keys.Surface
 	for _, s := range keys.Surfaces() {
@@ -415,8 +415,8 @@ func TestGrantList_TheRegisterRowIsTheKeysItAnswers(t *testing.T) {
 	if found == nil {
 		t.Fatal("the grant list has no row in the register")
 	}
-	if got := len(found.Bindings); got != 3 {
-		t.Fatalf("the row declares %d bindings; want move, take and cancel", got)
+	if got := len(found.Bindings); got != 4 {
+		t.Fatalf("the row declares %d bindings; want move, take, cancel and the key list", got)
 	}
 	var ran []string
 	m := grantCardModel(t, &ran, "go build ./one")

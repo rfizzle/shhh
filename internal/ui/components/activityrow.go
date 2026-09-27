@@ -377,56 +377,98 @@ func (r ActivityRow) runningGlyph() string {
 	return Spinner{Frame: r.Frame}.Glyph()
 }
 
+// glyphRow is one row of the glyph table: the mark, the token it is painted
+// in, and what it means in words. The grid draws the mark and the key list's
+// legend draws all three, from this one table, so the legend cannot describe a
+// glyph the grid no longer draws.
+type glyphRow struct {
+	mark  string
+	tone  func(Styles) lipgloss.Style
+	means string
+}
+
+func dimTone(s Styles) lipgloss.Style    { return s.Dim }
+func accentTone(s Styles) lipgloss.Style { return s.Accent }
+func spinTone(s Styles) lipgloss.Style   { return s.SpinText }
+
+// kindGlyphs is the kind of act, which a row keeps once it has finished.
+//
+// A read is chrome, so its glyph is too: the accent is kept for the glyphs
+// beside a rail and for what asks a decision, and one on every read would
+// teach the eye to skip it. The verb beside the glyph still says which read
+// it was. See docs/interface/principles.md#weight-tracks-risk.
+//
+// A compaction has no kind of its own, so its column says how it came out:
+// ✓ for a window that came back. One that hit the floor is ActivityFailed
+// and takes ✗ from the state table.
+var kindGlyphs = [...]glyphRow{
+	ActivityTool:       {"⚙", dimTone, "a read: a file, a search, a listing"},
+	ActivityCommand:    {"$", accentTone, "a shell command"},
+	ActivityEdit:       {"✎", accentTone, "an edit, a write, a patch or a memory"},
+	ActivitySubagent:   {"◇", func(s Styles) lipgloss.Style { return s.Info }, "a sub-agent"},
+	ActivityRemote:     {"⇄", accentTone, "a call to a server not marked read-only"},
+	ActivityThink:      {"✻", dimTone, "the model's own reasoning"},
+	ActivityReport:     {"⛁", dimTone, "a published report page"},
+	ActivitySummary:    {"≡", dimTone, "a reading of the session"},
+	ActivityCompaction: {"✓", func(s Styles) lipgloss.Style { return s.Add }, "a compaction that brought the window back"},
+}
+
+// stateGlyphs is the states worth a glyph of their own, each overriding the
+// kind glyph. A row that simply finished is ActivityDone and has no mark
+// here, so `$`, `⚙` and `✎` stay visible on the rows that succeeded.
+var stateGlyphs = [...]glyphRow{
+	ActivityQueued:   {"·", dimTone, "accepted, not started"},
+	ActivityRunning:  {"▸", spinTone, "running"},
+	ActivityChecking: {"✦", spinTone, "the classifier is deciding"},
+	ActivityFailed:   {"✗", func(s Styles) lipgloss.Style { return s.Err }, "failed"},
+	// A refusal a rule made is painted del and yours dim. The mark is the
+	// same, so the legend says both.
+	ActivityDenied: {"⊘", dimTone, "refused: dim by you, red by a rule"},
+}
+
 // glyph renders the 2-column glyph field: the state where it overrides, the
 // kind of act otherwise.
 func (r ActivityRow) glyph() string {
 	var g string
-	switch r.State {
-	case ActivityQueued:
-		g = sty.Dim.Render("·")
-	case ActivityRunning:
-		g = sty.SpinText.Render(r.runningGlyph())
-	case ActivityChecking:
-		g = sty.SpinText.Render("✦")
-	case ActivityFailed:
-		g = sty.Err.Render("✗")
-	case ActivityDenied:
-		if r.ByRule {
-			g = sty.Del.Render("⊘")
-		} else {
-			g = sty.Dim.Render("⊘")
-		}
+	switch {
+	case r.State == ActivityRunning:
+		g = spinTone(sty).Render(r.runningGlyph())
+	case r.State == ActivityDenied && r.ByRule:
+		g = sty.Del.Render(stateGlyphs[ActivityDenied].mark)
+	case r.State != ActivityDone && int(r.State) < len(stateGlyphs):
+		g = stateGlyphs[r.State].render()
+	case int(r.Kind) < len(kindGlyphs):
+		g = kindGlyphs[r.Kind].render()
 	default:
-		switch r.Kind {
-		case ActivityCommand:
-			g = sty.Accent.Render("$")
-		case ActivityEdit:
-			g = sty.Accent.Render("✎")
-		case ActivitySubagent:
-			g = sty.Info.Render("◇")
-		case ActivityRemote:
-			g = sty.Accent.Render("⇄")
-		case ActivityThink:
-			g = sty.Dim.Render("✻")
-		case ActivityReport:
-			g = sty.Dim.Render("⛁")
-		case ActivitySummary:
-			g = sty.Dim.Render("≡")
-		case ActivityCompaction:
-			// The act has no kind, so the column says how it came out. A
-			// compaction that hit the floor is ActivityFailed and takes ✗
-			// from the state switch above.
-			g = sty.Add.Render("✓")
-		default:
-			// A read is chrome, so its glyph is too: the accent is kept for
-			// the glyphs beside a rail and for what asks a decision, and one
-			// on every read would teach the eye to skip it. The verb beside
-			// the glyph still says which read it was.
-			// See docs/interface/principles.md#weight-tracks-risk.
-			g = sty.Dim.Render("⚙")
-		}
+		g = kindGlyphs[ActivityTool].render()
 	}
 	return g + " "
+}
+
+// render is the mark in its token.
+func (g glyphRow) render() string { return g.tone(sty).Render(g.mark) }
+
+// GlyphLegend is the glyph table as the key list draws it under a surface's
+// keys: one row per glyph, painted as the grid paints it, with its meaning
+// beside it — the kinds of act in the order they are declared, then the
+// states that override them. Words too long for the width fold onto the next
+// row rather than being cut (docs/interface/principles.md#fold-never-hide).
+func GlyphLegend(width int) []string {
+	rows := []string{sty.Dim.Render(Clip("glyphs", width))}
+	for _, set := range [][]glyphRow{kindGlyphs[:], stateGlyphs[ActivityQueued:]} {
+		for _, g := range set {
+			lead := g.render() + "  "
+			pad := strings.Repeat(" ", lipgloss.Width(lead))
+			room := max(width-lipgloss.Width(lead), 1)
+			for i, line := range strings.Split(lipgloss.Wrap(g.means, room, ""), "\n") {
+				if i > 0 {
+					lead = pad
+				}
+				rows = append(rows, lead+sty.Dim.Render(line))
+			}
+		}
+	}
+	return rows
 }
 
 // verbField pads the verb to its 8 columns; an over-long verb clips, which is

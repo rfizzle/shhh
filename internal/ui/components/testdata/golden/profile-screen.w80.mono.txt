@@ -31,7 +31,7 @@
   [esc] nothing is drafted
 
 · the pointer moved onto a starting point · enter takes that one instead
-/agents new · a coding agent · reviewer tester                       [esc] leave
+/agents new · a coding agent · reviewer tester            [?] keys · [esc] leave
 ────────────────────────────────────────────────────────────────────────────────
 
   ● brief   · questions   · draft
@@ -51,7 +51,7 @@
   [esc] nothing is drafted
 
 · the wait · the step it was started from, and the key that stops it
-/agents new · a coding agent · reviewer tester               [esc] stop drafting
+/agents new · a coding agent · reviewer tester    [?] keys · [esc] stop drafting
 ────────────────────────────────────────────────────────────────────────────────
 
   ● brief   · questions   · draft
@@ -78,7 +78,7 @@
   [enter] answer it · [esc] back to the last answer
 
 · the draft · the profile over the decision that writes it
-/agents new · a coding agent · reviewer tester           [esc] discard the draft
+/agents new                                   [?] keys · [esc] discard the draft
 ────────────────────────────────────────────────────────────────────────────────
 
   ✓ brief   ⊘ questions   ● draft
@@ -110,7 +110,7 @@
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
 · a short surface · the card is the one thing that never gives ground
-/agents new · a coding agent · reviewer tester           [esc] discard the draft
+/agents new                                   [?] keys · [esc] discard the draft
 ────────────────────────────────────────────────────────────────────────────────
 
   ✓ brief   ⊘ questions   ● draft
@@ -128,7 +128,7 @@
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
 · the file already exists · the card asks again, saying so
-/agents new · a coding agent · reviewer tester           [esc] discard the draft
+/agents new                                   [?] keys · [esc] discard the draft
 ────────────────────────────────────────────────────────────────────────────────
 
   ✓ brief   ⊘ questions   ● draft
@@ -181,7 +181,7 @@
   ␛[38;5;254m[esc]␛[m␛[38;5;244m nothing is drafted␛[m
 
 · the pointer moved onto a starting point · enter takes that one instead
-␛[1;38;5;254m/agents new␛[m␛[38;5;244m · a coding agent · reviewer tester␛[m                       ␛[38;5;244m[esc] leave␛[m
+␛[1;38;5;254m/agents new␛[m␛[38;5;244m · a coding agent · reviewer tester␛[m            ␛[38;5;244m[?] keys · [esc] leave␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;254m● brief␛[m␛[38;5;244m   ␛[m␛[38;5;244m· questions␛[m␛[38;5;244m   ␛[m␛[38;5;244m· draft␛[m
@@ -201,7 +201,7 @@
   ␛[38;5;254m[esc]␛[m␛[38;5;244m nothing is drafted␛[m
 
 · the wait · the step it was started from, and the key that stops it
-␛[1;38;5;254m/agents new␛[m␛[38;5;244m · a coding agent · reviewer tester␛[m               ␛[38;5;244m[esc] stop drafting␛[m
+␛[1;38;5;254m/agents new␛[m␛[38;5;244m · a coding agent · reviewer tester␛[m    ␛[38;5;244m[?] keys · [esc] stop drafting␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;254m● brief␛[m␛[38;5;244m   ␛[m␛[38;5;244m· questions␛[m␛[38;5;244m   ␛[m␛[38;5;244m· draft␛[m
@@ -228,7 +228,7 @@
   ␛[38;5;254m[enter]␛[m␛[38;5;244m answer it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the last answer␛[m
 
 · the draft · the profile over the decision that writes it
-␛[1;38;5;254m/agents new␛[m␛[38;5;244m · a coding agent · reviewer tester␛[m           ␛[38;5;244m[esc] discard the draft␛[m
+␛[1;38;5;254m/agents new␛[m                                   ␛[38;5;244m[?] keys · [esc] discard the draft␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;244m✓ brief␛[m␛[38;5;244m   ␛[m␛[38;5;244m⊘ questions␛[m␛[38;5;244m   ␛[m␛[38;5;254m● draft␛[m
@@ -260,7 +260,7 @@
 ␛[38;5;244m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · a short surface · the card is the one thing that never gives ground
-␛[1;38;5;254m/agents new␛[m␛[38;5;244m · a coding agent · reviewer tester␛[m           ␛[38;5;244m[esc] discard the draft␛[m
+␛[1;38;5;254m/agents new␛[m                                   ␛[38;5;244m[?] keys · [esc] discard the draft␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;244m✓ brief␛[m␛[38;5;244m   ␛[m␛[38;5;244m⊘ questions␛[m␛[38;5;244m   ␛[m␛[38;5;254m● draft␛[m
@@ -278,7 +278,7 @@
 ␛[38;5;244m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · the file already exists · the card asks again, saying so
-␛[1;38;5;254m/agents new␛[m␛[38;5;244m · a coding agent · reviewer tester␛[m           ␛[38;5;244m[esc] discard the draft␛[m
+␛[1;38;5;254m/agents new␛[m                                   ␛[38;5;244m[?] keys · [esc] discard the draft␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;244m✓ brief␛[m␛[38;5;244m   ␛[m␛[38;5;244m⊘ questions␛[m␛[38;5;244m   ␛[m␛[38;5;254m● draft␛[m

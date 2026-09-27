@@ -336,13 +336,27 @@ func TestReadingMode_SurvivesMono(t *testing.T) {
 // The key register on the page (
 // docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 
+// readingKeyList is what `?` puts on the pane in reading mode, rendered at
+// the given width and height.
+func readingKeyList(t *testing.T, m Model, width, height int) []string {
+	t.Helper()
+	next, _ := m.Update(tea.KeyPressMsg{Code: '?', Text: "?"})
+	after := next.(Model)
+	if after.state != stateKeyList || after.keyList == nil {
+		t.Fatalf("? in reading mode did not open the key list (state %d)", after.state)
+	}
+	screen := after.keyList.screen
+	screen.SetSize(width, height)
+	return strings.Split(screen.View(width), "\n")
+}
+
 // TestReadingKeyListNamesEveryModeKey is what `[?]` is for: the bar sheds
 // keys as the terminal narrows and never says which, and this is where they
 // went. A key in reading mode's register that the list does not print is a
 // key a reader has no way left to find.
 func TestReadingKeyListNamesEveryModeKey(t *testing.T) {
 	m := readingModel(t, 100)
-	lines := strings.Join(m.readingKeyListLines(100, 40), "\n")
+	lines := strings.Join(readingKeyList(t, m, 100, 80), "\n")
 	for _, b := range keys.Reading.All() {
 		if !strings.Contains(ansi.Strip(lines), "["+keys.Shown(b)+"]") {
 			t.Errorf("the key list never names %q (%s)", keys.Shown(b), keys.Words(b))
@@ -360,7 +374,7 @@ func TestReadingKeyListCarriesTheRowsOffers(t *testing.T) {
 	if len(offers) == 0 {
 		t.Fatal("the fixture's cursor is on a row with no offers; the test needs one that has them")
 	}
-	lines := ansi.Strip(strings.Join(m.readingKeyListLines(100, 40), "\n"))
+	lines := ansi.Strip(strings.Join(readingKeyList(t, m, 100, 80), "\n"))
 	for _, o := range offers {
 		if !strings.Contains(lines, o.Key) {
 			t.Errorf("the key list drops the row's own %s", o.Key)
@@ -368,28 +382,28 @@ func TestReadingKeyListCarriesTheRowsOffers(t *testing.T) {
 	}
 }
 
-// The panel is bounded like every other one. What does not fit is
-// counted rather than dropped in silence (invariant 4).
+// A pane shorter than the list windows it, and what the window leaves out
+// is counted rather than dropped in silence (invariant 4).
 func TestReadingKeyListCountsWhatDoesNotFit(t *testing.T) {
 	m := readingModel(t, 100)
-	lines := m.readingKeyListLines(100, 3)
-	if len(lines) != 3 {
+	lines := readingKeyList(t, m, 100, 8)
+	if len(lines) != 8 {
 		t.Fatalf("the list ignored its bound: %d lines", len(lines))
 	}
-	if last := ansi.Strip(lines[2]); !strings.Contains(last, "more keys") {
+	if last := ansi.Strip(lines[len(lines)-1]); !strings.Contains(last, "more") {
 		t.Errorf("the last row does not say what it swallowed: %q", last)
 	}
 }
 
-// `?` is live in reading mode and, from the input, only on an empty draft:
-// invariant 5 read literally — a bare letter is a letter while a sentence is
-// being typed, and reading mode is a takeover where nothing else is
-// listening.
+// `?` is live in reading mode and on a card that holds the keyboard, and a
+// character in the draft: invariant 5 read literally — a bare letter is a
+// letter while a sentence is being typed, and reading mode is a takeover
+// where nothing else is listening.
 func TestKeyListIsNotAKeyFromTheDraft(t *testing.T) {
 	m := typeChars(t, frameModel(t, 100, 40), "how do I")
 	next, _ := m.Update(tea.KeyPressMsg{Code: '?', Text: "?"})
 	after := next.(Model)
-	if after.readingKeyList {
+	if after.keyList != nil {
 		t.Error("? opened the key register from a live draft")
 	}
 	if !strings.Contains(after.input.Value(), "?") {

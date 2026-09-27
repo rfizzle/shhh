@@ -419,6 +419,10 @@ func (l *AgentList) settleSteer() {
 // closeSteer puts the keyboard back on the list.
 func (l *AgentList) closeSteer() { l.steer, l.steerAt = nil, "" }
 
+// Typing reports that the steer field has the keyboard, where every letter —
+// `?` included — is text.
+func (l *AgentList) Typing() bool { return l.steer != nil }
+
 // steerTarget is where the open field's child sits in the list now, or -1
 // where it is no longer in it.
 func (l *AgentList) steerTarget() int {

@@ -22,7 +22,7 @@
 ├──────────────────────────────────────────────────────────────────────────┤
 │ [y] run it once · [Y] and say what next · [n] deny · [N] and say why not │
 │ [a] allow "npm test" without asking · [d] full view                      │
-│ [e] edit the command · [esc] leave it waiting, nothing is denied         │
+│ [e] edit the command · [?] keys · [esc] leave it waiting                 │
 ╰──────────────────────────────────────────────────────────────────────────╯
 
 · the line the reader wrote, read again
@@ -37,7 +37,7 @@
 │ network   open                                                           │
 ├──────────────────────────────────────────────────────────────────────────┤
 │ [y] run it once · [Y] and say what next · [n] deny · [N] and say why not │
-│ [d] full view · [e] edit the command                                     │
+│ [d] full view · [e] edit the command · [?] keys                          │
 │ [esc] don't — the safe answer; the decision waits                        │
 │ [a] always — not offered: a safety-flagged command is never pre-approved │
 ╰──────────────────────────────────────────────────────────────────────────╯
@@ -55,7 +55,7 @@
 ␛[38;5;254m├──────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mrun it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[Y]␛[m ␛[38;5;254mand say what next␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m␛[38;5;244m · ␛[m␛[38;5;254m[N]␛[m ␛[38;5;254mand say why not␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[a]␛[m ␛[38;5;254mallow "npm test" without asking␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m ␛[38;5;254mfull view␛[m                      ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[e]␛[m ␛[38;5;254medit the command␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc] leave it waiting, nothing is denied␛[m         ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[e]␛[m ␛[38;5;254medit the command␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m ␛[38;5;254mkeys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc] leave it waiting␛[m                 ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────────────────────╯␛[m
 
 · the line the reader wrote, read again
@@ -70,7 +70,7 @@
 ␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[m␛[38;5;254mopen␛[m                                                           ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mrun it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[Y]␛[m ␛[38;5;254mand say what next␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m␛[38;5;244m · ␛[m␛[38;5;254m[N]␛[m ␛[38;5;254mand say why not␛[m ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[d]␛[m ␛[38;5;254mfull view␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m ␛[38;5;254medit the command␛[m                                     ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[d]␛[m ␛[38;5;254mfull view␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m ␛[38;5;254medit the command␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m ␛[38;5;254mkeys␛[m                          ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[esc] don't — the safe answer; the decision waits␛[m                        ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m[a] always — not offered: a safety-flagged command is never pre-approved␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────────────────────╯␛[m

@@ -28,6 +28,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/subagent"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // placement is where the one-panel grammar draws an overlay. There are three
@@ -143,6 +144,12 @@ type mode struct {
 	// happen once in routeOverlay rather than at the end of every mode.
 	// done is false for a key the mode consumed without finishing.
 	answer func(m *Model, key tea.KeyPressMsg) (done bool, act overlayAction)
+	// keyList names the register row (internal/ui/keys) whose keys `?` lists
+	// over this mode, and answers "" where `?` is not a key right now — a
+	// field on the card has the keyboard, and there it is a character. nil
+	// is a mode that answers `?` itself or never takes it as a key
+	// (keylist.go).
+	keyList func(m Model) string
 }
 
 func (o *mode) Placement() placement { return o.place }
@@ -186,17 +193,19 @@ func buildOverlays() map[state]*mode {
 		// (resolvePanel). Neither borrows the screen: a decision is a stage of
 		// the turn that asked for it.
 		stateConfirmRun: {
-			place:  placeFloating,
-			lines:  panelRows((Model).confirmPanelLines),
-			bound:  (Model).confirmPanelBound,
-			cursor: (Model).confirmCursor,
-			keys:   (Model).updateConfirmRun,
+			place:   placeFloating,
+			lines:   panelRows((Model).confirmPanelLines),
+			bound:   (Model).confirmPanelBound,
+			cursor:  (Model).confirmCursor,
+			keys:    (Model).updateConfirmRun,
+			keyList: (Model).confirmKeyList,
 		},
 		statePlanApprove: {
-			place: placeFloating,
-			lines: panelRows((Model).planPanelLines),
-			bound: func(m Model) int { return m.planPanelBound() + m.gatedExtraRows() },
-			keys:  (Model).updatePlanApprove,
+			place:   placeFloating,
+			lines:   panelRows((Model).planPanelLines),
+			bound:   func(m Model) int { return m.planPanelBound() + m.gatedExtraRows() },
+			keys:    (Model).updatePlanApprove,
+			keyList: staticKeyList("the plan card"),
 		},
 		// The third of them: the model's own question (question.go). It
 		// takes the confirm card's bound rather than the plan card's
@@ -206,10 +215,11 @@ func buildOverlays() map[state]*mode {
 		// free answer that has grown past it, which is why it took the
 		// screen (questionPanelBound).
 		stateQuestion: {
-			place: placeFloating,
-			lines: panelRows((Model).questionPanelLines),
-			bound: (Model).questionPanelBound,
-			keys:  (Model).updateQuestion,
+			place:   placeFloating,
+			lines:   panelRows((Model).questionPanelLines),
+			bound:   (Model).questionPanelBound,
+			keys:    (Model).updateQuestion,
+			keyList: (Model).questionKeyList,
 		},
 
 		// The panel overlays: the cards and selectors that take the draft box's
@@ -229,6 +239,7 @@ func buildOverlays() map[state]*mode {
 			borrows: true,
 			lines:   panelRows((Model).rewindScopeLines),
 			answer:  (*Model).updateRewindScope,
+			keyList: staticKeyList("the rewind scope card"),
 		},
 		stateTodoPropose: {
 			place:   placePanel,
@@ -261,8 +272,9 @@ func buildOverlays() map[state]*mode {
 			// A decision whose keys were cut off by the panel bound is not one,
 			// so the card gets the plan card's headroom the way the pressure card
 			// does (scaffold.go).
-			bound:  (Model).planPanelBound,
-			answer: (*Model).answerScaffold,
+			bound:   (Model).planPanelBound,
+			answer:  (*Model).answerScaffold,
+			keyList: staticKeyList("the scaffold card"),
 		},
 		stateTodoPause: {
 			place:   placePanel,
@@ -275,6 +287,7 @@ func buildOverlays() map[state]*mode {
 			borrows: true,
 			lines:   panelRows((Model).undoConfirmLines),
 			keys:    (Model).updateUndoConfirm,
+			keyList: staticKeyList("the inline confirm and the undo confirm"),
 		},
 		// The card a line from another session waits on. It borrows the
 		// panel and opens only onto an empty draft, so both of its keys are
@@ -284,6 +297,7 @@ func buildOverlays() map[state]*mode {
 			borrows: true,
 			lines:   panelRows((Model).heldLineLines),
 			keys:    (Model).updateHeldLine,
+			keyList: staticKeyList("the held-line card"),
 		},
 		stateQuitConfirm: {
 			place:    placePanel,
@@ -291,6 +305,7 @@ func buildOverlays() map[state]*mode {
 			ownsQuit: true,
 			lines:    panelRows((Model).quitConfirmLines),
 			keys:     (Model).updateQuitConfirm,
+			keyList:  staticKeyList("the inline confirm and the undo confirm"),
 		},
 		// The commit card and the message behind its edit key. Both borrow
 		// the bottom panel, and the card gets the plan card's headroom for
@@ -302,6 +317,7 @@ func buildOverlays() map[state]*mode {
 			lines:   panelRows((Model).commitCardLines),
 			bound:   (Model).planPanelBound,
 			keys:    (Model).updateCommitCard,
+			keyList: staticKeyList("the commit card"),
 		},
 		stateCommitMessage: {
 			place:   placePanel,
@@ -337,8 +353,9 @@ func buildOverlays() map[state]*mode {
 			lines:   panelRows((Model).pressureLines),
 			// The card is a decision, and a decision whose action bar was cut off
 			// by the panel bound is not one: it gets the plan card's headroom.
-			bound: (Model).planPanelBound,
-			keys:  (Model).updatePressure,
+			bound:   (Model).planPanelBound,
+			keys:    (Model).updatePressure,
+			keyList: staticKeyList("the context-pressure card"),
 		},
 
 		// The pane overlays: full width, the rail hidden, a one-line hint where
@@ -371,6 +388,18 @@ func buildOverlays() map[state]*mode {
 			},
 			hint: (Model).renderOutputFullHint,
 			keys: (Model).updateOutputFull,
+		},
+		// The key list `?` opens over a card and over reading mode
+		// (keylist.go). It is above the decision for the reason the viewers
+		// are: a card's own `?` opened it, so the reader is inside the card's
+		// detail and the handover chord is not what a key means here.
+		stateKeyList: {
+			place:         placePane,
+			borrows:       true,
+			aboveDecision: true,
+			lines:         (Model).keyListLines,
+			hint:          (Model).renderKeyListHint,
+			keys:          (Model).updateKeyList,
 		},
 		statePreview: {
 			place:         placePane,
@@ -514,9 +543,10 @@ func buildOverlays() map[state]*mode {
 // found, which is coverOverlay rather than the state.
 func agentListMode() *mode {
 	return &mode{
-		place: placePanel,
-		lines: panelRows((Model).agentListLines),
-		keys:  (Model).updateAgentList,
+		place:   placePanel,
+		lines:   panelRows((Model).agentListLines),
+		keys:    (Model).updateAgentList,
+		keyList: (Model).agentListKeyList,
 	}
 }
 
@@ -538,6 +568,7 @@ func childAskMode(ask *subagent.Ask) *mode {
 		keys: func(m Model, key tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			return m.updateChildAsk(key, ask)
 		},
+		keyList: staticKeyList("the approval card and the /run confirm"),
 	}
 }
 
@@ -611,6 +642,16 @@ func (m Model) askOverlay() overlay {
 // only has to say what it decided cannot get the order wrong, and so that
 // changing the order is one edit rather than one per mode.
 func (m Model) routeOverlay(o *mode, key tea.KeyPressMsg) (tea.Model, tea.Cmd) {
+	// `?` is answered here, once, for every mode that names a register row,
+	// rather than in each card's own handler: it is the one key every
+	// surface holding the keyboard answers the same way, and a card that had
+	// to remember to is a card that will one day forget
+	// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+	if o.keyList != nil && keys.Match(key, keys.Screen.List) {
+		if surface := o.keyList(m); surface != "" {
+			return m.openKeyList(surface, nil)
+		}
+	}
 	if o.ownsQuit {
 		return m.applyOverlay(o, key)
 	}

@@ -125,6 +125,10 @@ type MetricsScreen struct {
 	// body's budget before anything is drawn. 0 is unbounded, which is what a
 	// test or a host that sizes itself gets.
 	MaxLines int
+
+	// keys reports that `?` has the register and the glyph legend showing
+	// in place of the foot.
+	keys bool
 }
 
 // MetricsResult is the screen's answer, and it carries nothing: the reading
@@ -134,16 +138,19 @@ type MetricsScreen struct {
 // beside it (Keyed).
 type MetricsResult struct{}
 
-// Update is the screen's whole keyboard, and it is one act. The header
-// offers it as `[q]` and the footer as `[esc]`, which are the two spellings
-// the whole family states its way out in; there is no pointer to move,
-// nothing to choose and nothing to change, so there is no key list to open
-// either — a `[?]` over a single act would be a row explaining the row above
-// it.
+// Update is the screen's whole keyboard. It has one act — leaving, which the
+// header offers as `[q]` and the footer as `[esc]` — and the `?` every
+// surface that holds the keyboard answers the same way: the register with the
+// glyph legend under it. A screen with one act still has a legend a reader may
+// have come for, and a `?` that did nothing here would be the one surface a
+// reader who learned the key elsewhere finds it dead on
+// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 func (m *MetricsScreen) Update(msg tea.KeyPressMsg) (done bool, result MetricsResult) {
 	switch pressed := msg.String(); {
 	case keys.Is(pressed, keys.Screen.Quit):
 		return true, MetricsResult{}
+	case keys.Is(pressed, keys.Screen.List):
+		m.keys = !m.keys
 	}
 	return false, MetricsResult{}
 }
@@ -167,18 +174,19 @@ func (m *MetricsScreen) View(width int) string {
 		return ""
 	}
 	return ScreenChrome{Header: m.header(), MaxLines: m.MaxLines,
-		Foot: KeyFooter{Offers: []KeyOffer{wayOut(backToShell)}}.Rows(width)}.
+		Foot: KeyFooter{Offers: []KeyOffer{wayOut(backToShell)},
+			Register: []KeyOffer{wayOut(backToShell)}, Showing: m.keys}.Rows(width)}.
 		View(width, func(budget int) []string { return m.bodyRows(width, budget) })
 }
 
 // header names the command and what it is over, with the total spend beside
-// the one key the screen has. The spend sits with the key rather than in the
+// the keys the screen has. The spend sits with the key rather than in the
 // subject because it is the answer the reader came for, and this is where the
 // eye already goes for the state of a surface.
 func (m *MetricsScreen) header() ScreenHeader {
 	h := ScreenHeader{
 		Left:  []RailSegment{screenTitle("shhh metrics")},
-		Keys:  keys.Bracket(keys.Screen.Quit) + " " + keys.Words(keys.Screen.Quit),
+		Keys:  screenHeaderKeys(),
 		Tally: sty.Body.Render(m.Spend),
 	}
 	if m.Subject != "" {

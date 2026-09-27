@@ -63,7 +63,7 @@ func TestMain(m *testing.M) {
 func TestGolden_TheMacKeyboard(t *testing.T) {
 	golden.OnPlatform(t, "darwin",
 		"TestGolden_ChildRequestRouted", "TestGolden_HelpKeys", "TestGolden_HelpChat",
-		"TestGolden_HistorySearch", "TestGolden_Interrupt", "TestGolden_PasteToken",
+		"TestGolden_HistorySearch", "TestGolden_Interrupt", "TestGolden_KeyList", "TestGolden_PasteToken",
 		"TestGolden_ProviderFailures", "TestGolden_RecoverySelection", "TestGolden_RewindFold",
 		"TestGolden_RewindRow",
 		"TestGolden_RoundLimitPause", "TestGolden_Screen", "TestGolden_ScreenAttached",
@@ -1483,12 +1483,18 @@ func TestGolden_ProfileDrafter(t *testing.T) {
 			return "", errors.New("agent profile /repo/.shhh/agents/test-writer.toml: max_tokens: must be at least 300000")
 		}
 		m = pressOn(t, m, tea.KeyPressMsg{Code: tea.KeyEnter})
+		refused := pane(m)
+		// `?` on the draft card, where no field has the keyboard: the
+		// drafter's keys and the glyph legend take the foot, on a pane tall
+		// enough to hold them.
+		m = pressOn(t, m, tea.KeyPressMsg{Code: '?', Text: "?"})
 		return []golden.Panel{
 			{Label: "the brief · the roles this session already has are on the header", View: brief},
 			{Label: "the drafter's first question, asked on its own", View: first},
 			{Label: "the second, with the first answer still above it", View: second},
 			{Label: "the draft · both places a coding agent's profile can live", View: drafted},
-			{Label: "a save the loader refused · the draft stays, the refusal under it", View: pane(m)},
+			{Label: "a save the loader refused · the draft stays, the refusal under it", View: refused},
+			{Label: "[?] on the draft card · the drafter's keys and the glyph legend", View: m.personaPane(width, 40)},
 		}
 	})
 }
@@ -1934,13 +1940,6 @@ func TestGolden_ReadingMode(t *testing.T) {
 				next, _ := m.updateFocus(tea.KeyPressMsg{Code: tea.KeyEnter})
 				*m = next.(Model)
 			})},
-			// The register with the cursor on a row that offers keys of its
-			// own: the mode's keys, then the row's under its own rail, which
-			// is the whole of what the keyboard can do from here.
-			{Label: "[?] · the mode's whole key register, where the bar was", View: reading(func(m *Model) {
-				next, _ := m.updateFocus(tea.KeyPressMsg{Code: '?', Text: "?"})
-				*m = next.(Model)
-			})},
 			{Label: "prose · the cursor on a message: [y] copies its markdown source", View: func() string {
 				m := frameModel(t, width, 40)
 				m.transcript = []entry{
@@ -1951,6 +1950,36 @@ func TestGolden_ReadingMode(t *testing.T) {
 				next, _ := m.enterFocusMode()
 				return readingSurface(next.(Model))
 			}()},
+		}
+	})
+}
+
+// TestGolden_KeyList captures what `?` opens on the surfaces that hold the
+// keyboard and have no foot of their own to swap: a decision card after the
+// handover, and reading mode with the cursor on a row that makes offers of
+// its own. Each is the surface's register with the glyph legend under it, on
+// the pane, and the hint where the draft was says how to go back
+// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+// A screen's `?` is captured with the screen (profile-drafter here,
+// metrics-screen in the components package).
+func TestGolden_KeyList(t *testing.T) {
+	captureGolden(t, "key-list", "the key list over a card and reading mode", goldenWidths, func(width int) []golden.Panel {
+		surface := func(m Model) string {
+			if m.state != stateKeyList {
+				t.Fatalf("? did not open the key list (state %d)", m.state)
+			}
+			return strings.Join(m.keyListLines(m.paneWidth(), 34), "\n") + "\n" + m.renderKeyListHint()
+		}
+		card := interruptedModel(t, "also add a flag")
+		card.width, card.height = width, 40
+		card.syncInputWidth()
+		card.syncViewport()
+		card = pressOn(t, handover(t, card), tea.KeyPressMsg{Code: '?', Text: "?"})
+
+		reading := pressOn(t, readingModel(t, width), tea.KeyPressMsg{Code: '?', Text: "?"})
+		return []golden.Panel{
+			{Label: "over the approval card · after the handover", View: surface(card)},
+			{Label: "over reading mode · the cursor on a row with offers of its own", View: surface(reading)},
 		}
 	})
 }

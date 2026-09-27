@@ -578,6 +578,9 @@ func cardKeys(m Model, card *components.ApprovalCard) []string {
 	for _, o := range card.ExtraHints {
 		out = append(out, strings.Trim(o.Key, "[]"))
 	}
+	if card.KeyList {
+		out = append(out, keys.Shown(keys.Screen.List))
+	}
 	if maxBody, _ := card.ScrollBounds(m.contentWidth()); maxBody > 0 {
 		out = append(out, keys.Shown(keys.Decision.ScrollDown))
 	}

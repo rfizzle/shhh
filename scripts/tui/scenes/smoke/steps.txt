@@ -10,17 +10,25 @@ keys "say hi" Enter
 snap 02-reply "Hello from the scripted provider"
 keys "run something" Enter
 snap 03-approval "[y] run it once"
+# The card holds the keyboard, so `?` is its key list: the card's register
+# and the glyph legend on the pane, and esc puts the card back. The card
+# discards a key typed the moment it arrives, hence the pause.
+sleep 1
+keys "?"
+snap 04-keys "keys · the approval card" "refused: dim by you, red by a rule"
+keys Escape
+snap 05-card-again "[y] run it once"
 keys y
-snap 04-ran "Done: the command printed a greeting" "ok · 1 line · approved by you" "▎✎ wrote nothing"
+snap 06-ran "Done: the command printed a greeting" "ok · 1 line · approved by you" "▎✎ wrote nothing"
 keys "/ui verbosity low" Enter
 # Each rung is waited on by what the row draws at it: low drops the row's
 # count, normal puts it back, high opens the row onto its output.
-snap 05-low "ok · approved by you" "verbosity set to low"
+snap 07-low "ok · approved by you" "verbosity set to low"
 keys "/ui verbosity normal" Enter
-snap 06-normal "verbosity set to normal" "ok · 1 line · approved by you"
+snap 08-normal "verbosity set to normal" "ok · 1 line · approved by you"
 keys "/ui verbosity high" Enter
-snap 07-high "verbosity set to high" "    hi from the scripted provider"
+snap 09-high "verbosity set to high" "    hi from the scripted provider"
 keys C-c
-snap 08-quit-armed "again quits"
+snap 10-quit-armed "again quits"
 keys C-c
-snap 09-exit "that is everything the screen was holding"
+snap 11-exit "that is everything the screen was holding"

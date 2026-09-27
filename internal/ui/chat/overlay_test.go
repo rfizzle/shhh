@@ -43,6 +43,7 @@ func TestOverlayPlacements(t *testing.T) {
 
 		stateDiffFull:   placePane,
 		stateOutputFull: placePane,
+		stateKeyList:    placePane,
 		statePreview:    placePane,
 		statePasteView:  placePane,
 		stateReview:     placePane,

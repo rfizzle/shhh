@@ -445,6 +445,13 @@ type ApprovalCard struct {
 	// these together and presses every one of them through the surface's
 	// real route.
 	ExtraHints []KeyOffer
+	// KeyList says the host answers `?` over this card with the card's whole
+	// register and the glyph legend. The offer takes the run's last slot
+	// before the way out, on a card that arrived holding the keyboard as well
+	// as one that was handed it: it shows keys and answers nothing, so it is
+	// not one a reader who came to type could regret
+	// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+	KeyList bool
 	// Footnote says why a key the reader might expect is absent. A missing
 	// key with a stated reason teaches; a missing key without one reads as a
 	// bug.
@@ -487,8 +494,9 @@ type ApprovalCard struct {
 	//. It claims less than a card that was handed the keyboard:
 	// the two answers and the two ways out, and nothing whose consequence a
 	// reader could not undo — [a] and [d] still want the handover, because
-	// `always` and `always` are not what someone typing `also` meant. Every
-	// other key releases the keyboard and goes into the draft.
+	// `always` and `always` are not what someone typing `also` meant. `?`
+	// is claimed too, where KeyList offers it: it shows the keys and answers
+	// nothing. Every other key releases the keyboard and goes into the draft.
 	HeldOnArrival bool
 	// Grace marks a held card whose arrival landed on a keyboard still warm:
 	// the host is discarding its decision keys until the typing has settled
@@ -894,6 +902,9 @@ func (c *ApprovalCard) hintRowsFor(width, inner int) []string {
 		for _, o := range c.ExtraHints {
 			segments = append(segments, offerSegment(o.Key, o.Label))
 		}
+	}
+	if c.KeyList {
+		segments = append(segments, offerSegment(keys.Bracket(keys.Screen.List), keys.Words(keys.Screen.List)))
 	}
 	return append(c.closeRun(runRows(segments, inner), inner), c.footnoteRows(inner)...)
 }

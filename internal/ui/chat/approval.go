@@ -1119,6 +1119,8 @@ func (m Model) approvalCard() *components.ApprovalCard {
 	m.applyDecisionNote(card)
 	m.applyCommandEdit(card)
 	m.applyGrantChoice(card)
+	// The card offers `?` wherever the register row answers it (keylist.go).
+	card.KeyList = m.confirmKeyList() != ""
 	return card
 }
 

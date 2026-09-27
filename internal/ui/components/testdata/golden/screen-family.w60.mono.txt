@@ -24,7 +24,7 @@ shhh doctor · 10 checks           1.4s · [?] keys · [q] quit
 [r] run the checks again · [esc] back to the shell
 
 · metrics · the spend rides with the one key the screen has
-shhh metrics                               $18.42 · [q] quit
+shhh metrics                    $18.42 · [?] keys · [q] quit
 ────────────────────────────────────────────────────────────
 
   MODEL              REQUESTS  ↑ TOK  ↓ TOK   SPEND   TTFT
@@ -168,7 +168,7 @@ MODE AND POLICY
 ␛[38;5;254m[r]␛[m␛[38;5;244m run the checks again␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the shell␛[m
 
 · metrics · the spend rides with the one key the screen has
-␛[1;38;5;254mshhh metrics␛[m                               ␛[38;5;254m$18.42␛[m␛[38;5;244m · [q] quit␛[m
+␛[1;38;5;254mshhh metrics␛[m                    ␛[38;5;254m$18.42␛[m␛[38;5;244m · [?] keys · [q] quit␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
   ␛[1;38;5;254mMODEL              REQUESTS  ↑ TOK  ↓ TOK   SPEND   TTFT␛[m

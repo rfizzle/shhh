@@ -898,6 +898,9 @@ func (m Model) listAnswerCard(ask *subagent.Ask) *components.ApprovalCard {
 	// that answered no because the reader wanted to look at the list again
 	// was the one place in the product where it did.
 	card.ExtraHints = nil
+	// Over the manager `?` is not routed to the card (agentListKeyList), so
+	// the card does not offer it.
+	card.KeyList = false
 	card.Return = "back to the agents — the decision stays waiting"
 	return card
 }

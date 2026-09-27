@@ -135,11 +135,14 @@ func (c CommitCard) stagesRow(inner int) string {
 // spelling offered is the spelling answered. The staging key carries the
 // surface's own words after it, because what `[s]` opens is the review the
 // product already has and a reader should be told that before pressing it.
+// `?` takes the last slot: the host answers it with the card's register and
+// the glyph legend, as every surface holding the keyboard does.
 func commitRun() []string {
 	return []string{
 		offerSegment(keys.Bracket(keys.Commit.Take), keys.Words(keys.Commit.Take)),
 		offerSegment(keys.Bracket(keys.Commit.Edit), keys.Words(keys.Commit.Edit)),
 		offerSegment(keys.Bracket(keys.Commit.Hunks), keys.Words(keys.Commit.Hunks)+" — the review surface"),
+		offerSegment(keys.Bracket(keys.Screen.List), keys.Words(keys.Screen.List)),
 	}
 }
 

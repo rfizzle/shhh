@@ -22,7 +22,7 @@
 │ ⛨         bwrap · workspace                          │
 ├──────────────────────────────────────────────────────┤
 │ [y] run it once · [n] deny · [g] attach to writer-1  │
-│ [alt+a] agents                                       │
+│ [alt+a] agents · [?] keys                            │
 │ [esc] don't — the safe answer; the decision waits    │
 │ [a] always — not offered: a safety-flagged command   │
 │ is never pre-approved                                │
@@ -39,7 +39,7 @@
 │ network   closed                                     │
 │ ⛨         bwrap · workspace                          │
 ├──────────────────────────────────────────────────────┤
-│ [y] run it once · [n] deny                           │
+│ [y] run it once · [n] deny · [?] keys                │
 │ [esc] don't — the safe answer; the decision waits    │
 │ [a] always — not offered: a safety-flagged command   │
 │ is never pre-approved                                │
@@ -73,7 +73,7 @@
 │ [y] run it once · [n] deny                           │
 │ [a] allow "go test" for every agent until this turn  │
 │     ends                                             │
-│ [g] attach to writer-1 · [alt+a] agents              │
+│ [g] attach to writer-1 · [alt+a] agents · [?] keys   │
 │ [esc] leave it waiting, nothing is denied            │
 ╰──────────────────────────────────────────────────────╯
 
@@ -91,7 +91,7 @@
 │ [y] run it once · [n] deny                           │
 │ [a] allow "go run tools generate-fixtures" for every │
 │     agent until this turn ends                       │
-│ [g] attach to writer-1 · [alt+a] agents              │
+│ [g] attach to writer-1 · [alt+a] agents · [?] keys   │
 │ [esc] leave it waiting, nothing is denied            │
 ╰──────────────────────────────────────────────────────╯
 
@@ -126,7 +126,7 @@
 ├──────────────────────────────────────────────────────┤
 │ [y] apply the patch to your workspace · [n] deny     │
 │ [d] full diff · [g] attach to writer-1               │
-│ [alt+a] agents · [esc] leave it waiting              │
+│ [alt+a] agents · [?] keys · [esc] leave it waiting   │
 ╰──────────────────────────────────────────────────────╯
 
 · a patch your checkout moved under · the merge is the diff, and the card says so
@@ -144,7 +144,7 @@
 ├──────────────────────────────────────────────────────┤
 │ [y] apply the patch to your workspace · [n] deny     │
 │ [d] full diff · [g] attach to writer-1               │
-│ [alt+a] agents · [esc] leave it waiting              │
+│ [alt+a] agents · [?] keys · [esc] leave it waiting   │
 ╰──────────────────────────────────────────────────────╯
 
 · a patch that touched a golden file · its generator wrote it, and the card names the command
@@ -162,7 +162,7 @@
 ├──────────────────────────────────────────────────────┤
 │ [y] apply the patch to your workspace · [n] deny     │
 │ [d] full diff · [g] attach to writer-1               │
-│ [alt+a] agents · [esc] leave it waiting              │
+│ [alt+a] agents · [?] keys · [esc] leave it waiting   │
 ╰──────────────────────────────────────────────────────╯
 
 · an integration writer's patch · the reconciliation is a fact, not a clash
@@ -180,7 +180,7 @@
 ├──────────────────────────────────────────────────────┤
 │ [y] apply the patch to your workspace · [n] deny     │
 │ [d] full diff · [g] attach to integrator-1           │
-│ [alt+a] agents · [esc] leave it waiting              │
+│ [alt+a] agents · [?] keys · [esc] leave it waiting   │
 ╰──────────────────────────────────────────────────────╯
 
 ── ansi ────────────────────────────────────────────────────
@@ -196,7 +196,7 @@
 ␛[91m│␛[m ␛[38;5;243m⛨         ␛[m␛[38;5;243mbwrap · workspace␛[m                          ␛[91m│␛[m
 ␛[91m├──────────────────────────────────────────────────────┤␛[m
 ␛[91m│␛[m ␛[94m[y]␛[m ␛[38;5;252mrun it once␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m ␛[38;5;252mdeny␛[m␛[38;5;241m · ␛[m␛[94m[g]␛[m ␛[38;5;252mattach to writer-1␛[m  ␛[91m│␛[m
-␛[91m│␛[m ␛[94m[alt+a]␛[m ␛[38;5;252magents␛[m                                       ␛[91m│␛[m
+␛[91m│␛[m ␛[94m[alt+a]␛[m ␛[38;5;252magents␛[m␛[38;5;241m · ␛[m␛[94m[?]␛[m ␛[38;5;252mkeys␛[m                            ␛[91m│␛[m
 ␛[91m│␛[m ␛[92m[esc] don't — the safe answer; the decision waits␛[m    ␛[91m│␛[m
 ␛[91m│␛[m ␛[38;5;241m[a] always — not offered: a safety-flagged command␛[m   ␛[91m│␛[m
 ␛[91m│␛[m ␛[38;5;241mis never pre-approved␛[m                                ␛[91m│␛[m
@@ -213,7 +213,7 @@
 ␛[91m│␛[m ␛[38;5;243mnetwork   ␛[m␛[92mclosed␛[m                                     ␛[91m│␛[m
 ␛[91m│␛[m ␛[38;5;243m⛨         ␛[m␛[38;5;243mbwrap · workspace␛[m                          ␛[91m│␛[m
 ␛[91m├──────────────────────────────────────────────────────┤␛[m
-␛[91m│␛[m ␛[94m[y]␛[m ␛[38;5;252mrun it once␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m ␛[38;5;252mdeny␛[m                           ␛[91m│␛[m
+␛[91m│␛[m ␛[94m[y]␛[m ␛[38;5;252mrun it once␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m ␛[38;5;252mdeny␛[m␛[38;5;241m · ␛[m␛[94m[?]␛[m ␛[38;5;252mkeys␛[m                ␛[91m│␛[m
 ␛[91m│␛[m ␛[92m[esc] don't — the safe answer; the decision waits␛[m    ␛[91m│␛[m
 ␛[91m│␛[m ␛[38;5;241m[a] always — not offered: a safety-flagged command␛[m   ␛[91m│␛[m
 ␛[91m│␛[m ␛[38;5;241mis never pre-approved␛[m                                ␛[91m│␛[m
@@ -247,7 +247,7 @@
 ␛[38;5;214m│␛[m ␛[94m[y]␛[m ␛[38;5;252mrun it once␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m ␛[38;5;252mdeny␛[m                           ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[94m[a]␛[m ␛[38;5;252mallow "go test" for every agent until this turn␛[m  ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m     ␛[94m␛[m␛[38;5;252mends␛[m                                             ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[94m[g]␛[m ␛[38;5;252mattach to writer-1␛[m␛[38;5;241m · ␛[m␛[94m[alt+a]␛[m ␛[38;5;252magents␛[m              ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[94m[g]␛[m ␛[38;5;252mattach to writer-1␛[m␛[38;5;241m · ␛[m␛[94m[alt+a]␛[m ␛[38;5;252magents␛[m␛[38;5;241m · ␛[m␛[94m[?]␛[m ␛[38;5;252mkeys␛[m   ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[92m[esc] leave it waiting, nothing is denied␛[m            ␛[38;5;214m│␛[m
 ␛[38;5;214m╰──────────────────────────────────────────────────────╯␛[m
 
@@ -265,7 +265,7 @@
 ␛[38;5;214m│␛[m ␛[94m[y]␛[m ␛[38;5;252mrun it once␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m ␛[38;5;252mdeny␛[m                           ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[94m[a]␛[m ␛[38;5;252mallow "go run tools generate-fixtures" for every␛[m ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m     ␛[94m␛[m␛[38;5;252magent until this turn ends␛[m                       ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[94m[g]␛[m ␛[38;5;252mattach to writer-1␛[m␛[38;5;241m · ␛[m␛[94m[alt+a]␛[m ␛[38;5;252magents␛[m              ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[94m[g]␛[m ␛[38;5;252mattach to writer-1␛[m␛[38;5;241m · ␛[m␛[94m[alt+a]␛[m ␛[38;5;252magents␛[m␛[38;5;241m · ␛[m␛[94m[?]␛[m ␛[38;5;252mkeys␛[m   ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[92m[esc] leave it waiting, nothing is denied␛[m            ␛[38;5;214m│␛[m
 ␛[38;5;214m╰──────────────────────────────────────────────────────╯␛[m
 
@@ -300,7 +300,7 @@
 ␛[38;5;214m├──────────────────────────────────────────────────────┤␛[m
 ␛[38;5;214m│␛[m ␛[94m[y]␛[m ␛[38;5;252mapply the patch to your workspace␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m ␛[38;5;252mdeny␛[m     ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[94m[d]␛[m ␛[38;5;252mfull diff␛[m␛[38;5;241m · ␛[m␛[94m[g]␛[m ␛[38;5;252mattach to writer-1␛[m               ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[94m[alt+a]␛[m ␛[38;5;252magents␛[m␛[38;5;241m · ␛[m␛[92m[esc] leave it waiting␛[m              ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[94m[alt+a]␛[m ␛[38;5;252magents␛[m␛[38;5;241m · ␛[m␛[94m[?]␛[m ␛[38;5;252mkeys␛[m␛[38;5;241m · ␛[m␛[92m[esc] leave it waiting␛[m   ␛[38;5;214m│␛[m
 ␛[38;5;214m╰──────────────────────────────────────────────────────╯␛[m
 
 · a patch your checkout moved under · the merge is the diff, and the card says so
@@ -318,7 +318,7 @@
 ␛[38;5;214m├──────────────────────────────────────────────────────┤␛[m
 ␛[38;5;214m│␛[m ␛[94m[y]␛[m ␛[38;5;252mapply the patch to your workspace␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m ␛[38;5;252mdeny␛[m     ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[94m[d]␛[m ␛[38;5;252mfull diff␛[m␛[38;5;241m · ␛[m␛[94m[g]␛[m ␛[38;5;252mattach to writer-1␛[m               ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[94m[alt+a]␛[m ␛[38;5;252magents␛[m␛[38;5;241m · ␛[m␛[92m[esc] leave it waiting␛[m              ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[94m[alt+a]␛[m ␛[38;5;252magents␛[m␛[38;5;241m · ␛[m␛[94m[?]␛[m ␛[38;5;252mkeys␛[m␛[38;5;241m · ␛[m␛[92m[esc] leave it waiting␛[m   ␛[38;5;214m│␛[m
 ␛[38;5;214m╰──────────────────────────────────────────────────────╯␛[m
 
 · a patch that touched a golden file · its generator wrote it, and the card names the command
@@ -336,7 +336,7 @@
 ␛[38;5;214m├──────────────────────────────────────────────────────┤␛[m
 ␛[38;5;214m│␛[m ␛[94m[y]␛[m ␛[38;5;252mapply the patch to your workspace␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m ␛[38;5;252mdeny␛[m     ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[94m[d]␛[m ␛[38;5;252mfull diff␛[m␛[38;5;241m · ␛[m␛[94m[g]␛[m ␛[38;5;252mattach to writer-1␛[m               ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[94m[alt+a]␛[m ␛[38;5;252magents␛[m␛[38;5;241m · ␛[m␛[92m[esc] leave it waiting␛[m              ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[94m[alt+a]␛[m ␛[38;5;252magents␛[m␛[38;5;241m · ␛[m␛[94m[?]␛[m ␛[38;5;252mkeys␛[m␛[38;5;241m · ␛[m␛[92m[esc] leave it waiting␛[m   ␛[38;5;214m│␛[m
 ␛[38;5;214m╰──────────────────────────────────────────────────────╯␛[m
 
 · an integration writer's patch · the reconciliation is a fact, not a clash
@@ -354,5 +354,5 @@
 ␛[38;5;214m├──────────────────────────────────────────────────────┤␛[m
 ␛[38;5;214m│␛[m ␛[94m[y]␛[m ␛[38;5;252mapply the patch to your workspace␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m ␛[38;5;252mdeny␛[m     ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[94m[d]␛[m ␛[38;5;252mfull diff␛[m␛[38;5;241m · ␛[m␛[94m[g]␛[m ␛[38;5;252mattach to integrator-1␛[m           ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[94m[alt+a]␛[m ␛[38;5;252magents␛[m␛[38;5;241m · ␛[m␛[92m[esc] leave it waiting␛[m              ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[94m[alt+a]␛[m ␛[38;5;252magents␛[m␛[38;5;241m · ␛[m␛[94m[?]␛[m ␛[38;5;252mkeys␛[m␛[38;5;241m · ␛[m␛[92m[esc] leave it waiting␛[m   ␛[38;5;214m│␛[m
 ␛[38;5;214m╰──────────────────────────────────────────────────────╯␛[m

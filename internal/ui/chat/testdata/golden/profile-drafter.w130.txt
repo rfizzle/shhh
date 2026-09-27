@@ -61,7 +61,7 @@
   [enter] answer it · [esc] back to the last answer
 
 · the draft · both places a coding agent's profile can live
-/agents new · a coding agent · researcher                                                                  [esc] discard the draft
+/agents new · a coding agent · researcher                                                       [?] keys · [esc] discard the draft
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
   ✓ brief   ✓ questions   ● draft
@@ -89,7 +89,7 @@
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 · a save the loader refused · the draft stays, the refusal under it
-/agents new · a coding agent · researcher                                                                  [esc] discard the draft
+/agents new · a coding agent · researcher                                                       [?] keys · [esc] discard the draft
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
   ✓ brief   ✓ questions   ● draft
@@ -115,6 +115,48 @@
 │   (none)                                                                                                                       │
 │ [tab] note/options · [enter] confirm · [esc] take none                                                                         │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+· [?] on the draft card · the drafter's keys and the glyph legend
+/agents new · a coding agent · researcher                                                       [?] keys · [esc] discard the draft
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  ✓ brief   ✓ questions   ● draft
+
+  test-writer — adds table-driven tests for a package and runs them
+
+╭─ Keep test-writer? ────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ ❯ 1. Save to this project  /repo/.shhh/agents                                                                                  │
+│   2. Save globally         /home/x/.config/shhh/agents                                                                         │
+│   3. Refine                say what to change in the note                                                                      │
+│   4. Discard                                                                                                                   │
+│ ┄ note (optional)                                                                                                              │
+│   (none)                                                                                                                       │
+│ [tab] note/options · [enter] confirm · [esc] take none                                                                         │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+[↑↓] move
+[enter] take it
+[tab] note or options
+[shift+↑] scroll the profile up
+[shift+↓] scroll the profile
+[esc] back a step
+
+glyphs
+⚙  a read: a file, a search, a listing
+$  a shell command
+✎  an edit, a write, a patch or a memory
+◇  a sub-agent
+⇄  a call to a server not marked read-only
+✻  the model's own reasoning
+⛁  a published report page
+≡  a reading of the session
+✓  a compaction that brought the window back
+·  accepted, not started
+▸  running
+✦  the classifier is deciding
+✗  failed
+⊘  refused: dim by you, red by a rule
+[?] hide the keys
 
 ── ansi ────────────────────────────────────────────────────
 · the brief · the roles this session already has are on the header
@@ -168,7 +210,7 @@
   ␛[94m[enter]␛[m␛[38;5;241m answer it␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the last answer␛[m
 
 · the draft · both places a coding agent's profile can live
-␛[1;97m/agents new␛[m␛[38;5;241m · a coding agent · researcher␛[m                                                                  ␛[38;5;241m[esc] discard the draft␛[m
+␛[1;97m/agents new␛[m␛[38;5;241m · a coding agent · researcher␛[m                                                       ␛[38;5;241m[?] keys · [esc] discard the draft␛[m
 ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;241m✓ brief␛[m␛[38;5;245m   ␛[m␛[38;5;241m✓ questions␛[m␛[38;5;245m   ␛[m␛[94m● draft␛[m
@@ -196,7 +238,7 @@
 ␛[38;5;241m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · a save the loader refused · the draft stays, the refusal under it
-␛[1;97m/agents new␛[m␛[38;5;241m · a coding agent · researcher␛[m                                                                  ␛[38;5;241m[esc] discard the draft␛[m
+␛[1;97m/agents new␛[m␛[38;5;241m · a coding agent · researcher␛[m                                                       ␛[38;5;241m[?] keys · [esc] discard the draft␛[m
 ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;241m✓ brief␛[m␛[38;5;245m   ␛[m␛[38;5;241m✓ questions␛[m␛[38;5;245m   ␛[m␛[94m● draft␛[m
@@ -222,3 +264,45 @@
 ␛[38;5;241m│␛[m   ␛[38;5;245m(none)␛[m                                                                                                                       ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[94m[tab]␛[m␛[38;5;241m note/options␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m confirm␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m take none␛[m                                                                         ␛[38;5;241m│␛[m
 ␛[38;5;241m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
+
+· [?] on the draft card · the drafter's keys and the glyph legend
+␛[1;97m/agents new␛[m␛[38;5;241m · a coding agent · researcher␛[m                                                       ␛[38;5;241m[?] keys · [esc] discard the draft␛[m
+␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+
+  ␛[38;5;241m✓ brief␛[m␛[38;5;245m   ␛[m␛[38;5;241m✓ questions␛[m␛[38;5;245m   ␛[m␛[94m● draft␛[m
+
+  ␛[38;5;252mtest-writer — adds table-driven tests for a package and runs them␛[m
+
+␛[38;5;241m╭─ ␛[m␛[1;97mKeep test-writer? ␛[m␛[38;5;241m────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m␛[38;5;241m╮␛[m
+␛[38;5;241m│␛[m ␛[94m❯␛[m ␛[1;97;48;5;62m1. Save to this project  /repo/.shhh/agents                                                                                 ␛[m ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m   ␛[38;5;241m2. ␛[m␛[38;5;252mSave globally␛[m         ␛[38;5;241m/home/x/.config/shhh/agents␛[m                                                                         ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m   ␛[38;5;241m3. ␛[m␛[38;5;252mRefine␛[m                ␛[38;5;241msay what to change in the note␛[m                                                                      ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m   ␛[38;5;241m4. ␛[m␛[38;5;252mDiscard␛[m                                                                                                                   ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[38;5;241m┄ note (optional)␛[m                                                                                                              ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m   ␛[38;5;245m(none)␛[m                                                                                                                       ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[94m[tab]␛[m␛[38;5;241m note/options␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m confirm␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m take none␛[m                                                                         ␛[38;5;241m│␛[m
+␛[38;5;241m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
+
+␛[94m[↑↓]␛[m␛[38;5;241m move␛[m
+␛[94m[enter]␛[m␛[38;5;241m take it␛[m
+␛[94m[tab]␛[m␛[38;5;241m note or options␛[m
+␛[94m[shift+↑]␛[m␛[38;5;241m scroll the profile up␛[m
+␛[94m[shift+↓]␛[m␛[38;5;241m scroll the profile␛[m
+␛[92m[esc]␛[m␛[38;5;241m back a step␛[m
+
+␛[38;5;241mglyphs␛[m
+␛[38;5;241m⚙␛[m  ␛[38;5;241ma read: a file, a search, a listing␛[m
+␛[38;5;214m$␛[m  ␛[38;5;241ma shell command␛[m
+␛[38;5;214m✎␛[m  ␛[38;5;241man edit, a write, a patch or a memory␛[m
+␛[94m◇␛[m  ␛[38;5;241ma sub-agent␛[m
+␛[38;5;214m⇄␛[m  ␛[38;5;241ma call to a server not marked read-only␛[m
+␛[38;5;241m✻␛[m  ␛[38;5;241mthe model's own reasoning␛[m
+␛[38;5;241m⛁␛[m  ␛[38;5;241ma published report page␛[m
+␛[38;5;241m≡␛[m  ␛[38;5;241ma reading of the session␛[m
+␛[92m✓␛[m  ␛[38;5;241ma compaction that brought the window back␛[m
+␛[38;5;241m·␛[m  ␛[38;5;241maccepted, not started␛[m
+␛[38;5;205m▸␛[m  ␛[38;5;241mrunning␛[m
+␛[38;5;205m✦␛[m  ␛[38;5;241mthe classifier is deciding␛[m
+␛[91m✗␛[m  ␛[38;5;241mfailed␛[m
+␛[38;5;241m⊘␛[m  ␛[38;5;241mrefused: dim by you, red by a rule␛[m
+␛[94m[?]␛[m␛[38;5;241m hide the keys␛[m

@@ -215,6 +215,11 @@ const (
 	// takeover: the picker already held the keyboard, so every letter on it
 	// is live.
 	stateRewindScope
+	// stateKeyList: `?` on a card that holds the keyboard, or in reading
+	// mode — the surface's whole register with the glyph legend under it, on
+	// the pane (keylist.go). It borrows the screen, and the same key or esc
+	// goes back to the surface it was opened over.
+	stateKeyList
 )
 
 // minPanelHeight is the fewest rows the bottom panel takes: what a surface
@@ -921,12 +926,9 @@ type Model struct {
 	//; -1 while the transcript is being read with nothing on it to
 	// select.
 	focusIdx int
-	// readingKeyList is `[?]` in reading mode: the compact hint
-	// bar swapped for the mode's whole key register, in place. It is
-	// per-visit, not per-session — the mode closing closes the list too,
-	// because it is a reading of this surface rather than a preference about
-	// it, and the four supporting TUIs treat their own `[?]` the same way.
-	readingKeyList bool
+	// keyList is what `?` opened over a card or reading mode (keylist.go),
+	// and the surface it goes back to; nil while no list is open.
+	keyList *keyListView
 	// mouseOn turns terminal mouse reporting on (ctrl+x, /ui mouse). It is
 	// on by default so the wheel scrolls the transcript, click-drag selects
 	// text, and clicks open rows or answer cards. Turning it off hands

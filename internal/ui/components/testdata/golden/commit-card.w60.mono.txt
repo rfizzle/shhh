@@ -21,7 +21,7 @@
 │ push      no                                             │
 ├──────────────────────────────────────────────────────────┤
 │ [enter] commit · [e] edit the message                    │
-│ [s] pick hunks — the review surface                      │
+│ [s] pick hunks — the review surface · [?] keys           │
 │ [esc] don't — the changeset stays, and so does the offer │
 ╰──────────────────────────────────────────────────────────╯
 
@@ -36,7 +36,7 @@
 │ push      no                                             │
 ├──────────────────────────────────────────────────────────┤
 │ [enter] commit · [e] edit the message                    │
-│ [s] pick hunks — the review surface                      │
+│ [s] pick hunks — the review surface · [?] keys           │
 │ [esc] don't — the changeset stays, and so does the offer │
 ╰──────────────────────────────────────────────────────────╯
 
@@ -51,7 +51,7 @@
 │ push      no                                             │
 ├──────────────────────────────────────────────────────────┤
 │ [enter] commit · [e] edit the message                    │
-│ [s] pick hunks — the review surface                      │
+│ [s] pick hunks — the review surface · [?] keys           │
 │ [esc] don't — the changeset stays, and so does the offer │
 ╰──────────────────────────────────────────────────────────╯
 
@@ -68,7 +68,7 @@
 │ ✗ git commit: pre-commit hook failed: gofmt -l found 2 … │
 ├──────────────────────────────────────────────────────────┤
 │ [enter] commit · [e] edit the message                    │
-│ [s] pick hunks — the review surface                      │
+│ [s] pick hunks — the review surface · [?] keys           │
 │ [esc] don't — the changeset stays, and so does the offer │
 ╰──────────────────────────────────────────────────────────╯
 
@@ -84,7 +84,7 @@
 │ push      no                                             │
 ├──────────────────────────────────────────────────────────┤
 │ [enter] commit · [e] edit the message                    │
-│ [s] pick hunks — the review surface                      │
+│ [s] pick hunks — the review surface · [?] keys           │
 │ [esc] don't — the changeset stays, and so does the offer │
 ╰──────────────────────────────────────────────────────────╯
 
@@ -130,7 +130,7 @@
 ␛[38;5;254m│␛[m ␛[38;5;244mpush      ␛[m␛[38;5;254mno␛[m                                             ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m ␛[38;5;254mcommit␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m ␛[38;5;254medit the message␛[m                    ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[s]␛[m ␛[38;5;254mpick hunks — the review surface␛[m                      ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[s]␛[m ␛[38;5;254mpick hunks — the review surface␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m ␛[38;5;254mkeys␛[m           ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[esc] don't — the changeset stays, and so does the offer␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────╯␛[m
 
@@ -145,7 +145,7 @@
 ␛[38;5;254m│␛[m ␛[38;5;244mpush      ␛[m␛[38;5;254mno␛[m                                             ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m ␛[38;5;254mcommit␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m ␛[38;5;254medit the message␛[m                    ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[s]␛[m ␛[38;5;254mpick hunks — the review surface␛[m                      ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[s]␛[m ␛[38;5;254mpick hunks — the review surface␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m ␛[38;5;254mkeys␛[m           ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[esc] don't — the changeset stays, and so does the offer␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────╯␛[m
 
@@ -160,7 +160,7 @@
 ␛[38;5;254m│␛[m ␛[38;5;244mpush      ␛[m␛[38;5;254mno␛[m                                             ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m ␛[38;5;254mcommit␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m ␛[38;5;254medit the message␛[m                    ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[s]␛[m ␛[38;5;254mpick hunks — the review surface␛[m                      ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[s]␛[m ␛[38;5;254mpick hunks — the review surface␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m ␛[38;5;254mkeys␛[m           ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[esc] don't — the changeset stays, and so does the offer␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────╯␛[m
 
@@ -177,7 +177,7 @@
 ␛[38;5;254m│␛[m ␛[38;5;254m✗ git commit: pre-commit hook failed: gofmt -l found 2 …␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m ␛[38;5;254mcommit␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m ␛[38;5;254medit the message␛[m                    ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[s]␛[m ␛[38;5;254mpick hunks — the review surface␛[m                      ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[s]␛[m ␛[38;5;254mpick hunks — the review surface␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m ␛[38;5;254mkeys␛[m           ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[esc] don't — the changeset stays, and so does the offer␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────╯␛[m
 
@@ -193,7 +193,7 @@
 ␛[38;5;254m│␛[m ␛[38;5;244mpush      ␛[m␛[38;5;254mno␛[m                                             ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m ␛[38;5;254mcommit␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m ␛[38;5;254medit the message␛[m                    ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[s]␛[m ␛[38;5;254mpick hunks — the review surface␛[m                      ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[s]␛[m ␛[38;5;254mpick hunks — the review surface␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m ␛[38;5;254mkeys␛[m           ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[esc] don't — the changeset stays, and so does the offer␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────╯␛[m
 

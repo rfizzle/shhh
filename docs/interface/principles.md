@@ -104,6 +104,13 @@ product. A bare key is live only inside a surface that holds the keyboard —
 reading mode after esc, a card after the handover, a picker, a takeover screen
 — and it is live there because nothing else is listening.
 
+`?` is the one key every surface that holds the keyboard answers the same
+way: with that surface's whole register, and the glyph legend under it. That
+is what lets a surface's own row of offers stay short — whatever it leaves out
+is one keystroke away, on every surface, in one shape. Where the draft holds
+the keyboard `?` is a character, so the same list is on a chord there, and the
+rail names that chord instead.
+
 The reason is the hand and not the parser. A letter pressed in the middle of a
 sentence is a letter, and a keyboard that sometimes commits, kills, denies or
 opens on one is a keyboard nobody can type on without watching the screen for

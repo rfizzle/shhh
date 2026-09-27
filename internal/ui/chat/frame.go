@@ -317,6 +317,9 @@ func (m Model) frameActivity(width int) string {
 // to the corner.
 func (m Model) frameHints(room int) string {
 	var hints []hintSeg
+	// armed is an open two-press window, whose note is the one thing the
+	// rail says while it is open.
+	armed := false
 	switch {
 	case m.attachedTo == "" && m.questionAside():
 		// Only where the frame is the orchestrator's own: attached, enter
@@ -340,10 +343,16 @@ func (m Model) frameHints(room int) string {
 		// and stops — the same evidence the undressed draft states under a
 		// card that took the panel instead (interrupt.go). An empty box holds
 		// nothing and says nothing.
+		// The one key the card holding the keyboard answers the same way
+		// every other surface does takes the rail's last slot: it is where
+		// the rest of the card's keys are, and the card's own row is short so
+		// that it can be
+		// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+		list := segAs(keys.Screen.List, keys.Words(keys.Screen.List)).render()
 		if m.input.Value() == "" {
-			return ""
+			return list
 		}
-		return m.draftPosition()
+		return m.draftPosition() + sty.Hint.Dim.Render(" · ") + list
 	case m.decisionUngated():
 		// The three keys that matter while a decision waits. Stopping the run
 		// is the cancel chord, never esc: esc on this surface goes back rather
@@ -360,6 +369,7 @@ func (m Model) frameHints(room int) string {
 		// its armed window is said here too.
 		if note, ok := m.armedHint(); ok {
 			hints = []hintSeg{note}
+			armed = true
 			break
 		}
 		hints = []hintSeg{
@@ -397,6 +407,7 @@ func (m Model) frameHints(room int) string {
 		// turn can still be given up on (hold.go).
 		if note, ok := m.armedHint(); ok {
 			hints = []hintSeg{note}
+			armed = true
 			break
 		}
 		hints = []hintSeg{
@@ -409,6 +420,7 @@ func (m Model) frameHints(room int) string {
 		// press does is the one thing the rail must say (cancel.go).
 		if note, ok := m.armedHint(); ok {
 			hints = []hintSeg{note}
+			armed = true
 			break
 		}
 		// Commands run mid-turn now, so the working rail says so;
@@ -440,6 +452,7 @@ func (m Model) frameHints(room int) string {
 		// cancel window takes the working one.
 		if note, ok := m.armedHint(); ok {
 			hints = []hintSeg{note}
+			armed = true
 			break
 		}
 		// The whole run is written down and the rail sheds what will not
@@ -488,6 +501,15 @@ func (m Model) frameHints(room int) string {
 			}
 			hints = slices.Insert(hints, 1, segAs(keys.Draft.OpenPaste, label).givesUp(1))
 		}
+	}
+	// The key list takes the last slot while the draft holds the keyboard,
+	// spelled as the chord that opens it here: `?` is a character in a
+	// sentence, so the list the other surfaces open on it is on a chord at
+	// the prompt. Attached, the chord is not answered — the keyboard is
+	// pointed at a child and the orchestrator's register is not what it is
+	// about — so the rail does not offer it.
+	if !armed && m.attachedTo == "" && len(hints) > 0 {
+		hints = append(hints, segAs(keys.Draft.KeyList, keys.Words(keys.Screen.List)).givesUp(1))
 	}
 	return joinSegs(fitSegs(hints, room))
 }

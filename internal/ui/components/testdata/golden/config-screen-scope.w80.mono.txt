@@ -84,6 +84,22 @@ shhh config · the checkout's file · .shhh/config.toml        [?] keys · [q] q
 [g] switch the write between the checkout's file and yours
 [esc] leave the picker, or leave the screen writing nothing
 [q] leave the screen writing nothing
+
+glyphs
+⚙  a read: a file, a search, a listing
+$  a shell command
+✎  an edit, a write, a patch or a memory
+◇  a sub-agent
+⇄  a call to a server not marked read-only
+✻  the model's own reasoning
+⛁  a published report page
+≡  a reading of the session
+✓  a compaction that brought the window back
+·  accepted, not started
+▸  running
+✦  the classifier is deciding
+✗  failed
+⊘  refused: dim by you, red by a rule
 [?] hide the keys
 
 ── ansi ────────────────────────────────────────────────────
@@ -161,4 +177,20 @@ shhh config · the checkout's file · .shhh/config.toml        [?] keys · [q] q
 ␛[38;5;254m[g]␛[m␛[38;5;244m switch the write between the checkout's file and yours␛[m
 ␛[38;5;254m[esc]␛[m␛[38;5;244m leave the picker, or leave the screen writing nothing␛[m
 ␛[38;5;254m[q]␛[m␛[38;5;244m leave the screen writing nothing␛[m
+
+␛[38;5;244mglyphs␛[m
+␛[38;5;244m⚙␛[m  ␛[38;5;244ma read: a file, a search, a listing␛[m
+␛[38;5;254m$␛[m  ␛[38;5;244ma shell command␛[m
+␛[38;5;254m✎␛[m  ␛[38;5;244man edit, a write, a patch or a memory␛[m
+␛[38;5;254m◇␛[m  ␛[38;5;244ma sub-agent␛[m
+␛[38;5;254m⇄␛[m  ␛[38;5;244ma call to a server not marked read-only␛[m
+␛[38;5;244m✻␛[m  ␛[38;5;244mthe model's own reasoning␛[m
+␛[38;5;244m⛁␛[m  ␛[38;5;244ma published report page␛[m
+␛[38;5;244m≡␛[m  ␛[38;5;244ma reading of the session␛[m
+␛[38;5;254m✓␛[m  ␛[38;5;244ma compaction that brought the window back␛[m
+␛[38;5;244m·␛[m  ␛[38;5;244maccepted, not started␛[m
+␛[38;5;254m▸␛[m  ␛[38;5;244mrunning␛[m
+␛[38;5;254m✦␛[m  ␛[38;5;244mthe classifier is deciding␛[m
+␛[38;5;254m✗␛[m  ␛[38;5;244mfailed␛[m
+␛[38;5;244m⊘␛[m  ␛[38;5;244mrefused: dim by you, red by a rule␛[m
 ␛[38;5;254m[?]␛[m␛[38;5;244m hide the keys␛[m

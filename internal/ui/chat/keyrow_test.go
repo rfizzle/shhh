@@ -27,7 +27,9 @@ import (
 
 // bracketed is every `[…]` run in a hint row. The brackets are the notation a
 // live key is written in, so what they hold is what has to be a declaration.
-var bracketed = regexp.MustCompile(`\[([^\]]+)\]`)
+// A key may itself be a closing bracket — the key list is `ctrl+]` — so one
+// `]` before the bracket that closes the run is part of the key.
+var bracketed = regexp.MustCompile(`\[([^\]]+\]?)\]`)
 
 // shownKeys is every spelling the register offers, from both halves of it:
 // the session's surfaces and the programs beside it.
