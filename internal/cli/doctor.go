@@ -1147,7 +1147,15 @@ func probeKeymap(context.Context, config.Config) doctorFinding {
 			}
 		}
 	}
-	return doctorKeymap(path, moved, err)
+	behind := 0
+	if path != "" && err == nil {
+		// A reading that fails leaves the row as it was: the file loaded,
+		// and whether it lists every key is not worth a warning of its own.
+		if b, berr := keys.KeymapOutdated(path); berr == nil {
+			behind = b.KeysBehind()
+		}
+	}
+	return doctorKeymap(path, moved, behind, err)
 }
 
 // doctorKeymap is the keymap row. A refused file is said once on stderr as
@@ -1155,7 +1163,13 @@ func probeKeymap(context.Context, config.Config) doctorFinding {
 // the place somebody whose keys went back to the defaults finds out why:
 // it names the file and quotes the refusal
 // (docs/capabilities/configuration.md#the-keymap-file).
-func doctorKeymap(path string, moved int, err error) doctorFinding {
+//
+// behind is how many keys arrived since a file listing every key was
+// written, counted the way the config row counts settings: a warning with
+// the update as its fix, since a key the file has no row for is a key its
+// reader will not find to move
+// (docs/capabilities/configuration.md#an-older-file-is-brought-up-to-date).
+func doctorKeymap(path string, moved, behind int, err error) doctorFinding {
 	switch {
 	case err != nil:
 		return doctorFinding{
@@ -1170,7 +1184,15 @@ func doctorKeymap(path string, moved int, err error) doctorFinding {
 	case path == "":
 		return doctorFinding{Subject: "no keybindings.toml", Detail: "the keyboard shhh ships", Outcome: "ok"}
 	}
-	return doctorFinding{Subject: shortPath(path), Detail: countOf(moved, "key", "keys") + " moved", Outcome: "ok"}
+	f := doctorFinding{Subject: shortPath(path), Detail: countOf(moved, "key", "keys") + " moved", Outcome: "ok"}
+	if behind > 0 {
+		f.Detail = joinDetail("behind by "+countOf(behind, "key", "keys"), f.Detail)
+		f.State, f.Outcome = components.DoctorWarned, "behind"
+		f.Consequence = "what arrived since the file was written is not in it to find"
+		f.FixLabel = "bring it up to date"
+		f.Fix = []string{config.UpdateUser + "   keeps every key the file binds"}
+	}
+	return f
 }
 
 func probeLogs(context.Context, config.Config) doctorFinding {

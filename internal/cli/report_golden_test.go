@@ -150,8 +150,11 @@ func TestReportGoldens_FitTheirWidth(t *testing.T) {
 func goldenChecks() []components.DoctorCheck {
 	return []components.DoctorCheck{
 		{Name: "binary", Subject: "shhh 0.9.4", Detail: "linux/amd64", Outcome: "ok"},
-		doctorCheck("keymap", doctorKeymap("/home/dev/.config/shhh/keybindings.toml", 0,
+		doctorCheck("keymap", doctorKeymap("/home/dev/.config/shhh/keybindings.toml", 0, 0,
 			errors.New(`/home/dev/.config/shhh/keybindings.toml: "p" is a letter while the draft can take text, so it cannot also be "the command palette" on the input; a key live at the input is a chord`)), 0),
+		// The same file read once it loads, written before three keys
+		// arrived: counted the way the config row counts settings.
+		doctorCheck("keymap", doctorKeymap("/home/dev/.config/shhh/keybindings.toml", 2, 3, nil), 0),
 		// Built from the check itself, so the fixture carries one of the
 		// `shhh config set --global` fix lines word for word: each names a
 		// key about this machine, and the flag is what keeps it out of a
@@ -511,9 +514,12 @@ func goldenConfigUpdate() report.Report {
 		settings: "updated",
 		behind:   config.Behind{New: []string{"a.b", "a.c", "a.d", "a.e"}, Renamed: config.Renames()[:1], Listed: true},
 		wordings: []string{"steer", "summary"},
+		keys:     3,
 	}.report(initPlan{
-		settings: "/home/dev/.config/shhh/config.toml",
-		prompts:  "/home/dev/.config/shhh/prompts",
+		settings:   "/home/dev/.config/shhh/config.toml",
+		prompts:    "/home/dev/.config/shhh/prompts",
+		keymap:     "/home/dev/.config/shhh/keybindings.toml",
+		keymapHeld: true,
 	})
 }
 

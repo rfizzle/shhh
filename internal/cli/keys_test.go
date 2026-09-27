@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
@@ -139,15 +140,22 @@ func TestKeys_JSONListsEveryGroup(t *testing.T) {
 // the line at process start.
 func TestDoctorKeymap(t *testing.T) {
 	path := "/home/dev/.config/shhh/keybindings.toml"
-	f := doctorKeymap(path, 0, errors.New(path+`: "p" is a letter while the draft can take text`))
+	f := doctorKeymap(path, 0, 0, errors.New(path+`: "p" is a letter while the draft can take text`))
 	if f.State != components.DoctorWarned || f.Outcome != "refused" || len(f.Fix) == 0 ||
 		!strings.HasPrefix(f.Fix[0], `"p" is a letter`) {
 		t.Fatalf("the refused row is %+v", f)
 	}
-	if f := doctorKeymap("", 0, nil); f.State != components.DoctorPassed || !strings.Contains(f.Subject, "no keybindings.toml") {
+	if f := doctorKeymap("", 0, 0, nil); f.State != components.DoctorPassed || !strings.Contains(f.Subject, "no keybindings.toml") {
 		t.Fatalf("the row for no file is %+v", f)
 	}
-	if f := doctorKeymap(path, 2, nil); f.State != components.DoctorPassed || f.Detail != "2 keys moved" {
+	if f := doctorKeymap(path, 2, 0, nil); f.State != components.DoctorPassed || f.Detail != "2 keys moved" {
 		t.Fatalf("the applied row is %+v", f)
+	}
+	// A file behind the register is counted the way the config row counts
+	// settings, and its fix is the update.
+	if f := doctorKeymap(path, 2, 3, nil); f.State != components.DoctorWarned || f.Outcome != "behind" ||
+		f.Detail != "behind by 3 keys · 2 keys moved" || len(f.Fix) == 0 ||
+		!strings.HasPrefix(f.Fix[0], config.UpdateUser) {
+		t.Fatalf("the behind row is %+v", f)
 	}
 }

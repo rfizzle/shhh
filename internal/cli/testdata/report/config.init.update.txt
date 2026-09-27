@@ -4,3 +4,5 @@
         every value the file set is kept; a moved key says so on the line above
         it
   ✓ wrote /home/dev/.config/shhh/prompts/ · 2 wordings, each the built-…  [user]
+  ✓ updated /home/dev/.config/shhh/keybindings.toml · added 3 keys, eac…  [user]
+        every key the file binds is kept

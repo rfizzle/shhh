@@ -121,7 +121,22 @@ func rewrite(path string, change func(*document) error) error {
 // replaceFile writes text over path atomically. A new file is 0600 because
 // the provider key lives in this one; an existing file keeps its mode.
 func replaceFile(path, text string) error {
-	mode := os.FileMode(0o600)
+	return ReplaceFile(path, text, 0o600)
+}
+
+// ReplaceFile writes text over path so that the path holds either the old
+// file whole or the new one whole, never a prefix of either: a truncated
+// wording is loaded as a wording, and a truncated settings file stops every
+// command. The text goes to a temporary file in the same directory, which is
+// synced to the disk before it is renamed over the path, and the directory is
+// synced after the rename so the rename itself survives a power cut. Without
+// the first sync a crash just after the rename can leave the new name on an
+// empty file, because the rename reaches the disk before the data does.
+//
+// mode is what a new file is created with; a file already there keeps its
+// own. Every file `config set`, `config init` and `--update` write goes
+// through here.
+func ReplaceFile(path, text string, mode os.FileMode) error {
 	if info, err := os.Stat(path); err == nil {
 		mode = info.Mode().Perm()
 	}
@@ -129,12 +144,15 @@ func replaceFile(path, text string) error {
 	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return err
 	}
-	tmp, err := os.CreateTemp(dir, ".config-*.toml")
+	tmp, err := os.CreateTemp(dir, "."+filepath.Base(path)+"-*")
 	if err != nil {
 		return err
 	}
 	name := tmp.Name()
 	_, werr := tmp.WriteString(text)
+	if werr == nil {
+		werr = syncFile(tmp)
+	}
 	if err := tmp.Close(); werr == nil {
 		werr = err
 	}
@@ -142,13 +160,35 @@ func replaceFile(path, text string) error {
 		werr = os.Chmod(name, mode)
 	}
 	if werr == nil {
-		werr = os.Rename(name, path)
+		werr = renameFile(name, path)
 	}
 	if werr != nil {
 		_ = os.Remove(name) // the write is the failure to report
+		return werr
 	}
-	return werr
+	// The file is in place by now; a directory the platform will not sync —
+	// Windows opens none for writing — is not a failed write.
+	_ = syncDir(dir)
+	return nil
 }
+
+// The three steps of ReplaceFile a test replaces, to fail one part-way or to
+// read the order they ran in.
+var (
+	syncFile   = func(f *os.File) error { return f.Sync() }
+	renameFile = os.Rename
+	syncDir    = func(dir string) error {
+		d, err := os.Open(dir)
+		if err != nil {
+			return err
+		}
+		serr := d.Sync()
+		if err := d.Close(); serr == nil {
+			serr = err
+		}
+		return serr
+	}
+)
 
 // literalFor turns a key and the value a person typed into the path the file
 // spells the key by and the TOML literal to write there, empty when the value

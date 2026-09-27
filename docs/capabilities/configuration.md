@@ -277,7 +277,12 @@ way every other write does, one line at a time:
   comment trailing it on the line carried byte for byte, and a comment above
   it saying where it came from and when it moved;
 - a wording with no file gets one, holding the built-in text; a file already
-  there is never written over, and the keymap is left alone.
+  there is never written over;
+- for your own pair, a `keybindings.toml` that is there gets a commented row
+  for every key it neither binds nor lists, as the scaffold writes it — under
+  the table it belongs to where the file has that table, and as a table of
+  its own at the end where it does not — with every binding it holds kept
+  byte for byte. One that is not there is not written.
 
 **Values are never changed by an update.** Every value the file sets stays
 where the person wrote it, with every comment, blank line, MCP server and
@@ -289,9 +294,11 @@ a rename, which is a typo to settle first, and a file setting a key under
 both its old and new names, which only the person can choose between. What
 the writer cannot carry is a comment on the lines *above* a renamed key: it
 stays where it was, because nothing says whether it described that key or
-the section it opened. The write goes through a temporary file and a rename,
-so a failure leaves the file as it was, and a file already current is not
-written at all. `--stdout --update` prints what would be written.
+the section it opened. The write goes through a temporary file, synced to the disk, and a rename,
+so a failure — the power going included — leaves the file as it was, and a
+file already current is not written at all. Every file shhh writes into
+either pair, a wording included, is written that way, because a wording cut
+off part-way would be loaded as a wording. `--stdout --update` prints what would be written.
 
 A key that moved stops every command, like any key the table does not read,
 but the refusal names the new key and the command that moves it, and that
@@ -707,7 +714,12 @@ check` reads a file the way a session start will and says `ok` or the
 refusal, without starting one. A refused file is also on the doctor's
 `keymap` row, which names the file and quotes the refusal, so a keyboard that
 quietly reverted to the shipped one has somewhere to be explained beyond the
-line printed as the process started.
+line printed as the process started. A file written before keys arrived is
+brought up to date by `shhh config init --global --update`
+([an older file is brought up to date](#an-older-file-is-brought-up-to-date)),
+and the same row warns `behind by 3 keys` until it is — counted the way the
+settings file's keys are, so a file of a few lines that lists no commented
+row is behind by none.
 
 The names a file uses are the register's own, and this table is written from
 it. Every group is a file's to move, the screens and cards included: the

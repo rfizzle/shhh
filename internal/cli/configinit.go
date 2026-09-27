@@ -26,9 +26,10 @@ package cli
 //
 // `--update` is the other answer for a file that is already there: the keys
 // that have arrived since it was written are added as commented rows, a key
-// that has moved is written under its new name, and a wording with no file
-// gets one — every value the file sets kept as it is, and nothing already
-// there written over
+// that has moved is written under its new name, a wording with no file
+// gets one, and your keymap gets a commented row for each key it lacks —
+// every value and binding the files set kept as they are, and nothing
+// already there written over
 // (docs/capabilities/configuration.md#an-older-file-is-brought-up-to-date).
 
 import (
@@ -63,7 +64,8 @@ func newConfigInitCmd() *cobra.Command {
 			"holds filled in; `shhh keys defaults` prints the keymap. " +
 			"`--update` brings files that are already there up to date instead of refusing them: the keys " +
 			"added since the settings were written are added commented out, a renamed key is written under " +
-			"its new name with its value, a wording with no file gets one, and every value the file sets is " +
+			"its new name with its value, a wording with no file gets one, your keybindings.toml gets the " +
+			"keys added since it was written, commented out, and every value and binding is " +
 			"kept; with `--stdout` it prints the settings file it would write.",
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -253,7 +255,7 @@ func (p initPlan) write() error {
 		// Every wording ends in a newline it did not have as a Go string: it
 		// is a text file now, and one without a final newline is one every
 		// editor and every diff will add one to.
-		if err := os.WriteFile(f.path, []byte(f.text+"\n"), mode); err != nil {
+		if err := config.ReplaceFile(f.path, f.text+"\n", mode); err != nil {
 			return err
 		}
 	}
@@ -261,11 +263,11 @@ func (p initPlan) write() error {
 		return err
 	}
 	if p.keymap != "" {
-		if err := os.WriteFile(p.keymap, []byte(keys.Scaffold()), mode); err != nil {
+		if err := config.ReplaceFile(p.keymap, keys.Scaffold(), mode); err != nil {
 			return err
 		}
 	}
-	return os.WriteFile(p.settings, []byte(config.Scaffold(config.Config{}, p.project)), mode)
+	return config.ReplaceFile(p.settings, config.Scaffold(config.Config{}, p.project), mode)
 }
 
 // wrote is the confirmation: the two things written and what each holds, and
@@ -330,11 +332,13 @@ func keymapKeys() int {
 
 // initUpdate is what `--update` did: how the settings file was written —
 // brought up to date, written new where there was none, or left alone as
-// already current — and the wordings it wrote.
+// already current — the wordings it wrote, and how many keys it added to
+// the keymap, zero where the keymap was current or not there.
 type initUpdate struct {
 	behind   config.Behind
 	settings string
 	wordings []string
+	keys     int
 }
 
 // update brings the pair up to date. The settings go first here, unlike a
@@ -344,8 +348,11 @@ type initUpdate struct {
 //
 // A wording file already there is never written, and nor is one the person's
 // settings point somewhere else — a file of the built-in words beside a key
-// naming another would be a file nothing reads. The keymap is left as it is:
-// it is a file of its own with a command of its own.
+// naming another would be a file nothing reads. The keymap is brought up to
+// date the same way the settings are, where there is one: the keys that
+// arrived since are added as commented rows and every binding stays. One
+// that is not there is not written — the keyboard shhh ships is what no file
+// means, and `config init` is what writes one.
 func (p initPlan) update() (initUpdate, error) {
 	var done initUpdate
 	mode, dirMode := os.FileMode(0o600), os.FileMode(0o700)
@@ -368,7 +375,7 @@ func (p initPlan) update() (initUpdate, error) {
 		if err := os.MkdirAll(filepath.Dir(p.settings), dirMode); err != nil {
 			return done, err
 		}
-		if err := os.WriteFile(p.settings, []byte(config.Scaffold(config.Config{}, p.project)), mode); err != nil {
+		if err := config.ReplaceFile(p.settings, config.Scaffold(config.Config{}, p.project), mode); err != nil {
 			return done, err
 		}
 		done.settings = "wrote"
@@ -382,22 +389,43 @@ func (p initPlan) update() (initUpdate, error) {
 		named = held.Prompts
 	}
 	missing, _ := wordingsBehind(p.prompts, p.project, named)
-	if len(missing) == 0 {
-		return done, nil
-	}
-	if err := os.MkdirAll(p.prompts, dirMode); err != nil {
-		return done, err
+	if len(missing) > 0 {
+		if err := os.MkdirAll(p.prompts, dirMode); err != nil {
+			return done, err
+		}
 	}
 	for _, f := range p.files {
 		if !slices.Contains(missing, f.key) {
 			continue
 		}
-		if err := os.WriteFile(f.path, []byte(f.text+"\n"), mode); err != nil {
+		if err := config.ReplaceFile(f.path, f.text+"\n", mode); err != nil {
 			return done, err
 		}
 		done.wordings = append(done.wordings, f.key)
 	}
+	if p.keymapHeld {
+		n, err := updateKeymap(p.keymap)
+		if err != nil {
+			return done, err
+		}
+		done.keys = n
+	}
 	return done, nil
+}
+
+// updateKeymap adds the keys the keymap at path lacks and says how many; a
+// current file is not written at all.
+func updateKeymap(path string) (int, error) {
+	// A keymap is often a link into a dotfiles checkout, and the rename
+	// would replace the link with a plain file.
+	if resolved, err := filepath.EvalSymlinks(path); err == nil {
+		path = resolved
+	}
+	text, added, err := keys.KeymapUpdated(path)
+	if err != nil || added == 0 {
+		return 0, err
+	}
+	return added, config.ReplaceFile(path, text, 0o600)
 }
 
 // lines is what the update did, one line per file touched, for the doctor
@@ -413,11 +441,15 @@ func (u initUpdate) lines(p initPlan) []string {
 	if n := len(u.wordings); n > 0 {
 		out = append(out, "wrote "+countOf(n, "wording", "wordings")+" under "+shortPath(p.prompts)+string(filepath.Separator))
 	}
+	if u.keys > 0 {
+		out = append(out, "updated "+shortPath(p.keymap)+": added "+countOf(u.keys, "key", "keys"))
+	}
 	return out
 }
 
 // report is the confirmation `--update` prints: a row for the settings and
-// a row for the wordings, each saying what changed or that nothing had to.
+// a row for the wordings, and for your own pair a row for the keymap, each
+// saying what changed or that nothing had to.
 func (u initUpdate) report(p initPlan) report.Report {
 	pair := "user"
 	if p.project {
@@ -443,10 +475,24 @@ func (u initUpdate) report(p initPlan) report.Report {
 		wordings.Detail = countOf(n, "wording", "wordings") + ", each the built-in text"
 		wordings.Outcome = pair
 	}
+	rows := []report.Row{settings, wordings}
+	if p.keymap != "" {
+		keymap := report.Row{State: report.Skip, Subject: shortPath(p.keymap), Detail: "already up to date", Outcome: pair}
+		switch {
+		case u.keys > 0:
+			keymap = report.Done("updated", shortPath(p.keymap))
+			keymap.Detail = "added " + countOf(u.keys, "key", "keys") + ", each commented out"
+			keymap.Outcome = pair
+			keymap.Fix = []string{"every key the file binds is kept"}
+		case !p.keymapHeld:
+			keymap.Detail = "not there; the keyboard shhh ships runs"
+		}
+		rows = append(rows, keymap)
+	}
 	return report.Report{
 		Title:    "shhh config init --update",
 		Subject:  shortPath(filepath.Dir(p.settings)),
-		Sections: []report.Section{{Rows: []report.Row{settings, wordings}}},
+		Sections: []report.Section{{Rows: rows}},
 	}
 }
 

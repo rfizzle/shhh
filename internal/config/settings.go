@@ -709,23 +709,16 @@ func matchWild(pattern, key string) bool {
 }
 
 // RenamedKey is the key a key that moved is now spelled as, or "" when it did
-// not move. The role models were `agents.researcher_model` and are the
-// `[agents.profiles.<role>]` table the file has always written them to, now
-// that any role can have one; a person who types the old spelling is told the
-// new one rather than told it is unknown.
+// not move: a person who types the old spelling is told the new one rather
+// than told it is unknown. It answers from the rename table and nothing else.
+// A pattern — any `agents.<x>_model` read as a role's profile model — would
+// map away a real `agents.*_model` key the day one is added, as
+// `agents.drafter_model` already is.
 func RenamedKey(key string) string {
 	if r, ok := renameOf(key); ok {
 		return r.To
 	}
-	role, ok := strings.CutPrefix(key, "agents.")
-	if !ok {
-		return ""
-	}
-	role, ok = strings.CutSuffix(role, "_model")
-	if !ok || role == "" || strings.Contains(role, ".") {
-		return ""
-	}
-	return "agents.profiles." + role + ".model"
+	return ""
 }
 
 // Nearest is the known key within an edit or two of an unknown one, or "" when

@@ -9,6 +9,7 @@ import (
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // dropKey takes one key's block out of a scaffold — the blank line, the
@@ -86,6 +87,59 @@ func TestConfigInitUpdate_LeavesACurrentFileByteForByte(t *testing.T) {
 	}
 	if !strings.Contains(out, "already up to date") {
 		t.Errorf("the confirmation does not say the file was current:\n%s", out)
+	}
+}
+
+// A keymap written before a key arrived gets the key back as a commented
+// row, and the key the person bound stays as they wrote it; a current keymap
+// is not written.
+func TestConfigInitUpdate_BringsTheKeymapUpToDate(t *testing.T) {
+	path := pointConfigAt(t, "")
+	runRoot(t, "config", "init")
+	keymap := filepath.Join(filepath.Dir(path), "keybindings.toml")
+	lines := strings.SplitAfter(keys.Scaffold(), "\n")
+	var arrived, bound string
+	var older strings.Builder
+	inTable := false
+	for _, line := range lines {
+		switch {
+		case strings.HasPrefix(line, "["):
+			inTable = true
+		case inTable && strings.HasPrefix(line, "# ") && arrived == "":
+			arrived = line
+			continue
+		case inTable && strings.HasPrefix(line, "# ") && bound == "":
+			bound = strings.TrimPrefix(line, "# ")
+			line = bound
+		}
+		older.WriteString(line)
+	}
+	must(t, os.WriteFile(keymap, []byte(older.String()), 0o600))
+	if b, err := keys.KeymapOutdated(keymap); err != nil || b.KeysBehind() != 1 {
+		t.Fatalf("the older keymap reads as %+v, %v", b, err)
+	}
+
+	out := runRoot(t, "config", "init", "--update")
+	if !strings.Contains(out, "added 1 key") {
+		t.Errorf("the confirmation does not name the key added:\n%s", out)
+	}
+	raw, err := os.ReadFile(keymap)
+	must(t, err)
+	if !strings.Contains(string(raw), "\n"+arrived) || !strings.Contains(string(raw), "\n"+bound) {
+		t.Fatalf("the key that arrived is not back, or the bound one moved:\n%s", raw)
+	}
+	if b, err := keys.KeymapOutdated(keymap); err != nil || len(b.Missing) != 0 {
+		t.Errorf("still behind: %+v %v", b, err)
+	}
+	if _, err := keys.Check(keymap); err != nil {
+		t.Errorf("the updated keymap is refused: %v", err)
+	}
+
+	runRoot(t, "config", "init", "--update")
+	again, err := os.ReadFile(keymap)
+	must(t, err)
+	if string(again) != string(raw) {
+		t.Fatal("a current keymap was rewritten")
 	}
 }
 

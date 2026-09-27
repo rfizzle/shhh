@@ -246,11 +246,11 @@ func Scaffold() string {
 		}
 		table := ""
 		for _, a := range g.Acts {
-			if t := a.Name[:strings.LastIndex(a.Name, ".")]; t != table {
+			if t := tableOf(a.Name); t != table {
 				table = t
 				fmt.Fprintf(&b, "\n[%s]\n", table)
 			}
-			fmt.Fprintf(&b, "# %s = %s  # %s\n", a.Name[len(table)+1:], tomlKeys(a.Shipped), a.Words)
+			b.WriteString(scaffoldRow(table, a))
 		}
 	}
 	if len(fixedNames) > 0 {
@@ -258,6 +258,17 @@ func Scaffold() string {
 		b.WriteString(wrapComment(strings.Join(fixedNames, ", "), 78))
 	}
 	return b.String()
+}
+
+// tableOf is the table a key's line sits under: its name less the last part.
+func tableOf(name string) string { return name[:strings.LastIndex(name, ".")] }
+
+// scaffoldRow is one key as the scaffold writes it under its table: commented
+// out, at the keystrokes it ships with, with what it does beside it. The
+// update writes the keys a file lacks through this too, so an added row reads
+// as the scaffold's own.
+func scaffoldRow(table string, a Act) string {
+	return fmt.Sprintf("# %s = %s  # %s\n", a.Name[len(table)+1:], tomlKeys(a.Shipped), a.Words)
 }
 
 // tomlKeys is a binding's keystrokes as a TOML value: one as a string, several

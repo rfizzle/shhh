@@ -292,3 +292,21 @@ func firstDiff(got, want string) string {
 }
 
 func itoa(n int) string { return strconv.Itoa(n) }
+
+// A rename is the table's entries and nothing shaped like them: the three
+// role models move, and any other `agents.*_model` — a real key such as
+// agents.drafter_model, or one added later — is not mapped away.
+func TestRenamedKey_OnlyTheRolesTheTableLists(t *testing.T) {
+	for key, want := range map[string]string{
+		"agents.researcher_model": "agents.profiles.researcher.model",
+		"agents.Writer_Model":     "agents.profiles.writer.model",
+		"agents.reviewer_model":   "agents.profiles.reviewer.model",
+		"agents.drafter_model":    "",
+		"agents.designer_model":   "",
+		"agents.planner_model":    "",
+	} {
+		if got := RenamedKey(key); got != want {
+			t.Errorf("RenamedKey(%q) = %q, want %q", key, got, want)
+		}
+	}
+}
