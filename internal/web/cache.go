@@ -24,6 +24,10 @@ type Cache struct {
 	dir string
 	ttl time.Duration
 
+	// now is the clock an entry is stamped and judged fresh by, injectable
+	// so a test can move past the TTL instead of sleeping past it.
+	now func() time.Time
+
 	// mu guards the scrub, which a session installs while the fetches of a
 	// round may already be writing entries on other goroutines.
 	mu    sync.Mutex
@@ -48,7 +52,7 @@ func OpenCache(dir string, ttl time.Duration) (*Cache, error) {
 	if ttl <= 0 {
 		ttl = DefaultCacheTTL
 	}
-	c := &Cache{dir: dir, ttl: ttl}
+	c := &Cache{dir: dir, ttl: ttl, now: time.Now}
 	c.Prune()
 	return c, nil
 }
@@ -99,7 +103,7 @@ func (c *Cache) Get(url string) (Result, bool) {
 	if err := json.Unmarshal(data, &meta); err != nil {
 		return Result{}, false
 	}
-	if time.Since(meta.Fetched) > c.ttl {
+	if c.now().Sub(meta.Fetched) > c.ttl {
 		return Result{}, false
 	}
 	body, err := os.ReadFile(c.bodyPath(key))
@@ -147,7 +151,7 @@ func (c *Cache) Put(requestedURL, finalURL string, res Result) {
 		Status:      res.Status,
 		ContentType: res.ContentType,
 		Truncated:   res.Truncated,
-		Fetched:     time.Now().UTC(),
+		Fetched:     c.now().UTC(),
 	}
 	data, err := json.Marshal(meta)
 	if err != nil {

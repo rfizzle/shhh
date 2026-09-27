@@ -46,15 +46,21 @@ func TestCache_PutGetRoundtrip(t *testing.T) {
 }
 
 func TestCache_TTLExpiry(t *testing.T) {
-	cache, err := OpenCache(t.TempDir(), 50*time.Millisecond)
+	cache, err := OpenCache(t.TempDir(), time.Hour)
 	if err != nil {
 		t.Fatal(err)
 	}
+	// The clock is moved rather than slept past, so a loaded host cannot
+	// cross the TTL between the write and the first read.
+	now := time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC)
+	cache.now = func() time.Time { return now }
+
 	cache.Put("https://example.com/", "", Result{Status: 200, Body: []byte("x")})
+	now = now.Add(time.Hour)
 	if _, ok := cache.Get("https://example.com/"); !ok {
-		t.Fatal("expected fresh hit")
+		t.Fatal("expected a hit at exactly the TTL")
 	}
-	time.Sleep(80 * time.Millisecond)
+	now = now.Add(time.Nanosecond)
 	if _, ok := cache.Get("https://example.com/"); ok {
 		t.Error("expected expired entry to miss")
 	}
