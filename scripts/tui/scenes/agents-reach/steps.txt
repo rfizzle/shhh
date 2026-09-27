@@ -41,12 +41,22 @@ sleep 4
 # (docs/capabilities/subagents.md#a-child-may-delegate-to-a-configured-depth).
 # Every other agent is still reading here, so this card is the one at the
 # front of the queue rather than one of four racing for it.
-snap 03-delegates "spawn_agent"
+#
+# The snap waits on the card's own title, not on `spawn_agent`: the lane's
+# `waiting approval: use spawn_agent` note can draw a frame before the card
+# holds the keyboard, and a `y` sent into that frame is a letter in the draft.
+# The second's wait is the grace-window rule every card answer here keeps.
+snap 03-delegates "writer-3 ▸ Approve tool" "spawn_agent"
+sleep 1
 keys y
 sleep 3
 # And the level the session did not ask for, on the map: the grandchild under
-# the agent that spawned it, a column in behind the corner.
-snap 04-nested "reader-3a" "└◇ reader-3a"
+# the agent that spawned it, a column in behind the corner. The snap waits on
+# the map's row, never on the bare name: `name=reader-3a` is on the card, so
+# while the card is still up — the answer not yet taken, or the grandchild
+# slow to start on a loaded host — the bare name is on screen too, and the
+# snap would fire on the card and give the row only the compare's two seconds.
+snap 04-nested "└◇ reader-3a"
 # Everything then asks to run a command at once: the session's own request is
 # a card of its own, and the children's are routed here to be answered. The
 # queue counter is what says how many are standing behind this one.
