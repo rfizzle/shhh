@@ -122,7 +122,7 @@ backlog · done                                                                 
                                              │ Sixty-eight literals came out of twenty files; the register is
                                              │ the one place a key is written down.
 
-[↑↓] move · [enter] read · [/] filter · [e] edit · [n] new · [esc] back
+[↑↓] move · [enter] read · [/] filter · [o] put it back in the backlog · [n] new · [esc] back
 
 · [x] · the one confirm that names what it loses
 backlog · the cockpit sprint                                                     6 items · [?] keys · [q] back
@@ -174,7 +174,7 @@ backlog · the cockpit sprint                                            6 items
 [↑↓] move between items
 [enter] read the body in the pane
 [pgup/pgdn] page the body while reading it
-[tab] the backlog, or what shipped
+[tab] the backlog, the sprint, or what shipped
 [/] filter by slug or title
 [ctrl+u] clear the filter; clear it again to close it
 [backspace] take a rune back out of the filter
@@ -308,7 +308,7 @@ backlog · the cockpit sprint                                            6 items
                                             ␛[38;5;241m │ ␛[m␛[38;5;241mSixty-eight literals came out of twenty files; the register is␛[m
                                             ␛[38;5;241m │ ␛[m␛[38;5;241mthe one place a key is written down.␛[m
 
-␛[94m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m read␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[94m[e]␛[m␛[38;5;241m edit␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m␛[38;5;241m new␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back␛[m
+␛[94m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m read␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[94m[o]␛[m␛[38;5;241m put it back in the backlog␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m␛[38;5;241m new␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back␛[m
 
 · [x] · the one confirm that names what it loses
 ␛[1;97mbacklog␛[m␛[38;5;241m · the cockpit sprint␛[m                                                     ␛[38;5;241m6 items␛[m␛[38;5;241m · [?] keys · [q] back␛[m
@@ -360,7 +360,7 @@ backlog · the cockpit sprint                                            6 items
 ␛[94m[↑↓]␛[m␛[38;5;241m move between items␛[m
 ␛[94m[enter]␛[m␛[38;5;241m read the body in the pane␛[m
 ␛[94m[pgup/pgdn]␛[m␛[38;5;241m page the body while reading it␛[m
-␛[94m[tab]␛[m␛[38;5;241m the backlog, or what shipped␛[m
+␛[94m[tab]␛[m␛[38;5;241m the backlog, the sprint, or what shipped␛[m
 ␛[94m[/]␛[m␛[38;5;241m filter by slug or title␛[m
 ␛[94m[ctrl+u]␛[m␛[38;5;241m clear the filter; clear it again to close it␛[m
 ␛[94m[backspace]␛[m␛[38;5;241m take a rune back out of the filter␛[m

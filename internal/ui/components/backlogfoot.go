@@ -58,14 +58,7 @@ func (b *BacklogScreen) offers(width int) []KeyOffer {
 		return sprintOffers(b.Plan)
 	}
 	if b.filtering {
-		return []KeyOffer{
-			keyOffer(keys.Backlog.Move),
-			keyOfferAs(keys.Backlog.ClearQ, "clear the filter, then close it"),
-			// esc and not the letter: a row being typed into keeps every
-			// letter as text, so the two keystrokes no sentence produces are
-			// the whole of what closes it (invariant 5).
-			wayOut("close it"),
-		}
+		return filterOffers(width)
 	}
 	if b.reading {
 		return []KeyOffer{
@@ -79,6 +72,30 @@ func (b *BacklogScreen) offers(width int) []KeyOffer {
 	return b.listOffers(width)
 }
 
+// filterOffers is the query row's key row, and it is one row at every width
+// the way the list's is. Where the full words do not fit, esc gives up its
+// words first — it is the way out, and its tone says so — and then the clear
+// key its clause, down to the two things it does in turn. No offer is shed:
+// these three are the whole of what a row being typed into answers.
+func filterOffers(width int) []KeyOffer {
+	move := keyOffer(keys.Backlog.Move)
+	clearQ := keyOfferAs(keys.Backlog.ClearQ, "clear the filter, then close it")
+	rungs := [][]KeyOffer{
+		// esc and not the letter: a row being typed into keeps every letter
+		// as text, so the two keystrokes no sentence produces are the whole
+		// of what closes it (invariant 5).
+		{move, clearQ, wayOut("close it")},
+		{move, clearQ, wayOut("")},
+		{move, keyOfferAs(keys.Backlog.ClearQ, "clear, then close"), wayOut("")},
+	}
+	for _, rung := range rungs {
+		if lipgloss.Width(keyOffers(rung)) <= width {
+			return rung
+		}
+	}
+	return rungs[len(rungs)-1]
+}
+
 // listOffers is the list's key row, and it is one row at every width: the
 // keys a reader presses every time the screen is open — move, read, filter,
 // edit, a new item and the way out. Every other key is behind the header's
@@ -89,8 +106,10 @@ func (b *BacklogScreen) offers(width int) []KeyOffer {
 // Where even those will not fit, whole segments give ground, the way the
 // history browser's row does (invariant 4): the way out first, because the
 // header states it at every width; then the two verbs, which `[?]` carries in
-// full. The pointer's keys are never shed — this list moves on the arrows
-// alone, which no other list in the product teaches.
+// full. On the archive the row's verb is putting an item back, and its words
+// shorten before it is shed, since it is the one thing that tab is for. The
+// pointer's keys are never shed — this list moves on the arrows alone, which
+// no other list in the product teaches.
 func (b *BacklogScreen) listOffers(width int) []KeyOffer {
 	out := []KeyOffer{keyOffer(keys.Backlog.Move)}
 	if b.current() != nil {
@@ -106,11 +125,13 @@ func (b *BacklogScreen) listOffers(width int) []KeyOffer {
 
 	way := keys.Bracket(keys.Select.Cancel)
 	edit, fresh := keys.Bracket(keys.Backlog.Edit), keys.Bracket(keys.Backlog.New)
+	reopen := keys.Bracket(keys.Backlog.Reopen)
 	rungs := [][]KeyOffer{
 		out,
 		without(out, way),
 		without(out, way, fresh),
-		without(out, way, fresh, edit),
+		reworded(without(out, way, fresh), reopen, "put it back"),
+		without(out, way, fresh, edit, reopen),
 	}
 	for _, rung := range rungs {
 		if lipgloss.Width(keyOffers(rung)) <= width {
@@ -120,21 +141,38 @@ func (b *BacklogScreen) listOffers(width int) []KeyOffer {
 	return rungs[len(rungs)-1]
 }
 
-// fileOffers are the two verbs the list's row carries: the editor on the row
-// under the pointer, and starting a new item — which is about the backlog
-// rather than the row, so an empty list offers it too.
+// fileOffers are the two verbs the list's row carries: the row's own — the
+// editor, or on the archive putting the item back, which is what that tab is
+// for — and starting a new item, which is about the backlog rather than the
+// row, so an empty list offers it too.
 func (b *BacklogScreen) fileOffers() []KeyOffer {
 	fresh := keyOfferAs(keys.Backlog.New, "new")
 	row := b.current()
 	if row == nil {
 		return []KeyOffer{fresh}
 	}
-	edit := keyOfferAs(keys.Backlog.Edit, "edit")
-	if row.State == BacklogUnreadable {
+	verb := keyOfferAs(keys.Backlog.Edit, "edit")
+	switch {
+	case row.State == BacklogUnreadable:
 		// None of the verbs is a line edit this file's header could take.
-		edit = keyOfferAs(keys.Backlog.Edit, "fix the header")
+		verb = keyOfferAs(keys.Backlog.Edit, "fix the header")
+	case b.archived():
+		verb = keyOfferAs(keys.Backlog.Reopen, "put it back in the backlog")
 	}
-	return []KeyOffer{edit, fresh}
+	return []KeyOffer{verb, fresh}
+}
+
+// reworded is a rung with one offer's words replaced, for a verb that
+// shortens before it is shed. A rung without that offer comes back as it
+// was.
+func reworded(offers []KeyOffer, key, label string) []KeyOffer {
+	out := append([]KeyOffer(nil), offers...)
+	for i := range out {
+		if out[i].Key == key {
+			out[i].Label = label
+		}
+	}
+	return out
 }
 
 // stateOffers are the keys that change a file: the run the footer greys out
@@ -189,7 +227,7 @@ func (b *BacklogScreen) keyList() []KeyOffer {
 		keyOfferAs(keys.Backlog.Move, "move between items"),
 		keyOfferAs(keys.Backlog.Read, "read the body in the pane"),
 		keyOfferAs(keys.Backlog.Page, "page the body while reading it"),
-		keyOfferAs(keys.Backlog.Tab, "the backlog, or what shipped"),
+		keyOfferAs(keys.Backlog.Tab, "the backlog, the sprint, or what shipped"),
 		keyOfferAs(keys.Backlog.Filter, "filter by slug or title"),
 		keyOfferAs(keys.Backlog.ClearQ, "clear the filter; clear it again to close it"),
 		keyOfferAs(keys.Query.Rub, "take a rune back out of the filter"),

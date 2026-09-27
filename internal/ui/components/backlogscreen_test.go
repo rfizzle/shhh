@@ -271,10 +271,54 @@ func TestBacklogScreen_FootIsOneRow(t *testing.T) {
 		}
 	}
 
+	// The archive's row carries its own verb in the editor's place, and at
+	// every width: its words shorten before anything but the way out and the
+	// new item gives ground.
+	for _, width := range append([]int{40}, goldenWidths...) {
+		b := goldenBacklogScreen()
+		b.Update(key("tab"))
+		rows := b.footRows(width)
+		if len(rows) != 1 {
+			t.Fatalf("at %d columns the archive's foot is %d rows:\n%s", width, len(rows), strings.Join(rows, "\n"))
+		}
+		foot := ansi.Strip(rows[0])
+		want := "[o] put it back"
+		if width >= 80 {
+			want = "[o] put it back in the backlog"
+		}
+		if width > 40 && !strings.Contains(foot, want) {
+			t.Errorf("at %d columns the archive's foot never offers %q: %s", width, want, foot)
+		}
+		if strings.Contains(foot, "[e]") {
+			t.Errorf("at %d columns the archive's foot offers the editor over its own verb: %s", width, foot)
+		}
+	}
+
+	// The query row's foot sheds esc's words and then shortens the clear
+	// key's clause, and never offers fewer than its three keys, down to the
+	// narrowest width a surface is drawn at.
+	for _, width := range goldenWidths {
+		b := goldenBacklogScreen()
+		pressAll(b, "/")
+		rows := b.footRows(width)
+		if len(rows) != 1 {
+			t.Fatalf("at %d columns the filter's foot is %d rows:\n%s", width, len(rows), strings.Join(rows, "\n"))
+		}
+		foot := ansi.Strip(rows[0])
+		for _, want := range []string{"[↑↓] move", "[ctrl+u] clear", "[esc]"} {
+			if !strings.Contains(foot, want) {
+				t.Errorf("at %d columns the filter's foot sheds %q: %s", width, want, foot)
+			}
+		}
+		if width >= 80 && !strings.Contains(foot, "[esc] close it") {
+			t.Errorf("at %d columns the filter's foot gives up esc's words with room for them: %s", width, foot)
+		}
+	}
+
 	b := goldenBacklogScreen()
 	pressAll(b, "?")
 	register := ansi.Strip(strings.Join(b.footRows(110), "\n"))
-	for _, want := range []string{"[s] cycle the status filter", "[tab] the backlog, or what shipped", "[R] work it through", "[x] delete the file"} {
+	for _, want := range []string{"[s] cycle the status filter", "[tab] the backlog, the sprint, or what shipped", "[R] work it through", "[x] delete the file"} {
 		if !strings.Contains(register, want) {
 			t.Errorf("[?] never lists %q:\n%s", want, register)
 		}
@@ -300,8 +344,8 @@ func TestBacklogScreen_ArchiveTab(t *testing.T) {
 	if strings.Contains(view, "[R] run it") || strings.Contains(view, "[x] drop it") {
 		t.Errorf("the archive offers a key it cannot answer:\n%s", view)
 	}
-	// Reopening is behind `[?]` with the rest of the verbs; the archive's
-	// own words for it are the ones a turn greys out.
+	// Reopening is the archive's own verb: its row offers it, and a turn
+	// greys out the same words.
 	if got := keyOffers(b.stateOffers()); !strings.Contains(ansi.Strip(got), "[o] put it back in the backlog") {
 		t.Errorf("the archive's verbs lost the reopen: %s", ansi.Strip(got))
 	}

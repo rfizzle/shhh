@@ -47,9 +47,19 @@ func keyOffers(keys []TurnKey) string {
 		if k.Safe {
 			tone = sty.Add
 		}
-		parts = append(parts, tone.Render(k.Key)+sty.Dim.Render(" "+k.Label))
+		parts = append(parts, tone.Render(k.Key)+offerWords(k.Label))
 	}
 	return strings.Join(parts, sty.Dim.Render(" · "))
+}
+
+// offerWords is the words after a key. A key offered bare — the tone
+// carrying what it does, where a row had no room left for its words — gets
+// no trailing space either, since that space is a column the row is short of.
+func offerWords(label string) string {
+	if label == "" {
+		return ""
+	}
+	return sty.Dim.Render(" " + label)
 }
 
 // inertOffers renders the same run for a surface that does not hold the
@@ -59,7 +69,7 @@ func keyOffers(keys []TurnKey) string {
 func inertOffers(keys []TurnKey) string {
 	var parts []string
 	for _, k := range keys {
-		parts = append(parts, sty.Dimmer.Render(k.Key)+sty.Dim.Render(" "+k.Label))
+		parts = append(parts, sty.Dimmer.Render(k.Key)+offerWords(k.Label))
 	}
 	return strings.Join(parts, sty.Dim.Render(" · "))
 }
