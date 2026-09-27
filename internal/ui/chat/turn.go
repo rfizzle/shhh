@@ -193,6 +193,17 @@ func (m *Model) leaveSurface() {
 		m.heldOnArrival = m.decisionHeld
 		m.armGrace()
 	}
+	// The pane is repainted on the way back whatever the geometry did. Its
+	// lines were set before the surface took it, and the model can have moved
+	// underneath: the command that opened the surface emptied the draft, and
+	// the start screen's list is drawn live or dismissed from exactly that
+	// (start.go), so the lines it left say the list is gone after the reader
+	// has nothing typed. syncViewport repaints only where the pane's rows or
+	// columns moved — with a notice on the rail they did, and the stale lines
+	// were never seen — which is why this is not left to it.
+	if m.ready {
+		m.viewport.SetLines(m.renderHistoryLines())
+	}
 }
 
 // answerIsArriving reports whether the round has prose on the way that has

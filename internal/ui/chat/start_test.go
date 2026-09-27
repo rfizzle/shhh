@@ -567,3 +567,28 @@ func TestStartScreen_AClickOnAnOfferRunsItAndTheChromeIsInert(t *testing.T) {
 		t.Fatal("a click never takes the keyboard")
 	}
 }
+
+func TestStartScreen_ComesBackWholeWhenASurfaceCloses(t *testing.T) {
+	m := startModel(t, startFixture())
+	m.input.SetValue("/safety")
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	m = updated.(Model)
+	if m.state != stateSafety {
+		t.Fatalf("the command should have opened the safety screen, state %v", m.state)
+	}
+	// What the pane held while the surface had it was drawn with a draft in
+	// the input, so the list was dismissed. The reader has an empty draft
+	// again on the way back, and the pane's rows and columns need not have
+	// moved — a rail with nothing on it leaves them exactly as they were —
+	// so the return itself has to repaint rather than leaving it to the
+	// geometry check in syncViewport.
+	m.viewport.SetLines([]string{"a render taken with the list dismissed"})
+	m.leaveSurface()
+	if m.state != stateInput {
+		t.Fatalf("leaving the surface should hand the screen back, state %v", m.state)
+	}
+	pane := ansi.Strip(m.viewport.View())
+	if !strings.Contains(pane, "worth doing first") {
+		t.Fatalf("the start screen came back without its list:\n%s", pane)
+	}
+}
