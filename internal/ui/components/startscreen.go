@@ -4,8 +4,8 @@ package components
 // docs/interface/surfaces.md#the-start-screen). An empty session used to be
 // one italic sentence in the middle of a blank viewport, which told a new
 // reader nothing and a returning one less. The screen states what shhh
-// already knows about the checkout it opened in — the path, the toolchain,
-// the branch and its dirty count, the package count — names the files it read
+// already knows about the checkout it opened in that the header row does not —
+// the toolchain, the dirty count, the package count — names the files it read
 // into the system prompt and the gate that will run without asking, and then
 // offers three concrete pieces of work rather than a blinking cursor.
 //
@@ -19,15 +19,12 @@ import (
 	"charm.land/lipgloss/v2"
 )
 
-// StartFact is one clause of the header line: `~/src/shhh`, `go 1.24`,
-// `3 files changed`. The tone only makes the clause that matters findable —
-// the words carry the meaning, as everywhere else.
+// StartFact is one clause of the fact line: `go 1.24`, `3 files changed`,
+// `41 packages`. The tone only makes the clause that matters findable — the
+// words carry the meaning, as everywhere else.
 type StartFact struct {
 	Text string
 	Tone FieldTone
-	// Lead marks the clause that opens the line (the path), which is bright
-	// rather than dim because it is the one thing a reader checks first.
-	Lead bool
 }
 
 // StartNote is one labelled line under the header: what was read for context,
@@ -52,7 +49,7 @@ type StartSuggestion struct {
 
 // StartScreen is the empty session's surface.
 type StartScreen struct {
-	// Facts is the header line, joined with · and clipped as one line.
+	// Facts is the fact line, joined with · and clipped as one line.
 	Facts []StartFact
 	Notes []StartNote
 	// Lead introduces the suggestion list; empty hides the list's heading.
@@ -72,11 +69,18 @@ type StartScreen struct {
 	// It is dropped along with the suggestions once the reader starts
 	// typing, because a key nothing accepts is not an offer.
 	Hint []KeyOffer
-	// Typing closes that row with the way in that is not a key. It is a
+	// Typing opens that row with the way in that is not a key. It is a
 	// field of its own rather than an offer with an empty key, because every
 	// segment of a key row is a key and this clause is what a reader does
-	// instead of pressing one.
+	// instead of pressing one — and it leads, because it is the one thing a
+	// first-time reader needs from the row.
 	Typing string
+	// FirstRun is the block drawn in dim above the key row on the machine's
+	// first session, one line each: how to ask, how to back out, how to
+	// stop. The host decides it is due and supplies the lines; empty draws
+	// nothing, which is every session after the first
+	// (docs/interface/surfaces.md#the-start-screen).
+	FirstRun []string
 	// Nav is the second key row: how to move between the prompt and the
 	// transcript. It outlives the typing dismissal that takes
 	// Hint, because those keys outlive it too — the wheel, pgup and ctrl+o
@@ -150,6 +154,17 @@ func (s StartScreen) layout(width int) ([]string, []int) {
 		rows = append(rows, lines...)
 		offers = append(offers, owners...)
 	}
+	// The first-run block sits above the key row it introduces, a paragraph
+	// of its own so the row under it still reads as a row of keys, and it
+	// outlives the typing dismissal: how to back out and how to stop are
+	// still what a reader with a half-written draft needs.
+	if len(s.FirstRun) > 0 {
+		rows = append(rows, "")
+		for _, line := range s.FirstRun {
+			rows = append(rows, Clip(sty.Dim.Render(line), width))
+		}
+		blank(1 + len(s.FirstRun))
+	}
 	hint := s.hintRows(width)
 	if len(hint) > 0 {
 		rows = append(rows, "")
@@ -167,14 +182,13 @@ func (s StartScreen) layout(width int) ([]string, []int) {
 	return rows, offers
 }
 
-// hintRows is the suggestion list's key row with the typing clause closing
-// it. The keys are packed by the rule every key row in the product is packed
-// by — an offer that will not fit beside the one before it starts a row of
-// its own rather than being dropped
-// (docs/interface/principles.md#fold-never-hide) — and the clause that is not
-// a key rides the last of those rows where there is room and takes one of its
-// own where there is not. It is last because it is the alternative to the
-// keys and not one of them.
+// hintRows is the suggestion list's key row with the typing clause leading
+// it. It is one row wherever the terminal holds it, which is why the host
+// hands over few offers and leaves the other spellings to the key list. Where
+// it does not fit, the clause takes a row of its own and the keys are packed
+// under it by the rule every key row in the product is packed by — an offer
+// that will not fit beside the one before it starts a row of its own rather
+// than being dropped (docs/interface/principles.md#fold-never-hide).
 func (s StartScreen) hintRows(width int) []string {
 	rows := HintRows(s.Hint, width)
 	if s.Typing == "" {
@@ -184,12 +198,12 @@ func (s StartScreen) hintRows(width int) []string {
 	if len(rows) == 0 {
 		return []string{Clip(typing, width)}
 	}
-	last := len(rows) - 1
-	if joined := rows[last] + sty.Dim.Render(" · ") + typing; lipgloss.Width(joined) <= width {
-		rows[last] = joined
-		return rows
+	if len(rows) == 1 {
+		if joined := typing + sty.Dim.Render(" · ") + rows[0]; lipgloss.Width(joined) <= width {
+			return []string{joined}
+		}
 	}
-	return append(rows, Clip(typing, width))
+	return append([]string{Clip(typing, width)}, rows...)
 }
 
 // The product's name as this screen wears it
@@ -322,9 +336,10 @@ func nameRule(width int) string {
 // a face that reads `./shhh-linux-amd64` is not a face.
 const startName = "shhh"
 
-// factLine renders the header clauses joined with ·, dropping clauses from
-// the right until the line fits. The path is never dropped: a header that
-// cannot say where it is has nothing left to say.
+// factLine renders the clauses joined with ·, dropping clauses from the
+// right until the line fits. The first is never dropped: a line that gave up
+// every clause would say nothing, and the first is the one the host put
+// where it would be read first.
 func (s StartScreen) factLine(width int) string {
 	facts := s.Facts
 	for {
@@ -342,11 +357,7 @@ func joinFacts(facts []StartFact) string {
 		if i > 0 {
 			b.WriteString(sty.Dim.Render(" · "))
 		}
-		style := f.Tone.style()
-		if f.Lead {
-			style = brightStyle()
-		}
-		b.WriteString(style.Render(f.Text))
+		b.WriteString(f.Tone.style().Render(f.Text))
 	}
 	return b.String()
 }

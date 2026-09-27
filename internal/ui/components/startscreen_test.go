@@ -14,9 +14,7 @@ import (
 func startFixture() StartScreen {
 	return StartScreen{
 		Facts: []StartFact{
-			{Text: "~/src/shhh", Lead: true},
 			{Text: "go 1.24"},
-			{Text: "git main"},
 			{Text: "3 files changed", Tone: ToneOpen},
 			{Text: "41 packages"},
 		},
@@ -34,9 +32,18 @@ func startFixture() StartScreen {
 		Hint: []KeyOffer{
 			{Key: "[↑↓]", Label: "choose"},
 			{Key: "[enter]", Label: "start"},
+			{Key: "[ctrl+]]", Label: "keys"},
 		},
 		Typing: "or just type what you want",
 	}
+}
+
+// startFirstRunFixture is the block a first session carries, in the host's
+// words.
+var startFirstRunFixture = []string{
+	"type what you want and press enter",
+	"esc backs out of anything and never loses work",
+	"ctrl+c twice stops a run",
 }
 
 func startView(s StartScreen, width int) string { return ansi.Strip(s.View(width)) }
@@ -44,7 +51,7 @@ func startView(s StartScreen, width int) string { return ansi.Strip(s.View(width
 func TestStartScreen_StatesWhatItAlreadyKnows(t *testing.T) {
 	view := startView(startFixture(), 110)
 	for _, want := range []string{
-		"~/src/shhh", "go 1.24", "git main", "3 files changed", "41 packages",
+		"go 1.24", "3 files changed", "41 packages",
 		"context", "AGENTS.md", "gate", "default", "runs without asking",
 		"Some things worth doing first:",
 		"pick up (last session)", "7 turns · $0.42 · 4m ago",
@@ -84,11 +91,11 @@ func TestStartScreen_FocusIsAPointerNotOnlyAHighlight(t *testing.T) {
 	}
 }
 
-func TestStartScreen_FactsDropFromTheRightAndKeepThePath(t *testing.T) {
+func TestStartScreen_FactsDropFromTheRightAndKeepTheFirst(t *testing.T) {
 	s := startFixture()
 	line := strings.Split(startView(s, 30), "\n")[0]
-	if !strings.Contains(line, "~/src/shhh") {
-		t.Fatalf("the path was dropped from a narrow header: %q", line)
+	if !strings.Contains(line, "go 1.24") {
+		t.Fatalf("the first clause was dropped from a narrow line: %q", line)
 	}
 	if strings.Contains(line, "41 packages") {
 		t.Fatalf("a header this narrow cannot carry every clause: %q", line)
@@ -144,18 +151,49 @@ func TestStartScreen_KeyRowsWearTheBracketGrammar(t *testing.T) {
 }
 
 // The typing clause is the alternative to the keys rather than one of them,
-// so it closes their row where there is room and takes one of its own where
-// there is not — it is never dropped.
-func TestStartScreen_TheTypingClauseFoldsRatherThanGoing(t *testing.T) {
+// and the one thing a first-time reader needs from the row, so it leads the
+// one row where there is room and takes a row of its own above the keys
+// where there is not — it is never dropped.
+func TestStartScreen_TheTypingClauseLeadsTheOneRow(t *testing.T) {
 	s := startFixture()
 	s.Facts, s.Notes, s.Suggestions, s.Lead = nil, nil, nil, ""
 	wide := strings.Split(strings.TrimLeft(startView(s, 110), "\n"), "\n")
-	if len(wide) != 1 || !strings.HasSuffix(wide[0], "· or just type what you want") {
-		t.Fatalf("a wide row should carry the clause beside the keys: %q", wide)
+	if len(wide) != 1 || !strings.HasPrefix(wide[0], "or just type what you want · [↑↓] choose") {
+		t.Fatalf("a wide row should be one row led by the clause: %q", wide)
 	}
 	narrow := strings.Split(strings.TrimLeft(startView(s, 30), "\n"), "\n")
-	if len(narrow) != 2 || narrow[1] != "or just type what you want" {
+	if len(narrow) < 2 || narrow[0] != "or just type what you want" {
 		t.Fatalf("a narrow row should give the clause a row of its own: %q", narrow)
+	}
+}
+
+// The first session's block sits above the key row it introduces,
+// and a session with none draws exactly what it drew before.
+func TestStartScreen_TheFirstRunBlockSitsAboveTheKeyRow(t *testing.T) {
+	s := startFixture()
+	without := startView(s, 110)
+	s.FirstRun = startFirstRunFixture
+	rows := strings.Split(startView(s, 110), "\n")
+	at := -1
+	for i, row := range rows {
+		if row == startFirstRunFixture[0] {
+			at = i
+		}
+	}
+	if at < 1 || rows[at-1] != "" {
+		t.Fatalf("the block should open after a blank row:\n%s", strings.Join(rows, "\n"))
+	}
+	for i, want := range startFirstRunFixture {
+		if rows[at+i] != want {
+			t.Fatalf("block row %d = %q, want %q", i, rows[at+i], want)
+		}
+	}
+	if gap, next := rows[at+len(startFirstRunFixture)], rows[at+len(startFirstRunFixture)+1]; gap != "" ||
+		!strings.HasPrefix(next, "or just type what you want") {
+		t.Fatalf("the key row should follow the block after one blank row, got %q then %q", gap, next)
+	}
+	if strings.Contains(without, startFirstRunFixture[1]) {
+		t.Fatalf("a later session drew the block:\n%s", without)
 	}
 }
 
@@ -168,7 +206,7 @@ func TestStartScreen_WithoutSuggestionsTheKeysGoToo(t *testing.T) {
 	if strings.Contains(view, "[↑↓]") || strings.Contains(view, "worth doing first") {
 		t.Fatalf("the dismissed list left its chrome behind:\n%s", view)
 	}
-	if !strings.Contains(view, "~/src/shhh") {
+	if !strings.Contains(view, "go 1.24") {
 		t.Fatalf("dismissing the list took the facts with it:\n%s", view)
 	}
 }
@@ -184,7 +222,7 @@ func TestStartScreen_TheFaceIsWhatTheHeightAllows(t *testing.T) {
 		height int
 		want   string
 	}{
-		{"a host that did not say", 0, "~/src/shhh"},
+		{"a host that did not say", 0, "go 1.24"},
 		{"a short pane", startFaceHeight - 1, "── shhh ─"},
 		{"room for the wordmark", startFaceHeight, startWordmark[0]},
 	} {
@@ -215,7 +253,7 @@ func TestStartScreen_TheWordmarkTrailsOffInBirthMarks(t *testing.T) {
 	}
 }
 
-// The face carries no fact — the path under it is where the reader is going —
+// The face carries no fact — the line under it is where the reader is going —
 // so a palette with two greys to spend declines it whole (invariant 1).
 func TestStartScreen_TheFaceIsDeclinedInMono(t *testing.T) {
 	was := Mono()

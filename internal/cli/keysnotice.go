@@ -36,12 +36,6 @@ type keymapLaunch struct {
 	noticeDue bool
 }
 
-// keymapNoticeDue reports whether this launch should carry the notice, and
-// records that it did.
-func keymapNoticeDue() bool {
-	return readKeymapLaunch().noticeDue
-}
-
 // readKeymapLaunch reads the marker in the data directory and brings it up to
 // date. A machine whose data directory cannot be resolved or written shows
 // nothing: a notice that cannot be marked seen would show on every launch,

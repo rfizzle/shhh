@@ -2157,9 +2157,7 @@ func TestGolden_StartScreen(t *testing.T) {
 		screen := func(mut func(*StartScreen)) string {
 			s := StartScreen{
 				Facts: []StartFact{
-					{Text: "~/src/shhh", Lead: true},
 					{Text: "go 1.24"},
-					{Text: "git main"},
 					{Text: "3 files changed", Tone: ToneOpen},
 					{Text: "41 packages"},
 				},
@@ -2178,6 +2176,7 @@ func TestGolden_StartScreen(t *testing.T) {
 				Hint: []KeyOffer{
 					{Key: "[↑↓]", Label: "choose"},
 					{Key: "[enter]", Label: "start"},
+					{Key: "[ctrl+]]", Label: "keys"},
 				},
 				Typing: "or just type what you want",
 			}
@@ -2190,7 +2189,7 @@ func TestGolden_StartScreen(t *testing.T) {
 				s.Focus = 2
 			})},
 			{Label: "nothing to pick up · a clean tree in a project with no gate", View: screen(func(s *StartScreen) {
-				s.Facts[3] = StartFact{Text: "clean tree", Tone: ToneSafe}
+				s.Facts[1] = StartFact{Text: "clean tree", Tone: ToneSafe}
 				s.Notes = []StartNote{
 					{Label: "context", Value: "nothing read", Detail: "no .shhh/project.md or AGENTS.md up the tree"},
 					{Label: "gate", Value: "not configured", Detail: ".shhh/quality.json"},
@@ -2203,12 +2202,19 @@ func TestGolden_StartScreen(t *testing.T) {
 				}
 			})},
 			{Label: "somebody else is in this checkout too", View: screen(func(s *StartScreen) {
-				// Second, and the header drops from the right, so this panel
-				// is also what shows the package count going before it does.
-				s.Facts = append([]StartFact{s.Facts[0],
-					{Text: "another session open here since 10:32", Tone: ToneOpen}}, s.Facts[1:]...)
+				// First, and the line drops from the right, so this panel is
+				// also what shows the package count going before it does.
+				s.Facts = append([]StartFact{
+					{Text: "another session open here since 10:32", Tone: ToneOpen}}, s.Facts...)
+			})},
+			{Label: "the first session · three keys above the key row, once", View: screen(func(s *StartScreen) {
+				s.FirstRun = startFirstRunFixture
 			})},
 			{Label: "typing dismissed the list · the facts stay", View: screen(func(s *StartScreen) {
+				s.Suggestions, s.Lead, s.Hint, s.Typing = nil, "", nil, ""
+			})},
+			{Label: "typing on the first session · the three keys stay", View: screen(func(s *StartScreen) {
+				s.FirstRun = startFirstRunFixture
 				s.Suggestions, s.Lead, s.Hint, s.Typing = nil, "", nil, ""
 			})},
 		}
@@ -2230,9 +2236,7 @@ func TestGolden_StartFace(t *testing.T) {
 			return StartScreen{
 				Height: height,
 				Facts: []StartFact{
-					{Text: "~/src/shhh", Lead: true},
 					{Text: "go 1.24"},
-					{Text: "git main"},
 					{Text: "3 files changed", Tone: ToneOpen},
 					{Text: "41 packages"},
 				},

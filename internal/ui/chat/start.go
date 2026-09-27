@@ -3,10 +3,10 @@ package chat
 // First contact (docs/interface/surfaces.md#the-start-screen). An
 // empty session is the one screen every user sees and the one that used to
 // say the least: a single italic sentence in the middle of a blank viewport.
-// It now states what shhh already knows about the checkout — path, toolchain,
-// branch, dirty count, package count — names the files it read into the
-// system prompt and the quality gate that will run without asking, and offers
-// three concrete pieces of work.
+// It now states what shhh already knows about the checkout that the header
+// row does not — toolchain, dirty count, package count — names the files it
+// read into the system prompt and the quality gate that will run without
+// asking, and offers three concrete pieces of work.
 //
 // Two rules keep it from becoming a wizard. Everything on it was computed
 // once, at session start, by the survey the CLI hands in; View does
@@ -108,12 +108,33 @@ type StartInfo struct {
 	// value means time.Now, which is what the product uses and the tests do
 	// not.
 	Now time.Time
+	// FirstRun is the machine's first session of shhh, which the CLI reads
+	// off the marker in the data directory. It puts the three keys every
+	// session turns on above the key row, once
+	// (docs/interface/surfaces.md#the-start-screen).
+	FirstRun bool
 }
 
 // WithStartScreen supplies the first-contact facts. Without it the empty
 // session keeps the plain welcome line, which is what every non-chat host
 // (the attached child view, tests that build a bare model) gets.
 func (m Model) WithStartScreen(info StartInfo) Model {
+	m.start = &info
+	return m
+}
+
+// WithFirstRun marks the session as the machine's first, which the start
+// screen answers with its block of three keys. It is a mark on the facts
+// already supplied rather than a fact of its own, so a host with no start
+// screen gains nothing from it.
+func (m Model) WithFirstRun() Model {
+	if m.start == nil {
+		return m
+	}
+	// A copy rather than a write through the pointer: the model is a value,
+	// and every copy of it shares the one StartInfo.
+	info := *m.start
+	info.FirstRun = true
 	m.start = &info
 	return m
 }
@@ -220,7 +241,7 @@ func (m Model) renderStartScreen(width int) string {
 	screen, _ := m.startScreen()
 	if !m.startChoosing() {
 		// Typing dismisses the list, not the facts — and not the
-		// navigation line, whose keys are still live.
+		// navigation line or the first-run block, whose keys are still live.
 		screen.Suggestions, screen.Lead = nil, ""
 		screen.Hint, screen.Typing = nil, ""
 	}
@@ -245,25 +266,23 @@ func (m Model) startScreen() (components.StartScreen, []string) {
 		Lead:        "Some things worth doing first:",
 		Suggestions: suggestions,
 		Focus:       min(max(m.startFocus, 0), max(len(suggestions)-1, 0)),
-		// Both routes to an offer are named, because they answer different
-		// hands: the plain arrows are what a reader tries first, and the
-		// pointer chords are the ones that go on working in the pane after
-		// the first turn (pointer.go). The two spellings share one offer
-		// rather than taking one each, because they are one act — and they
-		// are joined the way the completion menu joins its own pair, inside
-		// the run of keys, so the word between them is not painted as though
-		// it were one.
+		// One row, led by the way in that is not a key: the plain arrows
+		// and enter are what a reader tries first, and the pointer chords
+		// that also reach an offer (pointer.go) are on the key list the row
+		// ends with rather than doubled into it — a key row is one row of at
+		// most six. The draft holds the keyboard here, so the list is the
+		// draft's chord and not a bare key.
 		//
 		// The row goes over as offers and not as a sentence: the screen
 		// paints the key apart from the words, and a run joined here could
 		// only arrive in one tone.
 		Hint: []components.KeyOffer{
-			{Key: keys.BracketPair(keys.Draft.HistoryPrev, keys.Draft.HistoryNext) + "/" +
-				keys.BracketPair(keys.Draft.PointUp, keys.Draft.PointDown), Label: "choose"},
-			{Key: keys.Bracket(keys.Draft.Send) + "/" + keys.Bracket(keys.Draft.Open), Label: "start"},
+			{Key: keys.BracketPair(keys.Draft.HistoryPrev, keys.Draft.HistoryNext), Label: "choose"},
+			components.OfferAs(keys.Draft.Send, "start"),
+			components.OfferAs(keys.Draft.KeyList, "keys"),
 		},
-		// And the way in that is not a key, which closes the row.
-		Typing: "or just type what you want",
+		Typing:   "or just type what you want",
+		FirstRun: startFirstRun(*info),
 		// The navigation line survives the typing dismissal above, because
 		// these keys survive it: every one of them works with a half-written
 		// draft in the box. This is the one screen every user
@@ -287,20 +306,32 @@ func (m Model) startScreen() (components.StartScreen, []string) {
 	}, actions
 }
 
-// startFacts is the header line: where we are, in what, on which branch, how
-// dirty, how big. Each clause is dropped when it would be a guess rather than
-// a fact.
-func startFacts(p project.Info) []components.StartFact {
-	dir := p.Display
-	if dir == "" {
-		dir = "this directory"
+// startFirstRun is the block a machine's first session opens with: how to
+// ask, how to back out, how to stop — the three keys every session turns on,
+// learned before the first card rather than on it. The keys are the
+// register's spellings, so a rebind cannot leave the block naming the old
+// ones. Every later session draws nothing here.
+func startFirstRun(info StartInfo) []string {
+	if !info.FirstRun {
+		return nil
 	}
-	facts := []components.StartFact{{Text: dir, Lead: true}}
+	return []string{
+		"type what you want and press " + keys.Shown(keys.Draft.Send),
+		keys.Shown(keys.Draft.Clear) + " backs out of anything and never loses work",
+		keys.Shown(keys.Draft.Cancel) + " twice stops a run",
+	}
+}
 
-	// Second, right behind the path. The header drops clauses from the right
-	// when the line will not fit, and this is the clause that changes how
-	// every other one should be read: the branch, the dirty count and the
-	// tree are partly somebody else's now.
+// startFacts is the fact line: in what, how dirty, how big. Where the
+// session is and on which branch are the header row's, so they are not said
+// twice (docs/interface/surfaces.md#the-start-screen). Each clause is
+// dropped when it would be a guess rather than a fact.
+func startFacts(p project.Info) []components.StartFact {
+	var facts []components.StartFact
+
+	// First, because the line drops clauses from the right when it will not
+	// fit, and this is the clause that changes how every other one should be
+	// read: the dirty count and the tree are partly somebody else's now.
 	if !p.Sibling.IsZero() {
 		facts = append(facts, components.StartFact{
 			Text: "another session open here since " + p.Sibling.Local().Format(project.SiblingClock),
@@ -315,24 +346,20 @@ func startFacts(p project.Info) []components.StartFact {
 		}
 		facts = append(facts, components.StartFact{Text: lang})
 	}
+	// The header names the branch, or that HEAD is detached, and says
+	// nothing about git outside a repository — so that absence is the one
+	// git fact left for this line.
 	switch {
 	case !p.Repo:
 		facts = append(facts, components.StartFact{Text: "not a git repository", Tone: components.ToneOpen})
-	case p.Detached:
-		facts = append(facts, components.StartFact{Text: "git detached HEAD", Tone: components.ToneOpen})
+	case p.Dirty == 0:
+		facts = append(facts, components.StartFact{Text: "clean tree", Tone: components.ToneSafe})
 	default:
-		facts = append(facts, components.StartFact{Text: "git " + p.Branch})
-	}
-	if p.Repo {
-		if p.Dirty == 0 {
-			facts = append(facts, components.StartFact{Text: "clean tree", Tone: components.ToneSafe})
-		} else {
-			changed := fmt.Sprintf("%d files changed", p.Dirty)
-			if p.Dirty == 1 {
-				changed = "1 file changed"
-			}
-			facts = append(facts, components.StartFact{Text: changed, Tone: components.ToneOpen})
+		changed := fmt.Sprintf("%d files changed", p.Dirty)
+		if p.Dirty == 1 {
+			changed = "1 file changed"
 		}
+		facts = append(facts, components.StartFact{Text: changed, Tone: components.ToneOpen})
 	}
 	if p.Packages > 0 {
 		count := fmt.Sprintf("%d", p.Packages)

@@ -1406,7 +1406,13 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	if r := update.CheckCached(version); r != nil {
 		model = model.WithUpdateNotice("update: " + r.Latest)
 	}
-	if keymapNoticeDue() {
+	// One reading answers both, because the marker it reads is written by
+	// it: a first run is owed the start screen's three keys and never the
+	// notice about keys it did not have.
+	switch launch := readKeymapLaunch(); {
+	case launch.firstRun:
+		model = model.WithFirstRun()
+	case launch.noticeDue:
 		model = model.WithKeysNotice(chat.KeysChangedNotice())
 	}
 

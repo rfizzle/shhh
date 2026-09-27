@@ -15,7 +15,7 @@
  ▀▀▄ █▀▀▄ █▀▀▄ █▀▀▄ · ·  ·   ·     ·
 ▄▄▄▀ █  █ █  █ █  █
 
-~/src/shhh · go 1.24 · git main · 3 files changed
+go 1.24 · 3 files changed · 41 packages
 
 context  AGENTS.md — in the system prompt
 gate     default — vet, test · runs without asking
@@ -27,8 +27,8 @@ Some things worth doing first:
   ⚙ run the default quality gate and triage what fails
     one approval, then it reports back
 
-[↑↓]/[shift+↑↓] choose · [enter]/[shift+→] start
 or just type what you want
+[↑↓] choose · [enter] start · [ctrl+]] keys
 [pgup] scroll · [ctrl+o] select rows
 [ctrl+/] palette · [ctrl+x] mouse
 
@@ -37,7 +37,7 @@ or just type what you want
  ▀▀▄ █▀▀▄ █▀▀▄ █▀▀▄ · ·  ·   ·     ·
 ▄▄▄▀ █  █ █  █ █  █
 
-~/src/shhh · go 1.24 · git main · 3 files changed
+go 1.24 · 3 files changed · 41 packages
 
 context  AGENTS.md — in the system prompt
 gate     default — vet, test · runs without asking
@@ -49,8 +49,8 @@ Some things worth doing first:
 ❯ ⚙ run the default quality gate and triage what fails
     one approval, then it reports back
 
-[↑↓]/[shift+↑↓] choose · [enter]/[shift+→] start
 or just type what you want
+[↑↓] choose · [enter] start · [ctrl+]] keys
 [pgup] scroll · [ctrl+o] select rows
 [ctrl+/] palette · [ctrl+x] mouse
 
@@ -59,7 +59,7 @@ or just type what you want
  ▀▀▄ █▀▀▄ █▀▀▄ █▀▀▄ · ·  ·   ·     ·
 ▄▄▄▀ █  █ █  █ █  █
 
-~/src/shhh · go 1.24 · git main · clean tree
+go 1.24 · clean tree · 41 packages
 
 context  nothing read
          no .shhh/project.md, AGENTS.md or CLAUDE.md
@@ -73,8 +73,8 @@ Some things worth doing first:
   ⚙ run go test ./... and triage the failures
     one approval, then it reports back
 
-[↑↓]/[shift+↑↓] choose · [enter]/[shift+→] start
 or just type what you want
+[↑↓] choose · [enter] start · [ctrl+]] keys
 [pgup] scroll · [ctrl+o] select rows
 [ctrl+/] palette · [ctrl+x] mouse
 
@@ -83,7 +83,7 @@ or just type what you want
  ▀▀▄ █▀▀▄ █▀▀▄ █▀▀▄ · ·  ·   ·     ·
 ▄▄▄▀ █  █ █  █ █  █
 
-~/src/shhh · go 1.24 · not a git repository
+go 1.24 · not a git repository · 41+ packages
 
 context  AGENTS.md — in the system prompt
 gate     default — vet, test · runs without asking
@@ -95,8 +95,8 @@ Some things worth doing first:
   ⚙ run the default quality gate and triage what fails
     one approval, then it reports back
 
-[↑↓]/[shift+↑↓] choose · [enter]/[shift+→] start
 or just type what you want
+[↑↓] choose · [enter] start · [ctrl+]] keys
 [pgup] scroll · [ctrl+o] select rows
 [ctrl+/] palette · [ctrl+x] mouse
 
@@ -105,7 +105,7 @@ or just type what you want
  ▀▀▄ █▀▀▄ █▀▀▄ █▀▀▄ · ·  ·   ·     ·
 ▄▄▄▀ █  █ █  █ █  █
 
-~/src/shhh · go 1.24 · git main · 3 files changed
+go 1.24 · 3 files changed · 41 packages
 
 context  nothing read
          no .shhh/project.md, AGENTS.md or CLAUDE.md
@@ -117,8 +117,8 @@ Some things worth doing first:
     reads only, no writes
   ✎ scaffold .shhh/ — one approval
 
-[↑↓]/[shift+↑↓] choose · [enter]/[shift+→] start
 or just type what you want
+[↑↓] choose · [enter] start · [ctrl+]] keys
 [pgup] scroll · [ctrl+o] select rows
 [ctrl+/] palette · [ctrl+x] mouse
 
@@ -127,7 +127,7 @@ or just type what you want
  ▀▀▄ █▀▀▄ █▀▀▄ █▀▀▄ · ·  ·   ·     ·
 ▄▄▄▀ █  █ █  █ █  █
 
-~/src/shhh · another session open here since 10:32
+another session open here since 10:32 · go 1.24
 
 context  AGENTS.md — in the system prompt
 gate     default — vet, test · runs without asking
@@ -139,8 +139,8 @@ Some things worth doing first:
   ⚙ run the default quality gate and triage what fails
     one approval, then it reports back
 
-[↑↓]/[shift+↑↓] choose · [enter]/[shift+→] start
 or just type what you want
+[↑↓] choose · [enter] start · [ctrl+]] keys
 [pgup] scroll · [ctrl+o] select rows
 [ctrl+/] palette · [ctrl+x] mouse
 
@@ -149,7 +149,7 @@ or just type what you want
  ▀▀▄ █▀▀▄ █▀▀▄ █▀▀▄ · ·  ·   ·     ·
 ▄▄▄▀ █  █ █  █ █  █
 
-~/src/shhh · go 1.24 · git main · 3 files changed
+go 1.24 · 3 files changed · 41 packages
 
 context  AGENTS.md — in the system prompt
 gate     withheld
@@ -164,8 +164,8 @@ Some things worth doing first:
   ⚙ run go test ./... and triage the failures
     one approval, then it reports back
 
-[↑↓]/[shift+↑↓] choose · [enter]/[shift+→] start
 or just type what you want
+[↑↓] choose · [enter] start · [ctrl+]] keys
 [pgup] scroll · [ctrl+o] select rows
 [ctrl+/] palette · [ctrl+x] mouse
 
@@ -174,7 +174,7 @@ or just type what you want
  ▀▀▄ █▀▀▄ █▀▀▄ █▀▀▄ · ·  ·   ·     ·
 ▄▄▄▀ █  █ █  █ █  █
 
-~/src/shhh · go 1.24 · git main · 3 files changed
+go 1.24 · 3 files changed · 41 packages
 
 context  AGENTS.md — in the system prompt
 gate     default — vet, test · runs without asking
@@ -188,8 +188,8 @@ Some things worth doing first:
   ⚙ run the default quality gate and triage what fails
     one approval, then it reports back
 
-[↑↓]/[shift+↑↓] choose · [enter]/[shift+→] start
 or just type what you want
+[↑↓] choose · [enter] start · [ctrl+]] keys
 [pgup] scroll · [ctrl+o] select rows
 [ctrl+/] palette · [ctrl+x] mouse
 
@@ -198,7 +198,7 @@ or just type what you want
  ▀▀▄ █▀▀▄ █▀▀▄ █▀▀▄ · ·  ·   ·     ·
 ▄▄▄▀ █  █ █  █ █  █
 
-~/src/shhh · go 1.24 · git main · 3 files changed
+go 1.24 · 3 files changed · 41 packages
 
 context   AGENTS.md — in the system prompt
 gate      default — vet, test · runs without asking
@@ -214,8 +214,8 @@ Some things worth doing first:
   ⚙ run the default quality gate and triage what fails
     one approval, then it reports back
 
-[↑↓]/[shift+↑↓] choose · [enter]/[shift+→] start
 or just type what you want
+[↑↓] choose · [enter] start · [ctrl+]] keys
 [pgup] scroll · [ctrl+o] select rows
 [ctrl+/] palette · [ctrl+x] mouse
 
@@ -224,10 +224,53 @@ or just type what you want
  ▀▀▄ █▀▀▄ █▀▀▄ █▀▀▄ · ·  ·   ·     ·
 ▄▄▄▀ █  █ █  █ █  █
 
-~/src/shhh · go 1.24 · git main · 3 files changed
+go 1.24 · 3 files changed · 41 packages
 
 context  AGENTS.md — in the system prompt
 gate     default — vet, test · runs without asking
+
+[pgup] scroll · [ctrl+o] select rows
+[ctrl+/] palette · [ctrl+x] mouse
+
+· the machine's first session · three keys above the key row
+▄▀▀▀ █    █    █
+ ▀▀▄ █▀▀▄ █▀▀▄ █▀▀▄ · ·  ·   ·     ·
+▄▄▄▀ █  █ █  █ █  █
+
+go 1.24 · 3 files changed · 41 packages
+
+context  AGENTS.md — in the system prompt
+gate     default — vet, test · runs without asking
+
+Some things worth doing first:
+❯ ▸ pick up (last session) — 7 turns · $0.42 · 4m ago 
+  ⚙ explain what changed in the working tree
+    reads only, no writes
+  ⚙ run the default quality gate and triage what fails
+    one approval, then it reports back
+
+type what you want and press enter
+esc backs out of anything and never loses work
+ctrl+c twice stops a run
+
+or just type what you want
+[↑↓] choose · [enter] start · [ctrl+]] keys
+[pgup] scroll · [ctrl+o] select rows
+[ctrl+/] palette · [ctrl+x] mouse
+
+· typing on the first session · the three keys stay
+▄▀▀▀ █    █    █
+ ▀▀▄ █▀▀▄ █▀▀▄ █▀▀▄ · ·  ·   ·     ·
+▄▄▄▀ █  █ █  █ █  █
+
+go 1.24 · 3 files changed · 41 packages
+
+context  AGENTS.md — in the system prompt
+gate     default — vet, test · runs without asking
+
+type what you want and press enter
+esc backs out of anything and never loses work
+ctrl+c twice stops a run
 
 [pgup] scroll · [ctrl+o] select rows
 [ctrl+/] palette · [ctrl+x] mouse
@@ -238,7 +281,7 @@ gate     default — vet, test · runs without asking
 ␛[1;97m ▀▀▄ █▀▀▄ █▀▀▄ █▀▀▄␛[m␛[38;5;241m · ·  ·   ·     ·␛[m
 ␛[1;97m▄▄▄▀ █  █ █  █ █  █␛[m
 
-␛[1;97m~/src/shhh␛[m␛[38;5;241m · ␛[m␛[38;5;252mgo 1.24␛[m␛[38;5;241m · ␛[m␛[38;5;252mgit main␛[m␛[38;5;241m · ␛[m␛[38;5;214m3 files changed␛[m
+␛[38;5;252mgo 1.24␛[m␛[38;5;241m · ␛[m␛[38;5;214m3 files changed␛[m␛[38;5;241m · ␛[m␛[38;5;252m41 packages␛[m
 
 ␛[38;5;243mcontext␛[m  ␛[38;5;252mAGENTS.md␛[m␛[38;5;241m — in the system prompt␛[m
 ␛[38;5;243mgate   ␛[m  ␛[38;5;252mdefault␛[m␛[38;5;241m — vet, test · runs without asking␛[m
@@ -250,8 +293,8 @@ gate     default — vet, test · runs without asking
   ␛[38;5;214m⚙␛[m ␛[38;5;252mrun the default quality gate and triage what fails␛[m
     ␛[38;5;241mone approval, then it reports back␛[m
 
-␛[94m[↑↓]/[shift+↑↓]␛[m␛[38;5;241m choose␛[m␛[38;5;241m · ␛[m␛[94m[enter]/[shift+→]␛[m␛[38;5;241m start␛[m
 ␛[38;5;241mor just type what you want␛[m
+␛[94m[↑↓]␛[m␛[38;5;241m choose␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m start␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+]]␛[m␛[38;5;241m keys␛[m
 ␛[94m[pgup]␛[m␛[38;5;241m scroll␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+o]␛[m␛[38;5;241m select rows␛[m
 ␛[94m[ctrl+/]␛[m␛[38;5;241m palette␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+x]␛[m␛[38;5;241m mouse␛[m
 
@@ -260,7 +303,7 @@ gate     default — vet, test · runs without asking
 ␛[1;97m ▀▀▄ █▀▀▄ █▀▀▄ █▀▀▄␛[m␛[38;5;241m · ·  ·   ·     ·␛[m
 ␛[1;97m▄▄▄▀ █  █ █  █ █  █␛[m
 
-␛[1;97m~/src/shhh␛[m␛[38;5;241m · ␛[m␛[38;5;252mgo 1.24␛[m␛[38;5;241m · ␛[m␛[38;5;252mgit main␛[m␛[38;5;241m · ␛[m␛[38;5;214m3 files changed␛[m
+␛[38;5;252mgo 1.24␛[m␛[38;5;241m · ␛[m␛[38;5;214m3 files changed␛[m␛[38;5;241m · ␛[m␛[38;5;252m41 packages␛[m
 
 ␛[38;5;243mcontext␛[m  ␛[38;5;252mAGENTS.md␛[m␛[38;5;241m — in the system prompt␛[m
 ␛[38;5;243mgate   ␛[m  ␛[38;5;252mdefault␛[m␛[38;5;241m — vet, test · runs without asking␛[m
@@ -272,8 +315,8 @@ gate     default — vet, test · runs without asking
 ␛[94m❯␛[m ␛[1;97;48;5;62m⚙ run the default quality gate and triage what fails␛[m
     ␛[38;5;241mone approval, then it reports back␛[m
 
-␛[94m[↑↓]/[shift+↑↓]␛[m␛[38;5;241m choose␛[m␛[38;5;241m · ␛[m␛[94m[enter]/[shift+→]␛[m␛[38;5;241m start␛[m
 ␛[38;5;241mor just type what you want␛[m
+␛[94m[↑↓]␛[m␛[38;5;241m choose␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m start␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+]]␛[m␛[38;5;241m keys␛[m
 ␛[94m[pgup]␛[m␛[38;5;241m scroll␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+o]␛[m␛[38;5;241m select rows␛[m
 ␛[94m[ctrl+/]␛[m␛[38;5;241m palette␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+x]␛[m␛[38;5;241m mouse␛[m
 
@@ -282,7 +325,7 @@ gate     default — vet, test · runs without asking
 ␛[1;97m ▀▀▄ █▀▀▄ █▀▀▄ █▀▀▄␛[m␛[38;5;241m · ·  ·   ·     ·␛[m
 ␛[1;97m▄▄▄▀ █  █ █  █ █  █␛[m
 
-␛[1;97m~/src/shhh␛[m␛[38;5;241m · ␛[m␛[38;5;252mgo 1.24␛[m␛[38;5;241m · ␛[m␛[38;5;252mgit main␛[m␛[38;5;241m · ␛[m␛[92mclean tree␛[m
+␛[38;5;252mgo 1.24␛[m␛[38;5;241m · ␛[m␛[92mclean tree␛[m␛[38;5;241m · ␛[m␛[38;5;252m41 packages␛[m
 
 ␛[38;5;243mcontext␛[m  ␛[38;5;252mnothing read␛[m
          ␛[38;5;241mno .shhh/project.md, AGENTS.md or CLAUDE.md␛[m
@@ -296,8 +339,8 @@ gate     default — vet, test · runs without asking
   ␛[38;5;214m⚙␛[m ␛[38;5;252mrun go test ./... and triage the failures␛[m
     ␛[38;5;241mone approval, then it reports back␛[m
 
-␛[94m[↑↓]/[shift+↑↓]␛[m␛[38;5;241m choose␛[m␛[38;5;241m · ␛[m␛[94m[enter]/[shift+→]␛[m␛[38;5;241m start␛[m
 ␛[38;5;241mor just type what you want␛[m
+␛[94m[↑↓]␛[m␛[38;5;241m choose␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m start␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+]]␛[m␛[38;5;241m keys␛[m
 ␛[94m[pgup]␛[m␛[38;5;241m scroll␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+o]␛[m␛[38;5;241m select rows␛[m
 ␛[94m[ctrl+/]␛[m␛[38;5;241m palette␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+x]␛[m␛[38;5;241m mouse␛[m
 
@@ -306,7 +349,7 @@ gate     default — vet, test · runs without asking
 ␛[1;97m ▀▀▄ █▀▀▄ █▀▀▄ █▀▀▄␛[m␛[38;5;241m · ·  ·   ·     ·␛[m
 ␛[1;97m▄▄▄▀ █  █ █  █ █  █␛[m
 
-␛[1;97m~/src/shhh␛[m␛[38;5;241m · ␛[m␛[38;5;252mgo 1.24␛[m␛[38;5;241m · ␛[m␛[38;5;214mnot a git repository␛[m
+␛[38;5;252mgo 1.24␛[m␛[38;5;241m · ␛[m␛[38;5;214mnot a git repository␛[m␛[38;5;241m · ␛[m␛[38;5;252m41+ packages␛[m
 
 ␛[38;5;243mcontext␛[m  ␛[38;5;252mAGENTS.md␛[m␛[38;5;241m — in the system prompt␛[m
 ␛[38;5;243mgate   ␛[m  ␛[38;5;252mdefault␛[m␛[38;5;241m — vet, test · runs without asking␛[m
@@ -318,8 +361,8 @@ gate     default — vet, test · runs without asking
   ␛[38;5;214m⚙␛[m ␛[38;5;252mrun the default quality gate and triage what fails␛[m
     ␛[38;5;241mone approval, then it reports back␛[m
 
-␛[94m[↑↓]/[shift+↑↓]␛[m␛[38;5;241m choose␛[m␛[38;5;241m · ␛[m␛[94m[enter]/[shift+→]␛[m␛[38;5;241m start␛[m
 ␛[38;5;241mor just type what you want␛[m
+␛[94m[↑↓]␛[m␛[38;5;241m choose␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m start␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+]]␛[m␛[38;5;241m keys␛[m
 ␛[94m[pgup]␛[m␛[38;5;241m scroll␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+o]␛[m␛[38;5;241m select rows␛[m
 ␛[94m[ctrl+/]␛[m␛[38;5;241m palette␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+x]␛[m␛[38;5;241m mouse␛[m
 
@@ -328,7 +371,7 @@ gate     default — vet, test · runs without asking
 ␛[1;97m ▀▀▄ █▀▀▄ █▀▀▄ █▀▀▄␛[m␛[38;5;241m · ·  ·   ·     ·␛[m
 ␛[1;97m▄▄▄▀ █  █ █  █ █  █␛[m
 
-␛[1;97m~/src/shhh␛[m␛[38;5;241m · ␛[m␛[38;5;252mgo 1.24␛[m␛[38;5;241m · ␛[m␛[38;5;252mgit main␛[m␛[38;5;241m · ␛[m␛[38;5;214m3 files changed␛[m
+␛[38;5;252mgo 1.24␛[m␛[38;5;241m · ␛[m␛[38;5;214m3 files changed␛[m␛[38;5;241m · ␛[m␛[38;5;252m41 packages␛[m
 
 ␛[38;5;243mcontext␛[m  ␛[38;5;252mnothing read␛[m
          ␛[38;5;241mno .shhh/project.md, AGENTS.md or CLAUDE.md␛[m
@@ -340,8 +383,8 @@ gate     default — vet, test · runs without asking
     ␛[38;5;241mreads only, no writes␛[m
   ␛[38;5;214m✎␛[m ␛[38;5;252mscaffold .shhh/␛[m␛[38;5;241m — one approval␛[m
 
-␛[94m[↑↓]/[shift+↑↓]␛[m␛[38;5;241m choose␛[m␛[38;5;241m · ␛[m␛[94m[enter]/[shift+→]␛[m␛[38;5;241m start␛[m
 ␛[38;5;241mor just type what you want␛[m
+␛[94m[↑↓]␛[m␛[38;5;241m choose␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m start␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+]]␛[m␛[38;5;241m keys␛[m
 ␛[94m[pgup]␛[m␛[38;5;241m scroll␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+o]␛[m␛[38;5;241m select rows␛[m
 ␛[94m[ctrl+/]␛[m␛[38;5;241m palette␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+x]␛[m␛[38;5;241m mouse␛[m
 
@@ -350,7 +393,7 @@ gate     default — vet, test · runs without asking
 ␛[1;97m ▀▀▄ █▀▀▄ █▀▀▄ █▀▀▄␛[m␛[38;5;241m · ·  ·   ·     ·␛[m
 ␛[1;97m▄▄▄▀ █  █ █  █ █  █␛[m
 
-␛[1;97m~/src/shhh␛[m␛[38;5;241m · ␛[m␛[38;5;214manother session open here since 10:32␛[m
+␛[38;5;214manother session open here since 10:32␛[m␛[38;5;241m · ␛[m␛[38;5;252mgo 1.24␛[m
 
 ␛[38;5;243mcontext␛[m  ␛[38;5;252mAGENTS.md␛[m␛[38;5;241m — in the system prompt␛[m
 ␛[38;5;243mgate   ␛[m  ␛[38;5;252mdefault␛[m␛[38;5;241m — vet, test · runs without asking␛[m
@@ -362,8 +405,8 @@ gate     default — vet, test · runs without asking
   ␛[38;5;214m⚙␛[m ␛[38;5;252mrun the default quality gate and triage what fails␛[m
     ␛[38;5;241mone approval, then it reports back␛[m
 
-␛[94m[↑↓]/[shift+↑↓]␛[m␛[38;5;241m choose␛[m␛[38;5;241m · ␛[m␛[94m[enter]/[shift+→]␛[m␛[38;5;241m start␛[m
 ␛[38;5;241mor just type what you want␛[m
+␛[94m[↑↓]␛[m␛[38;5;241m choose␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m start␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+]]␛[m␛[38;5;241m keys␛[m
 ␛[94m[pgup]␛[m␛[38;5;241m scroll␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+o]␛[m␛[38;5;241m select rows␛[m
 ␛[94m[ctrl+/]␛[m␛[38;5;241m palette␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+x]␛[m␛[38;5;241m mouse␛[m
 
@@ -372,7 +415,7 @@ gate     default — vet, test · runs without asking
 ␛[1;97m ▀▀▄ █▀▀▄ █▀▀▄ █▀▀▄␛[m␛[38;5;241m · ·  ·   ·     ·␛[m
 ␛[1;97m▄▄▄▀ █  █ █  █ █  █␛[m
 
-␛[1;97m~/src/shhh␛[m␛[38;5;241m · ␛[m␛[38;5;252mgo 1.24␛[m␛[38;5;241m · ␛[m␛[38;5;252mgit main␛[m␛[38;5;241m · ␛[m␛[38;5;214m3 files changed␛[m
+␛[38;5;252mgo 1.24␛[m␛[38;5;241m · ␛[m␛[38;5;214m3 files changed␛[m␛[38;5;241m · ␛[m␛[38;5;252m41 packages␛[m
 
 ␛[38;5;243mcontext␛[m  ␛[38;5;252mAGENTS.md␛[m␛[38;5;241m — in the system prompt␛[m
 ␛[38;5;243mgate   ␛[m  ␛[38;5;252mwithheld␛[m
@@ -387,8 +430,8 @@ gate     default — vet, test · runs without asking
   ␛[38;5;214m⚙␛[m ␛[38;5;252mrun go test ./... and triage the failures␛[m
     ␛[38;5;241mone approval, then it reports back␛[m
 
-␛[94m[↑↓]/[shift+↑↓]␛[m␛[38;5;241m choose␛[m␛[38;5;241m · ␛[m␛[94m[enter]/[shift+→]␛[m␛[38;5;241m start␛[m
 ␛[38;5;241mor just type what you want␛[m
+␛[94m[↑↓]␛[m␛[38;5;241m choose␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m start␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+]]␛[m␛[38;5;241m keys␛[m
 ␛[94m[pgup]␛[m␛[38;5;241m scroll␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+o]␛[m␛[38;5;241m select rows␛[m
 ␛[94m[ctrl+/]␛[m␛[38;5;241m palette␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+x]␛[m␛[38;5;241m mouse␛[m
 
@@ -397,7 +440,7 @@ gate     default — vet, test · runs without asking
 ␛[1;97m ▀▀▄ █▀▀▄ █▀▀▄ █▀▀▄␛[m␛[38;5;241m · ·  ·   ·     ·␛[m
 ␛[1;97m▄▄▄▀ █  █ █  █ █  █␛[m
 
-␛[1;97m~/src/shhh␛[m␛[38;5;241m · ␛[m␛[38;5;252mgo 1.24␛[m␛[38;5;241m · ␛[m␛[38;5;252mgit main␛[m␛[38;5;241m · ␛[m␛[38;5;214m3 files changed␛[m
+␛[38;5;252mgo 1.24␛[m␛[38;5;241m · ␛[m␛[38;5;214m3 files changed␛[m␛[38;5;241m · ␛[m␛[38;5;252m41 packages␛[m
 
 ␛[38;5;243mcontext␛[m  ␛[38;5;252mAGENTS.md␛[m␛[38;5;241m — in the system prompt␛[m
 ␛[38;5;243mgate   ␛[m  ␛[38;5;252mdefault␛[m␛[38;5;241m — vet, test · runs without asking␛[m
@@ -411,8 +454,8 @@ gate     default — vet, test · runs without asking
   ␛[38;5;214m⚙␛[m ␛[38;5;252mrun the default quality gate and triage what fails␛[m
     ␛[38;5;241mone approval, then it reports back␛[m
 
-␛[94m[↑↓]/[shift+↑↓]␛[m␛[38;5;241m choose␛[m␛[38;5;241m · ␛[m␛[94m[enter]/[shift+→]␛[m␛[38;5;241m start␛[m
 ␛[38;5;241mor just type what you want␛[m
+␛[94m[↑↓]␛[m␛[38;5;241m choose␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m start␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+]]␛[m␛[38;5;241m keys␛[m
 ␛[94m[pgup]␛[m␛[38;5;241m scroll␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+o]␛[m␛[38;5;241m select rows␛[m
 ␛[94m[ctrl+/]␛[m␛[38;5;241m palette␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+x]␛[m␛[38;5;241m mouse␛[m
 
@@ -421,7 +464,7 @@ gate     default — vet, test · runs without asking
 ␛[1;97m ▀▀▄ █▀▀▄ █▀▀▄ █▀▀▄␛[m␛[38;5;241m · ·  ·   ·     ·␛[m
 ␛[1;97m▄▄▄▀ █  █ █  █ █  █␛[m
 
-␛[1;97m~/src/shhh␛[m␛[38;5;241m · ␛[m␛[38;5;252mgo 1.24␛[m␛[38;5;241m · ␛[m␛[38;5;252mgit main␛[m␛[38;5;241m · ␛[m␛[38;5;214m3 files changed␛[m
+␛[38;5;252mgo 1.24␛[m␛[38;5;241m · ␛[m␛[38;5;214m3 files changed␛[m␛[38;5;241m · ␛[m␛[38;5;252m41 packages␛[m
 
 ␛[38;5;243mcontext ␛[m  ␛[38;5;252mAGENTS.md␛[m␛[38;5;241m — in the system prompt␛[m
 ␛[38;5;243mgate    ␛[m  ␛[38;5;252mdefault␛[m␛[38;5;241m — vet, test · runs without asking␛[m
@@ -437,8 +480,8 @@ gate     default — vet, test · runs without asking
   ␛[38;5;214m⚙␛[m ␛[38;5;252mrun the default quality gate and triage what fails␛[m
     ␛[38;5;241mone approval, then it reports back␛[m
 
-␛[94m[↑↓]/[shift+↑↓]␛[m␛[38;5;241m choose␛[m␛[38;5;241m · ␛[m␛[94m[enter]/[shift+→]␛[m␛[38;5;241m start␛[m
 ␛[38;5;241mor just type what you want␛[m
+␛[94m[↑↓]␛[m␛[38;5;241m choose␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m start␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+]]␛[m␛[38;5;241m keys␛[m
 ␛[94m[pgup]␛[m␛[38;5;241m scroll␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+o]␛[m␛[38;5;241m select rows␛[m
 ␛[94m[ctrl+/]␛[m␛[38;5;241m palette␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+x]␛[m␛[38;5;241m mouse␛[m
 
@@ -447,10 +490,53 @@ gate     default — vet, test · runs without asking
 ␛[1;97m ▀▀▄ █▀▀▄ █▀▀▄ █▀▀▄␛[m␛[38;5;241m · ·  ·   ·     ·␛[m
 ␛[1;97m▄▄▄▀ █  █ █  █ █  █␛[m
 
-␛[1;97m~/src/shhh␛[m␛[38;5;241m · ␛[m␛[38;5;252mgo 1.24␛[m␛[38;5;241m · ␛[m␛[38;5;252mgit main␛[m␛[38;5;241m · ␛[m␛[38;5;214m3 files changed␛[m
+␛[38;5;252mgo 1.24␛[m␛[38;5;241m · ␛[m␛[38;5;214m3 files changed␛[m␛[38;5;241m · ␛[m␛[38;5;252m41 packages␛[m
 
 ␛[38;5;243mcontext␛[m  ␛[38;5;252mAGENTS.md␛[m␛[38;5;241m — in the system prompt␛[m
 ␛[38;5;243mgate   ␛[m  ␛[38;5;252mdefault␛[m␛[38;5;241m — vet, test · runs without asking␛[m
+
+␛[94m[pgup]␛[m␛[38;5;241m scroll␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+o]␛[m␛[38;5;241m select rows␛[m
+␛[94m[ctrl+/]␛[m␛[38;5;241m palette␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+x]␛[m␛[38;5;241m mouse␛[m
+
+· the machine's first session · three keys above the key row
+␛[1;97m▄▀▀▀ █    █    █␛[m
+␛[1;97m ▀▀▄ █▀▀▄ █▀▀▄ █▀▀▄␛[m␛[38;5;241m · ·  ·   ·     ·␛[m
+␛[1;97m▄▄▄▀ █  █ █  █ █  █␛[m
+
+␛[38;5;252mgo 1.24␛[m␛[38;5;241m · ␛[m␛[38;5;214m3 files changed␛[m␛[38;5;241m · ␛[m␛[38;5;252m41 packages␛[m
+
+␛[38;5;243mcontext␛[m  ␛[38;5;252mAGENTS.md␛[m␛[38;5;241m — in the system prompt␛[m
+␛[38;5;243mgate   ␛[m  ␛[38;5;252mdefault␛[m␛[38;5;241m — vet, test · runs without asking␛[m
+
+␛[38;5;241mSome things worth doing first:␛[m
+␛[94m❯␛[m ␛[1;97;48;5;62m▸ pick up (last session) — 7 turns · $0.42 · 4m ago ␛[m
+  ␛[38;5;214m⚙␛[m ␛[38;5;252mexplain what changed in the working tree␛[m
+    ␛[38;5;241mreads only, no writes␛[m
+  ␛[38;5;214m⚙␛[m ␛[38;5;252mrun the default quality gate and triage what fails␛[m
+    ␛[38;5;241mone approval, then it reports back␛[m
+
+␛[38;5;241mtype what you want and press enter␛[m
+␛[38;5;241mesc backs out of anything and never loses work␛[m
+␛[38;5;241mctrl+c twice stops a run␛[m
+
+␛[38;5;241mor just type what you want␛[m
+␛[94m[↑↓]␛[m␛[38;5;241m choose␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m start␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+]]␛[m␛[38;5;241m keys␛[m
+␛[94m[pgup]␛[m␛[38;5;241m scroll␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+o]␛[m␛[38;5;241m select rows␛[m
+␛[94m[ctrl+/]␛[m␛[38;5;241m palette␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+x]␛[m␛[38;5;241m mouse␛[m
+
+· typing on the first session · the three keys stay
+␛[1;97m▄▀▀▀ █    █    █␛[m
+␛[1;97m ▀▀▄ █▀▀▄ █▀▀▄ █▀▀▄␛[m␛[38;5;241m · ·  ·   ·     ·␛[m
+␛[1;97m▄▄▄▀ █  █ █  █ █  █␛[m
+
+␛[38;5;252mgo 1.24␛[m␛[38;5;241m · ␛[m␛[38;5;214m3 files changed␛[m␛[38;5;241m · ␛[m␛[38;5;252m41 packages␛[m
+
+␛[38;5;243mcontext␛[m  ␛[38;5;252mAGENTS.md␛[m␛[38;5;241m — in the system prompt␛[m
+␛[38;5;243mgate   ␛[m  ␛[38;5;252mdefault␛[m␛[38;5;241m — vet, test · runs without asking␛[m
+
+␛[38;5;241mtype what you want and press enter␛[m
+␛[38;5;241mesc backs out of anything and never loses work␛[m
+␛[38;5;241mctrl+c twice stops a run␛[m
 
 ␛[94m[pgup]␛[m␛[38;5;241m scroll␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+o]␛[m␛[38;5;241m select rows␛[m
 ␛[94m[ctrl+/]␛[m␛[38;5;241m palette␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+x]␛[m␛[38;5;241m mouse␛[m

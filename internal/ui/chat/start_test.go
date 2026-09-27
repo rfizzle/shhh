@@ -69,11 +69,18 @@ func startPointerRow(m Model) string {
 func TestStartScreen_StatesTheProjectItOpenedIn(t *testing.T) {
 	view := startText(startModel(t, startFixture()))
 	for _, want := range []string{
-		"~/src/shhh", "go 1.24", "git main", "3 files changed", "41 packages",
+		"go 1.24", "3 files changed", "41 packages",
 		"AGENTS.md",
 	} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("the screen never says %q:\n%s", want, view)
+		}
+	}
+	// Where the session is and on which branch are the header row's, and a
+	// screen that said them again under it would be saying them twice.
+	for _, dup := range []string{"~/src/shhh", "git main"} {
+		if strings.Contains(view, dup) {
+			t.Fatalf("the screen repeats the header's %q:\n%s", dup, view)
 		}
 	}
 	if strings.Contains(view, "Type a message") {
@@ -325,7 +332,7 @@ func TestStartScreen_TypingDismissesTheListAndGivesTheKeysBack(t *testing.T) {
 	if strings.Contains(view, "[↑↓]") || strings.Contains(view, "worth doing first") {
 		t.Fatalf("the dismissed list left its chrome behind:\n%s", view)
 	}
-	if !strings.Contains(view, "~/src/shhh") {
+	if !strings.Contains(view, "go 1.24") {
 		t.Fatalf("dismissing the list took the facts with it:\n%s", view)
 	}
 	// Enter is the input's again, so the draft is sent rather than an offer.
@@ -424,14 +431,67 @@ func TestStartScreen_SaysWhyTheOfferIsNotTheLastConversation(t *testing.T) {
 	}
 }
 
-// The header drops clauses from the right, so the clause that survives a
+// The fact line drops clauses from the right, so the clause that survives a
 // narrow terminal has to be this one rather than the package count.
 func TestStartScreen_TheSiblingClauseOutlivesTheNarrowHeader(t *testing.T) {
 	info := startFixture()
 	info.Project.Sibling = startSibling
 	facts := startFacts(info.Project)
-	if len(facts) < 2 || !strings.Contains(facts[1].Text, "another session open here") {
-		t.Fatalf("the clause should sit right behind the path, got %+v", facts)
+	if len(facts) < 1 || !strings.Contains(facts[0].Text, "another session open here") {
+		t.Fatalf("the clause should open the line, got %+v", facts)
+	}
+}
+
+// The first session says how to ask, how to back out and how to stop, in the
+// register's spellings, and a session the CLI did not mark says none of it.
+// The mark is on the facts already supplied, so a host with no start screen
+// is left exactly as it was.
+func TestStartScreen_TheFirstSessionSaysThreeThings(t *testing.T) {
+	block := []string{
+		"type what you want and press enter",
+		"esc backs out of anything and never loses work",
+		"ctrl+c twice stops a run",
+	}
+	first := startModel(t, startFixture()).WithFirstRun()
+	view := startText(first)
+	for _, line := range block {
+		if !strings.Contains(view, line) {
+			t.Fatalf("the first session never says %q:\n%s", line, view)
+		}
+	}
+	later := startText(startModel(t, startFixture()))
+	for _, line := range block {
+		if strings.Contains(later, line) {
+			t.Fatalf("a later session says %q:\n%s", line, later)
+		}
+	}
+	if bare := New(nil, mockStream).WithFirstRun(); bare.start != nil {
+		t.Fatal("marking a model with no start screen gave it one")
+	}
+	// The mark is a copy: the model it came from is not a first session.
+	plain := startModel(t, startFixture())
+	_ = plain.WithFirstRun()
+	if plain.start.FirstRun {
+		t.Fatal("marking a copy wrote through to the model it was copied from")
+	}
+}
+
+// The key row is one row, led by the clause that is not a key, and the
+// doubled spellings are left to the key list it ends with.
+func TestStartScreen_TheKeyRowIsOneRow(t *testing.T) {
+	view := startText(startModel(t, startFixture()))
+	var row string
+	for _, line := range strings.Split(view, "\n") {
+		if strings.HasPrefix(strings.TrimSpace(line), "or just type what you want") {
+			row = strings.TrimSpace(line)
+		}
+	}
+	want := "or just type what you want · [↑↓] choose · [enter] start · [ctrl+]] keys"
+	if row != want {
+		t.Fatalf("key row = %q, want %q:\n%s", row, want, view)
+	}
+	if strings.Contains(view, "shift+") {
+		t.Fatalf("a doubled spelling is still on the screen:\n%s", view)
 	}
 }
 

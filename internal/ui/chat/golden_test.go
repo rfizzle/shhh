@@ -1238,6 +1238,15 @@ func TestGolden_StartScreen(t *testing.T) {
 				i.Wordings = []string{"steer", "todo_standards", "todo_review"}
 			})},
 			{Label: "typing dismissed the list · the facts stay", View: typed()},
+			{Label: "the machine's first session · three keys above the key row", View: func() string {
+				m := frameModel(t, width, 40).WithStartScreen(startFixture()).WithFirstRun()
+				return m.renderHistory()
+			}()},
+			{Label: "typing on the first session · the three keys stay", View: func() string {
+				m := frameModel(t, width, 40).WithStartScreen(startFixture()).WithFirstRun()
+				m.input.SetValue("why is the round limit off by one")
+				return m.renderHistory()
+			}()},
 		}
 	})
 }

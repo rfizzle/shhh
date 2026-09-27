@@ -2222,10 +2222,11 @@ find.
 A first launch in a repository shhh has never seen already knows the
 repository, and offers work rather than a blank prompt.
 
-The header is what shhh already knows — where it is, the toolchain, the
-branch, whether the tree is dirty. Clauses drop from the right as the terminal
-narrows and the path never drops: a header that cannot say where it is has
-nothing left to say.
+The fact line is what shhh already knows that the header row above the
+transcript does not say — the toolchain, whether the tree is dirty, how many
+packages. Where the session is and on which branch are the header's, and a
+screen that said them again one row under it would be saying them twice.
+Clauses drop from the right as the terminal narrows and the first never drops.
 
 Two things that govern what happens next are stated without being asked for:
 what was read into the system prompt, and which check suite is in effect. A
@@ -2253,15 +2254,34 @@ where a row is worth more than it says. A refusal is remembered for that
 repository, so the offer is made once and the command behind it stays
 available afterwards: what was refused was being asked, not the file.
 
-Typing anything dismisses the offers and keeps the facts, because the input
-owns every ordinary key the moment there is a draft.
+Under the offers is one key row, led by the way in that is not a key — `or
+just type what you want` — and then choosing, starting and the key list. It
+is one row of at most six, like every key hint: the pointer's own chords,
+which reach an offer too, are on the key list rather than doubled into the
+row. The draft holds the keyboard here, so the list is the draft's chord and
+not a bare key. The navigation row under it is a row of its own.
+
+Typing anything dismisses the offers and their key row and keeps the facts,
+because the input owns every ordinary key the moment there is a draft. The
+navigation row stays, since its keys work with a half-written draft in the
+box.
+
+The machine's first session says three things above the key row, in dim, one
+line each: type what you want and press enter; esc backs out of anything and
+never loses work; ctrl+c twice stops a run. Those are the three keys every
+session turns on, and a reader who meets them first on an approval card is
+learning them at the moment they are most needed and least read. The block
+outlives the typing dismissal, since backing out and stopping are what a
+reader with a draft in the box needs next, and it is never drawn again: the
+first session is the one the data directory held no store for, and the mark
+that says so is written as it is read.
 
 An offer is reached three ways that are one act: the arrows and enter, the
 pointer chords — shift on the arrows, the same chords that go on working in
 the pane after the first turn — and a click on its row. Each runs the line
 of input the offer names, through the submit typing it would take, so an
-offer can never reach somewhere typing could not. The lead, the facts and
-the hint lines are not targets: they name nothing to run.
+offer can never reach somewhere typing could not. The lead, the facts, the
+first-run block and the hint lines are not targets: they name nothing to run.
 
 This is the one screen with room for the product to have a face, and the only
 one that gets one. Where the pane has the rows, the name is drawn in three of

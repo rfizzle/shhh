@@ -366,7 +366,7 @@ func monoFixtures() []monoSurface {
 
 	start := func(mut func(*StartScreen)) string {
 		s := StartScreen{
-			Facts: []StartFact{{Text: "~/src/shhh", Lead: true}, {Text: "git main"}},
+			Facts: []StartFact{{Text: "go 1.24"}},
 			Suggestions: []StartSuggestion{
 				{Glyph: "▸", Title: "pick up (last session)", Detail: "7 turns"},
 				{Glyph: "⚙", Title: "explain what changed", Detail: "reads only, no writes"},
