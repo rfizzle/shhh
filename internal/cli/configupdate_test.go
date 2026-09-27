@@ -247,6 +247,33 @@ func TestDoctorConfig_SaysWhenTheFileIsBehind(t *testing.T) {
 	}
 }
 
+// The offer's prompt names the keymap where the update will write it too,
+// and only there: a keymap that is current, or not there at all, is left
+// out of the question.
+func TestDoctorConfig_TheOfferNamesTheKeymapItWillUpdate(t *testing.T) {
+	ok := doctorConfig("~/.config/shhh/config.toml", nil, config.Config{}, config.Project{}, nil)
+	dir := t.TempDir()
+	plan := initPlan{settings: filepath.Join(dir, "config.toml"), keymap: filepath.Join(dir, "keybindings.toml")}
+	b := configBehind{Behind: config.Behind{New: []string{"a.b"}, Listed: true}}
+	name := shortPath(plan.keymap)
+
+	if got := withBehind(ok, b, plan).ActionPrompt; strings.Contains(got, name) {
+		t.Errorf("no keymap, yet the prompt names one: %q", got)
+	}
+	plan.keymapHeld = true
+	must(t, os.WriteFile(plan.keymap, []byte(keys.Scaffold()), 0o600))
+	if got := withBehind(ok, b, plan).ActionPrompt; strings.Contains(got, name) {
+		t.Errorf("a current keymap is named: %q", got)
+	}
+	// A file of its own lines is behind by every key the update would add
+	// as a commented row, which is what it writes.
+	must(t, os.WriteFile(plan.keymap, []byte("# my keys\n"), 0o600))
+	got := withBehind(ok, b, plan).ActionPrompt
+	if !strings.Contains(got, shortPath(plan.settings)) || !strings.Contains(got, name) {
+		t.Errorf("a keymap behind is not named beside the settings: %q", got)
+	}
+}
+
 // The doctor's [a] runs the update and the row reads clean after it.
 func TestDoctorConfig_TheOfferUpdatesTheFile(t *testing.T) {
 	path := pointConfigAt(t, "")

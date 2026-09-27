@@ -396,6 +396,10 @@ func withBehind(f doctorFinding, b configBehind, plan initPlan) doctorFinding {
 	if _, _, err := config.Updated(plan.settings, plan.project); err == nil {
 		f.Action = "update the file"
 		f.ActionPrompt = "Update " + shortPath(plan.settings) + " now? Every value it sets is kept."
+		if keymapBehind(plan) {
+			f.ActionPrompt = "Update " + shortPath(plan.settings) + " and " + shortPath(plan.keymap) +
+				" now? Every value and binding they set is kept."
+		}
 		f.Apply = func() ([]string, error) {
 			done, err := plan.update()
 			return done.lines(plan), err
@@ -414,6 +418,18 @@ func withBehind(f doctorFinding, b configBehind, plan initPlan) doctorFinding {
 	}
 	f.Fix = append(f.Fix, command+"   keeps every value the file sets")
 	return f
+}
+
+// keymapBehind says the update the config row offers will also write the
+// keymap beside the settings: there is one, and it lacks a key the update
+// adds. The prompt names the file where it will be written, so a rewritten
+// keymap is not news the reader first hears after the fact.
+func keymapBehind(plan initPlan) bool {
+	if !plan.keymapHeld {
+		return false
+	}
+	b, err := keys.KeymapOutdated(plan.keymap)
+	return err == nil && len(b.Missing) > 0
 }
 
 // behindConsequence is what leaving the file behind costs: a key that
