@@ -208,22 +208,30 @@ func macPath(path string) string { return strings.TrimSuffix(path, ".txt") + mac
 // where the render differs from the Linux one: a Mac render equal to it is
 // compared against it, written nowhere, and a Mac file that has come to
 // equal it is removed on an update and refused as redundant otherwise.
+//
+// An update started by OnPlatform decides nothing here. It runs beside a
+// parent that is rewriting the Linux files itself, usually after this
+// child has finished, so the Linux file on disk may be the one about to be
+// replaced; the render is handed back instead and settled by Run once the
+// parent's own pass is over.
 func assertMac(t *testing.T, path, want string, c Case) {
 	t.Helper()
 	mac := macPath(path)
 	record(mac)
 	tellParent(mac)
-	linux, linuxErr := os.ReadFile(path)
 	if updating() {
-		if linuxErr == nil && string(linux) == want {
-			_ = os.Remove(mac)
+		if dir := os.Getenv(stagedEnv); dir != "" {
+			if err := os.WriteFile(filepath.Join(dir, filepath.Base(mac)), []byte(want), 0o600); err != nil {
+				t.Fatalf("golden %s: %v", mac, err)
+			}
 			return
 		}
-		if err := os.WriteFile(mac, []byte(want), 0o644); err != nil {
-			t.Fatalf("golden %s: %v", mac, err)
+		if err := settleMac(mac, want); err != nil {
+			t.Fatal(err)
 		}
 		return
 	}
+	linux, linuxErr := os.ReadFile(path)
 	have, err := os.ReadFile(mac)
 	switch {
 	case err == nil && linuxErr == nil && string(have) == string(linux):
@@ -243,6 +251,75 @@ func assertMac(t *testing.T, path, want string, c Case) {
 		c.Surface, mac, firstDifference(string(have), want), currentPackage())
 }
 
+// settleMac writes a Mac render beside its Linux file, or removes the Mac
+// file, according to whether the two renders differ.
+func settleMac(mac, want string) error {
+	linux, err := os.ReadFile(strings.TrimSuffix(mac, macSuffix) + ".txt")
+	if err == nil && string(linux) == want {
+		if err := os.Remove(mac); err != nil && !os.IsNotExist(err) {
+			return fmt.Errorf("golden %s: %w", mac, err)
+		}
+		return nil
+	}
+	if err := os.WriteFile(mac, []byte(want), 0o644); err != nil {
+		return fmt.Errorf("golden %s: %w", mac, err)
+	}
+	return nil
+}
+
+// staged is every Mac render a child handed back during an update, keyed by
+// the file it belongs in, waiting for Run to settle it against the Linux
+// render this run wrote.
+var staged struct {
+	sync.Mutex
+	renders map[string]string
+}
+
+// stagedEnv names the directory an updating child writes its Mac renders to,
+// one file per render under the Mac file's own name.
+const stagedEnv = "SHHH_GOLDEN_STAGED"
+
+// collectStaged takes a child's handed-back renders into staged, as files
+// of dir.
+func collectStaged(from, dir string) error {
+	entries, err := os.ReadDir(from)
+	if err != nil {
+		return err
+	}
+	staged.Lock()
+	defer staged.Unlock()
+	if staged.renders == nil {
+		staged.renders = map[string]string{}
+	}
+	for _, e := range entries {
+		raw, err := os.ReadFile(filepath.Join(from, e.Name()))
+		if err != nil {
+			return err
+		}
+		staged.renders[filepath.Join(dir, e.Name())] = string(raw)
+	}
+	return nil
+}
+
+// settleStaged writes or removes each staged Mac render against the Linux
+// file as it stands now — after this run's own update has rewritten it.
+func settleStaged() error {
+	staged.Lock()
+	defer staged.Unlock()
+	macs := make([]string, 0, len(staged.renders))
+	for mac := range staged.renders {
+		macs = append(macs, mac)
+	}
+	sort.Strings(macs)
+	for _, mac := range macs {
+		if err := settleMac(mac, staged.renders[mac]); err != nil {
+			return err
+		}
+	}
+	staged.renders = nil
+	return nil
+}
+
 // OnPlatform runs the named tests of this package again in a test binary
 // started under a platform's keyboard, and fails with what that run printed
 // if it failed. The keyboard is chosen before anything reads the register —
@@ -251,7 +328,9 @@ func assertMac(t *testing.T, path, want string, c Case) {
 // binary is this one, so nothing is built and nothing leaves the machine.
 //
 // An updating run passes the update on, so `-update-golden` writes both
-// platforms' renders in one go. The Mac files are read here as well as in
+// platforms' renders in one go: the child hands its renders back and Run
+// writes each only where it differs from the Linux render this run wrote,
+// so a host calling OnPlatform must wrap its TestMain in Run. The Mac files are read here as well as in
 // the child, so the go test cache, which sees only this process's reads,
 // notices one changing.
 func OnPlatform(t *testing.T, platform string, tests ...string) {
@@ -272,8 +351,18 @@ func OnPlatform(t *testing.T, platform string, tests ...string) {
 	cmd := exec.Command(os.Args[0], args...)
 	told := filepath.Join(t.TempDir(), "asserted")
 	cmd.Env = append(os.Environ(), keys.PlatformEnv+"="+platform, assertedEnv+"="+told)
+	var stage string
+	if updating() {
+		stage = t.TempDir()
+		cmd.Env = append(cmd.Env, stagedEnv+"="+stage)
+	}
 	if out, err := cmd.CombinedOutput(); err != nil {
 		t.Fatalf("the captures under the %s keyboard failed (%v):\n%s", platform, err, out)
+	}
+	if stage != "" {
+		if err := collectStaged(stage, Dir); err != nil {
+			t.Fatalf("the renders under the %s keyboard: %v", platform, err)
+		}
 	}
 	// The child's run is filtered, so it never looks for orphans; it says
 	// which Mac files it asserted and this run's sweep counts them, so a
@@ -406,8 +495,15 @@ func currentPackage() string {
 // reported rather than left to rot: a surface that was renamed or deleted
 // should take its captures with it. A filtered run (-run) touches only some
 // of them, so the check stands down; an updating run deletes them.
+//
+// An updating run also settles the Mac renders OnPlatform handed back, now
+// that every Linux file this run rewrites has been written.
 func Run(m *testing.M) int {
 	code := m.Run()
+	if err := settleStaged(); err != nil {
+		fmt.Fprintf(os.Stderr, "golden: %v\n", err)
+		return 1
+	}
 	if code != 0 {
 		return code
 	}

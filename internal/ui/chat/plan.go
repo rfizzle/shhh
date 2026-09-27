@@ -4,8 +4,9 @@ package chat
 // stream request carries planning instructions and the mode policy in
 // internal/agent refuses gated calls (waving through read-only inspection
 // commands). When the model finishes a planning response, the plan-approval
-// card takes over the input area: the user executes the plan in a chosen
-// mode, keeps planning, or rejects it — all in the same session.
+// card takes over the input area: the user executes the plan here in a
+// chosen mode, keeps planning, or rejects it — or carries the plan to a new
+// session, either to stop there ([n]) or to start executing it at once ([i]).
 //
 // The plan is parsed into steps and priced once,
 // when the prompt is armed, for the same reason the blast radius is:
