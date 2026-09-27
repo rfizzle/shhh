@@ -326,6 +326,27 @@ func TestInterrupt_TheHeldDraftKeepsTheCountAndTheVitals(t *testing.T) {
 	}
 }
 
+// The token pair standing in for an unpriced spend is on the held rail while
+// there is room for it, and sheds before the position: the position is what
+// the block is on screen to say, and the frame's own rail keeps the account.
+func TestInterrupt_TheHeldRailShedsTheStandInBeforeThePosition(t *testing.T) {
+	m := interruptedModel(t, "also add a --max-rounds flag while you're in there")
+	m = handover(t, m)
+	m.TotalTokensIn, m.TotalTokensOut = 41_200, 9_800
+	wide := ansi.Strip(m.heldDraftRail(200))
+	for _, want := range []string{"↑41.2k ↓9.8k", m.draftPosition()} {
+		if !strings.Contains(wide, want) {
+			t.Fatalf("a wide held rail carries %q: %q", want, wide)
+		}
+	}
+	for width := 200; width >= 20; width-- {
+		rail := ansi.Strip(m.heldDraftRail(width))
+		if strings.Contains(rail, "↑41.2k") && !strings.Contains(rail, "cursor at") {
+			t.Fatalf("width %d: the stand-in outlived the position: %q", width, rail)
+		}
+	}
+}
+
 // The rail is the check invariant 5 states: cover the colours, and the screen
 // still names the surface holding the keyboard.
 func TestInterrupt_TheRailFallsBackRatherThanClippingTheWord(t *testing.T) {

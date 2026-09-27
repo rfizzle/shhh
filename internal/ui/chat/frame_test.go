@@ -180,6 +180,27 @@ func TestFrame_NarrowMinimalRail(t *testing.T) {
 	}
 }
 
+// A model the price table does not know has no spend to state, and the token
+// pair is the account standing in for it — so it takes the spend's rank and
+// the narrow rail keeps it, where beside a price it would be the second
+// reading of one bill and go (docs/interface/surfaces.md#the-input-frame).
+func TestFrame_NarrowRailKeepsTheUnpricedAccount(t *testing.T) {
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).
+		WithPricing(pricing.NewTable(nil), "unpriced-model")
+	m.accumulateUsage(&provider.Usage{PromptTokens: 41200, CompletionTokens: 9800})
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 60, Height: 30})
+	m = updated.(Model)
+	rail := stripANSI(m.frameVitals(frameNarrow, 200))
+	for _, want := range []string{"⏸ manual", "ctx ", "↑41.2k ↓9.8k"} {
+		if !strings.Contains(rail, want) {
+			t.Fatalf("the narrow rail of an unpriced session keeps %q: %q", want, rail)
+		}
+	}
+	if strings.Contains(rail, "$") {
+		t.Fatalf("no price is known, so no spend is stated: %q", rail)
+	}
+}
+
 // Below the 12-column rung there is no box, and what stands in its place is
 // the prompt glyph rather than blank rows: a terminal this narrow still has
 // to say where you type (guidelines/layout-breakpoints).

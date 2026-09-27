@@ -776,10 +776,14 @@ the model, which goes last: a reader checking mid-session which model is
 answering looks up, not down.
 
 The fields a rail may shed when it runs out of columns leave in one order:
-token counts first where they stand, then the round counter, then the
-extras; attached, the child's name goes first. Context pressure, spend,
-blocked or failed state and the permission-mode segment are not on that
-ladder at any width. A rail that goes
+the round counter first, then the extras; attached, the child's name goes
+first. Context pressure, spend, blocked or failed state and the
+permission-mode segment are not on that ladder at any width, and the token
+pair standing in for a spend nobody can price takes the spend's place: it is
+the only account such a session has, and a narrow rail that shed it would say
+nothing of what the session had cost. Under a held draft the position the
+sentence is held at outranks it, since the frame's own rail still carries the
+account and the position is what that block is on screen to say. A rail that goes
 quiet about what a child is burning goes quiet exactly where somebody is
 watching it, which is the one moment those figures are being read for.
 

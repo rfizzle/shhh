@@ -565,11 +565,20 @@ func (m Model) undressedDraft(width int) []string {
 // (docs/interface/principles.md#colour-never-carries-meaning-alone).
 func (m Model) heldDraftRail(width int) string {
 	idle := sty.Frame.Idle
+	c := m.cockpitData(false)
+	// The token pair standing in for an unpriced spend is the account and
+	// stays while there is room, but it is not the bill: it sheds before the
+	// position, which is what this block is on screen to say.
+	standIn := c.Tokens
+	c.Tokens = ""
 	var segs []components.RailSegment
-	for _, s := range m.cockpitData(false).RailSegments() {
+	for _, s := range c.RailSegments() {
 		if s.Drop <= components.RailVital {
 			segs = append(segs, components.RailSegment{Text: idle.Render(ansi.Strip(s.Text)), Drop: s.Drop})
 		}
+	}
+	if standIn != "" {
+		segs = append(segs, components.RailSegment{Text: idle.Render(standIn), Drop: components.RailTokens})
 	}
 	segs = append(segs, components.RailSegment{Text: idle.Render(m.draftPosition()), Drop: components.RailNormal})
 	return components.FitRail(segs, idle.Render(" · "), railLabelWidth("", width))

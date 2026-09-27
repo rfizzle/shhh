@@ -99,17 +99,20 @@ func (c Cockpit) agentsSegment() string {
 
 // Rail drop ranks (docs/interface/surfaces.md#the-input-frame): when a
 // frame rail overflows, the highest rank present is dropped first.
-// The session's rail sheds its token counts first, then the round counter,
-// the extras and the agent count; context pressure, spend, and error state
-// are never removed, and the mode segment is never dropped. The model and
+// The session's rail sheds the round counter, the extras and the agent
+// count; context pressure, spend, and error state are never removed, and the
+// mode segment is never dropped. The token pair standing in for a spend
+// nobody can price takes the spend's rank, because it is the only account the
+// rail has; beside a spend it is a second reading of the same bill and sheds
+// at the tokens rank. The model and
 // the reasoning level are the header's, so nothing on the session's rail
 // sits at the detail rank — an attached child's name is the one field that
 // does.
 const (
 	RailKeep   = iota // mode — never dropped
-	RailVital         // context meter, spend
+	RailVital         // context meter, spend or the token pair standing in for it
 	RailNormal        // round counter, extras, agent count
-	RailTokens        // token counts, where they stand in for spend
+	RailTokens        // token counts beside a spend
 	RailDetail        // an attached child's name — dropped first
 )
 
@@ -132,7 +135,11 @@ func (c Cockpit) RailSegments() []RailSegment {
 		segs = append(segs, RailSegment{Text: c.ctxMeter(), Drop: RailVital})
 	}
 	if c.Tokens != "" {
-		segs = append(segs, RailSegment{Text: sty.Status.Render(c.Tokens), Drop: RailTokens})
+		drop := RailTokens
+		if c.Spend == "" {
+			drop = RailVital
+		}
+		segs = append(segs, RailSegment{Text: sty.Status.Render(c.Tokens), Drop: drop})
 	}
 	if c.Spend != "" {
 		segs = append(segs, RailSegment{Text: sty.Status.Render(c.Spend), Drop: RailVital})
