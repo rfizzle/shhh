@@ -11,7 +11,7 @@
 
 ── layout ──────────────────────────────────────────────────
 · a conversation at rest
-   shhh chat                                                
+   shhh chat · gpt-4o                                       
   ────────────────────────────────────────────────────────  
   nothing yet — ask for anything                            
                                                             
@@ -37,7 +37,7 @@
   ╰─ ⏸ read-only · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 ─────────────╯  
 
 · the mode chord, answered
-   shhh chat                                                
+   shhh chat · gpt-4o                                       
   ────────────────────────────────────────────────────────  
     A conversation has one mode: read-only. Nothing it      
     can do changes the tree or the machine, so there is     
@@ -63,7 +63,7 @@
   ╰─ ⏸ read-only · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 ─────────────╯  
 
 · a fetch that ran without a card
-   shhh chat                                                
+   shhh chat · gpt-4o                                       
   ────────────────────────────────────────────────────────  
      ⚙ web     https://docs.python.org/3…  1 line           
                                                             
@@ -90,7 +90,7 @@
 
 ── ansi ────────────────────────────────────────────────────
 · a conversation at rest
-  ␛[38;5;254;1m shhh chat␛[m                                                
+  ␛[38;5;254;1m shhh chat␛[38;5;244;22m · gpt-4o␛[m                                       
   ␛[38;5;244m────────────────────────────────────────────────────────␛[m  
   ␛[38;5;244mnothing yet — ask for anything␛[m                            
                                                             
@@ -116,7 +116,7 @@
   ␛[38;5;244m╰─␛[m ␛[38;5;254m⏸ read-only␛[38;5;244m · ␛[38;5;254mctx 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51␛[m ␛[38;5;244m─────────────╯␛[m  
 
 · the mode chord, answered
-  ␛[38;5;254;1m shhh chat␛[m                                                
+  ␛[38;5;254;1m shhh chat␛[38;5;244;22m · gpt-4o␛[m                                       
   ␛[38;5;244m────────────────────────────────────────────────────────␛[m  
     ␛[38;5;244mA conversation has one mode: read-only. Nothing it␛[m      
     ␛[38;5;244mcan do changes the tree or the machine, so there is␛[m     
@@ -142,7 +142,7 @@
   ␛[38;5;244m╰─␛[m ␛[38;5;254m⏸ read-only␛[38;5;244m · ␛[38;5;254mctx 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51␛[m ␛[38;5;244m─────────────╯␛[m  
 
 · a fetch that ran without a card
-  ␛[38;5;254;1m shhh chat␛[m                                                
+  ␛[38;5;254;1m shhh chat␛[38;5;244;22m · gpt-4o␛[m                                       
   ␛[38;5;244m────────────────────────────────────────────────────────␛[m  
      ␛[38;5;254m⚙␛[m ␛[38;5;254mweb␛[m     ␛[38;5;254mhttps://docs.python.org/3…␛[m  ␛[38;5;244m1 line␛[m           
                                                             

@@ -757,10 +757,29 @@ vitals rail states the child's permission mode, its own context pressure,
 what it has spent against what the whole session has, and which of the
 parent's rounds it is running under.
 
+The vitals rail carries what moves: the permission mode, the context
+pressure and the spend, at every width, and beyond those only what is live —
+the round counter once a turn has used a round, idle included, since how much
+of the ceiling the last turn spent is what the reader about to send the next
+one is asking; the count of children while there are any; and the token pair
+only where no price is known, because a stat that cannot be reported is left
+out and the pair is the nearest honest stand-in for the bill
+([principles](principles.md#a-stat-that-cannot-be-reported-is-left-out)).
+Beside a price the pair is the same account read a second way, so it goes.
+What never moves while a session runs — the directory, the branch, the model
+and the reasoning level — is the header's, in dim after the surface's name
+above the transcript. Those four used to sit on the rail beside the three
+facts that change what the reader does next, and every glance at the rail
+became a search through things that had not changed since the session
+opened. The header sheds them from the right as the terminal narrows, except
+the model, which goes last: a reader checking mid-session which model is
+answering looks up, not down.
+
 The fields a rail may shed when it runs out of columns leave in one order:
-model and provider detail first, then token counts, then the round counter,
-then the extras. Context pressure, spend, blocked or failed state and the
-permission-mode segment are not on that ladder at any width. A rail that goes
+token counts first where they stand, then the round counter, then the
+extras; attached, the child's name goes first. Context pressure, spend,
+blocked or failed state and the permission-mode segment are not on that
+ladder at any width. A rail that goes
 quiet about what a child is burning goes quiet exactly where somebody is
 watching it, which is the one moment those figures are being read for.
 

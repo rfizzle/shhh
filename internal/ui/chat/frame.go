@@ -1024,8 +1024,8 @@ func (m Model) frameVitals(layout frameLayout, width int) string {
 // the droppable-first detail field.
 //
 // It carries pressure and spend at every width because the field-drop order
-// never sheds them (guidelines/layout-drop-order): the model goes first, then
-// the token counts, then the round counter, then the extras, and context
+// never sheds them (guidelines/layout-drop-order): the child's name goes
+// first, then the round counter, then the extras, and context
 // pressure, spend, blocked or failed state and the mode segment are not on
 // that ladder at all. This rail used to state neither the pressure nor the
 // spend, so the one place that reports what a child is burning went quiet

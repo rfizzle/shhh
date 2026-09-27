@@ -597,11 +597,34 @@ func TestStatusBar_CockpitSegments(t *testing.T) {
 
 	bar := stripANSI(m.renderStatusBar(160))
 	round := fmt.Sprintf("round 1/%d", DefaultMaxToolRounds)
-	// The counts are the turn's own while it runs, so they print every digit.
-	for _, want := range []string{"⏸ manual", round, "ctx ", "%", "↑41,200 ↓9,800", "$0.51", "queued 1", "gpt-4o"} {
+	for _, want := range []string{"⏸ manual", round, "ctx ", "%", "$0.51", "queued 1"} {
 		if !strings.Contains(bar, want) {
 			t.Fatalf("cockpit rail should contain %q, got %q", want, bar)
 		}
+	}
+	// Beside a price the token pair is the bill read a second way, and the
+	// model is the header's (docs/interface/surfaces.md#the-input-frame).
+	for _, gone := range []string{"↑41,200", "gpt-4o"} {
+		if strings.Contains(bar, gone) {
+			t.Fatalf("cockpit rail should not carry %q, got %q", gone, bar)
+		}
+	}
+}
+
+// Where no price is known the token pair stands in for the spend, and it is
+// the only time it does. While a turn is spending them they print every digit.
+func TestStatusBar_TokensStandInWhereNoPriceIsKnown(t *testing.T) {
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).
+		WithPricing(nil, "scripted-model")
+	m.accumulateUsage(&provider.Usage{PromptTokens: 41200, CompletionTokens: 9800})
+	m.state = stateStreaming
+
+	bar := stripANSI(m.renderStatusBar(160))
+	if !strings.Contains(bar, "↑41,200 ↓9,800") {
+		t.Fatalf("an unpriced rail states the token pair, got %q", bar)
+	}
+	if strings.Contains(bar, "$") {
+		t.Fatalf("an unpriced rail states no spend, got %q", bar)
 	}
 }
 

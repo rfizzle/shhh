@@ -201,9 +201,10 @@ func TestTurnStatus_TheRunningLineStatesNoAccount(t *testing.T) {
 	}
 
 	// What it leaves out is not missing from the frame: the rail below
-	// carries the session's pair, this turn's estimate inside it.
-	if bar := stripANSI(m.renderStatusBar(160)); !strings.Contains(bar, "↑") {
-		t.Fatalf("the vitals rail should still carry the counts:\n%s", bar)
+	// carries the session's account — the billed spend, since this session
+	// is priced.
+	if bar := stripANSI(m.renderStatusBar(160)); !strings.Contains(bar, "$") {
+		t.Fatalf("the vitals rail should still carry the account:\n%s", bar)
 	}
 }
 

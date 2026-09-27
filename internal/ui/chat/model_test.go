@@ -1337,8 +1337,8 @@ func TestStatusBar_ShowsModelAndContext(t *testing.T) {
 	m.accumulateUsage(&provider.Usage{PromptTokens: 1500, CompletionTokens: 300})
 
 	bar := m.renderStatusBar(120)
-	if !strings.Contains(bar, "gpt-4o") {
-		t.Error("status bar should show model name")
+	if strings.Contains(bar, "gpt-4o") {
+		t.Error("the model is the header's, not the status bar's")
 	}
 	// No pricing table here, so the window comes from the model family
 	//: 1500 of gpt-4o's 128k ≈ 1% on the context meter.
@@ -1349,10 +1349,10 @@ func TestStatusBar_ShowsModelAndContext(t *testing.T) {
 		t.Errorf("status bar should show the usage segment, got %q", bar)
 	}
 
-	// Model name shows even before any usage arrives.
+	// The header names the model even before any usage arrives.
 	empty := New(msgs, mockStream).WithPricing(nil, "gpt-4o")
-	if !strings.Contains(empty.renderStatusBar(80), "gpt-4o") {
-		t.Error("status bar should show model name before first response")
+	if !strings.Contains(empty.headerRow(80), "gpt-4o") {
+		t.Error("the header should name the model before the first response")
 	}
 }
 
@@ -2119,8 +2119,8 @@ func TestSlashModel_Switches(t *testing.T) {
 	if m.modelName != "claude-opus-5" {
 		t.Fatalf("status-bar model name should update, got %q", m.modelName)
 	}
-	if !strings.Contains(m.renderStatusBar(80), "claude-opus-5") {
-		t.Fatal("status bar should show the new model")
+	if !strings.Contains(m.headerRow(80), "claude-opus-5") {
+		t.Fatal("the header should name the new model")
 	}
 }
 

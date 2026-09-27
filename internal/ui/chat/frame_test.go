@@ -170,10 +170,13 @@ func TestFrame_NarrowMinimalRail(t *testing.T) {
 			t.Fatalf("narrow frame missing %q:\n%s", want, view)
 		}
 	}
-	// Model detail and token counts drop first in the field-drop order; the
-	// narrow rail keeps only the never-dropped fields.
-	if strings.Contains(view, "gpt-4o") || strings.Contains(view, "↑41.2k") {
-		t.Fatalf("narrow frame must drop model detail and token counts:\n%s", view)
+	// The narrow rail keeps only the never-dropped fields, and the model is
+	// the header's at every width that can hold it.
+	if strings.Contains(view, "↑41.2k") {
+		t.Fatalf("narrow frame must drop token counts:\n%s", view)
+	}
+	if header := strings.SplitN(view, "\n", 2)[0]; !strings.Contains(header, "gpt-4o") {
+		t.Fatalf("the header keeps the model at 60 columns: %q", header)
 	}
 }
 
@@ -1216,5 +1219,57 @@ func BenchmarkStreamingFrame(b *testing.B) {
 	b.ReportAllocs()
 	for b.Loop() {
 		_ = sm.View()
+	}
+}
+
+// The header carries the session's constants after the title and sheds them
+// from the right as the row narrows — the level, then the branch, then the
+// directory — keeping the model to the last, because a reader checking which
+// model is answering looks up (docs/interface/surfaces.md#the-input-frame).
+func TestHeader_ShedsTheConstantsFromTheRightAndKeepsTheModel(t *testing.T) {
+	m := frameModel(t, 130, 40).
+		WithStartScreen(startFixture()).
+		WithPricing(nil, "claude-opus-5").
+		WithReasoning(provider.EffortMedium, func(provider.Effort) {})
+
+	full := stripANSI(m.headerRow(200))
+	if want := " shhh chat · ~/src/shhh · main · claude-opus-5 · think medium"; full != want {
+		t.Fatalf("header = %q, want %q", full, want)
+	}
+	steps := []struct {
+		width int
+		want  string
+	}{
+		{lipgloss.Width(full) - 1, " shhh chat · ~/src/shhh · main · claude-opus-5"},
+		{45, " shhh chat · ~/src/shhh · claude-opus-5"},
+		{38, " shhh chat · claude-opus-5"},
+		{20, " shhh chat"},
+	}
+	for _, s := range steps {
+		if got := stripANSI(m.headerRow(s.width)); got != s.want {
+			t.Errorf("width %d: header = %q, want %q", s.width, got, s.want)
+		}
+	}
+	for width := 0; width <= 80; width++ {
+		if got := lipgloss.Width(m.headerRow(width)); got > width && got > lipgloss.Width(" shhh chat") {
+			t.Fatalf("width %d: the header overflowed to %d columns", width, got)
+		}
+	}
+}
+
+// The model and the reasoning level are constants of the session and leave
+// the vitals rail; what stays there is what moves.
+func TestVitals_CarryNoSessionConstants(t *testing.T) {
+	m := frameModel(t, 130, 40).WithReasoning(provider.EffortHigh, func(provider.Effort) {})
+	rail := stripANSI(m.frameVitals(frameWide, 200))
+	for _, gone := range []string{"gpt-4o", "think"} {
+		if strings.Contains(rail, gone) {
+			t.Fatalf("the vitals rail should not carry %q: %q", gone, rail)
+		}
+	}
+	for _, want := range []string{"⏸ manual", "ctx ", "$"} {
+		if !strings.Contains(rail, want) {
+			t.Fatalf("the vitals rail should carry %q: %q", want, rail)
+		}
 	}
 }

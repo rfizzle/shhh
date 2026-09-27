@@ -11,10 +11,10 @@ import (
 
 func TestCockpit_Segments(t *testing.T) {
 	c := Cockpit{Mode: "accept edits", ModeKind: CockpitPermissive, Round: "round 7/25",
-		CtxPct: 62, Tokens: "↑41.2k ↓9.8k", Spend: "$0.14", Model: "gpt-5.2",
+		CtxPct: 62, Tokens: "↑41.2k ↓9.8k", Spend: "$0.14",
 		Agents: 2}
 	view := c.View(120)
-	for _, want := range []string{"⏵⏵ accept edits", "round 7/25", "ctx", "62%", "▰", "$0.14", "◇2", "gpt-5.2"} {
+	for _, want := range []string{"⏵⏵ accept edits", "round 7/25", "ctx", "62%", "▰", "$0.14", "◇2"} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("cockpit should contain %q:\n%s", want, view)
 		}
@@ -55,47 +55,15 @@ func TestCockpit_CtxMeterFillAndThresholds(t *testing.T) {
 	}
 }
 
-func TestCockpit_DropsRightSideWhenNarrow(t *testing.T) {
+func TestCockpit_DropsTrailingSegmentsWhenNarrow(t *testing.T) {
 	c := Cockpit{Mode: "manual", ModeKind: CockpitGated, CtxPct: 42,
-		Tokens: "↑41.2k ↓9.8k", Spend: "$0.14", Model: "claude-sonnet-5"}
+		Tokens: "↑41.2k ↓9.8k", Spend: "$0.14"}
 	view := c.View(30)
-	if strings.Contains(view, "claude-sonnet-5") {
-		t.Fatalf("narrow cockpit should drop the right-side model first:\n%s", view)
+	if lipgloss.Width(view) > 30 {
+		t.Fatalf("narrow cockpit overflowed:\n%s", view)
 	}
 	if !strings.Contains(view, "manual") {
 		t.Fatalf("the mode segment survives narrowing:\n%s", view)
-	}
-}
-
-// The right side sheds the model before the reasoning level and only then
-// goes altogether: the level is what the session just changed, the model is
-// the detail rank the field-drop order drops first.
-func TestCockpit_ShedsTheModelBeforeTheReasoningLevel(t *testing.T) {
-	c := Cockpit{Mode: "manual", ModeKind: CockpitGated, CtxPct: 42,
-		Tokens: "↑41.2k ↓9.8k", Spend: "$0.14", Reasoning: "think high", Model: "claude-sonnet-5"}
-
-	wide := c.View(90)
-	if !strings.Contains(wide, "think high") || !strings.Contains(wide, "claude-sonnet-5") {
-		t.Fatalf("a wide rail states both:\n%s", wide)
-	}
-	mid := c.View(65)
-	if strings.Contains(mid, "claude-sonnet-5") {
-		t.Fatalf("the model goes first:\n%s", mid)
-	}
-	if !strings.Contains(mid, "think high") {
-		t.Fatalf("the level outlives the model:\n%s", mid)
-	}
-	if strings.Contains(c.View(30), "think high") {
-		t.Fatalf("a rail with no room states neither:\n%s", c.View(30))
-	}
-}
-
-// A session asking for no reasoning has nothing to state, and the rail is
-// exactly what it was before the level existed.
-func TestCockpit_NoReasoningSegmentWhenOff(t *testing.T) {
-	c := Cockpit{Mode: "manual", ModeKind: CockpitGated, CtxPct: -1, Model: "gpt-4o"}
-	if got := stripANSI(c.View(60)); !strings.HasSuffix(got, "gpt-4o") {
-		t.Fatalf("expected the model alone on the right, got %q", got)
 	}
 }
 
@@ -202,7 +170,7 @@ func TestDropToFit_GivesUpTheLastFieldWhole(t *testing.T) {
 func TestCockpit_ViewTerminatesAtEveryWidth(t *testing.T) {
 	c := Cockpit{Mode: "accept edits", ModeKind: CockpitPermissive, Round: "round 7/25",
 		CtxPct: 62, Tokens: "↑41.2k ↓9.8k", Spend: "$0.14", Agents: 2,
-		Extra: []string{"1 queued"}, Reasoning: "think medium", Model: "claude-opus-5"}
+		Extra: []string{"1 queued"}}
 	for w := 0; w <= 120; w++ {
 		if got := lipgloss.Width(c.View(w)); got > w && w > 0 {
 			t.Fatalf("width %d rendered %d columns", w, got)

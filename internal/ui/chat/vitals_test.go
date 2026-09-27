@@ -271,7 +271,9 @@ func TestVitals_SessionTotalHoldsAcrossTheTurnBoundary(t *testing.T) {
 // The resolution follows the moment: every digit while a turn is spending
 // them, and the shape a finished total is read in once nothing is moving.
 func TestVitals_RailCountsChangeResolutionWithTheTurn(t *testing.T) {
-	m := statusModel(t)
+	// Unpriced, because the token pair stands on the rail only where no
+	// price is known (docs/interface/surfaces.md#the-input-frame).
+	m := statusModel(t).WithPricing(nil, "gpt-4o")
 	// A session whose only spend is this turn's, so the rail's figure is one
 	// the assertion can name.
 	m.vitals.reset()

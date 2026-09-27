@@ -84,7 +84,7 @@ func (m Model) paint(cur *cursorSink) string {
 	scr := uv.NewScreenBuffer(max(m.width, 0), max(m.height, 0))
 	draw := func(view string, area uv.Rectangle) { drawIn(scr, view, area) }
 
-	draw(m.headerRow(), s.header)
+	draw(m.headerRow(s.header.Dx()), s.header)
 	// The line under the header says which pane has the keyboard (reading
 	// mode): a plain divider while the input does, the transcript's own rail
 	// while focus mode does.
@@ -115,11 +115,19 @@ func (m Model) paint(cur *cursorSink) string {
 	return renderScreen(scr)
 }
 
-// headerRow is the title row: the header carries only the title —
-// the static key hint moved into the frame's contextual bottom rail, the
-// update notice onto the notice rail, and the attached breadcrumb onto the
-// frame's top rail.
-func (m Model) headerRow() string {
+// headerRow is the title row: the surface's name, then in dim the facts that
+// do not change while the session runs — the directory, the branch, the model
+// and the reasoning level. They are here rather than on the vitals rail
+// because the rail is read for what changes what the reader does next, and
+// four constants beside the three that move made every glance at it a search
+// (docs/interface/surfaces.md#the-input-frame).
+//
+// When the row runs out of columns the facts go from the right, except the
+// model, which goes last: a reader checking mid-session which model is
+// answering looks up, and a header that had shed it would send them to
+// /model to find out. Attached to a child behind a takeover surface, the
+// breadcrumb stays where it has always been, right after the title.
+func (m Model) headerRow(width int) string {
 	title := m.title
 	if title == "" {
 		title = defaultTitle
@@ -129,7 +137,59 @@ func (m Model) headerRow() string {
 		// A takeover surface while attached keeps the breadcrumb visible.
 		header += sty.HeaderHint.Render("  " + m.breadcrumb())
 	}
-	return header
+	facts := m.headerFacts()
+	sep := sty.HeaderHint.Render(" · ")
+	for {
+		row := header
+		for _, f := range facts {
+			row += sep + sty.HeaderHint.Render(f.text)
+		}
+		if lipgloss.Width(row) <= width || len(facts) == 0 {
+			return row
+		}
+		facts = shedHeaderFact(facts)
+	}
+}
+
+// headerFact is one of the header's constants, and whether it is the model.
+type headerFact struct {
+	text  string
+	model bool
+}
+
+// headerFacts is what the header states after the title, in reading order.
+// Each is left out where the session cannot state it: a conversation has no
+// survey of the checkout, a directory outside a repository has no branch,
+// and a session asking for no reasoning names no level.
+func (m Model) headerFacts() []headerFact {
+	var facts []headerFact
+	if m.start != nil {
+		p := m.start.Project
+		if p.Display != "" {
+			facts = append(facts, headerFact{text: p.Display})
+		}
+		if p.Repo {
+			facts = append(facts, headerFact{text: resumeBranch(p)})
+		}
+	}
+	if m.modelName != "" {
+		facts = append(facts, headerFact{text: m.modelName, model: true})
+	}
+	if level := m.reasoningSegment(); level != "" {
+		facts = append(facts, headerFact{text: level})
+	}
+	return facts
+}
+
+// shedHeaderFact drops the rightmost fact that is not the model, and the
+// model only once nothing else is left.
+func shedHeaderFact(facts []headerFact) []headerFact {
+	for i := len(facts) - 1; i >= 0; i-- {
+		if !facts[i].model {
+			return append(facts[:i:i], facts[i+1:]...)
+		}
+	}
+	return facts[:len(facts)-1]
 }
 
 // paneView is what the transcript pane's rows hold: whichever overlay takes

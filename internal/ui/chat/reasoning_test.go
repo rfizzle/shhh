@@ -114,23 +114,23 @@ func TestReasoning_DefaultSaysWhenItIsOverruled(t *testing.T) {
 	}
 }
 
-func TestReasoning_CockpitStatesTheLevelBesideTheModel(t *testing.T) {
+// The level is a session constant, so the header states it beside the model
+// and the vitals rail does not (docs/interface/surfaces.md#the-input-frame).
+func TestReasoning_HeaderStatesTheLevelBesideTheModel(t *testing.T) {
 	m, _ := reasoningModel(t)
 	m = m.WithPricing(nil, "claude-opus-5")
 
-	if seg := m.cockpitData(true).Reasoning; seg != "" {
-		t.Errorf("a session asking for no reasoning has nothing to state, got %q", seg)
+	if header := stripANSI(m.headerRow(200)); strings.Contains(header, "think") {
+		t.Errorf("a session asking for no reasoning has nothing to state, got %q", header)
 	}
 
 	updated, _ := m.Update(altT())
 	m = updated.(Model)
-	c := m.cockpitData(true)
-	if c.Reasoning != "think low" {
-		t.Fatalf("cockpit reasoning segment = %q", c.Reasoning)
+	if header := stripANSI(m.headerRow(200)); !strings.Contains(header, "claude-opus-5 · think low") {
+		t.Errorf("the header should carry both halves, got %q", header)
 	}
-	rail := c.View(100)
-	if !strings.Contains(rail, "think low") || !strings.Contains(rail, "claude-opus-5") {
-		t.Errorf("the rail should carry both halves, got %q", rail)
+	if rail := stripANSI(m.cockpitData(true).View(200)); strings.Contains(rail, "think") || strings.Contains(rail, "claude-opus-5") {
+		t.Errorf("the rail carries neither half, got %q", rail)
 	}
 }
 

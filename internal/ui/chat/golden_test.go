@@ -1107,6 +1107,32 @@ func TestGolden_PromptFrameWidthsCoverEveryLayout(t *testing.T) {
 	}
 }
 
+// TestGolden_HeaderRow captures the title row with the session's constants
+// after the title, at each width: what it sheds as the terminal narrows is
+// read from the right, and the model outlasts the rest
+// (docs/interface/surfaces.md#the-input-frame).
+func TestGolden_HeaderRow(t *testing.T) {
+	captureGolden(t, "header-row", "the header's constants", goldenWidths, func(width int) []golden.Panel {
+		header := func(info *StartInfo, effort provider.Effort) string {
+			m := frameModel(t, width, 40).
+				WithPricing(nil, "claude-sonnet-4-5").
+				WithReasoning(effort, func(provider.Effort) {})
+			if info != nil {
+				m = m.WithStartScreen(*info)
+			}
+			return m.headerRow(width - 2*horizontalPadding)
+		}
+		coding := startFixture()
+		outside := startFixture()
+		outside.Project.Repo, outside.Project.Branch = false, ""
+		return []golden.Panel{
+			{Label: "a coding session · directory, branch, model, level", View: header(&coding, provider.EffortMedium)},
+			{Label: "outside a repository, asking for no reasoning", View: header(&outside, provider.EffortOff)},
+			{Label: "a conversation · no survey of the checkout", View: header(nil, provider.EffortHigh)},
+		}
+	})
+}
+
 // TestGolden_StartScreen captures the first-contact screen as the host
 // assembles it: the survey's facts, the gate in effect, and the
 // three offers a dirty Go checkout with a session to pick up produces —
@@ -2218,7 +2244,12 @@ func TestGolden_Screen(t *testing.T) {
 
 	captureGolden(t, "screen", "the whole surface", screenWidths, func(width int) []golden.Panel {
 		build := func(mut func(*Model)) string {
-			m := frameModel(t, width, screenHeight)
+			// The session's constants are the header's: the checkout the
+			// survey found and the level the session is asking for
+			// (docs/interface/surfaces.md#the-input-frame).
+			m := frameModel(t, width, screenHeight).
+				WithStartScreen(startFixture()).
+				WithReasoning(provider.EffortMedium, func(provider.Effort) {})
 			m.transcript = goldenTranscript()
 			// The transcript is the session's first turn, and a real turn
 			// stamps every row it leaves with its number: without it the

@@ -47,7 +47,7 @@ keys n
 # is the whole reason for the key.
 snap 09-carried "carried · 2 steps" "saved · shhh code --continue"
 keys BTab
-snap 10-back-to-manual "⏸ manual · think"
+snap 10-back-to-manual "├─ ⏸ manual ─" "scripted-model"
 # The child's rail carries the mode for the same reason the parent's does, and
 # a child is never more permissive than the session that spawned it — which is
 # the manual word again, on a frame the keyboard has moved into. The command

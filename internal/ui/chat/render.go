@@ -589,8 +589,8 @@ func separatorBefore(prev, cur entry) string {
 // renderStatusBar renders the cockpit rail (
 // docs/interface/surfaces.md#the-input-frame): the active mode, tool-round
 // counter, context occupancy meter (coloured at the trim thresholds), usage
-// and spend, queued steering, policy grants, and the sub-agent badge, with
-// the model name right-aligned and dropped first when narrow.
+// or spend, queued steering, policy grants, and the sub-agent badge. The
+// model and the reasoning level are the header's (headerRow).
 func (m Model) renderStatusBar(width int) string {
 	// Attached, the status bar scopes to the focused child.
 	if m.attachedTo != "" && m.subagents != nil {
@@ -616,12 +616,12 @@ func modeWord(mode agent.Mode) string { return mode.Word() }
 // omits the queued-steering extra — the notice rail carries it — so
 // includeQueued is false there.
 func (m Model) cockpitData(includeQueued bool) components.Cockpit {
+	// The model and the reasoning level are not here: they do not change
+	// while the session runs, and the header states them (headerRow).
 	c := components.Cockpit{
-		CtxPct:    -1,
-		WarnPct:   warnThresholdPercent,
-		AlertPct:  trimThresholdPercent,
-		Reasoning: m.reasoningSegment(),
-		Model:     m.modelName,
+		CtxPct:   -1,
+		WarnPct:  warnThresholdPercent,
+		AlertPct: trimThresholdPercent,
 	}
 	if m.turnState() == stateClassifying {
 		c.Mode, c.ModeKind = "checking", components.CockpitChecking
@@ -638,12 +638,9 @@ func (m Model) cockpitData(includeQueued bool) components.Cockpit {
 		}
 	}
 	// The round counter stands as soon as there is one to state, idle
-	// included. It is the third field the rail sheds when it runs out of
-	// columns and the model is the first (guidelines/layout-drop-order), so a
-	// rail that hid the counter at rest while keeping the model had the order
-	// backwards — and what the counter answers at rest, how much of the
-	// ceiling the last turn spent, is exactly what the reader about to send
-	// the next one is asking. The grant on offer is stated beside it through
+	// included: what it answers at rest, how much of the ceiling the last
+	// turn spent, is exactly what the reader about to send the next one is
+	// asking, and it is live the moment a turn has used a round. The grant on offer is stated beside it through
 	// a round-limit pause, so the counter says both what the bound is and
 	// what taking the offer would make it.
 	if m.agent.Rounds() > 0 {
@@ -666,6 +663,10 @@ func (m Model) cockpitData(includeQueued bool) components.Cockpit {
 	// See docs/capabilities/providers.md#the-prompt-prefix-is-paid-for-once.
 	if label := m.totalsLabel(m.sessionSpend()); strings.HasPrefix(label, "$") {
 		c.Spend = label
+		// The token pair stands in for a price nobody knows and for nothing
+		// else: beside the bill it is the same account read a second way
+		// (docs/interface/principles.md#a-stat-that-cannot-be-reported-is-left-out).
+		c.Tokens = ""
 	}
 	if _, warned := m.ledger.Warning(); warned {
 		c.Extra = append(c.Extra, "spend warning")
