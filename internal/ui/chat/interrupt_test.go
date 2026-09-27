@@ -91,7 +91,7 @@ func TestInterrupt_TheCardOffersOnlyTheKeyThatIsLive(t *testing.T) {
 	m := interruptedModel(t, "also add a --max-rounds flag")
 
 	view := ansi.Strip(m.View().Content)
-	for _, want := range []string{keys.Bracket(keys.Draft.Answer) + " answer it", "you are still typing into the draft"} {
+	for _, want := range []string{keys.Bracket(keys.Draft.Answer) + " answer it", "other keys type into the draft"} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("the ungated card should say %q:\n%s", want, view)
 		}
@@ -186,7 +186,7 @@ func TestInterrupt_EscLeavesTheDecisionWaitingRatherThanDenyingIt(t *testing.T) 
 	// And the card says so while it holds the keyboard, because the safe
 	// answer here is not obvious (invariant 3).
 	gatedView := ansi.Strip(handover(t, m).View().Content)
-	if !strings.Contains(gatedView, "back to your draft") {
+	if !strings.Contains(gatedView, "[esc] leave it waiting, nothing is denied") {
 		t.Fatalf("the gated card should state what esc does:\n%s", gatedView)
 	}
 	// Saying no is still [n].
@@ -556,10 +556,10 @@ func TestArrival_TheKeysASentenceCouldHaveMeantWaitForTheHandover(t *testing.T) 
 			t.Fatalf("an arrival-held card offers %q:\n%s", want, view)
 		}
 	}
-	if !strings.Contains(view, keys.Bracket(keys.Draft.Answer)+" for [a]/[d]") {
+	if !strings.Contains(view, keys.Bracket(keys.Draft.Answer)+" answer it") {
 		t.Fatalf("the card should say what the handover still buys:\n%s", view)
 	}
-	if !strings.Contains(view, "any other key goes to your draft") {
+	if !strings.Contains(view, "other keys type into the draft") {
 		t.Fatalf("the card should say where everything else goes:\n%s", view)
 	}
 

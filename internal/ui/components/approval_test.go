@@ -514,7 +514,7 @@ func TestApprovalCard_TheRunIsBracketedOffers(t *testing.T) {
 	view := ansi.Strip(c.View(110))
 	for _, want := range []string{
 		"[y] run it once", "[n] deny", `[a] allow "go test" without asking`,
-		"[d] full view", "[esc] " + waitingWords,
+		"[d] full view", "[esc] leave it waiting",
 	} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("the run should offer %q:\n%s", want, view)
@@ -812,5 +812,53 @@ func TestSpawnScopeLines_BreakBetweenClauses(t *testing.T) {
 	}
 	if got := spawnScopeLines("", 40); got != nil {
 		t.Fatalf("no scope is no line: %q", got)
+	}
+}
+
+// A card's keys end on its way out: the offers and esc are one run, and
+// under it sits at most one dim footnote — the handover on a card that took
+// the keyboard by arriving, or a key that is not offered, which wins where a
+// card has both. At 60 columns the run breaks between offers, never inside
+// one.
+func TestApprovalCard_TheKeysAreOneRunAndOneFootnote(t *testing.T) {
+	held := func() *ApprovalCard {
+		return &ApprovalCard{
+			Variant: ApprovalCommand, Title: "Approve command",
+			Act: "go test ./...", Answer: "run it once", Noted: true,
+			AllowAlways: true, AlwaysHint: `allow "go test" without asking`,
+			HeldOnArrival: true, Handover: "ctrl+space",
+		}
+	}
+	keyBlock := func(c *ApprovalCard, width int) []string {
+		_, hints := c.buildRows(width)
+		var rows []string
+		for _, r := range hints[1:] {
+			rows = append(rows, ansi.Strip(r))
+		}
+		return rows
+	}
+
+	rows := keyBlock(held(), 120)
+	want := []string{
+		"[y] run it once · [Y] and say what next · [n] deny · [N] and say why not · [esc] " + waitingWords,
+		"[ctrl+space] answer it · " + arrivalDraftWords,
+	}
+	if strings.Join(rows, "\n") != strings.Join(want, "\n") {
+		t.Fatalf("an arrival card's keys are one run and one footnote:\ngot  %q\nwant %q", rows, want)
+	}
+
+	c := held()
+	c.Footnote = "[a] always — not offered: a safety-flagged command is never pre-approved"
+	if rows := keyBlock(c, 120); len(rows) != 2 || rows[1] != c.Footnote {
+		t.Fatalf("an absent key's reason wins the footnote over the handover: %q", rows)
+	}
+
+	// Every row of the run at 60 columns opens on a key: a row that opened
+	// on words would be an offer broken in two.
+	narrow := keyBlock(held(), 60)
+	for _, row := range narrow[:len(narrow)-1] {
+		if !strings.HasPrefix(row, "[") {
+			t.Fatalf("an offer was broken across rows at 60 columns: %q", narrow)
+		}
 	}
 }

@@ -315,7 +315,7 @@ func TestProgram_ACardsKeyIsInertUntilTheHandover(t *testing.T) {
 	// And it says so in words rather than leaving the reader to infer it
 	// from a key row nothing painted: the card draws the one key that is
 	// live and says where the rest of them are going (invariant 1).
-	if !strings.Contains(frame, "you are still typing into the draft") {
+	if !strings.Contains(frame, "other keys type into the draft") {
 		t.Fatalf("the card does not say where the keystrokes are going:\n%s", frame)
 	}
 	if strings.Contains(frame, "[y]") {

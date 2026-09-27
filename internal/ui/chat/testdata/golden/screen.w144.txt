@@ -132,11 +132,11 @@
   │                                                                                                                                          │  
   │ lands in  your workspace — this agent has no worktree of its own                                                                         │  
   │ touches   nothing — the command resolved to reads only                                                                                   │  
-  │ … 2 more lines · [shift+↓]                                                                                                               │  
+  │ undo      n/a — no workspace file is modified                                                                                            │  
+  │ network   open — nothing contains this command, so nothing limits what it reaches                                                        │  
   ├──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤  
-  │ [y] run it once · [n] deny                                                                                                               │  
-  │ [ctrl+space/ctrl+y] for [a] · any other key goes to your draft                                                                           │  
-  │ [esc] back to your draft — the decision stays waiting, nothing is denied                                                                 │  
+  │ [y] run it once · [n] deny · [esc] leave it waiting, nothing is denied                                                                   │  
+  │ [ctrl+space/ctrl+y] answer it · other keys type into the draft                                                                           │  
 
 · working · a reading of the session leads the rail
    shhh chat                                                                                                                                    
@@ -357,11 +357,11 @@
   ␛[38;5;214m│␛[m                                                                                                                                          ␛[38;5;214m│␛[m  
   ␛[38;5;214m│␛[m ␛[38;5;243mlands in  ␛[38;5;214myour workspace␛[38;5;245m — this agent has no worktree of its own␛[m                                                                         ␛[38;5;214m│␛[m  
   ␛[38;5;214m│␛[m ␛[38;5;243mtouches   ␛[92mnothing␛[38;5;245m — the command resolved to reads only␛[m                                                                                   ␛[38;5;214m│␛[m  
-  ␛[38;5;214m│␛[m ␛[38;5;241m… 2 more lines · [shift+↓]␛[m                                                                                                               ␛[38;5;214m│␛[m  
+  ␛[38;5;214m│␛[m ␛[38;5;243mundo      ␛[92mn/a␛[38;5;245m — no workspace file is modified␛[m                                                                                            ␛[38;5;214m│␛[m  
+  ␛[38;5;214m│␛[m ␛[38;5;243mnetwork   ␛[38;5;214mopen␛[38;5;245m — nothing contains this command, so nothing limits what it reaches␛[m                                                        ␛[38;5;214m│␛[m  
   ␛[38;5;214m├──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m  
-  ␛[38;5;214m│␛[m ␛[94m[y]␛[m ␛[38;5;252mrun it once␛[38;5;241m · ␛[94m[n]␛[m ␛[38;5;252mdeny␛[m                                                                                                               ␛[38;5;214m│␛[m  
-  ␛[38;5;214m│␛[m ␛[38;5;241m[ctrl+space/ctrl+y] for [a] · any other key goes to your draft␛[m                                                                           ␛[38;5;214m│␛[m  
-  ␛[38;5;214m│␛[m ␛[92m[esc] back to your draft — the decision stays waiting, nothing is denied␛[m                                                                 ␛[38;5;214m│␛[m  
+  ␛[38;5;214m│␛[m ␛[94m[y]␛[m ␛[38;5;252mrun it once␛[38;5;241m · ␛[94m[n]␛[m ␛[38;5;252mdeny␛[38;5;241m · ␛[92m[esc] leave it waiting, nothing is denied␛[m                                                                   ␛[38;5;214m│␛[m  
+  ␛[38;5;214m│␛[m ␛[38;5;241m[ctrl+space/ctrl+y] answer it · other keys type into the draft␛[m                                                                           ␛[38;5;214m│␛[m  
 
 · working · a reading of the session leads the rail
   ␛[97;1m shhh chat␛[m                                                                                                                                    

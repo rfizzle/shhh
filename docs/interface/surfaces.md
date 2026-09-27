@@ -1690,13 +1690,23 @@ queue is never made to wait between questions.
 The decision run is written the way every other key row in the product is: a
 key in brackets, a lower-case imperative after it, and the answer that costs
 nothing in the colour of the safe answer — *[y] run it once · [e] edit the
-command · [n] deny*, with *[esc] don't — the safe answer* on a line of its
-own. A key that is not offered stays on the card with its reason rather than
+command · [n] deny · [esc] don't — the safe answer*, the way out last. A key
+that is not offered stays on the card with its reason rather than
 disappearing. The compact `[y/n/a]` prompt this card used to print, with what
 its keys bought in parentheses beside it, was the one place two notations sat
 a row apart — the offers under a frame's rule read one way and the offers
 under a card's read another — and a reader who has learned that a bracket
 means a live key is worse served by two notations than by one.
+
+The keys are one row, and the card ends on it. Under it sits at most one dim
+footnote, which has one use: a key the reader might expect that is not live.
+Where a key is deliberately not offered, the footnote names it and says why;
+otherwise, on a card that took the keyboard by arriving, it names the
+handover chord — *answer it · other keys type into the draft* — which is
+what buys the keys the card did not claim. A card with both states the absent
+key, because its reason is what keeps the missing offer from reading as a
+bug, and the handover goes on working unshown. A card that ended on three rows
+of sentences about the keyboard put its explanation where its answers belong.
 
 A run too long for the card takes another row, and an offer that is itself
 wider than the card folds at a word onto a continuation row indented under
@@ -1708,23 +1718,29 @@ that states what the key costs, and cutting it leaves a key whose price is
 unread ([invariant 4](principles.md#fold-never-hide)). The artboards draw no
 card narrow enough to need the fold; this is the shape where they are silent.
 
-Every card holding the keyboard carries the esc line, whatever it is about and
-whoever it came from, because the way out of a decision is the one thing a
-reader must be able to find without having pressed anything first
-([invariant 3](principles.md#esc-is-always-the-safe-answer)). It is a line of
-its own rather than the last segment of the run, so whether it is on screen
-does not depend on how many offers the card happens to have. A card whose own
-field or list holds the keyboard states that surface's esc instead, once: two
-surfaces cannot both have the key, and the nearer one wins. A card that does
-not have the keyboard at all states none — esc there belongs to the draft, and
-the line saying so is the handover's.
+Every card holding the keyboard ends its run on the esc offer, whatever it is
+about and whoever it came from, because the way out of a decision is the one
+thing a reader must be able to find without having pressed anything first
+([invariant 3](principles.md#esc-is-always-the-safe-answer)). The block the
+run is drawn in never scrolls, so a run that wraps keeps it on screen all the
+same. The offer joins the run's last row where it fits there and otherwise
+takes a row of its own, so a narrow card breaks the run before it rather than
+inside it. The words every gated card shares may give up their trailing
+clause to stay on the row — *leave it waiting* already says the decision is
+not answered — but a card's own words join whole or not at all: they are on
+the card because the first clause was not enough to tell esc from that card's
+no.
+A card whose own field or list holds the keyboard states that surface's esc
+instead, once: two surfaces cannot both have the key, and the nearer one wins.
+A card that does not have the keyboard at all states none — esc there belongs
+to the draft, and the line saying so is the handover's.
 
-What the line says is what esc actually does on that card, which is not one
+What the offer says is what esc actually does on that card, which is not one
 thing. On a gated card it hands the keyboard back and leaves the request
 where it was, which is a different act from the denial `[n]` is; on a card
 picked off the [agent manager](#the-agent-manager) there is no draft
 underneath, so it hands the reader back to the list instead — the request
-still queued, and the line naming the surface it returns to rather than the
+still queued, and the offer naming the surface it returns to rather than the
 draft it did not come from.
 
 A rail above the card names whichever surface holds the keyboard and says

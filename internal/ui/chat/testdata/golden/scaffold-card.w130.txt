@@ -20,8 +20,7 @@
 │ undo      yes — delete them; nothing else is touched                                                                       │
 │ network   closed                                                                                                           │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ [y] write them · [n] no — nothing written; not offered again                                                               │
-│ [esc] leave — nothing written, and the offer stays                                                                         │
+│ [y] write them · [n] no — nothing written; not offered again · [esc] leave — nothing written, and the offer stays          │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 ── ansi ────────────────────────────────────────────────────
@@ -35,6 +34,5 @@
 ␛[94m│␛[m ␛[38;5;243mundo      ␛[m␛[92myes␛[m␛[38;5;245m — delete them; nothing else is touched␛[m                                                                       ␛[94m│␛[m
 ␛[94m│␛[m ␛[38;5;243mnetwork   ␛[m␛[92mclosed␛[m                                                                                                           ␛[94m│␛[m
 ␛[94m├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[94m│␛[m ␛[94m[y]␛[m ␛[38;5;252mwrite them␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m ␛[38;5;252mno — nothing written; not offered again␛[m                                                               ␛[94m│␛[m
-␛[94m│␛[m ␛[92m[esc] leave — nothing written, and the offer stays␛[m                                                                         ␛[94m│␛[m
+␛[94m│␛[m ␛[94m[y]␛[m ␛[38;5;252mwrite them␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m ␛[38;5;252mno — nothing written; not offered again␛[m␛[38;5;241m · ␛[m␛[92m[esc] leave — nothing written, and the offer stays␛[m          ␛[94m│␛[m
 ␛[94m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m

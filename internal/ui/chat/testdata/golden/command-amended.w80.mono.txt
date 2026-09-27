@@ -22,8 +22,7 @@
 ├──────────────────────────────────────────────────────────────────────────┤
 │ [y] run it once · [Y] and say what next · [n] deny · [N] and say why not │
 │ [a] allow "npm test" without asking · [d] full view                      │
-│ [e] edit the command                                                     │
-│ [esc] back to your draft — the decision stays waiting, nothing is denied │
+│ [e] edit the command · [esc] leave it waiting, nothing is denied         │
 ╰──────────────────────────────────────────────────────────────────────────╯
 
 · the line the reader wrote, read again
@@ -39,8 +38,8 @@
 ├──────────────────────────────────────────────────────────────────────────┤
 │ [y] run it once · [Y] and say what next · [n] deny · [N] and say why not │
 │ [d] full view · [e] edit the command                                     │
-│ [a] always — not offered: a safety-flagged command is never pre-approved │
 │ [esc] don't — the safe answer; the decision waits                        │
+│ [a] always — not offered: a safety-flagged command is never pre-approved │
 ╰──────────────────────────────────────────────────────────────────────────╯
 
 ── ansi ────────────────────────────────────────────────────
@@ -56,8 +55,7 @@
 ␛[38;5;254m├──────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mrun it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[Y]␛[m ␛[38;5;254mand say what next␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m␛[38;5;244m · ␛[m␛[38;5;254m[N]␛[m ␛[38;5;254mand say why not␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[a]␛[m ␛[38;5;254mallow "npm test" without asking␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m ␛[38;5;254mfull view␛[m                      ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[e]␛[m ␛[38;5;254medit the command␛[m                                                     ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[esc] back to your draft — the decision stays waiting, nothing is denied␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[e]␛[m ␛[38;5;254medit the command␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc] leave it waiting, nothing is denied␛[m         ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────────────────────╯␛[m
 
 · the line the reader wrote, read again
@@ -73,6 +71,6 @@
 ␛[38;5;254m├──────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mrun it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[Y]␛[m ␛[38;5;254mand say what next␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m␛[38;5;244m · ␛[m␛[38;5;254m[N]␛[m ␛[38;5;254mand say why not␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[d]␛[m ␛[38;5;254mfull view␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m ␛[38;5;254medit the command␛[m                                     ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244m[a] always — not offered: a safety-flagged command is never pre-approved␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[esc] don't — the safe answer; the decision waits␛[m                        ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244m[a] always — not offered: a safety-flagged command is never pre-approved␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────────────────────╯␛[m

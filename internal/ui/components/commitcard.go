@@ -81,7 +81,7 @@ func (c CommitCard) View(width int) string {
 	}
 	rows = append(rows, cardRule)
 	if c.Running {
-		rows = append(rows, deadRows(plainCommitRun(), committingWords, width)...)
+		rows = append(rows, deadRows(plainCommitRun(), "", committingWords, width)...)
 	} else {
 		rows = append(rows, runRows(commitRun(), inner)...)
 		rows = append(rows, commitEscRow(inner))

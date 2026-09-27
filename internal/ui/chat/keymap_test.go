@@ -512,9 +512,6 @@ func decisionCards(t *testing.T) []decisionCard {
 				return handover(t, updated.(Model))
 			},
 			card: sessionCard,
-			// The strip above the card takes rows the card would have had,
-			// so this fixture's body is one row longer than its panel.
-			scrolls: true,
 		},
 		{
 			name: "a child's routed command",

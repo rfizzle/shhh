@@ -135,8 +135,8 @@
   … 3…      
   [y] run   
   [n] deny  
+  [esc] le  
   [ctrl+sp  
-  [es…      
 
 · working · a reading of the session leads the rail
    shhh ch  
@@ -360,8 +360,8 @@
   ␛[38;5;241m… 3…␛[m      
   ␛[94m[y]␛[m ␛[38;5;252mrun ␛[m  
   ␛[94m[n]␛[m ␛[38;5;252mdeny␛[m  
+  ␛[92m[esc] le␛[m  
   ␛[38;5;241m[ctrl+sp␛[m  
-  ␛[92m[es…␛[m      
 
 · working · a reading of the session leads the rail
   ␛[97;1m shhh ch␛[m  

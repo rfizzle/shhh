@@ -818,11 +818,10 @@ func (c *ApprovalCard) hintRowsFor(width, inner int) []string {
 	case c.GrantOpen:
 		return append(chosenRows(dead(), width), c.grantRows(width, inner)...)
 	case c.HeldOnArrival && c.Grace:
-		rows := graceRows(dead(), width)
-		if rest := c.arrivalRest(); len(rest) > 0 {
-			rows = append(rows, sty.Dim.Render(FitSegments(rest, inner)))
-		}
-		return append(rows, c.escRow(inner))
+		// The run is dimmed and the way out is not: esc is not one of the
+		// keys the window discards, so it keeps its place at the end of the
+		// run in its own colour.
+		return append(graceRows(dead(), c.escSegment(inner), width), c.footnoteRows(inner)...)
 	}
 	segments := c.paintedRun()
 	// A card that took the keyboard by arriving claims the answers it was
@@ -839,42 +838,84 @@ func (c *ApprovalCard) hintRowsFor(width, inner int) []string {
 			segments = append(segments, offerSegment(o.Key, o.Label))
 		}
 	}
-	rows := runRows(segments, inner)
-	if rest := c.arrivalRest(); len(rest) > 0 {
-		// Fitted onto a row of its own rather than wrapped across two: the
-		// sentence about the draft is an annotation on the keys and not one
-		// of them, and the panel a card is drawn in may take at most 40% of
-		// the terminal (docs/interface/principles.md#one-interaction-panel),
-		// so a row spent on it is a row the transcript gives up.
-		rows = append(rows, sty.Dim.Render(FitSegments(rest, inner)))
-	}
-	// A key that is not offered stays on the card with its reason rather than
-	// disappearing: a missing key with a stated reason teaches, and a missing
-	// key without one reads as a bug.
-	if c.Footnote != "" {
-		// Wrapped rather than shortened either way. The load-bearing half of
-		// this row is its tail — `[a] always — not offered: …` clipped to
-		// `[a] always` reads as an offer of exactly the key the row exists to
-		// say is absent — and a reason cut mid-word teaches nothing
-		// (docs/interface/principles.md#fold-never-hide).
-		rows = append(rows, wrapDim(c.Footnote, inner)...)
-	}
-	return append(rows, c.escRow(inner))
+	return append(c.closeRun(runRows(segments, inner), inner), c.footnoteRows(inner)...)
 }
 
-// escRow is the line every live card ends on. It is a row of its own rather
-// than the last segment of the run because it is the one offer a reader may
-// need before they have read anything above it, and a run that wrapped would
-// decide from one card to the next whether it was still on screen
+// closeRun puts the way out at the end of the run, so the card ends on its
+// keys rather than on a sentence about the keyboard. The block under the rule
+// is pinned, so a run that wraps keeps it on screen all the same
 // (docs/interface/principles.md#esc-is-always-the-safe-answer).
+//
+// The offer joins the run's last row where it fits there, and otherwise
+// takes a row of its own. The words every gated card shares may give up
+// their trailing clause to stay on the row — `leave it waiting` already says
+// the decision is not answered, and a row spent on the rest is a row the
+// transcript gives up. A card's own words may not: they are on the card
+// because the first clause was not enough to tell esc from the card's no
+// (`leave — nothing written, and the offer stays` beside a no that is never
+// offered again), so they join whole or not at all.
+func (c *ApprovalCard) closeRun(rows []string, inner int) []string {
+	sep := sty.Dim.Render(" · ")
+	if n := len(rows); n > 0 {
+		if room := inner - lipgloss.Width(rows[n-1]) - lipgloss.Width(sep); room > 0 {
+			fit := inner
+			if c.Return == "" {
+				fit = room
+			}
+			if esc := c.escSegment(fit); lipgloss.Width(esc) <= room {
+				rows[n-1] += sep + esc
+				return rows
+			}
+		}
+	}
+	return append(rows, c.escSegment(inner))
+}
+
+// escSegment is the offer every live card's run ends on: esc and what it
+// does on this card, in the colour of the answer that costs nothing
+// (docs/interface/principles.md#esc-is-always-the-safe-answer). Its words
+// give ground clause by clause, so the segment fits the room it is given
+// and a narrow run breaks before it rather than inside it.
 //
 // The key is spelled from the selector family's cancel rather than from
 // Decision.Deny, which binds the same keystroke under the letter `n`: what
-// this row needs is a spelling, and `esc` is the spelling the register gives
-// that keystroke wherever a surface holds the whole keyboard.
-func (c *ApprovalCard) escRow(inner int) string {
+// this offer needs is a spelling, and `esc` is the spelling the register
+// gives that keystroke wherever a surface holds the whole keyboard.
+func (c *ApprovalCard) escSegment(inner int) string {
 	esc := keys.Shown(keys.Select.Cancel)
-	return Clip(safeSegment(esc, fitClauses("["+esc+"] ", c.returnWords(), inner)), inner)
+	return safeSegment(esc, fitClauses("["+esc+"] ", c.returnWords(), inner))
+}
+
+// footnoteRows is the one dim line a card may carry under its run, and it
+// has one use: a key the reader might expect that is not live. Where a key
+// is deliberately not offered, the line says which and why — a missing key
+// with a stated reason teaches, and a missing key without one reads as a bug.
+// Otherwise, on a card that took the keyboard by arriving, it names the
+// handover and where every other key goes.
+//
+// A card with both draws the absent key. Its reason is what makes the
+// missing offer read as a decision rather than a bug, and the handover it
+// displaces goes on working unshown — a key live and unshown costs a reader
+// one thing they already knew, where a key shown and dead is what invariant 5
+// exists to stop
+// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+func (c *ApprovalCard) footnoteRows(inner int) []string {
+	if c.Footnote != "" {
+		// Wrapped rather than shortened. The load-bearing half of this row
+		// is its tail — `[a] always — not offered: …` clipped to `[a] always`
+		// reads as an offer of exactly the key the row exists to say is
+		// absent — and a reason cut mid-word teaches nothing
+		// (docs/interface/principles.md#fold-never-hide).
+		return wrapDim(c.Footnote, inner)
+	}
+	if note := c.handoverNote(); len(note) > 0 {
+		// Fitted onto the one row rather than wrapped across two: the panel
+		// a card is drawn in may take at most 40% of the terminal
+		// (docs/interface/principles.md#one-interaction-panel), so a row
+		// spent on it is a row the transcript gives up.
+		return []string{sty.Dim.Render(FitSegments(note, inner))}
+	}
+	return nil
 }
 
 // fitClauses is how a row of prose on the key block gives ground: the
@@ -912,9 +953,9 @@ func (c *ApprovalCard) returnWords() string {
 
 // waitingWords is what esc does on a card that said nothing else about it:
 // the keyboard goes back to the draft and the decision is still there. It is
-// not a denial, and that difference is the whole reason the row is worth a
-// row (docs/interface/principles.md#esc-is-always-the-safe-answer).
-const waitingWords = "back to your draft — the decision stays waiting, nothing is denied"
+// not a denial, and that difference is the whole reason the offer is worth
+// its words (docs/interface/principles.md#esc-is-always-the-safe-answer).
+const waitingWords = "leave it waiting, nothing is denied"
 
 // offerSegment is one offer in the card's grammar: the key in Info, the
 // imperative after it in Body. The mark arrives already bracketed, because
@@ -1162,47 +1203,32 @@ func (c *ApprovalCard) HandoverAt(row string, col int) bool {
 	return col >= lo && col < lo+ansi.StringWidth(mark+handoverImperative)
 }
 
-// arrivalRest names what the handover still buys on a card that took the
-// keyboard by arriving: the keys it deliberately did not claim, and the fact
-// that everything else goes into the draft. It is the not-yet-live row turned
-// around — there the handover buys every key, here it buys the ones a
-// sentence could have produced by accident.
+// handoverNote is the footnote of a card that took the keyboard by
+// arriving: the handover, which buys the keys the card deliberately did not
+// claim, and the fact that everything else goes into the draft.
 //
 // The two are separate fields, in the order the row gives them up: the
 // handover is an offer and the sentence after it is what explains the offer,
 // so a terminal that cannot carry both drops the explanation whole rather
 // than ending the row mid-sentence — the same order the chrome's header fits
-// its halves in (docs/interface/principles.md#fold-never-hide).
-func (c *ApprovalCard) arrivalRest() []string {
+// its halves in (docs/interface/principles.md#fold-never-hide). The handover
+// is named whether or not there is a key left for it to buy, because what it
+// hands over is the keyboard, and the keyboard is what a reader who meant to
+// type is asking after.
+func (c *ApprovalCard) handoverNote() []string {
 	if !c.HeldOnArrival {
 		return nil
 	}
-	var rest []string
-	if c.AllowAlways {
-		rest = append(rest, keys.Shown(keys.Decision.Always))
-	}
-	if c.FullDiff {
-		rest = append(rest, keys.Shown(keys.Decision.Diff))
-	}
-	if c.Batch {
-		rest = append(rest, keys.Shown(keys.Decision.Batch))
-	}
-	if len(rest) == 0 || c.Handover == "" {
+	if c.Handover == "" {
 		return []string{arrivalDraftWords}
 	}
-	for i, k := range rest {
-		rest[i] = "[" + k + "]"
-	}
-	return []string{
-		"[" + c.Handover + "] for " + strings.Join(rest, "/"),
-		arrivalDraftWords,
-	}
+	return []string{"[" + c.Handover + "]" + handoverImperative, arrivalDraftWords}
 }
 
 // arrivalDraftWords is what a card that took the keyboard by arriving says
 // about every key it did not claim. It is a sentence rather than an offer,
 // which is why it is the field the row drops.
-const arrivalDraftWords = "any other key goes to your draft"
+const arrivalDraftWords = "other keys type into the draft"
 
 // fullWords is what [d] is said to open: the register's own words unless the
 // card means something more specific — the command card's full view.

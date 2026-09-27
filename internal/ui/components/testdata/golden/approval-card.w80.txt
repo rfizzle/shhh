@@ -15,7 +15,7 @@
 │ $ go test ./internal/agent/...                                               │
 ├──────────────────────────────────────────────────────────────────────────────┤
 │ [y] run it once · [n] deny · [a] allow commands without asking this session  │
-│ [esc] back to your draft — the decision stays waiting, nothing is denied     │
+│ [esc] leave it waiting, nothing is denied                                    │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
 · variant · command, an offer wider than the card
@@ -24,8 +24,7 @@
 ├──────────────────────────────────────────────────────────────────────────────┤
 │ [y] run it once · [n] deny                                                   │
 │ [a] allow "go test" for every agent until this turn ends, and internal/agent │
-│     with it                                                                  │
-│ [esc] back to your draft — the decision stays waiting, nothing is denied     │
+│     with it · [esc] leave it waiting, nothing is denied                      │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
 · variant · command, a batch waiting behind it
@@ -34,8 +33,7 @@
 │ ⚠ low · writes nothing                                                       │
 ├──────────────────────────────────────────────────────────────────────────────┤
 │ [y] run it once · [n] deny · [a] allow commands without asking this session  │
-│ [A] answer 3 like this as a list                                             │
-│ [esc] back to your draft — the decision stays waiting, nothing is denied     │
+│ [A] answer 3 like this as a list · [esc] leave it waiting, nothing is denied │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
 · variant · command, flagged, contained, blast radius
@@ -49,8 +47,8 @@
 │ ⛨         bwrap · workspace                                                  │
 ├──────────────────────────────────────────────────────────────────────────────┤
 │ [y] run it once · [n] deny                                                   │
-│ [a] always — not offered: a safety-flagged command is never pre-approved     │
 │ [esc] don't — the safe answer; the decision waits                            │
+│ [a] always — not offered: a safety-flagged command is never pre-approved     │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
 · variant · command, contained to a host list
@@ -63,8 +61,7 @@
 │ network   2 hosts                                                            │
 │ ⛨         bwrap · workspace                                                  │
 ├──────────────────────────────────────────────────────────────────────────────┤
-│ [y] run it once · [n] deny                                                   │
-│ [esc] back to your draft — the decision stays waiting, nothing is denied     │
+│ [y] run it once · [n] deny · [esc] leave it waiting, nothing is denied       │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
 · variant · command, uncontained
@@ -78,8 +75,8 @@
 │ ⛨         no sandbox                                                         │
 ├──────────────────────────────────────────────────────────────────────────────┤
 │ [y] run it once · [n] deny                                                   │
-│ containment is off for this session · /sandbox doctor explains why           │
 │ [esc] don't — the safe answer; the decision waits                            │
+│ containment is off for this session · /sandbox doctor explains why           │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
 · bound · a long command card, counted then scrolled
@@ -88,28 +85,27 @@
 │ ⚠ medium · runs a repository script; shhh cannot see inside it               │
 │                                                                              │
 │ touches   ./dist — the script rewrites the release tree                      │
-│ … 3 more lines · [shift+↓]                                                   │
+│ undo      none — nothing it writes is tracked in git                         │
+│ … 2 more lines · [shift+↓]                                                   │
 ├──────────────────────────────────────────────────────────────────────────────┤
-│ [y] run it once · [n] deny                                                   │
-│ [esc] back to your draft — the decision stays waiting, nothing is denied     │
+│ [y] run it once · [n] deny · [esc] leave it waiting, nothing is denied       │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ╭─ Approve command ───────────────────────────────────────────────── ⚠ medium ─╮
-│ … 3 lines above · [shift+↑]                                                  │
+│ … 2 lines above · [shift+↑]                                                  │
+│                                                                              │
 │ touches   ./dist — the script rewrites the release tree                      │
 │ undo      none — nothing it writes is tracked in git                         │
 │ network   open — it pushes the artefacts it builds                           │
 │ ⛨         bwrap — workspace profile                                          │
 ├──────────────────────────────────────────────────────────────────────────────┤
-│ [y] run it once · [n] deny                                                   │
-│ [esc] back to your draft — the decision stays waiting, nothing is denied     │
+│ [y] run it once · [n] deny · [esc] leave it waiting, nothing is denied       │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
 · bound · a wide body, panned right
 ╭─ Approve command ────────────────────────────────────────────────────────────╮
 │ x-amd64.tar.gz --exclude .git --exclude node_modules --transform 's,^,shhh/… │
 ├──────────────────────────────────────────────────────────────────────────────┤
-│ [y] run it once · [n] deny                                                   │
-│ [esc] back to your draft — the decision stays waiting, nothing is denied     │
+│ [y] run it once · [n] deny · [esc] leave it waiting, nothing is denied       │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
 · variant · edit, diff body
@@ -126,8 +122,7 @@
 │   143      }                                                                 │
 │ +2 −1 · 1 hunk · undo yes — recorded, and git has this file                  │
 ├──────────────────────────────────────────────────────────────────────────────┤
-│ [y] apply the change · [n] deny · [d] full diff                              │
-│ [esc] back to your draft — the decision stays waiting, nothing is denied     │
+│ [y] apply the change · [n] deny · [d] full diff · [esc] leave it waiting     │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
 · state · not yet live, beside a draft that has the keyboard
@@ -144,7 +139,7 @@
 │   143      }                                                                 │
 │ +2 −1 · 1 hunk                                                               │
 ├──────────────────────────────────────────────────────────────────────────────┤
-│ [ctrl+space/ctrl+y] answer it                                                │
+│ [ctrl+space/ctrl+y] answer it · other keys type into the draft               │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
 · variant · generic
@@ -158,15 +153,14 @@
 │ receives  page text, whole, into the evidence store; the first 16 KB into t… │
 ├──────────────────────────────────────────────────────────────────────────────┤
 │ [y] allow it · [n] deny · [a] allow pkg.go.dev without asking                │
-│ [esc] back to your draft — the decision stays waiting, nothing is denied     │
+│ [esc] leave it waiting, nothing is denied                                    │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
 · answered · the row it leaves in the transcript
 ╭─ Approve command ────────────────────────────────────────────────────────────╮
 │ $ go test ./internal/agent/...                                               │
 ├──────────────────────────────────────────────────────────────────────────────┤
-│ [y] run it once · [n] deny                                                   │
-│ [esc] back to your draft — the decision stays waiting, nothing is denied     │
+│ [y] run it once · [n] deny · [esc] leave it waiting, nothing is denied       │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
   ▎$ run     go test ./internal/agent/...   ok · 1 line · approved by you  12.4s
@@ -178,7 +172,7 @@
 ␛[94m│␛[m ␛[38;5;214m$␛[m ␛[97mgo test ./internal/agent/...␛[m                                               ␛[94m│␛[m
 ␛[94m├──────────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[94m│␛[m ␛[94m[y]␛[m ␛[38;5;252mrun it once␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m ␛[38;5;252mdeny␛[m␛[38;5;241m · ␛[m␛[94m[a]␛[m ␛[38;5;252mallow commands without asking this session␛[m  ␛[94m│␛[m
-␛[94m│␛[m ␛[92m[esc] back to your draft — the decision stays waiting, nothing is denied␛[m     ␛[94m│␛[m
+␛[94m│␛[m ␛[92m[esc] leave it waiting, nothing is denied␛[m                                    ␛[94m│␛[m
 ␛[94m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · variant · command, an offer wider than the card
@@ -187,8 +181,7 @@
 ␛[94m├──────────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[94m│␛[m ␛[94m[y]␛[m ␛[38;5;252mrun it once␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m ␛[38;5;252mdeny␛[m                                                   ␛[94m│␛[m
 ␛[94m│␛[m ␛[94m[a]␛[m ␛[38;5;252mallow "go test" for every agent until this turn ends, and internal/agent␛[m ␛[94m│␛[m
-␛[94m│␛[m     ␛[94m␛[m␛[38;5;252mwith it␛[m                                                                  ␛[94m│␛[m
-␛[94m│␛[m ␛[92m[esc] back to your draft — the decision stays waiting, nothing is denied␛[m     ␛[94m│␛[m
+␛[94m│␛[m     ␛[94m␛[m␛[38;5;252mwith it␛[m␛[38;5;241m · ␛[m␛[92m[esc] leave it waiting, nothing is denied␛[m                      ␛[94m│␛[m
 ␛[94m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · variant · command, a batch waiting behind it
@@ -197,8 +190,7 @@
 ␛[38;5;214m│␛[m ␛[38;5;214m⚠ low␛[m␛[38;5;241m · writes nothing␛[m                                                       ␛[38;5;214m│␛[m
 ␛[38;5;214m├──────────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;214m│␛[m ␛[94m[y]␛[m ␛[38;5;252mrun it once␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m ␛[38;5;252mdeny␛[m␛[38;5;241m · ␛[m␛[94m[a]␛[m ␛[38;5;252mallow commands without asking this session␛[m  ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[94m[A]␛[m ␛[38;5;252manswer 3 like this as a list␛[m                                             ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[92m[esc] back to your draft — the decision stays waiting, nothing is denied␛[m     ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[94m[A]␛[m ␛[38;5;252manswer 3 like this as a list␛[m␛[38;5;241m · ␛[m␛[92m[esc] leave it waiting, nothing is denied␛[m ␛[38;5;214m│␛[m
 ␛[38;5;214m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · variant · command, flagged, contained, blast radius
@@ -212,8 +204,8 @@
 ␛[91m│␛[m ␛[38;5;243m⛨         ␛[m␛[38;5;243mbwrap · workspace␛[m                                                  ␛[91m│␛[m
 ␛[91m├──────────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[91m│␛[m ␛[94m[y]␛[m ␛[38;5;252mrun it once␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m ␛[38;5;252mdeny␛[m                                                   ␛[91m│␛[m
-␛[91m│␛[m ␛[38;5;241m[a] always — not offered: a safety-flagged command is never pre-approved␛[m     ␛[91m│␛[m
 ␛[91m│␛[m ␛[92m[esc] don't — the safe answer; the decision waits␛[m                            ␛[91m│␛[m
+␛[91m│␛[m ␛[38;5;241m[a] always — not offered: a safety-flagged command is never pre-approved␛[m     ␛[91m│␛[m
 ␛[91m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · variant · command, contained to a host list
@@ -226,8 +218,7 @@
 ␛[38;5;214m│␛[m ␛[38;5;243mnetwork   ␛[m␛[38;5;252m2 hosts␛[m                                                            ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243m⛨         ␛[m␛[38;5;243mbwrap · workspace␛[m                                                  ␛[38;5;214m│␛[m
 ␛[38;5;214m├──────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;214m│␛[m ␛[94m[y]␛[m ␛[38;5;252mrun it once␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m ␛[38;5;252mdeny␛[m                                                   ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[92m[esc] back to your draft — the decision stays waiting, nothing is denied␛[m     ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[94m[y]␛[m ␛[38;5;252mrun it once␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m ␛[38;5;252mdeny␛[m␛[38;5;241m · ␛[m␛[92m[esc] leave it waiting, nothing is denied␛[m       ␛[38;5;214m│␛[m
 ␛[38;5;214m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · variant · command, uncontained
@@ -241,8 +232,8 @@
 ␛[91m│␛[m ␛[38;5;243m⛨         ␛[m␛[91mno sandbox␛[m                                                         ␛[91m│␛[m
 ␛[91m├──────────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[91m│␛[m ␛[94m[y]␛[m ␛[38;5;252mrun it once␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m ␛[38;5;252mdeny␛[m                                                   ␛[91m│␛[m
-␛[91m│␛[m ␛[38;5;241mcontainment is off for this session · /sandbox doctor explains why␛[m           ␛[91m│␛[m
 ␛[91m│␛[m ␛[92m[esc] don't — the safe answer; the decision waits␛[m                            ␛[91m│␛[m
+␛[91m│␛[m ␛[38;5;241mcontainment is off for this session · /sandbox doctor explains why␛[m           ␛[91m│␛[m
 ␛[91m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · bound · a long command card, counted then scrolled
@@ -251,28 +242,27 @@
 ␛[38;5;214m│␛[m ␛[38;5;214m⚠ medium␛[m␛[38;5;241m · runs a repository script; shhh cannot see inside it␛[m               ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m                                                                              ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mtouches   ␛[m␛[91m./dist␛[m␛[38;5;245m — the script rewrites the release tree␛[m                      ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;241m… 3 more lines · [shift+↓]␛[m                                                   ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;243mundo      ␛[m␛[91mnone␛[m␛[38;5;245m — nothing it writes is tracked in git␛[m                         ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;241m… 2 more lines · [shift+↓]␛[m                                                   ␛[38;5;214m│␛[m
 ␛[38;5;214m├──────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;214m│␛[m ␛[94m[y]␛[m ␛[38;5;252mrun it once␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m ␛[38;5;252mdeny␛[m                                                   ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[92m[esc] back to your draft — the decision stays waiting, nothing is denied␛[m     ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[94m[y]␛[m ␛[38;5;252mrun it once␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m ␛[38;5;252mdeny␛[m␛[38;5;241m · ␛[m␛[92m[esc] leave it waiting, nothing is denied␛[m       ␛[38;5;214m│␛[m
 ␛[38;5;214m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
 ␛[38;5;214m╭─ ␛[m␛[1;97mApprove command ␛[m␛[38;5;241m─────────────────────────────────────────────────␛[m␛[38;5;214m ⚠ medium ─╮␛[m
-␛[38;5;214m│␛[m ␛[38;5;241m… 3 lines above · [shift+↑]␛[m                                                  ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;241m… 2 lines above · [shift+↑]␛[m                                                  ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m                                                                              ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mtouches   ␛[m␛[91m./dist␛[m␛[38;5;245m — the script rewrites the release tree␛[m                      ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mundo      ␛[m␛[91mnone␛[m␛[38;5;245m — nothing it writes is tracked in git␛[m                         ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mnetwork   ␛[m␛[38;5;214mopen␛[m␛[38;5;245m — it pushes the artefacts it builds␛[m                           ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243m⛨         ␛[m␛[38;5;252mbwrap␛[m␛[38;5;245m — workspace profile␛[m                                          ␛[38;5;214m│␛[m
 ␛[38;5;214m├──────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;214m│␛[m ␛[94m[y]␛[m ␛[38;5;252mrun it once␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m ␛[38;5;252mdeny␛[m                                                   ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[92m[esc] back to your draft — the decision stays waiting, nothing is denied␛[m     ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[94m[y]␛[m ␛[38;5;252mrun it once␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m ␛[38;5;252mdeny␛[m␛[38;5;241m · ␛[m␛[92m[esc] leave it waiting, nothing is denied␛[m       ␛[38;5;214m│␛[m
 ␛[38;5;214m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · bound · a wide body, panned right
 ␛[94m╭─ ␛[m␛[1;97mApprove command ␛[m␛[38;5;241m────────────────────────────────────────────────────────────␛[m␛[94m╮␛[m
 ␛[94m│␛[m ␛[38;5;214m␛[m␛[97mx-amd64.tar.gz --exclude .git --exclude node_modules --transform 's,^,shhh/␛[m␛[38;5;241m…␛[m ␛[94m│␛[m
 ␛[94m├──────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[94m│␛[m ␛[94m[y]␛[m ␛[38;5;252mrun it once␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m ␛[38;5;252mdeny␛[m                                                   ␛[94m│␛[m
-␛[94m│␛[m ␛[92m[esc] back to your draft — the decision stays waiting, nothing is denied␛[m     ␛[94m│␛[m
+␛[94m│␛[m ␛[94m[y]␛[m ␛[38;5;252mrun it once␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m ␛[38;5;252mdeny␛[m␛[38;5;241m · ␛[m␛[92m[esc] leave it waiting, nothing is denied␛[m       ␛[94m│␛[m
 ␛[94m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · variant · edit, diff body
@@ -289,8 +279,7 @@
 ␛[38;5;214m│␛[m ␛[38;5;241m  143  ␛[m␛[38;5;245m    }␛[m                                                                 ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;241m+2 −1 · 1 hunk · undo yes — recorded, and git has this file␛[m                  ␛[38;5;214m│␛[m
 ␛[38;5;214m├──────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;214m│␛[m ␛[94m[y]␛[m ␛[38;5;252mapply the change␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m ␛[38;5;252mdeny␛[m␛[38;5;241m · ␛[m␛[94m[d]␛[m ␛[38;5;252mfull diff␛[m                              ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[92m[esc] back to your draft — the decision stays waiting, nothing is denied␛[m     ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[94m[y]␛[m ␛[38;5;252mapply the change␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m ␛[38;5;252mdeny␛[m␛[38;5;241m · ␛[m␛[94m[d]␛[m ␛[38;5;252mfull diff␛[m␛[38;5;241m · ␛[m␛[92m[esc] leave it waiting␛[m     ␛[38;5;214m│␛[m
 ␛[38;5;214m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · state · not yet live, beside a draft that has the keyboard
@@ -307,7 +296,7 @@
 ␛[38;5;214m│␛[m ␛[38;5;241m  143  ␛[m␛[38;5;245m    }␛[m                                                                 ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;241m+2 −1 · 1 hunk␛[m                                                               ␛[38;5;214m│␛[m
 ␛[38;5;214m├──────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;214m│␛[m ␛[94m[ctrl+space/ctrl+y]␛[m␛[38;5;252m answer it␛[m                                                ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[94m[ctrl+space/ctrl+y]␛[m␛[38;5;252m answer it␛[m␛[38;5;241m · other keys type into the draft␛[m               ␛[38;5;214m│␛[m
 ␛[38;5;214m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · variant · generic
@@ -321,15 +310,14 @@
 ␛[38;5;214m│␛[m ␛[38;5;243mreceives  ␛[m␛[38;5;252mpage text, whole, into the evidence store; the first 16 KB into t␛[m␛[38;5;241m…␛[m ␛[38;5;214m│␛[m
 ␛[38;5;214m├──────────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;214m│␛[m ␛[94m[y]␛[m ␛[38;5;252mallow it␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m ␛[38;5;252mdeny␛[m␛[38;5;241m · ␛[m␛[94m[a]␛[m ␛[38;5;252mallow pkg.go.dev without asking␛[m                ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[92m[esc] back to your draft — the decision stays waiting, nothing is denied␛[m     ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[92m[esc] leave it waiting, nothing is denied␛[m                                    ␛[38;5;214m│␛[m
 ␛[38;5;214m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · answered · the row it leaves in the transcript
 ␛[94m╭─ ␛[m␛[1;97mApprove command ␛[m␛[38;5;241m────────────────────────────────────────────────────────────␛[m␛[94m╮␛[m
 ␛[94m│␛[m ␛[38;5;214m$␛[m ␛[97mgo test ./internal/agent/...␛[m                                               ␛[94m│␛[m
 ␛[94m├──────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[94m│␛[m ␛[94m[y]␛[m ␛[38;5;252mrun it once␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m ␛[38;5;252mdeny␛[m                                                   ␛[94m│␛[m
-␛[94m│␛[m ␛[92m[esc] back to your draft — the decision stays waiting, nothing is denied␛[m     ␛[94m│␛[m
+␛[94m│␛[m ␛[94m[y]␛[m ␛[38;5;252mrun it once␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m ␛[38;5;252mdeny␛[m␛[38;5;241m · ␛[m␛[92m[esc] leave it waiting, nothing is denied␛[m       ␛[94m│␛[m
 ␛[94m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
 
   ␛[38;5;214m▎␛[m␛[38;5;214m$␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgo test ./internal/agent/...␛[m   ␛[92mok␛[m␛[38;5;241m · ␛[m␛[38;5;245m1 line␛[m␛[38;5;241m · ␛[m␛[92mapproved␛[m␛[38;5;241m by you␛[m  ␛[38;5;241m12.4s␛[m

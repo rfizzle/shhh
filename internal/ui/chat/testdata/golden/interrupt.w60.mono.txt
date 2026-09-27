@@ -77,7 +77,7 @@
 │ [y] apply the change · [Y] and say what next         │
 │ [n] deny · [N] and say why not                       │
 │ [a] allow edits in ./ without asking · [d] full diff │
-│ [esc] back to your draft                             │
+│ [esc] leave it waiting, nothing is denied            │
 ╰──────────────────────────────────────────────────────╯
 
 ╭─ ⏸ 1 waiting ────────────────────────────────────────╮
@@ -96,9 +96,9 @@
 ├──────────────────────────────────────────────────────┤
 │ [y] apply the change · [Y] and say what next         │
 │ [n] deny · [N] and say why not                       │
+│ [esc] leave it waiting, nothing is denied            │
 │ keys live in a moment                                │
-│ [ctrl+space/ctrl+y] for [a]/[d]                      │
-│ [esc] back to your draft                             │
+│ [ctrl+space/ctrl+y] answer it                        │
 ╰──────────────────────────────────────────────────────╯
 
 ── ansi ────────────────────────────────────────────────────
@@ -169,7 +169,7 @@
 ␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mapply the change␛[m␛[38;5;244m · ␛[m␛[38;5;254m[Y]␛[m ␛[38;5;254mand say what next␛[m         ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m␛[38;5;244m · ␛[m␛[38;5;254m[N]␛[m ␛[38;5;254mand say why not␛[m                       ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[a]␛[m ␛[38;5;254mallow edits in ./ without asking␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m ␛[38;5;254mfull diff␛[m ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[esc] back to your draft␛[m                             ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[esc] leave it waiting, nothing is denied␛[m            ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────╯␛[m
 
 ␛[38;5;244m╭─␛[m ␛[38;5;244m⏸ 1 waiting␛[m ␛[38;5;244m────────────────────────────────────────╮␛[m
@@ -188,7 +188,7 @@
 ␛[38;5;254m├──────────────────────────────────────────────────────┤␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m[y] apply the change␛[m␛[38;5;244m · ␛[m␛[38;5;244m[Y] and say what next␛[m         ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m[n] deny␛[m␛[38;5;244m · ␛[m␛[38;5;244m[N] and say why not␛[m                       ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[esc] leave it waiting, nothing is denied␛[m            ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mkeys live in a moment␛[m                                ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244m[ctrl+space/ctrl+y] for [a]/[d]␛[m                      ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[esc] back to your draft␛[m                             ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244m[ctrl+space/ctrl+y] answer it␛[m                        ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────╯␛[m

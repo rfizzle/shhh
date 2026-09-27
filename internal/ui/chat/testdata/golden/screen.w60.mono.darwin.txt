@@ -132,11 +132,11 @@
   │                                                      │  
   │ lands in  your workspace                             │  
   │ touches   nothing                                    │  
-  │ … 2 more lines · [shift+↓]                           │  
+  │ undo      n/a — no workspace file is modified        │  
+  │ network   open                                       │  
   ├──────────────────────────────────────────────────────┤  
-  │ [y] run it once · [n] deny                           │  
-  │ [ctrl+space/ctrl+y] for [a]                          │  
-  │ [esc] back to your draft                             │  
+  │ [y] run it once · [n] deny · [esc] leave it waiting  │  
+  │ [ctrl+space/ctrl+y] answer it                        │  
 
 · working · a reading of the session leads the rail
    shhh chat                                                
@@ -389,11 +389,11 @@
   ␛[38;5;254m│␛[m                                                      ␛[38;5;254m│␛[m  
   ␛[38;5;254m│␛[m ␛[38;5;244mlands in  ␛[38;5;254myour workspace␛[m                             ␛[38;5;254m│␛[m  
   ␛[38;5;254m│␛[m ␛[38;5;244mtouches   ␛[38;5;254mnothing␛[m                                    ␛[38;5;254m│␛[m  
-  ␛[38;5;254m│␛[m ␛[38;5;244m… 2 more lines · [shift+↓]␛[m                           ␛[38;5;254m│␛[m  
+  ␛[38;5;254m│␛[m ␛[38;5;244mundo      ␛[38;5;254mn/a␛[38;5;244m — no workspace file is modified␛[m        ␛[38;5;254m│␛[m  
+  ␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[38;5;254mopen␛[m                                       ␛[38;5;254m│␛[m  
   ␛[38;5;254m├──────────────────────────────────────────────────────┤␛[m  
-  ␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mrun it once␛[38;5;244m · ␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m                           ␛[38;5;254m│␛[m  
-  ␛[38;5;254m│␛[m ␛[38;5;244m[ctrl+space/ctrl+y] for [a]␛[m                          ␛[38;5;254m│␛[m  
-  ␛[38;5;254m│␛[m ␛[38;5;254m[esc] back to your draft␛[m                             ␛[38;5;254m│␛[m  
+  ␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mrun it once␛[38;5;244m · ␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[38;5;244m · ␛[38;5;254m[esc] leave it waiting␛[m  ␛[38;5;254m│␛[m  
+  ␛[38;5;254m│␛[m ␛[38;5;244m[ctrl+space/ctrl+y] answer it␛[m                        ␛[38;5;254m│␛[m  
 
 · working · a reading of the session leads the rail
   ␛[38;5;254;1m shhh chat␛[m                                                
