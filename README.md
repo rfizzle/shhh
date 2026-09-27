@@ -44,8 +44,10 @@ of an item as one of those headless runs.
   any mode, headless included.
 - **Containment.** An approved command runs contained by the operating system
   on Linux and macOS, with a temporary directory and an environment of its
-  own. Where the host has no mechanism, a disposable container does the job,
-  and a command with nothing containing it says so in that word.
+  own, and its network can be a list of hosts, held by a proxy shhh runs
+  outside containment. Where the host has no mechanism, a disposable
+  container does the job, and a command with nothing containing it says so in
+  that word.
 - **A deny mask nobody can widen.** `~/.ssh`, `~/.aws`, `~/.config/gh`,
   `~/.netrc`, `~/.gnupg` and the other credential stores are unreachable
   always; there is a setting to add to the mask and none to subtract from it.

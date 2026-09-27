@@ -68,10 +68,16 @@ work=$root/bin/readme
 rm -rf "$work"
 mkdir -p "$work" "$dest"
 
-# The stills: scene, snap, and the rows of the capture to keep, as ranges
+# The stills: scene, snap, the rows of the capture to keep, as ranges
 # counted from one — a run of blank rows between the transcript and the
-# bottom panel, or a notice the picture is not about, is cut out. Width and
-# height are the scene's own `size`, or 110 by 40 where it states none.
+# bottom panel, or a notice the picture is not about, is cut out — and a
+# phrase the kept rows must contain. Width and height are the scene's own
+# `size`, or 110 by 40 where it states none.
+#
+# The ranges are row numbers, and a layout change moves rows without telling
+# anyone; so each crop names a phrase from the snap's own wait text, and a
+# crop that no longer holds it fails the run rather than drawing a picture of
+# the wrong rows.
 #
 # Every picture comes from a README-only scene (scripts/tui/scenes/readme-*):
 # the harness's own scenes are tests, and their words say so — a greeting
@@ -80,11 +86,11 @@ mkdir -p "$work" "$dest"
 # real work and a placeholder model, `example-model`, named in its launch;
 # the replies are still scripted, and each picture's alt text says so.
 stills=(
-	"readme-hero 03-command-card 1-13,25-40"
-	"readme-fanout 05-three-states 1-25,34-46,48-52"
-	"readme-hero 04-close 1-18,36-40"
-	"readme-one-shot 01-result 1-6"
-	"readme-sprint 03-sprint-tab 1-28,38-40"
+	"readme-hero 03-command-card 1-13,25-40 [y] run it once"
+	"readme-fanout 05-three-states 1-25,34-46,48-52 ⚠ needs you ·"
+	"readme-hero 04-close 1-18,36-40 1 file changed"
+	"readme-one-shot 01-result 1-6 awk keeps the rows"
+	"readme-sprint 03-sprint-tab 1-28,38-40 working · 3 at once"
 )
 # The hero: the whole of one scene, recorded, and drawn at a frame rate that
 # reads as motion rather than as a slide show. The scene types at a person's
@@ -114,11 +120,12 @@ size_of() {
 # Keep the rows the ranges name. tmux writes a colour where it changes, which
 # may be several rows above a row kept, so every SGR sequence from the rows
 # cut away goes in front of the next row kept: SGR is cumulative, and each
-# kept row is then drawn in the colour it had. Prints how many rows it kept.
+# kept row is then drawn in the colour it had. Prints how many rows it kept,
+# and fails when the kept rows, colour aside, do not contain the phrase.
 crop() {
-	python3 - "$1" "$2" "$3" <<'PY'
+	python3 - "$1" "$2" "$3" "$4" <<'PY'
 import re, sys
-src, out, ranges = sys.argv[1], sys.argv[2], sys.argv[3]
+src, out, ranges, want = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
 lines = open(src, encoding="utf-8", errors="replace").read().split("\n")
 if lines and lines[-1] == "":
     lines.pop()
@@ -134,6 +141,8 @@ for n, line in enumerate(lines, 1):
         carried = ""
     else:
         carried += "".join(m.group(0) for m in sgr.finditer(line))
+if want not in sgr.sub("", "\n".join(kept)):
+    sys.exit("readme-pictures.sh: rows %s of %s no longer hold %r; the layout moved, so the crop is stale" % (ranges, src, want))
 open(out, "w", encoding="utf-8").write("\n".join(kept) + "\n")
 print(len(kept))
 PY
@@ -155,11 +164,11 @@ drive() {
 }
 
 for entry in "${stills[@]}"; do
-	read -r scene snap ranges <<<"$entry"
+	read -r scene snap ranges want <<<"$entry"
 	[ -n "$only" ] && [ "$only" != "$scene" ] && continue
 	drive "$scene" ""
 	read -r cols rows < <(size_of "$scene")
-	kept=$(crop "$work/$scene/$snap.ansi" "$work/$scene-$snap.ansi" "$ranges")
+	kept=$(crop "$work/$scene/$snap.ansi" "$work/$scene-$snap.ansi" "$ranges" "$want")
 	python3 "$here/still.py" "$work/$scene-$snap.ansi" "$work/$scene-$snap.cast" "$cols" "$kept"
 	draw --cols "$cols" --rows "$kept" --last-frame-duration 1 --fps-cap 1 \
 		"$work/$scene-$snap.cast" "$dest/$scene-$snap.gif"

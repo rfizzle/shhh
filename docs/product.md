@@ -143,10 +143,15 @@ that raising one again takes a new reason rather than a new week:
   remote server already does the token dance, and anything wanting to drive
   shhh has the session protocol; each would be a second implementation of
   something that already works.
-- **A network allowlist in front of a contained command** — an allowlist
-  means a proxy to run, a certificate to trust and a list to keep current,
-  and a list that has gone stale blocks the work rather than the harm; a
-  contained command has the network as it is, or closed.
+- **A host list the kernel holds** — neither containment mechanism can name
+  a host to the kernel, so a contained command's host list is a proxy
+  instead: the command gets no network of its own and one way out, a proxy
+  shhh runs outside containment that reads the host each request names and
+  refuses the rest. It holds for a tool that uses the proxy, a tool that
+  ignores it cannot connect at all, and it never looks inside an encrypted
+  tunnel or asks for a certificate to be trusted. Where the mechanism cannot
+  hold a list, the profile's own switch runs and every surface says so. See
+  [`capabilities/containment.md`](capabilities/containment.md#a-contained-commands-network-can-be-a-list-of-hosts).
 
 Extension happens at the seams instead, and never through a registry: every
 seam is a file under the project directory — skills, hooks, MCP server
