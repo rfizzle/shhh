@@ -1185,6 +1185,13 @@ func probeKeymap(context.Context, config.Config) doctorFinding {
 // the update as its fix, since a key the file has no row for is a key its
 // reader will not find to move
 // (docs/capabilities/configuration.md#an-older-file-is-brought-up-to-date).
+//
+// A behind file offers `[a]` on this row, running the keymap's half of the
+// update and nothing else. The config row's own offer writes the keymap too,
+// but it is made only where the settings are behind: a keymap behind on its
+// own would otherwise have its warning on one row and the only key that
+// answers it on another row that reads ok, since the screen offers `[a]` for
+// the row under the pointer.
 func doctorKeymap(path string, moved, behind int, err error) doctorFinding {
 	switch {
 	case err != nil:
@@ -1207,6 +1214,15 @@ func doctorKeymap(path string, moved, behind int, err error) doctorFinding {
 		f.Consequence = "what arrived since the file was written is not in it to find"
 		f.FixLabel = "bring it up to date"
 		f.Fix = []string{config.UpdateUser + "   keeps every key the file binds"}
+		f.Action = "update the file"
+		f.ActionPrompt = "Update " + shortPath(path) + " now? Every key it binds is kept."
+		f.Apply = func() ([]string, error) {
+			n, err := updateKeymap(path)
+			if err != nil || n == 0 {
+				return nil, err
+			}
+			return []string{"updated " + shortPath(path) + ": added " + countOf(n, "key", "keys")}, nil
+		}
 	}
 	return f
 }

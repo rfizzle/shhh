@@ -159,3 +159,57 @@ func TestDoctorKeymap(t *testing.T) {
 		t.Fatalf("the behind row is %+v", f)
 	}
 }
+
+// A keymap behind on its own is answered on its own row. The config row
+// offers its update only where the settings or wordings are behind, so with
+// those current the keymap row's [a] is the offer, and it writes the keymap
+// and nothing beside it.
+func TestDoctorKeymap_BehindOnItsOwnIsOfferedOnItsRow(t *testing.T) {
+	dir := t.TempDir()
+	plan := initPlan{
+		settings: filepath.Join(dir, "config.toml"), prompts: filepath.Join(dir, "prompts"),
+		keymap: filepath.Join(dir, "keybindings.toml"), keymapHeld: true,
+	}
+	must(t, os.WriteFile(plan.settings, []byte("# my settings\n"), 0o600))
+	// The scaffold less its first commented row: a list of every key, one
+	// short.
+	rows := strings.Split(keys.Scaffold(), "\n")
+	for i, row := range rows {
+		if strings.HasPrefix(row, "# ") && strings.Contains(row, " = ") {
+			rows = append(rows[:i], rows[i+1:]...)
+			break
+		}
+	}
+	must(t, os.WriteFile(plan.keymap, []byte(strings.Join(rows, "\n")), 0o600))
+
+	b, err := behindOf(plan)
+	must(t, err)
+	ok := doctorConfig(plan.settings, nil, config.Config{}, config.Project{}, nil)
+	if f := withBehind(ok, b, plan); f.Action != "" {
+		t.Fatalf("current settings, yet the config row offers %q", f.Action)
+	}
+	kb, err := keys.KeymapOutdated(plan.keymap)
+	must(t, err)
+	if kb.KeysBehind() != 1 {
+		t.Fatalf("the fixture keymap is behind by %d keys, want 1", kb.KeysBehind())
+	}
+	f := doctorKeymap(plan.keymap, 0, kb.KeysBehind(), nil)
+	if f.Action == "" || f.Apply == nil || !strings.Contains(f.ActionPrompt, shortPath(plan.keymap)) {
+		t.Fatalf("the behind keymap row offers nothing: %+v", f)
+	}
+	lines, err := f.Apply()
+	must(t, err)
+	if len(lines) != 1 || !strings.Contains(lines[0], "added 1 key") {
+		t.Errorf("the update says %q", lines)
+	}
+	if kb, err := keys.KeymapOutdated(plan.keymap); err != nil || kb.KeysBehind() != 0 {
+		t.Errorf("the keymap is still behind after the offer: %+v, %v", kb, err)
+	}
+	if raw, _ := os.ReadFile(plan.settings); string(raw) != "# my settings\n" {
+		t.Errorf("the keymap's offer wrote the settings: %q", raw)
+	}
+	// A current keymap offers nothing.
+	if f := doctorKeymap(plan.keymap, 0, 0, nil); f.Action != "" {
+		t.Errorf("a current keymap offers %q", f.Action)
+	}
+}
