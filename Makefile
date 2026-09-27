@@ -163,7 +163,7 @@ cross: ## Check every released platform still compiles
 
 # The CI pipeline, and nothing but the targets above in one order: the same
 # spelling a person runs is the one the runner runs. The quality gate
-# (.shhh/quality.json) is the first five; cross and the driven scenes are what
+# (.shhh/quality.json) is the first five; cross, the driven scenes and the host-snapshot age check are what
 # CI adds, because a scene wants a terminal a contained session has not got.
 ci: cross fmt-check docs-check test vet lint host-lists-check tui-check ## Run the CI pipeline
 
