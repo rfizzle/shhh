@@ -31,7 +31,10 @@ snap 03c-end "which decides which tiers" "↑"
 keys q
 snap 04-closed "Some things worth doing first"
 keys "/add-dir ../shared-assets" Enter
-snap 05-added "to the working scope: edits there"
+# The notice wraps around an absolute path whose length is the host's (and a
+# long one is clipped with an ellipsis), so the snap waits on single words
+# that no wrap can split and no clip can hide.
+snap 05-added "Added" "scope:"
 keys "/security" Enter
 snap 06-again "/safety · manual" "shared-assets"
 keys Escape
