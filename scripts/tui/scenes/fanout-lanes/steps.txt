@@ -70,7 +70,13 @@ snap 05-three-states "✓ done ·" "⚠ needs you ·" "1 of 3 steps ·" "· Run 
 # The finished lane carries what the child actually wrote, folded: the count
 # of lines behind the fold, the assumptions it stated instead of asking on the
 # line above it, and the transcript's own key as the way in.
-snap 06-report-fold "report ·" "▸ report · 6 lines · [enter] expand" "· 2 assumptions"
+#
+# From 130 columns the inspector rail takes its columns out of the pane, and
+# the line above the fold gives up the end of its count first: `· 2 assump…`.
+# The snap is written once per side of that breakpoint, each comparing what
+# that side draws, so the scene can be driven wide to read the rail.
+narrow 130 snap 06-report-fold "report ·" "▸ report · 6 lines · [enter] expand" "· 2 assumptions"
+wide 130 snap 06-report-fold "report ·" "▸ report · 6 lines · [enter] expand" "· 2 assump…"
 # Reading mode, and the key that opens every other fold in the transcript
 # opens this one. The report is read where the child ran rather than by
 # attaching to a child nobody thinks to attach to.
