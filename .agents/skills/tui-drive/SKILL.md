@@ -325,6 +325,21 @@ $SHHH_BIN code` — the harness exports its own before the line, so the line
 wins). They run under `make tui-check` like every other scene, so a picture's
 scene cannot rot.
 
+`requires` is the third optional file: what the host must have for the scene
+to pass at all, one word a line, and the one word is `containment`. A scene
+that waits on a child's command card — `agents-reach`, `fanout-lanes`,
+`manager-offers`, `readme-fanout`, the four that wait on `needs you` — needs a
+mechanism that can contain a writer, because a writer's command nothing can
+contain is refused before its card is drawn
+(`docs/capabilities/containment.md#containment-can-be-required`). A Mac always
+has Seatbelt; a Linux box needs bubblewrap *and* unprivileged user namespaces,
+which is why the CI job installs it and runs `bwrap --unshare-user --ro-bind /
+/ true` before `make ci`. `drive.sh` makes the binary's own probe before it
+starts anything and, where the host has no mechanism, stops the scene in one
+line saying so, rather than letting the snap wait out `WAIT` for a card that
+cannot come. A new scene that waits on a child's command card carries the
+file too.
+
 Pick the width. `COLS` is the terminal, and the four the goldens use are 60,
 80, 110 and 130 — the breakpoints in `docs/interface/principles.md#one-grid`.
 Capture at the width the item names, or at the narrowest the surface must

@@ -43,6 +43,23 @@ jobs:
       - name: Install tmux
         run: sudo apt-get install -y tmux
 
+      # The fan-out scenes wait on a child's command card, and a writer's
+      # command that nothing can contain is refused before its card is drawn
+      # (docs/capabilities/containment.md#containment-can-be-required), so
+      # those scenes need a containment mechanism on the runner. Installed and
+      # proved the way the containment job below does it: the binary alone is
+      # not a mechanism where AppArmor restricts unprivileged user namespaces,
+      # and the probe makes that a red step here rather than four scenes that
+      # wait out their snaps.
+      - name: Install bubblewrap
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bubblewrap
+          if sysctl -n kernel.apparmor_restrict_unprivileged_userns >/dev/null 2>&1; then
+            sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          fi
+          bwrap --unshare-user --ro-bind / / true
+
       - run: make ci
 
   # These tests deliberately bind loopback listeners. They are a boundary

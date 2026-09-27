@@ -7,6 +7,8 @@
 #   replies.txt   what the model says, one reply per request (fakeprovider.py)
 #   launch        what the pane runs, one shell line; default: $SHHH_BIN code
 #   size          the pane, columns then rows; default 120 40
+#   requires      what the host must have, one word a line; the one word is
+#                 containment (a child's command card needs a mechanism)
 #   steps.txt     what the reader does, one step per line:
 #
 #     setup <shell>             run in the workspace before the binary starts
@@ -139,6 +141,52 @@ fi
 # binary would be resolved there and found nowhere.
 SHHH_BIN=$(cd "$(dirname "$SHHH_BIN")" && pwd)/$(basename "$SHHH_BIN")
 [ -f "$scene/replies.txt" ] && [ -f "$scene/steps.txt" ] || { echo "drive.sh: $scene needs replies.txt and steps.txt" >&2; exit 2; }
+
+# What the host must have for the scene to pass at all, one word a line in a
+# `requires` file. The one word so far is `containment`: a scene that waits on
+# a child's command card needs a mechanism that can contain a writer, because
+# a writer's command that nothing can contain is refused before its card is
+# drawn (docs/capabilities/containment.md#containment-can-be-required). On a
+# host without one the card never comes, and the snap waiting for it would
+# spend all of WAIT only to say it never saw the text; this says why, before
+# anything is started. The probe is the one the binary makes itself —
+# bubblewrap in an unprivileged user namespace on Linux, the smallest Seatbelt
+# profile on macOS — so the two cannot disagree about the host.
+host_contains() {
+	case $(uname -s) in
+	Linux)
+		command -v bwrap >/dev/null 2>&1 || { echo "bubblewrap (bwrap) not found on PATH"; return 1; }
+		probe=$(bwrap --unshare-user --ro-bind / / true 2>&1) ||
+			{ echo "bwrap --unshare-user --ro-bind / / true failed (unprivileged user namespaces unavailable?): $(printf '%s\n' "$probe" | grep -m1 .)"; return 1; }
+		;;
+	Darwin)
+		[ -x /usr/bin/sandbox-exec ] || { echo "sandbox-exec not found at /usr/bin/sandbox-exec"; return 1; }
+		probe=$(/usr/bin/sandbox-exec -p '(version 1) (allow default)' /usr/bin/true 2>&1) ||
+			{ echo "the sandbox-exec probe failed (inside another sandbox?): $(printf '%s\n' "$probe" | grep -m1 .)"; return 1; }
+		;;
+	*)
+		echo "shhh has no containment mechanism for $(uname -s)"
+		return 1
+		;;
+	esac
+}
+if [ -f "$scene/requires" ]; then
+	while read -r need _ || [ -n "${need:-}" ]; do
+		case $need in
+		""|\#*) ;;
+		containment)
+			if ! why=$(host_contains); then
+				echo "drive.sh: $name: a child's command card needs a containment mechanism and this host has none — $why; install bubblewrap and allow unprivileged user namespaces, or drive another scene" >&2
+				exit 1
+			fi
+			;;
+		*)
+			echo "drive.sh: $name: requires names $need, and the one requirement drive.sh knows is containment" >&2
+			exit 2
+			;;
+		esac
+	done < "$scene/requires"
+fi
 
 # Recording is a bonus, never a gate: a missing recorder is said out loud and
 # the run goes on. An attached pane is the reader's to drive and stops when
