@@ -804,6 +804,12 @@ type AppearanceConfig struct {
 	// (docs/interface/principles.md#a-colour-is-three-values-and-a-ground).
 	// Empty is `auto`, the way an unset key is everywhere else.
 	Theme string `toml:"theme"`
+	// Verbosity is how much the chat surface explains: `low`, `normal` or
+	// `high`, one rung for every surface rather than a density per surface
+	// (docs/interface/principles.md#density-is-one-ladder). It is a word the
+	// chat surface owns, so it is a string here and that surface reads it;
+	// empty is `normal`, the way an unset key is everywhere else.
+	Verbosity string `toml:"verbosity"`
 	// Mouse turns terminal mouse reporting on. It is on by default so the
 	// wheel scrolls the transcript, click-drag selects it (scrolling past the
 	// edge of the pane and copying on release), and clicks open rows or answer

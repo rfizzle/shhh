@@ -520,6 +520,58 @@ func TestSlashUI_VerbositySetting(t *testing.T) {
 	}
 }
 
+// The rung a reader chose is a setting like the theme: it outlives the
+// session that chose it, and the reply says so.
+func TestSlashUI_VerbosityIsSaved(t *testing.T) {
+	m := activityModel(t)
+	written := map[string]string{}
+	m.writeConfig = func(key, value string) error {
+		written[key] = value
+		return nil
+	}
+	_, result := m.handleSlashCommand("/ui verbosity low")
+	if written["appearance.verbosity"] != "low" {
+		t.Fatalf("the rung was not persisted: %v", written)
+	}
+	if !strings.Contains(result, "saved") {
+		t.Fatalf("the reply should say the rung will last, got %q", result)
+	}
+
+	m.writeConfig = nil
+	if _, result = m.handleSlashCommand("/ui verbosity high"); !strings.Contains(result, "this session only") {
+		t.Fatalf("a session that cannot write says the rung is its own, got %q", result)
+	}
+	if m.verbosity != verbosityHigh {
+		t.Fatal("a session with no writer still takes the rung")
+	}
+}
+
+// The setting a session starts on is the config's word, and a word the
+// ladder does not have starts it on normal rather than stopping it.
+func TestWithVerbosity_StartsOnTheConfiguredRung(t *testing.T) {
+	for word, want := range map[string]verbosity{
+		"": verbosityNormal, "low": verbosityLow, "normal": verbosityNormal,
+		"high": verbosityHigh, " high ": verbosityHigh, "loud": verbosityNormal,
+	} {
+		if got := activityModel(t).WithVerbosity(word).verbosity; got != want {
+			t.Errorf("WithVerbosity(%q) = %v, want %v", word, got, want)
+		}
+	}
+}
+
+// The ladder is ordered: a rung draws everything the rungs below it draw.
+func TestDensity_ARungIncludesTheOnesBelowIt(t *testing.T) {
+	m := activityModel(t)
+	for _, set := range []verbosity{verbosityLow, verbosityNormal, verbosityHigh} {
+		m.verbosity = set
+		for _, rung := range []verbosity{verbosityLow, verbosityNormal, verbosityHigh} {
+			if got, want := m.density(rung), rung <= set; got != want {
+				t.Errorf("at %v, density(%v) = %v, want %v", set, rung, got, want)
+			}
+		}
+	}
+}
+
 func TestHelp_ListsUICommand(t *testing.T) {
 	m := frameModel(t, 80, 30)
 	if !strings.Contains(helpText(&m), "/ui") {

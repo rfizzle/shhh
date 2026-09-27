@@ -56,7 +56,7 @@ func (m Model) stepDetailOpen(g *stepGroup, es []entry) bool {
 	case foldClosed:
 		return false
 	}
-	return m.verbosity == verbosityHigh
+	return m.density(verbosityHigh)
 }
 
 // stepAt finds the step the entry at idx heads or belongs to. It is the one

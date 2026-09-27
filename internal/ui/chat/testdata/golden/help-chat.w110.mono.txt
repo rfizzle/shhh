@@ -50,8 +50,8 @@
     /trust         let this checkout's own skills, agent profiles, wordings and quality suites load. A clone
                    can carry instructions, so nothing of a checkout's runs until you say so; "off" withdraws
                    it and the next session starts without them
-    /ui            activity feed density, pane layout, monochrome and mouse: /ui verbosity <low|normal|high> ·
-                   /ui mono <on|off> · /ui mouse <on|off>
+    /ui            screen density, pane layout, monochrome and mouse: /ui verbosity <low|normal|high> · /ui
+                   mono <on|off> · /ui mouse <on|off>
                    low hides counts, normal collapses rows, high expands rows. The mouse is on by default so
                    the wheel scrolls the transcript, click-drag selects it, and clicks open rows or answer
                    keys; off hands selection back to the terminal, and ctrl+x flips it and saves it
@@ -117,8 +117,8 @@
     /trust         let this checkout's own skills, agent profiles, wordings and quality suites load. A clone
                    can carry instructions, so nothing of a checkout's runs until you say so; "off" withdraws
                    it and the next session starts without them
-    /ui            activity feed density, pane layout, monochrome and mouse: /ui verbosity <low|normal|high> ·
-                   /ui mono <on|off> · /ui mouse <on|off>
+    /ui            screen density, pane layout, monochrome and mouse: /ui verbosity <low|normal|high> · /ui
+                   mono <on|off> · /ui mouse <on|off>
                    low hides counts, normal collapses rows, high expands rows. The mouse is on by default so
                    the wheel scrolls the transcript, click-drag selects it, and clicks open rows or answer
                    keys; off hands selection back to the terminal, and ctrl+x flips it and saves it
@@ -195,8 +195,8 @@
     ␛[38;5;254m/trust␛[m         ␛[38;5;244mlet this checkout's own skills, agent profiles, wordings and quality suites load. A clone␛[m
                    ␛[38;5;244mcan carry instructions, so nothing of a checkout's runs until you say so; "off" withdraws␛[m
                    ␛[38;5;244mit and the next session starts without them␛[m
-    ␛[38;5;254m/ui␛[m            ␛[38;5;244mactivity feed density, pane layout, monochrome and mouse: /ui verbosity <low|normal|high> ·␛[m
-                   ␛[38;5;244m/ui mono <on|off> · /ui mouse <on|off>␛[m
+    ␛[38;5;254m/ui␛[m            ␛[38;5;244mscreen density, pane layout, monochrome and mouse: /ui verbosity <low|normal|high> · /ui␛[m
+                   ␛[38;5;244mmono <on|off> · /ui mouse <on|off>␛[m
                    ␛[38;5;244mlow hides counts, normal collapses rows, high expands rows. The mouse is on by default so␛[m
                    ␛[38;5;244mthe wheel scrolls the transcript, click-drag selects it, and clicks open rows or answer␛[m
                    ␛[38;5;244mkeys; off hands selection back to the terminal, and ctrl+x flips it and saves it␛[m
@@ -262,8 +262,8 @@
     ␛[38;5;254m/trust␛[m         ␛[38;5;244mlet this checkout's own skills, agent profiles, wordings and quality suites load. A clone␛[m
                    ␛[38;5;244mcan carry instructions, so nothing of a checkout's runs until you say so; "off" withdraws␛[m
                    ␛[38;5;244mit and the next session starts without them␛[m
-    ␛[38;5;254m/ui␛[m            ␛[38;5;244mactivity feed density, pane layout, monochrome and mouse: /ui verbosity <low|normal|high> ·␛[m
-                   ␛[38;5;244m/ui mono <on|off> · /ui mouse <on|off>␛[m
+    ␛[38;5;254m/ui␛[m            ␛[38;5;244mscreen density, pane layout, monochrome and mouse: /ui verbosity <low|normal|high> · /ui␛[m
+                   ␛[38;5;244mmono <on|off> · /ui mouse <on|off>␛[m
                    ␛[38;5;244mlow hides counts, normal collapses rows, high expands rows. The mouse is on by default so␛[m
                    ␛[38;5;244mthe wheel scrolls the transcript, click-drag selects it, and clicks open rows or answer␛[m
                    ␛[38;5;244mkeys; off hands selection back to the terminal, and ctrl+x flips it and saves it␛[m

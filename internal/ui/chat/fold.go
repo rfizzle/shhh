@@ -108,7 +108,7 @@ func (m Model) groupFolded(e entry, stepDetail bool) bool {
 	case foldClosed:
 		return true
 	}
-	return !stepDetail && m.verbosity != verbosityHigh
+	return !stepDetail && !m.density(verbosityHigh)
 }
 
 // blockSlots walks a block's rows and reports what the transcript renders for

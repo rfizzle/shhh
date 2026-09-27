@@ -291,6 +291,46 @@ func TestGolden_StepOutline(t *testing.T) {
 	})
 }
 
+// densityTranscript is a two-step turn with a think row in each step: the
+// first finished, with a run of reads, and the second broken, so it stays
+// open at every rung but the one that folds everything. It is what the think
+// row and the feed draw differently from one rung to the next.
+func densityTranscript() []entry {
+	return []entry{
+		{kind: entryUser, text: "fix the round limit"},
+		{kind: entryAssistant, text: "Locate the round accounting"},
+		{kind: entryTool, toolName: "read_file", toolArgs: `{"path":"internal/agent/loop.go"}`,
+			toolResult: "a\nb\nc", duration: 400 * time.Millisecond},
+		{kind: entryThink, text: "The cap is counted in the loop, so the sentinel has to come from there."},
+		{kind: entryTool, toolName: "read_file", toolArgs: `{"path":"internal/agent/round.go"}`,
+			toolResult: "a\nb", duration: 300 * time.Millisecond},
+		{kind: entryTool, toolName: "search", toolArgs: `{"pattern":"ErrRoundLimit"}`,
+			toolResult: searchHits, duration: 200 * time.Millisecond},
+		{kind: entryAssistant, text: "Thread the sentinel through the loop"},
+		{kind: entryThink, text: "One return path, then the test.\nThe test names the sentinel directly."},
+		{kind: entryTool, toolName: "edit_file", toolArgs: `{"path":"internal/agent/loop.go"}`,
+			toolResult: "edited", duration: 1100 * time.Millisecond},
+		{kind: entryCommand, text: "go test ./internal/agent/...",
+			toolResult: "--- FAIL: TestRoundLimit", exitCode: 1, duration: 21400 * time.Millisecond},
+	}
+}
+
+// TestGolden_Density captures the think row and the activity feed once per
+// rung of the density ladder (docs/interface/principles.md#density-is-one-ladder):
+// the same turn at low, normal and high, each its own golden so a change to
+// one rung's cell is a diff in that rung's file alone.
+func TestGolden_Density(t *testing.T) {
+	for _, rung := range []verbosity{verbosityLow, verbosityNormal, verbosityHigh} {
+		captureGolden(t, "density-"+rung.String(), "the think row and the feed at one rung", goldenWidths, func(width int) []golden.Panel {
+			m := frameModel(t, width, 40)
+			m.transcript = densityTranscript()
+			m.verbosity = rung
+			m.invalidateRenderCache()
+			return []golden.Panel{{Label: "verbosity · " + rung.String(), View: m.renderHistory()}}
+		})
+	}
+}
+
 // readRunTranscript is the turn this transcript used to render as a column of
 // line counts: a question, then thirty consecutive reads and searches with no
 // prose over them and no plan to number them, so there is no step for the run

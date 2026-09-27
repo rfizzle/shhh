@@ -824,8 +824,8 @@ type Model struct {
 	// card is rebuilt every frame and reading each queued spawn's arguments
 	// on all of them is work no frame changes (queue.go).
 	pendingSpawns []components.SpawnRow
-	// Compact activity feed: verbosity is the feed's default density
-	// (/ui verbosity); tailRunFn is the tail-capable command runner, and
+	// Compact activity feed: verbosity is the surface's rung on the one
+	// density ladder (/ui verbosity, read through density); tailRunFn is the tail-capable command runner, and
 	// runningCommand/runStart/runTail drive the live row while a command runs.
 	verbosity      verbosity
 	tailRunFn      TailFunc

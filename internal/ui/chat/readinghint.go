@@ -571,7 +571,7 @@ func (m *Model) foldOpenedRows() int {
 // on the screen at all, and crediting the setting for it would put the notice
 // on a pane where nothing is open.
 func (m Model) settingHoldsRowsOpen() bool {
-	if m.verbosity != verbosityHigh {
+	if !m.density(verbosityHigh) {
 		return false
 	}
 	es := *m.entries()

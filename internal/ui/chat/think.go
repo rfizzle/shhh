@@ -94,7 +94,7 @@ func reasoningText(blocks []provider.ReasoningBlock) string {
 // showThink reports whether think rows are drawn at all. Low verbosity is
 // "step headers only" and this row is the first thing that means: it is the
 // one row that reports no act at all, so it is the first to go.
-func (m Model) showThink() bool { return m.verbosity != verbosityLow }
+func (m Model) showThink() bool { return m.density(verbosityNormal) }
 
 // thinkDepthOf is the depth a row renders at: the reader's own where they
 // have given one, and the verbosity's otherwise — high opens every row to its
@@ -103,7 +103,7 @@ func (m Model) thinkDepthOf(e entry) thinkDepth {
 	if e.thinkDepth != thinkAuto {
 		return e.thinkDepth
 	}
-	if m.verbosity == verbosityHigh {
+	if m.density(verbosityHigh) {
 		return thinkTail
 	}
 	return thinkClosed

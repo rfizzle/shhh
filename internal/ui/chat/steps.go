@@ -350,10 +350,10 @@ func (m Model) stepFolded(g *stepGroup, es []entry, state stepState) bool {
 	case foldClosed:
 		return true
 	}
-	switch m.verbosity {
-	case verbosityHigh:
+	switch {
+	case m.density(verbosityHigh):
 		return false
-	case verbosityLow:
+	case !m.density(verbosityNormal):
 		// Headers only: at low every step is folded, a broken one
 		// included — you asked for the outline, and the ✗ is on the header.
 		return true

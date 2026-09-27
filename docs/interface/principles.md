@@ -364,3 +364,36 @@ its tokens reports its tokens. Nothing is reported as a zero it did not
 measure.
 
 A fabricated zero is worse than a gap, because a gap is legible as a gap.
+
+### Density is one ladder
+
+How much the screen explains is one setting — `/ui verbosity`, kept as
+`appearance.verbosity` — with three rungs, and every surface reads its rung
+from this table rather than deciding its own density. The default is
+`normal`.
+
+| Rung | Cards | Glosses | Summary rows | Vitals | Think rows | Resolved queue lines | Activity feed |
+|------|-------|---------|--------------|--------|------------|----------------------|---------------|
+| `low` | the offers row only, and the esc offer never drops | none | none | mode · ctx · spend | off | folded to a count | step headers only, no counts on a row |
+| `normal` | the readings: one row and its footnote | the ones about this call | the rows with something to say | the rail as the frame draws it | folded, counting their lines | as the surface draws them | a finished step folds, a run of reads folds to a counted row |
+| `high` | every hint row | every gloss | every reading | every field | open to their tail | as the surface draws them | every row open with its bounded body |
+
+A rung is inclusive of the ones below it: whatever `low` draws, `normal`
+draws, and whatever `normal` draws, `high` draws. A surface that draws
+something from one rung up asks whether the setting reaches that rung, which
+is why adding a surface to the ladder is one cell of this table and not a
+setting of its own.
+
+The reason is the first session. Each surface that chose its own density
+chose it alone, and a reader meeting every hint row, every gloss and every
+vitals field at once meets all of them at the density of the most talkative.
+One ladder is also one place to turn the screen down, rather than a
+different command for every surface that talks too much.
+
+Two things no rung reaches. The esc offer is on a card at every rung, `low`
+included, because a card that stopped saying what Esc does breaks
+[the first invariant a reader relies on](#esc-is-always-the-safe-answer) —
+which is why `low` is not the default either. And nothing a rung takes off
+the screen is lost: a fold still counts what it swallowed
+([fold, never hide](#fold-never-hide)), and a reader's own open or fold on
+a row outranks the rung.

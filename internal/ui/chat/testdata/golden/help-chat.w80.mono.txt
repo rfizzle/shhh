@@ -60,7 +60,7 @@
                    quality suites load. A clone can carry instructions, so
                    nothing of a checkout's runs until you say so; "off"
                    withdraws it and the next session starts without them
-    /ui            activity feed density, pane layout, monochrome and mouse: /ui
+    /ui            screen density, pane layout, monochrome and mouse: /ui
                    verbosity <low|normal|high> · /ui mono <on|off> · /ui mouse
                    <on|off>
                    low hides counts, normal collapses rows, high expands rows.
@@ -147,7 +147,7 @@
                    quality suites load. A clone can carry instructions, so
                    nothing of a checkout's runs until you say so; "off"
                    withdraws it and the next session starts without them
-    /ui            activity feed density, pane layout, monochrome and mouse: /ui
+    /ui            screen density, pane layout, monochrome and mouse: /ui
                    verbosity <low|normal|high> · /ui mono <on|off> · /ui mouse
                    <on|off>
                    low hides counts, normal collapses rows, high expands rows.
@@ -250,7 +250,7 @@
                    ␛[38;5;244mquality suites load. A clone can carry instructions, so␛[m
                    ␛[38;5;244mnothing of a checkout's runs until you say so; "off"␛[m
                    ␛[38;5;244mwithdraws it and the next session starts without them␛[m
-    ␛[38;5;254m/ui␛[m            ␛[38;5;244mactivity feed density, pane layout, monochrome and mouse: /ui␛[m
+    ␛[38;5;254m/ui␛[m            ␛[38;5;244mscreen density, pane layout, monochrome and mouse: /ui␛[m
                    ␛[38;5;244mverbosity <low|normal|high> · /ui mono <on|off> · /ui mouse␛[m
                    ␛[38;5;244m<on|off>␛[m
                    ␛[38;5;244mlow hides counts, normal collapses rows, high expands rows.␛[m
@@ -337,7 +337,7 @@
                    ␛[38;5;244mquality suites load. A clone can carry instructions, so␛[m
                    ␛[38;5;244mnothing of a checkout's runs until you say so; "off"␛[m
                    ␛[38;5;244mwithdraws it and the next session starts without them␛[m
-    ␛[38;5;254m/ui␛[m            ␛[38;5;244mactivity feed density, pane layout, monochrome and mouse: /ui␛[m
+    ␛[38;5;254m/ui␛[m            ␛[38;5;244mscreen density, pane layout, monochrome and mouse: /ui␛[m
                    ␛[38;5;244mverbosity <low|normal|high> · /ui mono <on|off> · /ui mouse␛[m
                    ␛[38;5;244m<on|off>␛[m
                    ␛[38;5;244mlow hides counts, normal collapses rows, high expands rows.␛[m

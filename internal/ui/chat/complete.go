@@ -166,10 +166,10 @@ func buildSlashCommands() []slashCommand {
 		{name: "/status", desc: "where the session is, and whether it is still on target"},
 		{name: "/sessions", desc: "the sessions running on this machine, and where each one is"},
 		{name: "/trust", desc: "let this checkout's skills, agent profiles and quality suites load (\"off\" withdraws it)"},
-		{name: "/ui", args: "verbosity <low|normal|high> | mono <on|off>", desc: "activity feed density and monochrome mode",
+		{name: "/ui", args: "verbosity <low|normal|high> | mono <on|off>", desc: "screen density and monochrome mode",
 			argSpecs: []argSpec{
 				{options: []argOption{
-					{"verbosity", "activity feed density"},
+					{"verbosity", "how much the screen explains"},
 					{"theme", "which colour table every surface draws with"},
 					{"ground", "paint the screen with the theme's own background"},
 					{"mono", "strip every surface to two greys"},

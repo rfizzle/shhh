@@ -446,6 +446,10 @@ var settings = []Setting{
 		Values: []string{"auto", "dark", "light", "charm"},
 		Desc:   "Which colour table every surface draws with: `auto` asks the terminal what its own background is and takes the table chosen for that ground, or name one.",
 	}, {
+		Key: "appearance.verbosity", Kind: KindEnum, Default: "normal",
+		Values: []string{"low", "normal", "high"},
+		Desc:   "How much the screen explains, one rung for every surface: `low` draws what you act on and little else, `normal` adds the readings, `high` every gloss, hint and field.",
+	}, {
 		Key: "appearance.mouse", Kind: KindBool, Default: "on",
 		Desc: "Terminal mouse reporting: the wheel scrolls the transcript and shhh selects text itself. Off leaves the terminal its native click-drag selection.",
 	}, {

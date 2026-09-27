@@ -144,7 +144,7 @@ default [level]   show or persist the level new sessions start on (provider.reas
 	"/status":   `where this session is: what it is working on, what it has spent, and whether the last few turns are still on the target you set it`,
 	"/sessions": `the sessions running on this machine: the conversation each saves to, its checkout and branch, and whether it is working`,
 	"/trust":    `let this checkout's own skills, agent profiles, wordings and quality suites load. A clone can carry instructions, so nothing of a checkout's runs until you say so; "off" withdraws it and the next session starts without them`,
-	"/ui": `activity feed density, pane layout, monochrome and mouse: /ui verbosity <low|normal|high> · /ui mono <on|off> · /ui mouse <on|off>
+	"/ui": `screen density, pane layout, monochrome and mouse: /ui verbosity <low|normal|high> · /ui mono <on|off> · /ui mouse <on|off>
 low hides counts, normal collapses rows, high expands rows. The mouse is on by default so the wheel scrolls the transcript, click-drag selects it, and clicks open rows or answer keys; off hands selection back to the terminal, and ctrl+x flips it and saves it
 terminal   what this terminal answered when shhh asked what it can do: inline images, desktop notifications, focus events, cell size`,
 	"/config":           `every setting, staged: what each one is set to, where that value came from, and what [enter] offers instead of typing it. Nothing reaches your config file until [w], and the way out asks before discarding what is staged. The running session keeps the settings it started on`,

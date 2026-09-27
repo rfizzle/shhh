@@ -36,9 +36,15 @@ import (
 	"github.com/rfizzle/shhh/internal/web"
 )
 
-// verbosity is the activity feed's default density, and the three levels have
-// three distinct meanings (docs/interface/surfaces.md#the-step): low
-// shows step headers only and draws no think row at all
+// verbosity is a rung of the surface's one density ladder: how much the
+// whole screen explains, set once by /ui verbosity and appearance.verbosity
+// rather than decided surface by surface, because densities chosen one
+// surface at a time add up to a first session that gets everything at once.
+// What each rung draws is one table
+// (docs/interface/principles.md#density-is-one-ladder), and a surface asks
+// it through Model.density rather than comparing the setting itself. In the
+// activity feed (docs/interface/surfaces.md#the-step) low shows step headers
+// only and draws no think row at all
 // (docs/interface/surfaces.md#the-think-row), normal folds a step's
 // consecutive read-only calls into one counted row, high expands every row
 // with its bounded detail body.
@@ -58,6 +64,26 @@ func (v verbosity) String() string {
 		return "high"
 	}
 	return "normal"
+}
+
+// density reports whether the setting draws what the rung draws: the ladder
+// is ordered, so a surface that appears from normal up asks
+// density(verbosityNormal), and one that only high draws asks
+// density(verbosityHigh). It is the one question every surface asks of the
+// setting, which is what keeps adding a rung to a surface one row of the
+// principles table.
+func (m Model) density(rung verbosity) bool { return m.verbosity >= rung }
+
+// WithVerbosity sets the rung the session starts on (appearance.verbosity).
+// A word the ladder does not have starts the session on normal rather than
+// refusing it: the settings writer has already judged the word, so one that
+// reaches here is a file edited by hand, and a session that will not start
+// over a density is a worse answer than the default.
+func (m Model) WithVerbosity(word string) Model {
+	if v, err := parseVerbosity(strings.TrimSpace(word)); err == nil {
+		m.verbosity = v
+	}
+	return m
 }
 
 func parseVerbosity(s string) (verbosity, error) {
@@ -549,7 +575,7 @@ func (m Model) activityRowFor(e entry) components.ActivityRow {
 // serves both.
 func (m Model) activityRowDetail(e entry, stepDetail bool, width int) components.ActivityRow {
 	row := components.ActivityRow{
-		Expanded:  e.expanded || stepDetail || m.verbosity == verbosityHigh,
+		Expanded:  e.expanded || stepDetail || m.density(verbosityHigh),
 		MaxDetail: maxToolResultLines,
 		Duration:  activityDuration(e.duration),
 		Frame:     m.spinFrame,
@@ -802,7 +828,7 @@ func (m Model) activityRowDetail(e entry, stepDetail bool, width int) components
 	}
 	if strings.TrimSpace(result) != "" {
 		row.Detail = strings.Split(strings.TrimRight(result, "\n"), "\n")
-		if !row.Failed() && m.verbosity != verbosityLow {
+		if !row.Failed() && m.density(verbosityNormal) {
 			row.Counts = activityCounts(e.toolName, result)
 		}
 	}
@@ -814,7 +840,7 @@ func (m Model) activityRowDetail(e entry, stepDetail bool, width int) components
 		// row says is what it said before the trim (context.go).
 		row.State, row.Outcome = e.elided.state, e.elided.outcome
 		row.Counts = ""
-		if !row.Failed() && m.verbosity != verbosityLow {
+		if !row.Failed() && m.density(verbosityNormal) {
 			row.Counts = e.elided.counts
 		}
 	}
@@ -906,17 +932,17 @@ func (m Model) runningCommandRow(width int) string {
 	return row.View(width)
 }
 
-// uiCommand handles /ui: the activity feed's verbosity, mono conformance,
+// uiCommand handles /ui: the surface's verbosity, mono conformance,
 // terminal mouse reporting, desktop notifications, what the terminal's own
 // window is called, and what the terminal itself can do.
 func (m *Model) uiCommand(parts []string) string {
 	if len(parts) == 1 {
-		return fmt.Sprintf("activity feed verbosity: %s\ntheme: %s\nscreen ground: %s\nmonochrome: %s\nmouse reporting: %s\ndesktop notifications: %s\nsession titles: %s\nwindow title: %s\nlayout: %s\nterminal: %s\n"+uiUsage, m.verbosity, m.themeStatus(), groundStatus(), monoStatus(), m.mouseStatus(), m.notifyStatus(), m.titleStatus(), m.windowStatus(), m.inspectorStatus(), terminalName(m.caps))
+		return fmt.Sprintf("verbosity: %s\ntheme: %s\nscreen ground: %s\nmonochrome: %s\nmouse reporting: %s\ndesktop notifications: %s\nsession titles: %s\nwindow title: %s\nlayout: %s\nterminal: %s\n"+uiUsage, m.verbosity, m.themeStatus(), groundStatus(), monoStatus(), m.mouseStatus(), m.notifyStatus(), m.titleStatus(), m.windowStatus(), m.inspectorStatus(), terminalName(m.caps))
 	}
 	switch parts[1] {
 	case "verbosity":
 		if len(parts) == 2 {
-			return fmt.Sprintf("activity feed verbosity: %s\nusage: /ui verbosity <low|normal|high> — low shows step headers only and drops think rows, normal folds read-only groups, high expands every row\nfor one step rather than all of them, /step opens the detail of the step in flight", m.verbosity)
+			return fmt.Sprintf("verbosity: %s — how much every surface explains\nusage: /ui verbosity <low|normal|high> — low shows step headers only and drops think rows, normal folds read-only groups, high expands every row\nfor one step rather than all of them, /step opens the detail of the step in flight", m.verbosity)
 		}
 		if len(parts) != 3 {
 			return "usage: /ui verbosity <low|normal|high>"
@@ -927,7 +953,14 @@ func (m *Model) uiCommand(parts []string) string {
 		}
 		m.verbosity = v
 		m.invalidateRenderCache()
-		return fmt.Sprintf("activity feed verbosity set to %s", v)
+		note := fmt.Sprintf("verbosity set to %s", v)
+		if m.writeConfig == nil {
+			return note + "\nthis session cannot write the config file, so it is for this session only"
+		}
+		if err := m.writeConfig("appearance.verbosity", v.String()); err != nil {
+			return note + "\n" + failed("ui", "could not save it: "+err.Error())
+		}
+		return note + " · saved — new sessions start this way"
 	case "theme":
 		return m.themeCommand(parts)
 	case "ground":
@@ -1239,7 +1272,7 @@ func (m *Model) appendCompose(d provider.ToolCallDelta) {
 // showCompose reports whether the compose row is drawn at all. Low verbosity
 // is step headers only, and this row reports no act either — the act it was
 // counting is the row that lands in its place a moment later.
-func (m Model) showCompose() bool { return m.verbosity != verbosityLow }
+func (m Model) showCompose() bool { return m.density(verbosityNormal) }
 
 // composeRowLine is the round's compose row as its rendered line, and nothing
 // where the row has not earned its place: no round in flight, nothing written
