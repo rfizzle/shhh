@@ -387,11 +387,11 @@
   ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254minternal/agent/loop.go␛[m          ␛[38;5;254m+18␛[m ␛[38;5;254m−3␛[m ␛[38;5;244m3t␛[m
   ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254minternal/ui/chat/model.go␛[m           ␛[38;5;254m+9␛[m ␛[38;5;254m−1␛[m
 
-  ␛[1;38;5;254mAGENTS␛[m                             ␛[38;5;254m2 running␛[m
+  ␛[1;38;5;254mAGENTS␛[m                             ␛[38;5;244m2 running␛[m
 ␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254m◇␛[m␛[48;5;237m ␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237morchestrator                         $0.12␛[m␛[m
     ␛[38;5;254m⠋ round 3 · streaming…␛[m                    
   ␛[38;5;254m⚠␛[m ␛[38;5;254mrunner-2␛[m                             ␛[38;5;244m$0.01␛[m
-    ␛[38;5;254m▰▰▰␛[m␛[38;5;244m▱▱␛[m ␛[38;5;254mstep 2 of 3␛[m␛[38;5;244m · ␛[m␛[38;5;244mgo test ./...␛[m         
+    ␛[38;5;254m▰▰▰␛[m␛[38;5;244m▱▱␛[m ␛[38;5;244mstep 2 of 3␛[m␛[38;5;244m · ␛[m␛[38;5;244mgo test ./...␛[m         
   ␛[38;5;254m◇␛[m ␛[38;5;254mwriter-1␛[m                             ␛[38;5;244m$0.02␛[m
     ␛[38;5;254m⠋ docs/loop.md␛[m␛[38;5;244m · ␛[m␛[38;5;244m4 tools␛[m                  
   ␛[38;5;254m✗␛[m ␛[38;5;254mwriter-3␛[m                     ␛[38;5;254mkilled␛[m  ␛[38;5;244m$0.03␛[m
@@ -522,7 +522,7 @@
   ␛[38;5;254m⚠␛[m ␛[38;5;254mmemory␛[m                       ␛[38;5;244m3 did not fit␛[m
 
 · the session map · the keyboard is in writer-2
-  ␛[1;38;5;254mAGENTS␛[m                             ␛[38;5;254m3 running␛[m
+  ␛[1;38;5;254mAGENTS␛[m                             ␛[38;5;244m3 running␛[m
   ␛[38;5;254m⚠␛[m ␛[38;5;254morchestrator␛[m                         ␛[38;5;244m$0.12␛[m
     ␛[38;5;244mround 3 · waiting on you␛[m                  
   ␛[38;5;254m⚠␛[m ␛[38;5;254mreviewer-5␛[m                           ␛[38;5;244m$0.03␛[m
@@ -530,7 +530,7 @@
 ␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254m◇␛[m␛[48;5;237m ␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237mwriter-2                             $0.04␛[m␛[m
     ␛[38;5;254m⠹ internal/ui/chat/model.go␛[m␛[38;5;244m · ␛[m␛[38;5;244m11 tools␛[m    
   ␛[38;5;254m◇␛[m ␛[38;5;254mrunner-4␛[m                             ␛[38;5;244m$0.02␛[m
-    ␛[38;5;254m▰▰▰␛[m␛[38;5;244m▱▱␛[m ␛[38;5;254mstep 2 of 3␛[m␛[38;5;244m · ␛[m␛[38;5;244mgo build ./...␛[m        
+    ␛[38;5;254m▰▰▰␛[m␛[38;5;244m▱▱␛[m ␛[38;5;244mstep 2 of 3␛[m␛[38;5;244m · ␛[m␛[38;5;244mgo build ./...␛[m        
   ␛[38;5;254m◇␛[m ␛[38;5;254mreader-6␛[m                       ␛[38;5;254mdone␛[m  ␛[38;5;244m$0.01␛[m
     ␛[38;5;244mread 9 files␛[m                              
   ␛[38;5;254m◇␛[m ␛[38;5;254mreader-7␛[m                       ␛[38;5;254mdone␛[m  ␛[38;5;244m$0.01␛[m
@@ -539,7 +539,7 @@
   ␛[38;5;244m… 2 more␛[m                                    
 
 · the map with the rail shorter than it (height 12)
-  ␛[1;38;5;254mAGENTS␛[m                             ␛[38;5;254m3 running␛[m
+  ␛[1;38;5;254mAGENTS␛[m                             ␛[38;5;244m3 running␛[m
   ␛[38;5;254m⚠␛[m ␛[38;5;254morchestrator␛[m                         ␛[38;5;244m$0.12␛[m
     ␛[38;5;244mround 3 · waiting on you␛[m                  
   ␛[38;5;254m⚠␛[m ␛[38;5;254mreviewer-5␛[m                           ␛[38;5;244m$0.03␛[m
@@ -547,13 +547,13 @@
 ␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254m◇␛[m␛[48;5;237m ␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237mwriter-2                             $0.04␛[m␛[m
     ␛[38;5;254m⠹ internal/ui/chat/model.go␛[m␛[38;5;244m · ␛[m␛[38;5;244m11 tools␛[m    
   ␛[38;5;254m◇␛[m ␛[38;5;254mrunner-4␛[m                             ␛[38;5;244m$0.02␛[m
-    ␛[38;5;254m▰▰▰␛[m␛[38;5;244m▱▱␛[m ␛[38;5;254mstep 2 of 3␛[m␛[38;5;244m · ␛[m␛[38;5;244mgo build ./...␛[m        
+    ␛[38;5;254m▰▰▰␛[m␛[38;5;244m▱▱␛[m ␛[38;5;244mstep 2 of 3␛[m␛[38;5;244m · ␛[m␛[38;5;244mgo build ./...␛[m        
   ␛[38;5;254m◇␛[m ␛[38;5;254mreader-7␛[m                       ␛[38;5;254mdone␛[m  ␛[38;5;244m$0.01␛[m
     ␛[38;5;244mnothing under that path␛[m                   
   ␛[38;5;244m… 3 more␛[m                                    
 
 · a fan-out of five · blocked, near its budget, off task, failed, nested
-  ␛[1;38;5;254mAGENTS␛[m                             ␛[38;5;254m4 running␛[m
+  ␛[1;38;5;254mAGENTS␛[m                             ␛[38;5;244m4 running␛[m
 ␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254m◇␛[m␛[48;5;237m ␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237morchestrator                         $0.21␛[m␛[m
     ␛[38;5;254m⠹ round 6 · streaming…␛[m                    
   ␛[38;5;254m⚠␛[m ␛[38;5;254mreviewer-3␛[m                           ␛[38;5;244m$0.02␛[m
@@ -569,7 +569,7 @@
   ␛[38;5;244malt+a manager · alt+] next · click to attach␛[m
 
 · the map while a hold lands · two children parked, one not yet
-  ␛[1;38;5;254mAGENTS␛[m                    ␛[38;5;244m2 held␛[m␛[38;5;244m · ␛[m␛[38;5;254m1 running␛[m
+  ␛[1;38;5;254mAGENTS␛[m                    ␛[38;5;244m2 held␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 running␛[m
 ␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254m◇␛[m␛[48;5;237m ␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237morchestrator                         $0.14␛[m␛[m
     ␛[38;5;254m⠹ round 4 · holding after this round␛[m      
   ␛[38;5;244m◇␛[m ␛[38;5;254mwriter-1␛[m                       ␛[38;5;244mheld␛[m  ␛[38;5;244m$0.05␛[m
@@ -581,7 +581,7 @@
   ␛[38;5;244malt+a manager · alt+] next · click to attach␛[m
 
 · a writer waiting for a check slot · two checks run, and its row says what it waits for
-  ␛[1;38;5;254mAGENTS␛[m                 ␛[38;5;244m1 waiting␛[m␛[38;5;244m · ␛[m␛[38;5;254m2 running␛[m
+  ␛[1;38;5;254mAGENTS␛[m                 ␛[38;5;244m1 waiting␛[m␛[38;5;244m · ␛[m␛[38;5;244m2 running␛[m
 ␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254m◇␛[m␛[48;5;237m ␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237morchestrator                         $0.12␛[m␛[m
     ␛[38;5;254m⠹ round 3 · streaming…␛[m                    
   ␛[38;5;254m◇␛[m ␛[38;5;254mwriter-1␛[m                             ␛[38;5;244m$0.04␛[m
@@ -593,17 +593,17 @@
   ␛[38;5;244malt+a manager · alt+] next · click to attach␛[m
 
 · a writer on its own plan · three of seven steps and its budget's share
-  ␛[1;38;5;254mAGENTS␛[m                             ␛[38;5;254m2 running␛[m
+  ␛[1;38;5;254mAGENTS␛[m                             ␛[38;5;244m2 running␛[m
 ␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254m◇␛[m␛[48;5;237m ␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237morchestrator                         $0.11␛[m␛[m
     ␛[38;5;254m⠹ round 6 · streaming…␛[m                    
   ␛[38;5;254m◇␛[m ␛[38;5;254mwriter-1␛[m                             ␛[38;5;244m$0.04␛[m
-    ␛[38;5;254m3 of 7 steps␛[m␛[38;5;244m · ␛[m␛[38;5;244m41% of budget␛[m␛[38;5;244m · ␛[m␛[38;5;244mdocs/loop.…␛[m
+    ␛[38;5;244m3 of 7 steps␛[m␛[38;5;244m · ␛[m␛[38;5;244m41% of budget␛[m␛[38;5;244m · ␛[m␛[38;5;244mdocs/loop.…␛[m
   ␛[38;5;254m◇␛[m ␛[38;5;254mwriter-2␛[m                             ␛[38;5;244m$0.02␛[m
-    ␛[38;5;254m▰␛[m␛[38;5;244m▱▱▱▱␛[m ␛[38;5;254mstep 1 of 4␛[m␛[38;5;244m · ␛[m␛[38;5;244minternal/agent/round.…␛[m
+    ␛[38;5;254m▰␛[m␛[38;5;244m▱▱▱▱␛[m ␛[38;5;244mstep 1 of 4␛[m␛[38;5;244m · ␛[m␛[38;5;244minternal/agent/round.…␛[m
   ␛[38;5;244malt+a manager · alt+] next · click to attach␛[m
 
 · a finished child taking a follow-up · running again, on the question
-  ␛[1;38;5;254mAGENTS␛[m                             ␛[38;5;254m1 running␛[m
+  ␛[1;38;5;254mAGENTS␛[m                             ␛[38;5;244m1 running␛[m
 ␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254m◇␛[m␛[48;5;237m ␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237morchestrator                         $0.09␛[m␛[m
     ␛[38;5;254m⠹ round 4 · streaming…␛[m                    
   ␛[38;5;254m◇␛[m ␛[38;5;254mreader-1␛[m                             ␛[38;5;244m$0.04␛[m
@@ -613,7 +613,7 @@
   ␛[38;5;244malt+a manager · alt+] next · click to attach␛[m
 
 · a failed sibling beside a nested pair · the subtree moves whole
-  ␛[1;38;5;254mAGENTS␛[m                             ␛[38;5;254m3 running␛[m
+  ␛[1;38;5;254mAGENTS␛[m                             ␛[38;5;244m3 running␛[m
 ␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254m◇␛[m␛[48;5;237m ␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237morchestrator                         $0.18␛[m␛[m
     ␛[38;5;254m⠹ round 5 · streaming…␛[m                    
   ␛[38;5;254m◇␛[m ␛[38;5;254mwriter-3␛[m                             ␛[38;5;244m$0.03␛[m
@@ -627,7 +627,7 @@
   ␛[38;5;244malt+a manager · alt+] next · click to attach␛[m
 
 · a killed writer · its patch is kept, and [p] reviews it
-  ␛[1;38;5;254mAGENTS␛[m                             ␛[38;5;254m1 running␛[m
+  ␛[1;38;5;254mAGENTS␛[m                             ␛[38;5;244m1 running␛[m
 ␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254m◇␛[m␛[48;5;237m ␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237morchestrator                         $0.21␛[m␛[m
     ␛[38;5;254m⠹ round 6 · streaming…␛[m                    
   ␛[38;5;254m✗␛[m ␛[38;5;254mwriter-1␛[m                     ␛[38;5;254mfailed␛[m  ␛[38;5;244m$0.03␛[m
@@ -637,7 +637,7 @@
   ␛[38;5;244malt+a manager · alt+] next · click to attach␛[m
 
 · the same map three rows short · what it gives up, in order
-  ␛[1;38;5;254mAGENTS␛[m                             ␛[38;5;254m5 running␛[m
+  ␛[1;38;5;254mAGENTS␛[m                             ␛[38;5;244m5 running␛[m
 ␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254m◇␛[m␛[48;5;237m ␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237morchestrator                         $0.21␛[m␛[m
     ␛[38;5;254m⠹ round 6 · streaming…␛[m                    
   ␛[38;5;254m⚠␛[m ␛[38;5;254mreviewer-3␛[m                           ␛[38;5;244m$0.02␛[m

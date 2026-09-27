@@ -706,3 +706,38 @@ func TestFanoutFailedLaneNamesItsHandoff(t *testing.T) {
 		t.Fatalf("a lane with no handoff says the reason alone: %q", got)
 	}
 }
+
+// TestFanoutCountsAreDimAndTheStateIsTheGlyph: a lane's state is carried by
+// its glyph and by the verdict after its bar, and every count around them is
+// dim — the running count on the header, the step count on the lane and the
+// rail's map, and the count beside a running bar
+// (docs/interface/departures.md#the-childrens-tally-says-who-needs-you-first).
+func TestFanoutCountsAreDimAndTheStateIsTheGlyph(t *testing.T) {
+	block := FanoutBlock{Lanes: []FanoutLane{
+		{State: FanoutRunning, Name: "a", Step: 2, Steps: 5},
+		{State: FanoutRunning, Name: "b", Step: 1, Steps: 3, Planned: true},
+		{State: FanoutBlocked, Name: "c"},
+		{State: FanoutDone, Name: "d", Step: 5, Steps: 5},
+	}}
+	view := block.View(110)
+	for _, want := range []struct{ what, render string }{
+		{"the header's running count in dim", sty.Dim.Render("3 running")},
+		{"a running bar's count in dim", sty.Dim.Render("2/5")},
+		{"a planned lane's step count in dim", sty.Dim.Render("1 of 3 steps")},
+		{"a running lane's glyph in info", sty.Info.Render("◇")},
+		{"the ask in del", sty.Err.Render("⚠ needs you")},
+		{"a finished lane's glyph in add", sty.Add.Render("◇")},
+	} {
+		if !strings.Contains(view, want.render) {
+			t.Errorf("want %s:\n%s", want.what, view)
+		}
+	}
+	rail := InspectorRail{Agents: []InspectorAgent{
+		{Name: "orchestrator", Self: true, State: FanoutRunning},
+		{Name: "b", State: FanoutRunning, Step: 1, Steps: 3, Planned: true},
+	}}
+	if got := rail.View(40, 30); !strings.Contains(got, sty.Dim.Render("1 of 3 steps")) ||
+		!strings.Contains(got, sty.Dim.Render("1 running")) {
+		t.Errorf("the rail's map should draw its counts in dim:\n%s", got)
+	}
+}

@@ -477,7 +477,10 @@ func (p AgentProgress) progress() string {
 			// with two of its steps unmarked says so here.
 			return p.withVerdict(sty.Add.Render("✓ " + text))
 		}
-		return sty.Info.Render(text)
+		// A count, not a verdict, so it is dim: the glyph beside the name is
+		// what carries the state's tone
+		// (docs/interface/departures.md#the-childrens-tally-says-who-needs-you-first).
+		return sty.Dim.Render(text)
 	}
 	if m, ok := AgentMeter(p.Step, p.Steps); ok {
 		m.Text = fmt.Sprintf("%d/%d", min(max(p.Step, 0), p.Steps), p.Steps)
@@ -488,6 +491,9 @@ func (p AgentProgress) progress() string {
 			m.Pct, m.Tone = 100, MeterProgress
 			m.Text = fmt.Sprintf("✓ %d/%d", p.Steps, p.Steps)
 		}
+		if p.State != FanoutDone {
+			return countedMeter(m)
+		}
 		return p.withVerdict(m.View())
 	}
 	if p.State == FanoutDone {
@@ -495,6 +501,13 @@ func (p AgentProgress) progress() string {
 	}
 	return Spinner{Frame: p.Frame, Label: "working"}.View()
 }
+
+// countedMeter is a running child's bar with its count beside it in dim. The
+// bar is the lane's info, and the `2/5` after it is a count like the tools
+// and the spend that follow it, so it takes their tone rather than the bar's;
+// only a verdict — `✓ 5/5`, `⚠ needs you` — is drawn in a state's colour
+// (docs/interface/departures.md#the-childrens-tally-says-who-needs-you-first).
+func countedMeter(m Meter) string { return join(m.Bar(), sty.Dim.Render(m.text())) }
 
 // withVerdict puts a review's own last word beside what the run came to:
 // `✓ done · approve with changes`. The tick is the session's account of the
@@ -964,7 +977,7 @@ func waitingTally(states []FanoutState, slotWaits int, owed bool) string {
 		parts = append(parts, sty.Dim.Render(fmt.Sprintf("%d waiting", waiting)))
 	}
 	if running > 0 {
-		parts = append(parts, sty.SpinText.Render(fmt.Sprintf("%d running", running)))
+		parts = append(parts, sty.Dim.Render(fmt.Sprintf("%d running", running)))
 	}
 	if len(parts) > tallyParts {
 		parts = parts[:tallyParts]

@@ -483,7 +483,7 @@ func (a InspectorAgent) detailRow(frame, width int) string {
 		// The child's own plan, in words, and the budget's share beside it:
 		// two denominators stated rather than one bar that merges them
 		// (docs/capabilities/subagents.md#how-far-along-is-three-numbers-not-one).
-		parts = append(parts, detailField{text: sty.Info.Render(stepsOf(a.Step, a.Steps))})
+		parts = append(parts, detailField{text: sty.Dim.Render(stepsOf(a.Step, a.Steps))})
 		if pct := BudgetPct(a.Fresh, a.Budget); pct > 0 {
 			parts = append(parts, detailField{text: sty.Dimmer.Render(fmt.Sprintf("%d%% of budget", pct))})
 		}
@@ -493,7 +493,7 @@ func (a InspectorAgent) detailRow(frame, width int) string {
 	case ok:
 		// A declared step count earns a bar; the lane is info whatever
 		// the child's health, and states its count beside it.
-		parts = append(parts, detailField{text: m.View()})
+		parts = append(parts, detailField{text: countedMeter(m)})
 		if a.Detail != "" {
 			parts = append(parts, detailField{text: sty.Dimmer.Render(a.Detail)})
 		}

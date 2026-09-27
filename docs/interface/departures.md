@@ -909,8 +909,8 @@ child whose progress you can see and whose name you cannot.
 
 *A disagreement.* The `Agents` artboard heads the manager with
 `╭─ agents ─… 3 running · 1 needs you ─╮`, in dim. The binary states the same
-two clauses the other way round, `1 needs you · 3 running`, with the count of
-running children in the spinner's tone. The frame itself is the artboard's:
+two clauses the other way round, `1 needs you · 3 running`, the ask in del
+and the count in the artboard's dim. The frame itself is the artboard's:
 Info, as every card waiting on an answer is.
 
 The manager's border is the one place outside a child's own lane or row that
@@ -929,10 +929,23 @@ one function, so they cannot disagree about a count.
 
 On the border the clause that asks something of you is the only one the
 reader has to act on, so it is read first; running children are the
-remainder. The count of running children is in the tone every live thing in
-the product is drawn in, the spinner's, rather than in dim beside a clause in
-del, which would make the one clause that says work is going on the quietest
-thing on the border.
+remainder.
+
+A lane's state is carried by its glyph, and only a verdict takes a state's
+colour after it. The `Agents` artboard draws the lane's `◇` in the state's
+tone — info running, add done, del blocked — the word after the bar in that
+tone where it is a verdict (`✓ 5/5`, `⚠ needs you`), and in dim where it is
+a count (`2/5 · 6 tools · $0.02`); the manager's `3 running` is dim as well.
+The `Main` artboard draws a lane's `2 of 5 steps` in info instead, and the two
+disagree: the `Agents` artboard is the fan-out's own and is the one followed.
+So every count of running children, every step count and every tool count is
+dim on the lane, the manager's row and the rail's map; the glyph, the
+spinner's own glyph and the verdicts keep their tones. The state is still
+said twice without colour — by the glyph's shape on a row and by the word —
+so dimming the counts takes nothing a monochrome terminal was reading
+([colour never carries meaning alone](principles.md#colour-never-carries-meaning-alone)),
+and a header that was red, magenta, blue and green on one row is one hue and
+its grey.
 
 Three smaller differences on the manager's top border follow from the family
 rather than from this card. The title is `Agents`, capitalised like every
