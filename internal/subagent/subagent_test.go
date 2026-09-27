@@ -60,6 +60,9 @@ type scriptedEnv struct {
 	// of execOut and execCode, for an ending the pair cannot state.
 	exec       *tools.ExecResult
 	ranCommand atomic.Bool
+	// commandRefusal is the Env's CommandRefusal: the answer a child's
+	// command gets where it must be contained and nothing can contain it.
+	commandRefusal string
 	// reduce is the reduction pipeline the child's command output goes
 	// through, as a session hands one in. Nil is a child whose surface has
 	// no evidence store.
@@ -166,9 +169,10 @@ func (s *scriptedEnv) factory() EnvFactory {
 				}
 				return tools.InferExecResult(s.execOut, s.execCode)
 			},
-			Reduce: s.reduce,
-			Keep:   s.keep,
-			Gated:  s.gated,
+			CommandRefusal: s.commandRefusal,
+			Reduce:         s.reduce,
+			Keep:           s.keep,
+			Gated:          s.gated,
 		}
 		if s.repeats != nil {
 			env.WrapAuto = func(_ Seam, next agent.ToolExecutor) agent.ToolExecutor {

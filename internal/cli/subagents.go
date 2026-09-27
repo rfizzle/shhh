@@ -822,6 +822,10 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 			Executor:     session.vault.WrapExecutor(subagent.RootedExecutor(croot, autoExec)),
 			ExecuteGated: session.vault.WrapExecutor(gatedExec),
 			RunCommand:   scrubResultRunner(session.vault, childCommandRunner(cfg, croot, sc, writer, avail)),
+			// The same refusal, answered ahead of the card: a command the
+			// runner would refuse whatever the person said is never put to
+			// them.
+			CommandRefusal: childCommandRefusal(cfg, writer, avail),
 			// The same pipeline the parent's own commands go through, and
 			// the same store behind it: a child's evidence entries land
 			// beside the session's, so the id in a reduction notice is one
@@ -1300,6 +1304,19 @@ func childCommandsRefused(cfg config.Config, writer bool, avail sandbox.Availabi
 	return writer && !avail.OK && childRequiresContainment(cfg, writer)
 }
 
+// childCommandRefusal is the answer every command a child makes gets before
+// anything decides about it, or "" where its commands may run: one that must
+// be contained on a host with nothing to contain it. The child's gate answers
+// with it ahead of the card and its runner with it behind every approval, so
+// the two cannot disagree about which commands are refused.
+// See docs/capabilities/containment.md#containment-can-be-required.
+func childCommandRefusal(cfg config.Config, writer bool, avail sandbox.Availability) string {
+	if avail.OK || !childRequiresContainment(cfg, writer) {
+		return ""
+	}
+	return childRefusal(cfg, avail)
+}
+
 // childRefusal is what a child's command is answered with where it must be
 // contained and nothing can contain it: the session's own refusal where the
 // session requires containment, and the writer's where only the writer
@@ -1425,8 +1442,7 @@ func childCommandRunnerIn(cfg config.Config, dir string, sc *scope.Scope, writer
 		// own commands, because nobody watches a writer's commands as they
 		// happen.
 		// See docs/capabilities/containment.md#containment-can-be-required.
-		if required {
-			refusal := childRefusal(cfg, avail)
+		if refusal := childCommandRefusal(cfg, writer, avail); refusal != "" {
 			return func(context.Context, string) tools.ExecResult {
 				return tools.ExecResult{Output: refusal, ExitCode: -1, Outcome: tools.ExecDidNotStart}
 			}

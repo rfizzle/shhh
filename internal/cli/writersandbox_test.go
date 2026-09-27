@@ -218,3 +218,46 @@ func TestOnlyAWriterThatRunsCommandsIsToldAboutThem(t *testing.T) {
 		t.Error("holdsCommand should find execute_command in the full toolset alone")
 	}
 }
+
+// The refusal a child's gate answers with ahead of the card is the one its
+// runner answers with behind an approval, and only where the command must be
+// contained and nothing can contain it: with a mechanism, with the writer
+// default off, or for a child that is not a writer, the gate is handed
+// nothing and the card is raised as before.
+// See docs/capabilities/containment.md#containment-can-be-required.
+func TestAChildsGateAndRunnerRefuseTheSameCommands(t *testing.T) {
+	t.Setenv("XDG_DATA_HOME", t.TempDir())
+	required := config.Config{Sandbox: config.SandboxConfig{Require: true}}
+	for _, tc := range []struct {
+		name    string
+		cfg     config.Config
+		writer  bool
+		avail   sandbox.Availability
+		refused bool
+	}{
+		{"a writer on a host with none", config.Config{}, true, noMechanism, true},
+		{"a writer on a host with a mechanism", config.Config{}, true, standInMechanism, false},
+		{"a writer with the default off", requireSandboxOff(), true, noMechanism, false},
+		{"a child that is not a writer", config.Config{}, false, noMechanism, false},
+		{"a child in a session that requires containment", required, false, noMechanism, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			gate := childCommandRefusal(tc.cfg, tc.writer, tc.avail)
+			if (gate != "") != tc.refused {
+				t.Fatalf("the gate's refusal is %q, want refused = %v", gate, tc.refused)
+			}
+			if !tc.refused {
+				return
+			}
+			dir := t.TempDir()
+			sc, errs := scope.New(dir)
+			if len(errs) > 0 {
+				t.Fatalf("scope: %v", errs)
+			}
+			got := childCommandRunnerIn(tc.cfg, dir, sc, tc.writer, tc.avail)(context.Background(), "echo ran")
+			if got.Output != gate {
+				t.Fatalf("the runner refused with %q, the gate with %q", got.Output, gate)
+			}
+		})
+	}
+}

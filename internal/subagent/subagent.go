@@ -433,6 +433,13 @@ type Env struct {
 	// command ended as well as what it printed, so a command that never
 	// started keeps its category and one whose ending nobody read says so.
 	RunCommand func(ctx context.Context, command string) tools.ExecResult
+	// CommandRefusal, when set, is the answer every command this child makes
+	// gets before anything decides about it: a child whose commands must be
+	// contained on a host with nothing to contain them. It is answered ahead
+	// of the policy, the classifier and the card, because a card whose every
+	// answer ends in the same refusal puts no decision to anyone.
+	// See docs/capabilities/containment.md#containment-can-be-required.
+	CommandRefusal string
 	// Reduce runs a command's output through the session's reduction
 	// pipeline before it becomes the child's tool result: a head, a tail,
 	// every line that names an error or a failure, and an id that pages the
@@ -5039,8 +5046,21 @@ func (s *Supervisor) resolveGated(c *child, tc provider.ToolCall) string {
 		return "error: " + actionErr.Error()
 	}
 	action = s.scopedAction(c, action)
-	policy := s.childPolicy(c)
 	title := askTitle(tc.Name, action)
+	// A command that must be contained where nothing can contain it is
+	// answered here, ahead of the policy, the classifier and the card, as a
+	// session that requires containment answers its own: every answer the
+	// person could give ends in the same refusal, so there is no decision to
+	// put to them and none is filed. The refusal is the call's result, which
+	// is where the child can act on it.
+	// See docs/capabilities/containment.md#containment-can-be-required.
+	if tc.Name == tools.ExecCommandName && c.env.CommandRefusal != "" {
+		c.appendEntry(TranscriptEntry{Kind: EntrySystem,
+			Text:   "Refused: " + title + " — nothing is containing this agent's commands",
+			Result: c.env.CommandRefusal})
+		return c.env.CommandRefusal
+	}
+	policy := s.childPolicy(c)
 	decision, reason := policy.Decide(action)
 	// The policy's reason is free text until it goes through ReasonCode,
 	// which is where it stops being able to carry the path it names.

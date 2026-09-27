@@ -301,7 +301,9 @@ it could not run and what would fix it, which is the one thing it can act on.
 **A sub-agent's commands are refused too.** A child has no card to draw and
 nobody in front of it to draw one for, which makes it the path a requirement
 that stopped at the session would be walked around by — one fan-out and the
-work is running bare again.
+work is running bare again. A child's command that would otherwise be routed to
+you is refused before its card, for the reason above: an approval spent on a
+command that will be refused whatever you answer is not a decision.
 
 **A writer's commands are required to be contained, whatever the session
 requires of its own.** A session's own commands are each put to you on a card,
