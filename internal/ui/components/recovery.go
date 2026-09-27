@@ -429,8 +429,10 @@ func (c ProviderCard) View(width int) string {
 		rows = append(rows, cardRule, keyOffers(c.Keys))
 	}
 	// Accent, not the default gray: this is the one card that stops the
-	// session, and the border says so the way a gated mode does
-	// (ui_kits/cockpit/Edges.html in the shhh Design System project).
+	// session, and an accent border is a card's weight — a decision waiting
+	// on the reader — while the input frame's border stays chrome in every
+	// mode (ui_kits/cockpit/Edges.html in the shhh Design System project).
+	// See docs/interface/departures.md#the-frames-border-is-chrome-and-the-mode-segment-carries-the-mode.
 	border := sty.Accent
 	return Card{
 		Title: "No model provider configured",

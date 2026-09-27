@@ -112,7 +112,9 @@ type TurnClose struct {
 	// Spend is the turn's cost, or its token count where the pricing table
 	// did not know the model — never a made-up zero.
 	Spend string
-	// Note is the first row's right-aligned note, e.g. "round 7/25".
+	// Note is the first row's right-aligned aside: a dim reading beside the
+	// stats that the row gives up first when the terminal is narrow, so
+	// nothing the turn's outcome depends on may live here.
 	Note string
 
 	Changes *TurnChanges
