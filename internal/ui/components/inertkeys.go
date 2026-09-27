@@ -125,12 +125,20 @@ const optionRow = "alt needs Option as Meta — shhh doctor"
 // optionLine is that sentence as the line a row appends.
 func optionLine() string { return sty.Dim.Render(optionRow) }
 
-// namesTheOption reports that this run is the one that says it: the offers
-// are being drawn as chords, at least one of them is an alt chord rather than
-// a key spelled the same either way (enter is) or a chord every terminal
-// delivers (a function key is), and this row is the session's first to do it.
+// OptionKeyboard reports that the keyboard in force is the Mac's, the only
+// one for which the Option setting is a fact about the terminal at all. It is
+// the answer the Mac's table is applied on (keys.Platform), not the host the
+// process runs on: every other keyboard is one whose alt arrives as it is, so
+// a row drawn under it names nothing, on any host.
+func OptionKeyboard() bool { return keys.Platform() == "darwin" }
+
+// namesTheOption reports that this run is the one that says it: the keyboard
+// is the Mac's, the offers are being drawn as chords, at least one of them is
+// an alt chord rather than a key spelled the same either way (enter is) or a
+// chord every terminal delivers (a function key is), and this row is the
+// session's first to do it.
 func namesTheOption(offers []TurnKey, waiting, option bool) bool {
-	if !option || !waiting || !chorded(offers) {
+	if !option || !waiting || !chorded(offers) || !OptionKeyboard() {
 		return false
 	}
 	for _, k := range offers {

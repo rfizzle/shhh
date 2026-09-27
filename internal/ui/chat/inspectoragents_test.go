@@ -83,8 +83,10 @@ func TestInspectorAgents_TrailerIsTheRegistersOwnLetters(t *testing.T) {
 // TestInspectorAgents_TheTrailerNamesWhatAltCosts: every clause of the
 // trailer is a chord, so where it is the first thing in the session to offer
 // one it carries the notice about the Option key — the same sentence, in the
-// same words, a transcript row carries when the row is first.
+// same words, a transcript row carries when the row is first. It is a Mac's
+// sentence, so it is asked of a Mac whose keymap put the manager on alt.
 func TestInspectorAgents_TheTrailerNamesWhatAltCosts(t *testing.T) {
+	macAltKeymap(t)
 	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
 	t.Cleanup(sup.Close)
 	updated, _ := newSubagentModel(t, sup).Update(tea.WindowSizeMsg{Width: 144, Height: 40})

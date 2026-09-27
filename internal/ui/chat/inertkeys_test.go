@@ -12,6 +12,8 @@ package chat
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
@@ -491,17 +493,19 @@ func steerNotice(turn int64) entry {
 }
 
 // TestRowChords_OneRowInASessionNamesTheOptionSetting is the sentence that
-// makes the chords usable on the desktop shhh is most often run on. An alt
-// chord composes a character on a stock Mac terminal until a profile setting
-// is ticked, so the first row in a session to offer one names the doctor row
-// that reads that setting — and only the first, because it is a fact about
-// the terminal rather than about that row.
+// makes the chords usable on a Mac. An alt chord composes a character on a
+// stock Mac terminal until a profile setting is ticked, so the first row in a
+// session to offer one names the doctor row that reads that setting — and
+// only the first, because it is a fact about the terminal rather than about
+// that row.
 //
-// Both kinds are checked because the rows do not agree on when they answer
-// the question: a turn's close settles it as it is built, and every other row
-// settles it as it is drawn. A kind the drawn answer cannot recognise says
-// "not me" for itself and "somebody already said it" for every row after it,
-// which is a session that never names the setting at all.
+// A Mac ships its row chords on the function row, so the rows that name it
+// are the ones a person's keymap put back on alt; macAltKeymap is that
+// keymap. Both kinds are checked because the rows do not agree on when they
+// answer the question: a turn's close settles it as it is built, and every
+// other row settles it as it is drawn. A kind the drawn answer cannot
+// recognise says "not me" for itself and "somebody already said it" for
+// every row after it, which is a session that never names the setting at all.
 func TestRowChords_OneRowInASessionNamesTheOptionSetting(t *testing.T) {
 	closeRow := func(m *Model) entry {
 		return entry{kind: entryTurnClose, turn: 1, close: &components.TurnClose{
@@ -519,6 +523,7 @@ func TestRowChords_OneRowInASessionNamesTheOptionSetting(t *testing.T) {
 	}
 
 	t.Run("the steer notice is first", func(t *testing.T) {
+		macAltKeymap(t)
 		m := frameModel(t, 110, 40)
 		m.turnCount, m.turnOpen = 1, true
 		m.appendEntry(steerNotice(1))
@@ -532,6 +537,7 @@ func TestRowChords_OneRowInASessionNamesTheOptionSetting(t *testing.T) {
 	})
 
 	t.Run("the turn's close is first", func(t *testing.T) {
+		macAltKeymap(t)
 		m := frameModel(t, 110, 40)
 		m.turnCount, m.turnOpen = 1, true
 		m.appendEntry(closeRow(&m))
@@ -563,6 +569,44 @@ func TestRowChords_OneRowInASessionNamesTheOptionSetting(t *testing.T) {
 			t.Error("the rail's trailer would name the Option setting over the function row")
 		}
 	})
+
+	// The Linux keyboard's alt arrives as it is, so its alt chords carry no
+	// sentence about a Mac's Option key, whatever host draws them — which is
+	// the README's pictures: the Linux keyboard, rendered on a Mac.
+	t.Run("the Linux keyboard names nothing", func(t *testing.T) {
+		t.Cleanup(keys.UsePlatform("linux"))
+		m := frameModel(t, 110, 40)
+		m.turnCount, m.turnOpen = 1, true
+		m.appendEntry(closeRow(&m))
+		m.appendEntry(steerNotice(1))
+		if row := ansi.Strip(m.renderEntryKeys(m.transcript[0], 110, rowPointed)); !strings.Contains(row, "[alt+z] undo turn") {
+			t.Fatalf("the Linux close does not offer its alt chord:\n%s", row)
+		}
+		if says(t, m, 0) || says(t, m, 1) {
+			t.Error("a row names a Mac's Option setting under the Linux keyboard")
+		}
+		if m.resolveInspector().AgentsOption {
+			t.Error("the rail's trailer names a Mac's Option setting under the Linux keyboard")
+		}
+	})
+}
+
+// macAltKeymap puts the Mac's keyboard on the register with a keymap file
+// that moves the undo chord and the agent manager back onto alt — a real Mac
+// session whose person chose the alt chords — and puts both back when the
+// test ends.
+func macAltKeymap(t *testing.T) {
+	t.Helper()
+	t.Cleanup(func() { _ = keys.Load() })
+	t.Cleanup(keys.UsePlatform("darwin"))
+	path := filepath.Join(t.TempDir(), "keybindings.toml")
+	keymap := "[draft]\nagents = \"alt+a\"\n\n[rowchord]\nundo = \"alt+z\"\n"
+	if err := os.WriteFile(path, []byte(keymap), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := keys.Load(path); err != nil {
+		t.Fatal(err)
+	}
 }
 
 // TestInertKeys_EveryTakeoverHoldsTheKeyboardExclusively is why most of the

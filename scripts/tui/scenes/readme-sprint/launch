@@ -2,4 +2,9 @@
 # harness's own name or any vendor's: the replies are scripted, and the
 # picture's alt text says so. The harness exports SHHH_MODEL before this
 # line, so naming it here is what overrides it.
-SHHH_MODEL=example-model $SHHH_BIN code
+#
+# The workspace is the harness's scratch directory, whose temporary path the
+# header row would print in full. A link to it under the run's own home,
+# entered by that name, is printed the way a person's checkout is:
+# ~/src/cache, the way readme-hero's is ~/src/fetch.
+mkdir -p $HOME/src && ln -s $PWD $HOME/src/cache && cd $HOME/src/cache && SHHH_MODEL=example-model $SHHH_BIN code

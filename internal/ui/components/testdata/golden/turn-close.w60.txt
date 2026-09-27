@@ -57,7 +57,6 @@
   ▎✎ 3 files changed +30 −4               all tracked in git
      [enter] review turn · [alt+g] commit
      [alt+z] undo turn
-     alt needs Option as Meta — shhh doctor
    ✓ go test ./internal/agent/... passing · 41 packages · 1…
 
 · committed · the receipt, and what undo does not reach
@@ -141,7 +140,6 @@
   ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m3 files changed ␛[m␛[92m+30␛[m ␛[91m−4␛[m               ␛[38;5;241mall tracked in git␛[m
      ␛[94m[enter]␛[m␛[38;5;241m review turn␛[m␛[38;5;241m · ␛[m␛[94m[alt+g]␛[m␛[38;5;241m commit␛[m
      ␛[94m[alt+z]␛[m␛[38;5;241m undo turn␛[m
-     ␛[38;5;241malt needs Option as Meta — shhh doctor␛[m
    ␛[92m✓␛[m ␛[38;5;252mgo test ./internal/agent/... passing␛[m␛[38;5;241m · 41 packages · 1…␛[m
 
 · committed · the receipt, and what undo does not reach
