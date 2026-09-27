@@ -63,9 +63,11 @@ seeded with your uncommitted work, so what comes back for approval is the
 child's work alone. A patch that no longer applies is merged three ways —
 the tree the writer started from, your files as they are now, and the
 writer's — and where two changes meet on the same lines, the conflict is
-handed to an integration writer rather than to you.
+handed to an integration writer rather than to you. From 130 columns an
+inspector rail opens beside the transcript, and its map of agents names
+every child and what it is doing while the fan-out runs.
 
-![Three writers in three states, recorded against a scripted model: one waiting on you, one part way through its steps, one done with its report folded](docs/readme/readme-fanout-05-three-states.gif)
+![Three writers in three states at 130 columns, recorded against a scripted model: one waiting on you with its command card open, one part way through its steps, one done with its report folded, and the rail's map of agents beside them](docs/readme/readme-fanout-05-three-states.gif)
 
 **A turn checks itself as it closes.** A project names a suite of checks in
 `.shhh/quality.json`; a turn that changed something can run it after its last
