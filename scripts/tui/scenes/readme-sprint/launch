@@ -1,0 +1,5 @@
+# A README picture, so the model is a neutral placeholder rather than the
+# harness's own name or any vendor's: the replies are scripted, and the
+# picture's alt text says so. The harness exports SHHH_MODEL before this
+# line, so naming it here is what overrides it.
+SHHH_MODEL=example-model $SHHH_BIN code

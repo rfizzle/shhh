@@ -1,0 +1,30 @@
+# program test: TestProgram_ASpawnCardStartsTheChildrenAsLanes,
+#   TestProgram_AChildsRequestIsAnsweredFromItsCard
+#
+# The README's picture of a fan-out: the fanout-lanes route, step for step,
+# with the words of real work and a placeholder model (its launch) in place
+# of the harness's. What the capture is for, and why each step is where it
+# is, is fanout-lanes' head comment; this scene keeps its keys and its waits
+# so the two cannot come apart, and ends at the picture.
+setup printf 'package cache\n\ntype entry struct {\n\tvalue []byte\n}\n\ntype Cache struct {\n\tentries map[string]entry\n}\n\nfunc (c *Cache) Get(key string) ([]byte, bool) {\n\te, ok := c.entries[key]\n\treturn e.value, ok\n}\n\nfunc (c *Cache) Put(key string, value []byte) {\n\tc.entries[key] = entry{value: value}\n}\n' > cache.go
+snap 01-start "Some things worth doing first"
+keys "entries never expire; survey how the cache reads, stores and evicts them" Enter
+snap 02-spawn-card "Spawn 3 writers"
+keys y
+sleep 4
+snap 03-lanes "3 agents"
+sleep 4
+keys Escape
+sleep 2
+snap 04-blocked "needs you"
+keys C-Space
+sleep 2
+keys y
+sleep 5
+keys C-Space
+sleep 2
+keys y
+sleep 5
+keys Escape
+sleep 2
+snap 05-three-states "✓ done ·" "⚠ needs you ·" "1 of 3 steps ·" "· Run gofmt"

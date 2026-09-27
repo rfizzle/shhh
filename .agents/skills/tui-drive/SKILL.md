@@ -121,6 +121,12 @@ immediately before a batch of calls. Sent as replies of their own the sentence
 would be a turn that ended before the calls were asked for, and the scene
 would get four rows and no outline.
 
+A reply streams as fast as the socket takes it. `FAKE_PACE_MS` in the
+environment of the run (`25-60`, or one number) paces a plain reply's words
+that many milliseconds apart, the way a model's arrive; it is a fact about the
+run and not the scene, so `scripts/tui/readme-pictures.sh` sets it for the
+README's recording alone and `make tui-check` drives the same scene unpaced.
+
 A `+` with nothing above it is an error naming the file and the line: the
 provider refuses to start, and the scene fails before the binary opens rather
 than drawing that line as a step title nobody wrote.
@@ -223,6 +229,13 @@ snap 04-exit "that is everything the screen was holding"
   they are for `keys`.
 - `sleep <seconds>` is for the rare step nothing on screen marks. Prefer a
   snap with text; a sleep is a guess about a machine's speed.
+- `type "<line>"` types the line a keystroke at a time, 45–90 ms apart and
+  jittered, in one tmux command the way `press` sends its keys, so a loaded
+  host cannot stretch it. It is for a scene someone watches — the README's
+  recording — and `keys` is unchanged, so a scene that is only a test stays
+  as fast as it was. `hold <seconds>` is `sleep` under the name that says
+  why: the pause a viewer of the recording needs on a screen that has
+  settled, before the next key.
 - `wide <cols> <step>` runs the step only where the pane is at least `<cols>`
   wide, and `narrow <cols> <step>` only where it is narrower; the two stack
   (`narrow 130 wide 110 snap …`). The gate drives a scene at its own `size`,
@@ -293,6 +306,14 @@ built-in bound back. A table the harness does not write can be appended with
 `[web]\nallow_private = true` so its fetch can reach the loopback fixture;
 the moment the harness writes that table too, the append has to become a
 rewrite.
+
+The README's pictures come from scenes of their own, `scripts/tui/scenes/readme-*`,
+drawn by `scripts/tui/readme-pictures.sh`. A harness scene is a test and its
+words say so; a README scene walks the same route with the words of real work
+and names the model `example-model` in its `launch` (`SHHH_MODEL=example-model
+$SHHH_BIN code` — the harness exports its own before the line, so the line
+wins). They run under `make tui-check` like every other scene, so a picture's
+scene cannot rot.
 
 Pick the width. `COLS` is the terminal, and the four the goldens use are 60,
 80, 110 and 130 — the breakpoints in `docs/interface/principles.md#one-grid`.

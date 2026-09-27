@@ -1,0 +1,6 @@
+# A README picture of the one-shot, so the model is a neutral placeholder
+# rather than the harness's own name or any vendor's: the reply is scripted,
+# and the picture's alt text says so. The harness exports SHHH_MODEL before
+# this line, so naming it here is what overrides it. `clear` first, so the
+# capture holds the one surface and nothing from the shell before it.
+clear; SHHH_MODEL=example-model $SHHH_BIN cmd 'find every process listening on a port above 8000'

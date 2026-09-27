@@ -13,7 +13,7 @@ flags. Every size is the same bargain: you say what you want in your own
 words, and shhh puts the result in front of you *before* anything happens, in
 enough detail to say no.
 
-![A whole shhh code session from the commit-offer scene: the prompt, the edit card, the turn's close and the commit](docs/readme/commit-offer.cast.gif)
+![A shhh code session recorded against a scripted model: a request typed in, the search it runs on its own, the edit card and the command card answered, the reply streaming in, the turn's close and the commit it offers](docs/readme/readme-hero.cast.gif)
 
 ## Code — `shhh code`
 
@@ -29,7 +29,7 @@ codes and a JSON or line-by-line event stream), a JSON-RPC session another
 program drives (`shhh serve`), and the backlog runner, which spends each stage
 of an item as one of those headless runs.
 
-![The smoke scene at its approval card: a command waiting for an answer, with what it touches, how to undo it, the network and the containment in force](docs/readme/smoke-03-approval.gif)
+![A command card, recorded against a scripted model: a command waiting for an answer, with what it touches, how to undo it, the network and the containment in force](docs/readme/readme-hero-03-command-card.gif)
 
 ### What it is careful about
 
@@ -63,7 +63,7 @@ the tree the writer started from, your files as they are now, and the
 writer's — and where two changes meet on the same lines, the conflict is
 handed to an integration writer rather than to you.
 
-![The fanout-lanes scene with three writers in three states: one waiting on you, one part way through its steps, one done with its report folded](docs/readme/fanout-lanes-05-three-states.gif)
+![Three writers in three states, recorded against a scripted model: one waiting on you, one part way through its steps, one done with its report folded](docs/readme/readme-fanout-05-three-states.gif)
 
 **A turn checks itself as it closes.** A project names a suite of checks in
 `.shhh/quality.json`; a turn that changed something can run it after its last
@@ -71,7 +71,7 @@ tool call, a failing verdict is handed back once, and the close says what the
 last verdict was. The model chooses a suite by name and never supplies a
 command.
 
-![The commit-offer scene at the turn's close: the edit, the answer, and the row saying one file changed](docs/readme/commit-offer-03-close.gif)
+![A turn's close, recorded against a scripted model: the steps, the answer, and the row saying one file changed](docs/readme/readme-hero-04-close.gif)
 
 **A backlog it works through.** Items are Markdown files under `.shhh/todo`.
 `shhh todo run` works one through research, implementation, checks, review
@@ -79,7 +79,7 @@ and commit; `--all` works the ready list as a sprint, and `--parallel N` works
 several items at once, each in its own copy of the checkout, taken only where
 the paths the items declare do not meet.
 
-![The sprint-lanes scene on the backlog screen's sprint tab: three items worked at once, each at its own stage](docs/readme/sprint-lanes-03-sprint-tab.gif)
+![The backlog screen's sprint tab, recorded against a scripted model: three items worked at once, each at its own stage](docs/readme/readme-sprint-03-sprint-tab.gif)
 
 **A record that holds no content.** Every session records which tools ran,
 what the policy decided and how each turn ended — never a prompt, an output,
@@ -107,7 +107,7 @@ does, and a row of keys: run it, edit it, ask for a different one, copy it,
 save it. Nothing runs until you say so. With no terminal on the other end it
 writes the bare command to stdout, so it composes.
 
-![The one-shot scene with a generated command, the line saying what it does, its safety reading and the row of keys](docs/readme/one-shot-02-result.gif)
+![A one-shot result, recorded against a scripted model: the generated command, the line saying what it does, its safety reading and the row of keys](docs/readme/readme-one-shot-01-result.gif)
 
 ```sh
 $ shhh cmd "find every process listening on a port above 8000"

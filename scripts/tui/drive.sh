@@ -12,6 +12,8 @@
 #     setup <shell>             run in the workspace before the binary starts
 #     keys <tmux send-keys …>   type; Enter, Escape, Tab, BTab, Up, C-c, "a line"
 #     press <seconds> <key> …   the keys <seconds> apart, timed by tmux itself
+#     type "<line>"             the line a keystroke at a time, 45–90 ms apart
+#                               and jittered, as a person types it
 #     paste <file>              bracketed-paste a file the setup wrote
 #     shell <shell>             run beside the binary, mid-scene, in the
 #                               workspace with the run's environment and
@@ -21,6 +23,8 @@
 #                               capture the screen once <text> is on it; every
 #                               further string must be on that capture too
 #     sleep <seconds>           wait, for the rare step nothing on screen marks
+#     hold <seconds>            the same wait, written where a viewer of the
+#                               recording needs a moment on a settled screen
 #     wide <cols> <step>        the step, only where the pane is <cols> or wider
 #     narrow <cols> <step>      the step, only where the pane is narrower; the
 #                               two stack, to bound a step on both sides
@@ -39,6 +43,13 @@
 # inside half a second: the keys leave in one tmux command and the server
 # keeps the gap, so no process the harness starts between them can stretch
 # it past the window on a loaded host.
+#
+# `type` is `keys` at a person's pace, for a scene that is watched rather than
+# only checked — the README's recording. Every character leaves in the same
+# one tmux command, with a gap of 45 to 90 ms drawn afresh before each, so the
+# typing has a rhythm rather than a metronome and a loaded host cannot stretch
+# it the way a process per key would. `keys` is unchanged and sends a line at
+# once, which is what every scene that is only a test wants.
 #
 # A capture is cells; --pictures draws them. Each snap's `.ansi` — the same
 # cells with their colour — is wrapped as a one-frame asciicast (still.py) and
@@ -145,7 +156,12 @@ fi
 # Everything the run touches is its own: a home so no developer setting or
 # saved chat leaks in, and a fresh repository to work in, because the start
 # screen and the approval card both read the checkout they are opened in.
-work=$(mktemp -d "${TMPDIR:-/tmp}/shhh-tui.XXXXXX") || { echo "drive.sh: could not make a scratch directory under ${TMPDIR:-/tmp}" >&2; exit 1; }
+# Without the trailing slash macOS puts on TMPDIR: `T//shhh-tui…` names the
+# same directory, but the home made under it is then a string no path the
+# binary prints begins with, so nothing under that home is shortened to `~`.
+tmpdir=${TMPDIR:-/tmp}
+tmpdir=${tmpdir%/}
+work=$(mktemp -d "$tmpdir/shhh-tui.XXXXXX") || { echo "drive.sh: could not make a scratch directory under $tmpdir" >&2; exit 1; }
 home=$work/home
 ws=$work/ws
 # The tmux socket goes here too. It cannot go under OUT: a Unix socket's path
@@ -370,8 +386,26 @@ while IFS= read -r line || [ -n "$line" ]; do
 		done
 		tmux -L "$SOCK" "${seq[@]}"
 		;;
-	sleep\ *)
-		sleep "${line#sleep }"
+	type\ *)
+		# The line a character at a time, each sent literally (-l) so a
+		# word is never read as a key name, with a jittered gap before every
+		# character after the first. One tmux command, like `press`: the
+		# server keeps the gaps, and the command returns once the last
+		# character has gone. A lone `;` is tmux's command separator, so it
+		# is sent as `\;`, which tmux reads as the character.
+		eval "set -- ${line#type }"
+		text="$*"
+		seq=()
+		for ((i = 0; i < ${#text}; i++)); do
+			c=${text:i:1}
+			[ "$c" = ";" ] && c='\;'
+			[ ${#seq[@]} -gt 0 ] && seq+=(";" run-shell -d "0.0$((45 + RANDOM % 46))" ";")
+			seq+=(send-keys -t scene -l -- "$c")
+		done
+		[ ${#seq[@]} -gt 0 ] && tmux -L "$SOCK" "${seq[@]}"
+		;;
+	sleep\ *|hold\ *)
+		sleep "${line#* }"
 		;;
 	snap\ *)
 		eval "set -- ${line#snap }"

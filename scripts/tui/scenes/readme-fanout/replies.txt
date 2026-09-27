@@ -1,0 +1,39 @@
+# The fanout-lanes scene's queues with the words of real work: a cache whose
+# entries never expire, surveyed by three writers at once. The mechanics are
+# fanout-lanes' own, and its replies file says why each is there — one queue
+# per agent, each child held a second longer than the one before on the round
+# it asks to run something, writer-1 kept waiting on its next token so its
+# lane is the one still going, writer-2 answered at once with a report, and
+# writer-3's request never answered.
+
+[session]
+Splitting the survey of the cache across three writers.
++tool:spawn_agent:{"role":"writer","task":"Find every place a cache entry is read.","name":"writer-1"}
++tool:spawn_agent:{"role":"writer","task":"Find where an entry's lifetime should be set.","name":"writer-2"}
++tool:spawn_agent:{"role":"writer","task":"Find where entries are evicted.","name":"writer-3"}
+tool:read_file:{"path":"cache.go"}
+Entries are read in Get alone, and nothing ever evicts them.
+
+[writer-1]
+1. Read cache.go\n2. Run gofmt\n3. Report every reader of an entry
++tool:read_file:{"path":"cache.go"}
+wait:1
++progress: 1
++tool:execute_command:{"command":"gofmt -l cache.go"}
+wait:40
++Entries are read in Get alone.
+
+[writer-2]
+tool:read_file:{"path":"cache.go"}
+wait:2
++tool:execute_command:{"command":"gofmt -l cache.go"}
+Put is where a lifetime belongs: it stores the entry and nothing else touches it.\n\n## Assumptions\n\n- A lifetime is per cache, not per entry.\n- The clock can be the wall clock; no test needs to fake it yet.
+
+[writer-3]
+tool:read_file:{"path":"cache.go"}
+wait:3
++tool:execute_command:{"command":"gofmt -l cache.go"}
+Nothing evicts an entry today; Put only ever adds.
+
+[reading]
+on_target: Three writers are surveying how the cache reads, stores and evicts entries.

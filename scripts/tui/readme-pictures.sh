@@ -16,12 +16,17 @@
 # falls apart when zoomed. So every picture is drawn at two to three times it:
 # at FONT_SIZE 28 a cell is about seventeen pixels wide, which puts a
 # 110-column capture near 1850 pixels and a 130-column one near 2200, and the
-# browser scales it down. When a picture is too heavy, the frame rate and the
-# rows are what give, never the font size.
+# browser scales it down. When a picture is too heavy, the rows it keeps and
+# the length of the scene are what give — never the font size, and for the
+# recording never the frame rate either.
 #
 # The font is JetBrains Mono (the Nerd Font build where it is installed, which
 # carries the drawing kit and the glyph set the interface draws), falling back
-# to agg's own list of monospaced faces. The ground is the dark palette's own,
+# to agg's own list of monospaced faces. STIX Two Math is last on the list for
+# one glyph: the `⏸` the mode chip wears. No monospaced face here carries
+# U+23F8, and without a face on the list that does, agg falls through to the
+# system's colour emoji and draws a blue tile in the middle of a line of text;
+# STIX Two Math ships with macOS and draws it as a glyph in the text's colour. The ground is the dark palette's own,
 # #1c1c1c, so the picture reads as the terminal did.
 #
 # The keyboard is the Linux one. drive.sh defaults PLATFORM to linux, and it
@@ -42,7 +47,7 @@ dest=$root/docs/readme
 only=${1:-}
 
 FONT_SIZE=${FONT_SIZE:-28}
-FONT="JetBrainsMono Nerd Font Mono,JetBrains Mono,Fira Code,SF Mono,Menlo,DejaVu Sans Mono"
+FONT="JetBrainsMono Nerd Font Mono,JetBrains Mono,Fira Code,SF Mono,Menlo,DejaVu Sans Mono,STIX Two Math"
 # agg's custom theme: the ground, the text, then the sixteen ANSI colours. The
 # interface draws in truecolor, so the sixteen are only a fallback.
 THEME=1c1c1c,d0d0d0,1c1c1c,d75f5f,87af87,d7af5f,5f87d7,af87d7,5fafaf,bcbcbc,585858,ff8787,afd7af,ffd787,87afff,d7afff,87d7d7,eeeeee
@@ -67,17 +72,38 @@ mkdir -p "$work" "$dest"
 # counted from one — a run of blank rows between the transcript and the
 # bottom panel, or a notice the picture is not about, is cut out. Width and
 # height are the scene's own `size`, or 110 by 40 where it states none.
+#
+# Every picture comes from a README-only scene (scripts/tui/scenes/readme-*):
+# the harness's own scenes are tests, and their words say so — a greeting
+# from "the scripted provider", a command that echoes "counted", the model
+# named scripted-model. A README scene is the same route with the words of
+# real work and a placeholder model, `example-model`, named in its launch;
+# the replies are still scripted, and each picture's alt text says so.
 stills=(
-	"smoke 03-approval 1-11,25-40"
-	"fanout-lanes 05-three-states 1-25,34-46,49-52"
-	"commit-offer 03-close 1-14,37-40"
-	"one-shot 02-result 2-7"
-	"sprint-lanes 03-sprint-tab 1-28,38-40"
+	"readme-hero 03-command-card 1-13,25-40"
+	"readme-fanout 05-three-states 1-25,34-46,48-52"
+	"readme-hero 04-close 1-18,36-40"
+	"readme-one-shot 01-result 1-6"
+	"readme-sprint 03-sprint-tab 1-28,38-40"
 )
-# The hero: the whole of one scene, recorded, and how many frames a second it
-# is drawn at.
-hero_scene=commit-offer
-hero_fps=8
+# The hero: the whole of one scene, recorded, and drawn at a frame rate that
+# reads as motion rather than as a slide show. The scene types at a person's
+# pace (its `type` steps) and FAKE_PACE_MS, set for this run alone, streams
+# the replies a word at a time as a model does, so `make tui-check` drives the
+# same scene at full speed. Idle stretches are cut at 2.5 s, which keeps a
+# pause long enough to read a card and no longer; the playback is never sped
+# up. When the file grows too heavy, the scene is shortened — never the frame
+# rate, and never the font size.
+#
+# The recording ends on the commit's receipt rather than on the exit banner:
+# the scene has to quit for the recorder to write its file, but a picture
+# that loops through an emptied terminal ends on nothing. So the cast is cut
+# at the first output after the receipt has stood for hero_rest seconds.
+hero_scene=readme-hero
+hero_fps=25
+hero_pace=25-60
+hero_until="committed 1 file as"
+hero_rest=2.5
 
 size_of() {
 	local cols=110 rows=40
@@ -119,11 +145,11 @@ draw() {
 
 driven=" "
 drive() {
-	local scene=$1 mode=$2 out=$work/$1$2
+	local scene=$1 mode=$2 pace=${3:-} out=$work/$1$2
 	case $driven in *" $scene$mode "*) return 0 ;; esac
 	read -r cols rows < <(size_of "$scene")
 	echo "driving $scene at ${cols}x$rows${mode:+ ($mode)}"
-	OUT=$out COLS=$cols ROWS=$rows "$here/drive.sh" $mode "$here/scenes/$scene" >"$work/$scene$mode.log" 2>&1 ||
+	FAKE_PACE_MS=$pace OUT=$out COLS=$cols ROWS=$rows "$here/drive.sh" $mode "$here/scenes/$scene" >"$work/$scene$mode.log" 2>&1 ||
 		{ echo "readme-pictures.sh: $scene did not run — $work/$scene$mode.log:" >&2; sed 's/^/  /' "$work/$scene$mode.log" >&2; exit 1; }
 	driven="$driven$scene$mode "
 }
@@ -141,11 +167,34 @@ for entry in "${stills[@]}"; do
 done
 
 if [ -z "$only" ] || [ "$only" = "$hero_scene" ]; then
-	drive "$hero_scene" --record
+	drive "$hero_scene" --record "$hero_pace"
 	cast=$work/$hero_scene--record/$hero_scene.cast
 	[ -s "$cast" ] || { echo "readme-pictures.sh: no recording at $cast" >&2; exit 1; }
+	python3 - "$cast" "$work/$hero_scene.cut.cast" "$hero_until" "$hero_rest" <<'PY' ||
+import json, sys
+src, out, until, rest = sys.argv[1], sys.argv[2], sys.argv[3], float(sys.argv[4])
+# A version 3 cast times each event from the one before it, so the clock is
+# the running sum.
+lines = open(src, encoding="utf-8").read().splitlines()
+kept, seen, t = [lines[0]], None, 0.0
+for line in lines[1:]:
+    if not line.startswith("["):
+        kept.append(line)
+        continue
+    step, kind, data = json.loads(line)
+    t += step
+    if seen is not None and t > seen + rest:
+        break
+    kept.append(line)
+    if seen is None and kind == "o" and until in data:
+        seen = t
+if seen is None:
+    sys.exit("readme-pictures.sh: the recording never drew %r" % until)
+open(out, "w", encoding="utf-8").write("\n".join(kept) + "\n")
+PY
+		exit 1
 	read -r cols rows < <(size_of "$hero_scene")
-	draw --cols "$cols" --rows "$rows" --fps-cap "$hero_fps" --idle-time-limit 1.5 --last-frame-duration 4 \
-		"$cast" "$dest/$hero_scene.cast.gif"
+	draw --cols "$cols" --rows "$rows" --fps-cap "$hero_fps" --idle-time-limit 2.5 --last-frame-duration 4 \
+		"$work/$hero_scene.cut.cast" "$dest/$hero_scene.cast.gif"
 	echo "  $dest/$hero_scene.cast.gif  $(wc -c <"$dest/$hero_scene.cast.gif" | tr -d ' ') bytes"
 fi

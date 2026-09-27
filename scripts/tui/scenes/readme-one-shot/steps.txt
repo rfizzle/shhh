@@ -1,0 +1,12 @@
+# program test: TestProgram_TheOneShotOpensItsAlternatives
+#
+# The README's picture of the one-shot: one ordinary command at 100 columns,
+# the width its artboard is drawn at, under a placeholder model (its launch).
+# The one-shot scene is the surface's own test, with the piped run and the
+# destructive command beside it; this one is the picture and nothing else.
+#
+# The key row is the surface's own and says how many other commands the
+# generation offered, so it is what the wait is on.
+snap 01-result "2 others" "[↵] run" "⛨ writes unknown" "awk keeps the rows"
+keys Escape
+snap 02-quit

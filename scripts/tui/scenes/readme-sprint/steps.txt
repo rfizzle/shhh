@@ -1,0 +1,18 @@
+# program test: TestProgram_TheSprintTabListsTheLanesAtWork
+#
+# The README's picture of a sprint working three items at once: the
+# sprint-lanes route with each item's tests written as a real backlog's are,
+# and a placeholder model (its launch) in place of the harness's. Why the
+# checkpoint is written by the setup rather than earned by running the lanes
+# is sprint-lanes' head comment.
+setup mkdir -p .shhh/todo/done .shhh/todo/.run
+setup printf -- '---\ntitle: Give the cache a lifetime\nsize: S\n---\n## Tests\n- `go test ./cache -run TestTTL`\n\n## Touches\n- `cache/ttl.go`\n' > .shhh/todo/cache-ttl.md
+setup printf -- '---\ntitle: Evict what the lifetime expired\nsize: S\n---\n## Tests\n- `go test ./cache -run TestEvict`\n\n## Touches\n- `cache/evict.go`\n' > .shhh/todo/cache-evict.md
+setup printf -- '---\ntitle: Say what the cache holds\nsize: S\n---\n## Tests\n- `go test ./cache -run TestReport`\n\n## Touches\n- `cache/report.go`\n' > .shhh/todo/cache-report.md
+setup printf -- '---\nname: caching\n---\nMake an entry'"'"'s lifetime mean something.\n\n## Items\n- cache-ttl\n- cache-evict\n- cache-report\n' > .shhh/todo/sprint.md
+setup printf '{"session":"scene","started":"2026-09-23T09:00:00Z","updated":"2026-09-23T09:40:00Z","parallel":3,"turns":5,"cost":1.2,"attempts":["cache-ttl","cache-evict","cache-report"],"lanes":[{"slug":"cache-ttl","stage":"implement"},{"slug":"cache-evict","stage":"verify"},{"slug":"cache-report","stage":"research"}]}\n' > .shhh/todo/.run/sprint.json
+snap 01-start "Some things worth doing first"
+keys "/todo" Enter
+snap 02-backlog "cache-evict" "cache-report"
+keys Tab
+snap 03-sprint-tab 'working · 3 at once' "cache-ttl     implement" "cache-evict   verify" "cache-report  research" "cache-evict  MS  verify" "go test ./cache -run TestTTL"

@@ -1,0 +1,29 @@
+# The README's hero: one turn of real-looking work in a small Go package. The
+# retry helper gives up after three attempts; the model looks for every
+# reader of the constant (a search that only reads, so it runs without a
+# card), changes the one line (an edit, so an edit card), checks the
+# formatting (a command, so a command card) and says what it did. Each reply
+# opens on a short wait, which is the moment a model spends before its first
+# token and what keeps the recording from looking like one frame per turn;
+# recorded, the words are paced as well (FAKE_PACE_MS, set by
+# readme-pictures.sh).
+#
+# The session's own readings of its run — the title, the summary — take the
+# [reading] queue, so the turn's replies are spent in order whatever else the
+# session asks.
+
+[session]
+wait:0.8
++I'll find every place that reads the attempt limit before changing it.
++tool:execute_command:{"command":"grep -rn maxAttempts --include=*.go ."}
+wait:0.8
++Only the loop in retry.go reads it, so this is a one-line change.
++tool:edit_file:{"path":"retry.go","old_text":"const maxAttempts = 3","new_text":"const maxAttempts = 5"}
+wait:0.6
++Checking the file is still formatted.
++tool:execute_command:{"command":"gofmt -l ."}
+wait:0.6
++The retry loop now makes up to five attempts before giving up. `maxAttempts` is read in one place, the loop in retry.go, so nothing else changes behaviour; the backoff still doubles from 200ms, so the last wait is 3.2s.
+
+[reading]
+on_target: Raising the retry limit from three attempts to five; only retry.go reads it.

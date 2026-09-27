@@ -77,12 +77,17 @@ print-mode tests make.
 
     fakeprovider.py <port> <replies-file>
 
+FAKE_PACE_MS in the environment (`25-60`, or one number) paces a plain
+reply's words that many milliseconds apart; unset, a reply arrives at once.
+
 Port 0 asks the kernel for a free one. The port taken is printed as `port
 <n>` on stdout once it is bound and listening, which is how drive.sh learns
 it: a port chosen in one process and bound in another leaves a window for
 anything else on the host to take it.
 """
 import json
+import os
+import random
 import re
 import sys
 import threading
@@ -137,6 +142,28 @@ def load(path):
     return queues
 
 
+def pace(value):
+    """FAKE_PACE_MS as the bounds of the gap between words, in milliseconds.
+
+    Unset, a reply streams as fast as the socket takes it, which is what a
+    scene that is only a test wants. Set — `25-60`, or one number for a fixed
+    gap — each word after the first waits a gap drawn between the two, so a
+    recording shows a reply arriving the way a model's does rather than in one
+    frame. It is an environment variable and not a reply directive because it
+    is a fact about the run rather than the scene: the same scene is a fast
+    test under `make tui-check` and a paced recording for the README.
+    """
+    if not value:
+        return None
+    lo, _, hi = value.partition("-")
+    try:
+        bounds = (float(lo), float(hi or lo))
+    except ValueError:
+        sys.exit("fakeprovider: FAKE_PACE_MS is milliseconds, `25-60` or `40`: %r" % value)
+    return (min(bounds), max(bounds))
+
+
+PACE = pace(os.environ.get("FAKE_PACE_MS", ""))
 PORT = int(sys.argv[1])
 QUEUES = load(sys.argv[2])
 # One queue for everybody is the shape of every scene written before queues,
@@ -306,7 +333,9 @@ class Handler(BaseHTTPRequestHandler):
             # Splitting on spaces and rejoining with one is lossless, so a
             # line break written as \n survives inside whatever word it landed
             # in and reaches the client where the scene put it.
-            for word in part.replace("\\n", "\n").split(" "):
+            for i, word in enumerate(part.replace("\\n", "\n").split(" ")):
+                if PACE and i:
+                    time.sleep(random.uniform(*PACE) / 1000)
                 self.wfile.write(chunk({"content": word + " "}))
                 self.wfile.flush()
         # A reply that asked for anything ends on tool_calls whatever else it

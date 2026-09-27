@@ -1,0 +1,55 @@
+# program test: TestProgram_ACardOnAnEmptyDraftAnswersToItsOwnKey,
+#   TestProgram_TheCloseOffersTheCommitAndTheCardCommits,
+#   TestProgram_TheQuitChordArmsThenLeaves
+#
+# The README's hero and two of its stills: one `shhh code` turn under a
+# person's hands, typed at a person's pace — an edit card answered, a command
+# card answered, the answer, the turn's close and the commit it offers. It is
+# a README scene, so its words read as work rather than as the harness: a
+# small Go package, a plausible ask, and a placeholder model (its launch).
+# readme-pictures.sh records it with the replies paced; `make tui-check` runs
+# it unpaced, so it is also a test that the route still reaches every card.
+#
+# The identity is repository-local because the pane runs under a home of its
+# own, so there is no global one for the commit to find.
+setup printf 'package fetch\n\nimport "time"\n\nconst maxAttempts = 3\n\n// Retry calls fn until it succeeds or the attempts run out, doubling the\n// wait between them from 200ms.\nfunc Retry(fn func() error) error {\n\twait := 200 * time.Millisecond\n\tvar err error\n\tfor i := 0; i < maxAttempts; i++ {\n\t\tif err = fn(); err == nil {\n\t\t\treturn nil\n\t\t}\n\t\ttime.Sleep(wait)\n\t\twait *= 2\n\t}\n\treturn err\n}\n' > retry.go
+setup printf 'module example.com/fetch\n\ngo 1.24\n' > go.mod
+setup git add retry.go go.mod
+setup git config user.email you@example.com
+setup git config user.name you
+setup git commit -q -m 'add a retry helper'
+snap 01-start "Some things worth doing first"
+hold 1.5
+type "the retry helper gives up too early on flaky networks; allow five attempts"
+hold 0.6
+keys Enter
+# The search only reads, so it runs on its own; the edit is gated in manual
+# mode, so the turn stops on its card.
+snap 02-edit-card "const maxAttempts = 5" "[y] apply the change"
+hold 2.5
+keys y
+# The formatting check is a command, so it has a card of its own: what it
+# touches, how it would be undone, the network and the containment in force.
+snap 03-command-card "[y] run it once" "gofmt -l ."
+hold 2.5
+keys y
+# The close: the answer, the turn's account and the row of files it changed.
+snap 04-close "1 file changed" "✓ Done · 3 steps"
+hold 2.5
+# Reading mode opens on the last row of the turn, which is the close, and the
+# close's commit offer is a letter there.
+keys C-o
+snap 05-reading "[g] commit" "row 5 of 5"
+hold 1.2
+keys g
+snap 06-commit-card "Commit this turn"
+hold 2.5
+keys Enter
+snap 07-receipt "committed 1 file as"
+hold 3
+keys C-c
+sleep 0.3
+keys C-c
+snap 08-quit-armed "again quits"
+keys C-c
+snap 09-exit "that is everything the screen was holding"

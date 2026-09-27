@@ -1,0 +1,4 @@
+# The one reply the README's one-shot picture shows: the command, the
+# sentence saying what it does, and two other ways to ask the same thing. A
+# \n is a line break. Nothing here is run — the scene quits the result.
+lsof -nP -iTCP -sTCP:LISTEN | awk '$9 ~ /:[89][0-9]{3}$/'\n--- explanation\nlsof lists listening TCP sockets without resolving names; awk keeps the rows whose address ends in a port from 8000-9999.\n--- alternatives\nss -lntp 'sport > :8000'\n# linux only, and faster on a busy machine\nnetstat -anv -p tcp\n# everywhere, including a machine with no lsof

@@ -1,0 +1,12 @@
+# The README's recording, so the model is a neutral placeholder rather than
+# the harness's own name or any vendor's: the replies are scripted, and the
+# picture's alt text says so. The harness exports SHHH_MODEL before this
+# line, so naming it here is what overrides it.
+#
+# The workspace is the harness's scratch directory, whose path is a temporary
+# name the start screen would print in full. A link to it under the run's own
+# home — the directory beside it — entered by that name, is printed the way a
+# person's checkout is: ~/src/fetch. The paths are relative because the line
+# is re-quoted for the recorder, where a variable would be expanded by the
+# shell outside the run's environment.
+mkdir -p ../home/src && ln -s ../../ws ../home/src/fetch && cd ../home/src/fetch && SHHH_MODEL=example-model $SHHH_BIN code
