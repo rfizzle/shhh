@@ -64,7 +64,8 @@ func TestGolden_TheMacKeyboard(t *testing.T) {
 	golden.OnPlatform(t, "darwin",
 		"TestGolden_ChildRequestRouted", "TestGolden_HelpKeys", "TestGolden_HelpChat",
 		"TestGolden_HistorySearch", "TestGolden_Interrupt", "TestGolden_PasteToken",
-		"TestGolden_ProviderFailures", "TestGolden_RewindFold", "TestGolden_RewindRow",
+		"TestGolden_ProviderFailures", "TestGolden_RecoverySelection", "TestGolden_RewindFold",
+		"TestGolden_RewindRow",
 		"TestGolden_RoundLimitPause", "TestGolden_Screen", "TestGolden_ScreenAttached",
 		"TestGolden_StagedRail", "TestGolden_TodoRunRow", "TestGolden_TranscriptGrid",
 		"TestGolden_TurnCloseSelection")
@@ -1230,12 +1231,17 @@ func TestGolden_ScaffoldCard(t *testing.T) {
 // row; this captures the decisions the session makes about one.
 func TestGolden_ProviderFailures(t *testing.T) {
 	captureGolden(t, "provider-failures", "provider failures in a session", goldenWidths, func(width int) []golden.Panel {
-		build := func(f *provider.Failure) string {
+		// Each is the failure the session's last turn ended on, which is what
+		// a failure row is when it lands: its retry and provider switch are
+		// the one pair drawn live with nothing selected, labelled as the last
+		// failure's (docs/interface/surfaces.md#the-recovery-row).
+		buildAs := func(f *provider.Failure, outcome components.TurnState) string {
 			m := frameModel(t, width, 40)
 			m.modelName = "gpt-4o"
 			m.providerName = "openai"
 			m.replaceKeyFn = func(string) error { return nil }
 			m.switchProviderFn = func(string) error { return nil }
+			m.turnOutcome = outcome
 			m.transcript = []entry{
 				{kind: entryUser, text: "rename the round-limit sentinel"},
 				{kind: entryFailure, fail: f, duration: 340 * time.Millisecond},
@@ -1243,6 +1249,7 @@ func TestGolden_ProviderFailures(t *testing.T) {
 			m.invalidateRenderCache()
 			return m.renderHistory()
 		}
+		build := func(f *provider.Failure) string { return buildAs(f, components.TurnFailed) }
 		return []golden.Panel{
 			{Label: "auth · the key it sent is named, and a new one can be entered", View: build(&provider.Failure{
 				Class: provider.ClassAuth, Status: 401, Provider: "openai",
@@ -1260,6 +1267,10 @@ func TestGolden_ProviderFailures(t *testing.T) {
 				Class: provider.ClassUnclassified, Status: 400, Provider: "openai",
 				Message: "Unknown parameter: 'reasoning.effort'",
 			})},
+			{Label: "a failure the session has moved past · every key grey until selected", View: buildAs(&provider.Failure{
+				Class: provider.ClassUnclassified, Status: 400, Provider: "openai",
+				Message: "Unknown parameter: 'reasoning.effort'",
+			}, components.TurnDone)},
 		}
 	})
 }
@@ -3008,6 +3019,51 @@ func TestGolden_TurnCloseSelection(t *testing.T) {
 			{Label: "nothing selected · neither close offers a key", View: closes(rowUnselected)},
 			{Label: "the pointer on turn 1 · enter reviews it, its chords are live", View: closes(rowPointed)},
 			{Label: "reading mode's cursor on turn 1 · its letters are live", View: closes(rowUnderCursor)},
+		}
+	})
+}
+
+// TestGolden_RecoverySelection captures the failure a turn ended on in the
+// three places the selection can stand, beside the closes above: nothing
+// selected, where its retry and provider switch are the one pair of row
+// offers drawn live, labelled as the last failure's, with the rest grey; the
+// pointer on it, which draws every offer as the chord that acts on it; and
+// reading mode's cursor, which draws the letters
+// (docs/interface/surfaces.md#the-recovery-row). A dropped stream is the
+// other recovery row that carries a retry.
+func TestGolden_RecoverySelection(t *testing.T) {
+	captureGolden(t, "recovery-selection", "the last failure and where the selection stands", goldenWidths, func(width int) []golden.Panel {
+		build := func(last entry, sel rowSel) string {
+			m := frameModel(t, width, 40)
+			m.modelName = "gpt-4o"
+			m.providerName = "openai"
+			m.switchProviderFn = func(string) error { return nil }
+			m.turnOutcome = components.TurnFailed
+			m.appendEntry(entry{kind: entryUser, text: "rename the round-limit sentinel"})
+			at := m.appendEntry(last)
+			switch sel {
+			case rowPointed:
+				m.pointer, m.focusIdx = true, at
+			case rowUnderCursor:
+				m.state, m.focusIdx = stateFocus, at
+			}
+			m.invalidateRenderCache()
+			return m.renderHistory()
+		}
+		failure := func() entry {
+			return entry{kind: entryFailure, duration: 340 * time.Millisecond, fail: &provider.Failure{
+				Class: provider.ClassContextLength, Status: 400, Provider: "openai",
+				Message: "This model's maximum context length is 128000 tokens",
+			}}
+		}
+		drop := entry{kind: entryStreamDrop, duration: 4 * time.Second, resume: &streamResume{
+			text: "so I'll thread the sentinel through runRound and then", tokens: 14,
+		}}
+		return []golden.Panel{
+			{Label: "nothing selected · the retry is live and says which row it acts on", View: build(failure(), rowUnselected)},
+			{Label: "the pointer on it · every offer is the chord that acts on it", View: build(failure(), rowPointed)},
+			{Label: "reading mode's cursor on it · its letters are live", View: build(failure(), rowUnderCursor)},
+			{Label: "a dropped stream, nothing selected · its retry is labelled the same way", View: build(drop, rowUnselected)},
 		}
 	})
 }

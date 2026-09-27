@@ -16,7 +16,8 @@
 
    ✗ model   gpt-4o · 401 unauthorized            key ···4f9c rejected
     Incorrect API key provided
-    [f7] enter a new key · [f8] switch provider
+    [f8] switch provider for the last failure
+    [f7] enter a new key
     [ctrl+o] to use them
     nothing in the turn was lost
 
@@ -27,8 +28,7 @@
 
    ⚠ model   gpt-4o · 429 rate limited                    retry in 38s
     Rate limit reached for gpt-4o. Please try again in 38s.
-    [f5] try again · [f8] switch provider
-    [ctrl+o] to use them
+    [f5] retry the last failure · [f8] switch provider for the last failure
     nothing in the turn was lost
 
 
@@ -38,12 +38,23 @@
 
    ✗ model   gpt-4o · 400 context too long             over the window
     This model's maximum context length is 128000 tokens
-    [f6] compact now · [f5] then try again
+    [f5] retry the last failure
+    [f6] compact now
     [ctrl+o] to use them
     compacting keeps the plan and the recent turns
 
 
 · unclassified · the message is the whole point of the row
+❯ rename the round-limit sentinel
+─────────────────────────────────────────────────────────────────────────────
+
+   ✗ model   gpt-4o · 400 unclassified                   message below
+    Unknown parameter: 'reasoning.effort'
+    [f5] retry the last failure · [f8] switch provider for the last failure
+    nothing in the turn was lost
+
+
+· a failure the session has moved past · every key grey until selected
 ❯ rename the round-limit sentinel
 ─────────────────────────────────────────────────────────────────────────────
 
@@ -61,7 +72,8 @@
 
    ␛[38;5;254m✗␛[m ␛[38;5;254mmodel␛[m   ␛[38;5;254mgpt-4o␛[m␛[38;5;244m · 401 unauthorized␛[m            ␛[38;5;254mkey ···4f9c rejected␛[m
     ␛[38;5;244mIncorrect API key provided␛[m
-    ␛[38;5;244m[f7]␛[m␛[38;5;244m enter a new key␛[m␛[38;5;244m · ␛[m␛[38;5;244m[f8]␛[m␛[38;5;244m switch provider␛[m
+    ␛[38;5;254m[f8]␛[m␛[38;5;244m switch provider for the last failure␛[m
+    ␛[38;5;244m[f7]␛[m␛[38;5;244m enter a new key␛[m
     ␛[38;5;254m[ctrl+o]␛[m␛[38;5;254m to use them␛[m
     ␛[38;5;244mnothing in the turn was lost␛[m
 
@@ -72,8 +84,7 @@
 
    ␛[38;5;254m⚠␛[m ␛[38;5;254mmodel␛[m   ␛[38;5;254mgpt-4o␛[m␛[38;5;244m · 429 rate limited␛[m                    ␛[38;5;254mretry in 38s␛[m
     ␛[38;5;244mRate limit reached for gpt-4o. Please try again in 38s.␛[m
-    ␛[38;5;244m[f5]␛[m␛[38;5;244m try again␛[m␛[38;5;244m · ␛[m␛[38;5;244m[f8]␛[m␛[38;5;244m switch provider␛[m
-    ␛[38;5;254m[ctrl+o]␛[m␛[38;5;254m to use them␛[m
+    ␛[38;5;254m[f5]␛[m␛[38;5;244m retry the last failure␛[m␛[38;5;244m · ␛[m␛[38;5;254m[f8]␛[m␛[38;5;244m switch provider for the last failure␛[m
     ␛[38;5;244mnothing in the turn was lost␛[m
 
 
@@ -83,12 +94,23 @@
 
    ␛[38;5;254m✗␛[m ␛[38;5;254mmodel␛[m   ␛[38;5;254mgpt-4o␛[m␛[38;5;244m · 400 context too long␛[m             ␛[38;5;254mover the window␛[m
     ␛[38;5;244mThis model's maximum context length is 128000 tokens␛[m
-    ␛[38;5;244m[f6]␛[m␛[38;5;244m compact now␛[m␛[38;5;244m · ␛[m␛[38;5;244m[f5]␛[m␛[38;5;244m then try again␛[m
+    ␛[38;5;254m[f5]␛[m␛[38;5;244m retry the last failure␛[m
+    ␛[38;5;244m[f6]␛[m␛[38;5;244m compact now␛[m
     ␛[38;5;254m[ctrl+o]␛[m␛[38;5;254m to use them␛[m
     ␛[38;5;244mcompacting keeps the plan and the recent turns␛[m
 
 
 · unclassified · the message is the whole point of the row
+␛[38;5;254m❯␛[m rename the round-limit sentinel
+␛[38;5;244m─────────────────────────────────────────────────────────────────────────────␛[m
+
+   ␛[38;5;254m✗␛[m ␛[38;5;254mmodel␛[m   ␛[38;5;254mgpt-4o␛[m␛[38;5;244m · 400 unclassified␛[m                   ␛[38;5;254mmessage below␛[m
+    ␛[38;5;244mUnknown parameter: 'reasoning.effort'␛[m
+    ␛[38;5;254m[f5]␛[m␛[38;5;244m retry the last failure␛[m␛[38;5;244m · ␛[m␛[38;5;254m[f8]␛[m␛[38;5;244m switch provider for the last failure␛[m
+    ␛[38;5;244mnothing in the turn was lost␛[m
+
+
+· a failure the session has moved past · every key grey until selected
 ␛[38;5;254m❯␛[m rename the round-limit sentinel
 ␛[38;5;244m─────────────────────────────────────────────────────────────────────────────␛[m
 

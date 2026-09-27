@@ -25,6 +25,7 @@ package chat
 // treatment they do not have.
 
 import (
+	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
@@ -264,4 +265,122 @@ func (m Model) gateRow(row components.RecoveryRow, sel rowSel) components.Recove
 	row.KeysWaiting = !sel.lettersLive()
 	row.Handover = m.rowHandover(sel.lettersLive())
 	return row
+}
+
+// The one exception to a row offer acting only on the selected row
+// (docs/interface/surfaces.md#the-recovery-row). A turn that has just broken
+// is the commonest thing a reader recovers from, usually mid-sentence, and
+// selecting the row first made that recovery two keys where it used to be
+// one. So while nothing is selected, the newest recovery row — the failure or
+// dropped stream the last turn ended on — keeps its retry and its provider
+// switch live as chords, and says in their words which row they act on. The
+// words are what make it an exception rather than the defect it replaced: a
+// bare `retry` that silently picked the newest row named no row at all.
+const (
+	latestRetryWords    = "retry the last failure"
+	latestProviderWords = "switch provider for the last failure"
+)
+
+// recoveryTarget is the identity of the row the exception points at: the
+// pointer each kind hangs its state off, as sameOfferRow reads it. The zero
+// value points at nothing. It is comparable so the feed's cache can be keyed
+// on it — the same row draws its chords live or grey depending on whether it
+// is still the target.
+type recoveryTarget struct {
+	fail   *provider.Failure
+	resume *streamResume
+}
+
+// latestRecovery is the row a labelled chord pressed with nothing selected
+// acts on, and its index, or the zero target where there is none. It is the
+// newest failure or stream-drop row, and only while it is still the last
+// failure: the turn it belongs to is the session's latest and ended broken,
+// nothing is running, no wait is draining under it, and the draft holds the
+// keyboard with no row selected. A retry that went through or a new turn
+// ends the exception, because "the last failure" would then name a failure
+// the session has already moved past.
+func (m Model) latestRecovery() (int, recoveryTarget) {
+	if m.attachedTo != "" || m.retry != nil || m.working() ||
+		m.turnOutcome != components.TurnFailed || !m.inputLive() || m.gutterShowing() {
+		return -1, recoveryTarget{}
+	}
+	for i := len(m.transcript) - 1; i >= 0; i-- {
+		e := m.transcript[i]
+		switch e.kind {
+		case entryUser:
+			return -1, recoveryTarget{}
+		case entryFailure, entryStreamDrop:
+			if e.turn != m.turnCount || len(m.latestOffers(e)) == 0 {
+				return -1, recoveryTarget{}
+			}
+			return i, recoveryTarget{fail: e.fail, resume: e.resume}
+		}
+	}
+	return -1, recoveryTarget{}
+}
+
+// isLatestRecovery reports that e is the row latestRecovery names.
+func (m Model) isLatestRecovery(e entry) bool {
+	_, t := m.latestRecovery()
+	if t == (recoveryTarget{}) {
+		return false
+	}
+	return (t.fail != nil && t.fail == e.fail) || (t.resume != nil && t.resume == e.resume)
+}
+
+// rowOffers is what a recovery row offers, as its own builder says.
+func (m Model) rowOffers(e entry) []components.KeyOffer {
+	switch {
+	case e.kind == entryFailure && e.fail != nil:
+		return m.failureKeys(e.fail)
+	case e.kind == entryStreamDrop && e.resume != nil:
+		return m.dropKeys(e.resume)
+	}
+	return nil
+}
+
+// latestOffers are the row's retry and provider switch, relabelled with the
+// row they act on. Only those two: they are the acts a broken turn is most
+// often answered with, and the row's other offers stay grey until the row is
+// selected, as every other row's do.
+func (m Model) latestOffers(e entry) []components.KeyOffer {
+	var out []components.KeyOffer
+	for _, o := range m.rowOffers(e) {
+		if l, ok := latestWords(o); ok {
+			o.Label = l
+			out = append(out, o)
+		}
+	}
+	return out
+}
+
+// latestWords is the label an offer takes as the latest failure's, and
+// whether it is one of the two that do.
+func latestWords(o components.KeyOffer) (string, bool) {
+	switch o.Key {
+	case keys.Bracket(keys.Row.Retry):
+		return latestRetryWords, true
+	case keys.Bracket(keys.Row.Provider):
+		return latestProviderWords, true
+	}
+	return "", false
+}
+
+// gateRecovery is gateRow for a failure or stream-drop row: where the row is
+// the latest failure and nothing is selected, its retry and provider switch
+// leave the grey run and are drawn live, labelled, ahead of it.
+func (m Model) gateRecovery(e entry, row components.RecoveryRow, sel rowSel) components.RecoveryRow {
+	if sel == rowUnselected && len(row.Keys) > 0 && m.isLatestRecovery(e) {
+		rest := make([]components.KeyOffer, 0, len(row.Keys))
+		for _, o := range row.Keys {
+			if l, ok := latestWords(o); ok {
+				o.Label = l
+				row.Latest = append(row.Latest, o)
+				continue
+			}
+			rest = append(rest, o)
+		}
+		row.Keys = rest
+	}
+	return m.gateRow(row, sel)
 }

@@ -303,6 +303,14 @@ func TestInertKeys_TheSurfaceAnswersOnceItHoldsTheKeyboard(t *testing.T) {
 // its modifier, never a rune the draft could produce.
 func pressChord(t *testing.T, m Model, b keys.Binding) Model {
 	t.Helper()
+	updated, _ := m.Update(chordMsg(t, b))
+	return updated.(Model)
+}
+
+// chordMsg is a chord as the decoder reports one, for a test that presses it
+// through the real program rather than through Update.
+func chordMsg(t *testing.T, b keys.Binding) tea.KeyPressMsg {
+	t.Helper()
 	spelling := keys.Shown(b)
 	var msg tea.KeyPressMsg
 	rest, shifted := strings.CutPrefix(spelling, "shift+")
@@ -323,8 +331,7 @@ func pressChord(t *testing.T, m Model, b keys.Binding) Model {
 	if msg.String() != b.Keys()[0] {
 		t.Fatalf("pressing %q reads as %q", spelling, msg.String())
 	}
-	updated, _ := m.Update(msg)
-	return updated.(Model)
+	return msg
 }
 
 // pointAt lights the pointer on the first row of a kind, the way shift+up
@@ -373,12 +380,21 @@ func rowChordsActOnTheSelectedRow(t *testing.T) {
 			for _, chord := range s.chords {
 				m := s.open(t)
 				before := snapshot(m)
+				// Asked before the press: a drop's retry spends the row.
+				latest := labelledLatest(m, s.row, chord)
 				next := pressChord(t, m, chord)
 				if got := next.input.Value(); got != draftLead {
 					t.Fatalf("%q is a chord and cannot reach the sentence: draft is %q",
 						keys.Shown(chord), got)
 				}
-				if after := snapshot(next); after != before {
+				// The one exception: the newest failure's retry and provider
+				// switch, drawn live and labelled as the last failure's.
+				if latest {
+					if after := snapshot(next); after == before {
+						t.Fatalf("%q is drawn live on the last failure and did nothing\n %s",
+							keys.Shown(chord), before)
+					}
+				} else if after := snapshot(next); after != before {
 					t.Fatalf("%q acted with no row selected:\n before %s\n after  %s",
 						keys.Shown(chord), before, after)
 				}
@@ -409,6 +425,24 @@ func rowChordsActOnTheSelectedRow(t *testing.T) {
 			}
 		})
 	}
+}
+
+// labelledLatest reports that chord is one the row of kind draws live and
+// labelled with nothing selected, as the last failure's (inertkeys.go).
+func labelledLatest(m Model, kind entryKind, chord keys.Binding) bool {
+	if !keys.Is(keys.Shown(chord), keys.RowChord.Retry, keys.RowChord.Provider) {
+		return false
+	}
+	for _, e := range m.transcript {
+		if e.kind == kind && m.isLatestRecovery(e) {
+			for _, o := range m.latestOffers(e) {
+				if o.Chord == keys.Bracket(chord) {
+					return true
+				}
+			}
+		}
+	}
+	return false
 }
 
 // TestRowChords_ASelectedRowThatDoesNotOfferAChordKeepsIt is the other half
@@ -701,4 +735,57 @@ func snapshot(m Model) string {
 	return fmt.Sprintf("state=%v entries=%d waiting=%d gated=%v focus=%d agents=%v attached=%q",
 		m.state, len(m.transcript), m.waitingCount(), m.decisionGated(),
 		m.focusIdx, m.agentList != nil, m.attachedTo)
+}
+
+// TestRowChords_WithNothingSelectedOnlyTheLastFailureAnswers holds the one
+// exception to a chord acting only on the selected row to its target
+// (docs/interface/surfaces.md#the-recovery-row): the newest recovery row, and
+// only while the session's last turn ended on it. An older failure above it
+// is not reached, and once the session has moved past the failure — a turn
+// that ended any other way — the chord acts on nothing.
+func TestRowChords_WithNothingSelectedOnlyTheLastFailureAnswers(t *testing.T) {
+	failure := func() *provider.Failure {
+		return &provider.Failure{Class: provider.ClassUnclassified, Status: 400, Message: "no"}
+	}
+	build := func(outcome components.TurnState) (Model, *provider.Failure, *provider.Failure) {
+		m := frameModel(t, 110, 40)
+		m.turnOutcome = outcome
+		older, newer := failure(), failure()
+		m.appendEntry(entry{kind: entryUser, text: "rename the sentinel"})
+		m.appendEntry(entry{kind: entryFailure, fail: older})
+		m.appendEntry(entry{kind: entryFailure, fail: newer})
+		m.invalidateRenderCache()
+		return m, older, newer
+	}
+
+	m, older, newer := build(components.TurnFailed)
+	idx, target := m.latestRecovery()
+	if target.fail != newer || idx != 2 {
+		t.Fatalf("the target is %+v at %d, want the newest failure at 2", target, idx)
+	}
+	for _, e := range m.transcript {
+		drawn := ansi.Strip(m.renderEntry(e, 110))
+		labelled := strings.Contains(drawn, latestRetryWords)
+		if want := e.fail == newer; labelled != want {
+			t.Fatalf("failure %p labelled=%v, want %v (older %p):\n%s", e.fail, labelled, want, older, drawn)
+		}
+	}
+	next := pressChord(t, m, keys.RowChord.Retry)
+	if next.turnState() != stateStreaming {
+		t.Fatalf("the chord did not retry the last failure: state %v", next.turnState())
+	}
+
+	for _, outcome := range []components.TurnState{components.TurnDone, components.TurnCancelled} {
+		m, _, _ := build(outcome)
+		if _, target := m.latestRecovery(); target != (recoveryTarget{}) {
+			t.Fatalf("a session whose last turn ended %v still names a last failure", outcome)
+		}
+		if strings.Contains(ansi.Strip(m.renderHistory()), latestRetryWords) {
+			t.Fatalf("a session whose last turn ended %v still draws the labelled retry", outcome)
+		}
+		before := snapshot(m)
+		if after := snapshot(pressChord(t, m, keys.RowChord.Retry)); after != before {
+			t.Fatalf("the chord acted after the session moved past the failure:\n before %s\n after  %s", before, after)
+		}
+	}
 }

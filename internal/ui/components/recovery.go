@@ -99,6 +99,14 @@ type RecoveryRow struct {
 	MaxDetail int
 	// Keys are the ways out, in the order they should be tried.
 	Keys []KeyOffer
+	// Latest are the offers the row makes as the session's newest failure
+	// while nothing is selected: live chords whose words name the row they
+	// act on (`retry the last failure`), drawn ahead of Keys, which stay in
+	// whatever state the keyboard puts them in. They are the one exception to
+	// a row offer acting only on the selected row, and the label is what
+	// makes the exception honest
+	// (docs/interface/surfaces.md#the-recovery-row).
+	Latest []KeyOffer
 	// Note trails the keys in dim, and is where the row says what survived —
 	// `nothing in the turn was lost`. A failure that does not say what it
 	// cost is a failure you have to go and check.
@@ -204,27 +212,33 @@ func (r RecoveryRow) keyLines(width int) []string {
 	if r.Note != "" {
 		note = sty.Dim.Render(r.Note)
 	}
-	if len(r.Keys) == 0 {
+	if len(r.Keys) == 0 && len(r.Latest) == 0 {
 		if note == "" {
 			return nil
 		}
 		return []string{note}
 	}
 	option := KeyRunOption(r.Keys, r.KeysWaiting, r.Option)
+	if option == "" {
+		option = KeyRunOption(r.Latest, true, r.Option)
+	}
 	if one := r.keyLine(); lipgloss.Width(one) <= width {
 		if option == "" {
 			return []string{one}
 		}
 		return []string{one, option}
 	}
+	// The labelled offers are chords live from the draft, so they fold as a
+	// chorded run does: whole, ahead of the keys still waiting.
+	rows := keyRunRows(r.Latest, true, "", width)
 	// A chorded run is live wherever the row's letters are not, so it packs
 	// as the offers it is rather than as keys waiting for something.
 	offers, live := r.Keys, !r.KeysWaiting
 	if r.KeysWaiting && chorded(offers) {
 		offers, live = asChords(offers), true
 	}
-	rows := packOffersIn(offers, width, live)
-	if r.KeysWaiting && !chorded(r.Keys) && r.Handover != "" {
+	rows = append(rows, packOffersIn(offers, width, live)...)
+	if len(r.Keys) > 0 && r.KeysWaiting && !chorded(r.Keys) && r.Handover != "" {
 		// The key that hands the keyboard over keeps a line of its own rather
 		// than wrapping in among the keys it makes live: it is the only offer
 		// on a row that does not hold the keyboard, and it reads as one.
@@ -292,9 +306,13 @@ func (w RetryWait) View(width int) string {
 
 // keyLine renders the offers and the note as one line: the keys in info, the
 // words for them and the note in dim — or, where the row does not hold the
-// keyboard, the keys grey beside the one key that hands it over.
+// keyboard, the keys grey beside the one key that hands it over. The last
+// failure's labelled offers lead it, live as the chords they are.
 func (r RecoveryRow) keyLine() string {
 	var parts []string
+	if len(r.Latest) > 0 {
+		parts = append(parts, keyRun(r.Latest, true, ""))
+	}
 	if offers := keyRun(r.Keys, r.KeysWaiting, r.Handover); offers != "" {
 		parts = append(parts, offers)
 	}

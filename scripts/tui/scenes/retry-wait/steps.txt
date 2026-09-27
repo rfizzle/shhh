@@ -1,4 +1,5 @@
-# program test: TestProgram_AStalledRequestIsWaitedOutAndAnswered
+# program test: TestProgram_AStalledRequestIsWaitedOutAndAnswered,
+#   TestProgram_TheLastFailureIsRetriedFromAHalfTypedLine
 #
 # The program test drives a 503 into the retry wait through the real
 # program; this scene is the same route through the built binary.
@@ -11,8 +12,20 @@
 # each snap waits on the attempt only that wait carries. `[m]` is not on the
 # block: the scripted model has no price, and the session offers no cheaper
 # model it cannot name one for.
+#
+# Then a failure that is not waited out: a 400 ends the next turn on its row,
+# which, with nothing selected, draws its retry live as the chord and says
+# which row it acts on — `[alt+r] retry the last failure` — while its other
+# offers stay grey. The chord is pressed with half a sentence in the draft,
+# the turn is asked again and answered, and the sentence is still there.
 snap 01-start "Some things worth doing first"
 keys "why does the loop stop" Enter
 snap 02-wait "attempt 1 of 3" "⚠ model" "the provider's side" "retry in" "[esc] stop the turn"
 snap 03-again "attempt 2 of 3" "retry in" "[esc] stop the turn"
 snap 04-answered "and nowhere else" "nothing in the turn was lost" "✓ Done"
+keys "and where is the cap set" Enter
+snap 05-last-failure "Unknown parameter" "[alt+r] retry the last failure"
+keys "half a thought"
+sleep 0.3
+keys M-r
+snap 06-retried "behavior.max_tool_rounds" "half a thought"

@@ -1,3 +1,5 @@
 status:503:The upstream model is overloaded, try again shortly
 status:503:The upstream model is overloaded, try again shortly
 The loop stops at the round cap, and nowhere else.
+status:400:Unknown parameter: 'reasoning.effort'
+The cap is set in config, as behavior.max_tool_rounds.

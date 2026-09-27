@@ -289,5 +289,43 @@ func TestRecoveryRow_EveryOfferTheRowActsOnIsDrawnWhole(t *testing.T) {
 				}
 			}
 		}
+		// As the last failure with nothing selected: its retry and provider
+		// switch live and labelled, the rest grey beside the handover
+		// (docs/interface/surfaces.md#the-recovery-row).
+		r := row
+		r.Keys, r.Latest = nil, nil
+		for _, k := range row.Keys {
+			if k.Chord == "[alt+r]" || k.Chord == "[alt+p]" {
+				k.Label += " for the last failure"
+				r.Latest = append(r.Latest, k)
+				continue
+			}
+			k.Key, k.Chord = k.Chord, ""
+			r.Keys = append(r.Keys, k)
+		}
+		r.KeysWaiting, r.Handover, r.Option = true, "ctrl+o", true
+		var want []string
+		for _, k := range r.Latest {
+			want = append(want, k.Chord+" "+k.Label)
+		}
+		for _, k := range r.Keys {
+			want = append(want, k.Key+" "+k.Label)
+		}
+		if len(r.Keys) > 0 {
+			want = append(want, "[ctrl+o]")
+		}
+		for _, width := range []int{60, 80, 110, 130} {
+			view := ansi.Strip(r.View(width))
+			for _, offer := range want {
+				if !strings.Contains(view, offer) {
+					t.Errorf("%s, the last failure, at %d: %q is not drawn whole:\n%s", name, width, offer, view)
+				}
+			}
+			for _, line := range strings.Split(view, "\n") {
+				if strings.Contains(line, "…") && strings.Contains(line, "[") {
+					t.Errorf("%s, the last failure, at %d: a row of offers was clipped: %q", name, width, line)
+				}
+			}
+		}
 	}
 }

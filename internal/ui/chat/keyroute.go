@@ -43,9 +43,41 @@ func (m Model) rowChordKey(pressed string) (tea.Model, tea.Cmd, bool) {
 		return m, nil, false
 	}
 	if !m.pointerLit() && m.state != stateFocus {
-		return m, nil, false
+		return m.latestRecoveryKey(letter)
 	}
 	return m.rowKey(letter)
+}
+
+// latestRecoveryKey is the one chord that acts with nothing selected: the
+// retry or provider switch the newest failure row draws live and labelled as
+// the last failure's (inertkeys.go). It reaches that row and no other, asked
+// through the row's own dispatch, and with no such row it acts on nothing —
+// so every other chord pressed with nothing selected still does nothing.
+func (m Model) latestRecoveryKey(letter string) (tea.Model, tea.Cmd, bool) {
+	if !keys.Is(letter, keys.Row.Retry, keys.Row.Provider) {
+		return m, nil, false
+	}
+	idx, t := m.latestRecovery()
+	if t == (recoveryTarget{}) {
+		return m, nil, false
+	}
+	row := m
+	row.focusIdx = idx
+	answer := row.failureKey
+	if t.resume != nil {
+		answer = row.dropKey
+	}
+	next, cmd, claimed := answer(letter)
+	if !claimed {
+		return m, nil, false
+	}
+	// The row was reached by index, not selected: the cursor the reader left
+	// is where it was.
+	if nm, ok := next.(Model); ok {
+		nm.focusIdx = m.focusIdx
+		next = nm
+	}
+	return next, cmd, true
 }
 
 // updateKey routes one key press. handled is false when nothing on the

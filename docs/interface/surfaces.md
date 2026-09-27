@@ -285,7 +285,8 @@ instead. It is one offer either way, and the row never draws both
 
 The chord acts on the selected row and on no other: pressed with nothing
 selected it does nothing, and a selected row that does not make the offer
-does not hand it to one that does. And the first row in a session to offer an
+does not hand it to one that does. The one exception is a broken turn's
+retry, and it says so in its words ([the recovery row](#the-recovery-row)). And the first row in a session to offer an
 alt chord says under it, once it is drawing one, that alt needs the Option
 setting on a stock macOS terminal, with the doctor row that reads it — once,
 because it is a fact about the terminal and not about that row. A Mac ships
@@ -398,6 +399,20 @@ failure row is the one row a reader most often meets mid-sentence — the turn
 broke while they were typing the next thing — and the pointer's first press
 from the prompt lands on it, so its chord is one selection away rather than a
 handover away.
+
+One row is closer than that. While nothing is selected, the failure or
+dropped stream the last turn ended on draws its retry and its provider switch
+live, as the chords that reach them from the prompt, and labels them with the
+row they act on: `retry the last failure`, `switch provider for the last
+failure`. Pressed with the sentence still in the box, the chord acts on that
+row and on no other. It is the one exception to a row offer acting only on the
+selected row, because retrying a turn that just broke is the commonest
+recovery there is and selecting the row first made it two keys. The words are
+what keep it from being the key the rule replaced — a bare `retry` that picked
+the newest row named no row at all. Its other offers stay grey until the row
+is selected, a failure the session has moved past — a retry that went
+through, a turn after it — offers nothing live, and a selected row's offers
+act on that row alone, unchanged.
 
 Two failures earn a card instead, and only two: the ones that stop the session
 dead.

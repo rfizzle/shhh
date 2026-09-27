@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // stallingProvider refuses its first requests with one failure and answers
@@ -74,6 +75,49 @@ func TestProgram_AStalledRequestIsWaitedOutAndAnswered(t *testing.T) {
 	frame := finalFrame(t, tm)
 	if strings.Contains(frame, "attempt 1 of 3") {
 		t.Errorf("the wait is still drawn after the answer landed:\n%s", frame)
+	}
+	p.mu.Lock()
+	started := p.started
+	p.mu.Unlock()
+	if started != 2 {
+		t.Errorf("the provider was asked %d times, want the refused request and its retry", started)
+	}
+}
+
+// A turn that broke is retried from a half-typed line with one key: the
+// newest failure draws its retry live and labelled as the last failure's
+// while nothing is selected, the chord asks again, and the sentence being
+// typed stays in the draft (docs/interface/surfaces.md#the-recovery-row).
+func TestProgram_TheLastFailureIsRetriedFromAHalfTypedLine(t *testing.T) {
+	p := &stallingProvider{
+		refuse: 1,
+		// Unclassified is never waited out on its own, so the row is what
+		// the turn ends on and the retry is the reader's.
+		fail: &provider.Failure{
+			Class: provider.ClassUnclassified, Status: 400, Provider: "openai",
+			Message: "Unknown parameter: 'reasoning.effort'",
+		},
+		answer: "The loop stops at the round cap, and nowhere else.",
+	}
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, streamOf(p))
+	tm := runProgramAt(t, m, 110, 40)
+
+	tm.Type("why does the loop stop")
+	tm.Send(programEnter)
+	offer := keys.Bracket(keys.RowChord.Retry) + " retry the last failure"
+	waitForText(t, tm, offer)
+
+	tm.Type(draftSentence)
+	waitForText(t, tm, draftSentence)
+	tm.Send(chordMsg(t, keys.RowChord.Retry))
+
+	waitForText(t, tm, "and nowhere else")
+	frame := finalFrame(t, tm)
+	if !strings.Contains(frame, draftSentence) {
+		t.Errorf("the retry took the half-typed line with it:\n%s", frame)
+	}
+	if strings.Contains(frame, offer) {
+		t.Errorf("the failure still offers itself as the last one after the retry answered:\n%s", frame)
 	}
 	p.mu.Lock()
 	started := p.started

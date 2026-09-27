@@ -314,9 +314,9 @@ func (m Model) renderEntryDetail(e entry, width int, sel rowSel, stepDetail bool
 		c := m.closeFor(*e.close, sel)
 		return c.View(width) + "\n"
 	case entryFailure:
-		return m.gateRow(m.failureRow(e), sel).View(width) + "\n"
+		return m.gateRecovery(e, m.failureRow(e), sel).View(width) + "\n"
 	case entryStreamDrop:
-		return m.gateRow(m.dropRow(e), sel).View(width) + "\n"
+		return m.gateRecovery(e, m.dropRow(e), sel).View(width) + "\n"
 	case entryRoundPause:
 		row := m.roundPauseRow(e)
 		if sel != rowUnselected && e.pause != nil && e.pause.files > 0 {
@@ -772,6 +772,14 @@ func (m *Model) renderHistoryRawLines() []string {
 		// on it scan again for a resize.
 		m.cached.reset()
 		m.gutter.reset()
+	}
+	// The newest failure draws its labelled chords live only while it is
+	// still the last failure (inertkeys.go), and that row is usually in a
+	// block that froze long before the turn after it moved on. So the target
+	// keys the cache the way the width does: a different one drops it.
+	if _, t := m.latestRecovery(); t != m.cached.latest {
+		m.cached.latest = t
+		m.cached.reset()
 	}
 	// History renders as step blocks. Every block but the last
 	// is frozen — the grouping scan is left to right, so a block that already
