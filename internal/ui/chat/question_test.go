@@ -314,6 +314,25 @@ func TestQuestion_ChooseManyCarriesEveryTickedLabel(t *testing.T) {
 	}
 }
 
+// The definition tells the model a pick-several answer is one or more, and
+// the card holds the reader to that: enter over nothing ticked answers
+// nothing and leaves the card up. The two are asserted together so neither
+// can move without the other.
+func TestQuestion_ChooseManyRefusesAnEmptySelectionAsTheDefinitionSays(t *testing.T) {
+	if d := string(ask.ToolDefinition().Parameters); !strings.Contains(d, "choose_many: one or more") {
+		t.Fatalf("the definition no longer tells the model a pick is needed: %s", d)
+	}
+	m := openedQuestion(t, agent.ModeManual, `{"question":"Which packages?","shape":"choose_many","options":[
+		{"label":"internal/agent"},{"label":"internal/cli"}]}`)
+	m = sendKey(t, m, tea.KeyPressMsg{Code: tea.KeyEnter})
+	if _, answered := countRows(m); answered != 0 {
+		t.Fatalf("an empty selection was sent as an answer")
+	}
+	if m.question == nil || m.question.multi == nil {
+		t.Fatalf("the card closed on an empty selection")
+	}
+}
+
 // Esc closes the card and answers nothing: the call is still outstanding, the
 // turn is still blocked on it, and the notice rail is what says so.
 func TestQuestion_EscHandsTheQuestionToTheDraft(t *testing.T) {

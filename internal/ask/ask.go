@@ -33,7 +33,11 @@ type Shape string
 const (
 	// ShapeChoose is one answer from a list.
 	ShapeChoose Shape = "choose"
-	// ShapeChooseMany is any number of answers from a list.
+	// ShapeChooseMany is one or more answers from a list. Never none: the
+	// card refuses an empty selection, and a reader who means "none of
+	// these" says so in their own words, so the definition the model reads
+	// promises only an answer the card can take
+	// (docs/capabilities/coding-agent.md#the-model-can-ask).
 	ShapeChooseMany Shape = "choose_many"
 	// ShapeConfirm is a yes-or-no.
 	ShapeConfirm Shape = "confirm"
@@ -391,7 +395,7 @@ func ToolDefinition() provider.Tool {
 // it can name which of the two was missing.
 const questionProperties = `
 				"question": {"type": "string", "description": "The question itself, in one or two short sentences"},
-				"shape": {"type": "string", "enum": ["choose", "choose_many", "confirm", "text"], "description": "choose: one answer from the options. choose_many: any number of them. confirm: yes or no, no options. text: a short answer in their own words, no options"},
+				"shape": {"type": "string", "enum": ["choose", "choose_many", "confirm", "text"], "description": "choose: one answer from the options. choose_many: one or more of them. confirm: yes or no, no options. text: a short answer in their own words, no options"},
 				"options": {
 					"type": "array",
 					"description": "The answers you can see, for choose and choose_many only. Two or more.",

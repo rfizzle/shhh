@@ -178,6 +178,42 @@ func TestToolDefinition_OffersTheShapesTheParseTakes(t *testing.T) {
 	}
 }
 
+// A pick-several question takes at least one pick, and the definition says so
+// wherever a question can be written — the call itself and an entry in its
+// list — because the card refuses an empty selection and a model told "any
+// number" would describe an answer the reader cannot give.
+func TestToolDefinition_ChooseManyAsksForOneOrMore(t *testing.T) {
+	type shape struct {
+		Description string `json:"description"`
+	}
+	var schema struct {
+		Properties struct {
+			Shape     shape `json:"shape"`
+			Questions struct {
+				Items struct {
+					Properties struct {
+						Shape shape `json:"shape"`
+					} `json:"properties"`
+				} `json:"items"`
+			} `json:"questions"`
+		} `json:"properties"`
+	}
+	if err := json.Unmarshal(ToolDefinition().Parameters, &schema); err != nil {
+		t.Fatal(err)
+	}
+	for name, d := range map[string]string{
+		"one question": schema.Properties.Shape.Description,
+		"tabbed entry": schema.Properties.Questions.Items.Properties.Shape.Description,
+	} {
+		if !strings.Contains(d, "choose_many: one or more") {
+			t.Errorf("%s: choose_many is not described as one or more: %q", name, d)
+		}
+		if strings.Contains(d, "any number") {
+			t.Errorf("%s: choose_many still admits none: %q", name, d)
+		}
+	}
+}
+
 // The rules the card enforces as it collects an answer, held to by a surface
 // that did not draw the card: the vocabulary is the reader's three, a pick is
 // a pick, the words are the whole of a typed answer, and a note the model said
@@ -195,6 +231,7 @@ func TestAnswer_ValidateHoldsAnAnswerToTheCardsOwnRules(t *testing.T) {
 		{name: "words", a: Answer{Answered: AnsweredTyped, Note: "neither, really"}, q: required},
 		{name: "nothing chosen", a: Answer{Answered: AnsweredSkipped}, q: required},
 		{name: "an empty pick", a: Answer{Answered: AnsweredOnCard}, q: optional, want: "picked nothing"},
+		{name: "an empty pick of several", a: Answer{Answered: AnsweredOnCard}, q: Question{Question: "Which?", Shape: ShapeChooseMany, Note: NoteOptional}, want: "picked nothing"},
 		{name: "words that are not there", a: Answer{Answered: AnsweredTyped, Note: "  "}, q: optional, want: "carries none"},
 		{name: "a required note left off", a: Answer{Answered: AnsweredOnCard, Picked: []string{"one"}}, q: required, want: "required note"},
 		{name: "the reader's absence claimed", a: Answer{Answered: AnsweredNobody}, q: optional, want: "unknown answer"},

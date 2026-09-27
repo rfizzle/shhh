@@ -483,6 +483,12 @@ a note was possible. The model may lead with one answer as its recommendation,
 and may say an answer cannot be taken and why; both are words on the row, not
 a colour.
 
+**A question offers only answers the reader can actually give.** A question
+that takes several picks takes at least one: "none of these" is an answer in
+the reader's own words, on the row that is always there, and not an empty
+selection. The model is told the same, so it never describes an answer the
+card would then refuse.
+
 **A question can be answered by talking.** Leaving the card does not answer
 it. The question is held, the session says one is waiting, and the next
 message the reader sends is delivered as the answer, unedited, in place of a
