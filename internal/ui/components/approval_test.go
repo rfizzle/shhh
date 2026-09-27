@@ -235,6 +235,16 @@ func TestCardField_OnlyAFixedSentenceIsStanding(t *testing.T) {
 		{CardField{Label: "network", Value: "closed", Detail: "the workspace-netless profile removes it"}, true},
 		{CardField{Label: "⛨", Value: "no sandbox", Detail: "bubblewrap (bwrap) not found on PATH; the command runs as you"}, true},
 		{CardField{Label: "push", Value: "no", Detail: "shhh never pushes; the remote is yours"}, true},
+		// The fetch, spawn and MCP cards: any value, the card's own sentence.
+		{CardField{Label: "domain", Value: "pkg.go.dev", Detail: "the request leaves this machine"}, true},
+		{CardField{Label: "sends", Value: "the URL and a shhh-web/1.0 user-agent", Detail: "no file contents, no credentials"}, true},
+		{CardField{Label: "sends", Value: `{"query":"context"}`, Detail: "the arguments, as the model wrote them"}, true},
+		{CardField{Label: "receives", Value: "the tool's result, into context", Detail: "it counts against the context window"}, true},
+		{CardField{Label: "budget", Value: "checks in every 40 rounds, ~300k new tokens", Detail: "counted in the session totals"}, true},
+		// The same labels with a sentence about this call keep it.
+		{CardField{Label: "server", Value: "docs", Detail: "the request leaves this machine for https://docs.example"}, false},
+		{CardField{Label: "domain", Value: "pkg.go.dev", Detail: "the request leaves this machine for a mirror"}, false},
+		{CardField{Label: "budget", Value: "~300k new tokens", Detail: "raised from the profile's 200k"}, false},
 		// The same label and value, with a sentence of its own.
 		{CardField{Label: "network", Value: "open", Detail: "it pushes the artefacts it builds"}, false},
 		{CardField{Label: "undo", Value: "none", Detail: "rm bypasses the changeset"}, false},

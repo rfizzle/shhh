@@ -545,6 +545,25 @@ reader had to answer no longer stood out from the one they type in
 keeps its word and its glyph's tone, which is what `Attention` draws. The
 departure is closed by the two artboards drawing the border in chrome.
 
+## A read's glyph is chrome
+
+*A disagreement.* The `Main`, `Approvals`, `Agents` and `OneShot` artboards
+draw a read's `⚙` in the accent, and the state-colour guideline gives the
+accent to tool glyphs alike. The binary draws `⚙` dim wherever it marks a
+read — the activity row, a folded run of reads, and the act row of a card
+asking about one — while `$`, `✎` and `⇄` keep the accent beside the rail
+they carry, and an offer that uses `⚙` to mean "start something" keeps it
+too, since an offer is a place to decide.
+
+A read is chrome ([weight tracks risk](principles.md#weight-tracks-risk)).
+The accent on every read's glyph put it on a screen of twelve reads twelve
+times, which taught the eye to skip the one colour that is meant to say
+something is changing or waiting on the reader. The verb beside the glyph
+still says which read it was, so nothing is lost but the colour, and the
+card's own border is what carries a decision about a read. The departure is
+closed by the four artboards drawing a read's glyph dim and the guideline
+giving the accent to the rail, a card's weight and the ctx meter.
+
 ## A row with no kind of its own carries its outcome in the glyph column
 
 *A gap.* The glyph guideline closes the outcome table with a rule and a list:
@@ -1053,13 +1072,21 @@ its limits ([the approval card](surfaces.md#the-approval-card)) — `skipped`
 with the `/trust` door, and the reason beside `HIGH`. A row whose sentence
 would read the same on every card with that value is drawn as the value
 alone, on the command card (touches, undo, network, the containment row), the
-commit card (leaves, branch, hooks, push) and the card a git write asks
-through (stages, push, hooks). Which sentences are fixed is one table beside
-the rows rather than a judgement at each site that words them. The words
-stay where they are written, and a command card's full view draws every row
-with its sentence. The commit card and a git write's card have no full view;
-what their fixed sentences said — nothing is pushed, a failing hook changes
-nothing, only this session's files are staged — is what the values there
-already say. The departure is closed by the artboards
+commit card (leaves, branch, hooks, push), the card a git write asks
+through (stages, push, hooks), and the fetch, spawn and MCP cards (domain,
+sends, receives, budget). On those last three the value is the call's own —
+the host, what goes out, what comes back, the budget — and the sentence
+under it is the card's, so the row keeps the value and drops the sentence;
+a gloss there that names something about this call, a server's address or a
+child's undo, stays. Which sentences are fixed is one table beside the rows
+rather than a judgement at each site that words them. The words stay where
+they are written, and a command card's full view draws every row with its
+sentence. The commit card, a git write's card and the fetch, spawn and MCP
+cards have no full view; what their fixed sentences said — nothing is
+pushed, a failing hook changes nothing, only this session's files are
+staged, a fetch sends no file contents, what comes back is counted against
+the window and the child's spend against the session — is what the values
+there already say, or what every card of that kind says alike. The
+departure is closed by the artboards
 agreeing that a gloss is drawn only where it is about the call — which every
 gloss they draw already is.

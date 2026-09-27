@@ -305,13 +305,18 @@ func TestBlastRadius_GenericToolCarriesItsOwnFields(t *testing.T) {
 	}})
 	m = updated.(Model)
 	view := ansi.Strip(m.View().Content)
+	// Both glosses are the fetch card's fixed sentences, so the rows are
+	// their values alone (docs/interface/departures.md).
 	for _, want := range []string{
-		"domain    pkg.go.dev — the request leaves this machine",
-		"sends     the URL and a user-agent — no file contents, no credentials",
+		"domain    pkg.go.dev",
+		"sends     the URL and a user-agent",
 	} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("generic card should carry the tool's own fields %q:\n%s", want, view)
 		}
+	}
+	if strings.Contains(view, "no file contents") {
+		t.Fatalf("a fixed sentence is not drawn on the card:\n%s", view)
 	}
 }
 

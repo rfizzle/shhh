@@ -194,8 +194,12 @@ type CardField struct {
 // match, so a row that shares a label and a value with one of these but says
 // something of its own keeps it. A `*` stands for the part a sentence takes
 // from the session — the containment profile's name, the detector's reason —
-// and matches any run of text. The sites that word the rows keep their words;
-// this table is the one place that decides which of them a card body draws.
+// and matches any run of text. A value of `*` is a row whose value is the
+// call's own — a host, a budget, the arguments — under a sentence that is the
+// same whatever the value; the sentence still has to match, so a row under
+// the same label that says something about this call keeps it. The sites
+// that word the rows keep their words; this table is the one place that
+// decides which of them a card body draws.
 var standingGlosses = map[[2]string][]string{
 	// The command card.
 	{"touches", "nothing"}: {"the command resolved to reads only"},
@@ -219,12 +223,26 @@ var standingGlosses = map[[2]string][]string{
 	{"hooks", "run"}:                        {"the checkout's own commit hooks; a failure cancels and changes nothing"},
 	{"stages", "this session's files only"}: {"work that was already in the tree is never staged"},
 	{"push", "no"}:                          {"shhh never pushes; the remote is yours"},
+	// The fetch, spawn and MCP cards: the value is the call's own, the
+	// sentence is the card's.
+	{"domain", "*"}: {"the request leaves this machine"},
+	{"sends", "*"}: {
+		"no file contents, no credentials",
+		"the arguments, as the model wrote them",
+	},
+	{"receives", "*"}: {"it counts against the context window"},
+	{"budget", "*"}:   {"counted in the session totals"},
 }
+
+// readGlyph is a read's kind glyph, which a card draws dim like the row.
+const readGlyph = "⚙"
 
 // Standing reports whether the row's gloss is a fixed sentence
 // (standingGlosses): the row a card body draws as its value alone.
 func (f CardField) Standing() bool {
-	for _, shape := range standingGlosses[[2]string{f.Label, f.Value}] {
+	shapes := standingGlosses[[2]string{f.Label, f.Value}]
+	shapes = append(shapes[:len(shapes):len(shapes)], standingGlosses[[2]string{f.Label, "*"}]...)
+	for _, shape := range shapes {
 		head, tail, wild := strings.Cut(shape, "*")
 		switch {
 		case !wild && f.Detail == shape:
@@ -298,9 +316,10 @@ type ApprovalCard struct {
 	// still says only what would happen (chat/subagents.go).
 	Act string
 	// ActGlyph opens that row with the kind of act it is — `$` a command, `✎`
-	// an edit, `⚙` a read-only call, `⇄` a call to a server — the four the
-	// activity rows already draw, in the same accent, so the card and the row
-	// it will become say the same thing about the same call. Empty draws no
+	// an edit, `⇄` a call to a server in the accent, `⚙` a read-only call
+	// dim — the glyphs the activity rows already draw, in the same tones, so
+	// the card and the row it will become say the same thing about the same
+	// call (docs/interface/principles.md#weight-tracks-risk). Empty draws no
 	// glyph, for a card whose act has no kind: shhh's own request to write a
 	// context file is not one of the four.
 	//
@@ -612,16 +631,21 @@ func (c *ApprovalCard) tone() lipgloss.Style {
 	return c.Severity.tone()
 }
 
-// actRow draws the first body row: the kind glyph in the accent every glyph
-// column carries, and the act itself bright, because it is the one thing on
-// the card the reader has to read before answering.
+// actRow draws the first body row: the kind glyph in the tone the activity
+// row it will become draws it in — a read's `⚙` dim, since a read is chrome
+// and the card's own border is what carries the decision — and the act
+// itself bright, because it is the one thing on the card the reader has to
+// read before answering.
 //
 // It is not clipped here. The row is laid out whole and panRows decides what
 // a narrow card shows, so a command too long for the border can be scrolled
 // into view rather than being cut off at the moment it is being approved.
 func (c *ApprovalCard) actRow() string {
-	if c.ActGlyph == "" {
+	switch c.ActGlyph {
+	case "":
 		return sty.Bright.Render(c.Act)
+	case readGlyph:
+		return sty.Dim.Render(c.ActGlyph) + " " + sty.Bright.Render(c.Act)
 	}
 	return sty.Accent.Render(c.ActGlyph) + " " + sty.Bright.Render(c.Act)
 }
