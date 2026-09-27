@@ -77,6 +77,27 @@ func TestTurnClose_ATurnThatChangedNothingIsOneRow(t *testing.T) {
 	}
 }
 
+// A turn that ran something that could have written, and changed no file,
+// says so on the row the files would take — with nothing offered, since there
+// is nothing to review, keep or take back — and the notification says it too.
+func TestTurnClose_ACommandThatWroteNothingIsAnsweredOnTheChangesRow(t *testing.T) {
+	c := TurnClose{Elapsed: "0.4s", WroteNothing: true}
+	lines := strings.Split(ansi.Strip(c.View(80)), "\n")
+	if len(lines) != 2 {
+		t.Fatalf("the close is the summary row and the answer, got:\n%s", strings.Join(lines, "\n"))
+	}
+	if got := strings.TrimSpace(lines[1]); got != "▎✎ wrote nothing" {
+		t.Fatalf("the changes row answers with nothing and offers nothing, got %q", got)
+	}
+	if !strings.Contains(c.Summary(), "wrote nothing") {
+		t.Fatalf("the summary says what the row says, got %q", c.Summary())
+	}
+	c.Changes = &TurnChanges{Files: 1, Added: 2}
+	if view := ansi.Strip(c.View(80)); strings.Contains(view, "wrote nothing") {
+		t.Fatalf("a turn that changed files states them instead:\n%s", view)
+	}
+}
+
 func TestTurnClose_TheNoteDropsBeforeTheStatement(t *testing.T) {
 	c := closeFixture()
 	for _, width := range []int{60, 40, 24, 12} {

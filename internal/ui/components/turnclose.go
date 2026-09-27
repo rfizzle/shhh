@@ -31,12 +31,17 @@ const (
 	TurnFailed                     // ✗ it broke
 )
 
+// wroteNothing is the changed-files row's statement for a turn that ran
+// something that could have written and changed no file.
+const wroteNothing = "wrote nothing"
+
 // closeMinNoteGap is the space a right-aligned note needs before it is worth
 // keeping; below it the note drops rather than crowding the statement.
 const closeMinNoteGap = 2
 
 // TurnChanges is the second row — what the turn wrote. It is absent from a
-// turn that changed nothing.
+// turn that changed nothing; TurnClose.WroteNothing is what stands in its
+// place where the turn ran something that could have written.
 type TurnChanges struct {
 	Files          int
 	Added, Removed int
@@ -118,8 +123,16 @@ type TurnClose struct {
 	Note string
 
 	Changes *TurnChanges
-	Commit  *TurnCommit
-	Checks  *TurnChecks
+	// WroteNothing says the turn ran a command or a call shhh cannot see the
+	// far side of and its changeset is empty, so the changed-files row is
+	// drawn answering the question that act raised: `wrote nothing`, with no
+	// offers, since there is nothing to review, keep or take back. A command
+	// is assumed to write (docs/interface/principles.md#weight-tracks-risk),
+	// and this row is that assumption answered. A turn that only read has no
+	// such question and no such row. Ignored where Changes is set.
+	WroteNothing bool
+	Commit       *TurnCommit
+	Checks       *TurnChecks
 	// Notes is what the turn's delegates left in the session's shared
 	// notebook, and how much of it is still waiting on the screen that holds
 	// it — e.g. "2 notes from reviewer · 3 unread". Empty where no delegate
@@ -191,6 +204,8 @@ func (c TurnClose) Summary() string {
 			changed = plural(ch.Files, "file") + " changed · " + ch.Mode
 		}
 		parts = append(parts, changed)
+	} else if c.WroteNothing {
+		parts = append(parts, wroteNothing)
 	}
 	if cm := c.Commit; cm != nil {
 		parts = append(parts, cm.Receipt)
@@ -314,6 +329,14 @@ func (c TurnClose) View(width int) string {
 		if option := KeyRunOption(ch.Keys, c.KeysWaiting, c.Option); option != "" {
 			lines = append(lines, closeLine(closeLead("", " "), option, "", width))
 		}
+	} else if c.WroteNothing {
+		// The changed-files row's own lead, because it is that row answering
+		// with nothing: the rail the command's row carried is the question,
+		// and this is where it is answered. No offers — there is nothing to
+		// review, keep or take back.
+		lines = append(lines, closeLine(
+			closeLead(sty.Accent.Render("▎"), sty.Accent.Render("✎")),
+			sty.Body.Render(wroteNothing), "", width))
 	}
 
 	if cm := c.Commit; cm != nil {

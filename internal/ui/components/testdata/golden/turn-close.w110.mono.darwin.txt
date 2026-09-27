@@ -20,8 +20,16 @@
   ▎✎ 3 files changed +30 −4 · [enter] review turn · [g] commit · [u] undo turn              all tracked in git
    ✗ go test ./internal/agent/... failing · 41 packages · 12.8s
 
-· done · nothing changed
+· done · reads only
    ✓ Done · 4 steps · 18 tools · 1m 04s · $0.14                                                     round 7/25
+
+· done · a command that wrote nothing
+   ✓ Done · 4 steps · 18 tools · 1m 04s · $0.14                                                     round 7/25
+  ▎✎ wrote nothing
+
+· done · files only
+   ✓ Done · 4 steps · 18 tools · 1m 04s · $0.14                                                     round 7/25
+  ▎✎ 3 files changed +30 −4 · [enter] review turn · [g] commit · [u] undo turn              all tracked in git
 
 · cancelled · reports what it changed before stopping
    ⊘ Cancelled · 2 steps · 5 tools · 8.1s · $0.14                                                   round 7/25
@@ -81,8 +89,16 @@
   ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m3 files changed ␛[m␛[38;5;254m+30␛[m ␛[38;5;254m−4␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m review turn␛[m␛[38;5;244m · ␛[m␛[38;5;254m[g]␛[m␛[38;5;244m commit␛[m␛[38;5;244m · ␛[m␛[38;5;254m[u]␛[m␛[38;5;244m undo turn␛[m              ␛[38;5;244mall tracked in git␛[m
    ␛[38;5;254m✗␛[m ␛[38;5;254mgo test ./internal/agent/... failing␛[m␛[38;5;244m · 41 packages · 12.8s␛[m
 
-· done · nothing changed
+· done · reads only
    ␛[38;5;254m✓␛[m ␛[38;5;254mDone␛[m␛[38;5;244m · 4 steps · 18 tools · 1m 04s · $0.14␛[m                                                     ␛[38;5;244mround 7/25␛[m
+
+· done · a command that wrote nothing
+   ␛[38;5;254m✓␛[m ␛[38;5;254mDone␛[m␛[38;5;244m · 4 steps · 18 tools · 1m 04s · $0.14␛[m                                                     ␛[38;5;244mround 7/25␛[m
+  ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254mwrote nothing␛[m
+
+· done · files only
+   ␛[38;5;254m✓␛[m ␛[38;5;254mDone␛[m␛[38;5;244m · 4 steps · 18 tools · 1m 04s · $0.14␛[m                                                     ␛[38;5;244mround 7/25␛[m
+  ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m3 files changed ␛[m␛[38;5;254m+30␛[m ␛[38;5;254m−4␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m review turn␛[m␛[38;5;244m · ␛[m␛[38;5;254m[g]␛[m␛[38;5;244m commit␛[m␛[38;5;244m · ␛[m␛[38;5;254m[u]␛[m␛[38;5;244m undo turn␛[m              ␛[38;5;244mall tracked in git␛[m
 
 · cancelled · reports what it changed before stopping
    ␛[38;5;244m⊘␛[m ␛[38;5;254mCancelled␛[m␛[38;5;244m · 2 steps · 5 tools · 8.1s · $0.14␛[m                                                   ␛[38;5;244mround 7/25␛[m

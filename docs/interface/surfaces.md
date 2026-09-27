@@ -238,6 +238,18 @@ like the rows that produced it. It also carries what git knew about those
 files when they were written — which is a statement about the past, not a
 promise about what can be undone; that promise is the approval card's job.
 
+A turn that changed no file has no files to state, and what it says instead
+depends on what it did. A turn that only read closes on its one summary row:
+nothing it did raised the question. A turn that ran a command, or called a
+server nobody marked read-only, did raise it — shhh cannot see what such an act
+wrote, so it assumes it wrote something
+([weight tracks risk](principles.md#weight-tracks-risk)) — and its close
+answers on the changed-files row: `wrote nothing`, under the same rail, with
+nothing offered, because there is nothing to review, keep or take back. A
+silent close after a command would leave that question unanswered. A command
+that was refused, or never started, ran nothing and raises nothing; a commit
+row, where the turn made one, is already the answer.
+
 Any turn can be put back, and putting one back is itself recorded as a change
 that can be reviewed and put back in turn.
 

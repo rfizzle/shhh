@@ -20,14 +20,16 @@ import (
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/digest"
 	"github.com/rfizzle/shhh/internal/structural"
+	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // The offers the changeset row makes are keys.Row.Commit and keys.Row.Undo,
 // and the row itself is the door to its turn's review: clicked, or selected
-// and opened with enter (inertkeys.go). The selected row answers them, so the
-// input keeps every other key.
+// and opened with enter (inertkeys.go). The selected row answers them, and
+// with nothing selected the newest close answers their chords from the prompt
+// (latestClose), so the input keeps every other key.
 
 // appendTurnClose closes the turn with its summary rows. It runs where the
 // turn's accounting is closed — one place, so a turn cannot end without
@@ -93,13 +95,17 @@ func (m *Model) appendTurnClose() {
 func (m Model) turnCloseData() *components.TurnClose {
 	es := m.turnEntries()
 	commit := turnCommitRow(es)
+	changes := m.turnChangesRow(commit != nil)
 	c := components.TurnClose{
 		State:   m.turnOutcome,
 		Elapsed: components.FormatElapsed(m.turnElapsed()),
-		Changes: m.turnChangesRow(commit != nil),
-		Commit:  commit,
-		Notes:   m.turnNotesClause(),
-		Checks:  turnChecksRow(es, m.gate.Manage != nil),
+		Changes: changes,
+		// A commit row already answers what the turn wrote, so it is only
+		// with neither that an unvouched act is answered with nothing.
+		WroteNothing: changes == nil && commit == nil && m.ranUnvouched(es),
+		Commit:       commit,
+		Notes:        m.turnNotesClause(),
+		Checks:       turnChecksRow(es, m.gate.Manage != nil),
 		// Whether this block is the first in the session to offer a chord is
 		// settled here, where the block is built and the transcript above it
 		// is what it will be: the note about the Option key is a fact about
@@ -131,7 +137,9 @@ func (m Model) turnCloseData() *components.TurnClose {
 }
 
 // turnChangesRow is the changed-files row, read from the turn's changeset.
-// A turn that changed nothing has no row — the summary row stands alone.
+// A turn that changed nothing has no such row: where it only read, the
+// summary row stands alone, and where it ran something that could have
+// written, the close says `wrote nothing` in its place (ranUnvouched).
 //
 // A turn that committed still opens its review and loses the undo offer. Undo
 // puts files back out of the session's own records, which still works, but
@@ -144,6 +152,35 @@ func (m Model) turnChangesRow(committed bool) *components.TurnChanges {
 		return nil
 	}
 	return m.turnChangesFor(t, committed)
+}
+
+// ranUnvouched reports whether the turn ran a command, or a server call the
+// person did not mark read-only — the acts that carry the mutation rail
+// because shhh cannot see what they wrote. The changeset records only what
+// the edit tools wrote, so for such a turn an empty changeset is not the
+// same answer as a turn that only read: a command is assumed to write
+// (docs/interface/principles.md#weight-tracks-risk), and the close says it
+// wrote nothing rather than falling silent on the question. A call that was
+// refused, skipped or never started ran nothing, and a dry run the reader
+// asked for ran a derived form of the command, not the command.
+func (m Model) ranUnvouched(es []entry) bool {
+	for _, e := range es {
+		switch e.kind {
+		case entryCommand:
+			if !e.localRun && e.commandResult.Outcome != tools.ExecDidNotStart {
+				return true
+			}
+		case entryTool:
+			if e.deniedBy != "" || e.skipped != "" {
+				continue
+			}
+			switch m.activityKind(e.toolName) {
+			case components.ActivityCommand, components.ActivityRemote:
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // turnCommitRow is the commit this turn made, or nothing. The receipt is the

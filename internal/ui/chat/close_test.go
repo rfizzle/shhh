@@ -76,6 +76,53 @@ func TestTurnClose_ATurnThatChangedNothingGetsTheSummaryRowOnly(t *testing.T) {
 	}
 }
 
+// A command is assumed to write, so a turn that ran one and changed no file
+// answers that on its close rather than falling silent on it
+// (docs/interface/surfaces.md#the-turns-close). A turn that only read has no
+// such question, and a command that never ran raises none either.
+func TestTurnClose_ACommandThatWroteNothingSaysSo(t *testing.T) {
+	remote := MCP{
+		Has:      func(name string) bool { return strings.HasPrefix(name, "docs__") },
+		ReadOnly: func(name string) bool { return name == "docs__search" },
+	}
+	cases := []struct {
+		name string
+		row  entry
+		want bool
+	}{
+		{"a command that ran", entry{kind: entryCommand, text: "go generate ./..."}, true},
+		{"a server call nobody vouched for", entry{kind: entryTool, toolName: "docs__publish"}, true},
+		{"a read", entry{kind: entryTool, toolName: "read_file"}, false},
+		{"a read-only server's call", entry{kind: entryTool, toolName: "docs__search"}, false},
+		{"a refused command", entry{kind: entryTool, toolName: "execute_command", deniedBy: decidedByYou}, false},
+		{"a dry run the reader asked for", entry{kind: entryCommand, text: "rm -rf build", localRun: true}, false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			m := sendText(t, readyModel(t).WithMCP(remote), "tidy the build")
+			m.appendEntry(tc.row)
+			m = finishTurn(t, m)
+
+			c := lastClose(t, m)
+			if c.Changes != nil {
+				t.Fatalf("nothing was written, so there are no files to state: %+v", c.Changes)
+			}
+			if c.WroteNothing != tc.want {
+				t.Fatalf("wrote nothing = %v, want %v", c.WroteNothing, tc.want)
+			}
+			view := plainView(c, 80)
+			if got := strings.Contains(view, "wrote nothing"); got != tc.want {
+				t.Fatalf("the close should say wrote nothing: %v, got:\n%s", tc.want, view)
+			}
+			// No offers: there is nothing to review, keep or take back, and
+			// the newest close's chords stay off a row that has none.
+			if i, target := m.latestClose(); target != nil {
+				t.Fatalf("a close with no changeset offers nothing from the prompt, got entry %d", i)
+			}
+		})
+	}
+}
+
 func TestTurnClose_TheChangesRowStatesTheFilesAndOffersTheKeys(t *testing.T) {
 	m := turnModel(t)
 	m = sendText(t, m, "write the file")

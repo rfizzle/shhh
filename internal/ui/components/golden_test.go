@@ -341,8 +341,8 @@ func TestGolden_ActivityRows(t *testing.T) {
 // command card plain and flagged, the edit card carrying its diff, and the
 // generic card.
 // TestGolden_TurnClose captures the rows a turn ends with: the
-// three-row close, the one-row close of a turn that changed nothing, and the
-// two ways a turn can stop early.
+// three-row close, the one-row close of a turn that only read, the close of
+// a turn whose command wrote nothing, and the two ways a turn can stop early.
 func TestGolden_TurnClose(t *testing.T) {
 	captureGolden(t, "turn-close", "turn close rows", goldenWidths, func(width int) []golden.Panel {
 		closed := func(mut func(*TurnClose)) string {
@@ -364,8 +364,17 @@ func TestGolden_TurnClose(t *testing.T) {
 		return []golden.Panel{
 			{Label: "done · changed · checked", View: closed(func(c *TurnClose) {})},
 			{Label: "done · checks failing", View: closed(func(c *TurnClose) { c.Checks.Failed = true })},
-			{Label: "done · nothing changed", View: closed(func(c *TurnClose) {
+			{Label: "done · reads only", View: closed(func(c *TurnClose) {
 				c.Changes, c.Checks = nil, nil
+			})},
+			// A command is assumed to write, so a turn that ran one and
+			// changed no file answers that where the files would be, with
+			// nothing to offer.
+			{Label: "done · a command that wrote nothing", View: closed(func(c *TurnClose) {
+				c.Changes, c.Checks, c.WroteNothing = nil, nil, true
+			})},
+			{Label: "done · files only", View: closed(func(c *TurnClose) {
+				c.Checks = nil
 			})},
 			{Label: "cancelled · reports what it changed before stopping", View: closed(func(c *TurnClose) {
 				c.State, c.Checks = TurnCancelled, nil
