@@ -164,7 +164,7 @@ func goldenTranscript() []entry {
 		{kind: entryCommand, text: "go test ./internal/agent/...",
 			toolResult: "--- FAIL: TestRoundLimit", exitCode: 1, duration: 21400 * time.Millisecond},
 		{kind: entryTurnClose, close: &components.TurnClose{
-			Steps: 2, Tools: 6, Elapsed: "24.7s", Spend: "$0.14", Note: "round 2/25",
+			Steps: 2, Tools: 6, Elapsed: "24.7s", Spend: "$0.14",
 			Changes: &components.TurnChanges{
 				Files: 1, Added: 12, Removed: 4,
 				Keys: []components.TurnKey{rowOffer(keys.Row.Undo, "undo turn")},
@@ -3345,7 +3345,7 @@ func TestGolden_OnCloseGate(t *testing.T) {
 			m.appendCloseGateRow(res.Suite, res.Format(res.Fingerprint))
 			m.appendEntry(entry{kind: entryTurnClose, turn: 1, close: &components.TurnClose{
 				State: components.TurnDone, Steps: 2, Tools: 5,
-				Elapsed: "41.3s", Spend: "$0.12", Note: "round 4/25",
+				Elapsed: "41.3s", Spend: "$0.12",
 				Changes: &components.TurnChanges{
 					Files: 2, Added: 31, Removed: 7,
 					Keys: []components.TurnKey{rowOffer(keys.Row.Undo, "undo turn")},
@@ -3413,7 +3413,7 @@ func TestGolden_ResolvedVerification(t *testing.T) {
 			}
 			m.appendEntry(entry{kind: entryTurnClose, turn: 1, close: &components.TurnClose{
 				State: components.TurnDone, Steps: 2, Tools: 6,
-				Elapsed: "1m 12s", Spend: "$0.18", Note: "round 5/25",
+				Elapsed: "1m 12s", Spend: "$0.18",
 				Changes: &components.TurnChanges{
 					Files: 1, Added: 12, Removed: 3,
 					Keys: []components.TurnKey{rowOffer(keys.Row.Undo, "undo turn")},
@@ -3508,7 +3508,7 @@ func TestGolden_InspectorAlerts(t *testing.T) {
 					m.transcript = append(m.transcript, entry{kind: entryTurnClose, turn: 4,
 						close: &components.TurnClose{
 							State: components.TurnDone, Steps: 2, Tools: 5,
-							Elapsed: "1m 12s", Spend: "$0.18", Note: "round 5/25",
+							Elapsed: "1m 12s", Spend: "$0.18",
 							Changes: &components.TurnChanges{
 								Files: 1, Added: 12, Removed: 3, Note: "all tracked",
 							},

@@ -58,7 +58,7 @@ func gridTranscript() []entry {
 				Text: "The constant has one home and the caller no longer passes its own."},
 		}},
 		{kind: entryTurnClose, turn: 1, close: &components.TurnClose{
-			Steps: 2, Tools: 6, Elapsed: "24.7s", Spend: "$0.14", Note: "round 36/50",
+			Steps: 2, Tools: 6, Elapsed: "24.7s", Spend: "$0.14",
 			Changes: &components.TurnChanges{
 				Files: 1, Added: 12, Removed: 4,
 				Keys: []components.TurnKey{rowOffer(keys.Row.Undo, "undo turn")},

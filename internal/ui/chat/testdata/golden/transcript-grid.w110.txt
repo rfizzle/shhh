@@ -31,7 +31,7 @@
   ✗ the notebook is read-only, so nothing was written down
    ≡ summary round 36                                       ▸ on target · 1 line · [enter] expand
 
-   ✓ Done · 2 steps · 6 tools · 24.7s · $0.14                                                round 36/50
+   ✓ Done · 2 steps · 6 tools · 24.7s · $0.14
   ▎✎ 1 file changed +12 −4                                                            all tracked in git
    ✗ go test ./internal/agent/... failing · exit 1 · 21s
 
@@ -59,7 +59,7 @@
     ✗ the notebook is read-only, so nothing was written down                                              ┃   
      ≡ summary round 36                                       ▸ on target · 1 line · [enter] expand       ┃   
                                                                                                           ┃   
-     ✓ Done · 2 steps · 6 tools · 24.7s · $0.14                                                round 36/50┃   
+     ✓ Done · 2 steps · 6 tools · 24.7s · $0.14                                                           ┃   
     ▎✎ 1 file changed +12 −4                                                            all tracked in git┃   
      ✗ go test ./internal/agent/... failing · exit 1 · 21s                                                ┃   
                                                                                                           ┃   
@@ -90,7 +90,7 @@
   ✗ the notebook is read-only, so nothing was written down
    ≡ summary round 36                                       ▸ on target · 1 line · [enter] expand
 
-   ✓ Done · 2 steps · 6 tools · 24.7s · $0.14                                                round 36/50
+   ✓ Done · 2 steps · 6 tools · 24.7s · $0.14
   ▎✎ 1 file changed +12 −4                                                            all tracked in git
    ✗ go test ./internal/agent/... failing · exit 1 · 21s
 
@@ -117,7 +117,7 @@
   ␛[91m✗ the notebook is read-only, so nothing was written down␛[m
    ␛[38;5;241m≡␛[m ␛[38;5;252msummary␛[m ␛[38;5;252mround 36␛[m                                       ␛[38;5;241m▸ on target␛[m␛[38;5;241m · ␛[m␛[38;5;245m1 line␛[m␛[38;5;241m · ␛[m␛[94m[enter] expand␛[m
 
-   ␛[92m✓␛[m ␛[38;5;252mDone␛[m␛[38;5;241m · 2 steps · 6 tools · 24.7s · $0.14␛[m                                                ␛[38;5;241mround 36/50␛[m
+   ␛[92m✓␛[m ␛[38;5;252mDone␛[m␛[38;5;241m · 2 steps · 6 tools · 24.7s · $0.14␛[m
   ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m1 file changed ␛[m␛[92m+12␛[m ␛[91m−4␛[m                                                            ␛[38;5;241mall tracked in git␛[m
    ␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/... failing␛[m␛[38;5;241m · exit 1 · 21s␛[m
 
@@ -145,7 +145,7 @@
     ␛[91m✗ the notebook is read-only, so nothing was written down␛[m                                              ␛[38;5;241m┃␛[m   
      ␛[38;5;241m≡␛[m ␛[38;5;252msummary␛[m ␛[38;5;252mround 36␛[m                                       ␛[38;5;241m▸ on target · ␛[38;5;245m1 line␛[38;5;241m · ␛[94m[enter] expand␛[m       ␛[38;5;241m┃␛[m   
                                                                                                           ␛[38;5;241m┃␛[m   
-     ␛[92m✓␛[m ␛[38;5;252mDone␛[38;5;241m · 2 steps · 6 tools · 24.7s · $0.14␛[m                                                ␛[38;5;241mround 36/50┃␛[m   
+     ␛[92m✓␛[m ␛[38;5;252mDone␛[38;5;241m · 2 steps · 6 tools · 24.7s · $0.14␛[m                                                           ␛[38;5;241m┃␛[m   
     ␛[38;5;214m▎✎␛[m ␛[38;5;252m1 file changed ␛[92m+12␛[m ␛[91m−4␛[m                                                            ␛[38;5;241mall tracked in git┃␛[m   
      ␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/... failing␛[38;5;241m · exit 1 · 21s␛[m                                                ␛[38;5;241m┃␛[m   
                                                                                                           ␛[38;5;241m┃␛[m   
@@ -176,7 +176,7 @@
   ␛[91m✗ the notebook is read-only, so nothing was written down␛[m
    ␛[38;5;241m≡␛[m ␛[38;5;252msummary␛[m ␛[38;5;252mround 36␛[m                                       ␛[38;5;241m▸ on target␛[m␛[38;5;241m · ␛[m␛[38;5;245m1 line␛[m␛[38;5;241m · ␛[m␛[94m[enter] expand␛[m
 
-   ␛[92m✓␛[m ␛[38;5;252mDone␛[m␛[38;5;241m · 2 steps · 6 tools · 24.7s · $0.14␛[m                                                ␛[38;5;241mround 36/50␛[m
+   ␛[92m✓␛[m ␛[38;5;252mDone␛[m␛[38;5;241m · 2 steps · 6 tools · 24.7s · $0.14␛[m
   ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m1 file changed ␛[m␛[92m+12␛[m ␛[91m−4␛[m                                                            ␛[38;5;241mall tracked in git␛[m
    ␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/... failing␛[m␛[38;5;241m · exit 1 · 21s␛[m
 

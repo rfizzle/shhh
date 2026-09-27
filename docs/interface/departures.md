@@ -826,6 +826,24 @@ the glyph set does not grow for it.
 The gap is closed by drawing the unbounded segment, and where that artboard
 and this differ, the artboard wins.
 
+## The round is counted on the rail and not on the close row
+
+*A disagreement.* The artboards disagree with each other. `Changeset` draws
+`round 7/25` at the right of the Done row; `Commit` draws the same row without
+it; and `Frame` keeps `round 7/25` on the vitals rail at idle, after the turn
+has closed. The binary follows `Commit` and `Frame`: the close row states the
+turn's steps, tools, time and spend, and the round is stated once, on the
+rail ([the turn's close](surfaces.md#the-turns-close)).
+
+Drawn on both, the same counter stood two rows apart with nothing between
+them, and a reader had to check that the two figures agreed before trusting
+either. The rail is the one that is always there — it is where a new reader
+learns to look for the session's counters, and it keeps the round after the
+turn ends — so the close row is the one that gives it up. The AGENTS block's
+orchestrator row states its round only while a turn is working, so an idle
+session still has one account. The departure is closed by `Changeset` dropping
+the note from its Done row.
+
 ## The working label arrives, and a light runs along it
 
 *A disagreement.* The readme knows one animation: the spinner. The binary

@@ -56,7 +56,7 @@ search: loop.go · 1 of 3
   ▎✗ run     go test ./internal/agent/...                       exit 1    21s┃ 
     --- FAIL: TestRoundLimit                                                 ┃ 
                                                                              ┃ 
-   ✓ Done · 2 steps · 6 tools · 24.7s · $0.14                      round 2/25  
+   ✓ Done · 2 steps · 6 tools · 24.7s · $0.14                                  
   ▎✎ 1 file changed +12 −4                                 all tracked in git  
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 search: context.go · 0 of 1
@@ -76,7 +76,7 @@ search: context.go · 0 of 1
   ▎✗ run     go test ./internal/agent/...                       exit 1    21s┃ 
     --- FAIL: TestRoundLimit                                                   
                                                                                
-   ✓ Done · 2 steps · 6 tools · 24.7s · $0.14                      round 2/25  
+   ✓ Done · 2 steps · 6 tools · 24.7s · $0.14                                  
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 [j/k] move · [enter] expand · [y] copy the row · [/] search · [n/N] match · [?] keys · [q] back to the prompt       row 2 of 6
 
@@ -129,7 +129,7 @@ search: context.go · 0 of 1
   ␛[91m▎␛[m␛[91m✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgo test ./internal/agent/...␛[m                       ␛[91mexit 1␛[m    ␛[38;5;241m21s␛[m␛[38;5;241m┃␛[m 
     ␛[38;5;245m--- FAIL: TestRoundLimit␛[m                                                 ␛[38;5;241m┃␛[m 
                                                                              ␛[38;5;241m┃␛[m 
-   ␛[92m✓␛[m ␛[38;5;252mDone␛[m␛[38;5;241m · 2 steps · 6 tools · 24.7s · $0.14␛[m                      ␛[38;5;241mround 2/25␛[m  
+   ␛[92m✓␛[m ␛[38;5;252mDone␛[m␛[38;5;241m · 2 steps · 6 tools · 24.7s · $0.14␛[m                                  
   ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m1 file changed ␛[m␛[92m+12␛[m ␛[91m−4␛[m                                 ␛[38;5;241mall tracked in git␛[m  
 ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 ␛[1;94msearch␛[m␛[38;5;241m: ␛[m␛[38;5;252mcontext.go␛[m␛[38;5;241m · 0 of 1␛[m
@@ -149,7 +149,7 @@ search: context.go · 0 of 1
   ␛[91m▎␛[m␛[91m✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgo test ./internal/agent/...␛[m                       ␛[91mexit 1␛[m    ␛[38;5;241m21s␛[m␛[38;5;241m┃␛[m 
     ␛[38;5;245m--- FAIL: TestRoundLimit␛[m                                                   
                                                                                
-   ␛[92m✓␛[m ␛[38;5;252mDone␛[m␛[38;5;241m · 2 steps · 6 tools · 24.7s · $0.14␛[m                      ␛[38;5;241mround 2/25␛[m  
+   ␛[92m✓␛[m ␛[38;5;252mDone␛[m␛[38;5;241m · 2 steps · 6 tools · 24.7s · $0.14␛[m                                  
 ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 ␛[94m[j/k]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m expand␛[m␛[38;5;241m · ␛[m␛[94m[y]␛[m␛[38;5;241m copy the row␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m search␛[m␛[38;5;241m · ␛[m␛[94m[n/N]␛[m␛[38;5;241m match␛[m␛[38;5;241m · ␛[m␛[94m[?]␛[m␛[38;5;241m keys␛[m␛[38;5;241m · ␛[m␛[94m[q]␛[m␛[38;5;241m back to the prompt␛[m       ␛[38;5;241mrow 2 of 6␛[m
 

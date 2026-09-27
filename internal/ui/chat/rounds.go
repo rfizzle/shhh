@@ -141,7 +141,10 @@ func (m Model) roundCounter() string {
 	return s
 }
 
-// roundLabel is the counter on its own, shared with the close block's note.
+// roundLabel is the counter on its own. The vitals rail is its one home: the
+// close row does not repeat it, since the rail is on screen at every width and
+// two accounts of one counter two rows apart is one too many
+// (docs/interface/departures.md#the-round-is-counted-on-the-rail-and-not-on-the-close-row).
 // A turn running without a ceiling keeps the counter's shape and puts `∞`
 // where the bound would be, because the rail must not invent a number and
 // cannot say so in words between its separators

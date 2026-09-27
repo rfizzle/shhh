@@ -155,8 +155,13 @@ func TestRoundLimit_AGrantedTurnClosesOnceForTheWholeTurn(t *testing.T) {
 	if c.Changes == nil || c.Changes.Files != 1 {
 		t.Fatalf("the close covers everything the turn changed, got %+v", c.Changes)
 	}
-	if want := fmt.Sprintf("round 1/%d", 1+roundGrantBlock); c.Note != want {
-		t.Errorf("the close reports the ceiling it finished under, got %q", c.Note)
+	// The round is stated once, on the rail, and the rail keeps it at idle
+	// with the ceiling the turn finished under.
+	if c.Note != "" {
+		t.Errorf("the close leaves the round to the rail, got note %q", c.Note)
+	}
+	if want := fmt.Sprintf("round 1/%d", 1+roundGrantBlock); m.cockpitData(true).Round != want {
+		t.Errorf("the rail reports the ceiling the turn finished under, got %q", m.cockpitData(true).Round)
 	}
 	// One turn in the history, not two: the accounting was reopened.
 	if got := len(m.vitals.turns); got != 1 {

@@ -96,7 +96,6 @@ func (m Model) turnCloseData() *components.TurnClose {
 	c := components.TurnClose{
 		State:   m.turnOutcome,
 		Elapsed: components.FormatElapsed(m.turnElapsed()),
-		Note:    m.roundNote(),
 		Changes: m.turnChangesRow(commit != nil),
 		Commit:  commit,
 		Notes:   m.turnNotesClause(),
@@ -129,17 +128,6 @@ func (m Model) turnCloseData() *components.TurnClose {
 		}
 	}
 	return &c
-}
-
-// roundNote is the first row's right-aligned note: how much of the turn's
-// tool-round budget it used. A turn that called nothing has no budget to
-// report.
-func (m Model) roundNote() string {
-	rounds := m.agent.Rounds()
-	if rounds <= 0 {
-		return ""
-	}
-	return m.roundLabel()
 }
 
 // turnChangesRow is the changed-files row, read from the turn's changeset.
