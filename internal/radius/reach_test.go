@@ -24,14 +24,14 @@ func TestReach(t *testing.T) {
 			want:    "writes 3 paths · no network · no sudo",
 		},
 		{
-			name:    "an unresolved verb never reads as read-only",
+			name:    "an unresolved verb leaves out what it cannot say and never reads as read-only",
 			command: "npm run build",
-			want:    "writes unknown · network unknown · no sudo",
+			want:    "no sudo",
 		},
 		{
-			name:    "a network verb is named, and its writes stay unknown",
+			name:    "a network verb is named, and the writes it cannot account for are left out",
 			command: "curl https://example.com",
-			want:    "writes unknown · network · no sudo",
+			want:    "network · no sudo",
 		},
 		{
 			name:    "a git subcommand that stays local is not the network",
@@ -41,7 +41,7 @@ func TestReach(t *testing.T) {
 		{
 			name:    "a git subcommand that leaves is",
 			command: "git push origin main",
-			want:    "writes unknown · network · no sudo",
+			want:    "network · no sudo",
 		},
 		{
 			name:    "escalation is always knowable and always said",
@@ -57,11 +57,12 @@ func TestReach(t *testing.T) {
 	}
 }
 
-func TestReachKeepsUnknownBesideWhatItResolved(t *testing.T) {
-	// One segment resolves and the other does not; the line has to carry both
-	// rather than letting the resolved half stand for the whole command.
+func TestReachStatesWhatItResolvedBesideWhatItCouldNot(t *testing.T) {
+	// One segment resolves and the other does not: the write it found is still
+	// a fact, the network it cannot vouch for is left out, and nothing on the
+	// line says unknown.
 	got := Outline("touch notes.txt && npm run build").Reach()
-	want := "writes notes.txt, plus unknown · network unknown · no sudo"
+	want := "writes notes.txt · no sudo"
 	if got != want {
 		t.Errorf("Reach() = %q, want %q", got, want)
 	}

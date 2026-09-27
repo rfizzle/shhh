@@ -2641,6 +2641,19 @@ here: it is the one run that cannot be reflowed between words without
 becoming a different command, and a folded command is still every character
 in order where a clipped one is not.
 
+**The containment line states what it knows.** It reads the command the way
+the approval card does — what it writes, whether it leaves the machine, whose
+privileges it runs with — and says each as a fact: `read-only · no network ·
+no sudo`. Where the reading could not settle a facet, the facet is left out
+rather than drawn as `unknown`: the one-shot's decision is taken on the
+command itself and on the risk lines above it, and nothing about it changes
+for a word saying that a reading is missing
+([a stat that cannot be reported is left
+out](principles.md#a-stat-that-cannot-be-reported-is-left-out)). The approval
+card keeps its `unknown` rows, because there the reading is what is being
+decided on. Whether a command escalates is always known, so the line is never
+empty.
+
 One blank row separates the containment line from the keys. The keys are what
 you do about everything above them rather than the last line of it, and a row
 of offers hard against the sentence above reads as part of the sentence.

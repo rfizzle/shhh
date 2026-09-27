@@ -8,9 +8,13 @@ package radius
 // decision, so the same resolution is folded into a phrase: what it writes,
 // whether it leaves the machine, and whose privileges it runs with.
 //
-// It is the same reading, so it inherits the same honesty: a verb shhh could
-// not account for makes the network facet `unknown` rather than quiet, since
-// a command nobody resolved is not one anybody can promise stays local.
+// It is the same reading, so it inherits the same honesty, which on a line
+// that carries no decision means leaving a facet out rather than printing
+// `unknown`: a verb shhh could not account for is never folded into
+// `read-only` or `no network`, and nothing is said in their place. The
+// approval cards keep their `unknown` rows, because there it is the reading a
+// person is deciding on.
+// See docs/interface/principles.md#a-stat-that-cannot-be-reported-is-left-out.
 
 import (
 	"fmt"
@@ -18,42 +22,47 @@ import (
 	"strings"
 )
 
-// Reach describes the command's reach as one line, three facets separated by
-// the middle dot the rest of the UI uses. It never claims more than Resolve
-// found: `read-only` means the resolver accounted for every segment and none
-// of them wrote.
+// Reach describes the command's reach as one line, up to three facets
+// separated by the middle dot the rest of the UI uses. It never claims more
+// than Resolve found: `read-only` means the resolver accounted for every
+// segment and none of them wrote. A facet it could not settle is left out, and
+// the sudo facet is always known, so the line is never empty.
 func (c Command) Reach() string {
-	return strings.Join([]string{c.writeFacet(), c.netFacet(), c.sudoFacet()}, " · ")
+	var facets []string
+	for _, f := range []string{c.writeFacet(), c.netFacet(), c.sudoFacet()} {
+		if f != "" {
+			facets = append(facets, f)
+		}
+	}
+	return strings.Join(facets, " · ")
 }
 
-// writeFacet names what the command changes on disk. An unresolved segment is
-// never folded into "read-only" — that is the whole point of the resolver.
+// writeFacet names what the command changes on disk, or "" where it cannot
+// say. An unresolved segment is never folded into "read-only" — that is the
+// whole point of the resolver — and a write it did find is still a fact beside
+// a segment it could not read, so that write is named and the rest left out.
 func (c Command) writeFacet() string {
 	switch {
 	case len(c.Writes) == 0 && len(c.Unresolved) == 0:
 		return "read-only"
 	case len(c.Writes) == 0:
-		return "writes unknown"
+		return ""
+	case len(c.Writes) > 1:
+		return fmt.Sprintf("writes %d paths", len(c.Writes))
 	}
-	facet := "writes " + c.Writes[0].Path
-	if len(c.Writes) > 1 {
-		facet = fmt.Sprintf("writes %d paths", len(c.Writes))
-	}
-	if len(c.Unresolved) > 0 {
-		facet += ", plus unknown"
-	}
-	return facet
+	return "writes " + c.Writes[0].Path
 }
 
 // netFacet reports the network. shhh reads verbs, not sockets, so a resolved
-// command that names no network verb gets `no network` and an unresolved one
-// gets `network unknown`.
+// command that names no network verb gets `no network`, and an unresolved one
+// that names none gets "" — a command nobody resolved is not one anybody can
+// promise stays local.
 func (c Command) netFacet() string {
 	switch {
 	case c.Net:
 		return "network"
 	case len(c.Unresolved) > 0:
-		return "network unknown"
+		return ""
 	}
 	return "no network"
 }
