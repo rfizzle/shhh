@@ -113,3 +113,33 @@ func (k *KeyListScreen) bodyRows(width, budget int) []string {
 	out = append(out, shown...)
 	return append(out, sty.Dim.Render(Clip(below, width)))
 }
+
+// A card's run says `[?] keys` wherever its host answers the key, so the list
+// is found from the card and not only from /help. It takes the last slot
+// before the way out, the way the approval card's run ends, and a run too
+// long for its row takes another row for it rather than losing an offer
+// (docs/interface/principles.md#fold-never-hide). A one-line confirm has no
+// second row to take, so there it is the first thing the line gives up
+// (Confirm.withKeyList).
+
+// withKeyListOffer is a run of offers with `[?] keys` placed before its way
+// out — the trailing safe offer, or the end where there is none.
+func withKeyListOffer(offers []KeyOffer) []KeyOffer {
+	at := len(offers)
+	for at > 0 && offers[at-1].Safe {
+		at--
+	}
+	with := make([]KeyOffer, 0, len(offers)+1)
+	with = append(with, offers[:at]...)
+	with = append(with, keyOffer(keys.Screen.List))
+	return append(with, offers[at:]...)
+}
+
+// KeyListOffers is withKeyListOffer for a run a host lays itself.
+func KeyListOffers(offers []KeyOffer) []KeyOffer { return withKeyListOffer(offers) }
+
+// keyListSegment is `[?] keys` as a painted segment of a run whose way out
+// the caller lays after it.
+func keyListSegment() string {
+	return offerSegment(keys.Bracket(keys.Screen.List), keys.Words(keys.Screen.List))
+}

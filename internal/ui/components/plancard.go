@@ -70,6 +70,10 @@ type PlanCard struct {
 	// rather than sentences because a live row paints the key apart from
 	// the words and a sentence has nowhere to hold that seam.
 	HintKeys []KeyOffer
+	// KeyList says the host answers `?` over the card with its register and
+	// the glyph legend, so the key row offers `[?] keys` in the last slot
+	// before the way out.
+	KeyList bool
 	// MaxLines bounds the card's height, frame included; the step list is
 	// what shrinks, and what it drops is counted rather than lost.
 	MaxLines int
@@ -128,7 +132,11 @@ func (c *PlanCard) tailRows(width, inner int, options []string) []string {
 		// sentence underneath is still taking them.
 		rows = append(rows, notYetLiveRows(c.Handover, width)...)
 	case len(c.HintKeys) > 0:
-		rows = append(rows, hintRows(c.HintKeys, width)...)
+		offers := c.HintKeys
+		if c.KeyList {
+			offers = withKeyListOffer(offers)
+		}
+		rows = append(rows, hintRows(offers, width)...)
 	}
 	return rows
 }

@@ -36,6 +36,10 @@ type NoteSelect struct {
 	// that means one thing where it is declared can mean a near thing here,
 	// and the row has to say which.
 	Actions []KeyOffer
+	// KeyList says the host answers `?` over this card with its register and
+	// the glyph legend, so the key row offers `[?] keys` in the last slot
+	// before the way out. It is drawn and never answered here.
+	KeyList bool
 	// NotYetLive says the card is drawn beside a draft that still holds the
 	// keyboard, so none of the keys above is live yet and the row under the
 	// field is the one that changes that. Handover is that key
@@ -181,6 +185,9 @@ func (s *NoteSelect) hintRowsFor(width int) []string {
 		hint = append(hint, keyOffer(keys.Select.Filter))
 	}
 	hint = append(hint, s.Select.cancelOffer())
+	if s.KeyList {
+		hint = withKeyListOffer(hint)
+	}
 	// Handed over as segments and never pre-joined, the way the checkbox
 	// list's are: a row too wide for the terminal takes another row, and a
 	// joined one could only be cut in the middle of a clause — which on this

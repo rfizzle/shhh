@@ -677,6 +677,7 @@ func (m Model) agentListLines() []string {
 	m.agentList.Rows = rows
 	m.agentList.MaxLines = m.maxConfirmPanelHeight()
 	m.agentList.Spawned, m.agentList.SpawnLimit = m.subagents.Spawned()
+	m.agentList.KeyList = m.agentListKeyList() != ""
 	if m.agentList.Focus >= len(rows) {
 		m.agentList.Focus = max(len(rows)-1, 0)
 	}

@@ -28,7 +28,7 @@
 │ lanes. Rebase onto it before your next commit.       │
 │ it joins the turn as a steer; it grants nothing      │
 ├──────────────────────────────────────────────────────┤
-│ [y] pass it to the turn · [n] drop it                │
+│ [y] pass it to the turn · [n] drop it · [?] keys     │
 ╰──────────────────────────────────────────────────────╯
 
 · the held card · with more lines behind it
@@ -38,7 +38,7 @@
 │ it joins the turn as a steer; it grants nothing      │
 │ 2 more lines waiting behind it                       │
 ├──────────────────────────────────────────────────────┤
-│ [y] pass it to the turn · [n] drop it                │
+│ [y] pass it to the turn · [n] drop it · [?] keys     │
 ╰──────────────────────────────────────────────────────╯
 
 ── ansi ────────────────────────────────────────────────────
@@ -60,7 +60,7 @@
 ␛[38;5;254m│␛[m ␛[38;5;254mlanes. Rebase onto it before your next commit.␛[m       ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mit joins the turn as a steer; it grants nothing␛[m      ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m␛[38;5;244m pass it to the turn␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;244m drop it␛[m                ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m␛[38;5;244m pass it to the turn␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;244m drop it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m     ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────╯␛[m
 
 · the held card · with more lines behind it
@@ -70,5 +70,5 @@
 ␛[38;5;254m│␛[m ␛[38;5;244mit joins the turn as a steer; it grants nothing␛[m      ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m2 more lines waiting behind it␛[m                       ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m␛[38;5;244m pass it to the turn␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;244m drop it␛[m                ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m␛[38;5;244m pass it to the turn␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;244m drop it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m     ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────╯␛[m

@@ -107,7 +107,7 @@ func (m *Model) armUndo(plan changeset.UndoPlan, of undoSubject, confirmTurn int
 	m.undoPlan = plan
 	m.undoSubject = of
 	m.undoAsk = &components.UndoConfirm{
-		Confirm:  components.Confirm{Prompt: fmt.Sprintf("Undo turn %d?", confirmTurn)},
+		Confirm:  components.Confirm{Prompt: fmt.Sprintf("Undo turn %d?", confirmTurn), KeyList: true},
 		Restores: plan.Restores() - driftedIn(plan, false),
 		Removes:  plan.Removes() - driftedIn(plan, true),
 		Drifted:  plan.Drifted(),

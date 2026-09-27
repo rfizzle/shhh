@@ -141,12 +141,13 @@ func (c UndoConfirm) driftRows(width int) []string {
 // the statement moves to a row of its own rather than pushing them off the
 // end.
 func (c UndoConfirm) headRows(width int) []string {
-	keys := c.defaultKeys()
-	if full := sty.Body.Render(c.Prompt+" "+c.effect()) + "  " + keys; lipgloss.Width(full) <= width {
+	answers := c.defaultKeys()
+	head := sty.Body.Render(c.Prompt + " " + c.effect())
+	if full := head + "  " + c.withKeyList(answers, width-lipgloss.Width(head)-2); lipgloss.Width(full) <= width {
 		return []string{full}
 	}
 	return []string{
-		Clip(sty.Body.Render(c.Prompt)+"  "+keys, width),
+		Clip(sty.Body.Render(c.Prompt)+"  "+c.withKeyList(answers, width-lipgloss.Width(c.Prompt)-2), width),
 		Clip(sty.Dim.Render(c.effect()), width),
 	}
 }

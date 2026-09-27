@@ -1,11 +1,15 @@
 package chat
 
 import (
+	"context"
 	"strings"
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/project"
+	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
@@ -83,4 +87,82 @@ func values(table map[state]*mode) []*mode {
 		out = append(out, o)
 	}
 	return out
+}
+
+// Every card that answers `?` says so on its own run, and the offer it draws
+// is the key that opens its list — a `[?] keys` that did nothing would be the
+// one offer on the card a reader could not trust
+// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+func TestKeyList_EveryCardThatAnswersQuestionMarkOffersIt(t *testing.T) {
+	const offer = "[?] keys"
+	for _, tc := range []struct {
+		name string
+		open func(t *testing.T) Model
+	}{
+		{"the plan card", func(t *testing.T) Model { return plannedModel(t, structuredPlan) }},
+		{"the question card", func(t *testing.T) Model {
+			return openedQuestion(t, agent.ModeManual, `{"question":"Which one?","shape":"choose","options":[{"label":"a"},{"label":"b"}]}`)
+		}},
+		{"the checkbox question", func(t *testing.T) Model {
+			return openedQuestion(t, agent.ModeManual, `{"question":"Which?","shape":"choose_many","options":[{"label":"a"},{"label":"b"}]}`)
+		}},
+		{"a yes-or-no question", func(t *testing.T) Model {
+			return openedQuestion(t, agent.ModeManual, `{"question":"Should the migration be reversible?","shape":"confirm"}`)
+		}},
+		{"the scaffold card", func(t *testing.T) Model {
+			m := frameModel(t, 120, 40).WithScaffold(Scaffold{
+				Offer: true, Paths: scaffoldFixturePaths(),
+				Write: func() (string, error) { return project.ContextFile, nil },
+			})
+			next, _ := m.scaffoldCommand()
+			return next.(Model)
+		}},
+		{"the rewind scope card", func(t *testing.T) Model {
+			m, _, _ := rewindOfferModel(t)
+			return sendText(t, m, "/rewind 1")
+		}},
+		{"the undo confirm", func(t *testing.T) Model {
+			m, _ := undoModel(t)
+			next, _ := m.undoTurn(1, nil)
+			return next.(Model)
+		}},
+		{"the quit confirm", func(t *testing.T) Model {
+			m := frameModel(t, 120, 40)
+			m.state = stateStreaming
+			next, _ := m.openQuitConfirm()
+			return next.(Model)
+		}},
+		{"the held-line card", func(t *testing.T) Model {
+			m := frameModel(t, 120, 40).WithInbound(Inbound{Policy: InboundHold})
+			next, _ := m.Update(inboundMsg{line: InboundLine{From: "2026-09-23 10:41:07", Text: "rebase onto master"}})
+			return next.(Model)
+		}},
+		{"the context-pressure card", func(t *testing.T) Model {
+			m := pressureModel(t, 120)
+			m.armPressureCard()
+			return m
+		}},
+		{"the agent manager", func(t *testing.T) Model {
+			sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
+			t.Cleanup(sup.Close)
+			next, _ := newSubagentModel(t, sup).openAgentList()
+			return next.(Model)
+		}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			m := tc.open(t)
+			before, list := m.state, m.agentList != nil
+			if view := ansi.Strip(m.View().Content); !strings.Contains(view, offer) {
+				t.Fatalf("the card does not offer %q:\n%s", offer, view)
+			}
+			m = pressOn(t, m, questionMark)
+			if m.state != stateKeyList || m.keyList == nil {
+				t.Fatalf("%q is offered and ? did not open the key list (state %d)", offer, m.state)
+			}
+			m = pressOn(t, m, questionMark)
+			if m.state != before || (m.agentList != nil) != list {
+				t.Fatalf("? again did not go back to the card (state %d, want %d)", m.state, before)
+			}
+		})
+	}
 }

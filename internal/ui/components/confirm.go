@@ -5,6 +5,7 @@ import (
 	"unicode"
 
 	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
@@ -23,6 +24,11 @@ type Confirm struct {
 	// Every other confirm in the product holds the keyboard and leaves this
 	// false.
 	NotYetLive bool
+	// KeyList says the host answers `?` over this confirm with its register
+	// and the glyph legend, so the answer set is followed by `[?] keys`. It
+	// is the first thing the row gives up: a confirm is one line, and the
+	// answers are what may never be clipped away.
+	KeyList bool
 }
 
 // Update resolves on the first decisive key: y confirms; n, enter, esc, and
@@ -59,7 +65,20 @@ func (c *Confirm) View(width int) string {
 	if c.NotYetLive {
 		return Clip(sty.Body.Render(c.Prompt), width)
 	}
-	return Clip(sty.Body.Render(c.Prompt)+"  "+confirmKeys(), width)
+	return Clip(sty.Body.Render(c.Prompt)+"  "+c.withKeyList(confirmKeys(), width-lipgloss.Width(c.Prompt)-2), width)
+}
+
+// withKeyList is an answer set with `[?] keys` after it where the confirm
+// offers it and the room holds both; where it does not, the answers alone.
+func (c *Confirm) withKeyList(answers string, room int) string {
+	if !c.KeyList {
+		return answers
+	}
+	with := answers + sty.Dim.Render(" · ") + keyListSegment()
+	if lipgloss.Width(with) > room {
+		return answers
+	}
+	return with
 }
 
 // confirmKeys is the answer set every confirm in the product draws: the two

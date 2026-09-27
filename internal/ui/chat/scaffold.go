@@ -107,6 +107,9 @@ func (m Model) scaffoldCard() *components.ApprovalCard {
 	// is not what it leaves behind on a gated card.
 	card.Decline = "no — nothing written; not offered again"
 	card.Return = "leave — nothing written, and the offer stays"
+	// routeOverlay answers `?` over the card with its register, so the run
+	// offers it (the scaffold row's keyList).
+	card.KeyList = true
 	return card
 }
 

@@ -48,6 +48,10 @@ type MultiSelect struct {
 	// item's file in the editor on the backlog screen and one proposal's
 	// header on this card. They are offers and are never dropped.
 	Actions []KeyOffer
+	// KeyList says the host answers `?` over this card with its register and
+	// the glyph legend, so the key row offers `[?] keys` in the last slot
+	// before the way out. It is drawn and never answered here.
+	KeyList bool
 	// Note is the one-line note field under the list, for a card whose
 	// answer can carry the reader's own words beside the boxes. Nil is a
 	// card with no note, which is every card that had one before this field
@@ -235,6 +239,9 @@ func (s *MultiSelect) hintRowsFor(width int) []string {
 	segs = append(segs,
 		keyOfferAs(keys.Select.Take, fmt.Sprintf("apply (%d)", s.count())),
 		cancelOffer(s.CancelLabel, applyNone))
+	if s.KeyList {
+		segs = withKeyListOffer(segs)
+	}
 	// Handed over as segments and never pre-joined: a row too wide for the
 	// terminal takes another row, and a joined one could only be cut in the
 	// middle of a clause (docs/interface/principles.md#fold-never-hide).

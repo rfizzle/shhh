@@ -46,7 +46,9 @@ type RewindCard struct {
 func (c RewindCard) View(width int) string {
 	inner := Card{}.Inner(width)
 	rows := []string{"", c.Code.render(inner), c.Talk.render(inner), c.Undo.render(inner), cardRule}
-	rows = append(rows, runRows(rewindRun(), inner)...)
+	// `?` takes the last slot before the way out: the host answers it with
+	// the card's register and the glyph legend.
+	rows = append(rows, runRows(append(rewindRun(), keyListSegment()), inner)...)
 	rows = append(rows, rewindEscRow(inner))
 	// The tone is the mutation rail's, the same Accent the rows a restore
 	// would put back are drawn in, and the chip says the level in words

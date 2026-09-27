@@ -603,6 +603,9 @@ func (m Model) questionCardLines(c *questionCard, width int) []string {
 	// sentence being typed
 	// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 	handover := m.questionHandover()
+	// `?` is offered wherever routeOverlay answers it with the card's
+	// register, which is every dressing while no field on it is typed into.
+	list := m.questionKeyList() != ""
 	switch {
 	case c.submit:
 		lines = append(lines, c.sheet.submitRows(width)...)
@@ -610,6 +613,7 @@ func (m Model) questionCardLines(c *questionCard, width int) []string {
 		c.sel.Select.Title, c.sel.Select.Tone = questionTitle, components.CardDecision
 		c.sel.Select.Chips, c.sel.Select.Lead = []string{c.place()}, m.questionLead(c, width)
 		c.sel.NotYetLive, c.sel.Handover = handover != "", handover
+		c.sel.KeyList = list
 		if c.freeAnswer() {
 			// The draft's own ceiling, which moves with the terminal
 			// (draftMaxRows): past it the field scrolls inside itself, as
@@ -621,12 +625,13 @@ func (m Model) questionCardLines(c *questionCard, width int) []string {
 		c.multi.Title, c.multi.Tone = questionTitle, components.CardDecision
 		c.multi.Chips, c.multi.Lead = []string{c.place()}, m.questionLead(c, width)
 		c.multi.NotYetLive, c.multi.Handover = handover != "", handover
+		c.multi.KeyList = list
 		lines = append(lines, strings.Split(c.multi.View(width), "\n")...)
 	case c.conf != nil:
 		c.conf.NotYetLive = handover != ""
 		lines = append(lines, components.Clip(c.conf.View(width), width))
 		lines = append(lines, c.note.RowsLive(width, handover == "")...)
-		lines = append(lines, questionConfirmKeys(c, width, handover)...)
+		lines = append(lines, questionConfirmKeys(c, width, handover, list)...)
 	}
 	return lines
 }
@@ -683,7 +688,7 @@ func (c *questionCard) place() string {
 // and `n`, which is to say two letters of the sentence being typed. The row is
 // drawn into the whole width because this is the dressing with no frame to pay
 // for, and the answer pair beside the question goes with it (Confirm).
-func questionConfirmKeys(c *questionCard, width int, handover string) []string {
+func questionConfirmKeys(c *questionCard, width int, handover string, list bool) []string {
 	if handover != "" {
 		return components.NotYetLiveRows(handover, width)
 	}
@@ -693,6 +698,9 @@ func questionConfirmKeys(c *questionCard, width int, handover string) []string {
 		components.OfferAs(keys.Select.Note, "note"),
 	}
 	segs = append(segs, c.offers()...)
+	if list {
+		segs = components.KeyListOffers(segs)
+	}
 	// Wrapped between clauses rather than clipped, the way a card's own key
 	// row is: this dressing is drawn bare in the panel, so the whole width is
 	// the room and there is no frame to pay for.

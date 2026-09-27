@@ -89,6 +89,8 @@ func (m Model) pressureCardData() *components.PressureCard {
 		// key it does not answer or words that disagree with what pressing
 		// it does (components.PressureOffers).
 		Keys: components.PressureOffers(),
+		// routeOverlay answers `?` over the card with its register.
+		KeyList: true,
 	}
 	card.Keeps = m.compactKeepsClause()
 	card.Drops = compactDropsClause(b)

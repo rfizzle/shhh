@@ -218,7 +218,7 @@ func (m Model) openEndConfirm(prompt string, yes func(*Model) tea.Cmd) (tea.Mode
 	if m.db != nil && len(m.agent.Messages()) > 1 {
 		kept = "the conversation is autosaved to " + m.sessionName
 	}
-	m.quitAsk = &components.Confirm{Prompt: prompt + lost + "; " + kept + "."}
+	m.quitAsk = &components.Confirm{Prompt: prompt + lost + "; " + kept + ".", KeyList: true}
 	m.quitAskYes = yes
 	m.enterSurface(stateQuitConfirm)
 	m.syncViewport()

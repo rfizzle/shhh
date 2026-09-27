@@ -43,9 +43,11 @@ func (h HeldLine) View(width int) string {
 		rows = append(rows, sty.Dim.Render(plural(h.More, "more line")+" waiting behind it"))
 	}
 	rows = append(rows, cardRule)
-	rows = append(rows, CardHintRows([]KeyOffer{
+	// `?` takes the last slot: the host answers it with the card's register
+	// and the glyph legend, as every surface holding the keyboard does.
+	rows = append(rows, CardHintRows(withKeyListOffer([]KeyOffer{
 		OfferAs(keys.Confirm.Yes, "pass it to the turn"),
 		OfferAs(keys.Decision.Refuse, "drop it"),
-	}, width)...)
+	}), width)...)
 	return card.Render(rows, width)
 }

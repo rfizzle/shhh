@@ -161,6 +161,11 @@ type AgentList struct {
 	// Spawned and SpawnLimit are the session's spawn count against its cap,
 	// drawn beside the tally; a zero limit draws nothing.
 	Spawned, SpawnLimit int
+	// KeyList says the host answers `?` over the manager with its register
+	// and the glyph legend, so the key row offers `[?] keys` in the last
+	// slot before the way out. It is drawn and never answered here, and
+	// never while the steer field holds the keyboard.
+	KeyList bool
 	// list is the shared pointer and window (list.go). A fan-out wide
 	// enough to overflow this card is itself the problem the screen should be
 	// showing, which is why the manager went unwindowed at first — but a
@@ -757,7 +762,11 @@ func (l *AgentList) View(width int) string {
 	// The key hints and the pinned blocked children come off the budget
 	// before the window is drawn: the list scrolls under them, and the window
 	// may never buy itself a row.
-	hints := hintRows(l.hints(), width)
+	offers := l.hints()
+	if l.KeyList && l.steer == nil {
+		offers = withKeyListOffer(offers)
+	}
+	hints := hintRows(offers, width)
 	pinned, scrolling := l.split()
 	var rows []string
 	for _, i := range pinned {

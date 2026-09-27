@@ -430,6 +430,7 @@ func (m Model) planCard() *components.PlanCard {
 		Options:       planApproveOptions,
 		Focus:         m.planChoice,
 		HintKeys:      planHint(),
+		KeyList:       true, // routeOverlay answers `?` with the card's register
 		Summary:       m.planFacts,
 		SummaryDetail: m.planDetail,
 		MaxLines:      m.planPanelBound(),

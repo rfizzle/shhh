@@ -82,6 +82,10 @@ type PressureCard struct {
 	Continuing string
 	// Keys are the three offers on the action bar.
 	Keys []KeyOffer
+	// KeyList says the host answers `?` over the card with its register and
+	// the glyph legend, so the action bar ends on `[?] keys`. It is drawn
+	// and never answered here: it is not one of the card's answers.
+	KeyList bool
 }
 
 // PressureDecision is the answer to the card: which of the three offers the
@@ -195,7 +199,11 @@ func (c PressureCard) View(width int) string {
 		// rows, not fewer answers, and the one that would clip here is the
 		// one that keeps going.
 		rows = append(rows, cardRule)
-		rows = append(rows, packOffers(c.Keys, width-cardFrameWidth)...)
+		offers := c.Keys
+		if c.KeyList {
+			offers = withKeyListOffer(offers)
+		}
+		rows = append(rows, packOffers(offers, width-cardFrameWidth)...)
 	}
 	return Card{
 		Title: pressureTitle,
