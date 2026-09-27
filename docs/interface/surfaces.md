@@ -608,6 +608,15 @@ itself on the top rail, the session's counters on the vitals rail, and
 contextual key hints on the bottom rail that change with what the session is
 doing.
 
+The box itself is chrome, drawn in the tone every rule on the screen is drawn
+in, whatever the mode. The mode is stated on the vitals rail, by its word and
+the glyph in front of it, and a border coloured by mode would say it a second
+time in the accent an [approval card](#the-approval-card) wears to say a
+decision is waiting — so with a card up there would be two accent boxes, and
+the one that is the decision would stop being the one that stands out. This
+departs from the artboards that colour the border by mode:
+[the frame's border is chrome](departures.md#the-frames-border-is-chrome-and-the-mode-segment-carries-the-mode).
+
 The top rail states what one turn is doing — which of four phases it is in,
 and how long the turn has been running — and it states it while it is
 happening rather than after the fact. Nothing else on screen says the same

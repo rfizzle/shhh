@@ -494,6 +494,30 @@ three: work goes through, work is asked about, nothing is written. The
 departure is closed by the palette row taking the five names, at which point
 the artboard and the binary say the same thing.
 
+## The frame's border is chrome, and the mode segment carries the mode
+
+*A disagreement.* The `Frame` and `Main` artboards colour the input frame's
+border by permission mode — add where work goes through, accent where it is
+asked about — so that a gated session looks different from a permissive one
+before a word is read. The `Attention` artboard draws the waiting frame in
+dim, with `⏸ 2 waiting` in the accent on its rail, and the state-colour
+guideline gives the accent both to gated mode and to a low card's border. The
+binary draws the border in chrome, the tone of every other rule, in every
+mode and attached or not ([the input frame](surfaces.md#the-input-frame)); the
+mode segment on the vitals rail keeps its tone per mode, and its `✦ checking`
+while the classifier decides.
+
+The mode is already said on the frame, by the segment's word and the glyph in
+front of it, which is what keeps it from being carried by colour alone
+([colour never carries meaning alone](principles.md#colour-never-carries-meaning-alone)).
+The border was the same fact a second time, and in a gated session it was said
+in the accent a card's border uses to say the decision on it is worth
+weighing. With a card up, the screen held two accent boxes, and the one the
+reader had to answer no longer stood out from the one they type in
+([weight tracks risk](principles.md#weight-tracks-risk)). The frame's title
+keeps its word and its glyph's tone, which is what `Attention` draws. The
+departure is closed by the two artboards drawing the border in chrome.
+
 ## A row with no kind of its own carries its outcome in the glyph column
 
 *A gap.* The glyph guideline closes the outcome table with a rule and a list:

@@ -132,15 +132,14 @@ func newReadingStyles(p components.ColorTokens) readingStyles {
 
 // frameStyles is the input frame's own group, built by newFrameStyles.
 type frameStyles struct {
-	AccentPermissive lipgloss.Style
-	AccentGated      lipgloss.Style
-	AccentChecking   lipgloss.Style
-	Idle             lipgloss.Style
-	GutterIdle       lipgloss.Style
-	GutterWork       lipgloss.Style
-	GutterBang       lipgloss.Style
-	NoticeInfo       lipgloss.Style
-	NoticeAlert      lipgloss.Style
+	// Border is the frame's box, drawn in chrome like every other rule.
+	Border      lipgloss.Style
+	Idle        lipgloss.Style
+	GutterIdle  lipgloss.Style
+	GutterWork  lipgloss.Style
+	GutterBang  lipgloss.Style
+	NoticeInfo  lipgloss.Style
+	NoticeAlert lipgloss.Style
 	// The undressed draft and the waiting chip a decision puts on the frame
 	//: the chrome goes dim, the characters stay legible.
 	DraftHeld   lipgloss.Style
@@ -165,12 +164,10 @@ type frameStyles struct {
 
 func newFrameStyles(p components.ColorTokens) frameStyles {
 	return frameStyles{
-		AccentPermissive: lipgloss.NewStyle().Foreground(p.Add.Color()),
-		AccentGated:      lipgloss.NewStyle().Foreground(p.Accent.Color()),
-		AccentChecking:   lipgloss.NewStyle().Foreground(p.Spin.Color()),
-		Idle:             lipgloss.NewStyle().Foreground(p.Dim.Color()),
-		GutterIdle:       lipgloss.NewStyle().Bold(true).Foreground(p.Info.Color()),
-		GutterWork:       lipgloss.NewStyle().Bold(true).Foreground(p.Spin.Color()),
+		Border:     lipgloss.NewStyle().Foreground(p.Dim.Color()),
+		Idle:       lipgloss.NewStyle().Foreground(p.Dim.Color()),
+		GutterIdle: lipgloss.NewStyle().Bold(true).Foreground(p.Info.Color()),
+		GutterWork: lipgloss.NewStyle().Bold(true).Foreground(p.Spin.Color()),
 		// The bang draft's glyph carries the gated accent: what enter does
 		// next is ask, on the confirm card.
 		GutterBang:    lipgloss.NewStyle().Bold(true).Foreground(p.Accent.Color()),

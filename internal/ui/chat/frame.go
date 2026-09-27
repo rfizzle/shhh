@@ -184,26 +184,15 @@ func (m Model) frameWorking() bool {
 	return false
 }
 
-// frameAccentStyle is the mode-aware border accent: add for the
-// permissive modes, accent for the gated ones, spin while the auto-mode
-// classifier is checking. Attached, it reflects the child's mode. The mode
-// glyphs in the vitals keep meaning independent of color.
+// frameAccentStyle is the frame's border: chrome, the tone every rule on the
+// surface is drawn in, whatever the mode and whether or not a child is
+// attached. The mode is carried by the mode segment on the vitals rail, word
+// and glyph, which also spins `checking` while the classifier decides; a
+// border in the accent would share its tone with a card's and stop that
+// border saying "weigh this".
+// See docs/interface/departures.md#the-frames-border-is-chrome-and-the-mode-segment-carries-the-mode.
 func (m Model) frameAccentStyle() lipgloss.Style {
-	if m.turnState() == stateClassifying {
-		return sty.Frame.AccentChecking
-	}
-	mode := m.policy.mode
-	if m.attachedTo != "" && m.subagents != nil {
-		if cm, ok := m.subagents.AgentMode(m.attachedTo); ok {
-			mode = cm
-		}
-	}
-	switch mode {
-	case agent.ModeAcceptEdits, agent.ModeAuto:
-		return sty.Frame.AccentPermissive
-	default:
-		return sty.Frame.AccentGated
-	}
+	return sty.Frame.Border
 }
 
 // frameIdentity is the top rail's far side: the attached breadcrumb, or
