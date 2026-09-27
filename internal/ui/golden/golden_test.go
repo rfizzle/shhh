@@ -99,6 +99,13 @@ func TestPath_MonoSitsBesideItsColourPair(t *testing.T) {
 	}
 }
 
+// A Mac render sits beside the Linux one it differs from, mono included.
+func TestMacPath_SitsBesideItsLinuxRender(t *testing.T) {
+	if got := macPath(Path("turn-close.w80", true)); got != "testdata/golden/turn-close.w80.mono.darwin.txt" {
+		t.Fatalf("macPath = %q", got)
+	}
+}
+
 // The failure message is the whole value of a golden: it has to point at the
 // line that moved, with the difference visible rather than implied.
 func TestFirstDifference(t *testing.T) {

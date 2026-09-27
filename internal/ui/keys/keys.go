@@ -327,9 +327,10 @@ var Draft = DraftKeys{
 	// every ctrl letter the terminal delivers is spent or the line
 	// editor's (docs/interface/reserved-keys.md). What alt costs is the
 	// Option key: a stock Mac terminal composes a character for it until
-	// the profile is told to send the escape prefix, so the doctor has a
-	// row that reads the setting and the key list names it beside these
-	// (docs/interface/reserved-keys.md#what-is-left).
+	// the profile is told to send the escape prefix, so a Mac ships the
+	// family on the function row instead (platform.go), and the doctor's
+	// row reads the setting only for an alt chord a keymap file put back
+	// (docs/interface/reserved-keys.md#a-mac-ships-without-alt).
 	Agents:  bind("alt+a", "the agent manager", "alt+a"),
 	Backlog: bind("ctrl+f", "the backlog screen", "ctrl+f"),
 
@@ -799,14 +800,17 @@ var Row = RowKeys{
 // than on whichever row happens to be newest
 // (docs/interface/surfaces.md#the-turns-close).
 //
-// Every one of them is on alt, and that is not a preference. Each ctrl letter
-// a terminal delivers is spent or the line editor's, and the free set is
-// function keys and modified navigation keys — ten offers do not come out
-// of it (docs/interface/reserved-keys.md#what-is-left). What alt costs is the
-// Option key on the two stock macOS terminals, which compose a character
-// until the profile is told to send the escape prefix; `shhh doctor`'s keys
-// row reads that setting and says which box, and the first row in a session
-// to offer one of these names it.
+// Every one of them is on alt here, and that is not a preference. Each ctrl
+// letter a terminal delivers is spent or the line editor's, and the free set
+// is function keys and modified navigation keys — ten offers named after
+// words do not come out of it (docs/interface/reserved-keys.md#what-is-left).
+// What alt costs is the Option key on the two stock macOS terminals, which
+// compose a character until the profile is told to send the escape prefix,
+// so a Mac ships these ten on the function row instead and gives up the
+// mnemonics to get chords that arrive (platform.go,
+// docs/interface/reserved-keys.md#a-mac-ships-without-alt). Where one is on
+// alt anyway, `shhh doctor`'s keys row reads the setting and the first row in
+// a session to offer it names that row.
 //
 // The letter each chord carries is the row's own where alt still had it.
 // Some did not: `alt+t` is the reasoning level's, and

@@ -27,6 +27,18 @@ import (
 
 func TestMain(m *testing.M) { os.Exit(golden.Run(m)) }
 
+// The captures that print a chord, run again under the Mac's keyboard, which
+// ships the alt chords on the function row
+// (docs/interface/reserved-keys.md#a-mac-ships-without-alt). A render that
+// differs is kept as the `.darwin.txt` beside the Linux one.
+func TestGolden_TheMacKeyboard(t *testing.T) {
+	golden.OnPlatform(t, "darwin",
+		"TestGolden_FanoutBlock", "TestGolden_InspectorRail",
+		"TestGolden_RecoveryRows", "TestGolden_TurnClose",
+		"TestGolden_ApprovalCard", "TestGolden_CommitCard", "TestGolden_SpawnCard",
+		"TestGolden_PlanCard", "TestGolden_PressureCard", "TestGolden_ProviderCard")
+}
+
 // rowOffer is a transcript row's offer built the way the session builds one:
 // the letter reading mode answers with its cursor on the row, and the chord
 // the draft answers, which is what the row draws while the draft can take

@@ -10,6 +10,7 @@ package keys
 import (
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 )
 
@@ -57,6 +58,43 @@ func ReservedReference() string {
 	}
 	b.WriteString("\n" + reservedEnd)
 	return b.String()
+}
+
+const (
+	platformBegin = "<!-- BEGIN generated platform keys — written by `make docs` from the Mac's table in internal/ui/keys/platform.go; edit the table, not this. -->"
+	platformEnd   = "<!-- END generated platform keys -->"
+)
+
+// PlatformReference is every key a Mac ships differently from Linux and
+// Windows, as the document prints it: the name a file writes it by, what it
+// does, and the keystrokes on each, in the order the register declares them.
+func PlatformReference() string {
+	var b strings.Builder
+	b.WriteString(platformBegin + "\n\n")
+	b.WriteString("| Key | Does | Linux and Windows | A Mac |\n|---|---|---|---|\n")
+	for _, g := range keyboard(true) {
+		for _, a := range g.Acts {
+			linux, _ := ShippedOn("linux", a.Name)
+			darwin, _ := ShippedOn("darwin", a.Name)
+			if slices.Equal(linux, darwin) {
+				continue
+			}
+			fmt.Fprintf(&b, "| `%s` | %s | %s | %s |\n", a.Name, cell(a.Words), keystrokes(linux), keystrokes(darwin))
+		}
+	}
+	b.WriteString("\n" + platformEnd)
+	return b.String()
+}
+
+// PlatformReferenceIn is the document with the platform region replaced.
+func PlatformReferenceIn(doc string) (string, bool, error) {
+	return regionIn(doc, platformBegin, platformEnd, PlatformReference(), "platform keys")
+}
+
+// WritePlatformReference rewrites the platform region of the document at
+// path and reports whether it had drifted.
+func WritePlatformReference(path string, write bool) (stale bool, err error) {
+	return writeRegion(path, write, PlatformReferenceIn)
 }
 
 // cell escapes what would end a column early.
@@ -122,22 +160,27 @@ const (
 )
 
 // KeymapReference is every key the register declares as a table: the name a
-// file writes it by, the keystrokes it ships with, what it does, and whether
-// a file may move it. It is written from the declarations rather than from
-// this process's keyboard, so a keymap on the machine that ran `make docs`
-// cannot reach the document, and a test that has moved a key does not find
-// it stale.
+// file writes it by, the keystrokes it ships with on Linux and Windows and on
+// a Mac, what it does, and whether a file may move it. It is written from the
+// platforms' shipped keyboards rather than from this process's, so neither a
+// keymap nor the platform of the machine that ran `make docs` can reach the
+// document, and a test that has moved a key does not find it stale.
 func KeymapReference() string {
 	var b strings.Builder
 	b.WriteString(keymapBegin + "\n\n")
-	b.WriteString("| Key | Ships as | Does | A file moves it |\n|---|---|---|---|\n")
+	b.WriteString("| Key | Ships as | On a Mac | Does | A file moves it |\n|---|---|---|---|---|\n")
 	for _, g := range keyboard(true) {
 		for _, a := range g.Acts {
 			moves := "yes"
 			if !a.Movable {
 				moves = "no"
 			}
-			fmt.Fprintf(&b, "| `%s` | %s | %s | %s |\n", a.Name, keystrokes(a.Shipped), cell(a.Words), moves)
+			linux, _ := ShippedOn("linux", a.Name)
+			mac := "the same"
+			if darwin, _ := ShippedOn("darwin", a.Name); !slices.Equal(darwin, linux) {
+				mac = keystrokes(darwin)
+			}
+			fmt.Fprintf(&b, "| `%s` | %s | %s | %s | %s |\n", a.Name, keystrokes(linux), mac, cell(a.Words), moves)
 		}
 	}
 	b.WriteString("\n" + keymapEnd)

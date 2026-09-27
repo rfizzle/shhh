@@ -22,7 +22,11 @@ package components
 // the handover goes last, because a key that is not live yet is not an offer
 // and the key that turns it into one is.
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/rfizzle/shhh/internal/ui/keys"
+)
 
 // handoverWords trail the key that hands a row the keyboard. They are the
 // row-sized form of the card's `not live yet`, and they are the component's
@@ -92,12 +96,15 @@ func asChords(keys []TurnKey) []TurnKey {
 	return out
 }
 
-// optionRow is what the first row in a session to offer a chord says under
-// it: an alt chord composes a character rather than arriving on the two stock
-// macOS terminals until the profile is told to send the escape prefix, and
-// the doctor's keys row is what reads that setting and says which box
+// optionRow is what the first row in a session to offer an alt chord says
+// under it: an alt chord composes a character rather than arriving on the two
+// stock macOS terminals until the profile is told to send the escape prefix,
+// and the doctor's keys row is what reads that setting and says which box
 // (docs/interface/reserved-keys.md#the-draft-spends-chords-only). It is said
-// once, because it is a fact about the terminal and not about this row.
+// once, because it is a fact about the terminal and not about this row — and
+// only over an alt chord, which a Mac ships none of: there it is a sentence
+// about a chord the person's own keymap put on alt
+// (docs/interface/reserved-keys.md#a-mac-ships-without-alt).
 //
 // It takes a line of its own rather than trailing the keys. A row's key run
 // is already the widest thing on it, and a sentence appended to that run is a
@@ -109,15 +116,15 @@ const optionRow = "alt needs Option as Meta — shhh doctor"
 func optionLine() string { return sty.Dim.Render(optionRow) }
 
 // namesTheOption reports that this run is the one that says it: the offers
-// are being drawn as chords, at least one of them is a chord rather than a
-// key spelled the same either way (enter is), and this row is the session's
-// first to do it.
-func namesTheOption(keys []TurnKey, waiting, option bool) bool {
-	if !option || !waiting || !chorded(keys) {
+// are being drawn as chords, at least one of them is an alt chord rather than
+// a key spelled the same either way (enter is) or a chord every terminal
+// delivers (a function key is), and this row is the session's first to do it.
+func namesTheOption(offers []TurnKey, waiting, option bool) bool {
+	if !option || !waiting || !chorded(offers) {
 		return false
 	}
-	for _, k := range keys {
-		if k.Chord != k.Key {
+	for _, k := range offers {
+		if k.Chord != k.Key && keys.OptionSpelled(k.Chord) {
 			return true
 		}
 	}

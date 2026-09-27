@@ -8,6 +8,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -296,6 +298,34 @@ func TestDoctorOptionKey_OffAMacIsNotAQuestion(t *testing.T) {
 	}
 	if !strings.Contains(f.Subject, "linux") || f.Detail != "xterm-256color" {
 		t.Fatalf("the row does not say where it is: %+v", f)
+	}
+}
+
+// A Mac ships no alt chord, so with no keymap putting one back the row has
+// nothing to ask the terminal about, whatever its profile says; a file that
+// moves a key onto alt brings the question back, counted.
+func TestDoctorOptionKey_AMacWithNoAltChordIsNotAQuestion(t *testing.T) {
+	t.Cleanup(keys.UsePlatform("darwin"))
+	f := doctorOptionKey(optionKeyState{GOOS: "darwin", Terminal: "Apple_Terminal", Profile: "Basic", Sends: optionCharacter})
+	if f.State != components.DoctorSkipped || f.Subject != "no alt chord is bound" || len(f.Fix) != 0 {
+		t.Fatalf("a Mac with no alt chord is judged on its Option key: %+v", f)
+	}
+
+	path := filepath.Join(t.TempDir(), "keybindings.toml")
+	if err := os.WriteFile(path, []byte("[draft]\nagents = \"alt+a\"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = keys.Load() })
+	if err := keys.Load(path); err != nil {
+		t.Fatal(err)
+	}
+	f = doctorOptionKey(optionKeyState{GOOS: "darwin", Terminal: "Apple_Terminal", Profile: "Basic", Sends: optionCharacter})
+	if f.State != components.DoctorWarned || !strings.Contains(f.Consequence, "1 alt chord types a character") {
+		t.Fatalf("a Mac whose keymap put the manager on alt is not told about the setting: %+v", f)
+	}
+	unread := doctorOptionKey(optionKeyState{GOOS: "darwin", Terminal: "WezTerm"})
+	if !strings.Contains(unread.Detail, "if alt+a types a character") {
+		t.Fatalf("the unread row does not name the chord that is bound: %+v", unread)
 	}
 }
 

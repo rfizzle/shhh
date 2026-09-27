@@ -285,10 +285,13 @@ instead. It is one offer either way, and the row never draws both
 
 The chord acts on the selected row and on no other: pressed with nothing
 selected it does nothing, and a selected row that does not make the offer
-does not hand it to one that does. And the first row in a session to offer a
-chord says under it, once it is drawing one, that alt needs the Option setting
-on a stock macOS terminal, with the doctor row that reads it — once, because it
-is a fact about the terminal and not about that row.
+does not hand it to one that does. And the first row in a session to offer an
+alt chord says under it, once it is drawing one, that alt needs the Option
+setting on a stock macOS terminal, with the doctor row that reads it — once,
+because it is a fact about the terminal and not about that row. A Mac ships
+its row chords on the function row, which needs no setting, so there the note
+appears only over a chord the person's own keymap put back on alt
+([a Mac ships without alt](reserved-keys.md#a-mac-ships-without-alt)).
 
 The key opens a card, for the reason every act that cannot be taken back gets
 one. It states the message that will be written, what will be staged, what
@@ -1100,8 +1103,9 @@ kill it — is still the manager's; the map is for seeing and moving.
 
 Every clause of the trailer under the map is a chord, which makes it the one
 piece of chrome on the rail that is a false offer on a terminal whose Option
-key composes a character instead of sending the escape prefix. So where it is
-the first thing in a session to offer a chord, it carries the one-line notice
+key composes a character instead of sending the escape prefix, wherever its
+chords are on alt — a Mac ships them on the function row. So where it is the
+first thing in a session to offer an alt chord, it carries the one-line notice
 that says what the setting is called and which command reads it — the same
 notice, in the same words, a transcript row carries when the row is first. It
 stops carrying it the moment something above says it instead: the fact is

@@ -12,6 +12,7 @@ package chat
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -303,11 +304,26 @@ func TestInertKeys_TheSurfaceAnswersOnceItHoldsTheKeyboard(t *testing.T) {
 func pressChord(t *testing.T, m Model, b keys.Binding) Model {
 	t.Helper()
 	spelling := keys.Shown(b)
-	rest, ok := strings.CutPrefix(spelling, "alt+")
-	if !ok || len([]rune(rest)) != 1 {
-		t.Fatalf("%q is not an alt chord on a single key", spelling)
+	var msg tea.KeyPressMsg
+	rest, shifted := strings.CutPrefix(spelling, "shift+")
+	if shifted {
+		msg.Mod = tea.ModShift
 	}
-	updated, _ := m.Update(tea.KeyPressMsg{Code: []rune(rest)[0], Mod: tea.ModAlt})
+	if n, err := strconv.Atoi(strings.TrimPrefix(rest, "f")); err == nil && strings.HasPrefix(rest, "f") && n >= 1 && n <= 12 {
+		// A Mac's row chords are the function row
+		// (docs/interface/reserved-keys.md#a-mac-ships-without-alt).
+		msg.Code = tea.KeyF1 + rune(n-1)
+	} else {
+		letter, ok := strings.CutPrefix(spelling, "alt+")
+		if !ok || len([]rune(letter)) != 1 {
+			t.Fatalf("%q is not an alt chord on a single key or a function key", spelling)
+		}
+		msg = tea.KeyPressMsg{Code: []rune(letter)[0], Mod: tea.ModAlt}
+	}
+	if msg.String() != b.Keys()[0] {
+		t.Fatalf("pressing %q reads as %q", spelling, msg.String())
+	}
+	updated, _ := m.Update(msg)
 	return updated.(Model)
 }
 
@@ -338,6 +354,17 @@ func pointAt(t *testing.T, m Model, kind entryKind) Model {
 // would be the failure both halves are about, an offer that types a letter
 // instead of doing what it says.
 func TestRowChords_ARowOffersOnlyWhatCanBePressedFromWhereItIsDrawn(t *testing.T) {
+	for _, platform := range []string{"linux", "darwin"} {
+		t.Run(platform, func(t *testing.T) {
+			t.Cleanup(keys.UsePlatform(platform))
+			rowChordsActOnTheSelectedRow(t)
+		})
+	}
+}
+
+// rowChordsActOnTheSelectedRow is that test under whichever keyboard the
+// register holds: the alt chords, or a Mac's function row.
+func rowChordsActOnTheSelectedRow(t *testing.T) {
 	for _, s := range register(t) {
 		if len(s.chords) == 0 {
 			continue
@@ -474,6 +501,26 @@ func TestRowChords_OneRowInASessionNamesTheOptionSetting(t *testing.T) {
 		}
 		if says(t, m, 1) {
 			t.Error("a second row names it again")
+		}
+	})
+
+	// A Mac ships the row chords on the function row, which needs no
+	// setting, so no row names it — not even the first, and not the rail's
+	// trailer either (docs/interface/reserved-keys.md#a-mac-ships-without-alt).
+	t.Run("a Mac ships nothing on alt", func(t *testing.T) {
+		t.Cleanup(keys.UsePlatform("darwin"))
+		m := frameModel(t, 110, 40)
+		m.turnCount, m.turnOpen = 1, true
+		m.appendEntry(closeRow(&m))
+		m.appendEntry(steerNotice(1))
+		if says(t, m, 0) || says(t, m, 1) {
+			t.Error("a row names the Option setting over chords that need none")
+		}
+		if !strings.Contains(ansi.Strip(m.renderEntryKeys(m.transcript[0], 110, rowPointed)), "[f2] undo turn") {
+			t.Errorf("the Mac's close does not offer its own chord:\n%s", ansi.Strip(m.renderEntryKeys(m.transcript[0], 110, rowPointed)))
+		}
+		if m.resolveInspector().AgentsOption {
+			t.Error("the rail's trailer would name the Option setting over the function row")
 		}
 	})
 }

@@ -162,9 +162,15 @@ var kept = map[string]string{
 // declared — the words of every binding on it, taken before any keymap file
 // could move one. The words are the one part of a declaration a file cannot
 // change, so they name the act the exemption belongs to.
-var shipped = map[string]map[string]bool{}
+//
+// It is built as a value rather than in an init function because the
+// platforms' keyboards are applied during the package's own initialisation
+// (platform.go), and applying one asks this map: filled any later, every
+// kept chord would read as unearned while the Mac's keyboard was checked.
+var shipped = keptActs()
 
-func init() {
+func keptActs() map[string]map[string]bool {
+	shipped := map[string]map[string]bool{}
 	for _, s := range append(Surfaces(), Programs()...) {
 		for _, b := range s.Bindings {
 			for _, k := range b.Keys() {
@@ -178,6 +184,7 @@ func init() {
 			}
 		}
 	}
+	return shipped
 }
 
 // Reservation reports who has a keystroke, if anyone.

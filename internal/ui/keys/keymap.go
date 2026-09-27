@@ -460,10 +460,12 @@ func settle(saved []reflect.Value) {
 	}
 }
 
-// declared is the register as shhh ships it, taken before any file is read,
-// which is what a listing measures a moved key against and what Check
-// applies a file to.
-var declared = snapshot()
+// declared is the register as shhh ships it on this platform, taken before
+// any file is read, which is what a listing measures a moved key against and
+// what Check applies a file to. Taking it is also what puts the platform's
+// keyboard on the register (platform.go), so a keymap file is applied over
+// the keyboard this machine ships and never over another one.
+var declared = ship(Platform())
 
 // Act is one key as a listing names it.
 type Act struct {

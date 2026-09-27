@@ -119,6 +119,14 @@ card is where somebody whose first chord did nothing is already looking; a
 cover named only in the key list is found after the sentence it was for has
 been abandoned.
 
+The same fact decides which chords a platform ships at all. A chord is an
+offer only on a keyboard that delivers it, and the stock macOS terminals do
+not deliver alt until a profile setting is ticked, so a Mac ships the acts the
+other platforms put on alt on the function row instead
+([a Mac ships without alt](reserved-keys.md#a-mac-ships-without-alt)). Every
+hint reads the one register, so what a surface prints is the keyboard the
+machine in front of the reader ships.
+
 A row of the transcript is the other shape this takes, and it answers
 differently because a row is not waiting for anything. A card is one decision
 that will be answered and then gone; a row's offers stand for the rest of the

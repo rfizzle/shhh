@@ -5,12 +5,13 @@ package cli
 //
 // On macOS the Option key types a character — å for alt+a on a US layout —
 // until the terminal's profile says to send the escape prefix instead, and
-// the stock terminals ship with that off, so every alt chord shhh binds is
-// dead on a Mac at its defaults. The chords stay on alt anyway: every ctrl
-// letter the terminal delivers is spent or the line editor's, and the fix
-// is one tick in a profile. This row is what tells a reader which tick, on
-// the profile they are in, and the key list names the same setting beside
-// the chords (docs/interface/reserved-keys.md#what-is-left).
+// the stock terminals ship with that off, so an alt chord is dead on a Mac at
+// its defaults. That is why a Mac ships no alt chord at all
+// (docs/interface/reserved-keys.md#a-mac-ships-without-alt), and why this row
+// has a question only where one is bound anyway: a keymap file that put a key
+// back on alt, or the Linux keyboard chosen on a Mac. It tells that reader
+// which tick, on the profile they are in, and the key list names the same
+// setting beside the chords (docs/interface/reserved-keys.md#what-is-left).
 //
 // The setting is read from the terminal's preferences rather than by
 // pressing anything: a diagnostic looks and does not touch, and a key
@@ -269,10 +270,28 @@ func doctorOptionKey(s optionKeyState) doctorFinding {
 	// which loses the name of the box, and the box is what the row is for.
 	// The count is the fact a reader acts on, and the key list is where the
 	// chords themselves are written down.
-	chords := fmt.Sprintf("%d alt chords", len(alt))
+	// On a Mac every one of them is the reader's own, and one is a count
+	// that happens: a file that put the agent manager back on alt.
+	chords := countOf(len(alt), "alt chord", "alt chords")
+	they := func(one, many string) string {
+		if len(alt) == 1 {
+			return one
+		}
+		return many
+	}
 	if s.GOOS != "darwin" {
 		return doctorFinding{
 			Subject: "no Option key on " + s.GOOS, Detail: s.terminalName(),
+			Outcome: "not a question here", State: components.DoctorSkipped,
+		}
+	}
+	if len(alt) == 0 {
+		// The keyboard a Mac ships, with no file putting anything back on
+		// alt: there is no chord for the setting to be about, and reading a
+		// preference to warn about keys nobody can press would be a warning
+		// with nothing behind it.
+		return doctorFinding{
+			Subject: "no alt chord is bound", Detail: s.terminalName(),
 			Outcome: "not a question here", State: components.DoctorSkipped,
 		}
 	}
@@ -284,8 +303,8 @@ func doctorOptionKey(s optionKeyState) doctorFinding {
 			// others and not itself again: a reader who has just been told
 			// to press it does not need it repeated, and the row clips
 			// rather than wraps.
-			Consequence: fmt.Sprintf("if %s types a character, %d more alt chords never reach shhh",
-				alt[0], len(alt)-1),
+			Consequence: fmt.Sprintf("if %s types a character, %s never reach%s shhh",
+				alt[0], they("it", countOf(len(alt)-1, "more alt chord", "more alt chords")), they("es", "")),
 			FixLabel: "show the setting to turn on",
 			Fix:      optionFix(s.Terminal, s.Profile),
 		}
@@ -310,7 +329,7 @@ func doctorOptionKey(s optionKeyState) doctorFinding {
 		return doctorFinding{
 			Subject: "Option types a character", Detail: joinDetail(s.terminalName(), profile),
 			Outcome: "chords dead", State: components.DoctorWarned,
-			Consequence: chords + " type a character and never reach shhh; " +
+			Consequence: chords + they(" types a character and never reaches shhh; ", " type a character and never reach shhh; ") +
 				keys.Shown(keys.Draft.KeyList) + " lists them",
 			FixLabel: "show the setting to turn on",
 			Fix:      optionFix(s.Terminal, s.Profile),
@@ -319,14 +338,14 @@ func doctorOptionKey(s optionKeyState) doctorFinding {
 		return doctorFinding{
 			Subject: "Option sets the eighth bit", Detail: joinDetail(s.terminalName(), profile),
 			Outcome: "not a chord", State: components.DoctorWarned,
-			Consequence: chords + " arrive as bytes, not chords; pick Esc+",
+			Consequence: chords + they(" arrives as bytes, not a chord; pick Esc+", " arrive as bytes, not chords; pick Esc+"),
 			FixLabel:    "show the setting to change",
 			Fix:         optionFix(s.Terminal, s.Profile),
 		}
 	}
 	f := doctorFinding{
 		Subject: "the Option setting of " + s.terminalName() + " is not one shhh reads",
-		Detail:  "if alt+a types a character, its option-as-alt setting is off",
+		Detail:  "if " + alt[0] + " types a character, its option-as-alt setting is off",
 		Outcome: "not read", State: components.DoctorSkipped,
 	}
 	switch {

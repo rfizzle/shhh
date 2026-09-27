@@ -18,12 +18,22 @@
 // Only test files import this package; it lives outside them because the
 // hosts with surfaces to capture — internal/ui/components, internal/ui/chat
 // and internal/ui itself — would otherwise each carry a copy.
+//
+// A golden is the Linux keyboard's render, because that is the keyboard a test
+// binary runs and the one CI ships. A Mac ships its alt chords on the
+// function row instead (docs/interface/reserved-keys.md#a-mac-ships-without-alt),
+// so a surface that prints one of those renders differently there, and that
+// render is kept beside the Linux one as `<name>.darwin.txt` — only where the
+// two differ, so the set of Mac files is exactly the set of surfaces the
+// Mac's table changes. OnPlatform is how a host package runs its chord-bearing
+// captures a second time under the Mac's keyboard.
 package golden
 
 import (
 	"flag"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -31,6 +41,8 @@ import (
 	"testing"
 
 	"github.com/charmbracelet/x/ansi"
+
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // Dir is where goldens live, relative to the package under test — `go test`
@@ -155,6 +167,10 @@ func Assert(t *testing.T, name string, c Case) {
 	path := Path(name, c.Mono)
 	record(path)
 	want := Format(name, c)
+	if keys.Platform() == macPlatform {
+		assertMac(t, path, want, c)
+		return
+	}
 
 	if updating() {
 		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
@@ -177,6 +193,113 @@ func Assert(t *testing.T, name string, c Case) {
 	}
 	t.Errorf("%s renders differently than %s:\n%s\nif the change is intended: go test %s -update-golden",
 		c.Surface, path, firstDifference(string(have), want), currentPackage())
+}
+
+// macPlatform is the platform whose renders are kept beside the Linux ones.
+const macPlatform = "darwin"
+
+// macSuffix is what a Mac render's file carries in place of `.txt`.
+const macSuffix = ".darwin.txt"
+
+// macPath is the Mac render's file beside a Linux one.
+func macPath(path string) string { return strings.TrimSuffix(path, ".txt") + macSuffix }
+
+// assertMac is Assert under the Mac's keyboard. The Mac file exists only
+// where the render differs from the Linux one: a Mac render equal to it is
+// compared against it, written nowhere, and a Mac file that has come to
+// equal it is removed on an update and refused as redundant otherwise.
+func assertMac(t *testing.T, path, want string, c Case) {
+	t.Helper()
+	mac := macPath(path)
+	record(mac)
+	tellParent(mac)
+	linux, linuxErr := os.ReadFile(path)
+	if updating() {
+		if linuxErr == nil && string(linux) == want {
+			_ = os.Remove(mac)
+			return
+		}
+		if err := os.WriteFile(mac, []byte(want), 0o644); err != nil {
+			t.Fatalf("golden %s: %v", mac, err)
+		}
+		return
+	}
+	have, err := os.ReadFile(mac)
+	switch {
+	case err == nil && linuxErr == nil && string(have) == string(linux):
+		t.Errorf("%s is the same as %s, so it is not a Mac render of its own\nrun: go test %s -update-golden",
+			mac, path, currentPackage())
+		return
+	case err != nil:
+		if linuxErr != nil {
+			t.Fatalf("golden %s is missing (%v)\nrun: go test %s -update-golden", path, linuxErr, currentPackage())
+		}
+		have, mac = linux, path
+	}
+	if string(have) == want {
+		return
+	}
+	t.Errorf("%s renders differently under the Mac's keyboard than %s:\n%s\nif the change is intended: go test %s -update-golden",
+		c.Surface, mac, firstDifference(string(have), want), currentPackage())
+}
+
+// OnPlatform runs the named tests of this package again in a test binary
+// started under a platform's keyboard, and fails with what that run printed
+// if it failed. The keyboard is chosen before anything reads the register —
+// a package's own values are built from it as the binary initialises — so a
+// second process is the only way to run a test under another one; the
+// binary is this one, so nothing is built and nothing leaves the machine.
+//
+// An updating run passes the update on, so `-update-golden` writes both
+// platforms' renders in one go. The Mac files are read here as well as in
+// the child, so the go test cache, which sees only this process's reads,
+// notices one changing.
+func OnPlatform(t *testing.T, platform string, tests ...string) {
+	t.Helper()
+	if keys.Platform() == platform {
+		t.Skip("this is the run it starts")
+	}
+	if platform == macPlatform {
+		matches, _ := filepath.Glob(filepath.Join(Dir, "*"+macSuffix))
+		for _, m := range matches {
+			_, _ = os.ReadFile(m)
+		}
+	}
+	args := []string{"-test.run=^(" + strings.Join(tests, "|") + ")$"}
+	if *updateFlag {
+		args = append(args, "-update-golden")
+	}
+	cmd := exec.Command(os.Args[0], args...)
+	told := filepath.Join(t.TempDir(), "asserted")
+	cmd.Env = append(os.Environ(), keys.PlatformEnv+"="+platform, assertedEnv+"="+told)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("the captures under the %s keyboard failed (%v):\n%s", platform, err, out)
+	}
+	// The child's run is filtered, so it never looks for orphans; it says
+	// which Mac files it asserted and this run's sweep counts them, so a
+	// Mac file whose test left the list is found like any other.
+	raw, _ := os.ReadFile(told)
+	for _, path := range strings.Fields(string(raw)) {
+		record(path)
+	}
+}
+
+// assertedEnv names the file a run started by OnPlatform lists the Mac files
+// it asserted in, one per line, for the run that started it.
+const assertedEnv = "SHHH_GOLDEN_ASSERTED"
+
+// tellParent adds a Mac file to that list, where there is a parent to tell.
+func tellParent(path string) {
+	file := os.Getenv(assertedEnv)
+	if file == "" {
+		return
+	}
+	f, err := os.OpenFile(file, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600)
+	if err != nil {
+		return
+	}
+	defer f.Close()
+	_, _ = f.WriteString(path + "\n")
 }
 
 // Format lays out a golden file: a header naming what is in it, the layout
@@ -320,6 +443,8 @@ func orphans() ([]string, error) {
 		if e.IsDir() {
 			continue
 		}
+		// A Mac render is asserted by the run OnPlatform starts, which
+		// reports it back, so it is judged like any other file.
 		path := filepath.Join(Dir, e.Name())
 		if !asserted.paths[path] {
 			stale = append(stale, path)

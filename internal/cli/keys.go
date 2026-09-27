@@ -103,6 +103,11 @@ func newKeysDefaultsCmd() *cobra.Command {
 // the way the config listing dots a default.
 func keysReport(kb []keys.Group, path string, refused error) report.Report {
 	r := report.Report{Title: "shhh keys", Subject: "the keyboard shhh ships"}
+	if keys.Platform() == "darwin" {
+		// A Mac ships its own keyboard (docs/interface/reserved-keys.md#a-mac-ships-without-alt),
+		// and "shipped" on every row below means that one.
+		r.Subject = "the keyboard shhh ships on a Mac"
+	}
 	if path != "" && refused == nil {
 		r.Subject = shortPath(path)
 	}
@@ -167,12 +172,13 @@ func keysCheckReport(path string) report.Report {
 	return r
 }
 
-// keysJSON is the listing for a script: the file this process read, the
-// refusal if there was one, and every key.
+// keysJSON is the listing for a script: the platform whose keyboard shipped,
+// the file this process read, the refusal if there was one, and every key.
 type keysJSON struct {
-	File    string          `json:"file,omitempty"`
-	Refused string          `json:"refused,omitempty"`
-	Groups  []keysGroupJSON `json:"groups"`
+	Platform string          `json:"platform"`
+	File     string          `json:"file,omitempty"`
+	Refused  string          `json:"refused,omitempty"`
+	Groups   []keysGroupJSON `json:"groups"`
 }
 
 type keysGroupJSON struct {
@@ -190,7 +196,7 @@ type keysActJSON struct {
 }
 
 func keysDoc(kb []keys.Group, path string, refused error) keysJSON {
-	doc := keysJSON{File: path, Groups: []keysGroupJSON{}}
+	doc := keysJSON{Platform: keys.Platform(), File: path, Groups: []keysGroupJSON{}}
 	if refused != nil {
 		doc.Refused = refused.Error()
 	}

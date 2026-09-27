@@ -177,6 +177,16 @@ func TestReference_ReservedKeysAreCurrent(t *testing.T) {
 	}
 }
 
+func TestReference_PlatformKeysAreCurrent(t *testing.T) {
+	stale, err := WritePlatformReference(reservedDoc, updatingDocs())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if stale && !updatingDocs() {
+		t.Errorf("%s no longer matches the Mac's table — run: make docs", reservedDoc)
+	}
+}
+
 func TestReference_HoldsEveryTierAndEveryKeptChord(t *testing.T) {
 	ref := ReservedReference()
 	for _, want := range []string{"### Tier A", "### Tier B", "### Tier C", "### Tier D", "### Kept on purpose", "`ctrl+up`", "Mission Control"} {

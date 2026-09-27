@@ -16,6 +16,8 @@ package chat
 // mode a help text has.
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -78,7 +80,7 @@ func TestHelpNamesTheKeyRegister(t *testing.T) {
 // as sets.
 func TestHelpKeyRowsCoverTheRegister(t *testing.T) {
 	named := map[string]bool{}
-	for _, r := range helpKeyRows {
+	for _, r := range helpKeyRows() {
 		for _, b := range r.binds {
 			shown := keys.Shown(b)
 			if named[shown] {
@@ -103,7 +105,7 @@ func TestHelpKeyRowsCoverTheRegister(t *testing.T) {
 // one-line hint — the recall arrows are the only pair that does — so that is
 // the one thing the check allows, and only where the row said so.
 func TestHelpKeyColumnsComeFromTheRegister(t *testing.T) {
-	for _, r := range helpKeyRows {
+	for _, r := range helpKeyRows() {
 		if r.key != "" || len(r.binds) == 0 {
 			continue
 		}
@@ -198,7 +200,7 @@ func TestHelp_AConversationOffersTheBacklogAndNotTheChangeset(t *testing.T) {
 // again would send them away with nothing
 // (docs/interface/reserved-keys.md#what-is-left).
 func TestHelpNamesTheOptionSettingBesideEveryAltChord(t *testing.T) {
-	for _, r := range helpKeyRows {
+	for _, r := range helpKeyRows() {
 		for _, b := range r.binds {
 			for _, k := range b.Keys() {
 				if !strings.HasPrefix(k, "alt+") {
@@ -214,6 +216,40 @@ func TestHelpNamesTheOptionSettingBesideEveryAltChord(t *testing.T) {
 	for _, want := range []string{"Use Option as Meta key", "Esc+", "shhh doctor"} {
 		if !strings.Contains(list, want) {
 			t.Errorf("the key list never says %q", want)
+		}
+	}
+}
+
+// A Mac ships no alt chord, so its key list has nothing for the Option
+// setting to be about and says nothing of it — until a keymap file puts a
+// key back on alt, when the row for that key names it again
+// (docs/interface/reserved-keys.md#a-mac-ships-without-alt).
+func TestHelp_AMacNamesTheOptionSettingOnlyForItsOwnAltChords(t *testing.T) {
+	t.Cleanup(func() { _ = keys.Load() })
+	t.Cleanup(keys.UsePlatform("darwin"))
+	list := helpKeysText()
+	for _, gone := range []string{"alt+", "Option", "Use Option as Meta key"} {
+		if strings.Contains(list, gone) {
+			t.Errorf("a Mac's key list says %q with no alt chord bound:\n%s", gone, list)
+		}
+	}
+	for _, want := range []string{"[f12]", "[f2…]", "f5 try again", "option+← and option+→"} {
+		if !strings.Contains(list, want) {
+			t.Errorf("a Mac's key list lacks %q:\n%s", want, list)
+		}
+	}
+
+	path := filepath.Join(t.TempDir(), "keybindings.toml")
+	if err := os.WriteFile(path, []byte("[draft]\nagents = \"alt+a\"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := keys.Load(path); err != nil {
+		t.Fatal(err)
+	}
+	list = helpKeysText()
+	for _, want := range []string{"[alt+a]", "Use Option as Meta key", "shhh doctor"} {
+		if !strings.Contains(list, want) {
+			t.Errorf("a Mac whose keymap put the manager on alt lacks %q:\n%s", want, list)
 		}
 	}
 }
