@@ -287,6 +287,30 @@ func TestProgram_APlanCardCarriesThePlanIntoANewSession(t *testing.T) {
 	frameHas(t, frame, "carried · 2 steps")
 }
 
+// [i] on the same card carries the plan the same way and starts executing it
+// on the far side, in the mode the offer names.
+func TestProgram_APlanCardImplementsInANewSession(t *testing.T) {
+	m, _ := scriptedSession(
+		programTurn{text: "Here is what I would do.\n\n## Plan: make the round limit recoverable\n\n1. Locate the round accounting\n   files: loop.go\n   action: read\n2. Return a sentinel when the rounds run out\n   files: loop.go\n   action: edit\n"},
+		programTurn{text: "The counter is read at the top of the loop."},
+	)
+	tm := runProgram(t, m)
+
+	for range 4 {
+		programPress(t, tm, "shift+tab")
+	}
+	waitForText(t, tm, "⏸ plan")
+	send(tm, "plan the round counter change")
+	waitForText(t, tm, "make the round limit recoverable")
+	tm.Send(programHandover)
+	waitForText(t, tm, "implement in a new session — accept edits mode")
+	programPress(t, tm, "i")
+	waitForText(t, tm, "read at the top of the loop")
+
+	frame := finalFrame(t, tm)
+	frameHas(t, frame, "carried · 2 steps", "⏵⏵ accept edits", "read at the top of the loop")
+}
+
 // Several questions in one call are one card of tabs: the handover gives it
 // the keyboard, each answer moves to the next tab, and the submit tab sends
 // the set.

@@ -333,6 +333,9 @@ func Surfaces() []Surface {
 				// question
 				// (docs/capabilities/coding-agent.md#an-approved-plan-is-an-artifact).
 				Wait.NewSession,
+				// And the same boundary with the execution turn started on
+				// the far side of it, in the mode its words name.
+				Plan.Implement,
 				Select.Cancel,
 			},
 		},

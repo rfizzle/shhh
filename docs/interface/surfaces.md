@@ -1896,6 +1896,15 @@ rather than walked one row at a time.
 An option that cannot be taken here says so on the row, in a glyph and a
 phrase, rather than merely being dimmed.
 
+The plan card's rows are the modes the plan can run in here, plus keep
+planning and reject. Where it runs at all is two keys on the card's key row:
+`[n]` carries the approved plan into a new session and starts nothing, so it
+names no mode and the new session stays in plan mode; `[i]` carries it the
+same way and starts the execution turn there at once, so it names the mode it
+enters — `implement in a new session — accept edits mode`. Every answer that
+starts work says which mode it starts it in
+([an approved plan is an artifact](../capabilities/coding-agent.md#an-approved-plan-is-an-artifact)).
+
 An unlit row is body text and its number is chrome. Both used to go out
 unpainted, which is not a colour the palette issued: it differs between two
 terminals side by side, and on half of them it reads brighter than the lit

@@ -90,9 +90,15 @@ func planHint() []components.KeyOffer {
 		components.OfferAs(keys.Plan.Jump, "jump"),
 		components.OfferAs(keys.Plan.Save, "save"),
 		components.OfferAs(keys.Wait.NewSession, components.NewSessionCarryPlan()),
+		components.OfferAs(keys.Plan.Implement, planImplementWords),
 		components.OfferAs(keys.Select.Cancel, "keep planning"),
 	}
 }
+
+// planImplementWords is [i]'s offer. It names the mode it enters, like every
+// row that starts work, because the new session begins executing the moment
+// the key is pressed; [n] beside it names none, because it starts nothing.
+var planImplementWords = "implement in a new session — " + agent.ModeAcceptEdits.Word() + " mode"
 
 // armPlan parses and prices the planning response the prompt is about to ask
 // about. It runs once, when the prompt opens.
@@ -126,6 +132,8 @@ func (m Model) updatePlanApprove(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		return m.savePlanFromCard()
 	case keys.Is(pressed, keys.Wait.NewSession):
 		return m.carryPlanToNewSession()
+	case keys.Is(pressed, keys.Plan.Implement):
+		return m.implementPlanInNewSession()
 	case keys.Is(pressed, keys.Select.Cancel):
 		// Esc never destroys: dismissing the prompt keeps planning.
 		return m.keepPlanning()
@@ -296,6 +304,62 @@ func (m Model) carryPlanToNewSession() (tea.Model, tea.Cmd) {
 	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()
 	return m, save
+}
+
+// implementPlanInNewSession is `[i]`: carrying the plan across the session
+// boundary and approving it on the far side, as one answer. The new session
+// is built exactly as `[n]` builds it — the outgoing conversation saved, the
+// system prompt built again, the record and nothing else seeded — and then
+// the execution turn starts at once, in the mode the offer names, rather than
+// leaving the person to find a mode change before the plan can run
+// (docs/capabilities/coding-agent.md#an-approved-plan-is-an-artifact).
+//
+// Nothing else on the card reaches here: saving a plan writes a file and
+// answers nothing, and `[n]` carries without running.
+func (m Model) implementPlanInNewSession() (tea.Model, tea.Cmd) {
+	doc := m.planDoc
+	rec := m.writePlanRecord(doc)
+	if rec.Empty() {
+		// The card stays up: with nothing to carry there is nothing to run,
+		// and an execution turn over an empty session would be the model
+		// guessing what was approved.
+		m.appendEntry(entry{kind: entrySystem, text: "no plan to implement — the response has no plan in it to write down"})
+		m.syncViewport()
+		m.viewport.SetLines(m.renderHistoryLines())
+		m.viewport.GotoBottom()
+		return m, nil
+	}
+	m.signal(observe.SignalPlan, "approved")
+	m.clearPlan()
+	m.setTurnState(stateInput)
+	notes, save := m.startNewSession()
+	m.appendEntries(notes)
+	m.appendEntries(m.seedFromPlan(rec))
+
+	const execMode = agent.ModeAcceptEdits
+	m.applyMode(execMode)
+	m.appendEntry(entry{kind: entrySystem, text: fmt.Sprintf("plan approved — executing in %s mode", execMode)})
+	// A turn of the new session's own, numbered from one, so the record's
+	// turn column and the messages agree about where it began.
+	m.openTurn(planApprovedMessage)
+	// What the readings judge it against is what the person approved: the
+	// task the plan was serving and its steps — the target the same answer
+	// in this session would have left, rather than the one-line instruction
+	// to begin.
+	m.summaryTarget = rec.Task
+	if steps := planTarget(doc); steps != "" {
+		m.summaryTarget = agent.ExtendTarget(m.summaryTarget, steps)
+	}
+	m.recordCheckpoint(planApprovedMessage)
+	m.agent.StartTurn(planApprovedMessage)
+	m.appendEntry(entry{kind: entryUser, text: planApprovedMessage})
+	// The approved plan is the checklist here as it is in the same-session
+	// answer: the outline's steps, the rail's PLAN block and /plan.
+	m.planRun = newPlanRun(doc, len(m.transcript))
+	m.invalidateRenderCache()
+	next, stream := m.streamOpenedTurn()
+	nm := next.(Model)
+	return nm, tea.Batch(save, stream, nm.autosaveCmd())
 }
 
 // keepPlanning dismisses the prompt so the user can send feedback; the

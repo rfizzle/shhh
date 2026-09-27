@@ -949,6 +949,7 @@ rules above are what refuse a move, not a list of keys held back from it.
 | `sprint.cancel` | `esc` | the same | write nothing | yes |
 | `plan.jump` | `1`, `2`, `3`, `4`, `5` | the same | jump to a row | yes |
 | `plan.save` | `s`, `S` | the same | save the plan | yes |
+| `plan.implement` | `i` | the same | implement in a new session | yes |
 | `query.rub` | `backspace` | the same | take a rune back | yes |
 | `oneshot.run` | `enter` | the same | run | yes |
 | `oneshot.confirm` | `y` | the same | run it | yes |

@@ -852,6 +852,19 @@ enters, because approving a plan is never an unstated mode change; carrying it
 into a new session names none, so the new session is in the mode the old one
 was and the person chooses how it runs from there.
 
+A clean session is usually where the plan is meant to run, so the card also
+offers the boundary and the execution as one answer: implement in a new
+session, in accept-edits mode. It writes the same record, saves the
+conversation being left, seeds the new one exactly as carrying does, and then
+starts the execution turn there at once — the same approval the same-session
+answers send, with the plan as the checklist and the steps as what the
+readings judge against. It names its mode because it starts work; carrying
+alone still names none, because it starts nothing. Where the response holds no
+plan to write down, it says so and starts nothing, since an execution turn
+over an empty session would be the model guessing what was approved. Saving
+the plan's text as a file is neither required by any of this nor a way into
+it.
+
 Approving into this session is still the ordinary answer, and it is the right
 one whenever the execution needs what the research saw — the file that was
 read and not named in a step, the failure a command printed. The record is

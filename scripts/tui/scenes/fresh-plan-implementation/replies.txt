@@ -1,0 +1,15 @@
+# The plan turn answers in the shape the card prices; its heading cannot open
+# the line, since a reply beginning with # is a comment in this file. The
+# execution turn is the new session's first: it announces step 1, reads the
+# file, and holds its next request so the running step can be captured, then
+# ends the turn. The readings have a queue of their own so they never take a
+# reply meant for the turn.
+[session]
+Here is what I would do.\n\n## Plan: make the round limit recoverable\n\n1. Locate the round accounting\n   files: loop.go\n   action: read\n2. Return a sentinel when the rounds run out\n   files: loop.go\n   action: edit\n   note: no signature changes
+Locate the round accounting
++tool:read_file:{"path":"loop.go"}
+wait:4
++The counter is read at the top of the loop, and nowhere else.
+
+[reading]
+The turn is carrying out the approved plan.

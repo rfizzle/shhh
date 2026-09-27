@@ -307,8 +307,9 @@
 
   PLAN
 
-  · jump  1 2 3 4 5 · jump to a row  [shipped]
-  · save  s S · save the plan  [shipped]
+  · jump       1 2 3 4 5 · jump to a row  [shipped]
+  · save       s S · save the plan  [shipped]
+  · implement  i · implement in a new session  [shipped]
 
   QUERY
 
@@ -335,4 +336,4 @@
   · paste   p · paste a key  [shipped]
   · local   o · a local model  [shipped]
 
-  248 keys · 1 moved
+  249 keys · 1 moved

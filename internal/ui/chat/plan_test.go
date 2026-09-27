@@ -784,3 +784,122 @@ func TestPlan_CarryRefusesWhenThereIsNoPlan(t *testing.T) {
 		t.Fatalf("the refusal should say why nothing happened, got %+v", last)
 	}
 }
+
+// [i] on the card is [n] with the execution turn started on the far side: the
+// outgoing conversation is saved in its own slot, the new one holds the
+// freshly built prompt, the record and the instruction to begin, and exactly
+// one request goes out — in the mode the offer names, with none of the
+// research behind the plan in it.
+func TestPlan_ImplementInNewSessionStartsTheExecutionTurn(t *testing.T) {
+	var requests [][]provider.Message
+	stream := func(msgs []provider.Message, _ string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		requests = append(requests, append([]provider.Message(nil), msgs...))
+		ch := make(chan provider.StreamEvent)
+		close(ch)
+		return ch, func() {}, nil
+	}
+	m := planRecordModel(t, stream).WithDB(rewindTestDB(t))
+	m = m.WithNewSession(func() SessionStart { return SessionStart{Prompt: "sys"} })
+	updated, _ := m.Update(doneMsg{})
+	m = handover(t, updated.(Model))
+	if m.state != statePlanApprove {
+		t.Fatalf("the card should be up, got state %d", m.state)
+	}
+	outgoing := m.sessionName
+
+	updated, cmd := m.Update(tea.KeyPressMsg{Code: 'i', Text: "i"})
+	m = updated.(Model)
+
+	if m.sessionName == outgoing {
+		t.Fatal("the execution should run in a slot of its own")
+	}
+	if m.policy.mode != agent.ModeAcceptEdits {
+		t.Fatalf("the offer names accept-edits mode, got %v", m.policy.mode)
+	}
+	if m.state != stateStreaming {
+		t.Fatalf("the execution turn should start at once, got state %d", m.state)
+	}
+	msgs := m.Messages()
+	if len(msgs) != 3 {
+		t.Fatalf("the new session should hold the prompt, the plan and the instruction, got %d: %+v", len(msgs), msgs)
+	}
+	if msgs[0].Role != provider.RoleSystem || msgs[0].Content != "sys" {
+		t.Fatalf("the first message should be the freshly built system prompt, got %+v", msgs[0])
+	}
+	if seed := msgs[1]; !seed.Machine || !strings.Contains(seed.Content, "1. Add the mode") ||
+		!strings.Contains(seed.Content, "internal/agent/mode.go") || !strings.Contains(seed.Content, "ev-00112233445566aa") {
+		t.Fatalf("the plan should be seeded as the session's own message: %+v", seed)
+	}
+	if last := msgs[2]; last.Role != provider.RoleUser || last.Content != planApprovedMessage {
+		t.Fatalf("the execution turn should be the approval, got %+v", last)
+	}
+	if m.planRun == nil || len(m.planRun.doc.Steps) != 2 {
+		t.Fatal("the approved plan should be the execution's checklist")
+	}
+	if !strings.Contains(m.summaryTarget, "plan the change") || !strings.Contains(m.summaryTarget, "Add the mode") {
+		t.Errorf("the readings should judge against the task and its steps, got %q", m.summaryTarget)
+	}
+
+	// Everything the key returned runs — the outgoing save, the request and
+	// the new slot's save — and the spinner's tick beside it, which Update
+	// batches around a turn that starts working.
+	var walk func(tea.Cmd)
+	walk = func(c tea.Cmd) {
+		if c == nil {
+			return
+		}
+		if batch, ok := c().(tea.BatchMsg); ok {
+			for _, sub := range batch {
+				walk(sub)
+			}
+		}
+	}
+	walk(cmd)
+	if len(requests) != 1 {
+		t.Fatalf("one execution request should go out, got %d", len(requests))
+	}
+	for _, msg := range requests[0] {
+		if strings.Contains(msg.Content, "3 checks passed") || strings.Contains(msg.Content, "## Plan: split the modes") {
+			t.Fatalf("the request carries the research the boundary was crossed to leave: %+v", msg)
+		}
+	}
+	if strings.Contains(requests[0][0].Content, "# Plan mode") {
+		t.Fatal("the execution request must not carry the planning instructions")
+	}
+	saved, err := m.db.LoadChat(outgoing)
+	if err != nil {
+		t.Fatalf("the outgoing conversation should be saved: %v", err)
+	}
+	research := false
+	for _, msg := range saved {
+		if strings.Contains(msg.Content, "## Plan: split the modes") {
+			research = true
+		}
+	}
+	if !research {
+		t.Error("the outgoing slot should hold the planning conversation")
+	}
+}
+
+// With no plan on the card there is nothing to run: [i] says so and starts
+// nothing, the way [n] refuses to carry nothing.
+func TestPlan_ImplementRefusesWhenThereIsNoPlan(t *testing.T) {
+	m := planModel(t, mockStream)
+	updated, _ := m.Update(doneMsg{})
+	m = handover(t, updated.(Model))
+	m.planDoc = plan.Plan{}
+
+	before, mode, slot := len(m.Messages()), m.policy.mode, m.sessionName
+	updated, cmd := m.Update(tea.KeyPressMsg{Code: 'i', Text: "i"})
+	m = updated.(Model)
+	if cmd != nil || len(m.Messages()) != before || m.sessionName != slot {
+		t.Fatal("a card with no plan on it must not cross the boundary or start a turn")
+	}
+	if m.policy.mode != mode || m.state != statePlanApprove {
+		t.Fatalf("the refusal should leave the mode and the card as they were, got %v, state %d", m.policy.mode, m.state)
+	}
+	last := m.transcript[len(m.transcript)-1]
+	if last.kind != entrySystem || !strings.Contains(last.text, "no plan to implement") {
+		t.Fatalf("the refusal should say why nothing happened, got %+v", last)
+	}
+}

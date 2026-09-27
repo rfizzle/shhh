@@ -1,0 +1,30 @@
+# program test: TestProgram_APlanCardImplementsInANewSession
+#
+# An approved plan can run in a clean session as one answer: [i] on the plan
+# card carries the plan across the session boundary the way [n] does and
+# starts the execution turn on the far side, in the mode its words name
+# (docs/capabilities/coding-agent.md#an-approved-plan-is-an-artifact).
+#
+# What the capture is for: at the narrowest width the card is drawn for, the
+# key row keeps [i]'s offer whole beside [n]'s, and after the key the new
+# session opens on the boundary's row, the carried plan and the approval, in
+# accept edits mode, and runs the plan's first step.
+setup printf 'package agent\n\nfunc loop() {\n    for round := 0; round < limit; round++ {\n        step()\n    }\n}\n' > loop.go
+snap 01-start "Some things worth doing first"
+keys BTab
+keys BTab
+keys BTab
+keys BTab
+snap 02-plan "⏸ plan"
+keys "plan the round counter change" Enter
+snap 03-plan-card "Plan · make the round limit recoverable"
+# The card landed while the draft still had the keyboard, so the handover is
+# what makes [i] a key.
+keys C-Space
+snap 04-card-live "[i] implement in a new session — accept edits mode"
+keys i
+# The execution turn's first reply announces step 1 and reads the file; the
+# request after it is held, so the step is on screen while it runs.
+snap 05-implementing "carried · 2 steps" "⏵⏵ accept edits"
+snap 06-first-step "loop.go"
+snap 07-done "read at the top of the loop"

@@ -104,7 +104,7 @@ func register(t *testing.T) []keyedSurface {
 			// [j] leads because the answering test presses the first key,
 			// and moving the choice is the one plan-card key that neither
 			// writes a file nor ends the card.
-			keys: []string{"j", "k", "s", "S"},
+			keys: []string{"j", "k", "s", "S", "i"},
 			open: func(t *testing.T) Model {
 				m := planModel(t, mockStream)
 				updated, _ := m.Update(doneMsg{})

@@ -1572,7 +1572,7 @@ var OneShot = OneShotKeys{
 	Quit: bind("esc", "quit", "esc", "q"),
 }
 
-// PlanKeys are the plan-approval card's own two: the five rows are the
+// PlanKeys are the plan-approval card's own three: the five rows are the
 // selector family's, so the card answers Select.MoveJK, Select.Take and
 // Select.Cancel like every other list, and these are what it has that a
 // selector does not.
@@ -1587,11 +1587,18 @@ type PlanKeys struct {
 	// do on the way to one — so it neither answers the question nor takes
 	// the card down.
 	Save Binding
+	// Implement approves the plan and runs it in a new session, which is the
+	// one answer that is both where and how: it crosses the boundary
+	// Wait.NewSession crosses and starts the execution turn on the far side,
+	// in the mode its words name
+	// (docs/capabilities/coding-agent.md#an-approved-plan-is-an-artifact).
+	Implement Binding
 }
 
 var Plan = PlanKeys{
-	Jump: bind("1–5", "jump to a row", "1", "2", "3", "4", "5"),
-	Save: bind("s", "save the plan", "s", "S"),
+	Jump:      bind("1–5", "jump to a row", "1", "2", "3", "4", "5"),
+	Save:      bind("s", "save the plan", "s", "S"),
+	Implement: bind("i", "implement in a new session", "i"),
 }
 
 // QueryKeys are the filter row's own. Every list in the product that filters
