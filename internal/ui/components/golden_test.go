@@ -2970,6 +2970,9 @@ func TestGolden_SprintBoard(t *testing.T) {
 			lanes.Lanes = append(lanes.Lanes, SprintLane{Slug: lanes.Rows[i+1].Slug, Stage: stage})
 		}
 		lanes.Next = ""
+		oneLane := goldenSprintBoard()
+		oneLane.Rows[1].Note = "implement"
+		oneLane.Lanes = []SprintLane{{Slug: oneLane.Rows[1].Slug, Stage: "implement"}}
 		ready := &SprintBoard{Spend: "6 turns · $1.20", Next: goldenSprintRows()[0].Slug}
 		for i, stage := range []string{"implement", "verify", "research"} {
 			row := goldenSprintRows()[i+1]
@@ -3003,7 +3006,9 @@ func TestGolden_SprintBoard(t *testing.T) {
 				View: goldenSprintScreen(goldenSprintBoard()).View(width)},
 			{Label: "under a spend ceiling · the spend said against it, under the meter where the row is too narrow",
 				View: goldenSprintScreen(capped).View(width)},
-			{Label: "three lanes at once · each item the sprint is working, with the step it is at",
+			{Label: "one lane · the head counts it and the row names it, with the step it is at",
+				View: goldenSprintScreen(oneLane).View(width)},
+			{Label: "three lanes at once · the head counts them and each row names its step",
 				View: goldenSprintScreen(lanes).View(width)},
 			{Label: "lanes over the ready list · no file, so no name, goal or meter; the lanes and their items",
 				View: readyScreen.View(width)},

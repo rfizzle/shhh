@@ -15,4 +15,4 @@ snap 01-start "Some things worth doing first"
 keys "/todo" Enter
 snap 02-backlog "cache-evict" "cache-report"
 keys Tab
-snap 03-sprint-tab 'working · 3 at once' "cache-ttl     implement" "cache-evict   verify" "cache-report  research" "cache-evict  MS  verify" "go test ./cache -run TestTTL"
+snap 03-sprint-tab 'working · 3 at once' "cache-ttl  MS  implement" "cache-evict  MS  verify" "cache-report  MS  research" "go test ./cache -run TestTTL"

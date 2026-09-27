@@ -568,9 +568,8 @@ func (m Model) openSprintBoard(s *todo.Store) *components.SprintBoard {
 			board.Next = next.Slug
 		}
 		// The lanes a sprint is working at once, each with the step its
-		// item is at. The head lists them because they are the sprint's
-		// answer to "what is moving", which a row's note alone answers for
-		// one slug at a time.
+		// item is at. The head counts them; each slug's step is its own
+		// row's note, which sprintBoardRow reads off the same checkpoint.
 		for _, l := range sp.Lanes {
 			board.Lanes = append(board.Lanes, components.SprintLane{Slug: l.Slug, Stage: string(l.Stage)})
 		}

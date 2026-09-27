@@ -304,7 +304,7 @@ with, and where the two differ the artboard wins.
 There is no artboard for it, and one is owed. Most of the tab needed no
 decision — the two panes, the windowed list, the header, the rule and the key
 row are the backlog screen's, drawn already, and the progress meter is the
-step meter with the set's own noun. Five things it could not take from
+step meter with the set's own noun. Six things it could not take from
 anywhere, and they were decided here:
 
 **The head is pinned above both panes, and it gives ground first.** What the
@@ -321,6 +321,16 @@ stage it is at, a slug the backlog no longer holds says so, and the two are
 different sentences about the same file. A row that said "in progress" on a
 board would answer the question the board was opened to ask with the word it
 already had.
+
+**The head counts the items being worked and names none of them.** A sprint
+working several items at once says so above the list — `working · 3 at once`
+— and stops there. Each of those items is already a row of the list, with the
+stage it is at as that row's state, and the list is where a new reader looks:
+it is where the pointer moves, and the pane beside it answers for the row the
+pointer is on. A head that also listed each slug with its stage stated every
+lane twice, one screen apart, and a sprint working one item named it twice as
+well. The count stays because it is the one fact no row states: how many the
+sprint is working at once.
 
 **The plan is a card on the tab, not a card over the transcript.** Choosing
 the set and watching it are the same two questions about the same thing, and
@@ -346,7 +356,7 @@ card is the only record of what was proposed: a row that left could not be put
 back without planning again. So the box empties and the row stays where the
 order put it.
 
-When there is an artboard, these five decisions are what it has to reconcile
+When there is an artboard, these six decisions are what it has to reconcile
 with, and where the two differ the artboard wins.
 
 ## The safety reading's layout was decided in the binary

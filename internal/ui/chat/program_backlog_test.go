@@ -37,9 +37,9 @@ func TestProgram_TheSprintTabSaysTheSpendAgainstItsCeiling(t *testing.T) {
 	frameHas(t, finalFrame(t, tm), "9 turns · spend $4.10 of $20", "next · cache-ttl")
 }
 
-// The sprint tab under a sprint working three items at once: the head lists
-// the lanes with the step each item is at, read off the loop's checkpoint,
-// and each lane's row says its step too.
+// The sprint tab under a sprint working three items at once: the head counts
+// the lanes, read off the loop's checkpoint, and each lane's row says the
+// step its item is at.
 func TestProgram_TheSprintTabListsTheLanesAtWork(t *testing.T) {
 	item := func(title string) string {
 		return "---\ntitle: " + title + "\nsize: S\n---\n## Tests\n- true\n"

@@ -4,6 +4,7 @@ package components
 // the board's head states, and what each of the plan card's five keys does.
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -66,6 +67,36 @@ func TestSprintBoard_RowsCarryTheSetsOwnReading(t *testing.T) {
 	for _, want := range []string{"rail-todo-block", "implement", "cache-warm", "dropped from the backlog"} {
 		if !strings.Contains(view, want) {
 			t.Errorf("the set's rows never say %q:\n%s", want, view)
+		}
+	}
+}
+
+// A lane is named once, on its own row with its step in the note, and the
+// head says only how many: a head that listed the slugs as well would state
+// each lane twice on one screen. One lane and three are the two shapes a
+// sprint is watched in.
+func TestSprintBoard_NamesEachLaneOnce(t *testing.T) {
+	stages := []string{"implement", "verify", "research"}
+	for _, n := range []int{1, 3} {
+		board := goldenSprintBoard()
+		for i := range n {
+			board.Rows[i+1].Note = stages[i]
+			board.Lanes = append(board.Lanes, SprintLane{Slug: board.Rows[i+1].Slug, Stage: stages[i]})
+		}
+		view := ansi.Strip(goldenSprintScreen(board).View(130))
+		if want := fmt.Sprintf("working · %d at once", n); !strings.Contains(view, want) {
+			t.Errorf("%d lanes: the head never says %q:\n%s", n, want, view)
+		}
+		for _, l := range board.Lanes {
+			named := 0
+			for _, line := range strings.Split(view, "\n") {
+				if strings.Contains(line, l.Slug) && strings.Contains(line, l.Stage) {
+					named++
+				}
+			}
+			if named != 1 {
+				t.Errorf("%d lanes: %s with its step is on %d lines, want 1:\n%s", n, l.Slug, named, view)
+			}
 		}
 	}
 }

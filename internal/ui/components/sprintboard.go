@@ -72,13 +72,14 @@ type SprintBoard struct {
 	// which is not the same reading as its status in the backlog.
 	Rows []BacklogRow
 	// Lanes are the items a sprint is working at once, each with the step
-	// it is at, in the order they were taken. None draws nothing: a sprint
-	// working one item at a time says which on that item's own row.
+	// it is at, in the order they were taken. The head states how many and
+	// names none of them, because each is a row with its step in the note.
+	// None draws nothing: a sprint working one item at a time says which on
+	// that item's own row.
 	Lanes []SprintLane
 }
 
-// SprintLane is one item a sprint is working beside others, as the head
-// lists it.
+// SprintLane is one item a sprint is working beside others.
 type SprintLane struct {
 	Slug, Stage string
 }
@@ -391,30 +392,16 @@ func (b *BacklogScreen) boardRows(width int) []string {
 }
 
 // laneRows is what the head says about the items being worked at once: how
-// many, then one row each with the step it is at, the slugs in a column so
-// the steps line up. The step is the field that gives ground, because a row
-// is found by its slug and not by its step.
+// many, and nothing about which. Each of them is a row of the list under the
+// head already, with the step it is at in the row's note, and the list is
+// where the pointer moves and the pane beside it answers for the row — a
+// slug the head named as well would be the same fact twice, one screen apart.
+// See docs/interface/departures.md#the-sprint-boards-layout-was-decided-in-the-binary.
 func laneRows(lanes []SprintLane, width int) []string {
 	if len(lanes) == 0 {
 		return nil
 	}
-	rows := []string{sty.Dim.Render(Clip(fmt.Sprintf("working · %d at once", len(lanes)), width))}
-	col := 0
-	for _, l := range lanes {
-		col = max(col, lipgloss.Width(l.Slug))
-	}
-	col = min(col, max(width/2, 1))
-	for _, l := range lanes {
-		slug := Clip(l.Slug, col)
-		lead := "  " + sty.Body.Render(slug) + strings.Repeat(" ", max(col-lipgloss.Width(slug), 0))
-		room := width - lipgloss.Width(lead) - 2
-		if room < 1 || l.Stage == "" {
-			rows = append(rows, Clip(lead, width))
-			continue
-		}
-		rows = append(rows, lead+"  "+sty.Dim.Render(Clip(l.Stage, room)))
-	}
-	return rows
+	return []string{sty.Dim.Render(Clip(fmt.Sprintf("working · %d at once", len(lanes)), width))}
 }
 
 // sprintOffers is the key row while the plan card holds the keyboard. The

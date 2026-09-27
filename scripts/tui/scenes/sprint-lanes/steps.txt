@@ -6,8 +6,8 @@
 #
 # What the capture is for is the head of the sprint tab. A sprint working
 # several items at once is another process's, and the board is where a
-# reader sees what it is doing: how many items are being worked, each with
-# the step it is at, and each lane's row saying the same step. The
+# reader sees what it is doing: how many items are being worked in the head,
+# and each lane's row in the list saying the step it is at. The
 # checkpoint is written by the setup rather than earned by running the
 # lanes, because the lanes are what the board reads and a run's stages are
 # not what this scene is about.
@@ -21,7 +21,7 @@ snap 01-start "Some things worth doing first"
 keys "/todo" Enter
 snap 02-backlog "cache-evict" "cache-report"
 keys Tab
-# The head: the goal, the meter and the spend, then the lanes at work with
-# the step each item is at; under it the set's rows, each lane's saying its
-# step.
-snap 03-sprint-tab 'working · 3 at once' "cache-ttl     implement" "cache-evict   verify" "cache-report  research" "cache-evict  MS  verify"
+# The head: the goal, the meter and the spend, then how many lanes are at
+# work; under it the set's rows, each lane's saying its step — the one place
+# a lane is named.
+snap 03-sprint-tab 'working · 3 at once' "cache-ttl  MS  implement" "cache-evict  MS  verify" "cache-report  MS  research"
