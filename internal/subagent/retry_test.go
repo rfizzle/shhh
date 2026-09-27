@@ -626,3 +626,30 @@ func TestTheEnvironmentIsToldTheAttemptItIsBuiltFor(t *testing.T) {
 		})
 	}
 }
+
+// A retry is a fresh conversation, so it starts with no working list: the
+// attempt it replaces named one and marked a step, and neither reaches the
+// new attempt's count.
+func TestARetryStartsWithNoWorkingList(t *testing.T) {
+	env := &scriptedEnv{steps: []streamStep{{
+		text:  "1. Read the loop\n2. Report\nprogress: 1",
+		calls: []provider.ToolCall{{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}},
+	}}}
+	sup := newTestSupervisor(t, env)
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"survey the loop"}`)
+	waitState(t, sup, "researcher-1", StateFailed)
+	if st, _ := sup.Get("researcher-1"); st.Steps != (StepCount{Done: 1, Total: 2, Current: "Report", Own: true}) {
+		t.Fatalf("the first attempt's list = %+v, want 1 of 2", st.Steps)
+	}
+
+	env.mu.Lock()
+	env.steps = []streamStep{{text: "the loop lives in internal/agent"}}
+	env.mu.Unlock()
+	if err := sup.Retry("researcher-1"); err != nil {
+		t.Fatalf("retry: %v", err)
+	}
+	waitState(t, sup, "researcher-1", StateDone)
+	if st, _ := sup.Get("researcher-1"); st.Steps.Own {
+		t.Fatalf("the retry kept the replaced attempt's list: %+v", st.Steps)
+	}
+}

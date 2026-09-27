@@ -1,0 +1,23 @@
+# The session's own working list, declared before its first call, marked a
+# step at a time, and revised under `steps:` when the approach changes. Every
+# reply after the first holds its request open for a few seconds, which is
+# what keeps the rail on the state the round before it left long enough to be
+# captured: read-only calls run without a card, so otherwise the turn is over
+# before the driver looks at the pane.
+#
+# The third reply marks step 2 and then revises: the finished steps stay
+# counted and the new ones are numbered after them, so the rail reads 2 of 4.
+# The last reply ends the turn with a numbered report of what changed — a
+# list in a message that ends a turn is a report, not a plan, so the rail
+# counts its marks and does not take the list.
+[session]
+I will work through this in steps.\n\n1. Read the loop\n2. Patch the round limit\n3. Run the tests
++tool:read_file:{"path":"loop.go"}
+wait:4
++progress: 1\nThe limit is counted in loop.go.
++tool:read_file:{"path":"round.go"}
+wait:4
++progress: 2\nThe limit is right; the ceiling is what is wrong.\nsteps:\n3. Raise the ceiling in round.go\n4. Run the tests again
++tool:read_file:{"path":"round.go"}
+wait:4
++progress: 3\nprogress: 4\nChanged:\n1. round.go raises the ceiling\n2. the tests pass

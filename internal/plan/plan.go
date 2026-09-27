@@ -142,7 +142,12 @@ var keyPattern = regexp.MustCompile(`^\s*(?:[-*+]\s+)?([A-Za-z]+)\s*:\s*(.*)$`)
 // Parse reads a planning response into a plan. It never errors: a response
 // with no step list parses to a Plan carrying only Text, which is what the
 // card's prose fallback renders.
-func Parse(text string) Plan {
+func Parse(text string) Plan { return parse(text, false) }
+
+// parse is Parse with the one rule a revised checklist relaxes: anyStart lets
+// the list open at any number, because the steps still ahead of a revision
+// are numbered after the ones already finished (checklist.go).
+func parse(text string, anyStart bool) Plan {
 	p := Plan{Text: text}
 	var cur *Step
 	indent := ""
@@ -160,7 +165,7 @@ func Parse(text string) Plan {
 			// happens to be numbered rather than the plan's steps; and every
 			// step sits at the indent the first one set, so a sub-list under
 			// a step is a detail of that step, not the next one.
-			if cur == nil && n != 1 {
+			if cur == nil && n != 1 && !anyStart {
 				continue
 			}
 			if cur != nil && (n <= cur.Number || m[1] != indent) {

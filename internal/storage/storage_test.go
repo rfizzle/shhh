@@ -1358,7 +1358,8 @@ func TestChatResume_RoundTripsAndFollowsTheSlot(t *testing.T) {
 		t.Fatalf("a fresh slot has nothing to resume on, got %+v %v", got, err)
 	}
 
-	want := ChatResume{Summary: "what was decided and what is open", Head: "0123456789abcdef0123456789abcdef01234567"}
+	want := ChatResume{Summary: "what was decided and what is open", Head: "0123456789abcdef0123456789abcdef01234567",
+		Steps: `{"steps":[{"n":1,"title":"Read"}],"done":[1]}`}
 	if err := db.SetChatResume("r", want); err != nil {
 		t.Fatalf("set: %v", err)
 	}

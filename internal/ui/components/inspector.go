@@ -120,6 +120,9 @@ type InspectorRail struct {
 	Summary *InspectorSummary
 	Turn    *InspectorTurn
 	Plan    *InspectorPlan
+	// Steps is the session's own working list. The host never sends it with
+	// Plan: while an approved plan is being executed, the plan is the list.
+	Steps   *InspectorSteps
 	Todo    *InspectorTodo
 	Alerts  InspectorAlerts
 	Changes *InspectorChanges
@@ -150,7 +153,7 @@ type InspectorRail struct {
 // Empty reports whether every block is omitted, so the host can skip the
 // split rather than draw an empty column.
 func (r InspectorRail) Empty() bool {
-	return r.Summary == nil && r.Turn == nil && r.Plan == nil && r.Todo == nil &&
+	return r.Summary == nil && r.Turn == nil && r.Plan == nil && r.Steps == nil && r.Todo == nil &&
 		len(r.Alerts.Live()) == 0 && r.Changes == nil &&
 		len(r.Agents) == 0 && r.Tools == nil && r.Context == nil && r.Spend == nil
 }
@@ -346,7 +349,7 @@ func (r InspectorRail) Rows(width, height int) []RailRow {
 func (r InspectorRail) blocks(width int) []railBlock {
 	var blocks []railBlock
 	for _, b := range []func(int) (railBlock, bool){
-		r.summaryBlock, r.turnBlock, r.alertsBlock, r.planBlock, r.todoBlock, r.changesBlock,
+		r.summaryBlock, r.turnBlock, r.alertsBlock, r.planBlock, r.stepsBlock, r.todoBlock, r.changesBlock,
 		r.agentsBlock, r.toolsBlock, r.contextBlock, r.spendBlock,
 	} {
 		if blk, ok := b(width); ok {

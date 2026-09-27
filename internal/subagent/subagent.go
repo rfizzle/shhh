@@ -1111,11 +1111,10 @@ type child struct {
 	started time.Time
 	ended   time.Time
 	step    int // announcements made, i.e. steps entered
-	// ownSteps is the plan a writer named itself before its first call, and
-	// stepsDone the step numbers its progress lines have marked (steps.go).
-	// Both are nil for a child that named no plan.
-	ownSteps  []plan.Step
-	stepsDone map[int]bool
+	// own is the working checklist the child named itself and the steps its
+	// progress lines have marked (steps.go); empty for a child that named
+	// none.
+	own plan.Checklist
 	// turns counts the turns this attempt has run, so a child's events are
 	// placed the way a session's are: a tool call in round 30 of turn 3 is a
 	// different fact from the same call in round 2 of turn 1.
@@ -3052,7 +3051,7 @@ func (s *Supervisor) restart(c *child, detail string) error {
 	c.turns, c.round = 0, 0
 	c.toolCalls, c.step = 0, 0
 	// A retry is a fresh conversation, which names its own plan.
-	c.ownSteps, c.stepsDone = nil, nil
+	c.own = plan.Checklist{}
 	// A retry starts from a worktree of its own, so what the attempt it
 	// replaces wrote is not in the tree this one is reading.
 	c.wrote = nil
@@ -4843,6 +4842,9 @@ func (c *child) claimFollowUp(text string) {
 		c.earlier = append(c.earlier, EarlierReport{Turn: c.turns, Text: c.report})
 	}
 	c.report, c.patchNote = "", ""
+	// A follow-up is a new ask the list was not written for, so it starts
+	// with none and names its own.
+	c.own = plan.Checklist{}
 	c.followUp = followUpWords(text)
 	c.done = make(chan struct{})
 	c.state, c.detail = StateRunning, followUpDetail(c.followUp)

@@ -580,6 +580,13 @@ var migrations = []string{
 	// decides whether a writer on a host with no mechanism runs anything at
 	// all. Nullable for the reason the other settings columns are.
 	`ALTER TABLE agent_sessions ADD COLUMN agents_require_sandbox INTEGER;`,
+
+	// The session's own working checklist, beside the compaction summary, so
+	// a conversation opened again shows the steps it was on rather than
+	// losing them to the reopening (docs/capabilities/coding-agent.md#the-session-keeps-its-own-working-steps).
+	// It is the slot's, like the summary: a conversation's own words. Empty
+	// on every slot written before it, which is a session with no list.
+	`ALTER TABLE chat_sessions ADD COLUMN steps TEXT NOT NULL DEFAULT '';`,
 }
 
 const (

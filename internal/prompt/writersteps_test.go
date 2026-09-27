@@ -9,20 +9,45 @@ import (
 	"github.com/rfizzle/shhh/internal/shell"
 )
 
-// The writer is shown the grammar its lane is counted in, and what it is
-// shown is what the counter reads: the example filled in parses to its steps
-// and its mark.
-func TestBuildWriter_AsksForThePlanInTheGrammarItIsReadIn(t *testing.T) {
-	got := BuildWriter(shell.Info{Shell: "bash", OS: "linux", Cwd: "/w"})
-	if !strings.Contains(got, "# Your steps\n"+writerSteps) {
-		t.Fatalf("the writer's prompt should carry the steps paragraph:\n%s", got)
+// The session and every child role are shown the grammar their list is
+// counted in, in the same words, and what they are shown is what the counter
+// reads: the example filled in parses to its steps, its mark and its
+// revision.
+func TestWorkingSteps_EveryRoleIsAskedInTheGrammarItIsReadIn(t *testing.T) {
+	info := shell.Info{Shell: "bash", OS: "linux", Cwd: "/w"}
+	for name, got := range map[string]string{
+		"session":    BuildAgent(info),
+		"writer":     BuildWriter(info),
+		"researcher": BuildResearcher(info, WebTools{}),
+		"reviewer":   BuildReviewer(info, ProfileSpec{}),
+		"profile":    BuildProfile(info, ProfileSpec{Name: "auditor", Tools: []string{"read_file"}}),
+	} {
+		if !strings.Contains(got, workingSteps) {
+			t.Errorf("the %s prompt should carry the working-steps paragraph", name)
+		}
 	}
-	filled := strings.NewReplacer("<what this step does>", "read the loop", "<step number>", "1").Replace(writerSteps)
+	if !strings.Contains(BuildAgent(info), "next action, with the working list below where the task has several steps.") {
+		t.Error("the public-progress sentence should point at the working list")
+	}
+	if strings.Contains(BuildConversation(info), workingSteps) {
+		t.Error("a conversation asks for no working list")
+	}
+
+	filled := strings.NewReplacer("<what this step does>", "read the loop", "<step number>", "1").Replace(workingSteps)
 	if p := plan.Parse(filled); len(p.Steps) != 2 {
 		t.Errorf("the example should parse to its two steps, got %+v", p.Steps)
 	}
 	if marks := plan.Progress(filled); !slices.Equal(marks, []int{1}) {
 		t.Errorf("the example's progress line should mark step 1, got %v", marks)
+	}
+	var l plan.Checklist
+	l.Note(filled, true)
+	l.Note("steps:\n1. patch the flag", true)
+	if done, total, current := l.Tally(); done != 1 || total != 2 || current != "patch the flag" {
+		t.Errorf("a revision in the words the paragraph gives = %d/%d %q, want 1/2 on the new step", done, total, current)
+	}
+	if !strings.Contains(workingSteps, "a line of its own reading steps: and under it") {
+		t.Error("the paragraph should name the steps: marker a revision is read under")
 	}
 }
 

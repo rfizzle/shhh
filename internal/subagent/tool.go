@@ -13,6 +13,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/rfizzle/shhh/internal/plan"
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
@@ -249,7 +250,7 @@ type spawnArgs struct {
 // MaxDeclaredSteps bounds the step count a spawn may declare. A lane
 // is five cells wide; a task claiming more steps than this is describing its
 // tool calls, not its shape, and the lane falls back to the spinner.
-const MaxDeclaredSteps = 20
+const MaxDeclaredSteps = plan.MaxWorkingSteps
 
 // maxClaimedPaths bounds a writer's declared scope; a claim longer than this
 // is a sign the model is listing files instead of scoping work.

@@ -35,6 +35,7 @@ import (
 	"charm.land/lipgloss/v2"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/diff"
+	"github.com/rfizzle/shhh/internal/plan"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/storage"
@@ -750,6 +751,10 @@ func (m *Model) rewindConversation(n int, filesNote string) string {
 	kept := append([]checkpoint(nil), m.checkpoints[:n]...)
 	m.loadConversation(full[:cp.index])
 	m.checkpoints = kept
+	// The working list goes with the turns: what it marked may be work the
+	// cut just took back, and the branch keeps the list the whole
+	// conversation had (worksteps.go).
+	m.workSteps = plan.Checklist{}
 	if split {
 		// The turns that stay keep the rows they already have, as a
 		// compaction's kept turns do: a turn redrawn from its messages is
@@ -909,6 +914,9 @@ func (m *Model) switchToBranch(target string) string {
 	// by name — this is a move inside one sitting, on the tree that sitting
 	// already surveyed, so there is nothing new to say about it.
 	m.compactSummary = storedChatSummary(m.db, target)
+	// So is the working list: each branch keeps the one it was last saved
+	// with, and the one just left is on its own slot (worksteps.go).
+	m.workSteps = storedChatSteps(m, target)
 	m.contextTokens = 0
 	m.resetRounds()
 	return fmt.Sprintf("switched to branch %q (%s)", target, plural(len(msgs), "message"))

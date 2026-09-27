@@ -2010,6 +2010,37 @@ func TestGolden_InspectorRail(t *testing.T) {
 	})
 }
 
+// TestGolden_InspectorSteps captures the STEPS block where it sits — under
+// THIS TURN and above CHANGES, in the place PLAN takes when an approved plan
+// is being executed — at the rail width each terminal width is given. A
+// session with no list draws no block at all, never zero of zero; a list
+// reads as the count and the step it is on; a revision keeps the finished
+// steps in the count; and a list whose every step is marked states the count
+// and nothing that says the task is finished
+// (docs/interface/surfaces.md#the-inspector-rail).
+func TestGolden_InspectorSteps(t *testing.T) {
+	captureBoundedGolden(t, "inspector-steps", "inspector rail · steps", goldenWidths, func(width int) []golden.Panel {
+		rail := func(steps *InspectorSteps) InspectorRail {
+			return InspectorRail{
+				Turn:  &InspectorTurn{Tools: 7, Running: true, Files: 1, Added: 12, Removed: 2},
+				Steps: steps,
+				Changes: &InspectorChanges{
+					Files: []InspectorFile{{Path: "internal/agent/loop.go", Added: 12, Removed: 2, ThisTurn: true}},
+					Added: 12, Removed: 2,
+				},
+			}
+		}
+		w := InspectorWidthFor(width)
+		const h = 14
+		return []golden.Panel{
+			{Label: "no list · a short task declares none, and the rail draws nothing for it", View: rail(nil).View(w, h)},
+			{Label: "a list with two done · the count and the step it is on", View: rail(&InspectorSteps{Done: 2, Total: 4, Current: "Return it from runRound"}).View(w, h)},
+			{Label: "a revised list · the finished steps stay counted, the new ones follow", View: rail(&InspectorSteps{Done: 2, Total: 5, Current: "Add the flag to the loop options"}).View(w, h)},
+			{Label: "every step marked · the count, and nothing saying the task is done", View: rail(&InspectorSteps{Done: 3, Total: 3}).View(w, h)},
+		}
+	})
+}
+
 // TestGolden_PlanCard captures the plan card: the priced step list with
 // its computed summary, a plan whose radius is the one worth reading twice,
 // the height bound that counts the steps it drops, and the prose fallback for

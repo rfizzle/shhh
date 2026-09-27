@@ -581,7 +581,9 @@ makes an extended silent investigation legible to the person following it. The
 coding prompt therefore asks for a short status before an extended
 investigation, after a material finding or plan change, and before a long edit
 or test phase. It names only the objective, evidence and next action; it never
-asks for private reasoning or a narration of every call.
+asks for private reasoning or a narration of every call. Where the task will
+take several steps, the same sentence asks for them as a short list the
+session can count ([its own working steps](#the-session-keeps-its-own-working-steps)).
 
 The session has a second backstop for models that make only tool calls. After
 twelve calls or ninety seconds without assistant prose, it inserts a bounded
@@ -598,6 +600,44 @@ The public text is not stored in the content-free observation record and is
 never confused with provider reasoning. A headless text run keeps stdout for
 its final answer; JSONL emits the status as a distinct `progress` event, while
 the record carries only that the checkpoint occurred.
+
+## The session keeps its own working steps
+
+A status note says where the work is; it does not say how far. For a task of
+several steps the prompt therefore asks for the steps themselves: a short
+numbered list in the message before the call that starts them, a `progress:
+<n>` line as each finishes, and — when the approach changes — a new list
+under a line reading `steps:`. The rail draws it as `2 of 4 · <the step it is
+on>`. A short task needs none, and a session with no list draws nothing, never
+zero of zero.
+
+It is the grammar a child's lane is counted in
+([how far along is three numbers](subagents.md#how-far-along-is-three-numbers-not-one)),
+read by one reader for both, so a step is the same thing on the rail and on a
+lane. The rules are that reader's. A list is taken from text that goes on to a
+call and never from a message that ends a turn, because a report listing what
+changed in numbered lines is not a plan. It is taken once: a later numbered
+list is text unless it stands under `steps:`, and then it replaces the
+unfinished steps while the finished ones stay finished, the new ones numbered
+after them. The explicit marker is the whole difference between a revision
+and a list of files, which is why a revision needs it. A new instruction may
+declare a fresh list in its first message that goes on to a call; until it
+does, the last list stands.
+
+A line is the whole mechanism, never a tool: the list is the agent's own
+account of its work, written in the messages the work is written in, and a
+tool call per step would spend a round on bookkeeping. It is not a backlog
+item and not an approved plan. It belongs to the session — each child keeps
+its own, and nothing is shared between them — and it never touches the plan
+record, its steps or its approval: while an approved plan is being executed,
+the plan is the checklist and the session keeps no second one. Every step
+marked is the agent saying so, not the task being done; only the turn's own
+ending and its checks say that.
+
+It is saved with the conversation beside the compaction summary and comes
+back when the conversation is opened again, so a resumed session shows the
+steps it was on. A new session starts with none, and a rewind drops it with
+the turns it cut, since what it marked may be work the rewind took back.
 
 ## Two failures, two interruptions
 

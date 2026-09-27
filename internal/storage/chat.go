@@ -332,9 +332,10 @@ func (db *DB) SaveChatBranch(parentName, branchName string, messages []provider.
 	if _, err := tx.Exec(
 		`UPDATE chat_sessions
 		    SET summary = (SELECT summary FROM chat_sessions WHERE name = ?),
-		        head    = (SELECT head    FROM chat_sessions WHERE name = ?)
+		        head    = (SELECT head    FROM chat_sessions WHERE name = ?),
+		        steps   = (SELECT steps   FROM chat_sessions WHERE name = ?)
 		  WHERE id = ?`,
-		parentName, parentName, branchID,
+		parentName, parentName, parentName, branchID,
 	); err != nil {
 		return fmt.Errorf("carry resume state to branch: %w", err)
 	}
@@ -1031,6 +1032,11 @@ type ChatResume struct {
 	// session's directory by, since the record beside it stores no paths
 	// (docs/capabilities/sessions-and-memory.md#a-session-knows-it-is-not-alone).
 	Root string
+	// Steps is the session's own working checklist as plan.Checklist encodes
+	// it, and empty for a session that declared none. The store keeps the
+	// text and never reads it.
+	// See docs/capabilities/coding-agent.md#the-session-keeps-its-own-working-steps.
+	Steps string
 }
 
 // SetChatResume stores what the slot is opened again on. It is the title's
@@ -1038,7 +1044,7 @@ type ChatResume struct {
 // slot can never carry a summary from one sitting and a commit from another.
 func (db *DB) SetChatResume(name string, r ChatResume) error {
 	res, err := db.sql.Exec(
-		`UPDATE chat_sessions SET summary = ?, head = ?, root = ? WHERE name = ?`, r.Summary, r.Head, r.Root, name)
+		`UPDATE chat_sessions SET summary = ?, head = ?, root = ?, steps = ? WHERE name = ?`, r.Summary, r.Head, r.Root, r.Steps, name)
 	if err != nil {
 		return err
 	}
@@ -1054,7 +1060,7 @@ func (db *DB) SetChatResume(name string, r ChatResume) error {
 func (db *DB) ChatResume(name string) (ChatResume, error) {
 	var r ChatResume
 	err := db.sql.QueryRow(
-		`SELECT summary, head, root FROM chat_sessions WHERE name = ?`, name).Scan(&r.Summary, &r.Head, &r.Root)
+		`SELECT summary, head, root, steps FROM chat_sessions WHERE name = ?`, name).Scan(&r.Summary, &r.Head, &r.Root, &r.Steps)
 	if err == sql.ErrNoRows {
 		return ChatResume{}, nil
 	}

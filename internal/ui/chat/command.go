@@ -749,7 +749,8 @@ func slashSave(m *Model, parts []string) string {
 	// conversation, and one that came back unable to say which commit it
 	// was written on would be the one copy that could not (reopen.go).
 	_ = m.db.SetChatResume(name, storage.ChatResume{
-		Summary: m.compactSummary, Head: project.Head(m.workspace), Root: project.Root(m.workspace)})
+		Summary: m.compactSummary, Head: project.Head(m.workspace), Root: project.Root(m.workspace),
+		Steps: m.workSteps.Encode()})
 	// Future rewind branches hang off the named session.
 	m.adoptSlot(name)
 	return fmt.Sprintf("chat saved as %q", name)

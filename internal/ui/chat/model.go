@@ -1067,6 +1067,10 @@ type Model struct {
 	// Empty is a conversation that never compacted, and nothing here ever
 	// writes one that a compaction did not.
 	compactSummary string
+	// workSteps is the session's own working checklist, read out of its
+	// messages by noteWorkSteps (worksteps.go) and saved with the slot beside
+	// compactSummary. It is not the approved plan and never becomes it.
+	workSteps plan.Checklist
 	// compactRun is what a compaction in flight remembers about the
 	// conversation it is about to replace, so the receipt it leaves can
 	// account for the act the way every other row accounts for one: how full
@@ -1560,6 +1564,9 @@ func (m Model) autosaveCmd() tea.Cmd {
 	// The commit is asked for in the command rather than here, because this
 	// runs on the way to a frame and that one does not.
 	summary, dir := m.compactSummary, m.workspace
+	// And the session's working list, so a conversation opened again shows
+	// the steps it was on (worksteps.go).
+	steps := m.workSteps.Encode()
 	// And the mark saying the conversation is mid-turn, which is what makes
 	// quitting while held and starting again the same place (hold.go). It
 	// rides the save itself rather than a write beside it: the conversation
@@ -1598,7 +1605,7 @@ func (m Model) autosaveCmd() tea.Cmd {
 		// read here, at the save, so the slot says where the tree was when
 		// this conversation was last written down rather than where it was
 		// when the process started.
-		_ = db.SetChatResume(slot, storage.ChatResume{Summary: summary, Head: project.Head(dir), Root: project.Root(dir)})
+		_ = db.SetChatResume(slot, storage.ChatResume{Summary: summary, Head: project.Head(dir), Root: project.Root(dir), Steps: steps})
 		if slot != name {
 			return autosaveMovedMsg{from: name, to: slot}
 		}

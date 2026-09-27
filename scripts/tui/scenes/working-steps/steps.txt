@@ -1,0 +1,25 @@
+# program test: TestProgram_TheSessionsOwnStepsReachTheRail,
+#   TestProgram_TheQuitChordArmsThenLeaves
+#
+# The rail's STEPS block (docs/interface/surfaces.md#the-inspector-rail): the
+# session's own working list, read out of the prose before its calls. The
+# pane is 130 columns, the narrowest terminal the rail is drawn at.
+#
+# What the captures are read for: at 02 the declared list reads 0 of 3 on its
+# first step, with no PLAN block beside it; at 03 a progress line has moved
+# it to 1 of 3; at 04 a list under `steps:` has replaced the unfinished step
+# and kept the two finished ones, so it reads 2 of 4 on the first new step;
+# at 05 the turn has ended on a numbered report, whose marks are counted and
+# whose list is not taken — 4 of 4, and nothing on the block saying the task
+# is done.
+setup printf 'package agent\n\nfunc loop() {}\n' > loop.go; printf 'package agent\n\nconst ceiling = 150\n' > round.go
+snap 01-start "Some things worth doing first"
+keys "raise the round ceiling" Enter
+snap 02-declared "STEPS" "0 of 3 · Read the loop"
+snap 03-marked "1 of 3 · Patch the round limit"
+snap 04-revised "2 of 4 · Raise the ceiling in round.go"
+snap 05-closed "4 of 4" "the tests pass"
+keys C-c
+snap 06-quit-armed "again quits"
+keys C-c
+snap 07-exit "that is everything the screen was holding"

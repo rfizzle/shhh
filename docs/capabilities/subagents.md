@@ -806,9 +806,11 @@ exist, side by side, and never merge them into one bar: a number with no
 denominator is a lie, and a bar that blended two would be a number with no
 denominator anybody could name.
 
-The three are these. **Steps** are the child's own: a writer is asked to open
-its work with a numbered plan of the steps it means to take, and to write a
-progress line naming a step's number as each one is finished. The plan is read
+The three are these. **Steps** are the child's own: every child, whatever its
+role, is asked — where its task will take several steps — to write a numbered
+list of the steps it means to take, to write a progress line naming a step's
+number as each one is finished, and to write a new list under `steps:` when
+its approach changes. The list is read
 in the same grammar the plan card reads a planning answer in, so a step is the
 same thing on both surfaces, and a lane reads `3 of 7 steps` with the step the
 child is on beside its task where the row has room. **The budget's share** is
@@ -827,12 +829,17 @@ writes in its own messages and never a tool: a count the model keeps is a
 record it could edit freely, and this is one it should write, in the same
 breath as the work it is counting.
 
-A plan is taken once, from the message a writer opens its work with, and a
-numbered list later on — a report listing what changed — is not mistaken for
-one. A plan that does not parse, or one too long to be a plan, is no plan: the
-lane then draws the budget's share with whatever count the spawn declared, and
-never zero of zero. A retry names its own plan, since it is a fresh
-conversation.
+A plan is taken once, from text that goes on to a call, and a numbered list
+later on — a report listing what changed — is not mistaken for one; only a
+list under `steps:` revises it, keeping the steps already marked and
+numbering the new ones after them. The reader is the one the session counts
+its [own working steps](coding-agent.md#the-session-keeps-its-own-working-steps)
+with, and each child's list is its own: nothing of the session's or another
+child's reaches it. A plan that does not parse, or one too long to be a plan,
+is no plan: the lane then draws the budget's share with whatever count the
+spawn declared, and never zero of zero. A retry and a follow-up each start
+with no plan and name their own, since the first is a fresh conversation and
+the second a new ask the old list was not written for.
 
 The count also decides when a landed patch is carried into a writer's copy
 ([a writer starts from your tree](#a-writer-starts-from-your-tree)). A writer on

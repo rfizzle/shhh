@@ -119,7 +119,9 @@ Investigation is where a session is won or wasted. Each round costs the user tim
 - Read a file once, and read enough of it. A whole file is a single call; paging through one in twenty-line windows is twenty calls that each tell you less than the first would have. start_line/end_line are for files big enough that the tool says so.
 - Never repeat a call you have already made. Its result is still here in the conversation — look back at it rather than asking again. If two attempts have not answered the question, the question is wrong: change tool, widen the path, or read the file instead of searching it. Repeating a search that already returned is the clearest sign of being stuck, and the way out is a different approach, not another attempt.
 - Know when to stop looking. Once you can name the file and the line you are going to change, start working. More reading is not more progress, and a turn that keeps reading past the point it could act is a turn the user has to interrupt.
-- Before an extended investigation, after a material finding or plan change, and before a long edit or test phase, give a brief public progress note naming the objective, evidence and next action. Do not reveal private reasoning or narrate every tool call.`
+- Before an extended investigation, after a material finding or plan change, and before a long edit or test phase, give a brief public progress note naming the objective, evidence and next action, with the working list below where the task has several steps. Do not reveal private reasoning or narrate every tool call.
+
+` + workingSteps
 
 // findingThingsBrief is the same discipline for a sub-agent, whose prompt has
 // room for the rules but not for the reasoning behind them.
@@ -283,9 +285,12 @@ Date: %s
 - Stay on the delegated task; depth over breadth.
 %s
 
+# Your steps
+%s
+
 # Final report
 Your last message IS the deliverable. Make it a self-contained report: the findings, the evidence (paths, line references, URLs), and any open questions or caveats. %s Do not end on a question or a promise of further work.`,
-		os, info.Cwd, today(), web.researcherTools(), findingThingsBrief, assumptionsSection)
+		os, info.Cwd, today(), web.researcherTools(), findingThingsBrief, workingSteps, assumptionsSection)
 	if len(extra) > 0 && extra[0] != "" {
 		base += "\n\n" + extra[0]
 	}
@@ -322,9 +327,12 @@ You are reviewing a change, not making one. Report, in this order:
 
 Rank by severity. Say "no findings" for an empty section rather than inventing one. Never propose a rewrite of something that works. Your inspection pass is bounded by a round cap, not by your own judgement of when to stop: once you have examined the declared evidence and its direct tests, report rather than broadening the survey. If the pass ends before you have, you are told to report on what you examined and you say what you did not reach.
 
+# Your steps
+%s
+
 # Final report
 Your last message IS the deliverable. %s %s`,
-		reviewerOpening(spec), os, info.Cwd, today(), reviewerTools(spec), assumptionsSection, verdictLine)
+		reviewerOpening(spec), os, info.Cwd, today(), reviewerTools(spec), workingSteps, assumptionsSection, verdictLine)
 	if len(extra) > 0 && extra[0] != "" {
 		base += "\n\n" + extra[0]
 	}
@@ -441,13 +449,18 @@ const writerCopyMoves = "The tree you started from can move while you work. When
 // See docs/capabilities/subagents.md#what-they-share.
 const writerCheckSlots = "- A build or test run may wait for a check slot before it starts, while other agents' checks finish first. Waiting is not a failure: let it run, and do not retry it, cancel it or skip the check because it was slow to begin."
 
-// writerSteps asks a writer for the plan its lane counts: a numbered list of
-// its own steps before its first call, and a progress line as each is done,
-// in the grammar the plan card reads (internal/plan). The count is the one
-// denominator of the three a lane draws that the child names itself, which is
-// what lets its reader hold it to what it said it would do.
-// See docs/capabilities/subagents.md#how-far-along-is-three-numbers-not-one.
-const writerSteps = `Before your first tool call, write your plan as a numbered list of the steps the task breaks into, one line each, numbered from 1 — at most 20:
+// workingSteps asks for the agent's own working checklist: a numbered list
+// of the steps it means to take, a progress line as each is done, and a list
+// under `steps:` when the approach changes — in the grammar plan.Checklist
+// reads, the plan card's (internal/plan). The session and every child role
+// carry it in these words, because one reader counts all of them. The count
+// is the one denominator of the three a lane draws that the agent names
+// itself, which is what lets its reader hold it to what it said it would do;
+// it is optional because a short task has no steps worth counting, and a
+// list the model was made to write for one would be noise on the rail.
+// See docs/capabilities/subagents.md#how-far-along-is-three-numbers-not-one
+// and docs/capabilities/coding-agent.md#the-session-keeps-its-own-working-steps.
+const workingSteps = `When a task will take several steps, write the steps you mean to take as a numbered list, one line each, numbered from 1 — at most 20 — in the message before the call that starts them:
 
 1. <what this step does>
 2. <what this step does>
@@ -456,7 +469,7 @@ When you finish a step, write a line of its own naming its number:
 
 progress: <step number>
 
-These lines are how the person watching sees how far along you are, and what your work is checked against: a step you have not marked reads as not done. Write the list once; if the work turns out different from it, say so in words and carry on rather than writing a new list.`
+If the approach changes, write a line of its own reading steps: and under it a numbered list of the steps still ahead. The steps you finished stay finished, and the new ones are numbered after them. A short task needs no list. The list is how the person watching follows your work, and a step you have not marked reads as not done; it is your own working checklist, not a plan anyone approved, and marking every step does not make the task finished.`
 
 // BuildWriter is the system prompt for writer sub-agents: the full
 // toolset against an isolated worktree whose changes return as a reviewable
@@ -499,7 +512,7 @@ Make changes with write_file and edit_file rather than pasting code into your me
 
 # Final report
 Your last message IS the deliverable. Report what you changed (files and why), how you verified it, and anything the reviewer should look at closely. %s Do not end on a question or a promise of further work.`,
-		info.Shell, os, info.Cwd, today(), executionDefault, findingThingsBrief, writerCheckSlots, shellSyntaxRules(info.Shell), sudoRules(info.OS, info.IsRoot), osRules(info.OS), writerSteps, writerCopyMoves, assumptionsSection)
+		info.Shell, os, info.Cwd, today(), executionDefault, findingThingsBrief, writerCheckSlots, shellSyntaxRules(info.Shell), sudoRules(info.OS, info.IsRoot), osRules(info.OS), workingSteps, writerCopyMoves, assumptionsSection)
 	if len(extra) > 0 && extra[0] != "" {
 		base += "\n\n" + extra[0]
 	}
@@ -837,6 +850,8 @@ func BuildProfile(info shell.Info, spec ProfileSpec, extra ...string) string {
 		b.WriteString("\n- Never run destructive commands (rm -rf, dropping databases, force-pushing) unless the task explicitly asked for that exact action.")
 		fmt.Fprintf(&b, "\n\n# Shell commands\n%s\n%s\n%s", shellSyntaxRules(info.Shell), sudoRules(info.OS, info.IsRoot), osRules(info.OS))
 	}
+
+	b.WriteString("\n\n# Your steps\n" + workingSteps)
 
 	b.WriteString("\n\n# Final report\nYour last message IS the deliverable. Make it a self-contained report: ")
 	if spec.Isolated {

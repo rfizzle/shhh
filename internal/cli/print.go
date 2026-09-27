@@ -698,6 +698,11 @@ type headlessChat struct {
 	// — a run has no /compact and nobody to ask for one — so a save that
 	// wrote an empty summary would take away the one a session left.
 	summary string
+	// steps is the session's working list the slot already carried, kept for
+	// the same reason: a run reads no list of its own, so a save that wrote
+	// none would take away the one a session left
+	// (docs/capabilities/coding-agent.md#the-session-keeps-its-own-working-steps).
+	steps string
 }
 
 // openHeadlessChat resolves what this run carries on from and where it will
@@ -729,6 +734,7 @@ func openHeadlessChat(db *storage.DB, session chatSession, initial []provider.Me
 			}
 			notice := chat.ResumeContext(db, c.slot, "")
 			c.summary = notice.Summary
+			c.steps = notice.Steps
 			msgs, c.at, c.head = spliceAfterSystem(msgs, notice.Messages)
 		}
 	}
@@ -876,7 +882,7 @@ func (c *headlessChat) save(msgs []provider.Message) {
 	// And what the conversation is opened again on. The commit is read here,
 	// at the save, so the slot says where the tree was when the conversation
 	// was last written down rather than where it was when the run started.
-	_ = c.db.SetChatResume(slot, storage.ChatResume{Summary: c.summary, Head: project.Head(""), Root: project.Root(".")})
+	_ = c.db.SetChatResume(slot, storage.ChatResume{Summary: c.summary, Head: project.Head(""), Root: project.Root("."), Steps: c.steps})
 }
 
 // runPrintSession runs the agent loop to completion without the TUI:

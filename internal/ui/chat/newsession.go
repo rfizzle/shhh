@@ -122,6 +122,9 @@ func (m *Model) startNewSession() (notes []entry, save tea.Cmd) {
 	// a different one: carried across, the new slot would open on a summary of
 	// work its transcript never mentions (reopen.go).
 	m.compactSummary = ""
+	// And its working list: the steps were the old conversation's, and the
+	// new one has declared none (worksteps.go).
+	m.workSteps = plan.Checklist{}
 	// So does an approved plan's record. A card that carries it across reads
 	// it before calling this, so it is carried once; left standing, the next
 	// boundary would seed a session the plan was never approved for

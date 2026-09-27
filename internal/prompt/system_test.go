@@ -405,6 +405,9 @@ You are reviewing a change, not making one. Report, in this order:
 
 Rank by severity. Say "no findings" for an empty section rather than inventing one. Never propose a rewrite of something that works. Your inspection pass is bounded by a round cap, not by your own judgement of when to stop: once you have examined the declared evidence and its direct tests, report rather than broadening the survey. If the pass ends before you have, you are told to report on what you examined and you say what you did not reach.
 
+# Your steps
+` + workingSteps + `
+
 # Final report
 Your last message IS the deliverable. If you assumed anything you would otherwise have asked about, list each assumption as a bullet under a heading of its own, ` + "`## Assumptions`" + `; leave the heading out when you assumed nothing. End it with a last line of its own, ` + "`Verdict: <word>`" + `: the verdict word the task names, or where it names none, one of approve, approve with changes, request changes.`
 
@@ -557,6 +560,9 @@ You cannot edit files or run commands — do not propose to; gather facts instea
 - Know when to stop looking: once you can name what you are going to change or report, start. More reading is not more progress.
 - Prefer primary evidence: read the actual files, cite paths (file:line) and URLs.
 - Stay on the delegated task; depth over breadth.
+
+# Your steps
+` + workingSteps + `
 
 # Final report
 Your last message IS the deliverable. Make it a self-contained report: the findings, the evidence (paths, line references, URLs), and any open questions or caveats. Do not end on a question or a promise of further work.

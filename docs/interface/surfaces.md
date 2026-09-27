@@ -1070,6 +1070,16 @@ changed file is ever pushed off the rail to keep an answered failure on it.
 When nothing is live the block goes with them: a block whose only news has
 been answered is history, and the transcript is where history is read.
 
+Where the session has declared its own working steps rather than executing
+an approved plan, the plan's place is taken by a block that reads as a
+child's lane does: `2 of 4 · <the step it is on>`, one row under the label
+STEPS. It is not a checklist of every step, because the list is the agent's
+own and can be revised; it is where the agent says it is. The two are never
+up together — while an approved plan is being executed, the plan is the
+checklist — and a session that declared no list draws no block. Every step
+marked reads `3 of 3` and nothing more: the count is the agent's account of
+its list, and whether the task is done is the turn's close to say.
+
 One block is scoped wider than the session: the project's backlog. It sits
 under the plan because it is the same question one step further out — the
 plan is what this turn is going through, the backlog is what is queued

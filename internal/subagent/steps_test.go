@@ -73,8 +73,8 @@ func TestStatusSteps_AMalformedPlanIsNoPlan(t *testing.T) {
 }
 
 // A numbered list in a message that ends the turn is a report, not a plan;
-// and a child that writes nothing is not held to a plan it was never asked for.
-func TestStatusSteps_OnlyAWriterPlansAndOnlyBeforeACall(t *testing.T) {
+// and every role keeps a list of its own, a reader included.
+func TestStatusSteps_EveryRolePlansButOnlyBeforeACall(t *testing.T) {
 	c := planningWriter()
 	c.streaming = "Changed:\n1. loop.go\n2. loop_test.go"
 	c.flushStreaming()
@@ -85,8 +85,74 @@ func TestStatusSteps_OnlyAWriterPlansAndOnlyBeforeACall(t *testing.T) {
 	r := &child{name: "researcher-1"}
 	r.streaming = "1. Read\n2. Report"
 	r.beginToolEntry("t1", "read_file", `{}`)
-	if got := r.status().Steps; got.Own {
-		t.Fatalf("a reader's list became a plan: %+v", got)
+	if got := r.status().Steps; got != (StepCount{Total: 2, Current: "Read", Own: true}) {
+		t.Fatalf("a reader's list = %+v, want its own 0 of 2", got)
+	}
+}
+
+// A list under a `steps:` line replaces the unfinished steps and keeps the
+// finished ones, numbering the new ones after them; the child can then mark
+// them by those numbers.
+func TestStatusSteps_ARevisionKeepsWhatWasDone(t *testing.T) {
+	c := planningWriter()
+	c.streaming = "1. Read\n2. Patch the loop\n3. Test"
+	c.beginToolEntry("t1", "read_file", `{}`)
+	c.streaming = "progress: 1\nThe loop is fine; the flag is the problem.\nsteps:\n1. Add the flag\n2. Document it\n3. Test"
+	c.beginToolEntry("t2", "edit_file", `{}`)
+	if got := c.status().Steps; got != (StepCount{Done: 1, Total: 4, Current: "Add the flag", Own: true}) {
+		t.Fatalf("after the revision = %+v, want 1 of 4 on the flag", got)
+	}
+	c.streaming = "progress: 2"
+	c.beginToolEntry("t3", "read_file", `{}`)
+	if got := c.status().Steps; got.Done != 2 || got.Current != "Document it" {
+		t.Fatalf("after marking a revised step = %+v, want 2 of 4 on the docs", got)
+	}
+}
+
+// Two children's lists are their own: one child's list and marks never move
+// another's count.
+func TestStatusSteps_EachChildsListIsItsOwn(t *testing.T) {
+	a, b := planningWriter(), &child{name: "researcher-1"}
+	a.streaming = "1. Read\n2. Write"
+	a.beginToolEntry("t1", "read_file", `{}`)
+	b.streaming = "progress: 1\nprogress: 2"
+	b.beginToolEntry("t1", "read_file", `{}`)
+	if got := a.status().Steps; got.Done != 0 || got.Total != 2 {
+		t.Fatalf("another child's marks moved this one: %+v", got)
+	}
+	if got := b.status().Steps; got.Own {
+		t.Fatalf("a child with no list read another's: %+v", got)
+	}
+}
+
+// A follow-up starts with no list: the ask is new, and the list the last one
+// named was not written for it. (A retry's reset is held beside restart.)
+func TestStatusSteps_AFollowUpStartsClean(t *testing.T) {
+	c := planningWriter()
+	c.streaming = "1. Read\n2. Write\nprogress: 1"
+	c.beginToolEntry("t1", "read_file", `{}`)
+	c.claimFollowUp("and the docs")
+	if got := c.status().Steps; got.Own {
+		t.Fatalf("a follow-up kept the last list: %+v", got)
+	}
+
+	c.streaming = "1. Docs\nprogress: 1"
+	c.beginToolEntry("t2", "read_file", `{}`)
+	if got := c.status().Steps; !got.Own || got.Total != 1 {
+		t.Fatalf("the follow-up's own list = %+v, want 1 step", got)
+	}
+}
+
+// A child whose every step is marked is still working: the marks are its own
+// account of its list, and only the loop's own ending says the task is done.
+func TestStatusSteps_AFullyMarkedListIsNotAFinishedTask(t *testing.T) {
+	c := planningWriter()
+	c.state = StateRunning
+	c.streaming = "1. Read\n2. Write\nprogress: 1\nprogress: 2"
+	c.beginToolEntry("t1", "read_file", `{}`)
+	st := c.status()
+	if st.Steps != (StepCount{Done: 2, Total: 2, Own: true}) || st.State != StateRunning {
+		t.Fatalf("status = %v %+v, want still running at 2 of 2", st.State, st.Steps)
 	}
 }
 

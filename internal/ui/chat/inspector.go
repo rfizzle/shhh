@@ -208,6 +208,7 @@ func (m Model) resolveInspector() components.InspectorRail {
 		Summary:    m.inspectorSummary(),
 		Turn:       m.inspectorTurn(steps),
 		Plan:       m.inspectorPlan(steps),
+		Steps:      m.inspectorSteps(),
 		Todo:       m.inspectorTodo(),
 		Alerts:     m.inspectorAlerts(),
 		Changes:    m.inspectorChanges(),

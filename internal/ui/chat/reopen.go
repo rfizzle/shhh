@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/rfizzle/shhh/internal/plan"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/storage"
@@ -62,6 +63,10 @@ type ResumeNotice struct {
 	// never compacts again would otherwise write an empty one over the slot
 	// and lose the handoff on its first save.
 	Summary string
+	// Steps is the session's working list as the slot stored it, handed back
+	// for the rail. The model is told nothing about it: the list is in the
+	// transcript it wrote.
+	Steps string
 }
 
 // ResumeContext is what slot's conversation should be told about dir as it
@@ -87,7 +92,7 @@ func ResumeContext(db *storage.DB, slot, dir string) ResumeNotice {
 // remembered, separately from the reading of either so it can be tested and
 // captured on facts built by hand.
 func resumeNotice(info project.Info, saved storage.ChatResume) ResumeNotice {
-	n := ResumeNotice{Subject: resumeSubject(info)}
+	n := ResumeNotice{Subject: resumeSubject(info), Steps: saved.Steps}
 	n.Messages = append(n.Messages, provider.Message{
 		Role: provider.RoleUser, Content: resumeSurveyMessage(info, saved.Head)})
 	// No placeholder for a conversation that never compacted. A line saying
@@ -311,6 +316,9 @@ func (m *Model) injectResumeContext() {
 	// The handoff comes back with the conversation, so this sitting's saves
 	// keep putting it on the slot rather than writing an empty one over it.
 	m.compactSummary = n.Summary
+	// And so does the working list, which the next save would otherwise
+	// write over with none (worksteps.go).
+	m.workSteps = plan.DecodeChecklist(n.Steps)
 	// A checkpoint is a conversation index, and every restored turn has just
 	// moved down by what was put in front of it. Left alone, a rewind would
 	// cut the conversation short of the turn the reader picked.
