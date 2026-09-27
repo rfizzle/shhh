@@ -25,7 +25,8 @@ type StepCount struct {
 // and never from a message that ends a turn, since a report listing what it
 // changed in numbered lines is not a plan and read as one it would put every
 // lane at zero of the report's length; it is taken once, and a later numbered
-// list is text unless it stands under a `steps:` line; a list longer than a
+// list is text unless it stands under a `steps:` line or follows a steer
+// (drainSteering reopens the list); a list longer than a
 // spawn may declare is a list rather than a plan. Every role keeps one, and
 // each child's is its own — nothing here reads the session's or another
 // child's.

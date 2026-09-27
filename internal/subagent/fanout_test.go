@@ -228,3 +228,26 @@ func TestQueuedWriterHasNoWorktreeUntilItRuns(t *testing.T) {
 		t.Fatalf("a started writer has no worktree to diff: %v", err)
 	}
 }
+
+// A steer that joins a child's conversation moves it onto the task it was
+// given, so the child's next message that goes on to a call may declare a
+// list of its own; until it does, the old list stands.
+func TestASteerLetsAChildDeclareAFreshList(t *testing.T) {
+	c := &child{name: "writer-1"}
+	c.noteSteps("1. Read\n2. Patch", true)
+	c.noteSteps("1. Something else\n2. Again\n3. More", true)
+	if sc := c.stepCount(); sc.Total != 2 {
+		t.Fatalf("an unsteered later list was taken: %+v", sc)
+	}
+	c.steering = []queuedSteer{{text: "do the docs instead", from: SteerFromLane}}
+	if msgs := c.drainSteering(); len(msgs) != 1 {
+		t.Fatalf("drained %v", msgs)
+	}
+	if sc := c.stepCount(); sc.Total != 2 {
+		t.Fatalf("the old list should stand until a new one is declared: %+v", sc)
+	}
+	c.noteSteps("1. Docs\n2. Changelog\n3. Release note", true)
+	if sc := c.stepCount(); sc.Total != 3 || sc.Current != "Docs" {
+		t.Fatalf("the steered child's list = %+v, want 0 of 3 on the docs", sc)
+	}
+}

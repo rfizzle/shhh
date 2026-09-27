@@ -148,3 +148,39 @@ func TestWorkSteps_ANewTurnMayDeclareAgain(t *testing.T) {
 		t.Fatalf("the new turn's list = %+v", s)
 	}
 }
+
+// A steer moves the turn onto the task the person gave, so the first message
+// after it that goes on to a call may declare a list of its own — from the
+// reader's box or from another session — while a machine message the
+// session queued for itself is no new task and opens nothing.
+func TestWorkSteps_ASteerMayDeclareAgain(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		item  steeringItem
+		fresh bool
+	}{
+		{"typed", steeringItem{text: "leave the loop, do the docs"}, true},
+		{"sent", steeringItem{text: "leave the loop, do the docs", sent: true, from: "other"}, true},
+		{"machine", steeringItem{text: "a note the session wrote", machine: true}, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			m := progressModel(t, mockStream)
+			m = callRound(t, m, "1. Read\n2. Patch")
+			m.steering = []steeringItem{tc.item}
+			if !m.injectSteering() {
+				t.Fatal("the steer was not injected")
+			}
+			if s := stepsOnRail(m); s == nil || s.Total != 2 {
+				t.Fatalf("the last list should stand until a new one is declared, got %+v", s)
+			}
+			m = callRound(t, m, "1. Docs\n2. Changelog\n3. Release note")
+			s := stepsOnRail(m)
+			if tc.fresh && (s == nil || *s != (components.InspectorSteps{Total: 3, Current: "Docs"})) {
+				t.Fatalf("the steered turn's list = %+v, want 0 of 3 on the docs", s)
+			}
+			if !tc.fresh && (s == nil || s.Total != 2) {
+				t.Fatalf("a machine message opened a fresh list: %+v", s)
+			}
+		})
+	}
+}

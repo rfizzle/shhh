@@ -1727,6 +1727,14 @@ func (c *child) drainSteering() []string {
 	c.mu.Lock()
 	queued := c.steering
 	c.steering = nil
+	// Every drained steer joins the conversation as the person's words and
+	// widens what the child is judged against, so it is a task the child's
+	// working list was not written for: the next message that goes on to a
+	// call may declare another, and until one does the old list stands
+	// (steps.go).
+	if len(queued) > 0 {
+		c.own.Reopen()
+	}
 	// The round the receipt states, off the agent this goroutine drives —
 	// the same counter pos reads. Nil is a child with no attempt running,
 	// which has nothing queued to drain.

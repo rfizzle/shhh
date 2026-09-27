@@ -626,9 +626,10 @@ changed in numbered lines is not a plan. It is taken once: a later numbered
 list is text unless it stands under `steps:`, and then it replaces the
 unfinished steps while the finished ones stay finished, the new ones numbered
 after them. The explicit marker is the whole difference between a revision
-and a list of files, which is why a revision needs it. A new instruction may
-declare a fresh list in its first message that goes on to a call; until it
-does, the last list stands.
+and a list of files, which is why a revision needs it. A new instruction —
+a steer into a running turn included, since it moves what the turn is judged
+against — may declare a fresh list in its first message that goes on to a
+call; until it does, the last list stands.
 
 A line is the whole mechanism, never a tool: the list is the agent's own
 account of its work, written in the messages the work is written in, and a
