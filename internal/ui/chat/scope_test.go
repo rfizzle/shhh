@@ -244,3 +244,31 @@ func transcriptText(m Model) string {
 	}
 	return b.String()
 }
+
+// /permissions describes the session's containment: a grant of the checkout
+// is on the writers' line and out of the session's scope, so the summary
+// does not count it as a directory the session added.
+// See docs/capabilities/subagents.md#a-child-inherits-its-scope-not-more.
+func TestPermissionsNameACheckoutGrantForWriters(t *testing.T) {
+	root := t.TempDir()
+	m := scopedModel(t, root, agent.ModeManual)
+	m.scopeCommand([]string{"/add-dir", root})
+
+	grants := m.grantStatus()
+	if strings.Contains(grants, "  scope      ") {
+		t.Fatalf("/permissions grants listed the checkout as the session's own scope:\n%s", grants)
+	}
+	if !strings.Contains(grants, "  writers    ") || !strings.Contains(grants, "for writers") {
+		t.Fatalf("/permissions grants did not name the checkout for writers:\n%s", grants)
+	}
+	help := m.policyHelp()
+	if strings.Contains(help, "added directory") {
+		t.Fatalf("/permissions counted the checkout as an added directory:\n%s", help)
+	}
+	if !strings.Contains(help, "granted for writers") {
+		t.Fatalf("/permissions did not name the checkout's grant for writers:\n%s", help)
+	}
+	if got := scopeDropArgs(&m); len(got) != 1 {
+		t.Fatalf("/add-dir drop should still offer the checkout's grant, got %v", got)
+	}
+}

@@ -745,6 +745,9 @@ func (m Model) policySection() helpSection {
 	} else if m.scope != nil {
 		row("scope", "the session directory; anything outside it asks (/add-dir)")
 	}
+	if n := len(m.writerDirs()); n > 0 {
+		row("", fmt.Sprintf("%d %s inside it granted for writers (/add-dir)", n, plural2(n, "directory", "directories")))
+	}
 	if m.subagents != nil {
 		row("", "sub-agents inherit this mode, these grants, and the classifier")
 	}
@@ -758,11 +761,26 @@ const policyHeadWidth = 11
 
 // scopeDirs is what the session has added to its working scope, or nothing
 // when the session has no scope wired (older tests, `shhh chat` without one).
+// It is Beyond, the set the session's containment writes to: a grant of the
+// checkout widens only a writer's scope and is writerDirs instead.
+// See docs/capabilities/subagents.md#a-child-inherits-its-scope-not-more.
 func (m Model) scopeDirs() []string {
 	if m.scope == nil {
 		return nil
 	}
-	return m.scope.Dirs()
+	return m.scope.Beyond()
+}
+
+// writerDirs are the granted directories inside the session's own checkout:
+// recorded for writers, and nothing the session did not already have.
+func (m Model) writerDirs() []string {
+	var out []string
+	for _, d := range m.scope.Dirs() {
+		if m.scope.InRoot(d) {
+			out = append(out, d)
+		}
+	}
+	return out
 }
 
 // plural2 picks between two spellings for a count, where "dir"/"dirs" will
@@ -789,7 +807,7 @@ func allowlistMatches(allowlist []string, command string) bool {
 func (m Model) grantStatus() string {
 	g := m.grants()
 	if !g.Any() && !m.policy.turn.Any() && len(m.policy.roles) == 0 && len(m.policy.allowlist) == 0 && len(m.policy.denylist) == 0 &&
-		len(m.policy.allowHosts) == 0 && len(m.policy.denyHosts) == 0 && len(m.scopeDirs()) == 0 {
+		len(m.policy.allowHosts) == 0 && len(m.policy.denyHosts) == 0 && len(m.scopeDirs()) == 0 && len(m.writerDirs()) == 0 {
 		return "nothing is granted — every gated call asks.\n" +
 			"[a] on a confirm prompt offers the grants that call can make, each with when it ends; /permissions allow <commands|edits> grants the category"
 	}
@@ -819,6 +837,9 @@ func (m Model) grantStatus() string {
 	}
 	for _, d := range m.scopeDirs() {
 		sb.WriteString("  scope      " + displayDir(d) + " — in the working scope (/add-dir drop takes it back)\n")
+	}
+	for _, d := range m.writerDirs() {
+		sb.WriteString("  writers    " + displayDir(d) + " — for writers; the session already had it (/add-dir drop takes it back)\n")
 	}
 	if n := len(m.policy.allowlist); n > 0 {
 		fmt.Fprintf(&sb, "  config     %s from behavior.command_allowlist — not this session's to revoke\n", plural(n, "command pattern"))

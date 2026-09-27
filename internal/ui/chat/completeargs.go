@@ -237,7 +237,9 @@ func modelArgs(m *Model) []argOption {
 // scope — the only ones /add-dir drop can take back, since the
 // session's own directory is never dropped.
 func scopeDropArgs(m *Model) []argOption {
-	dirs := m.scopeDirs()
+	// Dirs rather than scopeDirs: a grant of the checkout for writers is
+	// dropped by the same command.
+	dirs := m.scope.Dirs()
 	out := make([]argOption, 0, len(dirs))
 	for _, d := range dirs {
 		out = append(out, argOption{value: d, desc: "stop the session writing here"})

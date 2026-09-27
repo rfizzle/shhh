@@ -385,17 +385,31 @@ func scopeReport(sc *scope.Scope) string {
 	r := report.Report{Title: "/sandbox scope", Sections: []report.Section{{
 		Pairs: []report.Pair{{Key: "root", Value: sc.Root()}},
 	}}}
-	dirs := sc.Dirs()
+	// The added list is what the session's containment writes to, which is
+	// Beyond: a grant of the checkout was always in the session's scope and
+	// is recorded for writers, so it is named on a line of its own rather
+	// than as a widening of this session's.
+	// See docs/capabilities/subagents.md#a-child-inherits-its-scope-not-more.
+	dirs := sc.Beyond()
+	var writers []report.Row
+	for _, dir := range sc.Dirs() {
+		if sc.InRoot(dir) {
+			writers = append(writers, report.Row{State: report.Pass, Subject: dir, Detail: "the session already had it"})
+		}
+	}
 	if len(dirs) == 0 {
 		r.Sections = append(r.Sections, report.Section{Rows: []report.Row{
 			report.Empty("nothing added to the scope", "/add-dir <path> puts a directory in it")}})
-		return r.String()
+	} else {
+		rows := make([]report.Row, 0, len(dirs))
+		for _, dir := range dirs {
+			rows = append(rows, report.Row{State: report.Pass, Subject: dir})
+		}
+		r.Sections = append(r.Sections, report.Section{Header: "ADDED", Rows: rows})
 	}
-	rows := make([]report.Row, 0, len(dirs))
-	for _, dir := range dirs {
-		rows = append(rows, report.Row{State: report.Pass, Subject: dir})
+	if len(writers) > 0 {
+		r.Sections = append(r.Sections, report.Section{Header: "FOR WRITERS", Rows: writers})
 	}
-	r.Sections = append(r.Sections, report.Section{Header: "ADDED", Rows: rows})
 	return r.String()
 }
 

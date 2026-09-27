@@ -502,3 +502,39 @@ func TestChildContainedCommandWritesIntoAGrantedCheckout(t *testing.T) {
 		t.Fatalf("the session's containment would take the root as a grant of its own: %v", got)
 	}
 }
+
+// /sandbox scope lists what the session's containment writes to: a grant of
+// the checkout is named on the writers' line and never among the session's
+// own additions, where a grant outside it still is.
+// See docs/capabilities/subagents.md#a-child-inherits-its-scope-not-more.
+func TestScopeReportNamesACheckoutGrantForWriters(t *testing.T) {
+	root, outside := t.TempDir(), t.TempDir()
+	sc, errs := scope.New(root)
+	if len(errs) > 0 {
+		t.Fatalf("scope: %v", errs)
+	}
+	if _, err := sc.Add(root); err != nil {
+		t.Fatalf("granting the checkout: %v", err)
+	}
+	out := scopeReport(sc)
+	if strings.Contains(out, "ADDED") || !strings.Contains(out, "nothing added to the scope") {
+		t.Fatalf("a grant of the checkout was listed as an addition to the session's scope:\n%s", out)
+	}
+	if !strings.Contains(out, "FOR WRITERS") {
+		t.Fatalf("a grant of the checkout was not named for writers:\n%s", out)
+	}
+
+	if _, err := sc.Add(outside); err != nil {
+		t.Fatalf("granting %s: %v", outside, err)
+	}
+	out = scopeReport(sc)
+	added, writers, ok := strings.Cut(out, "FOR WRITERS")
+	// The rows clip at the fallback width, so the two temporary paths are
+	// told apart by count: one row under each heading.
+	if !ok || !strings.Contains(added, "ADDED") || strings.Count(added, "✓") != 1 {
+		t.Fatalf("a grant outside the checkout was not listed as added:\n%s", out)
+	}
+	if strings.Count(writers, "✓") != 1 {
+		t.Fatalf("a grant outside the checkout was named for writers:\n%s", out)
+	}
+}
