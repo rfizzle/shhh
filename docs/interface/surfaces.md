@@ -1277,24 +1277,37 @@ inverted: the approval classifier
 because a wrong yes is unsafe, and the summariser fails soft because a status
 block that vanishes when one request times out is a block nobody trusts again.
 
-**Every reading is also a transcript row.** The rail holds one reading and
-bounds it to three lines, which is what a rail is for — it is a column of
-standing status, and a block that grew would push the counts under it off the
-screen. But a longer reading is then a sentence nobody can finish, and the
-reading before it is gone entirely. So each reading lands in the activity feed
-as one folded row as well: closed it is the round it was taken at, its verdict
-and how many lines opening it costs; opened it is the reading whole, the
-verdict in the same marks the rail uses, the reason behind a departure, and
-the instruction the verdict was reached against — the last of which the rail
-never had room for at all.
+**A reading with something to say is also a transcript row.** The rail holds
+one reading and bounds it to three lines, which is what a rail is for — it is
+a column of standing status, and a block that grew would push the counts under
+it off the screen. But a longer reading is then a sentence nobody can finish,
+and a reading that interrupted the turn is the reason for the steer below it.
+So those readings land in the activity feed as one folded row as well: closed
+it is the round it was taken at, its verdict and how many lines opening it
+costs; opened it is the reading whole, the verdict in the same marks the rail
+uses, the reason behind a departure, and the instruction the verdict was
+reached against — the last of which the rail never had room for at all.
 
-It is every reading rather than the latest one because the readings in order
-are the run's own account of itself. What it believed it was doing at round 6
-and again at round 24 is then a thing the transcript can be scrolled for,
-which is the reconstruction the rail exists to remove and could only ever
-perform for the present moment. A failed reading still writes nothing: the
-rail keeps what it had, and a line reporting that one request timed out is not
-news.
+A quiet reading gets no row. It is quiet when its verdict is on target or
+unclear — the two that never interrupt a turn — and the rail's block draws it
+whole at the narrowest the rail is ever drawn. Such a reading is already said
+in full where it belongs: at 130 columns and wider it is the rail's block,
+below that its verdict is the frame's status row (`· target unclear · as of
+round 2`) and its text is on `/status`. A row under every close carrying the
+same verdict a second time is the feed telling the reader nothing, once a
+turn. A reading that went off target, found the run has what it needs, or is
+longer than the rail's bound always gets its row, which stays the one place a
+long reading is read whole and the record of what a steer was earned by —
+including one the reader then took back. This is drawing, not recording: the
+session's record files every reading, quiet or not.
+
+The rows are every such reading rather than the latest one because those
+readings in order are the run's own account of where it went wrong or was
+done. What it believed it was doing at round 6 and again at round 24 is then a
+thing the transcript can be scrolled for, which is the reconstruction the rail
+exists to remove and could only ever perform for the present moment. A failed
+reading still writes nothing: the rail keeps what it had, and a line reporting
+that one request timed out is not news.
 
 ### The agent manager
 

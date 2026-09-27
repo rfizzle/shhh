@@ -44,9 +44,11 @@ package chat
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/digest"
 	"github.com/rfizzle/shhh/internal/observe"
@@ -326,15 +328,15 @@ func (m *Model) finishSummary(msg summaryDoneMsg) bool {
 	m.signal(observe.SignalSummary, observe.SummaryCode(v.State))
 	m.summary.last = &v
 	m.summary.schedule.Read(v.Round)
-	// The row goes in before the verdict is considered: an off-target reading
-	// queues an interruption, and the row that explains the interruption has
-	// to be above it in the transcript rather than after it.
-	rowed := m.appendSummaryRow(v)
 	// A reading that says the run has drifted, or that it has what it needs,
 	// is the one thing a summary does besides being read. It only ever queues
 	// here; the round boundary delivers it (intervene.go).
 	m.considerVerdict(v)
-	return rowed
+	// The row is decided once the verdict has been weighed, since whether the
+	// reading earned an interruption is part of whether it has anything to
+	// say. It still lands above the interruption it explains: a queued one is
+	// delivered at the next round boundary, never here.
+	return m.appendSummaryRow(v)
 }
 
 // countSummarySpend records what a reading cost against the summary's own
@@ -664,19 +666,20 @@ func truncateRunes(s string, limit int) string {
 // three lines is then a sentence nobody can finish, and the reading before it
 // is gone entirely: the rail holds one, and only the current one.
 //
-// So every landed reading also lands in the transcript as one folded activity
-// row, the way a round's reasoning does (think.go). Folded it is a line: the
-// round it was taken at, its verdict, and how many lines opening it costs.
-// Opened it is the whole reading, the verdict in the rail's own marks, the
-// reason behind a departure, and the instruction it was judged against — the
-// last of which the rail never had room for at all and only `/status` could
-// answer.
+// So a landed reading with something to say also lands in the transcript as
+// one folded activity row, the way a round's reasoning does (think.go); a
+// quiet one the rail already draws whole does not (quietReading, below).
+// Folded it is a line: the round it was taken at, its verdict, and how many
+// lines opening it costs. Opened it is the whole reading, the verdict in the
+// rail's own marks, the reason behind a departure, and the instruction it was
+// judged against — the last of which the rail never had room for at all and
+// only `/status` could answer.
 //
 // It is a row rather than a block for the reason everything else is: one
-// grid. And it is every reading rather than the last one because the readings
-// in order are the run's own account of itself — what it thought it was doing
-// at round 6 and again at round 24 is a thing the transcript can now be
-// scrolled for, which is exactly the reconstruction the rail exists to
+// grid. And it is every such reading rather than the last one because the
+// readings in order are the run's own account of itself — what it thought it
+// was doing at round 6 and again at round 24 is a thing the transcript can
+// now be scrolled for, which is exactly the reconstruction the rail exists to
 // remove and could only ever do for the present moment.
 
 // summaryReading is what an entrySummary row holds: the verdict as it landed
@@ -705,10 +708,10 @@ const summaryReasonIndent = 2
 // would bury the reading.
 const summaryReadAgainstChars = 120
 
-// appendSummaryRow puts a landed reading in the transcript. It reports
-// whether it did, because the caller is the only thing that will repaint the
-// transcript for it — a reading arrives out of band, with no stream behind it
-// owing a frame.
+// appendSummaryRow puts a landed reading in the transcript when it has
+// something to say there. It reports whether it did, because the caller is
+// the only thing that will repaint the transcript for it — a reading arrives
+// out of band, with no stream behind it owing a frame.
 func (m *Model) appendSummaryRow(v agent.SummaryVerdict) bool {
 	if strings.TrimSpace(v.Text) == "" {
 		// A reading with no words is not a reading. The rail declines to
@@ -716,8 +719,51 @@ func (m *Model) appendSummaryRow(v agent.SummaryVerdict) bool {
 		// be a fold over nothing.
 		return false
 	}
+	if quietReading(v) {
+		return false
+	}
 	m.appendEntry(entry{kind: entrySummary, reading: &summaryReading{verdict: v, target: m.summaryTarget}})
 	return true
+}
+
+// quietReading reports whether a reading is already said in full everywhere
+// it is drawn, and so earns no transcript row. It is quiet when its verdict
+// is on target or unclear — the two agent.ConsiderVerdict never queues an
+// interruption for, so there is no steer below it for a row to explain — and
+// the rail's SUMMARY block draws its words whole. Anything else keeps the
+// row, which stays the one place a long reading is read whole and the record
+// of what an interruption was earned by. Below the rail's threshold the
+// verdict is on the status row and the text on /status, so a quiet reading
+// is not lost there either. This is drawing, not recording: the record files
+// every reading in finishSummary whether it rows or not
+// (docs/interface/surfaces.md#the-session-summary).
+func quietReading(v agent.SummaryVerdict) bool {
+	switch v.State {
+	case agent.SummaryOnTarget, agent.SummaryUncertain:
+	default:
+		return false
+	}
+	return railDrawsWhole(v.Text)
+}
+
+// railDrawsWhole reports whether the rail's SUMMARY block draws text without
+// clipping it, asked of the block itself so its bound is read where it is
+// decided rather than copied here. It is asked at the narrowest rail there is,
+// so the answer holds at every width the rail can be drawn at: a reading the
+// transcript declined cannot be clipped by a later resize.
+func railDrawsWhole(text string) bool {
+	rail := components.InspectorRail{Summary: &components.InspectorSummary{Text: text}}
+	lines := rail.Lines(components.InspectorWidth, 0)
+	// The heading first and the verdict's row last; between them, the
+	// reading as the rail wrapped it.
+	if len(lines) < 3 {
+		return false
+	}
+	var drawn []string
+	for _, line := range lines[1 : len(lines)-1] {
+		drawn = append(drawn, strings.Fields(ansi.Strip(line))...)
+	}
+	return slices.Equal(drawn, strings.Fields(text))
 }
 
 // summaryRowFor builds the row for a reading at the width it will be drawn

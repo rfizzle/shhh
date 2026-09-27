@@ -3,6 +3,7 @@ package chat
 import (
 	"context"
 	"errors"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -11,7 +12,9 @@ import (
 	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/meter"
+	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
 // readingProvider answers every summary request with a scripted reading (or
@@ -566,22 +569,109 @@ func summaryRowEntry(v agent.SummaryVerdict, target string) entry {
 	return entry{kind: entrySummary, reading: &summaryReading{verdict: v, target: target}}
 }
 
-// Every reading lands in the transcript, so the readings of a long turn are
-// a record that can be scrolled back to rather than one block the next
-// reading overwrites.
-func TestSummaryRow_EveryReadingLandsInTheTranscript(t *testing.T) {
-	m := summaryModel(t, &readingProvider{text: "Reading the loop."})
-	for i := 0; i < 3; i++ {
-		m = applyReading(t, m)
-	}
+// summaryRows counts the readings the transcript holds.
+func summaryRows(m Model) int {
 	rows := 0
 	for _, e := range m.transcript {
 		if e.kind == entrySummary {
 			rows++
 		}
 	}
-	if rows != 3 {
+	return rows
+}
+
+// Every reading with something to say lands in the transcript, so the
+// readings of a long turn are a record that can be scrolled back to rather
+// than one block the next reading overwrites.
+func TestSummaryRow_EveryReadingWithSomethingToSayLands(t *testing.T) {
+	m := summaryModel(t, &readingProvider{text: "Rewriting the README.", state: "off_target"})
+	for i := 0; i < 3; i++ {
+		m = applyReading(t, m)
+	}
+	if rows := summaryRows(m); rows != 3 {
 		t.Fatalf("three readings, %d rows", rows)
+	}
+}
+
+// A quiet reading — on target or unclear, and short enough for the rail to
+// draw whole — is said in full on the rail and by the status row's verdict,
+// so a row under it would be the same words a second time. It is still the
+// reading on screen and still in the record: this is drawing, not recording.
+func TestSummaryRow_AQuietReadingLandsNoRow(t *testing.T) {
+	for _, state := range []string{"on_target", "unclear"} {
+		t.Run(state, func(t *testing.T) {
+			m := summaryModel(t, &readingProvider{text: "Reading the loop.", state: state})
+			var signals []string
+			m = m.WithObserver(observe.Observer{Signal: func(_ observe.Pos, code, reason string) {
+				signals = append(signals, code+":"+reason)
+			}})
+			m.setTurnState(stateStreaming)
+			m = advanceRounds(m, 4)
+			before := len(m.transcript)
+			if m.finishSummary(driveSummaryDone(t, m.forceSummaryCmd())) {
+				t.Fatal("a quiet reading reported a row, and would be owed a repaint it did not need")
+			}
+			if len(m.transcript) != before {
+				t.Fatalf("a quiet reading wrote %d entries", len(m.transcript)-before)
+			}
+			if m.inspectorSummary() == nil {
+				t.Fatal("a quiet reading is still the rail's block")
+			}
+			want := observe.SignalSummary + ":" + observe.SummaryCode(m.summary.last.State)
+			if !slices.Contains(signals, want) {
+				t.Fatalf("signals = %v, want %q: every reading is recorded", signals, want)
+			}
+		})
+	}
+}
+
+// A reading the rail would clip keeps its row whatever its verdict, because
+// the row is the one place a long reading is read whole.
+func TestSummaryRow_AReadingTheRailClipsLands(t *testing.T) {
+	long := strings.Repeat("still reading the loop and touching nothing. ", 6)
+	m := summaryModel(t, &readingProvider{text: long})
+	if m = applyReading(t, m); summaryRows(m) != 1 {
+		t.Fatalf("a reading longer than the rail's bound wrote %d rows", summaryRows(m))
+	}
+}
+
+// A reading that earned an interruption, or says the run has what it needs,
+// is the row the interruption is explained by.
+func TestSummaryRow_AReadingThatSpeaksLands(t *testing.T) {
+	for _, state := range []string{"off_target", "sufficient"} {
+		t.Run(state, func(t *testing.T) {
+			m := verdictModel(t, state)
+			if !m.finishSummary(driveSummaryDone(t, m.forceSummaryCmd())) {
+				t.Fatal("the reading should have reported its row")
+			}
+			if last := m.transcript[len(m.transcript)-1]; last.kind != entrySummary {
+				t.Fatalf("the last entry is kind %v, want the reading", last.kind)
+			}
+		})
+	}
+}
+
+// The rail's bound is read off the block itself, so the two cannot disagree:
+// a reading that fills the block's lines exactly is quiet, and one word more
+// is not.
+func TestSummaryRow_TheRailsBoundIsTheBlocks(t *testing.T) {
+	const word = "loop "
+	text := ""
+	for railDrawsWhole(text + word) {
+		text += word
+	}
+	if text == "" {
+		t.Fatal("the rail draws no reading whole")
+	}
+	draw := func(text string) string {
+		rail := components.InspectorRail{Summary: &components.InspectorSummary{Text: text}}
+		return ansi.Strip(strings.Join(rail.Lines(components.InspectorWidth, 0), "\n"))
+	}
+	if got := draw(text); strings.Contains(got, "…") {
+		t.Fatalf("the longest quiet reading is clipped on the rail:\n%s", got)
+	}
+	if got := draw(text + word); !strings.Contains(got, "…") {
+		t.Fatalf("one word past the bound should be clipped on the rail:\n%s", got)
 	}
 }
 
@@ -657,7 +747,7 @@ func TestSummaryRow_SaysWhatItWasReadAgainst(t *testing.T) {
 // because the next turn moves it and an old row must not claim it was judged
 // against an instruction that did not exist yet.
 func TestSummaryRow_KeepsTheTargetItWasReadAgainst(t *testing.T) {
-	m := summaryModel(t, &readingProvider{text: "Reading the loop."})
+	m := summaryModel(t, &readingProvider{text: "Rewriting the README.", state: "off_target"})
 	m = applyReading(t, m)
 	m.summaryTarget = "something else entirely"
 	last := m.transcript[len(m.transcript)-1]

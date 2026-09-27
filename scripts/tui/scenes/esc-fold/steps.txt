@@ -19,7 +19,7 @@ snap 02-turn "The limit is a checkpoint, not a wall"
 # walks it up the pane, shift+→ opens the row it is on. The draft keeps the
 # keyboard throughout.
 keys S-Up
-keys S-Up S-Up S-Up
+keys S-Up S-Up
 keys S-Right
 keys S-Up
 keys S-Right

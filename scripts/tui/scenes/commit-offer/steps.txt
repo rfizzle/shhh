@@ -28,16 +28,17 @@ keys C-Space
 sleep 0.3
 keys y
 # The close offers nothing until it is selected: the same keys on every turn
-# a session closes would not say which turn they meant.
-snap 03-close "≡ summary" "1 file changed"
+# a session closes would not say which turn they meant. The session's reading
+# of its own run is quiet — an unclear verdict the rail would draw whole — so
+# it leaves no row under the close, and the close is the newest row.
+snap 03-close "1 file changed" "The rounds are capped at the limit now"
 # The pointer selects it from the prompt, mid-sentence: its first press lands
-# on the newest row, the session's reading of its own run, and the second on
-# the close above it, which then draws its offers — review, keep, take back — as the chords that reach
-# them, because the draft below still has the keyboard and a letter offered
-# there is a letter of the sentence being typed.
+# on the close, which then draws its offers — review, keep, take back — as the
+# chords that reach them, because the draft below still has the keyboard and
+# a letter offered there is a letter of the sentence being typed.
 keys "and while you are at it"
 sleep 0.3
-keys S-Up S-Up
+keys S-Up
 snap 03b-selected "[alt+g] commit" "[enter] review turn" "[alt+z] undo turn"
 # So the offer is taken from the prompt, and the sentence is still in the
 # box behind the card.
@@ -55,10 +56,7 @@ keys Escape
 sleep 0.3
 keys C-o
 snap 05-reading "back to the prompt"
-# Reading mode opens on the last row of the turn, which is the reading the
-# session took of its own run; the close is one row above it.
-keys k
-sleep 0.3
+# Reading mode opens on the last row of the turn, which is the close.
 keys g
 snap 06-card "Commit this turn" "README.md changed by you, never staged"
 # The message as a draft under its own rail, with the subject-line budget as

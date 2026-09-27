@@ -170,6 +170,70 @@
   ├─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · ↑41,200 ↓9,800 · $0.51 · gpt-4o ────────────────────────────────────────────────────────────┤  
   ╰─ [ctrl+c] ×2 stop the run · [enter] queues steering · [/] commands ────────────────────────────────────────────────────────╯  
 
+· working · a quiet reading lands · the rail's, not the feed's
+   shhh chat                                                                                                                      
+  ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────  
+  ❯ fix the round limit                                                          │  SUMMARY                       as of round 24  
+  ─────────────────────────────────────────────────────────────────────────────  │  Wiring the round-limit pause into the chat    
+                                                                                 │  model; the sentinel is in and nothing has     
+  ▸ 1  Locate the round accounting ─────────────────────────── ✓ 4 tools   1.2s  │  run the tests yet.                            
+                                                                                 │  ▸ on target                                   
+  ▾ 2  Thread the sentinel through the loop ────────────────── ✗ 2 tools    22s  │                                                
+    ▎✎ edit    internal/agent/loop.go                             1 line   1.1s  │  THIS TURN                             step 2  
+    ▎✗ run     go test ./internal/agent/...                       exit 1    21s  │  0 files this turn · 6 tools                   
+      --- FAIL: TestRoundLimit                                                   │                                                
+                                                                                 │  ALERTS                            1 standing  
+     ✓ Done · 2 steps · 6 tools · 24.7s · $0.14                                  │   ✗ go test  exit 1                    turn 1  
+    ▎✎ 1 file changed +12 −4                                 all tracked in git  │                                                
+     ✗ go test ./internal/agent/... failing · exit 1 · 21s                       │  CONTEXT                          32% of 128k  
+                                                                                 │  ▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱                   41k  
+                                                                                 │                                  ↑41.2k ↓9.8k  
+                                                                                 │                                                
+                                                                                 │  SPEND                                  $0.51  
+                                                                                 │  gpt-4o · $0.51 main                           
+                                                                                 │  session total $0.51                           
+                                                                                 │                                                
+                                                                                 │                                                
+                                                                                 │                                                
+                                                                                 │                                                
+                                                                                 │                                                
+  ╭─ ⠋ thinking… ──────────────────────────────────────────────────────────────────────────────────────────────────────────────╮  
+  │ ▸                                                                                                                          │  
+  ├─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · ↑41,200 ↓9,800 · $0.51 · gpt-4o ────────────────────────────────────────────────────────────┤  
+  ╰─ [ctrl+c] ×2 stop the run · [enter] queues steering · [/] commands ────────────────────────────────────────────────────────╯  
+
+· working · an off-target reading lands · a row under the close
+   shhh chat                                                                                                                      
+  ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────  
+  ❯ fix the round limit                                                          │  SUMMARY                       as of round 24  
+  ─────────────────────────────────────────────────────────────────────────────  │  Rewriting the README instead of the           
+                                                                                 │  round-limit pause.                            
+  ▸ 1  Locate the round accounting ─────────────────────────── ✓ 4 tools   1.2s  │  ⚠ off target                                  
+                                                                                 │    docs were not asked for                     
+  ▾ 2  Thread the sentinel through the loop ────────────────── ✗ 2 tools    22s  │                                                
+    ▎✎ edit    internal/agent/loop.go                             1 line   1.1s  │  THIS TURN                             step 2  
+    ▎✗ run     go test ./internal/agent/...                       exit 1    21s  │  0 files this turn · 6 tools                   
+      --- FAIL: TestRoundLimit                                                   │                                                
+                                                                                 │  ALERTS                            1 standing  
+     ✓ Done · 2 steps · 6 tools · 24.7s · $0.14                                  │   ✗ go test  exit 1                    turn 1  
+    ▎✎ 1 file changed +12 −4                                 all tracked in git  │                                                
+     ✗ go test ./internal/agent/... failing · exit 1 · 21s                       │  CONTEXT                          32% of 128k  
+                                                                                 │  ▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱                   41k  
+     ≡ summary round 24           ⚠ off target · 1 line · [enter] expand         │                                  ↑41.2k ↓9.8k  
+                                                                                 │                                                
+                                                                                 │  SPEND                                  $0.51  
+                                                                                 │  gpt-4o · $0.51 main                           
+                                                                                 │  session total $0.51                           
+                                                                                 │                                                
+                                                                                 │                                                
+                                                                                 │                                                
+                                                                                 │                                                
+                                                                                 │                                                
+  ╭─ ⠋ thinking… ──────────────────────────────────────────────────────────────────────────────────────────────────────────────╮  
+  │ ▸                                                                                                                          │  
+  ├─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · ↑41,200 ↓9,800 · $0.51 · gpt-4o ────────────────────────────────────────────────────────────┤  
+  ╰─ [ctrl+c] ×2 stop the run · [enter] queues steering · [/] commands ────────────────────────────────────────────────────────╯  
+
 ── ansi ────────────────────────────────────────────────────
 · idle · the turn resolved and the draft has the keyboard
   ␛[97;1m shhh chat␛[m                                                                                                                      
@@ -317,6 +381,70 @@
      ␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/... failing␛[38;5;241m · exit 1 · 21s␛[m                       ␛[38;5;241m│␛[m  ␛[94;1mCONTEXT␛[m                          ␛[92m32% of 128k␛[m  
                                                                                  ␛[38;5;241m│␛[m  ␛[92m▰▰▰▰▰▰▰␛[38;5;241m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m                   ␛[92m41k␛[m  
                                                                                  ␛[38;5;241m│␛[m                                  ␛[38;5;241m↑41.2k ↓9.8k␛[m  
+                                                                                 ␛[38;5;241m│␛[m                                                
+                                                                                 ␛[38;5;241m│␛[m  ␛[94;1mSPEND␛[m                                  ␛[38;5;252m$0.51␛[m  
+                                                                                 ␛[38;5;241m│␛[m  ␛[38;5;241mgpt-4o · $0.51 main␛[m                           
+                                                                                 ␛[38;5;241m│␛[m  ␛[38;5;241msession total $0.51␛[m                           
+                                                                                 ␛[38;5;241m│␛[m                                                
+                                                                                 ␛[38;5;241m│␛[m                                                
+                                                                                 ␛[38;5;241m│␛[m                                                
+                                                                                 ␛[38;5;241m│␛[m                                                
+                                                                                 ␛[38;5;241m│␛[m                                                
+  ␛[38;5;241m╭─␛[m ␛[38;5;205m⠋ thinking…␛[m ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────╮␛[m  
+  ␛[38;5;241m│␛[m ␛[38;5;205;1m▸␛[m ␛[38;5;252m                                                                                                                        ␛[m ␛[38;5;241m│␛[m  
+  ␛[38;5;241m├─␛[m ␛[38;5;214m⏸ manual␛[38;5;243m · ␛[92mctx 32%␛[m ␛[92m▰▰␛[38;5;241m▱▱▱▱▱▱␛[38;5;243m · ↑41,200 ↓9,800 · $0.51 · ␛[38;5;252mgpt-4o␛[m ␛[38;5;241m────────────────────────────────────────────────────────────┤␛[m  
+  ␛[38;5;241m╰─␛[m ␛[94m[ctrl+c]␛[38;5;241m ×2 stop the run · ␛[94m[enter]␛[38;5;241m queues steering · ␛[94m[/]␛[38;5;241m commands␛[m ␛[38;5;241m────────────────────────────────────────────────────────╯␛[m  
+
+· working · a quiet reading lands · the rail's, not the feed's
+  ␛[97;1m shhh chat␛[m                                                                                                                      
+  ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m  
+  ␛[94m❯␛[m ␛[97mfix the round limit␛[m                                                          ␛[38;5;241m│␛[m  ␛[94;1mSUMMARY␛[m                       ␛[38;5;241mas of round 24␛[m  
+  ␛[38;5;243m─────────────────────────────────────────────────────────────────────────────␛[m  ␛[38;5;241m│␛[m  ␛[38;5;252mWiring the round-limit pause into the chat␛[m    
+                                                                                 ␛[38;5;241m│␛[m  ␛[38;5;252mmodel; the sentinel is in and nothing has␛[m     
+  ␛[38;5;241m▸␛[m ␛[38;5;252m1 ␛[m ␛[38;5;252mLocate the round accounting␛[m ␛[38;5;241m───────────────────────────␛[m ␛[92m✓␛[m ␛[38;5;241m4 tools␛[m   ␛[38;5;241m1.2s␛[m  ␛[38;5;241m│␛[m  ␛[38;5;252mrun the tests yet.␛[m                            
+                                                                                 ␛[38;5;241m│␛[m  ␛[38;5;205m▸␛[m ␛[38;5;241mon target␛[m                                   
+  ␛[38;5;241m▾␛[m ␛[38;5;252m2 ␛[m ␛[38;5;252mThread the sentinel through the loop␛[m ␛[38;5;241m──────────────────␛[m ␛[91m✗␛[m ␛[38;5;241m2 tools␛[m    ␛[38;5;241m22s␛[m  ␛[38;5;241m│␛[m                                                
+    ␛[38;5;214m▎✎␛[m ␛[38;5;252medit␛[m    ␛[38;5;252minternal/agent/loop.go␛[m                             ␛[38;5;245m1 line␛[m   ␛[38;5;241m1.1s␛[m  ␛[38;5;241m│␛[m  ␛[94;1mTHIS TURN␛[m                             ␛[38;5;241mstep 2␛[m  
+    ␛[91m▎✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgo test ./internal/agent/...␛[m                       ␛[91mexit 1␛[m    ␛[38;5;241m21s␛[m  ␛[38;5;241m│␛[m  ␛[38;5;241m0 files this turn · 6 tools␛[m                   
+      ␛[38;5;245m--- FAIL: TestRoundLimit␛[m                                                   ␛[38;5;241m│␛[m                                                
+                                                                                 ␛[38;5;241m│␛[m  ␛[94;1mALERTS␛[m                            ␛[91m1 standing␛[m  
+     ␛[92m✓␛[m ␛[38;5;252mDone␛[38;5;241m · 2 steps · 6 tools · 24.7s · $0.14␛[m                                  ␛[38;5;241m│␛[m   ␛[91m✗␛[m ␛[38;5;252mgo test␛[m  ␛[38;5;241mexit 1␛[m                    ␛[38;5;241mturn 1␛[m  
+    ␛[38;5;214m▎✎␛[m ␛[38;5;252m1 file changed ␛[92m+12␛[m ␛[91m−4␛[m                                 ␛[38;5;241mall tracked in git␛[m  ␛[38;5;241m│␛[m                                                
+     ␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/... failing␛[38;5;241m · exit 1 · 21s␛[m                       ␛[38;5;241m│␛[m  ␛[94;1mCONTEXT␛[m                          ␛[92m32% of 128k␛[m  
+                                                                                 ␛[38;5;241m│␛[m  ␛[92m▰▰▰▰▰▰▰␛[38;5;241m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m                   ␛[92m41k␛[m  
+                                                                                 ␛[38;5;241m│␛[m                                  ␛[38;5;241m↑41.2k ↓9.8k␛[m  
+                                                                                 ␛[38;5;241m│␛[m                                                
+                                                                                 ␛[38;5;241m│␛[m  ␛[94;1mSPEND␛[m                                  ␛[38;5;252m$0.51␛[m  
+                                                                                 ␛[38;5;241m│␛[m  ␛[38;5;241mgpt-4o · $0.51 main␛[m                           
+                                                                                 ␛[38;5;241m│␛[m  ␛[38;5;241msession total $0.51␛[m                           
+                                                                                 ␛[38;5;241m│␛[m                                                
+                                                                                 ␛[38;5;241m│␛[m                                                
+                                                                                 ␛[38;5;241m│␛[m                                                
+                                                                                 ␛[38;5;241m│␛[m                                                
+                                                                                 ␛[38;5;241m│␛[m                                                
+  ␛[38;5;241m╭─␛[m ␛[38;5;205m⠋ thinking…␛[m ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────╮␛[m  
+  ␛[38;5;241m│␛[m ␛[38;5;205;1m▸␛[m ␛[38;5;252m                                                                                                                        ␛[m ␛[38;5;241m│␛[m  
+  ␛[38;5;241m├─␛[m ␛[38;5;214m⏸ manual␛[38;5;243m · ␛[92mctx 32%␛[m ␛[92m▰▰␛[38;5;241m▱▱▱▱▱▱␛[38;5;243m · ↑41,200 ↓9,800 · $0.51 · ␛[38;5;252mgpt-4o␛[m ␛[38;5;241m────────────────────────────────────────────────────────────┤␛[m  
+  ␛[38;5;241m╰─␛[m ␛[94m[ctrl+c]␛[38;5;241m ×2 stop the run · ␛[94m[enter]␛[38;5;241m queues steering · ␛[94m[/]␛[38;5;241m commands␛[m ␛[38;5;241m────────────────────────────────────────────────────────╯␛[m  
+
+· working · an off-target reading lands · a row under the close
+  ␛[97;1m shhh chat␛[m                                                                                                                      
+  ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m  
+  ␛[94m❯␛[m ␛[97mfix the round limit␛[m                                                          ␛[38;5;241m│␛[m  ␛[94;1mSUMMARY␛[m                       ␛[38;5;241mas of round 24␛[m  
+  ␛[38;5;243m─────────────────────────────────────────────────────────────────────────────␛[m  ␛[38;5;241m│␛[m  ␛[38;5;252mRewriting the README instead of the␛[m           
+                                                                                 ␛[38;5;241m│␛[m  ␛[38;5;252mround-limit pause.␛[m                            
+  ␛[38;5;241m▸␛[m ␛[38;5;252m1 ␛[m ␛[38;5;252mLocate the round accounting␛[m ␛[38;5;241m───────────────────────────␛[m ␛[92m✓␛[m ␛[38;5;241m4 tools␛[m   ␛[38;5;241m1.2s␛[m  ␛[38;5;241m│␛[m  ␛[38;5;214m⚠␛[m ␛[38;5;252moff target␛[m                                  
+                                                                                 ␛[38;5;241m│␛[m    ␛[38;5;241mdocs were not asked for␛[m                     
+  ␛[38;5;241m▾␛[m ␛[38;5;252m2 ␛[m ␛[38;5;252mThread the sentinel through the loop␛[m ␛[38;5;241m──────────────────␛[m ␛[91m✗␛[m ␛[38;5;241m2 tools␛[m    ␛[38;5;241m22s␛[m  ␛[38;5;241m│␛[m                                                
+    ␛[38;5;214m▎✎␛[m ␛[38;5;252medit␛[m    ␛[38;5;252minternal/agent/loop.go␛[m                             ␛[38;5;245m1 line␛[m   ␛[38;5;241m1.1s␛[m  ␛[38;5;241m│␛[m  ␛[94;1mTHIS TURN␛[m                             ␛[38;5;241mstep 2␛[m  
+    ␛[91m▎✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgo test ./internal/agent/...␛[m                       ␛[91mexit 1␛[m    ␛[38;5;241m21s␛[m  ␛[38;5;241m│␛[m  ␛[38;5;241m0 files this turn · 6 tools␛[m                   
+      ␛[38;5;245m--- FAIL: TestRoundLimit␛[m                                                   ␛[38;5;241m│␛[m                                                
+                                                                                 ␛[38;5;241m│␛[m  ␛[94;1mALERTS␛[m                            ␛[91m1 standing␛[m  
+     ␛[92m✓␛[m ␛[38;5;252mDone␛[38;5;241m · 2 steps · 6 tools · 24.7s · $0.14␛[m                                  ␛[38;5;241m│␛[m   ␛[91m✗␛[m ␛[38;5;252mgo test␛[m  ␛[38;5;241mexit 1␛[m                    ␛[38;5;241mturn 1␛[m  
+    ␛[38;5;214m▎✎␛[m ␛[38;5;252m1 file changed ␛[92m+12␛[m ␛[91m−4␛[m                                 ␛[38;5;241mall tracked in git␛[m  ␛[38;5;241m│␛[m                                                
+     ␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/... failing␛[38;5;241m · exit 1 · 21s␛[m                       ␛[38;5;241m│␛[m  ␛[94;1mCONTEXT␛[m                          ␛[92m32% of 128k␛[m  
+                                                                                 ␛[38;5;241m│␛[m  ␛[92m▰▰▰▰▰▰▰␛[38;5;241m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m                   ␛[92m41k␛[m  
+     ␛[38;5;241m≡␛[m ␛[38;5;252msummary␛[m ␛[38;5;252mround 24␛[m           ␛[38;5;241m⚠ off target · ␛[38;5;245m1 line␛[38;5;241m · ␛[94m[enter] expand␛[m         ␛[38;5;241m│␛[m                                  ␛[38;5;241m↑41.2k ↓9.8k␛[m  
                                                                                  ␛[38;5;241m│␛[m                                                
                                                                                  ␛[38;5;241m│␛[m  ␛[94;1mSPEND␛[m                                  ␛[38;5;252m$0.51␛[m  
                                                                                  ␛[38;5;241m│␛[m  ␛[38;5;241mgpt-4o · $0.51 main␛[m                           

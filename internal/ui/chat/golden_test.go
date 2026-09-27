@@ -2134,8 +2134,30 @@ func TestGolden_StatusRow(t *testing.T) {
 				}
 			})},
 			{Label: "the row in its slot, between the notices and the box", View: statusRowModel(t, width).renderPromptFrame()},
+			// A reading landing the way a session lands one. The quiet one
+			// is said here and on /status and nowhere in the feed; the one
+			// that queues a steer is said here and by a row of its own
+			// (docs/interface/surfaces.md#the-session-summary).
+			{Label: "a quiet reading lands · its verdict is this row's and the feed's is nothing", View: build(func(m *Model) {
+				m.state = stateStreaming
+				landReading(m, agent.SummaryVerdict{Text: "Reading the loop.", State: agent.SummaryUncertain, Round: 2})
+			})},
+			{Label: "an off-target reading lands · its verdict here and a row in the feed", View: build(func(m *Model) {
+				m.state = stateStreaming
+				landReading(m, agent.SummaryVerdict{
+					Text: "Rewriting the README.", State: agent.SummaryOffTarget,
+					Reason: "docs were not asked for", Round: 9,
+				})
+			})},
 		}
 	})
+}
+
+// landReading lands a reading through the path a session's own takes, so a
+// capture of it draws whatever that path decided to draw.
+func landReading(m *Model, v agent.SummaryVerdict) {
+	m.summary.inFlight = true
+	m.finishSummary(summaryDoneMsg{runID: m.summary.runID, gen: m.summary.gen, verdict: v})
 }
 
 // screenWidths adds the rungs the standing widths do not land on and two
@@ -2265,6 +2287,34 @@ func TestGolden_Screen(t *testing.T) {
 					Model: "fast",
 				}
 				m.summary.schedule.Read(24)
+			})},
+			// The same reading landing, and the one that earns a steer: the
+			// quiet one is the rail's block at 130 and the status row below
+			// it, with nothing added under the close; the other is a row
+			// under the close at every width
+			// (docs/interface/surfaces.md#the-session-summary).
+			{Label: "working · a quiet reading lands · the rail's, not the feed's", View: build(func(m *Model) {
+				m.state = stateStreaming
+				m.streaming = ""
+				m.summarizer = agent.NewSummarizer(&readingProvider{}, agent.SummaryConfig{Model: "fast"})
+				landReading(m, agent.SummaryVerdict{
+					Text:  "Wiring the round-limit pause into the chat model; the sentinel is in and nothing has run the tests yet.",
+					State: agent.SummaryOnTarget,
+					Round: 24,
+					Model: "fast",
+				})
+			})},
+			{Label: "working · an off-target reading lands · a row under the close", View: build(func(m *Model) {
+				m.state = stateStreaming
+				m.streaming = ""
+				m.summarizer = agent.NewSummarizer(&readingProvider{}, agent.SummaryConfig{Model: "fast"})
+				landReading(m, agent.SummaryVerdict{
+					Text:   "Rewriting the README instead of the round-limit pause.",
+					State:  agent.SummaryOffTarget,
+					Reason: "docs were not asked for",
+					Round:  24,
+					Model:  "fast",
+				})
 			})},
 		}
 		// A full-screen surface leaves a hint where the draft box was, and

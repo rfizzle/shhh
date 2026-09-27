@@ -38,11 +38,12 @@ keys y
 # the path.
 snap 03-row "The cap is where the file says it is" "+1 −1 · 1 hunk · approved by you"
 keys C-o
-snap 04-reading "row 5 of 5"
-# The cursor lands on the row most recently put on the pane, so it walks up
-# the pane to the edit — three rows, in the mode's own movement key.
-keys k k k
-snap 05-on-the-edit "row 2 of 5"
+snap 04-reading "row 4 of 4"
+# The cursor lands on the row most recently put on the pane — the close, since
+# the session's quiet reading of its run leaves no row — so it walks up the
+# pane to the edit: two rows, in the mode's own movement key.
+keys k k
+snap 05-on-the-edit "row 2 of 4"
 # The second depth: the change in place under the row it was opened from,
 # indented, bounded to the lines the transcript can spare.
 keys Enter
