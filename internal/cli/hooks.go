@@ -25,6 +25,7 @@ import (
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/hook"
 	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/process"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/runner"
@@ -219,6 +220,34 @@ func hookApprover(r *hook.Runner, at func() hook.Pos, note func(hook.Verdict),
 		post := r.PostTool(ctx, at(), call, out, hook.Outcome(out))
 		note(post)
 		return pre.Lead(post.Lead(out))
+	}
+}
+
+// unattendedHooks is hookApprover for a run with no card to draw — a scripted
+// run and a served session — with the containment refusal answered in front
+// of both seams rather than inside the approver they wrap. A command that must
+// be contained where nothing can contain it has no decision left to make, so
+// it is not handed to a seam that fires the person's pre-tool hook for it: a
+// session answers the refusal before its own hook and a child before its own
+// wrap, and one function here is what keeps both unattended surfaces in that
+// order. The approver keeps its own refusal for a caller that reaches it
+// directly; the text is the same either way.
+// See docs/capabilities/containment.md#containment-can-be-required.
+//
+// A process start is the other way to run a command, and procSup is what says
+// this run has one; a process call that reaches a gated resolver is a start.
+func unattendedHooks(r *hook.Runner, at func() hook.Pos, note func(hook.Verdict),
+	record func(decision, reason string), containRefusal string, procSup *process.Supervisor,
+	next func(provider.ToolCall) string) func(provider.ToolCall) string {
+	seams := hookApprover(r, at, note, record, next)
+	if containRefusal == "" {
+		return seams
+	}
+	return func(tc provider.ToolCall) string {
+		if tc.Name == tools.ExecCommandName || (procSup != nil && tc.Name == process.ToolName) {
+			return containRefusal
+		}
+		return seams(tc)
 	}
 }
 

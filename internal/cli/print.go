@@ -1375,8 +1375,9 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	resolve = own.wrap(resolve)
 	// The hooks go outside the reader of what this run wrote, so a call a
 	// hook refused is not counted as one and a call it rewrote is counted as
-	// the call that ran.
-	resolve = hookApprover(hooks, hookPos(a.Rounds), hookNoteLine, verdict.wrap(obs.decision), resolve)
+	// the call that ran. The containment refusal is answered in front of
+	// them, so a command that can never run fires no hook (hooks.go).
+	resolve = unattendedHooks(hooks, hookPos(a.Rounds), hookNoteLine, verdict.wrap(obs.decision), containRefusal, procSup, resolve)
 	// And outside all of it, what this run actually offered. A name nothing
 	// registered is not a call, so it is not a hook's event and not a path
 	// this run wrote either.

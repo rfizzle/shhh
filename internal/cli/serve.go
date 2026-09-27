@@ -709,7 +709,7 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 		}
 	}
 	resolveCall = own.wrap(resolveCall)
-	resolveCall = hookApprover(hooks, l.hookPos, hookNoteLine, record, resolveCall)
+	resolveCall = unattendedHooks(hooks, l.hookPos, hookNoteLine, record, containment.Refusal, procSup, resolveCall)
 	if c := headlessTree(cfg, session.sibling, own); c != nil {
 		// The boundary re-check asks the same question the write asks, so it
 		// has to ask it of the same record: read from the process-wide one it

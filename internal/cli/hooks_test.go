@@ -16,6 +16,7 @@ import (
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/sandbox"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
@@ -268,6 +269,66 @@ func TestHookApprover_AnAskIsNotSaidAsARefusal(t *testing.T) {
 	}
 	if got != hook.AskedResult("guard") {
 		t.Fatalf("an ask should not read as a refusal: %q", got)
+	}
+}
+
+// A run that requires containment on a host with none answers a command in
+// front of both seams, as a session and a child do: the person's pre-tool hook
+// is never fed a command that can never run. What the model reads is the
+// refusal itself, filed as the harness's, and a call that is not a command
+// still meets the hook.
+// See docs/capabilities/containment.md#containment-can-be-required.
+func TestUnattendedHooks_AContainmentRefusalFiresNoHook(t *testing.T) {
+	refusal := uncontainedRefusal(sandbox.Availability{Detail: "bwrap not found"})
+	for _, c := range []struct {
+		name    string
+		refusal string
+		tool    string
+		pre     int
+		refused bool
+	}{
+		{"a command where nothing contains it", refusal, "execute_command", 0, true},
+		{"a command allowed to run", "", "execute_command", 1, false},
+		{"a fetch where nothing contains commands", refusal, "web_fetch", 1, false},
+	} {
+		pre := 0
+		exec := func(_ context.Context, _ string, stdin []byte) (string, int, error) {
+			var p hook.Payload
+			if err := json.Unmarshal(stdin, &p); err != nil {
+				t.Fatal(err)
+			}
+			if p.Event == hook.PreTool {
+				pre++
+			}
+			return "", 0, nil
+		}
+		set := hook.Load(map[string]hook.Entry{
+			"before": {Event: hook.PreTool, Command: "before"},
+		}, "config.toml", "")
+		r := hook.NewRunner(set, exec, time.Second, "/work")
+		ran := false
+		resolve := unattendedHooks(r, func() hook.Pos { return hook.Pos{Turn: 1} }, hookNoteLine, nil,
+			c.refusal, nil, func(provider.ToolCall) string { ran = true; return "ran" })
+
+		got := resolve(provider.ToolCall{Name: c.tool, Arguments: `{"command":"go build"}`})
+		if pre != c.pre {
+			t.Errorf("%s: the pre-tool seam fired %d times, want %d", c.name, pre, c.pre)
+		}
+		if !c.refused {
+			if !ran || got != "ran" {
+				t.Errorf("%s: should have reached the approver, got %q", c.name, got)
+			}
+			continue
+		}
+		if ran {
+			t.Errorf("%s: a refused command must not reach the approver", c.name)
+		}
+		if got != refusal {
+			t.Errorf("%s: the model should read the refusal unchanged:\n got %q\nwant %q", c.name, got, refusal)
+		}
+		if class := observe.ClassFromResult(got); class != observe.ClassHarnessContainment {
+			t.Errorf("%s: the refusal files as %q, want %q", c.name, class, observe.ClassHarnessContainment)
+		}
 	}
 }
 
