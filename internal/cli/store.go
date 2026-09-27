@@ -17,6 +17,9 @@ import (
 // command is doing, and a command that never touches the store leaves the
 // purge to the next one that does.
 func openStore() (*storage.DB, error) {
+	// Whether a store was here before this launch has to be read before the
+	// open creates one (keysnotice.go).
+	noteStoreBeforeOpen()
 	db, err := storage.Open()
 	if err != nil {
 		return nil, err
