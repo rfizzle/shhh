@@ -1,6 +1,7 @@
-# program test: none — no program test sends a request the provider refuses
-# as a stall; resume_test.go holds the wait's block in-process, and this
-# scene is the route through the built binary
+# program test: TestProgram_AStalledRequestIsWaitedOutAndAnswered
+#
+# The program test drives a 503 into the retry wait through the real
+# program; this scene is the same route through the built binary.
 #
 # A stall on a narrow terminal: the scripted endpoint refuses two requests
 # with a 503, so the session draws the failure row stalled and the retry wait
