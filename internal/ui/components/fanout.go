@@ -583,31 +583,39 @@ func (l FanoutLane) glyph() string        { return l.progressOf().glyph() }
 func (l FanoutLane) outcomeField() string { return l.progressOf().outcomeField() }
 
 // fittedOutcome is as much of the outcome field as this width can carry,
-// which on a lane carrying a verdict is a question of what gives way first.
-// Nothing gives way at all until the name would be squeezed past
+// which is a question of what gives way first. On a lane that names no step,
+// nothing gives way at all until the name would be squeezed past
 // minTargetWidth, the bound an activity row keeps for the same reason: a name
 // clipped to an ellipsis is a lane the reader cannot tell from the one under
-// it, and two children of one profile then read as the same child.
+// it, and two children of one profile then read as the same child. On a
+// running lane that names the step it is on, the costs give way until the
+// growing field holds whole, because what the child is doing is read before
+// what it has spent; past that fittedTarget clips the task and keeps the step.
 //
-// Past that the cost goes before the verdict. What the child spent is
-// bookkeeping, and the manager's row states it for the same child; the
-// verdict is the thing the reader is about to act on and the only part of the
-// field that came out of the child's own words. The verdict goes last of all,
+// The costs go in a fixed order: what the child inherited, the token count,
+// the budget's share, then the tool count. Every one of them is bookkeeping
+// the manager's row states for the same child. The verdict goes last of all,
 // and only where `✓ done` and the word together will not fit — it is still a
-// key away in the report it was read off, which is more than the counts have.
+// key away in the report it was read off, which is more than the costs have.
 func (l FanoutLane) fittedOutcome(width int) string {
 	p := l.progressOf()
-	// What the child inherited goes first of all: it is a fact about how the
-	// child was started, and the manager's row states it for the same child.
-	if p.Inherited > 0 && !fitsBesideName(width, p.outcomeField()) {
+	fits := func() bool { return fitsBesideName(width, p.outcomeField()) }
+	if l.stepTitle() != "" {
+		fits = func() bool { return targetRoom(width, p.outcomeField()) >= lipgloss.Width(l.target()) }
+	}
+	if p.Inherited > 0 && !fits() {
 		p.Inherited = 0
 	}
-	// The budget's share next: the manager's row states it for the same
-	// child, and the step count beside it is the child's own word.
-	if p.BudgetPct > 0 && !fitsBesideName(width, p.outcomeField()) {
+	if p.Spend != "" && !fits() {
+		p.Spend = ""
+	}
+	if p.BudgetPct > 0 && !fits() {
 		p.BudgetPct = 0
 	}
-	if p.ReportVerdict == "" || fitsBesideName(width, p.outcomeField()) {
+	if p.Tools > 0 && !fits() {
+		p.Tools = 0
+	}
+	if p.ReportVerdict == "" || fits() {
 		return p.outcomeField()
 	}
 	if bare := (AgentProgress{State: p.State, Step: p.Step, Steps: p.Steps, Planned: p.Planned,
@@ -616,6 +624,16 @@ func (l FanoutLane) fittedOutcome(width int) string {
 	}
 	p.ReportVerdict = ""
 	return p.outcomeField()
+}
+
+// targetRoom is the width the growing field is left beside an outcome field,
+// by the same arithmetic gridLineWith clips it with.
+func targetRoom(width int, field string) int {
+	room := width - leadWidth - durGap - durWidth
+	if w := lipgloss.Width(field); w > 0 {
+		room -= w + 2
+	}
+	return room
 }
 
 // fitsBesideName reports whether an outcome field of this width leaves the
@@ -634,12 +652,27 @@ func (l FanoutLane) target() string {
 	if l.Task != "" {
 		target += detailSep + l.Task
 	}
-	// The step the child is on goes last, so the field clips it before the
-	// task: it is the row's where-there-is-room fact.
 	if title := l.stepTitle(); title != "" {
 		target += detailSep + title
 	}
 	return target
+}
+
+// fittedTarget is the growing field for this much room. The step the child is
+// on is what the row keeps once the costs have gone, so where the name, the
+// task and the step will not all fit, the task clips between the other two;
+// with no room left for any of the task it goes whole, and the step clips
+// only after that.
+func (l FanoutLane) fittedTarget(room int) string {
+	target, title := l.target(), l.stepTitle()
+	if title == "" || l.Task == "" || lipgloss.Width(target) <= room {
+		return target
+	}
+	tail := detailSep + title
+	if taskRoom := room - lipgloss.Width(l.Name+detailSep) - lipgloss.Width(tail); taskRoom > 1 {
+		return l.Name + detailSep + Clip(l.Task, taskRoom) + tail
+	}
+	return l.Name + tail
 }
 
 // stepTitle is the step a running child with its own plan says it is on,
@@ -665,8 +698,9 @@ func (l FanoutLane) paintTarget(s string) string {
 // blocked child is waiting for, or the first line of a finished child's
 // report — and, under that, the fold the rest of the report is behind.
 func (l FanoutLane) View(width int) string {
-	lines := []string{gridLineWith(fanoutLead(l.glyph(), l.Depth), l.target(), l.paintTarget,
-		l.fittedOutcome(width), l.Elapsed, width)}
+	outcome := l.fittedOutcome(width)
+	lines := []string{gridLineWith(fanoutLead(l.glyph(), l.Depth), l.fittedTarget(targetRoom(width, outcome)),
+		l.paintTarget, outcome, l.Elapsed, width)}
 	if note := l.note(); note != "" {
 		lines = append(lines, indented(note, detailIndent, width))
 	}

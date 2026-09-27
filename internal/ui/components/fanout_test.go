@@ -673,8 +673,8 @@ func TestFanoutLaneCarriesTheReviewVerdict(t *testing.T) {
 	if !strings.Contains(tight, "approve with changes") {
 		t.Fatalf("the cost should give way before the verdict: %q", tight)
 	}
-	if strings.Contains(tight, "9 tools") {
-		t.Fatalf("both the cost and the verdict cannot fit here: %q", tight)
+	if strings.Contains(tight, "$0.03") {
+		t.Fatalf("the spend cannot fit beside the verdict here: %q", tight)
 	}
 	narrow := ansi.Strip(costly.View(60))
 	if strings.Contains(narrow, "approve with changes") {
@@ -764,5 +764,38 @@ func TestFanoutCountsAreDimAndTheStateIsTheGlyph(t *testing.T) {
 	if got := rail.View(40, 30); !strings.Contains(got, sty.Dim.Render("1 of 3 steps")) ||
 		!strings.Contains(got, sty.Dim.Render("1 running")) {
 		t.Errorf("the rail's map should draw its counts in dim:\n%s", got)
+	}
+}
+
+// A running lane that names its step gives up its costs before its task, and
+// its task before its step: the token count, then the budget's share, then
+// the tool count, then the task clips, and the step is the last thing kept.
+func TestFanoutLaneKeepsItsStepLast(t *testing.T) {
+	lane := FanoutLane{State: FanoutRunning, Name: "writer-1",
+		Task: "Find every place a cache entry is written and read", Step: 1, Steps: 3,
+		Planned: true, StepTitle: "Run gofmt", BudgetPct: 2, Tools: 2,
+		Spend: "~26.2k tok", Elapsed: "41s"}
+	cases := []struct {
+		width      int
+		kept, gone []string
+	}{
+		{200, []string{"written and read", "2% of budget", "2 tools", "~26.2k tok", "Run gofmt"}, nil},
+		{140, []string{"written and read", "2% of budget", "2 tools", "Run gofmt"}, []string{"~26.2k tok"}},
+		{120, []string{"written and read", "2 tools", "Run gofmt"}, []string{"~26.2k tok", "of budget"}},
+		{100, []string{"writer-1 · Find every", "1 of 3", "Run gofmt"}, []string{"~26.2k tok", "of budget", "tools"}},
+		{80, []string{"writer-1 · Find", "… · Run gofmt"}, []string{"~26.2k tok", "of budget", "tools"}},
+	}
+	for _, c := range cases {
+		view := ansi.Strip(lane.View(c.width))
+		for _, k := range c.kept {
+			if !strings.Contains(view, k) {
+				t.Errorf("at %d the lane lost %q: %q", c.width, k, view)
+			}
+		}
+		for _, g := range c.gone {
+			if strings.Contains(view, g) {
+				t.Errorf("at %d %q should have given way: %q", c.width, g, view)
+			}
+		}
 	}
 }
