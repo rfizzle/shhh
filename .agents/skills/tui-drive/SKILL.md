@@ -126,6 +126,13 @@ environment of the run (`25-60`, or one number) paces a plain reply's words
 that many milliseconds apart, the way a model's arrive; it is a fact about the
 run and not the scene, so `scripts/tui/readme-pictures.sh` sets it for the
 README's recording alone and `make tui-check` drives the same scene unpaced.
+Every round closes with a usage report, tool rounds included:
+`prompt_tokens` is the request it received over four bytes to the token (the
+messages' text, their calls' arguments and the tool definitions) and
+`completion_tokens` what it wrote, measured the same way — the session's own
+estimate of the same request, so the rail's `↑` count and `ctx` agree. Those
+figures move with the system prompt, so a snap never waits on one: it waits on
+the rail's own words, as `cockpit-spend` waits on `· ↑`.
 
 A `+` with nothing above it is an error naming the file and the line: the
 provider refuses to start, and the scene fails before the binary opens rather

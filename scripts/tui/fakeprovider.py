@@ -71,6 +71,11 @@ arguments is the port this endpoint took, which is how a reply names a URL
 on a port nobody knew when the scene was written. The session only reaches
 it with web.allow_private set, which a scene's launch line writes.
 
+Every round closes with usage, a tool round as well as the closing reply:
+the prompt is the request received, bytes over four, and the completion what
+was written, so the session's report lands where its own estimate of the same
+request does rather than under the band it calibrates within.
+
 It speaks the openai-compatible SSE dialect only, because that is the one
 dialect a base_url on its own redirects; the same choice the CLI's
 print-mode tests make.
@@ -244,6 +249,38 @@ def remember_child(args):
 MODELS = ["scripted-model", "scripted-mini", "scripted-fast", "scripted-long"]
 
 
+def text_of(content):
+    """A message's content as the text it carries: a string, or the text
+    parts of a list of parts (an attachment's image part carries none)."""
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        return "".join(str(p.get("text") or "") for p in content if isinstance(p, dict))
+    return ""
+
+
+def prompt_tokens(body):
+    """What the request would cost a real provider, near enough to be read as
+    one: its bytes over four — the messages' text, the arguments of the calls
+    they carry, and the tool definitions sent in front of them — which is the
+    session's own estimate of the same request, so the report lands inside
+    the band the session calibrates against rather than under its floor."""
+    n = len(json.dumps(body.get("tools") or [])) if body.get("tools") else 0
+    for message in body.get("messages") or []:
+        n += len(text_of(message.get("content")).encode())
+        for call in message.get("tool_calls") or []:
+            n += len(str((call.get("function") or {}).get("arguments") or "").encode())
+    return max(n // 4, 1)
+
+
+def usage(prompt, wrote):
+    """The usage a round closes on: the prompt as received, the completion as
+    written, bytes over four each."""
+    completion = max(wrote // 4, 1)
+    return {"prompt_tokens": prompt, "completion_tokens": completion,
+            "total_tokens": prompt + completion}
+
+
 def chunk(delta, finish=None, usage=None):
     body = {"id": "scripted", "object": "chat.completion.chunk", "choices": [
         {"index": 0, "delta": delta, "finish_reason": finish}]}
@@ -313,6 +350,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Type", "text/event-stream")
         self.end_headers()
         calls = 0
+        wrote = 0
         for part in parts:
             if part.startswith("wait:"):
                 # Before the headers would be a request that has not been
@@ -325,6 +363,7 @@ class Handler(BaseHTTPRequestHandler):
                 args = args.replace("{port}", str(self.server.server_address[1]))
                 if QUEUED and name == "spawn_agent":
                     remember_child(args)
+                wrote += len(name) + len(args.encode())
                 self.wfile.write(chunk({"tool_calls": [{"index": calls, "id": "call-%d" % (calls + 1),
                                         "type": "function",
                                         "function": {"name": name, "arguments": args}}]}))
@@ -337,13 +376,14 @@ class Handler(BaseHTTPRequestHandler):
                 if PACE and i:
                     time.sleep(random.uniform(*PACE) / 1000)
                 self.wfile.write(chunk({"content": word + " "}))
+                wrote += len((word + " ").encode())
                 self.wfile.flush()
         # A reply that asked for anything ends on tool_calls whatever else it
-        # said; one that only spoke is the end of the turn.
-        if calls:
-            self.wfile.write(chunk({}, "tool_calls"))
-        else:
-            self.wfile.write(chunk({}, "stop", {"prompt_tokens": 10, "completion_tokens": 3, "total_tokens": 13}))
+        # said; one that only spoke is the end of the turn. Both carry usage,
+        # as a real provider's rounds do: a tool round that reported nothing
+        # would leave the rail's count where the round before it put it.
+        spent = usage(prompt_tokens(body), wrote)
+        self.wfile.write(chunk({}, "tool_calls" if calls else "stop", spent))
         self.wfile.write(b"data: [DONE]\n\n")
         self.wfile.flush()
 
