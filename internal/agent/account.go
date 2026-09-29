@@ -50,7 +50,10 @@ const (
 // disables it, the way an unconfigured titler is disabled. Prompt replaces
 // the built-in instruction.
 type AccountConfig struct {
-	Model     string
+	Model string
+	// ModelAt, where set, is asked for the model at each reading instead of
+	// Model (see modelAt).
+	ModelAt   func() string
 	Timeout   time.Duration
 	MaxTokens int
 	Prompt    string
@@ -143,7 +146,7 @@ func NewAccountant(p provider.Provider, cfg AccountConfig) *Accountant {
 
 // Enabled reports whether a reading will actually be taken.
 func (a *Accountant) Enabled() bool {
-	return a != nil && a.provider != nil && !a.cfg.Disabled && strings.TrimSpace(a.cfg.Model) != ""
+	return a != nil && a.provider != nil && !a.cfg.Disabled && a.Model() != ""
 }
 
 // Model is the model the accountant answers with, for a readout.
@@ -151,7 +154,7 @@ func (a *Accountant) Model() string {
 	if a == nil {
 		return ""
 	}
-	return strings.TrimSpace(a.cfg.Model)
+	return modelAt(a.cfg.ModelAt, a.cfg.Model)
 }
 
 var accountSchema = json.RawMessage(`{
@@ -200,7 +203,7 @@ func (a *Accountant) Account(ctx context.Context, req AccountRequest) AccountVer
 		{Role: provider.RoleSystem, Content: a.cfg.prompt()},
 		{Role: provider.RoleUser, Content: "UNTRUSTED EVIDENCE:\n" + string(evidence)},
 	}, provider.CompletionOpts{
-		Model:     a.cfg.Model,
+		Model:     v.Model,
 		MaxTokens: a.cfg.maxTokens(),
 		// A shallow thought is the right amount for two sentences, for the
 		// reason the titler asks for one.

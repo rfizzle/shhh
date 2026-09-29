@@ -1231,3 +1231,29 @@ in the sentence cannot be referred to except by describing it, and two of
 them cannot be told apart at all. The departure is closed by the artboard
 drawing an image fold beside a paste fold in one sentence and the fold rows
 under the sent message.
+
+## The settings screen opens on the flows
+
+*A disagreement.* The `Tools` artboard draws the settings screen as the
+file's own tables, each row a setting with its value and where
+that value came from, and a picker under a row whose key row reads `[enter]
+select` and the way to keep what is there. The binary now opens the screen on
+a FLOWS section above those tables: one row per bounded call — classifier,
+explanation, description, reading, title, account, compaction, backlog,
+profile drafter — with the model the call will run on, the key the chain read
+beside it, and in the source column the link that answered (`flow key`,
+`cheap key`, `provider small model`, `session model`) or `session` where this
+session holds a model no file does. In a session a flow's picker ends its key
+row with three destinations in place of the one — `[enter] this session ·
+[d] my settings · [g] this checkout` — before the way to keep the current
+model ([the supporting screens](surfaces.md#the-supporting-screens)).
+
+The reason is the question the screen is opened with. Which model answers
+the classifier, the readings or the title was a fact spread over six keys and
+a chain behind them, readable only in the doctor's row, and changing one for
+an afternoon meant editing a file every later session reads
+([a session can hold a value no file does](../capabilities/configuration.md#a-session-can-hold-a-value-no-file-does)).
+The section sits first because it is the part of the screen a person comes
+to move mid-session; the rows below it are the file, unchanged. The
+departure is closed by the artboard drawing the FLOWS rail above the tables and
+the picker's three-destination key row.

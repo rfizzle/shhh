@@ -149,7 +149,13 @@ type ExtractResult struct {
 
 // ExtractConfig bounds the extractor's request.
 type ExtractConfig struct {
-	Model     string
+	Model string
+	// ModelAt, where set, is asked for the model at each reading instead of
+	// Model, and its answer is kept for the whole of that reading: a session
+	// that moves the backlog readings onto another model takes it on the
+	// next one, and one already in flight finishes where it started
+	// (docs/capabilities/configuration.md#a-session-can-hold-a-value-no-file-does).
+	ModelAt   func() string
 	Timeout   time.Duration
 	MaxTokens int
 	// Session is what the session being read is, in the words the prompt
@@ -157,6 +163,16 @@ type ExtractConfig struct {
 	// session this reading was written for and the one every caller that
 	// says nothing has.
 	Session SessionKind
+}
+
+// fixed is the config with its model asked for once, which is the config a
+// single reading runs under from start to finish.
+func (c ExtractConfig) fixed() ExtractConfig {
+	if c.ModelAt != nil {
+		c.Model, c.ModelAt = c.ModelAt(), nil
+	}
+	c.Model = strings.TrimSpace(c.Model)
+	return c
 }
 
 // SessionKind is what a reading is a reading of. It is not a fact about the
@@ -221,7 +237,7 @@ func NewExtractor(p provider.Provider, cfg ExtractConfig, profile Profile) *Extr
 
 // Enabled reports whether a reading can be taken.
 func (e *Extractor) Enabled() bool {
-	return e != nil && e.provider != nil && strings.TrimSpace(e.cfg.Model) != ""
+	return e != nil && e.provider != nil && e.cfg.fixed().Model != ""
 }
 
 // extractPrompt asks for the items. The lines that name the header fields
@@ -351,14 +367,16 @@ func requiredList(names []string) string {
 func (e *Extractor) Extract(ctx context.Context, req ExtractRequest) ExtractResult {
 	start := time.Now()
 	r := ExtractResult{Failed: true}
+	var cfg ExtractConfig
 	if e != nil {
-		r.Model = strings.TrimSpace(e.cfg.Model)
+		cfg = e.cfg.fixed()
+		r.Model = cfg.Model
 	}
 	finish := func(r ExtractResult) ExtractResult {
 		r.Elapsed = time.Since(start)
 		return r
 	}
-	if !e.Enabled() {
+	if !e.Enabled() || cfg.Model == "" {
 		r.Err = "no model is configured to read the session"
 		return finish(r)
 	}
@@ -367,7 +385,7 @@ func (e *Extractor) Extract(ctx context.Context, req ExtractRequest) ExtractResu
 		r.Err = "could not build the session digest: " + err.Error()
 		return finish(r)
 	}
-	proposals, usage, err := readProposals(ctx, e.provider, e.cfg, e.profile, extractPrompt(e.profile, e.cfg.Session), "UNTRUSTED DIGEST:\n"+string(evidence))
+	proposals, usage, err := readProposals(ctx, e.provider, cfg, e.profile, extractPrompt(e.profile, cfg.Session), "UNTRUSTED DIGEST:\n"+string(evidence))
 	if usage != nil {
 		r.Usage = *usage
 	}
@@ -634,7 +652,7 @@ func NewDrafter(p provider.Provider, cfg ExtractConfig, profile Profile) *Drafte
 
 // Enabled reports whether a draft can be taken.
 func (d *Drafter) Enabled() bool {
-	return d != nil && d.provider != nil && strings.TrimSpace(d.cfg.Model) != ""
+	return d != nil && d.provider != nil && d.cfg.fixed().Model != ""
 }
 
 // Draft takes one drafting. Like a reading, anything short of a proposal
@@ -644,14 +662,16 @@ func (d *Drafter) Enabled() bool {
 func (d *Drafter) Draft(ctx context.Context, req DraftRequest) ExtractResult {
 	start := time.Now()
 	r := ExtractResult{Failed: true}
+	var cfg ExtractConfig
 	if d != nil {
-		r.Model = strings.TrimSpace(d.cfg.Model)
+		cfg = d.cfg.fixed()
+		r.Model = cfg.Model
 	}
 	finish := func(r ExtractResult) ExtractResult {
 		r.Elapsed = time.Since(start)
 		return r
 	}
-	if !d.Enabled() {
+	if !d.Enabled() || cfg.Model == "" {
 		r.Err = "no model is configured to draft an item"
 		return finish(r)
 	}
@@ -664,7 +684,7 @@ func (d *Drafter) Draft(ctx context.Context, req DraftRequest) ExtractResult {
 		r.Err = "could not build the request: " + err.Error()
 		return finish(r)
 	}
-	proposals, usage, err := readProposals(ctx, d.provider, d.cfg, d.profile, draftPrompt(d.profile), "UNTRUSTED REQUEST:\n"+string(evidence))
+	proposals, usage, err := readProposals(ctx, d.provider, cfg, d.profile, draftPrompt(d.profile), "UNTRUSTED REQUEST:\n"+string(evidence))
 	if usage != nil {
 		r.Usage = *usage
 	}

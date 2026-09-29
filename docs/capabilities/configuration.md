@@ -158,6 +158,41 @@ the classifier, the card's explanation, the readings, a snippet's
 description, the backlog's readings and the profile drafter — and each one
 left unset uses the model it used before it had one.
 
+## A session can hold a value no file does
+
+A bounded call's model is the one setting a person is likeliest to want to
+move in the middle of the work: the classifier is slow on the model it is
+on, or the readings are spending more than they are worth, and the question
+is whether another model does it better — which is answered by trying it for
+an hour, not by editing a file that every later session will read. So the
+settings screen in a session can take a flow's model for **this session**
+alone, the way `/model` switches the session's own model without writing
+anything.
+
+A value held that way is written nowhere. It is not staged against a file,
+it is not in either file afterwards, and it dies with the process: the next
+session starts on what the files say. It takes the rank above the files for
+the session that holds it, because it is a choice made for that one run —
+the rank a flag has, given from the chair instead of the command line — and
+the screen says so on the row, with `session` where the file's source would
+be, so the one value in the session that no file explains is the one value
+the screen does not leave unexplained.
+
+It takes hold at the flow's next call. Each flow asks for its model when it
+makes a call rather than once when the session was assembled, and keeps the
+answer for the whole of that call, so a reading already in flight finishes
+on the model it began with and the next one is sent on the new one. The
+session's record states the models the rest of the session is asked on from
+the moment one moves, and every row a session boundary opens after that
+carries it too, because a comparison split on the classifier's model is
+asking which model judged the calls.
+
+The same picker writes either file at once when that is what was asked for,
+and the session takes the value too. What is not offered is a session value
+for a flow no session sends: the one-shot's description belongs to `shhh
+cmd`, and the compaction the chain describes is an unattended run's, since
+a session compacts on its own model.
+
 ## One layout everywhere
 
 Three directories, and the same three on every platform: settings where a

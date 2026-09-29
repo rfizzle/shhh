@@ -35,15 +35,15 @@ shhh metrics                    $18.42 · [?] keys · [q] quit
 
 [esc] back to the shell
 
-· config · the file, and what is standing against it
-shhh config · 2 changes unwritten        [?] keys · [q] quit
+· config · the file, and what is standing against it, over the flows section
+/config · 2 changes unwritten            [?] keys · [q] back
 ────────────────────────────────────────────────────────────
 
-  SESSION
-  ❯ permission mode    ⏵⏵ auto — edits apply; allowli…  user
-    round limit        25                            default
-    context budget     8000 tokens                   default
-  ↓ 11 more
+  FLOWS
+  ❯ classifier         gemini-3-flash — this sessi…  session
+    explanation        claude-sonnet-4.6 — behavi…  flow key
+    reading            gpt-5.2-mini — provider.c…  cheap key
+  ↓ 16 more
 
 [↑↓/jk] move · [enter] change · [/] filter
 [r] reset to default · [w] write the file
@@ -207,15 +207,15 @@ r 11 · off target                                     turn 2
 
 ␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m
 
-· config · the file, and what is standing against it
-␛[1;97mshhh config␛[m␛[38;5;214m · 2 changes unwritten␛[m        ␛[38;5;241m[?] keys · [q] quit␛[m
+· config · the file, and what is standing against it, over the flows section
+␛[1;97m/config␛[m␛[38;5;214m · 2 changes unwritten␛[m            ␛[38;5;241m[?] keys · [q] back␛[m
 ␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
-  ␛[1;94mSESSION␛[m
-  ␛[94m❯␛[m ␛[1;97;48;5;62mpermission mode    ⏵⏵ auto — edits apply; allowli…  user␛[m
-    ␛[38;5;252mround limit␛[m        ␛[38;5;252m25␛[m                            ␛[38;5;252mdefault␛[m
-    ␛[38;5;252mcontext budget␛[m     ␛[38;5;252m8000 tokens␛[m                   ␛[38;5;252mdefault␛[m
-  ␛[38;5;241m↓ 11 more␛[m
+  ␛[1;94mFLOWS␛[m
+  ␛[94m❯␛[m ␛[1;97;48;5;62mclassifier         gemini-3-flash — this sessi…  session␛[m
+    ␛[38;5;252mexplanation␛[m        ␛[38;5;252mclaude-sonnet-4.6␛[m ␛[38;5;241m— behavi…␛[m  ␛[38;5;252mflow key␛[m
+    ␛[38;5;252mreading␛[m            ␛[38;5;252mgpt-5.2-mini␛[m ␛[38;5;241m— provider.c…␛[m  ␛[38;5;252mcheap key␛[m
+  ␛[38;5;241m↓ 16 more␛[m
 
 ␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m change␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter␛[m
 ␛[94m[r]␛[m␛[38;5;241m reset to default␛[m␛[38;5;241m · ␛[m␛[94m[w]␛[m␛[38;5;241m write the file␛[m

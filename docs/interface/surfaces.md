@@ -2452,6 +2452,33 @@ reaches for in the middle of the work rather than before it — how often the
 harness checks in, what its steering says, which model summarises, and which
 profile the backlog is read under.
 
+The settings screen opens on its flows section: one row for every bounded
+call outside the main agent and its children — the classifier, the
+explanation, the one-shot's description, the reading, the title, the account,
+the compaction, the backlog readings and the profile drafter — with the model
+the call will run on and, in the source column, which link of the chain gave
+it: `flow key`, `cheap key`, `provider small model` or `session model`, and
+the key that link read beside the model. It is the doctor's `flows` row laid
+out as settings, read from the same chain the calls are sent with
+([a bounded call runs on the small
+model](../capabilities/providers.md#a-bounded-call-runs-on-the-small-model)),
+so a second model on the bill is answered by looking. In a session a flow's
+row opens the list the session's own model picker offers, and its key row
+names three places the choice can go: `[enter]` **this session** — the model
+answers that flow for the rest of the process and reaches no file, and the
+row says `session` in its source column from then on; `[d]` **my settings**;
+and `[g]` **this checkout**, offered where the screen stands in one and
+refused with the writer's own sentence where the checkout is not trusted or
+may not decide the key. The two files are written at once for that one key,
+because the key already said which file the question was about, and the
+session takes the model too, the way the model picker's own key switches the
+session as it makes the default. These are the one exception to the session
+keeping the settings it started on, and they are an exception by being asked
+for by name. A flow no session sends — the one-shot's description, and the
+compaction an unattended run makes — offers only the files. `shhh config`
+has no session, so its flows rows stage like every other row, and `[g]` and
+`[w]` reach either file.
+
 Neither row repeats the other. The header carries the register's key and the
 letter; the foot carries what the screen can do and, last, the way out. A
 surface that put `[?]` and the letter on both rows spent its bottom row saying

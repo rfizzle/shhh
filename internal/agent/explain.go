@@ -42,6 +42,9 @@ const (
 // disables it, the way an unconfigured titler is disabled.
 type ExplainConfig struct {
 	Model string
+	// ModelAt, where set, is asked for the model at each reading instead of
+	// Model (see modelAt).
+	ModelAt func() string
 	// Prompt is the whole instruction. It is required rather than defaulted,
 	// because the words that settle what an explanation of a command says and
 	// how long it is are the one-shot's and live above this package: a
@@ -82,7 +85,7 @@ func NewExplainer(p provider.Provider, cfg ExplainConfig) *Explainer {
 // offer (docs/interface/surfaces.md#the-approval-card).
 func (e *Explainer) Enabled() bool {
 	return e != nil && e.provider != nil &&
-		strings.TrimSpace(e.cfg.Model) != "" && strings.TrimSpace(e.cfg.Prompt) != ""
+		e.Model() != "" && strings.TrimSpace(e.cfg.Prompt) != ""
 }
 
 // Model is the model that answers, for a readout. The card names it, because
@@ -92,7 +95,7 @@ func (e *Explainer) Model() string {
 	if e == nil {
 		return ""
 	}
-	return strings.TrimSpace(e.cfg.Model)
+	return modelAt(e.cfg.ModelAt, e.cfg.Model)
 }
 
 // ExplainRequest is the command a paragraph is asked about.
@@ -146,7 +149,7 @@ func (e *Explainer) Explain(ctx context.Context, req ExplainRequest) ExplainVerd
 		{Role: provider.RoleSystem, Content: e.cfg.Prompt},
 		{Role: provider.RoleUser, Content: "UNTRUSTED COMMAND:\n" + command},
 	}, provider.CompletionOpts{
-		Model:     e.cfg.Model,
+		Model:     v.Model,
 		MaxTokens: e.cfg.maxTokens(),
 		// A shallow thought is the right amount for reading a command line,
 		// and asking for it is the only way to bound one on a model that

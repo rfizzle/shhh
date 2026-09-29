@@ -186,6 +186,9 @@ type SummaryConfig struct {
 	// Model is the summarizing model; callers default it to the session model
 	// when summary.model is unset, exactly as the classifier does.
 	Model string
+	// ModelAt, where set, is asked for the model at each reading instead of
+	// Model (see modelAt).
+	ModelAt func() string
 	// Timeout bounds one reading.
 	Timeout time.Duration
 	// MaxTokens caps the reading's response.
@@ -378,7 +381,7 @@ func (s *Summarizer) Config() SummaryConfig {
 
 // Enabled reports whether readings will actually be taken.
 func (s *Summarizer) Enabled() bool {
-	return s != nil && s.provider != nil && !s.cfg.Disabled && strings.TrimSpace(s.cfg.Model) != ""
+	return s != nil && s.provider != nil && !s.cfg.Disabled && modelAt(s.cfg.ModelAt, s.cfg.Model) != ""
 }
 
 // Summarize takes one reading. It never returns a partial verdict as a good
@@ -388,7 +391,7 @@ func (s *Summarizer) Summarize(ctx context.Context, req SummaryRequest) SummaryV
 	start := time.Now()
 	v := SummaryVerdict{Round: req.Round, Failed: true}
 	if s != nil {
-		v.Model = strings.TrimSpace(s.cfg.Model)
+		v.Model = modelAt(s.cfg.ModelAt, s.cfg.Model)
 	}
 	finish := func(v SummaryVerdict) SummaryVerdict {
 		v.Elapsed = time.Since(start)
@@ -409,7 +412,7 @@ func (s *Summarizer) Summarize(ctx context.Context, req SummaryRequest) SummaryV
 	// One attempt and no retries. A missed reading is answered by the next
 	// interval a few rounds from now, which is cheaper and quieter than
 	// asking twice for a block nobody is blocked on.
-	text, state, reason, usage, err := s.readOnce(ctx, s.cfg.prompt(), "UNTRUSTED DIGEST:\n"+string(evidence))
+	text, state, reason, usage, err := s.readOnce(ctx, v.Model, s.cfg.prompt(), "UNTRUSTED DIGEST:\n"+string(evidence))
 	if usage != nil {
 		v.Usage = *usage
 	}
@@ -454,7 +457,7 @@ func logSummaryFailure(model string, err error, elapsed time.Duration) {
 // instruction and the digest travel in separate messages, so the dialect's
 // own instruction channel keeps them apart rather than the sentence in the
 // prompt that says the digest is data (classifier.go).
-func (s *Summarizer) readOnce(ctx context.Context, instructions, digest string) (string, SummaryState, string, *provider.Usage, error) {
+func (s *Summarizer) readOnce(ctx context.Context, model, instructions, digest string) (string, SummaryState, string, *provider.Usage, error) {
 	attemptCtx, cancel := context.WithTimeout(ctx, s.cfg.timeout())
 	defer cancel()
 
@@ -462,7 +465,7 @@ func (s *Summarizer) readOnce(ctx context.Context, instructions, digest string) 
 		{Role: provider.RoleSystem, Content: instructions},
 		{Role: provider.RoleUser, Content: digest},
 	}, provider.CompletionOpts{
-		Model:     s.cfg.Model,
+		Model:     model,
 		MaxTokens: s.cfg.maxTokens(),
 		// A shallow thought over a digest that is already assembled. Off
 		// would be the model's own depth, which is what emptied the block.

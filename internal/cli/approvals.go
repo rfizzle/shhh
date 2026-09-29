@@ -88,7 +88,7 @@ func unattendedGate(webTools *web.Toolset, procSup *process.Supervisor, mcpTools
 // See docs/capabilities/configuration.md#the-classifier-is-configured-once.
 func buildClassifier(cfg config.Config, env *sessionEnv, ledger *meter.Ledger) *agent.Classifier {
 	return agent.NewClassifier(ledger.For(env.prov, meter.SourceClassifier), agent.ClassifierConfig{
-		Model:     gateModel(cfg, env),
+		ModelAt:   gateModel(cfg, env),
 		Timeout:   time.Duration(cfg.Behavior.ClassifierTimeoutSeconds) * time.Second,
 		MaxTokens: cfg.Behavior.ClassifierMaxTokens,
 		Retries:   cfg.Behavior.ClassifierRetries,
@@ -98,7 +98,8 @@ func buildClassifier(cfg config.Config, env *sessionEnv, ledger *meter.Ledger) *
 
 // gateModel is the inexpensive model the gate reads with: what
 // behavior.classifier_model names, and the bounded-call chain's answer where
-// it names nothing.
+// it names nothing, asked at each judgement so a model the session took for
+// itself on the config screen is the one the next call is judged on.
 //
 // One resolution and not one per reader. Everything asked at the approval
 // card is the same size of question about the same call, and a session where
@@ -106,8 +107,8 @@ func buildClassifier(cfg config.Config, env *sessionEnv, ledger *meter.Ledger) *
 // two readings a person could not compare — which is exactly what the reader
 // does with them, one under the other, in the moment before answering.
 // See docs/capabilities/configuration.md#the-classifier-is-configured-once.
-func gateModel(cfg config.Config, env *sessionEnv) string {
-	return resolveFlow(cfg, flowClassifier, env.provName, env.modelName).model
+func gateModel(cfg config.Config, env *sessionEnv) func() string {
+	return env.flowModelAt(cfg, flowClassifier)
 }
 
 // buildExplainer is the card's explanation: the same model the classifier
@@ -135,8 +136,8 @@ func gateModel(cfg config.Config, env *sessionEnv) string {
 // nothing else on it is for.
 func buildExplainer(cfg config.Config, env *sessionEnv, ledger *meter.Ledger) *agent.Explainer {
 	return agent.NewExplainer(ledger.For(env.prov, meter.SourceExplanation), agent.ExplainConfig{
-		Model:  resolveFlow(cfg, flowExplanation, env.provName, env.modelName).model,
-		Prompt: prompt.BuildExplain(true),
+		ModelAt: env.flowModelAt(cfg, flowExplanation),
+		Prompt:  prompt.BuildExplain(true),
 	})
 }
 

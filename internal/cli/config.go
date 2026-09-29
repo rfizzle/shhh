@@ -15,6 +15,7 @@ import (
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/resolve"
 	"github.com/rfizzle/shhh/internal/sandbox"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/ui/chat"
@@ -355,8 +356,22 @@ type configModel struct {
 	// which is what the write needs: a row's read is the screen's rendering
 	// of the value and is not what goes in the file.
 	staged map[string]string
+	// flows is what the flows section is resolved against, and — inside a
+	// session — the session a flow's model can be taken for.
+	flows configFlows
 
 	screen components.ConfigScreen
+}
+
+// configFlows is what the flows section needs from where the screen was
+// opened: the provider and the model the chain falls back on, the models its
+// picker offers, and the session a model can be held by. env is nil for
+// `shhh config`, which has no session to hold one.
+type configFlows struct {
+	provName string
+	model    string
+	models   []string
+	env      *sessionEnv
 }
 
 // defaultConfigWidth is what the screen is drawn at before the terminal has
@@ -365,6 +380,10 @@ const defaultConfigWidth = 110
 
 func newConfigModel(cfg config.Config, proj config.Project) *configModel {
 	m := &configModel{base: cfg, cfg: cfg, proj: proj, staged: map[string]string{}, path: config.WritePath()}
+	// Outside a session the chain falls back on what a session started now
+	// would run, which is the doctor's flows row's reading too.
+	resolved := resolve.Resolve(resolve.Opts{ConfigProvider: cfg.Provider.Default, ConfigModel: cfg.Provider.Model})
+	m.flows = configFlows{provName: resolved.Provider, model: resolved.Model}
 	m.screen.Path = shortPath(m.path)
 	m.screen.Behind = pairBehind(true, "")
 	m.refresh()
@@ -479,15 +498,24 @@ func (m *configModel) answer(done bool, result components.ConfigResult) tea.Cmd 
 // the session started with. The screen's whole right-hand column is where a
 // value came from, and a copy loaded an hour ago would be saying it about a
 // file that `shhh config set` in another terminal has edited since.
-func configSessionOpener() chat.ConfigOpener {
-	return func() (chat.ConfigSession, error) {
+//
+// env is the session the screen was opened from, which is what the flows
+// section resolves against and what a model taken for this session alone is
+// held by; nil opens the screen with no session to hold one. models is what
+// the session's own model picker offers, so the flows' picker is that list.
+func configSessionOpener(env *sessionEnv) chat.ConfigOpener {
+	return func(models []string) (chat.ConfigSession, error) {
 		cfg, proj, err := loadLayeredConfig(workingDir())
 		if err != nil {
 			return chat.ConfigSession{}, err
 		}
 		m := newConfigModel(cfg, proj)
+		if env != nil {
+			m.flows = configFlows{provName: env.provName, model: env.modelName, models: models, env: env}
+		}
 		m.standIn(false, workingDir())
 		m.screen.InSession = true
+		m.refresh()
 		return chat.ConfigSession{Screen: &m.screen, Answer: m.answered}, nil
 	}
 }
@@ -514,6 +542,10 @@ func (m *configModel) answered(done bool, result components.ConfigResult) string
 // apply stages one edit and rebuilds the rows, so the screen redraws from the
 // config rather than from what it thinks it changed.
 func (m *configModel) apply(change components.ConfigChange) {
+	if change.Take != 0 {
+		m.takeFlow(change)
+		return
+	}
 	value := change.Value
 	if change.Reset {
 		value = ""
@@ -544,6 +576,147 @@ func (m *configModel) apply(change components.ConfigChange) {
 	m.refresh()
 }
 
+// takeFlow sends a flow's model where its picker's key said
+// (docs/interface/surfaces.md#the-supporting-screens). This session holds it
+// and writes it nowhere; my settings and this checkout write that one key at
+// once — the destination is the question [w] would ask, already answered —
+// and the session takes it too, the way the model picker's own key switches
+// the session as it writes the default. Nothing else that is staged moves.
+func (m *configModel) takeFlow(change components.ConfigChange) {
+	key, value := change.Key, strings.TrimSpace(change.Value)
+	if err := checkConfigValue(key, value); err != nil {
+		m.screen.Notice = err.Error()
+		return
+	}
+	edit := config.Edit{Key: key, Value: value}
+	switch change.Take {
+	case components.TakeSession:
+		m.screen.Notice = fmt.Sprintf("%s is %s for the rest of this session — written to no file", key, value)
+	case components.TakeMine:
+		path := config.WritePath()
+		note, err := writeConfigEdits(m.proj, path, edit)
+		if err != nil {
+			m.screen.Notice = "could not write " + shortPath(path) + ": " + err.Error()
+			return
+		}
+		if !m.proj.Sets(key) {
+			_ = config.Set(&m.base, key, value)
+		}
+		m.screen.Notice = joinNotice(fmt.Sprintf("wrote %s = %s to %s", key, value, shortPath(path)), note)
+	case components.TakeCheckout:
+		if reason := config.RefusedInProject(key); reason != "" {
+			m.screen.Notice = fmt.Sprintf("config key %s is not read from a checkout's file — %s", key, reason)
+			return
+		}
+		if !projectTrust().Allows() {
+			m.screen.Notice = projectTrustNote()
+			return
+		}
+		if _, err := writeConfigEdits(config.Project{}, config.ProjectPath(m.dir), edit); err != nil {
+			m.screen.Notice = "could not write " + project.ConfigFile + ": " + err.Error()
+			return
+		}
+		_ = config.Set(&m.base, key, value)
+		if !m.proj.Sets(key) {
+			m.proj.Keys = append(slices.Clone(m.proj.Keys), key)
+		}
+		m.screen.Notice = fmt.Sprintf("wrote %s = %s to %s", key, value, project.ConfigFile)
+	default:
+		return
+	}
+	// What the file now holds is what the screen compares against, so the
+	// key the destination just decided is no longer an edit standing
+	// against the file.
+	delete(m.staged, key)
+	loaded, _ := config.Value(m.base, key)
+	_ = config.Set(&m.cfg, key, loaded)
+	if env := m.flows.env; env != nil {
+		env.flows.set(key, value)
+		if change.Take != components.TakeSession {
+			m.screen.Notice += "; this session takes it too"
+		}
+		if env.flowsMoved != nil {
+			env.flowsMoved()
+		}
+	}
+	m.refresh()
+}
+
+// joinNotice puts what the writer had to add after what was written.
+func joinNotice(done, note string) string {
+	if note == "" {
+		return done
+	}
+	return done + " — " + note
+}
+
+// flowRows are the flows section: every bounded call outside the main agent,
+// the model it will run on, and which link of the chain answered — flow key,
+// cheap key, the provider's small model, the session's model — read from the
+// chain the calls themselves are sent with, so the screen and the doctor's
+// flows row cannot disagree
+// (docs/capabilities/providers.md#a-bounded-call-runs-on-the-small-model).
+//
+// Inside a session a row answered by a model the session holds says
+// `session`, and its picker offers the three destinations; `shhh config` has
+// no session, so its rows stage like any other and [g] and [w] are the way
+// to either file.
+func (m *configModel) flowRows() []components.ConfigRow {
+	f, env := m.flows, m.flows.env
+	in := m.cfg
+	if env != nil {
+		in = env.flows.over(m.cfg)
+	}
+	answers := resolveFlows(in, f.provName, f.model)
+	files := resolveFlows(m.cfg, f.provName, f.model)
+	opts := modelOptions(m.cfg)
+	if len(f.models) > 0 {
+		opts = make([]components.SelectOption, 0, len(f.models))
+		for _, name := range f.models {
+			opts = append(opts, components.SelectOption{Label: name})
+		}
+	}
+	rows := make([]components.ConfigRow, 0, len(answers))
+	for i, a := range answers {
+		held := env != nil && !a.flow.sessionless && a.key != "" && env.flows.holds(a.key) && a.model != files[i].model
+		if a.flow.sessionless {
+			// No session sends it, so what a session holds is not its answer.
+			a = files[i]
+		}
+		row := components.ConfigRow{
+			Group: "FLOWS", Key: a.flow.keys[0], Label: a.flow.name,
+			Value: a.model, Detail: a.key, Source: a.step.String(), Options: opts,
+		}
+		if row.Value == "" {
+			row.Value = "the session's own"
+		}
+		switch staged, _ := config.Value(m.cfg, a.key); {
+		case held:
+			row.Source, row.SourceTone = "session", components.ToneOpen
+			row.Detail = "this session only, written to no file"
+		case a.key != "" && staged != configLoaded(m.base, a.key):
+			row.Source, row.SourceTone = row.Source+" · unwritten", components.ToneOpen
+		}
+		if env != nil {
+			if !a.flow.sessionless {
+				row.Takes = append(row.Takes, components.TakeSession)
+			}
+			row.Takes = append(row.Takes, components.TakeMine)
+			if m.dir != "" {
+				row.Takes = append(row.Takes, components.TakeCheckout)
+			}
+		}
+		rows = append(rows, row)
+	}
+	return rows
+}
+
+// configLoaded is the value the loaded files gave key.
+func configLoaded(base config.Config, key string) string {
+	v, _ := config.Value(base, key)
+	return v
+}
+
 // edits is what [w] writes: every key whose staged value differs from the
 // loaded one, in the screen's order. A key edited and then put back is not
 // among them, so its line in the file is not rewritten either.
@@ -567,7 +740,7 @@ func (m configModel) edits() []config.Edit {
 // refresh rebuilds every row from the staged config and recounts what is
 // standing against the file.
 func (m *configModel) refresh() {
-	m.screen.Rows = configRowsTo(m.cfg, m.base, m.proj, m.toProject)
+	m.screen.Rows = append(m.flowRows(), configRowsTo(m.cfg, m.base, m.proj, m.toProject)...)
 	changed := 0
 	for _, s := range configSettings(m.cfg, m.base) {
 		staged, _ := config.Value(m.cfg, s.Key)
@@ -1060,6 +1233,7 @@ var configOptions = map[string]func(config.Config) []components.SelectOption{
 		return opts
 	},
 	"provider.model":            modelOptions,
+	"provider.cheap_model":      modelOptions,
 	"summary.model":             modelOptions,
 	"behavior.classifier_model": modelOptions,
 	"provider.reasoning": func(config.Config) []components.SelectOption {

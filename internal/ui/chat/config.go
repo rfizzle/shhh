@@ -51,7 +51,12 @@ type ConfigSession struct {
 // session because the screen states where every value came from, and a copy
 // loaded when the session started would state it about a file that has been
 // edited since — by `shhh config set` in another terminal, or by the reader.
-type ConfigOpener func() (ConfigSession, error)
+//
+// models is what the session's own model picker offers now — the catalog,
+// or the endpoint's list once `/model` has asked for it — so the picker a
+// flow's row opens is that one list rather than a second idea of which
+// models there are.
+type ConfigOpener func(models []string) (ConfigSession, error)
 
 // WithConfigScreen installs what `/config` opens. A session without one still
 // runs; it says the settings cannot be reached from here rather than drawing
@@ -66,7 +71,7 @@ func (m Model) openConfigScreen() (tea.Model, tea.Cmd) {
 	if m.openConfig == nil {
 		return m.systemNotice("this session cannot reach the config file. `shhh config` opens the same screen")
 	}
-	session, err := m.openConfig()
+	session, err := m.openConfig(m.modelPickChoices())
 	if err != nil {
 		return m.systemNotice(failed("config", "could not read the config: "+err.Error()))
 	}

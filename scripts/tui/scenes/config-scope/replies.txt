@@ -1,2 +1,2 @@
-# No request is made: the scene opens the settings screen and leaves it.
+# No completion is asked for: the scene lists the endpoint's models, opens the settings screen and leaves it.
 Nothing to say.

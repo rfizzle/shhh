@@ -99,6 +99,9 @@ type ClassifierConfig struct {
 	// Model is the classifier model; callers default it to the session model
 	// when behavior.classifier_model is unset.
 	Model string
+	// ModelAt, where set, is asked for the model at each judgement instead
+	// of Model (see modelAt).
+	ModelAt func() string
 	// Timeout bounds each classifier attempt.
 	Timeout time.Duration
 	// MaxTokens caps the classifier's response.
@@ -157,6 +160,19 @@ func NewClassifier(p provider.Provider, cfg ClassifierConfig) *Classifier {
 	return &Classifier{provider: p, cfg: cfg}
 }
 
+// modelAt is the model a bounded reader asks with: what at answers, where
+// the surface handed one, and the fixed name it was built with otherwise.
+// It is asked once per call and the answer kept for the whole of it, so a
+// reader moved onto another model for the rest of a session takes it on its
+// next call and one already in flight finishes on the model it started with.
+// See docs/capabilities/configuration.md#a-session-can-hold-a-value-no-file-does.
+func modelAt(at func() string, fixed string) string {
+	if at != nil {
+		return strings.TrimSpace(at())
+	}
+	return strings.TrimSpace(fixed)
+}
+
 // ClassifierRequest is one proposed tool call plus the evidence the
 // classifier judges it with.
 type ClassifierRequest struct {
@@ -197,7 +213,11 @@ func (c *Classifier) Judge(ctx context.Context, req ClassifierRequest) Classifie
 		return v
 	}
 
-	if c == nil || c.provider == nil || strings.TrimSpace(c.cfg.Model) == "" {
+	model := ""
+	if c != nil {
+		model = modelAt(c.cfg.ModelAt, c.cfg.Model)
+	}
+	if c == nil || c.provider == nil || model == "" {
 		v.Reason = "the permission classifier is not configured"
 		return finish(v)
 	}
@@ -230,7 +250,7 @@ func (c *Classifier) Judge(ctx context.Context, req ClassifierRequest) Classifie
 			instructions += "\n\nYour previous reply did not contain a valid " + DecisionToolName + " decision. Return one now."
 		}
 
-		decision, reason, usage, err := c.completeOnce(ctx, instructions, "UNTRUSTED EVIDENCE:\n"+string(evidence))
+		decision, reason, usage, err := c.completeOnce(ctx, model, instructions, "UNTRUSTED EVIDENCE:\n"+string(evidence))
 		if usage != nil {
 			v.Usage.PromptTokens += usage.PromptTokens
 			v.Usage.CompletionTokens += usage.CompletionTokens
@@ -266,7 +286,7 @@ func (c *Classifier) Judge(ctx context.Context, req ClassifierRequest) Classifie
 	// file twice with the second copy carrying whatever prose the provider
 	// chose to send.
 	logs.Logger().Warn("permission classifier failed closed",
-		"model", strings.TrimSpace(c.cfg.Model), "failure", failure,
+		"model", model, "failure", failure,
 		"attempts", c.cfg.attempts())
 	return finish(v)
 }
@@ -287,7 +307,7 @@ const (
 // thing structurally — one the evidence cannot be written into. Concatenating
 // the two into one user turn threw that away and left the sentence doing the
 // work alone.
-func (c *Classifier) completeOnce(ctx context.Context, instructions, evidence string) (Decision, string, *provider.Usage, error) {
+func (c *Classifier) completeOnce(ctx context.Context, model, instructions, evidence string) (Decision, string, *provider.Usage, error) {
 	attemptCtx, cancel := context.WithTimeout(ctx, c.cfg.timeout())
 	defer cancel()
 
@@ -295,7 +315,7 @@ func (c *Classifier) completeOnce(ctx context.Context, instructions, evidence st
 		{Role: provider.RoleSystem, Content: instructions},
 		{Role: provider.RoleUser, Content: evidence},
 	}, provider.CompletionOpts{
-		Model:     c.cfg.Model,
+		Model:     model,
 		MaxTokens: c.cfg.maxTokens(),
 		// A judgement over assembled evidence wants a shallow thought, and
 		// on a model that thinks by default this is the only way to ask for

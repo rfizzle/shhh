@@ -189,7 +189,7 @@ func TestConfigScreen_WritesTheFileOfWhereItIsRun(t *testing.T) {
 // decide, rather than holding an edit its write would stop on.
 func TestConfigScreen_InACheckoutRefusesAKeyItMayNotDecide(t *testing.T) {
 	scopeFixture(t, scopeCases[0])
-	session, err := configSessionOpener()()
+	session, err := configSessionOpener(nil)(nil)
 	must(t, err)
 	if session.Screen.Path != project.ConfigFile {
 		t.Fatalf("/config in a checkout names %q as the file it writes", session.Screen.Path)
@@ -209,7 +209,7 @@ func TestConfigScreen_InACheckoutRefusesAKeyItMayNotDecide(t *testing.T) {
 // write cannot be moved back to the checkout over an edit it would refuse.
 func TestConfigScreen_TheScopeKeyMovesTheWrite(t *testing.T) {
 	userPath, checkout := scopeFixture(t, scopeCases[0])
-	session, err := configSessionOpener()()
+	session, err := configSessionOpener(nil)(nil)
 	must(t, err)
 	screen := session.Screen
 	if !screen.Scoped || screen.Yours {

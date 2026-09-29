@@ -590,7 +590,7 @@ func Programs() []Surface {
 			Reached:  Bracket(Screen.Take) + " on a setting",
 			Bindings: []Binding{
 				Select.Move, Screen.Take, Screen.Filter, Screen.ClearQ, Query.Rub,
-				Screen.Keep,
+				Select.Alt, Screen.Scope, Screen.Keep,
 			},
 		},
 		{

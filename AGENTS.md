@@ -631,6 +631,16 @@ on. What will bite you: **the compaction summary skips the provider's small
 model** (`boundedFlow.window`), because `headlessCompactor` only takes a model
 whose window it can vouch for, and an unconfigured compaction must keep
 running on the conversation's own.
+**The session's readers ask the chain at the call, not at construction**:
+each is built with `ModelAt` (`sessionEnv.flowModelAt`), which walks
+`resolveFlow` over the start config with `sessionEnv.flows` — the models the
+config screen's flows section took for this session alone — laid over it,
+and each reader asks it once per call and keeps the answer for that call.
+The section is `configModel.flowRows`/`takeFlow` in `internal/cli/config.go`,
+`components.ConfigRow.Takes` is what gives a row its three destinations, and
+`sessionEnv.flowsMoved` re-stamps the record. A reader built with a plain
+`Model` string does not see a session value, which is why the description
+and the compaction (`boundedFlow.sessionless`) never offer one.
 Each of these calls sends `EffortLow` outright and carries a ceiling with
 room for the thought and the answer together — off is the model's own depth,
 and the four ceilings are spent by the reasoning first.

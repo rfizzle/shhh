@@ -264,7 +264,7 @@ func TestConfigScreen_TheWriteCarriesTheOverriddenNote(t *testing.T) {
 // row for the transcript rather than a line on the way out to the shell.
 func TestConfigSession_HostsTheSameScreenAndReportsTheWrite(t *testing.T) {
 	path := pointConfigAt(t, "")
-	session, err := configSessionOpener()()
+	session, err := configSessionOpener(nil)(nil)
 	must(t, err)
 	if session.Screen == nil || !session.Screen.InSession {
 		t.Fatal("the session host did not hand over the screen as a session's")
@@ -298,7 +298,7 @@ func TestConfigSession_HostsTheSameScreenAndReportsTheWrite(t *testing.T) {
 // saying a screen closed is a row about nothing.
 func TestConfigSession_LeavingWritesNothingAndSaysNothing(t *testing.T) {
 	path := pointConfigAt(t, "")
-	session, err := configSessionOpener()()
+	session, err := configSessionOpener(nil)(nil)
 	must(t, err)
 	if note := session.Answer(true, components.ConfigResult{Canceled: true}); note != "" {
 		t.Errorf("closing without a write left a row: %q", note)

@@ -2664,6 +2664,32 @@ func TestGolden_SecretPrompt(t *testing.T) {
 // three rails, values that are toned because their glyphs already say what
 // the colour says, a secret already masked, a setting the host cannot honour,
 // and enough rows that the window has work to do at both widths.
+// goldenFlowRows is the flows section as a session draws it: one row
+// answered by each link of the chain, and one the session holds a model for.
+func goldenFlowRows() []ConfigRow {
+	models := []SelectOption{
+		{Label: "gpt-5.2"}, {Label: "gpt-5.2-mini"}, {Label: "claude-haiku-4.5"},
+		{Label: "claude-sonnet-4.6"}, {Label: "gemini-3-flash"},
+	}
+	all := []ConfigTake{TakeSession, TakeMine, TakeCheckout}
+	return []ConfigRow{
+		{Group: "FLOWS", Key: "behavior.classifier_model", Label: "classifier",
+			Value: "gemini-3-flash", Detail: "this session only, written to no file",
+			Source: "session", SourceTone: ToneOpen, Options: models, Takes: all},
+		{Group: "FLOWS", Key: "behavior.explainer_model", Label: "explanation",
+			Value: "claude-sonnet-4.6", Detail: "behavior.explainer_model", Source: "flow key",
+			Options: models, Takes: all},
+		{Group: "FLOWS", Key: "summary.model", Label: "reading",
+			Value: "gpt-5.2-mini", Detail: "provider.cheap_model", Source: "cheap key",
+			Options: models, Takes: all},
+		{Group: "FLOWS", Key: "todo.model", Label: "backlog",
+			Value: "claude-haiku-4.5", Source: "provider small model", Options: models, Takes: all},
+		{Group: "FLOWS", Key: "summary.model", Label: "compaction",
+			Value: "gpt-5.2", Source: "session model", Options: models,
+			Takes: []ConfigTake{TakeMine, TakeCheckout}},
+	}
+}
+
 func goldenConfigRows() []ConfigRow {
 	models := []SelectOption{
 		{Label: "gpt-5.2", Desc: "current default", Meta: "$1.25 / $10"},
@@ -2722,7 +2748,7 @@ func goldenConfigRows() []ConfigRow {
 // open in the same place, and the write-back the header has been counting
 // towards.
 func TestGolden_ConfigScreen(t *testing.T) {
-	captureGolden(t, "config-screen", "the config screen", listWidths, func(width int) []golden.Panel {
+	captureGolden(t, "config-screen", "the config screen", goldenWidths, func(width int) []golden.Panel {
 		screen := func(mut func(*ConfigScreen)) *ConfigScreen {
 			c := &ConfigScreen{
 				Path: "~/.config/shhh/config.toml", Rows: goldenConfigRows(), MaxLines: 22,
@@ -2791,8 +2817,28 @@ func TestGolden_ConfigScreen(t *testing.T) {
 				c.Update(key("?"))
 				return c.View(width)
 			}()},
+			{Label: "the flows section · each row says which link of the chain answered, or that the session holds it",
+				View: flowsScreen(nil).View(width)},
+			{Label: "a flow's picker · the choice has three destinations on the key row", View: func() string {
+				c := flowsScreen(func(c *ConfigScreen) { c.Focus = 1 })
+				c.Update(key("enter"))
+				return c.View(width)
+			}()},
 		}
 	})
+}
+
+// flowsScreen is `/config` in a checkout with the flows section at its head,
+// the way a session opens it.
+func flowsScreen(mut func(*ConfigScreen)) *ConfigScreen {
+	c := &ConfigScreen{
+		Path: ".shhh/config.toml", Rows: append(goldenFlowRows(), goldenConfigRows()...),
+		MaxLines: 22, InSession: true, Scoped: true,
+	}
+	if mut != nil {
+		mut(c)
+	}
+	return c
 }
 
 // TestGolden_ConfigScreenScope captures the config screen standing in a
@@ -3620,10 +3666,10 @@ func TestGolden_ScreenFamily(t *testing.T) {
 						Subject: "last 30 days · 251 requests · 4 models", Spend: "$18.42",
 						Models: goldenMetricsModels(), MaxLines: 12,
 					}).View(width)},
-				{Label: "config · the file, and what is standing against it",
+				{Label: "config · the file, and what is standing against it, over the flows section",
 					View: (&ConfigScreen{
-						Path: "~/.config/shhh/config.toml", Rows: goldenConfigRows(),
-						Changed: 2, MaxLines: 12,
+						Path: "~/.config/shhh/config.toml", Rows: append(goldenFlowRows(), goldenConfigRows()...),
+						Changed: 2, MaxLines: 12, InSession: true,
 					}).View(width)},
 				{Label: "history · the subject, and a foot key row that states the way out",
 					View: (&HistoryScreen{

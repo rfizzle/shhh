@@ -408,3 +408,38 @@ func TestConfigScreen_IsATakeoverNotACard(t *testing.T) {
 		t.Fatalf("the header carries the two keys every one of these screens has: %q", lines[0])
 	}
 }
+
+// A row with destinations answers its picker on three keys — enter for the
+// first, then one each for the others — and says so on the key row. Those
+// two are letters, so while the picker's query row is open they are text.
+func TestConfigScreen_AFlowsPickerSendsTheChoiceWhereItsKeySays(t *testing.T) {
+	flows := func() *ConfigScreen {
+		c := configFixture()
+		c.Rows = append([]ConfigRow{{
+			Group: "FLOWS", Key: "behavior.classifier_model", Label: "classifier",
+			Value: "gpt-5.2", Source: "flow key",
+			Options: []SelectOption{{Label: "gpt-5.2"}, {Label: "gpt-5.2-mini"}},
+			Takes:   []ConfigTake{TakeSession, TakeMine, TakeCheckout},
+		}}, c.Rows...)
+		c.Update(key("enter"))
+		c.Update(key("down"))
+		return c
+	}
+	foot := ansi.Strip(flows().View(130))
+	for _, want := range []string{"[enter] this session", "[d] my settings", "[g] this checkout"} {
+		if !strings.Contains(foot, want) {
+			t.Errorf("the picker's key row does not offer %q:\n%s", want, foot)
+		}
+	}
+	for pressed, want := range map[string]ConfigTake{"enter": TakeSession, "d": TakeMine, "g": TakeCheckout} {
+		_, result := flows().Update(key(pressed))
+		if result.Change == nil || result.Change.Take != want || result.Change.Value != "gpt-5.2-mini" {
+			t.Errorf("[%s] answered %+v, want %v with the option under the pointer", pressed, result.Change, want)
+		}
+	}
+	c := flows()
+	c.Update(key("/"))
+	if _, result := c.Update(key("d")); result.Change != nil {
+		t.Errorf("a d typed into the picker's query took the choice: %+v", result.Change)
+	}
+}

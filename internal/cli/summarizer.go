@@ -15,6 +15,9 @@ package cli
 // bounds are assembled in one place and only the switch is passed in.
 
 import (
+	"maps"
+	"slices"
+	"sync"
 	"time"
 
 	"github.com/rfizzle/shhh/internal/agent"
@@ -94,6 +97,12 @@ type boundedFlow struct {
 	name   string
 	keys   []string
 	source meter.Source
+	// sessionless marks a flow no interactive session asks: the one-shot's
+	// description is `shhh cmd`'s, and the compaction summary is an
+	// unattended run's — a session compacts on its own model. A model taken
+	// for a session alone moves nothing such a flow sends, so its row never
+	// says it does.
+	sessionless bool
 	// window marks the compaction summary. A model other than the
 	// conversation's is taken there only when its window holds the
 	// conversation, and nothing vouches for the provider's small model's, so
@@ -106,11 +115,11 @@ type boundedFlow struct {
 var (
 	flowClassifier  = boundedFlow{name: "classifier", keys: []string{"behavior.classifier_model"}, source: meter.SourceClassifier}
 	flowExplanation = boundedFlow{name: "explanation", keys: []string{"behavior.explainer_model", "behavior.classifier_model"}, source: meter.SourceExplanation}
-	flowDescription = boundedFlow{name: "description", keys: []string{"behavior.description_model"}, source: meter.SourceOneShot}
+	flowDescription = boundedFlow{name: "description", keys: []string{"behavior.description_model"}, source: meter.SourceOneShot, sessionless: true}
 	flowReading     = boundedFlow{name: "reading", keys: []string{"summary.model"}, source: meter.SourceSummary}
 	flowTitle       = boundedFlow{name: "title", keys: []string{"summary.model"}, source: meter.SourceSummary}
 	flowAccount     = boundedFlow{name: "account", keys: []string{"summary.model"}, source: meter.SourceSummary}
-	flowCompaction  = boundedFlow{name: "compaction", keys: []string{"summary.model"}, source: meter.SourceSummary, window: true}
+	flowCompaction  = boundedFlow{name: "compaction", keys: []string{"summary.model"}, source: meter.SourceSummary, window: true, sessionless: true}
 	flowBacklog     = boundedFlow{name: "backlog", keys: []string{"todo.model"}, source: meter.SourceBacklog}
 	flowDrafter     = boundedFlow{name: "profile drafter", keys: []string{"agents.drafter_model"}, source: meter.SourcePersona}
 )
@@ -162,14 +171,86 @@ func resolveFlows(cfg config.Config, provName, sessionModel string) []flowModel 
 	return out
 }
 
+// flowOverrides are the models a session took for itself from the config
+// screen: a flow's key and the name it answers with until the process ends,
+// written to no file. The chain reads them over the config it was built
+// with, so a reader asked after the change is asked on the new model.
+// See docs/capabilities/configuration.md#a-session-can-hold-a-value-no-file-does.
+//
+// The lock is there because the readers are not on the goroutine that
+// writes: the classifier judges off the UI goroutine and the readings land
+// as commands, while the screen that sets a value is answered on the UI
+// goroutine.
+type flowOverrides struct {
+	mu   sync.Mutex
+	keys map[string]string
+}
+
+// set takes model for key for the rest of the session. Only a key some flow
+// reads is taken: an override is a value for the chain, and a key outside it
+// has no reader here to move.
+func (o *flowOverrides) set(key, model string) {
+	if !flowKey(key) {
+		return
+	}
+	o.mu.Lock()
+	defer o.mu.Unlock()
+	if o.keys == nil {
+		o.keys = map[string]string{}
+	}
+	o.keys[key] = model
+}
+
+// over is cfg with the session's own values in place of the files'.
+func (o *flowOverrides) over(cfg config.Config) config.Config {
+	o.mu.Lock()
+	keys := maps.Clone(o.keys)
+	o.mu.Unlock()
+	for key, model := range keys {
+		// Every key here is a plain string field (flowKey), so a copy of
+		// the config takes the value without reaching a map it shares.
+		_ = config.Set(&cfg, key, model)
+	}
+	return cfg
+}
+
+// holds reports whether the session took a value for key.
+func (o *flowOverrides) holds(key string) bool {
+	o.mu.Lock()
+	defer o.mu.Unlock()
+	_, ok := o.keys[key]
+	return ok
+}
+
+// flowKey reports whether key names some flow's model.
+func flowKey(key string) bool {
+	for _, f := range boundedFlows {
+		if slices.Contains(f.keys, key) {
+			return true
+		}
+	}
+	return false
+}
+
+// flowModelAt is a flow's model asked at the call rather than at
+// construction: the chain walked over the config the surface was built with
+// and whatever the session has taken for itself since.
+func (env *sessionEnv) flowModelAt(cfg config.Config, f boundedFlow) func() string {
+	return func() string {
+		return resolveFlow(env.flows.over(cfg), f, env.provName, env.modelName).model
+	}
+}
+
 // newSummarizer returns the summarizer for one surface. enabled is that
 // surface's switch; a disabled one still returns a summarizer, which reports
 // itself disabled rather than being nil — the callers all handle a disabled
 // reader and none of them should have to handle a nil one as well.
 func newSummarizer(cfg config.Config, env *sessionEnv, ledger *meter.Ledger, enabled bool) *agent.Summarizer {
-	model := resolveFlow(cfg, flowReading, env.provName, env.modelName).model
 	return agent.NewSummarizer(ledger.For(env.prov, meter.SourceSummary), agent.SummaryConfig{
-		Model:                      model,
+		// Model is the answer at start, which is what the settings readout
+		// states; the reading itself asks ModelAt.
+		Model:                      resolveFlow(cfg, flowReading, env.provName, env.modelName).model,
+		ModelAt:                    env.flowModelAt(cfg, flowReading),
 		Timeout:                    time.Duration(cfg.Summary.TimeoutSeconds) * time.Second,
 		MaxTokens:                  cfg.Summary.MaxTokens,
 		IntervalRounds:             cfg.Summary.IntervalRounds,
@@ -189,7 +270,7 @@ func newSummarizer(cfg config.Config, env *sessionEnv, ledger *meter.Ledger, ena
 // disabled, for newSummarizer's reason.
 func newAccountant(cfg config.Config, env *sessionEnv, ledger *meter.Ledger) *agent.Accountant {
 	return agent.NewAccountant(ledger.For(env.prov, flowAccount.source), agent.AccountConfig{
-		Model:    resolveFlow(cfg, flowAccount, env.provName, env.modelName).model,
+		ModelAt:  env.flowModelAt(cfg, flowAccount),
 		Timeout:  time.Duration(cfg.Summary.TimeoutSeconds) * time.Second,
 		Prompt:   env.prompts.account,
 		Disabled: cfg.AccountInterval() == 0,

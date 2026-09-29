@@ -73,7 +73,7 @@ func (h *fakeConfigHost) answer(done bool, result components.ConfigResult) strin
 // configModelWith is a session whose /config opens the given host.
 func configModelWith(t *testing.T, h *fakeConfigHost) Model {
 	t.Helper()
-	m := readyModel(t).WithConfigScreen(func() (ConfigSession, error) {
+	m := readyModel(t).WithConfigScreen(func([]string) (ConfigSession, error) {
 		return h.session(), nil
 	})
 	return m

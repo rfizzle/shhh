@@ -48,7 +48,10 @@ const (
 // TitleConfig bounds the titler. Model is the model that answers; empty
 // disables it, the way an unconfigured summarizer is disabled.
 type TitleConfig struct {
-	Model     string
+	Model string
+	// ModelAt, where set, is asked for the model at each reading instead of
+	// Model (see modelAt).
+	ModelAt   func() string
 	Timeout   time.Duration
 	MaxTokens int
 	Disabled  bool
@@ -97,7 +100,7 @@ func NewTitler(p provider.Provider, cfg TitleConfig) *Titler {
 
 // Enabled reports whether a reading will actually be taken.
 func (t *Titler) Enabled() bool {
-	return t != nil && t.provider != nil && !t.cfg.Disabled && strings.TrimSpace(t.cfg.Model) != ""
+	return t != nil && t.provider != nil && !t.cfg.Disabled && t.Model() != ""
 }
 
 // Model is the model the titler answers with, for a readout.
@@ -105,7 +108,7 @@ func (t *Titler) Model() string {
 	if t == nil {
 		return ""
 	}
-	return strings.TrimSpace(t.cfg.Model)
+	return modelAt(t.cfg.ModelAt, t.cfg.Model)
 }
 
 var titleSchema = json.RawMessage(`{
@@ -144,7 +147,7 @@ func (t *Titler) Title(ctx context.Context, req TitleRequest) TitleVerdict {
 		{Role: provider.RoleSystem, Content: titlePrompt},
 		{Role: provider.RoleUser, Content: "UNTRUSTED EXCHANGE:\n" + string(evidence)},
 	}, provider.CompletionOpts{
-		Model:     t.cfg.Model,
+		Model:     v.Model,
 		MaxTokens: t.cfg.maxTokens(),
 		// A shallow thought is the right amount for naming an exchange, and
 		// asking for it is the only way to bound one on a model that thinks

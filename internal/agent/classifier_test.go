@@ -599,3 +599,30 @@ func TestResolveUnattended_EveryAskBecomesARefusal(t *testing.T) {
 		t.Error("a deny passes through")
 	}
 }
+
+// TestClassifier_ModelAtIsAskedPerJudgementAndKeptForIt holds the two halves
+// of a model a session moves mid-run: the next judgement is sent on the new
+// one, and a judgement already retrying finishes every attempt on the model
+// it started with.
+func TestClassifier_ModelAtIsAskedPerJudgementAndKeptForIt(t *testing.T) {
+	current := "first"
+	var sent []string
+	p := &fakeClassifierProvider{fn: func(attempt int, opts provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+		sent = append(sent, opts.Model)
+		// The session moves the flow while this judgement is in flight.
+		current = "second"
+		if attempt == 1 {
+			return eventsOf(provider.StreamEvent{Token: "not sure", Done: true}), nil
+		}
+		return eventsOf(decisionCall(`{"decision":"allow","reason":"tests"}`)), nil
+	}}
+	c := NewClassifier(p, ClassifierConfig{Model: "built", ModelAt: func() string { return current }, Retries: 2})
+	c.Judge(context.Background(), testRequest())
+	if len(sent) != 2 || sent[0] != "first" || sent[1] != "first" {
+		t.Fatalf("a judgement in flight must keep its model across attempts, sent %v", sent)
+	}
+	c.Judge(context.Background(), testRequest())
+	if sent[len(sent)-1] != "second" {
+		t.Fatalf("the next judgement must ask the moved model, sent %v", sent)
+	}
+}

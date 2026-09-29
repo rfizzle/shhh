@@ -374,6 +374,13 @@ type sessionEnv struct {
 	// session untouched when the rebuild fails.
 	replaceKey     func(string) error
 	switchProvider func(string) error
+	// flows holds the models the config screen took for this session alone
+	// (summarizer.go). Its zero value holds none, which is every surface but
+	// the interactive session.
+	flows flowOverrides
+	// flowsMoved is told when one of them changes, so the record can say
+	// what the rest of the session is asked on. Nil tells nobody.
+	flowsMoved func()
 }
 
 // userInstructionsPath is the user's own instructions file: instructions.md
@@ -858,12 +865,11 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	// overrides, and empty falls down the bounded-call chain —
 	// provider.cheap_model, the provider's small model, the session's own.
 	summarizer := newSummarizer(cfg, env, ledger, !cfg.Summary.Disabled)
-	summaryModel := resolveFlow(cfg, flowTitle, env.provName, env.modelName).model
 	// Session titles ask the same model. On unless the config says
 	// otherwise, since a model always resolves down the chain; a name the
 	// user gives wins either way.
 	titler := agent.NewTitler(ledger.For(env.prov, meter.SourceSummary), agent.TitleConfig{
-		Model:    summaryModel,
+		ModelAt:  env.flowModelAt(cfg, flowTitle),
 		Timeout:  time.Duration(cfg.Summary.TimeoutSeconds) * time.Second,
 		Disabled: !cfg.TitlesEnabled(),
 	})
@@ -937,17 +943,30 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	// session that ran start to finish in the configured default would
 	// record no mode at all, and absence is also what a session that
 	// recorded nothing looks like.
-	settings := sessionSettings(cfg, runSettings{
-		mode:       mode.String(),
-		effort:     env.effort,
-		rounds:     roundCapFor(maxRoundsFor(cfg, session.maxRounds, session.maxRoundsSet)),
-		checkIn:    checkInFor(cfg.Behavior.CheckInIntervalRounds),
-		sandbox:    containment.Profile,
-		model:      auxiliaryModel(cfg, env.provName, env.modelName),
-		summary:    !cfg.Summary.Disabled,
-		classifier: true,
-	})
-	recorder.stamp(env.prompts.fingerprintOf(env.sysPrompt), session.skills.Len(), projectFingerprintRoot(), settings)
+	//
+	// The models are read through the session's own values, so a flow moved
+	// on the config screen is what the row states from the change on: the
+	// row is stamped again when one moves, and every row a boundary opens
+	// after it is stamped with it
+	// (docs/capabilities/configuration.md#a-session-can-hold-a-value-no-file-does).
+	settings := func() storage.AgentSettings {
+		in := env.flows.over(cfg)
+		return sessionSettings(in, runSettings{
+			mode:       mode.String(),
+			effort:     env.effort,
+			rounds:     roundCapFor(maxRoundsFor(cfg, session.maxRounds, session.maxRoundsSet)),
+			checkIn:    checkInFor(cfg.Behavior.CheckInIntervalRounds),
+			sandbox:    containment.Profile,
+			model:      auxiliaryModel(in, env.provName, env.modelName),
+			summary:    !cfg.Summary.Disabled,
+			classifier: true,
+		})
+	}
+	stamped := env.sysPrompt
+	recorder.stamp(env.prompts.fingerprintOf(stamped), session.skills.Len(), projectFingerprintRoot(), settings())
+	env.flowsMoved = func() {
+		recorder.stamp(env.prompts.fingerprintOf(stamped), session.skills.Len(), projectFingerprintRoot(), settings())
+	}
 
 	// The session boundary: /new ends this session and begins another without
 	// the process restarting, so the two halves of a launch the front end
@@ -967,7 +986,8 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		text, projectTokens, _ := session.systemPrompt(cfg.Behavior.SystemPromptExtra)
 		text = session.boundaryPrompt(text, scopeSaid, sc)
 		if recorder.restart() {
-			recorder.stamp(env.prompts.fingerprintOf(text), session.skills.Len(), projectFingerprintRoot(), settings)
+			stamped = text
+			recorder.stamp(env.prompts.fingerprintOf(text), session.skills.Len(), projectFingerprintRoot(), settings())
 		}
 		return chat.SessionStart{Prompt: text, Resume: resume, ProjectTokens: projectTokens}
 	}
@@ -1038,7 +1058,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		WithScope(sc).
 		WithMaxToolRounds(maxRoundsFor(cfg, session.maxRounds, session.maxRoundsSet)).
 		WithConfigWriter(configWriter(proj)).
-		WithConfigScreen(configSessionOpener()).
+		WithConfigScreen(configSessionOpener(env)).
 		WithMouse(cfg.MouseEnabled()).
 		WithVerbosity(cfg.Appearance.Verbosity).
 		WithPasteThresholds(cfg.Appearance.PasteLines, cfg.Appearance.PasteColumns).
@@ -1151,7 +1171,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		// and unset they fall down the bounded-call chain like every other
 		// digest, so the session model is never spent on one by accident
 		// (docs/capabilities/providers.md#a-bounded-call-runs-on-the-small-model).
-		reading := todo.ExtractConfig{Model: resolveFlow(cfg, flowBacklog, env.provName, env.modelName).model, Session: todo.CodingSession}
+		reading := todo.ExtractConfig{ModelAt: env.flowModelAt(cfg, flowBacklog), Session: todo.CodingSession}
 		if session.conversation {
 			reading.Session = todo.Conversation
 		}

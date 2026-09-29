@@ -50,9 +50,23 @@ type Outcome struct {
 
 // Config bounds the drafter's request.
 type Config struct {
-	Model     string
+	Model string
+	// ModelAt, where set, is asked for the model at each drafting turn
+	// instead of Model, and its answer is kept for that turn: a session that
+	// moves the drafter onto another model takes it on the next turn, and a
+	// turn already in flight finishes where it started
+	// (docs/capabilities/configuration.md#a-session-can-hold-a-value-no-file-does).
+	ModelAt   func() string
 	Timeout   time.Duration
 	MaxTokens int
+}
+
+// model is the name a turn asks with.
+func (c Config) model() string {
+	if c.ModelAt != nil {
+		return strings.TrimSpace(c.ModelAt())
+	}
+	return strings.TrimSpace(c.Model)
 }
 
 func (c Config) timeout() time.Duration {
@@ -82,7 +96,7 @@ func NewDrafter(p provider.Provider, cfg Config) *Drafter {
 
 // Enabled reports a drafter with somewhere to send the brief.
 func (d *Drafter) Enabled() bool {
-	return d != nil && d.provider != nil && strings.TrimSpace(d.cfg.Model) != ""
+	return d != nil && d.provider != nil && d.cfg.model() != ""
 }
 
 // DraftToolName is the tool the drafter answers through.
@@ -147,7 +161,11 @@ func (d *Drafter) Draft(ctx context.Context, req Request) Outcome {
 		o.Elapsed = time.Since(start)
 		return o
 	}
-	if !d.Enabled() {
+	model := ""
+	if d != nil {
+		model = d.cfg.model()
+	}
+	if !d.Enabled() || model == "" {
 		out.Err = "no model is configured to draft a profile"
 		return finish(out)
 	}
@@ -157,7 +175,7 @@ func (d *Drafter) Draft(ctx context.Context, req Request) Outcome {
 		{Role: provider.RoleSystem, Content: systemPrompt(req.Kind)},
 		{Role: provider.RoleUser, Content: userPrompt(req)},
 	}, provider.CompletionOpts{
-		Model:      d.cfg.Model,
+		Model:      model,
 		MaxTokens:  d.cfg.maxTokens(),
 		Tools:      []provider.Tool{DraftTool()},
 		ToolChoice: "auto",

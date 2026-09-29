@@ -1,6 +1,8 @@
 # program test: none — the screen's host is the command package's config
 #   model, which the chat program test does not build; the scope key is held
-#   by TestConfigScreen_TheScopeKeyMovesTheWrite
+#   by TestConfigScreen_TheScopeKeyMovesTheWrite, and the flows section by
+#   TestConfigScreen_FlowsSayWhichStepAnswered and
+#   TestConfigScreen_AFlowTakenForTheSessionReachesItsReader
 #
 # /config in a session standing in a checkout, at 110 columns. The scene's
 # directory is a fresh repository, so the screen opens writing the
@@ -10,12 +12,28 @@
 # now offers the way back. That is what lets a key the checkout may not
 # decide — an api key, sandbox.require — be written from inside a session
 # rather than by leaving it for a flag the screen cannot pass.
+#
+# The flows section heads the screen: every bounded call and the model the
+# chain gives it, with the link that answered in the source column. The
+# classifier's row opens the same list the session's /model picker offers,
+# which is why /model is asked first — the scripted endpoint's models are
+# what it lists — and its key row names the three places the choice can go.
+# Taken for this session, the row is redrawn with `session` as its source and
+# nothing is written.
 snap 01-start "Some things worth doing first"
+keys "/model" Enter
+snap 02-models "scripted-mini" "(current)"
+keys Escape
+sleep 0.5
 keys "/config" Enter
-snap 02-checkout "/config · the checkout's file · .shhh/config.toml" "[g] write yours"
+snap 03-checkout "/config · the checkout's file · .shhh/config.toml" "[g] write yours" "FLOWS"
 keys g
-snap 03-yours "/config · your file" "[g] write the checkout's"
+snap 04-yours "/config · your file" "[g] write the checkout's"
 keys g
-snap 04-back "/config · the checkout's file" "[g] write yours"
+snap 05-back "/config · the checkout's file" "[g] write yours"
+keys Enter
+snap 06-flow-picker "[enter] this session" "[d] my settings" "[g] this checkout"
+keys Up Enter
+snap 07-session "this session only, written to no file" "for the rest of this session"
 keys Escape
 sleep 0.5
