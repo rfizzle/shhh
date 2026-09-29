@@ -328,9 +328,10 @@ type runSettings struct {
 	// rather than here so this stays a function of the config and the flags.
 	item, stage string
 	// model is what the summariser and the classifier fall back to when
-	// their own keys are unset — the provider's small model where it names
-	// one, else the session's own. It is resolved by the surface rather than
-	// here so the record states the model that was actually asked.
+	// their own keys are unset — auxiliaryModel's answer: provider.cheap_model,
+	// the provider's small model, else the session's own. It is resolved by
+	// the surface rather than here so the record states the model that was
+	// actually asked.
 	model string
 	// checkIn is how many rounds pass before this surface asks a turn to
 	// take stock, and 0 where it never asks. It is the surface's own answer

@@ -499,6 +499,13 @@ type ProviderConfig struct {
 	CmdModel  string `toml:"cmd_model"`
 	ChatModel string `toml:"chat_model"`
 	CodeModel string `toml:"code_model"`
+	// CheapModel is the model every bounded call — the classifier, the
+	// readings, the title, the backlog's drafts — falls back to when its own
+	// key is unset, ahead of the provider's small model. Empty keeps that
+	// small model, else the session's own, which is how a file naming none
+	// has always run.
+	// See docs/capabilities/providers.md#a-bounded-call-runs-on-the-small-model.
+	CheapModel string `toml:"cheap_model"`
 	// APIKey holds the key itself, so every copy of this file — a backup, a
 	// dotfiles commit, a screen share — is a copy of the key. APIKeyEnv is
 	// the form to prefer, and this one is here for the machines that were

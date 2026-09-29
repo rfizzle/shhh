@@ -1173,3 +1173,35 @@ func TestProbeSearch_ReadsTheConfiguredBackend(t *testing.T) {
 		t.Errorf("an unknown backend was not named: %+v", f)
 	}
 }
+
+// The flows row names each bounded call and the link of the chain that put
+// it on its model. A provider with no small model of its own — a gateway
+// profile — reads as every flow on the session's model, said in words; a
+// cheap key moves every unkeyed flow onto it, and a flow key moves one.
+func TestDoctorFlows_NamesEachFlowAndTheLinkThatAnswered(t *testing.T) {
+	f := doctorFlows(resolveFlows(config.Config{}, "my-gateway", "big-model"))
+	if f.Subject != "big-model" || f.Detail != "8 session model" {
+		t.Fatalf("a profile route: subject %q, detail %q", f.Subject, f.Detail)
+	}
+	if len(f.Fix) != len(boundedFlows) || f.Fix[0] != "classifier — big-model · session model" {
+		t.Fatalf("lines = %q", f.Fix)
+	}
+
+	var cfg config.Config
+	cfg.Provider.CheapModel = "cheap"
+	cfg.Todo.Model = "backlogger"
+	f = doctorFlows(resolveFlows(cfg, "my-gateway", "big-model"))
+	if f.Subject != "2 models" || f.Detail != "1 flow key · 7 cheap key" {
+		t.Fatalf("keyed: subject %q, detail %q", f.Subject, f.Detail)
+	}
+	joined := strings.Join(f.Fix, "\n")
+	for _, want := range []string{
+		"backlog — backlogger · flow key todo.model",
+		"reading — cheap · cheap key provider.cheap_model",
+		"compaction — cheap · cheap key provider.cheap_model · when its window holds the conversation",
+	} {
+		if !strings.Contains(joined, want) {
+			t.Errorf("missing %q in:\n%s", want, joined)
+		}
+	}
+}

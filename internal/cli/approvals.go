@@ -97,8 +97,8 @@ func buildClassifier(cfg config.Config, env *sessionEnv, ledger *meter.Ledger) *
 }
 
 // gateModel is the inexpensive model the gate reads with: what
-// behavior.classifier_model names, and the provider's small model where it
-// names nothing.
+// behavior.classifier_model names, and the bounded-call chain's answer where
+// it names nothing.
 //
 // One resolution and not one per reader. Everything asked at the approval
 // card is the same size of question about the same call, and a session where
@@ -107,7 +107,7 @@ func buildClassifier(cfg config.Config, env *sessionEnv, ledger *meter.Ledger) *
 // does with them, one under the other, in the moment before answering.
 // See docs/capabilities/configuration.md#the-classifier-is-configured-once.
 func gateModel(cfg config.Config, env *sessionEnv) string {
-	return modelOr(cfg.Behavior.ClassifierModel, auxiliaryModel(env.provName, env.modelName))
+	return resolveFlow(cfg, flowClassifier, env.provName, env.modelName).model
 }
 
 // buildExplainer is the card's explanation: the same model the classifier
@@ -135,7 +135,7 @@ func gateModel(cfg config.Config, env *sessionEnv) string {
 // nothing else on it is for.
 func buildExplainer(cfg config.Config, env *sessionEnv, ledger *meter.Ledger) *agent.Explainer {
 	return agent.NewExplainer(ledger.For(env.prov, meter.SourceExplanation), agent.ExplainConfig{
-		Model:  modelOr(cfg.Behavior.ExplainerModel, gateModel(cfg, env)),
+		Model:  resolveFlow(cfg, flowExplanation, env.provName, env.modelName).model,
 		Prompt: prompt.BuildExplain(true),
 	})
 }

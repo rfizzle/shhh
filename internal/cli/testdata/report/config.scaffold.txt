@@ -45,6 +45,12 @@
 # this.
 #code_model = ""
 
+# The model every bounded call — the classifier, the readings, the title,
+# the explanation, the description, the backlog's drafts, the profile drafter
+# — falls back to when its own key is unset.
+# The default is the provider's small model, or the session's own.
+#cheap_model = ""
+
 # The provider key itself, which puts a copy of it in every copy of this file;
 # `api_key_env` is the form to prefer.
 # The default is from the environment.

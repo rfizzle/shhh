@@ -939,7 +939,7 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 				// only question it is ever put.
 				checkIn:    subagent.ChildCheckInInterval,
 				sandbox:    childSandboxProfile(cfg),
-				model:      auxiliaryModel(env.provName, env.modelName),
+				model:      auxiliaryModel(cfg, env.provName, env.modelName),
 				summary:    cfg.SubagentSummaryEnabled(),
 				classifier: true,
 			}))

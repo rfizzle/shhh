@@ -217,9 +217,41 @@ default one, and only fall back to the session's own where the provider has
 none to name: a local endpoint serves whatever weights were pulled, and
 guessing a name there is a request that 404s.
 
-Naming the model explicitly still wins. A session that puts a model in the
-classifier or summary setting gets that model, which is what a person reaches
-for when the small one is judging badly.
+Every bounded call outside the main agent and its children resolves its model
+down one chain of four links, each answering only where the one before it is
+unset:
+
+1. the flow's own key, where a person named one;
+2. `provider.cheap_model`, the one model every flow falls back to;
+3. the small model the provider names;
+4. the session's own model.
+
+The flows on it are the permission classifier (`behavior.classifier_model`),
+the approval card's explanation (`behavior.explainer_model`, then the
+classifier's key, because the two are read one under the other), the
+one-shot's saved-command description (`behavior.description_model`), the
+session reading, the title and the compaction summary (all three
+`summary.model`), the backlog's extractor and drafter (`todo.model`), and the
+agent-profile drafter (`agents.drafter_model`). The last two used to run on
+the session's model outright; a digest is a digest whichever flow asks for
+it, and the session model is never spent on one by accident.
+
+Naming the model explicitly still wins. A session that puts a model in a
+flow's own setting gets that model, which is what a person reaches for when
+the small one is judging badly — and a person who wants all of the machinery
+on one model names it once, in `provider.cheap_model`, rather than once per
+flow.
+
+The compaction summary keeps a rule of its own over the chain. A model other
+than the conversation's is taken only when its window is at least the
+conversation's, because a compaction is asked for at exactly the moment the
+conversation is nearly a window's worth. Nothing vouches for the provider's
+small model's window, so that link is skipped there: an unconfigured
+compaction runs on the conversation's own model, as it always has.
+
+`shhh doctor` names each flow, the model it resolved to and which link
+answered, and `/stats` names under each model the sources that billed it — a
+second model on the bill is explained where the bill is read.
 
 ## A bounded call asks for the shape of its answer
 

@@ -855,11 +855,10 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	explainer := buildExplainer(cfg, env, ledger)
 
 	// The session summary resolves its model the same way: summary.model
-	// overrides, and empty takes the provider's small model. It is still the
-	// setting in that section worth changing, because a provider that names
-	// no small model leaves the readings on the session's own.
+	// overrides, and empty falls down the bounded-call chain —
+	// provider.cheap_model, the provider's small model, the session's own.
 	summarizer := newSummarizer(cfg, env, ledger, !cfg.Summary.Disabled)
-	summaryModel := modelOr(cfg.Summary.Model, auxiliaryModel(env.provName, env.modelName))
+	summaryModel := resolveFlow(cfg, flowTitle, env.provName, env.modelName).model
 	// Session titles ask the same model. Off unless a summary model is
 	// configured or the config says so outright; a name the user gives
 	// wins either way.
@@ -944,7 +943,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		rounds:     roundCapFor(maxRoundsFor(cfg, session.maxRounds, session.maxRoundsSet)),
 		checkIn:    checkInFor(cfg.Behavior.CheckInIntervalRounds),
 		sandbox:    containment.Profile,
-		model:      auxiliaryModel(env.provName, env.modelName),
+		model:      auxiliaryModel(cfg, env.provName, env.modelName),
 		summary:    !cfg.Summary.Disabled,
 		classifier: true,
 	})
@@ -1147,18 +1146,19 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		// What the reading is a reading of, in the words the person would
 		// use for it. A prompt that called a conversation a coding session
 		// would be asking the model to read something that did not happen.
-		// todo.model moves the two backlog readings below off the session's
-		// model where a person named one, and leaves them on it otherwise.
-		reading := todo.ExtractConfig{Model: modelOr(cfg.Todo.Model, env.modelName), Session: todo.CodingSession}
+		// todo.model names the model the two backlog readings below run on,
+		// and unset they fall down the bounded-call chain like every other
+		// digest, so the session model is never spent on one by accident
+		// (docs/capabilities/providers.md#a-bounded-call-runs-on-the-small-model).
+		reading := todo.ExtractConfig{Model: resolveFlow(cfg, flowBacklog, env.provName, env.modelName).model, Session: todo.CodingSession}
 		if session.conversation {
 			reading.Session = todo.Conversation
 		}
 		model = model.WithTodos(chat.Todos{
 			Root: root, Manage: todoManager(root), Detail: todoDetail,
 			Profile: profile,
-			// The session's own model reads the session: extraction is a
-			// judgement about the whole conversation, not a status line, and
-			// the cheap summary model is the wrong price point for it.
+			// The reading is metered against the backlog, so /stats names
+			// it under whichever model the chain answered with.
 			Extractor: todo.NewExtractor(ledger.For(env.prov, meter.SourceBacklog), reading, profile),
 			// Drafting an item from a sentence is the same judgement in one
 			// paragraph rather than over a whole session, so it goes to the

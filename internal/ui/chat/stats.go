@@ -8,6 +8,7 @@ package chat
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/rfizzle/shhh/internal/meter"
@@ -178,6 +179,17 @@ func (m Model) spendByModelReport() string {
 	if len(rows) < 2 {
 		return ""
 	}
+	// Under each model, the sources that billed it: a second model on the
+	// bill is almost always a bounded call's, and the row is where the bill
+	// is read, so it names which ones put it there
+	// (docs/capabilities/providers.md#a-bounded-call-runs-on-the-small-model).
+	sources := map[string][]string{}
+	for _, e := range m.ledger.Entries() {
+		src := string(e.Origin.Source)
+		if e.Requests > 0 && !slices.Contains(sources[e.Model], src) {
+			sources[e.Model] = append(sources[e.Model], src)
+		}
+	}
 	var sb strings.Builder
 	sb.WriteString("By model:\n")
 	for _, e := range rows {
@@ -186,6 +198,9 @@ func (m Model) spendByModelReport() string {
 			name = "(unnamed)"
 		}
 		sb.WriteString(spendRow(name, 24, e))
+		if s := sources[e.Model]; len(s) > 0 {
+			sb.WriteString("    " + strings.Join(s, " · ") + "\n")
+		}
 	}
 	return sb.String()
 }

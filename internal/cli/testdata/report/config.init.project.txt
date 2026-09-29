@@ -1,6 +1,6 @@
   shhh config init — /home/dev/src/app/.shhh
 
-  ✓ wrote /home/dev/src/app/.shhh/config.toml · 101 settings, each c…  [project]
+  ✓ wrote /home/dev/src/app/.shhh/config.toml · 102 settings, each c…  [project]
         uncomment a line to change one; above each key is what it decides
   ✓ wrote /home/dev/src/app/.shhh/prompts/ · 12 wordings, each the b…  [project]
         edit one and it is what a session is told; delete it and the built-in

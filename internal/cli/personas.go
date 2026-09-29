@@ -20,14 +20,13 @@ func personaKind(session chatSession) persona.Kind {
 	return persona.KindCode
 }
 
-// buildPersonas wires /agents new: the drafter on the session's own model
-// (a profile is a judgement about the work, not a status line) unless
-// agents.drafter_model names another, and a save
+// buildPersonas wires /agents new: the drafter on agents.drafter_model, or
+// down the bounded-call chain where that is unset, and a save
 // that writes the file and makes the role spawnable in this session.
 // See docs/capabilities/subagents.md#a-profile-is-drafted-in-conversation.
 func buildPersonas(session chatSession, env *sessionEnv, agents *agentProfiles, sup *subagent.Supervisor, ledger *meter.Ledger) chat.Personas {
 	kind := personaKind(session)
-	drafter := persona.NewDrafter(ledger.For(env.prov, meter.SourcePersona), persona.Config{Model: modelOr(env.cfg.Agents.DrafterModel, env.modelName)})
+	drafter := persona.NewDrafter(ledger.For(env.prov, meter.SourcePersona), persona.Config{Model: resolveFlow(env.cfg, flowDrafter, env.provName, env.modelName).model})
 	cwd, err := os.Getwd()
 	if err != nil {
 		cwd = "."

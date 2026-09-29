@@ -1204,7 +1204,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 		rounds:     roundCapFor(opts.rounds(cfg)),
 		checkIn:    checkInFor(cfg.Behavior.CheckInIntervalRounds),
 		sandbox:    sandboxProfile,
-		model:      auxiliaryModel(env.provName, env.modelName),
+		model:      auxiliaryModel(cfg, env.provName, env.modelName),
 		summary:    cfg.HeadlessSummaryEnabled(),
 		classifier: opts.autoMode,
 	}))
@@ -1702,8 +1702,11 @@ func headlessCompactor(ctx context.Context, cfg config.Config, env *sessionEnv, 
 	// though, and never to one nothing can vouch for the window of: the
 	// moment a compaction is asked for is the moment that conversation is
 	// nearly a window's worth, so a smaller model would refuse the request at
-	// precisely the point there is no room to fail.
-	if name := strings.TrimSpace(cfg.Summary.Model); name != "" && name != env.modelName {
+	// precisely the point there is no room to fail. Which name is tried is
+	// the bounded-call chain's answer — summary.model, then
+	// provider.cheap_model — without the provider's small model, whose window
+	// nothing here has vouched for.
+	if name := strings.TrimSpace(resolveFlow(cfg, flowCompaction, env.provName, env.modelName).model); name != "" && name != env.modelName {
 		if w, ok := summaryModelWindow(prices, name); ok && w >= window {
 			c.Stream = summaryModelStream(ctx, env, ledger, defs, name)
 		}

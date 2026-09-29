@@ -217,6 +217,9 @@ var settings = []Setting{
 		Env: "SHHH_MODEL", Flag: "--model",
 		Desc: "The model `shhh code` runs on — a `--print` run, `shhh serve`, `shhh eval` and the stages of a backlog run that writes included — read ahead of `provider.model`.",
 	}, {
+		Key: "provider.cheap_model", Kind: KindString, Default: "(the provider's small model, or the session's own)",
+		Desc: "The model every bounded call — the classifier, the readings, the title, the explanation, the description, the backlog's drafts, the profile drafter — falls back to when its own key is unset.",
+	}, {
 		Key: "provider.api_key", Kind: KindString, Default: "(from the environment)", Secret: true,
 		Env: "SHHH_API_KEY", Flag: "--api-key",
 		Desc: "The provider key itself, which puts a copy of it in every copy of this file; `api_key_env` is the form to prefer.",
@@ -299,7 +302,7 @@ var settings = []Setting{
 		Values: []string{"manual", "accept-edits", "auto", "read-only", "plan"},
 		Desc:   "The order the mode key walks the permission modes in.",
 	}, {
-		Key: "behavior.classifier_model", Kind: KindString, Default: "(the provider's small model, or the session's own)",
+		Key: "behavior.classifier_model", Kind: KindString, Default: "(provider.cheap_model)",
 		Desc: "The model auto mode's permission classifier runs on.",
 	}, {
 		Key: "behavior.classifier_timeout_seconds", Kind: KindInt, Default: "30",
@@ -314,7 +317,7 @@ var settings = []Setting{
 		Key: "behavior.explainer_model", Kind: KindString, Default: "(the classifier's model)",
 		Desc: "The model an approval card's explanation of a command is asked of.",
 	}, {
-		Key: "behavior.description_model", Kind: KindString, Default: "(the provider's small model, or the one-shot's own)",
+		Key: "behavior.description_model", Kind: KindString, Default: "(provider.cheap_model)",
 		Desc: "The model that writes the one-line description a command saved from `shhh cmd` is listed under.",
 	}, {
 		Key: "behavior.memory_disabled", Kind: KindBool, Default: "off",
@@ -510,7 +513,7 @@ var settings = []Setting{
 		Key: "agents.model", Kind: KindString, Default: "inherit",
 		Desc: "The model every sub-agent runs, unless its role says otherwise; `inherit` is the session's own.",
 	}, {
-		Key: "agents.drafter_model", Kind: KindString, Default: "(the session's own)",
+		Key: "agents.drafter_model", Kind: KindString, Default: "(provider.cheap_model)",
 		Desc: "The model `/agents new` drafts a profile on.",
 	}, {
 		Key: "agents.profiles." + RoleWildcard + ".model", Kind: KindString, Wild: WildRole,
@@ -542,7 +545,7 @@ var settings = []Setting{
 	},
 
 	{
-		Key: "summary.model", Kind: KindString, Default: "(the provider's small model, or the session's own)",
+		Key: "summary.model", Kind: KindString, Default: "(provider.cheap_model)",
 		Desc: "The model that takes the periodic reading of the session.",
 	}, {
 		Key: "summary.interval_rounds", Kind: KindInt, Default: "10",
@@ -651,7 +654,7 @@ var settings = []Setting{
 		Key: "todo.profile", Kind: KindString, Default: "code",
 		Desc: "The profile this project's backlog is written in and worked under: what an item is called, which fields it carries, and which steps a run takes; it is looked for in this checkout, then beside your settings, then among the ones built in.",
 	}, {
-		Key: "todo.model", Kind: KindString, Default: "(the session's own)",
+		Key: "todo.model", Kind: KindString, Default: "(provider.cheap_model)",
 		Desc: "The model `/todo add` reads a session into items with and `/todo new` drafts an item on; grooming and sprint planning are turns of the session and run on its model.",
 	}, {
 		Key: "todo.commit", Kind: KindBool, Default: "on",

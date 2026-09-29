@@ -109,6 +109,12 @@ var settingsAllowlist = map[string]bool{
 	"Summary.IntervalRounds":         true,
 	"Behavior.ClassifierModel":       true,
 	"Behavior.CheckInIntervalRounds": true,
+	// The model every bounded call falls back to. It reaches the stamp
+	// through runSettings.model, which each surface resolves with
+	// auxiliaryModel, so the summary and classifier columns carry it where
+	// their own keys are unset — the split a cohort comparison of the cheap
+	// model is made on.
+	"Provider.CheapModel": true,
 	// A switch, stamped so a cohort comparison can split on whether a
 	// writer's commands had to be contained.
 	"Agents.RequireSandbox": true,
@@ -179,6 +185,23 @@ func TestSessionSettings_KeepsNothingOffTheAllowlist(t *testing.T) {
 	if got.CheckInInterval != ints["Behavior.CheckInIntervalRounds"] {
 		t.Fatalf("check-in = %d, want the marker %d",
 			got.CheckInInterval, ints["Behavior.CheckInIntervalRounds"])
+	}
+}
+
+// The stamp follows the bounded-call chain: with the flow keys unset, the
+// summary and classifier columns name provider.cheap_model when the surface
+// resolved its fallback through auxiliaryModel, and a flow key still wins.
+func TestSessionSettings_StampsTheCheapModel(t *testing.T) {
+	var cfg config.Config
+	cfg.Provider.CheapModel = "cheap"
+	run := runSettings{model: auxiliaryModel(cfg, "anthropic", "session"), summary: true, classifier: true}
+	got := sessionSettings(cfg, run)
+	if got.SummaryModel != "cheap" || got.ClassifierModel != "cheap" {
+		t.Fatalf("the cheap key did not reach the stamp: %+v", got)
+	}
+	cfg.Summary.Model = "reader"
+	if got := sessionSettings(cfg, run); got.SummaryModel != "reader" || got.ClassifierModel != "cheap" {
+		t.Fatalf("a flow key must outrank the cheap key in the stamp: %+v", got)
 	}
 }
 

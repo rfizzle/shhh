@@ -1043,6 +1043,7 @@ own file could hold.
 | `cmd_model` | text | (provider.model) | The model `shhh cmd` and the shell hotkey generate a command on, read ahead of `provider.model`. `--model` and `SHHH_MODEL` are read ahead of the file. |
 | `chat_model` | text | (provider.model) | The model `shhh chat` runs on, a `--print` conversation and the stages of a backlog run that only reads included, read ahead of `provider.model`. `--model` and `SHHH_MODEL` are read ahead of the file. |
 | `code_model` | text | (provider.model) | The model `shhh code` runs on — a `--print` run, `shhh serve`, `shhh eval` and the stages of a backlog run that writes included — read ahead of `provider.model`. `--model` and `SHHH_MODEL` are read ahead of the file. |
+| `cheap_model` | text | (the provider's small model, or the session's own) | The model every bounded call — the classifier, the readings, the title, the explanation, the description, the backlog's drafts, the profile drafter — falls back to when its own key is unset. |
 | `api_key` | text | (from the environment) | The provider key itself, which puts a copy of it in every copy of this file; `api_key_env` is the form to prefer. `--api-key` and `SHHH_API_KEY` are read ahead of the file. It is a credential: the listing says whether it is set, never what it is. |
 | `api_key_env` | variable | (the provider's own variable) | The environment variable the provider key is read from at start, so the file names the key instead of holding it. It is read ahead of `api_key`. |
 | `base_url` | text | (the provider's own) | Where the provider's API is, for a gateway or a self-hosted endpoint. `SHHH_BASE_URL` is read ahead of the file. |
@@ -1072,12 +1073,12 @@ own file could hold.
 | `scope_dirs` | list | (the directory the session opened in) | Directories added to a session's working scope at start, beside the one it was opened in. |
 | `default_mode` | word: `manual`, `accept-edits`, `auto`, `read-only`, `plan` | `manual` | The permission mode a session starts in. |
 | `mode_cycle` | list: `manual`, `accept-edits`, `auto`, `read-only`, `plan` | manual, accept-edits, auto, read-only, plan | The order the mode key walks the permission modes in. |
-| `classifier_model` | text | (the provider's small model, or the session's own) | The model auto mode's permission classifier runs on. |
+| `classifier_model` | text | (provider.cheap_model) | The model auto mode's permission classifier runs on. |
 | `classifier_timeout_seconds` | number | `30` | How long one classifier request may take. |
 | `classifier_max_tokens` | number | `8192` | The ceiling on a classifier response, the reasoning it does before answering included. |
 | `classifier_retries` | number | `1` | How many extra attempts an invalid or failed classifier response gets before it fails closed. |
 | `explainer_model` | text | (the classifier's model) | The model an approval card's explanation of a command is asked of. |
-| `description_model` | text | (the provider's small model, or the one-shot's own) | The model that writes the one-line description a command saved from `shhh cmd` is listed under. |
+| `description_model` | text | (provider.cheap_model) | The model that writes the one-line description a command saved from `shhh cmd` is listed under. |
 | `memory_disabled` | true/false | `off` | Turn durable memory off: nothing is injected and the remember tool is not registered. |
 | `memory_max_entries` | number | `20` | How many memories are injected into one session's system prompt. |
 | `memory_max_tokens` | number | `1200` | The token budget for the injected memory block. |
@@ -1191,7 +1192,7 @@ own file could hold.
 | Key | Takes | Default | What it decides |
 |---|---|---|---|
 | `model` | text | `inherit` | The model every sub-agent runs, unless its role says otherwise; `inherit` is the session's own. |
-| `drafter_model` | text | (the session's own) | The model `/agents new` drafts a profile on. |
+| `drafter_model` | text | (provider.cheap_model) | The model `/agents new` drafts a profile on. |
 | `profiles.<role>.model` | text | (the sub-agent model) | The model one role runs — the role is the key's own segment, so any role a spawn names can have one. |
 | `depth.<depth>.model` | text | (the sub-agent model) | The model one level of delegation runs — `2` is a child of this session, `3` a child of that. A role that names its own model outranks it. |
 | `max_concurrent` | number | `3` | How many children may run at once at one level of delegation; further spawns queue. |
@@ -1205,7 +1206,7 @@ own file could hold.
 
 | Key | Takes | Default | What it decides |
 |---|---|---|---|
-| `model` | text | (the provider's small model, or the session's own) | The model that takes the periodic reading of the session. |
+| `model` | text | (provider.cheap_model) | The model that takes the periodic reading of the session. |
 | `interval_rounds` | number | `10` | How many tool rounds pass between two readings; higher is cheaper and staler. |
 | `min_gap_seconds` | number | `20` | The floor on wall-clock time between two readings, so a burst of fast rounds cannot rewrite the block repeatedly. |
 | `timeout_seconds` | number | `20` | How long one reading may take. |
@@ -1263,7 +1264,7 @@ own file could hold.
 |---|---|---|---|
 | `root` | path | (the project you are in, else the global backlog) | Where the backlog lives when the working directory is part of no project; a session inside a project always reads that project's backlog. |
 | `profile` | text | `code` | The profile this project's backlog is written in and worked under: what an item is called, which fields it carries, and which steps a run takes; it is looked for in this checkout, then beside your settings, then among the ones built in. |
-| `model` | text | (the session's own) | The model `/todo add` reads a session into items with and `/todo new` drafts an item on; grooming and sprint planning are turns of the session and run on its model. |
+| `model` | text | (provider.cheap_model) | The model `/todo add` reads a session into items with and `/todo new` drafts an item on; grooming and sprint planning are turns of the session and run on its model. |
 | `commit` | true/false | `on` | End a backlog run in a commit; off leaves the change in the working tree, which is the answer for a directory that is not a repository. |
 | `item_timeout_minutes` | number | 0 (no cap) | How long one item of a sprint may take before it is blocked and the sprint stops; zero leaves it uncapped. |
 | `sprint_cost_cap_cents` | number | 0 (off) | Priced spend, in cents, across a whole sprint after which it starts no further item; provider.cost_cap_cents still bounds each item's own session. `--cost-cap` is read ahead of the file. |

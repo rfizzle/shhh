@@ -95,6 +95,20 @@ func TestSpend_StatsNamesEverySource(t *testing.T) {
 	}
 }
 
+// A second model on the bill is explained where the bill is read: each model
+// row names the sources that billed it.
+func TestSpend_StatsNamesTheFlowsUnderEachModel(t *testing.T) {
+	m, ledger := spendModel(t)
+	ledger.Record(meter.Origin{Source: meter.SourceAgent}, "gpt-4o", provider.Usage{PromptTokens: 1000, CompletionTokens: 100})
+	ledger.Record(meter.Origin{Source: meter.SourceClassifier}, "cheap", provider.Usage{PromptTokens: 800, CompletionTokens: 30})
+	ledger.Record(meter.Origin{Source: meter.SourceSummary}, "cheap", provider.Usage{PromptTokens: 400, CompletionTokens: 40})
+
+	report := m.spendByModelReport()
+	if !strings.Contains(report, "    classifier · summary\n") || !strings.Contains(report, "    agent\n") {
+		t.Fatalf("each model should name what billed it:\n%s", report)
+	}
+}
+
 // A single sub-agent is already named by its class row; repeating it under
 // itself is noise.
 func TestSpend_StatsDoesNotRepeatALoneChild(t *testing.T) {

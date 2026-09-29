@@ -35,6 +35,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -234,6 +235,7 @@ func doctorProbes() []doctorProbe {
 		{name: "config", run: probeConfig},
 		{name: "migrate", run: probeMigrate},
 		{name: "model", run: probeModel},
+		{name: "flows", run: probeFlows},
 		{name: "search", run: probeSearch},
 		{name: "hosts", run: probeHosts},
 		{name: "store", run: probeStore},
@@ -821,6 +823,64 @@ func probeModel(ctx context.Context, cfg config.Config) doctorFinding {
 		f.Detail = joinDetail(f.Detail, "reasoning "+effort.String())
 	}
 	return f
+}
+
+// probeFlows reads where every bounded call lands for a session started now:
+// the provider and model the row above resolved, put through the same chain
+// the calls themselves are sent with.
+func probeFlows(_ context.Context, cfg config.Config) doctorFinding {
+	resolved := resolve.Resolve(resolve.Opts{
+		ConfigProvider: cfg.Provider.Default,
+		ConfigModel:    cfg.Provider.Model,
+	})
+	return doctorFlows(resolveFlows(cfg, resolved.Provider, resolved.Model))
+}
+
+// doctorFlows is that reading. A second model on the bill is the question it
+// answers, so the row names the models and which link of the chain put each
+// flow on one — flow key, cheap key, provider small model, session model —
+// and a provider with no small model (a gateway profile, a local endpoint)
+// reads as flows on the session's own rather than as nothing.
+// See docs/capabilities/providers.md#a-bounded-call-runs-on-the-small-model.
+func doctorFlows(answers []flowModel) doctorFinding {
+	var models []string
+	steps := map[flowStep]int{}
+	lines := make([]string, 0, len(answers))
+	for _, a := range answers {
+		name := a.model
+		if name == "" {
+			name = "the session's own"
+		}
+		if !slices.Contains(models, name) {
+			models = append(models, name)
+		}
+		steps[a.step]++
+		line := a.flow.name + " — " + name + " · " + a.step.String()
+		if a.key != "" {
+			line += " " + a.key
+		}
+		if a.flow.window && a.step != stepSessionModel {
+			line += " · when its window holds the conversation"
+		}
+		lines = append(lines, line)
+	}
+	subject := countOf(len(models), "model", "models")
+	if len(models) == 1 {
+		subject = models[0]
+	}
+	var tally []string
+	for _, s := range []flowStep{stepFlowKey, stepCheapKey, stepSmallModel, stepSessionModel} {
+		if n := steps[s]; n > 0 {
+			tally = append(tally, fmt.Sprintf("%d %s", n, s))
+		}
+	}
+	return doctorFinding{
+		Subject:  subject,
+		Detail:   strings.Join(tally, " · "),
+		Outcome:  "ok",
+		Fix:      lines,
+		FixLabel: "show the model each flow runs on",
+	}
 }
 
 // probeSearch reads the web_search backend, and reaches only the one that is
@@ -2098,6 +2158,8 @@ func doctorQueuedSubject(name string) string {
 		return "whether this machine is still shaped an older way"
 	case "model":
 		return "the provider and where its key comes from"
+	case "flows":
+		return "the model each bounded call runs on"
 	case "search":
 		return "the backend a session searches the web with"
 	case "hosts":

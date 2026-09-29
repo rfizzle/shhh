@@ -504,7 +504,7 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 			rounds:     roundCapFor(maxRoundsFor(cfg, opts.maxRounds, opts.maxRoundsSet)),
 			checkIn:    checkInFor(cfg.Behavior.CheckInIntervalRounds),
 			sandbox:    sandboxProfile,
-			model:      auxiliaryModel(env.provName, env.modelName),
+			model:      auxiliaryModel(cfg, env.provName, env.modelName),
 			summary:    cfg.HeadlessSummaryEnabled(),
 			classifier: opts.autoMode,
 		}))

@@ -618,12 +618,19 @@ a reading-mode stop at all — a system row with no body is otherwise not one.
 The record is deliberately not written there: what a withdrawal says about the
 thresholds belongs with an intervention's outcome, in one place.
 
-**Which model the bounded calls answer on is `auxiliaryModel`**
-(`internal/cli/summarizer.go`): the provider's `CheapModel` where it names
-one, the session's own where it does not, with `modelOr` putting
-`behavior.classifier_model` or `summary.model` ahead of both. Every surface
-fills the record's `runSettings.model` from the same call, so the stamp names
-the model that was actually asked rather than the one the session runs on.
+**Which model the bounded calls answer on is `resolveFlow`**
+(`internal/cli/summarizer.go`): the flow's own keys, then
+`provider.cheap_model`, then the provider's `CheapModel`, then the session's
+own. `boundedFlows` is the one table of flows and their keys, `resolveFlows`
+answers for all of them with the link that answered (`flowStep`) — the doctor's
+`flows` row reads it, and a screen that lists the flows should too rather
+than restating the keys. `auxiliaryModel` is the chain below the flow keys,
+and every surface fills the record's `runSettings.model` from it, so the stamp
+names the model that was actually asked rather than the one the session runs
+on. What will bite you: **the compaction summary skips the provider's small
+model** (`boundedFlow.window`), because `headlessCompactor` only takes a model
+whose window it can vouch for, and an unconfigured compaction must keep
+running on the conversation's own.
 Each of these calls sends `EffortLow` outright and carries a ceiling with
 room for the thought and the answer together — off is the model's own depth,
 and the four ceilings are spent by the reasoning first.
