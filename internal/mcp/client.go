@@ -13,6 +13,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	sdk "github.com/modelcontextprotocol/go-sdk/mcp"
@@ -578,14 +579,18 @@ type Death struct {
 // left is a transport that will not carry another request — the SDK's
 // ErrConnectionClosed, and the read error a connection retires the calls
 // still out with when its reader stops, which for an `npx` server whose
-// process exited is io.EOF.
+// process exited is io.EOF. A request written after the process has exited
+// and before that reader has noticed is refused by the pipe itself, as
+// EPIPE, which is the same fact reached from the other side: nothing is
+// reading at the far end.
 //
 // The session's own deadline and its cancel are neither: they arrive as
 // context errors, and a call this session gave up on says nothing about
 // whether the server is still there.
 func transportFailure(err error) bool {
 	return err != nil && (errors.Is(err, sdk.ErrConnectionClosed) ||
-		errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF))
+		errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) ||
+		errors.Is(err, syscall.EPIPE))
 }
 
 // markDead records that the transport is gone and ends the session, so

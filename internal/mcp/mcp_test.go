@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"syscall"
 	"testing"
 	"time"
 	"unicode/utf8"
@@ -1140,6 +1141,21 @@ func TestAServerKilledAfterConnectIsNoticedOnceAndAnswersFast(t *testing.T) {
 	}
 	if got := ts.Deaths(); len(got) != 0 {
 		t.Errorf("deaths were not drained: %+v", got)
+	}
+}
+
+// A request written into the pipe of a process that has exited, before the
+// connection's reader has seen it go, is refused by the pipe as EPIPE — which
+// is the transport gone, the same as the EOF the reader would have reported a
+// moment later. A server killed just before a call met exactly this, and was
+// never marked dead.
+func TestABrokenPipeIsATransportFailure(t *testing.T) {
+	write := &os.PathError{Op: "write", Path: "|1", Err: syscall.EPIPE}
+	if !transportFailure(fmt.Errorf("calling %q: %w", "tools/call", write)) {
+		t.Error("a write into a pipe nothing reads was not read as the transport gone")
+	}
+	if transportFailure(fmt.Errorf("calling %q: %w", "tools/call", context.DeadlineExceeded)) {
+		t.Error("a call this session gave up on was read as the transport gone")
 	}
 }
 
