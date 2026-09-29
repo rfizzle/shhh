@@ -1148,3 +1148,26 @@ there already say, or what every card of that kind says alike. The
 departure is closed by the artboards
 agreeing that a gloss is drawn only where it is about the call — which every
 gloss they draw already is.
+
+## A saved chat's preview carries its standing account
+
+*A disagreement.* The `Lists` artboard draws the saved-chat browser's preview
+as the slot's name with its time, the title under it, and the turn count; the
+rows of the picker inside a session carry the title, the turns and the time.
+The binary now draws a third reading in both: the two sentences the session
+kept of what it was doing and where it left off. In the browser `--resume`
+and `shhh chats` open, it is body text under the title in the preview, a
+blank row above and below, wrapped whole; on the picker's rows it follows the
+time in the continuation column, where it is the first thing a narrow card
+gives up ([the supporting screens](surfaces.md#the-supporting-screens)).
+
+The reason is what the list is for. A title says what a conversation was
+about and nothing about how far it got, so a list of titled slots still left
+the reader opening each one to find the one they had stopped in the middle
+of; the account is the answer to that question, written while the session ran
+([a title you did not write](../capabilities/sessions-and-memory.md#a-title-you-did-not-write)).
+It is kept off the browser's rows because two sentences in a continuation
+column clip to their first few words and push the turns and the time off the
+row, which is the reading the list is scanned by. A slot with no account
+draws exactly what it drew before. The departure is closed by the artboard
+drawing the account under the title in the preview.

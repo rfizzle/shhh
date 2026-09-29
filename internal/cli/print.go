@@ -694,9 +694,10 @@ type headlessChat struct {
 	// one would hand the next opening a picture of a tree that has since
 	// moved, drawn as a message the person never typed.
 	at, head int
-	// summary is the handoff the slot already carried. Nothing here compacts
-	// — a run has no /compact and nobody to ask for one — so a save that
-	// wrote an empty summary would take away the one a session left.
+	// summary is the slot's standing account: what it already carried, and
+	// the revision reviseAccount makes of it from this run before the save.
+	// A save that wrote an empty one would take away the account a session
+	// left, so a run whose revision failed keeps the one it had.
 	summary string
 	// steps is the session's working list the slot already carried, kept for
 	// the same reason: a run reads no list of its own, so a save that wrote
@@ -883,6 +884,23 @@ func (c *headlessChat) save(msgs []provider.Message) {
 	// at the save, so the slot says where the tree was when the conversation
 	// was last written down rather than where it was when the run started.
 	_ = c.db.SetChatResume(slot, storage.ChatResume{Summary: c.summary, Head: project.Head(""), Root: project.Root("."), Steps: c.steps})
+}
+
+// reviseAccount takes one reading of the slot's standing account over the
+// conversation as the save will keep it — the reopening's reading left out —
+// revising the account the slot already carried. A reading that fails, or a
+// run with nothing asked in it, leaves the account as it was.
+func (c *headlessChat) reviseAccount(a *agent.Accountant, msgs []provider.Message) {
+	if c == nil || c.db == nil || c.slot == "" || !a.Enabled() {
+		return
+	}
+	req := agent.AccountRequestFrom(c.summary, c.withoutReading(msgs))
+	if req.Empty() {
+		return
+	}
+	if v := a.Account(context.Background(), req); !v.Failed {
+		c.summary = v.Account
+	}
 }
 
 // runPrintSession runs the agent loop to completion without the TUI:
@@ -1545,6 +1563,10 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	// --continue` will find it, and the record is told which slot that is —
 	// the name is the only thing joining what the run cost to what it said,
 	// and it is not known until the save has settled where the words went.
+	// The slot's standing account is revised from what the run did before
+	// the save that carries it, so a run resumed with --resume says what it
+	// did (docs/capabilities/sessions-and-memory.md#a-title-you-did-not-write).
+	saved.reviseAccount(newAccountant(cfg, env, ledger), a.Messages())
 	saved.save(a.Messages())
 	recorder.link(saved.slot)
 	// Where this run can be picked up, in the three forms both JSON shapes

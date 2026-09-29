@@ -25,8 +25,13 @@ type ChatSession struct {
 // generated one, empty until a reading produced it; the name is always the
 // slot's own and is what every command addresses the session by.
 type ChatListEntry struct {
-	Name      string
-	Title     string
+	Name  string
+	Title string
+	// Summary is the slot's standing account — two sentences on what the
+	// conversation was doing and where it left off, or the handoff its last
+	// compaction wrote, whichever came later — and empty until one of them
+	// was written (docs/capabilities/sessions-and-memory.md#a-title-you-did-not-write).
+	Summary   string
 	UpdatedAt time.Time
 	Turns     int
 	// Live marks a slot another running session is writing to. Opening one
@@ -579,7 +584,7 @@ func (db *DB) ListChats() ([]ChatListEntry, error) {
 	// the listing, which is the answer the caller actually asked for.
 	live, _ := db.liveChatSlots(time.Now())
 	rows, err := db.sql.Query(
-		`SELECT s.name, s.title, s.updated_at,
+		`SELECT s.name, s.title, s.summary, s.updated_at,
 		        COUNT(CASE WHEN m.role = 'user' THEN 1 END) as turns
 		 FROM chat_sessions s
 		 JOIN chat_messages m ON m.session_id = s.id
@@ -597,7 +602,7 @@ func (db *DB) ListChats() ([]ChatListEntry, error) {
 			e         ChatListEntry
 			updatedAt string
 		)
-		if err := rows.Scan(&e.Name, &e.Title, &updatedAt, &e.Turns); err != nil {
+		if err := rows.Scan(&e.Name, &e.Title, &e.Summary, &updatedAt, &e.Turns); err != nil {
 			return nil, err
 		}
 		e.UpdatedAt, _ = time.Parse(time.RFC3339Nano, updatedAt)
@@ -653,7 +658,7 @@ func (db *DB) SearchChats(query string) ([]ChatListEntry, error) {
 	// reasons ListChats reads it that way.
 	live, _ := db.liveChatSlots(time.Now())
 	rows, err := db.sql.Query(
-		`SELECT s.name, s.title, s.updated_at,
+		`SELECT s.name, s.title, s.summary, s.updated_at,
 		        COUNT(CASE WHEN m.role = 'user' THEN 1 END) AS turns
 		 FROM chat_sessions s
 		 LEFT JOIN chat_messages m ON m.session_id = s.id
@@ -672,7 +677,7 @@ func (db *DB) SearchChats(query string) ([]ChatListEntry, error) {
 			e         ChatListEntry
 			updatedAt string
 		)
-		if err := rows.Scan(&e.Name, &e.Title, &updatedAt, &e.Turns); err != nil {
+		if err := rows.Scan(&e.Name, &e.Title, &e.Summary, &updatedAt, &e.Turns); err != nil {
 			return nil, err
 		}
 		e.UpdatedAt, _ = time.Parse(time.RFC3339Nano, updatedAt)

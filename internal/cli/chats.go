@@ -28,6 +28,7 @@ import (
 type chatRow struct {
 	Name      string    `json:"name"`
 	Title     string    `json:"title,omitempty"`
+	Summary   string    `json:"summary,omitempty"`
 	Turns     int       `json:"turns"`
 	UpdatedAt time.Time `json:"updated_at"`
 	Live      bool      `json:"live,omitempty"`
@@ -244,14 +245,17 @@ func confirmDelete(cmd *cobra.Command, name string, branches int) (bool, error) 
 func chatRows(entries []storage.ChatListEntry) []chatRow {
 	rows := make([]chatRow, 0, len(entries))
 	for _, e := range entries {
-		rows = append(rows, chatRow{Name: e.Name, Title: e.Title, Turns: e.Turns,
+		rows = append(rows, chatRow{Name: e.Name, Title: e.Title, Summary: e.Summary, Turns: e.Turns,
 			UpdatedAt: e.UpdatedAt, Live: e.Live})
 	}
 	return rows
 }
 
 // chatsReport is the listing as text: one row per chat, the title where a
-// session has been given one and the name alone where it has not.
+// session has been given one and the name alone where it has not, and the
+// slot's standing account on the line under it where one was written — the
+// row's label is the slot, and the account is the thing itself, so it wraps
+// rather than clips (docs/capabilities/sessions-and-memory.md#a-title-you-did-not-write).
 //
 // A slot a running session still holds is warned rather than listed flat:
 // the row is readable and resumable like any other, and resuming it means
@@ -269,6 +273,9 @@ func chatsReport(entries []storage.ChatListEntry, now time.Time) report.Report {
 			Name:    e.Name,
 			Subject: e.Title,
 			Detail:  joinDetail(countOf(e.Turns, "turn", "turns"), historyAgo(e.UpdatedAt, now)),
+		}
+		if e.Summary != "" {
+			row.Body = []string{e.Summary}
 		}
 		if e.Live {
 			row.State, row.Outcome = report.Warn, livePhrase

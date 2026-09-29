@@ -230,8 +230,8 @@ The flows on it are the permission classifier (`behavior.classifier_model`),
 the approval card's explanation (`behavior.explainer_model`, then the
 classifier's key, because the two are read one under the other), the
 one-shot's saved-command description (`behavior.description_model`), the
-session reading, the title and the compaction summary (all three
-`summary.model`), the backlog's extractor and drafter (`todo.model`), and the
+session reading, the title, the session's standing account and the
+compaction summary (all four `summary.model`), the backlog's extractor and drafter (`todo.model`), and the
 agent-profile drafter (`agents.drafter_model`). The last two used to run on
 the session's model outright; a digest is a digest whichever flow asks for
 it, and the session model is never spent on one by accident.

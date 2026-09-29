@@ -255,8 +255,8 @@ func TestTitle_UICommandTogglesAndReports(t *testing.T) {
 	}
 
 	unconfigured := m.WithTitler(agent.NewTitler(p, agent.TitleConfig{}), false)
-	if out := unconfigured.uiCommand([]string{"/ui", "title"}); !strings.Contains(out, "no summary model is configured") {
-		t.Fatalf("off for want of a model should say so, got %q", out)
+	if out := unconfigured.uiCommand([]string{"/ui", "title"}); !strings.Contains(out, "turned off in the config (summary.title)") {
+		t.Fatalf("off in the config should say where, got %q", out)
 	}
 }
 

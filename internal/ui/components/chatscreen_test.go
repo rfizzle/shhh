@@ -13,6 +13,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/rfizzle/shhh/internal/ui/golden"
 )
 
 func chatRows() []ChatRow {
@@ -191,5 +192,50 @@ func TestChatScreen_EmptyRenders(t *testing.T) {
 	}
 	if done, result := c.Update(tea.KeyPressMsg{Code: tea.KeyEnter}); done || result.Open {
 		t.Fatalf("enter over an empty list took something: %+v", result)
+	}
+}
+
+// accountRows are the three slots a listing holds once sessions keep a
+// standing account: one titled and summarised, one titled only, and one a
+// reading never reached.
+func accountRows() []ChatRow {
+	return []ChatRow{
+		{ID: "a", Name: "2026-09-29 09:14:02", Title: "the retry backoff was doubling twice",
+			Summary: "Fixing the retry backoff so a stall waits once. Left off with the timer test green and the flake still unexplained.",
+			Turns:   "12 turns", When: "Sep 29 09:14", Updated: "2026-09-29 09:14:02"},
+		{ID: "b", Name: "2026-09-28 17:40:11", Title: "naming the report pages",
+			Turns: "4 turns", When: "Sep 28 17:40", Updated: "2026-09-28 17:40:11"},
+		{ID: "c", Name: "2026-09-27 08:02:41",
+			Turns: "1 turn", When: "Sep 27 08:02", Updated: "2026-09-27 08:02:41"},
+	}
+}
+
+// TestGolden_ChatScreen captures the saved-chat browser over the three
+// slots: the preview puts the standing account under the title, and a slot
+// with none draws exactly what it drew before there was one
+// (docs/capabilities/sessions-and-memory.md#a-title-you-did-not-write).
+func TestGolden_ChatScreen(t *testing.T) {
+	captureGolden(t, "chat-screen", "the saved-chat browser", goldenWidths, func(width int) []golden.Panel {
+		screen := func(focus int) string {
+			return (&ChatScreen{Rows: accountRows(), Subject: "3 conversations", Focus: focus, MaxLines: 20}).View(width)
+		}
+		return []golden.Panel{
+			{Label: "titled and summarised · the account under the title", View: screen(0)},
+			{Label: "titled only", View: screen(1)},
+			{Label: "neither", View: screen(2)},
+		}
+	})
+}
+
+// The preview puts the account under the title, and the row itself does not
+// carry it.
+func TestChatScreen_TheAccountIsInThePreviewNotTheRow(t *testing.T) {
+	c := &ChatScreen{Rows: accountRows(), Subject: "3 conversations", MaxLines: 14}
+	view := ansi.Strip(c.View(130))
+	if !strings.Contains(view, "the retry backoff was doubling twice") || strings.Count(view, "Fixing the retry backoff") != 1 {
+		t.Fatalf("the preview should carry the title and the account once:\n%s", view)
+	}
+	if desc := chatDesc(c.Rows[0]); !strings.Contains(desc, "12 turns") || strings.Contains(desc, "Fixing") {
+		t.Fatalf("the row's continuation should not carry the account: %q", desc)
 	}
 }

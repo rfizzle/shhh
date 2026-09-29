@@ -31,8 +31,8 @@
     editing it, and do not revert or explain changes
     you did not make.
     
-    Summary written when this conversation was last
-    compacted:
+    Where this conversation stood when it was last
+    written down:
     
     The cache work is half done: the lifetime is read
     from config and honoured on get, and the eviction
@@ -61,8 +61,8 @@
     ␛[38;5;245mediting it, and do not revert or explain changes␛[m
     ␛[38;5;245myou did not make.␛[m
     ␛[38;5;245m␛[m
-    ␛[38;5;245mSummary written when this conversation was last␛[m
-    ␛[38;5;245mcompacted:␛[m
+    ␛[38;5;245mWhere this conversation stood when it was last␛[m
+    ␛[38;5;245mwritten down:␛[m
     ␛[38;5;245m␛[m
     ␛[38;5;245mThe cache work is half done: the lifetime is read␛[m
     ␛[38;5;245mfrom config and honoured on get, and the eviction␛[m

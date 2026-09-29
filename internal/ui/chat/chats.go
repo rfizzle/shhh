@@ -82,6 +82,18 @@ func chatDesc(e storage.ChatListEntry) string {
 	return desc
 }
 
+// chatPickDesc is the picker's continuation: chatDesc, then the slot's
+// standing account. The account goes last because it is the longest and the
+// column clips from the end, so on a narrow card the title and the readings
+// survive and the account gives way first
+// (docs/capabilities/sessions-and-memory.md#a-title-you-did-not-write).
+func chatPickDesc(e storage.ChatListEntry) string {
+	if e.Summary == "" {
+		return chatDesc(e)
+	}
+	return chatDesc(e) + " · " + e.Summary
+}
+
 // chatPickOptions builds the picker's rows. Two kinds of row cannot be
 // opened, and both are still listed — fold, never hide — with a meta field
 // saying why: the session's own slot, and a slot another running session is
@@ -90,7 +102,7 @@ func (m Model) chatPickOptions(entries []storage.ChatListEntry) ([]components.Se
 	opts := make([]components.SelectOption, len(entries))
 	focus := 0
 	for i, e := range entries {
-		opts[i] = components.SelectOption{Label: e.Name, Desc: chatDesc(e)}
+		opts[i] = components.SelectOption{Label: e.Name, Desc: chatPickDesc(e)}
 		switch {
 		case e.Name == m.sessionName:
 			opts[i].Dim = true

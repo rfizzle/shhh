@@ -1,0 +1,20 @@
+# program test: none — the picker is the command package's screen, opened by
+# a second process over the slot the first one left, which no program test
+# over the session model can be.
+#
+# A session keeps a standing account of itself while it runs
+# (docs/capabilities/sessions-and-memory.md#a-title-you-did-not-write). Two
+# turns, then quit: a turn has closed since the last account was asked for,
+# so the save on the way out carries one. The second process opens the
+# picker `--resume` shows on its own, and the capture is for the preview of
+# the slot the first sitting left: its title, and under it the account.
+snap 01-start "Some things worth doing first"
+keys "why does the retry backoff double" Enter
+snap 02-first "the client both wait"
+keys "make a stall wait once" Enter
+snap 03-second "the client's own wait is gone"
+keys C-c
+sleep 0.3
+keys C-c
+# Wait on the account's own words: only the picker's preview draws them.
+snap 04-picker "Left off with the client's own" "shhh chats" "The retry backoff doubling" "Fixing the retry backoff so a stall waits once."

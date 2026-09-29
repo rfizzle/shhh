@@ -884,6 +884,8 @@ type Model struct {
 	titler      *agent.Titler
 	titles      titleState
 	titleCancel context.CancelFunc
+	// The session's standing account and its writer — account.go.
+	account accountState
 	// summaryTarget is the instruction the current turn is serving, captured
 	// when the turn starts and never re-derived from the conversation. It is
 	// what a reading judges drift against, and anchoring it here — rather
@@ -1076,10 +1078,11 @@ type Model struct {
 	// compacting marks an in-flight /compact request: the streamed
 	// response is a summary handled by finishCompact, not conversation text.
 	compacting bool
-	// compactSummary is the last summary a compaction produced, carried so
-	// every save can put it on the slot for the next opening (reopen.go).
-	// Empty is a conversation that never compacted, and nothing here ever
-	// writes one that a compaction did not.
+	// compactSummary is the slot's standing account: the last summary a
+	// compaction produced or the last account a reading revised
+	// (account.go), whichever came later, carried so every save can put it
+	// on the slot for the next opening (reopen.go). Empty is a conversation
+	// that has had neither.
 	compactSummary string
 	// workSteps is the session's own working checklist, read out of its
 	// messages by noteWorkSteps (worksteps.go) and saved with the slot beside
@@ -1584,7 +1587,13 @@ type SessionStart struct {
 // prompt to save. The slot is captured here, not when the command runs, so
 // a save issued just before the session moves to a new slot still lands in
 // the one it was describing.
-func (m Model) autosaveCmd() tea.Cmd {
+func (m Model) autosaveCmd() tea.Cmd { return m.saveCmd(nil) }
+
+// saveCmd is the autosave with the reading a session owes the slot it is
+// leaving (closingAccount): revise runs after the conversation is written and
+// before the resume columns are, so the account it writes rides this save.
+// Nil is the ordinary autosave.
+func (m Model) saveCmd(revise func() string) tea.Cmd {
 	if m.db == nil || len(m.agent.Messages()) <= 1 {
 		return nil
 	}
@@ -1635,6 +1644,9 @@ func (m Model) autosaveCmd() tea.Cmd {
 		// read here, at the save, so the slot says where the tree was when
 		// this conversation was last written down rather than where it was
 		// when the process started.
+		if revise != nil {
+			summary = revise()
+		}
 		_ = db.SetChatResume(slot, storage.ChatResume{Summary: summary, Head: project.Head(dir), Root: project.Root(dir), Steps: steps})
 		if slot != name {
 			return autosaveMovedMsg{from: name, to: slot}
@@ -1703,7 +1715,7 @@ func (m *Model) noteSlotMove(msg autosaveMovedMsg) {
 // so that no other session could take the name, and a row nothing will ever
 // be written to is one every later rename has to work around.
 func (m Model) quitCmd() tea.Cmd {
-	if save := m.autosaveCmd(); save != nil {
+	if save := m.saveCmd(m.closingAccount()); save != nil {
 		return tea.Sequence(save, tea.Quit)
 	}
 	if m.db != nil {
@@ -1903,6 +1915,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	// And the session's title (title.go), read once the first turn is over.
 	if read := mm.titleCloseCmd(m); read != nil {
+		cmd = tea.Batch(cmd, read)
+	}
+	// And its standing account (account.go), once enough turns have closed.
+	if read := mm.accountCloseCmd(); read != nil {
 		cmd = tea.Batch(cmd, read)
 	}
 	// And the repository's own checks over what the turn wrote (gate.go).

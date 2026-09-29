@@ -115,6 +115,8 @@ func TestReportGoldens(t *testing.T) {
 		{"config.init.update", goldenConfigUpdate().Render(80)},
 		{"config.scaffold", goldenScaffoldOpening()},
 		{"keys", goldenKeys().Render(80)},
+		{"chats", chatsReport(goldenChats(), goldenNow).Render(80)},
+		{"chats.w60", chatsReport(goldenChats(), goldenNow).Render(60)},
 	} {
 		t.Run(c.name, func(t *testing.T) { assertReportGolden(t, c.name, c.body) })
 	}
@@ -204,6 +206,18 @@ func goldenHistory() []storage.HistoryEntry {
 		{ID: 3, CreatedAt: goldenNow.Add(-4 * time.Minute), Provider: "anthropic", Model: "claude-sonnet-5",
 			Prompt: "show the ten biggest files", Command: "du -ah . | sort -rh | head -10",
 			Action: "copy", Success: true},
+	}
+}
+
+// goldenChats is three saved chats: one titled and carrying its standing
+// account, one titled only, and one a reading never reached.
+func goldenChats() []storage.ChatListEntry {
+	return []storage.ChatListEntry{
+		{Name: "2026-08-31 09:14:02", Title: "the retry backoff was doubling twice",
+			Summary: "Fixing the retry backoff so a stall waits once. Left off with the timer test green and the flake still unexplained.",
+			Turns:   12, UpdatedAt: goldenNow.Add(-2 * time.Hour)},
+		{Name: "release notes", Title: "naming the report pages", Turns: 4, UpdatedAt: goldenNow.Add(-26 * time.Hour)},
+		{Name: "2026-08-29 08:02:41", Turns: 1, UpdatedAt: goldenNow.Add(-52 * time.Hour)},
 	}
 }
 

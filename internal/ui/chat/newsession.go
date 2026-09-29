@@ -37,8 +37,9 @@ func (m *Model) startNewSession() (notes []entry, save tea.Cmd) {
 	// The autosave is built first and in quitting's own sequence: it reads
 	// the conversation as it stands and names the slot to the record that is
 	// about to be closed, so the row left behind describes the conversation
-	// it is the record of.
-	save = m.autosaveCmd()
+	// it is the record of. It carries the standing account the slot is owed
+	// where a turn closed since the last one (account.go).
+	save = m.saveCmd(m.closingAccount())
 	// The slot only counts as left behind if something is going into it: the
 	// row must not name a slot this conversation was never written to.
 	left := ""
@@ -126,6 +127,9 @@ func (m *Model) startNewSession() (notes []entry, save tea.Cmd) {
 	// a different one: carried across, the new slot would open on a summary of
 	// work its transcript never mentions (reopen.go).
 	m.compactSummary = ""
+	// And the count toward the next account, which was the old one's turns;
+	// its closing reading already rides the save above (account.go).
+	m.resetAccount()
 	// And its working list: the steps were the old conversation's, and the
 	// new one has declared none (worksteps.go).
 	m.workSteps = plan.Checklist{}

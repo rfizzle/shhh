@@ -218,7 +218,7 @@ var settings = []Setting{
 		Desc: "The model `shhh code` runs on — a `--print` run, `shhh serve`, `shhh eval` and the stages of a backlog run that writes included — read ahead of `provider.model`.",
 	}, {
 		Key: "provider.cheap_model", Kind: KindString, Default: "(the provider's small model, or the session's own)",
-		Desc: "The model every bounded call — the classifier, the readings, the title, the explanation, the description, the backlog's drafts, the profile drafter — falls back to when its own key is unset.",
+		Desc: "The model every bounded call — the classifier, the readings, the title, the standing account, the explanation, the description, the backlog's drafts, the profile drafter — falls back to when its own key is unset.",
 	}, {
 		Key: "provider.api_key", Kind: KindString, Default: "(from the environment)", Secret: true,
 		Env: "SHHH_API_KEY", Flag: "--api-key",
@@ -575,8 +575,11 @@ var settings = []Setting{
 		Key: "summary.steer_target_chars", Kind: KindInt, Signed: true, Default: "400 characters", Literal: "400",
 		Desc: "How much of the instruction a steer quotes back to a drifting turn; a negative quotes it whole.",
 	}, {
-		Key: "summary.title", Kind: KindBool, Default: "on when a summary model is set, off otherwise", Literal: "true",
+		Key: "summary.title", Kind: KindBool, Default: "on",
 		Desc: "Ask the summary model to name an unnamed session after its first turn, for the saved-chat listings.",
+	}, {
+		Key: "summary.resume_interval_turns", Kind: KindInt, Signed: true, Default: "3",
+		Desc: "How many turns pass between two revisions of the session's standing account, the two sentences the saved-chat listings show under the title; a negative turns it off.",
 	},
 
 	{
@@ -616,6 +619,9 @@ var settings = []Setting{
 	}, {
 		Key: "prompts.classifier", Kind: KindPath, Default: "(the built-in wording)",
 		Desc: "A file whose contents replace the instruction auto mode's permission classifier is sent.",
+	}, {
+		Key: "prompts.account", Kind: KindPath, Default: "(the built-in wording)",
+		Desc: "A file whose contents replace the instruction the session's standing account is asked with.",
 	}, {
 		Key: "prompts.todo_standards", Kind: KindPath, Default: "(the built-in wording)",
 		Desc: "A file whose contents replace the sentence every step of a backlog run that changes the tree carries.",

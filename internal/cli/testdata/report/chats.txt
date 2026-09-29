@@ -1,0 +1,7 @@
+  shhh chats — 3 chats
+
+  ✓ 2026-08-31 09:14:02  the retry backoff was doubling twice · 12 turns · 2h a…
+      Fixing the retry backoff so a stall waits once. Left off with the timer
+      test green and the flake still unexplained.
+  ✓ release notes        naming the report pages · 4 turns · yesterday
+  ✓ 2026-08-29 08:02:41  1 turn · sat

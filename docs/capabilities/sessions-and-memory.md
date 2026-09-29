@@ -78,6 +78,15 @@ list of exceptions to a transcript. Where the paths cannot be read at all —
 no git, or a commit the checkout no longer has after a rewritten branch or a
 pruned fetch — the line that says the tree moved still stands.
 
+Behind the checkout comes where the conversation stood: the slot's
+standing account ([a title you did not write](#a-title-you-did-not-write)),
+or the handoff its last compaction wrote where that came later. It used to be
+the handoff alone, so a conversation that never compacted came back told
+nothing about where it had got to; the account is written while every session
+runs, so the line is there for every conversation that closed a turn. It is
+opened with the words "where this conversation stood", because the model
+reads it as the first thing the person did not type.
+
 The reading is not part of the conversation. It is built from the checkout
 every time, the way the system prompt is, so opening the same conversation
 three times tells it about the tree once rather than three times about three
@@ -506,9 +515,40 @@ beside the slot's name wherever chats are listed.
 Three rules keep it honest. A name you give a session — `/save name`, or a
 rename — always wins, and such a session is never asked for a title. A
 reading that fails leaves the row untitled and is retried once, after the
-next turn, never in a loop. And the reading is off unless a summary model is
-configured, because on the session model the cheapest question is still not
-cheap; `summary.title` and `/ui title` say otherwise.
+next turn, never in a loop. And the reading is on by default: it used to be
+off unless a summary model was named, but a model now always resolves down
+the bounded-call chain ([a bounded call runs on the small
+model](providers.md#a-bounded-call-runs-on-the-small-model)), and the gate
+left most listings a column of timestamps. `summary.title` and `/ui title`
+turn it off.
+
+A title says what a conversation is about and not how far it got, so beside
+it the session keeps a standing account: at most two sentences on what it was
+doing and where it left off. It is written while the session runs, never by
+asking you and never when you come to resume:
+
+- **When.** At a turn's close, no more often than every
+  `summary.resume_interval_turns` turns (three unless set; a negative turns
+  it off, and so does `summary.disabled`). Once more where the session is
+  left — at the session boundary and at quit — when a turn has closed since
+  the last reading, and that reading rides the save that leaves the slot. A
+  headless run takes one reading as it closes.
+- **How.** Each reading revises the one before it rather than describing the
+  session from nothing, so an account that was right about the goal stays
+  right after the goal's turns scroll out of what it reads. It reads what you
+  asked and what the assistant answered, never a tool result. A compaction's
+  handoff is kept in the same place, and whichever was written later stands.
+- **What it costs.** One bounded request on the account's flow — the summary
+  model's key, then the one cheap key, the provider's small model, the
+  session's own — billed as a summary, so the rail's spend and `/stats` show
+  it beside the title. At the default interval that is one request every
+  three turns and one at quit; a failed reading changes nothing.
+- **Where it is read.** Under the title in the preview of the browser
+  `--resume` and `shhh chats` open, after the readings on each row of the
+  picker inside a session, on the line under each row of `shhh chats list`
+  and as `summary` in its `--json`, and as the first thing a reopened
+  conversation is told about where it stood
+  ([a resumed session sees the tree as it is](#a-resumed-session-sees-the-tree-as-it-is)).
 
 ## Memory is what shhh knows about your project
 

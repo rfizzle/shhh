@@ -12,11 +12,11 @@ package chat
 // fixed, and nothing in front of it says otherwise.
 //
 // So a reopened conversation is given the checkout as it stands now, ahead of
-// everything it remembers, and the summary its last compaction wrote where
-// there is one. Nothing is summarized here: /compact already asks for the
-// goals, the decisions, the work done and what is open, and a second
-// summarizer run at quit would be a request the person did not make and did
-// not wait for.
+// everything it remembers, and the slot's standing account where there is
+// one: the two sentences the session kept of what it was doing and where it
+// left off (account.go), or the handoff its last compaction wrote, whichever
+// came later. Nothing is summarized here: the account was written while the
+// session ran, and opening a conversation asks for nothing.
 
 import (
 	"fmt"
@@ -40,7 +40,7 @@ const resumeVerb = "resumed"
 // commits, two of which nobody is looking at any more.
 const (
 	resumeMessagePrefix = "[resume: "
-	resumeSummaryPrefix = "Summary written when this conversation was last compacted:"
+	resumeSummaryPrefix = "Where this conversation stood when it was last written down:"
 )
 
 // ResumeNotice is what a reopened conversation starts with, ready to deliver:
@@ -95,8 +95,8 @@ func resumeNotice(info project.Info, saved storage.ChatResume) ResumeNotice {
 	n := ResumeNotice{Subject: resumeSubject(info), Steps: saved.Steps}
 	n.Messages = append(n.Messages, provider.Message{
 		Role: provider.RoleUser, Content: resumeSurveyMessage(info, saved.Head)})
-	// No placeholder for a conversation that never compacted. A line saying
-	// there is no summary is a line the model has to read and can do nothing
+	// No placeholder for a conversation with no standing account. A line
+	// saying there is none is a line the model has to read and can do nothing
 	// with.
 	if summary := strings.TrimSpace(saved.Summary); summary != "" {
 		n.Summary = summary

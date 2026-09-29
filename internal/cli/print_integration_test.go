@@ -408,7 +408,11 @@ func newPrintSession(t *testing.T, f *fakeProvider) printSession {
 	// A stall is asked again three times over sixteen seconds, and none of
 	// what is asserted below is about the waiting: a run told to wait none
 	// reports the failure it already has.
-	body := "[behavior]\nprovider_retries = 0\n"
+	//
+	// And the slot's standing account is not asked for: a run revises it
+	// once as it closes, which would make the account's request the last one
+	// every case reads back, and none of them is about the account.
+	body := "[behavior]\nprovider_retries = 0\n\n[summary]\nresume_interval_turns = -1\n"
 	if err := os.WriteFile(filepath.Join(dir, "config.toml"), []byte(body), 0o600); err != nil {
 		t.Fatal(err)
 	}

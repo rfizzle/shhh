@@ -56,6 +56,12 @@ type ChatRow struct {
 	// Title is what the conversation was about, in the row's continuation and
 	// under the name in the preview. Empty for a slot nothing has titled.
 	Title string
+	// Summary is the slot's standing account — what the conversation was
+	// doing and where it left off — under the title in the preview. It is
+	// not on the row: two sentences in a continuation column would clip to
+	// their first few words and push the turns and the time off the row.
+	// Empty for a slot nothing has written one for.
+	Summary string
 	// Turns is how long the conversation is, in words — `12 turns`.
 	Turns string
 	// When is when it was last written, in the row's own words — `Jan 2
@@ -327,8 +333,8 @@ func (c *ChatScreen) hiddenRows(width int) []string {
 
 // previewRows is the right pane: the conversation the pointer is on. The name
 // leads it with when it was last written right-aligned, the title sits under
-// that, and the last line is how long it is — and, where the host refused it,
-// why it will not open.
+// that and the standing account under the title, and the last line is how
+// long it is — and, where the host refused it, why it will not open.
 //
 // It is a preview, not a second list: nothing in it is focusable and no key
 // reaches it.
@@ -340,6 +346,14 @@ func (c *ChatScreen) previewRows(width int) []string {
 	rows := []string{paneTitle(brightStyle().Render(row.Name), sty.Dim.Render(row.Updated), width)}
 	if row.Title != "" {
 		for _, line := range wrapSpans([]styledSpan{{row.Title, sty.Dim}}, max(width-2, 1)) {
+			rows = append(rows, "  "+line)
+		}
+	}
+	// The account is prose to read rather than a label, so it is body text
+	// and wraps whole, a blank row below the title it qualifies.
+	if row.Summary != "" {
+		rows = append(rows, "")
+		for _, line := range wrapSpans([]styledSpan{{row.Summary, sty.Body}}, max(width-2, 1)) {
 			rows = append(rows, "  "+line)
 		}
 	}

@@ -1,0 +1,3 @@
+# The first sitting runs two turns and quits; the second opens the picker
+# --resume shows on its own, over the slot the first one left.
+$SHHH_BIN code; $SHHH_BIN code --resume

@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/shell"
 	"github.com/rfizzle/shhh/internal/storage"
@@ -292,6 +293,37 @@ func TestChatBrowseRows_ASlotSomebodyElseHoldsRefusesToOpen(t *testing.T) {
 	}
 	if free := rows["mine"]; free.Refused != "" || free.Mark != "" {
 		t.Fatalf("a slot nobody holds opens, got %+v", free)
+	}
+}
+
+// The picker `--resume` shows carries each slot's standing account from the
+// store, and its preview puts it under the title, above how long the
+// conversation is (docs/capabilities/sessions-and-memory.md#a-title-you-did-not-write).
+func TestChatBrowser_TheAccountIsUnderTheTitle(t *testing.T) {
+	db := resumeStore(t)
+	if err := db.SaveChat("mine", []provider.Message{{Role: provider.RoleUser, Content: "ours"}}); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.SetChatTitle("mine", "the retry flake"); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.SetChatResume("mine", storage.ChatResume{Summary: "Fixing the retry backoff. Left off with the tests green."}); err != nil {
+		t.Fatal(err)
+	}
+	entries, err := db.ListChats()
+	if err != nil {
+		t.Fatal(err)
+	}
+	rows := chatBrowseRows(db, entries)
+	if len(rows) != 1 || rows[0].Summary != "Fixing the retry backoff. Left off with the tests green." {
+		t.Fatalf("rows = %+v", rows)
+	}
+	view := ansi.Strip((&components.ChatScreen{Rows: rows, MaxLines: 20}).View(130))
+	title := strings.Index(view, "│   the retry flake")
+	account := strings.Index(view, "Fixing the retry backoff.")
+	turns := strings.Index(view, "│   1 turn")
+	if title < 0 || account < title || turns < account {
+		t.Fatalf("the preview should read title, account, size in that order:\n%s", view)
 	}
 }
 

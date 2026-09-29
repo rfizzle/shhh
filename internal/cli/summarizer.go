@@ -109,6 +109,7 @@ var (
 	flowDescription = boundedFlow{name: "description", keys: []string{"behavior.description_model"}, source: meter.SourceOneShot}
 	flowReading     = boundedFlow{name: "reading", keys: []string{"summary.model"}, source: meter.SourceSummary}
 	flowTitle       = boundedFlow{name: "title", keys: []string{"summary.model"}, source: meter.SourceSummary}
+	flowAccount     = boundedFlow{name: "account", keys: []string{"summary.model"}, source: meter.SourceSummary}
 	flowCompaction  = boundedFlow{name: "compaction", keys: []string{"summary.model"}, source: meter.SourceSummary, window: true}
 	flowBacklog     = boundedFlow{name: "backlog", keys: []string{"todo.model"}, source: meter.SourceBacklog}
 	flowDrafter     = boundedFlow{name: "profile drafter", keys: []string{"agents.drafter_model"}, source: meter.SourcePersona}
@@ -119,7 +120,7 @@ var (
 // reported wherever the question is asked.
 var boundedFlows = []boundedFlow{
 	flowClassifier, flowExplanation, flowDescription, flowReading,
-	flowTitle, flowCompaction, flowBacklog, flowDrafter,
+	flowTitle, flowAccount, flowCompaction, flowBacklog, flowDrafter,
 }
 
 // flowModel is one flow's answer: the model, the link that gave it, and the
@@ -176,5 +177,21 @@ func newSummarizer(cfg config.Config, env *sessionEnv, ledger *meter.Ledger, ena
 		InterveneCooldownIntervals: cfg.Summary.InterveneCooldownIntervals,
 		Prompt:                     env.prompts.summary,
 		Disabled:                   !enabled,
+	})
+}
+
+// newAccountant returns the writer of the session's standing account for one
+// surface: the two sentences every saved-chat listing shows and a reopened
+// conversation is told. It is asked on the account's own flow and billed as
+// a summary, so the rail's spend and /stats see it beside the title
+// (docs/capabilities/sessions-and-memory.md#a-title-you-did-not-write). A
+// session whose settings turned it off still gets one, reporting itself
+// disabled, for newSummarizer's reason.
+func newAccountant(cfg config.Config, env *sessionEnv, ledger *meter.Ledger) *agent.Accountant {
+	return agent.NewAccountant(ledger.For(env.prov, flowAccount.source), agent.AccountConfig{
+		Model:    resolveFlow(cfg, flowAccount, env.provName, env.modelName).model,
+		Timeout:  time.Duration(cfg.Summary.TimeoutSeconds) * time.Second,
+		Prompt:   env.prompts.account,
+		Disabled: cfg.AccountInterval() == 0,
 	})
 }

@@ -346,6 +346,42 @@ func TestListChats_WithSessions(t *testing.T) {
 	}
 }
 
+// A listing carries the slot's standing account from the column the resume
+// half writes, and a search answers with it too.
+func TestListChats_CarriesTheStandingAccount(t *testing.T) {
+	db := openTestDB(t)
+	msgs := []provider.Message{{Role: provider.RoleUser, Content: "the retry flake"}}
+	if err := db.SaveChat("summed", msgs); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.SaveChat("bare", msgs); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.SetChatResume("summed", ChatResume{Summary: "Fixing the retry backoff."}); err != nil {
+		t.Fatal(err)
+	}
+	entries, err := db.ListChats()
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := map[string]string{}
+	for _, e := range entries {
+		got[e.Name] = e.Summary
+	}
+	if got["summed"] != "Fixing the retry backoff." || got["bare"] != "" {
+		t.Fatalf("summaries = %q", got)
+	}
+	found, err := db.SearchChats("retry")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, e := range found {
+		if e.Name == "summed" && e.Summary != "Fixing the retry backoff." {
+			t.Fatalf("the search lost the account: %+v", e)
+		}
+	}
+}
+
 func TestSaveChat_OverwritePreservesCreatedAt(t *testing.T) {
 	db := openTestDB(t)
 

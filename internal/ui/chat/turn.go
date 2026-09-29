@@ -665,6 +665,8 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 
 	case titleDoneMsg:
 		return m, m.finishTitle(msg), true
+	case accountDoneMsg:
+		return m, m.finishAccount(msg), true
 
 	case autosaveMovedMsg:
 		m.noteSlotMove(msg)

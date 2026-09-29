@@ -1048,7 +1048,7 @@ own file could hold.
 | `cmd_model` | text | (provider.model) | The model `shhh cmd` and the shell hotkey generate a command on, read ahead of `provider.model`. `--model` and `SHHH_MODEL` are read ahead of the file. |
 | `chat_model` | text | (provider.model) | The model `shhh chat` runs on, a `--print` conversation and the stages of a backlog run that only reads included, read ahead of `provider.model`. `--model` and `SHHH_MODEL` are read ahead of the file. |
 | `code_model` | text | (provider.model) | The model `shhh code` runs on — a `--print` run, `shhh serve`, `shhh eval` and the stages of a backlog run that writes included — read ahead of `provider.model`. `--model` and `SHHH_MODEL` are read ahead of the file. |
-| `cheap_model` | text | (the provider's small model, or the session's own) | The model every bounded call — the classifier, the readings, the title, the explanation, the description, the backlog's drafts, the profile drafter — falls back to when its own key is unset. |
+| `cheap_model` | text | (the provider's small model, or the session's own) | The model every bounded call — the classifier, the readings, the title, the standing account, the explanation, the description, the backlog's drafts, the profile drafter — falls back to when its own key is unset. |
 | `api_key` | text | (from the environment) | The provider key itself, which puts a copy of it in every copy of this file; `api_key_env` is the form to prefer. `--api-key` and `SHHH_API_KEY` are read ahead of the file. It is a credential: the listing says whether it is set, never what it is. |
 | `api_key_env` | variable | (the provider's own variable) | The environment variable the provider key is read from at start, so the file names the key instead of holding it. It is read ahead of `api_key`. |
 | `base_url` | text | (the provider's own) | Where the provider's API is, for a gateway or a self-hosted endpoint. `SHHH_BASE_URL` is read ahead of the file. |
@@ -1221,7 +1221,8 @@ own file could hold.
 | `subagents` | true/false | `on` | Take readings in each spawned child, which has nobody in front of it; turning it off saves a reading per interval per child and leaves a child that has wandered unnoticed until its report. |
 | `intervene_cooldown_intervals` | number | 2 readings | How many reading intervals pass between two verdict-driven interventions. |
 | `steer_target_chars` | number | 400 characters | How much of the instruction a steer quotes back to a drifting turn; a negative quotes it whole. |
-| `title` | true/false | on when a summary model is set, off otherwise | Ask the summary model to name an unnamed session after its first turn, for the saved-chat listings. |
+| `title` | true/false | `on` | Ask the summary model to name an unnamed session after its first turn, for the saved-chat listings. |
+| `resume_interval_turns` | number | `3` | How many turns pass between two revisions of the session's standing account, the two sentences the saved-chat listings show under the title; a negative turns it off. |
 
 **`[secrets]`**
 
@@ -1248,6 +1249,7 @@ own file could hold.
 | `check_in` | path | (the built-in wording) | A file whose contents replace the message a turn that has reached its interval is given; it may place `{{rounds}}` and `{{finished}}`. |
 | `summary` | path | (the built-in wording) | A file whose contents replace the reading instruction the summarizing model is sent. |
 | `classifier` | path | (the built-in wording) | A file whose contents replace the instruction auto mode's permission classifier is sent. |
+| `account` | path | (the built-in wording) | A file whose contents replace the instruction the session's standing account is asked with. |
 | `todo_standards` | path | (the built-in wording) | A file whose contents replace the sentence every step of a backlog run that changes the tree carries. |
 | `todo_research` | path | (the built-in wording) | A file whose contents replace what a backlog run's research step is told; it may place `{{item}}` and `{{answers}}`. |
 | `todo_implement` | path | (the built-in wording) | A file whose contents replace what a backlog run's implement step is told; it may place `{{item}}`, `{{plan}}` and `{{answers}}`. |

@@ -256,9 +256,27 @@ func TestChatPick_TitleLeadsTheDescription(t *testing.T) {
 	}
 }
 
-// TestGolden_ChatPicker captures the saved-chat picker: a titled row, an
-// untitled one, the session's own unavailable slot, then the delete confirm
-// and the rename row under the card.
+// The slot's standing account follows the title and the readings, so the
+// column gives it up first on a narrow card
+// (docs/capabilities/sessions-and-memory.md#a-title-you-did-not-write).
+func TestChatPick_TheAccountFollowsTheReadings(t *testing.T) {
+	m := chatPickModel(t, "alpha", "beta")
+	if err := m.db.SetChatResume("alpha", storage.ChatResume{Summary: "Fixing the retry backoff."}); err != nil {
+		t.Fatal(err)
+	}
+	m = sendText(t, m, "/chats")
+	desc := m.picker.Options[pickIndex(t, m, "alpha")].Desc
+	if !strings.HasPrefix(desc, "1 turn · ") || !strings.HasSuffix(desc, " · Fixing the retry backoff.") {
+		t.Fatalf("the account should follow the readings, got %q", desc)
+	}
+	if desc := m.picker.Options[pickIndex(t, m, "beta")].Desc; strings.Contains(desc, "retry") {
+		t.Fatalf("a row with no account carries none, got %q", desc)
+	}
+}
+
+// TestGolden_ChatPicker captures the saved-chat picker: a titled row carrying
+// its standing account, an untitled one, the session's own unavailable slot,
+// then the delete confirm and the rename row under the card.
 func TestGolden_ChatPicker(t *testing.T) {
 	captureGolden(t, "chat-picker", "the saved-chat picker with housekeeping", goldenWidths, func(width int) []golden.Panel {
 		db := rewindTestDB(t)
@@ -280,7 +298,8 @@ func TestGolden_ChatPicker(t *testing.T) {
 		// still; the rows are pinned so the capture is the same every run.
 		at := time.Date(2026, 8, 31, 9, 4, 0, 0, time.Local)
 		fixed := []storage.ChatListEntry{
-			{Name: "2026-08-30 09:12:04", Title: "Flaky retry test", Turns: 1, UpdatedAt: at},
+			{Name: "2026-08-30 09:12:04", Title: "Flaky retry test", Turns: 1, UpdatedAt: at,
+				Summary: "Fixing the retry backoff. Left off with the timer test green."},
 			{Name: "release notes", Turns: 4, UpdatedAt: at},
 			{Name: "2026-08-31 14:02:11", Turns: 1, UpdatedAt: at},
 		}

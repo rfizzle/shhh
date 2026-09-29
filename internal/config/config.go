@@ -160,6 +160,10 @@ type PromptsConfig struct {
 	// before it joins the conversation. It may name `{{source}}`, the
 	// sending session; the line itself follows it whatever it says.
 	SessionSteer string `toml:"session_steer,omitempty"`
+	// Account is the instruction the standing account of a session is asked
+	// with. The previous account and the exchange it revises are appended
+	// after it, and it takes no placeholders.
+	Account string `toml:"account,omitempty"`
 
 	// The backlog runner's stage instructions. Each names a file that
 	// replaces what one stage of a run tells the model; the blocks the run
@@ -349,11 +353,17 @@ type SummaryConfig struct {
 	// question about the reading that produced it.
 	SteerTargetChars int `toml:"steer_target_chars"`
 	// Title asks the summary model to name an unnamed session after its
-	// first turn, for the saved-chat listings. Unset means on when Model is
-	// set and off otherwise: a provider that names no small model of its own
-	// reads titles on the session's, and a title nobody asked for should not
-	// cost that. A name the user gives a session always wins over it.
+	// first turn, for the saved-chat listings. Unset means on: the model
+	// that answers always resolves down the bounded-call chain, and a
+	// listing of timestamps is the failure the title exists to prevent. A
+	// name the user gives a session always wins over it.
 	Title *bool `toml:"title"`
+	// ResumeIntervalTurns is how many turns pass between two revisions of
+	// the session's standing account — the two sentences every saved-chat
+	// listing shows under the title (default 3). Any negative turns the
+	// account off, and so does Disabled.
+	// See docs/capabilities/sessions-and-memory.md#a-title-you-did-not-write.
+	ResumeIntervalTurns int `toml:"resume_interval_turns"`
 }
 
 // LSPConfig tunes the language-server integration `shhh code` uses for
@@ -1104,12 +1114,32 @@ func (c *Config) SubagentSummaryEnabled() bool {
 }
 
 // TitlesEnabled reports whether sessions are titled: what summary.title
-// says, or — unset — whether a summary model is configured to ask.
+// says, or — unset — yes. A model always resolves for the title now (the
+// bounded-call chain ends at the session's own), so a gate on whether one
+// was named only left every listing a list of timestamps.
 func (c Config) TitlesEnabled() bool {
 	if c.Summary.Title == nil {
-		return c.Summary.Model != ""
+		return true
 	}
 	return *c.Summary.Title
+}
+
+// DefaultResumeIntervalTurns is how many turns pass between two revisions
+// of the standing account when summary.resume_interval_turns is unset.
+const DefaultResumeIntervalTurns = 3
+
+// AccountInterval is how many closed turns pass between two revisions of the
+// session's standing account, or 0 where the account is off: a negative
+// summary.resume_interval_turns, or summary.disabled.
+func (c Config) AccountInterval() int {
+	switch n := c.Summary.ResumeIntervalTurns; {
+	case c.Summary.Disabled || n < 0:
+		return 0
+	case n == 0:
+		return DefaultResumeIntervalTurns
+	default:
+		return n
+	}
 }
 
 // NotifyEnabled reports whether a session may raise desktop notifications

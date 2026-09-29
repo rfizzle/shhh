@@ -2371,8 +2371,10 @@ screen's — trusted, trusted and changed since a session last read it, or
 withheld with `[a]` on it — and it only reads: the session that shows a
 change is the one that records it, so a doctor run never uses the notice up.
 The saved-chat browser is the same cut over conversations:
-the list on the left, the one the pointer is on beside it, and the renaming
-and deleting the picker inside a session already offers
+the list on the left, the one the pointer is on beside it — its title, and
+under that the account the session kept of where it left off
+(../capabilities/sessions-and-memory.md#a-title-you-did-not-write) — and the
+renaming and deleting the picker inside a session already offers
 (../capabilities/sessions-and-memory.md#housekeeping).
 
 Thirteen surfaces take the whole terminal this way — those seven, the reading

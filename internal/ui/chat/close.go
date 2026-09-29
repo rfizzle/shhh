@@ -55,6 +55,9 @@ func (m *Model) appendTurnClose() {
 	m.expireTurnGrants()
 	outcome := m.turnOutcomeCode()
 	m.recordTurn(outcome)
+	// And toward the slot's standing account, beside the record: this is the
+	// one place a turn is counted as over (account.go).
+	m.noteAccountTurn()
 	// A turn that stopped at its round limit has already closed, with the
 	// pause row: it states the rounds it used, what it changed, and
 	// the three ways on, and a second block offering review and [u] beside it

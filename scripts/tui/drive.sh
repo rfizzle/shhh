@@ -257,6 +257,14 @@ fi
 # each append to one.
 rm -f "$OUT"/*.txt "$OUT"/*.ansi "$OUT"/*.gif "$OUT"/*.cast "$OUT/shell.log"
 printf '[behavior]\nprovider_retries = 0\n' > "$home/config/shhh/config.toml"
+# A replies file with no queues answers every request from one script, so a
+# session's own title and standing account — both asked by default — would
+# each take the reply written for the next turn. Such a scene is not about
+# them, and they stay off there; a scene with queues answers them from its
+# [reading] queue, or with a line of the provider's own where it wrote none.
+if ! grep -q '^\[[^]]*\][[:space:]]*$' "$scene/replies.txt"; then
+	printf '\n[summary]\ntitle = false\nresume_interval_turns = -1\n' >> "$home/config/shhh/config.toml"
+fi
 (cd "$ws" && git init -q && git -c user.email=tui@shhh -c user.name=tui commit -q --allow-empty -m init)
 
 # The provider asks the kernel for a free port, binds it, and says which one

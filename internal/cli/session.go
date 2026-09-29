@@ -859,9 +859,9 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	// provider.cheap_model, the provider's small model, the session's own.
 	summarizer := newSummarizer(cfg, env, ledger, !cfg.Summary.Disabled)
 	summaryModel := resolveFlow(cfg, flowTitle, env.provName, env.modelName).model
-	// Session titles ask the same model. Off unless a summary model is
-	// configured or the config says so outright; a name the user gives
-	// wins either way.
+	// Session titles ask the same model. On unless the config says
+	// otherwise, since a model always resolves down the chain; a name the
+	// user gives wins either way.
 	titler := agent.NewTitler(ledger.For(env.prov, meter.SourceSummary), agent.TitleConfig{
 		Model:    summaryModel,
 		Timeout:  time.Duration(cfg.Summary.TimeoutSeconds) * time.Second,
@@ -1062,6 +1062,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		WithExplainer(explainer).
 		WithSummarizer(summarizer).
 		WithTitler(titler, cfg.TitlesEnabled()).
+		WithAccountant(newAccountant(cfg, env, ledger), cfg.AccountInterval()).
 		WithModelSwitcher(env.switchModel).
 		WithReasoning(env.effort, env.switchReasoning).
 		WithReasoningDefault(cfg.Provider.Reasoning,
@@ -1526,8 +1527,8 @@ func printExitBanner(b components.ExitBanner) {
 const livePhrase = "open in another session"
 
 // chatBrowseRows is the saved chats as the browser lists them: the name, what
-// the conversation was about and how big it is, and what deleting it would
-// take along.
+// the conversation was about and where it left off, how big it is, and what
+// deleting it would take along.
 func chatBrowseRows(db *storage.DB, entries []storage.ChatListEntry) []components.ChatRow {
 	rows := make([]components.ChatRow, len(entries))
 	for i, e := range entries {
@@ -1535,6 +1536,7 @@ func chatBrowseRows(db *storage.DB, entries []storage.ChatListEntry) []component
 			ID:      e.Name,
 			Name:    e.Name,
 			Title:   e.Title,
+			Summary: e.Summary,
 			Turns:   countOf(e.Turns, "turn", "turns"),
 			When:    e.UpdatedAt.Local().Format("Jan 2 15:04"),
 			Updated: e.UpdatedAt.Local().Format("2006-01-02 15:04:05"),

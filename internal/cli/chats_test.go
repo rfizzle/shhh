@@ -39,6 +39,9 @@ func chatsDB(t *testing.T) {
 	if err := db.SetChatTitle("alpha", "Flaky retry test"); err != nil {
 		t.Fatal(err)
 	}
+	if err := db.SetChatResume("alpha", storage.ChatResume{Summary: "Chasing the timer race. Left off at the retry test."}); err != nil {
+		t.Fatal(err)
+	}
 }
 
 // runChats runs `shhh chats <args>` under the root command and returns what
@@ -80,6 +83,9 @@ func TestChats_ListTextAndJSON(t *testing.T) {
 	if !strings.Contains(out, "✓ beta         1 turn") {
 		t.Fatal("an untitled chat states its turns where a title would be, with no empty column")
 	}
+	if !strings.Contains(out, "Flaky retry test · 1 turn") || !strings.Contains(out, "\n      Chasing the timer race.") {
+		t.Fatalf("the standing account should be the line under its row, got:\n%s", out)
+	}
 
 	out, err = runChats(t, "", "list", "--json")
 	if err != nil {
@@ -98,7 +104,8 @@ func TestChats_ListTextAndJSON(t *testing.T) {
 			alpha = r
 		}
 	}
-	if alpha.Title != "Flaky retry test" || alpha.Turns != 1 || alpha.UpdatedAt.IsZero() {
+	if alpha.Title != "Flaky retry test" || alpha.Turns != 1 || alpha.UpdatedAt.IsZero() ||
+		alpha.Summary != "Chasing the timer race. Left off at the retry test." {
 		t.Fatalf("alpha should carry its title, turns and time, got %+v", alpha)
 	}
 }

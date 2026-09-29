@@ -15,10 +15,9 @@ package chat
 //     asked a third time.
 //   - The reading is a background command like the summary's: nothing on
 //     screen waits for it, and the turn under it is untouched either way.
-//   - It is off unless a summary model is configured, because a provider
-//     that names no small model of its own reads the title on the session's,
-//     where the cheapest question is still not cheap; `/ui title` flips it
-//     for the session and `summary.title` in the config for good.
+//   - It is on by default, because a model always resolves down the
+//     bounded-call chain; `/ui title` flips it for the session and
+//     `summary.title` in the config for good.
 
 import (
 	"context"
@@ -195,11 +194,11 @@ func (m *Model) loadTitle() {
 func (m Model) titleStatus() string {
 	switch {
 	case !m.titles.on && !m.titler.Enabled():
-		return "off — no summary model is configured (summary.model)"
+		return "off — turned off in the config (summary.title)"
 	case !m.titles.on:
 		return "off"
 	case !m.titler.Enabled():
-		return "on, but no summary model is configured (summary.model) — nothing is asked"
+		return "on, but turned off in the config (summary.title) — nothing is asked"
 	}
 	return "on (" + m.titler.Model() + ")"
 }
