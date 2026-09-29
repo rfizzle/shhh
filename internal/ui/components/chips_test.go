@@ -85,6 +85,45 @@ func TestAttachmentChips_ClipsALongName(t *testing.T) {
 	}
 }
 
+// With handles, what a narrowing row gives up is ordered and the handle is
+// the last of it: every chip's name first, then whole chips from the end,
+// then the kept chip's counts, and only then a clip — so three screenshots
+// all called clipboard.png stay three words `/paste drop` takes for as long
+// as there is room for them.
+func TestAttachmentChips_TheHandleIsGivenUpLast(t *testing.T) {
+	chips := []AttachmentChip{
+		{Kind: ChipImage, Handle: "Image#1", Name: "clipboard.png", Size: "412 KB"},
+		{Kind: ChipImage, Handle: "Image#2", Name: "clipboard.png", Size: "380 KB"},
+		{Kind: ChipImage, Handle: "Image#3", Name: "clipboard.png", Size: "96 KB"},
+		{Kind: ChipText, Handle: "File#1", Name: "notes.md", Size: "2 KB", Lines: 84},
+	}
+	full := "▣ Image#1 clipboard.png 412 KB · ▣ Image#2 clipboard.png 380 KB · " +
+		"▣ Image#3 clipboard.png 96 KB · ≡ File#1 notes.md 2 KB 84 lines"
+	for _, c := range []struct {
+		width int
+		want  string
+	}{
+		{129, full},
+		{128, "▣ Image#1 412 KB · ▣ Image#2 380 KB · ▣ Image#3 96 KB · ≡ File#1 2 KB 84 lines"},
+		{78, "▣ Image#1 412 KB · ▣ Image#2 380 KB · ▣ Image#3 96 KB · ≡ File#1 2 KB 84 lines"},
+		{77, "▣ Image#1 412 KB · ▣ Image#2 380 KB · ▣ Image#3 96 KB · +1 more"},
+		{62, "▣ Image#1 412 KB · ▣ Image#2 380 KB · +2 more"},
+		{60, "▣ Image#1 412 KB · ▣ Image#2 380 KB · +2 more"},
+		{44, "▣ Image#1 412 KB · +3 more"},
+		{25, "▣ Image#1 · +3 more"},
+		{19, "▣ Image#1 · +3 more"},
+		{9, "▣ Image#1"},
+	} {
+		got := AttachmentChips(chips, c.width)
+		if plain := ansi.Strip(got); plain != c.want {
+			t.Fatalf("width %d: strip = %q, want %q", c.width, plain, c.want)
+		}
+		if w := lipgloss.Width(got); w > c.width {
+			t.Fatalf("width %d: strip is %d columns wide", c.width, w)
+		}
+	}
+}
+
 // A chip with no size is still a chip: the notice paths that stage one before
 // its bytes are counted must not render a trailing gap.
 func TestAttachmentChips_SizeIsOptional(t *testing.T) {

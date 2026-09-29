@@ -88,9 +88,9 @@ func typedByHand(msg provider.Message) bool { return !msg.Machine }
 //
 // So a recalled fold is a paste again. The bytes are on the transcript row the
 // send left, which keeps the whole log precisely so the row is an account of
-// what was sent (attachments.go), and recall stages them back under the next
-// free paste name — renumbering the token in the sentence when the number it
-// had is taken. It then opens with the same key, prices on the same rail and
+// what was sent (attachments.go), and recall stages them back under the
+// handle the row kept — renumbering the token in the sentence only when that
+// handle is taken, or the row is older than handles. It then opens with the same key, prices on the same rail and
 // rides out with the next send: the line as it was, ready to go again, which
 // is what recall means everywhere else in this surface.
 //
@@ -202,17 +202,23 @@ func (m *Model) restageRecalled(text string) string {
 func (m *Model) restagePaste(p pasteFold) (string, bool) {
 	// The row holds the log split into lines with the newline a file ends on
 	// taken off; joining it puts back the bytes the request carried.
-	a, err := attachment.FromBytes(nextPasteName(m.attachments),
+	a, err := attachment.FromBytes(attachment.PasteName(0),
 		[]byte(strings.Join(p.body, "\n")+"\n"))
-	if err != nil {
+	if err != nil || a.Kind != provider.AttachmentText {
 		return "", false
 	}
-	q, ok := pasteOf(a)
-	if !ok {
-		return "", false
+	// The handle the row kept, where it kept one: the same bytes are the
+	// same paste. A row saved before handles existed asks for a fresh one.
+	a.Handle = p.handle
+	if a.Handle == "" {
+		a.Handle = attachment.HandlePaste
 	}
 	staged, _ := m.stageQuietly([]provider.Attachment{a})
-	if !staged.isStaged(a.Name) {
+	if len(staged.attachments) == len(m.attachments) {
+		return "", false
+	}
+	q, ok := pasteOf(staged.attachments[len(staged.attachments)-1])
+	if !ok {
 		return "", false
 	}
 	*m = staged

@@ -284,6 +284,9 @@ func storedChatSummary(db *storage.DB, slot string) string {
 // them.
 func (m *Model) resumeConversation(slot string, msgs []provider.Message) {
 	m.loadConversation(stripResumeContext(msgs))
+	// The handles go on from the highest this conversation already used, so a
+	// reopened one does not hand out a second Image#1 (attachments.go).
+	m.seedHandles(msgs)
 	if slot != "" {
 		// The sitting being replaced has its own records in memory. They
 		// belong to that conversation; Restore would otherwise skip and

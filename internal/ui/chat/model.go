@@ -11,6 +11,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/ask"
+	"github.com/rfizzle/shhh/internal/attachment"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/clipboard"
 	"github.com/rfizzle/shhh/internal/digest"
@@ -1306,6 +1307,10 @@ type Model struct {
 	// next — a fresh turn or the first queued steering line — and are never
 	// rendered, only named.
 	attachments []provider.Attachment
+	// handles is the conversation's count of attachment handles, per kind
+	// (attachments.go): zeroed at the session boundary, read back off the
+	// saved messages when a conversation is resumed or loaded.
+	handles attachment.Handles
 	// pasteLines and pasteColumns are the shape past which a paste is staged
 	// as one of them rather than typed into the draft
 	// (appearance.paste_lines / appearance.paste_columns). They hold the

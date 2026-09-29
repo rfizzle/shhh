@@ -123,6 +123,22 @@ A recording has no preview. The surface that opens a staged attachment full
 pane draws what can be looked at — a picture, a body of text — and says so
 rather than opening onto a note about bytes it cannot render.
 
+Everything attached is given a handle beside its name, and the handle is the
+word for it: `Image#1` for a picture, `Paste#1` for text pasted into the draft
+that was too long to keep there, `File#1` for anything else — a PDF, a text
+file, a recording, however it arrived. The name cannot do this job. It is
+often nobody's choice — every screenshot taken off the clipboard is
+`clipboard.png` — and a word that three attachments share points at none of
+them. A picture is the one kind with a word of its own because it is the one
+a person refers to by what it shows — *the second screenshot*, *the one with
+the error* — and so the one most often attached several times in a row. A
+paste has its own because it is the one attachment with no file behind it: its
+name is only ever its number. Each word counts from one for the conversation,
+not for the message, so a handle keeps meaning the same thing for as long as
+the conversation it was used in — the number a dropped attachment had is not
+handed to the next, and a conversation reopened later goes on from the highest
+number its own messages carry. The count starts over with a new conversation.
+
 ## Colleagues, not workers
 
 A chat session can delegate to sub-agents, and the roles it may spawn are

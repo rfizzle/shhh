@@ -116,7 +116,7 @@ func helpMidTurn(m *Model) string {
 var helpCommands = map[string]string{
 	"/help":  `show this help`,
 	"/clear": `end this session and start another (also /new)`,
-	"/paste": `attach the clipboard — a screenshot, or files copied in a file manager — to your next message; /paste <path> attaches a file by name, /paste show <name> opens a staged image or paste full-pane, /paste drop <name> takes one back out and /paste clear drops what is staged (ctrl+v)`,
+	"/paste": `attach the clipboard — a screenshot, or files copied in a file manager — to your next message; /paste <path> attaches a file by name, /paste show <handle> opens a staged image or paste full-pane, /paste drop <handle> takes one back out — the handle is the one a chip leads with, Image#1, and its name works too — and /paste clear drops what is staged (ctrl+v)`,
 	"/copy":  `copy the last response (or just its code blocks)`,
 	"/run":   `run a code block from the last response (with confirmation)`,
 	"/model": `switch the model (bare /model opens an interactive picker)

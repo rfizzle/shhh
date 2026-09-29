@@ -90,6 +90,10 @@ func (m *Model) startNewSession() (notes []entry, save tea.Cmd) {
 	}
 	m.resetTranscript()
 	m.checkpoints = nil
+	// Attachment handles number from one again: `Image#1` is a word the new
+	// conversation has not used. A chip still staged rides into it and keeps
+	// its handle, so the count starts past it (attachments.go).
+	m.seedHandles(nil)
 	// Follow-ups were written against the conversation being dropped.
 	m.followUps = nil
 	m.followUpsHeld = false

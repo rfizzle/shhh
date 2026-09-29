@@ -2331,19 +2331,24 @@ func TestGolden_ExitBanner(t *testing.T) {
 func TestGolden_AttachmentChips(t *testing.T) {
 	captureGolden(t, "attachment-chips", "staged attachment chips", goldenWidths, func(width int) []golden.Panel {
 		strip := func(chips ...AttachmentChip) string { return AttachmentChips(chips, width) }
-		shot := AttachmentChip{Kind: ChipImage, Name: "shot.png", Size: "412 KB"}
-		notes := AttachmentChip{Kind: ChipText, Name: "notes.md", Size: "2 KB", Lines: 84}
-		spec := AttachmentChip{Kind: ChipDocument, Name: "spec.pdf", Size: "1.1 MB"}
-		paste := AttachmentChip{Kind: ChipText, Name: "paste-1.txt", Size: "4 KB", Lines: 178}
+		shot := AttachmentChip{Kind: ChipImage, Handle: "Image#1", Name: "shot.png", Size: "412 KB"}
+		notes := AttachmentChip{Kind: ChipText, Handle: "File#1", Name: "notes.md", Size: "2 KB", Lines: 84}
+		spec := AttachmentChip{Kind: ChipDocument, Handle: "File#2", Name: "spec.pdf", Size: "1.1 MB"}
+		paste := AttachmentChip{Kind: ChipText, Handle: "Paste#1", Name: "paste-1.txt", Size: "4 KB", Lines: 178}
+		clip := func(n int, size string) AttachmentChip {
+			return AttachmentChip{Kind: ChipImage, Handle: "Image#" + strconv.Itoa(n), Name: "clipboard.png", Size: size}
+		}
 		return []golden.Panel{
-			{Label: "one image · the mark, the name, the size", View: strip(shot)},
+			{Label: "one image · the mark, the handle, the name, the size", View: strip(shot)},
 			{Label: "a staged paste · the height is the half a name cannot carry",
 				View: strip(paste)},
+			{Label: "three pictures and a file · the names go first, the handles last",
+				View: strip(clip(1, "412 KB"), clip(2, "380 KB"), clip(3, "96 KB"), notes)},
 			{Label: "one of each kind · only the text counts lines", View: strip(shot, notes, spec)},
-			{Label: "more than the row can hold · whole chips, then a count",
-				View: strip(shot, notes, spec, shot, notes, spec)},
-			{Label: "a long name · clipped at the head, which is the half that names it",
-				View: strip(AttachmentChip{Kind: ChipImage,
+			{Label: "more than the row can hold · names, then whole chips, then a count",
+				View: strip(shot, notes, spec, clip(2, "380 KB"), clip(3, "96 KB"), paste, clip(4, "1.2 MB"))},
+			{Label: "a long name · clipped at the head, and the handle is never clipped",
+				View: strip(AttachmentChip{Kind: ChipImage, Handle: "Image#1",
 					Name: "screenshot-2026-08-29-at-14-02-11.png", Size: "412 KB"}, notes)},
 		}
 	})

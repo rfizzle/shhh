@@ -18,10 +18,13 @@
     /paste         attach the clipboard — a screenshot, or
                    files copied in a file manager — to your
                    next message; /paste <path> attaches a
-                   file by name, /paste show <name> opens a
-                   staged image or paste full-pane, /paste
-                   drop <name> takes one back out and /paste
-                   clear drops what is staged (ctrl+v)
+                   file by name, /paste show <handle> opens
+                   a staged image or paste full-pane, /paste
+                   drop <handle> takes one back out — the
+                   handle is the one a chip leads with,
+                   Image#1, and its name works too — and
+                   /paste clear drops what is staged
+                   (ctrl+v)
     /copy [code]   copy the last response (or just its code
                    blocks)
     /model [name]  switch the model (bare /model opens an
@@ -151,10 +154,13 @@
     /paste         attach the clipboard — a screenshot, or
                    files copied in a file manager — to your
                    next message; /paste <path> attaches a
-                   file by name, /paste show <name> opens a
-                   staged image or paste full-pane, /paste
-                   drop <name> takes one back out and /paste
-                   clear drops what is staged (ctrl+v)
+                   file by name, /paste show <handle> opens
+                   a staged image or paste full-pane, /paste
+                   drop <handle> takes one back out — the
+                   handle is the one a chip leads with,
+                   Image#1, and its name works too — and
+                   /paste clear drops what is staged
+                   (ctrl+v)
     /copy [code]   copy the last response (or just its code
                    blocks)
     /model [name]  switch the model (bare /model opens an
@@ -309,10 +315,13 @@
     ␛[38;5;252m/paste␛[m         ␛[38;5;241mattach the clipboard — a screenshot, or␛[m
                    ␛[38;5;241mfiles copied in a file manager — to your␛[m
                    ␛[38;5;241mnext message; /paste <path> attaches a␛[m
-                   ␛[38;5;241mfile by name, /paste show <name> opens a␛[m
-                   ␛[38;5;241mstaged image or paste full-pane, /paste␛[m
-                   ␛[38;5;241mdrop <name> takes one back out and /paste␛[m
-                   ␛[38;5;241mclear drops what is staged (ctrl+v)␛[m
+                   ␛[38;5;241mfile by name, /paste show <handle> opens␛[m
+                   ␛[38;5;241ma staged image or paste full-pane, /paste␛[m
+                   ␛[38;5;241mdrop <handle> takes one back out — the␛[m
+                   ␛[38;5;241mhandle is the one a chip leads with,␛[m
+                   ␛[38;5;241mImage#1, and its name works too — and␛[m
+                   ␛[38;5;241m/paste clear drops what is staged␛[m
+                   ␛[38;5;241m(ctrl+v)␛[m
     ␛[38;5;252m/copy [code]␛[m   ␛[38;5;241mcopy the last response (or just its code␛[m
                    ␛[38;5;241mblocks)␛[m
     ␛[38;5;252m/model [name]␛[m  ␛[38;5;241mswitch the model (bare /model opens an␛[m
@@ -442,10 +451,13 @@
     ␛[38;5;252m/paste␛[m         ␛[38;5;241mattach the clipboard — a screenshot, or␛[m
                    ␛[38;5;241mfiles copied in a file manager — to your␛[m
                    ␛[38;5;241mnext message; /paste <path> attaches a␛[m
-                   ␛[38;5;241mfile by name, /paste show <name> opens a␛[m
-                   ␛[38;5;241mstaged image or paste full-pane, /paste␛[m
-                   ␛[38;5;241mdrop <name> takes one back out and /paste␛[m
-                   ␛[38;5;241mclear drops what is staged (ctrl+v)␛[m
+                   ␛[38;5;241mfile by name, /paste show <handle> opens␛[m
+                   ␛[38;5;241ma staged image or paste full-pane, /paste␛[m
+                   ␛[38;5;241mdrop <handle> takes one back out — the␛[m
+                   ␛[38;5;241mhandle is the one a chip leads with,␛[m
+                   ␛[38;5;241mImage#1, and its name works too — and␛[m
+                   ␛[38;5;241m/paste clear drops what is staged␛[m
+                   ␛[38;5;241m(ctrl+v)␛[m
     ␛[38;5;252m/copy [code]␛[m   ␛[38;5;241mcopy the last response (or just its code␛[m
                    ␛[38;5;241mblocks)␛[m
     ␛[38;5;252m/model [name]␛[m  ␛[38;5;241mswitch the model (bare /model opens an␛[m

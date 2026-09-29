@@ -811,6 +811,14 @@ next message — it sits against the box because what is staged leaves with the
 sentence being typed, and the notices do not. Each chip says what the thing
 is, what it is called and how big it is, and for text how far it runs, because
 a size answers *will this fit* and never *which of these is the stack trace*.
+Each chip leads with a handle — its kind and a number, `Image#2`, `Paste#1`,
+`File#3` — and the number runs for the conversation, not for the strip: a
+chip that has left does not give its number to the next one, and a
+conversation reopened later goes on from where its own messages stopped. The
+handle is what the two paste verbs take, because the name is often nobody's
+choice and three pasted screenshots are all called `clipboard.png`. So when
+the row runs short the names go first, then whole chips from the end, then
+the counts of the one that is kept; the handle is the last thing given up.
 
 Above all of that, while children are working, one compact row apiece: the
 child's name joined to what it was asked to do with the separator every other

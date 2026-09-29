@@ -878,21 +878,27 @@ func TestGolden_StagedRail(t *testing.T) {
 		frame := func(mut func(*Model)) string {
 			m := goldenModel(t, width)
 			m.attachments = []provider.Attachment{
-				{Kind: provider.AttachmentImage, Name: "shot.png", Data: png},
+				{Kind: provider.AttachmentImage, Handle: "Image#1", Name: "shot.png", Data: png},
 			}
 			mut(&m)
 			return promptSurface(m)
 		}
 		return []golden.Panel{
 			{Label: "one screenshot waiting", View: frame(func(m *Model) {})},
+			{Label: "two screenshots with one name · the handle tells them apart", View: frame(func(m *Model) {
+				m.attachments = []provider.Attachment{
+					{Kind: provider.AttachmentImage, Handle: "Image#1", Name: "clipboard.png", Data: png},
+					{Kind: provider.AttachmentImage, Handle: "Image#2", Name: "clipboard.png", Data: png[:380<<10]},
+				}
+			})},
 			{Label: "one of each kind · only the text has lines to count", View: frame(func(m *Model) {
 				m.attachments = append(m.attachments,
-					provider.Attachment{Kind: provider.AttachmentText, Name: "notes.md", Data: md},
-					provider.Attachment{Kind: provider.AttachmentDocument, Name: "spec.pdf", Data: pdf})
+					provider.Attachment{Kind: provider.AttachmentText, Handle: "File#1", Name: "notes.md", Data: md},
+					provider.Attachment{Kind: provider.AttachmentDocument, Handle: "File#2", Name: "spec.pdf", Data: pdf})
 			})},
 			{Label: "a staged paste · the height is what names it", View: frame(func(m *Model) {
 				m.attachments = []provider.Attachment{
-					{Kind: provider.AttachmentText, Name: "paste-1.txt", Data: paste},
+					{Kind: provider.AttachmentText, Handle: "Paste#1", Name: "paste-1.txt", Data: paste},
 				}
 			})},
 			{Label: "a notice above it · transient first, then what rides", View: frame(func(m *Model) {

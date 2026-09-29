@@ -248,16 +248,36 @@ func scopeDropArgs(m *Model) []argOption {
 }
 
 // attachmentDropArgs offers the attachments staged for the next message
-// — the names `/paste drop` takes back out. A chip has no key of its
-// own, so its name is the handle, and this is what keeps the handle
-// from having to be typed from memory.
+// — the handles `/paste drop` takes back out. A chip has no key of its
+// own, so its handle is what is typed, and this is what keeps it from
+// having to be typed from memory.
 func attachmentDropArgs(m *Model) []argOption {
 	out := make([]argOption, 0, len(m.attachments))
 	for _, a := range m.attachments {
-		out = append(out, argOption{value: a.Name,
-			desc: "drop this attachment · " + attachment.HumanSize(len(a.Data))})
+		out = append(out, argOption{value: attachmentArg(a),
+			desc: "drop " + attachmentArgDesc(a)})
 	}
 	return out
+}
+
+// attachmentArg is the word the completion menu offers for one staged
+// attachment: its handle, which is the one word no other chip shares, or
+// its name where it has none.
+func attachmentArg(a provider.Attachment) string {
+	if a.Handle != "" {
+		return a.Handle
+	}
+	return a.Name
+}
+
+// attachmentArgDesc is the rest of the chip beside the offered handle, so a
+// row of three handles still says which file each one is.
+func attachmentArgDesc(a provider.Attachment) string {
+	size := attachment.HumanSize(len(a.Data))
+	if a.Handle == "" {
+		return size
+	}
+	return a.Name + " · " + size
 }
 
 // attachmentShowArgs offers the staged attachments `/paste show` can open
@@ -275,8 +295,8 @@ func attachmentShowArgs(m *Model) []argOption {
 		default:
 			continue
 		}
-		out = append(out, argOption{value: a.Name,
-			desc: what + attachment.HumanSize(len(a.Data))})
+		out = append(out, argOption{value: attachmentArg(a),
+			desc: what + attachmentArgDesc(a)})
 	}
 	return out
 }

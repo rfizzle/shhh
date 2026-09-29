@@ -96,7 +96,7 @@ func TestPreview_LeavingKeepsWhatIsStaged(t *testing.T) {
 	if len(m.attachments) != 1 {
 		t.Fatalf("esc dropped the attachment: %d staged", len(m.attachments))
 	}
-	if !strings.Contains(stripANSI(m.View().Content), "▣ shot.png") {
+	if !strings.Contains(stripANSI(m.View().Content), "▣ Image#1 shot.png") {
 		t.Fatal("the staged rail should be back with the chip on it")
 	}
 }
@@ -224,7 +224,7 @@ func TestPreview_CompletionOffersWhatTheSurfaceOpens(t *testing.T) {
 	for _, o := range attachmentShowArgs(&m) {
 		names = append(names, o.value)
 	}
-	if len(names) != 2 || names[0] != "shot.png" || names[1] != "notes.md" {
+	if len(names) != 2 || names[0] != "Image#1" || names[1] != "File#1" {
 		t.Fatalf("/paste show offers %v, want the image and the text", names)
 	}
 	// The drop menu still offers everything: dropping a document is fine.

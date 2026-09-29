@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"unicode/utf8"
 
@@ -319,10 +320,10 @@ func LineCount(data []byte) int {
 	return bytes.Count(body, []byte("\n")) + 1
 }
 
-// PasteName is what the nth staged paste is called. A paste has no name of
-// its own — nobody chose it and there is no file behind it — and `/paste
-// drop` and `/paste show` are both reached by name, so it is given one that
-// can be typed rather than one that has to be described.
+// PasteName is what the paste handed `Paste#n` is called. A paste has no
+// name of its own — nobody chose it and there is no file behind it — so it
+// is given one that follows its number, and the name and the handle can
+// never tell a reader two different things about which paste it is.
 func PasteName(n int) string {
 	return fmt.Sprintf("paste-%d.txt", n)
 }
@@ -361,4 +362,89 @@ func Names(atts []provider.Attachment) []string {
 		out = append(out, fmt.Sprintf("%s (%s)", a.Name, HumanSize(len(a.Data))))
 	}
 	return out
+}
+
+// The three words a handle is spelled with
+// (docs/capabilities/chat.md#what-can-ride-with-a-message). A picture has a
+// word of its own because it is the one kind a reader refers to by what is
+// in it — "the second screenshot" — and a paste has one because it is the
+// one attachment with no file behind it, so its name is only ever the
+// number. Everything else — a PDF, a text file, a recording — is a file.
+const (
+	HandleImage = "Image"
+	HandlePaste = "Paste"
+	HandleFile  = "File"
+)
+
+// HandleWord is the word an attachment of this kind is numbered under when
+// nothing asked for another. A paste is never decided here: it is text like
+// a text file, and only the door that staged it knows it had no file.
+func HandleWord(kind provider.AttachmentKind) string {
+	if kind == provider.AttachmentImage {
+		return HandleImage
+	}
+	return HandleFile
+}
+
+// SplitHandle reads a handle back into its word and number. It answers false
+// for anything that is not one of the three words, a `#` and a positive
+// number, spelled exactly — the handles this package writes, and nothing a
+// reader typed that merely resembles one.
+func SplitHandle(h string) (word string, n int, ok bool) {
+	word, digits, found := strings.Cut(h, "#")
+	if !found || !knownHandleWord(word) {
+		return "", 0, false
+	}
+	n, err := strconv.Atoi(digits)
+	if err != nil || n < 1 || strconv.Itoa(n) != digits {
+		return "", 0, false
+	}
+	return word, n, true
+}
+
+func knownHandleWord(word string) bool {
+	return word == HandleImage || word == HandlePaste || word == HandleFile
+}
+
+// Handles is the conversation's count of each word: the highest number
+// handed out so far. It is a value with no map in it on purpose — a session
+// model is copied on every update, and a count shared between the copies
+// would be advanced by a staging the caller then threw away.
+type Handles struct {
+	image, paste, file int
+}
+
+// Next hands out the next handle of a word and counts it. A word that is not
+// one of the three is numbered as a file, which is what anything unnamed is.
+func (h *Handles) Next(word string) string {
+	if !knownHandleWord(word) {
+		word = HandleFile
+	}
+	c := h.count(word)
+	*c++
+	return word + "#" + strconv.Itoa(*c)
+}
+
+// Saw counts a handle that was handed out somewhere else — on a saved
+// message being read back, or on a chip still staged across a boundary — so
+// the next one of its word is past it. Anything that is not a handle is
+// ignored: a message saved before handles existed carries none.
+func (h *Handles) Saw(handle string) {
+	word, n, ok := SplitHandle(handle)
+	if !ok {
+		return
+	}
+	if c := h.count(word); n > *c {
+		*c = n
+	}
+}
+
+func (h *Handles) count(word string) *int {
+	switch word {
+	case HandleImage:
+		return &h.image
+	case HandlePaste:
+		return &h.paste
+	}
+	return &h.file
 }

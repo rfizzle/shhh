@@ -152,7 +152,9 @@ func (m Model) stagePaste(text string) (tea.Model, tea.Cmd) {
 				"the agent reads one with a tool",
 			attachment.HumanSize(len(text)), attachment.HumanSize(attachment.MaxTextBytes)))
 	}
-	a, err := attachment.FromBytes(nextPasteName(m.attachments), []byte(text))
+	// The name is settled with the number, when stageQuietly hands out the
+	// handle; until then it only has to read as text to the sniffer.
+	a, err := attachment.FromBytes(attachment.PasteName(0), []byte(text))
 	if err != nil {
 		return m.surfaceNotice("nothing attached — " + err.Error())
 	}
@@ -163,24 +165,17 @@ func (m Model) stagePaste(text string) (tea.Model, tea.Cmd) {
 	if a.Kind != provider.AttachmentText {
 		return m.surfaceNotice("nothing attached — that paste is not text, it reads as " + a.MediaType)
 	}
+	// Asked for by word: text is a file to the sniffer, and this door is the
+	// one that knows there was never a file behind it.
+	a.Handle = attachment.HandlePaste
 	staged, note := m.stageQuietly([]provider.Attachment{a})
-	if !staged.isStaged(a.Name) {
+	if len(staged.attachments) == len(m.attachments) {
 		// The ceiling refused it, and the refusal is what there is to say. A
 		// fold for bytes that are not riding would be a sentence promising
 		// something the message is not carrying.
 		return staged.surfaceNotice(note)
 	}
-	return staged.insertPasteToken(a)
-}
-
-// isStaged reports whether the staging area is holding a name.
-func (m Model) isStaged(name string) bool {
-	for _, a := range m.attachments {
-		if strings.EqualFold(a.Name, name) {
-			return true
-		}
-	}
-	return false
+	return staged.insertPasteToken(staged.attachments[len(staged.attachments)-1])
 }
 
 // insertPasteToken puts the fold in the draft where the paste was pasted and
@@ -293,7 +288,7 @@ func (m Model) removePaste(a provider.Attachment) (tea.Model, bool) {
 		return m, false
 	}
 	for i, staged := range m.attachments {
-		if !strings.EqualFold(staged.Name, a.Name) {
+		if staged.Handle != a.Handle || !strings.EqualFold(staged.Name, a.Name) {
 			continue
 		}
 		// A full slice expression, for takeAttachments' reason: the staged
@@ -397,10 +392,10 @@ func pasteOf(a provider.Attachment) (stagedPaste, bool) {
 }
 
 // pasteLabel is what a staged paste is called in a sentence — `paste 1` for
-// paste-1.txt. The file name is the handle `/paste drop` and `/paste show`
-// take and it has to be typable; the label is what a reader reads inside
-// their own sentence, and a file extension in the middle of one is noise
-// about a file that does not exist.
+// paste-1.txt. The handle and the file name are what `/paste drop` and
+// `/paste show` take and they have to be typable; the label is what a reader
+// reads inside their own sentence, and a file extension in the middle of one
+// is noise about a file that does not exist.
 func pasteLabel(name string) (string, bool) {
 	digits, ok := strings.CutPrefix(name, pasteNamePrefix)
 	if !ok {
@@ -450,29 +445,6 @@ func (m Model) pasteCost() string {
 	return fmt.Sprintf("%s will cost ~%s tokens", subject, components.FormatCount(total))
 }
 
-// nextPasteName is the name the paste being staged takes: the lowest number
-// no chip is already using, matched the way `/paste drop` matches a name.
-//
-// It numbers what is staged rather than what the session has sent, because
-// the name is a handle for `/paste drop` and `/paste show` and both can only
-// reach what is staged now — a counter that climbed all session would make
-// the first chip of an emptied strip `paste-9.txt`.
-func nextPasteName(staged []provider.Attachment) string {
-	for n := 1; ; n++ {
-		name := attachment.PasteName(n)
-		taken := false
-		for _, a := range staged {
-			if strings.EqualFold(a.Name, name) {
-				taken = true
-				break
-			}
-		}
-		if !taken {
-			return name
-		}
-	}
-}
-
 // stage adds attachments to the pending set, refusing what would push it
 // past the total ceiling and saying so rather than truncating quietly.
 func (m Model) stage(atts []provider.Attachment) (tea.Model, tea.Cmd) {
@@ -496,8 +468,9 @@ func (m Model) stageQuietly(atts []provider.Attachment) (Model, string) {
 				a.Name, attachment.HumanSize(attachment.MaxTotalBytes),
 				attachment.HumanSize(provider.AttachmentBytes(m.attachments)))
 		}
+		a = m.assignHandle(a)
 		m.attachments = append(m.attachments, a)
-		added = append(added, fmt.Sprintf("%s (%s)", a.Name, attachment.HumanSize(len(a.Data))))
+		added = append(added, describeStaged(a))
 	}
 	if len(added) == 0 {
 		return m, ""
@@ -506,6 +479,145 @@ func (m Model) stageQuietly(atts []provider.Attachment) (Model, string) {
 	m.syncViewport()
 	return m, "attached " + strings.Join(added, ", ") +
 		" — it goes with your next message (/paste clear drops it)"
+}
+
+// assignHandle gives one attachment being staged its handle
+// (docs/capabilities/chat.md#what-can-ride-with-a-message). It is the one
+// place a handle is handed out, so every door — the clipboard, a dragged
+// path, `/paste <path>`, an overflowing paste, a recalled one — numbers
+// through the same count.
+//
+// The count runs for the conversation rather than for what is staged: a
+// handle is the word a reader will use for the thing, and the word the model
+// will be handed for it, so `Image#1` must not come to mean a second picture
+// because the first one left the strip.
+//
+// What arrives carrying a whole handle keeps it — a recalled paste is the
+// same bytes it was, and it is the same Paste#2 — unless a chip already
+// staged holds that handle, which would put two chips behind one word. What
+// arrives carrying only a word is numbered under it; that is how a paste
+// asks to be a paste. Anything else is numbered by its kind. A paste's name
+// follows its number, so paste-3.txt is always Paste#3.
+func (m *Model) assignHandle(a provider.Attachment) provider.Attachment {
+	word, n, kept := attachment.SplitHandle(a.Handle)
+	if kept && (m.stagedHandle(a.Handle) ||
+		(word == attachment.HandlePaste && m.stagedName(attachment.PasteName(n)))) {
+		kept = false
+	}
+	if kept {
+		m.handles.Saw(a.Handle)
+	} else {
+		if word == "" {
+			word = a.Handle
+		}
+		if word != attachment.HandlePaste {
+			word = attachment.HandleWord(a.Kind)
+		}
+		for {
+			a.Handle = m.handles.Next(word)
+			_, n, _ = attachment.SplitHandle(a.Handle)
+			// A file somebody attached as paste-2.txt would otherwise share
+			// a name, and so a fold, with Paste#2.
+			if word != attachment.HandlePaste || !m.stagedName(attachment.PasteName(n)) {
+				break
+			}
+		}
+	}
+	if word == attachment.HandlePaste {
+		a.Name = attachment.PasteName(n)
+	}
+	return a
+}
+
+// stagedHandle reports whether a chip already staged carries a handle.
+func (m Model) stagedHandle(handle string) bool {
+	for _, a := range m.attachments {
+		if a.Handle == handle {
+			return true
+		}
+	}
+	return false
+}
+
+// stagedName reports whether a chip already staged carries a name, matched
+// the way the verbs match one.
+func (m Model) stagedName(name string) bool {
+	for _, a := range m.attachments {
+		if strings.EqualFold(a.Name, name) {
+			return true
+		}
+	}
+	return false
+}
+
+// seedHandles puts the conversation's count back to what a conversation
+// already holds: the handles on its saved messages, and on whatever is staged
+// and about to ride into it. Nothing is stored for the count itself — every
+// handle ever sent is on the message that carried it, so the highest of each
+// word is already on the rows.
+func (m *Model) seedHandles(msgs []provider.Message) {
+	m.handles = attachment.Handles{}
+	for _, msg := range msgs {
+		for _, a := range msg.Attachments {
+			m.handles.Saw(a.Handle)
+		}
+	}
+	for _, a := range m.attachments {
+		m.handles.Saw(a.Handle)
+	}
+}
+
+// describeStaged is one staged attachment the way a sentence about the strip
+// names it: `Image#1 (clipboard.png, 412 KB)`, the handle first because it is
+// what the two verbs take. An attachment with no handle is named by its name.
+func describeStaged(a provider.Attachment) string {
+	size := attachment.HumanSize(len(a.Data))
+	if a.Handle == "" {
+		return fmt.Sprintf("%s (%s)", a.Name, size)
+	}
+	return fmt.Sprintf("%s (%s, %s)", a.Handle, a.Name, size)
+}
+
+// describeAllStaged is the whole strip in describeStaged's words, for the
+// refusals that list what could have been meant.
+func describeAllStaged(atts []provider.Attachment) string {
+	out := make([]string, len(atts))
+	for i, a := range atts {
+		out[i] = describeStaged(a)
+	}
+	return strings.Join(out, ", ")
+}
+
+// findStaged is the staged attachment a word from `/paste show` or `/paste
+// drop` names, or the sentence refusing it. A handle is matched first, then a
+// name, both case-folded. A name two chips share is refused with the handles
+// that tell them apart rather than taken as the first of them, because taking
+// the first is how three pasted screenshots came to be one reachable chip
+// and two nobody could name.
+func (m Model) findStaged(word string) (int, string) {
+	for i, a := range m.attachments {
+		if a.Handle != "" && strings.EqualFold(a.Handle, word) {
+			return i, ""
+		}
+	}
+	var hits []int
+	for i, a := range m.attachments {
+		if strings.EqualFold(a.Name, word) {
+			hits = append(hits, i)
+		}
+	}
+	switch len(hits) {
+	case 0:
+		return -1, word + " is not attached — " + describeAllStaged(m.attachments)
+	case 1:
+		return hits[0], ""
+	}
+	handles := make([]string, len(hits))
+	for i, at := range hits {
+		handles[i] = m.attachments[at].Handle
+	}
+	return -1, fmt.Sprintf("%s is the name of %d attachments — say which: %s",
+		word, len(hits), strings.Join(handles, ", "))
 }
 
 // pasteFold is one paste as the transcript keeps it after the send: the fold
@@ -517,6 +629,9 @@ func (m Model) stageQuietly(atts []provider.Attachment) (Model, string) {
 // the whole session. It is the same bytes the request carried, which is what
 // makes the row an account of what was sent rather than of what is staged.
 type pasteFold struct {
+	// handle is the one the paste rode under, which a recall stages it
+	// back under: the same bytes are the same paste (recall.go).
+	handle string
 	label  string
 	lines  int
 	tokens int64
@@ -541,6 +656,7 @@ func userEntry(text string, atts []provider.Attachment) entry {
 			continue
 		}
 		e.pastes = append(e.pastes, pasteFold{
+			handle: a.Handle,
 			label:  p.label,
 			lines:  p.lines,
 			tokens: p.tokens,
@@ -659,9 +775,10 @@ func (m Model) attachmentChips() []components.AttachmentChip {
 	chips := make([]components.AttachmentChip, 0, len(m.attachments))
 	for _, a := range m.attachments {
 		chip := components.AttachmentChip{
-			Kind: chipKind(a.Kind),
-			Name: a.Name,
-			Size: attachment.HumanSize(len(a.Data)),
+			Kind:   chipKind(a.Kind),
+			Handle: a.Handle,
+			Name:   a.Name,
+			Size:   attachment.HumanSize(len(a.Data)),
 		}
 		// Only text has lines. A stat that cannot be reported is left out
 		// rather than reported as zero
@@ -692,8 +809,8 @@ func chipKind(k provider.AttachmentKind) components.ChipKind {
 }
 
 // runPaste dispatches `/paste`: bare reads the clipboard, `clear` drops what
-// is staged, `drop <name>` drops one chip, `show <name>` opens one as a
-// picture, and anything else is a path.
+// is staged, `drop <handle>` drops one chip, `show <handle>` opens one as a
+// picture — either also takes a name — and anything else is a path.
 func (m Model) runPaste(parts []string) (tea.Model, tea.Cmd) {
 	if len(parts) == 1 {
 		return m, readClipboardCmd()
@@ -737,36 +854,33 @@ func cutFold(arg, word string) (string, bool) {
 	return strings.TrimSpace(rest), true
 }
 
-// dropAttachment takes one staged attachment back out by name — the per-chip
-// half of what `clear` does to the whole strip.
+// dropAttachment takes one staged attachment back out by handle or name —
+// the per-chip half of what `clear` does to the whole strip.
 //
 // A chip carries no key of its own: it sits above a live draft, so the
-// name printed on it is the handle instead, and the completion menu offers
-// the staged names so it is never typed from memory. A name that is
-// not staged is said out loud with the ones that are, for the same reason a
+// handle printed on it is what is typed instead, and the completion menu
+// offers the staged handles so none is typed from memory. A word that names
+// nothing staged is said out loud with what is, for the same reason a
 // refused attachment is: a drop that quietly did nothing is a message that
 // goes out carrying the file you meant to remove.
 func (m Model) dropAttachment(name string) (tea.Model, tea.Cmd) {
 	if len(m.attachments) == 0 {
 		return m.surfaceNotice("nothing is attached")
 	}
-	staged := strings.Join(attachment.Names(m.attachments), ", ")
 	if name == "" {
-		return m.surfaceNotice("/paste drop needs a name — " + staged)
+		return m.surfaceNotice("/paste drop needs a handle — " + describeAllStaged(m.attachments))
 	}
-	for i, a := range m.attachments {
-		if !strings.EqualFold(a.Name, name) {
-			continue
-		}
-		dropped := fmt.Sprintf("%s (%s)", a.Name, attachment.HumanSize(len(a.Data)))
-		// A full slice expression, because the staged set is handed off whole
-		// by takeAttachments and must not be shortened through a shared array.
-		m.attachments = append(m.attachments[:i:i], m.attachments[i+1:]...)
-		m.dropPasteToken(a)
-		m.syncViewport()
-		return m.surfaceNotice("dropped " + dropped)
+	i, refusal := m.findStaged(name)
+	if i < 0 {
+		return m.surfaceNotice(refusal)
 	}
-	return m.surfaceNotice(name + " is not attached — " + staged)
+	a := m.attachments[i]
+	// A full slice expression, because the staged set is handed off whole by
+	// takeAttachments and must not be shortened through a shared array.
+	m.attachments = append(m.attachments[:i:i], m.attachments[i+1:]...)
+	m.dropPasteToken(a)
+	m.syncViewport()
+	return m.surfaceNotice("dropped " + describeStaged(a))
 }
 
 // openPasteDrop is a bare `/paste drop`: the keyboard path to taking a
@@ -781,12 +895,18 @@ func (m Model) openPasteDrop() (tea.Model, tea.Cmd) {
 	case 1:
 		a := m.attachments[0]
 		m.pasteDropConfirm = &components.Confirm{
-			Prompt: fmt.Sprintf("Drop %s (%s)?", a.Name, attachment.HumanSize(len(a.Data))),
+			Prompt: fmt.Sprintf("Drop %s?", describeStaged(a)),
 		}
 	default:
 		opts := make([]components.SelectOption, len(m.attachments))
 		for i, a := range m.attachments {
-			opts[i] = components.SelectOption{Label: a.Name, Meta: attachment.HumanSize(len(a.Data))}
+			// The handle leads, as it does on the chip: two rows reading
+			// clipboard.png are told apart by nothing else.
+			label := a.Name
+			if a.Handle != "" {
+				label = a.Handle + " · " + a.Name
+			}
+			opts[i] = components.SelectOption{Label: label, Meta: attachment.HumanSize(len(a.Data))}
 		}
 		card := components.NewMultiSelect(fmt.Sprintf(
 			"Drop staged attachments — %s toggles, %s drops the checked ones, %s drops none",
@@ -843,7 +963,7 @@ func (m Model) dropAttachments(indices []int) (tea.Model, tea.Cmd) {
 	var dropped []string
 	for i, a := range m.attachments {
 		if chosen[i] {
-			dropped = append(dropped, fmt.Sprintf("%s (%s)", a.Name, attachment.HumanSize(len(a.Data))))
+			dropped = append(dropped, describeStaged(a))
 			m.dropPasteToken(a)
 		} else {
 			kept = append(kept, a)

@@ -119,7 +119,7 @@ func buildSlashCommands() []slashCommand {
 		// command stays offered mid-turn and answers with the confirm quitting
 		// draws (cancel.go).
 		{name: "/clear", aliases: []string{"/new"}, desc: "start a new session"},
-		{name: "/paste", args: "[path|show <name>|drop [name]|clear]", desc: "attach the clipboard, or a file, to your next message",
+		{name: "/paste", args: "[path|show <handle>|drop [handle]|clear]", desc: "attach the clipboard, or a file, to your next message",
 			key: keys.Shown(keys.Draft.Attach),
 			argSpecs: []argSpec{
 				{options: []argOption{

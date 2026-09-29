@@ -1,0 +1,29 @@
+# program test: TestProgram_StagedFilesLeadWithTheirHandles
+#
+# Every chip on the staged rail leads with a handle of its kind and number
+# (docs/interface/surfaces.md#the-input-frame). Two pictures that are both
+# called clipboard.png and a text file are staged by path, one `/paste` each;
+# the strip reads Image#1, Image#2 and File#1, so the two pictures are two
+# words the paste verbs take rather than one name that reaches the first.
+#
+# What the capture is for: at 04 the strip above the box carries all three
+# chips, each handle ahead of its name, and the staging notice above it says
+# `attached File#1 (notes.txt, …)`. At 05 `/paste drop clipboard.png` is
+# refused naming both handles, and all three chips are still there.
+setup mkdir -p a b
+setup echo 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==' | base64 -d > a/clipboard.png
+setup cp a/clipboard.png b/clipboard.png
+setup printf 'what the screenshots are of\nthe second one is after the fix\n' > notes.txt
+snap 01-start "Some things worth doing first"
+keys "/paste a/clipboard.png" Enter
+snap 02-first "attached Image#1"
+keys "/paste b/clipboard.png" Enter
+snap 03-second "attached Image#2"
+keys "/paste notes.txt" Enter
+snap 04-strip "attached File#1" "Image#1" "Image#2" "File#1 notes.txt"
+keys "/paste drop clipboard.png" Enter
+snap 05-shared-name "say which" "Image#1, Image#2" "File#1 notes.txt"
+keys C-c
+snap 06-quit-armed "again quits"
+keys C-c
+snap 07-exit "that is everything the screen was holding"

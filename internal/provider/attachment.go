@@ -44,7 +44,17 @@ type Attachment struct {
 	Kind AttachmentKind
 	// Name is what to call it in the prompt and on screen — a base name, not
 	// a path, so the transcript does not leak the sender's directory layout.
-	Name      string
+	Name string
+	// Handle is what the attachment is called when somebody points at it —
+	// `Image#2`, `Paste#1`, `File#3` — numbered by kind across the
+	// conversation. It sits beside the name rather than replacing it,
+	// because the name is often nobody's choice (every pasted screenshot is
+	// clipboard.png) and three chips with one name cannot be told apart by
+	// the two verbs that take one. Empty on a message saved before handles
+	// existed. No provider converter reads it: the request still names the
+	// part by Name.
+	// See docs/capabilities/chat.md#what-can-ride-with-a-message.
+	Handle    string
 	MediaType string
 	Data      []byte
 }

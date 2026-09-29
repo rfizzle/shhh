@@ -47,10 +47,11 @@ import (
 	"github.com/rfizzle/shhh/internal/ui/raster"
 )
 
-// showAttachment dispatches `/paste show`: the named staged attachment, or
-// the only one the surface can open when the name is left off.
+// showAttachment dispatches `/paste show`: the staged attachment a handle or
+// a name picks out (findStaged), or the only one the surface can open when
+// neither is given.
 //
-// A name that is not staged is said out loud with the ones that are, the way
+// A word that names nothing staged is said out loud with what is, the way
 // `/paste drop` says it — a command that quietly did nothing is worse here
 // than anywhere, because the whole point of asking was that the reader could
 // not tell the files apart.
@@ -58,20 +59,18 @@ func (m Model) showAttachment(name string) (tea.Model, tea.Cmd) {
 	if len(m.attachments) == 0 {
 		return m.surfaceNotice("nothing is attached")
 	}
-	staged := strings.Join(attachment.Names(m.attachments), ", ")
 	if name == "" {
 		only, ok := onlyPreviewable(m.attachments)
 		if !ok {
-			return m.surfaceNotice("/paste show needs a name — " + staged)
+			return m.surfaceNotice("/paste show needs a handle — " + describeAllStaged(m.attachments))
 		}
 		return m.openPreview(only)
 	}
-	for _, a := range m.attachments {
-		if strings.EqualFold(a.Name, name) {
-			return m.openPreview(a)
-		}
+	i, refusal := m.findStaged(name)
+	if i < 0 {
+		return m.surfaceNotice(refusal)
 	}
-	return m.surfaceNotice(name + " is not attached — " + staged)
+	return m.openPreview(m.attachments[i])
 }
 
 // onlyPreviewable is the one staged attachment this surface can open, when

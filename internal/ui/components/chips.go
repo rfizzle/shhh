@@ -3,7 +3,7 @@ package components
 // The staged attachment strip (
 // docs/interface/surfaces.md#the-input-frame). What is waiting to ride on the
 // next message, one chip per file: the mark for what kind of thing it is,
-// what it is called, and how big it is.
+// the handle it is pointed at by, what it is called, and how big it is.
 //
 // It replaces `2 attachments · 4 KB`, which was true and said nothing. The
 // count is the one fact about a staging area a reader never has to be told —
@@ -16,8 +16,8 @@ package components
 //, and a `✕` would be a control the keyboard cannot reach — which is
 // the test the click targets came with: the pointer names
 // one thing, and that thing already has a key. Taking one back out is `/paste
-// drop <name>` — which is why the name is the field a chip gives up last, and
-// why what does not fit is counted rather than half-drawn.
+// drop <handle>` — which is why the handle is the field a chip gives up last,
+// and why what does not fit is counted rather than half-drawn.
 
 import (
 	"strconv"
@@ -60,8 +60,15 @@ func (k ChipKind) mark() string {
 // never a path, and a size already in the rails' own units.
 type AttachmentChip struct {
 	Kind ChipKind
-	Name string
-	Size string
+	// Handle is what the two verbs take — `Image#2` — and the chip leads
+	// with it, ahead of the name, because a name is often nobody's choice
+	// and three screenshots all called clipboard.png are told apart by
+	// nothing else (docs/interface/surfaces.md#the-input-frame). Empty
+	// leaves the name as the only word the chip has, and then the name is
+	// never the field given up.
+	Handle string
+	Name   string
+	Size   string
 	// Lines is how far the text runs, for the chips that have text in them.
 	// A size answers "will this fit"; it does not answer "which of these is
 	// the stack trace", and for a paste that arrived without a name of its
@@ -75,43 +82,80 @@ type AttachmentChip struct {
 
 // chipNameWidth caps a chip's name. A staging area holds a handful of files
 // and the strip is one line, so a name long enough to push another chip off
-// the row costs more than its tail is worth — and the head is the half that
+// the row costs more than its tail is worth. The cap is the name's and never
+// the handle's: the handle is short by construction, and it is the word that
 // tells two screenshots apart.
 const chipNameWidth = 20
 
 // chipSeparator joins chips the way every other rail joins its fields.
 const chipSeparator = " · "
 
+// chipForm is how much of a chip is drawn, widest first. Each form gives up
+// one more field, and the handle is in all of them.
+type chipForm int
+
+const (
+	// chipFull is the mark, the handle, the name and the counts.
+	chipFull chipForm = iota
+	// chipNameless gives up the name, which the handle already stands for.
+	chipNameless
+	// chipBare gives up the counts as well: the mark and the handle.
+	chipBare
+)
+
 // AttachmentChips renders the staged set as one row, or "" when nothing is
 // staged.
 //
-// Chips are dropped whole from the end rather than clipped, because half a
-// name is a file that cannot be named to `/paste drop`, and what was dropped
-// is counted where it stood — the number of files you are not looking at is
-// the one thing the row cannot otherwise say.
+// What does not fit is given up in an order, and the handle is the last of
+// it, because the handle is what `/paste show` and `/paste drop` take. Every
+// chip gives up its name first: the handle already says which chip it is,
+// and a row of three `clipboard.png`s is the one thing a name adds. Then
+// chips are dropped whole from the end rather than clipped, because half a
+// handle is a chip that cannot be named, and what was dropped is counted
+// where it stood — the number of files you are not looking at is the one
+// thing the row cannot otherwise say. The one chip that is always kept gives
+// up its counts, and only then clips.
 func AttachmentChips(chips []AttachmentChip, width int) string {
 	if len(chips) == 0 || width <= 0 {
 		return ""
 	}
-	parts := make([]string, len(chips))
-	for i, c := range chips {
-		parts[i] = c.render()
+	full := renderChips(chips, chipFull)
+	if row := joinChips(full); lipgloss.Width(row) <= width {
+		return row
 	}
+	parts := renderChips(chips, chipNameless)
 	row := joinChips(parts)
 	if lipgloss.Width(row) <= width {
 		return row
 	}
 	// Give the row back one chip at a time until it fits alongside the count
 	// of the ones it gave up. The last rung keeps one chip whatever happens:
-	// a strip that is only a number has lost the thing it is for, so at that
-	// point the name clips like any other field.
-	for kept := len(chips) - 1; kept >= 1; kept-- {
+	// a strip that is only a number has lost the thing it is for.
+	kept := len(chips) - 1
+	for ; kept >= 1; kept-- {
 		row = joinChips(parts[:kept]) + sty.Dim.Render(chipSeparator+chipTail(len(chips)-kept))
-		if lipgloss.Width(row) <= width || kept == 1 {
-			break
+		if lipgloss.Width(row) <= width {
+			return row
 		}
 	}
-	return Clip(row, width)
+	bare := chips[0].render(chipBare)
+	if len(chips) > 1 {
+		// The count goes before the handle does: a clip through the tail
+		// would cut the number off the one word the row still has.
+		if row = bare + sty.Dim.Render(chipSeparator+chipTail(len(chips)-1)); lipgloss.Width(row) <= width {
+			return row
+		}
+	}
+	return Clip(bare, width)
+}
+
+// renderChips draws every chip in one form.
+func renderChips(chips []AttachmentChip, form chipForm) []string {
+	parts := make([]string, len(chips))
+	for i, c := range chips {
+		parts[i] = c.render(form)
+	}
+	return parts
 }
 
 // joinChips lays a run of already-rendered chips on one row.
@@ -163,11 +207,23 @@ func chipTail(hidden int) string {
 	return "+" + strconv.Itoa(hidden) + " more"
 }
 
-// render lays one chip: the kind's mark and the name in body text, the counts
-// dim beside it. The counts read like every other count on the rails; the
-// name is the content, and is the only part drawn as such.
-func (c AttachmentChip) render() string {
-	s := sty.Body.Render(c.Kind.mark() + " " + Clip(c.Name, chipNameWidth))
+// render lays one chip in a form: the kind's mark, the handle and the name in
+// body text, the counts dim beside them. The counts read like every other
+// count on the rails; the handle and the name are the content, and are the
+// only parts drawn as such. A chip with no handle keeps its name in every
+// form, since then the name is the word the verbs take.
+func (c AttachmentChip) render(form chipForm) string {
+	head := c.Kind.mark()
+	if c.Handle != "" {
+		head += " " + c.Handle
+	}
+	if c.Handle == "" || form == chipFull {
+		head += " " + Clip(c.Name, chipNameWidth)
+	}
+	s := sty.Body.Render(head)
+	if form == chipBare {
+		return s
+	}
 	if c.Size != "" {
 		s += sty.Dim.Render(" " + c.Size)
 	}

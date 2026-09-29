@@ -43,14 +43,14 @@ func TestAttachments_StagedRailNamesWhatIsStaged(t *testing.T) {
 		t.Fatal("an empty staging area should say nothing")
 	}
 	m = stagePNG(t, m, "shot.png")
-	if got := stripANSI(m.stagedRail()); !strings.Contains(got, "▣ shot.png") {
+	if got := stripANSI(m.stagedRail()); !strings.Contains(got, "▣ Image#1 shot.png") {
 		t.Fatalf("staged rail = %q", got)
 	}
 	// It is the frame's own row, not one of the notice rail's fields.
 	if m.noticeLine() != "" {
 		t.Fatalf("notice rail = %q", stripANSI(m.noticeLine()))
 	}
-	if !strings.Contains(stripANSI(m.View().Content), "▣ shot.png") {
+	if !strings.Contains(stripANSI(m.View().Content), "▣ Image#1 shot.png") {
 		t.Fatalf("the staged rail should reach the surface:\n%s", stripANSI(m.View().Content))
 	}
 }
@@ -88,7 +88,7 @@ func TestAttachments_DropTakesOneBackOut(t *testing.T) {
 	if len(next.attachments) != 1 || next.attachments[0].Name != "spec.png" {
 		t.Fatalf("staged after the drop = %v", attachment.Names(next.attachments))
 	}
-	if !strings.Contains(lastSystemText(next), "dropped shot.png") {
+	if !strings.Contains(lastSystemText(next), "dropped Image#1 (shot.png") {
 		t.Fatalf("the drop should say what it dropped: %q", lastSystemText(next))
 	}
 
@@ -566,7 +566,7 @@ func TestPreview_BareShowRefusesAnImageBesideAPaste(t *testing.T) {
 	if next.state == statePreview {
 		t.Fatal("with an image and a paste staged, bare /paste show should ask for a name")
 	}
-	if notice := stripANSI(next.View().Content); !strings.Contains(notice, "needs a name") {
+	if notice := stripANSI(next.View().Content); !strings.Contains(notice, "needs a handle") {
 		t.Fatalf("and say so: %s", notice)
 	}
 }
@@ -836,5 +836,98 @@ func TestPasteFold_TheOpenKeyReadsItAndLeavesItAlone(t *testing.T) {
 	gone := dropped.(Model)
 	if len(gone.attachments) != 0 || gone.input.Value() != "" {
 		t.Fatalf("[x] left %d staged and the draft at %q", len(gone.attachments), gone.input.Value())
+	}
+}
+
+// stagedHandles is the staging area as the handles the chips lead with.
+func stagedHandles(m Model) []string {
+	out := make([]string, len(m.attachments))
+	for i, a := range m.attachments {
+		out[i] = a.Handle
+	}
+	return out
+}
+
+// Every attachment carries a handle of its kind, numbered for the
+// conversation rather than for the strip: three screenshots that are all
+// clipboard.png are Image#1, #2 and #3, a handle a chip took with it when it
+// left is not handed out again, the session boundary starts the count over,
+// and a resumed conversation goes on from the highest handle on its rows.
+func TestStage_HandlesRunAcrossTheConversation(t *testing.T) {
+	m := stageImage(t, stageImage(t, frameModel(t, 130, 40), "clipboard.png"), "clipboard.png")
+	updated, _ := m.stagePaste(strings.Repeat("a line of the log\n", 12))
+	m = stageText(t, updated.(Model), "notes.md")
+	if got := strings.Join(stagedHandles(m), " "); got != "Image#1 Image#2 Paste#1 File#1" {
+		t.Fatalf("handles = %s", got)
+	}
+	if name := m.attachments[2].Name; name != "paste-1.txt" {
+		t.Fatalf("a paste's name follows its number, got %s", name)
+	}
+	if notice := lastSystemText(m); !strings.Contains(notice, "attached File#1 (notes.md, ") {
+		t.Fatalf("the staging notice leads with the handle: %q", notice)
+	}
+
+	// A name two chips share is refused naming the handles, not taken as
+	// the first of them.
+	updated, _ = m.runPaste([]string{"/paste", "drop", "clipboard.png"})
+	next := updated.(Model)
+	if len(next.attachments) != 4 {
+		t.Fatalf("a shared name dropped something: %v", stagedHandles(next))
+	}
+	if notice := lastSystemText(next); !strings.Contains(notice, "Image#1, Image#2") {
+		t.Fatalf("the refusal should name the handles: %q", notice)
+	}
+	// The handle reaches the second one, case-folded.
+	updated, _ = next.runPaste([]string{"/paste", "drop", "image#2"})
+	next = updated.(Model)
+	if got := strings.Join(stagedHandles(next), " "); got != "Image#1 Paste#1 File#1" {
+		t.Fatalf("after dropping image#2: %s", got)
+	}
+	updated, _ = next.runPaste([]string{"/paste", "show", "IMAGE#1"})
+	if updated.(Model).state != statePreview {
+		t.Fatal("/paste show should open a chip by its handle")
+	}
+	// The count is the conversation's: Image#2 left the strip and is not
+	// handed out again.
+	next = stageImage(t, next, "clipboard.png")
+	if got := next.attachments[len(next.attachments)-1].Handle; got != "Image#3" {
+		t.Fatalf("the next picture after a drop = %s, want Image#3", got)
+	}
+
+	// The session boundary starts every word over from one.
+	next.attachments = nil
+	next.startNewSession()
+	next = stageImage(t, next, "clipboard.png")
+	if got := strings.Join(stagedHandles(next), " "); got != "Image#1" {
+		t.Fatalf("after the boundary: %s", got)
+	}
+
+	// A resumed conversation goes on from the highest handle of each word on
+	// its saved rows, and a recalled paste comes back under the handle its
+	// row kept.
+	log := strings.Repeat("a line of the log\n", 11)
+	token := components.PasteToken("paste 2", 11)
+	r := resumedModel(t, []provider.Message{
+		{Role: provider.RoleSystem, Content: "sys"},
+		{Role: provider.RoleUser, Content: "look " + token, Attachments: []provider.Attachment{
+			{Kind: provider.AttachmentImage, Handle: "Image#4", Name: "clipboard.png", MediaType: "image/png", Data: pngHeader},
+			{Kind: provider.AttachmentText, Handle: "Paste#2", Name: "paste-2.txt", MediaType: "text/plain", Data: []byte(log)},
+		}},
+	})
+	r = stageImage(t, r, "clipboard.png")
+	if got := strings.Join(stagedHandles(r), " "); got != "Image#5" {
+		t.Fatalf("after a resume: %s, want Image#5", got)
+	}
+	r = pressUp(t, r)
+	if got := strings.Join(stagedHandles(r), " "); got != "Image#5 Paste#2" {
+		t.Fatalf("the recalled paste should keep its handle: %s", got)
+	}
+	if !strings.Contains(r.input.Value(), token) {
+		t.Fatalf("and its fold: %q", r.input.Value())
+	}
+	updated, _ = r.stagePaste(strings.Repeat("another\n", 12))
+	r = updated.(Model)
+	if a := r.attachments[len(r.attachments)-1]; a.Handle != "Paste#3" || a.Name != "paste-3.txt" {
+		t.Fatalf("the next paste after a resume = %s %s, want Paste#3 paste-3.txt", a.Handle, a.Name)
 	}
 }

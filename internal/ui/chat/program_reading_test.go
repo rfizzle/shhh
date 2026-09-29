@@ -6,6 +6,7 @@ package chat
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -127,6 +128,39 @@ func TestProgram_APasteTooBigForTheDraftIsAToken(t *testing.T) {
 
 	frame := finalFrame(t, tm)
 	frameHas(t, frame, "paste 1", "never leaves the round")
+}
+
+// Three files staged by path each take a handle of their kind, and the strip
+// leads every chip with it: two pictures both called clipboard.png are
+// Image#1 and Image#2, and the text file beside them is File#1.
+func TestProgram_StagedFilesLeadWithTheirHandles(t *testing.T) {
+	dir := t.TempDir()
+	var paths []string
+	for _, sub := range []string{"a", "b"} {
+		p := filepath.Join(dir, sub, "clipboard.png")
+		if err := os.MkdirAll(filepath.Dir(p), 0o700); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(p, pngHeader, 0o600); err != nil {
+			t.Fatal(err)
+		}
+		paths = append(paths, p)
+	}
+	notes := filepath.Join(dir, "notes.txt")
+	if err := os.WriteFile(notes, []byte("one\ntwo\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	paths = append(paths, notes)
+	m, _ := scriptedSession(programTurn{text: "nothing to do"})
+	tm := runProgram(t, m)
+
+	for i, p := range paths {
+		send(tm, "/paste "+p)
+		waitForText(t, tm, []string{"attached Image#1", "attached Image#2", "attached File#1"}[i])
+	}
+
+	frame := finalFrame(t, tm)
+	frameHas(t, frame, "▣ Image#1", "▣ Image#2", "≡ File#1")
 }
 
 // The palette and a picker both open from the draft and both give it back:
