@@ -308,13 +308,16 @@ func (m Model) editRadius(req *approvalRequest) blastRadius {
 // genericRadius is the block for a tool that is neither a command nor an
 // edit. A tool that described its own radius (GatedPreview.Fields) carries
 // that; a generic approval carrying a command — a process start — is
-// resolved as the command it is.
+// resolved as the command it is. A write-tier call carries a command only as
+// the line the deny list matches: it runs no shell, so reading that line as
+// one would put a shell's reading of `git commit` — touches and undo both
+// unknown — in place of the fields the tool wrote about its own act.
 //
 // batched is a spawn card drawing a row per child: the scope field leaves the
 // block for those rows (applySpawnCard), so the reason names it as theirs
 // rather than as a row of the block the card no longer draws.
 func (m Model) genericRadius(req *approvalRequest, batched bool) blastRadius {
-	if req.command != "" {
+	if req.command != "" && !req.write {
 		return m.commandRadius(req.command, cardContainment{
 			assistant: true, mechanism: m.processContainment(),
 		})

@@ -1293,3 +1293,83 @@ func TestSpawnCard_AReadOnlyRoleIsGrantedForTheSession(t *testing.T) {
 		t.Fatal("revoke leaves nothing granted")
 	}
 }
+
+// gitWriteCard is one git write as its card is asked: the call and the
+// preview the session builds for it.
+type gitWriteCard struct {
+	label, args string
+	preview     GatedPreview
+}
+
+// gitWriteCards are the four verbs' previews written out as the session
+// builds them. The function that builds them lives with the session's wiring
+// above this package, so what is held here is the shape it hands over: the
+// fields, the write tier and the deny line together.
+func gitWriteCards() []gitWriteCard {
+	stages := GatedField{Label: "stages", Value: "this session's files only", Detail: "work that was already in the tree is never staged"}
+	push := GatedField{Label: "push", Value: "no", Detail: "shhh never pushes; the remote is yours"}
+	cards := []gitWriteCard{
+		{"stage · the session's files, and nothing pushed", `{"verb":"add","paths":["internal/agent/loop.go"]}`,
+			GatedPreview{Title: "stage 1 file", Action: "add", Summary: "internal/agent/loop.go",
+				Fields: []GatedField{stages, push}}},
+		{"commit · the hooks, and git revert as the way back", `{"verb":"commit","message":"feat(agent): cap rounds at the limit"}`,
+			GatedPreview{Title: "commit", Action: "commit", Summary: "feat(agent): cap rounds at the limit",
+				Fields: []GatedField{stages, push,
+					{Label: "hooks", Value: "run", Detail: "the checkout's own commit hooks; a failure cancels and changes nothing"},
+					{Label: "undo", Value: "git revert", Detail: components.CommitUndoNote}}}},
+		{"branch · deleting it is the way back", `{"verb":"branch","branch":"topic"}`,
+			GatedPreview{Title: "branch topic", Action: "branch", Summary: "create the branch topic",
+				Fields: []GatedField{stages, push,
+					{Label: "undo", Value: "git branch -d", Detail: "a new branch moves no file and holds no work; deleting it is a line you type"}}}},
+		{"switch · switching back is the way back", `{"verb":"switch","branch":"topic"}`,
+			GatedPreview{Title: "switch to topic", Action: "switch", Summary: "switch to the branch topic",
+				Fields: []GatedField{stages, push,
+					{Label: "undo", Value: "git switch -", Detail: "the tree becomes the other branch's, and every file this session had read is re-read"}}}},
+	}
+	for i := range cards {
+		cards[i].preview.Write = true
+		cards[i].preview.DenyLine = "git " + cards[i].preview.Action
+	}
+	return cards
+}
+
+// armGitWrite puts one git write's card up in a manual session of the given
+// size and returns the panel it draws.
+func armGitWrite(t *testing.T, width, height int, c gitWriteCard) string {
+	t.Helper()
+	m := New([]provider.Message{
+		{Role: provider.RoleSystem, Content: "sys"},
+		{Role: provider.RoleUser, Content: "commit that change"},
+	}, mockStream).WithGatedTools(map[string]GatedPreviewFunc{
+		structural.GitWriteToolName: func(json.RawMessage) (GatedPreview, error) { return c.preview, nil },
+	})
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: width, Height: height})
+	m = updated.(Model)
+	m.state = stateStreaming
+	updated, _ = m.Update(toolCallsMsg{calls: []provider.ToolCall{
+		{ID: "call_gw", Name: structural.GitWriteToolName, Arguments: c.args},
+	}})
+	m = updated.(Model)
+	if m.pendingApproval == nil {
+		t.Fatalf("%s: the git write should arm a decision", c.label)
+	}
+	return strings.Join(m.confirmLines(), "\n")
+}
+
+// A git write carries a command line only for the deny list to match. The
+// card is the tool's own fields, never a shell's reading of that line, which
+// could say only that it knew neither what the act touches nor how it is
+// undone.
+func TestGitWriteCard_DrawsThePreviewsOwnFields(t *testing.T) {
+	for _, c := range gitWriteCards() {
+		plain := ansi.Strip(armGitWrite(t, 130, 48, c))
+		if strings.Contains(plain, "unknown") {
+			t.Fatalf("%s: the card read the deny line as a shell command:\n%s", c.label, plain)
+		}
+		for _, f := range c.preview.Fields {
+			if !strings.Contains(plain, f.Label) || !strings.Contains(plain, f.Value) {
+				t.Fatalf("%s: the card should draw the preview's %s field:\n%s", c.label, f.Label, plain)
+			}
+		}
+	}
+}

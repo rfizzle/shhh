@@ -3065,6 +3065,21 @@ func TestGolden_GitWriteRows(t *testing.T) {
 	})
 }
 
+// TestGolden_GitWriteCards pins the card each of the four git writes asks
+// through: what is staged, that nothing is pushed, whether the checkout's
+// hooks run, and the way back per verb — the tool's own fields, and never a
+// shell's reading of the deny line the call also carries
+// (docs/interface/surfaces.md#the-approval-card).
+func TestGolden_GitWriteCards(t *testing.T) {
+	captureGolden(t, "git-write-cards", "the card each git write asks through", goldenWidths, func(width int) []golden.Panel {
+		var panels []golden.Panel
+		for _, c := range gitWriteCards() {
+			panels = append(panels, golden.Panel{Label: c.label, View: armGitWrite(t, width, 48, c)})
+		}
+		return panels
+	})
+}
+
 // TestGolden_SearchSweep pins what a run of searches leaves on the feed. A
 // search's row is the one row read to tell a session asking many questions
 // from a session asking one question many times, and it can only do that if

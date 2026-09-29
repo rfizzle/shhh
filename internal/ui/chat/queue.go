@@ -472,7 +472,9 @@ func queueSeverity(req *approvalRequest) components.Severity {
 	case approvalMemory:
 		return components.SeverityNone
 	}
-	if req.command != "" {
+	// A write-tier call is rated by its own fields, as its card is
+	// (genericRadius): its command is a deny line, not a shell line.
+	if req.command != "" && !req.write {
 		return severityOf(radius.Outline(req.command).Level)
 	}
 	for _, f := range req.fields {

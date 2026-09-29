@@ -55,13 +55,15 @@ keys Escape
 sleep 0.3
 keys "commit that change" Enter
 # Staging is a write to the repository, so it is a card of its own, and so
-# is the commit after it.
-snap 06-add-card "$ stage 1 file"
+# is the commit after it. Each card draws the write tool's own fields — what
+# is staged, that nothing is pushed, the hooks and the way back — and never
+# a shell's reading of the git line the deny list matches.
+snap 06-add-card "$ stage 1 file" "this session's files only"
 sleep 1
 keys C-Space
 sleep 0.3
 keys y
-snap 07-commit-card "$ commit"
+snap 07-commit-card "$ commit" "hooks" "git revert"
 sleep 1
 keys C-Space
 sleep 0.3
