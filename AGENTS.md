@@ -80,7 +80,10 @@ resolves and lists documents nothing cites; it runs as part of `make ci`.
 rungs, glyph assignments and the artboards are normative in the `shhh Design
 System` project in Claude Design, read with the DesignSync tool. Don't re-draw
 an artboard in Markdown — it becomes a second source of truth that disagrees
-with the first.
+with the first. `scripts/design/keymap-check.py` lists every `[key] words`
+caption the artboards draw against the bindings `shhh keys --json` ships,
+reading the export the design-sync skill writes to `.design/` (by default
+`.design/ui_kits/cockpit/*.html`).
 
 ### Where the model reads it
 

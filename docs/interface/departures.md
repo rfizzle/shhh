@@ -215,16 +215,14 @@ artboard and this differ, the artboard wins.
 
 ## The backlog screen's layout was decided in the binary
 
-The Backlog artboard draws `/todo` as a picker: a card in the panel, one slug
-per row with its state beside it, and enter to read one. The binary draws a
-screen. Reading an item, walking both ends of its dependencies and acting on
-it are what the command is opened for, and a card cannot hold them, so the
-picker was superseded rather than disagreed with — the screen is the
-supporting screens' own shape over backlog items, and an artboard for it is
-owed. Most of it needed no decision: the header and its rule, the two panes
-and the divider, the windowed list and the counted overflow markers were all
-drawn already. Five things it could not take from anywhere, and they were
-decided here:
+*A gap, mostly closed.* The Backlog artboard now draws `/todo` as the screen
+the binary draws, and it draws the first four decisions below as they are
+written here: the one-row foot with `[?]` holding the rest, the row's field
+order, the pointer on the arrows alone and both ends of a dependency. What it
+does not draw is the rest of the first — which offers give ground where even
+the foot does not fit, and the keys drawn grey while a turn runs — and the
+fifth, where the two panes stop fitting. The five were decided here, before
+there was an artboard:
 
 **The foot is one row, and `[?]` holds the rest.** The picker's own key row
 is one row — `[↑↓] choose · [enter] read it · [esc] close` — and a key hint is
@@ -261,8 +259,9 @@ the second, because no surface has ever shown it.
 own threshold, arrived at the same way: below it the pane beside the list is
 prose in a column too narrow to read a sentence in.
 
-When there is an artboard, these five decisions are what it has to reconcile
-with, and where the two differ the artboard wins.
+The gap is closed by the artboard drawing the foot at its narrowest, the turn
+running and the panes stacked; where that artboard and this differ, the
+artboard wins.
 
 ## The item draft card's layout was decided in the binary
 
@@ -388,110 +387,6 @@ before the reader moves to it.
 available, a checkout whose trust was withheld and no servers are each a
 section that says so rather than a section left out, because a boundary
 drawn without them would look wider than it is.
-
-When there is an artboard, these three decisions are what it has to
-reconcile with, and where the two differ the artboard wins.
-
-## The steps screen's layout was decided in the binary
-
-*A gap.* No artboard draws `/steps`, and the InspectorRail component draws the
-STEPS block's heading as a label rather than as a door to anything. The
-binary draws a screen behind that heading
-([the supporting screens](surfaces.md#the-supporting-screens)): the family's
-chrome over a list and a preview, the list the session's working checklist and
-the preview the step under the pointer with the run the transcript titled for
-it. Most of it needed no decision — the header and its rule, the two panes and
-the divider, the windowed list with its counted markers and the key row are
-the supporting screens' own, and the calls in the preview are the transcript's
-activity rows drawn by their own renderer. Three things it could not take
-from anywhere, and they were decided here:
-
-**The list states the step and the join, the preview the rest.** A row is the
-step's number, the step header's own mark (`✓`, `▸`, `·`), its title, a word
-for where it stands on the list — `done`, `current`, or nothing for a step not
-reached — and at the far end either the count of calls the transcript
-recorded for it or `not started`. The duration and the paths are the
-preview's, because a list row carrying all of them clipped the word that says
-which step is current at 110 columns.
-
-**A step with no titled run says so rather than drawing an empty pane.** The
-checklist and the transcript's steps are two different things that usually
-share titles; where none matches, the preview says `not started` and why,
-because a blank pane would read as a step whose calls failed to draw.
-
-**The heading is the door, as the other blocks' are.** STEPS draws one row and
-never folds, so it has no marker; its heading opens the screen and the cell
-closes it, the way CHANGES opens the session's diff
-([the inspector rail](surfaces.md#the-inspector-rail)).
-
-When there is an artboard, these three decisions are what it has to
-reconcile with, and where the two differ the artboard wins.
-
-## The readings screen's layout was decided in the binary
-
-*A gap.* No artboard draws `/readings`, and the InspectorRail component draws
-the SUMMARY block's heading as a label rather than as a door to anything. The
-binary draws a screen behind that heading
-([the supporting screens](surfaces.md#the-supporting-screens)): the family's
-chrome over a list and a preview, the list every reading the session has taken
-and the preview the one under the pointer. Most of it needed no decision — the
-header and its rule, the two panes and the divider, the windowed list with its
-counted markers and the key row are the supporting screens' own, and the
-preview is the transcript's opened summary row drawn by its own renderer.
-Three things it could not take from anywhere, and they were decided here:
-
-**A row is the round, the verdict and what became of it.** The rail's verdict
-mark leads, then `r 14 · off target` in the rail's own words — not a new word
-for a departure — then `steered` or `withdrawn` where the reading interrupted
-the turn, and the turn it belongs to at the far end, because a round number
-only means something inside its turn. What a steer came to is said again in a
-line under the preview, since the row inside it is the reading as it landed
-and says nothing of what followed.
-
-**The cost is the header's tally.** What the readings have cost is the reading
-the header gives up first on a narrow terminal, beside the keys where the
-other screens keep their clock and their spend, and the count stays with the
-title.
-
-**A history that begins part-way says so.** Once the oldest readings have
-gone, a line pinned under the header says how many and how many the screen
-keeps, because a list that simply started later would read as a session that
-took its first reading late.
-
-When there is an artboard, these three decisions are what it has to
-reconcile with, and where the two differ the artboard wins.
-
-## The turns screen's layout was decided in the binary
-
-*A gap.* No artboard draws `/turns`, and the InspectorRail component draws
-the THIS TURN block's heading as a label rather than as a door to anything.
-The binary draws a screen behind that heading
-([the supporting screens](surfaces.md#the-supporting-screens)): the family's
-chrome over a list and a preview, the list every turn the session has run and
-the preview the one under the pointer. Most of it needed no decision — the
-header and its rule, the two panes and the divider, the windowed list and the
-key row are the supporting screens' own, and the preview is the turn's close
-drawn by the close's own renderer. Three things it could not take from
-anywhere, and they were decided here:
-
-**A row is the turn, its ending and what it wrote.** The close's own glyph
-leads, then `turn 4` and the ending's word, then what it wrote in the rewind
-picker's spelling — the mutation mark, the file count and the lines, or
-`changed no files` — and the turn's spend at the far end. The running turn takes
-`▸` and `running`, the steps screen's mark for the one being worked on.
-
-**A turn whose close was not kept is its files and a sentence.** A resumed
-conversation's earlier turns have no close, so their row carries `·`, `no
-figures kept` and the files the records hold, and the preview says the session
-kept its files and not its close rather than drawing an empty block. The bare changeset row a
-resume puts back for the last turn is read the same way: it carries files and
-no figures, and its `Done` was never measured.
-
-**The review is greyed, not dropped.** `[enter] review turn n` names the turn
-it opens and stays in the key row on a turn with nothing to review, drawn
-grey, so the row does not change shape under a pointer walking the list. The
-turn count and the tool count are two header fields, so the tool count gives
-way first and the turn count stays with the title beside the spend.
 
 When there is an artboard, these three decisions are what it has to
 reconcile with, and where the two differ the artboard wins.
@@ -653,9 +548,9 @@ departure is closed by the two artboards drawing the border in chrome.
 
 ## A read's glyph is chrome
 
-*A disagreement.* The `Main`, `Approvals`, `Agents` and `OneShot` artboards
-draw a read's `⚙` in the accent, and the state-colour guideline gives the
-accent to tool glyphs alike. The binary draws `⚙` dim wherever it marks a
+*A disagreement.* The `Main`, `Approvals` and `Agents` artboards, like every
+artboard that draws a read's row but `WorkList`, draw a read's `⚙` in the
+accent, and the state-colour guideline gives the accent to tool glyphs alike. The binary draws `⚙` dim wherever it marks a
 read — the activity row, a folded run of reads, and the act row of a card
 asking about one — while `$`, `✎` and `⇄` keep the accent beside the rail
 they carry, and an offer that uses `⚙` to mean "start something" keeps it
@@ -667,7 +562,7 @@ times, which taught the eye to skip the one colour that is meant to say
 something is changing or waiting on the reader. The verb beside the glyph
 still says which read it was, so nothing is lost but the colour, and the
 card's own border is what carries a decision about a read. The departure is
-closed by the four artboards drawing a read's glyph dim and the guideline
+closed by the artboards drawing a read's glyph dim and the guideline
 giving the accent to the rail, a card's weight and the context meter.
 
 ## A row with no kind of its own carries its outcome in the glyph column
@@ -746,8 +641,8 @@ artboard and this differ, the artboard wins.
 
 ## The current one is marked, and four other marks the pages do not list
 
-*A gap.* Five marks the binary draws are on no guideline page. Two of them are
-on artboards; three had nowhere to come from.
+*A gap.* Five marks the binary draws are on no guideline page. Three of them
+are on artboards; two had nowhere to come from.
 
 `●` is the current one of a run — the step the drafter's rail is standing on,
 the agent whose surface is showing in the manager, the decision at the head of
@@ -756,7 +651,7 @@ glyph page lists it. It is not a state: `✓ brief   ● questions   · draft` s
 where you are in something, which is a different question from how any of it
 turned out, and answering it with a state mark would be the rail claiming an
 outcome for a step nobody has finished. `○` is its pair, and only the queue
-strip draws it — a run of dots is a shape rather than a list of rows, and a
+strip draws it, as the `Approvals` and `Attention` artboards do — a run of dots is a shape rather than a list of rows, and a
 dot that is not the current one has to be a dot.
 
 `⋮` is the drafter's profile pane counting what did not fit: `⋮ 2 more lines ·
@@ -801,8 +696,9 @@ one renderer, so there is no second spelling to drift.
 
 ## The attachment chips mark what kind of file is staged
 
-*A gap.* No artboard draws the staged strip's chips, and the kit has no mark
-for *this is a picture*. The tool-kind glyphs answer a different question —
+*A gap.* The `Paste` artboard draws the staged strip's chips with `≡` and
+`▣`, as the binary does, and no glyph page lists either there: the kit has no
+mark for *this is a picture*. The tool-kind glyphs answer a different question —
 they say what the session did, and a chip is a thing the reader attached
 before the session does anything at all.
 
@@ -820,41 +716,19 @@ Colour reinforces nothing here. The chips are body text and the mark carries
 the whole distinction, which is what makes the strip read the same in mono
 ([invariant 1](principles.md#colour-never-carries-meaning-alone)).
 
-## A staged chip is reached from reading mode, and the card drops it
-
-*A disagreement.* The `Paste` artboard draws the staged strip as chips
-nothing reaches but a command, the preview card with its way out as its only
-key, and the staging notice pointing at `/paste clear` — which is what the
-binary drew until now. The binary makes the strip the last row reading mode's
-cursor reaches: drawn as the panel's first row while the mode is up, the
-chip under the cursor wearing the pointer in the column its mark stands in
-and the rest of it lit, with the strip's own bar under it — `[←→] chip ·
-[enter] open · [x] drop · [esc] back to the draft` and `chip 2 of 3` on the
-right. The card's hint row reads `[x] remove · [esc] back`, and `back to the
-strip` where that is where it was opened from. The notice reads `attached
-Image#1 (clipboard.png, 412 KB) — it goes with your next message; ctrl+o
-reaches it to look or drop`.
-
-The reason is when the reader needs the doors. A screenshot is pasted
-halfway through a sentence, and a command is read only as the first word of
-an empty draft, so every door the artboard drew was out of reach at the one
-moment it was wanted. Reading mode already keeps the sentence and holds the
-keyboard, so its keys are live and nothing has to be printed on a chip; the
-card is where a wrong screenshot is recognised, so it is where one is taken
-back ([a staged attachment](surfaces.md#a-staged-attachment)).
-
 ## Two surfaces draw with blocks rather than in them
 
 *A gap.* The drawing kit's eight sparkline blocks are cells of a bar. Two
 surfaces use block characters as ink instead, for pictures rather than
-measurements, and neither has an artboard.
+measurements, and the glyph pages list the blocks only as a bar's cells.
 
 The start screen's wordmark is drawn in `▀ ▄ █` — the letters are the blocks,
-five rows tall, and mono drops the whole thing rather than drawing it in one
-grey. The image rasteriser is the other: a picture arrives as half-block cells
-(`▀`, with the lower half as the cell's background), and a terminal that will
-not take colour gets `░ ▒ ▓ █` as a four-step ramp, which is the only way left
-to say *this pixel is darker than that one*.
+three rows tall, and mono drops the whole thing rather than drawing it in one
+grey, which is what the `brand-wordmark` guideline draws. The image rasteriser
+is the other: a picture arrives as half-block cells (`▀`, with the lower half
+as the cell's background), which the `Paste` artboard draws, and a terminal
+that will not take colour gets `░ ▒ ▓ █` as a four-step ramp, which is the
+only way left to say *this pixel is darker than that one*.
 
 Neither is a glyph in the sense the kit means. Nothing here is a mark a reader
 learns and then recognises somewhere else; they are pixels, and the test that
@@ -984,7 +858,7 @@ sixteen colours: both get the drawing kit's density ramp
 ## A turn with no round limit still draws a bound
 
 *A gap.* The `Frame` artboard draws the round segment with its bound —
-`round 7/25`, which the binary now spells `round 7 of 25` — and nothing draws a
+`round 7 of 25` — and nothing draws a
 turn that has none: a sub-agent, a session started with the limit off, or a
 turn the reader told to run on at the checkpoint. The binary keeps the
 counter's shape and puts `∞` where the bound would be, `round 7 of ∞`.
@@ -1004,8 +878,8 @@ and this differ, the artboard wins.
 ## The round is counted on the rail and not on the close row
 
 *A disagreement.* The artboards disagree with each other. `Changeset` draws
-`round 7/25` at the right of the Done row; `Commit` draws the same row without
-it; and `Frame` keeps `round 7/25` on the vitals rail at idle, after the turn
+`round 7 of 25` at the right of the Done row; `Commit` draws the same row
+without it; and `Frame` keeps `round 7 of 25` on the vitals rail at idle, after the turn
 has closed. The binary follows `Commit` and `Frame`: the close row states the
 turn's steps, tools, time and spend, and the round is stated once, on the
 rail ([the turn's close](surfaces.md#the-turns-close)).
@@ -1045,40 +919,14 @@ closed by the readme naming the label's motion beside the spinner's.
 
 ## A turn that changed no files says so
 
-*A gap.* No artboard draws the rail's THIS TURN block for a turn that has
-changed no files. The rule nearest to it points the other way at first
-reading: a turn that called no tools reports no tool count, because nothing
-is reported as a zero it did not measure
-([the rule](principles.md#a-stat-that-cannot-be-reported-is-left-out)).
-
-The binary follows the rule for the tools and states the files anyway: `0
-files this turn`. That zero was measured — the turn's changes are read whether
-or not there are any — and it is the answer to the question the block is
-there to be asked, which is what the session's count in CHANGES beneath it is
-being told apart from. A block that fell silent on a turn that changed no
-files would read as a turn nobody had counted. The rule forbids a zero standing in
-for a gap; this is the other case, a gap standing in for a zero.
-
-The gap is closed by drawing the block for a turn that changed no files, and
-where that artboard and this differ, the artboard wins.
+*Closed.* The `rail-session-scope` guideline now draws `0 files this turn`
+for a turn that changed nothing, as the binary does: that zero was measured.
 
 ## The AGENTS block's meter is on the detail row
 
-*A disagreement.* The `Main` artboard draws a child's meter on its name row —
-`◇ writer-1  ▰▰▰▱▱ 2/5 · $0.02` over `docs/loop.md · 4 tools`. The binary
-draws the name row with the name, the word the child ended on and its spend,
-and puts the meter at the head of the line under it:
-`▰▰▰▱▱ 2/5 · docs/loop.md · 4 tools`.
-
-That head is one slot saying how the child is moving, and three things take
-it: the meter where the child declared a step count, the budget's bar where it
-declared none and is past half its ceiling, and the spinner where neither
-applies. A child that has stopped takes none of them. On the name row the
-meter would be the only one of the three with a place there, so one block
-would answer one question in two columns depending on what each child had
-declared. The name row is also the one that has to survive the rail's
-narrowest width, and a five-cell bar and its count beside a clipped name is a
-child whose progress you can see and whose name you cannot.
+*Closed.* The `Main` artboard now draws a child's meter at the head of the
+line under its name, the one slot saying how a child is moving, and the
+binary draws it there too.
 
 ## The children's tally says who needs you first
 
@@ -1136,18 +984,9 @@ every card, which is the card's own rule
 
 ## A fan-out offers the manager, not the answer
 
-*A disagreement.* The `Agents` artboard draws a dim line under the blocked
-lane — `⚠ needs you`, the reason under it, then `[ctrl+b] agents · [a] answer
-it here · the other two keep running`. The binary draws that line in that
-place, with the manager's own chord, and leaves `[a] answer it here` out.
-
-A child's routed ask is a card over the frame, and the card owns the answer:
-it is the one surface holding the keyboard while the ask waits, and it says
-which request its keys are for. A key on the lane that answered the same ask
-would be dead where it is drawn — the card is up whenever there is anything to
-answer — and a second place to answer one request is a second place to wonder
-which request a key meant. The manager is still offered, because it is where
-the other lanes are read and steered while one waits on you.
+*Closed.* The `Agents` artboard now draws the line under a waiting lane as
+the manager's key and no answer key, as the binary does: the routed card is
+the one surface that owns an answer.
 
 ## A confirm prompt and a card title keep their capital
 
@@ -1168,78 +1007,6 @@ would make the one line the reader has to answer look like the lines they may
 skip. It is also what every other card already does — `Approve command`,
 `Apply patch`, `Agents` — so a lower-case prompt on these four would be the
 exception rather than the voice.
-
-## A close offers review and the commit, and names what undoes it
-
-*A disagreement.* `Changeset`, `Commit` and `Frame` draw a turn's close with
-review, keep and take back as keys on the changed-files row — commit and undo
-among them — and a key on the checks row that runs the suite again, and
-`Reading` draws the row's own line under reading mode with the undo key on it.
-The binary draws none of those keys. A close nobody has selected offers
-nothing, the newest included; a selected one offers `[enter] review turn ·
-[ctrl+space/ctrl+y] commit`, the commit reached through the handover rather
-than a letter of its own. Taking the turn back is `/undo`, and the
-changed-files row says so in its note — `all tracked in git · /undo 3 takes
-it back` — where there is room, giving that clause up first; the checks row's
-note says `/gate run default runs it again` the same way
-([the turn's close](surfaces.md#the-turns-close)).
-
-The reason is that each of those keys was a second path to an act that
-already had one. Undo is a command, running the checks again is a command and
-the model's own tool, and a commit is something the model makes through its
-card when asked. A letter on the row for each had to be kept correct beside
-the command it duplicated, and the month of record held no use of either. The
-commit keeps an offer because it is the one act a reader decides on the moment
-they have read the change; it takes the handover's spelling because that is
-the chord that already gives a card the keyboard. The departure is closed by
-the artboards dropping the undo, commit and rerun keys from the close and the
-reading-mode line, and drawing the note and the handover offer instead.
-
-## A turn's review is a reading
-
-*A disagreement.* `Changeset` draws review mode as a staging surface: a box
-per file and per hunk, a staged count in the header, and a footer offering
-the hunk, file and all keys with `[enter]` undoing the staged files. The
-binary draws a turn's review the way it draws `/diff`: no boxes, the file
-count in the header, `[n/p] hunk · [esc] leave, change nothing` in the footer,
-and the standing note naming `/undo` with the turn's number as the way back
-([the turn's close](surfaces.md#the-turns-close)).
-
-Staging there selected an undo, and the undo is `/undo`: a whole turn goes
-back a file at a time either way, and one file of it is asked of the model.
-The keys were a second path to the command, with a partial-selection warning
-of their own to keep true. The departure is closed by the artboard drawing the
-reading shape.
-
-## The commit card is opened by the handover
-
-*A disagreement.* `Commit` draws the card as what the close's `[g]` opens,
-with `[s] choose what goes in` among its keys. The binary opens it with the
-handover on a selected changed-files row, and its `[s]` reads `read the
-hunks`: it opens the turn's review, which stages nothing now
-([the turn's close](surfaces.md#the-turns-close)). The card is otherwise the
-artboard's. The departure is closed by the artboard drawing the handover as
-the way in and the `[s]` words.
-
-## A recovery row is answered through the handover
-
-*A disagreement.* `Interrupt` draws the recovery rows and the round-limit
-pause with each offer as a key live from the prompt, and `Frame` draws the
-pause the same way. The binary draws every such offer as its bare letter —
-`[r] try again`, `[+50] more rounds` — grey while the draft holds the
-keyboard, beside `[ctrl+space/ctrl+y] to use them` on the row the handover
-reaches (the selected one, or with nothing selected the failure the last turn
-ended on) and `[ctrl+o] to use them` on any other; once the handover has given
-the row the keyboard the letters are live, and answering it or esc gives the
-keyboard back ([the recovery row](surfaces.md#the-recovery-row)).
-
-The reason is that an act answering the product is a bare letter behind the
-handover, the way a card's are, and never a chord of its own
-([a key is inert until its surface holds the keyboard](principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard)).
-A chord per offer was a second spelling of each on every row, and six chords
-of the free set spent on standing for letters. The departure is closed by the
-artboards drawing the letters grey beside the handover offer, and the letters
-live once the row holds the keyboard.
 
 ## A card row's gloss is a fact about the call, or nothing
 
@@ -1277,125 +1044,8 @@ the window and the child's spend against the session — is what the values
 there already say, or what every card of that kind says alike. The
 departure is closed by the artboards
 agreeing that a gloss is drawn only where it is about the call — which every
-gloss they draw already is.
-
-## A saved chat's preview carries its standing account
-
-*A disagreement.* The `Lists` artboard draws the saved-chat browser's preview
-as the slot's name with its time, the title under it, and the turn count; the
-rows of the picker inside a session carry the title, the turns and the time.
-The binary now draws a third reading in both: the two sentences the session
-kept of what it was doing and where it left off. In the browser `--resume`
-and `shhh chats` open, it is body text under the title in the preview, a
-blank row above and below, wrapped whole; on the picker's rows it follows the
-time in the continuation column, where it is the first thing a narrow card
-gives up ([the supporting screens](surfaces.md#the-supporting-screens)).
-
-The reason is what the list is for. A title says what a conversation was
-about and nothing about how far it got, so a list of titled slots still left
-the reader opening each one to find the one they had stopped in the middle
-of; the account is the answer to that question, written while the session ran
-([a title you did not write](../capabilities/sessions-and-memory.md#a-title-you-did-not-write)).
-It is kept off the browser's rows because two sentences in a continuation
-column clip to their first few words and push the turns and the time off the
-row, which is the reading the list is scanned by. A slot with no account
-draws exactly what it drew before. The departure is closed by the artboard
-drawing the account under the title in the preview.
-
-## A picture and a file leave a fold in the sentence too
-
-*A disagreement.* The `Paste` artboard draws the fold only for a paste —
-`⟨paste 1 · 214 lines⟩` in the draft and `▸ paste 1 · 214 lines · 6.1k tokens
-· [enter] expand` under the sent message — and a screenshot or a dragged file
-as a chip and nothing in the sentence. The binary folds everything that
-arrives at the cursor, spelled with the chip's handle and the one figure its
-kind is counted by: `⟨Paste#1 · 214 lines⟩`, `⟨Image#1 · 1440×900⟩`,
-`⟨File#1 · 3.2 MB⟩`, drawn in the same tone as the paste's fold. Under the
-sent message each fold has a row: the paste's as before with its handle for a
-label, `▸ Image#1 · 1440×900 · [enter] open` for a picture (`▾ Image#1 ·
-1440×900` with no offer once the message is open), and `▸ File#1 · 3.2 MB`
-with no offer for anything else. The vitals clause names the handle,
-`Paste#1 will cost ~6.1k tokens`, and the paste reader's rail reads `──── PASTE#1 · lines 1–8 of 214 ────`. The
-preview card opened from a sent picture's row reads `[esc] back`, with no
-`[x] remove`.
-
-The reason is that the sentence should be able to point at what it carries,
-and the handle is the word the model is given for each part
-([the input frame](surfaces.md#the-input-frame)). A screenshot with no mark
-in the sentence cannot be referred to except by describing it, and two of
-them cannot be told apart at all. The departure is closed by the artboard
-drawing an image fold beside a paste fold in one sentence and the fold rows
-under the sent message.
-
-## The settings screen opens on the flows
-
-*A disagreement.* The `Tools` artboard draws the settings screen as the
-file's own tables, each row a setting with its value and where
-that value came from, and a picker under a row whose key row reads `[enter]
-select` and the way to keep what is there. The binary now opens the screen on
-a FLOWS section above those tables: one row per bounded call — classifier,
-explanation, description, reading, title, account, compaction, backlog,
-profile drafter — with the model the call will run on, the key the chain read
-beside it, and in the source column the link that answered (`flow key`,
-`cheap key`, `provider small model`, `session model`) or `session` where this
-session holds a model no file does. In a session a flow's picker ends its key
-row with three destinations in place of the one — `[enter] this session ·
-[d] my settings · [g] this checkout` — before the way to keep the current
-model ([the supporting screens](surfaces.md#the-supporting-screens)).
-
-The reason is the question the screen is opened with. Which model answers
-the classifier, the readings or the title was a fact spread over six keys and
-a chain behind them, readable only in the doctor's row, and changing one for
-an afternoon meant editing a file every later session reads
-([a session can hold a value no file does](../capabilities/configuration.md#a-session-can-hold-a-value-no-file-does)).
-The section sits first because it is the part of the screen a person comes
-to move mid-session; the rows below it are the file, unchanged. The
-departure is closed by the artboard drawing the FLOWS rail above the tables and
-the picker's three-destination key row.
-
-## A card's esc cuts to a word, or to the key, before it wraps
-
-*A disagreement.* The `Approvals` and `Interrupt` artboards end a card's
-offers run on esc with its words — *leave it waiting, nothing is denied* —
-and draw no card narrow enough for those words to miss the run's last row.
-The binary cuts the words every gated card shares for as long as esc would
-otherwise take a row of its own: the trailing clause, then all but *wait*,
-and where even `[esc] wait` will not fit, the bare `[esc]` in the safe
-answer's colour. At 60 columns most cards now end `· [esc] wait` or `·
-[esc]`, and a held card's esc stays on its offers row
-([the approval card](surfaces.md#the-approval-card)).
-
-The reason is the row. The block a card's keys are drawn in is at most one
-panel's share of the terminal, and a row spent on the way out alone is a row
-the transcript gives up at the width that has fewest to give. The cut is
-ordered so the key is the last thing standing: esc answers every gated card
-the same way, and a card whose own words say something the key does not —
-`not now — it keeps waiting` — keeps them whole on a row of
-their own instead. The departure is closed by the artboards drawing a
-60-column card with the cut run.
-
-## The SPEND block is a row per model
-
-*A disagreement.* The `Main` artboard and the rail's `InspectorRail`
-component draw SPEND as one split row and a total —
-`gpt-5.2 · $0.12 main · $0.02 ◇` over `session total $1.86` — and the two
-figures do not add up, because the total is the whole bill and the row is
-only the session's own model. The binary draws one row per model that
-answered, each with its cost and the kinds of request it was spent on, the
-children's share after their `◇` on the row of the model they ran on, and the
-total under them with a `·` like every other row's figure:
-`gpt-5.2 · $1.70 main · $0.02 ◇`, `gpt-5-mini · $0.14 classifier · summary`,
-`session total · $1.86` ([the inspector rail](surfaces.md#the-inspector-rail)).
-
-The reason is the gap itself. The classifier, the readings and the title run
-on a smaller model than the session's
-([a bounded call](../capabilities/providers.md#a-bounded-call-runs-on-the-small-model)),
-so the artboard's two figures differ in every session that has either, and
-nothing on the block says why. As shares of one bill the rows explain the
-total rather than contradict it. The departure is closed by the artboard
-drawing a row per model over the total, and the order the row gives up its
-words in at the rail's narrowest: the kinds fold to the first and a count,
-then the model's name shortens to its family word, then goes.
+gloss they draw already is but one: `Commit` still glosses `push` with *shhh
+never pushes; the remote is yours*.
 
 ## The screen's words are the reader's
 
@@ -1412,9 +1062,8 @@ bar's captions are one verb in the second person: `[enter] add to this turn`,
 files`, the bare `⛨` label is `sandbox`, `n/a` is `nothing to undo`, a fan-out
 is titled `Start a writer`, a fetch `Approve fetch` with `[y] fetch it`, the
 shifted answers are `[Y] run with a note` and `[N] deny with a note`, and a
-flagged card's esc is `not now — it keeps waiting`. On the commit card `[s]` is
-`choose what goes in`, `drifted` is `skipped` (and so on the rail's CHANGES
-block), esc is `not now — nothing is committed, and the offer stays`, and the
+flagged card's esc is `not now — it keeps waiting`. On the commit card
+`drifted` is `skipped` (and so on the rail's CHANGES block), esc is `not now — nothing is committed, and the offer stays`, and the
 subject budget counts `0 left`. On the close, `wrote nothing` is `changed no
 files`, a tally is `4 of 4 checks` and an answered failure is `since passed`.
 The backlog's `?` reveal names what its letters stand for, from the profile.
@@ -1422,35 +1071,9 @@ The backlog's `?` reveal names what its letters stand for, from the profile.
 The reason is the reader who has never opened these documents: a word that
 needs a page to decode is a word the screen has not finished saying
 ([closed vocabularies](principles.md#closed-vocabularies)). The words are
-spelled in [the surfaces](surfaces.md#the-input-frame), and the artboards that
-still draw the old ones are `Frame`, `Main` and `Attention` (the rail, the key
-bar and `round 7/25`), `Approvals` and `Agents` (the card's labels, titles and
-offers), `Questions` (`note/options` and `apply`), `Commit` and `Changeset`
-(the commit card and the close rows), and `Backlog` (the letters, which have no
-legend drawn at all). The departure is closed by those artboards drawing the
-words the binary draws.
-
-## The agent family is on the function row, and a staged paste has no chord
-
-*A disagreement.* The artboards draw the agent manager and the walk along the
-rail's map on alt chords, and a staged paste opened by a chord of its own.
-The binary ships no alt chord on any platform. The manager is `f12` and the
-walk `shift+f8` forward and `shift+f7` back, so the AGENTS block's trailer on
-`Main` reads `f12 agents · shift+f8 next · click to attach`, the key bar on
-`Frame` and a fan-out's line under a waiting lane on `Agents` read `[f12]
-agents`, and the attached key bar reads `[esc] back to your session · [f12]
-agents`. On `Paste` the key bar offers nothing for the fold, and the notice a
-paste leaves reads `Paste#1 is one character in your draft — its chip opens
-it, backspace over it drops all 214 lines`; the chip — a click, or reading
-mode's cursor on the staged strip — and `/paste show` are the ways in ([the
-input frame](surfaces.md#the-input-frame), [a staged
-attachment](surfaces.md#a-staged-attachment)).
-
-The reason is that an alt chord is dead on a stock Mac terminal until a
-profile setting is ticked, and a key that works on some desks and types a
-character on others is a false offer on the desktop shhh is most often run on
-([one keyboard on every platform](reserved-keys.md#one-keyboard-on-every-platform)). The
-function row arrives on every terminal with nothing set, and the staged
-paste already had two doors that need no chord. The departure is closed by
-`Main`, `Frame`, `Agents` and `Paste` drawing the function-row keys and the
-fold with no chord offered for it.
+spelled in [the surfaces](surfaces.md#the-input-frame). `Frame`, `Main`,
+`Questions`, `Commit`, `Changeset` and `Backlog` draw them now; the artboards
+that still draw old ones are `Attention` (`round 7/25`), `Approvals` (the
+command card's title, `Approve shell command`, and the fetch's `[enter]
+fetch`) and `Agents` (the child's card's offers, `[enter] approve` and `[v] diff`). The departure is
+closed by those artboards drawing the words the binary draws.
