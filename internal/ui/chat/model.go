@@ -221,6 +221,11 @@ const (
 	// the pane (keylist.go). It borrows the screen, and the same key or esc
 	// goes back to the surface it was opened over.
 	stateKeyList
+	// stateSteps: the steps screen is up — the session's own working list,
+	// each step beside what the transcript recorded for it. A takeover like
+	// the sources screen: full width, the rail hidden, esc returns, and it
+	// changes nothing (worksteps.go).
+	stateSteps
 )
 
 // minPanelHeight is the fewest rows the bottom panel takes: what a surface
@@ -1488,6 +1493,9 @@ type Model struct {
 	// the session had read when the reader asked.
 	sourceLedger *web.Ledger
 	sources      *components.SourcesScreen
+	// The steps screen while it is up, built once per opening like the
+	// sources screen (worksteps.go).
+	stepsScreen *components.StepsScreen
 	// The safety reading: the readings only the command package can make,
 	// and the screen while it is up, built once per opening (safety.go).
 	safety       Safety

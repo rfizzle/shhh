@@ -12,6 +12,14 @@
 # at 05 the turn has ended on a numbered report, whose marks are counted and
 # whose list is not taken — 4 of 4, and nothing on the block saying the task
 # is done.
+#
+# The second turn is the steps screen (docs/interface/surfaces.md#the-supporting-screens):
+# at 06 a fresh list reads 1 of 3; at 07 `/steps` has opened it over the pane
+# with the pointer on the current step, marked `current`, which no run in the
+# transcript is titled for and so says `not started`; at 08 the pointer is on
+# the finished first step, marked `done`, with the path it named and the two
+# calls the run titled with its words recorded, drawn as the transcript drew
+# them; at 09 esc has put the rail back.
 setup printf 'package agent\n\nfunc loop() {}\n' > loop.go; printf 'package agent\n\nconst ceiling = 150\n' > round.go
 snap 01-start "Some things worth doing first"
 keys "raise the round ceiling" Enter
@@ -19,7 +27,15 @@ snap 02-declared "STEPS" "0 of 3 · Read the loop"
 snap 03-marked "1 of 3 · Patch the round limit"
 snap 04-revised "2 of 4 · Raise the ceiling in round.go"
 snap 05-closed "4 of 4" "the tests pass"
+keys "tidy the loop" Enter
+snap 06-second-list "1 of 3 · Run the tests" "The loop is tidy."
+keys "/steps" Enter
+snap 07-steps "/steps · 1 of 3" "▸ Run the tests" "current" "not started · no step in the transcript is titled for it"
+keys k
+snap 08-steps-run "in the transcript · 2 tools" "✓ Tidy the loop" "touches loop.go" "read"
+keys Escape
+snap 09-back "1 of 3 · Run the tests"
 keys C-c
-snap 06-quit-armed "again quits"
+snap 10-quit-armed "again quits"
 keys C-c
-snap 07-exit "that is everything the screen was holding"
+snap 11-exit "that is everything the screen was holding"

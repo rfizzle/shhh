@@ -1185,7 +1185,9 @@ own and can be revised; it is where the agent says it is. The two are never
 up together — while an approved plan is being executed, the plan is the
 checklist — and a session that declared no list draws no block. Every step
 marked reads `3 of 3` and nothing more: the count is the agent's account of
-its list, and whether the task is done is the turn's close to say.
+its list, and whether the task is done is the turn's close to say. The whole
+list is one act away: the heading opens it ([the supporting
+screens](#the-supporting-screens)).
 
 One block is scoped wider than the session: the project's backlog. It sits
 under the plan because it is the same question one step further out — the
@@ -1308,8 +1310,8 @@ reachable without a pointer.
 
 A block is a door to the whole of what it bounds. Where a block has a surface
 holding all of it, its heading and its fold marker open that surface: CHANGES
-opens the session's diff, AGENTS the manager, TODO the backlog screen and
-CONTEXT the occupancy screen — each the surface its command already opens, so
+opens the session's diff, AGENTS the manager, STEPS the whole working list,
+TODO the backlog screen and CONTEXT the occupancy screen — each the surface its command already opens, so
 the command is the door's key. The surface is left by its own esc, and by a
 click on the cell that opened it: the surface stands over the rail, so the
 row is not there to click again, but the cell is, and a click that opened a
@@ -2356,13 +2358,13 @@ the list on the left, the one the pointer is on beside it, and the renaming
 and deleting the picker inside a session already offers
 (../capabilities/sessions-and-memory.md#housekeeping).
 
-Twelve surfaces take the whole terminal this way — those seven, the reading of
-what is in the session's context, the ledger of what the session read
+Thirteen surfaces take the whole terminal this way — those seven, the reading
+of what is in the session's context, the ledger of what the session read
 (`/sources`, [what was read](../capabilities/chat.md#what-was-read)), the
-session's shared notebook (`/notes`, below), the reading of the session's
-boundary (`/safety`, [the safety reading](#the-safety-reading)) and the
-drafting flow for a new agent profile — and they are one family rather than
-twelve screens: the same header, the same
+session's own working list (`/steps`, below), the session's shared notebook
+(`/notes`, below), the reading of the session's boundary (`/safety`, [the
+safety reading](#the-safety-reading)) and the drafting flow for a new agent
+profile — and they are one family rather than thirteen screens: the same header, the same
 ground given up in the same order as the terminal narrows, the same key row at
 the foot and the same `[?]` behind it. The two that arrived last had each been
 drawing a chrome of their own, and the way that showed was not in either of
@@ -2376,7 +2378,7 @@ act in one word: `quit` where the screen was opened from a command line,
 under the key a reader reaches for without thinking, and there it is a phrase:
 **back to the shell** on doctor, metrics, history, snippets and the saved-chat
 browser, **back to the prompt** on the context reading, the sources ledger, the
-safety reading, the notebook and the backlog, which is drawn on this chrome too ([the backlog screen](#the-backlog-screen)).
+working list, the safety reading, the notebook and the backlog, which is drawn on this chrome too ([the backlog screen](#the-backlog-screen)).
 For leaving a screen and changing nothing there is no third wording.
 
 Three of them leave by doing something rather than nothing, and each says what
@@ -2410,15 +2412,34 @@ surface that put `[?]` and the letter on both rows spent its bottom row saying
 what its top row had already said, which on the narrowest terminal is the row
 that had least to give.
 
-Five of them list something and preview what the pointer is on — past
+Six of them list something and preview what the pointer is on — past
 commands, saved commands, saved conversations, the pages this session
-read, and the notes its agents wrote each other — and they split the terminal
+read, the steps it declared, and the notes its agents wrote each other — and
+they split the terminal
 the same way: two columns where there is
 room for two, stacked where there is not, and the preview giving way to the
 list when the rows run out, because a screen that cannot preview an item can
 still say which items there are.
 
-`/notes` is the newest of the five, and it is the shared notebook — what one
+`/steps` is the rail's STEPS block read whole: every step the session
+declared, numbered as the list numbers them, the one the agent is on marked
+`current` and the ones it has marked finished `done`; beside the step under
+the pointer, the paths it said it would touch and the calls the transcript
+recorded for it, each drawn as the transcript drew it. Two different things
+meet on this screen. The list is the session's working checklist — what the
+agent said it would do. The transcript's steps are the model's titled runs of
+calls ([the step](#the-step)). They usually share titles, and they are joined
+by title, with case, spacing, a leading number and closing punctuation set
+aside; a step no run is titled for says `not started`, because nothing in the
+transcript is filed under it. A revised list shows the declaration the agent
+is working to now, and the one it replaced is not kept. The screen is built
+when it opens, reads and changes nothing, and the turn goes on underneath it.
+It is opened by `/steps` and by a click on the STEPS heading
+([the inspector rail](#the-inspector-rail)), and a session with no list — or
+one executing an approved plan, whose steps are the checklist — says so in a
+line instead.
+
+`/notes` is the shared notebook — what one
 agent found and the next should not have to find again
 ([what they share](../capabilities/subagents.md#what-they-share)). The list is
 grouped under the agent that signed each note, because a fan-out's notes

@@ -214,6 +214,13 @@
                    row in it shows its output body, bounded;
                    run it again to close (/ui verbosity high
                    is the same thing for every step at once)
+    /steps         the session's own working list on one
+                   screen: every step it declared, the paths
+                   each said it would touch, which it has
+                   marked done and the one it is on — and
+                   beside each, the calls the transcript
+                   titled for it, or not started where there
+                   are none. It reads and changes nothing
     /status        where this session is: what it is working
                    on, what it has spent, and whether the
                    last few turns are still on the target
@@ -511,6 +518,13 @@
                    ␛[38;5;241mrow in it shows its output body, bounded;␛[m
                    ␛[38;5;241mrun it again to close (/ui verbosity high␛[m
                    ␛[38;5;241mis the same thing for every step at once)␛[m
+    ␛[38;5;252m/steps␛[m         ␛[38;5;241mthe session's own working list on one␛[m
+                   ␛[38;5;241mscreen: every step it declared, the paths␛[m
+                   ␛[38;5;241meach said it would touch, which it has␛[m
+                   ␛[38;5;241mmarked done and the one it is on — and␛[m
+                   ␛[38;5;241mbeside each, the calls the transcript␛[m
+                   ␛[38;5;241mtitled for it, or not started where there␛[m
+                   ␛[38;5;241mare none. It reads and changes nothing␛[m
     ␛[38;5;252m/status␛[m        ␛[38;5;241mwhere this session is: what it is working␛[m
                    ␛[38;5;241mon, what it has spent, and whether the␛[m
                    ␛[38;5;241mlast few turns are still on the target␛[m

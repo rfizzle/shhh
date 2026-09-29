@@ -1,8 +1,10 @@
 package chat
 
 import (
+	"strings"
 	"testing"
 
+	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/plan"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -182,5 +184,97 @@ func TestWorkSteps_ASteerMayDeclareAgain(t *testing.T) {
 				t.Fatalf("a machine message opened a fresh list: %+v", s)
 			}
 		})
+	}
+}
+
+// stepsListModel is stepsModel's two titled runs under a three-step list whose
+// first step is marked: the first step shares its run's title once a number
+// and a full stop are set aside, the second is the one the agent is on and
+// shares nothing, and the third names the files it will touch.
+func stepsListModel(t *testing.T) Model {
+	t.Helper()
+	m := stepsModel(t)
+	m.workSteps.Note("1. Locate the round accounting.\n2. Patch the limit\n3. Test it\n   files: internal/agent/loop_test.go", true)
+	m.workSteps.Note("progress: 1", true)
+	return m
+}
+
+// The list is the checklist and each step carries the run the transcript
+// titled for it; a step no run is titled for is not started, and the one the
+// agent is on is marked as the rail marks it.
+func TestStepsScreen_JoinsTheListToTheRunsByTitle(t *testing.T) {
+	m := stepsListModel(t)
+	opened, _ := m.runCommand("/steps", "/steps")
+	got := opened.(Model)
+	if got.state != stateSteps || got.stepsScreen == nil {
+		t.Fatalf("/steps should open the screen, got state %d", got.state)
+	}
+	s := got.stepsScreen
+	if s.Subject != "1 of 3" || s.Focus != 1 {
+		t.Fatalf("subject %q focus %d, want the rail's count and the current step", s.Subject, s.Focus)
+	}
+	first, second, third := s.Steps[0], s.Steps[1], s.Steps[2]
+	if !first.Done || !first.Started || first.Count != "2 tools" || len(first.Rows) != 2 {
+		t.Fatalf("the first step should carry its run: %+v", first)
+	}
+	if first.Rows[0].Verb != "read" || first.Rows[0].Expanded || len(first.Rows[0].Detail) != 0 {
+		t.Fatalf("a run's row should be the transcript's own, folded to one line: %+v", first.Rows[0])
+	}
+	if !second.Current || second.Started {
+		t.Fatalf("the second step is the current one and nothing is titled for it: %+v", second)
+	}
+	if len(third.Paths) != 1 || third.Paths[0] != "internal/agent/loop_test.go" || third.Current {
+		t.Fatalf("the third step should carry the path it named: %+v", third)
+	}
+	if !got.inspectorHidden() {
+		t.Fatal("the screen should stand over the rail")
+	}
+	next, _ := got.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
+	if left := next.(Model); left.state == stateSteps || left.stepsScreen != nil {
+		t.Fatalf("esc should leave the screen, got state %d", left.state)
+	}
+}
+
+// Where there is no list to show, the command says why in a line instead of
+// opening an empty screen.
+func TestStepsScreen_NoListSaysWhy(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		set  func(*Model)
+		want string
+	}{
+		{"no list", func(*Model) {}, "declared no working steps"},
+		{"a conversation", func(m *Model) { m.conversation = true }, "not part of this session"},
+		{"an approved plan", func(m *Model) { m.planRun = newPlanRun(plan.Parse(planFixture), 0) }, "its steps are the checklist"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			m := stepsModel(t)
+			tc.set(&m)
+			next, _ := m.runCommand("/steps", "/steps")
+			got := next.(Model)
+			if got.state == stateSteps {
+				t.Fatal("the screen opened over nothing")
+			}
+			last := got.transcript[len(got.transcript)-1]
+			if last.kind != entrySystem || !strings.Contains(last.text, tc.want) {
+				t.Fatalf("the notice = %q, want %q", last.text, tc.want)
+			}
+		})
+	}
+}
+
+// The join compares the words, not how they were written down.
+func TestStepKey_SetsTheWritingAside(t *testing.T) {
+	for _, pair := range [][2]string{
+		{"Read the loop", "read  the loop."},
+		{"1. Read the loop", "Read the loop"},
+		{"Step 2: Patch it", "patch it"},
+	} {
+		if stepKey(pair[0]) != stepKey(pair[1]) {
+			t.Errorf("%q and %q should be one step: %q vs %q", pair[0], pair[1], stepKey(pair[0]), stepKey(pair[1]))
+		}
+	}
+	if stepKey("2 files changed") != "2 files changed" {
+		t.Errorf("a number that is the title's own words was taken off: %q", stepKey("2 files changed"))
 	}
 }

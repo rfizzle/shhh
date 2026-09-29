@@ -68,6 +68,7 @@ func TestRailDoors_AHeadingOrAMarkerOpensItsSurfaceAndTheCellClosesIt(t *testing
 		{components.RailAgents, false, railDoorModel, "/agents"},
 		{components.RailAgents, true, railDoorModel, "/agents"},
 		{components.RailContext, false, railDoorModel, "/context"},
+		{components.RailSteps, false, railStepsModel, "/steps"},
 		{components.RailTodo, false, railTodoModel, "/todo"},
 		{components.RailTodo, true, railTodoModel, "/todo"},
 	} {
@@ -109,6 +110,15 @@ func TestRailDoors_AHeadingOrAMarkerOpensItsSurfaceAndTheCellClosesIt(t *testing
 			}
 		})
 	}
+}
+
+// railStepsModel is railDoorModel with the session's own working list
+// declared, so the rail draws a STEPS block.
+func railStepsModel(t *testing.T) Model {
+	t.Helper()
+	m := railDoorModel(t)
+	m.workSteps.Note("1. Read the loop\n2. Patch the limit", true)
+	return m
 }
 
 // railTodoModel is a two-pane session with a backlog longer than the TODO

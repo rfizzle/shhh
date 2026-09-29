@@ -256,6 +256,13 @@ func (m Model) runCommand(text, name string) (tea.Model, tea.Cmd) {
 		// came from.
 		return m.openSources()
 
+	case text == "/steps":
+		// The session's whole working list, each step beside what the
+		// transcript recorded for it — the rail's STEPS door. It reads and
+		// changes nothing, so it is not idleOnly: mid-turn is when somebody
+		// asks where the agent is (worksteps.go).
+		return m.openSteps()
+
 	case text == "/safety" || text == "/security":
 		// The session's whole boundary, full screen. It reads and changes
 		// nothing, so it is not idleOnly: a turn that just asked for

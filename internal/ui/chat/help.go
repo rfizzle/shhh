@@ -141,6 +141,7 @@ default [level]   show or persist the level new sessions start on (provider.reas
 	"/context":  `the window as a meter, by category, with the tools itemised`,
 	"/stats":    `context occupancy breakdown and cumulative session spend`,
 	"/step":     `open the in-flight step's detail: every row in it shows its output body, bounded; run it again to close (/ui verbosity high is the same thing for every step at once)`,
+	"/steps":    `the session's own working list on one screen: every step it declared, the paths each said it would touch, which it has marked done and the one it is on — and beside each, the calls the transcript titled for it, or not started where there are none. It reads and changes nothing`,
 	"/status":   `where this session is: what it is working on, what it has spent, and whether the last few turns are still on the target you set it`,
 	"/sessions": `the sessions running on this machine: the conversation each saves to, its checkout and branch, and whether it is working`,
 	"/trust":    `let this checkout's own skills, agent profiles, wordings and quality suites load. A clone can carry instructions, so nothing of a checkout's runs until you say so; "off" withdraws it and the next session starts without them`,
@@ -497,7 +498,7 @@ bare /todo opens the same screen; it opens over a running turn, and the keys tha
 		},
 		{
 			key:  "rail click",
-			text: `on the inspector rail, a changed file opens its diff and a session's row moves the keyboard into it. A block's heading, or its … N more, opens the surface holding the whole block — CHANGES is /diff, AGENTS is /agents, TODO is /todo, CONTEXT is /context — and a click on the same cell closes it, as its own esc does. The rail never holds the keyboard, so each command is that door's key`,
+			text: `on the inspector rail, a changed file opens its diff and a session's row moves the keyboard into it. A block's heading, or its … N more, opens the surface holding the whole block — CHANGES is /diff, AGENTS is /agents, STEPS is /steps, TODO is /todo, CONTEXT is /context — and a click on the same cell closes it, as its own esc does. The rail never holds the keyboard, so each command is that door's key`,
 		},
 		{
 			binds: []keys.Binding{keys.Draft.Editor},

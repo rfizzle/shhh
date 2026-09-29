@@ -155,12 +155,13 @@ func (l Checklist) has(n int) bool {
 	return false
 }
 
-// titles keeps what a checklist is: a number and a title. The plan card's
-// files, action and note belong to a plan somebody approves.
+// titles keeps what a checklist is: a number, a title and the paths the step
+// said it would touch, which the steps screen draws under it. The plan card's
+// action and note belong to a plan somebody approves.
 func titles(steps []Step) []Step {
 	out := make([]Step, len(steps))
 	for i, s := range steps {
-		out[i] = Step{Number: s.Number, Title: s.Title}
+		out[i] = Step{Number: s.Number, Title: s.Title, Paths: s.Paths}
 	}
 	return out
 }
@@ -184,8 +185,9 @@ type checklistJSON struct {
 }
 
 type checklistStep struct {
-	N     int    `json:"n"`
-	Title string `json:"title"`
+	N     int      `json:"n"`
+	Title string   `json:"title"`
+	Paths []string `json:"paths,omitempty"`
 }
 
 // Encode is the checklist as a slot stores it, and "" for no list.
@@ -195,7 +197,7 @@ func (l Checklist) Encode() string {
 	}
 	var c checklistJSON
 	for _, s := range l.Steps {
-		c.Steps = append(c.Steps, checklistStep{N: s.Number, Title: s.Title})
+		c.Steps = append(c.Steps, checklistStep{N: s.Number, Title: s.Title, Paths: s.Paths})
 		if l.Done[s.Number] {
 			c.Done = append(c.Done, s.Number)
 		}
@@ -216,7 +218,7 @@ func DecodeChecklist(s string) Checklist {
 	}
 	var l Checklist
 	for _, s := range c.Steps {
-		l.Steps = append(l.Steps, Step{Number: s.N, Title: s.Title})
+		l.Steps = append(l.Steps, Step{Number: s.N, Title: s.Title, Paths: s.Paths})
 	}
 	for _, n := range c.Done {
 		if l.has(n) {

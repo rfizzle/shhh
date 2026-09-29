@@ -161,3 +161,18 @@ func TestChecklist_EncodeRoundTrips(t *testing.T) {
 		}
 	}
 }
+
+// The paths a step said it would touch are kept with it, through a slot as
+// well, because the steps screen draws them under the step.
+func TestChecklist_KeepsTheStepsPaths(t *testing.T) {
+	var l Checklist
+	l.Note("1. Patch the loop\n   files: loop.go, round.go\n2. Test it", true)
+	for _, got := range []Checklist{l, DecodeChecklist(l.Encode())} {
+		if p := got.Steps[0].Paths; len(p) != 2 || p[0] != "loop.go" || p[1] != "round.go" {
+			t.Fatalf("paths = %q", p)
+		}
+		if len(got.Steps[1].Paths) != 0 {
+			t.Fatalf("a step that named no files was given some: %q", got.Steps[1].Paths)
+		}
+	}
+}

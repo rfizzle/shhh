@@ -213,6 +213,11 @@ func (d *DiffView) row() ActivityRow {
 // RowView is the collapsed one-row transcript form.
 func (d *DiffView) RowView(width int) string { return d.row().View(width) }
 
+// Row is the collapsed form as a row, for a surface that lays transcript rows
+// out itself — the steps screen draws a step's calls, edits included, through
+// the activity row's own renderer.
+func (d *DiffView) Row() ActivityRow { return d.row() }
+
 // UnifiedOpts controls the unified rendering.
 type UnifiedOpts struct {
 	// LineNumbers prefixes each line with its old/new line number.

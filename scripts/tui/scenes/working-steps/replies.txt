@@ -10,6 +10,11 @@
 # The last reply ends the turn with a numbered report of what changed — a
 # list in a message that ends a turn is a report, not a plan, so the rail
 # counts its marks and does not take the list.
+#
+# The second turn declares a fresh list, whose first step names the file it
+# will touch, then titles a run of calls with that step's own words and marks
+# it — so the steps screen has a step joined to its run, a current step no
+# run is titled for, and a step not reached.
 [session]
 I will work through this in steps.\n\n1. Read the loop\n2. Patch the round limit\n3. Run the tests
 +tool:read_file:{"path":"loop.go"}
@@ -21,3 +26,9 @@ wait:4
 +tool:read_file:{"path":"round.go"}
 wait:4
 +progress: 3\nprogress: 4\nChanged:\n1. round.go raises the ceiling\n2. the tests pass
+I will tidy up in steps.\n\n1. Tidy the loop\n   files: loop.go\n2. Run the tests\n3. Write it up
++tool:read_file:{"path":"loop.go"}
+Tidy the loop
++tool:read_file:{"path":"loop.go"}
++tool:read_file:{"path":"round.go"}
+progress: 1\nThe loop is tidy.

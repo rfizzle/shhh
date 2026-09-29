@@ -153,6 +153,20 @@ MODE AND POLICY
 
 [↑↓/jk] scroll · [esc] back to the prompt                                                      a reading · nothing here changes it
 
+· steps · the session's own list, the run the transcript titled for the step beside it
+/steps · 1 of 7                                                                                                [?] keys · [q] back
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1. ✓ Read the loop               done          2 tools │ 2. Patch the round limit                                        current
+❯ 2. ▸ Patch the round limit       current       2 tools │ 
+  3. · Name the ceiling in the error         not started │   touches internal/agent/round.go
+  4. · Read the headless driver                   1 tool │           internal/agent/round_test.go
+  5. · Carry the cap into the child          not started │ 
+  6. · Run the whole suite                   not started │   in the transcript · 2 tools · 4.1s
+  7. · Write the report                      not started │   ▎✎ edit    internal/agent/round.go            +12 −4 · 2 hunks   1.1s
+
+[↑↓/jk] move · [esc] back to the prompt                                                           the agent's own list, not a plan
+
 ── ansi ────────────────────────────────────────────────────
 · doctor · the count on the left, the clock and the keys on the right
 ␛[1;38;5;254mshhh doctor␛[m␛[38;5;244m · 10 checks␛[m                                                                                 ␛[38;5;244m1.4s␛[m␛[38;5;244m · [?] keys · [q] quit␛[m
@@ -296,3 +310,17 @@ MODE AND POLICY
 ␛[38;5;244m↓ 7 more · where it may write · containment · web · what the checkout was let load · mcp · secrets · tools␛[m
 
 ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m scroll␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m                                                      ␛[38;5;244ma reading · nothing here changes it␛[m
+
+· steps · the session's own list, the run the transcript titled for the step beside it
+␛[1;38;5;254m/steps␛[m␛[38;5;244m · 1 of 7␛[m                                                                                                ␛[38;5;244m[?] keys · [q] back␛[m
+␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+
+  ␛[38;5;244m1. ␛[m␛[38;5;254m✓ Read the loop␛[m               ␛[38;5;254mdone␛[m          ␛[38;5;254m2 tools␛[m␛[38;5;244m │ ␛[m␛[1;38;5;254m2. Patch the round limit␛[m                                        ␛[38;5;244mcurrent␛[m
+␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m2. ▸ Patch the round limit       current       2 tools␛[m␛[38;5;244m │ ␛[m
+  ␛[38;5;244m3. ␛[m␛[38;5;254m· Name the ceiling in the error␛[m         ␛[38;5;244mnot started␛[m␛[38;5;244m │ ␛[m  ␛[38;5;244mtouches ␛[m␛[38;5;254minternal/agent/round.go␛[m
+  ␛[38;5;244m4. ␛[m␛[38;5;254m· Read the headless driver␛[m                   ␛[38;5;254m1 tool␛[m␛[38;5;244m │ ␛[m          ␛[38;5;254minternal/agent/round_test.go␛[m
+  ␛[38;5;244m5. ␛[m␛[38;5;254m· Carry the cap into the child␛[m          ␛[38;5;244mnot started␛[m␛[38;5;244m │ ␛[m
+  ␛[38;5;244m6. ␛[m␛[38;5;254m· Run the whole suite␛[m                   ␛[38;5;244mnot started␛[m␛[38;5;244m │ ␛[m␛[38;5;244m  in the transcript · 2 tools · 4.1s␛[m
+  ␛[38;5;244m7. ␛[m␛[38;5;254m· Write the report␛[m                      ␛[38;5;244mnot started␛[m␛[38;5;244m │ ␛[m  ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254medit␛[m    ␛[38;5;254minternal/agent/round.go␛[m            ␛[38;5;254m+12␛[m ␛[38;5;254m−4␛[m␛[38;5;244m · ␛[m␛[38;5;244m2 hunks␛[m   ␛[38;5;244m1.1s␛[m
+
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m                                                           ␛[38;5;244mthe agent's own list, not a plan␛[m

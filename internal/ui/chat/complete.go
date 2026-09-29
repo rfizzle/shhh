@@ -163,6 +163,8 @@ func buildSlashCommands() []slashCommand {
 		{name: "/context", desc: "the window as a meter, itemised down to the tool"},
 		{name: "/stats", desc: "context occupancy and session spend"},
 		{name: "/step", desc: "open the in-flight step's detail (again closes it)"},
+		{name: "/steps", desc: "the session's own working list, each step beside what the transcript recorded for it",
+			enabled: func(m *Model) bool { return m.codingSurfaces() }},
 		{name: "/status", desc: "where the session is, and whether it is still on target"},
 		{name: "/sessions", desc: "the sessions running on this machine, and where each one is"},
 		{name: "/trust", desc: "let this checkout's skills, agent profiles and quality suites load (\"off\" withdraws it)"},

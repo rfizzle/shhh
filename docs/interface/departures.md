@@ -390,6 +390,41 @@ drawn without them would look wider than it is.
 When there is an artboard, these three decisions are what it has to
 reconcile with, and where the two differ the artboard wins.
 
+## The steps screen's layout was decided in the binary
+
+*A gap.* No artboard draws `/steps`, and the InspectorRail component draws the
+STEPS block's heading as a label rather than as a door to anything. The
+binary draws a screen behind that heading
+([the supporting screens](surfaces.md#the-supporting-screens)): the family's
+chrome over a list and a preview, the list the session's working checklist and
+the preview the step under the pointer with the run the transcript titled for
+it. Most of it needed no decision — the header and its rule, the two panes and
+the divider, the windowed list with its counted markers and the key row are
+the supporting screens' own, and the calls in the preview are the transcript's
+activity rows drawn by their own renderer. Three things it could not take
+from anywhere, and they were decided here:
+
+**The list states the step and the join, the preview the rest.** A row is the
+step's number, the step header's own mark (`✓`, `▸`, `·`), its title, a word
+for where it stands on the list — `done`, `current`, or nothing for a step not
+reached — and at the far end either the count of calls the transcript
+recorded for it or `not started`. The duration and the paths are the
+preview's, because a list row carrying all of them clipped the word that says
+which step is current at 110 columns.
+
+**A step with no titled run says so rather than drawing an empty pane.** The
+checklist and the transcript's steps are two different things that usually
+share titles; where none matches, the preview says `not started` and why,
+because a blank pane would read as a step whose calls failed to draw.
+
+**The heading is the door, as the other blocks' are.** STEPS draws one row and
+never folds, so it has no marker; its heading opens the screen and the cell
+closes it, the way CHANGES opens the session's diff
+([the inspector rail](surfaces.md#the-inspector-rail)).
+
+When there is an artboard, these three decisions are what it has to
+reconcile with, and where the two differ the artboard wins.
+
 ## The explanation's screen wears the full view's title, not a rail label
 
 *A disagreement.* The artboard draws the command explanation with a rail

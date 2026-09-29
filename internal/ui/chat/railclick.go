@@ -17,7 +17,8 @@ package chat
 //   - A block's heading, and its fold marker. Each names the block, and where
 //     the block has a surface holding the whole of what it bounds, that
 //     surface is what a command already opens: CHANGES is /diff, AGENTS is
-//     /agents, TODO is /todo, CONTEXT is /context (railDoors).
+//     /agents, STEPS is /steps, TODO is /todo, CONTEXT is /context
+//     (railDoors).
 //
 // A heading or a marker opens that surface, and the remembered cell closes
 // it: the surface takes the rail's columns, so the row is not there for a
@@ -80,6 +81,7 @@ func railDoors() map[string]railDoor {
 		railDoorTable = map[string]railDoor{
 			components.RailChanges: {Model.openSessionDiff, reviewShowing, Model.closeReview},     // /diff
 			components.RailAgents:  {Model.openAgentList, agentListShowing, Model.closeAgentList}, // /agents
+			components.RailSteps:   {Model.openSteps, stepsShowing, Model.closeStepsScreen},       // /steps
 			components.RailTodo:    {Model.openTodoDoor, backlogShowing, Model.closeTodoScreen},   // /todo
 			components.RailContext: {Model.openContext, contextShowing, Model.closeContextScreen}, // /context
 		}
@@ -127,6 +129,13 @@ func agentListShowing(m Model) any {
 		return nil
 	}
 	return m.agentList
+}
+
+func stepsShowing(m Model) any {
+	if m.state != stateSteps || m.stepsScreen == nil {
+		return nil
+	}
+	return m.stepsScreen
 }
 
 func backlogShowing(m Model) any {

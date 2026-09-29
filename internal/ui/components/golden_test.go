@@ -3651,6 +3651,8 @@ func TestGolden_ScreenFamily(t *testing.T) {
 					View: (&SafetyScreen{
 						Sections: safetySections(), Subject: "manual · sandbox-exec", MaxLines: 12,
 					}).View(width)},
+				{Label: "steps · the session's own list, the run the transcript titled for the step beside it",
+					View: func() string { s := stepsScreen(1); s.MaxLines = 12; return s.View(width) }()},
 			}
 		})
 }
