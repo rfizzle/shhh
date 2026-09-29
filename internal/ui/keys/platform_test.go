@@ -43,7 +43,7 @@ func TestShippedKeyboard_TheInputSurfacesShareNoKeystroke(t *testing.T) {
 // terminals compose a character for Option until a profile is changed, so an
 // alt chord there is an offer that does nothing, and one keyboard for every
 // desk holds only while this does
-// (docs/interface/reserved-keys.md#a-mac-ships-without-alt).
+// (docs/interface/reserved-keys.md#one-keyboard-on-every-platform).
 func TestShippedKeyboard_ShipsNoAltChord(t *testing.T) {
 	for _, s := range all() {
 		for _, b := range s.Bindings {

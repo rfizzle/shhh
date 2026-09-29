@@ -135,13 +135,15 @@ card is where somebody whose first chord did nothing is already looking; a
 cover named only in the key list is found after the sentence it was for has
 been abandoned.
 
-The same fact decides which chords a platform ships at all. A chord is an
-offer only on a keyboard that delivers it, and the stock macOS terminals do
-not deliver alt until a profile setting is ticked, so a Mac ships the acts the
-other platforms put on alt on the function row instead
-([a Mac ships without alt](reserved-keys.md#a-mac-ships-without-alt)). Every
-hint reads the one register, so what a surface prints is the keyboard the
-machine in front of the reader ships.
+The same fact decides which chords ship at all. A chord is an offer only on a
+keyboard that delivers it, and the stock macOS terminals do not deliver alt
+until a profile setting is ticked, so no key ships on alt on any platform:
+what was on alt went to the function row, which every terminal delivers, or
+became a command, or a bare letter behind the handover ([one keyboard on
+every platform](reserved-keys.md#one-keyboard-on-every-platform)). There is
+one keyboard, the same on every desk, and every hint reads the one register,
+so what a surface prints is what the reader's keyboard delivers wherever they
+are sitting.
 
 A row of the transcript is the other shape this takes, and it answers the
 same way. An act that answers the product — try again, continue, a new key,
@@ -151,8 +153,8 @@ grey beside the handover while the draft holds the keyboard; the handover
 gives the row the keyboard the way it gives a card the keyboard, the letters
 are live from then on, and answering the row or esc gives the keyboard back.
 A chord per offer was a second spelling of each act on every row that made
-one, which is the notation problem the paragraph above is about, and it spent
-the free set on keys whose one job was to stand for a letter. An act on the
+one, and it spent the free set on keys whose one job was to stand for a
+letter. An act on the
 work is not a row offer at all: it has a command, and the model has a tool.
 
 One press goes to one row, and the row is the one the reader can see is

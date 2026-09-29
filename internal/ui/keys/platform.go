@@ -1,7 +1,7 @@
 package keys
 
 // The keyboard shhh ships is one keyboard on every platform
-// (docs/interface/reserved-keys.md#a-mac-ships-without-alt).
+// (docs/interface/reserved-keys.md#one-keyboard-on-every-platform).
 //
 // On macOS the two stock terminals send Option+letter as the character it
 // composes until a profile setting is ticked, so an alt chord would be dead

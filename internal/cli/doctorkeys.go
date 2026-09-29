@@ -7,7 +7,7 @@ package cli
 // until the terminal's profile says to send the escape prefix instead, and
 // the stock terminals ship with that off, so an alt chord is dead on a Mac at
 // its defaults. That is why nothing ships on alt
-// (docs/interface/reserved-keys.md#a-mac-ships-without-alt), and why this row
+// (docs/interface/reserved-keys.md#one-keyboard-on-every-platform), and why this row
 // has a question only where a keymap file put a key back on alt. It is the
 // one place that names the setting: it tells that reader which tick, on the
 // profile they are in.

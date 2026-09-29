@@ -1449,7 +1449,7 @@ attachment](surfaces.md#a-staged-attachment)).
 The reason is that an alt chord is dead on a stock Mac terminal until a
 profile setting is ticked, and a key that works on some desks and types a
 character on others is a false offer on the desktop shhh is most often run on
-([a Mac ships without alt](reserved-keys.md#a-mac-ships-without-alt)). The
+([one keyboard on every platform](reserved-keys.md#one-keyboard-on-every-platform)). The
 function row arrives on every terminal with nothing set, and the staged
 paste already had two doors that need no chord. The departure is closed by
 `Main`, `Frame`, `Agents` and `Paste` drawing the function-row keys and the

@@ -194,7 +194,7 @@ func TestHelp_AConversationOffersTheBacklogAndNotTheChangeset(t *testing.T) {
 // The key list is one keyboard on every desk; the one sentence in it that
 // follows the desk is how the line editor moves by word, since a stock Mac
 // terminal sends the Option arrows where alt+b and alt+f would compose a
-// character (docs/interface/reserved-keys.md#a-mac-ships-without-alt).
+// character (docs/interface/reserved-keys.md#one-keyboard-on-every-platform).
 func TestHelp_TheWordMovesFollowTheDesk(t *testing.T) {
 	for _, tc := range []struct{ platform, want, not string }{
 		{"linux", "alt+b and alt+f move by word", "option+"},

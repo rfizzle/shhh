@@ -333,7 +333,7 @@ func TestDoctorOptionKey_AMacWithNoAltChordIsNotAQuestion(t *testing.T) {
 // person who chose the alt chord would, and restores the shipped keyboard
 // when the test ends. Nothing ships on alt, so the row is only a question
 // once a file has put a chord there
-// (docs/interface/reserved-keys.md#a-mac-ships-without-alt).
+// (docs/interface/reserved-keys.md#one-keyboard-on-every-platform).
 func altChordBound(t *testing.T, keymap ...string) {
 	t.Helper()
 	if len(keymap) == 0 {

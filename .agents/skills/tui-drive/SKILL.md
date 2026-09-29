@@ -411,7 +411,7 @@ than leaving it out.
   `PORT` and `SOCK`, `TMUX_TMPDIR` and `FAKE_PACE_MS` — and none of them
   picks a keyboard: nothing ships on alt, so a scene's keys and its snap text
   hold on a Mac as on Linux
-  (docs/interface/reserved-keys.md#a-mac-ships-without-alt). The one sentence
+  (docs/interface/reserved-keys.md#one-keyboard-on-every-platform). The one sentence
   that follows the host is `/help`'s word moves (`option+←`/`option+→` on a
   Mac), so a snap does not wait on it.
 - **A card that lands just after a keypress drops the next key.** An

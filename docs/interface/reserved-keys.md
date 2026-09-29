@@ -31,7 +31,7 @@ An alt chord is the wrong answer for a key a reader reaches for when they are
 lost. On the stock macOS terminals Option composes a character until the
 profile is told to send the escape prefix, so an alt chord is dead there until
 a box is ticked — which is why no key ships on alt at all
-([below](#a-mac-ships-without-alt)), and why the key list is on a ctrl chord
+([below](#one-keyboard-on-every-platform)), and why the key list is on a ctrl chord
 everywhere. Where an alt chord is bound on a Mac anyway, because a keymap
 file put one there, `shhh doctor`'s keys row is what reads the setting and
 says which box.
@@ -53,16 +53,19 @@ A turn's review is not among them either. It is the changed-files row's own
 open — clicked, or selected and opened with enter — because that is the
 gesture that names the turn, and it gave back `alt+w`. Nor are undoing a turn,
 committing it, running its checks again and reopening a blocked run's item:
-each is a command now ([the turn's close](surfaces.md#the-turns-close)), and
-they gave back `alt+z`, `alt+g`, `alt+k` and `alt+o`.
+each is a command now, or the model's to do when it is asked, and a commit's
+card is reached through the handover on the selected changed-files row
+rather than through a key of its own ([the turn's
+close](surfaces.md#the-turns-close)). They gave back `alt+z`, `alt+g`,
+`alt+k` and `alt+o`.
 
-The four alt letters the textarea holds — `alt+b`, `alt+f`, `alt+d` and the
+The alt letters the textarea holds — `alt+b`, `alt+f`, `alt+d` and the
 case chords `alt+c`, `alt+l`, `alt+u` — are left to it for the reason the
 readline chords are: the draft is a readline-shaped editor and those keys
 reach it, so binding one takes a shell user's muscle memory to open something
 they did not ask for.
 
-## A Mac ships without alt
+## One keyboard on every platform
 
 On Linux and Windows the terminal sends the escape prefix for alt and an alt
 chord arrives. On a Mac the two stock terminals compose a character for
@@ -70,22 +73,30 @@ Option until a profile setting is ticked, so the same chord is an offer that
 does nothing on the desktop shhh is most often run on — the `alt+t` alias and
 the agent family were among them, which is how this was found.
 
-So no key ships on alt, on any platform. The agent family is on the free set
-everywhere: the function row, which every terminal delivers with nothing set
-(a laptop's top row sends it with the `fn` key held) — the agent manager on
-`f12`, and the walk along the rail's map on `shift+f7` and `shift+f8`, back
-first. The reasoning level is `ctrl+t` alone, and the staged paste is reached
-through its chip and `/paste show` rather than through a chord of its own
-([a staged attachment](surfaces.md#a-staged-attachment)). So there is one
-keyboard, the same on every platform, and it is what a keymap file is applied
-over and what `shhh keys` measures a moved key against. A file may put a key
-back on alt — the rules are the same five — and then the doctor's keys row
-names the Option setting, because the chord is the person's own and the
-setting is what it needs. The one sentence that differs by desk is the key
-list's word moves: `option+←` and `option+→` on a Mac, where alt+b and alt+f
-would compose a character. The walk's shift+F spellings are the agent family's keys not yet pressed
-at Terminal.app's default profile (*verify*); iTerm2 and the Linux terminals
-report them as xterm does.
+So no key ships on alt, on any platform, and there is one keyboard: the same
+register on every desk, with no table of moves for any of them. The agent
+family is on the free set everywhere: the function row, which every terminal
+delivers with nothing set (a laptop's top row sends it with the `fn` key
+held) — the agent manager on `f12`, and the walk along the rail's map on
+`shift+f7` and `shift+f8`, back first. The reasoning level is `ctrl+t` alone,
+and the staged paste is reached through its chip and `/paste show` rather
+than through a chord of its own ([a staged
+attachment](surfaces.md#a-staged-attachment)). That one keyboard is what a
+keymap file is applied over and what `shhh keys` measures a moved key
+against, and one set of renders and one run of each scene describe it on
+every desk.
+
+The one thing that differs by desk is a sentence and not a key: the key
+list's word moves, which are the line editor's own. On a Mac they are
+`option+←` and `option+→`, which the stock terminals send as a word move with
+nothing set, where `alt+b` and `alt+f` would compose a character; everywhere
+else they are `alt+b` and `alt+f`.
+
+A keymap file may put a key back on alt — the rules are the same five — and
+then the doctor's keys row names the Option setting, because the chord is the
+person's own and the setting is what it needs. The walk's shift+F spellings
+are the agent family's keys not yet pressed at Terminal.app's default profile
+(*verify*); iTerm2 and the Linux terminals report them as xterm does.
 
 ## What the encoding can carry
 
@@ -212,22 +223,22 @@ The Option key on macOS is the one row the table cannot settle from a page,
 so it was settled at a keyboard. At Terminal.app's default profile on
 2026-09-06, `alt+a`, `alt+[`, `alt+]` and `alt+t` typed `å`, `“`, `‘` and
 `†`: "Use Option as Meta key" is off until a person ticks it, and every alt
-chord shhh binds — the agent family and the `alt+t` alias — is dead there
-until they do. iTerm2's Left Option "Esc+" is believed to be off the same
+chord shhh bound then — the agent family and the `alt+t` alias — was dead
+there until they did. iTerm2's Left Option "Esc+" is believed to be off the same
 way (*verify* — its default profile has not been pressed yet).
 
 Every ctrl letter the terminal delivers is spent or the line editor's, so the
 free set is function keys and modified navigation keys, and that is where the
-chords that were on alt went on every platform ([a Mac ships without
-alt](#a-mac-ships-without-alt)); the tick is only a question for a chord a
+chords that were on alt went on every platform ([one keyboard on every
+platform](#one-keyboard-on-every-platform)); the tick is only a question for a chord a
 keymap file put back on alt. What shhh
 does about the tick: `shhh doctor` has a row for it, which on a Mac reads the setting from the profile Terminal.app
 opens new windows with, or the profile the iTerm2 session is in, and says
 which box turns it on — a profile that composes characters is a warning
 naming the chords it costs, and the row is not checked at all off a Mac or
 in a terminal whose preferences shhh does not read — and on a Mac with no
-alt chord bound it has nothing to check and says so. The key list (`ctrl+]`,
-and `/help`) names the same setting beside any alt chord it lists. iTerm2's "Meta" is
+alt chord bound it has nothing to check and says so. It is the one surface
+that names the setting. iTerm2's "Meta" is
 not the tick: it sets the eighth bit on the byte, which is not the
 escape prefix a chord is, and the row says so.
 
