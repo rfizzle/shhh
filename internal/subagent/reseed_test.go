@@ -132,8 +132,18 @@ func TestReseedWorktree_ACollisionLeavesTheCopyAsItWas(t *testing.T) {
 // landing arrives while writer-2 is between rounds, exactly as it does when
 // one writer of a fan-out finishes before another. What writer-2 does after
 // that is the test's.
+//
+// writer-1 writes only once writer-2 is inside its first round, which is the
+// one point that proves writer-2 holds a copy: a landing that arrives before
+// then finds no copy to queue for, and writer-2 simply starts from the tree
+// with the patch already in it — no reseed, which is not the case under test
+// and is what a slow scheduler used to hand these tests.
 type landingWriters struct {
 	landed chan struct{}
+	// copied is closed by writer-2's first write, once: the integration
+	// writer a kept patch starts takes writer-2's first-round branch too.
+	copied     chan struct{}
+	copiedOnce sync.Once
 	// second is writer-2's first-round write, and third its second-round
 	// write where it has one; each is handed the root it works in.
 	second, third func(root string)
@@ -178,9 +188,11 @@ func (w *landingWriters) factory() EnvFactory {
 				calls++
 				switch {
 				case spec.Name == "writer-1":
+					<-w.copied
 					put(spec.Root, "main.go", strings.Replace(reseedBase, "var x = 0", "var x = 1", 1))
 				case calls == 1:
 					w.second(spec.Root)
+					w.copiedOnce.Do(func() { close(w.copied) })
 					<-w.landed
 				default:
 					w.third(spec.Root)
@@ -212,6 +224,7 @@ func (w *landingWriters) asked(n int) string {
 func runLanding(t *testing.T, w *landingWriters, repo string, approve2 bool) (*Supervisor, chan *Ask) {
 	t.Helper()
 	w.landed = make(chan struct{})
+	w.copied = make(chan struct{})
 	w.requests = map[string][][]provider.Message{}
 	w.roots = map[string]string{}
 	ctx, cancel := context.WithCancel(context.Background())

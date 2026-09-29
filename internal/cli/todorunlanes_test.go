@@ -204,6 +204,28 @@ func removeLaneCopies(t *testing.T, root string) {
 	})
 }
 
+// laneStarted is the point a lane is known to hold a copy of the checkout:
+// its first stage is spent in that copy. A test about a landing carried into
+// another lane makes the landing lane wait for it, because a lane taken after
+// the landing starts from the tree with it already in and has nothing to
+// carry — which is what a slow scheduler used to hand these tests.
+type laneStarted struct {
+	once sync.Once
+	ch   chan struct{}
+}
+
+func newLaneStarted() *laneStarted { return &laneStarted{ch: make(chan struct{})} }
+
+func (s *laneStarted) arrive() { s.once.Do(func() { close(s.ch) }) }
+
+func (s *laneStarted) wait(t *testing.T, who string) {
+	select {
+	case <-s.ch:
+	case <-time.After(30 * time.Second):
+		t.Errorf("%s waited for the other lane to start, and it never did", who)
+	}
+}
+
 // A lane carries what another lane landed into its copy before its next
 // step, and where the landing meets the lane's own work the item blocks with
 // the collision as the evidence — nobody is there to be steered — and the
@@ -213,6 +235,7 @@ func TestTodoRunHeadless_ALaneALandingWillNotCarryIntoBlocksAndTheSprintGoesOn(t
 	laneItem(t, root, "a-one", "a-one.go")
 	laneItem(t, root, "b-two", "b-two.go")
 	removeLaneCopies(t, root)
+	started := newLaneStarted()
 	landed := func() bool {
 		log, _ := todoGit(root, "log", "--format=%s")
 		return strings.Contains(log, "Build a-one")
@@ -228,11 +251,18 @@ func TestTodoRunHeadless_ALaneALandingWillNotCarryIntoBlocksAndTheSprintGoesOn(t
 			return slug + ".go", "package aone\n"
 		},
 		hold: func(slug string, stage run.Stage, _ string) {
-			// b-two finishes building only once a-one has landed, so its
-			// next step is the one that finds the branch moved.
-			if slug != "b-two" || stage != run.StageImplement {
+			switch {
+			case slug == "b-two" && stage == run.StageResearch:
+				started.arrive()
+				return
+			case slug == "a-one" && stage == run.StageImplement:
+				started.wait(t, slug)
+				return
+			case slug != "b-two" || stage != run.StageImplement:
 				return
 			}
+			// b-two finishes building only once a-one has landed, so its
+			// next step is the one that finds the branch moved.
 			deadline := time.Now().Add(30 * time.Second)
 			for !landed() && time.Now().Before(deadline) {
 				time.Sleep(20 * time.Millisecond)
@@ -276,11 +306,17 @@ func TestTodoRunHeadless_ALaneCarriesAnotherLanesLandingAtItsNextBoundary(t *tes
 		return strings.Contains(log, "Build a-one")
 	}
 	var carried []byte
+	started := newLaneStarted()
 	a := &laneAnswers{hold: func(slug string, stage run.Stage, dir string) {
 		if slug != "b-two" {
+			if stage == run.StageImplement {
+				started.wait(t, slug)
+			}
 			return
 		}
 		switch stage {
+		case run.StageResearch:
+			started.arrive()
 		case run.StageImplement:
 			deadline := time.Now().Add(30 * time.Second)
 			for !landed() && time.Now().Before(deadline) {

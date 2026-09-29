@@ -2352,7 +2352,13 @@ func TestGolden_Screen(t *testing.T) {
 	// approval, and the request one of them is parked on. Both are live: the
 	// block reads its lanes off the supervisor on every frame, so the only
 	// way to draw one is to have children behind it.
-	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: gatedEnv()})
+	// Their clock stands still, so a lane's elapsed field is drawn from
+	// the fixture and not from how long the machine took to reach the
+	// render: past half a second the lanes grow a duration the golden does
+	// not hold.
+	frozen := time.Date(2026, 9, 4, 10, 0, 0, 0, time.UTC)
+	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: gatedEnv(),
+		Now: func() time.Time { return frozen }})
 	t.Cleanup(sup.Close)
 	batch := sup.BeginBatch()
 	for _, task := range []string{"Say where the round counter is read.",

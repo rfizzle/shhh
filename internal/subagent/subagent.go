@@ -808,6 +808,10 @@ type Options struct {
 	// spend counted in tokens and priced by nobody, which is the case the
 	// recorder's own fallback exists for.
 	Prices *pricing.Table
+	// Now is the clock a child's Started and Elapsed are read off. nil is the
+	// wall clock; the field is for a test that draws a live child and needs
+	// the age it draws not to depend on how quickly the test ran.
+	Now func() time.Time
 	// CommandAllowlist is the parent's config allowlist, inherited by
 	// children (inheriting it keeps the child at most as permissive).
 	CommandAllowlist []string
@@ -1147,6 +1151,9 @@ type child struct {
 	// prices nothing, which is what leaves the recorder its own fallback.
 	spend  *meter.Ledger
 	prices *pricing.Table
+	// now is the clock started and ended are read off: Options.Now, and nil
+	// for the wall clock.
+	now func() time.Time
 	// fresh is what the token budget is measured against: the input less the
 	// part every prompt was served from the provider's cache, plus the
 	// output. It is a counter of its own because it answers a different
@@ -1360,7 +1367,7 @@ func (c *child) set(state State, detail string) {
 	switch state {
 	case StateDone, StateFailed:
 		if c.ended.IsZero() {
-			c.ended = time.Now()
+			c.ended = c.at()
 		}
 		c.followUp = ""
 	}
@@ -1388,12 +1395,28 @@ func (c *child) unpark(hold chan struct{}) bool {
 	return true
 }
 
+// at is the time on the child's clock.
+func (c *child) at() time.Time {
+	if c.now != nil {
+		return c.now()
+	}
+	return time.Now()
+}
+
+// clock is the clock a new child's age is read off.
+func (s *Supervisor) clock() func() time.Time {
+	if s.opts.Now != nil {
+		return s.opts.Now
+	}
+	return time.Now
+}
+
 func (c *child) status() Status {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	end := c.ended
 	if end.IsZero() {
-		end = time.Now()
+		end = c.at()
 	}
 	summary := ""
 	if c.state == StateDone {
@@ -3032,7 +3055,7 @@ func (s *Supervisor) restart(c *child, detail string) error {
 	// Whom the replaced attempt waited behind is that attempt's; this one
 	// asks again, and its lane names whoever it finds.
 	c.waitsOn = ""
-	c.started, c.ended = time.Now(), time.Time{}
+	c.started, c.ended = c.at(), time.Time{}
 	c.maxTokens = budget
 	// The attempt is told what the one before it hit and handed over. A
 	// retry on the identical prompt is an attempt with no reason to come out
@@ -3775,7 +3798,8 @@ func (s *Supervisor) spawn(caller string, raw json.RawMessage, integ *integratio
 		overlap:         args.overlap,
 		integrates:      integ,
 		waitsOn:         waitsOn,
-		started:         time.Now(),
+		started:         s.clock()(),
+		now:             s.opts.Now,
 		attempt:         1,
 		prices:          s.opts.Prices,
 		spend:           meter.New(s.opts.Prices),
