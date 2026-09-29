@@ -113,38 +113,38 @@ func agentListShowing(m Model) any {
 }
 
 func stepsShowing(m Model) any {
-	if m.state != stateSteps || m.stepsScreen == nil {
+	if m.state != stateSteps || m.screens.steps() == nil {
 		return nil
 	}
-	return m.stepsScreen
+	return m.screens.steps()
 }
 
 func readingsShowing(m Model) any {
-	if m.state != stateReadings || m.readingsScreen == nil {
+	if m.state != stateReadings || m.screens.readings() == nil {
 		return nil
 	}
-	return m.readingsScreen
+	return m.screens.readings()
 }
 
 func turnsShowing(m Model) any {
-	if m.state != stateTurns || m.turnsScreen == nil {
+	if m.state != stateTurns || m.screens.turns() == nil {
 		return nil
 	}
-	return m.turnsScreen
+	return m.screens.turns()
 }
 
 func backlogShowing(m Model) any {
-	if m.state != stateBacklog || m.backlog == nil {
+	if m.state != stateBacklog || m.screens.backlog() == nil {
 		return nil
 	}
-	return m.backlog
+	return m.screens.backlog()
 }
 
 func contextShowing(m Model) any {
-	if m.state != stateContext || m.context == nil {
+	if m.state != stateContext || m.screens.contextScreen() == nil {
 		return nil
 	}
-	return m.context
+	return m.screens.contextScreen()
 }
 
 // openTodoDoor is bare /todo, the backlog screen, through the command's own

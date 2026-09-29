@@ -88,10 +88,10 @@ func TestReadings_TheCommandOpensTheReadingWhole(t *testing.T) {
 		Reason: "docs were not asked for", Round: 9})
 	next, _ := m.runCommand("/readings", "/readings")
 	opened := next.(Model)
-	if opened.state != stateReadings || opened.readingsScreen == nil {
+	if opened.state != stateReadings || opened.screens.readings() == nil {
 		t.Fatalf("/readings should open the screen, got state %d", opened.state)
 	}
-	view := stripANSI(opened.readingsScreen.View(130))
+	view := stripANSI(opened.screens.readings().View(130))
 	for _, want := range []string{"/readings", "2 readings", "r 9 · off target", "r 3 · on target",
 		"Rewriting the README.", "docs were not asked for", "read against: make the round limit a checkpoint"} {
 		if !strings.Contains(view, want) {
@@ -102,7 +102,7 @@ func TestReadings_TheCommandOpensTheReadingWhole(t *testing.T) {
 		t.Errorf("the newest reading should come first:\n%s", view)
 	}
 	closed, _ := opened.updateReadings(keyPress('q'))
-	if got := closed.(Model); got.state == stateReadings || got.readingsScreen != nil {
+	if got := closed.(Model); got.state == stateReadings || got.screens.readings() != nil {
 		t.Fatalf("the way out should close the screen, got state %d", got.state)
 	}
 }

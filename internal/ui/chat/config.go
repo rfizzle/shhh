@@ -75,7 +75,7 @@ func (m Model) openConfigScreen() (tea.Model, tea.Cmd) {
 	if err != nil {
 		return m.systemNotice(failed("config", "could not read the config: "+err.Error()))
 	}
-	m.configScreen = &session
+	m.screens = m.screens.with(stateConfig, &session)
 	m.enterSurface(stateConfig)
 	return m, nil
 }
@@ -85,11 +85,12 @@ func (m Model) openConfigScreen() (tea.Model, tea.Cmd) {
 // redraws from what the host made of it rather than from what it thinks it
 // changed.
 func (m *Model) answerConfig(msg tea.KeyPressMsg) (bool, overlayAction) {
-	if m.configScreen == nil || m.configScreen.Screen == nil || m.configScreen.Answer == nil {
+	screen := m.screens.config()
+	if screen == nil || screen.Screen == nil || screen.Answer == nil {
 		return true, m.closeConfigScreen("")
 	}
-	done, result := m.configScreen.Screen.Update(msg)
-	note := m.configScreen.Answer(done, result)
+	done, result := screen.Screen.Update(msg)
+	note := screen.Answer(done, result)
 	if !done {
 		return false, overlayAction{}
 	}
@@ -104,7 +105,7 @@ func (m *Model) answerConfig(msg tea.KeyPressMsg) (bool, overlayAction) {
 // only the file would be letting the reader believe this turn had changed
 // under them.
 func (m *Model) closeConfigScreen(note string) overlayAction {
-	m.configScreen = nil
+	m.screens = m.screens.without(stateConfig)
 	if note != "" {
 		note += "\nThis session keeps the settings it started on; the next one starts on these."
 	}
@@ -113,11 +114,12 @@ func (m *Model) closeConfigScreen(note string) overlayAction {
 
 // configScreenLines renders the surface into the pane it was given.
 func (m Model) configScreenLines(width, height int) []string {
-	if m.configScreen == nil || m.configScreen.Screen == nil {
+	screen := m.screens.config()
+	if screen == nil || screen.Screen == nil {
 		return nil
 	}
-	m.configScreen.Screen.SetSize(width, height)
-	return strings.Split(m.configScreen.Screen.View(width), "\n")
+	screen.Screen.SetSize(width, height)
+	return strings.Split(screen.Screen.View(width), "\n")
 }
 
 // renderConfigHint is the one line the screen leaves where the draft box was.

@@ -87,7 +87,7 @@ const planAnswerForFixture = "goal: Make the cache trustworthy.\n" +
 func TestSprintPlan_CardIsTheReadingsSetInItsOwnOrder(t *testing.T) {
 	m, root := sprintModel(t, "")
 	next := planned(m, planAnswerForFixture, nil)
-	if next.state != stateBacklog || next.backlog == nil || next.backlog.Plan == nil {
+	if next.state != stateBacklog || next.screens.backlog() == nil || next.screens.backlog().Plan == nil {
 		t.Fatalf("state = %v; the plan opens the sprint tab", next.state)
 	}
 	// The order is the reading's, not the backlog's: what ships together is
@@ -95,12 +95,12 @@ func TestSprintPlan_CardIsTheReadingsSetInItsOwnOrder(t *testing.T) {
 	if got := strings.Join(planSlugs(next), ","); got != "c-third,a-high" {
 		t.Fatalf("proposal = %v, want the reading's own order", got)
 	}
-	if r := next.backlog.Plan.Rows[0]; r.Slug != "c-third" || r.Title != "Third" ||
+	if r := next.screens.backlog().Plan.Rows[0]; r.Slug != "c-third" || r.Title != "Third" ||
 		r.Note != "it is the cause the next one closes" || r.Dropped {
 		t.Fatalf("first row = %+v", r)
 	}
 	// And what it left out is on the card with the word for why.
-	if got := next.backlog.Plan.Left; len(got) != 2 ||
+	if got := next.screens.backlog().Plan.Left; len(got) != 2 ||
 		got[0].Slug != "b-second" || got[0].Why != string(todo.OmitUnrelated) ||
 		got[1].Why != string(todo.OmitTooBig) {
 		t.Fatalf("left out = %+v", got)
@@ -112,7 +112,7 @@ func TestSprintPlan_CardIsTheReadingsSetInItsOwnOrder(t *testing.T) {
 	dropped2, _ := dropped.(Model).updateTodoScreen(key(' '))
 	final, _ := dropped2.(Model).updateTodoScreen(tea.KeyPressMsg{Code: tea.KeyEnter})
 	done := final.(Model)
-	if done.backlog.Plan != nil || done.sprintPlan != nil {
+	if done.screens.backlog().Plan != nil || done.sprintPlan != nil {
 		t.Fatal("taking the card left the proposal up")
 	}
 	sp, err := todo.LoadSprint(root)
@@ -156,7 +156,7 @@ func TestSprintPlan_TurnAnswersWithTheSetAndTheRecordSaysSo(t *testing.T) {
 		t.Fatalf("the planning turn should be in flight in plan mode: mode=%s working=%t", m.policy.mode, m.working())
 	}
 	m = answer(t, m, planAnswerForFixture)
-	if m.backlog == nil || m.backlog.Plan == nil {
+	if m.screens.backlog() == nil || m.screens.backlog().Plan == nil {
 		t.Fatal("the turn ended without a proposal")
 	}
 	if got := strings.Join(planSlugs(m), ","); got != "c-third,a-high" {
@@ -189,7 +189,7 @@ func TestSprintPlan_AnswerInNoShapeWritesNothing(t *testing.T) {
 	}
 	started, _ := m.startTodoSprintPlan(nil)
 	m = answer(t, started.(Model), "I had a look and they all seem fine to me.")
-	if m.backlog != nil && m.backlog.Plan != nil {
+	if m.screens.backlog() != nil && m.screens.backlog().Plan != nil {
 		t.Fatal("prose was drawn as a proposal")
 	}
 	if last := m.transcript[len(m.transcript)-1].text; !strings.Contains(last, "no set that could be read as items") {
@@ -209,7 +209,7 @@ func TestSprintPlan_HeaderStatesTheBudget(t *testing.T) {
 		t.Fatal(err)
 	}
 	next := planned(m, planAnswerForFixture, budget)
-	if view := ansi.Strip(next.backlog.View(110)); !strings.Contains(view, "S=2 M=1") {
+	if view := ansi.Strip(next.screens.backlog().View(110)); !strings.Contains(view, "S=2 M=1") {
 		t.Fatalf("the header never states the budget:\n%s", view)
 	}
 }
@@ -699,8 +699,8 @@ func TestSprintPlan_GoalGoesOnTheProposal(t *testing.T) {
 	m.input.SetValue(sprintGoalPrefix + "Make the cache trustworthy.")
 	back, _ := m.submitInput()
 	m = back.(Model)
-	if m.backlog == nil || m.backlog.Plan == nil || m.backlog.Plan.Goal != "Make the cache trustworthy." {
-		t.Fatalf("the goal did not land on the proposal: %+v", m.backlog)
+	if m.screens.backlog() == nil || m.screens.backlog().Plan == nil || m.screens.backlog().Plan.Goal != "Make the cache trustworthy." {
+		t.Fatalf("the goal did not land on the proposal: %+v", m.screens.backlog())
 	}
 	taken, _ := m.updateTodoScreen(tea.KeyPressMsg{Code: tea.KeyEnter})
 	sp, err := todo.LoadSprint(root)

@@ -93,7 +93,7 @@ func stageOne(t *testing.T, m Model, value string) Model {
 func TestConfig_TheCommandOpensTheScreen(t *testing.T) {
 	h := newFakeConfigHost()
 	m := sendText(t, configModelWith(t, h), "/config")
-	if m.state != stateConfig || m.configScreen == nil {
+	if m.state != stateConfig || m.screens.config() == nil {
 		t.Fatalf("/config left the session in state %v", m.state)
 	}
 	view := strings.Join(m.configScreenLines(m.contentWidth(), 30), "\n")
@@ -238,7 +238,7 @@ func TestConfig_LeavingWithNothingStagedIsOnePress(t *testing.T) {
 	m := sendText(t, configModelWith(t, h), "/config")
 	before := len(m.transcript)
 	m = pressKeys(t, m, keyEsc)
-	if m.state == stateConfig || m.configScreen != nil {
+	if m.state == stateConfig || m.screens.config() != nil {
 		t.Fatal("escape over an untouched screen did not close it")
 	}
 	if len(m.transcript) != before {

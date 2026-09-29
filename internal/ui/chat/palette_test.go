@@ -128,6 +128,33 @@ func TestPalette_CountsMatchesAgainstTheWholeReach(t *testing.T) {
 	}
 }
 
+// paletteCommandTotal is how many commands a plain coding session's palette
+// offers. It is the one number that moves when a command joins the registry:
+// the palette's golden draws a reach of its own (paletteFixtureCommands), so
+// adding a command changes this line and no fixture.
+const paletteCommandTotal = 28
+
+// The palette's tally is every command the registry offers this session, and
+// the registry is the one place that count comes from.
+func TestPalette_CountsEveryCommandTheRegistryOffers(t *testing.T) {
+	m := frameModel(t, 80, 40)
+	m.recentFiles = func() []project.RecentFile { return nil }
+	offered := 0
+	for _, c := range slashCommands() {
+		if c.enabled == nil || c.enabled(&m) {
+			offered++
+		}
+	}
+	if offered != paletteCommandTotal {
+		t.Fatalf("the registry offers %d commands and the stated total is %d: a command was added or taken away, so move paletteCommandTotal", offered, paletteCommandTotal)
+	}
+	opened, _ := m.openPalette()
+	got := strings.Join(opened.(Model).picker.Chips, "")
+	if want := fmt.Sprintf("%d matches", paletteCommandTotal); got != want {
+		t.Fatalf("the palette should count every command the registry offers, got %q want %q", got, want)
+	}
+}
+
 func TestPalette_SessionsAndFilesAreSearchedToo(t *testing.T) {
 	m := paletteModel(t)
 	store := changeset.New(1 << 20)

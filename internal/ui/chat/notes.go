@@ -137,7 +137,7 @@ func (m Model) openNotes(clear bool) (tea.Model, tea.Cmd) {
 	if clear {
 		screen.AskClear()
 	}
-	m.notes = &screen
+	m.screens = m.screens.with(stateNotes, &screen)
 	m.notesSeen = notebook.Newest(m.notebook.List())
 	m.enterSurface(stateNotes)
 	return m, nil
@@ -149,11 +149,12 @@ func (m Model) openNotes(clear bool) (tea.Model, tea.Cmd) {
 // away — and `[enter]` opens the note whole, which comes back here for the
 // same reason.
 func (m Model) updateNotes(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
-	if m.notes == nil {
+	screen := m.screens.notes()
+	if screen == nil {
 		return m.closeNotes()
 	}
-	m.notes.Notice = ""
-	done, result := m.notes.Update(msg)
+	screen.Notice = ""
+	done, result := screen.Update(msg)
 	if len(result.Dropped) > 0 {
 		return m.dropNotes(result.Dropped)
 	}
@@ -181,15 +182,16 @@ func (m Model) dropNotes(ids []string) (tea.Model, tea.Cmd) {
 		}
 	}
 	next := m.notesScreenData()
-	m.notes.Rows, m.notes.Subject = next.Rows, next.Subject
-	m.notes.Focus = min(m.notes.Focus, max(len(next.Rows)-1, 0))
+	screen := m.screens.notes()
+	screen.Rows, screen.Subject = next.Rows, next.Subject
+	screen.Focus = min(screen.Focus, max(len(next.Rows)-1, 0))
 	switch len(dropped) {
 	case 0:
-		m.notes.Notice = "Nothing was dropped."
+		screen.Notice = "Nothing was dropped."
 	case 1:
-		m.notes.Notice = "dropped note " + dropped[0]
+		screen.Notice = "dropped note " + dropped[0]
 	default:
-		m.notes.Notice = fmt.Sprintf("dropped %d notes", len(dropped))
+		screen.Notice = fmt.Sprintf("dropped %d notes", len(dropped))
 	}
 	m.notesSeen = notebook.Newest(m.notebook.List())
 	return m, nil
@@ -208,13 +210,13 @@ func (m Model) openNote(id string) (tea.Model, tea.Cmd) {
 			Lines: strings.Split(notebook.Format([]notebook.Note{n}), "\n"),
 		}, noOutputEntry, stateNotes)
 	}
-	m.notes.Notice = "That note is no longer in the notebook."
+	m.screens.notes().Notice = "That note is no longer in the notebook."
 	return m, nil
 }
 
 // closeNotes hands the screen back to the turn.
 func (m Model) closeNotes() (tea.Model, tea.Cmd) {
-	m.notes = nil
+	m.screens = m.screens.without(stateNotes)
 	m.leaveSurface()
 	m.syncViewport()
 	return m, nil
@@ -222,10 +224,11 @@ func (m Model) closeNotes() (tea.Model, tea.Cmd) {
 
 // notesLines renders the screen, one row per line.
 func (m Model) notesLines() []string {
-	if m.notes == nil {
+	screen := m.screens.notes()
+	if screen == nil {
 		return nil
 	}
-	return strings.Split(m.notes.View(m.contentWidth()), "\n")
+	return strings.Split(screen.View(m.contentWidth()), "\n")
 }
 
 // renderNotesHint is the one line the screen leaves where the draft box was.

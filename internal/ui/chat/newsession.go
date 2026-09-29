@@ -60,6 +60,12 @@ func (m *Model) startNewSession() (notes []entry, save tea.Cmd) {
 	m.dropTodoGroom()
 	m.dropTodoPlan()
 	m.dropPersona()
+	// Every screen a register row holds was built from the session being
+	// left, and they all go in one call. The one with the screen now stays:
+	// a sprint crosses this boundary between two items while the reader may
+	// be looking at the board, and pulling a surface out from under its own
+	// state would leave it drawing nothing (overlay.go).
+	m.screens = m.screens.keeping(m.state)
 	// A run in progress keeps its checkpoint and the new session is told how
 	// to pick it up. The checkpoint was written to survive exactly this: the
 	// stages already done are in the tree, and putting the item back to open

@@ -62,17 +62,18 @@ func (m Model) WithToolDefinitions(defs []ToolTokens) Model {
 // it would be answering a question they had stopped asking.
 func (m Model) openContext() (tea.Model, tea.Cmd) {
 	screen := m.contextScreenData()
-	m.context = &screen
+	m.screens = m.screens.with(stateContext, &screen)
 	m.enterSurface(stateContext)
 	return m, nil
 }
 
 // updateContext routes keys while the surface is up.
 func (m *Model) answerContext(msg tea.KeyPressMsg) (bool, overlayAction) {
-	if m.context == nil {
+	screen := m.screens.contextScreen()
+	if screen == nil {
 		return true, m.closeContext()
 	}
-	done, _ := m.context.Update(msg)
+	done, _ := screen.Update(msg)
 	if !done {
 		return false, overlayAction{}
 	}
@@ -84,22 +85,24 @@ func (m *Model) answerContext(msg tea.KeyPressMsg) (bool, overlayAction) {
 // way out, because the surface itself is rebuilt from the accounting the next
 // time it is asked for.
 func (m *Model) closeContext() overlayAction {
-	if m.context != nil {
+	screen := m.screens.contextScreen()
+	if screen != nil {
 		m.contextOpen = map[string]bool{}
-		for _, g := range m.context.Groups {
+		for _, g := range screen.Groups {
 			m.contextOpen[g.Label] = g.Open
 		}
 	}
-	m.context = nil
+	m.screens = m.screens.without(stateContext)
 	return overlayAction{close: true}
 }
 
 // contextLines renders the surface, one row per line.
 func (m Model) contextLines() []string {
-	if m.context == nil {
+	screen := m.screens.contextScreen()
+	if screen == nil {
 		return nil
 	}
-	return strings.Split(m.context.View(m.contentWidth()), "\n")
+	return strings.Split(screen.View(m.contentWidth()), "\n")
 }
 
 // contextScreenData builds the surface from the session's own accounting.

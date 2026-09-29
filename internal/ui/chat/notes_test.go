@@ -29,7 +29,7 @@ func notesModel(t *testing.T, width int) Model {
 // is who found what.
 func TestNotes_TheScreenGroupsByTheAgentThatWroteEachNote(t *testing.T) {
 	m := sendText(t, notesModel(t, 110), "/notes")
-	if m.state != stateNotes || m.notes == nil {
+	if m.state != stateNotes || m.screens.notes() == nil {
 		t.Fatalf("/notes left the session in state %v", m.state)
 	}
 	view := strings.Join(m.notesLines(), "\n")
@@ -69,10 +69,10 @@ func TestNotes_AGrandchildsNotesSitUnderTheChildThatSpawnedIt(t *testing.T) {
 	_, _, _ = m.notebook.Write("researcher-1", "Where the goldens live", "testdata/golden")
 	_, _, _ = m.notebook.Write("researcher-1/reviewer-1a", "And the widths", "80, 110, 130")
 	m = sendText(t, m, "/notes")
-	if m.notes == nil {
+	if m.screens.notes() == nil {
 		t.Fatalf("/notes left the session in state %v", m.state)
 	}
-	row := m.notes.Rows[1]
+	row := m.screens.notes().Rows[1]
 	if row.Group != "researcher-1" || row.Signer != "researcher-1/reviewer-1a" {
 		t.Fatalf("the grandchild's note is filed under %q and signed %q", row.Group, row.Signer)
 	}
@@ -111,7 +111,7 @@ func TestNotes_AnEmptyNotebookPrintsTheNotice(t *testing.T) {
 // the reader is walking a list and correcting it.
 func TestNotes_DropAsksAndKeepsTheScreen(t *testing.T) {
 	m := sendText(t, notesModel(t, 110), "/notes")
-	m.notes.Focus = 0
+	m.screens.notes().Focus = 0
 	updated, _ := m.Update(tea.KeyPressMsg{Code: 'd', Text: "d"})
 	m = updated.(Model)
 	if m.notebook.Len() != 3 {

@@ -1491,7 +1491,7 @@ func TestGolden_SourcesScreen(t *testing.T) {
 		m := sendText(t, sourcesModel(t, width), "/sources")
 		opened := strings.Join(m.sourcesLines(), "\n")
 		panel := m.takeoverPanel(m.contentWidth())
-		m.sources.Focus = 1
+		m.screens.sources().Focus = 1
 		return []golden.Panel{
 			{Label: "as it opens · the pointer on the last thing read", View: opened},
 			{Label: "a page that was kept · the preview opens it", View: strings.Join(m.sourcesLines(), "\n")},
@@ -2202,6 +2202,33 @@ func TestGolden_KillConfirm(t *testing.T) {
 	})
 }
 
+// paletteFixtureCommands is how many commands the palette's fixture keeps,
+// in the menu's own order. The golden is the rows the card draws — the rails,
+// a runnable row beside one that waits for an idle session, the marker for
+// what did not fit — and its reach is the fixture's rather than the
+// session's, so a screen that declares a command does not move the tally and
+// the marker in eight files. How many commands a session offers is asserted
+// once, in TestPalette_CountsEveryCommandTheRegistryOffers.
+const paletteFixtureCommands = 28
+
+// pinPaletteReach cuts the gathered candidates to the fixture's commands and
+// keeps every other group whole, then rebuilds the card over them.
+func pinPaletteReach(m *Model) {
+	var kept []paletteEntry
+	commands := 0
+	for _, e := range m.palette.all {
+		if e.group == paletteCommands {
+			if commands == paletteFixtureCommands {
+				continue
+			}
+			commands++
+		}
+		kept = append(kept, e)
+	}
+	m.palette.all = kept
+	m.refreshPalette()
+}
+
 // TestGolden_Palette captures the command palette in the bottom panel
 // : the query line, the group rails, a command that cannot run
 // while the agent works, and the count of what did not fit.
@@ -2216,13 +2243,14 @@ func TestGolden_Palette(t *testing.T) {
 		}
 		opened, _ := m.openPalette()
 		idle := opened.(Model)
+		pinPaletteReach(&idle)
 
 		working := idle
 		working.setTurnState(stateStreaming)
 		reopened, _ := working.openPalette()
 		working = reopened.(Model)
 		working.palette.query = "co"
-		working.refreshPalette()
+		pinPaletteReach(&working)
 
 		return []golden.Panel{
 			{Label: "nothing typed yet", View: strings.Join(idle.pickerLines(), "\n")},
@@ -4134,7 +4162,7 @@ func TestGolden_NotesScreen(t *testing.T) {
 		// last one and this is what walking off it looks like — a different
 		// author's group, and the drop below acting on a child's note rather
 		// than on the session's own.
-		m.notes.Focus = 1
+		m.screens.notes().Focus = 1
 		pointed := strings.Join(m.notesLines(), "\n")
 		dropping, _ := m.Update(tea.KeyPressMsg{Code: 'd', Text: "d"})
 		clearing := sendText(t, goldenNotesModel(t, width), "/notes clear")

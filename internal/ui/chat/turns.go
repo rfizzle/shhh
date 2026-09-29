@@ -31,7 +31,7 @@ func (m Model) openTurns() (tea.Model, tea.Cmd) {
 	if len(screen.Turns) == 0 {
 		return m.systemNotice("the session has run no turns yet")
 	}
-	m.turnsScreen = &screen
+	m.screens = m.screens.with(stateTurns, &screen)
 	m.enterSurface(stateTurns)
 	return m, nil
 }
@@ -41,10 +41,11 @@ func (m Model) openTurns() (tea.Model, tea.Cmd) {
 // the prompt: the reader is walking a list, and a look at one turn is not
 // leaving it.
 func (m Model) updateTurns(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
-	if m.turnsScreen == nil {
+	screen := m.screens.turns()
+	if screen == nil {
 		return m.closeTurnsScreen()
 	}
-	done, result := m.turnsScreen.Update(msg)
+	done, result := screen.Update(msg)
 	if !done {
 		return m, nil
 	}
@@ -62,7 +63,7 @@ func (m Model) updateTurns(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 // closeTurnsScreen hands the screen back to the turn, the way its own esc
 // does and the way the rail cell that opened it does.
 func (m Model) closeTurnsScreen() (tea.Model, tea.Cmd) {
-	m.turnsScreen = nil
+	m.screens = m.screens.without(stateTurns)
 	m.leaveSurface()
 	m.syncViewport()
 	return m, nil

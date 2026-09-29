@@ -144,18 +144,18 @@ func TestTodoSprint_ASessionOpenedBesideLanesFollowsThem(t *testing.T) {
 
 	updated, _ := m.openTodoScreen()
 	m = updated.(Model)
-	if m.backlog == nil || m.backlog.Board == nil {
+	if m.screens.backlog() == nil || m.screens.backlog().Board == nil {
 		t.Fatal("a sprint over the ready list has a board")
 	}
-	board := m.backlog.Board
+	board := m.screens.backlog().Board
 	if board.Name != "" || board.Goal != "" || board.Total != 0 || len(board.Lanes) != 3 || len(board.Rows) != 3 {
 		t.Fatalf("the board is drawn from the checkpoint alone: %+v", board)
 	}
 	if board.Rows[1].Slug != "b-two" || board.Rows[1].Note != "verify" {
 		t.Fatalf("each lane's item is a row saying its step: %+v", board.Rows[1])
 	}
-	m.backlog.Update(tea.KeyPressMsg{Code: tea.KeyTab})
-	if view := m.backlog.View(130); !strings.Contains(view, "working · 3 at once") {
+	m.screens.backlog().Update(tea.KeyPressMsg{Code: tea.KeyTab})
+	if view := m.screens.backlog().View(130); !strings.Contains(view, "working · 3 at once") {
 		t.Fatalf("the sprint tab is reachable and lists the lanes:\n%s", view)
 	}
 

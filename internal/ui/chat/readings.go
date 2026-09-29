@@ -28,14 +28,15 @@ func (m Model) openReadings() (tea.Model, tea.Cmd) {
 		return m.systemNotice("the session has taken no readings yet")
 	}
 	screen := m.readingsScreenData()
-	m.readingsScreen = &screen
+	m.screens = m.screens.with(stateReadings, &screen)
 	m.enterSurface(stateReadings)
 	return m, nil
 }
 
 // updateReadings routes keys while the screen is up.
 func (m Model) updateReadings(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
-	if m.readingsScreen == nil || m.readingsScreen.Update(msg) {
+	screen := m.screens.readings()
+	if screen == nil || screen.Update(msg) {
 		return m.closeReadingsScreen()
 	}
 	return m, nil
@@ -44,7 +45,7 @@ func (m Model) updateReadings(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 // closeReadingsScreen hands the screen back to the turn, the way its own esc
 // does and the way the rail cell that opened it does.
 func (m Model) closeReadingsScreen() (tea.Model, tea.Cmd) {
-	m.readingsScreen = nil
+	m.screens = m.screens.without(stateReadings)
 	m.leaveSurface()
 	m.syncViewport()
 	return m, nil

@@ -5,21 +5,25 @@ import (
 	"encoding/json"
 	"errors"
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
 
 	"charm.land/bubbles/v2/spinner"
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/clipboard"
 	"github.com/rfizzle/shhh/internal/meter"
+	"github.com/rfizzle/shhh/internal/notebook"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/ui/caps"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/web"
 )
 
 // modelFields is how many fields Model is allowed to have.
@@ -34,9 +38,12 @@ import (
 // this stops — a mode with more than a field or two of its own has an
 // alternative the surfaces here already use, a struct of its own held by one
 // pointer that is nil while the mode is not up (pressure, review, the
-// overlays). This is the same guard overlay_test.go puts on the placement
-// table: a table nobody reads is a table that drifts.
-const modelFields = 286
+// overlays). A screen built once per opening has a third: its register row
+// holds it (overlay.go's heldScreens), so it is no field here at all and the
+// session boundary resets it with the rest in one call. This is the same
+// guard overlay_test.go puts on the placement table: a table nobody reads is
+// a table that drifts.
+const modelFields = 278
 
 func TestModelHasAStatedBound(t *testing.T) {
 	got := reflect.TypeOf(Model{}).NumField()
@@ -1240,6 +1247,115 @@ func TestNewSession_KeepsTheSlotItIsStillSavingInto(t *testing.T) {
 	// said by the time the boundary took it.
 	if kept, err := db.LoadChat(left); err != nil || len(kept) != 2 {
 		t.Fatalf("the save should land in the slot it named, got %d messages, err=%v", len(kept), err)
+	}
+}
+
+// heldScreensModel is a coding session every screen a register row holds can
+// open on: a backlog, a notebook with a note in it, the ledger of what it
+// read, a settings opener, a reading taken, a working list declared and a
+// turn run.
+func heldScreensModel(t *testing.T) Model {
+	t.Helper()
+	h := newFakeConfigHost()
+	m := todoModel(t, todoTestRoot(t)).
+		WithNotebook(notebook.New(nil)).
+		WithSources(web.NewLedger(nil)).
+		WithConfigScreen(func([]string) (ConfigSession, error) { return h.session(), nil }).
+		WithSummarizer(agent.NewSummarizer(&readingProvider{text: "Reading."}, agent.SummaryConfig{
+			Model: "fast", IntervalRounds: 10, MinGap: -1,
+		}))
+	_, _, _ = m.notebook.Write(notebook.Orchestrator, "The freeze is the target", "better, not wider")
+	landReading(&m, agent.SummaryVerdict{Text: "Reading the loop.", State: agent.SummaryOnTarget, Round: 3})
+	m.workSteps.Note("1. Locate the round accounting.\n2. Patch the limit", true)
+	m.transcript = append(m.transcript,
+		entry{kind: entryUser, text: "raise the cap", turn: 1},
+		entry{kind: entryTurnClose, turn: 1, close: &components.TurnClose{State: components.TurnDone, Elapsed: "9.0s"}})
+	m.turnCount = 1
+	return m
+}
+
+// heldStates is every state whose register row holds its screen, in order.
+func heldStates() []state {
+	var held []state
+	for s, o := range overlays() {
+		if o.holds {
+			held = append(held, s)
+		}
+	}
+	slices.Sort(held)
+	return held
+}
+
+// The screens a register row holds are what the Model's field count no longer
+// sees, so the boundary is what stands in for it: every one of them is opened
+// through the command the row declares, left standing behind the next, and
+// the session boundary has to take them all. A screen that stored its state
+// under a row that does not say it holds one fails here too, since nothing
+// else would know to look for it.
+func TestNewSession_TakesEveryHeldScreenWithIt(t *testing.T) {
+	m := heldScreensModel(t)
+	held := heldStates()
+	if len(held) == 0 {
+		t.Fatal("no register row holds a screen")
+	}
+	for _, s := range held {
+		c := overlays()[s].command
+		if c == nil {
+			t.Fatalf("state %d holds a screen and no command opens it", s)
+		}
+		next, _ := c.open(m, []string{c.name})
+		m = next.(Model)
+		if m.state != s || m.screens[s] == nil {
+			t.Fatalf("%s did not put its own screen up: state=%d, held=%v", c.name, m.state, m.screens[s])
+		}
+	}
+	for s := range m.screens {
+		if !overlays()[s].holds {
+			t.Errorf("state %d keeps a screen and its register row does not say it holds one", s)
+		}
+	}
+	if len(m.screens) != len(held) {
+		t.Fatalf("opening every held screen left %d standing, want %d", len(m.screens), len(held))
+	}
+	m.leaveSurface()
+
+	m.startNewSession()
+	for s := range m.screens {
+		t.Errorf("the session boundary left state %d's screen standing", s)
+	}
+}
+
+// The one screen that has the reader in front of it is not pulled out from
+// under them: a sprint crosses the boundary between two items while the board
+// may be up, and a surface with its state gone would draw nothing.
+func TestNewSession_KeepsTheScreenInFrontOfTheReader(t *testing.T) {
+	m := heldScreensModel(t)
+	next, _ := m.openTodoScreen()
+	m = next.(Model)
+	next, _ = m.openSteps()
+	m = next.(Model)
+
+	m.startNewSession()
+	if m.state != stateSteps || m.screens.steps() == nil {
+		t.Fatalf("the screen on show should survive the boundary, state=%d", m.state)
+	}
+	if m.screens.backlog() != nil || len(m.screens) != 1 {
+		t.Fatalf("only the screen on show survives the boundary, held %d", len(m.screens))
+	}
+}
+
+// A Model is a value and every copy of one shares a map, so the held screens
+// are written copy-on-write: what one copy opens or closes is its own.
+func TestHeldScreensAreEachModelsOwn(t *testing.T) {
+	steps := &components.StepsScreen{}
+	a := heldScreens(nil).with(stateSteps, steps)
+	b := a.without(stateSteps)
+	c := a.with(stateTurns, &components.TurnsScreen{})
+	if a.steps() != steps || a.turns() != nil {
+		t.Fatalf("the original moved under its copies: %v", a)
+	}
+	if b.steps() != nil || c.steps() != steps || c.turns() == nil {
+		t.Fatalf("a copy did not get its own change: without=%v with=%v", b, c)
 	}
 }
 

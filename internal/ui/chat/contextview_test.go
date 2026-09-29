@@ -35,12 +35,12 @@ func contextModel(t *testing.T, width int) Model {
 // leaving a block in the transcript, and that esc gives it back.
 func TestContext_OpensAsATakeover(t *testing.T) {
 	m := sendText(t, contextModel(t, 110), "/context")
-	if m.state != stateContext || m.context == nil {
-		t.Fatalf("/context did not open the surface, state=%d screen=%v", m.state, m.context)
+	if m.state != stateContext || m.screens.contextScreen() == nil {
+		t.Fatalf("/context did not open the surface, state=%d screen=%v", m.state, m.screens.contextScreen())
 	}
 	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	m = updated.(Model)
-	if m.state == stateContext || m.context != nil {
+	if m.state == stateContext || m.screens.contextScreen() != nil {
 		t.Fatal("esc did not give the screen back")
 	}
 }
@@ -216,12 +216,12 @@ func TestContext_CarriesOpenFoldsAcrossOpenings(t *testing.T) {
 	m := sendText(t, contextModel(t, 110), "/context")
 	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
-	if !m.context.Groups[0].Open {
+	if !m.screens.contextScreen().Groups[0].Open {
 		t.Fatal("enter did not open the first group")
 	}
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	m = sendText(t, updated.(Model), "/context")
-	if !m.context.Groups[0].Open {
+	if !m.screens.contextScreen().Groups[0].Open {
 		t.Error("the fold the reader opened came back shut")
 	}
 }

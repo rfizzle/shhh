@@ -41,11 +41,11 @@ func sourcesModel(t *testing.T, width int) Model {
 
 func TestSources_TheScreenListsWhatTheSessionRead(t *testing.T) {
 	m := sendText(t, sourcesModel(t, 100), "/sources")
-	if m.state != stateSources || m.sources == nil {
+	if m.state != stateSources || m.screens.sources() == nil {
 		t.Fatalf("/sources left the session in state %v", m.state)
 	}
-	if len(m.sources.Rows) != 4 {
-		t.Fatalf("the screen holds %d rows for four reads", len(m.sources.Rows))
+	if len(m.screens.sources().Rows) != 4 {
+		t.Fatalf("the screen holds %d rows for four reads", len(m.screens.sources().Rows))
 	}
 	view := strings.Join(m.sourcesLines(), "\n")
 	for _, want := range []string{
@@ -67,7 +67,7 @@ func TestSources_TheScreenListsWhatTheSessionRead(t *testing.T) {
 // the fields a reader checking a citation reads.
 func TestSources_ThePreviewStatesTheRowsFields(t *testing.T) {
 	m := sendText(t, sourcesModel(t, 110), "/sources")
-	m.sources.Focus = 1
+	m.screens.sources().Focus = 1
 	view := strings.Join(m.sourcesLines(), "\n")
 	for _, want := range []string{
 		"https://docs.rs/tokio/latest/tokio/", // the URL that answered
@@ -84,7 +84,7 @@ func TestSources_ThePreviewStatesTheRowsFields(t *testing.T) {
 
 func TestSources_EnterOpensThePageThatWasKept(t *testing.T) {
 	m := sendText(t, sourcesModel(t, 100), "/sources")
-	m.sources.Focus = 1
+	m.screens.sources().Focus = 1
 	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 	if m.state != stateOutputFull || m.fullOutput == nil {
@@ -105,7 +105,7 @@ func TestSources_EnterOpensThePageThatWasKept(t *testing.T) {
 // pretend it has.
 func TestSources_EnterOnAPageThatWasNotKeptDoesNothing(t *testing.T) {
 	m := sendText(t, sourcesModel(t, 100), "/sources")
-	m.sources.Focus = 3
+	m.screens.sources().Focus = 3
 	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	if got := updated.(Model).state; got != stateSources {
 		t.Errorf("enter on a row with no entry went to state %v", got)

@@ -70,10 +70,10 @@ func (m Model) WithSafety(s Safety) Model {
 // session — the scope, the grants and the mode as they stand now — so
 // reopening it after one of them moved is how the reader sees the move.
 func (m Model) openSafety() (tea.Model, tea.Cmd) {
-	m.safetyScreen = &components.SafetyScreen{
+	m.screens = m.screens.with(stateSafety, &components.SafetyScreen{
 		Sections: m.safetySections(),
 		Subject:  m.safetySubject(),
-	}
+	})
 	m.enterSurface(stateSafety)
 	return m, nil
 }
@@ -81,10 +81,11 @@ func (m Model) openSafety() (tea.Model, tea.Cmd) {
 // updateSafety routes keys while the screen is up. Nothing it answers
 // changes the session, so the only answer that reaches the host is leaving.
 func (m Model) updateSafety(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
-	if m.safetyScreen == nil {
+	screen := m.screens.safety()
+	if screen == nil {
 		return m.closeSafety()
 	}
-	if done, _ := m.safetyScreen.Update(msg); !done {
+	if done, _ := screen.Update(msg); !done {
 		return m, nil
 	}
 	return m.closeSafety()
@@ -92,7 +93,7 @@ func (m Model) updateSafety(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 
 // closeSafety hands the screen back to the turn.
 func (m Model) closeSafety() (tea.Model, tea.Cmd) {
-	m.safetyScreen = nil
+	m.screens = m.screens.without(stateSafety)
 	m.leaveSurface()
 	m.syncViewport()
 	return m, nil
@@ -100,11 +101,12 @@ func (m Model) closeSafety() (tea.Model, tea.Cmd) {
 
 // safetyLines renders the screen, one row per line.
 func (m Model) safetyLines(width, height int) []string {
-	if m.safetyScreen == nil {
+	screen := m.screens.safety()
+	if screen == nil {
 		return nil
 	}
-	m.safetyScreen.SetSize(width, height)
-	return strings.Split(m.safetyScreen.View(width), "\n")
+	screen.SetSize(width, height)
+	return strings.Split(screen.View(width), "\n")
 }
 
 // renderSafetyHint is the one line the screen leaves where the draft box

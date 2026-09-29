@@ -206,10 +206,10 @@ func TestStepsScreen_JoinsTheListToTheRunsByTitle(t *testing.T) {
 	m := stepsListModel(t)
 	opened, _ := m.runCommand("/steps", "/steps")
 	got := opened.(Model)
-	if got.state != stateSteps || got.stepsScreen == nil {
+	if got.state != stateSteps || got.screens.steps() == nil {
 		t.Fatalf("/steps should open the screen, got state %d", got.state)
 	}
-	s := got.stepsScreen
+	s := got.screens.steps()
 	if s.Subject != "1 of 3" || s.Focus != 1 {
 		t.Fatalf("subject %q focus %d, want the rail's count and the current step", s.Subject, s.Focus)
 	}
@@ -230,7 +230,7 @@ func TestStepsScreen_JoinsTheListToTheRunsByTitle(t *testing.T) {
 		t.Fatal("the screen should stand over the rail")
 	}
 	next, _ := got.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
-	if left := next.(Model); left.state == stateSteps || left.stepsScreen != nil {
+	if left := next.(Model); left.state == stateSteps || left.screens.steps() != nil {
 		t.Fatalf("esc should leave the screen, got state %d", left.state)
 	}
 }

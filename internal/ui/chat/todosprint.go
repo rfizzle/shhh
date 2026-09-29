@@ -287,10 +287,11 @@ func (m *Model) dropTodoPlan() {
 func (m Model) openWithPlan(plan *components.SprintPlan) (tea.Model, tea.Cmd) {
 	next, cmd := m.openTodoScreen()
 	model := next.(Model)
-	if model.backlog == nil {
+	screen := model.screens.backlog()
+	if screen == nil {
 		return model, cmd
 	}
-	model.sprintPlan, model.backlog.Plan = plan, plan
+	model.sprintPlan, screen.Plan = plan, plan
 	return model, cmd
 }
 

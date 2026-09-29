@@ -87,17 +87,17 @@ func TestTodoCommand_ScreenAndSubcommands(t *testing.T) {
 	m.input.SetValue("/todo")
 	updated, _ := m.submitInput()
 	next := updated.(Model)
-	if next.backlog == nil || next.state != stateBacklog {
+	if next.screens.backlog() == nil || next.state != stateBacklog {
 		t.Fatal("bare /todo should open the backlog screen")
 	}
-	if len(next.backlog.Rows) != 5 || next.backlog.Rows[0].Slug != "a-high" {
-		t.Fatalf("screen rows = %+v", next.backlog.Rows)
+	if len(next.screens.backlog().Rows) != 5 || next.screens.backlog().Rows[0].Slug != "a-high" {
+		t.Fatalf("screen rows = %+v", next.screens.backlog().Rows)
 	}
-	if got := next.backlog.Rows[1]; got.Slug != "b-waits" ||
+	if got := next.screens.backlog().Rows[1]; got.Slug != "b-waits" ||
 		strings.Join(got.Waits, ",") != "a-high,c-blocked" {
 		t.Fatalf("the waiting row should name both dependencies, got %+v", got)
 	}
-	if got := next.backlog.Rows[0].Blocks; strings.Join(got, ",") != "b-waits" {
+	if got := next.screens.backlog().Rows[0].Blocks; strings.Join(got, ",") != "b-waits" {
 		t.Fatalf("a-high should say b-waits is waiting on it, got %v", got)
 	}
 
@@ -115,8 +115,8 @@ func TestTodoCommand_ScreenAndSubcommands(t *testing.T) {
 	empty.input.SetValue("/todo")
 	updated, _ = empty.submitInput()
 	next = updated.(Model)
-	if next.backlog == nil || len(next.backlog.Rows) != 0 {
-		t.Fatalf("an empty backlog should open an empty screen, got %+v", next.backlog)
+	if next.screens.backlog() == nil || len(next.screens.backlog().Rows) != 0 {
+		t.Fatalf("an empty backlog should open an empty screen, got %+v", next.screens.backlog())
 	}
 }
 
@@ -128,20 +128,20 @@ func TestTodoScreen_ChordOpensAndAWorkingTurnMakesItReadOnly(t *testing.T) {
 	m.setTurnState(stateStreaming)
 	updated, _ := m.Update(tea.KeyPressMsg{Code: 'f', Mod: tea.ModCtrl})
 	next := updated.(Model)
-	if next.state != stateBacklog || next.backlog == nil {
+	if next.state != stateBacklog || next.screens.backlog() == nil {
 		t.Fatalf("the chord should open the screen, state=%d", next.state)
 	}
-	if !next.backlog.ReadOnly {
+	if !next.screens.backlog().ReadOnly {
 		t.Fatal("the screen should open read-only over a working turn")
 	}
-	view := ansi.Strip(next.backlog.View(130))
+	view := ansi.Strip(next.screens.backlog().View(130))
 	if !strings.Contains(view, todoScreenWhy) {
 		t.Fatalf("the footer should say why the keys are inert:\n%s", view)
 	}
 	// The state key is inert rather than refused after the fact.
 	before := len(next.transcript)
 	after, _ := next.updateTodoScreen(key('x'))
-	if got := after.(Model); len(got.transcript) != before || got.backlog == nil {
+	if got := after.(Model); len(got.transcript) != before || got.screens.backlog() == nil {
 		t.Fatal("a state key over a working turn should do nothing at all")
 	}
 }
@@ -162,8 +162,8 @@ func TestTodoScreen_KeysGoThroughTheSameVerbs(t *testing.T) {
 	} {
 		after, _ := next.updateTodoScreen(key(tc.key))
 		m2 := after.(Model)
-		if m2.backlog.Notice != "" {
-			t.Fatalf("%c should ask before it acts, notice = %q", tc.key, m2.backlog.Notice)
+		if m2.screens.backlog().Notice != "" {
+			t.Fatalf("%c should ask before it acts, notice = %q", tc.key, m2.screens.backlog().Notice)
 		}
 		answered, _ := m2.updateTodoScreen(key('y'))
 		m3 := answered.(Model)
@@ -194,8 +194,8 @@ func TestTodoScreen_DoneTabShowsTheReportAndReopens(t *testing.T) {
 	m := todoModel(t, root)
 	opened, _ := m.openTodoScreen()
 	next := opened.(Model)
-	if len(next.backlog.Done) != 1 || next.backlog.Done[0].Body != "what actually happened" {
-		t.Fatalf("the done tab should carry the report, got %+v", next.backlog.Done)
+	if len(next.screens.backlog().Done) != 1 || next.screens.backlog().Done[0].Body != "what actually happened" {
+		t.Fatalf("the done tab should carry the report, got %+v", next.screens.backlog().Done)
 	}
 	after, _ := next.updateTodoScreen(tea.KeyPressMsg{Code: tea.KeyTab})
 	reopened, _ := after.(Model).updateTodoScreen(key('o'))
@@ -221,9 +221,9 @@ func TestTodoScreen_UnreadableFileIsARow(t *testing.T) {
 	opened, _ := m.openTodoScreen()
 	next := opened.(Model)
 	var broken *components.BacklogRow
-	for i, row := range next.backlog.Rows {
+	for i, row := range next.screens.backlog().Rows {
 		if row.Slug == "f-broken" {
-			broken = &next.backlog.Rows[i]
+			broken = &next.screens.backlog().Rows[i]
 		}
 	}
 	if broken == nil || broken.State != components.BacklogUnreadable || broken.Reason == "" {
@@ -241,7 +241,7 @@ func TestTodoScreen_BodyGoesThroughTheProseRenderer(t *testing.T) {
 	}
 	m := todoModel(t, root)
 	opened, _ := m.openTodoScreen()
-	view := ansi.Strip(opened.(Model).backlog.View(130))
+	view := ansi.Strip(opened.(Model).screens.backlog().View(130))
 	if strings.Contains(view, "## Acceptance") || !strings.Contains(view, "Acceptance criteria") {
 		t.Fatalf("the body should be rendered rather than shown as marks:\n%s", view)
 	}

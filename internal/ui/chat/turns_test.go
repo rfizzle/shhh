@@ -105,11 +105,11 @@ func TestTurnsScreen_EnterOpensTheTurnsReviewAndComesBack(t *testing.T) {
 		t.Fatalf("enter on turn 1 should review it, got state %d, turn %d", m.state, m.reviewTurnN)
 	}
 	back, _ := m.closeReview()
-	if m = back.(Model); m.state != stateTurns || m.turnsScreen == nil {
+	if m = back.(Model); m.state != stateTurns || m.screens.turns() == nil {
 		t.Fatalf("leaving the review should come back to the turns, got state %d", m.state)
 	}
 	gone, _ := m.updateTurns(tea.KeyPressMsg{Code: tea.KeyEscape})
-	if m = gone.(Model); m.state == stateTurns || m.turnsScreen != nil {
+	if m = gone.(Model); m.state == stateTurns || m.screens.turns() != nil {
 		t.Fatalf("esc should leave the screen, got state %d", m.state)
 	}
 }

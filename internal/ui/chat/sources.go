@@ -69,7 +69,7 @@ func (m Model) openSources() (tea.Model, tea.Cmd) {
 		return m.systemNotice("this session has no web tools, so nothing has been read")
 	}
 	screen := m.sourcesScreenData()
-	m.sources = &screen
+	m.screens = m.screens.with(stateSources, &screen)
 	m.enterSurface(stateSources)
 	return m, nil
 }
@@ -79,11 +79,12 @@ func (m Model) openSources() (tea.Model, tea.Cmd) {
 // here rather than to the prompt: the reader is walking a list, and a look at
 // one entry is not leaving it.
 func (m Model) updateSources(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
-	if m.sources == nil {
+	screen := m.screens.sources()
+	if screen == nil {
 		return m.closeSources()
 	}
-	m.sources.Notice = ""
-	done, result := m.sources.Update(msg)
+	screen.Notice = ""
+	done, result := screen.Update(msg)
 	if !done {
 		return m, nil
 	}
@@ -99,7 +100,7 @@ func (m Model) updateSources(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 func (m Model) openSourcePage(result components.SourcesResult) (tea.Model, tea.Cmd) {
 	text, ok := m.readEvidence(result.Evidence, sourcesOpen)
 	if !ok {
-		m.sources.Notice = "The page kept as " + result.Evidence + " is no longer in the evidence store."
+		m.screens.sources().Notice = "The page kept as " + result.Evidence + " is no longer in the evidence store."
 		return m, nil
 	}
 	title := result.ID
@@ -114,7 +115,7 @@ func (m Model) openSourcePage(result components.SourcesResult) (tea.Model, tea.C
 
 // closeSources hands the screen back to the turn.
 func (m Model) closeSources() (tea.Model, tea.Cmd) {
-	m.sources = nil
+	m.screens = m.screens.without(stateSources)
 	m.leaveSurface()
 	m.syncViewport()
 	return m, nil
@@ -122,10 +123,11 @@ func (m Model) closeSources() (tea.Model, tea.Cmd) {
 
 // sourcesLines renders the screen, one row per line.
 func (m Model) sourcesLines() []string {
-	if m.sources == nil {
+	screen := m.screens.sources()
+	if screen == nil {
 		return nil
 	}
-	return strings.Split(m.sources.View(m.contentWidth()), "\n")
+	return strings.Split(screen.View(m.contentWidth()), "\n")
 }
 
 // renderSourcesHint is the one line the screen leaves where the draft box
@@ -137,12 +139,13 @@ func (m Model) renderSourcesHint() string {
 
 // sourceRow is the screen's row with an id, or nil.
 func (m Model) sourceRow(id string) *components.SourcesRow {
-	if m.sources == nil {
+	screen := m.screens.sources()
+	if screen == nil {
 		return nil
 	}
-	for i, row := range m.sources.Rows {
+	for i, row := range screen.Rows {
 		if row.ID == id {
-			return &m.sources.Rows[i]
+			return &screen.Rows[i]
 		}
 	}
 	return nil

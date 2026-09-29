@@ -1447,17 +1447,15 @@ type Model struct {
 	// conversation marks `shhh chat`; notebook is its shared notebook.
 	conversation bool
 	notebook     *notebook.Store
-	// notes is the notes screen while it is up, built once per opening the
-	// way the sources screen is. notesSeen is the highest note number the
-	// reader has had on that screen: what a turn closes by calling unread is
-	// what a delegate wrote past it (notes.go).
+	// notesSeen is the highest note number the reader has had on the notes
+	// screen: what a turn closes by calling unread is what a delegate wrote
+	// past it (notes.go).
 	//
 	// The mark is the session's and is not written to the slot, so a resume
 	// starts at zero and the notebook it brings back is unread until the
 	// screen is opened. That is the reading rather than a gap: "unread" is a
 	// promise that the reader has had these notes in front of them, and the
 	// only surface that can make it is the one this session drew.
-	notes     *components.NotesScreen
 	notesSeen int64
 	// personas is the profile-drafting flow's wiring; persona the one in
 	// progress, personaScreen the surface it runs on.
@@ -1505,44 +1503,29 @@ type Model struct {
 	// what follows the summary is the request that round was about to send
 	// rather than the input.
 	compactResume bool
-	// The context surface: the screen while it is up, and the tool
-	// definitions it itemises the tool category into. The definitions are
-	// the host's because which tools a session has depends on what the
-	// machine turned out to have (prompt.Toolbox).
-	context  *components.ContextScreen
+	// screens is every screen a register row holds while it is up — the
+	// context, sources, steps, readings, turns, safety, notes, backlog and
+	// settings screens — keyed by the row's state (overlay.go). Each is built
+	// once per opening and kept rather than rebuilt per frame, because what
+	// it draws is what the session held when the reader asked, and the
+	// pointer, filters and tab the reader moved to are what the surface is.
+	screens heldScreens
+	// The tool definitions the context surface itemises the tool category
+	// into. They are the host's because which tools a session has depends
+	// on what the machine turned out to have (prompt.Toolbox).
 	toolDefs []ToolTokens
-	// The sources screen: the ledger the session's fetches record
-	// themselves in, and the screen while it is up. The screen is built
-	// once per opening, like the context surface — what it draws is what
-	// the session had read when the reader asked.
+	// The ledger the session's fetches record themselves in, which the
+	// sources screen draws.
 	sourceLedger *web.Ledger
-	sources      *components.SourcesScreen
-	// The steps screen while it is up, built once per opening like the
-	// sources screen (worksteps.go).
-	stepsScreen *components.StepsScreen
-	// The readings screen while it is up, built once per opening like the
-	// steps screen (readings.go).
-	readingsScreen *components.ReadingsScreen
-	// The turns screen while it is up, built once per opening like the
-	// readings screen (turns.go).
-	turnsScreen *components.TurnsScreen
-	// The safety reading: the readings only the command package can make,
-	// and the screen while it is up, built once per opening (safety.go).
-	safety       Safety
-	safetyScreen *components.SafetyScreen
-	// The settings surface: what a session may open the config screen with,
-	// and the staged pass over the file while one is up. Both come from the
+	// The readings only the command package can make, which the safety
+	// screen draws (safety.go).
+	safety Safety
+	// What a session may open the config screen with. It comes from the
 	// CLI — the chat package owns no config semantics, the way it owns none
 	// for the writer beside it (defaults.go) — and a session without an
 	// opener says /config cannot be reached rather than drawing a screen
 	// that cannot write.
-	openConfig   ConfigOpener
-	configScreen *ConfigSession
-	// backlog is the backlog screen while it is up. It is kept rather than
-	// rebuilt per frame because the pointer, the filters and the tab the
-	// reader is on are what the surface is: a screen re-derived from the
-	// store on every keystroke would forget all three.
-	backlog *components.BacklogScreen
+	openConfig ConfigOpener
 	// sprintPlan is the proposal being answered. It lives on the session
 	// rather than on the screen because the key that writes its goal hands
 	// the keyboard back to the input, and a proposal that died with the

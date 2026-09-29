@@ -177,6 +177,12 @@ type mode struct {
 	// door is the rail block whose heading and fold marker open this mode
 	// (railclick.go). nil is a mode the rail has no door to.
 	door *surfaceDoor
+	// holds reports that the mode's own state lives in the session's
+	// heldScreens under this row's state while it is up, rather than as a
+	// field of the Model. It is the screens built once per opening and
+	// nothing else — one pointer each, with no return state or confirm of
+	// its own beside it.
+	holds bool
 }
 
 // surfaceCommand is the slash command a register row declares. The embedded
@@ -191,6 +197,99 @@ type surfaceCommand struct {
 	// open carries the command out; parts is the whole line split on
 	// whitespace, the command name included.
 	open func(m Model, parts []string) (tea.Model, tea.Cmd)
+}
+
+// heldScreens is the state of every screen a register row holds, keyed by
+// that row's state (mode.holds). It exists so a screen joining the register
+// adds a row and not a field of the Model: the Model is copied on every
+// message and every field is one more thing the session boundary has to
+// remember to reset, so the screens are one field and one reset.
+//
+// It is written copy-on-write. A Model is a value and a map is shared by
+// every copy of one, so a delete made on a copy — paint's, or the next model
+// an Update builds — would reach every other copy. with and without hand back
+// a new map instead, which gives each Model value the snapshot it was built
+// with, exactly as the pointer fields this replaced did. The screens
+// themselves are pointers, and what is written through one is shared the way
+// it always was.
+type heldScreens map[state]any
+
+// with is the set with s holding v.
+func (h heldScreens) with(s state, v any) heldScreens {
+	next := make(heldScreens, len(h)+1)
+	for k, held := range h {
+		next[k] = held
+	}
+	next[s] = v
+	return next
+}
+
+// without is the set with nothing held under s.
+func (h heldScreens) without(s state) heldScreens {
+	if _, ok := h[s]; !ok {
+		return h
+	}
+	next := make(heldScreens, len(h))
+	for k, held := range h {
+		if k != s {
+			next[k] = held
+		}
+	}
+	return next
+}
+
+// keeping is the set with nothing held but what s holds: the session
+// boundary's one reset (startNewSession). The surface that has the screen
+// while the boundary is crossed keeps its state — a backlog sprint crosses it
+// between two items while the reader may be looking at one of these — and
+// every other screen goes.
+func (h heldScreens) keeping(s state) heldScreens {
+	if v, ok := h[s]; ok {
+		return heldScreens{s: v}
+	}
+	return nil
+}
+
+// heldAs is the screen held under s, or nil while none is.
+func heldAs[T any](h heldScreens, s state) *T {
+	v, _ := h[s].(*T)
+	return v
+}
+
+func (h heldScreens) contextScreen() *components.ContextScreen {
+	return heldAs[components.ContextScreen](h, stateContext)
+}
+
+func (h heldScreens) sources() *components.SourcesScreen {
+	return heldAs[components.SourcesScreen](h, stateSources)
+}
+
+func (h heldScreens) steps() *components.StepsScreen {
+	return heldAs[components.StepsScreen](h, stateSteps)
+}
+
+func (h heldScreens) readings() *components.ReadingsScreen {
+	return heldAs[components.ReadingsScreen](h, stateReadings)
+}
+
+func (h heldScreens) turns() *components.TurnsScreen {
+	return heldAs[components.TurnsScreen](h, stateTurns)
+}
+
+func (h heldScreens) safety() *components.SafetyScreen {
+	return heldAs[components.SafetyScreen](h, stateSafety)
+}
+
+func (h heldScreens) notes() *components.NotesScreen {
+	return heldAs[components.NotesScreen](h, stateNotes)
+}
+
+func (h heldScreens) backlog() *components.BacklogScreen {
+	return heldAs[components.BacklogScreen](h, stateBacklog)
+}
+
+func (h heldScreens) config() *ConfigSession {
+	return heldAs[ConfigSession](h, stateConfig)
 }
 
 // surfaceDoor is a register row's rail door: the block whose heading opens
@@ -534,16 +633,18 @@ func buildOverlays() map[state]*mode {
 		},
 		stateContext: {
 			place:       placePane,
+			holds:       true,
 			borrows:     true,
 			ownsQuit:    true,
 			hidesRail:   true,
 			noSelection: true,
 			lines: func(m Model, width, height int) []string {
-				if m.context == nil {
+				screen := m.screens.contextScreen()
+				if screen == nil {
 					return nil
 				}
-				m.context.SetSize(width, height)
-				return strings.Split(m.context.View(width), "\n")
+				screen.SetSize(width, height)
+				return strings.Split(screen.View(width), "\n")
 			},
 			hint:   (Model).renderContextHint,
 			answer: (*Model).answerContext,
@@ -560,15 +661,17 @@ func buildOverlays() map[state]*mode {
 		},
 		stateSources: {
 			place:       placePane,
+			holds:       true,
 			borrows:     true,
 			hidesRail:   true,
 			noSelection: true,
 			lines: func(m Model, width, height int) []string {
-				if m.sources == nil {
+				screen := m.screens.sources()
+				if screen == nil {
 					return nil
 				}
-				m.sources.SetSize(width, height)
-				return strings.Split(m.sources.View(width), "\n")
+				screen.SetSize(width, height)
+				return strings.Split(screen.View(width), "\n")
 			},
 			hint: (Model).renderSourcesHint,
 			keys: (Model).updateSources,
@@ -585,15 +688,17 @@ func buildOverlays() map[state]*mode {
 		},
 		stateSteps: {
 			place:       placePane,
+			holds:       true,
 			borrows:     true,
 			hidesRail:   true,
 			noSelection: true,
 			lines: func(m Model, width, height int) []string {
-				if m.stepsScreen == nil {
+				screen := m.screens.steps()
+				if screen == nil {
 					return nil
 				}
-				m.stepsScreen.SetSize(width, height)
-				return strings.Split(m.stepsScreen.View(width), "\n")
+				screen.SetSize(width, height)
+				return strings.Split(screen.View(width), "\n")
 			},
 			hint: (Model).renderStepsHint,
 			keys: (Model).updateSteps,
@@ -612,15 +717,17 @@ func buildOverlays() map[state]*mode {
 		},
 		stateReadings: {
 			place:       placePane,
+			holds:       true,
 			borrows:     true,
 			hidesRail:   true,
 			noSelection: true,
 			lines: func(m Model, width, height int) []string {
-				if m.readingsScreen == nil {
+				screen := m.screens.readings()
+				if screen == nil {
 					return nil
 				}
-				m.readingsScreen.SetSize(width, height)
-				return strings.Split(m.readingsScreen.View(width), "\n")
+				screen.SetSize(width, height)
+				return strings.Split(screen.View(width), "\n")
 			},
 			hint: (Model).renderReadingsHint,
 			keys: (Model).updateReadings,
@@ -637,15 +744,17 @@ func buildOverlays() map[state]*mode {
 		},
 		stateTurns: {
 			place:       placePane,
+			holds:       true,
 			borrows:     true,
 			hidesRail:   true,
 			noSelection: true,
 			lines: func(m Model, width, height int) []string {
-				if m.turnsScreen == nil {
+				screen := m.screens.turns()
+				if screen == nil {
 					return nil
 				}
-				m.turnsScreen.SetSize(width, height)
-				return strings.Split(m.turnsScreen.View(width), "\n")
+				screen.SetSize(width, height)
+				return strings.Split(screen.View(width), "\n")
 			},
 			hint: (Model).renderTurnsHint,
 			keys: (Model).updateTurns,
@@ -662,6 +771,7 @@ func buildOverlays() map[state]*mode {
 		},
 		stateSafety: {
 			place:       placePane,
+			holds:       true,
 			borrows:     true,
 			hidesRail:   true,
 			noSelection: true,
@@ -680,15 +790,17 @@ func buildOverlays() map[state]*mode {
 		},
 		stateNotes: {
 			place:       placePane,
+			holds:       true,
 			borrows:     true,
 			hidesRail:   true,
 			noSelection: true,
 			lines: func(m Model, width, height int) []string {
-				if m.notes == nil {
+				screen := m.screens.notes()
+				if screen == nil {
 					return nil
 				}
-				m.notes.SetSize(width, height)
-				return strings.Split(m.notes.View(width), "\n")
+				screen.SetSize(width, height)
+				return strings.Split(screen.View(width), "\n")
 			},
 			hint: (Model).renderNotesHint,
 			keys: (Model).updateNotes,
@@ -705,11 +817,12 @@ func buildOverlays() map[state]*mode {
 		},
 		stateBacklog: {
 			place:       placePane,
+			holds:       true,
 			borrows:     true,
 			hidesRail:   true,
 			noSelection: true,
 			lines: func(m Model, width, height int) []string {
-				if m.backlog == nil {
+				if m.screens.backlog() == nil {
 					return nil
 				}
 				return strings.Split(m.backlogPane(width, height), "\n")
@@ -748,6 +861,7 @@ func buildOverlays() map[state]*mode {
 		// the screen's own rule rather than the register's (config.go).
 		stateConfig: {
 			place:       placePane,
+			holds:       true,
 			borrows:     true,
 			hidesRail:   true,
 			noSelection: true,

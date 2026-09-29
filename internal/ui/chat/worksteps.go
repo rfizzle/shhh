@@ -91,14 +91,15 @@ func (m Model) openSteps() (tea.Model, tea.Cmd) {
 		return m.systemNotice("the session has declared no working steps")
 	}
 	screen := m.stepsScreenData()
-	m.stepsScreen = &screen
+	m.screens = m.screens.with(stateSteps, &screen)
 	m.enterSurface(stateSteps)
 	return m, nil
 }
 
 // updateSteps routes keys while the screen is up.
 func (m Model) updateSteps(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
-	if m.stepsScreen == nil || m.stepsScreen.Update(msg) {
+	screen := m.screens.steps()
+	if screen == nil || screen.Update(msg) {
 		return m.closeStepsScreen()
 	}
 	return m, nil
@@ -107,7 +108,7 @@ func (m Model) updateSteps(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 // closeStepsScreen hands the screen back to the turn, the way its own esc
 // does and the way the rail cell that opened it does.
 func (m Model) closeStepsScreen() (tea.Model, tea.Cmd) {
-	m.stepsScreen = nil
+	m.screens = m.screens.without(stateSteps)
 	m.leaveSurface()
 	m.syncViewport()
 	return m, nil

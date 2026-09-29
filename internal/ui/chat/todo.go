@@ -586,8 +586,9 @@ func (m Model) openTodoScreen() (tea.Model, tea.Cmd) {
 	if !m.todosEnabled() {
 		return m.systemNotice("the backlog is unavailable in this session")
 	}
-	m.backlog = &components.BacklogScreen{Prose: todoProse, Plan: m.sprintPlan, Noun: m.todos.Profile.Noun}
-	m.backlog.Priority, m.backlog.Fields = todoScreenFieldSet(m.todos.Profile)
+	screen := &components.BacklogScreen{Prose: todoProse, Plan: m.sprintPlan, Noun: m.todos.Profile.Noun}
+	screen.Priority, screen.Fields = todoScreenFieldSet(m.todos.Profile)
+	m.screens = m.screens.with(stateBacklog, screen)
 	m.reloadTodos()
 	m.enterSurface(stateBacklog)
 	return followingLanes(m, nil)
@@ -609,20 +610,22 @@ func todoProse(src string, width int) []string {
 // frame is a field on the session; the rows are not, and they are rebuilt
 // only when something changed a file.
 func (m Model) backlogPane(width, height int) string {
-	m.backlog.ReadOnly = m.working()
-	m.backlog.SetSize(width, height)
-	return m.backlog.View(width)
+	screen := m.screens.backlog()
+	screen.ReadOnly = m.working()
+	screen.SetSize(width, height)
+	return screen.View(width)
 }
 
 // updateTodoScreen routes a key while the screen is up and carries out what
 // it asked for.
 func (m Model) updateTodoScreen(key tea.KeyPressMsg) (tea.Model, tea.Cmd) {
-	if m.backlog == nil {
+	screen := m.screens.backlog()
+	if screen == nil {
 		m.shutTodoScreen()
 		return m, nil
 	}
-	m.backlog.ReadOnly = m.working()
-	done, result := m.backlog.Update(key)
+	screen.ReadOnly = m.working()
+	done, result := screen.Update(key)
 	if done {
 		m.shutTodoScreen()
 		return m, nil
@@ -636,7 +639,7 @@ func (m Model) updateTodoScreen(key tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 // shutTodoScreen takes the screen down and hands the keyboard back to the
 // turn, which may have moved on while the surface was up.
 func (m *Model) shutTodoScreen() {
-	m.backlog = nil
+	m.screens = m.screens.without(stateBacklog)
 	m.leaveSurface()
 	m.syncViewport()
 }
@@ -662,13 +665,14 @@ func (m Model) todoScreenAct(cmd components.BacklogCommand) (tea.Model, tea.Cmd)
 		m.shutTodoScreen()
 		return m.startTodoGroom([]string{cmd.Slug})
 	case components.BacklogSprintTake:
-		note := m.writeSprintPlan(cmd.Slugs, sprintFileGoal(m.backlog.Plan))
-		m.backlog.Plan, m.sprintPlan = nil, nil
+		screen := m.screens.backlog()
+		note := m.writeSprintPlan(cmd.Slugs, sprintFileGoal(screen.Plan))
+		screen.Plan, m.sprintPlan = nil, nil
 		m.reloadTodos()
-		m.backlog.Notice = firstLine(note)
+		screen.Notice = firstLine(note)
 		return m.systemNotice(note)
 	case components.BacklogSprintCancel:
-		m.backlog.Plan, m.sprintPlan = nil, nil
+		m.screens.backlog().Plan, m.sprintPlan = nil, nil
 		m.refreshTodoScreen()
 		return m.systemNotice("nothing written; no sprint was planned")
 	case components.BacklogSprintGoal:
@@ -680,14 +684,15 @@ func (m Model) todoScreenAct(cmd components.BacklogCommand) (tea.Model, tea.Cmd)
 	}
 	note := m.todoScreenVerb(cmd)
 	m.reloadTodos()
-	if m.backlog == nil {
+	screen := m.screens.backlog()
+	if screen == nil {
 		return m.systemNotice(note)
 	}
 	// The screen says what happened in one line and the transcript keeps the
 	// whole answer, which is the answer the same verb typed into the input
 	// would have left: a change made from a surface must be in the record of
 	// the session, or closing the surface loses it.
-	m.backlog.Notice = firstLine(note)
+	screen.Notice = firstLine(note)
 	return m.systemNotice(note)
 }
 
@@ -754,19 +759,20 @@ func (m Model) todoReopen(slug string) string {
 // the filters and the tab the reader is on have to survive a change to one
 // file.
 func (m Model) refreshTodoScreen() {
-	if m.backlog == nil {
+	screen := m.screens.backlog()
+	if screen == nil {
 		return
 	}
 	s := m.todoStore
-	m.backlog.Rows = m.todoScreenRows(s, false)
-	m.backlog.Done = m.todoScreenRows(s, true)
-	m.backlog.Board = m.sprintBoard()
-	m.backlog.Sprint = ""
+	screen.Rows = m.todoScreenRows(s, false)
+	screen.Done = m.todoScreenRows(s, true)
+	screen.Board = m.sprintBoard()
+	screen.Sprint = ""
 	if s != nil && s.Sprint.Open() {
-		m.backlog.Sprint = s.Sprint.Name
+		screen.Sprint = s.Sprint.Name
 	}
-	m.backlog.ReadOnly = m.working()
-	m.backlog.Why = todoScreenWhy
+	screen.ReadOnly = m.working()
+	screen.Why = todoScreenWhy
 }
 
 // todoScreenFieldSet is the project's vocabulary as the screen filters and
