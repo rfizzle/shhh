@@ -23,7 +23,8 @@ keys "/paste notes.txt" Enter
 snap 04-strip "attached File#1" "Image#1" "Image#2" "File#1 notes.txt"
 keys "/paste drop clipboard.png" Enter
 snap 05-shared-name "say which" "Image#1, Image#2" "File#1 notes.txt"
+# Nothing is sent, so the conversation has no turn and quitting leaves no
+# exit banner to wait for — a session with nothing to resume prints nothing.
 keys C-c
 snap 06-quit-armed "again quits"
 keys C-c
-snap 07-exit "that is everything the screen was holding"
