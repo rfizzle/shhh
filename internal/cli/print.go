@@ -903,6 +903,20 @@ func (c *headlessChat) reviseAccount(a *agent.Accountant, msgs []provider.Messag
 	}
 }
 
+// headlessAccountant is the writer a headless run revises its slot's standing
+// account with, or nil for a run a backlog runner started to work a stage of
+// an item. A stage's conversation is one the runner deletes once the item
+// goes through, and where the item blocks instead the item file is what says
+// where it stood. The stage cannot tell which it will be — the block is
+// decided steps after its own turn — so it pays for no account either way
+// (docs/capabilities/todo.md#a-sprint-is-runs-with-a-session-between-them).
+func headlessAccountant(cfg config.Config, env *sessionEnv, ledger *meter.Ledger) *agent.Accountant {
+	if item, _ := todoStageStamp(); item != "" {
+		return nil
+	}
+	return newAccountant(cfg, env, ledger)
+}
+
 // runPrintSession runs the agent loop to completion without the TUI:
 // assistant text streams to stdout, tool activity to stderr, and --output
 // replaces the streamed text with a transcript at the end or an event stream
@@ -1566,7 +1580,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	// The slot's standing account is revised from what the run did before
 	// the save that carries it, so a run resumed with --resume says what it
 	// did (docs/capabilities/sessions-and-memory.md#a-title-you-did-not-write).
-	saved.reviseAccount(newAccountant(cfg, env, ledger), a.Messages())
+	saved.reviseAccount(headlessAccountant(cfg, env, ledger), a.Messages())
 	saved.save(a.Messages())
 	recorder.link(saved.slot)
 	// Where this run can be picked up, in the three forms both JSON shapes

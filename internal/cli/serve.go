@@ -187,6 +187,10 @@ type serveLoop struct {
 	// built per turn because what a reading is judged against is that turn's
 	// instruction, and a session has one per turn.
 	summarizer *agent.Summarizer
+	// account keeps the slot's standing account for this session, revised
+	// at a turn's close on the interval a session on a screen uses and once
+	// more where the session ends.
+	account servedAccount
 	// repeats is the session's circling detector, held so each turn's reading
 	// can ask it what ground has been swept. It is the session's rather than
 	// the turn's for the reason the window is: a session that asked one
@@ -757,6 +761,7 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 	}
 	l.headless.SetRetryLimit(cfg.Behavior.ProviderRetries)
 	l.summarizer = newSummarizer(cfg, env, l.ledger, cfg.HeadlessSummaryEnabled())
+	l.account = servedAccount{writer: newAccountant(cfg, env, l.ledger), every: cfg.AccountInterval()}
 	if suite, retries, ok := onCloseGate(qgate); ok {
 		l.newCloseGate = func() *headlessCloseGate {
 			return &headlessCloseGate{ctx: cmd.Context(), gate: qgate, suite: suite, retries: retries, written: own.paths}
@@ -1095,6 +1100,10 @@ func (l *serveLoop) Run(turn int64, prompt string) (string, error) {
 	}
 	outcome := headlessTurnOutcome(runErr)
 	l.recorder.turn(turn, rounds, time.Since(started), outcome)
+	// The standing account rides the save, so a slot a person later opens
+	// with --resume says how far this session got
+	// (docs/capabilities/headless.md#something-else-can-drive-it).
+	l.account.turnClosed(l.saved, l.agent.Messages())
 	l.saved.save(l.agent.Messages())
 	l.recorder.link(l.saved.slot)
 	// What the session read goes with its conversation, bound once the save
@@ -1167,8 +1176,56 @@ func (l *serveLoop) release() {
 		l.mu.Unlock()
 		l.hookNote(l.hooks.Stop(l.hookCtx, l.hookPos(), final))
 	})
+	// The turns closed since the last reading are accounted for before the
+	// store goes, and the save carries it: a session ended after two turns
+	// would otherwise leave its slot with no account at all.
+	if l.agent != nil && l.account.leaving(l.saved, l.agent.Messages()) {
+		l.saved.save(l.agent.Messages())
+		l.recorder.link(l.saved.slot)
+	}
 	for i := len(l.closers) - 1; i >= 0; i-- {
 		l.closers[i]()
 	}
 	l.closers = nil
+}
+
+// servedAccount is a served session's standing account, kept the way a
+// session on a screen keeps it: a reading at a turn's close no more often
+// than every summary.resume_interval_turns turns, and one more where the
+// session ends when a turn has closed since the last. Each is taken before
+// the save that carries it, as the headless run's is, because a served
+// turn's close is where its conversation is written down.
+type servedAccount struct {
+	writer *agent.Accountant
+	// every is how many closed turns pass between two readings; zero is off.
+	every int
+	// turns counts the turns closed since the last reading.
+	turns int
+}
+
+// turnClosed counts a closed turn and revises the account when enough have
+// closed since the last reading.
+func (s *servedAccount) turnClosed(c *headlessChat, msgs []provider.Message) {
+	if s.every <= 0 {
+		return
+	}
+	s.turns++
+	if s.turns >= s.every {
+		s.revise(c, msgs)
+	}
+}
+
+// leaving revises the account for the turns closed since the last reading,
+// and reports whether it asked, so the caller knows a save is owed.
+func (s *servedAccount) leaving(c *headlessChat, msgs []provider.Message) bool {
+	if s.every <= 0 || s.turns == 0 {
+		return false
+	}
+	s.revise(c, msgs)
+	return true
+}
+
+func (s *servedAccount) revise(c *headlessChat, msgs []provider.Message) {
+	s.turns = 0
+	c.reviseAccount(s.writer, msgs)
 }

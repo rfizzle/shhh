@@ -556,6 +556,17 @@ its adapter, finds the session it left. And a turn running holds the session
 open whatever its clients are doing: the grace starts where the turn ends,
 because a turn is work nobody may pull the store out from under.
 
+**A served session keeps a standing account of itself**, because its slot is
+one a person may open later with `--resume`, and a slot that kept only the
+account some earlier session left would describe work this one overtook
+([`sessions-and-memory.md`](sessions-and-memory.md#a-title-you-did-not-write)).
+It is revised the way a session on a screen revises it: at a turn's close no
+more often than every `summary.resume_interval_turns` turns, and once more
+where the session ends when a turn has closed since then. Each reading is taken
+before the save that carries it, so a turn's close line waits for it on the
+turns it is due — one bounded request, the price of the slot saying how far
+the session got.
+
 ## A client answers one call at a time
 
 The approval queue belongs to the protocol and not to the client. A request is

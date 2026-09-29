@@ -532,7 +532,9 @@ asking you and never when you come to resume:
   it off, and so does `summary.disabled`). Once more where the session is
   left — at the session boundary and at quit — when a turn has closed since
   the last reading, and that reading rides the save that leaves the slot. A
-  headless run takes one reading as it closes.
+  headless run takes one reading as it closes, except a stage of a backlog
+  run, whose conversation the runner deletes once the item goes through; a
+  served session keeps the screen's rhythm.
 - **How.** Each reading revises the one before it rather than describing the
   session from nothing, so an account that was right about the goal stays
   right after the goal's turns scroll out of what it reads. It reads what you

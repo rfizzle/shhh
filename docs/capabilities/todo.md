@@ -974,7 +974,13 @@ whole when it does not — the item file says what stopped the run, and they are
 what is left of how it got there. The decision waits for the item because a
 run stops at the checks rather than at the turn that wrote what failed them,
 so a stage answered for as its own turn came back would take the conversation
-the block is about.
+the block is about. For the same reason no stage pays for the standing account
+a saved conversation otherwise carries
+([`sessions-and-memory.md`](sessions-and-memory.md#a-title-you-did-not-write)):
+the stage would have to write it before anyone knows whether its conversation
+is about to be deleted, and where the item blocks, the item file already says
+where the run stood, so thirty stages do not spend thirty requests on accounts
+of conversations nobody keeps.
 
 **It stops on the first block.** A blocked item has a follow-up written for
 it, and what comes next in the list may be resting on the work that did not
