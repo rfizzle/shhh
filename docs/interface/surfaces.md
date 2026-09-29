@@ -897,7 +897,10 @@ in the sentence by hand.
 What the fold will cost stands on the vitals rail while it waits — `Paste#1
 will cost ~6.1k tokens` — because a paste is the one keystroke that can
 double the price of a message, and the rail is already where the price of
-this session is read. The bottom rail offers the key that opens it. Opening
+this session is read. The fold's chip opens it — a click, or reading mode's
+cursor on the staged strip ([a staged attachment](#a-staged-attachment)) —
+and so does `/paste show` by name; there is no chord of its own, so the bottom
+rail offers none. Opening
 borrows [reading mode](#reading-mode)'s labelled rail — `──── PASTE#1 ·
 lines 1–8 of 214 ────` over the lines themselves — rather than inventing a
 pager of its own, and the draft underneath is untouched: the cursor is where
@@ -923,7 +926,7 @@ a PDF, a recording — is a row that counts it and opens onto nothing.
 Recalling that sentence brings the paste back with it. ↑ puts a line in the
 draft as it was sent, so the fold in it has to be a fold again or stop being
 one: the log is on the row the send left, and it is staged again under the
-next free number with the token renumbered to match — the same key opens it,
+next free number with the token renumbered to match — its chip opens it,
 the same rail prices it, and the next send carries it. A picture's fold comes
 back the same way, from the bytes its row kept. A conversation loaded
 from storage is no different: the log was saved with the message that carried
@@ -1559,7 +1562,7 @@ is one column wide, so how far down a tree runs is a question the rail's map
 answers and a lane does not.
 
 A fan-out offers the manager once, on a line under the lane that needs you —
-`[alt+a] agents · the other two keep running`, the chord from the pointer and
+`[f12] agents · the other two keep running`, the key from the pointer and
 from reading mode's cursor alike, since the manager has no letter — and
 nowhere at all while no lane is waiting, so the key sits where there is
 something to answer

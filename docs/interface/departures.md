@@ -1314,9 +1314,8 @@ kind is counted by: `⟨Paste#1 · 214 lines⟩`, `⟨Image#1 · 1440×900⟩`,
 sent message each fold has a row: the paste's as before with its handle for a
 label, `▸ Image#1 · 1440×900 · [enter] open` for a picture (`▾ Image#1 ·
 1440×900` with no offer once the message is open), and `▸ File#1 · 3.2 MB`
-with no offer for anything else. The vitals clause and the open-paste offer
-name the handle, `Paste#1 will cost ~6.1k tokens` and `[alt+v] open Paste#1`,
-and the paste reader's rail reads `──── PASTE#1 · lines 1–8 of 214 ────`. The
+with no offer for anything else. The vitals clause names the handle,
+`Paste#1 will cost ~6.1k tokens`, and the paste reader's rail reads `──── PASTE#1 · lines 1–8 of 214 ────`. The
 preview card opened from a sent picture's row reads `[esc] back`, with no
 `[x] remove`.
 
@@ -1430,3 +1429,28 @@ offers), `Questions` (`note/options` and `apply`), `Commit` and `Changeset`
 (the commit card and the close rows), and `Backlog` (the letters, which have no
 legend drawn at all). The departure is closed by those artboards drawing the
 words the binary draws.
+
+## The agent family is on the function row, and a staged paste has no chord
+
+*A disagreement.* The artboards draw the agent manager and the walk along the
+rail's map on alt chords, and a staged paste opened by a chord of its own.
+The binary ships no alt chord on any platform. The manager is `f12` and the
+walk `shift+f8` forward and `shift+f7` back, so the AGENTS block's trailer on
+`Main` reads `f12 agents · shift+f8 next · click to attach`, the key bar on
+`Frame` and a fan-out's line under a waiting lane on `Agents` read `[f12]
+agents`, and the attached key bar reads `[esc] back to your session · [f12]
+agents`. On `Paste` the key bar offers nothing for the fold, and the notice a
+paste leaves reads `Paste#1 is one character in your draft — its chip opens
+it, backspace over it drops all 214 lines`; the chip — a click, or reading
+mode's cursor on the staged strip — and `/paste show` are the ways in ([the
+input frame](surfaces.md#the-input-frame), [a staged
+attachment](surfaces.md#a-staged-attachment)).
+
+The reason is that an alt chord is dead on a stock Mac terminal until a
+profile setting is ticked, and a key that works on some desks and types a
+character on others is a false offer on the desktop shhh is most often run on
+([a Mac ships without alt](reserved-keys.md#a-mac-ships-without-alt)). The
+function row arrives on every terminal with nothing set, and the staged
+paste already had two doors that need no chord. The departure is closed by
+`Main`, `Frame`, `Agents` and `Paste` drawing the function-row keys and the
+fold with no chord offered for it.

@@ -198,8 +198,22 @@ func TestHelp_AConversationOffersTheBacklogAndNotTheChangeset(t *testing.T) {
 // names that setting — the key list is where a reader whose chord typed a
 // character goes to find out why, and a row that only spelled the chord
 // again would send them away with nothing
-// (docs/interface/reserved-keys.md#what-is-left).
+// (docs/interface/reserved-keys.md#what-is-left). Nothing ships on alt, so
+// the setting is named only once a keymap file puts a key there.
 func TestHelpNamesTheOptionSettingBesideEveryAltChord(t *testing.T) {
+	t.Cleanup(func() { _ = keys.Load() })
+	t.Cleanup(keys.UsePlatform("linux"))
+	if list := helpKeysText(); strings.Contains(list, "Use Option as Meta key") {
+		t.Errorf("the key list names the Option setting with no alt chord bound:\n%s", list)
+	}
+
+	path := filepath.Join(t.TempDir(), "keybindings.toml")
+	if err := os.WriteFile(path, []byte("[draft]\nagents = \"alt+a\"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := keys.Load(path); err != nil {
+		t.Fatal(err)
+	}
 	for _, r := range helpKeyRows() {
 		for _, b := range r.binds {
 			for _, k := range b.Keys() {
@@ -213,7 +227,7 @@ func TestHelpNamesTheOptionSettingBesideEveryAltChord(t *testing.T) {
 		}
 	}
 	list := helpKeysText()
-	for _, want := range []string{"Use Option as Meta key", "Esc+", "shhh doctor"} {
+	for _, want := range []string{"[alt+a]", "Use Option as Meta key", "Esc+", "shhh doctor"} {
 		if !strings.Contains(list, want) {
 			t.Errorf("the key list never says %q", want)
 		}

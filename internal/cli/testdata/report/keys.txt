@@ -9,7 +9,7 @@
   · attach          ctrl+v · attach the clipboard  [shipped]
   · complete        tab · complete a slash command  [shipped]
   · palette         ctrl+/ ctrl+_ · the command palette  [shipped]
-  · reasoning       ctrl+t alt+t · cycle the reasoning level  [shipped]
+  · reasoning       ctrl+t · cycle the reasoning level  [shipped]
   · mode            shift+tab · cycle the permission mode  [shipped]
   · pause           ctrl+p · hold the turn between rounds, or let a …  [shipped]
   · history_prev    up · recall the previous input  [shipped]
@@ -22,11 +22,10 @@
   · page_up         pgup · page the transcript  [shipped]
   · page_down       pgdown · page it back  [shipped]
   · reading         ctrl+o · reading mode  [shipped]
-  · open_paste      alt+v · open the staged paste  [shipped]
-  · agents          alt+a · the agent manager  [shipped]
+  · agents          f12 · the agent manager  [shipped]
   · backlog         ctrl+f · the backlog screen  [shipped]
-  · next_agent      alt+] · the next session in the rail's map  [shipped]
-  · prev_agent      alt+[ · the previous one  [shipped]
+  · next_agent      shift+f8 · the next session in the rail's map  [shipped]
+  · prev_agent      shift+f7 · the previous one  [shipped]
   · mouse           ctrl+x · mouse reporting on or off  [shipped]
   · key_list        ctrl+] · the keys  [shipped]
   · suspend         ctrl+z · suspend shhh (idle only)  [shipped]
@@ -324,4 +323,4 @@
   · paste   p · paste a key  [shipped]
   · local   o · a local model  [shipped]
 
-  237 keys · 1 moved
+  236 keys · 1 moved

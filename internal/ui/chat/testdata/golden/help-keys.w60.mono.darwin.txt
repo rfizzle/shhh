@@ -74,18 +74,22 @@
                      A paste over 256 KB is refused
                      rather than staged — it would
                      ride in the prompt itself
-    [shift+f12]      open the staged paste. What is
-                     staged leaves a fold where you
+    /paste show      open the staged paste. What is
+    the chip         staged leaves a fold where you
                      pasted it — ⟨Paste#1 · 214 lines⟩
                      — which moves, deletes and sends
                      as one character, and what it
                      will cost is on the vitals rail
-                     before you send. This reads it
-                     back: j/k scrolls, x drops it, q
+                     before you send. Its chip opens
+                     it with the sentence kept: a
+                     click on the chip, or reading
+                     mode (ctrl+o) down to the strip
+                     and enter on it; /paste show
+                     Paste#1 is the same surface by
+                     name. It reads the paste back:
+                     j/k scrolls, x drops it, q
                      returns to the draft with the
-                     cursor where you left it. /paste
-                     show paste-1.txt is the same
-                     surface by name
+                     cursor where you left it
     [tab]            complete a slash command (typing
                      / opens the menu; ↑↓ move, enter
                      runs the highlighted command, esc
@@ -219,8 +223,8 @@
                      are grey while one is going,
                      because the model may be reading
                      them
-    [shift+f8] [shift+f7] move the keyboard one sessi…
-                     along the inspector rail's AGENTS
+    [shift+f8]       move the keyboard one session
+    [shift+f7]       along the inspector rail's AGENTS
                      map — the orchestrator and every
                      agent it started, in the order
                      they were started, wrapping at
@@ -441,18 +445,22 @@
                      ␛[38;5;244mA paste over 256 KB is refused␛[m
                      ␛[38;5;244mrather than staged — it would␛[m
                      ␛[38;5;244mride in the prompt itself␛[m
-    ␛[38;5;254m[shift+f12]␛[m      ␛[38;5;244mopen the staged paste. What is␛[m
-                     ␛[38;5;244mstaged leaves a fold where you␛[m
+    ␛[38;5;254m/paste show␛[m      ␛[38;5;244mopen the staged paste. What is␛[m
+    ␛[38;5;254mthe chip␛[m         ␛[38;5;244mstaged leaves a fold where you␛[m
                      ␛[38;5;244mpasted it — ⟨Paste#1 · 214 lines⟩␛[m
                      ␛[38;5;244m— which moves, deletes and sends␛[m
                      ␛[38;5;244mas one character, and what it␛[m
                      ␛[38;5;244mwill cost is on the vitals rail␛[m
-                     ␛[38;5;244mbefore you send. This reads it␛[m
-                     ␛[38;5;244mback: j/k scrolls, x drops it, q␛[m
+                     ␛[38;5;244mbefore you send. Its chip opens␛[m
+                     ␛[38;5;244mit with the sentence kept: a␛[m
+                     ␛[38;5;244mclick on the chip, or reading␛[m
+                     ␛[38;5;244mmode (ctrl+o) down to the strip␛[m
+                     ␛[38;5;244mand enter on it; /paste show␛[m
+                     ␛[38;5;244mPaste#1 is the same surface by␛[m
+                     ␛[38;5;244mname. It reads the paste back:␛[m
+                     ␛[38;5;244mj/k scrolls, x drops it, q␛[m
                      ␛[38;5;244mreturns to the draft with the␛[m
-                     ␛[38;5;244mcursor where you left it. /paste␛[m
-                     ␛[38;5;244mshow paste-1.txt is the same␛[m
-                     ␛[38;5;244msurface by name␛[m
+                     ␛[38;5;244mcursor where you left it␛[m
     ␛[38;5;254m[tab]␛[m            ␛[38;5;244mcomplete a slash command (typing␛[m
                      ␛[38;5;244m/ opens the menu; ↑↓ move, enter␛[m
                      ␛[38;5;244mruns the highlighted command, esc␛[m
@@ -586,8 +594,8 @@
                      ␛[38;5;244mare grey while one is going,␛[m
                      ␛[38;5;244mbecause the model may be reading␛[m
                      ␛[38;5;244mthem␛[m
-    ␛[38;5;254m[shift+f8] [shift+f7]␛[m ␛[38;5;244mmove the keyboard one sessi…␛[m
-                     ␛[38;5;244malong the inspector rail's AGENTS␛[m
+    ␛[38;5;254m[shift+f8]␛[m       ␛[38;5;244mmove the keyboard one session␛[m
+    ␛[38;5;254m[shift+f7]␛[m       ␛[38;5;244malong the inspector rail's AGENTS␛[m
                      ␛[38;5;244mmap — the orchestrator and every␛[m
                      ␛[38;5;244magent it started, in the order␛[m
                      ␛[38;5;244mthey were started, wrapping at␛[m

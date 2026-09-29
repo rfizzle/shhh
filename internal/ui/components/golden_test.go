@@ -1579,7 +1579,7 @@ func TestGolden_FanoutBlock(t *testing.T) {
 // register. It is a literal in these tests because the fixture is the
 // component's input: what the register currently binds is the host's own
 // test to make.
-const railAgentsHint = "alt+a manager · alt+] next · click to attach"
+const railAgentsHint = "f12 agents · shift+f8 next · click to attach"
 
 func TestGolden_InspectorRail(t *testing.T) {
 	captureGolden(t, "inspector-rail", "inspector rail", []int{InspectorWidth, InspectorMaxWidth}, func(width int) []golden.Panel {

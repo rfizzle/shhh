@@ -82,7 +82,7 @@ snap 06-blocked "waiting approval"
 # than counting on the harness to beat the clock: on a loaded host it does
 # not, and the rows move under the pointer before the kill. Each row is named
 # by as much of its task as the manager draws at 80, where the rest is cut.
-keys M-a
+keys F12
 snap 07-manager "⚠ writer-3 · Say where the loop" "⚠ writer-2 · Say where the round" "[enter] attach"
 keys j
 keys X
@@ -110,15 +110,15 @@ snap 09-killed "[p] review"
 # tui-shot COLS=80` runs the scene to its end.
 keys Escape
 sleep 1
-keys M-]
+keys S-F8
 sleep 1
-keys M-]
+keys S-F8
 sleep 1
-keys M-]
+keys S-F8
 sleep 1
-keys M-]
+keys S-F8
 sleep 1
-wide 130 snap 10-map "alt+a manager" "alt+] next" "orchestrator ▸ writer-3 ▸ reader-3a" "└◇ reader-3a" "✗ writer-1"
+wide 130 snap 10-map "f12 agents" "shift+f8 next" "orchestrator ▸ writer-3 ▸ reader-3a" "└◇ reader-3a" "✗ writer-1"
 narrow 130 wide 110 snap 10-map "orchestrator ▸ writer-3 ▸ reader-3a"
 narrow 110 snap 10-map "… ▸ writer-3 ▸ reader-3a"
 # The chord itself, twice: it walks spawn order rather than the order the map
@@ -127,9 +127,9 @@ narrow 110 snap 10-map "… ▸ writer-3 ▸ reader-3a"
 # the map draws at the bottom because it failed. Where it ended up is the
 # map's own pointer, which is what the trailer promised the key would move,
 # and the breadcrumb, which is what says so where there is no map.
-keys M-]
+keys S-F8
 sleep 1
-keys M-]
+keys S-F8
 sleep 1
 wide 130 snap 11-chord "❯ ✗ writer-1" "orchestrator ▸ writer-1"
 narrow 130 snap 11-chord "orchestrator ▸ writer-1"

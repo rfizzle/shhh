@@ -814,12 +814,12 @@ func TestPasteFold_AScreenshotIsStillNamedUnderTheRow(t *testing.T) {
 	}
 }
 
-// The open key reaches the reader; leaving it changes nothing, and its one
+// The chip reaches the reader; leaving it changes nothing, and its one
 // destructive key takes the paste out of both places it is.
-func TestPasteFold_TheOpenKeyReadsItAndLeavesItAlone(t *testing.T) {
+func TestPasteFold_TheChipReadsItAndLeavesItAlone(t *testing.T) {
 	m := stagedLog(t, frameModel(t, 120, 40), 214)
 	sentence := m.input.Value()
-	opened, _ := m.openStagedPaste()
+	opened, _ := m.openPreview(m.attachments[0])
 	read := opened.(Model)
 	if read.state != statePasteView {
 		t.Fatalf("state = %v, want the paste reader", read.state)

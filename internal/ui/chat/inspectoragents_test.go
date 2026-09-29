@@ -69,7 +69,7 @@ func TestInspectorAgents_TrailerIsTheRegistersOwnLetters(t *testing.T) {
 
 	hint := m.resolveInspector().AgentsHint
 	for _, want := range []string{
-		keys.Shown(keys.Draft.Agents) + " manager",
+		keys.Shown(keys.Draft.Agents) + " agents",
 		keys.Shown(keys.Draft.NextAgent) + " next",
 		"click to attach",
 	} {

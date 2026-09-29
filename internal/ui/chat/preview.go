@@ -261,48 +261,6 @@ type pasteReader struct {
 	page  components.Pager
 }
 
-// openStagedPaste opens the fold the draft is holding. With one paste staged
-// it opens that one; with several it opens the one the cursor is standing in
-// or after, which is the one the reader was looking at when they pressed the
-// key, and falls back to the first — a surface that refused to guess would be
-// asking the reader to type a name that is on the screen in front of them.
-func (m Model) openStagedPaste() (tea.Model, tea.Cmd) {
-	staged := m.stagedPastes()
-	if len(staged) == 0 {
-		return m.surfaceNotice("no paste is staged — " + keys.Bracket(keys.Draft.Attach) +
-			" attaches the clipboard, and a paste too big for the draft stages itself")
-	}
-	want := staged[0].label
-	if len(staged) > 1 {
-		if under, ok := m.pasteUnderCursor(staged); ok {
-			want = under
-		}
-	}
-	for _, a := range m.attachments {
-		if p, ok := pasteOf(a); ok && p.label == want {
-			return m.openPasteReader(a)
-		}
-	}
-	return m, nil
-}
-
-// pasteUnderCursor is the fold the draft's cursor is inside or nearest behind
-// — the last one that opens at or before it. A cursor in front of every fold
-// in the sentence names none, and the caller takes the first.
-func (m Model) pasteUnderCursor(staged []stagedPaste) (string, bool) {
-	value := m.input.Value()
-	at := m.draftOffset(value)
-	label, found := "", false
-	for _, p := range staged {
-		from := strings.Index(value, p.token)
-		if from < 0 || len([]rune(value[:from])) > at {
-			continue
-		}
-		label, found = p.label, true
-	}
-	return label, found
-}
-
 // openPasteReader puts one paste on the pane, from the top.
 func (m Model) openPasteReader(a provider.Attachment) (tea.Model, tea.Cmd) {
 	p, ok := pasteOf(a)

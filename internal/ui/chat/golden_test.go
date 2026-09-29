@@ -993,12 +993,12 @@ func TestGolden_PasteToken(t *testing.T) {
 		}
 		reader := func() string {
 			m := staged(t, width)
-			opened, _ := m.openStagedPaste()
+			opened, _ := m.openPreview(m.attachments[0])
 			return strings.Join(opened.(Model).pasteReaderLines(width, 12), "\n")
 		}
 		// ↑ on the sent row, through the key itself: the fold comes back
-		// staged from the row's own bytes, so the rails price it and offer
-		// the key that opens it exactly as they did before the send
+		// staged from the row's own bytes, so the rails price it exactly as
+		// they did before the send
 		// (recall.go).
 		recalled := func() string {
 			m := goldenModel(t, width)

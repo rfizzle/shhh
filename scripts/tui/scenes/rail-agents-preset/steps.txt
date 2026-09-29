@@ -41,5 +41,5 @@ sleep 1
 keys Escape
 sleep 2
 # The snap waits on the map's own row for writer-1, which only the rail draws.
-wide 130 snap 05-past-the-preset "⚠ writer-1" "… 4 more · 4 running" "alt+a manager"
+wide 130 snap 05-past-the-preset "⚠ writer-1" "… 4 more · 4 running" "f12 agents"
 narrow 130 snap 05-past-the-preset "needs you"

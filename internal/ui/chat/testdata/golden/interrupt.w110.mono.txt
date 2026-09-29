@@ -39,7 +39,7 @@
 │ [ctrl+space/ctrl+y] answer it · other keys type into the draft                                         │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ──── DRAFT ───────────────────────────────────────────────────────────────────────────────────────────────
-keys changed: [ctrl+]] key list · [ctrl+n] queue · [alt+a] agents · [shift+↓] pointer … — /help keys      
+keys changed: [ctrl+]] key list · [ctrl+n] queue · [f12] agents · [shift+↓] pointer … — /help keys        
 ╭─ ⏸ 1 waiting ──────────────────────────────────────────────────────────────────────────────────────────╮
 │ ▸ also add a --max-rounds flag while you're in there                                                   │
 ├─ ⏸ manual · round 1 of 150 · context 0% ▱▱▱▱▱▱▱▱ · ↑41.2k ↓9.8k tok ───────────────────────────────────┤
@@ -126,7 +126,7 @@ keys changed: [ctrl+]] key list · [ctrl+n] queue · [alt+a] agents · [shift+�
 ␛[38;5;254m│␛[m ␛[38;5;254m[ctrl+space/ctrl+y]␛[m␛[38;5;254m answer it␛[m␛[38;5;244m · other keys type into the draft␛[m                                         ␛[38;5;254m│␛[m
 ␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 ␛[38;5;244m────␛[m ␛[1;38;5;254mDRAFT␛[m ␛[38;5;244m───────────────────────────────────────────────────────────────────────────────────────────────␛[m
-␛[38;5;254mkeys changed: [ctrl+]] key list␛[38;5;244m · ␛[38;5;254m[ctrl+n] queue␛[38;5;244m · ␛[38;5;254m[alt+a] agents␛[38;5;244m · ␛[38;5;254m[shift+↓] pointer␛[38;5;244m …␛[38;5;254m — /help keys␛[m      
+␛[38;5;254mkeys changed: [ctrl+]] key list␛[38;5;244m · ␛[38;5;254m[ctrl+n] queue␛[38;5;244m · ␛[38;5;254m[f12] agents␛[38;5;244m · ␛[38;5;254m[shift+↓] pointer␛[38;5;244m …␛[38;5;254m — /help keys␛[m        
 ␛[38;5;244m╭─␛[m ␛[38;5;254;1m⏸ 1 waiting␛[m ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────╮␛[m
 ␛[38;5;244m│␛[m ␛[38;5;244m▸␛[m ␛[38;5;254malso add a --max-rounds flag while you're in there                                                  ␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m├─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · round 1 of 150 · ␛[38;5;254mcontext 0%␛[m ␛[38;5;244m▱▱▱▱▱▱▱▱ · ↑41.2k ↓9.8k tok␛[m ␛[38;5;244m───────────────────────────────────┤␛[m

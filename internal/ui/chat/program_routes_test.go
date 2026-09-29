@@ -223,7 +223,7 @@ func TestProgram_AnEditCardAppliesTheEdit(t *testing.T) {
 }
 
 // programKey is one keystroke spelled the way the register spells it —
-// "ctrl+o", "shift+up", "alt+v", "j" — and checked against the spelling the
+// "ctrl+o", "shift+up", "f12", "j" — and checked against the spelling the
 // runtime gives it back, so a key this file sends is the key a binding names.
 func programKey(t *testing.T, s string) tea.KeyPressMsg {
 	t.Helper()
@@ -244,6 +244,7 @@ func programKey(t *testing.T, s string) tea.KeyPressMsg {
 		"enter": tea.KeyEnter, "esc": tea.KeyEscape, "tab": tea.KeyTab, "space": tea.KeySpace,
 		"up": tea.KeyUp, "down": tea.KeyDown, "left": tea.KeyLeft, "right": tea.KeyRight,
 		"backspace": tea.KeyBackspace,
+		"f7":        tea.KeyF7, "f8": tea.KeyF8, "f12": tea.KeyF12,
 	}
 	if code, ok := named[name]; ok {
 		msg.Code = code

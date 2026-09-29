@@ -30,7 +30,7 @@ is `ctrl+]` now.
 An alt chord is the wrong answer for a key a reader reaches for when they are
 lost. On the stock macOS terminals Option composes a character until the
 profile is told to send the escape prefix, so an alt chord is dead there until
-a box is ticked — which is why a Mac ships no alt chord at all
+a box is ticked — which is why no key ships on alt at all
 ([below](#a-mac-ships-without-alt)), and why the key list is on a ctrl chord
 everywhere. Where an alt chord is bound on a Mac anyway, because a keymap
 file put one there, `shhh doctor`'s keys row is what reads the setting and
@@ -65,32 +65,25 @@ they did not ask for.
 
 ## A Mac ships without alt
 
-The keyboard shhh ships is one keyboard per platform, and the difference is
-exactly the alt chords. On Linux and Windows the terminal sends the escape
-prefix for alt and every alt chord above arrives. On a Mac the two stock
-terminals compose a character for Option until a profile setting is ticked,
-so the same chords would be offers that do nothing on the desktop shhh is
-most often run on — the `alt+t` alias and the agent family among
-them, which is how this was found.
+On Linux and Windows the terminal sends the escape prefix for alt and an alt
+chord arrives. On a Mac the two stock terminals compose a character for
+Option until a profile setting is ticked, so the same chord is an offer that
+does nothing on the desktop shhh is most often run on — the `alt+t` alias and
+the agent family were among them, which is how this was found.
 
-So a Mac ships the same acts on the free set: the function row, which every
-terminal delivers with nothing set (a laptop's top row sends them with the
-`fn` key held). The plain key carries the offer a reader meets most — the
-agent manager on `f12` — and shift on the same row carries the rest. The
-reasoning level keeps `ctrl+t` and drops its alt alias rather than moving it.
-Every other key is the same on both, so the two are one register with a
-different spelling in five places, and every hint reads whichever this
-machine ships. The table below is written from the Mac's table in the code:
+So no key ships on alt, on any platform. The agent family is on the free set
+everywhere: the function row, which every terminal delivers with nothing set
+(a laptop's top row sends it with the `fn` key held) — the agent manager on
+`f12`, and the walk along the rail's map on `shift+f7` and `shift+f8`, back
+first. The reasoning level is `ctrl+t` alone, and the staged paste is reached
+through its chip and `/paste show` rather than through a chord of its own
+([a staged attachment](surfaces.md#a-staged-attachment)). The Mac's table in
+the code, which used to move the alt chords to the function row, is left with
+nothing to move:
 
 <!-- BEGIN generated platform keys — written by `make docs` from the Mac's table in internal/ui/keys/platform.go; edit the table, not this. -->
 
-| Key | Does | Linux and Windows | A Mac |
-|---|---|---|---|
-| `draft.reasoning` | cycle the reasoning level | `ctrl+t`, `alt+t` | `ctrl+t` |
-| `draft.open_paste` | open the staged paste | `alt+v` | `shift+f12` |
-| `draft.agents` | the agent manager | `alt+a` | `f12` |
-| `draft.next_agent` | the next session in the rail's map | `alt+]` | `shift+f8` |
-| `draft.prev_agent` | the previous one | `alt+[` | `shift+f7` |
+The Mac's table is empty: every key is the same on both keyboards.
 
 <!-- END generated platform keys -->
 
@@ -102,7 +95,7 @@ that chord name the Option setting, because the chord is the person's own and
 the setting is what it needs. `SHHH_KEYS_PLATFORM=linux` in the environment
 runs the Linux keyboard on a Mac whose Option key already sends the escape
 prefix, and it is what the scene harness sets so a capture reads the same on
-every host. The shift+F spellings are the part of the table not yet pressed
+every host. The walk's shift+F spellings are the agent family's keys not yet pressed
 at Terminal.app's default profile (*verify*); iTerm2 and the Linux terminals
 report them as xterm does.
 
@@ -235,11 +228,11 @@ chord shhh binds — the agent family and the `alt+t` alias — is dead there
 until they do. iTerm2's Left Option "Esc+" is believed to be off the same
 way (*verify* — its default profile has not been pressed yet).
 
-On Linux and Windows the chords stay on alt: every ctrl letter the terminal
-delivers is spent or the line editor's, the free set is function keys and
-modified navigation keys, and alt costs nothing there. On a Mac they move to
-that free set ([a Mac ships without alt](#a-mac-ships-without-alt)), and the
-tick is only a question for a chord a keymap file put back on alt. What shhh
+Every ctrl letter the terminal delivers is spent or the line editor's, so the
+free set is function keys and modified navigation keys, and that is where the
+chords that were on alt went on every platform ([a Mac ships without
+alt](#a-mac-ships-without-alt)); the tick is only a question for a chord a
+keymap file put back on alt. What shhh
 does about the tick: `shhh doctor` has a row for it, which on a Mac reads the setting from the profile Terminal.app
 opens new windows with, or the profile the iTerm2 session is in, and says
 which box turns it on — a profile that composes characters is a warning
@@ -251,25 +244,21 @@ not the tick: it sets the eighth bit on the byte, which is not the
 escape prefix a chord is, and the row says so.
 
 Free chords, spelled the way the decoder spells them and so the way a
-keymap file must: `ctrl+^`, the plain function keys `f2` … `f9` and `f12`,
+keymap file must: `ctrl+^`, the plain function keys `f2` … `f9`,
 and the modifier combinations on the arrow and navigation rows
 the tables above do not name — `alt+pgup`, `alt+pgdown`, `alt+home`,
 `alt+end`, `ctrl+home`, `ctrl+end`, `alt+shift+pgup`, `alt+shift+pgdown`,
 `ctrl+alt+pgup`, `ctrl+alt+pgdown`. Every ctrl letter the terminal delivers
 is spent or the line editor's (`ctrl+a`, `ctrl+e`, `ctrl+k`, `ctrl+u`,
-`ctrl+w` stay with the textarea), which is why the agent manager went to
-alt on Linux and Windows. `ctrl+]` left that set for the key list, which could not: it is the
-door a lost reader opens, and a door behind the Option setting is a door
-that is shut on the desktop where the setting is off. A Mac spends `f12`
-from the same set, and shift on `f7`, `f8` and `f12`.
+`ctrl+w` stay with the textarea), which is why the agent manager is on the
+function row. `ctrl+]` left that set for the key list: it is the door a lost
+reader opens, and it had to be a chord every terminal delivers. The agent
+family spends `f12` from the same set, and shift on `f7` and `f8`.
 
-What is left on alt on Linux and Windows — the Linux table; a Mac ships no
-alt chord of its own — after the family the agent manager took, the staged
-paste and the reasoning level's alias: `alt+e`, `alt+g`, `alt+h`, `alt+i`,
-`alt+j`, `alt+k`, `alt+m`, `alt+n`, `alt+o`, `alt+p`, `alt+q`, `alt+r`,
-`alt+s`, `alt+w`, `alt+x`, `alt+y`, `alt+z`.
-The six the textarea holds and `alt+0` … `alt+9`, which GNOME Terminal
-switches tabs with, are not among them.
+Nothing ships on alt, so every alt letter is left to a keymap file on Linux
+and Windows — where it costs nothing — apart from the six the textarea holds
+and `alt+0` … `alt+9`, which GNOME Terminal switches tabs with; on a Mac one
+costs the Option setting, which the doctor's row then reads.
 
 ## Sources
 

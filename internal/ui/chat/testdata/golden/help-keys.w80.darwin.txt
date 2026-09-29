@@ -50,14 +50,16 @@
                      machine's, and a negative turns one of them off. A
                      paste over 256 KB is refused rather than staged — it
                      would ride in the prompt itself
-    [shift+f12]      open the staged paste. What is staged leaves a fold
-                     where you pasted it — ⟨Paste#1 · 214 lines⟩ — which
+    /paste show      open the staged paste. What is staged leaves a fold
+    the chip         where you pasted it — ⟨Paste#1 · 214 lines⟩ — which
                      moves, deletes and sends as one character, and what
                      it will cost is on the vitals rail before you send.
-                     This reads it back: j/k scrolls, x drops it, q
-                     returns to the draft with the cursor where you left
-                     it. /paste show paste-1.txt is the same surface by
-                     name
+                     Its chip opens it with the sentence kept: a click on
+                     the chip, or reading mode (ctrl+o) down to the strip
+                     and enter on it; /paste show Paste#1 is the same
+                     surface by name. It reads the paste back: j/k
+                     scrolls, x drops it, q returns to the draft with the
+                     cursor where you left it
     [tab]            complete a slash command (typing / opens the menu; ↑↓
                      move, enter runs the highlighted command, esc
                      dismisses)
@@ -143,8 +145,8 @@
                      running turn, and the keys that would change a file
                      are grey while one is going, because the model may be
                      reading them
-    [shift+f8] [shift+f7] move the keyboard one session along the inspect…
-                     rail's AGENTS map — the orchestrator and every agent
+    [shift+f8]       move the keyboard one session along the inspector
+    [shift+f7]       rail's AGENTS map — the orchestrator and every agent
                      it started, in the order they were started, wrapping
                      at both ends. The rail stays up while you are in an
                      agent's session and marks the row you are in;
@@ -284,14 +286,16 @@
                      ␛[38;5;241mmachine's, and a negative turns one of them off. A␛[m
                      ␛[38;5;241mpaste over 256 KB is refused rather than staged — it␛[m
                      ␛[38;5;241mwould ride in the prompt itself␛[m
-    ␛[94m[shift+f12]␛[m      ␛[38;5;241mopen the staged paste. What is staged leaves a fold␛[m
-                     ␛[38;5;241mwhere you pasted it — ⟨Paste#1 · 214 lines⟩ — which␛[m
+    ␛[38;5;252m/paste show␛[m      ␛[38;5;241mopen the staged paste. What is staged leaves a fold␛[m
+    ␛[38;5;252mthe chip␛[m         ␛[38;5;241mwhere you pasted it — ⟨Paste#1 · 214 lines⟩ — which␛[m
                      ␛[38;5;241mmoves, deletes and sends as one character, and what␛[m
                      ␛[38;5;241mit will cost is on the vitals rail before you send.␛[m
-                     ␛[38;5;241mThis reads it back: j/k scrolls, x drops it, q␛[m
-                     ␛[38;5;241mreturns to the draft with the cursor where you left␛[m
-                     ␛[38;5;241mit. /paste show paste-1.txt is the same surface by␛[m
-                     ␛[38;5;241mname␛[m
+                     ␛[38;5;241mIts chip opens it with the sentence kept: a click on␛[m
+                     ␛[38;5;241mthe chip, or reading mode (ctrl+o) down to the strip␛[m
+                     ␛[38;5;241mand enter on it; /paste show Paste#1 is the same␛[m
+                     ␛[38;5;241msurface by name. It reads the paste back: j/k␛[m
+                     ␛[38;5;241mscrolls, x drops it, q returns to the draft with the␛[m
+                     ␛[38;5;241mcursor where you left it␛[m
     ␛[94m[tab]␛[m            ␛[38;5;241mcomplete a slash command (typing / opens the menu; ↑↓␛[m
                      ␛[38;5;241mmove, enter runs the highlighted command, esc␛[m
                      ␛[38;5;241mdismisses)␛[m
@@ -377,8 +381,8 @@
                      ␛[38;5;241mrunning turn, and the keys that would change a file␛[m
                      ␛[38;5;241mare grey while one is going, because the model may be␛[m
                      ␛[38;5;241mreading them␛[m
-    ␛[94m[shift+f8] [shift+f7]␛[m ␛[38;5;241mmove the keyboard one session along the inspect…␛[m
-                     ␛[38;5;241mrail's AGENTS map — the orchestrator and every agent␛[m
+    ␛[94m[shift+f8]␛[m       ␛[38;5;241mmove the keyboard one session along the inspector␛[m
+    ␛[94m[shift+f7]␛[m       ␛[38;5;241mrail's AGENTS map — the orchestrator and every agent␛[m
                      ␛[38;5;241mit started, in the order they were started, wrapping␛[m
                      ␛[38;5;241mat both ends. The rail stays up while you are in an␛[m
                      ␛[38;5;241magent's session and marks the row you are in;␛[m

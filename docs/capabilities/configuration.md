@@ -783,7 +783,7 @@ rules above are what refuse a move, not a list of keys held back from it.
 | `draft.attach` | `ctrl+v` | the same | attach the clipboard | yes |
 | `draft.complete` | `tab` | the same | complete a slash command | yes |
 | `draft.palette` | `ctrl+/`, `ctrl+_` | the same | the command palette | yes |
-| `draft.reasoning` | `ctrl+t`, `alt+t` | `ctrl+t` | cycle the reasoning level | yes |
+| `draft.reasoning` | `ctrl+t` | the same | cycle the reasoning level | yes |
 | `draft.mode` | `shift+tab` | the same | cycle the permission mode | yes |
 | `draft.pause` | `ctrl+p` | the same | hold the turn between rounds, or let a held one go | yes |
 | `draft.history_prev` | `up` | the same | recall the previous input | yes |
@@ -796,11 +796,10 @@ rules above are what refuse a move, not a list of keys held back from it.
 | `draft.page_up` | `pgup` | the same | page the transcript | yes |
 | `draft.page_down` | `pgdown` | the same | page it back | yes |
 | `draft.reading` | `ctrl+o` | the same | reading mode | yes |
-| `draft.open_paste` | `alt+v` | `shift+f12` | open the staged paste | yes |
-| `draft.agents` | `alt+a` | `f12` | the agent manager | yes |
+| `draft.agents` | `f12` | the same | the agent manager | yes |
 | `draft.backlog` | `ctrl+f` | the same | the backlog screen | yes |
-| `draft.next_agent` | `alt+]` | `shift+f8` | the next session in the rail's map | yes |
-| `draft.prev_agent` | `alt+[` | `shift+f7` | the previous one | yes |
+| `draft.next_agent` | `shift+f8` | the same | the next session in the rail's map | yes |
+| `draft.prev_agent` | `shift+f7` | the same | the previous one | yes |
 | `draft.mouse` | `ctrl+x` | the same | mouse reporting on or off | yes |
 | `draft.key_list` | `ctrl+]` | the same | the keys | yes |
 | `draft.suspend` | `ctrl+z` | the same | suspend shhh (idle only) | yes |

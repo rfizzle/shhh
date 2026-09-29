@@ -244,8 +244,8 @@ func (m Model) insertPasteToken(a provider.Attachment) (tea.Model, tea.Cmd) {
 	m.syncCompletions()
 	m.syncViewport()
 	return m.surfaceNotice(fmt.Sprintf(
-		"%s is one character in your draft — %s opens it, backspace over it drops all %s",
-		p.token, keys.Bracket(keys.Draft.OpenPaste), countedPasteLines(p.lines)))
+		"%s is one character in your draft — its chip opens it, backspace over it drops all %s",
+		p.token, countedPasteLines(p.lines)))
 }
 
 // countedPasteLines is a paste's height in the words the chip and the fold

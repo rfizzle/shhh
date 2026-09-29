@@ -704,13 +704,6 @@ func (m Model) updateKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 		if m.inputLive() {
 			return answered(m.submitInput())
 		}
-	case keys.Is(pressed, keys.Draft.OpenPaste):
-		// The fold in the draft, opened (preview.go). Orchestrator-scoped
-		// like the staging area it reads: attached, the keyboard is pointed
-		// at a child and the fold is not in the sentence being typed.
-		if m.inputLive() && m.attachedTo == "" {
-			return answered(m.openStagedPaste())
-		}
 	}
 	// The fold is one character as far as the keyboard is concerned
 	// (docs/interface/surfaces.md#the-input-frame), and this is where that is

@@ -230,7 +230,7 @@ func heldChildren(t *testing.T, open bool) (*program, func()) {
 func TestProgram_TheManagerSteersAndKillsAChild(t *testing.T) {
 	tm, _ := heldChildren(t, false)
 
-	programPress(t, tm, "alt+a")
+	programPress(t, tm, "f12")
 	waitForText(t, tm, "[enter] attach")
 	programPress(t, tm, "j", "s")
 	waitForText(t, tm, "steer reader-1")
@@ -265,7 +265,7 @@ func TestProgram_TheManagerAsksAFinishedChildAFollowUp(t *testing.T) {
 
 	startChildren(t, tm, release, "Start a researcher", "The reader is on it")
 	waitForText(t, tm, "reader-1  done")
-	programPress(t, tm, "alt+a")
+	programPress(t, tm, "f12")
 	waitForText(t, tm, "[enter] attach")
 	programPress(t, tm, "j")
 	waitForText(t, tm, "[s] follow up")
@@ -317,9 +317,9 @@ func TestProgram_AHoldReachesTheFanOut(t *testing.T) {
 func TestProgram_TheNextAgentChordWalksTheMap(t *testing.T) {
 	tm, _ := heldChildren(t, false)
 
-	programPress(t, tm, "alt+]")
+	programPress(t, tm, "shift+f8")
 	waitForText(t, tm, "[esc] back to your session")
-	programPress(t, tm, "alt+]", "alt+]")
+	programPress(t, tm, "shift+f8", "shift+f8")
 	waitForGone(t, tm, "[esc] back to your session")
 
 	frameHas(t, finalFrame(t, tm), "[enter] send")
@@ -344,11 +344,11 @@ func TestProgram_TheChordMovesOnItsFirstPressAfterTheManager(t *testing.T) {
 
 	startChildren(t, tm, release, "Start a writer", "The writer is on it")
 	waitForText(t, tm, "writer-1 ▸ Approve command")
-	programPress(t, tm, "alt+a")
+	programPress(t, tm, "f12")
 	waitForText(t, tm, "[enter] attach")
 	programPress(t, tm, "esc")
 	waitForGone(t, tm, "[enter] attach")
-	programPress(t, tm, "alt+]")
+	programPress(t, tm, "shift+f8")
 	waitForText(t, tm, "orchestrator ▸ writer-1")
 
 	frameHas(t, finalFrame(t, tm), "❯ ⚠ writer-1")
@@ -372,7 +372,7 @@ func TestProgram_TheManagerAnswersAChildInPlace(t *testing.T) {
 	startChildren(t, tm, release, "Start a writer", "The writer is on it")
 	waitForText(t, tm, "writer-1 ▸ Approve command")
 	programPress(t, tm, "esc")
-	programPress(t, tm, "alt+a")
+	programPress(t, tm, "f12")
 	waitForText(t, tm, "[enter] attach")
 	programPress(t, tm, "j")
 	waitForText(t, tm, "answer without attaching")

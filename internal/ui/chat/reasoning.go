@@ -27,9 +27,9 @@ import (
 // Terminal and iTerm2 send Option+letter as the character the letter composes
 // (option+t is a dagger), so alt+t typed a † into the draft on the platform
 // most readers are on, and no amount of documenting it makes the key work.
-// Ctrl+T is reported identically by every terminal on every platform. It is
-// still bound to alt+t as well, for the muscle memory of the readers whose
-// terminals do send meta. What it costs is the textarea's own
+// Ctrl+T is reported identically by every terminal on every platform, and it
+// is the key's only spelling: an alt alias would be a key that works on some
+// desks and types a dagger on others. What it costs is the textarea's own
 // transpose-character-backward, which is the same trade ctrl+g and ctrl+p
 // already made; ctrl+r stayed with the shell's meaning, the history search.
 

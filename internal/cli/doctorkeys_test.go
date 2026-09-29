@@ -329,7 +329,29 @@ func TestDoctorOptionKey_AMacWithNoAltChordIsNotAQuestion(t *testing.T) {
 	}
 }
 
+// altChordBound puts the agent manager back on alt with a keymap file, as a
+// person who chose the alt chord would, and restores the shipped keyboard
+// when the test ends. Nothing ships on alt, so the row is only a question
+// once a file has put a chord there
+// (docs/interface/reserved-keys.md#a-mac-ships-without-alt).
+func altChordBound(t *testing.T, keymap ...string) {
+	t.Helper()
+	if len(keymap) == 0 {
+		keymap = []string{"[draft]\nagents = \"alt+a\"\n"}
+	}
+	t.Cleanup(func() { _ = keys.Load() })
+	t.Cleanup(keys.UsePlatform("linux"))
+	path := filepath.Join(t.TempDir(), "keybindings.toml")
+	if err := os.WriteFile(path, []byte(keymap[0]), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := keys.Load(path); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestDoctorOptionKey_ATickedProfilePasses(t *testing.T) {
+	altChordBound(t)
 	f := doctorOptionKey(optionKeyState{GOOS: "darwin", Terminal: "Apple_Terminal", Version: "455",
 		Profile: "Pro", Sends: optionEscape})
 	if f.State != components.DoctorPassed || f.Outcome != "delivered" {
@@ -378,10 +400,11 @@ func TestDoctorOptionKey_FitsAnEightyColumnScreen(t *testing.T) {
 // terminal's own words with the profile it was read from — the reader is sent
 // to one box, not to a settings window.
 //
-// The count rather than the list: there are sixteen of them now that a
-// transcript row's offers are chords, and a sentence naming sixteen is a
-// sentence the screen clips before it reaches the name of the box.
+// The count rather than the list: a keymap file may put any number of keys
+// on alt, and a sentence naming them all is a sentence the screen clips
+// before it reaches the name of the box.
 func TestDoctorOptionKey_TypingACharacterWarnsAndNamesTheTick(t *testing.T) {
+	altChordBound(t, "[draft]\nagents = \"alt+a\"\nnext_agent = \"alt+]\"\n")
 	f := doctorOptionKey(optionKeyState{GOOS: "darwin", Terminal: "Apple_Terminal", Profile: "Basic", Sends: optionCharacter})
 	if f.State != components.DoctorWarned {
 		t.Fatalf("a profile that types characters did not warn: %+v", f)
@@ -413,6 +436,7 @@ func TestDoctorOptionKey_TypingACharacterWarnsAndNamesTheTick(t *testing.T) {
 // the one: the byte arrives with its eighth bit set, which no decoder reads
 // as a chord. The row says so rather than reporting it as delivered.
 func TestDoctorOptionKey_MetaIsNotAChord(t *testing.T) {
+	altChordBound(t)
 	f := doctorOptionKey(optionKeyState{GOOS: "darwin", Terminal: "iTerm.app", Profile: "Meta", Sends: optionHighBit})
 	if f.State != components.DoctorWarned {
 		t.Fatalf("Meta passed: %+v", f)
@@ -425,6 +449,7 @@ func TestDoctorOptionKey_MetaIsNotAChord(t *testing.T) {
 // An export that failed is not a pass: the row says what to look for at the
 // prompt and where the tick is, so the reader can settle it by hand.
 func TestDoctorOptionKey_AnUnreadableSettingStillNamesTheTick(t *testing.T) {
+	altChordBound(t)
 	f := doctorOptionKey(optionKeyState{GOOS: "darwin", Terminal: "Apple_Terminal", Err: errors.New("defaults: not found")})
 	if f.State != components.DoctorWarned || f.Outcome != "unread" {
 		t.Fatalf("an unreadable setting reads as %+v", f)
@@ -435,6 +460,7 @@ func TestDoctorOptionKey_AnUnreadableSettingStillNamesTheTick(t *testing.T) {
 }
 
 func TestDoctorOptionKey_ATerminalItDoesNotReadIsNotChecked(t *testing.T) {
+	altChordBound(t)
 	f := doctorOptionKey(optionKeyState{GOOS: "darwin", Terminal: "ghostty"})
 	if f.State != components.DoctorSkipped || !strings.Contains(f.Subject, "ghostty") {
 		t.Fatalf("an unknown terminal is judged: %+v", f)

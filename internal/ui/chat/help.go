@@ -380,8 +380,8 @@ on an empty draft the same key pulls the newest queued message — a follow-up f
 			text: `text taller than 10 lines or wider than 1000 columns is staged as paste-1.txt rather than typed into the draft — both through ctrl+v and through your terminal's own paste — so a stack trace does not bury the sentence it came with. Those two numbers are the defaults for appearance.paste_lines and appearance.paste_columns; shhh config shows this machine's, and a negative turns one of them off. A paste over 256 KB is refused rather than staged — it would ride in the prompt itself`,
 		},
 		{
-			binds: []keys.Binding{keys.Draft.OpenPaste},
-			text:  `open the staged paste. What is staged leaves a fold where you pasted it — ⟨Paste#1 · 214 lines⟩ — which moves, deletes and sends as one character, and what it will cost is on the vitals rail before you send. This reads it back: j/k scrolls, x drops it, q returns to the draft with the cursor where you left it. /paste show paste-1.txt is the same surface by name` + optionWhen(optionAside, keys.Draft.OpenPaste),
+			key:  "/paste show\nthe chip",
+			text: `open the staged paste. What is staged leaves a fold where you pasted it — ⟨Paste#1 · 214 lines⟩ — which moves, deletes and sends as one character, and what it will cost is on the vitals rail before you send. Its chip opens it with the sentence kept: a click on the chip, or reading mode (` + keys.Shown(keys.Draft.Reading) + `) down to the strip and enter on it; /paste show Paste#1 is the same surface by name. It reads the paste back: j/k scrolls, x drops it, q returns to the draft with the cursor where you left it`,
 		},
 		{
 			binds: []keys.Binding{keys.Draft.Complete},
@@ -443,7 +443,7 @@ bare /todo opens the same screen; it opens over a running turn, and the keys tha
 		},
 		{
 			binds: []keys.Binding{keys.Draft.NextAgent, keys.Draft.PrevAgent},
-			sep:   " ",
+			sep:   "\n",
 			text:  `move the keyboard one session along the inspector rail's AGENTS map — the orchestrator and every agent it started, in the order they were started, wrapping at both ends. The rail stays up while you are in an agent's session and marks the row you are in; everything you do *to* an agent is still in the manager` + optionWhen(optionAside, keys.Draft.NextAgent, keys.Draft.PrevAgent),
 		},
 		{

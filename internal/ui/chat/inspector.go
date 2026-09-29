@@ -652,10 +652,13 @@ func (m Model) inspectorAgents() []components.InspectorAgent {
 // forty-four columns at the rail's floor, which is exactly what these three
 // clauses take, and the reverse of a chord whose forward key is on screen is
 // the one thing a reader can guess — where a fourth clause would clip one of
-// the other three off the narrowest rail there is.
+// the other three off the narrowest rail there is. The manager is named by
+// the word the key bar offers it with, agents, which is also the one that
+// fits: with the manager on the function row, "manager" is the column that
+// would clip the pointer's clause.
 func agentsHintRail() string {
 	return strings.Join([]string{
-		keys.Shown(keys.Draft.Agents) + " manager",
+		keys.Shown(keys.Draft.Agents) + " agents",
 		keys.Shown(keys.Draft.NextAgent) + " next",
 		"click to attach",
 	}, " · ")

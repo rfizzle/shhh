@@ -85,7 +85,7 @@ func Surfaces() []Surface {
 				Draft.HistoryPrev, Draft.HistoryNext, Draft.HistorySearch,
 				Draft.PointUp, Draft.PointDown, Draft.Open, Draft.Close,
 				Draft.PageUp, Draft.PageDown,
-				Draft.Reading, Draft.OpenPaste, Draft.Agents, Draft.Backlog,
+				Draft.Reading, Draft.Agents, Draft.Backlog,
 				Draft.NextAgent, Draft.PrevAgent,
 				Draft.Mouse, Draft.KeyList,
 				Draft.Suspend, Draft.Redraw,
@@ -133,13 +133,14 @@ func Surfaces() []Surface {
 			Bindings: Staged.All(),
 		},
 		{
-			// The staged paste, opened from the fold the draft is holding.
-			// A takeover: it scrolls, and one of its keys drops the paste,
-			// so nothing under it may be answering keys at the same time.
+			// The staged paste, opened from its chip on the staged strip or
+			// by name. A takeover: it scrolls, and one of its keys drops the
+			// paste, so nothing under it may be answering keys at the same
+			// time.
 			Name:     "the staged paste",
 			Section:  "docs/interface/surfaces.md#the-input-frame",
 			Position: Takeover,
-			Reached:  Shown(Draft.OpenPaste) + ", or /paste show",
+			Reached:  "its chip on the staged strip, or /paste show",
 			Bindings: Paste.All(),
 		},
 		{

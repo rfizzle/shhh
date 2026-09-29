@@ -116,6 +116,7 @@ var retired = []string{
 	"rowchord.retry", "rowchord.continue", "rowchord.key", "rowchord.provider",
 	"rowchord.rounds", "rowchord.uncap",
 	"review.stage_hunk", "review.stage_file", "review.stage_all", "review.apply",
+	"draft.open_paste",
 }
 
 // isRetired reports that a name from a file is one of retired, read the way

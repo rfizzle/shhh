@@ -28,7 +28,7 @@
      ✗ go test ./internal/agent/... failing · exit 1 · 21s                                  │     ⠋ running                                     
                                                                                             │  ✗ reviewer-1                      failed  $0.05  
                                                                                             │    cancelled                                      
-                                                                                            │  alt+a manager · alt+] next · click to attach     
+                                                                                            │  f12 agents · shift+f8 next · click to attach     
                                                                                             │                                                   
                                                                                             │  CONTEXT                             32% of 128k  
                                                                                             │  ▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱                   41k  
@@ -60,7 +60,7 @@
                                                                                             │     ⠋ running                                     
                                                                                             │  ✗ reviewer-1                      failed  $0.05  
                                                                                             │    cancelled                                      
-                                                                                            │  alt+a manager · alt+] next · click to attach     
+                                                                                            │  f12 agents · shift+f8 next · click to attach     
                                                                                             │                                                   
                                                                                             │  CONTEXT                             32% of 128k  
                                                                                             │  ▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱                   41k  
@@ -72,7 +72,7 @@
   ╭─ ⠋ acting… ──────────────────────────────────────────────────────────────────────────────────── orchestrator ▸ researcher-1 · shhh chat ─╮  
   │ researcher-1 ▸                                                                                                                           │  
   ├─ ⏸ manual · running · context 9% ▰▱▱▱▱▱▱▱ · $0.05 of $0.51 · parent round 2 of 150 · 1 queued for this turn · researcher-1 ──────────────┤  
-  ╰─ [esc] back to your session · [alt+a] agents ────────────────────────────────────────────────────────────────────────────────────────────╯  
+  ╰─ [esc] back to your session · [f12] agents ──────────────────────────────────────────────────────────────────────────────────────────────╯  
 
 · the keyboard in a child's child · the breadcrumb is the lineage
    shhh chat · gpt-4o                                                                                                                           
@@ -92,7 +92,7 @@
                                                                                             │     ⠋ running                                     
                                                                                             │  ✗ reviewer-1                      failed  $0.05  
                                                                                             │    cancelled                                      
-                                                                                            │  alt+a manager · alt+] next · click to attach     
+                                                                                            │  f12 agents · shift+f8 next · click to attach     
                                                                                             │                                                   
                                                                                             │  CONTEXT                             32% of 128k  
                                                                                             │  ▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱                   41k  
@@ -104,7 +104,7 @@
   ╭─ ⠋ thinking… ───────────────────────────────────────────────────────────────────── orchestrator ▸ researcher-1 ▸ reviewer-2 · shhh chat ─╮  
   │ reviewer-2 ▸                                                                                                                             │  
   ├─ ⏸ read-only · running · context 0% ▱▱▱▱▱▱▱▱ · $0.05 of $0.51 · parent round 2 of 150 · reviewer-2 ──────────────────────────────────────┤  
-  ╰─ [esc] back to your session · [alt+a] agents ────────────────────────────────────────────────────────────────────────────────────────────╯  
+  ╰─ [esc] back to your session · [f12] agents ──────────────────────────────────────────────────────────────────────────────────────────────╯  
 
 · another agent waiting · the rail says so and names the chord
    shhh chat · gpt-4o                                                                                                                           
@@ -124,7 +124,7 @@
                                                                                             │     ⠋ running                                     
                                                                                             │  ✗ reviewer-1                      failed  $0.05  
                                                                                             │    cancelled                                      
-                                                                                            │  alt+a manager · alt+] next · click to attach     
+                                                                                            │  f12 agents · shift+f8 next · click to attach     
                                                                                             │                                                   
                                                                                             │  CONTEXT                             32% of 128k  
                                                                                             │  ▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱                   41k  
@@ -136,7 +136,7 @@
   ╭─ ⏸ 1 waiting ────────────────────────────────────────────────────────────────────────────────── orchestrator ▸ researcher-1 · shhh chat ─╮  
   │ researcher-1 ▸                                                                                                                           │  
   ├─ ⏸ manual · running · context 9% ▰▱▱▱▱▱▱▱ · $0.05 of $0.51 · parent round 2 of 150 · 1 queued for this turn · researcher-1 ──────────────┤  
-  ╰─ ⚠ 1 other agent waiting · [alt+a] agents · [esc] back to your session ──────────────────────────────────────────────────────────────────╯  
+  ╰─ ⚠ 1 other agent waiting · [f12] agents · [esc] back to your session ────────────────────────────────────────────────────────────────────╯  
 
 · a parked child · held on the frame and on the map, and no key the frame cannot answer
    shhh chat · gpt-4o                                                                                                                           
@@ -152,7 +152,7 @@
                                                                                             │    ready                                          
                                                                                             │❯ ◇ researcher-1                             held  
                                                                                             │    1 tool                                         
-                                                                                            │  alt+a manager · alt+] next · click to attach     
+                                                                                            │  f12 agents · shift+f8 next · click to attach     
                                                                                             │                                                   
                                                                                             │  CONTEXT                             32% of 128k  
                                                                                             │  ▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱                   41k  
@@ -168,7 +168,7 @@
   ╭─ ⏸ held ─────────────────────────────────────────────────────────────────────────────────────── orchestrator ▸ researcher-1 · shhh chat ─╮  
   │ researcher-1 ▸                                                                                                                           │  
   ├─ ⏸ manual · held · context 0% ▱▱▱▱▱▱▱▱ · researcher-1 ───────────────────────────────────────────────────────────────────────────────────┤  
-  ╰─ [esc] back to your session · [alt+a] agents ────────────────────────────────────────────────────────────────────────────────────────────╯  
+  ╰─ [esc] back to your session · [f12] agents ──────────────────────────────────────────────────────────────────────────────────────────────╯  
 
 ── ansi ────────────────────────────────────────────────────
 · the keyboard in this session · the map marks its first row
@@ -189,7 +189,7 @@
      ␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/... failing␛[38;5;241m · exit 1 · 21s␛[m                                  ␛[38;5;241m│␛[m     ␛[38;5;205m⠋ running␛[m                                     
                                                                                             ␛[38;5;241m│␛[m  ␛[91m✗␛[m ␛[38;5;252mreviewer-1␛[m                      ␛[91mfailed␛[m  ␛[38;5;241m$0.05␛[m  
                                                                                             ␛[38;5;241m│␛[m    ␛[38;5;245mcancelled␛[m                                      
-                                                                                            ␛[38;5;241m│␛[m  ␛[38;5;241malt+a manager · alt+] next · click to attach␛[m     
+                                                                                            ␛[38;5;241m│␛[m  ␛[38;5;241mf12 agents · shift+f8 next · click to attach␛[m     
                                                                                             ␛[38;5;241m│␛[m                                                   
                                                                                             ␛[38;5;241m│␛[m  ␛[94;1mCONTEXT␛[m                             ␛[92m32% of 128k␛[m  
                                                                                             ␛[38;5;241m│␛[m  ␛[92m▰▰▰▰▰▰▰▰␛[38;5;241m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m                   ␛[92m41k␛[m  
@@ -221,7 +221,7 @@
                                                                                             ␛[38;5;241m│␛[m     ␛[38;5;205m⠋ running␛[m                                     
                                                                                             ␛[38;5;241m│␛[m  ␛[91m✗␛[m ␛[38;5;252mreviewer-1␛[m                      ␛[91mfailed␛[m  ␛[38;5;241m$0.05␛[m  
                                                                                             ␛[38;5;241m│␛[m    ␛[38;5;245mcancelled␛[m                                      
-                                                                                            ␛[38;5;241m│␛[m  ␛[38;5;241malt+a manager · alt+] next · click to attach␛[m     
+                                                                                            ␛[38;5;241m│␛[m  ␛[38;5;241mf12 agents · shift+f8 next · click to attach␛[m     
                                                                                             ␛[38;5;241m│␛[m                                                   
                                                                                             ␛[38;5;241m│␛[m  ␛[94;1mCONTEXT␛[m                             ␛[92m32% of 128k␛[m  
                                                                                             ␛[38;5;241m│␛[m  ␛[92m▰▰▰▰▰▰▰▰␛[38;5;241m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m                   ␛[92m41k␛[m  
@@ -233,7 +233,7 @@
   ␛[38;5;241m╭─␛[m ␛[38;5;205m⠋ acting…␛[m ␛[38;5;241m────────────────────────────────────────────────────────────────────────────────────␛[m ␛[38;5;243morchestrator␛[94m ▸ researcher-1␛[38;5;243m · shhh chat␛[m ␛[38;5;241m─╮␛[m  
   ␛[38;5;241m│␛[m ␛[94;1mresearcher-1 ▸␛[m ␛[38;5;252m                                                                                                                         ␛[m ␛[38;5;241m│␛[m  
   ␛[38;5;241m├─␛[m ␛[38;5;214m⏸ manual␛[38;5;243m · running · ␛[92mcontext 9%␛[m ␛[92m▰␛[38;5;241m▱▱▱▱▱▱▱␛[38;5;243m · $0.05 of $0.51 · parent round 2 of 150 · 1 queued for this turn · researcher-1␛[m ␛[38;5;241m──────────────┤␛[m  
-  ␛[38;5;241m╰─␛[m ␛[92m[esc]␛[38;5;241m back to your session · ␛[94m[alt+a]␛[38;5;241m agents␛[m ␛[38;5;241m────────────────────────────────────────────────────────────────────────────────────────────╯␛[m  
+  ␛[38;5;241m╰─␛[m ␛[92m[esc]␛[38;5;241m back to your session · ␛[94m[f12]␛[38;5;241m agents␛[m ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────╯␛[m  
 
 · the keyboard in a child's child · the breadcrumb is the lineage
   ␛[97;1m shhh chat␛[38;5;241;22m · gpt-4o␛[m                                                                                                                           
@@ -253,7 +253,7 @@
                                                                                             ␛[38;5;241m│␛[m     ␛[38;5;205m⠋ running␛[m                                     
                                                                                             ␛[38;5;241m│␛[m  ␛[91m✗␛[m ␛[38;5;252mreviewer-1␛[m                      ␛[91mfailed␛[m  ␛[38;5;241m$0.05␛[m  
                                                                                             ␛[38;5;241m│␛[m    ␛[38;5;245mcancelled␛[m                                      
-                                                                                            ␛[38;5;241m│␛[m  ␛[38;5;241malt+a manager · alt+] next · click to attach␛[m     
+                                                                                            ␛[38;5;241m│␛[m  ␛[38;5;241mf12 agents · shift+f8 next · click to attach␛[m     
                                                                                             ␛[38;5;241m│␛[m                                                   
                                                                                             ␛[38;5;241m│␛[m  ␛[94;1mCONTEXT␛[m                             ␛[92m32% of 128k␛[m  
                                                                                             ␛[38;5;241m│␛[m  ␛[92m▰▰▰▰▰▰▰▰␛[38;5;241m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m                   ␛[92m41k␛[m  
@@ -265,7 +265,7 @@
   ␛[38;5;241m╭─␛[m ␛[38;5;205m⠋ thinking…␛[m ␛[38;5;241m─────────────────────────────────────────────────────────────────────␛[m ␛[38;5;243morchestrator␛[94m ▸ researcher-1 ▸ reviewer-2␛[38;5;243m · shhh chat␛[m ␛[38;5;241m─╮␛[m  
   ␛[38;5;241m│␛[m ␛[94;1mreviewer-2 ▸␛[m ␛[38;5;252m                                                                                                                           ␛[m ␛[38;5;241m│␛[m  
   ␛[38;5;241m├─␛[m ␛[38;5;214m⏸ read-only␛[38;5;243m · running · ␛[92mcontext 0%␛[m ␛[38;5;241m▱▱▱▱▱▱▱▱␛[38;5;243m · $0.05 of $0.51 · parent round 2 of 150 · reviewer-2␛[m ␛[38;5;241m──────────────────────────────────────┤␛[m  
-  ␛[38;5;241m╰─␛[m ␛[92m[esc]␛[38;5;241m back to your session · ␛[94m[alt+a]␛[38;5;241m agents␛[m ␛[38;5;241m────────────────────────────────────────────────────────────────────────────────────────────╯␛[m  
+  ␛[38;5;241m╰─␛[m ␛[92m[esc]␛[38;5;241m back to your session · ␛[94m[f12]␛[38;5;241m agents␛[m ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────╯␛[m  
 
 · another agent waiting · the rail says so and names the chord
   ␛[97;1m shhh chat␛[38;5;241;22m · gpt-4o␛[m                                                                                                                           
@@ -285,7 +285,7 @@
                                                                                             ␛[38;5;241m│␛[m     ␛[38;5;205m⠋ running␛[m                                     
                                                                                             ␛[38;5;241m│␛[m  ␛[91m✗␛[m ␛[38;5;252mreviewer-1␛[m                      ␛[91mfailed␛[m  ␛[38;5;241m$0.05␛[m  
                                                                                             ␛[38;5;241m│␛[m    ␛[38;5;245mcancelled␛[m                                      
-                                                                                            ␛[38;5;241m│␛[m  ␛[38;5;241malt+a manager · alt+] next · click to attach␛[m     
+                                                                                            ␛[38;5;241m│␛[m  ␛[38;5;241mf12 agents · shift+f8 next · click to attach␛[m     
                                                                                             ␛[38;5;241m│␛[m                                                   
                                                                                             ␛[38;5;241m│␛[m  ␛[94;1mCONTEXT␛[m                             ␛[92m32% of 128k␛[m  
                                                                                             ␛[38;5;241m│␛[m  ␛[92m▰▰▰▰▰▰▰▰␛[38;5;241m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m                   ␛[92m41k␛[m  
@@ -297,7 +297,7 @@
   ␛[38;5;241m╭─␛[m ␛[38;5;214;1m⏸ 1 waiting␛[m ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────␛[m ␛[38;5;243morchestrator␛[94m ▸ researcher-1␛[38;5;243m · shhh chat␛[m ␛[38;5;241m─╮␛[m  
   ␛[38;5;241m│␛[m ␛[94;1mresearcher-1 ▸␛[m ␛[38;5;252m                                                                                                                         ␛[m ␛[38;5;241m│␛[m  
   ␛[38;5;241m├─␛[m ␛[38;5;214m⏸ manual␛[38;5;243m · running · ␛[92mcontext 9%␛[m ␛[92m▰␛[38;5;241m▱▱▱▱▱▱▱␛[38;5;243m · $0.05 of $0.51 · parent round 2 of 150 · 1 queued for this turn · researcher-1␛[m ␛[38;5;241m──────────────┤␛[m  
-  ␛[38;5;241m╰─␛[m ␛[38;5;214;1m⚠ 1 other agent waiting␛[38;5;241;22m · ␛[94m[alt+a]␛[38;5;241m agents · ␛[92m[esc]␛[38;5;241m back to your session␛[m ␛[38;5;241m──────────────────────────────────────────────────────────────────╯␛[m  
+  ␛[38;5;241m╰─␛[m ␛[38;5;214;1m⚠ 1 other agent waiting␛[38;5;241;22m · ␛[94m[f12]␛[38;5;241m agents · ␛[92m[esc]␛[38;5;241m back to your session␛[m ␛[38;5;241m────────────────────────────────────────────────────────────────────╯␛[m  
 
 · a parked child · held on the frame and on the map, and no key the frame cannot answer
   ␛[97;1m shhh chat␛[38;5;241;22m · gpt-4o␛[m                                                                                                                           
@@ -313,7 +313,7 @@
                                                                                             ␛[38;5;241m│␛[m    ␛[38;5;245mready␛[m                                          
                                                                                             ␛[38;5;241m│␛[94m❯␛[m ␛[38;5;241;48;5;62m◇␛[39m ␛[97mresearcher-1                             held␛[m  
                                                                                             ␛[38;5;241m│␛[m    ␛[38;5;245m1 tool␛[m                                         
-                                                                                            ␛[38;5;241m│␛[m  ␛[38;5;241malt+a manager · alt+] next · click to attach␛[m     
+                                                                                            ␛[38;5;241m│␛[m  ␛[38;5;241mf12 agents · shift+f8 next · click to attach␛[m     
                                                                                             ␛[38;5;241m│␛[m                                                   
                                                                                             ␛[38;5;241m│␛[m  ␛[94;1mCONTEXT␛[m                             ␛[92m32% of 128k␛[m  
                                                                                             ␛[38;5;241m│␛[m  ␛[92m▰▰▰▰▰▰▰▰␛[38;5;241m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m                   ␛[92m41k␛[m  
@@ -329,4 +329,4 @@
   ␛[38;5;241m╭─␛[m ␛[38;5;214;1m⏸ held␛[m ␛[38;5;241m───────────────────────────────────────────────────────────────────────────────────────␛[m ␛[38;5;243morchestrator␛[94m ▸ researcher-1␛[38;5;243m · shhh chat␛[m ␛[38;5;241m─╮␛[m  
   ␛[38;5;241m│␛[m ␛[94;1mresearcher-1 ▸␛[m ␛[38;5;252m                                                                                                                         ␛[m ␛[38;5;241m│␛[m  
   ␛[38;5;241m├─␛[m ␛[38;5;214m⏸ manual␛[38;5;243m · held · ␛[92mcontext 0%␛[m ␛[38;5;241m▱▱▱▱▱▱▱▱␛[38;5;243m · researcher-1␛[m ␛[38;5;241m───────────────────────────────────────────────────────────────────────────────────┤␛[m  
-  ␛[38;5;241m╰─␛[m ␛[92m[esc]␛[38;5;241m back to your session · ␛[94m[alt+a]␛[38;5;241m agents␛[m ␛[38;5;241m────────────────────────────────────────────────────────────────────────────────────────────╯␛[m  
+  ␛[38;5;241m╰─␛[m ␛[92m[esc]␛[38;5;241m back to your session · ␛[94m[f12]␛[38;5;241m agents␛[m ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────╯␛[m  

@@ -69,9 +69,7 @@ const (
 // Windows, as the document prints it: the name a file writes it by, what it
 // does, and the keystrokes on each, in the order the register declares them.
 func PlatformReference() string {
-	var b strings.Builder
-	b.WriteString(platformBegin + "\n\n")
-	b.WriteString("| Key | Does | Linux and Windows | A Mac |\n|---|---|---|---|\n")
+	var rows strings.Builder
 	for _, g := range keyboard(true) {
 		for _, a := range g.Acts {
 			linux, _ := ShippedOn("linux", a.Name)
@@ -79,8 +77,18 @@ func PlatformReference() string {
 			if slices.Equal(linux, darwin) {
 				continue
 			}
-			fmt.Fprintf(&b, "| `%s` | %s | %s | %s |\n", a.Name, cell(a.Words), keystrokes(linux), keystrokes(darwin))
+			fmt.Fprintf(&rows, "| `%s` | %s | %s | %s |\n", a.Name, cell(a.Words), keystrokes(linux), keystrokes(darwin))
 		}
+	}
+	var b strings.Builder
+	b.WriteString(platformBegin + "\n\n")
+	if rows.Len() == 0 {
+		// A table with a header and no rows reads as a table that failed to
+		// generate; an empty one is a fact, so it is said as one.
+		b.WriteString("The Mac's table is empty: every key is the same on both keyboards.\n")
+	} else {
+		b.WriteString("| Key | Does | Linux and Windows | A Mac |\n|---|---|---|---|\n")
+		b.WriteString(rows.String())
 	}
 	b.WriteString("\n" + platformEnd)
 	return b.String()

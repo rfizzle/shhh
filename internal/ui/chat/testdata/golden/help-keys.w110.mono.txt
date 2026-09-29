@@ -37,12 +37,12 @@
                      numbers are the defaults for appearance.paste_lines and appearance.paste_columns;
                      shhh config shows this machine's, and a negative turns one of them off. A paste
                      over 256 KB is refused rather than staged — it would ride in the prompt itself
-    [alt+v]          open the staged paste. What is staged leaves a fold where you pasted it — ⟨Paste#1
-                     · 214 lines⟩ — which moves, deletes and sends as one character, and what it will
-                     cost is on the vitals rail before you send. This reads it back: j/k scrolls, x
-                     drops it, q returns to the draft with the cursor where you left it. /paste show
-                     paste-1.txt is the same surface by name (alt needs the Option setting the agent
-                     manager's row names)
+    /paste show      open the staged paste. What is staged leaves a fold where you pasted it — ⟨Paste#1
+    the chip         · 214 lines⟩ — which moves, deletes and sends as one character, and what it will
+                     cost is on the vitals rail before you send. Its chip opens it with the sentence
+                     kept: a click on the chip, or reading mode (ctrl+o) down to the strip and enter on
+                     it; /paste show Paste#1 is the same surface by name. It reads the paste back: j/k
+                     scrolls, x drops it, q returns to the draft with the cursor where you left it
     [tab]            complete a slash command (typing / opens the menu; ↑↓ move, enter runs the
                      highlighted command, esc dismisses)
     [ctrl+a ctrl+e]  the draft is a readline editor: line start and line end, kill to end and to start
@@ -64,7 +64,7 @@
                      draft, esc puts the draft back exactly as it was
     [ctrl+t]         cycle the reasoning level: off → low → medium → high. It changes the next model
                      request, not the one in flight, and the level is stated on the vitals rail beside
-                     the model (the alt+t alias needs the Option setting the agent manager's row names)
+                     the model
     [shift+tab]      cycle the permission mode: manual → accept-edits → auto → read-only → plan, and
                      round again (behavior.mode_cycle sets another order)
                      while the agent is working, enter queues a steering message that joins the
@@ -88,13 +88,9 @@
                      scrollable at the last one. It opens over a running turn, which keeps streaming
                      underneath; a transcript with nothing selectable opens as a plain pager. /step
                      opens the in-flight step's detail from the prompt
-    [alt+a]          agent manager: enter attaches to an agent's session, s steers it from its row
+    [f12]            agent manager: enter attaches to an agent's session, s steers it from its row
                      without attaching, x cancels its turn, X kills it — the one way an agent ends;
                      attached, typing steers the agent, shift+tab sets its mode (clamped), esc detaches
-                     on a Mac an alt chord arrives only once the terminal's Option key sends the escape
-                     prefix, which the stock terminals do not until told — Terminal.app: Settings ›
-                     Profiles › Keyboard › Use Option as Meta key; iTerm2: Profiles › Keys › Left Option
-                     key: Esc+. shhh doctor's keys row reads yours
     [ctrl+f]         the backlog screen: the project's items on the left and the one under the pointer
                      on the right, / and s/p/k/r narrow the list, enter reads the body, e edits the
                      file, R runs it, b/o/d/x block, reopen, archive and drop it, tab shows what
@@ -102,11 +98,10 @@
                      bare /todo opens the same screen; it opens over a running turn, and the keys that
                      would change a file are grey while one is going, because the model may be reading
                      them
-    [alt+]] [alt+[]  move the keyboard one session along the inspector rail's AGENTS map — the
-                     orchestrator and every agent it started, in the order they were started, wrapping
+    [shift+f8]       move the keyboard one session along the inspector rail's AGENTS map — the
+    [shift+f7]       orchestrator and every agent it started, in the order they were started, wrapping
                      at both ends. The rail stays up while you are in an agent's session and marks the
-                     row you are in; everything you do *to* an agent is still in the manager (alt needs
-                     the Option setting the agent manager's row names)
+                     row you are in; everything you do *to* an agent is still in the manager
     rail click       on the inspector rail, a changed file opens its diff and a session's row moves the
                      keyboard into it. A block's heading, or its … N more, opens the surface holding the
                      whole block — SUMMARY is /readings, THIS TURN is /turns, CHANGES is /diff, AGENTS
@@ -198,12 +193,12 @@
                      ␛[38;5;244mnumbers are the defaults for appearance.paste_lines and appearance.paste_columns;␛[m
                      ␛[38;5;244mshhh config shows this machine's, and a negative turns one of them off. A paste␛[m
                      ␛[38;5;244mover 256 KB is refused rather than staged — it would ride in the prompt itself␛[m
-    ␛[38;5;254m[alt+v]␛[m          ␛[38;5;244mopen the staged paste. What is staged leaves a fold where you pasted it — ⟨Paste#1␛[m
-                     ␛[38;5;244m· 214 lines⟩ — which moves, deletes and sends as one character, and what it will␛[m
-                     ␛[38;5;244mcost is on the vitals rail before you send. This reads it back: j/k scrolls, x␛[m
-                     ␛[38;5;244mdrops it, q returns to the draft with the cursor where you left it. /paste show␛[m
-                     ␛[38;5;244mpaste-1.txt is the same surface by name (alt needs the Option setting the agent␛[m
-                     ␛[38;5;244mmanager's row names)␛[m
+    ␛[38;5;254m/paste show␛[m      ␛[38;5;244mopen the staged paste. What is staged leaves a fold where you pasted it — ⟨Paste#1␛[m
+    ␛[38;5;254mthe chip␛[m         ␛[38;5;244m· 214 lines⟩ — which moves, deletes and sends as one character, and what it will␛[m
+                     ␛[38;5;244mcost is on the vitals rail before you send. Its chip opens it with the sentence␛[m
+                     ␛[38;5;244mkept: a click on the chip, or reading mode (ctrl+o) down to the strip and enter on␛[m
+                     ␛[38;5;244mit; /paste show Paste#1 is the same surface by name. It reads the paste back: j/k␛[m
+                     ␛[38;5;244mscrolls, x drops it, q returns to the draft with the cursor where you left it␛[m
     ␛[38;5;254m[tab]␛[m            ␛[38;5;244mcomplete a slash command (typing / opens the menu; ↑↓ move, enter runs the␛[m
                      ␛[38;5;244mhighlighted command, esc dismisses)␛[m
     ␛[38;5;254m[ctrl+a ctrl+e]␛[m  ␛[38;5;244mthe draft is a readline editor: line start and line end, kill to end and to start␛[m
@@ -225,7 +220,7 @@
                      ␛[38;5;244mdraft, esc puts the draft back exactly as it was␛[m
     ␛[38;5;254m[ctrl+t]␛[m         ␛[38;5;244mcycle the reasoning level: off → low → medium → high. It changes the next model␛[m
                      ␛[38;5;244mrequest, not the one in flight, and the level is stated on the vitals rail beside␛[m
-                     ␛[38;5;244mthe model (the alt+t alias needs the Option setting the agent manager's row names)␛[m
+                     ␛[38;5;244mthe model␛[m
     ␛[38;5;254m[shift+tab]␛[m      ␛[38;5;244mcycle the permission mode: manual → accept-edits → auto → read-only → plan, and␛[m
                      ␛[38;5;244mround again (behavior.mode_cycle sets another order)␛[m
                      ␛[38;5;244mwhile the agent is working, enter queues a steering message that joins the␛[m
@@ -249,13 +244,9 @@
                      ␛[38;5;244mscrollable at the last one. It opens over a running turn, which keeps streaming␛[m
                      ␛[38;5;244munderneath; a transcript with nothing selectable opens as a plain pager. /step␛[m
                      ␛[38;5;244mopens the in-flight step's detail from the prompt␛[m
-    ␛[38;5;254m[alt+a]␛[m          ␛[38;5;244magent manager: enter attaches to an agent's session, s steers it from its row␛[m
+    ␛[38;5;254m[f12]␛[m            ␛[38;5;244magent manager: enter attaches to an agent's session, s steers it from its row␛[m
                      ␛[38;5;244mwithout attaching, x cancels its turn, X kills it — the one way an agent ends;␛[m
                      ␛[38;5;244mattached, typing steers the agent, shift+tab sets its mode (clamped), esc detaches␛[m
-                     ␛[38;5;244mon a Mac an alt chord arrives only once the terminal's Option key sends the escape␛[m
-                     ␛[38;5;244mprefix, which the stock terminals do not until told — Terminal.app: Settings ›␛[m
-                     ␛[38;5;244mProfiles › Keyboard › Use Option as Meta key; iTerm2: Profiles › Keys › Left Option␛[m
-                     ␛[38;5;244mkey: Esc+. shhh doctor's keys row reads yours␛[m
     ␛[38;5;254m[ctrl+f]␛[m         ␛[38;5;244mthe backlog screen: the project's items on the left and the one under the pointer␛[m
                      ␛[38;5;244mon the right, / and s/p/k/r narrow the list, enter reads the body, e edits the␛[m
                      ␛[38;5;244mfile, R runs it, b/o/d/x block, reopen, archive and drop it, tab shows what␛[m
@@ -263,11 +254,10 @@
                      ␛[38;5;244mbare /todo opens the same screen; it opens over a running turn, and the keys that␛[m
                      ␛[38;5;244mwould change a file are grey while one is going, because the model may be reading␛[m
                      ␛[38;5;244mthem␛[m
-    ␛[38;5;254m[alt+]] [alt+[]␛[m  ␛[38;5;244mmove the keyboard one session along the inspector rail's AGENTS map — the␛[m
-                     ␛[38;5;244morchestrator and every agent it started, in the order they were started, wrapping␛[m
+    ␛[38;5;254m[shift+f8]␛[m       ␛[38;5;244mmove the keyboard one session along the inspector rail's AGENTS map — the␛[m
+    ␛[38;5;254m[shift+f7]␛[m       ␛[38;5;244morchestrator and every agent it started, in the order they were started, wrapping␛[m
                      ␛[38;5;244mat both ends. The rail stays up while you are in an agent's session and marks the␛[m
-                     ␛[38;5;244mrow you are in; everything you do *to* an agent is still in the manager (alt needs␛[m
-                     ␛[38;5;244mthe Option setting the agent manager's row names)␛[m
+                     ␛[38;5;244mrow you are in; everything you do *to* an agent is still in the manager␛[m
     ␛[38;5;254mrail click␛[m       ␛[38;5;244mon the inspector rail, a changed file opens its diff and a session's row moves the␛[m
                      ␛[38;5;244mkeyboard into it. A block's heading, or its … N more, opens the surface holding the␛[m
                      ␛[38;5;244mwhole block — SUMMARY is /readings, THIS TURN is /turns, CHANGES is /diff, AGENTS␛[m

@@ -195,6 +195,7 @@ snap 04-exit "that is everything the screen was holding"
   | `S-Tab` `S-Enter` `S-Up` `S-Down` `S-Left` `S-Right` | a shift chord |
   | `C-/` `C-_` | ctrl+/ |
   | `M-a` `M-]` | an alt chord |
+  | `F12` `S-F7` `S-F8` | a function key, and one under shift |
 
   Write a chord in the case the register spells it — `M-a`, never `M-A`: the
   capital is a shift the scene never asked for.

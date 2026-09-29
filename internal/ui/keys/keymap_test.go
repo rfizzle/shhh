@@ -526,14 +526,14 @@ func TestKeyboard_MarksAMovedKey(t *testing.T) {
 // refusal, which is what keeps a typo from being quietly ignored.
 func TestLoad_ReadsAFileNamingARetiredKey(t *testing.T) {
 	restoreRegister(t)
-	path := keymapFile(t, "[row]\nUndo = \"u\"\n\n[rowchord]\ncommit = \"alt+g\"\nretry = \"alt+r\"\n\n[reading]\ncopy = \"c\"\n")
+	path := keymapFile(t, "[row]\nUndo = \"u\"\n\n[rowchord]\ncommit = \"alt+g\"\nretry = \"alt+r\"\n\n[draft]\nopen_paste = \"alt+v\"\n\n[reading]\ncopy = \"c\"\n")
 	if err := Load(path); err != nil {
 		t.Fatalf("a file naming a retired key was refused: %v", err)
 	}
 	if !Is("c", Reading.Copy) {
 		t.Errorf("the file's live line did not apply: copy answers %v", Reading.Copy.Keys())
 	}
-	if got, want := Dead(), []string{"row.Undo", "rowchord.commit", "rowchord.retry"}; !slices.Equal(got, want) {
+	if got, want := Dead(), []string{"draft.open_paste", "row.Undo", "rowchord.commit", "rowchord.retry"}; !slices.Equal(got, want) {
 		t.Errorf("Dead() = %v, want %v", got, want)
 	}
 	if err := Load(keymapFile(t, "[row]\nundoo = \"u\"\n")); err == nil {

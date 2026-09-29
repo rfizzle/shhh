@@ -96,7 +96,7 @@ func TestCycleAgentWalksTheMap(t *testing.T) {
 
 	next := func(m Model) Model {
 		t.Helper()
-		updated, _ := m.Update(tea.KeyPressMsg{Code: ']', Mod: tea.ModAlt})
+		updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyF8, Mod: tea.ModShift})
 		return updated.(Model)
 	}
 	for _, want := range []string{"researcher-1", "reviewer-1", "", "researcher-1"} {
@@ -107,7 +107,7 @@ func TestCycleAgentWalksTheMap(t *testing.T) {
 	}
 	// And back the other way, from wherever it left the keyboard.
 	for _, want := range []string{"", "reviewer-1", "researcher-1"} {
-		updated, _ := m.Update(tea.KeyPressMsg{Code: '[', Mod: tea.ModAlt})
+		updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyF7, Mod: tea.ModShift})
 		m = updated.(Model)
 		if m.attachedTo != want {
 			t.Fatalf("the reverse cycle should have reached %q, got %q", want, m.attachedTo)
@@ -132,7 +132,7 @@ func TestCycleAgentKeepsItsStopsAcrossAKill(t *testing.T) {
 		m.attach("researcher-1")
 		var got []string
 		for range 2 {
-			updated, _ := m.Update(tea.KeyPressMsg{Code: ']', Mod: tea.ModAlt})
+			updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyF8, Mod: tea.ModShift})
 			m = updated.(Model)
 			got = append(got, m.attachedTo)
 		}
@@ -168,7 +168,7 @@ func TestCycleAgentWalksTheMapsRows(t *testing.T) {
 	}
 	var stops []string
 	for range len(rows) {
-		updated, _ := m.Update(tea.KeyPressMsg{Code: ']', Mod: tea.ModAlt})
+		updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyF8, Mod: tea.ModShift})
 		m = updated.(Model)
 		stops = append(stops, m.attachedTo)
 	}
@@ -194,7 +194,7 @@ func TestCycleAgentKeepsEachSessionsScroll(t *testing.T) {
 	m.viewport.SetYOffset(7)
 	m.atBottom = false
 
-	updated, _ := m.Update(tea.KeyPressMsg{Code: ']', Mod: tea.ModAlt})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyF8, Mod: tea.ModShift})
 	m = updated.(Model)
 	if m.attachedTo != "researcher-1" {
 		t.Fatalf("the cycle should have attached to the child, got %q", m.attachedTo)
@@ -202,7 +202,7 @@ func TestCycleAgentKeepsEachSessionsScroll(t *testing.T) {
 	if m.parentView.yoffset != 7 || m.parentView.atBottom {
 		t.Fatalf("the orchestrator's scroll should have been saved: %+v", m.parentView)
 	}
-	updated, _ = m.Update(tea.KeyPressMsg{Code: '[', Mod: tea.ModAlt})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyF7, Mod: tea.ModShift})
 	m = updated.(Model)
 	if m.attachedTo != "" || m.viewport.YOffset() != 7 {
 		t.Fatalf("coming back restores the row it was left on: %q at %d",
@@ -216,7 +216,7 @@ func TestCycleAgentIsInertWithoutChildren(t *testing.T) {
 	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
 	t.Cleanup(sup.Close)
 	m := newSubagentModel(t, sup)
-	updated, _ := m.Update(tea.KeyPressMsg{Code: ']', Mod: tea.ModAlt})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyF8, Mod: tea.ModShift})
 	if got := updated.(Model).attachedTo; got != "" {
 		t.Fatalf("the keyboard should not have moved, got %q", got)
 	}
@@ -228,7 +228,7 @@ func TestAgentListOpensAttachesAndDetaches(t *testing.T) {
 	m := newSubagentModel(t, sup)
 	spawnBlockedChild(t, sup)
 
-	updated, _ := m.Update(tea.KeyPressMsg{Code: 'a', Mod: tea.ModAlt})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyF12})
 	m = updated.(Model)
 	if m.agentList == nil {
 		t.Fatal("the manager chord must open the agent list")
@@ -433,7 +433,7 @@ func TestKillFromListWithInlineConfirm(t *testing.T) {
 	m := newSubagentModel(t, sup)
 	spawnBlockedChild(t, sup)
 
-	updated, _ := m.Update(tea.KeyPressMsg{Code: 'a', Mod: tea.ModAlt})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyF12})
 	m = updated.(Model)
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyDown})
 	m = updated.(Model)
@@ -476,7 +476,7 @@ func TestKillAllFromListWithOneConfirm(t *testing.T) {
 	spawnChild(t, sup, subagent.RoleResearcher, "researcher-1")
 	spawnChild(t, sup, subagent.RoleResearcher, "researcher-2")
 
-	updated, _ := m.Update(tea.KeyPressMsg{Code: 'a', Mod: tea.ModAlt})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyF12})
 	m = updated.(Model)
 	updated, _ = m.Update(key('K'))
 	m = updated.(Model)
@@ -519,7 +519,7 @@ func TestKillAllHandsTheCascadeItsRoots(t *testing.T) {
 		return ok && st.State == subagent.StateRunning
 	})
 
-	updated, _ := m.Update(tea.KeyPressMsg{Code: 'a', Mod: tea.ModAlt})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyF12})
 	m = updated.(Model)
 	updated, _ = m.Update(key('K'))
 	m = updated.(Model)
@@ -603,7 +603,7 @@ func TestBlockedRowSortsUpAndSaysWhatItWaitsFor(t *testing.T) {
 			t.Fatalf("a child's row must carry lane progress: %+v", row)
 		}
 	}
-	updated, _ := m.Update(tea.KeyPressMsg{Code: 'a', Mod: tea.ModAlt})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyF12})
 	m = updated.(Model)
 	if view := m.View().Content; !strings.Contains(view, "2 needs you") {
 		t.Fatalf("the manager's title rail must state who needs you:\n%s", view)
@@ -710,7 +710,7 @@ func TestAnswerBlockedChildFromTheList(t *testing.T) {
 	spawnInto(t, sup, `{"role":"researcher","task":"survey"}`)
 	m = pumpAsks(t, m, sup, 1)
 
-	updated, _ := m.Update(tea.KeyPressMsg{Code: 'a', Mod: tea.ModAlt})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyF12})
 	m = updated.(Model)
 	// The child sorts directly below the orchestrator; [a] on it opens the card.
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyDown})
@@ -772,7 +772,7 @@ func TestAnswerFromTheListLeavesTheDecisionWaitingOnEsc(t *testing.T) {
 	spawnInto(t, sup, `{"role":"researcher","task":"survey"}`)
 	m = pumpAsks(t, m, sup, 1)
 
-	updated, _ := m.Update(tea.KeyPressMsg{Code: 'a', Mod: tea.ModAlt})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyF12})
 	m = updated.(Model)
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyDown})
 	m = updated.(Model)
@@ -810,7 +810,7 @@ func TestRetryFailedChildFromTheList(t *testing.T) {
 		return ok && st.State == subagent.StateFailed
 	})
 
-	updated, _ := m.Update(tea.KeyPressMsg{Code: 'a', Mod: tea.ModAlt})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyF12})
 	m = updated.(Model)
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyDown})
 	m = updated.(Model)
@@ -849,7 +849,7 @@ func TestSteerAChildFromTheList(t *testing.T) {
 	m := newSubagentModel(t, sup)
 	spawnBlockedChild(t, sup)
 
-	updated, _ := m.Update(tea.KeyPressMsg{Code: 'a', Mod: tea.ModAlt})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyF12})
 	m = updated.(Model)
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyDown})
 	m = updated.(Model)
@@ -1275,7 +1275,7 @@ func TestAgentsFromReadingModeOpensTheManager(t *testing.T) {
 	if m.state != stateFocus {
 		t.Fatalf("the reading chord should enter reading mode, got state %d", m.state)
 	}
-	updated, _ = m.Update(tea.KeyPressMsg{Code: 'a', Mod: tea.ModAlt})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyF12})
 	m = updated.(Model)
 	if m.agentList == nil {
 		t.Fatal("alt+a in reading mode must open the agent manager")

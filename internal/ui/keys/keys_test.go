@@ -166,7 +166,7 @@ func TestEveryDeclaredBindingIsOnASurface(t *testing.T) {
 			Draft.Complete, Draft.Palette, Draft.Reasoning, Draft.Mode,
 			Draft.HistoryPrev, Draft.HistoryNext, Draft.HistorySearch,
 			Draft.PointUp, Draft.PointDown, Draft.Open, Draft.Close,
-			Draft.PageUp, Draft.PageDown, Draft.Reading, Draft.OpenPaste,
+			Draft.PageUp, Draft.PageDown, Draft.Reading,
 			Draft.Agents, Draft.Backlog, Draft.NextAgent, Draft.PrevAgent,
 			Draft.Mouse, Draft.KeyList, Draft.Suspend, Draft.Redraw,
 			Draft.Answer, Draft.Clear,
@@ -266,11 +266,11 @@ func TestRealignedChordsHaveOneHome(t *testing.T) {
 // TestMapCycleChordsHaveOneHome pins the pair the rail's session map is
 // walked with, the way the realigned chords are pinned. A chord taken from
 // the draft is only free if it is free everywhere: a second home for either
-// bracket is a surface that answers the keyboard's own movement key with
-// something else, on a keystroke no sentence can produce and nobody would
-// think to check.
+// key, or for the manager beside them, is a surface that answers the
+// keyboard's own movement key with something else, on a keystroke no
+// sentence can produce and nobody would think to check.
 func TestMapCycleChordsHaveOneHome(t *testing.T) {
-	for _, chord := range []string{"alt+[", "alt+]"} {
+	for _, chord := range []string{"shift+f7", "shift+f8", "f12"} {
 		var homes []string
 		for _, s := range all() {
 			for _, b := range s.Bindings {

@@ -342,7 +342,7 @@ func TestDraft_FreedChordsStayTextKeysUnderALiveSupervisor(t *testing.T) {
 	if got := m.input.Value(); got != "xab" {
 		t.Errorf("with a supervisor wired, ctrl+a stopped being line start: %q", got)
 	}
-	m, _ = pressKey(t, m, tea.KeyPressMsg{Code: 'a', Mod: tea.ModAlt})
+	m, _ = pressKey(t, m, tea.KeyPressMsg{Code: tea.KeyF12})
 	if m.agentList == nil {
 		t.Error("the manager chord did not open the agent manager")
 	}
@@ -667,6 +667,12 @@ func pressSpelling(t *testing.T, m Model, spelling string) Model {
 		msg.Code = tea.KeyEscape
 	case "space":
 		msg.Code = tea.KeySpace
+	case "f7":
+		msg.Code = tea.KeyF7
+	case "f8":
+		msg.Code = tea.KeyF8
+	case "f12":
+		msg.Code = tea.KeyF12
 	default:
 		r := []rune(rest)
 		if len(r) != 1 {

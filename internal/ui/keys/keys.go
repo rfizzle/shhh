@@ -222,16 +222,7 @@ type DraftKeys struct {
 	PageDown  Binding
 
 	Reading Binding
-	// OpenPaste opens the paste the draft is holding a fold for
-	// (docs/interface/surfaces.md#the-input-frame). The artboard draws it on
-	// ctrl+o, which is reading mode's here and declared once; every ctrl
-	// letter a terminal delivers is spent or the line editor's, so this went
-	// to alt the way the agent family did
-	// (docs/interface/reserved-keys.md#what-is-left). The letter is v, the
-	// one the paste family already answers to: ctrl+v puts a paste in the
-	// draft and alt+v opens the one that is there.
-	OpenPaste Binding
-	Agents    Binding
+	Agents  Binding
 	// Backlog opens the project's backlog as a screen. There is no
 	// mnemonic in the chord and there was none left to find: every letter
 	// the word suggests is spent — b is the agent manager, t is the
@@ -302,7 +293,7 @@ var Draft = DraftKeys{
 	// conhost is the known one) still reaches the palette through `/` on an
 	// empty draft and tab, which is what the key list says beside it.
 	Palette:   bind("ctrl+/", "the command palette", "ctrl+/", "ctrl+_"),
-	Reasoning: bind("ctrl+t", "cycle the reasoning level", "ctrl+t", "alt+t"),
+	Reasoning: bind("ctrl+t", "cycle the reasoning level", "ctrl+t"),
 	Mode:      bind("shift+tab", "cycle the permission mode", "shift+tab"),
 
 	// The chord the palette had. It is spent here because holding is the act
@@ -322,31 +313,20 @@ var Draft = DraftKeys{
 	PageUp:    bind("pgup", "page the transcript", "pgup"),
 	PageDown:  bind("pgdn", "page it back", "pgdown"),
 
-	Reading:   bind("ctrl+o", "reading mode", "ctrl+o"),
-	OpenPaste: bind("alt+v", "open the staged paste", "alt+v"),
-	// The manager is on alt with the rest of the agent family — alt+[ and
-	// alt+] walk the sessions, alt+a opens the list of them — because
-	// ctrl+b is tmux's prefix and never reaches the program there, and
-	// every ctrl letter the terminal delivers is spent or the line
-	// editor's (docs/interface/reserved-keys.md). What alt costs is the
-	// Option key: a stock Mac terminal composes a character for it until
-	// the profile is told to send the escape prefix, so a Mac ships the
-	// family on the function row instead (platform.go), and the doctor's
-	// row reads the setting only for an alt chord a keymap file put back
-	// (docs/interface/reserved-keys.md#a-mac-ships-without-alt).
-	Agents:  bind("alt+a", "the agent manager", "alt+a"),
+	Reading: bind("ctrl+o", "reading mode", "ctrl+o"),
+	// The agent family is on the function row, at its right-hand end: the
+	// manager on the plain key, and the walk on two neighbours under shift,
+	// back first. Every ctrl letter the terminal delivers is spent or the
+	// line editor's, ctrl+b is tmux's prefix besides, and alt is dead on a
+	// stock Mac terminal until a profile setting is ticked — while the
+	// function row arrives on every terminal with nothing set, and none of
+	// these three is a desktop's or a terminal's
+	// (docs/interface/reserved-keys.md#what-is-left).
+	Agents:  bind("f12", "the agent manager", "f12"),
 	Backlog: bind("ctrl+f", "the backlog screen", "ctrl+f"),
 
-	// The brackets are next and previous in the shape the key caps already
-	// have, and they are free twice over: nothing else in the register
-	// answers them, and neither does the textarea, which spends its own alt
-	// chords on words, case and the ends of the input. They are also the two
-	// alt chords that have to be checked rather than assumed — esc-[ and
-	// esc-] are the introducers for the terminal's own control sequences —
-	// and the input decoder resolves both, reading a bare pair as the key
-	// rather than as the start of something longer.
-	NextAgent: bind("alt+]", "the next session in the rail's map", "alt+]"),
-	PrevAgent: bind("alt+[", "the previous one", "alt+["),
+	NextAgent: bind("shift+f8", "the next session in the rail's map", "shift+f8"),
+	PrevAgent: bind("shift+f7", "the previous one", "shift+f7"),
 
 	Mouse:   bind("ctrl+x", "mouse reporting on or off", "ctrl+x"),
 	KeyList: bind("ctrl+]", "the keys", "ctrl+]"),

@@ -921,7 +921,7 @@ func TestChildAskHeldOnArrivalStillReachesTheManager(t *testing.T) {
 	if !m.heldOnArrival {
 		t.Fatal("an ask landing on an empty draft holds the keyboard by arrival")
 	}
-	updated, _ = m.Update(tea.KeyPressMsg{Code: 'a', Mod: tea.ModAlt})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyF12})
 	if next := updated.(Model); next.agentList == nil {
 		t.Fatal("the manager's chord opens the manager from a held card too")
 	}
@@ -1075,7 +1075,7 @@ func TestAttachedRailNamesAnotherAgentWaiting(t *testing.T) {
 	if !strings.Contains(view, "⚠ 1 other agent waiting") {
 		t.Fatalf("the attached rail states what is waiting elsewhere:\n%s", view)
 	}
-	if !strings.Contains(view, "[alt+a] agents") {
+	if !strings.Contains(view, "[f12] agents") {
 		t.Fatalf("the rail keeps the chord that reaches it:\n%s", view)
 	}
 	// The child the reader is attached to is not an "other": its own request

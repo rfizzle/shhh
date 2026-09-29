@@ -62,7 +62,7 @@ snap 04-three-states "needs you"
 # anyway, which is the whole of what this scene is for. Under the three
 # children are the rows that are not agents: the roles this session can spawn,
 # each saying where it lives, and the offer to draft another under them.
-keys M-a
+keys F12
 sleep 2
 snap 05-manager "kill all" "[a] answer without attaching" "[esc] back to the turn"
 # The pointer on the blocked child. The offers do not change, because they
@@ -86,7 +86,7 @@ snap 08-mid-sentence "and check the exit condition too"
 # with the answer esc is not. The card over the list claims every key it has —
 # the list is a takeover and there is no draft under it — so its own run is
 # live and its esc row says what leaving does here.
-keys M-a
+keys F12
 sleep 1
 keys j
 keys a
@@ -131,7 +131,7 @@ snap 13-steered "steered from lane"
 # (docs/capabilities/subagents.md#three-can-steer-a-child-and-none-of-them-can-end-it).
 # The manager opens on the orchestrator; writer-2 is the fourth row, under the
 # child waiting on you and the one still working.
-keys M-a
+keys F12
 sleep 1
 keys j
 keys j

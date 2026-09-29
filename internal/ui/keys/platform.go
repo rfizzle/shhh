@@ -4,14 +4,13 @@ package keys
 // (docs/interface/reserved-keys.md#a-mac-ships-without-alt).
 //
 // keys.go declares it once, and on Linux and Windows that declaration is
-// what ships. On macOS it is not: the two stock terminals send Option+letter
-// as the character it composes until a profile setting is ticked, so every
-// alt chord in the declaration is dead there by default, and a hint offering
-// one is a false offer on the desktop shhh is most often run on. So a Mac
-// ships the same acts with the alt ones moved to the function row, which
-// every terminal delivers with nothing set — plain F keys for the offers a
-// reader meets most, shift on them for the rest, and the reasoning level's
-// alt alias simply dropped, since its ctrl chord already works.
+// what ships. On macOS the two stock terminals send Option+letter as the
+// character it composes until a profile setting is ticked, so an alt chord in
+// the declaration would be dead there by default, and a hint offering one a
+// false offer on the desktop shhh is most often run on. The Mac's table moved
+// such chords to the function row, which every terminal delivers with nothing
+// set; the declaration now ships no alt chord, so the table is empty and a Mac
+// ships the declaration as it stands.
 //
 // The table is a keymap file the program carries: the same dotted names, the
 // same apply, the same five rules. It is applied once, before anything reads
@@ -30,27 +29,12 @@ import (
 )
 
 // darwinMoves is the Mac's keyboard, as the moves it makes over the one
-// keys.go declares. Only the alt chords move; every other key is the same on
-// both, which is what keeps the two keyboards one register rather than two.
-//
-// Why the function row and not ctrl: every ctrl letter the terminal delivers
-// is already spent at the input or is the line editor's, and the free set
-// that is left is the function keys and modified navigation keys
-// (docs/interface/reserved-keys.md#what-is-left) — the same reason the alt
-// chords were alt in the first place. The draft's shift arrows are the
-// pointer's, so the function row it is.
-var darwinMoves = map[string][]string{
-	// The alias is dropped rather than moved: ctrl+t is the chord, and the
-	// alias only ever existed for the readers whose alt arrives.
-	"draft.reasoning": {"ctrl+t"},
-
-	// The agent family, at the right-hand end of the row: the manager on the
-	// plain key, and the walk on two neighbours under shift, back first.
-	"draft.agents":     {"f12"},
-	"draft.prev_agent": {"shift+f7"},
-	"draft.next_agent": {"shift+f8"},
-	"draft.open_paste": {"shift+f12"},
-}
+// keys.go declares. It is empty: the table existed to move the alt chords
+// onto the function row, because a stock Mac terminal composes a character
+// for Option, and keys.go now declares no alt chord at all — the agent family
+// is on the function row everywhere and the reasoning level is ctrl+t alone.
+// A move added here is held to the five rules like any other.
+var darwinMoves = map[string][]string{}
 
 // PlatformEnv names the platform whose keyboard this process ships, in place
 // of the one it runs on. It exists for two readers: the scene harness, which

@@ -485,22 +485,6 @@ func (m Model) frameHints(room int) string {
 		if m.conversation {
 			hints = slices.DeleteFunc(hints, func(h hintSeg) bool { return h.label == "change mode" })
 		}
-		// The key for the fold the draft is holding, offered only while
-		// there is one to open and named for the one it opens — `open the
-		// staged paste` beside a sentence carrying two of them is the rail
-		// asking the reader which it meant
-		// (docs/interface/surfaces.md#the-input-frame). It leads the run
-		// after the send, because it is the only offer here that is about
-		// something on the screen right now, and it sheds last of the ones
-		// that shed at all: the palette announces itself by the character
-		// it opens on, and this chord is the only way to the surface.
-		if staged := m.stagedPastes(); len(staged) > 0 {
-			label := "open " + staged[0].label
-			if len(staged) > 1 {
-				label = "open the pastes"
-			}
-			hints = slices.Insert(hints, 1, segAs(keys.Draft.OpenPaste, label).givesUp(1))
-		}
 	}
 	// The key list takes the last slot while the draft holds the keyboard,
 	// spelled as the chord that opens it here: `?` is a character in a

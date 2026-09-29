@@ -107,8 +107,9 @@ func TestProgram_CompactLeavesAReceiptOverTheTurnsItFolded(t *testing.T) {
 	frameHas(t, frame, "folded turn", "out of the window")
 }
 
-// A paste too big for the draft is staged as a token, the token opens onto
-// the paste, and the sent message keeps it as a row that expands.
+// A paste too big for the draft is staged as a token, its chip opens onto
+// the paste — reading mode lands on the strip when there is nothing above it
+// — and the sent message keeps it as a row that expands.
 func TestProgram_APasteTooBigForTheDraftIsAToken(t *testing.T) {
 	var log strings.Builder
 	log.WriteString("=== RUN   TestRoundLimit\n")
@@ -122,11 +123,11 @@ func TestProgram_APasteTooBigForTheDraftIsAToken(t *testing.T) {
 	tm.Send(tea.PasteMsg{Content: "this test log says the loop never stops "})
 	tm.Send(tea.PasteMsg{Content: log.String()})
 	waitForText(t, tm, "will cost")
-	programPress(t, tm, "alt+v")
+	programPress(t, tm, "ctrl+o", "enter")
 	waitForText(t, tm, "PASTE#1")
 	programPress(t, tm, "q")
-	waitForText(t, tm, "open Paste#1")
-	programPress(t, tm, "enter")
+	waitForText(t, tm, "back to the draft")
+	programPress(t, tm, "esc", "enter")
 	waitForText(t, tm, "never leaves the round")
 
 	frame := finalFrame(t, tm)
