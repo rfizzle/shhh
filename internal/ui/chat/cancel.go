@@ -71,7 +71,7 @@ type armedPress struct {
 
 // open reports whether the window is armed for kind right now.
 func (a armedPress) open(kind armKind) bool {
-	return a.kind == kind && time.Now().Before(a.deadline)
+	return a.kind == kind && clock().Before(a.deadline)
 }
 
 // armExpiredMsg is the window shutting on its own. The handler repaints, so
@@ -87,7 +87,7 @@ func (m *Model) armPress(kind armKind, key string) tea.Cmd {
 // window is a gesture's rather than a reflex filter's.
 func (m *Model) armPressFor(kind armKind, key string, window time.Duration) tea.Cmd {
 	seq := m.armed.seq + 1
-	m.armed = armedPress{kind: kind, key: key, deadline: time.Now().Add(window), seq: seq}
+	m.armed = armedPress{kind: kind, key: key, deadline: clock().Add(window), seq: seq}
 	return tea.Tick(window, func(time.Time) tea.Msg { return armExpiredMsg{seq: seq} })
 }
 

@@ -16,7 +16,6 @@ package chat
 
 import (
 	"strings"
-	"time"
 
 	tea "charm.land/bubbletea/v2"
 
@@ -79,8 +78,8 @@ func (m Model) updateKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 	// as part of it. Stamped here rather than on the draft's own path
 	// because the question is whether the reader is at the keyboard, not
 	// which surface they were talking to.
-	m.settleGrace(time.Now())
-	m.lastKeypress = time.Now()
+	m.settleGrace(clock())
+	m.lastKeypress = clock()
 	// And every key consumes an armed two-press window (cancel.go),
 	// whichever surface answers it: a reader who went on typing — or
 	// answered a card — was not confirming anything. The draft's own

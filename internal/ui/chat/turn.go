@@ -126,7 +126,7 @@ func (m *Model) setTurnState(s state) {
 	// came out, the ring the spend sparkline is drawn from. All of it is
 	// owed to the round that finishes the turn instead (hold.go).
 	if s == stateInput && m.working() && !m.turnStarted.IsZero() && !m.heldAtBoundary() {
-		m.turnEnded = time.Now()
+		m.turnEnded = clock()
 		// A turn can have edited the backlog files; the rail reads the
 		// store, so the store is re-read here rather than per frame.
 		m.reloadTodos()

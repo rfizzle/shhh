@@ -2127,7 +2127,7 @@ func (m *Model) openTurn(shown string) {
 	m.spendStartScreen()
 	m.clearRetryChain()
 	m.nextTurn()
-	m.turnStarted, m.turnEnded = time.Now(), time.Time{}
+	m.turnStarted, m.turnEnded = clock(), time.Time{}
 	m.turnOpen, m.turnOutcome = true, components.TurnDone
 	m.turnTokensIn, m.turnTokensOut = 0, 0
 	m.vitals.startTurn()

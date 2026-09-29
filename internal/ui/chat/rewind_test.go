@@ -764,6 +764,9 @@ func TestRewind_ATreePastTheBoundStillOffersTheRestore(t *testing.T) {
 // wrote. The ages are fixed so the rows say the same thing on every run.
 func rewindPickerModel(t *testing.T, width int) Model {
 	t.Helper()
+	// The picker states each checkpoint's age, so the clock the ages are
+	// read against is held from before the first turn is stamped.
+	holdClock(t)
 	db := rewindTestDB(t)
 	// The bound holds the last turn's records and not the second's, so the
 	// last turn's write is what drops the second.
@@ -798,7 +801,7 @@ func rewindPickerModel(t *testing.T, width int) Model {
 		t.Fatalf("the fixture wants turn 2's records dropped, got %v", got)
 	}
 	for i := range m.checkpoints {
-		m.checkpoints[i].at = time.Now().Add(-time.Duration(30-9*i) * time.Minute)
+		m.checkpoints[i].at = goldenNow.Add(-time.Duration(30-9*i) * time.Minute)
 	}
 	return m
 }
@@ -1051,7 +1054,7 @@ func TestGolden_RewindPicker(t *testing.T) {
 func TestGolden_RewindRow(t *testing.T) {
 	captureGolden(t, "rewind-row", "the rewind's return row", goldenWidths,
 		func(width int) []golden.Panel {
-			ret := rewindReturn{turn: 5, first: 6, last: 7, was: 62, now: 41, at: time.Now()}
+			ret := rewindReturn{turn: 5, first: 6, last: 7, was: 62, now: 41, at: goldenNow}
 			rec := func(path string, before, after int) changeset.Record {
 				return changeset.Record{
 					Path:         path,

@@ -1387,6 +1387,10 @@ Profiles are three layers, and the split matters: `config.AgentDefinition` (`int
 
 TUI layout tests use golden files in `testdata/golden/` directories. Golden files capture renders at multiple terminal widths (60, 80, 110, 130 columns) in both color and mono palettes. Each golden has two blocks: ANSI-stripped layout and escaped-ANSI for color assertions.
 
+**A component's golden is its own, and the whole surface is captured at two widths.** Every block the chat surface draws has a golden of its own; `screen` holds only the seams none of them can see — 130 columns, the rail beside the transcript and the bottom panel taking rows off both, and 60, the stacked form — so a change to one block moves that block's files and those two, not forty. A fact only some other width shows (a key the rail sheds, a count a frame layout drops, the rail's growth) goes into the component's golden or a layout test, not a third frame: `screenWidths` in `internal/ui/chat/golden_test.go` says where each rung is held now.
+
+**A golden's clock stands still.** Every elapsed, age and window the chat surface draws is read off the package's `clock` rather than `time.Now`, and `captureCases` holds it at `goldenNow` for every capture (`holdClock`). A new clock the screen draws reads `clock()`; one read off `time.Now` puts the machine's speed into a fixture, and the next run takes it out again. A supervisor a fixture builds takes `Now: goldenClock` for the same reason.
+
 **To update goldens after an intentional layout change:**
 ```
 go test ./internal/ui ./internal/ui/components ./internal/ui/chat -update-golden

@@ -144,10 +144,10 @@ func relativeLuminance(t *testing.T, c color.Color) float64 {
 
 // TestGolden_LightScreen captures the whole surface through the light table.
 // One state at two widths, because what this file pins is the colour
-// assignment and not the arrangement — the arrangement is already held at six
-// widths in two palettes by the whole-screen captures beside it, and the
-// table cannot move a column.
+// assignment and not the arrangement — the arrangement is held by the two
+// whole-screen captures beside it, and the table cannot move a column.
 func TestGolden_LightScreen(t *testing.T) {
+	holdClock(t)
 	themeRestore(t)
 	was := components.Profile()
 	components.SetProfile(colorprofile.ANSI256)

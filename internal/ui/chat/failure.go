@@ -284,7 +284,7 @@ func (m Model) retryTurn() (tea.Model, tea.Cmd) {
 	// asking the same question rather than asking twice. What restarts is the
 	// turn's own accounting: a retry is a turn, and /stats should say so.
 	m.clearRetryChain()
-	m.turnStarted, m.turnEnded = time.Now(), time.Time{}
+	m.turnStarted, m.turnEnded = clock(), time.Time{}
 	m.turnOpen, m.turnOutcome = true, components.TurnDone
 	m.turnTokensIn, m.turnTokensOut = 0, 0
 	m.vitals.startTurn()

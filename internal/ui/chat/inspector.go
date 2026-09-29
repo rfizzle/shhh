@@ -120,6 +120,15 @@ func (m Model) turnEntries() []entry {
 	return m.transcript[m.turnStartIndex():]
 }
 
+// clock is the moment every clock the surface draws is read against: the
+// turn's elapsed, a running command's duration, a checkpoint's age, the
+// grace window and the press-again window, the retry countdown. It is a
+// variable so a golden can hold it still — a figure the machine's speed
+// writes into a fixture is one the next run takes out again. The durations
+// measured around work done off the update loop keep the wall clock, since
+// they time the work itself.
+var clock = time.Now
+
 // turnElapsed is how long the current turn has been running — live while it
 // works, final once it is done.
 func (m Model) turnElapsed() time.Duration {
@@ -127,7 +136,7 @@ func (m Model) turnElapsed() time.Duration {
 		return 0
 	}
 	if m.working() || m.turnEnded.IsZero() {
-		return time.Since(m.turnStarted)
+		return clock().Sub(m.turnStarted)
 	}
 	return m.turnEnded.Sub(m.turnStarted)
 }

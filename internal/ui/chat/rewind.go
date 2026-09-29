@@ -89,7 +89,7 @@ func (m Model) WithGitSnapshots(fn func() GitSnapshot) Model {
 // message joins the conversation, so the checkpoint index points at it.
 func (m *Model) recordCheckpoint(text string) {
 	cp := checkpoint{index: len(m.agent.Messages()), preview: firstLine(text),
-		turn: m.turnCount, at: time.Now()}
+		turn: m.turnCount, at: clock()}
 	if m.gitSnapshot != nil {
 		cp.git = m.gitSnapshot()
 		cp.hasGit = true
@@ -325,7 +325,7 @@ func checkpointAge(cp checkpoint) string {
 	if cp.at.IsZero() {
 		return ""
 	}
-	d := time.Since(cp.at)
+	d := clock().Sub(cp.at)
 	switch {
 	case d < time.Minute:
 		return fmt.Sprintf("%ds", max(int(d.Seconds()), 0))
@@ -484,7 +484,7 @@ func (m *Model) openRewindScope(n int, turns []changeset.Turn) {
 // would do, before it does it: which turns leave the window, and what the
 // window's occupancy is either side of them.
 func (m Model) rewindReturnFor(n int) rewindReturn {
-	r := rewindReturn{turn: n, first: n + 1, last: len(m.checkpoints), was: m.contextPercent(), at: time.Now()}
+	r := rewindReturn{turn: n, first: n + 1, last: len(m.checkpoints), was: m.contextPercent(), at: clock()}
 	r.now = r.was
 	cp := m.checkpoints[n]
 	if cp.index > len(m.agent.Messages()) {
@@ -637,7 +637,7 @@ func (m *Model) appendRewindRow(r rewindReturn, folded changeset.Turn) {
 	row := &components.ActivityRow{
 		Kind:     components.ActivityCompaction,
 		Verb:     rewindVerb,
-		Duration: activityDuration(time.Since(r.at)),
+		Duration: activityDuration(clock().Sub(r.at)),
 	}
 	var parts []string
 	if folded.Files() > 0 {
@@ -694,7 +694,7 @@ func (m *Model) armRewindRestore(n int, turns []changeset.Turn, ret *rewindRetur
 	if ret == nil {
 		// The files alone: the row still says where the workspace was put
 		// back to, and says nothing about a window nothing moved.
-		of.rewind = &rewindReturn{turn: n, at: time.Now()}
+		of.rewind = &rewindReturn{turn: n, at: clock()}
 	} else {
 		of.rewind = ret
 	}

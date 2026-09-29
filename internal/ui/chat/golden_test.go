@@ -64,6 +64,28 @@ func TestMain(m *testing.M) {
 // on each side before any of these thresholds are read.
 var goldenWidths = []int{60, 80, 110, 130}
 
+// goldenNow is the moment a golden's clock stands at. Every elapsed, age
+// and window a fixture draws is stated against it, so the figure in the
+// file is the fixture's and not the time the machine took to reach the
+// render.
+var goldenNow = time.Date(2026, 9, 4, 10, 0, 0, 0, time.UTC)
+
+// goldenClock is goldenNow as a clock, for the supervisors a fixture builds:
+// a child's lane states how long it has been alive, and that is read off
+// the supervisor's clock rather than the session's.
+func goldenClock() time.Time { return goldenNow }
+
+// holdClock stands the surface's clock at goldenNow for the rest of the
+// test. Every capture holds it (captureCases); a fixture whose session stamps
+// a moment before its capture starts calls it first itself, because that
+// stamp is read against the same clock the render reads.
+func holdClock(t *testing.T) {
+	t.Helper()
+	was := clock
+	clock = goldenClock
+	t.Cleanup(func() { clock = was })
+}
+
 // captureGolden renders one surface at every width in both palettes. The
 // colour profile is forced because a test binary's stdout is not a terminal,
 // so lipgloss would otherwise emit no escapes at all and the ansi block would
@@ -106,6 +128,7 @@ func captureCases(t *testing.T, name, surface string, widths []int, build func(w
 	was := components.Profile()
 	components.SetProfile(colorprofile.ANSI256)
 	t.Cleanup(func() { components.SetProfile(was) })
+	holdClock(t)
 
 	for _, mono := range []bool{false, true} {
 		label := "color"
@@ -480,8 +503,10 @@ func TestGolden_PlanChecklist(t *testing.T) {
 // draft; and 8, under the rung, where there is no box and the bare prompt
 // stands in for it (guidelines/layout-breakpoints). 14 is kept because it is
 // inside the band the rung moved across, and is the fixture that says what a
-// terminal there draws now.
-var frameWidths = append([]int{8, 12, 14, 70}, goldenWidths...)
+// terminal there draws now. 144 and 200 are past the widest rung, where the
+// key rail has the columns for the keys it sheds first: the editor from 144,
+// the newline from 200.
+var frameWidths = append(append([]int{8, 12, 14, 70}, goldenWidths...), 144, 200)
 
 // TestGolden_PromptFrame captures the command-center surface in
 // each of its four layout modes, at every rung of
@@ -695,7 +720,7 @@ func TestGolden_PressAgain(t *testing.T) {
 		armed := func(kind armKind, key string, st state) string {
 			m := goldenModel(t, width)
 			m.state = st
-			m.armed = armedPress{kind: kind, key: key, deadline: time.Now().Add(time.Hour), seq: 1}
+			m.armed = armedPress{kind: kind, key: key, deadline: goldenNow.Add(time.Hour), seq: 1}
 			return promptSurface(m)
 		}
 		confirm := func() string {
@@ -757,9 +782,9 @@ func TestGolden_DraftGrammar(t *testing.T) {
 			m := goldenModel(t, width)
 			m.recentFiles = func() []project.RecentFile {
 				return []project.RecentFile{
-					{Path: "go.mod", Mod: time.Now().Add(-time.Minute)},
-					{Path: "internal/ui/chat/model.go", Mod: time.Now().Add(-9 * time.Minute)},
-					{Path: "internal/ui/chat/modelutil.go", Mod: time.Now().Add(-26 * time.Minute)},
+					{Path: "go.mod", Mod: goldenNow.Add(-30 * time.Second)},
+					{Path: "internal/ui/chat/model.go", Mod: goldenNow.Add(-8*time.Minute - 30*time.Second)},
+					{Path: "internal/ui/chat/modelutil.go", Mod: goldenNow.Add(-25*time.Minute - 30*time.Second)},
 				}
 			}
 			m.input.SetValue("@mod")
@@ -1030,9 +1055,9 @@ func TestGolden_TurnStatus(t *testing.T) {
 		frame := func(mut func(*Model)) string {
 			m := goldenModel(t, width)
 			m.turnCount = 1
-			// A start stamp far from any rounding boundary, so the ticking
-			// field is captured without the capture depending on the clock.
-			m.turnStarted = time.Now().Add(-64500 * time.Millisecond)
+			// A turn 64.5 seconds old by the held clock: the ticking field is
+			// drawn from the fixture, not from how long the capture took.
+			m.turnStarted = goldenNow.Add(-64500 * time.Millisecond)
 			m.state = stateStreaming
 			mut(&m)
 			return promptSurface(m)
@@ -1107,12 +1132,12 @@ func TestGolden_LiveCommand(t *testing.T) {
 	captureBoundedGolden(t, "live-command", "a long command running in the feed", goldenWidths, func(width int) []golden.Panel {
 		m := frameModel(t, width, 40)
 		m.turnCount = 1
-		// Stamps half a second off a rounding boundary, so both clocks are
-		// captured ticking without the capture depending on the clock.
-		m.turnStarted = time.Now().Add(-64500 * time.Millisecond)
+		// Both clocks are stated against the held one, so each ticking
+		// field is drawn from the fixture, not from how long the capture took.
+		m.turnStarted = goldenNow.Add(-64500 * time.Millisecond)
 		m.state = stateRunningCmd
 		m.runningCommand = "go test ./internal/agent/... ./internal/ui/chat/... -run TestRoundLimitPause -count=1 -timeout 120s"
-		m.runStart = time.Now().Add(-42500 * time.Millisecond)
+		m.runStart = goldenNow.Add(-42500 * time.Millisecond)
 		m.runTail = &commandTail{}
 		m.runTail.Set("--- FAIL: TestRoundLimitPause/the ceiling holds the turn open (0.42s)")
 		m.invalidateRenderCache()
@@ -1578,7 +1603,7 @@ func TestGolden_Interrupt(t *testing.T) {
 		grace.syncInputWidth()
 		grace.releaseDecision()
 		grace.lastDecisionLeft = time.Time{}
-		grace.lastKeypress = time.Now()
+		grace.lastKeypress = goldenNow
 		grace.armDecision(stateConfirmRun)
 		grace.syncViewport()
 		// The same arrival on the first session after a rebinding release:
@@ -2159,7 +2184,7 @@ func TestGolden_KeyEntry(t *testing.T) {
 // the workspace clause and never that one, and over a child with nothing to
 // keep there is no such sentence (docs/interface/surfaces.md#the-inline-confirm).
 func TestGolden_KillConfirm(t *testing.T) {
-	sup := subagent.New(context.Background(), subagent.Options{Root: keptRepo(t), NewEnv: keptWriterEnv(false)})
+	sup := subagent.New(context.Background(), subagent.Options{Root: keptRepo(t), NewEnv: keptWriterEnv(false), Now: goldenClock})
 	t.Cleanup(sup.Close)
 	spawnChild(t, sup, subagent.RoleWriter, "writer-1")
 	waitFor(t, func() bool { return sup.PatchToKeep("writer-1") })
@@ -2185,8 +2210,8 @@ func TestGolden_Palette(t *testing.T) {
 		m := frameModel(t, width, 40)
 		m.recentFiles = func() []project.RecentFile {
 			return []project.RecentFile{
-				{Path: "internal/agent/loop.go", Mod: time.Now().Add(-4*time.Minute - time.Second)},
-				{Path: "README.md", Mod: time.Now().Add(-2*time.Hour - time.Second)},
+				{Path: "internal/agent/loop.go", Mod: goldenNow.Add(-4*time.Minute - time.Second)},
+				{Path: "README.md", Mod: goldenNow.Add(-2*time.Hour - time.Second)},
 			}
 		}
 		opened, _ := m.openPalette()
@@ -2228,8 +2253,8 @@ func TestGolden_CompletionMenu(t *testing.T) {
 			m := goldenModel(t, width)
 			m.recentFiles = func() []project.RecentFile {
 				return []project.RecentFile{
-					{Path: "internal/auth/session.go", Mod: time.Now().Add(-time.Minute)},
-					{Path: "docs/security.md", Mod: time.Now().Add(-9 * time.Minute)},
+					{Path: "internal/auth/session.go", Mod: goldenNow.Add(-30 * time.Second)},
+					{Path: "docs/security.md", Mod: goldenNow.Add(-8*time.Minute - 30*time.Second)},
 				}
 			}
 			m.personas = Personas{Kind: persona.KindChat, Roles: func() []SpawnableRole {
@@ -2305,14 +2330,19 @@ func landReading(m *Model, v agent.SummaryVerdict) {
 	m.finishSummary(summaryDoneMsg{runID: m.summary.runID, gen: m.summary.gen, verdict: v})
 }
 
-// screenWidths adds the rungs the standing widths do not land on and two
-// terminals past the widest of them. 12 is the narrowest terminal the draft
-// is still framed in and 70 is where the vitals fold into the border, so the
-// whole-screen capture carries every rung of guidelines/layout-breakpoints;
-// 144 and 200 are past the split, where the rail grows with the terminal, and
-// the pair is what shows that the growth goes to the rail's blocks rather
-// than to the gap beside them.
-var screenWidths = append(append([]int{12, 70}, goldenWidths...), 144, 200)
+// screenWidths are the two frames the whole surface is captured at, each
+// chosen for a seam no component's own golden can see: 130, where the rail
+// stands beside the transcript and the bottom panel takes its rows off both,
+// and 60, the stacked form, where the status row stands in for the rail
+// above the input. Every block drawn in them has a golden of its own, so a
+// change to one block moves that block's files and these two. What the
+// other rungs of guidelines/layout-breakpoints assert is held where the thing
+// asserted lives: the frame at 12, 70, 110, 144 and 200 in prompt-frame, the
+// children's count on each frame layout in agent-rows, the rows adding up to
+// the terminal at every rung in TestLayout_RowsAddUpToTheTerminal, and the
+// rail's growth past the split in
+// TestLayout_TheRailBesideTheTranscriptIsTheRailAtItsWidth.
+var screenWidths = []int{60, 130}
 
 // questionWidths adds one terminal past the rung the rail appears at. The
 // question card is the one card whose shape decides whether the surface
@@ -2342,9 +2372,8 @@ func TestGolden_Screen(t *testing.T) {
 	// the fixture and not from how long the machine took to reach the
 	// render: past half a second the lanes grow a duration the golden does
 	// not hold.
-	frozen := time.Date(2026, 9, 4, 10, 0, 0, 0, time.UTC)
 	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: gatedEnv(),
-		Now: func() time.Time { return frozen }})
+		Now: goldenClock})
 	t.Cleanup(sup.Close)
 	batch := sup.BeginBatch()
 	for _, task := range []string{"Say where the round counter is read.",
@@ -2492,20 +2521,6 @@ func TestGolden_Screen(t *testing.T) {
 		}
 		return panels
 	})
-
-	// A lane states how long its child has been alive, and that is the one
-	// figure on this sheet a clock writes rather than the fixture. A child
-	// under half a second old states none — the duration field has a floor
-	// there (activity.go) — and the capture runs in a fraction of that, so
-	// the sheet is reproducible. This says so out loud: a machine slow
-	// enough to cross the floor would otherwise write a duration into the
-	// fixture and the next run would take it out again.
-	for _, st := range sup.Snapshot() {
-		if st.Elapsed >= 500*time.Millisecond {
-			t.Fatalf("%s was %s old when the capture finished: the lane's duration field "+
-				"has a 500ms floor and this sheet is only reproducible inside it", st.Name, st.Elapsed)
-		}
-	}
 }
 
 // TestGolden_ScreenAttached captures the arrangement this surface had no
@@ -2522,7 +2537,7 @@ func TestGolden_Screen(t *testing.T) {
 // measures the pressure off the conversation behind it.
 func TestGolden_ScreenAttached(t *testing.T) {
 	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(),
-		NewEnv: billedEnv(provider.Usage{PromptTokens: 4200, CompletionTokens: 900})})
+		NewEnv: billedEnv(provider.Usage{PromptTokens: 4200, CompletionTokens: 900}), Now: goldenClock})
 	t.Cleanup(sup.Close)
 	spawnChild(t, sup, subagent.RoleResearcher, "researcher-1")
 	spawnChild(t, sup, subagent.RoleReviewer, "reviewer-1")
@@ -2567,7 +2582,7 @@ func TestGolden_ScreenAttached(t *testing.T) {
 	// reaches every child a supervisor has. The session's own turn is parked
 	// too, which is the state a parked child is found in once the hold has
 	// landed whole.
-	held := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: heldChildEnv()})
+	held := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: heldChildEnv(), Now: goldenClock})
 	t.Cleanup(held.Close)
 	held.Hold()
 	spawnChild(t, held, subagent.RoleResearcher, "researcher-1")
@@ -2627,6 +2642,88 @@ func TestGolden_ScreenAttached(t *testing.T) {
 					}()},
 			}
 		})
+}
+
+// TestGolden_AgentRows captures the working children where the input is: one
+// compact row a child directly above the frame, a grandchild behind the
+// corner under the child that spawned it, and the frame's vitals counting
+// them, at every width the frame is captured at. The two are one capture
+// because the rows are drawn onto the rows the frame leaves them, and the
+// count is the one drawing of the children that stays when the rows go
+// (docs/interface/surfaces.md#the-input-frame).
+func TestGolden_AgentRows(t *testing.T) {
+	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv(), Now: goldenClock})
+	t.Cleanup(sup.Close)
+	for _, task := range []string{"Say where the round counter is read.",
+		"Say where the round limit is set.", "Say where the loop exits."} {
+		spawnInto(t, sup, `{"role":"researcher","task":"`+task+`"}`)
+	}
+	waitFor(t, func() bool { running, _ := sup.ActiveCounts(); return running == 3 })
+	spawnUnder(t, sup, "researcher-1", subagent.RoleReviewer, "reviewer-1")
+	captureGolden(t, "agent-rows", "the working children above the input", frameWidths, func(width int) []golden.Panel {
+		m := goldenModel(t, width).WithSubagents(sup)
+		m.invalidateRenderCache()
+		return []golden.Panel{
+			{Label: "four children working · a row each, and the frame's count",
+				View: m.renderAgentRows(m.paneWidth()) + "\n" + promptSurface(m)},
+		}
+	})
+}
+
+// TestGolden_SummaryRow captures the row a reading leaves in the feed when
+// the rail cannot say it all: the verdict and the round on the row, and the
+// reading itself once the row is opened. A reading that earns a steer rows
+// whatever its length; one on target rows only when the rail's block cannot
+// draw its words whole (docs/interface/surfaces.md#the-session-summary).
+func TestGolden_SummaryRow(t *testing.T) {
+	captureGolden(t, "summary-row", "a reading's row in the feed", goldenWidths, func(width int) []golden.Panel {
+		row := func(v agent.SummaryVerdict, open bool) string {
+			m := frameModel(t, width, 40)
+			m.summaryTarget = "fix the round limit"
+			if !m.appendSummaryRow(v) {
+				t.Fatalf("the reading %q left no row", v.Text)
+			}
+			last := m.transcript[len(m.transcript)-1]
+			last.expanded = open
+			return m.renderEntry(last, m.transcriptWidth())
+		}
+		off := agent.SummaryVerdict{
+			Text:   "Rewriting the README instead of the round-limit pause.",
+			State:  agent.SummaryOffTarget,
+			Reason: "docs were not asked for",
+			Round:  24,
+			Model:  "fast",
+		}
+		long := agent.SummaryVerdict{
+			Text: "Wiring the round-limit pause into the chat model: the sentinel is returned from runRound, " +
+				"the loop reads it at the round boundary and parks the turn, and the offer to continue is drawn " +
+				"on the frame. Nothing has run the tests yet, and the changeset holds loop.go and rounds.go.",
+			State: agent.SummaryOnTarget,
+			Round: 31,
+			Model: "fast",
+		}
+		return []golden.Panel{
+			{Label: "off target · the row as it lands", View: row(off, false)},
+			{Label: "off target · the row opened", View: row(off, true)},
+			{Label: "on target, and longer than the rail's block · the row opened", View: row(long, true)},
+		}
+	})
+}
+
+// TestGolden_PasteReaderHint captures what the paste reader leaves where the
+// draft box was. It is the widest hint a full-screen surface leaves, and on
+// a 60-column terminal it wraps onto a second row the panel is paid for,
+// rather than a row the edge cuts the way out off
+// (docs/interface/surfaces.md#the-input-frame).
+func TestGolden_PasteReaderHint(t *testing.T) {
+	captureGolden(t, "paste-reader-hint", "the paste reader's hint in the panel", goldenWidths, func(width int) []golden.Panel {
+		m := stagePasted(t, frameModel(t, width, 30))
+		updated, _ := m.runPaste([]string{"/paste", "show", "paste-1.txt"})
+		m = updated.(Model)
+		return []golden.Panel{
+			{Label: "the paste reader · the way back to the draft", View: m.takeoverPanel(m.surface().bottom.Dx())},
+		}
+	})
 }
 
 // TestGolden_StaleEditRow pins the row an edit refused for staleness leaves
@@ -2853,7 +2950,7 @@ func TestGolden_CommandErrors(t *testing.T) {
 // row's own and is pinned at three widths by TestGolden_AutoApproved. What
 // this sheet is about is that the account crosses the mirror at all.
 func TestGolden_ChildAutoApproved(t *testing.T) {
-	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
+	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv(), Now: goldenClock})
 	t.Cleanup(sup.Close)
 	spawnChild(t, sup, subagent.RoleResearcher, "researcher-1")
 	// The child opens its own transcript with the task it was spawned on,
@@ -4077,7 +4174,7 @@ func goldenNotesModel(t *testing.T, width int) Model {
 // request approved and a child that finished, `⊘` for one declined (the
 // person's decision, not a break) and `✗` for a child that ended short.
 func TestGolden_ChildAskVerdicts(t *testing.T) {
-	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
+	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv(), Now: goldenClock})
 	t.Cleanup(sup.Close)
 
 	captureGolden(t, "child-ask-verdicts", "a child's request answered and its ending said", goldenWidths, func(width int) []golden.Panel {
@@ -4129,7 +4226,7 @@ func TestGolden_ChildRequestRouted(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	sup := subagent.New(context.Background(), subagent.Options{Root: dir, NewEnv: blockingEnv()})
+	sup := subagent.New(context.Background(), subagent.Options{Root: dir, NewEnv: blockingEnv(), Now: goldenClock})
 	t.Cleanup(sup.Close)
 
 	captureGolden(t, "child-request-routed", "a child's request routed to the person", goldenWidths, func(width int) []golden.Panel {

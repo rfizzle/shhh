@@ -97,7 +97,7 @@ func (m Model) decisionRides() bool { return m.decisionUngated() || m.questionIn
 // moments after one left is the queue advancing, which armGrace reads.
 func (m *Model) releaseDecision() {
 	if m.decisionHeld || m.heldOnArrival {
-		m.lastDecisionLeft = time.Now()
+		m.lastDecisionLeft = clock()
 	}
 	m.decisionHeld, m.heldOnArrival = false, false
 	m.graceFrom = time.Time{}
@@ -160,16 +160,16 @@ func (m *Model) armGrace() {
 		// very keystroke a window would count against it.
 		return
 	}
-	if time.Since(m.lastKeypress) >= graceQuiet {
+	if clock().Sub(m.lastKeypress) >= graceQuiet {
 		// The keyboard had been quiet: nothing can be in flight, and the
 		// reader walking up to answer should not wait out a window that
 		// protects nobody.
 		return
 	}
-	if !m.lastDecisionLeft.IsZero() && time.Since(m.lastDecisionLeft) < graceReplace {
+	if !m.lastDecisionLeft.IsZero() && clock().Sub(m.lastDecisionLeft) < graceReplace {
 		return
 	}
-	m.graceFrom = time.Now()
+	m.graceFrom = clock()
 	m.graceSeq++
 }
 
@@ -200,7 +200,7 @@ func (m Model) graceShowing() bool {
 	if m.graceFrom.IsZero() || !m.decisionGated() || !m.heldOnArrival {
 		return false
 	}
-	now := time.Now()
+	now := clock()
 	return now.Sub(m.graceFrom) < graceMax && now.Sub(m.lastKeypress) < graceQuiet
 }
 
@@ -245,7 +245,7 @@ func (m Model) graceTickCmd(prev Model) tea.Cmd {
 	if hardEnd := m.graceFrom.Add(graceMax); hardEnd.Before(end) {
 		end = hardEnd
 	}
-	wait := time.Until(end) + 10*time.Millisecond
+	wait := end.Sub(clock()) + 10*time.Millisecond
 	return tea.Tick(wait, func(time.Time) tea.Msg { return graceTickMsg{} })
 }
 
@@ -270,7 +270,7 @@ func (m *Model) armDecision(s state) {
 	// A transition away from a showing decision is that decision leaving;
 	// the stamp is what tells a queue advance from fresh typing (armGrace).
 	if m.interruptShowing() && (m.decisionHeld || m.heldOnArrival) {
-		m.lastDecisionLeft = time.Now()
+		m.lastDecisionLeft = clock()
 	}
 	if m.state.isSurface() || !m.arrivalGates(s) {
 		m.decisionHeld, m.heldOnArrival = false, false

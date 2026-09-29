@@ -12,6 +12,7 @@ import (
 
 	"charm.land/lipgloss/v2"
 	uv "github.com/charmbracelet/ultraviolet"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
@@ -69,8 +70,11 @@ func layoutStates(t *testing.T, width, height int) map[string]Model {
 // : the live tail under the transcript was drawn on a row nothing had
 // budgeted for, so the surface ran one row past the bottom of the terminal
 // and the frame's closing rail went with it.
+//
+// The sizes walk every rung the arrangement changes at, from the narrowest
+// terminal the draft is framed in to one past the rail's growth.
 func TestLayout_RowsAddUpToTheTerminal(t *testing.T) {
-	for _, size := range [][2]int{{60, 20}, {80, 30}, {110, 24}, {130, 40}, {144, 30}} {
+	for _, size := range [][2]int{{12, 30}, {60, 20}, {70, 30}, {80, 30}, {110, 24}, {130, 40}, {144, 30}, {200, 30}} {
 		for name, m := range layoutStates(t, size[0], size[1]) {
 			view := m.View().Content
 			lines := strings.Split(view, "\n")
@@ -271,6 +275,33 @@ func TestLayout_RailWidensWithTheContent(t *testing.T) {
 		}
 		if c.rail >= c.content-c.rail {
 			t.Errorf("content %d: a %d-column rail leaves the transcript the smaller share", c.content, c.rail)
+		}
+	}
+}
+
+// TestLayout_TheRailBesideTheTranscriptIsTheRailAtItsWidth holds the seam
+// between the rail's own golden and the frame: past the rung, what the
+// terminal gains goes to the rail's blocks rather than to a gap beside a rail
+// of the floor's width. The rail painted into the frame is the rail component
+// drawn at the ladder's width, cell for cell, at the rung and past it
+// (docs/interface/surfaces.md#the-inspector-rail).
+func TestLayout_TheRailBesideTheTranscriptIsTheRailAtItsWidth(t *testing.T) {
+	for _, width := range []int{130, 144, 200} {
+		m := inspectorModel(t, width, 30)
+		s := m.surface()
+		if got, want := s.inspector.Dx(), components.InspectorWidthFor(m.contentWidth()); got != want {
+			t.Fatalf("w%d: the rail is %d columns, the ladder gives %d", width, got, want)
+		}
+		rail := m.inspectorData().Lines(s.inspector.Dx(), s.body.Dy())
+		if len(rail) == 0 {
+			t.Fatalf("w%d: the fixture draws no rail", width)
+		}
+		rows := strings.Split(ansi.Strip(m.View().Content), "\n")
+		for i, line := range rail {
+			painted := ansi.Cut(rows[s.body.Min.Y+i], s.inspector.Min.X, s.inspector.Max.X)
+			if got, want := strings.TrimRight(painted, " "), strings.TrimRight(ansi.Strip(line), " "); got != want {
+				t.Errorf("w%d rail row %d is painted %q, the rail at its width draws %q", width, i, got, want)
+			}
 		}
 	}
 }

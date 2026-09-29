@@ -396,7 +396,7 @@ func (m Model) continueStream(res *streamResume) (tea.Model, tea.Cmd) {
 	m.clearRetryChain()
 	res.spent = true
 	m.invalidateRenderCache()
-	m.turnStarted, m.turnEnded = time.Now(), time.Time{}
+	m.turnStarted, m.turnEnded = clock(), time.Time{}
 	m.turnOpen, m.turnOutcome = true, components.TurnDone
 	m.turnTokensIn, m.turnTokensOut = 0, 0
 	m.vitals.startTurn()
@@ -512,7 +512,7 @@ func (m Model) startRetryWait(f *provider.Failure) (tea.Model, tea.Cmd) {
 		attempt:  n.Attempt,
 		max:      n.Max,
 		wait:     n.Wait,
-		deadline: time.Now().Add(n.Wait),
+		deadline: clock().Add(n.Wait),
 		fallback: m.cheaperModel(),
 		seq:      m.retrySeq,
 	}
@@ -534,7 +534,7 @@ func (m Model) retryTick(msg retryTickMsg) (tea.Model, tea.Cmd) {
 	if m.retry == nil || msg.seq != m.retry.seq || m.turnState() != stateRetryWait {
 		return m, nil
 	}
-	if time.Now().Before(m.retry.deadline) {
+	if clock().Before(m.retry.deadline) {
 		return m, m.retryTickCmd()
 	}
 	return m.resumeAfterWait()
@@ -679,7 +679,7 @@ func (m Model) retryWaitBlock(width int) string {
 		return ""
 	}
 	r := m.retry
-	left := time.Until(r.deadline)
+	left := r.deadline.Sub(clock())
 	if left < 0 {
 		left = 0
 	}

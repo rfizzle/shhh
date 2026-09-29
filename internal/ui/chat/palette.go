@@ -25,7 +25,6 @@ import (
 	"fmt"
 	"sort"
 	"strings"
-	"time"
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/project"
@@ -418,7 +417,7 @@ func (m Model) paletteFileEntries() []paletteEntry {
 			}
 		}
 	}
-	now := time.Now()
+	now := clock()
 	for _, f := range m.recentProjectFiles() {
 		if seen[f.Path] {
 			continue

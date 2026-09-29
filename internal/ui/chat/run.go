@@ -212,7 +212,7 @@ func (m Model) executeRun() (tea.Model, tea.Cmd) {
 	m.applyScopeGrant()
 	m.setTurnState(stateRunningCmd)
 	m.runningCommand = command
-	m.runStart = time.Now()
+	m.runStart = clock()
 	tail := &commandTail{}
 	m.runTail = tail
 	m.syncViewport()

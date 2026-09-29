@@ -583,7 +583,7 @@ func recentDetail(r StartRecent, now time.Time) string {
 // true. now is the caller's clock, so a test does not have to race one.
 func agoLabel(t, now time.Time) string {
 	if now.IsZero() {
-		now = time.Now()
+		now = clock()
 	}
 	d := now.Sub(t)
 	switch {

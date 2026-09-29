@@ -939,7 +939,7 @@ func (m Model) runningCommandRow(width int) string {
 		Frame:   m.spinFrame,
 	}
 	if !m.runStart.IsZero() {
-		row.Duration = activityDuration(time.Since(m.runStart))
+		row.Duration = activityDuration(clock().Sub(m.runStart))
 	}
 	if m.runTail != nil {
 		row.Tail = m.runTail.Line()
