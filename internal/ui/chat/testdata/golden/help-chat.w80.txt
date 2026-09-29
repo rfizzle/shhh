@@ -53,6 +53,12 @@
                                      start on (provider.reasoning)
     /context       the window as a meter, by category, with the tools itemised
     /stats         context occupancy breakdown and cumulative session spend
+    /readings      every reading the session has taken of its own run on one
+                   screen, newest first: the round, the verdict, the whole
+                   reading with its reason and the instruction it was judged
+                   against, and whether it steered the turn and whether that
+                   steer was taken back. Quiet readings are kept here too. It
+                   reads and changes nothing
     /step          open the in-flight step's detail: every row in it shows its
                    output body, bounded; run it again to close (/ui verbosity
                    high is the same thing for every step at once)
@@ -145,6 +151,12 @@
                                      start on (provider.reasoning)
     /context       the window as a meter, by category, with the tools itemised
     /stats         context occupancy breakdown and cumulative session spend
+    /readings      every reading the session has taken of its own run on one
+                   screen, newest first: the round, the verdict, the whole
+                   reading with its reason and the instruction it was judged
+                   against, and whether it steered the turn and whether that
+                   steer was taken back. Quiet readings are kept here too. It
+                   reads and changes nothing
     /step          open the in-flight step's detail: every row in it shows its
                    output body, bounded; run it again to close (/ui verbosity
                    high is the same thing for every step at once)
@@ -258,6 +270,12 @@
                    ␛[38;5;241m                  start on (provider.reasoning)␛[m
     ␛[38;5;252m/context␛[m       ␛[38;5;241mthe window as a meter, by category, with the tools itemised␛[m
     ␛[38;5;252m/stats␛[m         ␛[38;5;241mcontext occupancy breakdown and cumulative session spend␛[m
+    ␛[38;5;252m/readings␛[m      ␛[38;5;241mevery reading the session has taken of its own run on one␛[m
+                   ␛[38;5;241mscreen, newest first: the round, the verdict, the whole␛[m
+                   ␛[38;5;241mreading with its reason and the instruction it was judged␛[m
+                   ␛[38;5;241magainst, and whether it steered the turn and whether that␛[m
+                   ␛[38;5;241msteer was taken back. Quiet readings are kept here too. It␛[m
+                   ␛[38;5;241mreads and changes nothing␛[m
     ␛[38;5;252m/step␛[m          ␛[38;5;241mopen the in-flight step's detail: every row in it shows its␛[m
                    ␛[38;5;241moutput body, bounded; run it again to close (/ui verbosity␛[m
                    ␛[38;5;241mhigh is the same thing for every step at once)␛[m
@@ -350,6 +368,12 @@
                    ␛[38;5;241m                  start on (provider.reasoning)␛[m
     ␛[38;5;252m/context␛[m       ␛[38;5;241mthe window as a meter, by category, with the tools itemised␛[m
     ␛[38;5;252m/stats␛[m         ␛[38;5;241mcontext occupancy breakdown and cumulative session spend␛[m
+    ␛[38;5;252m/readings␛[m      ␛[38;5;241mevery reading the session has taken of its own run on one␛[m
+                   ␛[38;5;241mscreen, newest first: the round, the verdict, the whole␛[m
+                   ␛[38;5;241mreading with its reason and the instruction it was judged␛[m
+                   ␛[38;5;241magainst, and whether it steered the turn and whether that␛[m
+                   ␛[38;5;241msteer was taken back. Quiet readings are kept here too. It␛[m
+                   ␛[38;5;241mreads and changes nothing␛[m
     ␛[38;5;252m/step␛[m          ␛[38;5;241mopen the in-flight step's detail: every row in it shows its␛[m
                    ␛[38;5;241moutput body, bounded; run it again to close (/ui verbosity␛[m
                    ␛[38;5;241mhigh is the same thing for every step at once)␛[m

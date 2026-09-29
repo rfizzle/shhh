@@ -41,6 +41,9 @@
                    default [level]   show or persist the level new sessions start on (provider.reasoning)
     /context       the window as a meter, by category, with the tools itemised
     /stats         context occupancy breakdown and cumulative session spend
+    /readings      every reading the session has taken of its own run on one screen, newest first: the round, the verdict, the
+                   whole reading with its reason and the instruction it was judged against, and whether it steered the turn and
+                   whether that steer was taken back. Quiet readings are kept here too. It reads and changes nothing
     /step          open the in-flight step's detail: every row in it shows its output body, bounded; run it again to close (/ui
                    verbosity high is the same thing for every step at once)
     /status        where this session is: what it is working on, what it has spent, and whether the last few turns are still on
@@ -105,6 +108,9 @@
                    default [level]   show or persist the level new sessions start on (provider.reasoning)
     /context       the window as a meter, by category, with the tools itemised
     /stats         context occupancy breakdown and cumulative session spend
+    /readings      every reading the session has taken of its own run on one screen, newest first: the round, the verdict, the
+                   whole reading with its reason and the instruction it was judged against, and whether it steered the turn and
+                   whether that steer was taken back. Quiet readings are kept here too. It reads and changes nothing
     /step          open the in-flight step's detail: every row in it shows its output body, bounded; run it again to close (/ui
                    verbosity high is the same thing for every step at once)
     /steps         the session's own working list on one screen: every step it declared, the paths each said it would touch, which
@@ -182,6 +188,9 @@
                    ␛[38;5;244mdefault [level]   show or persist the level new sessions start on (provider.reasoning)␛[m
     ␛[38;5;254m/context␛[m       ␛[38;5;244mthe window as a meter, by category, with the tools itemised␛[m
     ␛[38;5;254m/stats␛[m         ␛[38;5;244mcontext occupancy breakdown and cumulative session spend␛[m
+    ␛[38;5;254m/readings␛[m      ␛[38;5;244mevery reading the session has taken of its own run on one screen, newest first: the round, the verdict, the␛[m
+                   ␛[38;5;244mwhole reading with its reason and the instruction it was judged against, and whether it steered the turn and␛[m
+                   ␛[38;5;244mwhether that steer was taken back. Quiet readings are kept here too. It reads and changes nothing␛[m
     ␛[38;5;254m/step␛[m          ␛[38;5;244mopen the in-flight step's detail: every row in it shows its output body, bounded; run it again to close (/ui␛[m
                    ␛[38;5;244mverbosity high is the same thing for every step at once)␛[m
     ␛[38;5;254m/status␛[m        ␛[38;5;244mwhere this session is: what it is working on, what it has spent, and whether the last few turns are still on␛[m
@@ -246,6 +255,9 @@
                    ␛[38;5;244mdefault [level]   show or persist the level new sessions start on (provider.reasoning)␛[m
     ␛[38;5;254m/context␛[m       ␛[38;5;244mthe window as a meter, by category, with the tools itemised␛[m
     ␛[38;5;254m/stats␛[m         ␛[38;5;244mcontext occupancy breakdown and cumulative session spend␛[m
+    ␛[38;5;254m/readings␛[m      ␛[38;5;244mevery reading the session has taken of its own run on one screen, newest first: the round, the verdict, the␛[m
+                   ␛[38;5;244mwhole reading with its reason and the instruction it was judged against, and whether it steered the turn and␛[m
+                   ␛[38;5;244mwhether that steer was taken back. Quiet readings are kept here too. It reads and changes nothing␛[m
     ␛[38;5;254m/step␛[m          ␛[38;5;244mopen the in-flight step's detail: every row in it shows its output body, bounded; run it again to close (/ui␛[m
                    ␛[38;5;244mverbosity high is the same thing for every step at once)␛[m
     ␛[38;5;254m/steps␛[m         ␛[38;5;244mthe session's own working list on one screen: every step it declared, the paths each said it would touch, which␛[m

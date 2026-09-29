@@ -72,6 +72,11 @@ const (
 	// a doubled interval. A provider that is refusing should be asked less
 	// often, not at the same rate for the rest of the session.
 	summaryBackoff = 2
+	// summaryHistoryMax bounds the readings a session keeps for the readings
+	// screen. A reading is a few sentences and a session takes one every few
+	// rounds, so the bound is only ever reached by a session that has run for
+	// days; the oldest go first, and the screen says how many went.
+	summaryHistoryMax = 200
 )
 
 // summaryState is what the session knows about its own summary: the reading
@@ -112,6 +117,13 @@ type summaryState struct {
 	// names them: a mechanism that spends the user's money in the background
 	// should be able to say how much.
 	tokensIn, tokensOut int64
+	// readings are every reading that has landed this session, quiet ones
+	// included, oldest first — the history the readings screen draws
+	// (readings.go). They are the session's rather than the turn's, since a
+	// history scoped to one turn is the rail again; dropped counts the oldest
+	// let go at summaryHistoryMax.
+	readings []summaryReading
+	dropped  int
 }
 
 // startTurn scopes the summary to the turn that is beginning: the reading on
@@ -164,6 +176,42 @@ func (s *summaryState) noteIntervention(iv agent.Intervention, round int) {
 	s.interventions = append(s.interventions, iv.Row(round))
 	if iv.Kind == agent.InterveneSteer {
 		s.steers++
+		s.markSteered(iv, iv.Row(round))
+	}
+}
+
+// keepReading adds a landed reading to the session's history, letting the
+// oldest go once the history is full.
+func (s *summaryState) keepReading(r summaryReading) {
+	s.readings = append(s.readings, r)
+	if over := len(s.readings) - summaryHistoryMax; over > 0 {
+		s.readings = append(s.readings[:0:0], s.readings[over:]...)
+		s.dropped += over
+	}
+}
+
+// markSteered files a delivered steer against the reading that earned it.
+// Only an off-target reading earns a steer, so the candidates are those that
+// have not steered yet: the newest whose reason the steer carries, or the
+// newest of them where none does. It keeps the steer's digest row, which is
+// what a withdrawal names it by (dropIntervention).
+func (s *summaryState) markSteered(iv agent.Intervention, row string) {
+	at := -1
+	for i := len(s.readings) - 1; i >= 0; i-- {
+		r := s.readings[i]
+		if r.steer != "" || r.verdict.State != agent.SummaryOffTarget {
+			continue
+		}
+		if at < 0 {
+			at = i
+		}
+		if iv.Reason != "" && r.verdict.Reason == iv.Reason {
+			at = i
+			break
+		}
+	}
+	if at >= 0 {
+		s.readings[at].steer = row
 	}
 }
 
@@ -178,8 +226,21 @@ func (s *summaryState) noteIntervention(iv agent.Intervention, round int) {
 // telling the machinery it was wrong: the sooner answer is the one that says
 // whether it still thinks so.
 func (s *summaryState) dropIntervention(iv agent.Intervention, row string) {
-	if iv.Kind == agent.InterveneSteer && s.steers > 0 {
-		s.steers--
+	if iv.Kind == agent.InterveneSteer {
+		if s.steers > 0 {
+			s.steers--
+		}
+		// The reading that earned it keeps its words and says the steer
+		// went, which is the one outcome the readings screen most needs.
+		// Newest first, and only the one: a round restarts every turn, so an
+		// earlier turn's steer can carry the same row, and only a steer of
+		// the running turn can be taken back.
+		for i := len(s.readings) - 1; i >= 0; i-- {
+			if s.readings[i].steer == row {
+				s.readings[i].withdrawn = true
+				break
+			}
+		}
 	}
 	for i, have := range s.interventions {
 		if have == row {
@@ -328,6 +389,13 @@ func (m *Model) finishSummary(msg summaryDoneMsg) bool {
 	m.signal(observe.SignalSummary, observe.SummaryCode(v.State))
 	m.summary.last = &v
 	m.summary.schedule.Read(v.Round)
+	if strings.TrimSpace(v.Text) != "" {
+		// Kept whether or not it earns a transcript row: a quiet reading is
+		// drawn nowhere once the next replaces it, and the readings screen is
+		// where it is read afterwards. A reading with no words is not one,
+		// for the reason the rail and the row decline it.
+		m.summary.keepReading(summaryReading{verdict: v, target: m.summaryTarget, turn: m.turnCount})
+	}
 	// A reading that says the run has drifted, or that it has what it needs,
 	// is the one thing a summary does besides being read. It only ever queues
 	// here; the round boundary delivers it (intervene.go).
@@ -692,6 +760,13 @@ func truncateRunes(s string, limit int) string {
 type summaryReading struct {
 	verdict agent.SummaryVerdict
 	target  string
+	// turn, steer and withdrawn are the readings screen's and the row never
+	// reads them: the turn the reading was taken in, the digest row of the
+	// steer it earned ("" for none), and whether that steer was taken back —
+	// the same two facts recordIntervened files a turn's outcome from.
+	turn      int64
+	steer     string
+	withdrawn bool
 }
 
 // summaryVerb is the row's verb, closed like every other

@@ -1,0 +1,42 @@
+# Two turns of reading, and the session's own readings of its run in a queue
+# of their own, so a reading taken mid-turn or at a close never takes the
+# reply a turn is waiting for.
+#
+# The first turn is two tool rounds, which is enough for a reading at its close; it
+# is on target and short, so it is quiet — the rail draws it whole and the
+# transcript writes no row for it. The second turn reads three files before
+# the first of two slow rounds: the reading taken at round three finds it off
+# target, and the round boundary after it delivers the steer while the turn
+# is still running. The close's reading finds it back on target.
+#
+# The session's title and its standing account are asked from the same queue,
+# so every reply carries their answers too, each through its own tool, and
+# whichever reading asks takes its own. The title is asked once, beside the
+# first turn's reading, which is why the first reply is written twice: in
+# whichever order those two ask, the reading gets the quiet verdict.
+[session]
+tool:read_file:{"path":"loop.go"}
+tool:read_file:{"path":"round.go"}
+The loop counts rounds and stops at the ceiling.
+tool:read_file:{"path":"loop.go"}
+tool:read_file:{"path":"round.go"}
+tool:read_file:{"path":"README.md"}
+wait:3
++tool:read_file:{"path":"README.md"}
+wait:3
++tool:read_file:{"path":"round.go"}
+The ceiling is declared in round.go and read in loop.go.
+
+[reading]
+tool:session_summary:{"summary":"Reading the loop and its round counter.","state":"on_target"}
++tool:session_title:{"title":"Where the round ceiling lives"}
++tool:session_account:{"account":"Finding where the round ceiling is declared and read."}
+tool:session_summary:{"summary":"Reading the loop and its round counter.","state":"on_target"}
++tool:session_title:{"title":"Where the round ceiling lives"}
++tool:session_account:{"account":"Finding where the round ceiling is declared and read."}
+tool:session_summary:{"summary":"Reading the README's install section twice, which does not bear on the ceiling.","state":"off_target","reason":"the instruction was the round ceiling, not the docs"}
++tool:session_title:{"title":"Where the round ceiling lives"}
++tool:session_account:{"account":"Finding where the round ceiling is declared and read."}
+tool:session_summary:{"summary":"Back on round.go, where the ceiling is declared.","state":"on_target"}
++tool:session_title:{"title":"Where the round ceiling lives"}
++tool:session_account:{"account":"Finding where the round ceiling is declared and read."}

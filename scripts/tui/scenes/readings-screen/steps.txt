@@ -1,0 +1,33 @@
+# program test: TestProgram_ReadingsOpensEveryReadingTheSessionTook
+#
+# The readings screen (docs/interface/surfaces.md#the-supporting-screens):
+# every reading the session has taken of its own run, the history the rail's
+# SUMMARY block holds only the latest line of. The pane is 130 columns, the
+# narrowest terminal the rail is drawn at.
+#
+# What the captures are read for: at 02 the first turn's reading is on the
+# rail and nowhere in the transcript, because it is quiet; at 03 the second
+# turn has been steered by the reading taken at its third round; at 04
+# `/readings` has opened over the pane with the newest reading first, the
+# steered one marked `steered`, the quiet one still listed, the count and
+# what the readings cost in the header; at 05 the pointer is on the steered
+# reading and the preview is that reading whole — its text, the verdict, the
+# reason and the instruction it was read against — with a line saying it
+# steered the turn; at 06 esc has put the rail back.
+setup printf 'package agent\n\nfunc loop() {}\n' > loop.go; printf 'package agent\n\nconst ceiling = 150\n' > round.go; printf '# agent\n\nInstall with go install.\n' > README.md
+snap 01-start "Some things worth doing first"
+keys "find where the round ceiling lives" Enter
+snap 02-quiet "SUMMARY" "The loop counts rounds"
+keys "and where it is read" Enter
+snap 03-steered "The ceiling is declared in round.go" "Steered"
+sleep 1
+keys "/readings" Enter
+snap 04-readings "/readings ·" "steered" "r 2 · on target"
+keys j
+snap 05-steered-reading "the instruction was the round ceiling" "read against:" "it steered the turn"
+keys Escape
+snap 06-back "SUMMARY"
+keys C-c
+snap 07-quit-armed "again quits"
+keys C-c
+snap 08-exit "that is everything the screen was holding"

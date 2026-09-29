@@ -1326,7 +1326,8 @@ pass here: the pointer names exactly one thing, and the thing it names is
 reachable without a pointer.
 
 A block is a door to the whole of what it bounds. Where a block has a surface
-holding all of it, its heading and its fold marker open that surface: CHANGES
+holding all of it, its heading and its fold marker open that surface: SUMMARY
+opens every reading the session has taken, CHANGES
 opens the session's diff, AGENTS the manager, STEPS the whole working list,
 TODO the backlog screen and CONTEXT the occupancy screen — each the surface its command already opens, so
 the command is the door's key. The surface is left by its own esc, and by a
@@ -1431,6 +1432,11 @@ thing the transcript can be scrolled for, which is the reconstruction the rail
 exists to remove and could only ever perform for the present moment. A failed
 reading still writes nothing: the rail keeps what it had, and a line reporting
 that one request timed out is not news.
+
+Every reading that lands, quiet or not, is also kept for the session, and the
+SUMMARY heading opens them as one list ([the supporting
+screens](#the-supporting-screens)): the scroll the rows ask for, without the
+turns between them, and with the quiet readings the feed leaves out.
 
 ### The agent manager
 
@@ -2377,13 +2383,14 @@ under that the account the session kept of where it left off
 renaming and deleting the picker inside a session already offers
 (../capabilities/sessions-and-memory.md#housekeeping).
 
-Thirteen surfaces take the whole terminal this way — those seven, the reading
+Fourteen surfaces take the whole terminal this way — those seven, the reading
 of what is in the session's context, the ledger of what the session read
 (`/sources`, [what was read](../capabilities/chat.md#what-was-read)), the
-session's own working list (`/steps`, below), the session's shared notebook
+session's own working list (`/steps`, below), the readings it has taken of its
+own run (`/readings`, below), the session's shared notebook
 (`/notes`, below), the reading of the session's boundary (`/safety`, [the
 safety reading](#the-safety-reading)) and the drafting flow for a new agent
-profile — and they are one family rather than thirteen screens: the same header, the same
+profile — and they are one family rather than fourteen screens: the same header, the same
 ground given up in the same order as the terminal narrows, the same key row at
 the foot and the same `[?]` behind it. The two that arrived last had each been
 drawing a chrome of their own, and the way that showed was not in either of
@@ -2397,7 +2404,7 @@ act in one word: `quit` where the screen was opened from a command line,
 under the key a reader reaches for without thinking, and there it is a phrase:
 **back to the shell** on doctor, metrics, history, snippets and the saved-chat
 browser, **back to the prompt** on the context reading, the sources ledger, the
-working list, the safety reading, the notebook and the backlog, which is drawn on this chrome too ([the backlog screen](#the-backlog-screen)).
+working list, the readings, the safety reading, the notebook and the backlog, which is drawn on this chrome too ([the backlog screen](#the-backlog-screen)).
 For leaving a screen and changing nothing there is no third wording.
 
 Three of them leave by doing something rather than nothing, and each says what
@@ -2431,9 +2438,10 @@ surface that put `[?]` and the letter on both rows spent its bottom row saying
 what its top row had already said, which on the narrowest terminal is the row
 that had least to give.
 
-Six of them list something and preview what the pointer is on — past
+Seven of them list something and preview what the pointer is on — past
 commands, saved commands, saved conversations, the pages this session
-read, the steps it declared, and the notes its agents wrote each other — and
+read, the steps it declared, the readings it took of its own run, and the
+notes its agents wrote each other — and
 they split the terminal
 the same way: two columns where there is
 room for two, stacked where there is not, and the preview giving way to the
@@ -2457,6 +2465,29 @@ It is opened by `/steps` and by a click on the STEPS heading
 ([the inspector rail](#the-inspector-rail)), and a session with no list — or
 one executing an approved plan, whose steps are the checklist — says so in a
 line instead.
+
+`/readings` is the rail's SUMMARY block read as a history: every reading the
+session has taken of its own run ([the session
+summary](#the-session-summary)), newest first, one row each — the round it was
+taken at and its verdict in the rail's own marks (`▸ r 9 · on target`, `⚠ r 14
+· off target`), the turn it belongs to, and what became of it where it
+interrupted the turn: `steered`, or `withdrawn` once the reader took that steer
+back. Beside the reading under the pointer is the reading whole, drawn as the
+transcript's opened summary row draws it — the text, the verdict, the reason
+behind a departure and the instruction it was judged against as that
+instruction stood then — because a reading here and the same reading in the
+feed are one thing and are read the same way. A quiet reading, which earns no
+transcript row, is kept here too: once the next reading replaces it on the
+rail, this screen is the only place it is still said. The header counts the
+readings and states what they have cost the session, which only `/status` said
+before. The history belongs to the session rather than to the turn — a history
+of one turn is the rail again — so it runs across turns and is gone at a new
+session; it keeps the last two hundred, and once the oldest have gone a line
+under the header says how many. It is built when it opens, reads and changes
+nothing, and the turn goes on underneath it. It is opened by `/readings` and by
+a click on the SUMMARY heading ([the inspector rail](#the-inspector-rail)), and
+a session with no readings yet, or with the summary off, says so in a line
+instead.
 
 `/notes` is the shared notebook — what one
 agent found and the next should not have to find again

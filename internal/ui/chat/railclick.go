@@ -16,9 +16,9 @@ package chat
 //     and the manager's [enter] both attach to it already.
 //   - A block's heading, and its fold marker. Each names the block, and where
 //     the block has a surface holding the whole of what it bounds, that
-//     surface is what a command already opens: CHANGES is /diff, AGENTS is
-//     /agents, STEPS is /steps, TODO is /todo, CONTEXT is /context
-//     (railDoors).
+//     surface is what a command already opens: SUMMARY is /readings, CHANGES
+//     is /diff, AGENTS is /agents, STEPS is /steps, TODO is /todo, CONTEXT is
+//     /context (railDoors).
 //
 // A heading or a marker opens that surface, and the remembered cell closes
 // it: the surface takes the rail's columns, so the row is not there for a
@@ -79,11 +79,12 @@ func (o railOpening) showing(m Model) bool {
 func railDoors() map[string]railDoor {
 	railDoorOnce.Do(func() {
 		railDoorTable = map[string]railDoor{
-			components.RailChanges: {Model.openSessionDiff, reviewShowing, Model.closeReview},     // /diff
-			components.RailAgents:  {Model.openAgentList, agentListShowing, Model.closeAgentList}, // /agents
-			components.RailSteps:   {Model.openSteps, stepsShowing, Model.closeStepsScreen},       // /steps
-			components.RailTodo:    {Model.openTodoDoor, backlogShowing, Model.closeTodoScreen},   // /todo
-			components.RailContext: {Model.openContext, contextShowing, Model.closeContextScreen}, // /context
+			components.RailChanges: {Model.openSessionDiff, reviewShowing, Model.closeReview},        // /diff
+			components.RailAgents:  {Model.openAgentList, agentListShowing, Model.closeAgentList},    // /agents
+			components.RailSummary: {Model.openReadings, readingsShowing, Model.closeReadingsScreen}, // /readings
+			components.RailSteps:   {Model.openSteps, stepsShowing, Model.closeStepsScreen},          // /steps
+			components.RailTodo:    {Model.openTodoDoor, backlogShowing, Model.closeTodoScreen},      // /todo
+			components.RailContext: {Model.openContext, contextShowing, Model.closeContextScreen},    // /context
 		}
 		railDoorNames = map[string]bool{}
 		for name := range railDoorTable {
@@ -136,6 +137,13 @@ func stepsShowing(m Model) any {
 		return nil
 	}
 	return m.stepsScreen
+}
+
+func readingsShowing(m Model) any {
+	if m.state != stateReadings || m.readingsScreen == nil {
+		return nil
+	}
+	return m.readingsScreen
 }
 
 func backlogShowing(m Model) any {

@@ -425,6 +425,40 @@ closes it, the way CHANGES opens the session's diff
 When there is an artboard, these three decisions are what it has to
 reconcile with, and where the two differ the artboard wins.
 
+## The readings screen's layout was decided in the binary
+
+*A gap.* No artboard draws `/readings`, and the InspectorRail component draws
+the SUMMARY block's heading as a label rather than as a door to anything. The
+binary draws a screen behind that heading
+([the supporting screens](surfaces.md#the-supporting-screens)): the family's
+chrome over a list and a preview, the list every reading the session has taken
+and the preview the one under the pointer. Most of it needed no decision — the
+header and its rule, the two panes and the divider, the windowed list with its
+counted markers and the key row are the supporting screens' own, and the
+preview is the transcript's opened summary row drawn by its own renderer.
+Three things it could not take from anywhere, and they were decided here:
+
+**A row is the round, the verdict and what became of it.** The rail's verdict
+mark leads, then `r 14 · off target` in the rail's own words — not a new word
+for a departure — then `steered` or `withdrawn` where the reading interrupted
+the turn, and the turn it belongs to at the far end, because a round number
+only means something inside its turn. What a steer came to is said again in a
+line under the preview, since the row inside it is the reading as it landed
+and says nothing of what followed.
+
+**The cost is the header's tally.** What the readings have cost is the reading
+the header gives up first on a narrow terminal, beside the keys where the
+other screens keep their clock and their spend, and the count stays with the
+title.
+
+**A history that begins part-way says so.** Once the oldest readings have
+gone, a line pinned under the header says how many and how many the screen
+keeps, because a list that simply started later would read as a session that
+took its first reading late.
+
+When there is an artboard, these three decisions are what it has to
+reconcile with, and where the two differ the artboard wins.
+
 ## The explanation's screen wears the full view's title, not a rail label
 
 *A disagreement.* The artboard draws the command explanation with a rail

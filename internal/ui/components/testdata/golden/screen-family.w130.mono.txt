@@ -167,6 +167,20 @@ MODE AND POLICY
 
 [↑↓/jk] move · [esc] back to the prompt                                                           the agent's own list, not a plan
 
+· readings · every reading the session took, the one under the pointer whole beside it
+/readings · 5 readings                                                                         $0.0142 spent · [?] keys · [q] back
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+❯ ⚠ r 11 · off target     withdrawn       turn 2 │ r 11 · off target                                                        turn 2
+  ⚠ r 6 · off target      steered         turn 2 │ 
+  ▸ r 3 · has enough                      turn 2 │    ≡ summary round 11                              ⚠ off target · 1 line
+  · r 9 · target unclear                  turn 1 │     Rewriting the README's install section after the exporter fix.
+  ▸ r 3 · on target                       turn 1 │     ⚠ off target
+                                                 │       the instruction was the exporter; docs were not asked for
+                                                 │     read against: fix the CSV exporter's quoting
+
+[↑↓/jk] move · [esc] back to the prompt                                                a reader's account of the run, newest first
+
 ── ansi ────────────────────────────────────────────────────
 · doctor · the count on the left, the clock and the keys on the right
 ␛[1;38;5;254mshhh doctor␛[m␛[38;5;244m · 10 checks␛[m                                                                                 ␛[38;5;244m1.4s␛[m␛[38;5;244m · [?] keys · [q] quit␛[m
@@ -324,3 +338,17 @@ MODE AND POLICY
   ␛[38;5;244m7. ␛[m␛[38;5;254m· Write the report␛[m                      ␛[38;5;244mnot started␛[m␛[38;5;244m │ ␛[m  ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254medit␛[m    ␛[38;5;254minternal/agent/round.go␛[m            ␛[38;5;254m+12␛[m ␛[38;5;254m−4␛[m␛[38;5;244m · ␛[m␛[38;5;244m2 hunks␛[m   ␛[38;5;244m1.1s␛[m
 
 ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m                                                           ␛[38;5;244mthe agent's own list, not a plan␛[m
+
+· readings · every reading the session took, the one under the pointer whole beside it
+␛[1;38;5;254m/readings␛[m␛[38;5;244m · 5 readings␛[m                                                                         ␛[38;5;244m$0.0142 spent␛[m␛[38;5;244m · [?] keys · [q] back␛[m
+␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+
+␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m⚠ r 11 · off target     withdrawn       turn 2␛[m␛[38;5;244m │ ␛[m␛[1;38;5;254mr 11 · off target␛[m                                                        ␛[38;5;244mturn 2␛[m
+  ␛[38;5;254m⚠ r 6 · off target␛[m      ␛[38;5;254msteered␛[m         ␛[38;5;244mturn 2␛[m␛[38;5;244m │ ␛[m
+  ␛[38;5;254m▸ r 3 · has enough␛[m                      ␛[38;5;244mturn 2␛[m␛[38;5;244m │ ␛[m   ␛[38;5;244m≡␛[m ␛[38;5;254msummary␛[m ␛[38;5;254mround 11␛[m                              ␛[38;5;244m⚠ off target␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 line␛[m
+  ␛[38;5;254m· r 9 · target unclear␛[m                  ␛[38;5;244mturn 1␛[m␛[38;5;244m │ ␛[m    ␛[38;5;244mRewriting the README's install section after the exporter fix.␛[m
+  ␛[38;5;254m▸ r 3 · on target␛[m                       ␛[38;5;244mturn 1␛[m␛[38;5;244m │ ␛[m    ␛[38;5;244m⚠ off target␛[m
+                                                ␛[38;5;244m │ ␛[m    ␛[38;5;244m  the instruction was the exporter; docs were not asked for␛[m
+                                                ␛[38;5;244m │ ␛[m    ␛[38;5;244mread against: fix the CSV exporter's quoting␛[m
+
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m                                                ␛[38;5;244ma reader's account of the run, newest first␛[m

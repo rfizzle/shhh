@@ -176,11 +176,12 @@
     rail click       on the inspector rail, a changed file opens its diff
                      and a session's row moves the keyboard into it. A
                      block's heading, or its … N more, opens the surface
-                     holding the whole block — CHANGES is /diff, AGENTS is
-                     /agents, STEPS is /steps, TODO is /todo, CONTEXT is
-                     /context — and a click on the same cell closes it, as
-                     its own esc does. The rail never holds the keyboard,
-                     so each command is that door's key
+                     holding the whole block — SUMMARY is /readings,
+                     CHANGES is /diff, AGENTS is /agents, STEPS is /steps,
+                     TODO is /todo, CONTEXT is /context — and a click on
+                     the same cell closes it, as its own esc does. The
+                     rail never holds the keyboard, so each command is
+                     that door's key
     [ctrl+g]         open the draft in your editor: $EDITOR (then $VISUAL,
                      then vi) opens a file holding what you have typed, at
                      the line and column the cursor was on, and whatever
@@ -418,11 +419,12 @@
     ␛[38;5;252mrail click␛[m       ␛[38;5;241mon the inspector rail, a changed file opens its diff␛[m
                      ␛[38;5;241mand a session's row moves the keyboard into it. A␛[m
                      ␛[38;5;241mblock's heading, or its … N more, opens the surface␛[m
-                     ␛[38;5;241mholding the whole block — CHANGES is /diff, AGENTS is␛[m
-                     ␛[38;5;241m/agents, STEPS is /steps, TODO is /todo, CONTEXT is␛[m
-                     ␛[38;5;241m/context — and a click on the same cell closes it, as␛[m
-                     ␛[38;5;241mits own esc does. The rail never holds the keyboard,␛[m
-                     ␛[38;5;241mso each command is that door's key␛[m
+                     ␛[38;5;241mholding the whole block — SUMMARY is /readings,␛[m
+                     ␛[38;5;241mCHANGES is /diff, AGENTS is /agents, STEPS is /steps,␛[m
+                     ␛[38;5;241mTODO is /todo, CONTEXT is /context — and a click on␛[m
+                     ␛[38;5;241mthe same cell closes it, as its own esc does. The␛[m
+                     ␛[38;5;241mrail never holds the keyboard, so each command is␛[m
+                     ␛[38;5;241mthat door's key␛[m
     ␛[94m[ctrl+g]␛[m         ␛[38;5;241mopen the draft in your editor: $EDITOR (then $VISUAL,␛[m
                      ␛[38;5;241mthen vi) opens a file holding what you have typed, at␛[m
                      ␛[38;5;241mthe line and column the cursor was on, and whatever␛[m

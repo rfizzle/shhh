@@ -475,6 +475,19 @@ func buildOverlays() map[state]*mode {
 			hint: (Model).renderStepsHint,
 			keys: (Model).updateSteps,
 		},
+		stateReadings: {
+			place:   placePane,
+			borrows: true,
+			lines: func(m Model, width, height int) []string {
+				if m.readingsScreen == nil {
+					return nil
+				}
+				m.readingsScreen.SetSize(width, height)
+				return strings.Split(m.readingsScreen.View(width), "\n")
+			},
+			hint: (Model).renderReadingsHint,
+			keys: (Model).updateReadings,
+		},
 		stateSafety: {
 			place:   placePane,
 			borrows: true,

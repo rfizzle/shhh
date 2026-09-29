@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -69,6 +70,7 @@ func TestRailDoors_AHeadingOrAMarkerOpensItsSurfaceAndTheCellClosesIt(t *testing
 		{components.RailAgents, true, railDoorModel, "/agents"},
 		{components.RailContext, false, railDoorModel, "/context"},
 		{components.RailSteps, false, railStepsModel, "/steps"},
+		{components.RailSummary, false, railSummaryModel, "/readings"},
 		{components.RailTodo, false, railTodoModel, "/todo"},
 		{components.RailTodo, true, railTodoModel, "/todo"},
 	} {
@@ -118,6 +120,17 @@ func railStepsModel(t *testing.T) Model {
 	t.Helper()
 	m := railDoorModel(t)
 	m.workSteps.Note("1. Read the loop\n2. Patch the limit", true)
+	return m
+}
+
+// railSummaryModel is railDoorModel with a reading landed, so the rail draws
+// a SUMMARY block.
+func railSummaryModel(t *testing.T) Model {
+	t.Helper()
+	m := railDoorModel(t)
+	m = m.WithSummarizer(agent.NewSummarizer(&readingProvider{text: "Reading."},
+		agent.SummaryConfig{Model: "fast", IntervalRounds: 10, MinGap: -1}))
+	landReading(&m, agent.SummaryVerdict{Text: "Reading the loop.", State: agent.SummaryOnTarget, Round: 3})
 	return m
 }
 

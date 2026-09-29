@@ -757,6 +757,23 @@ the same code as the interruptions that were delivered, since a run whose
 reader is slower than its rounds otherwise reads exactly like a run that never
 drifted.
 
+**The readings are kept for the session.** The record files every reading as
+a verdict code and never its words, by contract; the rail holds only the
+latest, and the feed only the readings with something to say. So the run's
+account of itself at each point — what the reader thought it was doing at round
+6 and again at round 24, which of those accounts interrupted it, and which
+interruption the person then took back — would otherwise survive nowhere. Each
+reading that lands is kept with the instruction it was judged against as that
+instruction stood, and with what became of any steer it earned, for as long as
+the session lasts: across its turns, since a history of one turn is the rail
+again, and not into the next session, whose instruction is somebody else's
+target. The readings screen is where they are read
+([the supporting screens](../interface/surfaces.md#the-supporting-screens)),
+opened from the rail's SUMMARY heading or with `/readings`. The bound is two
+hundred, the oldest going first, which only a session running for days
+reaches. Nothing about it reaches the model: it is a screen over readings it
+already made.
+
 ## A steer can be taken back
 
 The judge is a cheap model reading a digest, and it is wrong often enough that

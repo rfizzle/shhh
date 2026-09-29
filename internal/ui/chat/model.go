@@ -226,6 +226,10 @@ const (
 	// the sources screen: full width, the rail hidden, esc returns, and it
 	// changes nothing (worksteps.go).
 	stateSteps
+	// stateReadings: the readings screen is up — every reading the session
+	// has taken of its own run. A takeover like the steps screen: full width,
+	// the rail hidden, esc returns, and it changes nothing (readings.go).
+	stateReadings
 )
 
 // minPanelHeight is the fewest rows the bottom panel takes: what a surface
@@ -1500,6 +1504,9 @@ type Model struct {
 	// The steps screen while it is up, built once per opening like the
 	// sources screen (worksteps.go).
 	stepsScreen *components.StepsScreen
+	// The readings screen while it is up, built once per opening like the
+	// steps screen (readings.go).
+	readingsScreen *components.ReadingsScreen
 	// The safety reading: the readings only the command package can make,
 	// and the screen while it is up, built once per opening (safety.go).
 	safety       Safety

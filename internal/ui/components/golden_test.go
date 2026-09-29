@@ -3653,6 +3653,8 @@ func TestGolden_ScreenFamily(t *testing.T) {
 					}).View(width)},
 				{Label: "steps · the session's own list, the run the transcript titled for the step beside it",
 					View: func() string { s := stepsScreen(1); s.MaxLines = 12; return s.View(width) }()},
+				{Label: "readings · every reading the session took, the one under the pointer whole beside it",
+					View: func() string { s := readingsScreen(0); s.MaxLines = 12; return s.View(width) }()},
 			}
 		})
 }
