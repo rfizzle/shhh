@@ -219,10 +219,12 @@ func (r stripRun) draw() (string, []ChipHit) {
 	return b.String(), hits
 }
 
-// PasteToken is the fold a staged paste leaves in the sentence it was pasted
-// into: `⟨paste 1 · 214 lines⟩`, which the draft holds where the log would
-// otherwise have gone and the transcript keeps once the message is sent
-// (docs/interface/surfaces.md#the-input-frame).
+// PasteToken is the fold anything that arrives at the cursor leaves in the
+// sentence: `⟨Paste#1 · 214 lines⟩` for a paste, `⟨Image#1 · 1440×900⟩` for a
+// picture, `⟨File#1 · 3.2 MB⟩` for anything else — the handle, which carries
+// the kind, and the one figure that kind is counted by. The draft holds it
+// where the bytes would otherwise have gone and the transcript keeps it once
+// the message is sent (docs/interface/surfaces.md#the-input-frame).
 //
 // The angle quotes are two marks the guideline pages do not carry, taken
 // deliberately because square brackets are how this product writes a key and
@@ -230,11 +232,12 @@ func (r stripRun) draw() (string, []ChipHit) {
 // (docs/interface/departures.md#the-paste-fold-is-written-in-angle-quotes).
 //
 // It is here beside the chip because the strip and the token are the same
-// paste said twice — what is riding, and where in the sentence it goes — and
-// one spelling of its height is what keeps the two from disagreeing about
-// the same file on the same screen.
-func PasteToken(label string, lines int) string {
-	return string(PasteFoldOpen) + label + chipSeparator + countedLines(lines) + string(PasteFoldClose)
+// attachment said twice — what is riding, and where in the sentence it goes.
+// The figure is the caller's, read off provider.Attachment.Figure, because
+// the line that leads the bytes in the request states the same one and the
+// word in the sentence must resolve to it.
+func PasteToken(handle, figure string) string {
+	return string(PasteFoldOpen) + handle + chipSeparator + figure + string(PasteFoldClose)
 }
 
 // PasteFoldOpen and PasteFoldClose are the two marks, exported because

@@ -15,6 +15,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"image"
+	"image/png"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -793,10 +795,10 @@ func TestGolden_DraftGrammar(t *testing.T) {
 		folded := func() string {
 			m := goldenModel(t, width)
 			m.attachments = []provider.Attachment{{
-				Kind: provider.AttachmentText, Name: "paste-1.txt",
+				Kind: provider.AttachmentText, Handle: "Paste#1", Name: "paste-1.txt",
 				Data: bytes.Repeat([]byte("round 26 reached, loop still running\n"), 214),
 			}}
-			m.input.SetValue("why does " + components.PasteToken("paste 1", 214) + " never stop")
+			m.input.SetValue("why does " + components.PasteToken("Paste#1", "214 lines") + " never stop")
 			return promptSurface(m)
 		}
 		return []golden.Panel{
@@ -956,22 +958,36 @@ func TestGolden_PasteToken(t *testing.T) {
 		strings.Repeat("    loop_test.go:44: round 26 reached after 2.1s, loop still running "+
 			"with 3 goroutines parked on the same channel\n", 209) +
 		"--- FAIL: TestRoundLimit (2.11s)\nFAIL\nFAIL\tshhh/internal/agent\t2.184s\nexit status 1\n")
-	pasted := provider.Attachment{Kind: provider.AttachmentText, Name: "paste-1.txt", Data: log}
+	pasted := provider.Attachment{Kind: provider.AttachmentText, Handle: "Paste#1", Name: "paste-1.txt", Data: log}
 	fold, ok := pasteOf(pasted)
 	if !ok {
 		t.Fatal("the fixture's paste does not read as one")
 	}
-	sentence := "this test log says the loop never stops — " + fold.token + " — fix the exit condition"
+	// A screenshot pasted beside it, which leaves a fold of its own: the
+	// sentence points at both, and the row keeps both after the send.
+	var shot bytes.Buffer
+	if err := png.Encode(&shot, image.NewNRGBA(image.Rect(0, 0, 1440, 900))); err != nil {
+		t.Fatal(err)
+	}
+	picture := provider.Attachment{Kind: provider.AttachmentImage, Handle: "Image#1",
+		Name: "clipboard.png", MediaType: "image/png", Data: shot.Bytes()}
+	pictured, ok := pasteOf(picture)
+	if !ok || pictured.token != "⟨Image#1 · 1440×900⟩" {
+		t.Fatalf("the fixture's picture folds as %q", pictured.token)
+	}
+	sentence := "this test log says the loop never stops — " + fold.token + " — and " +
+		pictured.token + " is the screen it hangs on; fix the exit condition"
+	carried := []provider.Attachment{pasted, picture}
 	staged := func(t *testing.T, width int) Model {
 		m := goldenModel(t, width)
-		m.attachments = []provider.Attachment{pasted}
+		m.attachments = carried
 		m.input.SetValue(sentence)
 		return m
 	}
 	captureGolden(t, "paste-token", "the paste fold", goldenWidths, func(width int) []golden.Panel {
 		sent := func(open bool) string {
 			m := goldenModel(t, width)
-			m.transcript = []entry{userEntry(sentence, []provider.Attachment{pasted})}
+			m.transcript = []entry{userEntry(sentence, carried)}
 			m.transcript[0].expanded = open
 			m.invalidateRenderCache()
 			return m.renderHistory()
@@ -987,7 +1003,7 @@ func TestGolden_PasteToken(t *testing.T) {
 		// (recall.go).
 		recalled := func() string {
 			m := goldenModel(t, width)
-			m.transcript = []entry{userEntry(sentence, []provider.Attachment{pasted})}
+			m.transcript = []entry{userEntry(sentence, carried)}
 			m.recordInput(sentence)
 			m.invalidateRenderCache()
 			back, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyUp})
@@ -1001,7 +1017,7 @@ func TestGolden_PasteToken(t *testing.T) {
 			m := goldenModel(t, width)
 			m.loadConversation([]provider.Message{
 				{Role: provider.RoleSystem, Content: "sys"},
-				{Role: provider.RoleUser, Content: sentence, Attachments: []provider.Attachment{pasted}},
+				{Role: provider.RoleUser, Content: sentence, Attachments: carried},
 			})
 			m.invalidateRenderCache()
 			back, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyUp})
@@ -2476,7 +2492,7 @@ func TestGolden_Screen(t *testing.T) {
 			panels = append(panels, golden.Panel{
 				Label: "the paste reader · a hint wider than the terminal wraps onto a row the panel pays for",
 				View: build(func(m *Model) {
-					*m = stageText(t, *m, "paste-1.txt")
+					*m = stagePasted(t, *m)
 					updated, _ := m.runPaste([]string{"/paste", "show", "paste-1.txt"})
 					*m = updated.(Model)
 				}),

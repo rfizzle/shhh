@@ -237,7 +237,7 @@
 · the paste reader · a hint wider than the terminal wraps onto a row the panel pays for
    shhh chat · ~/src/shhh · main · gpt-4o · think medium    
   ────────────────────────────────────────────────────────  
-  ──── PASTE 1 · lines 1–3 of 3 ──────────────────────────  
+  ──── PASTE#1 · lines 1–3 of 3 ──────────────────────────  
     # notes                                                 
                                                             
     something                                               
@@ -494,7 +494,7 @@
 · the paste reader · a hint wider than the terminal wraps onto a row the panel pays for
   ␛[38;5;254;1m shhh chat␛[38;5;244;22m · ~/src/shhh · main · gpt-4o · think medium␛[m    
   ␛[38;5;244m────────────────────────────────────────────────────────␛[m  
-  ␛[38;5;244m────␛[m ␛[38;5;254;1mPASTE 1 · lines 1–3 of 3␛[m ␛[38;5;244m──────────────────────────␛[m  
+  ␛[38;5;244m────␛[m ␛[38;5;254;1mPASTE#1 · lines 1–3 of 3␛[m ␛[38;5;244m──────────────────────────␛[m  
     ␛[38;5;244m# notes␛[m                                                 
                                                             
     ␛[38;5;244msomething␛[m                                               

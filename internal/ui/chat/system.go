@@ -123,7 +123,7 @@ func (m Model) updateSystem(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 		// what it saw before.
 		if m.inputLive() && m.attachedTo == "" {
 			if path, ok := pastedFileAttachment(msg.Content); ok {
-				return m, attachFileCmd(m.inWorkspace(path)), true
+				return m, attachFileCmd(m.inWorkspace(path), true), true
 			}
 			// A stack trace or a log is a file that happens to have arrived
 			// through the clipboard, and typing it into a three-row box hides

@@ -525,10 +525,11 @@ func geminiResponseParts(atts []Attachment) []*genai.FunctionResponsePart {
 // geminiAttachmentParts carries a user message's attachments as inline data.
 // Gemini takes images, PDFs and recordings as blobs, all three in the same
 // part; text attachments stay text, and so does a recording in a format the
-// model's list does not name.
+// model's list does not name. Each is led by its label as a text part.
 func geminiAttachmentParts(atts []Attachment) []*genai.Part {
 	var parts []*genai.Part
 	for _, a := range atts {
+		parts = append(parts, &genai.Part{Text: a.Label()})
 		switch a.Kind {
 		case AttachmentImage, AttachmentDocument:
 			parts = append(parts, &genai.Part{

@@ -44,6 +44,9 @@ type stagedDoor struct {
 	// back is that the card or reader up now was opened from the strip, so
 	// its way out is back to the strip rather than to the draft.
 	back bool
+	// row is that the card up now was opened from a sent message's fold row
+	// in reading mode, so its way out is back to that row (foldPicture).
+	row bool
 	// shows is the staged attachment the card is showing, which is what the
 	// card's own drop takes out.
 	shows provider.Attachment

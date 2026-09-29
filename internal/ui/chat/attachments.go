@@ -44,27 +44,34 @@ import (
 type clipboardMsg struct {
 	clip attachment.Clipboard
 	err  error
+	// atCursor is that the read came from the draft's own key rather than
+	// from `/paste`, so what it stages leaves a fold where the cursor is.
+	atCursor bool
 }
 
 // attachedFileMsg carries the result of attaching one named file.
 type attachedFileMsg struct {
 	attachment provider.Attachment
 	err        error
+	// atCursor is that the path was dragged into the draft rather than named
+	// to `/paste` or mentioned, so the file leaves a fold where it landed.
+	atCursor bool
 }
 
-// readClipboardCmd reads the clipboard off the render loop.
-func readClipboardCmd() tea.Cmd {
+// readClipboardCmd reads the clipboard off the render loop. atCursor says
+// whether the read was asked for at the draft's cursor (stageAtCursor).
+func readClipboardCmd(atCursor bool) tea.Cmd {
 	return func() tea.Msg {
 		clip, err := attachment.Read()
-		return clipboardMsg{clip: clip, err: err}
+		return clipboardMsg{clip: clip, err: err, atCursor: atCursor}
 	}
 }
 
 // attachFileCmd reads one file off disk as an attachment.
-func attachFileCmd(path string) tea.Cmd {
+func attachFileCmd(path string, atCursor bool) tea.Cmd {
 	return func() tea.Msg {
 		a, err := attachment.FromFile(path)
-		return attachedFileMsg{attachment: a, err: err}
+		return attachedFileMsg{attachment: a, err: err, atCursor: atCursor}
 	}
 }
 
@@ -74,6 +81,9 @@ func (m Model) handleClipboard(msg clipboardMsg) (tea.Model, tea.Cmd) {
 		return m.surfaceNotice("nothing attached — " + msg.err.Error())
 	}
 	if len(msg.clip.Attachments) > 0 {
+		if msg.atCursor {
+			return m.stageAtCursor(msg.clip.Attachments)
+		}
 		return m.stage(msg.clip.Attachments)
 	}
 	// Something was on the clipboard and shhh could not take it: say which,
@@ -102,7 +112,39 @@ func (m Model) handleAttachedFile(msg attachedFileMsg) (tea.Model, tea.Cmd) {
 	if msg.err != nil {
 		return m.surfaceNotice("nothing attached — " + msg.err.Error())
 	}
+	if msg.atCursor {
+		return m.stageAtCursor([]provider.Attachment{msg.attachment})
+	}
 	return m.stage([]provider.Attachment{msg.attachment})
+}
+
+// stageAtCursor stages what arrived at the draft's cursor — a picture off
+// the clipboard, a path dragged in — and leaves a fold where the cursor was,
+// the way a paste does, so the sentence can point at what it carries
+// (docs/interface/surfaces.md#the-input-frame). `/paste <path>` does not come
+// through here: the command is the sentence, and there is no cursor in it.
+//
+// The staging area's own sentence is what it says, because it already names
+// the handle the fold carries and the way to reach the chip; several at once
+// are folded side by side, a space apart, in the order they were staged.
+// What the ceiling refused leaves no fold, for stagePaste's reason.
+func (m Model) stageAtCursor(atts []provider.Attachment) (tea.Model, tea.Cmd) {
+	staged, note := m.stageQuietly(atts)
+	var tokens []string
+	for _, a := range staged.attachments[len(m.attachments):] {
+		if p, ok := pasteOf(a); ok {
+			tokens = append(tokens, p.token)
+		}
+	}
+	if len(tokens) > 0 {
+		staged.input.InsertString(strings.Join(tokens, " "))
+		staged.syncCompletions()
+		staged.syncViewport()
+	}
+	if note == "" {
+		return staged, nil
+	}
+	return staged.surfaceNotice(note)
 }
 
 // WithPasteThresholds sets the shape past which a paste is staged rather than
@@ -221,7 +263,7 @@ func countedPasteLines(n int) string {
 // A fold is one character to the keyboard: an arrow that would land inside
 // the run steps over the whole of it, and a delete that would eat one rune of
 // it takes the token and the paste it stands for together. Half a token is
-// the state this exists to make unreachable — `⟨paste 1 · 214 line`, still
+// the state this exists to make unreachable — `⟨Paste#1 · 214 line`, still
 // attached, still priced, and no longer anything the reader can act on.
 //
 // Deleting the fold drops the paste. The alternative is a staging area with a
@@ -300,15 +342,19 @@ func (m Model) removePaste(a provider.Attachment) (tea.Model, bool) {
 		m.syncViewport()
 		// Its own sentence rather than `/paste drop`'s, and only one: the
 		// reader is looking at the sentence the fold came out of, so what
-		// there is to say is what went with it.
-		next, _ := m.surfaceNotice(fmt.Sprintf("dropped %s — all %s of it",
-			p.label, countedPasteLines(p.lines)))
+		// there is to say is what went with it. A picture or a file has no
+		// lines to count, and is named the way every other drop names it.
+		note := "dropped " + describeStaged(a)
+		if p.paste {
+			note = fmt.Sprintf("dropped %s — all %s of it", p.label, countedPasteLines(p.lines))
+		}
+		next, _ := m.surfaceNotice(note)
 		return next, true
 	}
 	return m, false
 }
 
-// dropPasteToken takes the fold for one paste back out of the draft. It is
+// dropPasteToken takes the fold for one attachment back out of the draft. It is
 // called wherever a chip leaves the staging area — the reader's backspace,
 // `/paste drop`, the reader's `[x]` — because a token standing for bytes
 // that are no longer staged is a sentence that lies about what it carries.
@@ -347,9 +393,12 @@ func (m *Model) setDraft(value string, offset int) {
 	m.syncViewport()
 }
 
-// stagedPaste is one staged paste as everything but the chip strip sees it:
-// what to call it in a sentence, the fold that stands for it in the draft,
-// how far it runs, and what it will cost the next request.
+// stagedPaste is one staged attachment as its fold: what to call it in a
+// sentence (its handle), the fold that stands for it in the draft, the one
+// figure the fold counts it by, and — for text — how far it runs and what it
+// will cost the next request. paste is that it is the text the draft staged
+// itself, which is the one kind with a reader of its own and a price on the
+// vitals rail.
 //
 // It is derived from the staging area on every read rather than kept beside
 // it. There is one staging area and it is already the answer to "what is
@@ -359,68 +408,50 @@ func (m *Model) setDraft(value string, offset int) {
 type stagedPaste struct {
 	label  string
 	token  string
+	figure string
+	paste  bool
 	lines  int
 	tokens int64
 }
 
 // stagedPastes is the pastes in the staging area, in the order they were
-// staged. A staged file that somebody happened to name paste-2.txt is one of
-// these as far as the draft is concerned, which is the right answer: the
-// fold stands for whatever the chip stands for.
+// staged — the folds with a reader and a price, not the pictures and files
+// beside them.
 func (m Model) stagedPastes() []stagedPaste {
 	var out []stagedPaste
 	for _, a := range m.attachments {
-		if p, ok := pasteOf(a); ok {
+		if p, ok := pasteOf(a); ok && p.paste {
 			out = append(out, p)
 		}
 	}
 	return out
 }
 
-// pasteOf reads one attachment as a paste, or reports that it is not one.
+// pasteOf is the one reading of a fold, whatever it stands for: the token an
+// attachment leaves in a sentence, spelled from its handle and its figure
+// (docs/interface/surfaces.md#the-input-frame). Whether a given attachment
+// has a fold is whether its token is in the sentence — a file attached by
+// `/paste <path>` has none — so every door that removes, repaints or
+// rebuilds a fold asks this and nothing else. An attachment with no handle,
+// which only a message saved before handles existed carries, has no fold.
 func pasteOf(a provider.Attachment) (stagedPaste, bool) {
-	label, ok := pasteLabel(a.Name)
-	if !ok || a.Kind != provider.AttachmentText {
+	if a.Handle == "" {
 		return stagedPaste{}, false
 	}
-	lines := attachment.LineCount(a.Data)
-	return stagedPaste{
-		label:  label,
-		token:  components.PasteToken(label, lines),
-		lines:  lines,
-		tokens: agent.EstimateBytesTokens(a.Data),
-	}, true
+	figure := a.Figure()
+	word, _, _ := attachment.SplitHandle(a.Handle)
+	p := stagedPaste{
+		label:  a.Handle,
+		token:  components.PasteToken(a.Handle, figure),
+		figure: figure,
+		paste:  word == attachment.HandlePaste && a.Kind == provider.AttachmentText,
+	}
+	if a.Kind == provider.AttachmentText {
+		p.lines = attachment.LineCount(a.Data)
+		p.tokens = agent.EstimateBytesTokens(a.Data)
+	}
+	return p, true
 }
-
-// pasteLabel is what a staged paste is called in a sentence — `paste 1` for
-// paste-1.txt. The handle and the file name are what `/paste drop` and
-// `/paste show` take and they have to be typable; the label is what a reader
-// reads inside their own sentence, and a file extension in the middle of one
-// is noise about a file that does not exist.
-func pasteLabel(name string) (string, bool) {
-	digits, ok := strings.CutPrefix(name, pasteNamePrefix)
-	if !ok {
-		return "", false
-	}
-	digits, ok = strings.CutSuffix(digits, pasteNameSuffix)
-	if !ok || digits == "" {
-		return "", false
-	}
-	if _, err := strconv.Atoi(digits); err != nil {
-		return "", false
-	}
-	return "paste " + digits, true
-}
-
-// The two halves of attachment.PasteName, so a label can be read back off a
-// name that package wrote. They are split off it rather than spelled again
-// here, because a name composed from two constants and taken apart by a
-// third spelling is a pair that drifts the day either end moves.
-var pasteNamePrefix, pasteNameSuffix = func() (string, string) {
-	name := attachment.PasteName(0)
-	digit := strings.LastIndex(name, "0")
-	return name[:digit], name[digit+1:]
-}()
 
 // pasteCost is the vitals rail's clause while pastes are staged: what the
 // next message is about to pay for them. A paste is the one keystroke that
@@ -626,33 +657,44 @@ func (m Model) findStaged(word string) (int, string) {
 		word, len(hits), strings.Join(handles, ", "))
 }
 
-// pasteFold is one paste as the transcript keeps it after the send: the fold
-// row's own facts, and the lines behind them
+// pasteFold is one fold as the transcript keeps it after the send: the fold
+// row's own facts, and — for text — the lines behind them
 // (docs/interface/surfaces.md#the-input-frame).
 //
-// The body is copied onto the entry rather than left in the staging area,
+// The attachment is kept on the entry rather than left in the staging area,
 // because the staging area is emptied by the send and the row outlives it by
 // the whole session. It is the same bytes the request carried, which is what
-// makes the row an account of what was sent rather than of what is staged.
+// makes the row an account of what was sent rather than of what is staged,
+// and what a recall stages again under the handle it rode under — the same
+// bytes are the same attachment (recall.go) — and what a picture's fold row
+// opens onto the card.
 type pasteFold struct {
-	// handle is the one the paste rode under, which a recall stages it
-	// back under: the same bytes are the same paste (recall.go).
-	handle string
+	att    provider.Attachment
 	label  string
+	token  string
+	figure string
 	lines  int
 	tokens int64
-	body   []string
+	// body is a text fold's lines, and empty for a picture or a file, which
+	// has no body the transcript can open in place.
+	body []string
+}
+
+// picture reports whether the fold stands for a picture, which its row opens
+// onto the preview card rather than in place.
+func (p pasteFold) picture() bool {
+	return p.att.Kind == provider.AttachmentImage
 }
 
 // userEntry is the transcript row one sent message leaves. What rode with it
-// is named two ways and the sentence decides which: a paste whose fold is in
+// is named two ways and the sentence decides which: anything whose fold is in
 // the words is kept as that fold, and everything else is named on the
 // `attached:` line under them.
 //
 // The split is the sentence's because that is where the reader will look. A
-// log the reader put in the middle of what they were asking is accounted for
-// where they put it; a screenshot they attached is a thing the message
-// carried and has nowhere in the words to be.
+// log or a screenshot the reader put in the middle of what they were asking
+// is accounted for where they put it; a file attached by `/paste <path>` is a
+// thing the message carried and has nowhere in the words to be.
 func userEntry(text string, atts []provider.Attachment) entry {
 	e := entry{kind: entryUser, text: text}
 	for _, a := range atts {
@@ -661,20 +703,74 @@ func userEntry(text string, atts []provider.Attachment) entry {
 			e.attached = append(e.attached, attachment.Names([]provider.Attachment{a})...)
 			continue
 		}
-		e.pastes = append(e.pastes, pasteFold{
-			handle: a.Handle,
+		fold := pasteFold{
+			att:    a,
 			label:  p.label,
+			token:  p.token,
+			figure: p.figure,
 			lines:  p.lines,
 			tokens: p.tokens,
-			body:   strings.Split(strings.TrimSuffix(string(a.Data), "\n"), "\n"),
-		})
+		}
+		if a.Kind == provider.AttachmentText {
+			fold.body = strings.Split(strings.TrimSuffix(string(a.Data), "\n"), "\n")
+		}
+		e.pastes = append(e.pastes, fold)
 	}
 	return e
 }
 
-// pasteFoldBlock is the row a sent paste leaves under the sentence it was
-// pasted into: `▸ paste 1 · 214 lines · 6.1k tokens · [enter] expand`, and
-// the lines themselves when the reader has opened it
+// foldOpens reports whether a sent message's folds hold anything a press can
+// open — a text body in place, or a picture onto its card. A row folding only
+// a document or a recording has nothing, and is no stop for reading mode.
+func foldOpens(e entry) bool {
+	for _, p := range e.pastes {
+		if len(p.body) > 0 || p.picture() {
+			return true
+		}
+	}
+	return false
+}
+
+// foldPicture is the picture a closed sent row opens onto the card: the first
+// its folds hold. The first press on such a row opens the card and leaves the
+// row open behind it, so the text folds beside the picture are there when
+// the reader comes back, and the presses after that are the text's own.
+func foldPicture(e entry) (provider.Attachment, bool) {
+	if e.kind != entryUser || e.expanded {
+		return provider.Attachment{}, false
+	}
+	for _, p := range e.pastes {
+		if p.picture() {
+			return p.att, true
+		}
+	}
+	return provider.Attachment{}, false
+}
+
+// openFoldPicture opens a sent picture on the preview card and leaves its row
+// open behind it. Opened from reading mode, the card's way out is back to the
+// row; from the draft, back to the draft.
+func (m Model) openFoldPicture(idx int, a provider.Attachment) (tea.Model, tea.Cmd) {
+	fromRow := m.state == stateFocus
+	next, cmd := m.openPreview(a)
+	nm, ok := next.(Model)
+	if !ok || nm.state != statePreview {
+		return next, cmd
+	}
+	// The row opens only once the card has: a row left open behind a card
+	// that never came up would have lost its offer for nothing.
+	es := *nm.entries()
+	es[idx].expanded = true
+	nm.invalidateRenderCache()
+	nm.staged.row = fromRow
+	return nm, cmd
+}
+
+// pasteFoldBlock is the row a sent fold leaves under the sentence it was
+// written into: `▸ Paste#1 · 214 lines · 6.1k tokens · [enter] expand`, and
+// the lines themselves when the reader has opened it; `▸ Image#1 · 1440×900 ·
+// [enter] open` for a picture, whose press opens the preview card; `▸ File#1 ·
+// 3.2 MB` for anything else, which the transcript has no way to open
 // (docs/interface/surfaces.md#the-input-frame).
 //
 // The row is the fold every other body in the transcript wears, on the same
@@ -694,10 +790,21 @@ func (m Model) pasteFoldBlock(p pasteFold, open bool, width int) string {
 		mark, offer = "▾", "fold it back up"
 	}
 	const sep = " · "
-	held := fmt.Sprintf("%s %s%s%s%s%s tokens", mark, p.label, sep,
-		countedPasteLines(p.lines), sep, components.FormatCount(p.tokens))
-	key := keys.Bracket(keys.Reading.Expand) + " " + offer
 	lead := strings.Repeat(" ", components.GridVerbColumn-2)
+	if len(p.body) == 0 {
+		// A picture or a file: the figure is all there is to count. A
+		// picture offers its card while the row is closed; once the row is
+		// open the press belongs to whatever text is folded beside it.
+		held := mark + " " + p.label + sep + p.figure
+		if !p.picture() || open {
+			return lead + sty.SystemMsg.Render(held) + "\n"
+		}
+		key := keys.Bracket(keys.Reading.Expand) + " open"
+		return lead + sty.SystemMsg.Render(held+sep) + sty.Hint.Key.Render(key) + "\n"
+	}
+	held := fmt.Sprintf("%s %s%s%s%s%s tokens", mark, p.label, sep,
+		p.figure, sep, components.FormatCount(p.tokens))
+	key := keys.Bracket(keys.Reading.Expand) + " " + offer
 	out := lead + sty.SystemMsg.Render(held+sep) + sty.Hint.Key.Render(key) + "\n"
 	if !open {
 		return out
@@ -734,20 +841,25 @@ func pasteFoldOverflows(e entry) bool {
 // pasteOutputView is the whole of a row's pastes on their own screen — the
 // third depth, where the bound stops applying. Several folds on one message
 // are one view with each named where it starts, because they were one send
-// and the reader opened the row rather than one of them.
+// and the reader opened the row rather than one of them. Only text has a
+// body here; a picture's fold opens its card instead.
 func pasteOutputView(e entry) *components.OutputView {
 	var lines []string
-	title := ""
-	for i, p := range e.pastes {
-		if i == 0 {
+	title, n := "", 0
+	for _, p := range e.pastes {
+		if len(p.body) == 0 {
+			continue
+		}
+		if n == 0 {
 			title = p.label
 		} else {
 			lines = append(lines, "", strings.ToUpper(p.label))
 		}
 		lines = append(lines, p.body...)
+		n++
 	}
-	if len(e.pastes) > 1 {
-		title = fmt.Sprintf("%d pastes", len(e.pastes))
+	if n > 1 {
+		title = fmt.Sprintf("%d pastes", n)
 	}
 	return &components.OutputView{Title: title, Lines: lines}
 }
@@ -819,7 +931,7 @@ func chipKind(k provider.AttachmentKind) components.ChipKind {
 // picture — either also takes a name — and anything else is a path.
 func (m Model) runPaste(parts []string) (tea.Model, tea.Cmd) {
 	if len(parts) == 1 {
-		return m, readClipboardCmd()
+		return m, readClipboardCmd(false)
 	}
 	arg := strings.TrimSpace(strings.Join(parts[1:], " "))
 	if strings.EqualFold(arg, "clear") {
@@ -843,7 +955,7 @@ func (m Model) runPaste(parts []string) (tea.Model, tea.Cmd) {
 	if rest, ok := cutFold(arg, "show"); ok {
 		return m.showAttachment(rest)
 	}
-	return m, attachFileCmd(m.inWorkspace(attachment.Expand(arg)))
+	return m, attachFileCmd(m.inWorkspace(attachment.Expand(arg)), false)
 }
 
 // cutFold splits a leading subcommand word off an argument, matched the way

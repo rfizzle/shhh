@@ -218,6 +218,11 @@ func (m Model) clickRow(line int) (tea.Model, tea.Cmd) {
 	if turn, ok := m.reviewableRow(idx); ok && es[idx].kind == entryTurnClose && offset == 1 {
 		return m.openReview(turn)
 	}
+	// A sent picture's fold row opens its card, from the row line or from
+	// the fold rows under it — the same press enter makes (openCursorRow).
+	if a, ok := foldPicture(es[idx]); ok {
+		return m.openFoldPicture(idx, a)
+	}
 	claimed, full, output := m.toggleRow(idx, g)
 	if !claimed {
 		if !m.rowExpands(es[idx]) {

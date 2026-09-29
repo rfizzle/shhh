@@ -29,10 +29,11 @@ func expandable(e entry) bool {
 	return e.kind == entryTool || e.kind == entryCommand || e.kind == entryDiff ||
 		e.kind == entryThink || e.kind == entrySummary || e.kind == entryTodoRun ||
 		(e.kind == entrySystem && len(outputLines(e)) > 0) ||
-		// A sent message counts when it kept a fold: the paste it folded is
-		// a body under the row like any other, and the row's own offer is
-		// what gives it back (attachments.go).
-		(e.kind == entryUser && len(e.pastes) > 0) ||
+		// A sent message counts when it kept a fold with something to open:
+		// the paste it folded is a body under the row like any other, a
+		// picture opens onto its card, and the row's own offer is what
+		// gives either back (attachments.go).
+		(e.kind == entryUser && foldOpens(e)) ||
 		// A compaction receipt folds the summary under it, which is a body
 		// like any other — and the one that opens with the fold already open,
 		// because a reader who has just lost five turns is owed what replaced
@@ -259,6 +260,11 @@ func (m Model) openCursorRow(ret state) (tea.Model, tea.Cmd) {
 	// a takeover and esc comes back to where it was opened from.
 	if turn, ok := m.reviewableRow(m.focusIdx); ok {
 		return m.openReview(turn)
+	}
+	if es := *m.entries(); m.focusIdx >= 0 && m.focusIdx < len(es) {
+		if a, ok := foldPicture(es[m.focusIdx]); ok {
+			return m.openFoldPicture(m.focusIdx, a)
+		}
 	}
 	claimed, full, output := m.toggleRow(m.focusIdx, gestureCycle)
 	if full != nil {

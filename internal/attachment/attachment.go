@@ -7,7 +7,6 @@ package attachment
 // for `attach`, the verb that already means "attach to a sub-agent" here.
 
 import (
-	"bytes"
 	"fmt"
 	"net/http"
 	"os"
@@ -311,13 +310,11 @@ func NormalizeNewlines(text string) string {
 
 // LineCount is how many lines of text an attachment carries, as the chip and
 // the preview report it. A trailing newline opens no line: a file that ends
-// the way files end is not one line longer than what is in it.
+// the way files end is not one line longer than what is in it. It is the
+// provider's count, because the line leading a text attachment in a request
+// states the same figure (provider.Attachment.Label).
 func LineCount(data []byte) int {
-	if len(data) == 0 {
-		return 0
-	}
-	body := bytes.TrimSuffix(data, []byte("\n"))
-	return bytes.Count(body, []byte("\n")) + 1
+	return provider.LineCount(data)
 }
 
 // PasteName is what the paste handed `Paste#n` is called. A paste has no
@@ -329,16 +326,10 @@ func PasteName(n int) string {
 }
 
 // HumanSize renders a byte count the way the rails do — two significant
-// figures at most, so it never widens a row unpredictably.
+// figures at most, so it never widens a row unpredictably. It is the
+// provider's spelling, for LineCount's reason.
 func HumanSize(n int) string {
-	switch {
-	case n >= 1<<20:
-		return fmt.Sprintf("%.1f MB", float64(n)/float64(1<<20))
-	case n >= 1<<10:
-		return fmt.Sprintf("%.0f KB", float64(n)/float64(1<<10))
-	default:
-		return fmt.Sprintf("%d B", n)
-	}
+	return provider.HumanSize(n)
 }
 
 // Summarize is the one-line description of a staged set, for the notice rail

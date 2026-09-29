@@ -509,10 +509,13 @@ func anthropicToolResult(id, content string, isError bool, atts []Attachment) an
 
 // anthropicAttachmentBlocks carries a user message's attachments as native
 // blocks. Images and PDFs the API takes inline; everything else falls back to
-// the shared text form, which is also what a text attachment always is.
+// the shared text form, which is also what a text attachment always is. Each
+// is led by its label, a text block of its own, which is the Messages API's
+// guidance for several pictures in one message.
 func anthropicAttachmentBlocks(atts []Attachment) []anthropic.ContentBlockParamUnion {
 	var blocks []anthropic.ContentBlockParamUnion
 	for _, a := range atts {
+		blocks = append(blocks, anthropic.NewTextBlock(a.Label()))
 		switch {
 		case a.Kind == AttachmentImage:
 			blocks = append(blocks, anthropic.NewImageBlockBase64(a.MediaType, a.Base64()))

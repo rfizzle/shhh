@@ -98,7 +98,7 @@ func onlyPreviewable(atts []provider.Attachment) (provider.Attachment, bool) {
 // already say. An image that will not decode does open, because "this is
 // staged and shhh cannot read it" is a fact about the send that follows.
 func (m Model) openPreview(a provider.Attachment) (tea.Model, tea.Cmd) {
-	if _, ok := pasteOf(a); ok {
+	if p, ok := pasteOf(a); ok && p.paste {
 		// A paste has a surface of its own, and the name is a second door
 		// onto it rather than a second reading of it: one thing drawn two
 		// ways depending on which door the reader came in by is two things
@@ -169,6 +169,10 @@ func (m *Model) placePicture() tea.Cmd {
 // with the cursor on the chip, or the draft.
 func (m *Model) answerPreview(msg tea.KeyPressMsg) (bool, overlayAction) {
 	switch {
+	case keys.Match(msg, keys.Preview.Remove) && m.stagedIndex(m.staged.shows) < 0:
+		// A picture that has already been sent is not the staging area's to
+		// drop, and the card does not offer the key for it.
+		return false, overlayAction{}
 	case keys.Match(msg, keys.Preview.Remove):
 		note := ""
 		if i := m.stagedIndex(m.staged.shows); i >= 0 {
@@ -187,7 +191,15 @@ func (m *Model) answerPreview(msg tea.KeyPressMsg) (bool, overlayAction) {
 		}
 		return true, overlayAction{run: act.run}
 	case keys.Match(msg, keys.Preview.Back), keys.Match(msg, keys.Preview.Leave):
+		row := m.staged.row
 		act := m.closePreview()
+		if row {
+			// Back to reading mode on the row the card was opened from, the
+			// way the strip's card goes back to the strip.
+			m.state = stateFocus
+			m.refreshFocusView()
+			return true, overlayAction{run: act.run}
+		}
 		if !m.staged.back {
 			return true, act
 		}
@@ -202,7 +214,7 @@ func (m *Model) answerPreview(msg tea.KeyPressMsg) (bool, overlayAction) {
 func (m *Model) closePreview() overlayAction {
 	cmd := m.caps.Delete()
 	m.preview = nil
-	m.staged.shows = provider.Attachment{}
+	m.staged.shows, m.staged.row = provider.Attachment{}, false
 	return overlayAction{close: true, run: cmd}
 }
 
@@ -214,6 +226,11 @@ func (m Model) renderPreviewHint() string {
 	back := seg(keys.Preview.Back)
 	if m.staged.back {
 		back = segAs(keys.Preview.Back, "back to the strip")
+	}
+	// A picture opened from a sent message's fold row is no longer staged,
+	// so there is nothing for the card to drop and no drop to offer.
+	if m.stagedIndex(m.staged.shows) < 0 {
+		return joinSegs([]hintSeg{back})
 	}
 	return joinSegs([]hintSeg{seg(keys.Preview.Remove), back})
 }

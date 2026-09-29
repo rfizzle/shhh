@@ -51,7 +51,7 @@
                      paste over 256 KB is refused rather than staged — it
                      would ride in the prompt itself
     [shift+f12]      open the staged paste. What is staged leaves a fold
-                     where you pasted it — ⟨paste 1 · 214 lines⟩ — which
+                     where you pasted it — ⟨Paste#1 · 214 lines⟩ — which
                      moves, deletes and sends as one character, and what
                      it will cost is on the vitals rail before you send.
                      This reads it back: j/k scrolls, x drops it, q
@@ -283,7 +283,7 @@
                      ␛[38;5;244mpaste over 256 KB is refused rather than staged — it␛[m
                      ␛[38;5;244mwould ride in the prompt itself␛[m
     ␛[38;5;254m[shift+f12]␛[m      ␛[38;5;244mopen the staged paste. What is staged leaves a fold␛[m
-                     ␛[38;5;244mwhere you pasted it — ⟨paste 1 · 214 lines⟩ — which␛[m
+                     ␛[38;5;244mwhere you pasted it — ⟨Paste#1 · 214 lines⟩ — which␛[m
                      ␛[38;5;244mmoves, deletes and sends as one character, and what␛[m
                      ␛[38;5;244mit will cost is on the vitals rail before you send.␛[m
                      ␛[38;5;244mThis reads it back: j/k scrolls, x drops it, q␛[m

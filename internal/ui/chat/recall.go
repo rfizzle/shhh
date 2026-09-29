@@ -42,7 +42,6 @@ package chat
 import (
 	"strings"
 
-	"github.com/rfizzle/shhh/internal/attachment"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
@@ -80,7 +79,7 @@ func typedByHand(msg provider.Message) bool { return !msg.Machine }
 //
 // ↑ puts a line back in the draft exactly as it was sent, folds and all. What
 // the folds stood for left with the send — takeAttachments empties the staging
-// area — so `⟨paste 1 · 214 lines⟩` came back painted as a thing the session
+// area — so `⟨Paste#1 · 214 lines⟩` came back painted as a thing the session
 // is carrying, priced by nothing, opened by no key, and about to go out as
 // those five words instead of two hundred lines. A mark that is drawn nowhere
 // else in the product must not be readable as a fold when there is no fold
@@ -101,7 +100,7 @@ func typedByHand(msg provider.Message) bool { return !msg.Machine }
 //
 // Where the bytes are not there the fold loses its quotes instead and stays as
 // its count in plain words — a paste that no longer fits beside what is
-// already staged. `paste 1 · 214 lines` is prose about a log that is not
+// already staged. `Paste#1 · 214 lines` is prose about a log that is not
 // riding, and prose is what it now is.
 //
 // Walking on drops what walking here staged. ↑ again, or ↓ back out to the
@@ -182,7 +181,7 @@ func (m *Model) restageRecalled(text string) string {
 	}
 	for i := len(m.transcript) - 1; i >= 0; i-- {
 		for _, p := range m.transcript[i].pastes {
-			token := components.PasteToken(p.label, p.lines)
+			token := p.token
 			if !strings.Contains(text, token) || m.stagedFold(token) {
 				continue
 			}
@@ -200,20 +199,10 @@ func (m *Model) restageRecalled(text string) string {
 // is quiet here, because the sentence says what happened by keeping the count
 // and losing the quotes.
 func (m *Model) restagePaste(p pasteFold) (string, bool) {
-	// The row holds the log split into lines with the newline a file ends on
-	// taken off; joining it puts back the bytes the request carried.
-	a, err := attachment.FromBytes(attachment.PasteName(0),
-		[]byte(strings.Join(p.body, "\n")+"\n"))
-	if err != nil || a.Kind != provider.AttachmentText {
-		return "", false
-	}
-	// The handle the row kept, where it kept one: the same bytes are the
-	// same paste. A row saved before handles existed asks for a fresh one.
-	a.Handle = p.handle
-	if a.Handle == "" {
-		a.Handle = attachment.HandlePaste
-	}
-	staged, _ := m.stageQuietly([]provider.Attachment{a})
+	// The row kept the attachment the request carried, handle and all: the
+	// same bytes are the same paste, or the same picture, and a handle
+	// already on the strip is replaced by assignHandle with a fresh one.
+	staged, _ := m.stageQuietly([]provider.Attachment{p.att})
 	if len(staged.attachments) == len(m.attachments) {
 		return "", false
 	}
@@ -227,8 +216,8 @@ func (m *Model) restagePaste(p pasteFold) (string, bool) {
 
 // stagedFold reports whether a token stands for something in the staging area.
 func (m Model) stagedFold(token string) bool {
-	for _, p := range m.stagedPastes() {
-		if p.token == token {
+	for _, a := range m.attachments {
+		if p, ok := pasteOf(a); ok && p.token == token {
 			return true
 		}
 	}

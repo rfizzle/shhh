@@ -342,7 +342,7 @@ func TestPasteMsg_StagesAPasteTooBigForTheDraft(t *testing.T) {
 	if got := m.attachments[0].Kind; got != provider.AttachmentText {
 		t.Fatalf("the staged paste is %q, want text", got)
 	}
-	if got := m.input.Value(); got != "⟨paste 1 · 11 lines⟩" {
+	if got := m.input.Value(); got != "⟨Paste#1 · 11 lines⟩" {
 		t.Fatalf("the draft should hold the fold and not the log, got %q", got)
 	}
 
@@ -365,7 +365,7 @@ func TestPasteMsg_StagesOneVeryWideLine(t *testing.T) {
 	if len(m.attachments) != 1 {
 		t.Fatalf("a 1001-column paste should stage one attachment, got %d", len(m.attachments))
 	}
-	if got := m.input.Value(); got != "⟨paste 1 · 1 line⟩" {
+	if got := m.input.Value(); got != "⟨Paste#1 · 1 line⟩" {
 		t.Fatalf("the draft should hold the fold and not the line, got %q", got)
 	}
 
@@ -429,7 +429,7 @@ func TestClipboard_StagesTextTooBigForTheDraft(t *testing.T) {
 	if len(m.attachments) != 1 || m.attachments[0].Name != "paste-1.txt" {
 		t.Fatalf("a tall clipboard should stage paste-1.txt, got %v", m.attachments)
 	}
-	if got := m.input.Value(); got != "⟨paste 1 · 11 lines⟩" {
+	if got := m.input.Value(); got != "⟨Paste#1 · 11 lines⟩" {
 		t.Fatalf("the draft should hold the fold and not the log, got %q", got)
 	}
 
@@ -496,7 +496,7 @@ func TestPasteMsg_NumbersEachStagedPaste(t *testing.T) {
 func TestAttachmentChips_TextCarriesItsHeightAndNothingElseDoes(t *testing.T) {
 	m := frameModel(t, 100, 40)
 	m.attachments = []provider.Attachment{
-		{Kind: provider.AttachmentText, Name: "paste-1.txt", Data: []byte("a\nb\nc\n")},
+		{Kind: provider.AttachmentText, Handle: "Paste#1", Name: "paste-1.txt", Data: []byte("a\nb\nc\n")},
 		{Kind: provider.AttachmentImage, Name: "shot.png", Data: pngHeader},
 	}
 	chips := m.attachmentChips()
@@ -688,7 +688,7 @@ func TestPasteFold_LandsWhereTheCursorWas(t *testing.T) {
 	m.input.MoveToBegin()
 	m.input.SetCursorColumn(len("why does "))
 	m = stagedLog(t, m, 214)
-	want := "why does " + components.PasteToken("paste 1", 214) + " never stop"
+	want := "why does " + components.PasteToken("Paste#1", "214 lines") + " never stop"
 	if got := m.input.Value(); got != want {
 		t.Fatalf("the draft is %q, want %q", got, want)
 	}
@@ -698,7 +698,7 @@ func TestPasteFold_LandsWhereTheCursorWas(t *testing.T) {
 func TestPasteFold_AnArrowStepsOverTheWholeToken(t *testing.T) {
 	m := stagedLog(t, frameModel(t, 120, 40), 214)
 	m.input.SetValue(m.input.Value() + " after")
-	tok := len([]rune(components.PasteToken("paste 1", 214)))
+	tok := len([]rune(components.PasteToken("Paste#1", "214 lines")))
 	m.input.MoveToBegin()
 	m.input.SetCursorColumn(tok)
 	next, claimed := m.pasteFoldKey(tea.KeyPressMsg{Code: tea.KeyLeft})
@@ -764,7 +764,7 @@ func TestPasteFold_TheVitalsPriceIt(t *testing.T) {
 		t.Fatalf("an empty staging area priced %q", got)
 	}
 	m = stagedLog(t, m, 214)
-	if got := m.pasteCost(); !strings.HasPrefix(got, "paste 1 will cost ~") {
+	if got := m.pasteCost(); !strings.HasPrefix(got, "Paste#1 will cost ~") {
 		t.Fatalf("the vitals say %q", got)
 	}
 	if frame := stripANSI(promptSurface(m)); !strings.Contains(frame, "will cost") {
@@ -788,7 +788,7 @@ func TestPasteFold_TheTranscriptKeepsIt(t *testing.T) {
 		t.Fatal("a row with a fold cannot be opened")
 	}
 	row := stripANSI(m.renderEntry(e, 120))
-	for _, want := range []string{sent, "▸ paste 1 · 214 lines", "tokens", "expand"} {
+	for _, want := range []string{sent, "▸ Paste#1 · 214 lines", "tokens", "expand"} {
 		if !strings.Contains(row, want) {
 			t.Fatalf("the row never says %q:\n%s", want, row)
 		}
@@ -824,7 +824,7 @@ func TestPasteFold_TheOpenKeyReadsItAndLeavesItAlone(t *testing.T) {
 	if read.state != statePasteView {
 		t.Fatalf("state = %v, want the paste reader", read.state)
 	}
-	if view := stripANSI(strings.Join(read.pasteReaderLines(120, 12), "\n")); !strings.Contains(view, "PASTE 1 · lines 1–10 of 214") {
+	if view := stripANSI(strings.Join(read.pasteReaderLines(120, 12), "\n")); !strings.Contains(view, "PASTE#1 · lines 1–10 of 214") {
 		t.Fatalf("the rail does not say where in the paste this is:\n%s", view)
 	}
 	left, _ := read.updatePasteReader(tea.KeyPressMsg{Code: 'q', Text: "q"})
@@ -906,7 +906,7 @@ func TestStage_HandlesRunAcrossTheConversation(t *testing.T) {
 	// its saved rows, and a recalled paste comes back under the handle its
 	// row kept.
 	log := strings.Repeat("a line of the log\n", 11)
-	token := components.PasteToken("paste 2", 11)
+	token := components.PasteToken("Paste#2", "11 lines")
 	r := resumedModel(t, []provider.Message{
 		{Role: provider.RoleSystem, Content: "sys"},
 		{Role: provider.RoleUser, Content: "look " + token, Attachments: []provider.Attachment{
@@ -929,5 +929,103 @@ func TestStage_HandlesRunAcrossTheConversation(t *testing.T) {
 	r = updated.(Model)
 	if a := r.attachments[len(r.attachments)-1]; a.Handle != "Paste#3" || a.Name != "paste-3.txt" {
 		t.Fatalf("the next paste after a resume = %s %s, want Paste#3 paste-3.txt", a.Handle, a.Name)
+	}
+}
+
+// pictureToFold is a real 32×16 PNG as the clipboard or a dragged path hands
+// it over: sniffed, named, and not yet given a handle.
+func pictureToFold(t *testing.T) provider.Attachment {
+	t.Helper()
+	a := stageImage(t, frameModel(t, 100, 40), "clipboard.png").attachments[0]
+	a.Handle = ""
+	return a
+}
+
+// Anything that arrives at the cursor leaves a fold where the cursor was, the
+// way a paste does; `/paste <path>` leaves none, because the command is the
+// sentence and has no cursor in it.
+func TestFold_WhatArrivesAtTheCursorLeavesOne(t *testing.T) {
+	m := frameModel(t, 120, 40)
+	m.input.SetValue("so  is the error")
+	m.input.MoveToBegin()
+	m.input.SetCursorColumn(len("so "))
+	updated, _ := m.handleAttachedFile(attachedFileMsg{attachment: pictureToFold(t), atCursor: true})
+	m = updated.(Model)
+	if want := "so ⟨Image#1 · 32×16⟩ is the error"; m.input.Value() != want {
+		t.Fatalf("the draft is %q, want %q", m.input.Value(), want)
+	}
+
+	// The clipboard's own key is the same door.
+	updated, _ = frameModel(t, 120, 40).handleClipboard(clipboardMsg{
+		clip: attachment.Clipboard{Attachments: []provider.Attachment{pictureToFold(t)}}, atCursor: true})
+	if got := updated.(Model).input.Value(); got != "⟨Image#1 · 32×16⟩" {
+		t.Fatalf("ctrl+v left %q in the draft", got)
+	}
+
+	// The command form stages the chip and leaves the sentence alone.
+	updated, _ = frameModel(t, 120, 40).handleAttachedFile(attachedFileMsg{attachment: pictureToFold(t)})
+	cmd := updated.(Model)
+	if len(cmd.attachments) != 1 || cmd.input.Value() != "" {
+		t.Fatalf("/paste <path> staged %d and left %q", len(cmd.attachments), cmd.input.Value())
+	}
+}
+
+// A picture's fold is one character to the keyboard like a paste's: the
+// backspace at its closing quote takes the fold and the picture together, and
+// every drop by the chip takes the fold out of the sentence.
+func TestFold_APicturesFoldIsDroppedLikeAPastes(t *testing.T) {
+	updated, _ := frameModel(t, 120, 40).handleAttachedFile(attachedFileMsg{attachment: pictureToFold(t), atCursor: true})
+	m := updated.(Model)
+	next, claimed := m.pasteFoldKey(tea.KeyPressMsg{Code: tea.KeyBackspace})
+	if !claimed {
+		t.Fatal("a backspace at the fold's closing quote was not claimed")
+	}
+	gone := next.(Model)
+	if len(gone.attachments) != 0 || gone.input.Value() != "" {
+		t.Fatalf("the backspace left %d staged and %q", len(gone.attachments), gone.input.Value())
+	}
+
+	m.input.SetValue(m.input.Value() + " shows it")
+	note := m.dropStagedAt(0)
+	if m.input.Value() != " shows it" || !strings.Contains(note, "dropped Image#1") {
+		t.Fatalf("the chip's drop left %q and said %q", m.input.Value(), note)
+	}
+}
+
+// After the send the row keeps the picture's fold in the sentence and draws a
+// fold row under it; enter on the row opens the card, and the card's way out
+// is back to the row, with nothing on it to drop.
+func TestFold_ASentPicturesRowOpensTheCard(t *testing.T) {
+	updated, _ := frameModel(t, 120, 40).handleAttachedFile(attachedFileMsg{attachment: pictureToFold(t), atCursor: true})
+	m := updated.(Model)
+	sent := m.input.Value() + " shows the error"
+	m.transcript = []entry{userEntry(sent, m.takeAttachments())}
+	m.input.Reset()
+	e := m.transcript[0]
+	if len(e.pastes) != 1 || len(e.attached) != 0 || !expandable(e) {
+		t.Fatalf("the row kept %d folds and %d names", len(e.pastes), len(e.attached))
+	}
+	row := stripANSI(m.renderEntry(e, 120))
+	for _, want := range []string{"⟨Image#1 · 32×16⟩ shows the error", "▸ Image#1 · 32×16", "open"} {
+		if !strings.Contains(row, want) {
+			t.Fatalf("the row never says %q:\n%s", want, row)
+		}
+	}
+
+	next, _ := m.enterFocusMode()
+	rm := next.(Model)
+	rm.focusIdx = 0
+	opened, _ := rm.openCursorRow(stateFocus)
+	card := opened.(Model)
+	if card.state != statePreview || card.preview == nil {
+		t.Fatalf("enter on the sent row did not open the card (state %d)", card.state)
+	}
+	if hint := stripANSI(card.renderPreviewHint()); strings.Contains(hint, "remove") {
+		t.Fatalf("a sent picture's card offers a drop: %q", hint)
+	}
+	back := pressOn(t, card, tea.KeyPressMsg{Code: tea.KeyEscape})
+	if back.state != stateFocus || back.focusIdx != 0 || !back.transcript[0].expanded {
+		t.Fatalf("the card came back to state %d, row %d, open %v",
+			back.state, back.focusIdx, back.transcript[0].expanded)
 	}
 }

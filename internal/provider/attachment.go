@@ -9,9 +9,18 @@ package provider
 // decides how to carry one; only the fallback text form is shared.
 
 import (
+	"bytes"
 	"encoding/base64"
 	"fmt"
+	"image"
 	"strings"
+
+	// The picture formats whose size Figure can read from a header. They are
+	// registered for their side effect, which is what image.DecodeConfig
+	// reads its sniffer from; WebP is not among them and is counted in bytes.
+	_ "image/gif"
+	_ "image/jpeg"
+	_ "image/png"
 )
 
 // AttachmentKind is how a provider should carry one part. Sniffing decides it
@@ -51,8 +60,8 @@ type Attachment struct {
 	// because the name is often nobody's choice (every pasted screenshot is
 	// clipboard.png) and three chips with one name cannot be told apart by
 	// the two verbs that take one. Empty on a message saved before handles
-	// existed. No provider converter reads it: the request still names the
-	// part by Name.
+	// existed. Label is where a converter reads it: every part a user
+	// message carries is led by a line naming it by its handle.
 	// See docs/capabilities/chat.md#what-can-ride-with-a-message.
 	Handle    string
 	MediaType string
@@ -81,6 +90,72 @@ func (a Attachment) AsText() string {
 	}
 	return fmt.Sprintf("[attachment %q (%s, %d bytes) could not be sent to this provider inline]",
 		a.Name, a.MediaType, len(a.Data))
+}
+
+// Label is the one line that leads an attachment's part in a request:
+// `Image#1 (clipboard.png, 1440×900):`. It is what makes a handle written in
+// the sentence resolve — "Image#1 shows the error" names the part the line
+// stands over — and it carries the name as well, so a file named in the
+// sentence by hand resolves too. The bytes still lead the message and the
+// sentence still follows them: the label points, it moves nothing
+// (docs/capabilities/chat.md#what-can-ride-with-a-message).
+//
+// An attachment saved before handles existed is labelled by its name alone.
+func (a Attachment) Label() string {
+	if a.Handle == "" {
+		return fmt.Sprintf("%s (%s):", a.Name, a.Figure())
+	}
+	return fmt.Sprintf("%s (%s, %s):", a.Handle, a.Name, a.Figure())
+}
+
+// Figure is the one fact an attachment is counted by where it is pointed at —
+// the fold in the draft, the fold row under a sent message, and Label: a
+// picture's size in pixels, text's height in lines, anything else its size in
+// bytes. One function, so the word in the sentence and the line over the
+// bytes cannot describe the same attachment two ways.
+//
+// A picture whose header this package cannot read — WebP, or bytes that are
+// not the picture they claim to be — is counted in bytes rather than not at
+// all: the fold still needs a figure, and a guessed one would be wrong.
+func (a Attachment) Figure() string {
+	switch a.Kind {
+	case AttachmentImage:
+		cfg, _, err := image.DecodeConfig(bytes.NewReader(a.Data))
+		if err == nil && cfg.Width > 0 && cfg.Height > 0 {
+			return fmt.Sprintf("%d×%d", cfg.Width, cfg.Height)
+		}
+	case AttachmentText:
+		if n := LineCount(a.Data); n != 1 {
+			return fmt.Sprintf("%d lines", n)
+		}
+		return "1 line"
+	}
+	return HumanSize(len(a.Data))
+}
+
+// LineCount is how many lines text runs to, the way the chip, the fold and
+// Label count them: a trailing newline does not open another line.
+func LineCount(data []byte) int {
+	if len(data) == 0 {
+		return 0
+	}
+	body := bytes.TrimSuffix(data, []byte("\n"))
+	return bytes.Count(body, []byte("\n")) + 1
+}
+
+// HumanSize renders a byte count the way the rails do — two significant
+// figures at most, so it never widens a row unpredictably. It is here rather
+// than beside the staging area because Label writes one into the request,
+// and the chip and the line over the bytes must spell a size alike.
+func HumanSize(n int) string {
+	switch {
+	case n >= 1<<20:
+		return fmt.Sprintf("%.1f MB", float64(n)/float64(1<<20))
+	case n >= 1<<10:
+		return fmt.Sprintf("%.0f KB", float64(n)/float64(1<<10))
+	default:
+		return fmt.Sprintf("%d B", n)
+	}
 }
 
 // audioMediaTypes maps what a byte sniffer calls a recording onto the media

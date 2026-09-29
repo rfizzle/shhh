@@ -11,14 +11,15 @@
 
 ── layout ──────────────────────────────────────────────────
 · the fold in the draft · priced on the vitals, opened from the hints
-≡ paste-1.txt 23 KB 214 lines                                                                                                 
+≡ Paste#1 paste-1.txt 23 KB 214 lines · ▣ Image#1 clipboard.png 34 KB                                                         
 ╭─ idle ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ ▸ this test log says the loop never stops — ⟨paste 1 · 214 lines⟩ — fix the exit condition                                 │
-├─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 · paste 1 will cost ~6.0k tokens ─────────────────────────────────────────────────────┤
-╰─ [enter] send · [shift+f12] open paste 1 · [ctrl+/] palette · [shift+tab] mode · [ctrl+d] ×2 quit · [ctrl+]] keys ─────────╯
+│ ▸ this test log says the loop never stops — ⟨Paste#1 · 214 lines⟩ — and ⟨Image#1 · 1440×900⟩ is the screen it hangs on;    │
+│   fix the exit condition                                                                                                   │
+├─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 · Paste#1 will cost ~6.0k tokens ─────────────────────────────────────────────────────┤
+╰─ [enter] send · [shift+f12] open Paste#1 · [ctrl+/] palette · [shift+tab] mode · [ctrl+d] ×2 quit · [ctrl+]] keys ─────────╯
 
 · opened · reading's rail says how far through it you are
-──── PASTE 1 · lines 1–10 of 214 ─────────────────────────────────────────────────────────────────────────────────────────────────
+──── PASTE#1 · lines 1–10 of 214 ─────────────────────────────────────────────────────────────────────────────────────────────────
   === RUN   TestRoundLimit
       loop_test.go:44: round 26 reached after 2.1s, loop still running with 3 goroutines parked on the same channel
       loop_test.go:44: round 26 reached after 2.1s, loop still running with 3 goroutines parked on the same channel
@@ -32,16 +33,17 @@
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 · sent · the transcript keeps the fold, not the flood
-❯ this test log says the loop never stops — ⟨paste 1 · 214 lines⟩ — fix the
-  exit condition
-   ▸ paste 1 · 214 lines · 6.0k tokens · [enter] expand
+❯ this test log says the loop never stops — ⟨Paste#1 · 214 lines⟩ — and    
+  ⟨Image#1 · 1440×900⟩ is the screen it hangs on; fix the exit condition
+   ▸ Paste#1 · 214 lines · 6.0k tokens · [enter] expand
+   ▸ Image#1 · 1440×900 · [enter] open
 ─────────────────────────────────────────────────────────────────────────────
 
 
 · opened in the transcript · bounded, and the bound counts
-❯ this test log says the loop never stops — ⟨paste 1 · 214 lines⟩ — fix the
-  exit condition
-   ▾ paste 1 · 214 lines · 6.0k tokens · [enter] fold it back up
+❯ this test log says the loop never stops — ⟨Paste#1 · 214 lines⟩ — and    
+  ⟨Image#1 · 1440×900⟩ is the screen it hangs on; fix the exit condition
+   ▾ Paste#1 · 214 lines · 6.0k tokens · [enter] fold it back up
     === RUN   TestRoundLimit
         loop_test.go:44: round 26 reached after 2.1s, loop still running wit…
         loop_test.go:44: round 26 reached after 2.1s, loop still running wit…
@@ -51,33 +53,37 @@
         loop_test.go:44: round 26 reached after 2.1s, loop still running wit…
         loop_test.go:44: round 26 reached after 2.1s, loop still running wit…
     … 206 lines more, [enter] opens the whole of it
+   ▾ Image#1 · 1440×900
 ─────────────────────────────────────────────────────────────────────────────
 
 
 · recalled · the fold is a paste again, not five words about one
-≡ Paste#1 paste-1.txt 23 KB 214 lines                                                                                         
+≡ Paste#1 paste-1.txt 23 KB 214 lines · ▣ Image#1 clipboard.png 34 KB                                                         
 ╭─ idle ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ ▸ this test log says the loop never stops — ⟨paste 1 · 214 lines⟩ — fix the exit condition                                 │
-├─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 · paste 1 will cost ~6.0k tokens ─────────────────────────────────────────────────────┤
-╰─ [enter] send · [shift+f12] open paste 1 · [ctrl+/] palette · [shift+tab] mode · [ctrl+d] ×2 quit · [ctrl+]] keys ─────────╯
+│ ▸ this test log says the loop never stops — ⟨Paste#1 · 214 lines⟩ — and ⟨Image#1 · 1440×900⟩ is the screen it hangs on;    │
+│   fix the exit condition                                                                                                   │
+├─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 · Paste#1 will cost ~6.0k tokens ─────────────────────────────────────────────────────┤
+╰─ [enter] send · [shift+f12] open Paste#1 · [ctrl+/] palette · [shift+tab] mode · [ctrl+d] ×2 quit · [ctrl+]] keys ─────────╯
 
 · recalled after a reopen · the saved log is staged the same way
-≡ Paste#1 paste-1.txt 23 KB 214 lines                                                                                         
+≡ Paste#1 paste-1.txt 23 KB 214 lines · ▣ Image#1 clipboard.png 34 KB                                                         
 ╭─ idle ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ ▸ this test log says the loop never stops — ⟨paste 1 · 214 lines⟩ — fix the exit condition                                 │
-├─ ⏸ manual · ctx 36% ▰▰▱▱▱▱▱▱ · $0.51 · paste 1 will cost ~6.0k tokens ─────────────────────────────────────────────────────┤
-╰─ [enter] send · [shift+f12] open paste 1 · [ctrl+/] palette · [shift+tab] mode · [ctrl+d] ×2 quit · [ctrl+]] keys ─────────╯
+│ ▸ this test log says the loop never stops — ⟨Paste#1 · 214 lines⟩ — and ⟨Image#1 · 1440×900⟩ is the screen it hangs on;    │
+│   fix the exit condition                                                                                                   │
+├─ ⏸ manual · ctx 38% ▰▰▰▱▱▱▱▱ · $0.51 · Paste#1 will cost ~6.0k tokens ─────────────────────────────────────────────────────┤
+╰─ [enter] send · [shift+f12] open Paste#1 · [ctrl+/] palette · [shift+tab] mode · [ctrl+d] ×2 quit · [ctrl+]] keys ─────────╯
 
 ── ansi ────────────────────────────────────────────────────
 · the fold in the draft · priced on the vitals, opened from the hints
-␛[38;5;252m≡ paste-1.txt␛[38;5;241m 23 KB 214 lines␛[m                                                                                                 
+␛[38;5;252m≡ Paste#1 paste-1.txt␛[38;5;241m 23 KB 214 lines · ␛[38;5;252m▣ Image#1 clipboard.png␛[38;5;241m 34 KB␛[m                                                         
 ␛[38;5;241m╭─␛[m ␛[38;5;241midle␛[m ␛[38;5;241m─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮␛[m
-␛[38;5;241m│␛[m ␛[38;5;241m▸␛[m ␛[38;5;252mthis test log says the loop never stops — ␛[94m⟨paste 1 · 214 lines⟩␛[38;5;252m — fix the exit condition                                ␛[m ␛[38;5;241m│␛[m
-␛[38;5;241m├─␛[m ␛[38;5;214m⏸ manual␛[38;5;243m · ␛[92mctx 32%␛[m ␛[92m▰▰␛[38;5;241m▱▱▱▱▱▱␛[38;5;243m · $0.51 · paste 1 will cost ~6.0k tokens␛[m ␛[38;5;241m─────────────────────────────────────────────────────┤␛[m
-␛[38;5;241m╰─␛[m ␛[94m[enter]␛[38;5;241m send · ␛[94m[shift+f12]␛[38;5;241m open paste 1 · ␛[94m[ctrl+/]␛[38;5;241m palette · ␛[94m[shift+tab]␛[38;5;241m mode · ␛[94m[ctrl+d]␛[38;5;241m ×2 quit · ␛[94m[ctrl+]]␛[38;5;241m keys␛[m ␛[38;5;241m─────────╯␛[m
+␛[38;5;241m│␛[m ␛[38;5;241m▸␛[m ␛[38;5;252mthis test log says the loop never stops — ␛[94m⟨Paste#1 · 214 lines⟩␛[38;5;252m — and ␛[94m⟨Image#1 · 1440×900⟩␛[38;5;252m is the screen it hangs on;   ␛[m ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m   ␛[38;5;252mfix the exit condition                                                                                                  ␛[m ␛[38;5;241m│␛[m
+␛[38;5;241m├─␛[m ␛[38;5;214m⏸ manual␛[38;5;243m · ␛[92mctx 32%␛[m ␛[92m▰▰␛[38;5;241m▱▱▱▱▱▱␛[38;5;243m · $0.51 · Paste#1 will cost ~6.0k tokens␛[m ␛[38;5;241m─────────────────────────────────────────────────────┤␛[m
+␛[38;5;241m╰─␛[m ␛[94m[enter]␛[38;5;241m send · ␛[94m[shift+f12]␛[38;5;241m open Paste#1 · ␛[94m[ctrl+/]␛[38;5;241m palette · ␛[94m[shift+tab]␛[38;5;241m mode · ␛[94m[ctrl+d]␛[38;5;241m ×2 quit · ␛[94m[ctrl+]]␛[38;5;241m keys␛[m ␛[38;5;241m─────────╯␛[m
 
 · opened · reading's rail says how far through it you are
-␛[38;5;241m────␛[m ␛[1;94mPASTE 1 · lines 1–10 of 214␛[m ␛[38;5;241m─────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[38;5;241m────␛[m ␛[1;94mPASTE#1 · lines 1–10 of 214␛[m ␛[38;5;241m─────────────────────────────────────────────────────────────────────────────────────────────────␛[m
   ␛[38;5;245m=== RUN   TestRoundLimit␛[m
   ␛[38;5;245m    loop_test.go:44: round 26 reached after 2.1s, loop still running with 3 goroutines parked on the same channel␛[m
   ␛[38;5;245m    loop_test.go:44: round 26 reached after 2.1s, loop still running with 3 goroutines parked on the same channel␛[m
@@ -91,16 +97,17 @@
 ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
 · sent · the transcript keeps the fold, not the flood
-␛[94m❯␛[m ␛[97mthis test log says the loop never stops — ␛[m␛[94m⟨paste 1 · 214 lines⟩␛[m␛[94m␛[m␛[97m — fix the␛[m
-  ␛[97mexit condition␛[m
-   ␛[38;5;241m▸ paste 1 · 214 lines · 6.0k tokens · ␛[m␛[94m[enter] expand␛[m
+␛[94m❯␛[m ␛[97mthis test log says the loop never stops — ␛[m␛[94m⟨Paste#1 · 214 lines⟩␛[m␛[94m␛[m␛[97m — and ␛[m   
+  ␛[97m␛[m␛[94m⟨Image#1 · 1440×900⟩␛[m␛[97m is the screen it hangs on; fix the exit condition␛[m
+   ␛[38;5;241m▸ Paste#1 · 214 lines · 6.0k tokens · ␛[m␛[94m[enter] expand␛[m
+   ␛[38;5;241m▸ Image#1 · 1440×900 · ␛[m␛[94m[enter] open␛[m
 ␛[38;5;243m─────────────────────────────────────────────────────────────────────────────␛[m
 
 
 · opened in the transcript · bounded, and the bound counts
-␛[94m❯␛[m ␛[97mthis test log says the loop never stops — ␛[m␛[94m⟨paste 1 · 214 lines⟩␛[m␛[94m␛[m␛[97m — fix the␛[m
-  ␛[97mexit condition␛[m
-   ␛[38;5;241m▾ paste 1 · 214 lines · 6.0k tokens · ␛[m␛[94m[enter] fold it back up␛[m
+␛[94m❯␛[m ␛[97mthis test log says the loop never stops — ␛[m␛[94m⟨Paste#1 · 214 lines⟩␛[m␛[94m␛[m␛[97m — and ␛[m   
+  ␛[97m␛[m␛[94m⟨Image#1 · 1440×900⟩␛[m␛[97m is the screen it hangs on; fix the exit condition␛[m
+   ␛[38;5;241m▾ Paste#1 · 214 lines · 6.0k tokens · ␛[m␛[94m[enter] fold it back up␛[m
     ␛[38;5;245m=== RUN   TestRoundLimit␛[m
     ␛[38;5;245m    loop_test.go:44: round 26 reached after 2.1s, loop still running wit…␛[m
     ␛[38;5;245m    loop_test.go:44: round 26 reached after 2.1s, loop still running wit…␛[m
@@ -110,19 +117,22 @@
     ␛[38;5;245m    loop_test.go:44: round 26 reached after 2.1s, loop still running wit…␛[m
     ␛[38;5;245m    loop_test.go:44: round 26 reached after 2.1s, loop still running wit…␛[m
     ␛[38;5;241m… 206 lines more, [enter] opens the whole of it␛[m
+   ␛[38;5;241m▾ Image#1 · 1440×900␛[m
 ␛[38;5;243m─────────────────────────────────────────────────────────────────────────────␛[m
 
 
 · recalled · the fold is a paste again, not five words about one
-␛[38;5;252m≡ Paste#1 paste-1.txt␛[38;5;241m 23 KB 214 lines␛[m                                                                                         
+␛[38;5;252m≡ Paste#1 paste-1.txt␛[38;5;241m 23 KB 214 lines · ␛[38;5;252m▣ Image#1 clipboard.png␛[38;5;241m 34 KB␛[m                                                         
 ␛[38;5;241m╭─␛[m ␛[38;5;241midle␛[m ␛[38;5;241m─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮␛[m
-␛[38;5;241m│␛[m ␛[38;5;241m▸␛[m ␛[38;5;252mthis test log says the loop never stops — ␛[94m⟨paste 1 · 214 lines⟩␛[38;5;252m — fix the exit condition                                ␛[m ␛[38;5;241m│␛[m
-␛[38;5;241m├─␛[m ␛[38;5;214m⏸ manual␛[38;5;243m · ␛[92mctx 32%␛[m ␛[92m▰▰␛[38;5;241m▱▱▱▱▱▱␛[38;5;243m · $0.51 · paste 1 will cost ~6.0k tokens␛[m ␛[38;5;241m─────────────────────────────────────────────────────┤␛[m
-␛[38;5;241m╰─␛[m ␛[94m[enter]␛[38;5;241m send · ␛[94m[shift+f12]␛[38;5;241m open paste 1 · ␛[94m[ctrl+/]␛[38;5;241m palette · ␛[94m[shift+tab]␛[38;5;241m mode · ␛[94m[ctrl+d]␛[38;5;241m ×2 quit · ␛[94m[ctrl+]]␛[38;5;241m keys␛[m ␛[38;5;241m─────────╯␛[m
+␛[38;5;241m│␛[m ␛[38;5;241m▸␛[m ␛[38;5;252mthis test log says the loop never stops — ␛[94m⟨Paste#1 · 214 lines⟩␛[38;5;252m — and ␛[94m⟨Image#1 · 1440×900⟩␛[38;5;252m is the screen it hangs on;   ␛[m ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m   ␛[38;5;252mfix the exit condition                                                                                                  ␛[m ␛[38;5;241m│␛[m
+␛[38;5;241m├─␛[m ␛[38;5;214m⏸ manual␛[38;5;243m · ␛[92mctx 32%␛[m ␛[92m▰▰␛[38;5;241m▱▱▱▱▱▱␛[38;5;243m · $0.51 · Paste#1 will cost ~6.0k tokens␛[m ␛[38;5;241m─────────────────────────────────────────────────────┤␛[m
+␛[38;5;241m╰─␛[m ␛[94m[enter]␛[38;5;241m send · ␛[94m[shift+f12]␛[38;5;241m open Paste#1 · ␛[94m[ctrl+/]␛[38;5;241m palette · ␛[94m[shift+tab]␛[38;5;241m mode · ␛[94m[ctrl+d]␛[38;5;241m ×2 quit · ␛[94m[ctrl+]]␛[38;5;241m keys␛[m ␛[38;5;241m─────────╯␛[m
 
 · recalled after a reopen · the saved log is staged the same way
-␛[38;5;252m≡ Paste#1 paste-1.txt␛[38;5;241m 23 KB 214 lines␛[m                                                                                         
+␛[38;5;252m≡ Paste#1 paste-1.txt␛[38;5;241m 23 KB 214 lines · ␛[38;5;252m▣ Image#1 clipboard.png␛[38;5;241m 34 KB␛[m                                                         
 ␛[38;5;241m╭─␛[m ␛[38;5;241midle␛[m ␛[38;5;241m─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮␛[m
-␛[38;5;241m│␛[m ␛[38;5;241m▸␛[m ␛[38;5;252mthis test log says the loop never stops — ␛[94m⟨paste 1 · 214 lines⟩␛[38;5;252m — fix the exit condition                                ␛[m ␛[38;5;241m│␛[m
-␛[38;5;241m├─␛[m ␛[38;5;214m⏸ manual␛[38;5;243m · ␛[92mctx 36%␛[m ␛[92m▰▰␛[38;5;241m▱▱▱▱▱▱␛[38;5;243m · $0.51 · paste 1 will cost ~6.0k tokens␛[m ␛[38;5;241m─────────────────────────────────────────────────────┤␛[m
-␛[38;5;241m╰─␛[m ␛[94m[enter]␛[38;5;241m send · ␛[94m[shift+f12]␛[38;5;241m open paste 1 · ␛[94m[ctrl+/]␛[38;5;241m palette · ␛[94m[shift+tab]␛[38;5;241m mode · ␛[94m[ctrl+d]␛[38;5;241m ×2 quit · ␛[94m[ctrl+]]␛[38;5;241m keys␛[m ␛[38;5;241m─────────╯␛[m
+␛[38;5;241m│␛[m ␛[38;5;241m▸␛[m ␛[38;5;252mthis test log says the loop never stops — ␛[94m⟨Paste#1 · 214 lines⟩␛[38;5;252m — and ␛[94m⟨Image#1 · 1440×900⟩␛[38;5;252m is the screen it hangs on;   ␛[m ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m   ␛[38;5;252mfix the exit condition                                                                                                  ␛[m ␛[38;5;241m│␛[m
+␛[38;5;241m├─␛[m ␛[38;5;214m⏸ manual␛[38;5;243m · ␛[92mctx 38%␛[m ␛[92m▰▰▰␛[38;5;241m▱▱▱▱▱␛[38;5;243m · $0.51 · Paste#1 will cost ~6.0k tokens␛[m ␛[38;5;241m─────────────────────────────────────────────────────┤␛[m
+␛[38;5;241m╰─␛[m ␛[94m[enter]␛[38;5;241m send · ␛[94m[shift+f12]␛[38;5;241m open Paste#1 · ␛[94m[ctrl+/]␛[38;5;241m palette · ␛[94m[shift+tab]␛[38;5;241m mode · ␛[94m[ctrl+d]␛[38;5;241m ×2 quit · ␛[94m[ctrl+]]␛[38;5;241m keys␛[m ␛[38;5;241m─────────╯␛[m

@@ -207,6 +207,12 @@ func openAIAttachmentParts(m Message) []openai.ChatMessagePart {
 	}
 	var parts []openai.ChatMessagePart
 	for _, a := range m.Attachments {
+		// Each part is led by its label, so a handle in the sentence names
+		// the part it stands over (Attachment.Label).
+		parts = append(parts, openai.ChatMessagePart{
+			Type: openai.ChatMessagePartTypeText,
+			Text: a.Label(),
+		})
 		if a.Kind == AttachmentImage {
 			parts = append(parts, openai.ChatMessagePart{
 				Type:     openai.ChatMessagePartTypeImageURL,

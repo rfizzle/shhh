@@ -417,10 +417,12 @@ func toResponseItems(messages []Message, replayReasoning bool) ([]responseItem, 
 // responsesAttachmentContent renders attachments as Responses input parts.
 // This API takes an image, a document and a recording inline, so text
 // attachments use the shared text form — and so does a recording in either of
-// the formats the audio part does not name.
+// the formats the audio part does not name. Each is led by its label as an
+// input_text part.
 func responsesAttachmentContent(atts []Attachment) []responseContent {
 	var out []responseContent
 	for _, a := range atts {
+		out = append(out, responseContent{Type: "input_text", Text: a.Label()})
 		switch a.Kind {
 		case AttachmentImage:
 			out = append(out, responseContent{Type: "input_image", ImageURL: a.DataURL()})

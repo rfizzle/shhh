@@ -428,7 +428,7 @@ on an empty draft the same key pulls the newest queued message — a follow-up f
 		},
 		{
 			binds: []keys.Binding{keys.Draft.OpenPaste},
-			text:  `open the staged paste. What is staged leaves a fold where you pasted it — ⟨paste 1 · 214 lines⟩ — which moves, deletes and sends as one character, and what it will cost is on the vitals rail before you send. This reads it back: j/k scrolls, x drops it, q returns to the draft with the cursor where you left it. /paste show paste-1.txt is the same surface by name` + optionWhen(optionAside, keys.Draft.OpenPaste),
+			text:  `open the staged paste. What is staged leaves a fold where you pasted it — ⟨Paste#1 · 214 lines⟩ — which moves, deletes and sends as one character, and what it will cost is on the vitals rail before you send. This reads it back: j/k scrolls, x drops it, q returns to the draft with the cursor where you left it. /paste show paste-1.txt is the same surface by name` + optionWhen(optionAside, keys.Draft.OpenPaste),
 		},
 		{
 			binds: []keys.Binding{keys.Draft.Complete},

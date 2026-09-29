@@ -131,7 +131,7 @@ func TestLayout_RetryWaitIsPaidForByTheRowsItTakes(t *testing.T) {
 // for the row, the panel has to be exactly the rows it was paid, and the
 // whole hint has to be on the screen.
 func TestLayout_AWrappingHintIsPaidForByTheRowsItTakes(t *testing.T) {
-	m := stageText(t, frameModel(t, 60, 30), "paste-1.txt")
+	m := stagePasted(t, frameModel(t, 60, 30))
 	updated, _ := m.runPaste([]string{"/paste", "show", "paste-1.txt"})
 	m = updated.(Model)
 	if m.state != statePasteView {

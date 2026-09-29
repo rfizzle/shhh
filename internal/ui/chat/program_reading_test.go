@@ -123,14 +123,14 @@ func TestProgram_APasteTooBigForTheDraftIsAToken(t *testing.T) {
 	tm.Send(tea.PasteMsg{Content: log.String()})
 	waitForText(t, tm, "will cost")
 	programPress(t, tm, "alt+v")
-	waitForText(t, tm, "PASTE 1")
+	waitForText(t, tm, "PASTE#1")
 	programPress(t, tm, "q")
-	waitForText(t, tm, "open paste 1")
+	waitForText(t, tm, "open Paste#1")
 	programPress(t, tm, "enter")
 	waitForText(t, tm, "never leaves the round")
 
 	frame := finalFrame(t, tm)
-	frameHas(t, frame, "paste 1", "never leaves the round")
+	frameHas(t, frame, "Paste#1", "never leaves the round")
 }
 
 // Three files staged by path each take a handle of their kind, and the strip
@@ -164,6 +164,28 @@ func TestProgram_StagedFilesLeadWithTheirHandles(t *testing.T) {
 
 	frame := finalFrame(t, tm)
 	frameHas(t, frame, "▣ Image#1", "▣ Image#2", "≡ File#1")
+}
+
+// A picture dragged into the middle of a sentence leaves its fold where it
+// landed, the sentence goes out folds and all, and the sent row keeps the
+// fold and draws a fold row for the picture under it.
+func TestProgram_ADraggedPictureLeavesAFoldInTheSentence(t *testing.T) {
+	shot := filepath.Join(t.TempDir(), "shot.png")
+	if err := os.WriteFile(shot, pictureToFold(t).Data, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	m, _ := scriptedSession(programTurn{text: "The dialog is clipped at the edge."})
+	tm := runProgram(t, m)
+
+	tm.Send(tea.PasteMsg{Content: "this is the error "})
+	tm.Send(tea.PasteMsg{Content: shot})
+	waitForText(t, tm, "⟨Image#1 · 32×16⟩")
+	tm.Send(tea.PasteMsg{Content: " on the settings screen"})
+	programPress(t, tm, "enter")
+	waitForText(t, tm, "clipped at the edge")
+
+	frame := finalFrame(t, tm)
+	frameHas(t, frame, "this is the error ⟨Image#1 · 32×16⟩ on the settings screen", "▸ Image#1 · 32×16")
 }
 
 // The palette and a picker both open from the draft and both give it back:

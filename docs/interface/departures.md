@@ -1205,3 +1205,29 @@ column clip to their first few words and push the turns and the time off the
 row, which is the reading the list is scanned by. A slot with no account
 draws exactly what it drew before. The departure is closed by the artboard
 drawing the account under the title in the preview.
+
+## A picture and a file leave a fold in the sentence too
+
+*A disagreement.* The `Paste` artboard draws the fold only for a paste —
+`⟨paste 1 · 214 lines⟩` in the draft and `▸ paste 1 · 214 lines · 6.1k tokens
+· [enter] expand` under the sent message — and a screenshot or a dragged file
+as a chip and nothing in the sentence. The binary folds everything that
+arrives at the cursor, spelled with the chip's handle and the one figure its
+kind is counted by: `⟨Paste#1 · 214 lines⟩`, `⟨Image#1 · 1440×900⟩`,
+`⟨File#1 · 3.2 MB⟩`, drawn in the same tone as the paste's fold. Under the
+sent message each fold has a row: the paste's as before with its handle for a
+label, `▸ Image#1 · 1440×900 · [enter] open` for a picture (`▾ Image#1 ·
+1440×900` with no offer once the message is open), and `▸ File#1 · 3.2 MB`
+with no offer for anything else. The vitals clause and the open-paste offer
+name the handle, `Paste#1 will cost ~6.1k tokens` and `[alt+v] open Paste#1`,
+and the paste reader's rail reads `──── PASTE#1 · lines 1–8 of 214 ────`. The
+preview card opened from a sent picture's row reads `[esc] back`, with no
+`[x] remove`.
+
+The reason is that the sentence should be able to point at what it carries,
+and the handle is the word the model is given for each part
+([the input frame](surfaces.md#the-input-frame)). A screenshot with no mark
+in the sentence cannot be referred to except by describing it, and two of
+them cannot be told apart at all. The departure is closed by the artboard
+drawing an image fold beside a paste fold in one sentence and the fold rows
+under the sent message.

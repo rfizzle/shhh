@@ -368,7 +368,7 @@ func (m Model) updateKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 		// orchestrator's staging area is not what the keyboard is
 		// pointed at, so the key keeps its textarea meaning there.
 		if m.inputLive() && m.attachedTo == "" {
-			return m, readClipboardCmd(), true
+			return m, readClipboardCmd(true), true
 		}
 	case keys.Is(pressed, keys.Draft.Editor):
 		// The draft goes out to the reader's own editor and comes back

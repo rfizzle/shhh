@@ -871,7 +871,7 @@ a fact about how much text they pasted.
 
 The sentence keeps a mark where the paste was. A chip above the box says a
 log is riding out with this message and says nothing about where in the
-sentence it belongs, so the draft holds the fold itself — `⟨paste 1 · 214
+sentence it belongs, so the draft holds the fold itself — `⟨Paste#1 · 214
 lines⟩`, drawn as the thing the session is carrying rather than as the words
 around it, and one character wide as far as the keyboard is concerned: an
 arrow steps over the whole of it, a backspace at its closing quote takes the
@@ -880,11 +880,24 @@ written. Angle quotes and not square brackets, because square brackets are
 how this product writes a key, and a fold that could be read as an offer
 would be teaching two notations at once.
 
-What the fold will cost stands on the vitals rail while it waits — `paste 1
+Everything that arrives at the cursor leaves a fold, not only a paste. A
+screenshot taken off the clipboard or a file dragged into the terminal lands
+where the cursor was as `⟨Image#1 · 1440×900⟩` or `⟨File#1 · 3.2 MB⟩` — the
+chip's handle, and the one figure that kind is counted by: a picture's size
+in pixels, text's height in lines, anything else its size. The fold is what
+lets the sentence point at the thing — *Image#1 shows the error, Image#2 is
+after the fix* — and it is the same fold a paste leaves in every other
+respect: one character to the keyboard, a backspace over it drops the chip,
+and a chip dropped any other way takes its fold out of the sentence. A file
+named to the paste command leaves none, because the command is the sentence
+and there is no cursor in it; it is still named on the chip, and can be named
+in the sentence by hand.
+
+What the fold will cost stands on the vitals rail while it waits — `Paste#1
 will cost ~6.1k tokens` — because a paste is the one keystroke that can
 double the price of a message, and the rail is already where the price of
 this session is read. The bottom rail offers the key that opens it. Opening
-borrows [reading mode](#reading-mode)'s labelled rail — `──── PASTE 1 ·
+borrows [reading mode](#reading-mode)'s labelled rail — `──── PASTE#1 ·
 lines 1–8 of 214 ────` over the lines themselves — rather than inventing a
 pager of its own, and the draft underneath is untouched: the cursor is where
 it was left, so the way back is to the sentence rather than to the start of
@@ -894,21 +907,28 @@ are no longer staged would be a sentence promising something it is not
 carrying.
 
 After the send the transcript keeps the fold and not the flood. The row is
-the sentence as it was typed, the token still in it, and under it `▸ paste 1
+the sentence as it was typed, the token still in it, and under it `▸ Paste#1
 · 214 lines · 6.1k tokens · [enter] expand` — bounded the way every other
 body in the transcript is, because the paste is in the context window and
 does not have to be in the scrollback as well
-([fold, never hide](principles.md#fold-never-hide)).
+([fold, never hide](principles.md#fold-never-hide)). A picture's fold leaves
+a row of its own beside it, `▸ Image#1 · 1440×900 · [enter] open`, and
+opening the message opens the picture on the [preview
+card](#a-staged-attachment) with the row left open behind it, so esc comes
+back to the row and whatever text was folded beside the picture is there.
+The card offers no drop for a picture that has already gone. Anything else —
+a PDF, a recording — is a row that counts it and opens onto nothing.
 
 Recalling that sentence brings the paste back with it. ↑ puts a line in the
 draft as it was sent, so the fold in it has to be a fold again or stop being
 one: the log is on the row the send left, and it is staged again under the
 next free number with the token renumbered to match — the same key opens it,
-the same rail prices it, and the next send carries it. A conversation loaded
+the same rail prices it, and the next send carries it. A picture's fold comes
+back the same way, from the bytes its row kept. A conversation loaded
 from storage is no different: the log was saved with the message that carried
 it, so a reopened session's row has it too. Where the bytes cannot be staged —
 a paste that no longer fits beside what is already staged — the fold loses its
-quotes and stays as `paste 1 · 214 lines`, which is words about a log that is
+quotes and stays as `Paste#1 · 214 lines`, which is words about a log that is
 not riding rather than a mark with nothing behind it. Walking on drops what
 walking here staged, for the reason a backspace over a token does.
 

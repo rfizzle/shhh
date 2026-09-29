@@ -139,6 +139,24 @@ the conversation it was used in — the number a dropped attachment had is not
 handed to the next, and a conversation reopened later goes on from the highest
 number its own messages carry. The count starts over with a new conversation.
 
+A message can point at what it carries. The handle is written into the
+sentence where the thing arrived — a fold the draft leaves at the cursor — and
+the sentence goes to the model as it was written, folds and all. On the way
+out each attachment's part is led by one line in the handle's words,
+`Image#1 (clipboard.png, 1440×900):`, so "Image#1 shows the error, Image#2 is
+after the fix" resolves to the bytes under each line rather than leaving the
+model to guess which picture is which. The line carries the name as well, so
+a file attached by typing its path, which leaves no fold, can still be named
+in the sentence by hand. The bytes still lead the message and the sentence
+still follows them: a model reads a picture better with the question about it
+after it, and the guidance for several pictures in one message is that each
+is labelled, which is what the line is. Putting each part where its fold
+stood — every provider could take that — is deliberately not done: it would
+reorder a message by where the cursor happened to be, and the label gives the
+reference without moving anything. The line is the only thing the model is
+told about it; no prompt describes the convention, because a label that
+explains itself does not need one.
+
 ## Colleagues, not workers
 
 A chat session can delegate to sub-agents, and the roles it may spawn are

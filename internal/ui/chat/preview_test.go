@@ -51,6 +51,15 @@ func stageText(t *testing.T, m Model, name string) Model {
 	return next.(Model)
 }
 
+// stagePasted stages the same text the way the draft stages a paste too big
+// for it, so it is Paste#1 — the one kind the reader opens — with its fold
+// in the draft.
+func stagePasted(t *testing.T, m Model) Model {
+	t.Helper()
+	next, _ := m.stagePaste("# notes\n\nsomething\n")
+	return next.(Model)
+}
+
 // The point of the surface: the chip says a file is staged, and this says
 // which file it is. It is opened by naming the chip, because a chip has no
 // key of its own.
@@ -238,14 +247,14 @@ func TestPreview_CompletionOffersWhatTheSurfaceOpens(t *testing.T) {
 // them — is this the right log, and is it all there — are the ones a surface
 // that scrolls and states its own span answers.
 func TestPreview_ShowDrawsAStagedPasteAsText(t *testing.T) {
-	m := stageText(t, frameModel(t, 130, 40), "paste-1.txt")
+	m := stagePasted(t, frameModel(t, 130, 40))
 	updated, _ := m.runPaste([]string{"/paste", "show", "paste-1.txt"})
 	next := updated.(Model)
 	if next.state != statePasteView {
 		t.Fatalf("state = %v, want the paste reader", next.state)
 	}
 	view := stripANSI(next.View().Content)
-	for _, want := range []string{"PASTE 1 · lines 1–3 of 3", "# notes", "something"} {
+	for _, want := range []string{"PASTE#1 · lines 1–3 of 3", "# notes", "something"} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("the reader never says %q:\n%s", want, view)
 		}
@@ -265,7 +274,7 @@ func TestPreview_ShowIsAWholeWord(t *testing.T) {
 // Bare `/paste show` takes whatever is staged when only one thing is, which
 // after this story is most often a paste rather than a screenshot.
 func TestPreview_BareShowTakesALonePaste(t *testing.T) {
-	m := stageText(t, frameModel(t, 130, 40), "paste-1.txt")
+	m := stagePasted(t, frameModel(t, 130, 40))
 	updated, _ := m.runPaste([]string{"/paste", "show"})
 	if next := updated.(Model); next.state != statePasteView {
 		t.Fatalf("state = %v, want the paste reader", next.state)

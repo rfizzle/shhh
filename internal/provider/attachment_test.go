@@ -72,16 +72,16 @@ func TestToAnthropicMessages_ImageLeadsTheMessage(t *testing.T) {
 		t.Fatalf("got %d messages, want 1", len(out))
 	}
 	blocks := out[0].Content
-	if len(blocks) != 3 {
-		t.Fatalf("got %d blocks, want image + text attachment + sentence", len(blocks))
+	if len(blocks) != 5 {
+		t.Fatalf("got %d blocks, want a label and the bytes per attachment, then the sentence", len(blocks))
 	}
-	if blocks[0].OfImage == nil {
+	if blocks[1].OfImage == nil {
 		t.Fatal("the image should lead the message")
 	}
-	if blocks[0].OfImage.Source.OfBase64.Data != testPNG.Base64() {
+	if blocks[1].OfImage.Source.OfBase64.Data != testPNG.Base64() {
 		t.Fatal("image block does not carry the bytes")
 	}
-	if blocks[2].OfText == nil || blocks[2].OfText.Text != "what is wrong here?" {
+	if blocks[4].OfText == nil || blocks[4].OfText.Text != "what is wrong here?" {
 		t.Fatal("the sentence should come last")
 	}
 }
@@ -90,7 +90,7 @@ func TestToAnthropicMessages_EmptySentenceStillSendsOneBlock(t *testing.T) {
 	// Attaching and pressing enter with nothing typed must not produce a
 	// message with no content at all, which the API rejects.
 	_, out := toAnthropicMessages([]Message{{Role: RoleUser, Attachments: []Attachment{testPNG}}})
-	if len(out) != 1 || len(out[0].Content) != 1 || out[0].Content[0].OfImage == nil {
+	if len(out) != 1 || len(out[0].Content) != 2 || out[0].Content[1].OfImage == nil {
 		t.Fatalf("got %#v", out)
 	}
 	// And a message with no attachments keeps its single text block.
@@ -110,13 +110,13 @@ func TestToOpenAIMessages_MixedContentClearsTheStringField(t *testing.T) {
 	if msg.Content != "" {
 		t.Fatal("Content and MultiContent are mutually exclusive in the SDK")
 	}
-	if len(msg.MultiContent) != 2 {
-		t.Fatalf("got %d parts, want image + sentence", len(msg.MultiContent))
+	if len(msg.MultiContent) != 3 {
+		t.Fatalf("got %d parts, want label + image + sentence", len(msg.MultiContent))
 	}
-	if msg.MultiContent[0].ImageURL == nil || msg.MultiContent[0].ImageURL.URL != testPNG.DataURL() {
+	if msg.MultiContent[1].ImageURL == nil || msg.MultiContent[1].ImageURL.URL != testPNG.DataURL() {
 		t.Fatal("the image part does not carry the data URL")
 	}
-	if msg.MultiContent[1].Text != "look" {
+	if msg.MultiContent[2].Text != "look" {
 		t.Fatal("the sentence should come last")
 	}
 	// Messages without attachments stay on the plain string form.
@@ -133,20 +133,20 @@ func TestToResponseItems_ImageAndDocumentParts(t *testing.T) {
 		Content:     "read this",
 		Attachments: []Attachment{testPNG, pdf},
 	}}, false)
-	if len(items) != 1 || len(items[0].Content) != 3 {
+	if len(items) != 1 || len(items[0].Content) != 5 {
 		t.Fatalf("got %#v", items)
 	}
-	if items[0].Content[0].Type != "input_image" || items[0].Content[0].ImageURL != testPNG.DataURL() {
-		t.Fatalf("image part = %#v", items[0].Content[0])
+	if items[0].Content[1].Type != "input_image" || items[0].Content[1].ImageURL != testPNG.DataURL() {
+		t.Fatalf("image part = %#v", items[0].Content[1])
 	}
-	if items[0].Content[1].Type != "input_file" || items[0].Content[1].Filename != "spec.pdf" {
-		t.Fatalf("file part = %#v", items[0].Content[1])
+	if items[0].Content[3].Type != "input_file" || items[0].Content[3].Filename != "spec.pdf" {
+		t.Fatalf("file part = %#v", items[0].Content[3])
 	}
-	if items[0].Content[2].Type != "input_text" || items[0].Content[2].Text != "read this" {
-		t.Fatalf("text part = %#v", items[0].Content[2])
+	if items[0].Content[4].Type != "input_text" || items[0].Content[4].Text != "read this" {
+		t.Fatalf("text part = %#v", items[0].Content[4])
 	}
 	// The added fields must stay out of an ordinary text part's JSON.
-	b, err := json.Marshal(items[0].Content[2])
+	b, err := json.Marshal(items[0].Content[4])
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -161,14 +161,14 @@ func TestToGeminiContents_InlineBlobLeads(t *testing.T) {
 		Content:     "look",
 		Attachments: []Attachment{testPNG},
 	}})
-	if len(contents) != 1 || len(contents[0].Parts) != 2 {
+	if len(contents) != 1 || len(contents[0].Parts) != 3 {
 		t.Fatalf("got %#v", contents)
 	}
-	blob := contents[0].Parts[0].InlineData
+	blob := contents[0].Parts[1].InlineData
 	if blob == nil || blob.MIMEType != "image/png" || string(blob.Data) != string(testPNG.Data) {
 		t.Fatalf("inline blob = %#v", blob)
 	}
-	if contents[0].Parts[1].Text != "look" {
+	if contents[0].Parts[2].Text != "look" {
 		t.Fatal("the sentence should come last")
 	}
 }
@@ -207,19 +207,19 @@ func TestToGeminiContents_AudioRidesAsAnInlineBlob(t *testing.T) {
 		Content:     "what is said here?",
 		Attachments: []Attachment{testMP3, testOGG},
 	}})
-	if len(contents) != 1 || len(contents[0].Parts) != 3 {
+	if len(contents) != 1 || len(contents[0].Parts) != 5 {
 		t.Fatalf("got %#v", contents)
 	}
 	// Gemini's own list spells MP3 differently from every other surface.
-	mp3 := contents[0].Parts[0].InlineData
+	mp3 := contents[0].Parts[1].InlineData
 	if mp3 == nil || mp3.MIMEType != "audio/mp3" || string(mp3.Data) != string(testMP3.Data) {
 		t.Fatalf("mp3 blob = %#v", mp3)
 	}
-	ogg := contents[0].Parts[1].InlineData
+	ogg := contents[0].Parts[3].InlineData
 	if ogg == nil || ogg.MIMEType != "audio/ogg" {
 		t.Fatalf("ogg blob = %#v", ogg)
 	}
-	if contents[0].Parts[2].Text != "what is said here?" {
+	if contents[0].Parts[4].Text != "what is said here?" {
 		t.Fatal("the sentence should come last")
 	}
 }
@@ -227,7 +227,7 @@ func TestToGeminiContents_AudioRidesAsAnInlineBlob(t *testing.T) {
 func TestToGeminiContents_AFormatItsListOmitsGoesAsText(t *testing.T) {
 	flac := Attachment{Kind: AttachmentAudio, Name: "take.flac", MediaType: "audio/flac", Data: []byte("fLaC")}
 	contents, _ := toGeminiContents([]Message{{Role: RoleUser, Attachments: []Attachment{flac}}})
-	part := contents[0].Parts[0]
+	part := contents[0].Parts[1]
 	if part.InlineData != nil {
 		t.Fatalf("a format the list omits should not go inline: %#v", part.InlineData)
 	}
@@ -242,10 +242,10 @@ func TestToResponseItems_AudioIsBareBase64AndAFormatToken(t *testing.T) {
 		Content:     "transcribe this",
 		Attachments: []Attachment{testMP3, testWAV},
 	}}, false)
-	if len(items) != 1 || len(items[0].Content) != 3 {
+	if len(items) != 1 || len(items[0].Content) != 5 {
 		t.Fatalf("got %#v", items)
 	}
-	mp3 := items[0].Content[0]
+	mp3 := items[0].Content[1]
 	if mp3.Type != "input_audio" || mp3.InputAudio == nil {
 		t.Fatalf("mp3 part = %#v", mp3)
 	}
@@ -256,14 +256,14 @@ func TestToResponseItems_AudioIsBareBase64AndAFormatToken(t *testing.T) {
 	if strings.HasPrefix(mp3.InputAudio.Data, "data:") {
 		t.Fatal("the audio part takes base64 without a data URL prefix")
 	}
-	if wav := items[0].Content[1]; wav.InputAudio == nil || wav.InputAudio.Format != "wav" {
+	if wav := items[0].Content[3]; wav.InputAudio == nil || wav.InputAudio.Format != "wav" {
 		t.Fatalf("wav part = %#v", wav)
 	}
-	if items[0].Content[2].Type != "input_text" {
-		t.Fatalf("text part = %#v", items[0].Content[2])
+	if items[0].Content[4].Type != "input_text" {
+		t.Fatalf("text part = %#v", items[0].Content[4])
 	}
 	// The nested object must stay out of every other part's JSON.
-	b, err := json.Marshal(items[0].Content[2])
+	b, err := json.Marshal(items[0].Content[4])
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -274,7 +274,7 @@ func TestToResponseItems_AudioIsBareBase64AndAFormatToken(t *testing.T) {
 
 func TestToResponseItems_AFormatTheAudioPartOmitsGoesAsText(t *testing.T) {
 	items, _ := toResponseItems([]Message{{Role: RoleUser, Attachments: []Attachment{testOGG}}}, false)
-	part := items[0].Content[0]
+	part := items[0].Content[1]
 	if part.Type != "input_text" || part.InputAudio != nil {
 		t.Fatalf("ogg part = %#v", part)
 	}
@@ -291,15 +291,15 @@ func TestAudioDegradesOnTheDialectsWithNoPartForIt(t *testing.T) {
 		Content:     "listen",
 		Attachments: []Attachment{testMP3},
 	}})[0].MultiContent
-	if len(parts) != 2 || parts[0].ImageURL != nil {
+	if len(parts) != 3 || parts[1].ImageURL != nil {
 		t.Fatalf("got %#v", parts)
 	}
-	if !strings.Contains(parts[0].Text, "could not be sent") || !strings.Contains(parts[0].Text, "memo.mp3") {
-		t.Fatalf("fallback part = %q", parts[0].Text)
+	if !strings.Contains(parts[1].Text, "could not be sent") || !strings.Contains(parts[1].Text, "memo.mp3") {
+		t.Fatalf("fallback part = %q", parts[1].Text)
 	}
 	// The Messages API takes no recording at all.
 	_, out := toAnthropicMessages([]Message{{Role: RoleUser, Attachments: []Attachment{testMP3}}})
-	block := out[0].Content[0]
+	block := out[0].Content[1]
 	if block.OfText == nil || !strings.Contains(block.OfText.Text, "could not be sent") {
 		t.Fatalf("anthropic block = %#v", block)
 	}

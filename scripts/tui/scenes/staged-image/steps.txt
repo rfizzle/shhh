@@ -1,19 +1,27 @@
-# program test: TestProgram_AStagedChipIsReachedOpenedAndDropped
+# program test: TestProgram_AStagedChipIsReachedOpenedAndDropped,
+#   TestProgram_ADraggedPictureLeavesAFoldInTheSentence
 #
 # A staged chip is reached, opened and dropped without leaving the sentence
 # (docs/interface/surfaces.md#a-staged-attachment). A small picture is staged
 # by path on the empty draft, half a sentence is typed after it, and reading
 # mode reaches the strip as its last row: the card opens from the chip, q
 # comes back to the strip, x drops the chip, and esc goes back to the
-# sentence as it was.
+# sentence as it was. Then the same picture is dragged into the middle of the
+# sentence — a bracketed paste of its path — and leaves a fold where it
+# landed (docs/interface/surfaces.md#the-input-frame), and the sent row keeps
+# the fold and draws a fold row for the picture under it.
 #
 # What the capture is for: at 02 the staging notice names the way in. At 03
 # the strip is the panel's first row with the cursor in Image#1's own first
 # column and the strip's bar under it. At 04 the card is the picture in the
 # half-block rung with `[x] remove` and the way back to the strip on its
 # hint row. At 06 the drop is said and the strip is gone. At 07 the half
-# sentence is still in the draft.
+# sentence is still in the draft. At 08 the dragged picture is a fold in the
+# middle of the sentence, `⟨Image#2 · 16×8⟩` — the number goes on from the
+# dropped Image#1 — with its chip above and the vitals rail under it. At 09
+# the sent row keeps the fold in the sentence and `▸ Image#2 · 16×8` under it.
 setup echo 'iVBORw0KGgoAAAANSUhEUgAAABAAAAAICAIAAAB/FOjAAAAAHElEQVR4nGJhYGgQYGAgHrEwKDCQBEY1EKMBMADhhgJxNvbMPQAAAABJRU5ErkJggg==' | base64 -d > shot.png
+setup printf '%s' "$PWD/shot.png" > drag.txt
 snap 01-start "Some things worth doing first"
 keys "/paste shot.png" Enter
 snap 02-staged "reaches it to look or drop" "attached Image#1 (shot.png" "▣ Image#1 shot.png"
@@ -29,10 +37,12 @@ keys x
 snap 06-dropped "dropped Image#1 (shot.png"
 keys Escape
 snap 07-draft "[enter] send" "this is the error I"
-# Nothing is sent, so the conversation has no turn and quitting leaves no
-# exit banner to wait for. The first ctrl+c clears the half sentence and the
-# second arms the quit.
+keys " saw "
+paste drag.txt
+snap 08-fold "attached Image#2 (shot.png" "this is the error I saw ⟨Image#2 · 16×8⟩" "▣ Image#2 shot.png" "├─ ⏸ manual ─"
+keys " on the settings screen" Enter
+snap 09-sent "clipped at the edge" "⟨Image#2 · 16×8⟩ on the settings screen" "▸ Image#2 · 16×8 · [enter] open"
 keys C-c
+snap 10-quit-armed "again quits"
 keys C-c
-snap 08-quit-armed "again quits"
-keys C-c
+snap 11-exit "that is everything the screen was holding"

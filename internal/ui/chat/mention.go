@@ -103,7 +103,7 @@ func (m Model) insertMention() (tea.Model, tea.Cmd) {
 	// the read that attaches the image happens in a command.
 	path := m.inWorkspace(item.name)
 	if kind, err := attachment.PeekKind(path); err == nil && kind == provider.AttachmentImage {
-		return m, attachFileCmd(path)
+		return m, attachFileCmd(path, false)
 	}
 	return m, nil
 }

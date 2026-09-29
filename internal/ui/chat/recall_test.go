@@ -285,13 +285,13 @@ func TestRecall_RestagesTheSentPaste(t *testing.T) {
 // count (newsession.go, recall.go).
 func TestRecall_RestagesAPasteFromAReopenedSession(t *testing.T) {
 	log := strings.Repeat("loop_test.go:44: round 26 reached, still running\n", 11)
-	token := components.PasteToken("paste 1", 11)
+	token := components.PasteToken("Paste#1", "11 lines")
 	sentence := "this log says the loop never stops — " + token + " — fix it"
 	m := resumedModel(t, []provider.Message{
 		{Role: provider.RoleSystem, Content: "sys"},
 		{Role: provider.RoleUser, Content: sentence,
 			Attachments: []provider.Attachment{{
-				Kind: provider.AttachmentText, Name: "paste-1.txt", Data: []byte(log)}}},
+				Kind: provider.AttachmentText, Handle: "Paste#1", Name: "paste-1.txt", Data: []byte(log)}}},
 	})
 	folds := 0
 	for _, e := range m.transcript {
@@ -321,14 +321,14 @@ func TestRecall_RestagesAPasteFromAReopenedSession(t *testing.T) {
 // fold loses its quotes: a count in plain words, not a mark with no key
 // behind it.
 func TestRecall_StripsAFoldWithNoPasteBehindIt(t *testing.T) {
-	token := components.PasteToken("paste 1", 214)
+	token := components.PasteToken("Paste#1", "214 lines")
 	m := resumedModel(t, []provider.Message{
 		{Role: provider.RoleSystem, Content: "sys"},
 		{Role: provider.RoleUser, Content: "this log says the loop never stops — " + token + " — fix it"},
 	})
 
 	m = pressUp(t, m)
-	want := "this log says the loop never stops — paste 1 · 214 lines — fix it"
+	want := "this log says the loop never stops — Paste#1 · 214 lines — fix it"
 	if got := m.input.Value(); got != want {
 		t.Fatalf("a fold with nothing behind it should read as its count, got %q, want %q", got, want)
 	}
@@ -345,14 +345,12 @@ func TestRecall_RenumbersAFoldWhoseNameIsTaken(t *testing.T) {
 	log := strings.Repeat("a line of the log\n", 11)
 	m := frameModel(t, 100, 40)
 	m.attachments = []provider.Attachment{{
-		Kind: provider.AttachmentText, Name: "paste-1.txt", Data: []byte("some other paste\n")}}
-	m.transcript = []entry{{kind: entryUser, text: "sent", pastes: []pasteFold{{
-		label: "paste 1", lines: 11,
-		body: strings.Split(strings.TrimSuffix(log, "\n"), "\n"),
-	}}}}
+		Kind: provider.AttachmentText, Handle: "Paste#1", Name: "paste-1.txt", Data: []byte("some other paste\n")}}
+	sent := provider.Attachment{Kind: provider.AttachmentText, Handle: "Paste#1", Name: "paste-1.txt", Data: []byte(log)}
+	m.transcript = []entry{userEntry("sent "+components.PasteToken("Paste#1", "11 lines"), []provider.Attachment{sent})}
 
-	got := m.restageRecalled(components.PasteToken("paste 1", 11))
-	if want := components.PasteToken("paste 2", 11); got != want {
+	got := m.restageRecalled(components.PasteToken("Paste#1", "11 lines"))
+	if want := components.PasteToken("Paste#2", "11 lines"); got != want {
 		t.Fatalf("the recalled fold should be renumbered to %q, got %q", want, got)
 	}
 	if len(m.attachments) != 2 || m.attachments[1].Name != "paste-2.txt" {
@@ -380,7 +378,7 @@ func TestRecall_StagesNothingWhileAttached(t *testing.T) {
 	if len(m.attachments) != 0 {
 		t.Fatalf("a steer carries nothing, %d staged", len(m.attachments))
 	}
-	if want := "paste 1 · 11 lines"; m.input.Value() != want {
+	if want := "Paste#1 · 11 lines"; m.input.Value() != want {
 		t.Fatalf("a fold in a steer should read as its count, got %q, want %q",
 			m.input.Value(), want)
 	}
