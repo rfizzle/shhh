@@ -1231,7 +1231,7 @@ func probeKeymap(context.Context, config.Config) doctorFinding {
 			behind = b.KeysBehind()
 		}
 	}
-	return doctorKeymap(path, moved, behind, err)
+	return doctorKeymap(path, moved, behind, keys.Dead(), err)
 }
 
 // doctorKeymap is the keymap row. A refused file is said once on stderr as
@@ -1252,7 +1252,12 @@ func probeKeymap(context.Context, config.Config) doctorFinding {
 // own would otherwise have its warning on one row and the only key that
 // answers it on another row that reads ok, since the screen offers `[a]` for
 // the row under the pointer.
-func doctorKeymap(path string, moved, behind int, err error) doctorFinding {
+//
+// dead is the file's lines that name a key shhh has since given up. The
+// file was read without them rather than refused, so this row is where
+// somebody tidying it learns which lines do nothing now
+// (docs/capabilities/configuration.md#the-keymap-file).
+func doctorKeymap(path string, moved, behind int, dead []string, err error) doctorFinding {
 	switch {
 	case err != nil:
 		return doctorFinding{
@@ -1282,6 +1287,18 @@ func doctorKeymap(path string, moved, behind int, err error) doctorFinding {
 				return nil, err
 			}
 			return []string{"updated " + shortPath(path) + ": added " + countOf(n, "key", "keys")}, nil
+		}
+	}
+	if len(dead) > 0 {
+		f.Detail = joinDetail(countOf(len(dead), "line", "lines")+" doing nothing", f.Detail)
+		note := strings.Join(dead, ", ") + " name keys shhh no longer has; those lines do nothing"
+		if f.Outcome == "behind" {
+			f.Fix = append(f.Fix, note)
+		} else {
+			f.State, f.Outcome = components.DoctorWarned, "stale"
+			f.Consequence = "a line naming a key shhh no longer has is read and does nothing"
+			f.FixLabel = "delete the lines"
+			f.Fix = []string{note}
 		}
 	}
 	return f

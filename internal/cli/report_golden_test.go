@@ -152,11 +152,15 @@ func TestReportGoldens_FitTheirWidth(t *testing.T) {
 func goldenChecks() []components.DoctorCheck {
 	return []components.DoctorCheck{
 		{Name: "binary", Subject: "shhh 0.9.4", Detail: "linux/amd64", Outcome: "ok"},
-		doctorCheck("keymap", doctorKeymap("/home/dev/.config/shhh/keybindings.toml", 0, 0,
+		doctorCheck("keymap", doctorKeymap("/home/dev/.config/shhh/keybindings.toml", 0, 0, nil,
 			errors.New(`/home/dev/.config/shhh/keybindings.toml: "p" is a letter while the draft can take text, so it cannot also be "the command palette" on the input; a key live at the input is a chord`)), 0),
 		// The same file read once it loads, written before three keys
 		// arrived: counted the way the config row counts settings.
-		doctorCheck("keymap", doctorKeymap("/home/dev/.config/shhh/keybindings.toml", 2, 3, nil), 0),
+		doctorCheck("keymap", doctorKeymap("/home/dev/.config/shhh/keybindings.toml", 2, 3, nil, nil), 0),
+		// And once more, naming two keys shhh has since given up: read, not
+		// refused, with the lines that do nothing named.
+		doctorCheck("keymap", doctorKeymap("/home/dev/.config/shhh/keybindings.toml", 1, 0,
+			[]string{"row.commit", "rowchord.undo"}, nil), 0),
 		// Built from the check itself, so the fixture carries one of the
 		// `shhh config set --global` fix lines word for word: each names a
 		// key about this machine, and the flag is what keeps it out of a

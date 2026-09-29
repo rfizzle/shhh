@@ -54,6 +54,11 @@ type TurnChanges struct {
 	Keys []TurnKey
 	// Note is the right-aligned reversibility note.
 	Note string
+	// Back is the command that takes the turn back, said after Note where
+	// there is room for both and given up before Note where there is not:
+	// the note is a reading of the files, and this is a command /help also
+	// names (docs/interface/surfaces.md#the-turns-close).
+	Back string
 }
 
 // CommitUndoNote is what the commit row says about undo, and it is the
@@ -73,8 +78,7 @@ const CommitUndoNote = "/undo does not reach history"
 
 // TurnCommit is the row a turn that committed adds — the receipt, worded by
 // the host, in the one place a reader looks for what the turn did. A turn
-// that made no commit has none, and the changed-files row above it then keeps
-// its undo offer.
+// that made no commit has none.
 type TurnCommit struct {
 	// Receipt is the commit said in one line: what landed, its sha, and the
 	// branch it landed on.
@@ -98,11 +102,12 @@ type TurnChecks struct {
 	// longer do is decide what this row says
 	// (docs/interface/surfaces.md#the-turns-close).
 	Superseded int
-	// Keys are the offers the row makes, in order. There is one — run the
-	// suite again — and it is present only where there is a suite to run: a
-	// verdict a command left is a verdict about a line nobody is looking at
-	// any more, and re-running that is not a key's to offer.
-	Keys []TurnKey
+	// Again is the command that runs the suite again, said in the note
+	// column where there is room for it. It is present only where there is
+	// a suite to run: a verdict a command left is a verdict about a line
+	// nobody is looking at any more, and re-running that is not the row's
+	// to suggest.
+	Again string
 }
 
 // TurnClose is the block a finished turn appends. Steps, Tools, Elapsed and
@@ -285,20 +290,33 @@ func closeLine(lead, text, note string, width int) string {
 // screen's keys beside its lead — an offer the row acts on goes to the next
 // row whole, never clipped off the edge of this one
 // (docs/interface/principles.md#fold-never-hide).
-func closeOfferRows(lead, stated string, keys []TurnKey, waiting bool, handover, note string, width int) []string {
+//
+// notes are the note column's candidates, fullest first: the row takes the
+// first that fits beside what it states.
+func closeOfferRows(lead, stated string, keys []TurnKey, waiting bool, handover string, notes []string, width int) []string {
+	line := func(text string) string {
+		note := ""
+		for _, n := range notes {
+			if closeNoteFits(lead+text, n, width) {
+				note = n
+				break
+			}
+		}
+		return closeLine(lead, text, note, width)
+	}
 	run := keyRun(keys, waiting, handover)
 	if run == "" {
-		return []string{closeLine(lead, stated, note, width)}
+		return []string{line(stated)}
 	}
 	sep := sty.Dim.Render(" · ")
 	if text := stated + sep + run; lipgloss.Width(lead+text) <= width {
-		return []string{closeLine(lead, text, note, width)}
+		return []string{line(text)}
 	}
 	if text := stated + sep + keyRunNarrow(keys, waiting, handover); lipgloss.Width(lead+text) <= width {
-		return []string{closeLine(lead, text, note, width)}
+		return []string{line(text)}
 	}
 	under := closeLead("", " ")
-	rows := []string{closeLine(lead, stated, note, width)}
+	rows := []string{line(stated)}
 	for _, r := range keyRunRows(keys, waiting, handover, width-lipgloss.Width(under)) {
 		rows = append(rows, closeLine(under, r, "", width))
 	}
@@ -320,7 +338,15 @@ func (c TurnClose) View(width int) string {
 		}
 		stated := sty.Body.Render(plural(ch.Files, "file")+" changed ") + stats
 		lead := closeLead(sty.Accent.Render("▎"), sty.Accent.Render("✎"))
-		lines = append(lines, closeOfferRows(lead, stated, ch.Keys, c.KeysWaiting, c.Handover, sty.Dim.Render(ch.Note), width)...)
+		notes := []string{sty.Dim.Render(ch.Note)}
+		if ch.Back != "" {
+			fuller := ch.Back
+			if ch.Note != "" {
+				fuller = ch.Note + " · " + ch.Back
+			}
+			notes = append([]string{sty.Dim.Render(fuller)}, notes...)
+		}
+		lines = append(lines, closeOfferRows(lead, stated, ch.Keys, c.KeysWaiting, c.Handover, notes, width)...)
 		// And, the first time a session offers a chord, what alt costs on a
 		// stock macOS terminal. It takes a line under the row rather than a
 		// clause on it: the row is already the widest line in the block, and
@@ -364,29 +390,30 @@ func (c TurnClose) View(width int) string {
 		if ck.Counts != "" {
 			text += sty.Dim.Render(" · " + ck.Counts)
 		}
-		// What the verdict answered rides in the note column, where it is the
-		// first thing a narrow terminal drops: it annotates the verdict and
-		// is never the verdict, and the offer beside it is a key somebody can
-		// press.
-		note := ""
+		// What the verdict answered, and what to type to run it again, ride
+		// in the note column, where they are the first thing a narrow
+		// terminal drops: they annotate the verdict and are never the
+		// verdict. Where there is room for one of the two, it is what the
+		// verdict answered: that is a reading of the row, and the other is a
+		// command /help also names.
+		lead := closeLead("", glyph)
+		var notes []string
 		if ck.Superseded > 0 {
-			note = sty.Dim.Render(plural(ck.Superseded, "earlier failure") + " since passed")
+			notes = append(notes, plural(ck.Superseded, "earlier failure")+" since passed")
 		}
-		// The offer is answered by reading mode on the row, exactly as the
-		// changed-files row's are, so it renders under the same rule about
-		// which keys are live (invariant 5). The handover is not repeated
-		// here: it is one key for the whole block and the row above already
-		// names it, and a chord printed twice in four lines reads as two.
-		lines = append(lines, closeOfferRows(closeLead("", glyph), text, ck.Keys, c.KeysWaiting, "", note, width)...)
-		// The Option sentence belongs to whichever row in the block offers a
-		// chord first, and the changed-files row above has already said it
-		// where there is one: a turn that changed nothing and ran its checks
-		// leaves this row holding the block's only chord.
-		if c.Changes == nil {
-			if option := KeyRunOption(ck.Keys, c.KeysWaiting, c.Option); option != "" {
-				lines = append(lines, closeLine(closeLead("", " "), option, "", width))
+		if ck.Again != "" {
+			again := append(append([]string{}, notes...), ck.Again+" runs it again")
+			if closeNoteFits(lead+text, strings.Join(again, " · "), width) {
+				notes = again
 			}
 		}
+		lines = append(lines, closeLine(lead, text, sty.Dim.Render(strings.Join(notes, " · ")), width))
 	}
 	return strings.Join(lines, "\n")
+}
+
+// closeNoteFits reports that a note has room beside a row's statement, which
+// is the test closeLine makes before it keeps one.
+func closeNoteFits(left, note string, width int) bool {
+	return lipgloss.Width(left)+closeMinNoteGap+lipgloss.Width(note) <= width
 }

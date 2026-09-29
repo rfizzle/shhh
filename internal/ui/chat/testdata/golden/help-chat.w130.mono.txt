@@ -155,10 +155,11 @@
                    plan/response to .shhh/plans/ · drop forgets an approved plan
     /diff [path]   show what this session changed, full screen, or one file's — read from the session's own changeset, so it works
                    outside a git repository
-    /review [turn] review what a turn changed: file list, hunks, staging per hunk (bare reviews the last turn that changed
-                   anything). Also a turn's changed-files row, clicked or selected and opened with enter. Nothing is applied
+    /review [turn] review what a turn changed: file list, hunks and the turn's verdict (bare reviews the last turn that changed
+                   anything). Also a turn's changed-files row, clicked or selected and opened with enter. It reads and changes
+                   nothing; /undo takes a turn back
     /undo [turn]   put back what a turn changed, from the session's own records (not git). Asks first, names anything that changed
-                   since, and is itself recorded as a turn. Also [u] on the row
+                   since, and is itself recorded as a turn
     /compact       continue from a summary plus the most recent turns
     /rewind [n]    rewind to the end of turn [n], 0 being the start (bare /rewind picks interactively); the abandoned tail is kept
                    as a branch, and a card asks whether the files come back too
@@ -310,10 +311,11 @@
                    ␛[38;5;244mplan/response to .shhh/plans/ · drop forgets an approved plan␛[m
     ␛[38;5;254m/diff [path]␛[m   ␛[38;5;244mshow what this session changed, full screen, or one file's — read from the session's own changeset, so it works␛[m
                    ␛[38;5;244moutside a git repository␛[m
-    ␛[38;5;254m/review [turn]␛[m ␛[38;5;244mreview what a turn changed: file list, hunks, staging per hunk (bare reviews the last turn that changed␛[m
-                   ␛[38;5;244manything). Also a turn's changed-files row, clicked or selected and opened with enter. Nothing is applied␛[m
+    ␛[38;5;254m/review [turn]␛[m ␛[38;5;244mreview what a turn changed: file list, hunks and the turn's verdict (bare reviews the last turn that changed␛[m
+                   ␛[38;5;244manything). Also a turn's changed-files row, clicked or selected and opened with enter. It reads and changes␛[m
+                   ␛[38;5;244mnothing; /undo takes a turn back␛[m
     ␛[38;5;254m/undo [turn]␛[m   ␛[38;5;244mput back what a turn changed, from the session's own records (not git). Asks first, names anything that changed␛[m
-                   ␛[38;5;244msince, and is itself recorded as a turn. Also [u] on the row␛[m
+                   ␛[38;5;244msince, and is itself recorded as a turn␛[m
     ␛[38;5;254m/compact␛[m       ␛[38;5;244mcontinue from a summary plus the most recent turns␛[m
     ␛[38;5;254m/rewind [n]␛[m    ␛[38;5;244mrewind to the end of turn [n], 0 being the start (bare /rewind picks interactively); the abandoned tail is kept␛[m
                    ␛[38;5;244mas a branch, and a card asks whether the files come back too␛[m

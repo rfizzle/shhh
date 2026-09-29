@@ -15,8 +15,8 @@ package chat
 // about: the changeset row a turn closes with, a provider failure's row
 //, a dropped stream's, and a round-limit pause's. They are transcript
 // entries, not takeovers. Their keys are handled by reading mode on the row
-// (focus.go), so while the draft below has the keyboard `u` is a letter, `[u]
-// undo turn` is an offer nothing accepts, and the row was painting it in info —
+// (focus.go), so while the draft below has the keyboard `r` is a letter, `[r]
+// try again` is an offer nothing accepts, and the row was painting it in info —
 // the colour that means "you can press this".
 //
 // So a transcript row renders its keys live only while reading mode's cursor
@@ -81,27 +81,21 @@ func (m Model) firstRowOffer() bool {
 	return true
 }
 
-// offersRowKeys reports that an entry carries offers of its own — the rows
-// whose keys keys.Row declares. It is the list the Option note counts and the
-// chord walks, so both read one answer.
+// offersRowKeys reports that an entry carries offers of its own that the
+// draft reaches as chords — the rows whose keys keys.RowChord pairs. It is
+// the list the Option note counts and the chord walks, so both read one
+// answer. A turn's close and a steer's notice are not on it: the close's one
+// offer is the handover and the notice's letter has no chord.
 func (m Model) offersRowKeys(e entry) bool {
 	switch e.kind {
-	case entryTurnClose:
-		return e.close != nil &&
-			((e.close.Changes != nil && len(e.close.Changes.Keys) > 0) ||
-				(e.close.Checks != nil && len(e.close.Checks.Keys) > 0))
 	case entryFailure:
 		return e.fail != nil && len(m.failureKeys(e.fail)) > 0
 	case entryStreamDrop:
 		return e.resume != nil && len(m.dropKeys(e.resume)) > 0
 	case entryRoundPause:
 		return e.pause != nil && len(e.pause.keys()) > 0
-	case entryTodoRun:
-		return e.todorun != nil && len(e.todorun.offers()) > 0
 	case entryRewound:
 		return len(m.rewoundOffers(e)) > 0
-	case entrySystem:
-		return len(m.steerOffers(e)) > 0
 	}
 	return false
 }
@@ -235,10 +229,9 @@ func (m Model) reviewableRow(idx int) (int64, bool) {
 }
 
 // closeFor is a turn's close block as the selection lets it draw. Its offers
-// are drawn only on the selected block — or, with nothing selected, on the
-// newest close (closeRowFor) — because the same keys on every turn a session
-// has closed told the reader nothing about which turn they would act on.
-// Selected, the changed-files row leads with enter's own act.
+// are drawn only on the selected block, because the same keys on every turn a
+// session has closed told the reader nothing about which turn they would act
+// on. Selected, the changed-files row leads with enter's own act.
 func (m Model) closeFor(c components.TurnClose, sel rowSel) components.TurnClose {
 	live := sel.lettersLive()
 	c.KeysWaiting, c.Handover = !live, ""
@@ -249,11 +242,6 @@ func (m Model) closeFor(c components.TurnClose, sel rowSel) components.TurnClose
 			cp.Keys = append([]components.KeyOffer{reviewTurnOffer()}, ch.Keys...)
 		}
 		c.Changes = &cp
-	}
-	if ck := c.Checks; ck != nil && sel == rowUnselected {
-		cp := *ck
-		cp.Keys = nil
-		c.Checks = &cp
 	}
 	return c
 }
@@ -268,9 +256,8 @@ func (m Model) gateRow(row components.RecoveryRow, sel rowSel) components.Recove
 	return row
 }
 
-// One of the two exceptions to a row offer acting only on the selected row
-// (docs/interface/surfaces.md#the-recovery-row); the newest close, below, is
-// the other. A turn that has just broken
+// The one exception to a row offer acting only on the selected row
+// (docs/interface/surfaces.md#the-recovery-row). A turn that has just broken
 // is the commonest thing a reader recovers from, usually mid-sentence, and
 // selecting the row first made that recovery two keys where it used to be
 // one. So while nothing is selected, the newest recovery row — the failure or
@@ -301,24 +288,7 @@ type recoveryTarget struct {
 // keyboard with no row selected. A retry that went through or a new turn
 // ends the exception, because "the last failure" would then name a failure
 // the session has already moved past.
-//
-// Where the newest close offers its keys as well, the newer of the two rows in
-// transcript order is the one that draws its offers, and the other stays
-// inert: two rows each claiming to be the last thing to act on would be the
-// ambiguity the labels exist to end.
 func (m Model) latestRecovery() (int, recoveryTarget) {
-	i, t := m.newestRecovery()
-	if t == (recoveryTarget{}) {
-		return -1, recoveryTarget{}
-	}
-	if c, cl := m.newestClose(); cl != nil && c > i {
-		return -1, recoveryTarget{}
-	}
-	return i, t
-}
-
-// newestRecovery is latestRecovery before the newest close is asked.
-func (m Model) newestRecovery() (int, recoveryTarget) {
 	if m.attachedTo != "" || m.retry != nil || m.working() ||
 		m.turnOutcome != components.TurnFailed || !m.inputLive() || m.gutterShowing() {
 		return -1, recoveryTarget{}
@@ -402,91 +372,4 @@ func (m Model) gateRecovery(e entry, row components.RecoveryRow, sel rowSel) com
 		row.Keys = rest
 	}
 	return m.gateRow(row, sel)
-}
-
-// The newest close is the other row that offers keys with nothing selected
-// (docs/interface/surfaces.md#the-turns-close). The objection the
-// selected-only rule was written for was a key on every close that named no
-// turn; there is only one newest, and its words say which turn it is. So
-// while nothing is selected the close the last turn ended on draws review,
-// keep and take back live, as the chords that reach them from the prompt,
-// and keep and take back say they act on the last turn. Every older close
-// stays quiet until it is selected, and selecting one quiets the newest, so
-// never more than one close is offering. Nothing here moves the pointer.
-const (
-	latestCommitWords = "commit the last turn"
-	latestUndoWords   = "undo the last turn"
-)
-
-// latestClose is the close a commit or undo chord pressed with nothing
-// selected acts on, and its index, or nil where there is none: the newest
-// close, while its turn is the session's latest, its changeset is still
-// offered, nothing is running, the draft holds the keyboard with no row
-// selected, and no newer failure row is drawing its own offers.
-func (m Model) latestClose() (int, *components.TurnClose) {
-	i, c := m.newestClose()
-	if c == nil {
-		return -1, nil
-	}
-	if r, t := m.newestRecovery(); t != (recoveryTarget{}) && r > i {
-		return -1, nil
-	}
-	return i, c
-}
-
-// newestClose is latestClose before the newest failure is asked.
-func (m Model) newestClose() (int, *components.TurnClose) {
-	if m.attachedTo != "" || m.working() || !m.inputLive() || m.gutterShowing() {
-		return -1, nil
-	}
-	for i := len(m.transcript) - 1; i >= 0; i-- {
-		e := m.transcript[i]
-		switch e.kind {
-		case entryUser:
-			return -1, nil
-		case entryTurnClose:
-			if e.close == nil || e.turn != m.turnCount ||
-				e.close.Changes == nil || len(e.close.Changes.Keys) == 0 {
-				return -1, nil
-			}
-			return i, e.close
-		}
-	}
-	return -1, nil
-}
-
-// latestCloseWords is the label an offer takes on the newest close, and
-// whether it is one of the two that act on it from the prompt.
-func latestCloseWords(o components.KeyOffer) (string, bool) {
-	switch o.Key {
-	case keys.Bracket(keys.Row.Commit):
-		return latestCommitWords, true
-	case keys.Bracket(keys.Row.Undo):
-		return latestUndoWords, true
-	}
-	return "", false
-}
-
-// closeRowFor is closeFor for a close in the transcript: where the row is the
-// newest close and nothing is selected, its changed-files row draws what the
-// selected row would — enter's review ahead of keep and take back, as live
-// chords — with keep and take back labelled as the last turn's. The checks
-// row's rerun stays the selected row's: no chord reaches it from here.
-func (m Model) closeRowFor(e entry, sel rowSel) components.TurnClose {
-	c := m.closeFor(*e.close, sel)
-	if sel != rowUnselected || c.Changes == nil {
-		return c
-	}
-	if _, target := m.latestClose(); target == nil || target != e.close {
-		return c
-	}
-	offers := []components.KeyOffer{reviewTurnOffer()}
-	for _, o := range e.close.Changes.Keys {
-		if l, ok := latestCloseWords(o); ok {
-			o.Label = l
-		}
-		offers = append(offers, o)
-	}
-	c.Changes.Keys = offers
-	return c
 }

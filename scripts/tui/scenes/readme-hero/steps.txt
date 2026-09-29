@@ -37,11 +37,11 @@ keys y
 snap 04-close "1 file changed" "✓ Done · 3 steps"
 hold 2.5
 # Reading mode opens on the last row of the turn, which is the close, and the
-# close's commit offer is a letter there.
+# close's commit offer is the handover there.
 keys C-o
-snap 05-reading "[g] commit" "row 5 of 5"
+snap 05-reading "[ctrl+space/ctrl+y] commit" "row 5 of 5"
 hold 1.2
-keys g
+keys C-Space
 snap 06-commit-card "Commit this turn"
 hold 2.5
 keys Enter

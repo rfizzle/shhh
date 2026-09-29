@@ -68,10 +68,13 @@ func TestRoundLimit_PausesWithRoundsUsedAndWhatChanged(t *testing.T) {
 	if !strings.Contains(view, "the suite has not been re-run since") {
 		t.Errorf("an unchecked edit should be named:\n%s", view)
 	}
-	for _, want := range []string{"[enter] " + reviewTurnWords, firstGrantOffer + " more rounds", "[u] undo the turn"} {
+	for _, want := range []string{"[enter] " + reviewTurnWords, firstGrantOffer + " more rounds"} {
 		if !strings.Contains(view, want) {
 			t.Errorf("the row should offer %q:\n%s", want, view)
 		}
+	}
+	if strings.Contains(view, "undo") {
+		t.Errorf("taking the turn back is /undo, not an offer on the row:\n%s", view)
 	}
 }
 
@@ -219,8 +222,8 @@ func TestRoundLimit_AFreshMessageSpendsTheStandingOffer(t *testing.T) {
 	}
 }
 
-func TestRoundLimit_ReviewAndUndoActOnThePausedTurn(t *testing.T) {
-	m, path := pausedModel(t)
+func TestRoundLimit_ReviewActsOnThePausedTurn(t *testing.T) {
+	m, _ := pausedModel(t)
 	m.focusIdx = indexOfKind(t, m, entryRoundPause)
 
 	// Review is the row's own open, the way it is on the close the pause
@@ -235,16 +238,9 @@ func TestRoundLimit_ReviewAndUndoActOnThePausedTurn(t *testing.T) {
 			reviewed.state, reviewed.reviewTurnN)
 	}
 
-	updated, _, claimed := m.roundPauseKey(keys.Shown(keys.Row.Undo))
-	if !claimed {
-		t.Fatal("[u] should be claimed by the pause row")
-	}
-	undone := updated.(Model)
-	if undone.state != stateUndoConfirm || undone.undoAsk == nil {
-		t.Fatalf("[u] asks before it writes, got state %v", undone.state)
-	}
-	if got := undoPlanPaths(undone.undoPlan); len(got) != 1 || got[0] != path {
-		t.Errorf("the undo covers what the turn wrote, got %v", got)
+	// Taking the turn back is /undo, not a letter on the row.
+	if _, _, claimed := m.roundPauseKey("u"); claimed {
+		t.Fatal("the pause row offers no [u]; /undo takes the turn back")
 	}
 }
 

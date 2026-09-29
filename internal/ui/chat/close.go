@@ -16,20 +16,20 @@ import (
 	"fmt"
 	"strings"
 
-	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/digest"
 	"github.com/rfizzle/shhh/internal/structural"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/components"
-	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
-// The offers the changeset row makes are keys.Row.Commit and keys.Row.Undo,
-// and the row itself is the door to its turn's review: clicked, or selected
-// and opened with enter (inertkeys.go). The selected row answers them, and
-// with nothing selected the newest close answers their chords from the prompt
-// (latestClose), so the input keeps every other key.
+// The changeset row is the door to its turn's review: clicked, or selected
+// and opened with enter (inertkeys.go). Selected, it also takes the handover,
+// which opens the commit card for its turn (commit.go). Taking the turn back
+// and running its checks again are commands — /undo and /gate run — and the
+// row says so in its note where there is room, rather than offering a letter
+// that was a second path to the same act
+// (docs/interface/surfaces.md#the-turns-close).
 
 // appendTurnClose closes the turn with its summary rows. It runs where the
 // turn's accounting is closed — one place, so a turn cannot end without
@@ -60,8 +60,8 @@ func (m *Model) appendTurnClose() {
 	m.noteAccountTurn()
 	// A turn that stopped at its round limit has already closed, with the
 	// pause row: it states the rounds it used, what it changed, and
-	// the three ways on, and a second block offering review and [u] beside it
-	// would be the same answer twice. Granting the rounds spends the pause,
+	// the ways on, and a second block offering review beside it would be
+	// the same answer twice. Granting the rounds spends the pause,
 	// so the turn it continues into closes here in the ordinary way.
 	if m.pausedAtRoundLimit() {
 		return
@@ -245,16 +245,17 @@ func (m Model) turnChangesFor(t changeset.Turn, committed bool) *components.Turn
 	if t.Files() == 0 {
 		return nil
 	}
-	// Review, keep, or take back — the three things a changeset can become,
-	// on one line and in that order. Review is the row's own open and is
-	// drawn in front of these once the row is selected (inertkeys.go). The
-	// commit offer stands for as long as the changeset is uncommitted and
-	// goes when it is not: banking work twice is not one of the three.
+	// Review or keep. Review is the row's own open and is drawn in front of
+	// this once the row is selected (inertkeys.go); keeping it is the
+	// handover, which opens the commit card, for as long as the changeset is
+	// uncommitted — banking work twice is not an offer. Taking it back is
+	// /undo, said in the note where there is room, and only while there is
+	// something /undo can reach: history is not.
 	var offers []components.TurnKey
+	back := ""
 	if !committed {
-		offers = append(offers,
-			rowOffer(keys.Row.Commit, keys.Words(keys.Row.Commit)),
-			rowOffer(keys.Row.Undo, keys.Words(keys.Row.Undo)))
+		offers = append(offers, commitOffer())
+		back = fmt.Sprintf("/undo %d takes it back", t.N)
 	}
 	return &components.TurnChanges{
 		Files:   t.Files(),
@@ -263,6 +264,7 @@ func (m Model) turnChangesFor(t changeset.Turn, committed bool) *components.Turn
 		Mode:    t.ModeChange(),
 		Keys:    offers,
 		Note:    trackingNote(t),
+		Back:    back,
 	}
 }
 
@@ -298,10 +300,9 @@ func trackingNote(t changeset.Turn) string {
 // with (resolved.go).
 //
 // gated says the session has a quality gate to run again, which is what puts
-// `[t]` on the row. A verdict a command left never carries the offer, however
-// the session is configured: re-running it would be shhh choosing to execute
-// a line nobody is looking at any more, and a key that did that on a row is
-// not an offer, it is a hazard.
+// the `/gate run` that does it in the row's note. A verdict a command left
+// never carries it, however the session is configured: re-running that would
+// be a line nobody is looking at any more.
 func turnChecksRow(es []entry, gated bool) *components.TurnChecks {
 	r := resolveChecks(es)
 	standing := r.standing()
@@ -309,10 +310,8 @@ func turnChecksRow(es []entry, gated bool) *components.TurnChecks {
 		return nil
 	}
 	row := components.TurnChecks{Superseded: r.superseded()}
-	if gated && r.suites() > 0 {
-		row.Keys = []components.TurnKey{
-			rowOffer(keys.Row.Rerun, keys.Words(keys.Row.Rerun)),
-		}
+	if suite := suiteOfTurn(es); gated && r.suites() > 0 && suite != "" {
+		row.Again = "/gate run " + suite
 	}
 	if len(standing) == 1 {
 		row.Failed = standing[0].outcome == checkFailed
@@ -329,27 +328,6 @@ func turnChecksRow(es []entry, gated bool) *components.TurnChecks {
 	row.Label = "checks"
 	row.Counts = fmt.Sprintf("%d of %d passing", passed, len(standing))
 	return &row
-}
-
-// rerunChecksKey answers the checks row's rerun offer: the suite the row is a
-// verdict about runs again over the tree as it now stands. It is the same run
-// `/gate run` makes — one way to start a suite, whoever asked — and it starts
-// in the background, because the reader pressed a key on a row and not a
-// command that owes them an answer.
-func (m Model) rerunChecksKey(pressed string) (tea.Model, tea.Cmd, bool) {
-	if !keys.Is(pressed, keys.Row.Rerun) || m.gate.Manage == nil {
-		return m, nil, false
-	}
-	e, ok := m.focusedClose()
-	if !ok || e.close == nil || e.close.Checks == nil || len(e.close.Checks.Keys) == 0 {
-		return m, nil, false
-	}
-	suite := suiteOfTurn(m.entriesForTurn(e.turn))
-	if suite == "" {
-		return m, nil, false
-	}
-	next, cmd := m.systemNotice(m.gate.Manage([]string{"run", suite}))
-	return next, cmd, true
 }
 
 // suiteOfTurn is the suite the verdict on a turn's close row came from, read

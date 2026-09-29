@@ -104,7 +104,9 @@ looks exactly as the artboard draws it.
 There is no artboard for a run's row. What the binary draws is the step
 header's grammar — the same fold state, the same lead columns, the same faint
 rule, the same right-aligned duration field — with the stages under it as a
-strip and each stage's own note under that.
+strip and each stage's own note under that. A run that blocked ends the row
+on the command that reopens its item — `/todo open` and the slug — rather
+than on a key.
 
 The reason is the neighbours. A run's row sits in a transcript of steps, and
 a run *is* a step of steps: a second header shape a column out of alignment
@@ -1167,18 +1169,57 @@ skip. It is also what every other card already does — `Approve command`,
 `Apply patch`, `Agents` — so a lower-case prompt on these four would be the
 exception rather than the voice.
 
-## A close offers its keys when it is the newest or selected
+## A close offers review and the commit, and names what undoes it
 
-*A gap.* `Changeset` and `Commit` draw one turn's close with review, keep and
-take back on the row, and the binary draws the newest close exactly so, with
-keep and take back labelled as the last turn's. What no artboard draws is a
-transcript holding more than one close. There the binary draws the offers on
-the newest close or on the selected one, never on both and never on the rest:
-the same keys printed on every turn a session had closed did not say which
-turn they meant, and the chord that answered them acted on whichever was
-newest ([the turn's close](surfaces.md#the-turns-close)). An older close states
-what its turn did and offers nothing until the pointer or reading mode's
-cursor selects it.
+*A disagreement.* `Changeset`, `Commit` and `Frame` draw a turn's close with
+review, keep and take back as keys on the changed-files row — commit and undo
+among them — and a key on the checks row that runs the suite again, and
+`Reading` draws the row's own line under reading mode with the undo key on it.
+The binary draws none of those keys. A close nobody has selected offers
+nothing, the newest included; a selected one offers `[enter] review turn ·
+[ctrl+space/ctrl+y] commit`, the commit reached through the handover rather
+than a letter of its own. Taking the turn back is `/undo`, and the
+changed-files row says so in its note — `all tracked in git · /undo 3 takes
+it back` — where there is room, giving that clause up first; the checks row's
+note says `/gate run default runs it again` the same way
+([the turn's close](surfaces.md#the-turns-close)).
+
+The reason is that each of those keys was a second path to an act that
+already had one. Undo is a command, running the checks again is a command and
+the model's own tool, and a commit is something the model makes through its
+card when asked. A letter on the row for each had to be kept correct beside
+the command it duplicated, and the month of record held no use of either. The
+commit keeps an offer because it is the one act a reader decides on the moment
+they have read the change; it takes the handover's spelling because that is
+the chord that already gives a card the keyboard. The departure is closed by
+the artboards dropping the undo, commit and rerun keys from the close and the
+reading-mode line, and drawing the note and the handover offer instead.
+
+## A turn's review is a reading
+
+*A disagreement.* `Changeset` draws review mode as a staging surface: a box
+per file and per hunk, a staged count in the header, and a footer offering
+the hunk, file and all keys with `[enter]` undoing the staged files. The
+binary draws a turn's review the way it draws `/diff`: no boxes, the file
+count in the header, `[n/p] hunk · [esc] leave, change nothing` in the footer,
+and the standing note naming `/undo` with the turn's number as the way back
+([the turn's close](surfaces.md#the-turns-close)).
+
+Staging there selected an undo, and the undo is `/undo`: a whole turn goes
+back a file at a time either way, and one file of it is asked of the model.
+The keys were a second path to the command, with a partial-selection warning
+of their own to keep true. The departure is closed by the artboard drawing the
+reading shape.
+
+## The commit card is opened by the handover
+
+*A disagreement.* `Commit` draws the card as what the close's `[g]` opens,
+with `[s] choose what goes in` among its keys. The binary opens it with the
+handover on a selected changed-files row, and its `[s]` reads `read the
+hunks`: it opens the turn's review, which stages nothing now
+([the turn's close](surfaces.md#the-turns-close)). The card is otherwise the
+artboard's. The departure is closed by the artboard drawing the handover as
+the way in and the `[s]` words.
 
 ## A card row's gloss is a fact about the call, or nothing
 

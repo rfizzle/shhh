@@ -466,7 +466,7 @@ type entry struct {
 	diff *components.DiffView
 	// close is the entryTurnClose block: the raw counts a turn ended
 	// with, so the rows re-render at any width like every other entry, and
-	// turn is the turn it closed — what its review and [u] act on.
+	// turn is the turn it closed — what its review and its commit act on.
 	close *components.TurnClose
 	turn  int64
 	// restored marks a close block put back for a resumed conversation

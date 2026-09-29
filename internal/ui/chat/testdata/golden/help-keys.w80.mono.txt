@@ -110,10 +110,10 @@
                      drops the pointer; ctrl+o opens reading mode on it
     [shift+→]        open or run the pointed row, and close it: what enter
     [shift+←]        and - do under reading mode's cursor, by the same
-                     handler. A row's own letters (a turn's v and u, a
-                     failure's r) stay reading mode's, because at the
-                     prompt a letter is text. Enter on an empty draft is
-                     the same open
+                     handler. A row's own letters (a failure's r, a
+                     pause's +) stay reading mode's, because at the prompt
+                     a letter is text. Enter on an empty draft is the same
+                     open
     [ctrl+o]         reading mode: select transcript rows (j/k, u/d half a
                      page), expand/collapse (enter), y copies the row
                      under the cursor — a command as $ cmd over its
@@ -141,20 +141,23 @@
                      key; iTerm2: Profiles › Keys › Left Option key: Esc+.
                      shhh doctor's keys row reads yours
     [alt+…]          a transcript row's own offers, taken from the prompt
-                     with the draft still holding the keyboard: alt+g
-                     commit · alt+z undo turn · alt+r try again · alt+n
-                     continue from here · alt+e enter a new key · alt+p
-                     switch provider · alt+m more rounds · alt+x let it
-                     run · alt+o reopen the item · alt+k run the checks
-                     again
+                     with the draft still holding the keyboard: alt+r try
+                     again · alt+n continue from here · alt+e enter a new
+                     key · alt+p switch provider · alt+m more rounds ·
+                     alt+x let it run
                      in reading mode each is the bare letter instead, on
                      the row under the cursor; the selected row draws
                      whichever of the two works where you are. From the
                      prompt the chord acts on the row the pointer names
                      and on nothing when no row is selected. A turn's
                      changed-files row opens that turn's review when it is
-                     clicked or selected and opened with enter. On a Mac
-                     an alt chord needs the Option key setting above
+                     clicked or selected and opened with enter, and its
+                     commit card when it is selected and handed the
+                     keyboard. What a row once offered to do to the work
+                     is a command now: /undo takes a turn back, /gate run
+                     runs its checks again, /todo open reopens a blocked
+                     run's item. On a Mac an alt chord needs the Option
+                     key setting above
     [ctrl+f]         the backlog screen: the project's items on the left
                      and the one under the pointer on the right, / and
                      s/p/k/r narrow the list, enter reads the body, e
@@ -205,7 +208,9 @@
                      two are the same act, and a waiting card names both:
                      ctrl+y is for terminals and desktops that never
                      deliver ctrl+space — macOS binds it to the
-                     input-source switcher and takes it first
+                     input-source switcher and takes it first. With
+                     nothing waiting, on a selected changed-files row, it
+                     opens that turn's commit card
     [ctrl+]]         print this key list. It is a chord and not the ? it
                      used to be, because a bare key at the draft is a
                      letter of whatever you are typing — every key live
@@ -353,10 +358,10 @@
                      ␛[38;5;244mdrops the pointer; ctrl+o opens reading mode on it␛[m
     ␛[38;5;254m[shift+→]␛[m        ␛[38;5;244mopen or run the pointed row, and close it: what enter␛[m
     ␛[38;5;254m[shift+←]␛[m        ␛[38;5;244mand - do under reading mode's cursor, by the same␛[m
-                     ␛[38;5;244mhandler. A row's own letters (a turn's v and u, a␛[m
-                     ␛[38;5;244mfailure's r) stay reading mode's, because at the␛[m
-                     ␛[38;5;244mprompt a letter is text. Enter on an empty draft is␛[m
-                     ␛[38;5;244mthe same open␛[m
+                     ␛[38;5;244mhandler. A row's own letters (a failure's r, a␛[m
+                     ␛[38;5;244mpause's +) stay reading mode's, because at the prompt␛[m
+                     ␛[38;5;244ma letter is text. Enter on an empty draft is the same␛[m
+                     ␛[38;5;244mopen␛[m
     ␛[38;5;254m[ctrl+o]␛[m         ␛[38;5;244mreading mode: select transcript rows (j/k, u/d half a␛[m
                      ␛[38;5;244mpage), expand/collapse (enter), y copies the row␛[m
                      ␛[38;5;244munder the cursor — a command as $ cmd over its␛[m
@@ -384,20 +389,23 @@
                      ␛[38;5;244mkey; iTerm2: Profiles › Keys › Left Option key: Esc+.␛[m
                      ␛[38;5;244mshhh doctor's keys row reads yours␛[m
     ␛[38;5;254m[alt+…]␛[m          ␛[38;5;244ma transcript row's own offers, taken from the prompt␛[m
-                     ␛[38;5;244mwith the draft still holding the keyboard: alt+g␛[m
-                     ␛[38;5;244mcommit · alt+z undo turn · alt+r try again · alt+n␛[m
-                     ␛[38;5;244mcontinue from here · alt+e enter a new key · alt+p␛[m
-                     ␛[38;5;244mswitch provider · alt+m more rounds · alt+x let it␛[m
-                     ␛[38;5;244mrun · alt+o reopen the item · alt+k run the checks␛[m
-                     ␛[38;5;244magain␛[m
+                     ␛[38;5;244mwith the draft still holding the keyboard: alt+r try␛[m
+                     ␛[38;5;244magain · alt+n continue from here · alt+e enter a new␛[m
+                     ␛[38;5;244mkey · alt+p switch provider · alt+m more rounds ·␛[m
+                     ␛[38;5;244malt+x let it run␛[m
                      ␛[38;5;244min reading mode each is the bare letter instead, on␛[m
                      ␛[38;5;244mthe row under the cursor; the selected row draws␛[m
                      ␛[38;5;244mwhichever of the two works where you are. From the␛[m
                      ␛[38;5;244mprompt the chord acts on the row the pointer names␛[m
                      ␛[38;5;244mand on nothing when no row is selected. A turn's␛[m
                      ␛[38;5;244mchanged-files row opens that turn's review when it is␛[m
-                     ␛[38;5;244mclicked or selected and opened with enter. On a Mac␛[m
-                     ␛[38;5;244man alt chord needs the Option key setting above␛[m
+                     ␛[38;5;244mclicked or selected and opened with enter, and its␛[m
+                     ␛[38;5;244mcommit card when it is selected and handed the␛[m
+                     ␛[38;5;244mkeyboard. What a row once offered to do to the work␛[m
+                     ␛[38;5;244mis a command now: /undo takes a turn back, /gate run␛[m
+                     ␛[38;5;244mruns its checks again, /todo open reopens a blocked␛[m
+                     ␛[38;5;244mrun's item. On a Mac an alt chord needs the Option␛[m
+                     ␛[38;5;244mkey setting above␛[m
     ␛[38;5;254m[ctrl+f]␛[m         ␛[38;5;244mthe backlog screen: the project's items on the left␛[m
                      ␛[38;5;244mand the one under the pointer on the right, / and␛[m
                      ␛[38;5;244ms/p/k/r narrow the list, enter reads the body, e␛[m
@@ -448,7 +456,9 @@
                      ␛[38;5;244mtwo are the same act, and a waiting card names both:␛[m
                      ␛[38;5;244mctrl+y is for terminals and desktops that never␛[m
                      ␛[38;5;244mdeliver ctrl+space — macOS binds it to the␛[m
-                     ␛[38;5;244minput-source switcher and takes it first␛[m
+                     ␛[38;5;244minput-source switcher and takes it first. With␛[m
+                     ␛[38;5;244mnothing waiting, on a selected changed-files row, it␛[m
+                     ␛[38;5;244mopens that turn's commit card␛[m
     ␛[38;5;254m[ctrl+]]␛[m         ␛[38;5;244mprint this key list. It is a chord and not the ? it␛[m
                      ␛[38;5;244mused to be, because a bare key at the draft is a␛[m
                      ␛[38;5;244mletter of whatever you are typing — every key live␛[m

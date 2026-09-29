@@ -10,81 +10,75 @@
 # it for the colour assignments. Trailing spaces are significant in both.
 
 ── layout ──────────────────────────────────────────────────
-· nothing selected · the newest close offers its keys as the last turn's, the older none
+· nothing selected · neither close offers a key, each names /undo
   Turn 1 raised the cap.
 
    ✓ Done · 1 tool · 2.1s
-  ▎✎ 1 file changed +1 −1                                  all tracked in git
+  ▎✎ 1 file changed +1 −1          all tracked in git · /undo 1 takes it back
 
   Turn 2 raised the cap.
 
    ✓ Done · 1 tool · 2.1s
-  ▎✎ 1 file changed +1 −1                                  all tracked in git
-     [enter] review turn · [alt+g] commit the last turn
-     [alt+z] undo the last turn
+  ▎✎ 1 file changed +1 −1          all tracked in git · /undo 2 takes it back
 
 
-· the pointer on turn 1 · enter reviews it, its chords are live, the newest is quiet
-  Turn 1 raised the cap.
-
-❯  ✓ Done · 1 tool · 2.1s                                                    
-  ▎✎ 1 file changed +1 −1                                  all tracked in git
-     [enter] review turn · [alt+g] commit · [alt+z] undo turn
-
-  Turn 2 raised the cap.
-
-   ✓ Done · 1 tool · 2.1s
-  ▎✎ 1 file changed +1 −1                                  all tracked in git
-
-
-· reading mode's cursor on turn 1 · its letters are live
+· the pointer on turn 1 · enter reviews it, the handover commits it
   Turn 1 raised the cap.
 
 ❯  ✓ Done · 1 tool · 2.1s                                                    
-  ▎✎ 1 file changed +1 −1 · [enter] review turn · [g] commit · [u] undo turn
+  ▎✎ 1 file changed +1 −1 · [enter] review turn · [ctrl+space/ctrl+y] commit
 
   Turn 2 raised the cap.
 
    ✓ Done · 1 tool · 2.1s
-  ▎✎ 1 file changed +1 −1                                  all tracked in git
+  ▎✎ 1 file changed +1 −1          all tracked in git · /undo 2 takes it back
+
+
+· reading mode's cursor on turn 1 · the same two offers
+  Turn 1 raised the cap.
+
+❯  ✓ Done · 1 tool · 2.1s                                                    
+  ▎✎ 1 file changed +1 −1 · [enter] review turn · [ctrl+space/ctrl+y] commit
+
+  Turn 2 raised the cap.
+
+   ✓ Done · 1 tool · 2.1s
+  ▎✎ 1 file changed +1 −1          all tracked in git · /undo 2 takes it back
 
 
 ── ansi ────────────────────────────────────────────────────
-· nothing selected · the newest close offers its keys as the last turn's, the older none
+· nothing selected · neither close offers a key, each names /undo
   Turn 1 raised the cap.
 
    ␛[38;5;254m✓␛[m ␛[38;5;254mDone␛[m␛[38;5;244m · 1 tool · 2.1s␛[m
-  ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m1 file changed ␛[m␛[38;5;254m+1␛[m ␛[38;5;254m−1␛[m                                  ␛[38;5;244mall tracked in git␛[m
+  ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m1 file changed ␛[m␛[38;5;254m+1␛[m ␛[38;5;254m−1␛[m          ␛[38;5;244mall tracked in git · /undo 1 takes it back␛[m
 
   Turn 2 raised the cap.
 
    ␛[38;5;254m✓␛[m ␛[38;5;254mDone␛[m␛[38;5;244m · 1 tool · 2.1s␛[m
-  ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m1 file changed ␛[m␛[38;5;254m+1␛[m ␛[38;5;254m−1␛[m                                  ␛[38;5;244mall tracked in git␛[m
-     ␛[38;5;254m[enter]␛[m␛[38;5;244m review turn␛[m␛[38;5;244m · ␛[m␛[38;5;254m[alt+g]␛[m␛[38;5;244m commit the last turn␛[m
-     ␛[38;5;254m[alt+z]␛[m␛[38;5;244m undo the last turn␛[m
+  ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m1 file changed ␛[m␛[38;5;254m+1␛[m ␛[38;5;254m−1␛[m          ␛[38;5;244mall tracked in git · /undo 2 takes it back␛[m
 
 
-· the pointer on turn 1 · enter reviews it, its chords are live, the newest is quiet
-  Turn 1 raised the cap.
-
-␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[48;5;237m ␛[38;5;254m✓␛[m␛[48;5;237m ␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237mDone · 1 tool · 2.1s                                                    ␛[m␛[m
-  ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m1 file changed ␛[m␛[38;5;254m+1␛[m ␛[38;5;254m−1␛[m                                  ␛[38;5;244mall tracked in git␛[m
-     ␛[38;5;254m[enter]␛[m␛[38;5;244m review turn␛[m␛[38;5;244m · ␛[m␛[38;5;254m[alt+g]␛[m␛[38;5;244m commit␛[m␛[38;5;244m · ␛[m␛[38;5;254m[alt+z]␛[m␛[38;5;244m undo turn␛[m
-
-  Turn 2 raised the cap.
-
-   ␛[38;5;254m✓␛[m ␛[38;5;254mDone␛[m␛[38;5;244m · 1 tool · 2.1s␛[m
-  ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m1 file changed ␛[m␛[38;5;254m+1␛[m ␛[38;5;254m−1␛[m                                  ␛[38;5;244mall tracked in git␛[m
-
-
-· reading mode's cursor on turn 1 · its letters are live
+· the pointer on turn 1 · enter reviews it, the handover commits it
   Turn 1 raised the cap.
 
 ␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[48;5;237m ␛[38;5;254m✓␛[m␛[48;5;237m ␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237mDone · 1 tool · 2.1s                                                    ␛[m␛[m
-  ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m1 file changed ␛[m␛[38;5;254m+1␛[m ␛[38;5;254m−1␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m review turn␛[m␛[38;5;244m · ␛[m␛[38;5;254m[g]␛[m␛[38;5;244m commit␛[m␛[38;5;244m · ␛[m␛[38;5;254m[u]␛[m␛[38;5;244m undo turn␛[m
+  ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m1 file changed ␛[m␛[38;5;254m+1␛[m ␛[38;5;254m−1␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m review turn␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+space/ctrl+y]␛[m␛[38;5;244m commit␛[m
 
   Turn 2 raised the cap.
 
    ␛[38;5;254m✓␛[m ␛[38;5;254mDone␛[m␛[38;5;244m · 1 tool · 2.1s␛[m
-  ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m1 file changed ␛[m␛[38;5;254m+1␛[m ␛[38;5;254m−1␛[m                                  ␛[38;5;244mall tracked in git␛[m
+  ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m1 file changed ␛[m␛[38;5;254m+1␛[m ␛[38;5;254m−1␛[m          ␛[38;5;244mall tracked in git · /undo 2 takes it back␛[m
+
+
+· reading mode's cursor on turn 1 · the same two offers
+  Turn 1 raised the cap.
+
+␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[48;5;237m ␛[38;5;254m✓␛[m␛[48;5;237m ␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237mDone · 1 tool · 2.1s                                                    ␛[m␛[m
+  ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m1 file changed ␛[m␛[38;5;254m+1␛[m ␛[38;5;254m−1␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m review turn␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+space/ctrl+y]␛[m␛[38;5;244m commit␛[m
+
+  Turn 2 raised the cap.
+
+   ␛[38;5;254m✓␛[m ␛[38;5;254mDone␛[m␛[38;5;244m · 1 tool · 2.1s␛[m
+  ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m1 file changed ␛[m␛[38;5;254m+1␛[m ␛[38;5;254m−1␛[m          ␛[38;5;244mall tracked in git · /undo 2 takes it back␛[m
 

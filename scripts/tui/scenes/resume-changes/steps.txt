@@ -30,6 +30,6 @@ keys C-c
 # accounts for itself, and it is the proof the second process is on screen.
 snap 04-resumed "resumed master" "1 file changed"
 keys C-o
-snap 05-reading "back to the prompt" "[enter] review turn" "[g] commit"
+snap 05-reading "back to the prompt" "[enter] review turn" "[ctrl+space/ctrl+y] commit"
 keys Enter
-snap 06-review "loop.go" "❯ [x] ✎ loop.go"
+snap 06-review "loop.go" "❯ ✎ loop.go"

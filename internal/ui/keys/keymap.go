@@ -58,27 +58,29 @@ import (
 // No file is not an error: most people never write one, and the register is
 // the answer for all of them.
 func Load(paths ...string) error {
-	appliedPath, appliedErr = load(paths...)
+	appliedPath, appliedDead, appliedErr = load(paths...)
 	return appliedErr
 }
 
 // load is Load without the record: the path it read, "" where none of them
-// exists, and the refusal.
-func load(paths ...string) (string, error) {
+// exists, the lines of it that name a key the register no longer has, and
+// the refusal.
+func load(paths ...string) (string, []string, error) {
 	for _, path := range paths {
 		moves, err := readKeymap(path)
 		if errors.Is(err, fs.ErrNotExist) {
 			continue
 		}
+		var dead []string
 		if err == nil {
-			err = apply(moves)
+			dead, err = apply(moves)
 		}
 		if err != nil {
-			return path, fmt.Errorf("%s: %w", path, err)
+			return path, nil, fmt.Errorf("%s: %w", path, err)
 		}
-		return path, nil
+		return path, dead, nil
 	}
-	return "", nil
+	return "", nil, nil
 }
 
 // appliedPath and appliedErr are what the last Load read and what it said,
@@ -89,12 +91,43 @@ func load(paths ...string) (string, error) {
 // applying the file again under a screen that is drawing from the register.
 var (
 	appliedPath string
+	appliedDead []string
 	appliedErr  error
 )
 
 // Applied is the file this process's keyboard was read from and the reason
 // it was refused, if it was. An empty path is a machine with no file.
 func Applied() (path string, err error) { return appliedPath, appliedErr }
+
+// Dead is the names in the applied file that the register no longer has, in
+// the order a listing reads them: lines that were read and do nothing.
+func Dead() []string { return appliedDead }
+
+// retired is every key the register once declared and has since given up,
+// by the name a file writes it as. A line naming one is read and does
+// nothing rather than refusing the file: the file was right when it was
+// written, and a keyboard that went back to the defaults because shhh
+// dropped a key would be the person paying for a change they did not make.
+// A typo is still a refusal; these are names the register itself once
+// handed out (docs/capabilities/configuration.md#the-keymap-file).
+var retired = []string{
+	"row.undo", "row.commit", "row.rerun", "row.reopen",
+	"rowchord.undo", "rowchord.commit", "rowchord.rerun", "rowchord.reopen",
+	"review.stage_hunk", "review.stage_file", "review.stage_all", "review.apply",
+}
+
+// isRetired reports that a name from a file is one of retired, read the way
+// fieldNamed reads a name: case and underscores are not worth being right
+// about.
+func isRetired(name string) bool {
+	fold := func(s string) string { return strings.ToLower(strings.ReplaceAll(s, "_", "")) }
+	for _, r := range retired {
+		if fold(r) == fold(name) {
+			return true
+		}
+	}
+	return false
+}
 
 // Check is whether a session started now would run the file at path, or the
 // first of paths that exists: the path it read ("" where none exists) and
@@ -111,7 +144,8 @@ func Check(paths ...string) (string, error) {
 	held := snapshot()
 	defer settle(held)
 	settle(declared)
-	return load(paths...)
+	path, _, err := load(paths...)
+	return path, err
 }
 
 // readKeymap reads one file into the moves it asks for: the dotted name of a
@@ -167,24 +201,30 @@ func flatten(prefix string, table map[string]any, into map[string][]string) erro
 }
 
 // apply moves every binding the file names and then asks the register
-// whether what came out is still a register. Nothing is left behind on a
+// whether what came out is still a register, and returns the names it passed
+// over because the register has given them up. Nothing is left behind on a
 // refusal: the declarations are put back before the error is returned, so a
 // caller that carries on runs the keyboard shhh declared.
-func apply(moves map[string][]string) error {
+func apply(moves map[string][]string) ([]string, error) {
 	if len(moves) == 0 {
-		return nil
+		return nil, nil
 	}
 	restore := map[*Binding]Binding{}
+	var dead []string
 	for _, name := range sorted(moves) {
 		b := binding(name)
+		if b == nil && isRetired(name) {
+			dead = append(dead, name)
+			continue
+		}
 		if b == nil {
 			undo(restore)
-			return fmt.Errorf("%s names no key in the register", name)
+			return nil, fmt.Errorf("%s names no key in the register", name)
 		}
 		presses := moves[name]
 		if len(presses) == 0 {
 			undo(restore)
-			return fmt.Errorf("%s: a key with no keystrokes answers to nothing", name)
+			return nil, fmt.Errorf("%s: a key with no keystrokes answers to nothing", name)
 		}
 		if _, seen := restore[b]; !seen {
 			restore[b] = *b
@@ -193,9 +233,9 @@ func apply(moves map[string][]string) error {
 	}
 	if err := check(); err != nil {
 		undo(restore)
-		return err
+		return nil, err
 	}
-	return nil
+	return dead, nil
 }
 
 func undo(restore map[*Binding]Binding) {

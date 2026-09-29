@@ -70,9 +70,9 @@ func allowEdit(t *testing.T, tm *program, shows string) {
 	tm.Send(programAllow)
 }
 
-// The turn's close offers the commit; the commit key opens the card, its
-// message opens and closes, and the card's enter commits the turn's own file
-// and nothing the reader changed by hand.
+// The turn's close offers the commit once it is selected; the handover opens
+// the card, its message opens and closes, and the card's enter commits the
+// turn's own file and nothing the reader changed by hand.
 func TestProgram_TheCloseOffersTheCommitAndTheCardCommits(t *testing.T) {
 	root := programRepo(t, map[string]string{"README.md": "# project\n\nnotes of my own\n"})
 	tm := runProgram(t, changesSession(root,
@@ -84,16 +84,16 @@ func TestProgram_TheCloseOffersTheCommitAndTheCardCommits(t *testing.T) {
 	send(tm, "cap rounds at the limit instead of erroring")
 	allowEdit(t, tm, "const limit = 50")
 	// The pointer's first press lands on the close, the newest row, which
-	// then draws its chords as the selected row's.
+	// then draws its offers as the selected row's.
 	waitForText(t, tm, "1 file changed")
 	programPress(t, tm, "shift+up")
-	waitForText(t, tm, "[alt+g] commit")
-	programPress(t, tm, "alt+g")
+	waitForText(t, tm, "[ctrl+space/ctrl+y] commit")
+	tm.Send(programHandover)
 	waitForText(t, tm, "Commit this turn")
 	programPress(t, tm, "e")
 	waitForText(t, tm, "COMMIT MESSAGE")
 	programPress(t, tm, "esc")
-	waitForText(t, tm, "choose what goes in")
+	waitForText(t, tm, "read the hunks")
 	programPress(t, tm, "enter")
 	waitForText(t, tm, "committed 1 file as")
 
@@ -107,12 +107,11 @@ func TestProgram_TheCloseOffersTheCommitAndTheCardCommits(t *testing.T) {
 	}
 }
 
-// The newest close offers its commit with nothing selected, labelled as the
-// last turn's, so the chord pressed from a half-typed line opens the card for
-// that turn and the card commits it — without the pointer having been lit,
-// and with the sentence still in the draft behind it
+// The close offers its commit once the pointer selects it from a half-typed
+// line, spelled as the handover, and the handover opens the card for that turn
+// and the card commits it — with the sentence still in the draft behind it
 // (docs/interface/surfaces.md#the-turns-close).
-func TestProgram_TheNewestCloseIsCommittedFromAHalfTypedLine(t *testing.T) {
+func TestProgram_ASelectedCloseIsCommittedThroughTheHandover(t *testing.T) {
 	root := programRepo(t, map[string]string{"README.md": "# project\n\nnotes of my own\n"})
 	tm := runProgram(t, changesSession(root,
 		editTurn(root, "loop.go", "const limit = 25", "const limit = 50"),
@@ -121,12 +120,14 @@ func TestProgram_TheNewestCloseIsCommittedFromAHalfTypedLine(t *testing.T) {
 
 	send(tm, "cap rounds at the limit instead of erroring")
 	allowEdit(t, tm, "const limit = 50")
-	offer := keys.Bracket(keys.RowChord.Commit) + " commit the last turn"
-	waitForText(t, tm, offer)
+	waitForText(t, tm, "The rounds are capped at the limit now.")
+	offer := keys.Bracket(keys.Draft.Answer) + " " + commitWords
 
 	tm.Type(draftSentence)
 	waitForText(t, tm, draftSentence)
-	tm.Send(chordMsg(t, keys.RowChord.Commit))
+	tm.Send(tea.KeyPressMsg{Code: tea.KeyUp, Mod: tea.ModShift})
+	waitForText(t, tm, offer)
+	tm.Send(programHandover)
 	waitForText(t, tm, "Commit this turn")
 	programPress(t, tm, "enter")
 	waitForText(t, tm, "committed 1 file as")

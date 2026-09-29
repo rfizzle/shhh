@@ -70,7 +70,7 @@ func TestReadings_ASteerAndItsWithdrawalAreTheReadingsOutcome(t *testing.T) {
 		t.Fatal("the reading that earned the steer should carry it")
 	}
 	m.focusIdx = steerNoticeIndex(t, m)
-	updated, _, _ := m.withdrawSteer(keys.Shown(keys.Row.Undo))
+	updated, _, _ := m.withdrawSteer(keys.Shown(keys.Row.Withdraw))
 	next := updated.(Model)
 	data := next.readingsScreenData()
 	if top := data.Readings[0]; !top.Steered || !top.Withdrawn {

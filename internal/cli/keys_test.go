@@ -140,23 +140,34 @@ func TestKeys_JSONListsEveryGroup(t *testing.T) {
 // the line at process start.
 func TestDoctorKeymap(t *testing.T) {
 	path := "/home/dev/.config/shhh/keybindings.toml"
-	f := doctorKeymap(path, 0, 0, errors.New(path+`: "p" is a letter while the draft can take text`))
+	f := doctorKeymap(path, 0, 0, nil, errors.New(path+`: "p" is a letter while the draft can take text`))
 	if f.State != components.DoctorWarned || f.Outcome != "refused" || len(f.Fix) == 0 ||
 		!strings.HasPrefix(f.Fix[0], `"p" is a letter`) {
 		t.Fatalf("the refused row is %+v", f)
 	}
-	if f := doctorKeymap("", 0, 0, nil); f.State != components.DoctorPassed || !strings.Contains(f.Subject, "no keybindings.toml") {
+	if f := doctorKeymap("", 0, 0, nil, nil); f.State != components.DoctorPassed || !strings.Contains(f.Subject, "no keybindings.toml") {
 		t.Fatalf("the row for no file is %+v", f)
 	}
-	if f := doctorKeymap(path, 2, 0, nil); f.State != components.DoctorPassed || f.Detail != "2 keys moved" {
+	if f := doctorKeymap(path, 2, 0, nil, nil); f.State != components.DoctorPassed || f.Detail != "2 keys moved" {
 		t.Fatalf("the applied row is %+v", f)
 	}
 	// A file behind the register is counted the way the config row counts
 	// settings, and its fix is the update.
-	if f := doctorKeymap(path, 2, 3, nil); f.State != components.DoctorWarned || f.Outcome != "behind" ||
+	if f := doctorKeymap(path, 2, 3, nil, nil); f.State != components.DoctorWarned || f.Outcome != "behind" ||
 		f.Detail != "behind by 3 keys · 2 keys moved" || len(f.Fix) == 0 ||
 		!strings.HasPrefix(f.Fix[0], config.UpdateUser) {
 		t.Fatalf("the behind row is %+v", f)
+	}
+	// A file naming keys shhh has given up was read without them, and the
+	// row names the lines that do nothing now.
+	if f := doctorKeymap(path, 1, 0, []string{"row.commit"}, nil); f.State != components.DoctorWarned ||
+		f.Outcome != "stale" || f.Detail != "1 line doing nothing · 1 key moved" || len(f.Fix) != 1 ||
+		!strings.HasPrefix(f.Fix[0], "row.commit name") {
+		t.Fatalf("the stale row is %+v", f)
+	}
+	// Behind as well, the update stays the row's fix and the lines join it.
+	if f := doctorKeymap(path, 0, 3, []string{"row.commit"}, nil); f.Outcome != "behind" || len(f.Fix) != 2 {
+		t.Fatalf("a behind row naming dead lines is %+v", f)
 	}
 }
 
@@ -193,7 +204,7 @@ func TestDoctorKeymap_BehindOnItsOwnIsOfferedOnItsRow(t *testing.T) {
 	if kb.KeysBehind() != 1 {
 		t.Fatalf("the fixture keymap is behind by %d keys, want 1", kb.KeysBehind())
 	}
-	f := doctorKeymap(plan.keymap, 0, kb.KeysBehind(), nil)
+	f := doctorKeymap(plan.keymap, 0, kb.KeysBehind(), nil, nil)
 	if f.Action == "" || f.Apply == nil || !strings.Contains(f.ActionPrompt, shortPath(plan.keymap)) {
 		t.Fatalf("the behind keymap row offers nothing: %+v", f)
 	}
@@ -209,7 +220,7 @@ func TestDoctorKeymap_BehindOnItsOwnIsOfferedOnItsRow(t *testing.T) {
 		t.Errorf("the keymap's offer wrote the settings: %q", raw)
 	}
 	// A current keymap offers nothing.
-	if f := doctorKeymap(plan.keymap, 0, 0, nil); f.Action != "" {
+	if f := doctorKeymap(plan.keymap, 0, 0, nil, nil); f.Action != "" {
 		t.Errorf("a current keymap offers %q", f.Action)
 	}
 }

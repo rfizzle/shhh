@@ -227,12 +227,12 @@ func (c TurnClose) readOnly() TurnClose {
 	c.Option, c.KeysWaiting, c.Handover = false, false, ""
 	if c.Changes != nil {
 		ch := *c.Changes
-		ch.Keys = nil
+		ch.Keys, ch.Back = nil, ""
 		c.Changes = &ch
 	}
 	if c.Checks != nil {
 		ck := *c.Checks
-		ck.Keys = nil
+		ck.Again = ""
 		c.Checks = &ck
 	}
 	return c

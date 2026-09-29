@@ -1,9 +1,9 @@
 package components
 
 // Review mode (docs/interface/surfaces.md#the-turns-close). The
-// surface is a layout around the shared diff renderer, so these cover the two
-// things that are its own: what staging selects, and how the two panes behave
-// as the terminal changes width.
+// surface is a layout around the shared diff renderer, so these cover what
+// is its own: that it is a reading with one way out, and how the two panes
+// behave as the terminal changes width.
 
 import (
 	"strings"
@@ -15,8 +15,8 @@ import (
 	"github.com/rfizzle/shhh/internal/diff"
 )
 
-// reviewFixture is a two-file review: the first file has two hunks so hunk
-// staging has something to be partial about.
+// reviewFixture is a two-file review: the first file has two hunks so the
+// hunk cursor has somewhere to go.
 func reviewFixture() *ReviewView {
 	// The changed lines share a prefix, so the pair carries an intraline
 	// emphasis span and the pane has something to tint.
@@ -27,139 +27,36 @@ func reviewFixture() *ReviewView {
 	return &ReviewView{
 		Title: "turn 7",
 		Files: []ReviewFile{
-			{Path: "internal/agent/loop.go", Hunks: loop, Staged: make([]bool, len(loop))},
-			{Path: "internal/agent/errors.go", Hunks: errs, Staged: make([]bool, len(errs)), Agent: "writer-1"},
+			{Path: "internal/agent/loop.go", Hunks: loop},
+			{Path: "internal/agent/errors.go", Hunks: errs, Agent: "writer-1"},
 		},
 		Verdict: &ReviewVerdict{
 			Failed: true, Label: "go test ./internal/agent/...",
 			Detail: []string{"--- FAIL: TestRoundLimit (0.03s)"},
 		},
 		Shield:       "nothing is committed",
-		ShieldDetail: "undo restores the 2 files this turn wrote",
+		ShieldDetail: "/undo 7 restores the 2 files this turn wrote",
 		Height:       20,
 	}
 }
 
-func TestReview_StagesPerHunkFileAndAll(t *testing.T) {
+// Esc is the one way out, and it changes nothing: there is no selection to
+// report, and the keys that once staged one do nothing here.
+func TestReview_IsAReadingWithOneWayOut(t *testing.T) {
 	v := reviewFixture()
-	if len(v.Files[0].Hunks) != 2 {
-		t.Fatalf("the fixture needs a two-hunk file, got %d", len(v.Files[0].Hunks))
+	for _, k := range []string{"s", "S", "A", "enter"} {
+		if v.Update(key(k)) {
+			t.Fatalf("%q should not end a review", k)
+		}
 	}
-
-	// s stages the hunk under the cursor and nothing else; space is the
-	// same key, because a box in a list is a thing people press space on.
-	v.Update(key("s"))
-	if v.Files[0].stagedCount() != 1 {
-		t.Fatalf("s should stage one hunk, got %d", v.Files[0].stagedCount())
+	out := ansi.Strip(v.View(130))
+	for _, gone := range []string{"[x]", "[ ]", "staged", "[enter]"} {
+		if strings.Contains(out, gone) {
+			t.Fatalf("a review offers no staging, yet draws %q:\n%s", gone, out)
+		}
 	}
-	// n moves to the next hunk of the same file; space stages that one too.
-	v.Update(key("n"))
-	v.Update(key("space"))
-	if v.Files[0].stagedCount() != 2 {
-		t.Fatalf("the second hunk should stage too, got %d", v.Files[0].stagedCount())
-	}
-	// S on a wholly staged file clears it.
-	v.Update(key("S"))
-	if v.Files[0].stagedCount() != 0 {
-		t.Fatalf("S should clear a wholly staged file, got %d", v.Files[0].stagedCount())
-	}
-	// A stages everything, then nothing.
-	v.Update(key("A"))
-	if v.Files[0].stagedCount() != 2 || v.Files[1].stagedCount() != 1 {
-		t.Fatalf("A should stage every hunk of every file, got %d and %d",
-			v.Files[0].stagedCount(), v.Files[1].stagedCount())
-	}
-	v.Update(key("a"))
-	if v.Files[0].stagedCount() != 0 || v.Files[1].stagedCount() != 0 {
-		t.Fatal("a second all/none should clear everything")
-	}
-}
-
-func TestReview_EnterReportsTheStagedSelection(t *testing.T) {
-	v := reviewFixture()
-
-	// Nothing staged: enter says so and stays, rather than applying nothing.
-	done, _ := v.Update(key("enter"))
-	if done {
-		t.Fatal("enter with nothing staged should not finish the surface")
-	}
-	if !strings.Contains(ansi.Strip(v.View(90)), "nothing staged") {
-		t.Fatalf("the surface should say why enter did nothing:\n%s", ansi.Strip(v.View(90)))
-	}
-
-	// One hunk of the first file, and the whole second file.
-	v.Update(key("s"))
-	v.Update(key("j"))
-	v.Update(key("S"))
-	done, result := v.Update(key("enter"))
-	if !done {
-		t.Fatal("enter with a staged selection should finish the surface")
-	}
-	r := result
-	if r.Canceled {
-		t.Fatalf("enter should report a selection, got %#v", result)
-	}
-	if r.Files() != 2 {
-		t.Fatalf("both files have a staged hunk, got %d", r.Files())
-	}
-	if len(r.Staged[0].Hunks) != 1 || r.Staged[0].Hunks[0] != 0 {
-		t.Fatalf("the first file staged only its first hunk, got %#v", r.Staged[0])
-	}
-	if r.Staged[1].File != 1 || len(r.Staged[1].Hunks) != 1 {
-		t.Fatalf("the second file should be staged whole, got %#v", r.Staged[1])
-	}
-}
-
-func TestReview_EscLeavesWithNothingChosen(t *testing.T) {
-	v := reviewFixture()
-	v.Update(key("A"))
-	done, result := v.Update(key("esc"))
-	r := result
-	if !done || !r.Canceled {
-		t.Fatalf("esc should finish the surface with a cancel, got done=%v %#v", done, result)
-	}
-	if len(r.Staged) != 0 {
-		t.Fatalf("a cancel carries no selection, got %#v", r.Staged)
-	}
-	// The staging state itself survives — esc dismisses, it does not destroy.
-	if v.Files[0].stagedCount() != 2 {
-		t.Fatal("esc should leave the staging state alone")
-	}
-}
-
-// A host that acts a file at a time stops advertising a granularity it
-// cannot honour: the file key leads the footer and the hunk key says what
-// pressing it costs.
-func TestReview_WholeFileStopsPromisingPerHunkStaging(t *testing.T) {
-	v := reviewFixture()
-	v.WholeFile = true
-	v.ApplyVerb = "undo"
-
-	// Nothing staged: the way back names the file key first.
-	v.Update(key("enter"))
-	notice := ansi.Strip(v.View(110))
-	if !strings.Contains(notice, "nothing staged — [S] stages a file") {
-		t.Fatalf("an empty selection should offer the file key first:\n%s", notice)
-	}
-
-	v.Update(key("s")) // one hunk of two
-	out := ansi.Strip(v.View(110))
-	file, hunk := strings.Index(out, "[S] file"), strings.Index(out, "[s] hunk · reverts its file")
-	if file < 0 || hunk < 0 {
-		t.Fatalf("the footer should offer both staging keys, worded for this host:\n%s", out)
-	}
-	if file > hunk {
-		t.Fatalf("the file key is the promoted one, so it comes first:\n%s", out)
-	}
-	if strings.Contains(out, "stage hunk") {
-		t.Fatalf("this host cannot honour per-hunk staging, so it may not promise it:\n%s", out)
-	}
-
-	// The child-patch host, where the hunks really are separable, keeps the
-	// plain offer.
-	v.WholeFile = false
-	if separable := ansi.Strip(v.View(110)); !strings.Contains(separable, "[s] stage hunk") {
-		t.Fatalf("a separable host still offers per-hunk staging:\n%s", separable)
+	if !v.Update(key("esc")) {
+		t.Fatal("esc should leave the review")
 	}
 }
 
@@ -178,9 +75,9 @@ func TestReview_PaneBodyComesFromTheSharedRenderer(t *testing.T) {
 			t.Fatalf("pane row %d differs from the shared renderer:\n got %q\nwant %q", i+1, rows[i+1], want)
 		}
 	}
-	// The header row is the surface's own: it carries the staging box.
-	if !strings.Contains(ansi.Strip(rows[0]), "@@") || !strings.Contains(ansi.Strip(rows[0]), "[ ]") {
-		t.Fatalf("the hunk header should carry the hunk and its staging box, got %q", ansi.Strip(rows[0]))
+	// The header row is the surface's own.
+	if !strings.Contains(ansi.Strip(rows[0]), "@@") {
+		t.Fatalf("the hunk header should carry the hunk, got %q", ansi.Strip(rows[0]))
 	}
 }
 
@@ -281,38 +178,6 @@ func TestReview_ListCarriesTheVerdictAndAttribution(t *testing.T) {
 	}
 }
 
-// A read-only review — a cumulative diff, where there is nothing to select —
-// drops staging entirely rather than offering boxes that mean nothing.
-func TestReview_ReadOnlyOffersNoStaging(t *testing.T) {
-	v := reviewFixture()
-	v.ReadOnly = true
-	out := ansi.Strip(v.View(130))
-	if strings.Contains(out, "[x]") || strings.Contains(out, "[ ]") {
-		t.Fatalf("a read-only review has no staging boxes:\n%s", out)
-	}
-	if strings.Contains(out, "[enter]") {
-		t.Fatalf("a read-only review offers nothing to apply:\n%s", out)
-	}
-	done, result := v.Update(key("enter"))
-	if !done || !result.Canceled {
-		t.Fatalf("enter in a read-only review should just leave, got done=%v %#v", done, result)
-	}
-}
-
-// The footer's apply offer counts the staged files as they are staged, so
-// the confirm is live rather than a fixed label.
-func TestReview_ApplyOfferCountsWhatIsStaged(t *testing.T) {
-	v := reviewFixture()
-	v.ApplyVerb = "undo"
-	if got := ansi.Strip(strings.Join(v.footerRows(200), " ")); !strings.Contains(got, "undo 0 files") {
-		t.Fatalf("an unstaged review offers nothing to undo, got %q", got)
-	}
-	v.Update(key("A"))
-	if got := ansi.Strip(strings.Join(v.footerRows(200), " ")); !strings.Contains(got, "undo 2 files") {
-		t.Fatalf("the offer should count the staged files, got %q", got)
-	}
-}
-
 // n walks the whole review rather than stopping at a file boundary.
 func TestReview_HunkCursorSpillsBetweenFiles(t *testing.T) {
 	v := reviewFixture()
@@ -328,9 +193,8 @@ func TestReview_HunkCursorSpillsBetweenFiles(t *testing.T) {
 }
 
 // Both of the surface's lists draw the one pointer every other list draws:
-// the ❯ in its own column outside the highlight, the whole row lit inside
-// it, and the staging box keeping the tone that says what will happen to the
-// file. What this replaced was a filename in a second colour on an unlit
+// the ❯ in its own column outside the highlight and the whole row lit inside
+// it. What this replaced was a filename in a second colour on an unlit
 // ground — the one list in the product that answered "where is the keyboard"
 // with a word rather than a row.
 func TestReview_BothCursorsAreLitRows(t *testing.T) {
@@ -338,7 +202,6 @@ func TestReview_BothCursorsAreLitRows(t *testing.T) {
 
 	const width = 44
 	v := reviewFixture()
-	v.Update(key("A")) // everything staged, so both boxes are the add box
 
 	f := v.Files[0]
 	for _, list := range []struct {
@@ -346,7 +209,7 @@ func TestReview_BothCursorsAreLitRows(t *testing.T) {
 		row  string
 	}{
 		{"the file list", v.fileRows(width)[0]},
-		{"the hunk pane", v.hunkHeader(f, 0, f.Hunks[0], width)},
+		{"the hunk pane", v.hunkHeader(f.Hunks[0], 0, width)},
 	} {
 		if got := lipgloss.Width(ansi.Strip(list.row)); got != width {
 			t.Fatalf("%s's lit row is %d columns, want the pane's %d", list.name, got, width)
@@ -363,9 +226,6 @@ func TestReview_BothCursorsAreLitRows(t *testing.T) {
 		}
 		if !strings.Contains(after, background) {
 			t.Fatalf("%s lights nothing behind the row: %q", list.name, list.row)
-		}
-		if box := sty.Add.Render("[x]"); !strings.Contains(after, box) {
-			t.Fatalf("%s loses the staging box's tone inside the highlight: %q", list.name, list.row)
 		}
 	}
 }

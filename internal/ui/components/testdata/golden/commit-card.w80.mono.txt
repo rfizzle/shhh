@@ -20,7 +20,7 @@
 │ hooks     pre-commit runs                                                    │
 │ push      no                                                                 │
 ├──────────────────────────────────────────────────────────────────────────────┤
-│ [enter] commit · [e] edit the message · [s] choose what goes in · [?] keys   │
+│ [enter] commit · [e] edit the message · [s] read the hunks · [?] keys        │
 │ [esc] not now — nothing is committed, and the offer stays                    │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
@@ -34,7 +34,7 @@
 │ hooks     pre-commit runs                                                    │
 │ push      no                                                                 │
 ├──────────────────────────────────────────────────────────────────────────────┤
-│ [enter] commit · [e] edit the message · [s] choose what goes in · [?] keys   │
+│ [enter] commit · [e] edit the message · [s] read the hunks · [?] keys        │
 │ [esc] not now — nothing is committed, and the offer stays                    │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
@@ -48,7 +48,7 @@
 │ hooks     skipped                                                            │
 │ push      no                                                                 │
 ├──────────────────────────────────────────────────────────────────────────────┤
-│ [enter] commit · [e] edit the message · [s] choose what goes in · [?] keys   │
+│ [enter] commit · [e] edit the message · [s] read the hunks · [?] keys        │
 │ [esc] not now — nothing is committed, and the offer stays                    │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
@@ -64,7 +64,7 @@
 │                                                                              │
 │ ✗ git commit: pre-commit hook failed: gofmt -l found 2 files                 │
 ├──────────────────────────────────────────────────────────────────────────────┤
-│ [enter] commit · [e] edit the message · [s] choose what goes in · [?] keys   │
+│ [enter] commit · [e] edit the message · [s] read the hunks · [?] keys        │
 │ [esc] not now — nothing is committed, and the offer stays                    │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
@@ -79,7 +79,7 @@
 │ hooks     pre-commit runs                                                    │
 │ push      no                                                                 │
 ├──────────────────────────────────────────────────────────────────────────────┤
-│ [enter] commit · [e] edit the message · [s] choose what goes in · [?] keys   │
+│ [enter] commit · [e] edit the message · [s] read the hunks · [?] keys        │
 │ [esc] not now — nothing is committed, and the offer stays                    │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
@@ -93,7 +93,7 @@
 │ hooks     pre-commit runs                                                    │
 │ push      no                                                                 │
 ├──────────────────────────────────────────────────────────────────────────────┤
-│ [enter] commit · [e] edit the message · [s] choose what goes in              │
+│ [enter] commit · [e] edit the message · [s] read the hunks                   │
 │ committing — git has it                                                      │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
@@ -124,7 +124,7 @@
 ␛[38;5;254m│␛[m ␛[38;5;244mhooks     ␛[m␛[38;5;254mpre-commit runs␛[m                                                    ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mpush      ␛[m␛[38;5;254mno␛[m                                                                 ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m ␛[38;5;254mcommit␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m ␛[38;5;254medit the message␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m ␛[38;5;254mchoose what goes in␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m ␛[38;5;254mkeys␛[m   ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m ␛[38;5;254mcommit␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m ␛[38;5;254medit the message␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m ␛[38;5;254mread the hunks␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m ␛[38;5;254mkeys␛[m        ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[esc] not now — nothing is committed, and the offer stays␛[m                    ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
 
@@ -138,7 +138,7 @@
 ␛[38;5;254m│␛[m ␛[38;5;244mhooks     ␛[m␛[38;5;254mpre-commit runs␛[m                                                    ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mpush      ␛[m␛[38;5;254mno␛[m                                                                 ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m ␛[38;5;254mcommit␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m ␛[38;5;254medit the message␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m ␛[38;5;254mchoose what goes in␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m ␛[38;5;254mkeys␛[m   ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m ␛[38;5;254mcommit␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m ␛[38;5;254medit the message␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m ␛[38;5;254mread the hunks␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m ␛[38;5;254mkeys␛[m        ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[esc] not now — nothing is committed, and the offer stays␛[m                    ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
 
@@ -152,7 +152,7 @@
 ␛[38;5;254m│␛[m ␛[38;5;244mhooks     ␛[m␛[38;5;244mskipped␛[m                                                            ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mpush      ␛[m␛[38;5;254mno␛[m                                                                 ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m ␛[38;5;254mcommit␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m ␛[38;5;254medit the message␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m ␛[38;5;254mchoose what goes in␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m ␛[38;5;254mkeys␛[m   ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m ␛[38;5;254mcommit␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m ␛[38;5;254medit the message␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m ␛[38;5;254mread the hunks␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m ␛[38;5;254mkeys␛[m        ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[esc] not now — nothing is committed, and the offer stays␛[m                    ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
 
@@ -168,7 +168,7 @@
 ␛[38;5;254m│␛[m                                                                              ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m✗ git commit: pre-commit hook failed: gofmt -l found 2 files␛[m                 ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m ␛[38;5;254mcommit␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m ␛[38;5;254medit the message␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m ␛[38;5;254mchoose what goes in␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m ␛[38;5;254mkeys␛[m   ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m ␛[38;5;254mcommit␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m ␛[38;5;254medit the message␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m ␛[38;5;254mread the hunks␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m ␛[38;5;254mkeys␛[m        ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[esc] not now — nothing is committed, and the offer stays␛[m                    ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
 
@@ -183,7 +183,7 @@
 ␛[38;5;254m│␛[m ␛[38;5;244mhooks     ␛[m␛[38;5;254mpre-commit runs␛[m                                                    ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mpush      ␛[m␛[38;5;254mno␛[m                                                                 ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m ␛[38;5;254mcommit␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m ␛[38;5;254medit the message␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m ␛[38;5;254mchoose what goes in␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m ␛[38;5;254mkeys␛[m   ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m ␛[38;5;254mcommit␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m ␛[38;5;254medit the message␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m ␛[38;5;254mread the hunks␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m ␛[38;5;254mkeys␛[m        ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[esc] not now — nothing is committed, and the offer stays␛[m                    ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
 
@@ -197,7 +197,7 @@
 ␛[38;5;254m│␛[m ␛[38;5;244mhooks     ␛[m␛[38;5;254mpre-commit runs␛[m                                                    ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mpush      ␛[m␛[38;5;254mno␛[m                                                                 ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;244m[enter] commit␛[m␛[38;5;244m · ␛[m␛[38;5;244m[e] edit the message␛[m␛[38;5;244m · ␛[m␛[38;5;244m[s] choose what goes in␛[m              ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244m[enter] commit␛[m␛[38;5;244m · ␛[m␛[38;5;244m[e] edit the message␛[m␛[38;5;244m · ␛[m␛[38;5;244m[s] read the hunks␛[m                   ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mcommitting — git has it␛[m                                                      ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
 

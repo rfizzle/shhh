@@ -68,17 +68,16 @@ func (m Model) systemEntries(es []entry) (tea.Model, tea.Cmd) {
 // It reads the session's own changeset rather than shelling out to
 // git, so it says the same thing in a directory that was never a repository
 // — and it says what this session changed, not what the working tree happens
-// to hold. There is nothing to stage in a cumulative diff, so the surface
-// opens read-only: the same file list and hunk pane, without the boxes.
+// to hold. It is the same reading a turn's review is: the same file list and
+// hunk pane.
 func (m Model) openSessionDiff() (tea.Model, tea.Cmd) {
 	files := m.changes.SessionFiles()
 	if len(files) == 0 {
 		return m.systemNotice(sessionDiffEmptyNotice(m.changes))
 	}
 	review := &components.ReviewView{
-		Title:    "session diff",
-		ReadOnly: true,
-		Shield:   "nothing is committed",
+		Title:  "session diff",
+		Shield: "nothing is committed",
 	}
 	// Eviction is a gap in the record, so it goes where the header keeps it
 	// rather than into the title, which is what a narrow list clips first.

@@ -14,7 +14,6 @@ import (
 	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/ui/components"
-	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // gridWidths are goldenWidths plus one terminal past the inspector's rung, so
@@ -61,7 +60,7 @@ func gridTranscript() []entry {
 			Steps: 2, Tools: 6, Elapsed: "24.7s", Spend: "$0.14",
 			Changes: &components.TurnChanges{
 				Files: 1, Added: 12, Removed: 4,
-				Keys: []components.TurnKey{rowOffer(keys.Row.Undo, "undo turn")},
+				Keys: []components.TurnKey{commitOffer()},
 				Note: "all tracked in git",
 			},
 			Checks: &components.TurnChecks{Failed: true, Label: "go test ./internal/agent/...", Counts: "exit 1 · 21s"},

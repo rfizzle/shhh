@@ -273,7 +273,8 @@ type DraftKeys struct {
 
 	// Answer is the handover: the one key a decision that arrived on top
 	// of a sentence answers to, and the reason every other letter on the
-	// card stays a letter.
+	// card stays a letter. With no decision waiting it hands the keyboard to
+	// the commit card of the changed-files row the reader has selected.
 	Answer Binding
 
 	Clear  Binding
@@ -741,14 +742,18 @@ var Sprint = SprintKeys{
 // a chord for it was the same act on a second key, and drawn on every turn's
 // close it was a key that did not say which turn it would open
 // (docs/interface/surfaces.md#the-turns-close).
+//
+// Nor is there an act on the work among them. Undoing a turn, committing it,
+// running its checks again and reopening a backlog run's item each have a
+// command or a tool — /undo, the model's commit, /gate run, /todo open — and
+// a letter on the row was a second path to keep correct beside them. What
+// stays is what answers the product rather than the work
+// (docs/interface/surfaces.md#the-turns-close).
 type RowKeys struct {
-	// Undo is `[u]`, which two rows offer with different words, the way
-	// Retry below does: a turn's changeset row puts the files back, and the
-	// notice an automatic steer left takes that message out of the
-	// conversation. Both are the same gesture on the row in front of you —
-	// undo what this row is telling you about — and both are answered by
-	// reading mode standing on it, so the draft keeps the letter either way.
-	Undo Binding
+	// Withdraw is `[u]` on the notice an automatic steer left: it takes that
+	// message back out of the conversation. It answers the machinery rather
+	// than acting on the work, and nothing else reaches it.
+	Withdraw Binding
 
 	// Retry is `[r]`, which two rows offer with different words: a failure
 	// asks again, a dropped stream asks again *from scratch*. Same key, same
@@ -768,41 +773,10 @@ type RowKeys struct {
 	// key, which is what Shown carries.
 	Rounds Binding
 	Uncap  Binding
-
-	// Reopen is `[o]` on the row a backlog run blocked on: the item it
-	// blocked goes back to open, which is the one act a reader who has just
-	// read the block wants and would otherwise have to compose a command
-	// for. It is `o` because that is the word — the textual form is
-	// `/todo open` — and because every other letter on a transcript row is
-	// already spent.
-	Reopen Binding
-
-	// Commit is the offer a turn's changed-files row makes while its
-	// changeset is uncommitted: banking the turn is one key rather than a
-	// sentence somebody composes.
-	//
-	// It is `[g]` for git rather than the letter the word starts with,
-	// because `[c]` is "continue from here" on a dropped stream's row and a
-	// key is declared once — the same reason reading mode's copy is `[y]`.
-	// The word beside it carries the act, which is what a letter never has
-	// to (docs/interface/principles.md#colour-never-carries-meaning-alone).
-	//
-	// Which letter this is stopped being the interesting question when the
-	// chord arrived: RowChord.Commit is what a reader mid-sentence presses,
-	// and `g` is only ever read inside reading mode, where the keyboard has
-	// already left the draft and no letter of it is a letter.
-	Commit Binding
-
-	// Rerun is `[t]` on the row a turn's checks left: the suite runs again
-	// over the tree as it now stands. It is offered only where there is a
-	// suite to run again — a command the turn happened to run is not one,
-	// because re-running that would be shhh choosing to execute a line
-	// nobody is looking at.
-	Rerun Binding
 }
 
 var Row = RowKeys{
-	Undo: bind("u", "undo turn", "u"),
+	Withdraw: bind("u", "take the steer back", "u"),
 
 	Retry:    bind("r", "try again", "r"),
 	Continue: bind("c", "continue from here", "c"),
@@ -811,17 +785,13 @@ var Row = RowKeys{
 
 	Rounds: bind("+", "more rounds", "+"),
 	Uncap:  bind("!", "let it run", "!"),
-
-	Reopen: bind("o", "reopen the item", "o"),
-
-	Commit: bind("g", "commit", "g"),
-	Rerun:  bind("t", "run the checks again", "t"),
 }
 
-// RowChordKeys are the same ten offers, reached from the draft. A row is
+// RowChordKeys are the recovery and round-limit offers, reached from the
+// draft. A row is
 // drawn beside a live input nearly all the time, and a letter drawn there is
-// a letter of the sentence being typed: pressing `g` under `[g] commit` typed
-// a g (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+// a letter of the sentence being typed: pressing `r` under `[r] try again`
+// typed an r (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 // So each offer has a chord as well, live wherever the row's letter is not.
 // Either spelling acts on one row, the one that is visibly selected — the
 // pointer lit from the prompt, or reading mode's cursor — and the row draws
@@ -833,11 +803,11 @@ var Row = RowKeys{
 //
 // Every one of them is on alt here, and that is not a preference. Each ctrl
 // letter a terminal delivers is spent or the line editor's, and the free set
-// is function keys and modified navigation keys — ten offers named after
-// words do not come out of it (docs/interface/reserved-keys.md#what-is-left).
+// is function keys and modified navigation keys — offers named after words
+// do not come out of it (docs/interface/reserved-keys.md#what-is-left).
 // What alt costs is the Option key on the two stock macOS terminals, which
 // compose a character until the profile is told to send the escape prefix,
-// so a Mac ships these ten on the function row instead and gives up the
+// so a Mac ships these on the function row instead and gives up the
 // mnemonics to get chords that arrive (platform.go,
 // docs/interface/reserved-keys.md#a-mac-ships-without-alt). Where one is on
 // alt anyway, `shhh doctor`'s keys row reads the setting and the first row in
@@ -849,9 +819,6 @@ var Row = RowKeys{
 // chords, which the draft leaves to it the way it leaves the readline chords
 // (DraftKeys). Each replacement says below which letter it took and why.
 type RowChordKeys struct {
-	// Undo is `alt+z`, the chord an editor has meant by undo for thirty
-	// years; `alt+u` is the textarea's uppercase-word.
-	Undo  Binding
 	Retry Binding
 	// Continue is `alt+n`: `alt+c` is the textarea's capitalize-word, and
 	// `n` is the next letter of the word — which is also what continuing
@@ -869,25 +836,16 @@ type RowChordKeys struct {
 	// continuing, `r` is trying again, `t` is the reasoning level's — so
 	// this is simply a chord the register still had free. The words beside
 	// it carry the act, as they do on the row.
-	Uncap  Binding
-	Reopen Binding
-	Commit Binding
-	// Rerun is `alt+k` for the checks it runs again: `alt+t` is the
-	// reasoning level's alias, and `k` is the letter of the word the row
-	// actually says.
-	Rerun Binding
+	Uncap Binding
 }
 
 // All is the chords in the order the rows offer them, which is the order Row
 // declares the letters in.
 func (k RowChordKeys) All() []Binding {
-	return []Binding{k.Commit, k.Undo, k.Retry, k.Continue,
-		k.Key, k.Provider, k.Rounds, k.Uncap, k.Reopen, k.Rerun}
+	return []Binding{k.Retry, k.Continue, k.Key, k.Provider, k.Rounds, k.Uncap}
 }
 
 var RowChord = RowChordKeys{
-	Undo: bind("alt+z", "undo turn", "alt+z"),
-
 	Retry:    bind("alt+r", "try again", "alt+r"),
 	Continue: bind("alt+n", "continue from here", "alt+n"),
 	Key:      bind("alt+e", "enter a new key", "alt+e"),
@@ -895,11 +853,6 @@ var RowChord = RowChordKeys{
 
 	Rounds: bind("alt+m", "more rounds", "alt+m"),
 	Uncap:  bind("alt+x", "let it run", "alt+x"),
-
-	Reopen: bind("alt+o", "reopen the item", "alt+o"),
-
-	Commit: bind("alt+g", "commit", "alt+g"),
-	Rerun:  bind("alt+k", "run the checks again", "alt+k"),
 }
 
 // rowPairs is each row offer beside the chord that reaches it from the draft.
@@ -908,16 +861,12 @@ var RowChord = RowChordKeys{
 // then decide which of them to print.
 func rowPairs() [][2]Binding {
 	return [][2]Binding{
-		{Row.Commit, RowChord.Commit},
-		{Row.Undo, RowChord.Undo},
 		{Row.Retry, RowChord.Retry},
 		{Row.Continue, RowChord.Continue},
 		{Row.Key, RowChord.Key},
 		{Row.Provider, RowChord.Provider},
 		{Row.Rounds, RowChord.Rounds},
 		{Row.Uncap, RowChord.Uncap},
-		{Row.Reopen, RowChord.Reopen},
-		{Row.Rerun, RowChord.Rerun},
 	}
 }
 
@@ -946,23 +895,24 @@ func RowLetter(pressed string) (string, bool) {
 	return "", false
 }
 
-// CommitKeys are the commit card's — the card a turn's changed-files row
-// opens, which stages exactly what that turn changed and nothing else
+// CommitKeys are the commit card's — the card the handover opens on a
+// selected changed-files row, which stages exactly what that turn changed and
+// nothing else
 // (docs/capabilities/approvals-and-safety.md#the-writing-half-of-git-is-a-tool-too).
 //
-// It is a takeover rather than a card beside the draft, because the row that
-// opened it was answered from reading mode: the keyboard was already out of
-// the draft when the card arrived, so there is nothing to hand over and every
-// letter here is live.
+// It is a takeover rather than a card beside the draft, because it is
+// reached through Draft.Answer: the handover has already taken the keyboard
+// out of the draft when the card arrives, so there is nothing to hand over
+// and every letter here is live.
 type CommitKeys struct {
 	Take Binding
 	// Edit opens the proposed message as a draft. It is the letter the word
 	// starts with, free here for the reason every bare letter on a takeover
 	// is: nothing else is listening while the card is up.
 	Edit Binding
-	// Hunks opens the staging surface that /diff and a review open, rather
-	// than a second one: what may be committed is one question with one
-	// answer, however it was reached.
+	// Hunks opens the turn's review, the surface /diff and the row itself
+	// open, rather than a second one: what is about to be committed is read
+	// in the one place a turn's hunks are read.
 	Hunks  Binding
 	Cancel Binding
 }
@@ -975,7 +925,7 @@ func (k CommitKeys) All() []Binding {
 var Commit = CommitKeys{
 	Take:  bind("enter", "commit", "enter"),
 	Edit:  bind("e", "edit the message", "e"),
-	Hunks: bind("s", "choose what goes in", "s"),
+	Hunks: bind("s", "read the hunks", "s"),
 	// The words say what is left standing rather than "cancel": a changeset
 	// nobody committed is still there, and so is the offer
 	// (docs/interface/principles.md#esc-is-always-the-safe-answer).
@@ -1245,41 +1195,25 @@ var Select = SelectKeys{
 	},
 }
 
-// ReviewKeys are review mode's: a takeover over the whole screen. Nothing
-// it does is applied.
-//
-// The hunk key and the file key are declared apart because what staging can
-// honour is the host's, not the surface's: a patch a child is offering is
-// separable hunk by hunk, and a turn already on disk is put back a file at a
-// time, so a host that can only act per file promotes the file key and says
-// what staging one hunk of five really costs.
+// ReviewKeys are review mode's: a takeover over the whole screen, and a
+// reading of it. It offers no staging: a turn is taken back with /undo and a
+// file of it by asking for it, so the surface moves, pages and leaves
+// (docs/interface/surfaces.md#the-turns-close).
 type ReviewKeys struct {
 	MoveFile   Binding
 	MoveHunk   Binding
-	StageHunk  Binding
-	StageFile  Binding
-	StageAll   Binding
 	SideBySide Binding
 	PageUp     Binding
 	PageDown   Binding
-	Apply      Binding
 	Back       Binding
 }
 
 var Review = ReviewKeys{
-	MoveFile: bind("j/k", "file", "k", "j", "up", "down"),
-	MoveHunk: bind("n/p", "hunk", "p", "n"),
-	// s and S rather than space and s: the two staging keys are one
-	// gesture apart, and the shifted one is the whole file, which is the
-	// bigger act. Space stays bound to the hunk because a box in a list is
-	// a thing people press space on.
-	StageHunk:  bind("s", "stage hunk", "s", " ", "space"),
-	StageFile:  bind("S", "file", "S"),
-	StageAll:   bind("A", "all", "a", "A"),
+	MoveFile:   bind("j/k", "file", "k", "j", "up", "down"),
+	MoveHunk:   bind("n/p", "hunk", "p", "n"),
 	SideBySide: bind("\\", "side by side", "\\"),
 	PageUp:     bind("pgup", "page up", "pgup"),
 	PageDown:   bind("pgdn", "page down", "pgdown"),
-	Apply:      bind("enter", "take the staged hunks", "enter"),
 	Back:       bind("esc", "back", "esc", "ctrl+c"),
 }
 

@@ -84,29 +84,22 @@
 
   ROW
 
-  · undo      u · undo turn  [shipped]
+  · withdraw  u · take the steer back  [shipped]
   · retry     r · try again  [shipped]
   · continue  c · continue from here  [shipped]
   · key       e · enter a new key  [shipped]
   · provider  p · switch provider  [shipped]
   · rounds    + · more rounds  [shipped]
   · uncap     ! · let it run  [shipped]
-  · reopen    o · reopen the item  [shipped]
-  · commit    g · commit  [shipped]
-  · rerun     t · run the checks again  [shipped]
 
   ROWCHORD
 
-  · undo      alt+z · undo turn  [shipped]
   · retry     alt+r · try again  [shipped]
   · continue  alt+n · continue from here  [shipped]
   · key       alt+e · enter a new key  [shipped]
   · provider  alt+p · switch provider  [shipped]
   · rounds    alt+m · more rounds  [shipped]
   · uncap     alt+x · let it run  [shipped]
-  · reopen    alt+o · reopen the item  [shipped]
-  · commit    alt+g · commit  [shipped]
-  · rerun     alt+k · run the checks again  [shipped]
 
   DECISION
 
@@ -159,20 +152,16 @@
 
   · move_file     k j up down · file  [shipped]
   · move_hunk     p n · hunk  [shipped]
-  · stage_hunk    s " " space · stage hunk  [shipped]
-  · stage_file    S · file  [shipped]
-  · stage_all     a A · all  [shipped]
   · side_by_side  \ · side by side  [shipped]
   · page_up       pgup · page up  [shipped]
   · page_down     pgdown · page down  [shipped]
-  · apply         enter · take the staged hunks  [shipped]
   · back          esc ctrl+c · back  [shipped]
 
   COMMIT
 
   · take    enter · commit  [shipped]
   · edit    e · edit the message  [shipped]
-  · hunks   s · choose what goes in  [shipped]
+  · hunks   s · read the hunks  [shipped]
   · cancel  esc · not now  [shipped]
 
   REWIND
@@ -344,4 +333,4 @@
   · paste   p · paste a key  [shipped]
   · local   o · a local model  [shipped]
 
-  254 keys · 1 moved
+  243 keys · 1 moved

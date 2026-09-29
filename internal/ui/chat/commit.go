@@ -3,12 +3,12 @@ package chat
 // Committing a turn from the row that closed it
 // (docs/interface/surfaces.md#the-turns-close).
 //
-// A commit was already something this product could do — the model asks for
-// one through the write tool, and the unattended runner makes one at the end
-// of an item — but the person watching a turn end had neither. They typed
-// `git commit` into a shell in another window, or they asked the agent to do
-// it and paid a round for the privilege. So the changed-files row offers the
-// key, and the key opens a card.
+// A commit is something the model asks for through the write tool, and the
+// unattended runner makes one at the end of an item. The person watching a
+// turn end has this card too, reached through the handover on the
+// changed-files row they have selected — the one chord that already hands a
+// card the keyboard — rather than through a letter of its own on every
+// close.
 //
 // The card is where the two boundaries are stated before the commit is made,
 // because they are the two a reader is entitled to check and cannot check
@@ -137,15 +137,27 @@ type commitDoneMsg struct {
 	err    error
 }
 
-// commitKey answers the changed-files row's commit offer. It claims the key
-// only on a close row whose turn still has an uncommitted changeset, so the
-// letter stays the draft's everywhere else.
-func (m Model) commitKey(pressed string) (tea.Model, tea.Cmd, bool) {
-	if !keys.Is(pressed, keys.Row.Commit) {
+// commitWords are what the handover does on a selected changed-files row.
+const commitWords = "commit"
+
+// commitOffer is that act drawn on the row: the handover's own spelling, as
+// a chord, so it is live under the pointer and under the cursor alike.
+func commitOffer() components.KeyOffer {
+	k := keys.Bracket(keys.Draft.Answer)
+	return components.KeyOffer{Key: k, Chord: k, Label: commitWords}
+}
+
+// commitHandover answers the handover on the selected changed-files row
+// (docs/interface/surfaces.md#the-turns-close). It claims the chord only on
+// a close row the reader has selected whose turn still has an uncommitted
+// changeset, so with nothing selected the handover means what it always
+// has.
+func (m Model) commitHandover() (tea.Model, tea.Cmd, bool) {
+	if m.interruptShowing() || (!m.pointerLit() && m.state != stateFocus) {
 		return m, nil, false
 	}
 	e, ok := m.focusedClose()
-	if !ok || e.close == nil || e.close.Changes == nil || e.close.Commit != nil {
+	if !ok || e.close.Changes == nil || e.close.Commit != nil || len(e.close.Changes.Keys) == 0 {
 		return m, nil, false
 	}
 	next, cmd := m.openCommitCard(m.focusIdx, e.turn)
@@ -579,7 +591,7 @@ func (m Model) makeCommit() (tea.Model, tea.Cmd) {
 		// commit at all rather than to quietly carry less than the card said.
 		if moved := driftedNow(staging); len(moved) > 0 {
 			return commitDoneMsg{turn: turn, err: fmt.Errorf(
-				"%s changed since this card was drawn; nothing was committed — press the commit key again to read the tree afresh",
+				"%s changed since this card was drawn; nothing was committed — open the card again to read the tree afresh",
 				strings.Join(moved, ", "))}
 		}
 		files, err := run.Commit(root, paths, message, without, hooks)

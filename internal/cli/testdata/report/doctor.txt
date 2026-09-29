@@ -1,4 +1,4 @@
-  shhh doctor — 8 checks
+  shhh doctor — 9 checks
 
   ✓ binary    shhh 0.9.4 · linux/amd64  [ok]
   ⚠ keymap    /home/dev/.config/shhh/keybindings.toml  [refused]
@@ -9,6 +9,10 @@
   ⚠ keymap    /home/dev/.config/shhh/keybindings.toml · behind by 3 k…  [behind]
       what arrived since the file was written is not in it to find
         shhh config init --global --update   keeps every key the file binds
+  ⚠ keymap    /home/dev/.config/shhh/keybindings.toml · 2 lines doing …  [stale]
+      a line naming a key shhh no longer has is read and does nothing
+        row.commit, rowchord.undo name keys shhh no longer has; those lines do
+        nothing
   ⚠ otel      the collector endpoint is not a URL · the endpoint ne…  [unusable]
       sessions are recorded locally and nothing is exported
         shhh config set --global otel.endpoint http://localhost:4318
@@ -30,4 +34,4 @@
         summary — config prompts.summary
         todo_commit — ~/.config/shhh/prompts/todo_commit.md
 
-  1 failed · 4 warnings · 2 passed · 1 not checked
+  1 failed · 5 warnings · 2 passed · 1 not checked

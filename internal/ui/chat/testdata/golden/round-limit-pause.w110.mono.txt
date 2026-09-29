@@ -16,7 +16,7 @@
 
    ⚠ rounds  150 of 150 used · the turn's own bound                                       stopped  4m12s
     3 files changed +30 −4 · the suite has not been re-run since
-    [alt+m] more rounds · [alt+z] undo the turn · [ctrl+o] to use them
+    [alt+m] more rounds · [ctrl+o] to use them
 
 
 · nothing changed · only the grant can be honoured
@@ -34,7 +34,7 @@
 
    ⚠ rounds  200 of 200 used · 50 already granted                                         stopped  4m12s
     5 files changed +112 −40
-    [alt+m] more rounds · [alt+x] let it run · [alt+z] undo the turn · [ctrl+o] to use them
+    [alt+m] more rounds · [alt+x] let it run · [ctrl+o] to use them
 
 
 · the offer is spent · the row keeps its words
@@ -43,7 +43,6 @@
 
    ⚠ rounds  150 of 150 used · the turn's own bound                                       stopped  4m12s
     3 files changed +30 −4 · the suite has not been re-run since
-    [alt+z] undo the turn · [ctrl+o] to use them
 
 
 ── ansi ────────────────────────────────────────────────────
@@ -53,7 +52,7 @@
 
    ␛[38;5;254m⚠␛[m ␛[38;5;254mrounds␛[m  ␛[38;5;254m150 of 150 used␛[m␛[38;5;244m · the turn's own bound␛[m                                       ␛[38;5;254mstopped␛[m  ␛[38;5;244m4m12s␛[m
     ␛[38;5;244m3 files changed +30 −4 · the suite has not been re-run since␛[m
-    ␛[38;5;244m[alt+m]␛[m␛[38;5;244m more rounds␛[m␛[38;5;244m · ␛[m␛[38;5;244m[alt+z]␛[m␛[38;5;244m undo the turn␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+o]␛[m␛[38;5;254m to use them␛[m
+    ␛[38;5;244m[alt+m]␛[m␛[38;5;244m more rounds␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+o]␛[m␛[38;5;254m to use them␛[m
 
 
 · nothing changed · only the grant can be honoured
@@ -71,7 +70,7 @@
 
    ␛[38;5;254m⚠␛[m ␛[38;5;254mrounds␛[m  ␛[38;5;254m200 of 200 used␛[m␛[38;5;244m · 50 already granted␛[m                                         ␛[38;5;254mstopped␛[m  ␛[38;5;244m4m12s␛[m
     ␛[38;5;244m5 files changed +112 −40␛[m
-    ␛[38;5;244m[alt+m]␛[m␛[38;5;244m more rounds␛[m␛[38;5;244m · ␛[m␛[38;5;244m[alt+x]␛[m␛[38;5;244m let it run␛[m␛[38;5;244m · ␛[m␛[38;5;244m[alt+z]␛[m␛[38;5;244m undo the turn␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+o]␛[m␛[38;5;254m to use them␛[m
+    ␛[38;5;244m[alt+m]␛[m␛[38;5;244m more rounds␛[m␛[38;5;244m · ␛[m␛[38;5;244m[alt+x]␛[m␛[38;5;244m let it run␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+o]␛[m␛[38;5;254m to use them␛[m
 
 
 · the offer is spent · the row keeps its words
@@ -80,5 +79,4 @@
 
    ␛[38;5;254m⚠␛[m ␛[38;5;254mrounds␛[m  ␛[38;5;254m150 of 150 used␛[m␛[38;5;244m · the turn's own bound␛[m                                       ␛[38;5;254mstopped␛[m  ␛[38;5;244m4m12s␛[m
     ␛[38;5;244m3 files changed +30 −4 · the suite has not been re-run since␛[m
-    ␛[38;5;244m[alt+z]␛[m␛[38;5;244m undo the turn␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+o]␛[m␛[38;5;254m to use them␛[m
 

@@ -194,17 +194,16 @@ func Surfaces() []Surface {
 		},
 		{
 			Name:     "a transcript row's own offers",
-			Section:  "docs/interface/surfaces.md#the-turns-close, docs/interface/surfaces.md#the-recovery-row, docs/interface/surfaces.md#the-backlog-runs-row",
+			Section:  "docs/interface/surfaces.md#the-turns-close, docs/interface/surfaces.md#the-recovery-row",
 			Position: Beside,
 			Reached:  Shown(Draft.Reading) + ", then the cursor on the row",
 			Bindings: []Binding{
-				Row.Commit, Row.Undo, Row.Retry, Row.Continue,
-				Row.Key, Row.Provider, Row.Rounds, Row.Uncap, Row.Reopen,
-				Row.Rerun,
+				Row.Withdraw, Row.Retry, Row.Continue,
+				Row.Key, Row.Provider, Row.Rounds, Row.Uncap,
 			},
 		},
 		{
-			// The same ten offers, from the draft. They are a surface of
+			// The recovery and round-limit offers, from the draft. They are a surface of
 			// their own and positioned Home because that is where they are
 			// answered: a chord is live while the input holds the keyboard,
 			// which is the only position in the register that means that.
@@ -212,20 +211,20 @@ func Surfaces() []Surface {
 			// reading mode's cursor, where the letters are live because
 			// nothing else is listening.
 			Name:     "a transcript row's offers, from the draft",
-			Section:  "docs/interface/surfaces.md#the-turns-close, docs/interface/surfaces.md#the-recovery-row, docs/interface/surfaces.md#the-backlog-runs-row",
+			Section:  "docs/interface/surfaces.md#the-turns-close, docs/interface/surfaces.md#the-recovery-row",
 			Position: Home,
 			Reached:  "the input has the keyboard; the chord acts on the row the pointer names, and on nothing when no row is selected",
 			Bindings: RowChord.All(),
 		},
 		{
-			// The card the changed-files row's commit key opens. It is a
-			// takeover and not a card beside the draft: the key that opened
-			// it was pressed in reading mode, so the keyboard had already
-			// left the draft and there is nothing to hand over.
+			// The card the handover opens on a selected changed-files row.
+			// It is a takeover and not a card beside the draft: the key that
+			// opened it is the handover itself, so the keyboard has already
+			// left the draft and there is nothing more to hand over.
 			Name:     "the commit card",
 			Section:  "docs/interface/surfaces.md#the-turns-close, docs/capabilities/approvals-and-safety.md#the-writing-half-of-git-is-a-tool-too",
 			Position: Takeover,
-			Reached:  Bracket(Row.Commit) + " on a turn's changed-files row",
+			Reached:  Shown(Draft.Answer) + " on a selected changed-files row",
 			Bindings: append(Commit.All(), Screen.List),
 		},
 		{
@@ -475,9 +474,8 @@ func Surfaces() []Surface {
 			Position: Takeover,
 			Reached:  "a turn's changed-files row, clicked or opened with " + Bracket(Reading.Expand) + ", /review, /diff",
 			Bindings: []Binding{
-				Review.MoveFile, Review.MoveHunk, Review.StageHunk,
-				Review.StageFile, Review.StageAll, Review.SideBySide,
-				Review.PageUp, Review.PageDown, Review.Apply, Review.Back,
+				Review.MoveFile, Review.MoveHunk, Review.SideBySide,
+				Review.PageUp, Review.PageDown, Review.Back,
 			},
 		},
 		{

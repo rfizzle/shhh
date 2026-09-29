@@ -13,13 +13,13 @@
 · done · changed · checked
    ✓ Done · 4 steps · 18 tools · 1m 04s · $0.14
   ▎✎ 3 files changed +30 −4               all tracked in git
-     [enter] review turn · [g] commit · [u] undo turn
+     [enter] review turn · [ctrl+space/ctrl+y] commit
    ✓ go test ./internal/agent/... passing · 41 packages · 1…
 
 · done · checks failing
    ✓ Done · 4 steps · 18 tools · 1m 04s · $0.14
   ▎✎ 3 files changed +30 −4               all tracked in git
-     [enter] review turn · [g] commit · [u] undo turn
+     [enter] review turn · [ctrl+space/ctrl+y] commit
    ✗ go test ./internal/agent/... failing · 41 packages · 1…
 
 · done · reads only
@@ -32,12 +32,12 @@
 · done · files only
    ✓ Done · 4 steps · 18 tools · 1m 04s · $0.14
   ▎✎ 3 files changed +30 −4               all tracked in git
-     [enter] review turn · [g] commit · [u] undo turn
+     [enter] review turn · [ctrl+space/ctrl+y] commit
 
 · cancelled · reports what it changed before stopping
    ⊘ Cancelled · 2 steps · 5 tools · 8.1s · $0.14
   ▎✎ 3 files changed +30 −4               all tracked in git
-     [enter] review turn · [g] commit · [u] undo turn
+     [enter] review turn · [ctrl+space/ctrl+y] commit
 
 · failed · the stream broke
    ✗ Failed · 1 step · 2 tools · 3.4s · ~1.2k tok
@@ -45,18 +45,10 @@
 · unpriced · tokens, never a made-up zero
    ✓ Done · 4 steps · 18 tools · 1m 04s · ~48.1k tok
 
-· keys waiting · beside a live draft, the row offers its chords
+· keys waiting · beside a live draft, the row's offers are chords
    ✓ Done · 4 steps · 18 tools · 1m 04s · $0.14
   ▎✎ 3 files changed +30 −4               all tracked in git
-     [enter] review turn · [alt+g] commit
-     [alt+z] undo turn
-   ✓ go test ./internal/agent/... passing · 41 packages · 1…
-
-· keys waiting · the first chord of a session names the Option row
-   ✓ Done · 4 steps · 18 tools · 1m 04s · $0.14
-  ▎✎ 3 files changed +30 −4               all tracked in git
-     [enter] review turn · [alt+g] commit
-     [alt+z] undo turn
+     [enter] review turn · [ctrl+space/ctrl+y] commit
    ✓ go test ./internal/agent/... passing · 41 packages · 1…
 
 · committed · the receipt, and what undo does not reach
@@ -68,41 +60,39 @@
 · notes · what the fan-out wrote, and what is unread
    ✓ Done · 4 steps · 18 tools · 1m 04s · $0.14
   ▎✎ 3 files changed +30 −4               all tracked in git
-     [enter] review turn · [g] commit · [u] undo turn
+     [enter] review turn · [ctrl+space/ctrl+y] commit
      2 notes from writer-1, researcher-2 · 3 unread
    ✓ go test ./internal/agent/... passing · 41 packages · 1…
 
 · checks · the suite can be run again
    ✓ Done · 4 steps · 18 tools · 1m 04s · $0.14
   ▎✎ 3 files changed +30 −4               all tracked in git
-     [enter] review turn · [g] commit · [u] undo turn
+     [enter] review turn · [ctrl+space/ctrl+y] commit
    ✓ quality gate default passing · 4/4 checks · 12.8s
-     [t] run the checks again
 
 · resolved · the suite answered the failure before it
    ✓ Done · 4 steps · 18 tools · 1m 04s · $0.14
   ▎✎ 3 files changed +30 −4               all tracked in git
-     [enter] review turn · [g] commit · [u] undo turn
+     [enter] review turn · [ctrl+space/ctrl+y] commit
    ✓ quality gate default passing · 5/5 checks · 12.8s
-     [t] run the checks again
 
 · unresolved · nothing has answered the failure
    ✓ Done · 4 steps · 18 tools · 1m 04s · $0.14
   ▎✎ 3 files changed +30 −4               all tracked in git
-     [enter] review turn · [g] commit · [u] undo turn
+     [enter] review turn · [ctrl+space/ctrl+y] commit
    ✗ go test ./internal/agent/... failing · exit 1 · 4.2s
 
 ── ansi ────────────────────────────────────────────────────
 · done · changed · checked
    ␛[92m✓␛[m ␛[38;5;252mDone␛[m␛[38;5;241m · 4 steps · 18 tools · 1m 04s · $0.14␛[m
   ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m3 files changed ␛[m␛[92m+30␛[m ␛[91m−4␛[m               ␛[38;5;241mall tracked in git␛[m
-     ␛[94m[enter]␛[m␛[38;5;241m review turn␛[m␛[38;5;241m · ␛[m␛[94m[g]␛[m␛[38;5;241m commit␛[m␛[38;5;241m · ␛[m␛[94m[u]␛[m␛[38;5;241m undo turn␛[m
+     ␛[94m[enter]␛[m␛[38;5;241m review turn␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+space/ctrl+y]␛[m␛[38;5;241m commit␛[m
    ␛[92m✓␛[m ␛[38;5;252mgo test ./internal/agent/... passing␛[m␛[38;5;241m · 41 packages · 1…␛[m
 
 · done · checks failing
    ␛[92m✓␛[m ␛[38;5;252mDone␛[m␛[38;5;241m · 4 steps · 18 tools · 1m 04s · $0.14␛[m
   ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m3 files changed ␛[m␛[92m+30␛[m ␛[91m−4␛[m               ␛[38;5;241mall tracked in git␛[m
-     ␛[94m[enter]␛[m␛[38;5;241m review turn␛[m␛[38;5;241m · ␛[m␛[94m[g]␛[m␛[38;5;241m commit␛[m␛[38;5;241m · ␛[m␛[94m[u]␛[m␛[38;5;241m undo turn␛[m
+     ␛[94m[enter]␛[m␛[38;5;241m review turn␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+space/ctrl+y]␛[m␛[38;5;241m commit␛[m
    ␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/... failing␛[m␛[38;5;241m · 41 packages · 1…␛[m
 
 · done · reads only
@@ -115,12 +105,12 @@
 · done · files only
    ␛[92m✓␛[m ␛[38;5;252mDone␛[m␛[38;5;241m · 4 steps · 18 tools · 1m 04s · $0.14␛[m
   ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m3 files changed ␛[m␛[92m+30␛[m ␛[91m−4␛[m               ␛[38;5;241mall tracked in git␛[m
-     ␛[94m[enter]␛[m␛[38;5;241m review turn␛[m␛[38;5;241m · ␛[m␛[94m[g]␛[m␛[38;5;241m commit␛[m␛[38;5;241m · ␛[m␛[94m[u]␛[m␛[38;5;241m undo turn␛[m
+     ␛[94m[enter]␛[m␛[38;5;241m review turn␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+space/ctrl+y]␛[m␛[38;5;241m commit␛[m
 
 · cancelled · reports what it changed before stopping
    ␛[38;5;241m⊘␛[m ␛[38;5;252mCancelled␛[m␛[38;5;241m · 2 steps · 5 tools · 8.1s · $0.14␛[m
   ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m3 files changed ␛[m␛[92m+30␛[m ␛[91m−4␛[m               ␛[38;5;241mall tracked in git␛[m
-     ␛[94m[enter]␛[m␛[38;5;241m review turn␛[m␛[38;5;241m · ␛[m␛[94m[g]␛[m␛[38;5;241m commit␛[m␛[38;5;241m · ␛[m␛[94m[u]␛[m␛[38;5;241m undo turn␛[m
+     ␛[94m[enter]␛[m␛[38;5;241m review turn␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+space/ctrl+y]␛[m␛[38;5;241m commit␛[m
 
 · failed · the stream broke
    ␛[91m✗␛[m ␛[38;5;252mFailed␛[m␛[38;5;241m · 1 step · 2 tools · 3.4s · ~1.2k tok␛[m
@@ -128,18 +118,10 @@
 · unpriced · tokens, never a made-up zero
    ␛[92m✓␛[m ␛[38;5;252mDone␛[m␛[38;5;241m · 4 steps · 18 tools · 1m 04s · ~48.1k tok␛[m
 
-· keys waiting · beside a live draft, the row offers its chords
+· keys waiting · beside a live draft, the row's offers are chords
    ␛[92m✓␛[m ␛[38;5;252mDone␛[m␛[38;5;241m · 4 steps · 18 tools · 1m 04s · $0.14␛[m
   ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m3 files changed ␛[m␛[92m+30␛[m ␛[91m−4␛[m               ␛[38;5;241mall tracked in git␛[m
-     ␛[94m[enter]␛[m␛[38;5;241m review turn␛[m␛[38;5;241m · ␛[m␛[94m[alt+g]␛[m␛[38;5;241m commit␛[m
-     ␛[94m[alt+z]␛[m␛[38;5;241m undo turn␛[m
-   ␛[92m✓␛[m ␛[38;5;252mgo test ./internal/agent/... passing␛[m␛[38;5;241m · 41 packages · 1…␛[m
-
-· keys waiting · the first chord of a session names the Option row
-   ␛[92m✓␛[m ␛[38;5;252mDone␛[m␛[38;5;241m · 4 steps · 18 tools · 1m 04s · $0.14␛[m
-  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m3 files changed ␛[m␛[92m+30␛[m ␛[91m−4␛[m               ␛[38;5;241mall tracked in git␛[m
-     ␛[94m[enter]␛[m␛[38;5;241m review turn␛[m␛[38;5;241m · ␛[m␛[94m[alt+g]␛[m␛[38;5;241m commit␛[m
-     ␛[94m[alt+z]␛[m␛[38;5;241m undo turn␛[m
+     ␛[94m[enter]␛[m␛[38;5;241m review turn␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+space/ctrl+y]␛[m␛[38;5;241m commit␛[m
    ␛[92m✓␛[m ␛[38;5;252mgo test ./internal/agent/... passing␛[m␛[38;5;241m · 41 packages · 1…␛[m
 
 · committed · the receipt, and what undo does not reach
@@ -151,26 +133,24 @@
 · notes · what the fan-out wrote, and what is unread
    ␛[92m✓␛[m ␛[38;5;252mDone␛[m␛[38;5;241m · 4 steps · 18 tools · 1m 04s · $0.14␛[m
   ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m3 files changed ␛[m␛[92m+30␛[m ␛[91m−4␛[m               ␛[38;5;241mall tracked in git␛[m
-     ␛[94m[enter]␛[m␛[38;5;241m review turn␛[m␛[38;5;241m · ␛[m␛[94m[g]␛[m␛[38;5;241m commit␛[m␛[38;5;241m · ␛[m␛[94m[u]␛[m␛[38;5;241m undo turn␛[m
+     ␛[94m[enter]␛[m␛[38;5;241m review turn␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+space/ctrl+y]␛[m␛[38;5;241m commit␛[m
      ␛[38;5;241m2 notes from writer-1, researcher-2 · 3 unread␛[m
    ␛[92m✓␛[m ␛[38;5;252mgo test ./internal/agent/... passing␛[m␛[38;5;241m · 41 packages · 1…␛[m
 
 · checks · the suite can be run again
    ␛[92m✓␛[m ␛[38;5;252mDone␛[m␛[38;5;241m · 4 steps · 18 tools · 1m 04s · $0.14␛[m
   ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m3 files changed ␛[m␛[92m+30␛[m ␛[91m−4␛[m               ␛[38;5;241mall tracked in git␛[m
-     ␛[94m[enter]␛[m␛[38;5;241m review turn␛[m␛[38;5;241m · ␛[m␛[94m[g]␛[m␛[38;5;241m commit␛[m␛[38;5;241m · ␛[m␛[94m[u]␛[m␛[38;5;241m undo turn␛[m
+     ␛[94m[enter]␛[m␛[38;5;241m review turn␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+space/ctrl+y]␛[m␛[38;5;241m commit␛[m
    ␛[92m✓␛[m ␛[38;5;252mquality gate default passing␛[m␛[38;5;241m · 4/4 checks · 12.8s␛[m
-     ␛[94m[t]␛[m␛[38;5;241m run the checks again␛[m
 
 · resolved · the suite answered the failure before it
    ␛[92m✓␛[m ␛[38;5;252mDone␛[m␛[38;5;241m · 4 steps · 18 tools · 1m 04s · $0.14␛[m
   ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m3 files changed ␛[m␛[92m+30␛[m ␛[91m−4␛[m               ␛[38;5;241mall tracked in git␛[m
-     ␛[94m[enter]␛[m␛[38;5;241m review turn␛[m␛[38;5;241m · ␛[m␛[94m[g]␛[m␛[38;5;241m commit␛[m␛[38;5;241m · ␛[m␛[94m[u]␛[m␛[38;5;241m undo turn␛[m
+     ␛[94m[enter]␛[m␛[38;5;241m review turn␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+space/ctrl+y]␛[m␛[38;5;241m commit␛[m
    ␛[92m✓␛[m ␛[38;5;252mquality gate default passing␛[m␛[38;5;241m · 5/5 checks · 12.8s␛[m
-     ␛[94m[t]␛[m␛[38;5;241m run the checks again␛[m
 
 · unresolved · nothing has answered the failure
    ␛[92m✓␛[m ␛[38;5;252mDone␛[m␛[38;5;241m · 4 steps · 18 tools · 1m 04s · $0.14␛[m
   ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m3 files changed ␛[m␛[92m+30␛[m ␛[91m−4␛[m               ␛[38;5;241mall tracked in git␛[m
-     ␛[94m[enter]␛[m␛[38;5;241m review turn␛[m␛[38;5;241m · ␛[m␛[94m[g]␛[m␛[38;5;241m commit␛[m␛[38;5;241m · ␛[m␛[94m[u]␛[m␛[38;5;241m undo turn␛[m
+     ␛[94m[enter]␛[m␛[38;5;241m review turn␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+space/ctrl+y]␛[m␛[38;5;241m commit␛[m
    ␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/... failing␛[m␛[38;5;241m · exit 1 · 4.2s␛[m

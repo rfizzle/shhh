@@ -342,16 +342,16 @@
                    session's own changeset, so it works
                    outside a git repository
     /review [turn] review what a turn changed: file list,
-                   hunks, staging per hunk (bare reviews the
-                   last turn that changed anything). Also a
-                   turn's changed-files row, clicked or
-                   selected and opened with enter. Nothing
-                   is applied
+                   hunks and the turn's verdict (bare
+                   reviews the last turn that changed
+                   anything). Also a turn's changed-files
+                   row, clicked or selected and opened with
+                   enter. It reads and changes nothing;
+                   /undo takes a turn back
     /undo [turn]   put back what a turn changed, from the
                    session's own records (not git). Asks
                    first, names anything that changed since,
-                   and is itself recorded as a turn. Also
-                   [u] on the row
+                   and is itself recorded as a turn
     /compact       continue from a summary plus the most
                    recent turns
     /rewind [n]    rewind to the end of turn [n], 0 being
@@ -694,16 +694,16 @@
                    ␛[38;5;241msession's own changeset, so it works␛[m
                    ␛[38;5;241moutside a git repository␛[m
     ␛[38;5;252m/review [turn]␛[m ␛[38;5;241mreview what a turn changed: file list,␛[m
-                   ␛[38;5;241mhunks, staging per hunk (bare reviews the␛[m
-                   ␛[38;5;241mlast turn that changed anything). Also a␛[m
-                   ␛[38;5;241mturn's changed-files row, clicked or␛[m
-                   ␛[38;5;241mselected and opened with enter. Nothing␛[m
-                   ␛[38;5;241mis applied␛[m
+                   ␛[38;5;241mhunks and the turn's verdict (bare␛[m
+                   ␛[38;5;241mreviews the last turn that changed␛[m
+                   ␛[38;5;241manything). Also a turn's changed-files␛[m
+                   ␛[38;5;241mrow, clicked or selected and opened with␛[m
+                   ␛[38;5;241menter. It reads and changes nothing;␛[m
+                   ␛[38;5;241m/undo takes a turn back␛[m
     ␛[38;5;252m/undo [turn]␛[m   ␛[38;5;241mput back what a turn changed, from the␛[m
                    ␛[38;5;241msession's own records (not git). Asks␛[m
                    ␛[38;5;241mfirst, names anything that changed since,␛[m
-                   ␛[38;5;241mand is itself recorded as a turn. Also␛[m
-                   ␛[38;5;241m[u] on the row␛[m
+                   ␛[38;5;241mand is itself recorded as a turn␛[m
     ␛[38;5;252m/compact␛[m       ␛[38;5;241mcontinue from a summary plus the most␛[m
                    ␛[38;5;241mrecent turns␛[m
     ␛[38;5;252m/rewind [n]␛[m    ␛[38;5;241mrewind to the end of turn [n], 0 being␛[m

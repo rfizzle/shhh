@@ -251,84 +251,65 @@ that was refused, or never started, ran nothing and raises nothing; a commit
 row, where the turn made one, is already the answer.
 
 Any turn can be put back, and putting one back is itself recorded as a change
-that can be reviewed and put back in turn.
+that can be reviewed and put back in turn. Putting one back is `/undo` with the
+turn's number: what the turn recorded is each file's two sides, not a history
+within the file, so the whole turn goes back a file at a time. A single file of
+it is asked of the model, which has the edit tools and the card that goes with
+them.
 
-Putting one back works a file at a time: what the turn recorded is each file's
-two sides, not a history within the file. Reviewing a turn therefore stages a
-file at a time as well — the file is the promoted key, and a selection that
-covers part of a file is answered with what it will really do, which is to
-revert that file whole. Where the hunks genuinely are separable, as in a patch
-a sub-agent is offering, the same surface stages per hunk.
-
-The changed-files row offers review, keep and take back, in that order: the
-three things a changeset can become. Keeping it is a commit, and the offer
-stands for as long as the changeset is uncommitted. Banking the turn is a key
-on the row rather than a sentence typed in another window, because the moment
-a person knows whether the work is worth keeping is the moment they have just
-read what it changed.
+The changed-files row offers review and keep, in that order. Taking the
+change back is not a key on the row: it is a command, and the row's note says
+which one — `/undo 3 takes it back` beside what git knew about the files —
+where there is room, giving that up before the reading of the files when there
+is not. A letter on the row for an act that already has a command, and that
+the model can do as well, was a second path to keep correct beside the first,
+and it was the path nobody took.
 
 Review is the row itself. The row states what one turn changed, so clicking
 it, or selecting it and pressing enter, opens that turn's review — its files,
-the verdict beside them, and the selection an undo would restore. It is the
-one door to that surface that names which turn is meant by where the reader
-put the pointer, which is why it replaced a review key: a key printed on every
-turn a session closed told nobody which turn it would open, and it opened the
-newest. Review is its own surface and not a second way to read a diff — the
-rail's changed files open one file's diff across the session, and an edit's
-row opens that one edit — so it keeps a door of its own, and `/review` with a
-turn number is the other one. Selected, enter on the row says so: `review
-turn`. That is a label for what enter does once the row holds the keyboard,
-not a promise that enter reaches the transcript while a sentence in the draft
-owns it; there, enter sends the sentence and the pointer's own open is the
-key. A click reaches the row from a half-typed line without handing the
-keyboard over at all.
+their hunks and the verdict beside them. It is the one door to that surface
+that names which turn is meant by where the reader put the pointer, which is
+why it replaced a review key: a key printed on every turn a session closed told
+nobody which turn it would open, and it opened the newest. Review is its own
+surface and not a second way to read a diff — the rail's changed files open one
+file's diff across the session, and an edit's row opens that one edit — so it
+keeps a door of its own, and `/review` with a turn number is the other one.
+Selected, enter on the row says so: `review turn`. That is a label for what
+enter does once the row holds the keyboard, not a promise that enter reaches
+the transcript while a sentence in the draft owns it; there, enter sends the
+sentence and the pointer's own open is the key. A click reaches the row from a
+half-typed line without handing the keyboard over at all.
 
-Keep and take back are drawn on the newest close and on a selected one, and
-on no other. The same keys on every closed turn were keys that did not say
-which turn they meant, so an older close states what the turn did and offers
-nothing, and selecting it — the pointer from the prompt, or reading mode's
-cursor — is what draws its offers. The newest close is the answer to that
-objection rather than an exception to it: there is only one newest, and a
-turn that has just ended is the moment a reader decides what its change
-becomes. So while nothing is selected, the close the last turn ended on
-draws review, keep and take back live, as the chords that reach them from the
-prompt, and keep and take back say in their words which turn they act on:
-`commit the last turn`, `undo the last turn`. Selecting any other close draws
-that row's offers and quiets the newest, so never more than one close is
-offering; a close the session has moved past — a later turn, or a commit
-that spent the offer — offers nothing until it is selected. Nothing about a
-turn ending moves the pointer: it moves on the reader's key or click and on
-nothing else, and the newest close's offers are how the row is reached
-without it. The selected row draws each in the spelling that works from where the
-reader is standing: under the pointer the draft can still take text and a
-letter offered there is a letter of the sentence being typed, so it prints the
-chord, pressed from the prompt with the half-written sentence still in the
-box; under reading mode's cursor the letter is live and it prints that
-instead. It is one offer either way, and the row never draws both
-([why](principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard)).
+Review is a reading, as `/diff`'s is. It moves between files and hunks, pages
+and pairs the two sides, and leaves on esc having changed nothing; it stages
+nothing, because what staging selected was an undo, and the undo is `/undo`.
+The standing note says so: nothing is committed, and `/undo` with the turn's
+number is what restores the files it wrote.
 
-The chord acts on the selected row and on no other, and a selected row that
-does not make the offer does not hand it to one that does. Pressed with
-nothing selected it acts on the row that is drawing it live and says so in
-its words: the newest close's keep and take back, or a broken turn's retry
-([the recovery row](#the-recovery-row)). Where both rows are live, the newer
-of the two in the transcript draws its offers and the other stays inert, so
-a chord with nothing selected never has two rows to choose between. And the first row in a session to offer an
-alt chord says under it, once it is drawing one, that alt needs the Option
-setting on a stock macOS terminal, with the doctor row that reads it — once,
-because it is a fact about the terminal and not about that row. A Mac ships
-its row chords on the function row, which needs no setting, so there the note
-appears only over a chord the person's own keymap put back on alt
-([a Mac ships without alt](reserved-keys.md#a-mac-ships-without-alt)).
+Keeping the change is a commit, and the offer stands for as long as the
+changeset is uncommitted. The model can make one when it is asked, through its
+own card; the row's offer is for the reader who has just read what changed and
+knows whether it is worth keeping. It is reached through the handover — the
+one chord that already gives a card the keyboard — on the row the reader has
+selected: `[ctrl+space/ctrl+y] commit`. Offers are drawn on a selected close
+and on no other. The same keys on every closed turn were keys that did not say
+which turn they meant, so a close nobody has selected states what the turn did
+and offers nothing, the newest included; selecting it — the pointer from the
+prompt, or reading mode's cursor — is what draws its review and its commit.
+Both are chords, neither a letter of a sentence being typed, so the pointer and
+the cursor draw them the same way, and the handover pressed with nothing
+selected means what it always has. Nothing about a turn ending moves the
+pointer: it moves on the reader's key or click and on nothing else.
 
-The key opens a card, for the reason every act that cannot be taken back gets
-one. It states the message that will be written, what will be staged, what
+The handover opens a card, for the reason every act that cannot be taken back
+gets one. It states the message that will be written, what will be staged, what
 will deliberately not be, the branch this lands on, whether the checkout's own
 hooks run, and that nothing is pushed. Those are the facts a reader is
 entitled to check before pressing enter and cannot check afterwards. A file
 the turn wrote and the reader has edited since is on the card as a statement
 of its own: it is neither theirs nor the turn's any more, so it is left out of
-the commit rather than folded into either answer. The
+the commit rather than folded into either answer. The card's `[s]` opens the
+turn's review, to read the hunks it is about to carry. The
 message is proposed rather than asked for: it is the turn's own question under
 the lead this repository's recent subjects use, and a key opens it as a draft
 under its own rail, where the frame's title is the subject-line budget
@@ -337,15 +318,15 @@ stays on the card, the index goes back the way it was found, and the changeset
 is still there to be offered again.
 
 The receipt is the row the turn's close already draws for a commit. Once a
-changeset is committed the row still opens its review and loses the other two: the
-commit key has been spent, and undo restores files from the session's own
-records without reaching history, so offering it beside a commit would read as
-an offer to take the commit back.
+changeset is committed the row still opens its review and loses the commit,
+which has been spent, and the `/undo` in its note: undo restores files from
+the session's own records without reaching history, so naming it beside a
+commit would read as an offer to take the commit back.
 
-The checks row carries one offer of its own — run the suite again — and only
-where there is a suite. A command the turn happened to run is a line nobody is
-looking at any more, and a key that re-ran one would be shhh choosing to
-execute it.
+The checks row names how to run its suite again — `/gate run default runs it
+again`, in the note column where there is room — and only where there is a
+suite. A command the turn happened to run is a line nobody is looking at any
+more, and suggesting it again would be shhh choosing to execute it.
 
 A turn that watched the tests fail, fixed the code and ran the repository's
 own suite again has one true answer about the tree it leaves behind, and it is
@@ -404,8 +385,10 @@ The words on the row are the words the record keys the run's transitions on.
 There is one vocabulary and both readers of it draw from the same place, so a
 row and a record cannot describe the same transition differently.
 
-A run that blocked carries one offer: the item it stopped on goes back to
-open, from the row that says why it stopped.
+A run that blocked says how its item goes back to open — `/todo open` with
+the slug, the command that does it — on the row that says why it stopped. It
+is a sentence rather than a key: the command is the path either way, and a
+letter on the row was a second one to keep correct beside it.
 
 ### The recovery row
 
@@ -417,9 +400,14 @@ decides what to do next, never a repeat of the class. The provider's own words
 appear underneath, bounded — which is why "unclassified" is a class rather
 than an error path. A message we could not name still gets said.
 
-The offered key is drawn the way [a turn's close](#the-turns-close) draws its
-own once selected: as a chord under the pointer, as the letter under reading
-mode's cursor, and live only there. Unlike a close, a recovery row keeps
+The offered key is drawn in the spelling that works from where the reader is
+standing: under the pointer the draft can still take text and a letter offered
+there is a letter of the sentence being typed, so it prints the chord, pressed
+from the prompt with the half-written sentence still in the box; under reading
+mode's cursor the letter is live and it prints that instead. It is one offer
+either way, and the row never draws both
+([why](principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard)).
+Unlike [a turn's close](#the-turns-close), a recovery row keeps
 saying what its keys are when nothing selects it — grey, beside the key that
 hands the keyboard over — because they are how the reader gets out of it. A
 failure row is the one row a reader most often meets mid-sentence — the turn
@@ -432,16 +420,24 @@ dropped stream the last turn ended on draws its retry and its provider switch
 live, as the chords that reach them from the prompt, and labels them with the
 row they act on: `retry the last failure`, `switch provider for the last
 failure`. Pressed with the sentence still in the box, the chord acts on that
-row and on no other. It is one of two rows whose offers act with nothing
-selected — [the newest close](#the-turns-close) is the other — because
-retrying a turn that just broke is the commonest recovery there is and
-selecting the row first made it two keys; where a close is newer than the
-failure, the close is the one that offers. The words are
+row and on no other. It is the one row whose offers act with nothing
+selected, because retrying a turn that just broke is the commonest recovery
+there is and selecting the row first made it two keys. The words are
 what keep it from being the key the rule replaced — a bare `retry` that picked
 the newest row named no row at all. Its other offers stay grey until the row
 is selected, a failure the session has moved past — a retry that went
 through, a turn after it — offers nothing live, and a selected row's offers
-act on that row alone, unchanged.
+act on that row alone, unchanged. A chord acts on the selected row and on no
+other, and a selected row that does not make the offer does not hand it to one
+that does.
+
+The first row in a session to offer an alt chord says under it, once it is
+drawing one, that alt needs the Option setting on a stock macOS terminal, with
+the doctor row that reads it — once, because it is a fact about the terminal
+and not about that row. A Mac ships its row chords on the function row, which
+needs no setting, so there the note appears only over a chord the person's own
+keymap put back on alt
+([a Mac ships without alt](reserved-keys.md#a-mac-ships-without-alt)).
 
 Two failures earn a card instead, and only two: the ones that stop the session
 dead.

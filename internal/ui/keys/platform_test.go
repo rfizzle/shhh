@@ -83,7 +83,7 @@ func TestShippedKeyboards_AMacShipsNoAltChord(t *testing.T) {
 
 // The Mac's table moves only what was on alt, and every act it moves keeps
 // its words: the two keyboards are one register with a different spelling in
-// fifteen places, not two registers.
+// eleven places, not two registers.
 func TestShippedKeyboards_TheMacMovesOnlyTheAltChords(t *testing.T) {
 	for name, presses := range darwinMoves {
 		linux, ok := ShippedOn("linux", name)
@@ -128,7 +128,7 @@ func TestShippedKeyboards_LinuxIsTheDeclaration(t *testing.T) {
 
 // A Mac's keyboard is what a listing measures a person's file against, so a
 // Mac with no file lists nothing as moved even though the table moved
-// fifteen keys.
+// eleven keys.
 func TestShippedKeyboards_TheMacsTableIsNotAMove(t *testing.T) {
 	onPlatform(t, "darwin", func(t *testing.T) {
 		for _, g := range Keyboard() {
@@ -175,9 +175,9 @@ func TestShippedKeyboards_AFileMovesTheSameOnBoth(t *testing.T) {
 // moving a row chord back onto alt is read as a move of the Mac's key.
 func TestShippedKeyboards_CheckIsAskedOfThisPlatformsKeyboard(t *testing.T) {
 	onPlatform(t, "darwin", func(t *testing.T) {
-		path := keymapFile(t, "[rowchord]\nretry = \"f2\"\n")
-		if _, err := Check(path); err == nil || !strings.Contains(err.Error(), "undo turn") {
-			t.Errorf("f2 is the Mac's undo; want a refusal naming it, got %v", err)
+		path := keymapFile(t, "[rowchord]\nretry = \"f6\"\n")
+		if _, err := Check(path); err == nil || !strings.Contains(err.Error(), "continue from here") {
+			t.Errorf("f6 is the Mac's continue; want a refusal naming it, got %v", err)
 		}
 		if !Is("f5", RowChord.Retry) {
 			t.Errorf("Check left the register moved: %v", RowChord.Retry.Keys())

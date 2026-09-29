@@ -32,8 +32,8 @@ import (
 type KeyOffer struct {
 	Key, Label string
 	// Chord is the same offer spelled as the chord that reaches it while the
-	// row's letters are not live — from the draft, where `g` under `[g]
-	// commit` is a letter of the sentence being typed. A row draws whichever
+	// row's letters are not live — from the draft, where `r` under `[r]
+	// try again` is a letter of the sentence being typed. A row draws whichever
 	// of the two is true where it stands, and an offer with no chord is one
 	// whose surface holds the keyboard, so its key is live as it is
 	// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).

@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/todo"
 	"github.com/rfizzle/shhh/internal/todo/run"
 )
@@ -206,26 +207,18 @@ func TestTodoRunRow_BlockedNamesTheFollowUpAndReopens(t *testing.T) {
 		t.Fatalf("the follow-up %q the row names should be in the backlog", r.followUp)
 	}
 
-	// The row's own offer, live under reading mode's cursor.
+	// The row names the command that reopens the item, rather than a key.
 	idx := lastTodoRunRow(m.transcript)
-	if len(r.offers()) != 1 {
-		t.Fatalf("a blocked row offers the reopen and nothing else: %+v", r.offers())
+	if got := r.reopenLine(); got != "/todo open do-it puts the item back to open" {
+		t.Fatalf("a blocked row names /todo open, got %q", got)
 	}
-	next, _, claimed := m.todoRunReopen(idx)
-	if !claimed {
-		t.Fatal("the key should be claimed on a blocked run's row")
+	if view := ansi.Strip(m.todoRunRowView(m.transcript[idx], 110, rowUnderCursor)); !strings.Contains(view, "/todo open do-it") || strings.Contains(view, "[o]") {
+		t.Errorf("the row should name the command and offer no key:\n%s", view)
 	}
-	if it, _ := todo.Load(todo.BuiltinCode(), root).Find("do-it"); it.Status != todo.StatusOpen {
-		t.Fatalf("the item should be open again, is %s", it.Status)
-	}
-	if note := next.(Model).transcript[len(next.(Model).transcript)-1].text; !strings.Contains(note, "is open again") {
-		t.Errorf("reopening should say so: %q", note)
-	}
-	// A row that did not block offers nothing, and the letter goes back to
-	// the draft.
+	// A row that did not block names nothing.
 	m.transcript[idx].todorun.st.Stage = run.StageDone
-	if _, _, claimed := m.todoRunReopen(idx); claimed {
-		t.Error("only a blocked run's row answers the key")
+	if got := r.reopenLine(); got != "" {
+		t.Errorf("only a blocked run's row names the reopen, got %q", got)
 	}
 }
 

@@ -163,11 +163,11 @@
     [shift+←]        close it: what enter and - do
                      under reading mode's cursor, by
                      the same handler. A row's own
-                     letters (a turn's v and u, a
-                     failure's r) stay reading mode's,
-                     because at the prompt a letter is
-                     text. Enter on an empty draft is
-                     the same open
+                     letters (a failure's r, a pause's
+                     +) stay reading mode's, because
+                     at the prompt a letter is text.
+                     Enter on an empty draft is the
+                     same open
     [ctrl+o]         reading mode: select transcript
                      rows (j/k, u/d half a page),
                      expand/collapse (enter), y copies
@@ -202,16 +202,13 @@
                      attached, typing steers the
                      agent, shift+tab sets its mode
                      (clamped), esc detaches
-    [f2…]            a transcript row's own offers,
+    [f5…]            a transcript row's own offers,
                      taken from the prompt with the
                      draft still holding the keyboard:
-                     f3 commit · f2 undo turn · f5 try
-                     again · f6 continue from here ·
-                     f7 enter a new key · f8 switch
-                     provider · f9 more rounds ·
-                     shift+f9 let it run · shift+f2
-                     reopen the item · f4 run the
-                     checks again
+                     f5 try again · f6 continue from
+                     here · f7 enter a new key · f8
+                     switch provider · f9 more rounds
+                     · shift+f9 let it run
                      in reading mode each is the bare
                      letter instead, on the row under
                      the cursor; the selected row
@@ -223,7 +220,14 @@
                      changed-files row opens that
                      turn's review when it is clicked
                      or selected and opened with
-                     enter.
+                     enter, and its commit card when
+                     it is selected and handed the
+                     keyboard. What a row once offered
+                     to do to the work is a command
+                     now: /undo takes a turn back,
+                     /gate run runs its checks again,
+                     /todo open reopens a blocked
+                     run's item.
     [ctrl+f]         the backlog screen: the project's
                      items on the left and the one
                      under the pointer on the right, /
@@ -303,7 +307,10 @@
                      terminals and desktops that never
                      deliver ctrl+space — macOS binds
                      it to the input-source switcher
-                     and takes it first
+                     and takes it first. With nothing
+                     waiting, on a selected
+                     changed-files row, it opens that
+                     turn's commit card
     [ctrl+]]         print this key list. It is a
                      chord and not the ? it used to
                      be, because a bare key at the
@@ -528,11 +535,11 @@
     ␛[94m[shift+←]␛[m        ␛[38;5;241mclose it: what enter and - do␛[m
                      ␛[38;5;241munder reading mode's cursor, by␛[m
                      ␛[38;5;241mthe same handler. A row's own␛[m
-                     ␛[38;5;241mletters (a turn's v and u, a␛[m
-                     ␛[38;5;241mfailure's r) stay reading mode's,␛[m
-                     ␛[38;5;241mbecause at the prompt a letter is␛[m
-                     ␛[38;5;241mtext. Enter on an empty draft is␛[m
-                     ␛[38;5;241mthe same open␛[m
+                     ␛[38;5;241mletters (a failure's r, a pause's␛[m
+                     ␛[38;5;241m+) stay reading mode's, because␛[m
+                     ␛[38;5;241mat the prompt a letter is text.␛[m
+                     ␛[38;5;241mEnter on an empty draft is the␛[m
+                     ␛[38;5;241msame open␛[m
     ␛[94m[ctrl+o]␛[m         ␛[38;5;241mreading mode: select transcript␛[m
                      ␛[38;5;241mrows (j/k, u/d half a page),␛[m
                      ␛[38;5;241mexpand/collapse (enter), y copies␛[m
@@ -567,16 +574,13 @@
                      ␛[38;5;241mattached, typing steers the␛[m
                      ␛[38;5;241magent, shift+tab sets its mode␛[m
                      ␛[38;5;241m(clamped), esc detaches␛[m
-    ␛[94m[f2…]␛[m            ␛[38;5;241ma transcript row's own offers,␛[m
+    ␛[94m[f5…]␛[m            ␛[38;5;241ma transcript row's own offers,␛[m
                      ␛[38;5;241mtaken from the prompt with the␛[m
                      ␛[38;5;241mdraft still holding the keyboard:␛[m
-                     ␛[38;5;241mf3 commit · f2 undo turn · f5 try␛[m
-                     ␛[38;5;241magain · f6 continue from here ·␛[m
-                     ␛[38;5;241mf7 enter a new key · f8 switch␛[m
-                     ␛[38;5;241mprovider · f9 more rounds ·␛[m
-                     ␛[38;5;241mshift+f9 let it run · shift+f2␛[m
-                     ␛[38;5;241mreopen the item · f4 run the␛[m
-                     ␛[38;5;241mchecks again␛[m
+                     ␛[38;5;241mf5 try again · f6 continue from␛[m
+                     ␛[38;5;241mhere · f7 enter a new key · f8␛[m
+                     ␛[38;5;241mswitch provider · f9 more rounds␛[m
+                     ␛[38;5;241m· shift+f9 let it run␛[m
                      ␛[38;5;241min reading mode each is the bare␛[m
                      ␛[38;5;241mletter instead, on the row under␛[m
                      ␛[38;5;241mthe cursor; the selected row␛[m
@@ -588,7 +592,14 @@
                      ␛[38;5;241mchanged-files row opens that␛[m
                      ␛[38;5;241mturn's review when it is clicked␛[m
                      ␛[38;5;241mor selected and opened with␛[m
-                     ␛[38;5;241menter.␛[m
+                     ␛[38;5;241menter, and its commit card when␛[m
+                     ␛[38;5;241mit is selected and handed the␛[m
+                     ␛[38;5;241mkeyboard. What a row once offered␛[m
+                     ␛[38;5;241mto do to the work is a command␛[m
+                     ␛[38;5;241mnow: /undo takes a turn back,␛[m
+                     ␛[38;5;241m/gate run runs its checks again,␛[m
+                     ␛[38;5;241m/todo open reopens a blocked␛[m
+                     ␛[38;5;241mrun's item.␛[m
     ␛[94m[ctrl+f]␛[m         ␛[38;5;241mthe backlog screen: the project's␛[m
                      ␛[38;5;241mitems on the left and the one␛[m
                      ␛[38;5;241munder the pointer on the right, /␛[m
@@ -668,7 +679,10 @@
                      ␛[38;5;241mterminals and desktops that never␛[m
                      ␛[38;5;241mdeliver ctrl+space — macOS binds␛[m
                      ␛[38;5;241mit to the input-source switcher␛[m
-                     ␛[38;5;241mand takes it first␛[m
+                     ␛[38;5;241mand takes it first. With nothing␛[m
+                     ␛[38;5;241mwaiting, on a selected␛[m
+                     ␛[38;5;241mchanged-files row, it opens that␛[m
+                     ␛[38;5;241mturn's commit card␛[m
     ␛[94m[ctrl+]]␛[m         ␛[38;5;241mprint this key list. It is a␛[m
                      ␛[38;5;241mchord and not the ? it used to␛[m
                      ␛[38;5;241mbe, because a bare key at the␛[m

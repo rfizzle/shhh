@@ -1,11 +1,15 @@
 # program test: TestProgram_TheCloseOffersTheCommitAndTheCardCommits,
+#   TestProgram_ASelectedCloseIsCommittedThroughTheHandover,
 #   TestProgram_TheQuitChordArmsThenLeaves
 #
-# The turn's close offers the commit, and the commit is a card
-# (docs/interface/surfaces.md#the-turns-close). The workspace is a repository
-# with one commit in it, one tracked file the turn edits, and one the reader
-# changed by hand and never staged — which is what the card's `leaves` row is
-# read for: the commit carries the turn's own work and nothing of theirs.
+# A turn's close offers no key for taking it back or committing it until it
+# is selected, and then only review and the commit card the handover opens
+# (docs/interface/surfaces.md#the-turns-close); taking it back is /undo,
+# which the row's note names. The commit itself is asked of the model, and it
+# arrives as the write tool's cards. The workspace is a repository with one
+# commit in it, one tracked file the turn edits, and one the reader changed by
+# hand and never staged — which is what the card's `leaves` row is read for:
+# the commit carries the turn's own work and nothing of theirs.
 #
 # The identity is repository-local because the pane runs under a home of its
 # own, so there is no global one for the commit to find.
@@ -27,58 +31,46 @@ sleep 1
 keys C-Space
 sleep 0.3
 keys y
-# The newest close offers review, keep and take back with nothing selected,
-# as the chords that reach them from the prompt, and keep and take back say
-# they act on the last turn; the pointer is not lit by the turn ending. The
-# session's reading of its own run is quiet — an unclear verdict the rail
-# would draw whole — so it leaves no row under the close, and the close is the
-# newest row.
-snap 03-close "1 file changed" "The rounds are capped at the limit now" "commit the last turn" "undo the last turn"
-# The pointer selects it from the prompt, mid-sentence: its first press lands
-# on the close, which then draws its offers as the selected row's, because
-# the draft below still has the keyboard and a letter offered there is a
-# letter of the sentence being typed.
+# The close states what changed and offers nothing while nothing selects it;
+# its note names /undo as the way back where the row has room for it.
+snap 03-close "1 file changed" "The rounds are capped at the limit now" "/undo 1 takes it back"
+# The pointer selects it from the prompt, mid-sentence: the row then draws
+# review and the commit, both chords, so neither is a letter of the sentence.
 keys "and while you are at it"
 sleep 0.3
 keys S-Up
-snap 03b-selected "[alt+g] commit" "[enter] review turn" "[alt+z] undo turn"
-# So the offer is taken from the prompt, and the sentence is still in the
-# box behind the card.
-keys M-g
-snap 04-card-from-the-draft "Commit this turn" "README.md changed by you, never staged"
+snap 04-selected "[enter] review turn" "[ctrl+space/ctrl+y] commit"
+# The handover opens the card with the sentence still in the box behind it.
+keys C-Space
+snap 05-card "Commit this turn" "README.md changed by you, never staged" "[s] read the hunks"
 sleep 0.5
 keys Escape
 sleep 0.5
 # Esc leaves the changeset standing, and the draft with it; the second one
 # drops the pointer and the third clears the box, so what follows is the
-# other route to the same card.
+# commit asked of the model instead.
 keys Escape
 sleep 0.3
 keys Escape
 sleep 0.3
-keys C-o
-snap 05-reading "back to the prompt"
-# Reading mode opens on the last row of the turn, which is the close.
-keys g
-snap 06-card "Commit this turn" "README.md changed by you, never staged"
-# The message as a draft under its own rail, with the subject-line budget as
-# the frame's title. Esc comes back to the card with the edits kept.
+keys "commit that change" Enter
+# Staging is a write to the repository, so it is a card of its own, and so
+# is the commit after it.
+snap 06-add-card "$ stage 1 file"
 sleep 1
-keys e
-snap 07-message "COMMIT MESSAGE"
-sleep 0.5
-keys Escape
-sleep 0.5
-snap 08-back "choose what goes in"
-keys Enter
-# The receipt is the row the close already draws for a commit, and the row
-# above it has lost the two offers a committed changeset no longer has.
-snap 09-receipt "committed 1 file as" "/undo does not reach history"
-# The card handed the screen back to the row that offered it, so the first
-# cancel is reading mode's way out and the pair after it is the session's.
-keys C-c
+keys C-Space
 sleep 0.3
+keys y
+snap 07-commit-card "$ commit"
+sleep 1
+keys C-Space
+sleep 0.3
+keys y
+# The receipt is the row the close draws for a commit, and it names what an
+# undo does not reach.
+snap 08-receipt "Committed loop.go, and nothing of yours" "committed 1 file as" "/undo does not reach history"
+# The draft is empty, so the first cancel arms the quit and the second leaves.
 keys C-c
-snap 10-quit-armed "again quits"
+snap 09-quit-armed "again quits"
 keys C-c
-snap 11-exit "that is everything the screen was holding"
+snap 10-exit "that is everything the screen was holding"

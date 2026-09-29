@@ -15,15 +15,6 @@ import (
 	"github.com/rfizzle/shhh/internal/changeset"
 )
 
-// undoPlanPaths names what a plan covers, in plan order.
-func undoPlanPaths(p changeset.UndoPlan) []string {
-	out := make([]string, 0, len(p.Files))
-	for _, f := range p.Files {
-		out = append(out, f.Path())
-	}
-	return out
-}
-
 // undoModel is a finished turn that created one file, ready to be undone.
 func undoModel(t *testing.T) (Model, string) {
 	t.Helper()

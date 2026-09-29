@@ -5,26 +5,18 @@ package components
 // agent's work is a pass over a list rather than a scroll through a
 // transcript.
 //
-// The file list is on the left with a staging box per file, the focused
-// file's hunks on the right, and the turn's verdict pinned under the list —
-// the failing test beside the hunks that claim to fix it. Nothing here
-// renders a diff of its own: the hunk pane calls the same UnifiedLines and
-// sideBySideHunks the approval card's body, the transcript row and /diff go
-// through, so there is one diff renderer and review is a layout around it.
+// The file list is on the left, the focused file's hunks on the right, and
+// the turn's verdict pinned under the list — the failing test beside the
+// hunks that claim to fix it. Nothing here renders a diff of its own: the
+// hunk pane calls the same UnifiedLines and sideBySideHunks the approval
+// card's body, the transcript row and /diff go through, so there is one diff
+// renderer and review is a layout around it.
 //
-// Staging is a selection, never an action. The component reports what was
-// staged when enter is pressed and the host decides what that means — a
-// child's proposed patch to apply, or, for edits already on disk, what an
-// undo would put back. Esc returns the selection nowhere: the surface is not
-// destructive, and it says so on screen while it is up.
-//
-// Whether a hunk can be taken on its own is the host's fact, not this
-// surface's, so WholeFile is how a host that acts a file at a time says so.
-// The boxes and the keys follow it: the file key is promoted and the hunk
-// key is worded for what staging one hunk of five will really do, because a
-// surface that offers a per-hunk box for a per-file act is lying about the
-// blast radius, and the person finds out by losing the four hunks they
-// meant to keep.
+// It is a reading and nothing else. There is no staging: a turn is taken
+// back with /undo, and a file of it by asking for it, so the surface offers
+// what reading needs — moving, paging, the paired layout — and a way out
+// that changes nothing, and it says so on screen while it is up
+// (docs/interface/surfaces.md#the-turns-close).
 
 import (
 	"fmt"
@@ -55,17 +47,13 @@ const (
 	reviewMinPane = 4
 )
 
-// ReviewFile is one file in the review: its hunks, who wrote it, and which
-// of its hunks are staged.
+// ReviewFile is one file in the review: its hunks and who wrote it.
 type ReviewFile struct {
 	Path  string
 	Hunks []diff.Hunk
 	// Agent names the sub-agent that authored the file; empty is the
 	// session's own agent, which is not worth a column.
 	Agent string
-	// Staged is one flag per hunk. A shorter slice reads as unstaged, so a
-	// caller that never touches it gets a review with nothing selected.
-	Staged []bool
 	// Syntax highlights this file's lines in the hunk pane; nil renders the
 	// plain diff colors.
 	Syntax Syntax
@@ -81,17 +69,6 @@ type ReviewFile struct {
 // stats is the file's +N −M.
 func (f ReviewFile) stats() (added, removed int) { return diff.Stats(f.Hunks) }
 
-// stagedCount is how many of the file's hunks are staged.
-func (f ReviewFile) stagedCount() int {
-	n := 0
-	for i := range f.Hunks {
-		if i < len(f.Staged) && f.Staged[i] {
-			n++
-		}
-	}
-	return n
-}
-
 // ReviewVerdict is the turn's own verdict, pinned beside the files: what it
 // ran to check its own work and what came back. Failed says the
 // verdict in a field rather than leaving it to the glyph's color.
@@ -104,32 +81,14 @@ type ReviewVerdict struct {
 	Detail []string
 }
 
-// ReviewSelection is one file's staged hunks, by index into ReviewView.Files
-// and into that file's Hunks.
-type ReviewSelection struct {
-	File  int
-	Hunks []int
-}
-
-// ReviewResult is the surface's Update result: the staged selection, or a
-// cancel. Canceled means the user left with esc and nothing was chosen.
-type ReviewResult struct {
-	Canceled bool
-	Staged   []ReviewSelection
-}
-
-// Files is how many files the selection covers.
-func (r ReviewResult) Files() int { return len(r.Staged) }
-
 // ReviewView is the takeover review surface. Like every component here it is
 // plain state: the host owns it, routes keys to Update while it is up, and
 // renders View every frame.
 type ReviewView struct {
 	// Title names what is being reviewed, e.g. "turn 7".
 	Title string
-	// Note is the header's right-hand note in a read-only review, where
-	// there is no staged count to put there — the file count when it is
-	// empty. A staging review always counts what is staged instead.
+	// Note is the header's right-hand note — the file count when it is
+	// empty.
 	Note  string
 	Files []ReviewFile
 	// Verdict is the test status pinned under the file list; nil when the
@@ -138,19 +97,6 @@ type ReviewView struct {
 	// Shield is the standing note that review changes nothing, with an
 	// optional second line saying what would put the work back.
 	Shield, ShieldDetail string
-	// ApplyVerb is what enter offers to do with the staged files ("apply" by
-	// default); the host names the action it will actually take.
-	ApplyVerb string
-	// ReadOnly drops staging entirely: no boxes, no apply, just the files
-	// and their hunks. It is what a cumulative diff wants, where there is
-	// nothing to select.
-	ReadOnly bool
-	// WholeFile says the host acts a file at a time, so staging any hunk of
-	// a file takes the whole file with it. The selection still carries the
-	// hunks — a host whose hunks are separable leaves this false and gets
-	// per-hunk staging — but the surface stops advertising a granularity
-	// this host cannot honour.
-	WholeFile bool
 	// Height is the surface's row budget, footer included.
 	Height int
 	// SideBySide forces the paired layout; it is automatic at
@@ -161,9 +107,6 @@ type ReviewView struct {
 	// and Offset the first visible row of the hunk pane.
 	File, Hunk, Offset int
 
-	// notice is a one-line answer to a key that could not do anything, e.g.
-	// enter with nothing staged. It clears on the next key.
-	notice string
 	// wide is the last render's automatic side-by-side verdict, taken from
 	// the surface's own width rather than the hunk pane's: the layout
 	// switches at the same terminal width the full-screen viewer does.
@@ -175,14 +118,11 @@ type ReviewView struct {
 func (v *ReviewView) SetSize(_, height int) { v.Height = height }
 
 // Update handles keys while review has the screen. done reports that the
-// surface is finished, with a ReviewResult saying what was staged or that it
-// was cancelled.
-func (v *ReviewView) Update(msg tea.KeyPressMsg) (done bool, result ReviewResult) {
-	v.notice = ""
+// reader has left it, which changes nothing.
+func (v *ReviewView) Update(msg tea.KeyPressMsg) (done bool) {
 	switch pressed := msg.String(); {
 	case keys.Is(pressed, keys.Review.Back):
-		// Esc never applies and never destroys.
-		return true, ReviewResult{Canceled: true}
+		return true
 	case keys.Is(pressed, keys.Review.MoveFile):
 		v.moveFile(keys.Step(pressed, keys.Review.MoveFile))
 	case keys.Is(pressed, keys.Review.MoveHunk):
@@ -193,24 +133,8 @@ func (v *ReviewView) Update(msg tea.KeyPressMsg) (done bool, result ReviewResult
 		v.Offset -= max(v.paneHeight()-1, 1)
 	case keys.Is(pressed, keys.Review.SideBySide):
 		v.SideBySide = !v.SideBySide
-	case keys.Is(pressed, keys.Review.StageHunk):
-		v.stageHunk()
-	case keys.Is(pressed, keys.Review.StageFile):
-		v.stageFile()
-	case keys.Is(pressed, keys.Review.StageAll):
-		v.stageAll()
-	case keys.Is(pressed, keys.Review.Apply):
-		if v.ReadOnly {
-			return true, ReviewResult{Canceled: true}
-		}
-		staged := v.selection()
-		if len(staged) == 0 {
-			v.notice = "nothing staged — " + v.stageKeyHint()
-			return false, ReviewResult{}
-		}
-		return true, ReviewResult{Staged: staged}
 	}
-	return false, ReviewResult{}
+	return false
 }
 
 // current is the focused file, or nil when there is nothing to review.
@@ -259,92 +183,6 @@ func (v *ReviewView) moveHunk(delta int) {
 		v.Hunk = next
 	}
 }
-
-// ensureStaged sizes the focused file's staging slice so a file built
-// without one can still be staged.
-func (f *ReviewFile) ensureStaged() {
-	for len(f.Staged) < len(f.Hunks) {
-		f.Staged = append(f.Staged, false)
-	}
-}
-
-// stageHunk toggles the hunk under the cursor.
-func (v *ReviewView) stageHunk() {
-	f := v.current()
-	if v.ReadOnly || f == nil || v.Hunk >= len(f.Hunks) {
-		return
-	}
-	f.ensureStaged()
-	f.Staged[v.Hunk] = !f.Staged[v.Hunk]
-}
-
-// stageFile stages the whole focused file, or clears it when it is already
-// wholly staged — the file-level counterpart of a all/none.
-func (v *ReviewView) stageFile() {
-	f := v.current()
-	if v.ReadOnly || f == nil {
-		return
-	}
-	f.ensureStaged()
-	want := f.stagedCount() < len(f.Hunks)
-	for i := range f.Staged {
-		f.Staged[i] = want
-	}
-}
-
-// stageAll flips the whole review between everything and nothing.
-func (v *ReviewView) stageAll() {
-	if v.ReadOnly {
-		return
-	}
-	total, staged := 0, 0
-	for _, f := range v.Files {
-		total += len(f.Hunks)
-		staged += f.stagedCount()
-	}
-	want := staged < total
-	for i := range v.Files {
-		v.Files[i].ensureStaged()
-		for j := range v.Files[i].Staged {
-			v.Files[i].Staged[j] = want
-		}
-	}
-}
-
-// stageKeyHint is the way back from an empty selection, in the same order
-// the footer offers the keys — so a surface that stages a file at a time
-// does not answer "nothing staged" by naming a hunk key first.
-func (v *ReviewView) stageKeyHint() string {
-	if v.WholeFile {
-		return keys.Bracket(keys.Review.StageFile) + " stages a file, " +
-			keys.Bracket(keys.Review.StageAll) + " everything"
-	}
-	return keys.Bracket(keys.Review.StageHunk) + " stages a hunk, " +
-		keys.Bracket(keys.Review.StageFile) + " a file, " +
-		keys.Bracket(keys.Review.StageAll) + " everything"
-}
-
-// selection is what enter reports: every file with at least one staged hunk,
-// and which of its hunks those are.
-func (v *ReviewView) selection() []ReviewSelection {
-	var out []ReviewSelection
-	for i, f := range v.Files {
-		var hunks []int
-		for j := range f.Hunks {
-			if j < len(f.Staged) && f.Staged[j] {
-				hunks = append(hunks, j)
-			}
-		}
-		if len(hunks) > 0 {
-			out = append(out, ReviewSelection{File: i, Hunks: hunks})
-		}
-	}
-	return out
-}
-
-// stagedFiles is how many files have anything staged — the count enter
-// offers to act on.
-func (v *ReviewView) stagedFiles() int { return len(v.selection()) }
 
 // View renders the surface at the given width.
 func (v *ReviewView) View(width int) string {
@@ -450,19 +288,6 @@ func reviewLine(text, note string, width int) string {
 	return padRight(text, width-noteW) + note
 }
 
-// stageBox is the file's staging box: staged, partly staged, or not. The
-// three differ as text, so color never carries which one it is (invariant 1).
-func stageBox(staged, total int) string {
-	switch {
-	case total > 0 && staged == total:
-		return sty.Add.Render("[x]")
-	case staged > 0:
-		return sty.Accent.Render("[~]")
-	default:
-		return sty.Dim.Render("[ ]")
-	}
-}
-
 // listRows is the whole left pane: the file list, the verdict and the shield
 // note, in that order.
 func (v *ReviewView) listRows(width int) []string {
@@ -476,10 +301,10 @@ func (v *ReviewView) headRows(width int) []string {
 	if v.Title != "" {
 		head += sty.Dim.Render(" " + v.Title)
 	}
-	return []string{reviewLine(head, v.stagedLabel(), width), screenRule(width)}
+	return []string{reviewLine(head, v.countLabel(), width), screenRule(width)}
 }
 
-// fileRows are the files themselves: the staging box, the mutation glyph,
+// fileRows are the files themselves: the mutation glyph,
 // the path with whoever wrote it, and the file's own +N −M. The row the
 // cursor is on is lit the way every list lights one — the ❯ in its own
 // column outside the highlight, the row bright on the focus background —
@@ -493,11 +318,7 @@ func (v *ReviewView) fileRows(width int) []string {
 	rows := make([]string, 0, len(v.Files))
 	for i, f := range v.Files {
 		added, removed := f.stats()
-		lead := ""
-		if !v.ReadOnly {
-			lead = stageBox(f.stagedCount(), len(f.Hunks)) + " "
-		}
-		lead += sty.Accent.Render("✎ ")
+		lead := sty.Accent.Render("✎ ")
 		note := DiffStat(added, removed)
 		switch {
 		case f.Mode != "" && len(f.Hunks) == 0:
@@ -526,14 +347,12 @@ func (v *ReviewView) fileRows(width int) []string {
 
 // reviewRow is how both of this surface's lists draw one row: the pointer's
 // own column first, then the row — lit where the cursor is on it. marks is
-// how much of the row keeps its own colours inside the highlight, and it is
-// counted rather than measured because a staging box is `[x]`, whose middle
-// is a letter: left to find the first word itself the highlight would start
-// between the bracket and the tick and draw one mark in two colours.
+// how much of the row keeps its own colours inside the highlight, counted
+// by the caller rather than measured here.
 //
-// The marks keep their tones because they say what the row is and what will
-// happen to it; the highlight says only where the keyboard is. They are
-// different facts, so the highlight is not allowed to answer either of them.
+// The marks keep their tones because they say what the row is; the
+// highlight says only where the keyboard is. They are different facts, so
+// the highlight is not allowed to answer either of them.
 func reviewRow(row string, marks int, lit bool, width int) string {
 	if !lit {
 		return PointerColumn() + row
@@ -615,16 +434,13 @@ func brightStyle() lipgloss.Style {
 	return lipgloss.NewStyle().Bold(true).Foreground(Palette.Bright.Color())
 }
 
-// stagedLabel is the list header's right-hand note: how much of the review
-// is selected. A read-only review has nothing to count.
-func (v *ReviewView) stagedLabel() string {
-	if v.ReadOnly {
-		if v.Note != "" {
-			return sty.Dim.Render(v.Note)
-		}
-		return sty.Dim.Render(plural(len(v.Files), "file"))
+// countLabel is the list header's right-hand note: the host's own, or how
+// many files the review holds.
+func (v *ReviewView) countLabel() string {
+	if v.Note != "" {
+		return sty.Dim.Render(v.Note)
 	}
-	return sty.Add.Render(fmt.Sprintf("%d of %d staged", v.stagedFiles(), len(v.Files)))
+	return sty.Dim.Render(plural(len(v.Files), "file"))
 }
 
 // paneRows is the focused file's hunks, scrolled to keep the focused hunk on
@@ -644,9 +460,6 @@ func (v *ReviewView) paneRows(width, rows int) []string {
 		detail += sty.Dim.Render(" · " + f.Mode)
 	}
 	head := brightStyle().Render(f.Path) + detail
-	if !v.ReadOnly {
-		head += sty.Dim.Render(" · ") + v.fileStageLabel(*f)
-	}
 
 	body, focus := v.hunkRows(*f, width)
 	// The pane follows the focused hunk: moving between hunks is how this
@@ -657,22 +470,6 @@ func (v *ReviewView) paneRows(width, rows int) []string {
 	visible := p.Window(body)
 	v.Offset = p.Offset
 	return append([]string{Clip(head, width)}, visible...)
-}
-
-// fileStageLabel says how much of the focused file is staged, in words as
-// well as color. What a partial selection will cost is left to the footer
-// and to the confirm: the pane header is a fitted row that clips a long
-// tail at ordinary widths, and a warning that arrives as `— the…` is worse
-// than one made once, in full, where the answer is given.
-func (v *ReviewView) fileStageLabel(f ReviewFile) string {
-	switch staged := f.stagedCount(); {
-	case len(f.Hunks) > 0 && staged == len(f.Hunks):
-		return sty.Add.Render("✓ staged")
-	case staged > 0:
-		return sty.Accent.Render(fmt.Sprintf("~ %d of %d hunks staged", staged, len(f.Hunks)))
-	default:
-		return sty.Dim.Render("not staged")
-	}
 }
 
 // hunkRows renders the file's hunks and reports which row the focused hunk's
@@ -690,7 +487,7 @@ func (v *ReviewView) hunkRows(f ReviewFile, width int) (rows []string, focus int
 		if i == v.Hunk {
 			focus = len(rows)
 		}
-		rows = append(rows, v.hunkHeader(f, i, h, width))
+		rows = append(rows, v.hunkHeader(h, i, width))
 		if len(lines) > 1 {
 			// The shared renderer's own header is replaced by the row above;
 			// its body is used verbatim, so review shows the same diff every
@@ -704,62 +501,22 @@ func (v *ReviewView) hunkRows(f ReviewFile, width int) (rows []string, focus int
 	return rows, focus
 }
 
-// hunkHeader is the hunk's own header row with the staging box and the
-// cursor in front of it. It is the file list's row drawn again in the other
-// pane, so it is lit the same way — one surface with two lists is still one
-// pointer.
-func (v *ReviewView) hunkHeader(f ReviewFile, i int, h diff.Hunk, width int) string {
-	box := ""
-	if !v.ReadOnly {
-		staged := 0
-		if i < len(f.Staged) && f.Staged[i] {
-			staged = 1
-		}
-		box = stageBox(staged, 1) + " "
-	}
+// hunkHeader is the hunk's own header row with the cursor in front of it.
+// It is the file list's row drawn again in the other pane, so it is lit the
+// same way — one surface with two lists is still one pointer.
+func (v *ReviewView) hunkHeader(h diff.Hunk, i, width int) string {
 	inner := max(width-GridPointerWidth, 1)
-	row := box + sty.Hunk.Render(Clip(h.Header(), max(inner-lipgloss.Width(box), 0)))
-	return reviewRow(row, lipgloss.Width(box), i == v.Hunk, inner)
+	row := sty.Hunk.Render(Clip(h.Header(), inner))
+	return reviewRow(row, 0, i == v.Hunk, inner)
 }
 
-// footerRows are the keys the surface offers, plus any notice a key left
-// behind. Below reviewStackWidth the offers stack one per line rather than
-// truncating.
+// footerRows are the keys the surface offers. Below reviewStackWidth the
+// offers stack one per line rather than truncating.
 func (v *ReviewView) footerRows(width int) []string {
-	verb := v.ApplyVerb
-	if verb == "" {
-		verb = "apply"
-	}
-	offers := []TurnKey{keyOffer(keys.Review.MoveHunk)}
-	if !v.ReadOnly {
-		stage := []TurnKey{
-			keyOffer(keys.Review.StageHunk),
-			keyOffer(keys.Review.StageFile),
-		}
-		if v.WholeFile {
-			// The file key leads because the file is what this host acts on,
-			// and the hunk key keeps its place saying what pressing it costs
-			// rather than being dropped: a hunk is still how the selection
-			// is narrowed, and an offer that vanishes is not more honest
-			// than one that is worded straight.
-			stage = []TurnKey{
-				keyOffer(keys.Review.StageFile),
-				keyOfferAs(keys.Review.StageHunk, "hunk · reverts its file"),
-			}
-		}
-		offers = append(stage,
-			keyOffer(keys.Review.StageAll),
-			keyOffer(keys.Review.MoveHunk),
-			keyOfferAs(keys.Review.Apply, fmt.Sprintf("%s %s", verb, plural(v.stagedFiles(), "file"))),
-		)
-	}
-	offers = append(offers, keyOfferAs(keys.Review.Back, "leave, change nothing"))
-
-	rows := packOffers(offers, width)
-	if v.notice != "" {
-		rows = append(rows, sty.Warn.Render(Clip(v.notice, width)))
-	}
-	return rows
+	return packOffers([]TurnKey{
+		keyOffer(keys.Review.MoveHunk),
+		keyOfferAs(keys.Review.Back, "leave, change nothing"),
+	}, width)
 }
 
 // Scroll moves the hunk pane by delta rows. The offset is clamped where it is

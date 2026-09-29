@@ -114,10 +114,9 @@ func TestTurnClose_ACommandThatWroteNothingSaysSo(t *testing.T) {
 			if got := strings.Contains(view, "changed no files"); got != tc.want {
 				t.Fatalf("the close should say changed no files: %v, got:\n%s", tc.want, view)
 			}
-			// No offers: there is nothing to review, keep or take back, and
-			// the newest close's chords stay off a row that has none.
-			if i, target := m.latestClose(); target != nil {
-				t.Fatalf("a close with no changeset offers nothing from the prompt, got entry %d", i)
+			// No offers: there is nothing to review, keep or take back.
+			if strings.Contains(view, "[") {
+				t.Fatalf("a close with no changeset offers nothing, got:\n%s", view)
 			}
 		})
 	}
@@ -139,20 +138,25 @@ func TestTurnClose_TheChangesRowStatesTheFilesAndOffersTheKeys(t *testing.T) {
 	}
 	// Its offers are drawn once the row is selected (inertkeys.go).
 	view := ansi.Strip(m.closeFor(*c, rowUnderCursor).View(100))
-	for _, want := range []string{"1 file changed", "+1", "−0", "[enter] review turn", "[u] undo turn"} {
+	for _, want := range []string{"1 file changed", "+1", "−0", "[enter] review turn", "[ctrl+space/ctrl+y] commit"} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("the changeset row should state %q, got:\n%s", want, view)
 		}
 	}
-	// The temp dir is not a repository, and unknown is not untracked.
-	if c.Changes.Note != "not a git repository" {
-		t.Fatalf("outside a repository the tracking note should say so, got %q", c.Changes.Note)
+	// The temp dir is not a repository, and unknown is not untracked; and
+	// taking the turn back is a command, which the note names.
+	if c.Changes.Note != "not a git repository" || c.Changes.Back != "/undo 1 takes it back" {
+		t.Fatalf("outside a repository the tracking note should say so, and name /undo, got %q and %q",
+			c.Changes.Note, c.Changes.Back)
+	}
+	if strings.Contains(view, "[u]") || strings.Contains(view, "[g]") {
+		t.Fatalf("the row offers no letter for undo or commit any more, got:\n%s", view)
 	}
 }
 
 // A turn that committed names the sha where the reader is already looking,
-// says what undo does not reach, and stops offering [u]: undo puts files back
-// out of the session's own records and never touches history, so offering it
+// says what undo does not reach, and stops naming /undo: undo puts files back
+// out of the session's own records and never touches history, so naming it
 // beside a commit would read as an offer to take the commit back.
 func TestTurnClose_ACommittedTurnNamesTheShaAndDropsTheUndoOffer(t *testing.T) {
 	receipt := "committed 3 files as a41f2c9 on master"
@@ -191,8 +195,8 @@ func TestTurnClose_ACommittedTurnNamesTheShaAndDropsTheUndoOffer(t *testing.T) {
 			t.Fatalf("the close should state %q, got:\n%s", want, view)
 		}
 	}
-	if strings.Contains(view, "undo turn") {
-		t.Fatalf("a committed changeset offers no undo key, got:\n%s", view)
+	if strings.Contains(view, "takes it back") || strings.Contains(view, "] commit") {
+		t.Fatalf("a committed changeset names no undo and offers no second commit, got:\n%s", view)
 	}
 }
 
@@ -203,7 +207,7 @@ func turnChangesRowFor(files, added, removed int, committed bool) *components.Tu
 	// Enter's own act leads, as it does on the selected row.
 	offers := []components.TurnKey{reviewTurnOffer()}
 	if !committed {
-		offers = append(offers, rowOffer(keys.Row.Undo, "undo turn"))
+		offers = append(offers, commitOffer())
 	}
 	return &components.TurnChanges{Files: files, Added: added, Removed: removed, Keys: offers}
 }
@@ -411,19 +415,11 @@ func TestTurnClose_ReachableFromFocusMode(t *testing.T) {
 		t.Fatalf("the surface should name the turn it is reviewing, got %q", review.review.Title)
 	}
 
-	// [u] arms the undo confirm over the row that offered it: the
-	// prompt borrows the bottom panel and nothing is written until it is
-	// answered.
-	updated, _ = m.updateFocus(tea.KeyPressMsg{Code: []rune(keys.Shown(keys.Row.Undo))[0], Text: keys.Shown(keys.Row.Undo)})
-	undo := updated.(Model)
-	if undo.state != stateUndoConfirm || undo.undoAsk == nil {
-		t.Fatalf("[u] should ask before it writes, got state %v", undo.state)
-	}
-	if undo.undoReturn != stateFocus {
-		t.Fatalf("esc should come back to the row that offered it, got %v", undo.undoReturn)
-	}
-	if prompt := ansi.Strip(undo.panelView()); !strings.Contains(prompt, "Undo turn 1?") {
-		t.Fatalf("the confirm should name the turn, got %q", prompt)
+	// [u] on the close is reading mode's half page and nothing more: taking
+	// the turn back is /undo, and the row offers no letter for it.
+	updated, _ = m.updateFocus(tea.KeyPressMsg{Code: 'u', Text: "u"})
+	if undo := updated.(Model); undo.state == stateUndoConfirm || undo.undoAsk != nil {
+		t.Fatalf("[u] on a close should not arm an undo any more, got state %v", undo.state)
 	}
 }
 

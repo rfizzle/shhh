@@ -37,39 +37,38 @@ file put one there, `shhh doctor`'s keys row is what reads the setting and
 says which box, and the surfaces that offer the chord name that row beside
 it.
 
-### The ten a transcript row spends
+### The six a transcript row spends
 
 The offers a transcript row makes are the largest single claim on the free
-set, because there are ten of them and each is drawn beside a live draft
-([the row's side of it](surfaces.md#the-turns-close)). On Linux and Windows
+set, because there are six of them and each is drawn beside a live draft
+([the row's side of it](surfaces.md#the-recovery-row)). On Linux and Windows
 they are all on alt: every ctrl letter a terminal delivers is spent or the
 line editor's, and the free set at the end of this page is function keys and
-modified navigation keys, which ten acts named after words do not come out
+modified navigation keys, which six acts named after words do not come out
 of. A Mac ships them on that free set instead
 ([below](#a-mac-ships-without-alt)). The first row in a session to offer an
 alt chord names the doctor's Option row beside it.
 
 A turn's review is not among them. It is the changed-files row's own open —
 clicked, or selected and opened with enter — because that is the gesture that
-names the turn, and it gave back `alt+w`.
+names the turn, and it gave back `alt+w`. Nor are undoing a turn, committing
+it, running its checks again and reopening a blocked run's item: each is a
+command now ([the turn's close](surfaces.md#the-turns-close)), and they gave
+back `alt+z`, `alt+g`, `alt+k` and `alt+o`.
 
 The table below is the Linux and Windows keyboard. On alt, the letter each
-takes is the row's own where alt still had it. Five letters were already
+takes is the row's own where alt still had it. Three letters were already
 spent, and this is where each replacement is recorded; the Mac's spelling of
 each offer is the generated table [below](#a-mac-ships-without-alt):
 
 | Offer | On the row | The chord | Why not the row's own letter |
 |---|---|---|---|
-| commit | `g` | `alt+g` | — (`ctrl+g` is the editor's, which is why this is on alt) |
-| undo turn | `u` | `alt+z` | `alt+u` is the textarea's uppercase-word; `z` is undo everywhere else |
 | try again | `r` | `alt+r` | — |
 | continue from here | `c` | `alt+n` | `alt+c` is the textarea's capitalize-word; `n` is the next letter of the word |
 | enter a new key | `e` | `alt+e` | — |
 | switch provider | `p` | `alt+p` | — |
 | more rounds | `+` | `alt+m` | the row draws the grant (`[+50]`), not a keystroke; `m` is *more* |
 | let it run | `!` | `alt+x` | no mnemonic was left: `u`, `c` and `l` are the textarea's, and `a`, `p`, `n`, `r` and `t` are spent above |
-| reopen the item | `o` | `alt+o` | — |
-| run the checks again | `t` | `alt+k` | `alt+t` is the reasoning level's alias; `k` is the letter of *checks* |
 
 The four alt letters the textarea holds — `alt+b`, `alt+f`, `alt+d` and the
 case chords `alt+c`, `alt+l`, `alt+u` — are left to it for the reason the
@@ -83,19 +82,19 @@ The keyboard shhh ships is one keyboard per platform, and the difference is
 exactly the alt chords. On Linux and Windows the terminal sends the escape
 prefix for alt and every alt chord above arrives. On a Mac the two stock
 terminals compose a character for Option until a profile setting is ticked,
-so the same chords would be fifteen offers that do nothing on the desktop
+so the same chords would be eleven offers that do nothing on the desktop
 shhh is most often run on — the `alt+t` alias and the agent family among
 them, which is how this was found.
 
 So a Mac ships the same acts on the free set: the function row, which every
 terminal delivers with nothing set (a laptop's top row sends them with the
-`fn` key held). Plain F keys carry the offers a reader meets most — the turn's
-close on `f2`–`f4`, the recovery rows on `f5`–`f8` with try again on `f5`,
+`fn` key held). Plain F keys carry the offers a reader meets most — the
+recovery rows on `f5`–`f8` with try again on `f5`,
 the key that has meant reload everywhere, the round-limit pause on `f9`, the
 agent manager on `f12` — and shift on the same row carries the rest. The
 reasoning level keeps `ctrl+t` and drops its alt alias rather than moving it.
 Every other key is the same on both, so the two are one register with a
-different spelling in fifteen places, and every hint reads whichever this
+different spelling in eleven places, and every hint reads whichever this
 machine ships. The table below is written from the Mac's table in the code:
 
 <!-- BEGIN generated platform keys — written by `make docs` from the Mac's table in internal/ui/keys/platform.go; edit the table, not this. -->
@@ -107,16 +106,12 @@ machine ships. The table below is written from the Mac's table in the code:
 | `draft.agents` | the agent manager | `alt+a` | `f12` |
 | `draft.next_agent` | the next session in the rail's map | `alt+]` | `shift+f8` |
 | `draft.prev_agent` | the previous one | `alt+[` | `shift+f7` |
-| `rowchord.undo` | undo turn | `alt+z` | `f2` |
 | `rowchord.retry` | try again | `alt+r` | `f5` |
 | `rowchord.continue` | continue from here | `alt+n` | `f6` |
 | `rowchord.key` | enter a new key | `alt+e` | `f7` |
 | `rowchord.provider` | switch provider | `alt+p` | `f8` |
 | `rowchord.rounds` | more rounds | `alt+m` | `f9` |
 | `rowchord.uncap` | let it run | `alt+x` | `shift+f9` |
-| `rowchord.reopen` | reopen the item | `alt+o` | `shift+f2` |
-| `rowchord.commit` | commit | `alt+g` | `f3` |
-| `rowchord.rerun` | run the checks again | `alt+k` | `f4` |
 
 <!-- END generated platform keys -->
 
@@ -287,13 +282,13 @@ is spent or the line editor's (`ctrl+a`, `ctrl+e`, `ctrl+k`, `ctrl+u`,
 alt on Linux and Windows. `ctrl+]` left that set for the key list, which could not: it is the
 door a lost reader opens, and a door behind the Option setting is a door
 that is shut on the desktop where the setting is off. A Mac spends
-`f2` … `f9` and `f12` from the same set, and shift on them.
+`f5` … `f9` and `f12` from the same set, and shift on them.
 
 What is left on alt on Linux and Windows — the Linux table; a Mac ships no
-alt chord of its own — after the ten a
+alt chord of its own — after the six a
 transcript row spends, the family the agent manager took, the staged paste
-and the reasoning level's alias: `alt+h`, `alt+i`, `alt+j`, `alt+q`, `alt+s`,
-`alt+w`, `alt+y`.
+and the reasoning level's alias: `alt+g`, `alt+h`, `alt+i`, `alt+j`, `alt+k`,
+`alt+o`, `alt+q`, `alt+s`, `alt+w`, `alt+y`, `alt+z`.
 The six the textarea holds and `alt+0` … `alt+9`, which GNOME Terminal
 switches tabs with, are not among them.
 

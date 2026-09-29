@@ -161,23 +161,23 @@ func TestLoad_RefusesABareKeyAtTheDraft(t *testing.T) {
 }
 
 // A row offer's chord is held to the same rule, and it is the one a file is
-// most likely to try: `[g] commit` is the spelling a reader knows, and moving
+// most likely to try: `[r] try again` is the spelling a reader knows, and moving
 // the chord back onto the letter would put it in every prompt they write.
 // The letter itself stays a file's to move — reading mode holds the keyboard
 // while it is live, so a bare key there is a bare key on a takeover.
 func TestLoad_RefusesABareKeyOnARowChord(t *testing.T) {
 	restoreRegister(t)
-	err := Load(keymapFile(t, "[rowchord]\ncommit = \"g\"\n"))
+	err := Load(keymapFile(t, "[rowchord]\nretry = \"r\"\n"))
 	if err == nil {
 		t.Fatal("a bare key on a row chord should be refused")
 	}
-	for _, want := range []string{"\"g\"", "commit", "chord"} {
+	for _, want := range []string{"\"r\"", "try again", "chord"} {
 		if !strings.Contains(err.Error(), want) {
 			t.Errorf("the refusal does not name %s: %v", want, err)
 		}
 	}
-	if !Is("alt+g", RowChord.Commit) {
-		t.Errorf("a refused file left the register at %v", RowChord.Commit.Keys())
+	if !Is("alt+r", RowChord.Retry) {
+		t.Errorf("a refused file left the register at %v", RowChord.Retry.Keys())
 	}
 }
 
@@ -185,14 +185,14 @@ func TestLoad_RefusesABareKeyOnARowChord(t *testing.T) {
 // chords are a keyboard like any other and not a set of constants.
 func TestLoad_TakesAnotherChordOnARowOffer(t *testing.T) {
 	restoreRegister(t)
-	if err := Load(keymapFile(t, "[rowchord]\ncommit = \"f7\"\n")); err != nil {
+	if err := Load(keymapFile(t, "[rowchord]\nretry = \"f2\"\n")); err != nil {
 		t.Fatalf("a chord on a row offer was refused: %v", err)
 	}
-	if !Is("f7", RowChord.Commit) || Is("alt+g", RowChord.Commit) {
-		t.Errorf("the file did not move the chord: %v", RowChord.Commit.Keys())
+	if !Is("f2", RowChord.Retry) || Is("alt+r", RowChord.Retry) {
+		t.Errorf("the file did not move the chord: %v", RowChord.Retry.Keys())
 	}
-	if letter, ok := RowLetter("f7"); !ok || letter != Shown(Row.Commit) {
-		t.Errorf("the moved chord reads back as %q, want %q", letter, Shown(Row.Commit))
+	if letter, ok := RowLetter("f2"); !ok || letter != Shown(Row.Retry) {
+		t.Errorf("the moved chord reads back as %q, want %q", letter, Shown(Row.Retry))
 	}
 }
 
@@ -553,5 +553,26 @@ func TestKeyboard_MarksAMovedKey(t *testing.T) {
 	}
 	if moved != 1 {
 		t.Errorf("%d keys are marked moved, want 1", moved)
+	}
+}
+
+// A line naming a key the register has since given up is read and does
+// nothing, and is named, rather than costing the rest of the file: the file
+// was right when it was written. A name nobody ever declared is still a
+// refusal, which is what keeps a typo from being quietly ignored.
+func TestLoad_ReadsAFileNamingARetiredKey(t *testing.T) {
+	restoreRegister(t)
+	path := keymapFile(t, "[row]\nUndo = \"u\"\n\n[rowchord]\ncommit = \"alt+g\"\n\n[reading]\ncopy = \"c\"\n")
+	if err := Load(path); err != nil {
+		t.Fatalf("a file naming a retired key was refused: %v", err)
+	}
+	if !Is("c", Reading.Copy) {
+		t.Errorf("the file's live line did not apply: copy answers %v", Reading.Copy.Keys())
+	}
+	if got, want := Dead(), []string{"row.Undo", "rowchord.commit"}; !slices.Equal(got, want) {
+		t.Errorf("Dead() = %v, want %v", got, want)
+	}
+	if err := Load(keymapFile(t, "[row]\nundoo = \"u\"\n")); err == nil {
+		t.Error("a name the register never declared should still be refused")
 	}
 }

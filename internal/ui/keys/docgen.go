@@ -233,6 +233,8 @@ func Scaffold() string {
 #   - put a bare key where the draft can take text;
 #   - give a key that moves both ways one half of its pair (back first, then on);
 #   - move a key onto a chord the desktop or the terminal takes.
+# A line naming a key shhh has since given up is read and does nothing, and
+# shhh doctor names it.
 # ` + "`shhh keys check`" + ` reads this file the way a session will, without starting one.
 # See docs/capabilities/configuration.md#the-keymap-file.
 `)

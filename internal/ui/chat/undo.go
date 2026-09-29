@@ -1,7 +1,7 @@
 package chat
 
-// Undo a turn (docs/interface/surfaces.md#the-turns-close). `[u]` on a
-// changeset row and `/undo [turn]` put back what a turn wrote, reading the
+// Undo a turn (docs/interface/surfaces.md#the-turns-close). `/undo [turn]`
+// puts back what a turn wrote, reading the
 // session's own records rather than git: it works in a directory that
 // was never a repository, and it never touches the user's index or stash.
 //
@@ -231,14 +231,14 @@ func (m Model) applyUndo(plan changeset.UndoPlan, of undoSubject, force bool) (t
 }
 
 // undoCloseData is the close block the undo appends: the same rows a turn
-// ends with, so its review and `[u]` work on it exactly as they do on the turn it
-// took back. The note says what that was.
+// ends with, so its review and /undo work on it exactly as they do on the turn
+// it took back. The note says what that was.
 func (m Model) undoCloseData(note string) *components.TurnClose {
 	return &components.TurnClose{
 		State: components.TurnDone,
 		Note:  note,
-		// An undo's own close made no commit, so the row keeps both offers:
-		// the turn it took back is not the turn being closed here.
+		// An undo's own close made no commit, so the row keeps its commit
+		// offer: the turn it took back is not the turn being closed here.
 		Changes: m.turnChangesRow(false),
 	}
 }

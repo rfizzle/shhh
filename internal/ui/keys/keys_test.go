@@ -177,8 +177,8 @@ func TestEveryDeclaredBindingIsOnASurface(t *testing.T) {
 		{"Context", Context.All()},
 		{"Backlog", Backlog.All()},
 		{"Sprint", Sprint.All()},
-		{"Row", []Binding{Row.Commit, Row.Undo, Row.Retry, Row.Continue,
-			Row.Key, Row.Provider, Row.Rounds, Row.Uncap, Row.Reopen, Row.Rerun}},
+		{"Row", []Binding{Row.Withdraw, Row.Retry, Row.Continue,
+			Row.Key, Row.Provider, Row.Rounds, Row.Uncap}},
 		{"RowChord", RowChord.All()},
 		{"Commit", Commit.All()},
 		{"Decision", []Binding{Decision.Allow, Decision.Deny, Decision.Refuse,
@@ -190,9 +190,8 @@ func TestEveryDeclaredBindingIsOnASurface(t *testing.T) {
 			Select.Filter, Select.ClearQ, Select.Toggle, Select.All, Select.Note,
 			Select.Delete, Select.Rename, Select.Cancel, Select.Palette.Prev, Select.Palette.Next,
 			Select.Palette.Run, Select.Palette.Write}},
-		{"Review", []Binding{Review.MoveFile, Review.MoveHunk, Review.StageHunk,
-			Review.StageFile, Review.StageAll, Review.SideBySide, Review.PageUp,
-			Review.PageDown, Review.Apply, Review.Back}},
+		{"Review", []Binding{Review.MoveFile, Review.MoveHunk, Review.SideBySide,
+			Review.PageUp, Review.PageDown, Review.Back}},
 		{"Profile", []Binding{Profile.Move, Profile.Take, Profile.Note,
 			Profile.ScrollUp, Profile.ScrollDown, Profile.Back}},
 		{"Agent", []Binding{Agent.Move, Agent.Go, Agent.Attach, Agent.Answer,
@@ -443,9 +442,8 @@ func handoversNamedBy(s Surface) []Binding {
 // from and what the dispatch reads back, so it has to be total in both
 // directions: every letter has a chord, and every chord names its letter.
 func TestEveryRowOfferHasAChordThatIsOne(t *testing.T) {
-	for _, b := range []Binding{Row.Commit, Row.Undo, Row.Retry,
-		Row.Continue, Row.Key, Row.Provider, Row.Rounds, Row.Uncap, Row.Reopen,
-		Row.Rerun} {
+	for _, b := range []Binding{Row.Retry,
+		Row.Continue, Row.Key, Row.Provider, Row.Rounds, Row.Uncap} {
 		chord, ok := ChordFor(b)
 		if !ok {
 			t.Errorf("%q (%s) is offered on a row and has no chord, so it cannot be taken from the draft",

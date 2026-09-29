@@ -296,7 +296,7 @@ func TestWithdrawSteer_TheMessageLeavesAndTheRowSaysSo(t *testing.T) {
 	idx := steerNoticeIndex(t, m)
 	m.focusIdx = idx
 
-	updated, _, claimed := m.withdrawSteer(keys.Shown(keys.Row.Undo))
+	updated, _, claimed := m.withdrawSteer(keys.Shown(keys.Row.Withdraw))
 	if !claimed {
 		t.Fatal("[u] on a steer notice should be claimed by the row")
 	}
@@ -309,7 +309,7 @@ func TestWithdrawSteer_TheMessageLeavesAndTheRowSaysSo(t *testing.T) {
 		t.Errorf("the row should say it was withdrawn, got %q", row.text)
 	}
 	// The offer is spent, on the row as well as in the dispatch.
-	if _, _, claimed := next.withdrawSteer(keys.Shown(keys.Row.Undo)); claimed {
+	if _, _, claimed := next.withdrawSteer(keys.Shown(keys.Row.Withdraw)); claimed {
 		t.Error("a withdrawn steer should stop claiming its key")
 	}
 	if len(next.steerOffers(next.transcript[idx])) != 0 {
@@ -344,7 +344,7 @@ func TestWithdrawnNotice_KeepsTheReadingsReason(t *testing.T) {
 func TestWithdrawSteer_NoFurtherReadingSteersTheTurn(t *testing.T) {
 	m := steeredModel(t)
 	m.focusIdx = steerNoticeIndex(t, m)
-	updated, _, _ := m.withdrawSteer(keys.Shown(keys.Row.Undo))
+	updated, _, _ := m.withdrawSteer(keys.Shown(keys.Row.Withdraw))
 	m = updated.(Model)
 
 	// A second reading, well past the cooldown, saying exactly what the
@@ -373,7 +373,7 @@ func TestWithdrawSteer_AFinishedTurnOffersNothing(t *testing.T) {
 	if len(m.steerOffers(m.transcript[m.focusIdx])) != 0 {
 		t.Error("a finished turn's steer notice should offer no key")
 	}
-	if _, _, claimed := m.withdrawSteer(keys.Shown(keys.Row.Undo)); claimed {
+	if _, _, claimed := m.withdrawSteer(keys.Shown(keys.Row.Withdraw)); claimed {
 		t.Error("[u] on a closed turn's notice belongs to the row under it, not here")
 	}
 }
@@ -392,7 +392,7 @@ func TestWithdrawSteer_ACheckInIsNotWithdrawable(t *testing.T) {
 	if len(m.steerOffers(m.transcript[idx])) != 0 {
 		t.Error("an early check-in should offer no take-back")
 	}
-	if _, _, claimed := m.withdrawSteer(keys.Shown(keys.Row.Undo)); claimed {
+	if _, _, claimed := m.withdrawSteer(keys.Shown(keys.Row.Withdraw)); claimed {
 		t.Error("[u] must not claim a check-in's notice")
 	}
 }
@@ -477,7 +477,7 @@ func TestIntervened_ASecondSteerOutranksTheTurnsOwnEnding(t *testing.T) {
 func TestIntervened_AWithdrawnSteerIsTheTurnsOutcome(t *testing.T) {
 	m := steeredModel(t)
 	m.focusIdx = steerNoticeIndex(t, m)
-	updated, _, _ := m.withdrawSteer(keys.Shown(keys.Row.Undo))
+	updated, _, _ := m.withdrawSteer(keys.Shown(keys.Row.Withdraw))
 	next := updated.(Model)
 
 	var got []string

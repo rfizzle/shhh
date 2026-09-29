@@ -26,9 +26,9 @@ func turnsFixture() []TurnsItem {
 				{Path: "internal/agent/loop_test.go", Added: 6, Removed: 2}},
 			Added: 18, Removed: 6, Reviewable: true},
 		{N: 3, Close: &TurnClose{State: TurnDone, Steps: 1, Tools: 5, Elapsed: "38s", Spend: "$0.0440",
-			Changes: &TurnChanges{Files: 1, Added: 3, Removed: 3, Keys: []TurnKey{{Key: "[g]", Label: "commit"}}},
+			Changes: &TurnChanges{Files: 1, Added: 3, Removed: 3, Keys: []TurnKey{{Key: "[ctrl+space/ctrl+y]", Label: "commit"}}},
 			Checks: &TurnChecks{Failed: true, Label: "go test ./internal/agent/...", Counts: "1/3 checks · 4.2s",
-				Keys: []TurnKey{{Key: "[r]", Label: "run again"}}}},
+				Again: "/gate run default"}},
 			Files: []TurnsFile{{Path: "internal/agent/policy.go", Added: 3, Removed: 3}},
 			Added: 3, Removed: 3, Reviewable: true},
 		{N: 2, Files: []TurnsFile{{Path: "README.md", Added: 9, Removed: 0}, {Path: "docs/loop.md", Added: 2, Removed: 1}},
@@ -61,14 +61,15 @@ func TestTurnsScreen_ThePreviewIsTheTurnsClose(t *testing.T) {
 }
 
 // The close drawn here offers none of the row's keys: this screen answers
-// none of them, and a `[g] commit` beside a failing check would be a key
-// that does nothing.
+// none of them, and a commit offer beside a failing check would be a key
+// that does nothing. Nor does it suggest running the checks again from a
+// screen that is reading an old turn.
 func TestTurnsScreen_ThePreviewOffersNoneOfTheRowsKeys(t *testing.T) {
 	view := ansi.Strip(turnsScreen(3).View(130))
 	if !strings.Contains(view, "go test ./internal/agent/... failing") {
 		t.Fatalf("the failing check went unsaid:\n%s", view)
 	}
-	for _, key := range []string{"[g] commit", "[r] run again"} {
+	for _, key := range []string{"[ctrl+space/ctrl+y] commit", "/gate run default"} {
 		if strings.Contains(view, key) {
 			t.Errorf("the preview offered the row's %q:\n%s", key, view)
 		}

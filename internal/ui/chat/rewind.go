@@ -472,7 +472,7 @@ func (m *Model) openRewindScope(n int, turns []changeset.Turn) {
 		},
 		Undo: components.CardField{
 			Label: "undo", Tone: components.ToneSafe, Value: "yes",
-			Detail: "a rewind is a turn, and " + keys.Bracket(keys.Row.Undo) + " takes it back",
+			Detail: "a rewind is a turn, and /undo takes it back",
 		},
 	}
 	m.rewindScope = scope

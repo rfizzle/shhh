@@ -622,16 +622,11 @@ func (m Model) readingRowOffers() []components.KeyOffer {
 	}
 	if e, ok := m.focusedClose(); ok {
 		// A close is one row to the cursor and several rows on the screen,
-		// so the bar carries what all of them offer: the changeset's keys
-		// and the checks row's, in the order they are drawn.
-		var offers []components.KeyOffer
+		// and the changeset's is the one that offers anything.
 		if e.close.Changes != nil {
-			offers = append(offers, e.close.Changes.Keys...)
+			return e.close.Changes.Keys
 		}
-		if e.close.Checks != nil {
-			offers = append(offers, e.close.Checks.Keys...)
-		}
-		return offers
+		return nil
 	}
 	if e, ok := m.focusedDrop(); ok {
 		return m.dropKeys(e.resume)
@@ -644,13 +639,6 @@ func (m Model) readingRowOffers() []components.KeyOffer {
 	}
 	if e, ok := m.focusedRewound(); ok {
 		return m.rewoundOffers(e)
-	}
-	// A backlog run's row, which offers the reopen once it has blocked. Like
-	// the rows above, it is the session's own transcript only.
-	if m.attachedTo == "" {
-		if i := todoRunRowIndexOf(m.transcript, m.focusIdx); i >= 0 {
-			return m.transcript[i].todorun.offers()
-		}
 	}
 	return nil
 }

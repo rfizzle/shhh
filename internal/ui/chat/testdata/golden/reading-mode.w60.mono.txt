@@ -24,12 +24,12 @@
 
 ❯  ✓ Done · 2 steps · 6 tools · 24.7s · $0.14         
   ▎✎ 1 file changed +12 −4          all tracked in git
-     [enter] review turn · [u] undo turn
+     [enter] review turn · [ctrl+space/ctrl+y] commit
    ✗ go test ./internal/agent/... failing · exit 1 · …
 
 ────────────────────────────────────────────────────────
 [j/k] move · [enter] review turn · [q] prompt     5 of 5
-▎this row · [u] undo turn · [esc] nothing
+▎this row · [ctrl+space/ctrl+y] commit · [esc] nothing
 
 
 · the input has it · plain rail, no row lit, the frame is accented
@@ -46,7 +46,6 @@
 
    ✓ Done · 2 steps · 6 tools · 24.7s · $0.14
   ▎✎ 1 file changed +12 −4          all tracked in git
-     [enter] review turn · [alt+z] undo the last turn
    ✗ go test ./internal/agent/... failing · exit 1 · …
 
 ╭─ idle ───────────────────────────────────────────────╮
@@ -125,12 +124,12 @@
 
 ␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[48;5;237m ␛[38;5;254m✓␛[m␛[48;5;237m ␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237mDone · 2 steps · 6 tools · 24.7s · $0.14         ␛[m␛[m
   ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m1 file changed ␛[m␛[38;5;254m+12␛[m ␛[38;5;254m−4␛[m          ␛[38;5;244mall tracked in git␛[m
-     ␛[38;5;254m[enter]␛[m␛[38;5;244m review turn␛[m␛[38;5;244m · ␛[m␛[38;5;254m[u]␛[m␛[38;5;244m undo turn␛[m
+     ␛[38;5;254m[enter]␛[m␛[38;5;244m review turn␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+space/ctrl+y]␛[m␛[38;5;244m commit␛[m
    ␛[38;5;254m✗␛[m ␛[38;5;254mgo test ./internal/agent/... failing␛[m␛[38;5;244m · exit 1 · …␛[m
 
 ␛[38;5;244m────────────────────────────────────────────────────────␛[m
 ␛[38;5;254m[j/k]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m review turn␛[m␛[38;5;244m · ␛[m␛[38;5;254m[q]␛[m␛[38;5;244m prompt␛[m     ␛[38;5;244m5 of 5␛[m
-␛[38;5;254m▎␛[m␛[38;5;244mthis row · ␛[m␛[38;5;254m[u]␛[m␛[38;5;244m undo turn␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m nothing␛[m
+␛[38;5;254m▎␛[m␛[38;5;244mthis row · ␛[m␛[38;5;254m[ctrl+space/ctrl+y]␛[m␛[38;5;244m commit␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m nothing␛[m
 
 
 · the input has it · plain rail, no row lit, the frame is accented
@@ -147,7 +146,6 @@
 
    ␛[38;5;254m✓␛[m ␛[38;5;254mDone␛[m␛[38;5;244m · 2 steps · 6 tools · 24.7s · $0.14␛[m
   ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m1 file changed ␛[m␛[38;5;254m+12␛[m ␛[38;5;254m−4␛[m          ␛[38;5;244mall tracked in git␛[m
-     ␛[38;5;254m[enter]␛[m␛[38;5;244m review turn␛[m␛[38;5;244m · ␛[m␛[38;5;254m[alt+z]␛[m␛[38;5;244m undo the last turn␛[m
    ␛[38;5;254m✗␛[m ␛[38;5;254mgo test ./internal/agent/... failing␛[m␛[38;5;244m · exit 1 · …␛[m
 
 ␛[38;5;244m╭─␛[m ␛[38;5;244midle␛[m ␛[38;5;244m───────────────────────────────────────────────╮␛[m

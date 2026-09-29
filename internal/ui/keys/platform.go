@@ -51,21 +51,16 @@ var darwinMoves = map[string][]string{
 	"draft.next_agent": {"shift+f8"},
 	"draft.open_paste": {"shift+f12"},
 
-	// A transcript row's offers, from the draft. The turn's close takes the
-	// first three keys (undo, commit, and running its checks again), the
-	// recovery rows the next four — F5 is try again, which is what that key
-	// has meant in every browser — and the round-limit pause the last plain
-	// key with its shifted twin for the grant that goes further.
-	"rowchord.undo":     {"f2"},
-	"rowchord.commit":   {"f3"},
-	"rowchord.rerun":    {"f4"},
+	// A transcript row's offers, from the draft. The recovery rows take four
+	// keys — F5 is try again, which is what that key has meant in every
+	// browser — and the round-limit pause the last plain key with its
+	// shifted twin for the grant that goes further.
 	"rowchord.retry":    {"f5"},
 	"rowchord.continue": {"f6"},
 	"rowchord.key":      {"f7"},
 	"rowchord.provider": {"f8"},
 	"rowchord.rounds":   {"f9"},
 	"rowchord.uncap":    {"shift+f9"},
-	"rowchord.reopen":   {"shift+f2"},
 }
 
 // PlatformEnv names the platform whose keyboard this process ships, in place
@@ -123,7 +118,7 @@ func shippedFrom(platform string) []reflect.Value {
 	held := snapshot()
 	defer settle(held)
 	settle(written)
-	if err := apply(movesFor(platform)); err != nil {
+	if _, err := apply(movesFor(platform)); err != nil {
 		panic(fmt.Sprintf("keys: the %s keyboard breaks the register's rules: %v", platform, err))
 	}
 	return snapshot()

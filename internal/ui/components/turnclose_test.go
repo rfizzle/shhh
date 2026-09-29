@@ -14,7 +14,7 @@ func closeFixture() TurnClose {
 		Steps: 4, Tools: 18, Elapsed: "1m 04s", Spend: "$0.14", Note: "round 7 of 25",
 		Changes: &TurnChanges{
 			Files: 3, Added: 30, Removed: 4,
-			Keys: []TurnKey{{Key: "[enter]", Label: "review turn"}, {Key: "[u]", Label: "undo turn"}},
+			Keys: []TurnKey{{Key: "[enter]", Label: "review turn"}, {Key: "[ctrl+space/ctrl+y]", Label: "commit"}},
 			Note: "all tracked in git",
 		},
 		Checks: &TurnChecks{Label: "go test ./internal/agent/...", Counts: "41 packages · 12.8s"},
@@ -28,7 +28,7 @@ func TestTurnClose_ThreeRowsAnswerThreeQuestions(t *testing.T) {
 	}
 	for i, want := range []string{
 		"✓ Done · 4 steps · 18 tools · 1m 04s · $0.14",
-		"▎✎ 3 files changed +30 −4 · [enter] review turn · [u] undo turn",
+		"▎✎ 3 files changed +30 −4 · [enter] review turn · [ctrl+space/ctrl+y] commit",
 		"✓ go test ./internal/agent/... passing · 41 packages · 12.8s",
 	} {
 		if !strings.Contains(lines[i], want) {
@@ -118,28 +118,22 @@ func TestTurnClose_TheNoteDropsBeforeTheStatement(t *testing.T) {
 func TestTurnClose_EveryOfferTheRowActsOnIsDrawnWhole(t *testing.T) {
 	chords := []TurnKey{
 		{Key: "[enter]", Chord: "[enter]", Label: "review turn"},
-		{Key: "[g]", Chord: "[alt+g]", Label: "commit"},
-		{Key: "[u]", Chord: "[alt+z]", Label: "undo turn"},
+		{Key: "[ctrl+space/ctrl+y]", Chord: "[ctrl+space/ctrl+y]", Label: "commit"},
 	}
 	for _, tc := range []struct {
 		name    string
 		waiting bool
 		want    []string
 	}{
-		{"letters live", false, []string{"[enter] review turn", "[g] commit", "[u] undo turn"}},
-		{"chords live", true, []string{"[enter] review turn", "[alt+g] commit", "[alt+z] undo turn"}},
+		{"under the cursor", false, []string{"[enter] review turn", "[ctrl+space/ctrl+y] commit"}},
+		{"under the pointer", true, []string{"[enter] review turn", "[ctrl+space/ctrl+y] commit"}},
 	} {
 		c := closeFixture()
 		c.Changes.Keys = chords
 		c.KeysWaiting = tc.waiting
-		c.Checks.Keys = []TurnKey{{Key: "[t]", Chord: "[alt+t]", Label: "run the checks again"}}
-		again := "[t] run the checks again"
-		if tc.waiting {
-			again = "[alt+t] run the checks again"
-		}
 		for _, width := range []int{60, 80, 110, 130} {
 			view := ansi.Strip(c.View(width))
-			for _, offer := range append(tc.want, again) {
+			for _, offer := range tc.want {
 				if !strings.Contains(view, offer) {
 					t.Errorf("%s at %d: %q is not drawn whole:\n%s", tc.name, width, offer, view)
 				}
@@ -150,6 +144,24 @@ func TestTurnClose_EveryOfferTheRowActsOnIsDrawnWhole(t *testing.T) {
 				}
 			}
 		}
+	}
+}
+
+// The checks row says what to type to run its suite again where there is
+// room, and gives that up before it gives up what the verdict answered.
+func TestTurnClose_TheChecksRowNamesTheCommandWhereItFits(t *testing.T) {
+	c := closeFixture()
+	c.Checks = &TurnChecks{Label: "quality gate default", Counts: "4/4 checks", Again: "/gate run default"}
+	if wide := ansi.Strip(c.View(130)); !strings.Contains(wide, "/gate run default runs it again") {
+		t.Errorf("a wide row should name the command:\n%s", wide)
+	}
+	c.Checks.Superseded = 1
+	narrow := ansi.Strip(c.View(80))
+	if strings.Contains(narrow, "/gate run") {
+		t.Errorf("a row with no room for both keeps the verdict's note alone:\n%s", narrow)
+	}
+	if !strings.Contains(narrow, "1 earlier failure since passed") {
+		t.Errorf("what the verdict answered is the note that stays:\n%s", narrow)
 	}
 }
 

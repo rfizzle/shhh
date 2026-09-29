@@ -233,7 +233,7 @@ func TestHelp_AMacNamesTheOptionSettingOnlyForItsOwnAltChords(t *testing.T) {
 			t.Errorf("a Mac's key list says %q with no alt chord bound:\n%s", gone, list)
 		}
 	}
-	for _, want := range []string{"[f12]", "[f2…]", "f5 try again", "option+← and option+→"} {
+	for _, want := range []string{"[f12]", "[f5…]", "f5 try again", "option+← and option+→"} {
 		if !strings.Contains(list, want) {
 			t.Errorf("a Mac's key list lacks %q:\n%s", want, list)
 		}

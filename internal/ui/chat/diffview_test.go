@@ -224,9 +224,6 @@ func TestSessionDiff_ReadsTheChangesetWithoutGit(t *testing.T) {
 	if m.state != stateReview || m.review == nil {
 		t.Fatalf("/diff should open the session diff in review mode, got state %d", m.state)
 	}
-	if !m.review.ReadOnly {
-		t.Fatal("a cumulative diff has nothing to stage, so review opens read-only")
-	}
 	view := ansi.Strip(m.View().Content)
 	for _, want := range []string{"session diff", "a.go", "- 1  old", "+ 1  new"} {
 		if !strings.Contains(view, want) {

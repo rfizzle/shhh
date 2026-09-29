@@ -171,15 +171,12 @@ func (m *Model) expireSteerOffers() {
 	}
 }
 
-// steerOffers are the keys the notice carries. `[u]` is keys.Row.Undo with
-// this row's own words, the way `[r]` is one key on two rows that mean
-// different things by it: the register declares the keystroke, and what it
-// does is the row's to say.
+// steerOffers are the keys the notice carries: `[u]`, keys.Row.Withdraw.
 func (m Model) steerOffers(e entry) []components.TurnKey {
 	if !m.withdrawableSteer(e) {
 		return nil
 	}
-	return []components.TurnKey{rowOffer(keys.Row.Undo, "take the steer back")}
+	return []components.TurnKey{rowOffer(keys.Row.Withdraw, keys.Words(keys.Row.Withdraw))}
 }
 
 // steerOfferLine is that run as the line the notice draws under itself, or ""
@@ -220,8 +217,8 @@ func (m Model) focusedSteerNotice() (entry, bool) {
 }
 
 // withdrawSteer routes a keystroke to the focused steer notice, reporting
-// false when the row is not claiming it — which leaves `[u]` on a changeset
-// row and the pager's half page exactly as they were.
+// false when the row is not claiming it — which leaves `[u]` as reading mode's
+// half page exactly as it was.
 //
 // The record is not written here. A withdrawal is the cheapest evidence the
 // thresholds have that the check was wrong about a turn, and it is filed
@@ -230,7 +227,7 @@ func (m Model) focusedSteerNotice() (entry, bool) {
 // keystroke would put a turn that was steered and then withdrawn in two
 // populations at once.
 func (m Model) withdrawSteer(key string) (tea.Model, tea.Cmd, bool) {
-	if !keys.Is(key, keys.Row.Undo) {
+	if !keys.Is(key, keys.Row.Withdraw) {
 		return m, nil, false
 	}
 	e, ok := m.focusedSteerNotice()

@@ -132,16 +132,16 @@ func register(t *testing.T) []keyedSurface {
 		},
 		{
 			name: "the changeset row a turn closes with",
-			// [v] is on the list as the letter it now only is: review is
-			// the row's own open, not a key it offers.
-			keys: []string{"u", "v"},
+			// Every one of these is on the list as the letter it now only
+			// is: review is the row's own open, and undo, commit and
+			// running the checks again are commands, not keys it offers.
+			keys: []string{"u", "g", "t", "v"},
 			open: func(t *testing.T) Model {
 				m, _ := undoModel(t)
 				return typeChars(t, m, draftLead)
 			},
-			hold:   readingCursorOn(entryTurnClose),
-			chords: []keys.Binding{keys.RowChord.Undo},
-			row:    entryTurnClose,
+			hold: readingCursorOn(entryTurnClose),
+			row:  entryTurnClose,
 		},
 		{
 			name: "a provider failure's row",
@@ -169,13 +169,13 @@ func register(t *testing.T) []keyedSurface {
 		},
 		{
 			name: "a round-limit pause's row",
-			keys: []string{"u", keys.Shown(keys.Row.Rounds), keys.Shown(keys.Row.Uncap), "v"},
+			keys: []string{keys.Shown(keys.Row.Rounds), keys.Shown(keys.Row.Uncap), "u", "v"},
 			open: func(t *testing.T) Model {
 				m, _ := pausedModel(t)
 				return typeChars(t, m, draftLead)
 			},
 			hold:   readingCursorOn(entryRoundPause),
-			chords: []keys.Binding{keys.RowChord.Undo, keys.RowChord.Rounds},
+			chords: []keys.Binding{keys.RowChord.Rounds},
 			row:    entryRoundPause,
 		},
 		{
@@ -431,13 +431,8 @@ func rowChordsActOnTheSelectedRow(t *testing.T) {
 }
 
 // labelledLatest reports that chord is one the row of kind draws live and
-// labelled with nothing selected, as the last failure's or the last turn's
-// (inertkeys.go).
+// labelled with nothing selected, as the last failure's (inertkeys.go).
 func labelledLatest(m Model, kind entryKind, chord keys.Binding) bool {
-	if keys.Is(keys.Shown(chord), keys.RowChord.Commit, keys.RowChord.Undo) {
-		idx, c := m.latestClose()
-		return c != nil && m.transcript[idx].kind == kind
-	}
 	if !keys.Is(keys.Shown(chord), keys.RowChord.Retry, keys.RowChord.Provider) {
 		return false
 	}
@@ -456,7 +451,7 @@ func labelledLatest(m Model, kind entryKind, chord keys.Binding) bool {
 // TestRowChords_ASelectedRowThatDoesNotOfferAChordKeepsIt is the other half
 // of acting on the selected row: the chord is not handed on to a newer row
 // that does make the offer. Here the pointer stands on a tool row, which
-// offers nothing, with a turn's close under it offering undo.
+// offers nothing, with a turn's close under it.
 func TestRowChords_ASelectedRowThatDoesNotOfferAChordKeepsIt(t *testing.T) {
 	m, _ := undoModel(t)
 	m = typeChars(t, m, draftLead)
@@ -473,23 +468,11 @@ func TestRowChords_ASelectedRowThatDoesNotOfferAChordKeepsIt(t *testing.T) {
 	m.pointer, m.focusIdx = true, at
 	m.refreshCursorView()
 	before := snapshot(m)
-	next := pressChord(t, m, keys.RowChord.Undo)
+	next := pressChord(t, m, keys.RowChord.Retry)
 	if after := snapshot(next); after != before {
 		t.Fatalf("the chord fell through to a row the pointer was not on:\n before %s\n after  %s",
 			before, after)
 	}
-}
-
-// steerNotice is the row an automatic steer leaves, which is the one system
-// row that offers a key of its own (intervene.go). The offer stands only
-// while the turn it interrupted is live, which is what the caller sets up.
-func steerNotice(turn int64) entry {
-	return entry{kind: entrySystem, turn: turn,
-		text: "Steered — the edits have moved outside the round loop.",
-		intervened: &interveneRow{
-			iv:  agent.Intervention{Kind: agent.InterveneSteer, Notice: "Steered", Reason: "edits outside the round loop"},
-			row: "round 2 · steered · edits outside the round loop",
-		}}
 }
 
 // TestRowChords_OneRowInASessionNamesTheOptionSetting is the sentence that
@@ -501,19 +484,17 @@ func steerNotice(turn int64) entry {
 //
 // A Mac ships its row chords on the function row, so the rows that name it
 // are the ones a person's keymap put back on alt; macAltKeymap is that
-// keymap. Both kinds are checked because the rows do not agree on when they
-// answer the question: a turn's close settles it as it is built, and every
-// other row settles it as it is drawn. A kind the drawn answer cannot
+// keymap. Both orders are checked, because a kind the answer cannot
 // recognise says "not me" for itself and "somebody already said it" for
 // every row after it, which is a session that never names the setting at all.
 func TestRowChords_OneRowInASessionNamesTheOptionSetting(t *testing.T) {
-	closeRow := func(m *Model) entry {
-		return entry{kind: entryTurnClose, turn: 1, close: &components.TurnClose{
-			State: components.TurnDone,
-			Changes: &components.TurnChanges{Files: 1, Added: 1, Removed: 1,
-				Keys: []components.TurnKey{rowOffer(keys.Row.Undo, "undo turn")}},
-			Option: m.firstRowOffer(),
-		}}
+	failRow := func() entry {
+		return entry{kind: entryFailure, turn: 1, fail: &provider.Failure{
+			Class: provider.ClassContextLength, Status: 400, Provider: "openai",
+			Message: "maximum context length exceeded"}}
+	}
+	pauseRow := func() entry {
+		return entry{kind: entryRoundPause, turn: 1, pause: &roundPause{turn: 1, used: 25, limit: 25}}
 	}
 	// A row's chords are live only under the pointer, so that is where the
 	// sentence about them is read.
@@ -521,13 +502,17 @@ func TestRowChords_OneRowInASessionNamesTheOptionSetting(t *testing.T) {
 		t.Helper()
 		return strings.Contains(ansi.Strip(m.renderEntryKeys(m.transcript[at], 110, rowPointed)), "Option")
 	}
-
-	t.Run("the steer notice is first", func(t *testing.T) {
-		macAltKeymap(t)
+	both := func(first, second func() entry) Model {
 		m := frameModel(t, 110, 40)
 		m.turnCount, m.turnOpen = 1, true
-		m.appendEntry(steerNotice(1))
-		m.appendEntry(closeRow(&m))
+		m.appendEntry(first())
+		m.appendEntry(second())
+		return m
+	}
+
+	t.Run("the failure is first", func(t *testing.T) {
+		macAltKeymap(t)
+		m := both(failRow, pauseRow)
 		if !says(t, m, 0) {
 			t.Error("the first row to offer a chord does not name the Option setting")
 		}
@@ -536,12 +521,9 @@ func TestRowChords_OneRowInASessionNamesTheOptionSetting(t *testing.T) {
 		}
 	})
 
-	t.Run("the turn's close is first", func(t *testing.T) {
+	t.Run("the pause is first", func(t *testing.T) {
 		macAltKeymap(t)
-		m := frameModel(t, 110, 40)
-		m.turnCount, m.turnOpen = 1, true
-		m.appendEntry(closeRow(&m))
-		m.appendEntry(steerNotice(1))
+		m := both(pauseRow, failRow)
 		if !says(t, m, 0) {
 			t.Error("the first row to offer a chord does not name the Option setting")
 		}
@@ -555,15 +537,12 @@ func TestRowChords_OneRowInASessionNamesTheOptionSetting(t *testing.T) {
 	// trailer either (docs/interface/reserved-keys.md#a-mac-ships-without-alt).
 	t.Run("a Mac ships nothing on alt", func(t *testing.T) {
 		t.Cleanup(keys.UsePlatform("darwin"))
-		m := frameModel(t, 110, 40)
-		m.turnCount, m.turnOpen = 1, true
-		m.appendEntry(closeRow(&m))
-		m.appendEntry(steerNotice(1))
+		m := both(failRow, pauseRow)
 		if says(t, m, 0) || says(t, m, 1) {
 			t.Error("a row names the Option setting over chords that need none")
 		}
-		if !strings.Contains(ansi.Strip(m.renderEntryKeys(m.transcript[0], 110, rowPointed)), "[f2] undo turn") {
-			t.Errorf("the Mac's close does not offer its own chord:\n%s", ansi.Strip(m.renderEntryKeys(m.transcript[0], 110, rowPointed)))
+		if row := ansi.Strip(m.renderEntryKeys(m.transcript[0], 110, rowPointed)); !strings.Contains(row, "[f5] then try again") {
+			t.Errorf("the Mac's failure row does not offer its own chord:\n%s", row)
 		}
 		if m.resolveInspector().AgentsOption {
 			t.Error("the rail's trailer would name the Option setting over the function row")
@@ -575,12 +554,9 @@ func TestRowChords_OneRowInASessionNamesTheOptionSetting(t *testing.T) {
 	// the README's pictures: the Linux keyboard, rendered on a Mac.
 	t.Run("the Linux keyboard names nothing", func(t *testing.T) {
 		t.Cleanup(keys.UsePlatform("linux"))
-		m := frameModel(t, 110, 40)
-		m.turnCount, m.turnOpen = 1, true
-		m.appendEntry(closeRow(&m))
-		m.appendEntry(steerNotice(1))
-		if row := ansi.Strip(m.renderEntryKeys(m.transcript[0], 110, rowPointed)); !strings.Contains(row, "[alt+z] undo turn") {
-			t.Fatalf("the Linux close does not offer its alt chord:\n%s", row)
+		m := both(failRow, pauseRow)
+		if row := ansi.Strip(m.renderEntryKeys(m.transcript[0], 110, rowPointed)); !strings.Contains(row, "[alt+r] then try again") {
+			t.Fatalf("the Linux failure row does not offer its alt chord:\n%s", row)
 		}
 		if says(t, m, 0) || says(t, m, 1) {
 			t.Error("a row names a Mac's Option setting under the Linux keyboard")
@@ -592,7 +568,7 @@ func TestRowChords_OneRowInASessionNamesTheOptionSetting(t *testing.T) {
 }
 
 // macAltKeymap puts the Mac's keyboard on the register with a keymap file
-// that moves the undo chord and the agent manager back onto alt — a real Mac
+// that moves the retry and rounds chords and the agent manager back onto alt — a real Mac
 // session whose person chose the alt chords — and puts both back when the
 // test ends.
 func macAltKeymap(t *testing.T) {
@@ -600,7 +576,7 @@ func macAltKeymap(t *testing.T) {
 	t.Cleanup(func() { _ = keys.Load() })
 	t.Cleanup(keys.UsePlatform("darwin"))
 	path := filepath.Join(t.TempDir(), "keybindings.toml")
-	keymap := "[draft]\nagents = \"alt+a\"\n\n[rowchord]\nundo = \"alt+z\"\n"
+	keymap := "[draft]\nagents = \"alt+a\"\n\n[rowchord]\nretry = \"alt+r\"\nrounds = \"alt+m\"\n"
 	if err := os.WriteFile(path, []byte(keymap), 0o600); err != nil {
 		t.Fatal(err)
 	}
@@ -656,68 +632,36 @@ func TestInertKeys_EveryTakeoverHoldsTheKeyboardExclusively(t *testing.T) {
 
 // TestInertKeys_ARowDrawsTheKeyThatIsLiveWhereItStands is invariant 1 applied
 // to the state of a key. A turn's close offers its keys only once it is
-// selected: under the pointer lit from the prompt it prints the chords,
-// because a letter there would be a letter of the sentence being typed, and
-// under reading mode's cursor it prints the letters. Either way it leads with
-// what enter does on it, which is its turn's review. Unselected, only the
-// newest close offers anything, and its keep and take back say they act on
-// the last turn; a close the session has moved past offers nothing — the same
-// keys on every turn a session has closed told the reader nothing about which
-// turn they would act on.
+// selected, and it leads with what enter does on it, which is its turn's
+// review, then the handover that opens its commit card. Both are chords —
+// neither is a letter of a sentence — so the pointer and the cursor draw the
+// same two. Unselected, no close offers anything, the newest included: the
+// same keys on every turn a session has closed told the reader nothing about
+// which turn they would act on.
 func TestInertKeys_ARowDrawsTheKeyThatIsLiveWhereItStands(t *testing.T) {
 	m, _ := undoModel(t)
 	e := m.transcript[indexOfKind(t, m, entryTurnClose)]
+	commit := keys.Bracket(keys.Draft.Answer) + " " + commitWords
 
-	newest := ansi.Strip(m.renderEntryKeys(e, 110, rowUnselected))
-	for _, want := range []string{
-		"[enter] " + reviewTurnWords,
-		keys.Bracket(keys.RowChord.Commit) + " " + latestCommitWords,
-		keys.Bracket(keys.RowChord.Undo) + " " + latestUndoWords,
-	} {
-		if !strings.Contains(newest, want) {
-			t.Fatalf("the newest close offers its keys unselected, want %q in:\n%s", want, newest)
-		}
-	}
-	if strings.Contains(newest, "to use them") {
-		t.Fatalf("nothing on the newest close is waiting for the keyboard:\n%s", newest)
-	}
-
-	past := m
-	past.turnCount++
-	plain := ansi.Strip(past.renderEntryKeys(e, 110, rowUnselected))
-	for _, never := range []string{"undo", "review turn", "alt+", "to use them"} {
+	plain := ansi.Strip(m.renderEntryKeys(e, 110, rowUnselected))
+	for _, never := range []string{"review turn", commit, "alt+", "to use them"} {
 		if strings.Contains(plain, never) {
-			t.Fatalf("a close the session has moved past offers nothing, found %q in:\n%s", never, plain)
+			t.Fatalf("an unselected close offers nothing, found %q in:\n%s", never, plain)
 		}
 	}
 
 	pointed := ansi.Strip(m.renderEntryKeys(e, 110, rowPointed))
-	for _, want := range []string{
-		"[enter] " + reviewTurnWords,
-		keys.Bracket(keys.RowChord.Undo) + " undo turn",
-	} {
-		if !strings.Contains(pointed, want) {
-			t.Fatalf("the row under the pointer offers its chords, want %q in:\n%s", want, pointed)
-		}
-	}
-	if strings.Contains(pointed, "to use them") {
-		t.Fatalf("nothing on the selected row is waiting for the keyboard:\n%s", pointed)
-	}
-
-	// Under the cursor the keys are the letters again, and there is nothing
-	// left to hand over.
 	held := readingCursorOn(entryTurnClose)(t, m)
 	live := ansi.Strip(held.renderEntryKeys(e, 110, rowUnderCursor))
-	for _, want := range []string{"[enter] " + reviewTurnWords, "[u] undo turn"} {
-		if !strings.Contains(live, want) {
-			t.Fatalf("the row under the cursor keeps its letters, want %q in:\n%s", want, live)
+	for _, drawn := range []string{pointed, live} {
+		for _, want := range []string{"[enter] " + reviewTurnWords, commit} {
+			if !strings.Contains(drawn, want) {
+				t.Fatalf("the selected row offers %q, got:\n%s", want, drawn)
+			}
 		}
-	}
-	if strings.Contains(live, keys.Shown(keys.Draft.Reading)) {
-		t.Fatalf("a row that holds the keyboard has nothing to hand over:\n%s", live)
-	}
-	if strings.Contains(live, "alt+") {
-		t.Fatalf("the chord is the draft's spelling, not the cursor's:\n%s", live)
+		if strings.Contains(drawn, "to use them") || strings.Contains(drawn, "[u]") {
+			t.Fatalf("the selected row waits on nothing and offers no undo key:\n%s", drawn)
+		}
 	}
 }
 
@@ -765,8 +709,10 @@ func TestInertKeys_WaitingAndLiveNeverPaintAlike(t *testing.T) {
 			components.SetMono(mono)
 			t.Cleanup(func() { components.SetMono(was) })
 
-			m, _ := undoModel(t)
-			e := m.transcript[indexOfKind(t, m, entryTurnClose)]
+			m := failureModel(t)
+			updated, _ := m.Update(streamErrMsg{err: authFailure()})
+			m = updated.(Model)
+			e := m.transcript[indexOfKind(t, m, entryFailure)]
 			waiting := m.renderEntryKeys(e, 110, rowPointed)
 			live := m.renderEntryKeys(e, 110, rowUnderCursor)
 			if waiting == live {

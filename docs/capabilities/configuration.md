@@ -675,6 +675,18 @@ describing neither their file nor the default. A refusal says what it refused
 and the keyboard shhh ships runs instead — out loud, rather than swallowed: a
 session quietly running neither keyboard is the failure this guards against.
 
+**A key shhh has given up is a line that does nothing, not a refusal.** When a
+key leaves the keyboard — the undo, commit, rerun and reopen offers a turn's
+close and a backlog run's row once carried, and review mode's staging keys,
+went this way — a file written while it existed still names it. That line is
+read and does nothing, and the rest of the file applies: the file was right
+when it was written, and a keyboard that fell back to the shipped one because
+shhh dropped a key would be charging the person for a change they did not
+make. The line is named on stderr as the process starts and on the doctor's
+`keymap` row, which is where somebody tidying the file finds it. A name the
+keyboard never had is still refused, so a typo does not become a line that
+quietly does nothing.
+
 Five things a file cannot do.
 
 **It cannot leave one surface answering a keystroke with two acts.** That is
@@ -825,26 +837,19 @@ rules above are what refuse a move, not a list of keys held back from it.
 | `context.expand` | `enter` | the same | expand or fold | yes |
 | `context.list` | `?` | the same | keys | yes |
 | `context.back` | `q`, `esc`, `ctrl+c` | the same | back to the prompt | yes |
-| `row.undo` | `u` | the same | undo turn | yes |
+| `row.withdraw` | `u` | the same | take the steer back | yes |
 | `row.retry` | `r` | the same | try again | yes |
 | `row.continue` | `c` | the same | continue from here | yes |
 | `row.key` | `e` | the same | enter a new key | yes |
 | `row.provider` | `p` | the same | switch provider | yes |
 | `row.rounds` | `+` | the same | more rounds | yes |
 | `row.uncap` | `!` | the same | let it run | yes |
-| `row.reopen` | `o` | the same | reopen the item | yes |
-| `row.commit` | `g` | the same | commit | yes |
-| `row.rerun` | `t` | the same | run the checks again | yes |
-| `rowchord.undo` | `alt+z` | `f2` | undo turn | yes |
 | `rowchord.retry` | `alt+r` | `f5` | try again | yes |
 | `rowchord.continue` | `alt+n` | `f6` | continue from here | yes |
 | `rowchord.key` | `alt+e` | `f7` | enter a new key | yes |
 | `rowchord.provider` | `alt+p` | `f8` | switch provider | yes |
 | `rowchord.rounds` | `alt+m` | `f9` | more rounds | yes |
 | `rowchord.uncap` | `alt+x` | `shift+f9` | let it run | yes |
-| `rowchord.reopen` | `alt+o` | `shift+f2` | reopen the item | yes |
-| `rowchord.commit` | `alt+g` | `f3` | commit | yes |
-| `rowchord.rerun` | `alt+k` | `f4` | run the checks again | yes |
 | `decision.allow` | `y`, `enter` | the same | allow | yes |
 | `decision.deny` | `n`, `esc`, `ctrl+c` | the same | deny | yes |
 | `decision.always` | `a` | the same | allow without asking — choose how long | yes |
@@ -885,17 +890,13 @@ rules above are what refuse a move, not a list of keys held back from it.
 | `select.palette.write` | `tab` | the same | write it into the input | yes |
 | `review.move_file` | `k`, `j`, `up`, `down` | the same | file | yes |
 | `review.move_hunk` | `p`, `n` | the same | hunk | yes |
-| `review.stage_hunk` | `s`, `" "`, `space` | the same | stage hunk | yes |
-| `review.stage_file` | `S` | the same | file | yes |
-| `review.stage_all` | `a`, `A` | the same | all | yes |
 | `review.side_by_side` | `\` | the same | side by side | yes |
 | `review.page_up` | `pgup` | the same | page up | yes |
 | `review.page_down` | `pgdown` | the same | page down | yes |
-| `review.apply` | `enter` | the same | take the staged hunks | yes |
 | `review.back` | `esc`, `ctrl+c` | the same | back | yes |
 | `commit.take` | `enter` | the same | commit | yes |
 | `commit.edit` | `e` | the same | edit the message | yes |
-| `commit.hunks` | `s` | the same | choose what goes in | yes |
+| `commit.hunks` | `s` | the same | read the hunks | yes |
 | `commit.cancel` | `esc` | the same | not now | yes |
 | `rewind.both` | `b` | the same | both | yes |
 | `rewind.code` | `c` | the same | code only | yes |

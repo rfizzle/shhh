@@ -31,15 +31,10 @@ import (
 // or that cursor itself.
 //
 // A selected row that does not make the offer does not hand the chord on to
-// one that does. With nothing selected the chord acts on nothing but the two
-// rows that draw their offers live and say which row they mean: the newest
-// failure's retry and provider switch, and the newest close's commit and
-// undo. The second reopens, on purpose, what was removed here: the chord
-// used to walk back to the newest row offering the key, which drawn on every
-// turn a session had closed was a chord that named no turn and then acted on
-// whichever was newest. It now reaches the newest close only, only while
-// that close is drawing the chord labelled as the last turn's, and never an
-// older one (docs/interface/surfaces.md#the-turns-close).
+// one that does. With nothing selected the chord acts on nothing but the one
+// row that draws its offers live and says which row it means: the newest
+// failure's retry and provider switch
+// (docs/interface/surfaces.md#the-recovery-row).
 func (m Model) rowChordKey(pressed string) (tea.Model, tea.Cmd, bool) {
 	letter, ok := keys.RowLetter(pressed)
 	// Attached, the keyboard is pointed at a child and the rows in the pane
@@ -48,43 +43,9 @@ func (m Model) rowChordKey(pressed string) (tea.Model, tea.Cmd, bool) {
 		return m, nil, false
 	}
 	if !m.pointerLit() && m.state != stateFocus {
-		if keys.Is(letter, keys.Row.Commit, keys.Row.Undo) {
-			return m.latestCloseKey(letter)
-		}
 		return m.latestRecoveryKey(letter)
 	}
 	return m.rowKey(letter)
-}
-
-// latestCloseKey is the commit or undo the newest close draws live and
-// labelled as the last turn's with nothing selected (inertkeys.go). It
-// reaches that close and no other, through the same acts its selected row
-// answers with, and with no such close it acts on nothing. The pointer is
-// not moved: the row is reached by index, and the cursor the reader left is
-// where it was.
-func (m Model) latestCloseKey(letter string) (tea.Model, tea.Cmd, bool) {
-	idx, c := m.latestClose()
-	if c == nil {
-		return m, nil, false
-	}
-	row := m
-	row.focusIdx = idx
-	var next tea.Model
-	var cmd tea.Cmd
-	claimed := true
-	if keys.Is(letter, keys.Row.Undo) {
-		next, cmd = row.undoTurn(m.transcript[idx].turn, nil)
-	} else {
-		next, cmd, claimed = row.commitKey(letter)
-	}
-	if !claimed {
-		return m, nil, false
-	}
-	if nm, ok := next.(Model); ok {
-		nm.focusIdx = m.focusIdx
-		next = nm
-	}
-	return next, cmd, true
 }
 
 // latestRecoveryKey is the one chord that acts with nothing selected: the
@@ -194,6 +155,15 @@ func (m Model) updateKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 	// alone on purpose ([a], [d], [A]).
 	if m.interruptShowing() && keys.Match(msg, keys.Draft.Answer) && (m.decisionUngated() || m.heldOnArrival) {
 		return answered(m.gateDecision())
+	}
+	// With no decision waiting, the handover on a selected changed-files row
+	// hands the keyboard to that turn's commit card (commit.go): the one
+	// chord that already gives a card the keyboard, rather than a letter of
+	// its own on the row.
+	if keys.Match(msg, keys.Draft.Answer) {
+		if next, cmd, ok := m.commitHandover(); ok {
+			return next, cmd, true
+		}
 	}
 	// The grace window on a card that took the keyboard by arriving on a
 	// warm keyboard (interrupt.go): the keys that would answer it are
@@ -744,8 +714,8 @@ func (m Model) updateKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 		// A transcript row's own offer, taken from the prompt. The row is
 		// drawn beside a live draft nearly all the time, and the letter it
 		// used to print there was a letter of the sentence being typed —
-		// `[g] commit` under a half-written prompt was an offer that typed a
-		// g (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+		// `[r] try again` under a half-written prompt was an offer that typed
+		// an r (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 		// So each offer has a chord as well, and the row prints whichever of
 		// the two is true where it stands.
 		if next, cmd, claimed := m.rowChordKey(pressed); claimed {

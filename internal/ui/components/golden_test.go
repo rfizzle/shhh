@@ -51,6 +51,13 @@ func reviewTurnOffer() TurnKey {
 	return TurnKey{Key: k, Chord: k, Label: "review turn"}
 }
 
+// commitTurnOffer is the handover drawn on a selected changed-files row,
+// which opens the commit card there.
+func commitTurnOffer() TurnKey {
+	k := keys.Bracket(keys.Draft.Answer)
+	return TurnKey{Key: k, Chord: k, Label: "commit"}
+}
+
 func rowOffer(b keys.Binding, label string) TurnKey {
 	o := TurnKey{Key: keys.Bracket(b), Label: label}
 	if c, ok := keys.ChordFor(b); ok {
@@ -350,11 +357,11 @@ func TestGolden_TurnClose(t *testing.T) {
 				Steps: 4, Tools: 18, Elapsed: "1m 04s", Spend: "$0.14", Note: "round 7 of 25",
 				Changes: &TurnChanges{
 					Files: 3, Added: 30, Removed: 4,
-					// Review, keep, or take back — the three things a
-					// changeset can become, on one line and in that order.
-					Keys: []TurnKey{reviewTurnOffer(),
-						rowOffer(keys.Row.Commit, "commit"), rowOffer(keys.Row.Undo, "undo turn")},
+					// Review or keep, as the selected row draws them; taking
+					// it back is a command the note names where it fits.
+					Keys: []TurnKey{reviewTurnOffer(), commitTurnOffer()},
 					Note: "all tracked in git",
+					Back: "/undo 3 takes it back",
 				},
 				Checks: &TurnChecks{Label: "go test ./internal/agent/...", Counts: "41 packages · 12.8s"},
 			}
@@ -387,27 +394,20 @@ func TestGolden_TurnClose(t *testing.T) {
 			{Label: "unpriced · tokens, never a made-up zero", View: closed(func(c *TurnClose) {
 				c.Spend, c.Changes, c.Checks = "~48.1k tok", nil, nil
 			})},
-			// The changeset row in the two spellings invariant 5 puts it in.
-			// Its [g] and [u] are reading mode's, on the row; under the
-			// pointer lit beside a live draft each of those is a letter of the
-			// sentence being typed, so what the row draws there is the chord
-			// that reaches the same offer without the handover.
-			{Label: "keys waiting · beside a live draft, the row offers its chords", View: closed(func(c *TurnClose) {
+			// The changeset row beside a live draft, under the pointer. Both
+			// of its offers are chords — enter and the handover — so neither
+			// is a letter of the sentence being typed, and both stay live.
+			{Label: "keys waiting · beside a live draft, the row's offers are chords", View: closed(func(c *TurnClose) {
 				c.KeysWaiting, c.Handover = true, "ctrl+o"
-			})},
-			// And the first block in a session to offer one says what an alt
-			// chord costs on a stock macOS terminal, once.
-			{Label: "keys waiting · the first chord of a session names the Option row", View: closed(func(c *TurnClose) {
-				c.KeysWaiting, c.Handover, c.Option = true, "ctrl+o", true
 			})},
 			// A turn that committed: the receipt is a row of its own, the
 			// undo sentence rides beside it, and the changed-files row loses
-			// [u] because the honest key for taking a commit back is `git
-			// revert`, which is a sentence you type — and [g], which has
-			// been spent.
+			// the commit, which has been spent, and the /undo in its note,
+			// because the honest way to take a commit back is `git revert`.
 			{Label: "committed · the receipt, and what undo does not reach", View: closed(func(c *TurnClose) {
 				c.Commit = &TurnCommit{Receipt: "committed 3 files as a41f2c9 on master"}
 				c.Changes.Keys = []TurnKey{reviewTurnOffer()}
+				c.Changes.Back = ""
 			})},
 			// What the turn's delegates left in the shared notebook, and
 			// what is still waiting unread on the screen that holds it. No
@@ -415,12 +415,12 @@ func TestGolden_TurnClose(t *testing.T) {
 			{Label: "notes · what the fan-out wrote, and what is unread", View: closed(func(c *TurnClose) {
 				c.Notes = "2 notes from writer-1, researcher-2 · 3 unread"
 			})},
-			// The checks row's own offer, which is present only where there
-			// is a suite to run again.
+			// The checks row's note names the command that runs the suite
+			// again, present only where there is a suite to run again.
 			{Label: "checks · the suite can be run again", View: closed(func(c *TurnClose) {
 				c.Checks = &TurnChecks{
 					Label: "quality gate default", Counts: "4/4 checks · 12.8s",
-					Keys: []TurnKey{rowOffer(keys.Row.Rerun, "run the checks again")},
+					Again: "/gate run default",
 				}
 			})},
 			// The two states a turn's verification can close in. A pass over
@@ -431,7 +431,7 @@ func TestGolden_TurnClose(t *testing.T) {
 				c.Checks = &TurnChecks{
 					Label: "quality gate default", Counts: "5/5 checks · 12.8s",
 					Superseded: 1,
-					Keys:       []TurnKey{rowOffer(keys.Row.Rerun, "run the checks again")},
+					Again:      "/gate run default",
 				}
 			})},
 			{Label: "unresolved · nothing has answered the failure", View: closed(func(c *TurnClose) {
@@ -1206,21 +1206,17 @@ func TestGolden_ReviewMode(t *testing.T) {
 			v := &ReviewView{
 				Title: "turn 7",
 				Files: []ReviewFile{
-					{Path: "internal/agent/loop.go", Hunks: goldenHunks(), Staged: []bool{true}},
-					{Path: "internal/ui/chat/model.go", Hunks: goldenHunks(), Staged: []bool{false}},
-					{Path: "internal/agent/errors.go", Hunks: goldenHunks(), Staged: []bool{false}, Agent: "writer-1"},
+					{Path: "internal/agent/loop.go", Hunks: goldenHunks()},
+					{Path: "internal/ui/chat/model.go", Hunks: goldenHunks()},
+					{Path: "internal/agent/errors.go", Hunks: goldenHunks(), Agent: "writer-1"},
 				},
 				Verdict: &ReviewVerdict{
 					Failed: true, Label: "go test ./internal/agent/... · exit 1",
 					Detail: []string{"--- FAIL: TestRoundLimit (0.03s)", "loop_test.go:142"},
 				},
 				Shield:       "nothing is committed",
-				ShieldDetail: "undo restores the 3 files this turn wrote",
-				ApplyVerb:    "undo",
-				// The session's own turn: an undo restores whole files, so
-				// the footer promotes the file key.
-				WholeFile: true,
-				Height:    18,
+				ShieldDetail: "/undo 7 restores the 3 files this turn wrote",
+				Height:       18,
 			}
 			if mut != nil {
 				mut(v)
@@ -1228,18 +1224,11 @@ func TestGolden_ReviewMode(t *testing.T) {
 			return v.View(width)
 		}
 		return []golden.Panel{
-			{Label: "staging · one of three files staged", View: view(nil)},
-			{Label: "staging · everything staged, second file focused", View: view(func(v *ReviewView) {
-				v.Update(key("A"))
+			{Label: "a turn's review · the first file focused", View: view(nil)},
+			{Label: "a turn's review · the second file focused", View: view(func(v *ReviewView) {
 				v.Update(key("j"))
 			})},
-			{Label: "staging · a patch whose hunks are separable", View: view(func(v *ReviewView) {
-				v.WholeFile, v.ApplyVerb = false, "apply"
-			})},
 			{Label: "layout · side-by-side forced", View: view(func(v *ReviewView) { v.SideBySide = true })},
-			{Label: "read-only (a cumulative diff has nothing to stage)", View: view(func(v *ReviewView) {
-				v.ReadOnly = true
-			})},
 		}
 	})
 }

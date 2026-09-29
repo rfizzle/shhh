@@ -23,7 +23,6 @@
 
    ✓ Done · 2 steps · 6 tools · 24.7s · $0.14
   ▎✎ 1 file changed +12 −4          all tracked in git
-     [enter] review turn · [alt+z] undo the last turn
    ✗ go test ./internal/agent/... failing · exit 1 · …
 
 
@@ -41,7 +40,6 @@
 
    ✓ Done · 2 steps · 6 tools · 24.7s · $0.14
   ▎✎ 1 file changed +12 −4          all tracked in git
-     [enter] review turn · [alt+z] undo the last turn
    ✗ go test ./internal/agent/... failing · exit 1 · …
 
 
@@ -70,7 +68,6 @@
 
    ✓ Done · 2 steps · 6 tools · 24.7s · $0.14
   ▎✎ 1 file changed +12 −4          all tracked in git
-     [enter] review turn · [alt+z] undo the last turn
    ✗ go test ./internal/agent/... failing · exit 1 · …
 
 
@@ -88,7 +85,6 @@
 
    ✓ Done · 2 steps · 6 tools · 24.7s · $0.14
   ▎✎ 1 file changed +12 −4          all tracked in git
-     [enter] review turn · [alt+z] undo the last turn
    ✗ go test ./internal/agent/... failing · exit 1 · …
 
 
@@ -102,7 +98,6 @@
 
    ✓ Done · 2 steps · 6 tools · 24.7s · $0.14
   ▎✎ 1 file changed +12 −4          all tracked in git
-     [enter] review turn · [alt+z] undo the last turn
    ✗ go test ./internal/agent/... failing · exit 1 · …
 
 
@@ -149,7 +144,6 @@
 
    ␛[38;5;254m✓␛[m ␛[38;5;254mDone␛[m␛[38;5;244m · 2 steps · 6 tools · 24.7s · $0.14␛[m
   ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m1 file changed ␛[m␛[38;5;254m+12␛[m ␛[38;5;254m−4␛[m          ␛[38;5;244mall tracked in git␛[m
-     ␛[38;5;254m[enter]␛[m␛[38;5;244m review turn␛[m␛[38;5;244m · ␛[m␛[38;5;254m[alt+z]␛[m␛[38;5;244m undo the last turn␛[m
    ␛[38;5;254m✗␛[m ␛[38;5;254mgo test ./internal/agent/... failing␛[m␛[38;5;244m · exit 1 · …␛[m
 
 
@@ -167,7 +161,6 @@
 
    ␛[38;5;254m✓␛[m ␛[38;5;254mDone␛[m␛[38;5;244m · 2 steps · 6 tools · 24.7s · $0.14␛[m
   ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m1 file changed ␛[m␛[38;5;254m+12␛[m ␛[38;5;254m−4␛[m          ␛[38;5;244mall tracked in git␛[m
-     ␛[38;5;254m[enter]␛[m␛[38;5;244m review turn␛[m␛[38;5;244m · ␛[m␛[38;5;254m[alt+z]␛[m␛[38;5;244m undo the last turn␛[m
    ␛[38;5;254m✗␛[m ␛[38;5;254mgo test ./internal/agent/... failing␛[m␛[38;5;244m · exit 1 · …␛[m
 
 
@@ -196,7 +189,6 @@
 
    ␛[38;5;254m✓␛[m ␛[38;5;254mDone␛[m␛[38;5;244m · 2 steps · 6 tools · 24.7s · $0.14␛[m
   ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m1 file changed ␛[m␛[38;5;254m+12␛[m ␛[38;5;254m−4␛[m          ␛[38;5;244mall tracked in git␛[m
-     ␛[38;5;254m[enter]␛[m␛[38;5;244m review turn␛[m␛[38;5;244m · ␛[m␛[38;5;254m[alt+z]␛[m␛[38;5;244m undo the last turn␛[m
    ␛[38;5;254m✗␛[m ␛[38;5;254mgo test ./internal/agent/... failing␛[m␛[38;5;244m · exit 1 · …␛[m
 
 
@@ -214,7 +206,6 @@
 
    ␛[38;5;254m✓␛[m ␛[38;5;254mDone␛[m␛[38;5;244m · 2 steps · 6 tools · 24.7s · $0.14␛[m
   ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m1 file changed ␛[m␛[38;5;254m+12␛[m ␛[38;5;254m−4␛[m          ␛[38;5;244mall tracked in git␛[m
-     ␛[38;5;254m[enter]␛[m␛[38;5;244m review turn␛[m␛[38;5;244m · ␛[m␛[38;5;254m[alt+z]␛[m␛[38;5;244m undo the last turn␛[m
    ␛[38;5;254m✗␛[m ␛[38;5;254mgo test ./internal/agent/... failing␛[m␛[38;5;244m · exit 1 · …␛[m
 
 
@@ -228,7 +219,6 @@
 
    ␛[38;5;254m✓␛[m ␛[38;5;254mDone␛[m␛[38;5;244m · 2 steps · 6 tools · 24.7s · $0.14␛[m
   ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m1 file changed ␛[m␛[38;5;254m+12␛[m ␛[38;5;254m−4␛[m          ␛[38;5;244mall tracked in git␛[m
-     ␛[38;5;254m[enter]␛[m␛[38;5;244m review turn␛[m␛[38;5;244m · ␛[m␛[38;5;254m[alt+z]␛[m␛[38;5;244m undo the last turn␛[m
    ␛[38;5;254m✗␛[m ␛[38;5;254mgo test ./internal/agent/... failing␛[m␛[38;5;244m · exit 1 · …␛[m
 
 

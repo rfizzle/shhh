@@ -50,8 +50,6 @@ package chat
 
 import (
 	"strings"
-
-	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
 // lineCache is the rendered transcript, one display line per element.
@@ -78,9 +76,6 @@ type lineCache struct {
 	// frozen while it was the target keeps drawing its chords live after it
 	// has stopped being one, so a different target drops the cache.
 	latest recoveryTarget
-	// latestClose is the close the lines drew as the newest, offering its
-	// keys with nothing selected (inertkeys.go), keyed for the same reason.
-	latestClose *components.TurnClose
 }
 
 // reset drops every rendered line. The width is not part of it — it is the

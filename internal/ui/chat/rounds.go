@@ -12,8 +12,8 @@ package chat
 //
 // The row stands in for the turn's close block rather than sitting above one.
 // It already says what the turn did, what it changed and what the ways on
-// are, and a second block offering review and [u] beside it would be the same
-// answer twice.
+// are, and a second block offering review beside it would be the same answer
+// twice.
 
 import (
 	"fmt"
@@ -54,7 +54,7 @@ const uncapRoundsLabel = "let it run"
 // where the turn got to — a granted turn goes on changing files, and a record
 // that rewrites itself underneath you is worse than a stale one.
 type roundPause struct {
-	// turn is the turn that stopped; its review and [u] act on it.
+	// turn is the turn that stopped; its review acts on it.
 	turn int64
 	// used and limit are the counter as the rail reported it.
 	used, limit int
@@ -209,9 +209,8 @@ func (p roundPause) detail() string {
 // third 200.
 func (p roundPause) grant() int { return p.granted + roundGrantBlock }
 
-// keys are the ways on. Reviewing and undoing are offered only when there is
-// a changeset to act on — a key that cannot be honoured is not offered — and
-// both offers go once either has been taken.
+// keys are the ways on. Taking the turn's changes back is /undo, a command
+// rather than an offer on the row (docs/interface/surfaces.md#the-turns-close).
 //
 // `[!]` appears only from the second stop, because the first one is the
 // checkpoint doing its job: you have not yet seen this turn stopped, so the
@@ -224,9 +223,6 @@ func (p roundPause) keys() []components.KeyOffer {
 		if p.granted > 0 {
 			offers = append(offers, rowOffer(keys.Row.Uncap, uncapRoundsLabel))
 		}
-	}
-	if p.files > 0 {
-		offers = append(offers, rowOffer(keys.Row.Undo, "undo the turn"))
 	}
 	return offers
 }
@@ -243,9 +239,6 @@ func roundPauseOffers(p *roundPause) []components.KeyOffer {
 		if p.granted > 0 {
 			offers = append(offers, rowOffer(keys.Row.Uncap, uncapRoundsLabel))
 		}
-	}
-	if p.files > 0 {
-		offers = append(offers, rowOffer(keys.Row.Undo, "undo the turn"))
 	}
 	return offers
 }
@@ -265,8 +258,7 @@ func (m Model) focusedRoundPause() (entry, bool) {
 }
 
 // roundPauseKey routes a keystroke to the focused pause row, reporting false
-// when the row is not claiming it — which leaves the changeset row's own [u]
-// exactly as it was.
+// when the row is not claiming it.
 func (m Model) roundPauseKey(key string) (tea.Model, tea.Cmd, bool) {
 	e, ok := m.focusedRoundPause()
 	if !ok {
@@ -274,12 +266,6 @@ func (m Model) roundPauseKey(key string) (tea.Model, tea.Cmd, bool) {
 	}
 	p := e.pause
 	switch key {
-	case keys.Shown(keys.Row.Undo):
-		if p.files == 0 {
-			return m, nil, false
-		}
-		next, cmd := m.undoTurn(e.turn, nil)
-		return next, cmd, true
 	case keys.Shown(keys.Row.Rounds):
 		if p.spent {
 			return m, nil, false
@@ -301,7 +287,7 @@ func (m Model) roundPauseKey(key string) (tea.Model, tea.Cmd, bool) {
 // added to, the round counter is not reset, the changeset keeps collecting
 // under the same turn number, and the accounting is reopened rather than
 // started again — so the turn closes once, priced as one thing, with one
-// changeset for [u] to take back.
+// changeset for /undo to take back.
 func (m Model) grantRounds(p *roundPause) (tea.Model, tea.Cmd) {
 	if m.working() {
 		return m.systemNotice("the turn is already running again")

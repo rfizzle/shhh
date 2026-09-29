@@ -170,8 +170,8 @@ new [brief]   draft an agent profile from a sentence with the model's help: answ
 	"/todo":     `the project's backlog: bare opens a picker · show|edit <slug> · add (reads this session into proposed items you accept or drop) · add <text> · block <slug> [why] · open|done|drop <slug> · new <text> · groom <slug> (reads an item against the tree and proposes the corrections) · run [slug|--next] works an item through its profile's run · sprint · status · stop`,
 	"/plan":     `the approved plan as a checklist, with anything that has departed from it · save [name] writes the last plan/response to .shhh/plans/ · drop forgets an approved plan`,
 	"/diff":     `show what this session changed, full screen, or one file's — read from the session's own changeset, so it works outside a git repository`,
-	"/review":   `review what a turn changed: file list, hunks, staging per hunk (bare reviews the last turn that changed anything). Also a turn's changed-files row, clicked or selected and opened with enter. Nothing is applied`,
-	"/undo":     `put back what a turn changed, from the session's own records (not git). Asks first, names anything that changed since, and is itself recorded as a turn. Also [u] on the row`,
+	"/review":   `review what a turn changed: file list, hunks and the turn's verdict (bare reviews the last turn that changed anything). Also a turn's changed-files row, clicked or selected and opened with enter. It reads and changes nothing; /undo takes a turn back`,
+	"/undo":     `put back what a turn changed, from the session's own records (not git). Asks first, names anything that changed since, and is itself recorded as a turn`,
 	"/compact":  `continue from a summary plus the most recent turns`,
 	"/rewind":   `rewind to the end of turn [n], 0 being the start (bare /rewind picks interactively); the abandoned tail is kept as a branch, and a card asks whether the files come back too`,
 	"/branches": `switch this session's branches: [n] by number, [name] by name, bare opens a picker`,
@@ -329,9 +329,9 @@ func (r helpKeyRow) column() []string {
 // rowChordList is the transcript rows' own offers as the key list writes
 // them: the chord and the register's words for it, in one run joined the way
 // every run of offers is joined. They are one row of the list rather than
-// ten because they are one gesture — the offers a row makes, taken from
-// the prompt — and ten rows of one word each would bury the keys around
-// them (docs/interface/surfaces.md#the-turns-close).
+// six because they are one gesture — the offers a row makes, taken from
+// the prompt — and six rows of one word each would bury the keys around
+// them (docs/interface/surfaces.md#the-recovery-row).
 //
 // Read off the register, like every other spelling here, so a rebind moves
 // the list with the handler.
@@ -367,7 +367,7 @@ func rowChordKey() string {
 // rowChordText is that row's paragraph.
 func rowChordText() string {
 	text := `a transcript row's own offers, taken from the prompt with the draft still holding the keyboard: ` + rowChordList() + `
-in reading mode each is the bare letter instead, on the row under the cursor; the selected row draws whichever of the two works where you are. From the prompt the chord acts on the row the pointer names and on nothing when no row is selected. A turn's changed-files row opens that turn's review when it is clicked or selected and opened with enter.`
+in reading mode each is the bare letter instead, on the row under the cursor; the selected row draws whichever of the two works where you are. From the prompt the chord acts on the row the pointer names and on nothing when no row is selected. A turn's changed-files row opens that turn's review when it is clicked or selected and opened with enter, and its commit card when it is selected and handed the keyboard. What a row once offered to do to the work is a command now: /undo takes a turn back, /gate run runs its checks again, /todo open reopens a blocked run's item.`
 	if keys.NeedsOption(keys.RowChord.All()...) {
 		text += ` On a Mac an alt chord needs the Option key setting above`
 	}
@@ -473,7 +473,7 @@ while the agent is working, enter queues a steering message that joins the conve
 		{
 			binds: []keys.Binding{keys.Draft.Open, keys.Draft.Close},
 			sep:   "\n",
-			text:  `open or run the pointed row, and close it: what enter and - do under reading mode's cursor, by the same handler. A row's own letters (a turn's v and u, a failure's r) stay reading mode's, because at the prompt a letter is text. Enter on an empty draft is the same open`,
+			text:  `open or run the pointed row, and close it: what enter and - do under reading mode's cursor, by the same handler. A row's own letters (a failure's r, a pause's +) stay reading mode's, because at the prompt a letter is text. Enter on an empty draft is the same open`,
 		},
 		{
 			binds: []keys.Binding{keys.Draft.Reading},
@@ -517,7 +517,7 @@ bare /todo opens the same screen; it opens over a running turn, and the keys tha
 		{
 			binds: []keys.Binding{keys.Draft.Answer},
 			sep:   "\n",
-			text:  `hand the keyboard to a decision waiting on screen. An approval that lands while you are typing does not take your keys with it: its y, n and a are not live until one of these chords gives them the keyboard, and until then every letter goes into the draft. Esc leaves the decision waiting; n is how you say no. The two are the same act, and a waiting card names both: ctrl+y is for terminals and desktops that never deliver ctrl+space — macOS binds it to the input-source switcher and takes it first`,
+			text:  `hand the keyboard to a decision waiting on screen. An approval that lands while you are typing does not take your keys with it: its y, n and a are not live until one of these chords gives them the keyboard, and until then every letter goes into the draft. Esc leaves the decision waiting; n is how you say no. The two are the same act, and a waiting card names both: ctrl+y is for terminals and desktops that never deliver ctrl+space — macOS binds it to the input-source switcher and takes it first. With nothing waiting, on a selected changed-files row, it opens that turn's commit card`,
 		},
 		{
 			binds: []keys.Binding{keys.Draft.KeyList},

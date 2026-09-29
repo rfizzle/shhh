@@ -293,15 +293,15 @@ func monoFixtures() []monoSurface {
 		return Meter{Pct: pct, Cells: MeterCellsVitals, Tone: MeterPressure, Label: "ctx"}.View()
 	}
 
-	// The review surface's staging states, held to one file and one hunk so
-	// that only the staging itself is left to tell them apart.
-	review := func(staged []bool, mut func(*ReviewView)) string {
+	// The review surface's verdicts, held to one file and one hunk so that
+	// only the verdict is left to tell them apart.
+	review := func(mut func(*ReviewView)) string {
 		hunks := diff.Compute(
 			"a\nb\nc\nd\ne\nf\ng\nh\ni\nj\nk\nl\n",
 			"a\nB\nc\nd\ne\nf\ng\nh\ni\nj\nK\nl\n")
 		v := &ReviewView{
 			Title:  "turn 7",
-			Files:  []ReviewFile{{Path: "internal/agent/loop.go", Hunks: hunks, Staged: staged}},
+			Files:  []ReviewFile{{Path: "internal/agent/loop.go", Hunks: hunks}},
 			Shield: "nothing is committed",
 			Height: 12,
 		}
@@ -562,17 +562,12 @@ func monoFixtures() []monoSurface {
 			{"cancelled", status(func(s *TurnStatus) { s.Done, s.Outcome = true, TurnCancelled })},
 			{"failed", status(func(s *TurnStatus) { s.Done, s.Outcome = true, TurnFailed })},
 		}},
-		{"review staging", []monoState{
-			{"nothing staged", review([]bool{false, false}, nil)},
-			{"partly staged", review([]bool{true, false}, nil)},
-			{"wholly staged", review([]bool{true, true}, nil)},
-		}},
 		{"review verdict", []monoState{
-			{"no verdict", review([]bool{true, true}, nil)},
-			{"checks passing", review([]bool{true, true}, func(v *ReviewView) {
+			{"no verdict", review(nil)},
+			{"checks passing", review(func(v *ReviewView) {
 				v.Verdict = &ReviewVerdict{Label: "go test ./..."}
 			})},
-			{"checks failing", review([]bool{true, true}, func(v *ReviewView) {
+			{"checks failing", review(func(v *ReviewView) {
 				v.Verdict = &ReviewVerdict{Failed: true, Label: "go test ./..."}
 			})},
 		}},

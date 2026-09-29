@@ -132,8 +132,8 @@ func (c CommitCard) stagesRow(inner int) string {
 }
 
 // commitRun is the card's decision keys, drawn from the register so the
-// spelling offered is the spelling answered. The staging key says what the
-// reader does there — choose what goes in — rather than naming the review
+// spelling offered is the spelling answered. The hunks key says what the
+// reader does there — read the hunks — rather than naming the review
 // surface it opens, which is the product's word for it and not theirs. `?`
 // takes the last slot: the host answers it with the card's register and
 // the glyph legend, as every surface holding the keyboard does.

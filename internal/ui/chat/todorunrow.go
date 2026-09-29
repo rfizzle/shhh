@@ -23,12 +23,9 @@ import (
 	"strings"
 	"time"
 
-	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	"github.com/rfizzle/shhh/internal/todo"
 	"github.com/rfizzle/shhh/internal/todo/run"
 	"github.com/rfizzle/shhh/internal/ui/components"
-	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // runMark is one strip stage's state on the row.
@@ -473,14 +470,15 @@ func (r *todoRunRow) answers() []runRowLine {
 	return out
 }
 
-// offers are the keys the row carries: a blocked run's item can be reopened
-// from the row it blocked on, which is where the reader is when they decide
-// to.
-func (r *todoRunRow) offers() []components.TurnKey {
+// reopenLine is what a blocked run's row says about putting its item back:
+// the command that does it, where the reader is when they decide to. It is a
+// sentence rather than a key on the row, because /todo open is the path
+// either way (docs/interface/surfaces.md#the-backlog-runs-row).
+func (r *todoRunRow) reopenLine() string {
 	if r.st.Stage != run.StageBlocked {
-		return nil
+		return ""
 	}
-	return []components.TurnKey{rowOffer(keys.Row.Reopen, keys.Words(keys.Row.Reopen))}
+	return "/todo open " + r.st.Slug + " puts the item back to open"
 }
 
 // todoRunRowView renders the row: its header, the strip, the notes each
@@ -521,11 +519,8 @@ func (m Model) todoRunRowView(e entry, width int, sel rowSel) string {
 			wrapped(answer)
 		}
 	}
-	if offers := components.KeyRun(selOffers(r.offers(), sel), !sel.lettersLive(), m.rowHandover(sel.lettersLive())); offers != "" {
-		clipped(offers)
-	}
-	if option := components.KeyRunOption(selOffers(r.offers(), sel), !sel.lettersLive(), m.namesOptionRow(e)); option != "" {
-		clipped(option)
+	if reopen := r.reopenLine(); reopen != "" {
+		clipped(sty.Step.Stats.Render(reopen))
 	}
 	return strings.Join(lines, "\n")
 }
@@ -568,43 +563,4 @@ func (m *Model) closeTodoRunRow(how string) {
 		m.invalidateRenderCache()
 	}
 	m.todoRunner.rowIdx = 0
-}
-
-// todoRunRowIndexOf finds the transcript index of a run row, or -1.
-func todoRunRowIndexOf(es []entry, idx int) int {
-	if idx < 0 || idx >= len(es) || es[idx].kind != entryTodoRun || es[idx].todorun == nil {
-		return -1
-	}
-	return idx
-}
-
-// todoRunReopen is `[o]` on a blocked run's row: the item it blocked goes
-// back to open. It is refused on a row whose item another run is working —
-// reopening it under a run would put the run's own item back to a state the
-// run does not expect.
-func (m Model) todoRunReopen(idx int) (tea.Model, tea.Cmd, bool) {
-	if todoRunRowIndexOf(m.transcript, idx) < 0 {
-		return m, nil, false
-	}
-	r := m.transcript[idx].todorun
-	if r.st.Stage != run.StageBlocked {
-		return m, nil, false
-	}
-	slug := r.st.Slug
-	if m.todoRunner.state != nil && !m.todoRunner.state.Over() && m.todoRunner.state.Slug == slug {
-		next, cmd := m.systemNotice(fmt.Sprintf("%s is being run again; /todo stop ends that run first", slug))
-		return next, cmd, true
-	}
-	it, ok := m.todoStore.Find(slug)
-	if !ok {
-		next, cmd := m.systemNotice(fmt.Sprintf("no backlog item %q; it may have been archived or renamed since the run blocked", slug))
-		return next, cmd, true
-	}
-	if err := todo.SetStatus(it.Path, todo.StatusOpen); err != nil {
-		next, cmd := m.systemNotice("could not reopen " + slug + " — " + err.Error())
-		return next, cmd, true
-	}
-	m.reloadTodos()
-	next, cmd := m.systemNotice(fmt.Sprintf("%s is open again; /todo run %s starts it over", slug, slug))
-	return next, cmd, true
 }

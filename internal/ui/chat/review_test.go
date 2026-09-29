@@ -13,7 +13,6 @@ import (
 	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/ui/components"
-	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // reviewModel is a finished turn that wrote one file, ready to review.
@@ -27,7 +26,7 @@ func reviewModel(t *testing.T) (Model, string) {
 }
 
 // reviewSplitModel is a recorded turn that changed one file in two separate
-// places, which is what makes a selection covering part of a file possible.
+// places, so the review has two hunks to move between.
 // The record is filed directly rather than driven through the tool: an
 // overwrite of a file the session never read is refused before it reaches a
 // card, and what these tests need is the two hunks, not the route.
@@ -50,7 +49,7 @@ func reviewSplitModel(t *testing.T) (Model, string) {
 	return m, path
 }
 
-// openSplitReview takes that turn into review, wholly staged.
+// openSplitReview takes that turn into review.
 func openSplitReview(t *testing.T, m Model) Model {
 	t.Helper()
 	updated, _ := m.openReview(1)
@@ -64,45 +63,27 @@ func openSplitReview(t *testing.T, m Model) Model {
 	return m
 }
 
-// An undo is planned a file at a time, so a selection covering some but not
-// all of a file's hunks says at the confirm that the rest goes back with it.
-// This is the four hunks somebody meant to keep.
-func TestReview_APartialSelectionSaysTheFileGoesBackWhole(t *testing.T) {
+// A turn's review is a reading: the keys that once staged an undo stage
+// nothing, enter arms no confirm, and the way to take the turn back is named
+// on the surface instead (docs/interface/surfaces.md#the-turns-close).
+func TestReview_ATurnsReviewStagesNothing(t *testing.T) {
 	m, _ := reviewSplitModel(t)
 	m = openSplitReview(t, m)
-
-	// The turn opens wholly staged, so the hunk key takes one hunk back out
-	// of the selection — the press the warning is about.
-	stage := keys.Shown(keys.Review.StageHunk)
-	updated, _ := m.Update(tea.KeyPressMsg{Code: []rune(stage)[0], Text: stage})
-	m = updated.(Model)
-	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
-	m = updated.(Model)
-
-	if m.undoAsk == nil {
-		t.Fatalf("enter should arm the undo confirm, got state %v", m.state)
+	for _, press := range []tea.KeyPressMsg{
+		{Code: 's', Text: "s"}, {Code: 'A', Text: "A"}, {Code: tea.KeyEnter},
+	} {
+		updated, _ := m.Update(press)
+		m = updated.(Model)
+		if m.undoAsk != nil || m.state != stateReview {
+			t.Fatalf("%v should stage and arm nothing, got state %v", press, m.state)
+		}
 	}
-	if m.undoAsk.Note != reviewPartialNote {
-		t.Fatalf("a partial selection should carry the warning, got %q", m.undoAsk.Note)
+	if view := ansi.Strip(m.View().Content); !strings.Contains(view, "/undo 1 restores") {
+		t.Fatalf("the surface should name the way back:\n%s", view)
 	}
-	if view := ansi.Strip(m.View().Content); !strings.Contains(view, reviewPartialNote) {
-		t.Fatalf("the confirm should say what the answer really does:\n%s", view)
-	}
-}
-
-// A selection that covers a file's every hunk costs nothing extra, so the
-// confirm says nothing extra.
-func TestReview_AWholeFileSelectionCarriesNoWarning(t *testing.T) {
-	m, _ := reviewSplitModel(t)
-	m = openSplitReview(t, m)
-	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
-	m = updated.(Model)
-
-	if m.undoAsk == nil {
-		t.Fatalf("enter should arm the undo confirm, got state %v", m.state)
-	}
-	if m.undoAsk.Note != "" {
-		t.Fatalf("a whole-file selection warns about nothing, got %q", m.undoAsk.Note)
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
+	if updated.(Model).state == stateReview {
+		t.Fatal("esc should leave the review")
 	}
 }
 
@@ -118,11 +99,6 @@ func TestReview_CommandOpensTheLastTurn(t *testing.T) {
 	}
 	if len(m.review.Files) != 1 || m.review.Files[0].Path != path {
 		t.Fatalf("the surface should carry the turn's file, got %#v", m.review.Files)
-	}
-	// The whole turn starts staged: for an applied turn the selection is
-	// what undo would restore.
-	if m.review.Files[0].Staged == nil || !m.review.Files[0].Staged[0] {
-		t.Fatalf("the turn should open wholly staged, got %#v", m.review.Files[0].Staged)
 	}
 	view := ansi.Strip(m.View().Content)
 	for _, want := range []string{"REVIEW", "turn 1", "nothing is committed"} {
@@ -176,54 +152,6 @@ func TestReview_EscChangesNothing(t *testing.T) {
 	}
 	if _, ok := m.changes.Turn(1); !ok {
 		t.Fatal("the turn's records should survive a review")
-	}
-}
-
-// Enter hands the staged selection to the undo path. Review itself
-// applies nothing: what enter does is arm the undo confirm, and the file is
-// untouched until that confirm is answered.
-func TestReview_EnterHandsTheSelectionToUndo(t *testing.T) {
-	m, path := reviewModel(t)
-	before, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	m = sendText(t, m, "/review")
-	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
-	m = updated.(Model)
-	if m.state == stateReview {
-		t.Fatal("enter with a staged selection should leave the surface")
-	}
-	if m.state != stateUndoConfirm || m.undoAsk == nil {
-		t.Fatalf("enter should arm the undo confirm, got state %v", m.state)
-	}
-	if got := undoPlanPaths(m.undoPlan); len(got) != 1 || got[0] != path {
-		t.Fatalf("the plan should cover the staged file, got %v", got)
-	}
-	after, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if string(after) != string(before) {
-		t.Fatalf("nothing in review is destructive: %q became %q", before, after)
-	}
-}
-
-// Staging nothing and pressing enter is not an exit: the surface says why.
-func TestReview_EnterWithNothingStagedStays(t *testing.T) {
-	m, _ := reviewModel(t)
-	m = sendText(t, m, "/review")
-
-	updated, _ := m.Update(tea.KeyPressMsg{Code: 'a', Text: "a"}) // all → none
-	m = updated.(Model)
-	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
-	m = updated.(Model)
-	if m.state != stateReview {
-		t.Fatalf("enter with nothing staged should stay in review, got state %v", m.state)
-	}
-	if !strings.Contains(ansi.Strip(m.View().Content), "nothing staged") {
-		t.Fatalf("the surface should say why enter did nothing:\n%s", ansi.Strip(m.View().Content))
 	}
 }
 

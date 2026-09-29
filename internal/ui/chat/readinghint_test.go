@@ -209,7 +209,7 @@ func TestReadingHint_RowKeysAreASecondLineUnderTheRowsOwnRail(t *testing.T) {
 	if !strings.HasPrefix(line, "▎this row · ") {
 		t.Fatalf("the row's keys carry the row's own rail, got %q", line)
 	}
-	for _, want := range []string{"[u] undo turn", "[esc] nothing"} {
+	for _, want := range []string{keys.Bracket(keys.Draft.Answer) + " " + commitWords, "[esc] nothing"} {
 		if !strings.Contains(line, want) {
 			t.Fatalf("the row should offer %q, got %q", want, line)
 		}
@@ -230,24 +230,17 @@ func TestReadingHint_RowKeysAreASecondLineUnderTheRowsOwnRail(t *testing.T) {
 	}
 }
 
-// A blocked backlog run's row offers the reopen, so the bar names it; the
-// same row before it blocked offers nothing and the bar says nothing.
-func TestReadingHint_ABlockedRunsRowOffersTheReopen(t *testing.T) {
+// A blocked backlog run's row names /todo open on itself rather than
+// offering a key, so the bar says nothing about it, blocked or not.
+func TestReadingHint_ABlockedRunsRowOffersNoKey(t *testing.T) {
 	m := readingModel(t, 130)
 	st := run.Start(todo.Item{Slug: "do-it", Profile: todo.BuiltinCode(), Fields: map[string]string{"size": "S"}}, "s", "manual", 1, run.Options{})
 	st.Stage = run.StageBlocked
 	m.transcript = append(m.transcript, entry{kind: entryTodoRun, todorun: newTodoRunRow(st)})
 	m.focusIdx = len(m.transcript) - 1
 
-	rows := m.readingRowLines(m.contentWidth(), minPanelHeight-1)
-	if len(rows) != 1 {
-		t.Fatalf("a blocked run's row offers a key, so it should carry one line, got %d", len(rows))
-	}
-	line := ansi.Strip(rows[0])
-	for _, want := range []string{"▎this row · ", "[o] reopen", "[esc] nothing"} {
-		if !strings.Contains(line, want) {
-			t.Fatalf("the bar should carry %q, got %q", want, line)
-		}
+	if rows := m.readingRowLines(m.contentWidth(), minPanelHeight-1); len(rows) != 0 {
+		t.Fatalf("a blocked run's row offers no key, got %q", rows)
 	}
 
 	st.Stage = run.StageImplement

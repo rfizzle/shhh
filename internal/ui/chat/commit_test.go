@@ -79,6 +79,13 @@ func focusLastClose(t *testing.T, m Model) Model {
 	return m
 }
 
+// handOverRow presses the handover through the session's own routing, which
+// on a selected changed-files row opens that turn's commit card.
+func handOverRow(t *testing.T, m Model) (Model, tea.Cmd) {
+	t.Helper()
+	return pressKey(t, m, tea.KeyPressMsg{Code: tea.KeySpace, Mod: tea.ModCtrl})
+}
+
 // typeLetter sends one bare letter through the session's own routing.
 func typeLetter(t *testing.T, m Model, key string) (Model, tea.Cmd) {
 	t.Helper()
@@ -99,7 +106,7 @@ func settle(t *testing.T, m Model, cmd tea.Cmd) Model {
 	return m
 }
 
-func TestCommitOffer_TheChangedFilesRowOffersReviewCommitAndUndo(t *testing.T) {
+func TestCommitOffer_TheChangedFilesRowOffersReviewAndTheHandover(t *testing.T) {
 	m, _, _ := commitRepo(t)
 	c := lastClose(t, m)
 	if c.Changes == nil {
@@ -107,30 +114,51 @@ func TestCommitOffer_TheChangedFilesRowOffersReviewCommitAndUndo(t *testing.T) {
 	}
 	// Selected, as the offers are only drawn on the row the reader has
 	// chosen (inertkeys.go).
-	view := ansi.Strip(m.closeFor(*c, rowUnderCursor).View(120))
-	for _, want := range []string{
-		"[enter] " + reviewTurnWords,
-		keys.Bracket(keys.Row.Commit) + " commit",
-		keys.Bracket(keys.Row.Undo) + " undo turn",
-	} {
+	view := ansi.Strip(m.closeFor(*c, rowUnderCursor).View(160))
+	handover := keys.Bracket(keys.Draft.Answer) + " " + commitWords
+	for _, want := range []string{"[enter] " + reviewTurnWords, handover, "/undo 1 takes it back"} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("the row should offer %q, got:\n%s", want, view)
 		}
 	}
-	// The order is review, keep, take back: the three things a changeset can
-	// become, in the order a reader meets them.
-	vi := strings.Index(view, "[enter]")
-	gi := strings.Index(view, keys.Bracket(keys.Row.Commit))
-	ui := strings.Index(view, keys.Bracket(keys.Row.Undo))
-	if vi >= gi || gi >= ui {
+	// Review, then keep, in the order a reader meets them.
+	if strings.Index(view, "[enter]") >= strings.Index(view, handover) {
 		t.Fatalf("the offers are out of order in:\n%s", view)
+	}
+	// Unselected, the row offers nothing: no key on every close names which
+	// turn it would act on.
+	if quiet := ansi.Strip(m.closeFor(*c, rowUnselected).View(160)); strings.Contains(quiet, handover) {
+		t.Fatalf("an unselected close should offer no commit, got:\n%s", quiet)
+	}
+}
+
+// The handover opens the card only where the reader has selected the row —
+// the pointer lit from the prompt, or reading mode's cursor. With nothing
+// selected it means what it always has, and the draft keeps its sentence.
+func TestCommitOffer_TheHandoverReachesOnlyASelectedRow(t *testing.T) {
+	m, _, _ := commitRepo(t)
+	m.input.SetValue("and while you are at it")
+	next, _ := handOverRow(t, m)
+	if next.state == stateCommitCard {
+		t.Fatal("the handover with nothing selected should not open the card")
+	}
+	pointed := m
+	pointed.pointer = true
+	pointed.focusIdx = focusLastClose(t, m).focusIdx
+	pointed.state = stateInput
+	opened, _ := handOverRow(t, pointed)
+	if opened.state != stateCommitCard || opened.commit == nil {
+		t.Fatalf("the handover on the pointed close should open the card, got state %v", opened.state)
+	}
+	if got := opened.input.Value(); got != "and while you are at it" {
+		t.Fatalf("the sentence in the draft should be left alone, got %q", got)
 	}
 }
 
 func TestCommitCard_StatesTheTurnsOwnFilesAndLeavesTheReadersAlone(t *testing.T) {
 	m, _, _ := commitRepo(t)
 	m = focusLastClose(t, m)
-	m, _ = typeLetter(t, m, keys.Shown(keys.Row.Commit))
+	m, _ = handOverRow(t, m)
 	if m.state != stateCommitCard || m.commit == nil {
 		t.Fatalf("the commit key should open the card, got state %v", m.state)
 	}
@@ -167,7 +195,7 @@ func TestCommitCard_StatesTheTurnsOwnFilesAndLeavesTheReadersAlone(t *testing.T)
 func TestCommitCard_NeverStagesAPathTheTurnDidNotWrite(t *testing.T) {
 	m, root, mine := commitRepo(t)
 	m = focusLastClose(t, m)
-	m, _ = typeLetter(t, m, keys.Shown(keys.Row.Commit))
+	m, _ = handOverRow(t, m)
 	next, cmd := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = settle(t, next.(Model), cmd)
 	if m.commit == nil || m.commit.banked == nil {
@@ -206,7 +234,7 @@ func TestCommitCard_LeavesOutAFileTheReaderChangedSinceTheTurn(t *testing.T) {
 		t.Fatal(err)
 	}
 	m = focusLastClose(t, m)
-	next, _ := typeLetter(t, m, keys.Shown(keys.Row.Commit))
+	next, _ := handOverRow(t, m)
 	m = next
 
 	// One file, and it was the only one: the card cannot be opened at all,
@@ -228,7 +256,7 @@ func TestCommitCard_LeavesOutAFileTheReaderChangedSinceTheTurn(t *testing.T) {
 func TestCommitCard_RefusesWhenTheTreeMovedUnderTheCard(t *testing.T) {
 	m, root, _ := commitRepo(t)
 	m = focusLastClose(t, m)
-	m, _ = typeLetter(t, m, keys.Shown(keys.Row.Commit))
+	m, _ = handOverRow(t, m)
 	if m.state != stateCommitCard {
 		t.Fatalf("the card should be up, got %v", m.state)
 	}
@@ -293,7 +321,7 @@ func TestCommit_TheReceiptLandsOnTheCloseRowAndWithdrawsUndo(t *testing.T) {
 	m, _, _ := commitRepo(t)
 	m = focusLastClose(t, m)
 	row := m.focusIdx
-	m, _ = typeLetter(t, m, keys.Shown(keys.Row.Commit))
+	m, _ = handOverRow(t, m)
 	next, cmd := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = settle(t, next.(Model), cmd)
 
@@ -305,11 +333,8 @@ func TestCommit_TheReceiptLandsOnTheCloseRowAndWithdrawsUndo(t *testing.T) {
 		t.Fatalf("the receipt is the tool's own wording, got %q", c.Commit.Receipt)
 	}
 	view := ansi.Strip(m.closeFor(*c, rowUnderCursor).View(120))
-	if strings.Contains(view, keys.Bracket(keys.Row.Undo)) {
-		t.Fatalf("a committed changeset offers no undo key, got:\n%s", view)
-	}
-	if strings.Contains(view, keys.Bracket(keys.Row.Commit)) {
-		t.Fatalf("the commit key has been spent, got:\n%s", view)
+	if strings.Contains(view, keys.Bracket(keys.Draft.Answer)) {
+		t.Fatalf("the commit has been spent, got:\n%s", view)
 	}
 	if !strings.Contains(view, "[enter] "+reviewTurnWords) {
 		t.Fatalf("review survives a commit, got:\n%s", view)
@@ -341,7 +366,7 @@ func TestCommit_AFailingHookCancelsAndChangesNothing(t *testing.T) {
 
 	m = focusLastClose(t, m)
 	row := m.focusIdx
-	m, _ = typeLetter(t, m, keys.Shown(keys.Row.Commit))
+	m, _ = handOverRow(t, m)
 	// The hooks the card promises to run are the checkout's, and they run
 	// only where the checkout is trusted.
 	m.commit.hooks = true
@@ -374,7 +399,7 @@ func TestCommit_AFailingHookCancelsAndChangesNothing(t *testing.T) {
 func TestCommitCard_AnswersNothingWhileGitHasIt(t *testing.T) {
 	m, _, _ := commitRepo(t)
 	m = focusLastClose(t, m)
-	m, _ = typeLetter(t, m, keys.Shown(keys.Row.Commit))
+	m, _ = handOverRow(t, m)
 	next, cmd := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = next.(Model)
 	if m.commit == nil || !m.commit.running {
@@ -406,7 +431,7 @@ func TestCommitCard_EscLeavesTheChangesetAndTheOffer(t *testing.T) {
 	before, _ := git(root, "rev-parse", "HEAD")
 	m = focusLastClose(t, m)
 	row := m.focusIdx
-	m, _ = typeLetter(t, m, keys.Shown(keys.Row.Commit))
+	m, _ = handOverRow(t, m)
 	next, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	m = next.(Model)
 
@@ -419,8 +444,8 @@ func TestCommitCard_EscLeavesTheChangesetAndTheOffer(t *testing.T) {
 	if after, _ := git(root, "rev-parse", "HEAD"); after != before {
 		t.Fatalf("esc wrote history: %s → %s", before, after)
 	}
-	view := ansi.Strip(m.transcript[row].close.View(120))
-	if !strings.Contains(view, keys.Bracket(keys.Row.Commit)) {
+	view := ansi.Strip(m.transcript[row].close.View(160))
+	if !strings.Contains(view, keys.Bracket(keys.Draft.Answer)+" "+commitWords) {
 		t.Fatalf("the offer should still be on the row, got:\n%s", view)
 	}
 }
@@ -428,7 +453,7 @@ func TestCommitCard_EscLeavesTheChangesetAndTheOffer(t *testing.T) {
 func TestCommitMessage_IsADraftThatKeepsItsEditsOnEsc(t *testing.T) {
 	m, _, _ := commitRepo(t)
 	m = focusLastClose(t, m)
-	m, _ = typeLetter(t, m, keys.Shown(keys.Row.Commit))
+	m, _ = handOverRow(t, m)
 	proposed := m.commit.message
 	if proposed == "" {
 		t.Fatal("the card opens with a proposal")
@@ -480,31 +505,30 @@ func TestProposedCommitMessage_ReadsTheTurnAndThePaths(t *testing.T) {
 	}
 }
 
-// The checks row's own offer, which is present only where there is a suite to
-// run again: re-running a command the turn happened to run would be shhh
-// executing a line nobody is looking at.
-func TestChecksRow_OffersTheRerunOnlyForASuite(t *testing.T) {
+// The checks row names the command that runs its suite again, and only
+// where there is a suite: re-running a command the turn happened to run would
+// be a line nobody is looking at.
+func TestChecksRow_NamesTheRerunOnlyForASuite(t *testing.T) {
 	gate := []entry{{kind: entryTool, toolName: quality.ToolName,
 		toolResult: `Quality gate "default": PASS — 4/4 checks passed (1s)`}}
-	if c := turnChecksRow(gate, true); c == nil || len(c.Keys) != 1 ||
-		c.Keys[0].Key != keys.Bracket(keys.Row.Rerun) {
-		t.Fatalf("a gate verdict offers the rerun, got %+v", c)
+	if c := turnChecksRow(gate, true); c == nil || c.Again != "/gate run default" {
+		t.Fatalf("a gate verdict names /gate run for its suite, got %+v", c)
 	}
-	if c := turnChecksRow(gate, false); c == nil || len(c.Keys) != 0 {
-		t.Fatalf("a session with no gate offers nothing, got %+v", c)
+	if c := turnChecksRow(gate, false); c == nil || c.Again != "" {
+		t.Fatalf("a session with no gate names nothing, got %+v", c)
 	}
 	cmdRow := []entry{{kind: entryCommand, text: "go test ./internal/agent/..."}}
-	if c := turnChecksRow(cmdRow, true); c == nil || len(c.Keys) != 0 {
-		t.Fatalf("a command verdict is never re-run from a row, got %+v", c)
+	if c := turnChecksRow(cmdRow, true); c == nil || c.Again != "" {
+		t.Fatalf("a command verdict is never suggested again, got %+v", c)
 	}
 	if got := suiteOfTurn(gate); got != "default" {
 		t.Fatalf("the suite is read back off the gate row, got %q", got)
 	}
 }
 
-// And the offer reaches the suite through the door /gate already opens, so
-// there is one way to start a run whoever asked for it.
-func TestChecksRow_TheRerunReachesTheSameRunAsTheCommand(t *testing.T) {
+// And the row's letter for it is gone: the suite runs again through the door
+// /gate already opens, and [t] on the row is reading mode's to hand back.
+func TestChecksRow_OffersNoKeyToRunTheSuiteAgain(t *testing.T) {
 	m, _ := closeGateModel(t, quality.VerdictPass)
 	asked := ""
 	gate := m.gate
@@ -514,13 +538,14 @@ func TestChecksRow_TheRerunReachesTheSameRunAsTheCommand(t *testing.T) {
 	}
 	m = m.WithGate(gate)
 	m = closeTurnWithGate(t, startEditedTurn(t, m))
-	m = focusLastClose(t, m)
-	next, _ := typeLetter(t, m, keys.Shown(keys.Row.Rerun))
-	if asked != "run fast" {
-		t.Fatalf("the rerun should ask for the suite the verdict came from, got %q", asked)
+	c := lastClose(t, m)
+	if c.Checks == nil || c.Checks.Again != "/gate run fast" {
+		t.Fatalf("the checks row should name the suite's own run, got %+v", c.Checks)
 	}
-	if !strings.Contains(lastSystemNotice(t, next), "the suite is running") {
-		t.Fatal("the reader should be told the run started")
+	m = focusLastClose(t, m)
+	typeLetter(t, m, "t")
+	if asked != "" {
+		t.Fatalf("a letter on the row should start no run, got %q", asked)
 	}
 }
 
@@ -539,8 +564,8 @@ func lastSystemNotice(t *testing.T, m Model) string {
 // The keys the register gave these two surfaces are the ones the surfaces
 // answer to, which is the whole of what the register is for.
 func TestCommitKeys_AreTheRegistersOwn(t *testing.T) {
-	if got := keys.Shown(keys.Row.Commit); got != "g" {
-		t.Fatalf("the row's commit key is %q; [c] is continue-from-here", got)
+	if got := commitOffer().Key; got != keys.Bracket(keys.Draft.Answer) {
+		t.Fatalf("the row reaches the card through the handover, got %q", got)
 	}
 	var card components.CommitCard
 	view := ansi.Strip(card.View(110))

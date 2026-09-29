@@ -16,7 +16,7 @@ func rewindCardFixture() RewindCard {
 		Talk: CardField{Label: "talk", Value: "turns 6–7 leave the window",
 			Detail: "ctx 62% → 41% · kept as a branch, /branches to switch back"},
 		Undo: CardField{Label: "undo", Value: "yes", Tone: ToneSafe,
-			Detail: "a rewind is a turn, and [u] takes it back"},
+			Detail: "a rewind is a turn, and /undo takes it back"},
 	}
 }
 
