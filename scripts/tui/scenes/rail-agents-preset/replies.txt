@@ -1,7 +1,7 @@
 # One queue per agent: the session, and each of the seven writers it fans
 # out. With the default three slots a level, three writers start and four
 # stand queued behind them, and nothing in the scene frees a slot: writer-1
-# asks to run a command the reader never answers, so it is the child waiting
+# asks to write a file the reader never approves, so it is the child waiting
 # on you, and writer-2 and writer-3 go on reading, slowly, for as long as the
 # scene runs. The last reply of a queue repeats once it runs out, so a reply
 # that ends on a call held behind a wait is an agent still working at every
@@ -26,11 +26,13 @@ Fanning seven writers over the round accounting.
 tool:read_file:{"path":"loop.go"}
 Seven writers are on the round accounting.
 
-# writer-1's request is never answered: it is the row the preset never folds.
+# writer-1 asks to write a file and is never answered: it is the row the
+# preset never folds. An edit rather than a command, because a child's command
+# needs a containment mechanism to be carded at all (steps.txt says more).
 [writer-1]
 tool:read_file:{"path":"loop.go"}
 wait:2
-+tool:execute_command:{"command":"echo counted"}
++tool:write_file:{"path":"round.md","content":"The counter is read at the top of the loop.\n"}
 The counter is read at the top of the loop, and nowhere else.
 
 [writer-2]

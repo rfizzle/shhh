@@ -1,20 +1,26 @@
 # program test: TestProgram_ASpawnCardStartsTheChildrenAsLanes,
-#   TestProgram_AChildsRequestIsAnsweredFromItsCard,
-#   TestProgram_TheQuitChordArmsThenLeaves
+#   TestProgram_AChildsRequestIsAnsweredFromItsCard
 #
 # The rail's AGENTS block is bounded by a preset of live children at each
 # level and folds past it however tall the rail is
 # (docs/interface/surfaces.md#the-inspector-rail). The session fans out seven
 # writers: with the default slots three start and four stand queued, and one
-# of the three asks to run a command nobody answers.
+# of the three asks to write a file and is never answered, so it keeps its
+# slot and the four stay queued.
 #
-# What the capture is for, at 130 columns where the rail is on screen: at 04
+# The request is an edit rather than a command on purpose: a child's command
+# card needs a containment mechanism, and on a host without one the command is
+# refused before any card is drawn, so the child finishes instead of waiting.
+# An edit lands in the writer's own worktree and is carded in manual mode on
+# every host.
+#
+# What the capture is for, at 130 columns where the rail is on screen: at 05
 # the map draws the orchestrator, writer-1 waiting on you directly under it,
 # and the two writers still working — the waiting row took its place in the
 # preset first — and the four queued writers are behind `… 4 more · 4
-# running`, in the heading's own words. CHANGES and the meters under the map
-# are still on the rail. Below 130 there is no rail, so the snap names only
-# what the transcript's lanes carry.
+# running`, in the heading's own words, with CONTEXT and SPEND still on the
+# rail under it. Below 130 there is no rail, so the snap names only what the
+# transcript's lanes carry.
 setup printf 'package agent\n\nfunc loop() {\n    for round := 0; round < limit; round++ {\n        step()\n    }\n}\n' > loop.go
 snap 01-start "Some things worth doing first"
 keys "survey the round accounting" Enter
@@ -25,14 +31,15 @@ sleep 1
 keys y
 sleep 4
 snap 03-lanes "7 agents"
-sleep 4
-# writer-1's request is routed here as a card; leaving it standing is what
-# keeps writer-1 waiting on you for the rest of the scene.
+# writer-1's edit is routed here as a card, which takes the screen and the
+# rail with it while it holds the keyboard. esc hands the keyboard back to the
+# draft and denies nothing: the card stays standing over the draft, the rail
+# comes back, and writer-1 goes on waiting on you for the rest of the scene.
+# The answer waits out the card's grace window like every other here.
+snap 04-edit-card "writer-1 ▸ Approve edit"
+sleep 1
 keys Escape
 sleep 2
-wide 130 snap 04-past-the-preset "⚠ writer-1" "… 4 more · 4 running" "alt+a manager"
-narrow 130 snap 04-past-the-preset "needs you"
-keys C-c
-snap 05-quit-armed "again quits"
-keys C-c
-snap 06-exit "that is everything the screen was holding"
+# The snap waits on the map's own row for writer-1, which only the rail draws.
+wide 130 snap 05-past-the-preset "⚠ writer-1" "… 4 more · 4 running" "alt+a manager"
+narrow 130 snap 05-past-the-preset "needs you"
