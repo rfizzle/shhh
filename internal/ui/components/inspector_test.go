@@ -478,6 +478,54 @@ func TestInspectorChanges_FoldKeepsThisTurnAndCarriesItsCounts(t *testing.T) {
 	}
 }
 
+// The block draws a preset of path rows whatever height the rail has, and
+// folds the rest behind the counted marker: this turn's files and the most
+// recently edited stay, a foreign path past the preset is counted as a row
+// and brings no lines, and a list at exactly the preset draws no marker
+// (docs/interface/surfaces.md#the-inspector-rail).
+func TestInspectorRail_ChangesFoldsAtThePreset(t *testing.T) {
+	files := make([]InspectorFile, 0, inspectorChangesRows+4)
+	for i := range inspectorChangesRows + 4 {
+		// Twelve files, first edited in turns 1 to 12 in that order; the
+		// first two were edited again in turn 13, the running turn.
+		f := InspectorFile{Path: fmt.Sprintf("pkg/f%02d.go", i), Added: 10, Last: int64(i + 1)}
+		if i < 2 {
+			f.ThisTurn, f.Last = true, 13
+		}
+		files = append(files, f)
+	}
+	r := InspectorRail{Changes: &InspectorChanges{
+		Files:   files,
+		Added:   120,
+		Foreign: []string{"README.md"},
+	}}
+	view := stripANSI(r.View(InspectorWidth, 0))
+	// Kept: f00 and f01 (this turn), then f06..f11 (the six edited most
+	// recently). Folded: f02..f05 and the foreign path.
+	for i := range len(files) {
+		name := fmt.Sprintf("f%02d.go", i)
+		folded := i >= 2 && i < 6
+		if strings.Contains(view, name) == folded {
+			t.Fatalf("%s folded=%v, got the opposite:\n%s", name, folded, view)
+		}
+	}
+	if strings.Contains(view, "README.md") {
+		t.Fatalf("a foreign path past the preset folds with the rest:\n%s", view)
+	}
+	if !strings.Contains(view, "… 5 more") || !strings.Contains(view, "+40") {
+		t.Fatalf("the marker counts five rows and the four files' lines:\n%s", view)
+	}
+	// The kept rows keep the host's order.
+	if strings.Index(view, "f01.go") > strings.Index(view, "f06.go") {
+		t.Fatalf("kept rows stay in first-edit order:\n%s", view)
+	}
+
+	exact := InspectorRail{Changes: &InspectorChanges{Files: files[:inspectorChangesRows], Added: 80}}
+	if view := stripANSI(exact.View(InspectorWidth, 0)); strings.Contains(view, "more") {
+		t.Fatalf("a list at exactly the preset draws no marker:\n%s", view)
+	}
+}
+
 // An alert outlives the turn that caused it, names that turn, and is the last
 // thing the fold takes — a red row that scrolls itself away is the failure
 // the block exists to prevent. It is a block of its own, above the changeset,

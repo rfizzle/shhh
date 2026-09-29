@@ -1,0 +1,23 @@
+# One reply per request. The last line repeats once these run out.
+#
+# Turn one writes twelve files in one reply, four past the rail's preset.
+Laying out the stubs
++tool:write_file:{"path":"pkg/f00.go","content":"package pkg\n\nconst f00 = 0\n"}
++tool:write_file:{"path":"pkg/f01.go","content":"package pkg\n\nconst f01 = 0\n"}
++tool:write_file:{"path":"pkg/f02.go","content":"package pkg\n\nconst f02 = 0\n"}
++tool:write_file:{"path":"pkg/f03.go","content":"package pkg\n\nconst f03 = 0\n"}
++tool:write_file:{"path":"pkg/f04.go","content":"package pkg\n\nconst f04 = 0\n"}
++tool:write_file:{"path":"pkg/f05.go","content":"package pkg\n\nconst f05 = 0\n"}
++tool:write_file:{"path":"pkg/f06.go","content":"package pkg\n\nconst f06 = 0\n"}
++tool:write_file:{"path":"pkg/f07.go","content":"package pkg\n\nconst f07 = 0\n"}
++tool:write_file:{"path":"pkg/f08.go","content":"package pkg\n\nconst f08 = 0\n"}
++tool:write_file:{"path":"pkg/f09.go","content":"package pkg\n\nconst f09 = 0\n"}
++tool:write_file:{"path":"pkg/f10.go","content":"package pkg\n\nconst f10 = 0\n"}
++tool:write_file:{"path":"pkg/f11.go","content":"package pkg\n\nconst f11 = 0\n"}
+Twelve stub files are written under pkg.
+# Turn two edits the first file again, so it is the running turn's and takes
+# a kept row back from the oldest of the others.
+Setting the first stub
++tool:read_file:{"path":"pkg/f00.go"}
+tool:edit_file:{"path":"pkg/f00.go","old_text":"const f00 = 0","new_text":"const f00 = 1"}
+f00 carries its real value now.

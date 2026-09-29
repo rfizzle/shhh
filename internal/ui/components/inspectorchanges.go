@@ -7,6 +7,7 @@ package components
 
 import (
 	"fmt"
+	"sort"
 )
 
 // InspectorFile is one changed path in the CHANGES block: the session's net
@@ -22,6 +23,10 @@ type InspectorFile struct {
 	// the fold takes, so the turn in front of you keeps its rows while the
 	// session's older ones go behind `… N more`.
 	ThisTurn bool
+	// Last is the turn that most recently edited this path. The host hands
+	// the files over in first-edit order, and the preset keeps the most
+	// recently edited of them, which that order cannot say (changesKept).
+	Last int64
 	// Mode states a change of permissions the session made to this file,
 	// already worded by whoever knows the two modes. A file whose whole
 	// change is its mode has no lines to count, so this stands where the
@@ -65,6 +70,53 @@ type InspectorChanges struct {
 	Foreign []string
 }
 
+// inspectorChangesRows is how many path rows the block draws before the rest
+// fold behind its counted marker, whatever height the rail has. A session
+// that has written thirty files would otherwise draw thirty rows on a rail
+// with nothing else long enough to be taken first, and push the map and the
+// meters under it off the bottom: the block is a reading of the changeset,
+// and the whole changeset is the diff view's
+// (docs/interface/surfaces.md#the-inspector-rail). The committed row is not
+// one of them — it is pinned and it is a single row. The preset is applied
+// in changesBlock, before fitBlocks, which can still take more when the rail
+// is shorter than what the preset left.
+const inspectorChangesRows = 8
+
+// changesKept reports which of the block's list rows — the files, then the
+// foreign paths under them — the preset keeps. The rule, not the first N:
+// the files the running turn touched, then the most recently edited, then
+// the foreign paths with whatever the files left. Two files last edited in
+// the same turn keep the one written later in it, which is the later one in
+// the host's first-edit order.
+func changesKept(c *InspectorChanges) []bool {
+	n := len(c.Files) + len(c.Foreign)
+	kept := make([]bool, n)
+	if n <= inspectorChangesRows {
+		for i := range kept {
+			kept[i] = true
+		}
+		return kept
+	}
+	order := make([]int, len(c.Files))
+	for i := range order {
+		order[i] = len(c.Files) - 1 - i
+	}
+	sort.SliceStable(order, func(a, b int) bool {
+		fa, fb := c.Files[order[a]], c.Files[order[b]]
+		if fa.ThisTurn != fb.ThisTurn {
+			return fa.ThisTurn
+		}
+		return fa.Last > fb.Last
+	})
+	for i := len(c.Files); i < n; i++ {
+		order = append(order, i)
+	}
+	for _, i := range order[:inspectorChangesRows] {
+		kept[i] = true
+	}
+	return kept
+}
+
 // changesBlock is the session's own diff: every path it has touched since it
 // opened, one row each. The heading says "session" in words because THIS TURN
 // counts files too, and a rail that printed two bare counts would read as a
@@ -103,7 +155,19 @@ func (r InspectorRail) changesBlock(width int) (railBlock, bool) {
 		}
 		b.pin(railRow(" "+sty.Add.Render("✓")+" "+stated, "", width, inspectorIndent))
 	}
-	for _, f := range c.Files {
+	// The rows the preset does not keep go straight behind the marker, which
+	// states them with their counts the way it states what a short rail
+	// took; the kept rows stay in the host's order, so a file does not move
+	// on the rail because another was edited.
+	kept := changesKept(c)
+	list := func(i int, line railLine) {
+		if kept[i] {
+			b.rows = append(b.rows, line)
+		} else {
+			b.hidden = append(b.hidden, line)
+		}
+	}
+	for i, f := range c.Files {
 		// The changed-file row carries the mutation rail and the edit glyph,
 		// so the close of a turn looks like the rows that produced it.
 		lead := sty.Accent.Render("▎") + sty.Accent.Render("✎") + " "
@@ -120,7 +184,7 @@ func (r InspectorRail) changesBlock(width int) (railBlock, bool) {
 			// turns are behind its counts.
 			stats += " " + sty.Dim.Render(fmt.Sprintf("%dt", f.Turns))
 		}
-		b.rows = append(b.rows, railLine{
+		list(i, railLine{
 			text:    railRow(lead+sty.Body.Render(f.Path), stats, width, inspectorIndent),
 			pinned:  f.ThisTurn,
 			counted: counted,
@@ -136,7 +200,7 @@ func (r InspectorRail) changesBlock(width int) (railBlock, bool) {
 	// column is a bare `·`: none of the acts it names happened to these
 	// files here, and an empty column would read as a row of the list above
 	// that lost its mark.
-	for _, path := range c.Foreign {
+	for j, path := range c.Foreign {
 		// "yours" is the reader's uncommitted work beside a commit; a
 		// resume names a path the session no longer owns as drifted,
 		// which is the other reason a file sits in this list.
@@ -144,16 +208,16 @@ func (r InspectorRail) changesBlock(width int) (railBlock, bool) {
 		if c.Committed == nil {
 			label = "drifted"
 		}
-		b.add(railRow(" "+sty.Dim.Render("·")+" "+sty.Dimmer.Render(path),
-			sty.Dim.Render(label), width, inspectorIndent))
+		list(len(c.Files)+j, railLine{text: railRow(" "+sty.Dim.Render("·")+" "+sty.Dimmer.Render(path),
+			sty.Dim.Render(label), width, inspectorIndent)})
 	}
 	b.fold = func(hidden []railLine) string { return changesFold(hidden, width) }
 	return b, true
 }
 
-// changesFold is the marker the file list folds behind when the rail is
-// shorter than it. It carries its own counts, so the rows it swallowed are
-// still accounted for (invariant 4); rows with no counts of their own — a
+// changesFold is the marker the file list folds behind, past the preset or
+// when the rail is shorter than the list. It carries its own counts, so the
+// rows it swallowed are still accounted for (invariant 4); rows with no counts of their own — a
 // file whose whole change was its permissions — fold behind a bare marker
 // rather than a fabricated zero.
 func changesFold(hidden []railLine, width int) string {

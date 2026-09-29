@@ -131,6 +131,18 @@
   ▎✎ internal/agent/errors.go                                      +3 −0
   … 5 more                                                        +63 −6
 
+· twelve files · the preset draws eight and counts the rest
+  CHANGES                                             session · +143 −21
+  ▎✎ internal/agent/loop.go                                    +21 −4 3t
+  ▎✎ internal/agent/loop_test.go                               +18 −0 2t
+  ▎✎ go.mod                                                        +1 −0
+  ▎✎ internal/ui/chat/model.go                                     +9 −1
+  ▎✎ internal/ui/chat/view.go                                     +12 −7
+  ▎✎ internal/ui/chat/rail.go                                      +5 −0
+  ▎✎ internal/ui/components/row.go                                 +8 −3
+  ▎✎ internal/ui/components/row_test.go                           +22 −0
+  … 4 more                                                        +47 −6
+
 · a change of permissions has no lines to count
   CHANGES                                                        session
   ▎✎ scripts/build.sh                                   mode 0644 → 0755
@@ -469,6 +481,18 @@
   ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254minternal/ui/chat/model.go␛[m                                     ␛[38;5;254m+9␛[m ␛[38;5;254m−1␛[m
   ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254minternal/agent/errors.go␛[m                                      ␛[38;5;254m+3␛[m ␛[38;5;254m−0␛[m
   ␛[38;5;244m… 5 more␛[m                                                        ␛[38;5;254m+63␛[m ␛[38;5;254m−6␛[m
+
+· twelve files · the preset draws eight and counts the rest
+  ␛[1;38;5;254mCHANGES␛[m                                             ␛[38;5;244msession · ␛[m␛[38;5;254m+143␛[m ␛[38;5;254m−21␛[m
+  ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254minternal/agent/loop.go␛[m                                    ␛[38;5;254m+21␛[m ␛[38;5;254m−4␛[m ␛[38;5;244m3t␛[m
+  ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254minternal/agent/loop_test.go␛[m                               ␛[38;5;254m+18␛[m ␛[38;5;254m−0␛[m ␛[38;5;244m2t␛[m
+  ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254mgo.mod␛[m                                                        ␛[38;5;254m+1␛[m ␛[38;5;254m−0␛[m
+  ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254minternal/ui/chat/model.go␛[m                                     ␛[38;5;254m+9␛[m ␛[38;5;254m−1␛[m
+  ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254minternal/ui/chat/view.go␛[m                                     ␛[38;5;254m+12␛[m ␛[38;5;254m−7␛[m
+  ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254minternal/ui/chat/rail.go␛[m                                      ␛[38;5;254m+5␛[m ␛[38;5;254m−0␛[m
+  ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254minternal/ui/components/row.go␛[m                                 ␛[38;5;254m+8␛[m ␛[38;5;254m−3␛[m
+  ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254minternal/ui/components/row_test.go␛[m                           ␛[38;5;254m+22␛[m ␛[38;5;254m−0␛[m
+  ␛[38;5;244m… 4 more␛[m                                                        ␛[38;5;254m+47␛[m ␛[38;5;254m−6␛[m
 
 · a change of permissions has no lines to count
   ␛[1;38;5;254mCHANGES␛[m                                                        ␛[38;5;244msession␛[m

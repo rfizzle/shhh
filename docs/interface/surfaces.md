@@ -1099,6 +1099,22 @@ otherwise be read as contradicting each other. A file edited in turn 2 is
 still on screen in turn 8: "what has this session done to my machine" does not
 reset when the agent starts a new turn.
 
+The session's changes are a reading of the changeset and not the changeset,
+so the block is bounded by a preset rather than by whatever height the rail
+happens to have: a handful of files are drawn, and past that the rest fold
+behind a marker that says how many went and what they added and removed —
+`… 24 more +1210 −0` — whether or not the rail is short. Without it a session
+that has written thirty files draws thirty rows on a rail with nothing else
+long enough to give first, and the map and the meters under it are what
+leave. Which files stay is a rule, not the first few: the ones the running
+turn touched, then the ones edited most recently, drawn in the order they
+were first written so a row does not move because another file was edited.
+What was banked stays pinned above them, and a path the session did not
+write folds behind the same marker, counted as a row and bringing no lines.
+The whole list is the session's diff, one command away. When the rail is
+shorter still, the block goes on folding below the preset the way every
+block does.
+
 One block is neither the turn's nor the session's but the standing bad news
 between them: what this session has run that is still broken. It sits directly
 under the turn's own block, above everything scoped to the session, because a

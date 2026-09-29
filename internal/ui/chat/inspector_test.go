@@ -551,6 +551,11 @@ func TestInspectorChanges_SessionScoped(t *testing.T) {
 	if loop.Turns != 2 {
 		t.Fatalf("the row carries the turns behind it: %+v", loop)
 	}
+	// The order is first-edit, so the turn that edited a path last rides
+	// beside it: the block's preset keeps the most recently edited rows.
+	if loop.Last != 2 {
+		t.Fatalf("the row carries the turn that last edited it: %+v", loop)
+	}
 	if !loop.ThisTurn || !c.Files[1].ThisTurn {
 		t.Fatalf("both paths were touched this turn: %+v", c.Files)
 	}

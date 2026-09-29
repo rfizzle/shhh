@@ -1694,6 +1694,31 @@ func TestGolden_InspectorRail(t *testing.T) {
 				{Label: "go build", Note: OutcomeExit(2), Turn: 9, Turns: 1},
 			},
 		}
+		// Past the preset: a session that has written twelve files draws
+		// eight of them however tall the rail is — the two this turn edited
+		// again and the six edited most recently, in the order they were
+		// first written — and the marker counts the rest with their lines.
+		// The eight-file fixture above is exactly the preset and draws no
+		// marker until the rail is shorter than it.
+		sprawl := InspectorRail{
+			Changes: &InspectorChanges{
+				Files: []InspectorFile{
+					{Path: "internal/agent/loop.go", Added: 21, Removed: 4, Turns: 3, ThisTurn: true, Last: 5},
+					{Path: "internal/agent/loop_test.go", Added: 18, Turns: 2, Last: 3},
+					{Path: "internal/agent/round.go", Added: 6, Removed: 2, Last: 1},
+					{Path: "internal/tool/exec.go", Added: 4, Removed: 4, Last: 1},
+					{Path: "internal/agent/errors.go", Added: 3, Last: 2},
+					{Path: "docs/loop.md", Added: 34, Last: 2},
+					{Path: "go.mod", Added: 1, Last: 3},
+					{Path: "internal/ui/chat/model.go", Added: 9, Removed: 1, ThisTurn: true, Last: 5},
+					{Path: "internal/ui/chat/view.go", Added: 12, Removed: 7, Last: 4},
+					{Path: "internal/ui/chat/rail.go", Added: 5, Last: 4},
+					{Path: "internal/ui/components/row.go", Added: 8, Removed: 3, Last: 4},
+					{Path: "internal/ui/components/row_test.go", Added: 22, Last: 4},
+				},
+				Added: 143, Removed: 21,
+			},
+		}
 		// A writer's patch made two scripts executable and moved not a byte.
 		// There are no lines to count for that, so each row states the two
 		// modes where it would state its counts and the heading has no total
@@ -1996,6 +2021,7 @@ func TestGolden_InspectorRail(t *testing.T) {
 			{Label: "blocks with nothing to say are omitted", View: quiet.View(width, 0)},
 			{Label: "eight files, four turns deep", View: session.View(width, 0)},
 			{Label: "the rail is shorter than the list (height 14)", View: session.View(width, 14)},
+			{Label: "twelve files · the preset draws eight and counts the rest", View: sprawl.View(width, 0)},
 			{Label: "a change of permissions has no lines to count", View: permissions.View(width, 0)},
 			{Label: "banked · what was committed, and what is still yours", View: banked.View(width, 0)},
 			{Label: "resumed · owned files, and a drifted file named separately", View: resumed.View(width, 0)},

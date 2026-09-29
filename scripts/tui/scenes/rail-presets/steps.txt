@@ -1,0 +1,31 @@
+# program test: TestProgram_ShiftTabWalksTheModes,
+#   TestProgram_AnEditCardAppliesTheEdit,
+#   TestProgram_TheQuitChordArmsThenLeaves
+#
+# The rail's CHANGES block is bounded by a preset and folds at it however
+# tall the rail is (docs/interface/surfaces.md#the-inspector-rail). One turn
+# writes twelve files; the block draws eight of them and folds the other four
+# behind `… 4 more` with their lines, on a rail with room to spare. A second
+# turn edits the first file again: it is the running turn's, so it takes a
+# kept row back from the oldest of the others, and the marker under the kept
+# rows counts five.
+#
+# What the capture is for: at 03 the marker sits under eight rows with the
+# rail's lower blocks still on screen; at 04 pkg/f00.go is the top row of the
+# block, the kept rows are in the order they were first written, and the
+# marker says `… 5 more`.
+#
+# The mode is accept-edits so twelve writes are twelve rows rather than
+# twelve cards.
+setup mkdir -p pkg
+snap 01-start "Some things worth doing first"
+keys BTab
+snap 02-accept-edits "⏵⏵ accept edits"
+keys "lay out the twelve stub files" Enter
+snap 03-past-the-preset "Twelve stub files are written" "… 4 more" "pkg/f11.go"
+keys "give the first stub its real value" Enter
+snap 04-second-turn "f00 carries its real value now" "… 5 more" "pkg/f00.go"
+keys C-c
+snap 05-quit-armed "again quits"
+keys C-c
+snap 06-exit "that is everything the screen was holding"

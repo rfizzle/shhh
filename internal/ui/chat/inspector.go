@@ -309,6 +309,7 @@ func (m Model) inspectorChanges() *components.InspectorChanges {
 			Removed:  f.Removed,
 			Turns:    f.Turns,
 			ThisTurn: touched[f.Path],
+			Last:     f.Last,
 			Mode:     f.ModeChange,
 		})
 	}
