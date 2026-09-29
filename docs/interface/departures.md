@@ -1313,3 +1313,26 @@ the same way, and a card whose own words say something the key does not —
 `don't — the safe answer; the decision waits` — keeps them whole on a row of
 their own instead. The departure is closed by the artboards drawing a
 60-column card with the cut run.
+
+## The SPEND block is a row per model
+
+*A disagreement.* The `Main` artboard and the rail's `InspectorRail`
+component draw SPEND as one split row and a total —
+`gpt-5.2 · $0.12 main · $0.02 ◇` over `session total $1.86` — and the two
+figures do not add up, because the total is the whole bill and the row is
+only the session's own model. The binary draws one row per model that
+answered, each with its cost and the kinds of request it was spent on, the
+children's share after their `◇` on the row of the model they ran on, and the
+total under them with a `·` like every other row's figure:
+`gpt-5.2 · $1.70 main · $0.02 ◇`, `gpt-5-mini · $0.14 classifier · summary`,
+`session total · $1.86` ([the inspector rail](surfaces.md#the-inspector-rail)).
+
+The reason is the gap itself. The classifier, the readings and the title run
+on a smaller model than the session's
+([a bounded call](../capabilities/providers.md#a-bounded-call-runs-on-the-small-model)),
+so the artboard's two figures differ in every session that has either, and
+nothing on the block says why. As shares of one bill the rows explain the
+total rather than contradict it. The departure is closed by the artboard
+drawing a row per model over the total, and the order the row gives up its
+words in at the rail's narrowest: the kinds fold to the first and a count,
+then the model's name shortens to its family word, then goes.

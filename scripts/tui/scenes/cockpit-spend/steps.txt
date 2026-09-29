@@ -3,7 +3,24 @@
 # The root session's cockpit rail, before and after a provider-billed reply.
 # The regression test supplies a cached request; this scene confirms the rail
 # stays in the prompt frame through a real session.
+#
+# Then the rail's SPEND block past a classifier decision: in auto the judge
+# answers on the small model the launch line names, so the block grows a
+# second row for it, and the two rows are the shares the session total under
+# them adds up to (docs/interface/surfaces.md#the-inspector-rail). Drive it at
+# 130 columns or wider, where the rail is on screen.
 snap 01-start "Some things worth doing first"
 keys "how is cockpit spend reported" Enter
 snap 02-reply "The cockpit uses the session's billed total" "· ↑"
 snap 03-idle "[enter] send" "· ↑"
+# One model has answered, so SPEND is that one row and the total.
+snap 04-one-model "scripted-model · " "session total · "
+# The mode comes first, because the classifier only judges in auto: two
+# presses of the cycle key from the mode a session opens in.
+keys BTab
+keys BTab
+snap 05-auto "⏵⏵ auto"
+keys "write the spend notes" Enter
+# The judge allowed the call on scripted-mini, and its row sits under the
+# session model's, naming what it was spent on.
+snap 06-two-models "The notes file is there" "scripted-mini · " "classifier" "session total · "

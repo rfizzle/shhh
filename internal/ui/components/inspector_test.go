@@ -28,8 +28,10 @@ func fullRail() InspectorRail {
 		},
 		Context: &InspectorContext{Pct: 62, Tokens: 124000, Window: 200000,
 			Tokens1: "↑41.2k", Tokens2: "↓9.8k", Burn: []float64{1, 2, 3, 3, 4, 5, 5, 6}},
-		Spend: &InspectorSpend{Turn: "$0.14", Main: "$0.12", Children: "$0.02",
-			Session: "$1.86", Model: "gpt-5.2"},
+		Spend: &InspectorSpend{Turn: "$0.14", Session: "$1.86", Models: []InspectorSpendModel{
+			{Model: "gpt-5.2", Cost: "$1.70", Sources: []string{"main"}, Children: "$0.02"},
+			{Model: "gpt-5-mini", Cost: "$0.14", Sources: []string{"classifier", "summary"}},
+		}},
 	}
 }
 
@@ -89,7 +91,7 @@ func TestInspectorRail_BlockOrderAndContents(t *testing.T) {
 		"ALERTS", "1 standing", "✗ go test", "turn 7", "exit 1",
 		"AGENTS", "1 running", "◇ writer-1", "$0.02", "docs/loop.md · 4 tools",
 		"CONTEXT", "62% of 200k", "124k", "↑41.2k ↓9.8k", "per round",
-		"SPEND", "$0.14", "gpt-5.2 · $0.12 main · $0.02 ◇", "session total $1.86",
+		"SPEND", "$0.14", "gpt-5.2 · $1.70 main · $0.02 ◇", "gpt-5-mini · $0.14 classifier · summary", "session total · $1.86",
 	} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("rail missing %q:\n%s", want, view)
@@ -332,7 +334,7 @@ func TestInspectorRail_TruncatesLongestBlockFirst(t *testing.T) {
 		t.Fatalf("a truncated block says what it swallowed:\n%s", view)
 	}
 	// The longest block gave up the rows; the short ones kept theirs.
-	for _, want := range []string{"THIS TURN", "SPEND", "session total $1.86", "CONTEXT"} {
+	for _, want := range []string{"THIS TURN", "SPEND", "session total · $1.86", "CONTEXT"} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("truncation should not drop %q:\n%s", want, view)
 		}
@@ -1293,5 +1295,43 @@ func TestInspectorTodo_RunningRowDrawsItsLanes(t *testing.T) {
 	}
 	if strings.Contains(ready, "▰") || strings.Contains(ready, "▱") {
 		t.Fatalf("an item with no lanes draws no meter: %q", ready)
+	}
+}
+
+// A SPEND row gives up its words before its figures as the rail narrows: the
+// kinds of request fold to a count behind the first, then the model's name
+// shortens to its family word, then goes, and every figure is still on the
+// row at the end (docs/interface/surfaces.md#the-inspector-rail).
+func TestInspectorSpend_ARowGivesUpItsWordsBeforeItsFigures(t *testing.T) {
+	row := InspectorSpendModel{Model: "claude-opus-5-5", Cost: "$12.34",
+		Sources: []string{"main", "classifier", "summary"}, Children: "$0.02"}
+	for _, tc := range []struct {
+		room int
+		want string
+	}{
+		{80, "claude-opus-5-5 · $12.34 main · classifier · summary · $0.02 ◇"},
+		{50, "claude-opus-5-5 · $12.34 main · 2 more · $0.02 ◇"},
+		{40, "opus · $12.34 main · 2 more · $0.02 ◇"},
+		{32, "$12.34 main · 2 more · $0.02 ◇"},
+		{20, "$12.34 · $0.02 ◇"},
+	} {
+		if got := row.fit(tc.room); got != tc.want {
+			t.Fatalf("at %d columns: got %q, want %q", tc.room, got, tc.want)
+		}
+	}
+}
+
+// The family word is the part of a model's name a narrow rail keeps.
+func TestModelFamilyWord(t *testing.T) {
+	for name, want := range map[string]string{
+		"claude-opus-5-5":           "opus",
+		"gpt-4o-mini":               "mini",
+		"gpt-5.2":                   "gpt",
+		"anthropic/claude-sonnet-4": "sonnet",
+		"scripted":                  "scripted",
+	} {
+		if got := modelFamilyWord(name); got != want {
+			t.Fatalf("%s: got %q, want %q", name, got, want)
+		}
 	}
 }

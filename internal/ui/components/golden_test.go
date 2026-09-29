@@ -1660,8 +1660,13 @@ func TestGolden_InspectorRail(t *testing.T) {
 				{Name: "docs", State: ToolSourceUp, Note: "9 tools"},
 				{Name: "linear", State: ToolSourceFailed, Note: "timeout"},
 			}},
-			Spend: &InspectorSpend{Turn: "$0.14", Main: "$0.12", Children: "$0.02",
-				Session: "$1.86", Model: "gpt-5.2"},
+			// The session's bill on two models: its own turns and a child on
+			// the session's, the classifier and the summary on the small one.
+			// The rows add up to the total under them.
+			Spend: &InspectorSpend{Turn: "$0.14", Session: "$1.86", Models: []InspectorSpendModel{
+				{Model: "gpt-5.2", Cost: "$1.70", Sources: []string{"main"}, Children: "$0.02"},
+				{Model: "gpt-5-mini", Cost: "$0.14", Sources: []string{"classifier", "summary"}},
+			}},
 		}
 		quiet := InspectorRail{
 			Turn:    &InspectorTurn{Tools: 2, Running: true},
@@ -2060,8 +2065,19 @@ func TestGolden_InspectorRail(t *testing.T) {
 			},
 			Changes: crowded.Changes,
 		}
+		// The machinery ran on the session's own model: one row names every
+		// kind of request that billed it, and at the rail's narrowest the
+		// kinds fold behind the first and the name gives up all but its
+		// family word before any figure is lost.
+		oneModel := InspectorRail{
+			Spend: &InspectorSpend{Turn: "$0.41", Session: "$12.36", Models: []InspectorSpendModel{
+				{Model: "claude-opus-5-5", Cost: "$12.34", Sources: []string{"main", "classifier", "summary"},
+					Children: "$0.02"},
+			}},
+		}
 		return []golden.Panel{
 			{Label: "every block, unbounded height", View: full.View(width, 0)},
+			{Label: "spend · the machinery on the session's model", View: oneModel.View(width, 0)},
 			{Label: "every block, height 16 (truncating)", View: full.View(width, 16)},
 			{Label: "blocks with nothing to say are omitted", View: quiet.View(width, 0)},
 			{Label: "eight files, four turns deep", View: session.View(width, 0)},

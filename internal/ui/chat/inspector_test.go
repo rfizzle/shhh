@@ -242,7 +242,7 @@ func TestInspectorData_BlocksFromTheSession(t *testing.T) {
 	if len(rail.Context.Burn) != 0 {
 		t.Fatal("one round is a dot, not a trend: no sparkline yet")
 	}
-	if rail.Spend == nil || rail.Spend.Model != "gpt-4o" || rail.Spend.Main == "" {
+	if rail.Spend == nil || len(rail.Spend.Models) != 1 || rail.Spend.Models[0].Model != "gpt-4o" || rail.Spend.Models[0].Cost == "" {
 		t.Fatalf("SPEND: %+v", rail.Spend)
 	}
 	// No children in this session: the block is omitted, not empty.

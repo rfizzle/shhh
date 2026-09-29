@@ -67,8 +67,14 @@
   ▂▃▄▄▅▆▆█ per round              ↑41.2k ↓9.8k
 
   SPEND                                  $0.14
-  gpt-5.2 · $0.12 main · $0.02 ◇              
-  session total $1.86                         
+  gpt-5.2 · $1.70 main · $0.02 ◇              
+  gpt-5-mini · $0.14 classifier · summary     
+  session total · $1.86                       
+
+· spend · the machinery on the session's model
+  SPEND                                  $0.41
+  opus · $12.34 main · 2 more · $0.02 ◇       
+  session total · $12.36                      
 
 · every block, height 16 (truncating)
   SUMMARY                       as of round 24
@@ -446,8 +452,14 @@
   ␛[38;5;244m▂▃▄▄▅▆▆█␛[m ␛[38;5;244mper round␛[m              ␛[38;5;244m↑41.2k ↓9.8k␛[m
 
   ␛[1;38;5;254mSPEND␛[m                                  ␛[38;5;254m$0.14␛[m
-  ␛[38;5;244mgpt-5.2 · $0.12 main · $0.02 ◇␛[m              
-  ␛[38;5;244msession total $1.86␛[m                         
+  ␛[38;5;244mgpt-5.2 · $1.70 main · $0.02 ◇␛[m              
+  ␛[38;5;244mgpt-5-mini · $0.14 classifier · summary␛[m     
+  ␛[38;5;244msession total · $1.86␛[m                       
+
+· spend · the machinery on the session's model
+  ␛[1;38;5;254mSPEND␛[m                                  ␛[38;5;254m$0.41␛[m
+  ␛[38;5;244mopus · $12.34 main · 2 more · $0.02 ◇␛[m       
+  ␛[38;5;244msession total · $12.36␛[m                      
 
 · every block, height 16 (truncating)
   ␛[1;38;5;254mSUMMARY␛[m                       ␛[38;5;244mas of round 24␛[m

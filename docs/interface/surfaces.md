@@ -1369,6 +1369,24 @@ with nothing but its own tools has no way to have lost any, and it folds past
 a few rows: whether what was configured is up is the question, and the whole
 listing is a command away.
 
+The last block is the bill. Its heading carries what the running turn has
+cost; the rows under it are the session's bill in shares, one per model that
+answered — the model, what its own requests cost and what kinds of request
+they were, then what the children that ran on it cost after their `◇` — and
+the last row is `session total`, which the shares add up to. The machinery
+around a turn — the permission classifier, the session's readings, the title
+— [runs on a smaller model](../capabilities/providers.md#a-bounded-call-runs-on-the-small-model)
+than the turn does, so a session's total is rarely what its own model's row
+says, and the rows are what explain the difference without a reader having
+to know it. A kind of request that spent nothing is not named, and where
+everything ran on one model the block is that one row and the total. As the
+rail narrows a row gives up its words before its figures: the kinds fold to
+the first and a count, then the model's name shortens to its family word,
+then goes. When the rail runs short of height the shares fold and the total
+stays, because it is the one figure the rest of the block is about. The
+breakdown by source and by model in words is `/stats`, which reads the same
+ledger; the block has no surface of its own to open.
+
 The rail takes the room a wide terminal gives it. Its width is a rule rather
 than a number: it is at its narrowest at the threshold, and above that it
 grows by about one column for every four the surface gains, up to a ceiling.

@@ -28,6 +28,7 @@ package chat
 
 import (
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -702,33 +703,131 @@ func (m Model) inspectorContext() *components.InspectorContext {
 	return &c
 }
 
-// inspectorSpend splits the cost between this session's own requests and its
-// children. The session figure is the ledger's — the agent's turns, the
-// permission classifier, the session summary and every child, each priced
-// against the model that actually answered it — so the rail's bottom line is
-// the whole bill rather than the part of it the main agent ran up.
+// inspectorSpend is the session's bill one row per model, then the total.
+// The session figure is the ledger's — the agent's turns, the permission
+// classifier, the session summary and every child, each priced against the
+// model that actually answered it — so the rail's bottom line is the whole
+// bill rather than the part of it the main agent ran up, and the model rows
+// above it are what explain the difference: the machinery around a turn
+// usually runs on another model than the turn does
+// (docs/capabilities/providers.md#a-bounded-call-runs-on-the-small-model).
 //
-// All four rows are read down the block as shares of one bill, so all four
-// are the priced-as-it-went figure. A row re-priced from its token counts
-// would charge the input the provider served from its cache at the fresh
-// rate, and the block would show a turn costing more than the session it is
-// part of (attach.go).
+// Every row is read down the block as a share of one bill, so every row is
+// the priced-as-it-went figure and the model rows add up to the total. A row
+// re-priced from its token counts would charge the input the provider served
+// from its cache at the fresh rate, and the block would show a turn costing
+// more than the session it is part of (attach.go).
 func (m Model) inspectorSpend() *components.InspectorSpend {
 	total := m.sessionSpend()
 	children := m.childSpend()
 	if total.In == 0 && total.Out == 0 && children.In == 0 && children.Out == 0 {
 		return nil
 	}
+	if m.ledger == nil {
+		// Without a ledger the session's figure is the agent's own, and the
+		// children's roll-up is a row above it: the total is the two added,
+		// or the rows would not add up to it.
+		total = total.Plus(children)
+	}
 	s := components.InspectorSpend{
 		Turn:    m.totalsLabel(m.turnSpend()),
-		Main:    m.totalsLabel(m.mainSpend()),
 		Session: m.totalsLabel(total),
-		Model:   m.modelName,
 	}
-	if children.In != 0 || children.Out != 0 {
-		s.Children = m.totalsLabel(children)
+	for _, share := range m.spendShares() {
+		row := components.InspectorSpendModel{
+			Model:    share.model,
+			Cost:     shareLabel(share.own),
+			Children: shareLabel(share.children),
+		}
+		for _, src := range share.sources {
+			row.Sources = append(row.Sources, spendWord(src))
+		}
+		s.Models = append(s.Models, row)
 	}
 	return &s
+}
+
+// spendShare is one model's part of the session's bill: what its own
+// requests cost and which kinds of request they were, and what the children
+// that ran on it cost.
+type spendShare struct {
+	model    string
+	own      meter.Totals
+	sources  []meter.Source
+	children meter.Totals
+}
+
+// spendShares divides the ledger by model, in the order /stats lists them
+// (Ledger.ByModel), and each model's entries between the children and
+// everything else — the same entries spendByModelReport names the sources of,
+// so the rail and /stats cannot disagree about who billed which model. A
+// model nothing was spent on is left out, and so is a kind of request that
+// spent nothing. A session with no ledger has only the agent's own
+// accounting and the children's roll-up, on the session's model.
+func (m Model) spendShares() []spendShare {
+	if m.ledger == nil {
+		share := spendShare{model: m.modelName, own: m.mainSpend(), children: m.childSpend()}
+		if spent(share.own) {
+			share.sources = []meter.Source{meter.SourceAgent}
+		}
+		if !spent(share.own) && !spent(share.children) {
+			return nil
+		}
+		return []spendShare{share}
+	}
+	entries := m.ledger.Entries()
+	var shares []spendShare
+	for _, model := range m.ledger.ByModel() {
+		if !spent(meter.Totals{In: model.In, Out: model.Out}) {
+			continue
+		}
+		share := spendShare{model: model.Model}
+		for _, e := range entries {
+			if e.Model != model.Model {
+				continue
+			}
+			t := meter.Totals{In: e.In, Out: e.Out, Cached: e.Cached, Cost: e.Cost, Priced: e.Priced, Requests: e.Requests}
+			if e.Origin.Source == meter.SourceSubagent {
+				share.children = share.children.Plus(t)
+				continue
+			}
+			share.own = share.own.Plus(t)
+			if spent(t) && !slices.Contains(share.sources, e.Origin.Source) {
+				share.sources = append(share.sources, e.Origin.Source)
+			}
+		}
+		shares = append(shares, share)
+	}
+	return shares
+}
+
+// spent reports whether a roll-up has any tokens in it — the rail's test for
+// "this has something to say", as everywhere else on it.
+func spent(t meter.Totals) bool { return t.In != 0 || t.Out != 0 }
+
+// spendWord is a kind of request as a SPEND row names it: the session's own
+// turns are "main", as the block has always called them, and the machinery
+// keeps the ledger's word for it, which is the word /stats uses.
+func spendWord(s meter.Source) string {
+	if s == meter.SourceAgent {
+		return "main"
+	}
+	return string(s)
+}
+
+// shareLabel is one model's share as a row states it: the cost it was billed
+// at, or its tokens where nothing priced it. It never falls back to the
+// session model's fresh rate the way totalsLabel does, because a share priced
+// there is a figure nobody was billed, and the total under the rows — which
+// counts only what was priced — would stop being what they add up to.
+func shareLabel(t meter.Totals) string {
+	switch {
+	case !spent(t):
+		return ""
+	case t.Priced:
+		return formatCost(t.Cost)
+	}
+	return "~" + formatTokenCount(t.In+t.Out) + " tok"
 }
 
 // childSpend is what every sub-agent has cost. The session ledger is the

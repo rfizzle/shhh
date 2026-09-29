@@ -22,7 +22,7 @@
      ⚙ read    internal/agent/round74.go                         2 lines         │                                                
      ⚙ read    internal/agent/round75.go                         2 lines         │  SPEND                                  $0.51  
      ⚙ read    internal/agent/round76.go                         2 lines         │  gpt-4o · $0.51 main                           
-     ⚙ read    internal/agent/round77.go                         2 lines         │  session total $0.51                           
+     ⚙ read    internal/agent/round77.go                         2 lines         │  session total · $0.51                         
      ⚙ read    internal/agent/round78.go                         2 lines         │                                                
      ⚙ read    internal/agent/round79.go                         2 lines         │                                                
      ⚙ read    internal/agent/round80.go                         2 lines         │                                                
@@ -54,7 +54,7 @@
      ⚙ read    internal/agent/round51.go                         2 lines         │                                                
      ⚙ read    internal/agent/round52.go                         2 lines         │  SPEND                                  $0.51  
      ⚙ read    internal/agent/round53.go                         2 lines         │  gpt-4o · $0.51 main                           
-     ⚙ read    internal/agent/round54.go                         2 lines         │  session total $0.51                           
+     ⚙ read    internal/agent/round54.go                         2 lines         │  session total · $0.51                         
      ⚙ read    internal/agent/round55.go                         2 lines         │                                                
      ⚙ read    internal/agent/round56.go                         2 lines         │                                                
      ⚙ read    internal/agent/round57.go                         2 lines       ┃ │                                                
@@ -87,7 +87,7 @@
      ␛[38;5;241m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/round74.go␛[m                         ␛[38;5;245m2 lines␛[m         ␛[38;5;241m│␛[m                                                
      ␛[38;5;241m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/round75.go␛[m                         ␛[38;5;245m2 lines␛[m         ␛[38;5;241m│␛[m  ␛[94;1mSPEND␛[m                                  ␛[38;5;252m$0.51␛[m  
      ␛[38;5;241m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/round76.go␛[m                         ␛[38;5;245m2 lines␛[m         ␛[38;5;241m│␛[m  ␛[38;5;241mgpt-4o · $0.51 main␛[m                           
-     ␛[38;5;241m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/round77.go␛[m                         ␛[38;5;245m2 lines␛[m         ␛[38;5;241m│␛[m  ␛[38;5;241msession total $0.51␛[m                           
+     ␛[38;5;241m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/round77.go␛[m                         ␛[38;5;245m2 lines␛[m         ␛[38;5;241m│␛[m  ␛[38;5;241msession total · $0.51␛[m                         
      ␛[38;5;241m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/round78.go␛[m                         ␛[38;5;245m2 lines␛[m         ␛[38;5;241m│␛[m                                                
      ␛[38;5;241m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/round79.go␛[m                         ␛[38;5;245m2 lines␛[m         ␛[38;5;241m│␛[m                                                
      ␛[38;5;241m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/round80.go␛[m                         ␛[38;5;245m2 lines␛[m         ␛[38;5;241m│␛[m                                                
@@ -119,7 +119,7 @@
      ␛[38;5;241m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/round51.go␛[m                         ␛[38;5;245m2 lines␛[m         ␛[38;5;241m│␛[m                                                
      ␛[38;5;241m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/round52.go␛[m                         ␛[38;5;245m2 lines␛[m         ␛[38;5;241m│␛[m  ␛[94;1mSPEND␛[m                                  ␛[38;5;252m$0.51␛[m  
      ␛[38;5;241m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/round53.go␛[m                         ␛[38;5;245m2 lines␛[m         ␛[38;5;241m│␛[m  ␛[38;5;241mgpt-4o · $0.51 main␛[m                           
-     ␛[38;5;241m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/round54.go␛[m                         ␛[38;5;245m2 lines␛[m         ␛[38;5;241m│␛[m  ␛[38;5;241msession total $0.51␛[m                           
+     ␛[38;5;241m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/round54.go␛[m                         ␛[38;5;245m2 lines␛[m         ␛[38;5;241m│␛[m  ␛[38;5;241msession total · $0.51␛[m                         
      ␛[38;5;241m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/round55.go␛[m                         ␛[38;5;245m2 lines␛[m         ␛[38;5;241m│␛[m                                                
      ␛[38;5;241m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/round56.go␛[m                         ␛[38;5;245m2 lines␛[m         ␛[38;5;241m│␛[m                                                
      ␛[38;5;241m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/round57.go␛[m                         ␛[38;5;245m2 lines␛[m       ␛[38;5;241m┃␛[m ␛[38;5;241m│␛[m                                                
