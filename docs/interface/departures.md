@@ -524,27 +524,9 @@ the artboard and the binary say the same thing.
 
 ## The frame's border is chrome, and the mode segment carries the mode
 
-*A disagreement.* The `Frame` and `Main` artboards colour the input frame's
-border by permission mode — add where work goes through, accent where it is
-asked about — so that a gated session looks different from a permissive one
-before a word is read. The `Attention` artboard draws the waiting frame in
-dim, with `⏸ 2 waiting` in the accent on its rail, and the state-colour
-guideline gives the accent both to gated mode and to a low card's border. The
-binary draws the border in chrome, the tone of every other rule, in every
-mode and attached or not ([the input frame](surfaces.md#the-input-frame)); the
-mode segment on the vitals rail keeps its tone per mode, and its `✦ deciding`
-while the classifier decides.
-
-The mode is already said on the frame, by the segment's word and the glyph in
-front of it, which is what keeps it from being carried by colour alone
-([colour never carries meaning alone](principles.md#colour-never-carries-meaning-alone)).
-The border was the same fact a second time, and in a gated session it was said
-in the accent a card's border uses to say the decision on it is worth
-weighing. With a card up, the screen held two accent boxes, and the one the
-reader had to answer no longer stood out from the one they type in
-([weight tracks risk](principles.md#weight-tracks-risk)). The frame's title
-keeps its word and its glyph's tone, which is what `Attention` draws. The
-departure is closed by the two artboards drawing the border in chrome.
+*Closed.* The `Frame` and `Main` artboards, and every other artboard that
+draws the input frame, now draw its border in chrome in every mode; the mode
+segment on the rail keeps its tone, which is where the binary says the mode.
 
 ## A read's glyph is chrome
 
@@ -877,21 +859,8 @@ and this differ, the artboard wins.
 
 ## The round is counted on the rail and not on the close row
 
-*A disagreement.* The artboards disagree with each other. `Changeset` draws
-`round 7 of 25` at the right of the Done row; `Commit` draws the same row
-without it; and `Frame` keeps `round 7 of 25` on the vitals rail at idle, after the turn
-has closed. The binary follows `Commit` and `Frame`: the close row states the
-turn's steps, tools, time and spend, and the round is stated once, on the
-rail ([the turn's close](surfaces.md#the-turns-close)).
-
-Drawn on both, the same counter stood two rows apart with nothing between
-them, and a reader had to check that the two figures agreed before trusting
-either. The rail is the one that is always there — it is where a new reader
-learns to look for the session's counters, and it keeps the round after the
-turn ends — so the close row is the one that gives it up. The AGENTS block's
-orchestrator row states its round only while a turn is working, so an idle
-session still has one account. The departure is closed by `Changeset` dropping
-the note from its Done row.
+*Closed.* `Changeset` and `Scroll` now draw the Done row without the round;
+it is stated once, on the rail, as the binary draws it.
 
 ## The working label arrives, and a light runs along it
 
@@ -930,57 +899,9 @@ binary draws it there too.
 
 ## The children's tally says who needs you first
 
-*A disagreement.* The `Agents` artboard heads the manager with
-`╭─ agents ─… 3 running · 1 needs you ─╮`, in dim. The binary states the same
-two clauses the other way round, `1 needs you · 3 running`, the ask in del
-and the count in the artboard's dim. The frame itself is the artboard's:
-Info, as every card waiting on an answer is.
-
-The manager's border is the one place outside a child's own lane or row that
-says a child needs you, and the frame's title (`⏸ 1 waiting`, counting the
-child's routed ask among the decisions waiting) is the other. Everywhere else
-the artboards draw a count and the binary follows them: the rail's `AGENTS`
-heading (`3 running`, the `Main` artboard's), the vitals' `◇3`, and the
-fan-out header, which the `Agents` artboard draws as `▸ 3 agents · 1m 12s`
-and the binary as the same with `3 running` in the outcome field — the field
-is what says how far a hold has landed (`2 held · 1 running`,
-[a hold](../capabilities/subagents.md#a-hold-reaches-the-whole-fan-out)), and
-it stays a count. A child waiting on you is a live one, so every count takes
-it in with the running, as the artboard's `3 running · 1 needs you` over three
-children does. The header, the heading and the manager's border are drawn by
-one function, so they cannot disagree about a count.
-
-On the border the clause that asks something of you is the only one the
-reader has to act on, so it is read first; running children are the
-remainder.
-
-A lane's state is carried by its glyph, and only a verdict takes a state's
-colour after it. The `Agents` artboard draws the lane's `◇` in the state's
-tone — info running, add done, del blocked — the word after the bar in that
-tone where it is a verdict (`✓ 5/5`, `⚠ needs you`), and in dim where it is
-a count (`2/5 · 6 tools · $0.02`); the manager's `3 running` is dim as well.
-The `Main` artboard draws a lane's `2 of 5 steps` in info instead, and the two
-disagree: the `Agents` artboard is the fan-out's own and is the one followed.
-So every count of running children, every step count and every tool count is
-dim on the lane, the manager's row and the rail's map; the glyph, the
-spinner's own glyph and the verdicts keep their tones. The state is still
-said twice without colour — by the glyph's shape on a row and by the word —
-so dimming the counts takes nothing a monochrome terminal was reading
-([colour never carries meaning alone](principles.md#colour-never-carries-meaning-alone)),
-and a header that was red, magenta, blue and green on one row is one hue and
-its grey.
-
-Three smaller differences on the manager's top border follow from the family
-rather than from this card. The title is `Agents`, capitalised like every
-card title the same artboard draws (`Approve edit`), because a lower-case word
-on a card's rail reads as a label rather than a heading. The count of
-children started, which no artboard draws, is a chip of its own in front of
-the tally (`4 of 32 spawned ─ 1 needs you · 2 running`) rather than joined to
-it with a separator: chips give up whole from the front as the terminal
-narrows, and a count joined into the tally could only be given up with it.
-And the run of rule between the title and the chips is in the chrome tone on
-every card, which is the card's own rule
-([the approval card](surfaces.md#the-approval-card)) and not a departure.
+*Closed.* The `Agents` artboard now heads the manager `Agents ─ 1 needs you ·
+3 running`, the ask in del and the count dim, and draws every count on a
+lane and on the rail dim, as the binary does.
 
 ## A fan-out offers the manager, not the answer
 
@@ -1046,34 +967,3 @@ departure is closed by the artboards
 agreeing that a gloss is drawn only where it is about the call — which every
 gloss they draw already is but one: `Commit` still glosses `push` with *shhh
 never pushes; the remote is yours*.
-
-## The screen's words are the reader's
-
-*A disagreement.* The artboards draw the product's own vocabulary on the frame,
-the cards, the close rows and the backlog screen, and the binary now draws the
-reader's. On the vitals rail `ctx` is `context` from a 110-column terminal up,
-`round 7/25` is `round 7 of 25`, the unpriced token pair ends in `tok`, the
-classifier's moment is `✦ deciding` rather than `✦ checking`, the grants chip
-is `granted: edits, 2 commands` rather than `auto: edits+2 cmds`, and the
-steering count is `1 queued for this turn` wherever it is counted. The key
-bar's captions are one verb in the second person: `[enter] add to this turn`,
-`[ctrl+/] commands`, `[shift+tab] change mode`, `[esc] back to your session`,
-`resume the turn`, `cancel it`. On a card, `writes nothing` is `changes no
-files`, the bare `⛨` label is `sandbox`, `n/a` is `nothing to undo`, a fan-out
-is titled `Start a writer`, a fetch `Approve fetch` with `[y] fetch it`, the
-shifted answers are `[Y] run with a note` and `[N] deny with a note`, and a
-flagged card's esc is `not now — it keeps waiting`. On the commit card
-`drifted` is `skipped` (and so on the rail's CHANGES block), esc is `not now — nothing is committed, and the offer stays`, and the
-subject budget counts `0 left`. On the close, `wrote nothing` is `changed no
-files`, a tally is `4 of 4 checks` and an answered failure is `since passed`.
-The backlog's `?` reveal names what its letters stand for, from the profile.
-
-The reason is the reader who has never opened these documents: a word that
-needs a page to decode is a word the screen has not finished saying
-([closed vocabularies](principles.md#closed-vocabularies)). The words are
-spelled in [the surfaces](surfaces.md#the-input-frame). `Frame`, `Main`,
-`Questions`, `Commit`, `Changeset` and `Backlog` draw them now; the artboards
-that still draw old ones are `Attention` (`round 7/25`), `Approvals` (the
-command card's title, `Approve shell command`, and the fetch's `[enter]
-fetch`) and `Agents` (the child's card's offers, `[enter] approve` and `[v] diff`). The departure is
-closed by those artboards drawing the words the binary draws.
