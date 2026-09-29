@@ -8,4 +8,10 @@
 # frame behind it; clear is what keeps a capture holding one screen. The
 # piped line is deliberately left standing under the first two, because a
 # capture of it beside the surface is the comparison.
-clear; echo 'list open ports' | $SHHH_BIN cmd; $SHHH_BIN cmd 'find every process listening on a port above 8000'; clear; $SHHH_BIN cmd 'delete every node_modules under ~/src'
+# The one-shot checks that a command's programs are on PATH before it offers
+# it, and asks the model to correct one that is not — which takes the next
+# reply. lsof is not on every host (a minimal Linux has ss instead), so the
+# setup puts a stand-in for it in the workspace and the runs look there first:
+# the scene is about the surface, not about what this machine has installed,
+# and nothing it draws is ever run.
+PATH="$PWD/.tools:$PATH"; clear; echo 'list open ports' | $SHHH_BIN cmd; $SHHH_BIN cmd 'find every process listening on a port above 8000'; clear; $SHHH_BIN cmd 'delete every node_modules under ~/src'

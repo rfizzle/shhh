@@ -8,7 +8,8 @@
 #   launch        what the pane runs, one shell line; default: $SHHH_BIN code
 #   size          the pane, columns then rows; default 120 40
 #   requires      what the host must have, one word a line; the one word is
-#                 containment (a child's command card needs a mechanism)
+#                 containment (a child's command card needs a mechanism); a
+#                 host without it stops the scene before it starts, exit 3
 #   steps.txt     what the reader does, one step per line:
 #
 #     setup <shell>             run in the workspace before the binary starts
@@ -152,6 +153,11 @@ SHHH_BIN=$(cd "$(dirname "$SHHH_BIN")" && pwd)/$(basename "$SHHH_BIN")
 # anything is started. The probe is the one the binary makes itself —
 # bubblewrap in an unprivileged user namespace on Linux, the smallest Seatbelt
 # profile on macOS — so the two cannot disagree about the host.
+#
+# A scene stopped here exits 3, not 1: it did not fail, it could not run, and
+# check.sh counts it apart from a failure and names it with the reason on the
+# `declared unable:` line. A host that has the mechanism — the CI job, which
+# installs bubblewrap — drives it like any other scene.
 host_contains() {
 	case $(uname -s) in
 	Linux)
@@ -176,8 +182,9 @@ if [ -f "$scene/requires" ]; then
 		""|\#*) ;;
 		containment)
 			if ! why=$(host_contains); then
-				echo "drive.sh: $name: a child's command card needs a containment mechanism and this host has none — $why; install bubblewrap and allow unprivileged user namespaces, or drive another scene" >&2
-				exit 1
+				echo "drive.sh: $name: declared unable: containment — $why" >&2
+				echo "drive.sh: $name: a child's command card needs a containment mechanism and this host has none; install bubblewrap and allow unprivileged user namespaces, or drive another scene" >&2
+				exit 3
 			fi
 			;;
 		*)
@@ -256,15 +263,24 @@ fi
 # left to the redirections that write them, except the shell steps', which
 # each append to one.
 rm -f "$OUT"/*.txt "$OUT"/*.ansi "$OUT"/*.gif "$OUT"/*.cast "$OUT/shell.log"
-printf '[behavior]\nprovider_retries = 0\n' > "$home/config/shhh/config.toml"
 # A replies file with no queues answers every request from one script, so a
 # session's own title and standing account — both asked by default — would
 # each take the reply written for the next turn. Such a scene is not about
 # them, and they stay off there; a scene with queues answers them from its
 # [reading] queue, or with a line of the provider's own where it wrote none.
-if ! grep -q '^\[[^]]*\][[:space:]]*$' "$scene/replies.txt"; then
-	printf '\n[summary]\ntitle = false\nresume_interval_turns = -1\n' >> "$home/config/shhh/config.toml"
-fi
+#
+# That switch is written first and [behavior] last, because a scene's launch
+# may append to this file, and a bare key appended lands in whichever table
+# the file ends in: `command_timeout_seconds = 1` belongs to [behavior], and
+# under a [summary] written after it the file no longer loads. A launch that
+# rewrites the file whole takes the switch with it, so such a scene puts its
+# replies under a [session] queue instead of relying on the switch.
+{
+	if ! grep -q '^\[[^]]*\][[:space:]]*$' "$scene/replies.txt"; then
+		printf '[summary]\ntitle = false\nresume_interval_turns = -1\n\n'
+	fi
+	printf '[behavior]\nprovider_retries = 0\n'
+} > "$home/config/shhh/config.toml"
 (cd "$ws" && git init -q && git -c user.email=tui@shhh -c user.name=tui commit -q --allow-empty -m init)
 
 # The provider asks the kernel for a free port, binds it, and says which one

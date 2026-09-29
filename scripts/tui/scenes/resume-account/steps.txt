@@ -16,5 +16,8 @@ snap 03-second "the client's own wait is gone"
 keys C-c
 sleep 0.3
 keys C-c
-# Wait on the account's own words: only the picker's preview draws them.
-snap 04-picker "Left off with the client's own" "shhh chats" "The retry backoff doubling" "Fixing the retry backoff so a stall waits once."
+# Wait on the account's own words: only the picker's preview draws them. The
+# preview wraps the account to its column, and where a line breaks moves with
+# the terminal's width, so the wait is one word and the comparisons are the
+# title and the account's opening, which start a line at every width.
+snap 04-picker "removed" "shhh chats" "The retry backoff doubling" "Fixing the retry"

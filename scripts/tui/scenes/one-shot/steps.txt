@@ -22,6 +22,9 @@
 # There are no keys to reach the one-shot with — it is its own entry point —
 # so the three runs are in the scene's launch file rather than typed here.
 #
+# A stand-in lsof on the runs' PATH, for the check the one-shot makes before
+# it offers a command; the launch says why.
+setup mkdir -p .tools && printf '#!/bin/sh\nexit 0\n' > .tools/lsof && chmod +x .tools/lsof
 # The piped run is first and it is the whole of the non-TTY story: one line of
 # shell on stdout, no spinner, no keys, no colour. It stays on screen above
 # everything that follows, which is what lets one capture hold both.

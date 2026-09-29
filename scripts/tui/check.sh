@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Drive every scene it is handed, a few at a time, and end on one line that
-# says how many passed and where each failure stopped.
+# says how many passed, where each failure stopped, and which scenes this
+# host could not run and why.
 #
 #   check.sh <scene-dir>…     (make tui-check hands it every scene)
 #
@@ -60,9 +61,19 @@ printf '%s\0' "$@" | xargs -0 -n 1 -P "$jobs" "$0" --one
 # they finished in, so two runs of the same tree name their failures the same
 # way. Where a scene stopped is the first snap drive.sh named in a failure; a
 # scene that failed outside its snaps (a setup, a stray tab) is named alone.
+#
+# A scene whose `requires` names something this host has not got is not a
+# failure: drive.sh stops it before it starts, exits 3 and says why on a
+# `declared unable:` line. It is counted apart and named with that reason, so
+# the line says what was not driven here rather than letting it pass unseen,
+# and the exit status is still zero when nothing else failed — CI, which has
+# the mechanism, drives those scenes like any other.
 total=0
 passed=0
+failed=0
 failures=
+reasons=()
+unable_by=()
 for scene in "$@"; do
 	name=$(basename "$scene")
 	total=$((total + 1))
@@ -71,8 +82,31 @@ for scene in "$@"; do
 		passed=$((passed + 1))
 		continue
 	fi
+	if [ "$status" = 3 ]; then
+		why=$(sed -n "s|^drive\.sh: $name: declared unable: ||p" "$TUI_CHECK_LOGS/$name.log" 2>/dev/null | head -n 1)
+		if [ -n "$why" ]; then
+			# Scenes stopped for the same reason share one clause, so four
+			# fan-out scenes on a host with no mechanism read as one fact.
+			i=0
+			while [ "$i" -lt ${#reasons[@]} ] && [ "${reasons[$i]}" != "$why" ]; do i=$((i + 1)); done
+			if [ "$i" -eq ${#reasons[@]} ]; then
+				reasons+=("$why")
+				unable_by+=("")
+			fi
+			unable_by[$i]="${unable_by[$i]:+${unable_by[$i]}, }$name"
+			continue
+		fi
+	fi
+	failed=$((failed + 1))
 	snap=$(sed -n "s|^drive\.sh: $name/\([^:]*\): .*|\1|p" "$TUI_CHECK_LOGS/$name.log" 2>/dev/null | head -n 1)
 	failures="$failures · $name failed${snap:+ at $snap}"
 done
-echo "$passed/$total scenes passed$failures"
-[ "$passed" = "$total" ]
+unable=$((total - passed - failed))
+counted=
+[ "$unable" -gt 0 ] && counted=", $unable declared unable here"
+declared=
+for i in ${reasons[@]+"${!reasons[@]}"}; do
+	declared="$declared · unable here, ${reasons[$i]}: ${unable_by[$i]}"
+done
+echo "$passed/$total scenes passed$counted$failures$declared"
+[ "$failed" = 0 ]

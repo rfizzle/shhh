@@ -259,9 +259,11 @@ fails the run, so every scene is also a test, and the exit code of
 `TUI_JOBS=1` is the serial run) through `scripts/tui/check.sh`, which prints
 each scene's output whole once it is done, drives every scene whatever fails,
 and ends on one line — `47/48 scenes passed · esc-fold failed at 05-rewind` —
-with a non-zero exit on any failure. On a loaded host, lower `TUI_JOBS` before
-reading a timed-out snap as a broken scene: every scene is a binary, a tmux
-server and a scripted model, and a snap waits a fixed time for its text.
+with a non-zero exit on any failure. A scene stopped by its `requires` is not
+a failure and is named apart, with its reason (see `requires` below). On a
+loaded host, lower `TUI_JOBS` before reading a timed-out snap as a broken
+scene: every scene is a binary, a tmux server and a scripted model, and a
+snap waits a fixed time for its text.
 
 **A step that counts on the screen's order waits for the order first.** A
 scene that presses `j` three times to reach a row is betting the rows are
@@ -306,13 +308,24 @@ way out and a capture would otherwise hold two screens.
 `launch` is also where a scene changes a setting. `drive.sh` writes the
 run's own `$XDG_CONFIG_HOME/shhh/config.toml` before the pane starts, and it
 holds `[behavior]` with `provider_retries = 0`, so that no scene sits out a
-retry wait it did not ask for. A scene that needs another value rewrites
-that file whole from its `launch`, ahead of the binary — appending a second
-`[behavior]` table is invalid TOML, and the file no longer loads.
-`retry-wait` is the example: it writes `printf '[behavior]\nprovider_retries
-= 3\n' > $XDG_CONFIG_HOME/shhh/config.toml && $SHHH_BIN code` to give the
-built-in bound back. A table the harness does not write can be appended with
-`>>` instead, which is what `chat-reads-web` does with
+retry wait it did not ask for. Where the replies file has no queue header it
+also holds, ahead of that, `[summary]` with `title = false` and
+`resume_interval_turns = -1`: a queue-less file answers every request from
+one script, so the session's title and standing account would each take the
+reply written for the next turn. `[behavior]` is always the last table, so a
+bare key appended with `>>` lands in it — `command-errors` appends
+`command_timeout_seconds = 1` that way — and never under the switch.
+
+A scene that needs another `[behavior]` value rewrites the file whole from
+its `launch`, ahead of the binary — appending a second `[behavior]` table is
+invalid TOML, and the file no longer loads. `retry-wait` is the example: it
+writes `printf '[behavior]\nprovider_retries = 3\n' >
+$XDG_CONFIG_HOME/shhh/config.toml && $SHHH_BIN code` to give the built-in
+bound back. A rewrite takes the queue-less switch with it, so a scene that
+rewrites puts its replies under a `[session]` queue, as `retry-wait` does:
+the title and the account are then answered from `[reading]` rather than
+from the turn's script. A table the harness does not write can be appended
+with `>>` instead, which is what `chat-reads-web` does with
 `[web]\nallow_private = true` so its fetch can reach the loopback fixture;
 the moment the harness writes that table too, the append has to become a
 rewrite.
@@ -337,8 +350,15 @@ which is why the CI job installs it and runs `bwrap --unshare-user --ro-bind /
 / true` before `make ci`. `drive.sh` makes the binary's own probe before it
 starts anything and, where the host has no mechanism, stops the scene in one
 line saying so, rather than letting the snap wait out `WAIT` for a card that
-cannot come. A new scene that waits on a child's command card carries the
-file too.
+cannot come. That stop exits 3 rather than 1 and says why on a `declared
+unable:` line, and `check.sh` counts it apart from a failure: the sweep's
+last line carries `, 4 declared unable here` and the reason with the scenes
+it stopped, and the exit status stays zero when nothing else failed. A host
+that has the mechanism drives those scenes like any other, so the CI job,
+which installs bubblewrap, still runs them. A new scene that waits on a
+child's command card carries the file too; nothing else is a reason to
+declare one, and a scene that fails on a host that has what it declares is a
+failure.
 
 Pick the width. `COLS` is the terminal, and the four the goldens use are 60,
 80, 110 and 130 — the breakpoints in `docs/interface/principles.md#one-grid`.
