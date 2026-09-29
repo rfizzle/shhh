@@ -628,7 +628,7 @@ func TestClick_RailFileOpensItsDiff(t *testing.T) {
 	if m.state == stateDiffFull {
 		t.Fatal("the same cell should close the diff again")
 	}
-	if m.fullDiff != nil || m.railDiff.live {
+	if m.fullDiff != nil || m.railOpened.live {
 		t.Fatal("closing the diff should leave nothing holding the cell")
 	}
 }
@@ -680,11 +680,12 @@ func TestClick_RailSessionDetailRowIsTheSameTarget(t *testing.T) {
 	}
 }
 
-// Everything else on the rail is a reading. A heading names a block rather
-// than anything in it, and a meter has nothing to open.
+// Everything else on the rail is a reading. A heading whose block has no
+// surface behind it names nothing to go to, and a meter has nothing to open;
+// the headings that are doors are railclick_test.go's.
 func TestClick_RailHeadingsAndMetersAreInert(t *testing.T) {
 	m := railClickModel(t)
-	for _, row := range []string{"CHANGES", "AGENTS", "CONTEXT", "SPEND", "THIS TURN"} {
+	for _, row := range []string{"SPEND", "THIS TURN"} {
 		x, y := railCell(t, m, row)
 		next := click(t, m, x, y)
 		if next.state != m.state || next.attachedTo != m.attachedTo || next.fullDiff != nil {

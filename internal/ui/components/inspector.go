@@ -148,7 +148,29 @@ type InspectorRail struct {
 	// declared no step count. The rail stays passive: it animates nothing, it
 	// just draws the frame it is handed.
 	Frame int
+	// Doors names the blocks, by their Rail* heading, that have a surface
+	// behind them holding the whole of what the block bounds. Their heading
+	// and fold marker point at the block; every other block's point at
+	// nothing. Which blocks have one is the host's answer, because the
+	// surfaces are the host's (docs/interface/surfaces.md#the-inspector-rail).
+	Doors map[string]bool
 }
+
+// The blocks' names: the heading each one draws, and what a RailTargetBlock
+// carries.
+const (
+	RailSummary = "SUMMARY"
+	RailTurn    = "THIS TURN"
+	RailAlerts  = "ALERTS"
+	RailPlan    = "PLAN"
+	RailSteps   = "STEPS"
+	RailTodo    = "TODO"
+	RailChanges = "CHANGES"
+	RailAgents  = "AGENTS"
+	RailTools   = "TOOLS"
+	RailContext = "CONTEXT"
+	RailSpend   = "SPEND"
+)
 
 // Empty reports whether every block is omitted, so the host can skip the
 // split rather than draw an empty column.
@@ -159,10 +181,11 @@ func (r InspectorRail) Empty() bool {
 }
 
 // RailTargetKind says what a row on the rail points at. Most of the rail
-// points at nothing, and that is the default on purpose: a heading, a meter,
-// a sentence and a fold marker are readings rather than doors, and a row that
-// answered a click by opening a whole surface would be a target the same
-// click could not leave.
+// points at nothing, and that is the default on purpose: a meter and a
+// sentence are readings rather than doors. A block's heading and its fold
+// marker are the exception where the block has a surface behind it: they
+// open the surface that holds the whole of what the block bounds, and the
+// same cell closes it again.
 type RailTargetKind int
 
 const (
@@ -172,11 +195,15 @@ const (
 	RailTargetFile
 	// RailTargetSession: the row names a session in the map.
 	RailTargetSession
+	// RailTargetBlock: the row is a block's heading or its fold marker, and
+	// names the block.
+	RailTargetBlock
 )
 
 // RailTarget is what a row points at: the kind of thing it names and the name
-// itself — a workspace path for a file, and a session's name for a session,
-// which is empty for the session the rail belongs to.
+// itself — a workspace path for a file, a session's name for a session,
+// which is empty for the session the rail belongs to, and a block's Rail*
+// name for a block.
 type RailTarget struct {
 	Kind RailTargetKind
 	Name string
@@ -241,6 +268,9 @@ type railBlock struct {
 	// fold renders the marker for the hidden rows. Nil prints the bare
 	// "… N more" every block but CHANGES uses.
 	fold func([]railLine) string
+	// door is what the heading and the fold marker point at: the block
+	// itself where it has a surface behind it, nothing where it has none.
+	door RailTarget
 }
 
 // add appends an ordinary row: truncation may take it, and it carries no
@@ -274,26 +304,33 @@ func (b railBlock) height() int {
 // at 46 columns inside a 62-column rail is a row that ends where nothing else
 // on the rail ends.
 //
-// The heading and the fold marker point at nothing. The heading names a block
-// rather than a thing in it, and the marker stands for rows that are not on
-// screen — a click on either would have to guess which of several things the
-// reader meant.
+// The heading and the fold marker are the block's door. A heading names the
+// block rather than a thing in it, and a marker stands for rows that are not
+// on screen, so neither can point at one of the block's things — but both
+// can point at the block, and where the block has a surface holding the whole
+// of it, that is what they open. A host's own count of rows it left out
+// (TODO's `… N more`) is a fold marker in the host's words and opens the same
+// door. A block with no surface behind it keeps all of them inert.
 func (b railBlock) render(width int) []RailRow {
 	out := make([]RailRow, 0, b.height())
-	out = append(out, RailRow{Text: b.heading})
+	out = append(out, RailRow{Text: b.heading, Target: b.door})
 	for _, r := range b.rows {
-		out = append(out, RailRow{Text: r.text, Target: r.target})
+		target := r.target
+		if r.more > 0 {
+			target = b.door
+		}
+		out = append(out, RailRow{Text: r.text, Target: target})
 	}
 	switch {
 	case len(b.hidden) == 0:
 	case b.fold != nil:
-		out = append(out, RailRow{Text: b.fold(b.hidden)})
+		out = append(out, RailRow{Text: b.fold(b.hidden), Target: b.door})
 	default:
 		n := 0
 		for _, h := range b.hidden {
 			n += max(h.more, 1)
 		}
-		out = append(out, RailRow{Text: indentRow(sty.Hint.Render(fmt.Sprintf("… %d more", n)), width)})
+		out = append(out, RailRow{Text: indentRow(sty.Hint.Render(fmt.Sprintf("… %d more", n)), width), Target: b.door})
 	}
 	return out
 }
@@ -345,14 +382,23 @@ func (r InspectorRail) Rows(width, height int) []RailRow {
 	return out
 }
 
-// blocks assembles the present blocks in their fixed order.
+// blocks assembles the present blocks in their fixed order, each carrying
+// its door where the host named one.
 func (r InspectorRail) blocks(width int) []railBlock {
 	var blocks []railBlock
-	for _, b := range []func(int) (railBlock, bool){
-		r.summaryBlock, r.turnBlock, r.alertsBlock, r.planBlock, r.stepsBlock, r.todoBlock, r.changesBlock,
-		r.agentsBlock, r.toolsBlock, r.contextBlock, r.spendBlock,
+	for _, b := range []struct {
+		name  string
+		build func(int) (railBlock, bool)
+	}{
+		{RailSummary, r.summaryBlock}, {RailTurn, r.turnBlock}, {RailAlerts, r.alertsBlock},
+		{RailPlan, r.planBlock}, {RailSteps, r.stepsBlock}, {RailTodo, r.todoBlock},
+		{RailChanges, r.changesBlock}, {RailAgents, r.agentsBlock}, {RailTools, r.toolsBlock},
+		{RailContext, r.contextBlock}, {RailSpend, r.spendBlock},
 	} {
-		if blk, ok := b(width); ok {
+		if blk, ok := b.build(width); ok {
+			if r.Doors[b.name] {
+				blk.door = RailTarget{Kind: RailTargetBlock, Name: b.name}
+			}
 			blocks = append(blocks, blk)
 		}
 	}

@@ -155,9 +155,6 @@ func (m Model) openFileDiff(path string) (tea.Model, tea.Cmd) {
 			ModeChange: f.ModeChange,
 		}, m.state)
 	}
-	// Nothing opened, so nothing is holding the cell a rail click was
-	// answered from.
-	m.railDiff = pointerPress{}
 	return m.systemNotice(fmt.Sprintf("%s has not been changed by this session. /diff shows every file that has", path))
 }
 
@@ -194,11 +191,14 @@ func (m Model) updateDiffFull(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 // closeDiffFull returns from the full-screen diff to wherever it was opened
 // from — the confirm prompt, focus mode, or the input.
 func (m Model) closeDiffFull() (tea.Model, tea.Cmd) {
+	// Whatever door this was opened by, it is shut: the cell that opened the
+	// diff is a row again (railclick.go). Only a memo held for this diff is
+	// cleared — a diff opened from inside a surface a rail cell opened goes
+	// back to that surface, and the cell still closes it.
+	if m.railOpened.surface == any(m.fullDiff) {
+		m.railOpened = railOpening{}
+	}
 	m.fullDiff = nil
-	// Whatever door this was opened by, it is shut: the rail is about to be
-	// back on screen, and the cell that opened the diff is a row again
-	// (railclick.go).
-	m.railDiff = pointerPress{}
 	// A diff opened from focus mode goes back to it; anything else hands the
 	// screen back to the turn, which may have moved on while it was up.
 	if m.diffReturn.isSurface() {

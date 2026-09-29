@@ -1,0 +1,16 @@
+# One reply per request. The last line repeats once these run out.
+#
+# One turn writes ten files, two past the CHANGES block's preset, so the
+# block draws its fold marker.
+Laying out the stubs
++tool:write_file:{"path":"pkg/f00.go","content":"package pkg\n\nconst f00 = 0\n"}
++tool:write_file:{"path":"pkg/f01.go","content":"package pkg\n\nconst f01 = 0\n"}
++tool:write_file:{"path":"pkg/f02.go","content":"package pkg\n\nconst f02 = 0\n"}
++tool:write_file:{"path":"pkg/f03.go","content":"package pkg\n\nconst f03 = 0\n"}
++tool:write_file:{"path":"pkg/f04.go","content":"package pkg\n\nconst f04 = 0\n"}
++tool:write_file:{"path":"pkg/f05.go","content":"package pkg\n\nconst f05 = 0\n"}
++tool:write_file:{"path":"pkg/f06.go","content":"package pkg\n\nconst f06 = 0\n"}
++tool:write_file:{"path":"pkg/f07.go","content":"package pkg\n\nconst f07 = 0\n"}
++tool:write_file:{"path":"pkg/f08.go","content":"package pkg\n\nconst f08 = 0\n"}
++tool:write_file:{"path":"pkg/f09.go","content":"package pkg\n\nconst f09 = 0\n"}
+Ten stub files are written under pkg.

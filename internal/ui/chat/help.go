@@ -496,6 +496,10 @@ bare /todo opens the same screen; it opens over a running turn, and the keys tha
 			text:  `move the keyboard one session along the inspector rail's AGENTS map — the orchestrator and every agent it started, in the order they were started, wrapping at both ends. The rail stays up while you are in an agent's session and marks the row you are in; everything you do *to* an agent is still in the manager` + optionWhen(optionAside, keys.Draft.NextAgent, keys.Draft.PrevAgent),
 		},
 		{
+			key:  "rail click",
+			text: `on the inspector rail, a changed file opens its diff and a session's row moves the keyboard into it. A block's heading, or its … N more, opens the surface holding the whole block — CHANGES is /diff, AGENTS is /agents, TODO is /todo, CONTEXT is /context — and a click on the same cell closes it, as its own esc does. The rail never holds the keyboard, so each command is that door's key`,
+		},
+		{
 			binds: []keys.Binding{keys.Draft.Editor},
 			text:  `open the draft in your editor: $EDITOR (then $VISUAL, then vi) opens a file holding what you have typed, at the line and column the cursor was on, and whatever is in the file when the editor exits becomes the draft. An empty file leaves the draft alone. Not while a turn is running or a decision is waiting — the editor takes the terminal with it`,
 		},

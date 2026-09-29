@@ -267,6 +267,19 @@
                      agent is still in the manager
                      (alt needs the Option setting the
                      agent manager's row names)
+    rail click       on the inspector rail, a changed
+                     file opens its diff and a
+                     session's row moves the keyboard
+                     into it. A block's heading, or
+                     its … N more, opens the surface
+                     holding the whole block — CHANGES
+                     is /diff, AGENTS is /agents, TODO
+                     is /todo, CONTEXT is /context —
+                     and a click on the same cell
+                     closes it, as its own esc does.
+                     The rail never holds the
+                     keyboard, so each command is that
+                     door's key
     [ctrl+g]         open the draft in your editor:
                      $EDITOR (then $VISUAL, then vi)
                      opens a file holding what you
@@ -635,6 +648,19 @@
                      ␛[38;5;244magent is still in the manager␛[m
                      ␛[38;5;244m(alt needs the Option setting the␛[m
                      ␛[38;5;244magent manager's row names)␛[m
+    ␛[38;5;254mrail click␛[m       ␛[38;5;244mon the inspector rail, a changed␛[m
+                     ␛[38;5;244mfile opens its diff and a␛[m
+                     ␛[38;5;244msession's row moves the keyboard␛[m
+                     ␛[38;5;244minto it. A block's heading, or␛[m
+                     ␛[38;5;244mits … N more, opens the surface␛[m
+                     ␛[38;5;244mholding the whole block — CHANGES␛[m
+                     ␛[38;5;244mis /diff, AGENTS is /agents, TODO␛[m
+                     ␛[38;5;244mis /todo, CONTEXT is /context —␛[m
+                     ␛[38;5;244mand a click on the same cell␛[m
+                     ␛[38;5;244mcloses it, as its own esc does.␛[m
+                     ␛[38;5;244mThe rail never holds the␛[m
+                     ␛[38;5;244mkeyboard, so each command is that␛[m
+                     ␛[38;5;244mdoor's key␛[m
     ␛[38;5;254m[ctrl+g]␛[m         ␛[38;5;244mopen the draft in your editor:␛[m
                      ␛[38;5;244m$EDITOR (then $VISUAL, then vi)␛[m
                      ␛[38;5;244mopens a file holding what you␛[m

@@ -1304,11 +1304,19 @@ click on the row already marked comes back. Both have the key that reaches
 them by name already — the file's diff is a command with a path, and the map
 is walked by a chord and by the manager — which is the test a target has to
 pass here: the pointer names exactly one thing, and the thing it names is
-reachable without a pointer. Everything else on the rail is inert, including
-the headings and the blocks that do have a surface behind them, because a row
-that opened a whole surface would be somewhere the same click could not
-leave. Nothing on the rail takes the keyboard: the draft keeps every
-character it had.
+reachable without a pointer.
+
+A block is a door to the whole of what it bounds. Where a block has a surface
+holding all of it, its heading and its fold marker open that surface: CHANGES
+opens the session's diff, AGENTS the manager, TODO the backlog screen and
+CONTEXT the occupancy screen — each the surface its command already opens, so
+the command is the door's key. The surface is left by its own esc, and by a
+click on the cell that opened it: the surface stands over the rail, so the
+row is not there to click again, but the cell is, and a click that opened a
+thing closes it — the way a changed file's diff always has. A block with no
+surface behind it keeps its heading and marker inert, and so does a meter.
+Nothing on the rail takes the keyboard: the draft keeps every character it
+had, and no door has a key on the rail itself.
 
 One block is not about the work at all: where the session's tools came from.
 A server that failed to answer leaves no trace in a transcript — a tool that

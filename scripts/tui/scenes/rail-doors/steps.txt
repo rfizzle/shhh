@@ -1,0 +1,47 @@
+# program test: TestProgram_ShiftTabWalksTheModes,
+#   TestProgram_TheQuitChordArmsThenLeaves
+#
+# A rail block is a door to the whole of what it bounds
+# (docs/interface/surfaces.md#the-inspector-rail): the CHANGES heading and its
+# `… 2 more` open the session's diff, the CONTEXT heading the occupancy
+# screen, and each surface is left by its own esc or by a second click on the
+# cell that opened it. A click is the terminal's own SGR mouse report, sent as
+# literal bytes: a press then a release in one cell, column and row counted
+# from 1. At 130 columns the rail's first column is 85, and the replies fix
+# the rows — the CHANGES heading on 6, its marker on 15, CONTEXT on 17.
+#
+# What the capture is for: at 03 the rail draws CHANGES with eight rows and
+# `… 2 more` under them; at 04 a click on the heading has put the session's
+# diff over the pane and the rail, all ten files in it; at 05 a click on the
+# same cell has put the rail back as it was; at 06 the marker opens the same
+# diff and at 07 its own esc leaves it; at 08 the CONTEXT heading opens the
+# occupancy screen and at 09 the same cell closes it; at 10 /diff, the key
+# twin, opens what the heading opened.
+#
+# The mode is accept-edits so ten writes are ten rows rather than ten cards.
+setup mkdir -p pkg
+snap 01-start "Some things worth doing first"
+keys BTab
+snap 02-accept-edits "⏵⏵ accept edits"
+keys "lay out the ten stub files" Enter
+snap 03-past-the-preset "Ten stub files are written" "… 2 more" "CHANGES"
+keys -l "$(printf '\033[<0;85;6M\033[<0;85;6m')"
+snap 04-heading-opens "session diff" "pkg/f09.go"
+keys -l "$(printf '\033[<0;85;6M\033[<0;85;6m')"
+snap 05-cell-closes "… 2 more" "CONTEXT"
+keys -l "$(printf '\033[<0;85;15M\033[<0;85;15m')"
+snap 06-marker-opens "session diff" "pkg/f00.go"
+keys Escape
+snap 07-esc-leaves "… 2 more" "CONTEXT"
+keys -l "$(printf '\033[<0;85;17M\033[<0;85;17m')"
+snap 08-context-opens "/context" "system prompt"
+keys -l "$(printf '\033[<0;85;17M\033[<0;85;17m')"
+snap 09-cell-closes "… 2 more" "CONTEXT"
+keys "/diff" Enter
+snap 10-key-twin "session diff" "pkg/f09.go"
+keys Escape
+snap 11-back "… 2 more" "CONTEXT"
+keys C-c
+snap 12-quit-armed "again quits"
+keys C-c
+snap 13-exit "that is everything the screen was holding"

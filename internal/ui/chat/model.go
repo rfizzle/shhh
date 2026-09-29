@@ -980,8 +980,9 @@ type Model struct {
 	// (pointer.go). A flag beside the index rather than a state of its own,
 	// because the keyboard does not move.
 	pointer bool
-	// railDiff is the rail cell a file's diff was opened from (railclick.go).
-	railDiff pointerPress
+	// railOpened is the rail cell a surface was opened from, and the surface
+	// (railclick.go).
+	railOpened railOpening
 	// writeConfig persists one config key to the user's file. The CLI
 	// installs it; a session without one cannot make a setting stick and
 	// says so rather than pretending it did.
