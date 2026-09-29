@@ -183,6 +183,18 @@ func (m Model) rowOnScreen(idx int) bool {
 // input box with nowhere to go. An empty transcript is the one case with
 // nothing to open onto, and it still says so.
 func (m Model) enterFocusMode() (tea.Model, tea.Cmd) {
+	m.staged.onStrip = false
+	if m.stripReachable() && len(m.expandableIndices()) == 0 {
+		// Nothing above the strip to stand on — the first screenshot of a
+		// session, pasted into its first sentence — so the mode opens on the
+		// strip, which is the one thing on screen it can reach
+		// (docs/interface/surfaces.md#a-staged-attachment).
+		m.enterSurface(stateFocus)
+		m.pointer = false
+		m.syncViewport()
+		m.enterStrip()
+		return m, nil
+	}
 	if len(*m.entries()) == 0 {
 		if m.startScreenShowing() {
 			// First contact is the one screen that is visibly empty,
@@ -349,6 +361,11 @@ func (m Model) updateFocus(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	// row being typed into is a surface of its own while it is up.
 	if m.viewport.SearchOpen() {
 		return m.updateSearchQuery(msg)
+	}
+	// On the strip its own four keys answer first: enter there opens a chip
+	// rather than a row, and esc goes back to the draft (stagedstrip.go).
+	if next, cmd, took := m.updateStrip(msg); took {
+		return next, cmd
 	}
 	// The copy caption stands until the next key: whatever the reader does
 	// next, they have moved on from the copy it describes.
@@ -570,6 +587,8 @@ func (m Model) exitFocusMode() (tea.Model, tea.Cmd) {
 	// The copy caption closes with the mode — it captions a mode that is
 	// ending.
 	m.readingCopied = ""
+	// The strip's cursor is the mode's; the chip stays staged.
+	m.staged.onStrip = false
 	// So does the search. Its marks are painted on the pane the feed uses
 	// too, and the keys that walk them are this mode's: a query left standing
 	// would mark lines in a transcript with nothing on screen offering to
@@ -658,8 +677,12 @@ func (m *Model) unitLineStarts() map[int]int {
 
 // moveFocus selects the next (+1) or previous (-1) expandable row. With
 // nothing to select the transcript is being read rather than navigated, so
-// the key is a line of scroll instead.
+// the key is a line of scroll instead. With something staged, the strip is
+// one more target below the last row (stagedstrip.go).
 func (m *Model) moveFocus(dir int) {
+	if m.stripMove(dir) {
+		return
+	}
 	idxs := m.expandableIndices()
 	if len(idxs) == 0 {
 		m.scrollLines(dir)
@@ -1002,12 +1025,23 @@ func gutterPrefix(block string, selected, grid bool, width int) string {
 // panel the layout paid for.
 func (m Model) focusHintLines() []string {
 	width := m.contentWidth()
+	// The staged strip leads the panel whenever something is staged, as the
+	// row under the transcript the cursor can reach: it is drawn whether or
+	// not the cursor is on it, so the mode never moves it to say where the
+	// cursor is.
+	var lines []string
+	if row, _ := m.stripRow(); row != "" {
+		lines = append(lines, row)
+	}
 	// The query row takes the bar's place while it is open, and takes the
 	// row's own offers with it: every letter is going into the query, so
 	// nothing else on the surface can be honoured while it is up.
 	if m.viewport.SearchOpen() {
-		return m.transcriptSearchLines(width)
+		return append(lines, m.transcriptSearchLines(width)...)
 	}
-	lines := []string{m.readingKeyLine(width)}
+	if m.atStrip() {
+		return append(lines, m.stripKeyLine(width))
+	}
+	lines = append(lines, m.readingKeyLine(width))
 	return append(lines, m.readingRowLines(width, minPanelHeight-1)...)
 }

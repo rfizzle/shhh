@@ -11,11 +11,18 @@ package components
 // screenshots and a spec were the same sentence as three screenshots, and a
 // file attached by accident looked exactly like one attached on purpose.
 //
-// Nothing here is a key and nothing here is clickable. The strip sits above a
-// live draft, so a key written on a chip would be an offer nothing accepts
-//, and a `✕` would be a control the keyboard cannot reach — which is
-// the test the click targets came with: the pointer names
-// one thing, and that thing already has a key. Taking one back out is `/paste
+// No key is printed on a chip, and none ever will be. The strip sits above a
+// live draft, so a key written on it would be an offer nothing accepts while
+// the draft holds the keyboard, and a `✕` would be a control the keyboard
+// cannot reach
+// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+// A chip is a door instead: reading mode's cursor reaches the strip as its
+// last row, where the keys are live because the mode holds the keyboard and
+// its own bar says so, and a click on a chip is the pointer twin of that
+// cursor's enter — the pointer names one thing, and that thing already has a
+// key. So a chip can be drawn picked (the reading cursor standing in its mark's
+// column) and reports the cells it was drawn in (AttachmentChipsAt), and it
+// still carries nothing that asks to be pressed. By name, a chip is `/paste
 // drop <handle>` — which is why the handle is the field a chip gives up last,
 // and why what does not fit is counted rather than half-drawn.
 
@@ -104,7 +111,27 @@ const (
 )
 
 // AttachmentChips renders the staged set as one row, or "" when nothing is
-// staged.
+// staged. It is AttachmentChipsAt with no chip picked and the cells thrown
+// away, which is the strip above a draft that holds the keyboard.
+func AttachmentChips(chips []AttachmentChip, width int) string {
+	row, _ := AttachmentChipsAt(chips, width, -1)
+	return row
+}
+
+// ChipHit is where one chip landed on a row AttachmentChipsAt drew: its index
+// in the chips it was handed, and the columns it covers, From inclusive and
+// To exclusive, counted from the row's first cell. A chip the row gave up has
+// none, and neither does the count of the ones it gave up: a number of files
+// nobody is looking at names no one of them to open.
+type ChipHit struct {
+	Index    int
+	From, To int
+}
+
+// AttachmentChipsAt renders the staged set as one row with the chip at picked
+// drawn under the reading cursor — a negative picked draws none — and reports
+// the cells each drawn chip covers, which is what a click on the strip is
+// resolved against.
 //
 // What does not fit is given up in an order, and the handle is the last of
 // it, because the handle is what `/paste show` and `/paste drop` take. Every
@@ -115,52 +142,81 @@ const (
 // where it stood — the number of files you are not looking at is the one
 // thing the row cannot otherwise say. The one chip that is always kept gives
 // up its counts, and only then clips.
-func AttachmentChips(chips []AttachmentChip, width int) string {
+//
+// A picked chip is never the one given up. Where the chips in front of it
+// fill the row, the ones before it are dropped instead and counted where they
+// stood, at the front: a cursor that walked onto a chip the row is not
+// drawing is a cursor nobody can see.
+func AttachmentChipsAt(chips []AttachmentChip, width, picked int) (string, []ChipHit) {
 	if len(chips) == 0 || width <= 0 {
-		return ""
+		return "", nil
 	}
-	full := renderChips(chips, chipFull)
-	if row := joinChips(full); lipgloss.Width(row) <= width {
-		return row
+	if picked >= len(chips) {
+		picked = -1
 	}
-	parts := renderChips(chips, chipNameless)
-	row := joinChips(parts)
-	if lipgloss.Width(row) <= width {
-		return row
+	for _, form := range []chipForm{chipFull, chipNameless} {
+		run := stripRun{chips: chips, form: form, to: len(chips), picked: picked}
+		if row, hits := run.draw(); lipgloss.Width(row) <= width {
+			return row, hits
+		}
 	}
 	// Give the row back one chip at a time until it fits alongside the count
 	// of the ones it gave up. The last rung keeps one chip whatever happens:
 	// a strip that is only a number has lost the thing it is for.
-	kept := len(chips) - 1
-	for ; kept >= 1; kept-- {
-		row = joinChips(parts[:kept]) + sty.Dim.Render(chipSeparator+chipTail(len(chips)-kept))
-		if lipgloss.Width(row) <= width {
-			return row
+	for kept := len(chips) - 1; kept >= 1; kept-- {
+		from := 0
+		if picked >= kept {
+			from = picked - kept + 1
+		}
+		run := stripRun{chips: chips, form: chipNameless, from: from, to: from + kept, picked: picked}
+		if row, hits := run.draw(); lipgloss.Width(row) <= width {
+			return row, hits
 		}
 	}
-	bare := chips[0].render(chipBare)
-	if len(chips) > 1 {
-		// The count goes before the handle does: a clip through the tail
-		// would cut the number off the one word the row still has.
-		if row = bare + sty.Dim.Render(chipSeparator+chipTail(len(chips)-1)); lipgloss.Width(row) <= width {
-			return row
+	// The count goes before the handle does: a clip through the tail would
+	// cut the number off the one word the row still has.
+	one := max(picked, 0)
+	run := stripRun{chips: chips, form: chipBare, from: one, to: one + 1, picked: picked}
+	if row, hits := run.draw(); lipgloss.Width(row) <= width {
+		return row, hits
+	}
+	bare := Clip(chips[one].render(chipBare, one == picked), width)
+	return bare, []ChipHit{{Index: one, From: 0, To: lipgloss.Width(bare)}}
+}
+
+// stripRun is the chips from one index up to another drawn in one form, with
+// the ones either side of the run counted rather than drawn.
+type stripRun struct {
+	chips    []AttachmentChip
+	form     chipForm
+	from, to int
+	picked   int
+}
+
+// draw lays the run on one row and notes the cells each chip took.
+func (r stripRun) draw() (string, []ChipHit) {
+	var b strings.Builder
+	var hits []ChipHit
+	col := 0
+	write := func(s string) {
+		b.WriteString(s)
+		col += lipgloss.Width(s)
+	}
+	if r.from > 0 {
+		write(sty.Dim.Render(chipTail(r.from) + chipSeparator))
+	}
+	for i := r.from; i < r.to; i++ {
+		if i > r.from {
+			write(sty.Dim.Render(chipSeparator))
 		}
+		at := col
+		write(r.chips[i].render(r.form, i == r.picked))
+		hits = append(hits, ChipHit{Index: i, From: at, To: col})
 	}
-	return Clip(bare, width)
-}
-
-// renderChips draws every chip in one form.
-func renderChips(chips []AttachmentChip, form chipForm) []string {
-	parts := make([]string, len(chips))
-	for i, c := range chips {
-		parts[i] = c.render(form)
+	if r.to < len(r.chips) {
+		write(sty.Dim.Render(chipSeparator + chipTail(len(r.chips)-r.to)))
 	}
-	return parts
-}
-
-// joinChips lays a run of already-rendered chips on one row.
-func joinChips(parts []string) string {
-	return strings.Join(parts, sty.Dim.Render(chipSeparator))
+	return b.String(), hits
 }
 
 // PasteToken is the fold a staged paste leaves in the sentence it was pasted
@@ -212,23 +268,33 @@ func chipTail(hidden int) string {
 // count on the rails; the handle and the name are the content, and are the
 // only parts drawn as such. A chip with no handle keeps its name in every
 // form, since then the name is the word the verbs take.
-func (c AttachmentChip) render(form chipForm) string {
-	head := c.Kind.mark()
+//
+// A picked chip is drawn the way reading mode draws the row under its
+// cursor: the pointer in the chip's first column, where its mark was, and the
+// rest of it lit — so nothing on the strip moves sideways to say where the
+// cursor is. The mark is what gives way because the handle still says what
+// kind of thing the chip is, the way a lit row gives up its fold mark
+// (docs/interface/surfaces.md#reading-mode).
+func (c AttachmentChip) render(form chipForm, picked bool) string {
+	head := ""
 	if c.Handle != "" {
 		head += " " + c.Handle
 	}
 	if c.Handle == "" || form == chipFull {
 		head += " " + Clip(c.Name, chipNameWidth)
 	}
-	s := sty.Body.Render(head)
-	if form == chipBare {
-		return s
+	counts := ""
+	if form != chipBare {
+		if c.Size != "" {
+			counts += sty.Dim.Render(" " + c.Size)
+		}
+		if c.Lines > 0 {
+			counts += sty.Dim.Render(" " + countedLines(c.Lines))
+		}
 	}
-	if c.Size != "" {
-		s += sty.Dim.Render(" " + c.Size)
+	if picked {
+		rest := sty.Body.Render(head) + counts
+		return sty.FocusPointer.Render("❯") + LitRow(rest, 0, lipgloss.Width(rest))
 	}
-	if c.Lines > 0 {
-		s += sty.Dim.Render(" " + countedLines(c.Lines))
-	}
-	return s
+	return sty.Body.Render(c.Kind.mark()+head) + counts
 }

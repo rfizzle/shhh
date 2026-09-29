@@ -904,6 +904,33 @@ func TestGolden_StagedRail(t *testing.T) {
 			{Label: "a notice above it · transient first, then what rides", View: frame(func(m *Model) {
 				m.steering = []steeringItem{{text: "and check the parser"}}
 			})},
+			{Label: "reading mode on the strip · the cursor on the second of three chips, the strip's keys under it", View: func() string {
+				m := goldenModel(t, width)
+				m.attachments = []provider.Attachment{
+					{Kind: provider.AttachmentImage, Handle: "Image#1", Name: "clipboard.png", Data: png},
+					{Kind: provider.AttachmentImage, Handle: "Image#2", Name: "clipboard.png", Data: png[:380<<10]},
+					{Kind: provider.AttachmentText, Handle: "File#1", Name: "notes.md", Data: md},
+				}
+				next, _ := m.enterFocusMode()
+				rm := next.(Model)
+				rm = pressOn(t, rm, key('j'))
+				rm = pressOn(t, rm, arrow(false))
+				if !rm.atStrip() || rm.pickedChip() != 1 {
+					t.Fatalf("the cursor is not on the second chip (strip %v, chip %d)", rm.atStrip(), rm.pickedChip())
+				}
+				return dividerStyle(rm.contentWidth()) + "\n" + rm.panelView()
+			}()},
+			{Label: "the card a chip opened · [x] remove on its hint row, and back is to the strip", View: func() string {
+				m := stageImage(t, goldenModel(t, width), "shot.png")
+				next, _ := m.enterFocusMode()
+				rm := pressOn(t, next.(Model), key('j'))
+				rm = pressOn(t, rm, tea.KeyPressMsg{Code: tea.KeyEnter})
+				if rm.state != statePreview || rm.preview == nil {
+					t.Fatalf("enter on the chip did not open the card (state %d)", rm.state)
+				}
+				rm.preview.SetSize(rm.paneWidth(), 10)
+				return rm.preview.View(rm.paneWidth()) + "\n" + rm.renderPreviewHint()
+			}()},
 		}
 	})
 }

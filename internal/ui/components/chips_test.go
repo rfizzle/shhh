@@ -148,3 +148,44 @@ func TestAttachmentChips_TextCountsItsLines(t *testing.T) {
 		t.Fatalf("strip = %q, want %q", got, want)
 	}
 }
+
+// The picked chip is drawn under the reading cursor in its own columns — the
+// pointer where its mark was, nothing moved sideways — and every drawn chip
+// reports the cells it took, which is what a click is resolved against. A
+// picked chip the row would have given up is kept by giving up the ones in
+// front of it instead, and the count of what was given up is no target.
+func TestAttachmentChipsAt_ThePickedChipIsDrawnAndEveryChipIsMapped(t *testing.T) {
+	chips := []AttachmentChip{
+		{Kind: ChipImage, Handle: "Image#1", Name: "one.png", Size: "4 KB"},
+		{Kind: ChipImage, Handle: "Image#2", Name: "two.png", Size: "4 KB"},
+		{Kind: ChipText, Handle: "File#1", Name: "notes.md", Size: "2 KB"},
+	}
+	plain, _ := AttachmentChipsAt(chips, 200, -1)
+	row, hits := AttachmentChipsAt(chips, 200, 1)
+	if lipgloss.Width(row) != lipgloss.Width(plain) {
+		t.Fatalf("picking a chip moved the row: %q against %q", ansi.Strip(row), ansi.Strip(plain))
+	}
+	cells := ansi.Strip(row)
+	if !strings.Contains(cells, "❯ Image#2 two.png") || strings.Contains(cells, "▣ Image#2") {
+		t.Fatalf("the cursor takes the picked chip's mark: %q", cells)
+	}
+	if len(hits) != 3 {
+		t.Fatalf("every drawn chip is mapped, got %v", hits)
+	}
+	for _, h := range hits {
+		if got := ansi.Cut(cells, h.From, h.To); !strings.Contains(got, chips[h.Index].Handle) {
+			t.Fatalf("chip %d's cells %d–%d hold %q", h.Index, h.From, h.To, got)
+		}
+	}
+
+	narrow, hits := AttachmentChipsAt(chips, 30, 2)
+	got := ansi.Strip(narrow)
+	if !strings.Contains(got, "❯ File#1") || !strings.HasPrefix(got, "+") {
+		t.Fatalf("a picked chip past the edge is kept, the ones before it counted: %q", got)
+	}
+	for _, h := range hits {
+		if cut := ansi.Cut(got, h.From, h.To); !strings.Contains(cut, chips[h.Index].Handle) || strings.Contains(cut, "more") {
+			t.Fatalf("only chips are targets, never the count: %v on %q", hits, got)
+		}
+	}
+}

@@ -359,8 +359,14 @@ func (m Model) readingSearchCursor(width int) *tea.Cursor {
 		return nil
 	}
 	// The row itself is clipped to the panel's width, so the cursor stops
-	// where the row does rather than standing past its end.
-	return tea.NewCursor(min(lipgloss.Width(m.transcriptSearchHead()), max(width-1, 0)), 0)
+	// where the row does rather than standing past its end. The staged strip,
+	// where there is one, is the panel's first row and the query the next
+	// (focusHintLines).
+	y := 0
+	if row, _ := m.stripRow(); row != "" {
+		y = 1
+	}
+	return tea.NewCursor(min(lipgloss.Width(m.transcriptSearchHead()), max(width-1, 0)), y)
 }
 
 // paneTakenOver reports that something other than the transcript is drawing
@@ -502,6 +508,11 @@ func (m Model) readingRail(width int) string {
 func (m Model) readingLabel() string {
 	if m.viewport.SearchOpen() || m.viewport.Searching() {
 		return m.searchLabel()
+	}
+	if m.atStrip() {
+		// The cursor is below the rows, on the strip, so it has no place
+		// among them to report; the bar says which chip it is on.
+		return "READING"
 	}
 	pos, total := m.readingPosition()
 	if total == 0 {

@@ -122,6 +122,17 @@ func Surfaces() []Surface {
 			Bindings: Find.All(),
 		},
 		{
+			// Reading mode with its cursor on the staged strip. A row of its
+			// own because the mode's enter and esc mean something else there:
+			// enter opens the chip rather than a row, and esc goes back to the
+			// draft from wherever the cursor stood.
+			Name:     "the staged strip",
+			Section:  "docs/interface/surfaces.md#a-staged-attachment",
+			Position: Takeover,
+			Reached:  "reading mode's last row, below the transcript",
+			Bindings: Staged.All(),
+		},
+		{
 			// The staged paste, opened from the fold the draft is holding.
 			// A takeover: it scrolls, and one of its keys drops the paste,
 			// so nothing under it may be answering keys at the same time.
@@ -517,8 +528,8 @@ func Surfaces() []Surface {
 			Name:     "the staged attachment preview",
 			Section:  "docs/interface/surfaces.md#a-staged-attachment",
 			Position: Takeover,
-			Reached:  "/paste show <name>",
-			Bindings: []Binding{Preview.Back, Preview.Leave},
+			Reached:  "a chip in reading mode, a click on one, or /paste show <handle>",
+			Bindings: Preview.All(),
 		},
 		{
 			// The list `?` opens over a card or reading mode. It holds the

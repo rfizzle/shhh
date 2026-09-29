@@ -5,7 +5,10 @@ package chat
 // opened from the draft (program_routes_test.go says what these are for).
 
 import (
+	"bytes"
 	"fmt"
+	"image"
+	"image/png"
 	"os"
 	"path/filepath"
 	"strings"
@@ -183,5 +186,40 @@ func TestProgram_ThePaletteAndTheModelPickerOpenFromTheDraft(t *testing.T) {
 	frameHas(t, frame, "scripted-large", "scripted-mini")
 	if strings.Contains(frame, "COMMANDS") {
 		t.Fatalf("esc did not close the palette:\n%s", frame)
+	}
+}
+
+// A screenshot staged by path, then half a sentence: reading mode reaches the
+// chip from the sentence, enter opens the card, q comes back to the strip, x
+// drops the chip, and esc goes back to the sentence still in the draft.
+func TestProgram_AStagedChipIsReachedOpenedAndDropped(t *testing.T) {
+	var shot bytes.Buffer
+	img := image.NewNRGBA(image.Rect(0, 0, 32, 16))
+	for i := range img.Pix {
+		img.Pix[i] = 0xc0
+	}
+	if err := png.Encode(&shot, img); err != nil {
+		t.Fatal(err)
+	}
+	dir := fixtureDir(t, map[string]string{"shot.png": shot.String()})
+	tm := runProgramAt(t, readingSession(dir, programTurn{text: "unused"}), 110, 40)
+
+	send(tm, "/paste shot.png")
+	waitForText(t, tm, "reaches it to look or drop")
+	tm.Send(tea.PasteMsg{Content: "this is the error I"})
+	programPress(t, tm, "ctrl+o", "j")
+	waitForText(t, tm, "chip 1 of 1")
+	programPress(t, tm, "enter")
+	waitForText(t, tm, "32×16")
+	programPress(t, tm, "q")
+	waitForText(t, tm, "chip 1 of 1")
+	programPress(t, tm, "x")
+	waitForText(t, tm, "dropped Image#1")
+	programPress(t, tm, "esc")
+
+	frame := finalFrame(t, tm)
+	frameHas(t, frame, "this is the error I", "dropped Image#1")
+	if strings.Contains(frame, "▣ Image#1") {
+		t.Fatalf("the dropped chip is still on the strip:\n%s", frame)
 	}
 }

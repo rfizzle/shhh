@@ -749,6 +749,29 @@ Colour reinforces nothing here. The chips are body text and the mark carries
 the whole distinction, which is what makes the strip read the same in mono
 ([invariant 1](principles.md#colour-never-carries-meaning-alone)).
 
+## A staged chip is reached from reading mode, and the card drops it
+
+*A disagreement.* The `Paste` artboard draws the staged strip as chips
+nothing reaches but a command, the preview card with its way out as its only
+key, and the staging notice pointing at `/paste clear` — which is what the
+binary drew until now. The binary makes the strip the last row reading mode's
+cursor reaches: drawn as the panel's first row while the mode is up, the
+chip under the cursor wearing the pointer in the column its mark stands in
+and the rest of it lit, with the strip's own bar under it — `[←→] chip ·
+[enter] open · [x] drop · [esc] back to the draft` and `chip 2 of 3` on the
+right. The card's hint row reads `[x] remove · [esc] back`, and `back to the
+strip` where that is where it was opened from. The notice reads `attached
+Image#1 (clipboard.png, 412 KB) — it goes with your next message; ctrl+o
+reaches it to look or drop`.
+
+The reason is when the reader needs the doors. A screenshot is pasted
+halfway through a sentence, and a command is read only as the first word of
+an empty draft, so every door the artboard drew was out of reach at the one
+moment it was wanted. Reading mode already keeps the sentence and holds the
+keyboard, so its keys are live and nothing has to be printed on a chip; the
+card is where a wrong screenshot is recognised, so it is where one is taken
+back ([a staged attachment](surfaces.md#a-staged-attachment)).
+
 ## Two surfaces draw with blocks rather than in them
 
 *A gap.* The drawing kit's eight sparkline blocks are cells of a bar. Two

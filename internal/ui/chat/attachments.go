@@ -4,8 +4,9 @@ package chat
 // attachment shows as a chip carrying its mark, its name and its size —
 // and, where it is text, how far it runs — on the frame's staged rail while
 // it waits and on the user's own transcript row once it has gone. Nothing
-// here draws the bytes: `/paste show` is the one surface that does, opened by
-// naming a chip and given the whole pane while it is up (preview.go). What
+// here draws the bytes: the preview card is the one surface that does, opened
+// from the chip or by naming it and given the whole pane while it is up
+// (preview.go, stagedstrip.go). What
 // the bytes are for is the request — they ride on the user message
 // (internal/provider), and each provider carries them the way its API takes
 // them.
@@ -477,8 +478,13 @@ func (m Model) stageQuietly(atts []provider.Attachment) (Model, string) {
 	}
 	// The staged rail may have appeared: the viewport is one line shorter.
 	m.syncViewport()
+	// The sentence names the way in rather than a command: a command is only
+	// the first word of an empty draft, and this is usually said halfway
+	// through a sentence. Reading mode keeps that sentence and reaches the
+	// strip (docs/interface/surfaces.md#a-staged-attachment).
 	return m, "attached " + strings.Join(added, ", ") +
-		" — it goes with your next message (/paste clear drops it)"
+		" — it goes with your next message; " + keys.Shown(keys.Draft.Reading) +
+		" reaches it to look or drop"
 }
 
 // assignHandle gives one attachment being staged its handle
@@ -857,9 +863,11 @@ func cutFold(arg, word string) (string, bool) {
 // dropAttachment takes one staged attachment back out by handle or name —
 // the per-chip half of what `clear` does to the whole strip.
 //
-// A chip carries no key of its own: it sits above a live draft, so the
-// handle printed on it is what is typed instead, and the completion menu
-// offers the staged handles so none is typed from memory. A word that names
+// A chip carries no key of its own: it sits above a live draft, so by name
+// the handle printed on it is what is typed, and the completion menu offers
+// the staged handles so none is typed from memory. The other doors — the
+// strip's key in reading mode, the card's — go through dropStagedAt too
+// (stagedstrip.go). A word that names
 // nothing staged is said out loud with what is, for the same reason a
 // refused attachment is: a drop that quietly did nothing is a message that
 // goes out carrying the file you meant to remove.
@@ -874,13 +882,7 @@ func (m Model) dropAttachment(name string) (tea.Model, tea.Cmd) {
 	if i < 0 {
 		return m.surfaceNotice(refusal)
 	}
-	a := m.attachments[i]
-	// A full slice expression, because the staged set is handed off whole by
-	// takeAttachments and must not be shortened through a shared array.
-	m.attachments = append(m.attachments[:i:i], m.attachments[i+1:]...)
-	m.dropPasteToken(a)
-	m.syncViewport()
-	return m.surfaceNotice("dropped " + describeStaged(a))
+	return m.surfaceNotice(m.dropStagedAt(i))
 }
 
 // openPasteDrop is a bare `/paste drop`: the keyboard path to taking a

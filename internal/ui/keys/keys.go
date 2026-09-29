@@ -463,6 +463,37 @@ var Reading = ReadingKeys{
 	Back: bind("q", "back to the prompt", "q", "esc", "ctrl+c"),
 }
 
+// StagedKeys are reading mode's with its cursor on the staged strip — the
+// row of chips under the transcript, which is the last thing the mode's
+// cursor reaches (docs/interface/surfaces.md#a-staged-attachment). The strip
+// sits above a live draft, so no key is ever printed on a chip; these are
+// live only once reading mode holds the keyboard, which is what makes the
+// letter a key rather than a letter of the sentence.
+type StagedKeys struct {
+	Pick Binding
+	Open Binding
+	Drop Binding
+	Back Binding
+}
+
+// All is the strip's keys in the order its bar offers them.
+func (k StagedKeys) All() []Binding { return []Binding{k.Pick, k.Open, k.Drop, k.Back} }
+
+var Staged = StagedKeys{
+	// Pick walks the chips, and like Select.Tab it is one binding both ways
+	// with the dispatch reading which half was pressed: the strip is one row,
+	// so the arrows along it are the gesture j/k is down the transcript.
+	Pick: bind("←→", "chip", "left", "right"),
+	Open: bind("enter", "open", "enter"),
+	// Drop is the paste reader's letter for the same act, and it is free
+	// here for the reason every letter on reading mode's bar is: nothing
+	// else is listening.
+	Drop: bind("x", "drop", "x"),
+	// The safe answer: the draft comes back as it was, with the chip still
+	// staged (docs/interface/principles.md#esc-is-always-the-safe-answer).
+	Back: bind("esc", "back to the draft", "esc"),
+}
+
 // FindKeys are the transcript search's query row — what reading mode's bar
 // becomes while `[/]` is open. It is typed into, so every letter is text
 // there and the mode's own letters are not live: the two keys below are the
@@ -1408,20 +1439,29 @@ var Output = OutputKeys{
 	Leave:    bind("q", "back", "q", "ctrl+c"),
 }
 
-// PreviewKeys are the staged attachment preview's. Two keys and no more:
-// the surface has nothing to decide, nothing to scroll and nothing to stage —
-// a thumbnail is fitted to the pane and a paste is clipped with what did not
-// fit counted at the foot, rather than either being panned around — so what it
-// offers is the two spellings of leaving that every full-screen viewer in
-// shhh has always answered to.
+// PreviewKeys are the staged attachment preview's. The surface has nothing
+// to scroll and nothing to stage — a thumbnail is fitted to the pane and a
+// text file is clipped with what did not fit counted at the foot, rather
+// than either being panned around — so what it offers is the two spellings
+// of leaving every full-screen viewer in shhh has always answered to, and the
+// one act this card is the moment for: a wrong screenshot is recognised
+// here, so here is where it is dropped
+// (docs/interface/surfaces.md#a-staged-attachment).
 type PreviewKeys struct {
-	Back  Binding
-	Leave Binding
+	Remove Binding
+	Back   Binding
+	Leave  Binding
 }
 
+// All is the card's keys in the order its hint row offers them.
+func (k PreviewKeys) All() []Binding { return []Binding{k.Remove, k.Back, k.Leave} }
+
 var Preview = PreviewKeys{
-	Back:  bind("esc", "back", "esc"),
-	Leave: bind("q", "back", "q", "ctrl+c"),
+	// The paste reader's letter, because it is the same act on the same
+	// staging area from the surface beside it.
+	Remove: bind("x", "remove", "x"),
+	Back:   bind("esc", "back", "esc"),
+	Leave:  bind("q", "back", "q", "ctrl+c"),
 }
 
 // PasteKeys are the staged paste's reader — the surface the draft's fold

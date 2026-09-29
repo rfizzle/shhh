@@ -778,6 +778,10 @@ rules above are what refuse a move, not a list of keys held back from it.
 | `reading.back` | `q`, `esc`, `ctrl+c` | the same | back to the prompt | yes |
 | `find.keep` | `enter` | the same | keep the search | yes |
 | `find.clear` | `esc`, `ctrl+c` | the same | clear it | yes |
+| `staged.pick` | `left`, `right` | the same | chip | yes |
+| `staged.open` | `enter` | the same | open | yes |
+| `staged.drop` | `x` | the same | drop | yes |
+| `staged.back` | `esc` | the same | back to the draft | yes |
 | `paste.scroll` | `k`, `j`, `up`, `down` | the same | scroll | yes |
 | `paste.remove` | `x` | the same | remove the paste | yes |
 | `paste.leave` | `q`, `ctrl+c` | the same | back to the draft, cursor where you left it | yes |
@@ -899,6 +903,7 @@ rules above are what refuse a move, not a list of keys held back from it.
 | `output.collapse` | `enter` | the same | close the row | yes |
 | `output.back` | `esc` | the same | back | yes |
 | `output.leave` | `q`, `ctrl+c` | the same | back | yes |
+| `preview.remove` | `x` | the same | remove | yes |
 | `preview.back` | `esc` | the same | back | yes |
 | `preview.leave` | `q`, `ctrl+c` | the same | back | yes |
 | `screen.move` | `up`, `down`, `k`, `j` | the same | move | yes |

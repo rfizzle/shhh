@@ -12,7 +12,7 @@ package chat
 // the button is down, so a drag that starts on a target still selects, and
 // the one button carries both gestures without either having to give ground.
 //
-// Four things are targets, and the test they pass is the same one four times:
+// Five things are targets, and the test they pass is the same one five times:
 // the pointer names exactly one of them, and the thing it names already has a
 // key.
 //
@@ -27,14 +27,22 @@ package chat
 //     path's diff by name (railclick.go).
 //   - A session on the rail. It names one session, and the chord that walks
 //     the map and the manager's [enter] both attach to it.
+//   - A staged chip. It names one attachment, and [enter] with reading mode's
+//     cursor on it opens it (stagedstrip.go). The chip is a door and not a
+//     button: nothing is printed on it, because it sits above a live draft
+//     where a printed key would be an offer nothing accepts, and the keys
+//     that act on it are live only in the mode that says so on its own bar.
+//     The count of the chips the strip gave up names none of them and is
+//     not a target.
 //
 // Everything else on the screen fails that test. Prose under the pointer is a
 // selection surface first and has no single act behind it; the scroll gutter
-// is a shape rather than a control; the rail's headings and its readings —
-// the summary, the plan, the todo list, the tool sources and the two meters —
-// name blocks and numbers rather than things to go to; a chip's `✕` would be a
-// button with no keyboard equal, and a target only the mouse can reach is a
-// target half the readers do not have.
+// is a shape rather than a control; the rail's readings — the summary, the
+// plan, the todo list, the tool sources and the two meters — name blocks and
+// numbers rather than things to go to (its headings are doors of their own,
+// railclick.go); a chip's `✕` would be a button with no keyboard equal, and
+// a target only the mouse can reach is a target half the readers do not
+// have.
 //
 // Three rules hold the whole file together. **A click never takes the
 // keyboard** — reading is not a decision, so a row opened by pointer
@@ -85,6 +93,13 @@ func (m *Model) endClick(x, y int) bool {
 // coordinate can be checked against without rendering anything; the card is
 // what is left, and it is the one that has to be drawn to be found.
 func (m Model) clickAt(x, y int) (tea.Model, tea.Cmd) {
+	if o := m.staged.opened; o.x == x && o.y == y && o.showing(m) {
+		// The card or reader this chip's cell opened covers the strip, so the
+		// chip is not there to be found — but the cell is, and a click that
+		// opened a thing closes it again (stagedstrip.go).
+		m.staged.opened = railOpening{}
+		return o.door.close(m)
+	}
 	if next, cmd, ok := m.clickRail(x, y); ok {
 		return next, cmd
 	}
@@ -98,6 +113,9 @@ func (m Model) clickAt(x, y int) (tea.Model, tea.Cmd) {
 			return m.clickOffer(pt.line)
 		}
 		return m.clickRow(pt.line)
+	}
+	if next, cmd, ok := m.clickChip(x, y); ok {
+		return next, cmd
 	}
 	return m.clickKey(x, y)
 }

@@ -570,6 +570,18 @@ their keys here is what keeps `g`, `u`, `r`, `c`, `e` and `p` available for
 typing. Enter on a turn's changeset opens that turn's review, which is the
 one row where enter does something other than expand, and the bar says so.
 
+**What is staged is its last target.** With anything staged, the strip of
+chips is drawn as the panel's first row and the cursor reaches it below the
+last transcript row: `j` off that row lands on it, `k` leaves it back up, and
+the arrows pick a chip. Where there is no row above it to stand on — the
+first screenshot of a session, pasted into its first sentence — the mode opens
+straight onto the strip. The chip under the cursor takes the pointer in its
+first column, where its mark was, and the rest of it is lit, so nothing on
+the strip moves to say where the cursor is; the handle still names the kind.
+The bar is the strip's own — open, drop, and esc back to the draft — and the
+draft and its cursor are what they were when the mode opened. What the strip
+opens onto is [a staged attachment](#a-staged-attachment).
+
 One key copies the row under the cursor, shaped by what the row is: a message
 as its markdown source, a command as the command over its output, an edit as
 the unified diff, a read as what the read returned, a folded group member by
@@ -819,6 +831,11 @@ handle is what the two paste verbs take, because the name is often nobody's
 choice and three pasted screenshots are all called `clipboard.png`. So when
 the row runs short the names go first, then whole chips from the end, then
 the counts of the one that is kept; the handle is the last thing given up.
+The strip is also the last row [reading mode](#reading-mode) reaches: below
+the transcript, drawn in the panel where the box was, the same chips in the
+same columns — which is how a chip is looked at or taken back without the
+sentence being cleared to type a command ([a staged
+attachment](#a-staged-attachment)).
 
 Above all of that, while children are working, one compact row apiece: the
 child's name joined to what it was asked to do with the separator every other
@@ -2758,18 +2775,33 @@ it — the question it answers is *is this the right thing to send*, and what
 did not fit is counted rather than lost. Reading the whole of it is the
 model's job, and it gets the whole of it either way.
 
-It is reached by name rather than by a key: a chip sits above a live draft,
-and a key written on it would be an offer nothing accepts
+No key is written on a chip: it sits above a live draft, and a key printed
+there would be an offer nothing accepts while the draft holds the keyboard
 ([invariant 5](principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard)).
-Asking without a name takes the only staged image when there is exactly one
-and refuses when there are two — guessing which was meant is the mistake this
-surface exists to stop someone making.
+A chip is a door instead, reached three ways. [Reading mode](#reading-mode)
+reaches the strip as its last row — the mode that already keeps the sentence
+and holds the keyboard, so its keys are live and its own bar offers them —
+and enter there opens the chip under the cursor. A click on a chip is the
+pointer twin of that enter, and the same cell clicked again closes what it
+opened; the count of chips the row gave up names none of them and is not a
+target. And by name, which is the form for an empty draft: a command is
+read only as the first word of the whole draft, so it is the one door out of
+reach once a sentence is half typed, which is exactly when a screenshot has
+just been pasted into it. Asking without a name takes the only staged image
+when there is exactly one and refuses when there are two — guessing which was
+meant is the mistake this surface exists to stop someone making.
 
-Esc hands the pane back and destroys nothing; removing an attachment stays its
-own deliberate act. That act does not require typing a name from memory:
-asked bare, the drop opens a list of what is staged — checked rows go, esc
-drops none — and a lone chip is a one-line question naming it, defaulting to
-No.
+Esc hands the pane back and destroys nothing — to the strip, with the cursor
+on the same chip, when that is where the card was opened from, and to the
+draft otherwise. Removing an attachment stays its own deliberate act, and the
+card can do it: the card is where a wrong screenshot is recognised, so that
+is the moment to take it back, with the key the paste reader already drops a
+paste with. The strip's cursor drops the chip under it with the same key, and
+moves on to the next chip, or back to the transcript when none is left; each
+drop says what went, and a paste's fold leaves the sentence with it. Nor does
+the act need a name typed from memory: asked bare, the drop opens a list of
+what is staged — checked rows go, esc drops none — and a lone chip is a
+one-line question naming it, defaulting to No.
 
 A picture that will not decode still opens, onto the reason where the picture
 would be. That it is staged and unreadable is a fact about the message you are

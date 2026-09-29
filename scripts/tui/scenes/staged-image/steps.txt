@@ -1,0 +1,38 @@
+# program test: TestProgram_AStagedChipIsReachedOpenedAndDropped
+#
+# A staged chip is reached, opened and dropped without leaving the sentence
+# (docs/interface/surfaces.md#a-staged-attachment). A small picture is staged
+# by path on the empty draft, half a sentence is typed after it, and reading
+# mode reaches the strip as its last row: the card opens from the chip, q
+# comes back to the strip, x drops the chip, and esc goes back to the
+# sentence as it was.
+#
+# What the capture is for: at 02 the staging notice names the way in. At 03
+# the strip is the panel's first row with the cursor in Image#1's own first
+# column and the strip's bar under it. At 04 the card is the picture in the
+# half-block rung with `[x] remove` and the way back to the strip on its
+# hint row. At 06 the drop is said and the strip is gone. At 07 the half
+# sentence is still in the draft.
+setup echo 'iVBORw0KGgoAAAANSUhEUgAAABAAAAAICAIAAAB/FOjAAAAAHElEQVR4nGJhYGgQYGAgHrEwKDCQBEY1EKMBMADhhgJxNvbMPQAAAABJRU5ErkJggg==' | base64 -d > shot.png
+snap 01-start "Some things worth doing first"
+keys "/paste shot.png" Enter
+snap 02-staged "reaches it to look or drop" "attached Image#1 (shot.png" "▣ Image#1 shot.png"
+keys "this is the error I"
+keys C-o
+keys j
+snap 03-strip "chip 1 of 1" "❯ Image#1 shot.png" "[←→] chip · [enter] open · [x] drop · [esc] back to the draft"
+keys Enter
+snap 04-card "back to the strip" "[x] remove" "16×8"
+keys q
+snap 05-strip-again "chip 1 of 1"
+keys x
+snap 06-dropped "dropped Image#1 (shot.png"
+keys Escape
+snap 07-draft "[enter] send" "this is the error I"
+# Nothing is sent, so the conversation has no turn and quitting leaves no
+# exit banner to wait for. The first ctrl+c clears the half sentence and the
+# second arms the quit.
+keys C-c
+keys C-c
+snap 08-quit-armed "again quits"
+keys C-c

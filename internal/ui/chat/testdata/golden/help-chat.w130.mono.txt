@@ -17,7 +17,9 @@
     /paste         attach the clipboard — a screenshot, or files copied in a file manager — to your next message; /paste <path>
                    attaches a file by name, /paste show <handle> opens a staged image or paste full-pane, /paste drop <handle>
                    takes one back out — the handle is the one a chip leads with, Image#1, and its name works too — and /paste
-                   clear drops what is staged (ctrl+v)
+                   clear drops what is staged (ctrl+v). With a sentence half typed, reading mode (ctrl+o) keeps it and reaches the
+                   strip of chips as its last row: ←→ picks a chip, enter opens it, x drops it, esc goes back to the sentence; a
+                   click on a chip opens it too
     /copy [code]   copy the last response (or just its code blocks)
     /model [name]  switch the model (bare /model opens an interactive picker)
                    default [name]   show or persist the default model for new sessions
@@ -79,7 +81,9 @@
     /paste         attach the clipboard — a screenshot, or files copied in a file manager — to your next message; /paste <path>
                    attaches a file by name, /paste show <handle> opens a staged image or paste full-pane, /paste drop <handle>
                    takes one back out — the handle is the one a chip leads with, Image#1, and its name works too — and /paste
-                   clear drops what is staged (ctrl+v)
+                   clear drops what is staged (ctrl+v). With a sentence half typed, reading mode (ctrl+o) keeps it and reaches the
+                   strip of chips as its last row: ←→ picks a chip, enter opens it, x drops it, esc goes back to the sentence; a
+                   click on a chip opens it too
     /copy [code]   copy the last response (or just its code blocks)
     /model [name]  switch the model (bare /model opens an interactive picker)
                    default [name]   show or persist the default model for new sessions
@@ -154,7 +158,9 @@
     ␛[38;5;254m/paste␛[m         ␛[38;5;244mattach the clipboard — a screenshot, or files copied in a file manager — to your next message; /paste <path>␛[m
                    ␛[38;5;244mattaches a file by name, /paste show <handle> opens a staged image or paste full-pane, /paste drop <handle>␛[m
                    ␛[38;5;244mtakes one back out — the handle is the one a chip leads with, Image#1, and its name works too — and /paste␛[m
-                   ␛[38;5;244mclear drops what is staged (ctrl+v)␛[m
+                   ␛[38;5;244mclear drops what is staged (ctrl+v). With a sentence half typed, reading mode (ctrl+o) keeps it and reaches the␛[m
+                   ␛[38;5;244mstrip of chips as its last row: ←→ picks a chip, enter opens it, x drops it, esc goes back to the sentence; a␛[m
+                   ␛[38;5;244mclick on a chip opens it too␛[m
     ␛[38;5;254m/copy [code]␛[m   ␛[38;5;244mcopy the last response (or just its code blocks)␛[m
     ␛[38;5;254m/model [name]␛[m  ␛[38;5;244mswitch the model (bare /model opens an interactive picker)␛[m
                    ␛[38;5;244mdefault [name]   show or persist the default model for new sessions␛[m
@@ -216,7 +222,9 @@
     ␛[38;5;254m/paste␛[m         ␛[38;5;244mattach the clipboard — a screenshot, or files copied in a file manager — to your next message; /paste <path>␛[m
                    ␛[38;5;244mattaches a file by name, /paste show <handle> opens a staged image or paste full-pane, /paste drop <handle>␛[m
                    ␛[38;5;244mtakes one back out — the handle is the one a chip leads with, Image#1, and its name works too — and /paste␛[m
-                   ␛[38;5;244mclear drops what is staged (ctrl+v)␛[m
+                   ␛[38;5;244mclear drops what is staged (ctrl+v). With a sentence half typed, reading mode (ctrl+o) keeps it and reaches the␛[m
+                   ␛[38;5;244mstrip of chips as its last row: ←→ picks a chip, enter opens it, x drops it, esc goes back to the sentence; a␛[m
+                   ␛[38;5;244mclick on a chip opens it too␛[m
     ␛[38;5;254m/copy [code]␛[m   ␛[38;5;244mcopy the last response (or just its code blocks)␛[m
     ␛[38;5;254m/model [name]␛[m  ␛[38;5;244mswitch the model (bare /model opens an interactive picker)␛[m
                    ␛[38;5;244mdefault [name]   show or persist the default model for new sessions␛[m

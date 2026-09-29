@@ -61,6 +61,13 @@
   · keep   enter · keep the search  [shipped]
   · clear  esc ctrl+c · clear it  [shipped]
 
+  STAGED
+
+  · pick  left right · chip  [shipped]
+  · open  enter · open  [shipped]
+  · drop  x · drop  [shipped]
+  · back  esc · back to the draft  [shipped]
+
   PASTE
 
   · scroll  k j up down · scroll  [shipped]
@@ -229,8 +236,9 @@
 
   PREVIEW
 
-  · back   esc · back  [shipped]
-  · leave  q ctrl+c · back  [shipped]
+  · remove  x · remove  [shipped]
+  · back    esc · back  [shipped]
+  · leave   q ctrl+c · back  [shipped]
 
   SCREEN
 
@@ -336,4 +344,4 @@
   · paste   p · paste a key  [shipped]
   · local   o · a local model  [shipped]
 
-  249 keys · 1 moved
+  254 keys · 1 moved

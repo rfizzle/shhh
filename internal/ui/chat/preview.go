@@ -22,11 +22,12 @@ package chat
 // reader below rather than to the card: the surface the fold in the draft
 // leads to, which scrolls and can drop what it is showing.
 //
-// It is reached by name and not by a key, for the staged rail's own reason —
-// a chip sits above a live draft, so the name printed on it is the handle and
-// the completion menu offers the staged ones. The name is now the
-// handle for two verbs rather than one, which is the argument for having made
-// it the field a chip gives up last.
+// No key is printed on a chip, for the staged rail's own reason — it sits
+// above a live draft — so the card is reached through doors that already
+// hold a key: reading mode's cursor on the strip, a click on the chip as the
+// pointer twin of that cursor's enter, and the handle by name, which the
+// completion menu offers (stagedstrip.go). Opened from the strip, its way out
+// goes back there.
 //
 // Three rungs draw the picture, best first, and which one is used is a
 // question already answered rather than one asked here: the terminal's own
@@ -120,7 +121,7 @@ func (m Model) openPreview(a provider.Attachment) (tea.Model, tea.Cmd) {
 		return m.surfaceNotice(a.Name + " is not an image or text — " + string(a.Kind) +
 			" attachments ride as themselves and have no preview")
 	}
-	m.preview = view
+	m.preview, m.staged.shows = view, a
 	m.enterSurface(statePreview)
 	return m, m.placePicture()
 }
@@ -157,15 +158,43 @@ func (m *Model) placePicture() tea.Cmd {
 	return m.caps.Transmit(p.Image, cols, rows, cellW, cellH)
 }
 
-// updatePreview routes the surface's keys. It offers two, both of which are
-// the same thing said twice, and neither of which touches the staging area:
-// esc never destroys, and the file the reader just looked at is still staged
-// when they get back to their draft (invariant 3).
+// answerPreview routes the surface's keys. Two of them are one way out said
+// twice, and neither touches the staging area: esc never destroys, and the
+// file the reader just looked at is still staged when they get back
+// (invariant 3). The third drops what the card is showing, because the card
+// is where a wrong screenshot is recognised and that is the moment to take
+// it back (docs/interface/surfaces.md#a-staged-attachment).
+//
+// Back is to wherever the card was opened from: the strip in reading mode,
+// with the cursor on the chip, or the draft.
 func (m *Model) answerPreview(msg tea.KeyPressMsg) (bool, overlayAction) {
-	if !keys.Match(msg, keys.Preview.Back) && !keys.Match(msg, keys.Preview.Leave) {
-		return false, overlayAction{}
+	switch {
+	case keys.Match(msg, keys.Preview.Remove):
+		note := ""
+		if i := m.stagedIndex(m.staged.shows); i >= 0 {
+			note = m.dropStagedAt(i)
+		}
+		act := m.closePreview()
+		if !m.staged.back {
+			act.note = note
+			return true, act
+		}
+		m.leaveStagedSurface()
+		if note != "" {
+			next, _ := m.systemNotice(note)
+			*m = next.(Model)
+			m.refreshFocusView()
+		}
+		return true, overlayAction{run: act.run}
+	case keys.Match(msg, keys.Preview.Back), keys.Match(msg, keys.Preview.Leave):
+		act := m.closePreview()
+		if !m.staged.back {
+			return true, act
+		}
+		m.leaveStagedSurface()
+		return true, overlayAction{run: act.run}
 	}
-	return true, m.closePreview()
+	return false, overlayAction{}
 }
 
 // closePreview hands the pane back and releases whatever the terminal was
@@ -173,13 +202,20 @@ func (m *Model) answerPreview(msg tea.KeyPressMsg) (bool, overlayAction) {
 func (m *Model) closePreview() overlayAction {
 	cmd := m.caps.Delete()
 	m.preview = nil
+	m.staged.shows = provider.Attachment{}
 	return overlayAction{close: true, run: cmd}
 }
 
 // renderPreviewHint fills the input area while the preview shows. It names
-// one of the two ways out, the way every other takeover's hint does.
+// the drop and one of the two ways out, the way every other takeover's hint
+// names its way out — and the way out says where it goes when that is the
+// strip rather than the draft.
 func (m Model) renderPreviewHint() string {
-	return seg(keys.Preview.Back).render()
+	back := seg(keys.Preview.Back)
+	if m.staged.back {
+		back = segAs(keys.Preview.Back, "back to the strip")
+	}
+	return joinSegs([]hintSeg{seg(keys.Preview.Remove), back})
 }
 
 // pasteReader is the staged paste opened for reading — the surface the fold
@@ -327,7 +363,11 @@ func (m Model) updatePasteReader(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			if strings.EqualFold(a.Name, r.name) {
 				m.closePasteReader()
 				next, _ := m.removePaste(a)
-				return next, nil
+				// Back on the strip, the cursor moves on from the chip that
+				// went, and the pane is the cursor's again.
+				nm := next.(Model)
+				nm.settleStrip()
+				return nm, nil
 			}
 		}
 		m.closePasteReader()
@@ -341,17 +381,20 @@ func (m Model) updatePasteReader(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-// closePasteReader hands the pane back to the turn.
+// closePasteReader hands the pane back: to the strip when the reader was
+// opened from it, to the turn otherwise.
 func (m *Model) closePasteReader() {
 	m.pasteRead = nil
-	m.leaveSurface()
-	m.syncViewport()
+	m.leaveStagedSurface()
 }
 
 // renderPasteReaderHint fills the input area while the paste is open, the way
-// every other pane overlay's hint does.
+// every other pane overlay's hint does. Opened from the strip, the way out
+// says it goes back there, since that is where the reader came from.
 func (m Model) renderPasteReaderHint() string {
-	return joinSegs([]hintSeg{
-		seg(keys.Paste.Scroll), seg(keys.Paste.Remove), seg(keys.Paste.Leave),
-	})
+	leave := seg(keys.Paste.Leave)
+	if m.staged.back {
+		leave = segAs(keys.Paste.Leave, "back to the strip")
+	}
+	return joinSegs([]hintSeg{seg(keys.Paste.Scroll), seg(keys.Paste.Remove), leave})
 }

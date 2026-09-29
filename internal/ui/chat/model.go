@@ -1201,16 +1201,17 @@ type Model struct {
 	// copied and how far it ran. It stands until the next key in the mode,
 	// which is the moment the reader has moved on from the copy it captions.
 	readingCopied string
-	// The staged attachment preview: preview is the card while it
-	// has the pane. There is no return state beside it — the surface is
-	// opened from the draft and from nowhere else, so leaveSurface's own
-	// answer is always the right one.
+	// The staged attachment preview: preview is the card while it has the
+	// pane.
 	preview *components.AttachmentView
 	// pasteRead is the staged paste open for reading, which the fold in the
-	// draft leads to (preview.go). It has no return state beside it for the
-	// preview's reason, and it is a pointer so the offset the reader
+	// draft leads to (preview.go). It is a pointer so the offset the reader
 	// scrolled to survives the frames drawn under it.
 	pasteRead *pasteReader
+	// staged is the staging area's doors: where reading mode's cursor stands
+	// on the strip, and where the card or reader up now came from
+	// (stagedstrip.go).
+	staged stagedDoor
 	// Review mode: review is the surface while it has the screen,
 	// reviewTurnN the turn it is reviewing (0 for a review of something
 	// else), and reviewReturn where esc goes back to.
