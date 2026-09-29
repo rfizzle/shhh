@@ -109,11 +109,6 @@ func (m Model) turnCloseData() *components.TurnClose {
 		Commit:       commit,
 		Notes:        m.turnNotesClause(),
 		Checks:       turnChecksRow(es, m.gate.Manage != nil),
-		// Whether this block is the first in the session to offer a chord is
-		// settled here, where the block is built and the transcript above it
-		// is what it will be: the note about the Option key is a fact about
-		// the terminal, said once (inertkeys.go).
-		Option: m.firstRowOffer(),
 	}
 	// The count is the steps this turn actually ran, so an approved plan's
 	// declared-but-not-started steps are not counted as work done.
@@ -233,7 +228,6 @@ func (m *Model) restoreTurnClose() {
 		close: &components.TurnClose{
 			State:   components.TurnDone,
 			Changes: m.turnChangesFor(t, false),
-			Option:  m.firstRowOffer(),
 		},
 	})
 }

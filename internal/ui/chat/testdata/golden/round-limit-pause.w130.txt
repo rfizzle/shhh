@@ -16,7 +16,7 @@
 
    ⚠ rounds  150 of 150 used · the turn's own bound            stopped  4m12s
     3 files changed +30 −4 · the suite has not been re-run since
-    [alt+m] more rounds · [ctrl+o] to use them
+    [+50] more rounds · [ctrl+o] to use them
 
 
 · nothing changed · only the grant can be honoured
@@ -25,7 +25,7 @@
 
    ⚠ rounds  150 of 150 used · the turn's own bound            stopped  4m12s
     nothing changed
-    [alt+m] more rounds · [ctrl+o] to use them
+    [+50] more rounds · [ctrl+o] to use them
 
 
 · a second stop · the grant doubles and [!] arrives
@@ -34,7 +34,7 @@
 
    ⚠ rounds  200 of 200 used · 50 already granted              stopped  4m12s
     5 files changed +112 −40
-    [alt+m] more rounds · [alt+x] let it run · [ctrl+o] to use them
+    [+100] more rounds · [!] let it run · [ctrl+o] to use them
 
 
 · the offer is spent · the row keeps its words
@@ -52,7 +52,7 @@
 
    ␛[38;5;214m⚠␛[m ␛[38;5;252mrounds␛[m  ␛[38;5;252m150 of 150 used␛[m␛[38;5;241m · the turn's own bound␛[m            ␛[38;5;214mstopped␛[m  ␛[38;5;241m4m12s␛[m
     ␛[38;5;245m3 files changed +30 −4 · the suite has not been re-run since␛[m
-    ␛[38;5;245m[alt+m]␛[m␛[38;5;241m more rounds␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+o]␛[m␛[38;5;252m to use them␛[m
+    ␛[38;5;245m[+50]␛[m␛[38;5;241m more rounds␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+o]␛[m␛[38;5;252m to use them␛[m
 
 
 · nothing changed · only the grant can be honoured
@@ -61,7 +61,7 @@
 
    ␛[38;5;214m⚠␛[m ␛[38;5;252mrounds␛[m  ␛[38;5;252m150 of 150 used␛[m␛[38;5;241m · the turn's own bound␛[m            ␛[38;5;214mstopped␛[m  ␛[38;5;241m4m12s␛[m
     ␛[38;5;245mnothing changed␛[m
-    ␛[38;5;245m[alt+m]␛[m␛[38;5;241m more rounds␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+o]␛[m␛[38;5;252m to use them␛[m
+    ␛[38;5;245m[+50]␛[m␛[38;5;241m more rounds␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+o]␛[m␛[38;5;252m to use them␛[m
 
 
 · a second stop · the grant doubles and [!] arrives
@@ -70,7 +70,7 @@
 
    ␛[38;5;214m⚠␛[m ␛[38;5;252mrounds␛[m  ␛[38;5;252m200 of 200 used␛[m␛[38;5;241m · 50 already granted␛[m              ␛[38;5;214mstopped␛[m  ␛[38;5;241m4m12s␛[m
     ␛[38;5;245m5 files changed +112 −40␛[m
-    ␛[38;5;245m[alt+m]␛[m␛[38;5;241m more rounds␛[m␛[38;5;241m · ␛[m␛[38;5;245m[alt+x]␛[m␛[38;5;241m let it run␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+o]␛[m␛[38;5;252m to use them␛[m
+    ␛[38;5;245m[+100]␛[m␛[38;5;241m more rounds␛[m␛[38;5;241m · ␛[m␛[38;5;245m[!]␛[m␛[38;5;241m let it run␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+o]␛[m␛[38;5;252m to use them␛[m
 
 
 · the offer is spent · the row keeps its words

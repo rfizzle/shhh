@@ -185,6 +185,7 @@ func (m Model) rowOnScreen(idx int) bool {
 // nothing to open onto, and it still says so.
 func (m Model) enterFocusMode() (tea.Model, tea.Cmd) {
 	m.staged.onStrip = false
+	m.rowHeld = false
 	if m.stripReachable() && len(m.expandableIndices()) == 0 {
 		// Nothing above the strip to stand on — the first screenshot of a
 		// session, pasted into its first sentence — so the mode opens on the
@@ -290,17 +291,39 @@ func (m Model) openCursorRow(ret state) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+// rowLetter runs a row's letter under reading mode's cursor. Where the
+// handover gave the row the keyboard, answering it gives the keyboard back,
+// as answering a card does: the reader asked to answer the row, not to read
+// the transcript, so the act lands on the screen they answer from and the
+// draft has its sentence again. Where the reader opened reading mode
+// themselves, the mode stays up around the act. A letter the row does not
+// answer changes nothing, the mode included.
+func (m Model) rowLetter(pressed string) (tea.Model, tea.Cmd, bool) {
+	if !m.rowHeld {
+		return m.rowKey(pressed)
+	}
+	at := m.focusIdx
+	back, _ := m.exitFocusMode()
+	bm := back.(Model)
+	bm.focusIdx = at
+	next, cmd, claimed := bm.rowKey(pressed)
+	if !claimed {
+		return m, nil, false
+	}
+	return next, cmd, true
+}
+
 // rowKey runs the offer a transcript row makes, on the row m.focusIdx names,
 // and reports whether that row claimed it. `pressed` is the offer's own
 // letter, which is how the register declares it (keys.Row).
 //
 // It is one dispatch behind two doors. Reading mode presses the letter with
 // its cursor on the row, where a letter is live because nothing else is
-// listening; from the draft the same offer is a chord, which puts the cursor
-// on the row it acts on and arrives here as the letter (keyroute.go). Two
-// dispatches would be two answers to "what does [r] do on this row", and the
-// second one would be discovered by a reader whose retry asked a different
-// turn again.
+// listening, and a click on a live offer arrives here as the same letter
+// (click.go); both come through rowLetter, which decides what the screen
+// does once the row has answered. Two dispatches would be two answers to "what does [r] do on
+// this row", and the second one would be discovered by a reader whose retry
+// asked a different turn again.
 //
 // A row that does not make the offer claims nothing, and the caller decides
 // what the key was instead: a character for the draft, or the pager's half
@@ -381,7 +404,7 @@ func (m Model) updateFocus(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		// cursor's own offers beside the mode's (keylist.go).
 		return m.openKeyList("reading mode", m.readingRowOffers())
 	case keys.Is(pressed, keys.Row.Withdraw, keys.Row.Rounds, keys.Row.Uncap):
-		if next, cmd, claimed := m.rowKey(pressed); claimed {
+		if next, cmd, claimed := m.rowLetter(pressed); claimed {
 			return next, cmd
 		}
 		// [u] off a steer's notice is the pager's half page, not an offer
@@ -407,19 +430,10 @@ func (m Model) updateFocus(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		// A provider failure's own offers and a dropped stream's. Every one
 		// is answered on the row under the cursor, so the input keeps all
 		// four letters for typing.
-		if next, cmd, claimed := m.rowKey(pressed); claimed {
+		if next, cmd, claimed := m.rowLetter(pressed); claimed {
 			return next, cmd
 		}
 		return m.returnToInput(msg)
-	case keys.Is(pressed, keys.RowChord.All()...):
-		// The same offers as chords, answered on the row the cursor is on
-		// and nowhere else (keyroute.go). A chord that row does not answer
-		// is nothing: no sentence can produce it, so there is no letter to
-		// hand back.
-		if next, cmd, claimed := m.rowChordKey(pressed); claimed {
-			return next, cmd
-		}
-		return m, nil
 	case keys.Is(pressed, keys.Draft.Agents):
 		// The manager's chord answers here as it does at the draft: with a
 		// supervisor it opens the list, which leaves this mode first
@@ -561,6 +575,7 @@ func (m Model) focusedClose() (entry, bool) {
 // exitFocusMode returns to the input, keeping expansion state; the render
 // cache is rebuilt without the selection gutter.
 func (m Model) exitFocusMode() (tea.Model, tea.Cmd) {
+	m.rowHeld = false
 	// The copy caption closes with the mode — it captions a mode that is
 	// ending.
 	m.readingCopied = ""

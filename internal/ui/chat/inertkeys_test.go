@@ -14,7 +14,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"testing"
 
@@ -49,13 +48,11 @@ type keyedSurface struct {
 	// hold gives the surface the keyboard, or nil where the surface is a
 	// takeover and holds it by construction.
 	hold func(t *testing.T, m Model) Model
-	// chords are the same offers as the chords that reach them without the
-	// handover, on the surfaces that have them: a transcript row is drawn
-	// beside a live draft nearly all the time, so its offers exist twice
-	// (keys.RowChord), and the chord acts once the pointer has selected the
-	// row. A takeover has none — it holds the keyboard, so its letters are
-	// already live.
-	chords []keys.Binding
+	// answer says the handover chord gives the surface the keyboard once the
+	// pointer has selected it: a recovery or round-limit row, reached the way
+	// a waiting decision is. A takeover holds the keyboard by construction,
+	// and a turn's close answers the chord with its commit card instead.
+	answer bool
 	// row is the kind of transcript entry the surface is, for reading back
 	// what it drew. Zero on the surfaces that are not rows.
 	row entryKind
@@ -152,7 +149,7 @@ func register(t *testing.T) []keyedSurface {
 				return typeChars(t, updated.(Model), draftLead)
 			},
 			hold:   readingCursorOn(entryFailure),
-			chords: []keys.Binding{keys.RowChord.Key, keys.RowChord.Provider},
+			answer: true,
 			row:    entryFailure,
 		},
 		{
@@ -164,7 +161,7 @@ func register(t *testing.T) []keyedSurface {
 				return typeChars(t, updated.(Model), draftLead)
 			},
 			hold:   readingCursorOn(entryStreamDrop),
-			chords: []keys.Binding{keys.RowChord.Continue, keys.RowChord.Retry},
+			answer: true,
 			row:    entryStreamDrop,
 		},
 		{
@@ -175,7 +172,7 @@ func register(t *testing.T) []keyedSurface {
 				return typeChars(t, m, draftLead)
 			},
 			hold:   readingCursorOn(entryRoundPause),
-			chords: []keys.Binding{keys.RowChord.Rounds},
+			answer: true,
 			row:    entryRoundPause,
 		},
 		{
@@ -301,39 +298,22 @@ func TestInertKeys_TheSurfaceAnswersOnceItHoldsTheKeyboard(t *testing.T) {
 	}
 }
 
-// pressChord presses a chord the way the decoder reports one: the key with
-// its modifier, never a rune the draft could produce.
-func pressChord(t *testing.T, m Model, b keys.Binding) Model {
+// answerMsg is the handover chord as the decoder reports one: ctrl+y, the
+// spelling every terminal delivers.
+func answerMsg(t *testing.T) tea.KeyPressMsg {
 	t.Helper()
-	updated, _ := m.Update(chordMsg(t, b))
-	return updated.(Model)
-}
-
-// chordMsg is a chord as the decoder reports one, for a test that presses it
-// through the real program rather than through Update.
-func chordMsg(t *testing.T, b keys.Binding) tea.KeyPressMsg {
-	t.Helper()
-	spelling := keys.Shown(b)
-	var msg tea.KeyPressMsg
-	rest, shifted := strings.CutPrefix(spelling, "shift+")
-	if shifted {
-		msg.Mod = tea.ModShift
-	}
-	if n, err := strconv.Atoi(strings.TrimPrefix(rest, "f")); err == nil && strings.HasPrefix(rest, "f") && n >= 1 && n <= 12 {
-		// A Mac's row chords are the function row
-		// (docs/interface/reserved-keys.md#a-mac-ships-without-alt).
-		msg.Code = tea.KeyF1 + rune(n-1)
-	} else {
-		letter, ok := strings.CutPrefix(spelling, "alt+")
-		if !ok || len([]rune(letter)) != 1 {
-			t.Fatalf("%q is not an alt chord on a single key or a function key", spelling)
-		}
-		msg = tea.KeyPressMsg{Code: []rune(letter)[0], Mod: tea.ModAlt}
-	}
-	if msg.String() != b.Keys()[0] {
-		t.Fatalf("pressing %q reads as %q", spelling, msg.String())
+	msg := tea.KeyPressMsg{Code: 'y', Mod: tea.ModCtrl}
+	if !keys.Match(msg, keys.Draft.Answer) {
+		t.Fatalf("%q is not the handover", msg.String())
 	}
 	return msg
+}
+
+// pressAnswer presses the handover chord.
+func pressAnswer(t *testing.T, m Model) Model {
+	t.Helper()
+	updated, _ := m.Update(answerMsg(t))
+	return updated.(Model)
 }
 
 // pointAt lights the pointer on the first row of a kind, the way shift+up
@@ -349,110 +329,64 @@ func pointAt(t *testing.T, m Model, kind entryKind) Model {
 	return m
 }
 
-// TestRowChords_ARowOffersOnlyWhatCanBePressedFromWhereItIsDrawn is the
+// TestRowHandover_TheSelectedRowTakesTheKeyboardAndItsLettersAct is the
 // story the row offers tell together with the test above. That one presses
 // the letter and watches it land in the sentence, which is what a letter
-// beside a live draft has to do. This one presses the chord, and watches it
-// act on the row the pointer has selected — from the prompt, with the
-// sentence still in the box — and act on nothing when no row is selected,
-// because a chord that fell to whichever row was newest named no row at all
-// (docs/interface/surfaces.md#the-turns-close).
+// beside a live draft has to do. This one selects the row with the pointer,
+// presses the handover — the chord a waiting decision is answered through —
+// and watches the row take the keyboard with the sentence still in the box;
+// then the same letter acts, and esc gives the keyboard back
+// (docs/interface/surfaces.md#the-recovery-row).
 //
-// The third part is what the row has on screen while the draft holds the
-// keyboard: nothing it prints there is a bare letter. A letter drawn there
-// would be the failure both halves are about, an offer that types a letter
-// instead of doing what it says.
-func TestRowChords_ARowOffersOnlyWhatCanBePressedFromWhereItIsDrawn(t *testing.T) {
-	for _, platform := range []string{"linux", "darwin"} {
-		t.Run(platform, func(t *testing.T) {
-			t.Cleanup(keys.UsePlatform(platform))
-			rowChordsActOnTheSelectedRow(t)
-		})
-	}
-}
-
-// rowChordsActOnTheSelectedRow is that test under whichever keyboard the
-// register holds: the alt chords, or a Mac's function row.
-func rowChordsActOnTheSelectedRow(t *testing.T) {
+// While the draft holds the keyboard, what the row draws beside its grey
+// letters is the handover itself, because that is the key that reaches it.
+func TestRowHandover_TheSelectedRowTakesTheKeyboardAndItsLettersAct(t *testing.T) {
 	for _, s := range register(t) {
-		if len(s.chords) == 0 {
+		if !s.answer {
 			continue
 		}
 		t.Run(s.name, func(t *testing.T) {
-			for _, chord := range s.chords {
-				m := s.open(t)
-				before := snapshot(m)
-				// Asked before the press: a drop's retry spends the row.
-				latest := labelledLatest(m, s.row, chord)
-				next := pressChord(t, m, chord)
-				if got := next.input.Value(); got != draftLead {
-					t.Fatalf("%q is a chord and cannot reach the sentence: draft is %q",
-						keys.Shown(chord), got)
-				}
-				// The two exceptions: the newest failure's retry and provider
-				// switch, and the newest close's commit and undo, drawn live
-				// and labelled with the row they act on.
-				if latest {
-					if after := snapshot(next); after == before {
-						t.Fatalf("%q is drawn live on the newest row and did nothing\n %s",
-							keys.Shown(chord), before)
-					}
-				} else if after := snapshot(next); after != before {
-					t.Fatalf("%q acted with no row selected:\n before %s\n after  %s",
-						keys.Shown(chord), before, after)
-				}
-
-				m = pointAt(t, s.open(t), s.row)
-				before = snapshot(m)
-				next = pressChord(t, m, chord)
-				if got := next.input.Value(); got != draftLead {
-					t.Fatalf("%q is a chord and cannot reach the sentence: draft is %q",
-						keys.Shown(chord), got)
-				}
-				if after := withoutFocus(snapshot(next)); after == withoutFocus(before) {
-					t.Fatalf("%q did nothing on the row the pointer selected\n %s",
-						keys.Shown(chord), before)
-				}
+			m := pointAt(t, s.open(t), s.row)
+			at := m.focusIdx
+			drawn := ansi.Strip(m.renderEntryKeys(m.transcript[at], 110, rowPointed))
+			if !strings.Contains(drawn, keys.Bracket(keys.Draft.Answer)) {
+				t.Fatalf("the selected row does not name the handover that reaches it:\n%s", drawn)
 			}
 
-			m := s.open(t)
-			e := m.transcript[indexOfKind(t, m, s.row)]
-			for _, sel := range []rowSel{rowUnselected, rowPointed} {
-				drawn := ansi.Strip(m.renderEntryKeys(e, 110, sel))
-				for _, offer := range bracketed.FindAllStringSubmatch(drawn, -1) {
-					if len([]rune(offer[1])) == 1 {
-						t.Fatalf("the row draws %q beside a live draft, which is a letter of the sentence:\n%s",
-							offer[1], drawn)
-					}
-				}
+			held := pressAnswer(t, m)
+			if held.state != stateFocus || held.focusIdx != at {
+				t.Fatalf("the handover did not give the row the keyboard: state %v, cursor %d want %d",
+					held.state, held.focusIdx, at)
+			}
+			if got := held.input.Value(); got != draftLead {
+				t.Fatalf("the handover touched the sentence: %q", got)
+			}
+
+			before := snapshot(held)
+			next := press(t, held, s.keys[0])
+			if got := next.input.Value(); got != draftLead {
+				t.Fatalf("%q reached the draft once the row held the keyboard: %q", s.keys[0], got)
+			}
+			if after := snapshot(next); after == before {
+				t.Fatalf("%q did nothing on the row that holds the keyboard\n %s", s.keys[0], before)
+			}
+
+			back, _ := pressKey(t, held, tea.KeyPressMsg{Code: tea.KeyEscape})
+			if back.state == stateFocus || !back.inputLive() {
+				t.Fatalf("esc did not give the keyboard back: state %v", back.state)
+			}
+			if got := back.input.Value(); got != draftLead {
+				t.Fatalf("giving the keyboard back lost the sentence: %q", got)
 			}
 		})
 	}
 }
 
-// labelledLatest reports that chord is one the row of kind draws live and
-// labelled with nothing selected, as the last failure's (inertkeys.go).
-func labelledLatest(m Model, kind entryKind, chord keys.Binding) bool {
-	if !keys.Is(keys.Shown(chord), keys.RowChord.Retry, keys.RowChord.Provider) {
-		return false
-	}
-	for _, e := range m.transcript {
-		if e.kind == kind && m.isLatestRecovery(e) {
-			for _, o := range m.latestOffers(e) {
-				if o.Chord == keys.Bracket(chord) {
-					return true
-				}
-			}
-		}
-	}
-	return false
-}
-
-// TestRowChords_ASelectedRowThatDoesNotOfferAChordKeepsIt is the other half
-// of acting on the selected row: the chord is not handed on to a newer row
-// that does make the offer. Here the pointer stands on a tool row, which
-// offers nothing, with a turn's close under it.
-func TestRowChords_ASelectedRowThatDoesNotOfferAChordKeepsIt(t *testing.T) {
+// TestRowHandover_ASelectedRowThatOffersNothingKeepsIt is the other half of
+// acting on the selected row: the handover is not passed on to a newer row
+// that does make offers. Here the pointer stands on a tool row, which offers
+// nothing, with a turn's close under it.
+func TestRowHandover_ASelectedRowThatOffersNothingKeepsIt(t *testing.T) {
 	m, _ := undoModel(t)
 	m = typeChars(t, m, draftLead)
 	idxs := m.expandableIndices()
@@ -468,115 +402,68 @@ func TestRowChords_ASelectedRowThatDoesNotOfferAChordKeepsIt(t *testing.T) {
 	m.pointer, m.focusIdx = true, at
 	m.refreshCursorView()
 	before := snapshot(m)
-	next := pressChord(t, m, keys.RowChord.Retry)
-	if after := snapshot(next); after != before {
-		t.Fatalf("the chord fell through to a row the pointer was not on:\n before %s\n after  %s",
+	if after := snapshot(pressAnswer(t, m)); after != before {
+		t.Fatalf("the handover fell through to a row the pointer was not on:\n before %s\n after  %s",
 			before, after)
 	}
 }
 
-// TestRowChords_OneRowInASessionNamesTheOptionSetting is the sentence that
-// makes the chords usable on a Mac. An alt chord composes a character on a
-// stock Mac terminal until a profile setting is ticked, so the first row in a
-// session to offer one names the doctor row that reads that setting — and
-// only the first, because it is a fact about the terminal rather than about
-// that row.
-//
-// A Mac ships its row chords on the function row, so the rows that name it
-// are the ones a person's keymap put back on alt; macAltKeymap is that
-// keymap. Both orders are checked, because a kind the answer cannot
-// recognise says "not me" for itself and "somebody already said it" for
-// every row after it, which is a session that never names the setting at all.
-func TestRowChords_OneRowInASessionNamesTheOptionSetting(t *testing.T) {
-	failRow := func() entry {
-		return entry{kind: entryFailure, turn: 1, fail: &provider.Failure{
-			Class: provider.ClassContextLength, Status: 400, Provider: "openai",
-			Message: "maximum context length exceeded"}}
-	}
-	pauseRow := func() entry {
-		return entry{kind: entryRoundPause, turn: 1, pause: &roundPause{turn: 1, used: 25, limit: 25}}
-	}
-	// A row's chords are live only under the pointer, so that is where the
-	// sentence about them is read.
-	says := func(t *testing.T, m Model, at int) bool {
-		t.Helper()
-		return strings.Contains(ansi.Strip(m.renderEntryKeys(m.transcript[at], 110, rowPointed)), "Option")
-	}
-	both := func(first, second func() entry) Model {
-		m := frameModel(t, 110, 40)
-		m.turnCount, m.turnOpen = 1, true
-		m.appendEntry(first())
-		m.appendEntry(second())
-		return m
+// TestRowHandover_AClickOnAnOfferIsItsLetter is clickKey's rule on a row
+// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard):
+// while the draft holds the keyboard the only live key on the row is the
+// handover, and a click there is the chord; once the row holds the keyboard
+// a click on an offer is that offer's letter, through the row's own dispatch.
+// A click on a grey offer is nothing.
+func TestRowHandover_AClickOnAnOfferIsItsLetter(t *testing.T) {
+	m := failureModel(t)
+	updated, _ := m.Update(streamErrMsg{err: authFailure()})
+	m = typeChars(t, updated.(Model), draftLead)
+	m = pointAt(t, m, entryFailure)
+	at := m.focusIdx
+
+	key := keys.Bracket(keys.Row.Key)
+	if next, _, ok := m.clickRowOffer(pointOn(t, m, key)); ok && snapshot(next.(Model)) != snapshot(m) {
+		t.Fatalf("a click on a grey offer acted: %s", snapshot(next.(Model)))
 	}
 
-	t.Run("the failure is first", func(t *testing.T) {
-		macAltKeymap(t)
-		m := both(failRow, pauseRow)
-		if !says(t, m, 0) {
-			t.Error("the first row to offer a chord does not name the Option setting")
-		}
-		if says(t, m, 1) {
-			t.Error("a second row names it again")
-		}
-	})
+	next, _, ok := m.clickRowOffer(pointOn(t, m, keys.Bracket(keys.Draft.Answer)))
+	held := next.(Model)
+	if !ok || held.state != stateFocus || held.focusIdx != at {
+		t.Fatalf("a click on the handover did not give the row the keyboard: state %v", held.state)
+	}
 
-	t.Run("the pause is first", func(t *testing.T) {
-		macAltKeymap(t)
-		m := both(pauseRow, failRow)
-		if !says(t, m, 0) {
-			t.Error("the first row to offer a chord does not name the Option setting")
-		}
-		if says(t, m, 1) {
-			t.Error("a second row names it again")
-		}
-	})
+	next, _, ok = held.clickRowOffer(pointOn(t, held, key))
+	if !ok || next.(Model).state != stateKeyEntry {
+		t.Fatalf("a click on %s did not do what the letter does: state %v", key, next.(Model).state)
+	}
+	if got := next.(Model).input.Value(); got != draftLead {
+		t.Fatalf("the click touched the sentence: %q", got)
+	}
+}
 
-	// A Mac ships the row chords on the function row, which needs no
-	// setting, so no row names it — not even the first, and not the rail's
-	// trailer either (docs/interface/reserved-keys.md#a-mac-ships-without-alt).
-	t.Run("a Mac ships nothing on alt", func(t *testing.T) {
-		t.Cleanup(keys.UsePlatform("darwin"))
-		m := both(failRow, pauseRow)
-		if says(t, m, 0) || says(t, m, 1) {
-			t.Error("a row names the Option setting over chords that need none")
+// pointOn is the pane cell of the first drawn line carrying mark, at the
+// mark's first column.
+func pointOn(t *testing.T, m Model, mark string) selPoint {
+	t.Helper()
+	for i, line := range m.viewport.lines {
+		plain := ansi.Strip(line)
+		if j := strings.Index(plain, mark); j >= 0 {
+			return selPoint{line: i, col: ansi.StringWidth(plain[:j]) + 1}
 		}
-		if row := ansi.Strip(m.renderEntryKeys(m.transcript[0], 110, rowPointed)); !strings.Contains(row, "[f5] then try again") {
-			t.Errorf("the Mac's failure row does not offer its own chord:\n%s", row)
-		}
-		if m.resolveInspector().AgentsOption {
-			t.Error("the rail's trailer would name the Option setting over the function row")
-		}
-	})
-
-	// The Linux keyboard's alt arrives as it is, so its alt chords carry no
-	// sentence about a Mac's Option key, whatever host draws them — which is
-	// the README's pictures: the Linux keyboard, rendered on a Mac.
-	t.Run("the Linux keyboard names nothing", func(t *testing.T) {
-		t.Cleanup(keys.UsePlatform("linux"))
-		m := both(failRow, pauseRow)
-		if row := ansi.Strip(m.renderEntryKeys(m.transcript[0], 110, rowPointed)); !strings.Contains(row, "[alt+r] then try again") {
-			t.Fatalf("the Linux failure row does not offer its alt chord:\n%s", row)
-		}
-		if says(t, m, 0) || says(t, m, 1) {
-			t.Error("a row names a Mac's Option setting under the Linux keyboard")
-		}
-		if m.resolveInspector().AgentsOption {
-			t.Error("the rail's trailer names a Mac's Option setting under the Linux keyboard")
-		}
-	})
+	}
+	t.Fatalf("no drawn line carries %q", mark)
+	return selPoint{}
 }
 
 // macAltKeymap puts the Mac's keyboard on the register with a keymap file
-// that moves the retry and rounds chords and the agent manager back onto alt — a real Mac
-// session whose person chose the alt chords — and puts both back when the
-// test ends.
+// that moves the agent manager back onto alt — a real Mac session whose
+// person chose the alt chords — and puts both back when the test ends.
 func macAltKeymap(t *testing.T) {
 	t.Helper()
 	t.Cleanup(func() { _ = keys.Load() })
 	t.Cleanup(keys.UsePlatform("darwin"))
 	path := filepath.Join(t.TempDir(), "keybindings.toml")
-	keymap := "[draft]\nagents = \"alt+a\"\n\n[rowchord]\nretry = \"alt+r\"\nrounds = \"alt+m\"\n"
+	keymap := "[draft]\nagents = \"alt+a\"\n"
 	if err := os.WriteFile(path, []byte(keymap), 0o600); err != nil {
 		t.Fatal(err)
 	}
@@ -665,39 +552,40 @@ func TestInertKeys_ARowDrawsTheKeyThatIsLiveWhereItStands(t *testing.T) {
 	}
 }
 
-// TestInertKeys_AnUnselectedRecoveryRowDrawsItsChordsWaiting is the recovery
+// TestInertKeys_AnUnselectedRecoveryRowDrawsItsLettersWaiting is the recovery
 // rows' half. A failure's offers are how the reader gets out of it, so the
 // row keeps saying what they are when nothing selects it — but grey, beside
-// the key that hands the keyboard over, because a chord acts on the selected
-// row and this one is not it.
-func TestInertKeys_AnUnselectedRecoveryRowDrawsItsChordsWaiting(t *testing.T) {
+// the key that hands the keyboard over: the handover itself on the row it
+// reaches, and reading mode's key on a row it does not.
+func TestInertKeys_AnUnselectedRecoveryRowDrawsItsLettersWaiting(t *testing.T) {
 	m := failureModel(t)
 	updated, _ := m.Update(streamErrMsg{err: authFailure()})
 	m = updated.(Model)
 	e := m.transcript[indexOfKind(t, m, entryFailure)]
 
-	plain := m.renderEntryKeys(e, 110, rowUnselected)
-	pointed := m.renderEntryKeys(e, 110, rowPointed)
-	want := keys.Bracket(keys.RowChord.Key) + " enter a new key"
-	if !strings.Contains(ansi.Strip(plain), want) || !strings.Contains(ansi.Strip(pointed), want) {
-		t.Fatalf("both states name the chord, want %q in:\n%s\n%s", want, ansi.Strip(plain), ansi.Strip(pointed))
+	plain := ansi.Strip(m.renderEntryKeys(e, 110, rowUnselected))
+	pointed := ansi.Strip(m.renderEntryKeys(e, 110, rowPointed))
+	want := keys.Bracket(keys.Row.Key) + " enter a new key"
+	if !strings.Contains(plain, want) || !strings.Contains(pointed, want) {
+		t.Fatalf("both states name the offer, want %q in:\n%s\n%s", want, plain, pointed)
 	}
-	if !strings.Contains(ansi.Strip(plain), keys.Shown(keys.Draft.Reading)+"] to use them") {
-		t.Fatalf("an unselected row names the key that makes its offers live:\n%s", ansi.Strip(plain))
+	unselected := keys.Draft.Reading
+	if m.isLatestRecovery(e) {
+		unselected = keys.Draft.Answer
 	}
-	if strings.Contains(ansi.Strip(pointed), "to use them") {
-		t.Fatalf("the selected row's chords are live already:\n%s", ansi.Strip(pointed))
+	if !strings.Contains(plain, keys.Shown(unselected)+"] to use them") {
+		t.Fatalf("an unselected row names the key that makes its offers live:\n%s", plain)
 	}
-	if plain == pointed {
-		t.Fatal("a waiting chord and a live one have to be told apart")
+	if !strings.Contains(pointed, keys.Shown(keys.Draft.Answer)+"] to use them") {
+		t.Fatalf("the selected row names the handover that reaches it:\n%s", pointed)
 	}
 }
 
 // TestInertKeys_WaitingAndLiveNeverPaintAlike holds the same rule in both
 // palettes. The two states of a row's keys are never the same run of
-// characters, and the difference is in the spelling rather than in a shade a
-// monochrome terminal loses: the chord where the draft has the keyboard, the
-// letter under the cursor.
+// characters, and the difference is in the words rather than in a shade a
+// monochrome terminal loses: the handover beside the letters where the draft
+// has the keyboard, the letters alone under the cursor.
 func TestInertKeys_WaitingAndLiveNeverPaintAlike(t *testing.T) {
 	for _, mono := range []bool{false, true} {
 		label := "color"
@@ -727,20 +615,6 @@ func TestInertKeys_WaitingAndLiveNeverPaintAlike(t *testing.T) {
 	}
 }
 
-// withoutFocus is a snapshot with the reading cursor's position taken out of
-// it, for the one check that has to ignore the cursor.
-func withoutFocus(s string) string {
-	i := strings.Index(s, " focus=")
-	if i < 0 {
-		return s
-	}
-	j := strings.Index(s[i+1:], " ")
-	if j < 0 {
-		return s[:i]
-	}
-	return s[:i] + s[i+1+j:]
-}
-
 // snapshot is everything about a session that a bare letter must not move:
 // which surface is up, how much transcript there is, what is waiting for an
 // answer, and where the reading cursor is. The draft itself is checked
@@ -751,13 +625,13 @@ func snapshot(m Model) string {
 		m.focusIdx, m.agentList != nil, m.attachedTo)
 }
 
-// TestRowChords_WithNothingSelectedOnlyTheLastFailureAnswers holds the one
-// exception to a chord acting only on the selected row to its target
+// TestRowHandover_WithNothingSelectedOnlyTheLastFailureAnswers holds the one
+// exception to the handover reaching only the selected row to its target
 // (docs/interface/surfaces.md#the-recovery-row): the newest recovery row, and
 // only while the session's last turn ended on it. An older failure above it
 // is not reached, and once the session has moved past the failure — a turn
-// that ended any other way — the chord acts on nothing.
-func TestRowChords_WithNothingSelectedOnlyTheLastFailureAnswers(t *testing.T) {
+// that ended any other way — the handover reaches nothing.
+func TestRowHandover_WithNothingSelectedOnlyTheLastFailureAnswers(t *testing.T) {
 	failure := func() *provider.Failure {
 		return &provider.Failure{Class: provider.ClassUnclassified, Status: 400, Message: "no"}
 	}
@@ -784,9 +658,12 @@ func TestRowChords_WithNothingSelectedOnlyTheLastFailureAnswers(t *testing.T) {
 			t.Fatalf("failure %p labelled=%v, want %v (older %p):\n%s", e.fail, labelled, want, older, drawn)
 		}
 	}
-	next := pressChord(t, m, keys.RowChord.Retry)
-	if next.turnState() != stateStreaming {
-		t.Fatalf("the chord did not retry the last failure: state %v", next.turnState())
+	held := pressAnswer(t, m)
+	if held.state != stateFocus || held.focusIdx != idx {
+		t.Fatalf("the handover did not reach the last failure: state %v, cursor %d", held.state, held.focusIdx)
+	}
+	if next := press(t, held, keys.Shown(keys.Row.Retry)); next.turnState() != stateStreaming {
+		t.Fatalf("the letter did not retry the last failure: state %v", next.turnState())
 	}
 
 	for _, outcome := range []components.TurnState{components.TurnDone, components.TurnCancelled} {
@@ -798,8 +675,8 @@ func TestRowChords_WithNothingSelectedOnlyTheLastFailureAnswers(t *testing.T) {
 			t.Fatalf("a session whose last turn ended %v still draws the labelled retry", outcome)
 		}
 		before := snapshot(m)
-		if after := snapshot(pressChord(t, m, keys.RowChord.Retry)); after != before {
-			t.Fatalf("the chord acted after the session moved past the failure:\n before %s\n after  %s", before, after)
+		if after := snapshot(pressAnswer(t, m)); after != before {
+			t.Fatalf("the handover acted after the session moved past the failure:\n before %s\n after  %s", before, after)
 		}
 	}
 }

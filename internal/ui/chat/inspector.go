@@ -216,13 +216,13 @@ func (m Model) resolveInspector() components.InspectorRail {
 		Agents:     m.inspectorAgents(),
 		AgentsHint: agentsHintRail(),
 		// The trailer is all chords, so it is a row that says what a chord
-		// needs — but only while it is the session's first, which is the same
-		// question every transcript row asks before saying it (inertkeys.go).
-		// And only while those chords are on alt under the Mac's keyboard:
-		// a Mac ships them on the function row, which needs no setting
-		// (docs/interface/reserved-keys.md#a-mac-ships-without-alt), and
-		// every other keyboard's alt arrives as it is.
-		AgentsOption: components.OptionKeyboard() && m.firstRowOffer() && keys.NeedsOption(keys.Draft.Agents, keys.Draft.NextAgent),
+		// needs — but only while those chords are on alt under the Mac's
+		// keyboard: a Mac ships them on the function row, which needs no
+		// setting (docs/interface/reserved-keys.md#a-mac-ships-without-alt),
+		// and every other keyboard's alt arrives as it is. No transcript row
+		// offers a chord any more, so the trailer is the one place that says
+		// it.
+		AgentsOption: components.OptionKeyboard() && keys.NeedsOption(keys.Draft.Agents, keys.Draft.NextAgent),
 		Tools:        m.inspectorTools(),
 		Context:      m.inspectorContext(),
 		Spend:        m.inspectorSpend(),

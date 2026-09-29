@@ -274,7 +274,9 @@ type DraftKeys struct {
 	// Answer is the handover: the one key a decision that arrived on top
 	// of a sentence answers to, and the reason every other letter on the
 	// card stays a letter. With no decision waiting it hands the keyboard to
-	// the commit card of the changed-files row the reader has selected.
+	// the row the reader has selected: a recovery or round-limit row, whose
+	// letters are live once it has, or the commit card of a changed-files
+	// row.
 	Answer Binding
 
 	Clear  Binding
@@ -734,7 +736,11 @@ var Sprint = SprintKeys{
 // RowKeys are the offers a transcript row carries. They are the register's
 // awkward corner and its own subject: passive entries whose keys are answered
 // by reading mode standing on the row, which is why the input keeps every one
-// of these letters for typing.
+// of these letters for typing. From the prompt they are reached the way a
+// card's are, through Draft.Answer on the selected row, and they have no
+// chord of their own: an act that answers the product is a bare letter
+// behind the handover
+// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 //
 // There is no review among them. A turn's review is opened by the row that
 // states what the turn changed — clicked, or selected and opened with enter —
@@ -785,114 +791,6 @@ var Row = RowKeys{
 
 	Rounds: bind("+", "more rounds", "+"),
 	Uncap:  bind("!", "let it run", "!"),
-}
-
-// RowChordKeys are the recovery and round-limit offers, reached from the
-// draft. A row is
-// drawn beside a live input nearly all the time, and a letter drawn there is
-// a letter of the sentence being typed: pressing `r` under `[r] try again`
-// typed an r (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
-// So each offer has a chord as well, live wherever the row's letter is not.
-// Either spelling acts on one row, the one that is visibly selected — the
-// pointer lit from the prompt, or reading mode's cursor — and the row draws
-// the spelling that is live only while it is that row: the chord under the
-// pointer, the letter under the cursor. A row nobody has selected draws no
-// live key, and a chord pressed with nothing selected acts on nothing rather
-// than on whichever row happens to be newest
-// (docs/interface/surfaces.md#the-turns-close).
-//
-// Every one of them is on alt here, and that is not a preference. Each ctrl
-// letter a terminal delivers is spent or the line editor's, and the free set
-// is function keys and modified navigation keys — offers named after words
-// do not come out of it (docs/interface/reserved-keys.md#what-is-left).
-// What alt costs is the Option key on the two stock macOS terminals, which
-// compose a character until the profile is told to send the escape prefix,
-// so a Mac ships these on the function row instead and gives up the
-// mnemonics to get chords that arrive (platform.go,
-// docs/interface/reserved-keys.md#a-mac-ships-without-alt). Where one is on
-// alt anyway, `shhh doctor`'s keys row reads the setting and the first row in
-// a session to offer it names that row.
-//
-// The letter each chord carries is the row's own where alt still had it.
-// Some did not: `alt+t` is the reasoning level's, and
-// `alt+u`, `alt+c`, `alt+l` and `alt+b` are the textarea's own word and case
-// chords, which the draft leaves to it the way it leaves the readline chords
-// (DraftKeys). Each replacement says below which letter it took and why.
-type RowChordKeys struct {
-	Retry Binding
-	// Continue is `alt+n`: `alt+c` is the textarea's capitalize-word, and
-	// `n` is the next letter of the word — which is also what continuing
-	// from a partial answer asks for.
-	Continue Binding
-	Key      Binding
-	Provider Binding
-	// Rounds is `alt+m` for the words the row says rather than the mark it
-	// draws: `[+50]` is the block being granted, not a keystroke, and `+`
-	// under a modifier is a spelling only some terminals deliver.
-	Rounds Binding
-	// Uncap is `alt+x`, and there is no mnemonic in it. Every letter of
-	// "uncap" and of "let it run" is spent — `u`, `c` and `l` are the
-	// textarea's, `a` is the agent manager's, `p` is the provider's, `n` is
-	// continuing, `r` is trying again, `t` is the reasoning level's — so
-	// this is simply a chord the register still had free. The words beside
-	// it carry the act, as they do on the row.
-	Uncap Binding
-}
-
-// All is the chords in the order the rows offer them, which is the order Row
-// declares the letters in.
-func (k RowChordKeys) All() []Binding {
-	return []Binding{k.Retry, k.Continue, k.Key, k.Provider, k.Rounds, k.Uncap}
-}
-
-var RowChord = RowChordKeys{
-	Retry:    bind("alt+r", "try again", "alt+r"),
-	Continue: bind("alt+n", "continue from here", "alt+n"),
-	Key:      bind("alt+e", "enter a new key", "alt+e"),
-	Provider: bind("alt+p", "switch provider", "alt+p"),
-
-	Rounds: bind("alt+m", "more rounds", "alt+m"),
-	Uncap:  bind("alt+x", "let it run", "alt+x"),
-}
-
-// rowPairs is each row offer beside the chord that reaches it from the draft.
-// The two are declared apart — one spelling each, one set of words each — and
-// paired here, so nothing has to hold a letter and a chord in one binding and
-// then decide which of them to print.
-func rowPairs() [][2]Binding {
-	return [][2]Binding{
-		{Row.Retry, RowChord.Retry},
-		{Row.Continue, RowChord.Continue},
-		{Row.Key, RowChord.Key},
-		{Row.Provider, RowChord.Provider},
-		{Row.Rounds, RowChord.Rounds},
-		{Row.Uncap, RowChord.Uncap},
-	}
-}
-
-// ChordFor is the chord that reaches a row offer from the draft. A binding
-// that is not one of the row's offers has none, which is what the second
-// return says.
-func ChordFor(b Binding) (Binding, bool) {
-	for _, p := range rowPairs() {
-		if Shown(p[0]) == Shown(b) {
-			return p[1], true
-		}
-	}
-	return Binding{}, false
-}
-
-// RowLetter is the reverse: the keystroke a row chord stands for, which is
-// the spelling the row's own dispatch is written in. It is how one press
-// reaches one handler from either door — reading mode's cursor on the row, or
-// the chord from the draft.
-func RowLetter(pressed string) (string, bool) {
-	for _, p := range rowPairs() {
-		if Is(pressed, p[1]) {
-			return Shown(p[0]), true
-		}
-	}
-	return "", false
 }
 
 // CommitKeys are the commit card's — the card the handover opens on a

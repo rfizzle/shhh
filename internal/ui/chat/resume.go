@@ -259,7 +259,6 @@ func (m Model) dropRow(e entry) components.RecoveryRow {
 			Outcome:   "partial",
 			Duration:  turnDuration(e.duration),
 			Keys:      m.dropKeys(res),
-			Option:    m.namesOptionRow(e),
 			Note:      "the reply is in the conversation",
 		}
 	}
@@ -273,7 +272,6 @@ func (m Model) dropRow(e entry) components.RecoveryRow {
 		Detail:    res.tail(),
 		MaxDetail: maxDropDetail,
 		Keys:      m.dropKeys(res),
-		Option:    m.namesOptionRow(e),
 		Note:      "the partial reply stays",
 	}
 }

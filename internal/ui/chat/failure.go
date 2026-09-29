@@ -86,7 +86,6 @@ func (m Model) failureRow(e entry) components.RecoveryRow {
 		Detail:    f.Detail(),
 		MaxDetail: maxFailureDetail,
 		Keys:      m.failureKeys(f),
-		Option:    m.namesOptionRow(e),
 		Note:      failureNote(f),
 	}
 	switch {

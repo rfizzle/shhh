@@ -50,17 +50,6 @@ var darwinMoves = map[string][]string{
 	"draft.prev_agent": {"shift+f7"},
 	"draft.next_agent": {"shift+f8"},
 	"draft.open_paste": {"shift+f12"},
-
-	// A transcript row's offers, from the draft. The recovery rows take four
-	// keys — F5 is try again, which is what that key has meant in every
-	// browser — and the round-limit pause the last plain key with its
-	// shifted twin for the grant that goes further.
-	"rowchord.retry":    {"f5"},
-	"rowchord.continue": {"f6"},
-	"rowchord.key":      {"f7"},
-	"rowchord.provider": {"f8"},
-	"rowchord.rounds":   {"f9"},
-	"rowchord.uncap":    {"shift+f9"},
 }
 
 // PlatformEnv names the platform whose keyboard this process ships, in place

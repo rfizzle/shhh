@@ -1001,6 +1001,12 @@ type Model struct {
 	// (pointer.go). A flag beside the index rather than a state of its own,
 	// because the keyboard does not move.
 	pointer bool
+	// rowHeld is whether reading mode was opened by the handover on a
+	// recovery or round-limit row (keyroute.go). The row was handed the
+	// keyboard the way a card is, so answering it hands the keyboard back
+	// the way answering a card does (focus.go's rowLetter), rather than
+	// leaving the reader in a mode they never asked to read in.
+	rowHeld bool
 	// railOpened is the rail cell a surface was opened from, and the surface
 	// (railclick.go).
 	railOpened railOpening

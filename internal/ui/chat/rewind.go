@@ -1080,7 +1080,7 @@ func (m Model) rewoundBlock(e entry, width int, sel rowSel) string {
 	}
 	enter := sty.Hint.Key.Render(keys.Bracket(keys.Reading.Expand) + " " + label)
 	offers := m.rewoundOffers(e)
-	run := components.KeyRun(selOffers(offers, sel), !sel.lettersLive(), m.rowHandover(sel.lettersLive()))
+	run := components.KeyRun(offers, !sel.lettersLive(), m.rowHandover(e, sel))
 	room := width - lipgloss.Width(lead)
 	fits := func(parts ...string) bool {
 		w := 0
@@ -1109,11 +1109,6 @@ func (m Model) rewoundBlock(e entry, width int, sel rowSel) string {
 		if run != "" {
 			lines = append(lines, components.Clip(lead+run, width))
 		}
-	}
-	// Where this is the session's first chord, what alt costs on a stock
-	// macOS terminal — a line of its own, as on every other row.
-	if option := components.KeyRunOption(selOffers(offers, sel), !sel.lettersLive(), m.namesOptionRow(e)); option != "" {
-		lines = append(lines, lead+option)
 	}
 	if !open {
 		return strings.Join(lines, "\n")

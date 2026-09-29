@@ -66,9 +66,7 @@ func TestGolden_TheMacKeyboard(t *testing.T) {
 	golden.OnPlatform(t, "darwin",
 		"TestGolden_ChildRequestRouted", "TestGolden_HelpKeys", "TestGolden_HelpChat",
 		"TestGolden_HistorySearch", "TestGolden_Interrupt", "TestGolden_KeyList", "TestGolden_PasteToken",
-		"TestGolden_ProviderFailures", "TestGolden_RecoverySelection", "TestGolden_RewindFold",
-		"TestGolden_RewindRow",
-		"TestGolden_RoundLimitPause", "TestGolden_Screen", "TestGolden_ScreenAttached",
+		"TestGolden_Screen", "TestGolden_ScreenAttached",
 		"TestGolden_StagedRail", "TestGolden_TodoRunRow", "TestGolden_TranscriptGrid",
 		"TestGolden_TurnCloseSelection")
 }
@@ -1363,9 +1361,9 @@ func TestGolden_ScaffoldCard(t *testing.T) {
 func TestGolden_ProviderFailures(t *testing.T) {
 	captureGolden(t, "provider-failures", "provider failures in a session", goldenWidths, func(width int) []golden.Panel {
 		// Each is the failure the session's last turn ended on, which is what
-		// a failure row is when it lands: its retry and provider switch are
-		// the one pair drawn live with nothing selected, labelled as the last
-		// failure's (docs/interface/surfaces.md#the-recovery-row).
+		// a failure row is when it lands: the handover reaches it with
+		// nothing selected, and its retry and provider switch are labelled as
+		// the last failure's (docs/interface/surfaces.md#the-recovery-row).
 		buildAs := func(f *provider.Failure, outcome components.TurnState) string {
 			m := frameModel(t, width, 40)
 			m.modelName = "gpt-4o"
@@ -3242,10 +3240,10 @@ func TestGolden_TurnCloseSelection(t *testing.T) {
 
 // TestGolden_RecoverySelection captures the failure a turn ended on in the
 // three places the selection can stand, beside the closes above: nothing
-// selected, where its retry and provider switch are the one pair of row
-// offers drawn live, labelled as the last failure's, with the rest grey; the
-// pointer on it, which draws every offer as the chord that acts on it; and
-// reading mode's cursor, which draws the letters
+// selected, where it is the row the handover reaches and its retry and
+// provider switch say so, labelled as the last failure's; the pointer on it,
+// where its letters are grey beside the handover that reaches it; and
+// reading mode's cursor, which draws the letters live
 // (docs/interface/surfaces.md#the-recovery-row). A dropped stream is the
 // other recovery row that carries a retry.
 func TestGolden_RecoverySelection(t *testing.T) {
@@ -3277,8 +3275,8 @@ func TestGolden_RecoverySelection(t *testing.T) {
 			text: "so I'll thread the sentinel through runRound and then", tokens: 14,
 		}}
 		return []golden.Panel{
-			{Label: "nothing selected · the retry is live and says which row it acts on", View: build(failure(), rowUnselected)},
-			{Label: "the pointer on it · every offer is the chord that acts on it", View: build(failure(), rowPointed)},
+			{Label: "nothing selected · the handover reaches it, and the retry says which row it is", View: build(failure(), rowUnselected)},
+			{Label: "the pointer on it · its letters wait on the handover", View: build(failure(), rowPointed)},
 			{Label: "reading mode's cursor on it · its letters are live", View: build(failure(), rowUnderCursor)},
 			{Label: "a dropped stream, nothing selected · its retry is labelled the same way", View: build(drop, rowUnselected)},
 		}

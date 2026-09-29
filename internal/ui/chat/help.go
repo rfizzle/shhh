@@ -286,8 +286,8 @@ func optionWhen(aside string, bs ...keys.Binding) string {
 // terminal, and the doctor row that reads it.
 const optionSentence = "\non a Mac an alt chord arrives only once the terminal's Option key sends the escape prefix, which the stock terminals do not until told — Terminal.app: Settings › Profiles › Keyboard › Use Option as Meta key; iTerm2: Profiles › Keys › Left Option key: Esc+. shhh doctor's keys row reads yours"
 
-// optionWhenAny is the full sentence, where anything the input answers — its
-// own keys or a row's chords — is on alt and so has the setting to need.
+// optionWhenAny is the full sentence, where anything the input answers is on
+// alt and so has the setting to need.
 func optionWhenAny() string {
 	for _, s := range keys.Surfaces() {
 		if s.Position == keys.Home && keys.NeedsOption(s.Bindings...) {
@@ -324,54 +324,6 @@ func (r helpKeyRow) column() []string {
 	default:
 		return []string{strings.Join(shown, r.sep)}
 	}
-}
-
-// rowChordList is the transcript rows' own offers as the key list writes
-// them: the chord and the register's words for it, in one run joined the way
-// every run of offers is joined. They are one row of the list rather than
-// six because they are one gesture — the offers a row makes, taken from
-// the prompt — and six rows of one word each would bury the keys around
-// them (docs/interface/surfaces.md#the-recovery-row).
-//
-// Read off the register, like every other spelling here, so a rebind moves
-// the list with the handler.
-func rowChordList() string {
-	var offers []string
-	for _, b := range keys.RowChord.All() {
-		offers = append(offers, keys.Shown(b)+" "+keys.Words(b))
-	}
-	return strings.Join(offers, " · ")
-}
-
-// rowChordKey is the column for the row chords' one row: the modifier they
-// share, as `[alt+…]` reads, or where they share none — a Mac's are the
-// function row, some of them shifted — the first of them, as `[f2…]`.
-func rowChordKey() string {
-	var shown []string
-	for _, b := range keys.RowChord.All() {
-		shown = append(shown, keys.Shown(b))
-	}
-	slices.Sort(shown)
-	prefix, _, ok := strings.Cut(shown[0], "+")
-	for _, k := range shown {
-		if p, _, has := strings.Cut(k, "+"); !has || p != prefix {
-			ok = false
-		}
-	}
-	if ok {
-		return keys.Bracketed(prefix + "+…")
-	}
-	return keys.Bracketed(shown[0] + "…")
-}
-
-// rowChordText is that row's paragraph.
-func rowChordText() string {
-	text := `a transcript row's own offers, taken from the prompt with the draft still holding the keyboard: ` + rowChordList() + `
-in reading mode each is the bare letter instead, on the row under the cursor; the selected row draws whichever of the two works where you are. From the prompt the chord acts on the row the pointer names and on nothing when no row is selected. A turn's changed-files row opens that turn's review when it is clicked or selected and opened with enter, and its commit card when it is selected and handed the keyboard. What a row once offered to do to the work is a command now: /undo takes a turn back, /gate run runs its checks again, /todo open reopens a blocked run's item.`
-	if keys.NeedsOption(keys.RowChord.All()...) {
-		text += ` On a Mac an alt chord needs the Option key setting above`
-	}
-	return text
 }
 
 // wordMoves is how the line editor moves by word, in the keys this platform
@@ -473,7 +425,7 @@ while the agent is working, enter queues a steering message that joins the conve
 		{
 			binds: []keys.Binding{keys.Draft.Open, keys.Draft.Close},
 			sep:   "\n",
-			text:  `open or run the pointed row, and close it: what enter and - do under reading mode's cursor, by the same handler. A row's own letters (a failure's r, a pause's +) stay reading mode's, because at the prompt a letter is text. Enter on an empty draft is the same open`,
+			text:  `open or run the pointed row, and close it: what enter and - do under reading mode's cursor, by the same handler. A row's own letters (a failure's r, a pause's +) are live only once the handover or reading mode has given the row the keyboard, because at the prompt a letter is text. Enter on an empty draft is the same open`,
 		},
 		{
 			binds: []keys.Binding{keys.Draft.Reading},
@@ -483,10 +435,6 @@ enter on an edit row cycles collapsed → expanded → full-screen diff, and on 
 		{
 			binds: []keys.Binding{keys.Draft.Agents},
 			text:  `agent manager: enter attaches to an agent's session, s steers it from its row without attaching, x cancels its turn, X kills it — the one way an agent ends; attached, typing steers the agent, shift+tab sets its mode (clamped), esc detaches` + optionWhenAny(),
-		},
-		{
-			key:  rowChordKey(),
-			text: rowChordText(),
 		},
 		{
 			binds: []keys.Binding{keys.Draft.Backlog},
@@ -517,7 +465,7 @@ bare /todo opens the same screen; it opens over a running turn, and the keys tha
 		{
 			binds: []keys.Binding{keys.Draft.Answer},
 			sep:   "\n",
-			text:  `hand the keyboard to a decision waiting on screen. An approval that lands while you are typing does not take your keys with it: its y, n and a are not live until one of these chords gives them the keyboard, and until then every letter goes into the draft. Esc leaves the decision waiting; n is how you say no. The two are the same act, and a waiting card names both: ctrl+y is for terminals and desktops that never deliver ctrl+space — macOS binds it to the input-source switcher and takes it first. With nothing waiting, on a selected changed-files row, it opens that turn's commit card`,
+			text:  `hand the keyboard to a decision waiting on screen. An approval that lands while you are typing does not take your keys with it: its y, n and a are not live until one of these chords gives them the keyboard, and until then every letter goes into the draft. Esc leaves the decision waiting; n is how you say no. The two are the same act, and a waiting card names both: ctrl+y is for terminals and desktops that never deliver ctrl+space — macOS binds it to the input-source switcher and takes it first. With nothing waiting it hands the keyboard to the row you have selected: on a recovery or round-limit row that row's own letters are live from then on — r tries again, c continues, e takes a new key, p switches provider, + grants more rounds, ! lets it run — and esc gives the keyboard back; with no row selected it reaches the failure the last turn ended on, which says so. On a selected changed-files row it opens that turn's commit card, and a changed-files row opens the turn's review when it is clicked or selected and opened with enter. What a row once offered to do to the work is a command now: /undo takes a turn back, /gate run runs its checks again, /todo open reopens a blocked run's item`,
 		},
 		{
 			binds: []keys.Binding{keys.Draft.KeyList},

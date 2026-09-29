@@ -298,7 +298,7 @@ and offers nothing, the newest included; selecting it — the pointer from the
 prompt, or reading mode's cursor — is what draws its review and its commit.
 Both are chords, neither a letter of a sentence being typed, so the pointer and
 the cursor draw them the same way, and the handover pressed with nothing
-selected means what it always has. Nothing about a turn ending moves the
+selected never reaches a close. Nothing about a turn ending moves the
 pointer: it moves on the reader's key or click and on nothing else.
 
 The handover opens a card, for the reason every act that cannot be taken back
@@ -400,44 +400,40 @@ decides what to do next, never a repeat of the class. The provider's own words
 appear underneath, bounded — which is why "unclassified" is a class rather
 than an error path. A message we could not name still gets said.
 
-The offered key is drawn in the spelling that works from where the reader is
-standing: under the pointer the draft can still take text and a letter offered
-there is a letter of the sentence being typed, so it prints the chord, pressed
-from the prompt with the half-written sentence still in the box; under reading
-mode's cursor the letter is live and it prints that instead. It is one offer
-either way, and the row never draws both
+The offered keys are bare letters, and they are answered the way a card is:
+through the handover. While the draft holds the keyboard a letter offered on
+the row is a letter of the sentence being typed, so the row draws its letters
+grey beside the key that hands it the keyboard; the handover gives the
+selected row the keyboard, as it gives a waiting decision the keyboard, and
+the letters are live from then on — `r` tries again, `c` continues, `e` takes
+a new key, `p` switches provider, `+` grants more rounds, `!` lets the turn
+run. Answering the row gives the keyboard back to the draft, sentence intact,
+and so does esc. Under reading mode's cursor the letters are live already.
+There is no second spelling of any of them
 ([why](principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard)).
-Unlike [a turn's close](#the-turns-close), a recovery row keeps
-saying what its keys are when nothing selects it — grey, beside the key that
-hands the keyboard over — because they are how the reader gets out of it. A
-failure row is the one row a reader most often meets mid-sentence — the turn
-broke while they were typing the next thing — and the pointer's first press
-from the prompt lands on it, so its chord is one selection away rather than a
-handover away.
+A click on a drawn offer is the same letter through the same handler once the
+row holds the keyboard; before that, the one live key on the row is the
+handover, and a click there hands the row the keyboard as the chord does.
+Unlike [a turn's close](#the-turns-close), a recovery row keeps saying what
+its keys are when nothing selects it — grey, beside the key that hands the
+keyboard over — because they are how the reader gets out of it. A failure row
+is the one row a reader most often meets mid-sentence — the turn broke while
+they were typing the next thing — and the pointer's first press from the
+prompt lands on it, so its letters are one selection and the handover away.
 
-One row is closer than that. While nothing is selected, the failure or
-dropped stream the last turn ended on draws its retry and its provider switch
-live, as the chords that reach them from the prompt, and labels them with the
-row they act on: `retry the last failure`, `switch provider for the last
-failure`. Pressed with the sentence still in the box, the chord acts on that
-row and on no other. It is the one row whose offers act with nothing
-selected, because retrying a turn that just broke is the commonest recovery
-there is and selecting the row first made it two keys. The words are
-what keep it from being the key the rule replaced — a bare `retry` that picked
-the newest row named no row at all. Its other offers stay grey until the row
-is selected, a failure the session has moved past — a retry that went
-through, a turn after it — offers nothing live, and a selected row's offers
-act on that row alone, unchanged. A chord acts on the selected row and on no
-other, and a selected row that does not make the offer does not hand it to one
-that does.
-
-The first row in a session to offer an alt chord says under it, once it is
-drawing one, that alt needs the Option setting on a stock macOS terminal, with
-the doctor row that reads it — once, because it is a fact about the terminal
-and not about that row. A Mac ships its row chords on the function row, which
-needs no setting, so there the note appears only over a chord the person's own
-keymap put back on alt
-([a Mac ships without alt](reserved-keys.md#a-mac-ships-without-alt)).
+One row is closer than that. While nothing is selected, the handover reaches
+the failure or dropped stream the last turn ended on, and that row labels its
+retry and its provider switch with the row they act on: `retry the last
+failure`, `switch provider for the last failure`. Pressed with the sentence
+still in the box, the handover gives that row the keyboard and no other. It is
+the one row the handover reaches with nothing selected, because retrying a
+turn that just broke is the commonest recovery there is and selecting the row
+first made it a key longer. The words are what keep it from being the key the
+rule replaced — a bare `retry` that picked the newest row named no row at all.
+A failure the session has moved past — a retry that went through, a turn
+after it — is not reached with nothing selected, and a selected row's letters
+act on that row alone. The handover reaches the selected row and no other,
+and a selected row that makes no offer does not hand it to one that does.
 
 Two failures earn a card instead, and only two: the ones that stop the session
 dead.

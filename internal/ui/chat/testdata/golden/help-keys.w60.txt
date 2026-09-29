@@ -168,10 +168,12 @@
                      under reading mode's cursor, by
                      the same handler. A row's own
                      letters (a failure's r, a pause's
-                     +) stay reading mode's, because
-                     at the prompt a letter is text.
-                     Enter on an empty draft is the
-                     same open
+                     +) are live only once the
+                     handover or reading mode has
+                     given the row the keyboard,
+                     because at the prompt a letter is
+                     text. Enter on an empty draft is
+                     the same open
     [ctrl+o]         reading mode: select transcript
                      rows (j/k, u/d half a page),
                      expand/collapse (enter), y copies
@@ -216,34 +218,6 @@
                      Profiles › Keys › Left Option
                      key: Esc+. shhh doctor's keys row
                      reads yours
-    [alt+…]          a transcript row's own offers,
-                     taken from the prompt with the
-                     draft still holding the keyboard:
-                     alt+r try again · alt+n continue
-                     from here · alt+e enter a new key
-                     · alt+p switch provider · alt+m
-                     more rounds · alt+x let it run
-                     in reading mode each is the bare
-                     letter instead, on the row under
-                     the cursor; the selected row
-                     draws whichever of the two works
-                     where you are. From the prompt
-                     the chord acts on the row the
-                     pointer names and on nothing when
-                     no row is selected. A turn's
-                     changed-files row opens that
-                     turn's review when it is clicked
-                     or selected and opened with
-                     enter, and its commit card when
-                     it is selected and handed the
-                     keyboard. What a row once offered
-                     to do to the work is a command
-                     now: /undo takes a turn back,
-                     /gate run runs its checks again,
-                     /todo open reopens a blocked
-                     run's item. On a Mac an alt chord
-                     needs the Option key setting
-                     above
     [ctrl+f]         the backlog screen: the project's
                      items on the left and the one
                      under the pointer on the right, /
@@ -326,9 +300,28 @@
                      deliver ctrl+space — macOS binds
                      it to the input-source switcher
                      and takes it first. With nothing
-                     waiting, on a selected
-                     changed-files row, it opens that
-                     turn's commit card
+                     waiting it hands the keyboard to
+                     the row you have selected: on a
+                     recovery or round-limit row that
+                     row's own letters are live from
+                     then on — r tries again, c
+                     continues, e takes a new key, p
+                     switches provider, + grants more
+                     rounds, ! lets it run — and esc
+                     gives the keyboard back; with no
+                     row selected it reaches the
+                     failure the last turn ended on,
+                     which says so. On a selected
+                     changed-files row it opens that
+                     turn's commit card, and a
+                     changed-files row opens the
+                     turn's review when it is clicked
+                     or selected and opened with
+                     enter. What a row once offered to
+                     do to the work is a command now:
+                     /undo takes a turn back, /gate
+                     run runs its checks again, /todo
+                     open reopens a blocked run's item
     [ctrl+]]         print this key list. It is a
                      chord and not the ? it used to
                      be, because a bare key at the
@@ -558,10 +551,12 @@
                      ␛[38;5;241munder reading mode's cursor, by␛[m
                      ␛[38;5;241mthe same handler. A row's own␛[m
                      ␛[38;5;241mletters (a failure's r, a pause's␛[m
-                     ␛[38;5;241m+) stay reading mode's, because␛[m
-                     ␛[38;5;241mat the prompt a letter is text.␛[m
-                     ␛[38;5;241mEnter on an empty draft is the␛[m
-                     ␛[38;5;241msame open␛[m
+                     ␛[38;5;241m+) are live only once the␛[m
+                     ␛[38;5;241mhandover or reading mode has␛[m
+                     ␛[38;5;241mgiven the row the keyboard,␛[m
+                     ␛[38;5;241mbecause at the prompt a letter is␛[m
+                     ␛[38;5;241mtext. Enter on an empty draft is␛[m
+                     ␛[38;5;241mthe same open␛[m
     ␛[94m[ctrl+o]␛[m         ␛[38;5;241mreading mode: select transcript␛[m
                      ␛[38;5;241mrows (j/k, u/d half a page),␛[m
                      ␛[38;5;241mexpand/collapse (enter), y copies␛[m
@@ -606,34 +601,6 @@
                      ␛[38;5;241mProfiles › Keys › Left Option␛[m
                      ␛[38;5;241mkey: Esc+. shhh doctor's keys row␛[m
                      ␛[38;5;241mreads yours␛[m
-    ␛[94m[alt+…]␛[m          ␛[38;5;241ma transcript row's own offers,␛[m
-                     ␛[38;5;241mtaken from the prompt with the␛[m
-                     ␛[38;5;241mdraft still holding the keyboard:␛[m
-                     ␛[38;5;241malt+r try again · alt+n continue␛[m
-                     ␛[38;5;241mfrom here · alt+e enter a new key␛[m
-                     ␛[38;5;241m· alt+p switch provider · alt+m␛[m
-                     ␛[38;5;241mmore rounds · alt+x let it run␛[m
-                     ␛[38;5;241min reading mode each is the bare␛[m
-                     ␛[38;5;241mletter instead, on the row under␛[m
-                     ␛[38;5;241mthe cursor; the selected row␛[m
-                     ␛[38;5;241mdraws whichever of the two works␛[m
-                     ␛[38;5;241mwhere you are. From the prompt␛[m
-                     ␛[38;5;241mthe chord acts on the row the␛[m
-                     ␛[38;5;241mpointer names and on nothing when␛[m
-                     ␛[38;5;241mno row is selected. A turn's␛[m
-                     ␛[38;5;241mchanged-files row opens that␛[m
-                     ␛[38;5;241mturn's review when it is clicked␛[m
-                     ␛[38;5;241mor selected and opened with␛[m
-                     ␛[38;5;241menter, and its commit card when␛[m
-                     ␛[38;5;241mit is selected and handed the␛[m
-                     ␛[38;5;241mkeyboard. What a row once offered␛[m
-                     ␛[38;5;241mto do to the work is a command␛[m
-                     ␛[38;5;241mnow: /undo takes a turn back,␛[m
-                     ␛[38;5;241m/gate run runs its checks again,␛[m
-                     ␛[38;5;241m/todo open reopens a blocked␛[m
-                     ␛[38;5;241mrun's item. On a Mac an alt chord␛[m
-                     ␛[38;5;241mneeds the Option key setting␛[m
-                     ␛[38;5;241mabove␛[m
     ␛[94m[ctrl+f]␛[m         ␛[38;5;241mthe backlog screen: the project's␛[m
                      ␛[38;5;241mitems on the left and the one␛[m
                      ␛[38;5;241munder the pointer on the right, /␛[m
@@ -716,9 +683,28 @@
                      ␛[38;5;241mdeliver ctrl+space — macOS binds␛[m
                      ␛[38;5;241mit to the input-source switcher␛[m
                      ␛[38;5;241mand takes it first. With nothing␛[m
-                     ␛[38;5;241mwaiting, on a selected␛[m
-                     ␛[38;5;241mchanged-files row, it opens that␛[m
-                     ␛[38;5;241mturn's commit card␛[m
+                     ␛[38;5;241mwaiting it hands the keyboard to␛[m
+                     ␛[38;5;241mthe row you have selected: on a␛[m
+                     ␛[38;5;241mrecovery or round-limit row that␛[m
+                     ␛[38;5;241mrow's own letters are live from␛[m
+                     ␛[38;5;241mthen on — r tries again, c␛[m
+                     ␛[38;5;241mcontinues, e takes a new key, p␛[m
+                     ␛[38;5;241mswitches provider, + grants more␛[m
+                     ␛[38;5;241mrounds, ! lets it run — and esc␛[m
+                     ␛[38;5;241mgives the keyboard back; with no␛[m
+                     ␛[38;5;241mrow selected it reaches the␛[m
+                     ␛[38;5;241mfailure the last turn ended on,␛[m
+                     ␛[38;5;241mwhich says so. On a selected␛[m
+                     ␛[38;5;241mchanged-files row it opens that␛[m
+                     ␛[38;5;241mturn's commit card, and a␛[m
+                     ␛[38;5;241mchanged-files row opens the␛[m
+                     ␛[38;5;241mturn's review when it is clicked␛[m
+                     ␛[38;5;241mor selected and opened with␛[m
+                     ␛[38;5;241menter. What a row once offered to␛[m
+                     ␛[38;5;241mdo to the work is a command now:␛[m
+                     ␛[38;5;241m/undo takes a turn back, /gate␛[m
+                     ␛[38;5;241mrun runs its checks again, /todo␛[m
+                     ␛[38;5;241mopen reopens a blocked run's item␛[m
     ␛[94m[ctrl+]]␛[m         ␛[38;5;241mprint this key list. It is a␛[m
                      ␛[38;5;241mchord and not the ? it used to␛[m
                      ␛[38;5;241mbe, because a bare key at the␛[m

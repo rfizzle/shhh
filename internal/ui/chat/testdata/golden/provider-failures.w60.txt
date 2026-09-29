@@ -16,9 +16,9 @@
 
    ✗ model   gpt-4o · 40…  key ···4f9c rejected
     Incorrect API key provided
-    [alt+p] switch provider for the last failure
-    [alt+e] enter a new key
-    [ctrl+o] to use them
+    [e] enter a new key
+    [p] switch provider for the last failure
+    [ctrl+space/ctrl+y] to use them
     nothing in the turn was lost
 
 
@@ -28,8 +28,9 @@
 
    ⚠ model   gpt-4o · 429 rate l…  retry in 38s
     Rate limit reached for gpt-4o. Please try again i…
-    [alt+r] retry the last failure
-    [alt+p] switch provider for the last failure
+    [r] retry the last failure
+    [p] switch provider for the last failure
+    [ctrl+space/ctrl+y] to use them
     nothing in the turn was lost
 
 
@@ -39,9 +40,8 @@
 
    ✗ model   gpt-4o · 400 con…  over the window
     This model's maximum context length is 128000 tok…
-    [alt+r] retry the last failure
-    [alt+n] compact now
-    [ctrl+o] to use them
+    [c] compact now · [r] retry the last failure
+    [ctrl+space/ctrl+y] to use them
     compacting keeps the plan and the recent turns
 
 
@@ -51,8 +51,9 @@
 
    ✗ model   gpt-4o · 400 uncla…  message below
     Unknown parameter: 'reasoning.effort'
-    [alt+r] retry the last failure
-    [alt+p] switch provider for the last failure
+    [r] retry the last failure
+    [p] switch provider for the last failure
+    [ctrl+space/ctrl+y] to use them
     nothing in the turn was lost
 
 
@@ -62,7 +63,7 @@
 
    ✗ model   gpt-4o · 400 uncla…  message below
     Unknown parameter: 'reasoning.effort'
-    [alt+r] try again · [alt+p] switch provider
+    [r] try again · [p] switch provider
     [ctrl+o] to use them
     nothing in the turn was lost
 
@@ -74,9 +75,9 @@
 
    ␛[91m✗␛[m ␛[38;5;252mmodel␛[m   ␛[38;5;252mgpt-4o␛[m␛[38;5;241m · 40…␛[m  ␛[91mkey ···4f9c rejected␛[m
     ␛[38;5;245mIncorrect API key provided␛[m
-    ␛[94m[alt+p]␛[m␛[38;5;241m switch provider for the last failure␛[m
-    ␛[38;5;245m[alt+e]␛[m␛[38;5;241m enter a new key␛[m
-    ␛[94m[ctrl+o]␛[m␛[38;5;252m to use them␛[m
+    ␛[38;5;245m[e]␛[m␛[38;5;241m enter a new key␛[m
+    ␛[38;5;245m[p]␛[m␛[38;5;241m switch provider for the last failure␛[m
+    ␛[94m[ctrl+space/ctrl+y]␛[m␛[38;5;252m to use them␛[m
     ␛[38;5;241mnothing in the turn was lost␛[m
 
 
@@ -86,8 +87,9 @@
 
    ␛[38;5;214m⚠␛[m ␛[38;5;252mmodel␛[m   ␛[38;5;252mgpt-4o␛[m␛[38;5;241m · 429 rate l…␛[m  ␛[38;5;214mretry in 38s␛[m
     ␛[38;5;245mRate limit reached for gpt-4o. Please try again i…␛[m
-    ␛[94m[alt+r]␛[m␛[38;5;241m retry the last failure␛[m
-    ␛[94m[alt+p]␛[m␛[38;5;241m switch provider for the last failure␛[m
+    ␛[38;5;245m[r]␛[m␛[38;5;241m retry the last failure␛[m
+    ␛[38;5;245m[p]␛[m␛[38;5;241m switch provider for the last failure␛[m
+    ␛[94m[ctrl+space/ctrl+y]␛[m␛[38;5;252m to use them␛[m
     ␛[38;5;241mnothing in the turn was lost␛[m
 
 
@@ -97,9 +99,8 @@
 
    ␛[91m✗␛[m ␛[38;5;252mmodel␛[m   ␛[38;5;252mgpt-4o␛[m␛[38;5;241m · 400 con…␛[m  ␛[91mover the window␛[m
     ␛[38;5;245mThis model's maximum context length is 128000 tok…␛[m
-    ␛[94m[alt+r]␛[m␛[38;5;241m retry the last failure␛[m
-    ␛[38;5;245m[alt+n]␛[m␛[38;5;241m compact now␛[m
-    ␛[94m[ctrl+o]␛[m␛[38;5;252m to use them␛[m
+    ␛[38;5;245m[c]␛[m␛[38;5;241m compact now␛[m␛[38;5;241m · ␛[m␛[38;5;245m[r]␛[m␛[38;5;241m retry the last failure␛[m
+    ␛[94m[ctrl+space/ctrl+y]␛[m␛[38;5;252m to use them␛[m
     ␛[38;5;241mcompacting keeps the plan and the recent turns␛[m
 
 
@@ -109,8 +110,9 @@
 
    ␛[91m✗␛[m ␛[38;5;252mmodel␛[m   ␛[38;5;252mgpt-4o␛[m␛[38;5;241m · 400 uncla…␛[m  ␛[91mmessage below␛[m
     ␛[38;5;245mUnknown parameter: 'reasoning.effort'␛[m
-    ␛[94m[alt+r]␛[m␛[38;5;241m retry the last failure␛[m
-    ␛[94m[alt+p]␛[m␛[38;5;241m switch provider for the last failure␛[m
+    ␛[38;5;245m[r]␛[m␛[38;5;241m retry the last failure␛[m
+    ␛[38;5;245m[p]␛[m␛[38;5;241m switch provider for the last failure␛[m
+    ␛[94m[ctrl+space/ctrl+y]␛[m␛[38;5;252m to use them␛[m
     ␛[38;5;241mnothing in the turn was lost␛[m
 
 
@@ -120,7 +122,7 @@
 
    ␛[91m✗␛[m ␛[38;5;252mmodel␛[m   ␛[38;5;252mgpt-4o␛[m␛[38;5;241m · 400 uncla…␛[m  ␛[91mmessage below␛[m
     ␛[38;5;245mUnknown parameter: 'reasoning.effort'␛[m
-    ␛[38;5;245m[alt+r]␛[m␛[38;5;241m try again␛[m␛[38;5;241m · ␛[m␛[38;5;245m[alt+p]␛[m␛[38;5;241m switch provider␛[m
+    ␛[38;5;245m[r]␛[m␛[38;5;241m try again␛[m␛[38;5;241m · ␛[m␛[38;5;245m[p]␛[m␛[38;5;241m switch provider␛[m
     ␛[94m[ctrl+o]␛[m␛[38;5;252m to use them␛[m
     ␛[38;5;241mnothing in the turn was lost␛[m
 

@@ -24,60 +24,47 @@ import (
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
-// rowChordKey answers a transcript row's offer pressed as the chord that
-// reaches it while the row's own letters are not live (keys.RowChord). One
-// press, one row, and the row is the one the reader can see is selected: the
-// pointer lit from the prompt — reading mode's cursor seen from the prompt —
-// or that cursor itself.
+// rowHandoverKey answers the handover on a transcript row
+// (docs/interface/surfaces.md#the-recovery-row): it gives the row the
+// keyboard the way the chord gives a waiting decision the keyboard, and the
+// row's letters are live from then on because reading mode's cursor is
+// standing on it and nothing else is listening. Esc gives the keyboard back,
+// as it leaves reading mode everywhere.
 //
-// A selected row that does not make the offer does not hand the chord on to
-// one that does. With nothing selected the chord acts on nothing but the one
-// row that draws its offers live and says which row it means: the newest
-// failure's retry and provider switch
-// (docs/interface/surfaces.md#the-recovery-row).
-func (m Model) rowChordKey(pressed string) (tea.Model, tea.Cmd, bool) {
-	letter, ok := keys.RowLetter(pressed)
+// The row is the one the reader can see is selected — the pointer lit from
+// the prompt — and only a row that makes offers of its own: a selected row
+// that does not make any does not pass the chord on to one that does. With
+// nothing selected it reaches the one row that says it is the target, the
+// failure the last turn ended on, whose retry and provider switch name it.
+func (m Model) rowHandoverKey() (tea.Model, tea.Cmd, bool) {
 	// Attached, the keyboard is pointed at a child and the rows in the pane
 	// are the child's feed, which offers none of this.
-	if !ok || m.attachedTo != "" {
+	if m.interruptShowing() || m.attachedTo != "" {
 		return m, nil, false
 	}
-	if !m.pointerLit() && m.state != stateFocus {
-		return m.latestRecoveryKey(letter)
+	idx := -1
+	if m.pointerLit() {
+		if m.focusIdx >= 0 && m.focusIdx < len(m.transcript) && m.offersRowKeys(m.transcript[m.focusIdx]) {
+			idx = m.focusIdx
+		}
+	} else {
+		idx, _ = m.latestRecovery()
 	}
-	return m.rowKey(letter)
+	if idx < 0 {
+		return m, nil, false
+	}
+	return answered(m.giveRowKeyboard(idx))
 }
 
-// latestRecoveryKey is the one chord that acts with nothing selected: the
-// retry or provider switch the newest failure row draws live and labelled as
-// the last failure's (inertkeys.go). It reaches that row and no other, asked
-// through the row's own dispatch, and with no such row it acts on nothing —
-// so every other chord pressed with nothing selected still does nothing.
-func (m Model) latestRecoveryKey(letter string) (tea.Model, tea.Cmd, bool) {
-	if !keys.Is(letter, keys.Row.Retry, keys.Row.Provider) {
-		return m, nil, false
-	}
-	idx, t := m.latestRecovery()
-	if t == (recoveryTarget{}) {
-		return m, nil, false
-	}
-	row := m
-	row.focusIdx = idx
-	answer := row.failureKey
-	if t.resume != nil {
-		answer = row.dropKey
-	}
-	next, cmd, claimed := answer(letter)
-	if !claimed {
-		return m, nil, false
-	}
-	// The row was reached by index, not selected: the cursor the reader left
-	// is where it was.
-	if nm, ok := next.(Model); ok {
-		nm.focusIdx = m.focusIdx
-		next = nm
-	}
-	return next, cmd, true
+// giveRowKeyboard opens reading mode with its cursor on the row at idx: the
+// one state in which a row's letters are keys.
+func (m Model) giveRowKeyboard(idx int) (tea.Model, tea.Cmd) {
+	m.enterSurface(stateFocus)
+	m.pointer = false
+	m.rowHeld = true
+	m.focusIdx = idx
+	m.refreshFocusView()
+	return m, nil
 }
 
 // updateKey routes one key press. handled is false when nothing on the
@@ -157,11 +144,18 @@ func (m Model) updateKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 		return answered(m.gateDecision())
 	}
 	// With no decision waiting, the handover on a selected changed-files row
-	// hands the keyboard to that turn's commit card (commit.go): the one
-	// chord that already gives a card the keyboard, rather than a letter of
-	// its own on the row.
+	// hands the keyboard to that turn's commit card (commit.go), and on a
+	// selected recovery or round-limit row to the row itself: the one chord
+	// that already gives a card the keyboard, rather than a key of its own
+	// on the row.
 	if keys.Match(msg, keys.Draft.Answer) {
 		if next, cmd, ok := m.commitHandover(); ok {
+			return next, cmd, true
+		}
+		// And on a selected recovery or round-limit row it hands the row the
+		// keyboard, so answering the product is the same chord a card is
+		// answered through rather than a chord of its own per offer.
+		if next, cmd, ok := m.rowHandoverKey(); ok {
 			return next, cmd, true
 		}
 	}
@@ -709,26 +703,6 @@ func (m Model) updateKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 		// idle and steering while the agent works.
 		if m.inputLive() {
 			return answered(m.submitInput())
-		}
-	case keys.Is(pressed, keys.RowChord.All()...):
-		// A transcript row's own offer, taken from the prompt. The row is
-		// drawn beside a live draft nearly all the time, and the letter it
-		// used to print there was a letter of the sentence being typed —
-		// `[r] try again` under a half-written prompt was an offer that typed
-		// an r (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
-		// So each offer has a chord as well, and the row prints whichever of
-		// the two is true where it stands.
-		if next, cmd, claimed := m.rowChordKey(pressed); claimed {
-			return next, cmd, true
-		}
-		// A chord the selected row does not answer — or pressed with no row
-		// selected — is claimed all the same: nothing
-		// else in the register wants it, and the textarea underneath binds
-		// its own alt chords to words and case — a chord the input declares
-		// must not fall through to a meaning nothing offered, the way the
-		// pointer's shift-arrows must not.
-		if m.inputLive() {
-			return m, nil, true
 		}
 	case keys.Is(pressed, keys.Draft.OpenPaste):
 		// The fold in the draft, opened (preview.go). Orchestrator-scoped

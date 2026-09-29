@@ -418,13 +418,13 @@ func TestProgram_TheRewoundTurnsFoldAndReapply(t *testing.T) {
 	waitForText(t, tm, "Undo turn")
 	programPress(t, tm, "y")
 	waitForText(t, tm, "turn 3 · rewound")
-	// The reapply is the fold's own offer, so it is live once the pointer
-	// selects the fold: the first press lands on the newest close, the rewind's
-	// own, and the second on the fold above it. Selected, the fold draws the
-	// chord live on its own line.
+	// The reapply is the fold's own offer, reached the way a card is: the
+	// pointer selects the fold — the first press lands on the newest close,
+	// the rewind's own, and the second on the fold above it — and the
+	// handover gives it the keyboard, so its letter is live.
 	programPress(t, tm, "shift+up", "shift+up")
-	waitForText(t, tm, "read them · [alt+r] reapply")
-	programPress(t, tm, "alt+r")
+	waitForText(t, tm, "[ctrl+space/ctrl+y] to use them")
+	programPress(t, tm, "ctrl+y", "r")
 	waitForText(t, tm, "reapplied turn 3")
 	programPress(t, tm, "y")
 	waitForText(t, tm, "undo of turn")

@@ -143,20 +143,22 @@ other platforms put on alt on the function row instead
 hint reads the one register, so what a surface prints is the keyboard the
 machine in front of the reader ships.
 
-A row of the transcript is the other shape this takes, and it answers
-differently because a row is not waiting for anything. A card is one decision
-that will be answered and then gone; a row's offers stand for the rest of the
-session, and a row that spent them all on "press ctrl+o first" would be a
-screen full of keys nobody presses. So each of those offers exists twice: the
-letter, live under reading mode's cursor, and a chord that reaches the same
-act from the prompt with the pointer on the row. The selected row draws
-whichever of the two is true where it stands — the chord under the pointer,
-the letter under the cursor — and never both, because two spellings of one act
-on one line is the notation problem the paragraph above is about.
+A row of the transcript is the other shape this takes, and it answers the
+same way. An act that answers the product — try again, continue, a new key,
+another provider, more rounds, let it run — is a bare letter reached through
+the handover, never a chord of its own. The selected row draws its letters
+grey beside the handover while the draft holds the keyboard; the handover
+gives the row the keyboard the way it gives a card the keyboard, the letters
+are live from then on, and answering the row or esc gives the keyboard back.
+A chord per offer was a second spelling of each act on every row that made
+one, which is the notation problem the paragraph above is about, and it spent
+the free set on keys whose one job was to stand for a letter. An act on the
+work is not a row offer at all: it has a command, and the model has a tool.
 
 One press goes to one row, and the row is the one the reader can see is
-selected. With nothing selected a row's chord acts on nothing, and a selected
-row that does not make an offer does not pass the key on to one that does.
+selected. With nothing selected the handover reaches no row but the one that
+says it is the target, and a selected row that does not make an offer does not
+pass the key on to one that does.
 An offer that fell to the newest row was a key drawn on every turn a session
 had closed, each copy promising to act on a turn it would not have acted on;
 a key that names its target by where the reader has put the selection cannot

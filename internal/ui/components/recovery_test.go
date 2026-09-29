@@ -206,8 +206,8 @@ func TestRetryWait_Drains(t *testing.T) {
 }
 
 // Every offer a recovery row acts on is drawn whole at every width the design
-// names, whether its keys are live, drawn as the chords that reach them or
-// waiting behind a handover: an offer clipped off the edge is a key that acts
+// names, whether its keys are live or waiting behind a handover: an offer
+// clipped off the edge is a key that acts
 // with nothing on the screen saying so.
 func TestRecoveryRow_EveryOfferTheRowActsOnIsDrawnWhole(t *testing.T) {
 	letters := func(offers []KeyOffer) []KeyOffer {
@@ -263,7 +263,6 @@ func TestRecoveryRow_EveryOfferTheRowActsOnIsDrawnWhole(t *testing.T) {
 			spelled  func(KeyOffer) string
 		}{
 			{"live", row.Keys, false, "", func(k KeyOffer) string { return k.Key + " " + k.Label }},
-			{"chords", row.Keys, true, "ctrl+o", func(k KeyOffer) string { return k.Chord + " " + k.Label }},
 			{"waiting on a handover", letters(row.Keys), true, "ctrl+o", func(k KeyOffer) string { return k.Key + " " + k.Label }},
 		} {
 			r := row
@@ -286,44 +285,6 @@ func TestRecoveryRow_EveryOfferTheRowActsOnIsDrawnWhole(t *testing.T) {
 					if strings.Contains(line, "…") && strings.Contains(line, "[") {
 						t.Errorf("%s, %s, at %d: a row of offers was clipped: %q", name, tc.how, width, line)
 					}
-				}
-			}
-		}
-		// As the last failure with nothing selected: its retry and provider
-		// switch live and labelled, the rest grey beside the handover
-		// (docs/interface/surfaces.md#the-recovery-row).
-		r := row
-		r.Keys, r.Latest = nil, nil
-		for _, k := range row.Keys {
-			if k.Chord == "[alt+r]" || k.Chord == "[alt+p]" {
-				k.Label += " for the last failure"
-				r.Latest = append(r.Latest, k)
-				continue
-			}
-			k.Key, k.Chord = k.Chord, ""
-			r.Keys = append(r.Keys, k)
-		}
-		r.KeysWaiting, r.Handover, r.Option = true, "ctrl+o", true
-		var want []string
-		for _, k := range r.Latest {
-			want = append(want, k.Chord+" "+k.Label)
-		}
-		for _, k := range r.Keys {
-			want = append(want, k.Key+" "+k.Label)
-		}
-		if len(r.Keys) > 0 {
-			want = append(want, "[ctrl+o]")
-		}
-		for _, width := range []int{60, 80, 110, 130} {
-			view := ansi.Strip(r.View(width))
-			for _, offer := range want {
-				if !strings.Contains(view, offer) {
-					t.Errorf("%s, the last failure, at %d: %q is not drawn whole:\n%s", name, width, offer, view)
-				}
-			}
-			for _, line := range strings.Split(view, "\n") {
-				if strings.Contains(line, "…") && strings.Contains(line, "[") {
-					t.Errorf("%s, the last failure, at %d: a row of offers was clipped: %q", name, width, line)
 				}
 			}
 		}

@@ -73,8 +73,8 @@ type lineCache struct {
 	hasSep bool
 	// latest is the recovery row the lines drew as the last failure
 	// (inertkeys.go). Like width it is a key rather than content: a row
-	// frozen while it was the target keeps drawing its chords live after it
-	// has stopped being one, so a different target drops the cache.
+	// frozen while it was the target keeps naming itself the last failure
+	// after it has stopped being one, so a different target drops the cache.
 	latest recoveryTarget
 }
 

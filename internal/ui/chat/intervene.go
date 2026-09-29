@@ -188,18 +188,12 @@ func (m Model) steerOfferLine(e entry, sel rowSel) string {
 	if len(offers) == 0 {
 		return ""
 	}
-	run := components.KeyRun(selOffers(offers, sel), !sel.lettersLive(), m.rowHandover(sel.lettersLive()))
+	run := components.KeyRun(offers, !sel.lettersLive(), m.rowHandover(e, sel))
 	if run == "" {
 		return ""
 	}
 	indent := "\n" + strings.Repeat(" ", components.GridDetailIndent)
-	line := indent + run
-	// And, where this is the session's first chord, what alt costs on a stock
-	// macOS terminal — a line of its own, like every other row's.
-	if option := components.KeyRunOption(selOffers(offers, sel), !sel.lettersLive(), m.namesOptionRow(e)); option != "" {
-		line += indent + option
-	}
-	return line
+	return indent + run
 }
 
 // focusedSteerNotice is the withdrawable steer notice the reading cursor is

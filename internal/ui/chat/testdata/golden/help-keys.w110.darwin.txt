@@ -75,9 +75,9 @@
                      far as keeps the pointed row in view. On the start screen the offers are the rows.
                      Esc drops the pointer; ctrl+o opens reading mode on it
     [shift+→]        open or run the pointed row, and close it: what enter and - do under reading mode's
-    [shift+←]        cursor, by the same handler. A row's own letters (a failure's r, a pause's +) stay
-                     reading mode's, because at the prompt a letter is text. Enter on an empty draft is
-                     the same open
+    [shift+←]        cursor, by the same handler. A row's own letters (a failure's r, a pause's +) are
+                     live only once the handover or reading mode has given the row the keyboard, because
+                     at the prompt a letter is text. Enter on an empty draft is the same open
     [ctrl+o]         reading mode: select transcript rows (j/k, u/d half a page), expand/collapse
                      (enter), y copies the row under the cursor — a command as $ cmd over its output, an
                      edit as its unified diff, a message as markdown source, a folded group member by
@@ -91,17 +91,6 @@
     [f12]            agent manager: enter attaches to an agent's session, s steers it from its row
                      without attaching, x cancels its turn, X kills it — the one way an agent ends;
                      attached, typing steers the agent, shift+tab sets its mode (clamped), esc detaches
-    [f5…]            a transcript row's own offers, taken from the prompt with the draft still holding
-                     the keyboard: f5 try again · f6 continue from here · f7 enter a new key · f8 switch
-                     provider · f9 more rounds · shift+f9 let it run
-                     in reading mode each is the bare letter instead, on the row under the cursor; the
-                     selected row draws whichever of the two works where you are. From the prompt the
-                     chord acts on the row the pointer names and on nothing when no row is selected. A
-                     turn's changed-files row opens that turn's review when it is clicked or selected
-                     and opened with enter, and its commit card when it is selected and handed the
-                     keyboard. What a row once offered to do to the work is a command now: /undo takes a
-                     turn back, /gate run runs its checks again, /todo open reopens a blocked run's
-                     item.
     [ctrl+f]         the backlog screen: the project's items on the left and the one under the pointer
                      on the right, / and s/p/k/r narrow the list, enter reads the body, e edits the
                      file, R runs it, b/o/d/x block, reopen, archive and drop it, tab shows what
@@ -135,8 +124,15 @@
                      draft. Esc leaves the decision waiting; n is how you say no. The two are the same
                      act, and a waiting card names both: ctrl+y is for terminals and desktops that never
                      deliver ctrl+space — macOS binds it to the input-source switcher and takes it
-                     first. With nothing waiting, on a selected changed-files row, it opens that turn's
-                     commit card
+                     first. With nothing waiting it hands the keyboard to the row you have selected: on
+                     a recovery or round-limit row that row's own letters are live from then on — r
+                     tries again, c continues, e takes a new key, p switches provider, + grants more
+                     rounds, ! lets it run — and esc gives the keyboard back; with no row selected it
+                     reaches the failure the last turn ended on, which says so. On a selected
+                     changed-files row it opens that turn's commit card, and a changed-files row opens
+                     the turn's review when it is clicked or selected and opened with enter. What a row
+                     once offered to do to the work is a command now: /undo takes a turn back, /gate run
+                     runs its checks again, /todo open reopens a blocked run's item
     [ctrl+]]         print this key list. It is a chord and not the ? it used to be, because a bare key
                      at the draft is a letter of whatever you are typing — every key live here is a
                      chord but enter and esc
@@ -235,9 +231,9 @@
                      ␛[38;5;241mfar as keeps the pointed row in view. On the start screen the offers are the rows.␛[m
                      ␛[38;5;241mEsc drops the pointer; ctrl+o opens reading mode on it␛[m
     ␛[94m[shift+→]␛[m        ␛[38;5;241mopen or run the pointed row, and close it: what enter and - do under reading mode's␛[m
-    ␛[94m[shift+←]␛[m        ␛[38;5;241mcursor, by the same handler. A row's own letters (a failure's r, a pause's +) stay␛[m
-                     ␛[38;5;241mreading mode's, because at the prompt a letter is text. Enter on an empty draft is␛[m
-                     ␛[38;5;241mthe same open␛[m
+    ␛[94m[shift+←]␛[m        ␛[38;5;241mcursor, by the same handler. A row's own letters (a failure's r, a pause's +) are␛[m
+                     ␛[38;5;241mlive only once the handover or reading mode has given the row the keyboard, because␛[m
+                     ␛[38;5;241mat the prompt a letter is text. Enter on an empty draft is the same open␛[m
     ␛[94m[ctrl+o]␛[m         ␛[38;5;241mreading mode: select transcript rows (j/k, u/d half a page), expand/collapse␛[m
                      ␛[38;5;241m(enter), y copies the row under the cursor — a command as $ cmd over its output, an␛[m
                      ␛[38;5;241medit as its unified diff, a message as markdown source, a folded group member by␛[m
@@ -251,17 +247,6 @@
     ␛[94m[f12]␛[m            ␛[38;5;241magent manager: enter attaches to an agent's session, s steers it from its row␛[m
                      ␛[38;5;241mwithout attaching, x cancels its turn, X kills it — the one way an agent ends;␛[m
                      ␛[38;5;241mattached, typing steers the agent, shift+tab sets its mode (clamped), esc detaches␛[m
-    ␛[94m[f5…]␛[m            ␛[38;5;241ma transcript row's own offers, taken from the prompt with the draft still holding␛[m
-                     ␛[38;5;241mthe keyboard: f5 try again · f6 continue from here · f7 enter a new key · f8 switch␛[m
-                     ␛[38;5;241mprovider · f9 more rounds · shift+f9 let it run␛[m
-                     ␛[38;5;241min reading mode each is the bare letter instead, on the row under the cursor; the␛[m
-                     ␛[38;5;241mselected row draws whichever of the two works where you are. From the prompt the␛[m
-                     ␛[38;5;241mchord acts on the row the pointer names and on nothing when no row is selected. A␛[m
-                     ␛[38;5;241mturn's changed-files row opens that turn's review when it is clicked or selected␛[m
-                     ␛[38;5;241mand opened with enter, and its commit card when it is selected and handed the␛[m
-                     ␛[38;5;241mkeyboard. What a row once offered to do to the work is a command now: /undo takes a␛[m
-                     ␛[38;5;241mturn back, /gate run runs its checks again, /todo open reopens a blocked run's␛[m
-                     ␛[38;5;241mitem.␛[m
     ␛[94m[ctrl+f]␛[m         ␛[38;5;241mthe backlog screen: the project's items on the left and the one under the pointer␛[m
                      ␛[38;5;241mon the right, / and s/p/k/r narrow the list, enter reads the body, e edits the␛[m
                      ␛[38;5;241mfile, R runs it, b/o/d/x block, reopen, archive and drop it, tab shows what␛[m
@@ -295,8 +280,15 @@
                      ␛[38;5;241mdraft. Esc leaves the decision waiting; n is how you say no. The two are the same␛[m
                      ␛[38;5;241mact, and a waiting card names both: ctrl+y is for terminals and desktops that never␛[m
                      ␛[38;5;241mdeliver ctrl+space — macOS binds it to the input-source switcher and takes it␛[m
-                     ␛[38;5;241mfirst. With nothing waiting, on a selected changed-files row, it opens that turn's␛[m
-                     ␛[38;5;241mcommit card␛[m
+                     ␛[38;5;241mfirst. With nothing waiting it hands the keyboard to the row you have selected: on␛[m
+                     ␛[38;5;241ma recovery or round-limit row that row's own letters are live from then on — r␛[m
+                     ␛[38;5;241mtries again, c continues, e takes a new key, p switches provider, + grants more␛[m
+                     ␛[38;5;241mrounds, ! lets it run — and esc gives the keyboard back; with no row selected it␛[m
+                     ␛[38;5;241mreaches the failure the last turn ended on, which says so. On a selected␛[m
+                     ␛[38;5;241mchanged-files row it opens that turn's commit card, and a changed-files row opens␛[m
+                     ␛[38;5;241mthe turn's review when it is clicked or selected and opened with enter. What a row␛[m
+                     ␛[38;5;241monce offered to do to the work is a command now: /undo takes a turn back, /gate run␛[m
+                     ␛[38;5;241mruns its checks again, /todo open reopens a blocked run's item␛[m
     ␛[94m[ctrl+]]␛[m         ␛[38;5;241mprint this key list. It is a chord and not the ? it used to be, because a bare key␛[m
                      ␛[38;5;241mat the draft is a letter of whatever you are typing — every key live here is a␛[m
                      ␛[38;5;241mchord but enter and esc␛[m

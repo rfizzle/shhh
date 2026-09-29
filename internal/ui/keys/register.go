@@ -196,25 +196,11 @@ func Surfaces() []Surface {
 			Name:     "a transcript row's own offers",
 			Section:  "docs/interface/surfaces.md#the-turns-close, docs/interface/surfaces.md#the-recovery-row",
 			Position: Beside,
-			Reached:  Shown(Draft.Reading) + ", then the cursor on the row",
+			Reached:  Shown(Draft.Answer) + " on a selected recovery or round-limit row, or " + Shown(Draft.Reading) + " and the cursor on the row",
 			Bindings: []Binding{
 				Row.Withdraw, Row.Retry, Row.Continue,
 				Row.Key, Row.Provider, Row.Rounds, Row.Uncap,
 			},
-		},
-		{
-			// The recovery and round-limit offers, from the draft. They are a surface of
-			// their own and positioned Home because that is where they are
-			// answered: a chord is live while the input holds the keyboard,
-			// which is the only position in the register that means that.
-			// What the row above this one describes is the other door —
-			// reading mode's cursor, where the letters are live because
-			// nothing else is listening.
-			Name:     "a transcript row's offers, from the draft",
-			Section:  "docs/interface/surfaces.md#the-turns-close, docs/interface/surfaces.md#the-recovery-row",
-			Position: Home,
-			Reached:  "the input has the keyboard; the chord acts on the row the pointer names, and on nothing when no row is selected",
-			Bindings: RowChord.All(),
 		},
 		{
 			// The card the handover opens on a selected changed-files row.

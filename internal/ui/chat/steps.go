@@ -642,10 +642,10 @@ func (m Model) blockUnits(blk transcriptBlock, es []entry, width int, focus bool
 	}
 	addEntry := func(i int, detail bool) {
 		e := es[i]
-		// A row's own offers are live only on the selected row: its letters
-		// under reading mode's cursor, its chords under the pointer lit from
-		// the prompt, where every letter is text. Every other row renders
-		// them beside the key that hands the keyboard to the transcript.
+		// A row's own offers are live only under reading mode's cursor. Under
+		// the pointer lit from the prompt every letter is text, so the row
+		// draws them grey beside the handover that reaches it, and every
+		// other row beside the key that hands the keyboard to the transcript.
 		sel := rowUnselected
 		if focus && i == focusIdx {
 			sel = rowPointed

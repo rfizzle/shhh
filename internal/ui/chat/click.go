@@ -12,7 +12,7 @@ package chat
 // the button is down, so a drag that starts on a target still selects, and
 // the one button carries both gestures without either having to give ground.
 //
-// Five things are targets, and the test they pass is the same one five times:
+// Six things are targets, and the test they pass is the same one six times:
 // the pointer names exactly one of them, and the thing it names already has a
 // key.
 //
@@ -23,6 +23,11 @@ package chat
 //     review, which enter on the selected close opens as well.
 //   - The approval card's decision run. Each key owns its own cells inside
 //     `[y/N/a]`, and the click is delivered as the keystroke.
+//   - A recovery or round-limit row's offers, by the card's rule
+//     (clickRowOffer): while the row holds the keyboard each offer it draws
+//     is its letter, delivered through the row's own dispatch; while it does
+//     not, the one live key it draws is the handover, and a click there
+//     hands the row the keyboard as the chord would.
 //   - A file on the rail. It names one path, and `/diff <path>` opens that
 //     path's diff by name (railclick.go).
 //   - A session on the rail. It names one session, and the chord that walks
@@ -62,7 +67,10 @@ import (
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/charmbracelet/x/ansi"
+
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // pointerPress is where the primary button went down, and whether one is down
@@ -111,6 +119,9 @@ func (m Model) clickAt(x, y int) (tea.Model, tea.Cmd) {
 		// one line of input that enter already runs (start.go).
 		if m.startChoosing() {
 			return m.clickOffer(pt.line)
+		}
+		if next, cmd, ok := m.clickRowOffer(pt); ok {
+			return next, cmd
 		}
 		return m.clickRow(pt.line)
 	}
@@ -187,8 +198,8 @@ func (m Model) unitAtLine(line int) (idx, offset int, ok bool) {
 //
 // The rows a click can open are narrower than the rows reading mode can put
 // its cursor on. A provider failure is selectable because it *offers keys*,
-// not because it expands, and a pointer has no way to say which of them it
-// meant, so a click leaves it where it is. A turn's close is the exception:
+// not because it expands, so a click on it is answered by the offer it
+// landed on (clickRowOffer) and a click anywhere else leaves it where it is. A turn's close is the exception:
 // its changed-files line names one turn, and the turn's review is what
 // enter on the block opens too (openCursorRow) — its other offers stay keys.
 func (m Model) clickRow(line int) (tea.Model, tea.Cmd) {
@@ -449,6 +460,93 @@ func (m Model) clickKey(x, y int) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 	return m.routeDecision(clickKeyPress(key))
+}
+
+// clickRowOffer answers a click on the offers a recovery or round-limit row
+// draws, by clickKey's rule extended to the row. Where the row's letters are
+// live — reading mode's cursor on it — a click on an offer is that offer's
+// letter, handed to the row's own dispatch (rowKey), so the key and the
+// pointer are one handler. Where they are not, the offers are grey and the
+// only live key on the row is the handover beside them, so that is the only
+// thing on it a click can mean: it hands the row the keyboard, as the chord
+// does, and the next click answers it. A grey offer is not an offer yet, and
+// a click on one is nothing — as a key pressed at the prompt would be a
+// letter.
+//
+// The offer is found by reading the line that was drawn, as the card's keys
+// are, so a key on the screen is clickable by construction rather than by
+// upkeep. ok is false wherever the click did not land on one of those keys,
+// which leaves the row to clickRow.
+func (m Model) clickRowOffer(pt selPoint) (tea.Model, tea.Cmd, bool) {
+	idx, _, found := m.unitAtLine(pt.line)
+	if !found || m.attachedTo != "" || idx < 0 || idx >= len(m.transcript) ||
+		pt.line < 0 || pt.line >= len(m.viewport.lines) {
+		return m, nil, false
+	}
+	e := m.transcript[idx]
+	if !m.offersRowKeys(e) {
+		return m, nil, false
+	}
+	plain := ansi.Strip(m.viewport.lines[pt.line])
+	if m.state == stateFocus && m.focusIdx == idx {
+		for _, o := range m.entryOffers(e) {
+			letter, ok := offerLetter(o)
+			if ok && markAt(plain, o.Key, pt.col) {
+				return m.rowLetter(letter)
+			}
+		}
+		return m, nil, false
+	}
+	sel := rowUnselected
+	if m.pointerLit() && m.focusIdx == idx {
+		sel = rowPointed
+	}
+	if h := m.rowHandover(e, sel); h != "" && markAt(plain, "["+h+"]", pt.col) {
+		next, cmd := m.giveRowKeyboard(idx)
+		return next, cmd, true
+	}
+	return m, nil, false
+}
+
+// entryOffers is every offer a row the handover reaches makes, as its own
+// builder states it.
+func (m Model) entryOffers(e entry) []components.KeyOffer {
+	switch e.kind {
+	case entryRoundPause:
+		if e.pause != nil {
+			return e.pause.keys()
+		}
+	case entryRewound:
+		return m.rewoundOffers(e)
+	}
+	return m.rowOffers(e)
+}
+
+// offerLetter is the keystroke an offer a row draws stands for. The pause
+// draws its grant as the block it grants (`[+50]`), not as the `+` that
+// takes it, so that one is read by its opening rather than its whole.
+func offerLetter(o components.KeyOffer) (string, bool) {
+	for _, b := range []keys.Binding{keys.Row.Retry, keys.Row.Continue, keys.Row.Key,
+		keys.Row.Provider, keys.Row.Rounds, keys.Row.Uncap} {
+		if o.Key == keys.Bracket(b) {
+			return keys.Shown(b), true
+		}
+	}
+	if strings.HasPrefix(o.Key, "[+") {
+		return keys.Shown(keys.Row.Rounds), true
+	}
+	return "", false
+}
+
+// markAt reports whether display column col of a plain line is inside the
+// bracketed mark wherever the line draws it.
+func markAt(plain, mark string, col int) bool {
+	i := strings.Index(plain, mark)
+	if i < 0 {
+		return false
+	}
+	lo := ansi.StringWidth(plain[:i])
+	return col >= lo && col < lo+ansi.StringWidth(mark)
 }
 
 // decisionCard is the approval card on screen, if the surface showing one is

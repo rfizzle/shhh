@@ -92,15 +92,6 @@
   · rounds    + · more rounds  [shipped]
   · uncap     ! · let it run  [shipped]
 
-  ROWCHORD
-
-  · retry     alt+r · try again  [shipped]
-  · continue  alt+n · continue from here  [shipped]
-  · key       alt+e · enter a new key  [shipped]
-  · provider  alt+p · switch provider  [shipped]
-  · rounds    alt+m · more rounds  [shipped]
-  · uncap     alt+x · let it run  [shipped]
-
   DECISION
 
   · allow        y enter · allow  [shipped]
@@ -333,4 +324,4 @@
   · paste   p · paste a key  [shipped]
   · local   o · a local model  [shipped]
 
-  243 keys · 1 moved
+  237 keys · 1 moved

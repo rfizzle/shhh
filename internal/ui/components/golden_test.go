@@ -39,11 +39,6 @@ func TestGolden_TheMacKeyboard(t *testing.T) {
 		"TestGolden_PlanCard", "TestGolden_PressureCard", "TestGolden_ProviderCard")
 }
 
-// rowOffer is a transcript row's offer built the way the session builds one:
-// the letter reading mode answers with its cursor on the row, and the chord
-// the draft answers, which is what the row draws while the draft can take
-// text (keys.RowChord). A capture that spelled the pair by hand would go on
-// drawing a letter the register had moved.
 // reviewTurnOffer is what a selected changed-files row leads with: enter
 // opens the turn's review, and it is spelled the same from either door.
 func reviewTurnOffer() TurnKey {
@@ -58,12 +53,12 @@ func commitTurnOffer() TurnKey {
 	return TurnKey{Key: k, Chord: k, Label: "commit"}
 }
 
+// rowOffer is a transcript row's offer built the way the session builds one:
+// the letter reading mode answers with its cursor on the row, which the
+// handover makes live from the prompt. A capture that spelled it by hand
+// would go on drawing a letter the register had moved.
 func rowOffer(b keys.Binding, label string) TurnKey {
-	o := TurnKey{Key: keys.Bracket(b), Label: label}
-	if c, ok := keys.ChordFor(b); ok {
-		o.Chord = keys.Bracket(c)
-	}
-	return o
+	return TurnKey{Key: keys.Bracket(b), Label: label}
 }
 
 // goldenWidths are the width breakpoints from guidelines/layout-breakpoints
@@ -2514,21 +2509,15 @@ func TestGolden_RecoveryRows(t *testing.T) {
 				r.Detail = []string{"Unknown parameter: 'reasoning.effort'"}
 				r.Keys = []KeyOffer{rowOffer(keys.Row.Retry, "try again"), rowOffer(keys.Row.Provider, "switch provider")}
 			})},
-			// The same row in the two spellings invariant 5 puts it in. It is
-			// a transcript row, so the draft below usually has the keyboard
-			// and `r` is a letter — what the row draws there is the chord
-			// that reaches the same offer from the prompt.
-			{Label: "keys waiting · beside a live draft, the row offers its chords", View: row(func(r *RecoveryRow) {
+			// The same row in the state invariant 5 puts it in. It is a
+			// transcript row, so the draft below usually has the keyboard and
+			// `r` is a letter — what the row draws there is its letters grey,
+			// beside the key that hands it the keyboard.
+			{Label: "keys waiting · beside a live draft, the letters wait on the handover", View: row(func(r *RecoveryRow) {
 				r.State, r.Qualifier, r.Outcome = RecoveryStalled, "429 rate limited", "retry in 38s"
 				r.Detail = []string{"Rate limit reached for gpt-4o. Please try again in 38s."}
 				r.Keys = []KeyOffer{rowOffer(keys.Row.Retry, "try again"), rowOffer(keys.Row.Provider, "switch provider")}
 				r.KeysWaiting, r.Handover = true, "ctrl+o"
-			})},
-			{Label: "keys waiting · the first chord of a session names the Option row", View: row(func(r *RecoveryRow) {
-				r.State, r.Qualifier, r.Outcome = RecoveryStalled, "429 rate limited", "retry in 38s"
-				r.Detail = []string{"Rate limit reached for gpt-4o. Please try again in 38s."}
-				r.Keys = []KeyOffer{rowOffer(keys.Row.Retry, "try again"), rowOffer(keys.Row.Provider, "switch provider")}
-				r.KeysWaiting, r.Handover, r.Option = true, "ctrl+o", true
 			})},
 		}
 	})

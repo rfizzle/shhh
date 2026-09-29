@@ -38,11 +38,11 @@ func TestShippedKeyboards_KeepTheFiveRules(t *testing.T) {
 	}
 }
 
-// The input and a row's chords are two surfaces in the register and one
-// keyboard on the screen: both are live while the draft is. So a keystroke
-// answered at the input may not also be a row chord, on either keyboard —
-// the check a per-surface rule cannot make, asked of the two together.
-func TestShippedKeyboards_TheDraftAndTheRowChordsShareNoKeystroke(t *testing.T) {
+// Every surface positioned at the input is one keyboard on the screen: all of
+// them are live while the draft is. So a keystroke answered by one of them
+// may not also answer for another, on either keyboard — the check a
+// per-surface rule cannot make, asked of them together.
+func TestShippedKeyboards_TheInputSurfacesShareNoKeystroke(t *testing.T) {
 	for _, p := range platforms {
 		onPlatform(t, p, func(t *testing.T) {
 			seen := map[string]string{}
@@ -83,7 +83,7 @@ func TestShippedKeyboards_AMacShipsNoAltChord(t *testing.T) {
 
 // The Mac's table moves only what was on alt, and every act it moves keeps
 // its words: the two keyboards are one register with a different spelling in
-// eleven places, not two registers.
+// a handful of places, not two registers.
 func TestShippedKeyboards_TheMacMovesOnlyTheAltChords(t *testing.T) {
 	for name, presses := range darwinMoves {
 		linux, ok := ShippedOn("linux", name)
@@ -128,7 +128,7 @@ func TestShippedKeyboards_LinuxIsTheDeclaration(t *testing.T) {
 
 // A Mac's keyboard is what a listing measures a person's file against, so a
 // Mac with no file lists nothing as moved even though the table moved
-// eleven keys.
+// keys.
 func TestShippedKeyboards_TheMacsTableIsNotAMove(t *testing.T) {
 	onPlatform(t, "darwin", func(t *testing.T) {
 		for _, g := range Keyboard() {
@@ -138,8 +138,8 @@ func TestShippedKeyboards_TheMacsTableIsNotAMove(t *testing.T) {
 				}
 			}
 		}
-		if !Is("f5", RowChord.Retry) || Is("alt+r", RowChord.Retry) {
-			t.Errorf("the Mac's retry chord answers %v", RowChord.Retry.Keys())
+		if !Is("f12", Draft.Agents) || Is("alt+a", Draft.Agents) {
+			t.Errorf("the Mac's agent manager answers %v", Draft.Agents.Keys())
 		}
 	})
 }
@@ -151,17 +151,17 @@ func TestShippedKeyboards_AFileMovesTheSameOnBoth(t *testing.T) {
 	for _, p := range platforms {
 		onPlatform(t, p, func(t *testing.T) {
 			restoreRegister(t)
-			path := keymapFile(t, "[sources]\nlist = \"i\"\n[backlog]\nnew = \"a\"\n[rowchord]\nretry = \"alt+r\"\n")
+			path := keymapFile(t, "[sources]\nlist = \"i\"\n[backlog]\nnew = \"a\"\n[draft]\nagents = \"alt+a\"\n")
 			if err := Load(path); err != nil {
-				t.Fatalf("a file moving a screen key and a row chord was refused: %v", err)
+				t.Fatalf("a file moving a screen key and a draft chord was refused: %v", err)
 			}
-			if !Is("i", Sources.List) || !Is("a", Backlog.New) || !Is("alt+r", RowChord.Retry) {
-				t.Errorf("the moves did not land: %v %v %v", Sources.List.Keys(), Backlog.New.Keys(), RowChord.Retry.Keys())
+			if !Is("i", Sources.List) || !Is("a", Backlog.New) || !Is("alt+a", Draft.Agents) {
+				t.Errorf("the moves did not land: %v %v %v", Sources.List.Keys(), Backlog.New.Keys(), Draft.Agents.Keys())
 			}
 			for _, refused := range []struct{ body, says string }{
 				{"[backlog]\nmove = \"up\"\n", "pairs"},
 				{"[backlog]\ndrop = \"j\"\n", "moves the cursor"},
-				{"[rowchord]\nretry = \"ctrl+b\"\n", "tmux"},
+				{"[draft]\nagents = \"ctrl+b\"\n", "tmux"},
 			} {
 				if err := Load(keymapFile(t, refused.body)); err == nil || !strings.Contains(err.Error(), refused.says) {
 					t.Errorf("%q: want a refusal saying %q, got %v", refused.body, refused.says, err)
@@ -172,15 +172,16 @@ func TestShippedKeyboards_AFileMovesTheSameOnBoth(t *testing.T) {
 }
 
 // Check judges a file against the keyboard this platform ships: a Mac file
-// moving a row chord back onto alt is read as a move of the Mac's key.
+// moving a draft chord onto another of the Mac's keys is refused by that
+// key's name.
 func TestShippedKeyboards_CheckIsAskedOfThisPlatformsKeyboard(t *testing.T) {
 	onPlatform(t, "darwin", func(t *testing.T) {
-		path := keymapFile(t, "[rowchord]\nretry = \"f6\"\n")
-		if _, err := Check(path); err == nil || !strings.Contains(err.Error(), "continue from here") {
-			t.Errorf("f6 is the Mac's continue; want a refusal naming it, got %v", err)
+		path := keymapFile(t, "[draft]\nagents = \"shift+f8\"\n")
+		if _, err := Check(path); err == nil || !strings.Contains(err.Error(), "the next session") {
+			t.Errorf("shift+f8 is the Mac's next session; want a refusal naming it, got %v", err)
 		}
-		if !Is("f5", RowChord.Retry) {
-			t.Errorf("Check left the register moved: %v", RowChord.Retry.Keys())
+		if !Is("f12", Draft.Agents) {
+			t.Errorf("Check left the register moved: %v", Draft.Agents.Keys())
 		}
 	})
 }

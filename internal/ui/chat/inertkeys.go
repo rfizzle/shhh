@@ -21,8 +21,9 @@ package chat
 //
 // So a transcript row renders its keys live only while reading mode's cursor
 // is standing on it. Everywhere else they go grey and the one key that hands
-// the keyboard to the transcript is offered beside them, in the live
-// treatment they do not have.
+// the row the keyboard is offered beside them, in the live treatment they do
+// not have: the handover itself on the row it reaches — the selected one, or
+// the failure the last turn ended on — and reading mode's key on any other.
 
 import (
 	"github.com/rfizzle/shhh/internal/provider"
@@ -30,62 +31,28 @@ import (
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
-// rowOffer is one offer a transcript row makes, in both the spellings it has:
-// the letter reading mode answers with its cursor on the row, and the chord
-// the draft answers wherever that letter is a letter of the sentence being
-// typed (keys.RowChord). The row draws whichever of the two is true where it
-// stands, and neither the row nor the hint bar has to know which — they read
-// the same offer.
+// rowOffer is one offer a transcript row makes: the letter reading mode's
+// cursor answers on the row, and which the handover makes live from the
+// prompt (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+// It has no second spelling. An act that answers the product rather than the
+// work is a bare letter behind the handover, the way a card's are, and never
+// a chord of its own.
 func rowOffer(b keys.Binding, label string) components.KeyOffer {
-	return rowOfferAs(b, keys.Bracket(b), label)
+	return rowOfferAs(keys.Bracket(b), label)
 }
 
 // rowOfferAs is the same offer where the row draws something other than the
 // keystroke: the round-limit pause draws the grant as the block it grants
 // (`[+50]`) rather than as the `+` that takes it.
-func rowOfferAs(b keys.Binding, shown, label string) components.KeyOffer {
-	o := components.KeyOffer{Key: shown, Label: label}
-	if c, ok := keys.ChordFor(b); ok {
-		o.Chord = keys.Bracket(c)
-	}
-	return o
+func rowOfferAs(shown, label string) components.KeyOffer {
+	return components.KeyOffer{Key: shown, Label: label}
 }
 
-// namesOptionRow reports that a row about to be built is the first in the
-// session to offer a chord, so it is the row that names the profile setting
-// an alt chord needs on a stock macOS terminal
-// (docs/interface/reserved-keys.md#the-draft-spends-chords-only). It is asked
-// of the transcript rather than remembered, because the answer is the same
-// question either way: is there already a row up there saying it.
-func (m Model) namesOptionRow(row entry) bool {
-	for _, e := range *m.entries() {
-		if sameOfferRow(e, row) {
-			return true
-		}
-		if m.offersRowKeys(e) {
-			return false
-		}
-	}
-	return false
-}
-
-// firstRowOffer is the same question asked by a row that is being built and
-// is not in the transcript yet: nothing up there offers anything, so this is
-// the row that names the setting.
-func (m Model) firstRowOffer() bool {
-	for _, e := range *m.entries() {
-		if m.offersRowKeys(e) {
-			return false
-		}
-	}
-	return true
-}
-
-// offersRowKeys reports that an entry carries offers of its own that the
-// draft reaches as chords — the rows whose keys keys.RowChord pairs. It is
-// the list the Option note counts and the chord walks, so both read one
-// answer. A turn's close and a steer's notice are not on it: the close's one
-// offer is the handover and the notice's letter has no chord.
+// offersRowKeys reports that an entry is a row the handover hands the
+// keyboard to: a recovery or round-limit row, or a rewound fold, carrying
+// offers of its own. A turn's close and a steer's notice are not on it: the
+// handover on a close opens its commit card, and the notice's letter is
+// reading mode's alone.
 func (m Model) offersRowKeys(e entry) bool {
 	switch e.kind {
 	case entryFailure:
@@ -100,41 +67,16 @@ func (m Model) offersRowKeys(e entry) bool {
 	return false
 }
 
-// sameOfferRow reports that two entries are the same row on the screen. The
-// entries hold slices and cannot be compared, and the pointer each kind hangs
-// its state off is unique to the row, so that is the identity.
-func sameOfferRow(a, b entry) bool {
-	if a.kind != b.kind {
-		return false
-	}
-	switch a.kind {
-	case entryTurnClose:
-		return a.close != nil && a.close == b.close
-	case entryFailure:
-		return a.fail != nil && a.fail == b.fail
-	case entryStreamDrop:
-		return a.resume != nil && a.resume == b.resume
-	case entryRoundPause:
-		return a.pause != nil && a.pause == b.pause
-	case entryTodoRun:
-		return a.todorun != nil && a.todorun == b.todorun
-	case entryRewound:
-		return a.rewound != nil && a.rewound == b.rewound
-	case entrySystem:
-		// The notice an automatic steer left, which is the one system row
-		// that offers a key. What it hangs the offer off is the record of the
-		// interruption (intervene.go), so that is its identity here.
-		return a.intervened != nil && a.intervened == b.intervened
-	}
-	return false
-}
-
 // rowHandover is the key a transcript row offers beside keys that are not
 // live yet, or "" where the row has nothing to offer.
 //
-// It is keys.Draft.Reading, which hands the keyboard from the draft to
-// the transcript — a control chord for the same reason the handover is: no
-// sentence can produce it, so it can be live while the draft is.
+// On a row the handover reaches — the selected recovery or round-limit row,
+// or with nothing selected the failure the last turn ended on — it is
+// keys.Draft.Answer, the one chord that already gives a card the keyboard,
+// so answering the product is the same gesture wherever the product asks.
+// On any other row it is keys.Draft.Reading, which hands the keyboard to the
+// transcript. Both are control chords for the same reason: no sentence can
+// produce them, so they can be live while the draft is.
 //
 // It is offered only where it is live. Reading mode cannot be opened from
 // under a gated decision or from inside a takeover surface, and a key that
@@ -142,9 +84,12 @@ func sameOfferRow(a, b entry) bool {
 // the row's keys are simply grey, and the surface holding the keyboard says
 // what its own keys are. A row whose keys are already live has nothing to
 // hand over.
-func (m Model) rowHandover(keysLive bool) string {
-	if keysLive || !m.inputLive() {
+func (m Model) rowHandover(e entry, sel rowSel) string {
+	if sel.lettersLive() || !m.inputLive() {
 		return ""
+	}
+	if (sel == rowPointed && m.offersRowKeys(e)) || (sel == rowUnselected && m.isLatestRecovery(e)) {
+		return keys.Shown(keys.Draft.Answer)
 	}
 	return keys.Shown(keys.Draft.Reading)
 }
@@ -154,9 +99,9 @@ func (m Model) rowHandover(keysLive bool) string {
 // (docs/interface/surfaces.md#the-turns-close). A row offer acts on one row,
 // the one the reader can see is selected, so a row nobody has selected draws
 // nothing live: its offers go grey beside the key that hands the keyboard
-// over, and the chords stay off it. That is also what keeps the same live
-// chord from being printed on every turn a session has closed, each of them
-// promising to act on a turn it would not have acted on.
+// over. That is also what keeps the same live key from being printed on
+// every turn a session has closed, each of them promising to act on a turn
+// it would not have acted on.
 type rowSel int
 
 const (
@@ -164,8 +109,8 @@ const (
 	// under the gutter.
 	rowUnselected rowSel = iota
 	// rowPointed is the row the pointer lit from the prompt names. The draft
-	// still has the keyboard, so the row's letters are text and its chords
-	// are what is live.
+	// still has the keyboard, so the row's letters are text and the handover
+	// is what makes them keys.
 	rowPointed
 	// rowUnderCursor is the row reading mode's cursor stands on, where the
 	// letters are live because nothing else is listening.
@@ -174,27 +119,6 @@ const (
 
 // lettersLive reports whether the row's own letters answer where it stands.
 func (s rowSel) lettersLive() bool { return s == rowUnderCursor }
-
-// selOffers is a row's offers as the selection lets it draw them. A row that
-// is not selected draws its chords grey, beside the handover, rather than
-// live: a chord acts only on the selected row, and a live chord on any other
-// would be an offer the dispatch does not answer. It keeps the chord's
-// spelling rather than going back to the letter, because a letter drawn
-// beside a live draft is a letter of the sentence being typed.
-func selOffers(offers []components.KeyOffer, sel rowSel) []components.KeyOffer {
-	if sel != rowUnselected || len(offers) == 0 {
-		return offers
-	}
-	out := make([]components.KeyOffer, len(offers))
-	for i, o := range offers {
-		if o.Chord != "" {
-			o.Key = o.Chord
-		}
-		o.Chord = ""
-		out[i] = o
-	}
-	return out
-}
 
 // reviewTurnWords are what enter does on a row that states what a turn
 // changed: it opens that turn's review.
@@ -249,39 +173,39 @@ func (m Model) closeFor(c components.TurnClose, sel rowSel) components.TurnClose
 // gateRow stamps a recovery row with the state the keyboard puts it in. It is
 // one place for the same reason applyNotYetLive is: no surface gets to decide
 // on its own that its keys are live.
-func (m Model) gateRow(row components.RecoveryRow, sel rowSel) components.RecoveryRow {
-	row.Keys = selOffers(row.Keys, sel)
+func (m Model) gateRow(e entry, row components.RecoveryRow, sel rowSel) components.RecoveryRow {
 	row.KeysWaiting = !sel.lettersLive()
-	row.Handover = m.rowHandover(sel.lettersLive())
+	row.Handover = m.rowHandover(e, sel)
 	return row
 }
 
-// The one exception to a row offer acting only on the selected row
+// The one exception to the handover reaching only the selected row
 // (docs/interface/surfaces.md#the-recovery-row). A turn that has just broken
 // is the commonest thing a reader recovers from, usually mid-sentence, and
-// selecting the row first made that recovery two keys where it used to be
-// one. So while nothing is selected, the newest recovery row — the failure or
-// dropped stream the last turn ended on — keeps its retry and its provider
-// switch live as chords, and says in their words which row they act on. The
-// words are what make it an exception rather than the defect it replaced: a
-// bare `retry` that silently picked the newest row named no row at all.
+// selecting the row first made that recovery a step longer than it needs to
+// be. So while nothing is selected, the handover reaches the newest recovery
+// row — the failure or dropped stream the last turn ended on — and that row
+// says in the words of its retry and its provider switch which row it is.
+// The words are what make it an exception rather than the defect it
+// replaced: a bare `retry` that silently picked the newest row named no row
+// at all.
 const (
 	latestRetryWords    = "retry the last failure"
 	latestProviderWords = "switch provider for the last failure"
 )
 
 // recoveryTarget is the identity of the row the exception points at: the
-// pointer each kind hangs its state off, as sameOfferRow reads it. The zero
+// pointer each kind hangs its state off, which is unique to the row. The zero
 // value points at nothing. It is comparable so the feed's cache can be keyed
-// on it — the same row draws its chords live or grey depending on whether it
-// is still the target.
+// on it — the same row draws its labels and its handover differently
+// depending on whether it is still the target.
 type recoveryTarget struct {
 	fail   *provider.Failure
 	resume *streamResume
 }
 
-// latestRecovery is the row a labelled chord pressed with nothing selected
-// acts on, and its index, or the zero target where there is none. It is the
+// latestRecovery is the row the handover pressed with nothing selected hands
+// the keyboard to, and its index, or the zero target where there is none. It is the
 // newest failure or stream-drop row, and only while it is still the last
 // failure: the turn it belongs to is the session's latest and ended broken,
 // nothing is running, no wait is draining under it, and the draft holds the
@@ -330,8 +254,7 @@ func (m Model) rowOffers(e entry) []components.KeyOffer {
 
 // latestOffers are the row's retry and provider switch, relabelled with the
 // row they act on. Only those two: they are the acts a broken turn is most
-// often answered with, and the row's other offers stay grey until the row is
-// selected, as every other row's do.
+// often answered with, so they are the ones that name the row.
 func (m Model) latestOffers(e entry) []components.KeyOffer {
 	var out []components.KeyOffer
 	for _, o := range m.rowOffers(e) {
@@ -357,19 +280,17 @@ func latestWords(o components.KeyOffer) (string, bool) {
 
 // gateRecovery is gateRow for a failure or stream-drop row: where the row is
 // the latest failure and nothing is selected, its retry and provider switch
-// leave the grey run and are drawn live, labelled, ahead of it.
+// take the words that name it, since the handover reaches it from the prompt.
 func (m Model) gateRecovery(e entry, row components.RecoveryRow, sel rowSel) components.RecoveryRow {
 	if sel == rowUnselected && len(row.Keys) > 0 && m.isLatestRecovery(e) {
-		rest := make([]components.KeyOffer, 0, len(row.Keys))
-		for _, o := range row.Keys {
+		named := make([]components.KeyOffer, len(row.Keys))
+		for i, o := range row.Keys {
 			if l, ok := latestWords(o); ok {
 				o.Label = l
-				row.Latest = append(row.Latest, o)
-				continue
 			}
-			rest = append(rest, o)
+			named[i] = o
 		}
-		row.Keys = rest
+		row.Keys = named
 	}
-	return m.gateRow(row, sel)
+	return m.gateRow(e, row, sel)
 }

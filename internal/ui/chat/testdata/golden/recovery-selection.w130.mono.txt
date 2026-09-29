@@ -10,25 +10,25 @@
 # it for the colour assignments. Trailing spaces are significant in both.
 
 ── layout ──────────────────────────────────────────────────
-· nothing selected · the retry is live and says which row it acts on
+· nothing selected · the handover reaches it, and the retry says which row it is
 ❯ rename the round-limit sentinel
 ─────────────────────────────────────────────────────────────────────────────
 
    ✗ model   gpt-4o · 400 context too long             over the window
     This model's maximum context length is 128000 tokens
-    [alt+r] retry the last failure
-    [alt+n] compact now
-    [ctrl+o] to use them
+    [c] compact now · [r] retry the last failure
+    [ctrl+space/ctrl+y] to use them
     compacting keeps the plan and the recent turns
 
 
-· the pointer on it · every offer is the chord that acts on it
+· the pointer on it · its letters wait on the handover
 ❯ rename the round-limit sentinel
 ─────────────────────────────────────────────────────────────────────────────
 
 ❯  ✗ model   gpt-4o · 400 context too long             over the window       
     This model's maximum context length is 128000 tokens
-    [alt+n] compact now · [alt+r] then try again
+    [c] compact now · [r] then try again
+    [ctrl+space/ctrl+y] to use them
     compacting keeps the plan and the recent turns
 
 
@@ -48,32 +48,31 @@
 
    ⚠ stream  dropped mid-reply · ~14 tokens kept               partial   4.0s
     …so I'll thread the sentinel through runRound and then
-    [alt+r] retry the last failure
-    [alt+n] continue from here
-    [ctrl+o] to use them
+    [c] continue from here · [r] retry the last failure
+    [ctrl+space/ctrl+y] to use them
     the partial reply stays
 
 
 ── ansi ────────────────────────────────────────────────────
-· nothing selected · the retry is live and says which row it acts on
+· nothing selected · the handover reaches it, and the retry says which row it is
 ␛[38;5;254m❯␛[m rename the round-limit sentinel
 ␛[38;5;244m─────────────────────────────────────────────────────────────────────────────␛[m
 
    ␛[38;5;254m✗␛[m ␛[38;5;254mmodel␛[m   ␛[38;5;254mgpt-4o␛[m␛[38;5;244m · 400 context too long␛[m             ␛[38;5;254mover the window␛[m
     ␛[38;5;244mThis model's maximum context length is 128000 tokens␛[m
-    ␛[38;5;254m[alt+r]␛[m␛[38;5;244m retry the last failure␛[m
-    ␛[38;5;244m[alt+n]␛[m␛[38;5;244m compact now␛[m
-    ␛[38;5;254m[ctrl+o]␛[m␛[38;5;254m to use them␛[m
+    ␛[38;5;244m[c]␛[m␛[38;5;244m compact now␛[m␛[38;5;244m · ␛[m␛[38;5;244m[r]␛[m␛[38;5;244m retry the last failure␛[m
+    ␛[38;5;254m[ctrl+space/ctrl+y]␛[m␛[38;5;254m to use them␛[m
     ␛[38;5;244mcompacting keeps the plan and the recent turns␛[m
 
 
-· the pointer on it · every offer is the chord that acts on it
+· the pointer on it · its letters wait on the handover
 ␛[38;5;254m❯␛[m rename the round-limit sentinel
 ␛[38;5;244m─────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[38;5;254m␛[m␛[48;5;237m ␛[38;5;254m✗␛[m␛[48;5;237m ␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254;48;5;237mmodel   gpt-4o · 400 context too long             over the window       ␛[m␛[m
     ␛[38;5;244mThis model's maximum context length is 128000 tokens␛[m
-    ␛[38;5;254m[alt+n]␛[m␛[38;5;244m compact now␛[m␛[38;5;244m · ␛[m␛[38;5;254m[alt+r]␛[m␛[38;5;244m then try again␛[m
+    ␛[38;5;244m[c]␛[m␛[38;5;244m compact now␛[m␛[38;5;244m · ␛[m␛[38;5;244m[r]␛[m␛[38;5;244m then try again␛[m
+    ␛[38;5;254m[ctrl+space/ctrl+y]␛[m␛[38;5;254m to use them␛[m
     ␛[38;5;244mcompacting keeps the plan and the recent turns␛[m
 
 
@@ -93,8 +92,7 @@
 
    ␛[38;5;254m⚠␛[m ␛[38;5;254mstream␛[m  ␛[38;5;254mdropped mid-reply␛[m␛[38;5;244m · ~14 tokens kept␛[m               ␛[38;5;254mpartial␛[m   ␛[38;5;244m4.0s␛[m
     ␛[38;5;244m…so I'll thread the sentinel through runRound and then␛[m
-    ␛[38;5;254m[alt+r]␛[m␛[38;5;244m retry the last failure␛[m
-    ␛[38;5;244m[alt+n]␛[m␛[38;5;244m continue from here␛[m
-    ␛[38;5;254m[ctrl+o]␛[m␛[38;5;254m to use them␛[m
+    ␛[38;5;244m[c]␛[m␛[38;5;244m continue from here␛[m␛[38;5;244m · ␛[m␛[38;5;244m[r]␛[m␛[38;5;244m retry the last failure␛[m
+    ␛[38;5;254m[ctrl+space/ctrl+y]␛[m␛[38;5;254m to use them␛[m
     ␛[38;5;244mthe partial reply stays␛[m
 

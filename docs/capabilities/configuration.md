@@ -844,12 +844,6 @@ rules above are what refuse a move, not a list of keys held back from it.
 | `row.provider` | `p` | the same | switch provider | yes |
 | `row.rounds` | `+` | the same | more rounds | yes |
 | `row.uncap` | `!` | the same | let it run | yes |
-| `rowchord.retry` | `alt+r` | `f5` | try again | yes |
-| `rowchord.continue` | `alt+n` | `f6` | continue from here | yes |
-| `rowchord.key` | `alt+e` | `f7` | enter a new key | yes |
-| `rowchord.provider` | `alt+p` | `f8` | switch provider | yes |
-| `rowchord.rounds` | `alt+m` | `f9` | more rounds | yes |
-| `rowchord.uncap` | `alt+x` | `shift+f9` | let it run | yes |
 | `decision.allow` | `y`, `enter` | the same | allow | yes |
 | `decision.deny` | `n`, `esc`, `ctrl+c` | the same | deny | yes |
 | `decision.always` | `a` | the same | allow without asking — choose how long | yes |

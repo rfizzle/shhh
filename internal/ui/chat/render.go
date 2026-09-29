@@ -221,10 +221,10 @@ func (m Model) renderEntry(e entry, width int) string {
 // renderEntryKeys is the same, told where the row stands against the
 // selection — which decides whether its own keys are live
 // (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
-// Its letters are live only under reading mode's cursor and its chords only
-// under the pointer; everywhere else the row is beside a live draft, `g` is a
-// letter, and the row says so: its keys go grey and the key that hands the
-// keyboard over is offered in the live treatment beside them (inertkeys.go).
+// Its letters are live only under reading mode's cursor; everywhere else the
+// row is beside a live draft, `r` is a letter, and the row says so: its keys
+// go grey and the key that hands the keyboard over is offered in the live
+// treatment beside them (inertkeys.go).
 func (m Model) renderEntryKeys(e entry, width int, sel rowSel) string {
 	return m.renderEntryDetail(e, width, sel, false)
 }
@@ -323,7 +323,7 @@ func (m Model) renderEntryDetail(e entry, width int, sel rowSel, stepDetail bool
 			// close it stands in for does, and leads with it.
 			row.Keys = append([]components.KeyOffer{reviewTurnOffer()}, row.Keys...)
 		}
-		return m.gateRow(row, sel).View(width) + "\n"
+		return m.gateRow(e, row, sel).View(width) + "\n"
 	case entryFanout:
 		block := m.fanoutBlockFor(e)
 		if len(block.Lanes) == 0 {
@@ -774,8 +774,8 @@ func (m *Model) renderHistoryRawLines() []string {
 		m.cached.reset()
 		m.gutter.reset()
 	}
-	// The newest failure draws its labelled chords live only while it is
-	// still the last failure (inertkeys.go), and that row is usually in a
+	// The newest failure names itself as the handover's target only while it
+	// is still the last failure (inertkeys.go), and that row is usually in a
 	// block that froze long before the turn after it moved on. So the target
 	// keys the cache the way the width does: a different one drops it.
 	_, t := m.latestRecovery()

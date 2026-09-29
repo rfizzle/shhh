@@ -113,6 +113,8 @@ func Dead() []string { return appliedDead }
 var retired = []string{
 	"row.undo", "row.commit", "row.rerun", "row.reopen",
 	"rowchord.undo", "rowchord.commit", "rowchord.rerun", "rowchord.reopen",
+	"rowchord.retry", "rowchord.continue", "rowchord.key", "rowchord.provider",
+	"rowchord.rounds", "rowchord.uncap",
 	"review.stage_hunk", "review.stage_file", "review.stage_all", "review.apply",
 }
 
@@ -443,7 +445,6 @@ func movable() []namedGroup {
 		{"paste", reflect.ValueOf(&Paste).Elem()},
 		{"context", reflect.ValueOf(&Context).Elem()},
 		{"row", reflect.ValueOf(&Row).Elem()},
-		{"rowchord", reflect.ValueOf(&RowChord).Elem()},
 		{"decision", reflect.ValueOf(&Decision).Elem()},
 		{"confirm", reflect.ValueOf(&Confirm).Elem()},
 		{"select", reflect.ValueOf(&Select).Elem()},

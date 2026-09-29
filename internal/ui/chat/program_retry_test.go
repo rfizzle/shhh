@@ -84,10 +84,10 @@ func TestProgram_AStalledRequestIsWaitedOutAndAnswered(t *testing.T) {
 	}
 }
 
-// A turn that broke is retried from a half-typed line with one key: the
-// newest failure draws its retry live and labelled as the last failure's
-// while nothing is selected, the chord asks again, and the sentence being
-// typed stays in the draft (docs/interface/surfaces.md#the-recovery-row).
+// A turn that broke is retried from a half-typed line: the newest failure
+// names itself as the last failure while nothing is selected, the handover
+// gives it the keyboard, its letter asks again, and the sentence being typed
+// stays in the draft (docs/interface/surfaces.md#the-recovery-row).
 func TestProgram_TheLastFailureIsRetriedFromAHalfTypedLine(t *testing.T) {
 	p := &stallingProvider{
 		refuse: 1,
@@ -104,12 +104,13 @@ func TestProgram_TheLastFailureIsRetriedFromAHalfTypedLine(t *testing.T) {
 
 	tm.Type("why does the loop stop")
 	tm.Send(programEnter)
-	offer := keys.Bracket(keys.RowChord.Retry) + " retry the last failure"
+	offer := keys.Bracket(keys.Row.Retry) + " retry the last failure"
 	waitForText(t, tm, offer)
 
 	tm.Type(draftSentence)
 	waitForText(t, tm, draftSentence)
-	tm.Send(chordMsg(t, keys.RowChord.Retry))
+	tm.Send(answerMsg(t))
+	tm.Type(keys.Shown(keys.Row.Retry))
 
 	waitForText(t, tm, "and nowhere else")
 	frame := finalFrame(t, tm)

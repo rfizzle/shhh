@@ -1221,6 +1221,26 @@ hunks`: it opens the turn's review, which stages nothing now
 artboard's. The departure is closed by the artboard drawing the handover as
 the way in and the `[s]` words.
 
+## A recovery row is answered through the handover
+
+*A disagreement.* `Interrupt` draws the recovery rows and the round-limit
+pause with each offer as a key live from the prompt, and `Frame` draws the
+pause the same way. The binary draws every such offer as its bare letter —
+`[r] try again`, `[+50] more rounds` — grey while the draft holds the
+keyboard, beside `[ctrl+space/ctrl+y] to use them` on the row the handover
+reaches (the selected one, or with nothing selected the failure the last turn
+ended on) and `[ctrl+o] to use them` on any other; once the handover has given
+the row the keyboard the letters are live, and answering it or esc gives the
+keyboard back ([the recovery row](surfaces.md#the-recovery-row)).
+
+The reason is that an act answering the product is a bare letter behind the
+handover, the way a card's are, and never a chord of its own
+([a key is inert until its surface holds the keyboard](principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard)).
+A chord per offer was a second spelling of each on every row, and six chords
+of the free set spent on standing for letters. The departure is closed by the
+artboards drawing the letters grey beside the handover offer, and the letters
+live once the row holds the keyboard.
+
 ## A card row's gloss is a fact about the call, or nothing
 
 *A disagreement.* The `Approvals` and `Commit` artboards gloss every row of a
