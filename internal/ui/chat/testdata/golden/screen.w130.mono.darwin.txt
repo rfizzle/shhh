@@ -83,13 +83,13 @@
       --- FAIL: TestRoundLimit                                                   │  ALERTS                            1 standing  
                                                                                ┃ │   ✗ go test  exit 1                    turn 1  
   ◇ fan-out    4 agents · 4 of 32 spawned                      4 running       ┃ │                                                
-     ◇ agent   researcher-1 · Say where the round…  ⚠ needs you · 1 tool       ┃ │  AGENTS                             4 running  
+     ◇ agent   researcher-1 · Say where the round counter …  ⚠ needs you       ┃ │  AGENTS                             4 running  
       waiting approval: run echo hi                                            ┃ │❯ ⊘ orchestrator                         $0.51  
-    └◇ agent   researcher-4 · Say who calls the l…  ⚠ needs you · 1 tool       ┃ │    ready                                       
+    └◇ agent   researcher-4 · Say who calls the loop.        ⚠ needs you       ┃ │    ready                                       
       waiting approval: run echo hi                                            ┃ │  ⚠ researcher-1                                
-     ◇ agent   researcher-2 · Say where the round…  ⚠ needs you · 1 tool       ┃ │    waiting approval: run echo hi · 1 tool      
+     ◇ agent   researcher-2 · Say where the round limit is…  ⚠ needs you       ┃ │    waiting approval: run echo hi · 1 tool      
       waiting approval: run echo hi                                            ┃ │  └⚠ researcher-4                               
-     ◇ agent   researcher-3 · Say where the loop …  ⚠ needs you · 1 tool       ┃ │     waiting approval: run echo hi · 1 tool     
+     ◇ agent   researcher-3 · Say where the loop exits.      ⚠ needs you       ┃ │     waiting approval: run echo hi · 1 tool     
       waiting approval: run echo hi                                            ┃ │  ⚠ researcher-2                                
       [f12] agents                                                             ┃ │    waiting approval: run echo hi · 1 tool      
                                                                                ┃ │  ⚠ researcher-3                                
@@ -308,13 +308,13 @@
       ␛[38;5;244m--- FAIL: TestRoundLimit␛[m                                                   ␛[38;5;244m│␛[m  ␛[38;5;254;1mALERTS␛[m                            ␛[38;5;254m1 standing␛[m  
                                                                                ␛[38;5;244m┃␛[m ␛[38;5;244m│␛[m   ␛[38;5;254m✗␛[m ␛[38;5;254mgo test␛[m  ␛[38;5;244mexit 1␛[m                    ␛[38;5;244mturn 1␛[m  
   ␛[38;5;254m◇␛[m ␛[38;5;254mfan-out␛[m    ␛[38;5;244m4 agents · 4 of 32 spawned␛[m                      ␛[38;5;244m4 running␛[m       ␛[38;5;244m┃␛[m ␛[38;5;244m│␛[m                                                
-     ␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mresearcher-1␛[38;5;244m · Say where the round…␛[m  ␛[38;5;254m⚠ needs you␛[38;5;244m · 1 tool␛[m       ␛[38;5;244m┃␛[m ␛[38;5;244m│␛[m  ␛[38;5;254;1mAGENTS␛[m                             ␛[38;5;244m4 running␛[m  
+     ␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mresearcher-1␛[38;5;244m · Say where the round counter …␛[m  ␛[38;5;254m⚠ needs you␛[m       ␛[38;5;244m┃␛[m ␛[38;5;244m│␛[m  ␛[38;5;254;1mAGENTS␛[m                             ␛[38;5;244m4 running␛[m  
       ␛[38;5;244mwaiting approval: run echo hi␛[m                                            ␛[38;5;244m┃␛[m ␛[38;5;244m│␛[38;5;254m❯␛[m ␛[38;5;244;48;5;237m⊘␛[39m ␛[38;5;254morchestrator                         $0.51␛[m  
-    ␛[38;5;244m└␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mresearcher-4␛[38;5;244m · Say who calls the l…␛[m  ␛[38;5;254m⚠ needs you␛[38;5;244m · 1 tool␛[m       ␛[38;5;244m┃␛[m ␛[38;5;244m│␛[m    ␛[38;5;244mready␛[m                                       
+    ␛[38;5;244m└␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mresearcher-4␛[38;5;244m · Say who calls the loop.␛[m        ␛[38;5;254m⚠ needs you␛[m       ␛[38;5;244m┃␛[m ␛[38;5;244m│␛[m    ␛[38;5;244mready␛[m                                       
       ␛[38;5;244mwaiting approval: run echo hi␛[m                                            ␛[38;5;244m┃␛[m ␛[38;5;244m│␛[m  ␛[38;5;254m⚠␛[m ␛[38;5;254mresearcher-1␛[m                                
-     ␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mresearcher-2␛[38;5;244m · Say where the round…␛[m  ␛[38;5;254m⚠ needs you␛[38;5;244m · 1 tool␛[m       ␛[38;5;244m┃␛[m ␛[38;5;244m│␛[m    ␛[38;5;244mwaiting approval: run echo hi · 1 tool␛[m      
+     ␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mresearcher-2␛[38;5;244m · Say where the round limit is…␛[m  ␛[38;5;254m⚠ needs you␛[m       ␛[38;5;244m┃␛[m ␛[38;5;244m│␛[m    ␛[38;5;244mwaiting approval: run echo hi · 1 tool␛[m      
       ␛[38;5;244mwaiting approval: run echo hi␛[m                                            ␛[38;5;244m┃␛[m ␛[38;5;244m│␛[m  ␛[38;5;244m└␛[38;5;254m⚠␛[m ␛[38;5;254mresearcher-4␛[m                               
-     ␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mresearcher-3␛[38;5;244m · Say where the loop …␛[m  ␛[38;5;254m⚠ needs you␛[38;5;244m · 1 tool␛[m       ␛[38;5;244m┃␛[m ␛[38;5;244m│␛[m     ␛[38;5;244mwaiting approval: run echo hi · 1 tool␛[m     
+     ␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mresearcher-3␛[38;5;244m · Say where the loop exits.␛[m      ␛[38;5;254m⚠ needs you␛[m       ␛[38;5;244m┃␛[m ␛[38;5;244m│␛[m     ␛[38;5;244mwaiting approval: run echo hi · 1 tool␛[m     
       ␛[38;5;244mwaiting approval: run echo hi␛[m                                            ␛[38;5;244m┃␛[m ␛[38;5;244m│␛[m  ␛[38;5;254m⚠␛[m ␛[38;5;254mresearcher-2␛[m                                
       ␛[38;5;254m[f12]␛[38;5;244m agents␛[m                                                             ␛[38;5;244m┃␛[m ␛[38;5;244m│␛[m    ␛[38;5;244mwaiting approval: run echo hi · 1 tool␛[m      
                                                                                ␛[38;5;244m┃␛[m ␛[38;5;244m│␛[m  ␛[38;5;254m⚠␛[m ␛[38;5;254mresearcher-3␛[m                                

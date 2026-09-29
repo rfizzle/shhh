@@ -583,26 +583,24 @@ func (l FanoutLane) glyph() string        { return l.progressOf().glyph() }
 func (l FanoutLane) outcomeField() string { return l.progressOf().outcomeField() }
 
 // fittedOutcome is as much of the outcome field as this width can carry,
-// which is a question of what gives way first. On a lane that names no step,
-// nothing gives way at all until the name would be squeezed past
-// minTargetWidth, the bound an activity row keeps for the same reason: a name
-// clipped to an ellipsis is a lane the reader cannot tell from the one under
-// it, and two children of one profile then read as the same child. On a
-// running lane that names the step it is on, the costs give way until the
-// growing field holds whole, because what the child is doing is read before
-// what it has spent; past that fittedTarget clips the task and keeps the step.
+// which is a question of what gives way first. The costs give way until the
+// growing field holds whole — the name, the task and, on a running lane that
+// names the step it is on, that step — because what the child was asked to do
+// is read before what it has spent, and a finished lane beside a running one
+// keeps its words by the same rule. Past that the task clips: fittedTarget
+// keeps a step where there is one, and the grid clips the tail where there is
+// not.
 //
 // The costs go in a fixed order: what the child inherited, the token count,
 // the budget's share, then the tool count. Every one of them is bookkeeping
 // the manager's row states for the same child. The verdict goes last of all,
-// and only where `✓ done` and the word together will not fit — it is still a
-// key away in the report it was read off, which is more than the costs have.
+// and only where `✓ done` and the word together would squeeze the name past
+// minTargetWidth — a name clipped to an ellipsis is a lane the reader cannot
+// tell from the one under it — and it is still a key away in the report it
+// was read off, which is more than the costs have.
 func (l FanoutLane) fittedOutcome(width int) string {
 	p := l.progressOf()
-	fits := func() bool { return fitsBesideName(width, p.outcomeField()) }
-	if l.stepTitle() != "" {
-		fits = func() bool { return targetRoom(width, p.outcomeField()) >= lipgloss.Width(l.target()) }
-	}
+	fits := func() bool { return targetRoom(width, p.outcomeField()) >= lipgloss.Width(l.target()) }
 	if p.Inherited > 0 && !fits() {
 		p.Inherited = 0
 	}

@@ -83,13 +83,13 @@
       --- FAIL: TestRoundLimit                                        
                                                                       
   ◇ fan-out    4 agents · 4 of 32 spawned         4 running       ┃   
-     ◇ agent   researcher-1 · Say wh…  ⚠ needs you · 1 tool       ┃   
+     ◇ agent   researcher-1 · Say where the r…  ⚠ needs you       ┃   
       waiting approval: run echo hi                               ┃   
-    └◇ agent   researcher-4 · Say wh…  ⚠ needs you · 1 tool       ┃   
+    └◇ agent   researcher-4 · Say who calls t…  ⚠ needs you       ┃   
       waiting approval: run echo hi                               ┃   
-     ◇ agent   researcher-2 · Say wh…  ⚠ needs you · 1 tool       ┃   
+     ◇ agent   researcher-2 · Say where the r…  ⚠ needs you       ┃   
       waiting approval: run echo hi                               ┃   
-     ◇ agent   researcher-3 · Say wh…  ⚠ needs you · 1 tool       ┃   
+     ◇ agent   researcher-3 · Say where the l…  ⚠ needs you       ┃   
       waiting approval: run echo hi                               ┃   
       [alt+a] agents                                              ┃   
                                                                   ┃   
@@ -110,11 +110,11 @@
    shhh chat · ~/src/shhh · main · gpt-4o · think medium              
   ──────────────────────────────────────────────────────────────────  
       waiting approval: run echo hi                                   
-    └◇ agent   researcher-4 · Say wh…  ⚠ needs you · 1 tool           
+    └◇ agent   researcher-4 · Say who calls t…  ⚠ needs you           
       waiting approval: run echo hi                                   
-     ◇ agent   researcher-2 · Say wh…  ⚠ needs you · 1 tool           
+     ◇ agent   researcher-2 · Say where the r…  ⚠ needs you           
       waiting approval: run echo hi                                   
-     ◇ agent   researcher-3 · Say wh…  ⚠ needs you · 1 tool           
+     ◇ agent   researcher-3 · Say where the l…  ⚠ needs you           
       waiting approval: run echo hi                                   
       [alt+a] agents                                              ┃   
                                                                   ┃   
@@ -308,13 +308,13 @@
       ␛[38;5;244m--- FAIL: TestRoundLimit␛[m                                        
                                                                       
   ␛[38;5;254m◇␛[m ␛[38;5;254mfan-out␛[m    ␛[38;5;244m4 agents · 4 of 32 spawned␛[m         ␛[38;5;244m4 running␛[m       ␛[38;5;244m┃␛[m   
-     ␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mresearcher-1␛[38;5;244m · Say wh…␛[m  ␛[38;5;254m⚠ needs you␛[38;5;244m · 1 tool␛[m       ␛[38;5;244m┃␛[m   
+     ␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mresearcher-1␛[38;5;244m · Say where the r…␛[m  ␛[38;5;254m⚠ needs you␛[m       ␛[38;5;244m┃␛[m   
       ␛[38;5;244mwaiting approval: run echo hi␛[m                               ␛[38;5;244m┃␛[m   
-    ␛[38;5;244m└␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mresearcher-4␛[38;5;244m · Say wh…␛[m  ␛[38;5;254m⚠ needs you␛[38;5;244m · 1 tool␛[m       ␛[38;5;244m┃␛[m   
+    ␛[38;5;244m└␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mresearcher-4␛[38;5;244m · Say who calls t…␛[m  ␛[38;5;254m⚠ needs you␛[m       ␛[38;5;244m┃␛[m   
       ␛[38;5;244mwaiting approval: run echo hi␛[m                               ␛[38;5;244m┃␛[m   
-     ␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mresearcher-2␛[38;5;244m · Say wh…␛[m  ␛[38;5;254m⚠ needs you␛[38;5;244m · 1 tool␛[m       ␛[38;5;244m┃␛[m   
+     ␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mresearcher-2␛[38;5;244m · Say where the r…␛[m  ␛[38;5;254m⚠ needs you␛[m       ␛[38;5;244m┃␛[m   
       ␛[38;5;244mwaiting approval: run echo hi␛[m                               ␛[38;5;244m┃␛[m   
-     ␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mresearcher-3␛[38;5;244m · Say wh…␛[m  ␛[38;5;254m⚠ needs you␛[38;5;244m · 1 tool␛[m       ␛[38;5;244m┃␛[m   
+     ␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mresearcher-3␛[38;5;244m · Say where the l…␛[m  ␛[38;5;254m⚠ needs you␛[m       ␛[38;5;244m┃␛[m   
       ␛[38;5;244mwaiting approval: run echo hi␛[m                               ␛[38;5;244m┃␛[m   
       ␛[38;5;254m[alt+a]␛[38;5;244m agents␛[m                                              ␛[38;5;244m┃␛[m   
                                                                   ␛[38;5;244m┃␛[m   
@@ -335,11 +335,11 @@
   ␛[38;5;254;1m shhh chat␛[38;5;244;22m · ~/src/shhh · main · gpt-4o · think medium␛[m              
   ␛[38;5;244m──────────────────────────────────────────────────────────────────␛[m  
       ␛[38;5;244mwaiting approval: run echo hi␛[m                                   
-    ␛[38;5;244m└␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mresearcher-4␛[38;5;244m · Say wh…␛[m  ␛[38;5;254m⚠ needs you␛[38;5;244m · 1 tool␛[m           
+    ␛[38;5;244m└␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mresearcher-4␛[38;5;244m · Say who calls t…␛[m  ␛[38;5;254m⚠ needs you␛[m           
       ␛[38;5;244mwaiting approval: run echo hi␛[m                                   
-     ␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mresearcher-2␛[38;5;244m · Say wh…␛[m  ␛[38;5;254m⚠ needs you␛[38;5;244m · 1 tool␛[m           
+     ␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mresearcher-2␛[38;5;244m · Say where the r…␛[m  ␛[38;5;254m⚠ needs you␛[m           
       ␛[38;5;244mwaiting approval: run echo hi␛[m                                   
-     ␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mresearcher-3␛[38;5;244m · Say wh…␛[m  ␛[38;5;254m⚠ needs you␛[38;5;244m · 1 tool␛[m           
+     ␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mresearcher-3␛[38;5;244m · Say where the l…␛[m  ␛[38;5;254m⚠ needs you␛[m           
       ␛[38;5;244mwaiting approval: run echo hi␛[m                                   
       ␛[38;5;254m[alt+a]␛[38;5;244m agents␛[m                                              ␛[38;5;244m┃␛[m   
                                                                   ␛[38;5;244m┃␛[m   

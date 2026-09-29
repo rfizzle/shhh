@@ -799,3 +799,33 @@ func TestFanoutLaneKeepsItsStepLast(t *testing.T) {
 		}
 	}
 }
+
+// A finished lane gives way in the running lane's order: the token count,
+// then the budget's share, then the tool count, and only then the task clips —
+// so a settled lane beside a running one keeps its words at the same width.
+func TestFanoutSettledLaneKeepsItsTaskBeforeItsCosts(t *testing.T) {
+	lane := FanoutLane{State: FanoutDone, Name: "writer-2",
+		Task: "Decide what a cache entry's lifetime should be", BudgetPct: 3, Tools: 2,
+		Spend: "~39.3k tok", Elapsed: "1m12s"}
+	cases := []struct {
+		width      int
+		kept, gone []string
+	}{
+		{200, []string{"lifetime should be", "3% of budget", "2 tools", "~39.3k tok"}, nil},
+		{120, []string{"lifetime should be", "✓ done"}, []string{"~39.3k tok"}},
+		{80, []string{"writer-2 · Decide", "✓ done"}, []string{"~39.3k tok", "of budget", "tools"}},
+	}
+	for _, c := range cases {
+		view := ansi.Strip(lane.View(c.width))
+		for _, k := range c.kept {
+			if !strings.Contains(view, k) {
+				t.Errorf("at %d the lane lost %q: %q", c.width, k, view)
+			}
+		}
+		for _, g := range c.gone {
+			if strings.Contains(view, g) {
+				t.Errorf("at %d %q should have given way: %q", c.width, g, view)
+			}
+		}
+	}
+}
