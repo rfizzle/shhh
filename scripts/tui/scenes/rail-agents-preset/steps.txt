@@ -1,0 +1,38 @@
+# program test: TestProgram_ASpawnCardStartsTheChildrenAsLanes,
+#   TestProgram_AChildsRequestIsAnsweredFromItsCard,
+#   TestProgram_TheQuitChordArmsThenLeaves
+#
+# The rail's AGENTS block is bounded by a preset of live children at each
+# level and folds past it however tall the rail is
+# (docs/interface/surfaces.md#the-inspector-rail). The session fans out seven
+# writers: with the default slots three start and four stand queued, and one
+# of the three asks to run a command nobody answers.
+#
+# What the capture is for, at 130 columns where the rail is on screen: at 04
+# the map draws the orchestrator, writer-1 waiting on you directly under it,
+# and the two writers still working — the waiting row took its place in the
+# preset first — and the four queued writers are behind `… 4 more · 4
+# running`, in the heading's own words. CHANGES and the meters under the map
+# are still on the rail. Below 130 there is no rail, so the snap names only
+# what the transcript's lanes carry.
+setup printf 'package agent\n\nfunc loop() {\n    for round := 0; round < limit; round++ {\n        step()\n    }\n}\n' > loop.go
+snap 01-start "Some things worth doing first"
+keys "survey the round accounting" Enter
+# Spawning is gated: one card with a row per child, because the round asked
+# for them together. The answer waits out the card's grace window.
+snap 02-spawn-card "Spawn 7 writers"
+sleep 1
+keys y
+sleep 4
+snap 03-lanes "7 agents"
+sleep 4
+# writer-1's request is routed here as a card; leaving it standing is what
+# keeps writer-1 waiting on you for the rest of the scene.
+keys Escape
+sleep 2
+wide 130 snap 04-past-the-preset "⚠ writer-1" "… 4 more · 4 running" "alt+a manager"
+narrow 130 snap 04-past-the-preset "needs you"
+keys C-c
+snap 05-quit-armed "again quits"
+keys C-c
+snap 06-exit "that is everything the screen was holding"

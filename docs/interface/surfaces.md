@@ -1209,6 +1209,19 @@ by scrolling is a run you have to reconstruct to see. Finished agents fold
 past a count rather than disappearing and the marker says how many went
 behind it; what needs an answer from you never folds.
 
+A wide fan-out folds too, whether or not the rail is short. Past a preset of
+a few live agents at each level of delegation — one per slot a level can run
+at once — the rest go behind the same marker, and where anything behind it is
+still live the marker says so in the heading's words: `… 6 more · 6 running`,
+with what finished after it. Without the preset the block's height is the
+fan-out's width, two rows an agent, and a run of nine writers pushes the
+changes and the meters under it off the rail. What folds first is an agent
+queued for a slot, then the oldest of the working ones; an agent waiting on an
+answer, the one the keyboard is in, and the root never fold, and the waiting
+ones take their places in the preset before any working agent does. A parked
+agent keeps its row, because it says why the run is not moving. The whole
+list is the agent manager's, one chord away.
+
 One row of the map is marked, and the mark is where the keyboard is. That is
 what lets the rail stay up while the keyboard is in an agent's session: the
 changeset, the window and the bill are the whole session's whichever agent is

@@ -1882,10 +1882,13 @@ func TestGolden_InspectorRail(t *testing.T) {
 		// short of it: the trailer goes first, then the child that never
 		// started, then the line under the child that stopped — its name row
 		// stays, because the working child it started hangs off it — and
-		// every working row is still there.
+		// every working row is still there. The queued child is a level down,
+		// beside reader-5, because the level above already has its preset of
+		// live children and would fold it whatever the height; this panel is
+		// about what the height takes.
 		reachShort := reach
 		reachShort.Agents = append(append([]InspectorAgent{}, reach.Agents...),
-			InspectorAgent{Name: "reader-6", Detail: "waiting for a slot", Depth: 1,
+			InspectorAgent{Name: "reader-6", Detail: "waiting for a slot", Depth: 2,
 				State: FanoutQueued})
 		// The map while a hold lands. The hold is the session's and reaches
 		// every child, but each one parks at its own boundary, so two rows
@@ -1976,6 +1979,48 @@ func TestGolden_InspectorRail(t *testing.T) {
 			AgentsHint: railAgentsHint,
 			Frame:      2,
 		}
+		// A fan-out of nine writers: the map draws the three newest, which is
+		// the preset, and the marker counts the six older ones and says they
+		// are still running — the rail counts a wide fan-out and the manager
+		// lists it.
+		wide := InspectorRail{
+			Agents: append([]InspectorAgent{
+				{Name: "orchestrator", Detail: "round 4 · streaming…", Spend: "$0.16",
+					Self: true, Focused: true, State: FanoutRunning},
+			}, func() []InspectorAgent {
+				var writers []InspectorAgent
+				for i := 1; i <= 9; i++ {
+					writers = append(writers, InspectorAgent{Name: fmt.Sprintf("writer-%d", i),
+						Detail: fmt.Sprintf("internal/lane%d/lane.go", i), Spend: "$0.02",
+						Tools: 10 - i, Depth: 1, State: FanoutRunning})
+				}
+				return writers
+			}()...),
+			AgentsHint: railAgentsHint,
+			Frame:      2,
+		}
+		// Three writers working and two reviewers waiting on an answer. The
+		// waiting rows never fold and take their places in the preset first,
+		// so the newest writer is the one working row left beside them and
+		// the two older writers are what the marker counts.
+		waitingWide := InspectorRail{
+			Agents: []InspectorAgent{
+				{Name: "orchestrator", Detail: "round 4 · streaming…", Spend: "$0.16",
+					Self: true, Focused: true, State: FanoutRunning},
+				{Name: "writer-1", Detail: "internal/agent/loop.go", Spend: "$0.04",
+					Tools: 6, Depth: 1, State: FanoutRunning},
+				{Name: "writer-2", Detail: "internal/agent/round.go", Spend: "$0.03",
+					Tools: 4, Depth: 1, State: FanoutRunning},
+				{Name: "reviewer-3", Detail: "waiting approval: apply patch", Spend: "$0.02",
+					Depth: 1, State: FanoutBlocked},
+				{Name: "writer-4", Detail: "docs/loop.md", Spend: "$0.01",
+					Tools: 2, Depth: 1, State: FanoutRunning},
+				{Name: "reviewer-5", Detail: "waiting approval: delete a file", Spend: "$0.01",
+					Depth: 1, State: FanoutBlocked},
+			},
+			AgentsHint: railAgentsHint,
+			Frame:      2,
+		}
 		// The block on its own, at the three shapes it has: one thing broken
 		// and nothing behind it; the cap, with an older live alert and eight
 		// answered ones behind the marker; and a session whose failures have
@@ -2045,6 +2090,10 @@ func TestGolden_InspectorRail(t *testing.T) {
 				View: subtree.View(width, 0)},
 			{Label: "a killed writer · its patch is kept, and [p] reviews it",
 				View: killed.View(width, 0)},
+			{Label: "nine writers · the preset draws three, and the marker says the rest are running",
+				View: wide.View(width, 0)},
+			{Label: "three writers and two waiting · the waiting rows stay, the older writers fold",
+				View: waitingWide.View(width, 0)},
 			{Label: "the same map three rows short · what it gives up, in order",
 				View: reachShort.View(width, len(reachShort.Lines(width, 0))-3)},
 			{Label: "one command broken · the block above the changeset", View: alerting.View(width, 0)},

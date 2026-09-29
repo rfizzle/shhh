@@ -127,7 +127,7 @@ func (r InspectorRail) agentsBlock(width int) (railBlock, bool) {
 			})
 		}
 	}
-	b.fold = func(hidden []railLine) string { return agentsFold(hidden, width) }
+	b.fold = func(hidden []railLine) string { return agentsFold(hidden, r.Agents, width) }
 	return b, true
 }
 
@@ -226,6 +226,19 @@ func (r InspectorRail) hasChild() bool {
 // not a standing overview's.
 const inspectorAgentsSettled = 2
 
+// inspectorAgentsRunning is how many live children the map draws at each
+// level of delegation before the rest fold behind the marker, whatever
+// height the rail has. It is one per concurrency slot at a level: a wider
+// fan-out than that is children queued behind the slots or a run wide
+// enough that the rail would spend two rows on every one of them and push
+// CHANGES off the bottom to do it. The rail counts them and the agent
+// manager lists them (docs/interface/surfaces.md#the-inspector-rail). It is
+// counted per level rather than over the tree because the slots are, so a
+// child's own fan-out does not take its parent's siblings off the map. The
+// preset is applied in mappedAgents, before fitBlocks, which still takes
+// what is left in orderGiving's order when the rail is shorter than that.
+const inspectorAgentsRunning = 3
+
 // mappedAgents splits the map into the rows it draws and the rows it folds.
 // What folds is the surplus of finished children, earliest first: an outcome
 // you have not read yet is the one that just landed, so the budget is spent
@@ -234,13 +247,47 @@ const inspectorAgentsSettled = 2
 // blocked child is never what folds. The orchestrator never folds because it
 // never finishes, and the focused session never folds because the mark on it
 // is the reason the rest of the rail can be read at all.
+//
+// The surplus of live children folds too, past inspectorAgentsRunning at
+// each level. A child waiting on you and the focused child never fold, so
+// they take their places in the preset first; the children working fill what
+// is left, newest first, since the newest is the one whose first rounds are
+// the news; and a child queued for a slot comes last, because it has nothing
+// to report yet — with the default slots a fan-out of nine is three working
+// and six queued, and the six are what fold. The block stays the width the
+// preset promises, and what goes is always a child that only needs watching.
+// A parked or idle child neither folds nor takes a place: those rows say why
+// a child stopped, which is not a fan-out's width.
 func (r InspectorRail) mappedAgents() (shown, folded []InspectorAgent) {
 	ordered := r.mapOrder()
 	drop := make(map[int]bool)
+	places := make(map[int]int)
+	live := func(s FanoutState) bool { return s == FanoutRunning || s == FanoutQueued }
+	for _, a := range ordered {
+		if !a.Self && (a.State == FanoutBlocked || a.Focused && live(a.State)) {
+			places[a.Depth]++
+		}
+	}
+	for _, state := range []FanoutState{FanoutRunning, FanoutQueued} {
+		for i := len(ordered) - 1; i >= 0; i-- {
+			a := ordered[i]
+			if a.Self || a.Focused || a.State != state {
+				continue
+			}
+			if places[a.Depth] < inspectorAgentsRunning {
+				places[a.Depth]++
+			} else {
+				drop[i] = true
+			}
+		}
+	}
 	budget := inspectorAgentsSettled
 	for i := len(ordered) - 1; i >= 0; i-- {
 		a := ordered[i]
-		if a.Self || a.Focused || !a.State.settled() {
+		if a.Self || a.Focused || live(a.State) {
+			continue
+		}
+		if !a.State.settled() {
 			continue
 		}
 		if budget > 0 {
@@ -344,13 +391,48 @@ func (r InspectorRail) childTally() string {
 }
 
 // agentsFold is the marker the map folds behind: a count of sessions, which
-// is what the counted rows are.
-func agentsFold(hidden []railLine, width int) string {
+// is what the counted rows are. Where anything it hid has not finished — the
+// preset folds working children too — it says what state they are in,
+// `… 6 more · 4 running · 2 done`, since a bare count reads as outcomes
+// already landed. The words are waitingTally's, so the marker and the
+// heading above it spell a state one way; the finished ones are said after
+// the live ones, because beside a live count "done" is the part that asks
+// nothing.
+func agentsFold(hidden []railLine, agents []InspectorAgent, width int) string {
 	n := 0
+	var states []FanoutState
+	waits := 0
 	for _, h := range hidden {
-		if h.counted {
-			n++
+		if !h.counted {
+			continue
 		}
+		n++
+		for _, a := range agents {
+			if !a.Self && a.Name == h.target.Name {
+				states = append(states, a.State)
+				if a.State == FanoutHeld && a.SlotWait > 0 {
+					waits++
+				}
+				break
+			}
+		}
+	}
+	if running, blocked, held, done, failed := tallyStates(states); n > 0 && running+blocked+held > 0 {
+		text := sty.Hint.Render(fmt.Sprintf("… %d more", n)) + sty.Dim.Render(" · ") + waitingTally(states, waits, false)
+		// waitingTally leaves the finished to the rows while anything is
+		// live; here there are no rows, so they are asked for on their own.
+		var ended []FanoutState
+		for range done {
+			ended = append(ended, FanoutDone)
+		}
+		for range failed {
+			ended = append(ended, FanoutFailed)
+		}
+		finished := waitingTally(ended, 0, false)
+		if finished != "" {
+			text += sty.Dim.Render(" · ") + finished
+		}
+		return indentRow(text, width)
 	}
 	if n == 0 {
 		// Height truncation can take a session's detail row on its own,

@@ -1,6 +1,7 @@
 package components
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -18,7 +19,7 @@ func TestInspectorRail_AgentsMapFloatsBlockedChildrenUnderTheRoot(t *testing.T) 
 			{Name: "orchestrator", Detail: "round 3", Self: true, State: FanoutRunning},
 			{Name: "writer-1", Detail: "docs/loop.md", State: FanoutRunning},
 			{Name: "reviewer-2", Detail: "waiting approval: apply patch", State: FanoutBlocked},
-			{Name: "runner-3", Detail: "the package tests", State: FanoutRunning},
+			{Name: "runner-3", Detail: "the package tests", State: FanoutIdle},
 			{Name: "reviewer-4", Detail: "waiting approval: delete a file", State: FanoutBlocked},
 		},
 		Frame: 2,
@@ -458,4 +459,124 @@ func TestInspectorRail_TallyCountsASlotWaitAsWaiting(t *testing.T) {
 	if got := ansi.Strip(r.childTally()); !strings.Contains(got, "1 held · 1 waiting") {
 		t.Fatalf("the map's tally = %q", got)
 	}
+}
+
+// Working children fold past a preset at each level of delegation, oldest
+// first, whatever height the rail has, and the marker says what state the
+// folded ones are in. A child waiting on you never folds and takes its place
+// in the preset first, the focused child never folds, and a parent stays
+// while a child under it is drawn
+// (docs/interface/surfaces.md#the-inspector-rail).
+func TestInspectorRail_RunningChildrenFoldAtThePreset(t *testing.T) {
+	self := InspectorAgent{Name: "orchestrator", Detail: "round 3", Self: true, Focused: true, State: FanoutRunning}
+	shown := func(r InspectorRail) map[string]bool {
+		s, _ := r.mappedAgents()
+		names := make(map[string]bool, len(s))
+		for _, a := range s {
+			names[a.Name] = true
+		}
+		return names
+	}
+
+	t.Run("nine running keep the three newest", func(t *testing.T) {
+		agents := []InspectorAgent{self}
+		for i := 1; i <= 9; i++ {
+			agents = append(agents, InspectorAgent{Name: fmt.Sprintf("writer-%d", i), Detail: "pkg", Depth: 1, State: FanoutRunning})
+		}
+		agents = append(agents, InspectorAgent{Name: "writer-10", Detail: "wrote a file", Outcome: "done", Depth: 1, State: FanoutDone})
+		r := InspectorRail{Agents: agents, Frame: 2}
+		got := shown(r)
+		for i := 1; i <= 9; i++ {
+			name := fmt.Sprintf("writer-%d", i)
+			if got[name] != (i > 9-inspectorAgentsRunning) {
+				t.Fatalf("%s drawn=%v; the preset keeps the newest %d running", name, got[name], inspectorAgentsRunning)
+			}
+		}
+		if !got["orchestrator"] || !got["writer-10"] {
+			t.Fatalf("the orchestrator and a finished child within its own budget stay: %v", got)
+		}
+		view := stripANSI(r.View(InspectorMaxWidth, 0))
+		if !strings.Contains(view, "… 6 more · 6 running") {
+			t.Fatalf("the marker counts six sessions and says they are running:\n%s", view)
+		}
+	})
+
+	t.Run("with the default slots the queued fold before the working", func(t *testing.T) {
+		agents := []InspectorAgent{self}
+		for i := 1; i <= 9; i++ {
+			state := FanoutRunning
+			if i > 3 {
+				state = FanoutQueued
+			}
+			agents = append(agents, InspectorAgent{Name: fmt.Sprintf("writer-%d", i), Detail: "pkg", Depth: 1, State: state})
+		}
+		r := InspectorRail{Agents: agents, Frame: 2}
+		got := shown(r)
+		for i := 1; i <= 9; i++ {
+			name := fmt.Sprintf("writer-%d", i)
+			if got[name] != (i <= 3) {
+				t.Fatalf("%s drawn=%v; the three working stay and the six queued fold", name, got[name])
+			}
+		}
+		if view := stripANSI(r.View(InspectorMaxWidth, 0)); !strings.Contains(view, "… 6 more · 6 running") {
+			t.Fatalf("the marker spells queued the way the heading does:\n%s", view)
+		}
+	})
+
+	t.Run("blocked children take their places first", func(t *testing.T) {
+		r := InspectorRail{Agents: []InspectorAgent{self,
+			{Name: "writer-1", Detail: "pkg", Depth: 1, State: FanoutRunning},
+			{Name: "reviewer-2", Detail: "waiting approval", Depth: 1, State: FanoutBlocked},
+			{Name: "writer-3", Detail: "pkg", Depth: 1, State: FanoutRunning},
+			{Name: "reviewer-4", Detail: "waiting approval", Depth: 1, State: FanoutBlocked},
+			{Name: "writer-5", Detail: "pkg", Depth: 1, State: FanoutRunning},
+		}, Frame: 2}
+		got := shown(r)
+		for name, want := range map[string]bool{
+			"reviewer-2": true, "reviewer-4": true, "writer-5": true, "writer-1": false, "writer-3": false,
+		} {
+			if got[name] != want {
+				t.Fatalf("%s drawn=%v, want %v", name, got[name], want)
+			}
+		}
+		if view := stripANSI(r.View(InspectorMaxWidth, 0)); !strings.Contains(view, "… 2 more · 2 running") {
+			t.Fatalf("the marker names the two running children it hid:\n%s", view)
+		}
+	})
+
+	t.Run("the focused child never folds", func(t *testing.T) {
+		agents := []InspectorAgent{{Name: "orchestrator", Self: true, State: FanoutRunning}}
+		for i := 1; i <= 5; i++ {
+			agents = append(agents, InspectorAgent{Name: fmt.Sprintf("writer-%d", i), Depth: 1, State: FanoutRunning, Focused: i == 1})
+		}
+		got := shown(InspectorRail{Agents: agents})
+		if !got["writer-1"] || got["writer-2"] || got["writer-3"] || !got["writer-5"] {
+			t.Fatalf("the focused oldest child stays and takes a place: %v", got)
+		}
+	})
+
+	t.Run("each level has its own preset, and a parent stays over a drawn child", func(t *testing.T) {
+		agents := []InspectorAgent{self,
+			{Name: "writer-1", Depth: 1, State: FanoutRunning},
+			{Name: "reader-1a", Depth: 2, State: FanoutRunning},
+		}
+		for i := 2; i <= 4; i++ {
+			agents = append(agents, InspectorAgent{Name: fmt.Sprintf("writer-%d", i), Depth: 1, State: FanoutRunning})
+		}
+		got := shown(InspectorRail{Agents: agents})
+		if !got["reader-1a"] || !got["writer-1"] {
+			t.Fatalf("the nested child is within its level's preset and keeps its parent: %v", got)
+		}
+	})
+
+	t.Run("a marker over finished children only stays a bare count", func(t *testing.T) {
+		agents := []InspectorAgent{self}
+		for i := 1; i <= 4; i++ {
+			agents = append(agents, InspectorAgent{Name: fmt.Sprintf("reader-%d", i), Detail: "read", Outcome: "done", Depth: 1, State: FanoutDone})
+		}
+		view := stripANSI(InspectorRail{Agents: agents}.View(InspectorMaxWidth, 0))
+		if !strings.Contains(view, "… 2 more") || strings.Contains(view, "more ·") {
+			t.Fatalf("finished children fold behind a bare count:\n%s", view)
+		}
+	})
 }

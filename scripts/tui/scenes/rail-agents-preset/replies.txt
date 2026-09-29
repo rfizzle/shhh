@@ -1,0 +1,69 @@
+# One queue per agent: the session, and each of the seven writers it fans
+# out. With the default three slots a level, three writers start and four
+# stand queued behind them, and nothing in the scene frees a slot: writer-1
+# asks to run a command the reader never answers, so it is the child waiting
+# on you, and writer-2 and writer-3 go on reading, slowly, for as long as the
+# scene runs. The last reply of a queue repeats once it runs out, so a reply
+# that ends on a call held behind a wait is an agent still working at every
+# snap after it starts.
+#
+# The four queued writers have queues of their own in the same shape, so that
+# a slot freed on a loaded host starts a writer that goes on working rather
+# than one answered with a line that ends its turn.
+#
+# The sentence and the seven spawns are one reply, so the transcript titles
+# the step with the sentence rather than closing a turn before the calls were
+# asked for.
+[session]
+Fanning seven writers over the round accounting.
++tool:spawn_agent:{"role":"writer","task":"Say where the round counter is read.","name":"writer-1"}
++tool:spawn_agent:{"role":"writer","task":"Say where the round limit is set.","name":"writer-2"}
++tool:spawn_agent:{"role":"writer","task":"Say where the loop exits.","name":"writer-3"}
++tool:spawn_agent:{"role":"writer","task":"Say where a step is counted.","name":"writer-4"}
++tool:spawn_agent:{"role":"writer","task":"Say where the round is reset.","name":"writer-5"}
++tool:spawn_agent:{"role":"writer","task":"Say where the limit is read.","name":"writer-6"}
++tool:spawn_agent:{"role":"writer","task":"Say where an error ends the loop.","name":"writer-7"}
+tool:read_file:{"path":"loop.go"}
+Seven writers are on the round accounting.
+
+# writer-1's request is never answered: it is the row the preset never folds.
+[writer-1]
+tool:read_file:{"path":"loop.go"}
+wait:2
++tool:execute_command:{"command":"echo counted"}
+The counter is read at the top of the loop, and nowhere else.
+
+[writer-2]
+tool:read_file:{"path":"loop.go"}
+wait:60
++tool:read_file:{"path":"loop.go"}
+
+[writer-3]
+tool:read_file:{"path":"loop.go"}
+wait:60
++tool:read_file:{"path":"loop.go"}
+
+[writer-4]
+tool:read_file:{"path":"loop.go"}
+wait:60
++tool:read_file:{"path":"loop.go"}
+
+[writer-5]
+tool:read_file:{"path":"loop.go"}
+wait:60
++tool:read_file:{"path":"loop.go"}
+
+[writer-6]
+tool:read_file:{"path":"loop.go"}
+wait:60
++tool:read_file:{"path":"loop.go"}
+
+[writer-7]
+tool:read_file:{"path":"loop.go"}
+wait:60
++tool:read_file:{"path":"loop.go"}
+
+# The session's own readings of its run take a reply of their own rather than
+# one of anybody's rounds.
+[reading]
+The writers are on the round accounting.
