@@ -1888,9 +1888,12 @@ thing a reader must be able to find without having pressed anything first
 run is drawn in never scrolls, so a run that wraps keeps it on screen all the
 same. The offer joins the run's last row where it fits there and otherwise
 takes a row of its own, so a narrow card breaks the run before it rather than
-inside it. The words every gated card shares may give up their trailing
-clause to stay on the row — *leave it waiting* already says the decision is
-not answered — but a card's own words join whole or not at all: they are on
+inside it. The words every gated card shares give up whatever it takes to
+stay on the row — the trailing clause first, since *leave it waiting* already
+says the decision is not answered, then all but *wait*, and at the narrowest
+the words themselves, leaving the bare `[esc]` in the safe answer's colour as
+the run's last offer — so the way out never takes a row of its own for them;
+but a card's own words join whole or not at all: they are on
 the card because the first clause was not enough to tell esc from that card's
 no.
 A card whose own field or list holds the keyboard states that surface's esc

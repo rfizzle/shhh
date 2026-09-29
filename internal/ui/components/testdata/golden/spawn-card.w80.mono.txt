@@ -49,8 +49,7 @@
 │ budget    no round limit, ~300k new tokens                                   │
 │ reaches   no host granted yet — every fetch comes back to you as a card      │
 ├──────────────────────────────────────────────────────────────────────────────┤
-│ [y] start it · [n] deny · [a] allow researchers for this session             │
-│ [esc] leave it waiting, nothing is denied                                    │
+│ [y] start it · [n] deny · [a] allow researchers for this session · [esc]     │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
 · batch · three writers, one decision
@@ -67,8 +66,7 @@
 │ budget    no round limit, ~300k new tokens                                   │
 │ commands  contained · sandbox-exec                                           │
 ├──────────────────────────────────────────────────────────────────────────────┤
-│ [y] start all 3 · [n] deny all 3 · [A] pick which of the 3 to start          │
-│ [esc] leave it waiting, nothing is denied                                    │
+│ [y] start all 3 · [n] deny all 3 · [A] pick which of the 3 to start · [esc]  │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
 · state · a fan-out beside a draft that has the keyboard
@@ -124,8 +122,7 @@
 ␛[38;5;254m│␛[m ␛[38;5;244mbudget    ␛[m␛[38;5;254mno round limit, ~300k new tokens␛[m                                   ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mreaches   ␛[m␛[38;5;254mno host granted yet␛[m␛[38;5;244m — every fetch comes back to you as a card␛[m      ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mstart it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m ␛[38;5;254mallow researchers for this session␛[m             ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[esc] leave it waiting, nothing is denied␛[m                                    ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mstart it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m ␛[38;5;254mallow researchers for this session␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m     ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · batch · three writers, one decision
@@ -142,8 +139,7 @@
 ␛[38;5;254m│␛[m ␛[38;5;244mbudget    ␛[m␛[38;5;254mno round limit, ~300k new tokens␛[m                                   ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mcommands  ␛[m␛[38;5;254mcontained · sandbox-exec␛[m                                           ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mstart all 3␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny all 3␛[m␛[38;5;244m · ␛[m␛[38;5;254m[A]␛[m ␛[38;5;254mpick which of the 3 to start␛[m          ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[esc] leave it waiting, nothing is denied␛[m                                    ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mstart all 3␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny all 3␛[m␛[38;5;244m · ␛[m␛[38;5;254m[A]␛[m ␛[38;5;254mpick which of the 3 to start␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m  ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · state · a fan-out beside a draft that has the keyboard

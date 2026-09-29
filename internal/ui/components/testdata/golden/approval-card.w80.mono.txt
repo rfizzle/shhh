@@ -165,8 +165,7 @@
 │ sends     the URL and a shhh-web/1.0 user-agent                              │
 │ receives  page text, whole, into the evidence store; the first 16 KB into t… │
 ├──────────────────────────────────────────────────────────────────────────────┤
-│ [y] allow it · [n] deny · [a] allow pkg.go.dev without asking                │
-│ [esc] leave it waiting, nothing is denied                                    │
+│ [y] allow it · [n] deny · [a] allow pkg.go.dev without asking · [esc] wait   │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
 · answered · the row it leaves in the transcript
@@ -335,8 +334,7 @@
 ␛[38;5;254m│␛[m ␛[38;5;244msends     ␛[m␛[38;5;254mthe URL and a shhh-web/1.0 user-agent␛[m                              ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mreceives  ␛[m␛[38;5;254mpage text, whole, into the evidence store; the first 16 KB into t␛[m␛[38;5;244m…␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mallow it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m ␛[38;5;254mallow pkg.go.dev without asking␛[m                ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[esc] leave it waiting, nothing is denied␛[m                                    ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mallow it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m ␛[38;5;254mallow pkg.go.dev without asking␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc] wait␛[m   ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · answered · the row it leaves in the transcript

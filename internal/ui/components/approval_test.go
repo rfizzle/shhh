@@ -592,8 +592,9 @@ func TestApprovalCard_AnOfferWiderThanTheCardFolds(t *testing.T) {
 	if !strings.Contains(joined, " [a] "+hint+" ") {
 		t.Fatalf("the offer should read whole across its rows:\n%s", view)
 	}
-	// The rows between the [a] row and the esc row are the offer's
-	// continuation, and each starts under the words rather than the bracket.
+	// The rows between the [a] row and the esc row, or the frame where esc
+	// has joined the run's last row, are the offer's continuation, and each
+	// starts under the words rather than the bracket.
 	lines := strings.Split(view, "\n")
 	continued := 0
 	for i, line := range lines {
@@ -601,7 +602,7 @@ func TestApprovalCard_AnOfferWiderThanTheCardFolds(t *testing.T) {
 			continue
 		}
 		for _, next := range lines[i+1:] {
-			if strings.HasPrefix(next, "│ [esc]") {
+			if strings.HasPrefix(next, "│ [esc]") || !strings.HasPrefix(next, "│") {
 				break
 			}
 			if !strings.HasPrefix(next, "│     ") || strings.HasPrefix(next, "│      ") {
@@ -902,6 +903,38 @@ func TestApprovalCard_TheKeysAreOneRunAndOneFootnote(t *testing.T) {
 	for _, row := range narrow[:len(narrow)-1] {
 		if !strings.HasPrefix(row, "[") {
 			t.Fatalf("an offer was broken across rows at 60 columns: %q", narrow)
+		}
+	}
+
+	// At 60 columns a held card's esc ends the offers row, in the grace
+	// window as well as out of it: the shared words give up their clauses
+	// rather than put the way out on a row of its own.
+	for _, grace := range []bool{false, true} {
+		c := held()
+		c.Grace = grace
+		for _, row := range keyBlock(c, 60) {
+			if strings.HasPrefix(row, "[esc]") {
+				t.Fatalf("a held card's esc took a row of its own at 60 columns (grace %v): %q", grace, keyBlock(c, 60))
+			}
+		}
+		if rows := keyBlock(c, 60); !strings.Contains(rows[1], " · [esc] ") {
+			t.Fatalf("a held card's esc should end the offers row at 60 columns (grace %v): %q", grace, rows)
+		}
+	}
+
+	// Where even `leave it waiting` would wrap, the shared words cut to one
+	// word, and where that would wrap too, to the bare key.
+	for _, tc := range []struct{ hint, tail string }{
+		{"allow go test without asking", " · [esc] " + waitWord},
+		{"allow commands without asking this session", " · [esc]"},
+	} {
+		c = held()
+		c.AlwaysHint = tc.hint
+		c.Noted = false
+		c.HeldOnArrival, c.Handover = false, ""
+		rows = keyBlock(c, 60)
+		if last := rows[len(rows)-1]; !strings.HasSuffix(last, tc.tail) {
+			t.Fatalf("the run should end on %q at 60 columns: %q", tc.tail, rows)
 		}
 	}
 }

@@ -22,8 +22,7 @@
 │ $ go test ./internal/agent/...                                                                             │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
 │ [y] run it once · [n] deny                                                                                 │
-│ [a] allow "go test" for every agent until this turn ends, and internal/agent with it                       │
-│ [esc] leave it waiting, nothing is denied                                                                  │
+│ [a] allow "go test" for every agent until this turn ends, and internal/agent with it · [esc] wait          │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 · variant · command, a batch waiting behind it
@@ -188,8 +187,7 @@
 ␛[94m│␛[m ␛[38;5;214m$␛[m ␛[97mgo test ./internal/agent/...␛[m                                                                             ␛[94m│␛[m
 ␛[94m├────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[94m│␛[m ␛[94m[y]␛[m ␛[38;5;252mrun it once␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m ␛[38;5;252mdeny␛[m                                                                                 ␛[94m│␛[m
-␛[94m│␛[m ␛[94m[a]␛[m ␛[38;5;252mallow "go test" for every agent until this turn ends, and internal/agent with it␛[m                       ␛[94m│␛[m
-␛[94m│␛[m ␛[92m[esc] leave it waiting, nothing is denied␛[m                                                                  ␛[94m│␛[m
+␛[94m│␛[m ␛[94m[a]␛[m ␛[38;5;252mallow "go test" for every agent until this turn ends, and internal/agent with it␛[m␛[38;5;241m · ␛[m␛[92m[esc] wait␛[m          ␛[94m│␛[m
 ␛[94m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · variant · command, a batch waiting behind it

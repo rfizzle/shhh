@@ -910,7 +910,7 @@ func (c *ApprovalCard) hintRowsFor(width, inner int) []string {
 		// The run is dimmed and the way out is not: esc is not one of the
 		// keys the window discards, so it keeps its place at the end of the
 		// run in its own colour.
-		return append(graceRows(dead(), c.escSegment(inner), width), c.footnoteRows(inner)...)
+		return append(graceRows(dead(), c.closeRun, width), c.footnoteRows(inner)...)
 	}
 	segments := c.paintedRun()
 	// A card that took the keyboard by arriving claims the answers it was
@@ -946,6 +946,13 @@ func (c *ApprovalCard) hintRowsFor(width, inner int) []string {
 // because the first clause was not enough to tell esc from the card's no
 // (`leave — nothing written, and the offer stays` beside a no that is never
 // offered again), so they join whole or not at all.
+//
+// Where even `leave it waiting` would wrap, the shared words cut harder:
+// to `wait`, and where that would wrap too, to the bare key in the add
+// tone. A row of its own for the way out is the one thing the run is built
+// to avoid, and a bare `[esc]` last on the run is still the key every card
+// answers the same way, so the words give up before the row does
+// (docs/interface/surfaces.md#the-approval-card).
 func (c *ApprovalCard) closeRun(rows []string, inner int) []string {
 	sep := sty.Dim.Render(" · ")
 	if n := len(rows); n > 0 {
@@ -954,7 +961,14 @@ func (c *ApprovalCard) closeRun(rows []string, inner int) []string {
 			if c.Return == "" {
 				fit = room
 			}
-			if esc := c.escSegment(fit); lipgloss.Width(esc) <= room {
+			esc := c.escSegment(fit)
+			if c.Return == "" && lipgloss.Width(esc) > room {
+				esc = safeSegment(keys.Shown(keys.Select.Cancel), waitWord)
+			}
+			if c.Return == "" && lipgloss.Width(esc) > room {
+				esc = sty.Add.Render("[" + keys.Shown(keys.Select.Cancel) + "]")
+			}
+			if lipgloss.Width(esc) <= room {
 				rows[n-1] += sep + esc
 				return rows
 			}
@@ -1048,6 +1062,10 @@ func (c *ApprovalCard) returnWords() string {
 // not a denial, and that difference is the whole reason the offer is worth
 // its words (docs/interface/principles.md#esc-is-always-the-safe-answer).
 const waitingWords = "leave it waiting, nothing is denied"
+
+// waitWord is waitingWords cut to the one word that still says the decision
+// is left standing, for a run whose last row has no room for more.
+const waitWord = "wait"
 
 // offerSegment is one offer in the card's grammar: the key in Info, the
 // imperative after it in Body. The mark arrives already bracketed, because

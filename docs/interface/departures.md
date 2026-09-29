@@ -1292,3 +1292,24 @@ The section sits first because it is the part of the screen a person comes
 to move mid-session; the rows below it are the file, unchanged. The
 departure is closed by the artboard drawing the FLOWS rail above the tables and
 the picker's three-destination key row.
+
+## A card's esc cuts to a word, or to the key, before it wraps
+
+*A disagreement.* The `Approvals` and `Interrupt` artboards end a card's
+offers run on esc with its words — *leave it waiting, nothing is denied* —
+and draw no card narrow enough for those words to miss the run's last row.
+The binary cuts the words every gated card shares for as long as esc would
+otherwise take a row of its own: the trailing clause, then all but *wait*,
+and where even `[esc] wait` will not fit, the bare `[esc]` in the safe
+answer's colour. At 60 columns most cards now end `· [esc] wait` or `·
+[esc]`, and a held card's esc stays on its offers row
+([the approval card](surfaces.md#the-approval-card)).
+
+The reason is the row. The block a card's keys are drawn in is at most one
+panel's share of the terminal, and a row spent on the way out alone is a row
+the transcript gives up at the width that has fewest to give. The cut is
+ordered so the key is the last thing standing: esc answers every gated card
+the same way, and a card whose own words say something the key does not —
+`don't — the safe answer; the decision waits` — keeps them whole on a row of
+their own instead. The departure is closed by the artboards drawing a
+60-column card with the cut run.

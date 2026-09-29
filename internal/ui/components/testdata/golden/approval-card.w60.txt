@@ -15,8 +15,7 @@
 │ $ go test ./internal/agent/...                           │
 ├──────────────────────────────────────────────────────────┤
 │ [y] run it once · [n] deny                               │
-│ [a] allow commands without asking this session           │
-│ [esc] leave it waiting, nothing is denied                │
+│ [a] allow commands without asking this session · [esc]   │
 ╰──────────────────────────────────────────────────────────╯
 
 · variant · command, an offer wider than the card
@@ -25,8 +24,7 @@
 ├──────────────────────────────────────────────────────────┤
 │ [y] run it once · [n] deny                               │
 │ [a] allow "go test" for every agent until this turn      │
-│     ends, and internal/agent with it                     │
-│ [esc] leave it waiting, nothing is denied                │
+│     ends, and internal/agent with it · [esc] wait        │
 ╰──────────────────────────────────────────────────────────╯
 
 · variant · command, a batch waiting behind it
@@ -36,8 +34,7 @@
 ├──────────────────────────────────────────────────────────┤
 │ [y] run it once · [n] deny                               │
 │ [a] allow commands without asking this session           │
-│ [A] answer 3 like this as a list                         │
-│ [esc] leave it waiting, nothing is denied                │
+│ [A] answer 3 like this as a list · [esc] wait            │
 ╰──────────────────────────────────────────────────────────╯
 
 · variant · command, a quiet card · values alone
@@ -141,8 +138,7 @@
 │   143      }                                             │
 │ +2 −1 · 1 hunk · undo yes — recorded, and git has this … │
 ├──────────────────────────────────────────────────────────┤
-│ [y] apply the change · [n] deny · [d] full diff          │
-│ [esc] leave it waiting, nothing is denied                │
+│ [y] apply the change · [n] deny · [d] full diff · [esc]  │
 ╰──────────────────────────────────────────────────────────╯
 
 · state · not yet live, beside a draft that has the keyboard
@@ -173,8 +169,7 @@
 │ receives  page text, whole, into the evidence store; th… │
 ├──────────────────────────────────────────────────────────┤
 │ [y] allow it · [n] deny                                  │
-│ [a] allow pkg.go.dev without asking                      │
-│ [esc] leave it waiting, nothing is denied                │
+│ [a] allow pkg.go.dev without asking · [esc] wait         │
 ╰──────────────────────────────────────────────────────────╯
 
 · answered · the row it leaves in the transcript
@@ -193,8 +188,7 @@
 ␛[94m│␛[m ␛[38;5;214m$␛[m ␛[97mgo test ./internal/agent/...␛[m                           ␛[94m│␛[m
 ␛[94m├──────────────────────────────────────────────────────────┤␛[m
 ␛[94m│␛[m ␛[94m[y]␛[m ␛[38;5;252mrun it once␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m ␛[38;5;252mdeny␛[m                               ␛[94m│␛[m
-␛[94m│␛[m ␛[94m[a]␛[m ␛[38;5;252mallow commands without asking this session␛[m           ␛[94m│␛[m
-␛[94m│␛[m ␛[92m[esc] leave it waiting, nothing is denied␛[m                ␛[94m│␛[m
+␛[94m│␛[m ␛[94m[a]␛[m ␛[38;5;252mallow commands without asking this session␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m   ␛[94m│␛[m
 ␛[94m╰──────────────────────────────────────────────────────────╯␛[m
 
 · variant · command, an offer wider than the card
@@ -203,8 +197,7 @@
 ␛[94m├──────────────────────────────────────────────────────────┤␛[m
 ␛[94m│␛[m ␛[94m[y]␛[m ␛[38;5;252mrun it once␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m ␛[38;5;252mdeny␛[m                               ␛[94m│␛[m
 ␛[94m│␛[m ␛[94m[a]␛[m ␛[38;5;252mallow "go test" for every agent until this turn␛[m      ␛[94m│␛[m
-␛[94m│␛[m     ␛[94m␛[m␛[38;5;252mends, and internal/agent with it␛[m                     ␛[94m│␛[m
-␛[94m│␛[m ␛[92m[esc] leave it waiting, nothing is denied␛[m                ␛[94m│␛[m
+␛[94m│␛[m     ␛[94m␛[m␛[38;5;252mends, and internal/agent with it␛[m␛[38;5;241m · ␛[m␛[92m[esc] wait␛[m        ␛[94m│␛[m
 ␛[94m╰──────────────────────────────────────────────────────────╯␛[m
 
 · variant · command, a batch waiting behind it
@@ -214,8 +207,7 @@
 ␛[38;5;214m├──────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;214m│␛[m ␛[94m[y]␛[m ␛[38;5;252mrun it once␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m ␛[38;5;252mdeny␛[m                               ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[94m[a]␛[m ␛[38;5;252mallow commands without asking this session␛[m           ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[94m[A]␛[m ␛[38;5;252manswer 3 like this as a list␛[m                         ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[92m[esc] leave it waiting, nothing is denied␛[m                ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[94m[A]␛[m ␛[38;5;252manswer 3 like this as a list␛[m␛[38;5;241m · ␛[m␛[92m[esc] wait␛[m            ␛[38;5;214m│␛[m
 ␛[38;5;214m╰──────────────────────────────────────────────────────────╯␛[m
 
 · variant · command, a quiet card · values alone
@@ -319,8 +311,7 @@
 ␛[38;5;214m│␛[m ␛[38;5;241m  143  ␛[m␛[38;5;245m    }␛[m                                             ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;241m+2 −1 · 1 hunk · undo yes — recorded, and git has this ␛[m␛[38;5;241m…␛[m ␛[38;5;214m│␛[m
 ␛[38;5;214m├──────────────────────────────────────────────────────────┤␛[m
-␛[38;5;214m│␛[m ␛[94m[y]␛[m ␛[38;5;252mapply the change␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m ␛[38;5;252mdeny␛[m␛[38;5;241m · ␛[m␛[94m[d]␛[m ␛[38;5;252mfull diff␛[m          ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[92m[esc] leave it waiting, nothing is denied␛[m                ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[94m[y]␛[m ␛[38;5;252mapply the change␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m ␛[38;5;252mdeny␛[m␛[38;5;241m · ␛[m␛[94m[d]␛[m ␛[38;5;252mfull diff␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m  ␛[38;5;214m│␛[m
 ␛[38;5;214m╰──────────────────────────────────────────────────────────╯␛[m
 
 · state · not yet live, beside a draft that has the keyboard
@@ -351,8 +342,7 @@
 ␛[38;5;214m│␛[m ␛[38;5;243mreceives  ␛[m␛[38;5;252mpage text, whole, into the evidence store; th␛[m␛[38;5;241m…␛[m ␛[38;5;214m│␛[m
 ␛[38;5;214m├──────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;214m│␛[m ␛[94m[y]␛[m ␛[38;5;252mallow it␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m ␛[38;5;252mdeny␛[m                                  ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[94m[a]␛[m ␛[38;5;252mallow pkg.go.dev without asking␛[m                      ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[92m[esc] leave it waiting, nothing is denied␛[m                ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[94m[a]␛[m ␛[38;5;252mallow pkg.go.dev without asking␛[m␛[38;5;241m · ␛[m␛[92m[esc] wait␛[m         ␛[38;5;214m│␛[m
 ␛[38;5;214m╰──────────────────────────────────────────────────────────╯␛[m
 
 · answered · the row it leaves in the transcript
