@@ -1,8 +1,9 @@
 # The launch rewrites the settings file whole to give the retry bound back,
 # and that takes the harness's switch for a queue-less scene with it. So the
 # replies are the session's queue, and the title and the standing account the
-# session asks for after a turn are answered from [reading] — a line of the
-# provider's own — rather than taking the 400 the second turn is written for.
+# session asks for after a turn are answered by the provider's own line —
+# known by the tool each offers — rather than taking the 400 the second turn
+# is written for.
 [session]
 status:503:The upstream model is overloaded, try again shortly
 status:503:The upstream model is overloaded, try again shortly

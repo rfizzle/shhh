@@ -151,8 +151,8 @@ The counter is read at the top of the loop, and nowhere else.
 
 `[session]` is the session the reader types into, `[<name>]` the child
 `spawn_agent` gave that name, and `[reading]` the session's own readings of
-its run — the summariser, the classifier, the title — which otherwise take
-the scene's next reply and leave the turn one short. Each queue is a queue:
+its run — the summariser and the classifier — which otherwise take the
+scene's next reply and leave the turn one short. Each queue is a queue:
 its last line repeats once it is used up. A child is routed by its task
 rather than by its prompt, because two writers of one session are handed the
 same prompt and the task is the scene's own words; an agent no queue was
@@ -161,6 +161,25 @@ says so, so a fan-out scene writes only the children it is about. A file with
 no header is one queue for everybody, which is what a scene written before
 queues is and stays: every racer in uniform rounds, because which of them
 reaches the endpoint first is a race the file cannot settle.
+
+The session's title and its standing account are asked by default, and the
+provider answers both on its own, so a scene about another surface scripts
+neither: a request offering `session_title` as its one tool is answered with
+the title `A scripted session`, and one offering `session_account` with
+`Working through a scripted session.` — with or without queues in the file.
+A scene that wants words of its own there writes a `[title]` or an
+`[account]` queue, which wins, as `resume-account` does:
+
+```
+[title]
+tool:session_title:{"title":"The retry backoff doubling"}
+```
+
+The request is known by the tool it offers and never by where it falls in
+the run, so a title request that stopped carrying its tool takes the next
+reply of whatever queue it lands in, and the scene fails rather than the
+harness absorbing it. `fakeprovider_test.py` beside the provider holds both
+branches, and `make tui-check` runs it before any scene.
 
 `steps.txt` is the reader, one step per line:
 
@@ -311,9 +330,9 @@ run's own `$XDG_CONFIG_HOME/shhh/config.toml` before the pane starts, and it
 holds `[behavior]` with `provider_retries = 0`, so that no scene sits out a
 retry wait it did not ask for. Where the replies file has no queue header it
 also holds, ahead of that, `[summary]` with `title = false` and
-`resume_interval_turns = -1`: a queue-less file answers every request from
-one script, so the session's title and standing account would each take the
-reply written for the next turn. `[behavior]` is always the last table, so a
+`resume_interval_turns = -1`: a scene written without queues is about
+neither the session's title nor its standing account, and keeps both off
+rather than drawing the provider's own answers to them. `[behavior]` is always the last table, so a
 bare key appended with `>>` lands in it — `command-errors` appends
 `command_timeout_seconds = 1` that way — and never under the switch.
 
@@ -322,10 +341,9 @@ its `launch`, ahead of the binary — appending a second `[behavior]` table is
 invalid TOML, and the file no longer loads. `retry-wait` is the example: it
 writes `printf '[behavior]\nprovider_retries = 3\n' >
 $XDG_CONFIG_HOME/shhh/config.toml && $SHHH_BIN code` to give the built-in
-bound back. A rewrite takes the queue-less switch with it, so a scene that
-rewrites puts its replies under a `[session]` queue, as `retry-wait` does:
-the title and the account are then answered from `[reading]` rather than
-from the turn's script. A table the harness does not write can be appended
+bound back. A rewrite takes the queue-less switch with it, so the title and
+the account are asked again, and the provider answers them on its own as
+above rather than from the turn's script. A table the harness does not write can be appended
 with `>>` instead, which is what `chat-reads-web` does with
 `[web]\nallow_private = true` so its fetch can reach the loopback fixture;
 the moment the harness writes that table too, the append has to become a

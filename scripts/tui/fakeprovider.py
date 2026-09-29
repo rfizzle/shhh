@@ -53,9 +53,12 @@ answered from the queue of its own name rather than all of them from one:
                   with — one queue per child, so a fan-out scene scripts each
                   of them instead of writing every racer the same uniform
                   round to survive the race between them
-    [reading]     the session's own readings of its run — the summariser, the
-                  classifier, the title — which otherwise take the scene's
-                  next reply and leave the turn one short
+    [reading]     the session's own readings of its run — the summariser and
+                  the classifier — which otherwise take the scene's next
+                  reply and leave the turn one short
+    [title]       the session's title, and [account] its standing account,
+                  where a scene wants words of its own there; without the
+                  queue the endpoint answers each with a line of its own
     [integrator]  the integration writer the supervisor starts itself when
                   two writers' changes conflict: no spawn_agent call names
                   it, so it is known by the conflict its first turn opens on
@@ -63,6 +66,16 @@ answered from the queue of its own name rather than all of them from one:
 A file with no header is one queue for everybody, which is what a scene
 written before this is. An agent no queue was written for is answered with a
 line that ends its turn, and the log says which.
+
+The title and the standing account are asked by default beside every
+reading, and no scene about some other surface should have to script them.
+So a request offering the one tool either is asked to call —
+session_title, session_account — is answered here with a fixed call of that
+tool, unless the scene wrote a [title] or [account] queue, which wins. It is
+known by that tool and never by where it falls in the run: a request that
+stopped carrying its tool is answered from the queues as any other, and takes
+a reply the scene wrote for something else, which fails the scene rather than
+being absorbed here.
 
 A page is served for a scene that fetches one. Anything under /site/ is
 answered with a small page whose text is its own path, so a fetch reaches
@@ -169,12 +182,12 @@ def pace(value):
 
 
 PACE = pace(os.environ.get("FAKE_PACE_MS", ""))
-PORT = int(sys.argv[1])
-QUEUES = load(sys.argv[2])
+# Loaded from the replies file by main, and set by a test directly.
+QUEUES = {}
 # One queue for everybody is the shape of every scene written before queues,
 # and is kept exactly: no routing, no reading held back, the next reply to
 # whoever asks.
-QUEUED = "" not in QUEUES
+QUEUED = False
 # How many of each queue have been handed out, and what the endpoint knows
 # about the children it has been asked to spawn. Both are read and written
 # from the request threads, which a fan-out runs several of at once.
@@ -212,6 +225,46 @@ def route(body):
         if task in first:
             return name
     return SESSION
+
+
+# The session's readings of itself the endpoint answers on its own: the tool
+# each is asked to call, the queue a scene overrides it with, and the answer.
+FLOWS = {
+    "session_title": ("title", ['tool:session_title:{"title":"A scripted session"}']),
+    "session_account": ("account", ['tool:session_account:{"account":"Working through a scripted session."}']),
+}
+
+
+def flow(body):
+    """The tool of a flow the endpoint answers itself, or "".
+
+    Known by the request's own marker — it offers exactly one tool, and that
+    tool is one of FLOWS — so a request that lost its tool is not one.
+    """
+    tools = body.get("tools") or []
+    if len(tools) != 1 or not isinstance(tools[0], dict):
+        return ""
+    name = str((tools[0].get("function") or {}).get("name") or "")
+    return name if name in FLOWS else ""
+
+
+def answer(body):
+    """Who a request is answered for and with what: the queue, the count
+    in it, the reply's parts, and what the log adds about where they came
+    from."""
+    name = flow(body)
+    if name:
+        queue, line = FLOWS[name]
+        if QUEUES.get(queue):
+            count, parts, _ = take(queue)
+            return queue, count, parts, ""
+        with lock:
+            count = turn.get(queue, 0) + 1
+            turn[queue] = count
+        return queue, count, line, " (answered by the harness)"
+    queue = route(body)
+    count, parts, scripted = take(queue)
+    return queue, count, parts, "" if scripted else " (no queue written for it)"
 
 
 def take(queue):
@@ -329,11 +382,9 @@ class Handler(BaseHTTPRequestHandler):
             body = json.loads(raw or b"{}")
         except ValueError:
             body = {}
-        queue = route(body)
-        count, parts, scripted = take(queue)
+        queue, count, parts, note = answer(body)
         self.log_message("reply %d%s%s: %s", count, " [%s]" % queue if queue else "",
-                         "" if scripted else " (no queue written for it)",
-                         " + ".join(parts)[:60])
+                         note, " + ".join(parts)[:60])
         if parts and parts[0].startswith("status:"):
             # The request refused outright, in the shape the dialect's own
             # errors take, so the session classifies it as it would the real
@@ -388,8 +439,17 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.flush()
 
 
-server = ThreadingHTTPServer(("127.0.0.1", PORT), Handler)
-# Bound and listening by the line above, so the port is said only once it is
-# ours: the run that reads this line has nothing left to race with.
-print("port %d" % server.server_address[1], flush=True)
-server.serve_forever()
+def main():
+    global QUEUES, QUEUED
+    port = int(sys.argv[1])
+    QUEUES = load(sys.argv[2])
+    QUEUED = "" not in QUEUES
+    server = ThreadingHTTPServer(("127.0.0.1", port), Handler)
+    # Bound and listening by the line above, so the port is said only once it
+    # is ours: the run that reads this line has nothing left to race with.
+    print("port %d" % server.server_address[1], flush=True)
+    server.serve_forever()
+
+
+if __name__ == "__main__":
+    main()

@@ -265,8 +265,9 @@ rm -f "$OUT"/*.txt "$OUT"/*.ansi "$OUT"/*.gif "$OUT"/*.cast "$OUT/shell.log"
 # A replies file with no queues answers every request from one script, so a
 # session's own title and standing account — both asked by default — would
 # each take the reply written for the next turn. Such a scene is not about
-# them, and they stay off there; a scene with queues answers them from its
-# [reading] queue, or with a line of the provider's own where it wrote none.
+# them, and they stay off there; with them on, the provider answers each with
+# a line of its own, known by the tool the request offers, unless the scene
+# wrote a [title] or [account] queue.
 #
 # That switch is written first and [behavior] last, because a scene's launch
 # may append to this file, and a bare key appended lands in whichever table

@@ -3,10 +3,10 @@
 The backoff doubles because the retry wrapper and the client both wait.
 A stall now waits once: the client's own wait is gone.
 
-# The session's own readings of its run: the title after the first turn and
-# the standing account at quit. One reply carries both answers, each through
-# its own tool, so whichever reading asks takes its own and the order the two
-# arrive in does not matter.
-[reading]
+# The session's own readings of its run, in words of the scene's own: the
+# title after the first turn and the standing account at quit, each from the
+# queue named for it rather than the line the harness answers them with.
+[title]
 tool:session_title:{"title":"The retry backoff doubling"}
-+tool:session_account:{"account":"Fixing the retry backoff so a stall waits once. Left off with the client's own wait removed and the timer test green."}
+[account]
+tool:session_account:{"account":"Fixing the retry backoff so a stall waits once. Left off with the client's own wait removed and the timer test green."}
