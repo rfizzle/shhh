@@ -18,8 +18,12 @@ then shhh on PATH); --keys reads a saved `shhh keys --json` instead.
 
 What it reads: every `[key] words` caption on an artboard's screen rows
 (`.l`), stopping the words at the next ` · `, the next caption, a run of two
-spaces or the row's end. Captions inside prose (`.cap`, `.rat`, `.note`)
-are skipped.
+spaces, a column gap (`.sp`, `.gap`) or the row's end. Captions inside prose
+(`.cap`, `.rat`, `.note`) are skipped, and so is a bracket that does not start
+a caption run: a key counts only at the head of a row (past its border and
+gutter glyphs), after ` · `, two spaces or a column gap, or straight after
+another caption, so the `[x]` of `...where one is dropped: [x] is the key`
+is a word of a sentence.
 
 What it can know, and what it cannot. The key is matched first, and the
 words second: a caption's words are prose, the register's Words are the
@@ -33,17 +37,28 @@ reported as
   other        the key is shipped for one or two unrelated acts and no act
                on another key says the caption's words either
   spelling     the key is written with a glyph the product never draws
-               (`[↵]` for `[enter]`)
+               (`[⏎]` for `[enter]`)
   words        the key is shipped for a related act, spelled differently
                (a difference, not a failure)
   surface      a key the register gives three or more acts (enter, esc, y)
                beside words none of them say; almost always a surface's
                own words, listed last so they can be read past
+  drawn        a caption that would be one of the first four, but that a
+               golden under internal/ui draws word for word: the binary's
+               own words, so no difference from it
+  own          a caption a surface draws that is no act of the register
+               (OWN below: `[/] commands`, the round-limit grant `[+50]`)
+
+A key the product draws in a spelling of its own (`pgdn` for the register's
+`pgdown`, DRAWN below) is read as that key and is not a spelling finding:
+`shhh keys --json` names the keystroke, not the spelling a hint draws.
 
 The script cannot tell which surface a row belongs to, so a key shipped on
 one surface is accepted on every artboard; and a bracket that is not a key
-(a checkbox, a placeholder) may be read as one. It exits 0 and ends with the
-counts, so it can be run again and the drift measured.
+(a checkbox, a placeholder) may be read as one. The drift it counts is the
+first four kinds, and a caption a golden draws is never among them; the
+goldens are read from the checkout the script sits in. It exits 0 and ends
+with the counts, so it can be run again and the drift measured.
 """
 
 import argparse
@@ -58,6 +73,7 @@ from collections import defaultdict
 
 DEFAULT_GLOB_DIR = os.path.join(".design", "ui_kits", "cockpit")
 PROSE = {"cap", "rat", "note"}
+SPACERS = {"sp", "gap"}  # .sp grows (flex:1), .gap is 3ch: both are a column gap
 
 # Glyphs an artboard may write for a key, and the keystroke each one means.
 # A glyph the product itself draws (the arrows) is not a spelling finding.
@@ -69,8 +85,21 @@ ALIASES = {
     "⌫": "backspace", "bksp": "backspace",
     "␣": "space",
     "pg up": "pgup", "pageup": "pgup", "page up": "pgup",
-    "pg dn": "pgdown", "pgdn": "pgdown", "pagedown": "pgdown", "page down": "pgdown",
+    "pg dn": "pgdown", "pagedown": "pgdown", "page down": "pgdown",
 }
+# Spellings the product itself draws for a key the register names otherwise:
+# the hints bind the display `pgdn` to the keystroke `pgdown`.
+DRAWN = {"pgdn": "pgdown"}
+# Captions a surface draws that are no act of the register, as (key, words)
+# patterns: the draft's `[/] commands` hint, and the round-limit card's grant
+# bracket, whose key is the number of rounds it grants.
+OWN = [
+    (re.compile(r"/"), re.compile(r"commands")),
+    (re.compile(r"\+\d+"), re.compile(r".*")),
+]
+REPO = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..")
+GOLDENS = [os.path.join(REPO, "internal", "ui", d, "testdata", "golden")
+           for d in ("chat", "components", "")]
 MODIFIERS = {"⇧": "shift+", "⌃": "ctrl+", "^": "ctrl+", "⌥": "alt+", "c-": "ctrl+", "m-": "alt+"}
 NAMED = {"enter", "esc", "tab", "space", "backspace", "pgup", "pgdown", "home", "end",
          "up", "down", "left", "right", "delete", "insert"}
@@ -120,6 +149,8 @@ class Rows(html.parser.HTMLParser):
         row = "l" in classes and not prose and self.buf is None
         if row:
             self.buf = []
+        elif self.buf is not None and classes & SPACERS:
+            self.buf.append("  ")  # a flex spacer is a gap between columns
         self.stack.append((row, prose))
 
     def handle_endtag(self, tag):
@@ -138,9 +169,13 @@ class Rows(html.parser.HTMLParser):
 BOX = re.compile(r"[─-╿▀-▟]+")
 
 
+EDGE = " │┃╭╰╮╯─▎▸›❯"
+
+
 def captions(row):
-    """Yields (key, words) for each `[key] words` in one row's text."""
+    """Yields (key, words) for each `[key] words` that starts a caption run."""
     i, n = 0, len(row)
+    last = 0  # where the previous caption's words stopped
     while i < n:
         if row[i] != "[":
             i += 1
@@ -161,8 +196,13 @@ def captions(row):
             if k != -1:
                 end = min(end, k)
         words = BOX.sub("", rest[:end]).strip(" ·│┃╯╰")
-        before = row[:i].strip()
-        yield key, words, before
+        lead = row[:i]
+        before = lead.strip()
+        heads = (not BOX.sub("", lead).strip(EDGE) or lead.endswith(" · ")
+                 or lead.endswith("  ") or (last and not row[last:i].strip()))
+        last = j + 1 + end
+        if heads:
+            yield key, words, before
         i = j + 1
 
 
@@ -171,6 +211,8 @@ def split_key(key):
     raw = key.strip()
     odd = []
     low = raw.lower()
+    if low in DRAWN:
+        return {DRAWN[low]}, odd
     if low in ALIASES:
         odd.append(raw)
         return {ALIASES[low]}, odd
@@ -194,7 +236,9 @@ def split_key(key):
         if m and len(p) > m.end():
             prefix, p = prefix + m.group(0), p[m.end():]
         lowp = p.lower()
-        if lowp in ALIASES:
+        if lowp in DRAWN:
+            out.add(prefix + DRAWN[lowp])
+        elif lowp in ALIASES:
             odd.append(p)
             out.add(prefix + ALIASES[lowp])
         elif p and all(c in ARROWS for c in p):
@@ -266,7 +310,8 @@ def files(paths):
     return sorted(set(out))
 
 
-KINDS = ["unbound", "moved", "other", "spelling", "words", "surface"]
+DRIFT = ["unbound", "moved", "other", "spelling"]
+KINDS = DRIFT + ["words", "surface", "drawn", "own"]
 TITLES = {
     "unbound": "key not shipped",
     "moved": "key shipped for another act; these words are another key's",
@@ -274,7 +319,20 @@ TITLES = {
     "words": "key agrees; the register's words differ",
     "spelling": "key written with a glyph the product does not draw",
     "surface": "a key of many acts, with words of the surface's own",
+    "drawn": "would be drift, but a golden draws it word for word",
+    "own": "a surface's own caption, not an act of the register",
 }
+
+
+def golden_text():
+    out = []
+    for d in GOLDENS:
+        if os.path.isdir(d):
+            for name in sorted(os.listdir(d)):
+                if name.endswith(".txt"):
+                    with open(os.path.join(d, name), encoding="utf-8") as f:
+                        out.append(f.read())
+    return "\n".join(out)
 
 
 def main():
@@ -285,6 +343,10 @@ def main():
     ap.add_argument("--keys")
     args = ap.parse_args()
     platform, acts = load_register(args)
+    drawn = golden_text()
+    if not drawn:
+        print("keymap-check: no goldens under %s; nothing is read as drawn" % os.path.normpath(REPO),
+              file=sys.stderr)
     names = files(args.paths)
     base = os.path.dirname(os.path.commonpath(names)) if names else ""
     total = 0
@@ -310,13 +372,22 @@ def main():
                        and not re.fullmatch(r"f\d{1,2}", k) for k in keyset):
                     continue  # `[provider]`, `[89]`: a placeholder, not a key
                 total += 1
+                cap = "[%s] %s" % (key, words)
+                if any(k.fullmatch(key.strip()) and w.fullmatch(words) for k, w in OWN):
+                    found["own"][(cap, "drawn by a surface; the register has no act for it")].add(words)
+                    counts["own"] += 1
+                    continue
+                shown = cap in drawn
                 if odd:
-                    found["spelling"][("[%s]" % key, "the product writes [%s]" % "/".join(sorted(keyset)))].add(words)
-                    counts["spelling"] += 1
+                    kind = "drawn" if shown else "spelling"
+                    found[kind][("[%s]" % key, "the product writes [%s]" % "/".join(sorted(keyset)))].add(words)
+                    counts[kind] += 1
                 verdict = judge(keyset, words, acts)
                 if verdict:
                     kind, detail = verdict
-                    found[kind][("[%s] %s" % (key, words), detail)].add(words)
+                    if shown and kind in DRIFT:
+                        kind, detail = "drawn", "%s: %s" % (kind, detail)
+                    found[kind][(cap, detail)].add(words)
                     counts[kind] += 1
         if not found:
             continue
@@ -332,7 +403,7 @@ def main():
         print("(%s has no screen rows; nothing read)" % os.path.relpath(path, base))
     print("\ncaptions read: %d" % total)
     print("reported: " + ", ".join("%s %d" % (k, counts[k]) for k in KINDS))
-    print("drift (unbound, moved, other, spelling): %d" % sum(counts[k] for k in KINDS if k not in ("words", "surface")))
+    print("drift (unbound, moved, other, spelling): %d" % sum(counts[k] for k in DRIFT))
     return 0
 
 
