@@ -227,8 +227,9 @@ func (m *Model) restoreTurnClose() {
 		}
 	}
 	m.appendEntry(entry{
-		kind: entryTurnClose,
-		turn: t.N,
+		kind:     entryTurnClose,
+		turn:     t.N,
+		restored: true,
 		close: &components.TurnClose{
 			State:   components.TurnDone,
 			Changes: m.turnChangesFor(t, false),

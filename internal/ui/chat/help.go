@@ -141,6 +141,7 @@ default [level]   show or persist the level new sessions start on (provider.reas
 	"/context":  `the window as a meter, by category, with the tools itemised`,
 	"/stats":    `context occupancy breakdown and cumulative session spend`,
 	"/readings": `every reading the session has taken of its own run on one screen, newest first: the round, the verdict, the whole reading with its reason and the instruction it was judged against, and whether it steered the turn and whether that steer was taken back. Quiet readings are kept here too. It reads and changes nothing`,
+	"/turns":    `every turn the session has run on one screen, newest first: how it ended, its steps, tools, time and spend, what it changed, its commit and its checks' verdict — the figures its close row drew, beside the close itself — with the turn in flight on top. [enter] opens a turn's review where it changed files. A turn from an ended sitting shows its files and says its figures were not kept. It reads and changes nothing`,
 	"/step":     `open the in-flight step's detail: every row in it shows its output body, bounded; run it again to close (/ui verbosity high is the same thing for every step at once)`,
 	"/steps":    `the session's own working list on one screen: every step it declared, the paths each said it would touch, which it has marked done and the one it is on — and beside each, the calls the transcript titled for it, or not started where there are none. It reads and changes nothing`,
 	"/status":   `where this session is: what it is working on, what it has spent, and whether the last few turns are still on the target you set it`,
@@ -499,7 +500,7 @@ bare /todo opens the same screen; it opens over a running turn, and the keys tha
 		},
 		{
 			key:  "rail click",
-			text: `on the inspector rail, a changed file opens its diff and a session's row moves the keyboard into it. A block's heading, or its … N more, opens the surface holding the whole block — SUMMARY is /readings, CHANGES is /diff, AGENTS is /agents, STEPS is /steps, TODO is /todo, CONTEXT is /context — and a click on the same cell closes it, as its own esc does. The rail never holds the keyboard, so each command is that door's key`,
+			text: `on the inspector rail, a changed file opens its diff and a session's row moves the keyboard into it. A block's heading, or its … N more, opens the surface holding the whole block — SUMMARY is /readings, THIS TURN is /turns, CHANGES is /diff, AGENTS is /agents, STEPS is /steps, TODO is /todo, CONTEXT is /context — and a click on the same cell closes it, as its own esc does. The rail never holds the keyboard, so each command is that door's key`,
 		},
 		{
 			binds: []keys.Binding{keys.Draft.Editor},

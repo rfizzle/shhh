@@ -71,6 +71,7 @@ func TestRailDoors_AHeadingOrAMarkerOpensItsSurfaceAndTheCellClosesIt(t *testing
 		{components.RailContext, false, railDoorModel, "/context"},
 		{components.RailSteps, false, railStepsModel, "/steps"},
 		{components.RailSummary, false, railSummaryModel, "/readings"},
+		{components.RailTurn, false, railTurnModel, "/turns"},
 		{components.RailTodo, false, railTodoModel, "/todo"},
 		{components.RailTodo, true, railTodoModel, "/todo"},
 	} {
@@ -131,6 +132,15 @@ func railSummaryModel(t *testing.T) Model {
 	m = m.WithSummarizer(agent.NewSummarizer(&readingProvider{text: "Reading."},
 		agent.SummaryConfig{Model: "fast", IntervalRounds: 10, MinGap: -1}))
 	landReading(&m, agent.SummaryVerdict{Text: "Reading the loop.", State: agent.SummaryOnTarget, Round: 3})
+	return m
+}
+
+// railTurnModel is railDoorModel with its files counted as the current
+// turn's, so the rail draws a THIS TURN block.
+func railTurnModel(t *testing.T) Model {
+	t.Helper()
+	m := railDoorModel(t)
+	m.turnCount = 1
 	return m
 }
 

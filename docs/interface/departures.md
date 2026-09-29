@@ -459,6 +459,41 @@ took its first reading late.
 When there is an artboard, these three decisions are what it has to
 reconcile with, and where the two differ the artboard wins.
 
+## The turns screen's layout was decided in the binary
+
+*A gap.* No artboard draws `/turns`, and the InspectorRail component draws
+the THIS TURN block's heading as a label rather than as a door to anything.
+The binary draws a screen behind that heading
+([the supporting screens](surfaces.md#the-supporting-screens)): the family's
+chrome over a list and a preview, the list every turn the session has run and
+the preview the one under the pointer. Most of it needed no decision — the
+header and its rule, the two panes and the divider, the windowed list and the
+key row are the supporting screens' own, and the preview is the turn's close
+drawn by the close's own renderer. Three things it could not take from
+anywhere, and they were decided here:
+
+**A row is the turn, its ending and what it wrote.** The close's own glyph
+leads, then `turn 4` and the ending's word, then what it wrote in the rewind
+picker's spelling — the mutation mark, the file count and the lines, or
+`wrote nothing` — and the turn's spend at the far end. The running turn takes
+`▸` and `running`, the steps screen's mark for the one being worked on.
+
+**A turn whose close was not kept is its files and a sentence.** A resumed
+conversation's earlier turns have no close, so their row carries `·`, `no
+figures kept` and the files the records hold, and the preview says the session
+kept its files and not its close rather than drawing an empty block. The bare changeset row a
+resume puts back for the last turn is read the same way: it carries files and
+no figures, and its `Done` was never measured.
+
+**The review is greyed, not dropped.** `[enter] review turn n` names the turn
+it opens and stays in the key row on a turn with nothing to review, drawn
+grey, so the row does not change shape under a pointer walking the list. The
+turn count and the tool count are two header fields, so the tool count gives
+way first and the turn count stays with the title beside the spend.
+
+When there is an artboard, these three decisions are what it has to
+reconcile with, and where the two differ the artboard wins.
+
 ## The explanation's screen wears the full view's title, not a rail label
 
 *A disagreement.* The artboard draws the command explanation with a rail

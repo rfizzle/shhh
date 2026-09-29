@@ -44,6 +44,10 @@
     /readings      every reading the session has taken of its own run on one screen, newest first: the round, the verdict, the
                    whole reading with its reason and the instruction it was judged against, and whether it steered the turn and
                    whether that steer was taken back. Quiet readings are kept here too. It reads and changes nothing
+    /turns         every turn the session has run on one screen, newest first: how it ended, its steps, tools, time and spend,
+                   what it changed, its commit and its checks' verdict — the figures its close row drew, beside the close itself —
+                   with the turn in flight on top. [enter] opens a turn's review where it changed files. A turn from an ended
+                   sitting shows its files and says its figures were not kept. It reads and changes nothing
     /step          open the in-flight step's detail: every row in it shows its output body, bounded; run it again to close (/ui
                    verbosity high is the same thing for every step at once)
     /status        where this session is: what it is working on, what it has spent, and whether the last few turns are still on
@@ -111,6 +115,10 @@
     /readings      every reading the session has taken of its own run on one screen, newest first: the round, the verdict, the
                    whole reading with its reason and the instruction it was judged against, and whether it steered the turn and
                    whether that steer was taken back. Quiet readings are kept here too. It reads and changes nothing
+    /turns         every turn the session has run on one screen, newest first: how it ended, its steps, tools, time and spend,
+                   what it changed, its commit and its checks' verdict — the figures its close row drew, beside the close itself —
+                   with the turn in flight on top. [enter] opens a turn's review where it changed files. A turn from an ended
+                   sitting shows its files and says its figures were not kept. It reads and changes nothing
     /step          open the in-flight step's detail: every row in it shows its output body, bounded; run it again to close (/ui
                    verbosity high is the same thing for every step at once)
     /steps         the session's own working list on one screen: every step it declared, the paths each said it would touch, which
@@ -191,6 +199,10 @@
     ␛[38;5;254m/readings␛[m      ␛[38;5;244mevery reading the session has taken of its own run on one screen, newest first: the round, the verdict, the␛[m
                    ␛[38;5;244mwhole reading with its reason and the instruction it was judged against, and whether it steered the turn and␛[m
                    ␛[38;5;244mwhether that steer was taken back. Quiet readings are kept here too. It reads and changes nothing␛[m
+    ␛[38;5;254m/turns␛[m         ␛[38;5;244mevery turn the session has run on one screen, newest first: how it ended, its steps, tools, time and spend,␛[m
+                   ␛[38;5;244mwhat it changed, its commit and its checks' verdict — the figures its close row drew, beside the close itself —␛[m
+                   ␛[38;5;244mwith the turn in flight on top. [enter] opens a turn's review where it changed files. A turn from an ended␛[m
+                   ␛[38;5;244msitting shows its files and says its figures were not kept. It reads and changes nothing␛[m
     ␛[38;5;254m/step␛[m          ␛[38;5;244mopen the in-flight step's detail: every row in it shows its output body, bounded; run it again to close (/ui␛[m
                    ␛[38;5;244mverbosity high is the same thing for every step at once)␛[m
     ␛[38;5;254m/status␛[m        ␛[38;5;244mwhere this session is: what it is working on, what it has spent, and whether the last few turns are still on␛[m
@@ -258,6 +270,10 @@
     ␛[38;5;254m/readings␛[m      ␛[38;5;244mevery reading the session has taken of its own run on one screen, newest first: the round, the verdict, the␛[m
                    ␛[38;5;244mwhole reading with its reason and the instruction it was judged against, and whether it steered the turn and␛[m
                    ␛[38;5;244mwhether that steer was taken back. Quiet readings are kept here too. It reads and changes nothing␛[m
+    ␛[38;5;254m/turns␛[m         ␛[38;5;244mevery turn the session has run on one screen, newest first: how it ended, its steps, tools, time and spend,␛[m
+                   ␛[38;5;244mwhat it changed, its commit and its checks' verdict — the figures its close row drew, beside the close itself —␛[m
+                   ␛[38;5;244mwith the turn in flight on top. [enter] opens a turn's review where it changed files. A turn from an ended␛[m
+                   ␛[38;5;244msitting shows its files and says its figures were not kept. It reads and changes nothing␛[m
     ␛[38;5;254m/step␛[m          ␛[38;5;244mopen the in-flight step's detail: every row in it shows its output body, bounded; run it again to close (/ui␛[m
                    ␛[38;5;244mverbosity high is the same thing for every step at once)␛[m
     ␛[38;5;254m/steps␛[m         ␛[38;5;244mthe session's own working list on one screen: every step it declared, the paths each said it would touch, which␛[m

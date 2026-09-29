@@ -230,6 +230,11 @@ const (
 	// has taken of its own run. A takeover like the steps screen: full width,
 	// the rail hidden, esc returns, and it changes nothing (readings.go).
 	stateReadings
+	// stateTurns: the turns screen is up — every turn the session has run,
+	// as its close row reads it. A takeover like the readings screen: full
+	// width, the rail hidden, esc returns, and its [enter] opens a turn's
+	// review, whose own esc comes back here (turns.go).
+	stateTurns
 )
 
 // minPanelHeight is the fewest rows the bottom panel takes: what a surface
@@ -464,6 +469,11 @@ type entry struct {
 	// turn is the turn it closed — what its review and [u] act on.
 	close *components.TurnClose
 	turn  int64
+	// restored marks a close block put back for a resumed conversation
+	// (restoreTurnClose): it carries the turn's files and none of its
+	// figures, which were never saved, so the turns screen draws it as a
+	// turn whose figures were not kept rather than as one that cost nothing.
+	restored bool
 	// fail is the classified provider failure behind an entryFailure row
 	//. It is stored as the classification rather than as rendered
 	// text, so the row re-renders at any width and the offered keys stay
@@ -1507,6 +1517,9 @@ type Model struct {
 	// The readings screen while it is up, built once per opening like the
 	// steps screen (readings.go).
 	readingsScreen *components.ReadingsScreen
+	// The turns screen while it is up, built once per opening like the
+	// readings screen (turns.go).
+	turnsScreen *components.TurnsScreen
 	// The safety reading: the readings only the command package can make,
 	// and the screen while it is up, built once per opening (safety.go).
 	safety       Safety

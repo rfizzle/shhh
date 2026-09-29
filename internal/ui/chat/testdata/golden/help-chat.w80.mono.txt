@@ -59,6 +59,13 @@
                    against, and whether it steered the turn and whether that
                    steer was taken back. Quiet readings are kept here too. It
                    reads and changes nothing
+    /turns         every turn the session has run on one screen, newest first:
+                   how it ended, its steps, tools, time and spend, what it
+                   changed, its commit and its checks' verdict — the figures its
+                   close row drew, beside the close itself — with the turn in
+                   flight on top. [enter] opens a turn's review where it changed
+                   files. A turn from an ended sitting shows its files and says
+                   its figures were not kept. It reads and changes nothing
     /step          open the in-flight step's detail: every row in it shows its
                    output body, bounded; run it again to close (/ui verbosity
                    high is the same thing for every step at once)
@@ -157,6 +164,13 @@
                    against, and whether it steered the turn and whether that
                    steer was taken back. Quiet readings are kept here too. It
                    reads and changes nothing
+    /turns         every turn the session has run on one screen, newest first:
+                   how it ended, its steps, tools, time and spend, what it
+                   changed, its commit and its checks' verdict — the figures its
+                   close row drew, beside the close itself — with the turn in
+                   flight on top. [enter] opens a turn's review where it changed
+                   files. A turn from an ended sitting shows its files and says
+                   its figures were not kept. It reads and changes nothing
     /step          open the in-flight step's detail: every row in it shows its
                    output body, bounded; run it again to close (/ui verbosity
                    high is the same thing for every step at once)
@@ -276,6 +290,13 @@
                    ␛[38;5;244magainst, and whether it steered the turn and whether that␛[m
                    ␛[38;5;244msteer was taken back. Quiet readings are kept here too. It␛[m
                    ␛[38;5;244mreads and changes nothing␛[m
+    ␛[38;5;254m/turns␛[m         ␛[38;5;244mevery turn the session has run on one screen, newest first:␛[m
+                   ␛[38;5;244mhow it ended, its steps, tools, time and spend, what it␛[m
+                   ␛[38;5;244mchanged, its commit and its checks' verdict — the figures its␛[m
+                   ␛[38;5;244mclose row drew, beside the close itself — with the turn in␛[m
+                   ␛[38;5;244mflight on top. [enter] opens a turn's review where it changed␛[m
+                   ␛[38;5;244mfiles. A turn from an ended sitting shows its files and says␛[m
+                   ␛[38;5;244mits figures were not kept. It reads and changes nothing␛[m
     ␛[38;5;254m/step␛[m          ␛[38;5;244mopen the in-flight step's detail: every row in it shows its␛[m
                    ␛[38;5;244moutput body, bounded; run it again to close (/ui verbosity␛[m
                    ␛[38;5;244mhigh is the same thing for every step at once)␛[m
@@ -374,6 +395,13 @@
                    ␛[38;5;244magainst, and whether it steered the turn and whether that␛[m
                    ␛[38;5;244msteer was taken back. Quiet readings are kept here too. It␛[m
                    ␛[38;5;244mreads and changes nothing␛[m
+    ␛[38;5;254m/turns␛[m         ␛[38;5;244mevery turn the session has run on one screen, newest first:␛[m
+                   ␛[38;5;244mhow it ended, its steps, tools, time and spend, what it␛[m
+                   ␛[38;5;244mchanged, its commit and its checks' verdict — the figures its␛[m
+                   ␛[38;5;244mclose row drew, beside the close itself — with the turn in␛[m
+                   ␛[38;5;244mflight on top. [enter] opens a turn's review where it changed␛[m
+                   ␛[38;5;244mfiles. A turn from an ended sitting shows its files and says␛[m
+                   ␛[38;5;244mits figures were not kept. It reads and changes nothing␛[m
     ␛[38;5;254m/step␛[m          ␛[38;5;244mopen the in-flight step's detail: every row in it shows its␛[m
                    ␛[38;5;244moutput body, bounded; run it again to close (/ui verbosity␛[m
                    ␛[38;5;244mhigh is the same thing for every step at once)␛[m

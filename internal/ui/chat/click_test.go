@@ -685,7 +685,7 @@ func TestClick_RailSessionDetailRowIsTheSameTarget(t *testing.T) {
 // the headings that are doors are railclick_test.go's.
 func TestClick_RailHeadingsAndMetersAreInert(t *testing.T) {
 	m := railClickModel(t)
-	for _, row := range []string{"SPEND", "THIS TURN"} {
+	for _, row := range []string{"SPEND", "ALERTS"} {
 		x, y := railCell(t, m, row)
 		next := click(t, m, x, y)
 		if next.state != m.state || next.attachedTo != m.attachedTo || next.fullDiff != nil {

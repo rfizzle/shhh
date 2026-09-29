@@ -44,7 +44,10 @@ func keyOffers(keys []TurnKey) string {
 	var parts []string
 	for _, k := range keys {
 		tone := sty.Info
-		if k.Safe {
+		switch {
+		case k.Inert:
+			tone = sty.Dimmer
+		case k.Safe:
 			tone = sty.Add
 		}
 		parts = append(parts, tone.Render(k.Key)+offerWords(k.Label))

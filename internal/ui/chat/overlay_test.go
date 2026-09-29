@@ -51,6 +51,7 @@ func TestOverlayPlacements(t *testing.T) {
 		stateSources:    placePane,
 		stateSteps:      placePane,
 		stateReadings:   placePane,
+		stateTurns:      placePane,
 		stateSafety:     placePane,
 		stateNotes:      placePane,
 		stateBacklog:    placePane,

@@ -43,6 +43,12 @@ type KeyOffer struct {
 	// (keyoffers.go), so a surface cannot forget it
 	// (docs/interface/principles.md#esc-is-always-the-safe-answer).
 	Safe bool
+	// Inert marks an offer that cannot act where it stands — the turns
+	// screen's review on a turn that changed nothing. It keeps its place in
+	// the row, grey with its words, the treatment a key that is not live
+	// takes everywhere (inertOffers), so the row does not change shape under
+	// a pointer walking a list.
+	Inert bool
 }
 
 // TurnKey is the turn close's name for the same thing; the two were

@@ -1347,7 +1347,8 @@ reachable without a pointer.
 
 A block is a door to the whole of what it bounds. Where a block has a surface
 holding all of it, its heading and its fold marker open that surface: SUMMARY
-opens every reading the session has taken, CHANGES
+opens every reading the session has taken, THIS TURN every turn the session
+has run, CHANGES
 opens the session's diff, AGENTS the manager, STEPS the whole working list,
 TODO the backlog screen and CONTEXT the occupancy screen — each the surface its command already opens, so
 the command is the door's key. The surface is left by its own esc, and by a
@@ -2403,14 +2404,15 @@ under that the account the session kept of where it left off
 renaming and deleting the picker inside a session already offers
 (../capabilities/sessions-and-memory.md#housekeeping).
 
-Fourteen surfaces take the whole terminal this way — those seven, the reading
+Fifteen surfaces take the whole terminal this way — those seven, the reading
 of what is in the session's context, the ledger of what the session read
 (`/sources`, [what was read](../capabilities/chat.md#what-was-read)), the
 session's own working list (`/steps`, below), the readings it has taken of its
-own run (`/readings`, below), the session's shared notebook
+own run (`/readings`, below), the turns it has run (`/turns`, below), the
+session's shared notebook
 (`/notes`, below), the reading of the session's boundary (`/safety`, [the
 safety reading](#the-safety-reading)) and the drafting flow for a new agent
-profile — and they are one family rather than fourteen screens: the same header, the same
+profile — and they are one family rather than fifteen screens: the same header, the same
 ground given up in the same order as the terminal narrows, the same key row at
 the foot and the same `[?]` behind it. The two that arrived last had each been
 drawing a chrome of their own, and the way that showed was not in either of
@@ -2424,7 +2426,7 @@ act in one word: `quit` where the screen was opened from a command line,
 under the key a reader reaches for without thinking, and there it is a phrase:
 **back to the shell** on doctor, metrics, history, snippets and the saved-chat
 browser, **back to the prompt** on the context reading, the sources ledger, the
-working list, the readings, the safety reading, the notebook and the backlog, which is drawn on this chrome too ([the backlog screen](#the-backlog-screen)).
+working list, the readings, the turns, the safety reading, the notebook and the backlog, which is drawn on this chrome too ([the backlog screen](#the-backlog-screen)).
 For leaving a screen and changing nothing there is no third wording.
 
 Three of them leave by doing something rather than nothing, and each says what
@@ -2485,10 +2487,10 @@ surface that put `[?]` and the letter on both rows spent its bottom row saying
 what its top row had already said, which on the narrowest terminal is the row
 that had least to give.
 
-Seven of them list something and preview what the pointer is on — past
+Eight of them list something and preview what the pointer is on — past
 commands, saved commands, saved conversations, the pages this session
-read, the steps it declared, the readings it took of its own run, and the
-notes its agents wrote each other — and
+read, the steps it declared, the readings it took of its own run, the turns
+it ran, and the notes its agents wrote each other — and
 they split the terminal
 the same way: two columns where there is
 room for two, stacked where there is not, and the preview giving way to the
@@ -2535,6 +2537,32 @@ nothing, and the turn goes on underneath it. It is opened by `/readings` and by
 a click on the SUMMARY heading ([the inspector rail](#the-inspector-rail)), and
 a session with no readings yet, or with the summary off, says so in a line
 instead.
+
+`/turns` is the rail's THIS TURN block read down the session: every turn it
+has run, newest first, one row each — the close's own mark and how the turn
+ended (`✓ turn 4 · done`, `⊘ turn 1 · cancelled`), what it wrote in the
+mutation mark and its lines, or `wrote nothing`, and what it cost. Beside the
+turn under the pointer is its close drawn whole ([the turn's
+close](#the-turns-close)) — steps, tools, time and spend, the files it
+changed, its commit and its checks' verdict — from the very block the
+transcript's close row was drawn from, so the table and the rows cannot report
+one turn two ways; the close's own keys are not offered there, since this
+screen answers none of them. Under it are the files the turn changed. The turn
+still running is on top, marked `running` and drawn from the rail's own
+reading of it: the step it is on, its tools, and what it has written so far.
+`[enter]` opens the turn's review, whose esc comes back to the list, and it is
+grey on a turn that changed no files. The header counts the turns and their
+tools and states the session's spend as `/stats` states it. A resumed
+conversation is the gap: a close is never saved with the messages, so a turn
+from a sitting that has ended is drawn as its number and the files the
+session's records still hold for it, and says `no figures kept` — never a row
+of zeros ([a stat that cannot be reported is left
+out](principles.md#a-stat-that-cannot-be-reported-is-left-out)); an ended
+turn that left no files leaves nothing true to draw, and has no row. It is
+built when it opens, reads and changes nothing, and the turn goes on
+underneath it. It is opened by `/turns` and by a click on the THIS TURN
+heading ([the inspector rail](#the-inspector-rail)), and a session that has
+run no turns says so in a line instead.
 
 `/notes` is the shared notebook — what one
 agent found and the next should not have to find again

@@ -488,6 +488,19 @@ func buildOverlays() map[state]*mode {
 			hint: (Model).renderReadingsHint,
 			keys: (Model).updateReadings,
 		},
+		stateTurns: {
+			place:   placePane,
+			borrows: true,
+			lines: func(m Model, width, height int) []string {
+				if m.turnsScreen == nil {
+					return nil
+				}
+				m.turnsScreen.SetSize(width, height)
+				return strings.Split(m.turnsScreen.View(width), "\n")
+			},
+			hint: (Model).renderTurnsHint,
+			keys: (Model).updateTurns,
+		},
 		stateSafety: {
 			place:   placePane,
 			borrows: true,

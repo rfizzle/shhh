@@ -181,6 +181,20 @@ r 11 · off target                                     turn 2
 
 [esc] back to the prompt
 
+· turns · every turn the session ran, the close of the one under the pointer beside it
+/turns · 6 turns         $0.1580 spent · [?] keys · [q] back
+────────────────────────────────────────────────────────────
+
+↑ 2 more
+❯ ✓ turn 4  done · ▎2 files +18 −6                   $0.0870
+↓ 3 more
+────────────────────────────────────────────────────────────
+turn 4                                                  done
+
+… (+6 more rows)
+
+[enter] review turn 4 · [esc] back to the prompt
+
 ── ansi ────────────────────────────────────────────────────
 · doctor · the count on the left, the clock and the keys on the right
 ␛[1;38;5;254mshhh doctor␛[m␛[38;5;244m · 10 checks␛[m           ␛[38;5;244m1.4s␛[m␛[38;5;244m · [?] keys · [q] quit␛[m
@@ -352,3 +366,17 @@ r 11 · off target                                     turn 2
 ␛[38;5;244m… (+7 more rows)␛[m
 
 ␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m
+
+· turns · every turn the session ran, the close of the one under the pointer beside it
+␛[1;38;5;254m/turns␛[m␛[38;5;244m · 6 turns␛[m         ␛[38;5;244m$0.1580 spent␛[m␛[38;5;244m · [?] keys · [q] back␛[m
+␛[38;5;244m────────────────────────────────────────────────────────────␛[m
+
+␛[38;5;244m↑ 2 more␛[m
+␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m✓ turn 4  done · ▎2 files +18 −6                   $0.0870␛[m
+␛[38;5;244m↓ 3 more␛[m
+␛[38;5;244m────────────────────────────────────────────────────────────␛[m
+␛[1;38;5;254mturn 4␛[m                                                  ␛[38;5;244mdone␛[m
+
+␛[38;5;244m… (+6 more rows)␛[m
+
+␛[38;5;254m[enter]␛[m␛[38;5;244m review turn 4␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m

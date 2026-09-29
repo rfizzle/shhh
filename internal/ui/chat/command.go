@@ -270,6 +270,13 @@ func (m Model) runCommand(text, name string) (tea.Model, tea.Cmd) {
 		// itself (readings.go).
 		return m.openReadings()
 
+	case text == "/turns":
+		// Every turn the session has run, as its close row reads it — the
+		// rail's THIS TURN door. It reads and changes nothing, so it is not
+		// idleOnly: mid-turn is when somebody asks what the turns before this
+		// one cost (turns.go).
+		return m.openTurns()
+
 	case text == "/safety" || text == "/security":
 		// The session's whole boundary, full screen. It reads and changes
 		// nothing, so it is not idleOnly: a turn that just asked for

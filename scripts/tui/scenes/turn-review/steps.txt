@@ -1,6 +1,7 @@
 # program test: TestProgram_EnterOnASelectedCloseOpensThatTurnsReview,
 #   TestProgram_AClickOnACloseOpensThatTurnsReview,
-#   TestProgram_TheQuitChordArmsThenLeaves
+#   TestProgram_TheQuitChordArmsThenLeaves,
+#   TestProgram_TurnsOpensEveryTurnAndReviewsOne
 #
 # A turn's changed-files row is the door to that turn's review
 # (docs/interface/surfaces.md#the-turns-close). Two turns close on the same
@@ -10,7 +11,13 @@
 # row clicked, not the newest — from a half-typed line that is still in the
 # box once the review is left.
 #
-# Driven at 60 columns, the narrowest the close is drawn at.
+# Between the two, /turns puts both turns in one list, newest first, the
+# close of the one under the pointer beside it; enter on the turn just
+# reviewed opens that review again, and its esc comes back to the list
+# (docs/interface/surfaces.md#the-supporting-screens).
+#
+# Driven at 60 columns, the narrowest the close is drawn at, and read at 130,
+# where the list and the close stand side by side.
 setup printf 'package agent\n\nconst limit = 25\n' > loop.go
 setup git add loop.go
 setup git config user.email tui@shhh
@@ -48,18 +55,29 @@ keys Escape
 sleep 0.5
 keys Escape
 sleep 0.5
+# Every turn the session has run, newest first: turn 2 under the pointer, its
+# close drawn whole, and the review of it the one offer that names it.
+keys "/turns" Enter
+snap 08-turns "[enter] review turn 2" "✓ turn 2" "✓ turn 1" "1 file changed"
+keys Enter
+snap 09-turns-review "leave, change nothing" "REVIEW turn 2" "const limit = 100"
+# The review's way out is back to the list the reader was walking.
+keys Escape
+snap 10-turns-back "[enter] review turn 2" "✓ turn 1"
+keys Escape
+sleep 0.5
 # A half-typed line, then a click on the older close's changed-files row —
 # row 12 at this size — as the SGR press and release a terminal reports. The
 # review it opens is turn 1's, the change from 25 to 50.
 keys "and then"
-snap 08-draft "and then"
+snap 11-draft "and then"
 keys -l $'\e[<0;12;12M' $'\e[<0;12;12m'
-snap 09-review-turn-1 "leave, change nothing" "REVIEW turn 1" "const limit = 25"
+snap 12-review-turn-1 "leave, change nothing" "REVIEW turn 1" "const limit = 25"
 keys Escape
-snap 10-draft-kept "and then"
+snap 13-draft-kept "and then"
 keys C-c
 sleep 0.3
 keys C-c
-snap 11-quit-armed "again quits"
+snap 14-quit-armed "again quits"
 keys C-c
-snap 12-exit "that is everything the screen was holding"
+snap 15-exit "that is everything the screen was holding"
