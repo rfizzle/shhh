@@ -1,5 +1,7 @@
 package chat
 
+import "github.com/rfizzle/shhh/internal/process"
+
 // Containment is the process-containment setup for assistant commands.
 // When Run is set, approved and waved-through execute_command calls run
 // through it (the sandbox-wrapped runner) instead of the plain runner; /run —
@@ -76,8 +78,19 @@ type Containment struct {
 // when this session runs it. It is asked of the actions that run a command —
 // execute_command and a process start, which is the whole of what the
 // requirement is about; /run carries no request here and is never refused.
+//
+// It asks by the tool rather than by whether the request carries a command
+// line: a git write carries one only for the deny list to match, and it is
+// not a command the assistant wrote. What it runs besides git is the
+// checkout's own hooks, which the checkout's trust answer decides, so it is
+// put to the card at the write tier like any other write. The unattended
+// surfaces ask the same two names (unattendedHooks in internal/cli).
+// See docs/capabilities/containment.md#a-git-write-is-not-a-command.
 func (m Model) containmentRefusal(req *approvalRequest) string {
 	if m.containment.Refusal == "" || req == nil || req.command == "" {
+		return ""
+	}
+	if req.kind != approvalExec && req.call.Name != process.ToolName {
 		return ""
 	}
 	return m.containment.Refusal

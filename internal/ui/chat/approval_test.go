@@ -1373,3 +1373,51 @@ func TestGitWriteCard_DrawsThePreviewsOwnFields(t *testing.T) {
 		}
 	}
 }
+
+// A session that requires containment on a host with none refuses the
+// assistant's commands before a card, and a git write is not one: its deny
+// line is not a command the assistant wrote, so every verb reaches the same
+// card it draws without the requirement, and nothing is answered for it.
+// See docs/capabilities/containment.md#a-git-write-is-not-a-command.
+func TestGitWrite_RequiredContainmentPutsItToTheCard(t *testing.T) {
+	const refusal = "error: this session requires containment and no mechanism is in force: " +
+		"bubblewrap (bwrap) not found on PATH"
+	unconfined := Containment{
+		Status:  "unconfined — bubblewrap (bwrap) not found on PATH",
+		Detail:  "bubblewrap (bwrap) not found on PATH",
+		Network: true,
+	}
+	arm := func(c gitWriteCard, contain Containment) Model {
+		t.Helper()
+		m := New([]provider.Message{
+			{Role: provider.RoleSystem, Content: "sys"},
+			{Role: provider.RoleUser, Content: "commit that change"},
+		}, mockStream).WithGatedTools(map[string]GatedPreviewFunc{
+			structural.GitWriteToolName: func(json.RawMessage) (GatedPreview, error) { return c.preview, nil },
+		}).WithContainment(contain)
+		updated, _ := m.Update(tea.WindowSizeMsg{Width: 130, Height: 48})
+		m = updated.(Model)
+		m.state = stateStreaming
+		updated, _ = m.Update(toolCallsMsg{calls: []provider.ToolCall{
+			{ID: "call_gw", Name: structural.GitWriteToolName, Arguments: c.args},
+		}})
+		return updated.(Model)
+	}
+	required := unconfined
+	required.Refusal = refusal
+	for _, c := range gitWriteCards() {
+		m := arm(c, required)
+		if m.pendingApproval == nil {
+			t.Fatalf("%s: a git write under a required session should be put to its card", c.label)
+		}
+		for _, msg := range m.Messages() {
+			if msg.Role == provider.RoleTool {
+				t.Fatalf("%s: nothing should be answered for the call before the card, got %q", c.label, msg.Content)
+			}
+		}
+		want := strings.Join(arm(c, unconfined).confirmLines(), "\n")
+		if got := strings.Join(m.confirmLines(), "\n"); got != want {
+			t.Fatalf("%s: the requirement should not change the card:\n got:\n%s\nwant:\n%s", c.label, got, want)
+		}
+	}
+}

@@ -335,6 +335,40 @@ are never contained, and a requirement about the assistant's commands has
 nothing to say about them. The requirement is off by default: a machine with
 no bubblewrap is still a machine somebody has to work on.
 
+## A git write is not a command
+
+A session that requires containment on a host with none still puts the
+assistant's git writes — staging, a commit, a new branch, a switch — to you on
+their card. They are not refused with the sentence a command gets.
+
+The requirement is about command lines the assistant wrote: text handed to a
+shell, which can do anything a shell can do, and which containment exists to
+bound. A git write is not one. It is one of four closed verbs, shhh builds the
+arguments, and nothing the model says reaches a shell. It is asked about at
+the write tier, beside an edit, for the same reason an edit is: it changes
+your checkout, and the card says how, including the way back.
+
+What a git write runs besides git is the checkout's own programs, and a
+commit's hooks above all. Whether those run is already decided, and by
+something other than containment: **the checkout's trust.** A trusted checkout
+runs its commit hooks, as it runs its quality suites, and neither of those is
+contained on a host with no mechanism either. An untrusted one commits with
+`--no-verify`, which skips its pre-commit and commit-msg hooks, and the
+receipt says they were skipped. The commit card's `hooks` row says which
+before you answer. Refusing git writes here would have the requirement decide
+a question trust already answers, and the answer you would get is a commit you
+could not make, with nothing in the refusal that could fix it.
+
+What this leaves open: in a trusted checkout, a commit you approve runs its
+hooks as you, uncontained, even in a session that requires containment. If
+that is not acceptable for a checkout, withdraw its trust rather than rely on
+the requirement.
+
+An unattended run answers the same way: a git write goes to `--yes` or the
+classifier like any other write, and the containment refusal is not consulted
+for it. The model reads what the card or the run answered, as it would for an
+edit.
+
 ## A cancelled command takes its children with it
 
 Every captured command is a shell, and the work is that shell's children.

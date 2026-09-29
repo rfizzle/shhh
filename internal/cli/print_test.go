@@ -24,6 +24,7 @@ import (
 	"github.com/rfizzle/shhh/internal/process"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/quality"
+	"github.com/rfizzle/shhh/internal/sandbox"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/structural"
 	"github.com/rfizzle/shhh/internal/subagent"
@@ -417,6 +418,15 @@ func TestHeadlessApprover_GitWriteIsAnsweredAtTheWriteTier(t *testing.T) {
 	denied := headlessApprover(context.Background(), printOpts{yes: true}, nil, []string{"git commit"}, fakeRun(&[]string{}), "", nil, nil, nil, nil, nil, nil, nil, st, unattended{})
 	if result := denied(tc); result != agent.DenylistResult {
 		t.Fatalf("a deny-list entry for the act must refuse it under --yes too, got %q", result)
+	}
+	// A run that requires containment on a host with none still answers a
+	// git write at the write tier: it is not a command, so the containment
+	// refusal is not what the model reads for it.
+	// See docs/capabilities/containment.md#a-git-write-is-not-a-command.
+	refusal := uncontainedRefusal(sandbox.Availability{Detail: "bwrap not found"})
+	required := headlessApprover(context.Background(), printOpts{}, nil, nil, fakeRun(&[]string{}), refusal, nil, nil, nil, nil, nil, nil, nil, st, unattended{})
+	if result := required(tc); result == refusal || !strings.Contains(result, "--yes") {
+		t.Fatalf("a required-containment run must answer a git write at the write tier, got %q", result)
 	}
 }
 

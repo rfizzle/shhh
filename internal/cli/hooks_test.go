@@ -290,6 +290,8 @@ func TestUnattendedHooks_AContainmentRefusalFiresNoHook(t *testing.T) {
 		{"a command where nothing contains it", refusal, "execute_command", 0, true},
 		{"a command allowed to run", "", "execute_command", 1, false},
 		{"a fetch where nothing contains commands", refusal, "web_fetch", 1, false},
+		// See docs/capabilities/containment.md#a-git-write-is-not-a-command.
+		{"a git write where nothing contains commands", refusal, "git_write", 1, false},
 	} {
 		pre := 0
 		exec := func(_ context.Context, _ string, stdin []byte) (string, int, error) {

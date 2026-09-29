@@ -236,6 +236,9 @@ func hookApprover(r *hook.Runner, at func() hook.Pos, note func(hook.Verdict),
 //
 // A process start is the other way to run a command, and procSup is what says
 // this run has one; a process call that reaches a gated resolver is a start.
+// A git write is neither, and the session's card asks about it at the write
+// tier under the same requirement, so it goes to the seams here too.
+// See docs/capabilities/containment.md#a-git-write-is-not-a-command.
 func unattendedHooks(r *hook.Runner, at func() hook.Pos, note func(hook.Verdict),
 	record func(decision, reason string), containRefusal string, procSup *process.Supervisor,
 	next func(provider.ToolCall) string) func(provider.ToolCall) string {
