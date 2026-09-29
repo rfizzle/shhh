@@ -133,20 +133,17 @@ func (m Model) runCommand(text, name string) (tea.Model, tea.Cmd) {
 		return m.surfaceNotice(name + " is not part of this session")
 	}
 	parts := strings.Fields(text)
+	// A command whose job is opening a surface is carried out by that
+	// surface's register row (overlay.go). A bare one typed with words after
+	// it goes on below and is answered as any form the session does not know.
+	if c, ok := registeredCommand(name); ok && (!c.bare || len(parts) == 1) {
+		return c.open(m, parts)
+	}
 	switch {
-	case name == "/notes":
-		return m.notesCommand(parts[1:])
-
 	case name == "/paste":
 		// Attachments. Not idleOnly: staging bytes for the next
 		// message touches nothing the running turn is using.
 		return m.runPaste(parts)
-
-	case name == "/agents":
-		if len(parts) > 1 && parts[1] == "new" {
-			return m.startPersona(strings.Join(parts[2:], " "))
-		}
-		return m.openAgentList()
 
 	case name == "/attach":
 		return m.attachCommand(parts)
@@ -231,76 +228,12 @@ func (m Model) runCommand(text, name string) (tea.Model, tea.Cmd) {
 		// goes through handleSlashCommand.
 		return m.openRewindPick()
 
-	case name == "/diff":
-		// Bare, the cumulative session diff; with a path, that one file's,
-		// which is the keyboard's way to the door a click on a CHANGES row
-		// opens (railclick.go). The argument is a path and not a turn
-		// number, because the rail's rows are paths and the two surfaces
-		// answer the same question.
-		if len(parts) > 1 {
-			return m.openFileDiff(strings.Join(parts[1:], " "))
-		}
-		return m.openSessionDiff()
-
 	case text == "/step":
 		// The in-flight step's detail, from the draft — the chord that
 		// answered this went to reading mode, and the question it answered
 		// is still asked mid-turn with a half-written sentence in the box
 		// (detail.go).
 		return m.detailFromDraft()
-
-	case text == "/sources":
-		// The ledger of what the session read, full screen. Like the
-		// occupancy surface it reads and changes nothing, so it is not
-		// idleOnly: mid-turn is exactly when somebody asks where a claim
-		// came from.
-		return m.openSources()
-
-	case text == "/steps":
-		// The session's whole working list, each step beside what the
-		// transcript recorded for it — the rail's STEPS door. It reads and
-		// changes nothing, so it is not idleOnly: mid-turn is when somebody
-		// asks where the agent is (worksteps.go).
-		return m.openSteps()
-
-	case text == "/readings":
-		// Every reading the session has taken of its own run — the rail's
-		// SUMMARY door. It reads and changes nothing, so it is not idleOnly:
-		// mid-turn is when somebody asks what the run has been saying about
-		// itself (readings.go).
-		return m.openReadings()
-
-	case text == "/turns":
-		// Every turn the session has run, as its close row reads it — the
-		// rail's THIS TURN door. It reads and changes nothing, so it is not
-		// idleOnly: mid-turn is when somebody asks what the turns before this
-		// one cost (turns.go).
-		return m.openTurns()
-
-	case text == "/safety" || text == "/security":
-		// The session's whole boundary, full screen. It reads and changes
-		// nothing, so it is not idleOnly: a turn that just asked for
-		// something is when a person wants to see what it may do (safety.go).
-		return m.openSafety()
-
-	case text == "/context":
-		// The occupancy surface, full screen. It reads the conversation
-		// and changes nothing in it, so it is not idleOnly: a window filling
-		// up mid-turn is exactly when the question gets asked.
-		return m.openContext()
-
-	case text == "/config":
-		// The settings screen, full screen. Not idleOnly: the settings a
-		// person wants to change mid-session are the ones the running turn
-		// just made them think about, and nothing the screen stages reaches
-		// the file until [w] — which writes the user's own config file and
-		// not the tree the turn is working in (config.go).
-		return m.openConfigScreen()
-
-	case name == "/review":
-		// Review mode over a turn's changeset; bare takes the
-		// most recent turn that changed anything.
-		return m.reviewCommand(parts)
 
 	case name == "/undo":
 		// Put a turn's edits back from the session's own records;
@@ -346,11 +279,6 @@ func (m Model) runCommand(text, name string) (tea.Model, tea.Cmd) {
 	case text == scaffoldCommandName:
 		// The scaffolding card: what it would write, before it writes it.
 		return m.scaffoldCommand()
-
-	case name == "/todo":
-		// Bare /todo opens the backlog picker; the subcommands are textual,
-		// and edit hands the item file to the editor.
-		return m.todoCommand(parts)
 
 	case name == "/memory" && len(parts) > 1 && parts[1] == "edit":
 		// /memory edit hands the entry's text to the editor; every other

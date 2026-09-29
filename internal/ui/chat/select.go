@@ -154,8 +154,9 @@ func (m Model) selectableSurface() bool {
 	if m.attachedTo != "" {
 		return false
 	}
-	switch m.state {
-	case stateDiffFull, stateOutputFull, stateReview, stateContext, stateSources, stateSteps, stateReadings, stateTurns, stateSafety, stateNotes, stateBacklog, stateConfig, stateFocus, stateKeyList:
+	// Which modes put something else under the pointer is each mode's own
+	// row (overlay.go).
+	if o := overlayFor(m.state); o != nil && o.noSelection {
 		return false
 	}
 	return true

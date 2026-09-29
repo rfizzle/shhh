@@ -58,7 +58,7 @@ func (m Model) helpSheet() helpSheet {
 		}
 		commands.rows = append(commands.rows, helpRow{
 			head:  []string{helpHead(c)},
-			paras: strings.Split(helpCommands[c.name], "\n"),
+			paras: strings.Split(commandHelp(c), "\n"),
 		})
 	}
 	mid := helpSection{title: "mid-turn", rows: []helpRow{{paras: []string{helpMidTurn(&m)}}}}
@@ -111,8 +111,10 @@ func helpMidTurn(m *Model) string {
 // — `default [name]   show or persist…` — and wraps under the text after the
 // gap rather than under the term (helpsheet.go).
 //
-// A test holds the two together as sets, so a command added to the registry
-// with nothing here draws an empty row rather than quietly shipping one.
+// A command a register row declares carries its paragraph on that row
+// (overlay.go) and has none here. A test holds the two together as sets, so
+// a command added to the registry with a paragraph in neither place draws an
+// empty row rather than quietly shipping one.
 var helpCommands = map[string]string{
 	"/help":  `show this help`,
 	"/clear": `end this session and start another (also /new)`,
@@ -136,21 +138,14 @@ revoke [commands|edits|hosts|agents]   take the grants back`,
 	"/reasoning": `how much thinking the model does before it answers: off (the default), low, medium, high, xhigh or max — ctrl+t cycles them
 [level]           set it for this session (also /think)
 default [level]   show or persist the level new sessions start on (provider.reasoning)`,
-	"/safety":   `the session's whole boundary on one screen (also /security): the mode and grants, where it may write, what contains its commands, the hosts it reaches, what the checkout was let load, its servers, secrets and tools — each section naming the command that changes it. It reads and changes nothing`,
-	"/sources":  `what this session read: every fetch and every search, its own and its children's, grouped by host — with the whole page under [enter] where the fetch kept one`,
-	"/context":  `the window as a meter, by category, with the tools itemised`,
 	"/stats":    `context occupancy breakdown and cumulative session spend`,
-	"/readings": `every reading the session has taken of its own run on one screen, newest first: the round, the verdict, the whole reading with its reason and the instruction it was judged against, and whether it steered the turn and whether that steer was taken back. Quiet readings are kept here too. It reads and changes nothing`,
-	"/turns":    `every turn the session has run on one screen, newest first: how it ended, its steps, tools, time and spend, what it changed, its commit and its checks' verdict — the figures its close row drew, beside the close itself — with the turn in flight on top. [enter] opens a turn's review where it changed files. A turn from an ended sitting shows its files and says its figures were not kept. It reads and changes nothing`,
 	"/step":     `open the in-flight step's detail: every row in it shows its output body, bounded; run it again to close (/ui verbosity high is the same thing for every step at once)`,
-	"/steps":    `the session's own working list on one screen: every step it declared, the paths each said it would touch, which it has marked done and the one it is on — and beside each, the calls the transcript titled for it, or not started where there are none. It reads and changes nothing`,
 	"/status":   `where this session is: what it is working on, what it has spent, and whether the last few turns are still on the target you set it`,
 	"/sessions": `the sessions running on this machine: the conversation each saves to, its checkout and branch, and whether it is working`,
 	"/trust":    `let this checkout's own skills, agent profiles, wordings and quality suites load. A clone can carry instructions, so nothing of a checkout's runs until you say so; "off" withdraws it and the next session starts without them`,
 	"/ui": `screen density, pane layout, monochrome and mouse: /ui verbosity <low|normal|high> · /ui mono <on|off> · /ui mouse <on|off>
 low hides counts, normal collapses rows, high expands rows. The mouse is on by default so the wheel scrolls the transcript, click-drag selects it, and clicks open rows or answer keys; off hands selection back to the terminal, and ctrl+x flips it and saves it
 terminal   what this terminal answered when shhh asked what it can do: inline images, desktop notifications, focus events, cell size`,
-	"/config":           `every setting, staged: what each one is set to, where that value came from, and what [enter] offers instead of typing it. Nothing reaches your config file until [w], and the way out asks before discarding what is staged. The running session keeps the settings it started on`,
 	"/add-dir":          `the working scope: which directories this session may write to. Bare lists it; <path> adds one (contained commands can write there, and edits there stop asking about leaving the scope); drop <path> takes it back`,
 	"/sandbox":          `containment status and container sandboxes (doctor|scope|list|status|destroy <id>|prune)`,
 	"/evidence":         `tool-output evidence store: reduction stats and size (purge to clear)`,
@@ -161,24 +156,27 @@ terminal   what this terminal answered when shhh asked what it can do: inline im
 	"/mcp":              `the MCP servers this session connected, and why any did not. trust <name> lets a server this checkout declares start from the next session on; distrust <name> withdraws that`,
 	"/skill":            `activate a skill now: /skill <name> [task] sends its instructions to the model with your task, as the model would load them itself. /<name> does the same for a skill whose name is not a command`,
 	"/secret":           `values a command may use and the model never sees: list names them, set NAME takes one from your environment (or NAME=value declares it outright), forget NAME drops it. What a command prints is scrubbed of them before it reaches the transcript`,
-	"/notes":            `the session's shared notebook — what the agents wrote for each other, and what a backlog run wrote up, listed by author. Dropping is yours alone: drop <n> removes one, clear empties it`,
 	"/memory":           `durable memories: list (default) · add [global] [kind] <text> · edit <id> (opens the entry in your editor) · forget <id>`,
-	"/agents": `agent manager: attach, answer, steer, retry, cancel and kill sub-agents from the row each is on (also ` + keys.Bracket(keys.Draft.Agents) + `)
-new [brief]   draft an agent profile from a sentence with the model's help: answer its questions if it has any, then keep, refine or discard the draft on a card. Bare offers starting points`,
-	"/attach":   `attach to an agent's session and steer it (bare /attach lists)`,
-	"/detach":   `back to your own session (also esc while attached)`,
-	"/todo":     `the project's backlog: bare opens a picker · show|edit <slug> · add (reads this session into proposed items you accept or drop) · add <text> · block <slug> [why] · open|done|drop <slug> · new <text> · groom <slug> (reads an item against the tree and proposes the corrections) · run [slug|--next] works an item through its profile's run · sprint · status · stop`,
-	"/plan":     `the approved plan as a checklist, with anything that has departed from it · save [name] writes the last plan/response to .shhh/plans/ · drop forgets an approved plan`,
-	"/diff":     `show what this session changed, full screen, or one file's — read from the session's own changeset, so it works outside a git repository`,
-	"/review":   `review what a turn changed: file list, hunks and the turn's verdict (bare reviews the last turn that changed anything). Also a turn's changed-files row, clicked or selected and opened with enter. It reads and changes nothing; /undo takes a turn back`,
-	"/undo":     `put back what a turn changed, from the session's own records (not git). Asks first, names anything that changed since, and is itself recorded as a turn`,
-	"/compact":  `continue from a summary plus the most recent turns`,
-	"/rewind":   `rewind to the end of turn [n], 0 being the start (bare /rewind picks interactively); the abandoned tail is kept as a branch, and a card asks whether the files come back too`,
-	"/branches": `switch this session's branches: [n] by number, [name] by name, bare opens a picker`,
-	"/save":     `save this chat`,
-	"/load":     `load a saved chat (bare /load opens a picker)`,
-	"/chats":    `saved chats — opens the same picker; enter loads, [x] deletes (asks first), [r] renames`,
-	"/exit":     `quit (also /quit, /q)`,
+	"/attach":           `attach to an agent's session and steer it (bare /attach lists)`,
+	"/detach":           `back to your own session (also esc while attached)`,
+	"/plan":             `the approved plan as a checklist, with anything that has departed from it · save [name] writes the last plan/response to .shhh/plans/ · drop forgets an approved plan`,
+	"/undo":             `put back what a turn changed, from the session's own records (not git). Asks first, names anything that changed since, and is itself recorded as a turn`,
+	"/compact":          `continue from a summary plus the most recent turns`,
+	"/rewind":           `rewind to the end of turn [n], 0 being the start (bare /rewind picks interactively); the abandoned tail is kept as a branch, and a card asks whether the files come back too`,
+	"/branches":         `switch this session's branches: [n] by number, [name] by name, bare opens a picker`,
+	"/save":             `save this chat`,
+	"/load":             `load a saved chat (bare /load opens a picker)`,
+	"/chats":            `saved chats — opens the same picker; enter loads, [x] deletes (asks first), [r] renames`,
+	"/exit":             `quit (also /quit, /q)`,
+}
+
+// commandHelp is a command's /help paragraph: the one its register row
+// declares, or the one kept above.
+func commandHelp(c slashCommand) string {
+	if c.help != "" {
+		return c.help
+	}
+	return helpCommands[c.name]
 }
 
 // helpKeysText is the key list on its own, as text: what the chord prints,

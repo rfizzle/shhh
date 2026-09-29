@@ -48,6 +48,10 @@ type slashCommand struct {
 	// greyed behind ⊘ with idleOnlyMeta beside it; an unwired one never
 	// appears at all, because it is not a command this session has.
 	idleOnly string
+	// help is the command's /help paragraph when a register row declares the
+	// command (overlay.go). Empty is a command whose paragraph is kept in
+	// helpCommands (help.go).
+	help string
 }
 
 // idleOnlyMeta is the short field a menu puts at the end of a row it cannot
@@ -106,6 +110,12 @@ var (
 // the attachments it offers — and the session asks the overlay register which
 // mode owns the screen (overlay.go), which reads a table built the same way.
 // A package-level registry closes that loop into an initialisation cycle.
+//
+// The order below is the one order every command list keeps — the menu, the
+// palette and /help. A command whose job is opening a surface is declared on
+// that surface's register row (overlay.go), completion row and paragraph
+// included, and stands here as registeredSlash: the slot is the only thing
+// this list says about it.
 func slashCommands() []slashCommand {
 	slashOnce.Do(func() { slashTable = buildSlashCommands() })
 	return slashTable
@@ -160,13 +170,12 @@ func buildSlashCommands() []slashCommand {
 				{dynamic: reasoningArgs},
 				{after: []string{"default"}, options: reasoningLevelArgs()},
 			}},
-		{name: "/context", desc: "the window as a meter, itemised down to the tool"},
+		registeredSlash("/context"),
 		{name: "/stats", desc: "context occupancy and session spend"},
-		{name: "/readings", desc: "every reading the session has taken of its own run, each whole"},
-		{name: "/turns", desc: "every turn the session has run, as its close row reads it, each one's review a key away"},
+		registeredSlash("/readings"),
+		registeredSlash("/turns"),
 		{name: "/step", desc: "open the in-flight step's detail (again closes it)"},
-		{name: "/steps", desc: "the session's own working list, each step beside what the transcript recorded for it",
-			enabled: func(m *Model) bool { return m.codingSurfaces() }},
+		registeredSlash("/steps"),
 		{name: "/status", desc: "where the session is, and whether it is still on target"},
 		{name: "/sessions", desc: "the sessions running on this machine, and where each one is"},
 		{name: "/trust", desc: "let this checkout's skills, agent profiles and quality suites load (\"off\" withdraws it)"},
@@ -221,12 +230,7 @@ func buildSlashCommands() []slashCommand {
 				}},
 				{after: []string{"rail"}, dynamic: railArgs},
 			}},
-		// The whole settings file, where /ui is the handful of its keys a
-		// session flips often enough to have a word for. Not idleOnly: it
-		// stages edits to your own config file and writes none of them until
-		// [w] (config.go).
-		{name: "/config", desc: "every setting, where its value came from, and what changing it costs",
-			enabled: func(m *Model) bool { return m.openConfig != nil }},
+		registeredSlash("/config"),
 		{name: "/add-dir", args: "[<path>|drop <path>]", desc: "the directories this session may work in",
 			enabled: func(m *Model) bool { return m.scope != nil },
 			argSpecs: []argSpec{
@@ -243,9 +247,8 @@ func buildSlashCommands() []slashCommand {
 				argOption{"destroy", "destroy a sandbox by id"},
 				argOption{"prune", "remove stopped sandboxes"},
 			)},
-		{name: "/safety", aliases: []string{"/security"}, desc: "everything this session may do, and what fences it, in one place"},
-		{name: "/sources", desc: "what this session read: every fetch and search, by host",
-			enabled: func(m *Model) bool { return m.sourceLedger != nil }},
+		registeredSlash("/safety"),
+		registeredSlash("/sources"),
 		{name: "/evidence", args: "[purge]", desc: "tool-output evidence store",
 			enabled:  func(m *Model) bool { return m.evidence.Manage != nil },
 			argSpecs: staticArgs(argOption{"purge", "delete stored tool output"})},
@@ -278,12 +281,7 @@ func buildSlashCommands() []slashCommand {
 				argOption{"set", "declare one: NAME from the environment, or NAME=value"},
 				argOption{"forget", "drop one by name"},
 			)},
-		{name: "/notes", args: "[drop <n>|clear]", desc: "the session's shared notebook, as a screen: what the agents wrote for each other",
-			enabled: func(m *Model) bool { return m.notebook != nil },
-			argSpecs: staticArgs(
-				argOption{"drop", "remove one note by number"},
-				argOption{"clear", "empty the notebook, after confirming it"},
-			)},
+		registeredSlash("/notes"),
 		{name: "/memory", args: "[list|add|edit|forget]", desc: "durable memories",
 			enabled: func(m *Model) bool { return m.memory.Manage != nil },
 			argSpecs: staticArgs(
@@ -292,49 +290,21 @@ func buildSlashCommands() []slashCommand {
 				argOption{"edit", "reword a memory by id, in your editor"},
 				argOption{"forget", "drop a memory by id"},
 			)},
-		{name: "/agents", args: "[new [brief]]", desc: "agent manager; new drafts a profile from a sentence",
-			key: keys.Shown(keys.Draft.Agents),
-			// The manager opens on a session that can spawn agents or draft a
-			// profile for one. Drafting alone is enough: the list is where the
-			// offer to draft lives (attach.go).
-			enabled:  func(m *Model) bool { return m.subagents != nil || m.personas.Enabled },
-			argSpecs: staticArgs(argOption{"new", "draft an agent profile with the model's help"})},
+		registeredSlash("/agents"),
 		{name: "/attach", args: "[name]", desc: "attach to an agent's session and steer it",
 			enabled:  func(m *Model) bool { return m.subagents != nil },
 			argSpecs: []argSpec{{dynamic: agentArgs, fuzzy: true}}},
 		{name: "/detach", desc: "back to the orchestrator (also esc)",
 			enabled: func(m *Model) bool { return m.subagents != nil && m.attachedTo != "" }},
-		{name: "/todo", args: "[show|edit|new|add|groom|block|open|done|drop|run|sprint|status|stop]", desc: "the project's backlog (bare /todo opens the screen)",
-			enabled: func(m *Model) bool { return m.todosEnabled() },
-			argSpecs: []argSpec{
-				{options: []argOption{
-					{"show", "print an item"},
-					{"edit", "open an item in your editor"},
-					{"add", "read this session into items, or add one from a sentence"},
-					{"groom", "read an item against the tree and propose the corrections"},
-					{"block", "mark an item blocked, with why"},
-					{"open", "reopen a blocked item"},
-					{"done", "archive an item"},
-					{"drop", "delete an item outright"},
-					{"run", "work an item through to a commit (bare run takes the next ready one)"},
-					{"sprint", "the set being worked: bare shows it, plan proposes one"},
-					{"status", "where the run is"},
-					{"stop", "abandon the run; the item goes back to open"},
-				}},
-				{after: []string{"show", "edit", "groom", "block", "open", "done", "drop", "run"}, dynamic: todoSlugArgs, fuzzy: true},
-			}},
+		registeredSlash("/todo"),
 		{name: "/plan", args: "[save|drop]", desc: "the approved plan as a checklist, with anything that has departed from it",
 			enabled: func(m *Model) bool { return m.codingSurfaces() },
 			argSpecs: staticArgs(
 				argOption{"save", "write the last plan/response to .shhh/plans/"},
 				argOption{"drop", "forget the approved plan; steps go back to inferred"},
 			)},
-		{name: "/diff", args: "[path]", desc: "cumulative session diff, full screen — bare, or one file's",
-			enabled:  func(m *Model) bool { return m.changes != nil && m.codingSurfaces() },
-			argSpecs: []argSpec{{dynamic: sessionFileArgs, fuzzy: true}}},
-		{name: "/review", args: "[turn]", desc: "review what a turn changed — files, hunks, staging",
-			enabled:  func(m *Model) bool { return m.changes != nil && m.codingSurfaces() },
-			argSpecs: []argSpec{{dynamic: reviewTurnArgs}}},
+		registeredSlash("/diff"),
+		registeredSlash("/review"),
 		{name: "/undo", args: "[turn]", desc: "put back what a turn changed (asks first)",
 			enabled:  func(m *Model) bool { return m.changes != nil && m.codingSurfaces() },
 			argSpecs: []argSpec{{dynamic: reviewTurnArgs}},

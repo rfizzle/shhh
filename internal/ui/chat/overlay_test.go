@@ -8,6 +8,9 @@ package chat
 // seen. None of that is a compile error, so it is these tests.
 
 import (
+	"fmt"
+	"strings"
+	"sync"
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
@@ -71,7 +74,7 @@ func TestOverlayPlacements(t *testing.T) {
 			t.Errorf("state %d places %d, want %d", s, o.Placement(), p)
 		}
 	}
-	overlayOnce.Do(func() { overlayTable = buildOverlays() })
+	overlays()
 	for s := range overlayTable {
 		if _, ok := want[s]; !ok {
 			t.Errorf("state %d is in the register and not in this test", s)
@@ -83,7 +86,7 @@ func TestOverlayPlacements(t *testing.T) {
 // does not: the pane one has taken the transcript, so the panel is all the
 // room left to say how to get out of it.
 func TestOverlayPaneModesLeaveAHint(t *testing.T) {
-	overlayOnce.Do(func() { overlayTable = buildOverlays() })
+	overlays()
 	for s, o := range overlayTable {
 		if o.place == placePane && o.hint == nil {
 			t.Errorf("state %d takes the pane and leaves no hint in the draft's place", s)
@@ -98,7 +101,7 @@ func TestOverlayPaneModesLeaveAHint(t *testing.T) {
 // the session back itself — and every mode that draws into the panel is one
 // isSurface knows about: the two lists that used to be written separately.
 func TestOverlayRowsAreComplete(t *testing.T) {
-	overlayOnce.Do(func() { overlayTable = buildOverlays() })
+	overlays()
 	for s, o := range overlayTable {
 		if (o.keys == nil) == (o.answer == nil) {
 			t.Errorf("state %d must have exactly one of keys and answer", s)
@@ -118,7 +121,7 @@ func TestOverlayRowsAreComplete(t *testing.T) {
 func TestOverlayAddingAModeIsOneRow(t *testing.T) {
 	const testState = state(1 << 20)
 	answered := 0
-	overlayOnce.Do(func() { overlayTable = buildOverlays() })
+	overlays()
 	overlayTable[testState] = &mode{
 		place:   placePanel,
 		borrows: true,
@@ -144,5 +147,94 @@ func TestOverlayAddingAModeIsOneRow(t *testing.T) {
 	}
 	if _, _, handled := m.updateKey(tea.KeyPressMsg{Code: 'x'}); !handled || answered != 1 {
 		t.Fatalf("the key ladder did not route to the row (handled=%v answered=%d)", handled, answered)
+	}
+}
+
+// The register row is where a surface declares everything the rest of the
+// session reads about it, and this is the check that the readers agree with
+// the rows: a surface's command is on the menu once and has a paragraph in
+// /help, a pane surface stands over the rail, and every rail door is a row's.
+func TestRegisterDeclaresEachSurfaceOnce(t *testing.T) {
+	rows := map[string]*mode{"the agent manager": agentListMode()}
+	for s, o := range overlays() {
+		rows[fmt.Sprintf("state %d", s)] = o
+	}
+	listed := map[string]int{}
+	for _, c := range slashCommands() {
+		listed[c.name]++
+	}
+	doors := map[string]string{}
+	for name, o := range rows {
+		if c := o.command; c != nil {
+			if listed[c.name] != 1 {
+				t.Errorf("%s declares %s, which the completion registry lists %d times", name, c.name, listed[c.name])
+			}
+			if strings.TrimSpace(c.help) == "" {
+				t.Errorf("%s declares %s with no /help paragraph", name, c.name)
+			}
+			if c.open == nil {
+				t.Errorf("%s declares %s and nothing to do when it is typed", name, c.name)
+			}
+		}
+		if d := o.door; d != nil {
+			if other, dup := doors[d.block]; dup {
+				t.Errorf("%s and %s both declare the %s door", name, other, d.block)
+			}
+			doors[d.block] = name
+			if d.open == nil || d.surface == nil || d.close == nil {
+				t.Errorf("%s declares the %s door without an open, a showing and a close", name, d.block)
+			}
+		}
+	}
+	for block := range railDoors() {
+		if _, ok := doors[block]; !ok {
+			t.Errorf("the rail has a %s door no register row declares", block)
+		}
+	}
+	for block := range doors {
+		if !railDoorSet()[block] {
+			t.Errorf("the %s door is declared and the rail is not told it has one", block)
+		}
+	}
+	// The two staged-attachment viewers are opened from the draft's own strip
+	// and have always left the rail standing; every other pane covers it.
+	keepsRail := map[state]bool{statePreview: true, statePasteView: true}
+	for s, o := range overlays() {
+		if o.place == placePane && !o.hidesRail && !keepsRail[s] {
+			t.Errorf("state %d takes the pane and leaves the rail beside it", s)
+		}
+	}
+}
+
+// Every table derived from the register opens on a session nothing has
+// painted yet. Each is built in the register's own first use, so the check
+// starts from a register nobody has built: a derived table read on some
+// other path would answer from a nil map here rather than from the table a
+// paint happened to build first.
+func TestRegisterDerivedTablesOpenFromAZeroModel(t *testing.T) {
+	overlayOnce, overlayTable = sync.Once{}, nil
+	registerCommands, registerDoors, registerDoorNames = nil, nil, nil
+	slashOnce, slashTable = sync.Once{}, nil
+
+	var m Model
+	if c, ok := registeredCommand("/context"); !ok || c.open == nil {
+		t.Fatal("the command dispatch has no /context before a paint")
+	}
+	if len(slashCommands()) == 0 {
+		t.Fatal("the completion registry is empty before a paint")
+	}
+	if len(railDoors()) == 0 || len(railDoorSet()) != len(railDoors()) {
+		t.Fatal("the rail doors are missing before a paint")
+	}
+	if strings.TrimSpace(commandHelp(registeredSlash("/steps"))) == "" {
+		t.Fatal("/help has no paragraph for a register command before a paint")
+	}
+	m.state = stateSteps
+	if !m.inspectorHidden() {
+		t.Fatal("the rail should stand hidden under a pane surface before a paint")
+	}
+	m.mouseOn, m.ready = true, true
+	if m.selectableSurface() {
+		t.Fatal("the transcript should not be selectable under a pane surface before a paint")
 	}
 }

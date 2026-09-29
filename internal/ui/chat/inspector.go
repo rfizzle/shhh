@@ -83,9 +83,9 @@ func (m Model) inspectorHidden() bool {
 	if m.activeChildAsk() != nil {
 		return true
 	}
-	switch m.state {
-	case stateConfirmRun, statePlanApprove, stateQuestion, statePick, stateTodoPropose, stateTodoDraft, statePasteDrop, stateScaffold, statePersona, stateTodoPause, stateDiffFull, stateOutputFull, stateReview, stateContext, stateSources, stateSteps, stateReadings, stateTurns, stateSafety, stateNotes, stateBacklog, stateConfig, stateModelList, stateKeyList:
-		return true
+	// The rest is the mode's own row (overlay.go).
+	if o := overlayFor(m.state); o != nil {
+		return o.hidesRail
 	}
 	return false
 }

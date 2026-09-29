@@ -160,7 +160,7 @@ func TestHelp_ListsExactlyTheCommandsThisSessionHas(t *testing.T) {
 func TestHelp_EveryCommandHasAParagraph(t *testing.T) {
 	named := map[string]bool{}
 	for _, c := range slashCommands() {
-		if strings.TrimSpace(helpCommands[c.name]) == "" {
+		if strings.TrimSpace(commandHelp(c)) == "" {
 			t.Errorf("%s has no paragraph in /help", c.name)
 		}
 		named[c.name] = true
@@ -168,6 +168,9 @@ func TestHelp_EveryCommandHasAParagraph(t *testing.T) {
 	for name := range helpCommands {
 		if !named[name] {
 			t.Errorf("/help keeps a paragraph for %s, which is not a command", name)
+		}
+		if _, ok := registeredCommand(name); ok {
+			t.Errorf("/help keeps a paragraph for %s, which its register row already declares", name)
 		}
 	}
 }

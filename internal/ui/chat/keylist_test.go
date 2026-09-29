@@ -65,7 +65,7 @@ func TestKeyList_EveryCardNamesARegisterRow(t *testing.T) {
 		"reading mode", "a yes-or-no question", "the question card", "the agent manager",
 		"the approval card's queue list", "the approval card's grant list",
 	}
-	overlayOnce.Do(func() { overlayTable = buildOverlays() })
+	overlays()
 	for _, o := range append([]*mode{agentListMode(), childAskMode(nil)}, values(overlayTable)...) {
 		if o.keyList == nil {
 			continue

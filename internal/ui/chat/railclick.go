@@ -36,8 +36,6 @@ package chat
 // has no key on the rail for the same reason — its command is its key.
 
 import (
-	"sync"
-
 	tea "charm.land/bubbletea/v2"
 	uv "github.com/charmbracelet/ultraviolet"
 
@@ -73,39 +71,20 @@ func (o railOpening) showing(m Model) bool {
 }
 
 // railDoors is every block whose heading and fold marker open a surface,
-// keyed by the block's name: one row per door, the command each one's key
-// twin is. It is built on first use for the reason the overlay register is
-// (overlay.go): a row names the session's own methods.
+// keyed by the block's name. Each door is declared on the register row of
+// the surface it opens (overlay.go), and read through the register's own
+// accessor for the reason the register is built on first use: a row names
+// the session's own methods.
 func railDoors() map[string]railDoor {
-	railDoorOnce.Do(func() {
-		railDoorTable = map[string]railDoor{
-			components.RailChanges: {Model.openSessionDiff, reviewShowing, Model.closeReview},        // /diff
-			components.RailAgents:  {Model.openAgentList, agentListShowing, Model.closeAgentList},    // /agents
-			components.RailSummary: {Model.openReadings, readingsShowing, Model.closeReadingsScreen}, // /readings
-			components.RailTurn:    {Model.openTurns, turnsShowing, Model.closeTurnsScreen},          // /turns
-			components.RailSteps:   {Model.openSteps, stepsShowing, Model.closeStepsScreen},          // /steps
-			components.RailTodo:    {Model.openTodoDoor, backlogShowing, Model.closeTodoScreen},      // /todo
-			components.RailContext: {Model.openContext, contextShowing, Model.closeContextScreen},    // /context
-		}
-		railDoorNames = map[string]bool{}
-		for name := range railDoorTable {
-			railDoorNames[name] = true
-		}
-	})
-	return railDoorTable
+	overlays()
+	return registerDoors
 }
-
-var (
-	railDoorOnce  sync.Once
-	railDoorTable map[string]railDoor
-	railDoorNames map[string]bool
-)
 
 // railDoorSet is the names of the blocks with a door, which the rail is
 // handed so that exactly those headings and markers carry a target.
 func railDoorSet() map[string]bool {
-	railDoors()
-	return railDoorNames
+	overlays()
+	return registerDoorNames
 }
 
 // fileDoor is a file row's door. It opens by path, so it is not a row of the
