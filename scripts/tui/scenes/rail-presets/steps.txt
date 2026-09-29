@@ -6,14 +6,14 @@
 # tall the rail is (docs/interface/surfaces.md#the-inspector-rail). One turn
 # writes twelve files; the block draws eight of them and folds the other four
 # behind `… 4 more` with their lines, on a rail with room to spare. A second
-# turn edits the first file again: it is the running turn's, so it takes a
-# kept row back from the oldest of the others, and the marker under the kept
-# rows counts five.
+# turn edits the first file again, one of the four the first fold took: it
+# is the running turn's, so it takes a kept row back from the oldest of the
+# others, and the marker under the kept rows still counts four.
 #
 # What the capture is for: at 03 the marker sits under eight rows with the
 # rail's lower blocks still on screen; at 04 pkg/f00.go is the top row of the
 # block, the kept rows are in the order they were first written, and the
-# marker says `… 5 more`.
+# marker still says `… 4 more` — f00 came back and f04 went behind it.
 #
 # The mode is accept-edits so twelve writes are twelve rows rather than
 # twelve cards.
@@ -24,7 +24,7 @@ snap 02-accept-edits "⏵⏵ accept edits"
 keys "lay out the twelve stub files" Enter
 snap 03-past-the-preset "Twelve stub files are written" "… 4 more" "pkg/f11.go"
 keys "give the first stub its real value" Enter
-snap 04-second-turn "f00 carries its real value now" "… 5 more" "pkg/f00.go"
+snap 04-second-turn "f00 carries its real value now" "… 4 more" "pkg/f00.go"
 keys C-c
 snap 05-quit-armed "again quits"
 keys C-c
