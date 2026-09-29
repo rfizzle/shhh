@@ -155,10 +155,6 @@ type TurnClose struct {
 	// live beside the waiting keys. Empty where there is no such key to
 	// press from this screen.
 	Handover string
-	// Option says this block is the first in the session to offer a chord,
-	// so its first key run names the profile setting an alt chord needs on a
-	// stock macOS terminal (inertkeys.go).
-	Option bool
 }
 
 // Word is how the turn ended, in the one word that rides beside the glyph so
@@ -347,14 +343,6 @@ func (c TurnClose) View(width int) string {
 			notes = append([]string{sty.Dim.Render(fuller)}, notes...)
 		}
 		lines = append(lines, closeOfferRows(lead, stated, ch.Keys, c.KeysWaiting, c.Handover, notes, width)...)
-		// And, the first time a session offers a chord, what alt costs on a
-		// stock macOS terminal. It takes a line under the row rather than a
-		// clause on it: the row is already the widest line in the block, and
-		// this is the sentence a reader whose chord did nothing needs most
-		// (inertkeys.go).
-		if option := KeyRunOption(ch.Keys, c.KeysWaiting, c.Option); option != "" {
-			lines = append(lines, closeLine(closeLead("", " "), option, "", width))
-		}
 	} else if c.WroteNothing {
 		// The changed-files row's own lead, because it is that row answering
 		// with nothing: the rail the command's row carried is the question,

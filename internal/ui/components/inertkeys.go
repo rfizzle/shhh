@@ -24,8 +24,6 @@ package components
 
 import (
 	"strings"
-
-	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // handoverWords trail the key that hands a row the keyboard. They are the
@@ -109,49 +107,6 @@ func asChords(keys []TurnKey) []TurnKey {
 	return out
 }
 
-// optionRow is what the first row in a session to offer an alt chord says
-// under it: an alt chord composes a character rather than arriving on the two
-// stock macOS terminals until the profile is told to send the escape prefix,
-// and the doctor's keys row is what reads that setting and says which box
-// (docs/interface/reserved-keys.md#the-draft-spends-chords-only). It is said
-// once, because it is a fact about the terminal and not about this row — and
-// only over an alt chord, which a Mac ships none of: there it is a sentence
-// about a chord the person's own keymap put on alt
-// (docs/interface/reserved-keys.md#a-mac-ships-without-alt).
-//
-// It takes a line of its own rather than trailing the keys. A row's key run
-// is already the widest thing on it, and a sentence appended to that run is a
-// sentence the narrowing drops first — which would leave the note on the wide
-// terminals that least need it and off the narrow ones that most do.
-const optionRow = "alt needs Option as Meta — shhh doctor"
-
-// optionLine is that sentence as the line a row appends.
-func optionLine() string { return sty.Dim.Render(optionRow) }
-
-// OptionKeyboard reports that the keyboard in force is the Mac's, the only
-// one for which the Option setting is a fact about the terminal at all. It is
-// the answer the Mac's table is applied on (keys.Platform), not the host the
-// process runs on: every other keyboard is one whose alt arrives as it is, so
-// a row drawn under it names nothing, on any host.
-func OptionKeyboard() bool { return keys.Platform() == "darwin" }
-
-// namesTheOption reports that this run is the one that says it: the keyboard
-// is the Mac's, the offers are being drawn as chords, at least one of them is
-// an alt chord rather than a key spelled the same either way (enter is) or a
-// chord every terminal delivers (a function key is), and this row is the
-// session's first to do it.
-func namesTheOption(offers []TurnKey, waiting, option bool) bool {
-	if !option || !waiting || !chorded(offers) || !OptionKeyboard() {
-		return false
-	}
-	for _, k := range offers {
-		if k.Chord != k.Key && keys.OptionSpelled(k.Chord) {
-			return true
-		}
-	}
-	return false
-}
-
 // keyRun renders a row's offers in the state the keyboard puts them in.
 // Waiting is the row's own claim — a host that makes none keeps the live
 // treatment the run always had, which is what leaves the one-shot's printed
@@ -222,13 +177,4 @@ func keyRunRows(keys []TurnKey, waiting bool, handover string, room int) []strin
 // rule a surface gets to keep a second copy of.
 func KeyRun(keys []TurnKey, waiting bool, handover string) string {
 	return keyRun(keys, waiting, handover)
-}
-
-// KeyRunOption is the sentence such a row appends the first time a session
-// offers a chord, or "" where it is not that row.
-func KeyRunOption(keys []TurnKey, waiting, option bool) string {
-	if !namesTheOption(keys, waiting, option) {
-		return ""
-	}
-	return optionLine()
 }

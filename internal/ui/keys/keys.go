@@ -225,8 +225,8 @@ type DraftKeys struct {
 	Agents  Binding
 	// Backlog opens the project's backlog as a screen. There is no
 	// mnemonic in the chord and there was none left to find: every letter
-	// the word suggests is spent — b is the agent manager, t is the
-	// reasoning level — so this is simply the chord the register still had
+	// the word suggests is spent — t is the reasoning level — so this is
+	// simply the chord the register still had
 	// free among the ones every terminal delivers. The door people will
 	// use is /todo; this is the one for hands already on the keyboard.
 	Backlog Binding
@@ -244,14 +244,11 @@ type DraftKeys struct {
 	// the key list instead, and "on an empty draft" is a condition a reader
 	// discovers by having it fire.
 	//
-	// The chord is ctrl rather than alt, which is a decision about this key
-	// in particular. Alt is where the register's spare chords are, and it
-	// costs the Option setting on a stock macOS terminal
-	// (docs/interface/reserved-keys.md#the-draft-spends-chords-only) — a
-	// price every other alt chord pays by naming the doctor's row beside
-	// itself. This is the row that names it. A key list behind a setting the
-	// key list is what tells you about is a door that only opens once you no
-	// longer need it, so it took ctrl+] from the free set instead.
+	// The chord is ctrl rather than alt: an alt chord costs the Option
+	// setting on a stock macOS terminal
+	// (docs/interface/reserved-keys.md#the-draft-spends-chords-only), and a
+	// key list behind a setting is a door that only opens once you no longer
+	// need it, so it took ctrl+] from the free set instead.
 	KeyList Binding
 
 	// Suspend hands the terminal back to the shell, and Redraw takes the

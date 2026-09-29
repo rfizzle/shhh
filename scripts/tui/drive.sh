@@ -93,9 +93,8 @@
 # bin/tui/<scene>), WAIT (seconds a snap waits for its text; default 20),
 # COMPARE (seconds a compared string is looked for again; default 2),
 # PORT and SOCK (the provider's port and the tmux server's name; both per run
-# unless set), TMUX_TMPDIR (the tmux socket directory; a directory of the
-# run's own under $TMPDIR unless set), and PLATFORM (whose keyboard the binary
-# ships; default linux).
+# unless set), and TMUX_TMPDIR (the tmux socket directory; a directory of the
+# run's own under $TMPDIR unless set).
 set -u
 here=$(cd "$(dirname "$0")" && pwd)
 root=$(cd "$here/../.." && pwd)
@@ -333,12 +332,6 @@ done < "$scene/steps.txt"
 envs="HOME=$home XDG_CONFIG_HOME=$home/config XDG_DATA_HOME=$home/data"
 envs="$envs SHHH_PROVIDER=openai-compatible SHHH_BASE_URL=http://127.0.0.1:$PORT/v1 SHHH_API_KEY=scripted SHHH_MODEL=scripted-model SHHH_REASONING=medium"
 envs="$envs TERM=xterm-256color COLORTERM=truecolor"
-# The keyboard is the Linux one wherever the scene is driven, because a Mac
-# ships its alt chords on the function row and the snaps wait for chord text
-# the runner prints (docs/interface/reserved-keys.md#a-mac-ships-without-alt).
-# PLATFORM=darwin captures the Mac's; a scene that waits on an alt spelling or
-# presses M- will not reach its snaps under it.
-envs="$envs SHHH_KEYS_PLATFORM=${PLATFORM:-linux}"
 
 # What the pane runs. `shhh code` is the default because most scenes are the
 # session, but it is one of four sizes and the others are separate entry

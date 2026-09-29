@@ -103,11 +103,6 @@ func newKeysDefaultsCmd() *cobra.Command {
 // the way the config listing dots a default.
 func keysReport(kb []keys.Group, path string, refused error) report.Report {
 	r := report.Report{Title: "shhh keys", Subject: "the keyboard shhh ships"}
-	if keys.Platform() == "darwin" {
-		// A Mac ships its own keyboard (docs/interface/reserved-keys.md#a-mac-ships-without-alt),
-		// and "shipped" on every row below means that one.
-		r.Subject = "the keyboard shhh ships on a Mac"
-	}
 	if path != "" && refused == nil {
 		r.Subject = shortPath(path)
 	}

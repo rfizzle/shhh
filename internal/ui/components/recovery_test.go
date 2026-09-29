@@ -266,7 +266,7 @@ func TestRecoveryRow_EveryOfferTheRowActsOnIsDrawnWhole(t *testing.T) {
 			{"waiting on a handover", letters(row.Keys), true, "ctrl+o", func(k KeyOffer) string { return k.Key + " " + k.Label }},
 		} {
 			r := row
-			r.Keys, r.KeysWaiting, r.Handover, r.Option = tc.keys, tc.waiting, tc.handover, tc.waiting
+			r.Keys, r.KeysWaiting, r.Handover = tc.keys, tc.waiting, tc.handover
 			want := make([]string, 0, len(tc.keys)+1)
 			for _, k := range tc.keys {
 				want = append(want, tc.spelled(k))

@@ -12,8 +12,6 @@ package chat
 import (
 	"context"
 	"fmt"
-	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 
@@ -453,23 +451,6 @@ func pointOn(t *testing.T, m Model, mark string) selPoint {
 	}
 	t.Fatalf("no drawn line carries %q", mark)
 	return selPoint{}
-}
-
-// macAltKeymap puts the Mac's keyboard on the register with a keymap file
-// that moves the agent manager back onto alt — a real Mac session whose
-// person chose the alt chords — and puts both back when the test ends.
-func macAltKeymap(t *testing.T) {
-	t.Helper()
-	t.Cleanup(func() { _ = keys.Load() })
-	t.Cleanup(keys.UsePlatform("darwin"))
-	path := filepath.Join(t.TempDir(), "keybindings.toml")
-	keymap := "[draft]\nagents = \"alt+a\"\n"
-	if err := os.WriteFile(path, []byte(keymap), 0o600); err != nil {
-		t.Fatal(err)
-	}
-	if err := keys.Load(path); err != nil {
-		t.Fatal(err)
-	}
 }
 
 // TestInertKeys_EveryTakeoverHoldsTheKeyboardExclusively is why most of the

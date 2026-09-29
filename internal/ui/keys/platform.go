@@ -1,163 +1,43 @@
 package keys
 
-// The keyboard shhh ships is one keyboard per platform
+// The keyboard shhh ships is one keyboard on every platform
 // (docs/interface/reserved-keys.md#a-mac-ships-without-alt).
 //
-// keys.go declares it once, and on Linux and Windows that declaration is
-// what ships. On macOS the two stock terminals send Option+letter as the
-// character it composes until a profile setting is ticked, so an alt chord in
-// the declaration would be dead there by default, and a hint offering one a
-// false offer on the desktop shhh is most often run on. The Mac's table moved
-// such chords to the function row, which every terminal delivers with nothing
-// set; the declaration now ships no alt chord, so the table is empty and a Mac
-// ships the declaration as it stands.
-//
-// The table is a keymap file the program carries: the same dotted names, the
-// same apply, the same five rules. It is applied once, before anything reads
-// the register, and what it leaves is what "shipped" means on this machine —
-// the keyboard a person's own keybindings.toml is applied over and measured
-// against, and the one `shhh keys` marks a moved key beside. Hints and
-// handlers read one declaration either way, so they move together.
+// On macOS the two stock terminals send Option+letter as the character it
+// composes until a profile setting is ticked, so an alt chord would be dead
+// there by default. That is why keys.go declares no alt chord at all: the
+// agent family is on the function row, which every terminal delivers with
+// nothing set, and what keys.go declares is what every desk ships. The one
+// thing that still differs by desk is a sentence rather than a key — how the
+// line editor moves by word — which is what Platform is asked for.
 
 import (
-	"fmt"
-	"os"
-	"reflect"
 	"runtime"
-	"strings"
 	"testing"
 )
 
-// darwinMoves is the Mac's keyboard, as the moves it makes over the one
-// keys.go declares. It is empty: the table existed to move the alt chords
-// onto the function row, because a stock Mac terminal composes a character
-// for Option, and keys.go now declares no alt chord at all — the agent family
-// is on the function row everywhere and the reasoning level is ctrl+t alone.
-// A move added here is held to the five rules like any other.
-var darwinMoves = map[string][]string{}
-
-// PlatformEnv names the platform whose keyboard this process ships, in place
-// of the one it runs on. It exists for two readers: the scene harness, which
-// drives the binary on whatever host it is given and whose snaps wait for the
-// Linux spelling, and a person on a Mac who has ticked the Option setting and
-// would rather have the alt keyboard.
-const PlatformEnv = "SHHH_KEYS_PLATFORM"
-
-// Platform is the platform whose shipped keyboard this process runs, which is
-// also what a surface asks when a sentence it prints depends on the desk
-// rather than on a key: how the line editor moves by word, say.
+// Platform is the platform this process runs on, which is what a surface
+// asks when a sentence it prints depends on the desk rather than on a key:
+// how the line editor moves by word, say.
 func Platform() string { return running }
 
-// running is Platform's answer: the override where one is set, else the
-// platform this process runs on. A test binary runs the Linux keyboard unless
-// told otherwise, because the goldens and the assertions that print a chord
-// are written against the keyboard the CI runner ships, and a suite that
-// passed on one desk and failed on the next would be testing the desk.
+// running is Platform's answer. A test binary answers linux whatever the
+// host, because the goldens that print the word moves are written against
+// the CI runner's desk, and a suite that passed on one desk and failed on the
+// next would be testing the desk.
 var running = func() string {
-	if p := os.Getenv(PlatformEnv); p != "" {
-		return p
-	}
 	if testing.Testing() {
 		return "linux"
 	}
 	return runtime.GOOS
 }()
 
-// movesFor is the table a platform applies over the declaration: the Mac's,
-// or nothing.
-func movesFor(platform string) map[string][]string {
-	if platform == "darwin" {
-		return darwinMoves
-	}
-	return nil
-}
-
-// written is the register exactly as keys.go declares it, before any
-// platform's table: the keyboard Linux and Windows ship.
-var written = snapshot()
-
-// shippedOn is each platform's keyboard, taken once. The Mac's is the
-// declaration with its table applied; applying it is also where it is held
-// to the five rules, so a table that broke one is a program that does not
-// start rather than a keyboard nobody checked.
-var shippedOn = map[string][]reflect.Value{
-	"linux":  written,
-	"darwin": shippedFrom("darwin"),
-}
-
-// shippedFrom applies a platform's table to the declaration and returns the
-// keyboard that makes, leaving the register as it found it.
-func shippedFrom(platform string) []reflect.Value {
-	held := snapshot()
-	defer settle(held)
-	settle(written)
-	if _, err := apply(movesFor(platform)); err != nil {
-		panic(fmt.Sprintf("keys: the %s keyboard breaks the register's rules: %v", platform, err))
-	}
-	return snapshot()
-}
-
-// ship puts a platform's keyboard on the register and returns it, which is
-// what declared is.
-func ship(platform string) []reflect.Value {
-	board, ok := shippedOn[platform]
-	if !ok {
-		board = written
-	}
-	settle(board)
-	return board
-}
-
-// UsePlatform puts the keyboard a platform ships on the register, as though
-// the process had started there, and returns the call that puts the previous
-// one back. It is for tests: the process start has already chosen, and a
-// surface drawn while the register moved under it would be offering keys
-// from two keyboards.
+// UsePlatform makes Platform answer platform, as though the process had
+// started there, and returns the call that puts the previous answer back. It
+// is for tests of the sentences that depend on the desk; the keyboard itself
+// is the same on every one.
 func UsePlatform(platform string) (restore func()) {
-	was, wasDeclared, wasRunning := snapshot(), declared, running
-	declared, running = ship(platform), platform
-	return func() {
-		settle(was)
-		declared, running = wasDeclared, wasRunning
-	}
-}
-
-// ShippedOn is a key's keystrokes as a platform ships them, by the dotted
-// name a file writes it by, and false for a name the register does not have.
-// The reference is written from it, so the document states both keyboards
-// whichever one the machine running `make docs` would have started with.
-func ShippedOn(platform, name string) ([]string, bool) {
-	board, ok := shippedOn[platform]
-	if !ok {
-		board = written
-	}
-	var out []string
-	found := false
-	for i, g := range movable() {
-		walk(g.name, board[i], func(n string, b Binding) {
-			if n == name {
-				out, found = b.Keys(), true
-			}
-		})
-	}
-	return out, found
-}
-
-// OptionSpelled reports that a spelling a hint prints names an alt chord —
-// the one kind of chord a stock macOS terminal does not deliver until its
-// Option key is set to send the escape prefix. It is how a surface decides
-// whether the note naming that setting has anything to be about.
-func OptionSpelled(spelling string) bool { return strings.Contains(spelling, "alt+") }
-
-// NeedsOption reports that any of the bindings answers an alt chord in this
-// process — the shipped Linux keyboard, or a keymap file that put one there.
-func NeedsOption(bs ...Binding) bool {
-	for _, b := range bs {
-		for _, k := range b.Keys() {
-			if OptionSpelled(k) {
-				return true
-			}
-		}
-	}
-	return false
+	was := running
+	running = platform
+	return func() { running = was }
 }

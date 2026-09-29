@@ -305,7 +305,6 @@ func TestDoctorOptionKey_OffAMacIsNotAQuestion(t *testing.T) {
 // nothing to ask the terminal about, whatever its profile says; a file that
 // moves a key onto alt brings the question back, counted.
 func TestDoctorOptionKey_AMacWithNoAltChordIsNotAQuestion(t *testing.T) {
-	t.Cleanup(keys.UsePlatform("darwin"))
 	f := doctorOptionKey(optionKeyState{GOOS: "darwin", Terminal: "Apple_Terminal", Profile: "Basic", Sends: optionCharacter})
 	if f.State != components.DoctorSkipped || f.Subject != "no alt chord is bound" || len(f.Fix) != 0 {
 		t.Fatalf("a Mac with no alt chord is judged on its Option key: %+v", f)
@@ -315,7 +314,8 @@ func TestDoctorOptionKey_AMacWithNoAltChordIsNotAQuestion(t *testing.T) {
 	if err := os.WriteFile(path, []byte("[draft]\nagents = \"alt+a\"\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	t.Cleanup(func() { _ = keys.Load() })
+	was := keys.Draft
+	t.Cleanup(func() { keys.Draft = was; _ = keys.Load() })
 	if err := keys.Load(path); err != nil {
 		t.Fatal(err)
 	}
@@ -339,8 +339,8 @@ func altChordBound(t *testing.T, keymap ...string) {
 	if len(keymap) == 0 {
 		keymap = []string{"[draft]\nagents = \"alt+a\"\n"}
 	}
-	t.Cleanup(func() { _ = keys.Load() })
-	t.Cleanup(keys.UsePlatform("linux"))
+	was := keys.Draft
+	t.Cleanup(func() { keys.Draft = was; _ = keys.Load() })
 	path := filepath.Join(t.TempDir(), "keybindings.toml")
 	if err := os.WriteFile(path, []byte(keymap[0]), 0o600); err != nil {
 		t.Fatal(err)

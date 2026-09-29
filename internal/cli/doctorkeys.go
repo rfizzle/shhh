@@ -6,12 +6,11 @@ package cli
 // On macOS the Option key types a character — å for alt+a on a US layout —
 // until the terminal's profile says to send the escape prefix instead, and
 // the stock terminals ship with that off, so an alt chord is dead on a Mac at
-// its defaults. That is why a Mac ships no alt chord at all
+// its defaults. That is why nothing ships on alt
 // (docs/interface/reserved-keys.md#a-mac-ships-without-alt), and why this row
-// has a question only where one is bound anyway: a keymap file that put a key
-// back on alt, or the Linux keyboard chosen on a Mac. It tells that reader
-// which tick, on the profile they are in, and the key list names the same
-// setting beside the chords (docs/interface/reserved-keys.md#what-is-left).
+// has a question only where a keymap file put a key back on alt. It is the
+// one place that names the setting: it tells that reader which tick, on the
+// profile they are in.
 //
 // The setting is read from the terminal's preferences rather than by
 // pressing anything: a diagnostic looks and does not touch, and a key

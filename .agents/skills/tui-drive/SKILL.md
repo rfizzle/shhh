@@ -406,22 +406,14 @@ than leaving it out.
   then rows), so `tui-check` runs it where it means to be run; `COLS` and
   `ROWS` on the command line still override it. `ROWS` matters as much as
   `COLS` for anything bound by the forty-per-cent panel rule.
-- **The keyboard is Linux's on every host unless `PLATFORM` says otherwise.**
-  The run reads its knobs from the environment — `SHHH_BIN`, `COLS` and
-  `ROWS`, `OUT`, `WAIT`, `COMPARE`, `PORT` and `SOCK`, `TMUX_TMPDIR`,
-  `FAKE_PACE_MS` and `PLATFORM` — and `PLATFORM` (default `linux`) is the
-  keyboard the binary ships, handed to it as `SHHH_KEYS_PLATFORM`. A Mac
-  ships its alt chords on the function row, so without the default a scene
-  driven on a Mac would press `M-g` at a binary that no longer binds it and
-  wait for `[alt+g] commit` on a row that draws `[f3] commit`. That is why a
-  scene that presses `M-` keys, or waits on an alt spelling, reads the Linux
-  table wherever it runs. `PLATFORM=darwin` captures the Mac's keyboard,
-  and a chord scene driven that way needs Mac snap text and Mac keys:
-  `commit-offer`'s `03b-selected` waits on `[alt+g] commit` and
-  `[alt+z] undo turn`, and under the Mac's table it would have to wait on
-  `[f3] commit` and `[f2] undo turn` and press `F3` where it presses `M-g`.
-  The Mac's spellings are the generated table in
-  `docs/interface/reserved-keys.md`.
+- **The keyboard is the same on every host.** The run reads its knobs from
+  the environment — `SHHH_BIN`, `COLS` and `ROWS`, `OUT`, `WAIT`, `COMPARE`,
+  `PORT` and `SOCK`, `TMUX_TMPDIR` and `FAKE_PACE_MS` — and none of them
+  picks a keyboard: nothing ships on alt, so a scene's keys and its snap text
+  hold on a Mac as on Linux
+  (docs/interface/reserved-keys.md#a-mac-ships-without-alt). The one sentence
+  that follows the host is `/help`'s word moves (`option+←`/`option+→` on a
+  Mac), so a snap does not wait on it.
 - **A card that lands just after a keypress drops the next key.** An
   approval card arriving within 400 ms of the last key opens a grace window,
   and a decision key pressed inside it is discarded by design

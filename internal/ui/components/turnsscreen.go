@@ -224,7 +224,7 @@ func runningRows(r InspectorTurn, width int) []string {
 // the row's offers, because the keys a close row offers are answered by
 // reading mode on the transcript and this screen answers none of them.
 func (c TurnClose) readOnly() TurnClose {
-	c.Option, c.KeysWaiting, c.Handover = false, false, ""
+	c.KeysWaiting, c.Handover = false, ""
 	if c.Changes != nil {
 		ch := *c.Changes
 		ch.Keys, ch.Back = nil, ""

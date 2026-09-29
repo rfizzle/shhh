@@ -27,18 +27,6 @@ import (
 
 func TestMain(m *testing.M) { os.Exit(golden.Run(m)) }
 
-// The captures that print a chord, run again under the Mac's keyboard, which
-// ships the alt chords on the function row
-// (docs/interface/reserved-keys.md#a-mac-ships-without-alt). A render that
-// differs is kept as the `.darwin.txt` beside the Linux one.
-func TestGolden_TheMacKeyboard(t *testing.T) {
-	golden.OnPlatform(t, "darwin",
-		"TestGolden_FanoutBlock", "TestGolden_InspectorRail",
-		"TestGolden_RecoveryRows", "TestGolden_TurnClose",
-		"TestGolden_ApprovalCard", "TestGolden_CommitCard", "TestGolden_SpawnCard",
-		"TestGolden_PlanCard", "TestGolden_PressureCard", "TestGolden_ProviderCard")
-}
-
 // reviewTurnOffer is what a selected changed-files row leads with: enter
 // opens the turn's review, and it is spelled the same from either door.
 func reviewTurnOffer() TurnKey {

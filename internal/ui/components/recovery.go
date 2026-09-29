@@ -120,11 +120,6 @@ type RecoveryRow struct {
 	// live beside the waiting keys. Empty where there is no such key to
 	// press from this screen.
 	Handover string
-	// Option says this is the first row in the session to offer a chord, so
-	// the run names the profile setting an alt chord needs on a stock macOS
-	// terminal. One row says it, because it is a fact about the terminal
-	// rather than about this row (inertkeys.go).
-	Option bool
 }
 
 // glyph is the state's glyph, in the state's colour.
@@ -216,12 +211,8 @@ func (r RecoveryRow) keyLines(width int) []string {
 		}
 		return []string{note}
 	}
-	option := KeyRunOption(r.Keys, r.KeysWaiting, r.Option)
 	if one := r.keyLine(); lipgloss.Width(one) <= width {
-		if option == "" {
-			return []string{one}
-		}
-		return []string{one, option}
+		return []string{one}
 	}
 	// A chorded run is live wherever the row's letters are not, so it packs
 	// as the offers it is rather than as keys waiting for something.
@@ -238,9 +229,6 @@ func (r RecoveryRow) keyLines(width int) []string {
 	}
 	if note != "" {
 		rows = append(rows, note)
-	}
-	if option != "" {
-		rows = append(rows, option)
 	}
 	return rows
 }

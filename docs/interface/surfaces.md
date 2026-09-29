@@ -1274,17 +1274,6 @@ between sessions is a keystroke rather than a surface to open and close.
 Everything you do *to* an agent — answer it, steer it, retry it, cancel it,
 kill it — is still the manager's; the map is for seeing and moving.
 
-Every clause of the trailer under the map is a chord, which makes it the one
-piece of chrome on the rail that is a false offer on a terminal whose Option
-key composes a character instead of sending the escape prefix, wherever its
-chords are on alt — a Mac ships them on the function row. So where it is the
-first thing in a session to offer an alt chord, it carries the one-line notice
-that says what the setting is called and which command reads it — the same
-notice, in the same words, a transcript row carries when the row is first. It
-stops carrying it the moment something above says it instead: the fact is
-about the terminal, not about the row, and it is said once. It is shed before
-the trailer it hangs under, which is shed before the map gives up a session.
-
 The order is the order the sessions were started, with one exception: an
 agent waiting on an answer floats to directly under the root, and the ones
 waiting keep the started order among themselves. Everything the run needs

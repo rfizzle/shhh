@@ -267,36 +267,6 @@ type helpKeyRow struct {
 	text string
 }
 
-// optionAside is the parenthesis a key list row carries when its own keys
-// are on alt, pointing at the row that says what the setting is.
-const optionAside = " (alt needs the Option setting the agent manager's row names)"
-
-// optionWhen is a row's aside about the Option key, where any of the
-// bindings answers an alt chord and nowhere else. A Mac ships none of them on
-// alt (docs/interface/reserved-keys.md#a-mac-ships-without-alt), so there it
-// is a sentence about a chord the person's own keymap put on alt.
-func optionWhen(aside string, bs ...keys.Binding) string {
-	if keys.NeedsOption(bs...) {
-		return aside
-	}
-	return ""
-}
-
-// optionSentence is the Option setting said in full: which box, in which
-// terminal, and the doctor row that reads it.
-const optionSentence = "\non a Mac an alt chord arrives only once the terminal's Option key sends the escape prefix, which the stock terminals do not until told — Terminal.app: Settings › Profiles › Keyboard › Use Option as Meta key; iTerm2: Profiles › Keys › Left Option key: Esc+. shhh doctor's keys row reads yours"
-
-// optionWhenAny is the full sentence, where anything the input answers is on
-// alt and so has the setting to need.
-func optionWhenAny() string {
-	for _, s := range keys.Surfaces() {
-		if s.Position == keys.Home && keys.NeedsOption(s.Bindings...) {
-			return optionSentence
-		}
-	}
-	return ""
-}
-
 // column is the row's key column, one entry per line of it.
 func (r helpKeyRow) column() []string {
 	if r.key != "" {
@@ -335,17 +305,6 @@ func wordMoves() string {
 		return "option+← and option+→ move by word"
 	}
 	return "alt+b and alt+f move by word"
-}
-
-// reasoningAlias is the reasoning row's aside: the alt alias it carries where
-// it carries one, named by the keystroke the register holds.
-func reasoningAlias() string {
-	for _, k := range keys.Draft.Reasoning.Keys() {
-		if keys.OptionSpelled(k) {
-			return " (the " + k + " alias needs the Option setting the agent manager's row names)"
-		}
-	}
-	return ""
 }
 
 // helpKeyRows is the key list, in the order a reader meets the keys rather
@@ -405,7 +364,7 @@ on an empty draft the same key pulls the newest queued message — a follow-up f
 		},
 		{
 			binds: []keys.Binding{keys.Draft.Reasoning},
-			text:  `cycle the reasoning level: off → low → medium → high. It changes the next model request, not the one in flight, and the level is stated on the vitals rail beside the model` + reasoningAlias(),
+			text:  `cycle the reasoning level: off → low → medium → high. It changes the next model request, not the one in flight, and the level is stated on the vitals rail beside the model`,
 		},
 		{
 			binds: []keys.Binding{keys.Draft.Mode},
@@ -434,7 +393,7 @@ enter on an edit row cycles collapsed → expanded → full-screen diff, and on 
 		},
 		{
 			binds: []keys.Binding{keys.Draft.Agents},
-			text:  `agent manager: enter attaches to an agent's session, s steers it from its row without attaching, x cancels its turn, X kills it — the one way an agent ends; attached, typing steers the agent, shift+tab sets its mode (clamped), esc detaches` + optionWhenAny(),
+			text:  `agent manager: enter attaches to an agent's session, s steers it from its row without attaching, x cancels its turn, X kills it — the one way an agent ends; attached, typing steers the agent, shift+tab sets its mode (clamped), esc detaches`,
 		},
 		{
 			binds: []keys.Binding{keys.Draft.Backlog},
@@ -444,7 +403,7 @@ bare /todo opens the same screen; it opens over a running turn, and the keys tha
 		{
 			binds: []keys.Binding{keys.Draft.NextAgent, keys.Draft.PrevAgent},
 			sep:   "\n",
-			text:  `move the keyboard one session along the inspector rail's AGENTS map — the orchestrator and every agent it started, in the order they were started, wrapping at both ends. The rail stays up while you are in an agent's session and marks the row you are in; everything you do *to* an agent is still in the manager` + optionWhen(optionAside, keys.Draft.NextAgent, keys.Draft.PrevAgent),
+			text:  `move the keyboard one session along the inspector rail's AGENTS map — the orchestrator and every agent it started, in the order they were started, wrapping at both ends. The rail stays up while you are in an agent's session and marks the row you are in; everything you do *to* an agent is still in the manager`,
 		},
 		{
 			key:  "rail click",

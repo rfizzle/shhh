@@ -29,12 +29,6 @@
 # STIX Two Math ships with macOS and draws it as a glyph in the text's colour. The ground is the dark palette's own,
 # #1c1c1c, so the picture reads as the terminal did.
 #
-# The keyboard is the Linux one. drive.sh defaults PLATFORM to linux, and it
-# is left there on purpose: it is the keyboard most readers and the CI runner
-# have, and the one every scene's snaps are written against. A Mac ships its
-# alt chords on the function row, so a picture taken with PLATFORM=darwin
-# would show a key row most readers do not have.
-#
 #   scripts/tui/readme-pictures.sh            every picture
 #   scripts/tui/readme-pictures.sh <scene>    only the pictures from one scene
 #

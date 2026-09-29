@@ -1,8 +1,6 @@
 package golden
 
 import (
-	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -101,13 +99,6 @@ func TestPath_MonoSitsBesideItsColourPair(t *testing.T) {
 	}
 }
 
-// A Mac render sits beside the Linux one it differs from, mono included.
-func TestMacPath_SitsBesideItsLinuxRender(t *testing.T) {
-	if got := macPath(Path("turn-close.w80", true)); got != "testdata/golden/turn-close.w80.mono.darwin.txt" {
-		t.Fatalf("macPath = %q", got)
-	}
-}
-
 // The failure message is the whole value of a golden: it has to point at the
 // line that moved, with the difference visible rather than implied.
 func TestFirstDifference(t *testing.T) {
@@ -124,62 +115,5 @@ func TestFirstDifference(t *testing.T) {
 	}
 	if got := firstDifference("a\n", "a\n"); !strings.Contains(got, "trailing newline") {
 		t.Fatalf("identical files should say so, got %q", got)
-	}
-}
-
-// An update runs the Mac pass in a child that usually finishes before the
-// parent has rewritten the Linux files, so a child that compared against the
-// Linux file on disk judged the old render: a surface whose Linux golden was
-// changing got a Mac file equal to the new Linux one, which only a second
-// update removed. The child hands its renders back, and they are settled
-// once the Linux pass has written.
-func TestUpdate_MacRenderIsJudgedAgainstTheLinuxRenderThisRunWrote(t *testing.T) {
-	was := *updateFlag
-	*updateFlag = true
-	t.Cleanup(func() { *updateFlag = was })
-	dir, stage := t.TempDir(), t.TempDir()
-	t.Setenv(stagedEnv, stage)
-	write := func(path, text string) {
-		t.Helper()
-		if err := os.WriteFile(path, []byte(text), 0o644); err != nil {
-			t.Fatal(err)
-		}
-	}
-
-	same := filepath.Join(dir, "card.w80.txt")      // the Mac render equals the new Linux one
-	differs := filepath.Join(dir, "row.w80.txt")    // the Mac render has chords of its own
-	redundant := filepath.Join(dir, "rail.w80.txt") // a Mac file that has come to equal it
-	write(same, "old render")
-	write(differs, "old render")
-	write(redundant, "old render")
-	write(macPath(redundant), "old mac render")
-
-	// The child's pass, under the Mac keyboard, before the parent's.
-	assertMac(t, same, "new render", Case{})
-	assertMac(t, differs, "mac render", Case{})
-	assertMac(t, redundant, "new render", Case{})
-	if _, err := os.Stat(macPath(same)); err == nil {
-		t.Fatalf("the child wrote %s before the Linux render it is judged against existed", macPath(same))
-	}
-
-	// The parent's pass, then Run's settling.
-	write(same, "new render")
-	write(differs, "new render")
-	write(redundant, "new render")
-	if err := collectStaged(stage, dir); err != nil {
-		t.Fatal(err)
-	}
-	if err := settleStaged(); err != nil {
-		t.Fatal(err)
-	}
-
-	if _, err := os.Stat(macPath(same)); err == nil {
-		t.Errorf("%s is the same as the Linux render this run wrote, so it should not exist", macPath(same))
-	}
-	if _, err := os.Stat(macPath(redundant)); err == nil {
-		t.Errorf("%s has come to equal the Linux render, so the update should remove it", macPath(redundant))
-	}
-	if got, err := os.ReadFile(macPath(differs)); err != nil || string(got) != "mac render" {
-		t.Errorf("%s should hold the Mac render, got %q (%v)", macPath(differs), got, err)
 	}
 }

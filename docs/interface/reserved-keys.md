@@ -34,8 +34,7 @@ a box is ticked — which is why no key ships on alt at all
 ([below](#a-mac-ships-without-alt)), and why the key list is on a ctrl chord
 everywhere. Where an alt chord is bound on a Mac anyway, because a keymap
 file put one there, `shhh doctor`'s keys row is what reads the setting and
-says which box, and the surfaces that offer the chord name that row beside
-it.
+says which box.
 
 ### A transcript row spends none
 
@@ -77,25 +76,14 @@ everywhere: the function row, which every terminal delivers with nothing set
 `f12`, and the walk along the rail's map on `shift+f7` and `shift+f8`, back
 first. The reasoning level is `ctrl+t` alone, and the staged paste is reached
 through its chip and `/paste show` rather than through a chord of its own
-([a staged attachment](surfaces.md#a-staged-attachment)). The Mac's table in
-the code, which used to move the alt chords to the function row, is left with
-nothing to move:
-
-<!-- BEGIN generated platform keys — written by `make docs` from the Mac's table in internal/ui/keys/platform.go; edit the table, not this. -->
-
-The Mac's table is empty: every key is the same on both keyboards.
-
-<!-- END generated platform keys -->
-
-The Mac's keyboard is what a keymap file is applied over on a Mac, and what
-`shhh keys` measures a moved key against, so a Mac with no file lists nothing
-as moved. A file may put a key back on alt — the rules are the same five on
-both keyboards — and then the doctor's keys row and the first row offering
-that chord name the Option setting, because the chord is the person's own and
-the setting is what it needs. `SHHH_KEYS_PLATFORM=linux` in the environment
-runs the Linux keyboard on a Mac whose Option key already sends the escape
-prefix, and it is what the scene harness sets so a capture reads the same on
-every host. The walk's shift+F spellings are the agent family's keys not yet pressed
+([a staged attachment](surfaces.md#a-staged-attachment)). So there is one
+keyboard, the same on every platform, and it is what a keymap file is applied
+over and what `shhh keys` measures a moved key against. A file may put a key
+back on alt — the rules are the same five — and then the doctor's keys row
+names the Option setting, because the chord is the person's own and the
+setting is what it needs. The one sentence that differs by desk is the key
+list's word moves: `option+←` and `option+→` on a Mac, where alt+b and alt+f
+would compose a character. The walk's shift+F spellings are the agent family's keys not yet pressed
 at Terminal.app's default profile (*verify*); iTerm2 and the Linux terminals
 report them as xterm does.
 

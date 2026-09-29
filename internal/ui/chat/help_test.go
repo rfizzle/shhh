@@ -16,8 +16,6 @@ package chat
 // mode a help text has.
 
 import (
-	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 
@@ -193,77 +191,21 @@ func TestHelp_AConversationOffersTheBacklogAndNotTheChangeset(t *testing.T) {
 	}
 }
 
-// An alt chord is dead on a stock Mac terminal until the profile's Option
-// key is told to send the escape prefix, so the row beside every alt chord
-// names that setting — the key list is where a reader whose chord typed a
-// character goes to find out why, and a row that only spelled the chord
-// again would send them away with nothing
-// (docs/interface/reserved-keys.md#what-is-left). Nothing ships on alt, so
-// the setting is named only once a keymap file puts a key there.
-func TestHelpNamesTheOptionSettingBesideEveryAltChord(t *testing.T) {
-	t.Cleanup(func() { _ = keys.Load() })
-	t.Cleanup(keys.UsePlatform("linux"))
-	if list := helpKeysText(); strings.Contains(list, "Use Option as Meta key") {
-		t.Errorf("the key list names the Option setting with no alt chord bound:\n%s", list)
-	}
-
-	path := filepath.Join(t.TempDir(), "keybindings.toml")
-	if err := os.WriteFile(path, []byte("[draft]\nagents = \"alt+a\"\n"), 0o600); err != nil {
-		t.Fatal(err)
-	}
-	if err := keys.Load(path); err != nil {
-		t.Fatal(err)
-	}
-	for _, r := range helpKeyRows() {
-		for _, b := range r.binds {
-			for _, k := range b.Keys() {
-				if !strings.HasPrefix(k, "alt+") {
-					continue
-				}
-				if !strings.Contains(r.text, "Option") {
-					t.Errorf("the row for %q (%s) does not name the Option setting", k, keys.Words(b))
-				}
+// The key list is one keyboard on every desk; the one sentence in it that
+// follows the desk is how the line editor moves by word, since a stock Mac
+// terminal sends the Option arrows where alt+b and alt+f would compose a
+// character (docs/interface/reserved-keys.md#a-mac-ships-without-alt).
+func TestHelp_TheWordMovesFollowTheDesk(t *testing.T) {
+	for _, tc := range []struct{ platform, want, not string }{
+		{"linux", "alt+b and alt+f move by word", "option+"},
+		{"darwin", "option+← and option+→ move by word", "alt+b"},
+	} {
+		t.Run(tc.platform, func(t *testing.T) {
+			t.Cleanup(keys.UsePlatform(tc.platform))
+			list := helpKeysText()
+			if !strings.Contains(list, tc.want) || strings.Contains(list, tc.not) {
+				t.Errorf("the %s key list should say %q and not %q:\n%s", tc.platform, tc.want, tc.not, list)
 			}
-		}
-	}
-	list := helpKeysText()
-	for _, want := range []string{"[alt+a]", "Use Option as Meta key", "Esc+", "shhh doctor"} {
-		if !strings.Contains(list, want) {
-			t.Errorf("the key list never says %q", want)
-		}
-	}
-}
-
-// A Mac ships no alt chord, so its key list has nothing for the Option
-// setting to be about and says nothing of it — until a keymap file puts a
-// key back on alt, when the row for that key names it again
-// (docs/interface/reserved-keys.md#a-mac-ships-without-alt).
-func TestHelp_AMacNamesTheOptionSettingOnlyForItsOwnAltChords(t *testing.T) {
-	t.Cleanup(func() { _ = keys.Load() })
-	t.Cleanup(keys.UsePlatform("darwin"))
-	list := helpKeysText()
-	for _, gone := range []string{"alt+", "Option", "Use Option as Meta key"} {
-		if strings.Contains(list, gone) {
-			t.Errorf("a Mac's key list says %q with no alt chord bound:\n%s", gone, list)
-		}
-	}
-	for _, want := range []string{"[f12]", "option+← and option+→"} {
-		if !strings.Contains(list, want) {
-			t.Errorf("a Mac's key list lacks %q:\n%s", want, list)
-		}
-	}
-
-	path := filepath.Join(t.TempDir(), "keybindings.toml")
-	if err := os.WriteFile(path, []byte("[draft]\nagents = \"alt+a\"\n"), 0o600); err != nil {
-		t.Fatal(err)
-	}
-	if err := keys.Load(path); err != nil {
-		t.Fatal(err)
-	}
-	list = helpKeysText()
-	for _, want := range []string{"[alt+a]", "Use Option as Meta key", "shhh doctor"} {
-		if !strings.Contains(list, want) {
-			t.Errorf("a Mac whose keymap put the manager on alt lacks %q:\n%s", want, list)
-		}
+		})
 	}
 }

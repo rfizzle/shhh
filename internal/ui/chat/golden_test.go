@@ -58,19 +58,6 @@ func TestMain(m *testing.M) {
 	os.Exit(golden.Run(m))
 }
 
-// The captures that print a chord, run again under the Mac's keyboard, which
-// ships the alt chords on the function row
-// (docs/interface/reserved-keys.md#a-mac-ships-without-alt). A render that
-// differs is kept as the `.darwin.txt` beside the Linux one.
-func TestGolden_TheMacKeyboard(t *testing.T) {
-	golden.OnPlatform(t, "darwin",
-		"TestGolden_ChildRequestRouted", "TestGolden_HelpKeys", "TestGolden_HelpChat",
-		"TestGolden_HistorySearch", "TestGolden_Interrupt", "TestGolden_KeyList", "TestGolden_PasteToken",
-		"TestGolden_Screen", "TestGolden_ScreenAttached",
-		"TestGolden_StagedRail", "TestGolden_TodoRunRow", "TestGolden_TranscriptGrid",
-		"TestGolden_TurnCloseSelection")
-}
-
 // goldenWidths are the terminal widths behind the breakpoints of
 // guidelines/layout-breakpoints in the shhh Design System project. They are
 // terminal columns, not content columns: the surface loses horizontalPadding
