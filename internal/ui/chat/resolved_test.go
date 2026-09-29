@@ -35,7 +35,7 @@ func TestResolvedChecks_FailThenPass(t *testing.T) {
 	if c == nil || c.Failed {
 		t.Fatalf("an applicable pass settles the turn, got %+v", c)
 	}
-	if c.Label != "quality gate default" || !strings.Contains(c.Counts, "5/5 checks") {
+	if c.Label != "quality gate default" || !strings.Contains(c.Counts, "5 of 5 checks") {
 		t.Fatalf("the row is the verification that settled it, got %+v", c)
 	}
 	if c.Superseded != 1 {
@@ -237,7 +237,7 @@ func TestResolvedChecks_TheReviewVerdictReadsTheSameResolution(t *testing.T) {
 	if len(v.Detail) != 0 {
 		t.Fatalf("an answered failure is not pinned beside the files, got %+v", v.Detail)
 	}
-	if !strings.Contains(v.Label, "1 earlier failure superseded") {
+	if !strings.Contains(v.Label, "1 earlier failure since passed") {
 		t.Fatalf("the review says what the pass answered, got %q", v.Label)
 	}
 }

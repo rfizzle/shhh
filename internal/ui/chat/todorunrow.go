@@ -355,12 +355,12 @@ type runRowLine struct {
 // rounds is the remediation note: which round is being spent while one is,
 // and how many were spent once the run has moved on. A round count is a fact
 // about a run that outlives the round — the note stays on the row after the
-// stage is ticked — and `round 1/2` read beside a finished run would say a
+// stage is ticked — and `round 1 of 2` read beside a finished run would say a
 // round is in flight when none is.
 func (r *todoRunRow) rounds() string {
 	n, of := r.st.Round, r.st.Rounds()
 	if r.st.Remediating() {
-		return fmt.Sprintf("round %d/%d", n, of)
+		return fmt.Sprintf("round %d of %d", n, of)
 	}
 	return fmt.Sprintf("%d/%d rounds spent", n, of)
 }

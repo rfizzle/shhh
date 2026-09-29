@@ -710,7 +710,7 @@ func (c *ConfigScreen) keyList() []KeyOffer {
 		keyOfferAs(keys.Screen.Take, "change the setting under the pointer"),
 		keyOfferAs(keys.Screen.Filter, "filter the settings by name"),
 		keyOfferAs(keys.Screen.ClearQ, "clear the filter, or the field being typed into"),
-		keyOfferAs(keys.Query.Rub, "take a rune back out of either"),
+		keyOfferAs(keys.Query.Rub, "delete a character from either"),
 		keyOfferAs(keys.Screen.Reset, "reset this setting to its default"),
 		keyOfferAs(keys.Screen.Write, "write every staged change to "+c.owner()+c.Path),
 	}

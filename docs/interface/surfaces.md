@@ -244,7 +244,7 @@ nothing it did raised the question. A turn that ran a command, or called a
 server nobody marked read-only, did raise it — shhh cannot see what such an act
 wrote, so it assumes it wrote something
 ([weight tracks risk](principles.md#weight-tracks-risk)) — and its close
-answers on the changed-files row: `wrote nothing`, under the same rail, with
+answers on the changed-files row: `changed no files`, under the same rail, with
 nothing offered, because there is nothing to review, keep or take back. A
 silent close after a command would leave that question unanswered. A command
 that was refused, or never started, ran nothing and raises nothing; a commit
@@ -778,6 +778,15 @@ only where no price is known, because a stat that cannot be reported is left
 out and the pair is the nearest honest stand-in for the bill
 ([principles](principles.md#a-stat-that-cannot-be-reported-is-left-out)).
 Beside a price the pair is the same account read a second way, so it goes.
+The rail says each of these in words a reader who has never opened these
+documents already knows. The pressure reads `context 32%` on a terminal of
+110 columns and wider and `ctx 32%` below, where the four columns are ones the
+rail cannot spare; the counter reads `round 7 of 25`; the token pair ends in
+`tok`, because two arrows name no unit; what the session has stopped asking
+about reads `granted: edits, 2 commands`, never beginning with a mode's name
+beside the segment that states the mode; and a sentence typed while the turn
+works is counted `1 queued for this turn`, the one spelling every rail that
+counts it uses.
 What never moves while a session runs — the directory, the branch, the model
 and the reasoning level — is the header's, in dim after the surface's name
 above the transcript. Those four used to sit on the rail beside the three
@@ -812,7 +821,7 @@ in it. The word is the name the picker lists, `/permissions` takes and the
 settings row shows — written as the two words `accept edits` where the file
 hyphenates them, and one speller does that for every surface, so no mode is
 written two ways.
-While the classifier is deciding a call the segment says `✦ checking` instead,
+While the classifier is deciding a call the segment says `✦ deciding` instead,
 because for that moment the mode is not the answer.
 
 Above it, a notice rail exists only while there is something to say and
@@ -1455,8 +1464,8 @@ A quiet reading gets no row. It is quiet when its verdict is on target or
 unclear — the two that never interrupt a turn — and the rail's block draws it
 whole at the narrowest the rail is ever drawn. Such a reading is already said
 in full where it belongs: at 130 columns and wider it is the rail's block,
-below that its verdict is the frame's status row (`· target unclear · as of
-round 2`) and its text is on `/status`. A row under every close carrying the
+below that its verdict is the frame's status row (`· unclear · as of round
+2`) and its text is on `/status`. A row under every close carrying the
 same verdict a second time is the feed telling the reader nothing, once a
 turn. A reading that went off target, found the run has what it needs, or is
 longer than the rail's bound always gets its row, which stays the one place a
@@ -1734,7 +1743,7 @@ border, the chip on the title rail, and the row under the act — in one
 wording, so that a reader checking any one of them against another is not
 first working out that they are the same claim. What the body row adds is the
 reading behind the level, in the terms the level was decided in: *⚠ medium ·
-edits one file under internal/agent*, *⚠ low · writes nothing*, *⚠ HIGH*
+edits one file under internal/agent*, *⚠ low · changes no files*, *⚠ HIGH*
 followed by the risk that flagged it. Where a variant has nothing to read the
 reason off, the row states the level and stops, because a reason invented to
 fill it would be the one thing on the card the reader could not check.
@@ -1871,7 +1880,7 @@ queue is never made to wait between questions.
 The decision run is written the way every other key row in the product is: a
 key in brackets, a lower-case imperative after it, and the answer that costs
 nothing in the colour of the safe answer — *[y] run it once · [e] edit the
-command · [n] deny · [esc] don't — the safe answer*, the way out last. A key
+command · [n] deny · [esc] not now — it keeps waiting*, the way out last. A key
 that is not offered stays on the card with its reason rather than
 disappearing. The compact `[y/n/a]` prompt this card used to print, with what
 its keys bought in parentheses beside it, was the one place two notations sat
@@ -1942,8 +1951,10 @@ at. Those are the fields the [frame's](#the-input-frame) drop order never
 sheds, and a decision is the moment they are being read for.
 
 The decision run has two answers, and each has a spelling that says more.
-Beside *allow* and *deny* sit *allow, and say what to do next* and *deny, and
-say why*, each opening the note field under the card; the note travels with
+Beside *allow* and *deny* sit *run with a note* and *deny with a note* — the
+yes taking the card's own verb, so an edit card says *apply with a note* and a
+spawn card *start with a note* — each opening the note field under the card,
+which asks *what next* or *why not*; the note travels with
 the answer, and what it does to the model is the capability's to say
 ([`../capabilities/approvals-and-safety.md`](../capabilities/approvals-and-safety.md#a-no-can-say-why-and-a-yes-can-say-what-next)).
 The plain key stays one press, because most answers are one press and a
@@ -2002,7 +2013,7 @@ A fan-out is a variant of its own. Starting an agent is an approval-gated call
 like any other and used to arrive as one generic card per child: three
 researchers were three cards reading *Approve tool (1 of 3)*, the task buried
 in a summary line, nothing to grant on any of them. The spawn card is titled
-with the role — *Spawn writer* — and its body is a row per child: the mark
+with the role — *Start a writer* — and its body is a row per child: the mark
 every sub-agent surface draws a child with, the child's name, and the line it
 was asked to do. One child leaves the profile's own clause under its row and
 states what it may touch in the block where every card answers that question;
@@ -2379,8 +2390,8 @@ navigation row stays, since its keys work with a half-written draft in the
 box.
 
 The machine's first session says three things above the key row, in dim, one
-line each: type what you want and press enter; esc backs out of anything and
-never loses work; ctrl+c twice stops a run. Those are the three keys every
+line each: enter sends what you type; esc backs out of anything and never
+loses work; ctrl+c twice stops a run — each a key and what it does. Those are the three keys every
 session turns on, and a reader who meets them first on an approval card is
 learning them at the moment they are most needed and least read. The block
 outlives the typing dismissal, since backing out and stopping are what a
@@ -2562,7 +2573,7 @@ instead.
 `/turns` is the rail's THIS TURN block read down the session: every turn it
 has run, newest first, one row each — the close's own mark and how the turn
 ended (`✓ turn 4 · done`, `⊘ turn 1 · cancelled`), what it wrote in the
-mutation mark and its lines, or `wrote nothing`, and what it cost. Beside the
+mutation mark and its lines, or `changed no files`, and what it cost. Beside the
 turn under the pointer is its close drawn whole ([the turn's
 close](#the-turns-close)) — steps, tools, time and spend, the files it
 changed, its commit and its checks' verdict — from the very block the
@@ -2660,7 +2671,9 @@ and key row as every other screen in this section.
 The row carries what decides the order and nothing else: the name, the
 priority and size as two letters, and where the item stands — ready, waiting
 on something, in progress, blocked. The title takes whatever is left and
-clips, because the pane beside the list carries it in full. Under the width
+clips, because the pane beside the list carries it in full. What the letters
+stand for is a line of the `?` reveal, built from the profile's own words — a
+second profile's letters explain themselves with nothing written for them. Under the width
 that carries two columns the pane folds under the list rather than beside it:
 prose two columns wide is prose nobody reads.
 

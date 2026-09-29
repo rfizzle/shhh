@@ -464,7 +464,7 @@ func TestFetchPlan_ReceivesNamesTheStore(t *testing.T) {
 	if err != nil {
 		t.Fatalf("FetchPlan: %v", err)
 	}
-	if strings.Contains(plan.Receives, "evidence store") {
+	if strings.Contains(plan.Receives, "kept whole") {
 		t.Errorf("without a store the card must not promise one: %q", plan.Receives)
 	}
 
@@ -473,7 +473,7 @@ func TestFetchPlan_ReceivesNamesTheStore(t *testing.T) {
 	if err != nil {
 		t.Fatalf("FetchPlan: %v", err)
 	}
-	if plan.Receives != "page text, whole, into the evidence store; the first 16 KB into the conversation" {
+	if plan.Receives != "page text, kept whole; the first 16 KB into the conversation" {
 		t.Errorf("receives = %q", plan.Receives)
 	}
 

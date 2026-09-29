@@ -548,7 +548,7 @@ func (r ActivityRow) outcomeStyle() lipgloss.Style {
 	}
 	// The two kinds that are not acts have no act to have succeeded. A
 	// reading of the session states a verdict in this column — `⚠ off
-	// target`, `· target unclear` — and add would paint the bad news as
+	// target`, `· unclear` — and add would paint the bad news as
 	// good; thinking states no outcome at all. Both sit at the bottom of the
 	// weight order, which is where their kind glyphs already are
 	// (docs/interface/principles.md#weight-tracks-risk), and the glyph in

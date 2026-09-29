@@ -226,9 +226,9 @@ func TestHold_TheRailSaysHowToLetTheTurnGo(t *testing.T) {
 	m.width, m.height = 130, 40
 	hints := stripANSI(m.frameHints(m.contentWidth()))
 	for _, want := range []string{
-		keys.Bracket(keys.Draft.Pause) + " resumes the turn",
-		keys.Bracket(keys.Draft.Send) + " queues steering",
-		keys.Bracket(keys.Draft.Cancel) + " ×2 cancels it",
+		keys.Bracket(keys.Draft.Pause) + " resume the turn",
+		keys.Bracket(keys.Draft.Send) + " add to this turn",
+		keys.Bracket(keys.Draft.Cancel) + " ×2 cancel it",
 	} {
 		if !strings.Contains(hints, want) {
 			t.Errorf("the held rail should offer %q, got %q", want, hints)

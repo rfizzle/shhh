@@ -840,7 +840,7 @@ is already marked — a second compaction over the same turns recovers nothing �
 and that is the floor case `compactFloor` words. `components.ActivityCompaction`
 is the row's kind: no glyph of its own, so `✓` stands in the glyph column
 without overriding one, and `paintOccupancy` is what puts the two ends of
-`ctx 88% → 28%` in del and add.
+`context 88% → 28%` in del and add.
 
 `Headless.Compact` is where an unattended run installs one, and the step runs
 at the head of each round — ahead of the request, so the first request of a

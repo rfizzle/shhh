@@ -20,6 +20,12 @@ setup printf '{"session":"scene","started":"2026-09-23T09:00:00Z","updated":"202
 snap 01-start "Some things worth doing first"
 keys "/todo" Enter
 snap 02-backlog "cache-evict" "cache-report"
+# The row's two letters are explained in the `?` reveal, in the profile's own
+# words, and the field-filter key names the fields it cycles.
+keys ?
+snap 02b-letters "letters  priority H high" "cycle the kind or size filter"
+keys ?
+snap 02c-back "[?] keys"
 keys Tab
 # The head: the goal, the meter and the spend, then how many lanes are at
 # work; under it the set's rows, each lane's saying its step — the one place

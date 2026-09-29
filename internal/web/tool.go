@@ -296,7 +296,7 @@ func (t *Toolset) FetchPlan(args json.RawMessage) (FetchPlan, error) {
 	// promise a person something the session cannot do.
 	receives := fmt.Sprintf("page text into the conversation, bounded to %s", formatBytes(t.Fetcher.maxBody()))
 	if t.keep != nil {
-		receives = fmt.Sprintf("page text, whole, into the evidence store; the first %s into the conversation",
+		receives = fmt.Sprintf("page text, kept whole; the first %s into the conversation",
 			formatBytes(int64(t.inlineBytes())))
 	}
 	return FetchPlan{

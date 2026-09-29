@@ -648,8 +648,8 @@ func TestStatusBar_CockpitSegments(t *testing.T) {
 	m.steering = []steeringItem{{text: "queued note"}}
 
 	bar := stripANSI(m.renderStatusBar(160))
-	round := fmt.Sprintf("round 1/%d", DefaultMaxToolRounds)
-	for _, want := range []string{"⏸ manual", round, "ctx ", "%", "$0.51", "queued 1"} {
+	round := fmt.Sprintf("round 1 of %d", DefaultMaxToolRounds)
+	for _, want := range []string{"⏸ manual", round, "ctx ", "%", "$0.51", "1 queued for this turn"} {
 		if !strings.Contains(bar, want) {
 			t.Fatalf("cockpit rail should contain %q, got %q", want, bar)
 		}

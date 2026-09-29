@@ -211,10 +211,10 @@ backlog · the cockpit sprint              6 items · [?] hide the keys · [q] b
 [tab] the backlog, the sprint, or what shipped
 [/] filter by slug or title
 [ctrl+u] clear the filter; clear it again to close it
-[backspace] take a rune back out of the filter
+[backspace] delete a character from the filter
 [s] cycle the status filter
 [p] cycle the priority filter
-[k] cycle the next field filter
+[k] cycle the kind or size filter
 [r] only what can be started now
 [w] jump to what this one waits on
 [e] open the file in your editor
@@ -227,6 +227,7 @@ backlog · the cockpit sprint              6 items · [?] hide the keys · [q] b
 [S] add it to the cockpit sprint, or drop it
 [esc] back to the prompt
 [q] back to the prompt
+letters  priority H high · M medium · L low — size S M L — - unset
 
 glyphs
 ⚙  a read: a file, a search, a listing
@@ -447,10 +448,10 @@ $  a shell command
 ␛[94m[tab]␛[m␛[38;5;241m the backlog, the sprint, or what shipped␛[m
 ␛[94m[/]␛[m␛[38;5;241m filter by slug or title␛[m
 ␛[94m[ctrl+u]␛[m␛[38;5;241m clear the filter; clear it again to close it␛[m
-␛[94m[backspace]␛[m␛[38;5;241m take a rune back out of the filter␛[m
+␛[94m[backspace]␛[m␛[38;5;241m delete a character from the filter␛[m
 ␛[94m[s]␛[m␛[38;5;241m cycle the status filter␛[m
 ␛[94m[p]␛[m␛[38;5;241m cycle the priority filter␛[m
-␛[94m[k]␛[m␛[38;5;241m cycle the next field filter␛[m
+␛[94m[k]␛[m␛[38;5;241m cycle the kind or size filter␛[m
 ␛[94m[r]␛[m␛[38;5;241m only what can be started now␛[m
 ␛[94m[w]␛[m␛[38;5;241m jump to what this one waits on␛[m
 ␛[94m[e]␛[m␛[38;5;241m open the file in your editor␛[m
@@ -463,6 +464,7 @@ $  a shell command
 ␛[94m[S]␛[m␛[38;5;241m add it to the cockpit sprint, or drop it␛[m
 ␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m
 ␛[94m[q]␛[m␛[38;5;241m back to the prompt␛[m
+␛[38;5;241mletters  priority H high · M medium · L low — size S M L — - unset␛[m
 
 ␛[38;5;241mglyphs␛[m
 ␛[38;5;241m⚙␛[m  ␛[38;5;241ma read: a file, a search, a listing␛[m

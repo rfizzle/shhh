@@ -22,7 +22,7 @@ keys "about the token check"
 snap 03-named "@security-reviewer about the token check"
 keys Enter
 # The spawn the hint led to is put to the person like any other.
-snap 04-spawn-card "Spawn security-reviewer" "reads only — a security-reviewer changes nothing"
+snap 04-spawn-card "Start a security-reviewer" "reads only — a security-reviewer changes nothing"
 # The card's keys go live a moment after it lands, so the answer waits for
 # them rather than falling into the draft.
 sleep 1

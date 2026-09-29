@@ -26,7 +26,7 @@
 ╰─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 ────────────────╯
 
 · a quiet reading lands · its verdict is this row's and the feed's is nothing
-· target unclear · as of round 2 · 1 file this turn
+· unclear · as of round 2 · 1 file this turn
 
 · an off-target reading lands · its verdict here and a row in the feed
 ⚠ off target · as of round 9 · 1 file this turn
@@ -48,7 +48,7 @@
 ␛[38;5;244m╰─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mctx 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51␛[m ␛[38;5;244m────────────────╯␛[m
 
 · a quiet reading lands · its verdict is this row's and the feed's is nothing
-␛[38;5;244m·␛[m ␛[38;5;244mtarget unclear␛[m␛[38;5;244m · as of round 2␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 file this turn␛[m
+␛[38;5;244m·␛[m ␛[38;5;244munclear␛[m␛[38;5;244m · as of round 2␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 file this turn␛[m
 
 · an off-target reading lands · its verdict here and a row in the feed
 ␛[38;5;254m⚠␛[m ␛[38;5;254moff target␛[m␛[38;5;244m · as of round 9␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 file this turn␛[m

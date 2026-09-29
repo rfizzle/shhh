@@ -202,11 +202,12 @@ func (r InspectorRail) changesBlock(width int) (railBlock, bool) {
 	// that lost its mark.
 	for j, path := range c.Foreign {
 		// "yours" is the reader's uncommitted work beside a commit; a
-		// resume names a path the session no longer owns as drifted,
-		// which is the other reason a file sits in this list.
+		// resume names a path the session no longer owns as skipped (the
+		// commit card's word for a file it leaves out), which is the other
+		// reason a file sits in this list.
 		label := "yours"
 		if c.Committed == nil {
-			label = "drifted"
+			label = "skipped"
 		}
 		list(len(c.Files)+j, railLine{text: railRow(" "+sty.Dim.Render("·")+" "+sty.Dimmer.Render(path),
 			sty.Dim.Render(label), width, inspectorIndent)})

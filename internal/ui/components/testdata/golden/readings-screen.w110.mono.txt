@@ -14,10 +14,10 @@
 /readings · 5 readings                                                     $0.0142 spent · [?] keys · [q] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
-❯ ⚠ r 11 · off target     withdrawn       turn 2 │ r 11 · off target                                    turn 2
-  ⚠ r 6 · off target      steered         turn 2 │ 
+❯ ⚠ r 11 · off target  withdrawn          turn 2 │ r 11 · off target                                    turn 2
+  ⚠ r 6 · off target   steered            turn 2 │ 
   ▸ r 3 · has enough                      turn 2 │    ≡ summary round 11          ⚠ off target · 1 line
-  · r 9 · target unclear                  turn 1 │     Rewriting the README's install section after the expor…
+  · r 9 · unclear                         turn 1 │     Rewriting the README's install section after the expor…
   ▸ r 3 · on target                       turn 1 │     ⚠ off target
                                                  │       the instruction was the exporter; docs were not aske…
                                                  │     read against: fix the CSV exporter's quoting
@@ -31,10 +31,10 @@
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 3 oldest readings let go · the screen keeps the last 200
-  ⚠ r 11 · off target     withdrawn       turn 2 │ r 6 · off target                                     turn 2
-❯ ⚠ r 6 · off target      steered         turn 2 │ 
+  ⚠ r 11 · off target  withdrawn          turn 2 │ r 6 · off target                                     turn 2
+❯ ⚠ r 6 · off target   steered            turn 2 │ 
   ▸ r 3 · has enough                      turn 2 │    ≡ summary round 6           ⚠ off target · 1 line
-  · r 9 · target unclear                  turn 1 │     Editing the importer's tests, which the exporter does …
+  · r 9 · unclear                         turn 1 │     Editing the importer's tests, which the exporter does …
   ▸ r 3 · on target                       turn 1 │     ⚠ off target
                                                  │       the importer is not the exporter
                                                  │     read against: fix the CSV exporter's quoting
@@ -47,10 +47,10 @@
 /readings · 5 readings                                                     $0.0142 spent · [?] keys · [q] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
-  ⚠ r 11 · off target     withdrawn       turn 2 │ r 3 · on target                                      turn 1
-  ⚠ r 6 · off target      steered         turn 2 │ 
+  ⚠ r 11 · off target  withdrawn          turn 2 │ r 3 · on target                                      turn 1
+  ⚠ r 6 · off target   steered            turn 2 │ 
   ▸ r 3 · has enough                      turn 2 │    ≡ summary round 3            ▸ on target · 1 line
-  · r 9 · target unclear                  turn 1 │     Reading the loop and its round counter.
+  · r 9 · unclear                         turn 1 │     Reading the loop and its round counter.
 ❯ ▸ r 3 · on target                       turn 1 │     ▸ on target
                                                  │     read against: find why the loop never stops
 
@@ -61,10 +61,10 @@
 ␛[1;38;5;254m/readings␛[m␛[38;5;244m · 5 readings␛[m                                                     ␛[38;5;244m$0.0142 spent␛[m␛[38;5;244m · [?] keys · [q] back␛[m
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m⚠ r 11 · off target     withdrawn       turn 2␛[m␛[38;5;244m │ ␛[m␛[1;38;5;254mr 11 · off target␛[m                                    ␛[38;5;244mturn 2␛[m
-  ␛[38;5;254m⚠ r 6 · off target␛[m      ␛[38;5;254msteered␛[m         ␛[38;5;244mturn 2␛[m␛[38;5;244m │ ␛[m
+␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m⚠ r 11 · off target  withdrawn          turn 2␛[m␛[38;5;244m │ ␛[m␛[1;38;5;254mr 11 · off target␛[m                                    ␛[38;5;244mturn 2␛[m
+  ␛[38;5;254m⚠ r 6 · off target␛[m   ␛[38;5;254msteered␛[m            ␛[38;5;244mturn 2␛[m␛[38;5;244m │ ␛[m
   ␛[38;5;254m▸ r 3 · has enough␛[m                      ␛[38;5;244mturn 2␛[m␛[38;5;244m │ ␛[m   ␛[38;5;244m≡␛[m ␛[38;5;254msummary␛[m ␛[38;5;254mround 11␛[m          ␛[38;5;244m⚠ off target␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 line␛[m
-  ␛[38;5;254m· r 9 · target unclear␛[m                  ␛[38;5;244mturn 1␛[m␛[38;5;244m │ ␛[m    ␛[38;5;244mRewriting the README's install section after the expor…␛[m
+  ␛[38;5;254m· r 9 · unclear␛[m                         ␛[38;5;244mturn 1␛[m␛[38;5;244m │ ␛[m    ␛[38;5;244mRewriting the README's install section after the expor…␛[m
   ␛[38;5;254m▸ r 3 · on target␛[m                       ␛[38;5;244mturn 1␛[m␛[38;5;244m │ ␛[m    ␛[38;5;244m⚠ off target␛[m
                                                 ␛[38;5;244m │ ␛[m    ␛[38;5;244m  the instruction was the exporter; docs were not aske…␛[m
                                                 ␛[38;5;244m │ ␛[m    ␛[38;5;244mread against: fix the CSV exporter's quoting␛[m
@@ -78,10 +78,10 @@
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;244m3 oldest readings let go · the screen keeps the last 200␛[m
-  ␛[38;5;254m⚠ r 11 · off target␛[m     ␛[38;5;244mwithdrawn␛[m       ␛[38;5;244mturn 2␛[m␛[38;5;244m │ ␛[m␛[1;38;5;254mr 6 · off target␛[m                                     ␛[38;5;244mturn 2␛[m
-␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m⚠ r 6 · off target      steered         turn 2␛[m␛[38;5;244m │ ␛[m
+  ␛[38;5;254m⚠ r 11 · off target␛[m  ␛[38;5;244mwithdrawn␛[m          ␛[38;5;244mturn 2␛[m␛[38;5;244m │ ␛[m␛[1;38;5;254mr 6 · off target␛[m                                     ␛[38;5;244mturn 2␛[m
+␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m⚠ r 6 · off target   steered            turn 2␛[m␛[38;5;244m │ ␛[m
   ␛[38;5;254m▸ r 3 · has enough␛[m                      ␛[38;5;244mturn 2␛[m␛[38;5;244m │ ␛[m   ␛[38;5;244m≡␛[m ␛[38;5;254msummary␛[m ␛[38;5;254mround 6␛[m           ␛[38;5;244m⚠ off target␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 line␛[m
-  ␛[38;5;254m· r 9 · target unclear␛[m                  ␛[38;5;244mturn 1␛[m␛[38;5;244m │ ␛[m    ␛[38;5;244mEditing the importer's tests, which the exporter does …␛[m
+  ␛[38;5;254m· r 9 · unclear␛[m                         ␛[38;5;244mturn 1␛[m␛[38;5;244m │ ␛[m    ␛[38;5;244mEditing the importer's tests, which the exporter does …␛[m
   ␛[38;5;254m▸ r 3 · on target␛[m                       ␛[38;5;244mturn 1␛[m␛[38;5;244m │ ␛[m    ␛[38;5;244m⚠ off target␛[m
                                                 ␛[38;5;244m │ ␛[m    ␛[38;5;244m  the importer is not the exporter␛[m
                                                 ␛[38;5;244m │ ␛[m    ␛[38;5;244mread against: fix the CSV exporter's quoting␛[m
@@ -94,10 +94,10 @@
 ␛[1;38;5;254m/readings␛[m␛[38;5;244m · 5 readings␛[m                                                     ␛[38;5;244m$0.0142 spent␛[m␛[38;5;244m · [?] keys · [q] back␛[m
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;254m⚠ r 11 · off target␛[m     ␛[38;5;244mwithdrawn␛[m       ␛[38;5;244mturn 2␛[m␛[38;5;244m │ ␛[m␛[1;38;5;254mr 3 · on target␛[m                                      ␛[38;5;244mturn 1␛[m
-  ␛[38;5;254m⚠ r 6 · off target␛[m      ␛[38;5;254msteered␛[m         ␛[38;5;244mturn 2␛[m␛[38;5;244m │ ␛[m
+  ␛[38;5;254m⚠ r 11 · off target␛[m  ␛[38;5;244mwithdrawn␛[m          ␛[38;5;244mturn 2␛[m␛[38;5;244m │ ␛[m␛[1;38;5;254mr 3 · on target␛[m                                      ␛[38;5;244mturn 1␛[m
+  ␛[38;5;254m⚠ r 6 · off target␛[m   ␛[38;5;254msteered␛[m            ␛[38;5;244mturn 2␛[m␛[38;5;244m │ ␛[m
   ␛[38;5;254m▸ r 3 · has enough␛[m                      ␛[38;5;244mturn 2␛[m␛[38;5;244m │ ␛[m   ␛[38;5;244m≡␛[m ␛[38;5;254msummary␛[m ␛[38;5;254mround 3␛[m            ␛[38;5;244m▸ on target␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 line␛[m
-  ␛[38;5;254m· r 9 · target unclear␛[m                  ␛[38;5;244mturn 1␛[m␛[38;5;244m │ ␛[m    ␛[38;5;244mReading the loop and its round counter.␛[m
+  ␛[38;5;254m· r 9 · unclear␛[m                         ␛[38;5;244mturn 1␛[m␛[38;5;244m │ ␛[m    ␛[38;5;244mReading the loop and its round counter.␛[m
 ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m▸ r 3 · on target                       turn 1␛[m␛[38;5;244m │ ␛[m    ␛[38;5;244m▸ on target␛[m
                                                 ␛[38;5;244m │ ␛[m    ␛[38;5;244mread against: find why the loop never stops␛[m
 

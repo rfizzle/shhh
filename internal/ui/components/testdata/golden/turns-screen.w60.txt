@@ -15,7 +15,7 @@
 ────────────────────────────────────────────────────────────
 
 ❯ ▸ turn 6  running · ▎1 file +4 −1                         
-  ✓ turn 5  done · wrote nothing                     $0.0210
+  ✓ turn 5  done · changed no files                  $0.0210
   ✓ turn 4  done · ▎2 files +18 −6                   $0.0870
   ✓ turn 3  done · ▎1 file +3 −3                     $0.0440
   · turn 2  no figures kept · ▎2 files +11 −1
@@ -35,7 +35,7 @@ turn 6                                               running
 ────────────────────────────────────────────────────────────
 
   ▸ turn 6  running · ▎1 file +4 −1
-❯ ✓ turn 5  done · wrote nothing                     $0.0210
+❯ ✓ turn 5  done · changed no files                  $0.0210
   ✓ turn 4  done · ▎2 files +18 −6                   $0.0870
   ✓ turn 3  done · ▎1 file +3 −3                     $0.0440
   · turn 2  no figures kept · ▎2 files +11 −1
@@ -44,7 +44,7 @@ turn 6                                               running
 turn 5                                                  done
 
    ✓ Done · 1 step · 3 tools · 12s · $0.0210
-  ▎✎ wrote nothing
+  ▎✎ changed no files
 
 [enter] review turn 5 · [esc] back to the prompt
 
@@ -53,7 +53,7 @@ turn 5                                                  done
 ────────────────────────────────────────────────────────────
 
   ▸ turn 6  running · ▎1 file +4 −1
-  ✓ turn 5  done · wrote nothing                     $0.0210
+  ✓ turn 5  done · changed no files                  $0.0210
 ❯ ✓ turn 4  done · ▎2 files +18 −6                   $0.0870
   ✓ turn 3  done · ▎1 file +3 −3                     $0.0440
   · turn 2  no figures kept · ▎2 files +11 −1
@@ -74,7 +74,7 @@ turn 4                                                  done
 ────────────────────────────────────────────────────────────
 
   ▸ turn 6  running · ▎1 file +4 −1
-  ✓ turn 5  done · wrote nothing                     $0.0210
+  ✓ turn 5  done · changed no files                  $0.0210
   ✓ turn 4  done · ▎2 files +18 −6                   $0.0870
 ❯ ✓ turn 3  done · ▎1 file +3 −3                     $0.0440
   · turn 2  no figures kept · ▎2 files +11 −1
@@ -95,7 +95,7 @@ turn 3                                                  done
 ────────────────────────────────────────────────────────────
 
   ▸ turn 6  running · ▎1 file +4 −1
-  ✓ turn 5  done · wrote nothing                     $0.0210
+  ✓ turn 5  done · changed no files                  $0.0210
   ✓ turn 4  done · ▎2 files +18 −6                   $0.0870
   ✓ turn 3  done · ▎1 file +3 −3                     $0.0440
 ❯ · turn 2  no figures kept · ▎2 files +11 −1               
@@ -117,7 +117,7 @@ turn 2                                       no figures kept
 ␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
 ␛[94m❯␛[m ␛[1;97;48;5;62m▸ turn 6  running · ▎1 file +4 −1                         ␛[m
-  ␛[38;5;252m✓ turn 5␛[m  ␛[92mdone␛[m␛[38;5;241m · ␛[m␛[38;5;241mwrote nothing␛[m                     ␛[38;5;241m$0.0210␛[m
+  ␛[38;5;252m✓ turn 5␛[m  ␛[92mdone␛[m␛[38;5;241m · ␛[m␛[38;5;241mchanged no files␛[m                  ␛[38;5;241m$0.0210␛[m
   ␛[38;5;252m✓ turn 4␛[m  ␛[92mdone␛[m␛[38;5;241m · ␛[m␛[38;5;214m▎␛[m␛[38;5;241m2 files ␛[m␛[92m+18␛[m␛[38;5;241m ␛[m␛[91m−6␛[m                   ␛[38;5;241m$0.0870␛[m
   ␛[38;5;252m✓ turn 3␛[m  ␛[92mdone␛[m␛[38;5;241m · ␛[m␛[38;5;214m▎␛[m␛[38;5;241m1 file ␛[m␛[92m+3␛[m␛[38;5;241m ␛[m␛[91m−3␛[m                     ␛[38;5;241m$0.0440␛[m
   ␛[38;5;252m· turn 2␛[m  ␛[38;5;241mno figures kept␛[m␛[38;5;241m · ␛[m␛[38;5;214m▎␛[m␛[38;5;241m2 files ␛[m␛[92m+11␛[m␛[38;5;241m ␛[m␛[91m−1␛[m
@@ -137,7 +137,7 @@ turn 2                                       no figures kept
 ␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;252m▸ turn 6␛[m  ␛[38;5;214mrunning␛[m␛[38;5;241m · ␛[m␛[38;5;214m▎␛[m␛[38;5;241m1 file ␛[m␛[92m+4␛[m␛[38;5;241m ␛[m␛[91m−1␛[m
-␛[94m❯␛[m ␛[1;97;48;5;62m✓ turn 5  done · wrote nothing                     $0.0210␛[m
+␛[94m❯␛[m ␛[1;97;48;5;62m✓ turn 5  done · changed no files                  $0.0210␛[m
   ␛[38;5;252m✓ turn 4␛[m  ␛[92mdone␛[m␛[38;5;241m · ␛[m␛[38;5;214m▎␛[m␛[38;5;241m2 files ␛[m␛[92m+18␛[m␛[38;5;241m ␛[m␛[91m−6␛[m                   ␛[38;5;241m$0.0870␛[m
   ␛[38;5;252m✓ turn 3␛[m  ␛[92mdone␛[m␛[38;5;241m · ␛[m␛[38;5;214m▎␛[m␛[38;5;241m1 file ␛[m␛[92m+3␛[m␛[38;5;241m ␛[m␛[91m−3␛[m                     ␛[38;5;241m$0.0440␛[m
   ␛[38;5;252m· turn 2␛[m  ␛[38;5;241mno figures kept␛[m␛[38;5;241m · ␛[m␛[38;5;214m▎␛[m␛[38;5;241m2 files ␛[m␛[92m+11␛[m␛[38;5;241m ␛[m␛[91m−1␛[m
@@ -146,7 +146,7 @@ turn 2                                       no figures kept
 ␛[1;97mturn 5␛[m                                                  ␛[38;5;241mdone␛[m
 
    ␛[92m✓␛[m ␛[38;5;252mDone␛[m␛[38;5;241m · 1 step · 3 tools · 12s · $0.0210␛[m
-  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252mwrote nothing␛[m
+  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252mchanged no files␛[m
 
 ␛[38;5;245m[enter]␛[m␛[38;5;241m review turn 5␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m
 
@@ -155,7 +155,7 @@ turn 2                                       no figures kept
 ␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;252m▸ turn 6␛[m  ␛[38;5;214mrunning␛[m␛[38;5;241m · ␛[m␛[38;5;214m▎␛[m␛[38;5;241m1 file ␛[m␛[92m+4␛[m␛[38;5;241m ␛[m␛[91m−1␛[m
-  ␛[38;5;252m✓ turn 5␛[m  ␛[92mdone␛[m␛[38;5;241m · ␛[m␛[38;5;241mwrote nothing␛[m                     ␛[38;5;241m$0.0210␛[m
+  ␛[38;5;252m✓ turn 5␛[m  ␛[92mdone␛[m␛[38;5;241m · ␛[m␛[38;5;241mchanged no files␛[m                  ␛[38;5;241m$0.0210␛[m
 ␛[94m❯␛[m ␛[1;97;48;5;62m✓ turn 4  done · ▎2 files +18 −6                   $0.0870␛[m
   ␛[38;5;252m✓ turn 3␛[m  ␛[92mdone␛[m␛[38;5;241m · ␛[m␛[38;5;214m▎␛[m␛[38;5;241m1 file ␛[m␛[92m+3␛[m␛[38;5;241m ␛[m␛[91m−3␛[m                     ␛[38;5;241m$0.0440␛[m
   ␛[38;5;252m· turn 2␛[m  ␛[38;5;241mno figures kept␛[m␛[38;5;241m · ␛[m␛[38;5;214m▎␛[m␛[38;5;241m2 files ␛[m␛[92m+11␛[m␛[38;5;241m ␛[m␛[91m−1␛[m
@@ -176,7 +176,7 @@ turn 2                                       no figures kept
 ␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;252m▸ turn 6␛[m  ␛[38;5;214mrunning␛[m␛[38;5;241m · ␛[m␛[38;5;214m▎␛[m␛[38;5;241m1 file ␛[m␛[92m+4␛[m␛[38;5;241m ␛[m␛[91m−1␛[m
-  ␛[38;5;252m✓ turn 5␛[m  ␛[92mdone␛[m␛[38;5;241m · ␛[m␛[38;5;241mwrote nothing␛[m                     ␛[38;5;241m$0.0210␛[m
+  ␛[38;5;252m✓ turn 5␛[m  ␛[92mdone␛[m␛[38;5;241m · ␛[m␛[38;5;241mchanged no files␛[m                  ␛[38;5;241m$0.0210␛[m
   ␛[38;5;252m✓ turn 4␛[m  ␛[92mdone␛[m␛[38;5;241m · ␛[m␛[38;5;214m▎␛[m␛[38;5;241m2 files ␛[m␛[92m+18␛[m␛[38;5;241m ␛[m␛[91m−6␛[m                   ␛[38;5;241m$0.0870␛[m
 ␛[94m❯␛[m ␛[1;97;48;5;62m✓ turn 3  done · ▎1 file +3 −3                     $0.0440␛[m
   ␛[38;5;252m· turn 2␛[m  ␛[38;5;241mno figures kept␛[m␛[38;5;241m · ␛[m␛[38;5;214m▎␛[m␛[38;5;241m2 files ␛[m␛[92m+11␛[m␛[38;5;241m ␛[m␛[91m−1␛[m
@@ -197,7 +197,7 @@ turn 2                                       no figures kept
 ␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;252m▸ turn 6␛[m  ␛[38;5;214mrunning␛[m␛[38;5;241m · ␛[m␛[38;5;214m▎␛[m␛[38;5;241m1 file ␛[m␛[92m+4␛[m␛[38;5;241m ␛[m␛[91m−1␛[m
-  ␛[38;5;252m✓ turn 5␛[m  ␛[92mdone␛[m␛[38;5;241m · ␛[m␛[38;5;241mwrote nothing␛[m                     ␛[38;5;241m$0.0210␛[m
+  ␛[38;5;252m✓ turn 5␛[m  ␛[92mdone␛[m␛[38;5;241m · ␛[m␛[38;5;241mchanged no files␛[m                  ␛[38;5;241m$0.0210␛[m
   ␛[38;5;252m✓ turn 4␛[m  ␛[92mdone␛[m␛[38;5;241m · ␛[m␛[38;5;214m▎␛[m␛[38;5;241m2 files ␛[m␛[92m+18␛[m␛[38;5;241m ␛[m␛[91m−6␛[m                   ␛[38;5;241m$0.0870␛[m
   ␛[38;5;252m✓ turn 3␛[m  ␛[92mdone␛[m␛[38;5;241m · ␛[m␛[38;5;214m▎␛[m␛[38;5;241m1 file ␛[m␛[92m+3␛[m␛[38;5;241m ␛[m␛[91m−3␛[m                     ␛[38;5;241m$0.0440␛[m
 ␛[94m❯␛[m ␛[1;97;48;5;62m· turn 2  no figures kept · ▎2 files +11 −1               ␛[m

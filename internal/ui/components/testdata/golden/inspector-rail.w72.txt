@@ -164,7 +164,7 @@
 · resumed · owned files, and a drifted file named separately
   CHANGES                                               session · +18 −3
   ▎✎ internal/agent/loop.go                                    +18 −3 2t
-   · internal/agent/round.go                                     drifted
+   · internal/agent/round.go                                     skipped
 
 · a reading that has left the instruction
   SUMMARY                                                 as of round 31
@@ -178,7 +178,7 @@
 · a reading the session has outrun
   SUMMARY                                         as of round 12 · stale
   Running the agent package's tests.                                    
-  · target unclear                                                      
+  · unclear                                                             
 
   THIS TURN                                                             
   0 files this turn · 40 tools                                          
@@ -547,7 +547,7 @@
 · resumed · owned files, and a drifted file named separately
   ␛[1;94mCHANGES␛[m                                               ␛[38;5;241msession · ␛[m␛[92m+18␛[m ␛[91m−3␛[m
   ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252minternal/agent/loop.go␛[m                                    ␛[92m+18␛[m ␛[91m−3␛[m ␛[38;5;241m2t␛[m
-   ␛[38;5;241m·␛[m ␛[38;5;245minternal/agent/round.go␛[m                                     ␛[38;5;241mdrifted␛[m
+   ␛[38;5;241m·␛[m ␛[38;5;245minternal/agent/round.go␛[m                                     ␛[38;5;241mskipped␛[m
 
 · a reading that has left the instruction
   ␛[1;94mSUMMARY␛[m                                                 ␛[38;5;241mas of round 31␛[m
@@ -561,7 +561,7 @@
 · a reading the session has outrun
   ␛[1;94mSUMMARY␛[m                                         ␛[38;5;214mas of round 12 · stale␛[m
   ␛[38;5;252mRunning the agent package's tests.␛[m                                    
-  ␛[38;5;241m·␛[m ␛[38;5;241mtarget unclear␛[m                                                      
+  ␛[38;5;241m·␛[m ␛[38;5;241munclear␛[m                                                             
 
   ␛[1;94mTHIS TURN␛[m                                                             
   ␛[38;5;241m0 files this turn␛[m␛[38;5;241m · ␛[m␛[38;5;241m40 tools␛[m                                          

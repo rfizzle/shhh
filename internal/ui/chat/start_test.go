@@ -448,7 +448,7 @@ func TestStartScreen_TheSiblingClauseOutlivesTheNarrowHeader(t *testing.T) {
 // is left exactly as it was.
 func TestStartScreen_TheFirstSessionSaysThreeThings(t *testing.T) {
 	block := []string{
-		"type what you want and press enter",
+		"enter sends what you type",
 		"esc backs out of anything and never loses work",
 		"ctrl+c twice stops a run",
 	}

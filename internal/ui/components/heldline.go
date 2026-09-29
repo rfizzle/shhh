@@ -38,7 +38,7 @@ func (h HeldLine) View(width int) string {
 	if len(rows) > heldLineRows {
 		rows = append(rows[:heldLineRows-1], sty.Dim.Render("…"))
 	}
-	rows = append(rows, sty.Dim.Render("it joins the turn as a steer; it grants nothing"))
+	rows = append(rows, sty.Dim.Render("it joins the turn as a message; it grants nothing"))
 	if h.More > 0 {
 		rows = append(rows, sty.Dim.Render(plural(h.More, "more line")+" waiting behind it"))
 	}

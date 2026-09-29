@@ -20,7 +20,7 @@
 │   4. Something else …  answer in your own words                                                                            │
 │ ┄ note (optional)                                                                                                          │
 │   (none)                                                                                                                   │
-│ [tab] note/options · [enter] confirm · [d] the full answer · [?] keys · [esc] back to the draft — the question waits       │
+│ [tab] note or list · [enter] confirm · [d] the full answer · [?] keys · [esc] back to the draft — the question waits       │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 · the note has the keyboard · the list's digits are text until tab hands it back
@@ -33,7 +33,7 @@
 │   4. Something else …  answer in your own words                                                                            │
 │ ┄ note (optional)                                                                                                          │
 │   ┃ note (optional)                                                                                                        │
-│ [tab] note/options · [enter] confirm · [d] the full answer · [esc] back to the draft — the question waits                  │
+│ [tab] note or list · [enter] confirm · [d] the full answer · [esc] back to the draft — the question waits                  │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 · pick several · the boxes, with the same field under them
@@ -46,7 +46,7 @@
 │   [ ] Something else …                                                                                                     │
 │ ┄ note (optional)                                                                                                          │
 │   (none)                                                                                                                   │
-│ [tab] note/options · [space] toggle · [a] all/none · [d] the full answer · [enter] apply (0) · [?] keys                    │
+│ [tab] note or list · [space] toggle · [a] all/none · [d] the full answer · [enter] choose (0) · [?] keys                   │
 │ [esc] back to the draft — the question waits                                                                               │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
@@ -141,7 +141,7 @@ Should the migration be reversible?
   ──── DECISION 1/1 ────────────────────────────────────────────────────────────────────────────────────────────────────────────  
   ╭─ ⏸ 1 waiting ──────────────────────────────────────────────────────────────────────────────────────────────────────────────╮  
   │ ▸                                                                                                                          │  
-  ├─ ⏸ manual · round 1/150 · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 ────────────────────────────────────────────────────────────────────────┤  
+  ├─ ⏸ manual · round 1 of 150 · context 32% ▰▰▱▱▱▱▱▱ · $0.51 ─────────────────────────────────────────────────────────────────┤  
   ╰─ [?] keys ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯  
 
 · a free answer · the whole surface, which a one-line field leaves standing
@@ -173,7 +173,7 @@ Should the migration be reversible?
   ──── DECISION 1/1 ────────────────────────────────────────────────────────────────────────────────────────────────────────────  
   ╭─ ⏸ 1 waiting ──────────────────────────────────────────────────────────────────────────────────────────────────────────────╮  
   │ ▸                                                                                                                          │  
-  ├─ ⏸ manual · round 1/150 · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 ────────────────────────────────────────────────────────────────────────┤  
+  ├─ ⏸ manual · round 1 of 150 · context 32% ▰▰▱▱▱▱▱▱ · $0.51 ─────────────────────────────────────────────────────────────────┤  
   ╰─ [?] keys ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯  
 
 · pick one · the same terminal, and the card has all of it
@@ -194,7 +194,7 @@ Should the migration be reversible?
      ✗ go test ./internal/agent/... failing · exit 1 · 21s                                                                        
                                                                                                                                   
   ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────  
-  ⏸ manual · round 1/150 · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51                                                                               
+  ⏸ manual · round 1 of 150 · context 32% ▰▰▱▱▱▱▱▱ · $0.51                                                                        
   ──── DECISION 1/1 ────────────────────────────────────────────────────────────────────────────────────────────────────────────  
   ╭─ Question ──────────────────────────────────────────────────────────────────────────────────────────────────────── 1 of 1 ─╮  
   │ Which store should the cache use?                                                                                          │  
@@ -205,7 +205,7 @@ Should the migration be reversible?
   │   4. Something else …  answer in your own words                                                                            │  
   │ ┄ note (optional)                                                                                                          │  
   │   (none)                                                                                                                   │  
-  │ [tab] note/options · [enter] confirm · [d] the full answer · [?] keys · [esc] back to the draft — the question waits       │  
+  │ [tab] note or list · [enter] confirm · [d] the full answer · [?] keys · [esc] back to the draft — the question waits       │  
   ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯  
 
 ── ansi ────────────────────────────────────────────────────
@@ -219,7 +219,7 @@ Should the migration be reversible?
 ␛[94m│␛[m   ␛[38;5;241m4. ␛[m␛[38;5;252mSomething else …␛[m  ␛[38;5;241manswer in your own words␛[m                                                                            ␛[94m│␛[m
 ␛[94m│␛[m ␛[38;5;241m┄ note (optional)␛[m                                                                                                          ␛[94m│␛[m
 ␛[94m│␛[m   ␛[38;5;245m(none)␛[m                                                                                                                   ␛[94m│␛[m
-␛[94m│␛[m ␛[94m[tab]␛[m␛[38;5;241m note/options␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m confirm␛[m␛[38;5;241m · ␛[m␛[94m[d]␛[m␛[38;5;241m the full answer␛[m␛[38;5;241m · ␛[m␛[94m[?]␛[m␛[38;5;241m keys␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the draft — the question waits␛[m       ␛[94m│␛[m
+␛[94m│␛[m ␛[94m[tab]␛[m␛[38;5;241m note or list␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m confirm␛[m␛[38;5;241m · ␛[m␛[94m[d]␛[m␛[38;5;241m the full answer␛[m␛[38;5;241m · ␛[m␛[94m[?]␛[m␛[38;5;241m keys␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the draft — the question waits␛[m       ␛[94m│␛[m
 ␛[94m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · the note has the keyboard · the list's digits are text until tab hands it back
@@ -232,7 +232,7 @@ Should the migration be reversible?
 ␛[94m│␛[m   ␛[38;5;241m4. ␛[m␛[38;5;252mSomething else …␛[m  ␛[38;5;241manswer in your own words␛[m                                                                            ␛[94m│␛[m
 ␛[94m│␛[m ␛[38;5;241m┄ note (optional)␛[m                                                                                                          ␛[94m│␛[m
 ␛[94m│␛[m   ␛[38;5;252m␛[38;5;241m┃ ␛[m␛[m␛[38;5;252m␛[7;38;5;62mn␛[m␛[m␛[38;5;252m␛[38;5;241mote (optional)␛[m␛[m␛[38;5;252m                                                                                                       ␛[m ␛[94m│␛[m
-␛[94m│␛[m ␛[94m[tab]␛[m␛[38;5;241m note/options␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m confirm␛[m␛[38;5;241m · ␛[m␛[94m[d]␛[m␛[38;5;241m the full answer␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the draft — the question waits␛[m                  ␛[94m│␛[m
+␛[94m│␛[m ␛[94m[tab]␛[m␛[38;5;241m note or list␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m confirm␛[m␛[38;5;241m · ␛[m␛[94m[d]␛[m␛[38;5;241m the full answer␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the draft — the question waits␛[m                  ␛[94m│␛[m
 ␛[94m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · pick several · the boxes, with the same field under them
@@ -245,7 +245,7 @@ Should the migration be reversible?
 ␛[94m│␛[m   ␛[38;5;241m[ ]␛[m Something else …                                                                                                     ␛[94m│␛[m
 ␛[94m│␛[m ␛[38;5;241m┄ note (optional)␛[m                                                                                                          ␛[94m│␛[m
 ␛[94m│␛[m   ␛[38;5;245m(none)␛[m                                                                                                                   ␛[94m│␛[m
-␛[94m│␛[m ␛[94m[tab]␛[m␛[38;5;241m note/options␛[m␛[38;5;241m · ␛[m␛[94m[space]␛[m␛[38;5;241m toggle␛[m␛[38;5;241m · ␛[m␛[94m[a]␛[m␛[38;5;241m all/none␛[m␛[38;5;241m · ␛[m␛[94m[d]␛[m␛[38;5;241m the full answer␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m apply (0)␛[m␛[38;5;241m · ␛[m␛[94m[?]␛[m␛[38;5;241m keys␛[m                    ␛[94m│␛[m
+␛[94m│␛[m ␛[94m[tab]␛[m␛[38;5;241m note or list␛[m␛[38;5;241m · ␛[m␛[94m[space]␛[m␛[38;5;241m toggle␛[m␛[38;5;241m · ␛[m␛[94m[a]␛[m␛[38;5;241m all/none␛[m␛[38;5;241m · ␛[m␛[94m[d]␛[m␛[38;5;241m the full answer␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m choose (0)␛[m␛[38;5;241m · ␛[m␛[94m[?]␛[m␛[38;5;241m keys␛[m                   ␛[94m│␛[m
 ␛[94m│␛[m ␛[92m[esc]␛[m␛[38;5;241m back to the draft — the question waits␛[m                                                                               ␛[94m│␛[m
 ␛[94m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
@@ -340,7 +340,7 @@ Should the migration be reversible?
   ␛[38;5;241m────␛[m ␛[94;1mDECISION 1/1␛[m ␛[38;5;241m────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m  
   ␛[38;5;241m╭─␛[m ␛[38;5;214;1m⏸ 1 waiting␛[m ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────╮␛[m  
   ␛[38;5;241m│␛[m ␛[38;5;241m▸␛[m ␛[38;5;252m                                                                                                                        ␛[m ␛[38;5;241m│␛[m  
-  ␛[38;5;241m├─␛[m ␛[38;5;214m⏸ manual␛[38;5;243m · round 1/150 · ␛[92mctx 32%␛[m ␛[92m▰▰␛[38;5;241m▱▱▱▱▱▱␛[38;5;243m · $0.51␛[m ␛[38;5;241m────────────────────────────────────────────────────────────────────────┤␛[m  
+  ␛[38;5;241m├─␛[m ␛[38;5;214m⏸ manual␛[38;5;243m · round 1 of 150 · ␛[92mcontext 32%␛[m ␛[92m▰▰␛[38;5;241m▱▱▱▱▱▱␛[38;5;243m · $0.51␛[m ␛[38;5;241m─────────────────────────────────────────────────────────────────┤␛[m  
   ␛[38;5;241m╰─␛[m ␛[94m[?]␛[38;5;241m keys␛[m ␛[38;5;241m─────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m  
 
 · a free answer · the whole surface, which a one-line field leaves standing
@@ -372,7 +372,7 @@ Should the migration be reversible?
   ␛[38;5;241m────␛[m ␛[94;1mDECISION 1/1␛[m ␛[38;5;241m────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m  
   ␛[38;5;241m╭─␛[m ␛[38;5;214;1m⏸ 1 waiting␛[m ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────╮␛[m  
   ␛[38;5;241m│␛[m ␛[38;5;241m▸␛[m ␛[38;5;252m                                                                                                                        ␛[m ␛[38;5;241m│␛[m  
-  ␛[38;5;241m├─␛[m ␛[38;5;214m⏸ manual␛[38;5;243m · round 1/150 · ␛[92mctx 32%␛[m ␛[92m▰▰␛[38;5;241m▱▱▱▱▱▱␛[38;5;243m · $0.51␛[m ␛[38;5;241m────────────────────────────────────────────────────────────────────────┤␛[m  
+  ␛[38;5;241m├─␛[m ␛[38;5;214m⏸ manual␛[38;5;243m · round 1 of 150 · ␛[92mcontext 32%␛[m ␛[92m▰▰␛[38;5;241m▱▱▱▱▱▱␛[38;5;243m · $0.51␛[m ␛[38;5;241m─────────────────────────────────────────────────────────────────┤␛[m  
   ␛[38;5;241m╰─␛[m ␛[94m[?]␛[38;5;241m keys␛[m ␛[38;5;241m─────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m  
 
 · pick one · the same terminal, and the card has all of it
@@ -393,7 +393,7 @@ Should the migration be reversible?
      ␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/... failing␛[38;5;241m · exit 1 · 21s␛[m                                                                        
                                                                                                                                   
   ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m  
-  ␛[38;5;214m⏸ manual␛[38;5;243m · round 1/150 · ␛[92mctx 32%␛[m ␛[92m▰▰␛[38;5;241m▱▱▱▱▱▱␛[38;5;243m · $0.51␛[m                                                                               
+  ␛[38;5;214m⏸ manual␛[38;5;243m · round 1 of 150 · ␛[92mcontext 32%␛[m ␛[92m▰▰␛[38;5;241m▱▱▱▱▱▱␛[38;5;243m · $0.51␛[m                                                                        
   ␛[38;5;241m────␛[m ␛[94;1mDECISION 1/1␛[m ␛[38;5;241m────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m  
   ␛[94m╭─ ␛[97;1mQuestion ␛[38;5;241;22m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[94m 1 of 1 ─╮␛[m  
   ␛[94m│␛[m ␛[38;5;252mWhich store should the cache use?␛[m                                                                                          ␛[94m│␛[m  
@@ -404,5 +404,5 @@ Should the migration be reversible?
   ␛[94m│␛[m   ␛[38;5;241m4. ␛[38;5;252mSomething else …␛[m  ␛[38;5;241manswer in your own words␛[m                                                                            ␛[94m│␛[m  
   ␛[94m│␛[m ␛[38;5;241m┄ note (optional)␛[m                                                                                                          ␛[94m│␛[m  
   ␛[94m│␛[m   ␛[38;5;245m(none)␛[m                                                                                                                   ␛[94m│␛[m  
-  ␛[94m│␛[m ␛[94m[tab]␛[38;5;241m note/options · ␛[94m[enter]␛[38;5;241m confirm · ␛[94m[d]␛[38;5;241m the full answer · ␛[94m[?]␛[38;5;241m keys · ␛[92m[esc]␛[38;5;241m back to the draft — the question waits␛[m       ␛[94m│␛[m  
+  ␛[94m│␛[m ␛[94m[tab]␛[38;5;241m note or list · ␛[94m[enter]␛[38;5;241m confirm · ␛[94m[d]␛[38;5;241m the full answer · ␛[94m[?]␛[38;5;241m keys · ␛[92m[esc]␛[38;5;241m back to the draft — the question waits␛[m       ␛[94m│␛[m  
   ␛[94m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m  

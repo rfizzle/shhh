@@ -64,7 +64,7 @@ func (r InspectorRail) turnBlock(width int) (railBlock, bool) {
 	// (docs/interface/principles.md#a-stat-that-cannot-be-reported-is-left-out).
 	// The file count is kept at zero because that zero was measured, and
 	// "0 files this turn" is the answer the block is asked for
-	// (docs/interface/departures.md#a-turn-that-wrote-nothing-says-so).
+	// (docs/interface/departures.md#a-turn-that-changed-no-files-says-so).
 	if t.Tools > 0 {
 		stats = append(stats, sty.Dim.Render(plural(t.Tools, "tool")))
 	}

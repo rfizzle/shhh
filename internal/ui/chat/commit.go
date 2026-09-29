@@ -289,7 +289,7 @@ func (st *commitState) fields() []components.CardField {
 	fields := []components.CardField{leaves}
 	if n := len(st.drifted); n > 0 {
 		fields = append(fields, components.CardField{
-			Label: "drifted", Value: plural(n, "file") + " left out",
+			Label: "skipped", Value: plural(n, "file") + " left out",
 			Tone:   components.ToneOpen,
 			Detail: strings.Join(st.drifted, ", ") + " changed since the turn wrote it",
 		})

@@ -84,8 +84,8 @@ func TestClassifierFlow_AllowRunsCommand(t *testing.T) {
 	if m.state != stateClassifying {
 		t.Fatalf("an unlisted command in auto mode should be classified, got state %d", m.state)
 	}
-	if !strings.Contains(m.renderStatusBar(80), "✦ checking") {
-		t.Fatalf("status bar should show the checking indicator, got %q", m.renderStatusBar(80))
+	if !strings.Contains(m.renderStatusBar(80), "✦ deciding") {
+		t.Fatalf("status bar should show the deciding indicator, got %q", m.renderStatusBar(80))
 	}
 
 	updated, cmd = m.Update(driveClassifierDone(t, cmd))

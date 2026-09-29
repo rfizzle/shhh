@@ -33,7 +33,7 @@ const (
 
 // wroteNothing is the changed-files row's statement for a turn that ran
 // something that could have written and changed no file.
-const wroteNothing = "wrote nothing"
+const wroteNothing = "changed no files"
 
 // closeMinNoteGap is the space a right-aligned note needs before it is worth
 // keeping; below it the note drops rather than crowding the statement.
@@ -125,7 +125,7 @@ type TurnClose struct {
 	Changes *TurnChanges
 	// WroteNothing says the turn ran a command or a call shhh cannot see the
 	// far side of and its changeset is empty, so the changed-files row is
-	// drawn answering the question that act raised: `wrote nothing`, with no
+	// drawn answering the question that act raised: `changed no files`, with no
 	// offers, since there is nothing to review, keep or take back. A command
 	// is assumed to write (docs/interface/principles.md#weight-tracks-risk),
 	// and this row is that assumption answered. A turn that only read has no
@@ -370,7 +370,7 @@ func (c TurnClose) View(width int) string {
 		// press.
 		note := ""
 		if ck.Superseded > 0 {
-			note = sty.Dim.Render(plural(ck.Superseded, "earlier failure") + " superseded")
+			note = sty.Dim.Render(plural(ck.Superseded, "earlier failure") + " since passed")
 		}
 		// The offer is answered by reading mode on the row, exactly as the
 		// changed-files row's are, so it renders under the same rule about

@@ -675,7 +675,7 @@ func TestPolicy_StatusBarAndHelpReflectPolicy(t *testing.T) {
 
 	m.policy.allEdits = true
 	m = m.WithCommandAllowlist([]string{"git status"})
-	if !strings.Contains(m.renderStatusBar(80), "auto: edits+allowlist") {
+	if !strings.Contains(m.renderStatusBar(80), "granted: edits, allowlist") {
 		t.Fatalf("status bar should show the active policy, got %q", m.renderStatusBar(80))
 	}
 	_, help = m.handleSlashCommand("/help")

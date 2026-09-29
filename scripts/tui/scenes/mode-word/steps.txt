@@ -21,15 +21,15 @@
 setup printf 'package agent\n\nfunc loop() {\n    for round := 0; round < limit; round++ {\n        step()\n    }\n}\n' > loop.go
 snap 01-start "Some things worth doing first"
 keys "where is the round counter read" Enter
-snap 02-manual "⏸ manual · ctx"
+snap 02-manual "⏸ manual · context"
 keys BTab
 snap 03-accept-edits "⏵⏵ accept edits"
 keys BTab
-snap 04-auto "⏵⏵ auto · ctx"
+snap 04-auto "⏵⏵ auto · context"
 keys BTab
 snap 05-read-only "⏸ read-only"
 keys BTab
-snap 06-plan "⏸ plan · ctx"
+snap 06-plan "⏸ plan · context"
 # Plan mode is read-only plus an artifact, and this is the artifact: the turn
 # ends on the card, and the card's own key row is where the plan can leave the
 # conversation that produced it.
@@ -54,13 +54,13 @@ snap 10-back-to-manual "├─ ⏸ manual ─" "scripted-model"
 # rather than the chord is the door in, because it is the one both terminals
 # under this harness deliver.
 keys "put a reader on it" Enter
-snap 11-spawn-card "Spawn researcher"
+snap 11-spawn-card "Start a researcher"
 sleep 1
 keys y
 snap 12-spawned "reader-1"
 sleep 2
 keys "/attach reader-1" Enter
-snap 13-attached "[esc] detach" "⏸ manual" "parent round 1/150 · reader-1"
+snap 13-attached "[esc] back to your session" "⏸ manual" "parent round 1 of 150 · reader-1"
 sleep 1
 keys Escape
 snap 14-detached "[enter] send"

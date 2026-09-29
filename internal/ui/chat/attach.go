@@ -1171,7 +1171,7 @@ func (m Model) childStatsReport(name string) string {
 	}
 	sb.WriteString(spend)
 	if q := m.subagents.QueuedSteering(name); q > 0 {
-		fmt.Fprintf(&sb, "\n  queued steering: %d", q)
+		fmt.Fprintf(&sb, "\n  %s", queuedForTurn(q))
 	}
 	return sb.String()
 }
@@ -1240,7 +1240,7 @@ func (m Model) renderChildStatusBar(width int) string {
 		parts = append(parts, sty.StatusBar.Render(spend))
 	}
 	if q := m.subagents.QueuedSteering(name); q > 0 {
-		parts = append(parts, sty.StatusBar.Render(fmt.Sprintf("queued %d", q)))
+		parts = append(parts, sty.StatusBar.Render(queuedForTurn(q)))
 	}
 	left := strings.Join(parts, "  ")
 	right := sty.StatusBar.Render(name)

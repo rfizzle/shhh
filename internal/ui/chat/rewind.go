@@ -468,7 +468,7 @@ func (m *Model) openRewindScope(n int, turns []changeset.Turn) {
 		Talk: components.CardField{
 			Label: "talk", Tone: components.ToneNeutral,
 			Value:  turnSpanPhrase(scope.ret.first, scope.ret.last) + leaveVerb(scope.ret.first, scope.ret.last),
-			Detail: fmt.Sprintf("ctx %d%% → %d%% · kept as a branch, /branches to switch back", scope.ret.was, scope.ret.now),
+			Detail: fmt.Sprintf("%s %d%% → %d%% · kept as a branch, /branches to switch back", m.contextWord(), scope.ret.was, scope.ret.now),
 		},
 		Undo: components.CardField{
 			Label: "undo", Tone: components.ToneSafe, Value: "yes",
@@ -647,7 +647,7 @@ func (m *Model) appendRewindRow(r rewindReturn, folded changeset.Turn) {
 	}
 	if r.first > 0 {
 		parts = append(parts, turnSpanPhrase(r.first, r.last)+" out of the window",
-			fmt.Sprintf("ctx %d%% → %d%%", r.was, r.now))
+			fmt.Sprintf("%s %d%% → %d%%", m.contextWord(), r.was, r.now))
 	}
 	if len(parts) == 0 {
 		parts = append(parts, "back to "+turnPoint(r.turn))

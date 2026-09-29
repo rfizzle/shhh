@@ -165,7 +165,7 @@ func resolveChecks(es []entry) resolvedChecks {
 	for i, e := range es {
 		switch s, isGate := gateVerdict(e); {
 		case isGate:
-			counts := fmt.Sprintf("%d/%d checks", s.Passed, s.Total)
+			counts := fmt.Sprintf("%d of %d checks", s.Passed, s.Total)
 			if s.Duration != "" {
 				counts += " · " + s.Duration
 			}

@@ -347,7 +347,7 @@ func TestGolden_TurnClose(t *testing.T) {
 	captureGolden(t, "turn-close", "turn close rows", goldenWidths, func(width int) []golden.Panel {
 		closed := func(mut func(*TurnClose)) string {
 			c := TurnClose{
-				Steps: 4, Tools: 18, Elapsed: "1m 04s", Spend: "$0.14", Note: "round 7/25",
+				Steps: 4, Tools: 18, Elapsed: "1m 04s", Spend: "$0.14", Note: "round 7 of 25",
 				Changes: &TurnChanges{
 					Files: 3, Added: 30, Removed: 4,
 					// Review, keep, or take back — the three things a
@@ -624,20 +624,20 @@ func TestGolden_ApprovalCard(t *testing.T) {
 			{Label: "variant · command, a batch waiting behind it", View: card(func(c *ApprovalCard) {
 				c.QueuePos = "1 of 5"
 				c.AllowAlways, c.AlwaysHint = true, "allow commands without asking this session"
-				c.Batch, c.BatchHint = true, "answer 3 like this as a list"
-				c.Severity, c.SeverityReason = SeverityLow, "writes nothing"
+				c.Batch, c.BatchHint = true, "answer all 3 in one list"
+				c.Severity, c.SeverityReason = SeverityLow, "changes no files"
 			})},
 			// A command that resolved to reads only, contained: every row's
 			// sentence would read the same on the next such card, so the
 			// card is its values alone and the full view keeps the words.
 			{Label: "variant · command, a quiet card · values alone", View: card(func(c *ApprovalCard) {
 				c.Act = "sed -n 1p go.mod"
-				c.Severity, c.SeverityReason = SeverityLow, "writes nothing"
+				c.Severity, c.SeverityReason = SeverityLow, "changes no files"
 				c.Fields = []CardField{
 					{Label: "touches", Value: "nothing", Detail: "the command resolved to reads only", Tone: ToneSafe},
-					{Label: "undo", Value: "n/a", Detail: "no workspace file is modified", Tone: ToneSafe},
+					{Label: "undo", Value: "nothing to undo", Detail: "no workspace file is modified", Tone: ToneSafe},
 					{Label: "network", Value: "open", Detail: "the workspace profile allows network access", Tone: ToneOpen},
-					{Label: "⛨", Value: "bwrap · workspace", Tone: ToneChrome},
+					{Label: "sandbox", Value: "bwrap · workspace", Tone: ToneChrome},
 				}
 			})},
 			{Label: "variant · command, flagged, contained, blast radius", View: card(func(c *ApprovalCard) {
@@ -653,10 +653,10 @@ func TestGolden_ApprovalCard(t *testing.T) {
 					// a chip on the rail: a chip is shed the moment the
 					// terminal narrows, and this is the row a flagged card
 					// must not stop stating.
-					{Label: "⛨", Value: "bwrap · workspace", Tone: ToneChrome},
+					{Label: "sandbox", Value: "bwrap · workspace", Tone: ToneChrome},
 				}
-				c.Footnote = "[a] always — not offered: a safety-flagged command is never pre-approved"
-				c.Return = "don't — the safe answer; the decision waits"
+				c.Footnote = "[a] always — not offered: shhh flagged this command"
+				c.Return = "not now — it keeps waiting"
 			})},
 			// A host list is neither open nor closed: the count is the value
 			// and the hosts are the detail, in the neutral tone of a fact.
@@ -667,21 +667,21 @@ func TestGolden_ApprovalCard(t *testing.T) {
 					{Label: "touches", Value: "./node_modules", Detail: "shhh cannot tell what npm writes"},
 					{Label: "undo", Value: "none", Detail: "nothing it writes is tracked in git", Tone: ToneRisk},
 					{Label: "network", Value: "2 hosts", Detail: "only registry.npmjs.org, proxy.golang.org; every other host is refused", Tone: ToneNeutral},
-					{Label: "⛨", Value: "bwrap · workspace", Tone: ToneChrome},
+					{Label: "sandbox", Value: "bwrap · workspace", Tone: ToneChrome},
 				}
 			})},
 			{Label: "variant · command, uncontained", View: card(func(c *ApprovalCard) {
 				c.Act = "curl -fsSL https://get.pnpm.io/install.sh | sh"
 				c.Severity, c.Uncontained = SeverityMedium, true
-				c.SeverityReason = "what it writes could not be resolved"
+				c.SeverityReason = "shhh can't tell what it changes"
 				c.Fields = []CardField{
 					{Label: "touches", Value: "unknown", Detail: "piped into sh; what it runs is not inspected first", Tone: ToneRisk},
 					{Label: "undo", Value: "unknown", Detail: "shhh could not resolve what this writes", Tone: ToneRisk},
 					{Label: "network", Value: "open", Detail: "nothing contains this command, so nothing limits what it reaches", Tone: ToneOpen},
-					{Label: "⛨", Value: "no sandbox", Detail: "bubblewrap (bwrap) not found on PATH; the command runs as you", Tone: ToneRisk},
+					{Label: "sandbox", Value: "no sandbox", Detail: "bubblewrap (bwrap) not found on PATH; the command runs as you", Tone: ToneRisk},
 				}
-				c.Footnote = "containment is off for this session · /sandbox doctor explains why"
-				c.Return = "don't — the safe answer; the decision waits"
+				c.Footnote = "no sandbox this session · /sandbox doctor says why"
+				c.Return = "not now — it keeps waiting"
 			})},
 			// A body taller than the panel: the last row becomes the counted
 			// tail, the decision block never moves, and one press of shift+↓
@@ -697,7 +697,7 @@ func TestGolden_ApprovalCard(t *testing.T) {
 							{Label: "touches", Value: "./dist", Detail: "the script rewrites the release tree", Tone: ToneRisk},
 							{Label: "undo", Value: "none", Detail: "nothing it writes is tracked in git", Tone: ToneRisk},
 							{Label: "network", Value: "open", Detail: "it pushes the artefacts it builds", Tone: ToneOpen},
-							{Label: "⛨", Value: "bwrap", Detail: "workspace profile"},
+							{Label: "sandbox", Value: "bwrap", Detail: "workspace profile"},
 						}
 					})
 				}
@@ -734,10 +734,10 @@ func TestGolden_ApprovalCard(t *testing.T) {
 			// declared nothing shhh can rate leaves the row stating the level
 			// and nothing else, which is what the row does rather than guess.
 			{Label: "variant · generic", View: card(func(c *ApprovalCard) {
-				c.Variant, c.Title = ApprovalGeneric, "Approve tool"
+				c.Variant, c.Title = ApprovalGeneric, "Approve fetch"
 				c.ActGlyph, c.Act = "⚙", "GET https://pkg.go.dev/context#WithCancel"
 				c.Summary = "the page arrives as text; nothing on it runs"
-				c.Answer = "allow it"
+				c.Answer = "fetch it"
 				c.Severity = SeverityLow
 				// The key names the host rather than the category: what the
 				// domain row states is exactly what pressing it grants.
@@ -745,7 +745,7 @@ func TestGolden_ApprovalCard(t *testing.T) {
 				c.Fields = []CardField{
 					{Label: "domain", Value: "pkg.go.dev", Detail: "the request leaves this machine", Tone: ToneOpen},
 					{Label: "sends", Value: "the URL and a shhh-web/1.0 user-agent", Detail: "no file contents, no credentials"},
-					{Label: "receives", Value: "page text, whole, into the evidence store; the first 16 KB into the conversation", Detail: "it counts against the context window"},
+					{Label: "receives", Value: "page text, kept whole; the first 16 KB into the conversation", Detail: "it counts against the context window"},
 				}
 			})},
 			// What the card leaves behind once it is answered. The decision
@@ -788,9 +788,9 @@ func TestGolden_SpawnCard(t *testing.T) {
 			// One child: the row, the profile's clause under it, and the
 			// scope back in the block where every other card answers it.
 			{Label: "single · a writer, with what it claims", View: card(func(c *ApprovalCard) {
-				c.Title = "Spawn writer"
+				c.Title = "Start a writer"
 				c.Answer = "start it"
-				c.SeverityReason = "touches open"
+				c.SeverityReason = "touches not limited"
 				c.Spawns = []SpawnRow{{
 					Role: "writer", Name: "writer-1",
 					About:   "full tools against an isolated copy of the workspace",
@@ -809,9 +809,9 @@ func TestGolden_SpawnCard(t *testing.T) {
 			// The same writer on a host with nothing to contain its commands:
 			// the card says they will be refused before the spawn is approved.
 			{Label: "single · a writer whose commands will be refused", View: card(func(c *ApprovalCard) {
-				c.Title = "Spawn writer"
+				c.Title = "Start a writer"
 				c.Answer = "start it"
-				c.SeverityReason = "touches open"
+				c.SeverityReason = "touches not limited"
 				c.Spawns = []SpawnRow{{
 					Role: "writer", Name: "writer-1",
 					About:   "full tools against an isolated copy of the workspace",
@@ -831,7 +831,7 @@ func TestGolden_SpawnCard(t *testing.T) {
 			// A read-only role is the one that can be waved through for the
 			// session, and the key says the role rather than the category.
 			{Label: "single · a researcher, grantable for the session", View: card(func(c *ApprovalCard) {
-				c.Title = "Spawn researcher"
+				c.Title = "Start a researcher"
 				c.Answer = "start it"
 				c.SeverityReason = "reaches open"
 				c.AllowAlways, c.AlwaysHint = true, "allow researchers for this session"
@@ -853,9 +853,9 @@ func TestGolden_SpawnCard(t *testing.T) {
 			// its own scope under it, and the block down to what is true of
 			// all three.
 			{Label: "batch · three writers, one decision", View: card(func(c *ApprovalCard) {
-				c.Title = "Spawn 3 writers"
+				c.Title = "Start 3 writers"
 				c.Answer, c.Decline = "start all 3", "deny all 3"
-				c.SeverityReason = "each child's touches open"
+				c.SeverityReason = "each child's touches not limited"
 				c.Batch, c.BatchHint = true, "pick which of the 3 to start"
 				c.Spawns = []SpawnRow{
 					{Role: "writer", Name: "writer-1", Task: "say where the round counter is read",
@@ -876,7 +876,7 @@ func TestGolden_SpawnCard(t *testing.T) {
 			// keys not yet live and the handover offered under them
 			// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 			{Label: "state · a fan-out beside a draft that has the keyboard", View: card(func(c *ApprovalCard) {
-				c.Title = "Spawn 3 writers"
+				c.Title = "Start 3 writers"
 				c.Answer, c.Decline = "start all 3", "deny all 3"
 				c.Batch, c.BatchHint = true, "pick which of the 3 to start"
 				c.Spawns = []SpawnRow{

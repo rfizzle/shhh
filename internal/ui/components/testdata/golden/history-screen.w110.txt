@@ -119,7 +119,7 @@ shhh history · 6 entries · 2 run                                              
 [x] delete the entry, after confirming it
 [/] filter by what was asked or by what came back
 [ctrl+u] clear the filter; clear it again to close it
-[backspace] take a rune back out of the filter
+[backspace] delete a character from the filter
 [esc] back to the shell
 [q] back to the shell
 
@@ -250,7 +250,7 @@ $  a shell command
 ␛[94m[x]␛[m␛[38;5;241m delete the entry, after confirming it␛[m
 ␛[94m[/]␛[m␛[38;5;241m filter by what was asked or by what came back␛[m
 ␛[94m[ctrl+u]␛[m␛[38;5;241m clear the filter; clear it again to close it␛[m
-␛[94m[backspace]␛[m␛[38;5;241m take a rune back out of the filter␛[m
+␛[94m[backspace]␛[m␛[38;5;241m delete a character from the filter␛[m
 ␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m
 ␛[94m[q]␛[m␛[38;5;241m back to the shell␛[m
 

@@ -22,7 +22,7 @@ shell mkdir -p ../other && cd ../other && git init -q && for i in $(seq 100); do
 snap 03-steer "Rebased onto master" "steer" "from session lane-b" "master moved under you: rebase onto it"
 keys BTab
 keys BTab
-snap 04-auto "⏵⏵ auto · ctx"
+snap 04-auto "⏵⏵ auto · context"
 shell cd ../other && "$SHHH_BIN" send --from lane-b "$(cat ../slot)" "master moved again: rebase once more"
 snap 05-held "pass it to the turn" "a line from session lane-b" "master moved again: rebase once more" "[n] drop it"
 keys y

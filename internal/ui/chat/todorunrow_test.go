@@ -231,12 +231,12 @@ func TestTodoRunRow_BlockedNamesTheFollowUpAndReopens(t *testing.T) {
 
 // The remediation note outlives the stage it is about — a run that spent a
 // round says so after it finishes — so it says which round is in flight only
-// while one is. `round 1/2` beside a finished run would claim one still was.
+// while one is. `round 1 of 2` beside a finished run would claim one still was.
 func TestTodoRunRow_RoundNoteSaysSpentOnceTheStageIsPast(t *testing.T) {
 	st := run.Start(todo.Item{Slug: "do-it", Profile: todo.BuiltinCode(), Fields: map[string]string{"size": "M"}}, "s", "manual", 1, run.Options{})
 	st.Round, st.Stage = 1, run.StageRemediate
 	r := newTodoRunRow(st)
-	if got := noteText(r); !strings.Contains(got, "remediate  round 1/2") {
+	if got := noteText(r); !strings.Contains(got, "remediate  round 1 of 2") {
 		t.Errorf("mid-round the note names the round in flight: %q", got)
 	}
 	st.Stage = run.StageDone

@@ -81,6 +81,11 @@ type MultiSelect struct {
 	// family's — applying none of the boxes, which is the counterpart of the
 	// `apply (N)` beside it (cancelOffer).
 	CancelLabel string
+	// TakeVerb is the word enter is offered under, before the count, in the
+	// host's own words. Empty is the family's `apply`; a question asked with
+	// boxes says `choose`, because `apply` is the edit card's word for
+	// writing a file.
+	TakeVerb string
 	// NotYetLive and Handover are the note-selector's, for the reason the
 	// note field and the lead are: a question asked with boxes is the same
 	// question asked with rows, and it lands beside a live draft the same way
@@ -216,6 +221,14 @@ func (s *MultiSelect) View(width int) string {
 	return Card{Title: s.Title, Chips: s.Chips, Tone: s.Tone}.Render(rows, width)
 }
 
+// takeVerb is enter's word on the key row: the host's, or `apply`.
+func (s *MultiSelect) takeVerb() string {
+	if s.TakeVerb != "" {
+		return s.TakeVerb
+	}
+	return "apply"
+}
+
 // hintRowsFor is the card's key row, or the handover alone while the draft
 // still holds the keyboard — the note-selector's rule, on the same terms: the
 // boxes toggle on a bare letter, and a bare letter drawn beside a live draft
@@ -229,7 +242,7 @@ func (s *MultiSelect) hintRowsFor(width int) []string {
 	if s.Note != nil {
 		// The field's own key leads, because it is the one this card has
 		// that the plain checkbox list does not.
-		segs = append(segs, keyOfferAs(keys.Select.Note, "note/options"))
+		segs = append(segs, keyOfferAs(keys.Select.Note, "note or list"))
 	}
 	segs = append(segs,
 		keyOffer(keys.Select.Toggle),
@@ -237,7 +250,7 @@ func (s *MultiSelect) hintRowsFor(width int) []string {
 	)
 	segs = append(segs, s.Actions...)
 	segs = append(segs,
-		keyOfferAs(keys.Select.Take, fmt.Sprintf("apply (%d)", s.count())),
+		keyOfferAs(keys.Select.Take, fmt.Sprintf("%s (%d)", s.takeVerb(), s.count())),
 		cancelOffer(s.CancelLabel, applyNone))
 	if s.KeyList {
 		segs = withKeyListOffer(segs)

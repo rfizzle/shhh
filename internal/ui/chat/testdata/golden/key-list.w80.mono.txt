@@ -16,12 +16,12 @@ keys · the approval card and the /run confirm                       [?] back
 
 [y] allow
 [n] deny
-[Y] allow, and say what to do next
-[N] deny, and say why
+[Y] allow with a note
+[N] deny with a note
 [a] allow without asking — choose how long
 [A] open the queue
 [d] full diff
-[t] try the harmless form
+[t] dry run
 [x] explain what the command does
 [e] edit the command before it runs
 [g] go to the agent that asked
@@ -87,12 +87,12 @@ keys · [esc] back to reading mode
 
 ␛[38;5;254m[y]␛[m␛[38;5;244m allow␛[m
 ␛[38;5;254m[n]␛[m␛[38;5;244m deny␛[m
-␛[38;5;254m[Y]␛[m␛[38;5;244m allow, and say what to do next␛[m
-␛[38;5;254m[N]␛[m␛[38;5;244m deny, and say why␛[m
+␛[38;5;254m[Y]␛[m␛[38;5;244m allow with a note␛[m
+␛[38;5;254m[N]␛[m␛[38;5;244m deny with a note␛[m
 ␛[38;5;254m[a]␛[m␛[38;5;244m allow without asking — choose how long␛[m
 ␛[38;5;254m[A]␛[m␛[38;5;244m open the queue␛[m
 ␛[38;5;254m[d]␛[m␛[38;5;244m full diff␛[m
-␛[38;5;254m[t]␛[m␛[38;5;244m try the harmless form␛[m
+␛[38;5;254m[t]␛[m␛[38;5;244m dry run␛[m
 ␛[38;5;254m[x]␛[m␛[38;5;244m explain what the command does␛[m
 ␛[38;5;254m[e]␛[m␛[38;5;244m edit the command before it runs␛[m
 ␛[38;5;254m[g]␛[m␛[38;5;244m go to the agent that asked␛[m

@@ -174,7 +174,7 @@ func (s *NoteSelect) hintRowsFor(width int) []string {
 	// to move between.
 	var hint []KeyOffer
 	if len(s.Select.Options) > 0 {
-		hint = append(hint, keyOfferAs(keys.Select.Note, "note/options"))
+		hint = append(hint, keyOfferAs(keys.Select.Note, "note or list"))
 	}
 	hint = append(hint, keyOfferAs(keys.Select.Take, "confirm"))
 	hint = append(hint, s.Actions...)

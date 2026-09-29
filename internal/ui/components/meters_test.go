@@ -128,7 +128,7 @@ func TestMeterStatesItsValueBeforeTheBarWhenAsked(t *testing.T) {
 		t.Fatalf("the host's own count leads too, got %q", view)
 	}
 	// And the vitals rail's meter is that shape wherever it is drawn.
-	if view := stripANSI(CtxMeter(62, 0, 0)); view != "ctx 62% ▰▰▰▰▱▱▱▱" {
+	if view := stripANSI(CtxMeter("", 62, 0, 0)); view != "ctx 62% ▰▰▰▰▱▱▱▱" {
 		t.Fatalf("the shared context meter leads with its number, got %q", view)
 	}
 }

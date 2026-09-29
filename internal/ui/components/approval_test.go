@@ -153,18 +153,18 @@ func TestApprovalCard_ContainmentIsARowAndSurvivesTheNarrowCard(t *testing.T) {
 		Act:      "go build ./...",
 		Severity: SeverityHigh,
 		Fields: []CardField{
-			{Label: "⛨", Value: "workspace-write · network allowed", Tone: ToneChrome},
+			{Label: "sandbox", Value: "workspace-write · network allowed", Tone: ToneChrome},
 		},
 		Answer: "run it once",
 	}
 	top := strings.SplitN(ansi.Strip(c.View(100)), "\n", 2)[0]
-	if strings.Contains(top, "⛨") || !strings.Contains(top, "⚠ HIGH") {
+	if strings.Contains(top, "sandbox") || !strings.Contains(top, "⚠ HIGH") {
 		t.Fatalf("the title rail carries the severity and no containment chip: %q", top)
 	}
 	// Sixty columns is the width the rail sheds a chip at, and the row a
 	// flagged card must not stop stating is the one saying what contains it.
 	for _, width := range []int{100, 60} {
-		if view := ansi.Strip(c.View(width)); !strings.Contains(view, "⛨") ||
+		if view := ansi.Strip(c.View(width)); !strings.Contains(view, "sandbox") ||
 			!strings.Contains(view, "workspace-write") {
 			t.Fatalf("the containment row should survive w%d:\n%s", width, view)
 		}
@@ -191,8 +191,8 @@ func TestApprovalCard_BlastRadiusBlockAndRule(t *testing.T) {
 			{Label: "network", Value: "open", Detail: "the workspace profile allows it", Tone: ToneOpen},
 		},
 		Answer:   "run it once",
-		Return:   "don't — the safe answer; the decision waits",
-		Footnote: "[a] always — not offered: a safety-flagged command is never pre-approved",
+		Return:   "not now — it keeps waiting",
+		Footnote: "[a] always — not offered: shhh flagged this command",
 	}
 	lines := strings.Split(ansi.Strip(c.View(90)), "\n")
 	view := strings.Join(lines, "\n")
@@ -200,7 +200,7 @@ func TestApprovalCard_BlastRadiusBlockAndRule(t *testing.T) {
 		"touches   ./dist — 412 files, 84.0 MB",
 		"undo      none — rm bypasses the changeset",
 		"network   open — the workspace profile allows it",
-		"[esc] don't — the safe answer",
+		"[esc] not now — it keeps waiting",
 		"[a] always — not offered",
 	} {
 		if !strings.Contains(view, want) {
@@ -233,7 +233,7 @@ func TestCardField_OnlyAFixedSentenceIsStanding(t *testing.T) {
 		{CardField{Label: "touches", Value: "nothing", Detail: "the command resolved to reads only"}, true},
 		{CardField{Label: "network", Value: "open", Detail: "the workspace profile allows network access"}, true},
 		{CardField{Label: "network", Value: "closed", Detail: "the workspace-netless profile removes it"}, true},
-		{CardField{Label: "⛨", Value: "no sandbox", Detail: "bubblewrap (bwrap) not found on PATH; the command runs as you"}, true},
+		{CardField{Label: "sandbox", Value: "no sandbox", Detail: "bubblewrap (bwrap) not found on PATH; the command runs as you"}, true},
 		{CardField{Label: "push", Value: "no", Detail: "shhh never pushes; the remote is yours"}, true},
 		// The fetch, spawn and MCP cards: any value, the card's own sentence.
 		{CardField{Label: "domain", Value: "pkg.go.dev", Detail: "the request leaves this machine"}, true},
@@ -884,7 +884,7 @@ func TestApprovalCard_TheKeysAreOneRunAndOneFootnote(t *testing.T) {
 
 	rows := keyBlock(held(), 120)
 	want := []string{
-		"[y] run it once · [Y] and say what next · [n] deny · [N] and say why not · [esc] " + waitingWords,
+		"[y] run it once · [Y] run with a note · [n] deny · [N] deny with a note · [esc] " + waitingWords,
 		"[ctrl+space] answer it · " + arrivalDraftWords,
 	}
 	if strings.Join(rows, "\n") != strings.Join(want, "\n") {
@@ -892,7 +892,7 @@ func TestApprovalCard_TheKeysAreOneRunAndOneFootnote(t *testing.T) {
 	}
 
 	c := held()
-	c.Footnote = "[a] always — not offered: a safety-flagged command is never pre-approved"
+	c.Footnote = "[a] always — not offered: shhh flagged this command"
 	if rows := keyBlock(c, 120); len(rows) != 2 || rows[1] != c.Footnote {
 		t.Fatalf("an absent key's reason wins the footnote over the handover: %q", rows)
 	}

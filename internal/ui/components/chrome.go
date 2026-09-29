@@ -231,6 +231,13 @@ type KeyFooter struct {
 	Register []KeyOffer
 	// Showing reports that the register is open, and the footer is it.
 	Showing bool
+	// Legend is what the register carries under its keys and above the
+	// glyph legend: what a screen's own shorthand stands for, where the
+	// screen has one (the backlog's letters). Its clauses are joined with a
+	// dash and a narrow terminal breaks between them rather than inside one,
+	// so a letter is never parted from the word it stands for. Empty draws
+	// nothing.
+	Legend []string
 	// Taken is the footer a sub-surface has taken over — an armed confirm,
 	// which is the only thing the keyboard is answering while it is up.
 	Taken string
@@ -242,7 +249,18 @@ func (f KeyFooter) Rows(width int) []string {
 		return []string{Clip(f.Taken, width)}
 	}
 	if f.Showing {
-		return append(KeyListRows(f.Register, width), packOffers([]KeyOffer{hideKeysOffer()}, width)...)
+		rows := KeyListRows(f.Register, width)
+		if len(f.Legend) > 0 {
+			// Under the keys, above the blank row the glyph legend starts
+			// after, the way the key list screen places a row's own offers.
+			split := len(rows) - len(GlyphLegend(width)) - 1
+			var legend []string
+			for _, l := range legendRows(f.Legend, width) {
+				legend = append(legend, sty.Dim.Render(l))
+			}
+			rows = append(append(append([]string{}, rows[:split]...), legend...), rows[split:]...)
+		}
+		return append(rows, packOffers([]KeyOffer{hideKeysOffer()}, width)...)
 	}
 	if f.Lead != "" {
 		if len(f.Offers) == 0 {
@@ -263,6 +281,35 @@ func (f KeyFooter) Rows(width int) []string {
 	painted := sty.Dim.Render(f.Field)
 	if pad := width - lipgloss.Width(rows[0]) - lipgloss.Width(painted); pad >= 2 {
 		rows[0] += strings.Repeat(" ", pad) + painted
+	}
+	return rows
+}
+
+// legendRows packs a legend's clauses into as few rows as the width allows,
+// joined by a dash and broken only between them; a clause wider than the row
+// on its own wraps.
+func legendRows(clauses []string, width int) []string {
+	width = max(width, 1)
+	var rows []string
+	line := ""
+	for _, c := range clauses {
+		switch {
+		case line == "":
+			line = c
+		case lipgloss.Width(line)+len(" — ")+lipgloss.Width(c) <= width:
+			line += " — " + c
+		default:
+			rows = append(rows, line)
+			line = c
+		}
+		if lipgloss.Width(line) > width {
+			wrapped := strings.Split(lipgloss.Wrap(line, width, ""), "\n")
+			rows = append(rows, wrapped[:len(wrapped)-1]...)
+			line = wrapped[len(wrapped)-1]
+		}
+	}
+	if line != "" {
+		rows = append(rows, line)
 	}
 	return rows
 }

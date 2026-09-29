@@ -99,7 +99,7 @@ func TestProgram_ASpawnCardStartsTheChildrenAsLanes(t *testing.T) {
 
 	send(tm, "survey the round accounting")
 	release()
-	waitForText(t, tm, "Spawn 2 researchers")
+	waitForText(t, tm, "Start 2 researchers")
 	tm.Send(programAllow)
 	waitForText(t, tm, "Both readers have reported")
 
@@ -143,7 +143,7 @@ func TestProgram_ANamedColleagueIsAHintAndItsSpawnIsCarded(t *testing.T) {
 	tm.Send(programEnter)
 	waitForText(t, tm, "ask @security-reviewer about the token check")
 	release()
-	waitForText(t, tm, "Spawn security-reviewer")
+	waitForText(t, tm, "Start a security-reviewer")
 	tm.Send(programAllow)
 	waitForText(t, tm, "The reviewer has reported")
 	// The session's reply does not wait for the child, so the child's own row
@@ -182,7 +182,7 @@ func TestProgram_AChildsRequestIsAnsweredFromItsCard(t *testing.T) {
 	}, lead, programTurn{text: "The writer is on it."})
 	tm := runProgramAt(t, m, 120, 52)
 
-	startChildren(t, tm, release, "Spawn writer", "The writer is on it")
+	startChildren(t, tm, release, "Start a writer", "The writer is on it")
 	waitForText(t, tm, "writer-1 ▸ Approve command")
 	tm.Send(programHandover)
 	tm.Send(programAllow)
@@ -221,7 +221,7 @@ func heldChildren(t *testing.T, open bool) (*program, func()) {
 		"reader-2": {{hold: busy, calls: reads("loop.go")}, {text: "The limit is set where the session builds the agent."}},
 	}, lead, after)
 	tm := runProgramAt(t, m, 130, 44)
-	startChildren(t, tm, release, "Spawn 2 researchers", settled)
+	startChildren(t, tm, release, "Start 2 researchers", settled)
 	return tm, letGo
 }
 
@@ -263,7 +263,7 @@ func TestProgram_TheManagerAsksAFinishedChildAFollowUp(t *testing.T) {
 	}, lead, programTurn{text: "The reader is on it."})
 	tm := runProgramAt(t, m, 110, 44)
 
-	startChildren(t, tm, release, "Spawn researcher", "The reader is on it")
+	startChildren(t, tm, release, "Start a researcher", "The reader is on it")
 	waitForText(t, tm, "reader-1  done")
 	programPress(t, tm, "alt+a")
 	waitForText(t, tm, "[enter] attach")
@@ -285,14 +285,14 @@ func TestProgram_AttachingMovesTheKeyboardIntoAChild(t *testing.T) {
 	tm, _ := heldChildren(t, false)
 
 	send(tm, "/attach reader-1")
-	waitForText(t, tm, "[esc] detach")
+	waitForText(t, tm, "[esc] back to your session")
 	send(tm, "read round.go as well")
-	waitForText(t, tm, "queued steering: 1")
+	waitForText(t, tm, "1 queued for this turn")
 	programPress(t, tm, "esc")
 	waitForText(t, tm, "[enter] send")
 
 	frame := finalFrame(t, tm)
-	if strings.Contains(frame, "[esc] detach") {
+	if strings.Contains(frame, "[esc] back to your session") {
 		t.Fatalf("esc did not bring the keyboard back to the session:\n%s", frame)
 	}
 }
@@ -318,9 +318,9 @@ func TestProgram_TheNextAgentChordWalksTheMap(t *testing.T) {
 	tm, _ := heldChildren(t, false)
 
 	programPress(t, tm, "alt+]")
-	waitForText(t, tm, "[esc] detach")
+	waitForText(t, tm, "[esc] back to your session")
 	programPress(t, tm, "alt+]", "alt+]")
-	waitForGone(t, tm, "[esc] detach")
+	waitForGone(t, tm, "[esc] back to your session")
 
 	frameHas(t, finalFrame(t, tm), "[enter] send")
 }
@@ -342,7 +342,7 @@ func TestProgram_TheChordMovesOnItsFirstPressAfterTheManager(t *testing.T) {
 	}, lead, programTurn{text: "The writer is on it."})
 	tm := runProgramAt(t, m, 130, 44)
 
-	startChildren(t, tm, release, "Spawn writer", "The writer is on it")
+	startChildren(t, tm, release, "Start a writer", "The writer is on it")
 	waitForText(t, tm, "writer-1 ▸ Approve command")
 	programPress(t, tm, "alt+a")
 	waitForText(t, tm, "[enter] attach")
@@ -369,7 +369,7 @@ func TestProgram_TheManagerAnswersAChildInPlace(t *testing.T) {
 	}, lead, programTurn{text: "The writer is on it."})
 	tm := runProgramAt(t, m, 110, 44)
 
-	startChildren(t, tm, release, "Spawn writer", "The writer is on it")
+	startChildren(t, tm, release, "Start a writer", "The writer is on it")
 	waitForText(t, tm, "writer-1 ▸ Approve command")
 	programPress(t, tm, "esc")
 	programPress(t, tm, "alt+a")
@@ -400,7 +400,7 @@ func TestProgram_ASettledLaneOpensOnItsReport(t *testing.T) {
 	}, lead, open)
 	tm := runProgramAt(t, m, 120, 52)
 
-	startChildren(t, tm, release, "Spawn 2 researchers", "▸ report ·")
+	startChildren(t, tm, release, "Start 2 researchers", "▸ report ·")
 	programPress(t, tm, "ctrl+o", "k", "j", "enter")
 	waitForText(t, tm, "▾ report ·")
 
@@ -438,7 +438,7 @@ func TestProgram_TheNotebookIsReadAndCorrectedOnItsScreen(t *testing.T) {
 
 	send(tm, "survey the round accounting")
 	release()
-	waitForText(t, tm, "Spawn 2 researchers")
+	waitForText(t, tm, "Start 2 researchers")
 	tm.Send(programAllow)
 	waitForText(t, tm, "2 notes from")
 	send(tm, "/notes")
@@ -468,7 +468,7 @@ func TestProgram_AChildsSpawnIsTheSessionsDecision(t *testing.T) {
 	}, lead, programTurn{text: "The reader is on it."})
 	tm := runProgramAt(t, m, 130, 44)
 
-	startChildren(t, tm, release, "Spawn researcher", "The reader is on it")
+	startChildren(t, tm, release, "Start a researcher", "The reader is on it")
 	waitForText(t, tm, "reader-1 ▸")
 	tm.Send(programHandover)
 	tm.Send(programAllow)

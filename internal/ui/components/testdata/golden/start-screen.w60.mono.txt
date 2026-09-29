@@ -88,7 +88,7 @@ Some things worth doing first:
   ⚙ run the default quality gate and triage what fails
     one approval, then it reports back
 
-type what you want and press enter
+enter sends what you type
 esc backs out of anything and never loses work
 ctrl+c twice stops a run
 
@@ -107,7 +107,7 @@ go 1.24 · 3 files changed · 41 packages
 context  AGENTS.md — in the system prompt
 gate     default — vet, test · runs without asking
 
-type what you want and press enter
+enter sends what you type
 esc backs out of anything and never loses work
 ctrl+c twice stops a run
 
@@ -190,7 +190,7 @@ ctrl+c twice stops a run
   ␛[38;5;254m⚙␛[m ␛[38;5;254mrun the default quality gate and triage what fails␛[m
     ␛[38;5;244mone approval, then it reports back␛[m
 
-␛[38;5;244mtype what you want and press enter␛[m
+␛[38;5;244menter sends what you type␛[m
 ␛[38;5;244mesc backs out of anything and never loses work␛[m
 ␛[38;5;244mctrl+c twice stops a run␛[m
 
@@ -209,6 +209,6 @@ ctrl+c twice stops a run
 ␛[38;5;244mcontext␛[m  ␛[38;5;254mAGENTS.md␛[m␛[38;5;244m — in the system prompt␛[m
 ␛[38;5;244mgate   ␛[m  ␛[38;5;254mdefault␛[m␛[38;5;244m — vet, test · runs without asking␛[m
 
-␛[38;5;244mtype what you want and press enter␛[m
+␛[38;5;244menter sends what you type␛[m
 ␛[38;5;244mesc backs out of anything and never loses work␛[m
 ␛[38;5;244mctrl+c twice stops a run␛[m

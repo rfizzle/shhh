@@ -151,9 +151,9 @@ func (m Model) roundCounter() string {
 // (docs/interface/departures.md#a-turn-with-no-round-limit-still-draws-a-bound).
 func (m Model) roundLabel() string {
 	if m.roundsUnbounded() {
-		return fmt.Sprintf("round %d/∞", m.agent.Rounds())
+		return fmt.Sprintf("round %d of ∞", m.agent.Rounds())
 	}
-	return fmt.Sprintf("round %d/%d", m.agent.Rounds(), m.effectiveMaxToolRounds())
+	return fmt.Sprintf("round %d of %d", m.agent.Rounds(), m.effectiveMaxToolRounds())
 }
 
 // roundPauseRow renders the pause on the column grid, under the `rounds` verb

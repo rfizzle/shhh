@@ -97,7 +97,7 @@ type ColorTokens struct {
 	FocusBg Token // selected option/row background, the cursor block
 	Dim     Token // chrome, counts, hints, faint rules, empty meter cells, the scroll gutter's thumb
 	Dimmer  Token // tool output, live tails, detail bodies, sparklines
-	Spin    Token // anything in motion — spinner frames, ▸ running…, ✦ checking
+	Spin    Token // anything in motion — spinner frames, ▸ running…, ✦ deciding
 	Status  Token // status text, the ⛨ containment line
 	Bright  Token // headings, the focused row's text, the working label's crest
 	Subtle  Token // the one-shot rung a revise superseded; no colors.css counterpart

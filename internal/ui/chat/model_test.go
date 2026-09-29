@@ -2323,7 +2323,7 @@ func TestSteering_EnterQueuesWhileStreaming(t *testing.T) {
 	if len(m.Messages()) != before {
 		t.Fatal("queued steering must not join the conversation until the round completes")
 	}
-	if !strings.Contains(m.renderStatusBar(80), "queued 1") {
+	if !strings.Contains(m.renderStatusBar(80), "1 queued for this turn") {
 		t.Fatal("status bar should show the queued steering count")
 	}
 }

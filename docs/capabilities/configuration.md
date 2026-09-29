@@ -850,9 +850,9 @@ rules above are what refuse a move, not a list of keys held back from it.
 | `decision.always` | `a` | the same | allow without asking — choose how long | yes |
 | `decision.batch` | `A` | the same | open the queue | yes |
 | `decision.diff` | `d`, `D` | the same | full diff | yes |
-| `decision.allow_noted` | `Y` | the same | allow, and say what to do next | yes |
-| `decision.deny_noted` | `N` | the same | deny, and say why | yes |
-| `decision.dry_run` | `t` | the same | try the harmless form | yes |
+| `decision.allow_noted` | `Y` | the same | allow with a note | yes |
+| `decision.deny_noted` | `N` | the same | deny with a note | yes |
+| `decision.dry_run` | `t` | the same | dry run | yes |
 | `decision.explain` | `x` | the same | explain what the command does | yes |
 | `decision.amend` | `e` | the same | edit the command before it runs | yes |
 | `decision.accept` | `y`, `Y`, `enter` | the same | yes | yes |
@@ -895,8 +895,8 @@ rules above are what refuse a move, not a list of keys held back from it.
 | `review.back` | `esc`, `ctrl+c` | the same | back | yes |
 | `commit.take` | `enter` | the same | commit | yes |
 | `commit.edit` | `e` | the same | edit the message | yes |
-| `commit.hunks` | `s` | the same | pick hunks | yes |
-| `commit.cancel` | `esc` | the same | don't | yes |
+| `commit.hunks` | `s` | the same | choose what goes in | yes |
+| `commit.cancel` | `esc` | the same | not now | yes |
 | `rewind.both` | `b` | the same | both | yes |
 | `rewind.code` | `c` | the same | code only | yes |
 | `rewind.talk` | `t` | the same | talk only | yes |
@@ -974,7 +974,7 @@ rules above are what refuse a move, not a list of keys held back from it.
 | `backlog.move` | `up`, `down` | the same | move | yes |
 | `backlog.read` | `enter` | the same | read the body | yes |
 | `backlog.page` | `pgup`, `pgdown` | the same | page the body | yes |
-| `backlog.tab` | `tab` | the same | the backlog or the archive | yes |
+| `backlog.tab` | `tab` | the same | the backlog, the sprint, or what shipped | yes |
 | `backlog.filter` | `/` | the same | filter by text | yes |
 | `backlog.clear_q` | `ctrl+u` | the same | clear the filter | yes |
 | `backlog.status` | `s` | the same | cycle the status filter | yes |
@@ -1002,7 +1002,7 @@ rules above are what refuse a move, not a list of keys held back from it.
 | `plan.jump` | `1`, `2`, `3`, `4`, `5` | the same | jump to a row | yes |
 | `plan.save` | `s`, `S` | the same | save the plan | yes |
 | `plan.implement` | `i` | the same | implement in a new session | yes |
-| `query.rub` | `backspace` | the same | take a rune back | yes |
+| `query.rub` | `backspace` | the same | delete a character | yes |
 | `oneshot.run` | `enter` | the same | run | yes |
 | `oneshot.confirm` | `y` | the same | run it | yes |
 | `oneshot.step` | `t` | the same | step by step | yes |

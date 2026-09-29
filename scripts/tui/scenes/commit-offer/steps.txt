@@ -69,7 +69,7 @@ snap 07-message "COMMIT MESSAGE"
 sleep 0.5
 keys Escape
 sleep 0.5
-snap 08-back "pick hunks"
+snap 08-back "choose what goes in"
 keys Enter
 # The receipt is the row the close already draws for a commit, and the row
 # above it has lost the two offers a committed changeset no longer has.

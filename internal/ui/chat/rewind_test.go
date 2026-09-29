@@ -906,7 +906,7 @@ func TestRewind_LandsAsARowAndTheFrameSaysWhereYouStand(t *testing.T) {
 	if row.Verb != rewindVerb {
 		t.Fatalf("the row's verb is the act, got %q", row.Verb)
 	}
-	if !strings.Contains(row.Target, "out of the window") || !strings.Contains(row.Target, "ctx ") {
+	if !strings.Contains(row.Target, "out of the window") || !strings.Contains(row.Target, "context ") {
 		t.Fatalf("the row should say what left and what the window costs, got %q", row.Target)
 	}
 	if got := m.frameActivity(40); !strings.Contains(got, "at turn 1") {
@@ -941,7 +941,7 @@ func TestRewind_TheCardsContextPairIsTheRows(t *testing.T) {
 		}
 		detail := m.rewindScope.card.Talk.Detail
 		pair := detail[:strings.Index(detail, " · ")]
-		if pair != "ctx 0% → 20%" {
+		if pair != "context 0% → 20%" {
 			t.Fatalf("the card should predict the corrected estimate of the kept turns, got %q", pair)
 		}
 		m = press(t, m, keys.Shown(answer))

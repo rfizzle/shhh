@@ -27,7 +27,7 @@ snap 01-start "Some things worth doing first"
 keys "survey the round accounting" Enter
 # Spawning is gated, so a card stands between the sentence and the children —
 # one card with a row per child, and one key that starts all three.
-snap 02-spawn-card "Spawn 3 writers"
+snap 02-spawn-card "Start 3 writers"
 sleep 1
 keys y
 sleep 3

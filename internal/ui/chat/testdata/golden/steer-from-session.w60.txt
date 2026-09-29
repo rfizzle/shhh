@@ -26,7 +26,7 @@
 ╭─ a line from session 2026-09-23 10:41:07 ───── held ─╮
 │ master moved under you: 04150ee7 landed the sprint   │
 │ lanes. Rebase onto it before your next commit.       │
-│ it joins the turn as a steer; it grants nothing      │
+│ it joins the turn as a message; it grants nothing    │
 ├──────────────────────────────────────────────────────┤
 │ [y] pass it to the turn · [n] drop it · [?] keys     │
 ╰──────────────────────────────────────────────────────╯
@@ -35,7 +35,7 @@
 ╭─ a line from session 2026-09-23 10:41:07 ───── held ─╮
 │ master moved under you: 04150ee7 landed the sprint   │
 │ lanes. Rebase onto it before your next commit.       │
-│ it joins the turn as a steer; it grants nothing      │
+│ it joins the turn as a message; it grants nothing    │
 │ 2 more lines waiting behind it                       │
 ├──────────────────────────────────────────────────────┤
 │ [y] pass it to the turn · [n] drop it · [?] keys     │
@@ -58,7 +58,7 @@
 ␛[94m╭─ ␛[m␛[1;97ma line from session 2026-09-23 10:41:07 ␛[m␛[38;5;241m─────␛[m␛[94m held ─╮␛[m
 ␛[94m│␛[m ␛[38;5;252mmaster moved under you: 04150ee7 landed the sprint␛[m   ␛[94m│␛[m
 ␛[94m│␛[m ␛[38;5;252mlanes. Rebase onto it before your next commit.␛[m       ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;241mit joins the turn as a steer; it grants nothing␛[m      ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;241mit joins the turn as a message; it grants nothing␛[m    ␛[94m│␛[m
 ␛[94m├──────────────────────────────────────────────────────┤␛[m
 ␛[94m│␛[m ␛[94m[y]␛[m␛[38;5;241m pass it to the turn␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m␛[38;5;241m drop it␛[m␛[38;5;241m · ␛[m␛[94m[?]␛[m␛[38;5;241m keys␛[m     ␛[94m│␛[m
 ␛[94m╰──────────────────────────────────────────────────────╯␛[m
@@ -67,7 +67,7 @@
 ␛[94m╭─ ␛[m␛[1;97ma line from session 2026-09-23 10:41:07 ␛[m␛[38;5;241m─────␛[m␛[94m held ─╮␛[m
 ␛[94m│␛[m ␛[38;5;252mmaster moved under you: 04150ee7 landed the sprint␛[m   ␛[94m│␛[m
 ␛[94m│␛[m ␛[38;5;252mlanes. Rebase onto it before your next commit.␛[m       ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;241mit joins the turn as a steer; it grants nothing␛[m      ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;241mit joins the turn as a message; it grants nothing␛[m    ␛[94m│␛[m
 ␛[94m│␛[m ␛[38;5;241m2 more lines waiting behind it␛[m                       ␛[94m│␛[m
 ␛[94m├──────────────────────────────────────────────────────┤␛[m
 ␛[94m│␛[m ␛[94m[y]␛[m␛[38;5;241m pass it to the turn␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m␛[38;5;241m drop it␛[m␛[38;5;241m · ␛[m␛[94m[?]␛[m␛[38;5;241m keys␛[m     ␛[94m│␛[m

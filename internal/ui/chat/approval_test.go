@@ -1144,7 +1144,7 @@ func TestSpawnCard_ARoundIsOneDecision(t *testing.T) {
 	)
 	view := ansi.Strip(m.View().Content)
 	for _, want := range []string{
-		"Spawn 3 researchers",
+		"Start 3 researchers",
 		"◇ researcher-1 · say where the counter is read",
 		"◇ researcher-2 · say where the limit is set",
 		"◇ researcher-3 · say where the loop exits",
@@ -1186,7 +1186,7 @@ func TestSpawnCard_ABatchStatesItsReasonFromTheRowsItDraws(t *testing.T) {
 	if len(card.Spawns) != 2 {
 		t.Fatalf("two writers asked for together are one card of two rows: %+v", card.Spawns)
 	}
-	if want := "each child's touches open"; card.SeverityReason != want {
+	if want := "each child's touches not limited"; card.SeverityReason != want {
 		t.Errorf("batched reason = %q, want %q", card.SeverityReason, want)
 	}
 	for _, f := range card.Fields {
@@ -1197,7 +1197,7 @@ func TestSpawnCard_ABatchStatesItsReasonFromTheRowsItDraws(t *testing.T) {
 
 	single := spawnModel(t, spawnCall("s1",
 		`{"role":"writer","task":"add the flag","name":"writer-1","paths":["internal/cli/**"]}`))
-	if want := "touches open"; single.approvalCard().SeverityReason != want {
+	if want := "touches not limited"; single.approvalCard().SeverityReason != want {
 		t.Errorf("single reason = %q, want %q", single.approvalCard().SeverityReason, want)
 	}
 }
@@ -1241,7 +1241,7 @@ func TestSpawnCard_ASingleSpawnKeepsItsCard(t *testing.T) {
 		`{"role":"writer","task":"add the flag","name":"writer-1","paths":["internal/cli/**"]}`))
 	view := ansi.Strip(m.View().Content)
 	for _, want := range []string{
-		"Spawn writer",
+		"Start a writer",
 		"◇ writer-1 · add the flag",
 		"full tools against an isolated copy of the workspace",
 		"touches   its own worktree · claims internal/cli/**",

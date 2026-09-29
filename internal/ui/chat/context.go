@@ -685,10 +685,22 @@ func (r compactReceipt) turns() int {
 	return int(r.last - r.first + 1)
 }
 
+// contextWord is what every occupancy figure on this surface is labelled:
+// `context` on a terminal of 110 columns and wider, `ctx` below, where the
+// four columns the word costs are four the vitals rail cannot spare. The rung
+// is the terminal's, so it is compared against the content width it names,
+// frameWideWidth (docs/interface/surfaces.md#the-input-frame).
+func (m Model) contextWord() string {
+	if m.contentWidth() >= frameWideWidth {
+		return "context"
+	}
+	return "ctx"
+}
+
 // account is the receipt row's right-aligned field: where the window stood
 // before the act and where it stands after, and what the summary cost.
-func (r compactReceipt) account() string {
-	acct := fmt.Sprintf("ctx %d%% → %d%%", r.was, r.now)
+func (r compactReceipt) account(word string) string {
+	acct := fmt.Sprintf("%s %d%% → %d%%", word, r.was, r.now)
 	if r.cost == "" {
 		return acct
 	}
@@ -881,7 +893,7 @@ const compactVerb = "compact"
 // (docs/interface/surfaces.md#the-activity-row). It carries no kind glyph,
 // because a compaction is not a call — the column says how it came out
 // instead — and no mutation rail, because nothing on the machine was touched.
-func compactRowFor(r compactReceipt) components.ActivityRow {
+func compactRowFor(r compactReceipt, word string) components.ActivityRow {
 	row := components.ActivityRow{
 		Kind:     components.ActivityCompaction,
 		Verb:     compactVerb,
@@ -895,7 +907,7 @@ func compactRowFor(r compactReceipt) components.ActivityRow {
 		return row
 	}
 	row.Target = "folded " + turnsPhrase(r.first, r.last)
-	row.Allowed = r.account()
+	row.Allowed = r.account(word)
 	return row
 }
 
@@ -914,7 +926,7 @@ func (m Model) compactBlock(e entry, width int) string {
 		// had rather than a row invented for it.
 		return m.compactSummaryBlock(e, width)
 	}
-	lines := []string{compactRowFor(*r).View(width)}
+	lines := []string{compactRowFor(*r, m.contextWord()).View(width)}
 	if r.floor != "" {
 		// Nothing was folded, so there is nothing to fold back: the row is
 		// the whole of the receipt.

@@ -51,7 +51,7 @@ func TestProgram_TheGatesPassSettlesTheFailureBeforeIt(t *testing.T) {
 	waitForText(t, tm, "suite is green")
 
 	frame := finalFrame(t, tm)
-	frameHas(t, frame, "exit 1", "quality gate default passing · 2/2 checks")
+	frameHas(t, frame, "exit 1", "quality gate default passing · 2 of 2 checks")
 }
 
 // A write the queue will not put to anybody — here an edit naming no file —

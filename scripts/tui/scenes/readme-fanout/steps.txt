@@ -9,7 +9,7 @@
 setup printf 'package cache\n\ntype entry struct {\n\tvalue []byte\n}\n\ntype Cache struct {\n\tentries map[string]entry\n}\n\nfunc (c *Cache) Get(key string) ([]byte, bool) {\n\te, ok := c.entries[key]\n\treturn e.value, ok\n}\n\nfunc (c *Cache) Put(key string, value []byte) {\n\tc.entries[key] = entry{value: value}\n}\n' > cache.go
 snap 01-start "Some things worth doing first"
 keys "entries never expire; survey how the cache reads, stores and evicts them" Enter
-snap 02-spawn-card "Spawn 3 writers"
+snap 02-spawn-card "Start 3 writers"
 sleep 1
 keys y
 sleep 4

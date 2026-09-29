@@ -202,9 +202,9 @@ type CardField struct {
 // decides which of them a card body draws.
 var standingGlosses = map[[2]string][]string{
 	// The command card.
-	{"touches", "nothing"}: {"the command resolved to reads only"},
-	{"undo", "n/a"}:        {"no workspace file is modified"},
-	{"undo", "git"}:        {"every path it writes is tracked, so git can restore them"},
+	{"touches", "nothing"}:      {"the command resolved to reads only"},
+	{"undo", "nothing to undo"}: {"no workspace file is modified"},
+	{"undo", "git"}:             {"every path it writes is tracked, so git can restore them"},
 	{"undo", "none"}: {
 		"this is not a git work tree and shhh does not record commands",
 		"nothing it writes is tracked in git",
@@ -215,7 +215,7 @@ var standingGlosses = map[[2]string][]string{
 	},
 	{"network", "closed"}: {"the * profile removes it"},
 	// The detector's reason is the session's; the footnote names the door.
-	{"⛨", "no sandbox"}: {"*; the command runs as you"},
+	{"sandbox", "no sandbox"}: {"*; the command runs as you"},
 	// The commit card and the git write's card.
 	{"leaves", "nothing"}:                   {"your tree holds no other uncommitted work"},
 	{"branch", "detached"}:                  {"HEAD is on no branch"},
@@ -1202,17 +1202,19 @@ func (c *ApprovalCard) KeyRun() []CardKey {
 	// end of the run: they are the same two answers with a sentence, and the
 	// pairing is what the run has to make legible.
 	//
-	// Their words are the labels of the fields they open rather than the
-	// register's longer form, so a reader who pressed on the promise is met
-	// with the words they pressed on — and on an eighty-column card the
-	// register's own pair pushes the run onto a third row, which comes off
-	// the diff the card exists to show.
+	// Their words are the act and what goes with it — `run with a note`,
+	// `deny with a note` — in the second person with one verb each, and the
+	// yes takes its verb off the card's own answer, so an edit card offers
+	// `apply with a note` and a spawn card `start with a note`. They are
+	// shorter than the register's own pair on purpose: on an eighty-column
+	// card that pair pushes the run onto a third row, which comes off the
+	// diff the card exists to show.
 	if c.Noted {
-		run = append(run, offer(keys.Decision.AllowNoted, "and say "+noteWhatNext))
+		run = append(run, offer(keys.Decision.AllowNoted, c.answerVerb()+" with a note"))
 	}
 	run = append(run, offer(keys.Decision.Deny, c.Decline))
 	if c.Noted {
-		run = append(run, offer(keys.Decision.DenyNoted, "and say "+noteWhyNot))
+		run = append(run, offer(keys.Decision.DenyNoted, "deny with a note"))
 	}
 	if c.HeldOnArrival {
 		// The card has the keyboard but nobody gave it: it answers what it
@@ -1349,10 +1351,24 @@ func (c *ApprovalCard) fullWords() string {
 	return keys.Words(keys.Decision.Diff)
 }
 
-// The two words the shifted answers are offered under, and the labels their
-// fields carry. They are the same two words in both places on purpose: what
-// the key promised is what the field asks for, so a reader who pressed on the
-// promise is not met with a differently worded request.
+// answerVerb is the verb of the card's own yes — `run` off `run it once`,
+// `apply` off `apply the change`, `start` off `start all 3` — which is what
+// the noted yes is offered under, so the pair reads as one act said twice.
+// A card with no answer of its own says the register's.
+func (c *ApprovalCard) answerVerb() string {
+	answer := c.Answer
+	if answer == "" {
+		answer = keys.Words(keys.Decision.Allow)
+	}
+	if verb, _, _ := strings.Cut(answer, " "); verb != "" {
+		return strings.TrimSuffix(verb, ",")
+	}
+	return "allow"
+}
+
+// The labels the two note fields carry: what the reader is asked to write
+// once the noted yes or the noted no has opened one. The keys that open them
+// say the act; the field says what goes in it.
 const (
 	noteWhatNext = "what next"
 	noteWhyNot   = "why not"

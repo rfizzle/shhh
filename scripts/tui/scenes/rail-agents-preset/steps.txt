@@ -26,7 +26,7 @@ snap 01-start "Some things worth doing first"
 keys "survey the round accounting" Enter
 # Spawning is gated: one card with a row per child, because the round asked
 # for them together. The answer waits out the card's grace window.
-snap 02-spawn-card "Spawn 7 writers"
+snap 02-spawn-card "Start 7 writers"
 sleep 1
 keys y
 sleep 4

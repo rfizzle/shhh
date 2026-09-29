@@ -19,7 +19,7 @@ snap 04-keys "keys · the approval card" "refused: dim by you, red by a rule"
 keys Escape
 snap 05-card-again "[y] run it once"
 keys y
-snap 06-ran "Done: the command printed a greeting" "ok · 1 line · approved by you" "▎✎ wrote nothing"
+snap 06-ran "Done: the command printed a greeting" "ok · 1 line · approved by you" "▎✎ changed no files"
 keys "/ui verbosity low" Enter
 # Each rung is waited on by what the row draws at it: low drops the row's
 # count, normal puts it back, high opens the row onto its output.

@@ -23,7 +23,7 @@
 · a medium run spending a remediation round on a failed verify
 ▸ ▸  todo run cache-ttl · size M ──────────────────────── remediate  4m12s
     ✓ research · ▸ implement · · verify · · review · · commit
-    remediate  round 1/2
+    remediate  round 1 of 2
 
 
 · reviewed, committed and done, opened to its answers
@@ -86,7 +86,7 @@
 · a medium run spending a remediation round on a failed verify
 ␛[38;5;241m▸␛[m ␛[38;5;205m▸␛[m  ␛[97mtodo run cache-ttl · size M␛[m ␛[38;5;241m────────────────────────␛[m ␛[38;5;241mremediate␛[m  ␛[38;5;241m4m12s␛[m
     ␛[92m✓␛[m ␛[38;5;252mresearch␛[m␛[38;5;241m · ␛[m␛[38;5;205m▸␛[m ␛[97mimplement␛[m␛[38;5;241m · ␛[m␛[38;5;241m·␛[m ␛[38;5;241mverify␛[m␛[38;5;241m · ␛[m␛[38;5;241m·␛[m ␛[38;5;241mreview␛[m␛[38;5;241m · ␛[m␛[38;5;241m·␛[m ␛[38;5;241mcommit␛[m
-    ␛[38;5;241mremediate  round 1/2␛[m
+    ␛[38;5;241mremediate  round 1 of 2␛[m
 
 
 · reviewed, committed and done, opened to its answers

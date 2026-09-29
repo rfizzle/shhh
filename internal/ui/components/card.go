@@ -232,8 +232,10 @@ func dropRules(rows []string) []string {
 // notYetLiveWords is what a key row says about itself while the surface
 // offering it does not hold the keyboard, and nothing names the key that
 // would change that. It is words rather than a border colour because
-// invariant 1 does not stop applying to the state of a key.
-const notYetLiveWords = "not live yet"
+// invariant 1 does not stop applying to the state of a key. It is the grace
+// window's words, because to the reader the two are one state — keys drawn
+// that do not answer yet — and one state gets one spelling.
+const notYetLiveWords = graceWords
 
 // notYetLiveRows renders a decision surface's key row while that surface does
 // not hold the keyboard
@@ -306,7 +308,7 @@ func deadRows(run []string, closeLive func(rows []string, inner int) []string, w
 // its keys: the same dimmed-run grammar as not-yet-live, with a phrase that
 // promises the keys rather than a chord, because nothing needs pressing —
 // the window ends the moment the keyboard has been quiet for a beat.
-const graceWords = "keys live in a moment"
+const graceWords = "keys work in a moment"
 
 // graceRows renders the key row of a card whose grace window is open. It is
 // the not-yet-live row's shape — dim keys, the state in words in the same

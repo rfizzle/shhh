@@ -163,7 +163,7 @@ func TestGrantList_ListedWithItsEndAndRevokedWithTheRest(t *testing.T) {
 			t.Fatalf("/permissions grants does not say %q:\n%s", want, listing)
 		}
 	}
-	if got := m.policyLabel(); !strings.Contains(got, "1 cmd") {
+	if got := m.policyLabel(); !strings.Contains(got, "1 command") {
 		t.Errorf("the status line does not count a standing turn grant: %q", got)
 	}
 
@@ -219,7 +219,7 @@ func TestGrantList_AFlaggedCardOffersNoGrant(t *testing.T) {
 	if next := updated.(Model); next.grantChoice != nil {
 		t.Fatal("the key opened the grant list on a flagged card")
 	}
-	if !strings.Contains(m.View().Content, "never pre-approved") {
+	if !strings.Contains(m.View().Content, "shhh flagged this command") {
 		t.Fatalf("the card should say why the key is absent:\n%s", m.View().Content)
 	}
 }

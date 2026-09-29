@@ -282,7 +282,7 @@ func trackingNote(t changeset.Turn) string {
 	}
 	switch {
 	case tracked == 0 && untracked == 0:
-		return "no git here"
+		return "not a git repository"
 	case untracked == 0:
 		return "all tracked in git"
 	case tracked == 0:

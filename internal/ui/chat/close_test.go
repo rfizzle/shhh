@@ -111,8 +111,8 @@ func TestTurnClose_ACommandThatWroteNothingSaysSo(t *testing.T) {
 				t.Fatalf("wrote nothing = %v, want %v", c.WroteNothing, tc.want)
 			}
 			view := plainView(c, 80)
-			if got := strings.Contains(view, "wrote nothing"); got != tc.want {
-				t.Fatalf("the close should say wrote nothing: %v, got:\n%s", tc.want, view)
+			if got := strings.Contains(view, "changed no files"); got != tc.want {
+				t.Fatalf("the close should say changed no files: %v, got:\n%s", tc.want, view)
 			}
 			// No offers: there is nothing to review, keep or take back, and
 			// the newest close's chords stay off a row that has none.
@@ -145,7 +145,7 @@ func TestTurnClose_TheChangesRowStatesTheFilesAndOffersTheKeys(t *testing.T) {
 		}
 	}
 	// The temp dir is not a repository, and unknown is not untracked.
-	if c.Changes.Note != "no git here" {
+	if c.Changes.Note != "not a git repository" {
 		t.Fatalf("outside a repository the tracking note should say so, got %q", c.Changes.Note)
 	}
 }
@@ -284,7 +284,7 @@ func TestTurnChecksRow_ReadsTheQualityGateVerdict(t *testing.T) {
 	if c == nil || c.Failed {
 		t.Fatalf("a clean gate run is a passing verdict, got %+v", c)
 	}
-	if c.Label != "quality gate default" || !strings.Contains(c.Counts, "4/4 checks") {
+	if c.Label != "quality gate default" || !strings.Contains(c.Counts, "4 of 4 checks") {
 		t.Fatalf("the row should name the suite and its tally, got %+v", c)
 	}
 
@@ -332,15 +332,15 @@ func TestTurnClose_RowsReRenderAtAnyWidth(t *testing.T) {
 	m = applyWrite(t, m, path, "package main\n", "y")
 	m = finishTurn(t, m)
 	c := lastClose(t, m)
-	c.Note = "round 3/25"
+	c.Note = "round 3 of 25"
 
 	wide := plainView(c, 110)
-	if !strings.Contains(wide, "round 3/25") || !strings.Contains(wide, "no git here") {
+	if !strings.Contains(wide, "round 3 of 25") || !strings.Contains(wide, "not a git repository") {
 		t.Fatalf("a wide terminal keeps the notes, got:\n%s", wide)
 	}
 	const narrowWidth = 30
 	narrow := plainView(c, narrowWidth)
-	if strings.Contains(narrow, "round 3/25") || strings.Contains(narrow, "no git here") {
+	if strings.Contains(narrow, "round 3 of 25") || strings.Contains(narrow, "not a git repository") {
 		t.Fatalf("the notes drop before the statement does, got:\n%s", narrow)
 	}
 	if !strings.Contains(narrow, "Done") || !strings.Contains(narrow, "1 file changed") {

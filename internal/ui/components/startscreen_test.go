@@ -41,7 +41,7 @@ func startFixture() StartScreen {
 // startFirstRunFixture is the block a first session carries, in the host's
 // words.
 var startFirstRunFixture = []string{
-	"type what you want and press enter",
+	"enter sends what you type",
 	"esc backs out of anything and never loses work",
 	"ctrl+c twice stops a run",
 }

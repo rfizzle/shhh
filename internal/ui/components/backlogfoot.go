@@ -7,6 +7,8 @@ package components
 // the failure collecting them here avoids.
 
 import (
+	"strings"
+
 	"charm.land/lipgloss/v2"
 
 	"github.com/rfizzle/shhh/internal/ui/keys"
@@ -19,6 +21,7 @@ func (b *BacklogScreen) footRows(width int) []string {
 		Offers:   b.offers(width),
 		Register: b.keyList(),
 		Showing:  b.keys,
+		Legend:   b.lettersLegend(),
 	}
 	if b.confirm != nil {
 		f.Taken = b.confirm.View(width)
@@ -47,7 +50,7 @@ func (b *BacklogScreen) whyInert() string {
 	if b.Why != "" {
 		return b.Why
 	}
-	return "a turn is running; these change files it may be working from"
+	return "the turn is running; these change the files it may be working from"
 }
 
 // offers is the key row for whichever surface holds the keyboard. While the
@@ -230,12 +233,12 @@ func (b *BacklogScreen) keyList() []KeyOffer {
 		keyOfferAs(keys.Backlog.Tab, "the backlog, the sprint, or what shipped"),
 		keyOfferAs(keys.Backlog.Filter, "filter by slug or title"),
 		keyOfferAs(keys.Backlog.ClearQ, "clear the filter; clear it again to close it"),
-		keyOfferAs(keys.Query.Rub, "take a rune back out of the filter"),
+		keyOfferAs(keys.Query.Rub, "delete a character from the filter"),
 		keyOfferAs(keys.Backlog.Status, "cycle the status filter"),
 		keyOfferAs(keys.Backlog.Priority, "cycle the priority filter"),
 	}
 	if len(b.Fields) > 0 {
-		out = append(out, keyOfferAs(keys.Backlog.Kind, "cycle the next field filter"))
+		out = append(out, keyOfferAs(keys.Backlog.Kind, "cycle the "+b.fieldNames()+" filter"))
 	}
 	out = append(out, []KeyOffer{
 		keyOfferAs(keys.Backlog.Ready, "only what can be started now"),
@@ -252,4 +255,63 @@ func (b *BacklogScreen) keyList() []KeyOffer {
 		out = append(out, keyOfferAs(keys.Backlog.Sprint, "add it to "+b.Sprint+", or drop it"))
 	}
 	return append(out, wayOut(backToPrompt), keyOfferAs(keys.Backlog.Back, backToPrompt))
+}
+
+// fieldNames is the fields the field-filter key cycles through, named: `kind
+// or size`. The names are the profile's, so a second profile's key says what
+// it narrows with nothing written here.
+func (b *BacklogScreen) fieldNames() string {
+	names := make([]string, len(b.Fields))
+	for i, f := range b.Fields {
+		names[i] = f.Name
+	}
+	switch len(names) {
+	case 1:
+		return names[0]
+	case 2:
+		return names[0] + " or " + names[1]
+	}
+	return strings.Join(names[:len(names)-1], ", ") + " or " + names[len(names)-1]
+}
+
+// lettersLegend is what the letters on every row stand for, built from the
+// profile's own words and glyphs so a second profile's letters explain
+// themselves: `letters  priority H high · M medium · L low — size S M L — -
+// unset`, one clause a field. A field whose letter is its word says the
+// letters alone. Nil where no field draws a letter, because then the rows
+// draw none (docs/interface/surfaces.md#the-backlog-screen).
+func (b *BacklogScreen) lettersLegend() []string {
+	var parts []string
+	for _, f := range append([]BacklogField{b.Priority}, b.Fields...) {
+		if f.lettered() {
+			parts = append(parts, f.legend())
+		}
+	}
+	if len(parts) == 0 {
+		return nil
+	}
+	parts[0] = "letters  " + parts[0]
+	return append(parts, "- unset")
+}
+
+// legend is one field's half of the letters legend: its name, then each
+// letter with the word it stands for.
+func (f BacklogField) legend() string {
+	var glyphs []string
+	plain := true
+	for _, v := range f.Values {
+		switch v.Glyph {
+		case "":
+		case v.Word:
+			glyphs = append(glyphs, v.Glyph)
+		default:
+			plain = false
+			glyphs = append(glyphs, v.Glyph+" "+v.Word)
+		}
+	}
+	sep := " · "
+	if plain {
+		sep = " "
+	}
+	return f.Name + " " + strings.Join(glyphs, sep)
 }

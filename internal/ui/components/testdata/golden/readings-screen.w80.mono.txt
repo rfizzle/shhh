@@ -14,10 +14,10 @@
 /readings · 5 readings                       $0.0142 spent · [?] keys · [q] back
 ────────────────────────────────────────────────────────────────────────────────
 
-❯ ⚠ r 11 · off target     withdrawn                                       turn 2
-  ⚠ r 6 · off target      steered                                         turn 2
+❯ ⚠ r 11 · off target  withdrawn                                          turn 2
+  ⚠ r 6 · off target   steered                                            turn 2
   ▸ r 3 · has enough                                                      turn 2
-  · r 9 · target unclear                                                  turn 1
+  · r 9 · unclear                                                         turn 1
   ▸ r 3 · on target                                                       turn 1
 ────────────────────────────────────────────────────────────────────────────────
 r 11 · off target                                                         turn 2
@@ -34,10 +34,10 @@ r 11 · off target                                                         turn 
 ────────────────────────────────────────────────────────────────────────────────
 
 3 oldest readings let go · the screen keeps the last 200
-  ⚠ r 11 · off target     withdrawn                                       turn 2
-❯ ⚠ r 6 · off target      steered                                         turn 2
+  ⚠ r 11 · off target  withdrawn                                          turn 2
+❯ ⚠ r 6 · off target   steered                                            turn 2
   ▸ r 3 · has enough                                                      turn 2
-  · r 9 · target unclear                                                  turn 1
+  · r 9 · unclear                                                         turn 1
   ▸ r 3 · on target                                                       turn 1
 ────────────────────────────────────────────────────────────────────────────────
 r 6 · off target                                                          turn 2
@@ -52,10 +52,10 @@ r 6 · off target                                                          turn 
 /readings · 5 readings                       $0.0142 spent · [?] keys · [q] back
 ────────────────────────────────────────────────────────────────────────────────
 
-  ⚠ r 11 · off target     withdrawn                                       turn 2
-  ⚠ r 6 · off target      steered                                         turn 2
+  ⚠ r 11 · off target  withdrawn                                          turn 2
+  ⚠ r 6 · off target   steered                                            turn 2
   ▸ r 3 · has enough                                                      turn 2
-  · r 9 · target unclear                                                  turn 1
+  · r 9 · unclear                                                         turn 1
 ❯ ▸ r 3 · on target                                                       turn 1
 ────────────────────────────────────────────────────────────────────────────────
 r 3 · on target                                                           turn 1
@@ -72,10 +72,10 @@ r 3 · on target                                                           turn 
 ␛[1;38;5;254m/readings␛[m␛[38;5;244m · 5 readings␛[m                       ␛[38;5;244m$0.0142 spent␛[m␛[38;5;244m · [?] keys · [q] back␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m⚠ r 11 · off target     withdrawn                                       turn 2␛[m
-  ␛[38;5;254m⚠ r 6 · off target␛[m      ␛[38;5;254msteered␛[m                                         ␛[38;5;244mturn 2␛[m
+␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m⚠ r 11 · off target  withdrawn                                          turn 2␛[m
+  ␛[38;5;254m⚠ r 6 · off target␛[m   ␛[38;5;254msteered␛[m                                            ␛[38;5;244mturn 2␛[m
   ␛[38;5;254m▸ r 3 · has enough␛[m                                                      ␛[38;5;244mturn 2␛[m
-  ␛[38;5;254m· r 9 · target unclear␛[m                                                  ␛[38;5;244mturn 1␛[m
+  ␛[38;5;254m· r 9 · unclear␛[m                                                         ␛[38;5;244mturn 1␛[m
   ␛[38;5;254m▸ r 3 · on target␛[m                                                       ␛[38;5;244mturn 1␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────────␛[m
 ␛[1;38;5;254mr 11 · off target␛[m                                                         ␛[38;5;244mturn 2␛[m
@@ -92,10 +92,10 @@ r 3 · on target                                                           turn 
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;244m3 oldest readings let go · the screen keeps the last 200␛[m
-  ␛[38;5;254m⚠ r 11 · off target␛[m     ␛[38;5;244mwithdrawn␛[m                                       ␛[38;5;244mturn 2␛[m
-␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m⚠ r 6 · off target      steered                                         turn 2␛[m
+  ␛[38;5;254m⚠ r 11 · off target␛[m  ␛[38;5;244mwithdrawn␛[m                                          ␛[38;5;244mturn 2␛[m
+␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m⚠ r 6 · off target   steered                                            turn 2␛[m
   ␛[38;5;254m▸ r 3 · has enough␛[m                                                      ␛[38;5;244mturn 2␛[m
-  ␛[38;5;254m· r 9 · target unclear␛[m                                                  ␛[38;5;244mturn 1␛[m
+  ␛[38;5;254m· r 9 · unclear␛[m                                                         ␛[38;5;244mturn 1␛[m
   ␛[38;5;254m▸ r 3 · on target␛[m                                                       ␛[38;5;244mturn 1␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────────␛[m
 ␛[1;38;5;254mr 6 · off target␛[m                                                          ␛[38;5;244mturn 2␛[m
@@ -110,10 +110,10 @@ r 3 · on target                                                           turn 
 ␛[1;38;5;254m/readings␛[m␛[38;5;244m · 5 readings␛[m                       ␛[38;5;244m$0.0142 spent␛[m␛[38;5;244m · [?] keys · [q] back␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;254m⚠ r 11 · off target␛[m     ␛[38;5;244mwithdrawn␛[m                                       ␛[38;5;244mturn 2␛[m
-  ␛[38;5;254m⚠ r 6 · off target␛[m      ␛[38;5;254msteered␛[m                                         ␛[38;5;244mturn 2␛[m
+  ␛[38;5;254m⚠ r 11 · off target␛[m  ␛[38;5;244mwithdrawn␛[m                                          ␛[38;5;244mturn 2␛[m
+  ␛[38;5;254m⚠ r 6 · off target␛[m   ␛[38;5;254msteered␛[m                                            ␛[38;5;244mturn 2␛[m
   ␛[38;5;254m▸ r 3 · has enough␛[m                                                      ␛[38;5;244mturn 2␛[m
-  ␛[38;5;254m· r 9 · target unclear␛[m                                                  ␛[38;5;244mturn 1␛[m
+  ␛[38;5;254m· r 9 · unclear␛[m                                                         ␛[38;5;244mturn 1␛[m
 ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m▸ r 3 · on target                                                       turn 1␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────────␛[m
 ␛[1;38;5;254mr 3 · on target␛[m                                                           ␛[38;5;244mturn 1␛[m

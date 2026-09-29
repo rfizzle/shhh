@@ -19,8 +19,8 @@
 │   1  line one                                        │
 │ … 2 more lines · [shift+↓]                           │
 ├──────────────────────────────────────────────────────┤
-│ [y] apply the change · [Y] and say what next         │
-│ [n] deny · [N] and say why not                       │
+│ [y] apply the change · [Y] apply with a note         │
+│ [n] deny · [N] deny with a note                      │
 │ [a] allow edits in ./ without asking · [d] full diff │
 │ these letters go into the field                      │
 │ ┄ why not                                            │
@@ -39,8 +39,8 @@
 ␛[38;5;254m│␛[m ␛[38;5;244m  1  ␛[m␛[38;5;244mline one␛[m                                        ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m… 2 more lines · [shift+↓]␛[m                           ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;244m[y] apply the change␛[m␛[38;5;244m · ␛[m␛[38;5;244m[Y] and say what next␛[m         ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244m[n] deny␛[m␛[38;5;244m · ␛[m␛[38;5;244m[N] and say why not␛[m                       ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244m[y] apply the change␛[m␛[38;5;244m · ␛[m␛[38;5;244m[Y] apply with a note␛[m         ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244m[n] deny␛[m␛[38;5;244m · ␛[m␛[38;5;244m[N] deny with a note␛[m                      ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m[a] allow edits in ./ without asking␛[m␛[38;5;244m · ␛[m␛[38;5;244m[d] full diff␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mthese letters go into the field␛[m                      ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m┄ why not␛[m                                            ␛[38;5;254m│␛[m

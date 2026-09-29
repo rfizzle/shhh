@@ -437,7 +437,7 @@ func monoFixtures() []monoSurface {
 				c.Warnings = []string{"deletes files recursively (rm -rf)"}
 			})},
 			{"contained", card(func(c *ApprovalCard) {
-				c.Fields = []CardField{{Label: "⛨", Value: "bwrap · workspace", Tone: ToneChrome}}
+				c.Fields = []CardField{{Label: "sandbox", Value: "bwrap · workspace", Tone: ToneChrome}}
 			})},
 			{"uncontained", card(func(c *ApprovalCard) {
 				c.Uncontained = true

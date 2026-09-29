@@ -85,7 +85,7 @@
 │   4. Discard                                                                                                                   │
 │ ┄ note (optional)                                                                                                              │
 │   (none)                                                                                                                       │
-│ [tab] note/options · [enter] confirm · [esc] take none                                                                         │
+│ [tab] note or list · [enter] confirm · [esc] take none                                                                         │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 · a save the loader refused · the draft stays, the refusal under it
@@ -113,7 +113,7 @@
 │   4. Discard                                                                                                                   │
 │ ┄ note (optional)                                                                                                              │
 │   (none)                                                                                                                       │
-│ [tab] note/options · [enter] confirm · [esc] take none                                                                         │
+│ [tab] note or list · [enter] confirm · [esc] take none                                                                         │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 · [?] on the draft card · the drafter's keys and the glyph legend
@@ -131,7 +131,7 @@
 │   4. Discard                                                                                                                   │
 │ ┄ note (optional)                                                                                                              │
 │   (none)                                                                                                                       │
-│ [tab] note/options · [enter] confirm · [esc] take none                                                                         │
+│ [tab] note or list · [enter] confirm · [esc] take none                                                                         │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 [↑↓] move
@@ -234,7 +234,7 @@ $  a shell command
 ␛[38;5;244m│␛[m   ␛[38;5;244m4. ␛[m␛[38;5;254mDiscard␛[m                                                                                                                   ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;244m┄ note (optional)␛[m                                                                                                              ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m(none)␛[m                                                                                                                       ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[38;5;254m[tab]␛[m␛[38;5;244m note/options␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m confirm␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m take none␛[m                                                                         ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m[tab]␛[m␛[38;5;244m note or list␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m confirm␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m take none␛[m                                                                         ␛[38;5;244m│␛[m
 ␛[38;5;244m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · a save the loader refused · the draft stays, the refusal under it
@@ -262,7 +262,7 @@ $  a shell command
 ␛[38;5;244m│␛[m   ␛[38;5;244m4. ␛[m␛[38;5;254mDiscard␛[m                                                                                                                   ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;244m┄ note (optional)␛[m                                                                                                              ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m(none)␛[m                                                                                                                       ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[38;5;254m[tab]␛[m␛[38;5;244m note/options␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m confirm␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m take none␛[m                                                                         ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m[tab]␛[m␛[38;5;244m note or list␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m confirm␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m take none␛[m                                                                         ␛[38;5;244m│␛[m
 ␛[38;5;244m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · [?] on the draft card · the drafter's keys and the glyph legend
@@ -280,7 +280,7 @@ $  a shell command
 ␛[38;5;244m│␛[m   ␛[38;5;244m4. ␛[m␛[38;5;254mDiscard␛[m                                                                                                                   ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;244m┄ note (optional)␛[m                                                                                                              ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m(none)␛[m                                                                                                                       ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[38;5;254m[tab]␛[m␛[38;5;244m note/options␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m confirm␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m take none␛[m                                                                         ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m[tab]␛[m␛[38;5;244m note or list␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m confirm␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m take none␛[m                                                                         ␛[38;5;244m│␛[m
 ␛[38;5;244m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 ␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m

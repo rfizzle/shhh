@@ -11,7 +11,7 @@ import (
 
 func closeFixture() TurnClose {
 	return TurnClose{
-		Steps: 4, Tools: 18, Elapsed: "1m 04s", Spend: "$0.14", Note: "round 7/25",
+		Steps: 4, Tools: 18, Elapsed: "1m 04s", Spend: "$0.14", Note: "round 7 of 25",
 		Changes: &TurnChanges{
 			Files: 3, Added: 30, Removed: 4,
 			Keys: []TurnKey{{Key: "[enter]", Label: "review turn"}, {Key: "[u]", Label: "undo turn"}},
@@ -35,7 +35,7 @@ func TestTurnClose_ThreeRowsAnswerThreeQuestions(t *testing.T) {
 			t.Errorf("row %d should state %q, got %q", i+1, want, lines[i])
 		}
 	}
-	if !strings.HasSuffix(lines[0], "round 7/25") || !strings.HasSuffix(lines[1], "all tracked in git") {
+	if !strings.HasSuffix(lines[0], "round 7 of 25") || !strings.HasSuffix(lines[1], "all tracked in git") {
 		t.Errorf("the notes are right-aligned:\n%s", strings.Join(lines, "\n"))
 	}
 }
@@ -86,10 +86,10 @@ func TestTurnClose_ACommandThatWroteNothingIsAnsweredOnTheChangesRow(t *testing.
 	if len(lines) != 2 {
 		t.Fatalf("the close is the summary row and the answer, got:\n%s", strings.Join(lines, "\n"))
 	}
-	if got := strings.TrimSpace(lines[1]); got != "▎✎ wrote nothing" {
+	if got := strings.TrimSpace(lines[1]); got != "▎✎ changed no files" {
 		t.Fatalf("the changes row answers with nothing and offers nothing, got %q", got)
 	}
-	if !strings.Contains(c.Summary(), "wrote nothing") {
+	if !strings.Contains(c.Summary(), "changed no files") {
 		t.Fatalf("the summary says what the row says, got %q", c.Summary())
 	}
 	c.Changes = &TurnChanges{Files: 1, Added: 2}
@@ -107,7 +107,7 @@ func TestTurnClose_TheNoteDropsBeforeTheStatement(t *testing.T) {
 			}
 		}
 	}
-	if strings.Contains(ansi.Strip(c.View(40)), "round 7/25") {
+	if strings.Contains(ansi.Strip(c.View(40)), "round 7 of 25") {
 		t.Error("a note that does not fit is dropped, never wrapped")
 	}
 }

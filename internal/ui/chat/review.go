@@ -152,7 +152,7 @@ func (m Model) reviewVerdict(n int64) *components.ReviewVerdict {
 		v.Label += " · " + checks.Counts
 	}
 	if checks.Superseded > 0 {
-		v.Label += " · " + plural(checks.Superseded, "earlier failure") + " superseded"
+		v.Label += " · " + plural(checks.Superseded, "earlier failure") + " since passed"
 	}
 	if checks.Failed {
 		v.Detail = failureLines(es)

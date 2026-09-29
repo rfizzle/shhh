@@ -262,7 +262,7 @@ func TestAFetchIsWiredToTheSessionsEvidenceStore(t *testing.T) {
 	if err != nil {
 		t.Fatalf("FetchPlan: %v", err)
 	}
-	if !strings.Contains(plan.Receives, "evidence store") {
+	if !strings.Contains(plan.Receives, "kept whole") {
 		t.Errorf("the fetch was not given the store: %q", plan.Receives)
 	}
 

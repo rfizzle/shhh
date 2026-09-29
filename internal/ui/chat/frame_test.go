@@ -69,7 +69,7 @@ func TestFrame_WideTwoRails(t *testing.T) {
 	m := frameModel(t, 130, 40) // the wide rung is a 110-column terminal
 	view := stripANSI(m.View().Content)
 
-	for _, want := range []string{"╭─", "├─", "╰─", "⏸ manual", "ctx ", "↑41.2k ↓9.8k", "$0.51", "gpt-4o", "[enter] send · [ctrl+v] attach · [ctrl+/] palette · [shift+tab] mode · [ctrl+d] ×2 quit · [ctrl+]] keys", "idle"} {
+	for _, want := range []string{"╭─", "├─", "╰─", "⏸ manual", "context ", "↑41.2k ↓9.8k", "$0.51", "gpt-4o", "[enter] send · [ctrl+v] attach · [ctrl+/] commands · [shift+tab] change mode · [ctrl+d] ×2 quit · [ctrl+]] keys", "idle"} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("wide frame missing %q:\n%s", want, view)
 		}
@@ -111,7 +111,7 @@ func TestFrame_IdleHintsFitEveryRailTheyAreDrawnOn(t *testing.T) {
 		}
 		for _, want := range []string{
 			keys.Bracket(keys.Draft.Send) + " send",
-			keys.Bracket(keys.Draft.Mode) + " mode",
+			keys.Bracket(keys.Draft.Mode) + " change mode",
 			keys.Bracket(keys.Draft.Quit) + " ×2 quit",
 		} {
 			if !strings.Contains(rail, want) {
@@ -131,8 +131,8 @@ func TestFrame_TheWidestIdleRailOffersEverythingItHas(t *testing.T) {
 		keys.Bracket(keys.Draft.Newline) + " newline",
 		keys.Bracket(keys.Draft.Editor) + " editor",
 		keys.Bracket(keys.Draft.Attach) + " attach",
-		keys.Bracket(keys.Draft.Palette) + " palette",
-		keys.Bracket(keys.Draft.Mode) + " mode",
+		keys.Bracket(keys.Draft.Palette) + " commands",
+		keys.Bracket(keys.Draft.Mode) + " change mode",
 		keys.Bracket(keys.Draft.Quit) + " ×2 quit",
 	} {
 		if !strings.Contains(rail, want) {
@@ -274,7 +274,7 @@ func TestFrame_GutterAndHintsSwapWhileWorking(t *testing.T) {
 	if !strings.Contains(view, "│ ▸ ") || !strings.Contains(view, "thinking…") {
 		t.Fatalf("working frame missing the steering gutter and the turn status:\n%s", view)
 	}
-	if !strings.Contains(view, "[ctrl+c] ×2 stop the run · [enter] queues steering · [/] commands") {
+	if !strings.Contains(view, "[ctrl+c] ×2 stop the run · [enter] add to this turn · [/] commands") {
 		t.Fatalf("working frame missing the interrupt and steering hints:\n%s", view)
 	}
 	if strings.Contains(view, "[enter] send") {
@@ -299,7 +299,7 @@ func TestFrame_NoticeRailAppearsAndCounts(t *testing.T) {
 	}
 
 	m.steering = []steeringItem{{text: "one"}, {text: "two"}}
-	if !strings.Contains(stripANSI(m.View().Content), "2 steering queued") {
+	if !strings.Contains(stripANSI(m.View().Content), "2 queued for this turn") {
 		t.Fatal("the notice rail should show the queued steering count")
 	}
 }
@@ -386,8 +386,8 @@ func TestFrame_AttachedShowsChildGutterAndVitals(t *testing.T) {
 	if !strings.Contains(view, "│ researcher-1 "+draftGutter+" ") {
 		t.Fatalf("attached gutter should carry the child's name:\n%s", view)
 	}
-	if !strings.Contains(view, "[esc] detach · [alt+a] agents") {
-		t.Fatalf("attached frame missing the detach hints:\n%s", view)
+	if !strings.Contains(view, "[esc] back to your session · [alt+a] agents") {
+		t.Fatalf("attached frame missing the way back:\n%s", view)
 	}
 }
 
@@ -577,7 +577,7 @@ func TestChildRail_NeverDropsPressureSpendOrMode(t *testing.T) {
 		}
 	}
 	full := stripANSI(m.frameVitals(frameWide, 200))
-	for _, want := range []string{"⏸ ", "ctx ", "▰", " of ", "parent round 1/", "researcher-1"} {
+	for _, want := range []string{"⏸ ", "context ", "▰", " of ", "parent round 1 of ", "researcher-1"} {
 		if !strings.Contains(full, want) {
 			t.Fatalf("a wide attached rail states everything, missing %q in %q", want, full)
 		}
@@ -596,14 +596,14 @@ func TestChildRail_NeverDropsPressureSpendOrMode(t *testing.T) {
 		if !strings.Contains(rail, "⏸ ") {
 			t.Fatalf("width %d: the mode segment is never dropped: %q", width, rail)
 		}
-		if strings.Contains(rail, "parent round") && !strings.Contains(rail, "ctx ") {
+		if strings.Contains(rail, "parent round") && !strings.Contains(rail, "context ") {
 			t.Fatalf("width %d: the round outlived the pressure: %q", width, rail)
 		}
 	}
 	// And the narrow layout, which keeps only the never-dropped fields, keeps
 	// all three of them.
 	narrow := stripANSI(m.frameVitals(frameNarrow, 200))
-	for _, want := range []string{"⏸ ", "ctx ", "$"} {
+	for _, want := range []string{"⏸ ", "context ", "$"} {
 		if !strings.Contains(narrow, want) {
 			t.Fatalf("the minimal rail keeps what never drops, missing %q in %q", want, narrow)
 		}
@@ -1288,9 +1288,25 @@ func TestVitals_CarryNoSessionConstants(t *testing.T) {
 			t.Fatalf("the vitals rail should not carry %q: %q", gone, rail)
 		}
 	}
-	for _, want := range []string{"⏸ manual", "ctx ", "$"} {
+	for _, want := range []string{"⏸ manual", "context ", "$"} {
 		if !strings.Contains(rail, want) {
 			t.Fatalf("the vitals rail should carry %q: %q", want, rail)
+		}
+	}
+}
+
+// The occupancy meter spells its word out from a 110-column terminal up and
+// abbreviates it below. The rung is a terminal width compared against a
+// content width, so the columns either side of it are the ones to hold.
+func TestContextWord_TheRungIsA110ColumnTerminal(t *testing.T) {
+	for terminal, want := range map[int]string{109: "ctx", 110: "context"} {
+		m := frameModel(t, terminal, 40)
+		if got := m.contextWord(); got != want {
+			t.Errorf("at %d columns the meter says %q, want %q", terminal, got, want)
+		}
+		rail := stripANSI(m.frameVitals(m.frameLayout(), m.contentWidth()))
+		if !strings.Contains(rail, want+" ") {
+			t.Errorf("at %d columns the vitals rail should read %q: %q", terminal, want, rail)
 		}
 	}
 }

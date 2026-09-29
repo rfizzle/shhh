@@ -93,7 +93,7 @@ func TestProgram_TheCloseOffersTheCommitAndTheCardCommits(t *testing.T) {
 	programPress(t, tm, "e")
 	waitForText(t, tm, "COMMIT MESSAGE")
 	programPress(t, tm, "esc")
-	waitForText(t, tm, "pick hunks")
+	waitForText(t, tm, "choose what goes in")
 	programPress(t, tm, "enter")
 	waitForText(t, tm, "committed 1 file as")
 

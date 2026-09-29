@@ -11,7 +11,7 @@
 
 ── layout ──────────────────────────────────────────────────
 · the receipt, its fold open, and the turns it folded below
-   ✓ compact folded turns 1–2                                               ctx 88% → 28% · $0.02   4.1s
+   ✓ compact folded turns 1–2                                           context 88% → 28% · $0.02   4.1s
    ▾ turns 1–2 · compacted · 74k tokens → a 5-line summary · [enter] fold it back up
     Rounds are counted in the round loop; the limit lived in three places and disagreed. The first three
     turns established the loop as the owner, the fourth moved the constant, and the fifth's tests pass
@@ -37,7 +37,7 @@
 
 
 · folded back up
-   ✓ compact folded turns 1–2                                               ctx 88% → 28% · $0.02   4.1s
+   ✓ compact folded turns 1–2                                           context 88% → 28% · $0.02   4.1s
    ▸ turns 1–2 · compacted · 74k tokens → a 5-line summary · [enter] read the summary
 
 ❯ fix the round limit
@@ -67,7 +67,7 @@
 
 ── ansi ────────────────────────────────────────────────────
 · the receipt, its fold open, and the turns it folded below
-   ␛[38;5;254m✓␛[m ␛[38;5;254mcompact␛[m ␛[38;5;254mfolded turns 1–2␛[m                                               ␛[38;5;244mctx␛[m ␛[38;5;254m88%␛[m␛[38;5;244m → ␛[m␛[38;5;254m28%␛[m␛[38;5;244m · ␛[m␛[38;5;244m$0.02␛[m   ␛[38;5;244m4.1s␛[m
+   ␛[38;5;254m✓␛[m ␛[38;5;254mcompact␛[m ␛[38;5;254mfolded turns 1–2␛[m                                           ␛[38;5;244mcontext␛[m ␛[38;5;254m88%␛[m␛[38;5;244m → ␛[m␛[38;5;254m28%␛[m␛[38;5;244m · ␛[m␛[38;5;244m$0.02␛[m   ␛[38;5;244m4.1s␛[m
    ␛[38;5;244m▾ turns 1–2 · compacted · 74k tokens → a 5-line summary · ␛[m␛[38;5;254m[enter] fold it back up␛[m
     ␛[3;38;5;244mRounds are counted in the round loop; the limit lived in three places and disagreed. The first three␛[m
     ␛[3;38;5;244mturns established the loop as the owner, the fourth moved the constant, and the fifth's tests pass␛[m
@@ -93,7 +93,7 @@
 
 
 · folded back up
-   ␛[38;5;254m✓␛[m ␛[38;5;254mcompact␛[m ␛[38;5;254mfolded turns 1–2␛[m                                               ␛[38;5;244mctx␛[m ␛[38;5;254m88%␛[m␛[38;5;244m → ␛[m␛[38;5;254m28%␛[m␛[38;5;244m · ␛[m␛[38;5;244m$0.02␛[m   ␛[38;5;244m4.1s␛[m
+   ␛[38;5;254m✓␛[m ␛[38;5;254mcompact␛[m ␛[38;5;254mfolded turns 1–2␛[m                                           ␛[38;5;244mcontext␛[m ␛[38;5;254m88%␛[m␛[38;5;244m → ␛[m␛[38;5;254m28%␛[m␛[38;5;244m · ␛[m␛[38;5;244m$0.02␛[m   ␛[38;5;244m4.1s␛[m
    ␛[38;5;244m▸ turns 1–2 · compacted · 74k tokens → a 5-line summary · ␛[m␛[38;5;254m[enter] read the summary␛[m
 
 ␛[38;5;254m❯␛[m fix the round limit

@@ -619,12 +619,13 @@ func (m Model) cockpitData(includeQueued bool) components.Cockpit {
 	// The model and the reasoning level are not here: they do not change
 	// while the session runs, and the header states them (headerRow).
 	c := components.Cockpit{
+		CtxWord:  m.contextWord(),
 		CtxPct:   -1,
 		WarnPct:  warnThresholdPercent,
 		AlertPct: trimThresholdPercent,
 	}
 	if m.turnState() == stateClassifying {
-		c.Mode, c.ModeKind = "checking", components.CockpitChecking
+		c.Mode, c.ModeKind = "deciding", components.CockpitChecking
 	} else {
 		c.Mode = modeWord(m.policy.mode)
 		if m.conversation {
@@ -652,7 +653,7 @@ func (m Model) cockpitData(includeQueued bool) components.Cockpit {
 	// back to the shape a total is read in.
 	sessionIn, sessionOut := m.liveSessionTokens()
 	if sessionIn != 0 || sessionOut != 0 {
-		c.Tokens = fmt.Sprintf("↑%s ↓%s", m.countLabel(sessionIn), m.countLabel(sessionOut))
+		c.Tokens = fmt.Sprintf("↑%s ↓%s tok", m.countLabel(sessionIn), m.countLabel(sessionOut))
 		if tokens := m.estimatedContextTokens(); tokens > 0 {
 			c.CtxPct = int(tokens * 100 / m.contextWindow())
 		}
@@ -682,7 +683,7 @@ func (m Model) cockpitData(includeQueued bool) components.Cockpit {
 	}
 	// Steering messages waiting to be injected.
 	if n := len(m.steering); n > 0 && includeQueued {
-		c.Extra = append(c.Extra, fmt.Sprintf("queued %d", n))
+		c.Extra = append(c.Extra, queuedForTurn(n))
 	}
 	// Active approval policy; absent in the default ask-everything
 	// state.

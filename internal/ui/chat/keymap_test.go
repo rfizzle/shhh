@@ -710,7 +710,7 @@ func TestNoticeLine_DropsWholePartsNeverClipsOne(t *testing.T) {
 		if w := lipgloss.Width(line); w > m.contentWidth() {
 			t.Errorf("at %d columns the rail is %d wide, past its %d", width, w, m.contentWidth())
 		}
-		if strings.Contains(line, "steering queued") {
+		if strings.Contains(line, "queued for this turn") {
 			t.Errorf("at %d columns the rail should have given up the part at its right end whole: %q", width, line)
 		}
 		body, door, ok := strings.Cut(line, noticeDoorSep)

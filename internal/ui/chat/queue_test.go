@@ -156,7 +156,7 @@ func TestBatch_MembershipSpansOnlyTheSameCategory(t *testing.T) {
 		t.Fatalf("batch should hold only the other command, got %v", got)
 	}
 	view := strings.Join(m.confirmLines(), "\n")
-	if !strings.Contains(ansi.Strip(view), "[A] answer 2 like this as a list") {
+	if !strings.Contains(ansi.Strip(view), "[A] answer all 2 in one list") {
 		t.Fatalf("the key should state how many it answers, got:\n%s", view)
 	}
 	if !strings.Contains(ansi.Strip(view), "[A] lists the 2 marked") {

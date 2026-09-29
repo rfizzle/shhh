@@ -790,7 +790,7 @@ func TestInspectorSummary_EveryStateStatesItself(t *testing.T) {
 	}{
 		{SummaryOnTarget, "▸ on target"},
 		{SummaryOffTarget, "⚠ off target"},
-		{SummaryUnclear, "· target unclear"},
+		{SummaryUnclear, "· unclear"},
 	}
 	for _, tc := range cases {
 		r := InspectorRail{Summary: &InspectorSummary{Text: "Reading the loop.", State: tc.state, Round: 3}}

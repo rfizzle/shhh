@@ -19,11 +19,11 @@
 │ touches   build — 2 files, 14 B; removed with everything under it        │
 │ undo      none                                                           │
 │ network   closed                                                         │
-│ ⛨         bwrap · workspace                                              │
+│ sandbox   bwrap · workspace                                              │
 ├──────────────────────────────────────────────────────────────────────────┤
 │ [y] run it once · [n] deny · [g] attach to writer-1 · [f12] agents       │
-│ [?] keys · [esc] don't — the safe answer; the decision waits             │
-│ [a] always — not offered: a safety-flagged command is never pre-approved │
+│ [?] keys · [esc] not now — it keeps waiting                              │
+│ [a] always — not offered: shhh flagged this command                      │
 ╰──────────────────────────────────────────────────────────────────────────╯
 
 · the same card, held by arriving · two answers, and nothing else offered
@@ -35,11 +35,10 @@
 │ touches   build — 2 files, 14 B; removed with everything under it        │
 │ undo      none                                                           │
 │ network   closed                                                         │
-│ ⛨         bwrap · workspace                                              │
+│ sandbox   bwrap · workspace                                              │
 ├──────────────────────────────────────────────────────────────────────────┤
-│ [y] run it once · [n] deny · [?] keys                                    │
-│ [esc] don't — the safe answer; the decision waits                        │
-│ [a] always — not offered: a safety-flagged command is never pre-approved │
+│ [y] run it once · [n] deny · [?] keys · [esc] not now — it keeps waiting │
+│ [a] always — not offered: shhh flagged this command                      │
 ╰──────────────────────────────────────────────────────────────────────────╯
 
 · landing on a half-typed sentence · one key, and it is the handover
@@ -51,7 +50,7 @@
 │ touches   build — 2 files, 14 B; removed with everything under it        │
 │ undo      none                                                           │
 │ network   closed                                                         │
-│ ⛨         bwrap · workspace                                              │
+│ sandbox   bwrap · workspace                                              │
 ├──────────────────────────────────────────────────────────────────────────┤
 │ [ctrl+space/ctrl+y] answer it · other keys type into the draft           │
 ╰──────────────────────────────────────────────────────────────────────────╯
@@ -59,13 +58,13 @@
 · a command nothing flags · [a] grants it to every agent for the turn
 ╭─ writer-1 ▸ Approve command ────────────────────────────────── ⚠ medium ─╮
 │ $ run go test ./...                                                      │
-│ ⚠ medium · what it writes could not be resolved                          │
+│ ⚠ medium · shhh can't tell what it changes                               │
 │                                                                          │
 │ lands in  the agent's worktree                                           │
 │ touches   unknown — shhh cannot tell what go writes                      │
 │ undo      unknown — shhh could not resolve what this writes              │
 │ network   closed                                                         │
-│ ⛨         bwrap · workspace                                              │
+│ sandbox   bwrap · workspace                                              │
 ├──────────────────────────────────────────────────────────────────────────┤
 │ [y] run it once · [n] deny                                               │
 │ [a] allow "go test" for every agent until this turn ends                 │
@@ -75,13 +74,13 @@
 · a long grant · the offer folds under its words, never clipped
 ╭─ writer-1 ▸ Approve command ────────────────────────────────── ⚠ medium ─╮
 │ $ run go run tools generate-fixtures                                     │
-│ ⚠ medium · what it writes could not be resolved                          │
+│ ⚠ medium · shhh can't tell what it changes                               │
 │                                                                          │
 │ lands in  the agent's worktree                                           │
 │ touches   unknown — shhh cannot tell what go writes                      │
 │ undo      unknown — shhh could not resolve what this writes              │
 │ network   closed                                                         │
-│ ⛨         bwrap · workspace                                              │
+│ sandbox   bwrap · workspace                                              │
 ├──────────────────────────────────────────────────────────────────────────┤
 │ [y] run it once · [n] deny                                               │
 │ [a] allow "go run tools generate-fixtures" for every agent until this    │
@@ -92,13 +91,13 @@
 · answered in place on the manager · esc goes back, the decision stays waiting
 ╭─ writer-1 ▸ Approve command ────────────────────────────────── ⚠ medium ─╮
 │ $ run go test ./...                                                      │
-│ ⚠ medium · what it writes could not be resolved                          │
+│ ⚠ medium · shhh can't tell what it changes                               │
 │                                                                          │
 │ lands in  the agent's worktree                                           │
 │ touches   unknown — shhh cannot tell what go writes                      │
 │ undo      unknown — shhh could not resolve what this writes              │
 │ network   closed                                                         │
-│ ⛨         bwrap · workspace                                              │
+│ sandbox   bwrap · workspace                                              │
 ├──────────────────────────────────────────────────────────────────────────┤
 │ [y] run it once · [n] deny                                               │
 │ [a] allow "go test" for every agent until this turn ends                 │
@@ -108,7 +107,7 @@
 · a writer's patch · your files, and the diff behind a counted tail
 ╭─ writer-1 ▸ Apply patch ────────────────────────────────────── ⚠ medium ─╮
 │ ✎ apply patch (+40 −40, 2 files)                                         │
-│ ⚠ medium · writes 2 files under internal/agent/                          │
+│ ⚠ medium · changes 2 files under internal/agent/                         │
 │                                                                          │
 │ lands in  your workspace                                                 │
 │ touches   internal/agent/loop.go and 1 more — 2 files in your checkout   │
@@ -126,7 +125,7 @@
 · a patch your checkout moved under · the merge is the diff, and the card says so
 ╭─ writer-1 ▸ Apply patch ────────────────────────────────────── ⚠ medium ─╮
 │ ✎ apply patch (+40 −40, 2 files)                                         │
-│ ⚠ medium · writes 2 files under internal/agent/                          │
+│ ⚠ medium · changes 2 files under internal/agent/                         │
 │                                                                          │
 │ lands in  your workspace                                                 │
 │ touches   internal/agent/loop.go and 1 more — 2 files in your checkout   │
@@ -144,7 +143,7 @@
 · a patch that touched a golden file · its generator wrote it, and the card names the command
 ╭─ writer-1 ▸ Apply patch ────────────────────────────────────── ⚠ medium ─╮
 │ ✎ apply patch (+40 −40, 2 files)                                         │
-│ ⚠ medium · writes 3 files                                                │
+│ ⚠ medium · changes 3 files                                               │
 │                                                                          │
 │ lands in  your workspace                                                 │
 │ touches   internal/agent/loop.go and 2 more — 3 files in your checkout   │
@@ -162,7 +161,7 @@
 · an integration writer's patch · the reconciliation is a fact, not a clash
 ╭─ integrator-1 ▸ Apply patch ────────────────────────────────── ⚠ medium ─╮
 │ ✎ apply patch (+40 −40, 2 files)                                         │
-│ ⚠ medium · writes 1 file under internal/agent/                           │
+│ ⚠ medium · changes 1 file under internal/agent/                          │
 │                                                                          │
 │ lands in  your workspace                                                 │
 │ touches   internal/agent/loop.go — 1 file in your checkout               │
@@ -187,11 +186,11 @@
 ␛[38;5;254m│␛[m ␛[38;5;244mtouches   ␛[m␛[38;5;254mbuild␛[m␛[38;5;244m — 2 files, 14 B; removed with everything under it␛[m        ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mundo      ␛[m␛[38;5;254mnone␛[m                                                           ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[m␛[38;5;254mclosed␛[m                                                         ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244m⛨         ␛[m␛[38;5;244mbwrap · workspace␛[m                                              ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244msandbox   ␛[m␛[38;5;244mbwrap · workspace␛[m                                              ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mrun it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m␛[38;5;244m · ␛[m␛[38;5;254m[g]␛[m ␛[38;5;254mattach to writer-1␛[m␛[38;5;244m · ␛[m␛[38;5;254m[f12]␛[m ␛[38;5;254magents␛[m       ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[?]␛[m ␛[38;5;254mkeys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc] don't — the safe answer; the decision waits␛[m             ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244m[a] always — not offered: a safety-flagged command is never pre-approved␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[?]␛[m ␛[38;5;254mkeys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc] not now — it keeps waiting␛[m                              ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244m[a] always — not offered: shhh flagged this command␛[m                      ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────────────────────╯␛[m
 
 · the same card, held by arriving · two answers, and nothing else offered
@@ -203,11 +202,10 @@
 ␛[38;5;254m│␛[m ␛[38;5;244mtouches   ␛[m␛[38;5;254mbuild␛[m␛[38;5;244m — 2 files, 14 B; removed with everything under it␛[m        ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mundo      ␛[m␛[38;5;254mnone␛[m                                                           ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[m␛[38;5;254mclosed␛[m                                                         ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244m⛨         ␛[m␛[38;5;244mbwrap · workspace␛[m                                              ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244msandbox   ␛[m␛[38;5;244mbwrap · workspace␛[m                                              ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mrun it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m ␛[38;5;254mkeys␛[m                                    ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[esc] don't — the safe answer; the decision waits␛[m                        ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244m[a] always — not offered: a safety-flagged command is never pre-approved␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mrun it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m ␛[38;5;254mkeys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc] not now — it keeps waiting␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244m[a] always — not offered: shhh flagged this command␛[m                      ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────────────────────╯␛[m
 
 · landing on a half-typed sentence · one key, and it is the handover
@@ -219,7 +217,7 @@
 ␛[38;5;254m│␛[m ␛[38;5;244mtouches   ␛[m␛[38;5;254mbuild␛[m␛[38;5;244m — 2 files, 14 B; removed with everything under it␛[m        ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mundo      ␛[m␛[38;5;254mnone␛[m                                                           ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[m␛[38;5;254mclosed␛[m                                                         ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244m⛨         ␛[m␛[38;5;244mbwrap · workspace␛[m                                              ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244msandbox   ␛[m␛[38;5;244mbwrap · workspace␛[m                                              ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[ctrl+space/ctrl+y]␛[m␛[38;5;254m answer it␛[m␛[38;5;244m · other keys type into the draft␛[m           ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────────────────────╯␛[m
@@ -227,13 +225,13 @@
 · a command nothing flags · [a] grants it to every agent for the turn
 ␛[38;5;254m╭─ ␛[m␛[1;38;5;254mwriter-1 ▸ Approve command ␛[m␛[38;5;254m────────────────────────────────── ⚠ medium ─╮␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m$␛[m ␛[38;5;254mrun go test ./...␛[m                                                      ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m⚠ medium␛[m␛[38;5;244m · what it writes could not be resolved␛[m                          ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m⚠ medium␛[m␛[38;5;244m · shhh can't tell what it changes␛[m                               ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m                                                                          ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mlands in  ␛[m␛[38;5;254mthe agent's worktree␛[m                                           ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mtouches   ␛[m␛[38;5;254munknown␛[m␛[38;5;244m — shhh cannot tell what go writes␛[m                      ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mundo      ␛[m␛[38;5;254munknown␛[m␛[38;5;244m — shhh could not resolve what this writes␛[m              ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[m␛[38;5;254mclosed␛[m                                                         ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244m⛨         ␛[m␛[38;5;244mbwrap · workspace␛[m                                              ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244msandbox   ␛[m␛[38;5;244mbwrap · workspace␛[m                                              ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mrun it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m                                               ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[a]␛[m ␛[38;5;254mallow "go test" for every agent until this turn ends␛[m                 ␛[38;5;254m│␛[m
@@ -243,13 +241,13 @@
 · a long grant · the offer folds under its words, never clipped
 ␛[38;5;254m╭─ ␛[m␛[1;38;5;254mwriter-1 ▸ Approve command ␛[m␛[38;5;254m────────────────────────────────── ⚠ medium ─╮␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m$␛[m ␛[38;5;254mrun go run tools generate-fixtures␛[m                                     ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m⚠ medium␛[m␛[38;5;244m · what it writes could not be resolved␛[m                          ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m⚠ medium␛[m␛[38;5;244m · shhh can't tell what it changes␛[m                               ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m                                                                          ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mlands in  ␛[m␛[38;5;254mthe agent's worktree␛[m                                           ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mtouches   ␛[m␛[38;5;254munknown␛[m␛[38;5;244m — shhh cannot tell what go writes␛[m                      ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mundo      ␛[m␛[38;5;254munknown␛[m␛[38;5;244m — shhh could not resolve what this writes␛[m              ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[m␛[38;5;254mclosed␛[m                                                         ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244m⛨         ␛[m␛[38;5;244mbwrap · workspace␛[m                                              ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244msandbox   ␛[m␛[38;5;244mbwrap · workspace␛[m                                              ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mrun it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m                                               ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[a]␛[m ␛[38;5;254mallow "go run tools generate-fixtures" for every agent until this␛[m    ␛[38;5;254m│␛[m
@@ -260,13 +258,13 @@
 · answered in place on the manager · esc goes back, the decision stays waiting
 ␛[38;5;254m╭─ ␛[m␛[1;38;5;254mwriter-1 ▸ Approve command ␛[m␛[38;5;254m────────────────────────────────── ⚠ medium ─╮␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m$␛[m ␛[38;5;254mrun go test ./...␛[m                                                      ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m⚠ medium␛[m␛[38;5;244m · what it writes could not be resolved␛[m                          ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m⚠ medium␛[m␛[38;5;244m · shhh can't tell what it changes␛[m                               ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m                                                                          ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mlands in  ␛[m␛[38;5;254mthe agent's worktree␛[m                                           ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mtouches   ␛[m␛[38;5;254munknown␛[m␛[38;5;244m — shhh cannot tell what go writes␛[m                      ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mundo      ␛[m␛[38;5;254munknown␛[m␛[38;5;244m — shhh could not resolve what this writes␛[m              ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[m␛[38;5;254mclosed␛[m                                                         ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244m⛨         ␛[m␛[38;5;244mbwrap · workspace␛[m                                              ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244msandbox   ␛[m␛[38;5;244mbwrap · workspace␛[m                                              ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mrun it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m                                               ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[a]␛[m ␛[38;5;254mallow "go test" for every agent until this turn ends␛[m                 ␛[38;5;254m│␛[m
@@ -276,7 +274,7 @@
 · a writer's patch · your files, and the diff behind a counted tail
 ␛[38;5;254m╭─ ␛[m␛[1;38;5;254mwriter-1 ▸ Apply patch ␛[m␛[38;5;254m────────────────────────────────────── ⚠ medium ─╮␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m✎␛[m ␛[38;5;254mapply patch (+40 −40, 2 files)␛[m                                         ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m⚠ medium␛[m␛[38;5;244m · writes 2 files under internal/agent/␛[m                          ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m⚠ medium␛[m␛[38;5;244m · changes 2 files under internal/agent/␛[m                         ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m                                                                          ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mlands in  ␛[m␛[38;5;254myour workspace␛[m                                                 ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mtouches   ␛[m␛[38;5;254minternal/agent/loop.go and 1 more␛[m␛[38;5;244m — 2 files in your checkout␛[m   ␛[38;5;254m│␛[m
@@ -294,7 +292,7 @@
 · a patch your checkout moved under · the merge is the diff, and the card says so
 ␛[38;5;254m╭─ ␛[m␛[1;38;5;254mwriter-1 ▸ Apply patch ␛[m␛[38;5;254m────────────────────────────────────── ⚠ medium ─╮␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m✎␛[m ␛[38;5;254mapply patch (+40 −40, 2 files)␛[m                                         ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m⚠ medium␛[m␛[38;5;244m · writes 2 files under internal/agent/␛[m                          ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m⚠ medium␛[m␛[38;5;244m · changes 2 files under internal/agent/␛[m                         ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m                                                                          ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mlands in  ␛[m␛[38;5;254myour workspace␛[m                                                 ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mtouches   ␛[m␛[38;5;254minternal/agent/loop.go and 1 more␛[m␛[38;5;244m — 2 files in your checkout␛[m   ␛[38;5;254m│␛[m
@@ -312,7 +310,7 @@
 · a patch that touched a golden file · its generator wrote it, and the card names the command
 ␛[38;5;254m╭─ ␛[m␛[1;38;5;254mwriter-1 ▸ Apply patch ␛[m␛[38;5;254m────────────────────────────────────── ⚠ medium ─╮␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m✎␛[m ␛[38;5;254mapply patch (+40 −40, 2 files)␛[m                                         ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m⚠ medium␛[m␛[38;5;244m · writes 3 files␛[m                                                ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m⚠ medium␛[m␛[38;5;244m · changes 3 files␛[m                                               ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m                                                                          ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mlands in  ␛[m␛[38;5;254myour workspace␛[m                                                 ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mtouches   ␛[m␛[38;5;254minternal/agent/loop.go and 2 more␛[m␛[38;5;244m — 3 files in your checkout␛[m   ␛[38;5;254m│␛[m
@@ -330,7 +328,7 @@
 · an integration writer's patch · the reconciliation is a fact, not a clash
 ␛[38;5;254m╭─ ␛[m␛[1;38;5;254mintegrator-1 ▸ Apply patch ␛[m␛[38;5;254m────────────────────────────────── ⚠ medium ─╮␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m✎␛[m ␛[38;5;254mapply patch (+40 −40, 2 files)␛[m                                         ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m⚠ medium␛[m␛[38;5;244m · writes 1 file under internal/agent/␛[m                           ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m⚠ medium␛[m␛[38;5;244m · changes 1 file under internal/agent/␛[m                          ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m                                                                          ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mlands in  ␛[m␛[38;5;254myour workspace␛[m                                                 ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mtouches   ␛[m␛[38;5;254minternal/agent/loop.go␛[m␛[38;5;244m — 1 file in your checkout␛[m               ␛[38;5;254m│␛[m

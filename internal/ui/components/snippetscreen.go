@@ -416,7 +416,7 @@ func (s *SnippetScreen) keyList() []KeyOffer {
 		keyOfferAs(keys.Screen.Delete, "delete it, after confirming it"),
 		keyOfferAs(keys.Screen.Filter, "filter by name or by what the command is"),
 		keyOfferAs(keys.Screen.ClearQ, "clear the filter or the rename row"),
-		keyOfferAs(keys.Query.Rub, "take a rune back out of either"),
+		keyOfferAs(keys.Query.Rub, "delete a character from either"),
 		keyOfferAs(keys.Screen.Keep, "keep the name, or "+backToShell),
 		keyOfferAs(keys.Screen.Quit, backToShell),
 	}

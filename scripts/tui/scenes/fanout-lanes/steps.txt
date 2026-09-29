@@ -29,7 +29,7 @@ keys "survey the round accounting" Enter
 # the keyboard with a grace window open, and the answer waits for the window
 # to close rather than racing it. On a fast host the snap below is taken
 # inside the window, and a `y` pressed straight after it is discarded.
-snap 02-spawn-card "Spawn 3 writers"
+snap 02-spawn-card "Start 3 writers"
 sleep 1
 keys y
 sleep 4

@@ -648,7 +648,7 @@ func TestChildAskPatchCardCarriesWhatTheSessionsCardCarries(t *testing.T) {
 	for _, want := range []string{
 		"lands in  your workspace",
 		"touches   internal/agent/loop.go and 1 more",
-		"writes 2 files under internal/agent",
+		"changes 2 files under internal/agent",
 	} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("the routed patch card should state %q:\n%s", want, view)
@@ -724,7 +724,7 @@ func TestChildAskCommandCardStatesContainmentAndRadius(t *testing.T) {
 
 	view := ansi.Strip(m.View().Content)
 	for _, want := range []string{
-		"⛨         bwrap · workspace",
+		"sandbox   bwrap · workspace",
 		"lands in  the agent's worktree",
 		"touches   build",
 		"network   closed",
@@ -1041,7 +1041,7 @@ func TestChildAskOffersNoGrantOnAFlaggedCommand(t *testing.T) {
 	if strings.Contains(view, "[a] allow") {
 		t.Fatalf("a safety-flagged command is never pre-approved:\n%s", view)
 	}
-	if !strings.Contains(view, "[a] always — not offered: a safety-flagged command is never pre-approved") {
+	if !strings.Contains(view, "[a] always — not offered: shhh flagged this command") {
 		t.Fatalf("the missing key states its reason:\n%s", view)
 	}
 }

@@ -27,20 +27,20 @@
 · variant · command, a batch waiting behind it
 ╭─ Approve command (1 of 5) ───────────────────────────────────────────────────────────────────────────────────────────── ⚠ low ─╮
 │ $ go test ./internal/agent/...                                                                                                 │
-│ ⚠ low · writes nothing                                                                                                         │
+│ ⚠ low · changes no files                                                                                                       │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ [y] run it once · [n] deny · [a] allow commands without asking this session · [A] answer 3 like this as a list · [esc] wait    │
+│ [y] run it once · [n] deny · [a] allow commands without asking this session · [A] answer all 3 in one list · [esc] wait        │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 · variant · command, a quiet card · values alone
 ╭─ Approve command ────────────────────────────────────────────────────────────────────────────────────────────────────── ⚠ low ─╮
 │ $ sed -n 1p go.mod                                                                                                             │
-│ ⚠ low · writes nothing                                                                                                         │
+│ ⚠ low · changes no files                                                                                                       │
 │                                                                                                                                │
 │ touches   nothing                                                                                                              │
-│ undo      n/a                                                                                                                  │
+│ undo      nothing to undo                                                                                                      │
 │ network   open                                                                                                                 │
-│ ⛨         bwrap · workspace                                                                                                    │
+│ sandbox   bwrap · workspace                                                                                                    │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
 │ [y] run it once · [n] deny · [esc] leave it waiting, nothing is denied                                                         │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
@@ -53,10 +53,10 @@
 │ touches   ./build — 412 files, 84.0 MB; shhh cannot tell what npm writes                                                       │
 │ undo      none                                                                                                                 │
 │ network   open                                                                                                                 │
-│ ⛨         bwrap · workspace                                                                                                    │
+│ sandbox   bwrap · workspace                                                                                                    │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ [y] run it once · [n] deny · [esc] don't — the safe answer; the decision waits                                                 │
-│ [a] always — not offered: a safety-flagged command is never pre-approved                                                       │
+│ [y] run it once · [n] deny · [esc] not now — it keeps waiting                                                                  │
+│ [a] always — not offered: shhh flagged this command                                                                            │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 · variant · command, contained to a host list
@@ -67,7 +67,7 @@
 │ touches   ./node_modules — shhh cannot tell what npm writes                                                                    │
 │ undo      none                                                                                                                 │
 │ network   2 hosts — only registry.npmjs.org, proxy.golang.org; every other host is refused                                     │
-│ ⛨         bwrap · workspace                                                                                                    │
+│ sandbox   bwrap · workspace                                                                                                    │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
 │ [y] run it once · [n] deny · [esc] leave it waiting, nothing is denied                                                         │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
@@ -75,15 +75,15 @@
 · variant · command, uncontained
 ╭─ Approve command ─────────────────────────────────────────────────────────────────────────────────── ⚠ UNCONTAINED ─ ⚠ medium ─╮
 │ $ curl -fsSL https://get.pnpm.io/install.sh | sh                                                                               │
-│ ⚠ medium · what it writes could not be resolved                                                                                │
+│ ⚠ medium · shhh can't tell what it changes                                                                                     │
 │                                                                                                                                │
 │ touches   unknown — piped into sh; what it runs is not inspected first                                                         │
 │ undo      unknown — shhh could not resolve what this writes                                                                    │
 │ network   open                                                                                                                 │
-│ ⛨         no sandbox                                                                                                           │
+│ sandbox   no sandbox                                                                                                           │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ [y] run it once · [n] deny · [esc] don't — the safe answer; the decision waits                                                 │
-│ containment is off for this session · /sandbox doctor explains why                                                             │
+│ [y] run it once · [n] deny · [esc] not now — it keeps waiting                                                                  │
+│ no sandbox this session · /sandbox doctor says why                                                                             │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 · bound · a long command card, counted then scrolled
@@ -103,7 +103,7 @@
 │ touches   ./dist — the script rewrites the release tree                                                                        │
 │ undo      none                                                                                                                 │
 │ network   open — it pushes the artefacts it builds                                                                             │
-│ ⛨         bwrap — workspace profile                                                                                            │
+│ sandbox   bwrap — workspace profile                                                                                            │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
 │ [y] run it once · [n] deny · [esc] leave it waiting, nothing is denied                                                         │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
@@ -150,16 +150,16 @@
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 · variant · generic
-╭─ Approve tool ───────────────────────────────────────────────────────────────────────────────────────────────────────── ⚠ low ─╮
+╭─ Approve fetch ──────────────────────────────────────────────────────────────────────────────────────────────────────── ⚠ low ─╮
 │ ⚙ GET https://pkg.go.dev/context#WithCancel                                                                                    │
 │ ⚠ low                                                                                                                          │
 │ the page arrives as text; nothing on it runs                                                                                   │
 │                                                                                                                                │
 │ domain    pkg.go.dev                                                                                                           │
 │ sends     the URL and a shhh-web/1.0 user-agent                                                                                │
-│ receives  page text, whole, into the evidence store; the first 16 KB into the conversation                                     │
+│ receives  page text, kept whole; the first 16 KB into the conversation                                                         │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ [y] allow it · [n] deny · [a] allow pkg.go.dev without asking · [esc] leave it waiting, nothing is denied                      │
+│ [y] fetch it · [n] deny · [a] allow pkg.go.dev without asking · [esc] leave it waiting, nothing is denied                      │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 · answered · the row it leaves in the transcript
@@ -190,20 +190,20 @@
 · variant · command, a batch waiting behind it
 ␛[38;5;214m╭─ ␛[m␛[1;97mApprove command (1 of 5) ␛[m␛[38;5;241m─────────────────────────────────────────────────────────────────────────────────────────────␛[m␛[38;5;214m ⚠ low ─╮␛[m
 ␛[38;5;214m│␛[m ␛[38;5;214m$␛[m ␛[97mgo test ./internal/agent/...␛[m                                                                                                 ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;214m⚠ low␛[m␛[38;5;241m · writes nothing␛[m                                                                                                         ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;214m⚠ low␛[m␛[38;5;241m · changes no files␛[m                                                                                                       ␛[38;5;214m│␛[m
 ␛[38;5;214m├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;214m│␛[m ␛[94m[y]␛[m ␛[38;5;252mrun it once␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m ␛[38;5;252mdeny␛[m␛[38;5;241m · ␛[m␛[94m[a]␛[m ␛[38;5;252mallow commands without asking this session␛[m␛[38;5;241m · ␛[m␛[94m[A]␛[m ␛[38;5;252manswer 3 like this as a list␛[m␛[38;5;241m · ␛[m␛[92m[esc] wait␛[m    ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[94m[y]␛[m ␛[38;5;252mrun it once␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m ␛[38;5;252mdeny␛[m␛[38;5;241m · ␛[m␛[94m[a]␛[m ␛[38;5;252mallow commands without asking this session␛[m␛[38;5;241m · ␛[m␛[94m[A]␛[m ␛[38;5;252manswer all 3 in one list␛[m␛[38;5;241m · ␛[m␛[92m[esc] wait␛[m        ␛[38;5;214m│␛[m
 ␛[38;5;214m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · variant · command, a quiet card · values alone
 ␛[38;5;214m╭─ ␛[m␛[1;97mApprove command ␛[m␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────␛[m␛[38;5;214m ⚠ low ─╮␛[m
 ␛[38;5;214m│␛[m ␛[38;5;214m$␛[m ␛[97msed -n 1p go.mod␛[m                                                                                                             ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;214m⚠ low␛[m␛[38;5;241m · writes nothing␛[m                                                                                                         ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;214m⚠ low␛[m␛[38;5;241m · changes no files␛[m                                                                                                       ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m                                                                                                                                ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mtouches   ␛[m␛[92mnothing␛[m                                                                                                              ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;243mundo      ␛[m␛[92mn/a␛[m                                                                                                                  ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;243mundo      ␛[m␛[92mnothing to undo␛[m                                                                                                      ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mnetwork   ␛[m␛[38;5;214mopen␛[m                                                                                                                 ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;243m⛨         ␛[m␛[38;5;243mbwrap · workspace␛[m                                                                                                    ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;243msandbox   ␛[m␛[38;5;243mbwrap · workspace␛[m                                                                                                    ␛[38;5;214m│␛[m
 ␛[38;5;214m├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;214m│␛[m ␛[94m[y]␛[m ␛[38;5;252mrun it once␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m ␛[38;5;252mdeny␛[m␛[38;5;241m · ␛[m␛[92m[esc] leave it waiting, nothing is denied␛[m                                                         ␛[38;5;214m│␛[m
 ␛[38;5;214m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
@@ -216,10 +216,10 @@
 ␛[91m│␛[m ␛[38;5;243mtouches   ␛[m␛[38;5;252m./build␛[m␛[38;5;245m — 412 files, 84.0 MB; shhh cannot tell what npm writes␛[m                                                       ␛[91m│␛[m
 ␛[91m│␛[m ␛[38;5;243mundo      ␛[m␛[91mnone␛[m                                                                                                                 ␛[91m│␛[m
 ␛[91m│␛[m ␛[38;5;243mnetwork   ␛[m␛[38;5;214mopen␛[m                                                                                                                 ␛[91m│␛[m
-␛[91m│␛[m ␛[38;5;243m⛨         ␛[m␛[38;5;243mbwrap · workspace␛[m                                                                                                    ␛[91m│␛[m
+␛[91m│␛[m ␛[38;5;243msandbox   ␛[m␛[38;5;243mbwrap · workspace␛[m                                                                                                    ␛[91m│␛[m
 ␛[91m├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[91m│␛[m ␛[94m[y]␛[m ␛[38;5;252mrun it once␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m ␛[38;5;252mdeny␛[m␛[38;5;241m · ␛[m␛[92m[esc] don't — the safe answer; the decision waits␛[m                                                 ␛[91m│␛[m
-␛[91m│␛[m ␛[38;5;241m[a] always — not offered: a safety-flagged command is never pre-approved␛[m                                                       ␛[91m│␛[m
+␛[91m│␛[m ␛[94m[y]␛[m ␛[38;5;252mrun it once␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m ␛[38;5;252mdeny␛[m␛[38;5;241m · ␛[m␛[92m[esc] not now — it keeps waiting␛[m                                                                  ␛[91m│␛[m
+␛[91m│␛[m ␛[38;5;241m[a] always — not offered: shhh flagged this command␛[m                                                                            ␛[91m│␛[m
 ␛[91m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · variant · command, contained to a host list
@@ -230,7 +230,7 @@
 ␛[38;5;214m│␛[m ␛[38;5;243mtouches   ␛[m␛[38;5;252m./node_modules␛[m␛[38;5;245m — shhh cannot tell what npm writes␛[m                                                                    ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mundo      ␛[m␛[91mnone␛[m                                                                                                                 ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mnetwork   ␛[m␛[38;5;252m2 hosts␛[m␛[38;5;245m — only registry.npmjs.org, proxy.golang.org; every other host is refused␛[m                                     ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;243m⛨         ␛[m␛[38;5;243mbwrap · workspace␛[m                                                                                                    ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;243msandbox   ␛[m␛[38;5;243mbwrap · workspace␛[m                                                                                                    ␛[38;5;214m│␛[m
 ␛[38;5;214m├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;214m│␛[m ␛[94m[y]␛[m ␛[38;5;252mrun it once␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m ␛[38;5;252mdeny␛[m␛[38;5;241m · ␛[m␛[92m[esc] leave it waiting, nothing is denied␛[m                                                         ␛[38;5;214m│␛[m
 ␛[38;5;214m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
@@ -238,15 +238,15 @@
 · variant · command, uncontained
 ␛[91m╭─ ␛[m␛[1;97mApprove command ␛[m␛[38;5;241m───────────────────────────────────────────────────────────────────────────────────␛[m␛[91m ⚠ UNCONTAINED ─ ⚠ medium ─╮␛[m
 ␛[91m│␛[m ␛[38;5;214m$␛[m ␛[97mcurl -fsSL https://get.pnpm.io/install.sh | sh␛[m                                                                               ␛[91m│␛[m
-␛[91m│␛[m ␛[91m⚠ medium␛[m␛[38;5;241m · what it writes could not be resolved␛[m                                                                                ␛[91m│␛[m
+␛[91m│␛[m ␛[91m⚠ medium␛[m␛[38;5;241m · shhh can't tell what it changes␛[m                                                                                     ␛[91m│␛[m
 ␛[91m│␛[m                                                                                                                                ␛[91m│␛[m
 ␛[91m│␛[m ␛[38;5;243mtouches   ␛[m␛[91munknown␛[m␛[38;5;245m — piped into sh; what it runs is not inspected first␛[m                                                         ␛[91m│␛[m
 ␛[91m│␛[m ␛[38;5;243mundo      ␛[m␛[91munknown␛[m␛[38;5;245m — shhh could not resolve what this writes␛[m                                                                    ␛[91m│␛[m
 ␛[91m│␛[m ␛[38;5;243mnetwork   ␛[m␛[38;5;214mopen␛[m                                                                                                                 ␛[91m│␛[m
-␛[91m│␛[m ␛[38;5;243m⛨         ␛[m␛[91mno sandbox␛[m                                                                                                           ␛[91m│␛[m
+␛[91m│␛[m ␛[38;5;243msandbox   ␛[m␛[91mno sandbox␛[m                                                                                                           ␛[91m│␛[m
 ␛[91m├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[91m│␛[m ␛[94m[y]␛[m ␛[38;5;252mrun it once␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m ␛[38;5;252mdeny␛[m␛[38;5;241m · ␛[m␛[92m[esc] don't — the safe answer; the decision waits␛[m                                                 ␛[91m│␛[m
-␛[91m│␛[m ␛[38;5;241mcontainment is off for this session · /sandbox doctor explains why␛[m                                                             ␛[91m│␛[m
+␛[91m│␛[m ␛[94m[y]␛[m ␛[38;5;252mrun it once␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m ␛[38;5;252mdeny␛[m␛[38;5;241m · ␛[m␛[92m[esc] not now — it keeps waiting␛[m                                                                  ␛[91m│␛[m
+␛[91m│␛[m ␛[38;5;241mno sandbox this session · /sandbox doctor says why␛[m                                                                             ␛[91m│␛[m
 ␛[91m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · bound · a long command card, counted then scrolled
@@ -266,7 +266,7 @@
 ␛[38;5;214m│␛[m ␛[38;5;243mtouches   ␛[m␛[91m./dist␛[m␛[38;5;245m — the script rewrites the release tree␛[m                                                                        ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mundo      ␛[m␛[91mnone␛[m                                                                                                                 ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mnetwork   ␛[m␛[38;5;214mopen␛[m␛[38;5;245m — it pushes the artefacts it builds␛[m                                                                             ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;243m⛨         ␛[m␛[38;5;252mbwrap␛[m␛[38;5;245m — workspace profile␛[m                                                                                            ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;243msandbox   ␛[m␛[38;5;252mbwrap␛[m␛[38;5;245m — workspace profile␛[m                                                                                            ␛[38;5;214m│␛[m
 ␛[38;5;214m├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;214m│␛[m ␛[94m[y]␛[m ␛[38;5;252mrun it once␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m ␛[38;5;252mdeny␛[m␛[38;5;241m · ␛[m␛[92m[esc] leave it waiting, nothing is denied␛[m                                                         ␛[38;5;214m│␛[m
 ␛[38;5;214m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
@@ -313,16 +313,16 @@
 ␛[38;5;214m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · variant · generic
-␛[38;5;214m╭─ ␛[m␛[1;97mApprove tool ␛[m␛[38;5;241m─────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m␛[38;5;214m ⚠ low ─╮␛[m
+␛[38;5;214m╭─ ␛[m␛[1;97mApprove fetch ␛[m␛[38;5;241m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m␛[38;5;214m ⚠ low ─╮␛[m
 ␛[38;5;214m│␛[m ␛[38;5;241m⚙␛[m ␛[97mGET https://pkg.go.dev/context#WithCancel␛[m                                                                                    ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;214m⚠ low␛[m                                                                                                                          ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;241mthe page arrives as text; nothing on it runs␛[m                                                                                   ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m                                                                                                                                ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mdomain    ␛[m␛[38;5;214mpkg.go.dev␛[m                                                                                                           ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243msends     ␛[m␛[38;5;252mthe URL and a shhh-web/1.0 user-agent␛[m                                                                                ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;243mreceives  ␛[m␛[38;5;252mpage text, whole, into the evidence store; the first 16 KB into the conversation␛[m                                     ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;243mreceives  ␛[m␛[38;5;252mpage text, kept whole; the first 16 KB into the conversation␛[m                                                         ␛[38;5;214m│␛[m
 ␛[38;5;214m├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;214m│␛[m ␛[94m[y]␛[m ␛[38;5;252mallow it␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m ␛[38;5;252mdeny␛[m␛[38;5;241m · ␛[m␛[94m[a]␛[m ␛[38;5;252mallow pkg.go.dev without asking␛[m␛[38;5;241m · ␛[m␛[92m[esc] leave it waiting, nothing is denied␛[m                      ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[94m[y]␛[m ␛[38;5;252mfetch it␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m ␛[38;5;252mdeny␛[m␛[38;5;241m · ␛[m␛[94m[a]␛[m ␛[38;5;252mallow pkg.go.dev without asking␛[m␛[38;5;241m · ␛[m␛[92m[esc] leave it waiting, nothing is denied␛[m                      ␛[38;5;214m│␛[m
 ␛[38;5;214m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · answered · the row it leaves in the transcript

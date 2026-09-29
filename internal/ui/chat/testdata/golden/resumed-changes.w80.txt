@@ -18,7 +18,7 @@
 · the rail · owned file, drifted file named separately
   CHANGES                      session · +1 −1
   ▎✎ internal/agent/loop.go              +1 −1
-   · internal/agent/round.go           drifted
+   · internal/agent/round.go           skipped
 
 ── ansi ────────────────────────────────────────────────────
 · the restored close · unselected, it states the change and offers nothing
@@ -29,4 +29,4 @@
 · the rail · owned file, drifted file named separately
   ␛[1;94mCHANGES␛[m                      ␛[38;5;241msession · ␛[m␛[92m+1␛[m ␛[91m−1␛[m
   ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252minternal/agent/loop.go␛[m              ␛[92m+1␛[m ␛[91m−1␛[m
-   ␛[38;5;241m·␛[m ␛[38;5;245minternal/agent/round.go␛[m           ␛[38;5;241mdrifted␛[m
+   ␛[38;5;241m·␛[m ␛[38;5;245minternal/agent/round.go␛[m           ␛[38;5;241mskipped␛[m

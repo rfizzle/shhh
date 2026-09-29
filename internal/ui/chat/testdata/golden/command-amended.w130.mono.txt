@@ -14,13 +14,13 @@
 ──── DECISION 1/1 ────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭─ Approve command ─────────────────────────────────────────────────────────────────────────────────────────────── ⚠ medium ─╮
 │ $ npm test                                                                                                                 │
-│ ⚠ medium · what it writes could not be resolved                                                                            │
+│ ⚠ medium · shhh can't tell what it changes                                                                                 │
 │                                                                                                                            │
 │ touches   unknown — shhh cannot tell what npm writes                                                                       │
 │ undo      unknown — shhh could not resolve what this writes                                                                │
 │ network   open                                                                                                             │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ [y] run it once · [Y] and say what next · [n] deny · [N] and say why not · [a] allow "npm test" without asking             │
+│ [y] run it once · [Y] run with a note · [n] deny · [N] deny with a note · [a] allow "npm test" without asking              │
 │ [d] full view · [e] edit the command · [?] keys · [esc] leave it waiting, nothing is denied                                │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
@@ -35,9 +35,9 @@
 │ undo      none                                                                                                             │
 │ network   open                                                                                                             │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ [y] run it once · [Y] and say what next · [n] deny · [N] and say why not · [d] full view · [e] edit the command · [?] keys │
-│ [esc] don't — the safe answer; the decision waits                                                                          │
-│ [a] always — not offered: a safety-flagged command is never pre-approved                                                   │
+│ [y] run it once · [Y] run with a note · [n] deny · [N] deny with a note · [d] full view · [e] edit the command · [?] keys  │
+│ [esc] not now — it keeps waiting                                                                                           │
+│ [a] always — not offered: shhh flagged this command                                                                        │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 ── ansi ────────────────────────────────────────────────────
@@ -45,13 +45,13 @@
 ␛[38;5;244m────␛[m ␛[1;38;5;254mDECISION 1/1␛[m ␛[38;5;244m────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 ␛[38;5;254m╭─ ␛[m␛[1;38;5;254mApprove command ␛[m␛[38;5;254m─────────────────────────────────────────────────────────────────────────────────────────────── ⚠ medium ─╮␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m$␛[m ␛[38;5;254mnpm test␛[m                                                                                                                 ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m⚠ medium␛[m␛[38;5;244m · what it writes could not be resolved␛[m                                                                            ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m⚠ medium␛[m␛[38;5;244m · shhh can't tell what it changes␛[m                                                                                 ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m                                                                                                                            ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mtouches   ␛[m␛[38;5;254munknown␛[m␛[38;5;244m — shhh cannot tell what npm writes␛[m                                                                       ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mundo      ␛[m␛[38;5;254munknown␛[m␛[38;5;244m — shhh could not resolve what this writes␛[m                                                                ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[m␛[38;5;254mopen␛[m                                                                                                             ␛[38;5;254m│␛[m
 ␛[38;5;254m├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mrun it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[Y]␛[m ␛[38;5;254mand say what next␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m␛[38;5;244m · ␛[m␛[38;5;254m[N]␛[m ␛[38;5;254mand say why not␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m ␛[38;5;254mallow "npm test" without asking␛[m             ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mrun it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[Y]␛[m ␛[38;5;254mrun with a note␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m␛[38;5;244m · ␛[m␛[38;5;254m[N]␛[m ␛[38;5;254mdeny with a note␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m ␛[38;5;254mallow "npm test" without asking␛[m              ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[d]␛[m ␛[38;5;254mfull view␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m ␛[38;5;254medit the command␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m ␛[38;5;254mkeys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc] leave it waiting, nothing is denied␛[m                                ␛[38;5;254m│␛[m
 ␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
@@ -66,7 +66,7 @@
 ␛[38;5;254m│␛[m ␛[38;5;244mundo      ␛[m␛[38;5;254mnone␛[m                                                                                                             ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[m␛[38;5;254mopen␛[m                                                                                                             ␛[38;5;254m│␛[m
 ␛[38;5;254m├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mrun it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[Y]␛[m ␛[38;5;254mand say what next␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m␛[38;5;244m · ␛[m␛[38;5;254m[N]␛[m ␛[38;5;254mand say why not␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m ␛[38;5;254mfull view␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m ␛[38;5;254medit the command␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m ␛[38;5;254mkeys␛[m ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m[esc] don't — the safe answer; the decision waits␛[m                                                                          ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244m[a] always — not offered: a safety-flagged command is never pre-approved␛[m                                                   ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mrun it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[Y]␛[m ␛[38;5;254mrun with a note␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m␛[38;5;244m · ␛[m␛[38;5;254m[N]␛[m ␛[38;5;254mdeny with a note␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m ␛[38;5;254mfull view␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m ␛[38;5;254medit the command␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m ␛[38;5;254mkeys␛[m  ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[esc] not now — it keeps waiting␛[m                                                                                           ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244m[a] always — not offered: shhh flagged this command␛[m                                                                        ␛[38;5;254m│␛[m
 ␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m

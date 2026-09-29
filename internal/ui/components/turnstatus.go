@@ -56,7 +56,7 @@ const (
 	// stream, where a provider has one.
 	PhaseThinking TurnPhase = iota
 	// PhaseDeciding is the auto-mode classifier judging a call (the vitals
-	// rail's `✦ checking`, seen from the frame).
+	// rail's `✦ deciding`, seen from the frame).
 	PhaseDeciding
 	// PhaseActing is a tool executing. The word is `acting…`, for the reason
 	// phaseWords gives.

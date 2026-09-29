@@ -77,7 +77,7 @@ func (m Model) turnStatus() (components.TurnStatus, bool) {
 func (m Model) turnPhase() (components.TurnPhase, bool) {
 	switch m.turnState() {
 	case stateClassifying:
-		// The vitals rail's `✦ checking`, seen from the frame.
+		// The vitals rail's `✦ deciding`, seen from the frame.
 		return components.PhaseDeciding, true
 	case stateRunningCmd:
 		return components.PhaseActing, true

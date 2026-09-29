@@ -67,7 +67,7 @@ func TestConfirmPromptShowsContainmentState(t *testing.T) {
 	// card always states, where it survives a terminal too narrow to carry a
 	// chip — and the profile's network answer is a field of its own.
 	view := m.View().Content
-	if !strings.Contains(view, "⛨") || !strings.Contains(view, "bwrap · workspace") {
+	if !strings.Contains(view, "sandbox ") || !strings.Contains(view, "bwrap · workspace") {
 		t.Fatalf("confirm prompt should carry the containment row:\n%s", view)
 	}
 	if !strings.Contains(view, "network   open") {

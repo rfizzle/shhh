@@ -19,11 +19,10 @@
 │ touches   build — 2 files, 14 B; removed with everything under it                                                          │
 │ undo      none                                                                                                             │
 │ network   closed                                                                                                           │
-│ ⛨         bwrap · workspace                                                                                                │
+│ sandbox   bwrap · workspace                                                                                                │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ [y] run it once · [n] deny · [g] attach to writer-1 · [alt+a] agents · [?] keys                                            │
-│ [esc] don't — the safe answer; the decision waits                                                                          │
-│ [a] always — not offered: a safety-flagged command is never pre-approved                                                   │
+│ [y] run it once · [n] deny · [g] attach to writer-1 · [alt+a] agents · [?] keys · [esc] not now — it keeps waiting         │
+│ [a] always — not offered: shhh flagged this command                                                                        │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 · the same card, held by arriving · two answers, and nothing else offered
@@ -35,10 +34,10 @@
 │ touches   build — 2 files, 14 B; removed with everything under it                                                          │
 │ undo      none                                                                                                             │
 │ network   closed                                                                                                           │
-│ ⛨         bwrap · workspace                                                                                                │
+│ sandbox   bwrap · workspace                                                                                                │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ [y] run it once · [n] deny · [?] keys · [esc] don't — the safe answer; the decision waits                                  │
-│ [a] always — not offered: a safety-flagged command is never pre-approved                                                   │
+│ [y] run it once · [n] deny · [?] keys · [esc] not now — it keeps waiting                                                   │
+│ [a] always — not offered: shhh flagged this command                                                                        │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 · landing on a half-typed sentence · one key, and it is the handover
@@ -50,7 +49,7 @@
 │ touches   build — 2 files, 14 B; removed with everything under it                                                          │
 │ undo      none                                                                                                             │
 │ network   closed                                                                                                           │
-│ ⛨         bwrap · workspace                                                                                                │
+│ sandbox   bwrap · workspace                                                                                                │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
 │ [ctrl+space/ctrl+y] answer it · other keys type into the draft                                                             │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
@@ -58,13 +57,13 @@
 · a command nothing flags · [a] grants it to every agent for the turn
 ╭─ writer-1 ▸ Approve command ──────────────────────────────────────────────────────────────────────────────────── ⚠ medium ─╮
 │ $ run go test ./...                                                                                                        │
-│ ⚠ medium · what it writes could not be resolved                                                                            │
+│ ⚠ medium · shhh can't tell what it changes                                                                                 │
 │                                                                                                                            │
 │ lands in  the agent's worktree — an isolated checkout; your files change only when you apply its patch                     │
 │ touches   unknown — shhh cannot tell what go writes                                                                        │
 │ undo      unknown — shhh could not resolve what this writes                                                                │
 │ network   closed                                                                                                           │
-│ ⛨         bwrap · workspace                                                                                                │
+│ sandbox   bwrap · workspace                                                                                                │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
 │ [y] run it once · [n] deny · [a] allow "go test" for every agent until this turn ends · [g] attach to writer-1             │
 │ [alt+a] agents · [?] keys · [esc] leave it waiting, nothing is denied                                                      │
@@ -73,13 +72,13 @@
 · a long grant · the offer folds under its words, never clipped
 ╭─ writer-1 ▸ Approve command ──────────────────────────────────────────────────────────────────────────────────── ⚠ medium ─╮
 │ $ run go run tools generate-fixtures                                                                                       │
-│ ⚠ medium · what it writes could not be resolved                                                                            │
+│ ⚠ medium · shhh can't tell what it changes                                                                                 │
 │                                                                                                                            │
 │ lands in  the agent's worktree — an isolated checkout; your files change only when you apply its patch                     │
 │ touches   unknown — shhh cannot tell what go writes                                                                        │
 │ undo      unknown — shhh could not resolve what this writes                                                                │
 │ network   closed                                                                                                           │
-│ ⛨         bwrap · workspace                                                                                                │
+│ sandbox   bwrap · workspace                                                                                                │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
 │ [y] run it once · [n] deny · [a] allow "go run tools generate-fixtures" for every agent until this turn ends               │
 │ [g] attach to writer-1 · [alt+a] agents · [?] keys · [esc] leave it waiting, nothing is denied                             │
@@ -88,13 +87,13 @@
 · answered in place on the manager · esc goes back, the decision stays waiting
 ╭─ writer-1 ▸ Approve command ──────────────────────────────────────────────────────────────────────────────────── ⚠ medium ─╮
 │ $ run go test ./...                                                                                                        │
-│ ⚠ medium · what it writes could not be resolved                                                                            │
+│ ⚠ medium · shhh can't tell what it changes                                                                                 │
 │                                                                                                                            │
 │ lands in  the agent's worktree — an isolated checkout; your files change only when you apply its patch                     │
 │ touches   unknown — shhh cannot tell what go writes                                                                        │
 │ undo      unknown — shhh could not resolve what this writes                                                                │
 │ network   closed                                                                                                           │
-│ ⛨         bwrap · workspace                                                                                                │
+│ sandbox   bwrap · workspace                                                                                                │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
 │ [y] run it once · [n] deny · [a] allow "go test" for every agent until this turn ends                                      │
 │ [esc] back to the agents — the decision stays waiting                                                                      │
@@ -103,7 +102,7 @@
 · a writer's patch · your files, and the diff behind a counted tail
 ╭─ writer-1 ▸ Apply patch ──────────────────────────────────────────────────────────────────────────────────────── ⚠ medium ─╮
 │ ✎ apply patch (+40 −40, 2 files)                                                                                           │
-│ ⚠ medium · writes 2 files under internal/agent/                                                                            │
+│ ⚠ medium · changes 2 files under internal/agent/                                                                           │
 │                                                                                                                            │
 │ lands in  your workspace — the agent's worktree is separate; this is where its work arrives                                │
 │ touches   internal/agent/loop.go and 1 more — 2 files in your checkout                                                     │
@@ -121,7 +120,7 @@
 · a patch your checkout moved under · the merge is the diff, and the card says so
 ╭─ writer-1 ▸ Apply patch ──────────────────────────────────────────────────────────────────────────────────────── ⚠ medium ─╮
 │ ✎ apply patch (+40 −40, 2 files)                                                                                           │
-│ ⚠ medium · writes 2 files under internal/agent/                                                                            │
+│ ⚠ medium · changes 2 files under internal/agent/                                                                           │
 │                                                                                                                            │
 │ lands in  your workspace — the agent's worktree is separate; this is where its work arrives                                │
 │ touches   internal/agent/loop.go and 1 more — 2 files in your checkout                                                     │
@@ -139,7 +138,7 @@
 · a patch that touched a golden file · its generator wrote it, and the card names the command
 ╭─ writer-1 ▸ Apply patch ──────────────────────────────────────────────────────────────────────────────────────── ⚠ medium ─╮
 │ ✎ apply patch (+40 −40, 2 files)                                                                                           │
-│ ⚠ medium · writes 3 files                                                                                                  │
+│ ⚠ medium · changes 3 files                                                                                                 │
 │                                                                                                                            │
 │ lands in  your workspace — the agent's worktree is separate; this is where its work arrives                                │
 │ touches   internal/agent/loop.go and 2 more — 3 files in your checkout                                                     │
@@ -157,7 +156,7 @@
 · an integration writer's patch · the reconciliation is a fact, not a clash
 ╭─ integrator-1 ▸ Apply patch ──────────────────────────────────────────────────────────────────────────────────── ⚠ medium ─╮
 │ ✎ apply patch (+40 −40, 2 files)                                                                                           │
-│ ⚠ medium · writes 1 file under internal/agent/                                                                             │
+│ ⚠ medium · changes 1 file under internal/agent/                                                                            │
 │                                                                                                                            │
 │ lands in  your workspace — the agent's worktree is separate; this is where its work arrives                                │
 │ touches   internal/agent/loop.go — 1 file in your checkout                                                                 │
@@ -182,11 +181,10 @@
 ␛[91m│␛[m ␛[38;5;243mtouches   ␛[m␛[38;5;252mbuild␛[m␛[38;5;245m — 2 files, 14 B; removed with everything under it␛[m                                                          ␛[91m│␛[m
 ␛[91m│␛[m ␛[38;5;243mundo      ␛[m␛[91mnone␛[m                                                                                                             ␛[91m│␛[m
 ␛[91m│␛[m ␛[38;5;243mnetwork   ␛[m␛[92mclosed␛[m                                                                                                           ␛[91m│␛[m
-␛[91m│␛[m ␛[38;5;243m⛨         ␛[m␛[38;5;243mbwrap · workspace␛[m                                                                                                ␛[91m│␛[m
+␛[91m│␛[m ␛[38;5;243msandbox   ␛[m␛[38;5;243mbwrap · workspace␛[m                                                                                                ␛[91m│␛[m
 ␛[91m├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[91m│␛[m ␛[94m[y]␛[m ␛[38;5;252mrun it once␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m ␛[38;5;252mdeny␛[m␛[38;5;241m · ␛[m␛[94m[g]␛[m ␛[38;5;252mattach to writer-1␛[m␛[38;5;241m · ␛[m␛[94m[alt+a]␛[m ␛[38;5;252magents␛[m␛[38;5;241m · ␛[m␛[94m[?]␛[m ␛[38;5;252mkeys␛[m                                            ␛[91m│␛[m
-␛[91m│␛[m ␛[92m[esc] don't — the safe answer; the decision waits␛[m                                                                          ␛[91m│␛[m
-␛[91m│␛[m ␛[38;5;241m[a] always — not offered: a safety-flagged command is never pre-approved␛[m                                                   ␛[91m│␛[m
+␛[91m│␛[m ␛[94m[y]␛[m ␛[38;5;252mrun it once␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m ␛[38;5;252mdeny␛[m␛[38;5;241m · ␛[m␛[94m[g]␛[m ␛[38;5;252mattach to writer-1␛[m␛[38;5;241m · ␛[m␛[94m[alt+a]␛[m ␛[38;5;252magents␛[m␛[38;5;241m · ␛[m␛[94m[?]␛[m ␛[38;5;252mkeys␛[m␛[38;5;241m · ␛[m␛[92m[esc] not now — it keeps waiting␛[m         ␛[91m│␛[m
+␛[91m│␛[m ␛[38;5;241m[a] always — not offered: shhh flagged this command␛[m                                                                        ␛[91m│␛[m
 ␛[91m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · the same card, held by arriving · two answers, and nothing else offered
@@ -198,10 +196,10 @@
 ␛[91m│␛[m ␛[38;5;243mtouches   ␛[m␛[38;5;252mbuild␛[m␛[38;5;245m — 2 files, 14 B; removed with everything under it␛[m                                                          ␛[91m│␛[m
 ␛[91m│␛[m ␛[38;5;243mundo      ␛[m␛[91mnone␛[m                                                                                                             ␛[91m│␛[m
 ␛[91m│␛[m ␛[38;5;243mnetwork   ␛[m␛[92mclosed␛[m                                                                                                           ␛[91m│␛[m
-␛[91m│␛[m ␛[38;5;243m⛨         ␛[m␛[38;5;243mbwrap · workspace␛[m                                                                                                ␛[91m│␛[m
+␛[91m│␛[m ␛[38;5;243msandbox   ␛[m␛[38;5;243mbwrap · workspace␛[m                                                                                                ␛[91m│␛[m
 ␛[91m├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[91m│␛[m ␛[94m[y]␛[m ␛[38;5;252mrun it once␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m ␛[38;5;252mdeny␛[m␛[38;5;241m · ␛[m␛[94m[?]␛[m ␛[38;5;252mkeys␛[m␛[38;5;241m · ␛[m␛[92m[esc] don't — the safe answer; the decision waits␛[m                                  ␛[91m│␛[m
-␛[91m│␛[m ␛[38;5;241m[a] always — not offered: a safety-flagged command is never pre-approved␛[m                                                   ␛[91m│␛[m
+␛[91m│␛[m ␛[94m[y]␛[m ␛[38;5;252mrun it once␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m ␛[38;5;252mdeny␛[m␛[38;5;241m · ␛[m␛[94m[?]␛[m ␛[38;5;252mkeys␛[m␛[38;5;241m · ␛[m␛[92m[esc] not now — it keeps waiting␛[m                                                   ␛[91m│␛[m
+␛[91m│␛[m ␛[38;5;241m[a] always — not offered: shhh flagged this command␛[m                                                                        ␛[91m│␛[m
 ␛[91m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · landing on a half-typed sentence · one key, and it is the handover
@@ -213,7 +211,7 @@
 ␛[91m│␛[m ␛[38;5;243mtouches   ␛[m␛[38;5;252mbuild␛[m␛[38;5;245m — 2 files, 14 B; removed with everything under it␛[m                                                          ␛[91m│␛[m
 ␛[91m│␛[m ␛[38;5;243mundo      ␛[m␛[91mnone␛[m                                                                                                             ␛[91m│␛[m
 ␛[91m│␛[m ␛[38;5;243mnetwork   ␛[m␛[92mclosed␛[m                                                                                                           ␛[91m│␛[m
-␛[91m│␛[m ␛[38;5;243m⛨         ␛[m␛[38;5;243mbwrap · workspace␛[m                                                                                                ␛[91m│␛[m
+␛[91m│␛[m ␛[38;5;243msandbox   ␛[m␛[38;5;243mbwrap · workspace␛[m                                                                                                ␛[91m│␛[m
 ␛[91m├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[91m│␛[m ␛[94m[ctrl+space/ctrl+y]␛[m␛[38;5;252m answer it␛[m␛[38;5;241m · other keys type into the draft␛[m                                                             ␛[91m│␛[m
 ␛[91m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
@@ -221,13 +219,13 @@
 · a command nothing flags · [a] grants it to every agent for the turn
 ␛[38;5;214m╭─ ␛[m␛[1;97mwriter-1 ▸ Approve command ␛[m␛[38;5;241m────────────────────────────────────────────────────────────────────────────────────␛[m␛[38;5;214m ⚠ medium ─╮␛[m
 ␛[38;5;214m│␛[m ␛[38;5;214m$␛[m ␛[97mrun go test ./...␛[m                                                                                                        ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;214m⚠ medium␛[m␛[38;5;241m · what it writes could not be resolved␛[m                                                                            ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;214m⚠ medium␛[m␛[38;5;241m · shhh can't tell what it changes␛[m                                                                                 ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m                                                                                                                            ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mlands in  ␛[m␛[92mthe agent's worktree␛[m␛[38;5;245m — an isolated checkout; your files change only when you apply its patch␛[m                     ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mtouches   ␛[m␛[91munknown␛[m␛[38;5;245m — shhh cannot tell what go writes␛[m                                                                        ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mundo      ␛[m␛[91munknown␛[m␛[38;5;245m — shhh could not resolve what this writes␛[m                                                                ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mnetwork   ␛[m␛[92mclosed␛[m                                                                                                           ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;243m⛨         ␛[m␛[38;5;243mbwrap · workspace␛[m                                                                                                ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;243msandbox   ␛[m␛[38;5;243mbwrap · workspace␛[m                                                                                                ␛[38;5;214m│␛[m
 ␛[38;5;214m├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;214m│␛[m ␛[94m[y]␛[m ␛[38;5;252mrun it once␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m ␛[38;5;252mdeny␛[m␛[38;5;241m · ␛[m␛[94m[a]␛[m ␛[38;5;252mallow "go test" for every agent until this turn ends␛[m␛[38;5;241m · ␛[m␛[94m[g]␛[m ␛[38;5;252mattach to writer-1␛[m             ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[94m[alt+a]␛[m ␛[38;5;252magents␛[m␛[38;5;241m · ␛[m␛[94m[?]␛[m ␛[38;5;252mkeys␛[m␛[38;5;241m · ␛[m␛[92m[esc] leave it waiting, nothing is denied␛[m                                                      ␛[38;5;214m│␛[m
@@ -236,13 +234,13 @@
 · a long grant · the offer folds under its words, never clipped
 ␛[38;5;214m╭─ ␛[m␛[1;97mwriter-1 ▸ Approve command ␛[m␛[38;5;241m────────────────────────────────────────────────────────────────────────────────────␛[m␛[38;5;214m ⚠ medium ─╮␛[m
 ␛[38;5;214m│␛[m ␛[38;5;214m$␛[m ␛[97mrun go run tools generate-fixtures␛[m                                                                                       ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;214m⚠ medium␛[m␛[38;5;241m · what it writes could not be resolved␛[m                                                                            ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;214m⚠ medium␛[m␛[38;5;241m · shhh can't tell what it changes␛[m                                                                                 ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m                                                                                                                            ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mlands in  ␛[m␛[92mthe agent's worktree␛[m␛[38;5;245m — an isolated checkout; your files change only when you apply its patch␛[m                     ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mtouches   ␛[m␛[91munknown␛[m␛[38;5;245m — shhh cannot tell what go writes␛[m                                                                        ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mundo      ␛[m␛[91munknown␛[m␛[38;5;245m — shhh could not resolve what this writes␛[m                                                                ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mnetwork   ␛[m␛[92mclosed␛[m                                                                                                           ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;243m⛨         ␛[m␛[38;5;243mbwrap · workspace␛[m                                                                                                ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;243msandbox   ␛[m␛[38;5;243mbwrap · workspace␛[m                                                                                                ␛[38;5;214m│␛[m
 ␛[38;5;214m├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;214m│␛[m ␛[94m[y]␛[m ␛[38;5;252mrun it once␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m ␛[38;5;252mdeny␛[m␛[38;5;241m · ␛[m␛[94m[a]␛[m ␛[38;5;252mallow "go run tools generate-fixtures" for every agent until this turn ends␛[m               ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[94m[g]␛[m ␛[38;5;252mattach to writer-1␛[m␛[38;5;241m · ␛[m␛[94m[alt+a]␛[m ␛[38;5;252magents␛[m␛[38;5;241m · ␛[m␛[94m[?]␛[m ␛[38;5;252mkeys␛[m␛[38;5;241m · ␛[m␛[92m[esc] leave it waiting, nothing is denied␛[m                             ␛[38;5;214m│␛[m
@@ -251,13 +249,13 @@
 · answered in place on the manager · esc goes back, the decision stays waiting
 ␛[38;5;214m╭─ ␛[m␛[1;97mwriter-1 ▸ Approve command ␛[m␛[38;5;241m────────────────────────────────────────────────────────────────────────────────────␛[m␛[38;5;214m ⚠ medium ─╮␛[m
 ␛[38;5;214m│␛[m ␛[38;5;214m$␛[m ␛[97mrun go test ./...␛[m                                                                                                        ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;214m⚠ medium␛[m␛[38;5;241m · what it writes could not be resolved␛[m                                                                            ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;214m⚠ medium␛[m␛[38;5;241m · shhh can't tell what it changes␛[m                                                                                 ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m                                                                                                                            ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mlands in  ␛[m␛[92mthe agent's worktree␛[m␛[38;5;245m — an isolated checkout; your files change only when you apply its patch␛[m                     ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mtouches   ␛[m␛[91munknown␛[m␛[38;5;245m — shhh cannot tell what go writes␛[m                                                                        ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mundo      ␛[m␛[91munknown␛[m␛[38;5;245m — shhh could not resolve what this writes␛[m                                                                ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mnetwork   ␛[m␛[92mclosed␛[m                                                                                                           ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;243m⛨         ␛[m␛[38;5;243mbwrap · workspace␛[m                                                                                                ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;243msandbox   ␛[m␛[38;5;243mbwrap · workspace␛[m                                                                                                ␛[38;5;214m│␛[m
 ␛[38;5;214m├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;214m│␛[m ␛[94m[y]␛[m ␛[38;5;252mrun it once␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m ␛[38;5;252mdeny␛[m␛[38;5;241m · ␛[m␛[94m[a]␛[m ␛[38;5;252mallow "go test" for every agent until this turn ends␛[m                                      ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[92m[esc] back to the agents — the decision stays waiting␛[m                                                                      ␛[38;5;214m│␛[m
@@ -266,7 +264,7 @@
 · a writer's patch · your files, and the diff behind a counted tail
 ␛[38;5;214m╭─ ␛[m␛[1;97mwriter-1 ▸ Apply patch ␛[m␛[38;5;241m────────────────────────────────────────────────────────────────────────────────────────␛[m␛[38;5;214m ⚠ medium ─╮␛[m
 ␛[38;5;214m│␛[m ␛[38;5;214m✎␛[m ␛[97mapply patch (+40 −40, 2 files)␛[m                                                                                           ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;214m⚠ medium␛[m␛[38;5;241m · writes 2 files under internal/agent/␛[m                                                                            ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;214m⚠ medium␛[m␛[38;5;241m · changes 2 files under internal/agent/␛[m                                                                           ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m                                                                                                                            ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mlands in  ␛[m␛[38;5;214myour workspace␛[m␛[38;5;245m — the agent's worktree is separate; this is where its work arrives␛[m                                ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mtouches   ␛[m␛[38;5;252minternal/agent/loop.go and 1 more␛[m␛[38;5;245m — 2 files in your checkout␛[m                                                     ␛[38;5;214m│␛[m
@@ -284,7 +282,7 @@
 · a patch your checkout moved under · the merge is the diff, and the card says so
 ␛[38;5;214m╭─ ␛[m␛[1;97mwriter-1 ▸ Apply patch ␛[m␛[38;5;241m────────────────────────────────────────────────────────────────────────────────────────␛[m␛[38;5;214m ⚠ medium ─╮␛[m
 ␛[38;5;214m│␛[m ␛[38;5;214m✎␛[m ␛[97mapply patch (+40 −40, 2 files)␛[m                                                                                           ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;214m⚠ medium␛[m␛[38;5;241m · writes 2 files under internal/agent/␛[m                                                                            ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;214m⚠ medium␛[m␛[38;5;241m · changes 2 files under internal/agent/␛[m                                                                           ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m                                                                                                                            ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mlands in  ␛[m␛[38;5;214myour workspace␛[m␛[38;5;245m — the agent's worktree is separate; this is where its work arrives␛[m                                ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mtouches   ␛[m␛[38;5;252minternal/agent/loop.go and 1 more␛[m␛[38;5;245m — 2 files in your checkout␛[m                                                     ␛[38;5;214m│␛[m
@@ -302,7 +300,7 @@
 · a patch that touched a golden file · its generator wrote it, and the card names the command
 ␛[38;5;214m╭─ ␛[m␛[1;97mwriter-1 ▸ Apply patch ␛[m␛[38;5;241m────────────────────────────────────────────────────────────────────────────────────────␛[m␛[38;5;214m ⚠ medium ─╮␛[m
 ␛[38;5;214m│␛[m ␛[38;5;214m✎␛[m ␛[97mapply patch (+40 −40, 2 files)␛[m                                                                                           ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;214m⚠ medium␛[m␛[38;5;241m · writes 3 files␛[m                                                                                                  ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;214m⚠ medium␛[m␛[38;5;241m · changes 3 files␛[m                                                                                                 ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m                                                                                                                            ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mlands in  ␛[m␛[38;5;214myour workspace␛[m␛[38;5;245m — the agent's worktree is separate; this is where its work arrives␛[m                                ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mtouches   ␛[m␛[38;5;252minternal/agent/loop.go and 2 more␛[m␛[38;5;245m — 3 files in your checkout␛[m                                                     ␛[38;5;214m│␛[m
@@ -320,7 +318,7 @@
 · an integration writer's patch · the reconciliation is a fact, not a clash
 ␛[38;5;214m╭─ ␛[m␛[1;97mintegrator-1 ▸ Apply patch ␛[m␛[38;5;241m────────────────────────────────────────────────────────────────────────────────────␛[m␛[38;5;214m ⚠ medium ─╮␛[m
 ␛[38;5;214m│␛[m ␛[38;5;214m✎␛[m ␛[97mapply patch (+40 −40, 2 files)␛[m                                                                                           ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;214m⚠ medium␛[m␛[38;5;241m · writes 1 file under internal/agent/␛[m                                                                             ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;214m⚠ medium␛[m␛[38;5;241m · changes 1 file under internal/agent/␛[m                                                                            ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m                                                                                                                            ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mlands in  ␛[m␛[38;5;214myour workspace␛[m␛[38;5;245m — the agent's worktree is separate; this is where its work arrives␛[m                                ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mtouches   ␛[m␛[38;5;252minternal/agent/loop.go␛[m␛[38;5;245m — 1 file in your checkout␛[m                                                                 ␛[38;5;214m│␛[m

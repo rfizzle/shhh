@@ -355,6 +355,16 @@ learns a dozen words once, rather than re-reading each row to find out what
 this one decided to call itself. An unmapped value renders as itself and is a
 signal the list has gone stale.
 
+The labels, key captions and fixed sentences a surface draws are closed the
+same way, and their words are the reader's rather than the product's: each is
+a word a person who has never read these documents already knows. A key
+caption is one verb in the second person — `[enter] add to this turn`, not
+`queues steering` — and a label says what happened in plain terms: `changes no
+files`, not `writes nothing`; `context`, not `ctx`, wherever the columns allow
+it. The product's own nouns — a steer, a changeset, a hunk, the classifier's
+target — belong in these documents and not on the screen. The lists
+themselves are spelled in [the surfaces](surfaces.md).
+
 ### Two denials are not one denial
 
 "You said no" and "a rule said no" are different facts and are reported
@@ -381,7 +391,7 @@ from this table rather than deciding its own density. The default is
 
 | Rung | Cards | Glosses | Summary rows | Vitals | Think rows | Resolved queue lines | Activity feed |
 |------|-------|---------|--------------|--------|------------|----------------------|---------------|
-| `low` | the offers row only, and the esc offer never drops | none | none | mode · ctx · spend | off | folded to a count | step headers only, no counts on a row |
+| `low` | the offers row only, and the esc offer never drops | none | none | mode · context · spend | off | folded to a count | step headers only, no counts on a row |
 | `normal` | the readings: one row and its footnote | the ones about this call | the rows with something to say | the rail as the frame draws it | folded, counting their lines | as the surface draws them | a finished step folds, a run of reads folds to a counted row |
 | `high` | every hint row | every gloss | every reading | every field | open to their tail | as the surface draws them | every row open with its bounded body |
 

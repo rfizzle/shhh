@@ -19,10 +19,10 @@ snap 01-start "Some things worth doing first"
 keys "walk the severity ladder" Enter
 # A card that lands on an empty draft takes the keyboard with a grace window
 # open, so the answer waits for the window to close rather than racing it.
-snap 02-low "sed -n 1p notes.md" "⚠ low · writes nothing"
+snap 02-low "sed -n 1p notes.md" "⚠ low · changes no files"
 sleep 1
 keys n
-snap 03-medium "npm run build" "⚠ medium · what it writes could not be resolved"
+snap 03-medium "npm run build" "⚠ medium · shhh can't tell what it changes"
 sleep 1
 keys n
 snap 04-flagged "⚠ HIGH" "⚠ HIGH · recursive forced deletion"

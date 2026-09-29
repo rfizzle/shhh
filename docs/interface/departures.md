@@ -475,7 +475,7 @@ anywhere, and they were decided here:
 **A row is the turn, its ending and what it wrote.** The close's own glyph
 leads, then `turn 4` and the ending's word, then what it wrote in the rewind
 picker's spelling — the mutation mark, the file count and the lines, or
-`wrote nothing` — and the turn's spend at the far end. The running turn takes
+`changed no files` — and the turn's spend at the far end. The running turn takes
 `▸` and `running`, the steps screen's mark for the one being worked on.
 
 **A turn whose close was not kept is its files and a sentence.** A resumed
@@ -635,7 +635,7 @@ dim, with `⏸ 2 waiting` in the accent on its rail, and the state-colour
 guideline gives the accent both to gated mode and to a low card's border. The
 binary draws the border in chrome, the tone of every other rule, in every
 mode and attached or not ([the input frame](surfaces.md#the-input-frame)); the
-mode segment on the vitals rail keeps its tone per mode, and its `✦ checking`
+mode segment on the vitals rail keeps its tone per mode, and its `✦ deciding`
 while the classifier decides.
 
 The mode is already said on the frame, by the segment's word and the glyph in
@@ -666,7 +666,7 @@ something is changing or waiting on the reader. The verb beside the glyph
 still says which read it was, so nothing is lost but the colour, and the
 card's own border is what carries a decision about a read. The departure is
 closed by the four artboards drawing a read's glyph dim and the guideline
-giving the accent to the rail, a card's weight and the ctx meter.
+giving the accent to the rail, a card's weight and the context meter.
 
 ## A row with no kind of its own carries its outcome in the glyph column
 
@@ -982,10 +982,10 @@ sixteen colours: both get the drawing kit's density ramp
 ## A turn with no round limit still draws a bound
 
 *A gap.* The `Frame` artboard draws the round segment with its bound —
-`round 7/25` — and nothing draws a turn that has none: a sub-agent, a session
-started with the limit off, or a turn the reader told to run on at the
-checkpoint. The binary keeps the counter's shape and puts `∞` where the bound
-would be, `round 7/∞`.
+`round 7/25`, which the binary now spells `round 7 of 25` — and nothing draws a
+turn that has none: a sub-agent, a session started with the limit off, or a
+turn the reader told to run on at the checkpoint. The binary keeps the
+counter's shape and puts `∞` where the bound would be, `round 7 of ∞`.
 
 Each other way of saying it says something else. `round 7` alone reads as a
 bound nobody has stated, which is not the same as a bound that does not exist;
@@ -1041,7 +1041,7 @@ What departs is the count. A reader who has learned that one thing moves on
 this screen sees a second thing move, beside the first. The departure is
 closed by the readme naming the label's motion beside the spinner's.
 
-## A turn that wrote nothing says so
+## A turn that changed no files says so
 
 *A gap.* No artboard draws the rail's THIS TURN block for a turn that has
 changed no files. The rule nearest to it points the other way at first
@@ -1053,11 +1053,11 @@ The binary follows the rule for the tools and states the files anyway: `0
 files this turn`. That zero was measured — the turn's changes are read whether
 or not there are any — and it is the answer to the question the block is
 there to be asked, which is what the session's count in CHANGES beneath it is
-being told apart from. A block that fell silent on a turn that wrote nothing
-would read as a turn nobody had counted. The rule forbids a zero standing in
+being told apart from. A block that fell silent on a turn that changed no
+files would read as a turn nobody had counted. The rule forbids a zero standing in
 for a gap; this is the other case, a gap standing in for a zero.
 
-The gap is closed by drawing the block for a turn that wrote nothing, and
+The gap is closed by drawing the block for a turn that changed no files, and
 where that artboard and this differ, the artboard wins.
 
 ## The AGENTS block's meter is on the detail row
@@ -1310,7 +1310,7 @@ panel's share of the terminal, and a row spent on the way out alone is a row
 the transcript gives up at the width that has fewest to give. The cut is
 ordered so the key is the last thing standing: esc answers every gated card
 the same way, and a card whose own words say something the key does not —
-`don't — the safe answer; the decision waits` — keeps them whole on a row of
+`not now — it keeps waiting` — keeps them whole on a row of
 their own instead. The departure is closed by the artboards drawing a
 60-column card with the cut run.
 
@@ -1336,3 +1336,36 @@ total rather than contradict it. The departure is closed by the artboard
 drawing a row per model over the total, and the order the row gives up its
 words in at the rail's narrowest: the kinds fold to the first and a count,
 then the model's name shortens to its family word, then goes.
+
+## The screen's words are the reader's
+
+*A disagreement.* The artboards draw the product's own vocabulary on the frame,
+the cards, the close rows and the backlog screen, and the binary now draws the
+reader's. On the vitals rail `ctx` is `context` from a 110-column terminal up,
+`round 7/25` is `round 7 of 25`, the unpriced token pair ends in `tok`, the
+classifier's moment is `✦ deciding` rather than `✦ checking`, the grants chip
+is `granted: edits, 2 commands` rather than `auto: edits+2 cmds`, and the
+steering count is `1 queued for this turn` wherever it is counted. The key
+bar's captions are one verb in the second person: `[enter] add to this turn`,
+`[ctrl+/] commands`, `[shift+tab] change mode`, `[esc] back to your session`,
+`resume the turn`, `cancel it`. On a card, `writes nothing` is `changes no
+files`, the bare `⛨` label is `sandbox`, `n/a` is `nothing to undo`, a fan-out
+is titled `Start a writer`, a fetch `Approve fetch` with `[y] fetch it`, the
+shifted answers are `[Y] run with a note` and `[N] deny with a note`, and a
+flagged card's esc is `not now — it keeps waiting`. On the commit card `[s]` is
+`choose what goes in`, `drifted` is `skipped` (and so on the rail's CHANGES
+block), esc is `not now — nothing is committed, and the offer stays`, and the
+subject budget counts `0 left`. On the close, `wrote nothing` is `changed no
+files`, a tally is `4 of 4 checks` and an answered failure is `since passed`.
+The backlog's `?` reveal names what its letters stand for, from the profile.
+
+The reason is the reader who has never opened these documents: a word that
+needs a page to decode is a word the screen has not finished saying
+([closed vocabularies](principles.md#closed-vocabularies)). The words are
+spelled in [the surfaces](surfaces.md#the-input-frame), and the artboards that
+still draw the old ones are `Frame`, `Main` and `Attention` (the rail, the key
+bar and `round 7/25`), `Approvals` and `Agents` (the card's labels, titles and
+offers), `Questions` (`note/options` and `apply`), `Commit` and `Changeset`
+(the commit card and the close rows), and `Backlog` (the letters, which have no
+legend drawn at all). The departure is closed by those artboards drawing the
+words the binary draws.

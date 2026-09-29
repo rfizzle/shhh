@@ -160,7 +160,7 @@ func TestRoundLimit_AGrantedTurnClosesOnceForTheWholeTurn(t *testing.T) {
 	if c.Note != "" {
 		t.Errorf("the close leaves the round to the rail, got note %q", c.Note)
 	}
-	if want := fmt.Sprintf("round 1/%d", 1+roundGrantBlock); m.cockpitData(true).Round != want {
+	if want := fmt.Sprintf("round 1 of %d", 1+roundGrantBlock); m.cockpitData(true).Round != want {
 		t.Errorf("the rail reports the ceiling the turn finished under, got %q", m.cockpitData(true).Round)
 	}
 	// One turn in the history, not two: the accounting was reopened.
@@ -171,13 +171,13 @@ func TestRoundLimit_AGrantedTurnClosesOnceForTheWholeTurn(t *testing.T) {
 
 func TestRoundLimit_TheRailCarriesTheLimitAndTheGrant(t *testing.T) {
 	m, _ := pausedModel(t)
-	if got, want := m.cockpitData(true).Round, fmt.Sprintf("round 1/1 +%d", roundGrantBlock); got != want {
+	if got, want := m.cockpitData(true).Round, fmt.Sprintf("round 1 of 1 +%d", roundGrantBlock); got != want {
 		t.Errorf("paused rail = %q, want the limit and the grant on offer", got)
 	}
 
 	m.focusIdx = indexOfKind(t, m, entryRoundPause)
 	updated, _, _ := m.roundPauseKey(keys.Shown(keys.Row.Rounds))
-	if got, want := updated.(Model).cockpitData(true).Round, fmt.Sprintf("round 1/%d", 1+roundGrantBlock); got != want {
+	if got, want := updated.(Model).cockpitData(true).Round, fmt.Sprintf("round 1 of %d", 1+roundGrantBlock); got != want {
 		t.Errorf("granted rail = %q, want the raised ceiling", got)
 	}
 }
@@ -448,7 +448,7 @@ func TestRoundLimit_LetItRunClearsTheCeilingForTheTurn(t *testing.T) {
 	if next.turnState() != stateStreaming {
 		t.Errorf("state = %v, want streaming", next.turnState())
 	}
-	if got, want := next.cockpitData(true).Round, "round 1/∞"; got != want {
+	if got, want := next.cockpitData(true).Round, "round 1 of ∞"; got != want {
 		t.Errorf("rail = %q, want %q — the rail must not invent a bound", got, want)
 	}
 	if _, _, claimed := next.roundPauseKey(keys.Shown(keys.Row.Uncap)); claimed {
@@ -475,7 +475,7 @@ func TestRoundLimit_AnUncappedSessionNeverStops(t *testing.T) {
 	if m.turnState() == stateInput {
 		t.Errorf("the turn should have carried straight on, state %v", m.turnState())
 	}
-	if got, want := m.cockpitData(true).Round, "round 1/∞"; got != want {
+	if got, want := m.cockpitData(true).Round, "round 1 of ∞"; got != want {
 		t.Errorf("rail = %q, want %q", got, want)
 	}
 }

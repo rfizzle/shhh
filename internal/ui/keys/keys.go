@@ -656,7 +656,7 @@ var Backlog = BacklogKeys{
 	Move: bind("↑↓", "move", "up", "down"),
 	Read: bind("enter", "read the body", "enter"),
 	Page: bind("pgup/pgdn", "page the body", "pgup", "pgdown"),
-	Tab:  bind("tab", "the backlog or the archive", "tab"),
+	Tab:  bind("tab", "the backlog, the sprint, or what shipped", "tab"),
 
 	Filter: bind("/", "filter by text", "/"),
 	ClearQ: bind("ctrl+u", "clear the filter", "ctrl+u"),
@@ -975,11 +975,11 @@ func (k CommitKeys) All() []Binding {
 var Commit = CommitKeys{
 	Take:  bind("enter", "commit", "enter"),
 	Edit:  bind("e", "edit the message", "e"),
-	Hunks: bind("s", "pick hunks", "s"),
+	Hunks: bind("s", "choose what goes in", "s"),
 	// The words say what is left standing rather than "cancel": a changeset
 	// nobody committed is still there, and so is the offer
 	// (docs/interface/principles.md#esc-is-always-the-safe-answer).
-	Cancel: bind("esc", "don't", "esc"),
+	Cancel: bind("esc", "not now", "esc"),
 }
 
 // DecisionKeys are the approval card's, the `/run` confirm's, the plan
@@ -1126,12 +1126,12 @@ const AlwaysRouted = "allow this command for every agent, this turn"
 var Decision = DecisionKeys{
 	Allow:      bind("y", "allow", "y", "enter"),
 	Deny:       bind("n", "deny", "n", "esc", "ctrl+c"),
-	AllowNoted: bind("Y", "allow, and say what to do next", "Y"),
-	DenyNoted:  bind("N", "deny, and say why", "N"),
+	AllowNoted: bind("Y", "allow with a note", "Y"),
+	DenyNoted:  bind("N", "deny with a note", "N"),
 	Always:     bind("a", "allow without asking — choose how long", "a"),
 	Batch:      bind("A", "open the queue", "A"),
 	Diff:       bind("d", "full diff", "d", "D"),
-	DryRun:     bind("t", "try the harmless form", "t"),
+	DryRun:     bind("t", "dry run", "t"),
 	Explain:    bind("x", "explain what the command does", "x"),
 	Amend:      bind("e", "edit the command before it runs", "e"),
 	Accept:     bind("y", "yes", "y", "Y", "enter"),
@@ -1653,7 +1653,7 @@ type QueryKeys struct {
 }
 
 var Query = QueryKeys{
-	Rub: bind("backspace", "take a rune back", "backspace"),
+	Rub: bind("backspace", "delete a character", "backspace"),
 }
 
 // SetupKeys are first contact's and the provider card's.

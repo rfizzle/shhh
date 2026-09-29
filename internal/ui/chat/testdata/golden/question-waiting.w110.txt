@@ -14,27 +14,27 @@
 1 question waiting                                                                                        
 ╭─ ⏸ 1 waiting ──────────────────────────────────────────────────────────────────────────────────────────╮
 │ ▸ the one that needs no new service                                                                    │
-├─ ⏸ manual · round 1/150 · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 ────────────────────────────────────────────────────┤
-╰─ [enter] answers the question · [ctrl+space/ctrl+y] the card again · [ctrl+n] queues for after ────────╯
+├─ ⏸ manual · round 1 of 150 · context 32% ▰▰▱▱▱▱▱▱ · $0.51 ─────────────────────────────────────────────┤
+╰─ [enter] answer the question · [ctrl+space/ctrl+y] show the card again ────────────────────────────────╯
 
 · beside a steer · three promises, told apart
-1 question waiting · 1 steering queued                                                                    
+1 question waiting · 1 queued for this turn                                                               
 ╭─ ⏸ 1 waiting ──────────────────────────────────────────────────────────────────────────────────────────╮
 │ ▸ the one that needs no new service                                                                    │
-├─ ⏸ manual · round 1/150 · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 ────────────────────────────────────────────────────┤
-╰─ [enter] answers the question · [ctrl+space/ctrl+y] the card again · [ctrl+n] queues for after ────────╯
+├─ ⏸ manual · round 1 of 150 · context 32% ▰▰▱▱▱▱▱▱ · $0.51 ─────────────────────────────────────────────┤
+╰─ [enter] answer the question · [ctrl+space/ctrl+y] show the card again ────────────────────────────────╯
 
 ── ansi ────────────────────────────────────────────────────
 · esc · the rail counts the question and the draft answers it
 ␛[94m1 question waiting␛[m                                                                                        
 ␛[38;5;241m╭─␛[m ␛[38;5;214;1m⏸ 1 waiting␛[m ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────╮␛[m
 ␛[38;5;241m│␛[m ␛[94m▸␛[m ␛[38;5;252mthe one that needs no new service                                                                   ␛[m ␛[38;5;241m│␛[m
-␛[38;5;241m├─␛[m ␛[38;5;214m⏸ manual␛[38;5;243m · round 1/150 · ␛[92mctx 32%␛[m ␛[92m▰▰␛[38;5;241m▱▱▱▱▱▱␛[38;5;243m · $0.51␛[m ␛[38;5;241m────────────────────────────────────────────────────┤␛[m
-␛[38;5;241m╰─␛[m ␛[94m[enter]␛[38;5;241m answers the question · ␛[94m[ctrl+space/ctrl+y]␛[38;5;241m the card again · ␛[94m[ctrl+n]␛[38;5;241m queues for after␛[m ␛[38;5;241m────────╯␛[m
+␛[38;5;241m├─␛[m ␛[38;5;214m⏸ manual␛[38;5;243m · round 1 of 150 · ␛[92mcontext 32%␛[m ␛[92m▰▰␛[38;5;241m▱▱▱▱▱▱␛[38;5;243m · $0.51␛[m ␛[38;5;241m─────────────────────────────────────────────┤␛[m
+␛[38;5;241m╰─␛[m ␛[94m[enter]␛[38;5;241m answer the question · ␛[94m[ctrl+space/ctrl+y]␛[38;5;241m show the card again␛[m ␛[38;5;241m────────────────────────────────╯␛[m
 
 · beside a steer · three promises, told apart
-␛[94m1 question waiting␛[38;5;241m · ␛[94m1 steering queued␛[m                                                                    
+␛[94m1 question waiting␛[38;5;241m · ␛[94m1 queued for this turn␛[m                                                               
 ␛[38;5;241m╭─␛[m ␛[38;5;214;1m⏸ 1 waiting␛[m ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────╮␛[m
 ␛[38;5;241m│␛[m ␛[94m▸␛[m ␛[38;5;252mthe one that needs no new service                                                                   ␛[m ␛[38;5;241m│␛[m
-␛[38;5;241m├─␛[m ␛[38;5;214m⏸ manual␛[38;5;243m · round 1/150 · ␛[92mctx 32%␛[m ␛[92m▰▰␛[38;5;241m▱▱▱▱▱▱␛[38;5;243m · $0.51␛[m ␛[38;5;241m────────────────────────────────────────────────────┤␛[m
-␛[38;5;241m╰─␛[m ␛[94m[enter]␛[38;5;241m answers the question · ␛[94m[ctrl+space/ctrl+y]␛[38;5;241m the card again · ␛[94m[ctrl+n]␛[38;5;241m queues for after␛[m ␛[38;5;241m────────╯␛[m
+␛[38;5;241m├─␛[m ␛[38;5;214m⏸ manual␛[38;5;243m · round 1 of 150 · ␛[92mcontext 32%␛[m ␛[92m▰▰␛[38;5;241m▱▱▱▱▱▱␛[38;5;243m · $0.51␛[m ␛[38;5;241m─────────────────────────────────────────────┤␛[m
+␛[38;5;241m╰─␛[m ␛[94m[enter]␛[38;5;241m answer the question · ␛[94m[ctrl+space/ctrl+y]␛[38;5;241m show the card again␛[m ␛[38;5;241m────────────────────────────────╯␛[m

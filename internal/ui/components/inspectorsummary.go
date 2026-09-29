@@ -192,5 +192,5 @@ func SummaryWord(s SummaryTone) string {
 	case SummaryOffTarget:
 		return "off target"
 	}
-	return "target unclear"
+	return "unclear"
 }

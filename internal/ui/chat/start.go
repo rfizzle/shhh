@@ -300,8 +300,8 @@ func (m Model) startScreen() (components.StartScreen, []string) {
 		Nav: []components.KeyOffer{
 			components.OfferAs(keys.Draft.PageUp, "scroll"),
 			components.OfferAs(keys.Draft.Reading, "select rows"),
-			components.OfferAs(keys.Draft.Palette, "palette"),
-			components.OfferAs(keys.Draft.Mouse, "mouse"),
+			components.OfferAs(keys.Draft.Palette, "commands"),
+			components.OfferAs(keys.Draft.Mouse, "mouse on/off"),
 		},
 	}, actions
 }
@@ -316,7 +316,7 @@ func startFirstRun(info StartInfo) []string {
 		return nil
 	}
 	return []string{
-		"type what you want and press " + keys.Shown(keys.Draft.Send),
+		keys.Shown(keys.Draft.Send) + " sends what you type",
 		keys.Shown(keys.Draft.Clear) + " backs out of anything and never loses work",
 		keys.Shown(keys.Draft.Cancel) + " twice stops a run",
 	}

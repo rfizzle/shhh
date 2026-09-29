@@ -332,9 +332,9 @@ func (m Model) frameHints(room int) string {
 		// draws the card again — beside the chord that queues for after the
 		// turn, which still means what it always did (question.go).
 		hints = []hintSeg{
-			segAs(keys.Draft.Send, "answers the question"),
-			segAs(keys.Draft.Answer, "the card again"),
-			segAs(keys.Draft.Queue, "queues for after").givesUp(1),
+			segAs(keys.Draft.Send, "answer the question"),
+			segAs(keys.Draft.Answer, "show the card again"),
+			segAs(keys.Draft.Queue, "queue for after the turn").givesUp(1),
 		}
 	case m.decisionGated():
 		// The card above holds the keyboard, so not one of the draft's keys
@@ -361,7 +361,7 @@ func (m Model) frameHints(room int) string {
 		// (docs/interface/principles.md#esc-is-always-the-safe-answer).
 		hints = []hintSeg{
 			segAs(keys.Draft.Answer, keys.Words(keys.Draft.Answer)),
-			segAs(keys.Draft.Send, "queues steering"),
+			segAs(keys.Draft.Send, "add to this turn"),
 			twoPress(keys.Draft.Cancel, "stop the run"),
 		}
 	case m.attachedTo != "":
@@ -373,7 +373,7 @@ func (m Model) frameHints(room int) string {
 			break
 		}
 		hints = []hintSeg{
-			segAs(keys.Agent.Detach, "detach"),
+			segAs(keys.Agent.Detach, "back to your session"),
 			segAs(keys.Draft.Agents, "agents").givesUp(1),
 		}
 		// A child that has answered is still listening, and what is typed
@@ -382,7 +382,7 @@ func (m Model) frameHints(room int) string {
 			break
 		}
 		if st, ok := m.subagents.Get(m.attachedTo); ok && st.TakesFollowUp {
-			hints = append([]hintSeg{segAs(keys.Draft.Send, "asks a follow-up")}, hints...)
+			hints = append([]hintSeg{segAs(keys.Draft.Send, "ask a follow-up")}, hints...)
 		}
 		// Attached, the screen is one child's and a routed card is narrowed
 		// to that child (activeChildAsk), so another child's request is
@@ -397,7 +397,7 @@ func (m Model) frameHints(room int) string {
 			hints = []hintSeg{
 				{label: "⚠ " + plural(n, "other agent") + " waiting"},
 				segAs(keys.Draft.Agents, "agents"),
-				segAs(keys.Agent.Detach, "detach").givesUp(1),
+				segAs(keys.Agent.Detach, "back to your session").givesUp(1),
 			}
 		}
 	case m.heldAtBoundary():
@@ -411,9 +411,9 @@ func (m Model) frameHints(room int) string {
 			break
 		}
 		hints = []hintSeg{
-			segAs(keys.Draft.Pause, "resumes the turn"),
-			segAs(keys.Draft.Send, "queues steering").givesUp(1),
-			twoPress(keys.Draft.Cancel, "cancels it"),
+			segAs(keys.Draft.Pause, "resume the turn"),
+			segAs(keys.Draft.Send, "add to this turn").givesUp(1),
+			twoPress(keys.Draft.Cancel, "cancel it"),
 		}
 	case m.working():
 		// An open two-press window replaces the hints: what the next
@@ -430,7 +430,7 @@ func (m Model) frameHints(room int) string {
 		// (docs/interface/principles.md#esc-is-always-the-safe-answer). The
 		// rail is the one place that says so, because esc doing nothing
 		// looks exactly like esc being unread.
-		steer := segAs(keys.Draft.Send, "queues steering")
+		steer := segAs(keys.Draft.Send, "add to this turn")
 		stop := twoPress(keys.Draft.Cancel, "stop the run")
 		agents := segAs(keys.Draft.Agents, "agents").givesUp(1)
 		active, _ := m.activeAgents()
@@ -476,14 +476,14 @@ func (m Model) frameHints(room int) string {
 			segAs(keys.Draft.Newline, "newline").givesUp(5),
 			segAs(keys.Draft.Editor, "editor").givesUp(4),
 			segAs(keys.Draft.Attach, "attach").givesUp(3),
-			segAs(keys.Draft.Palette, "palette").givesUp(1),
-			segAs(keys.Draft.Mode, "mode"),
+			segAs(keys.Draft.Palette, "commands").givesUp(1),
+			segAs(keys.Draft.Mode, "change mode"),
 			twoPress(keys.Draft.Quit, "quit").givesUp(2),
 		}
 		// A conversation has no mode to cycle, so the rail does not offer
 		// the key for one (conversation.go).
 		if m.conversation {
-			hints = slices.DeleteFunc(hints, func(h hintSeg) bool { return h.label == "mode" })
+			hints = slices.DeleteFunc(hints, func(h hintSeg) bool { return h.label == "change mode" })
 		}
 		// The key for the fold the draft is holding, offered only while
 		// there is one to open and named for the one it opens — `open the
@@ -802,7 +802,7 @@ func (m Model) noticeLine() string {
 		parts = append(parts, noticePart{text: sty.Frame.NoticeInfo.Render(note)})
 	}
 	if n := len(m.steering); n > 0 {
-		parts = append(parts, noticePart{text: sty.Frame.NoticeInfo.Render(fmt.Sprintf("%d steering queued", n))})
+		parts = append(parts, noticePart{text: sty.Frame.NoticeInfo.Render(queuedForTurn(n))})
 	}
 	// Follow-ups count separately from steering: one joins the running
 	// turn, the other waits for it to end (followup.go).
@@ -1016,6 +1016,16 @@ func drawRail(scr uv.Screen, area uv.Rectangle, accent lipgloss.Style, leftCorne
 	drawIn(scr, accent.Render("─"+rightCorner), at(tail))
 }
 
+// queuedForTurn is how every rail counts the sentences typed while a turn was
+// working and held for its next boundary: one spelling on the notice rail,
+// the free-floating status bar and an attached child's rail, and in the
+// reader's words rather than the product's `steering`. A follow-up is the
+// other queue, the one that waits for the turn to end, and it says so in its
+// own notice.
+func queuedForTurn(n int) string {
+	return fmt.Sprintf("%d queued for this turn", n)
+}
+
 // frameVitals renders the vitals rail content: the cockpit segments with the
 // layout modes' field-drop order. The narrow layout keeps only the
 // never-dropped fields (minimal rail); attached, the vitals scope to the
@@ -1074,7 +1084,7 @@ func (m Model) childRailSegments() []components.RailSegment {
 	segs = append(segs, components.RailSegment{Text: detail, Drop: drop})
 	if pct, ok := m.childContextPct(st); ok {
 		segs = append(segs, components.RailSegment{
-			Text: components.CtxMeter(pct, warnThresholdPercent, trimThresholdPercent),
+			Text: components.CtxMeter(m.contextWord(), pct, warnThresholdPercent, trimThresholdPercent),
 			Drop: components.RailVital,
 		})
 	}
@@ -1098,7 +1108,7 @@ func (m Model) childRailSegments() []components.RailSegment {
 	// (docs/capabilities/subagents.md#they-are-visible-while-they-run).
 	if q := m.subagents.QueuedSteering(name); q > 0 {
 		segs = append(segs, components.RailSegment{
-			Text: sty.StatusBar.Render(fmt.Sprintf("queued steering: %d", q)),
+			Text: sty.StatusBar.Render(queuedForTurn(q)),
 			Drop: components.RailNormal,
 		})
 	}

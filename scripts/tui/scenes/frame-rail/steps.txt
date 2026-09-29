@@ -19,7 +19,7 @@ sleep 1
 keys y
 # The command is a wait, so the turn stays open long enough for the working
 # rail to be read whole.
-snap 03-working "[ctrl+c] ×2 stop the run" "[enter] queues steering"
+snap 03-working "[ctrl+c] ×2 stop the run" "[enter] add to this turn"
 # The hold parks the turn at the round boundary the wait ends at, which is the
 # one state where the cancel chord arms rather than acting at once — a running
 # command is cancelled by a single press, being a reversible act rather than

@@ -23,10 +23,15 @@ const (
 type Cockpit struct {
 	Mode     string
 	ModeKind CockpitMode
-	// Round is the tool-round counter segment ("round 7/25"); empty hides it.
+	// Round is the tool-round counter segment ("round 7 of 25"); empty hides it.
 	Round string
 	// CtxPct drives the 8-cell context meter; negative hides it.
 	CtxPct int
+	// CtxWord is the meter's label: `context` where the terminal has the
+	// columns for the word, `ctx` where it does not. The host decides,
+	// because the rung is a terminal width and this rail is handed a content
+	// width. Empty is `ctx`.
+	CtxWord string
 	// WarnPct/AlertPct override the meter's warning-color thresholds (0 keeps
 	// the defaults), so the host can match its own trim warnings.
 	WarnPct  int
@@ -61,7 +66,8 @@ func (c Cockpit) modeSegment() string {
 }
 
 // CtxMeter is a vitals rail's context segment: the shared eight-cell Meter
-// with its number ahead of the bar — `ctx 62% ▰▰▰▰▰▱▱▱` — which is how every
+// with its number ahead of the bar — `context 62% ▰▰▰▰▰▱▱▱`, or `ctx` where
+// the host says the terminal is too narrow for the word — which is how every
 // rail that carries one draws it. The percentage leads because it is the
 // figure the reader is after and the bar is the shape it is read against; a
 // rail that put the bar first made the eye cross it to reach the number
@@ -70,12 +76,15 @@ func (c Cockpit) modeSegment() string {
 // It is exported so a rail scoped to something other than this session — an
 // attached child's, whose vitals the host assembles itself — draws the same
 // pressure the same way rather than building a meter of its own.
-func CtxMeter(pct, warn, alert int) string {
+func CtxMeter(word string, pct, warn, alert int) string {
+	if word == "" {
+		word = "ctx"
+	}
 	return Meter{
 		Pct:        pct,
 		Cells:      MeterCellsVitals,
 		Tone:       MeterPressure,
-		Label:      "ctx",
+		Label:      word,
 		ValueFirst: true,
 		Warn:       warn,
 		Alert:      alert,
@@ -86,7 +95,7 @@ func CtxMeter(pct, warn, alert int) string {
 // shared Meter, so the vitals rail and the inspector rail cannot
 // report the same pressure two ways.
 func (c Cockpit) ctxMeter() string {
-	return CtxMeter(c.CtxPct, c.WarnPct, c.AlertPct)
+	return CtxMeter(c.CtxWord, c.CtxPct, c.WarnPct, c.AlertPct)
 }
 
 // agentsSegment renders the sub-agent count, `◇3`. It is a count and carries

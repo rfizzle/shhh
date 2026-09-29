@@ -128,11 +128,11 @@
   ──── DECISION 1/1 ──────────────────────────────────────────────────────────  
   ╭─ researcher-2 ▸ Approve command ───────────────────────────────── ⚠ low ─╮  
   │ $ run echo hi                                                            │  
-  │ ⚠ low · writes nothing                                                   │  
+  │ ⚠ low · changes no files                                                 │  
   │                                                                          │  
   │ lands in  your workspace — this agent has no worktree of its own         │  
   │ touches   nothing                                                        │  
-  │ undo      n/a                                                            │  
+  │ undo      nothing to undo                                                │  
   │ network   open                                                           │  
   ├──────────────────────────────────────────────────────────────────────────┤  
   │ [y] run it once · [n] deny · [?] keys · [esc] leave it waiting           │  
@@ -353,11 +353,11 @@
   ␛[38;5;241m────␛[m ␛[94;1mDECISION 1/1␛[m ␛[38;5;241m──────────────────────────────────────────────────────────␛[m  
   ␛[38;5;214m╭─ ␛[97;1mresearcher-2 ▸ Approve command ␛[38;5;241;22m─────────────────────────────────␛[38;5;214m ⚠ low ─╮␛[m  
   ␛[38;5;214m│␛[m ␛[38;5;214m$␛[m ␛[97mrun echo hi␛[m                                                            ␛[38;5;214m│␛[m  
-  ␛[38;5;214m│␛[m ␛[38;5;214m⚠ low␛[38;5;241m · writes nothing␛[m                                                   ␛[38;5;214m│␛[m  
+  ␛[38;5;214m│␛[m ␛[38;5;214m⚠ low␛[38;5;241m · changes no files␛[m                                                 ␛[38;5;214m│␛[m  
   ␛[38;5;214m│␛[m                                                                          ␛[38;5;214m│␛[m  
   ␛[38;5;214m│␛[m ␛[38;5;243mlands in  ␛[38;5;214myour workspace␛[38;5;245m — this agent has no worktree of its own␛[m         ␛[38;5;214m│␛[m  
   ␛[38;5;214m│␛[m ␛[38;5;243mtouches   ␛[92mnothing␛[m                                                        ␛[38;5;214m│␛[m  
-  ␛[38;5;214m│␛[m ␛[38;5;243mundo      ␛[92mn/a␛[m                                                            ␛[38;5;214m│␛[m  
+  ␛[38;5;214m│␛[m ␛[38;5;243mundo      ␛[92mnothing to undo␛[m                                                ␛[38;5;214m│␛[m  
   ␛[38;5;214m│␛[m ␛[38;5;243mnetwork   ␛[38;5;214mopen␛[m                                                           ␛[38;5;214m│␛[m  
   ␛[38;5;214m├──────────────────────────────────────────────────────────────────────────┤␛[m  
   ␛[38;5;214m│␛[m ␛[94m[y]␛[m ␛[38;5;252mrun it once␛[38;5;241m · ␛[94m[n]␛[m ␛[38;5;252mdeny␛[38;5;241m · ␛[94m[?]␛[m ␛[38;5;252mkeys␛[38;5;241m · ␛[92m[esc] leave it waiting␛[m           ␛[38;5;214m│␛[m  

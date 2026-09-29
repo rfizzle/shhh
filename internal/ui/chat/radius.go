@@ -143,17 +143,17 @@ func (m Model) commandRadiusIn(in radiusIn, command string, reach scopeReach, co
 		}
 	}
 	if len(res.Risks) > 0 {
-		b.footnote = "[a] always — not offered: a safety-flagged command is never pre-approved"
+		b.footnote = "[a] always — not offered: shhh flagged this command"
 	}
 	if b.severity == components.SeverityHigh || b.uncontained {
-		b.safe = "don't — the safe answer; the decision waits"
+		b.safe = "not now — it keeps waiting"
 	}
 	if b.uncontained {
 		b.fields = append(b.fields, components.CardField{
-			Label: "⛨", Value: "no sandbox", Detail: uncontainedDetail(m.containment.Detail),
+			Label: "sandbox", Value: "no sandbox", Detail: uncontainedDetail(m.containment.Detail),
 			Tone: components.ToneRisk,
 		})
-		b.footnote = "containment is off for this session · /sandbox doctor explains why"
+		b.footnote = "no sandbox this session · /sandbox doctor says why"
 	}
 	return b
 }
@@ -174,7 +174,7 @@ func undoField(tracker *changeset.Tracker, res radius.Command) components.CardFi
 		f.Tone = components.ToneRisk
 		return f
 	case len(res.Writes) == 0:
-		f.Value, f.Detail = "n/a", "no workspace file is modified"
+		f.Value, f.Detail = "nothing to undo", "no workspace file is modified"
 		f.Tone = components.ToneSafe
 		return f
 	}
@@ -258,7 +258,7 @@ func (m Model) containmentField(mechanism string) (field components.CardField, u
 		return components.CardField{}, true
 	}
 	return components.CardField{
-		Label: "⛨", Value: m.containmentWords(mechanism), Tone: components.ToneChrome,
+		Label: "sandbox", Value: m.containmentWords(mechanism), Tone: components.ToneChrome,
 	}, false
 }
 
@@ -289,7 +289,7 @@ func (m Model) editRadius(req *approvalRequest) blastRadius {
 		b.fields = append(b.fields, f)
 		if m.pendingScope.class != scope.Ordinary {
 			b.severity, b.reason = components.SeverityHigh, "edits a file outside the working scope"
-			b.safe = "don't — the safe answer; the decision waits"
+			b.safe = "not now — it keeps waiting"
 		}
 	}
 	switch {
@@ -346,7 +346,7 @@ func (m Model) genericRadius(req *approvalRequest, batched bool) blastRadius {
 	}
 	switch {
 	case len(open) > 0:
-		b.reason = strings.Join(open, " and ") + " open"
+		b.reason = strings.Join(open, " and ") + " not limited"
 	case len(b.fields) > 0:
 		b.reason = "nothing it reports is open"
 	}
@@ -366,13 +366,13 @@ func commandReason(res radius.Command) string {
 	case len(res.Risks) > 0:
 		return ""
 	case len(res.Writes) > 0 && len(res.Unresolved) > 0:
-		return "writes " + plural(len(res.Writes), "path") + ", and part of it did not resolve"
+		return "changes " + plural(len(res.Writes), "path") + ", and part of it did not resolve"
 	case len(res.Writes) > 0:
-		return "writes " + plural(len(res.Writes), "path") + writesUnder(res.Writes)
+		return "changes " + plural(len(res.Writes), "path") + writesUnder(res.Writes)
 	case len(res.Unresolved) > 0:
-		return "what it writes could not be resolved"
+		return "shhh can't tell what it changes"
 	}
-	return "writes nothing"
+	return "changes no files"
 }
 
 // writesUnder names the directory every resolved write is in, where they
@@ -565,7 +565,7 @@ func (m Model) patchRadius(ask *subagent.Ask) blastRadius {
 		// separate worktrees and the second patch is about to land on the
 		// first, which is the one way isolated writers can still collide.
 		b.severity, b.reason = components.SeverityHigh, ""
-		b.safe = "don't — the safe answer; the decision waits"
+		b.safe = "not now — it keeps waiting"
 	}
 	value, detail := patchTouches(ask.Files)
 	b.fields = append(b.fields, landsInField(ask), components.CardField{
@@ -645,9 +645,9 @@ func landsInField(ask *subagent.Ask) components.CardField {
 // is decided in: how many of the reader's own files it rewrites, and where.
 func patchReason(files []string) string {
 	if len(files) == 0 {
-		return "writes your workspace"
+		return "changes your workspace"
 	}
-	return "writes " + plural(len(files), "file") + under(files)
+	return "changes " + plural(len(files), "file") + under(files)
 }
 
 // patchTouches is the `touches` row for a patch. An edit needs none — its

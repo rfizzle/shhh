@@ -447,10 +447,11 @@ func (m Model) childAskCard(ask *subagent.Ask) *components.ApprovalCard {
 		card.Answer = "apply the patch to your workspace"
 	default:
 		card.Variant = components.ApprovalGeneric
-		card.Title = prefix + "Approve tool"
+		title, answer := genericCardWords(ask.Tool)
+		card.Title = prefix + title
 		card.ActGlyph = "⚙"
 		card.Summary = firstLine(ask.Summary)
-		card.Answer = "allow it"
+		card.Answer = answer
 	}
 	return card
 }

@@ -70,7 +70,7 @@ func TestBlastRadius_CommandCardStatesTouchesUndoAndNetwork(t *testing.T) {
 		"touches   notes.md — 6 B",
 		"undo      ",
 		"network   open",
-		"⛨         bwrap · workspace",
+		"sandbox   bwrap · workspace",
 	} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("command card should contain %q:\n%s", want, view)
@@ -119,7 +119,7 @@ func TestBlastRadius_ReadOnlyCommandTouchesNothing(t *testing.T) {
 	// command on the inspection allowlist would auto-run and never reach a
 	// card at all.)
 	view := confirmFor(t, m, "sed -n 1p go.mod")
-	for _, want := range []string{"touches   nothing", "undo      n/a", "network   closed"} {
+	for _, want := range []string{"touches   nothing", "undo      nothing to undo", "network   closed"} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("read-only card should contain %q:\n%s", want, view)
 		}
@@ -145,7 +145,7 @@ func TestBlastRadius_TheFullViewKeepsTheStandingGlosses(t *testing.T) {
 	full := strings.Join(m.commandCardView().Lines, "\n")
 	for _, want := range []string{
 		"touches  nothing — the command resolved to reads only",
-		"undo  n/a — no workspace file is modified",
+		"undo  nothing to undo — no workspace file is modified",
 		"network  closed — the workspace-netless profile removes it",
 	} {
 		if !strings.Contains(full, want) {
@@ -172,7 +172,7 @@ func TestBlastRadius_FlaggedCommandSaysWhyAlwaysIsMissing(t *testing.T) {
 	}
 	// Esc is the safe answer, and on a flagged card the row says so in words
 	// rather than leaving it to the key's own colour.
-	if !strings.Contains(view, "[esc] don't — the safe answer") {
+	if !strings.Contains(view, "[esc] not now — it keeps waiting") {
 		t.Fatalf("a high-severity card states the safe answer in words:\n%s", view)
 	}
 }
@@ -189,7 +189,7 @@ func TestBlastRadius_UncontainedPromotesAndExplains(t *testing.T) {
 	view := confirmFor(t, m, "make install")
 	for _, want := range []string{
 		"⚠ UNCONTAINED",
-		"⛨         no sandbox",
+		"sandbox   no sandbox",
 		"/sandbox doctor",
 	} {
 		if !strings.Contains(view, want) {
@@ -358,7 +358,7 @@ func TestBlastRadius_ProcessStartRowReadsTheSupervisor(t *testing.T) {
 	}
 
 	view := confirmForStart(t, withSupervisor("bwrap"), "web", "npm run dev")
-	for _, want := range []string{"start process web", "⛨         bwrap · workspace", "network   open"} {
+	for _, want := range []string{"start process web", "sandbox   bwrap · workspace", "network   open"} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("a contained start's card should contain %q:\n%s", want, view)
 		}

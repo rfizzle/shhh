@@ -1183,7 +1183,7 @@ func (m Model) buildApprovalCard() *components.ApprovalCard {
 	// rest of its category along with it.
 	card.QueuePos = m.queuePosition()
 	if card.Batch = len(m.pendingBatch) > 0; card.Batch {
-		card.BatchHint = fmt.Sprintf("answer %d like this as a list", len(m.pendingBatch)+1)
+		card.BatchHint = fmt.Sprintf("answer all %d in one list", len(m.pendingBatch)+1)
 	}
 	// The blast-radius block, resolved when the decision was armed.
 	// It also carries the safety risks, so the card states severity and
@@ -1267,8 +1267,7 @@ func (m Model) buildApprovalCard() *components.ApprovalCard {
 		m.applySpawnCard(card, req)
 	default:
 		card.Variant = components.ApprovalGeneric
-		card.Title = "Approve tool"
-		card.Answer = "allow it"
+		card.Title, card.Answer = genericCardWords(req.call.Name)
 		// The row the card would draw, against the row it already has: a
 		// summary of several lines is compared by the line the card would
 		// take from it, because the act above was taken from that same line
@@ -1296,6 +1295,16 @@ func (m Model) buildApprovalCard() *components.ApprovalCard {
 // writes it and the card that moves it name it from one place.
 const SpawnTouchesLabel = "touches"
 
+// withArticle puts `a` or `an` in front of a role's name. A role can be a
+// profile somebody wrote, so the article is read off the name's first letter
+// rather than assumed.
+func withArticle(role string) string {
+	if role != "" && strings.ContainsRune("aeiouAEIOU", rune(role[0])) {
+		return "an " + role
+	}
+	return "a " + role
+}
+
 // applySpawnCard is the fan-out's card: the children the round asked for, one
 // row each, under a title naming the role rather than the tool that carries
 // it (docs/capabilities/subagents.md#spawning-is-a-decision).
@@ -1310,7 +1319,7 @@ func (m Model) applySpawnCard(card *components.ApprovalCard, req *approvalReques
 	}
 	card.Variant = components.ApprovalSpawn
 	card.Spawns = rows
-	card.Title = "Spawn " + req.spawn.Role
+	card.Title = "Start " + withArticle(req.spawn.Role)
 	card.Answer = "start it"
 	// A card that is the whole of what is waiting says no position: `(1 of
 	// 3)` over three rows counts the same children a second time, and the
@@ -1320,7 +1329,7 @@ func (m Model) applySpawnCard(card *components.ApprovalCard, req *approvalReques
 		card.QueuePos = ""
 	}
 	if n := len(rows); n > 1 {
-		card.Title = "Spawn " + plural(n, req.spawn.Role)
+		card.Title = "Start " + plural(n, req.spawn.Role)
 		// One [y] for the set and one [n] against it, because the card is one
 		// decision: the round asked for these children together and the
 		// reader is answering the fan-out, not the first of it. The refusal

@@ -22,7 +22,7 @@ Some things worth doing first:
   ⚙ run the default quality gate and triage what fails — one approval, then it reports back
 
 or just type what you want · [↑↓] choose · [enter] start · [ctrl+]] keys
-[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palette · [ctrl+x] mouse
+[pgup] scroll · [ctrl+o] select rows · [ctrl+/] commands · [ctrl+x] mouse on/off
 
 · the pointer on the offer that costs an approval
 go 1.24 · 3 files changed · 41 packages
@@ -36,7 +36,7 @@ Some things worth doing first:
 ❯ ⚙ run the default quality gate and triage what fails — one approval, then it reports back             
 
 or just type what you want · [↑↓] choose · [enter] start · [ctrl+]] keys
-[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palette · [ctrl+x] mouse
+[pgup] scroll · [ctrl+o] select rows · [ctrl+/] commands · [ctrl+x] mouse on/off
 
 · clean tree · nothing saved, no gate, no project context
 go 1.24 · clean tree · 41 packages
@@ -50,7 +50,7 @@ Some things worth doing first:
   ⚙ run go test ./... and triage the failures — one approval, then it reports back
 
 or just type what you want · [↑↓] choose · [enter] start · [ctrl+]] keys
-[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palette · [ctrl+x] mouse
+[pgup] scroll · [ctrl+o] select rows · [ctrl+/] commands · [ctrl+x] mouse on/off
 
 · outside a repository · the package count is a floor
 go 1.24 · not a git repository · 41+ packages
@@ -64,7 +64,7 @@ Some things worth doing first:
   ⚙ run the default quality gate and triage what fails — one approval, then it reports back
 
 or just type what you want · [↑↓] choose · [enter] start · [ctrl+]] keys
-[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palette · [ctrl+x] mouse
+[pgup] scroll · [ctrl+o] select rows · [ctrl+/] commands · [ctrl+x] mouse on/off
 
 · nothing read · the third offer writes the file that would be
 go 1.24 · 3 files changed · 41 packages
@@ -78,7 +78,7 @@ Some things worth doing first:
   ✎ scaffold .shhh/ — one approval
 
 or just type what you want · [↑↓] choose · [enter] start · [ctrl+]] keys
-[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palette · [ctrl+x] mouse
+[pgup] scroll · [ctrl+o] select rows · [ctrl+/] commands · [ctrl+x] mouse on/off
 
 · somebody else is in this checkout too
 another session open here since 10:32 · go 1.24 · 3 files changed · 41 packages
@@ -92,7 +92,7 @@ Some things worth doing first:
   ⚙ run the default quality gate and triage what fails — one approval, then it reports back
 
 or just type what you want · [↑↓] choose · [enter] start · [ctrl+]] keys
-[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palette · [ctrl+x] mouse
+[pgup] scroll · [ctrl+o] select rows · [ctrl+/] commands · [ctrl+x] mouse on/off
 
 · a checkout nobody has answered for · what it is holding back
 go 1.24 · 3 files changed · 41 packages
@@ -107,7 +107,7 @@ Some things worth doing first:
   ⚙ run go test ./... and triage the failures — one approval, then it reports back
 
 or just type what you want · [↑↓] choose · [enter] start · [ctrl+]] keys
-[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palette · [ctrl+x] mouse
+[pgup] scroll · [ctrl+o] select rows · [ctrl+/] commands · [ctrl+x] mouse on/off
 
 · a trusted checkout whose suites changed since the answer · said once
 go 1.24 · 3 files changed · 41 packages
@@ -122,7 +122,7 @@ Some things worth doing first:
   ⚙ run the default quality gate and triage what fails — one approval, then it reports back
 
 or just type what you want · [↑↓] choose · [enter] start · [ctrl+]] keys
-[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palette · [ctrl+x] mouse
+[pgup] scroll · [ctrl+o] select rows · [ctrl+/] commands · [ctrl+x] mouse on/off
 
 · the checkout brought its own settings and its own wordings
 go 1.24 · 3 files changed · 41 packages
@@ -138,7 +138,7 @@ Some things worth doing first:
   ⚙ run the default quality gate and triage what fails — one approval, then it reports back
 
 or just type what you want · [↑↓] choose · [enter] start · [ctrl+]] keys
-[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palette · [ctrl+x] mouse
+[pgup] scroll · [ctrl+o] select rows · [ctrl+/] commands · [ctrl+x] mouse on/off
 
 · typing dismissed the list · the facts stay
 go 1.24 · 3 files changed · 41 packages
@@ -146,7 +146,7 @@ go 1.24 · 3 files changed · 41 packages
 context  AGENTS.md — in the system prompt
 gate     default — vet, test · runs without asking
 
-[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palette · [ctrl+x] mouse
+[pgup] scroll · [ctrl+o] select rows · [ctrl+/] commands · [ctrl+x] mouse on/off
 
 · the machine's first session · three keys above the key row
 go 1.24 · 3 files changed · 41 packages
@@ -159,12 +159,12 @@ Some things worth doing first:
   ⚙ explain what changed in the working tree — reads only, no writes
   ⚙ run the default quality gate and triage what fails — one approval, then it reports back
 
-type what you want and press enter
+enter sends what you type
 esc backs out of anything and never loses work
 ctrl+c twice stops a run
 
 or just type what you want · [↑↓] choose · [enter] start · [ctrl+]] keys
-[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palette · [ctrl+x] mouse
+[pgup] scroll · [ctrl+o] select rows · [ctrl+/] commands · [ctrl+x] mouse on/off
 
 · typing on the first session · the three keys stay
 go 1.24 · 3 files changed · 41 packages
@@ -172,11 +172,11 @@ go 1.24 · 3 files changed · 41 packages
 context  AGENTS.md — in the system prompt
 gate     default — vet, test · runs without asking
 
-type what you want and press enter
+enter sends what you type
 esc backs out of anything and never loses work
 ctrl+c twice stops a run
 
-[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palette · [ctrl+x] mouse
+[pgup] scroll · [ctrl+o] select rows · [ctrl+/] commands · [ctrl+x] mouse on/off
 
 ── ansi ────────────────────────────────────────────────────
 · first contact · a dirty checkout with a session to pick up
@@ -191,7 +191,7 @@ ctrl+c twice stops a run
   ␛[38;5;254m⚙␛[m ␛[38;5;254mrun the default quality gate and triage what fails␛[m␛[38;5;244m — one approval, then it reports back␛[m
 
 ␛[38;5;244mor just type what you want␛[m␛[38;5;244m · ␛[m␛[38;5;254m[↑↓]␛[m␛[38;5;244m choose␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m start␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+]]␛[m␛[38;5;244m keys␛[m
-␛[38;5;254m[pgup]␛[m␛[38;5;244m scroll␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+o]␛[m␛[38;5;244m select rows␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+/]␛[m␛[38;5;244m palette␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+x]␛[m␛[38;5;244m mouse␛[m
+␛[38;5;254m[pgup]␛[m␛[38;5;244m scroll␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+o]␛[m␛[38;5;244m select rows␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+/]␛[m␛[38;5;244m commands␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+x]␛[m␛[38;5;244m mouse on/off␛[m
 
 · the pointer on the offer that costs an approval
 ␛[38;5;254mgo 1.24␛[m␛[38;5;244m · ␛[m␛[38;5;254m3 files changed␛[m␛[38;5;244m · ␛[m␛[38;5;254m41 packages␛[m
@@ -205,7 +205,7 @@ ctrl+c twice stops a run
 ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m⚙ run the default quality gate and triage what fails — one approval, then it reports back             ␛[m
 
 ␛[38;5;244mor just type what you want␛[m␛[38;5;244m · ␛[m␛[38;5;254m[↑↓]␛[m␛[38;5;244m choose␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m start␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+]]␛[m␛[38;5;244m keys␛[m
-␛[38;5;254m[pgup]␛[m␛[38;5;244m scroll␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+o]␛[m␛[38;5;244m select rows␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+/]␛[m␛[38;5;244m palette␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+x]␛[m␛[38;5;244m mouse␛[m
+␛[38;5;254m[pgup]␛[m␛[38;5;244m scroll␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+o]␛[m␛[38;5;244m select rows␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+/]␛[m␛[38;5;244m commands␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+x]␛[m␛[38;5;244m mouse on/off␛[m
 
 · clean tree · nothing saved, no gate, no project context
 ␛[38;5;254mgo 1.24␛[m␛[38;5;244m · ␛[m␛[38;5;254mclean tree␛[m␛[38;5;244m · ␛[m␛[38;5;254m41 packages␛[m
@@ -219,7 +219,7 @@ ctrl+c twice stops a run
   ␛[38;5;254m⚙␛[m ␛[38;5;254mrun go test ./... and triage the failures␛[m␛[38;5;244m — one approval, then it reports back␛[m
 
 ␛[38;5;244mor just type what you want␛[m␛[38;5;244m · ␛[m␛[38;5;254m[↑↓]␛[m␛[38;5;244m choose␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m start␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+]]␛[m␛[38;5;244m keys␛[m
-␛[38;5;254m[pgup]␛[m␛[38;5;244m scroll␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+o]␛[m␛[38;5;244m select rows␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+/]␛[m␛[38;5;244m palette␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+x]␛[m␛[38;5;244m mouse␛[m
+␛[38;5;254m[pgup]␛[m␛[38;5;244m scroll␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+o]␛[m␛[38;5;244m select rows␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+/]␛[m␛[38;5;244m commands␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+x]␛[m␛[38;5;244m mouse on/off␛[m
 
 · outside a repository · the package count is a floor
 ␛[38;5;254mgo 1.24␛[m␛[38;5;244m · ␛[m␛[38;5;254mnot a git repository␛[m␛[38;5;244m · ␛[m␛[38;5;254m41+ packages␛[m
@@ -233,7 +233,7 @@ ctrl+c twice stops a run
   ␛[38;5;254m⚙␛[m ␛[38;5;254mrun the default quality gate and triage what fails␛[m␛[38;5;244m — one approval, then it reports back␛[m
 
 ␛[38;5;244mor just type what you want␛[m␛[38;5;244m · ␛[m␛[38;5;254m[↑↓]␛[m␛[38;5;244m choose␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m start␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+]]␛[m␛[38;5;244m keys␛[m
-␛[38;5;254m[pgup]␛[m␛[38;5;244m scroll␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+o]␛[m␛[38;5;244m select rows␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+/]␛[m␛[38;5;244m palette␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+x]␛[m␛[38;5;244m mouse␛[m
+␛[38;5;254m[pgup]␛[m␛[38;5;244m scroll␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+o]␛[m␛[38;5;244m select rows␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+/]␛[m␛[38;5;244m commands␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+x]␛[m␛[38;5;244m mouse on/off␛[m
 
 · nothing read · the third offer writes the file that would be
 ␛[38;5;254mgo 1.24␛[m␛[38;5;244m · ␛[m␛[38;5;254m3 files changed␛[m␛[38;5;244m · ␛[m␛[38;5;254m41 packages␛[m
@@ -247,7 +247,7 @@ ctrl+c twice stops a run
   ␛[38;5;254m✎␛[m ␛[38;5;254mscaffold .shhh/␛[m␛[38;5;244m — one approval␛[m
 
 ␛[38;5;244mor just type what you want␛[m␛[38;5;244m · ␛[m␛[38;5;254m[↑↓]␛[m␛[38;5;244m choose␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m start␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+]]␛[m␛[38;5;244m keys␛[m
-␛[38;5;254m[pgup]␛[m␛[38;5;244m scroll␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+o]␛[m␛[38;5;244m select rows␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+/]␛[m␛[38;5;244m palette␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+x]␛[m␛[38;5;244m mouse␛[m
+␛[38;5;254m[pgup]␛[m␛[38;5;244m scroll␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+o]␛[m␛[38;5;244m select rows␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+/]␛[m␛[38;5;244m commands␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+x]␛[m␛[38;5;244m mouse on/off␛[m
 
 · somebody else is in this checkout too
 ␛[38;5;254manother session open here since 10:32␛[m␛[38;5;244m · ␛[m␛[38;5;254mgo 1.24␛[m␛[38;5;244m · ␛[m␛[38;5;254m3 files changed␛[m␛[38;5;244m · ␛[m␛[38;5;254m41 packages␛[m
@@ -261,7 +261,7 @@ ctrl+c twice stops a run
   ␛[38;5;254m⚙␛[m ␛[38;5;254mrun the default quality gate and triage what fails␛[m␛[38;5;244m — one approval, then it reports back␛[m
 
 ␛[38;5;244mor just type what you want␛[m␛[38;5;244m · ␛[m␛[38;5;254m[↑↓]␛[m␛[38;5;244m choose␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m start␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+]]␛[m␛[38;5;244m keys␛[m
-␛[38;5;254m[pgup]␛[m␛[38;5;244m scroll␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+o]␛[m␛[38;5;244m select rows␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+/]␛[m␛[38;5;244m palette␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+x]␛[m␛[38;5;244m mouse␛[m
+␛[38;5;254m[pgup]␛[m␛[38;5;244m scroll␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+o]␛[m␛[38;5;244m select rows␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+/]␛[m␛[38;5;244m commands␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+x]␛[m␛[38;5;244m mouse on/off␛[m
 
 · a checkout nobody has answered for · what it is holding back
 ␛[38;5;254mgo 1.24␛[m␛[38;5;244m · ␛[m␛[38;5;254m3 files changed␛[m␛[38;5;244m · ␛[m␛[38;5;254m41 packages␛[m
@@ -276,7 +276,7 @@ ctrl+c twice stops a run
   ␛[38;5;254m⚙␛[m ␛[38;5;254mrun go test ./... and triage the failures␛[m␛[38;5;244m — one approval, then it reports back␛[m
 
 ␛[38;5;244mor just type what you want␛[m␛[38;5;244m · ␛[m␛[38;5;254m[↑↓]␛[m␛[38;5;244m choose␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m start␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+]]␛[m␛[38;5;244m keys␛[m
-␛[38;5;254m[pgup]␛[m␛[38;5;244m scroll␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+o]␛[m␛[38;5;244m select rows␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+/]␛[m␛[38;5;244m palette␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+x]␛[m␛[38;5;244m mouse␛[m
+␛[38;5;254m[pgup]␛[m␛[38;5;244m scroll␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+o]␛[m␛[38;5;244m select rows␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+/]␛[m␛[38;5;244m commands␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+x]␛[m␛[38;5;244m mouse on/off␛[m
 
 · a trusted checkout whose suites changed since the answer · said once
 ␛[38;5;254mgo 1.24␛[m␛[38;5;244m · ␛[m␛[38;5;254m3 files changed␛[m␛[38;5;244m · ␛[m␛[38;5;254m41 packages␛[m
@@ -291,7 +291,7 @@ ctrl+c twice stops a run
   ␛[38;5;254m⚙␛[m ␛[38;5;254mrun the default quality gate and triage what fails␛[m␛[38;5;244m — one approval, then it reports back␛[m
 
 ␛[38;5;244mor just type what you want␛[m␛[38;5;244m · ␛[m␛[38;5;254m[↑↓]␛[m␛[38;5;244m choose␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m start␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+]]␛[m␛[38;5;244m keys␛[m
-␛[38;5;254m[pgup]␛[m␛[38;5;244m scroll␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+o]␛[m␛[38;5;244m select rows␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+/]␛[m␛[38;5;244m palette␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+x]␛[m␛[38;5;244m mouse␛[m
+␛[38;5;254m[pgup]␛[m␛[38;5;244m scroll␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+o]␛[m␛[38;5;244m select rows␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+/]␛[m␛[38;5;244m commands␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+x]␛[m␛[38;5;244m mouse on/off␛[m
 
 · the checkout brought its own settings and its own wordings
 ␛[38;5;254mgo 1.24␛[m␛[38;5;244m · ␛[m␛[38;5;254m3 files changed␛[m␛[38;5;244m · ␛[m␛[38;5;254m41 packages␛[m
@@ -307,7 +307,7 @@ ctrl+c twice stops a run
   ␛[38;5;254m⚙␛[m ␛[38;5;254mrun the default quality gate and triage what fails␛[m␛[38;5;244m — one approval, then it reports back␛[m
 
 ␛[38;5;244mor just type what you want␛[m␛[38;5;244m · ␛[m␛[38;5;254m[↑↓]␛[m␛[38;5;244m choose␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m start␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+]]␛[m␛[38;5;244m keys␛[m
-␛[38;5;254m[pgup]␛[m␛[38;5;244m scroll␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+o]␛[m␛[38;5;244m select rows␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+/]␛[m␛[38;5;244m palette␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+x]␛[m␛[38;5;244m mouse␛[m
+␛[38;5;254m[pgup]␛[m␛[38;5;244m scroll␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+o]␛[m␛[38;5;244m select rows␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+/]␛[m␛[38;5;244m commands␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+x]␛[m␛[38;5;244m mouse on/off␛[m
 
 · typing dismissed the list · the facts stay
 ␛[38;5;254mgo 1.24␛[m␛[38;5;244m · ␛[m␛[38;5;254m3 files changed␛[m␛[38;5;244m · ␛[m␛[38;5;254m41 packages␛[m
@@ -315,7 +315,7 @@ ctrl+c twice stops a run
 ␛[38;5;244mcontext␛[m  ␛[38;5;254mAGENTS.md␛[m␛[38;5;244m — in the system prompt␛[m
 ␛[38;5;244mgate   ␛[m  ␛[38;5;254mdefault␛[m␛[38;5;244m — vet, test · runs without asking␛[m
 
-␛[38;5;254m[pgup]␛[m␛[38;5;244m scroll␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+o]␛[m␛[38;5;244m select rows␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+/]␛[m␛[38;5;244m palette␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+x]␛[m␛[38;5;244m mouse␛[m
+␛[38;5;254m[pgup]␛[m␛[38;5;244m scroll␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+o]␛[m␛[38;5;244m select rows␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+/]␛[m␛[38;5;244m commands␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+x]␛[m␛[38;5;244m mouse on/off␛[m
 
 · the machine's first session · three keys above the key row
 ␛[38;5;254mgo 1.24␛[m␛[38;5;244m · ␛[m␛[38;5;254m3 files changed␛[m␛[38;5;244m · ␛[m␛[38;5;254m41 packages␛[m
@@ -328,12 +328,12 @@ ctrl+c twice stops a run
   ␛[38;5;254m⚙␛[m ␛[38;5;254mexplain what changed in the working tree␛[m␛[38;5;244m — reads only, no writes␛[m
   ␛[38;5;254m⚙␛[m ␛[38;5;254mrun the default quality gate and triage what fails␛[m␛[38;5;244m — one approval, then it reports back␛[m
 
-␛[38;5;244mtype what you want and press enter␛[m
+␛[38;5;244menter sends what you type␛[m
 ␛[38;5;244mesc backs out of anything and never loses work␛[m
 ␛[38;5;244mctrl+c twice stops a run␛[m
 
 ␛[38;5;244mor just type what you want␛[m␛[38;5;244m · ␛[m␛[38;5;254m[↑↓]␛[m␛[38;5;244m choose␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m start␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+]]␛[m␛[38;5;244m keys␛[m
-␛[38;5;254m[pgup]␛[m␛[38;5;244m scroll␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+o]␛[m␛[38;5;244m select rows␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+/]␛[m␛[38;5;244m palette␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+x]␛[m␛[38;5;244m mouse␛[m
+␛[38;5;254m[pgup]␛[m␛[38;5;244m scroll␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+o]␛[m␛[38;5;244m select rows␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+/]␛[m␛[38;5;244m commands␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+x]␛[m␛[38;5;244m mouse on/off␛[m
 
 · typing on the first session · the three keys stay
 ␛[38;5;254mgo 1.24␛[m␛[38;5;244m · ␛[m␛[38;5;254m3 files changed␛[m␛[38;5;244m · ␛[m␛[38;5;254m41 packages␛[m
@@ -341,8 +341,8 @@ ctrl+c twice stops a run
 ␛[38;5;244mcontext␛[m  ␛[38;5;254mAGENTS.md␛[m␛[38;5;244m — in the system prompt␛[m
 ␛[38;5;244mgate   ␛[m  ␛[38;5;254mdefault␛[m␛[38;5;244m — vet, test · runs without asking␛[m
 
-␛[38;5;244mtype what you want and press enter␛[m
+␛[38;5;244menter sends what you type␛[m
 ␛[38;5;244mesc backs out of anything and never loses work␛[m
 ␛[38;5;244mctrl+c twice stops a run␛[m
 
-␛[38;5;254m[pgup]␛[m␛[38;5;244m scroll␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+o]␛[m␛[38;5;244m select rows␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+/]␛[m␛[38;5;244m palette␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+x]␛[m␛[38;5;244m mouse␛[m
+␛[38;5;254m[pgup]␛[m␛[38;5;244m scroll␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+o]␛[m␛[38;5;244m select rows␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+/]␛[m␛[38;5;244m commands␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+x]␛[m␛[38;5;244m mouse on/off␛[m

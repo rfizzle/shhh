@@ -1129,7 +1129,7 @@ func TestCompactReceipt_IsAnActivityRowOnTheGrid(t *testing.T) {
 	if r.first != 1 || r.last != 1 {
 		t.Fatalf("the first turn went and the last two stayed, got turns %d–%d", r.first, r.last)
 	}
-	row := compactRowFor(r)
+	row := compactRowFor(r, "ctx")
 	if row.Kind != components.ActivityCompaction || row.Verb != compactVerb {
 		t.Fatalf("the receipt is a compaction row, got %+v", row)
 	}
@@ -1280,7 +1280,7 @@ func TestCompactReceipt_TheFloorSaysWhatIsLeftAndCarriesNoSummary(t *testing.T) 
 	if !strings.Contains(e.compact.floor, "turn 3") {
 		t.Fatalf("the floor names what is still in the window, got %q", e.compact.floor)
 	}
-	row := compactRowFor(*e.compact)
+	row := compactRowFor(*e.compact, "ctx")
 	if row.State != components.ActivityFailed {
 		t.Fatalf("a compaction that recovered nothing is a break, got state %d", row.State)
 	}
@@ -1392,10 +1392,11 @@ func TestDropCompactingNotice_TheNextRenderHasNoRowForIt(t *testing.T) {
 	}
 }
 
-// ctxPercent reads the rail's occupancy figure off a frame.
+// ctxPercent reads the rail's occupancy figure off a frame drawn at 110
+// columns or wider, where the meter is labelled `context`.
 func ctxPercent(t *testing.T, frame string) int {
 	t.Helper()
-	_, after, ok := strings.Cut(frame, "ctx ")
+	_, after, ok := strings.Cut(frame, "context ")
 	if !ok {
 		t.Fatalf("the frame has no ctx figure:\n%s", frame)
 	}
@@ -1427,7 +1428,7 @@ func TestProgram_TheContextMeterHoldsWhenAReportUndercounts(t *testing.T) {
 
 	tm.Type("say something")
 	tm.Send(programEnter)
-	waitForText(t, tm, "ctx ")
+	waitForText(t, tm, "context ")
 	streaming := ctxPercent(t, *tm.frame.Load())
 	if streaming == 0 {
 		t.Fatal("mid-stream the estimate of a 16k-token prompt should fill part of the default window")

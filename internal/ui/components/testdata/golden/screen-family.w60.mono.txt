@@ -171,8 +171,8 @@ MODE AND POLICY
 /readings · 5 readings   $0.0142 spent · [?] keys · [q] back
 ────────────────────────────────────────────────────────────
 
-❯ ⚠ r 11 · off target     withdrawn                   turn 2
-  ⚠ r 6 · off target      steered                     turn 2
+❯ ⚠ r 11 · off target  withdrawn                      turn 2
+  ⚠ r 6 · off target   steered                        turn 2
 ↓ 3 more
 ────────────────────────────────────────────────────────────
 r 11 · off target                                     turn 2
@@ -357,8 +357,8 @@ turn 4                                                  done
 ␛[1;38;5;254m/readings␛[m␛[38;5;244m · 5 readings␛[m   ␛[38;5;244m$0.0142 spent␛[m␛[38;5;244m · [?] keys · [q] back␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
-␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m⚠ r 11 · off target     withdrawn                   turn 2␛[m
-  ␛[38;5;254m⚠ r 6 · off target␛[m      ␛[38;5;254msteered␛[m                     ␛[38;5;244mturn 2␛[m
+␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m⚠ r 11 · off target  withdrawn                      turn 2␛[m
+  ␛[38;5;254m⚠ r 6 · off target␛[m   ␛[38;5;254msteered␛[m                        ␛[38;5;244mturn 2␛[m
 ␛[38;5;244m↓ 3 more␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 ␛[1;38;5;254mr 11 · off target␛[m                                     ␛[38;5;244mturn 2␛[m

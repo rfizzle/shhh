@@ -250,6 +250,21 @@ func gateTarget(target, tool, result string) string {
 	return target
 }
 
+// genericCardWords is the title and the yes of a card for a call that is
+// neither a command nor an edit nor a spawn, named for the act the reader is
+// asked to allow: a person asked to approve a web fetch reads "tool" as a
+// word about the program, not about the page it is about to read. Anything
+// that is not a fetch or a server's tool keeps the general words.
+func genericCardWords(tool string) (title, answer string) {
+	if tool == web.FetchToolName {
+		return "Approve fetch", "fetch it"
+	}
+	if _, ok := mcp.SplitName(tool); ok {
+		return "Approve server call", "call it"
+	}
+	return "Approve tool", "allow it"
+}
+
 func activityVerb(tool string) string {
 	if v, ok := activityVerbs[tool]; ok {
 		return v

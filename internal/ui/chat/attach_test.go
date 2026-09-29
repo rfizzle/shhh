@@ -253,7 +253,7 @@ func TestAgentListOpensAttachesAndDetaches(t *testing.T) {
 	if !strings.Contains(view, "orchestrator ▸ researcher-1") {
 		t.Fatalf("attached view missing breadcrumb:\n%s", view)
 	}
-	if !strings.Contains(ansi.Strip(view), "[esc] detach") {
+	if !strings.Contains(ansi.Strip(view), "[esc] back to your session") {
 		t.Fatalf("attached view missing detach hint:\n%s", view)
 	}
 	if !strings.Contains(view, "long survey") {
@@ -339,7 +339,7 @@ func TestAttachedEnterSteersChild(t *testing.T) {
 	}
 	// In words on the rail, because what is waiting is a sentence the reader
 	// typed here and not a queue of whatever else the frame counts.
-	if !strings.Contains(m.View().Content, "queued steering: 1") {
+	if !strings.Contains(m.View().Content, "1 queued for this turn") {
 		t.Fatalf("status bar missing the queued-steering count:\n%s", m.View().Content)
 	}
 }

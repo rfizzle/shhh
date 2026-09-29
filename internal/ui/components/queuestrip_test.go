@@ -125,9 +125,9 @@ func TestApprovalCard_BatchKey(t *testing.T) {
 		t.Fatalf("[A] without a batch should take the session grant, got %v %v", done, result)
 	}
 
-	c.Batch, c.BatchHint = true, "answer 3 like this as a list"
+	c.Batch, c.BatchHint = true, "answer all 3 in one list"
 	view := c.View(80)
-	if !strings.Contains(ansi.Strip(view), "[A] answer 3 like this as a list") {
+	if !strings.Contains(ansi.Strip(view), "[A] answer all 3 in one list") {
 		t.Fatalf("a batch should offer [A] under the count it answers:\n%s", view)
 	}
 	if done, result := c.Update(key("A")); !done || result != ApprovalBatch {

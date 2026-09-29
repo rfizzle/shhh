@@ -132,16 +132,16 @@ func (c CommitCard) stagesRow(inner int) string {
 }
 
 // commitRun is the card's decision keys, drawn from the register so the
-// spelling offered is the spelling answered. The staging key carries the
-// surface's own words after it, because what `[s]` opens is the review the
-// product already has and a reader should be told that before pressing it.
-// `?` takes the last slot: the host answers it with the card's register and
+// spelling offered is the spelling answered. The staging key says what the
+// reader does there — choose what goes in — rather than naming the review
+// surface it opens, which is the product's word for it and not theirs. `?`
+// takes the last slot: the host answers it with the card's register and
 // the glyph legend, as every surface holding the keyboard does.
 func commitRun() []string {
 	return []string{
 		offerSegment(keys.Bracket(keys.Commit.Take), keys.Words(keys.Commit.Take)),
 		offerSegment(keys.Bracket(keys.Commit.Edit), keys.Words(keys.Commit.Edit)),
-		offerSegment(keys.Bracket(keys.Commit.Hunks), keys.Words(keys.Commit.Hunks)+" — the review surface"),
+		offerSegment(keys.Bracket(keys.Commit.Hunks), keys.Words(keys.Commit.Hunks)),
 		offerSegment(keys.Bracket(keys.Screen.List), keys.Words(keys.Screen.List)),
 	}
 }
@@ -171,7 +171,7 @@ func plainCommitRun() []string {
 // (docs/interface/principles.md#esc-is-always-the-safe-answer).
 func commitEscRow(inner int) string {
 	esc := keys.Shown(keys.Commit.Cancel)
-	words := keys.Words(keys.Commit.Cancel) + " — the changeset stays, and so does the offer"
+	words := keys.Words(keys.Commit.Cancel) + " — nothing is committed, and the offer stays"
 	return Clip(safeSegment(esc, fitClauses("["+esc+"] ", words, inner)), inner)
 }
 
@@ -200,9 +200,9 @@ type CommitMessage struct {
 func (c CommitMessage) budgetTitle() string {
 	left := subjectBudget - lipgloss.Width(c.Subject)
 	if left < 0 {
-		return fmt.Sprintf("%d over · a body wraps at %d", -left, bodyWrap)
+		return fmt.Sprintf("%d over · the body wraps at %d", -left, bodyWrap)
 	}
-	return fmt.Sprintf("%d · a body wraps at %d", left, bodyWrap)
+	return fmt.Sprintf("%d left · the body wraps at %d", left, bodyWrap)
 }
 
 // View renders the editor at the given width.

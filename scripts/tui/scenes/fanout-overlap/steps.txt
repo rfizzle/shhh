@@ -22,7 +22,7 @@ keys BTab
 keys "change the loop's condition two ways" Enter
 # One card with a row per writer, each claiming loop.go with overlap allowed;
 # the second row names the first as the writer whose claim it shares.
-snap 02-spawn-card "Spawn 2 writers" "overlap allowed" "shares loop.go with writer-1"
+snap 02-spawn-card "Start 2 writers" "overlap allowed" "shares loop.go with writer-1"
 sleep 1
 keys y
 snap 03-lanes "2 agents"

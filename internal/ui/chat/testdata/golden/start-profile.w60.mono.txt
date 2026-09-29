@@ -28,7 +28,7 @@ Some things worth doing first:
 or just type what you want
 [↑↓] choose · [enter] start · [ctrl+]] keys
 [pgup] scroll · [ctrl+o] select rows
-[ctrl+/] palette · [ctrl+x] mouse
+[ctrl+/] commands · [ctrl+x] mouse on/off
 
 · a profile of the reader's own, by name
 go 1.24 · 3 files changed · 41 packages
@@ -48,7 +48,7 @@ Some things worth doing first:
 or just type what you want
 [↑↓] choose · [enter] start · [ctrl+]] keys
 [pgup] scroll · [ctrl+o] select rows
-[ctrl+/] palette · [ctrl+x] mouse
+[ctrl+/] commands · [ctrl+x] mouse on/off
 
 · one of the profiles shhh ships
 go 1.24 · 3 files changed · 41 packages
@@ -68,7 +68,7 @@ Some things worth doing first:
 or just type what you want
 [↑↓] choose · [enter] start · [ctrl+]] keys
 [pgup] scroll · [ctrl+o] select rows
-[ctrl+/] palette · [ctrl+x] mouse
+[ctrl+/] commands · [ctrl+x] mouse on/off
 
 ── ansi ────────────────────────────────────────────────────
 · the checkout carries its own profile
@@ -89,7 +89,7 @@ or just type what you want
 ␛[38;5;244mor just type what you want␛[m
 ␛[38;5;254m[↑↓]␛[m␛[38;5;244m choose␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m start␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+]]␛[m␛[38;5;244m keys␛[m
 ␛[38;5;254m[pgup]␛[m␛[38;5;244m scroll␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+o]␛[m␛[38;5;244m select rows␛[m
-␛[38;5;254m[ctrl+/]␛[m␛[38;5;244m palette␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+x]␛[m␛[38;5;244m mouse␛[m
+␛[38;5;254m[ctrl+/]␛[m␛[38;5;244m commands␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+x]␛[m␛[38;5;244m mouse on/off␛[m
 
 · a profile of the reader's own, by name
 ␛[38;5;254mgo 1.24␛[m␛[38;5;244m · ␛[m␛[38;5;254m3 files changed␛[m␛[38;5;244m · ␛[m␛[38;5;254m41 packages␛[m
@@ -109,7 +109,7 @@ or just type what you want
 ␛[38;5;244mor just type what you want␛[m
 ␛[38;5;254m[↑↓]␛[m␛[38;5;244m choose␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m start␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+]]␛[m␛[38;5;244m keys␛[m
 ␛[38;5;254m[pgup]␛[m␛[38;5;244m scroll␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+o]␛[m␛[38;5;244m select rows␛[m
-␛[38;5;254m[ctrl+/]␛[m␛[38;5;244m palette␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+x]␛[m␛[38;5;244m mouse␛[m
+␛[38;5;254m[ctrl+/]␛[m␛[38;5;244m commands␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+x]␛[m␛[38;5;244m mouse on/off␛[m
 
 · one of the profiles shhh ships
 ␛[38;5;254mgo 1.24␛[m␛[38;5;244m · ␛[m␛[38;5;254m3 files changed␛[m␛[38;5;244m · ␛[m␛[38;5;254m41 packages␛[m
@@ -129,4 +129,4 @@ or just type what you want
 ␛[38;5;244mor just type what you want␛[m
 ␛[38;5;254m[↑↓]␛[m␛[38;5;244m choose␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m start␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+]]␛[m␛[38;5;244m keys␛[m
 ␛[38;5;254m[pgup]␛[m␛[38;5;244m scroll␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+o]␛[m␛[38;5;244m select rows␛[m
-␛[38;5;254m[ctrl+/]␛[m␛[38;5;244m palette␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+x]␛[m␛[38;5;244m mouse␛[m
+␛[38;5;254m[ctrl+/]␛[m␛[38;5;244m commands␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+x]␛[m␛[38;5;244m mouse on/off␛[m

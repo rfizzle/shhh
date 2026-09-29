@@ -30,7 +30,7 @@ Some things worth doing first:
 or just type what you want
 [↑↓] choose · [enter] start · [ctrl+]] keys
 [pgup] scroll · [ctrl+o] select rows
-[ctrl+/] palette · [ctrl+x] mouse
+[ctrl+/] commands · [ctrl+x] mouse on/off
 
 · the pointer on the offer that costs an approval
 ▄▀▀▀ █    █    █
@@ -52,7 +52,7 @@ Some things worth doing first:
 or just type what you want
 [↑↓] choose · [enter] start · [ctrl+]] keys
 [pgup] scroll · [ctrl+o] select rows
-[ctrl+/] palette · [ctrl+x] mouse
+[ctrl+/] commands · [ctrl+x] mouse on/off
 
 · clean tree · nothing saved, no gate, no project context
 ▄▀▀▀ █    █    █
@@ -76,7 +76,7 @@ Some things worth doing first:
 or just type what you want
 [↑↓] choose · [enter] start · [ctrl+]] keys
 [pgup] scroll · [ctrl+o] select rows
-[ctrl+/] palette · [ctrl+x] mouse
+[ctrl+/] commands · [ctrl+x] mouse on/off
 
 · outside a repository · the package count is a floor
 ▄▀▀▀ █    █    █
@@ -98,7 +98,7 @@ Some things worth doing first:
 or just type what you want
 [↑↓] choose · [enter] start · [ctrl+]] keys
 [pgup] scroll · [ctrl+o] select rows
-[ctrl+/] palette · [ctrl+x] mouse
+[ctrl+/] commands · [ctrl+x] mouse on/off
 
 · nothing read · the third offer writes the file that would be
 ▄▀▀▀ █    █    █
@@ -120,7 +120,7 @@ Some things worth doing first:
 or just type what you want
 [↑↓] choose · [enter] start · [ctrl+]] keys
 [pgup] scroll · [ctrl+o] select rows
-[ctrl+/] palette · [ctrl+x] mouse
+[ctrl+/] commands · [ctrl+x] mouse on/off
 
 · somebody else is in this checkout too
 ▄▀▀▀ █    █    █
@@ -142,7 +142,7 @@ Some things worth doing first:
 or just type what you want
 [↑↓] choose · [enter] start · [ctrl+]] keys
 [pgup] scroll · [ctrl+o] select rows
-[ctrl+/] palette · [ctrl+x] mouse
+[ctrl+/] commands · [ctrl+x] mouse on/off
 
 · a checkout nobody has answered for · what it is holding back
 ▄▀▀▀ █    █    █
@@ -167,7 +167,7 @@ Some things worth doing first:
 or just type what you want
 [↑↓] choose · [enter] start · [ctrl+]] keys
 [pgup] scroll · [ctrl+o] select rows
-[ctrl+/] palette · [ctrl+x] mouse
+[ctrl+/] commands · [ctrl+x] mouse on/off
 
 · a trusted checkout whose suites changed since the answer · said once
 ▄▀▀▀ █    █    █
@@ -191,7 +191,7 @@ Some things worth doing first:
 or just type what you want
 [↑↓] choose · [enter] start · [ctrl+]] keys
 [pgup] scroll · [ctrl+o] select rows
-[ctrl+/] palette · [ctrl+x] mouse
+[ctrl+/] commands · [ctrl+x] mouse on/off
 
 · the checkout brought its own settings and its own wordings
 ▄▀▀▀ █    █    █
@@ -217,7 +217,7 @@ Some things worth doing first:
 or just type what you want
 [↑↓] choose · [enter] start · [ctrl+]] keys
 [pgup] scroll · [ctrl+o] select rows
-[ctrl+/] palette · [ctrl+x] mouse
+[ctrl+/] commands · [ctrl+x] mouse on/off
 
 · typing dismissed the list · the facts stay
 ▄▀▀▀ █    █    █
@@ -230,7 +230,7 @@ context  AGENTS.md — in the system prompt
 gate     default — vet, test · runs without asking
 
 [pgup] scroll · [ctrl+o] select rows
-[ctrl+/] palette · [ctrl+x] mouse
+[ctrl+/] commands · [ctrl+x] mouse on/off
 
 · the machine's first session · three keys above the key row
 ▄▀▀▀ █    █    █
@@ -249,14 +249,14 @@ Some things worth doing first:
   ⚙ run the default quality gate and triage what fails
     one approval, then it reports back
 
-type what you want and press enter
+enter sends what you type
 esc backs out of anything and never loses work
 ctrl+c twice stops a run
 
 or just type what you want
 [↑↓] choose · [enter] start · [ctrl+]] keys
 [pgup] scroll · [ctrl+o] select rows
-[ctrl+/] palette · [ctrl+x] mouse
+[ctrl+/] commands · [ctrl+x] mouse on/off
 
 · typing on the first session · the three keys stay
 ▄▀▀▀ █    █    █
@@ -268,12 +268,12 @@ go 1.24 · 3 files changed · 41 packages
 context  AGENTS.md — in the system prompt
 gate     default — vet, test · runs without asking
 
-type what you want and press enter
+enter sends what you type
 esc backs out of anything and never loses work
 ctrl+c twice stops a run
 
 [pgup] scroll · [ctrl+o] select rows
-[ctrl+/] palette · [ctrl+x] mouse
+[ctrl+/] commands · [ctrl+x] mouse on/off
 
 ── ansi ────────────────────────────────────────────────────
 · first contact · a dirty checkout with a session to pick up
@@ -296,7 +296,7 @@ ctrl+c twice stops a run
 ␛[38;5;241mor just type what you want␛[m
 ␛[94m[↑↓]␛[m␛[38;5;241m choose␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m start␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+]]␛[m␛[38;5;241m keys␛[m
 ␛[94m[pgup]␛[m␛[38;5;241m scroll␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+o]␛[m␛[38;5;241m select rows␛[m
-␛[94m[ctrl+/]␛[m␛[38;5;241m palette␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+x]␛[m␛[38;5;241m mouse␛[m
+␛[94m[ctrl+/]␛[m␛[38;5;241m commands␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+x]␛[m␛[38;5;241m mouse on/off␛[m
 
 · the pointer on the offer that costs an approval
 ␛[1;97m▄▀▀▀ █    █    █␛[m
@@ -318,7 +318,7 @@ ctrl+c twice stops a run
 ␛[38;5;241mor just type what you want␛[m
 ␛[94m[↑↓]␛[m␛[38;5;241m choose␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m start␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+]]␛[m␛[38;5;241m keys␛[m
 ␛[94m[pgup]␛[m␛[38;5;241m scroll␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+o]␛[m␛[38;5;241m select rows␛[m
-␛[94m[ctrl+/]␛[m␛[38;5;241m palette␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+x]␛[m␛[38;5;241m mouse␛[m
+␛[94m[ctrl+/]␛[m␛[38;5;241m commands␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+x]␛[m␛[38;5;241m mouse on/off␛[m
 
 · clean tree · nothing saved, no gate, no project context
 ␛[1;97m▄▀▀▀ █    █    █␛[m
@@ -342,7 +342,7 @@ ctrl+c twice stops a run
 ␛[38;5;241mor just type what you want␛[m
 ␛[94m[↑↓]␛[m␛[38;5;241m choose␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m start␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+]]␛[m␛[38;5;241m keys␛[m
 ␛[94m[pgup]␛[m␛[38;5;241m scroll␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+o]␛[m␛[38;5;241m select rows␛[m
-␛[94m[ctrl+/]␛[m␛[38;5;241m palette␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+x]␛[m␛[38;5;241m mouse␛[m
+␛[94m[ctrl+/]␛[m␛[38;5;241m commands␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+x]␛[m␛[38;5;241m mouse on/off␛[m
 
 · outside a repository · the package count is a floor
 ␛[1;97m▄▀▀▀ █    █    █␛[m
@@ -364,7 +364,7 @@ ctrl+c twice stops a run
 ␛[38;5;241mor just type what you want␛[m
 ␛[94m[↑↓]␛[m␛[38;5;241m choose␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m start␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+]]␛[m␛[38;5;241m keys␛[m
 ␛[94m[pgup]␛[m␛[38;5;241m scroll␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+o]␛[m␛[38;5;241m select rows␛[m
-␛[94m[ctrl+/]␛[m␛[38;5;241m palette␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+x]␛[m␛[38;5;241m mouse␛[m
+␛[94m[ctrl+/]␛[m␛[38;5;241m commands␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+x]␛[m␛[38;5;241m mouse on/off␛[m
 
 · nothing read · the third offer writes the file that would be
 ␛[1;97m▄▀▀▀ █    █    █␛[m
@@ -386,7 +386,7 @@ ctrl+c twice stops a run
 ␛[38;5;241mor just type what you want␛[m
 ␛[94m[↑↓]␛[m␛[38;5;241m choose␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m start␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+]]␛[m␛[38;5;241m keys␛[m
 ␛[94m[pgup]␛[m␛[38;5;241m scroll␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+o]␛[m␛[38;5;241m select rows␛[m
-␛[94m[ctrl+/]␛[m␛[38;5;241m palette␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+x]␛[m␛[38;5;241m mouse␛[m
+␛[94m[ctrl+/]␛[m␛[38;5;241m commands␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+x]␛[m␛[38;5;241m mouse on/off␛[m
 
 · somebody else is in this checkout too
 ␛[1;97m▄▀▀▀ █    █    █␛[m
@@ -408,7 +408,7 @@ ctrl+c twice stops a run
 ␛[38;5;241mor just type what you want␛[m
 ␛[94m[↑↓]␛[m␛[38;5;241m choose␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m start␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+]]␛[m␛[38;5;241m keys␛[m
 ␛[94m[pgup]␛[m␛[38;5;241m scroll␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+o]␛[m␛[38;5;241m select rows␛[m
-␛[94m[ctrl+/]␛[m␛[38;5;241m palette␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+x]␛[m␛[38;5;241m mouse␛[m
+␛[94m[ctrl+/]␛[m␛[38;5;241m commands␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+x]␛[m␛[38;5;241m mouse on/off␛[m
 
 · a checkout nobody has answered for · what it is holding back
 ␛[1;97m▄▀▀▀ █    █    █␛[m
@@ -433,7 +433,7 @@ ctrl+c twice stops a run
 ␛[38;5;241mor just type what you want␛[m
 ␛[94m[↑↓]␛[m␛[38;5;241m choose␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m start␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+]]␛[m␛[38;5;241m keys␛[m
 ␛[94m[pgup]␛[m␛[38;5;241m scroll␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+o]␛[m␛[38;5;241m select rows␛[m
-␛[94m[ctrl+/]␛[m␛[38;5;241m palette␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+x]␛[m␛[38;5;241m mouse␛[m
+␛[94m[ctrl+/]␛[m␛[38;5;241m commands␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+x]␛[m␛[38;5;241m mouse on/off␛[m
 
 · a trusted checkout whose suites changed since the answer · said once
 ␛[1;97m▄▀▀▀ █    █    █␛[m
@@ -457,7 +457,7 @@ ctrl+c twice stops a run
 ␛[38;5;241mor just type what you want␛[m
 ␛[94m[↑↓]␛[m␛[38;5;241m choose␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m start␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+]]␛[m␛[38;5;241m keys␛[m
 ␛[94m[pgup]␛[m␛[38;5;241m scroll␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+o]␛[m␛[38;5;241m select rows␛[m
-␛[94m[ctrl+/]␛[m␛[38;5;241m palette␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+x]␛[m␛[38;5;241m mouse␛[m
+␛[94m[ctrl+/]␛[m␛[38;5;241m commands␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+x]␛[m␛[38;5;241m mouse on/off␛[m
 
 · the checkout brought its own settings and its own wordings
 ␛[1;97m▄▀▀▀ █    █    █␛[m
@@ -483,7 +483,7 @@ ctrl+c twice stops a run
 ␛[38;5;241mor just type what you want␛[m
 ␛[94m[↑↓]␛[m␛[38;5;241m choose␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m start␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+]]␛[m␛[38;5;241m keys␛[m
 ␛[94m[pgup]␛[m␛[38;5;241m scroll␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+o]␛[m␛[38;5;241m select rows␛[m
-␛[94m[ctrl+/]␛[m␛[38;5;241m palette␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+x]␛[m␛[38;5;241m mouse␛[m
+␛[94m[ctrl+/]␛[m␛[38;5;241m commands␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+x]␛[m␛[38;5;241m mouse on/off␛[m
 
 · typing dismissed the list · the facts stay
 ␛[1;97m▄▀▀▀ █    █    █␛[m
@@ -496,7 +496,7 @@ ctrl+c twice stops a run
 ␛[38;5;243mgate   ␛[m  ␛[38;5;252mdefault␛[m␛[38;5;241m — vet, test · runs without asking␛[m
 
 ␛[94m[pgup]␛[m␛[38;5;241m scroll␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+o]␛[m␛[38;5;241m select rows␛[m
-␛[94m[ctrl+/]␛[m␛[38;5;241m palette␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+x]␛[m␛[38;5;241m mouse␛[m
+␛[94m[ctrl+/]␛[m␛[38;5;241m commands␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+x]␛[m␛[38;5;241m mouse on/off␛[m
 
 · the machine's first session · three keys above the key row
 ␛[1;97m▄▀▀▀ █    █    █␛[m
@@ -515,14 +515,14 @@ ctrl+c twice stops a run
   ␛[38;5;214m⚙␛[m ␛[38;5;252mrun the default quality gate and triage what fails␛[m
     ␛[38;5;241mone approval, then it reports back␛[m
 
-␛[38;5;241mtype what you want and press enter␛[m
+␛[38;5;241menter sends what you type␛[m
 ␛[38;5;241mesc backs out of anything and never loses work␛[m
 ␛[38;5;241mctrl+c twice stops a run␛[m
 
 ␛[38;5;241mor just type what you want␛[m
 ␛[94m[↑↓]␛[m␛[38;5;241m choose␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m start␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+]]␛[m␛[38;5;241m keys␛[m
 ␛[94m[pgup]␛[m␛[38;5;241m scroll␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+o]␛[m␛[38;5;241m select rows␛[m
-␛[94m[ctrl+/]␛[m␛[38;5;241m palette␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+x]␛[m␛[38;5;241m mouse␛[m
+␛[94m[ctrl+/]␛[m␛[38;5;241m commands␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+x]␛[m␛[38;5;241m mouse on/off␛[m
 
 · typing on the first session · the three keys stay
 ␛[1;97m▄▀▀▀ █    █    █␛[m
@@ -534,9 +534,9 @@ ctrl+c twice stops a run
 ␛[38;5;243mcontext␛[m  ␛[38;5;252mAGENTS.md␛[m␛[38;5;241m — in the system prompt␛[m
 ␛[38;5;243mgate   ␛[m  ␛[38;5;252mdefault␛[m␛[38;5;241m — vet, test · runs without asking␛[m
 
-␛[38;5;241mtype what you want and press enter␛[m
+␛[38;5;241menter sends what you type␛[m
 ␛[38;5;241mesc backs out of anything and never loses work␛[m
 ␛[38;5;241mctrl+c twice stops a run␛[m
 
 ␛[94m[pgup]␛[m␛[38;5;241m scroll␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+o]␛[m␛[38;5;241m select rows␛[m
-␛[94m[ctrl+/]␛[m␛[38;5;241m palette␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+x]␛[m␛[38;5;241m mouse␛[m
+␛[94m[ctrl+/]␛[m␛[38;5;241m commands␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+x]␛[m␛[38;5;241m mouse on/off␛[m

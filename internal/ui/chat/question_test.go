@@ -582,8 +582,12 @@ func TestQuestion_EscLeavesNothingOfTheCardOnTheScreen(t *testing.T) {
 }
 
 // The rail says the two ways back to the question and the one way past it.
+// The way past it is the offer the rail gives up first, so it is asked of a
+// terminal wide enough to carry all three.
 func TestQuestion_TheRailOffersTheCardAgainAndTheQueue(t *testing.T) {
 	m := escapedQuestion(t, chooseArgs)
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 130, Height: 40})
+	m = updated.(Model)
 	hints := stripANSI(m.frameHints(m.contentWidth()))
 	for _, want := range []string{
 		keys.Bracket(keys.Draft.Answer), keys.Bracket(keys.Draft.Send), keys.Bracket(keys.Draft.Queue),
@@ -1357,7 +1361,7 @@ func TestQuestion_TheFrameUnderTheCardSaysWhatItIsHolding(t *testing.T) {
 			t.Errorf("the frame should still hold the sentence and say so, missing %q:\n%s", want, view)
 		}
 	}
-	if strings.Contains(view, "queues steering") {
+	if strings.Contains(view, "add to this turn") {
 		t.Errorf("the draft's keys are not live under a card that holds the keyboard:\n%s", view)
 	}
 }

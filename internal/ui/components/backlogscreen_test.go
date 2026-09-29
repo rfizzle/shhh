@@ -539,3 +539,23 @@ func TestBacklogScreen_DrawsASecondVocabulary(t *testing.T) {
 		t.Errorf("after three presses the header says %q", got)
 	}
 }
+
+// The `?` reveal says what a row's letters stand for, and names the fields
+// the field-filter key cycles, in the words of whichever vocabulary the
+// screen was handed: nothing about them is written for one profile.
+func TestBacklogScreen_TheKeysSayWhatASecondVocabularysLettersMean(t *testing.T) {
+	b := &BacklogScreen{MaxLines: 60, Rows: []BacklogRow{
+		{Slug: "why-tabs", Title: "Why tabs", Priority: "high", Status: "open", State: BacklogReady},
+	}}
+	b.Priority, b.Fields = researchFields()
+	pressAll(b, "?")
+	view := ansi.Strip(b.View(130))
+	for _, want := range []string{
+		"letters  priority H high · M medium · L low — kind Q question · R reading — depth Q quick · D deep — - unset",
+		"cycle the kind or depth filter",
+	} {
+		if !strings.Contains(view, want) {
+			t.Errorf("the reveal never says %q:\n%s", want, view)
+		}
+	}
+}

@@ -15,7 +15,7 @@ keys "write down what we settled on" Enter
 # At 60 columns the held card's esc ends the offers row, cut to the bare key
 # rather than given a row of its own
 # (docs/interface/surfaces.md#the-approval-card).
-narrow 61 snap 02-card "notes.md" "[N] and say why not · [?] keys · [esc]"
+narrow 61 snap 02-card "notes.md" "[N] deny with a note · [?] keys · [esc]"
 wide 61 snap 02-card "notes.md"
 # A card that has just landed holds its keys for a beat, so the typing waits
 # for the grace window rather than racing it. The sentence carries a bare y:

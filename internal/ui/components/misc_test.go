@@ -10,11 +10,11 @@ import (
 )
 
 func TestCockpit_Segments(t *testing.T) {
-	c := Cockpit{Mode: "accept edits", ModeKind: CockpitPermissive, Round: "round 7/25",
+	c := Cockpit{Mode: "accept edits", ModeKind: CockpitPermissive, Round: "round 7 of 25",
 		CtxPct: 62, Tokens: "↑41.2k ↓9.8k", Spend: "$0.14",
 		Agents: 2}
 	view := c.View(120)
-	for _, want := range []string{"⏵⏵ accept edits", "round 7/25", "ctx", "62%", "▰", "$0.14", "◇2"} {
+	for _, want := range []string{"⏵⏵ accept edits", "round 7 of 25", "ctx", "62%", "▰", "$0.14", "◇2"} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("cockpit should contain %q:\n%s", want, view)
 		}
@@ -29,8 +29,8 @@ func TestCockpit_Segments(t *testing.T) {
 	if !strings.Contains(gated.View(80), "⏸ read-only") {
 		t.Fatal("gated modes render ⏸")
 	}
-	checking := Cockpit{Mode: "checking", ModeKind: CockpitChecking, CtxPct: -1}
-	if !strings.Contains(checking.View(80), "✦ checking") {
+	checking := Cockpit{Mode: "deciding", ModeKind: CockpitChecking, CtxPct: -1}
+	if !strings.Contains(checking.View(80), "✦ deciding") {
 		t.Fatal("classifier checks render ✦")
 	}
 }
@@ -168,7 +168,7 @@ func TestDropToFit_GivesUpTheLastFieldWhole(t *testing.T) {
 // side has just been emptied: a shedding chain that can re-widen loops for
 // ever, and it loops inside the render path of a narrow terminal.
 func TestCockpit_ViewTerminatesAtEveryWidth(t *testing.T) {
-	c := Cockpit{Mode: "accept edits", ModeKind: CockpitPermissive, Round: "round 7/25",
+	c := Cockpit{Mode: "accept edits", ModeKind: CockpitPermissive, Round: "round 7 of 25",
 		CtxPct: 62, Tokens: "↑41.2k ↓9.8k", Spend: "$0.14", Agents: 2,
 		Extra: []string{"1 queued"}}
 	for w := 0; w <= 120; w++ {

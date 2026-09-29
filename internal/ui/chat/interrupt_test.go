@@ -310,7 +310,7 @@ func TestInterrupt_TheHeldDraftKeepsTheCountAndTheVitals(t *testing.T) {
 	if !strings.Contains(held, "⏸ 1 waiting") {
 		t.Fatalf("the held frame's top rail counts what is waiting:\n%s", held)
 	}
-	for _, want := range []string{"⏸ manual", "ctx ", "▱", m.draftPosition()} {
+	for _, want := range []string{"⏸ manual", "context ", "▱", m.draftPosition()} {
 		if !strings.Contains(held, want) {
 			t.Fatalf("the held frame's rail keeps %q:\n%s", want, held)
 		}
@@ -321,7 +321,7 @@ func TestInterrupt_TheHeldDraftKeepsTheCountAndTheVitals(t *testing.T) {
 	if !strings.Contains(narrow, "⏸ manual") {
 		t.Fatalf("the mode segment is never dropped:\n%s", narrow)
 	}
-	if strings.Contains(narrow, "cursor at") && !strings.Contains(narrow, "ctx ") {
+	if strings.Contains(narrow, "cursor at") && !strings.Contains(narrow, "context ") {
 		t.Fatalf("the position outlived the pressure:\n%s", narrow)
 	}
 }
@@ -378,7 +378,7 @@ func TestArrival_ACardLandingOnAnIdleDraftHoldsTheKeyboard(t *testing.T) {
 		t.Fatal("the card took the keyboard by arriving, not by a handover")
 	}
 	view := ansi.Strip(m.View().Content)
-	if strings.Contains(view, "not live yet") {
+	if strings.Contains(view, "keys work in a moment") {
 		t.Fatalf("a card holding the keyboard has live keys:\n%s", view)
 	}
 	if !strings.Contains(view, "DECISION") {
@@ -499,7 +499,7 @@ func TestSpawnCard_AYTheSendHadInFlightWaitsForTheKeys(t *testing.T) {
 		t.Fatal("fixture: a card landing a moment after the send takes the keyboard with the grace window open")
 	}
 	view := ansi.Strip(m.View().Content)
-	for _, want := range []string{"Spawn 3 writers", "refused", "keys live in a moment"} {
+	for _, want := range []string{"Start 3 writers", "refused", "keys work in a moment"} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("the card inside its grace window does not say %q:\n%s", want, view)
 		}

@@ -674,9 +674,9 @@ func (m Model) policyLabel() string {
 	}
 	switch {
 	case live.AllCommands:
-		parts = append(parts, "cmds")
+		parts = append(parts, "commands")
 	case len(live.Commands)+len(live.ExactCommands) > 0:
-		parts = append(parts, plural(len(live.Commands)+len(live.ExactCommands), "cmd"))
+		parts = append(parts, plural(len(live.Commands)+len(live.ExactCommands), "command"))
 	}
 	if n := len(live.Hosts); n > 0 {
 		parts = append(parts, plural(n, "host"))
@@ -693,7 +693,7 @@ func (m Model) policyLabel() string {
 	if len(parts) == 0 {
 		return ""
 	}
-	return "auto: " + strings.Join(parts, "+")
+	return "granted: " + strings.Join(parts, ", ")
 }
 
 // policyHelp is the approval policy as text, the way /help lays it out.
