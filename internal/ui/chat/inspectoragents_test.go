@@ -2,11 +2,13 @@ package chat
 
 import (
 	"context"
+	"encoding/json"
 	"strings"
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
 
+	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
@@ -127,5 +129,65 @@ func TestInspectorAgents_TheMapFloatsAndTheChordDoesNot(t *testing.T) {
 	agents := m.inspectorAgents()
 	if agents[1].Name != "researcher-1" || agents[2].Name != "reviewer-1" {
 		t.Fatalf("the host hands the map spawn order: %+v", agents)
+	}
+}
+
+// oneToolEnv scripts children that make one read and then block on their
+// next request, so a test can observe a child that is working and has a
+// tool count to state.
+func oneToolEnv() subagent.EnvFactory {
+	return func(ctx context.Context, spec subagent.Spec) (subagent.Env, error) {
+		calls := 0
+		stream := func([]provider.Message, string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+			calls++
+			if calls == 1 {
+				ch := make(chan provider.StreamEvent, 1)
+				ch <- provider.StreamEvent{ToolCalls: []provider.ToolCall{{ID: "c1",
+					Name: "read_file", Arguments: `{"path":"docs/loop.md"}`}}}
+				close(ch)
+				return ch, func() {}, nil
+			}
+			ch := make(chan provider.StreamEvent)
+			go func() {
+				<-ctx.Done()
+				close(ch)
+			}()
+			return ch, func() {}, nil
+		}
+		return subagent.Env{
+			SystemPrompt: "sys",
+			Stream:       stream,
+			Executor:     func(string, json.RawMessage) (string, error) { return "", nil },
+		}, nil
+	}
+}
+
+// TestInspectorAgents_AWorkingChildSaysItsToolCountOnce: the supervisor's
+// line for a working child counts its tools for the model's roster, and the
+// map row counts them in a field of its own; the row is handed the one and
+// not the other, so it reads `running · 1 tool` rather than saying the count
+// twice.
+func TestInspectorAgents_AWorkingChildSaysItsToolCountOnce(t *testing.T) {
+	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: oneToolEnv()})
+	t.Cleanup(sup.Close)
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).WithSubagents(sup)
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 144, Height: 40})
+	m = updated.(Model)
+	spawnChild(t, sup, subagent.RoleResearcher, "researcher-1")
+	waitFor(t, func() bool { st, _ := sup.Get("researcher-1"); return st.ToolCalls == 1 })
+
+	child := m.inspectorAgents()[1]
+	if child.Detail != "running" || child.Tools != 1 {
+		t.Fatalf("the row is handed the state word and the count apart: %+v", child)
+	}
+	view := stripANSI(m.View().Content)
+	row := ""
+	for _, line := range strings.Split(view, "\n") {
+		if strings.Contains(line, "running ·") {
+			row = line
+		}
+	}
+	if row == "" || strings.Count(row, "1 tool") != 1 {
+		t.Fatalf("the map row should say its tool count once:\n%s", view)
 	}
 }

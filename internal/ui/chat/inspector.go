@@ -593,6 +593,18 @@ func (m Model) inspectorAgents() []components.InspectorAgent {
 			PatchKept: st.PatchKept,
 			Depth:     depth[st.Name],
 		}
+		if st.State == subagent.StateRunning {
+			// The supervisor's line for a working child is its roster line for
+			// the model, and it counts the tools itself (`running · 3 tools`).
+			// The row carries that count in a field of its own, ranked to be the
+			// first thing a narrow rail gives up, so the label beside the
+			// spinner is what the lane says under the same child — the question
+			// it is answering or the slot it waits for — and otherwise the state
+			// word alone (docs/interface/surfaces.md#the-inspector-rail).
+			if a.Detail = childNote(st); a.Detail == "" {
+				a.Detail = st.State.String()
+			}
+		}
 		if st.FollowUp != "" {
 			// The question it was asked after it answered, which is what it
 			// is working on rather than the task its name was spawned for.
