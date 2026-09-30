@@ -408,6 +408,16 @@ func Surfaces() []Surface {
 			Bindings: []Binding{Decision.Accept, Decision.Refuse, Select.Cancel, Screen.List},
 		},
 		{
+			// The scaffold card's shape again, for a file drafted rather
+			// than templated, with the one key a draft needs that a template
+			// does not: the file opens in $EDITOR before anything is written.
+			Name:     "the toolchain draft card",
+			Section:  "docs/interface/surfaces.md#the-approval-card",
+			Position: Takeover,
+			Reached:  "/toolchain, or the start screen's draft offer",
+			Bindings: []Binding{Decision.Accept, Decision.Revise, Decision.Refuse, Select.Cancel, Screen.List},
+		},
+		{
 			Name:     "the inline confirm and the undo confirm",
 			Section:  "docs/interface/surfaces.md#the-inline-confirm",
 			Position: Takeover,

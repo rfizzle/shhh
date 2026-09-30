@@ -754,6 +754,12 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 	case setupDoneMsg:
 		return answered(m.finishSetup(msg))
 
+	case toolchainDraftMsg:
+		return answered(m.finishToolchainDraft(msg))
+
+	case toolchainEditorDoneMsg:
+		return answered(m.toolchainEditorFinished(msg))
+
 	case personaDraftMsg:
 		return answered(m.finishPersonaDraft(msg))
 

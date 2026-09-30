@@ -1406,6 +1406,33 @@ func TestGolden_ToolchainSetup(t *testing.T) {
 	})
 }
 
+// TestGolden_ToolchainDraft captures the offer to draft this checkout's
+// toolchain declaration in the start screen's read-only slot, and the card a
+// drafting lands on: a new file, shown whole, each install line with what it
+// provides; the same in a checkout nobody has trusted, which names the
+// command that lets the file load; and a review, which is the diff against
+// the file as it stands and each change with its reason.
+func TestGolden_ToolchainDraft(t *testing.T) {
+	captureGolden(t, "toolchain-draft", "the toolchain draft offer and its card", goldenWidths, func(width int) []golden.Panel {
+		var r draftRecorder
+		review := draftedDeclaration()
+		review.Previous = []byte("check = [\"golangci-lint\"]\n")
+		review.Changes = []ToolchainChange{{Change: "install golangci-lint at v2.5.0", Reason: "the Makefile's lint target runs it"}}
+		untrusted := r.toolchain(draftedDeclaration())
+		untrusted.Untrusted = true
+		existing := r.toolchain(review)
+		existing.Exists = true
+		card := func(tc Toolchain) string { return declarationCard(t, width, tc, startFixture()).panelView() }
+		start := declarationModel(t, width, r.toolchain(draftedDeclaration()), startFixture())
+		return []golden.Panel{
+			{Label: "the start screen · the draft in the read-only slot", View: start.renderHistory()},
+			{Label: "the card · a new file", View: card(r.toolchain(draftedDeclaration()))},
+			{Label: "the card · an untrusted checkout", View: card(untrusted)},
+			{Label: "the card · a review", View: card(existing)},
+		}
+	})
+}
+
 // TestGolden_ProviderFailures captures the session's own mapping from a
 // classified failure to a row: which class earns ⚠ and which
 // earns ✗, what each says in its outcome, and which keys the session can

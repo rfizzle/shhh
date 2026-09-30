@@ -73,6 +73,7 @@ func registrableDefinitions(skills *skill.Catalog, profiles subagent.Profiles) [
 		ask.ToolDefinition(),
 		todo.ExtractTool(todo.BuiltinCode()),
 		persona.DraftTool(),
+		toolchainDraftTool(),
 	)
 	return defs
 }

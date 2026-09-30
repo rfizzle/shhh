@@ -514,7 +514,7 @@ var settings = []Setting{
 		Desc: "The model every sub-agent runs, unless its role says otherwise; `inherit` is the session's own.",
 	}, {
 		Key: "agents.drafter_model", Kind: KindString, Default: "(provider.cheap_model)",
-		Desc: "The model `/agents new` drafts a profile on.",
+		Desc: "The model `/agents new` drafts a profile on, and `/toolchain` drafts a toolchain declaration on.",
 	}, {
 		Key: "agents.profiles." + RoleWildcard + ".model", Kind: KindString, Wild: WildRole,
 		Default: "(the sub-agent model)",

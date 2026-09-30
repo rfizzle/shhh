@@ -975,6 +975,15 @@ type DecisionKeys struct {
 	// mnemonic — was settled the other way when it was made (Explain).
 	Amend Binding
 
+	// Revise is the drafted-file card's offer to change the file before it
+	// is written: the draft opens in $EDITOR and what comes back is read by
+	// the same loader before the card shows it
+	// (docs/capabilities/containment.md#a-declaration-can-be-drafted-for-you).
+	// It is [e] for the reason Amend is — edit is the word — and the two are
+	// never on one card: Amend is the command card's and this is a card that
+	// writes a file.
+	Revise Binding
+
 	// Accept and Refuse are Allow and Deny on a card the reader summoned
 	// rather than was handed.
 	//
@@ -1027,6 +1036,7 @@ var Decision = DecisionKeys{
 	DryRun:     bind("t", "dry run", "t"),
 	Explain:    bind("x", "explain what the command does", "x"),
 	Amend:      bind("e", "edit the command before it runs", "e"),
+	Revise:     bind("e", "edit the file before it is written", "e"),
 	Accept:     bind("y", "yes", "y", "Y", "enter"),
 	Refuse:     bind("n", "no, and stop offering", "n", "N"),
 

@@ -569,6 +569,9 @@ func (m Model) decisionCard() *components.ApprovalCard {
 	if m.state == stateSetup {
 		return m.setupCard()
 	}
+	if m.state == stateToolchainDraft {
+		return m.toolchainDraftCard()
+	}
 	if ask := m.activeChildAsk(); ask != nil {
 		return m.childAskCard(ask)
 	}

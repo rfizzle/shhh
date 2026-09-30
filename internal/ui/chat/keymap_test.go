@@ -466,6 +466,16 @@ func decisionCards(t *testing.T) []decisionCard {
 			card: sessionCard,
 		},
 		{
+			// The one card here the reader summoned: its [e] hands the
+			// draft to the editor, and it is pressed like every other key.
+			name: "the toolchain draft card",
+			open: func(t *testing.T) Model {
+				var r draftRecorder
+				return declarationCard(t, 110, r.toolchain(draftedDeclaration()), startFixture())
+			},
+			card: func(m Model) *components.ApprovalCard { return m.toolchainDraftCard() },
+		},
+		{
 			name: "the session's command card",
 			open: func(t *testing.T) Model {
 				var bare, contained []string

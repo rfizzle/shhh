@@ -928,6 +928,10 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		missing := toolchainPromptBlock(containment.Toolchain.Missing, containment.Toolchain.Runnable())
 		env.addBuiltPrompt(missing)
 		session.promptExtra = prompt.CombineExtra(session.promptExtra, missing)
+		// …and the offer to draft or review the declaration itself, which
+		// is this surface's alone: its answer is a card, and only a session
+		// has somebody to put one to (toolchaindraft.go).
+		wireToolchainDraft(&containment.Toolchain, ledger.For(env.prov, meter.SourceToolchain), env.flowModelAt(cfg, flowToolchain))
 	}
 
 	// The person's own commands at this session's seams (hooks.go). They are

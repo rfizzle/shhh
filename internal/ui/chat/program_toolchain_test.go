@@ -49,3 +49,43 @@ func TestProgram_SetupPutsTheDeclaredLinesOnOneCard(t *testing.T) {
 		t.Fatalf("the yes ran %v, want both lines", ran)
 	}
 }
+
+// `/toolchain` reaches the drafting through the whole program: its answer
+// arrives off the UI goroutine and lands on the card, esc leaves with the
+// draft waiting and nothing written, and only the yes writes.
+func TestProgram_ToolchainDraftLandsOnACardAndWritesOnlyOnYes(t *testing.T) {
+	var mu sync.Mutex
+	var written [][]byte
+	tc := Toolchain{
+		Draft: func(context.Context, bool) ToolchainDraft { return draftedDeclaration() },
+		WriteDraft: func(content []byte) (string, error) {
+			mu.Lock()
+			defer mu.Unlock()
+			written = append(written, content)
+			return ".shhh/toolchain.toml", nil
+		},
+	}
+	m, _ := scriptedSession(programTurn{text: "nobody asked the model"})
+	m = m.WithContainment(Containment{Status: "contained", Mechanism: "bwrap", Profile: "workspace", Network: true, Toolchain: tc})
+	tm := runProgramAt(t, m, 110, 40)
+
+	send(tm, toolchainCommandName)
+	waitForAll(t, tm, "Approve toolchain declaration", "provides golangci-lint", "edit first")
+	programPress(t, tm, "esc")
+	waitForText(t, tm, "opens the draft again")
+	mu.Lock()
+	if len(written) != 0 {
+		t.Fatalf("esc wrote %q", written)
+	}
+	mu.Unlock()
+
+	send(tm, toolchainCommandName)
+	waitForText(t, tm, "write it")
+	tm.Send(programAllow)
+	waitForText(t, tm, "wrote .shhh/toolchain.toml")
+	mu.Lock()
+	defer mu.Unlock()
+	if len(written) != 1 {
+		t.Fatalf("the yes wrote %d files, want one", len(written))
+	}
+}

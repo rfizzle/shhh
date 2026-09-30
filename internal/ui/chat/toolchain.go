@@ -59,6 +59,22 @@ type Toolchain struct {
 	Install func(ctx context.Context, line string) tools.ExecResult
 	// Recheck reads Missing again once the lines have run.
 	Recheck func() []string
+	// Draft reads the checkout and drafts its declaration — or, with
+	// review, the changes the existing one needs — and hands back a file the
+	// loader has already read (toolchaindraft.go). Nil, with WriteDraft, is
+	// a session with nobody to put the card to, which offers nothing.
+	Draft func(ctx context.Context, review bool) ToolchainDraft
+	// WriteDraft writes a drafted declaration into the checkout and returns
+	// the path it wrote. The card's yes is its only caller.
+	WriteDraft func(content []byte) (string, error)
+	// Exists is a declaration file in the checkout, trusted or not: what
+	// makes the offer a review rather than a draft.
+	Exists bool
+	// Untrusted is a checkout whose declaration is not read until the
+	// person trusts it, which the draft's card says.
+	Untrusted bool
+	// drafting is a drafting in flight or waiting on its card.
+	drafting *toolchainDrafting
 	// installing is a run under way, so a second /setup does not start a
 	// second run of the same lines into the same directory.
 	installing bool

@@ -494,6 +494,27 @@ func buildOverlays() map[state]*mode {
 				open: bareOpen(Model.setupCommand),
 			},
 		},
+		stateToolchainDraft: {
+			place:     placePanel,
+			borrows:   true,
+			hidesRail: true,
+			lines:     panelRows((Model).toolchainDraftLines),
+			// The scaffold card's headroom, for the scaffold card's reason: a
+			// decision whose keys the panel bound cut off is not one.
+			bound:   (Model).planPanelBound,
+			answer:  (*Model).answerToolchainDraft,
+			keyList: staticKeyList("the toolchain draft card"),
+			// The draft is read and written beside the conversation and never
+			// into it, so it is not idle-only; its editor refuses a running
+			// turn itself, since the editor takes the terminal with it.
+			command: &surfaceCommand{
+				slashCommand: slashCommand{name: toolchainCommandName, desc: "draft this checkout's toolchain declaration, or review the one it has (reads only, then asks)",
+					enabled: func(m *Model) bool { return m.toolchainDraftWired() },
+					help:    "read the checkout — its build files, CI workflows, Makefile and quality gate — and draft the .shhh/toolchain.toml its checks need, or review the one it has and propose only changes, each with its reason. The draft is read by the same loader the file is before a card shows it, and nothing is written until the card's yes"},
+				bare: true,
+				open: bareOpen(Model.toolchainCommand),
+			},
+		},
 		stateTodoPause: {
 			place:     placePanel,
 			borrows:   true,

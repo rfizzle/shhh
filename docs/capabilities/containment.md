@@ -542,7 +542,13 @@ The image carries the toolchains most projects build with and nothing a
 particular project's checks add on top: a Go project that lints with
 `golangci-lint` and scans with `gosec` finds neither, and with the network
 off there is nothing a running container can fetch them with. So a checkout
-names what its work needs, once, in `.shhh/toolchain.toml`:
+names what its work needs, once, in a file of its own. The grammar that
+follows is also, word for word, what a drafted declaration is handed
+([below](#a-declaration-can-be-drafted-for-you)):
+
+<!-- BEGIN generated toolchain grammar — written by `make docs` from internal/project/toolchain_grammar.md; edit that, not this. -->
+
+The declaration is `.shhh/toolchain.toml`, and it takes four keys:
 
 ```toml
 packages = ["shellcheck"]
@@ -554,22 +560,19 @@ hosts = ["proxy.golang.org", "sum.golang.org"]
 check = ["golangci-lint", "gosec", "shellcheck"]
 ```
 
-- `packages` are names in the base image's own package index, alone or as
-  `name=version`.
+- `packages` are names in the base image's own package index — Wolfi, so
+  apk's — alone or as `name=version`.
 - `install` are command lines, one install each, every package on them at one
   exact version.
 - `hosts` are the registries an install run on the host may reach — host names
-  alone, read exactly as a contained command's host list reads them.
-- `check` are the binaries the work expects to find on `PATH`.
+  alone, with no scheme, port, path or wildcard.
+- `check` are the binaries the work expects to find on `PATH`, named as a
+  program is named on `PATH` rather than as a path.
 
 The file is read whole or not at all. A key it does not know, a host that is
 not a host name, a check that is a path rather than a program, or an install
 line whose pin cannot be read is refused when the file is read, and the
-refusal quotes the entry. A declaration that quietly lost a line would
-prepare a place to work without the tool that line was for, and the first
-anyone would hear of it is a check failing inside it. On this machine a
-session checks its `PATH` against the file and offers to install what is
-missing (below); nothing yet prepares a container image from it.
+refusal quotes the entry.
 
 **An install line names one exact version, or it is refused.** A place to
 work prepared from the declaration is kept under the file's bytes, so it is
@@ -581,10 +584,32 @@ means something different next month under an unchanged line, and a cache
 keyed on the line would go on serving last month's tool. So a line is
 accepted only where the pin can be read: one command, with no chain, pipe,
 redirection, substitution or quote, from an installer whose arguments say
-the version — `go install`, `apk add`, `pip install` (and `pip3`, `python -m
-pip`, `pipx`), `npm install` or `pnpm add`, and `cargo install`. Any other
-line is refused rather than guessed at, since a pin that cannot be read is
-one nobody can vouch for.
+the version. Each installer states its pin one way:
+
+| Installer | A pinned line |
+|---|---|
+| `go install` | `go install example.com/cmd/tool@v1.2.3` — a full `vX.Y.Z` or a commit hash of twelve or more characters |
+| `pip install`, `pip3 install`, `python -m pip install`, `python3 -m pip install`, `pipx install` | `pip install package==1.2.3` — `==` and nothing else; no `-r`, `-c`, `-e`, `-U` or `--pre` |
+| `npm install`, `npm i`, `npm add`, `pnpm add` | `npm install package@1.2.3` — one exact version; no range and no `--tag` |
+| `cargo install` | `cargo install crate@1.2.3`, or `--version 1.2.3` for the one crate on the line; no `--git`, `--branch` or `--path` |
+| `apk add` | `apk add package=1.2.3-r0` — for the image, never run on this machine; no `-u` |
+
+A line may begin with `NAME=value` assignments, which are its environment.
+Any other installer is refused rather than guessed at, since a pin that
+cannot be read is one nobody can vouch for.
+
+What the lines install lands in shhh's own directory — `shhh/toolchain/bin`
+under the user cache directory, never `~/go/bin` or a global prefix — and
+that directory is on the end of the `PATH` every command of a session is
+handed, which is where the `check` names are looked for.
+
+<!-- END generated toolchain grammar -->
+
+A declaration that quietly lost a line would prepare a place to work without
+the tool that line was for, and the first anyone would hear of it is a check
+failing inside it — which is why a file is read whole or not at all. On this
+machine a session checks its `PATH` against the file and offers to install
+what is missing (below); nothing yet prepares a container image from it.
 
 The declaration is command text that runs as you, so it is part of what a
 checkout has to be trusted for
@@ -647,6 +672,60 @@ that a model whose work needs one asks rather than installing it — or, in a
 run with nobody to ask, says which it needs and carries on without it.
 Where every declared tool is there it is told nothing: a paragraph about
 tools that are all present would be read on every request for no reason.
+
+### A declaration can be drafted for you
+
+Nobody should have to learn this grammar before a sandbox can build their
+project, so a session offers to write the file. In a checkout that is a
+repository, or that holds a build file shhh recognises, the start screen's
+read-only offer becomes *draft this checkout's toolchain declaration* — or,
+where the file exists, *review* it — and `/toolchain` is the same act typed.
+Taking it reads the checkout: its build files, its task runner, its CI
+workflows, its linters' configuration and its quality gate, with its
+lockfiles named, and the declaration as it stands. It reads only; the
+answer is a card, and nothing is written until the card's yes.
+
+The reading is a bounded request of its own, not a turn of the conversation:
+it is handed what the session read, can call nothing but the one tool it
+answers through, and leaves nothing in the conversation. It is told the
+grammar above word for word — the section is generated from the same text
+the request carries, so what a person reads about the file and what the
+model is told about it cannot drift — and the model answers the file's four
+lists, not its text, so it writes no TOML and cannot invent a key. A review
+answers the whole declaration as it should be and each change it made with
+its reason: a tool the checks run that the file lacks, a pin behind the
+version the checkout states elsewhere, an entry nothing uses. A review that
+changes nothing says so and draws no card.
+
+**The loader judges the draft before anybody sees it.** The answer is
+rendered into the file and read by the same reading the next session will
+give it. A line it refuses goes back to the model once, with the loader's
+own sentence — the entry and what a pinned one looks like, which is exactly
+what the model needs to fix it — and a second refusal ends the drafting in
+those words. So the card only ever shows a declaration that loads: a card
+that offered a file the next session refused would be a keystroke that
+produced a failure a session later, with nothing on screen connecting the
+two. An edit made on the way (`[e]` opens the draft in your editor) is read
+the same way, and one the loader refuses leaves the card on the draft before
+it.
+
+The card is the scaffold card's shape: the file as a diff against what is
+there, a new file whole; each install line with the binary it provides; the
+registries the lines may reach; and the change and its reason for a review.
+The file is command text that will run, so in a checkout you have not
+trusted the card says it is not read until you run `shhh trust` — it is
+written either way, and it waits on the same answer as every other file a
+checkout declares.
+
+The tool the model answers through exists only in that request. The
+session's own prompt names no tool, because the tools a session has depend
+on what the machine and the checkout turned out to hold; a paragraph there
+naming the draft tool would promise one that every other request lacks. So
+what the model is told is the tool's definition and the drafting's own
+instruction, sent with it and nowhere else. A `-p` run and a served session
+have nobody to answer the card, so they refuse `/toolchain` in a sentence
+rather than handing the word to the model as an instruction, and a sub-agent
+never has it.
 
 ## A cancelled command takes its children with it
 

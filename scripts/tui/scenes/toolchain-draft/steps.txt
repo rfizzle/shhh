@@ -1,0 +1,15 @@
+# program test: TestProgram_ToolchainDraftLandsOnACardAndWritesOnlyOnYes
+#
+# A Go repository with no .shhh/toolchain.toml: the start screen's read-only
+# offer is the draft. /toolchain reads the checkout and the scripted model
+# answers the draft tool with a two-line declaration; the card shows the
+# file whole, the line with the binary it provides, and — the checkout never
+# having been trusted — that the file loads once it is. The yes writes it.
+# Read 02 against the toolchain card windows on the approval-card artboard.
+setup printf 'module example.com/scene\n\ngo 1.24\n' > go.mod
+setup printf 'lint:\n\tstaticcheck ./...\n' > Makefile
+snap 01-start "draft this checkout's toolchain declaration" "reads only, then asks"
+keys "/toolchain" Enter
+snap 02-card "Approve toolchain declaration" "provides staticcheck" "edit first"
+keys y
+snap 03-written "wrote .shhh/toolchain.toml"

@@ -2431,6 +2431,14 @@ would fail: one approval, the same card `/setup` opens, listing every line
 before anything runs. The line goes when nothing is missing, and the offer
 is not made where the session could not run the install.
 
+In a repository, or a checkout holding a build file shhh recognises, the
+read-only slot offers to draft the toolchain declaration — or to review it,
+where there is one
+([containment.md](../capabilities/containment.md#a-declaration-can-be-drafted-for-you)).
+It takes the second read-only row, and the only one where a session to resume
+has the first. It reads, then asks: the answer is a card, and nothing is
+written until its yes.
+
 Under the offers is one key row, led by the way in that is not a key — `or
 just type what you want` — and then choosing, starting and the key list. It
 is one row of at most six, like every key hint: the pointer's own chords,

@@ -61,6 +61,7 @@ func (m *Model) startNewSession() (notes []entry, save tea.Cmd) {
 	m.dropTodoGroom()
 	m.dropTodoPlan()
 	m.dropPersona()
+	m.dropToolchainDraft()
 	// Every screen a register row holds was built from the session being
 	// left, and they all go in one call. The one with the screen now stays:
 	// a sprint crosses this boundary between two items while the reader may

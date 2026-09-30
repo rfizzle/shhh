@@ -266,6 +266,12 @@ const (
 	// the spend screen: full width, the rail hidden, esc returns, and its [a]
 	// records the checkout's trust answer after asking (tools.go).
 	stateTools
+	// stateToolchainDraft: the card offering to write the toolchain
+	// declaration a model drafted from the checkout, or the changes it
+	// proposes to one (toolchaindraft.go). A takeover like the scaffold
+	// card, because the reader asked for it — from the start screen's offer
+	// or by typing /toolchain.
+	stateToolchainDraft
 )
 
 // minPanelHeight is the fewest rows the bottom panel takes: what a surface

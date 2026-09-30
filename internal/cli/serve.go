@@ -1036,6 +1036,11 @@ func (l *serveLoop) Fork(s rpc.Seams) (rpc.Loop, error) {
 // carried out here, under the number the client was given when it started
 // this turn.
 func (l *serveLoop) Run(turn int64, prompt string) (string, error) {
+	// A served session has nobody to answer the draft's card, and the words
+	// would otherwise reach the model as an instruction (toolchaindraft.go).
+	if err := toolchainCommandRefusal(prompt); err != nil {
+		return "", err
+	}
 	// A turn starting is this loop's round boundary, the one the TUI reads
 	// a submitted line at: whatever the servers have re-listed since the
 	// last turn is applied here, where nothing is in flight to move under,

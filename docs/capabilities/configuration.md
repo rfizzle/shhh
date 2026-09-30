@@ -862,6 +862,7 @@ rules above are what refuse a move, not a list of keys held back from it.
 | `decision.dry_run` | `t` | dry run | yes |
 | `decision.explain` | `x` | explain what the command does | yes |
 | `decision.amend` | `e` | edit the command before it runs | yes |
+| `decision.revise` | `e` | edit the file before it is written | yes |
 | `decision.accept` | `y`, `Y`, `enter` | yes | yes |
 | `decision.refuse` | `n`, `N` | no, and stop offering | yes |
 | `decision.scroll_up` | `shift+up` | scroll the card up | yes |
@@ -1238,7 +1239,7 @@ own file could hold.
 | Key | Takes | Default | What it decides |
 |---|---|---|---|
 | `model` | text | `inherit` | The model every sub-agent runs, unless its role says otherwise; `inherit` is the session's own. |
-| `drafter_model` | text | (provider.cheap_model) | The model `/agents new` drafts a profile on. |
+| `drafter_model` | text | (provider.cheap_model) | The model `/agents new` drafts a profile on, and `/toolchain` drafts a toolchain declaration on. |
 | `profiles.<role>.model` | text | (the sub-agent model) | The model one role runs — the role is the key's own segment, so any role a spawn names can have one. |
 | `depth.<depth>.model` | text | (the sub-agent model) | The model one level of delegation runs — `2` is a child of this session, `3` a child of that. A role that names its own model outranks it. |
 | `max_concurrent` | number | `3` | How many children may run at once at one level of delegation; further spawns queue. |

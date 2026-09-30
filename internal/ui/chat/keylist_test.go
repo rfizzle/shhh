@@ -117,6 +117,10 @@ func TestKeyList_EveryCardThatAnswersQuestionMarkOffersIt(t *testing.T) {
 			next, _ := m.scaffoldCommand()
 			return next.(Model)
 		}},
+		{"the toolchain draft card", func(t *testing.T) Model {
+			var r draftRecorder
+			return declarationCard(t, 120, r.toolchain(draftedDeclaration()), startFixture())
+		}},
 		{"the rewind scope card", func(t *testing.T) Model {
 			m, _, _ := rewindOfferModel(t)
 			return sendText(t, m, "/rewind 1")

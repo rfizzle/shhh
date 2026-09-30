@@ -267,6 +267,7 @@ func buildSlashCommands() []slashCommand {
 			enabled:  func(m *Model) bool { return m.scaffold.Write != nil },
 			idleOnly: "it writes a file into the checkout"},
 		registeredSlash(setupCommandName),
+		registeredSlash(toolchainCommandName),
 		{name: "/skills", desc: "the skills this session loaded, and why any did not"},
 		registeredSlash("/mcp"),
 		{name: "/skill", args: "<name> [task]", desc: "activate a skill now, with your task after it",

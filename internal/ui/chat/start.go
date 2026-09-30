@@ -259,7 +259,11 @@ func (m Model) startScreen() (components.StartScreen, []string) {
 	if info == nil {
 		return components.StartScreen{}, nil
 	}
-	suggestions, actions := startSuggestions(*info, m.scaffoldOffered(), m.setupOffered())
+	draft := ""
+	if m.toolchainDraftOffered() {
+		draft = toolchainDraftTitle(m.toolchain().Exists)
+	}
+	suggestions, actions := startSuggestions(*info, m.scaffoldOffered(), m.setupOffered(), draft)
 	notes := startNotes(*info)
 	// What the checkout declared and the contained PATH lacks, after
 	// everything the checkout told the session about itself: it is the one
@@ -503,7 +507,16 @@ func startNotes(info StartInfo) []components.StartNote {
 // setup is what it is instead when the checkout declared tools the contained
 // PATH lacks: the offer that costs an approval would otherwise run checks
 // that need them, and installing them is the approval worth spending first.
-func startSuggestions(info StartInfo, scaffold, setup bool) ([]components.StartSuggestion, []string) {
+//
+// draft, where it is not empty, is the offer to draft or review the
+// checkout's toolchain declaration, and it takes the read-only slot the way
+// the scaffold takes the last: it reads the checkout and asks before it
+// writes anything, so it costs what the read-only offers cost. It takes the
+// second read-only row where there is one, and the only one where the resume
+// has the first row — a checkout's own checks being runnable in a sandbox is
+// worth more than a tour of it
+// (docs/capabilities/containment.md#a-declaration-can-be-drafted-for-you).
+func startSuggestions(info StartInfo, scaffold, setup bool, draft string) ([]components.StartSuggestion, []string) {
 	var out []components.StartSuggestion
 	var actions []string
 	add := func(glyph, title, detail, action string) {
@@ -521,6 +534,15 @@ func startSuggestions(info StartInfo, scaffold, setup bool) ([]components.StartS
 	} else {
 		add("⚙", "walk me through what this project does", "reads only, no writes",
 			"walk me through what this project does, starting from its entry point")
+	}
+
+	switch {
+	case draft != "" && len(out) < 2:
+		add("⚙", draft, "reads only, then asks", toolchainCommandName)
+	case draft != "":
+		last := len(out) - 1
+		out[last] = components.StartSuggestion{Glyph: "⚙", Title: draft, Detail: "reads only, then asks"}
+		actions[last] = toolchainCommandName
 	}
 
 	// Three offers, always. Without a session to pick up there is room for a

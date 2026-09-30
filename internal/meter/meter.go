@@ -44,9 +44,13 @@ const (
 	// SourceBacklog is the reading that turns a session into backlog items.
 	SourceBacklog Source = "backlog"
 	// SourcePersona is the drafting of an agent profile from a brief.
-	SourcePersona  Source = "persona"
-	SourceSubagent Source = "sub-agent"
-	SourceOneShot  Source = "one-shot"
+	SourcePersona Source = "persona"
+	// SourceToolchain is the drafting or review of a checkout's toolchain
+	// declaration, which a person asked for on the start screen or with
+	// /toolchain.
+	SourceToolchain Source = "toolchain"
+	SourceSubagent  Source = "sub-agent"
+	SourceOneShot   Source = "one-shot"
 	// SourceUnattributed is where a gated request with no source lands. It
 	// exists so that a feature wired through the gate without declaring
 	// itself is visible in the total and named in the breakdown, rather than

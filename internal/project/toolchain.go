@@ -82,11 +82,28 @@ func LoadToolchain(t Trust) (Toolchain, bool, error) {
 	if err != nil {
 		return Toolchain{}, false, fmt.Errorf("%s: %w", ToolchainFile, err)
 	}
-	tc, err := parseToolchain(data)
+	tc, err := ParseToolchain(data)
 	if err != nil {
-		return Toolchain{}, false, fmt.Errorf("%s: %w", ToolchainFile, err)
+		return Toolchain{}, false, err
 	}
 	return tc, true, nil
+}
+
+// ParseToolchain is the loader's reading of a declaration's bytes, apart
+// from where they came from and from whether the checkout is trusted: the
+// same grammar, the same refusals, in the same words. It is what a drafted
+// declaration is judged by before anybody is shown it, so a draft the card
+// offers is one the next session will load rather than one it refuses
+// (docs/capabilities/containment.md#a-declaration-can-be-drafted-for-you).
+func ParseToolchain(data []byte) (Toolchain, error) {
+	if len(data) > maxToolchainBytes {
+		return Toolchain{}, fmt.Errorf("%s is %d bytes; a declaration is at most %d", ToolchainFile, len(data), maxToolchainBytes)
+	}
+	tc, err := parseToolchain(data)
+	if err != nil {
+		return Toolchain{}, fmt.Errorf("%s: %w", ToolchainFile, err)
+	}
+	return tc, nil
 }
 
 // parseToolchain is the file's grammar, apart from where the bytes came from.

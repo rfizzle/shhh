@@ -118,6 +118,7 @@
   · dry_run      t · dry run  [shipped]
   · explain      x · explain what the command does  [shipped]
   · amend        e · edit the command before it runs  [shipped]
+  · revise       e · edit the file before it is written  [shipped]
   · accept       y Y enter · yes  [shipped]
   · refuse       n N · no, and stop offering  [shipped]
   · scroll_up    shift+up · scroll the card up  [shipped]
@@ -341,4 +342,4 @@
   · paste   p · paste a key  [shipped]
   · local   o · a local model  [shipped]
 
-  248 keys · 1 moved
+  249 keys · 1 moved

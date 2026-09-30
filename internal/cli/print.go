@@ -1060,6 +1060,9 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	if strings.TrimSpace(initialPrompt) == "" {
 		return fmt.Errorf("print mode needs a prompt: pass one as an argument or pipe it on stdin")
 	}
+	if err := toolchainCommandRefusal(initialPrompt); err != nil {
+		return err
+	}
 	if opts.schema != nil {
 		initialPrompt += opts.schema.instruction()
 	}

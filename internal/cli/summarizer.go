@@ -122,6 +122,10 @@ var (
 	flowCompaction  = boundedFlow{name: "compaction", keys: []string{"summary.model"}, source: meter.SourceSummary, window: true, sessionless: true}
 	flowBacklog     = boundedFlow{name: "backlog", keys: []string{"todo.model"}, source: meter.SourceBacklog}
 	flowDrafter     = boundedFlow{name: "profile drafter", keys: []string{"agents.drafter_model"}, source: meter.SourcePersona}
+	// The toolchain draft reads the drafter's key: both turn a request
+	// into one file on a card, and a person who moved one drafter onto a
+	// stronger model meant the drafting, not the profile.
+	flowToolchain = boundedFlow{name: "toolchain drafter", keys: []string{"agents.drafter_model"}, source: meter.SourceToolchain}
 )
 
 // boundedFlows is every flow on the chain, in the order a listing reads them.
@@ -130,6 +134,7 @@ var (
 var boundedFlows = []boundedFlow{
 	flowClassifier, flowExplanation, flowDescription, flowReading,
 	flowTitle, flowAccount, flowCompaction, flowBacklog, flowDrafter,
+	flowToolchain,
 }
 
 // flowModel is one flow's answer: the model, the link that gave it, and the
