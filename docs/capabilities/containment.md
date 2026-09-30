@@ -661,7 +661,9 @@ toolchain caches containment grants — and each installer is pointed there:
 `cargo`, `npm`, `pnpm`, `pipx` and `pip`. The place an installer would pick
 for itself is on your own `PATH`, where a tool a checkout declared would
 shadow one you installed. The directory goes on the *end* of the `PATH`
-every command of the session is handed, and never on shhh's own: every
+every command of the session is handed — a process it starts included,
+contained or not, so a server started after an install finds what a command
+beside it finds — and never on shhh's own: every
 contained command may write there, so at the front a program dropped under a
 common name would answer for that name in every command after it, and shhh
 looks programs up for itself and runs them uncontained.
@@ -672,6 +674,24 @@ that a model whose work needs one asks rather than installing it — or, in a
 run with nobody to ask, says which it needs and carries on without it.
 Where every declared tool is there it is told nothing: a paragraph about
 tools that are all present would be read on every request for no reason.
+
+**An install that lands is told, not left to the next session.** That
+paragraph is written into the session's system prompt when it starts and is
+not rewritten while it runs, since rewriting it would pay for the whole cached
+prefix again. So once the card's lines have put tools on the `PATH`, the model
+is sent one message naming them and saying that what it was told about them no
+longer holds — only the tools the run actually put there, so a run that
+stopped at its second line still names what the first installed, and one that
+installed nothing says nothing. Without it the model goes on asking the person
+to install what they have just installed, until `/new` writes the prompt
+again.
+
+**The rest of the session reads the declaration as it stands now.** The
+start screen's line, `/status`, the install card and the draft card's word
+that the file waits on trust are read again whenever this session records the
+checkout's trust answer or writes the declaration, rather than once when it
+opened — so trusting a checkout mid-session, or taking a drafted file, shows
+what that changed straight away instead of a state from before it.
 
 ### A declaration can be drafted for you
 

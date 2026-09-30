@@ -73,12 +73,16 @@ func heldProjectTrust() project.Trust {
 // A session already under way is unaffected, and that is what the hold is
 // for: its skills, profiles, suites and servers were resolved before the
 // first turn, so trusting mid-session still takes effect in the next one,
-// which is what every surface says it does.
+// which is what every surface says it does. The toolchain declaration is the
+// one reading a session takes again (toolchainMoves): what it says is which
+// tools are missing and what the draft card will be loaded under, and
+// neither loads anything into the session.
 func forgetProjectTrust() {
 	trustHeld.mu.Lock()
 	trustHeld.read = nil
 	trustHeld.told = false
 	trustHeld.mu.Unlock()
+	toolchainMoves.Add(1)
 }
 
 // changeTold reports whether a session in this process already said what

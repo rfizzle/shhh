@@ -282,9 +282,10 @@ func (m *Model) answerToolchainDraft(msg tea.KeyPressMsg) (bool, overlayAction) 
 			return true, overlayAction{close: true, note: "could not write " + project.ToolchainFile + ": " + err.Error() + ". The draft waits for " + toolchainCommandName}
 		}
 		m.containment.Toolchain.drafting = nil
-		// This session read the checkout before the file existed, so the
-		// row says where it takes effect rather than implying it has.
-		note := "wrote " + path + ". Sessions opened here read it; /new reads it in this one."
+		// The session reads the file again once the write lands (toolchain.go),
+		// so /status and /setup have it now; the assistant's prompt was
+		// written before it existed, so the row says where that changes.
+		note := "wrote " + path + ". /status and /setup read it now; the assistant is told of it from /new."
 		if m.toolchain().Untrusted {
 			note = "wrote " + path + ". It loads once the checkout is trusted — shhh trust."
 		}

@@ -2,11 +2,14 @@ package cli
 
 import (
 	"context"
+	"encoding/json"
 	"os"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/project"
@@ -229,6 +232,80 @@ func TestTheCardIsHandedWhatTheInstallWillDo(t *testing.T) {
 	}
 	if empty := toolchainCard(toolchainReading{}, config.Config{}, noMechanism, ""); empty.Install != nil || len(empty.Declared) != 0 {
 		t.Fatalf("a checkout that declares nothing was offered something: %+v", empty)
+	}
+}
+
+// A session reads the declaration again when something in this process
+// changes what it would find — the checkout trusted, a declaration written —
+// so the card is handed the way to read it even where nothing was declared
+// yet, and each of those acts moves the count it is read again at.
+func TestTheSessionReadsTheDeclarationAgainOnceItMoves(t *testing.T) {
+	root, _ := declaredCheckout(t, "")
+	answer := project.Trust{Root: root}
+	withProjectTrust(t, project.Trust{})
+	projectTrust = func() project.Trust { return answer }
+
+	tc := toolchainCard(openToolchain(), config.Config{}, noMechanism, "")
+	if len(tc.Declared) != 0 || tc.Reread == nil || tc.Moved == nil {
+		t.Fatalf("an untrusted checkout's card = %+v", tc)
+	}
+	at := tc.Moved()
+	answer.Granted = true
+	forgetProjectTrust()
+	if tc.Moved() != at+1 {
+		t.Fatalf("recording the trust answer did not move the count: %d → %d", at, tc.Moved())
+	}
+	if fresh := tc.Reread(); !slices.Equal(fresh.Declared, []string{"golangci-lint", "gosec", "sh"}) || len(fresh.Lines) != 2 {
+		t.Fatalf("the reading after trust = %+v", fresh)
+	}
+	if _, err := writeToolchainDraft(root)(project.Toolchain{Check: []string{"gosec"}}.Render()); err != nil {
+		t.Fatal(err)
+	}
+	if tc.Moved() != at+2 {
+		t.Fatalf("writing a declaration did not move the count: %d → %d", at, tc.Moved())
+	}
+	if fresh := tc.Reread(); !slices.Equal(fresh.Declared, []string{"gosec"}) {
+		t.Fatalf("the reading after the write = %+v", fresh.Declared)
+	}
+}
+
+// A process the session starts is handed the PATH a captured command is,
+// so a tool the declaration installed is found by a server started bare as
+// it is by a command.
+func TestAProcessStartFindsWhatTheToolchainInstalled(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("the fixture is a shell script")
+	}
+	_, dir := declaredCheckout(t, "")
+	bin := filepath.Join(dir, "bin")
+	if err := os.MkdirAll(bin, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(bin, "shhh-declared-tool"), []byte("#!/bin/sh\necho declared-tool-ran\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	openToolchain()
+	sup := openProcessSupervisor(nil)
+	if sup == nil {
+		t.Fatal("no supervisor")
+	}
+	t.Cleanup(func() {
+		sup.Close()
+		runner.SetAdopter(nil)
+	})
+	if _, err := sup.Execute(json.RawMessage(`{"action":"start","name":"tool","command":"shhh-declared-tool"}`)); err != nil {
+		t.Fatal(err)
+	}
+	deadline := time.Now().Add(10 * time.Second)
+	for {
+		out, err := sup.Execute(json.RawMessage(`{"action":"read","name":"tool"}`))
+		if err == nil && strings.Contains(out, "declared-tool-ran") {
+			return
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("a started process did not find what the toolchain installed: %q %v", out, err)
+		}
+		time.Sleep(20 * time.Millisecond)
 	}
 }
 

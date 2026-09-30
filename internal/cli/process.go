@@ -44,6 +44,10 @@ func openProcessSupervisor(red *evidence.Reducer) *process.Supervisor {
 			Wait:    h.Wait,
 		})
 	})
+	// A start's PATH is the one a captured command is handed, so a tool the
+	// toolchain declaration installed is found by a process started bare
+	// just as by a command (process.Supervisor.SetPath).
+	sup.SetPath(runner.PathValue)
 	return sup
 }
 

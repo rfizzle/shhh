@@ -18,6 +18,7 @@ package chat
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
@@ -73,6 +74,16 @@ type Toolchain struct {
 	// Untrusted is a checkout whose declaration is not read until the
 	// person trusts it, which the draft's card says.
 	Untrusted bool
+	// Reread reads the declaration again, as the host built this value at
+	// session start; Moved counts the acts in this process that change what
+	// a reading would find — the checkout trusted or not, a declaration
+	// written. The session reads again when the count moves, so the start
+	// screen's line, /status and the draft card say what is so now rather
+	// than what was so when the session opened. Either nil reads once.
+	Reread func() Toolchain
+	Moved  func() int
+	// readAt is the count the reading in hand was asked for at.
+	readAt int
 	// drafting is a drafting in flight or waiting on its card.
 	drafting *toolchainDrafting
 	// installing is a run under way, so a second /setup does not start a
@@ -242,6 +253,10 @@ type setupDoneMsg struct {
 	failed  string
 	result  tools.ExecResult
 	missing []string
+	// before is what was missing when the run started, so the tools it put
+	// on PATH are the difference — a run that stopped at its second line
+	// may still have installed the first.
+	before []string
 }
 
 // runSetup runs the lines in order, off the UI goroutine, and stops at the
@@ -258,6 +273,7 @@ func runSetup(tc Toolchain) tea.Cmd {
 			}
 			done.ran++
 		}
+		done.before = tc.Missing
 		done.missing = tc.Missing
 		if tc.Recheck != nil {
 			done.missing = tc.Recheck()
@@ -271,6 +287,7 @@ func runSetup(tc Toolchain) tea.Cmd {
 func (m Model) finishSetup(msg setupDoneMsg) (tea.Model, tea.Cmd) {
 	m.containment.Toolchain.installing = false
 	m.containment.Toolchain.Missing = msg.missing
+	m.announce(toolchainInstalledMessage(installedNow(msg.before, msg.missing)))
 	var b strings.Builder
 	if msg.failed != "" {
 		fmt.Fprintf(&b, "install stopped at `%s` (%s)", msg.failed, setupEnding(msg.result))
@@ -309,6 +326,82 @@ func setupTail(out string) string {
 		lines = lines[len(lines)-setupTailLines:]
 	}
 	return strings.TrimSpace(strings.Join(lines, "\n"))
+}
+
+// installedNow is what a run put on PATH: missing before it, and not after.
+func installedNow(before, after []string) []string {
+	var now []string
+	for _, name := range before {
+		if !slices.Contains(after, name) {
+			now = append(now, name)
+		}
+	}
+	return now
+}
+
+// toolchainInstalledMessage is what the model is told once an install has
+// put declared tools on the PATH, or "" where it put none there. The
+// paragraph naming them as missing was written into the system prompt at
+// session start and is not rewritten mid-session, since that pays for the
+// cached prefix again; without this the model goes on asking the person to
+// install what they just installed.
+// See docs/capabilities/containment.md#a-checkout-declares-the-toolchain-its-work-needs.
+func toolchainInstalledMessage(installed []string) string {
+	if len(installed) == 0 {
+		return ""
+	}
+	they, them, are, were := "they", "them", "are", "were"
+	if len(installed) == 1 {
+		they, them, are, were = "it", "it", "is", "was"
+	}
+	return "The user installed " + joinAnd(installed) + " from this checkout's toolchain declaration, and " +
+		they + " " + are + " now on the PATH your commands run with. Where you were told earlier that " +
+		they + " " + were + " missing, that no longer holds: use " + them + " where your work needs " + them + "."
+}
+
+// toolchainReadMsg is the declaration read again, at the count it was asked
+// for at.
+type toolchainReadMsg struct {
+	tc Toolchain
+	at int
+}
+
+// rereadToolchain starts a reading of the declaration where the host says
+// something that changes it has happened since the last one — the checkout
+// trusted or not, a declaration written — and nothing otherwise. It is asked
+// on every transition, which is a function call and a comparison; the
+// reading itself runs off the UI goroutine, since it may read the store for
+// the trust answer.
+func (m Model) rereadToolchain() (Model, tea.Cmd) {
+	tc := m.toolchain()
+	if tc.Reread == nil || tc.Moved == nil {
+		return m, nil
+	}
+	at := tc.Moved()
+	if at == tc.readAt {
+		return m, nil
+	}
+	m.containment.Toolchain.readAt = at
+	reread := tc.Reread
+	return m, func() tea.Msg { return toolchainReadMsg{tc: reread(), at: at} }
+}
+
+// takeToolchainReading puts a fresh reading in place of the one in hand,
+// keeping what this session holds of its own — the drafting, a run under
+// way, the draft and its write — and dropping a reading overtaken by a
+// later ask.
+func (m Model) takeToolchainReading(msg toolchainReadMsg) (tea.Model, tea.Cmd) {
+	held := m.toolchain()
+	if msg.at != held.readAt {
+		return m, nil
+	}
+	fresh := msg.tc
+	fresh.Reread, fresh.Moved, fresh.readAt = held.Reread, held.Moved, held.readAt
+	fresh.Draft, fresh.WriteDraft = held.Draft, held.WriteDraft
+	fresh.drafting, fresh.installing = held.drafting, held.installing
+	m.containment.Toolchain = fresh
+	m.syncViewport()
+	return m, nil
 }
 
 // setupLines renders the card, one row per line.

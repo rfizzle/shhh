@@ -757,6 +757,9 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 	case setupDoneMsg:
 		return answered(m.finishSetup(msg))
 
+	case toolchainReadMsg:
+		return answered(m.takeToolchainReading(msg))
+
 	case toolchainDraftMsg:
 		return answered(m.finishToolchainDraft(msg))
 

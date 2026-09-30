@@ -325,6 +325,7 @@ func writeToolchainDraft(root string) func([]byte) (string, error) {
 		if err := config.ReplaceFile(path, string(content), 0o644); err != nil {
 			return "", err
 		}
+		toolchainMoves.Add(1)
 		return project.ToolchainFile, nil
 	}
 }
@@ -342,11 +343,27 @@ func wireToolchainDraft(tc *chat.Toolchain, prov provider.Provider, model func()
 	if root == "" {
 		root = project.Root(dir)
 	}
-	_, tc.Exists = project.Declared(root)
-	tc.Untrusted = !t.Allows()
+	tc.Exists, tc.Untrusted = toolchainFileState(root)
 	d := toolchainDrafter{prov: prov, model: model, root: root, dir: dir, scrub: scrub}
 	tc.Draft = d.draft
 	tc.WriteDraft = writeToolchainDraft(root)
+	// Reading the declaration again reads these two again as well: the
+	// card's "loads once trusted" line is about the trust answer as it
+	// stands, which /trust can change under a waiting draft.
+	if reread := tc.Reread; reread != nil {
+		tc.Reread = func() chat.Toolchain {
+			fresh := reread()
+			fresh.Exists, fresh.Untrusted = toolchainFileState(root)
+			return fresh
+		}
+	}
+}
+
+// toolchainFileState is whether the checkout holds a declaration, trusted or
+// not, and whether the checkout is untrusted, so one would not load.
+func toolchainFileState(root string) (exists, untrusted bool) {
+	_, exists = project.Declared(root)
+	return exists, !projectTrust().Allows()
 }
 
 // toolchainCommandRefusal is the sentence a run with nobody to answer the

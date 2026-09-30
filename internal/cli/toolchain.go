@@ -15,6 +15,7 @@ import (
 	"runtime"
 	"slices"
 	"strings"
+	"sync/atomic"
 
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/project"
@@ -60,6 +61,17 @@ func openToolchain() toolchainReading {
 	r.missing = tc.Missing(runner.PathValue())
 	return r
 }
+
+// toolchainMoves counts the acts in this process that change what a reading
+// of the declaration would find: the checkout's trust answer recorded or
+// withdrawn (forgetProjectTrust), and a declaration written by the draft
+// card (writeToolchainDraft). A session reads the declaration again when
+// the count moves, rather than on every frame, since a reading is a stat, a
+// file and a PATH walk.
+var toolchainMoves atomic.Int64
+
+// toolchainMoved is the count as the chat session asks for it.
+func toolchainMoved() int { return int(toolchainMoves.Load()) }
 
 // toolchainStartupNote is the line a session prints before it starts when the
 // declaration names tools the PATH lacks, beside the trust note and for the
@@ -111,18 +123,24 @@ func toolchainPromptBlock(missing []string, offered bool) string {
 // none is, and bare otherwise — as a hook is, since a card the person
 // answered is no stronger a reason to run bare than the command card beside
 // it.
+//
+// It carries the way to read it again, even where nothing is declared: a
+// checkout trusted mid-session, or a declaration the draft card just wrote,
+// is one the session goes on reading as it was otherwise.
 func toolchainCard(r toolchainReading, cfg config.Config, avail sandbox.Availability, refusal string) chat.Toolchain {
-	if !r.declared {
-		return chat.Toolchain{}
-	}
 	t := chat.Toolchain{
-		Declared: r.tc.Check,
-		Missing:  r.missing,
-		Lines:    r.tc.HostInstall(),
-		Bin:      shortPath(r.bin),
-		Refusal:  refusal,
-		Recheck:  func() []string { return openToolchain().missing },
+		Reread: func() chat.Toolchain { return toolchainCard(openToolchain(), cfg, avail, refusal) },
+		Moved:  toolchainMoved,
 	}
+	if !r.declared {
+		return t
+	}
+	t.Declared = r.tc.Check
+	t.Missing = r.missing
+	t.Lines = r.tc.HostInstall()
+	t.Bin = shortPath(r.bin)
+	t.Refusal = refusal
+	t.Recheck = func() []string { return openToolchain().missing }
 	if r.bin == "" {
 		// Nowhere of shhh's own to install into, so nothing is offered:
 		// the alternative is a directory on the person's own PATH.

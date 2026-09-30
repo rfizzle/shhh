@@ -222,3 +222,119 @@ func TestToolchain_StatusNamesWhatIsMissing(t *testing.T) {
 		t.Fatal("/setup opened a card with nothing to install")
 	}
 }
+
+// The paragraph naming the tools as missing was written into the system
+// prompt at session start, so an install that put them on PATH is told to
+// the model as a machine message naming what it put there — and only what
+// it put there: a run that stopped short names the part that landed, and
+// one that landed nothing says nothing.
+func TestToolchain_AnInstallTellsTheModelWhatIsNowOnPath(t *testing.T) {
+	for _, tt := range []struct {
+		name  string
+		after []string
+		want  string
+	}{
+		{"every tool", nil, "The user installed golangci-lint and gosec from this checkout's toolchain declaration, and they are now on the PATH"},
+		{"one of two", []string{"gosec"}, "The user installed golangci-lint from this checkout's toolchain declaration, and it is now on the PATH"},
+		{"none", []string{"golangci-lint", "gosec"}, ""},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			var ran []string
+			tc := toolchainFixture(&ran)
+			tc.Recheck = func() []string { return tt.after }
+			m := toolchainModel(t, tc)
+			before := len(m.agent.Messages())
+			m = submitLine(t, m, setupCommandName)
+			m, cmd := pressFor(t, m, "y")
+			m = runSetupCmd(t, m, cmd)
+			var told []provider.Message
+			for _, msg := range m.agent.Messages()[before:] {
+				if msg.Machine {
+					told = append(told, msg)
+				}
+			}
+			if tt.want == "" {
+				if len(told) != 0 {
+					t.Fatalf("an install that landed nothing told the model %q", told[0].Content)
+				}
+				return
+			}
+			if len(told) != 1 || !strings.Contains(told[0].Content, tt.want) {
+				t.Fatalf("the model was told %v, want one machine message holding %q", told, tt.want)
+			}
+		})
+	}
+}
+
+// runUntilToolchainRead runs what a transition started until the
+// declaration's second reading comes back, and hands it to the session.
+func runUntilToolchainRead(t *testing.T, m Model, cmd tea.Cmd) Model {
+	t.Helper()
+	pending := []tea.Cmd{cmd}
+	for len(pending) > 0 {
+		next := pending[0]
+		pending = pending[1:]
+		if next == nil {
+			continue
+		}
+		switch msg := next().(type) {
+		case tea.BatchMsg:
+			pending = append(pending, msg...)
+		case toolchainReadMsg:
+			updated, _ := m.Update(msg)
+			return updated.(Model)
+		}
+	}
+	t.Fatal("the transition started no reading of the declaration")
+	return m
+}
+
+// A checkout trusted mid-session, or a declaration the draft card just wrote,
+// is read again: the start screen's line, /status and the draft card's
+// "loads once trusted" say what is so now, while what the session holds of
+// its own — the draft and its write — stays. Nothing moved reads nothing.
+func TestToolchain_TrustOrAWrittenDeclarationIsReadAgain(t *testing.T) {
+	var ran []string
+	moves, reads := 0, 0
+	fresh := toolchainFixture(&ran)
+	held := Toolchain{
+		Untrusted:  true,
+		Draft:      func(context.Context, bool) ToolchainDraft { return ToolchainDraft{} },
+		WriteDraft: func([]byte) (string, error) { return "", nil },
+		Moved:      func() int { return moves },
+		Reread: func() Toolchain {
+			reads++
+			return fresh
+		},
+	}
+	m := toolchainModel(t, held)
+	if view := ansi.Strip(m.renderHistory()); strings.Contains(view, "not on PATH") {
+		t.Fatalf("an untrusted checkout named a declaration it cannot read:\n%s", view)
+	}
+	if _, cmd := m.rereadToolchain(); cmd != nil {
+		t.Fatal("a reading was started with nothing moved")
+	}
+
+	moves++
+	updated, cmd := m.Update(tea.WindowSizeMsg{Width: 110, Height: 40})
+	m = runUntilToolchainRead(t, updated.(Model), cmd)
+	if reads != 1 {
+		t.Fatalf("the declaration was read %d times, want once", reads)
+	}
+	if view := ansi.Strip(m.renderHistory()); !strings.Contains(view, "golangci-lint · gosec") {
+		t.Fatalf("the start screen still reads the declaration as it was:\n%s", view)
+	}
+	if status, _ := m.statusCommand(); !strings.Contains(status, "Toolchain\ngolangci-lint · gosec — declared, not on PATH") {
+		t.Fatalf("/status still reads the declaration as it was:\n%s", status)
+	}
+	tc := m.toolchain()
+	if tc.Untrusted {
+		t.Fatal("the draft card would still say the file loads once trusted")
+	}
+	if tc.Draft == nil || tc.WriteDraft == nil || tc.Reread == nil || tc.Moved == nil {
+		t.Fatal("the reading dropped what the session holds of its own")
+	}
+	if _, cmd := m.rereadToolchain(); cmd != nil {
+		t.Fatal("a second reading was started for the same move")
+	}
+}

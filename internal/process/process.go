@@ -85,6 +85,8 @@ type Supervisor struct {
 	// env is the session's NAME=value pairs every process gets after the
 	// caller's own, so the model's `env` argument cannot shadow a secret.
 	env []string
+	// path is the PATH a start is handed; nil is this process's own.
+	path func() string
 	// scrub rewrites captured output as it arrives; nil captures it raw.
 	// Each stream takes a copy at start, so changing it affects processes
 	// started afterwards.
@@ -126,6 +128,21 @@ func (c Containment) inForce() bool { return c.Mechanism != "" && c.Wrap != nil 
 func (s *Supervisor) SetEnv(env []string) {
 	s.mu.Lock()
 	s.env = append([]string(nil), env...)
+	s.mu.Unlock()
+}
+
+// SetPath installs where a start's PATH comes from, asked at each start. The
+// session hands it the PATH a captured command is handed rather than shhh's
+// own, so the directory the toolchain declaration's tools are installed into
+// is on its end here too: a server started bare after an install would
+// otherwise not find the linter a command beside it runs. It is a function
+// and not a value because the session can add that directory mid-session,
+// and a function and not an import because the runner's own tests use this
+// package.
+// See docs/capabilities/containment.md#a-checkout-declares-the-toolchain-its-work-needs.
+func (s *Supervisor) SetPath(path func() string) {
+	s.mu.Lock()
+	s.path = path
 	s.mu.Unlock()
 }
 
@@ -405,9 +422,21 @@ func (s *Supervisor) resolveCwd(p string) (string, error) {
 // into a process whose spool outlives the session by a week, and nothing on
 // screen would say so.
 // See docs/capabilities/secrets.md#the-names-that-do-not-travel.
-func buildEnv(extra []string) []string {
-	env := []string{"PATH=" + os.Getenv("PATH"), "HOME=" + os.Getenv("HOME")}
+func buildEnv(path string, extra []string) []string {
+	env := []string{"PATH=" + path, "HOME=" + os.Getenv("HOME")}
 	return append(env, extra...)
+}
+
+// pathValue is the PATH a start is handed: the session's (SetPath), or this
+// process's own where none was installed.
+func (s *Supervisor) pathValue() string {
+	s.mu.Lock()
+	path := s.path
+	s.mu.Unlock()
+	if path == nil {
+		return os.Getenv("PATH")
+	}
+	return path()
 }
 
 // extraPairs validates the start's own env argument and renders it as sorted
@@ -453,7 +482,7 @@ func (s *Supervisor) start(name, command, cwd string, extraEnv map[string]string
 	if err != nil {
 		return "", err
 	}
-	env := buildEnv(extras)
+	env := buildEnv(s.pathValue(), extras)
 
 	// The wrap runs outside the lock, because resolving a policy stats the
 	// filesystem and the supervisor's one mutex is what every status, read

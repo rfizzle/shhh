@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"strings"
 	"sync"
@@ -225,6 +226,28 @@ func TestEnv_CredentialShapedVariablesNeverReachAProcess(t *testing.T) {
 	}
 	if !strings.Contains(out, "DECLARED_KEY=lent-on-purpose") {
 		t.Errorf("a declared secret must reach the process, got %q", out)
+	}
+}
+
+// A start is handed the PATH the session installed, asked at the start, not
+// this process's own: a server started after an install finds the binary a
+// command beside it already can.
+func TestEnv_AProcessFindsWhatTheToolchainInstalled(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("the fixture is a shell script")
+	}
+	bin := t.TempDir()
+	if err := os.WriteFile(filepath.Join(bin, "shhh-declared-tool"), []byte("#!/bin/sh\necho declared-tool-ran\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	s := newTestSupervisor(t, nil)
+	s.SetPath(func() string { return os.Getenv("PATH") + string(os.PathListSeparator) + bin })
+	execute(t, s, `{"action":"start","name":"tool","command":"shhh-declared-tool"}`)
+	waitFor(t, "the tool to exit", func() bool {
+		return strings.Contains(execute(t, s, `{"action":"status","name":"tool"}`), "exited")
+	})
+	if out := execute(t, s, `{"action":"read","name":"tool"}`); !strings.Contains(out, "declared-tool-ran") {
+		t.Errorf("a process must find what the toolchain installed on its PATH, got %q", out)
 	}
 }
 

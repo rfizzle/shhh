@@ -2048,6 +2048,15 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if open := mm.openHeldLine(); open != nil {
 		cmd = tea.Batch(cmd, open)
 	}
+	// And the toolchain declaration, read again where /trust, the tools
+	// screen or the draft card changed what a reading would find
+	// (toolchain.go): each of those is a transition, and none of them is
+	// handed back a model it could put the reading on itself.
+	reread, read := mm.rereadToolchain()
+	mm = reread
+	if read != nil {
+		cmd = tea.Batch(cmd, read)
+	}
 	return mm, cmd
 }
 
