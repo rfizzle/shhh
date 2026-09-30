@@ -949,6 +949,8 @@ type Model struct {
 	titleCancel context.CancelFunc
 	// The session's standing account and its writer — account.go.
 	account accountState
+	// The next step offered in the empty draft and its writer — suggest.go.
+	suggest suggestState
 	// summaryTarget is the instruction the current turn is serving, captured
 	// when the turn starts and never re-derived from the conversation. It is
 	// what a reading judges drift against, and anchoring it here — rather
@@ -1988,6 +1990,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	// And its standing account (account.go), once enough turns have closed.
 	if read := mm.accountCloseCmd(); read != nil {
+		cmd = tea.Batch(cmd, read)
+	}
+	// And the next step it offers in the empty draft (suggest.go), once the
+	// turn has handed the screen back to the input.
+	if read := mm.suggestCloseCmd(m); read != nil {
 		cmd = tea.Batch(cmd, read)
 	}
 	// And the repository's own checks over what the turn wrote (gate.go).

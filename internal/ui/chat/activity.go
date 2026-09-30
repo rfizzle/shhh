@@ -957,7 +957,7 @@ func (m Model) runningCommandRow(width int) string {
 // window is called, and what the terminal itself can do.
 func (m *Model) uiCommand(parts []string) string {
 	if len(parts) == 1 {
-		return fmt.Sprintf("verbosity: %s\ntheme: %s\nscreen ground: %s\nmonochrome: %s\nmouse reporting: %s\ndesktop notifications: %s\nsession titles: %s\nwindow title: %s\nlayout: %s\nterminal: %s\n"+uiUsage, m.verbosity, m.themeStatus(), groundStatus(), monoStatus(), m.mouseStatus(), m.notifyStatus(), m.titleStatus(), m.windowStatus(), m.inspectorStatus(), terminalName(m.caps))
+		return fmt.Sprintf("verbosity: %s\ntheme: %s\nscreen ground: %s\nmonochrome: %s\nmouse reporting: %s\ndesktop notifications: %s\nsession titles: %s\nnext-step suggestions: %s\nwindow title: %s\nlayout: %s\nterminal: %s\n"+uiUsage, m.verbosity, m.themeStatus(), groundStatus(), monoStatus(), m.mouseStatus(), m.notifyStatus(), m.titleStatus(), m.suggestStatus(), m.windowStatus(), m.inspectorStatus(), terminalName(m.caps))
 	}
 	switch parts[1] {
 	case "verbosity":
@@ -993,6 +993,8 @@ func (m *Model) uiCommand(parts []string) string {
 		return m.notifyCommand(parts)
 	case "title":
 		return m.titleCommand(parts)
+	case "suggest":
+		return m.suggestCommand(parts)
 	case "window":
 		return m.windowCommand(parts)
 	case "rail":
@@ -1006,7 +1008,7 @@ func (m *Model) uiCommand(parts []string) string {
 // uiUsage is the one line naming everything /ui answers for. It is a constant
 // because the bare readout and the unknown-subcommand reply are the same
 // list, and a list written twice is a list that drifts.
-const uiUsage = "usage: /ui verbosity <low|normal|high> · /ui theme <auto|dark|light|charm> · /ui ground <on|off> · /ui mono <on|off> · /ui mouse <on|off> · /ui notify <on|off> · /ui title <on|off> · /ui window <on|off> · /ui rail <auto|columns> · /ui terminal"
+const uiUsage = "usage: /ui verbosity <low|normal|high> · /ui theme <auto|dark|light|charm> · /ui ground <on|off> · /ui mono <on|off> · /ui mouse <on|off> · /ui notify <on|off> · /ui title <on|off> · /ui suggest <on|off> · /ui window <on|off> · /ui rail <auto|columns> · /ui terminal"
 
 // terminalName is the one-line answer the bare /ui gives: what the terminal
 // called itself when shhh asked. A terminal that was asked

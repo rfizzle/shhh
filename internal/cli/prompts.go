@@ -50,6 +50,9 @@ type sessionPrompts struct {
 	// account is what the session's standing account is asked with
 	// (docs/capabilities/sessions-and-memory.md#a-title-you-did-not-write).
 	account string
+	// suggestion is what the next step offered in an empty draft is asked
+	// with (docs/capabilities/chat.md#the-next-step-is-offered-not-typed).
+	suggestion string
 
 	// sessionSteer frames a line another session sent
 	// (docs/capabilities/sessions-and-memory.md#a-session-can-hand-another-a-line).
@@ -134,7 +137,7 @@ type wording struct {
 	validate func(string) error
 }
 
-// wordingKeys is every wording a file can replace: this package's six, then
+// wordingKeys is every wording a file can replace: this package's seven, then
 // one per step of the backlog run, named `todo_<step>`. The run's half comes
 // from the pipeline rather than from a table written out here, because which
 // steps a run has is the profile's to say and a table would be a second
@@ -166,6 +169,9 @@ func wordingKeys() []wording {
 		{"account", func(c config.PromptsConfig) string { return c.Account },
 			setAccount, func(p sessionPrompts) string { return p.account },
 			agent.AccountWording, agent.ValidateVerbatim},
+		{"suggestion", func(c config.PromptsConfig) string { return c.Suggestion },
+			setSuggestion, func(p sessionPrompts) string { return p.suggestion },
+			agent.SuggestWording, agent.ValidateVerbatim},
 	}
 	pipeline := todoPipeline()
 	builtins := pipeline.Builtins()
@@ -191,6 +197,7 @@ func setCheckIn(p *sessionPrompts, text string)    { p.checkIn = text }
 func setSummary(p *sessionPrompts, text string)    { p.summary = text }
 func setClassifier(p *sessionPrompts, text string) { p.classifier = text }
 func setAccount(p *sessionPrompts, text string)    { p.account = text }
+func setSuggestion(p *sessionPrompts, text string) { p.suggestion = text }
 
 func setSessionSteer(p *sessionPrompts, text string) { p.sessionSteer = text }
 

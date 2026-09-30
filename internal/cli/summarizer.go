@@ -126,6 +126,10 @@ var (
 	// into one file on a card, and a person who moved one drafter onto a
 	// stronger model meant the drafting, not the profile.
 	flowToolchain = boundedFlow{name: "toolchain drafter", keys: []string{"agents.drafter_model"}, source: meter.SourceToolchain}
+	// The next step offered in an empty draft has a key of its own: it is
+	// asked at every turn's close, so it is the flow a person is likeliest
+	// to want on the smallest model there is.
+	flowSuggestion = boundedFlow{name: "suggestion", keys: []string{"behavior.suggestion_model"}, source: meter.SourceSuggestion}
 )
 
 // boundedFlows is every flow on the chain, in the order a listing reads them.
@@ -133,8 +137,8 @@ var (
 // reported wherever the question is asked.
 var boundedFlows = []boundedFlow{
 	flowClassifier, flowExplanation, flowDescription, flowReading,
-	flowTitle, flowAccount, flowCompaction, flowBacklog, flowDrafter,
-	flowToolchain,
+	flowTitle, flowAccount, flowSuggestion, flowCompaction, flowBacklog,
+	flowDrafter, flowToolchain,
 }
 
 // flowModel is one flow's answer: the model, the link that gave it, and the
@@ -279,5 +283,22 @@ func newAccountant(cfg config.Config, env *sessionEnv, ledger *meter.Ledger) *ag
 		Timeout:  time.Duration(cfg.Summary.TimeoutSeconds) * time.Second,
 		Prompt:   env.prompts.account,
 		Disabled: cfg.AccountInterval() == 0,
+	})
+}
+
+// newSuggester returns the writer of the next step an idle session offers in
+// its empty draft. Only the interactive session builds one: an unattended
+// run, a served session and a child have no draft to offer it in, so none of
+// them makes the request
+// (docs/capabilities/chat.md#the-next-step-is-offered-not-typed). It is
+// asked on its own flow and billed under its own source, so the bill names
+// what the offer costs. Whether it is asked at all is the session's switch
+// (behavior.suggestions, then /ui suggest), not the writer's: the setting
+// starts the session off and the command can still turn it on.
+func newSuggester(cfg config.Config, env *sessionEnv, ledger *meter.Ledger) *agent.Suggester {
+	return agent.NewSuggester(ledger.For(env.prov, flowSuggestion.source), agent.SuggestConfig{
+		ModelAt: env.flowModelAt(cfg, flowSuggestion),
+		Timeout: time.Duration(cfg.Summary.TimeoutSeconds) * time.Second,
+		Prompt:  env.prompts.suggestion,
 	})
 }

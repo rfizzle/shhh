@@ -267,6 +267,15 @@ because nothing else is listening: the profile drafter's draft step spends
 `profile.refine` on enter the way the agent manager's `K` widens a kill to
 all of them.
 
+One key at the input spends nothing from the free set because it takes an
+arrow in the one state where the arrow does nothing: `draft.take_suggestion`
+is `→` in the draft group, live only on an empty draft with a suggested next
+step drawn in it, and it puts that step in the draft with the cursor at its
+end. An empty draft has no cursor to move right past, so no reader's reflex
+lands somewhere new; with a single character in the box the arrow is the
+line editor's again ([the next step is offered, not
+typed](../capabilities/chat.md#the-next-step-is-offered-not-typed)).
+
 Nothing ships on alt, so every alt letter is left to a keymap file on Linux
 and Windows — where it costs nothing — apart from the six the textarea holds
 and `alt+0` … `alt+9`, which GNOME Terminal switches tabs with; on a Mac one

@@ -190,6 +190,7 @@ func buildSlashCommands() []slashCommand {
 					{"mouse", "whether shhh or the terminal owns the mouse"},
 					{"notify", "say so when a turn stops and you are elsewhere"},
 					{"title", "name an unnamed session after its first turn"},
+					{"suggest", "offer a next step in the empty draft after each turn"},
 					{"window", "name the terminal's own tab after this session"},
 					{"rail", "how many columns the inspector rail takes"},
 					{"terminal", "what this terminal can do"},
@@ -224,6 +225,10 @@ func buildSlashCommands() []slashCommand {
 				{after: []string{"title"}, options: []argOption{
 					{"on", "the summary model names the session after its first turn"},
 					{"off", "sessions keep the timestamp they were opened at"},
+				}},
+				{after: []string{"suggest"}, options: []argOption{
+					{"on", "a cheap model offers the obvious next message; → takes it"},
+					{"off", "the empty draft stays empty and nothing is asked"},
 				}},
 				{after: []string{"window"}, options: []argOption{
 					{"on", "the tab says the command, the directory, and ⏸ while a decision waits"},

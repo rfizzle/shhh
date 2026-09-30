@@ -62,6 +62,9 @@ func (m *Model) startNewSession() (notes []entry, save tea.Cmd) {
 	m.dropTodoPlan()
 	m.dropPersona()
 	m.dropToolchainDraft()
+	// An offered next step was read from the conversation being left, and is
+	// filed against its record before that record closes (suggest.go).
+	m.resetSuggestion()
 	// Every screen a register row holds was built from the session being
 	// left, and they all go in one call. The one with the screen now stays:
 	// a sprint crosses this boundary between two items while the reader may

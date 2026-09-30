@@ -83,6 +83,7 @@ func Surfaces() []Surface {
 				Draft.Complete, Draft.Palette, Draft.Reasoning, Draft.Mode,
 				Draft.Pause,
 				Draft.HistoryPrev, Draft.HistoryNext, Draft.HistorySearch,
+				Draft.TakeSuggestion,
 				Draft.PointUp, Draft.PointDown, Draft.Open, Draft.Close,
 				Draft.PageUp, Draft.PageDown,
 				Draft.Reading, Draft.Agents, Draft.Backlog,

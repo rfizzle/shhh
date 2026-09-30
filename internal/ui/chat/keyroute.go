@@ -80,6 +80,15 @@ func (m Model) updateKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 	// which surface they were talking to.
 	m.settleGrace(clock())
 	m.lastKeypress = clock()
+	// A next step offered in the empty draft ends on any keystroke, and only
+	// one of them takes it (suggest.go). It is answered before the surfaces
+	// because "any" means any: the take is live only where the offer is
+	// drawn, and every other key drops it on its way to whoever answers.
+	next, cmd, taken := m.suggestionKey(msg)
+	if taken {
+		return next, cmd, true
+	}
+	m = next.(Model)
 	// And every key consumes an armed two-press window (cancel.go),
 	// whichever surface answers it: a reader who went on typing — or
 	// answered a card — was not confirming anything. The draft's own

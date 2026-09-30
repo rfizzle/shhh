@@ -49,8 +49,13 @@ const (
 	// declaration, which a person asked for on the start screen or with
 	// /toolchain.
 	SourceToolchain Source = "toolchain"
-	SourceSubagent  Source = "sub-agent"
-	SourceOneShot   Source = "one-shot"
+	// SourceSuggestion is the next step offered in an empty draft at a
+	// turn's close. It is its own source rather than a summary's because it
+	// is the one background reading a person can turn off for its cost
+	// alone, and they can only judge that cost if the bill names it.
+	SourceSuggestion Source = "suggestion"
+	SourceSubagent   Source = "sub-agent"
+	SourceOneShot    Source = "one-shot"
 	// SourceUnattributed is where a gated request with no source lands. It
 	// exists so that a feature wired through the gate without declaring
 	// itself is visible in the total and named in the breakdown, rather than

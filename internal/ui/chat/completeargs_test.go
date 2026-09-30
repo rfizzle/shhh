@@ -34,7 +34,7 @@ func TestArgCompletion_StaticSubcommands(t *testing.T) {
 	if !m.completionActive() {
 		t.Fatal("the menu should stay open past the command name")
 	}
-	if got := strings.Join(completionNames(m), " "); got != "verbosity theme ground mono mouse notify title window rail terminal" {
+	if got := strings.Join(completionNames(m), " "); got != "verbosity theme ground mono mouse notify title suggest window rail terminal" {
 		t.Fatalf("expected every /ui subcommand in registry order, got %q", got)
 	}
 

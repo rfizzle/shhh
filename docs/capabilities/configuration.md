@@ -790,6 +790,7 @@ rules above are what refuse a move, not a list of keys held back from it.
 | `draft.history_prev` | `up` | recall the previous input | yes |
 | `draft.history_next` | `down` | the next one | yes |
 | `draft.history_search` | `ctrl+r` | search the input history | yes |
+| `draft.take_suggestion` | `right` | take the suggestion into an empty draft | yes |
 | `draft.point_up` | `shift+up` | move the pointer up a row of the pane | yes |
 | `draft.point_down` | `shift+down` | down a row | yes |
 | `draft.open` | `shift+right` | open or run the pointed row | yes |
@@ -1127,6 +1128,8 @@ own file could hold.
 | `classifier_retries` | number | `1` | How many extra attempts an invalid or failed classifier response gets before it fails closed. |
 | `explainer_model` | text | (the classifier's model) | The model an approval card's explanation of a command is asked of. |
 | `description_model` | text | (provider.cheap_model) | The model that writes the one-line description a command saved from `shhh cmd` is listed under. |
+| `suggestions` | true/false | `on` | Offer a next step, drawn dim in the empty draft after a turn closes, that the right arrow takes into the draft; off asks for none. |
+| `suggestion_model` | text | (provider.cheap_model) | The model the next step offered in an empty draft is asked of. |
 | `memory_disabled` | true/false | `off` | Turn durable memory off: nothing is injected and the remember tool is not registered. |
 | `memory_max_entries` | number | `20` | How many memories are injected into one session's system prompt. |
 | `memory_max_tokens` | number | `1200` | The token budget for the injected memory block. |
@@ -1293,6 +1296,7 @@ own file could hold.
 | `summary` | path | (the built-in wording) | A file whose contents replace the reading instruction the summarizing model is sent. |
 | `classifier` | path | (the built-in wording) | A file whose contents replace the instruction auto mode's permission classifier is sent. |
 | `account` | path | (the built-in wording) | A file whose contents replace the instruction the session's standing account is asked with. |
+| `suggestion` | path | (the built-in wording) | A file whose contents replace the instruction the next step offered in an empty draft is asked with. |
 | `todo_standards` | path | (the built-in wording) | A file whose contents replace the sentence every step of a backlog run that changes the tree carries. |
 | `todo_research` | path | (the built-in wording) | A file whose contents replace what a backlog run's research step is told; it may place `{{item}}` and `{{answers}}`. |
 | `todo_implement` | path | (the built-in wording) | A file whose contents replace what a backlog run's implement step is told; it may place `{{item}}`, `{{plan}}` and `{{answers}}`. |

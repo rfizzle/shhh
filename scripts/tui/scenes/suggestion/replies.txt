@@ -1,0 +1,10 @@
+# Two turns of the session's own.
+[session]
+The retry backoff now doubles from one second and stops at a minute.
+The suite passes: 212 tests, none skipped.
+
+# The next step each turn's close offers, in words of the scene's own: the
+# first is taken with the arrow, the second is dropped by a keystroke.
+[suggestion]
+Run the full test suite now.
+Commit the retry backoff.

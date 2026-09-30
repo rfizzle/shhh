@@ -288,6 +288,39 @@ session has a persona by that name it is the one spawned; where it does not
 — every coding session — the step falls back to the role that would have
 read the work anyway, so the same backlog is workable from both.
 
+## The next step is offered, not typed
+
+After a turn, the obvious next message is often one the session could have
+written: run the checks that failed again, take up the step still unmarked,
+commit what was changed. So when a turn closes at the input, a cheap model
+reads what the session's other close readings already hold — how the turn
+ended, the checks and the files on its close row, the working steps and
+which are marked, the last reading's verdict, the standing account, and the
+last thing asked — and writes that message, one or two sentences in the
+person's own voice. The empty draft draws it dim, and `→` takes it into the
+draft to be edited or sent. Both sessions offer it, since both have turns and
+a draft.
+
+A suggestion is never a message. It is not sent, not saved with the
+conversation and not shown to the model; it reaches the model only once the
+person has taken it into the draft and sent it, and then it goes through
+every gate a typed line does. That is why it can be read from the session's
+own evidence without being trusted: nothing it says acts until a person has
+made it theirs. It is never read from a tool result, so a fetched page
+cannot put words in the draft.
+
+It costs a request per closed turn, and the flow is read like the others: its
+model comes off the cheap chain with a key of its own
+(`behavior.suggestion_model`), its spend is on the bill under its own name,
+its wording is a prompts file like any other, and the record says how often
+an offer was taken against how often it was ignored — the one number that
+says whether it earns the request. A turn that broke, was cancelled, stopped
+at a card or ran while the keyboard was in a child's lane is not asked for
+one. `behavior.suggestions` turns it off and `/ui suggest` flips it for the
+session; off means no request is made, not an answer drawn nowhere. An
+unattended run, a served session and a child never ask, because none of
+them has a draft to put an offer in.
+
 ## A conversation runs without a screen
 
 `shhh chat --print "…"` is this session with the screen taken away: the same

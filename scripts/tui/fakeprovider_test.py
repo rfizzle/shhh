@@ -52,6 +52,27 @@ class Flows(unittest.TestCase):
         self.use({"": [["The turn's own reply."]]})
         self.assertEqual(fp.answer(request())[2], ["The turn's own reply."])
 
+    def test_a_suggestion_request_is_answered_with_no_offer_by_the_harness(self):
+        self.use({"session": [["Hello."]]})
+        body = {"messages": [{"role": "system", "content": "You suggest..."},
+                             {"role": "user", "content": 'UNTRUSTED EVIDENCE:\n{"last_instruction":"go"}'}]}
+        queue, _, parts, note = fp.answer(body)
+        self.assertEqual((queue, parts), ("suggestion", [""]))
+        self.assertIn("harness", note)
+        # The session's own queue is untouched.
+        self.assertEqual(fp.turn.get("session", 0), 0)
+
+    def test_a_scene_that_scripts_the_suggestion_wins(self):
+        self.use({"session": [["Hello."]], "suggestion": [["Run the tests again."]]})
+        body = {"messages": [{"role": "user", "content": 'UNTRUSTED EVIDENCE:\n{"last_instruction":"go"}'}]}
+        self.assertEqual(fp.answer(body)[2], ["Run the tests again."])
+
+    def test_a_turn_that_quotes_the_field_is_not_the_suggestion(self):
+        self.use({"session": [["Hello."]]})
+        body = {"messages": [{"role": "user", "content": 'what does "last_instruction" mean?'}],
+                "tools": [{"type": "function", "function": {"name": "read_file"}}]}
+        self.assertEqual(fp.flow(body), "")
+
     def test_the_tool_among_others_is_not_the_flow(self):
         self.use({"session": [["Hello."]]})
         self.assertEqual(fp.flow(request("session_title", "read_file")), "")

@@ -1114,6 +1114,10 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		WithSummarizer(summarizer).
 		WithTitler(titler, cfg.TitlesEnabled()).
 		WithAccountant(newAccountant(cfg, env, ledger), cfg.AccountInterval()).
+		// The next step offered in the empty draft is this surface's alone:
+		// a -p run, a served session and a child have no draft to offer it
+		// in, and none of them is built here.
+		WithSuggester(newSuggester(cfg, env, ledger), cfg.SuggestionsEnabled()).
 		WithModelSwitcher(env.switchModel).
 		WithReasoning(env.effort, env.switchReasoning).
 		WithReasoningDefault(cfg.Provider.Reasoning,

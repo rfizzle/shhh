@@ -58,6 +58,8 @@ func TestResolveFlow_WalksTheChainInOrder(t *testing.T) {
 		{"the explanation reads the classifier's key behind its own", func(c *config.Config) { c.Behavior.ClassifierModel = "judge" }, "anthropic", "judge", stepFlowKey, "behavior.classifier_model", flowExplanation},
 		{"compaction never assumes the small model's window", func(*config.Config) {}, "anthropic", "session", stepSessionModel, "", flowCompaction},
 		{"compaction takes the cheap key, under its window rule", func(c *config.Config) { c.Provider.CheapModel = "cheap" }, "anthropic", "cheap", stepCheapKey, "provider.cheap_model", flowCompaction},
+		{"the suggestion comes off the cheap chain", func(c *config.Config) { c.Provider.CheapModel = "cheap" }, "anthropic", "cheap", stepCheapKey, "provider.cheap_model", flowSuggestion},
+		{"the suggestion's own key outranks the cheap key", func(c *config.Config) { c.Provider.CheapModel = "cheap"; c.Behavior.SuggestionModel = "tiny" }, "anthropic", "tiny", stepFlowKey, "behavior.suggestion_model", flowSuggestion},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {

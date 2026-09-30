@@ -1082,6 +1082,18 @@ instruction to throw the draft away, so it leaves it standing. The editor has th
 refused rather than queued while a turn is in flight or a decision is waiting
 — neither can be watched from inside somebody else's editor.
 
+When a turn has closed and handed the screen back, the empty box can hold an
+offer: the next message the session's close readings point at, drawn in the
+dim tone a placeholder wears, on the one row an empty draft has and cut
+rather than wrapped, so the box is the size it always is. It is drawn only
+while the draft is empty and the session idle at its own input, and while it
+is up the key bar leads with `[→] take the suggestion`. The arrow puts the
+words in the draft with the cursor at their end, where they are a draft like
+any other; any other key drops the offer for that turn, and the next turn's
+close replaces it. Nothing is sent from it and nothing is saved with it — it
+is the box's suggestion, not a line of the conversation
+([the next step is offered, not typed](../capabilities/chat.md#the-next-step-is-offered-not-typed)).
+
 Two chords belong to the terminal rather than to the session, and shhh
 answers both because a terminal in raw mode will not. One suspends shhh back
 to the shell, and it is refused while a turn is in flight or a decision is

@@ -488,6 +488,13 @@ func (m Model) frameHints(room int) string {
 		if m.conversation {
 			hints = slices.DeleteFunc(hints, func(h hintSeg) bool { return h.label == "change mode" })
 		}
+		// An offered next step leads the rail while it is drawn, because the
+		// arrow that takes it is the one key on this row nobody would press
+		// without being told, and it is live only while the words are there
+		// (suggest.go).
+		if m.suggestionShown() {
+			hints = append([]hintSeg{segAs(keys.Draft.TakeSuggestion, "take the suggestion")}, hints...)
+		}
 	}
 	// The key list takes the last slot while the draft holds the keyboard,
 	// spelled as the chord that opens it here: `?` is a character in a
@@ -1263,6 +1270,14 @@ func (m Model) topRailLabels(mode frameLayout, width int) (left, right string) {
 // leaves the draft in the table the session started with.
 func (m Model) draftView() string {
 	components.StyleTextArea(&m.input)
+	// An offered next step stands where a placeholder would, in the tone the
+	// field paints one, on the one row an empty draft has: it is the box's
+	// own suggestion and not something typed, and it is cut rather than
+	// wrapped so the box stays the size an empty draft is
+	// (docs/capabilities/chat.md#the-next-step-is-offered-not-typed).
+	if m.suggestionShown() {
+		return m.input.Styles().Focused.Placeholder.Render(clipRow(m.suggest.text, m.input.Width()))
+	}
 	return paintPasteFolds(m.input.View())
 }
 

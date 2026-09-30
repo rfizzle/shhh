@@ -217,6 +217,14 @@ type DraftKeys struct {
 	HistoryNext   Binding
 	HistorySearch Binding
 
+	// TakeSuggestion puts the next step an idle session offers into the
+	// draft, cursor at its end, to be edited or sent like anything typed. It
+	// is live only on an empty draft with an offer drawn in it, which is the
+	// one state where the arrow has no act of its own — there is no cursor
+	// to move right past nothing — so taking it moves nothing a reader
+	// already relied on (docs/capabilities/chat.md#the-next-step-is-offered-not-typed).
+	TakeSuggestion Binding
+
 	// PointUp and PointDown move the pane's pointer — reading mode's cursor,
 	// seen from the prompt — and Open and Close act on the row it names,
 	// with the keyboard never leaving the draft. They are the arrows under
@@ -314,6 +322,8 @@ var Draft = DraftKeys{
 	HistoryPrev:   bind("↑", "recall the previous input", "up"),
 	HistoryNext:   bind("↓", "the next one", "down"),
 	HistorySearch: bind("ctrl+r", "search the input history", "ctrl+r"),
+
+	TakeSuggestion: bind("→", "take the suggestion into an empty draft", "right"),
 
 	PointUp:   bind("shift+↑", "move the pointer up a row of the pane", "shift+up"),
 	PointDown: bind("shift+↓", "down a row", "shift+down"),

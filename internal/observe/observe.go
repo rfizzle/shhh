@@ -390,6 +390,19 @@ const (
 	// on stderr, and a session driven over a socket has a client that cannot
 	// see this process's stderr at all.
 	SignalHook = "hook"
+	// SignalSuggestion: the next step offered in an empty draft left it.
+	// Reason: SuggestionTaken (the person took it into the draft) or
+	// SuggestionIgnored (a keystroke, a later turn's offer or the session's
+	// end dropped it). Every offer ends as one of the two, so the pair is
+	// the take rate's numerator and denominator in one code — and a rate is
+	// the only thing that says whether the offer is worth its request.
+	SignalSuggestion = "suggestion"
+)
+
+// Reasons for SignalSuggestion: how an offered next step left the draft.
+const (
+	SuggestionTaken   = "taken"
+	SuggestionIgnored = "ignored"
 )
 
 // Search backends for SignalSearch. They are spelled out here rather than

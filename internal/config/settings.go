@@ -320,6 +320,12 @@ var settings = []Setting{
 		Key: "behavior.description_model", Kind: KindString, Default: "(provider.cheap_model)",
 		Desc: "The model that writes the one-line description a command saved from `shhh cmd` is listed under.",
 	}, {
+		Key: "behavior.suggestions", Kind: KindBool, Default: "on",
+		Desc: "Offer a next step, drawn dim in the empty draft after a turn closes, that the right arrow takes into the draft; off asks for none.",
+	}, {
+		Key: "behavior.suggestion_model", Kind: KindString, Default: "(provider.cheap_model)",
+		Desc: "The model the next step offered in an empty draft is asked of.",
+	}, {
 		Key: "behavior.memory_disabled", Kind: KindBool, Default: "off",
 		Desc: "Turn durable memory off: nothing is injected and the remember tool is not registered.",
 	}, {
@@ -622,6 +628,9 @@ var settings = []Setting{
 	}, {
 		Key: "prompts.account", Kind: KindPath, Default: "(the built-in wording)",
 		Desc: "A file whose contents replace the instruction the session's standing account is asked with.",
+	}, {
+		Key: "prompts.suggestion", Kind: KindPath, Default: "(the built-in wording)",
+		Desc: "A file whose contents replace the instruction the next step offered in an empty draft is asked with.",
 	}, {
 		Key: "prompts.todo_standards", Kind: KindPath, Default: "(the built-in wording)",
 		Desc: "A file whose contents replace the sentence every step of a backlog run that changes the tree carries.",

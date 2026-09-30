@@ -323,6 +323,11 @@ on an empty draft the same key pulls the newest queued message — a follow-up f
 a message the turn delivered before the key reached it is already sent, and the row says so; /rewind is what takes a sent message back out`,
 		},
 		{
+			binds: []keys.Binding{keys.Draft.TakeSuggestion},
+			text: `on an empty draft with a next step drawn dim in it, put that step in the draft with the cursor at its end, to edit or send like anything you typed
+the step is offered after a turn closes and never sent on its own; any other key drops it for that turn. /ui suggest turns the offer off for the session`,
+		},
+		{
 			key:  "[@]",
 			text: `at the start of a word, open a file menu over what this session changed and the checkout's recent files, filtered by what you type after it. tab or enter inserts the path, esc keeps what you typed; a mentioned image is staged the way a pasted one is`,
 		},

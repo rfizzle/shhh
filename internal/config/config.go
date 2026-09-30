@@ -164,6 +164,10 @@ type PromptsConfig struct {
 	// with. The previous account and the exchange it revises are appended
 	// after it, and it takes no placeholders.
 	Account string `toml:"account,omitempty"`
+	// Suggestion is the instruction the next step offered in an empty draft
+	// is asked with. The evidence it reads is appended after it, and it
+	// takes no placeholders.
+	Suggestion string `toml:"suggestion,omitempty"`
 
 	// The backlog runner's stage instructions. Each names a file that
 	// replaces what one stage of a run tells the model; the blocks the run
@@ -629,6 +633,13 @@ type BehaviorConfig struct {
 	// is written by. Empty means the provider's own small model, and the
 	// one-shot's where the provider names none.
 	DescriptionModel string `toml:"description_model"`
+	// Suggestions turns the next step offered in an empty draft at a turn's
+	// close on or off; unset is on (SuggestionsEnabled).
+	Suggestions *bool `toml:"suggestions"`
+	// SuggestionModel is the model that offer is asked of. Empty means
+	// provider.cheap_model, then the provider's own small model, then the
+	// session's.
+	SuggestionModel string `toml:"suggestion_model"`
 	// ClassifierTimeoutSeconds bounds each classifier request (default 30).
 	ClassifierTimeoutSeconds int `toml:"classifier_timeout_seconds"`
 	// ClassifierMaxTokens caps the classifier's response, the reasoning it
@@ -1122,6 +1133,14 @@ func (c Config) TitlesEnabled() bool {
 		return true
 	}
 	return *c.Summary.Title
+}
+
+// SuggestionsEnabled reports whether an idle session offers a next step in
+// its empty draft: what behavior.suggestions says, or — unset — yes. Off
+// means no request is made at all, not an answer that is drawn nowhere
+// (docs/capabilities/chat.md#the-next-step-is-offered-not-typed).
+func (c Config) SuggestionsEnabled() bool {
+	return c.Behavior.Suggestions == nil || *c.Behavior.Suggestions
 }
 
 // DefaultResumeIntervalTurns is how many turns pass between two revisions
