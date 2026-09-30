@@ -427,7 +427,16 @@ func TestSeatbeltDeniesTheHostTmpdirAndAllowsTheSessionsOwn(t *testing.T) {
 	home := testHome(t)
 	mkdir(t, filepath.Join(home, ".ssh"))
 	policy, _ := workspacePolicy(t)
-	shared := resolvedPath(t, mkdir(t, filepath.Join(t.TempDir(), "lsp-sockets")))
+	// The grant is made under the host's tmpdir itself and not t.TempDir(),
+	// which follows GOTMPDIR: a grant inside the host tmpdir is the whole of
+	// what this test is about, so it cannot live wherever the test binary's
+	// own scratch happens to be.
+	scratch, err := os.MkdirTemp("", "seatbelt-tmp-grant-")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.RemoveAll(scratch) })
+	shared := resolvedPath(t, mkdir(t, filepath.Join(scratch, "lsp-sockets")))
 	policy.WriteExtra = []string{shared}
 
 	s, err := resolvePolicy(policy, "sandbox-exec")
