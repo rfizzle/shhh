@@ -22,8 +22,9 @@ func (p refusingProvider) StreamCompletion(context.Context, []provider.Message, 
 	return nil, p.fail
 }
 
-// A notice is lower case with no full stop, the key list is laid out on the
-// grid and a refused request is a failure row: none of them says `Error:`.
+// A notice is lower case with no full stop, the key list is a card over the
+// session that its own esc puts away and a refused request is a failure row:
+// none of them says `Error:`.
 func TestProgram_NoticesSpeakInTheReadmesVoice(t *testing.T) {
 	p := refusingProvider{fail: &provider.Failure{
 		Class: provider.ClassAuth, Status: 401, Provider: "openai",
@@ -36,7 +37,8 @@ func TestProgram_NoticesSpeakInTheReadmesVoice(t *testing.T) {
 	waitForText(t, tm, "nothing to copy yet")
 
 	tm.Send(tea.KeyPressMsg{Code: ']', Mod: tea.ModCtrl})
-	waitForText(t, tm, "print this key list")
+	waitForText(t, tm, "first or last")
+	tm.Send(tea.KeyPressMsg{Code: tea.KeyEscape})
 
 	tm.Type("why does the loop stop")
 	tm.Send(programEnter)

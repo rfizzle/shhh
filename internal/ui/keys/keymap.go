@@ -298,6 +298,7 @@ func pairs() []Binding {
 		Context.Move, Sources.Move, Notes.Move,
 		Backlog.Move, Backlog.Page, Sprint.Move,
 		Select.Move, Select.MoveJK, Select.Tab, Staged.Pick, Queue.Move,
+		KeyList.Move, KeyList.Page, KeyList.Ends,
 		Review.MoveFile, Review.MoveHunk,
 		Agent.Move, Profile.Move,
 		Diff.Scroll, Diff.Hunk, Output.Scroll,
@@ -445,6 +446,7 @@ func movable() []namedGroup {
 		{"find", reflect.ValueOf(&Find).Elem()},
 		{"staged", reflect.ValueOf(&Staged).Elem()},
 		{"queue", reflect.ValueOf(&Queue).Elem()},
+		{"keylist", reflect.ValueOf(&KeyList).Elem()},
 		{"paste", reflect.ValueOf(&Paste).Elem()},
 		{"context", reflect.ValueOf(&Context).Elem()},
 		{"row", reflect.ValueOf(&Row).Elem()},
@@ -517,6 +519,9 @@ type Act struct {
 	Name string
 	// Words are what the key does, the words beside it in every hint.
 	Words string
+	// Shown is the spelling a hint prints for it in this process — the
+	// shipped one, or the keystrokes a file moved it to.
+	Shown string
 	// Keys are the keystrokes it answers in this process, and Shipped the
 	// ones it was declared with.
 	Keys    []string
@@ -558,7 +563,7 @@ func keyboard(asShipped bool) []Group {
 		group := Group{Name: g.name, Movable: true}
 		walk(g.name, v, func(name string, b Binding) {
 			group.Acts = append(group.Acts, Act{
-				Name: name, Words: Words(b), Keys: b.Keys(), Shipped: shipped[name], Movable: true,
+				Name: name, Words: Words(b), Shown: Shown(b), Keys: b.Keys(), Shipped: shipped[name], Movable: true,
 			})
 		})
 		out = append(out, group)
@@ -566,7 +571,7 @@ func keyboard(asShipped bool) []Group {
 	for _, g := range fixed() {
 		group := Group{Name: g.name}
 		walk(g.name, g.value, func(name string, b Binding) {
-			group.Acts = append(group.Acts, Act{Name: name, Words: Words(b), Keys: b.Keys(), Shipped: b.Keys()})
+			group.Acts = append(group.Acts, Act{Name: name, Words: Words(b), Shown: Shown(b), Keys: b.Keys(), Shipped: b.Keys()})
 		})
 		out = append(out, group)
 	}

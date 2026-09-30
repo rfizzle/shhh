@@ -14,7 +14,7 @@
 ╭─ ctrl+/ ────────────────────────────────────────────────────────────────────────────────────────────────────── 30 matches ─╮
 │ ▸                                                                                                                          │
 │ COMMANDS                                                                                                                   │
-│ ❯ /help                   show commands, keys, and the approval policy                                                     │
+│ ❯ /help                   every key, by group, to filter; with words, the whole help as a row                       ctrl+] │
 │   /clear                  start a new session                                                                              │
 │   /paste                  attach the clipboard, or a file, to your next message                                     ctrl+v │
 │   /copy                   copy the last response (or just its code blocks)                                                 │
@@ -43,7 +43,7 @@
 ␛[38;5;241m╭─ ␛[m␛[1;97mctrl+/ ␛[m␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────␛[m␛[38;5;241m 30 matches ─╮␛[m
 ␛[38;5;241m│␛[m ␛[94m▸ ␛[m␛[97m ␛[m                                                                                                                        ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[1;94mCOMMANDS␛[m                                                                                                                   ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[94m❯␛[m ␛[1;97;48;5;62m/help                   show commands, keys, and the approval policy                                                    ␛[m ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[94m❯␛[m ␛[1;97;48;5;62m/help                   every key, by group, to filter; with words, the whole help as a row                       ctrl+]␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;252m/clear␛[m                  ␛[38;5;241mstart a new session␛[m                                                                              ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;252m/paste␛[m                  ␛[38;5;241mattach the clipboard, or a file, to your next message␛[m                                     ␛[38;5;252mctrl+v␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;252m/copy␛[m                   ␛[38;5;241mcopy the last response (or just its code blocks)␛[m                                                 ␛[38;5;241m│␛[m

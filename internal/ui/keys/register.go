@@ -467,6 +467,16 @@ func Surfaces() []Surface {
 			},
 		},
 		{
+			// Every key, by group, over the session. Typed into like the
+			// palette, so the only keys on its row are the ones no sentence
+			// produces, and the chord that opened it is one of the ways out.
+			Name:     "the whole key list",
+			Section:  "docs/interface/surfaces.md#the-key-list",
+			Position: Takeover,
+			Reached:  Shown(Draft.KeyList) + ", or /help",
+			Bindings: append(KeyList.All(), Draft.KeyList),
+		},
+		{
 			Name:     "review mode",
 			Section:  "docs/interface/surfaces.md#the-turns-close",
 			Position: Takeover,

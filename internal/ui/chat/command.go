@@ -257,9 +257,10 @@ func (m Model) runCommand(text, name string) (tea.Model, tea.Cmd) {
 			return picked, cmd
 		}
 
-	case text == "/help":
-		// The help is a sheet laid out at the pane's width rather than a
-		// sentence (helpsheet.go), so it is appended as one.
+	case name == "/help":
+		// Bare /help is the key list's register row (keypopup.go). With words
+		// after it, it writes the whole help — a sheet laid out at the pane's
+		// width rather than a sentence (helpsheet.go), so it is appended as one.
 		return m.helpNotice(m.helpSheet())
 
 	case name == "/ui":

@@ -12,7 +12,16 @@
 ── layout ──────────────────────────────────────────────────
 · a conversation
   commands
-    /help          show this help
+    /help          open the key list: every key this session
+                   answers, grouped as a keybindings.toml
+                   names them and spelled the way they are
+                   bound now — type to filter by key or
+                   words, [esc] or [ctrl+]] closes it, and
+                   the draft is as you left it. With words
+                   after it (/help keys), the whole sheet —
+                   the commands, what happens mid-turn, the
+                   keys and the approval policy — is written
+                   to the transcript instead
     /clear         end this session and start another (also
                    /new)
     /paste         attach the clipboard — a screenshot, or
@@ -183,7 +192,16 @@
 
 · a coding session
   commands
-    /help          show this help
+    /help          open the key list: every key this session
+                   answers, grouped as a keybindings.toml
+                   names them and spelled the way they are
+                   bound now — type to filter by key or
+                   words, [esc] or [ctrl+]] closes it, and
+                   the draft is as you left it. With words
+                   after it (/help keys), the whole sheet —
+                   the commands, what happens mid-turn, the
+                   keys and the approval policy — is written
+                   to the transcript instead
     /clear         end this session and start another (also
                    /new)
     /paste         attach the clipboard — a screenshot, or
@@ -386,7 +404,16 @@
 ── ansi ────────────────────────────────────────────────────
 · a conversation
   ␛[38;5;243mcommands␛[m
-    ␛[38;5;252m/help␛[m          ␛[38;5;241mshow this help␛[m
+    ␛[38;5;252m/help␛[m          ␛[38;5;241mopen the key list: every key this session␛[m
+                   ␛[38;5;241manswers, grouped as a keybindings.toml␛[m
+                   ␛[38;5;241mnames them and spelled the way they are␛[m
+                   ␛[38;5;241mbound now — type to filter by key or␛[m
+                   ␛[38;5;241mwords, [esc] or [ctrl+]] closes it, and␛[m
+                   ␛[38;5;241mthe draft is as you left it. With words␛[m
+                   ␛[38;5;241mafter it (/help keys), the whole sheet —␛[m
+                   ␛[38;5;241mthe commands, what happens mid-turn, the␛[m
+                   ␛[38;5;241mkeys and the approval policy — is written␛[m
+                   ␛[38;5;241mto the transcript instead␛[m
     ␛[38;5;252m/clear␛[m         ␛[38;5;241mend this session and start another (also␛[m
                    ␛[38;5;241m/new)␛[m
     ␛[38;5;252m/paste␛[m         ␛[38;5;241mattach the clipboard — a screenshot, or␛[m
@@ -557,7 +584,16 @@
 
 · a coding session
   ␛[38;5;243mcommands␛[m
-    ␛[38;5;252m/help␛[m          ␛[38;5;241mshow this help␛[m
+    ␛[38;5;252m/help␛[m          ␛[38;5;241mopen the key list: every key this session␛[m
+                   ␛[38;5;241manswers, grouped as a keybindings.toml␛[m
+                   ␛[38;5;241mnames them and spelled the way they are␛[m
+                   ␛[38;5;241mbound now — type to filter by key or␛[m
+                   ␛[38;5;241mwords, [esc] or [ctrl+]] closes it, and␛[m
+                   ␛[38;5;241mthe draft is as you left it. With words␛[m
+                   ␛[38;5;241mafter it (/help keys), the whole sheet —␛[m
+                   ␛[38;5;241mthe commands, what happens mid-turn, the␛[m
+                   ␛[38;5;241mkeys and the approval policy — is written␛[m
+                   ␛[38;5;241mto the transcript instead␛[m
     ␛[38;5;252m/clear␛[m         ␛[38;5;241mend this session and start another (also␛[m
                    ␛[38;5;241m/new)␛[m
     ␛[38;5;252m/paste␛[m         ␛[38;5;241mattach the clipboard — a screenshot, or␛[m

@@ -358,11 +358,11 @@ func TestHistorySearch_AnEmptyRingSaysSo(t *testing.T) {
 	}
 }
 
-// The key list is a chord, so it needs no empty box to be safe: it prints the
-// keys with a half-written prompt standing, and the `?` it used to answer to
-// is a letter like any other
+// The key list is a chord, so it needs no empty box to be safe: it opens over
+// a half-written prompt and leaves it standing, and the `?` it used to answer
+// to is a letter like any other
 // (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
-func TestKeyList_TheChordPrintsTheKeysAndAQuestionMarkIsALetter(t *testing.T) {
+func TestKeyList_TheChordOpensTheListAndAQuestionMarkIsALetter(t *testing.T) {
 	m, _ := pressKey(t, readyModel(t), tea.KeyPressMsg{Code: '?', Text: "?"})
 	if got := m.input.Value(); got != "?" {
 		t.Fatalf("? is a letter at the draft, got %q", got)
@@ -375,9 +375,11 @@ func TestKeyList_TheChordPrintsTheKeysAndAQuestionMarkIsALetter(t *testing.T) {
 	if got := m.input.Value(); got != "?" {
 		t.Fatalf("the chord took the draft with it, got %q", got)
 	}
-	view := stripANSI(m.renderHistory())
-	if !strings.Contains(view, "[ctrl+n]") || !strings.Contains(view, "reading mode") {
-		t.Errorf("the chord did not print the key section as a system row:\n%s", view)
+	if m.state != stateKeyPopup {
+		t.Fatalf("the chord did not open the key list, state %d", m.state)
+	}
+	if view := stripANSI(m.renderHistory()); strings.Contains(view, "[ctrl+n]") {
+		t.Errorf("the chord wrote the keys into the transcript:\n%s", view)
 	}
 }
 

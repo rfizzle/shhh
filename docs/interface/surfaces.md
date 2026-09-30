@@ -1678,8 +1678,8 @@ rather than chosen from a list, because the reach is the thing being decided
 and a standing permission is wider than the card is about. A safety-flagged
 command is the one place the key is missing, here as everywhere, and the card
 says so where the key would have been. The card does not gain the session
-card's list of lengths, so the key list printed while it waits names its `[a]`
-in its own words — this command, every agent, this turn — rather than in the
+card's list of lengths, so the key section `/help` writes while it waits names
+its `[a]` in its own words — this command, every agent, this turn — rather than in the
 session card's words, which promise a choice of how long that this card does
 not draw.
 
@@ -2336,8 +2336,8 @@ anything else addressable. The slash prefix is for a command you are already
 typing; the palette is for one you are looking for. Its chord is the slash key
 for that reason — the list a chord opens is the list the prefix completes —
 and it is declared in both the spellings a terminal delivers that keystroke
-in. A terminal that sends neither is not stranded: the key list names the
-other door beside it, which is the prefix on an empty draft.
+in. A terminal that sends neither is not stranded: the help's key section
+names the other door beside it, which is the prefix on an empty draft.
 
 It is the ordinary selector with its filter always open, not a fourth kind of
 list. It is titled with the chord that opened it rather than with a name for
@@ -2351,6 +2351,33 @@ every other windowed list folds in — a marker, never a fourth group rail.
 It greys an unreachable command exactly as the completion menu does, and for
 the same reason: the palette is where you go to look for a command you cannot
 find.
+
+### The key list
+
+Every key the session answers, over the session. The chord opens it, and so
+do the start screen's offer of it and a bare `/help`: one card, whichever door.
+It is the palette's shape — the ordinary selector with its filter open from the
+first keystroke, in the panel the draft box was in — and it borrows the screen
+the way the palette does, so a half-written prompt is exactly as it was when
+the card goes and a running turn goes on streaming under it.
+
+Reference is looked up, not written down. The list used to be a system row: the
+whole register appended to the transcript, where it scrolled the conversation
+away, was saved with it and came back on every resume, and said nothing about
+the session it sat in. A card is opened, read and put away, and leaves nothing
+behind — not in the transcript and not in the conversation. `/help` with words
+after it is the one door that still writes, because a reader who asks for the
+whole sheet by name is asking for a row.
+
+The keys are listed by the groups a keymap file names them in, in that file's
+order, each with its keystrokes and its words, read from the register when the
+card opens — so a key a file moved is listed at what it answers now, never at
+what it shipped with. Typing filters by the keys, the words, or the name the
+file writes a key by; the title rail counts what the query left of the whole
+register. The arrows move, the page keys page, `home` and `end` go to the two
+ends, and esc or the chord again closes it. None of those is a letter, because
+every letter is the query's. While the keyboard is pointed at a child the chord
+keeps its meaning there and opens nothing.
 
 ### The start screen
 

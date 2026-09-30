@@ -257,7 +257,11 @@ spends `f2` — `draft.queued`, the input's key into what is queued for the
 turn — because it is the one key on the row that already means "edit the
 thing selected" to anyone who has renamed a file on a desktop; the queue's
 own keys (`queue.move`, `queue.edit`, `queue.cancel`, `queue.back`) are
-letters and the arrows, live only once it holds the keyboard.
+letters and the arrows, live only once it holds the keyboard. The key list
+the chord opens spends nothing from the free set: its own keys
+(`keylist.move`, `keylist.page`, `keylist.ends`, `keylist.close`) are the
+arrows, the page keys, `home` and `end`, and esc — never a letter, because
+every letter it is sent is its filter's.
 
 Nothing ships on alt, so every alt letter is left to a keymap file on Linux
 and Windows — where it costs nothing — apart from the six the textarea holds

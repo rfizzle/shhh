@@ -403,15 +403,16 @@ func (m Model) updateKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 			return answered(m.enterFocusMode())
 		}
 	case keys.Is(pressed, keys.Draft.KeyList):
-		// The keys as a system row. It was `?` on an empty draft — the door
-		// Claude Code taught — and the emptiness was doing the work a chord
-		// does: no sentence can produce this one, so the key list opens with
-		// a half-written prompt in the box and leaves it there
+		// The key list, over the session and never into the transcript
+		// (docs/interface/surfaces.md#the-key-list). It was `?` on an empty
+		// draft — the door Claude Code taught — and the emptiness was doing
+		// the work a chord does: no sentence can produce this one, so the
+		// list opens with a half-written prompt in the box and leaves it there
 		// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 		// Attached, the keyboard is pointed at a child and the orchestrator's
 		// register is not what it is about, as with the palette above.
 		if m.inputLive() && m.attachedTo == "" {
-			return answered(m.helpNotice(helpSheet{m.helpKeySection()}))
+			return answered(m.openKeyPopup())
 		}
 	case keys.Is(pressed, keys.Draft.PageUp, keys.Draft.PageDown):
 		// The pager keys read the transcript and leave the keyboard in

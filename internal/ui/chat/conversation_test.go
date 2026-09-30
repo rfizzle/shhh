@@ -125,8 +125,8 @@ func TestConversation_TheRailOffersNoModeKey(t *testing.T) {
 }
 
 // The key list leaves the mode chord out of a conversation the way the rail
-// does — through the chord that prints it and through /help's key section,
-// which are one list — and keeps it in a coding session.
+// does — on the card the chord opens and in /help's key section — and keeps
+// it in a coding session.
 func TestConversation_TheKeyListOffersNoModeKey(t *testing.T) {
 	const row = "cycle the permission mode"
 	coding := gatedModel(t, nil, nil)
@@ -138,13 +138,24 @@ func TestConversation_TheKeyListOffersNoModeKey(t *testing.T) {
 	if got := helpText(&chat); strings.Contains(got, row) {
 		t.Errorf("/help's key section offers the mode chord in a conversation:\n%s", got)
 	}
-	updated, _ := chat.Update(tea.KeyPressMsg{Code: ']', Mod: tea.ModCtrl})
-	chat = updated.(Model)
-	if !transcriptContains(chat, "[ctrl+n]") {
-		t.Fatal("the key-list chord printed no key list")
+	listed := func(m Model) bool {
+		updated, _ := m.Update(tea.KeyPressMsg{Code: ']', Mod: tea.ModCtrl})
+		p := updated.(Model).screens.keyPopup()
+		if p == nil {
+			t.Fatal("the key-list chord opened no key list")
+		}
+		for _, r := range p.all {
+			if r.words == row {
+				return true
+			}
+		}
+		return false
 	}
-	if transcriptContains(chat, row) {
-		t.Error("the key list printed in a conversation offers the mode chord")
+	if !listed(coding) {
+		t.Fatal("the control is wrong: a coding session's key list card has no mode row")
+	}
+	if listed(chat) {
+		t.Error("the key list opened in a conversation offers the mode chord")
 	}
 }
 

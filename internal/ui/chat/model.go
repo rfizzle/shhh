@@ -246,6 +246,11 @@ const (
 	// like the turns screen: full width, the rail hidden, esc returns, and it
 	// changes nothing (alerts.go).
 	stateAlerts
+	// stateKeyPopup: the key list is up — every key the register binds, by
+	// group, filtered as it is typed into. It borrows the bottom panel the
+	// way the palette does, so the draft under it is untouched and the turn
+	// keeps running (keypopup.go).
+	stateKeyPopup
 )
 
 // minPanelHeight is the fewest rows the bottom panel takes: what a surface

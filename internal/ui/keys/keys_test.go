@@ -205,6 +205,7 @@ func TestEveryDeclaredBindingIsOnASurface(t *testing.T) {
 			Output.Collapse, Output.Back, Output.Leave}},
 		{"Preview", []Binding{Preview.Back, Preview.Leave}},
 		{"Paste", Paste.All()},
+		{"KeyList", KeyList.All()},
 		{"Screen", []Binding{Screen.Move, Screen.Take, Screen.Filter, Screen.ClearQ,
 			Screen.List, Screen.Quit, Screen.Reset, Screen.Write, Screen.Keep, Screen.Scope,
 			Screen.Copy, Screen.Rerun, Screen.Snippet, Screen.Delete, Screen.Rename,
@@ -493,11 +494,11 @@ func TestEveryPairIsDeclaredBackFirst(t *testing.T) {
 	// where every half is one of these.
 	back := map[string]bool{
 		"up": true, "k": true, "p": true, "N": true, "u": true,
-		"pgup": true, "left": true, "h": true,
+		"pgup": true, "left": true, "h": true, "home": true,
 	}
 	on := map[string]bool{
 		"down": true, "j": true, "n": true, "d": true,
-		"pgdown": true, "right": true, "l": true,
+		"pgdown": true, "right": true, "l": true, "end": true,
 	}
 	for _, b := range pairs() {
 		ks := b.Keys()

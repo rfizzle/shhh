@@ -12,7 +12,10 @@
 ── layout ──────────────────────────────────────────────────
 · a conversation
   commands
-    /help          show this help
+    /help          open the key list: every key this session answers, grouped as a keybindings.toml names them and spelled the way
+                   they are bound now — type to filter by key or words, [esc] or [ctrl+]] closes it, and the draft is as you left
+                   it. With words after it (/help keys), the whole sheet — the commands, what happens mid-turn, the keys and the
+                   approval policy — is written to the transcript instead
     /clear         end this session and start another (also /new)
     /paste         attach the clipboard — a screenshot, or files copied in a file manager — to your next message; /paste <path>
                    attaches a file by name, /paste show <handle> opens a staged image or paste full-pane, /paste drop <handle>
@@ -87,7 +90,10 @@
 
 · a coding session
   commands
-    /help          show this help
+    /help          open the key list: every key this session answers, grouped as a keybindings.toml names them and spelled the way
+                   they are bound now — type to filter by key or words, [esc] or [ctrl+]] closes it, and the draft is as you left
+                   it. With words after it (/help keys), the whole sheet — the commands, what happens mid-turn, the keys and the
+                   approval policy — is written to the transcript instead
     /clear         end this session and start another (also /new)
     /paste         attach the clipboard — a screenshot, or files copied in a file manager — to your next message; /paste <path>
                    attaches a file by name, /paste show <handle> opens a staged image or paste full-pane, /paste drop <handle>
@@ -176,7 +182,10 @@
 ── ansi ────────────────────────────────────────────────────
 · a conversation
   ␛[38;5;244mcommands␛[m
-    ␛[38;5;254m/help␛[m          ␛[38;5;244mshow this help␛[m
+    ␛[38;5;254m/help␛[m          ␛[38;5;244mopen the key list: every key this session answers, grouped as a keybindings.toml names them and spelled the way␛[m
+                   ␛[38;5;244mthey are bound now — type to filter by key or words, [esc] or [ctrl+]] closes it, and the draft is as you left␛[m
+                   ␛[38;5;244mit. With words after it (/help keys), the whole sheet — the commands, what happens mid-turn, the keys and the␛[m
+                   ␛[38;5;244mapproval policy — is written to the transcript instead␛[m
     ␛[38;5;254m/clear␛[m         ␛[38;5;244mend this session and start another (also /new)␛[m
     ␛[38;5;254m/paste␛[m         ␛[38;5;244mattach the clipboard — a screenshot, or files copied in a file manager — to your next message; /paste <path>␛[m
                    ␛[38;5;244mattaches a file by name, /paste show <handle> opens a staged image or paste full-pane, /paste drop <handle>␛[m
@@ -251,7 +260,10 @@
 
 · a coding session
   ␛[38;5;244mcommands␛[m
-    ␛[38;5;254m/help␛[m          ␛[38;5;244mshow this help␛[m
+    ␛[38;5;254m/help␛[m          ␛[38;5;244mopen the key list: every key this session answers, grouped as a keybindings.toml names them and spelled the way␛[m
+                   ␛[38;5;244mthey are bound now — type to filter by key or words, [esc] or [ctrl+]] closes it, and the draft is as you left␛[m
+                   ␛[38;5;244mit. With words after it (/help keys), the whole sheet — the commands, what happens mid-turn, the keys and the␛[m
+                   ␛[38;5;244mapproval policy — is written to the transcript instead␛[m
     ␛[38;5;254m/clear␛[m         ␛[38;5;244mend this session and start another (also /new)␛[m
     ␛[38;5;254m/paste␛[m         ␛[38;5;244mattach the clipboard — a screenshot, or files copied in a file manager — to your next message; /paste <path>␛[m
                    ␛[38;5;244mattaches a file by name, /paste show <handle> opens a staged image or paste full-pane, /paste drop <handle>␛[m

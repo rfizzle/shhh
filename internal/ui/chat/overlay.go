@@ -280,6 +280,10 @@ func (h heldScreens) alerts() *components.AlertsScreen {
 	return heldAs[components.AlertsScreen](h, stateAlerts)
 }
 
+func (h heldScreens) keyPopup() *keyPopup {
+	return heldAs[keyPopup](h, stateKeyPopup)
+}
+
 func (h heldScreens) safety() *components.SafetyScreen {
 	return heldAs[components.SafetyScreen](h, stateSafety)
 }
@@ -385,6 +389,27 @@ func buildOverlays() map[state]*mode {
 			lines:     panelRows((Model).pickerLines),
 			cursor:    (Model).pickCursor,
 			keys:      (Model).updatePick,
+		},
+		// The key list (keypopup.go): the palette's card over the register,
+		// in the palette's panel, with the query line open from the first
+		// keystroke. Bare /help is the command that opens it; with words
+		// after it /help goes on to write the whole help sheet as a row.
+		stateKeyPopup: {
+			place:     placePanel,
+			holds:     true,
+			borrows:   true,
+			hidesRail: true,
+			lines:     panelRows((Model).keyPopupLines),
+			cursor:    (Model).keyPopupCursor,
+			keys:      (Model).updateKeyPopup,
+			command: &surfaceCommand{
+				slashCommand: slashCommand{name: "/help", desc: "every key, by group, to filter; with words, the whole help as a row",
+					key: keys.Shown(keys.Draft.KeyList),
+					help: `open the key list: every key this session answers, grouped as a keybindings.toml names them and spelled the way they are bound now — type to filter by key or words, ` +
+						keys.Bracket(keys.KeyList.Close) + ` or ` + keys.Bracket(keys.Draft.KeyList) + ` closes it, and the draft is as you left it. With words after it (/help keys), the whole sheet — the commands, what happens mid-turn, the keys and the approval policy — is written to the transcript instead`},
+				bare: true,
+				open: bareOpen(Model.openKeyPopup),
+			},
 		},
 		// The card the rewind picker opens once a turn has been taken. It
 		// borrows the panel and the keyboard the picker already had, so

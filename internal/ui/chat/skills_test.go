@@ -70,7 +70,7 @@ func TestSkillCommand_ShortcutByName(t *testing.T) {
 	// A skill named like a real command does not take the command over.
 	m = skillModel(t)
 	before := len(m.Messages())
-	m = sendText(t, m, "/help")
+	m = sendText(t, m, "/help commands")
 	if len(m.Messages()) != before {
 		t.Fatal("/help is the help command, not the help skill")
 	}

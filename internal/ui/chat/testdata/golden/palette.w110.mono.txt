@@ -14,7 +14,7 @@
 ╭─ ctrl+/ ────────────────────────────────────────────────────────────────────────────────── 30 matches ─╮
 │ ▸                                                                                                      │
 │ COMMANDS                                                                                               │
-│ ❯ /help                   show commands, keys, and the approval policy                                 │
+│ ❯ /help                   every key, by group, to filter; with words, the whole help as a row   ctrl+] │
 │   /clear                  start a new session                                                          │
 │   /paste                  attach the clipboard, or a file, to your next message                 ctrl+v │
 │   /copy                   copy the last response (or just its code blocks)                             │
@@ -43,7 +43,7 @@
 ␛[38;5;244m╭─ ␛[m␛[1;38;5;254mctrl+/ ␛[m␛[38;5;244m────────────────────────────────────────────────────────────────────────────────── 30 matches ─╮␛[m
 ␛[38;5;244m│␛[m ␛[38;5;254m▸ ␛[m␛[38;5;254m ␛[m                                                                                                    ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[1;38;5;254mCOMMANDS␛[m                                                                                               ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m/help                   show commands, keys, and the approval policy                                ␛[m ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m/help                   every key, by group, to filter; with words, the whole help as a row   ctrl+]␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;254m/clear␛[m                  ␛[38;5;244mstart a new session␛[m                                                          ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;254m/paste␛[m                  ␛[38;5;244mattach the clipboard, or a file, to your next message␛[m                 ␛[38;5;254mctrl+v␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;254m/copy␛[m                   ␛[38;5;244mcopy the last response (or just its code blocks)␛[m                             ␛[38;5;244m│␛[m

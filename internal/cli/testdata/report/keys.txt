@@ -75,6 +75,13 @@
   · cancel  x · cancel it  [shipped]
   · back    esc ctrl+c · back to the draft  [shipped]
 
+  KEYLIST
+
+  · move   up down · move  [shipped]
+  · page   pgup pgdown · page  [shipped]
+  · ends   home end · first or last  [shipped]
+  · close  esc ctrl+c · close it  [shipped]
+
   PASTE
 
   · scroll  k j up down · scroll  [shipped]
@@ -331,4 +338,4 @@
   · paste   p · paste a key  [shipped]
   · local   o · a local model  [shipped]
 
-  241 keys · 1 moved
+  245 keys · 1 moved

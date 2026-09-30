@@ -515,6 +515,33 @@ var Queue = QueueKeys{
 	Back: bind("esc", "back to the draft", "esc", "ctrl+c"),
 }
 
+// KeyListKeys are the key list's: every key the register binds, by group,
+// over the session, once Draft.KeyList or a bare /help has opened it
+// (docs/interface/surfaces.md#the-key-list). It is typed into from the first
+// keystroke, like the palette — every letter filters — so none of these is
+// a letter, and the draft keeps its sentence underneath.
+type KeyListKeys struct {
+	Move  Binding
+	Page  Binding
+	Ends  Binding
+	Close Binding
+}
+
+// All is the key list's keys in the order its row offers them.
+func (k KeyListKeys) All() []Binding { return []Binding{k.Move, k.Page, k.Ends, k.Close} }
+
+var KeyList = KeyListKeys{
+	Move: bind("↑↓", "move", "up", "down"),
+	Page: bind("pgup/pgdn", "page", "pgup", "pgdown"),
+	Ends: bind("home/end", "first or last", "home", "end"),
+	// The safe answer: nothing was chosen and the list holds nothing a
+	// reader would lose, so it only goes away
+	// (docs/interface/principles.md#esc-is-always-the-safe-answer). The
+	// chord that opened it closes it too, answered as that chord so a file
+	// that moves one moves both.
+	Close: bind("esc", "close it", "esc", "ctrl+c"),
+}
+
 // FindKeys are the transcript search's query row — what reading mode's bar
 // becomes while `[/]` is open. It is typed into, so every letter is text
 // there and the mode's own letters are not live: the two keys below are the

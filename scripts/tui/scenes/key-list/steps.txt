@@ -1,0 +1,22 @@
+# program test: TestProgram_TheKeyListOpensOverADraftAndLeavesItStanding
+#
+# The key list is looked up and put away
+# (docs/interface/surfaces.md#the-key-list). One reply lands so the
+# transcript has a row to leave alone; a sentence is half typed; the chord
+# opens the list over it, typing filters it, esc puts it away.
+#
+# What the captures are for: the list open on its first group with its own
+# key row, the half-written sentence still in the box behind it; the list
+# filtered to one word with the count on its title rail; and the draft back
+# as it was, the reply the only row above it.
+snap 01-start "Some things worth doing first"
+keys "say hi" Enter
+snap 02-reply "Nothing here is real"
+keys "why does the parser"
+snap 03-draft "why does the parser"
+keys C-]
+snap 04-open "first or last" "DRAFT" "╭─ ctrl+] ─" "send the message"
+keys "reading"
+snap 05-filtered "READING" "▸ reading" "of " "copy the row"
+keys Escape
+snap 06-closed "why does the parser" "Nothing here is real"

@@ -821,19 +821,35 @@ func TestGolden_DraftGrammar(t *testing.T) {
 	})
 }
 
-// TestGolden_HelpKeys pins the key section as the key list prints it, at
-// every width and bounded: the list is laid out at the pane's width, so a row
-// that ran past the right edge fails here rather than being written into the
-// file it is checked against. The words are under test too: a rebind that
-// reaches the dispatch without reaching this sheet is the drift the register
-// exists to stop.
-func TestGolden_HelpKeys(t *testing.T) {
-	captureBoundedGolden(t, "help-keys", "the /help key section as a system row", goldenWidths, func(width int) []golden.Panel {
-		m := frameModel(t, width, 40)
-		mm, _ := m.Update(tea.KeyPressMsg{Code: ']', Mod: tea.ModCtrl})
-		m = mm.(Model)
+// TestGolden_KeyListPopup pins the key list as the card it opens as over the
+// session (docs/interface/surfaces.md#the-key-list): open on the register's
+// first group, filtered, moved to its last group, and in a terminal too short
+// to show more than a handful of keys. Bounded at every width, because the
+// card is laid out at the panel's width and a row past the edge would be
+// written into the file it is checked against — and the words are under test
+// too, since they are the register's own.
+func TestGolden_KeyListPopup(t *testing.T) {
+	captureBoundedGolden(t, "key-list-popup", "the key list over the session", goldenWidths, func(width int) []golden.Panel {
+		open := func(height int) Model {
+			m := frameModel(t, width, height)
+			m.input.SetValue("why does the parser")
+			mm, _ := m.Update(tea.KeyPressMsg{Code: ']', Mod: tea.ModCtrl})
+			return mm.(Model)
+		}
+		view := func(m Model) string { return strings.Join(m.keyPopupLines(), "\n") }
+		filtered := open(40)
+		for _, r := range "reading" {
+			mm, _ := filtered.Update(tea.KeyPressMsg{Code: r, Text: string(r)})
+			filtered = mm.(Model)
+		}
+		scrolled := open(40)
+		mm, _ := scrolled.Update(tea.KeyPressMsg{Code: tea.KeyEnd})
+		scrolled = mm.(Model)
 		return []golden.Panel{
-			{Label: "the key list, on the chord that prints it", View: m.renderHistory()},
+			{Label: "open over a half-written draft", View: view(open(40))},
+			{Label: "filtered by a word", View: view(filtered)},
+			{Label: "at the end, the last group in view", View: view(scrolled)},
+			{Label: "a short terminal", View: view(open(20))},
 		}
 	})
 }

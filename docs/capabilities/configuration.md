@@ -833,6 +833,10 @@ rules above are what refuse a move, not a list of keys held back from it.
 | `queue.edit` | `enter` | pull it back into the draft | yes |
 | `queue.cancel` | `x` | cancel it | yes |
 | `queue.back` | `esc`, `ctrl+c` | back to the draft | yes |
+| `keylist.move` | `up`, `down` | move | yes |
+| `keylist.page` | `pgup`, `pgdown` | page | yes |
+| `keylist.ends` | `home`, `end` | first or last | yes |
+| `keylist.close` | `esc`, `ctrl+c` | close it | yes |
 | `paste.scroll` | `k`, `j`, `up`, `down` | scroll | yes |
 | `paste.remove` | `x` | remove the paste | yes |
 | `paste.leave` | `q`, `ctrl+c` | back to the draft, cursor where you left it | yes |

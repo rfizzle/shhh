@@ -116,7 +116,6 @@ func helpMidTurn(m *Model) string {
 // a command added to the registry with a paragraph in neither place draws an
 // empty row rather than quietly shipping one.
 var helpCommands = map[string]string{
-	"/help":  `show this help`,
 	"/clear": `end this session and start another (also /new)`,
 	"/paste": `attach the clipboard — a screenshot, or files copied in a file manager — to your next message; /paste <path> attaches a file by name, /paste show <handle> opens a staged image or paste full-pane, /paste drop <handle> takes one back out — the handle is the one a chip leads with, Image#1, and its name works too — and /paste clear drops what is staged (ctrl+v). With a sentence half typed, reading mode (ctrl+o) keeps it and reaches the strip of chips as its last row: ←→ picks a chip, enter opens it, x drops it, esc goes back to the sentence; a click on a chip opens it too`,
 	"/copy":  `copy the last response (or just its code blocks)`,
@@ -431,7 +430,7 @@ bare /todo opens the same screen; it opens over a running turn, and the keys tha
 		},
 		{
 			binds: []keys.Binding{keys.Draft.KeyList},
-			text:  `print this key list. It is a chord and not the ? it used to be, because a bare key at the draft is a letter of whatever you are typing — every key live here is a chord but enter and esc`,
+			text:  `open the key list over the session: every key, by group, as they are bound now — type to filter, esc or the chord again closes it, and nothing is written to the transcript. It is a chord and not the ? it used to be, because a bare key at the draft is a letter of whatever you are typing — every key live here is a chord but enter and esc`,
 		},
 		{
 			binds: []keys.Binding{keys.Draft.Clear},

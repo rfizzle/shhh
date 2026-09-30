@@ -992,7 +992,7 @@ func TestChildAskAlwaysGrantsTheCommandForTheTurn(t *testing.T) {
 	}
 }
 
-// The key list printed while a routed command card waits names that card's
+// The help's key section written while a routed command card waits names that card's
 // [a] in the card's own words: one grant, this command, every agent, this
 // turn. The register's words promise a choice of how long, which this card
 // does not draw, so they must not be what the list says the key does here —
@@ -1005,20 +1005,18 @@ func TestKeyListNamesTheRoutedCardsGrant(t *testing.T) {
 		t.Fatalf("with no routed card up the key list names its grant:\n%s", got)
 	}
 	// A sentence in the draft keeps the keyboard there, so the card waits
-	// beside it and the chord that prints the key list reaches the input.
+	// beside it and /help written with words reaches the input.
 	m.input.SetValue("keep going")
 	ask := subagent.NewAsk("writer-1", subagent.AskCommand, "run go test ./...")
 	ask.Command = "go test ./..."
 	updated, _ := m.Update(subagentEventMsg{ev: subagent.Event{Kind: subagent.EventAsk, Ask: ask}})
 	m = updated.(Model)
 
-	updated, _ = m.Update(tea.KeyPressMsg{Code: ']', Mod: tea.ModCtrl})
-	m = updated.(Model)
-	if !transcriptContains(m, "[a]              "+keys.AlwaysRouted+",") {
-		t.Fatal("the key list printed beside a routed command card does not name its [a] in the card's words")
+	if got := m.helpKeys(); !strings.Contains(got, "[a]              "+keys.AlwaysRouted+",") {
+		t.Fatalf("the key section written beside a routed command card does not name its [a] in the card's words:\n%s", got)
 	}
-	if transcriptContains(m, keys.Words(keys.Decision.Always)) {
-		t.Fatal("the key list promises a choice of how long the routed card does not draw")
+	if got := m.helpKeys(); strings.Contains(got, keys.Words(keys.Decision.Always)) {
+		t.Fatal("the key section promises a choice of how long the routed card does not draw")
 	}
 	if !strings.Contains(helpText(&m), keys.AlwaysRouted) {
 		t.Fatal("/help's key section beside a routed command card does not name its [a]")

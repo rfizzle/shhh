@@ -123,7 +123,7 @@ func slashCommands() []slashCommand {
 
 func buildSlashCommands() []slashCommand {
 	return []slashCommand{
-		{name: "/help", desc: "show commands, keys, and the approval policy"},
+		registeredSlash("/help"),
 		// Not idleOnly, though it replaces the conversation: a turn that is not
 		// over is exactly when ending the session is worth asking about, so the
 		// command stays offered mid-turn and answers with the confirm quitting

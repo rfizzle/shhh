@@ -1,0 +1,3 @@
+# One reply, so the transcript has something above the draft for the key list
+# to leave unchanged.
+Hello from the scripted provider. Nothing here is real.
