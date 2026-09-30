@@ -31,6 +31,20 @@ func gitWorkspace(t *testing.T) (Policy, string) {
 	return policy, resolvedPath(t, ws)
 }
 
+// outsideAnyRepo is a scratch directory under the host's tmpdir itself and
+// not t.TempDir(), which follows GOTMPDIR: a GOTMPDIR inside a checkout lets
+// git's discovery walk up past a fixture that has no working store into the
+// enclosing repository, and answer about a store the test never made.
+func outsideAnyRepo(t *testing.T) string {
+	t.Helper()
+	dir, err := os.MkdirTemp("", "gitstore-")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.RemoveAll(dir) })
+	return dir
+}
+
 // argvIndex is where a flag and its paths first appear in an argv, or -1.
 func argvIndex(argv []string, seq ...string) int {
 	for i := 0; i+len(seq) <= len(argv); i++ {
@@ -214,7 +228,14 @@ func TestResolveKeepsAShadowRepositoryOutOfASubdirectoryWorkspace(t *testing.T) 
 func TestResolveKeepsTheMaskWhenGitCannotReadTheStore(t *testing.T) {
 	testHome(t)
 	stubHostTemp(t)
-	policy, ws := gitWorkspace(t)
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git is not on PATH")
+	}
+	// Git is to give up on this store, so it must have no repository above
+	// it to find instead.
+	ws := resolvedPath(t, outsideAnyRepo(t))
+	gitRun(t, ws, "init", "-q")
+	policy := Policy{Workspace: ws, Profile: ProfileWorkspace}
 	dotgit := filepath.Join(ws, ".git")
 	if err := os.WriteFile(filepath.Join(dotgit, "HEAD"), []byte("junk\n"), 0o644); err != nil {
 		t.Fatal(err)
@@ -287,7 +308,7 @@ func TestGitStoreForNamesTheWorkspacesStore(t *testing.T) {
 			t.Errorf("GitStoreFor(%s) = %q, %v; want %s", dir, store, ok, dotgit)
 		}
 	}
-	if store, ok := GitStoreFor(t.TempDir()); ok {
+	if store, ok := GitStoreFor(outsideAnyRepo(t)); ok {
 		t.Errorf("a directory in no repository has no store: %q", store)
 	}
 }
