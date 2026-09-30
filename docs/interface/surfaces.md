@@ -1256,7 +1256,10 @@ checklist — and a session that declared no list draws no block. Every step
 marked reads `3 of 3` and nothing more: the count is the agent's account of
 its list, and whether the task is done is the turn's close to say. The whole
 list is one act away: the heading opens it ([the supporting
-screens](#the-supporting-screens)).
+screens](#the-supporting-screens)). So does the plan's heading, onto the same
+screen drawing the plan instead: the two blocks stand in one place and answer
+one question, so they open one surface, and it is the list standing in that
+place that it draws.
 
 One block is scoped wider than the session: the project's backlog. It sits
 under the plan because it is the same question one step further out — the
@@ -1371,6 +1374,7 @@ holding all of it, its heading and its fold marker open that surface: SUMMARY
 opens every reading the session has taken, THIS TURN every turn the session
 has run, ALERTS every alert the session has had, standing and superseded,
 CHANGES opens the session's diff, AGENTS the manager, STEPS the whole working list,
+PLAN the approved plan's whole checklist on that same screen,
 TODO the backlog screen, CONTEXT the occupancy screen and SPEND the session's whole bill — each the surface its command already opens, so
 the command is the door's key. The surface is left by its own esc, and by a
 click on the cell that opened it: the surface stands over the rail, so the
@@ -2591,9 +2595,23 @@ transcript is filed under it. A revised list shows the declaration the agent
 is working to now, and the one it replaced is not kept. The screen is built
 when it opens, reads and changes nothing, and the turn goes on underneath it.
 It is opened by `/steps` and by a click on the STEPS heading
-([the inspector rail](#the-inspector-rail)), and a session with no list — or
-one executing an approved plan, whose steps are the checklist — says so in a
-line instead.
+([the inspector rail](#the-inspector-rail)), and a session with no list says
+so in a line instead.
+
+While an approved plan is being executed the plan is the checklist, and the
+same screen draws it instead of the working list: `/plan` in its header, the
+plan's title and how many of its steps are done, every declared step with the
+paths it named, and its state as the plan block reads it — `done`, `failed`,
+`running`, or `queued` for one the run has not reached — beside the calls
+that carried it out. A step's calls are the ones the transcript filed under
+its number, not a title matched a second time, so the screen and the outline
+cannot disagree about which work was which step. Under the list stands what
+the run has done that the plan did not say — work off the plan, a step run
+before an earlier one, a step passed over — or a line saying the run has kept
+to it; where the rows cannot hold every step and that too, the steps stay and
+the departures give way, since the plan block still counts them. It is opened
+by bare `/plan`, by `/steps`, and by a click on the PLAN heading; bare `/plan`
+with no plan running says so in a line.
 
 `/readings` is the rail's SUMMARY block read as a history: every reading the
 session has taken of its own run ([the session

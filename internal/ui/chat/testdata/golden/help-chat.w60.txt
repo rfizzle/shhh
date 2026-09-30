@@ -392,11 +392,13 @@
                    corrections) · run [slug|--next] works an
                    item through its profile's run · sprint ·
                    status · stop
-    /plan          the approved plan as a checklist, with
-                   anything that has departed from it · save
-                   [name] writes the last plan/response to
-                   .shhh/plans/ · drop forgets an approved
-                   plan
+    /plan          the approved plan as a checklist on the
+                   steps screen — each step, the paths it
+                   named, its state and the calls that
+                   carried it out — with anything that has
+                   departed from it · save [name] writes the
+                   last plan/response to .shhh/plans/ · drop
+                   forgets an approved plan
     /diff [path]   show what this session changed, full
                    screen, or one file's — read from the
                    session's own changeset, so it works
@@ -804,11 +806,13 @@
                    ␛[38;5;241mcorrections) · run [slug|--next] works an␛[m
                    ␛[38;5;241mitem through its profile's run · sprint ·␛[m
                    ␛[38;5;241mstatus · stop␛[m
-    ␛[38;5;252m/plan␛[m          ␛[38;5;241mthe approved plan as a checklist, with␛[m
-                   ␛[38;5;241manything that has departed from it · save␛[m
-                   ␛[38;5;241m[name] writes the last plan/response to␛[m
-                   ␛[38;5;241m.shhh/plans/ · drop forgets an approved␛[m
-                   ␛[38;5;241mplan␛[m
+    ␛[38;5;252m/plan␛[m          ␛[38;5;241mthe approved plan as a checklist on the␛[m
+                   ␛[38;5;241msteps screen — each step, the paths it␛[m
+                   ␛[38;5;241mnamed, its state and the calls that␛[m
+                   ␛[38;5;241mcarried it out — with anything that has␛[m
+                   ␛[38;5;241mdeparted from it · save [name] writes the␛[m
+                   ␛[38;5;241mlast plan/response to .shhh/plans/ · drop␛[m
+                   ␛[38;5;241mforgets an approved plan␛[m
     ␛[38;5;252m/diff [path]␛[m   ␛[38;5;241mshow what this session changed, full␛[m
                    ␛[38;5;241mscreen, or one file's — read from the␛[m
                    ␛[38;5;241msession's own changeset, so it works␛[m

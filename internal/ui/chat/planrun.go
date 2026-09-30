@@ -138,14 +138,6 @@ func (r *planRun) carryOver(steps []components.InspectorPlanStep, start int) {
 // through its list, whatever the outcome of the steps.
 func (r *planRun) complete() bool { return len(r.claimed) == len(r.doc.Steps) }
 
-// title is the plan's own title, for the heading /plan prints.
-func (r *planRun) title() string {
-	if r.doc.Title != "" {
-		return "Plan · " + r.doc.Title
-	}
-	return "Plan"
-}
-
 // outOfOrder reports the first pair of steps carried out back to front: the
 // later step's number, the earlier one's, and whether there was such a pair.
 func (r *planRun) outOfOrder() (ran, before int, ok bool) {

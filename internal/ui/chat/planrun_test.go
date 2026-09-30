@@ -249,43 +249,65 @@ func TestInspectorRail_NoPlanNoBlock(t *testing.T) {
 	}
 }
 
-func TestPlanStatus_ChecklistAndDrift(t *testing.T) {
+// Bare /plan is the approved plan read whole on the steps screen: every
+// declared step with its paths, its state as the checklist reads it and the
+// calls that carried it out, and what the run did that the plan did not say.
+func TestPlanScreen_ChecklistAndDrift(t *testing.T) {
 	m := runningPlanModel(t, 100)
 	announce(t, &m, "Return it from runRound", time.Second, false)
 	announce(t, &m, "Rebuild the changeset store from scratch", time.Second, false)
 	announce(t, &m, "Locate the round accounting", time.Second, false)
 
-	out := m.planStatus()
-	for _, want := range []string{
-		"Plan · make the round limit recoverable",
-		"2 of 4 done",
-		"✓ 1  Locate the round accounting",
-		"· 4  Offer more rounds in the chat model · " + components.OutcomeQueued,
-		"1 step off the plan",
-		"step 3 ran before step 1",
-		"1 step skipped so far (2)",
-	} {
-		if !strings.Contains(out, want) {
-			t.Fatalf("/plan should report %q, got:\n%s", want, out)
+	next, _ := m.runCommand("/plan", "/plan")
+	got := next.(Model)
+	screen := got.screens.steps()
+	if got.state != stateSteps || screen == nil || !screen.Plan {
+		t.Fatalf("bare /plan should open the steps screen over the plan, got state %d", got.state)
+	}
+	if len(got.transcript) != len(m.transcript) {
+		t.Fatal("bare /plan wrote a row where it should have opened the screen")
+	}
+	if screen.Subject != "make the round limit recoverable · 2 of 4 done" {
+		t.Fatalf("the header names the plan and its count, got %q", screen.Subject)
+	}
+	first := screen.Steps[0]
+	if !first.Done || !first.Started || first.Count != "1 tool" || len(first.Paths) != 1 || first.Paths[0] != "internal/agent/loop.go" {
+		t.Fatalf("step 1 should read done with its path and its run, got %+v", first)
+	}
+	if second := screen.Steps[1]; second.Done || second.Started {
+		t.Fatalf("step 2 was skipped and has no run, got %+v", second)
+	}
+	for _, want := range []string{"1 step off the plan", "step 3 ran before step 1", "1 step skipped so far (2)"} {
+		if !strings.Contains(strings.Join(screen.Drift, "\n"), want) {
+			t.Fatalf("the screen should carry the drift %q, got %q", want, screen.Drift)
+		}
+	}
+	view := ansi.Strip(screen.View(100))
+	for _, want := range []string{"/plan", "✓ Locate the round accounting", "⚠ 1 step off the plan", "the approved plan"} {
+		if !strings.Contains(view, want) {
+			t.Fatalf("the screen should draw %q, got:\n%s", want, view)
 		}
 	}
 }
 
-func TestPlanStatus_NoDriftSaysSo(t *testing.T) {
+func TestPlanScreen_NoDriftSaysSo(t *testing.T) {
 	m := runningPlanModel(t, 100)
 	announce(t, &m, "Locate the round accounting", time.Second, false)
 	announce(t, &m, "Add a RoundsExhausted sentinel", time.Second, false)
 
-	out := m.planStatus()
-	if !strings.Contains(out, "No drift") {
-		t.Fatalf("a run following its plan should say so, got:\n%s", out)
+	screen := m.planStepsScreenData()
+	if len(screen.Drift) != 0 {
+		t.Fatalf("steps nobody has reached yet are queued, not drift, got %q", screen.Drift)
 	}
-	if strings.Contains(out, "skipped") {
-		t.Fatalf("steps nobody has reached yet are queued, not skipped, got:\n%s", out)
+	if view := ansi.Strip(screen.View(100)); !strings.Contains(view, "no drift") {
+		t.Fatalf("a run following its plan should say so, got:\n%s", view)
+	}
+	if screen.Focus != 2 {
+		t.Fatalf("the pointer should open on the next step the run has not reached, got %d", screen.Focus)
 	}
 }
 
-func TestPlanStatus_IsAvailableBelowTheRailBreakpoint(t *testing.T) {
+func TestPlanScreen_IsAvailableBelowTheRailBreakpoint(t *testing.T) {
 	// Below 130 content columns there is no rail, so /plan is the whole
 	// of the checklist and must lose nothing.
 	m := runningPlanModel(t, 80)
@@ -293,10 +315,11 @@ func TestPlanStatus_IsAvailableBelowTheRailBreakpoint(t *testing.T) {
 	if m.twoPane() {
 		t.Fatal("the fixture should be below the rail's breakpoint")
 	}
-	out := m.planStatus()
+	next, _ := m.runCommand("/plan", "/plan")
+	view := ansi.Strip(next.(Model).View().Content)
 	for _, s := range m.planRun.doc.Steps {
-		if !strings.Contains(out, s.Title) {
-			t.Fatalf("/plan should list every step, missing %q:\n%s", s.Title, out)
+		if !strings.Contains(view, s.Title) {
+			t.Fatalf("/plan should list every step, missing %q:\n%s", s.Title, view)
 		}
 	}
 }
@@ -399,7 +422,7 @@ func TestPlanOutline_RenderIncludesQueuedHeaders(t *testing.T) {
 	}
 }
 
-func TestPlanStatus_OpensWhileTheTurnRuns(t *testing.T) {
+func TestPlanScreen_OpensWhileTheTurnRuns(t *testing.T) {
 	// "Where are we" is a question you ask mid-turn, so /plan is not one of
 	// the commands that waits for the turn to finish.
 	if reason, ok := idleOnlyReason("/plan"); ok {
@@ -413,9 +436,11 @@ func TestPlanStatus_OpensWhileTheTurnRuns(t *testing.T) {
 	}
 	updated, _ := m.runCommand("/plan", "/plan")
 	after := updated.(Model)
-	out := ansi.Strip(after.renderHistory())
-	if !strings.Contains(out, "Return it from runRound") {
-		t.Fatalf("/plan mid-turn should print the checklist, got:\n%s", out)
+	if after.state != stateSteps || after.screens.steps() == nil || !after.screens.steps().Plan {
+		t.Fatalf("/plan mid-turn should open the plan's checklist, got state %d", after.state)
+	}
+	if after.turnState() != stateStreaming {
+		t.Fatalf("the turn should go on under the screen, got turn state %d", after.turnState())
 	}
 }
 

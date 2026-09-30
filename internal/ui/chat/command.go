@@ -161,6 +161,13 @@ func (m Model) runCommand(text, name string) (tea.Model, tea.Cmd) {
 		}
 		return m.activateSkill(parts[1], strings.Join(parts[2:], " "))
 
+	case name == "/plan" && len(parts) == 1 && m.planRun != nil:
+		// The approved plan's checklist, read whole on the steps screen —
+		// the list the rail's PLAN block draws and whose heading opens the
+		// same screen. Not idleOnly: mid-turn is when somebody asks where
+		// the plan has got to, and below 130 columns there is no rail.
+		return m.openSteps()
+
 	case name == "/detach":
 		if m.attachedTo == "" {
 			return m.surfaceNotice("not attached to an agent. /attach <name> or /agents to pick one")
@@ -586,9 +593,9 @@ func slashSkills(m *Model, _ []string) string {
 }
 
 func slashPlan(m *Model, parts []string) string {
-	// Bare /plan reopens the approved plan mid-turn, which is how the
-	// checklist stays reachable below 130 columns, where there is no rail
-	// to hold it.
+	// Bare /plan with an approved plan running opens the steps screen over
+	// it (runCommand); what reaches here bare is a session with no plan to
+	// show, which is told so.
 	if len(parts) == 1 {
 		return m.planStatus()
 	}

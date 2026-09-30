@@ -157,7 +157,7 @@ terminal   what this terminal answered when shhh asked what it can do: inline im
 	"/memory":           `durable memories: list (default) · add [global] [kind] <text> · edit <id> (opens the entry in your editor) · forget <id>`,
 	"/attach":           `attach to an agent's session and steer it (bare /attach lists)`,
 	"/detach":           `back to your own session (also esc while attached)`,
-	"/plan":             `the approved plan as a checklist, with anything that has departed from it · save [name] writes the last plan/response to .shhh/plans/ · drop forgets an approved plan`,
+	"/plan":             `the approved plan as a checklist on the steps screen — each step, the paths it named, its state and the calls that carried it out — with anything that has departed from it · save [name] writes the last plan/response to .shhh/plans/ · drop forgets an approved plan`,
 	"/undo":             `put back what a turn changed, from the session's own records (not git). Asks first, names anything that changed since, and is itself recorded as a turn`,
 	"/compact":          `continue from a summary plus the most recent turns`,
 	"/rewind":           `rewind to the end of turn [n], 0 being the start (bare /rewind picks interactively); the abandoned tail is kept as a branch, and a card asks whether the files come back too`,

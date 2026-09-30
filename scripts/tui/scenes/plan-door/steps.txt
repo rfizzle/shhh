@@ -1,0 +1,41 @@
+# program test: TestProgram_BarePlanOpensTheApprovedPlansChecklist,
+#   TestProgram_TheQuitChordArmsThenLeaves
+#
+# The PLAN heading is a door (docs/interface/surfaces.md#the-inspector-rail):
+# while an approved plan is being executed it opens the steps screen drawing
+# the plan, the same screen bare /plan opens, and the cell that opened it
+# closes it again. The pane is 130 columns, the narrowest terminal the rail
+# is drawn at. A click is the terminal's own SGR mouse report, sent as literal
+# bytes, column and row counted from 1.
+#
+# What the captures are read for: at 04 the plan has run its first step and
+# one step it never named, and the rail's PLAN block reads 1 of 2 with the
+# departure; at 05 a click on the PLAN heading has put the steps screen over
+# the pane and the rail, headed /plan, the first step done beside its read and
+# the second queued, and the departure under the list; at 06 the same cell has
+# put the rail back; at 07 bare /plan, the key twin, opens the same screen.
+setup printf 'package agent\n\nfunc loop() {\n    for round := 0; round < limit; round++ {\n        step()\n    }\n}\n' > loop.go; printf 'package agent\n\nconst limit = 150\n' > round.go
+snap 01-start "Some things worth doing first"
+keys BTab
+keys BTab
+keys BTab
+keys BTab
+snap 02-plan "⏸ plan"
+keys "plan the round counter change" Enter
+snap 03-plan-card "Plan · make the round limit recoverable"
+keys C-Space
+keys Enter
+snap 04-executing "read at the top of the loop" "PLAN" "off plan"
+# The rail's first column is 85 and the PLAN heading is on row 11.
+keys -l "$(printf '\033[<0;85;11M\033[<0;85;11m')"
+snap 05-heading-opens "/plan" "1 step off the plan"
+keys -l "$(printf '\033[<0;85;11M\033[<0;85;11m')"
+snap 06-cell-closes "PLAN" "/plan for the whole list"
+keys "/plan" Enter
+snap 07-key-twin "/plan" "1 step off the plan"
+keys Escape
+snap 08-back "PLAN" "/plan for the whole list"
+keys C-c
+snap 09-quit-armed "again quits"
+keys C-c
+snap 10-exit "that is everything the screen was holding"

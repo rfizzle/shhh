@@ -196,8 +196,9 @@
                    <slug> · new <text> · groom <slug> (reads an item against the tree and proposes the
                    corrections) · run [slug|--next] works an item through its profile's run · sprint · status
                    · stop
-    /plan          the approved plan as a checklist, with anything that has departed from it · save [name]
-                   writes the last plan/response to .shhh/plans/ · drop forgets an approved plan
+    /plan          the approved plan as a checklist on the steps screen — each step, the paths it named, its
+                   state and the calls that carried it out — with anything that has departed from it · save
+                   [name] writes the last plan/response to .shhh/plans/ · drop forgets an approved plan
     /diff [path]   show what this session changed, full screen, or one file's — read from the session's own
                    changeset, so it works outside a git repository
     /review [turn] review what a turn changed: file list, hunks and the turn's verdict (bare reviews the last
@@ -397,8 +398,9 @@
                    ␛[38;5;244m<slug> · new <text> · groom <slug> (reads an item against the tree and proposes the␛[m
                    ␛[38;5;244mcorrections) · run [slug|--next] works an item through its profile's run · sprint · status␛[m
                    ␛[38;5;244m· stop␛[m
-    ␛[38;5;254m/plan␛[m          ␛[38;5;244mthe approved plan as a checklist, with anything that has departed from it · save [name]␛[m
-                   ␛[38;5;244mwrites the last plan/response to .shhh/plans/ · drop forgets an approved plan␛[m
+    ␛[38;5;254m/plan␛[m          ␛[38;5;244mthe approved plan as a checklist on the steps screen — each step, the paths it named, its␛[m
+                   ␛[38;5;244mstate and the calls that carried it out — with anything that has departed from it · save␛[m
+                   ␛[38;5;244m[name] writes the last plan/response to .shhh/plans/ · drop forgets an approved plan␛[m
     ␛[38;5;254m/diff [path]␛[m   ␛[38;5;244mshow what this session changed, full screen, or one file's — read from the session's own␛[m
                    ␛[38;5;244mchangeset, so it works outside a git repository␛[m
     ␛[38;5;254m/review [turn]␛[m ␛[38;5;244mreview what a turn changed: file list, hunks and the turn's verdict (bare reviews the last␛[m

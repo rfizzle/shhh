@@ -181,11 +181,16 @@ func TestRegisterDeclaresEachSurfaceOnce(t *testing.T) {
 				t.Errorf("%s declares %s and nothing to do when it is typed", name, c.name)
 			}
 		}
+		if len(o.doorAlso) > 0 && o.door == nil {
+			t.Errorf("%s names further doors and has no door for them to share", name)
+		}
 		if d := o.door; d != nil {
-			if other, dup := doors[d.block]; dup {
-				t.Errorf("%s and %s both declare the %s door", name, other, d.block)
+			for _, block := range append([]string{d.block}, o.doorAlso...) {
+				if other, dup := doors[block]; dup {
+					t.Errorf("%s and %s both declare the %s door", name, other, block)
+				}
+				doors[block] = name
 			}
-			doors[d.block] = name
 			if d.open == nil || d.surface == nil || d.close == nil {
 				t.Errorf("%s declares the %s door without an open, a showing and a close", name, d.block)
 			}

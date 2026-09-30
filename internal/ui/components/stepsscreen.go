@@ -2,7 +2,10 @@ package components
 
 // The steps screen (docs/interface/surfaces.md#the-supporting-screens): the
 // session's whole working list, the one the rail's STEPS block reads as a
-// count and the step it is on.
+// count and the step it is on — or, while an approved plan is being executed,
+// that plan's checklist, the one the rail's PLAN block draws. The two blocks
+// are never up together, so whichever list is the checklist is the one this
+// screen draws, and its header names which (Plan).
 //
 // Two things are joined here and they are not the same thing. The list is
 // the session's working checklist — the steps the agent said it would take,
@@ -56,6 +59,9 @@ type StepsItem struct {
 	// first one not marked, the step the rail's block names.
 	Done    bool
 	Current bool
+	// Failed is a plan's step whose run ended on a failure: finished, and
+	// not cleanly. The working list has no such mark.
+	Failed bool
 	// Started says the transcript has a step titled for this one. Count and
 	// Duration are what that step's header states — `3 tools`, `4.1s` — and
 	// Rows are its calls. The list carries the count alone; the duration is
@@ -76,6 +82,15 @@ type StepsScreen struct {
 	// Subject is what the header says the screen is over — `2 of 7`, the
 	// rail block's own count.
 	Subject string
+	// Plan says the list is an approved plan's checklist rather than the
+	// agent's own working list: the header is /plan's, a step's state is the
+	// transcript's reading of its run rather than a mark the agent made, and
+	// Drift is drawn under the list.
+	Plan bool
+	// Drift is what the run has done that the plan did not say, one clause
+	// each, as /plan has always reported it. Empty on a plan the run has
+	// followed, which says so.
+	Drift []string
 	// MaxLines bounds the screen height. 0 is unbounded.
 	MaxLines int
 
@@ -131,8 +146,40 @@ func (s *StepsScreen) listRows(width, budget int) []string {
 	if len(s.Steps) == 0 {
 		return []string{sty.Dim.Render(Clip("the session has declared no steps", width))}
 	}
+	// A plan's departures are about the whole run rather than one step, so
+	// they stand under the list the way /plan printed them under its
+	// checklist. The steps come first: where the rows cannot hold every step
+	// and the departures too, the departures give way, and the rail's PLAN
+	// block still counts them.
+	trail := s.driftRows(width)
+	if budget > 0 && len(s.Steps)+len(trail)+1 > budget {
+		trail = nil
+	}
+	if len(trail) > 0 && budget > 0 {
+		budget -= len(trail) + 1
+	}
 	body, _ := s.list.visibleRows(cardWidthFor(width), budget, false)
+	if len(trail) > 0 {
+		body = append(append(body, ""), trail...)
+	}
 	return body
+}
+
+// driftRows is the plan's departures, laid out in the list's width: each
+// clause on a line of its own in the warning's treatment, or the one line
+// that says there are none. The working list has no plan to depart from.
+func (s *StepsScreen) driftRows(width int) []string {
+	if !s.Plan {
+		return nil
+	}
+	if len(s.Drift) == 0 {
+		return wrapDim("no drift · every step so far is one the plan named, in the order it named them", width)
+	}
+	var rows []string
+	for _, d := range s.Drift {
+		rows = append(rows, wrapWarn("⚠ "+d, width)...)
+	}
+	return rows
 }
 
 // previewRows is the right pane: the step under the pointer, the paths it
@@ -143,7 +190,7 @@ func (s *StepsScreen) previewRows(width int) []string {
 		return []string{sty.Dim.Render(Clip("no step selected", width))}
 	}
 	rows := []string{paneTitle(brightStyle().Render(oneLine(stepLabel(*step))),
-		sty.Dim.Render(stepState(*step)), width)}
+		sty.Dim.Render(s.stepState(*step)), width)}
 	if len(step.Paths) > 0 {
 		rows = append(rows, "")
 		const label = "touches "
@@ -159,8 +206,17 @@ func (s *StepsScreen) previewRows(width int) []string {
 	if !step.Started {
 		// The join found nothing, and it says so rather than drawing an empty
 		// pane: a step the transcript has no run titled for is one nobody has
-		// started, as far as the transcript can say.
-		return append(rows, sty.Dim.Render(Clip("  "+outcomeNotStarted+" · no step in the transcript is titled for it", width)))
+		// started, as far as the transcript can say. A plan's step is read
+		// off its run, so one that finished with no run left is one whose
+		// run a compaction took out of the transcript.
+		line := outcomeNotStarted + " · no step in the transcript is titled for it"
+		switch {
+		case s.Plan && (step.Done || step.Failed):
+			line = "its run is no longer in the transcript"
+		case s.Plan:
+			line = outcomeNotStarted + " · nothing in the transcript has carried it out"
+		}
+		return append(rows, sty.Dim.Render(Clip("  "+line, width)))
 	}
 	head := "  in the transcript"
 	for _, f := range []string{step.Count, step.Duration} {
@@ -184,26 +240,38 @@ func stepLabel(step StepsItem) string {
 	return strings.TrimSpace(strconv.Itoa(step.Number) + ". " + step.Title)
 }
 
-// stepState is the step's standing on the list, in a word. The list's own
-// mark and not the transcript's: whether a step is finished is the agent's
-// account of it (docs/capabilities/coding-agent.md#the-session-keeps-its-own-working-steps).
-func stepState(step StepsItem) string {
+// stepState is the step's standing on the list, in a word. On the working
+// list it is the list's own mark and not the transcript's: whether a step is
+// finished is the agent's account of it
+// (docs/capabilities/coding-agent.md#the-session-keeps-its-own-working-steps).
+// On a plan it is the transcript's reading of the step's run, in the words
+// /plan has always used for it.
+func (s *StepsScreen) stepState(step StepsItem) string {
 	switch {
+	case step.Failed:
+		return "failed"
 	case step.Done:
 		return "done"
+	case step.Current && s.Plan:
+		return "running"
 	case step.Current:
 		return "current"
+	case s.Plan:
+		return OutcomeQueued
 	}
 	return "to do"
 }
 
 // stepGlyph is the row's leading mark, the step header's own: ✓ for a step
-// marked finished, ▸ for the one the agent is on, · for one it has not
-// reached. It is plain rather than painted for the sources screen's reason —
-// the label runs through the card's emphasis — and the word beside it says
-// the same thing, so the mark never carries the state alone (invariant 1).
+// marked finished, ✗ for a plan's step whose run failed, ▸ for the one the
+// agent is on, · for one it has not reached. It is plain rather than painted
+// for the sources screen's reason — the label runs through the card's
+// emphasis — and the word beside it says the same thing, so the mark never
+// carries the state alone (invariant 1).
 func stepGlyph(step StepsItem) string {
 	switch {
+	case step.Failed:
+		return "✗"
 	case step.Done:
 		return "✓"
 	case step.Current:
@@ -212,9 +280,14 @@ func stepGlyph(step StepsItem) string {
 	return "·"
 }
 
-// header names the surface and what it is over.
+// header names the surface and what it is over: /steps over the working list,
+// /plan over an approved plan's, since that is the command whose list it is.
 func (s *StepsScreen) header() ScreenHeader {
-	h := ScreenHeader{Left: []RailSegment{screenTitle("/steps")}, Keys: s.headerKeys()}
+	title := "/steps"
+	if s.Plan {
+		title = "/plan"
+	}
+	h := ScreenHeader{Left: []RailSegment{screenTitle(title)}, Keys: s.headerKeys()}
 	if s.Subject != "" {
 		h.Left = append(h.Left, screenField(s.Subject))
 	}
@@ -261,10 +334,14 @@ func (s *StepsScreen) keyList() []KeyOffer {
 
 // footField annotates the key row with the thing the rail's block says too:
 // the list is the agent's own and can be revised, so it is not an approved
-// plan (docs/interface/surfaces.md#the-inspector-rail).
+// plan (docs/interface/surfaces.md#the-inspector-rail). A plan's list is the
+// other one, and says that instead.
 func (s *StepsScreen) footField() string {
-	if len(s.Steps) == 0 {
+	switch {
+	case len(s.Steps) == 0:
 		return ""
+	case s.Plan:
+		return "the approved plan, as the transcript has carried it out"
 	}
 	return "the agent's own list, not a plan"
 }
@@ -280,14 +357,20 @@ func (s *StepsScreen) sync() {
 			Number: step.Number,
 		}
 		switch {
+		case step.Failed:
+			opt.Value, opt.ValueTone = s.stepState(step), ToneRisk
 		case step.Done:
 			opt.Value, opt.ValueTone = "done", ToneSafe
 		case step.Current:
-			opt.Value = "current"
+			opt.Value = s.stepState(step)
 		}
-		if step.Started {
+		switch {
+		case step.Started:
 			opt.Meta = step.Count
-		} else {
+		case s.Plan && (step.Done || step.Failed):
+			// A plan's finished step with no run left: the state beside it
+			// is the reading, and not started would contradict it.
+		default:
 			opt.Meta, opt.MetaTone = outcomeNotStarted, ToneQuiet
 		}
 		opts = append(opts, opt)

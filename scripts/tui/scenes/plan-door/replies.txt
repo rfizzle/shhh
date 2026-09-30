@@ -1,0 +1,14 @@
+# The plan turn answers in the shape the card prices. The execution turn
+# carries out step 1, then does a piece of work the plan never named, then
+# ends the turn with step 2 still to come. The readings have a queue of their
+# own so they never take a reply meant for the turn.
+[session]
+Here is what I would do.\n\n## Plan: make the round limit recoverable\n\n1. Locate the round accounting\n   files: loop.go\n   action: read\n2. Return a sentinel when the rounds run out\n   files: loop.go\n   action: edit\n   note: no signature changes
+Locate the round accounting
++tool:read_file:{"path":"loop.go"}
+Rename the ceiling constant while I am here
++tool:read_file:{"path":"round.go"}
+The counter is read at the top of the loop, and nowhere else.
+
+[reading]
+The turn is carrying out the approved plan.

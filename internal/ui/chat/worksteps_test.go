@@ -200,7 +200,6 @@ func TestStepsScreen_NoListSaysWhy(t *testing.T) {
 	}{
 		{"no list", func(*Model) {}, "declared no working steps"},
 		{"a conversation", func(m *Model) { m.conversation = true }, "not part of this session"},
-		{"an approved plan", func(m *Model) { m.planRun = newPlanRun(plan.Parse(planFixture), 0) }, "its steps are the checklist"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			m := stepsModel(t)
@@ -215,6 +214,26 @@ func TestStepsScreen_NoListSaysWhy(t *testing.T) {
 				t.Fatalf("the notice = %q, want %q", last.text, tc.want)
 			}
 		})
+	}
+}
+
+// While an approved plan is being executed the plan is the checklist, so
+// /steps opens the screen over the plan rather than the working list it is
+// standing in for — the list the rail's PLAN block draws in STEPS' place.
+func TestStepsScreen_AnApprovedPlanIsTheList(t *testing.T) {
+	m := stepsModel(t)
+	m.planRun = newPlanRun(plan.Parse(planFixture), len(m.transcript))
+	next, _ := m.runCommand("/steps", "/steps")
+	got := next.(Model)
+	screen := got.screens.steps()
+	if got.state != stateSteps || screen == nil || !screen.Plan {
+		t.Fatalf("/steps with a plan running should open the plan's checklist, got state %d", got.state)
+	}
+	if len(screen.Steps) != len(m.planRun.doc.Steps) || screen.Steps[0].Title != "Locate the round accounting" {
+		t.Fatalf("the screen should list the plan's steps, got %+v", screen.Steps)
+	}
+	if hint := stripANSI(got.renderStepsHint()); !strings.HasPrefix(hint, "plan · ") {
+		t.Fatalf("the hint should name the plan, got %q", hint)
 	}
 }
 

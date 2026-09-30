@@ -9,10 +9,12 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/changeset"
+	"github.com/rfizzle/shhh/internal/plan"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
@@ -70,6 +72,7 @@ func TestRailDoors_AHeadingOrAMarkerOpensItsSurfaceAndTheCellClosesIt(t *testing
 		{components.RailAgents, true, railDoorModel, "/agents"},
 		{components.RailContext, false, railDoorModel, "/context"},
 		{components.RailSteps, false, railStepsModel, "/steps"},
+		{components.RailPlan, false, railPlanModel, "/plan"},
 		{components.RailSummary, false, railSummaryModel, "/readings"},
 		{components.RailTurn, false, railTurnModel, "/turns"},
 		{components.RailAlerts, false, railAlertsModel, "/alerts"},
@@ -124,6 +127,17 @@ func railStepsModel(t *testing.T) Model {
 	t.Helper()
 	m := railDoorModel(t)
 	m.workSteps = stepsCalled(t, `{"steps":[{"title":"Read the loop"},{"title":"Patch the limit"}]}`)
+	return m
+}
+
+// railPlanModel is railDoorModel executing an approved plan with its first
+// step carried out, so the rail draws a PLAN block in STEPS' place.
+func railPlanModel(t *testing.T) Model {
+	t.Helper()
+	m := railDoorModel(t)
+	m.planRun = newPlanRun(plan.Parse(planFixture), len(m.transcript))
+	announce(t, &m, "Locate the round accounting", time.Second, false)
+	m.viewport.SetLines(m.renderHistoryLines())
 	return m
 }
 

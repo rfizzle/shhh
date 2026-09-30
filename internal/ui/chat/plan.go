@@ -822,58 +822,74 @@ func planProgress(steps []components.InspectorPlanStep) int {
 	return min(n, len(steps))
 }
 
-// planStatus is /plan: the approved plan as a checklist, and what the run has
-// done that the plan did not say. It is the same list the rail draws, so a
-// terminal too narrow for the rail loses nothing.
+// planStatus is what bare /plan says where there is no checklist to open. With
+// an approved plan running, bare /plan opens the steps screen over the plan
+// instead (command.go), which is the same list the rail's PLAN block draws, so
+// a terminal too narrow for the rail loses nothing.
 func (m Model) planStatus() string {
+	if m.policy.mode == agent.ModePlan {
+		return "no plan approved yet — the card offers the checklist once one is.\n" + planUsage
+	}
+	return "no approved plan is running.\n" + planUsage
+}
+
+// planStepsScreenData is the steps screen over the approved plan: every
+// declared step with the paths it named, its state as the checklist reads it
+// — the same reading the rail's PLAN block and the outline take — and under
+// each the calls of the run that carried it out, joined by the step number
+// the run was stamped with rather than by title (stampStep). What the run did
+// that the plan did not say is the drift /plan has always reported.
+func (m Model) planStepsScreenData() components.StepsScreen {
 	run := m.planRun
-	if run == nil {
-		if m.policy.mode == agent.ModePlan {
-			return "no plan approved yet — the card offers the checklist once one is.\n" + planUsage
+	es := m.planEntries()
+	runs := map[int][]*stepGroup{}
+	for _, blk := range m.blocksOf(es) {
+		if g := blk.step; g != nil && !g.offPlan && !g.queued() {
+			runs[g.ordinal] = append(runs[g.ordinal], g)
 		}
-		return "no approved plan is running.\n" + planUsage
 	}
-	steps := m.planChecklist()
-	var b strings.Builder
-	fmt.Fprintf(&b, "%s — %d of %d done\n", run.title(), planStepsDone(steps), len(steps))
-	for _, s := range steps {
-		fmt.Fprintf(&b, "  %s %d  %s", planStatusGlyph(s.State), s.Number, s.Title)
-		if note := planStatusNote(s); note != "" {
-			b.WriteString(" · " + note)
+	checklist := m.planChecklist()
+	items := make([]components.StepsItem, 0, len(run.doc.Steps))
+	focus, next := -1, -1
+	for i, s := range run.doc.Steps {
+		item := components.StepsItem{Number: s.Number, Title: s.Title, Paths: s.Paths}
+		switch checklist[i].State {
+		case components.PlanStepDone:
+			item.Done = true
+		case components.PlanStepFailed:
+			item.Failed = true
+		case components.PlanStepRunning:
+			item.Current = true
+			focus = i
+		default:
+			if next < 0 {
+				next = i
+			}
 		}
-		b.WriteString("\n")
+		tools := 0
+		var took time.Duration
+		for _, g := range runs[s.Number] {
+			_, n, d := m.stepStats(g, es)
+			tools, took = tools+n, took+d
+			item.Rows = append(item.Rows, m.stepsRows(es[g.start:g.end])...)
+		}
+		if item.Started = len(item.Rows) > 0; item.Started {
+			item.Count, item.Duration = plural(tools, "tool"), activityDuration(took)
+		}
+		items = append(items, item)
 	}
-	if d := run.drift(); len(d) > 0 {
-		b.WriteString("Drift: " + strings.Join(d, "; ") + ".")
-	} else {
-		b.WriteString("No drift — every step so far is one the plan named, in the order it named them.")
+	// The pointer opens on the step being worked, else the next one the run
+	// has not reached, else the last.
+	switch {
+	case focus >= 0:
+	case next >= 0:
+		focus = next
+	default:
+		focus = len(items) - 1
 	}
-	return b.String()
-}
-
-// planStatusGlyph is the checklist glyph /plan prints, the same four the
-// outline and the rail use.
-func planStatusGlyph(s components.PlanStepState) string {
-	switch s {
-	case components.PlanStepRunning:
-		return "▸"
-	case components.PlanStepDone:
-		return "✓"
-	case components.PlanStepFailed:
-		return "✗"
+	subject := fmt.Sprintf("%d of %d done", planStepsDone(checklist), len(checklist))
+	if run.doc.Title != "" {
+		subject = run.doc.Title + " · " + subject
 	}
-	return "·"
-}
-
-// planStatusNote is the step's right-hand word: what it cost, or what it is
-// waiting on. A step that finished in under half a second reports nothing,
-// like every other duration in the product.
-func planStatusNote(s components.InspectorPlanStep) string {
-	switch s.State {
-	case components.PlanStepQueued:
-		return components.OutcomeQueued
-	case components.PlanStepRunning:
-		return "running"
-	}
-	return s.Elapsed
+	return components.StepsScreen{Steps: items, Focus: focus, Subject: subject, Plan: true, Drift: run.drift()}
 }

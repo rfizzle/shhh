@@ -110,3 +110,69 @@ func TestGolden_StepsScreen(t *testing.T) {
 		}
 	})
 }
+
+// planItems is an approved plan four steps long: the first carried out, the
+// second failed, the third being worked and the last not reached.
+func planItems() []StepsItem {
+	return []StepsItem{
+		{Number: 1, Title: "Locate the round accounting", Done: true, Started: true, Count: "1 tool", Duration: "0.4s",
+			Paths: []string{"internal/agent/loop.go"},
+			Rows: []ActivityRow{
+				{Kind: ActivityTool, Verb: "read", Target: "internal/agent/loop.go", Counts: "212 lines", Duration: "0.4s"},
+			}},
+		{Number: 2, Title: "Add a RoundsExhausted sentinel", Failed: true, Started: true, Count: "1 tool", Duration: "3.0s",
+			Paths: []string{"internal/agent/errors.go"},
+			Rows: []ActivityRow{
+				{Kind: ActivityCommand, Verb: "run", Target: "go test ./internal/agent/...", Outcome: OutcomeExit(1),
+					Counts: "4 lines", Duration: "3.0s"},
+			}},
+		{Number: 3, Title: "Return it from runRound", Current: true, Started: true, Count: "1 tool", Duration: "1.1s",
+			Paths: []string{"internal/agent/loop.go"},
+			Rows: []ActivityRow{
+				{Kind: ActivityEdit, Verb: "edit", Target: "internal/agent/loop.go", Counts: "+6 −1 · 1 hunk", Duration: "1.1s"},
+			}},
+		{Number: 4, Title: "Offer more rounds in the chat model", Paths: []string{"internal/ui/chat/model.go"}},
+	}
+}
+
+func planStepsScreen(focus int, drift ...string) *StepsScreen {
+	return &StepsScreen{Steps: planItems(), Focus: focus, Subject: "make the round limit recoverable · 2 of 4 done",
+		Plan: true, Drift: drift, MaxLines: 16}
+}
+
+// Over an approved plan the screen is /plan's: the states are the
+// checklist's words, a failed step carries its mark, and what the run did
+// that the plan did not say stands under the list.
+func TestStepsScreen_APlanIsReadInItsOwnWords(t *testing.T) {
+	view := ansi.Strip(planStepsScreen(2, `1 step off the plan ("Rebuild the changeset store")`).View(130))
+	for _, want := range []string{
+		"/plan", "make the round limit recoverable · 2 of 4 done",
+		"✗ Add a RoundsExhausted sentinel", "failed", "▸ Return it from runRound", "running",
+		"⚠ 1 step off the plan", "the approved plan, as the transcript has carried it out",
+	} {
+		if !strings.Contains(view, want) {
+			t.Errorf("the plan's screen is missing %q:\n%s", want, view)
+		}
+	}
+	if strings.Contains(view, "/steps") || strings.Contains(view, "not a plan") {
+		t.Errorf("the plan's screen names the working list:\n%s", view)
+	}
+	if clean := ansi.Strip(planStepsScreen(3).View(130)); !strings.Contains(clean, "no drift") || !strings.Contains(clean, "queued") ||
+		!strings.Contains(clean, "nothing in the transcript has carried it out") {
+		t.Errorf("a plan followed so far should say so, and an unreached step why it is empty:\n%s", clean)
+	}
+}
+
+// TestGolden_StepsScreenPlan captures the steps screen over an approved plan:
+// the step being worked, a failed one, and one not reached with the drift
+// under the list.
+func TestGolden_StepsScreenPlan(t *testing.T) {
+	captureGolden(t, "steps-screen-plan", "the steps screen over an approved plan", goldenWidths, func(width int) []golden.Panel {
+		return []golden.Panel{
+			{Label: "the step being worked · its paths and the calls that carried it out", View: planStepsScreen(2).View(width)},
+			{Label: "a failed step · finished, and not cleanly", View: planStepsScreen(1).View(width)},
+			{Label: "a step not reached · with what the run did that the plan did not say",
+				View: planStepsScreen(3, `1 step off the plan ("Rebuild the changeset store from scratch")`, "step 3 ran before step 2").View(width)},
+		}
+	})
+}

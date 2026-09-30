@@ -177,6 +177,11 @@ type mode struct {
 	// door is the rail block whose heading and fold marker open this mode
 	// (railclick.go). nil is a mode the rail has no door to.
 	door *surfaceDoor
+	// doorAlso are further blocks whose heading and fold marker open this
+	// mode through the same door. A block belongs here only where it is never
+	// on the rail beside door's own, so the opener can tell from the session
+	// alone which of them the reader was looking at.
+	doorAlso []string
 	// holds reports that the mode's own state lives in the session's
 	// heldScreens under this row's state while it is up, rather than as a
 	// field of the Model. It is the screens built once per opening and
@@ -779,6 +784,9 @@ func buildOverlays() map[state]*mode {
 				open: bareOpen(Model.openSteps),
 			},
 			door: &surfaceDoor{components.RailSteps, railDoor{Model.openSteps, stepsShowing, Model.closeStepsScreen}},
+			// PLAN stands where STEPS would while an approved plan is being
+			// executed, and the screen is then the plan's (worksteps.go).
+			doorAlso: []string{components.RailPlan},
 		},
 		stateReadings: {
 			place:       placePane,
@@ -1145,8 +1153,10 @@ func overlays() map[state]*mode {
 				}
 			}
 			if d := o.door; d != nil {
-				registerDoors[d.block] = d.railDoor
-				registerDoorNames[d.block] = true
+				for _, block := range append([]string{d.block}, o.doorAlso...) {
+					registerDoors[block] = d.railDoor
+					registerDoorNames[block] = true
+				}
 			}
 		}
 	})

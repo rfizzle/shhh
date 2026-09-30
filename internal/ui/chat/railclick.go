@@ -18,8 +18,9 @@ package chat
 //     the block has a surface holding the whole of what it bounds, that
 //     surface is what a command already opens: SUMMARY is /readings, THIS
 //     TURN is /turns, ALERTS is /alerts, CHANGES is /diff, AGENTS is
-//     /agents, STEPS is /steps, TODO is /todo, CONTEXT is /context, SPEND
-//     is /stats (railDoors).
+//     /agents, STEPS is /steps, PLAN is bare /plan — the same screen, over
+//     the approved plan — TODO is /todo, CONTEXT is /context, SPEND is
+//     /stats (railDoors).
 //
 // A heading or a marker opens that surface, and the remembered cell closes
 // it: the surface takes the rail's columns, so the row is not there for a
@@ -27,8 +28,8 @@ package chat
 // always worked. That is what makes a whole surface a target the same click
 // can leave, and the surface's own esc leaves it too
 // (docs/interface/surfaces.md#the-inspector-rail). A block with no surface
-// behind it — PLAN answers in a transcript row rather than a surface, TOOLS
-// has no command — keeps its heading inert, and so does a meter's row.
+// behind it — TOOLS has no command — keeps its heading inert, and so does a
+// meter's row.
 //
 // The rail never takes the keyboard. Attaching is a focus switch and not a
 // handover: the draft holds every character it had, reading mode is not

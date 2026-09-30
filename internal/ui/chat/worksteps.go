@@ -4,7 +4,8 @@ package chat
 // tool when a task will take several steps, drawn in the rail's STEPS block.
 // It is the session's list and nobody else's — each child keeps its own
 // through the same call (internal/subagent/steps.go) — and it is never the
-// approved plan: nothing here reads or writes planRun or the plan record.
+// approved plan: nothing here writes planRun or the plan record, and it is
+// read only to stand aside for the plan, which is the checklist while it runs.
 // See docs/capabilities/coding-agent.md#the-session-keeps-its-own-working-steps.
 
 import (
@@ -94,16 +95,24 @@ func storedChatSteps(m *Model, slot string) plan.Checklist {
 // sources screen: what it draws is the list and the transcript as they stood
 // when the reader asked, and a screen that moved under them mid-read would be
 // answering a question they had stopped asking.
+//
+// Which list it draws is the same question that decides which of the rail's
+// two blocks is up: while an approved plan is being executed the plan is the
+// checklist (inspectorSteps, inspectorPlan), so the screen is the plan's —
+// whether it was opened by /steps, by bare /plan, or by either block's
+// heading.
 func (m Model) openSteps() (tea.Model, tea.Cmd) {
 	// A conversation keeps no list, and the command is not offered there
-	// (complete.go), so the two refusals left are these.
+	// (complete.go), so the refusal left is this one.
+	var screen components.StepsScreen
 	switch {
 	case m.planRun != nil:
-		return m.systemNotice("an approved plan is being executed, and its steps are the checklist · " + planHintRail)
+		screen = m.planStepsScreenData()
 	case len(m.workSteps.Steps) == 0:
 		return m.systemNotice("the session has declared no working steps")
+	default:
+		screen = m.stepsScreenData()
 	}
-	screen := m.stepsScreenData()
 	m.screens = m.screens.with(stateSteps, &screen)
 	m.enterSurface(stateSteps)
 	return m, nil
@@ -128,9 +137,14 @@ func (m Model) closeStepsScreen() (tea.Model, tea.Cmd) {
 }
 
 // renderStepsHint is the one line the screen leaves where the draft box was:
-// the way out and nothing else, the way the sources screen's does.
+// the way out and nothing else, the way the sources screen's does, under the
+// name of the list it is showing.
 func (m Model) renderStepsHint() string {
-	return sty.SystemMsg.Render("steps · ") + segAs(keys.Screen.Quit, "back to the prompt").render()
+	name := "steps · "
+	if s := m.screens.steps(); s != nil && s.Plan {
+		name = "plan · "
+	}
+	return sty.SystemMsg.Render(name) + segAs(keys.Screen.Quit, "back to the prompt").render()
 }
 
 // stepsScreenData builds the screen from the session's checklist and its own
