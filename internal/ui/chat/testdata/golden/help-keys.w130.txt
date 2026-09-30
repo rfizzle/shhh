@@ -156,10 +156,11 @@
                      a session's row moves the keyboard into it. A block's
                      heading, or its … N more, opens the surface holding the
                      whole block — SUMMARY is /readings, THIS TURN is /turns,
-                     CHANGES is /diff, AGENTS is /agents, STEPS is /steps,
-                     TODO is /todo, CONTEXT is /context — and a click on the
-                     same cell closes it, as its own esc does. The rail never
-                     holds the keyboard, so each command is that door's key
+                     ALERTS is /alerts, CHANGES is /diff, AGENTS is /agents,
+                     STEPS is /steps, TODO is /todo, CONTEXT is /context —
+                     and a click on the same cell closes it, as its own esc
+                     does. The rail never holds the keyboard, so each command
+                     is that door's key
     [ctrl+g]         open the draft in your editor: $EDITOR (then $VISUAL,
                      then vi) opens a file holding what you have typed, at
                      the line and column the cursor was on, and whatever is
@@ -388,10 +389,11 @@
                      ␛[38;5;241ma session's row moves the keyboard into it. A block's␛[m
                      ␛[38;5;241mheading, or its … N more, opens the surface holding the␛[m
                      ␛[38;5;241mwhole block — SUMMARY is /readings, THIS TURN is /turns,␛[m
-                     ␛[38;5;241mCHANGES is /diff, AGENTS is /agents, STEPS is /steps,␛[m
-                     ␛[38;5;241mTODO is /todo, CONTEXT is /context — and a click on the␛[m
-                     ␛[38;5;241msame cell closes it, as its own esc does. The rail never␛[m
-                     ␛[38;5;241mholds the keyboard, so each command is that door's key␛[m
+                     ␛[38;5;241mALERTS is /alerts, CHANGES is /diff, AGENTS is /agents,␛[m
+                     ␛[38;5;241mSTEPS is /steps, TODO is /todo, CONTEXT is /context —␛[m
+                     ␛[38;5;241mand a click on the same cell closes it, as its own esc␛[m
+                     ␛[38;5;241mdoes. The rail never holds the keyboard, so each command␛[m
+                     ␛[38;5;241mis that door's key␛[m
     ␛[94m[ctrl+g]␛[m         ␛[38;5;241mopen the draft in your editor: $EDITOR (then $VISUAL,␛[m
                      ␛[38;5;241mthen vi) opens a file holding what you have typed, at␛[m
                      ␛[38;5;241mthe line and column the cursor was on, and whatever is␛[m

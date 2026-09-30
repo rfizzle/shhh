@@ -1,0 +1,380 @@
+package components
+
+// The alerts screen (docs/interface/surfaces.md#the-supporting-screens):
+// every alert the session has had, the list the rail's ALERTS block holds only
+// the two most recent standing rows of.
+//
+// A row is one episode — a command's run of failures from the first one to
+// whatever answered it — carrying the block's own alert, so the name, the last
+// outcome, the runs and the turn it broke in are the rail row's words for the
+// same fact. The preview is that account laid out, with what answered it, and
+// `[enter]` puts each run under it: its turn, how it ended, how long it took,
+// and the evidence id its output was kept under where the result was reduced.
+// This is a renderer; the episodes are the host's.
+
+import (
+	"fmt"
+	"strings"
+
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
+	"github.com/rfizzle/shhh/internal/ui/keys"
+)
+
+const (
+	// alertsStackWidth is the width below which the panes stack. The preview
+	// is a short account and a list of runs, narrower than a close block, so
+	// the panes stand side by side sooner than the turns screen's do.
+	alertsStackWidth = 88
+	// alertsListMin / alertsListMax bound the list column. A row is a mark
+	// and a command's name, the last outcome and the runs, the standing word
+	// and the turn; past the ceiling the columns are worth more to the runs.
+	alertsListMin = 30
+	alertsListMax = 62
+	// alertsMinPreview is the smallest preview the stacked layout leaves
+	// standing: the title, and the first line of the account.
+	alertsMinPreview = 3
+)
+
+// AlertsRun is one failing run of an episode, already resolved to what the
+// screen draws.
+type AlertsRun struct {
+	// Turn is the turn the run was in, and Line the command line that ran —
+	// an episode is one command's name, so its runs can be several lines.
+	Turn int64
+	Line string
+	// Outcome is how the run ended, in the word its own row states: the exit
+	// code, or what ended it where nothing let it exit.
+	Outcome string
+	// Duration is how long it ran, as its row states it; empty says nothing.
+	Duration string
+	// Evidence is the id the run's output was kept under where the result
+	// was reduced or trimmed, so the whole of it is one read away. Empty
+	// where the output was never cut.
+	Evidence string
+}
+
+// AlertsAnswer is what answered an episode: a clean run of the command, or
+// the repository's own suite passing over the tree it failed on.
+type AlertsAnswer struct {
+	// What is the answer in words — `make check came back clean`.
+	What string
+	// Turn is the turn the answer ran in.
+	Turn int64
+}
+
+// AlertsItem is one episode.
+type AlertsItem struct {
+	// Alert is the rail's own alert for the episode, not a copy of its
+	// figures made again: the screen and the block read one walk.
+	Alert InspectorAlert
+	// Answer is what answered it; nil on a standing one.
+	Answer *AlertsAnswer
+	// Runs are its failing runs, oldest first.
+	Runs []AlertsRun
+}
+
+// AlertsScreen is `/alerts`: a takeover in the chat, full width, owning the
+// keyboard for as long as it is up.
+type AlertsScreen struct {
+	// Alerts are standing first, then superseded, each newest first — the
+	// order the list draws them in.
+	Alerts []AlertsItem
+	// Focus is an index into Alerts.
+	Focus int
+	// Open says the runs of the episode under the pointer are showing.
+	// Moving the pointer closes them, since they are one episode's.
+	Open bool
+	// MaxLines bounds the screen height. 0 is unbounded.
+	MaxLines int
+
+	list Select
+	keys bool
+}
+
+// Update is the screen's whole keyboard: it moves, it shows an episode's
+// runs, it shows its keys, and it leaves. It reports whether the screen is
+// done.
+func (s *AlertsScreen) Update(msg tea.KeyPressMsg) (done bool) {
+	pressed := msg.String()
+	switch {
+	case s.moved(pressed):
+	case keys.Is(pressed, keys.Screen.Take):
+		if s.current() != nil {
+			s.Open = !s.Open
+		}
+	case keys.Is(pressed, keys.Screen.List):
+		s.keys = !s.keys
+	case keys.Is(pressed, keys.Screen.Quit):
+		return true
+	}
+	return false
+}
+
+// SetSize gives the screen the terminal's rectangle. It lays itself out from
+// the width it is rendered at, so only the height is kept.
+func (s *AlertsScreen) SetSize(_, height int) { s.MaxLines = height }
+
+// View renders the screen: the shared chrome, with the two panes in the rows
+// it leaves.
+func (s *AlertsScreen) View(width int) string {
+	if width <= 0 {
+		return ""
+	}
+	s.sync()
+	return ScreenChrome{
+		Header:   s.header(),
+		Foot:     s.footer(width).Rows(width),
+		MaxLines: s.MaxLines,
+	}.View(width, func(budget int) []string { return s.panes().rows(width, budget) })
+}
+
+// panes is the body, split the way every screen with a list and a preview
+// splits it (screenpanes.go).
+func (s *AlertsScreen) panes() screenPanes {
+	return screenPanes{
+		stackAt: alertsStackWidth, listMin: alertsListMin,
+		listMax: alertsListMax, minPreview: alertsMinPreview,
+		list:    s.listRows,
+		preview: s.previewRows,
+	}
+}
+
+// listRows is the left pane: the episodes, standing first.
+func (s *AlertsScreen) listRows(width, budget int) []string {
+	if len(s.Alerts) == 0 {
+		return []string{sty.Dim.Render(Clip("nothing this session ran has come back broken", width))}
+	}
+	body, _ := s.list.visibleRows(cardWidthFor(width), budget, false)
+	return body
+}
+
+// previewRows is the right pane: the episode under the pointer, its account
+// in the rail's own words and what answered it, and its runs where they are
+// open.
+func (s *AlertsScreen) previewRows(width int) []string {
+	a := s.current()
+	if a == nil {
+		return []string{sty.Dim.Render(Clip("no alert selected", width))}
+	}
+	word, _ := alertStanding(*a)
+	rows := []string{paneTitle(brightStyle().Render(a.Alert.Label), sty.Dim.Render(word), width), ""}
+	runs := fmt.Sprintf("%d", max(a.Alert.Runs, 1))
+	if a.Alert.Turns > 1 {
+		runs += fmt.Sprintf(", in %d turns", a.Alert.Turns)
+	}
+	answered := sty.Err.Render("not yet")
+	if a.Answer != nil {
+		answered = sty.Body.Render(joinTurn(a.Answer.What, a.Answer.Turn))
+	}
+	fields := []struct{ label, value string }{
+		{"last run", sty.Body.Render(a.Alert.Note)},
+		{"runs", sty.Body.Render(runs)},
+	}
+	// A command run before any turn — the reader's own, at an idle prompt —
+	// has no turn to name, and the rail's row names none for it either.
+	if a.Alert.Turn > 0 {
+		fields = append(fields, struct{ label, value string }{"broke", sty.Body.Render(fmt.Sprintf("turn %d", a.Alert.Turn))})
+	}
+	fields = append(fields, struct{ label, value string }{"answered", answered})
+	for _, f := range fields {
+		rows = append(rows, alertsField(f.label, f.value, width))
+	}
+	if !s.Open {
+		return rows
+	}
+	rows = append(rows, "", "  "+sty.Status.Render("each run"))
+	for _, r := range a.Runs {
+		rows = append(rows, alertsRunRows(r, width)...)
+	}
+	return rows
+}
+
+// alertsLabelWidth is the account's label column, wide enough for its
+// longest label and the gap after it.
+const alertsLabelWidth = 10
+
+// alertsField is one line of the account: a dim label in a fixed column and
+// the value beside it, clipped to the pane.
+func alertsField(label, value string, width int) string {
+	lead := "  " + sty.Status.Render(fmt.Sprintf("%-*s", alertsLabelWidth, label))
+	return Clip(lead+value, width)
+}
+
+// alertsRunRows is one run: the mark, its turn and how it ended and how long
+// it took, with the evidence id at the far end where the output was kept,
+// and the command line under it — two runs of one episode can be two lines.
+func alertsRunRows(r AlertsRun, width int) []string {
+	text := r.Outcome
+	if r.Turn > 0 {
+		text = fmt.Sprintf("turn %d · %s", r.Turn, r.Outcome)
+	}
+	if r.Duration != "" {
+		text += " · " + r.Duration
+	}
+	left := "  " + sty.Err.Render("✗") + " " + sty.Body.Render(text)
+	rows := []string{Clip(left, width), Clip("    "+sty.Dimmer.Render(r.Line), width)}
+	if r.Evidence == "" {
+		return rows
+	}
+	// The id is what makes the output one read away, so where it will not
+	// stand at the end of the run's row it takes a row of its own rather
+	// than being dropped.
+	right := sty.Dim.Render(r.Evidence)
+	if pad := width - lipgloss.Width(left) - lipgloss.Width(right); pad >= 2 {
+		rows[0] = left + strings.Repeat(" ", pad) + right
+		return rows
+	}
+	return append(rows, Clip("    "+sty.Dim.Render("output kept as "+r.Evidence), width))
+}
+
+// joinTurn is a fact and the turn it happened in, `… · turn 3`, and the fact
+// alone where there was no turn to name.
+func joinTurn(fact string, turn int64) string {
+	if turn <= 0 {
+		return fact
+	}
+	return fmt.Sprintf("%s · turn %d", fact, turn)
+}
+
+// alertStanding is how an episode stands, in the word the list and the
+// preview both say, and the tone the list reads it in.
+func alertStanding(a AlertsItem) (string, FieldTone) {
+	if a.Alert.Superseded {
+		return "superseded", ToneQuiet
+	}
+	return "standing", ToneRisk
+}
+
+// alertGlyph is the row's leading mark: the rail row's ✗ for one still
+// standing, ✓ for one something has answered. It is plain rather than
+// painted for the steps screen's reason, and the word beside it says the
+// same thing (invariant 1).
+func alertGlyph(a AlertsItem) string {
+	if a.Alert.Superseded {
+		return "✓"
+	}
+	return "✗"
+}
+
+// header names the surface and what it counts: the standing and the answered,
+// two fields because they are two facts, as the rail's marker says them.
+func (s *AlertsScreen) header() ScreenHeader {
+	h := ScreenHeader{Left: []RailSegment{screenTitle("/alerts")}, Keys: s.headerKeys()}
+	standing := 0
+	for _, a := range s.Alerts {
+		if !a.Alert.Superseded {
+			standing++
+		}
+	}
+	// Nothing standing is not a field: the rail's marker leads with the
+	// answered count in that case too, rather than with a zero.
+	if standing > 0 {
+		h.Left = append(h.Left, screenField(fmt.Sprintf("%d standing", standing)))
+	}
+	if superseded := len(s.Alerts) - standing; superseded > 0 {
+		h.Left = append(h.Left, screenField(fmt.Sprintf("%d superseded", superseded)))
+	}
+	return h
+}
+
+// headerKeys is the pair the header ends with, as on every screen of the
+// family (docs/interface/surfaces.md#the-supporting-screens).
+func (s *AlertsScreen) headerKeys() string {
+	list := keys.Bracket(keys.Screen.List) + " " + keys.Words(keys.Screen.List)
+	if s.keys {
+		list = keys.Bracket(keys.Screen.List) + " hide the keys"
+	}
+	return list + " · " + words(keys.Screen.Quit, "back")
+}
+
+// footer is the keys the screen offers and the field that annotates them.
+func (s *AlertsScreen) footer(width int) KeyFooter {
+	field := s.footField()
+	return KeyFooter{Offers: s.offers(width, field), Register: s.keyList(),
+		Showing: s.keys, Field: field}
+}
+
+// offers is the key row: the pointer's keys, the runs, and the way out, and
+// the last two alone where the field leaves no room for all three.
+func (s *AlertsScreen) offers(width int, field string) []KeyOffer {
+	var acts []KeyOffer
+	if s.current() != nil {
+		label := "show each run"
+		if s.Open {
+			label = "hide the runs"
+		}
+		acts = append(acts, keyOfferAs(keys.Screen.Take, label))
+	}
+	acts = append(acts, wayOut(backToPrompt))
+	full := append([]KeyOffer{keyOffer(keys.Screen.Move)}, acts...)
+	if field == "" || fitsBeside(full, field, width) {
+		return full
+	}
+	return acts
+}
+
+// keyList is every key the screen has, for `[?]`.
+func (s *AlertsScreen) keyList() []KeyOffer {
+	return []KeyOffer{
+		keyOfferAs(keys.Screen.Move, "move between alerts"),
+		keyOfferAs(keys.Screen.Take, "show or hide the alert's runs"),
+		wayOut(backToPrompt),
+		keyOfferAs(keys.Screen.Quit, backToPrompt),
+	}
+}
+
+// footField annotates the key row with where the episodes come from: the
+// rail's own reading, so a row here and the rail's row are one alert.
+func (s *AlertsScreen) footField() string {
+	if len(s.Alerts) == 0 {
+		return ""
+	}
+	return "every command this session broke, as the rail reads it"
+}
+
+// sync rebuilds the list from Alerts. It runs before every View because the
+// host may replace Alerts, and the pointer has to survive that.
+func (s *AlertsScreen) sync() {
+	s.Focus = min(max(s.Focus, 0), max(len(s.Alerts)-1, 0))
+	opts := make([]SelectOption, 0, len(s.Alerts))
+	for _, a := range s.Alerts {
+		opt := SelectOption{Label: alertGlyph(a) + " " + a.Alert.Label,
+			MetaTone: ToneQuiet}
+		if a.Alert.Turn > 0 {
+			opt.Meta = alertTurn(a.Alert)
+		}
+		if note := alertNote(a.Alert); note != "" {
+			opt.Detail = []DetailSpan{{Text: note, Tone: ToneQuiet}}
+		}
+		opt.Value, opt.ValueTone = alertStanding(a)
+		opts = append(opts, opt)
+	}
+	s.list.Options = opts
+	s.list.Unnumbered = true
+	s.list.Focus = s.Focus
+}
+
+// moved walks the pointer between episodes.
+func (s *AlertsScreen) moved(pressed string) bool {
+	if len(s.Alerts) == 0 {
+		return false
+	}
+	l := List[AlertsItem]{Items: s.Alerts, Focus: s.Focus}
+	if !l.Move(pressed, keys.Screen.Move) {
+		return false
+	}
+	if l.Focus != s.Focus {
+		s.Open = false
+	}
+	s.Focus = l.Focus
+	return true
+}
+
+// current is the episode under the pointer, or nil for an empty list.
+func (s *AlertsScreen) current() *AlertsItem {
+	if s.Focus < 0 || s.Focus >= len(s.Alerts) {
+		return nil
+	}
+	return &s.Alerts[s.Focus]
+}

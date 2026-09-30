@@ -17,8 +17,9 @@ package chat
 //   - A block's heading, and its fold marker. Each names the block, and where
 //     the block has a surface holding the whole of what it bounds, that
 //     surface is what a command already opens: SUMMARY is /readings, THIS
-//     TURN is /turns, CHANGES is /diff, AGENTS is /agents, STEPS is /steps,
-//     TODO is /todo, CONTEXT is /context (railDoors).
+//     TURN is /turns, ALERTS is /alerts, CHANGES is /diff, AGENTS is
+//     /agents, STEPS is /steps, TODO is /todo, CONTEXT is /context
+//     (railDoors).
 //
 // A heading or a marker opens that surface, and the remembered cell closes
 // it: the surface takes the rail's columns, so the row is not there for a
@@ -26,9 +27,9 @@ package chat
 // always worked. That is what makes a whole surface a target the same click
 // can leave, and the surface's own esc leaves it too
 // (docs/interface/surfaces.md#the-inspector-rail). A block with no surface
-// behind it — ALERTS is this turn's,
-// PLAN and SPEND answer in a transcript row rather than a surface, TOOLS has
-// no command — keeps its heading inert, and so does a meter's row.
+// behind it — PLAN and SPEND answer in a transcript row rather than a
+// surface, TOOLS has no command — keeps its heading inert, and so does a
+// meter's row.
 //
 // The rail never takes the keyboard. Attaching is a focus switch and not a
 // handover: the draft holds every character it had, reading mode is not
@@ -131,6 +132,13 @@ func turnsShowing(m Model) any {
 		return nil
 	}
 	return m.screens.turns()
+}
+
+func alertsShowing(m Model) any {
+	if m.state != stateAlerts || m.screens.alerts() == nil {
+		return nil
+	}
+	return m.screens.alerts()
 }
 
 func backlogShowing(m Model) any {

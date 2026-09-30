@@ -195,6 +195,19 @@ MODE AND POLICY
 
 [↑↓/jk] move · [enter] review turn 4 · [esc] back to the prompt                                each turn as its close row reads it
 
+· alerts · every command the session broke, standing first, the one under the pointer's account beside it
+/alerts · 2 standing · 2 superseded                                                                            [?] keys · [q] back
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+❯ ✗ make test  standing · exit 2 · 3 runs         since turn 3 │ make test                                                standing
+  ✗ gofmt  standing · exit 1                            turn 5 │ 
+  ✓ golangci-lint run  superseded · exit 1 · 2 runs     turn 2 │   last run  exit 2
+  ✓ go build  superseded · exit 1                       turn 1 │   runs      3, in 2 turns
+                                                               │   broke     turn 3
+                                                               │   answered  not yet
+
+[↑↓/jk] move · [enter] show each run · [esc] back to the prompt             every command this session broke, as the rail reads it
+
 ── ansi ────────────────────────────────────────────────────
 · doctor · the count on the left, the clock and the keys on the right
 ␛[1;38;5;254mshhh doctor␛[m␛[38;5;244m · 10 checks␛[m                                                                                 ␛[38;5;244m1.4s␛[m␛[38;5;244m · [?] keys · [q] quit␛[m
@@ -380,3 +393,16 @@ MODE AND POLICY
                                                         ␛[38;5;244m │ ␛[m  ␛[38;5;244mfiles ␛[m␛[38;5;254minternal/agent/loop.go␛[m ␛[38;5;254m+12␛[m ␛[38;5;254m−4␛[m
 
 ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m review turn 4␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m                                ␛[38;5;244meach turn as its close row reads it␛[m
+
+· alerts · every command the session broke, standing first, the one under the pointer's account beside it
+␛[1;38;5;254m/alerts␛[m␛[38;5;244m · 2 standing␛[m␛[38;5;244m · 2 superseded␛[m                                                                            ␛[38;5;244m[?] keys · [q] back␛[m
+␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+
+␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m✗ make test  standing · exit 2 · 3 runs         since turn 3␛[m␛[38;5;244m │ ␛[m␛[1;38;5;254mmake test␛[m                                                ␛[38;5;244mstanding␛[m
+  ␛[38;5;254m✗ gofmt␛[m  ␛[38;5;254mstanding␛[m␛[38;5;244m · ␛[m␛[38;5;244mexit 1␛[m                            ␛[38;5;244mturn 5␛[m␛[38;5;244m │ ␛[m
+  ␛[38;5;254m✓ golangci-lint run␛[m  ␛[38;5;244msuperseded␛[m␛[38;5;244m · ␛[m␛[38;5;244mexit 1 · 2 runs␛[m     ␛[38;5;244mturn 2␛[m␛[38;5;244m │ ␛[m  ␛[38;5;244mlast run  ␛[m␛[38;5;254mexit 2␛[m
+  ␛[38;5;254m✓ go build␛[m  ␛[38;5;244msuperseded␛[m␛[38;5;244m · ␛[m␛[38;5;244mexit 1␛[m                       ␛[38;5;244mturn 1␛[m␛[38;5;244m │ ␛[m  ␛[38;5;244mruns      ␛[m␛[38;5;254m3, in 2 turns␛[m
+                                                              ␛[38;5;244m │ ␛[m  ␛[38;5;244mbroke     ␛[m␛[38;5;254mturn 3␛[m
+                                                              ␛[38;5;244m │ ␛[m  ␛[38;5;244manswered  ␛[m␛[38;5;254mnot yet␛[m
+
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m show each run␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m             ␛[38;5;244mevery command this session broke, as the rail reads it␛[m

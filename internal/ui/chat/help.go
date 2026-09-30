@@ -410,7 +410,7 @@ bare /todo opens the same screen; it opens over a running turn, and the keys tha
 		},
 		{
 			key:  "rail click",
-			text: `on the inspector rail, a changed file opens its diff and a session's row moves the keyboard into it. A block's heading, or its … N more, opens the surface holding the whole block — SUMMARY is /readings, THIS TURN is /turns, CHANGES is /diff, AGENTS is /agents, STEPS is /steps, TODO is /todo, CONTEXT is /context — and a click on the same cell closes it, as its own esc does. The rail never holds the keyboard, so each command is that door's key`,
+			text: `on the inspector rail, a changed file opens its diff and a session's row moves the keyboard into it. A block's heading, or its … N more, opens the surface holding the whole block — SUMMARY is /readings, THIS TURN is /turns, ALERTS is /alerts, CHANGES is /diff, AGENTS is /agents, STEPS is /steps, TODO is /todo, CONTEXT is /context — and a click on the same cell closes it, as its own esc does. The rail never holds the keyboard, so each command is that door's key`,
 		},
 		{
 			binds: []keys.Binding{keys.Draft.Editor},

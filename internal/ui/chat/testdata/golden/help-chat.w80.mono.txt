@@ -66,6 +66,14 @@
                    flight on top. [enter] opens a turn's review where it changed
                    files. A turn from an ended sitting shows its files and says
                    its figures were not kept. It reads and changes nothing
+    /alerts        every alert the session has had on one screen, standing first
+                   and then superseded, newest first: the command, its last
+                   outcome, its runs, the turn it first broke in and what
+                   answered it — a clean run or the quality gate passing, with
+                   the turn. [enter] shows each run: its turn, how it ended, how
+                   long it took and the evidence id its output was kept under
+                   where it was cut. It reads the rail's own alerts and changes
+                   nothing
     /step          open the in-flight step's detail: every row in it shows its
                    output body, bounded; run it again to close (/ui verbosity
                    high is the same thing for every step at once)
@@ -171,6 +179,14 @@
                    flight on top. [enter] opens a turn's review where it changed
                    files. A turn from an ended sitting shows its files and says
                    its figures were not kept. It reads and changes nothing
+    /alerts        every alert the session has had on one screen, standing first
+                   and then superseded, newest first: the command, its last
+                   outcome, its runs, the turn it first broke in and what
+                   answered it — a clean run or the quality gate passing, with
+                   the turn. [enter] shows each run: its turn, how it ended, how
+                   long it took and the evidence id its output was kept under
+                   where it was cut. It reads the rail's own alerts and changes
+                   nothing
     /step          open the in-flight step's detail: every row in it shows its
                    output body, bounded; run it again to close (/ui verbosity
                    high is the same thing for every step at once)
@@ -298,6 +314,14 @@
                    ␛[38;5;244mflight on top. [enter] opens a turn's review where it changed␛[m
                    ␛[38;5;244mfiles. A turn from an ended sitting shows its files and says␛[m
                    ␛[38;5;244mits figures were not kept. It reads and changes nothing␛[m
+    ␛[38;5;254m/alerts␛[m        ␛[38;5;244mevery alert the session has had on one screen, standing first␛[m
+                   ␛[38;5;244mand then superseded, newest first: the command, its last␛[m
+                   ␛[38;5;244moutcome, its runs, the turn it first broke in and what␛[m
+                   ␛[38;5;244manswered it — a clean run or the quality gate passing, with␛[m
+                   ␛[38;5;244mthe turn. [enter] shows each run: its turn, how it ended, how␛[m
+                   ␛[38;5;244mlong it took and the evidence id its output was kept under␛[m
+                   ␛[38;5;244mwhere it was cut. It reads the rail's own alerts and changes␛[m
+                   ␛[38;5;244mnothing␛[m
     ␛[38;5;254m/step␛[m          ␛[38;5;244mopen the in-flight step's detail: every row in it shows its␛[m
                    ␛[38;5;244moutput body, bounded; run it again to close (/ui verbosity␛[m
                    ␛[38;5;244mhigh is the same thing for every step at once)␛[m
@@ -403,6 +427,14 @@
                    ␛[38;5;244mflight on top. [enter] opens a turn's review where it changed␛[m
                    ␛[38;5;244mfiles. A turn from an ended sitting shows its files and says␛[m
                    ␛[38;5;244mits figures were not kept. It reads and changes nothing␛[m
+    ␛[38;5;254m/alerts␛[m        ␛[38;5;244mevery alert the session has had on one screen, standing first␛[m
+                   ␛[38;5;244mand then superseded, newest first: the command, its last␛[m
+                   ␛[38;5;244moutcome, its runs, the turn it first broke in and what␛[m
+                   ␛[38;5;244manswered it — a clean run or the quality gate passing, with␛[m
+                   ␛[38;5;244mthe turn. [enter] shows each run: its turn, how it ended, how␛[m
+                   ␛[38;5;244mlong it took and the evidence id its output was kept under␛[m
+                   ␛[38;5;244mwhere it was cut. It reads the rail's own alerts and changes␛[m
+                   ␛[38;5;244mnothing␛[m
     ␛[38;5;254m/step␛[m          ␛[38;5;244mopen the in-flight step's detail: every row in it shows its␛[m
                    ␛[38;5;244moutput body, bounded; run it again to close (/ui verbosity␛[m
                    ␛[38;5;244mhigh is the same thing for every step at once)␛[m

@@ -391,6 +391,38 @@ drawn without them would look wider than it is.
 When there is an artboard, these three decisions are what it has to
 reconcile with, and where the two differ the artboard wins.
 
+## The alerts screen's layout was decided in the binary
+
+*A gap.* No artboard draws `/alerts`, and the InspectorRail component draws
+the ALERTS block's heading as a label rather than as a door to anything. The
+binary draws a screen behind that heading and its marker ([the supporting
+screens](surfaces.md#the-supporting-screens)): the family's chrome over a
+list and a preview, the list every episode the block reads and the preview
+the one under the pointer. Most of it needed no decision — the header and its
+rule, the two panes and the divider, the windowed list and the key row are
+the supporting screens' own, and a list row is the block's own row with the
+standing word added. Three things it could not take from anywhere, and they
+were decided here:
+
+**A superseded episode is `✓`.** The block never draws one as a row, so it
+has no mark for one; the list takes the close row's pass mark, because what
+answered it was a clean run or a passing suite, and the word `superseded`
+beside it says the same thing.
+
+**The account is four labelled lines.** `last run`, `runs`, `broke` and
+`answered`, in a label column, with `not yet` in the failure tone for one
+still standing — the rail row's three facts spelled out and the one it has
+no room for.
+
+**`[enter]` opens the runs in place.** Each run is two rows under the
+account — its mark, turn, ending and time with the evidence id at the far
+end, and the command line under it — and moving the pointer puts them away,
+since they are one episode's. An id that will not fit beside its run takes a
+row of its own.
+
+When there is an artboard, these three decisions are what it has to
+reconcile with, and where the two differ the artboard wins.
+
 ## The explanation's screen wears the full view's title, not a rail label
 
 *A disagreement.* The artboard draws the command explanation with a rail

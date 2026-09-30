@@ -276,6 +276,10 @@ func (h heldScreens) turns() *components.TurnsScreen {
 	return heldAs[components.TurnsScreen](h, stateTurns)
 }
 
+func (h heldScreens) alerts() *components.AlertsScreen {
+	return heldAs[components.AlertsScreen](h, stateAlerts)
+}
+
 func (h heldScreens) safety() *components.SafetyScreen {
 	return heldAs[components.SafetyScreen](h, stateSafety)
 }
@@ -779,6 +783,33 @@ func buildOverlays() map[state]*mode {
 				open: bareOpen(Model.openTurns),
 			},
 			door: &surfaceDoor{components.RailTurn, railDoor{Model.openTurns, turnsShowing, Model.closeTurnsScreen}},
+		},
+		stateAlerts: {
+			place:       placePane,
+			holds:       true,
+			borrows:     true,
+			hidesRail:   true,
+			noSelection: true,
+			lines: func(m Model, width, height int) []string {
+				screen := m.screens.alerts()
+				if screen == nil {
+					return nil
+				}
+				screen.SetSize(width, height)
+				return strings.Split(screen.View(width), "\n")
+			},
+			hint: (Model).renderAlertsHint,
+			keys: (Model).updateAlerts,
+			// Every alert the session has had, as the rail reads it. It reads
+			// and changes nothing, so it is not idleOnly: mid-turn is when
+			// somebody asks what has been failing and what fixed it (alerts.go).
+			command: &surfaceCommand{
+				slashCommand: slashCommand{name: "/alerts", desc: "every command this session broke, standing and superseded, each run a key away",
+					help: `every alert the session has had on one screen, standing first and then superseded, newest first: the command, its last outcome, its runs, the turn it first broke in and what answered it — a clean run or the quality gate passing, with the turn. [enter] shows each run: its turn, how it ended, how long it took and the evidence id its output was kept under where it was cut. It reads the rail's own alerts and changes nothing`},
+				bare: true,
+				open: bareOpen(Model.openAlerts),
+			},
+			door: &surfaceDoor{components.RailAlerts, railDoor{Model.openAlerts, alertsShowing, Model.closeAlertsScreen}},
 		},
 		stateSafety: {
 			place:       placePane,

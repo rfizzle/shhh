@@ -98,6 +98,17 @@
                    from an ended sitting shows its files and
                    says its figures were not kept. It reads
                    and changes nothing
+    /alerts        every alert the session has had on one
+                   screen, standing first and then
+                   superseded, newest first: the command,
+                   its last outcome, its runs, the turn it
+                   first broke in and what answered it — a
+                   clean run or the quality gate passing,
+                   with the turn. [enter] shows each run:
+                   its turn, how it ended, how long it took
+                   and the evidence id its output was kept
+                   under where it was cut. It reads the
+                   rail's own alerts and changes nothing
     /step          open the in-flight step's detail: every
                    row in it shows its output body, bounded;
                    run it again to close (/ui verbosity high
@@ -258,6 +269,17 @@
                    from an ended sitting shows its files and
                    says its figures were not kept. It reads
                    and changes nothing
+    /alerts        every alert the session has had on one
+                   screen, standing first and then
+                   superseded, newest first: the command,
+                   its last outcome, its runs, the turn it
+                   first broke in and what answered it — a
+                   clean run or the quality gate passing,
+                   with the turn. [enter] shows each run:
+                   its turn, how it ended, how long it took
+                   and the evidence id its output was kept
+                   under where it was cut. It reads the
+                   rail's own alerts and changes nothing
     /step          open the in-flight step's detail: every
                    row in it shows its output body, bounded;
                    run it again to close (/ui verbosity high
@@ -450,6 +472,17 @@
                    ␛[38;5;244mfrom an ended sitting shows its files and␛[m
                    ␛[38;5;244msays its figures were not kept. It reads␛[m
                    ␛[38;5;244mand changes nothing␛[m
+    ␛[38;5;254m/alerts␛[m        ␛[38;5;244mevery alert the session has had on one␛[m
+                   ␛[38;5;244mscreen, standing first and then␛[m
+                   ␛[38;5;244msuperseded, newest first: the command,␛[m
+                   ␛[38;5;244mits last outcome, its runs, the turn it␛[m
+                   ␛[38;5;244mfirst broke in and what answered it — a␛[m
+                   ␛[38;5;244mclean run or the quality gate passing,␛[m
+                   ␛[38;5;244mwith the turn. [enter] shows each run:␛[m
+                   ␛[38;5;244mits turn, how it ended, how long it took␛[m
+                   ␛[38;5;244mand the evidence id its output was kept␛[m
+                   ␛[38;5;244munder where it was cut. It reads the␛[m
+                   ␛[38;5;244mrail's own alerts and changes nothing␛[m
     ␛[38;5;254m/step␛[m          ␛[38;5;244mopen the in-flight step's detail: every␛[m
                    ␛[38;5;244mrow in it shows its output body, bounded;␛[m
                    ␛[38;5;244mrun it again to close (/ui verbosity high␛[m
@@ -610,6 +643,17 @@
                    ␛[38;5;244mfrom an ended sitting shows its files and␛[m
                    ␛[38;5;244msays its figures were not kept. It reads␛[m
                    ␛[38;5;244mand changes nothing␛[m
+    ␛[38;5;254m/alerts␛[m        ␛[38;5;244mevery alert the session has had on one␛[m
+                   ␛[38;5;244mscreen, standing first and then␛[m
+                   ␛[38;5;244msuperseded, newest first: the command,␛[m
+                   ␛[38;5;244mits last outcome, its runs, the turn it␛[m
+                   ␛[38;5;244mfirst broke in and what answered it — a␛[m
+                   ␛[38;5;244mclean run or the quality gate passing,␛[m
+                   ␛[38;5;244mwith the turn. [enter] shows each run:␛[m
+                   ␛[38;5;244mits turn, how it ended, how long it took␛[m
+                   ␛[38;5;244mand the evidence id its output was kept␛[m
+                   ␛[38;5;244munder where it was cut. It reads the␛[m
+                   ␛[38;5;244mrail's own alerts and changes nothing␛[m
     ␛[38;5;254m/step␛[m          ␛[38;5;244mopen the in-flight step's detail: every␛[m
                    ␛[38;5;244mrow in it shows its output body, bounded;␛[m
                    ␛[38;5;244mrun it again to close (/ui verbosity high␛[m

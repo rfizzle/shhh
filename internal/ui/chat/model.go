@@ -240,6 +240,11 @@ const (
 	// one to pull back into the draft or cancel (msgqueue.go). It borrows the
 	// bottom panel, so the turn keeps running and delivering under it.
 	stateQueue
+	// stateAlerts: the alerts screen is up — every alert the session has
+	// had, standing and superseded, each with the runs behind it. A takeover
+	// like the turns screen: full width, the rail hidden, esc returns, and it
+	// changes nothing (alerts.go).
+	stateAlerts
 )
 
 // minPanelHeight is the fewest rows the bottom panel takes: what a surface

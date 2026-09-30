@@ -72,6 +72,8 @@ func TestRailDoors_AHeadingOrAMarkerOpensItsSurfaceAndTheCellClosesIt(t *testing
 		{components.RailSteps, false, railStepsModel, "/steps"},
 		{components.RailSummary, false, railSummaryModel, "/readings"},
 		{components.RailTurn, false, railTurnModel, "/turns"},
+		{components.RailAlerts, false, railAlertsModel, "/alerts"},
+		{components.RailAlerts, true, railAlertsModel, "/alerts"},
 		{components.RailTodo, false, railTodoModel, "/todo"},
 		{components.RailTodo, true, railTodoModel, "/todo"},
 	} {
@@ -141,6 +143,19 @@ func railTurnModel(t *testing.T) Model {
 	t.Helper()
 	m := railDoorModel(t)
 	m.turnCount = 1
+	return m
+}
+
+// railAlertsModel is railDoorModel with a formatter that broke and came back
+// clean beside its standing test failure, so the ALERTS block draws its
+// `… 1 superseded` marker under the row.
+func railAlertsModel(t *testing.T) Model {
+	t.Helper()
+	m := railDoorModel(t)
+	m.transcript = append(m.transcript,
+		entry{kind: entryCommand, text: "gofmt -l .", exitCode: 1, turn: 1},
+		entry{kind: entryCommand, text: "gofmt -l .", exitCode: 0, turn: 1})
+	m.viewport.SetLines(m.renderHistoryLines())
 	return m
 }
 

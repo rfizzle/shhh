@@ -1,0 +1,51 @@
+# program test: TestProgram_AlertsOpensEveryAlertAndItsRuns,
+#   TestProgram_TheQuitChordArmsThenLeaves
+#
+# The ALERTS block is a door to every alert the session has had
+# (docs/interface/surfaces.md#the-inspector-rail), and the screen behind it is
+# one of the supporting screens (docs/interface/surfaces.md#the-supporting-screens).
+# A check fails in two turns running and passes in the third. A click is the
+# terminal's own SGR mouse report, sent as literal bytes: a press then a
+# release in one cell, column and row counted from 1. At 130 columns the
+# rail's first column is 85 and, after the second turn, the ALERTS heading is
+# on row 6. The rail is not drawn below 130 columns, which is why the scene is
+# driven there.
+#
+# What the capture is for: at 05 the rail carries `ALERTS · 1 standing` and
+# the row `✗ make check  exit 2 · 2 runs  since turn 1`; at 06 a click on the
+# heading has put the screen over the pane and the rail, the episode standing
+# with `answered  not yet`; at 07 enter shows both runs; at 08 a click on the
+# same cell has put the rail back, and the half-typed draft is still in the
+# box; at 11 the third turn has answered the alert, the block is gone, and
+# /alerts, the key twin, lists the episode as superseded by the clean run in
+# turn 3.
+setup printf 'check:\n\t@n=$$(cat .runs 2>/dev/null || echo 0); n=$$((n+1)); echo $$n > .runs; echo "run $$n"; test $$n -ge 3\n' > Makefile
+snap 01-start "Some things worth doing first"
+keys "run the checks" Enter
+snap 02-card "make check" "run it once"
+keys y
+snap 03-failed "The checks failed."
+keys "again" Enter
+snap 04-card "run it once"
+keys y
+snap 05-standing "Still failing." "ALERTS" "2 runs"
+keys "wait"
+keys -l "$(printf '\033[<0;85;6M\033[<0;85;6m')"
+snap 06-heading-opens "/alerts · 1 standing" "not yet"
+keys Enter
+snap 07-each-run "each run" "hide the runs"
+keys -l "$(printf '\033[<0;85;6M\033[<0;85;6m')"
+snap 08-cell-closes "ALERTS" "wait"
+keys BSpace BSpace BSpace BSpace
+keys "once more" Enter
+snap 09-card "run it once"
+keys y
+snap 10-answered "The checks pass now."
+keys "/alerts" Enter
+snap 11-key-twin "/alerts · 1 superseded" "make check came back clean"
+keys Escape
+snap 12-back "The checks pass now."
+keys C-c
+snap 13-quit-armed "again quits"
+keys C-c
+snap 14-exit "that is everything the screen was holding"

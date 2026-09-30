@@ -174,6 +174,7 @@ func buildSlashCommands() []slashCommand {
 		{name: "/stats", desc: "context occupancy and session spend"},
 		registeredSlash("/readings"),
 		registeredSlash("/turns"),
+		registeredSlash("/alerts"),
 		{name: "/step", desc: "open the in-flight step's detail (again closes it)"},
 		registeredSlash("/steps"),
 		{name: "/status", desc: "where the session is, and whether it is still on target"},

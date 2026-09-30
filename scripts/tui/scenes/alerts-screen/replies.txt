@@ -1,0 +1,14 @@
+# One reply per request. The last line repeats once these run out.
+#
+# Three turns run the same check. The Makefile's target fails on its first
+# two runs and passes on its third, so the rail's ALERTS block stands for two
+# turns and is answered in the third.
+Running the checks
++tool:execute_command:{"command":"make check"}
+The checks failed.
+Running the checks again
++tool:execute_command:{"command":"make check"}
+Still failing.
+Running the checks once more
++tool:execute_command:{"command":"make check"}
+The checks pass now.

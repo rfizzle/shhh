@@ -1369,8 +1369,8 @@ reachable without a pointer.
 A block is a door to the whole of what it bounds. Where a block has a surface
 holding all of it, its heading and its fold marker open that surface: SUMMARY
 opens every reading the session has taken, THIS TURN every turn the session
-has run, CHANGES
-opens the session's diff, AGENTS the manager, STEPS the whole working list,
+has run, ALERTS every alert the session has had, standing and superseded,
+CHANGES opens the session's diff, AGENTS the manager, STEPS the whole working list,
 TODO the backlog screen and CONTEXT the occupancy screen — each the surface its command already opens, so
 the command is the door's key. The surface is left by its own esc, and by a
 click on the cell that opened it: the surface stands over the rail, so the
@@ -2452,11 +2452,11 @@ Fifteen surfaces take the whole terminal this way — those seven, the reading
 of what is in the session's context, the ledger of what the session read
 (`/sources`, [what was read](../capabilities/chat.md#what-was-read)), the
 session's own working list (`/steps`, below), the readings it has taken of its
-own run (`/readings`, below), the turns it has run (`/turns`, below), the
-session's shared notebook
+own run (`/readings`, below), the turns it has run (`/turns`, below), every
+alert it has had (`/alerts`, below), the session's shared notebook
 (`/notes`, below), the reading of the session's boundary (`/safety`, [the
 safety reading](#the-safety-reading)) and the drafting flow for a new agent
-profile — and they are one family rather than fifteen screens: the same header, the same
+profile — and they are one family rather than sixteen screens: the same header, the same
 ground given up in the same order as the terminal narrows, the same key row at
 the foot and the same `[?]` behind it. The two that arrived last had each been
 drawing a chrome of their own, and the way that showed was not in either of
@@ -2470,7 +2470,7 @@ act in one word: `quit` where the screen was opened from a command line,
 under the key a reader reaches for without thinking, and there it is a phrase:
 **back to the shell** on doctor, metrics, history, snippets and the saved-chat
 browser, **back to the prompt** on the context reading, the sources ledger, the
-working list, the readings, the turns, the safety reading, the notebook and the backlog, which is drawn on this chrome too ([the backlog screen](#the-backlog-screen)).
+working list, the readings, the turns, the alerts, the safety reading, the notebook and the backlog, which is drawn on this chrome too ([the backlog screen](#the-backlog-screen)).
 For leaving a screen and changing nothing there is no third wording.
 
 Three of them leave by doing something rather than nothing, and each says what
@@ -2531,10 +2531,10 @@ surface that put `[?]` and the letter on both rows spent its bottom row saying
 what its top row had already said, which on the narrowest terminal is the row
 that had least to give.
 
-Eight of them list something and preview what the pointer is on — past
+Nine of them list something and preview what the pointer is on — past
 commands, saved commands, saved conversations, the pages this session
 read, the steps it declared, the readings it took of its own run, the turns
-it ran, and the notes its agents wrote each other — and
+it ran, the alerts it has had, and the notes its agents wrote each other — and
 they split the terminal
 the same way: two columns where there is
 room for two, stacked where there is not, and the preview giving way to the
@@ -2607,6 +2607,33 @@ built when it opens, reads and changes nothing, and the turn goes on
 underneath it. It is opened by `/turns` and by a click on the THIS TURN
 heading ([the inspector rail](#the-inspector-rail)), and a session that has
 run no turns says so in a line instead.
+
+`/alerts` is the rail's ALERTS block read whole: every alert the session has
+had ([the inspector rail](#the-inspector-rail)) — the two the block draws, the
+older standing ones behind its marker, and every superseded one it only
+counts. Standing come first and then superseded, each newest first, one row
+an episode in the block row's own words: the mark (`✗` standing, `✓`
+superseded) and the command's name, `standing` or `superseded`, the last
+run's outcome and the runs behind it, and the turn it broke in — `since turn
+3` where it has gone on breaking. Beside the one under the pointer is its
+account: the last run, the runs and the turns they took, the turn it first
+broke in, and what answered it — `make check came back clean` or `quality
+gate default passed`, with the turn it did — or `not yet`. `[enter]` shows
+each run under that: its turn, how it ended, how long it took and the command
+line that ran, and at the far end the evidence id its output was kept under
+where the result was cut, so the whole output is one read away; where the id
+will not fit beside the run it takes a row of its own rather than going.
+The screen reads the very episodes the block reads, answered by the same
+resolution the turn's close reads ([the turn's close](#the-turns-close)),
+so a standing alert here is a standing alert on the rail and never a second
+count of the transcript. The header counts the standing and the superseded
+as two fields, the way the block's marker does. It is built when it opens,
+reads and changes nothing, and the turn goes on underneath it. It is opened
+by `/alerts` and by a click on the ALERTS heading or its marker ([the
+inspector rail](#the-inspector-rail)); unlike the screens above it, a session
+that has broken nothing still opens it, on one sentence saying so, because
+that is the answer the reader asked for — and the block itself is gone once
+nothing stands, so the command is then the only door.
 
 `/notes` is the shared notebook — what one
 agent found and the next should not have to find again

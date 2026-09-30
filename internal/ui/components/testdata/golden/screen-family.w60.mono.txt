@@ -195,6 +195,20 @@ turn 4                                                  done
 
 [enter] review turn 4 · [esc] back to the prompt
 
+· alerts · every command the session broke, standing first, the one under the pointer's account beside it
+/alerts · 2 standing · 2 superseded      [?] keys · [q] back
+────────────────────────────────────────────────────────────
+
+❯ ✗ make test  standing · exit 2 · 3 runs       since turn 3
+  ✗ gofmt  standing · exit 1                          turn 5
+↓ 2 more
+────────────────────────────────────────────────────────────
+make test                                           standing
+
+… (+4 more rows)
+
+[enter] show each run · [esc] back to the prompt
+
 ── ansi ────────────────────────────────────────────────────
 · doctor · the count on the left, the clock and the keys on the right
 ␛[1;38;5;254mshhh doctor␛[m␛[38;5;244m · 10 checks␛[m           ␛[38;5;244m1.4s␛[m␛[38;5;244m · [?] keys · [q] quit␛[m
@@ -380,3 +394,17 @@ turn 4                                                  done
 ␛[38;5;244m… (+6 more rows)␛[m
 
 ␛[38;5;254m[enter]␛[m␛[38;5;244m review turn 4␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m
+
+· alerts · every command the session broke, standing first, the one under the pointer's account beside it
+␛[1;38;5;254m/alerts␛[m␛[38;5;244m · 2 standing␛[m␛[38;5;244m · 2 superseded␛[m      ␛[38;5;244m[?] keys · [q] back␛[m
+␛[38;5;244m────────────────────────────────────────────────────────────␛[m
+
+␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m✗ make test  standing · exit 2 · 3 runs       since turn 3␛[m
+  ␛[38;5;254m✗ gofmt␛[m  ␛[38;5;254mstanding␛[m␛[38;5;244m · ␛[m␛[38;5;244mexit 1␛[m                          ␛[38;5;244mturn 5␛[m
+␛[38;5;244m↓ 2 more␛[m
+␛[38;5;244m────────────────────────────────────────────────────────────␛[m
+␛[1;38;5;254mmake test␛[m                                           ␛[38;5;244mstanding␛[m
+
+␛[38;5;244m… (+4 more rows)␛[m
+
+␛[38;5;254m[enter]␛[m␛[38;5;244m show each run␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m

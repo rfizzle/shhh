@@ -386,7 +386,33 @@ type alertMemo struct {
 	alerts  components.InspectorAlerts
 }
 
-// scanAlerts is the walk itself.
+// scanAlerts is the block's reading of the walk: each episode's alert, in the
+// order the walk hands them back.
+func (m Model) scanAlerts() components.InspectorAlerts {
+	var alerts components.InspectorAlerts
+	for _, ep := range alertEpisodes(m.transcript) {
+		alerts = append(alerts, ep.alert)
+	}
+	return alerts
+}
+
+// alertEpisode is one command's alert as the walk read it: the alert the
+// block draws, the transcript positions of the failing runs behind it, and
+// the position of what answered it — a clean run of the command or the
+// suite's pass — or noAnswer while it stands. The block keeps only the alert;
+// the alerts screen reads the rest (alerts.go), and both read this one walk.
+type alertEpisode struct {
+	alert    components.InspectorAlert
+	runs     []int
+	lastFail int
+	lastTurn int64
+	answer   int
+}
+
+// noAnswer is an episode nothing has answered yet.
+const noAnswer = -1
+
+// alertEpisodes is the walk itself, over es in transcript order.
 //
 // An alert is one command rather than one command line: an agent that runs a
 // formatter over three directories has one thing wrong with its workspace and
@@ -407,30 +433,23 @@ type alertMemo struct {
 // one from the start. It never stood long enough to be news, so it is never a
 // row — but it was red, and the fold is the account of how much red it took
 // to get to green (docs/interface/surfaces.md#the-inspector-rail).
-func (m Model) scanAlerts() components.InspectorAlerts {
-	// episode is one command's alert while the walk is still reading it: the
-	// alert as it stands, where its last failure sits (the position a later
-	// verification is asked about) and the turn that failure ran in.
-	type episode struct {
-		alert    components.InspectorAlert
-		lastFail int
-		lastTurn int64
-	}
-	verified := lastVerification(m.transcript)
-	var closed []*episode
-	open := map[string]*episode{}
+func alertEpisodes(es []entry) []alertEpisode {
+	verified := lastVerification(es)
+	var closed []*alertEpisode
+	open := map[string]*alertEpisode{}
 	// passed is where the suite last came back clean so far in the walk. A
 	// failure after it is about a tree the pass never saw, so it opens an
 	// episode of its own rather than going on with one the pass answered.
 	passed := -1
-	answer := func(name string) {
+	answer := func(name string, by int) {
 		if ep := open[name]; ep != nil {
 			ep.alert.Superseded = true
+			ep.answer = by
 			closed = append(closed, ep)
 			delete(open, name)
 		}
 	}
-	for i, e := range m.transcript {
+	for i, e := range es {
 		if s, ok := gateVerdict(e); ok && s.OK() {
 			passed = i
 			continue
@@ -459,15 +478,16 @@ func (m Model) scanAlerts() components.InspectorAlerts {
 		// whatever turn it ran: it is the command rather than the line that
 		// the workspace is either wrong about or not.
 		if e.exitCode == 0 && e.end.outcome == "" {
-			answer(name)
+			answer(name, i)
 			continue
 		}
 		if ep := open[name]; ep != nil && passed > ep.lastFail {
-			answer(name)
+			answer(name, passed)
 		}
 		ep := open[name]
 		if ep == nil {
-			ep = &episode{alert: components.InspectorAlert{Label: name, Turn: e.turn, Turns: 1}, lastTurn: e.turn}
+			ep = &alertEpisode{alert: components.InspectorAlert{Label: name, Turn: e.turn, Turns: 1},
+				lastTurn: e.turn, answer: noAnswer}
 			open[name] = ep
 		} else if e.turn != ep.lastTurn {
 			ep.alert.Turns++
@@ -476,23 +496,27 @@ func (m Model) scanAlerts() components.InspectorAlerts {
 		ep.alert.Runs++
 		ep.alert.Note = outcome
 		ep.lastFail = i
+		ep.runs = append(ep.runs, i)
 	}
 	// What is still open at the end is standing unless the suite has since
 	// passed over the tree its last failure ran on — the same resolution the
 	// close row reads (resolved.go).
 	for _, ep := range open {
-		ep.alert.Superseded = verified.settled(ep.lastFail)
+		if verified.settled(ep.lastFail) {
+			ep.alert.Superseded = true
+			ep.answer = int(verified)
+		}
 		closed = append(closed, ep)
 	}
 	// The block's order is the order the commands last broke in, so an alert
 	// sits where its most recent failure is and the block draws it as the
 	// recent news it is.
 	sort.Slice(closed, func(a, b int) bool { return closed[a].lastFail < closed[b].lastFail })
-	var alerts components.InspectorAlerts
-	for _, ep := range closed {
-		alerts = append(alerts, ep.alert)
+	episodes := make([]alertEpisode, len(closed))
+	for i, ep := range closed {
+		episodes[i] = *ep
 	}
-	return alerts
+	return episodes
 }
 
 // commandOutcome is what a command's run came to, in the word its own row
