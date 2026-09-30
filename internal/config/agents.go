@@ -129,6 +129,7 @@ var knownAgentTools = map[string]string{
 	"search":          PermissionRead,
 	"glob":            PermissionRead,
 	"query":           PermissionRead,
+	"sqlite":          PermissionRead,
 	"write_file":      PermissionWrite,
 	"edit_file":       PermissionWrite,
 	"execute_command": PermissionExecute,

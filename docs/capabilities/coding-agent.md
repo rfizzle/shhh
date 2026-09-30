@@ -1311,6 +1311,36 @@ given no environment, no module loader and no way to read a second input, so
 the path the call names is the whole of what it can read — the same paths
 the file reader itself can read.
 
+A SQLite database is the same question in a different shape — an app's
+data, a test fixture, shhh's own session record — and it had the same three
+bad answers, with `sqlite3` in place of `jq`. So a second reader answers it,
+in-process and in every session, under the same rule. The idiom it replaces
+is `.tables`, then `.schema`, then a `count(*)` per table before the first
+real query; called with no SQL, it answers all three at once — every table
+and view with its columns and types, its indexes and its row count, and the
+tables an index keeps behind a virtual table counted rather than listed. A
+reading that needs four queries is four statements in one call, each result
+labelled with the statement it answers. Values are bound by name or place
+rather than written into the SQL, so a value that happens to be SQL stays a
+value. Rows come back as the aligned table `sqlite3 -column` prints, with
+the same bounds the query reader keeps: a row limit the call can raise to a
+ceiling, a byte cap, the total stated when rows were cut and the rest kept
+as evidence under the id the notice names. A cell is held to one line and a
+bounded width, NULL is written as NULL so it is not mistaken for an empty
+string, and a BLOB is shown as its size, since its bytes say nothing a
+reader can use. A statement is interrupted when the call's time runs out
+wherever it is — finding its first row or counting the rest — because a
+recursive query can be written never to finish, and a read that auto-runs
+has to come back.
+
+What makes it a read is the engine's own read-only mode, not shhh reading the
+SQL; the boundary is in
+[`approvals-and-safety.md#a-closed-verb-set-is-what-makes-a-read-a-read`](approvals-and-safety.md#a-closed-verb-set-is-what-makes-a-read-a-read).
+shhh's own store is readable on purpose: a read-only reader of that database
+does not stand in the way of the session writing to it, and the answer on it
+carries one line pointing at the dashboard, which already answers most of
+what is asked of that record.
+
 ## The agent knows where and when it is standing
 
 The session already surveys the checkout before the first keystroke — the

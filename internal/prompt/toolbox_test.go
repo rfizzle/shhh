@@ -142,6 +142,21 @@ func TestToolbox_SendsAPartOfAStructuredFileToQuery(t *testing.T) {
 	}
 }
 
+// The SQLite reader's note says it replaces the command and names the cheap
+// first call and the one-call batch.
+// See docs/capabilities/coding-agent.md#structured-files-are-read-in-one-call.
+func TestToolbox_SendsADatabaseReadToSqlite(t *testing.T) {
+	got := Toolbox(toolList("sqlite"), false)
+	for _, want := range []string{"- sqlite — read a SQLite database", "rather than a sqlite3 command", "no sql first", "in one call"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("the sqlite note should say %q, got:\n%s", want, got)
+		}
+	}
+	if got := Toolbox(toolList("query"), false); strings.Contains(got, "sqlite3") {
+		t.Errorf("a session without sqlite should not be told about it:\n%s", got)
+	}
+}
+
 // The three questions beyond definition and references exist to replace a
 // search and a whole-file read, so the notes have to say so: a model that is
 // not told which tool is better than the one it already reaches for keeps

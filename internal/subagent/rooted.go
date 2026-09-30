@@ -39,7 +39,7 @@ func RootArgs(root, name string, args json.RawMessage) (json.RawMessage, error) 
 	}
 	optionalPath := false
 	switch name {
-	case "read_file", "list_directory", tools.WriteFileName, tools.EditFileName:
+	case "read_file", "list_directory", tools.SqliteName, tools.WriteFileName, tools.EditFileName:
 	// The language server's questions take the same argument and mean the
 	// same thing by it. A child shares its parent's server rather than
 	// starting one of its own, and that server resolves a relative path

@@ -18,13 +18,19 @@ negligible gain is reported as "nothing clears the bar", which is a finding.
 ## Open the record
 
 The store is `shhh.db` under the data directory — `storage.Dir`, which is
-`$XDG_DATA_HOME/shhh` or `~/.local/share/shhh` on every platform. Read it
-with `sqlite3` directly, read-only:
+`$XDG_DATA_HOME/shhh` or `~/.local/share/shhh` on every platform. Inside a
+shhh session read it with the `sqlite` tool: it opens the file read-only,
+answers with no `sql` the schema with every table's row count, and takes
+every query below as one entry of its `sql` array, so a whole reading is one
+call. It does not stand in the way of the session writing to the same
+store. Outside a session, `sqlite3` read-only does the same:
 
 ```bash
 DB=${XDG_DATA_HOME:-$HOME/.local/share}/shhh/shhh.db
 sqlite3 "file:$DB?mode=ro" 'select count(*) from agent_sessions; select min(started_at), max(started_at) from agent_sessions'
 ```
+
+The queries below are plain SQL and read the same through either.
 
 Two traps before the first query. **The installed `shhh` may be older than
 the store**, and the dashboard it draws is only as good as the schema the
@@ -76,8 +82,8 @@ conversations, and what it cannot read stays empty. Never count empty as
 `other`.
 
 **Read-tier volume against writes.** The read tools are `read_file`,
-`search`, `glob`, `list_directory`, `git`, `fd`, the six language-server
-verbs and the structural readers; the writes are `edit_file` and
+`search`, `glob`, `list_directory`, `query`, `sqlite`, `git`, `fd`, the six
+language-server verbs and the structural readers; the writes are `edit_file` and
 `write_file`. The ratio is the cost of finding things.
 
 **Reads before the first write.** This is the number
@@ -138,7 +144,7 @@ order:
   each tool is the right answer, and `internal/prompt/system.go`'s
   `BuildAgent` for what the base prompt asks of it (a "re-read after
   editing" instruction, for instance, is a round the record can count).
-- The host: `which gopls rust-analyzer pyright-langserver ast-grep fd sd jaq yq tokei pdftotext bwrap`.
+- The host: `which gopls rust-analyzer pyright-langserver ast-grep fd sd tokei pdftotext bwrap`.
   A tool that needs a binary the machine lacks was never in any session here,
   and every reading that would have gone through it went through `search`
   and `read_file` instead. Name the confound before the number.

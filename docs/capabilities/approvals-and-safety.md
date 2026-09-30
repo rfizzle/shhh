@@ -662,6 +662,25 @@ turns those settings off for its own calls, which matters more here than
 anywhere else in the tool set: this is the one tool that runs unattended, in
 every mode, with nobody asked first.
 
+The SQLite reader takes a language rather than a verb, so its closed set is a
+different one: the engine's own. The file is opened in SQLite's read-only
+mode with writes switched off for the whole connection, so a statement that
+writes is refused by the database, not by shhh's reading of it — a guess
+about SQL is not a boundary, and a reader that relied on one would be one
+misread keyword from a write. What that mode does not cover is refused before
+anything runs, for reasons of its own. Attaching a second database opens
+another file by path, around every check the call's own path went through,
+and on a read-only connection it would still create the file it names; so
+the connection is allowed no second database at all, and the statement is
+refused besides. A pragma that sets a value is how the read-only switch
+itself would be turned off, so only the pragmas that report are answered,
+and only by name. Loading an extension runs a library's code. A statement
+holds one statement, since several in one string would run in turn, and a
+word that writes anywhere in it refuses it, since a query can end in a
+write. The check errs towards refusing — a column named after a keyword has
+to be quoted — because the cost of a refusal is a rewritten query and the
+cost of the other mistake is not.
+
 ## The writing half of git is a tool too
 
 Reading history became a tool because a read that asks is a read the agent

@@ -103,6 +103,18 @@ const (
 	// MaxQueryShapeKeys caps the keys a shape answer lists.
 	MaxQueryShapeKeys = 50
 
+	// MaxSqliteRows is how many rows one sqlite statement shows unless the
+	// call asks for more, and MaxSqliteRowsCeiling is the most it may ask
+	// for. MaxSqliteOutputBytes cuts the whole answer whichever comes first;
+	// what is cut is kept, up to MaxSqliteKeptBytes (the evidence store's
+	// own cap on one entry), and the rows past that are counted, not kept.
+	MaxSqliteRows        = 200
+	MaxSqliteRowsCeiling = 1000
+	MaxSqliteOutputBytes = 32 << 10
+	MaxSqliteKeptBytes   = 4 << 20
+	MaxSqliteCellRunes   = 200
+	MaxSqliteStatements  = 20
+
 	// MaxListEntries caps how many entries list_directory returns.
 	MaxListEntries = 500
 

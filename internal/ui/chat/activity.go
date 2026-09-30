@@ -192,6 +192,7 @@ var activityVerbs = map[string]string{
 	"search":                    "search",
 	structural.AstGrepToolName:  "search",
 	tools.QueryName:             "search",
+	tools.SqliteName:            "search",
 	structural.TokeiToolName:    "search",
 	structural.GitToolName:      "read",
 	structural.GitWriteToolName: "commit",

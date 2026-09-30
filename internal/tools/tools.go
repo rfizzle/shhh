@@ -37,14 +37,16 @@ func ReadOnly() []Definition { return shared.ReadOnly() }
 
 // ReadOnly with r as the record a read files what it showed in. Only read_file
 // shows the model a file, so it is the only definition the owner reaches for
-// that; query reaches it for the evidence store a cut answer keeps the rest
-// of itself in, which belongs to the same owner.
+// that; query and sqlite reach it for the evidence store a cut answer keeps
+// the rest of itself in, which belongs to the same owner.
 func (r *Recorder) ReadOnly() []Definition {
 	read := readFile
 	read.Execute = r.executeReadFile
 	q := query
 	q.Execute = r.executeQuery
-	return []Definition{read, listDirectory, search, globFiles, q}
+	db := sqliteTool
+	db.Execute = r.executeSqlite
+	return []Definition{read, listDirectory, search, globFiles, q, db}
 }
 
 // SelfBounding reports whether a tool already bounds its own output.
@@ -66,7 +68,7 @@ func (r *Recorder) ReadOnly() []Definition {
 // See docs/capabilities/evidence.md#reduction-is-for-unbounded-output.
 func SelfBounding(name string) bool {
 	switch name {
-	case ReadFileName, ListDirectoryName, SearchName, GlobName, QueryName:
+	case ReadFileName, ListDirectoryName, SearchName, GlobName, QueryName, SqliteName:
 		return true
 	}
 	return false

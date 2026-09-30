@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/rfizzle/shhh/internal/lsp"
+	"github.com/rfizzle/shhh/internal/tools"
 )
 
 func rootedPath(t *testing.T, root, name, args string) (string, error) {
@@ -31,6 +32,19 @@ func TestRootArgs_RelativeJoinsRoot(t *testing.T) {
 	}
 	if p != filepath.Join(root, "sub/main.go") {
 		t.Fatalf("relative path not rooted: %s", p)
+	}
+}
+
+// The database reader takes a path like the file reader, so a writer's
+// relative path names the database in its own copy.
+func TestRootArgs_SqliteReadsTheChildsCopy(t *testing.T) {
+	root := t.TempDir()
+	p, err := rootedPath(t, root, tools.SqliteName, `{"path":"testdata/app.db","sql":["SELECT 1"]}`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if p != filepath.Join(root, "testdata/app.db") {
+		t.Fatalf("relative database path not rooted: %s", p)
 	}
 }
 
