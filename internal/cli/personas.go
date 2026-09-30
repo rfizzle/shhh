@@ -26,7 +26,7 @@ func personaKind(session chatSession) persona.Kind {
 // See docs/capabilities/subagents.md#a-profile-is-drafted-in-conversation.
 func buildPersonas(session chatSession, env *sessionEnv, agents *agentProfiles, sup *subagent.Supervisor, ledger *meter.Ledger) chat.Personas {
 	kind := personaKind(session)
-	drafter := persona.NewDrafter(ledger.For(env.prov, meter.SourcePersona), persona.Config{ModelAt: env.flowModelAt(env.cfg, flowDrafter)})
+	drafter := persona.NewDrafter(ledger.For(env.prov, meter.SourcePersona), persona.Config{ModelAt: env.flowModelAt(env.cfg, flowDrafter), Scrub: session.vault.Scrub})
 	cwd, err := os.Getwd()
 	if err != nil {
 		cwd = "."

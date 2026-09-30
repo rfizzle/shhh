@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -9,7 +10,9 @@ import (
 
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/meter"
+	"github.com/rfizzle/shhh/internal/persona"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/secret"
 	"github.com/rfizzle/shhh/internal/subagent"
 )
 
@@ -95,6 +98,46 @@ func TestPersonasReloadMakesAnEditedRoleTheRunningSessions(t *testing.T) {
 	}
 	if got := spawnTool().Description; strings.Contains(got, "half an edit") {
 		t.Fatalf("a refused file should leave the spawn tool as it was:\n%s", got)
+	}
+}
+
+// briefProvider keeps the messages of the drafting request it is sent.
+type briefProvider struct{ sent *[]provider.Message }
+
+func (briefProvider) Name() string { return "brief-test" }
+
+func (p briefProvider) StreamCompletion(_ context.Context, msgs []provider.Message, _ provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+	*p.sent = append(*p.sent, msgs...)
+	ch := make(chan provider.StreamEvent)
+	close(ch)
+	return ch, nil
+}
+
+// The drafter the session builds takes the session's own scrub, so a key
+// pasted into a brief leaves as its name like one typed into a turn.
+// See docs/capabilities/secrets.md#the-value-is-scrubbed-at-every-door.
+func TestPersonasDraftWithTheSessionsScrub(t *testing.T) {
+	const declared = "hunter2-deploy-key-7f3a9c"
+	v := secret.New()
+	must(t, v.Add("DEPLOY_KEY", declared))
+	var sent []provider.Message
+	agents := &agentProfiles{profiles: subagent.BuiltinProfiles(), definitions: map[string]config.AgentDefinition{}}
+	sup := subagent.New(t.Context(), subagent.Options{Root: t.TempDir(), Profiles: agents.profiles})
+	t.Cleanup(sup.Close)
+	env := &sessionEnv{prov: briefProvider{sent: &sent}, modelName: "m", replaceTools: func(func([]provider.Tool) []provider.Tool) {}}
+	p := buildPersonas(chatSession{vault: v}, env, agents, sup, meter.New(nil))
+
+	p.Draft(t.Context(), persona.Request{Kind: persona.KindCode, Brief: "deploy with " + declared})
+	if len(sent) == 0 {
+		t.Fatal("the drafter sent nothing")
+	}
+	for _, m := range sent {
+		if strings.Contains(m.Content, declared) {
+			t.Fatalf("the declared value reached the provider: %q", m.Content)
+		}
+	}
+	if last := sent[len(sent)-1].Content; !strings.Contains(last, secret.Placeholder("DEPLOY_KEY")) {
+		t.Fatalf("the brief should carry the placeholder: %q", last)
 	}
 }
 

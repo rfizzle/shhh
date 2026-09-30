@@ -1,6 +1,7 @@
 package persona
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -9,6 +10,8 @@ import (
 	"testing"
 
 	"github.com/rfizzle/shhh/internal/config"
+	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/secret"
 )
 
 func TestNormaliseChatDropsWriting(t *testing.T) {
@@ -483,5 +486,68 @@ func TestRenderedPromptSurvivesTheLoader(t *testing.T) {
 	}
 	if def.Description != d.Description || def.Intent != d.Intent {
 		t.Fatalf("description = %q intent = %q", def.Description, def.Intent)
+	}
+}
+
+// sentProvider keeps every message of the one request it is sent and
+// answers with a question, so a test can read what left the machine.
+type sentProvider struct{ msgs []provider.Message }
+
+func (p *sentProvider) Name() string { return "sent" }
+
+func (p *sentProvider) StreamCompletion(_ context.Context, msgs []provider.Message, _ provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+	p.msgs = append([]provider.Message(nil), msgs...)
+	ch := make(chan provider.StreamEvent, 2)
+	ch <- provider.StreamEvent{ToolCalls: []provider.ToolCall{{Name: DraftToolName, Arguments: `{"questions":["which paths?"]}`}}}
+	ch <- provider.StreamEvent{Done: true}
+	close(ch)
+	return ch, nil
+}
+
+// What the person typed into the drafter — the brief, their answers, a note
+// on a section, on the Commands section or on the whole draft — passes the
+// session's scrub before the request leaves: a declared value comes back as
+// its name and a token of a known shape as its kind, in every message sent.
+// See docs/capabilities/secrets.md#the-value-is-scrubbed-at-every-door.
+func TestTheDrafterScrubsWhatThePersonTyped(t *testing.T) {
+	const (
+		declared = "hunter2-deploy-key-7f3a9c"
+		shaped   = "sk-ant-api03-9Qw3RtY6uIoP0aSdFgHjKlZxCvBnM4eR7tY2uI9oP1aSdFgH"
+	)
+	v := secret.New()
+	if err := v.Add("DEPLOY_KEY", declared); err != nil {
+		t.Fatal(err)
+	}
+	pasted := "deploy with " + declared + " and call the API with " + shaped
+	current := &Draft{Name: "deployer", Description: "deploys", Sections: &Sections{Purpose: "Deploy."}}
+	for name, req := range map[string]Request{
+		"brief":    {Kind: KindCode, Brief: pasted},
+		"answers":  {Kind: KindCode, Brief: "a deployer", Exchange: []QA{{Question: "which key?", Answer: pasted}}},
+		"section":  {Kind: KindCode, Brief: "a deployer", Current: current, Section: config.SectionMethod, Feedback: pasted},
+		"commands": {Kind: KindCode, Brief: "a deployer", Current: current, Section: SectionCommands, Feedback: pasted},
+		"whole":    {Kind: KindCode, Brief: "a deployer", Current: current, Feedback: pasted},
+	} {
+		p := &sentProvider{}
+		NewDrafter(p, Config{Model: "m", Scrub: v.Scrub}).Draft(context.Background(), req)
+		if len(p.msgs) == 0 {
+			t.Fatalf("%s: nothing was sent", name)
+		}
+		var all strings.Builder
+		for _, m := range p.msgs {
+			if strings.Contains(m.Content, declared) || strings.Contains(m.Content, shaped) {
+				t.Fatalf("%s: a secret reached the provider in the %s message: %q", name, m.Role, m.Content)
+			}
+			all.WriteString(m.Content)
+		}
+		if !strings.Contains(all.String(), secret.Placeholder("DEPLOY_KEY")) || !strings.Contains(all.String(), secret.Redacted("anthropic-key")) {
+			t.Errorf("%s: the request was not scrubbed to the placeholders: %q", name, all.String())
+		}
+	}
+
+	// Nil is a session with no secrets: the text goes as typed.
+	p := &sentProvider{}
+	NewDrafter(p, Config{Model: "m"}).Draft(context.Background(), Request{Kind: KindCode, Brief: pasted})
+	if len(p.msgs) == 0 || !strings.Contains(p.msgs[len(p.msgs)-1].Content, declared) {
+		t.Fatalf("with no scrub the brief should go as typed: %+v", p.msgs)
 	}
 }

@@ -69,6 +69,14 @@ type Config struct {
 	ModelAt   func() string
 	Timeout   time.Duration
 	MaxTokens int
+	// Scrub is the session's secret scrub. The user turn carries what the
+	// person typed — the brief, their answers, a note on one section or on
+	// the whole draft — and a pasted snippet is where a token sits; this
+	// request is a door onto the provider like every other, so the turn
+	// passes it once before the request is built. Nil is a session with no
+	// secrets and sends it as typed.
+	// See docs/capabilities/secrets.md#the-value-is-scrubbed-at-every-door.
+	Scrub func(string) string
 }
 
 // model is the name a turn asks with.
@@ -196,11 +204,15 @@ func (d *Drafter) Draft(ctx context.Context, req Request) Outcome {
 		out.Err = "no model is configured to draft a profile"
 		return finish(out)
 	}
+	user := userPrompt(req)
+	if d.cfg.Scrub != nil {
+		user = d.cfg.Scrub(user)
+	}
 	attemptCtx, cancel := context.WithTimeout(ctx, d.cfg.timeout())
 	defer cancel()
 	events, err := d.provider.StreamCompletion(attemptCtx, []provider.Message{
 		{Role: provider.RoleSystem, Content: systemPrompt(req.Kind)},
-		{Role: provider.RoleUser, Content: userPrompt(req)},
+		{Role: provider.RoleUser, Content: user},
 	}, provider.CompletionOpts{
 		Model:      model,
 		MaxTokens:  d.cfg.maxTokens(),
