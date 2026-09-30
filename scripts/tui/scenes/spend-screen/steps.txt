@@ -29,7 +29,9 @@ keys BTab
 keys BTab
 snap 03-auto "⏵⏵ auto"
 keys "write the spend notes" Enter
-snap 04-two-models "The notes file is there" "scripted-mini · " "session total · "
+# The cheap model answers the classifier and the suggestion, so its row folds
+# to one source and its name shortens to the family word the rail keeps.
+snap 04-two-models "The notes file is there" "mini · " "1 more" "session total · "
 keys "wait"
 keys -l "$(printf '\033[<0;85;10M\033[<0;85;10m')"
 snap 05-heading-opens "/stats · 2 models · 2 turns" "by kind of request" "by turn"

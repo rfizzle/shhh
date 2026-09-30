@@ -9,7 +9,13 @@ snap 01-start "Some things worth doing first"
 keys "/copy" Enter
 snap 02-notice "nothing to copy yet"
 keys C-]
-snap 03-keys "first or last" "DRAFT" "[ctrl+]]"
+# The popup is known by its title, not by the row for its own chord: the rows
+# are the keymap's order, and a key added to the DRAFT group moves that row
+# below the window.
+snap 03-keys "first or last" "DRAFT" "─ ctrl+] ─"
 keys Escape
+# The escape stands alone before the text follows it, or the terminal reads
+# esc plus the first letter as one chord and the popup keeps the keyboard.
+sleep 0.5
 keys "why does the loop stop" Enter
 snap 04-refused "401 unauthorized" "Incorrect API key provided" "✗ model"

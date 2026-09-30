@@ -23,4 +23,6 @@ snap 05-auto "⏵⏵ auto"
 keys "write the spend notes" Enter
 # The judge allowed the call on scripted-mini, and its row sits under the
 # session model's, naming what it was spent on.
-snap 06-two-models "The notes file is there" "scripted-mini · " "classifier" "session total · "
+# The cheap model answers the classifier and the suggestion, so its row folds
+# to one source and its name shortens to the family word the rail keeps.
+snap 06-two-models "The notes file is there" "mini · " "1 more" "classifier" "session total · "
