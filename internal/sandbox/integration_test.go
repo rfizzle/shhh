@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strconv"
@@ -1016,7 +1017,15 @@ func refuseTheHookWrite(t *testing.T, avail Availability) {
 	if err != nil {
 		t.Fatalf("Wrap under %s: %v", avail.Mechanism, err)
 	}
-	out, _ := capture(t, argv[0], argv[1:]...)
+	// Started in the workspace, the way a runner starts it: bubblewrap
+	// chdirs into policy.Cwd itself, and Seatbelt has no such flag, so the
+	// relative paths below would otherwise name this package's directory.
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, argv[0], argv[1:]...)
+	cmd.Dir = ws
+	raw, _ := cmd.CombinedOutput()
+	out := string(raw)
 	for _, want := range []string{"STATUS-READ", "WROTE-INSIDE"} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("a contained command must still read the store and write the tree under %s (no %s):\n%s", avail.Mechanism, want, out)
