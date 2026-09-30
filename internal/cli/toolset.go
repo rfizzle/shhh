@@ -57,6 +57,10 @@ type toolsetOpts struct {
 	// a surface with no record of its own writes gets, having nothing to
 	// stage from.
 	gitWrites *structural.Writes
+	// asks says a person can answer a slash command during the session — a
+	// /secret for a masked variable. A -p run and a served session cannot,
+	// so what they tell the model names the flag for the next run instead.
+	asks bool
 }
 
 // toolset is what the registration opened. The pieces are held by name
@@ -201,7 +205,7 @@ func buildToolset(cmd *cobra.Command, session *chatSession, kind string, opts to
 	// Secrets last, and before the first command can run: this is where the
 	// vault's values reach the runner and the supervisor, and everything
 	// after it works with the names and the scrub rather than the values.
-	if err := session.openSecrets(cmd, t.evidence, t.proc); err != nil {
+	if err := session.openSecrets(cmd, t.evidence, t.proc, opts.asks); err != nil {
 		return nil, err
 	}
 	return t, nil

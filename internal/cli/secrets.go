@@ -125,13 +125,14 @@ func secretsManager(v *secret.Vault) func(args []string) (note, announce string)
 // /secret change was announced to the conversation the boundary drops, so a
 // new session still naming the launch-time set would never hear of it. next
 // is the block that followed the secrets block at launch, which is where one
-// that was empty then goes.
+// that was empty then goes. Only the interactive session crosses a
+// boundary, so the block it says is the one a person can answer.
 // See docs/capabilities/secrets.md#a-secret-is-an-environment-variable.
 func resecretPrompt(text, said string, v *secret.Vault, next string) string {
 	if v == nil {
 		return text
 	}
-	return resayBlock(text, said, secret.PromptBlock(v), next)
+	return resayBlock(text, said, secret.PromptBlock(v, true), next)
 }
 
 // secretsListing is the /secret list text: names only, never lengths or

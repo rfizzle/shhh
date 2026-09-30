@@ -200,7 +200,7 @@ type chatSession struct {
 // the prompt is built, and it is the one place the values are put anywhere;
 // everything after it works with the vault's name list and scrub.
 // See docs/capabilities/secrets.md#a-secret-is-an-environment-variable.
-func (s *chatSession) openSecrets(cmd *cobra.Command, red *evidence.Reducer, procSup *process.Supervisor) error {
+func (s *chatSession) openSecrets(cmd *cobra.Command, red *evidence.Reducer, procSup *process.Supervisor, asks bool) error {
 	cfg := ConfigFrom(cmd.Context())
 	v, err := loadSecrets(cfg, s.secretFlags, cmd.ErrOrStderr())
 	if err != nil {
@@ -226,7 +226,7 @@ func (s *chatSession) openSecrets(cmd *cobra.Command, red *evidence.Reducer, pro
 		procSup.SetScrub(v.Scrub)
 	}
 	scrubWebCache(s.web, v.Scrub)
-	s.secretsSaid = secret.PromptBlock(v)
+	s.secretsSaid = secret.PromptBlock(v, asks)
 	s.promptExtra = prompt.CombineExtra(s.promptExtra, s.secretsSaid)
 	return nil
 }
@@ -741,7 +741,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	// supervisor, the report publisher and the vault (toolset.go). A session
 	// pops a browser for a page the model published, because somebody is here
 	// to read it.
-	ts, err := buildToolset(cmd, &session, session.kind, toolsetOpts{scope: sc, browser: true, resident: true, gitWrites: gitWrites})
+	ts, err := buildToolset(cmd, &session, session.kind, toolsetOpts{scope: sc, browser: true, resident: true, gitWrites: gitWrites, asks: true})
 	if err != nil {
 		return err
 	}

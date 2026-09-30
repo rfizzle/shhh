@@ -167,7 +167,7 @@ func TestOpenSecrets_HandsTheScrubToTheWebCache(t *testing.T) {
 	cmd.SetContext(withConfig(context.Background(), config.Config{
 		Secrets: config.SecretsConfig{Env: []string{"WEBCACHE_TEST_KEY"}},
 	}))
-	if err := session.openSecrets(cmd, nil, nil); err != nil {
+	if err := session.openSecrets(cmd, nil, nil, true); err != nil {
 		t.Fatal(err)
 	}
 
@@ -228,7 +228,7 @@ func TestBoundaryPromptSaysTheVaultAsItStands(t *testing.T) {
 			cmd := &cobra.Command{}
 			cmd.SetErr(io.Discard)
 			cmd.SetContext(withConfig(context.Background(), tc.cfg))
-			if err := session.openSecrets(cmd, nil, nil); err != nil {
+			if err := session.openSecrets(cmd, nil, nil, true); err != nil {
 				t.Fatal(err)
 			}
 			sc := testScope(t, t.TempDir())
@@ -249,7 +249,7 @@ func TestBoundaryPromptSaysTheVaultAsItStands(t *testing.T) {
 			}
 
 			got := session.boundaryPrompt(launched, scopeSaid, sc)
-			want := prompt.CombineExtra("# Instructions", secret.PromptBlock(session.vault), scopeSaid, "# Toolbox")
+			want := prompt.CombineExtra("# Instructions", secret.PromptBlock(session.vault, true), scopeSaid, "# Toolbox")
 			if got != want {
 				t.Fatalf("the boundary prompt should carry the vault as it stands\ngot:\n%s\nwant:\n%s", got, want)
 			}

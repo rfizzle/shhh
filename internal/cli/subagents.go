@@ -390,7 +390,7 @@ func withSessionTools(session chatSession, red *evidence.Reducer, signature, cro
 	// anything is declared, because it also says that credential-shaped
 	// variables are masked out of a command's environment — and a child runs
 	// its commands through the same masked environment the session does.
-	sysPrompt = prompt.CombineExtra(sysPrompt, secret.PromptBlock(session.vault))
+	sysPrompt = prompt.CombineExtra(sysPrompt, secret.PromptBlock(session.vault, false))
 	// And last, what is in the box. A child met most of these tools as bare
 	// schemas, which is the tool you reach for last if at all — the evidence
 	// tool among them, whose whole job is to answer a reduction notice the

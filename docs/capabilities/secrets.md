@@ -173,6 +173,23 @@ model that just found a variable unset — which is why the system prompt says
 the mask is there. Unset with no explanation looks exactly like a machine that
 was never configured, and the model would go and fix the wrong thing.
 
+### A masked variable is asked for by name
+
+Knowing why a variable is unset is half of it; the other half is what the
+model does next. Left to itself it asks for the value — "paste your
+`GITHUB_TOKEN` and I'll set it" — and a person who does puts the credential
+into the conversation, where it is sent to the provider with every request
+after it. That is the one outcome the vault exists to prevent, reached by the
+most helpful-sounding sentence available.
+
+So the prompt names the way through and forbids the other one. In a session
+with somebody at the keyboard, the model names the variable and asks for
+`/secret set NAME`, which reads the value from the person's own environment
+and hands it to commands without showing it to anyone. A `-p` run, a served
+session and a sub-agent have nobody who can answer that, so they name the
+variable in what they report and it is declared before the work is run again.
+Neither asks for the value.
+
 The long-running processes the model starts never had the problem: the process
 tool builds its child's environment from nothing, naming `PATH` and `HOME`,
 and the session's declared secrets are handed to it explicitly.

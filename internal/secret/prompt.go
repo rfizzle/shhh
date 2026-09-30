@@ -17,7 +17,14 @@ import (
 // the command having failed and starts debugging the wrong thing — and the
 // same is true of the mask, where the symptom is a variable that is simply
 // unset and looks exactly like a machine that was never configured.
-func PromptBlock(v *Vault) string {
+//
+// asks is whether a person can answer /secret during the session. The mask's
+// way out is a declaration and never the value typed into the conversation,
+// which would put the credential exactly where the vault exists to keep it
+// out; a -p run, a served session and a sub-agent cannot be answered, so they
+// name the variable in what they report instead.
+// See docs/capabilities/secrets.md#a-masked-variable-is-asked-for-by-name.
+func PromptBlock(v *Vault, asks bool) string {
 	names := v.Names()
 	masked := v.EnvMask()
 	if len(names) == 0 && !masked {
@@ -35,7 +42,13 @@ func PromptBlock(v *Vault) string {
 		if len(names) > 0 {
 			b.WriteString(", unless the user declared one as a secret above")
 		}
-		b.WriteString(". One of them reading as unset is that mask and not a broken setup: name the variable you need and the user can hand it over.\n")
+		b.WriteString(". One of them reading as unset is that mask and not a broken setup. ")
+		if asks {
+			b.WriteString("Name the variable you need and ask the user to declare it with `/secret set NAME`, which hands a command the value without showing it to you. ")
+		} else {
+			b.WriteString("Nobody can declare one from inside this run: name the variable you need in what you report, so it can be declared before the work is run again. ")
+		}
+		b.WriteString("Never ask for the value itself or suggest pasting it into the conversation — you would read it.\n")
 	}
 	b.WriteString("- Text that carries a well-known credential's shape — an AWS access key, a GitHub or Slack token, a private-key block, a JWT — is replaced with `")
 	b.WriteString(Redacted("kind"))

@@ -259,12 +259,12 @@ func TestScrubMessages_CopiesAndScrubsEveryText(t *testing.T) {
 }
 
 func TestPromptBlock(t *testing.T) {
-	if PromptBlock(nil) != "" || PromptBlock(New()) != "" {
+	if PromptBlock(nil, true) != "" || PromptBlock(New(), true) != "" {
 		t.Fatal("no secrets, no block")
 	}
 	v := New()
 	_ = v.Add("API_KEY", "value-value-value")
-	block := PromptBlock(v)
+	block := PromptBlock(v, true)
 	for _, want := range []string{"$API_KEY", "[secret:API_KEY]", "## Secrets"} {
 		if !strings.Contains(block, want) {
 			t.Errorf("block lacks %q:\n%s", want, block)
@@ -765,7 +765,7 @@ func TestMaskedEnvName(t *testing.T) {
 func TestPromptBlock_SaysTheMaskAndTheRedactionExist(t *testing.T) {
 	masked := New()
 	masked.SetEnvMask(true)
-	block := PromptBlock(masked)
+	block := PromptBlock(masked, true)
 	for _, want := range []string{"## Secrets", "_TOKEN", Redacted("kind")} {
 		if !strings.Contains(block, want) {
 			t.Errorf("block lacks %q:\n%s", want, block)
@@ -777,11 +777,28 @@ func TestPromptBlock_SaysTheMaskAndTheRedactionExist(t *testing.T) {
 	if err := v.Add("API_KEY", "value-value-value"); err != nil {
 		t.Fatal(err)
 	}
-	block = PromptBlock(v)
+	block = PromptBlock(v, true)
 	for _, want := range []string{"$API_KEY", Placeholder("API_KEY"), "_SECRET", Redacted("kind")} {
 		if !strings.Contains(block, want) {
 			t.Errorf("block lacks %q:\n%s", want, block)
 		}
+	}
+}
+
+// A variable the mask took is asked for by name, never by value: the value
+// typed into the conversation would reach the provider, and a run nobody
+// can answer must not ask for a command it cannot receive.
+// See docs/capabilities/secrets.md#a-masked-variable-is-asked-for-by-name.
+func TestPromptBlock_AsksForAMaskedVariableByName(t *testing.T) {
+	v := New()
+	v.SetEnvMask(true)
+	asked := PromptBlock(v, true)
+	if !strings.Contains(asked, "/secret set NAME") || !strings.Contains(asked, "Never ask for the value") {
+		t.Errorf("a session a person can answer should ask for /secret and never the value:\n%s", asked)
+	}
+	unattended := PromptBlock(v, false)
+	if strings.Contains(unattended, "/secret") || !strings.Contains(unattended, "Never ask for the value") {
+		t.Errorf("a run nobody can answer should name the variable and never ask for a command or the value:\n%s", unattended)
 	}
 }
 
