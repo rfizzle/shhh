@@ -437,6 +437,19 @@ func newCmdCmd() *cobra.Command {
 				outcome = observe.TurnCancelled
 				return nil
 			}
+			// And for the same reason a command pointed at something no
+			// proposed command may destroy: the key is not the answer to a
+			// decision, and the reader's way through is to type it
+			// themselves.
+			// See docs/capabilities/approvals-and-safety.md#some-targets-are-never-destroyed.
+			if runAction(result.Action) {
+				if what := ruleAction(nil, result.Command, true).Irreplaceable; what != "" {
+					fmt.Fprintln(os.Stderr, "\n⊘ Refused — this command destroys "+what+
+						", which no command shhh proposes may destroy; it was not run. Type it yourself if you mean it.")
+					outcome = observe.TurnCancelled
+					return nil
+				}
+			}
 
 			// The result surface already moves the safe default on a
 			// destructive command and takes a deliberate `y` for it,

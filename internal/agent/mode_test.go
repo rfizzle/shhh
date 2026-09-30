@@ -711,3 +711,45 @@ func TestModeInstructions(t *testing.T) {
 		}
 	}
 }
+
+// A destroying command pointed at something this session may not destroy is
+// refused in every mode, whatever the grants, before anything that can allow
+// — and the deny list, which is the person's own answer, still names itself
+// first where both apply.
+func TestDecide_AnIrreplaceableTargetIsRefusedInEveryMode(t *testing.T) {
+	a := Action{Kind: ActionCommand, Command: "rm -rf ~", SafetyFlagged: true,
+		Irreplaceable: "~ — your home directory"}
+	for _, mode := range []Mode{ModeManual, ModeAcceptEdits, ModeAuto, ModeReadOnly, ModePlan} {
+		p := ModePolicy{Mode: mode, AllowCommands: true, CommandAllowlist: []string{"rm"},
+			TurnGrants: Grants{AllCommands: true}}
+		decision, reason := p.Decide(a)
+		if decision != Deny || !IsIrreplaceable(reason) || !strings.Contains(reason, "~ — your home directory") {
+			t.Errorf("%s: Decide = %v %q, want the irreplaceable-target refusal naming the target", mode, decision, reason)
+		}
+	}
+	both := ModePolicy{Mode: ModeAuto, CommandDenylist: []string{"rm"}}
+	if _, reason := both.Decide(a); reason != DenyReasonDenylist {
+		t.Errorf("the deny list answered second: %q", reason)
+	}
+	if _, ok := RuleRefusal(nil, Action{Kind: ActionCommand, Command: "rm -rf build"}); ok {
+		t.Error("a command with nothing irreplaceable in it was refused by rule")
+	}
+}
+
+// The refusal the model reads names the target, says a respelling is refused
+// as well, and names no setting: there is none that lifts it, and a sentence
+// that hinted at one would be the way around it.
+func TestIrreplaceableResultNamesTheTargetAndNoWayAround(t *testing.T) {
+	reason, _ := RuleRefusal(nil, Action{Command: "rm -rf /", Irreplaceable: "/ — the filesystem root"})
+	got := RuleRefusedResult(reason)
+	for _, want := range []string{"error:", "/ — the filesystem root", "outside what this session may destroy", "another spelling"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("the result does not say %q: %q", want, got)
+		}
+	}
+	for _, leak := range []string{"config", "behavior.", "deny list", "!"} {
+		if strings.Contains(got, leak) {
+			t.Errorf("the result names %q, which the model can act on: %q", leak, got)
+		}
+	}
+}

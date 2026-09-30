@@ -418,8 +418,8 @@ func (m Model) advanceApprovalQueue() (tea.Model, tea.Cmd) {
 	// is a moment that mattered and the reader's next act depends on knowing
 	// a rule and not a person refused it.
 	if m.deniedByRule(req) {
-		result, reason, why := m.ruleDenial(req)
-		m.recordDecision(observe.DecisionDeny, observe.ReasonDenylist)
+		result, reason, why, code := m.ruleDenial(req)
+		m.recordDecision(observe.DecisionDeny, code)
 		m.lastDenial = req.summary + " — " + why
 		// Surfaces on the notice rail until the next user turn.
 		m.denialNotice = req.summary
@@ -735,8 +735,8 @@ func (m *Model) refusedResult(tc provider.ToolCall, content string) string {
 // no grant can reach, and the classifier's reason otherwise.
 func denialResult(reason string) string {
 	switch {
-	case reason == agent.DenyReasonDenylist:
-		return agent.DenylistResult
+	case reason == agent.DenyReasonDenylist, agent.IsIrreplaceable(reason):
+		return agent.RuleRefusedResult(reason)
 	case reason == agent.DenyReasonHost:
 		return agent.DeniedHostResult
 	case reason == agent.ModePlan.String()+" mode", reason == agent.ModeReadOnly.String()+" mode":

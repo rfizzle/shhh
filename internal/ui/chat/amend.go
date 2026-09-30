@@ -250,7 +250,7 @@ func (m Model) confirmCommandEdit(line string) (tea.Model, tea.Cmd) {
 // answering it (docs/capabilities/approvals-and-safety.md#a-deny-list-is-answered-before-anything-can-allow).
 func (m Model) amendRefusal(req *approvalRequest, reach scopeReach) string {
 	if m.deniedByRule(req) {
-		_, _, why := m.ruleDenial(req)
+		_, _, why, _ := m.ruleDenial(req)
 		return why
 	}
 	if reach.class == scope.Refused {

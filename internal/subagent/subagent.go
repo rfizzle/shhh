@@ -5136,7 +5136,7 @@ func (s *Supervisor) resolveGated(c *child, tc provider.ToolCall) string {
 	if actionErr != nil {
 		return "error: " + actionErr.Error()
 	}
-	action = s.scopedAction(c, action)
+	action = ruledAction(c, s.scopedAction(c, action), s.opts.ScopeDirs)
 	title := askTitle(tc.Name, action)
 	policy := s.childPolicy(c)
 	decision, reason := policy.Decide(action)
@@ -5153,6 +5153,14 @@ func (s *Supervisor) resolveGated(c *child, tc provider.ToolCall) string {
 	// nothing ran, in the words of the mode that refused it; and for a path
 	// no grant can reach, which says which path and why.
 	if decision == agent.Deny {
+		if agent.IsIrreplaceable(reason) {
+			// Filed with the safety table's refusals, as the session files
+			// it: it is that table's destroying rows, read against where
+			// they point.
+			record(observe.DecisionDeny, observe.ReasonSafety)
+			c.appendEntry(TranscriptEntry{Kind: EntrySystem, Text: "Refused: " + title + " — " + reason})
+			return agent.IrreplaceableResult(reason)
+		}
 		record(observe.DecisionDeny, observe.ReasonCode(reason))
 		if reason == agent.DenyReasonDenylist {
 			c.appendEntry(TranscriptEntry{Kind: EntrySystem, Text: "Refused: " + title + " — " + reason})
@@ -5438,6 +5446,29 @@ func (s *Supervisor) scopedAction(c *child, a agent.Action) agent.Action {
 			}
 		}
 	}
+	return a
+}
+
+// ruledAction fills in what a child's command destroys that the child may
+// not, read from the directory it runs in against the scope scopedAction
+// reads — its own directory, plus what the person added to the session. A
+// child is refused through the policy the session is, so the same command is
+// refused the same way whichever agent proposed it.
+// See docs/capabilities/approvals-and-safety.md#some-targets-are-never-destroyed.
+func ruledAction(c *child, a agent.Action, added func() []string) agent.Action {
+	if a.Kind != agent.ActionCommand || a.Command == "" {
+		return a
+	}
+	where := radius.Where{Dir: c.root, Root: c.root}
+	if c.root != "" {
+		var dirs []string
+		if added != nil {
+			dirs = added()
+		}
+		where.Scope, _ = scope.New(c.root, dirs...)
+	}
+	where.Home, _ = os.UserHomeDir()
+	a.Irreplaceable = radius.Destroys(a.Command, where).Refusal()
 	return a
 }
 

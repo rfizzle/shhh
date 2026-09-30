@@ -276,25 +276,33 @@ type token struct {
 	// names cannot be resolved statically, and saying so is the honest
 	// answer.
 	literal bool
+	// raw is the word as it was typed, quotes and escapes included. It is
+	// what the destruction reading reads a home directory out of, since
+	// `"$HOME"` and `~` are expansions whose answer is known.
+	raw string
 }
 
 // tokenize splits a segment into words, respecting quotes, stripping them,
 // and marking a word non-literal when an unquoted part of it would expand.
 func tokenize(text string) []token {
 	var out []token
-	var cur strings.Builder
+	var cur, raw strings.Builder
 	literal, started := true, false
 	var quote rune
 	flush := func() {
 		if started {
-			out = append(out, token{text: cur.String(), literal: literal})
+			out = append(out, token{text: cur.String(), literal: literal, raw: raw.String()})
 		}
 		cur.Reset()
+		raw.Reset()
 		literal, started = true, false
 	}
 	runes := []rune(text)
 	for i := 0; i < len(runes); i++ {
 		r := runes[i]
+		if r != ' ' && r != '\t' || quote != 0 {
+			raw.WriteRune(r)
+		}
 		if quote != 0 {
 			if r == quote {
 				quote = 0
@@ -315,6 +323,7 @@ func tokenize(text string) []token {
 			started = true
 		case r == '\\' && i+1 < len(runes):
 			i++
+			raw.WriteRune(runes[i])
 			cur.WriteRune(runes[i])
 			started = true
 		default:

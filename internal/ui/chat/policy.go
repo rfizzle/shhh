@@ -11,6 +11,8 @@ import (
 	"time"
 
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/radius"
 	"github.com/rfizzle/shhh/internal/safety"
 	"github.com/rfizzle/shhh/internal/scope"
 	"github.com/rfizzle/shhh/internal/web"
@@ -163,20 +165,79 @@ func (m Model) deniedByRule(req *approvalRequest) bool {
 	if req.host != "" && agent.HostMatches(m.policy.denyHosts, req.host) {
 		return true
 	}
-	return req.command != "" && agent.DenylistMatches(m.policy.denylist, req.command)
+	_, refused := m.commandRule(req)
+	return refused
 }
 
-// ruleDenial is what a refusal by one of the two lists tells the model, and
-// the reason the denied row carries beside it. A host and a command are
+// commandRule is the rule that refuses a request's command line, asked
+// through the one function the policy asks: the deny list, then a destroying
+// command pointed at something this session may not destroy. The second is
+// answered here with the first for the first's reason — it is not a
+// decision, so there is no card, no batch approval and no classifier round.
+// See docs/capabilities/approvals-and-safety.md#some-targets-are-never-destroyed.
+func (m Model) commandRule(req *approvalRequest) (string, bool) {
+	if req == nil || req.command == "" || req.host != "" {
+		return "", false
+	}
+	a := agent.Action{Command: req.command}
+	if !req.write {
+		a.Irreplaceable = m.irreplaceable(req)
+	}
+	return agent.RuleRefusal(m.policy.denylist, a)
+}
+
+// irreplaceable is what a request's command destroys that this session may
+// not, in the words the refusal names it with, or "".
+//
+// The command is read from the directory it runs in. A process start names a
+// directory of its own, which the request does not carry, so its relative
+// paths prove nothing and only its absolute ones are read.
+func (m Model) irreplaceable(req *approvalRequest) string {
+	if req == nil || req.command == "" || req.write || req.host != "" {
+		return ""
+	}
+	where := radius.Where{Scope: m.scope}
+	where.Root = m.workspace
+	if m.scope != nil {
+		where.Root = m.scope.Root()
+	}
+	if where.Root == "" {
+		where.Root, _ = os.Getwd()
+	}
+	if req.kind == approvalExec {
+		where.Dir = where.Root
+		if m.workspace != "" {
+			where.Dir = m.workspace
+		}
+	}
+	where.Home, _ = os.UserHomeDir()
+	return radius.Destroys(req.command, where).Refusal()
+}
+
+// ruleDenial is what a refusal by one of the rules tells the model, the
+// reason the denied row carries beside it, the sentence `/permissions why`
+// prints and the code the record files it under. A host and a command are
 // refused by the same act and answered in the same place; what the model is
 // told differs, because a refused host is refused whatever the URL and a
 // retry with another path is the loop the wording exists to stop.
-func (m Model) ruleDenial(req *approvalRequest) (result, reason, why string) {
+func (m Model) ruleDenial(req *approvalRequest) (result, reason, why, code string) {
 	if req != nil && req.host != "" && agent.HostMatches(m.policy.denyHosts, req.host) {
-		return agent.DeniedHostResult, agent.DenyReasonHost, denyHostWhy
+		return agent.DeniedHostResult, agent.DenyReasonHost, denyHostWhy, observe.ReasonDenylist
 	}
-	return agent.DenylistResult, agent.DenyReasonDenylist, denylistWhy
+	if reason, ok := m.commandRule(req); ok && agent.IsIrreplaceable(reason) {
+		// Filed with the safety table's refusals: it is that table's
+		// destroying rows, read against where they point.
+		return agent.IrreplaceableResult(reason), reason, irreplaceableWhy, observe.ReasonSafety
+	}
+	return agent.DenylistResult, agent.DenyReasonDenylist, denylistWhy, observe.ReasonDenylist
 }
+
+// irreplaceableWhy is the sentence `/permissions why` prints under a command
+// refused for what it destroys. Unlike the model, the reader is told the way
+// through, because it is theirs: a command typed after `!` is their own and
+// nothing refuses it.
+const irreplaceableWhy = "refused by rule: it destroys something no session may destroy, in any mode, " +
+	"and nothing lifts that; run it yourself with ! if you mean it"
 
 // denylistWhy is the sentence `/permissions why` prints under a deny-list
 // refusal. "A rule said no" is only actionable when the reader is told which
@@ -571,6 +632,9 @@ func (m Model) approvalAction(req *approvalRequest) agent.Action {
 	a.ScopeSensitive = reach.class == scope.Sensitive
 	a.ScopeRefused = reach.class == scope.Refused
 	a.ScopeReason = reach.reason
+	if a.Kind == agent.ActionCommand {
+		a.Irreplaceable = m.irreplaceable(req)
+	}
 	return a
 }
 

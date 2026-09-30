@@ -379,6 +379,60 @@ and a warning nobody agrees with is a warning everybody dismisses. An
 interpreter pointed at a file that was already there — a task runner, a
 server, a checked-in script — says nothing here.
 
+## Some targets are never destroyed
+
+A recursive delete, a search that deletes what it finds, a `git clean`, a
+recursive `chmod` or `chown`, and a write onto a device are read for what they
+are pointed at, and where that is somewhere no session may destroy the
+command is refused by rule: the filesystem root, the home directory, the
+workspace root, a repository's git store, a path behind the containment deny
+mask, and anywhere outside the working scope. It is answered where the deny
+list is — before the mode, before any grant and before the classifier — so
+no card is drawn, no earlier batch approval reaches it and no classifier is
+paid to think about it. A session, an unattended run, a served session and
+every sub-agent refuse it through the same function.
+
+It is a rule and not a grade because a grade would have to be believed. A
+model's sense of how risky a command is was never calibrated, and it is read
+from evidence a fetched page can write into; a block that depends on it can
+be talked down. The rule reads the text, the filesystem and the working scope,
+which is what the safety table, the blast radius and the scope already read,
+and none of those is anything a page can reach. The classifier can only ever
+move a call toward a person; this is the one door it never opens.
+
+**The rule refuses only what it can prove.** A target is resolved the way the
+card's blast radius is — the paths the text names, stat-ed from the directory
+the command runs in, symlinks followed where the command would follow them —
+and a target it cannot resolve is not refused: a variable other than the home
+directory, a glob, a substitution, a brace expansion, a relative path after a
+`cd` earlier in the line, a relative path in a process started somewhere of
+its own. Those fall back to the flagged card they always had. `~`, `$HOME` and
+`${HOME}` are resolved, because their answer is known, and so is a glob over
+every entry of the filesystem root or the home directory (`/*`, `~/*`), which
+is that directory. A device is refused whether or not the surface has a
+working scope, and the streams every script writes to (`/dev/null`, a
+terminal) are not devices here. A symlink removed
+without its trailing slash is the link, not what it points at. A search that
+deletes only what its tests matched destroys some of a tree rather than the
+tree, so it is refused for reaching outside the scope and not for starting at
+the workspace root; `git clean` is refused at the workspace root, because what
+it deletes there is everything git cannot bring back. `rm -rf .tmp/test-build`
+and `rm -rf node_modules` are none of these and go to the card as before.
+
+**It cannot be lifted**, per session or by configuration. There is no setting
+for it and no grant reaches it. A person who means it types the command
+themselves — `!` and `/run` are the person's own and never reach the policy —
+and the explanation `/permissions why` gives says so, since that reader is the
+one person it is true for.
+
+What the model reads names the target and nothing about a way around it:
+
+> error: this command destroys `<target>`, which is outside what this session
+> may destroy. It is refused in every permission mode and no approval can
+> allow it, and retrying it under another spelling — another path to the same
+> place, a variable, a wrapper — will be refused too. Do the work without
+> destroying it, or say what you were trying to do and let the user decide.
+
 ## Denials are two different facts
 
 "You said no" and "a rule said no" are reported differently, and neither is

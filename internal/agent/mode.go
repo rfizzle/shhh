@@ -285,6 +285,13 @@ type Action struct {
 	// ScopeReason is why the scope fields say what they do, in the words the
 	// card and the tool result print after a dash.
 	ScopeReason string
+	// Irreplaceable names what a destroying command is pointed at that this
+	// session may not destroy (`~ — your home directory`), and is empty for
+	// every other call. It is resolved by the front-end, which holds the
+	// workspace and the scope, through radius.Destroys; here it is a rule
+	// read beside the deny list, before the mode and before the classifier.
+	// See docs/capabilities/approvals-and-safety.md#some-targets-are-never-destroyed.
+	Irreplaceable string
 }
 
 // Decision is a mode policy verdict for one gated tool call.
@@ -335,6 +342,64 @@ const DenyReasonDenylist = "deny list"
 const DenylistResult = "error: this command is on the deny list for this session. It is refused in every " +
 	"permission mode and no approval can allow it, so retrying it or rephrasing it will not run it. " +
 	"Say what you were trying to do and let the user decide."
+
+// DenyReasonIrreplaceable begins the rule name a command refused for what it
+// destroys carries; the target follows it, because the row that prints the
+// rule is where the reader learns which of their paths it was.
+const DenyReasonIrreplaceable = "irreplaceable target"
+
+// RuleRefusal is the refusal nothing a session can grant reaches: the
+// person's deny list, then a destroying command pointed at something this
+// session may not destroy. It returns the rule name the row carries, and ok
+// is false where neither answers. It is the one function every surface asks,
+// the policy included, so a session, an unattended run and a child refuse
+// the same call with the same words.
+//
+// Neither can be lifted by a mode, a grant, a batch approval or the
+// classifier, and the second not by configuration either: a person who means
+// to destroy one of those targets runs the command themselves.
+// See docs/capabilities/approvals-and-safety.md#some-targets-are-never-destroyed.
+func RuleRefusal(denylist []string, a Action) (string, bool) {
+	if a.Command != "" && DenylistMatches(denylist, a.Command) {
+		return DenyReasonDenylist, true
+	}
+	if a.Irreplaceable != "" {
+		return DenyReasonIrreplaceable + ": " + a.Irreplaceable, true
+	}
+	return "", false
+}
+
+// IsIrreplaceable reports whether a rule name is RuleRefusal's second rule.
+func IsIrreplaceable(reason string) bool {
+	return strings.HasPrefix(reason, DenyReasonIrreplaceable)
+}
+
+// IrreplaceableResult is the tool result recorded for a command refused for
+// what it destroys. It names the target, because a model told only "refused"
+// tries the next spelling, and it says that the next spelling is refused as
+// well — the rule reads what the command is pointed at, not how it was
+// written.
+//
+// Like the deny list's it names no key and points at no file: there is no
+// setting that lifts it, and a sentence that hinted at one would be the way
+// around it.
+// See docs/capabilities/approvals-and-safety.md#some-targets-are-never-destroyed.
+func IrreplaceableResult(reason string) string {
+	target := strings.TrimPrefix(strings.TrimPrefix(reason, DenyReasonIrreplaceable), ": ")
+	return "error: this command destroys " + target + ", which is outside what this session may destroy. " +
+		"It is refused in every permission mode and no approval can allow it, and retrying it under " +
+		"another spelling — another path to the same place, a variable, a wrapper — will be refused too. " +
+		"Do the work without destroying it, or say what you were trying to do and let the user decide."
+}
+
+// RuleRefusedResult is the tool result for a RuleRefusal, chosen by the rule
+// that answered.
+func RuleRefusedResult(reason string) string {
+	if IsIrreplaceable(reason) {
+		return IrreplaceableResult(reason)
+	}
+	return DenylistResult
+}
 
 // DenyReasonHost is the rule name a fetch refused for the host deny list
 // carries. It is a different word from the command list's so the row says
@@ -650,8 +715,12 @@ func (p ModePolicy) decide(a Action) (Decision, string) {
 	// than off the kind, so an action that stands for a command line is
 	// answered by the same match the command path uses whatever tier it
 	// sits at.
-	if a.Command != "" && DenylistMatches(p.CommandDenylist, a.Command) {
-		return Deny, DenyReasonDenylist
+	//
+	// A destroying command pointed at something this session may not
+	// destroy is answered in the same breath, and for the same reason: it is
+	// not a decision, so no mode, grant or classifier is asked about it.
+	if reason, ok := RuleRefusal(p.CommandDenylist, a); ok {
+		return Deny, reason
 	}
 	// The host deny list is read in the same breath and for the same reason:
 	// a host the person has refused is not a decision, so it is answered

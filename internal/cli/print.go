@@ -2209,9 +2209,9 @@ func headlessApprover(ctx context.Context, opts printOpts, allowlist, denylist [
 			if err != nil {
 				return "error: " + err.Error()
 			}
-			if agent.DenylistMatches(denylist, command) {
-				refuse(tc, command, observe.ReasonDenylist)
-				return agent.DenylistResult
+			if result, code, refused := ruleRefused(denylist, ruleAction(sc, command, false)); refused {
+				refuse(tc, command, code)
+				return result
 			}
 			if warnings := safety.Check(command); len(warnings) > 0 {
 				risks := make([]string, 0, len(warnings))
@@ -2251,10 +2251,13 @@ func headlessApprover(ctx context.Context, opts printOpts, allowlist, denylist [
 				return "error: invalid command arguments"
 			}
 			// Before --yes and before the allowlist: a deny list that a flag
-			// could out-rank would be a preference and not a rule.
-			if agent.DenylistMatches(denylist, args.Command) {
-				refuse(tc, args.Command, observe.ReasonDenylist)
-				return agent.DenylistResult
+			// could out-rank would be a preference and not a rule. A
+			// destroying command pointed at something this run may not
+			// destroy is answered in the same place, through the function
+			// the session's policy asks.
+			if result, code, refused := ruleRefused(denylist, ruleAction(sc, args.Command, true)); refused {
+				refuse(tc, args.Command, code)
+				return result
 			}
 			if warnings := safety.Check(args.Command); len(warnings) > 0 {
 				risks := make([]string, 0, len(warnings))
