@@ -127,6 +127,11 @@ type Behaviour struct {
 	CallsBeforeFirstMutation int
 	ValidationAttempts       int
 	UnintendedMutations      int
+	// ShellCalls is how many of the attempt's calls went through the shell;
+	// every other call was a built-in tool. A case whose work the built-in
+	// tools answer reads this to see which one the model reached for
+	// (docs/capabilities/coding-agent.md#the-built-in-tools-come-before-the-shell).
+	ShellCalls int
 }
 
 // Result is every attempt at one case.
@@ -183,6 +188,7 @@ func (r Result) Behaviour() (Behaviour, bool) {
 		CallsBeforeFirstMutation: int(r.Median(func(a Attempt) float64 { return float64(a.Behaviour.CallsBeforeFirstMutation) })),
 		ValidationAttempts:       int(r.Median(func(a Attempt) float64 { return float64(a.Behaviour.ValidationAttempts) })),
 		UnintendedMutations:      int(r.Median(func(a Attempt) float64 { return float64(a.Behaviour.UnintendedMutations) })),
+		ShellCalls:               int(r.Median(func(a Attempt) float64 { return float64(a.Behaviour.ShellCalls) })),
 	}, len(r.Attempts) > 0
 }
 

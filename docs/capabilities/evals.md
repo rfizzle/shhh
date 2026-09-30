@@ -35,7 +35,9 @@ paths it left behind. These are operational evidence rather than another
 verdict: the case's check still decides completion. Together, the implementation
 and failing-test cases show whether a coding request reaches a change and
 validation, while the analysis-only case shows whether the same tools were left
-unused.
+unused. It counts the calls that went through the shell as well, beside the
+calls that went to a built-in tool, so a case whose work the built-in tools
+answer shows which of the two the model reached for.
 
 ## Flaky is its own verdict
 

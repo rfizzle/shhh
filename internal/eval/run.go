@@ -126,6 +126,7 @@ func (t transcript) behaviour() (b Behaviour) {
 			case "quality_gate":
 				b.ValidationAttempts++
 			case "execute_command":
+				b.ShellCalls++
 				if validationCommand(call.Arguments) {
 					b.ValidationAttempts++
 				}

@@ -1,0 +1,9 @@
+name = "file-work-without-a-shell"
+prompt = "Find the file under src/ that sets the release channel, and read the version the last line of logs/build.log says was published. Then add one line to the end of CHANGELOG.md, exactly `- <version> (<channel>): <path>`, where <path> is that file's path from the checkout root. Change nothing else."
+
+# Every part of this is a search, the end of a file or an append, which the
+# built-in tools answer without an approval; the report's shell-call count is
+# what the case is read for, and the check only says the work was done.
+requires = ["sh", "git"]
+
+check = ["sh", "check.sh"]

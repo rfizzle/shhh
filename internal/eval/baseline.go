@@ -109,6 +109,7 @@ type BehaviourBaseline struct {
 	CallsBeforeFirstMutation float64 `json:"median_calls_before_first_mutation"`
 	ValidationAttempts       float64 `json:"median_validation_attempts"`
 	UnintendedMutations      float64 `json:"median_unintended_mutations"`
+	ShellCalls               float64 `json:"median_shell_calls"`
 }
 
 // TableBaseline is a table case's outcomes, counted apart the way the report
@@ -173,6 +174,7 @@ func (s Summary) Baseline() Baseline {
 				CallsBeforeFirstMutation: res.Median(func(a Attempt) float64 { return float64(a.Behaviour.CallsBeforeFirstMutation) }),
 				ValidationAttempts:       res.Median(func(a Attempt) float64 { return float64(a.Behaviour.ValidationAttempts) }),
 				UnintendedMutations:      res.Median(func(a Attempt) float64 { return float64(a.Behaviour.UnintendedMutations) }),
+				ShellCalls:               res.Median(func(a Attempt) float64 { return float64(a.Behaviour.ShellCalls) }),
 			}
 		}
 		if score, ok := res.Research(); ok {

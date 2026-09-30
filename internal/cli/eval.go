@@ -603,8 +603,8 @@ func evalDetail(res eval.Result) string {
 // case's check still decides its verdict; these figures show whether a prompt
 // change altered the route the agent took to get there.
 func behaviourDetail(b eval.Behaviour) string {
-	return fmt.Sprintf("%d mutations · %d calls before mutation · %d validations · %d unintended mutations",
-		b.MutationsAttempted, b.CallsBeforeFirstMutation, b.ValidationAttempts, b.UnintendedMutations)
+	return fmt.Sprintf("%d mutations · %d calls before mutation · %d validations · %d unintended mutations · %d shell calls",
+		b.MutationsAttempted, b.CallsBeforeFirstMutation, b.ValidationAttempts, b.UnintendedMutations, b.ShellCalls)
 }
 
 // evalBody is why a case did not pass, which is the only thing a failing row
@@ -810,7 +810,7 @@ func compareDetail(d eval.Delta) string {
 	return strings.Join(parts, " · ")
 }
 
-// behaviourShifts preserves the four action metrics in a comparison without
+// behaviourShifts preserves the action metrics in a comparison without
 // spending width on a number that stayed the same.
 func behaviourShifts(before, after eval.BehaviourBaseline) []string {
 	var parts []string
@@ -822,6 +822,7 @@ func behaviourShifts(before, after eval.BehaviourBaseline) []string {
 		{before.CallsBeforeFirstMutation, after.CallsBeforeFirstMutation, "calls before mutation"},
 		{before.ValidationAttempts, after.ValidationAttempts, "validations"},
 		{before.UnintendedMutations, after.UnintendedMutations, "unintended mutations"},
+		{before.ShellCalls, after.ShellCalls, "shell calls"},
 	} {
 		if metric.before != metric.after {
 			parts = append(parts, eval.FormatRounds(metric.before)+" → "+eval.FormatRounds(metric.after)+" "+metric.label)
