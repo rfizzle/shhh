@@ -28,4 +28,4 @@ keys y
 sleep 5
 keys Escape
 sleep 2
-snap 05-three-states "✓ done ·" "⚠ needs you ·" "1 of 3 steps ·" "· Run gofmt"
+snap 05-three-states "✓ done" "⚠ needs you" "1 of 3 steps ·" "· Run gofmt"

@@ -81,7 +81,7 @@ mkdir -p "$work" "$dest"
 # the replies are still scripted, and each picture's alt text says so.
 stills=(
 	"readme-hero 03-command-card 1-13,25-40 [y] run it once"
-	"readme-fanout 05-three-states 1-29,36-52 ⚠ needs you ·"
+	"readme-fanout 05-three-states 1-29,36-52 ⚠ needs you"
 	"readme-hero 04-close 1-18,36-40 1 file changed"
 	"readme-one-shot 01-result 1-6 awk keeps the rows"
 	"readme-sprint 03-sprint-tab 1-28,38-40 working · 3 at once"
