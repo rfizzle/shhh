@@ -2,17 +2,13 @@
 # The release workflow builds it, pushes it and links its digest into the
 # binary, so a shhh always starts the image built beside it.
 # See docs/capabilities/containment.md#the-sandbox-image-ships-with-the-binary.
-ARG GO_VERSION=1.26
-ARG NODE_VERSION=24
 
-FROM golang:${GO_VERSION}-trixie AS go
-# Documentation, examples and the toolchain's own tests are not what a
-# sandboxed build runs.
-RUN rm -rf /usr/local/go/doc /usr/local/go/test /usr/local/go/misc
-
-FROM node:${NODE_VERSION}-trixie-slim AS node
-
-FROM debian:trixie-slim
+# Wolfi is glibc, rebuilt continuously and much smaller than a Debian base, and
+# it packages Go, Node and Python as versioned streams, so the toolchains come
+# from the base's own index rather than being copied out of other images. Its
+# free tier publishes only the latest tag; the release pins the built image by
+# digest, which is what makes a given shhh's sandbox reproducible.
+FROM cgr.dev/chainguard/wolfi-base:latest
 
 # Links the published package to this repository, which is what keeps the
 # release workflow's token able to push new versions to it.
@@ -22,15 +18,6 @@ LABEL org.opencontainers.image.source="https://github.com/rfizzle/shhh"
 # running: whatever a session may need to build and test is here already.
 # Compilers are left out on purpose; a project that needs one names its own
 # image in sandbox.container_image.
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-        bash ca-certificates curl fd-find git jq make python3 ripgrep \
-    && ln -s "$(command -v fdfind)" /usr/local/bin/fd \
-    && rm -rf /var/lib/apt/lists/*
-
-COPY --from=go /usr/local/go /usr/local/go
-COPY --from=node /usr/local/bin/node /usr/local/bin/node
-COPY --from=node /usr/local/lib/node_modules /usr/local/lib/node_modules
-RUN ln -s ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
-    && ln -s ../lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx
-ENV PATH=/usr/local/go/bin:$PATH
+RUN apk add --no-cache \
+        bash ca-certificates-bundle curl fd git go-1.26 jq make \
+        nodejs-24 npm python-3.13 ripgrep
