@@ -148,6 +148,30 @@ func TestSuggestion_TheArrowTakesItIntoTheDraft(t *testing.T) {
 	}
 }
 
+// Below the wide breakpoint the frame draws no key bar, so the notice rail
+// names the arrow while an offer is up and lets it go with the offer; wide,
+// the key bar already says it and the rail does not say it twice.
+func TestSuggestion_ANarrowFrameNamesTheArrowOnTheNoticeRail(t *testing.T) {
+	for _, tc := range []struct {
+		width  int
+		onRail bool
+	}{{60, true}, {80, true}, {130, false}} {
+		m, _, _ := offeredModel(t)
+		updated, _ := m.Update(tea.WindowSizeMsg{Width: tc.width, Height: 30})
+		m = updated.(Model)
+		if got := strings.Contains(m.noticeLine(), "take it"); got != tc.onRail {
+			t.Fatalf("at %d columns the rail names the arrow = %v, want %v:\n%s", tc.width, got, tc.onRail, m.noticeLine())
+		}
+		if !strings.Contains(m.renderPromptFrame(), "take ") {
+			t.Fatalf("at %d columns something should name the arrow:\n%s", tc.width, m.renderPromptFrame())
+		}
+		m = press(t, m, "n")
+		if strings.Contains(m.noticeLine(), "take it") {
+			t.Fatalf("at %d columns the note should go with the offer:\n%s", tc.width, m.noticeLine())
+		}
+	}
+}
+
 // Any other key drops it, filed as ignored — and a letter typed is typed.
 func TestSuggestion_AnyOtherKeyDropsIt(t *testing.T) {
 	m, _, signals := offeredModel(t)

@@ -6,13 +6,16 @@
 # (docs/capabilities/chat.md#the-next-step-is-offered-not-typed).
 #
 # What the captures are for: the offer drawn dim on the one row of the empty
-# box once the first turn closes; the arrow putting it in the draft, where
-# more is typed after it; that draft sent as the second turn, whose close
+# box once the first turn closes, with the arrow that takes it named; the
+# arrow putting it in the draft, where more is typed after it; that draft sent as the second turn, whose close
 # offers another; and a letter dropping that one, the letter standing alone
 # in the box.
 snap 01-start "Some things worth doing first"
 keys "make the retry backoff double" Enter
-snap 02-offer "stops at a minute" "Run the full test suite now."
+# Below 110 columns the frame draws no key bar, so the notice rail names the
+# arrow; at 110 and wider the key bar does.
+narrow 110 snap 02-offer "stops at a minute" "Run the full test suite now." "[→] take it"
+wide 110 snap 02-offer "stops at a minute" "Run the full test suite now." "[→] take the suggestion"
 keys Right
 keys " and report the count"
 snap 03-taken "Run the full test suite now. and report the count"

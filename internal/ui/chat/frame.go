@@ -749,6 +749,13 @@ func (m Model) noticeLine() string {
 		if handover {
 			parts = append(parts, noticePart{text: segAs(keys.Draft.Answer, keys.Words(keys.Draft.Answer)).render()})
 		}
+		// The offered next step has no key bar to name its arrow here, and the
+		// dim words in the box are not a sentence anyone would think to take
+		// with it; it asks the one predicate the words and the key do, so the
+		// note goes with the offer (suggest.go).
+		if m.suggestionShown() {
+			parts = append(parts, noticePart{text: segAs(keys.Draft.TakeSuggestion, "take it").render()})
+		}
 	}
 	// What the last esc folded, or why it folded nothing (readinghint.go).
 	// It leads everything but the open two-press window because it is the
