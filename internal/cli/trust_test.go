@@ -131,6 +131,41 @@ func TestSetProjectTrustRecordsAndWithdrawsTheAnswer(t *testing.T) {
 	}
 }
 
+// A reply that said only "the next session" read as covering the tools line
+// that had just changed under it: the toolchain declaration is read again at
+// once, and everything else the checkout declares follows from the next
+// session. /trust and the tools screen's [a] are the same function, so this
+// is the sentence both say.
+func TestTrustReplyNamesWhatIsReadNowAndWhatWaits(t *testing.T) {
+	db, err := storage.OpenPath(filepath.Join(t.TempDir(), "shhh.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = db.Close() }()
+	t.Cleanup(forgetProjectTrust)
+
+	answer := project.Trust{Root: "/repo", Fingerprint: "fp1",
+		Present: []project.Kind{project.KindSkills, project.KindGate, project.KindServers, project.KindToolchain}}
+	withProjectTrust(t, answer)
+	manage := trustManager(db)
+
+	if got, want := manage(nil), "✓ trusted /repo · skills · quality suites · MCP servers · toolchain — "+
+		"this session reads the toolchain declaration again now; its skills, quality suites and MCP servers load from the next session."; got != want {
+		t.Errorf("/trust said\n %q\nwant\n %q", got, want)
+	}
+	if got, want := manage([]string{"off"}), "✓ untrusted /repo · skills · quality suites · MCP servers · toolchain — "+
+		"this session reads the toolchain declaration again now; its skills, quality suites and MCP servers stop loading from the next session."; got != want {
+		t.Errorf("/trust off said\n %q\nwant\n %q", got, want)
+	}
+
+	// A checkout declaring only its toolchain still names both halves.
+	withProjectTrust(t, project.Trust{Root: "/repo", Present: []project.Kind{project.KindToolchain}})
+	if got := manage(nil); !strings.HasSuffix(got, "this session reads the toolchain declaration again now; "+
+		"everything else it declares loads from the next session.") {
+		t.Errorf("/trust over a toolchain alone said %q", got)
+	}
+}
+
 // The doctor and `shhh mcp` both re-run their checks when an offer on a row
 // is taken, and both read the checkout's standing to answer. An answer this
 // process is still holding from before the write would make the row under

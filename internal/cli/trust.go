@@ -72,8 +72,8 @@ func heldProjectTrust() project.Trust {
 //
 // A session already under way is unaffected, and that is what the hold is
 // for: its skills, profiles, suites and servers were resolved before the
-// first turn, so trusting mid-session still takes effect in the next one,
-// which is what every surface says it does. The toolchain declaration is the
+// first turn, so trusting mid-session still takes effect in the next one.
+// The toolchain declaration is the
 // one reading a session takes again (toolchainMoves): what it says is which
 // tools are missing and what the draft card will be loaded under, and
 // neither loads anything into the session.
@@ -241,10 +241,11 @@ func kindNames(kinds []project.Kind) []string {
 	return out
 }
 
-// trustManager backs /trust in a session: what is being withheld, and the
-// answer. Like trusting a server, it takes effect in the next session —
-// the prompt naming the skills and the toolset holding the gate were both
-// built when this one started.
+// trustManager backs /trust in a session and the tools screen's [a]: what is
+// being withheld, and the answer. The reply names both halves of when the
+// answer is in force, because the toolchain declaration is read again at
+// once (forgetProjectTrust) and a reply saying only "the next session" reads
+// as covering the tools line that just changed under it.
 func trustManager(db *storage.DB) func(args []string) string {
 	return func(args []string) string {
 		t := projectTrust()
@@ -254,16 +255,45 @@ func trustManager(db *storage.DB) func(args []string) string {
 			if err != nil {
 				return err.Error()
 			}
-			return trustLine(row) + " — it takes effect in the next session."
+			return trustLine(row) + " — " + trustTakesEffect(t, true)
 		case len(args) == 1 && args[0] == "off":
 			row, err := setProjectTrust(db, t, false)
 			if err != nil {
 				return err.Error()
 			}
-			return trustLine(row) + " — it takes effect in the next session."
+			return trustLine(row) + " — " + trustTakesEffect(t, false)
 		}
 		return "usage: /trust · /trust off"
 	}
+}
+
+// trustTakesEffect is when an answer given mid-session is in force. The
+// toolchain declaration is the one reading this session takes again, since
+// what it says loads nothing into the session; everything else the checkout
+// declares was resolved before the first turn — the prompt naming the skills
+// and the toolset holding the gate — so it follows the answer from the next
+// session. The kinds named are the ones the checkout holds, in the words the
+// confirmation row already used for them.
+// See docs/capabilities/approvals-and-safety.md#a-checkout-declares-what-it-runs.
+func trustTakesEffect(t project.Trust, trust bool) string {
+	var later []project.Kind
+	for _, k := range t.Present {
+		if k != project.KindToolchain {
+			later = append(later, k)
+		}
+	}
+	rest := "everything else it declares"
+	if len(later) > 0 {
+		rest = "its " + joinAnd(kindNames(later))
+	}
+	// Every kind is a plural noun but the backlog profile, and "everything
+	// else" is singular.
+	plural := len(later) > 1 || (len(later) == 1 && later[0] != project.KindProfile)
+	verb := map[[2]bool]string{
+		{true, true}: " load", {true, false}: " loads",
+		{false, true}: " stop loading", {false, false}: " stops loading",
+	}[[2]bool{trust, plural}]
+	return "this session reads the toolchain declaration again now; " + rest + verb + " from the next session."
 }
 
 // chatTrust is the session's standing as the chat TUI takes it: the withheld

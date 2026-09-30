@@ -969,7 +969,10 @@ asked — so it is in the set on both counts
 Trust granted inside a session takes effect in the next one. The prompt
 naming the skills and the toolset holding the gate were both built when the
 session started, and something that joined without being named would be
-something the model does not know it has.
+something the model does not know it has. The toolchain declaration is the
+exception, read again at once, because what it says — which tools are
+missing — loads nothing into the session; the reply to `/trust` names both
+halves.
 
 ### The model is told what was held back
 
