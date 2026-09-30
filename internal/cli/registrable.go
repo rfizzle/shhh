@@ -8,6 +8,7 @@ import (
 	"github.com/rfizzle/shhh/internal/memory"
 	"github.com/rfizzle/shhh/internal/notebook"
 	"github.com/rfizzle/shhh/internal/persona"
+	"github.com/rfizzle/shhh/internal/plan"
 	"github.com/rfizzle/shhh/internal/process"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/quality"
@@ -49,6 +50,7 @@ func registrableDefinitions(skills *skill.Catalog, profiles subagent.Profiles) [
 		reports.NewPublisher(nil, "", "", reports.OneShot, false).ToolDefinition(),
 	)
 	defs = append(defs, notebook.Definitions()...)
+	defs = append(defs, plan.StepsToolDefinition())
 	defs = append(defs, subagent.Definitions(profiles)...)
 	defs = append(defs,
 		evidence.ToolDefinition(),

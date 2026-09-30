@@ -120,7 +120,7 @@ func TestRailDoors_AHeadingOrAMarkerOpensItsSurfaceAndTheCellClosesIt(t *testing
 func railStepsModel(t *testing.T) Model {
 	t.Helper()
 	m := railDoorModel(t)
-	m.workSteps.Note("1. Read the loop\n2. Patch the limit", true)
+	m.workSteps = stepsCalled(t, `{"steps":[{"title":"Read the loop"},{"title":"Patch the limit"}]}`)
 	return m
 }
 

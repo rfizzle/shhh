@@ -2,16 +2,16 @@
 #   TestProgram_TheQuitChordArmsThenLeaves
 #
 # The rail's STEPS block (docs/interface/surfaces.md#the-inspector-rail): the
-# session's own working list, read out of the prose before its calls. The
-# pane is 130 columns, the narrowest terminal the rail is drawn at.
+# session's own working list, set with the steps tool. The pane is 130
+# columns, the narrowest terminal the rail is drawn at.
 #
 # What the captures are read for: at 02 the declared list reads 0 of 3 on its
-# first step, with no PLAN block beside it; at 03 a progress line has moved
-# it to 1 of 3; at 04 a list under `steps:` has replaced the unfinished step
-# and kept the two finished ones, so it reads 2 of 4 on the first new step;
-# at 05 the turn has ended on a numbered report, whose marks are counted and
-# whose list is not taken — 4 of 4, and nothing on the block saying the task
-# is done.
+# first step, with no PLAN block beside it; at 03 the next call has marked the
+# first step, 1 of 3; at 04 a call has replaced the unfinished step with two
+# and kept the finished ones, so it reads 2 of 4 on the first new step; at 05
+# the turn has ended on a numbered report after a call marked the rest — 4 of
+# 4, the report's list not taken, and nothing on the block saying the task is
+# done.
 #
 # The second turn is the steps screen (docs/interface/surfaces.md#the-supporting-screens):
 # at 06 a fresh list reads 1 of 3; at 07 `/steps` has opened it over the pane

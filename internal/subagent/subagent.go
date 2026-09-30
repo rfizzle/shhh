@@ -1533,7 +1533,6 @@ func (c *child) flushStreaming() {
 	c.mu.Lock()
 	if c.streaming != "" {
 		c.transcript = append(c.transcript, TranscriptEntry{Kind: EntryAssistant, Text: c.streaming})
-		c.noteSteps(c.streaming, false)
 		c.streaming = ""
 	}
 	c.mu.Unlock()
@@ -1548,7 +1547,6 @@ func (c *child) beginToolEntry(id, tool, args string) {
 	if c.streaming != "" {
 		c.transcript = append(c.transcript,
 			TranscriptEntry{Kind: EntryAssistant, Text: c.streaming, Checkpoint: c.checkpointNext})
-		c.noteSteps(c.streaming, true)
 		c.streaming = ""
 		c.step++
 	}
@@ -1750,14 +1748,6 @@ func (c *child) drainSteering() []string {
 	c.mu.Lock()
 	queued := c.steering
 	c.steering = nil
-	// Every drained steer joins the conversation as the person's words and
-	// widens what the child is judged against, so it is a task the child's
-	// working list was not written for: the next message that goes on to a
-	// call may declare another, and until one does the old list stands
-	// (steps.go).
-	if len(queued) > 0 {
-		c.own.Reopen()
-	}
 	// The round the receipt states, off the agent this goroutine drives —
 	// the same counter pos reads. Nil is a child with no attempt running,
 	// which has nothing queued to drain.
@@ -3479,7 +3469,7 @@ func (s *Supervisor) openWorkspace(c *child, ctx context.Context, maxRounds, att
 	w.agent = newChildAgent(turnEnv, maxRounds)
 	// The auto-run executor is the env's rooted, reduced chain, inside
 	// whatever the surface puts on its own dispatchers.
-	w.agent.SetExecutor(w.env.autoExecutor(c.seam()))
+	w.agent.SetExecutor(c.stepsExecutor(w.env.autoExecutor(c.seam())))
 	// And the reading that tells the child its workspace moved under it,
 	// baselined here so the first boundary compares against the tree the
 	// child was started on.
@@ -4324,6 +4314,9 @@ func (s *Supervisor) run(c *child) {
 		return gated(tc)
 	}
 	compact := childCompactor(c.model, c.env)
+	if compact != nil {
+		compact.Carry = c.stepsCarried
+	}
 	if compact != nil && c.env.Compaction != nil {
 		c.env.Compaction(c.life(), compact)
 	}
@@ -5000,7 +4993,6 @@ func (s *Supervisor) finalCheckIn(c *child) {
 	}
 	c.appendEntry(TranscriptEntry{Kind: EntryAssistant, Text: text})
 	c.mu.Lock()
-	c.noteSteps(text, false)
 	if c.report == "" {
 		c.report = text
 	}

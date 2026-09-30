@@ -1,6 +1,11 @@
 package subagent
 
-import "github.com/rfizzle/shhh/internal/plan"
+import (
+	"encoding/json"
+
+	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/plan"
+)
 
 // StepCount is how far a child is through its steps. Total zero is a child
 // with no steps to count — no plan of its own and none declared — and never
@@ -17,25 +22,34 @@ type StepCount struct {
 	Own bool
 }
 
-// noteSteps reads the child's own working checklist and its progress lines
-// out of text the child has just written, with c.mu held.
-//
-// The grammar and its rules are plan.Checklist's, the one reader the session
-// uses for its own list too: a list is taken from text that goes on to a call
-// and never from a message that ends a turn, since a report listing what it
-// changed in numbered lines is not a plan and read as one it would put every
-// lane at zero of the report's length; it is taken once, and a later numbered
-// list is text unless it stands under a `steps:` line or follows a steer
-// (drainSteering reopens the list); a list longer than a
-// spawn may declare is a list rather than a plan. Every role keeps one, and
-// each child's is its own — nothing here reads the session's or another
-// child's.
-//
-// A line is the whole mechanism, never a tool: the count is the child's own
-// account of its work, written in the same messages as the work.
+// stepsExecutor answers the child's steps calls on its own checklist and
+// passes every other tool on. A call names the whole list, so what it leaves
+// is exactly what it said, and the result is that list with the numbers the
+// lane counts by. Every role keeps one, and each child's is its own —
+// nothing here reads the session's or another child's.
 // See docs/capabilities/subagents.md#how-far-along-is-three-numbers-not-one.
-func (c *child) noteSteps(text string, beforeCall bool) {
-	c.own.Note(text, beforeCall)
+func (c *child) stepsExecutor(next agent.ToolExecutor) agent.ToolExecutor {
+	return func(name string, args json.RawMessage) (string, error) {
+		if name != plan.StepsToolName {
+			return next(name, args)
+		}
+		l, err := plan.ParseStepsCall(args)
+		if err != nil {
+			return "", err
+		}
+		c.mu.Lock()
+		c.own = l
+		c.mu.Unlock()
+		return l.Report(), nil
+	}
+}
+
+// stepsCarried is the child's list as a compaction carries it past the
+// summary, and nothing where it keeps none.
+func (c *child) stepsCarried() string {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return plan.CarriedSteps(c.own)
 }
 
 // StepsOf is a checklist as the count every surface draws: a lane, the

@@ -70,10 +70,6 @@ func (m *Model) nextTurn() {
 	m.notebook.SetTurn(m.turnCount)
 	m.sourceLedger.SetTurn(m.turnCount)
 	m.agent.SetTurn(m.turnCount)
-	// A new instruction may be a new task, so the turn's first message that
-	// goes on to a call may declare a list of its own; until it does, the
-	// last one stands (worksteps.go).
-	m.workSteps.Reopen()
 }
 
 // notesCommand is /notes: the notebook as the person sees it. Bare opens the

@@ -32,6 +32,7 @@ import (
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/notebook"
 	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/plan"
 	"github.com/rfizzle/shhh/internal/process"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/prompt"
@@ -183,6 +184,10 @@ type chatSession struct {
 	// notebook is the shared channel between the session's agents, opened
 	// by openNotebook; nil registers no notebook tools.
 	notebook *notebook.Store
+	// workSteps says the session registered the steps tool: a coding session
+	// somebody watches, whose rail draws the list. A conversation keeps none,
+	// and a -p run or a served session has no rail to draw one on.
+	workSteps bool
 	// sources is the session's record of what it read, opened by
 	// openSourceLedger; nil is a session with no web tools and no servers.
 	sources *web.Ledger
@@ -802,6 +807,13 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 
 	// And the question tool, on the same terms and for the same reason.
 	session.toolDefs = askToolDefs(session)
+
+	// And the working list, which the rail's STEPS block draws.
+	// See docs/capabilities/coding-agent.md#the-session-keeps-its-own-working-steps.
+	if !session.conversation {
+		session.workSteps = true
+		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), plan.StepsToolDefinition())
+	}
 
 	session.openNotebook(db)
 	session.openSourceLedger(db)

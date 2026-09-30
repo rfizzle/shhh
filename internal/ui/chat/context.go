@@ -17,6 +17,7 @@ import (
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/hook"
 	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/plan"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -501,7 +502,15 @@ func (m Model) finishCompact() (tea.Model, tea.Cmd) {
 	// cut from, and the summary is about to replace that (rewind.go).
 	m.retireRewoundFolds()
 
-	m.agent.Compact(summary, kept)
+	// The working list lives outside the conversation, so it is put back
+	// under the summary the model will carry on from (worksteps.go).
+	// While an approved plan runs, the plan is the checklist and no list is
+	// kept beside it.
+	steps := m.workSteps
+	if m.planRun != nil {
+		steps = plan.Checklist{}
+	}
+	m.agent.Compact(agent.CarryUnder(summary, func() string { return plan.CarriedSteps(steps) }), kept)
 	// A compaction keeps the system prompt and replaces everything under it,
 	// so the workspace block is the one thing left describing the checkout as
 	// it was when the session opened rather than as it is now.

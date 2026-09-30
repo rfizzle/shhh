@@ -1104,9 +1104,9 @@ type Model struct {
 	// on the slot for the next opening (reopen.go). Empty is a conversation
 	// that has had neither.
 	compactSummary string
-	// workSteps is the session's own working checklist, read out of its
-	// messages by noteWorkSteps (worksteps.go) and saved with the slot beside
-	// compactSummary. It is not the approved plan and never becomes it.
+	// workSteps is the session's own working checklist, as its last steps
+	// call left it (noteStepsCall, worksteps.go), and saved with the slot
+	// beside compactSummary. It is not the approved plan and never becomes it.
 	workSteps plan.Checklist
 	// compactRun is what a compaction in flight remembers about the
 	// conversation it is about to replace, so the receipt it leaves can

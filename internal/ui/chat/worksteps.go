@@ -1,14 +1,14 @@
 package chat
 
-// The session's own working steps: the numbered list the model writes before
-// a call when a task will take several steps, and the progress lines that
-// mark it, read into the rail's STEPS block. It is the session's list and
-// nobody else's — each child keeps its own through the same reader
-// (internal/subagent/steps.go) — and it is never the approved plan: nothing
-// here reads or writes planRun or the plan record.
+// The session's own working steps: the list the model keeps with the steps
+// tool when a task will take several steps, drawn in the rail's STEPS block.
+// It is the session's list and nobody else's — each child keeps its own
+// through the same call (internal/subagent/steps.go) — and it is never the
+// approved plan: nothing here reads or writes planRun or the plan record.
 // See docs/capabilities/coding-agent.md#the-session-keeps-its-own-working-steps.
 
 import (
+	"encoding/json"
 	"fmt"
 	"regexp"
 	"strings"
@@ -16,24 +16,37 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/plan"
+	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
-// noteWorkSteps reads one of the session's own messages into its checklist:
-// beforeCall for the prose that goes on to a round's calls, false for the
-// message that ends the turn. The grammar and its rules are plan.Checklist's,
-// the one reader a child's lane is counted by too.
+// noteStepsCall applies a steps call to the session's checklist once its
+// result has landed. The executor checked the same arguments and answered
+// with the list they name (plan.WrapStepsExecutor); the list lives here, on
+// the UI goroutine, so the call is read again here rather than written from
+// the goroutine the round ran on — and a call the executor refused parses to
+// the same refusal and changes nothing.
+//
+// It reports whether the call moved the list. Such a call leaves no row of its
+// own: the STEPS block is where the list is drawn, and a row per revision
+// would be bookkeeping between the rows of the work it counts. A call that
+// was refused keeps its row, since its error is the model's to act on and
+// the reader's to see.
 //
 // While an approved plan is being executed the plan is the checklist, so the
-// session keeps no second one beside it; and a conversation asks for no list,
-// so none is read out of its answers.
-func (m *Model) noteWorkSteps(text string, beforeCall bool) {
-	if text == "" || m.planRun != nil || !m.codingSurfaces() {
-		return
+// session keeps no second one beside it; and a conversation keeps no list.
+func (m *Model) noteStepsCall(call provider.ToolCall) bool {
+	if call.Name != plan.StepsToolName || m.planRun != nil || !m.codingSurfaces() {
+		return false
 	}
-	m.workSteps.Note(text, beforeCall)
+	l, err := plan.ParseStepsCall(json.RawMessage(call.Arguments))
+	if err != nil {
+		return false
+	}
+	m.workSteps = l
+	return true
 }
 
 // inspectorSteps is the STEPS block: how far the session is through its own

@@ -353,11 +353,6 @@ func (m *Model) injectSteering() bool {
 		// And what was judged against the shorter instruction is retired, before
 		// the boundary below can deliver it (summary.go).
 		m.summarySteered()
-		// And the task the target now names is one the working list was not
-		// written for, so the next message that goes on to a call may declare
-		// a list of its own; until it does, the last one stands (worksteps.go).
-		// A machine message moves no target and so opens nothing.
-		m.workSteps.Reopen()
 		if humanSteers > 0 {
 			m.signal(observe.SignalSteer, strconv.Itoa(humanSteers))
 		}

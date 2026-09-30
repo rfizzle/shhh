@@ -733,7 +733,8 @@ func openHeadlessChat(db *storage.DB, session chatSession, initial []provider.Me
 			} else {
 				msgs = append(append([]provider.Message{}, initial...), msgs...)
 			}
-			notice := chat.ResumeContext(db, c.slot, "")
+			// No working list: this run has no steps tool to keep one with.
+			notice := chat.ResumeContext(db, c.slot, "", false)
 			c.summary = notice.Summary
 			c.steps = notice.Steps
 			msgs, c.at, c.head = spliceAfterSystem(msgs, notice.Messages)

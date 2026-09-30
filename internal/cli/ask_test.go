@@ -55,7 +55,9 @@ func TestAskToolNeverReachesAChild(t *testing.T) {
 		if names := toolsetNames(defs); containsString(names, ask.ToolName) {
 			t.Errorf("%s was offered %s: %v", role, ask.ToolName, names)
 		}
-		if strings.Contains(sysPrompt, ask.ToolName+" ") {
+		// The toolbox names a tool at the head of its line; a bare substring
+		// would also find the word in "task".
+		if strings.Contains(sysPrompt, "- "+ask.ToolName+" ") {
 			t.Errorf("%s was told it has the question tool", role)
 		}
 	}

@@ -403,6 +403,31 @@ func TestRecoverRewritesTheSystemPromptWhenAskedTo(t *testing.T) {
 	}
 }
 
+// State the agent keeps outside its conversation — its working list — is put
+// under the summary the rebuild carries on from, since the call that set it
+// is among the messages the summary replaced.
+// See docs/capabilities/coding-agent.md#the-session-keeps-its-own-working-steps.
+func TestRecoverCarriesWhatTheConversationNoLongerHolds(t *testing.T) {
+	c := &Compactor{Model: "test-model", Window: testWindow, Carry: func() string { return "the list as it stands" }}
+	a := New(filledWithProse(), nil)
+	n := c.Recover(a, func([]provider.Message, string) (string, error) { return "the conversation so far", nil })
+	if !n.Compacted {
+		t.Fatalf("expected a compaction: %+v", n)
+	}
+	var summary string
+	for _, m := range a.Messages() {
+		if strings.HasPrefix(m.Content, CompactSummaryPrefix) {
+			summary = m.Content
+		}
+	}
+	if !strings.HasSuffix(summary, "the conversation so far\n\nthe list as it stands") {
+		t.Fatalf("the carried state should stand under the summary, got %q", summary)
+	}
+	if got := CarryUnder("s", func() string { return "" }); got != "s" {
+		t.Errorf("an empty carry should add nothing, got %q", got)
+	}
+}
+
 // The surface's seams either side of a compaction fire around the act and
 // only around it: in front of the summary request with the occupancy it is
 // being asked at, behind the rebuild with both figures — and nothing behind a

@@ -15,10 +15,10 @@ tool:read_file:{"path":"cache.go"}
 Entries are read in Get alone, and nothing ever evicts them.
 
 [writer-1]
-1. Read cache.go\n2. Run gofmt\n3. Report every reader of an entry
+tool:steps:{"steps":[{"title":"Read cache.go"},{"title":"Run gofmt"},{"title":"Report every reader of an entry"}]}
 +tool:read_file:{"path":"cache.go"}
 wait:1
-+progress: 1
++tool:steps:{"steps":[{"title":"Read cache.go","done":true},{"title":"Run gofmt"},{"title":"Report every reader of an entry"}]}
 +tool:execute_command:{"command":"gofmt -l cache.go"}
 wait:40
 +Entries are read in Get alone.

@@ -5,9 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/plan"
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
@@ -229,25 +231,33 @@ func TestQueuedWriterHasNoWorktreeUntilItRuns(t *testing.T) {
 	}
 }
 
-// A steer that joins a child's conversation moves it onto the task it was
-// given, so the child's next message that goes on to a call may declare a
-// list of its own; until it does, the old list stands.
-func TestASteerLetsAChildDeclareAFreshList(t *testing.T) {
+// A child's steps call names its whole list: what the call leaves is what
+// the lane counts, a later call replaces it whole, and a refused call leaves
+// the list alone and says why.
+// See docs/capabilities/subagents.md#how-far-along-is-three-numbers-not-one.
+func TestAChildsStepsCallIsTheListItsLaneCounts(t *testing.T) {
 	c := &child{name: "writer-1"}
-	c.noteSteps("1. Read\n2. Patch", true)
-	c.noteSteps("1. Something else\n2. Again\n3. More", true)
+	exec := c.stepsExecutor(func(name string, _ json.RawMessage) (string, error) { return "ran " + name, nil })
+	if got, _ := exec("read_file", nil); got != "ran read_file" {
+		t.Fatalf("another tool should pass through, got %q", got)
+	}
+	out, err := exec(plan.StepsToolName, json.RawMessage(`{"steps":[{"title":"Read","done":true},{"title":"Patch"}]}`))
+	if err != nil || !strings.Contains(out, "1 of 2 done") {
+		t.Fatalf("steps = %q, %v", out, err)
+	}
+	if sc := c.stepCount(); !sc.Own || sc.Done != 1 || sc.Total != 2 || sc.Current != "Patch" {
+		t.Fatalf("the lane's count = %+v, want 1 of 2 on the patch", sc)
+	}
+	if _, err := exec(plan.StepsToolName, json.RawMessage(`{"steps":[{"title":""}]}`)); err == nil {
+		t.Fatal("a step with no title should be refused")
+	}
 	if sc := c.stepCount(); sc.Total != 2 {
-		t.Fatalf("an unsteered later list was taken: %+v", sc)
+		t.Fatalf("a refused call moved the list: %+v", sc)
 	}
-	c.steering = []queuedSteer{{text: "do the docs instead", from: SteerFromLane}}
-	if msgs := c.drainSteering(); len(msgs) != 1 {
-		t.Fatalf("drained %v", msgs)
+	if _, err := exec(plan.StepsToolName, json.RawMessage(`{"steps":[{"title":"Docs"},{"title":"Changelog"},{"title":"Release note"}]}`)); err != nil {
+		t.Fatal(err)
 	}
-	if sc := c.stepCount(); sc.Total != 2 {
-		t.Fatalf("the old list should stand until a new one is declared: %+v", sc)
-	}
-	c.noteSteps("1. Docs\n2. Changelog\n3. Release note", true)
-	if sc := c.stepCount(); sc.Total != 3 || sc.Current != "Docs" {
-		t.Fatalf("the steered child's list = %+v, want 0 of 3 on the docs", sc)
+	if sc := c.stepCount(); sc.Done != 0 || sc.Total != 3 || sc.Current != "Docs" {
+		t.Fatalf("a later call should replace the list whole, got %+v", sc)
 	}
 }

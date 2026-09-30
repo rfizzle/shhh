@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/plan"
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
@@ -628,12 +629,15 @@ func TestTheEnvironmentIsToldTheAttemptItIsBuiltFor(t *testing.T) {
 }
 
 // A retry is a fresh conversation, so it starts with no working list: the
-// attempt it replaces named one and marked a step, and neither reaches the
-// new attempt's count.
+// attempt it replaces named one and marked a step through its own executor,
+// and neither reaches the new attempt's count.
 func TestARetryStartsWithNoWorkingList(t *testing.T) {
 	env := &scriptedEnv{steps: []streamStep{{
-		text:  "1. Read the loop\n2. Report\nprogress: 1",
-		calls: []provider.ToolCall{{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}},
+		text: "Surveying the loop.",
+		calls: []provider.ToolCall{
+			{ID: "c0", Name: plan.StepsToolName, Arguments: `{"steps":[{"title":"Read the loop","done":true},{"title":"Report"}]}`},
+			{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`},
+		},
 	}}}
 	sup := newTestSupervisor(t, env)
 	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"survey the loop"}`)

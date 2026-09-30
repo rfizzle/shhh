@@ -80,12 +80,27 @@ type ResumeNotice struct {
 //
 // A nil store or an unnamed slot still surveys: the tree is the half that
 // does not come from the store, and it is the half that moves.
-func ResumeContext(db *storage.DB, slot, dir string) ResumeNotice {
+//
+// steps is whether the conversation is told its working list: only a
+// session that registered the steps tool is, since the list names the tool's
+// numbers and a run without the tool would be told of a list it cannot keep.
+func ResumeContext(db *storage.DB, slot, dir string, steps bool) ResumeNotice {
 	var saved storage.ChatResume
 	if db != nil && slot != "" {
 		saved, _ = db.ChatResume(slot)
 	}
-	return resumeNotice(project.Survey(dir), saved)
+	n := resumeNotice(project.Survey(dir), saved)
+	if !steps {
+		return n
+	}
+	// The call that set the list may be far behind, or gone with a
+	// compaction, and the model carries on from the numbers it is drawn by
+	// (worksteps.go).
+	if carried := plan.CarriedSteps(plan.DecodeChecklist(saved.Steps)); carried != "" {
+		n.Messages = append(n.Messages, provider.Message{Role: provider.RoleUser, Content: carried})
+		n.Text += "\n\n" + carried
+	}
+	return n
 }
 
 // resumeNotice assembles the notice from a survey and what the slot
@@ -305,7 +320,7 @@ func (m *Model) resumeConversation(slot string, msgs []provider.Message) {
 // standing facts, and because the transcript that follows is what they
 // correct; the row goes at the end, where the reader is looking.
 func (m *Model) injectResumeContext() {
-	n := ResumeContext(m.db, m.sessionName, m.workspace)
+	n := ResumeContext(m.db, m.sessionName, m.workspace, m.codingSurfaces())
 	msgs := m.agent.Messages()
 	at := 0
 	if len(msgs) > 0 && msgs[0].Role == provider.RoleSystem {
@@ -382,6 +397,11 @@ func stripResumeContext(msgs []provider.Message) []provider.Message {
 	// open the way one does, which is somebody's turn and stays.
 	if end < len(msgs) && msgs[end].Role == provider.RoleUser &&
 		strings.HasPrefix(msgs[end].Content, resumeSummaryPrefix) {
+		end++
+	}
+	// And the list, which is only ever the last part of one.
+	if end < len(msgs) && msgs[end].Role == provider.RoleUser &&
+		strings.HasPrefix(msgs[end].Content, plan.CarriedStepsPrefix) {
 		end++
 	}
 	kept := make([]provider.Message, 0, len(msgs)-(end-at))

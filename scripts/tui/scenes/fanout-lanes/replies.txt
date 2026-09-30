@@ -27,14 +27,14 @@ The counter is read at the top of the loop, and nowhere else.
 # and is kept waiting on the first token: its lane is the one still going
 # while the block is read.
 #
-# It opens with the numbered plan a writer is asked for and marks the first
-# step done on its next round, so the lane still going is the one that counts
-# its own steps: `1 of 3 steps`, with the step it is on after its task.
+# It opens by setting its working list and marks the first step done on its
+# next round, so the lane still going is the one that counts its own steps:
+# `1 of 3 steps`, with the step it is on after its task.
 [writer-1]
-1. Read the loop\n2. Run the count\n3. Report where it is read
+tool:steps:{"steps":[{"title":"Read the loop"},{"title":"Run the count"},{"title":"Report where it is read"}]}
 +tool:read_file:{"path":"loop.go"}
 wait:1
-+progress: 1
++tool:steps:{"steps":[{"title":"Read the loop","done":true},{"title":"Run the count"},{"title":"Report where it is read"}]}
 +tool:execute_command:{"command":"echo counted"}
 wait:40
 +The counter is read at the top of the loop, and nowhere else.

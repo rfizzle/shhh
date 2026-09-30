@@ -51,6 +51,19 @@ const CompactInstruction = "Summarize this conversation so it can be continued f
 // loads, and this is one of the few nobody typed.
 const CompactSummaryPrefix = "Summary of the conversation so far (earlier messages were compacted):"
 
+// CarryUnder is summary with what carry returns appended under it, the way
+// every rebuild puts state the conversation no longer holds in front of the
+// model again.
+func CarryUnder(summary string, carry func() string) string {
+	if carry == nil {
+		return summary
+	}
+	if t := carry(); t != "" {
+		return summary + "\n\n" + t
+	}
+	return summary
+}
+
 // CompactSummaryMessage is the user-role message that carries the summary.
 func CompactSummaryMessage(summary string) string {
 	return CompactSummaryPrefix + "\n\n" + summary
@@ -252,6 +265,14 @@ type Compactor struct {
 	// See docs/capabilities/hooks.md#a-compaction-is-a-seam.
 	Before func(beforePct int)
 	After  func(n CompactNotice)
+	// Carry is state the agent keeps outside its conversation and must still
+	// hold once the summary replaces it — its working list — appended under
+	// the summary. A summary is the model's prose about the work, and a list
+	// the model can only reach through the result of a call the rebuild
+	// discarded would be one it no longer knows it has. Nil or "" carries
+	// nothing.
+	// See docs/capabilities/coding-agent.md#the-session-keeps-its-own-working-steps.
+	Carry func() string
 
 	cal Calibration
 	// asked records that a summary was already requested on this crossing. A
@@ -455,7 +476,7 @@ func (c *Compactor) recover(a *Agent, before int64, ask CompactAsk) CompactNotic
 		return n
 	}
 	kept := a.CompactKeep(c.keepBudget(), c.cal)
-	a.Compact(summary, kept)
+	a.Compact(CarryUnder(summary, c.Carry), kept)
 	c.rewriteSystem(a)
 	n.Compacted, n.Kept = true, CompactKeptTurns(kept)
 	n.AfterPct = percentOfWindow(c.Estimate(a.Messages()), c.Window)

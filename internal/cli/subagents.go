@@ -29,6 +29,7 @@ import (
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/notebook"
 	"github.com/rfizzle/shhh/internal/persona"
+	"github.com/rfizzle/shhh/internal/plan"
 	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/prompt"
@@ -374,6 +375,9 @@ func withSessionTools(session chatSession, red *evidence.Reducer, signature, cro
 		keepResult = skill.IsContent
 	}
 	defs, base, sysPrompt = withNotebook(session.notebook, signature, defs, base, sysPrompt)
+	// Every role keeps a working list its lane is counted by; the supervisor
+	// answers the call on the child's own (internal/subagent/steps.go).
+	defs = append(defs, plan.StepsToolDefinition())
 	// The servers the person marked read-only are reads, and a child gets
 	// them the way it gets the skills catalog. Every other server's tools
 	// need a card, and a child has no card of its own

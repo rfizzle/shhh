@@ -12,6 +12,7 @@ import (
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/evidence"
 	"github.com/rfizzle/shhh/internal/notebook"
+	"github.com/rfizzle/shhh/internal/plan"
 	"github.com/rfizzle/shhh/internal/process"
 	"github.com/rfizzle/shhh/internal/prompt"
 	"github.com/rfizzle/shhh/internal/provider"
@@ -299,6 +300,9 @@ func (t *toolset) executor(session chatSession) agent.ToolExecutor {
 	}
 	if session.notebook != nil {
 		exec = session.notebook.WrapExecutor(notebook.Orchestrator, exec)
+	}
+	if session.workSteps {
+		exec = plan.WrapStepsExecutor(exec)
 	}
 	if t.evidence != nil {
 		exec = t.evidence.WrapExecutor(exec)

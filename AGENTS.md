@@ -713,6 +713,28 @@ The reasons are in
 and, for the backlog runner's seven,
 [`docs/capabilities/todo.md#the-stage-prompts-are-yours-to-edit`](docs/capabilities/todo.md#the-stage-prompts-are-yours-to-edit).
 
+### The working list
+
+The session's own steps and every child's are kept with the `steps` tool
+(`internal/plan/stepstool.go`): each call names the whole list, and
+`plan.ParseStepsCall` is the one reading of it. Why it is a tool and not a
+line format any more:
+[`docs/capabilities/coding-agent.md#the-session-keeps-its-own-working-steps`](docs/capabilities/coding-agent.md#the-session-keeps-its-own-working-steps).
+What will bite you: **the session's executor keeps no state.**
+`plan.WrapStepsExecutor` checks the call and answers with the list it names;
+the list the rail draws is `Model.workSteps`, a value, set by `noteStepsCall`
+when the result lands in `turn.go`'s `toolResultsMsg` case — on the UI
+goroutine, in call order — so every reset, rewind and restore path goes on
+treating it as a value. An applied call leaves no transcript row (the STEPS
+block is its display); a refused one keeps its row. A child's list is
+`child.own` under `c.mu`, written by `child.stepsExecutor`, installed in
+`openWorkspace`. **The list lives outside the conversation, so every rebuild
+has to carry it**: `agent.Compactor.Carry` for a child, `agent.CarryUnder`
+at `finishCompact` for the session, and `ResumeContext`'s `steps` argument
+for a reopened conversation — false on the `-p` path, which registers no
+tool — with `stripResumeContext` taking the carried copy off again at every
+save.
+
 ### Context management
 
 Two mechanisms in one place. The message surgery is

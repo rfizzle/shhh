@@ -1,6 +1,7 @@
 package plan
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"testing"
@@ -11,146 +12,90 @@ func tally(l Checklist) string {
 	return fmt.Sprintf("%d/%d %q", done, total, current)
 }
 
-// No list is nothing: a checklist nobody declared tallies to zero steps, which
-// every surface draws as no block rather than as zero of zero.
-func TestChecklist_NoListIsNothing(t *testing.T) {
-	var l Checklist
-	if l.Note("I will look at the loop.", true) || l.Note("progress: 1", true) {
-		t.Fatal("a message with no list moved an empty checklist")
+// call reads a steps call written as the model would write it, failing the
+// test where the tool would have refused it.
+func call(t *testing.T, args string) Checklist {
+	t.Helper()
+	l, err := ParseStepsCall(json.RawMessage(args))
+	if err != nil {
+		t.Fatalf("ParseStepsCall(%s): %v", args, err)
 	}
-	if got := tally(l); got != `0/0 ""` {
+	return l
+}
+
+// No list is nothing: a checklist nobody declared tallies to zero steps, which
+// every surface draws as no block rather than as zero of zero — and an empty
+// call is how a list is cleared.
+func TestChecklist_NoListIsNothing(t *testing.T) {
+	for _, l := range []Checklist{{}, call(t, `{"steps":[]}`)} {
+		if got := tally(l); got != `0/0 ""` {
+			t.Fatalf("tally = %s", got)
+		}
+		if l.Encode() != "" {
+			t.Fatal("an empty checklist should store as nothing")
+		}
+	}
+	if got := call(t, `{"steps":[]}`).Report(); got != "The working list is cleared." {
+		t.Fatalf("an empty call should say the list is cleared, got %q", got)
+	}
+}
+
+// A call names the whole list: numbered from 1 in the order given, marked
+// where it says done, and on the first step it does not.
+func TestStepsCall_NamesTheWholeList(t *testing.T) {
+	l := call(t, `{"steps":[{"title":"Read the loop","done":true},{"title":"Patch the  limit"},{"title":"Run the tests"}]}`)
+	if got := tally(l); got != `1/3 "Patch the limit"` {
 		t.Fatalf("tally = %s", got)
 	}
-	if l.Encode() != "" {
-		t.Fatal("an empty checklist should store as nothing")
+	for i, s := range l.Steps {
+		if s.Number != i+1 {
+			t.Fatalf("step %d is numbered %d", i, s.Number)
+		}
 	}
 }
 
-// A list is taken from a message that goes on to a call, and its marks move it.
-func TestChecklist_TakenBeforeACallAndMarked(t *testing.T) {
-	var l Checklist
-	if !l.Note("Plan:\n1. Read the loop\n2. Add the flag\n3. Test it", true) {
-		t.Fatal("the list was not taken")
+// The next call replaces the list whole, so a mark is taken back and a step
+// reworded or dropped by sending the list as it now stands — the three things
+// the text grammar the tool replaced could not do.
+func TestStepsCall_ReplacesTheListWhole(t *testing.T) {
+	first := call(t, `{"steps":[{"title":"Read","done":true},{"title":"Patch","done":true},{"title":"Test"}]}`)
+	second := call(t, `{"steps":[{"title":"Read","done":true},{"title":"Patch the ceiling"},{"title":"Test"}]}`)
+	if got := tally(second); got != `1/3 "Patch the ceiling"` {
+		t.Fatalf("a taken-back mark and a reworded step should read 1/3 on the step, got %s", got)
 	}
-	if got := tally(l); got != `0/3 "Read the loop"` {
-		t.Fatalf("fresh tally = %s", got)
-	}
-	l.Note("progress: 1\nprogress: 7", true)
-	if got := tally(l); got != `1/3 "Add the flag"` {
-		t.Fatalf("after a mark = %s (a number off the list marks nothing)", got)
-	}
-	// A turn-ending message's marks count too.
-	l.Note("All done.\nprogress: 2\nprogress: 3", false)
-	if got := tally(l); got != `3/3 ""` {
-		t.Fatalf("after the closing marks = %s", got)
+	if got := tally(first); got != `2/3 "Test"` {
+		t.Fatalf("a later call moved the earlier list: %s", got)
 	}
 }
 
-// A message that ends the turn is a report, and its numbered list is not taken.
-func TestChecklist_AReportIsNotAList(t *testing.T) {
-	var l Checklist
-	l.Note("Changed:\n1. loop.go\n2. loop_test.go", false)
-	if _, total, _ := l.Tally(); total != 0 {
-		t.Fatalf("a report's list was taken: %s", tally(l))
+// A call the tool refuses says why, in words the model can act on.
+func TestStepsCall_RefusesWhatItCannotDraw(t *testing.T) {
+	long := `{"steps":[` + strings.TrimSuffix(strings.Repeat(`{"title":"x"},`, MaxWorkingSteps+1), ",") + `]}`
+	for args, want := range map[string]string{
+		long:                         "holds at most",
+		`{"steps":[{"title":"  "}]}`: "step 1 has no title",
+		`{"steps":"read the loop"}`:  "invalid arguments",
+	} {
+		if _, err := ParseStepsCall(json.RawMessage(args)); err == nil || !strings.Contains(err.Error(), want) {
+			t.Errorf("ParseStepsCall(%.40s) = %v, want an error saying %q", args, err, want)
+		}
 	}
 }
 
-// A second numbered list without the marker is text; under `steps:` it
-// replaces the unfinished steps, keeps the finished ones, and numbers the new
-// ones after the last finished step.
-func TestChecklist_OnlyAMarkedListRevises(t *testing.T) {
-	var l Checklist
-	l.Note("1. Read\n2. Patch\n3. Test", true)
-	l.Note("progress: 1", true)
-	l.Note("Files:\n1. a.go\n2. b.go", true)
-	if got := tally(l); got != `1/3 "Patch"` {
-		t.Fatalf("an unmarked list replaced the checklist: %s", got)
-	}
-	l.Note("progress: 2\nChanging course.\n**steps:**\n1. Add a flag\n2. Test", true)
-	if got := tally(l); got != `2/4 "Add a flag"` {
-		t.Fatalf("after the revision = %s, want the two finished kept and two new", got)
-	}
-	if l.Steps[2].Number != 3 || l.Steps[3].Number != 4 {
-		t.Fatalf("the new steps should be numbered after the finished ones: %+v", l.Steps)
-	}
-	l.Note("progress: 3", true)
-	if got := tally(l); got != `3/4 "Test"` {
-		t.Fatalf("marking a revised step = %s", got)
-	}
-}
-
-// A revision in a message that ends the turn revises nothing.
-func TestChecklist_ARevisionEndingTheTurnIsText(t *testing.T) {
-	var l Checklist
-	l.Note("1. Read\n2. Patch", true)
-	l.Note("steps:\n1. Something else", false)
-	if got := tally(l); got != `0/2 "Read"` {
-		t.Fatalf("a closing message revised the list: %s", got)
-	}
-}
-
-// A list longer than a checklist may be is a list, first time or revised.
-func TestChecklist_ATooLongListIsAList(t *testing.T) {
-	var long strings.Builder
-	for i := 1; i <= MaxWorkingSteps+1; i++ {
-		fmt.Fprintf(&long, "%d. step %d\n", i, i)
-	}
-	var l Checklist
-	l.Note(long.String(), true)
-	if _, total, _ := l.Tally(); total != 0 {
-		t.Fatalf("a %d-item list was taken", MaxWorkingSteps+1)
-	}
-	l.Note("1. Read", true)
-	l.Note("steps:\n"+long.String(), true)
-	if got := tally(l); got != `0/1 "Read"` {
-		t.Fatalf("a too-long revision replaced the list: %s", got)
-	}
-}
-
-// A new turn may declare a fresh list in its first message that goes on to a
-// call; until then the old list stands, and a later list in that turn is text.
-func TestChecklist_ANewTurnMayDeclareAgain(t *testing.T) {
-	var l Checklist
-	l.Note("1. Read\n2. Patch\nprogress: 1", true)
-	l.Reopen()
-	if got := tally(l); got != `1/2 "Patch"` {
-		t.Fatalf("reopening dropped the list: %s", got)
-	}
-	l.Note("1. Docs\n2. Changelog", true)
-	if got := tally(l); got != `0/2 "Docs"` {
-		t.Fatalf("the new turn's list = %s", got)
-	}
-	l.Note("1. Other\n2. Things", true)
-	if got := tally(l); got != `0/2 "Docs"` {
-		t.Fatalf("a second list in the turn replaced it: %s", got)
-	}
-
-	var m Checklist
-	m.Note("1. Read\n2. Patch", true)
-	m.Reopen()
-	m.Note("Looking first.", true)
-	m.Note("1. Other\n2. Things", true)
-	if got := tally(m); got != `0/2 "Read"` {
-		t.Fatalf("a list after the turn's first call replaced it: %s", got)
-	}
-}
-
-// A mark writes a new map rather than the one a copy shares.
-func TestChecklist_ACopyIsNotMovedByTheOriginal(t *testing.T) {
-	var l Checklist
-	l.Note("1. Read\n2. Patch\nprogress: 1", true)
-	copied := l
-	l.Note("progress: 2", true)
-	if got := tally(copied); got != `1/2 "Patch"` {
-		t.Fatalf("the copy moved with the original: %s", got)
+// The result is the list with the numbers it is drawn by, the step being
+// worked on pointed at, so the model carries on from what is stored.
+func TestStepsCall_ReportsTheListAsItStands(t *testing.T) {
+	got := call(t, `{"steps":[{"title":"Read","done":true},{"title":"Patch"},{"title":"Test"}]}`).Report()
+	for _, want := range []string{"1 of 3 done — on: Patch", "  [x] 1. Read", "→ [ ] 2. Patch", "  [ ] 3. Test"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("the report lacks %q:\n%s", want, got)
+		}
 	}
 }
 
 // What a slot stores is what comes back.
 func TestChecklist_EncodeRoundTrips(t *testing.T) {
-	var l Checklist
-	l.Note("1. Read\n2. Patch\n3. Test\nprogress: 1", true)
-	l.Note("progress: 2\nsteps:\n1. Retest", true)
+	l := call(t, `{"steps":[{"title":"Read","done":true},{"title":"Patch","done":true},{"title":"Retest"}]}`)
 	back := DecodeChecklist(l.Encode())
 	if tally(back) != tally(l) || back.Steps[2].Number != 3 {
 		t.Fatalf("round trip = %s %+v, want %s", tally(back), back.Steps, tally(l))
@@ -165,8 +110,7 @@ func TestChecklist_EncodeRoundTrips(t *testing.T) {
 // The paths a step said it would touch are kept with it, through a slot as
 // well, because the steps screen draws them under the step.
 func TestChecklist_KeepsTheStepsPaths(t *testing.T) {
-	var l Checklist
-	l.Note("1. Patch the loop\n   files: loop.go, round.go\n2. Test it", true)
+	l := call(t, `{"steps":[{"title":"Patch the loop","paths":["loop.go"," round.go ",""]},{"title":"Test it"}]}`)
 	for _, got := range []Checklist{l, DecodeChecklist(l.Encode())} {
 		if p := got.Steps[0].Paths; len(p) != 2 || p[0] != "loop.go" || p[1] != "round.go" {
 			t.Fatalf("paths = %q", p)
@@ -174,5 +118,16 @@ func TestChecklist_KeepsTheStepsPaths(t *testing.T) {
 		if len(got.Steps[1].Paths) != 0 {
 			t.Fatalf("a step that named no files was given some: %q", got.Steps[1].Paths)
 		}
+	}
+}
+
+// Every other tool passes through the wrap untouched.
+func TestWrapStepsExecutor_PassesEveryOtherToolOn(t *testing.T) {
+	exec := WrapStepsExecutor(func(name string, _ json.RawMessage) (string, error) { return "ran " + name, nil })
+	if got, err := exec("read_file", nil); err != nil || got != "ran read_file" {
+		t.Fatalf("read_file = %q, %v", got, err)
+	}
+	if got, err := exec(StepsToolName, json.RawMessage(`{"steps":[{"title":"Read"}]}`)); err != nil || !strings.Contains(got, "0 of 1 done") {
+		t.Fatalf("steps = %q, %v", got, err)
 	}
 }

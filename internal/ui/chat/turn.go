@@ -325,9 +325,6 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 		hadText := m.streaming != ""
 		text := m.streaming
 		m.agent.NoteProgressProse(text)
-		// A message that ends the turn marks steps and declares none: a
-		// numbered list there is a report (worksteps.go).
-		m.noteWorkSteps(text, false)
 		m.finishStreaming()
 		// A reply that stopped at the output ceiling is not the model's whole
 		// answer, and nothing that follows a finished turn should treat it as
@@ -385,9 +382,6 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 			return answered(m.abortCompact())
 		}
 		checkpoint := m.noteProgressProse(m.streaming)
-		// The prose that goes on to a call is where the session's working list
-		// is declared, revised and marked (worksteps.go).
-		m.noteWorkSteps(m.streaming, true)
 		auto, gated := m.agent.BeginToolRound(m.streaming, msg.calls, m.requiresApproval)
 		m.approvalTotal = len(gated)
 		// A round is also where the session summary is scheduled:
@@ -443,6 +437,10 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 			m.recordToolResult(r.Call.Name, r.Duration, r.Result)
 			if agent.IsRepeatNotice(r.Result) {
 				m.signal(observe.SignalRepeat, r.Call.Name)
+			}
+			// In call order, so two steps calls in one round leave the second.
+			if m.noteStepsCall(r.Call) {
+				continue
 			}
 			m.appendCallRow(r.Call.ID, entry{kind: entryTool, toolName: r.Call.Name, toolArgs: r.Call.Arguments, toolResult: r.Result, duration: r.Duration})
 		}

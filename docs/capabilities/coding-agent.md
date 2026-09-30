@@ -588,8 +588,8 @@ coding prompt therefore asks for a short status before an extended
 investigation, after a material finding or plan change, and before a long edit
 or test phase. It names only the objective, evidence and next action; it never
 asks for private reasoning or a narration of every call. Where the task will
-take several steps, the same sentence asks for them as a short list the
-session can count ([its own working steps](#the-session-keeps-its-own-working-steps)).
+take several steps, the list of them is kept with a tool of its own
+([its own working steps](#the-session-keeps-its-own-working-steps)).
 
 The session has a second backstop for models that make only tool calls. After
 twelve calls or ninety seconds without assistant prose, it inserts a bounded
@@ -610,41 +610,53 @@ the record carries only that the checkpoint occurred.
 ## The session keeps its own working steps
 
 A status note says where the work is; it does not say how far. For a task of
-several steps the prompt therefore asks for the steps themselves: a short
-numbered list in the message before the call that starts them, a `progress:
-<n>` line as each finishes, and — when the approach changes — a new list
-under a line reading `steps:`. The rail draws it as `2 of 4 · <the step it is
-on>`. A short task needs none, and a session with no list draws nothing, never
-zero of zero.
+several steps the agent therefore keeps the steps themselves, with the steps
+tool: the list of what it means to do, in order, and which are done. The rail
+draws it as `2 of 4 · <the step it is on>`. A short task needs none, and a
+session with no list draws nothing, never zero of zero.
 
-It is the grammar a child's lane is counted in
+**A call names the whole list, every time.** Marking a step done, taking a
+mark back, rewording a step, adding one, dropping one and reordering them are
+all the same call, and what the call leaves is exactly the list it named — no
+numbering the agent has to predict, no revision that silently keeps something
+it meant to drop. The result is the list as it now stands, numbered as it is
+drawn, and a call that cannot be drawn (too long, a step with no title) is
+refused in words and changes nothing. That answer is the whole reason it is a
+tool: the list used to be a line format read out of the agent's prose — a
+numbered list, a `progress: <n>` line, a revision under `steps:` — and the
+agent never saw what the reader had made of it. A revision renumbered its steps
+out from under the marks that followed, a list over the limit was ignored
+without a word, and once a compaction or a resume took away the messages the
+list was written in, the agent had no way to know it still had one. A result
+is the feedback the format could not give, and a call per update costs no round
+of its own, since it rides in the round beside the work it counts.
+
+It is the tool a child's lane is counted by
 ([how far along is three numbers](subagents.md#how-far-along-is-three-numbers-not-one)),
-read by one reader for both, so a step is the same thing on the rail and on a
-lane. The rules are that reader's. A list is taken from text that goes on to a
-call and never from a message that ends a turn, because a report listing what
-changed in numbered lines is not a plan. It is taken once: a later numbered
-list is text unless it stands under `steps:`, and then it replaces the
-unfinished steps while the finished ones stay finished, the new ones numbered
-after them. The explicit marker is the whole difference between a revision
-and a list of files, which is why a revision needs it. A new instruction —
-a steer into a running turn included, since it moves what the turn is judged
-against — may declare a fresh list in its first message that goes on to a
-call; until it does, the last list stands.
+answered on each agent's own list, so a step is the same thing on the rail and
+on a lane. The call leaves no row in the transcript: the STEPS block is where
+the list is drawn, and a row per revision would be bookkeeping between the rows
+of the work it counts. A refused call keeps its row, because its error is
+something to read. The model is told when to reach for it by its definition and
+its toolbox line, which exist only in a session that registered it — a coding
+session somebody watches. A conversation keeps no list, and a `-p` run or a
+served session has no rail to draw one on.
 
-A line is the whole mechanism, never a tool: the list is the agent's own
-account of its work, written in the messages the work is written in, and a
-tool call per step would spend a round on bookkeeping. It is not a backlog
-item and not an approved plan. It belongs to the session — each child keeps
-its own, and nothing is shared between them — and it never touches the plan
-record, its steps or its approval: while an approved plan is being executed,
-the plan is the checklist and the session keeps no second one. Every step
-marked is the agent saying so, not the task being done; only the turn's own
-ending and its checks say that.
+It is not a backlog item and not an approved plan. It belongs to the session —
+each child keeps its own, and nothing is shared between them — and it never
+touches the plan record, its steps or its approval: while an approved plan is
+being executed, the plan is the checklist and the session keeps no second one.
+Every step marked is the agent saying so, not the task being done; only the
+turn's own ending and its checks say that.
 
 It is saved with the conversation beside the compaction summary and comes
 back when the conversation is opened again, so a resumed session shows the
-steps it was on. A new session starts with none, and a rewind drops it with
-the turns it cut, since what it marked may be work the rewind took back.
+steps it was on. **The list lives outside the conversation, so wherever the
+conversation is rebuilt it is put back in front of the model:** under the
+summary a compaction leaves, and in the reading a resumed conversation opens
+on. Neither copy is saved as something anybody said. A new session starts with
+none, and a rewind drops it with the turns it cut, since what it marked may be
+work the rewind took back.
 
 ## Two failures, two interruptions
 

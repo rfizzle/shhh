@@ -1266,7 +1266,7 @@ func heldScreensModel(t *testing.T) Model {
 		}))
 	_, _, _ = m.notebook.Write(notebook.Orchestrator, "The freeze is the target", "better, not wider")
 	landReading(&m, agent.SummaryVerdict{Text: "Reading the loop.", State: agent.SummaryOnTarget, Round: 3})
-	m.workSteps.Note("1. Locate the round accounting.\n2. Patch the limit", true)
+	m.workSteps = stepsCalled(t, `{"steps":[{"title":"Locate the round accounting."},{"title":"Patch the limit"}]}`)
 	m.transcript = append(m.transcript,
 		entry{kind: entryUser, text: "raise the cap", turn: 1},
 		entry{kind: entryTurnClose, turn: 1, close: &components.TurnClose{State: components.TurnDone, Elapsed: "9.0s"}})
