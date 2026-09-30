@@ -288,6 +288,40 @@ func (t *Toolset) Has(name string) bool {
 	return ok
 }
 
+// Binary is one binary a toolset found on PATH: its name, where it is, and
+// the tools this toolset registered over it.
+type Binary struct {
+	Name  string
+	Path  string
+	Tools []string
+}
+
+// Binaries is what the PATH probe came to: every binary found, in
+// registration order with git last, and the optional ones it did not find.
+// git is never among the missing, for ToolBinaries' reason. Safe on a nil
+// toolset, which found nothing and looked for nothing.
+func (t *Toolset) Binaries() (found []Binary, missing []string) {
+	if t == nil {
+		return nil, nil
+	}
+	for _, tool := range toolOrder {
+		path, ok := t.bins[tool]
+		if !ok {
+			missing = append(missing, binaryNames[tool])
+			continue
+		}
+		found = append(found, Binary{Name: binaryNames[tool], Path: path, Tools: []string{tool}})
+	}
+	if path, ok := t.bins[GitToolName]; ok {
+		repo := Binary{Name: binaryNames[GitToolName], Path: path, Tools: []string{GitToolName}}
+		if t.Has(GitWriteToolName) {
+			repo.Tools = append(repo.Tools, GitWriteToolName)
+		}
+		found = append(found, repo)
+	}
+	return found, missing
+}
+
 // Execute dispatches a structural tool call.
 func (t *Toolset) Execute(name string, args json.RawMessage) (string, error) {
 	if _, ok := t.bins[name]; !ok {

@@ -223,6 +223,20 @@ claude-opus-5-5                                        model
 
 [enter] open the turn · [esc] back to the prompt
 
+· tools · where the session's tools came from, the source under the pointer's account beside it
+/mcp · 3 servers · 2 of 4 up             [?] keys · [q] back
+────────────────────────────────────────────────────────────
+
+↑ 3 more
+❯ ✗ linear  error · server linear: connect: exec: "linear-m…
+↓ 7 more
+────────────────────────────────────────────────────────────
+linear                                                 error
+
+… (+12 more rows)
+
+[esc] back to the prompt
+
 ── ansi ────────────────────────────────────────────────────
 · doctor · the count on the left, the clock and the keys on the right
 ␛[1;97mshhh doctor␛[m␛[38;5;241m · 10 checks␛[m           ␛[38;5;245m1.4s␛[m␛[38;5;241m · [?] keys · [q] quit␛[m
@@ -436,3 +450,17 @@ claude-opus-5-5                                        model
 ␛[38;5;241m… (+8 more rows)␛[m
 
 ␛[38;5;245m[enter]␛[m␛[38;5;241m open the turn␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m
+
+· tools · where the session's tools came from, the source under the pointer's account beside it
+␛[1;97m/mcp␛[m␛[38;5;241m · 3 servers␛[m␛[38;5;241m · 2 of 4 up␛[m             ␛[38;5;241m[?] keys · [q] back␛[m
+␛[38;5;241m────────────────────────────────────────────────────────────␛[m
+
+␛[38;5;241m↑ 3 more␛[m
+␛[94m❯␛[m ␛[1;97;48;5;62m✗ linear  error · server linear: connect: exec: "linear-m…␛[m
+␛[38;5;241m↓ 7 more␛[m
+␛[38;5;241m────────────────────────────────────────────────────────────␛[m
+␛[1;97mlinear␛[m                                                 ␛[38;5;241merror␛[m
+
+␛[38;5;241m… (+12 more rows)␛[m
+
+␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m

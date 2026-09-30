@@ -1,0 +1,41 @@
+# program test: TestProgram_McpOpensWhereTheToolsCameFrom
+#
+# The TOOLS block is a door to every place the session's tools came from
+# (docs/interface/surfaces.md#the-inspector-rail), and the screen behind it is
+# one of the supporting screens (docs/interface/surfaces.md#the-supporting-screens).
+# The launch line configures one MCP server whose command is not installed,
+# so the connect fails and the block is up with the failure on it. A click is
+# the terminal's own SGR mouse report, sent as literal bytes: a press then a
+# release in one cell, column and row counted from 1. At 130 columns the
+# rail's first column is 85 and, after one turn, the TOOLS heading is on row
+# 3. The rail is not drawn below 130 columns, which is why the scene is driven
+# there.
+#
+# What the capture is for: at 02 the rail's TOOLS block says 1 of 2 up with
+# the failed server on it; at 03 a click on the heading has put the screen
+# over the pane and the rail, on the first source that is not up — the
+# server, with why it did not start and what would move it in /mcp's words,
+# under the heading's own `1 of 2 up`;
+# at 04 a click on the same cell has put the rail back, and the half-typed
+# draft is still in the box; at 05 bare /mcp, the key twin, opens the same
+# screen on the servers; at 06 the pointer is on the built-in toolset, whose
+# tools are listed; at 07 esc is back at the prompt.
+snap 01-start "Some things worth doing first"
+keys "why can you not see the tracker" Enter
+snap 02-reply "The tracker server did not start" "TOOLS" "1 of 2 up"
+keys "wait"
+keys -l "$(printf '\033[<0;85;3M\033[<0;85;3m')"
+snap 03-heading-opens "/mcp · 1 server · 1 of 2 up" "what would move it" "tracker-mcp-not-installed"
+keys -l "$(printf '\033[<0;85;3M\033[<0;85;3m')"
+snap 04-cell-closes "TOOLS" "wait"
+keys BSpace BSpace BSpace BSpace
+keys "/mcp" Enter
+snap 05-key-twin "/mcp · 1 server" "mcp servers"
+keys Up
+snap 06-built-in "read_file"
+keys Escape
+snap 07-back "The tracker server did not start" "[enter] send"
+keys C-c
+snap 08-quit-armed "again quits"
+keys C-c
+snap 09-exit "that is everything the screen was holding"

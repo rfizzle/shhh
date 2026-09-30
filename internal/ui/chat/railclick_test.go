@@ -80,6 +80,8 @@ func TestRailDoors_AHeadingOrAMarkerOpensItsSurfaceAndTheCellClosesIt(t *testing
 		{components.RailTodo, false, railTodoModel, "/todo"},
 		{components.RailTodo, true, railTodoModel, "/todo"},
 		{components.RailSpend, false, railDoorModel, "/stats"},
+		{components.RailTools, false, railToolsModel, "/mcp"},
+		{components.RailTools, true, railToolsModel, "/mcp"},
 	} {
 		name := c.block
 		if c.marker {

@@ -702,3 +702,26 @@ func TestSdPreviewSpellsTheUnifiedDiffExactly(t *testing.T) {
 		t.Errorf("preview =\n%q\nwant\n%q", got, want)
 	}
 }
+
+// What the probe came to reads back as the binaries found, each with the
+// tools registered over it and git last, and the optional ones missing — the
+// tools screen's rows, which start nothing to answer.
+func TestBinariesNameWhatWasFoundAndWhatWasNot(t *testing.T) {
+	ts := newTestToolset(t, map[string]string{
+		FdToolName: "/usr/bin/fd", SdToolName: "/usr/bin/sd", GitToolName: "/usr/bin/git",
+	})
+	found, missing := ts.Binaries()
+	var names []string
+	for _, b := range found {
+		names = append(names, b.Name+"="+strings.Join(b.Tools, ","))
+	}
+	if got := strings.Join(names, " "); got != "fd=fd sd=sd git=git" {
+		t.Errorf("found = %q", got)
+	}
+	if got := strings.Join(missing, " "); got != "ast-grep tokei" {
+		t.Errorf("missing = %q", got)
+	}
+	if f, m := (*Toolset)(nil).Binaries(); f != nil || m != nil {
+		t.Errorf("a nil toolset found %v and missed %v", f, m)
+	}
+}

@@ -79,8 +79,11 @@
                    contains its commands, the hosts it reaches, what the checkout was let load, its servers, secrets and tools —
                    each section naming the command that changes it. It reads and changes nothing
     /skills        the skills this session loaded (SKILL.md directories), and why any did not
-    /mcp           the MCP servers this session connected, and why any did not. trust <name> lets a server this checkout declares
-                   start from the next session on; distrust <name> withdraws that
+    /mcp           every place this session's tools came from on one screen, opened on the MCP servers: the built-in toolset, each
+                   server, the language servers, the binaries found on PATH and the web tools, each up or not with the tools it
+                   registered — and for one that is not up, what that costs and what would move it, in the words shhh mcp gives.
+                   On a server the checkout declared, [a] trusts the checkout or withdraws that, after asking, as /trust does; it
+                   takes effect in the next session. trust <name> and distrust <name> say where that answer is given
     /notes         the session's shared notebook — what the agents wrote for each other, and what a backlog run wrote up, listed
                    by author. Dropping is yours alone: drop <n> removes one, clear empties it
     /todo          the project's backlog: bare opens a picker · show|edit <slug> · add (reads this session into proposed items you
@@ -165,8 +168,11 @@
                    contains its commands, the hosts it reaches, what the checkout was let load, its servers, secrets and tools —
                    each section naming the command that changes it. It reads and changes nothing
     /skills        the skills this session loaded (SKILL.md directories), and why any did not
-    /mcp           the MCP servers this session connected, and why any did not. trust <name> lets a server this checkout declares
-                   start from the next session on; distrust <name> withdraws that
+    /mcp           every place this session's tools came from on one screen, opened on the MCP servers: the built-in toolset, each
+                   server, the language servers, the binaries found on PATH and the web tools, each up or not with the tools it
+                   registered — and for one that is not up, what that costs and what would move it, in the words shhh mcp gives.
+                   On a server the checkout declared, [a] trusts the checkout or withdraws that, after asking, as /trust does; it
+                   takes effect in the next session. trust <name> and distrust <name> say where that answer is given
     /notes         the session's shared notebook — what the agents wrote for each other, and what a backlog run wrote up, listed
                    by author. Dropping is yours alone: drop <n> removes one, clear empties it
     /todo          the project's backlog: bare opens a picker · show|edit <slug> · add (reads this session into proposed items you
@@ -258,8 +264,11 @@
                    ␛[38;5;244mcontains its commands, the hosts it reaches, what the checkout was let load, its servers, secrets and tools —␛[m
                    ␛[38;5;244meach section naming the command that changes it. It reads and changes nothing␛[m
     ␛[38;5;254m/skills␛[m        ␛[38;5;244mthe skills this session loaded (SKILL.md directories), and why any did not␛[m
-    ␛[38;5;254m/mcp␛[m           ␛[38;5;244mthe MCP servers this session connected, and why any did not. trust <name> lets a server this checkout declares␛[m
-                   ␛[38;5;244mstart from the next session on; distrust <name> withdraws that␛[m
+    ␛[38;5;254m/mcp␛[m           ␛[38;5;244mevery place this session's tools came from on one screen, opened on the MCP servers: the built-in toolset, each␛[m
+                   ␛[38;5;244mserver, the language servers, the binaries found on PATH and the web tools, each up or not with the tools it␛[m
+                   ␛[38;5;244mregistered — and for one that is not up, what that costs and what would move it, in the words shhh mcp gives.␛[m
+                   ␛[38;5;244mOn a server the checkout declared, [a] trusts the checkout or withdraws that, after asking, as /trust does; it␛[m
+                   ␛[38;5;244mtakes effect in the next session. trust <name> and distrust <name> say where that answer is given␛[m
     ␛[38;5;254m/notes␛[m         ␛[38;5;244mthe session's shared notebook — what the agents wrote for each other, and what a backlog run wrote up, listed␛[m
                    ␛[38;5;244mby author. Dropping is yours alone: drop <n> removes one, clear empties it␛[m
     ␛[38;5;254m/todo␛[m          ␛[38;5;244mthe project's backlog: bare opens a picker · show|edit <slug> · add (reads this session into proposed items you␛[m
@@ -344,8 +353,11 @@
                    ␛[38;5;244mcontains its commands, the hosts it reaches, what the checkout was let load, its servers, secrets and tools —␛[m
                    ␛[38;5;244meach section naming the command that changes it. It reads and changes nothing␛[m
     ␛[38;5;254m/skills␛[m        ␛[38;5;244mthe skills this session loaded (SKILL.md directories), and why any did not␛[m
-    ␛[38;5;254m/mcp␛[m           ␛[38;5;244mthe MCP servers this session connected, and why any did not. trust <name> lets a server this checkout declares␛[m
-                   ␛[38;5;244mstart from the next session on; distrust <name> withdraws that␛[m
+    ␛[38;5;254m/mcp␛[m           ␛[38;5;244mevery place this session's tools came from on one screen, opened on the MCP servers: the built-in toolset, each␛[m
+                   ␛[38;5;244mserver, the language servers, the binaries found on PATH and the web tools, each up or not with the tools it␛[m
+                   ␛[38;5;244mregistered — and for one that is not up, what that costs and what would move it, in the words shhh mcp gives.␛[m
+                   ␛[38;5;244mOn a server the checkout declared, [a] trusts the checkout or withdraws that, after asking, as /trust does; it␛[m
+                   ␛[38;5;244mtakes effect in the next session. trust <name> and distrust <name> say where that answer is given␛[m
     ␛[38;5;254m/notes␛[m         ␛[38;5;244mthe session's shared notebook — what the agents wrote for each other, and what a backlog run wrote up, listed␛[m
                    ␛[38;5;244mby author. Dropping is yours alone: drop <n> removes one, clear empties it␛[m
     ␛[38;5;254m/todo␛[m          ␛[38;5;244mthe project's backlog: bare opens a picker · show|edit <slug> · add (reads this session into proposed items you␛[m

@@ -117,9 +117,16 @@
                    the command that changes it. It reads and changes nothing
     /skills        the skills this session loaded (SKILL.md directories), and
                    why any did not
-    /mcp           the MCP servers this session connected, and why any did not.
-                   trust <name> lets a server this checkout declares start from
-                   the next session on; distrust <name> withdraws that
+    /mcp           every place this session's tools came from on one screen,
+                   opened on the MCP servers: the built-in toolset, each server,
+                   the language servers, the binaries found on PATH and the web
+                   tools, each up or not with the tools it registered — and for
+                   one that is not up, what that costs and what would move it,
+                   in the words shhh mcp gives. On a server the checkout
+                   declared, [a] trusts the checkout or withdraws that, after
+                   asking, as /trust does; it takes effect in the next session.
+                   trust <name> and distrust <name> say where that answer is
+                   given
     /notes         the session's shared notebook — what the agents wrote for
                    each other, and what a backlog run wrote up, listed by
                    author. Dropping is yours alone: drop <n> removes one, clear
@@ -250,9 +257,16 @@
                    the command that changes it. It reads and changes nothing
     /skills        the skills this session loaded (SKILL.md directories), and
                    why any did not
-    /mcp           the MCP servers this session connected, and why any did not.
-                   trust <name> lets a server this checkout declares start from
-                   the next session on; distrust <name> withdraws that
+    /mcp           every place this session's tools came from on one screen,
+                   opened on the MCP servers: the built-in toolset, each server,
+                   the language servers, the binaries found on PATH and the web
+                   tools, each up or not with the tools it registered — and for
+                   one that is not up, what that costs and what would move it,
+                   in the words shhh mcp gives. On a server the checkout
+                   declared, [a] trusts the checkout or withdraws that, after
+                   asking, as /trust does; it takes effect in the next session.
+                   trust <name> and distrust <name> say where that answer is
+                   given
     /notes         the session's shared notebook — what the agents wrote for
                    each other, and what a backlog run wrote up, listed by
                    author. Dropping is yours alone: drop <n> removes one, clear
@@ -393,9 +407,16 @@
                    ␛[38;5;241mthe command that changes it. It reads and changes nothing␛[m
     ␛[38;5;252m/skills␛[m        ␛[38;5;241mthe skills this session loaded (SKILL.md directories), and␛[m
                    ␛[38;5;241mwhy any did not␛[m
-    ␛[38;5;252m/mcp␛[m           ␛[38;5;241mthe MCP servers this session connected, and why any did not.␛[m
-                   ␛[38;5;241mtrust <name> lets a server this checkout declares start from␛[m
-                   ␛[38;5;241mthe next session on; distrust <name> withdraws that␛[m
+    ␛[38;5;252m/mcp␛[m           ␛[38;5;241mevery place this session's tools came from on one screen,␛[m
+                   ␛[38;5;241mopened on the MCP servers: the built-in toolset, each server,␛[m
+                   ␛[38;5;241mthe language servers, the binaries found on PATH and the web␛[m
+                   ␛[38;5;241mtools, each up or not with the tools it registered — and for␛[m
+                   ␛[38;5;241mone that is not up, what that costs and what would move it,␛[m
+                   ␛[38;5;241min the words shhh mcp gives. On a server the checkout␛[m
+                   ␛[38;5;241mdeclared, [a] trusts the checkout or withdraws that, after␛[m
+                   ␛[38;5;241masking, as /trust does; it takes effect in the next session.␛[m
+                   ␛[38;5;241mtrust <name> and distrust <name> say where that answer is␛[m
+                   ␛[38;5;241mgiven␛[m
     ␛[38;5;252m/notes␛[m         ␛[38;5;241mthe session's shared notebook — what the agents wrote for␛[m
                    ␛[38;5;241meach other, and what a backlog run wrote up, listed by␛[m
                    ␛[38;5;241mauthor. Dropping is yours alone: drop <n> removes one, clear␛[m
@@ -526,9 +547,16 @@
                    ␛[38;5;241mthe command that changes it. It reads and changes nothing␛[m
     ␛[38;5;252m/skills␛[m        ␛[38;5;241mthe skills this session loaded (SKILL.md directories), and␛[m
                    ␛[38;5;241mwhy any did not␛[m
-    ␛[38;5;252m/mcp␛[m           ␛[38;5;241mthe MCP servers this session connected, and why any did not.␛[m
-                   ␛[38;5;241mtrust <name> lets a server this checkout declares start from␛[m
-                   ␛[38;5;241mthe next session on; distrust <name> withdraws that␛[m
+    ␛[38;5;252m/mcp␛[m           ␛[38;5;241mevery place this session's tools came from on one screen,␛[m
+                   ␛[38;5;241mopened on the MCP servers: the built-in toolset, each server,␛[m
+                   ␛[38;5;241mthe language servers, the binaries found on PATH and the web␛[m
+                   ␛[38;5;241mtools, each up or not with the tools it registered — and for␛[m
+                   ␛[38;5;241mone that is not up, what that costs and what would move it,␛[m
+                   ␛[38;5;241min the words shhh mcp gives. On a server the checkout␛[m
+                   ␛[38;5;241mdeclared, [a] trusts the checkout or withdraws that, after␛[m
+                   ␛[38;5;241masking, as /trust does; it takes effect in the next session.␛[m
+                   ␛[38;5;241mtrust <name> and distrust <name> say where that answer is␛[m
+                   ␛[38;5;241mgiven␛[m
     ␛[38;5;252m/notes␛[m         ␛[38;5;241mthe session's shared notebook — what the agents wrote for␛[m
                    ␛[38;5;241meach other, and what a backlog run wrote up, listed by␛[m
                    ␛[38;5;241mauthor. Dropping is yours alone: drop <n> removes one, clear␛[m

@@ -261,6 +261,11 @@ const (
 	// width, the rail hidden, esc returns, and its [enter] opens a turn on
 	// the turns screen (stats.go).
 	stateSpend
+	// stateTools: the tools screen is up — every source this session's tools
+	// came from, with what each brought or why it did not. A takeover like
+	// the spend screen: full width, the rail hidden, esc returns, and its [a]
+	// records the checkout's trust answer after asking (tools.go).
+	stateTools
 )
 
 // minPanelHeight is the fewest rows the bottom panel takes: what a surface
@@ -1134,6 +1139,10 @@ type Model struct {
 	// mcp is the session's MCP servers: which tools are theirs, which run
 	// as reads, and the /mcp listing.
 	mcp MCP
+	// toolSources is what the tools screen reads that the chat cannot read
+	// itself: the sources outside the built-in toolset, and the checkout's
+	// trust answer (tools.go).
+	toolSources ToolSources
 	// hooks are the person's own commands at the session's seams; nil is a
 	// session with none, which every seam is safe under (hooks.go).
 	hooks *hook.Runner

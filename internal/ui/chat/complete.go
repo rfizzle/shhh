@@ -268,11 +268,7 @@ func buildSlashCommands() []slashCommand {
 			idleOnly: "it writes a file into the checkout"},
 		registeredSlash(setupCommandName),
 		{name: "/skills", desc: "the skills this session loaded, and why any did not"},
-		{name: "/mcp", args: "[trust <name>|distrust <name>]", desc: "the MCP servers this session connected, and why any did not",
-			argSpecs: staticArgs(
-				argOption{"trust", "let a project server start from the next session on"},
-				argOption{"distrust", "withdraw that"},
-			)},
+		registeredSlash("/mcp"),
 		{name: "/skill", args: "<name> [task]", desc: "activate a skill now, with your task after it",
 			enabled:  func(m *Model) bool { return m.skills.Len() > 0 },
 			argSpecs: []argSpec{{dynamic: skillArgs}}},

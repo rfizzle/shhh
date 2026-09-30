@@ -22,6 +22,7 @@ import (
 	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/mcp"
+	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/prompt"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/secret"
@@ -400,35 +401,14 @@ func mcpListingReport(ts *mcp.Toolset, cat *mcp.Catalog, root string) report.Rep
 	resources := report.Section{Header: "RESOURCES"}
 	connected := 0
 	for _, rep := range ts.Reports {
-		row := report.Row{
-			State:   report.StateOf(mcpState(rep.Status)),
-			Name:    rep.Definition.Name,
-			Subject: mcpDetail(rep.Definition),
-			Outcome: mcpOutcome(rep),
-		}
+		row, up := mcpServerRow(rep, root)
+		servers.Rows = append(servers.Rows, row)
 		if rep.Status != mcp.StatusConnected {
-			row.Consequence = mcpConsequence(rep)
-			row.Fix = mcpFix(rep, root)
-			if rep.Error != "" {
-				row.Fix = append(strings.Split(rep.Error, "\n"), row.Fix...)
-			}
-			servers.Rows = append(servers.Rows, row)
 			continue
 		}
-		row.Detail = mcpOffering(rep.Server)
-		// A server that answered the handshake and then went is a connect
-		// in the report and a failure to the reader, who is looking at this
-		// screen to find out what they can still call. Its tools stay in
-		// the sections below because the model still has their names; what
-		// they answer with now is the row above them.
-		if why := rep.Server.Dead(); why != "" {
-			row.State, row.Outcome = report.Fail, mcpDeadNote
-			row.Consequence = "its tools are not in this session any more"
-			row.Fix = []string{firstLine(why), "start a new session to reach it again"}
-		} else {
+		if up {
 			connected++
 		}
-		servers.Rows = append(servers.Rows, row)
 		// The tools of this session and not of that server: a definition
 		// that named its tools left the rest outside, and a listing that
 		// answers "what can I call" must not print them
@@ -463,6 +443,38 @@ func mcpListingReport(ts *mcp.Toolset, cat *mcp.Catalog, root string) report.Rep
 	r.Tally = countOf(connected, "server", "servers") + " connected; a server marked read-only " +
 		"runs without asking, every other server's calls ask like a command"
 	return r
+}
+
+// mcpServerRow is one server as the listing reads it: the row, what not
+// connecting costs and what would fix it, and whether it is up now. The tools
+// screen reads a server's words from here too, so the two say one thing.
+func mcpServerRow(rep mcp.Report, root string) (report.Row, bool) {
+	row := report.Row{
+		State:   report.StateOf(mcpState(rep.Status)),
+		Name:    rep.Definition.Name,
+		Subject: mcpDetail(rep.Definition),
+		Outcome: mcpOutcome(rep),
+	}
+	if rep.Status != mcp.StatusConnected {
+		row.Consequence = mcpConsequence(rep)
+		row.Fix = mcpFix(rep, root)
+		if rep.Error != "" {
+			row.Fix = append(strings.Split(rep.Error, "\n"), row.Fix...)
+		}
+		return row, false
+	}
+	row.Detail = mcpOffering(rep.Server)
+	// A server that answered the handshake and then went is a connect in the
+	// report and a failure to the reader, who is looking at this to find out
+	// what they can still call. Its tools stay listed because the model still
+	// has their names; what they answer with now is this row.
+	if why := rep.Server.Dead(); why != "" {
+		row.State, row.Outcome = report.Fail, mcpDeadNote
+		row.Consequence = "its tools are not in this session any more"
+		row.Fix = []string{firstLine(why), "start a new session to reach it again"}
+		return row, false
+	}
+	return row, true
 }
 
 // mcpPromptDetail is what a prompt's row says beside its command: how it is
@@ -577,8 +589,7 @@ func mcpFinding(r mcp.Report, root string, db *storage.DB) doctorFinding {
 	if r.Status == mcp.StatusUntrusted && db != nil && root != "" {
 		t := projectTrust()
 		f.Action = "trust this checkout"
-		f.ActionPrompt = "Trust " + shortPath(t.Root) + "? " + d.Name + " starts from " + d.Source +
-			" and runs " + d.Target() + " as you, along with everything else the checkout declares."
+		f.ActionPrompt = mcpTrustPrompt(t, d)
 		f.Apply = func() ([]string, error) {
 			row, err := setProjectTrust(db, t, true)
 			if err != nil {
@@ -588,6 +599,15 @@ func mcpFinding(r mcp.Report, root string, db *storage.DB) doctorFinding {
 		}
 	}
 	return f
+}
+
+// mcpTrustPrompt is the question put before a project server's checkout is
+// trusted: what that one server would run, and that the answer covers the
+// rest of what the checkout declares. The `shhh mcp` row and the session's
+// tools screen both ask it.
+func mcpTrustPrompt(t project.Trust, d mcp.Definition) string {
+	return "Trust " + shortPath(t.Root) + "? " + d.Name + " starts from " + d.Source +
+		" and runs " + d.Target() + " as you, along with everything else the checkout declares."
 }
 
 // mcpOffered is what one connected server holds, as the lines a fix key

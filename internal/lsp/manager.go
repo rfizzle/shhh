@@ -92,6 +92,10 @@ type Manager struct {
 	// with no file to route on can be put to the servers that exist without
 	// racing the sync.Once that started them.
 	running []startedServer
+	// failed is every server whose start was tried and did not come up, with
+	// what it said, recorded for the same reason running is: ms.err is only
+	// safe to read inside the Once.
+	failed []failedServer
 	// held is the file → open question left by an edit whose wait ran out.
 	// One entry per file: a file edited again replaces its question, because
 	// diagnostics for the file as it was are not a report on the file as it
@@ -171,6 +175,9 @@ func (m *Manager) start(ms *managedServer) *server {
 	ms.once.Do(func() {
 		ms.srv, ms.err = startServer(ms.spec, m.root, m.opts.connect, m.opts.RequestTimeout)
 		if ms.err != nil {
+			m.mu.Lock()
+			m.failed = append(m.failed, failedServer{name: ms.spec.Name, err: ms.err.Error()})
+			m.mu.Unlock()
 			return
 		}
 		// Recorded here rather than read off the map later: ms.srv is only
@@ -193,6 +200,48 @@ func (m *Manager) runningServers() []startedServer {
 	defer m.mu.Unlock()
 	out := append([]startedServer(nil), m.running...)
 	sort.Slice(out, func(i, j int) bool { return out[i].name < out[j].name })
+	return out
+}
+
+// failedServer is a server whose start was tried and did not come up.
+type failedServer struct {
+	name, err string
+}
+
+// ServerState is one detected server as the session stands with it: the
+// files it owns, and whether it has started, failed to, or not yet been
+// asked — a server starts on the first file it owns, so "not yet" is the
+// state of every server until something touches one.
+type ServerState struct {
+	Name       string
+	Command    string
+	Extensions []string
+	// Running says the server came up. Err is why it did not, where its start
+	// was tried; both empty is a server nothing has needed yet.
+	Running bool
+	Err     string
+}
+
+// States is every detected server's standing, by name. It starts nothing.
+func (m *Manager) States() []ServerState {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	out := make([]ServerState, 0, len(m.servers))
+	for name, ms := range m.servers {
+		st := ServerState{Name: name, Command: ms.spec.Command, Extensions: ms.spec.Extensions}
+		for _, r := range m.running {
+			if r.name == name {
+				st.Running = true
+			}
+		}
+		for _, f := range m.failed {
+			if f.name == name {
+				st.Err = f.err
+			}
+		}
+		out = append(out, st)
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].Name < out[j].Name })
 	return out
 }
 

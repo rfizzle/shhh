@@ -1375,7 +1375,7 @@ opens every reading the session has taken, THIS TURN every turn the session
 has run, ALERTS every alert the session has had, standing and superseded,
 CHANGES opens the session's diff, AGENTS the manager, STEPS the whole working list,
 PLAN the approved plan's whole checklist on that same screen,
-TODO the backlog screen, CONTEXT the occupancy screen and SPEND the session's whole bill — each the surface its command already opens, so
+TODO the backlog screen, CONTEXT the occupancy screen, SPEND the session's whole bill and TOOLS every place the session's tools came from — each the surface its command already opens, so
 the command is the door's key. The surface is left by its own esc, and by a
 click on the cell that opened it: the surface stands over the rail, so the
 row is not there to click again, but the cell is, and a click that opened a
@@ -1391,8 +1391,10 @@ call — so the sources say whether they are up in a glyph and a word, with the
 count of tools each brought or the one thing standing in the way. It is
 present only when something outside shhh was configured, because a session
 with nothing but its own tools has no way to have lost any, and it folds past
-a few rows: whether what was configured is up is the question, and the whole
-listing is a command away.
+a few rows: whether what was configured is up is the question. The heading and
+the fold marker open the whole of it (`/mcp`, [the supporting
+screens](#the-supporting-screens)): every source, the tools each brought, and
+for one that is not up what would move it.
 
 The last block is the bill. Its heading carries what the running turn has
 cost; the rows under it are the session's bill in shares, one per model that
@@ -2488,15 +2490,15 @@ under that the account the session kept of where it left off
 renaming and deleting the picker inside a session already offers
 (../capabilities/sessions-and-memory.md#housekeeping).
 
-Sixteen surfaces take the whole terminal this way — those seven, the reading
+Seventeen surfaces take the whole terminal this way — those seven, the reading
 of what is in the session's context, the ledger of what the session read
 (`/sources`, [what was read](../capabilities/chat.md#what-was-read)), the
 session's own working list (`/steps`, below), the readings it has taken of its
 own run (`/readings`, below), the turns it has run (`/turns`, below), every
-alert it has had (`/alerts`, below), its bill (`/stats`, below), the session's shared notebook
+alert it has had (`/alerts`, below), its bill (`/stats`, below), where its tools came from (`/mcp`, below), the session's shared notebook
 (`/notes`, below), the reading of the session's boundary (`/safety`, [the
 safety reading](#the-safety-reading)) and the drafting flow for a new agent
-profile — and they are one family rather than seventeen screens: the same header, the same
+profile — and they are one family rather than eighteen screens: the same header, the same
 ground given up in the same order as the terminal narrows, the same key row at
 the foot and the same `[?]` behind it. The two that arrived last had each been
 drawing a chrome of their own, and the way that showed was not in either of
@@ -2510,7 +2512,7 @@ act in one word: `quit` where the screen was opened from a command line,
 under the key a reader reaches for without thinking, and there it is a phrase:
 **back to the shell** on doctor, metrics, history, snippets and the saved-chat
 browser, **back to the prompt** on the context reading, the sources ledger, the
-working list, the readings, the turns, the alerts, the bill, the safety reading, the notebook and the backlog, which is drawn on this chrome too ([the backlog screen](#the-backlog-screen)).
+working list, the readings, the turns, the alerts, the bill, the tools, the safety reading, the notebook and the backlog, which is drawn on this chrome too ([the backlog screen](#the-backlog-screen)).
 For leaving a screen and changing nothing there is no third wording.
 
 Three of them leave by doing something rather than nothing, and each says what
@@ -2715,6 +2717,35 @@ or its marker; a session that has spent nothing opens it on one sentence
 saying so, since the block is absent then and the command is the only door.
 While the keyboard is in a child, `/stats` answers for that child alone, in
 its own transcript.
+
+`/mcp` is the rail's TOOLS block read whole: every place the session's tools
+came from ([the inspector rail](#the-inspector-rail)). The built-in toolset
+heads the list on the count the block's own row states, and under it, each
+under its heading, come the MCP servers, any server definition that could not
+be read at all, the language servers the session found, the binaries the
+structural tools found on PATH — with the optional ones it did not find as one
+row — and the web tools, fetch and search. Each row is the block row's mark,
+name, state word and note: a server's is the block's own reading of it, so a
+server drawn as failed here is failed on the rail and in the listing.
+Beside the one under the pointer is its account: its state, what it reaches,
+and for one that is not up what that costs and what would move it — a
+server's in the very words the listing `shhh mcp` prints
+([a server that did not answer is a
+row](../capabilities/mcp.md#a-server-that-did-not-answer-is-a-row)), a
+missing search backend's in the doctor's — then every tool it registered.
+A language server says it starts on the first file it owns until one has
+been touched. A server the checkout declared carries the checkout's answer
+as `[a]`: trust it where it is not trusted, withdraw it where it is, asked
+first in the doctor's confirm, recorded by the one writer `/trust` and `shhh
+mcp`'s own `[a]` use, and said under the row and in the transcript; like
+`/trust`, it takes effect in the next session ([a checkout cannot start a
+process](../capabilities/mcp.md#a-checkout-cannot-start-a-process)). The
+screen reads its sources again as it is drawn, so a server that stops
+answering while it is up reads as stopped, and the rail it closes onto says
+the same. It is opened by bare `/mcp`, on the servers, and by a click on the
+TOOLS heading or its marker, on the first source that is not up; a session
+with nothing outside shhh configured still opens it, on its own tools and
+the web. `/mcp` with words after it keeps its old answers.
 
 `/notes` is the shared notebook — what one
 agent found and the next should not have to find again

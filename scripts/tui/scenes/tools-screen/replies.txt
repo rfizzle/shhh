@@ -1,0 +1,3 @@
+# One plain reply: the scene is about where the tools came from, not what the
+# model did with them.
+The tracker server did not start, so none of its tools are in this session.

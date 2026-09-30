@@ -431,6 +431,26 @@ func TestManager_StartFailureBecomesNoOp(t *testing.T) {
 	if connects != 1 {
 		t.Fatalf("failed start must not retry, connected %d times", connects)
 	}
+	// The session's tools screen names why, in the start's own words.
+	if st := m.States(); len(st) != 1 || st[0].Running || !strings.Contains(st[0].Err, "binary vanished") {
+		t.Fatalf("a failed start reads as %+v", st)
+	}
+}
+
+// A server is not yet started until a file it owns is touched, running once
+// one has been, and nothing about asking starts it.
+func TestManager_StatesStartNothing(t *testing.T) {
+	fake := &fakeLS{}
+	m, root := testManager(t, fake, Options{})
+	st := m.States()
+	if len(st) != 1 || st[0].Name != "gopls" || st[0].Running || st[0].Err != "" || st[0].Extensions[0] != ".go" {
+		t.Fatalf("an untouched server reads as %+v", st)
+	}
+	path := writeWorkspaceFile(t, root, "main.go", "package main\n")
+	m.DiagnosticsAfterChange(path)
+	if st := m.States(); !st[0].Running || st[0].Err != "" {
+		t.Fatalf("a started server reads as %+v", st)
+	}
 }
 
 func TestToolset_DefinitionFormatsFileLine(t *testing.T) {

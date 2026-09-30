@@ -289,6 +289,10 @@ func (h heldScreens) spend() *components.SpendScreen {
 	return heldAs[components.SpendScreen](h, stateSpend)
 }
 
+func (h heldScreens) tools() *components.ToolsScreen {
+	return heldAs[components.ToolsScreen](h, stateTools)
+}
+
 func (h heldScreens) keyPopup() *keyPopup {
 	return heldAs[keyPopup](h, stateKeyPopup)
 }
@@ -897,6 +901,34 @@ func buildOverlays() map[state]*mode {
 				open: bareOpen(Model.openStats),
 			},
 			door: &surfaceDoor{components.RailSpend, railDoor{Model.openStats, statsShowing, Model.closeStatsScreen}},
+		},
+		stateTools: {
+			place:       placePane,
+			holds:       true,
+			borrows:     true,
+			hidesRail:   true,
+			noSelection: true,
+			lines:       (Model).toolsLines,
+			hint:        (Model).renderToolsHint,
+			keys:        (Model).updateTools,
+			// Where the session's tools came from, as the rail's TOOLS block
+			// reads it. It is not idleOnly: a server that went mid-turn is
+			// exactly when somebody asks, and its one act records an answer
+			// for the next session rather than changing this one (tools.go).
+			// With words after it, /mcp is the listing's own verbs and never
+			// reaches this row.
+			command: &surfaceCommand{
+				slashCommand: slashCommand{name: "/mcp", args: "[trust <name>|distrust <name>]",
+					desc: "where this session's tools came from, and why any did not come",
+					help: `every place this session's tools came from on one screen, opened on the MCP servers: the built-in toolset, each server, the language servers, the binaries found on PATH and the web tools, each up or not with the tools it registered — and for one that is not up, what that costs and what would move it, in the words shhh mcp gives. On a server the checkout declared, [a] trusts the checkout or withdraws that, after asking, as /trust does; it takes effect in the next session. trust <name> and distrust <name> say where that answer is given`,
+					argSpecs: staticArgs(
+						argOption{"trust", "where a project server's trust is answered"},
+						argOption{"distrust", "where that answer is withdrawn"},
+					)},
+				bare: true,
+				open: bareOpen(Model.openMCPScreen),
+			},
+			door: &surfaceDoor{components.RailTools, railDoor{Model.openTools, toolsShowing, Model.closeToolsScreen}},
 		},
 		stateSafety: {
 			place:       placePane,

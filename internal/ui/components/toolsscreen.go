@@ -1,0 +1,481 @@
+package components
+
+// The tools screen (docs/interface/surfaces.md#the-supporting-screens): every
+// place this session's tools came from, the list the rail's TOOLS block holds
+// only the first few rows of.
+//
+// A row is one source — the built-in toolset, an MCP server, a language
+// server, a binary found on PATH, a web tool — carrying the rail's own reading
+// of it where the rail draws one, so the state and the note are the TOOLS
+// row's words for the same fact. The preview is that source laid out: what it
+// reaches, every tool it registered, and for one that is not up what that
+// costs and what would move it, in the words the listing behind `/mcp` has
+// always given. A server a checkout declared carries the checkout's answer as
+// `[a]`, asked about first. This is a renderer; the sources are the host's.
+
+import (
+	"fmt"
+	"strings"
+
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
+	"github.com/rfizzle/shhh/internal/ui/keys"
+)
+
+const (
+	// toolsStackWidth is the width below which the panes stack. The preview
+	// is an account and a wrapped list of tool names, about as wide as the
+	// alerts screen's, so the panes stand side by side as soon as its do.
+	toolsStackWidth = 88
+	// toolsListMin / toolsListMax bound the list column. A row is a mark and
+	// a source's name, its state word and its note; past the ceiling the
+	// columns are worth more to the tools and the fix beside it.
+	toolsListMin = 30
+	toolsListMax = 56
+	// toolsMinPreview is the smallest preview the stacked layout leaves
+	// standing: the title, and the first line of the account.
+	toolsMinPreview = 3
+	// toolsLabelWidth is the account's label column, wide enough for its
+	// longest label and the gap after it.
+	toolsLabelWidth = 10
+)
+
+// ToolsGroup is which kind of source a row is, and the heading it is listed
+// under. The order of the constants is the order of the list.
+type ToolsGroup int
+
+const (
+	// ToolsBuiltin is the toolset shhh registers itself, the rail's
+	// `built-in` row. It heads the list on its own, under no heading.
+	ToolsBuiltin ToolsGroup = iota
+	// ToolsServers are the MCP servers the session was told to reach, each
+	// the rail's own row.
+	ToolsServers
+	// ToolsUnloaded are server definitions that could not be read at all,
+	// so never became a server — the listing's diagnostics.
+	ToolsUnloaded
+	// ToolsLanguage are the language servers detected on PATH.
+	ToolsLanguage
+	// ToolsBinaries are the optional binaries the structural tools wrap.
+	ToolsBinaries
+	// ToolsWeb are the web tools: fetch, and search where a backend is set.
+	ToolsWeb
+)
+
+// heading is the group rail a kind of source is listed under.
+func (g ToolsGroup) heading() string {
+	switch g {
+	case ToolsServers:
+		return "mcp servers"
+	case ToolsUnloaded:
+		return "definitions not loaded"
+	case ToolsLanguage:
+		return "language servers"
+	case ToolsBinaries:
+		return "binaries on PATH"
+	case ToolsWeb:
+		return "web"
+	}
+	return ""
+}
+
+// ToolsOffer is the one act a row can carry: the checkout's trust answer, on
+// a server the checkout declared.
+type ToolsOffer int
+
+const (
+	// ToolsOfferNone is a row with nothing to answer.
+	ToolsOfferNone ToolsOffer = iota
+	// ToolsOfferTrust trusts the checkout, which is what starts its servers
+	// from the next session on.
+	ToolsOfferTrust
+	// ToolsOfferDistrust withdraws that answer.
+	ToolsOfferDistrust
+)
+
+// label is what the key row calls the offer.
+func (o ToolsOffer) label() string {
+	switch o {
+	case ToolsOfferTrust:
+		return "trust this checkout"
+	case ToolsOfferDistrust:
+		return "withdraw trust"
+	}
+	return ""
+}
+
+// ToolsSource is one place tools came from, already resolved to what the
+// screen draws.
+type ToolsSource struct {
+	Group ToolsGroup
+	// Source is the row as the rail's TOOLS block draws it — the name, the
+	// state and the note — and not a copy of its words made again, so a
+	// server here and its row there are one reading.
+	Source InspectorToolSource
+	// Detail is what the source reaches: a server's command or url, a
+	// language server's files, a binary's path.
+	Detail string
+	// Tools are the names it registered, as the model knows them.
+	Tools []string
+	// Consequence is what a source that is not up costs the session.
+	Consequence string
+	// Fix is what would move it, one line each.
+	Fix []string
+	// Offer is the act the row carries, and Ask the question the confirm
+	// puts before it is carried out.
+	Offer ToolsOffer
+	Ask   string
+}
+
+// ToolsScreen is `/mcp` and the TOOLS heading: a takeover in the chat, full
+// width, owning the keyboard for as long as it is up.
+type ToolsScreen struct {
+	// Sources are in group order — the order the list draws them in.
+	Sources []ToolsSource
+	// Focus is an index into Sources.
+	Focus int
+	// Said is what the last answer came to, in the words the command behind
+	// it gives, drawn under the account of the row it was taken on. Moving
+	// the pointer drops it.
+	Said string
+	// MaxLines bounds the screen height. 0 is unbounded.
+	MaxLines int
+
+	list  Select
+	optAt map[int]int
+	keys  bool
+	// confirm is the question standing between `[a]` and the answer it
+	// records: none of the supporting screens changes the machine without
+	// asking (docs/interface/surfaces.md#the-supporting-screens).
+	confirm *Confirm
+	asking  ToolsResult
+}
+
+// ToolsResult is an act the screen hands the host: the offer a confirmed
+// `[a]` was about, and the row it was taken on. The zero value is nothing.
+type ToolsResult struct {
+	Offer ToolsOffer
+	At    int
+}
+
+// Update is the screen's whole keyboard: it moves, it asks about a row's
+// offer and hands the answer over, it shows its keys, and it leaves. It
+// reports whether the screen is done and any act a confirm let through.
+func (s *ToolsScreen) Update(msg tea.KeyPressMsg) (done bool, result ToolsResult) {
+	if s.confirm != nil {
+		if answered, yes := confirmed(&s.confirm, msg); answered && yes {
+			return false, s.asking
+		}
+		return false, ToolsResult{}
+	}
+	pressed := msg.String()
+	switch {
+	case s.moved(pressed):
+	case keys.Is(pressed, keys.Screen.Apply):
+		// Only where the row carries an offer, and even there it asks first.
+		if src := s.current(); src != nil && src.Offer != ToolsOfferNone {
+			s.asking = ToolsResult{Offer: src.Offer, At: s.Focus}
+			s.confirm = &Confirm{Prompt: sty.Body.Render(src.Ask)}
+		}
+	case keys.Is(pressed, keys.Screen.List):
+		s.keys = !s.keys
+	case keys.Is(pressed, keys.Screen.Quit):
+		return true, ToolsResult{}
+	}
+	return false, ToolsResult{}
+}
+
+// SetSize gives the screen the terminal's rectangle. It lays itself out from
+// the width it is rendered at, so only the height is kept.
+func (s *ToolsScreen) SetSize(_, height int) { s.MaxLines = height }
+
+// View renders the screen: the shared chrome, with the two panes in the rows
+// it leaves.
+func (s *ToolsScreen) View(width int) string {
+	if width <= 0 {
+		return ""
+	}
+	s.sync()
+	return ScreenChrome{
+		Header:   s.header(),
+		Foot:     s.footer(width).Rows(width),
+		MaxLines: s.MaxLines,
+	}.View(width, func(budget int) []string { return s.panes().rows(width, budget) })
+}
+
+// panes is the body, split the way every screen with a list and a preview
+// splits it (screenpanes.go).
+func (s *ToolsScreen) panes() screenPanes {
+	return screenPanes{
+		stackAt: toolsStackWidth, listMin: toolsListMin,
+		listMax: toolsListMax, minPreview: toolsMinPreview,
+		list:    s.listRows,
+		preview: s.previewRows,
+	}
+}
+
+// listRows is the left pane: the sources under their headings.
+func (s *ToolsScreen) listRows(width, budget int) []string {
+	if len(s.Sources) == 0 {
+		return []string{sty.Dim.Render(Clip("this session registered no tools", width))}
+	}
+	body, _ := s.list.visibleRows(cardWidthFor(width), budget, false)
+	return body
+}
+
+// previewRows is the right pane: the source under the pointer, what it
+// reaches and brought, and for one that is not up what it costs and what
+// would move it.
+func (s *ToolsScreen) previewRows(width int) []string {
+	src := s.current()
+	if src == nil {
+		return []string{sty.Dim.Render(Clip("nothing selected", width))}
+	}
+	word := ToolSourceWord(src.Source.State)
+	rows := []string{paneTitle(brightStyle().Render(src.Source.Name), sty.Dim.Render(word), width), ""}
+	state := word
+	if src.Source.Note != "" {
+		state += " · " + src.Source.Note
+	}
+	rows = append(rows, toolsField("state", state, width)...)
+	if src.Detail != "" {
+		rows = append(rows, toolsField("reaches", src.Detail, width)...)
+	}
+	if src.Consequence != "" {
+		rows = append(rows, toolsField("costs", src.Consequence, width)...)
+	}
+	if len(src.Tools) > 0 {
+		rows = append(rows, "", "  "+sty.Status.Render(plural(len(src.Tools), "tool")))
+		for _, line := range wrapPlain(strings.Join(src.Tools, ", "), max(width-4, 8)) {
+			rows = append(rows, Clip("    "+sty.Body.Render(line), width))
+		}
+	}
+	if len(src.Fix) > 0 {
+		// Wrapped rather than clipped: a server's reason is the one line the
+		// reader opened the screen for, and its tail is usually the part that
+		// names what is missing.
+		rows = append(rows, "", "  "+sty.Status.Render("what would move it"))
+		for _, line := range src.Fix {
+			// A line that fits is kept as written: the listing aligns its
+			// comments with runs of spaces, and wrapping would fold them.
+			parts := []string{line}
+			if lipgloss.Width(line) > width-4 {
+				parts = wrapPlain(line, max(width-4, 8))
+			}
+			for _, part := range parts {
+				rows = append(rows, Clip("    "+sty.Dim.Render(part), width))
+			}
+		}
+	}
+	if s.Said != "" {
+		rows = append(rows, "")
+		for _, line := range wrapPlain(s.Said, max(width-2, 8)) {
+			rows = append(rows, Clip("  "+sty.Body.Render(line), width))
+		}
+	}
+	return rows
+}
+
+// toolsField is one entry of the account: a dim label in a fixed column and
+// the value beside it, wrapped under itself rather than clipped, since a
+// server's reason runs longer than a pane is wide.
+func toolsField(label, value string, width int) []string {
+	lead := "  " + sty.Status.Render(fmt.Sprintf("%-*s", toolsLabelWidth, label))
+	indent := strings.Repeat(" ", 2+toolsLabelWidth)
+	var rows []string
+	for i, part := range wrapPlain(value, max(width-len(indent), 8)) {
+		if i == 0 {
+			rows = append(rows, Clip(lead+sty.Body.Render(part), width))
+			continue
+		}
+		rows = append(rows, Clip(indent+sty.Body.Render(part), width))
+	}
+	return rows
+}
+
+// toolsGlyph is the row's leading mark, the rail's glyph for the same state.
+// It is plain rather than painted for the steps screen's reason, and the
+// word beside it says the same thing (invariant 1).
+func toolsGlyph(st ToolSourceState) string {
+	switch st {
+	case ToolSourceUp:
+		return "✓"
+	case ToolSourceBlocked:
+		return "⚠"
+	case ToolSourceOff:
+		return "⊘"
+	}
+	return "✗"
+}
+
+// toolsTone is the weight a state word carries in the list: the rail's own
+// reading, where up and off are quiet and a failure is what the eye lands on.
+func toolsTone(st ToolSourceState) FieldTone {
+	switch st {
+	case ToolSourceUp, ToolSourceOff:
+		return ToneQuiet
+	case ToolSourceFailed:
+		return ToneRisk
+	}
+	return ToneNeutral
+}
+
+// option is a source as the list draws it: the rail row's mark and name,
+// its state word, and its note.
+func (src ToolsSource) option() SelectOption {
+	opt := SelectOption{Label: toolsGlyph(src.Source.State) + " " + src.Source.Name,
+		Value: ToolSourceWord(src.Source.State), ValueTone: toolsTone(src.Source.State)}
+	if src.Source.Note != "" {
+		opt.Detail = []DetailSpan{{Text: src.Source.Note, Tone: ToneQuiet}}
+	}
+	return opt
+}
+
+// header names the surface, how many servers it lists, and the TOOLS
+// heading's own ratio — the built-in toolset and the servers, the sources the
+// block draws — so the figure on the screen and the figure on the rail are
+// one. A session with no servers has no block, and no ratio either.
+func (s *ToolsScreen) header() ScreenHeader {
+	h := ScreenHeader{Left: []RailSegment{screenTitle("/mcp")}, Keys: s.headerKeys()}
+	servers, counted, up := 0, 0, 0
+	for _, src := range s.Sources {
+		if src.Group != ToolsBuiltin && src.Group != ToolsServers {
+			continue
+		}
+		counted++
+		if src.Group == ToolsServers {
+			servers++
+		}
+		if src.Source.State == ToolSourceUp {
+			up++
+		}
+	}
+	if servers > 0 {
+		h.Left = append(h.Left, screenField(plural(servers, "server")),
+			screenField(fmt.Sprintf("%d of %d up", up, counted)))
+	}
+	return h
+}
+
+// headerKeys is the pair the header ends with, as on every screen of the
+// family (docs/interface/surfaces.md#the-supporting-screens).
+func (s *ToolsScreen) headerKeys() string {
+	list := keys.Bracket(keys.Screen.List) + " " + keys.Words(keys.Screen.List)
+	if s.keys {
+		list = keys.Bracket(keys.Screen.List) + " hide the keys"
+	}
+	return list + " · " + words(keys.Screen.Quit, "back")
+}
+
+// footer is the keys the screen offers and the field that annotates them. The
+// confirm borrows the foot row while it is up, as the doctor's does.
+func (s *ToolsScreen) footer(width int) KeyFooter {
+	field := s.footField()
+	f := KeyFooter{Offers: s.offers(width, field), Register: s.keyList(),
+		Showing: s.keys, Field: field}
+	if s.confirm != nil {
+		f.Taken = s.confirm.View(width)
+	}
+	return f
+}
+
+// offers is the key row: the pointer's keys, the row's offer where it has
+// one, and the way out, and the last two alone where the field leaves no room
+// for all of them. The offer is dropped rather than drawn grey off a row that
+// has none: it is the one key here that changes the machine, and a grey
+// `trust this checkout` beside the built-in toolset would say it could.
+func (s *ToolsScreen) offers(width int, field string) []KeyOffer {
+	var acts []KeyOffer
+	if src := s.current(); src != nil && src.Offer != ToolsOfferNone {
+		acts = append(acts, keyOfferAs(keys.Screen.Apply, src.Offer.label()))
+	}
+	acts = append(acts, wayOut(backToPrompt))
+	full := append([]KeyOffer{keyOffer(keys.Screen.Move)}, acts...)
+	if field == "" || fitsBeside(full, field, width) {
+		return full
+	}
+	return acts
+}
+
+// keyList is every key the screen has, for `[?]`.
+func (s *ToolsScreen) keyList() []KeyOffer {
+	return []KeyOffer{
+		keyOfferAs(keys.Screen.Move, "move between sources"),
+		keyOfferAs(keys.Screen.Apply, "trust this checkout, or withdraw it, on a server it declared — after confirming"),
+		wayOut(backToPrompt),
+		keyOfferAs(keys.Screen.Quit, backToPrompt),
+	}
+}
+
+// footField annotates the key row with where the readings come from: the
+// rail's own, so a row here and the TOOLS row there are one source.
+func (s *ToolsScreen) footField() string {
+	if len(s.Sources) == 0 {
+		return ""
+	}
+	return "where this session's tools came from, as the rail reads it"
+}
+
+// FocusGroup puts the pointer on the first source of a group, and reports
+// whether there was one — `/mcp` opens on the servers.
+func (s *ToolsScreen) FocusGroup(g ToolsGroup) bool {
+	for i, src := range s.Sources {
+		if src.Group == g {
+			s.Focus = i
+			return true
+		}
+	}
+	return false
+}
+
+// sync rebuilds the list from Sources, with a heading over each group. It
+// runs before every View because the host replaces Sources as it reads them
+// again, and the pointer has to survive that.
+func (s *ToolsScreen) sync() {
+	s.Focus = min(max(s.Focus, 0), max(len(s.Sources)-1, 0))
+	s.optAt = make(map[int]int, len(s.Sources))
+	opts := make([]SelectOption, 0, len(s.Sources)+5)
+	group := ""
+	for i, src := range s.Sources {
+		if g := src.Group.heading(); g != group {
+			group = g
+			if g != "" {
+				opts = append(opts, SelectOption{Label: g, Header: true})
+			}
+		}
+		s.optAt[i] = len(opts)
+		opts = append(opts, src.option())
+	}
+	s.list.Options = opts
+	// The count the window's marker states is of sources, not of options:
+	// the headings are rows on the screen and not places tools came from.
+	s.list.Total = len(s.Sources)
+	s.list.Unnumbered = true
+	s.list.Focus = s.optAt[s.Focus]
+}
+
+// moved walks the pointer through the sources, over the headings. What the
+// last answer said belongs to the row it was taken on, so it goes when the
+// pointer does.
+func (s *ToolsScreen) moved(pressed string) bool {
+	if len(s.Sources) == 0 {
+		return false
+	}
+	l := List[ToolsSource]{Items: s.Sources, Focus: s.Focus}
+	if !l.Move(pressed, keys.Screen.Move) {
+		return false
+	}
+	if l.Focus != s.Focus {
+		s.Said = ""
+	}
+	s.Focus = l.Focus
+	return true
+}
+
+// current is the source under the pointer, or nil for an empty list.
+func (s *ToolsScreen) current() *ToolsSource {
+	if s.Focus < 0 || s.Focus >= len(s.Sources) {
+		return nil
+	}
+	return &s.Sources[s.Focus]
+}

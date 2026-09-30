@@ -87,7 +87,10 @@ func (r InspectorRail) toolsBlock(width int) (railBlock, bool) {
 		b.add(railRow(glyph+" "+sty.Body.Render(s.Name), right, width, inspectorIndent))
 	}
 	if t.More > 0 {
-		b.add(indentRow(sty.Hint.Render(fmt.Sprintf("… %d more", t.More)), width))
+		// A count of sources rather than one, so it folds with the first
+		// source the rail takes and the block's marker states both numbers,
+		// and it opens the block's door as that marker does (railLine.more).
+		b.moreRow(indentRow(sty.Hint.Render(fmt.Sprintf("… %d more", t.More)), width), t.More)
 	}
 	if t.MemoryOmitted > 0 {
 		// A source row in everything but name: the memory the prompt carries

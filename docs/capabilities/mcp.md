@@ -283,8 +283,9 @@ verbs, and a URI learned from its task text must not be the way around it.
 Every server is connected when the session starts, all of them at once,
 each under a timeout. One that did not answer — did not start, listed no
 tools, asked for a login, timed out — is reported before the session opens
-and again in the session's listing, with what it costs and what would fix
-it, and the session starts without it. A failed server that stopped the
+and again inside it, on the screen `/mcp` opens beside every other place the
+session's tools came from, with what it costs and what would fix it, and the
+session starts without it. A failed server that stopped the
 session would make the model's tools hostage to somebody else's uptime; a
 failed server that was silently left out would be a tool the model was
 told about and cannot reach.

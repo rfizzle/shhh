@@ -171,11 +171,20 @@
                    changes nothing
     /skills        the skills this session loaded (SKILL.md
                    directories), and why any did not
-    /mcp           the MCP servers this session connected,
-                   and why any did not. trust <name> lets a
-                   server this checkout declares start from
-                   the next session on; distrust <name>
-                   withdraws that
+    /mcp           every place this session's tools came
+                   from on one screen, opened on the MCP
+                   servers: the built-in toolset, each
+                   server, the language servers, the
+                   binaries found on PATH and the web tools,
+                   each up or not with the tools it
+                   registered — and for one that is not up,
+                   what that costs and what would move it,
+                   in the words shhh mcp gives. On a server
+                   the checkout declared, [a] trusts the
+                   checkout or withdraws that, after asking,
+                   as /trust does; it takes effect in the
+                   next session. trust <name> and distrust
+                   <name> say where that answer is given
     /notes         the session's shared notebook — what the
                    agents wrote for each other, and what a
                    backlog run wrote up, listed by author.
@@ -372,11 +381,20 @@
                    changes nothing
     /skills        the skills this session loaded (SKILL.md
                    directories), and why any did not
-    /mcp           the MCP servers this session connected,
-                   and why any did not. trust <name> lets a
-                   server this checkout declares start from
-                   the next session on; distrust <name>
-                   withdraws that
+    /mcp           every place this session's tools came
+                   from on one screen, opened on the MCP
+                   servers: the built-in toolset, each
+                   server, the language servers, the
+                   binaries found on PATH and the web tools,
+                   each up or not with the tools it
+                   registered — and for one that is not up,
+                   what that costs and what would move it,
+                   in the words shhh mcp gives. On a server
+                   the checkout declared, [a] trusts the
+                   checkout or withdraws that, after asking,
+                   as /trust does; it takes effect in the
+                   next session. trust <name> and distrust
+                   <name> say where that answer is given
     /notes         the session's shared notebook — what the
                    agents wrote for each other, and what a
                    backlog run wrote up, listed by author.
@@ -585,11 +603,20 @@
                    ␛[38;5;244mchanges nothing␛[m
     ␛[38;5;254m/skills␛[m        ␛[38;5;244mthe skills this session loaded (SKILL.md␛[m
                    ␛[38;5;244mdirectories), and why any did not␛[m
-    ␛[38;5;254m/mcp␛[m           ␛[38;5;244mthe MCP servers this session connected,␛[m
-                   ␛[38;5;244mand why any did not. trust <name> lets a␛[m
-                   ␛[38;5;244mserver this checkout declares start from␛[m
-                   ␛[38;5;244mthe next session on; distrust <name>␛[m
-                   ␛[38;5;244mwithdraws that␛[m
+    ␛[38;5;254m/mcp␛[m           ␛[38;5;244mevery place this session's tools came␛[m
+                   ␛[38;5;244mfrom on one screen, opened on the MCP␛[m
+                   ␛[38;5;244mservers: the built-in toolset, each␛[m
+                   ␛[38;5;244mserver, the language servers, the␛[m
+                   ␛[38;5;244mbinaries found on PATH and the web tools,␛[m
+                   ␛[38;5;244meach up or not with the tools it␛[m
+                   ␛[38;5;244mregistered — and for one that is not up,␛[m
+                   ␛[38;5;244mwhat that costs and what would move it,␛[m
+                   ␛[38;5;244min the words shhh mcp gives. On a server␛[m
+                   ␛[38;5;244mthe checkout declared, [a] trusts the␛[m
+                   ␛[38;5;244mcheckout or withdraws that, after asking,␛[m
+                   ␛[38;5;244mas /trust does; it takes effect in the␛[m
+                   ␛[38;5;244mnext session. trust <name> and distrust␛[m
+                   ␛[38;5;244m<name> say where that answer is given␛[m
     ␛[38;5;254m/notes␛[m         ␛[38;5;244mthe session's shared notebook — what the␛[m
                    ␛[38;5;244magents wrote for each other, and what a␛[m
                    ␛[38;5;244mbacklog run wrote up, listed by author.␛[m
@@ -786,11 +813,20 @@
                    ␛[38;5;244mchanges nothing␛[m
     ␛[38;5;254m/skills␛[m        ␛[38;5;244mthe skills this session loaded (SKILL.md␛[m
                    ␛[38;5;244mdirectories), and why any did not␛[m
-    ␛[38;5;254m/mcp␛[m           ␛[38;5;244mthe MCP servers this session connected,␛[m
-                   ␛[38;5;244mand why any did not. trust <name> lets a␛[m
-                   ␛[38;5;244mserver this checkout declares start from␛[m
-                   ␛[38;5;244mthe next session on; distrust <name>␛[m
-                   ␛[38;5;244mwithdraws that␛[m
+    ␛[38;5;254m/mcp␛[m           ␛[38;5;244mevery place this session's tools came␛[m
+                   ␛[38;5;244mfrom on one screen, opened on the MCP␛[m
+                   ␛[38;5;244mservers: the built-in toolset, each␛[m
+                   ␛[38;5;244mserver, the language servers, the␛[m
+                   ␛[38;5;244mbinaries found on PATH and the web tools,␛[m
+                   ␛[38;5;244meach up or not with the tools it␛[m
+                   ␛[38;5;244mregistered — and for one that is not up,␛[m
+                   ␛[38;5;244mwhat that costs and what would move it,␛[m
+                   ␛[38;5;244min the words shhh mcp gives. On a server␛[m
+                   ␛[38;5;244mthe checkout declared, [a] trusts the␛[m
+                   ␛[38;5;244mcheckout or withdraws that, after asking,␛[m
+                   ␛[38;5;244mas /trust does; it takes effect in the␛[m
+                   ␛[38;5;244mnext session. trust <name> and distrust␛[m
+                   ␛[38;5;244m<name> say where that answer is given␛[m
     ␛[38;5;254m/notes␛[m         ␛[38;5;244mthe session's shared notebook — what the␛[m
                    ␛[38;5;244magents wrote for each other, and what a␛[m
                    ␛[38;5;244mbacklog run wrote up, listed by author.␛[m

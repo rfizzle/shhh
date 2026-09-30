@@ -43,7 +43,7 @@ import (
 // session boundary resets it with the rest in one call. This is the same
 // guard overlay_test.go puts on the placement table: a table nobody reads is
 // a table that drifts.
-const modelFields = 280
+const modelFields = 281
 
 func TestModelHasAStatedBound(t *testing.T) {
 	got := reflect.TypeOf(Model{}).NumField()

@@ -142,14 +142,22 @@ func (m Model) builtinToolCount() int {
 	if m.mcp.Has == nil {
 		return 0
 	}
-	n := 0
+	return len(m.builtinToolNames())
+}
+
+// builtinToolNames is every registered tool that did not come from a server,
+// by name. A session with no servers has nothing to tell apart, so every name
+// is its own — the tools screen lists them where the rail, which is not up in
+// such a session, would have drawn no row.
+func (m Model) builtinToolNames() []string {
+	var out []string
 	for _, d := range m.toolDefs {
-		if m.mcp.Has(d.Name) {
+		if m.mcp.Has != nil && m.mcp.Has(d.Name) {
 			continue
 		}
-		n++
+		out = append(out, d.Name)
 	}
-	return n
+	return out
 }
 
 // The prompts a server publishes are commands of this session, not rows of

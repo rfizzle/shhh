@@ -151,7 +151,6 @@ terminal   what this terminal answered when shhh asked what it can do: inline im
 	"/ps":               `list the long-running processes this session owns (process tool)`,
 	scaffoldCommandName: `scaffold this project's .shhh/ context file — the card lists what it would write, and nothing is written until you say so. The start screen offers it in a checkout that has no .shhh`,
 	"/skills":           `the skills this session loaded (SKILL.md directories), and why any did not`,
-	"/mcp":              `the MCP servers this session connected, and why any did not. trust <name> lets a server this checkout declares start from the next session on; distrust <name> withdraws that`,
 	"/skill":            `activate a skill now: /skill <name> [task] sends its instructions to the model with your task, as the model would load them itself. /<name> does the same for a skill whose name is not a command`,
 	"/secret":           `values a command may use and the model never sees: list names them, set NAME takes one from your environment (or NAME=value declares it outright), forget NAME drops it. What a command prints is scrubbed of them before it reaches the transcript`,
 	"/memory":           `durable memories: list (default) · add [global] [kind] <text> · edit <id> (opens the entry in your editor) · forget <id>`,
@@ -408,7 +407,7 @@ bare /todo opens the same screen; it opens over a running turn, and the keys tha
 		},
 		{
 			key:  "rail click",
-			text: `on the inspector rail, a changed file opens its diff and a session's row moves the keyboard into it. A block's heading, or its … N more, opens the surface holding the whole block — SUMMARY is /readings, THIS TURN is /turns, ALERTS is /alerts, CHANGES is /diff, AGENTS is /agents, STEPS is /steps, TODO is /todo, CONTEXT is /context, SPEND is /stats — and a click on the same cell closes it, as its own esc does. The rail never holds the keyboard, so each command is that door's key`,
+			text: `on the inspector rail, a changed file opens its diff and a session's row moves the keyboard into it. A block's heading, or its … N more, opens the surface holding the whole block — SUMMARY is /readings, THIS TURN is /turns, ALERTS is /alerts, CHANGES is /diff, AGENTS is /agents, STEPS is /steps, TODO is /todo, CONTEXT is /context, SPEND is /stats, TOOLS is /mcp — and a click on the same cell closes it, as its own esc does. The rail never holds the keyboard, so each command is that door's key`,
 		},
 		{
 			binds: []keys.Binding{keys.Draft.Editor},

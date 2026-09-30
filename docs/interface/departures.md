@@ -451,6 +451,37 @@ their `◇` on a model.
 When there is an artboard, these three decisions are what it has to
 reconcile with, and where the two differ the artboard wins.
 
+## The tools screen's layout was decided in the binary
+
+*A gap.* No artboard draws a screen behind the TOOLS block, and the
+InspectorRail component draws its heading as a label rather than as a door.
+The `Servers` artboard draws `shhh mcp` — the doctor screen over servers —
+and not a session's screen. The binary draws one behind the heading, its
+marker and bare `/mcp` ([the supporting
+screens](surfaces.md#the-supporting-screens)): the family's chrome over a
+list and a preview, each row the block's own. Three things it could not take
+from anywhere, and they were decided here:
+
+**The list is every source under group rails, built-in first.** `mcp
+servers`, `definitions not loaded`, `language servers`, `binaries on PATH`
+and `web` are rails the pointer steps over, the way the spend screen's cuts
+are; the missing optional binaries are one row rather than one each.
+
+**The header counts the servers and what is up.** `/mcp · 3 servers · 2 of
+4 up`, the second field the block heading's own ratio — the built-in toolset
+and the servers, the sources the block draws — so the two never state
+different figures; a session with no servers has neither field.
+
+**The account is labelled lines, then the tools, then the fix.** `state`,
+`reaches` and `costs` in a label column and wrapped under themselves, then
+the count of tools with their names wrapped, then `what would move it` with
+the listing's own lines; `[a]` rides the key row only on a row that carries
+the checkout's answer, and its confirm takes the foot row as the doctor's
+does.
+
+When there is an artboard, these three decisions are what it has to
+reconcile with, and where the two differ the artboard wins.
+
 ## The explanation's screen wears the full view's title, not a rail label
 
 *A disagreement.* The artboard draws the command explanation with a rail

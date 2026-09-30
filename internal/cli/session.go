@@ -1386,6 +1386,11 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 			Abandon: mcpTools.AbandonCalls,
 		})
 	}
+	// Where every tool came from, read again whenever the tools screen asks:
+	// the servers as the rail and /mcp read them, the language servers, the
+	// binaries on PATH and the web tools. Both sessions, since a conversation
+	// has servers and web tools too (toolsources.go).
+	model = model.WithToolSources(sessionToolSources(session, cfg, db))
 	// The readings /safety needs that the chat cannot make itself, each the
 	// one its owning command already makes: the trust the start screen is
 	// handed, the servers as /mcp reports them, and the vault's names. It is

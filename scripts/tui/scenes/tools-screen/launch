@@ -1,0 +1,5 @@
+# One MCP server in the person's own config whose command does not exist, so
+# the connect fails before the first frame and the rail's TOOLS block is up
+# with the failure on it
+# (docs/capabilities/mcp.md#a-server-that-did-not-answer-is-a-row).
+printf '\n[mcp.servers.tracker]\ncommand = "tracker-mcp-not-installed"\n' >> $XDG_CONFIG_HOME/shhh/config.toml && $SHHH_BIN code
