@@ -1183,6 +1183,37 @@ with three steps in it needs somewhere to say which step it is on. The
 questions are asked one at a time and the way back through them is the same
 key that leaves: a mistyped answer costs an answer, not the drafting.
 
+A draft is built in sections, and the sections are fixed. A profile that
+was one blob over a card whose only way to change anything was a free-text
+note redrafted the whole file to fix one line, so the person lost a Purpose
+they were happy with to correct a Restriction. The eight sections, in the
+order the draft draws them, and what the drafter must put in each:
+
+- **Purpose** — the job, and what done looks like. Required.
+- **Scope** — the paths and areas it works in, and what it must leave alone.
+  Required.
+- **Restrictions** — what it never does. Required; a coding role with none
+  is a role nobody has thought about.
+- **Method** — how it works and how it verifies. Required.
+- **Report** — what it hands back and in what shape. Required.
+- **Tools & permissions** — the tiers and the tool allowlist, picked on a
+  selector that lists what this session has. Required; a chat profile has
+  no writing tier to pick.
+- **Commands** — what its commands are for, and the prefixes it must never
+  run. Optional; empty for a role with no `execute`.
+- **Model & budget** — model, reasoning, tokens, rounds and mode. Optional;
+  each falls back to the session's own.
+
+The brief fills every section at once, and the questions step asks only
+about the sections the drafter marked as gaps: someone whose brief already
+said what the agent must never touch is not asked. The person then revises
+one section at a time — a note to the drafter rewrites that section with
+the other seven sent as fixed context, or their own words in the editor,
+which marks the section as theirs and puts it beyond any later refine — and
+nothing is written until they take the card's save row. The five prose
+sections are `##` headings inside the profile's prompt; the other three are
+the file's fields.
+
 ## A failed child leaves a handoff
 
 A child that ends after it has begun — because it spent its token budget, its
