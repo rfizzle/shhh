@@ -922,6 +922,27 @@ func TestInspectorTools_EveryStateStatesItself(t *testing.T) {
 	}
 }
 
+// A reason longer than the rail is cut from its end, and the server's name —
+// the one word that says which source broke — is never what gives way.
+func TestInspectorTools_ALongNoteGivesWayBeforeTheName(t *testing.T) {
+	r := InspectorRail{Tools: &InspectorTools{
+		Sources: []InspectorToolSource{{Name: "tracker", State: ToolSourceFailed,
+			Note: "server tracker: " + strings.Repeat("executable file not found ", 4)}},
+	}}
+	view := stripANSI(r.View(InspectorWidth, 0))
+	if !strings.Contains(view, "✗ tracker ") || !strings.Contains(view, "error · server tracker:") {
+		t.Fatalf("the name and the head of the note should both stand:\n%s", view)
+	}
+	if !strings.Contains(view, "…") {
+		t.Fatalf("the note should be cut from its end:\n%s", view)
+	}
+	for _, line := range strings.Split(view, "\n") {
+		if w := lipgloss.Width(line); w > InspectorWidth {
+			t.Fatalf("row is %d wide, over the rail's %d:\n%s", w, InspectorWidth, view)
+		}
+	}
+}
+
 // The heading counts every source the session has, not only the rows that fit.
 func TestInspectorTools_HeadingCountsWhatTheFoldTook(t *testing.T) {
 	r := InspectorRail{Tools: &InspectorTools{

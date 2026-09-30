@@ -80,11 +80,20 @@ func (r InspectorRail) toolsBlock(width int) (railBlock, bool) {
 	b := railBlock{heading: railHeading("TOOLS", meta, sty.Dim, width)}
 	for _, s := range t.Sources {
 		glyph, word, style := toolSourceTone(s.State)
+		left := glyph + " " + sty.Body.Render(s.Name)
 		right := style.Render(word)
 		if s.Note != "" {
-			right += sty.Dim.Render(" · " + s.Note)
+			// The name is the row's target and the note its outcome, and the
+			// note is what gives way: which server broke is the one word the
+			// row exists to say, and a reason cut short still reads as one.
+			// The note is cut to what the name and the word leave it, and
+			// dropped whole where not even its separator and one cell fit.
+			const sep = " · "
+			if room := railRoom(width, right, inspectorIndent) - lipgloss.Width(left); room > lipgloss.Width(sep) {
+				right += sty.Dim.Render(Clip(sep+s.Note, room))
+			}
 		}
-		b.add(railRow(glyph+" "+sty.Body.Render(s.Name), right, width, inspectorIndent))
+		b.add(railRow(left, right, width, inspectorIndent))
 	}
 	if t.More > 0 {
 		// A count of sources rather than one, so it folds with the first

@@ -1773,6 +1773,18 @@ func TestGolden_InspectorRail(t *testing.T) {
 				More: 1,
 			},
 		}
+		// A server that broke with a reason longer than the rail: the note
+		// is cut from its end and the server's name stays whole.
+		broke := InspectorRail{
+			Tools: &InspectorTools{
+				Sources: []InspectorToolSource{
+					{Name: "built-in", State: ToolSourceUp, Note: "18 tools"},
+					{Name: "tracker", State: ToolSourceFailed,
+						Note: `server tracker: exec: "tracker-mcp-not-installed": executable file not found in $PATH`},
+				},
+				Up: 1,
+			},
+		}
 		// The recall budget left memories out of the prompt, and this is the
 		// only place that says so. The session has no external source, so the
 		// block is here for that row alone.
@@ -2061,6 +2073,7 @@ func TestGolden_InspectorRail(t *testing.T) {
 			{Label: "a reading that has left the instruction", View: drifting.View(width, 0)},
 			{Label: "a reading the session has outrun", View: stale.View(width, 0)},
 			{Label: "where the tools came from, and which answered", View: sources.View(width, 0)},
+			{Label: "a server that broke keeps its name and cuts its note", View: broke.View(width, 0)},
 			{Label: "memories the recall budget could not carry", View: omitted.View(width, 0)},
 			{Label: "the session map · the keyboard is in writer-2", View: mapped.View(width, 0)},
 			{Label: "the map with the rail shorter than it (height 12)", View: mapped.View(width, 12)},
