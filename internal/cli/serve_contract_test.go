@@ -386,8 +386,8 @@ command = "printf '' > %s"
 
 // appendConfig adds to the config this session's runs read, so a case can say
 // what the machine it drives is set up like. It appends to the file as it
-// stands, which is one [behavior] table: a second header for a table that is
-// already open is a config nothing loads.
+// stands, whose last table is [behavior]: a bare key lands there, and a
+// second header for a table that is already open is a config nothing loads.
 func appendConfig(t *testing.T, s printSession, body string) {
 	t.Helper()
 	path := filepath.Join(s.home, "config", "shhh", "config.toml")

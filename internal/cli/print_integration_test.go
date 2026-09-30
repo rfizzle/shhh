@@ -412,7 +412,11 @@ func newPrintSession(t *testing.T, f *fakeProvider) printSession {
 	// And the slot's standing account is not asked for: a run revises it
 	// once as it closes, which would make the account's request the last one
 	// every case reads back, and none of them is about the account.
-	body := "[behavior]\nprovider_retries = 0\n\n[summary]\nresume_interval_turns = -1\n"
+	//
+	// [behavior] is written last on purpose: appendConfig adds a case's own
+	// keys to the end of the file, under whichever table is open there, and a
+	// bare key it writes is a behavior key.
+	body := "[summary]\nresume_interval_turns = -1\n\n[behavior]\nprovider_retries = 0\n"
 	if err := os.WriteFile(filepath.Join(dir, "config.toml"), []byte(body), 0o600); err != nil {
 		t.Fatal(err)
 	}
