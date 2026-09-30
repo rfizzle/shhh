@@ -517,8 +517,22 @@ func Surfaces() []Surface {
 			Position: Takeover,
 			Reached:  "/agents new, or the manager's own row",
 			Bindings: []Binding{
-				Profile.Move, Profile.Take, Profile.Note,
-				Profile.ScrollUp, Profile.ScrollDown, Screen.List, Profile.Back,
+				Profile.Move, Profile.Take, Screen.List, Profile.Back,
+			},
+		},
+		{
+			// The draft step of the same flow: the sections, one at a time,
+			// over the card that writes the file. It is a row of its own
+			// because enter means something else here — a section is
+			// refined, not an answer taken — and one row answering one
+			// keystroke with two acts is what the register refuses.
+			Name:     "the profile draft",
+			Section:  "docs/interface/surfaces.md#the-profile-drafter",
+			Position: Takeover,
+			Reached:  "the drafter's last step",
+			Bindings: []Binding{
+				Profile.Move, Profile.Refine, Profile.Edit, Profile.Clear,
+				Profile.Note, Profile.ScrollUp, Profile.ScrollDown, Screen.List, Profile.Back,
 			},
 		},
 		{

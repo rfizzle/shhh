@@ -196,7 +196,10 @@
 
   · move         up down · move  [shipped]
   · take         enter · take it  [shipped]
-  · note         tab · note or options  [shipped]
+  · refine       enter · refine it with a note  [shipped]
+  · edit         e · edit it yourself  [shipped]
+  · clear        x · clear it  [shipped]
+  · note         tab · the sections or the card  [shipped]
   · scroll_up    shift+up · scroll the profile up  [shipped]
   · scroll_down  shift+down · scroll the profile  [shipped]
   · back         esc ctrl+c · back a step  [shipped]
@@ -338,4 +341,4 @@
   · paste   p · paste a key  [shipped]
   · local   o · a local model  [shipped]
 
-  245 keys · 1 moved
+  248 keys · 1 moved

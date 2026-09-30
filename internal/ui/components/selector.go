@@ -235,6 +235,13 @@ type Select struct {
 	// Unnumbered drops the "1." prefixes and the number-jump keys, for a
 	// surface where a digit is text rather than a jump.
 	Unnumbered bool
+	// Idle draws the card with no row lit, for a card on a surface where
+	// something else holds the keyboard until a key hands it over — the
+	// profile drafter's sections. A pointer on a card that is not answering
+	// keys would claim the keyboard twice
+	// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+	// The host supplies the key row that says how the card is reached.
+	Idle bool
 	// FocusDesc keeps each option's Desc under the focused option instead of
 	// on every row. It is the plan card's rule and no other surface's:
 	// there the descriptions are consequences of taking the option, and four
@@ -950,7 +957,7 @@ func (s *Select) optionRows(width int, numbered bool, lo, hi int) []string {
 		if i < lo || i >= hi {
 			continue
 		}
-		rows = append(rows, s.optionRow(opt, n, i == s.Focus, g, inner))
+		rows = append(rows, s.optionRow(opt, n, i == s.Focus && !s.Idle, g, inner))
 		if s.FocusDesc && i == s.Focus && opt.Desc != "" {
 			rows = append(rows, sty.Dim.Render(Clip("    "+opt.Desc, inner)))
 		}

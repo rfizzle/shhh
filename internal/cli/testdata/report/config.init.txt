@@ -5,6 +5,6 @@
   ✓ wrote /home/dev/.config/shhh/prompts/ · 13 wordings, each the built…  [user]
         edit one and it is what a session is told; delete it and the built-in
         words are back
-  ✓ wrote /home/dev/.config/shhh/keybindings.toml · 245 keys, each comm…  [user]
+  ✓ wrote /home/dev/.config/shhh/keybindings.toml · 248 keys, each comm…  [user]
         uncomment a line to move a key; shhh keys check reads it the way a
         session will

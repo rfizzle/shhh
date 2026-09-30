@@ -2914,13 +2914,26 @@ The wait while the drafter writes is on the surface too, and that is not only
 so it can be seen. A drafting turn that could not be stopped was a cancel
 nobody had — the session held the cancel and no key reached it.
 
-The last step is the draft over the card that writes it, and the card is the
-one thing on the surface that never gives ground: on a terminal too short for
-both, the profile pane shrinks and then goes, then the drafter's reason, then
-the fields from the bottom — the permission line is the one nobody should
-decide without, and the budget is the one they can look up. The card names the
-profile in its own title, so the question stays answerable on a surface too
-short to keep the name above it.
+The last step is the draft over the card that writes it, and the draft is
+laid out as its sections, one block each in the order the file keeps them:
+the five prose sections, then tools and permissions, commands, and model and
+budget. The pointer is on one block at a time. A prose section is revised on
+its own — a note to the drafter opens under it, and the answer is taken for
+that section alone with the rest sent as fixed context; the editor takes its
+text and hands it back as the person's own; a key clears it — so fixing one
+section never redrafts another. A mark after each heading says what has
+happened to it: refined, written by the person, or empty. Every revision is
+kept while the flow lasts, and esc on a revised block takes back its last one;
+on a block with none it is the step's own esc and drops the draft. The card
+lost its refine row and its note, since revision lives on the sections now:
+it is the ways out and nothing else, and tab moves the keyboard between it
+and the sections.
+
+The card is the one thing on the surface that never gives ground: on a
+terminal too short for both, the sections fold from the bottom and count what
+they folded, with the profile's own scroll keys to read on, and the selected
+block is kept in view. The card names the profile in its own title, so the
+question stays answerable on a surface too short to keep the name above it.
 
 Nothing on the surface writes anything until that card's own row is taken,
 which is the rule the scaffold card keeps: a decision gets a card, and the

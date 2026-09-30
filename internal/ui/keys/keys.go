@@ -1218,6 +1218,9 @@ var Agent = AgentKeys{
 type ProfileKeys struct {
 	Move       Binding
 	Take       Binding
+	Refine     Binding
+	Edit       Binding
+	Clear      Binding
 	Note       Binding
 	ScrollUp   Binding
 	ScrollDown Binding
@@ -1230,7 +1233,15 @@ var Profile = ProfileKeys{
 	// palette and the open query line already have.
 	Move: bind("↑↓", "move", "up", "down"),
 	Take: bind("enter", "take it", "enter"),
-	Note: bind("tab", "note or options", "tab"),
+	// The draft step's three acts on the selected section. e and x are the
+	// letters the same acts spend everywhere else: backlog.edit and
+	// commit.edit open the editor, and every drop and remove is x.
+	Refine: bind("enter", "refine it with a note", "enter"),
+	Edit:   bind("e", "edit it yourself", "e"),
+	Clear:  bind("x", "clear it", "x"),
+	// tab hands the keyboard between the draft's sections and the card that
+	// writes it.
+	Note: bind("tab", "the sections or the card", "tab"),
 	// The profile is the longest thing on the card and the one the decision
 	// is about, so it scrolls where the options do not. Shift is what every
 	// other card scrolls its body under.

@@ -30,6 +30,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/exp/teatest/v2"
+	"github.com/rfizzle/shhh/internal/persona"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
@@ -351,5 +352,66 @@ func TestProgram_TheHandoversCoverAnswersFromAHalfTypedLine(t *testing.T) {
 	}
 	if !strings.Contains(frame, draftSentence+"y") {
 		t.Fatalf("the draft did not keep what was typed into it:\n%s", frame)
+	}
+}
+
+// The drafter's draft step is reached and revised by key through the whole
+// program: the draft arrives from the drafting turn on the runtime's own
+// goroutine, the pointer walks to a section, a note is sent about it, and the
+// answer lands on that section alone
+// (docs/interface/surfaces.md#the-profile-drafter).
+func TestProgram_TheDraftIsRevisedOneSectionAtATime(t *testing.T) {
+	first := &persona.Draft{Name: "test-writer", Description: "adds tests", Permissions: []string{"write"},
+		Sections: &persona.Sections{Purpose: "Add tests.", Scope: "One package.", Restrictions: "Never delete a test.",
+			Method: "Read, then write.", Report: "The cases added."}}
+	answer := &persona.Draft{Name: "renamed", Description: "something else",
+		Sections: &persona.Sections{Purpose: "NEW purpose.", Method: "Run go vet after each file."}}
+	var mu sync.Mutex
+	var asked []persona.Request
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, streamOf(&programProvider{turns: []programTurn{{text: "unused"}}})).
+		WithPersonas(Personas{
+			Kind:    persona.KindCode,
+			Enabled: true,
+			Draft: func(_ context.Context, req persona.Request) persona.Outcome {
+				mu.Lock()
+				defer mu.Unlock()
+				asked = append(asked, req)
+				if req.Section == "" {
+					return persona.Outcome{Draft: first}
+				}
+				return persona.Outcome{Draft: answer}
+			},
+			Save: func(persona.Scope, persona.Draft, bool) (string, error) {
+				t.Error("nothing is written before the card's save row is taken")
+				return "", nil
+			},
+		})
+	tm := runProgramAt(t, m, 120, 50)
+
+	tm.Type("/agents new a test writer")
+	tm.Send(programEnter)
+	waitForText(t, tm, "Keep test-writer?")
+	for range 3 {
+		tm.Send(tea.KeyPressMsg{Code: tea.KeyDown})
+	}
+	tm.Send(programEnter)
+	waitForText(t, tm, "what to change in Method")
+	tm.Type("run go vet")
+	tm.Send(programEnter)
+	waitForText(t, tm, "Method · refined once")
+
+	frame := finalFrame(t, tm)
+	for _, want := range []string{"Run go vet after each file.", "Add tests.", "[esc] take back its last revision"} {
+		if !strings.Contains(frame, want) {
+			t.Fatalf("the revised draft lacks %q:\n%s", want, frame)
+		}
+	}
+	if strings.Contains(frame, "NEW purpose.") {
+		t.Fatalf("a note about Method rewrote Purpose:\n%s", frame)
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	if len(asked) != 2 || asked[1].Section != "Method" || asked[1].Feedback != "run go vet" {
+		t.Fatalf("requests = %+v", asked)
 	}
 }

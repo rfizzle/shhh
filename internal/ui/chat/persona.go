@@ -18,10 +18,14 @@ package chat
 import (
 	"context"
 	"fmt"
+	"os"
+	"os/exec"
+	"strconv"
 	"strings"
 	"time"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/persona"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
@@ -94,7 +98,39 @@ type personaFlow struct {
 	// overwrite is set once the person has been told a file exists and
 	// chosen to replace it.
 	overwrite bool
+	// sections is where each prose section of the draft stands, and
+	// revisions every earlier standing of it, newest last, so esc can take
+	// a revision back; both are keyed by the loader's section name and kept
+	// for the life of the flow. The draft's own Sections are written from
+	// sections at every revision (applySection), never the other way.
+	sections  map[string]personaSection
+	revisions map[string][]personaSection
+	// redrafting is the section a drafting turn in flight is rewriting, or
+	// "" when the turn drafts the whole profile.
+	redrafting string
 }
+
+// personaSection is one prose section as it stands: its text, and what has
+// happened to it — how many times the drafter rewrote it on a note, whether
+// the person wrote it themselves, whether they cleared it. The mark after
+// its heading is read off this.
+type personaSection struct {
+	body    string
+	refined int
+	mine    bool
+	cleared bool
+}
+
+// personaBlocks is the draft step's blocks in order: the five prose sections
+// by their loader names, then the three field blocks the file keeps beside
+// them. The index is what the surface hands back with a key.
+var personaBlocks = append(config.PromptSectionNames(), personaToolsBlock, "Commands", "Model")
+
+// personaToolsBlock is the block that is a set of tiers and tools rather
+// than prose. Enter on it is the door the tools-and-permissions selector
+// comes in by (pickPersonaSection); until that selector exists it opens
+// nothing.
+const personaToolsBlock = "Tools"
 
 // personaCommandName is the command the flow is opened by, named once so the
 // surface's header and the manager's own row cannot drift apart.
@@ -186,17 +222,46 @@ func (m Model) draftPersona(brief string) (tea.Model, tea.Cmd) {
 	}, "drafting")
 }
 
-// refinePersona sends the draft back with the person's note.
-func (m Model) refinePersona(feedback string) (tea.Model, tea.Cmd) {
+// refinePersonaSection sends the draft back with the person's note about one
+// section. The whole draft goes as fixed context and only that section is
+// taken from the answer (finishSectionRedraft), which is what keeps a
+// section the person wrote themselves — or was simply happy with — from
+// being rewritten by a note about another one
+// (docs/capabilities/subagents.md#a-profile-is-drafted-in-conversation).
+func (m Model) refinePersonaSection(index int, note string) (tea.Model, tea.Cmd) {
 	f := m.persona
+	name := personaProse(index)
+	if f.draft == nil || name == "" {
+		return m, nil
+	}
+	f.redrafting = name
+	// A copy, because the request is read on the drafting turn's own
+	// goroutine and the flow's draft may be revised meanwhile once a stopped
+	// turn hands the keyboard back.
+	current := *f.draft
+	if current.Sections != nil {
+		sections := *current.Sections
+		current.Sections = &sections
+	}
 	return m.runDrafter(persona.Request{
 		Kind:     m.personas.Kind,
 		Brief:    f.brief,
 		Exchange: drafterExchange(f.exchange),
-		Current:  f.draft,
-		Feedback: feedback,
+		Current:  &current,
+		Section:  name,
+		Feedback: note,
 		Models:   m.personas.Models,
-	}, "revising")
+	}, "redrafting "+name)
+}
+
+// personaProse is the prose section a block index names, or "" for a field
+// block or an index past the end.
+func personaProse(index int) string {
+	names := config.PromptSectionNames()
+	if index < 0 || index >= len(names) {
+		return ""
+	}
+	return names[index]
 }
 
 // drafterExchange is the exchange as the drafter is told it. An empty answer
@@ -220,7 +285,9 @@ func drafterExchange(qas []persona.QA) []persona.QA {
 func (m Model) runDrafter(req persona.Request, doing string) (tea.Model, tea.Cmd) {
 	f := m.persona
 	f.drafting = true
-	f.started = time.Now()
+	// The package's clock rather than time.Now, so a golden of the wait
+	// reads the same elapsed on every run.
+	f.started = clock()
 	f.runID++
 	runID := f.runID
 	if m.personas.Existing != nil {
@@ -266,7 +333,8 @@ func (m Model) closePersona(note string) (tea.Model, tea.Cmd) {
 }
 
 // finishPersonaDraft applies a drafting turn: questions are asked one at a
-// time, a draft opens the card.
+// time, a draft opens the card, and a section's redraft lands on that
+// section alone.
 func (m Model) finishPersonaDraft(msg personaDraftMsg) (tea.Model, tea.Cmd) {
 	f := m.persona
 	if f == nil || !f.drafting || msg.runID != f.runID {
@@ -275,6 +343,9 @@ func (m Model) finishPersonaDraft(msg personaDraftMsg) (tea.Model, tea.Cmd) {
 	f.drafting = false
 	f.cancel = nil
 	o := msg.outcome
+	if f.redrafting != "" {
+		return m.finishSectionRedraft(o)
+	}
 	if o.Failed {
 		return m.closePersona("The profile could not be drafted — " + o.Err + ".")
 	}
@@ -285,9 +356,83 @@ func (m Model) finishPersonaDraft(msg personaDraftMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 	f.draft = o.Draft
+	f.resetSections()
 	m.openPersonaCard()
 	m.syncViewport()
 	return m, nil
+}
+
+// finishSectionRedraft takes the one section the note was about out of the
+// drafter's answer and nothing else: every other section, the tiers and the
+// name stay as the draft had them, whatever the answer says. A turn that
+// failed, asked instead of answering, or came back with the section empty
+// leaves the section as it was and says so, because the draft on screen is
+// every revision the person has made and none of them is worth a failed turn.
+func (m Model) finishSectionRedraft(o persona.Outcome) (tea.Model, tea.Cmd) {
+	f := m.persona
+	name := f.redrafting
+	f.redrafting = ""
+	body := ""
+	if o.Draft != nil {
+		for _, sec := range o.Draft.SectionList() {
+			if sec.Name == name {
+				body = strings.TrimSpace(sec.Body)
+			}
+		}
+	}
+	var warning string
+	switch {
+	case o.Failed:
+		warning = name + " could not be redrafted — " + o.Err + ". It keeps its last text."
+	case len(o.Questions) > 0:
+		warning = name + " was not redrafted: the drafter asked " + strconv.Quote(o.Questions[0]) + " instead. Refine it again with the answer in the note."
+	case body == "":
+		warning = "The drafter answered with nothing for " + name + ". It keeps its last text."
+	}
+	if warning == "" {
+		cur := f.sections[name]
+		f.applySection(name, personaSection{body: body, refined: cur.refined + 1})
+	}
+	m.openPersonaCard()
+	m.personaScreen.Warn(warning)
+	m.syncViewport()
+	return m, nil
+}
+
+// resetSections reads a new draft's sections as the flow's starting point:
+// a whole draft is a new draft, so nothing revised before it can be taken
+// back into it.
+func (f *personaFlow) resetSections() {
+	f.sections = map[string]personaSection{}
+	f.revisions = map[string][]personaSection{}
+	for _, sec := range f.draft.SectionList() {
+		f.sections[sec.Name] = personaSection{body: strings.TrimSpace(sec.Body)}
+	}
+}
+
+// applySection is every revision of a section: the standing it replaces is
+// kept, and the draft's own section is written from the new one. It is the
+// one writer of the draft's prompt after the drafter's answer, and it writes
+// through SetSection — never the prompt itself, which Normalise would build
+// again from the sections over a hand edit.
+func (f *personaFlow) applySection(name string, next personaSection) {
+	f.revisions[name] = append(f.revisions[name], f.sections[name])
+	f.sections[name] = next
+	f.draft.SetSection(name, next.body)
+}
+
+// undoSection takes back a section's last revision, and reports whether it
+// had one.
+func (f *personaFlow) undoSection(name string) bool {
+	history := f.revisions[name]
+	if len(history) == 0 {
+		return false
+	}
+	prev := history[len(history)-1]
+	f.revisions[name] = history[:len(history)-1]
+	f.sections[name] = prev
+	f.draft.SetSection(name, prev.body)
+	return true
 }
 
 // askPersonaQuestion puts the question the flow is standing on onto the
@@ -298,44 +443,29 @@ func (m Model) askPersonaQuestion(text string) {
 	m.personaScreen.SetText(text)
 }
 
-// openPersonaCard puts the draft on the surface above the decision: where it
-// lives, a revision with a note, or nothing.
+// openPersonaCard puts the draft on the surface above the decision: its
+// sections one block each, in the order the file keeps them, over the card
+// that writes it.
 func (m *Model) openPersonaCard() {
-	d := m.persona.draft
-	facts := []components.ProfileFact{{
-		Label: "permissions",
-		Value: d.Tier(),
-		Tone:  personaTierTone(*d),
-		Detail: map[bool]string{
-			true:  "it can change things",
-			false: "it reads and reports",
-		}[d.Writes()],
-	}}
-	if len(d.Tools) > 0 {
-		// A narrowed profile gets fewer tools than its tier grants, and the
-		// card is where the file is agreed to: a person confirming "read"
-		// should see that it is three tools rather than all of them.
-		facts = append(facts, components.ProfileFact{Label: "tools", Value: strings.Join(d.Tools, " ")})
+	f := m.persona
+	d := f.draft
+	if f.sections == nil {
+		f.resetSections()
 	}
-	if len(d.Dropped) > 0 {
-		// The drafter named tools this session cannot grant and they were
-		// taken off; the person agreeing to the file should see that the
-		// file differs from what was proposed.
-		facts = append(facts, components.ProfileFact{
-			Label: "dropped", Value: strings.Join(d.Dropped, " "), Detail: "a chat persona only reads"})
+	blocks := make([]components.ProfileSection, 0, len(personaBlocks))
+	for _, name := range config.PromptSectionNames() {
+		sec := f.sections[name]
+		mark, tone := personaMark(name, sec)
+		blocks = append(blocks, components.ProfileSection{
+			Name:     name,
+			Body:     sec.body,
+			Mark:     mark,
+			MarkTone: tone,
+			Prose:    true,
+			Revised:  len(f.revisions[name]) > 0,
+		})
 	}
-	model := d.Model
-	if model == "" {
-		model = "inherited from this session"
-	}
-	facts = append(facts, components.ProfileFact{Label: "model", Value: model})
-	if d.Reasoning != "" {
-		facts = append(facts, components.ProfileFact{Label: "reasoning", Value: d.Reasoning})
-	}
-	if d.MaxTokens > 0 {
-		facts = append(facts, components.ProfileFact{
-			Label: "budget", Value: formatTokenCount(d.MaxTokens) + " tokens"})
-	}
+	blocks = append(blocks, personaToolsSection(*d), personaCommandsSection(), personaModelSection(*d))
 	saves := make([]components.SelectOption, 0, 2)
 	for _, s := range m.personaSaves() {
 		saves = append(saves, s.option)
@@ -343,10 +473,106 @@ func (m *Model) openPersonaCard() {
 	m.personaScreen.Show(components.ProfileDraftView{
 		Name:        d.Name,
 		Description: d.Description,
-		Facts:       facts,
-		Why:         d.Why,
-		Prompt:      d.Prompt,
+		Sections:    blocks,
 	}, saves)
+}
+
+// personaMark is what the mark after a section's heading says about it. An
+// empty section is marked whatever else happened to it, because a required
+// section with nothing in it is the thing to find before saving; a section
+// the person wrote is theirs, which is the mark no refine may take away; and
+// the drafter's own rewrites are counted, dim.
+func personaMark(name string, s personaSection) (string, components.ProfileMarkTone) {
+	switch {
+	case s.body == "" && (s.cleared || s.mine):
+		// Emptied by the person, with x or in the editor: the drafter did
+		// not leave it, and the mark must not say it did.
+		return "⚠ empty · you cleared it", components.ProfileMarkEmpty
+	case s.body == "":
+		return "⚠ empty · the drafter left it; " + personaRequired[name], components.ProfileMarkEmpty
+	case s.mine:
+		return "· edited by you", components.ProfileMarkMine
+	case s.refined > 0:
+		return "· refined " + personaTimes(s.refined), components.ProfileMarkQuiet
+	}
+	return "", components.ProfileMarkQuiet
+}
+
+// personaRequired says each section is required in a sentence that reads.
+var personaRequired = map[string]string{
+	config.SectionPurpose:      "a purpose is required",
+	config.SectionScope:        "a scope is required",
+	config.SectionRestrictions: "restrictions are required",
+	config.SectionMethod:       "a method is required",
+	config.SectionReport:       "a report is required",
+}
+
+// personaTimes is a count of rewrites as a sentence says it.
+func personaTimes(n int) string {
+	switch n {
+	case 1:
+		return "once"
+	case 2:
+		return "twice"
+	}
+	return strconv.Itoa(n) + " times"
+}
+
+// personaToolsSection is the Tools & permissions block: the tiers in words
+// and what they let the agent do, then the tools it narrows to and any the
+// session could not grant.
+func personaToolsSection(d persona.Draft) components.ProfileSection {
+	detail := []string{"it reads and reports"}
+	if d.Writes() {
+		detail = []string{"it can change things, in its own copy of the tree"}
+	}
+	if len(d.Tools) > 0 {
+		// A narrowed profile gets fewer tools than its tier grants, and the
+		// draft is where the file is agreed to: a person confirming "read"
+		// should see that it is three tools rather than all of them.
+		detail = append(detail, strings.Join(d.Tools, ", "))
+	}
+	if len(d.Dropped) > 0 {
+		// The drafter named tools this session cannot grant and they were
+		// taken off; the person agreeing to the file should see that the
+		// file differs from what was proposed.
+		detail = append(detail, "dropped "+strings.Join(d.Dropped, ", ")+" — a chat persona only reads")
+	}
+	return components.ProfileSection{
+		Name:   personaToolsBlock,
+		Value:  d.Tier(),
+		Tone:   personaTierTone(d),
+		Detail: strings.Join(detail, " · "),
+	}
+}
+
+// personaCommandsSection is the Commands block. A drafted profile states no
+// command fields yet, so the block says what applies instead: the session's
+// own lists.
+func personaCommandsSection() components.ProfileSection {
+	return components.ProfileSection{
+		Name:   "Commands",
+		Value:  "none stated",
+		Tone:   components.ToneQuiet,
+		Detail: "the session's own command lists apply",
+	}
+}
+
+// personaModelSection is the Model & budget block: each value, or the
+// session's own where the draft names none.
+func personaModelSection(d persona.Draft) components.ProfileSection {
+	model := d.Model
+	if model == "" {
+		model = "inherited from this session"
+	}
+	var detail []string
+	if d.Reasoning != "" {
+		detail = append(detail, "reasoning "+d.Reasoning)
+	}
+	if d.MaxTokens > 0 {
+		detail = append(detail, formatTokenCount(d.MaxTokens)+" tokens")
+	}
+	return components.ProfileSection{Name: "Model", Value: model, Detail: strings.Join(detail, " · ")}
 }
 
 // personaSaves is the card's writing rows. A chat persona is the person's,
@@ -409,9 +635,118 @@ func (m Model) updatePersona(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	case components.ProfileSave:
 		return m.savePersona(res.Index)
 	case components.ProfileRefine:
-		return m.refinePersona(res.Text)
+		return m.refinePersonaSection(res.Index, res.Text)
+	case components.ProfileEdit:
+		return m.editPersonaSection(res.Index)
+	case components.ProfileClear:
+		return m.clearPersonaSection(res.Index)
+	case components.ProfileUndo:
+		return m.undoPersonaSection(res.Index)
+	case components.ProfilePick:
+		return m.pickPersonaSection(res.Index)
 	}
 	return m.closePersona("Profile discarded.")
+}
+
+// pickPersonaSection is enter on a block that is a set of fields rather than
+// prose. It is the seam the tools-and-permissions selector opens from — the
+// Tools block — and until that selector exists it opens nothing: the key row
+// does not offer enter there, so nothing was promised.
+func (m Model) pickPersonaSection(int) (tea.Model, tea.Cmd) {
+	m.syncViewport()
+	return m, nil
+}
+
+// clearPersonaSection empties a section. It is a revision like any other,
+// so esc gives the text back.
+func (m Model) clearPersonaSection(index int) (tea.Model, tea.Cmd) {
+	f := m.persona
+	name := personaProse(index)
+	if f.draft == nil || name == "" || f.sections[name].body == "" {
+		return m, nil
+	}
+	cur := f.sections[name]
+	f.applySection(name, personaSection{refined: cur.refined, cleared: true})
+	m.openPersonaCard()
+	m.syncViewport()
+	return m, nil
+}
+
+// undoPersonaSection takes back the section's last revision — a refine, an
+// edit or a clear — and nothing else on the draft moves.
+func (m Model) undoPersonaSection(index int) (tea.Model, tea.Cmd) {
+	f := m.persona
+	name := personaProse(index)
+	if f.draft == nil || name == "" || !f.undoSection(name) {
+		return m, nil
+	}
+	m.openPersonaCard()
+	m.syncViewport()
+	return m, nil
+}
+
+// personaEditorDoneMsg is the editor's exit over one section's text. It
+// carries the flow it was opened for, so an edit that returns to a flow that
+// has since been dropped is dropped with it.
+type personaEditorDoneMsg struct {
+	flow    *personaFlow
+	section string
+	path    string
+	err     error
+}
+
+// editPersonaSection hands one section's text to the person's editor, the
+// draft editor's way (editorArgv, over a temporary file the finish removes).
+// It asks the terminal half of the draft editor's refusal and not the draft
+// half: this surface holds the keyboard itself, which is exactly what the
+// draft half refuses.
+func (m Model) editPersonaSection(index int) (tea.Model, tea.Cmd) {
+	f := m.persona
+	name := personaProse(index)
+	if f.draft == nil || name == "" {
+		return m, nil
+	}
+	if reason, refused := m.terminalRefusal(); refused {
+		m.personaScreen.Warn(reason)
+		m.syncViewport()
+		return m, nil
+	}
+	path, err := writeDraftFile(f.sections[name].body + "\n")
+	if err != nil {
+		m.personaScreen.Warn("could not write " + name + " out for the editor — " + err.Error())
+		m.syncViewport()
+		return m, nil
+	}
+	argv := editorArgv(editorCommand(), path, 1, 1)
+	proc := exec.Command(argv[0], argv[1:]...)
+	return m, tea.ExecProcess(proc, func(err error) tea.Msg {
+		return personaEditorDoneMsg{flow: f, section: name, path: path, err: err}
+	})
+}
+
+// personaEditorFinished takes the edited text back into its section and
+// marks it as the person's own, which no later refine of another section
+// touches. Every exit the editor can make arrives here, which is what makes
+// this the one place the temporary file is removed.
+func (m Model) personaEditorFinished(msg personaEditorDoneMsg) (tea.Model, tea.Cmd) {
+	defer func() { _ = os.Remove(msg.path) }()
+	f := m.persona
+	if f == nil || f != msg.flow || f.draft == nil || m.personaScreen == nil {
+		return m, nil
+	}
+	var warning string
+	if msg.err != nil {
+		warning = "the editor exited with an error, so " + msg.section + " is as it was — " + msg.err.Error()
+	} else if content, err := os.ReadFile(msg.path); err != nil {
+		warning = "could not read " + msg.section + " back, so it is as it was — " + err.Error()
+	} else if body := strings.TrimSpace(string(content)); body != f.sections[msg.section].body {
+		cur := f.sections[msg.section]
+		f.applySection(msg.section, personaSection{body: body, refined: cur.refined, mine: true})
+	}
+	m.openPersonaCard()
+	m.personaScreen.Warn(warning)
+	m.syncViewport()
+	return m, nil
 }
 
 // takePersonaAnswer applies the line the step was waiting for: the brief
@@ -463,7 +798,8 @@ func (m Model) stepPersonaBack() (tea.Model, tea.Cmd) {
 }
 
 // abortPersonaDraft stops a drafting turn and hands the flow back to the
-// brief, which is the step a person who stopped it is reconsidering.
+// brief, which is the step a person who stopped it is reconsidering — or,
+// for a section's redraft, back to the draft with the section as it was.
 func (m Model) abortPersonaDraft() (tea.Model, tea.Cmd) {
 	f := m.persona
 	if f.cancel != nil {
@@ -474,6 +810,12 @@ func (m Model) abortPersonaDraft() (tea.Model, tea.Cmd) {
 	// arrives (finishPersonaDraft).
 	f.drafting = false
 	f.runID++
+	if f.redrafting != "" && f.draft != nil {
+		f.redrafting = ""
+		m.openPersonaCard()
+		m.syncViewport()
+		return m, nil
+	}
 	f.exchange, f.questions, f.at = nil, nil, 0
 	m.askPersonaBrief(f.brief)
 	m.syncViewport()
@@ -491,19 +833,19 @@ func (m Model) savePersona(index int) (tea.Model, tea.Cmd) {
 	if err != nil {
 		if path != "" && !f.overwrite {
 			// The file exists. The card comes back with the choice made
-			// explicit: saving again replaces it, or a note renames it.
+			// explicit: saving again replaces it.
 			f.overwrite = true
 			m.openPersonaCard()
-			m.personaScreen.Warn(err.Error() + " Save again to replace it, or Refine with a new name.")
+			m.personaScreen.Warn(err.Error() + " Save again to replace it, or Discard it.")
 			m.syncViewport()
 			return m, nil
 		}
 		// The loader refused the profile. The draft stays on the card with
 		// the refusal under it, because a refusal is usually something a
-		// Refine can fix, and closing the card would cost the person the
+		// revision can fix, and closing the card would cost the person the
 		// draft they came to keep.
 		m.openPersonaCard()
-		m.personaScreen.Warn("Could not save the profile — " + err.Error() + ". Refine it, or Discard it.")
+		m.personaScreen.Warn("Could not save the profile — " + err.Error() + ". Revise a section, or Discard it.")
 		m.syncViewport()
 		return m, nil
 	}
@@ -521,7 +863,7 @@ func (m Model) personaPane(width, height int) string {
 	m.personaScreen.Frame = m.spinFrame
 	m.personaScreen.Elapsed = ""
 	if m.persona != nil && m.persona.drafting && !m.persona.started.IsZero() {
-		m.personaScreen.Elapsed = components.FormatElapsed(time.Since(m.persona.started))
+		m.personaScreen.Elapsed = components.FormatElapsed(clock().Sub(m.persona.started))
 	}
 	return m.personaScreen.View(width)
 }

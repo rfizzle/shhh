@@ -1,0 +1,10 @@
+# The drafter's two turns. A drafting request offers draft_profile as its one
+# tool, so the endpoint answers it from the reading queue: first the draft,
+# with Report left empty as a gap, then the answer to the note about Method —
+# which rewrites every section and renames the profile, so the capture shows
+# that only Method is taken from it.
+[session]
+Nothing in this scene asks the session anything.
+[reading]
+tool:draft_profile:{"profile":{"name":"test-writer","description":"adds table-driven tests for a package and runs them","permissions":["write","execute"],"sections":{"purpose":"Add table-driven tests for one package at a time. Done when every exported function has a case in its table and the package's tests pass.","scope":"The package you were pointed at and its _test.go files. Leave the exported API and every other package alone.","restrictions":"Never change an expected value to make a case pass.","method":"Read the package, then its tests, then write the cases the table is missing. Run the package's tests after each file.","report":""},"why":"a writer that could not run the tests would be proposing them"}}
+tool:draft_profile:{"profile":{"name":"renamed","description":"something else","permissions":["write","execute"],"sections":{"purpose":"REWRITTEN purpose.","scope":"REWRITTEN scope.","restrictions":"REWRITTEN restrictions.","method":"Read the package, then its tests, then write the missing cases. Run the tests and go vet after each file, and stop at the first that fails.","report":"REWRITTEN report."}}}

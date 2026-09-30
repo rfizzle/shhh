@@ -1,0 +1,3 @@
+# The editor is a sed that rewrites the section it is handed, so the hand
+# edit is a keystroke the scene can press and a change the capture can read.
+EDITOR='sed -i s/Never/NEVER/' $SHHH_BIN code

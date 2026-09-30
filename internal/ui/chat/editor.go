@@ -115,13 +115,25 @@ func (m Model) editorFinished(msg editorDoneMsg) (tea.Model, tea.Cmd) {
 // suspended is the child's, and the orchestrator's own state says nothing
 // about it.
 func (m Model) editorRefusal() (string, bool) {
+	if reason, refused := m.terminalRefusal(); refused {
+		return reason, true
+	}
+	if !m.inputLive() {
+		return "the draft does not have the keyboard", true
+	}
+	return "", false
+}
+
+// terminalRefusal is the half of editorRefusal that is about the terminal
+// rather than the draft: the two things handing the terminal to an editor
+// would break. A surface that holds the keyboard itself and opens the editor
+// from its own key — the profile drafter's sections — asks this half alone.
+func (m Model) terminalRefusal() (string, bool) {
 	switch {
 	case m.interruptShowing():
 		return "a decision is waiting — answer it first, then open the editor", true
 	case m.working() || m.frameWorking():
 		return "not while the turn is running — the editor takes the terminal with it", true
-	case !m.inputLive():
-		return "the draft does not have the keyboard", true
 	}
 	return "", false
 }

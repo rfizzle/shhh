@@ -1,0 +1,26 @@
+# program test: TestProgram_TheDraftIsRevisedOneSectionAtATime
+#
+# The profile drafter's draft step at 80 columns
+# (docs/interface/surfaces.md#the-profile-drafter).
+#
+# What the capture is for: the draft arrives as its sections, one block each,
+# with the pointer on Purpose and Report marked empty; a note about Method is
+# sent and only Method comes back rewritten, marked refined, though the answer
+# rewrote every section; Restrictions goes through the editor and comes back
+# marked as the person's own; esc takes that back; and tab hands the keyboard
+# to the card, whose pane folds rather than giving ground.
+snap 01-start "Some things worth doing first"
+keys "/agents new a test writer" Enter
+snap 02-sections "[enter] refine it with a note" "❯ Purpose" "Report ⚠ empty · the drafter left it"
+keys Down Down Down Enter
+snap 03-note "what to change in Method"
+keys "run go vet as well"
+keys Enter
+snap 04-refined "Method · refined once" "Never change an expected value" "Add table-driven tests"
+keys Up
+keys e
+snap 05-edited "Restrictions · edited by you" "NEVER change an expected value"
+keys Escape
+snap 06-taken-back "[esc] discard the draft" "Never change an expected value"
+keys Tab
+snap 07-card "[enter] confirm · [tab] the sections" "Keep test-writer?"

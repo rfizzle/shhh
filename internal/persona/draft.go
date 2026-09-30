@@ -25,6 +25,10 @@ type Request struct {
 	// on it; both empty for a first draft.
 	Current  *Draft
 	Feedback string
+	// Section names the one section of Current the note is about, for a
+	// revision of that section alone; the rest of the draft is sent as
+	// fixed context and only that section is taken from the answer.
+	Section string
 	// Existing is the role names the session already has.
 	Existing []string
 	// Models the drafter may name; empty leaves the model inherited.
@@ -323,6 +327,14 @@ func userPrompt(req Request) string {
 		}
 		cur, _ := json.MarshalIndent(shown, "", "  ")
 		fmt.Fprintf(&b, "\nCURRENT DRAFT:\n%s\n", cur)
+		if req.Section != "" {
+			// One section is being revised. The rest is context the answer
+			// must not move, and the caller takes that section alone from
+			// it, so a rewrite of anything else would be work thrown away.
+			fmt.Fprintf(&b, "\nRevise the %s section only, to match what the person said about it. Every other section and field is fixed: answer them exactly as they are in the current draft. Only %s is taken from your answer.\n", req.Section, req.Section)
+			fmt.Fprintf(&b, "\nWhat the person said about %s:\n%s\n", req.Section, strings.TrimSpace(req.Feedback))
+			return b.String()
+		}
 		fmt.Fprintf(&b, "\nWhat the person said about it — revise the draft to match, keeping everything they did not mention:\n%s\n", strings.TrimSpace(req.Feedback))
 	}
 	return b.String()

@@ -1545,6 +1545,9 @@ func TestGolden_SourcesScreen(t *testing.T) {
 // surface is built from a session's own wiring — which kind of profile this
 // is, which roles it already has, where a file could go — so the words on it
 // are checked against what the product actually says rather than a fixture.
+// The draft is revised the way a person revises one: a section refined on a
+// note, another written in the editor, and each mark is read off the flow's
+// own record of what happened to the section.
 func TestGolden_ProfileDrafter(t *testing.T) {
 	captureGolden(t, "profile-drafter", "the profile drafter in the pane", goldenWidths, func(width int) []golden.Panel {
 		draft := &persona.Draft{
@@ -1553,18 +1556,26 @@ func TestGolden_ProfileDrafter(t *testing.T) {
 			Permissions: []string{"write", "execute"},
 			MaxTokens:   8000,
 			Why:         "a writer that could not run the tests would be proposing them, not adding them",
-			Prompt: "You add table-driven tests for one package at a time. Read the package first, " +
-				"then the tests it already has, then write the cases the existing table is missing.\n" +
-				"Run the package's tests and fix what you broke. Do not touch any file outside the " +
-				"package's own directory.",
+			Sections: &persona.Sections{
+				Purpose:      "Add table-driven tests for one package at a time. Done when every exported function has a case in its table and the package's tests pass.",
+				Scope:        "The package you were pointed at and its _test.go files. Leave the exported API and every other package alone.",
+				Restrictions: "Never change an expected value to make a case pass.",
+				Method:       "Read the package, then its tests, then write the cases the table is missing. Run the package's tests after each file.",
+			},
 		}
+		refined := *draft
+		refined.Sections = &persona.Sections{Method: "Read the package, then its tests, then write the missing cases. Run the tests and go vet after each file, and stop at the first that fails."}
 		m, _, _ := personaModel(t, persona.KindCode,
 			persona.Outcome{Questions: []string{"Which package should it start from?", "Should it run the tests as well as write them?"}},
 			persona.Outcome{Draft: draft},
+			persona.Outcome{Draft: &refined},
 		)
 		m.width, m.height = width, 40
 		m.syncInputWidth()
-		pane := func(m Model) string { return m.personaPane(width, 26) }
+		pane := func(m Model) string { return m.personaPane(width, 40) }
+		key := func(m Model, k tea.KeyPressMsg) Model { return pressOn(t, m, k) }
+		down := tea.KeyPressMsg{Code: tea.KeyDown}
+		enter := tea.KeyPressMsg{Code: tea.KeyEnter}
 
 		// Each step is captured as it stands: the surface is one object the
 		// model holds a pointer to, so a view taken after the flow moved on
@@ -1573,29 +1584,47 @@ func TestGolden_ProfileDrafter(t *testing.T) {
 		brief := pane(m)
 		m = submitLine(t, m, "/agents new something for tests")
 		first := pane(m)
-		m = pressOn(t, typeInto(t, m, "internal/agent"), tea.KeyPressMsg{Code: tea.KeyEnter})
+		m = key(typeInto(t, m, "internal/agent"), enter)
 		second := pane(m)
-		m = pressOn(t, typeInto(t, m, "yes"), tea.KeyPressMsg{Code: tea.KeyEnter})
+		m = key(typeInto(t, m, "yes"), enter)
 		drafted := pane(m)
+		m = key(key(m, down), down)
+		selected := pane(m)
+		m = key(m, down)
+		m = typeInto(t, key(m, enter), "run go vet as well, and stop at the first failing file")
+		refining := pane(m)
+		updated, cmd := m.Update(enter)
+		m = updated.(Model)
+		waiting := pane(m)
+		m = runPersonaCmd(t, m, cmd)
+		refinedPane := pane(m)
+		m = handEdit(t, m, "Restrictions", "Never change an expected value to make a case pass. Never delete a test.")
+		m = key(key(m, tea.KeyPressMsg{Code: tea.KeyUp}), tea.KeyPressMsg{Code: tea.KeyUp})
+		edited := pane(m)
 		// The loader's own sentence for this draft's budget, with the path
 		// the project row names, so the fixture does not carry a scratch
 		// directory.
 		m.personas.Save = func(persona.Scope, persona.Draft, bool) (string, error) {
 			return "", errors.New("agent profile /repo/.shhh/agents/test-writer.toml: max_tokens: must be at least 300000")
 		}
-		m = pressOn(t, m, tea.KeyPressMsg{Code: tea.KeyEnter})
+		m = key(key(m, tea.KeyPressMsg{Code: tea.KeyTab}), enter)
 		refused := pane(m)
-		// `?` on the draft card, where no field has the keyboard: the
-		// drafter's keys and the glyph legend take the foot, on a pane tall
-		// enough to hold them.
-		m = pressOn(t, m, tea.KeyPressMsg{Code: '?', Text: "?"})
+		// `?` on the draft, where no field has the keyboard: the drafter's
+		// keys and the glyph legend take the foot, on a pane tall enough to
+		// hold them.
+		m = key(m, tea.KeyPressMsg{Code: '?', Text: "?"})
 		return []golden.Panel{
 			{Label: "the brief · the roles this session already has are on the header", View: brief},
 			{Label: "the drafter's first question, asked on its own", View: first},
 			{Label: "the second, with the first answer still above it", View: second},
-			{Label: "the draft · both places a coding agent's profile can live", View: drafted},
-			{Label: "a save the loader refused · the draft stays, the refusal under it", View: refused},
-			{Label: "[?] on the draft card · the drafter's keys and the glyph legend", View: m.personaPane(width, 40)},
+			{Label: "the draft in sections · Purpose selected, the one the drafter left empty marked", View: drafted},
+			{Label: "one selected further down · its keys on the row under the sections", View: selected},
+			{Label: "a section refining · the note under it, the other seven sent as fixed context", View: refining},
+			{Label: "the wait, on that section · the other sections stand", View: waiting},
+			{Label: "the section refined · marked, and esc now takes it back", View: refinedPane},
+			{Label: "a section written in the editor · marked as the person's own", View: edited},
+			{Label: "a save the loader refused · the draft stays, the refusal over it", View: refused},
+			{Label: "[?] on the draft · the drafter's keys and the glyph legend", View: m.personaPane(width, 60)},
 		}
 	})
 }

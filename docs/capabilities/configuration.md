@@ -919,7 +919,10 @@ rules above are what refuse a move, not a list of keys held back from it.
 | `agent.detach` | `esc` | back to your own session | yes |
 | `profile.move` | `up`, `down` | move | yes |
 | `profile.take` | `enter` | take it | yes |
-| `profile.note` | `tab` | note or options | yes |
+| `profile.refine` | `enter` | refine it with a note | yes |
+| `profile.edit` | `e` | edit it yourself | yes |
+| `profile.clear` | `x` | clear it | yes |
+| `profile.note` | `tab` | the sections or the card | yes |
 | `profile.scroll_up` | `shift+up` | scroll the profile up | yes |
 | `profile.scroll_down` | `shift+down` | scroll the profile | yes |
 | `profile.back` | `esc`, `ctrl+c` | back a step | yes |

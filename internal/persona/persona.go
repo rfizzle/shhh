@@ -114,6 +114,51 @@ func (s Sections) Empty() []string {
 	return out
 }
 
+// Section is one section's text by its loader name, or "" for a name that
+// is not one of the five.
+func (s Sections) Section(name string) string {
+	for _, sec := range s.List() {
+		if sec.Name == name {
+			return sec.Body
+		}
+	}
+	return ""
+}
+
+// SectionList is the draft's prompt as its five sections: the ones the
+// drafter answered, or the prompt read into them for a draft that carries
+// only a prompt.
+func (d Draft) SectionList() []config.PromptSection {
+	if d.Sections != nil {
+		return d.Sections.List()
+	}
+	return sectionsOf(config.ReadPromptSections(d.Prompt)).List()
+}
+
+// SetSection replaces one section's text and writes the prompt again from
+// the five. A revision changes the section and never the prompt: Normalise
+// rebuilds the prompt from the sections wherever any is filled, so a prompt
+// edited on its own would be overwritten by the next Normalise, and the
+// sections are the one place a revision can live
+// (docs/capabilities/subagents.md#a-profile-is-drafted-in-conversation).
+// It reports false for a name that is not one of the five.
+func (d *Draft) SetSection(name, body string) bool {
+	list := d.SectionList()
+	found := false
+	for i := range list {
+		if list[i].Name == name {
+			list[i].Body = strings.TrimSpace(body)
+			found = true
+		}
+	}
+	if !found {
+		return false
+	}
+	d.Sections = sectionsOf(list)
+	d.Prompt = config.WritePromptSections(list)
+	return true
+}
+
 // Definition is the draft as the loader would read it.
 func (d Draft) Definition() config.AgentDefinition {
 	return config.AgentDefinition{

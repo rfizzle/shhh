@@ -358,7 +358,7 @@ func destructive() []Binding {
 	return []Binding{
 		Agent.Cancel, Agent.Kill, Agent.KillAll,
 		Select.Delete, Screen.Delete,
-		Notes.Drop, Backlog.Drop,
+		Notes.Drop, Backlog.Drop, Profile.Clear,
 		Queue.Cancel,
 		Confirm.Force,
 	}

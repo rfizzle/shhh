@@ -3,6 +3,8 @@ package chat
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -91,8 +93,9 @@ func typeInto(t *testing.T, m Model, text string) Model {
 	return m
 }
 
-// personaView is the surface as the pane draws it.
-func personaView(m Model) string { return m.personaPane(130, 30) }
+// personaView is the surface as the pane draws it, on a pane tall enough to
+// hold every section of a draft over its card.
+func personaView(m Model) string { return m.personaPane(130, 48) }
 
 func lastNote(m Model) string { return m.transcript[len(m.transcript)-1].text }
 
@@ -122,7 +125,7 @@ func TestPersona_BriefStepOffersStartingPointsAndTakesOne(t *testing.T) {
 		t.Fatalf("the draft should be showing, step=%d", m.personaScreen.Step)
 	}
 	card := personaView(m)
-	for _, want := range []string{"skeptic — checks claims", "permissions", "read + web", "Doubt everything.", "Save", "Refine", "Discard"} {
+	for _, want := range []string{"skeptic — checks claims", "Tools", "read + web", "Purpose", "Doubt everything.", "Save", "Discard"} {
 		if !strings.Contains(card, want) {
 			t.Errorf("card lacks %q:\n%s", want, card)
 		}
@@ -130,6 +133,9 @@ func TestPersona_BriefStepOffersStartingPointsAndTakesOne(t *testing.T) {
 	if strings.Contains(card, "Save to this project") {
 		t.Fatal("a chat persona must not be offered a project scope")
 	}
+	// The sections hold the keyboard when the draft arrives; tab hands it to
+	// the card, and the card's row is the one that saves.
+	m = pressOn(t, m, tea.KeyPressMsg{Code: tea.KeyTab})
 	m = pressOn(t, m, tea.KeyPressMsg{Code: tea.KeyEnter})
 	if len(*saves) != 1 || (*saves)[0] != persona.ScopeGlobal {
 		t.Fatalf("saves = %v", *saves)
@@ -161,7 +167,7 @@ func TestPersona_CardNamesANarrowedToolset(t *testing.T) {
 	m, _, _ := personaModel(t, persona.KindCode, persona.Outcome{Draft: draft})
 	m = submitLine(t, m, "/agents new a reviewer")
 	card := personaView(m)
-	for _, want := range []string{"tools", "read_file search quality_gate"} {
+	for _, want := range []string{"Tools", "read_file, search, quality_gate"} {
 		if !strings.Contains(card, want) {
 			t.Errorf("card lacks %q:\n%s", want, card)
 		}
@@ -184,7 +190,7 @@ func TestPersona_CardNamesDroppedTools(t *testing.T) {
 			t.Errorf("card lacks %q:\n%s", want, card)
 		}
 	}
-	if strings.Contains(card, "read_file write_file") {
+	if strings.Contains(card, "read_file, write_file") {
 		t.Errorf("card still lists the dropped tool among the tools:\n%s", card)
 	}
 }
@@ -226,19 +232,25 @@ func TestPersona_QuestionsAreAskedOneAtATime(t *testing.T) {
 	if !strings.Contains(card, "Save to this project") || !strings.Contains(card, "/repo/.shhh/agents") || !strings.Contains(card, "read + write + execute") {
 		t.Fatalf("code card:\n%s", card)
 	}
-	// Down twice to Refine, tab to the note, type, enter.
-	for _, k := range []tea.KeyPressMsg{{Code: tea.KeyDown}, {Code: tea.KeyDown}, {Code: tea.KeyTab}} {
-		updated, _ := m.Update(k)
-		m = updated.(Model)
-	}
+	// enter on Purpose opens its note; the note goes to the drafter about
+	// Purpose alone.
+	m = pressOn(t, m, tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = typeInto(t, m, "table driven")
 	m = pressOn(t, m, tea.KeyPressMsg{Code: tea.KeyEnter})
-	if len(*reqs) != 3 || (*reqs)[2].Current == nil || (*reqs)[2].Current.Name != "test-writer" || (*reqs)[2].Feedback != "table driven" {
+	if len(*reqs) != 3 || (*reqs)[2].Current == nil || (*reqs)[2].Current.Name != "test-writer" ||
+		(*reqs)[2].Feedback != "table driven" || (*reqs)[2].Section != "Purpose" {
 		t.Fatalf("revision request = %+v", (*reqs)[2])
 	}
-	if !strings.Contains(personaView(m), "adds table tests") {
-		t.Fatal("the revised draft should be on the card")
+	view = personaView(m)
+	if !strings.Contains(view, "Write table-driven tests.") || !strings.Contains(view, "Purpose · refined once") {
+		t.Fatalf("the revised section should be on the draft:\n%s", view)
 	}
+	// Only the section is taken from the answer: the description it also
+	// changed stays as the draft had it.
+	if strings.Contains(view, "adds table tests") {
+		t.Fatalf("a section's refine rewrote the description:\n%s", view)
+	}
+	m = pressOn(t, m, tea.KeyPressMsg{Code: tea.KeyTab})
 	m = pressOn(t, m, tea.KeyPressMsg{Code: tea.KeyEnter})
 	if len(*saves) != 1 || (*saves)[0] != persona.ScopeProject {
 		t.Fatalf("saves = %v", *saves)
@@ -482,8 +494,8 @@ func TestPersona_AgentManagerOffersTheDrafter(t *testing.T) {
 }
 
 // A profile the loader refuses at save keeps the card: the draft stays on it
-// with the loader's own sentence underneath, and Refine is still there to
-// fix it with, because a refusal a note could answer should not cost the
+// with the loader's own sentence underneath, and its sections can still be
+// revised, because a refusal a revision could answer should not cost the
 // draft (docs/capabilities/subagents.md#a-profile-is-drafted-in-conversation).
 func TestPersona_ARefusedSaveKeepsTheDraftOnTheCard(t *testing.T) {
 	// Below the floor a child is admitted at, which only the loader knows.
@@ -494,24 +506,228 @@ func TestPersona_ARefusedSaveKeepsTheDraftOnTheCard(t *testing.T) {
 		return persona.Write(dir, d, persona.KindChat, overwrite)
 	}
 	m = submitLine(t, m, "/agents new something small")
+	m = pressOn(t, m, tea.KeyPressMsg{Code: tea.KeyTab})
 	m = pressOn(t, m, tea.KeyPressMsg{Code: tea.KeyEnter})
 	if m.persona == nil || m.personaScreen.Step != components.ProfileDraft {
 		t.Fatalf("a refused save closed the card: note=%q", lastNote(m))
 	}
 	card := personaView(m)
-	for _, want := range []string{"tiny", "Could not save the profile", "max_tokens: must be at least 300000", "Refine", "Discard"} {
+	for _, want := range []string{"tiny", "Could not save the profile", "max_tokens: must be at least 300000", "Revise a section", "Discard"} {
 		if !strings.Contains(card, want) {
 			t.Fatalf("the card should hold %q:\n%s", want, card)
 		}
 	}
-	// Refine is live: a note sends the draft back to the drafter.
-	for _, k := range []tea.KeyPressMsg{{Code: tea.KeyDown}, {Code: tea.KeyTab}} {
-		updated, _ := m.Update(k)
-		m = updated.(Model)
-	}
-	m = typeInto(t, m, "leave the budget to the session")
+	// The sections are live: tab back to them and a note sends one section
+	// to the drafter.
+	m = pressOn(t, m, tea.KeyPressMsg{Code: tea.KeyTab})
 	m = pressOn(t, m, tea.KeyPressMsg{Code: tea.KeyEnter})
-	if len(*reqs) != 2 || (*reqs)[1].Feedback != "leave the budget to the session" || (*reqs)[1].Current == nil {
+	m = typeInto(t, m, "read two files")
+	m = pressOn(t, m, tea.KeyPressMsg{Code: tea.KeyEnter})
+	if len(*reqs) != 2 || (*reqs)[1].Feedback != "read two files" || (*reqs)[1].Section != "Purpose" || (*reqs)[1].Current == nil {
 		t.Fatalf("refine after a refusal: %+v", *reqs)
+	}
+}
+
+// sectionedModel opens the drafter on a draft whose five sections are all
+// filled, with the outcomes after the first served to the refines that
+// follow, and hands back the requests and saves the fake records.
+func sectionedModel(t *testing.T, kind persona.Kind, refines ...persona.Outcome) (Model, *[]persona.Request, *[]persona.Scope) {
+	t.Helper()
+	draft := &persona.Draft{Name: "test-writer", Description: "adds tests", Permissions: []string{"write", "execute"},
+		Sections: &persona.Sections{Purpose: "Add tests.", Scope: "One package.", Restrictions: "Never delete a test.",
+			Method: "Read, then write.", Report: "The cases added."}}
+	if kind == persona.KindChat {
+		draft.Permissions = []string{"web"}
+	}
+	if err := draft.Normalise(kind); err != nil {
+		t.Fatal(err)
+	}
+	m, reqs, saves := personaModel(t, kind, append([]persona.Outcome{{Draft: draft}}, refines...)...)
+	m = submitLine(t, m, "/agents new a test writer")
+	if m.personaScreen.Step != components.ProfileDraft {
+		t.Fatalf("the draft should be showing, step=%d", m.personaScreen.Step)
+	}
+	return m, reqs, saves
+}
+
+// refineSection moves the pointer to a section, opens its note and sends it.
+func refineSection(t *testing.T, m Model, downs int, note string) Model {
+	t.Helper()
+	for range downs {
+		m = pressOn(t, m, tea.KeyPressMsg{Code: tea.KeyDown})
+	}
+	m = pressOn(t, m, tea.KeyPressMsg{Code: tea.KeyEnter})
+	m = typeInto(t, m, note)
+	return pressOn(t, m, tea.KeyPressMsg{Code: tea.KeyEnter})
+}
+
+// answerRewritingEverything is a drafter answer that rewrote every section
+// and granted every tier, which is what a careless redraft looks like: only
+// the section the note was about may be taken from it.
+func answerRewritingEverything() persona.Outcome {
+	d := &persona.Draft{Name: "renamed", Description: "something else", Permissions: []string{"web", "write", "execute"},
+		Tools: []string{"write_file"},
+		Sections: &persona.Sections{Purpose: "NEW purpose.", Scope: "NEW scope.", Restrictions: "NEW restrictions.",
+			Method: "NEW method.", Report: "NEW report."}}
+	return persona.Outcome{Draft: d}
+}
+
+// handEdit is the editor's return over a section: the file it was handed,
+// rewritten, arriving as the message the editor's exit sends.
+func handEdit(t *testing.T, m Model, section, text string) Model {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), "section.md")
+	if err := os.WriteFile(path, []byte(text+"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	updated, _ := m.Update(personaEditorDoneMsg{flow: m.persona, section: section, path: path})
+	return updated.(Model)
+}
+
+// A note about one section rewrites that section and nothing else: the other
+// four, the name, the description and the tiers stay as the draft had them
+// whatever the drafter's answer says.
+func TestPersona_ARefineRewritesItsSectionOnly(t *testing.T) {
+	m, reqs, saves := sectionedModel(t, persona.KindCode, answerRewritingEverything())
+	m = refineSection(t, m, 3, "run go vet as well")
+	req := (*reqs)[len(*reqs)-1]
+	if req.Section != "Method" || req.Feedback != "run go vet as well" || req.Current == nil {
+		t.Fatalf("request = %+v", req)
+	}
+	d := m.persona.draft
+	want := []string{"Add tests.", "One package.", "Never delete a test.", "NEW method.", "The cases added."}
+	for i, sec := range d.SectionList() {
+		if sec.Body != want[i] {
+			t.Fatalf("section %s = %q, want %q", sec.Name, sec.Body, want[i])
+		}
+	}
+	if d.Name != "test-writer" || d.Description != "adds tests" || strings.Join(d.Permissions, ",") != "write,execute" {
+		t.Fatalf("a section's refine moved the rest of the draft: %+v", d)
+	}
+	if !strings.Contains(d.Prompt, "NEW method.") || strings.Contains(d.Prompt, "Read, then write.") {
+		t.Fatalf("the prompt should be written from the sections:\n%s", d.Prompt)
+	}
+	if view := personaView(m); !strings.Contains(view, "Method · refined once") {
+		t.Fatalf("the refined section should be marked:\n%s", view)
+	}
+	if len(*saves) != 0 {
+		t.Fatalf("a revision wrote a file: %v", *saves)
+	}
+}
+
+// A section the person wrote themselves is marked as theirs, and a later
+// refine of another section leaves it exactly as they wrote it — in the
+// draft and in the prompt the save will write.
+func TestPersona_AHandEditIsNeverRewrittenByAnotherSectionsRefine(t *testing.T) {
+	m, _, _ := sectionedModel(t, persona.KindCode, answerRewritingEverything())
+	m = handEdit(t, m, "Restrictions", "Never touch the goldens.")
+	if view := personaView(m); !strings.Contains(view, "Restrictions · edited by you") {
+		t.Fatalf("a hand edit should be marked:\n%s", view)
+	}
+	// Emptied in the editor is the person's act, not a gap the drafter left.
+	if view := personaView(handEdit(t, m, "Report", "")); !strings.Contains(view, "Report ⚠ empty · you cleared it") {
+		t.Fatalf("a section emptied in the editor should say who emptied it:\n%s", view)
+	}
+	m = refineSection(t, m, 0, "say when it is done")
+	d := *m.persona.draft
+	if got := d.Sections.Restrictions; got != "Never touch the goldens." {
+		t.Fatalf("the hand edit was rewritten: %q", got)
+	}
+	// Normalise is what the save runs, and it rebuilds the prompt from the
+	// sections: the hand edit has to survive it.
+	if err := d.Normalise(persona.KindCode); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(d.Prompt, "Never touch the goldens.") || !strings.Contains(d.Prompt, "NEW purpose.") {
+		t.Fatalf("the prompt the save writes lost a revision:\n%s", d.Prompt)
+	}
+	if view := personaView(m); !strings.Contains(view, "Restrictions · edited by you") || !strings.Contains(view, "Purpose · refined once") {
+		t.Fatalf("both marks should stand:\n%s", view)
+	}
+}
+
+// Every revision is kept for the life of the flow, and esc on a section takes
+// back its last one — a clear, a hand edit, a refine — before it is the
+// step's own esc and discards the draft.
+func TestPersona_EscTakesBackASectionsRevisionsOneAtATime(t *testing.T) {
+	m, _, saves := sectionedModel(t, persona.KindCode, answerRewritingEverything())
+	m = refineSection(t, m, 1, "name the goldens")
+	m = handEdit(t, m, "Scope", "Only internal/agent.")
+	m = pressOn(t, m, tea.KeyPressMsg{Code: 'x', Text: "x"})
+	if got := m.persona.draft.Sections.Scope; got != "" {
+		t.Fatalf("x should clear the section, got %q", got)
+	}
+	if view := personaView(m); !strings.Contains(view, "Scope ⚠ empty · you cleared it") {
+		t.Fatalf("a cleared section should say so:\n%s", view)
+	}
+	for _, want := range []string{"Only internal/agent.", "NEW scope.", "One package."} {
+		m = pressOn(t, m, tea.KeyPressMsg{Code: tea.KeyEscape})
+		if m.persona == nil || m.state != statePersona {
+			t.Fatal("esc on a revised section should not leave the step")
+		}
+		if got := m.persona.draft.Sections.Scope; got != want {
+			t.Fatalf("esc took Scope back to %q, want %q", got, want)
+		}
+		if !strings.Contains(m.persona.draft.Prompt, want) {
+			t.Fatalf("the prompt should follow the section back:\n%s", m.persona.draft.Prompt)
+		}
+	}
+	// Nothing left to take back: esc is the step's own and drops the draft,
+	// and nothing was ever written.
+	m = pressOn(t, m, tea.KeyPressMsg{Code: tea.KeyEscape})
+	if m.persona != nil || !strings.Contains(lastNote(m), "Profile discarded.") {
+		t.Fatalf("esc on an unrevised section should discard: %q", lastNote(m))
+	}
+	if len(*saves) != 0 {
+		t.Fatalf("a revision wrote a file: %v", *saves)
+	}
+}
+
+// A redraft that fails or is stopped leaves the section — and every other
+// revision — as it was, on the draft; it does not cost the draft.
+func TestPersona_AFailedOrStoppedRedraftKeepsTheDraft(t *testing.T) {
+	m, _, _ := sectionedModel(t, persona.KindCode,
+		persona.Outcome{Failed: true, Err: "the model timed out"})
+	m = handEdit(t, m, "Purpose", "Add table tests.")
+	m = refineSection(t, m, 3, "shorter")
+	if m.persona == nil || m.personaScreen.Step != components.ProfileDraft {
+		t.Fatalf("a failed redraft closed the draft: %q", lastNote(m))
+	}
+	view := personaView(m)
+	if !strings.Contains(view, "Method could not be redrafted — the model timed out") ||
+		m.persona.draft.Sections.Method != "Read, then write." || m.persona.draft.Sections.Purpose != "Add table tests." {
+		t.Fatalf("the draft should stand with the failure under it:\n%s", view)
+	}
+
+	// Stopped: the wait's esc hands the draft back, and the answer that
+	// arrives after it is dropped.
+	m, _, _ = sectionedModel(t, persona.KindCode, answerRewritingEverything())
+	m = pressOn(t, m, tea.KeyPressMsg{Code: tea.KeyEnter})
+	m = typeInto(t, m, "shorter")
+	updated, cmd := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	m = updated.(Model)
+	if !strings.Contains(personaView(m), "redrafting Purpose") {
+		t.Fatalf("the wait should name the section:\n%s", personaView(m))
+	}
+	m = pressOn(t, m, tea.KeyPressMsg{Code: tea.KeyEscape})
+	m = runPersonaCmd(t, m, cmd)
+	if m.personaScreen.Step != components.ProfileDraft || m.persona.draft.Sections.Purpose != "Add tests." {
+		t.Fatalf("a stopped redraft should leave the section: step=%d purpose=%q",
+			m.personaScreen.Step, m.persona.draft.Sections.Purpose)
+	}
+}
+
+// The chat drafter's rule holds through a revision: whatever tier a redraft
+// answer grants, the chat profile still only reads, and the tools the first
+// draft had taken off are still named.
+func TestPersona_AChatRevisionCannotGrantAWritingTier(t *testing.T) {
+	m, _, _ := sectionedModel(t, persona.KindChat, answerRewritingEverything())
+	m.persona.draft.Dropped = []string{"write_file"}
+	m = refineSection(t, m, 0, "sharper")
+	if m.persona.draft.Writes() || strings.Join(m.persona.draft.Permissions, ",") != "web" {
+		t.Fatalf("a chat revision granted a writing tier: %+v", m.persona.draft.Permissions)
+	}
+	if view := personaView(m); !strings.Contains(view, "dropped write_file — a chat persona only reads") {
+		t.Fatalf("the dropped tool should still be named:\n%s", view)
 	}
 }

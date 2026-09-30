@@ -303,3 +303,53 @@ func TestDraftSchemaAsksForTheSectionsByName(t *testing.T) {
 		}
 	}
 }
+
+// A revision changes a section and the prompt is written from the five, so
+// a later Normalise — which rebuilds the prompt from the sections — keeps
+// it; clearing every section leaves a prompt the loader refuses rather than
+// the text the sections had before.
+func TestSetSectionIsThePromptsOneWriter(t *testing.T) {
+	d := Draft{Name: "tester", Description: "adds tests", Prompt: "Add tests."}
+	if !d.SetSection(config.SectionRestrictions, "  Never delete a test.  ") {
+		t.Fatal("Restrictions is a section")
+	}
+	if d.SetSection("Tools", "x") {
+		t.Fatal("Tools is not a prose section")
+	}
+	if d.Sections.Purpose != "Add tests." || d.Sections.Restrictions != "Never delete a test." {
+		t.Fatalf("sections = %+v", d.Sections)
+	}
+	before := d.Prompt
+	if err := d.Normalise(KindCode); err != nil {
+		t.Fatal(err)
+	}
+	if d.Prompt != before || !strings.Contains(d.Prompt, "Never delete a test.") {
+		t.Fatalf("Normalise moved the revised prompt:\n%s\nwas\n%s", d.Prompt, before)
+	}
+	for _, name := range config.PromptSectionNames() {
+		d.SetSection(name, "")
+	}
+	if d.Prompt != "" {
+		t.Fatalf("a draft with every section cleared kept a prompt: %q", d.Prompt)
+	}
+	if err := d.Normalise(KindCode); err == nil {
+		t.Fatal("a draft with every section cleared should not load")
+	}
+}
+
+// A revision of one section tells the drafter which section it is and that
+// every other one is fixed context.
+func TestASectionRevisionNamesItsSection(t *testing.T) {
+	cur := &Draft{Name: "tester", Description: "adds tests",
+		Sections: &Sections{Purpose: "Add tests.", Method: "Read, then write."}}
+	prompt := userPrompt(Request{Kind: KindCode, Brief: "tests", Current: cur, Section: config.SectionMethod, Feedback: "run go vet"})
+	for _, want := range []string{"Revise the Method section only", "Every other section and field is fixed",
+		"Only Method is taken from your answer", "What the person said about Method:\nrun go vet", "Read, then write."} {
+		if !strings.Contains(prompt, want) {
+			t.Fatalf("the revision request lacks %q:\n%s", want, prompt)
+		}
+	}
+	if strings.Contains(prompt, "revise the draft to match") {
+		t.Fatalf("a section's revision should not ask for the whole draft:\n%s", prompt)
+	}
+}

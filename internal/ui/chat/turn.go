@@ -745,6 +745,9 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 	case roleEditorDoneMsg:
 		return answered(m.roleEditorFinished(msg))
 
+	case personaEditorDoneMsg:
+		return answered(m.personaEditorFinished(msg))
+
 	case mcpPromptMsg:
 		return answered(m.applyMCPPrompt(msg))
 

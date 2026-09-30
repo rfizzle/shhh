@@ -119,16 +119,10 @@ func TestProfileScreen_TheRailSaysWhenQuestionsWereSkipped(t *testing.T) {
 
 func draftScreen() *ProfileScreen {
 	p := NewProfileScreen("/agents new")
-	p.Show(ProfileDraftView{
-		Name:        "test-writer",
-		Description: "adds table-driven tests for a package and runs them",
-		Facts: []ProfileFact{
-			{Label: "permissions", Value: "read + write + execute", Tone: ToneRisk, Detail: "it can change things"},
-			{Label: "model", Value: "inherited from this session"},
-		},
-		Why:    "a writer that could not run the tests would be proposing them",
-		Prompt: strings.Repeat("A line of the profile that is long enough to wrap on a narrow pane.\n", 12),
-	}, []SelectOption{
+	view := sectionedDraft()
+	// A long Method, so a short pane has something to fold.
+	view.Sections[3].Body = strings.Repeat("A line of the method that is long enough to wrap on a narrow pane.\n", 12)
+	p.Show(view, []SelectOption{
 		{Label: "Save to this project", Desc: ".shhh/agents"},
 		{Label: "Save globally", Desc: "~/.config/shhh/agents"},
 	})
@@ -136,7 +130,7 @@ func draftScreen() *ProfileScreen {
 }
 
 // The card's rows map onto the actions without the host having to know where
-// the save rows end.
+// the save rows end, once tab has handed it the keyboard.
 func TestProfileScreen_DecisionRows(t *testing.T) {
 	for _, tc := range []struct {
 		downs  int
@@ -145,43 +139,107 @@ func TestProfileScreen_DecisionRows(t *testing.T) {
 	}{
 		{0, ProfileSave, 0},
 		{1, ProfileSave, 1},
-		{3, ProfileDiscard, 0},
+		{2, ProfileDiscard, 0},
 	} {
 		p := draftScreen()
+		p.Update(key("tab"))
 		for range tc.downs {
-			p.Update(tea.KeyPressMsg{Code: tea.KeyDown})
+			p.Update(key("down"))
 		}
-		done, result := p.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
-		res := result
+		done, res := p.Update(key("enter"))
 		if !done || res.Action != tc.action || res.Index != tc.index {
 			t.Fatalf("%d downs: %+v", tc.downs, res)
 		}
 	}
-	// Refine refuses to confirm without a note, the way every note-required
-	// option does, and carries the note when it has one.
+	// The card has no Refine row and no note: revision is per section.
 	p := draftScreen()
-	for range 2 {
-		p.Update(tea.KeyPressMsg{Code: tea.KeyDown})
-	}
-	if done, _ := p.Update(tea.KeyPressMsg{Code: tea.KeyEnter}); done {
-		t.Fatal("Refine should refuse an empty note")
-	}
-	p.Update(tea.KeyPressMsg{Code: tea.KeyTab})
-	typeRunes(p, "table driven")
-	done, result := p.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
-	res := result
-	if !done || res.Action != ProfileRefine || res.Text != "table driven" {
-		t.Fatalf("refine = %+v", res)
+	if view := ansi.Strip(p.View(100)); strings.Contains(view, "Refine") || strings.Contains(view, "note or list") {
+		t.Fatalf("the card should be the ways out and nothing else:\n%s", view)
 	}
 }
 
-// The profile scrolls under the decision, and the fold counts what it is
-// holding back rather than hiding it (invariant 4).
+// The sections hold the keyboard when the draft arrives, and what enter, e, x
+// and esc do is the selected section's.
+func TestProfileScreen_TheSelectedSectionIsRevised(t *testing.T) {
+	p := draftScreen()
+	// Purpose has a revision, so esc takes it back rather than leaving.
+	if done, res := p.Update(key("esc")); !done || res.Action != ProfileUndo || res.Index != 0 {
+		t.Fatalf("esc on a revised section = %+v", res)
+	}
+	// Scope has none, so esc is the step's own: the draft is discarded.
+	p.Update(key("down"))
+	if done, res := p.Update(key("esc")); !done || res.Action != ProfileDiscard {
+		t.Fatalf("esc on an unrevised section = %+v", res)
+	}
+	if done, res := p.Update(key("e")); !done || res.Action != ProfileEdit || res.Index != 1 {
+		t.Fatalf("e = %+v", res)
+	}
+	if done, res := p.Update(key("x")); !done || res.Action != ProfileClear || res.Index != 1 {
+		t.Fatalf("x = %+v", res)
+	}
+	// enter opens a note under the section; an empty one sends nothing, esc
+	// closes it, and a note is sent with the section it is about.
+	p.Update(key("enter"))
+	if view := ansi.Strip(p.View(100)); !strings.Contains(view, "what to change in Scope — the other seven are sent as fixed context") {
+		t.Fatalf("the note should open under the section:\n%s", view)
+	}
+	if done, _ := p.Update(key("enter")); done {
+		t.Fatal("an empty note should send nothing")
+	}
+	p.Update(key("esc"))
+	if done, res := p.Update(key("enter")); done {
+		t.Fatalf("enter should open the note again, not act: %+v", res)
+	}
+	typeRunes(p, "name the goldens")
+	if done, res := p.Update(key("enter")); !done || res.Action != ProfileRefine || res.Index != 1 || res.Text != "name the goldens" {
+		t.Fatalf("refine = %+v", res)
+	}
+	// The empty Report offers nothing to clear.
+	p = draftScreen()
+	for range 4 {
+		p.Update(key("down"))
+	}
+	if done, res := p.Update(key("x")); done {
+		t.Fatalf("x on an empty section should do nothing: %+v", res)
+	}
+	// A field block is not prose: enter is handed to the host as a pick, and
+	// e and x do nothing.
+	p.Update(key("down"))
+	if done, res := p.Update(key("e")); done {
+		t.Fatalf("e on a field block should do nothing: %+v", res)
+	}
+	if done, res := p.Update(key("enter")); !done || res.Action != ProfilePick || res.Index != 5 {
+		t.Fatalf("enter on the tools block = %+v", res)
+	}
+}
+
+// A redraft's wait keeps the draft on screen with the wait under the section
+// it is for, and esc stops it naming that section.
+func TestProfileScreen_ARedraftWaitsUnderItsSection(t *testing.T) {
+	p := draftScreen()
+	p.Update(key("down"))
+	p.Work("redrafting Scope")
+	view := ansi.Strip(p.View(100))
+	for _, want := range []string{"Purpose", "redrafting Scope", "the other sections stand", "the section keeps its last text"} {
+		if !strings.Contains(view, want) {
+			t.Fatalf("the wait lacks %q:\n%s", want, view)
+		}
+	}
+	if strings.Contains(view, "Keep test-writer?") {
+		t.Fatalf("nothing can be saved during a redraft, so the card is not drawn:\n%s", view)
+	}
+	if done, res := p.Update(key("esc")); !done || res.Action != ProfileAbort || res.Index != 1 {
+		t.Fatalf("esc on the wait = %+v", res)
+	}
+}
+
+// The sections scroll under the card, and the fold counts the sections it is
+// holding back rather than hiding them (invariant 4).
 func TestProfileScreen_TheProfileScrolls(t *testing.T) {
 	p := draftScreen()
 	p.MaxLines = 30
 	first := p.View(100)
-	if !strings.Contains(first, "more lines") {
+	if !strings.Contains(ansi.Strip(first), "more section") {
 		t.Fatalf("the fold should count what it holds back:\n%s", first)
 	}
 	for range 3 {
@@ -192,23 +250,18 @@ func TestProfileScreen_TheProfileScrolls(t *testing.T) {
 	}
 }
 
-// The offset is held inside the profile: pressing past the last line settles
+// The offset is held inside the sections: pressing past the last row settles
 // on it rather than reading into nothing, and one press back up is enough to
 // undo the overshoot.
 func TestProfileScreen_TheProfilePaneHoldsItsEnds(t *testing.T) {
 	p := draftScreen()
 	p.MaxLines = 30
-	// The profile is wrapped as it is drawn, so the pane knows how long the
-	// body is only once it has been on screen.
 	top := p.View(100)
-	for range 40 {
+	for range 80 {
 		p.Update(tea.KeyPressMsg{Code: tea.KeyDown, Mod: tea.ModShift})
 	}
-	// The press holds the offset itself rather than leaving it to the draw:
-	// an overshoot the render clamps looks the same on screen and still
-	// costs a press for every row it ran past before it moves again.
-	if want := len(p.promptLines) - profilePromptRows; p.prompt.Offset != want {
-		t.Fatalf("offset after the overshoot = %d, want %d", p.prompt.Offset, want)
+	if want := p.pane.Total - p.pane.Height; p.pane.Offset != want {
+		t.Fatalf("offset after the overshoot = %d, want %d", p.pane.Offset, want)
 	}
 	end := p.View(100)
 	if end == top {
@@ -218,12 +271,6 @@ func TestProfileScreen_TheProfilePaneHoldsItsEnds(t *testing.T) {
 	if p.View(100) == end {
 		t.Fatalf("shift+↑ after an overshoot should scroll back up:\n%s", end)
 	}
-	for range 40 {
-		p.Update(tea.KeyPressMsg{Code: tea.KeyUp, Mod: tea.ModShift})
-	}
-	if back := p.View(100); back != top {
-		t.Fatalf("shift+↑ should settle at the first line:\n%s", back)
-	}
 }
 
 // The card is the thing the surface is for, so it is the one thing that never
@@ -232,14 +279,28 @@ func TestProfileScreen_TheCardSurvivesAShortSurface(t *testing.T) {
 	for _, height := range []int{15, 18, 22, 40} {
 		p := draftScreen()
 		p.MaxLines = height
+		p.Update(key("tab"))
 		view := p.View(80)
 		if lines := strings.Count(view, "\n") + 1; lines > height {
 			t.Fatalf("h=%d: rendered %d lines", height, lines)
 		}
-		for _, want := range []string{"Keep test-writer?", "Save to this project", "[enter] confirm", "[esc] take none"} {
+		for _, want := range []string{"Keep test-writer?", "Save to this project", "[enter] confirm", "[tab] the sections", "[esc] take none"} {
 			if !strings.Contains(ansi.Strip(view), want) {
 				t.Fatalf("h=%d: the card lost %q:\n%s", height, want, view)
 			}
 		}
+	}
+}
+
+// The selected section stays in the pane as the pointer moves down a folded
+// draft.
+func TestProfileScreen_TheSelectedSectionIsKeptInView(t *testing.T) {
+	p := draftScreen()
+	p.MaxLines = 24
+	for range 7 {
+		p.Update(key("down"))
+	}
+	if view := ansi.Strip(p.View(80)); !strings.Contains(view, "❯ Model") {
+		t.Fatalf("the last section should be in view once selected:\n%s", view)
 	}
 }

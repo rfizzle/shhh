@@ -3538,9 +3538,11 @@ func TestGolden_RateScreen(t *testing.T) {
 
 // TestGolden_ProfileScreen captures the drafting flow at each of its steps:
 // the brief with the pointer in the field and then on a starting point, the
-// wait, one question with the last answer still above it, and the draft over
-// its card — the last of those twice, because a short surface is where the
-// card's refusal to give ground is visible.
+// wait, one question with the last answer still above it, and the draft in
+// its sections over its card — the sections with the pointer on one, on
+// another further down, with a note open under one and with its redraft
+// waited on, the card holding the keyboard on a short surface, where the
+// card's refusal to give ground is visible, and a save asked again.
 func TestGolden_ProfileScreen(t *testing.T) {
 	captureGolden(t, "profile-screen", "the profile drafter", goldenWidths, func(width int) []golden.Panel {
 		starts := []string{
@@ -3559,27 +3561,18 @@ func TestGolden_ProfileScreen(t *testing.T) {
 			}
 			return p
 		}
-		drafted := func(height int) *ProfileScreen {
+		drafted := func(height int, mut func(*ProfileScreen)) *ProfileScreen {
 			p := NewProfileScreen("/agents new")
 			p.Subject = "a coding agent · reviewer tester"
 			p.MaxLines = height
-			p.Show(ProfileDraftView{
-				Name:        "test-writer",
-				Description: "adds table-driven tests for a package and runs them",
-				Facts: []ProfileFact{
-					{Label: "permissions", Value: "read + write + execute", Tone: ToneRisk, Detail: "it can change things"},
-					{Label: "model", Value: "inherited from this session"},
-					{Label: "budget", Value: "8.0k tokens"},
-				},
-				Why: "a writer that could not run the tests would be proposing them, not adding them",
-				Prompt: "You add table-driven tests for one package at a time. Read the package first, " +
-					"then the tests it already has, then write the cases the existing table is missing.\n" +
-					"Run the package's tests and fix what you broke. Do not touch any file outside the " +
-					"package's own directory, and never edit a test to make a failure go away.",
-			}, []SelectOption{
+			p.Of = 2
+			p.Show(sectionedDraft(), []SelectOption{
 				{Label: "Save to this project", Desc: ".shhh/agents"},
 				{Label: "Save globally", Desc: "~/.config/shhh/agents"},
 			})
+			if mut != nil {
+				mut(p)
+			}
 			return p
 		}
 		return []golden.Panel{
@@ -3603,18 +3596,65 @@ func TestGolden_ProfileScreen(t *testing.T) {
 					p.AskQuestion("Should it run the tests as well as write them?", 2, 2)
 					return p.View(width)
 				}()},
-			{Label: "the draft · the profile over the decision that writes it",
-				View: drafted(30).View(width)},
-			{Label: "a short surface · the card is the one thing that never gives ground",
-				View: drafted(16).View(width)},
-			{Label: "the file already exists · the card asks again, saying so",
-				View: func() string {
-					p := drafted(30)
+			{Label: "the draft in sections · Purpose selected, the card under them the only write",
+				View: drafted(46, nil).View(width)},
+			{Label: "one selected further down · a section the person edited, and its keys",
+				View: drafted(46, func(p *ProfileScreen) {
+					p.Update(key("down"))
+					p.Update(key("down"))
+				}).View(width)},
+			{Label: "a section refining · the note under it, the rest sent as fixed context",
+				View: drafted(46, func(p *ProfileScreen) {
+					for range 3 {
+						p.Update(key("down"))
+					}
+					p.Update(key("enter"))
+					for _, r := range "run go vet as well" {
+						p.Update(tea.KeyPressMsg{Code: r, Text: string(r)})
+					}
+				}).View(width)},
+			{Label: "the wait, on that section · the other sections stand",
+				View: drafted(46, func(p *ProfileScreen) {
+					for range 3 {
+						p.Update(key("down"))
+					}
+					p.Work("redrafting Method")
+					p.Frame = 3
+					p.Elapsed = "2.1s"
+				}).View(width)},
+			{Label: "a short surface · the card holds the keyboard and never gives ground, the pane folds",
+				View: drafted(26, func(p *ProfileScreen) { p.Update(key("tab")) }).View(width)},
+			{Label: "the file already exists · the draft asks again, saying so",
+				View: drafted(46, func(p *ProfileScreen) {
+					p.Update(key("tab"))
 					p.Warn("a profile named test-writer is already in .shhh/agents.")
-					return p.View(width)
-				}()},
+				}).View(width)},
 		}
 	})
+}
+
+// sectionedDraft is the artboard's draft: five prose sections — one refined,
+// one the person's own, one the drafter left empty — then the three field
+// blocks.
+func sectionedDraft() ProfileDraftView {
+	return ProfileDraftView{
+		Name:        "test-writer",
+		Description: "adds table-driven tests for a package and runs them",
+		Sections: []ProfileSection{
+			{Name: "Purpose", Prose: true, Revised: true, Mark: "· refined once",
+				Body: "Adds table-driven tests for one package at a time. Done when every exported function in the package has a case in its table and the package's tests pass."},
+			{Name: "Scope", Prose: true,
+				Body: "The package it was pointed at and its _test.go files. Leaves the package's exported API, every other package and the goldens alone."},
+			{Name: "Restrictions", Prose: true, Revised: true, Mark: "· edited by you", MarkTone: ProfileMarkMine,
+				Body: "Never changes an expected value to make a case pass. Never deletes a test. Never edits a file outside the package."},
+			{Name: "Method", Prose: true,
+				Body: "Reads the package, then the tests it already has, then writes the cases the table is missing. Runs the package's tests after each file and reads the failures before the next."},
+			{Name: "Report", Prose: true, Mark: "⚠ empty · the drafter left it; a report is required", MarkTone: ProfileMarkEmpty},
+			{Name: "Tools", Value: "read + write + execute", Tone: ToneRisk, Detail: "it can change things, in its own copy of the tree"},
+			{Name: "Commands", Value: "none stated", Tone: ToneQuiet, Detail: "the session's own command lists apply"},
+			{Name: "Model", Value: "inherited from this session", Detail: "reasoning medium · 8.0k tokens"},
+		},
+	}
 }
 
 // screenFamilyWidths are the two the family is captured at: the narrowest
