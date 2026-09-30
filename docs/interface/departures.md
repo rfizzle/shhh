@@ -416,9 +416,11 @@ no room for.
 
 **`[enter]` opens the runs in place.** Each run is two rows under the
 account — its mark, turn, ending and time with the evidence id at the far
-end, and the command line under it — and moving the pointer puts them away,
-since they are one episode's. An id that will not fit beside its run takes a
-row of its own.
+end, and the command line under it. An id that will not fit beside its run
+takes a row of its own. With them out the pointer walks the runs, the `❯` in
+the columns the other runs leave blank, and moving past either end puts them
+away, since they are one episode's; `[enter]` on a run is then the run's
+kept output, so there is no key that only hides them.
 
 When there is an artboard, these three decisions are what it has to
 reconcile with, and where the two differ the artboard wins.

@@ -63,14 +63,14 @@ make test                                                               standing
   answered  not yet
 
   each run
-  ✗ turn 3 · exit 2 · 4.2s                                   ev-0f3a9c1d2e4b5a67
+❯ ✗ turn 3 · exit 2 · 4.2s                                   ev-0f3a9c1d2e4b5a67
     make test
   ✗ turn 3 · exit 2 · 3.9s
     make test
   ✗ turn 5 · killed · signal 9 · 30s                         ev-7b21c0de9f8a3e44
     make test
 
-[enter] hide the runs · [esc] back to the prompt
+[enter] open its output · [esc] back to the prompt
 
 · empty · a session that has broken nothing
 /alerts                                                      [?] keys · [q] back
@@ -136,14 +136,14 @@ no alert selected
   ␛[38;5;244manswered  ␛[m␛[38;5;254mnot yet␛[m
 
   ␛[38;5;244meach run␛[m
-  ␛[38;5;254m✗␛[m ␛[38;5;254mturn 3 · exit 2 · 4.2s␛[m                                   ␛[38;5;244mev-0f3a9c1d2e4b5a67␛[m
+␛[38;5;254m❯␛[m ␛[38;5;254m✗␛[m ␛[38;5;254mturn 3 · exit 2 · 4.2s␛[m                                   ␛[38;5;244mev-0f3a9c1d2e4b5a67␛[m
     ␛[38;5;244mmake test␛[m
   ␛[38;5;254m✗␛[m ␛[38;5;254mturn 3 · exit 2 · 3.9s␛[m
     ␛[38;5;244mmake test␛[m
   ␛[38;5;254m✗␛[m ␛[38;5;254mturn 5 · killed · signal 9 · 30s␛[m                         ␛[38;5;244mev-7b21c0de9f8a3e44␛[m
     ␛[38;5;244mmake test␛[m
 
-␛[38;5;254m[enter]␛[m␛[38;5;244m hide the runs␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m
+␛[38;5;254m[enter]␛[m␛[38;5;244m open its output␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m
 
 · empty · a session that has broken nothing
 ␛[1;38;5;254m/alerts␛[m                                                      ␛[38;5;244m[?] keys · [q] back␛[m

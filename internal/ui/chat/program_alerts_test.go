@@ -9,7 +9,7 @@ import (
 )
 
 // A command that fails twice and then passes is one alert: `/alerts` reaches
-// it through the whole program standing, enter shows both runs, and once the
+// it through the whole program standing, enter shows both runs with the pointer on the first, and once the
 // third run comes back clean the same screen says what answered it.
 func TestProgram_AlertsOpensEveryAlertAndItsRuns(t *testing.T) {
 	codes := []int{2, 2, 0}
@@ -32,7 +32,7 @@ func TestProgram_AlertsOpensEveryAlertAndItsRuns(t *testing.T) {
 	send(tm, "/alerts")
 	waitForAll(t, tm, "/alerts · 1 standing", "✗ make check", "exit 2 · 2 runs", "not yet")
 	programPress(t, tm, "enter")
-	waitForAll(t, tm, "each run", "[enter] hide the runs")
+	waitForAll(t, tm, "each run", "❯ ✗ exit 2")
 	programPress(t, tm, "esc")
 	waitForGone(t, tm, "/alerts · 1 standing")
 

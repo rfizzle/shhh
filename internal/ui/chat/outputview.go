@@ -171,6 +171,10 @@ func (m Model) renderOutputFullHint() string {
 		label = segAs(keys.Output.Back, "back to the approval prompt")
 	case stateQuestion:
 		label = segAs(keys.Output.Back, "back to the question")
+	case stateAlerts:
+		// A run's kept output, opened from the alerts screen, goes back to
+		// its runs rather than to the prompt the screen itself goes back to.
+		label = segAs(keys.Output.Back, "back to the alerts")
 	}
 	return label.render()
 }

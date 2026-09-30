@@ -1569,6 +1569,25 @@ func TestGolden_SourcesScreen(t *testing.T) {
 	})
 }
 
+// TestGolden_AlertsOutput captures a run's kept output opened from the alerts
+// screen: the viewer in the pane over the screen, and the one row it leaves
+// at the foot of the terminal, which names the screen esc goes back to.
+func TestGolden_AlertsOutput(t *testing.T) {
+	captureGolden(t, "alerts-output", "a run's kept output opened from the alerts screen", goldenWidths, func(width int) []golden.Panel {
+		m := alertsKeptOutput(alertsModelAt(t, width, 30))
+		next, _ := m.runCommand("/alerts", "/alerts")
+		m = next.(Model)
+		for _, code := range []rune{tea.KeyDown, tea.KeyEnter, tea.KeyEnter} {
+			next, _ := m.Update(tea.KeyPressMsg{Code: code})
+			m = next.(Model)
+		}
+		return []golden.Panel{
+			{Label: "the reduced run's output, whole", View: strings.Join(overlays()[stateOutputFull].lines(m, m.contentWidth(), m.viewportHeight()), "\n")},
+			{Label: "the panel it leaves · the way back to the alerts", View: m.takeoverPanel(m.contentWidth())},
+		}
+	})
+}
+
 // TestGolden_ProfileDrafter captures the drafting flow through the host: the
 // surface is built from a session's own wiring — which kind of profile this
 // is, which roles it already has, where a file could go — so the words on it

@@ -10,7 +10,9 @@ package components
 // same fact. The preview is that account laid out, with what answered it, and
 // `[enter]` puts each run under it: its turn, how it ended, how long it took,
 // and the evidence id its output was kept under where the result was reduced.
-// This is a renderer; the episodes are the host's.
+// With the runs out the pointer walks them, and `[enter]` on one whose output
+// was kept hands its id back to the host to open.
+// This is a renderer; the episodes and the store are the host's.
 
 import (
 	"fmt"
@@ -74,6 +76,17 @@ type AlertsItem struct {
 	Runs []AlertsRun
 }
 
+// AlertsResult is how the screen closed: with a run's kept output to open, or
+// with nothing.
+type AlertsResult struct {
+	// Open is `[enter]` on a run whose output was kept; Evidence names the
+	// entry and Line the command that wrote it. The host does the opening,
+	// because the store is the session's and not this screen's.
+	Open     bool
+	Evidence string
+	Line     string
+}
+
 // AlertsScreen is `/alerts`: a takeover in the chat, full width, owning the
 // keyboard for as long as it is up.
 type AlertsScreen struct {
@@ -83,8 +96,15 @@ type AlertsScreen struct {
 	// Focus is an index into Alerts.
 	Focus int
 	// Open says the runs of the episode under the pointer are showing.
-	// Moving the pointer closes them, since they are one episode's.
+	// Moving the pointer off the episode closes them, since they are one
+	// episode's.
 	Open bool
+	// Run is the run under the pointer while the runs are showing, an index
+	// into the episode's Runs.
+	Run int
+	// Notice is the line a key left behind. The host clears it on the next
+	// keystroke.
+	Notice string
 	// MaxLines bounds the screen height. 0 is unbounded.
 	MaxLines int
 
@@ -93,22 +113,37 @@ type AlertsScreen struct {
 }
 
 // Update is the screen's whole keyboard: it moves, it shows an episode's
-// runs, it shows its keys, and it leaves. It reports whether the screen is
-// done.
-func (s *AlertsScreen) Update(msg tea.KeyPressMsg) (done bool) {
+// runs, it opens a run's kept output, it shows its keys, and it leaves. It
+// reports whether the screen is done, and with what.
+func (s *AlertsScreen) Update(msg tea.KeyPressMsg) (done bool, result AlertsResult) {
 	pressed := msg.String()
 	switch {
 	case s.moved(pressed):
 	case keys.Is(pressed, keys.Screen.Take):
-		if s.current() != nil {
-			s.Open = !s.Open
+		if s.current() == nil {
+			break
 		}
+		if !s.Open {
+			s.Open, s.Run = true, 0
+			break
+		}
+		r := s.run()
+		if r == nil {
+			break
+		}
+		if r.Evidence == "" {
+			// Nothing was kept because nothing was cut: the row in the
+			// transcript is the whole of it, and saying so is the answer.
+			s.Notice = "This run's output was never cut, so nothing was kept — its row in the transcript holds all of it."
+			break
+		}
+		return true, AlertsResult{Open: true, Evidence: r.Evidence, Line: r.Line}
 	case keys.Is(pressed, keys.Screen.List):
 		s.keys = !s.keys
 	case keys.Is(pressed, keys.Screen.Quit):
-		return true
+		return true, AlertsResult{}
 	}
-	return false
+	return false, AlertsResult{}
 }
 
 // SetSize gives the screen the terminal's rectangle. It lays itself out from
@@ -125,6 +160,7 @@ func (s *AlertsScreen) View(width int) string {
 	return ScreenChrome{
 		Header:   s.header(),
 		Foot:     s.footer(width).Rows(width),
+		Notice:   s.Notice,
 		MaxLines: s.MaxLines,
 	}.View(width, func(budget int) []string { return s.panes().rows(width, budget) })
 }
@@ -184,8 +220,8 @@ func (s *AlertsScreen) previewRows(width int) []string {
 		return rows
 	}
 	rows = append(rows, "", "  "+sty.Status.Render("each run"))
-	for _, r := range a.Runs {
-		rows = append(rows, alertsRunRows(r, width)...)
+	for i, r := range a.Runs {
+		rows = append(rows, alertsRunRows(r, i == s.Run, width)...)
 	}
 	return rows
 }
@@ -204,7 +240,9 @@ func alertsField(label, value string, width int) string {
 // alertsRunRows is one run: the mark, its turn and how it ended and how long
 // it took, with the evidence id at the far end where the output was kept,
 // and the command line under it — two runs of one episode can be two lines.
-func alertsRunRows(r AlertsRun, width int) []string {
+// The run under the pointer takes the pointer in the columns the others
+// leave blank, so walking the runs moves nothing sideways.
+func alertsRunRows(r AlertsRun, pointed bool, width int) []string {
 	text := r.Outcome
 	if r.Turn > 0 {
 		text = fmt.Sprintf("turn %d · %s", r.Turn, r.Outcome)
@@ -212,7 +250,11 @@ func alertsRunRows(r AlertsRun, width int) []string {
 	if r.Duration != "" {
 		text += " · " + r.Duration
 	}
-	left := "  " + sty.Err.Render("✗") + " " + sty.Body.Render(text)
+	lead := "  "
+	if pointed {
+		lead = sty.FocusPointer.Render("❯") + " "
+	}
+	left := lead + sty.Err.Render("✗") + " " + sty.Body.Render(text)
 	rows := []string{Clip(left, width), Clip("    "+sty.Dimmer.Render(r.Line), width)}
 	if r.Evidence == "" {
 		return rows
@@ -299,12 +341,13 @@ func (s *AlertsScreen) footer(width int) KeyFooter {
 // the last two alone where the field leaves no room for all three.
 func (s *AlertsScreen) offers(width int, field string) []KeyOffer {
 	var acts []KeyOffer
-	if s.current() != nil {
-		label := "show each run"
-		if s.Open {
-			label = "hide the runs"
-		}
-		acts = append(acts, keyOfferAs(keys.Screen.Take, label))
+	switch {
+	case s.current() != nil && !s.Open:
+		acts = append(acts, keyOfferAs(keys.Screen.Take, "show each run"))
+	case s.run() != nil && s.run().Evidence != "":
+		// Only a run whose output was kept offers the key: on one that was
+		// not, it answers with a sentence and opens nothing (invariant 5).
+		acts = append(acts, keyOfferAs(keys.Screen.Take, "open its output"))
 	}
 	acts = append(acts, wayOut(backToPrompt))
 	full := append([]KeyOffer{keyOffer(keys.Screen.Move)}, acts...)
@@ -317,8 +360,8 @@ func (s *AlertsScreen) offers(width int, field string) []KeyOffer {
 // keyList is every key the screen has, for `[?]`.
 func (s *AlertsScreen) keyList() []KeyOffer {
 	return []KeyOffer{
-		keyOfferAs(keys.Screen.Move, "move between alerts"),
-		keyOfferAs(keys.Screen.Take, "show or hide the alert's runs"),
+		keyOfferAs(keys.Screen.Move, "move between alerts, or between the runs where they are out"),
+		keyOfferAs(keys.Screen.Take, "show the alert's runs, or open a run's kept output"),
 		wayOut(backToPrompt),
 		keyOfferAs(keys.Screen.Quit, backToPrompt),
 	}
@@ -355,10 +398,18 @@ func (s *AlertsScreen) sync() {
 	s.list.Focus = s.Focus
 }
 
-// moved walks the pointer between episodes.
+// moved walks the pointer: between an open episode's runs, and between
+// episodes otherwise — or past either end of the runs, which leaves the
+// episode and puts them away.
 func (s *AlertsScreen) moved(pressed string) bool {
 	if len(s.Alerts) == 0 {
 		return false
+	}
+	if s.Open && s.current() != nil && keys.Is(pressed, keys.Screen.Move) {
+		if next := s.Run + keys.Step(pressed, keys.Screen.Move); next >= 0 && next < len(s.current().Runs) {
+			s.Run = next
+			return true
+		}
 	}
 	l := List[AlertsItem]{Items: s.Alerts, Focus: s.Focus}
 	if !l.Move(pressed, keys.Screen.Move) {
@@ -369,6 +420,15 @@ func (s *AlertsScreen) moved(pressed string) bool {
 	}
 	s.Focus = l.Focus
 	return true
+}
+
+// run is the run under the pointer while an episode's runs are out, or nil.
+func (s *AlertsScreen) run() *AlertsRun {
+	a := s.current()
+	if a == nil || !s.Open || s.Run < 0 || s.Run >= len(a.Runs) {
+		return nil
+	}
+	return &a.Runs[s.Run]
 }
 
 // current is the episode under the pointer, or nil for an empty list.

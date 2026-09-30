@@ -16,7 +16,13 @@ import (
 // evidence id, one reduced and one trimmed.
 func alertsModel(t *testing.T) Model {
 	t.Helper()
-	m := inspectorModel(t, 160, 50)
+	return alertsModelAt(t, 160, 50)
+}
+
+// alertsModelAt is alertsModel on a terminal of the given size.
+func alertsModelAt(t *testing.T, width, height int) Model {
+	t.Helper()
+	m := inspectorModel(t, width, height)
 	m.transcript = []entry{
 		{kind: entryUser, text: "fix the loop", turn: 1},
 		{kind: entryCommand, text: "go test ./...", exitCode: 1, duration: 4200 * time.Millisecond, turn: 1,
@@ -159,5 +165,80 @@ func TestAlertsScreen_NothingBrokenOpensOnASentence(t *testing.T) {
 	view := stripANSI(strings.Join(overlays()[stateAlerts].lines(m, 160, 40), "\n"))
 	if !strings.Contains(view, "nothing this session ran has come back broken") {
 		t.Errorf("the empty screen:\n%s", view)
+	}
+}
+
+// alertsKeptOutput is a store holding the reduced run's output and nothing
+// else: the trimmed run's entry has been purged since.
+func alertsKeptOutput(m Model) Model {
+	return m.WithEvidence(Evidence{Read: func(id string, limit int) (string, bool) {
+		if id != "ev-0123456789abcdef" {
+			return "", false
+		}
+		return "--- FAIL: TestLoop (0.00s)\n    loop_test.go:42: the loop ran 151 rounds\nFAIL\nexit status 1\n", true
+	}})
+}
+
+// alertsPress sends one key through the whole session, the way a reader's
+// keystroke arrives.
+func alertsPress(t *testing.T, m Model, code rune) Model {
+	t.Helper()
+	next, _ := m.Update(tea.KeyPressMsg{Code: code})
+	return next.(Model)
+}
+
+// On an opened episode, enter on a run whose output was kept opens it in the
+// full-screen viewer, and esc comes back to the alerts screen with the runs
+// still out rather than to the prompt.
+func TestAlertsScreen_EnterOnAKeptRunOpensItsOutputAndComesBack(t *testing.T) {
+	m := alertsKeptOutput(alertsModel(t))
+	next, _ := m.runCommand("/alerts", "/alerts")
+	m = next.(Model)
+	m = alertsPress(t, m, tea.KeyDown)  // the episode the gate answered
+	m = alertsPress(t, m, tea.KeyEnter) // its runs
+	m = alertsPress(t, m, tea.KeyEnter) // the first, whose output was reduced
+	if m.state != stateOutputFull || m.fullOutput == nil || m.outputReturn != stateAlerts {
+		t.Fatalf("enter on a kept run should open its output over the screen: state %d, return %d", m.state, m.outputReturn)
+	}
+	view := stripANSI(strings.Join(overlays()[stateOutputFull].lines(m, 160, 40), "\n"))
+	for _, want := range []string{"$ go test ./...", "the loop ran 151 rounds"} {
+		if !strings.Contains(view, want) {
+			t.Errorf("the opened output is missing %q:\n%s", want, view)
+		}
+	}
+	if hint := stripANSI(m.renderOutputFullHint()); !strings.Contains(hint, "back to the alerts") {
+		t.Errorf("the viewer should say where esc goes: %q", hint)
+	}
+	m = alertsPress(t, m, tea.KeyEscape)
+	if m.state != stateAlerts || m.screens.alerts() == nil || !m.screens.alerts().Open {
+		t.Fatalf("esc should come back to the screen with the runs out, state %d", m.state)
+	}
+}
+
+// A run whose kept output the store has since let go of says so on the
+// screen, and a run whose output was never cut opens nothing and says that.
+func TestAlertsScreen_ARunWithNothingToOpenSaysSo(t *testing.T) {
+	m := alertsKeptOutput(alertsModel(t))
+	next, _ := m.runCommand("/alerts", "/alerts")
+	m = next.(Model)
+	m = alertsPress(t, m, tea.KeyDown)
+	m = alertsPress(t, m, tea.KeyEnter)
+	m = alertsPress(t, m, tea.KeyDown) // the trimmed run, purged since
+	m = alertsPress(t, m, tea.KeyEnter)
+	if m.state != stateAlerts {
+		t.Fatalf("a purged entry should open nothing, state %d", m.state)
+	}
+	if got := m.screens.alerts().Notice; !strings.Contains(got, "ev-fedcba9876543210 is no longer in the evidence store") {
+		t.Errorf("the purged entry's notice: %q", got)
+	}
+	m = alertsPress(t, m, tea.KeyUp)
+	m = alertsPress(t, m, tea.KeyUp) // back to the standing episode, whose run was never cut
+	m = alertsPress(t, m, tea.KeyEnter)
+	m = alertsPress(t, m, tea.KeyEnter)
+	if m.state != stateAlerts {
+		t.Fatalf("a run nothing was kept of should open nothing, state %d", m.state)
+	}
+	if view := stripANSI(strings.Join(overlays()[stateAlerts].lines(m, 160, 40), "\n")); !strings.Contains(view, "never cut, so nothing was kept") {
+		t.Errorf("a run nothing was kept of did not say so:\n%s", view)
 	}
 }

@@ -4,7 +4,8 @@
 # The ALERTS block is a door to every alert the session has had
 # (docs/interface/surfaces.md#the-inspector-rail), and the screen behind it is
 # one of the supporting screens (docs/interface/surfaces.md#the-supporting-screens).
-# A check fails in two turns running and passes in the third. A click is the
+# A check fails in two turns running and passes in the third, printing enough
+# each time that its output is reduced and kept as evidence. A click is the
 # terminal's own SGR mouse report, sent as literal bytes: a press then a
 # release in one cell, column and row counted from 1. At 130 columns the
 # rail's first column is 85 and, after the second turn, the ALERTS heading is
@@ -14,12 +15,14 @@
 # What the capture is for: at 05 the rail carries `ALERTS · 1 standing` and
 # the row `✗ make check  exit 2 · 2 runs  since turn 1`; at 06 a click on the
 # heading has put the screen over the pane and the rail, the episode standing
-# with `answered  not yet`; at 07 enter shows both runs; at 08 a click on the
-# same cell has put the rail back, and the half-typed draft is still in the
-# box; at 11 the third turn has answered the alert, the block is gone, and
+# with `answered  not yet`; at 07 enter shows both runs, the pointer on the
+# first; at 07b enter on that run has opened its kept output full screen,
+# `[esc] back to the alerts` where the draft was, and esc comes back to the
+# runs; at 08 a click on the same cell has put the rail back, and the
+# half-typed draft is still in the box; at 11 the third turn has answered the alert, the block is gone, and
 # /alerts, the key twin, lists the episode as superseded by the clean run in
 # turn 3.
-setup printf 'check:\n\t@n=$$(cat .runs 2>/dev/null || echo 0); n=$$((n+1)); echo $$n > .runs; echo "run $$n"; test $$n -ge 3\n' > Makefile
+setup printf 'check:\n\t@n=$$(cat .runs 2>/dev/null || echo 0); n=$$((n+1)); echo $$n > .runs; echo "run $$n"; seq 1 1500; test $$n -ge 3\n' > Makefile
 snap 01-start "Some things worth doing first"
 keys "run the checks" Enter
 snap 02-card "make check" "run it once"
@@ -33,7 +36,10 @@ keys "wait"
 keys -l "$(printf '\033[<0;85;6M\033[<0;85;6m')"
 snap 06-heading-opens "/alerts · 1 standing" "not yet"
 keys Enter
-snap 07-each-run "each run" "hide the runs"
+snap 07-each-run "each run" "open its output"
+keys Enter
+snap 07b-output-opens "$ make check" "back to the alerts"
+keys Escape
 keys -l "$(printf '\033[<0;85;6M\033[<0;85;6m')"
 snap 08-cell-closes "ALERTS" "wait"
 keys BSpace BSpace BSpace BSpace

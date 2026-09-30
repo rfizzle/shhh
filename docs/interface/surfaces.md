@@ -2705,6 +2705,13 @@ each run under that: its turn, how it ended, how long it took and the command
 line that ran, and at the far end the evidence id its output was kept under
 where the result was cut, so the whole output is one read away; where the id
 will not fit beside the run it takes a row of its own rather than going.
+With the runs out the pointer walks them, from the first, and moving past
+either end leaves the episode and puts them away. `[enter]` on a run whose
+output was kept opens it whole in the full-screen viewer ([the activity
+row](#the-activity-row)), and `esc` there comes back to the runs rather than
+to the prompt. A run whose output was never cut offers no `[enter]`, and
+pressing it opens nothing and says so on the screen; one whose entry the
+store has since let go of says that instead.
 The screen reads the very episodes the block reads, answered by the same
 resolution the turn's close reads ([the turn's close](#the-turns-close)),
 so a standing alert here is a standing alert on the rail and never a second

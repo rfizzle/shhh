@@ -13,6 +13,7 @@ package chat
 
 import (
 	"sort"
+	"strings"
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -30,13 +31,40 @@ func (m Model) openAlerts() (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-// updateAlerts routes keys while the screen is up.
+// updateAlerts routes keys while the screen is up. `[enter]` on a run whose
+// output was kept opens it in the full-screen viewer, which comes back here
+// rather than to the prompt, the way the sources screen's page does: the
+// reader is walking an alert's runs, and a look at one is not leaving them.
 func (m Model) updateAlerts(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	screen := m.screens.alerts()
-	if screen == nil || screen.Update(msg) {
+	if screen == nil {
 		return m.closeAlertsScreen()
 	}
-	return m, nil
+	screen.Notice = ""
+	done, result := screen.Update(msg)
+	if !done {
+		return m, nil
+	}
+	if result.Open {
+		return m.openAlertOutput(result)
+	}
+	return m.closeAlertsScreen()
+}
+
+// openAlertOutput takes a run's kept output full screen, under the bound the
+// sources screen opens a stored page under. An entry the store no longer
+// holds says so on the screen rather than opening an empty viewer: a purge
+// is a thing that happens, and the run is still the account of what broke.
+func (m Model) openAlertOutput(result components.AlertsResult) (tea.Model, tea.Cmd) {
+	text, ok := m.readEvidence(result.Evidence, sourcesOpen)
+	if !ok {
+		m.screens.alerts().Notice = "The output kept as " + result.Evidence + " is no longer in the evidence store."
+		return m, nil
+	}
+	return m.openOutputFull(&components.OutputView{
+		Title: "$ " + result.Line,
+		Lines: strings.Split(strings.TrimRight(text, "\n"), "\n"),
+	}, noOutputEntry, stateAlerts)
 }
 
 // closeAlertsScreen hands the screen back to the turn, the way its own esc

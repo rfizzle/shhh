@@ -69,26 +69,56 @@ func TestAlertsScreen_AStandingEpisodeIsNotYetAnswered(t *testing.T) {
 }
 
 // Enter shows each run — its turn, its ending, its time and the evidence id
-// where the output was kept — and moving the pointer puts them away again.
+// where the output was kept — with the pointer on the first, and moving past
+// the last one leaves the episode and puts them away again.
 func TestAlertsScreen_EnterShowsEachRun(t *testing.T) {
 	s := alertsScreen(0, false)
 	s.View(130)
-	if done := s.Update(tea.KeyPressMsg{Code: tea.KeyEnter}); done || !s.Open {
-		t.Fatalf("enter: done %v, open %v", done, s.Open)
+	if done, _ := s.Update(tea.KeyPressMsg{Code: tea.KeyEnter}); done || !s.Open || s.Run != 0 {
+		t.Fatalf("enter: done %v, open %v, run %d", done, s.Open, s.Run)
 	}
 	view := ansi.Strip(s.View(130))
-	for _, want := range []string{"each run", "turn 3 · exit 2 · 4.2s", "ev-0f3a9c1d2e4b5a67",
-		"turn 5 · killed · signal 9 · 30s", "ev-7b21c0de9f8a3e44", "[enter] hide the runs"} {
+	for _, want := range []string{"each run", "❯ ✗ turn 3 · exit 2 · 4.2s", "ev-0f3a9c1d2e4b5a67",
+		"turn 5 · killed · signal 9 · 30s", "ev-7b21c0de9f8a3e44", "[enter] open its output"} {
 		if !strings.Contains(view, want) {
 			t.Errorf("the open episode is missing %q:\n%s", want, view)
 		}
 	}
+	for range 2 {
+		s.Update(tea.KeyPressMsg{Code: tea.KeyDown})
+	}
+	if !s.Open || s.Focus != 0 || s.Run != 2 {
+		t.Fatalf("down should walk the runs: open %v, focus %d, run %d", s.Open, s.Focus, s.Run)
+	}
 	s.Update(tea.KeyPressMsg{Code: tea.KeyDown})
 	if s.Open || s.Focus != 1 {
-		t.Fatalf("moving should close the runs: open %v, focus %d", s.Open, s.Focus)
+		t.Fatalf("moving past the last run should leave the episode: open %v, focus %d", s.Open, s.Focus)
 	}
-	if done := s.Update(tea.KeyPressMsg{Code: tea.KeyEscape}); !done {
+	if done, _ := s.Update(tea.KeyPressMsg{Code: tea.KeyEscape}); !done {
 		t.Fatal("esc did not close the screen")
+	}
+}
+
+// Enter on a run whose output was kept hands its id back for the host to
+// open; on one whose output was never cut it opens nothing, says so, and
+// does not offer the key.
+func TestAlertsScreen_EnterOnARunOpensItsKeptOutput(t *testing.T) {
+	s := alertsScreen(0, true)
+	done, result := s.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	if !done || !result.Open || result.Evidence != "ev-0f3a9c1d2e4b5a67" || result.Line != "make test" {
+		t.Fatalf("enter on a kept run: done %v, %+v", done, result)
+	}
+	s.Update(tea.KeyPressMsg{Code: tea.KeyDown})
+	done, result = s.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	if done || result.Open {
+		t.Fatalf("a run nothing was kept of opened something: done %v, %+v", done, result)
+	}
+	view := ansi.Strip(s.View(130))
+	if !strings.Contains(view, "never cut, so nothing was kept") {
+		t.Errorf("a run nothing was kept of did not say so:\n%s", view)
+	}
+	if strings.Contains(view, "open its output") {
+		t.Errorf("a run nothing was kept of offered to open it:\n%s", view)
 	}
 }
 
@@ -116,7 +146,7 @@ func TestAlertsScreen_EmptySaysNothingBroke(t *testing.T) {
 	if !strings.Contains(view, "nothing this session ran has come back broken") || strings.Contains(view, "standing") {
 		t.Errorf("the empty screen:\n%s", view)
 	}
-	if done := s.Update(tea.KeyPressMsg{Code: tea.KeyEnter}); done || s.Open {
+	if done, _ := s.Update(tea.KeyPressMsg{Code: tea.KeyEnter}); done || s.Open {
 		t.Fatal("enter on an empty screen should do nothing")
 	}
 }
