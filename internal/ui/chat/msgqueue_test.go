@@ -346,6 +346,30 @@ func TestQueue_ALineTheSessionQueuedIsReadNotPulledBack(t *testing.T) {
 	if len(m.steering) != 1 || m.steering[0].kind != "" {
 		t.Fatalf("x should cancel the session's line and leave the steer: %+v", m.steering)
 	}
+	last := m.transcript[len(m.transcript)-1]
+	if last.notice == nil || !strings.HasPrefix(last.notice.Subject, "session · A secret named DEMO_TOKEN") || last.notice.Outcome != "cancelled" {
+		t.Fatalf("the cancel row should name the line's kind beside its text: %+v", last.notice)
+	}
+}
+
+// A line another session sent goes back to its held card when the turn
+// breaks, and a key aimed at it says that rather than that it was sent.
+func TestQueue_ASentLineTheTurnGaveBackIsOnItsHeldCard(t *testing.T) {
+	for _, key := range []tea.KeyPressMsg{queueEnter, queueCancel} {
+		m := queuedModel(t, 100)
+		m.steering = append(m.steering, steeringItem{text: "master moved: rebase onto it", sent: true, from: "2026-09-23 10:41:07", id: m.queue.next(), kind: queuedSent})
+		m = pressKeys(t, m, queueKey)
+		m.queue.sel = m.steering[1].id
+		m.restoreSteering()
+		m = pressKeys(t, m, key)
+		last := m.transcript[len(m.transcript)-1]
+		if !strings.HasPrefix(last.text, "not sent") || !strings.Contains(last.text, "held card") {
+			t.Fatalf("%s should say the line is back on its held card: %q", key, last.text)
+		}
+		if len(m.inbound.held) != 1 || m.inbound.held[0].Text != "master moved: rebase onto it" {
+			t.Fatalf("%s should leave the line on its card: %+v", key, m.inbound.held)
+		}
+	}
 }
 
 // An approval's note went out with the call it let through, so the queue

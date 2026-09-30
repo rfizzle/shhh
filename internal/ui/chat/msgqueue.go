@@ -35,12 +35,22 @@ import (
 type queueState struct {
 	seq int
 	sel int
-	// returned says the message under the pointer went back into the draft
-	// rather than out: a turn that broke gives its steering back
-	// (restoreSteering), and a key aimed at it then must not say it was
-	// sent.
-	returned bool
+	// returned says where the message under the pointer went when it went
+	// back rather than out: a turn that broke gives its steering back
+	// (restoreSteering) — a typed message to the draft, a line another
+	// session sent to its held card — and a key aimed at it then must not
+	// say it was sent.
+	returned queueReturn
 }
+
+// queueReturn is where a message the turn gave back went.
+type queueReturn int
+
+const (
+	queueNotReturned queueReturn = iota
+	queueToDraft
+	queueToHeldCard
+)
 
 // next is the id for a message being queued now. Ids are never reused, so a
 // message delivered from under the pointer cannot be mistaken for a later
@@ -200,7 +210,7 @@ func (m Model) openQueue() (tea.Model, tea.Cmd, bool) {
 	if len(rows) == 0 {
 		return m, nil, false
 	}
-	m.queue.sel, m.queue.returned = rows[len(rows)-1].id, false
+	m.queue.sel, m.queue.returned = rows[len(rows)-1].id, queueNotReturned
 	m.enterSurface(stateQueue)
 	m.syncViewport()
 	return m, nil, true
@@ -233,11 +243,19 @@ const queueAlreadySent = "already sent — that message reached the conversation
 // broke: it is in the draft already, and was never sent.
 const queueReturned = "not sent — the turn ended first and that message is back in the draft"
 
+// queueReturnedToCard is that key aimed at a line another session sent: it
+// went back to the card it waits on (inbound.go), and is named in that
+// card's own words, since the card is where it is answered.
+const queueReturnedToCard = "not sent — the turn ended first and that line is back on its held card, to pass it to the turn or drop it"
+
 // queueGone is what a key aimed at a message that has left the queue says,
 // by which way it left.
 func (m Model) queueGone() string {
-	if m.queue.returned {
+	switch m.queue.returned {
+	case queueToDraft:
 		return queueReturned
+	case queueToHeldCard:
+		return queueReturnedToCard
 	}
 	return queueAlreadySent
 }
@@ -265,7 +283,7 @@ func (m *Model) answerQueue(key tea.KeyPressMsg) (bool, overlayAction) {
 		if at >= 0 {
 			next = min(max(at+keys.Step(pressed, keys.Queue.Move), 0), len(rows)-1)
 		}
-		m.queue.sel, m.queue.returned = rows[next].id, false
+		m.queue.sel, m.queue.returned = rows[next].id, queueNotReturned
 		return false, overlayAction{}
 	case keys.Is(pressed, keys.Queue.Edit):
 		if at >= 0 && rows[at].kind != "" {
@@ -312,9 +330,14 @@ func queueNotTheDrafts(kind queueKind) string {
 }
 
 // queueCancelNotice is the one row a cancel leaves: the message, what went
-// with it, and that it went nowhere.
+// with it, and that it went nowhere. A line the session queued is named by
+// its kind beside its text, as its row was, since the text alone — a
+// skill's opening tag, a secret's announcement — does not say what it was.
 func queueCancelNotice(row queuedRow) *components.ActivityNotice {
 	subject := firstLine(row.text)
+	if row.kind != "" {
+		subject = string(row.kind) + " · " + subject
+	}
 	for _, a := range row.atts {
 		subject += " · " + a.Handle
 	}

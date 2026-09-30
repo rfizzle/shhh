@@ -402,10 +402,13 @@ func (m *Model) restoreSteering() {
 			// back to their card, for the reader to pass on to the next turn
 			// or drop (inbound.go).
 			m.inbound.held = append(m.inbound.held, InboundLine{From: item.from, Text: item.text})
+			if item.id != 0 && item.id == m.queue.sel {
+				m.queue.returned = queueToHeldCard
+			}
 		case !item.machine:
 			parts = append(parts, item.text)
 			if item.id != 0 && item.id == m.queue.sel {
-				m.queue.returned = true
+				m.queue.returned = queueToDraft
 			}
 			// What rode with it goes back on the strip, where the fold its
 			// sentence holds can find it again.
