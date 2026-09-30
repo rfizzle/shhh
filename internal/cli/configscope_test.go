@@ -27,9 +27,24 @@ type scopeCase struct {
 
 var scopeCases = []scopeCase{
 	{"in a checkout", false, true, func(_ *testing.T, _, checkout string) string { return checkout }},
-	{"outside a checkout", false, false, func(t *testing.T, _, _ string) string { return t.TempDir() }},
+	{"outside a checkout", false, false, func(t *testing.T, _, _ string) string { return outsideAnyCheckout(t) }},
 	{"in the home directory", false, false, func(_ *testing.T, home, _ string) string { return home }},
 	{"--global in a checkout", true, false, func(_ *testing.T, _, checkout string) string { return checkout }},
+}
+
+// outsideAnyCheckout is a scratch directory that no marker above it claims,
+// or a skip where there is none to be had. The walk to a project root has no
+// ceiling, so with TMPDIR (or GOTMPDIR) inside a checkout every scratch
+// directory is in that checkout: a marker of the test's own would make it a
+// checkout too, and standing in it unmarked would write the scaffold into
+// whatever repository the run was started from.
+func outsideAnyCheckout(t *testing.T) string {
+	t.Helper()
+	dir := t.TempDir()
+	if root, found := project.RootFound(dir); found {
+		t.Skipf("the temporary directory is inside the checkout at %s, so no directory here is outside one", root)
+	}
+	return dir
 }
 
 // scopeFixture is a home directory holding the user's config under
@@ -256,5 +271,42 @@ func TestConfigScreen_OutsideACheckoutOffersNoScope(t *testing.T) {
 	m.answer(false, components.ConfigResult{Scope: true})
 	if m.screen.Scoped || m.toProject {
 		t.Fatalf("a screen outside a checkout offered a second file")
+	}
+}
+
+// A run whose temporary directory sits inside a checkout — somebody's
+// worktree, when the tmpfs is full — writes every case's files into that
+// case's own scratch and nothing into the checkout around it.
+func TestConfigWrites_ATemporaryDirectoryInsideACheckoutLeavesTheCheckoutAlone(t *testing.T) {
+	outer := t.TempDir()
+	must(t, os.MkdirAll(filepath.Join(outer, ".git"), 0o755))
+	tmp := filepath.Join(outer, "tmp")
+	must(t, os.MkdirAll(tmp, 0o755))
+	t.Setenv("TMPDIR", tmp)
+	t.Setenv("GOTMPDIR", "")
+
+	for _, args := range [][]string{{"config", "init"}, {"config", "set", "behavior.default_mode", "plan"}} {
+		for _, c := range scopeCases {
+			t.Run(strings.Join(args[:2], " ")+"/"+c.name, func(t *testing.T) {
+				if _, checkout := scopeFixture(t, c); !strings.HasPrefix(checkout, tmp) {
+					t.Fatalf("the scratch is not under the TMPDIR the test set: %s", checkout)
+				}
+				run := args
+				if c.global {
+					run = append(args[:len(args):len(args)], "--global")
+				}
+				runRoot(t, run...)
+			})
+		}
+	}
+
+	entries, err := os.ReadDir(outer)
+	must(t, err)
+	var names []string
+	for _, e := range entries {
+		names = append(names, e.Name())
+	}
+	if strings.Join(names, " ") != ".git tmp" {
+		t.Fatalf("the checkout around the temporary directory was written: it holds %v", names)
 	}
 }
