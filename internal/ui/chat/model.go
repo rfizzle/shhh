@@ -708,10 +708,14 @@ type entry struct {
 type steeringItem struct {
 	text    string
 	machine bool
-	// id names a message the reader typed into the draft and queued, which
-	// is what the queue lists and what a pull-back or a cancel is aimed at.
-	// Zero on everything the session queued for itself.
+	// id names the message in the queue, which is what the queue lists and
+	// what a pull-back or a cancel is aimed at (msgqueue.go). Every queued
+	// line has one, whoever queued it.
 	id int
+	// kind is the word a line the session queued on the reader's behalf is
+	// listed under, and empty on a message typed into the draft: only those
+	// can be pulled back into it, because only those were ever its.
+	kind queueKind
 	// atts are what was staged when the message was queued. They belong to
 	// it from then on, so pulling it back puts them back on the strip and
 	// cancelling it takes them with it.

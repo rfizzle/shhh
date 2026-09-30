@@ -8,7 +8,8 @@ import (
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
-// The queue: what was typed while a turn ran and has not been sent yet
+// The queue: what was typed while a turn ran and has not been sent yet, and
+// what the session queued beside it
 // (docs/interface/surfaces.md#the-input-frame). It is drawn two ways — as
 // rows above the box while the draft has the keyboard, and as a card once
 // the keyboard has moved into it — and both are drawn from the same list, in
@@ -19,13 +20,22 @@ type QueuedMessage struct {
 	// FollowUp is a message waiting for the turn to end; otherwise it is
 	// steering, which joins the turn at its next round.
 	FollowUp bool
-	Text     string
+	// Kind names a line the session queued on the reader's behalf — its
+	// word stands where steering or follow-up would — and is empty on a
+	// message typed into the draft.
+	Kind string
+	Text string
 	// Handles are the attachments riding with it, by the handle its chip
 	// had, so a message that carries a log says so on its row.
 	Handles []string
+	// ReadOnly is a row that cannot be pulled back into the draft, because
+	// it was never typed there; Kept is one that cannot be cancelled either.
+	// The card offers only the keys the selected row takes.
+	ReadOnly bool
+	Kept     bool
 }
 
-// queueKindWidth is the kind column, as wide as its longer word.
+// queueKindWidth is the kind column, as wide as its longest word.
 const queueKindWidth = len("follow-up")
 
 // queueCardRows bounds how many messages the card lists before it counts the
@@ -33,6 +43,9 @@ const queueKindWidth = len("follow-up")
 const queueCardRows = 8
 
 func (q QueuedMessage) kind() string {
+	if q.Kind != "" {
+		return q.Kind
+	}
 	if q.FollowUp {
 		return "follow-up"
 	}
@@ -133,11 +146,18 @@ func (c QueueCard) View(width int) string {
 		rows = append(rows, sty.Dim.Render(l))
 	}
 	rows = append(rows, cardRule)
-	rows = append(rows, CardHintRows(withKeyListOffer([]KeyOffer{
-		Offer(keys.Queue.Move),
-		Offer(keys.Queue.Edit),
-		Offer(keys.Queue.Cancel),
-		Offer(keys.Queue.Back),
-	}), width)...)
+	var sel QueuedMessage
+	if c.Selected >= 0 && c.Selected < len(c.Messages) {
+		sel = c.Messages[c.Selected]
+	}
+	offers := []KeyOffer{Offer(keys.Queue.Move)}
+	if !sel.ReadOnly {
+		offers = append(offers, Offer(keys.Queue.Edit))
+	}
+	if !sel.Kept {
+		offers = append(offers, Offer(keys.Queue.Cancel))
+	}
+	offers = append(offers, Offer(keys.Queue.Back))
+	rows = append(rows, CardHintRows(withKeyListOffer(offers), width)...)
 	return card.Render(rows, width)
 }

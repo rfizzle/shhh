@@ -879,7 +879,7 @@ func (m Model) updateDecisionNote(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 // is what a steer typed into the draft a second later would have done.
 func (m Model) approvePending(note string) (tea.Model, tea.Cmd) {
 	if note != "" {
-		m.steering = append(m.steering, steeringItem{text: note})
+		m.steering = append(m.steering, steeringItem{text: note, id: m.queue.next(), kind: queuedNote})
 	}
 	if m.pendingApproval != nil {
 		m.recordDecision(observe.DecisionAllow, observe.ReasonUser)

@@ -207,6 +207,9 @@ func TestAllowNoted_TheSentenceGoesOutAsYourOwnSteer(t *testing.T) {
 	if m.steering[0].machine {
 		t.Fatal("the reader wrote it, so it is not a machine-authored steer")
 	}
+	if m.steering[0].kind != queuedNote || m.steering[0].id == 0 {
+		t.Fatalf("the queue should list it as a note with an id, got %+v", m.steering[0])
+	}
 
 	// An allow with nothing written is the plain allow: no steer, and the
 	// next round is not handed an empty sentence.

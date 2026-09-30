@@ -59,7 +59,7 @@ func (m *Model) announce(text string) {
 		return
 	}
 	if m.working() || m.decisionUngated() {
-		m.steering = append(m.steering, steeringItem{text: text, machine: true})
+		m.steering = append(m.steering, steeringItem{text: text, machine: true, id: m.queue.next(), kind: queuedSession})
 	} else {
 		m.agent.AppendMachine(text)
 	}

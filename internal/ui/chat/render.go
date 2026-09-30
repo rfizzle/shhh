@@ -681,8 +681,9 @@ func (m Model) cockpitData(includeQueued bool) components.Cockpit {
 	if cost := m.pasteCost(); cost != "" {
 		c.Extra = append(c.Extra, cost)
 	}
-	// Steering messages waiting to be injected.
-	if n := len(m.steering); n > 0 && includeQueued {
+	// Steering messages waiting to be injected, counted off the rows the
+	// queue draws above the box so the two cannot disagree (msgqueue.go).
+	if n := m.queuedForTurnCount(); n > 0 && includeQueued {
 		c.Extra = append(c.Extra, queuedForTurn(n))
 	}
 	// Active approval policy; absent in the default ask-everything

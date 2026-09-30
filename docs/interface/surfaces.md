@@ -967,7 +967,13 @@ steering first, since it goes at the next round, then the follow-ups — each
 marked with which of the two it is, cut to one line, and naming what was
 staged with it, since what was staged when a message was queued leaves with
 that message and not with the next one. Past three rows the oldest are kept,
-because they go next, and the rest are counted. The notice rail carries the
+because they go next, and the rest are counted. A line the session queued on
+the reader's behalf — a secret announced, a line another session sent, a
+skill's or a server prompt's text, an approval card's note — is a row too,
+marked `session`, `sent`, `skill`, `prompt` or `note`, so every count of what
+is waiting reads the same rows; it can be read and cancelled but never pulled
+back into the draft it was never in, and a note, which went with the call it
+let through, cannot be cancelled either. The notice rail carries the
 one key that reaches it, and whether a cancel has held the follow-ups.
 
 That key moves the keyboard into the queue, which becomes a card in the

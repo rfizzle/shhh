@@ -65,17 +65,23 @@ func (m Model) queueFollowUp() (tea.Model, tea.Cmd, bool) {
 // queued message comes back into the draft. It is the queue's own pull-back
 // aimed at the last row — a follow-up first, else a steering line, which is
 // the order the queue lists them in — so the message leaves the queue the
-// same way whichever key took it (msgqueue.go). It reports false with a draft
+// same way whichever key took it (msgqueue.go). A line the session queued is
+// passed over, since it was never the draft's. It reports false with a draft
 // in the box or nothing to pull.
 func (m Model) pullQueued() (tea.Model, tea.Cmd, bool) {
 	if !m.inputLive() || m.attachedTo != "" || strings.TrimSpace(m.input.Value()) != "" {
 		return m, nil, false
 	}
-	rows := m.queuedRows()
-	if len(rows) == 0 {
+	newest := 0
+	for _, r := range m.queuedRows() {
+		if r.kind == "" && r.id != 0 {
+			newest = r.id
+		}
+	}
+	if newest == 0 {
 		return m, nil, false
 	}
-	m.pullBack(rows[len(rows)-1].id)
+	m.pullBack(newest)
 	// The queue lost a row, and the box may have grown a line.
 	m.syncViewport()
 	return m, nil, true

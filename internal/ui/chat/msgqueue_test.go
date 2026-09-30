@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/golden"
 )
@@ -187,7 +188,7 @@ func TestQueue_TheChordPullsTheNewestTheSameWay(t *testing.T) {
 		t.Fatalf("the chord should pull the follow-up: draft=%q followUps=%d", m.input.Value(), len(m.followUps))
 	}
 	m.input.SetValue("")
-	m.steering = append(m.steering, steeringItem{text: "an announcement", machine: true})
+	m.steering = append(m.steering, steeringItem{text: "an announcement", machine: true, id: m.queue.next(), kind: queuedSession})
 	m = pressKeys(t, m, queueChord())
 	if !strings.Contains(m.input.Value(), "the header in this one is wrong too") || len(m.attachments) != 1 {
 		t.Fatalf("the chord should pull the steer with its picture: draft=%q staged=%d", m.input.Value(), len(m.attachments))
@@ -264,4 +265,136 @@ func TestProgram_AQueuedLineIsCancelledOrPulledBackBeforeItIsSent(t *testing.T) 
 	if len(p.asked) != 1 {
 		t.Fatalf("the turn should have made one request, made %d", len(p.asked))
 	}
+}
+
+// Every line the session queues on the reader's behalf is a row of the queue
+// under its own word, with an id a cancel can be aimed at — so the rows and
+// every count of what is waiting read one list.
+func TestQueue_EveryLineTheSessionQueuedIsARowOfItsKind(t *testing.T) {
+	cases := []struct {
+		kind  queueKind
+		queue func(t *testing.T) Model
+	}{
+		{queuedSession, func(t *testing.T) Model {
+			m := frameModel(t, 100, 40).WithSecrets(Secrets{Manage: func([]string) (string, string) {
+				return "stored KEY", "A secret named KEY is now available."
+			}})
+			m.setTurnState(stateStreaming)
+			next, _ := m.secretCommand([]string{"set", "KEY=val"})
+			return next.(Model)
+		}},
+		{queuedSent, func(t *testing.T) Model {
+			m := frameModel(t, 100, 40)
+			m.setTurnState(stateStreaming)
+			next, _ := m.passInbound(InboundLine{From: "2026-09-23 10:41:07", Text: "master moved"})
+			return next.(Model)
+		}},
+		{queuedSkill, func(t *testing.T) Model {
+			m := skillModel(t)
+			m.setTurnState(stateStreaming)
+			next, _ := m.activateSkill("documentation", "")
+			return next.(Model)
+		}},
+		{queuedPrompt, func(t *testing.T) Model {
+			m := promptModel(t)
+			m.setTurnState(stateStreaming)
+			next, _ := m.applyMCPPrompt(mcpPromptMsg{shown: "/docs:brief", text: "what changed?"})
+			return next.(Model)
+		}},
+	}
+	for _, tc := range cases {
+		t.Run(string(tc.kind), func(t *testing.T) {
+			m := tc.queue(t)
+			rows := m.queuedRows()
+			if len(rows) != 1 || rows[0].kind != tc.kind || rows[0].id == 0 {
+				t.Fatalf("the line should be one row of kind %q with an id, got %+v", tc.kind, rows)
+			}
+			if got := m.queuedForTurnCount(); got != len(m.steering) {
+				t.Fatalf("the count reads %d, the steering list holds %d", got, len(m.steering))
+			}
+			if rail := strings.Join(m.queueRail(), "\n"); !strings.Contains(ansi.Strip(rail), string(tc.kind)) {
+				t.Fatalf("the row above the box should carry the word %q:\n%s", tc.kind, rail)
+			}
+		})
+	}
+}
+
+// mixedQueueModel is the queued fixture with a secret announced behind the
+// steer: a typed steer, the session's own line, then the follow-up.
+func mixedQueueModel(t *testing.T, width int) Model {
+	t.Helper()
+	m := queuedModel(t, width)
+	m.announce("A secret named DEMO_TOKEN is now available to every command you run as $DEMO_TOKEN.")
+	return m
+}
+
+// A line the session queued is read, not pulled back — it was never the
+// draft's — and it can be cancelled like anything else waiting.
+func TestQueue_ALineTheSessionQueuedIsReadNotPulledBack(t *testing.T) {
+	m := mixedQueueModel(t, 100)
+	m = pressKeys(t, m, queueKey, queueUp, queueEnter)
+	if m.state != stateQueue {
+		t.Fatalf("enter on the session's line should leave the keyboard in the queue, state=%d", m.state)
+	}
+	if m.input.Value() != "" || len(m.steering) != 2 {
+		t.Fatalf("nothing should be pulled back: draft=%q steering=%d", m.input.Value(), len(m.steering))
+	}
+	if !transcriptContains(m, "never typed into the draft") {
+		t.Fatal("the refusal should say why the line is not the draft's")
+	}
+	m = pressKeys(t, m, queueCancel)
+	if len(m.steering) != 1 || m.steering[0].kind != "" {
+		t.Fatalf("x should cancel the session's line and leave the steer: %+v", m.steering)
+	}
+}
+
+// An approval's note went out with the call it let through, so the queue
+// neither pulls it back nor cancels it.
+func TestQueue_AnApprovalNoteIsKept(t *testing.T) {
+	m := queuedModel(t, 100)
+	m.steering = append(m.steering, steeringItem{text: "and then run the tests", id: m.queue.next(), kind: queuedNote})
+	m = pressKeys(t, m, queueKey, queueUp, queueCancel, queueEnter)
+	if len(m.steering) != 2 || m.steering[1].kind != queuedNote || m.input.Value() != "" {
+		t.Fatalf("the note should stay queued and out of the draft: draft=%q %+v", m.input.Value(), m.steering)
+	}
+	if card := ansi.Strip(strings.Join(m.queueLines(), "\n")); strings.Contains(card, "cancel it") || strings.Contains(card, "into the draft") {
+		t.Fatalf("the card should offer neither key on the note:\n%s", card)
+	}
+}
+
+// The status bar counts what is waiting for the turn off the same rows the
+// queue draws, the session's own line included.
+func TestQueue_TheStatusBarCountsTheRows(t *testing.T) {
+	m := mixedQueueModel(t, 100)
+	if extra := strings.Join(m.cockpitData(true).Extra, " "); !strings.Contains(extra, queuedForTurn(2)) {
+		t.Fatalf("the status bar should count the steer and the session's line, got %q", extra)
+	}
+}
+
+// TestGolden_QueueMixed captures a queue holding every kind of line: above
+// the box, and as the card with the pointer on a line the session queued and
+// on an approval's note, each offering only the keys it takes.
+func TestGolden_QueueMixed(t *testing.T) {
+	captureBoundedGolden(t, "queue-mixed", "the message queue", goldenWidths, func(width int) []golden.Panel {
+		shown := mixedQueueModel(t, width)
+		full := mixedQueueModel(t, width)
+		for _, item := range []steeringItem{
+			{text: "master moved: rebase onto it", sent: true, from: "2026-09-23 10:41:07", kind: queuedSent},
+			{text: "<skill name=\"documentation\">", kind: queuedSkill},
+			{text: "Review HEAD.", kind: queuedPrompt},
+			{text: "and then run the tests", kind: queuedNote},
+		} {
+			item.id = full.queue.next()
+			full.steering = append(full.steering, item)
+		}
+		session := pressKeys(t, full, queueKey)
+		session.queue.sel = session.steering[1].id
+		note := pressKeys(t, full, queueKey)
+		note.queue.sel = note.steering[5].id
+		return []golden.Panel{
+			{Label: "queued · a steer, the session's line and a follow-up", View: promptSurface(shown)},
+			{Label: "the keyboard in the queue · the session's line selected", View: strings.Join(session.queueLines(), "\n")},
+			{Label: "the keyboard in the queue · an approval's note selected", View: strings.Join(note.queueLines(), "\n")},
+		}
+	})
 }

@@ -2,28 +2,44 @@
 #
 # What was typed at a running turn is still the reader's until it is sent
 # (docs/interface/surfaces.md#the-input-frame). The reply is held for twenty
-# seconds, so the turn is running while a steer and a follow-up are queued.
+# seconds, so the turn is running while a steer and a follow-up are queued,
+# and a secret is set, whose announcement the session queues on its own.
 #
-# What the captures are for: the two rows above the box, marked steering and
-# follow-up in the order they go out, with the key that reaches them on the
-# notice rail; the queue as a card once that key has the keyboard, the
-# pointer on the steer; the steer back in the draft and out of the queue; the
-# follow-up cancelled, with its one row in the transcript and the queue gone;
-# and the turn's answer landing with neither sent.
+# What the captures are for: the three rows above the box, marked steering,
+# session and follow-up in the order they go out, with the key that reaches
+# them on the notice rail; the queue as a card once that key has the
+# keyboard; the session's line selected, offering no pull-back, and enter on
+# it refused in words; the steer back in the draft and out of the queue; the
+# follow-up cancelled, with its one row in the transcript and the session's
+# line still waiting; and the turn's answer landing with neither sent, then
+# the announcement going out as the next turn.
+#
+# The session's line is a secret announcement because it is the one kind a
+# scene reaches with one binary and a scripted model: a skill and a server's
+# prompt need a catalog the scene's home does not have, a line from another
+# session needs a second process, and an approval's note needs a card up
+# while the turn is otherwise held.
 snap 01-start "Some things worth doing first"
 keys "start on the parser" Enter
 snap 02-working "thinking"
 keys "fix the header too" Enter
 keys "then do the footer" C-n
-snap 03-queued "follow-up  then do the footer" "steering   fix the header too" "[f2] edit the queue"
+keys "/secret set DEMO_TOKEN=abc123" Enter
+snap 03-queued "follow-up  then do the footer" "session    A secret named DEMO_TOKEN" "steering   fix the header too" "[f2] edit the queue"
 keys F2
-snap 04-card "queued · 2 messages" "[x] cancel it" "[esc] back to the draft"
+snap 04-card "queued · 3 messages" "[x] cancel it" "[esc] back to the draft"
 keys Up
-snap 05-selected "❯ steering   fix the header too"
+snap 05-session "❯ session"
 keys Enter
-snap 06-edited "▸ fix the header too" "follow-up  then do the footer"
+snap 06-refused "never typed into the draft"
+keys Up
+snap 07-selected "❯ steering   fix the header too"
+keys Enter
+snap 08-edited "▸ fix the header too" "follow-up  then do the footer"
 keys F2
-snap 07-card-again "queued · 1 message"
+snap 09-card-again "queued · 2 messages"
 keys x
-snap 08-cancelled "cancelled" "then do the footer"
-snap 09-answer "Finished the first pass over the parser" "▸ fix the header too"
+snap 10-cancelled "cancelled" "then do the footer" "queued · 1 message"
+keys Escape
+snap 11-answer "Finished the first pass over the parser" "▸ fix the header too"
+snap 12-announced "Noted: DEMO_TOKEN is set"

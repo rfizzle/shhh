@@ -3,7 +3,10 @@ package chat
 // The queue (docs/interface/surfaces.md#the-input-frame): every message the
 // reader typed while a turn ran and has not been sent yet — steering, which
 // joins the turn at its next round, and follow-ups, which wait for it to end
-// — drawn as rows above the box, in the order they will go out.
+// — drawn as rows above the box, in the order they will go out. A line the
+// session queued on the reader's behalf is a row too, marked with what it
+// is: every count of what is waiting reads these rows, so a line left off
+// them would be counted in one place and not the other.
 //
 // The keyboard moves into it on its own key, and there a message can be
 // pulled back into the draft or cancelled. Either takes the message out of
@@ -51,23 +54,42 @@ func (q *queueState) next() int {
 // oldest are drawn, since they go next, and the rest are counted.
 const queueRailRows = 3
 
+// queueKind is the word a line the session queued for itself is listed
+// under. A message typed into the draft has none and is steering or a
+// follow-up by the list it waits in.
+type queueKind string
+
+const (
+	// queuedSession is the session's own announcement: a secret named or
+	// forgotten mid-turn (secrets.go).
+	queuedSession queueKind = "session"
+	// queuedSent is a line another session handed this one (inbound.go).
+	queuedSent queueKind = "sent"
+	// queuedSkill is a skill's content, activated while the turn ran
+	// (skills.go).
+	queuedSkill queueKind = "skill"
+	// queuedPrompt is a server's prompt, rendered while the turn ran
+	// (mcp.go).
+	queuedPrompt queueKind = "prompt"
+	// queuedNote is the sentence written on an approval card, which goes out
+	// as a steer behind the call it was written about (approval.go).
+	queuedNote queueKind = "note"
+)
+
 // queuedRow is one message the queue lists and which list it waits in.
 type queuedRow struct {
 	steeringItem
 	followUp bool
 }
 
-// queuedRows is what the reader queued, in delivery order: the steering
-// lines, which go at the next round, then the follow-ups, which go once the
-// turn ends. What the session queued for itself — an announcement, a line
-// another session sent, a skill's content — is not the reader's sentence to
-// take back, and is not listed.
+// queuedRows is everything waiting, in delivery order: the steering lines,
+// which go at the next round, then the follow-ups, which go once the turn
+// ends. What the session queued for itself is listed among the steering it
+// joins with, under its own kind.
 func (m Model) queuedRows() []queuedRow {
 	var rows []queuedRow
 	for _, item := range m.steering {
-		if item.id != 0 {
-			rows = append(rows, queuedRow{steeringItem: item})
-		}
+		rows = append(rows, queuedRow{steeringItem: item})
 	}
 	for _, item := range m.followUps {
 		rows = append(rows, queuedRow{steeringItem: item, followUp: true})
@@ -75,7 +97,22 @@ func (m Model) queuedRows() []queuedRow {
 	return rows
 }
 
-// queuedMessages is the rows as the component draws them.
+// queuedForTurnCount is how many rows wait for the turn's next round, which
+// is what every rail's `queued for this turn` states.
+func (m Model) queuedForTurnCount() int {
+	n := 0
+	for _, r := range m.queuedRows() {
+		if !r.followUp {
+			n++
+		}
+	}
+	return n
+}
+
+// queuedMessages is the rows as the component draws them. A line the session
+// queued is read and never pulled back — it was never the draft's — and an
+// approval's note is not cancelled either, because the call it was written
+// about has already been let through on it.
 func queuedMessages(rows []queuedRow) []components.QueuedMessage {
 	msgs := make([]components.QueuedMessage, 0, len(rows))
 	for _, r := range rows {
@@ -83,7 +120,14 @@ func queuedMessages(rows []queuedRow) []components.QueuedMessage {
 		for _, a := range r.atts {
 			handles = append(handles, a.Handle)
 		}
-		msgs = append(msgs, components.QueuedMessage{FollowUp: r.followUp, Text: r.text, Handles: handles})
+		msgs = append(msgs, components.QueuedMessage{
+			FollowUp: r.followUp,
+			Kind:     string(r.kind),
+			Text:     r.text,
+			Handles:  handles,
+			ReadOnly: r.kind != "",
+			Kept:     r.kind == queuedNote,
+		})
 	}
 	return msgs
 }
@@ -224,11 +268,17 @@ func (m *Model) answerQueue(key tea.KeyPressMsg) (bool, overlayAction) {
 		m.queue.sel, m.queue.returned = rows[next].id, false
 		return false, overlayAction{}
 	case keys.Is(pressed, keys.Queue.Edit):
+		if at >= 0 && rows[at].kind != "" {
+			return true, overlayAction{note: queueNotTheDrafts(rows[at].kind)}
+		}
 		if !m.pullBack(m.queue.sel) {
 			return true, overlayAction{close: true, note: m.queueGone()}
 		}
 		return true, overlayAction{close: true}
 	case keys.Is(pressed, keys.Queue.Cancel):
+		if at >= 0 && rows[at].kind == queuedNote {
+			return true, overlayAction{note: queueNotTheDrafts(queuedNote)}
+		}
 		row, ok := m.takeQueued(m.queue.sel)
 		if !ok {
 			return true, overlayAction{close: true, note: m.queueGone()}
@@ -248,6 +298,17 @@ func (m *Model) answerQueue(key tea.KeyPressMsg) (bool, overlayAction) {
 		return false, overlayAction{}
 	}
 	return false, overlayAction{}
+}
+
+// queueNotTheDrafts is what a key the row does not take says: a line the
+// session queued was never typed into the draft, so there is nothing to pull
+// back into it, and an approval's note went with the approval.
+func queueNotTheDrafts(kind queueKind) string {
+	if kind == queuedNote {
+		return "kept — an approval's note goes with the call it let through, so it is neither pulled back nor cancelled"
+	}
+	return "not pulled back — a " + string(kind) + " line was never typed into the draft; " +
+		keys.Bracket(keys.Queue.Cancel) + " cancels it"
 }
 
 // queueCancelNotice is the one row a cancel leaves: the message, what went

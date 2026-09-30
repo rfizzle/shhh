@@ -326,7 +326,7 @@ func (m Model) applyMCPPrompt(msg mcpPromptMsg) (tea.Model, tea.Cmd) {
 		return m.surfaceNotice(msg.shown + " came back empty; the server rendered no messages")
 	}
 	if m.working() || m.decisionUngated() {
-		m.steering = append(m.steering, steeringItem{text: text})
+		m.steering = append(m.steering, steeringItem{text: text, id: m.queue.next(), kind: queuedPrompt})
 		m.syncViewport()
 		return m.surfaceNotice(msg.shown + " queued for the next round")
 	}

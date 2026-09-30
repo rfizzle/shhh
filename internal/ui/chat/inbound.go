@@ -157,7 +157,7 @@ func answerTaken(line InboundLine, word string) {
 // would have been for a sentence typed into the box; only the message is in
 // the session's own voice rather than the reader's.
 func (m Model) passInbound(line InboundLine) (tea.Model, tea.Cmd) {
-	item := steeringItem{text: line.Text, sent: true, from: line.From}
+	item := steeringItem{text: line.Text, sent: true, from: line.From, id: m.queue.next(), kind: queuedSent}
 	if m.turnInFlight() || m.turnState() != stateInput {
 		m.steering = append(m.steering, item)
 		m.syncViewport()
