@@ -16,7 +16,6 @@ import (
 	"errors"
 	"fmt"
 	"image"
-	"image/png"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -976,12 +975,9 @@ func TestGolden_PasteToken(t *testing.T) {
 	}
 	// A screenshot pasted beside it, which leaves a fold of its own: the
 	// sentence points at both, and the row keeps both after the send.
-	var shot bytes.Buffer
-	if err := png.Encode(&shot, image.NewNRGBA(image.Rect(0, 0, 1440, 900))); err != nil {
-		t.Fatal(err)
-	}
+	shot := fixedPNG(t, image.NewNRGBA(image.Rect(0, 0, 1440, 900)), 40<<10)
 	picture := provider.Attachment{Kind: provider.AttachmentImage, Handle: "Image#1",
-		Name: "clipboard.png", MediaType: "image/png", Data: shot.Bytes()}
+		Name: "clipboard.png", MediaType: "image/png", Data: shot}
 	pictured, ok := pasteOf(picture)
 	if !ok || pictured.token != "⟨Image#1 · 1440×900⟩" {
 		t.Fatalf("the fixture's picture folds as %q", pictured.token)

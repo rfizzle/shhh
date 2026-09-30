@@ -29,16 +29,27 @@ func stageImage(t *testing.T, m Model, name string) Model {
 			img.SetNRGBA(x, y, color.NRGBA{uint8(x * 8), uint8(y * 16), 0x80, 0xff})
 		}
 	}
-	var buf bytes.Buffer
-	if err := png.Encode(&buf, img); err != nil {
-		t.Fatal(err)
-	}
-	a, err := attachment.FromBytes(name, buf.Bytes())
+	a, err := attachment.FromBytes(name, fixedPNG(t, img, 128))
 	if err != nil {
 		t.Fatal(err)
 	}
 	next, _ := m.stage([]provider.Attachment{a})
 	return next.(Model)
+}
+
+// fixedPNG encodes img and pads the file to exactly size bytes. A golden
+// prints a staged file's size, and image/png's output is not stable across Go
+// releases; a decoder stops at the IEND chunk, so the padding is never read.
+func fixedPNG(t *testing.T, img image.Image, size int) []byte {
+	t.Helper()
+	var buf bytes.Buffer
+	if err := png.Encode(&buf, img); err != nil {
+		t.Fatal(err)
+	}
+	if buf.Len() > size {
+		t.Fatalf("the encoded PNG is %d bytes, over the %d the fixture pads to", buf.Len(), size)
+	}
+	return append(buf.Bytes(), make([]byte, size-buf.Len())...)
 }
 
 func stageText(t *testing.T, m Model, name string) Model {
