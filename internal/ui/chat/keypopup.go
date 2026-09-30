@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
@@ -52,17 +53,35 @@ type keyPopupRow struct {
 // has none: it has one mode, and the chord answers with a sentence saying so,
 // so a row offering to cycle it would offer a key the session refuses
 // (docs/capabilities/chat.md#a-conversation-has-one-mode).
-func keyPopupRows(conversation bool) []keyPopupRow {
+//
+// routed says an agent's command card is waiting with its [a] offered. That
+// card makes one grant and draws no list of lengths, so the register's words
+// for the key promise a choice it does not offer there; the row after
+// decision.always names that grant in the card's own words for as long as
+// the card is up (docs/interface/surfaces.md#the-agent-manager).
+func keyPopupRows(conversation, routed bool) []keyPopupRow {
 	var rows []keyPopupRow
 	for _, g := range keys.Keyboard() {
 		for _, a := range g.Acts {
 			if conversation && a.Shown == keys.Shown(keys.Draft.Mode) && a.Words == keys.Words(keys.Draft.Mode) {
 				continue
 			}
-			rows = append(rows, keyPopupRow{group: g.Name, keys: keys.Bracketed(a.Shown), words: a.Words, name: a.Name})
+			row := keyPopupRow{group: g.Name, keys: keys.Bracketed(a.Shown), words: a.Words, name: a.Name}
+			rows = append(rows, row)
+			if routed && a.Shown == keys.Shown(keys.Decision.Always) && a.Words == keys.Words(keys.Decision.Always) {
+				row.words = keys.AlwaysRouted + ", on the agent's card waiting now"
+				rows = append(rows, row)
+			}
 		}
 	}
 	return rows
+}
+
+// routedGrantWaiting says an agent's command card is up offering its one
+// grant, which is when the key list names that grant beside the register's.
+func (m Model) routedGrantWaiting() bool {
+	ask := m.activeChildAsk()
+	return ask != nil && ask.Kind == subagent.AskCommand && m.childAskCard(ask).AllowAlways
 }
 
 // keyPopupHint is the list's key row. Every spelling on it is the
@@ -82,7 +101,7 @@ func keyPopupHint() []components.KeyOffer {
 // the register here and not per keystroke: what is bound does not move while
 // a session runs.
 func (m Model) openKeyPopup() (tea.Model, tea.Cmd) {
-	p := &keyPopup{all: keyPopupRows(m.conversation)}
+	p := &keyPopup{all: keyPopupRows(m.conversation, m.routedGrantWaiting())}
 	p.card = components.Select{
 		// The chord is the title, as it is on the palette: the card is the
 		// answer to a key, and naming it is how a reader who came in through

@@ -23,6 +23,7 @@ import (
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/ui/caps"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 	"github.com/rfizzle/shhh/internal/web"
 )
 
@@ -1437,8 +1438,15 @@ func TestSlashUnknown_Handled(t *testing.T) {
 	if !handled {
 		t.Fatal("unknown slash command should be intercepted")
 	}
-	if !strings.Contains(result, "/help") {
-		t.Fatalf("unknown-command message should point at /help, got %q", result)
+	// The doors are the palette for commands and the key list for keys, the
+	// two surfaces that answer now; /help's sheet is a row neither opens.
+	for _, door := range []string{keys.Bracket(keys.Draft.Palette) + " lists the commands", keys.Bracket(keys.Draft.KeyList) + " the keys"} {
+		if !strings.Contains(result, door) {
+			t.Fatalf("unknown-command message should name %q, got %q", door, result)
+		}
+	}
+	if strings.Contains(result, "/help") {
+		t.Fatalf("unknown-command message still points at /help: %q", result)
 	}
 
 	// A path is not a command.

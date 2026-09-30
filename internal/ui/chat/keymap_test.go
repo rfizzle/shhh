@@ -732,7 +732,7 @@ func TestNoticeLine_DropsWholePartsNeverClipsOne(t *testing.T) {
 			t.Errorf("at %d columns the rail should have given up the part at its right end whole: %q", width, line)
 		}
 		body, door, ok := strings.Cut(line, noticeDoorSep)
-		if !ok || door != "/help keys" {
+		if !ok || door != keys.Bracket(keys.Draft.KeyList) {
 			t.Errorf("at %d columns the rail lost the door to the full list: %q", width, line)
 		}
 		kept, dropped := strings.CutSuffix(strings.TrimPrefix(body, "keys changed: "), strings.TrimSpace(noticeMore))

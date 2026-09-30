@@ -34,7 +34,7 @@ func KeysChangedNotice() string {
 		keys.Bracket(keys.Draft.Palette) + " palette",
 		keys.Bracket(keys.Draft.Pause) + " hold",
 	}
-	return "keys changed: " + strings.Join(changes, noticeSep) + noticeDoorSep + "/help keys"
+	return "keys changed: " + strings.Join(changes, noticeSep) + noticeDoorSep + keys.Bracket(keys.Draft.KeyList)
 }
 
 // WithKeysNotice puts the notice on the rail for this session. The caller

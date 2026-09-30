@@ -33,6 +33,7 @@ import (
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/caps"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 	"github.com/rfizzle/shhh/internal/web"
 )
 
@@ -2258,7 +2259,10 @@ func (m *Model) handleSlashCommand(text string) (handled bool, result string) {
 	// A lone "/word" is almost certainly a mistyped command; a path like
 	// /etc/hosts contains another slash and falls through to the LLM.
 	if strings.HasPrefix(parts[0], "/") && !strings.Contains(parts[0][1:], "/") {
-		return true, fmt.Sprintf("unknown command %s. Type /help for available commands", parts[0])
+		// The doors are the two surfaces that answer now, read off the
+		// register so a moved chord is named where it went.
+		return true, fmt.Sprintf("unknown command %s. %s lists the commands, %s the keys",
+			parts[0], keys.Bracket(keys.Draft.Palette), keys.Bracket(keys.Draft.KeyList))
 	}
 	return false, ""
 }

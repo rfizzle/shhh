@@ -1023,6 +1023,39 @@ func TestKeyListNamesTheRoutedCardsGrant(t *testing.T) {
 	}
 }
 
+// The key list opened beside a routed command card names that card's [a] in
+// the card's words, on the row after the register's own, and opened with no
+// such card up it carries no row for it.
+func TestKeyPopupNamesTheRoutedCardsGrant(t *testing.T) {
+	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
+	t.Cleanup(sup.Close)
+	m := newSubagentModel(t, sup)
+	named := func(m Model) (always, routed int) {
+		opened, _ := m.openKeyPopup()
+		for i, r := range opened.(Model).screens.keyPopup().all {
+			switch {
+			case strings.HasPrefix(r.words, keys.AlwaysRouted):
+				routed = i
+			case r.words == keys.Words(keys.Decision.Always):
+				always = i
+			}
+		}
+		return always, routed
+	}
+	if _, routed := named(m); routed != 0 {
+		t.Fatal("with no routed card up the key list names its grant")
+	}
+	m.input.SetValue("keep going")
+	ask := subagent.NewAsk("writer-1", subagent.AskCommand, "run go test ./...")
+	ask.Command = "go test ./..."
+	updated, _ := m.Update(subagentEventMsg{ev: subagent.Event{Kind: subagent.EventAsk, Ask: ask}})
+	m = updated.(Model)
+	always, routed := named(m)
+	if routed == 0 || routed != always+1 {
+		t.Fatalf("the routed card's grant is not the row after decision.always: always %d, routed %d", always, routed)
+	}
+}
+
 // A flagged command is the one place the key is missing, here as on the
 // session's own card — and the card says why rather than dropping the row,
 // which is the whole reason the footnote exists.
