@@ -167,6 +167,23 @@ func (r *Recorder) noteShown(path string, content []byte, whole bool) {
 	r.record(key, rec)
 }
 
+// noteAppended keeps the record honest across an append, which quotes nothing
+// and so is not a read. A file with no record keeps none: the model has still
+// not been shown it, and recording the appended result as seen would let a
+// full overwrite through on the strength of text the model never looked at.
+// A record that matched the file just before the append moves with it, at the
+// same wholeness, because the model knows exactly what it added and its next
+// edit should not be refused as stale over its own line. A record that was
+// already stale, or unknown, is left as it is — the append does not vouch for
+// the part of the file somebody else changed.
+func (r *Recorder) noteAppended(path string, before, after []byte) {
+	rec, ok := r.lookupSeen(path)
+	if !ok || rec.unknown() || rec.sum != fingerprint(before) {
+		return
+	}
+	r.noteShown(path, after, rec.whole)
+}
+
 // forget drops a file's record, for a path whose content is no longer
 // knowable — the one case being a write that failed partway.
 func (r *Recorder) forget(path string) {

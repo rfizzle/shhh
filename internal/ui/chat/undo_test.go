@@ -5,6 +5,7 @@ package chat
 // transcript as a changeset of its own.
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -13,6 +14,8 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/changeset"
+	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/tools"
 )
 
 // undoModel is a finished turn that created one file, ready to be undone.
@@ -75,6 +78,46 @@ func TestUndo_RestoresWhatTheTurnWrote(t *testing.T) {
 	}
 	if _, err := os.Stat(path); !os.IsNotExist(err) {
 		t.Fatalf("a file the turn created should be gone after undo, got %v", err)
+	}
+}
+
+// An append is an edit like any other on its way through the session: the
+// card names it and diffs the added lines at the end of the file, and /undo
+// puts the file back to what it held before the turn.
+func TestUndo_TakesBackAnAppend(t *testing.T) {
+	m := turnModel(t)
+	m = sendText(t, m, "log it")
+	path := filepath.Join(t.TempDir(), "CHANGELOG.md")
+	if err := os.WriteFile(path, []byte("- one"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+		{ID: "call_a", Name: tools.EditFileName,
+			Arguments: fmt.Sprintf(`{"path":%q,"append":"- two\n"}`, path)},
+	}})
+	m = updated.(Model)
+	req := m.pendingApproval
+	if req == nil || req.title != "append "+path || len(req.hunks) == 0 {
+		t.Fatalf("the card should name the append and diff it, got %+v", req)
+	}
+	m = handover(t, m)
+	updated, cmd := m.Update(tea.KeyPressMsg{Code: 'y', Text: "y"})
+	m = updated.(Model)
+	for _, c := range unwrapBatch(cmd) {
+		if msg, ok := c().(approvedToolDoneMsg); ok {
+			updated, _ = m.Update(msg)
+			m = updated.(Model)
+		}
+	}
+	if data, _ := os.ReadFile(path); string(data) != "- one\n- two\n" {
+		t.Fatalf("the approved append should have landed, got %q", data)
+	}
+	m = finishTurn(t, m)
+
+	m = sendText(t, m, "/undo")
+	m = press(t, m, "y")
+	if data, _ := os.ReadFile(path); string(data) != "- one" {
+		t.Fatalf("undo should put back what the file held before the append, got %q", data)
 	}
 }
 

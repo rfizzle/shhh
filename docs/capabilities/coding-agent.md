@@ -153,6 +153,44 @@ A second file is a second call. What is batched is one file's several places,
 which is the shape most changes actually have; a list of files would be one
 decision covering changes a person would want to answer separately.
 
+## Adding to the end of a file needs no read
+
+Adding an entry to a log, a changelog or a backlog used to mean quoting the
+file's last line, which meant reading a file that can run to thousands of
+lines to find it. A model that would rather not pays for that with the shell
+instead — `cat >> file <<EOF` — and a command is the heaviest thing a session
+can ask for: a card, or a classifier round and a refusal when the classifier
+says no, to do something an edit does with a diff. So the edit tool has a third
+form beside the single replacement and the list: text to add at the end.
+
+An append quotes nothing, and that is why it needs no read. Every rule the
+other two forms answer to is about a quote — that it matches, that it matches
+once, that the file it was taken from has not moved since — and the end of a
+file is somewhere the model can name without having seen anything. For the
+same reason a file that has changed since it was read is not refused: the end
+of the file is the end of whatever it says now, and the files that are
+appended to are exactly the ones something else keeps writing to.
+
+It is not a read either. A file the model had never read is still unread
+afterwards, so a full overwrite of it is still refused; a file it had read
+just before is still known afterwards, since the model knows what it added,
+and its next edit is not refused over its own line. A reading that was
+already out of date stays out of date — the append vouches for nothing
+somebody else wrote.
+
+The text starts on a line of its own. The model has not seen whether the
+file ends in a newline, and an entry run onto the end of the last one is a
+mistake nothing on its side would show it, so one is put in front of the text
+when the file lacks it.
+
+Everything else is an edit's. It is the same write tier, the same card — a
+diff whose added lines sit at the end of the file — and the same undo. It is
+refused beside a replacement, because whether it would land after the
+replacements or before them is a choice nobody made; the other change is a
+second call. There is no form for inserting at a line number: a position
+inside a file is an anchor, and quoting the anchor is what a replacement
+already does.
+
 ## A long call is counted while it is written
 
 A round that rewrites two hundred lines spends most of itself writing the call

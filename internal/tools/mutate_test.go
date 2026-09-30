@@ -920,3 +920,174 @@ func TestMutatingDescriptions_LeaveTheApprovalToTheMode(t *testing.T) {
 		}
 	}
 }
+
+// An append starts on a line of its own: the model has not seen whether the
+// file ends in a newline, and an entry run onto the last line is invisible to
+// it. A file that already ends in one, and an empty file, get nothing added.
+func TestEditFile_AppendAddsAtTheEndOnALineOfItsOwn(t *testing.T) {
+	for _, tc := range []struct{ name, before, want string }{
+		{"no trailing newline", "- one", "- one\n- two\n"},
+		{"trailing newline", "- one\n", "- one\n- two\n"},
+		{"empty file", "", "- two\n"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "CHANGELOG.md")
+			must(t, os.WriteFile(path, []byte(tc.before), 0o644))
+			result, err := ExecuteMutating(EditFileName, editArgs(t, editFileArgs{Path: path, Append: "- two\n"}))
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if data, _ := os.ReadFile(path); string(data) != tc.want {
+				t.Fatalf("file content = %q, want %q", data, tc.want)
+			}
+			if !strings.HasPrefix(result, "Appended 6 bytes (1 lines) to ") {
+				t.Errorf("result should say what was added: %q", result)
+			}
+		})
+	}
+}
+
+// The append is a form of its own: beside a replacement it would land at an
+// end that is either before or after the replacements, and nobody chose.
+func TestEditFile_AppendIsRefusedBesideAReplacement(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "log.txt")
+	must(t, os.WriteFile(path, []byte("alpha\n"), 0o644))
+	for _, args := range []editFileArgs{
+		{Path: path, Append: "beta\n", OldText: "alpha", NewText: "one"},
+		{Path: path, Append: "beta\n", Edits: []fileEdit{{OldText: "alpha", NewText: "one"}}},
+	} {
+		_, err := ExecuteMutating(EditFileName, editArgs(t, args))
+		if err == nil || !strings.Contains(err.Error(), "append") || !strings.Contains(err.Error(), "not both") {
+			t.Fatalf("expected the mixed call to be refused naming append, got %v", err)
+		}
+		if _, err := PreviewMutation(EditFileName, editArgs(t, args)); err == nil {
+			t.Fatal("the preview refuses it too")
+		}
+	}
+	if data, _ := os.ReadFile(path); string(data) != "alpha\n" {
+		t.Fatal("a refused call must leave the file untouched")
+	}
+}
+
+// An append is to an existing file; a new one is write_file's.
+func TestEditFile_AppendToAMissingFileIsRefused(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "absent.log")
+	if _, err := ExecuteMutating(EditFileName, editArgs(t, editFileArgs{Path: path, Append: "x\n"})); err == nil {
+		t.Fatal("appending to a file that does not exist should be refused")
+	}
+	if _, err := os.Stat(path); !os.IsNotExist(err) {
+		t.Fatal("the refused append must not create the file")
+	}
+}
+
+// An append quotes nothing, so a file that moved since it was read is no
+// reason to refuse it: the end of the file is the end of what it says now.
+func TestEditFile_AppendTakesNoStalenessCheck(t *testing.T) {
+	dir := t.TempDir()
+	path := seed(t, dir, "activity.log", "one\n")
+	readWholeFile(t, path)
+	seed(t, dir, "activity.log", "one\nsomebody else\n")
+
+	args := editArgs(t, editFileArgs{Path: path, Append: "mine\n"})
+	if _, err := PreviewMutation(EditFileName, args); err != nil {
+		t.Fatalf("the preview should not refuse a moved file: %v", err)
+	}
+	if _, err := ExecuteMutating(EditFileName, args); err != nil {
+		t.Fatalf("the append should not refuse a moved file: %v", err)
+	}
+	if data, _ := os.ReadFile(path); string(data) != "one\nsomebody else\nmine\n" {
+		t.Fatalf("file content = %q", data)
+	}
+	// The record stays stale: the append vouches for nothing somebody else
+	// wrote, so an edit built on the old read is still refused.
+	var stale StaleError
+	if _, err := ExecuteMutating(EditFileName, editArgs(t, editFileArgs{Path: path, OldText: "one", NewText: "1"})); !errors.As(err, &stale) {
+		t.Fatalf("an edit on the stale read should still be refused, got %v", err)
+	}
+}
+
+// An append is not a read. A file nobody read is still unread afterwards, so
+// a full overwrite of it is refused as before.
+func TestEditFile_AppendDoesNotMarkTheFileAsRead(t *testing.T) {
+	path := seed(t, t.TempDir(), "notes.md", "# Notes\n")
+	if _, err := ExecuteMutating(EditFileName, editArgs(t, editFileArgs{Path: path, Append: "- a\n"})); err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := shared.lookupSeen(path); ok {
+		t.Fatal("an append must leave no record of a read")
+	}
+	_, err := ExecuteMutating(WriteFileName, writeArgs(t, path, "replaced\n"))
+	if err == nil || !strings.Contains(err.Error(), "has not been read") {
+		t.Fatalf("an overwrite after an append is still an overwrite of an unread file, got %v", err)
+	}
+}
+
+// A file read just before the append is still known afterwards — the model
+// knows what it added — so its next edit is not refused over its own line.
+func TestEditFile_AppendKeepsAFreshReadingCurrent(t *testing.T) {
+	path := seed(t, t.TempDir(), "notes.md", "# Notes\n")
+	readWholeFile(t, path)
+	if _, err := ExecuteMutating(EditFileName, editArgs(t, editFileArgs{Path: path, Append: "- a\n"})); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ExecuteMutating(EditFileName, editArgs(t, editFileArgs{Path: path, OldText: "- a", NewText: "- b"})); err != nil {
+		t.Fatalf("the model's own append should not make its next edit stale: %v", err)
+	}
+	if data, _ := os.ReadFile(path); string(data) != "# Notes\n- b\n" {
+		t.Fatalf("file content = %q", data)
+	}
+}
+
+// The card shows what the write does: the file as it is against the file with
+// the lines added at its end.
+func TestPreviewMutation_AppendMatchesTheWrite(t *testing.T) {
+	tmp := t.TempDir()
+	preview := filepath.Join(tmp, "preview.log")
+	applied := filepath.Join(tmp, "applied.log")
+	const before = "alpha\nbeta"
+	must(t, os.WriteFile(preview, []byte(before), 0o644))
+	must(t, os.WriteFile(applied, []byte(before), 0o644))
+
+	mut, err := PreviewMutation(EditFileName, editArgs(t, editFileArgs{Path: preview, Append: "gamma\n"}))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if mut.Action != "append" || mut.OldText != before || mut.NewText != "alpha\nbeta\ngamma\n" {
+		t.Fatalf("preview = %+v", mut)
+	}
+	if _, err := ExecuteMutating(EditFileName, editArgs(t, editFileArgs{Path: applied, Append: "gamma\n"})); err != nil {
+		t.Fatal(err)
+	}
+	if data, _ := os.ReadFile(applied); string(data) != mut.NewText {
+		t.Fatalf("the preview promised %q, the write produced %q", mut.NewText, data)
+	}
+	if data, _ := os.ReadFile(preview); string(data) != before {
+		t.Fatal("a preview must not write anything")
+	}
+}
+
+// The model is told when to pass append, in the argument and in the
+// description, not only what it is: a label it cannot judge by is one it
+// walks past for a shell redirect.
+// See docs/capabilities/coding-agent.md#adding-to-the-end-of-a-file-needs-no-read.
+func TestEditFile_SchemaSaysAnAppendNeedsNoRead(t *testing.T) {
+	var schema struct {
+		Properties map[string]struct {
+			Type        string `json:"type"`
+			Description string `json:"description"`
+		} `json:"properties"`
+	}
+	if err := json.Unmarshal(editFile.Tool.Parameters, &schema); err != nil {
+		t.Fatal(err)
+	}
+	arg, ok := schema.Properties["append"]
+	if !ok || arg.Type != "string" {
+		t.Fatalf("edit_file should describe a string append, got %+v", arg)
+	}
+	if !strings.Contains(arg.Description, "end of the existing file") || !strings.Contains(arg.Description, "no read_file first") {
+		t.Errorf("the append argument should say it adds at the end without a read: %q", arg.Description)
+	}
+	if !strings.Contains(editFile.Tool.Description, "append is for adding to the end of a file without reading it first") {
+		t.Errorf("the description should say when to use append: %q", editFile.Tool.Description)
+	}
+}

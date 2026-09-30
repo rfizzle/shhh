@@ -151,14 +151,15 @@ func (r *Recorder) PreviewMutation(name string, raw json.RawMessage) (Mutation, 
 		if err != nil {
 			return Mutation{}, fmt.Errorf("cannot read file: %w", err)
 		}
-		if err := r.checkSeen(args.Path, content, true, false); err != nil {
-			return Mutation{}, err
-		}
-		updated, _, err := applyEdits(string(content), args.Path, args.Edits)
+		updated, _, err := r.planEdit(content, args)
 		if err != nil {
 			return Mutation{}, err
 		}
-		return Mutation{Action: "edit", Path: args.Path, OldText: string(content), NewText: updated}, nil
+		action := "edit"
+		if args.Append != "" {
+			action = "append"
+		}
+		return Mutation{Action: action, Path: args.Path, OldText: string(content), NewText: updated}, nil
 	}
 	return Mutation{}, fmt.Errorf("unknown mutating tool: %s", name)
 }
@@ -239,12 +240,13 @@ func (r *Recorder) executeWriteFile(raw json.RawMessage) (string, error) {
 var editFile = Definition{
 	Tool: provider.Tool{
 		Name: EditFileName,
-		Description: "Replace exact text snippets in an existing file. Give one replacement as old_text/new_text, or several as edits — one entry per place — and never both in the same call. " +
+		Description: "Change an existing file: replace exact text snippets in it, or add text to its end. Give one replacement as old_text/new_text, several as edits — one entry per place — or the text to add as append, and never two of these in the same call. " +
 			"Batch when one file needs changing in several places: that is one round, one diff and one decision instead of one of each per pair. A second file is a second call. " +
 			"Every old_text must match the file content exactly (including whitespace) and match exactly once, unless replace_all is set. " +
 			"Strip read_file's `<line number>\t` prefix before quoting a line here — the numbers are a reading aid and are not in the file. " +
 			"Every quote is matched against the file as it stands, not against the result of the edit before it, so the order does not matter and two edits that would touch the same text are refused. Nothing is written unless all of them apply. " +
 			"A file that has changed since you last read it is refused: read it again and rebase the edits on what it says now. " +
+			"append is for adding to the end of a file without reading it first — a new entry in a log, a changelog, a backlog or a list: it quotes nothing, so no read is needed and a file that moved is not refused; a newline goes before the text when the file does not end with one. Use it rather than a shell redirect. " +
 			"Whether the change is applied straight away or is shown to the user as a diff for approval first is the session's permission mode's to decide; a declined call returns an error result.",
 		Parameters: json.RawMessage(`{
 			"type": "object",
@@ -253,6 +255,7 @@ var editFile = Definition{
 				"old_text": {"type": "string", "description": "Exact existing text to replace, for a call that changes one place"},
 				"new_text": {"type": "string", "description": "Replacement text, for a call that changes one place"},
 				"replace_all": {"type": "boolean", "description": "Replace every occurrence instead of requiring a unique match"},
+				"append": {"type": "string", "description": "Text to add at the end of the existing file, for a call that only adds — a log line, a changelog entry, an item on a list. Pass it instead of reading the file to quote its last line: it needs no read_file first. Give it without old_text/new_text or edits"},
 				"edits": {
 					"type": "array",
 					"description": "Several places in this one file, applied together against the file as it stands",
@@ -287,6 +290,10 @@ type editFileArgs struct {
 	NewText    string     `json:"new_text,omitempty"`
 	ReplaceAll bool       `json:"replace_all,omitempty"`
 	Edits      []fileEdit `json:"edits,omitempty"`
+	// Append is the third form: text added at the end of the file. It is
+	// kept apart from Edits rather than folded into them because it quotes
+	// nothing, and a quote is what every rule applied to Edits is about.
+	Append string `json:"append,omitempty"`
 }
 
 // parseEditFileArgs reads the call and normalises both spellings into Edits,
@@ -297,7 +304,9 @@ type editFileArgs struct {
 //
 // Carrying both spellings at once is refused rather than merged: the two
 // orders that merge could produce are different files, and picking one on the
-// model's behalf is picking silently.
+// model's behalf is picking silently. An append beside either is refused for
+// the same reason: whether it lands at the end of the file before the
+// replacements or after them is a choice nobody made.
 func parseEditFileArgs(raw json.RawMessage) (editFileArgs, error) {
 	var args editFileArgs
 	if err := json.Unmarshal(raw, &args); err != nil {
@@ -308,12 +317,16 @@ func parseEditFileArgs(raw json.RawMessage) (editFileArgs, error) {
 	}
 	inline := args.OldText != "" || args.NewText != ""
 	switch {
+	case args.Append != "" && (inline || len(args.Edits) > 0):
+		return args, fmt.Errorf("give either append or a replacement (old_text/new_text or edits), not both: make the other change a second call")
+	case args.Append != "":
+		return args, nil
 	case inline && len(args.Edits) > 0:
 		return args, fmt.Errorf("give either old_text/new_text or edits, not both: put every replacement in edits")
 	case inline:
 		args.Edits = []fileEdit{{OldText: args.OldText, NewText: args.NewText, ReplaceAll: args.ReplaceAll}}
 	case len(args.Edits) == 0:
-		return args, fmt.Errorf("old_text is required, or edits with one entry per replacement")
+		return args, fmt.Errorf("old_text is required, or edits with one entry per replacement, or append to add text at the end")
 	}
 	for i, e := range args.Edits {
 		switch e.OldText {
@@ -335,16 +348,7 @@ func (r *Recorder) executeEditFile(raw json.RawMessage) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("cannot read file: %w", err)
 	}
-	// An edit needs no prior read — old_text is its own evidence — but a file
-	// that moved since it was read is one this edit was not written against.
-	// One question about the file answers it for every edit in the call,
-	// because every one of them is matched against this content.
-	if err := r.checkSeen(args.Path, content, true, false); err != nil {
-		return "", err
-	}
-	// Every edit is planned before any of them is written, so a call with one
-	// bad quote leaves the file exactly as it was rather than half changed.
-	updated, count, err := applyEdits(string(content), args.Path, args.Edits)
+	updated, count, err := r.planEdit(content, args)
 	if err != nil {
 		return "", err
 	}
@@ -354,6 +358,11 @@ func (r *Recorder) executeEditFile(raw json.RawMessage) (string, error) {
 		r.forget(args.Path)
 		return "", fmt.Errorf("cannot write file: %w", err)
 	}
+	if args.Append != "" {
+		r.noteAppended(args.Path, content, []byte(updated))
+		return fmt.Sprintf("Appended %d bytes (%d lines) to %s, file now %d bytes (%d lines)",
+			len(args.Append), countLines(args.Append), args.Path, len(updated), countLines(updated)), nil
+	}
 	// The model knows exactly what it just wrote, so the next edit is not
 	// asked to read it again.
 	r.noteShown(args.Path, []byte(updated), true)
@@ -362,6 +371,43 @@ func (r *Recorder) executeEditFile(raw json.RawMessage) (string, error) {
 		made += fmt.Sprintf(" from %d edits", len(args.Edits))
 	}
 	return fmt.Sprintf("Edited %s: %s, file now %d bytes (%d lines)", args.Path, made, len(updated), countLines(updated)), nil
+}
+
+// planEdit is the file a call would leave behind, asked by the preview and by
+// the write alike so a card never shows a change the write then refuses.
+//
+// An append takes no staleness check: it quotes nothing, so there is no
+// picture of the file for a move to have made wrong, and the end of the file
+// is the end of whatever the file says now. That is the reason the form
+// exists — a log or a changelog is exactly the file something else keeps
+// writing to, and a model sent to re-read one before adding a line to it
+// reaches for a shell redirect instead.
+// See docs/capabilities/coding-agent.md#adding-to-the-end-of-a-file-needs-no-read.
+func (r *Recorder) planEdit(content []byte, args editFileArgs) (string, int, error) {
+	if args.Append != "" {
+		return appendText(string(content), args.Append), 0, nil
+	}
+	// An edit needs no prior read — old_text is its own evidence — but a file
+	// that moved since it was read is one this edit was not written against.
+	// One question about the file answers it for every edit in the call,
+	// because every one of them is matched against this content.
+	if err := r.checkSeen(args.Path, content, true, false); err != nil {
+		return "", 0, err
+	}
+	// Every edit is planned before any of them is written, so a call with one
+	// bad quote leaves the file exactly as it was rather than half changed.
+	return applyEdits(string(content), args.Path, args.Edits)
+}
+
+// appendText puts text after content, starting it on a line of its own. The
+// model appending has not seen whether the file ends in a newline, and an
+// entry run onto the end of the previous line is a failure it cannot see. An
+// empty file has no line to separate from.
+func appendText(content, text string) string {
+	if content != "" && !strings.HasSuffix(content, "\n") {
+		content += "\n"
+	}
+	return content + text
 }
 
 // match is one place an edit claims: a half-open byte range of the file as it

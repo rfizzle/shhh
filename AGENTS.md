@@ -321,6 +321,11 @@ a simplification, passes most of the tests, and changes the meaning of every
 edit after the first — the offsets it matched against no longer exist. The
 staleness check runs once per call, before any of this, and covers every
 element for the same reason: they are all matched against that one content.
+The third form, `append`, is refused beside either and never reaches
+`applyEdits`: `planEdit` is what both callers ask, and it skips the staleness
+check for an append because nothing is quoted — so the write must not mark
+the file read either, which is `noteAppended` in `seen.go`
+([`docs/capabilities/coding-agent.md#adding-to-the-end-of-a-file-needs-no-read`](docs/capabilities/coding-agent.md#adding-to-the-end-of-a-file-needs-no-read)).
 Why the batch exists and what it deliberately does not cover:
 [`docs/capabilities/coding-agent.md#several-places-in-one-file-are-one-call`](docs/capabilities/coding-agent.md#several-places-in-one-file-are-one-call).
 
