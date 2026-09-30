@@ -137,7 +137,6 @@ revoke [commands|edits|hosts|agents]   take the grants back`,
 	"/reasoning": `how much thinking the model does before it answers: off (the default), low, medium, high, xhigh or max — ctrl+t cycles them
 [level]           set it for this session (also /think)
 default [level]   show or persist the level new sessions start on (provider.reasoning)`,
-	"/stats":    `context occupancy breakdown and cumulative session spend`,
 	"/step":     `open the in-flight step's detail: every row in it shows its output body, bounded; run it again to close (/ui verbosity high is the same thing for every step at once)`,
 	"/status":   `where this session is: what it is working on, what it has spent, and whether the last few turns are still on the target you set it`,
 	"/sessions": `the sessions running on this machine: the conversation each saves to, its checkout and branch, and whether it is working`,
@@ -409,7 +408,7 @@ bare /todo opens the same screen; it opens over a running turn, and the keys tha
 		},
 		{
 			key:  "rail click",
-			text: `on the inspector rail, a changed file opens its diff and a session's row moves the keyboard into it. A block's heading, or its … N more, opens the surface holding the whole block — SUMMARY is /readings, THIS TURN is /turns, ALERTS is /alerts, CHANGES is /diff, AGENTS is /agents, STEPS is /steps, TODO is /todo, CONTEXT is /context — and a click on the same cell closes it, as its own esc does. The rail never holds the keyboard, so each command is that door's key`,
+			text: `on the inspector rail, a changed file opens its diff and a session's row moves the keyboard into it. A block's heading, or its … N more, opens the surface holding the whole block — SUMMARY is /readings, THIS TURN is /turns, ALERTS is /alerts, CHANGES is /diff, AGENTS is /agents, STEPS is /steps, TODO is /todo, CONTEXT is /context, SPEND is /stats — and a click on the same cell closes it, as its own esc does. The rail never holds the keyboard, so each command is that door's key`,
 		},
 		{
 			binds: []keys.Binding{keys.Draft.Editor},

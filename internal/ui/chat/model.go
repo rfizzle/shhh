@@ -251,6 +251,11 @@ const (
 	// way the palette does, so the draft under it is untouched and the turn
 	// keeps running (keypopup.go).
 	stateKeyPopup
+	// stateSpend: the spend screen is up — the session's whole bill, by
+	// model, by child and by turn. A takeover like the alerts screen: full
+	// width, the rail hidden, esc returns, and its [enter] opens a turn on
+	// the turns screen (stats.go).
+	stateSpend
 )
 
 // minPanelHeight is the fewest rows the bottom panel takes: what a surface

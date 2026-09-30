@@ -1371,7 +1371,7 @@ holding all of it, its heading and its fold marker open that surface: SUMMARY
 opens every reading the session has taken, THIS TURN every turn the session
 has run, ALERTS every alert the session has had, standing and superseded,
 CHANGES opens the session's diff, AGENTS the manager, STEPS the whole working list,
-TODO the backlog screen and CONTEXT the occupancy screen — each the surface its command already opens, so
+TODO the backlog screen, CONTEXT the occupancy screen and SPEND the session's whole bill — each the surface its command already opens, so
 the command is the door's key. The surface is left by its own esc, and by a
 click on the cell that opened it: the surface stands over the rail, so the
 row is not there to click again, but the cell is, and a click that opened a
@@ -1405,8 +1405,9 @@ rail narrows a row gives up its words before its figures: the kinds fold to
 the first and a count, then the model's name shortens to its family word,
 then goes. When the rail runs short of height the shares fold and the total
 stays, because it is the one figure the rest of the block is about. The
-breakdown by source and by model in words is `/stats`, which reads the same
-ledger; the block has no surface of its own to open.
+heading and the fold marker open the whole bill (`/stats`, [the supporting
+screens](#the-supporting-screens)), which reads the same ledger: every share
+the block draws, each child's by name and each turn's.
 
 The rail takes the room a wide terminal gives it. Its width is a rule rather
 than a number: it is at its narrowest at the threshold, and above that it
@@ -2475,15 +2476,15 @@ under that the account the session kept of where it left off
 renaming and deleting the picker inside a session already offers
 (../capabilities/sessions-and-memory.md#housekeeping).
 
-Fifteen surfaces take the whole terminal this way — those seven, the reading
+Sixteen surfaces take the whole terminal this way — those seven, the reading
 of what is in the session's context, the ledger of what the session read
 (`/sources`, [what was read](../capabilities/chat.md#what-was-read)), the
 session's own working list (`/steps`, below), the readings it has taken of its
 own run (`/readings`, below), the turns it has run (`/turns`, below), every
-alert it has had (`/alerts`, below), the session's shared notebook
+alert it has had (`/alerts`, below), its bill (`/stats`, below), the session's shared notebook
 (`/notes`, below), the reading of the session's boundary (`/safety`, [the
 safety reading](#the-safety-reading)) and the drafting flow for a new agent
-profile — and they are one family rather than sixteen screens: the same header, the same
+profile — and they are one family rather than seventeen screens: the same header, the same
 ground given up in the same order as the terminal narrows, the same key row at
 the foot and the same `[?]` behind it. The two that arrived last had each been
 drawing a chrome of their own, and the way that showed was not in either of
@@ -2497,7 +2498,7 @@ act in one word: `quit` where the screen was opened from a command line,
 under the key a reader reaches for without thinking, and there it is a phrase:
 **back to the shell** on doctor, metrics, history, snippets and the saved-chat
 browser, **back to the prompt** on the context reading, the sources ledger, the
-working list, the readings, the turns, the alerts, the safety reading, the notebook and the backlog, which is drawn on this chrome too ([the backlog screen](#the-backlog-screen)).
+working list, the readings, the turns, the alerts, the bill, the safety reading, the notebook and the backlog, which is drawn on this chrome too ([the backlog screen](#the-backlog-screen)).
 For leaving a screen and changing nothing there is no third wording.
 
 Three of them leave by doing something rather than nothing, and each says what
@@ -2661,6 +2662,33 @@ inspector rail](#the-inspector-rail)); unlike the screens above it, a session
 that has broken nothing still opens it, on one sentence saying so, because
 that is the answer the reader asked for — and the block itself is gone once
 nothing stands, so the command is then the only door.
+
+`/stats` is the rail's SPEND block read whole: the session's bill, from the
+ledger the block reads ([the inspector rail](#the-inspector-rail)). The list
+opens on the session total and cuts the bill three ways under it: by model,
+each row the block's own — the model, what its own requests cost and what
+kinds of request they were, and what the children that ran on it cost after
+their `◇`; by child, each sub-agent's share by name with the model it ran
+on; and by turn, newest first, each turn's cost as its close row states it,
+in the turns screen's mark and word. The three cuts are three readings of one
+total and not three parts of it — a child's share is on its model's row and
+on its own — so the header counts them as fields beside the total rather than
+adding them up. Beside the row under the pointer is its account: what it
+cost, what it was billed for — the tokens each way and what came from the
+cache — and how many requests; on the total and on a model, each kind of
+request with its own cost under that. `[enter]` on a turn opens it on the
+turns screen with that turn under the pointer, and is grey anywhere else. A
+turn whose figures were not kept is left off the bill rather than drawn as a
+zero ([a stat that cannot be reported is left
+out](principles.md#a-stat-that-cannot-be-reported-is-left-out)). What the
+context window is occupied by is the other half the command used to print,
+and it is `/context`'s ([the context surface](#the-context-surface)). It is
+built when it opens, reads and changes nothing, and the turn goes on
+underneath it. It is opened by `/stats` and by a click on the SPEND heading
+or its marker; a session that has spent nothing opens it on one sentence
+saying so, since the block is absent then and the command is the only door.
+While the keyboard is in a child, `/stats` answers for that child alone, in
+its own transcript.
 
 `/notes` is the shared notebook — what one
 agent found and the next should not have to find again

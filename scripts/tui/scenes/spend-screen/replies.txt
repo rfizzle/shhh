@@ -1,0 +1,9 @@
+# One reply per request, and the classifier draws from this queue too: its
+# verdict is a request to the same endpoint, so the judged call costs two
+# lines here — the call, then the decision tool the judge is asked to call.
+# The first turn is one plain reply, so the rail's first reading is the
+# session's own model alone.
+The cockpit uses the session's billed total, including prompt-cache discounts.
+tool:execute_command:{"command":"touch SPEND.md"}
+tool:permission_decision:{"decision":"allow","reason":"a notes file is what the task asked for"}
+The notes file is there, and the classifier's verdict is on the bill.

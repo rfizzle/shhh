@@ -758,16 +758,9 @@ func (m Model) inspectorContext() *components.InspectorContext {
 // from its cache at the fresh rate, and the block would show a turn costing
 // more than the session it is part of (attach.go).
 func (m Model) inspectorSpend() *components.InspectorSpend {
-	total := m.sessionSpend()
-	children := m.childSpend()
-	if total.In == 0 && total.Out == 0 && children.In == 0 && children.Out == 0 {
+	total := m.billTotal()
+	if !spent(total) {
 		return nil
-	}
-	if m.ledger == nil {
-		// Without a ledger the session's figure is the agent's own, and the
-		// children's roll-up is a row above it: the total is the two added,
-		// or the rows would not add up to it.
-		total = total.Plus(children)
 	}
 	s := components.InspectorSpend{
 		Turn:    m.totalsLabel(m.turnSpend()),
@@ -787,13 +780,27 @@ func (m Model) inspectorSpend() *components.InspectorSpend {
 	return &s
 }
 
+// billTotal is the figure the block's `session total` row states and the
+// spend screen's total: the ledger's, which already holds every child. A
+// session with no ledger has the agent's own figure and the children's
+// roll-up as a row above it, so the total is the two added, or the rows would
+// not add up to it.
+func (m Model) billTotal() meter.Totals {
+	if m.ledger == nil {
+		return m.sessionSpend().Plus(m.childSpend())
+	}
+	return m.sessionSpend()
+}
+
 // spendShare is one model's part of the session's bill: what its own
-// requests cost and which kinds of request they were, and what the children
-// that ran on it cost.
+// requests cost and which kinds of request they were — each kind's own part
+// of that in parts, beside it in sources — and what the children that ran on
+// it cost.
 type spendShare struct {
 	model    string
 	own      meter.Totals
 	sources  []meter.Source
+	parts    []meter.Totals
 	children meter.Totals
 }
 
@@ -809,6 +816,7 @@ func (m Model) spendShares() []spendShare {
 		share := spendShare{model: m.modelName, own: m.mainSpend(), children: m.childSpend()}
 		if spent(share.own) {
 			share.sources = []meter.Source{meter.SourceAgent}
+			share.parts = []meter.Totals{share.own}
 		}
 		if !spent(share.own) && !spent(share.children) {
 			return nil
@@ -832,9 +840,15 @@ func (m Model) spendShares() []spendShare {
 				continue
 			}
 			share.own = share.own.Plus(t)
-			if spent(t) && !slices.Contains(share.sources, e.Origin.Source) {
-				share.sources = append(share.sources, e.Origin.Source)
+			if !spent(t) {
+				continue
 			}
+			if i := slices.Index(share.sources, e.Origin.Source); i >= 0 {
+				share.parts[i] = share.parts[i].Plus(t)
+				continue
+			}
+			share.sources = append(share.sources, e.Origin.Source)
+			share.parts = append(share.parts, t)
 		}
 		shares = append(shares, share)
 	}

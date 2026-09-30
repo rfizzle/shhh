@@ -3687,6 +3687,8 @@ func TestGolden_ScreenFamily(t *testing.T) {
 					View: func() string { s := turnsScreen(2); s.MaxLines = 12; return s.View(width) }()},
 				{Label: "alerts · every command the session broke, standing first, the one under the pointer's account beside it",
 					View: func() string { s := alertsScreen(0, false); s.MaxLines = 12; return s.View(width) }()},
+				{Label: "spend · the session's bill by model, by child and by turn, the row under the pointer's account beside it",
+					View: func() string { s := spendScreen(1); s.MaxLines = 12; return s.View(width) }()},
 			}
 		})
 }

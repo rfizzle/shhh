@@ -423,6 +423,34 @@ row of its own.
 When there is an artboard, these three decisions are what it has to
 reconcile with, and where the two differ the artboard wins.
 
+## The spend screen's layout was decided in the binary
+
+*A gap.* No artboard draws `/stats` as a screen, and the InspectorRail
+component draws the SPEND block's heading as a label rather than as a door to
+anything. The binary draws a screen behind that heading and its marker ([the
+supporting screens](surfaces.md#the-supporting-screens)): the family's chrome
+over a list and a preview. The chrome, the panes, the windowed list and the
+key row are the supporting screens' own, a model row is the block's own row,
+and a turn row is the turns screen's. Three things it could not take from
+anywhere, and they were decided here:
+
+**The list is headed by the total and cut under three group rails.**
+`session total` is the first row and the pointer's first stop; `by model`,
+`by child` and `by turn` are rails the pointer steps over, the way the
+sources ledger groups its hosts.
+
+**The header counts the cuts and leaves the adding to the total.** `2 models
+· 2 children · 3 turns` on the left and `$0.4210 spent` as the tally,
+because the three cuts overlap and a sum of them would be no figure at all.
+
+**The account is labelled lines, then the kinds.** `spent`, `model`,
+`tokens` and `requests` in a label column, then `by kind of request` with one
+line per kind — its cost, its tokens and its requests — and `children` after
+their `◇` on a model.
+
+When there is an artboard, these three decisions are what it has to
+reconcile with, and where the two differ the artboard wins.
+
 ## The explanation's screen wears the full view's title, not a rail label
 
 *A disagreement.* The artboard draws the command explanation with a rail

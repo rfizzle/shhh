@@ -280,6 +280,10 @@ func (h heldScreens) alerts() *components.AlertsScreen {
 	return heldAs[components.AlertsScreen](h, stateAlerts)
 }
 
+func (h heldScreens) spend() *components.SpendScreen {
+	return heldAs[components.SpendScreen](h, stateSpend)
+}
+
 func (h heldScreens) keyPopup() *keyPopup {
 	return heldAs[keyPopup](h, stateKeyPopup)
 }
@@ -835,6 +839,35 @@ func buildOverlays() map[state]*mode {
 				open: bareOpen(Model.openAlerts),
 			},
 			door: &surfaceDoor{components.RailAlerts, railDoor{Model.openAlerts, alertsShowing, Model.closeAlertsScreen}},
+		},
+		stateSpend: {
+			place:       placePane,
+			holds:       true,
+			borrows:     true,
+			hidesRail:   true,
+			noSelection: true,
+			lines: func(m Model, width, height int) []string {
+				screen := m.screens.spend()
+				if screen == nil {
+					return nil
+				}
+				screen.SetSize(width, height)
+				return strings.Split(screen.View(width), "\n")
+			},
+			hint: (Model).renderStatsHint,
+			keys: (Model).updateStats,
+			// The session's whole bill, as the rail's SPEND block reads it. It
+			// reads and changes nothing, so it is not idleOnly: mid-turn is when
+			// somebody asks what the run is costing (stats.go). While attached
+			// to a child, /stats is the child's own answer and never reaches
+			// this row (attach.go).
+			command: &surfaceCommand{
+				slashCommand: slashCommand{name: "/stats", desc: "the session's whole bill: by model, by child and by turn",
+					help: `the session's whole bill on one screen, as the rail's SPEND block reads it: the session total with the kinds of request that make it up, each model's share with its own kinds and what the children on it cost, each child's share by name, and each turn's cost as its close row states it. [enter] on a turn opens it on the turns screen. What the context window is occupied by is /context. While attached to an agent, /stats is that agent's own. It reads and changes nothing`},
+				bare: true,
+				open: bareOpen(Model.openStats),
+			},
+			door: &surfaceDoor{components.RailSpend, railDoor{Model.openStats, statsShowing, Model.closeStatsScreen}},
 		},
 		stateSafety: {
 			place:       placePane,

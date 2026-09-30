@@ -407,7 +407,6 @@ func buildSlashHandlers() map[string]slashHandler {
 		"/mode":        slashPermissions,
 		"/reasoning":   slashReasoning,
 		"/think":       slashReasoning,
-		"/stats":       slashStats,
 		"/ui":          slashUI,
 		"/add-dir":     slashAddDir,
 		"/adddir":      slashAddDir,
@@ -501,10 +500,6 @@ func slashPermissions(m *Model, parts []string) string {
 
 func slashReasoning(m *Model, parts []string) string {
 	return m.reasoningCommand(parts[1:])
-}
-
-func slashStats(m *Model, _ []string) string {
-	return m.statsReport()
 }
 
 func slashUI(m *Model, parts []string) string {

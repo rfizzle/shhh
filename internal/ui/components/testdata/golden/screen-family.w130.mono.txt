@@ -208,6 +208,20 @@ MODE AND POLICY
 
 [↑↓/jk] move · [enter] show each run · [esc] back to the prompt             every command this session broke, as the rail reads it
 
+· spend · the session's bill by model, by child and by turn, the row under the pointer's account beside it
+/stats · 2 models · 2 children · 3 turns                                                       $0.4210 spent · [?] keys · [q] back
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  session total                                      $0.4210 │ claude-opus-5-5                                               model
+by model                                                     │ 
+❯ claude-opus-5-5 · main · classifier · $0.0520 ◇    $0.3650 │   spent        $0.3650
+  claude-haiku-4-5 · summary · $0.0030 ◇             $0.0010 │   tokens       ↑152.2k ↓7.9k · 96.0k cached
+by child                                                     │   requests     18
+  ◇ writer-1 · claude-opus-5-5                       $0.0520 │ 
+↓ 4 more                                                     │   by kind of request
+
+[↑↓/jk] move · [enter] open the turn · [esc] back to the prompt             the session's bill, as the rail's SPEND block reads it
+
 ── ansi ────────────────────────────────────────────────────
 · doctor · the count on the left, the clock and the keys on the right
 ␛[1;38;5;254mshhh doctor␛[m␛[38;5;244m · 10 checks␛[m                                                                                 ␛[38;5;244m1.4s␛[m␛[38;5;244m · [?] keys · [q] quit␛[m
@@ -406,3 +420,17 @@ MODE AND POLICY
                                                               ␛[38;5;244m │ ␛[m  ␛[38;5;244manswered  ␛[m␛[38;5;254mnot yet␛[m
 
 ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m show each run␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m             ␛[38;5;244mevery command this session broke, as the rail reads it␛[m
+
+· spend · the session's bill by model, by child and by turn, the row under the pointer's account beside it
+␛[1;38;5;254m/stats␛[m␛[38;5;244m · 2 models␛[m␛[38;5;244m · 2 children␛[m␛[38;5;244m · 3 turns␛[m                                                       ␛[38;5;244m$0.4210 spent␛[m␛[38;5;244m · [?] keys · [q] back␛[m
+␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+
+  ␛[38;5;254msession total␛[m                                      ␛[38;5;244m$0.4210␛[m␛[38;5;244m │ ␛[m␛[1;38;5;254mclaude-opus-5-5␛[m                                               ␛[38;5;244mmodel␛[m
+␛[1;38;5;254mby model␛[m                                                    ␛[38;5;244m │ ␛[m
+␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mclaude-opus-5-5 · main · classifier · $0.0520 ◇    $0.3650␛[m␛[38;5;244m │ ␛[m  ␛[38;5;244mspent        ␛[m␛[38;5;254m$0.3650␛[m
+  ␛[38;5;254mclaude-haiku-4-5␛[m␛[38;5;244m · ␛[m␛[38;5;244msummary␛[m␛[38;5;244m · ␛[m␛[38;5;244m$0.0030 ◇␛[m             ␛[38;5;244m$0.0010␛[m␛[38;5;244m │ ␛[m  ␛[38;5;244mtokens       ␛[m␛[38;5;254m↑152.2k ↓7.9k · 96.0k cached␛[m
+␛[1;38;5;254mby child␛[m                                                    ␛[38;5;244m │ ␛[m  ␛[38;5;244mrequests     ␛[m␛[38;5;254m18␛[m
+  ␛[38;5;254m◇ writer-1␛[m␛[38;5;244m · ␛[m␛[38;5;244mclaude-opus-5-5␛[m                       ␛[38;5;244m$0.0520␛[m␛[38;5;244m │ ␛[m
+␛[38;5;244m↓ 4 more␛[m                                                    ␛[38;5;244m │ ␛[m  ␛[38;5;244mby kind of request␛[m
+
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;244m[enter]␛[m␛[38;5;244m open the turn␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m             ␛[38;5;244mthe session's bill, as the rail's SPEND block reads it␛[m

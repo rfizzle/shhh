@@ -209,6 +209,20 @@ make test                                           standing
 
 [enter] show each run · [esc] back to the prompt
 
+· spend · the session's bill by model, by child and by turn, the row under the pointer's account beside it
+/stats · 2 models        $0.4210 spent · [?] keys · [q] back
+────────────────────────────────────────────────────────────
+
+↑ 1 more
+❯ claude-opus-5-5 · main · classifier · $0.0520 ◇    $0.3650
+↓ 6 more
+────────────────────────────────────────────────────────────
+claude-opus-5-5                                        model
+
+… (+8 more rows)
+
+[enter] open the turn · [esc] back to the prompt
+
 ── ansi ────────────────────────────────────────────────────
 · doctor · the count on the left, the clock and the keys on the right
 ␛[1;97mshhh doctor␛[m␛[38;5;241m · 10 checks␛[m           ␛[38;5;245m1.4s␛[m␛[38;5;241m · [?] keys · [q] quit␛[m
@@ -408,3 +422,17 @@ make test                                           standing
 ␛[38;5;241m… (+4 more rows)␛[m
 
 ␛[94m[enter]␛[m␛[38;5;241m show each run␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m
+
+· spend · the session's bill by model, by child and by turn, the row under the pointer's account beside it
+␛[1;97m/stats␛[m␛[38;5;241m · 2 models␛[m        ␛[38;5;241m$0.4210 spent␛[m␛[38;5;241m · [?] keys · [q] back␛[m
+␛[38;5;241m────────────────────────────────────────────────────────────␛[m
+
+␛[38;5;241m↑ 1 more␛[m
+␛[94m❯␛[m ␛[1;97;48;5;62mclaude-opus-5-5 · main · classifier · $0.0520 ◇    $0.3650␛[m
+␛[38;5;241m↓ 6 more␛[m
+␛[38;5;241m────────────────────────────────────────────────────────────␛[m
+␛[1;97mclaude-opus-5-5␛[m                                        ␛[38;5;241mmodel␛[m
+
+␛[38;5;241m… (+8 more rows)␛[m
+
+␛[38;5;245m[enter]␛[m␛[38;5;241m open the turn␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m

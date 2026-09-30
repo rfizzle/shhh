@@ -171,7 +171,7 @@ func buildSlashCommands() []slashCommand {
 				{after: []string{"default"}, options: reasoningLevelArgs()},
 			}},
 		registeredSlash("/context"),
-		{name: "/stats", desc: "context occupancy and session spend"},
+		registeredSlash("/stats"),
 		registeredSlash("/readings"),
 		registeredSlash("/turns"),
 		registeredSlash("/alerts"),

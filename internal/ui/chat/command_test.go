@@ -27,8 +27,8 @@ func TestLiveCommand_RunsWhileWorking(t *testing.T) {
 
 	m = sendText(t, m, "/stats")
 
-	if m.state != stateStreaming {
-		t.Fatalf("a live command must not disturb the running turn, got state %d", m.state)
+	if m.turnState() != stateStreaming {
+		t.Fatalf("a live command must not disturb the running turn, got turn state %d", m.turnState())
 	}
 	if len(m.steering) != 0 {
 		t.Fatalf("a command is not steering text, got %v", m.steering)
@@ -36,8 +36,8 @@ func TestLiveCommand_RunsWhileWorking(t *testing.T) {
 	if len(m.Messages()) != before {
 		t.Fatal("a live command must not touch the conversation")
 	}
-	if !transcriptContains(m, "Context") {
-		t.Fatal("expected the /stats report in the transcript")
+	if m.state != stateSpend {
+		t.Fatalf("expected the /stats screen over the running turn, got state %d", m.state)
 	}
 }
 

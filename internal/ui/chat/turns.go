@@ -36,6 +36,23 @@ func (m Model) openTurns() (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+// openTurnsOn is openTurns with turn n under the pointer: the door another
+// screen that lists turns opens a turn through (stats.go). A turn the screen
+// does not list leaves the pointer on the newest.
+func (m Model) openTurnsOn(n int64) (tea.Model, tea.Cmd) {
+	next, cmd := m.openTurns()
+	if nm, ok := next.(Model); ok {
+		if screen := nm.screens.turns(); screen != nil {
+			for i, t := range screen.Turns {
+				if t.N == n {
+					screen.Focus = i
+				}
+			}
+		}
+	}
+	return next, cmd
+}
+
 // updateTurns routes keys while the screen is up. `[enter]` on a turn with a
 // changeset opens that turn's review, which comes back here rather than to
 // the prompt: the reader is walking a list, and a look at one turn is not

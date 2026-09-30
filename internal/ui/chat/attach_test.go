@@ -358,6 +358,9 @@ func TestAttachedScopedCommands(t *testing.T) {
 	if !childTranscriptContains(sup, "researcher-1", "tool calls") {
 		t.Fatal("/stats note missing from the child transcript")
 	}
+	if m.state == stateSpend || m.screens.spend() != nil {
+		t.Fatal("/stats while attached is the child's own answer, not the session's bill")
+	}
 
 	// /diff on a researcher reports there is nothing scoped to diff.
 	m.input.SetValue("/diff")

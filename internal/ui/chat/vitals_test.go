@@ -93,8 +93,8 @@ func TestVitals_UnpricedModelReportsNoCost(t *testing.T) {
 	if m.vitals.priced || m.vitals.totalCost != 0 {
 		t.Fatalf("without a pricing table there is no cost to report, got %v", m.vitals.totalCost)
 	}
-	if out := m.statsReport(); strings.Contains(out, "$") {
-		t.Fatalf("/stats should not invent a dollar figure:\n%s", out)
+	if s := m.spendScreenData(); s.Rows[0].Cost == "" || strings.Contains(s.Rows[0].Cost, "$") {
+		t.Fatalf("/stats should not invent a dollar figure: %+v", s.Rows[0])
 	}
 }
 
@@ -153,8 +153,8 @@ func TestContextAccounting_FallsBackToEstimateAndSaysSo(t *testing.T) {
 	if b.Reported || b.total() <= 0 {
 		t.Fatalf("with no usage the accounting estimates from the messages, got %+v", b)
 	}
-	if out := m.statsReport(); !strings.Contains(out, "estimated") {
-		t.Fatalf("/stats should say the occupancy is estimated:\n%s", out)
+	if got := m.contextScreenData().Source; !strings.Contains(got, "estimate") {
+		t.Fatalf("/context should say the occupancy is estimated, got %q", got)
 	}
 	rail := m.inspectorContext()
 	if rail == nil || !rail.Estimated {
@@ -163,15 +163,15 @@ func TestContextAccounting_FallsBackToEstimateAndSaysSo(t *testing.T) {
 
 	// Once the provider reports, both surfaces stop hedging.
 	m.accumulateUsage(&provider.Usage{PromptTokens: 5000, CompletionTokens: 200})
-	if out := m.statsReport(); !strings.Contains(out, "provider-reported") {
-		t.Fatalf("/stats should name the provider report:\n%s", out)
+	if got := m.contextScreenData().Source; got != "provider-reported" {
+		t.Fatalf("/context should name the provider report, got %q", got)
 	}
 	if rail := m.inspectorContext(); rail == nil || rail.Estimated {
 		t.Fatalf("a reported context is not an estimate, got %+v", rail)
 	}
 }
 
-func TestStatsReport_ReadsTheSameNumbersAsTheRail(t *testing.T) {
+func TestStats_ReadsTheSameNumbersAsTheRail(t *testing.T) {
 	m := vitalsModel(t)
 	m.vitals.startTurn()
 	m.accumulateUsage(&provider.Usage{PromptTokens: 41200, CompletionTokens: 9800, CachedTokens: 2000})
@@ -185,20 +185,12 @@ func TestStatsReport_ReadsTheSameNumbersAsTheRail(t *testing.T) {
 	if rail.Tokens != b.total() {
 		t.Fatalf("the rail and the accounting disagree: %d vs %d", rail.Tokens, b.total())
 	}
-	out := m.statsReport()
-	for _, want := range []string{
-		"Context occupancy", "system prompt", "tool definitions", "messages", "tool results",
-		"2.0k cached", "last turn", "1m 04s",
-	} {
-		if !strings.Contains(out, want) {
-			t.Fatalf("/stats missing %q:\n%s", want, out)
-		}
-	}
-	if strings.Contains(out, "project context") {
-		t.Fatalf("a session with no project context should not print the row:\n%s", out)
-	}
-	if !strings.Contains(out, formatTokenCount(b.total())) {
-		t.Fatalf("/stats should quote the accounting's total:\n%s", out)
+	// The spend half of what /stats used to print is the spend screen's, and
+	// it states the rail's own total with the cache split beside it; the
+	// occupancy half is /context's.
+	total := m.spendScreenData().Rows[0]
+	if total.Cost != m.inspectorSpend().Session || !strings.Contains(total.Tokens, "2.0k cached") {
+		t.Fatalf("/stats should state the rail's total and what came from the cache: %+v", total)
 	}
 }
 
@@ -360,10 +352,6 @@ func TestContextAccounting_CorrectedEstimateSaysSo(t *testing.T) {
 	if got := m.contextScreenData().Source; got != "corrected estimate" {
 		t.Fatalf("/context calls the figure %q", got)
 	}
-	// And /stats calls it the same thing, because it is the same figure.
-	if out := m.statsReport(); !strings.Contains(out, "corrected estimate") {
-		t.Fatalf("/stats should name the correction:\n%s", out)
-	}
 
 	// And the moment a report arrives it is used as it arrived: the factor is
 	// derived from reports, so scaling one by it would convert a measurement
@@ -414,9 +402,6 @@ func TestContextAccounting_ReportPlusWhatLandedAfterIt(t *testing.T) {
 	}
 	if got := m.contextScreenData().Source; got != "reported plus estimate since" {
 		t.Fatalf("/context calls the figure %q", got)
-	}
-	if out := m.statsReport(); !strings.Contains(out, "reported plus estimate since") {
-		t.Fatalf("/stats should say what the figure is made of:\n%s", out)
 	}
 	if rail := m.inspectorContext(); rail == nil || !rail.Estimated {
 		t.Fatalf("a figure that is part estimate has to say so, got %+v", rail)

@@ -11,6 +11,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/provider"
@@ -366,11 +367,21 @@ func TestRetryWait_FallbackFinishesOnACheaperModel(t *testing.T) {
 	if !noted {
 		t.Error("switching model mid-turn belongs in the transcript")
 	}
-	// …and in what /stats reports, so the cost attribution stays honest.
-	after.accumulateUsage(&provider.Usage{PromptTokens: 100, CompletionTokens: 50})
-	stats := after.statsReport()
-	if !strings.Contains(stats, "By model:") || !strings.Contains(stats, "gpt-4.1") {
-		t.Errorf("/stats should split the spend by model, got:\n%s", stats)
+	// …and on the bill /stats opens, under the model that answered, so the
+	// cost attribution stays honest. The gate is what records a request
+	// against the model it went to.
+	ledger := meter.New(nil)
+	after = after.WithLedger(ledger)
+	ledger.Record(meter.Origin{Source: meter.SourceAgent}, "gpt-4o", provider.Usage{PromptTokens: 400, CompletionTokens: 20})
+	ledger.Record(meter.Origin{Source: meter.SourceAgent}, "gpt-4.1", provider.Usage{PromptTokens: 100, CompletionTokens: 50})
+	var models []string
+	for _, r := range after.spendScreenData().Rows {
+		if r.Kind == components.SpendModel {
+			models = append(models, r.Name)
+		}
+	}
+	if strings.Join(models, ",") != "gpt-4o,gpt-4.1" {
+		t.Errorf("/stats should split the spend by model, got %v", models)
 	}
 }
 

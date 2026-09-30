@@ -1,79 +1,30 @@
 package chat
 
-// /stats: what the session's context is occupied by and what it has spent,
-// itemised by source and by model. It reads the same accounting the
-// inspector rail does — the context breakdown lives with the rest of the
-// session vitals (vitals.go), so the two quote one source rather than two
-// estimates that drift.
+// /stats: the spend screen (docs/interface/surfaces.md#the-supporting-screens).
+// `/stats`, and the rail's SPEND heading and its fold marker, open the
+// session's whole bill: the total, each model's share with the kinds of
+// request that spent on it, each child's share and each turn's cost. The
+// rail's SPEND block draws the same ledger in shares, and the screen reads
+// the block's own division of it (spendShares, inspector.go) rather than
+// dividing it a second time, so a share here is the row there. What the
+// window is occupied by is the other half /stats used to print, and it is
+// /context's.
 
 import (
 	"fmt"
 	"slices"
-	"strings"
 
+	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // WithToolTokenEstimate sets the estimated token cost of the registered tool
-// definitions, shown in /stats' context occupancy breakdown.
+// definitions, shown in /context's occupancy breakdown.
 func (m Model) WithToolTokenEstimate(n int64) Model {
 	m.toolDefTokens = n
 	return m
-}
-
-// statsReport renders /stats: the current session's context occupancy
-// breakdown and cumulative spend, from the same accounting the inspector
-// rail reads.
-func (m Model) statsReport() string {
-	b := m.contextAccounting()
-	var sb strings.Builder
-	fmt.Fprintf(&sb, "Context occupancy (~%s of %s window, %s):\n",
-		formatTokenCount(b.total()), formatTokenCount(m.contextWindow()), b.source())
-	for _, row := range []struct {
-		label  string
-		tokens int64
-		always bool
-	}{
-		{"system prompt", b.System, true},
-		{"project context", b.Project, false},
-		{"tool definitions", b.Tools, true},
-		{"messages", b.Messages, true},
-		{"tool results", b.ToolResults, true},
-	} {
-		if row.tokens == 0 && !row.always {
-			continue
-		}
-		fmt.Fprintf(&sb, "  %-17s ~%s\n", row.label, formatTokenCount(row.tokens))
-	}
-
-	// Session spend is the ledger's, not the turn accounting's: the agent's
-	// own rounds are only one of the things this session pays for.
-	total := m.sessionSpend()
-	spend := fmt.Sprintf("Session spend: ↑%s ↓%s tokens",
-		formatTokenCount(total.In), formatTokenCount(total.Out))
-	if total.Cached > 0 {
-		spend += fmt.Sprintf(" (%s cached)", formatTokenCount(total.Cached))
-	}
-	if total.Priced {
-		spend += "  " + formatCost(total.Cost)
-	}
-	sb.WriteString(spend + "\n")
-
-	sb.WriteString(m.spendBySourceReport())
-
-	sb.WriteString(m.spendByModelReport())
-
-	fmt.Fprintf(&sb, "Turns: %d", m.turnCount)
-	if t, ok := m.vitals.lastTurn(); ok {
-		fmt.Fprintf(&sb, " · last turn ↑%s ↓%s in %s",
-			formatTokenCount(t.In), formatTokenCount(t.Out), components.FormatElapsed(t.Elapsed))
-	}
-	// The occupancy half of this report has a surface of its own that draws
-	// it and itemises it below the category. Naming it here is how a reader
-	// who came for the breakdown finds out there is a better answer to it.
-	sb.WriteString("\n/context draws the occupancy and itemises it down to the tool.")
-	return sb.String()
 }
 
 // formatCost is the shared dollar format: four decimals below a cent, two
@@ -127,117 +78,210 @@ func (m Model) turnSpend() meter.Totals {
 	}
 }
 
-// spendBySourceReport breaks the session total down by what spent it. It
-// answers the question the total cannot: how much of this went on the work
-// the user asked for, and how much on the machinery around it.
-//
-// A named requester — a sub-agent — gets its own row under its class, because
-// a fan-out that ran away with the budget is only actionable if you can see
-// which child did it.
-func (m Model) spendBySourceReport() string {
-	if m.ledger == nil {
-		return ""
+// openStats puts the spend screen up. It is built once per opening, like the
+// turns screen: what it draws is the bill as it stood when the reader asked.
+// It opens over a session that has spent nothing, on one sentence, because
+// the rail has no SPEND block then and the command is the only door.
+func (m Model) openStats() (tea.Model, tea.Cmd) {
+	screen := m.spendScreenData()
+	m.screens = m.screens.with(stateSpend, &screen)
+	m.enterSurface(stateSpend)
+	return m, nil
+}
+
+// updateStats routes keys while the screen is up. `[enter]` on a turn opens
+// it on the turns screen with that turn under the pointer, in place of this
+// one: the turns screen is where a turn is read whole.
+func (m Model) updateStats(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
+	screen := m.screens.spend()
+	if screen == nil {
+		return m.closeStatsScreen()
 	}
-	sources := m.ledger.BySource()
-	origins := m.ledger.ByOrigin()
-	// One requester says nothing the total above does not.
-	if len(sources) < 2 && len(origins) < 2 {
-		return ""
+	done, result := screen.Update(msg)
+	if !done {
+		return m, nil
 	}
-	var sb strings.Builder
-	sb.WriteString("By source:\n")
-	for _, src := range sources {
-		sb.WriteString(spendRow(string(src.Origin.Source), 24, src))
-		named := 0
-		for _, o := range origins {
-			if o.Origin.Source == src.Origin.Source && o.Origin.Label != "" {
-				named++
-			}
+	next, cmd := m.closeStatsScreen()
+	if result.Turn == 0 {
+		return next, cmd
+	}
+	return next.(Model).openTurnsOn(result.Turn)
+}
+
+// closeStatsScreen hands the screen back to the turn, the way its own esc
+// does and the way the rail cell that opened it does.
+func (m Model) closeStatsScreen() (tea.Model, tea.Cmd) {
+	m.screens = m.screens.without(stateSpend)
+	m.leaveSurface()
+	m.syncViewport()
+	return m, nil
+}
+
+func statsShowing(m Model) any {
+	if m.state != stateSpend || m.screens.spend() == nil {
+		return nil
+	}
+	return m.screens.spend()
+}
+
+// renderStatsHint is the one line the screen leaves where the draft box was:
+// the way out and nothing else, the way the turns screen's does.
+func (m Model) renderStatsHint() string {
+	return sty.SystemMsg.Render("spend · ") + segAs(keys.Screen.Quit, "back to the prompt").render()
+}
+
+// spendScreenData builds the screen from the ledger the SPEND block reads:
+// the block's total, the block's own shares by model, the children by name
+// and the turns as the turns screen holds them.
+func (m Model) spendScreenData() components.SpendScreen {
+	total := m.billTotal()
+	if !spent(total) {
+		return components.SpendScreen{}
+	}
+	rows := []components.SpendRow{{
+		Kind: components.SpendTotal, Cost: m.totalsLabel(total),
+		Parts: m.billParts(), Tokens: tokensLabel(total), Requests: total.Requests,
+	}}
+	for _, share := range m.spendShares() {
+		row := components.SpendRow{
+			Kind: components.SpendModel, Name: share.model,
+			Cost: shareLabel(share.own), Children: shareLabel(share.children),
+			Tokens: tokensLabel(share.own), Requests: share.own.Requests,
 		}
-		// Naming one child under a class of one repeats the row above it.
-		if named < 2 {
+		if row.Name == "" {
+			row.Name = "(unnamed)"
+		}
+		for i, src := range share.sources {
+			row.Parts = append(row.Parts, spendPart(spendWord(src), share.parts[i]))
+		}
+		rows = append(rows, row)
+	}
+	for _, c := range m.childShares() {
+		rows = append(rows, components.SpendRow{
+			Kind: components.SpendChild, Name: c.name, Models: c.models,
+			Cost: shareLabel(c.spend), Tokens: tokensLabel(c.spend), Requests: c.spend.Requests,
+		})
+	}
+	turns := m.turnsScreenData().Turns
+	for i := range turns {
+		t := &turns[i]
+		cost := ""
+		switch {
+		case t.Close != nil:
+			cost = t.Close.Spend
+		case t.Running != nil:
+			// The rail's own reading of the turn under way: its heading.
+			cost = m.totalsLabel(m.turnSpend())
+		}
+		if cost == "" {
+			// A turn whose cost was not kept, or that has spent nothing, has
+			// no figure to put on the bill.
 			continue
 		}
-		for _, o := range origins {
-			if o.Origin.Source == src.Origin.Source && o.Origin.Label != "" {
-				sb.WriteString(spendRow("  "+o.Origin.Label, 24, o))
+		rows = append(rows, components.SpendRow{Kind: components.SpendTurn, Cost: cost, Turn: t})
+	}
+	return components.SpendScreen{Rows: rows}
+}
+
+// billParts is the whole bill by kind of request, in the order each first
+// billed: the ledger's own roll-up by source, or — with no ledger — the
+// session's turns and the children's roll-up, the two things the block adds
+// up without one.
+func (m Model) billParts() []components.SpendPart {
+	var parts []components.SpendPart
+	if m.ledger == nil {
+		for _, p := range []struct {
+			src meter.Source
+			t   meter.Totals
+		}{{meter.SourceAgent, m.mainSpend()}, {meter.SourceSubagent, m.childSpend()}} {
+			if spent(p.t) {
+				parts = append(parts, spendPart(spendWord(p.src), p.t))
 			}
 		}
+		return parts
 	}
-	return sb.String()
+	for _, e := range m.ledger.BySource() {
+		if t := entryTotals(e); spent(t) {
+			parts = append(parts, spendPart(spendWord(e.Origin.Source), t))
+		}
+	}
+	return parts
 }
 
-// spendByModelReport prices the session per model, so the total can be
-// reconciled against what each one actually answered. A fan-out and a
-// mid-session /model switch both put more than one model on the bill; one
-// model says nothing the total does not, so it says nothing.
-func (m Model) spendByModelReport() string {
+// childShare is one sub-agent's part of the bill: its name, the models it
+// ran on and what it cost on all of them.
+type childShare struct {
+	name   string
+	models []string
+	spend  meter.Totals
+}
+
+// childShares divides the children's part of the bill by child, in the
+// order each first billed. The ledger is the answer where there is one — the
+// same sub-agent entries the block's `◇` shares are summed from, so the
+// children here add up to those. A session with no ledger has each child's
+// own roll-up, the ones childSpend sums.
+func (m Model) childShares() []childShare {
+	var out []childShare
 	if m.ledger == nil {
-		return legacyModelSplitReport(m.vitals.modelSplit())
+		if m.subagents == nil {
+			return nil
+		}
+		for _, st := range m.subagents.Snapshot() {
+			if !spent(st.Spend) {
+				continue
+			}
+			c := childShare{name: st.Name, spend: st.Spend}
+			if st.Model != "" {
+				c.models = []string{st.Model}
+			}
+			out = append(out, c)
+		}
+		return out
 	}
-	rows := m.ledger.ByModel()
-	if len(rows) < 2 {
-		return ""
-	}
-	// Under each model, the sources that billed it: a second model on the
-	// bill is almost always a bounded call's, and the row is where the bill
-	// is read, so it names which ones put it there
-	// (docs/capabilities/providers.md#a-bounded-call-runs-on-the-small-model).
-	sources := map[string][]string{}
+	at := map[string]int{}
 	for _, e := range m.ledger.Entries() {
-		src := string(e.Origin.Source)
-		if e.Requests > 0 && !slices.Contains(sources[e.Model], src) {
-			sources[e.Model] = append(sources[e.Model], src)
+		t := entryTotals(e)
+		if e.Origin.Source != meter.SourceSubagent || !spent(t) {
+			continue
 		}
-	}
-	var sb strings.Builder
-	sb.WriteString("By model:\n")
-	for _, e := range rows {
-		name := e.Model
+		name := e.Origin.Label
 		if name == "" {
 			name = "(unnamed)"
 		}
-		sb.WriteString(spendRow(name, 24, e))
-		if s := sources[e.Model]; len(s) > 0 {
-			sb.WriteString("    " + strings.Join(s, " · ") + "\n")
+		i, ok := at[name]
+		if !ok {
+			i = len(out)
+			at[name] = i
+			out = append(out, childShare{name: name})
+		}
+		out[i].spend = out[i].spend.Plus(t)
+		if e.Model != "" && !slices.Contains(out[i].models, e.Model) {
+			out[i].models = append(out[i].models, e.Model)
 		}
 	}
-	return sb.String()
+	return out
 }
 
-// spendRow renders one breakdown line. An unpriced row reports its tokens
-// rather than a cost of zero, which would read as "this was free".
-func spendRow(label string, width int, e meter.Entry) string {
-	line := fmt.Sprintf("  %-*s ↑%s ↓%s", width, label,
-		formatTokenCount(e.In), formatTokenCount(e.Out))
-	switch {
-	case e.Priced:
-		line += "  " + formatCost(e.Cost)
-	case e.Requests == 0:
-		// Something the session switched to and never used says so, rather
-		// than reporting a cost of nothing as though it ran.
-		line += "  (no requests)"
-	}
-	return line + "\n"
+// entryTotals is one ledger entry as a roll-up.
+func entryTotals(e meter.Entry) meter.Totals {
+	return meter.Totals{In: e.In, Out: e.Out, Cached: e.Cached, Cost: e.Cost, Priced: e.Priced, Requests: e.Requests}
 }
 
-// legacyModelSplitReport is the per-model breakdown for a session assembled
-// without a ledger, which is every session in a test that builds the model
-// directly.
-func legacyModelSplitReport(split []modelSpend) string {
-	if split == nil {
+// spendPart is one kind of request as the screen's account lines it.
+func spendPart(word string, t meter.Totals) components.SpendPart {
+	return components.SpendPart{Word: word, Cost: shareLabel(t), Tokens: tokensLabel(t), Requests: t.Requests}
+}
+
+// tokensLabel is what a figure was billed for: the tokens each way, and how
+// many of the input's the provider served from its cache.
+func tokensLabel(t meter.Totals) string {
+	if !spent(t) {
 		return ""
 	}
-	var sb strings.Builder
-	sb.WriteString("By model:\n")
-	for _, ms := range split {
-		name := ms.Model
-		if name == "" {
-			name = "(unnamed)"
-		}
-		sb.WriteString(spendRow(name, 24, meter.Entry{
-			In: ms.In, Out: ms.Out, Cost: ms.Cost, Priced: ms.Priced, Requests: ms.Requests,
-		}))
+	s := fmt.Sprintf("↑%s ↓%s", formatTokenCount(t.In), formatTokenCount(t.Out))
+	if t.Cached > 0 {
+		s += fmt.Sprintf(" · %s cached", formatTokenCount(t.Cached))
 	}
-	return sb.String()
+	return s
 }

@@ -43,7 +43,11 @@
                    [level]           set it for this session (also /think)
                    default [level]   show or persist the level new sessions start on (provider.reasoning)
     /context       the window as a meter, by category, with the tools itemised
-    /stats         context occupancy breakdown and cumulative session spend
+    /stats         the session's whole bill on one screen, as the rail's SPEND block reads it: the session total with the kinds of
+                   request that make it up, each model's share with its own kinds and what the children on it cost, each child's
+                   share by name, and each turn's cost as its close row states it. [enter] on a turn opens it on the turns screen.
+                   What the context window is occupied by is /context. While attached to an agent, /stats is that agent's own. It
+                   reads and changes nothing
     /readings      every reading the session has taken of its own run on one screen, newest first: the round, the verdict, the
                    whole reading with its reason and the instruction it was judged against, and whether it steered the turn and
                    whether that steer was taken back. Quiet readings are kept here too. It reads and changes nothing
@@ -121,7 +125,11 @@
                    [level]           set it for this session (also /think)
                    default [level]   show or persist the level new sessions start on (provider.reasoning)
     /context       the window as a meter, by category, with the tools itemised
-    /stats         context occupancy breakdown and cumulative session spend
+    /stats         the session's whole bill on one screen, as the rail's SPEND block reads it: the session total with the kinds of
+                   request that make it up, each model's share with its own kinds and what the children on it cost, each child's
+                   share by name, and each turn's cost as its close row states it. [enter] on a turn opens it on the turns screen.
+                   What the context window is occupied by is /context. While attached to an agent, /stats is that agent's own. It
+                   reads and changes nothing
     /readings      every reading the session has taken of its own run on one screen, newest first: the round, the verdict, the
                    whole reading with its reason and the instruction it was judged against, and whether it steered the turn and
                    whether that steer was taken back. Quiet readings are kept here too. It reads and changes nothing
@@ -213,7 +221,11 @@
                    ␛[38;5;244m[level]           set it for this session (also /think)␛[m
                    ␛[38;5;244mdefault [level]   show or persist the level new sessions start on (provider.reasoning)␛[m
     ␛[38;5;254m/context␛[m       ␛[38;5;244mthe window as a meter, by category, with the tools itemised␛[m
-    ␛[38;5;254m/stats␛[m         ␛[38;5;244mcontext occupancy breakdown and cumulative session spend␛[m
+    ␛[38;5;254m/stats␛[m         ␛[38;5;244mthe session's whole bill on one screen, as the rail's SPEND block reads it: the session total with the kinds of␛[m
+                   ␛[38;5;244mrequest that make it up, each model's share with its own kinds and what the children on it cost, each child's␛[m
+                   ␛[38;5;244mshare by name, and each turn's cost as its close row states it. [enter] on a turn opens it on the turns screen.␛[m
+                   ␛[38;5;244mWhat the context window is occupied by is /context. While attached to an agent, /stats is that agent's own. It␛[m
+                   ␛[38;5;244mreads and changes nothing␛[m
     ␛[38;5;254m/readings␛[m      ␛[38;5;244mevery reading the session has taken of its own run on one screen, newest first: the round, the verdict, the␛[m
                    ␛[38;5;244mwhole reading with its reason and the instruction it was judged against, and whether it steered the turn and␛[m
                    ␛[38;5;244mwhether that steer was taken back. Quiet readings are kept here too. It reads and changes nothing␛[m
@@ -291,7 +303,11 @@
                    ␛[38;5;244m[level]           set it for this session (also /think)␛[m
                    ␛[38;5;244mdefault [level]   show or persist the level new sessions start on (provider.reasoning)␛[m
     ␛[38;5;254m/context␛[m       ␛[38;5;244mthe window as a meter, by category, with the tools itemised␛[m
-    ␛[38;5;254m/stats␛[m         ␛[38;5;244mcontext occupancy breakdown and cumulative session spend␛[m
+    ␛[38;5;254m/stats␛[m         ␛[38;5;244mthe session's whole bill on one screen, as the rail's SPEND block reads it: the session total with the kinds of␛[m
+                   ␛[38;5;244mrequest that make it up, each model's share with its own kinds and what the children on it cost, each child's␛[m
+                   ␛[38;5;244mshare by name, and each turn's cost as its close row states it. [enter] on a turn opens it on the turns screen.␛[m
+                   ␛[38;5;244mWhat the context window is occupied by is /context. While attached to an agent, /stats is that agent's own. It␛[m
+                   ␛[38;5;244mreads and changes nothing␛[m
     ␛[38;5;254m/readings␛[m      ␛[38;5;244mevery reading the session has taken of its own run on one screen, newest first: the round, the verdict, the␛[m
                    ␛[38;5;244mwhole reading with its reason and the instruction it was judged against, and whether it steered the turn and␛[m
                    ␛[38;5;244mwhether that steer was taken back. Quiet readings are kept here too. It reads and changes nothing␛[m

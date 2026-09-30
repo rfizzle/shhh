@@ -73,65 +73,6 @@ func TestSpend_EachSourceIsPricedAtItsOwnModel(t *testing.T) {
 	}
 }
 
-// /stats names what the session's money went on, down to the individual
-// sub-agent — "sub-agents cost this much" is not an answer to which of them
-// did.
-func TestSpend_StatsNamesEverySource(t *testing.T) {
-	m, ledger := spendModel(t)
-	ledger.Record(meter.Origin{Source: meter.SourceAgent}, "gpt-4o", provider.Usage{PromptTokens: 1000, CompletionTokens: 100})
-	ledger.Record(meter.Origin{Source: meter.SourceSummary}, "cheap", provider.Usage{PromptTokens: 800, CompletionTokens: 30})
-	ledger.Record(meter.Origin{Source: meter.SourceSubagent, Label: "researcher-1"}, "cheap", provider.Usage{PromptTokens: 400, CompletionTokens: 40})
-	ledger.Record(meter.Origin{Source: meter.SourceSubagent, Label: "writer-1"}, "gpt-4o", provider.Usage{PromptTokens: 600, CompletionTokens: 60})
-
-	report := m.statsReport()
-	for _, want := range []string{"By source:", "agent", "summary", "sub-agent", "researcher-1", "writer-1", "By model:", "cheap", "gpt-4o"} {
-		if !strings.Contains(report, want) {
-			t.Fatalf("/stats should name %q:\n%s", want, report)
-		}
-	}
-	// The session line is the whole bill, not the agent's share of it.
-	if !strings.Contains(report, "↑2.8k") {
-		t.Fatalf("session spend should total every source:\n%s", report)
-	}
-}
-
-// A second model on the bill is explained where the bill is read: each model
-// row names the sources that billed it.
-func TestSpend_StatsNamesTheFlowsUnderEachModel(t *testing.T) {
-	m, ledger := spendModel(t)
-	ledger.Record(meter.Origin{Source: meter.SourceAgent}, "gpt-4o", provider.Usage{PromptTokens: 1000, CompletionTokens: 100})
-	ledger.Record(meter.Origin{Source: meter.SourceClassifier}, "cheap", provider.Usage{PromptTokens: 800, CompletionTokens: 30})
-	ledger.Record(meter.Origin{Source: meter.SourceSummary}, "cheap", provider.Usage{PromptTokens: 400, CompletionTokens: 40})
-
-	report := m.spendByModelReport()
-	if !strings.Contains(report, "    classifier · summary\n") || !strings.Contains(report, "    agent\n") {
-		t.Fatalf("each model should name what billed it:\n%s", report)
-	}
-}
-
-// A single sub-agent is already named by its class row; repeating it under
-// itself is noise.
-func TestSpend_StatsDoesNotRepeatALoneChild(t *testing.T) {
-	m, ledger := spendModel(t)
-	ledger.Record(meter.Origin{Source: meter.SourceAgent}, "gpt-4o", provider.Usage{PromptTokens: 1000, CompletionTokens: 100})
-	ledger.Record(meter.Origin{Source: meter.SourceSubagent, Label: "writer-1"}, "gpt-4o", provider.Usage{PromptTokens: 600, CompletionTokens: 60})
-
-	if report := m.statsReport(); strings.Contains(report, "writer-1") {
-		t.Fatalf("one child of a class is the class row:\n%s", report)
-	}
-}
-
-// One source and one model say nothing the session total does not.
-func TestSpend_StatsStaysQuietForASingleSource(t *testing.T) {
-	m, ledger := spendModel(t)
-	ledger.Record(meter.Origin{Source: meter.SourceAgent}, "gpt-4o", provider.Usage{PromptTokens: 1000, CompletionTokens: 100})
-
-	report := m.statsReport()
-	if strings.Contains(report, "By source:") || strings.Contains(report, "By model:") {
-		t.Fatalf("a breakdown of one is not a breakdown:\n%s", report)
-	}
-}
-
 // The rail's session line is the whole bill; its main line is the agent's own.
 func TestSpend_InspectorSeparatesTheAgentFromTheSession(t *testing.T) {
 	m, ledger := spendModel(t)

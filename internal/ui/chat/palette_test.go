@@ -225,12 +225,11 @@ func TestPalette_EnterRunsTheFocusedCommand(t *testing.T) {
 	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 
-	if m.palette != nil || m.picker != nil || m.state != stateInput {
+	if m.palette != nil || m.picker != nil {
 		t.Fatal("running from the palette should dismiss it")
 	}
-	last := m.transcript[len(m.transcript)-1]
-	if !strings.Contains(last.text, "Context") && !strings.Contains(last.text, "tokens") {
-		t.Fatalf("/stats should have run, got %q", last.text)
+	if m.state != stateSpend {
+		t.Fatalf("/stats should have run and opened its screen, got state %d", m.state)
 	}
 }
 

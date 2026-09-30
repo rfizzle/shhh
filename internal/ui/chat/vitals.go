@@ -103,15 +103,6 @@ func (v *vitals) modelEntry(model string) *modelSpend {
 // still shows up.
 func (v *vitals) noteModel(model string) { v.modelEntry(model) }
 
-// modelSplit is the per-model spend, or nil when the whole session ran on one
-// model and the split would say nothing the total does not.
-func (v vitals) modelSplit() []modelSpend {
-	if len(v.models) < 2 {
-		return nil
-	}
-	return v.models
-}
-
 // startTurn opens a fresh turn's accounting. A turn still open (a cancelled
 // one, say) is closed with whatever it spent rather than dropped.
 func (v *vitals) startTurn() {

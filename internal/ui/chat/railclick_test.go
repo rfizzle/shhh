@@ -76,6 +76,7 @@ func TestRailDoors_AHeadingOrAMarkerOpensItsSurfaceAndTheCellClosesIt(t *testing
 		{components.RailAlerts, true, railAlertsModel, "/alerts"},
 		{components.RailTodo, false, railTodoModel, "/todo"},
 		{components.RailTodo, true, railTodoModel, "/todo"},
+		{components.RailSpend, false, railDoorModel, "/stats"},
 	} {
 		name := c.block
 		if c.marker {

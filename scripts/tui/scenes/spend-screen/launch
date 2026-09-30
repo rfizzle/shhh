@@ -1,0 +1,7 @@
+# The permission classifier is a bounded call, and a bounded call runs on the
+# model provider.cheap_model names
+# (docs/capabilities/providers.md#a-bounded-call-runs-on-the-small-model). The
+# scripted endpoint bills each request on the model it was asked for, so
+# naming a second model here is what puts a second row on the rail's SPEND
+# block once the classifier has judged a call.
+printf '[provider]\ncheap_model = "scripted-mini"\n' >> $XDG_CONFIG_HOME/shhh/config.toml && $SHHH_BIN code
