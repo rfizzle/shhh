@@ -24,3 +24,16 @@ keys Escape
 snap 06-taken-back "[esc] discard the draft" "Never change an expected value"
 keys Tab
 snap 07-card "[enter] confirm · [tab] the sections" "Keep test-writer?"
+# The Tools block opens its selector where the card stood: the tiers the
+# draft granted ticked, the tools this session registered under them, and
+# the note saying what write or execute make of the agent. Execute and write
+# are unticked — the note says it changes nothing — write is ticked again and
+# the note says it is a writer, and enter takes the pick into the block.
+keys Tab Down Down Down Enter
+snap 08-selector "What may test-writer do?" "test-writer is a writer" "navigation · notebook · skills"
+keys Down Down Space Up Space
+snap 09-reads "test-writer changes nothing"
+keys Space
+snap 10-writer "test-writer is a writer"
+keys Enter
+snap 11-taken "read + write" "[enter] open the selector"

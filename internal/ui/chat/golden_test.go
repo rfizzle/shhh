@@ -1656,6 +1656,29 @@ func TestGolden_ProfileDrafter(t *testing.T) {
 	})
 }
 
+// TestGolden_ProfileToolsSelector captures the Tools & permissions selector
+// through the host: the rows are the session's own registered tools and the
+// refusals are the loader's own sentences, so what the card offers and what
+// it refuses is what the product says rather than a fixture.
+func TestGolden_ProfileToolsSelector(t *testing.T) {
+	captureGolden(t, "profile-tools", "the tools and permissions selector in the pane", goldenWidths, func(width int) []golden.Panel {
+		open := func(kind persona.Kind) Model {
+			m := openPicker(t, kind)
+			m.width, m.height = width, 40
+			m.syncInputWidth()
+			return m
+		}
+		pane := func(m Model) string { return m.personaPane(width, 40) }
+		coding := open(persona.KindCode)
+		refused := togglePickerRow(t, open(persona.KindCode), "web_fetch")
+		return []golden.Panel{
+			{Label: "a coding profile · the draft's grant ticked, the gate refused beside write", View: pane(coding)},
+			{Label: "a chat profile · no tier that writes on offer", View: pane(open(persona.KindChat))},
+			{Label: "a refused pick · a tool ticked without its tier, the loader's sentence under the list", View: pane(refused)},
+		}
+	})
+}
+
 func TestGolden_PressureCard(t *testing.T) {
 	captureGolden(t, "pressure-card", "context pressure in the panel", goldenWidths, func(width int) []golden.Panel {
 		m := pressureModel(t, width)

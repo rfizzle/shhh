@@ -85,14 +85,19 @@ const (
 	// ProfileUndo takes back the last revision of the section Index names.
 	ProfileUndo
 	// ProfilePick is enter on a section that is a set of fields rather than
-	// prose, named by Index. It is the door the tools section's selector
-	// comes in by; the host answers it with nothing until that selector
-	// exists.
+	// prose and offers a selector, named by Index. The host answers it by
+	// opening the selector (OpenPicker).
 	ProfilePick
 	// ProfileDiscard drops the draft.
 	ProfileDiscard
 	// ProfileAbort stops a drafting turn that is still running.
 	ProfileAbort
+	// ProfilePicked is enter on the open selector: the host reads the boxes
+	// off the Picker it opened.
+	ProfilePicked
+	// ProfileUnpicked is esc on the open selector: the section stays as it
+	// was.
+	ProfileUnpicked
 )
 
 // ProfileResult is the surface's Update result.
@@ -154,6 +159,10 @@ type ProfileSection struct {
 	Prose bool
 	// Revised says the section has a revision esc can take back.
 	Revised bool
+	// Pick is what enter does on a field block that opens a selector, in
+	// the words its key row offers it under; empty is a field block enter
+	// does nothing on.
+	Pick string
 }
 
 // ProfileDraftView is the profile as the draft step states it: what it is
@@ -227,6 +236,10 @@ type ProfileScreen struct {
 	focus  int
 	field  textarea.Model
 	decide *Select
+	// Picker is the selector a field block opened, drawn where the card is
+	// and holding the keyboard until it is taken or cancelled. The host
+	// builds it and reads its boxes; the surface only routes and draws it.
+	Picker *MultiSelect
 	// section is the block the pointer is on, and card says the card rather
 	// than the sections has the keyboard; tab moves it between the two
 	// (docs/interface/surfaces.md#the-profile-drafter).
@@ -335,6 +348,7 @@ func (p *ProfileScreen) Show(draft ProfileDraftView, saves []SelectOption) {
 	p.Warning = ""
 	p.saves = saves
 	p.refining = false
+	p.Picker = nil
 	p.section = min(max(p.section, 0), max(len(draft.Sections)-1, 0))
 	p.reveal = true
 	p.field.Blur()
@@ -347,6 +361,13 @@ func (p *ProfileScreen) Show(draft ProfileDraftView, saves []SelectOption) {
 	// the card is the ways out and nothing else.
 	p.decide = &Select{Title: "Keep " + draft.Name + "?", Options: options}
 	p.syncCard()
+}
+
+// OpenPicker puts a field block's selector where the card is, holding the
+// keyboard. Show closes it: the next draft is the selector's answer.
+func (p *ProfileScreen) OpenPicker(picker *MultiSelect) {
+	p.Picker = picker
+	p.reveal = true
 }
 
 // Selected is the section the pointer is on, for a host that words a wait
@@ -463,6 +484,18 @@ func (p *ProfileScreen) updateDraft(msg tea.KeyPressMsg) (bool, ProfileResult) {
 	if p.refining {
 		return p.updateRefine(msg)
 	}
+	if p.Picker != nil {
+		// The selector holds the keyboard whole, the scroll keys included:
+		// it is a card of its own, with its own window.
+		done, res := p.Picker.Update(msg)
+		switch {
+		case !done:
+			return false, ProfileResult{}
+		case res.Canceled:
+			return true, ProfileResult{Action: ProfileUnpicked, Index: p.section}
+		}
+		return true, ProfileResult{Action: ProfilePicked, Index: p.section}
+	}
 	switch pressed := msg.String(); {
 	case keys.Is(pressed, keys.Profile.ScrollUp):
 		p.scrollPane(-1)
@@ -511,6 +544,9 @@ func (p *ProfileScreen) updateSections(msg tea.KeyPressMsg) (bool, ProfileResult
 		p.reveal = true
 	case keys.Is(pressed, keys.Profile.Refine):
 		if !sec.Prose {
+			if sec.Pick == "" {
+				return false, ProfileResult{}
+			}
 			return true, ProfileResult{Action: ProfilePick, Index: p.section}
 		}
 		p.refining = true
@@ -576,7 +612,7 @@ func (p *ProfileScreen) listLive() bool {
 	case ProfileWorking:
 		return true
 	default:
-		return p.decide != nil && !p.refining
+		return p.decide != nil && !p.refining && p.Picker == nil
 	}
 }
 
@@ -664,7 +700,7 @@ func (p *ProfileScreen) wayOutWords() string {
 	switch {
 	case p.Step == ProfileWorking:
 		return "stop drafting"
-	case p.Step == ProfileDraft && p.refining:
+	case p.Step == ProfileDraft && (p.refining || p.Picker != nil):
 		return "leave it as it is"
 	case p.Step == ProfileDraft:
 		return "discard the draft"
@@ -892,11 +928,14 @@ func (p *ProfileScreen) sectionHint() []KeyOffer {
 			keyOfferAs(keys.Profile.Back, "leave it as it is"),
 		}
 	}
-	if p.card {
+	if p.card || p.Picker != nil {
 		return nil
 	}
 	sec, ok := p.selected()
 	segments := []KeyOffer{keyOfferAs(keys.Profile.Move, "section")}
+	if ok && !sec.Prose && sec.Pick != "" {
+		segments = append(segments, keyOfferAs(keys.Profile.Refine, sec.Pick))
+	}
 	if ok && sec.Prose {
 		segments = append(segments,
 			keyOfferAs(keys.Profile.Refine, "refine it with a note"),
@@ -922,7 +961,13 @@ func (p *ProfileScreen) sectionHint() []KeyOffer {
 // the selected section is kept inside it.
 func (p *ProfileScreen) draftRows(width, budget int) []string {
 	var card []string
-	if p.Step == ProfileDraft {
+	switch {
+	case p.Step == ProfileDraft && p.Picker != nil:
+		// The selector stands where the card stands and on the card's terms:
+		// it is the decision on screen, so it is what never gives ground.
+		p.Picker.MaxLines = max(budget, 0)
+		card = strings.Split(p.Picker.View(width), "\n")
+	case p.Step == ProfileDraft:
 		card = p.cardRows(width, budget)
 	}
 	hint := p.hintFor(width)

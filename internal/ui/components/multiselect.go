@@ -81,6 +81,25 @@ type MultiSelect struct {
 	// family's — applying none of the boxes, which is the counterpart of the
 	// `apply (N)` beside it (cancelOffer).
 	CancelLabel string
+	// Columns lays each row out as the label, the Value and the Desc in
+	// columns of their own, the widest of each setting the next one's start,
+	// for a list whose rows are only told apart by what they mean — the
+	// profile drafter's tiers and tools, where `write` alone says nothing a
+	// person can decide on. A card that leaves it off draws the label alone,
+	// as every checkbox list did before this field existed.
+	Columns bool
+	// Fixed marks rows that are ticked and stay ticked, one per option like
+	// Checked: a grant every answer includes, drawn in its place so the list
+	// reads as the whole of what is granted. Space on one says why rather
+	// than unticking it, and all-or-none leaves it alone.
+	Fixed []bool
+	// Warning is the host's standing refusal of the boxes as they are ticked
+	// now, drawn under the list and kept until the host clears it; enter is
+	// refused while it stands. It is the host's rather than the card's
+	// because the rule is — a loader's, which the card cannot know — and the
+	// host asks it again after every keystroke, so it is live rather than
+	// said once at the take.
+	Warning string
 	// TakeVerb is the word enter is offered under, before the count, in the
 	// host's own words. Empty is the family's `apply`; a question asked with
 	// boxes says `choose`, because `apply` is the edit card's word for
@@ -99,12 +118,12 @@ type MultiSelect struct {
 	list List[SelectOption]
 }
 
-// pointer aims the shared list at this card's rows. Every option is one row —
-// a multi-select shows no descriptions — and every one of them is something a
-// key can land on, so nothing is skipped and the markers count rows and
-// options alike.
+// pointer aims the shared list at this card's rows. Every option is one row,
+// and every one of them is something a key can land on but a Header, which
+// labels or qualifies the rows around it and is stepped over.
 func (s *MultiSelect) pointer() *List[SelectOption] {
 	s.list.Items, s.list.Focus = s.Options, s.Focus
+	s.list.Skip = func(o SelectOption) bool { return o.Header }
 	return &s.list
 }
 
@@ -118,12 +137,15 @@ func NewMultiSelect(title string, options []SelectOption) *MultiSelect {
 func (s *MultiSelect) checkable() int {
 	n := 0
 	for _, o := range s.Options {
-		if !o.Dim {
+		if !o.Dim && !o.Header {
 			n++
 		}
 	}
 	return n
 }
+
+// fixed reports a row that is ticked and stays ticked.
+func (s *MultiSelect) fixed(i int) bool { return i < len(s.Fixed) && s.Fixed[i] }
 
 func (s *MultiSelect) count() int {
 	n := 0
@@ -173,6 +195,10 @@ func (s *MultiSelect) Update(msg tea.KeyPressMsg) (done bool, result MultiSelect
 				s.notice = s.Options[s.Focus].UnavailableNotice()
 				return false, MultiSelectResult{}
 			}
+			if s.fixed(s.Focus) {
+				s.notice = s.Options[s.Focus].fixedNotice()
+				return false, MultiSelectResult{}
+			}
 			s.Checked[s.Focus] = !s.Checked[s.Focus]
 		}
 	case keys.Is(pressed, keys.Select.All):
@@ -180,9 +206,18 @@ func (s *MultiSelect) Update(msg tea.KeyPressMsg) (done bool, result MultiSelect
 		// row that cannot be ticked is never ticked by it.
 		all := s.count() == s.checkable()
 		for i := range s.Checked {
-			s.Checked[i] = !all && !s.Options[i].Dim
+			if s.fixed(i) {
+				continue
+			}
+			s.Checked[i] = !all && !s.Options[i].Dim && !s.Options[i].Header
 		}
 	case keys.Is(pressed, keys.Select.Take):
+		if s.Warning != "" {
+			// The refusal is already on the card; enter says it was read
+			// rather than doing nothing (invariant 5).
+			s.notice = "not taken — the line above says why"
+			return false, MultiSelectResult{}
+		}
 		if s.count() == 0 && !s.AllowNone {
 			s.notice = "nothing selected — " + keys.Bracket(keys.Select.Toggle) +
 				" toggles, " + keys.Bracket(keys.Select.Cancel) + " cancels"
@@ -207,6 +242,17 @@ func (s *MultiSelect) View(width int) string {
 	// so what the card spends on them comes off the list's budget before the
 	// window is drawn.
 	var tail []string
+	if s.Warning != "" {
+		// Wrapped rather than clipped: the refusal is the loader's sentence,
+		// and the part a clip would cut is the part that says what to change.
+		for i, line := range wrapPlain(s.Warning, max(inner-2, 8)) {
+			mark := "  "
+			if i == 0 {
+				mark = "⚠ "
+			}
+			tail = append(tail, sty.Warn.Render(Clip(mark+line, inner)))
+		}
+	}
 	if s.notice != "" {
 		tail = append(tail, sty.Warn.Render(Clip(s.notice, inner)))
 	}
@@ -272,6 +318,10 @@ func (s *MultiSelect) visibleRows(width, budget int) []string {
 		rows = append(rows, ListOverflowRow("↑", lo, s.checkedNote(0, lo), width-cardFrameWidth))
 	}
 	for i := lo; i < hi; i++ {
+		if s.Options[i].Header {
+			rows = append(rows, s.headerRow(s.Options[i], s.columns(i), inner))
+			continue
+		}
 		rows = append(rows, s.optionRow(i, inner))
 	}
 	if hi < n {
@@ -297,10 +347,18 @@ func (s *MultiSelect) optionRow(i, inner int) string {
 	case i < len(s.Checked) && s.Checked[i]:
 		box = sty.Add.Render("[x]")
 	}
+	if s.fixed(i) {
+		// Ticked and not a choice: the box is the grant's, in the tone that
+		// says it is not the reader's to change.
+		box = sty.Dim.Render("[x]")
+	}
 	body := inner - 2
 	label := opt.labelText()
 	if opt.Dim {
 		label = sty.Dimmer.Render(label)
+	}
+	if s.Columns {
+		label = s.columnsText(opt, s.columns(i))
 	}
 	row := box + " " + label
 	// The right-hand run is placed first and the label clipped to what is
@@ -325,6 +383,91 @@ func (s *MultiSelect) optionRow(i, inner int) string {
 			LitRowKeeping(row, 0, lipgloss.Width(box)+1, max(body, 0))
 	}
 	return PointerColumn() + row
+}
+
+// multiColumns is the width of the label and the value columns, read off the
+// rows a key can land on.
+type multiColumns struct{ label, value int }
+
+// columns is where each column of row i starts on a Columns card. The rows
+// between two rails are one group and are measured together, so a group of
+// short words is not spaced out to the widest name in the group under it; a
+// note inside or after a group is laid in that group's columns.
+func (s *MultiSelect) columns(i int) multiColumns {
+	var c multiColumns
+	if !s.Columns || i < 0 || i >= len(s.Options) {
+		return c
+	}
+	rail := func(o SelectOption) bool { return o.Header && o.Desc == "" }
+	lo := i
+	for lo > 0 && !rail(s.Options[lo]) {
+		lo--
+	}
+	for j := lo; j < len(s.Options); j++ {
+		o := s.Options[j]
+		if j > lo && rail(o) {
+			break
+		}
+		if o.Header {
+			continue
+		}
+		c.label = max(c.label, lipgloss.Width(o.Label))
+		c.value = max(c.value, lipgloss.Width(o.Value))
+	}
+	return c
+}
+
+// columnsText is a row's label, value and description laid in their columns:
+// the label as the list's own, the value in its tone and the description dim,
+// all three Dimmer on a row that cannot be ticked. That row's ⊘ leads its
+// description rather than its label, so the columns stand where they stood
+// when a tick elsewhere makes the row one that cannot be ticked.
+func (s *MultiSelect) columnsText(opt SelectOption, c multiColumns) string {
+	label, value, desc := sty.Body, opt.ValueTone.style(), sty.Dim
+	why := opt.Desc
+	if opt.Dim {
+		label, value, desc = sty.Dimmer, sty.Dimmer, sty.Dimmer
+		why = strings.TrimSpace("⊘ " + why)
+	}
+	text := label.Render(padRight(opt.Label, c.label))
+	if c.value > 0 {
+		text += "  " + value.Render(padRight(opt.Value, c.value))
+	}
+	if why != "" {
+		text += "  " + desc.Render(why)
+	}
+	return text
+}
+
+// headerRow is a row no key lands on. With no description it is a rail over
+// the rows under it; with one it is a note in the list's columns — a fact
+// about the rows around it, like the grants every answer carries — drawn
+// where a row would be and without a box, because a box is an offer.
+func (s *MultiSelect) headerRow(opt SelectOption, c multiColumns, inner int) string {
+	if opt.Desc == "" {
+		return Clip(" "+sty.Dim.Render(opt.Label), inner)
+	}
+	if opt.Label == "" {
+		return Clip(PointerColumn()+sty.Dim.Render(opt.Desc), inner)
+	}
+	text := sty.Dim.Render(padRight(opt.Label, c.label))
+	if c.value > 0 {
+		text += "  " + strings.Repeat(" ", c.value)
+	}
+	return Clip(PointerColumn()+"    "+text+"  "+sty.Dim.Render(opt.Desc), inner)
+}
+
+// fixedNotice is what space on a row that stays ticked says: that it does,
+// and the reason the row already carries.
+func (opt SelectOption) fixedNotice() string {
+	reason := opt.Meta
+	if reason == "" {
+		reason = opt.Desc
+	}
+	if reason == "" {
+		return opt.Label + " stays ticked"
+	}
+	return opt.Label + " stays ticked — " + reason
 }
 
 // rightRun is the row's right-aligned block: the short field, and after it

@@ -3650,7 +3650,7 @@ func sectionedDraft() ProfileDraftView {
 			{Name: "Method", Prose: true,
 				Body: "Reads the package, then the tests it already has, then writes the cases the table is missing. Runs the package's tests after each file and reads the failures before the next."},
 			{Name: "Report", Prose: true, Mark: "⚠ empty · the drafter left it; a report is required", MarkTone: ProfileMarkEmpty},
-			{Name: "Tools", Value: "read + write + execute", Tone: ToneRisk, Detail: "it can change things, in its own copy of the tree"},
+			{Name: "Tools", Value: "read + write + execute", Tone: ToneRisk, Detail: "it can change things, in its own copy of the tree", Pick: "open the selector"},
 			{Name: "Commands", Value: "none stated", Tone: ToneQuiet, Detail: "the session's own command lists apply"},
 			{Name: "Model", Value: "inherited from this session", Detail: "reasoning medium · 8.0k tokens"},
 		},

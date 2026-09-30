@@ -399,6 +399,45 @@ func TestMultiSelect_AllowNoneTakesAnEmptyAnswer(t *testing.T) {
 	}
 }
 
+// A header is stepped over and never ticked, a fixed row stays ticked and
+// says why, and the host's standing refusal is drawn and holds enter.
+func TestMultiSelect_HeadersFixedRowsAndARefusal(t *testing.T) {
+	s := NewMultiSelect("What may it do?", []SelectOption{
+		{Label: "tiers", Header: true},
+		{Label: "read", Desc: "every agent has this"},
+		{Label: "web", Desc: "fetch pages"},
+		{Label: "always", Desc: "navigation · notebook · skills", Header: true},
+	})
+	s.Columns = true
+	s.Fixed = []bool{false, true, false, false}
+	s.Checked[1] = true
+	s.Focus = 1
+	s.Update(key("space"))
+	if !s.Checked[1] || !strings.Contains(ansi.Strip(s.View(70)), "read stays ticked — every agent has this") {
+		t.Fatalf("a fixed row should stay ticked and say why:\n%s", s.View(70))
+	}
+	s.Update(key("down"))
+	s.Update(key("down"))
+	if s.Focus != 2 {
+		t.Fatalf("the pointer should step over the header, focus = %d", s.Focus)
+	}
+	s.Update(key("a"))
+	s.Update(key("a"))
+	if s.Checked[0] || s.Checked[3] || !s.Checked[1] {
+		t.Fatalf("all-or-none ticked a header or cleared a fixed row: %v", s.Checked)
+	}
+	s.Warning = "tools: refused"
+	if done, _ := s.Update(key("enter")); done {
+		t.Fatal("enter should be refused while the warning stands")
+	}
+	view := ansi.Strip(s.View(70))
+	for _, want := range []string{"⚠ tools: refused", "always", "navigation · notebook · skills", "fetch pages"} {
+		if !strings.Contains(view, want) {
+			t.Fatalf("the card should draw %q:\n%s", want, view)
+		}
+	}
+}
+
 // The host's own key on the focused row is offered on the key row, worded by
 // the host, and never dropped.
 func TestMultiSelect_HostActionsAreOffered(t *testing.T) {

@@ -2968,6 +2968,20 @@ lost its refine row and its note, since revision lives on the sections now:
 it is the ways out and nothing else, and tab moves the keyboard between it
 and the sections.
 
+Enter on the tools and permissions block opens a selector where the card
+stands, with the draft's own grant ticked: the tiers first, each saying in
+plain words what it lets the agent do, then the tools this session has that a
+profile may name, grouped by tier, then one row without a box for what every
+child has whatever it is granted. It is the checkbox list every pick-several
+card is. The rules the profile's file would be refused under are asked on
+every tick rather than at the save — a tool no tier can make grantable
+shows why instead of a box, a pick the file would be refused for says the
+loader's own sentence under the list and enter will not take it, and ticking
+write or execute says the agent now works in a copy of its own. A tier ticked
+brings its tools with it and one unticked takes them away. A chat profile is
+offered no tier that writes. Enter writes the pick into the draft's tiers and
+tools and touches nothing else; esc leaves them as they were.
+
 The card is the one thing on the surface that never gives ground: on a
 terminal too short for both, the sections fold from the bottom and count what
 they folded, with the profile's own scroll keys to read on, and the selected

@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"slices"
@@ -94,6 +95,32 @@ func TestLoadAgentsQualityGateIsARead(t *testing.T) {
 	}
 	if !slices.Contains(KnownAgentTools(), QualityGateTool) {
 		t.Errorf("the gate must be listable by name: %v", KnownAgentTools())
+	}
+}
+
+// CheckGrant is the rule the loader refuses a file's grant by, so a grant it
+// answers is a grant the loader answers the same way — which is what lets
+// the drafter's selector refuse a pick before a file exists.
+func TestCheckGrantIsTheLoadersRule(t *testing.T) {
+	for _, tc := range []struct {
+		perms, tools []string
+		refused      string
+	}{
+		{nil, []string{"read_file", QualityGateTool}, ""},
+		{[]string{"write"}, []string{QualityGateTool}, "changes nothing"},
+		{[]string{"execute"}, []string{"search", QualityGateTool}, "changes nothing"},
+		{nil, []string{"web_fetch"}, `needs the "web" permission`},
+		{[]string{"web"}, []string{"git"}, "unknown tool"},
+		{[]string{"admin"}, nil, "unknown tier"},
+	} {
+		err := CheckGrant(tc.perms, tc.tools)
+		loaded := AgentDefinition{Name: "x", Permissions: tc.perms, Tools: tc.tools}.Validate()
+		if (err == nil) != (tc.refused == "") || (err != nil && !strings.Contains(err.Error(), tc.refused)) {
+			t.Errorf("CheckGrant(%v, %v) = %v, want %q", tc.perms, tc.tools, err, tc.refused)
+		}
+		if fmt.Sprint(err) != fmt.Sprint(loaded) {
+			t.Errorf("the loader and CheckGrant disagree on %v %v: %v against %v", tc.perms, tc.tools, loaded, err)
+		}
 	}
 }
 

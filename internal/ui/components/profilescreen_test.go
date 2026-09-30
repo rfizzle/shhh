@@ -211,6 +211,28 @@ func TestProfileScreen_TheSelectedSectionIsRevised(t *testing.T) {
 	if done, res := p.Update(key("enter")); !done || res.Action != ProfilePick || res.Index != 5 {
 		t.Fatalf("enter on the tools block = %+v", res)
 	}
+	// The selector the host opens holds the keyboard where the card is:
+	// space ticks inside it, enter takes it and esc leaves it.
+	ms := NewMultiSelect("What may test-writer do?", []SelectOption{{Label: "read"}, {Label: "web"}})
+	p.OpenPicker(ms)
+	if done, _ := p.Update(key("space")); done || !ms.Checked[0] {
+		t.Fatalf("space should tick inside the selector: %v", ms.Checked)
+	}
+	if !strings.Contains(p.View(130), "What may test-writer do?") {
+		t.Fatalf("the selector should be drawn:\n%s", p.View(130))
+	}
+	if done, res := p.Update(key("enter")); !done || res.Action != ProfilePicked || res.Index != 5 {
+		t.Fatalf("enter on the selector = %+v", res)
+	}
+	if done, res := p.Update(key("esc")); !done || res.Action != ProfileUnpicked {
+		t.Fatalf("esc on the selector = %+v", res)
+	}
+	// A field block with no selector offers no enter.
+	p.Picker = nil
+	p.Update(key("down"))
+	if done, res := p.Update(key("enter")); done {
+		t.Fatalf("enter on the Commands block should do nothing: %+v", res)
+	}
 }
 
 // A redraft's wait keeps the draft on screen with the wait under the section

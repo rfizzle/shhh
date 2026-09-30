@@ -108,6 +108,8 @@ type personaFlow struct {
 	// redrafting is the section a drafting turn in flight is rewriting, or
 	// "" when the turn drafts the whole profile.
 	redrafting string
+	// pick is the Tools block's selector while it is open (personatools.go).
+	pick *personaPick
 }
 
 // personaSection is one prose section as it stands: its text, and what has
@@ -128,8 +130,7 @@ var personaBlocks = append(config.PromptSectionNames(), personaToolsBlock, "Comm
 
 // personaToolsBlock is the block that is a set of tiers and tools rather
 // than prose. Enter on it is the door the tools-and-permissions selector
-// comes in by (pickPersonaSection); until that selector exists it opens
-// nothing.
+// comes in by (pickPersonaSection).
 const personaToolsBlock = "Tools"
 
 // personaCommandName is the command the flow is opened by, named once so the
@@ -543,6 +544,7 @@ func personaToolsSection(d persona.Draft) components.ProfileSection {
 		Value:  d.Tier(),
 		Tone:   personaTierTone(d),
 		Detail: strings.Join(detail, " · "),
+		Pick:   "open the selector",
 	}
 }
 
@@ -621,6 +623,11 @@ func (m Model) updatePersona(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		return m.closePersona("No profile drafted.")
 	}
 	done, res := m.personaScreen.Update(msg)
+	if ms := m.personaScreen.Picker; ms != nil && m.persona.pick != nil {
+		// The rules are asked again after every keystroke the selector
+		// takes, so what it refuses is on the card before enter is pressed.
+		m.persona.refreshPick(ms, m.persona.draft.Name)
+	}
 	if !done {
 		m.syncViewport()
 		return m, nil
@@ -644,17 +651,12 @@ func (m Model) updatePersona(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		return m.undoPersonaSection(res.Index)
 	case components.ProfilePick:
 		return m.pickPersonaSection(res.Index)
+	case components.ProfilePicked:
+		return m.takePersonaPick()
+	case components.ProfileUnpicked:
+		return m.dropPersonaPick()
 	}
 	return m.closePersona("Profile discarded.")
-}
-
-// pickPersonaSection is enter on a block that is a set of fields rather than
-// prose. It is the seam the tools-and-permissions selector opens from — the
-// Tools block — and until that selector exists it opens nothing: the key row
-// does not offer enter there, so nothing was promised.
-func (m Model) pickPersonaSection(int) (tea.Model, tea.Cmd) {
-	m.syncViewport()
-	return m, nil
 }
 
 // clearPersonaSection empties a section. It is a revision like any other,

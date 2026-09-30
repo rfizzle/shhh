@@ -237,22 +237,8 @@ func (d AgentDefinition) Validate() error {
 	if !validAgentName.MatchString(d.Name) {
 		return fmt.Errorf("name %q: lowercase letters, digits and dashes, max 24 characters", d.Name)
 	}
-	for _, p := range d.Permissions {
-		switch strings.ToLower(strings.TrimSpace(p)) {
-		case PermissionRead, PermissionWrite, PermissionExecute, PermissionWeb:
-		default:
-			return fmt.Errorf("permissions: unknown tier %q (valid: read, write, execute, web)", p)
-		}
-	}
-	for _, t := range d.Tools {
-		name := strings.TrimSpace(t)
-		tier, ok := knownAgentTools[name]
-		if !ok {
-			return fmt.Errorf("tools: unknown tool %q (valid: %s)", t, strings.Join(KnownAgentTools(), ", "))
-		}
-		if !d.Has(tier) {
-			return fmt.Errorf("tools: %q needs the %q permission, which this profile does not grant", name, tier)
-		}
+	if err := CheckGrant(d.Permissions, d.Tools); err != nil {
+		return err
 	}
 	switch strings.ToLower(strings.TrimSpace(d.PromptMode)) {
 	case "", PromptAppend, PromptReplace:
@@ -268,16 +254,6 @@ func (d AgentDefinition) Validate() error {
 	if d.Reviews && d.Writes() {
 		return fmt.Errorf("reviews: a profile that may write or execute claims its paths; it cannot also be handed them as evidence")
 	}
-	// The gate runs over the checkout the session is standing in, and a
-	// profile that writes works in a copy of that checkout — so the verdict
-	// coming back would be about a tree with none of the child's changes in
-	// it, which reads as a pass it did not earn. Refused at load rather than
-	// dropped at the spawn, for the reason the allowlist is validated at all:
-	// a tool the author asked for and will not get should be a line in a
-	// file, not something discovered by reading a child's toolbox.
-	if d.Writes() && d.lists(QualityGateTool) {
-		return fmt.Errorf("tools: %q is for a profile that changes nothing; one granting write or execute works in a copy of the checkout, where the gate would report on a tree without its changes", QualityGateTool)
-	}
 	if d.MaxTokens < 0 {
 		return fmt.Errorf("max_tokens: must not be negative")
 	}
@@ -289,6 +265,45 @@ func (d AgentDefinition) Validate() error {
 	}
 	if d.Inherit < 0 {
 		return fmt.Errorf("inherit: must not be negative")
+	}
+	return nil
+}
+
+// CheckGrant is the loader's rules on what a profile may be granted: every
+// tier is one of the four, every listed tool is one a profile may name and
+// sits in a tier the profile grants, and the quality gate is never listed
+// beside a tier that writes. Validate asks it, and so does the drafter's
+// selector, on every tick, so a pick the loader would refuse is refused
+// while it is still a card rather than when the file is next read
+// (docs/capabilities/subagents.md#a-profile-is-drafted-in-conversation).
+func CheckGrant(permissions, tools []string) error {
+	d := AgentDefinition{Permissions: permissions, Tools: tools}
+	for _, p := range permissions {
+		switch strings.ToLower(strings.TrimSpace(p)) {
+		case PermissionRead, PermissionWrite, PermissionExecute, PermissionWeb:
+		default:
+			return fmt.Errorf("permissions: unknown tier %q (valid: read, write, execute, web)", p)
+		}
+	}
+	for _, t := range tools {
+		name := strings.TrimSpace(t)
+		tier, ok := knownAgentTools[name]
+		if !ok {
+			return fmt.Errorf("tools: unknown tool %q (valid: %s)", t, strings.Join(KnownAgentTools(), ", "))
+		}
+		if !d.Has(tier) {
+			return fmt.Errorf("tools: %q needs the %q permission, which this profile does not grant", name, tier)
+		}
+	}
+	// The gate runs over the checkout the session is standing in, and a
+	// profile that writes works in a copy of that checkout — so the verdict
+	// coming back would be about a tree with none of the child's changes in
+	// it, which reads as a pass it did not earn. Refused at load rather than
+	// dropped at the spawn, for the reason the allowlist is validated at all:
+	// a tool the author asked for and will not get should be a line in a
+	// file, not something discovered by reading a child's toolbox.
+	if d.Writes() && d.lists(QualityGateTool) {
+		return fmt.Errorf("tools: %q is for a profile that changes nothing; one granting write or execute works in a copy of the checkout, where the gate would report on a tree without its changes", QualityGateTool)
 	}
 	return nil
 }
