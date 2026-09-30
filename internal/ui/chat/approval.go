@@ -713,8 +713,14 @@ func (m Model) finishClassifierCheck(v agent.ClassifierVerdict) (tea.Model, tea.
 		// host is theirs to answer for
 		// (docs/capabilities/approvals-and-safety.md#a-host-is-read-against-the-world-before-it-is-judged).
 		m.recordDecision(observe.DecisionAsk, code)
-		req.fields = append(req.fields, GatedField{Label: "standing", Value: why,
-			Detail: "the classifier would have allowed it; the lists put it to you", Open: true})
+		standing := GatedField{Label: "standing", Value: why,
+			Detail: "the classifier would have allowed it; the lists put it to you", Open: true}
+		req.fields = append(req.fields, standing)
+		// The block the card draws was resolved from the fields when the
+		// decision was armed, before the classifier was asked, so the row
+		// joins that block here rather than waiting on a second resolution
+		// that nothing would make.
+		m.pendingBlast.addStanding(standing)
 		m.armConfirm(req)
 		return m, nil
 	}
@@ -1412,6 +1418,19 @@ func withoutField(fields []components.CardField, label string) []components.Card
 		}
 	}
 	return out
+}
+
+// addStanding puts a host's standing on a block already resolved, open the way
+// genericRadius draws any field a tool declared open, and states the level
+// with it: the standing is the reason this call is a card at all.
+func (b *blastRadius) addStanding(f GatedField) {
+	b.fields = append(b.fields, components.CardField{
+		Label: f.Label, Value: f.Value, Detail: f.Detail, Tone: components.ToneOpen,
+	})
+	if b.severity < components.SeverityMedium {
+		b.severity = components.SeverityMedium
+	}
+	b.reason = "the host lists warn about it"
 }
 
 // applyTo puts the resolved block onto the card: the severity, the reading

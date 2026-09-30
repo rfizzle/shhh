@@ -30,6 +30,7 @@ import (
 	"github.com/rfizzle/shhh/internal/ask"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/diff"
+	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/notebook"
 	"github.com/rfizzle/shhh/internal/persona"
 	"github.com/rfizzle/shhh/internal/plan"
@@ -3192,6 +3193,38 @@ func TestGolden_ClassifierAsk(t *testing.T) {
 			{Label: "the session's own call", View: strings.Join(own.confirmPanelLines(), "\n")},
 			{Label: "a child's call, routed to the same person", View: strings.Join(child.childAskLines(ask), "\n")},
 		}
+	})
+}
+
+// TestGolden_ClassifierStanding captures the one card a person would not
+// otherwise expect: the classifier said yes to a fetch, and the host lists
+// put it to the person instead. The standing is a row of the card's block,
+// open, with the level stated from it
+// (docs/capabilities/approvals-and-safety.md#a-host-is-read-against-the-world-before-it-is-judged).
+func TestGolden_ClassifierStanding(t *testing.T) {
+	useFixtureReputation(t, map[string][]string{"urlhaus": {"bad.test"}})
+	previews := map[string]GatedPreviewFunc{
+		"web_fetch": func(json.RawMessage) (GatedPreview, error) {
+			return GatedPreview{Action: "fetch", Summary: "GET https://bad.test/release-notes", Host: "bad.test", Fields: []GatedField{
+				{Label: "domain", Value: "bad.test", Detail: "the request leaves this machine", Open: true},
+				{Label: "sends", Value: "the URL and a shhh-web/1.0 user-agent", Detail: "no file contents, no credentials"},
+				{Label: "receives", Value: "page text, kept whole; the first 16 KB into the conversation", Detail: "it counts against the context window"},
+			}}, nil
+		},
+	}
+	captureGolden(t, "classifier-standing", "a classifier's yes the host lists put to the person", goldenWidths, func(width int) []golden.Panel {
+		judge := &verdictProvider{decision: "allow", reason: "reads a page"}
+		m := gatedModel(t, func(string, json.RawMessage) (string, error) { return "", nil }, previews).
+			WithClassifier(agent.NewClassifier(meter.New(nil).For(judge, meter.SourceClassifier), agent.ClassifierConfig{Model: "judge"}))
+		m.policy.mode = agent.ModeAuto
+		m.width, m.height = width, 40
+		m.syncInputWidth()
+		updated, cmd := m.Update(toolCallsMsg{calls: []provider.ToolCall{fetchCall("call_1", "https://bad.test/release-notes")}})
+		m = updated.(Model)
+		updated, _ = m.Update(driveClassifierDone(t, cmd))
+		m = handover(t, updated.(Model))
+		m.syncViewport()
+		return []golden.Panel{{Label: "the standing row on the card", View: strings.Join(m.confirmPanelLines(), "\n")}}
 	})
 }
 

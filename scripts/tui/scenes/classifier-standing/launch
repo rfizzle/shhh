@@ -1,0 +1,5 @@
+# The host lists are written fresh into this run's own cache before the
+# session opens, one of them naming the host the scene fetches, so the reading
+# has a warning to give and no list is old enough to be downloaded again
+# (docs/capabilities/approvals-and-safety.md#a-host-is-read-against-the-world-before-it-is-judged).
+h=$XDG_CACHE_HOME/shhh/hosts; mkdir -p $h && s=$(date -u +%Y-%m-%dT%H:%M:%SZ) && for n in urlhaus stevenblack disposable nrd tranco; do printf '#shhh-hosts 1 %s %s\n' $n $s > $h/$n.hosts; done && printf 'bad.test\n' >> $h/urlhaus.hosts && $SHHH_BIN code

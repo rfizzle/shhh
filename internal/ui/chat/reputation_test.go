@@ -138,6 +138,9 @@ func TestReputation_AWarnedHostIsCardedWhereTheClassifierAllowed(t *testing.T) {
 			if !found {
 				t.Fatalf("the card does not say the standing: %+v", m.pendingApproval.fields)
 			}
+			if view := m.View().Content; !strings.Contains(view, c.reason) {
+				t.Fatalf("the standing is on the request and not on the card:\n%s", view)
+			}
 			want := [2]string{observe.DecisionAsk, c.code}
 			if len(decisions) != 1 || decisions[0] != want {
 				t.Fatalf("recorded %v, want %v", decisions, want)

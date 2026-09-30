@@ -1,0 +1,5 @@
+# One reply per request, and the classifier draws from this queue too: the
+# fetch, then the judge's yes, then the answer after the reader's no.
+tool:web_fetch:{"url":"https://bad.test/release-notes"}
+tool:permission_decision:{"decision":"allow","reason":"reading the release notes is what the task asked for"}
+Leaving that page unread.
