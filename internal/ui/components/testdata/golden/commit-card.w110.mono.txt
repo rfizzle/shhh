@@ -38,14 +38,14 @@
 │ [esc] not now — nothing is committed, and the offer stays                                                  │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
-· hooks skipped · the checkout is not trusted
+· two hooks skipped · the checkout is not trusted
 ╭─ Commit this turn ───────────────────────────────────────────────────────────────────────────────── ⚠ low ─╮
 │ $ agent: cap rounds at the limit instead of erroring                                                       │
 │                                                                                                            │
 │ stages    3 files +30 −4 — exactly what this turn changed                                                  │
 │ leaves    your 1 uncommitted edit — README.md changed by you, never staged                                 │
 │ branch    loop-refactor — will be 2 ahead of origin/main                                                   │
-│ hooks     skipped — this checkout is not trusted to run its own programs — /trust runs them                │
+│ hooks     pre-commit and commit-msg skipped — not trusted, other hooks run — /trust runs these             │
 │ push      no                                                                                               │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
 │ [enter] commit · [e] edit the message · [s] read the hunks · [?] keys                                      │
@@ -141,14 +141,14 @@
 ␛[38;5;254m│␛[m ␛[38;5;254m[esc] not now — nothing is committed, and the offer stays␛[m                                                  ␛[38;5;254m│␛[m
 ␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
-· hooks skipped · the checkout is not trusted
+· two hooks skipped · the checkout is not trusted
 ␛[38;5;254m╭─ ␛[m␛[1;38;5;254mCommit this turn ␛[m␛[38;5;254m───────────────────────────────────────────────────────────────────────────────── ⚠ low ─╮␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m$␛[m ␛[38;5;254magent: cap rounds at the limit instead of erroring␛[m                                                       ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m                                                                                                            ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mstages    ␛[m␛[38;5;254m3 files ␛[m␛[38;5;254m+30␛[m ␛[38;5;254m−4␛[m␛[38;5;244m — exactly what this turn changed␛[m                                                  ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mleaves    ␛[m␛[38;5;254myour 1 uncommitted edit␛[m␛[38;5;244m — README.md changed by you, never staged␛[m                                 ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mbranch    ␛[m␛[38;5;254mloop-refactor␛[m␛[38;5;244m — will be 2 ahead of origin/main␛[m                                                   ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244mhooks     ␛[m␛[38;5;244mskipped␛[m␛[38;5;244m — this checkout is not trusted to run its own programs — /trust runs them␛[m                ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244mhooks     ␛[m␛[38;5;244mpre-commit and commit-msg skipped␛[m␛[38;5;244m — not trusted, other hooks run — /trust runs these␛[m             ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mpush      ␛[m␛[38;5;254mno␛[m                                                                                               ␛[38;5;254m│␛[m
 ␛[38;5;254m├────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m ␛[38;5;254mcommit␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m ␛[38;5;254medit the message␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m ␛[38;5;254mread the hunks␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m ␛[38;5;254mkeys␛[m                                      ␛[38;5;254m│␛[m

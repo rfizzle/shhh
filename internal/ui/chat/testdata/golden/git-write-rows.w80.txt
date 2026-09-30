@@ -25,7 +25,7 @@
 
 · committed on an untrusted checkout · the hooks that did not run
   ▎$ commit  feat(agent): …  committed 3 files as a41f2c9 on master
-    hooks skipped · checkout not trusted — /trust to run them
+    pre-commit and commit-msg skipped · not trusted — /trust to run them
 
 
 · the turn's close · the sha, and what undo does not reach
@@ -52,7 +52,7 @@
 
 · committed on an untrusted checkout · the hooks that did not run
   ␛[38;5;214m▎␛[m␛[38;5;214m$␛[m ␛[38;5;252mcommit␛[m  ␛[38;5;252mfeat(agent): …␛[m  ␛[92mcommitted 3 files as a41f2c9 on master␛[m
-    ␛[38;5;245mhooks skipped · checkout not trusted — /trust to run them␛[m
+    ␛[38;5;245mpre-commit and commit-msg skipped · not trusted — /trust to run them␛[m
 
 
 · the turn's close · the sha, and what undo does not reach

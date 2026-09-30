@@ -106,7 +106,8 @@ type Writes struct {
 	// here, so a caller need not.
 	Files func() []string
 	// Hooks says the checkout's own programs may run on a commit. False
-	// commits with --no-verify and says so.
+	// commits with --no-verify, which holds back the pre-commit and
+	// commit-msg hooks and no others, and says which.
 	Hooks bool
 }
 
@@ -392,7 +393,7 @@ func CommitReceipt(files int, head, branch string, hooks bool) string {
 		r += " on " + branch
 	}
 	if !hooks {
-		r += "\nhooks skipped · checkout not trusted — /trust to run them"
+		r += "\npre-commit and commit-msg skipped · not trusted — /trust to run them"
 	}
 	return r
 }

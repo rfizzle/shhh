@@ -38,6 +38,21 @@
 │ [ctrl+space/ctrl+y] answer it · other keys type into the draft                                                             │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
+· commit · an untrusted checkout, and the two hooks it holds back
+╭─ Approve tool ───────────────────────────────────────────────────────────────────────────────────────────────────── ⚠ low ─╮
+│ $ commit                                                                                                                   │
+│ ⚠ low · nothing it reports is open                                                                                         │
+│ feat(agent): cap rounds at the limit                                                                                       │
+│                                                                                                                            │
+│ stages    this session's files only                                                                                        │
+│ push      no                                                                                                               │
+│ hooks     pre-commit and commit-msg skipped — the checkout is not trusted; its other hooks still run                       │
+│ undo      git revert — /undo does not reach history                                                                        │
+├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ [y] allow it · [Y] allow with a note · [n] deny · [N] deny with a note · [?] keys · [esc] leave it waiting                 │
+│ [ctrl+space/ctrl+y] answer it · other keys type into the draft                                                             │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
 · branch · deleting it is the way back
 ╭─ Approve tool ───────────────────────────────────────────────────────────────────────────────────────────────────── ⚠ low ─╮
 │ $ branch topic                                                                                                             │
@@ -89,6 +104,21 @@
 ␛[38;5;254m│␛[m ␛[38;5;244mstages    ␛[m␛[38;5;254mthis session's files only␛[m                                                                                        ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mpush      ␛[m␛[38;5;254mno␛[m                                                                                                               ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mhooks     ␛[m␛[38;5;254mrun␛[m                                                                                                              ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244mundo      ␛[m␛[38;5;254mgit revert␛[m␛[38;5;244m — /undo does not reach history␛[m                                                                        ␛[38;5;254m│␛[m
+␛[38;5;254m├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mallow it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[Y]␛[m ␛[38;5;254mallow with a note␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m␛[38;5;244m · ␛[m␛[38;5;254m[N]␛[m ␛[38;5;254mdeny with a note␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m ␛[38;5;254mkeys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc] leave it waiting␛[m                 ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244m[ctrl+space/ctrl+y] answer it · other keys type into the draft␛[m                                                             ␛[38;5;254m│␛[m
+␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
+
+· commit · an untrusted checkout, and the two hooks it holds back
+␛[38;5;254m╭─ ␛[m␛[1;38;5;254mApprove tool ␛[m␛[38;5;254m───────────────────────────────────────────────────────────────────────────────────────────────────── ⚠ low ─╮␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m$␛[m ␛[38;5;254mcommit␛[m                                                                                                                   ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m⚠ low␛[m␛[38;5;244m · nothing it reports is open␛[m                                                                                         ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244mfeat(agent): cap rounds at the limit␛[m                                                                                       ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m                                                                                                                            ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244mstages    ␛[m␛[38;5;254mthis session's files only␛[m                                                                                        ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244mpush      ␛[m␛[38;5;254mno␛[m                                                                                                               ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244mhooks     ␛[m␛[38;5;254mpre-commit and commit-msg skipped␛[m␛[38;5;244m — the checkout is not trusted; its other hooks still run␛[m                       ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mundo      ␛[m␛[38;5;254mgit revert␛[m␛[38;5;244m — /undo does not reach history␛[m                                                                        ␛[38;5;254m│␛[m
 ␛[38;5;254m├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mallow it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[Y]␛[m ␛[38;5;254mallow with a note␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m␛[38;5;244m · ␛[m␛[38;5;254m[N]␛[m ␛[38;5;254mdeny with a note␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m ␛[38;5;254mkeys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc] leave it waiting␛[m                 ␛[38;5;254m│␛[m

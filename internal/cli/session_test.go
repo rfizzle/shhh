@@ -422,8 +422,8 @@ func TestGitWriteGatedPreview_StatesTheBoundariesOfTheAct(t *testing.T) {
 		t.Fatalf("the card carries the line the deny list answers: %q", commit.DenyLine)
 	}
 	fields = labels(commit)
-	if fields["hooks"].Value != "skipped" {
-		t.Fatalf("an untrusted checkout runs no hooks: %+v", commit.Fields)
+	if fields["hooks"].Value != "pre-commit and commit-msg skipped" {
+		t.Fatalf("an untrusted checkout holds back the two hooks --no-verify skips: %+v", commit.Fields)
 	}
 	if fields["undo"].Value != "git revert" || fields["undo"].Detail != components.CommitUndoNote {
 		t.Fatalf("the commit card says what the way back is: %+v", commit.Fields)

@@ -659,12 +659,18 @@ path the session's own record of what it changed does not hold. The rule that
 work already in the tree is not the agent's stops being a sentence in the
 prompt and becomes a fact about the arguments.
 
-**Hooks run only on a checkout you trust.** A commit hook is a program git
-runs as you, and a checkout can point git at one inside itself. That is the
-line trust already draws around everything else a clone can make a session
-run, so a commit on an untrusted checkout passes `--no-verify` and the receipt
-says `hooks skipped · checkout not trusted` rather than leaving you to
-discover that the repository's own checks did not run.
+**A commit's checks run only on a checkout you trust.** A commit hook is a
+program git runs as you, and a checkout can point git at one inside itself.
+That is the line trust already draws around everything else a clone can make a session
+run, so a commit on an untrusted checkout passes `--no-verify`, which skips
+its pre-commit and commit-msg hooks and no others, and the receipt says
+`pre-commit and commit-msg skipped · not trusted` rather than leaving you to
+discover that the repository's own checks did not run. It names the two
+because they are all `--no-verify` reaches: the post-commit and
+reference-transaction hooks still run, as do the checkout's clean and smudge
+filters on a stage and its post-checkout hook on a switch, so the card and the
+receipt say which were held back rather than that nothing of the checkout's
+ran.
 
 What it cannot do, it says. An empty index is refused by name rather than
 turned into an empty commit; `--allow-empty` has no field. An identity nobody

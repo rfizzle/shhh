@@ -363,7 +363,7 @@ func TestExecuteGitWriteEndToEnd(t *testing.T) {
 	if !strings.HasPrefix(out, "committed 1 file as ") || !strings.Contains(out, " on main") {
 		t.Fatalf("commit answered %q", out)
 	}
-	if strings.Contains(out, "hooks skipped") {
+	if strings.Contains(out, " skipped") {
 		t.Fatalf("a trusted checkout runs its hooks: %q", out)
 	}
 	// The message reached git verbatim, punctuation and all, because it was
@@ -455,11 +455,11 @@ func TestExecuteGitWriteRunsHooksOnlyOnATrustedCheckout(t *testing.T) {
 		switch {
 		case trusted && statErr != nil:
 			t.Fatal("a trusted checkout's hook should have run")
-		case trusted && strings.Contains(out, "hooks skipped"):
+		case trusted && strings.Contains(out, " skipped"):
 			t.Fatalf("a trusted commit should not say hooks were skipped: %q", out)
 		case !trusted && statErr == nil:
 			t.Fatal("an untrusted checkout's hook must not run")
-		case !trusted && !strings.Contains(out, "hooks skipped · checkout not trusted"):
+		case !trusted && !strings.Contains(out, "pre-commit and commit-msg skipped · not trusted"):
 			t.Fatalf("an untrusted commit must say so: %q", out)
 		}
 	}

@@ -251,7 +251,7 @@ func TestCardField_OnlyAFixedSentenceIsStanding(t *testing.T) {
 		// A wildcard needs something to stand for.
 		{CardField{Label: "network", Value: "closed", Detail: "the  profile removes it"}, false},
 		// Values the table does not name keep whatever they say.
-		{CardField{Label: "hooks", Value: "skipped", Detail: "this checkout is not trusted to run its own programs — /trust runs them"}, false},
+		{CardField{Label: "hooks", Value: "pre-commit and commit-msg skipped", Detail: "not trusted, other hooks run — /trust runs these"}, false},
 		{CardField{Label: "touches", Value: "unknown", Detail: "piped into sh; what it runs is not inspected first"}, false},
 	} {
 		if got := tc.field.Standing(); got != tc.standing {

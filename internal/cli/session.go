@@ -1940,7 +1940,7 @@ func gitWriteGatedPreview(st *structural.Toolset, args json.RawMessage) (chat.Ga
 	}
 	hooks := chat.GatedField{Label: "hooks", Value: "run", Detail: "the checkout's own commit hooks; a failure cancels and changes nothing"}
 	if !w.Hooks {
-		hooks = chat.GatedField{Label: "hooks", Value: "skipped", Detail: "this checkout is not trusted, so its own programs do not run"}
+		hooks = chat.GatedField{Label: "hooks", Value: "pre-commit and commit-msg skipped", Detail: "the checkout is not trusted; its other hooks still run"}
 	}
 	fields := []chat.GatedField{
 		{Label: "stages", Value: "this session's files only", Detail: "work that was already in the tree is never staged"},

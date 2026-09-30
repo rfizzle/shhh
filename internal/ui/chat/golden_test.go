@@ -3049,7 +3049,7 @@ func TestGolden_GitWriteRows(t *testing.T) {
 			)},
 			{Label: "committed on an untrusted checkout · the hooks that did not run", View: build(
 				row(`{"verb":"commit","message":"feat(agent): cap rounds at the limit"}`,
-					"committed 3 files as a41f2c9 on master\nhooks skipped · checkout not trusted — /trust to run them"),
+					"committed 3 files as a41f2c9 on master\npre-commit and commit-msg skipped · not trusted — /trust to run them"),
 			)},
 			{Label: "the turn's close · the sha, and what undo does not reach", View: build(
 				row(`{"verb":"commit","message":"feat(agent): cap rounds at the limit"}`,

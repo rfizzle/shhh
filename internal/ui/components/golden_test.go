@@ -461,9 +461,9 @@ func TestGolden_CommitCard(t *testing.T) {
 			})},
 			// A checkout nobody trusts does not get to run programs as you,
 			// and the card says so before the commit rather than after it.
-			{Label: "hooks skipped · the checkout is not trusted", View: card(func(c *CommitCard) {
-				c.Fields[2] = CardField{Label: "hooks", Value: "skipped", Tone: ToneChrome,
-					Detail: "this checkout is not trusted to run its own programs — /trust runs them"}
+			{Label: "two hooks skipped · the checkout is not trusted", View: card(func(c *CommitCard) {
+				c.Fields[2] = CardField{Label: "hooks", Value: "pre-commit and commit-msg skipped", Tone: ToneChrome,
+					Detail: "not trusted, other hooks run — /trust runs these"}
 			})},
 			// A pre-commit hook that exits non-zero cancels the whole thing,
 			// which is what the hooks row promised it would do.

@@ -295,8 +295,8 @@ func (st *commitState) fields() []components.CardField {
 		// The same sentence the tool's receipt gives, because it is the same
 		// fact: a checkout nobody trusts does not get to run programs as you
 		// (docs/capabilities/approvals-and-safety.md#a-checkout-declares-what-it-runs).
-		hooks.Value, hooks.Tone = "skipped", components.ToneChrome
-		hooks.Detail = "this checkout is not trusted to run its own programs — /trust runs them"
+		hooks.Value, hooks.Tone = "pre-commit and commit-msg skipped", components.ToneChrome
+		hooks.Detail = "not trusted, other hooks run — /trust runs these"
 	}
 	fields := []components.CardField{leaves}
 	if n := len(st.drifted); n > 0 {

@@ -353,9 +353,9 @@ commit's hooks above all. Whether those run is already decided, and by
 something other than containment: **the checkout's trust.** A trusted checkout
 runs its commit hooks, as it runs its quality suites, and neither of those is
 contained on a host with no mechanism either. An untrusted one commits with
-`--no-verify`, which skips its pre-commit and commit-msg hooks, and the
-receipt says they were skipped. The commit card's `hooks` row says which
-before you answer. Refusing git writes here would have the requirement decide
+`--no-verify`, which skips its pre-commit and commit-msg hooks and no others,
+and the receipt names those two as skipped. The commit card's `hooks` row
+names the same two before you answer. Refusing git writes here would have the requirement decide
 a question trust already answers, and the answer you would get is a commit you
 could not make, with nothing in the refusal that could fix it.
 
