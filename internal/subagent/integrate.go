@@ -14,15 +14,17 @@ package subagent
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"slices"
 	"strings"
 	"sync"
+
+	"github.com/rfizzle/shhh/internal/hostgit"
 )
 
 // integratorRole is the stem an integration writer's generated name takes.
@@ -293,7 +295,7 @@ func conflictRegions(sides []mergeSide, labels []string) (string, bool) {
 		}
 		args = append(args, name)
 	}
-	cmd := exec.Command("git", args...)
+	cmd := hostgit.Command(context.Background(), "", args...)
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	// The exit status is the number of conflict regions; the output is

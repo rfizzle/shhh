@@ -4,11 +4,16 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"os"
+	"path/filepath"
+	"runtime"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/hostgit"
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/provider"
 )
@@ -363,5 +368,59 @@ func TestOverlapAllowedLetsTwoWritersClaimOneFile(t *testing.T) {
 	_, err = exec(SpawnToolName, json.RawMessage(`{"role":"writer","task":"look","overlap":"sometimes"}`))
 	if err == nil || !strings.Contains(err.Error(), `overlap "sometimes" is not one of`) {
 		t.Fatalf("an unknown overlap word should be refused, got %v", err)
+	}
+}
+
+// The merge that marks a conflict's regions for an integration writer runs
+// on the host, over text a writer produced, so it takes the environment
+// every other host-side git call takes: whatever configuration the session
+// inherited is replaced, never added to. The git on PATH is a stub that
+// writes down what it was started with.
+func TestConflictRegionsRunsGitUnderTheHostEnvironment(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("the stub git is a shell script")
+	}
+	dir := t.TempDir()
+	record := filepath.Join(dir, "record")
+	stub := "#!/bin/sh\nprintf '%s\\n' \"$@\" > '" + record + ".args'\nenv > '" + record + ".env'\n"
+	if err := os.WriteFile(filepath.Join(dir, "git"), []byte(stub), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", dir+string(os.PathListSeparator)+os.Getenv("PATH"))
+	t.Setenv("GIT_CONFIG_COUNT", "1")
+	t.Setenv("GIT_CONFIG_KEY_0", "core.fsmonitor")
+	t.Setenv("GIT_CONFIG_VALUE_0", "/tmp/attacker")
+	t.Setenv("GIT_CONFIG_PARAMETERS", "'core.fsmonitor'='/tmp/attacker'")
+
+	side := func(text string) mergeSide { return mergeSide{exists: true, mode: "100644", text: text} }
+	conflictRegions([]mergeSide{side("a\n"), side("b\n"), side("c\n")}, []string{"ours", "base", "theirs"})
+
+	args, err := os.ReadFile(record + ".args")
+	if err != nil {
+		t.Fatalf("the merge did not start git: %v", err)
+	}
+	if got := strings.Split(string(args), "\n"); len(got) < 2 || got[0] != "--no-pager" || got[1] != "merge-file" {
+		t.Fatalf("git should be started through the host helper, got argv %q", got)
+	}
+	env, err := os.ReadFile(record + ".env")
+	if err != nil {
+		t.Fatal(err)
+	}
+	gitConfig := func(pairs []string) []string {
+		var kept []string
+		for _, p := range pairs {
+			if strings.HasPrefix(p, "GIT_CONFIG_") {
+				kept = append(kept, p)
+			}
+		}
+		slices.Sort(kept)
+		return kept
+	}
+	got, want := gitConfig(strings.Split(string(env), "\n")), gitConfig(hostgit.Env(nil))
+	if !slices.Equal(got, want) {
+		t.Fatalf("the merge's git configuration =\n%q\nwant hostgit's\n%q", got, want)
+	}
+	if strings.Contains(string(env), "attacker") {
+		t.Fatal("an inherited program survived into the merge's environment")
 	}
 }
