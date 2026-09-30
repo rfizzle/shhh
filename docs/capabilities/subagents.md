@@ -379,6 +379,15 @@ about is refused. A patch is the exception, and only where the run may write:
 the run asked for the work, so what is left to refuse is a patch that overlaps
 one already landed.
 
+A child in auto mode is judged by the session's own classifier, and its no
+goes where the session's does. In a session it is one of the child's
+requests: routed to your card with the classifier's sentence on it, answered
+by you, and recorded as the classifier's verdict and then yours
+([`approvals-and-safety.md`](approvals-and-safety.md#the-classifier-fails-closed)).
+Where there is nobody it is refused in the child, with the classifier's reason
+as the result — not routed to the rule above, which would refuse it in your
+name for a reason that was never yours.
+
 A question is the one request that has no card to become. A child is not
 offered the tool that asks, whoever is there: a fan-out exists for work that
 does not need the reader, and one that could stop for a question would need

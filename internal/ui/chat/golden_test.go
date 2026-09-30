@@ -2941,6 +2941,43 @@ func TestGolden_ClassifierDenial(t *testing.T) {
 	})
 }
 
+// TestGolden_ClassifierAsk captures the card a classifier's no becomes where
+// a person is in front of the session: the sentence under the severity as
+// `classifier: <reason>`, and the safe answer named last. The second panel is
+// the same no from a child, routed to the same person
+// (docs/capabilities/approvals-and-safety.md#the-classifier-fails-closed).
+func TestGolden_ClassifierAsk(t *testing.T) {
+	const why = "the task asked for a release check, and this publishes one"
+	dir := t.TempDir()
+	sup := subagent.New(context.Background(), subagent.Options{Root: dir, NewEnv: blockingEnv(), Now: goldenClock})
+	t.Cleanup(sup.Close)
+	captureGolden(t, "classifier-ask", "a classifier's no put to the person", goldenWidths, func(width int) []golden.Panel {
+		var ran []string
+		own := classifierModel(t, &ran, &verdictProvider{decision: "deny", reason: why}).WithWorkspace(dir)
+		own.width, own.height = width, 40
+		own.syncInputWidth()
+		updated, cmd := own.Update(toolCallsMsg{calls: []provider.ToolCall{
+			{ID: "call_x", Name: tools.ExecCommandName, Arguments: `{"command":"npm run deploy -- --tag latest"}`},
+		}})
+		own = updated.(Model)
+		updated, _ = own.Update(driveClassifierDone(t, cmd))
+		own = handover(t, updated.(Model))
+		own.syncViewport()
+
+		child := frameModel(t, width, 40).WithSubagents(sup)
+		ask := subagent.NewAsk("writer-1", subagent.AskCommand, "run npm run deploy -- --tag latest")
+		ask.Command = "npm run deploy -- --tag latest"
+		ask.Root, ask.Worktree = dir, true
+		ask.Judged = why
+		updated, _ = child.Update(subagentEventMsg{ev: subagent.Event{Kind: subagent.EventAsk, Ask: ask}})
+		child = handover(t, updated.(Model))
+		return []golden.Panel{
+			{Label: "the session's own call", View: strings.Join(own.confirmPanelLines(), "\n")},
+			{Label: "a child's call, routed to the same person", View: strings.Join(child.childAskLines(ask), "\n")},
+		}
+	})
+}
+
 // TestGolden_CommandErrors captures the command-result states. Failed command
 // rows open their retained evidence, and no negative process status is painted
 // as a normal exit status. A command that never started is one panel per

@@ -353,6 +353,14 @@ type ApprovalCard struct {
 	// one thing on the card a reader could not check
 	// (docs/interface/principles.md#a-stat-that-cannot-be-reported-is-left-out).
 	SeverityReason string
+	// Judged is the auto-mode classifier's sentence on a card it would have
+	// refused, drawn whole under the severity as `classifier: <reason>`. The
+	// card exists because the classifier said no and a person was there to
+	// answer instead; its reason is what they are answering, so it is wrapped
+	// rather than clipped or panned
+	// (docs/capabilities/approvals-and-safety.md#a-judged-denial-carries-its-reason).
+	// Empty on every other card.
+	Judged string
 	// Warnings are safety.Check risks, rendered as ⚠ rows; when present the
 	// caller must not set AllowAlways (flagged actions are never
 	// blanket-approved).
@@ -754,6 +762,11 @@ func (c *ApprovalCard) buildRows(width int) (body, hints []string) {
 	// one fact is what makes the card survive mono and a colour-blind reader
 	// alike — three copies of one phrase would not.
 	body = append(body, c.severityRows()...)
+	// The classifier's no, where it is why the card is up: the sentence the
+	// reader is answering, beside the level it is read with.
+	if c.Judged != "" {
+		body = append(body, wrapSpans([]styledSpan{{"classifier:", sty.Status}, {c.Judged, sty.Warn}}, inner)...)
+	}
 	// The generic variant's one-liner belongs with the act it qualifies,
 	// above the blast-radius block rather than below it.
 	if c.Variant == ApprovalGeneric && c.Summary != "" && c.Summary != c.Act {

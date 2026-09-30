@@ -237,10 +237,39 @@ This is worth stating as a commitment because the opposite is the natural way
 to write it. A classifier that returns a boolean gets a zero value, and the
 zero value has to be the one that costs nothing.
 
+**A classifier's no is put to the person where one is there.** The classifier
+is told to say no when it is unsure, which is right for what it guards: it
+must never be the reason something ran. But a no from something unsure, in
+front of somebody who can answer, is a question for them — and refused
+instead, it turns a wrong judgement into a round of the person re-explaining
+the task to a model they cannot see. So in a session with a person in front of
+it, the call becomes a card: the classifier's sentence is on it, under the
+severity, and the answer that costs nothing is offered last, the way a flagged
+command's is ([below](#severity-moves-the-default)). Nor is a grant offered,
+as none is on a flagged card: a grant answers before the classifier, so it
+would wave through every later call of the shape just judged, none of them put
+to anyone. A yes runs this one and a no
+refuses it, and the model reads either as it reads any card's answer. The
+classifier only ever moves a call toward a person, never away from one.
+
+The same holds for a child: its classifier's no is routed to the session's
+card with its other requests
+([`subagents.md`](subagents.md#a-child-answers-to-the-session)).
+
+Nothing the classifier is never asked about is moved by this. The deny lists,
+a required sandbox that is missing, a path no grant can reach, and plan or
+read-only mode all answer before it, and still refuse without a card.
+
+The record keeps the two apart: the classifier's verdict is a row of its own,
+a denial by the classifier, and the person's answer is the row after it — so
+how often a person overturned the classifier is something the record can say
+([`sessions-and-memory.md`](sessions-and-memory.md#observations-are-what-the-session-did)).
+
 Where there is no human to fall back to — a scripted run in auto mode, a
-served session told nobody is attached — the fallback is a refusal instead,
-which is the same commitment with the one remaining answer taken away
-([`headless.md`](headless.md#auto-mode-fails-closed)).
+served session told nobody is attached, a backlog stage, a child with no route
+to a card — the fallback is a refusal instead, and a classifier's no stands as
+the refusal it is: the same commitment with the one remaining answer taken
+away ([`headless.md`](headless.md#auto-mode-fails-closed)).
 
 ## The classifier is shown what the session did, never what it read
 
@@ -372,8 +401,18 @@ had to say. One rule judges instead: auto mode's classifier reads this call,
 in this conversation, and writes a sentence about it. That sentence is not the
 rule's name and cannot be reported as one.
 
-**So it is folded under the row of the call it refused**, where the reader
-finds it by opening the refusal they are already looking at. A refusal is a
+**Where a person is there, the sentence is on the card.** A judged no is put
+to the person rather than refused
+([above](#the-classifier-fails-closed)), and what they are answering is the
+judgement, so the card states it whole, under the severity, as
+`classifier: <reason>` — wrapped rather than cut, because a clipped reason is
+the one line on the card the reader cannot check. It goes nowhere else: the
+answer they give is theirs, and the row it leaves reads as their allow or
+their denial like any other card's.
+
+**Where a no stands as a refusal, it is folded under the row of the call it
+refused**, where the reader finds it by opening the refusal they are already
+looking at. A refusal is a
 moment in a record, and the record is the feed: the row is still there after
 the turn has moved on, it is still there ten turns later, and what refused it
 is still on it. Anything else asks a reader who scrolled back to a denial to

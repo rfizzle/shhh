@@ -88,7 +88,9 @@ func TestResolveAutoPutsAWarnedHostToThePerson(t *testing.T) {
 		{"listed", fetchOf("bad.test", readListed), allow, Ask, "listed host (urlhaus)"},
 		{"unknown", fetchOf("nowhere.test", readUnknown), allow, Allow, "reads the docs"},
 		{"known", fetchOf("example.com", readKnown), allow, Allow, "reads the docs"},
-		{"the classifier's no stands", fetchOf("bad.test", readListed), deny, Deny, "unrelated"},
+		// A judged no is put to the person whatever the host's standing:
+		// the list only ever moves a call toward them.
+		{"the classifier's no is a card", fetchOf("bad.test", readListed), deny, Ask, "unrelated"},
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			got, reason := ResolveAuto(c.action, c.verdict)

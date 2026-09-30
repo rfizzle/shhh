@@ -200,8 +200,9 @@ func (m Model) confirmCommandEdit(line string) (tea.Model, tea.Cmd) {
 	}
 	// Nothing that answered the original answers this. autoRule is what a
 	// mode, a grant or the batch put on the request when it waved the call
-	// through, and the line it waved through is not this one.
-	amended.autoRule, amended.autoCost = "", 0
+	// through, and the line it waved through is not this one — and a
+	// classifier's no was about the line it read, not the reader's.
+	amended.autoRule, amended.autoCost, amended.judged = "", 0, ""
 	reach := m.scopeReachFor(&amended)
 
 	if why := m.amendRefusal(&amended, reach); why != "" {

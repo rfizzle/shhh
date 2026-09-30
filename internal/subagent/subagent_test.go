@@ -1664,6 +1664,58 @@ func TestChildClassifierDenyRefusesWithoutAsking(t *testing.T) {
 	}
 }
 
+// Where the session has a person to put a card to, a child's classifier no is
+// routed to them carrying the classifier's sentence, as the child's other
+// gated calls are, and the record keeps the verdict and the answer as two
+// rows (docs/capabilities/subagents.md#a-child-answers-to-the-session).
+func TestChildClassifierNoIsRoutedWhereThereIsAPerson(t *testing.T) {
+	const why = "installing tools was not requested"
+	for _, c := range []struct {
+		name   string
+		answer bool
+		want   string
+	}{
+		{"overturned", true, observe.DecisionAllow},
+		{"upheld", false, observe.DecisionDeny},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			env := &scriptedEnv{
+				steps:   gatedCommandSteps("go install ./cmd/tool"),
+				gated:   map[string]bool{tools.ExecCommandName: true},
+				execOut: "installed",
+			}
+			rec := &testRecorder{}
+			judge := &verdictProvider{decision: "deny", reason: why}
+			sup := New(t.Context(), Options{
+				Root:       t.TempDir(),
+				NewEnv:     env.factory(),
+				Classifier: agent.NewClassifier(judge, agent.ClassifierConfig{Model: "judge"}),
+				Record:     func(Spec, string) Recorder { return rec.recorder() },
+			})
+			t.Cleanup(sup.Close)
+			sup.SetParentMode(agent.ModeAuto)
+			sup.SetAttended()
+			execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"install something"}`)
+
+			ask := nextAsk(t, sup)
+			if ask.Judged != why {
+				t.Fatalf("the routed request should carry the classifier's sentence, got %q", ask.Judged)
+			}
+			ask.Respond(c.answer)
+			execTool(t, sup, ReportToolName, `{"name":"researcher-1"}`)
+			if env.ranCommand.Load() != c.answer {
+				t.Fatalf("the person's answer decides: ran = %v, answered %v", env.ranCommand.Load(), c.answer)
+			}
+			decisions := rec.of("decision")
+			if len(decisions) != 2 ||
+				decisions[0].outcome != observe.DecisionDeny || decisions[0].reason != observe.ReasonClassifier ||
+				decisions[1].outcome != c.want || decisions[1].reason != observe.ReasonUser {
+				t.Fatalf("want the classifier's deny then the person's %s, got %+v", c.want, decisions)
+			}
+		})
+	}
+}
+
 // TestParentGrantsReachChildren: a session grant ([a]) the user gave the
 // parent is not re-asked once per child.
 func TestParentGrantsReachChildren(t *testing.T) {

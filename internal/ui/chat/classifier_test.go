@@ -10,9 +10,9 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/meter"
+	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/tools"
-	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
 // verdictProvider answers every classifier request with a scripted decision
@@ -119,33 +119,105 @@ func TestClassifierFlow_AllowRunsCommand(t *testing.T) {
 	}
 }
 
-func TestClassifierFlow_DenyRefusesAndModeWhyExplains(t *testing.T) {
-	var ran []string
-	m := classifierModel(t, &ran, &verdictProvider{decision: "deny", reason: "user asked for read-only work"})
-
+// judgedCard drives one command through a classifier that says no, and
+// returns the session holding the card it became, with every decision the
+// record was told about so far.
+func judgedCard(t *testing.T, ran *[]string, why string) (Model, *[][2]string) {
+	t.Helper()
+	decisions := &[][2]string{}
+	m := recordingDecisions(classifierModel(t, ran, &verdictProvider{decision: "deny", reason: why}), decisions)
 	updated, cmd := m.Update(toolCallsMsg{calls: []provider.ToolCall{
-		{ID: "call_x", Name: "execute_command", Arguments: `{"command":"go test ./..."}`},
+		{ID: "call_x", Name: tools.ExecCommandName, Arguments: `{"command":"npm run deploy"}`},
 	}})
 	m = updated.(Model)
-	updated, restream := m.Update(driveClassifierDone(t, cmd))
-	m = updated.(Model)
+	if m.state != stateClassifying {
+		t.Fatalf("an unlisted command in auto mode should be classified, got state %d", m.state)
+	}
+	updated, _ = m.Update(driveClassifierDone(t, cmd))
+	return updated.(Model), decisions
+}
 
+// With a person in front of the session, the classifier's no is a card, not
+// a refusal: nothing runs, nothing reaches the model, and the card carries
+// the sentence the reader is answering with the safe answer offered last
+// (docs/capabilities/approvals-and-safety.md#the-classifier-fails-closed).
+func TestClassifierFlow_ANoIsACardCarryingItsReason(t *testing.T) {
+	const why = "the task asked for a release check, and this publishes one"
+	var ran []string
+	m, decisions := judgedCard(t, &ran, why)
+
+	if m.state != stateConfirmRun {
+		t.Fatalf("a judged no should be put to the person, got state %d", m.state)
+	}
 	if len(ran) != 0 {
-		t.Fatal("a denied command must not run")
+		t.Fatal("nothing may run before the person answers")
 	}
-	last := m.Messages()[len(m.Messages())-1]
-	if last.Role != provider.RoleTool || last.ToolCallID != "call_x" ||
-		!strings.Contains(last.Content, "auto mode denied") ||
-		!strings.Contains(last.Content, "user asked for read-only work") {
-		t.Fatalf("the model should get a denial tool result with the reason, got %+v", last)
+	if last := m.Messages()[len(m.Messages())-1]; last.Role == provider.RoleTool {
+		t.Fatalf("the model should hear nothing until the card is answered, got %+v", last)
 	}
-	if m.state != stateStreaming || restream == nil {
-		t.Fatal("the loop should resume so the model sees the denial")
+	card := m.buildApprovalCard()
+	if card.Judged != why {
+		t.Fatalf("the card should carry the classifier's sentence, got %q", card.Judged)
 	}
-	_, why := m.handleSlashCommand("/mode why")
-	if !strings.Contains(why, "user asked for read-only work") {
-		t.Fatalf("/mode why should show the latest denial's reason, got %q", why)
+	if card.Return != "not now — it keeps waiting" {
+		t.Fatalf("the safe answer should be named as a flagged card names it, got %q", card.Return)
 	}
+	// No grant, as a flagged card offers none: a grant answers before the
+	// classifier, so it would wave the refused shape through unasked.
+	handed := handover(t, m).buildApprovalCard()
+	if handed.AllowAlways || !strings.Contains(handed.Footnote, "the classifier would refuse this") {
+		t.Fatalf("a judged card should withhold [a] and say why, got always=%v footnote=%q", handed.AllowAlways, handed.Footnote)
+	}
+	view := stripANSI(card.View(80))
+	if !strings.Contains(view, "classifier: the task asked for a release check") {
+		t.Fatalf("the classifier line should be drawn on the card:\n%s", view)
+	}
+	// The classifier's verdict is the record's first row, as the verdict it was.
+	want := [][2]string{{observe.DecisionDeny, observe.ReasonClassifier}}
+	if !slices.Equal(*decisions, want) {
+		t.Fatalf("recorded %v, want %v", *decisions, want)
+	}
+	assertNoFrameDenial(t, m, "the card")
+}
+
+// The person's answer is a row of its own beside the classifier's, so the
+// record can say how often the two disagreed — and either answer does
+// exactly what it does on any other card.
+func TestClassifierFlow_ThePersonsAnswerIsRecordedBesideTheVerdict(t *testing.T) {
+	const why = "the task asked for a release check, not a release"
+	t.Run("overturned", func(t *testing.T) {
+		var ran []string
+		m, decisions := judgedCard(t, &ran, why)
+		updated, cmd := handover(t, m).Update(tea.KeyPressMsg{Code: 'y', Text: "y"})
+		if updated.(Model).state != stateRunningCmd {
+			t.Fatalf("the person's yes should start the command, got state %d", updated.(Model).state)
+		}
+		driveCmdDone(t, cmd)
+		if len(ran) != 1 || ran[0] != "npm run deploy" {
+			t.Fatalf("the person's yes should run the command, got %v", ran)
+		}
+		want := [][2]string{{observe.DecisionDeny, observe.ReasonClassifier}, {observe.DecisionAllow, observe.ReasonUser}}
+		if !slices.Equal(*decisions, want) {
+			t.Fatalf("recorded %v, want %v", *decisions, want)
+		}
+	})
+	t.Run("upheld", func(t *testing.T) {
+		var ran []string
+		m, decisions := judgedCard(t, &ran, why)
+		updated, _ := handover(t, m).Update(keyN())
+		m = updated.(Model)
+		if len(ran) != 0 {
+			t.Fatalf("the person's no should refuse the command, got %v", ran)
+		}
+		last := m.Messages()[len(m.Messages())-1]
+		if last.Role != provider.RoleTool || !strings.Contains(last.Content, "the user declined to run this command") {
+			t.Fatalf("the model reads the person's no as it reads any card's, got %+v", last)
+		}
+		want := [][2]string{{observe.DecisionDeny, observe.ReasonClassifier}, {observe.DecisionDeny, observe.ReasonUser}}
+		if !slices.Equal(*decisions, want) {
+			t.Fatalf("recorded %v, want %v", *decisions, want)
+		}
+	})
 }
 
 func TestClassifierFlow_FailureFallsBackToPrompt(t *testing.T) {
@@ -216,112 +288,6 @@ func TestClassifierFlow_CtrlCFallsBackToPrompt(t *testing.T) {
 	m = updated.(Model)
 	if m.state != stateConfirmRun || len(ran) != 0 {
 		t.Fatal("a stale classifier verdict must not act after cancellation")
-	}
-}
-
-// A judged denial is a row in the feed and nothing on the frame
-// (docs/capabilities/approvals-and-safety.md#a-judged-denial-carries-its-reason).
-// The three moments the frame used to carry a stale label are all here: the
-// turn streaming on under the refusal, a later call that ran, and the next
-// user turn.
-func TestClassifierFlow_DenialKeepsItsReasonOnTheRowAndNothingOnTheFrame(t *testing.T) {
-	const (
-		denied = "npm run deploy"
-		why    = "the task asked for read-only work"
-	)
-	var ran []string
-	p := &verdictProvider{decision: "deny", reason: why}
-	m := classifierModel(t, &ran, p)
-
-	updated, cmd := m.Update(toolCallsMsg{calls: []provider.ToolCall{
-		{ID: "call_x", Name: tools.ExecCommandName, Arguments: `{"command":"` + denied + `"}`},
-	}})
-	m = updated.(Model)
-	updated, restream := m.Update(driveClassifierDone(t, cmd))
-	m = updated.(Model)
-	if len(ran) != 0 {
-		t.Fatal("a denied command must not run")
-	}
-	if m.state != stateStreaming || restream == nil {
-		t.Fatal("the turn should carry on streaming under the refusal")
-	}
-
-	// The row is the call's own, completed and blocked, with the rule in the
-	// account field and the judgement's sentence folded under it.
-	idx := len(m.transcript) - 1
-	row := m.transcript[idx]
-	if row.kind != entryTool || row.deniedBy != decidedByAuto || row.denyRule != classifierRule {
-		t.Fatalf("a classifier denial is a rule's denial on the call's own row, got %+v", row)
-	}
-	if !strings.Contains(row.denyWhy, why) || !strings.Contains(row.denyWhy, denied) {
-		t.Fatalf("the row should keep the reason and the call it judged, got %q", row.denyWhy)
-	}
-	compact := m.activityRowDetail(row, false, m.contentWidth())
-	if compact.State != components.ActivityDenied || compact.Outcome != components.OutcomeBlocked {
-		t.Fatalf("the settled row should read as blocked, got %q/%d", compact.Outcome, compact.State)
-	}
-	if strings.Contains(compact.Allowed, why) || strings.Contains(compact.Outcome, why) {
-		t.Fatalf("the sentence belongs under the row, not in its outcome: %q %q", compact.Outcome, compact.Allowed)
-	}
-	if compact.Keys != "" {
-		t.Fatalf("a row holding the reason should not send the reader elsewhere for it, got %q", compact.Keys)
-	}
-
-	// Nothing of it is on the frame, now or after the turn has moved on.
-	assertNoFrameDenial(t, m, "the refusal")
-	p.decision, p.reason = "allow", "the checks are read-only"
-	updated, cmd = m.Update(toolCallsMsg{calls: []provider.ToolCall{
-		{ID: "call_y", Name: tools.ExecCommandName, Arguments: `{"command":"go test ./..."}`},
-	}})
-	m = updated.(Model)
-	updated, cmd = m.Update(driveClassifierDone(t, cmd))
-	m = updated.(Model)
-	updated, _ = m.Update(driveCmdDone(t, cmd))
-	m = updated.(Model)
-	if len(ran) != 1 || ran[0] != "go test ./..." {
-		t.Fatalf("the later command should have run, got %v", ran)
-	}
-	assertNoFrameDenial(t, m, "a later command that ran")
-
-	// The refusal selects and opens like any other row that never ran: the
-	// reading cursor walks back to it and [enter] gives the body.
-	updated, _ = m.Update(readingChord())
-	m = updated.(Model)
-	for m.focusIdx > idx {
-		updated, _ = m.Update(tea.KeyPressMsg{Code: 'k', Text: "k"})
-		m = updated.(Model)
-	}
-	if m.focusIdx != idx {
-		t.Fatalf("the reading cursor should reach the denied row, got %d want %d", m.focusIdx, idx)
-	}
-	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
-	m = updated.(Model)
-	if !m.transcript[idx].expanded {
-		t.Fatal("[enter] should open the denied row")
-	}
-	opened := stripANSI(m.activityRowDetail(m.transcript[idx], false, m.contentWidth()).View(m.contentWidth()))
-	for _, want := range []string{why, denied} {
-		if !strings.Contains(opened, want) {
-			t.Fatalf("the opened row should show %q:\n%s", want, opened)
-		}
-	}
-	updated, _ = m.Update(tea.KeyPressMsg{Code: 'q', Text: "q"})
-	m = updated.(Model)
-
-	// And the next turn starts on a frame that never had one to inherit,
-	// with the refusal still in the transcript behind it.
-	m.state = stateInput
-	m.input.SetValue("read it instead")
-	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
-	m = updated.(Model)
-	assertNoFrameDenial(t, m, "the next turn")
-	if got := m.transcript[idx]; got.denyWhy != row.denyWhy {
-		t.Fatalf("the refusal should still carry its reason a turn later, got %q", got.denyWhy)
-	}
-
-	// The session summary still answers the question it always answered.
-	if _, out := m.handleSlashCommand("/permissions why"); !strings.Contains(out, why) {
-		t.Fatalf("/permissions why should still report the latest denial, got %q", out)
 	}
 }
 

@@ -1029,6 +1029,13 @@ type Ask struct {
 	Tool      string
 	Arguments string
 
+	// Judged is the auto-mode classifier's sentence on a call it would have
+	// refused, routed to the person because the session has one
+	// (Supervisor.SetAttended). The card draws it as the session's own card
+	// draws its classifier's, and it is empty on every other request.
+	// See docs/capabilities/subagents.md#a-child-answers-to-the-session.
+	Judged string
+
 	once sync.Once
 	resp chan bool
 }
@@ -2019,6 +2026,10 @@ type Supervisor struct {
 	// conversationPolicy is set when the parent is a conversation: its
 	// fetches are reads, and so are its children's (SetConversationPolicy).
 	conversationPolicy bool
+	// attended is set when a person answers the requests children route up
+	// (SetAttended): a child's classifier no is then put to them as a card,
+	// and refused where it is not.
+	attended bool
 	// appliedFiles records which agent's patch last landed each file, so a
 	// later patch touching the same file is flagged before it is applied.
 	appliedFiles map[string]string
@@ -2192,6 +2203,19 @@ func (s *Supervisor) SetParentMode(m agent.Mode) {
 func (s *Supervisor) SetConversationPolicy() {
 	s.mu.Lock()
 	s.conversationPolicy = true
+	s.mu.Unlock()
+}
+
+// SetAttended says a person answers the requests this supervisor's children
+// route up — the interactive session, and no other surface. A child's
+// classifier no is then routed to that person's card with the classifier's
+// sentence on it, the way the session's own is put to them; without it the
+// no is refused, since the answerer on the other end of the route is a rule
+// that would decline it in somebody else's name.
+// See docs/capabilities/subagents.md#a-child-answers-to-the-session.
+func (s *Supervisor) SetAttended() {
+	s.mu.Lock()
+	s.attended = true
 	s.mu.Unlock()
 }
 
@@ -5147,10 +5171,16 @@ func (s *Supervisor) resolveGated(c *child, tc provider.ToolCall) string {
 	// standing is the reading's reason where the host's standing is what
 	// turned the classifier's yes into a card, which the ask is filed under.
 	var standing string
+	// judged is the classifier's sentence where it said no and a person is
+	// there to be asked instead, which the ask carries to the card.
+	var judged string
 	if decision == agent.Ask {
 		var denial string
-		decision, cost, denial = s.classify(c, policy.Mode, tc, action)
-		if decision == agent.Ask {
+		var byClassifier bool
+		decision, cost, denial, byClassifier = s.classify(c, policy.Mode, tc, action)
+		if decision == agent.Ask && byClassifier {
+			judged = denial
+		} else if decision == agent.Ask {
 			standing = denial
 		}
 		classified = true
@@ -5177,11 +5207,19 @@ func (s *Supervisor) resolveGated(c *child, tc provider.ToolCall) string {
 		// person, and what they said. The first is what a prompt-rate is
 		// made of and the second is what an approval-rate is, and one event
 		// carrying both could answer neither.
+		//
+		// A classifier's no is the first of the two in its own words, the
+		// verdict it reached, which the session records the same way: the
+		// person's answer after it is what says whether they agreed.
 		askCode := observe.AskReason(action)
 		if code := observe.HostReason(web.StandingOf(standing)); code != "" {
 			askCode = code
 		}
-		record(observe.DecisionAsk, askCode)
+		if judged != "" {
+			record(observe.DecisionDeny, observe.ReasonClassifier)
+		} else {
+			record(observe.DecisionAsk, askCode)
+		}
 		ask, askErr := s.buildAsk(c, tc.Name, rooted, action)
 		if askErr != nil {
 			// A child's refusals are rows in its own transcript, which the
@@ -5197,6 +5235,7 @@ func (s *Supervisor) resolveGated(c *child, tc provider.ToolCall) string {
 			}
 			return "error: " + askErr.Error()
 		}
+		ask.Judged = judged
 		approved, ok := s.await(c, ask)
 		if !ok {
 			return agent.CancelledResult
@@ -5234,10 +5273,17 @@ func (s *Supervisor) resolveGated(c *child, tc provider.ToolCall) string {
 // ever remove a prompt it is allowed to remove, never add permission.
 // It returns the decision, what the judgement took — the one rule whose cost
 // the child's transcript states — and, for a denial, the reason the model is
-// told; for an ask the host's standing forced, the standing's reason.
-func (s *Supervisor) classify(c *child, mode agent.Mode, tc provider.ToolCall, action agent.Action) (decision agent.Decision, cost time.Duration, denial string) {
+// told; for an ask the host's standing forced, the standing's reason; and for
+// an ask the classifier's own no became, its sentence, with judged set.
+//
+// That last is the session's person asked in place of a refusal, and it
+// happens only where there is one (SetAttended). Everywhere else the no is
+// refused here, as it always was: the only answerer on the other end of the
+// route is a rule, and it would decline the call in somebody's name.
+// See docs/capabilities/subagents.md#a-child-answers-to-the-session.
+func (s *Supervisor) classify(c *child, mode agent.Mode, tc provider.ToolCall, action agent.Action) (decision agent.Decision, cost time.Duration, denial string, judged bool) {
 	if mode != agent.ModeAuto || s.opts.Classifier == nil || action.SafetyFlagged {
-		return agent.Ask, 0, ""
+		return agent.Ask, 0, "", false
 	}
 	// A reach outside the child's scope is the person's, whatever the
 	// directory: nothing the classifier says widens what the child may write,
@@ -5245,7 +5291,7 @@ func (s *Supervisor) classify(c *child, mode agent.Mode, tc provider.ToolCall, a
 	// anyway, and the child would read that failure as an approved call.
 	// See docs/capabilities/subagents.md#a-child-inherits-its-scope-not-more.
 	if len(action.OutOfScope) > 0 {
-		return agent.Ask, 0, ""
+		return agent.Ask, 0, "", false
 	}
 	v := s.opts.Classifier.Judge(c.ctx, agent.ClassifierRequest{
 		Tool:      tc.Name,
@@ -5270,19 +5316,30 @@ func (s *Supervisor) classify(c *child, mode agent.Mode, tc provider.ToolCall, a
 	verdict, reason := agent.ResolveAuto(action, v)
 	switch {
 	case verdict == agent.Allow:
-		return agent.Allow, v.Elapsed, ""
+		return agent.Allow, v.Elapsed, "", false
 	case verdict == agent.Deny:
-		return agent.Deny, v.Elapsed, reason
+		return agent.Deny, v.Elapsed, reason, false
+	case agent.JudgedDenialAsks(action, v):
+		s.mu.Lock()
+		attended := s.attended
+		s.mu.Unlock()
+		if !attended {
+			return agent.Deny, v.Elapsed, reason, false
+		}
+		// The classifier said no and a person is there to answer instead;
+		// the child's transcript says whose no it was.
+		c.appendEntry(TranscriptEntry{Kind: EntrySystem, Text: "Asking the user: the classifier would refuse — " + reason + "."})
+		return agent.Ask, 0, reason, true
 	case !v.Failed && web.StandingOf(reason) != "":
 		// The classifier said yes and the host's standing put the call to
 		// the person instead; the child's transcript says which list did.
 		c.appendEntry(TranscriptEntry{Kind: EntrySystem, Text: "Asking the user: " + reason + "."})
-		return agent.Ask, 0, reason
+		return agent.Ask, 0, reason, false
 	case v.Failed:
 		// Fails closed: the user decides, and sees why they were asked.
 		c.appendEntry(TranscriptEntry{Kind: EntrySystem, Text: "Classifier unavailable (" + v.Reason + "); asking the user instead."})
 	}
-	return agent.Ask, 0, ""
+	return agent.Ask, 0, "", false
 }
 
 // classifierRule is what a child's transcript names as the rule when the

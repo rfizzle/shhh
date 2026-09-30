@@ -448,11 +448,36 @@ func firstNonEmptyLine(s string) string {
 	return ""
 }
 
-// ResolveAuto combines a classifier verdict with the high-risk backstop: a
+// ResolveAuto is a classifier verdict resolved for a session with a person
+// in front of it: the backstops first (resolveVerdict), and then the one
+// answer that surface can give and an unattended one cannot — a judged no is
+// put to the person, with the classifier's sentence as the reason, rather
+// than refused. The classifier is told to say no when it is unsure, and in
+// front of somebody who can answer, unsure is a question for them.
+// See docs/capabilities/approvals-and-safety.md#the-classifier-fails-closed.
+func ResolveAuto(a Action, v ClassifierVerdict) (Decision, string) {
+	decision, reason := resolveVerdict(a, v)
+	if JudgedDenialAsks(a, v) {
+		return Ask, reason
+	}
+	return decision, reason
+}
+
+// JudgedDenialAsks is the seam between the two surfaces: whether this
+// verdict is a no the classifier itself reached, which a session with a
+// person puts to them and ResolveUnattended refuses. It is the classifier's
+// own Deny and nothing else — a refusal a backstop reached (a path no grant
+// can reach) is a rule's, and a rule's no is never a card.
+func JudgedDenialAsks(a Action, v ClassifierVerdict) bool {
+	return v.Decision == Deny && !v.Failed && !a.ScopeRefused
+}
+
+// resolveVerdict combines a classifier verdict with the high-risk backstop: a
 // safety-flagged action prompts the human even after classifier ALLOW, and a
 // failed-closed verdict already is an Ask. Deny passes through with the
-// classifier's reason.
-func ResolveAuto(a Action, v ClassifierVerdict) (Decision, string) {
+// classifier's reason. Both surfaces begin here and part only over what a
+// judged no becomes.
+func resolveVerdict(a Action, v ClassifierVerdict) (Decision, string) {
 	if v.Decision == Allow && a.SafetyFlagged {
 		return Ask, "safety-flagged action; classifier approval is not sufficient"
 	}
@@ -593,10 +618,12 @@ func truncateTail(s string, maxChars int) string {
 
 // ResolveUnattended is ResolveAuto for a surface with nobody in front of it:
 // a scripted run, a served session with no client attached, a stage of a
-// backlog run. The verdict is resolved the same way — the safety and scope
-// backstops in front of it, unchanged — and then the one answer such a
-// surface cannot give is taken away: Ask means "put this to the user", and
-// there is no user to put it to, so it becomes Deny.
+// backlog run, a child with no route to a card. The verdict is resolved the
+// same way — the safety and scope backstops in front of it, unchanged — and a
+// judged no stands as the refusal it is, since the card ResolveAuto turns it
+// into would be drawn at nobody. Then the one answer such a surface cannot
+// give is taken away: Ask means "put this to the user", and there is no user
+// to put it to, so it becomes Deny.
 //
 // Deny and not Allow, in every failure: a classifier that timed out, one that
 // answered nothing usable, one that was never configured, and one that
@@ -605,7 +632,7 @@ func truncateTail(s string, maxChars int) string {
 // mean where the fallback the interactive surfaces have does not exist.
 // See docs/capabilities/headless.md#auto-mode-fails-closed.
 func ResolveUnattended(a Action, v ClassifierVerdict) (Decision, string) {
-	decision, reason := ResolveAuto(a, v)
+	decision, reason := resolveVerdict(a, v)
 	if decision != Ask {
 		return decision, reason
 	}

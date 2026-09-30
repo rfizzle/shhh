@@ -136,6 +136,13 @@ type approvalRequest struct {
 	// autoCost is what that judgement took, where it took anything, which is
 	// the classifier and nothing else.
 	autoCost time.Duration
+	// judged is the classifier's sentence on a call it would have refused
+	// and a person is being asked about instead. It rides the request rather
+	// than the blast-radius block, which is resolved again whenever the card
+	// is rebuilt from scratch, and it is what puts the `classifier:` row on
+	// the card and the safe answer at its end
+	// (docs/capabilities/approvals-and-safety.md#a-judged-denial-carries-its-reason).
+	judged string
 	// memoryDraft is the proposed entry for approvalMemory.
 	memoryDraft memory.Draft
 	// question is the parsed question for approvalQuestion — the call's first
@@ -627,8 +634,9 @@ func (m Model) startClassifierCheck(req *approvalRequest) (tea.Model, tea.Cmd) {
 }
 
 // finishClassifierCheck applies the classifier's verdict to the pending
-// approval: allow executes it, deny refuses it with the reason as the tool
-// result, and a failed check falls back to asking the user (fail closed).
+// approval: allow executes it, a no is put to the person with its reason,
+// and a failed check falls back to asking the user (fail closed). A refusal
+// here is a backstop's, never the classifier's.
 func (m Model) finishClassifierCheck(v agent.ClassifierVerdict) (tea.Model, tea.Cmd) {
 	// The verdict was billed at the provider gate as it streamed, so there is
 	// nothing to add here — only the observer to nudge, because a judgement
@@ -636,7 +644,8 @@ func (m Model) finishClassifierCheck(v agent.ClassifierVerdict) (tea.Model, tea.
 	m.notifyUsage()
 
 	req := m.pendingApproval
-	switch decision, reason := agent.ResolveAuto(m.approvalAction(req), v); decision {
+	act := m.approvalAction(req)
+	switch decision, reason := agent.ResolveAuto(act, v); decision {
 	case agent.Allow:
 		m.recordDecision(observe.DecisionAllow, observe.ReasonClassifier)
 		req.autoRule, req.autoCost = classifierRule, v.Elapsed
@@ -664,10 +673,21 @@ func (m Model) finishClassifierCheck(v agent.ClassifierVerdict) (tea.Model, tea.
 		m.viewport.GotoBottom()
 		return m.advanceApprovalQueue()
 	}
-	// Ask: the classifier failed closed, the safety backstop fired, or the
-	// host's standing overruled a yes — the user decides, never a silent
-	// allow.
-	resolved, why := agent.ResolveAuto(m.approvalAction(req), v)
+	// Ask: the classifier said no, failed closed, the safety backstop fired,
+	// or the host's standing overruled a yes — the user decides, never a
+	// silent allow.
+	resolved, why := agent.ResolveAuto(act, v)
+	if agent.JudgedDenialAsks(act, v) {
+		// The classifier's verdict is recorded as the verdict it was, and
+		// the person's answer as a row of its own when the card is answered,
+		// so the record can say how often the two disagreed. The card carries
+		// the sentence the reader is answering, and its safe answer last
+		// (docs/capabilities/approvals-and-safety.md#the-classifier-fails-closed).
+		m.recordDecision(observe.DecisionDeny, observe.ReasonClassifier)
+		req.judged = why
+		m.armConfirm(req)
+		return m, nil
+	}
 	if code := observe.HostReason(web.StandingOf(why)); resolved == agent.Ask && code != "" && !v.Failed {
 		// The card says so, because this is the one card a person would not
 		// otherwise expect: the classifier said yes, and the lists said the
@@ -1189,6 +1209,11 @@ func (m Model) buildApprovalCard() *components.ApprovalCard {
 	// It also carries the safety risks, so the card states severity and
 	// warnings from one source rather than two.
 	m.pendingBlast.applyTo(card)
+	// Deferred, because the variants below decide the grant key and a
+	// judged card withdraws it once they have.
+	if req != nil {
+		defer judgedBy(card, req.judged)
+	}
 
 	if req == nil || req.kind == approvalExec {
 		card.Variant = components.ApprovalCommand
@@ -1389,6 +1414,31 @@ func (b blastRadius) applyTo(card *components.ApprovalCard) {
 	}
 }
 
+// judgedBy puts a classifier's no on the card it turned into: the sentence,
+// and the safe answer named at the end of the run, as a flagged card names it
+// — the card is up because something judged this call should not run, and
+// the key that costs nothing is the one to offer last and plainest
+// (docs/capabilities/approvals-and-safety.md#severity-moves-the-default).
+//
+// And no grant, as a flagged card offers none: a grant answers before the
+// classifier, so [a] here would wave through every later call of the shape
+// the classifier just said no to, none of them put to anyone. This one is
+// the reader's to answer; the next is the classifier's to judge again.
+// An empty reason is every other card, and changes nothing.
+func judgedBy(card *components.ApprovalCard, reason string) {
+	if reason == "" {
+		return
+	}
+	card.Judged = reason
+	card.Return = "not now — it keeps waiting"
+	if card.AllowAlways {
+		card.AllowAlways, card.AlwaysHint = false, ""
+		if card.Footnote == "" {
+			card.Footnote = "[a] always — not offered: the classifier would refuse this"
+		}
+	}
+}
+
 // cardPanStep is how far one press of the card's pan chords moves a wide
 // body. Five columns, the step the horizontal-scroll convention settled on:
 // one column reads as sticking, a screenful loses the reader's place.
@@ -1432,6 +1482,9 @@ func (m Model) commandCardView() *components.OutputView {
 		for _, w := range card.Warnings {
 			lines = append(lines, "⚠ "+w)
 		}
+	}
+	if card.Judged != "" {
+		lines = append(lines, "classifier: "+card.Judged)
 	}
 	if len(card.Fields) > 0 {
 		lines = append(lines, "")

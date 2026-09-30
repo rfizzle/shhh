@@ -230,8 +230,8 @@ func TestResolveAuto_Backstop(t *testing.T) {
 	if d, reason := ResolveAuto(flagged, ClassifierVerdict{Decision: Allow, Reason: "ok"}); d != Ask || !strings.Contains(reason, "safety-flagged") {
 		t.Fatalf("safety-flagged actions must ask even after classifier ALLOW, got %v %q", d, reason)
 	}
-	if d, reason := ResolveAuto(flagged, ClassifierVerdict{Decision: Deny, Reason: "no"}); d != Deny || reason != "no" {
-		t.Fatal("deny passes through with the classifier's reason")
+	if d, reason := ResolveAuto(flagged, ClassifierVerdict{Decision: Deny, Reason: "no"}); d != Ask || reason != "no" {
+		t.Fatalf("a judged no is put to the person with the classifier's reason, got %v %q", d, reason)
 	}
 	if d, _ := ResolveAuto(plain, ClassifierVerdict{Decision: Ask, Reason: "unavailable", Failed: true}); d != Ask {
 		t.Fatal("a failed-closed verdict stays an Ask")
@@ -595,8 +595,46 @@ func TestResolveUnattended_EveryAskBecomesARefusal(t *testing.T) {
 	if _, reason := ResolveUnattended(plain, ClassifierVerdict{Decision: Ask, Failed: true}); strings.TrimSpace(reason) == "" {
 		t.Error("a refusal with no reason at all says nothing to the model or the record")
 	}
-	if d, _ := ResolveUnattended(plain, ClassifierVerdict{Decision: Deny, Reason: "unrelated"}); d != Deny {
-		t.Error("a deny passes through")
+	if d, reason := ResolveUnattended(plain, ClassifierVerdict{Decision: Deny, Reason: "unrelated"}); d != Deny || reason != "unrelated" {
+		t.Errorf("a deny passes through with its reason, got %v %q", d, reason)
+	}
+}
+
+// The two surfaces part over one verdict: the classifier's own no. With a
+// person in front of the session it is a card carrying the sentence; with
+// nobody it is the refusal it always was. A refusal a backstop reached is a
+// rule's, and stays a refusal on both.
+func TestJudgedDenial_AsksWhereAPersonIsAndRefusesWhereNot(t *testing.T) {
+	plain := Action{Kind: ActionCommand, Command: "echo hi >> notes.md"}
+	no := ClassifierVerdict{Decision: Deny, Reason: "appends to a file the task did not name"}
+
+	if !JudgedDenialAsks(plain, no) {
+		t.Fatal("the classifier's no should be the seam's to put to a person")
+	}
+	if d, reason := ResolveAuto(plain, no); d != Ask || reason != no.Reason {
+		t.Fatalf("ResolveAuto = %v %q; want Ask carrying the classifier's sentence", d, reason)
+	}
+	if d, reason := ResolveUnattended(plain, no); d != Deny || reason != no.Reason {
+		t.Fatalf("ResolveUnattended = %v %q; want the refusal unchanged", d, reason)
+	}
+
+	// A path no grant can reach: the backstop's refusal, not a judgement.
+	refused := Action{Kind: ActionCommand, Command: "cat ~/.ssh/id_ed25519",
+		ScopeRefused: true, ScopeReason: "behind the deny mask", OutOfScope: []string{"/home/u/.ssh"}}
+	for _, v := range []ClassifierVerdict{{Decision: Allow, Reason: "reads a key"}, no} {
+		if JudgedDenialAsks(refused, v) {
+			t.Errorf("%v on a refused path is not a judged no", v.Decision)
+		}
+	}
+	if d, _ := ResolveAuto(refused, ClassifierVerdict{Decision: Allow, Reason: "reads a key"}); d != Deny {
+		t.Errorf("a refused path after a classifier allow = %v; want Deny", d)
+	}
+	if d, _ := ResolveAuto(refused, no); d != Deny {
+		t.Errorf("a refused path after a classifier no = %v; want Deny, never a card", d)
+	}
+	// A classifier that failed is an Ask on its own terms, not a judged no.
+	if JudgedDenialAsks(plain, ClassifierVerdict{Decision: Ask, Failed: true}) {
+		t.Error("a failed classifier reached no verdict to put to anyone")
 	}
 }
 

@@ -30,6 +30,10 @@ func (m Model) WithSubagents(sup *subagent.Supervisor) Model {
 	m.childViews = map[string]*childView{}
 	sup.SetParentMode(m.policy.mode)
 	sup.SetParentGrants(m.liveGrants())
+	// This session is the surface with a person behind its cards, so a
+	// child's classifier no comes here rather than being refused
+	// (docs/capabilities/subagents.md#a-child-answers-to-the-session).
+	sup.SetAttended()
 	if m.conversation {
 		sup.SetConversationPolicy()
 	}
@@ -388,6 +392,10 @@ func (m Model) childAskCard(ask *subagent.Ask) *components.ApprovalCard {
 	// It carries the risks too, so the card states severity and warnings from
 	// one source rather than two.
 	m.childBlastFor(ask).applyTo(card)
+	// A child's classifier no is put to the reader as the session's own is:
+	// the sentence on the card, the safe answer last and no grant — deferred
+	// so it withdraws the one the variant below offers.
+	defer judgedBy(card, ask.Judged)
 	// The routed card answers `?` with the approval card's register, as the
 	// session's own does (childAskMode, keylist.go).
 	card.KeyList = true

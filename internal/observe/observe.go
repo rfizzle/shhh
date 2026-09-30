@@ -188,7 +188,11 @@ const (
 	ReasonMemory     = "memory"
 	// The auto-mode classifier's. A classifier that could not decide is its
 	// own code rather than a denial, because failing closed to a prompt is
-	// not the same event as deciding no.
+	// not the same event as deciding no. A denial under this code is the
+	// classifier's verdict: where a person was there to be asked, their
+	// answer is the next decision, under ReasonUser, and the pair is how
+	// often they overturned it
+	// (docs/capabilities/approvals-and-safety.md#the-classifier-fails-closed).
 	ReasonClassifier       = "classifier"
 	ReasonClassifierFailed = "classifier-failed"
 	// A headless run's, which has no person to ask: the flag opted in, or

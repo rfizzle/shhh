@@ -1,0 +1,36 @@
+# program test: TestProgram_ShiftTabWalksTheModes,
+#   TestProgram_AJudgedNoIsACardTheReaderAnswers,
+#   TestProgram_TheQuitChordArmsThenLeaves
+#
+# With a person in front of the session, a call the classifier says no to is
+# a card and not a refusal
+# (docs/capabilities/approvals-and-safety.md#the-classifier-fails-closed).
+#
+# What the capture is for: the card carries the judge's sentence under the
+# severity as `classifier: <reason>` and names the safe answer last, the way
+# a flagged command's does. Read it against the approval-card artboard. The
+# reader's no refuses the call and the turn goes on; a later command the
+# classifier allows runs without a card, as it always did.
+#
+# The mode comes first, because the classifier only judges in auto: two
+# presses of the cycle key from the mode a session opens in.
+snap 01-start "Some things worth doing first"
+keys BTab
+keys BTab
+snap 02-auto "⏵⏵ auto"
+keys "publish the release" Enter
+# The judge says no, and the call is put to the reader with its reason.
+snap 03-card "classifier: the task asked for a release check" "not now — it keeps waiting"
+# The card landed just after the Enter, inside the grace window; a decision
+# key pressed in it is discarded by design.
+sleep 1
+keys n
+# The reader's no is theirs: the turn goes on to its answer under it.
+snap 04-refused "Leaving the release alone"
+# And the session goes on. The next command is judged, allowed and runs.
+keys "start the release notes instead" Enter
+snap 05-later-ran "The notes file is there" "ok · auto-allowed · classifier"
+keys C-c
+snap 06-quit-armed "again quits"
+keys C-c
+snap 07-exit "that is everything the screen was holding"

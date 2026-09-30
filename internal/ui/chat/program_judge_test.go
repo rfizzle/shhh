@@ -42,10 +42,11 @@ func (p *judgeProvider) StreamCompletion(context.Context, []provider.Message, pr
 	return ch, nil
 }
 
-// In auto mode the classifier's refusal is a row in the feed and not a card,
-// the turn carries on past it, and reading mode opens the row onto the
-// reason the judge wrote.
-func TestProgram_AJudgedRefusalIsARowTheReaderCanOpen(t *testing.T) {
+// In auto mode, with a person in front of the session, the classifier's no is
+// a card carrying the reason the judge wrote and the safe answer last; the
+// reader's own no refuses the call and the turn carries on past it.
+// See docs/capabilities/approvals-and-safety.md#the-classifier-fails-closed.
+func TestProgram_AJudgedNoIsACardTheReaderAnswers(t *testing.T) {
 	var ran []string
 	m, _ := scriptedSession(
 		commandTurn(nil, "npm run deploy -- --tag latest"),
@@ -62,15 +63,19 @@ func TestProgram_AJudgedRefusalIsARowTheReaderCanOpen(t *testing.T) {
 	programPress(t, tm, "shift+tab", "shift+tab")
 	waitForText(t, tm, "⏵⏵ auto")
 	send(tm, "publish the release")
+	waitForText(t, tm, "classifier: the task asked for a release check")
+	waitForText(t, tm, "not now — it keeps waiting")
+	if len(ran) != 0 {
+		t.Fatalf("a command the classifier said no to ran before anyone answered: %v", ran)
+	}
+	tm.Send(programHandover)
+	programPress(t, tm, "n")
 	waitForText(t, tm, "Leaving the release alone")
-	programPress(t, tm, "ctrl+o", "k", "k", "enter")
-	waitForText(t, tm, "this publishes one")
 
 	frame := finalFrame(t, tm)
 	if len(ran) != 0 {
-		t.Fatalf("a command the classifier refused ran: %v\n%s", ran, frame)
+		t.Fatalf("a command the reader refused ran: %v\n%s", ran, frame)
 	}
-	frameHas(t, frame, "blocked", "this publishes one")
 }
 
 // A run that has read for a while without a word is asked for a public
