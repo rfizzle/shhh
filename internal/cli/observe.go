@@ -1276,11 +1276,18 @@ func observeDecisionState(decision string) report.State {
 	return report.Warn
 }
 
-// observeDecider is who or what decided. A decision with no recorded reason
-// was the person's, because the rules all record theirs.
+// observeDecider is who or what decided. The person's answer is recorded as
+// `user`, and the shapes a card offers it in as `user-` codes; those read as
+// `you`, with the shape beside it so a batch or a standing grant stays its own
+// row. A decision with no recorded reason was the person's too, from a store
+// written before every answer carried one. Everything else is a rule's or the
+// classifier's.
 func observeDecider(reason string) string {
-	if reason == "" {
+	if reason == "" || reason == observe.ReasonUser {
 		return "you"
+	}
+	if shape, ok := strings.CutPrefix(reason, observe.ReasonUser+"-"); ok {
+		return "you · " + shape
 	}
 	return "auto · " + reason
 }

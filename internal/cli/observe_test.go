@@ -1446,6 +1446,31 @@ func TestObserveOverturns_AShareOfTheJudgedDenials(t *testing.T) {
 	}
 }
 
+// A decision the person made is drawn as theirs, whichever shape the card
+// offered it in; only the rules and the classifier are drawn as auto.
+func TestObserveDecider_ThePersonsAnswerIsYou(t *testing.T) {
+	for reason, want := range map[string]string{
+		observe.ReasonUser:        "you",
+		"":                        "you",
+		observe.ReasonUserBatch:   "you · batch",
+		observe.ReasonUserAlways:  "you · always",
+		observe.ReasonUserAmended: "you · amended",
+		observe.ReasonClassifier:  "auto · classifier",
+		observe.ReasonPlanMode:    "auto · plan-mode",
+	} {
+		if got := observeDecider(reason); got != want {
+			t.Errorf("observeDecider(%q) = %q, want %q", reason, got, want)
+		}
+	}
+
+	rows := observeDecisionRows([]storage.AgentDecisionCount{
+		{Decision: "deny", Reason: observe.ReasonUser, Count: 2},
+	}, storage.AgentOverturns{})
+	if len(rows) != 1 || rows[0].Subject != "denied · you" {
+		t.Fatalf("a user decision row = %+v", rows)
+	}
+}
+
 // The command split is a share of each cohort's own commands, unrecorded
 // ones included in the denominator and named apart from other.
 func TestObserveCommands_AShareOfEachCohortsCommands(t *testing.T) {
