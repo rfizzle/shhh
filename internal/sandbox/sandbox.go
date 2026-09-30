@@ -415,6 +415,22 @@ func defaultWritePaths() []string {
 	return out
 }
 
+// ToolchainDir is shhh's own directory for the tools a checkout's
+// declaration installs on this machine, and its bin is where the binaries
+// land. It is under the user cache directory, which is the first of the
+// grants above, so a contained install can write it and a contained command
+// can run what it wrote — and nothing else a person keeps is touched, which
+// ~/go/bin or a global npm prefix would be: a directory on the person's own
+// PATH, where what a checkout declared would shadow what they installed.
+// See docs/capabilities/containment.md#a-checkout-declares-the-toolchain-its-work-needs.
+func ToolchainDir() (string, error) {
+	cache, err := os.UserCacheDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(cache, "shhh", "toolchain"), nil
+}
+
 // hostTempDirs are the shared temporary directories on this host: /tmp, and
 // whatever TMPDIR names when that is somewhere else. They are the one part of
 // the filesystem every process on the machine can both read and write, which

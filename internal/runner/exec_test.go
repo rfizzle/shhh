@@ -331,6 +331,36 @@ func TestEnvMask_OffInheritsEverything(t *testing.T) {
 	}
 }
 
+// The toolchain directory goes on the end of the PATH a captured command is
+// handed and nowhere else: what the machine already has keeps answering for
+// its own name, shhh's own environment is untouched, and "" takes it off.
+func TestPathAfter_EndsTheCommandsPathAndNotThisProcesss(t *testing.T) {
+	t.Setenv("SHELL", "/bin/sh")
+	t.Setenv("PATH", "/usr/bin:/bin")
+	dir := t.TempDir()
+	SetPathAfter(dir)
+	t.Cleanup(func() { SetPathAfter("") })
+	want := "/usr/bin:/bin" + string(os.PathListSeparator) + dir
+	if got := PathValue(); got != want {
+		t.Fatalf("PATH = %q, want %q", got, want)
+	}
+	out, code := RunCapture(context.Background(), `printf '%s' "$PATH"`)
+	if code != 0 || out != want {
+		t.Fatalf("the command was handed PATH %q (code %d)", out, code)
+	}
+	if os.Getenv("PATH") != "/usr/bin:/bin" {
+		t.Fatalf("shhh's own PATH moved: %q", os.Getenv("PATH"))
+	}
+	SetPathAfter(dir)
+	if got := PathValue(); got != want {
+		t.Fatalf("set twice, PATH = %q", got)
+	}
+	SetPathAfter("")
+	if Environ() != nil || PathValue() != "/usr/bin:/bin" {
+		t.Fatalf("taken off, PATH = %q", PathValue())
+	}
+}
+
 // Containment rebuilds a command's environment from an allowlist, and what
 // puts the session's own values on it is that somebody declared them. This is
 // the list of what was declared, which is the only thing the allowlist reads —

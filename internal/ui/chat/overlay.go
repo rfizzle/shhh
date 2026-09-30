@@ -464,6 +464,27 @@ func buildOverlays() map[state]*mode {
 			answer:  (*Model).answerScaffold,
 			keyList: staticKeyList("the scaffold card"),
 		},
+		stateSetup: {
+			place:     placePanel,
+			borrows:   true,
+			hidesRail: true,
+			lines:     panelRows((Model).setupLines),
+			// The scaffold card's headroom, for the scaffold card's reason: a
+			// decision whose keys the panel bound cut off is not one.
+			bound:   (Model).planPanelBound,
+			answer:  (*Model).answerSetup,
+			keyList: staticKeyList("the toolchain card"),
+			// The install writes only into shhh's own directory and never
+			// into the conversation, so it is not idle-only: a turn running
+			// is when the model finds the tool missing.
+			command: &surfaceCommand{
+				slashCommand: slashCommand{name: setupCommandName, desc: "install the tools this checkout's toolchain declaration names (asks first)",
+					enabled: func(m *Model) bool { return m.setupWired() },
+					help:    `install what this checkout's .shhh/toolchain.toml names — the card lists every install line, where the tools land and what the lines may reach before anything runs, and they run contained exactly as the assistant's commands are. The start screen offers it when a declared tool is not on PATH`},
+				bare: true,
+				open: bareOpen(Model.setupCommand),
+			},
+		},
 		stateTodoPause: {
 			place:     placePanel,
 			borrows:   true,

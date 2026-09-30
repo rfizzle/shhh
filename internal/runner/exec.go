@@ -6,6 +6,9 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"path/filepath"
+	"runtime"
+	"slices"
 	"strings"
 	"sync"
 	"syscall"
@@ -26,7 +29,27 @@ var (
 	sessionMu   sync.RWMutex
 	sessionEnv  []string
 	sessionMask func(name string) bool
+	sessionPath string
 )
+
+// SetPathAfter puts dir on the end of the PATH every captured command gets,
+// or takes it off again for "". It is where the tools a checkout's toolchain
+// declaration installed are found (sandbox.ToolchainDir).
+//
+// The end and not the front, because the directory is one every contained
+// command may write: at the front, a command that dropped a program there
+// under a common name would be answering for that name in every command
+// after it. At the end it only supplies what the machine does not already
+// have, which is all it is for. And it is this environment and not shhh's
+// own: shhh looks programs up for itself — a language server, a structural
+// tool — and runs them uncontained, so a directory a contained command can
+// write must never be on that PATH.
+// See docs/capabilities/containment.md#a-checkout-declares-the-toolchain-its-work-needs.
+func SetPathAfter(dir string) {
+	sessionMu.Lock()
+	sessionPath = dir
+	sessionMu.Unlock()
+}
 
 // SetSessionEnv replaces the NAME=value pairs every captured command gets
 // on top of the inherited environment. Later pairs win over earlier ones
@@ -77,9 +100,9 @@ func SessionEnvNames() []string {
 // inherit exactly as before.
 func Environ() []string {
 	sessionMu.RLock()
-	env, mask := sessionEnv, sessionMask
+	env, mask, after := sessionEnv, sessionMask, sessionPath
 	sessionMu.RUnlock()
-	if len(env) == 0 && mask == nil {
+	if len(env) == 0 && mask == nil && after == "" {
 		return nil
 	}
 	// os.Environ allocates a fresh slice on every call, so filtering it in
@@ -95,7 +118,46 @@ func Environ() []string {
 		}
 		inherited = kept
 	}
-	return append(inherited, env...)
+	out := append(inherited, env...)
+	if after == "" {
+		return out
+	}
+	return append(out, "PATH="+pathWith(pathOf(out), after))
+}
+
+// PathValue is the PATH a captured command is handed: this process's own,
+// with whatever the session put after it.
+func PathValue() string {
+	if env := Environ(); env != nil {
+		return pathOf(env)
+	}
+	return os.Getenv("PATH")
+}
+
+// pathOf is the PATH an environment sets, the last pair winning as it does
+// for the process that is handed it.
+func pathOf(env []string) string {
+	path := ""
+	for _, pair := range env {
+		// Windows names the variable `Path`, and its environment is
+		// case-insensitive: matching only `PATH` there reads it as empty
+		// and appends a PATH holding nothing but the toolchain directory.
+		if len(pair) >= 5 && pair[4] == '=' && (pair[:4] == "PATH" || (runtime.GOOS == "windows" && strings.EqualFold(pair[:4], "PATH"))) {
+			path = pair[5:]
+		}
+	}
+	return path
+}
+
+// pathWith is path with dir on the end, once.
+func pathWith(path, dir string) string {
+	if slices.Contains(filepath.SplitList(path), dir) {
+		return path
+	}
+	if path == "" {
+		return dir
+	}
+	return path + string(os.PathListSeparator) + dir
 }
 
 // Run executes a command with the terminal inherited, and it is the one

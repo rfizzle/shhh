@@ -428,6 +428,10 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 		// there is a supervisor to hand it to (process.go).
 		Backgrounds: procSup != nil,
 	}))
+	// And the declared tools its commands will not find, as nothing anyone
+	// here can install: a client answers cards for calls, and the install
+	// is not a call (toolchain.go).
+	env.addBuiltPrompt(toolchainPromptBlock(containment.Toolchain.Missing, false))
 	run = scrubResultRunner(session.vault, run)
 	// Nobody is at a keyboard to cancel a command that will not finish, which
 	// is the same reason an unattended run bounds one.

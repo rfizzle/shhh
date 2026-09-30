@@ -33,6 +33,7 @@ func TestOverlayPlacements(t *testing.T) {
 		stateTodoGroom:     placePanel,
 		statePasteDrop:     placePanel,
 		stateScaffold:      placePanel,
+		stateSetup:         placePanel,
 		stateTodoPause:     placePanel,
 		stateUndoConfirm:   placePanel,
 		stateInboundHold:   placePanel,

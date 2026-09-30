@@ -1090,6 +1090,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	// there is a supervisor to hand it to; the --sandbox branch below takes
 	// that back, having nowhere inside the container to put one.
 	cmdEnv := commandEnvironment{Ceiling: cfg.CommandTimeout(), Backgrounds: procSup != nil}
+	var missingTools []string
 	if opts.sandbox {
 		srun, cleanup, err := startSandbox(cmd.Context(), cfg, session.vault.Names())
 		if err != nil {
@@ -1146,12 +1147,17 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 		cmdEnv.Mechanism, cmdEnv.Profile = containment.Mechanism, containment.Profile
 		cmdEnv.Network, cmdEnv.Refused = containment.Network, containment.Refusal != ""
 		cmdEnv.Hosts = containment.Hosts
+		missingTools = containment.Toolchain.Missing
 	}
 	// A conversation reaches all of this and can run none of it, so it is
 	// told about the containment only where it has the tool the containment
-	// is about.
+	// is about. The declared tools the host's PATH lacks are said beside it,
+	// as nothing anyone here can install — a disposable container's PATH is
+	// not the host's, so a `--sandbox` run says nothing about them
+	// (toolchain.go).
 	if offersCommands(session.toolDefs) {
 		env.addBuiltPrompt(commandEnvironmentBlock(cmdEnv))
+		env.addBuiltPrompt(toolchainPromptBlock(missingTools, false))
 	}
 	run = scrubResultRunner(session.vault, run)
 	// The ceiling matters most here. A session has a reader who can cancel a

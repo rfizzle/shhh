@@ -1,4 +1,4 @@
-  shhh doctor — 9 checks
+  shhh doctor — 10 checks
 
   ✓ binary    shhh 0.9.4 · linux/amd64  [ok]
   ⚠ keymap    /home/dev/.config/shhh/keybindings.toml  [refused]
@@ -25,6 +25,10 @@
       commands run with your own permissions, in your own filesystem
         sudo apt install bubblewrap
   ⊘ engine    no container engine  [not checked]
+  ⚠ needs     2 tools missing · golangci-lint · gosec  [missing]
+      declared by .shhh/toolchain.toml and not on the PATH a command is handed
+        /setup   # in a session, which puts the lines on one card
+        they install into /home/dev/.cache/shhh/toolchain/bin
   ✓ prompts   3 wordings · steer · summary · todo_commit  [ok]
         profile code — built in
         steps: research · implement · verify · review · commit
@@ -34,4 +38,4 @@
         summary — config prompts.summary
         todo_commit — ~/.config/shhh/prompts/todo_commit.md
 
-  1 failed · 5 warnings · 2 passed · 1 not checked
+  1 failed · 6 warnings · 2 passed · 1 not checked

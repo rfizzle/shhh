@@ -567,9 +567,9 @@ not a host name, a check that is a path rather than a program, or an install
 line whose pin cannot be read is refused when the file is read, and the
 refusal quotes the entry. A declaration that quietly lost a line would
 prepare a place to work without the tool that line was for, and the first
-anyone would hear of it is a check failing inside it. Reading and checking
-the file is what exists today; nothing yet prepares an image from it or
-checks a session's `PATH` against it.
+anyone would hear of it is a check failing inside it. On this machine a
+session checks its `PATH` against the file and offers to install what is
+missing (below); nothing yet prepares a container image from it.
 
 **An install line names one exact version, or it is refused.** A place to
 work prepared from the declaration is kept under the file's bytes, so it is
@@ -593,6 +593,60 @@ in a checkout you have not answered for it is not read at all, and it is
 named among what was held back. It has to be a file in the checkout, not a
 link, because the trust answer records a link as the link and an edit to
 what it pointed at would never be told.
+
+**A session says what is missing before the first turn.** Each name under
+`check` is looked up on the `PATH` a contained command is handed, and what is
+not there is named on the start screen, in `/status` and on its own row of
+`shhh doctor`, and in one line before an unattended run starts. Without it the
+model spends its first rounds finding out that `golangci-lint` is not there,
+and the next ones trying to install it.
+
+**Installing is one card, and the card is the only way the lines run.** The
+start screen's last offer becomes the install, and `/setup` opens the same
+card: every install line the host can run, where the tools will land, what
+the lines may reach and what contains them, before anything runs. The lines
+are command text a checkout wrote, so nothing puts them to the classifier or
+to a permission mode, and nothing runs them without the card. A run with
+nobody to ask is never offered it: a `-p` run and a served session are told
+the tools are missing and that nobody there can install them, and a
+sub-agent has no card to be offered.
+An `apk add` line is the image's package manager and not this machine's, so
+the card leaves it out.
+
+The lines run under exactly the wall the session's own commands run under,
+narrowed. The workspace is read-only and the working scope's extra
+directories are left out, so what a line can write is the toolchain caches
+containment always grants; the session's secrets are not handed to them,
+because a line a checkout wrote has no business with them; they start in
+shhh's own directory, so an
+installer that writes where it stands writes there; and the declaration's
+`hosts` are the command's host list where the mechanism holds one
+([above](#a-contained-commands-network-can-be-a-list-of-hosts)). A session
+that requires containment on a host with none draws no card at all — a yes
+that cannot be answered is not a decision — and one whose commands run bare
+runs the lines bare too, under the same uncontained chip a command card
+carries: a card the person answered is no better a reason to run bare than
+the command card beside it. The lines run one at a time and stop at the
+first that fails, since the ones after it may need what it installed.
+
+**What they install lands in a directory of shhh's own, never `~/go/bin`.**
+It is `shhh/toolchain/bin` under the user cache directory — the first of the
+toolchain caches containment grants — and each installer is pointed there:
+`GOBIN` for `go install`, the install root, prefix or bin directory for
+`cargo`, `npm`, `pnpm`, `pipx` and `pip`. The place an installer would pick
+for itself is on your own `PATH`, where a tool a checkout declared would
+shadow one you installed. The directory goes on the *end* of the `PATH`
+every command of the session is handed, and never on shhh's own: every
+contained command may write there, so at the front a program dropped under a
+common name would answer for that name in every command after it, and shhh
+looks programs up for itself and runs them uncontained.
+
+**The model is told only where something is missing.** A paragraph names
+the missing binaries and says the person has been offered the install, so
+that a model whose work needs one asks rather than installing it — or, in a
+run with nobody to ask, says which it needs and carries on without it.
+Where every declared tool is there it is told nothing: a paragraph about
+tools that are all present would be read on every request for no reason.
 
 ## A cancelled command takes its children with it
 

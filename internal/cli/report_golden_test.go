@@ -185,6 +185,16 @@ func goldenChecks() []components.DoctorCheck {
 			Fix:         []string{"sudo apt install bubblewrap"}},
 		{Name: "engine", Subject: "no container engine", Outcome: "not checked",
 			State: components.DoctorSkipped},
+		// The declared tools the PATH lacks, built from the reading itself so
+		// the fix line is the one the row prints.
+		doctorCheck("needs", doctorToolchain(toolchainReading{
+			declared: true, bin: "/home/dev/.cache/shhh/toolchain/bin",
+			missing: []string{"golangci-lint", "gosec"},
+			tc: project.Toolchain{
+				Check:   []string{"golangci-lint", "gosec", "shellcheck"},
+				Install: []string{"go install github.com/securego/gosec/v2/cmd/gosec@v2.21.4"},
+			},
+		}, false), 0),
 		// The wordings row, built from the reading itself rather than typed
 		// out: which of the three directories won is what the row is opened
 		// with, so the fixture has to be able to go wrong the way the row

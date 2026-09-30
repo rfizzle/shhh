@@ -211,3 +211,46 @@ func TestALinkedToolchainIsRefused(t *testing.T) {
 }
 
 func quote(s string) string { return `"` + strings.ReplaceAll(s, `"`, `\"`) + `"` }
+
+// What is missing is read against the PATH a command will be handed, not
+// the one this process has: a tool in a later entry counts, a file without
+// its execute bit or a directory of the name does not, and a relative entry
+// is not searched at all — a program found there is whatever the checkout
+// put there.
+func TestMissingIsReadAgainstThePathGiven(t *testing.T) {
+	first, second := t.TempDir(), t.TempDir()
+	exe := func(dir, name string, mode os.FileMode) {
+		t.Helper()
+		if err := os.WriteFile(filepath.Join(dir, name), []byte("#!/bin/sh\n"), mode); err != nil {
+			t.Fatal(err)
+		}
+	}
+	exe(first, "golangci-lint", 0o755)
+	exe(second, "gosec", 0o755)
+	exe(first, "shellcheck", 0o644)
+	if err := os.Mkdir(filepath.Join(second, "staticcheck"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	tc := Toolchain{Check: []string{"golangci-lint", "gosec", "shellcheck", "staticcheck", "govulncheck"}}
+	path := strings.Join([]string{first, "relative/bin", second}, string(os.PathListSeparator))
+	if got := tc.Missing(path); !slices.Equal(got, []string{"shellcheck", "staticcheck", "govulncheck"}) {
+		t.Fatalf("missing = %v", got)
+	}
+	if got := tc.Missing(""); len(got) != len(tc.Check) {
+		t.Fatalf("an empty PATH finds %v", got)
+	}
+}
+
+// An `apk add` line is the base image's package manager, so it is not one
+// this machine is offered; every other line is, in the declaration's order.
+func TestTheHostIsOfferedEveryLineButTheImagesOwn(t *testing.T) {
+	tc := Toolchain{Install: []string{
+		"go install github.com/securego/gosec/v2/cmd/gosec@v2.21.4",
+		"apk add shellcheck=0.10.0-r0",
+		"CGO_ENABLED=0 go install golang.org/x/vuln/cmd/govulncheck@v1.1.4",
+	}}
+	want := []string{tc.Install[0], tc.Install[2]}
+	if got := tc.HostInstall(); !slices.Equal(got, want) {
+		t.Fatalf("host lines = %v, want %v", got, want)
+	}
+}

@@ -1377,6 +1377,35 @@ func TestGolden_ScaffoldCard(t *testing.T) {
 	})
 }
 
+// TestGolden_ToolchainSetup captures what a checkout's toolchain declaration
+// adds: the start screen's line naming the declared tools the PATH lacks and
+// the offer that replaces the check run, and the card that offer opens —
+// under a mechanism holding the declaration's hosts, and where nothing
+// contains the install, which draws the chip a command card would.
+func TestGolden_ToolchainSetup(t *testing.T) {
+	captureGolden(t, "toolchain-setup", "the toolchain line and its card", goldenWidths, func(width int) []golden.Panel {
+		var ran []string
+		build := func(mechanism string) Model {
+			c := Containment{Status: "contained", Mechanism: mechanism, Profile: "workspace", Network: true, Toolchain: toolchainFixture(&ran)}
+			if mechanism == "" {
+				c.Status, c.Profile = "unconfined — bwrap not found", ""
+				c.Toolchain.Hosts = nil
+			}
+			return frameModel(t, width, 40).WithStartScreen(startFixture()).WithContainment(c)
+		}
+		card := func(mechanism string) string {
+			next, _ := build(mechanism).setupCommand()
+			return next.(Model).panelView()
+		}
+		start := build("bwrap")
+		return []golden.Panel{
+			{Label: "the start screen · two declared tools not on PATH", View: start.renderHistory()},
+			{Label: "the card · contained, the declaration's hosts held", View: card("bwrap")},
+			{Label: "the card · nothing contains it", View: card("")},
+		}
+	})
+}
+
 // TestGolden_ProviderFailures captures the session's own mapping from a
 // classified failure to a row: which class earns ⚠ and which
 // earns ✗, what each says in its outcome, and which keys the session can

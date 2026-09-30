@@ -246,6 +246,11 @@ const (
 	// like the turns screen: full width, the rail hidden, esc returns, and it
 	// changes nothing (alerts.go).
 	stateAlerts
+	// stateSetup: the card offering to install what the checkout's
+	// toolchain declaration names is up (toolchain.go). A takeover like the
+	// scaffold card, because the reader asked for it — from the start
+	// screen's offer or by typing /setup.
+	stateSetup
 	// stateKeyPopup: the key list is up — every key the register binds, by
 	// group, filtered as it is typed into. It borrows the bottom panel the
 	// way the palette does, so the draft under it is untouched and the turn

@@ -248,6 +248,7 @@ func doctorProbes() []doctorProbe {
 		{name: "git", run: probeGit},
 		{name: "project", run: probeProject},
 		{name: "trust", run: probeTrust},
+		{name: "needs", run: probeToolchain},
 		{name: "hooks", run: probeHooks},
 		{name: "prompts", run: probePrompts},
 		{name: "tools", run: probeTools},
@@ -2198,6 +2199,8 @@ func doctorQueuedSubject(name string) string {
 		return "the instruction files a session here reads"
 	case "trust":
 		return "what this checkout may make a session load"
+	case "needs":
+		return "the tools this checkout's work declares"
 	case "hooks":
 		return "your own commands at the session's seams"
 	case "prompts":

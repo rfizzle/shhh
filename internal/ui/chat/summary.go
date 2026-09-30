@@ -629,6 +629,12 @@ func (m *Model) statusCommand() (string, tea.Cmd) {
 	if contained := m.containmentStatus(); contained != "" {
 		text += "\n\n" + contained
 	}
+	// And the tools the checkout declared that the contained PATH lacks,
+	// which is what the start screen said and a reader who typed past it
+	// still needs (toolchain.go).
+	if tools := m.toolchainStatus(); tools != "" {
+		text += "\n\n" + tools
+	}
 	// And the person's own commands at the session's seams, for the same
 	// reason again: a hook is a thing this session does that the one beside
 	// it does not (hooks.go).

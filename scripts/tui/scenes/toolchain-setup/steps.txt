@@ -1,0 +1,17 @@
+# program test: TestProgram_SetupPutsTheDeclaredLinesOnOneCard
+#
+# A trusted checkout whose .shhh/toolchain.toml names a binary this run's
+# PATH does not have. The start screen names it on a `tools` line and its
+# last offer is the install; /setup opens the card, which lists the line,
+# where it would land, what it may reach and what contains it, before
+# anything runs. esc leaves with nothing run. The scene never answers yes:
+# the line is a real `go install`, and a scene installs nothing. Read 02
+# against the scaffold card on the approval-card artboard, which has no
+# toolchain card of its own.
+setup mkdir -p .shhh
+setup printf 'install = ["go install example.com/scene/cmd/shhh-scene-lint@v1.0.0"]\nhosts = ["proxy.golang.org"]\ncheck = ["shhh-scene-lint"]\n' > .shhh/toolchain.toml
+snap 01-start "install the tools this checkout declares" "shhh-scene-lint" "installs them"
+keys "/setup" Enter
+snap 02-card "install them" "Approve toolchain install" "go install example.com/scene" "lands in"
+keys Escape
+snap 03-left "offers it again" "nothing installed"

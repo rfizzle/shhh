@@ -259,10 +259,17 @@ func (m Model) startScreen() (components.StartScreen, []string) {
 	if info == nil {
 		return components.StartScreen{}, nil
 	}
-	suggestions, actions := startSuggestions(*info, m.scaffoldOffered())
+	suggestions, actions := startSuggestions(*info, m.scaffoldOffered(), m.setupOffered())
+	notes := startNotes(*info)
+	// What the checkout declared and the contained PATH lacks, after
+	// everything the checkout told the session about itself: it is the one
+	// note a key on this screen puts right (toolchain.go).
+	if note, ok := m.toolchainNote(); ok {
+		notes = append(notes, note)
+	}
 	return components.StartScreen{
 		Facts:       startFacts(info.Project),
-		Notes:       startNotes(*info),
+		Notes:       notes,
 		Lead:        "Some things worth doing first:",
 		Suggestions: suggestions,
 		Focus:       min(max(m.startFocus, 0), max(len(suggestions)-1, 0)),
@@ -492,7 +499,11 @@ func startNotes(info StartInfo) []components.StartNote {
 // its own: a project that has told the model nothing about itself is worth
 // more than a test run, and it is how `shhh init --project` is found without
 // reading the manual (docs/interface/surfaces.md#the-start-screen).
-func startSuggestions(info StartInfo, scaffold bool) ([]components.StartSuggestion, []string) {
+//
+// setup is what it is instead when the checkout declared tools the contained
+// PATH lacks: the offer that costs an approval would otherwise run checks
+// that need them, and installing them is the approval worth spending first.
+func startSuggestions(info StartInfo, scaffold, setup bool) ([]components.StartSuggestion, []string) {
 	var out []components.StartSuggestion
 	var actions []string
 	add := func(glyph, title, detail, action string) {
@@ -520,6 +531,12 @@ func startSuggestions(info StartInfo, scaffold bool) ([]components.StartSuggesti
 			"summarise the last ten commits and what they were working towards")
 	}
 
+	if setup {
+		// The command glyph, because this row runs the declaration's lines
+		// where the read-only offers above it keep ⚙.
+		add("$", "install the tools this checkout declares", "one approval", setupCommandName)
+		return out, actions
+	}
 	if scaffold {
 		// The write glyph, because this row is the one that writes: the
 		// read-only offers above it keep ⚙.

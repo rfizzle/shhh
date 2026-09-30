@@ -79,6 +79,13 @@ type Containment struct {
 	// is the whole rule.
 	// See docs/capabilities/hooks.md#a-hook-is-a-command-like-any-other.
 	Wrap func(command string) ([]string, error)
+	// Toolchain is what the checkout's toolchain declaration names and this
+	// session's PATH lacks, and the install the person can be offered for it
+	// (toolchain.go). It rides here because both halves are a reading of the
+	// containment: missing is judged against the PATH a contained command is
+	// handed, and the install runs under the same wall the assistant's
+	// commands do. The zero value is a checkout that declares nothing.
+	Toolchain Toolchain
 }
 
 // containmentRefusal is the refusal an action gets before it is drawn, or ""

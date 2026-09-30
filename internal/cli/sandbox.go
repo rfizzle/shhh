@@ -169,6 +169,7 @@ func buildContainment(cfg config.Config, sc *scope.Scope, sup *process.Superviso
 			c.Refusal = uncontainedRefusal(avail)
 		}
 		logUnconfined(policy.Profile)
+		c.Toolchain = toolchainCard(openToolchain(), cfg, avail, c.Refusal)
 		return c, nil
 	}
 	c.Status = fmt.Sprintf("contained: %s (%s profile)", avail.Mechanism, policy.Profile)
@@ -233,6 +234,9 @@ func buildContainment(cfg config.Config, sc *scope.Scope, sup *process.Superviso
 		}
 		return readContained(avail.Mechanism, runner.RunCaptureArgvTailResult(ctx, command, argv, onLine))
 	}
+	// The checkout's declared tools, and the install behind the card that
+	// offers them, under the containment just resolved (toolchain.go).
+	c.Toolchain = toolchainCard(openToolchain(), cfg, avail, c.Refusal)
 	return c, nil
 }
 

@@ -486,3 +486,56 @@ var installers = func() []installer {
 		with(cargo, "cargo", "install"),
 	}
 }()
+
+// Missing is the declaration's check list less what path already has: the
+// binaries a command handed that PATH would not find. path is a PATH value
+// rather than this process's own, because the question is what a contained
+// command will find, and that is the session's PATH with shhh's own
+// toolchain directory on it, not the one shhh was started with.
+func (tc Toolchain) Missing(path string) []string {
+	dirs := filepath.SplitList(path)
+	var missing []string
+	for _, name := range tc.Check {
+		if !onPath(name, dirs) {
+			missing = append(missing, name)
+		}
+	}
+	return missing
+}
+
+// onPath reports whether name is an executable file in one of dirs, which is
+// what a shell's own lookup takes it to be. A relative entry is skipped for
+// the reason exec.LookPath refuses one: a program found there is whatever
+// the checkout put there, and saying it is present would be vouching for it.
+func onPath(name string, dirs []string) bool {
+	for _, dir := range dirs {
+		if !filepath.IsAbs(dir) {
+			continue
+		}
+		for _, candidate := range executableNames(name) {
+			info, err := os.Stat(filepath.Join(dir, candidate))
+			if err == nil && info.Mode().IsRegular() && executable(info) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// HostInstall is the install lines that can run on this machine rather than
+// in a prepared image: every line but an `apk add`, which is the base
+// image's own package manager and has no business with the host's.
+func (tc Toolchain) HostInstall() []string {
+	var out []string
+	for _, line := range tc.Install {
+		words := strings.Fields(line)
+		for len(words) > 0 && envAssign.MatchString(words[0]) {
+			words = words[1:]
+		}
+		if len(words) >= 2 && words[0] == "apk" && words[1] == "add" {
+			continue
+		}
+		out = append(out, line)
+	}
+	return out
+}

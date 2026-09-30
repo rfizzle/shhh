@@ -486,6 +486,15 @@ func buildSessionEnv(cmd *cobra.Command, session chatSession, ledger *meter.Ledg
 		_ = report.Fprintln(os.Stderr, report.Row{State: report.Warn, Subject: note})
 	}
 	restampProjectTrust()
+	// And the tools the checkout declared that its commands will not find,
+	// for the same reason and to both kinds of session: the headless one is
+	// the one that cannot be offered the install, and says so. A
+	// conversation runs no commands, so it is told nothing (toolchain.go).
+	if !session.conversation {
+		if note := toolchainStartupNote(openToolchain()); note != "" {
+			_ = report.Fprintln(os.Stderr, report.Row{State: report.Warn, Subject: note})
+		}
+	}
 
 	flags := session.flags
 	// A session reads the model key of the command it is — `chat` or
@@ -913,6 +922,12 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		})
 		env.addBuiltPrompt(commandEnv)
 		session.promptExtra = prompt.CombineExtra(session.promptExtra, commandEnv)
+		// …and which of the tools the checkout declared its commands will
+		// not find, where any: this is the one surface with a person to
+		// offer the install to, so it is told that they were (toolchain.go).
+		missing := toolchainPromptBlock(containment.Toolchain.Missing, containment.Toolchain.Runnable())
+		env.addBuiltPrompt(missing)
+		session.promptExtra = prompt.CombineExtra(session.promptExtra, missing)
 	}
 
 	// The person's own commands at this session's seams (hooks.go). They are

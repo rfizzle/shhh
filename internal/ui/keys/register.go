@@ -398,6 +398,16 @@ func Surfaces() []Surface {
 			Bindings: []Binding{Decision.Accept, Decision.Refuse, Select.Cancel, Screen.List},
 		},
 		{
+			// The scaffold card's twin: asked for rather than handed, so it
+			// holds the keyboard from the moment it opens, and its no is
+			// Refuse for the same reason.
+			Name:     "the toolchain card",
+			Section:  "docs/interface/surfaces.md#the-approval-card",
+			Position: Takeover,
+			Reached:  "/setup, or the start screen's install offer",
+			Bindings: []Binding{Decision.Accept, Decision.Refuse, Select.Cancel, Screen.List},
+		},
+		{
 			Name:     "the inline confirm and the undo confirm",
 			Section:  "docs/interface/surfaces.md#the-inline-confirm",
 			Position: Takeover,

@@ -2417,6 +2417,14 @@ where a row is worth more than it says. A refusal is remembered for that
 repository, so the offer is made once and the command behind it stays
 available afterwards: what was refused was being asked, not the file.
 
+A checkout whose toolchain declaration names tools the `PATH` lacks gets a
+`tools` line under the others, naming them
+([containment.md](../capabilities/containment.md#a-checkout-declares-the-toolchain-its-work-needs)),
+and its last offer becomes the install in place of the check run those tools
+would fail: one approval, the same card `/setup` opens, listing every line
+before anything runs. The line goes when nothing is missing, and the offer
+is not made where the session could not run the install.
+
 Under the offers is one key row, led by the way in that is not a key — `or
 just type what you want` — and then choosing, starting and the key list. It
 is one row of at most six, like every key hint: the pointer's own chords,

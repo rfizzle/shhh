@@ -392,7 +392,7 @@ func (m Model) routeDecision(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	// because both are already an answer to the card rather than a key that
 	// might have been meant for something else.
 	switch m.state {
-	case stateConfirmRun, statePlanApprove, stateScaffold, stateQuestion:
+	case stateConfirmRun, statePlanApprove, stateScaffold, stateSetup, stateQuestion:
 		return m.applyOverlay(overlayFor(m.state), msg)
 	}
 	if ask := m.activeChildAsk(); ask != nil {

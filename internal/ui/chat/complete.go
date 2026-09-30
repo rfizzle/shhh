@@ -266,6 +266,7 @@ func buildSlashCommands() []slashCommand {
 		{name: scaffoldCommandName, desc: "scaffold this project's .shhh/ context file (asks first)",
 			enabled:  func(m *Model) bool { return m.scaffold.Write != nil },
 			idleOnly: "it writes a file into the checkout"},
+		registeredSlash(setupCommandName),
 		{name: "/skills", desc: "the skills this session loaded, and why any did not"},
 		{name: "/mcp", args: "[trust <name>|distrust <name>]", desc: "the MCP servers this session connected, and why any did not",
 			argSpecs: staticArgs(
