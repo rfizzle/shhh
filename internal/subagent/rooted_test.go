@@ -1,12 +1,15 @@
 package subagent
 
 import (
+	"context"
 	"encoding/json"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/rfizzle/shhh/internal/lsp"
+	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/tools"
 )
 
@@ -59,6 +62,109 @@ func TestRootArgs_SqliteReadsTheChildsCopy(t *testing.T) {
 	}
 	if p != filepath.Join(root, "testdata/app.db") {
 		t.Fatalf("relative database path not rooted: %s", p)
+	}
+}
+
+// query names its files in an array, and every entry means the child's copy
+// by a relative path: a plain file, a glob, and an archive entry, which is
+// rooted without cleaning for the reason a single path is. An absolute
+// entry is left where it points.
+func TestRootArgs_QueryPathsAreRootedEachOne(t *testing.T) {
+	root := t.TempDir()
+	raw := `{"expression":".version","paths":["package.json","conf/*.yml","**/go.mod","/etc/hostname","dist/x.zip!/../y.json"]}`
+	out, err := RootArgs(root, tools.QueryName, json.RawMessage(raw))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got struct {
+		Expression string   `json:"expression"`
+		Paths      []string `json:"paths"`
+	}
+	if err := json.Unmarshal(out, &got); err != nil {
+		t.Fatalf("unmarshal rooted args: %v", err)
+	}
+	want := []string{
+		filepath.Join(root, "package.json"),
+		filepath.Join(root, "conf/*.yml"),
+		filepath.Join(root, "**/go.mod"),
+		"/etc/hostname",
+		root + string(filepath.Separator) + "dist/x.zip!/../y.json",
+	}
+	if len(got.Paths) != len(want) {
+		t.Fatalf("paths = %q, want %q", got.Paths, want)
+	}
+	for i := range want {
+		if got.Paths[i] != want[i] {
+			t.Errorf("paths[%d] = %q, want %q", i, got.Paths[i], want[i])
+		}
+	}
+	if got.Expression != ".version" {
+		t.Errorf("the expression should arrive as written, got %q", got.Expression)
+	}
+}
+
+// A writer queries a file only its own copy holds, once by name and once by
+// a glob, through the rooted executor a host wires. Unrooted, both entries
+// would be read from the test's working directory and find nothing.
+func TestAWriterQueriesAFileOnlyItsCopyHolds(t *testing.T) {
+	repo := initTestRepo(t)
+	ctx, cancel := context.WithCancel(context.Background())
+	env := &scriptedEnv{steps: []streamStep{
+		{calls: []provider.ToolCall{{ID: "q1", Name: tools.QueryName,
+			Arguments: `{"expression":".held","paths":["conf/only.json","conf/*.json"]}`}}},
+		{text: "read it"},
+	}}
+	inner := env.factory()
+	var copyRoot string
+	factory := func(ctx context.Context, spec Spec) (Env, error) {
+		e, err := inner(ctx, spec)
+		if err != nil || spec.Root == repo {
+			// The environment built before the spawn is admitted stands in
+			// the parent's checkout; only the copy gets the file.
+			return e, err
+		}
+		copyRoot = spec.Root
+		if err := os.MkdirAll(filepath.Join(spec.Root, "conf"), 0o755); err != nil {
+			return e, err
+		}
+		if err := os.WriteFile(filepath.Join(spec.Root, "conf", "only.json"), []byte(`{"held":"by the copy"}`), 0o644); err != nil {
+			return e, err
+		}
+		rooted := RootedExecutor(spec.Root, tools.Execute)
+		e.Executor = func(name string, args json.RawMessage) (string, error) {
+			// Asked at the call: once the child finishes, its patch may
+			// land and put the file in the parent's tree as well.
+			if _, err := os.Stat(filepath.Join(repo, "conf", "only.json")); err == nil {
+				t.Error("the file must be in the child's copy only when it is queried")
+			}
+			return rooted(name, args)
+		}
+		return e, nil
+	}
+	sup := New(ctx, Options{Root: repo, NewEnv: factory})
+	t.Cleanup(sup.Close)
+	t.Cleanup(cancel)
+	go func() {
+		for {
+			select {
+			case ev := <-sup.Events():
+				if ev.Kind == EventAsk {
+					ev.Ask.Respond(false)
+				}
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+
+	execTool(t, sup, SpawnToolName, `{"role":"writer","task":"read the copy's config"}`)
+	execTool(t, sup, ReportToolName, `{"name":"writer-1"}`)
+	if copyRoot == "" || copyRoot == repo {
+		t.Fatalf("a writer should stand in a copy of its own, got %q", copyRoot)
+	}
+	got := env.lastToolResult()
+	if strings.Count(got, "by the copy") != 1 {
+		t.Fatalf("query should have read the copy's file, named twice, once; got:\n%s", got)
 	}
 }
 

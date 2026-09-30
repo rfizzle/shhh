@@ -30,9 +30,10 @@ func RootedExecutor(root string, next agent.ToolExecutor) agent.ToolExecutor {
 
 // RootArgs resolves a tool call's "path" argument against root: relative
 // paths join root, an absent optional path defaults to root, and a mutating
-// tool's resolved path must stay inside root. Tools without a path argument
-// pass through untouched, as do arguments that don't parse (the executor
-// reports those itself).
+// tool's resolved path must stay inside root. query names its files in a
+// "paths" array, and each entry is resolved the same way. Tools without a
+// path argument pass through untouched, as do arguments that don't parse
+// (the executor reports those itself).
 func RootArgs(root, name string, args json.RawMessage) (json.RawMessage, error) {
 	if root == "" {
 		return args, nil
@@ -52,6 +53,8 @@ func RootArgs(root, name string, args json.RawMessage) (json.RawMessage, error) 
 		lsp.HoverToolName, lsp.DiagnosticsToolName:
 	case "search", "glob":
 		optionalPath = true
+	case tools.QueryName:
+		return rootPaths(root, args), nil
 	default:
 		return args, nil
 	}
@@ -61,20 +64,13 @@ func RootArgs(root, name string, args json.RawMessage) (json.RawMessage, error) 
 		return args, nil
 	}
 	p, _ := m["path"].(string)
-	switch {
-	case p == "":
+	if p == "" {
 		if !optionalPath {
 			return args, nil
 		}
 		m["path"] = root
-	case !filepath.IsAbs(p) && strings.Contains(p, "!/"):
-		// An archive entry, `x.zip!/path/in/it`: only the archive is a path
-		// on disk. Join would clean the whole string, and `x.zip!/../y`
-		// would come back as the file y beside the archive — a read of the
-		// disk under a name the model meant as a name inside the archive.
-		m["path"] = root + string(filepath.Separator) + p
-	case !filepath.IsAbs(p):
-		m["path"] = filepath.Join(root, p)
+	} else {
+		m["path"] = rootPath(root, p)
 	}
 	if tools.IsMutating(name) {
 		final, _ := m["path"].(string)
@@ -87,6 +83,49 @@ func RootArgs(root, name string, args json.RawMessage) (json.RawMessage, error) 
 		return args, nil
 	}
 	return b, nil
+}
+
+// rootPath resolves one path against root: a relative one joins it and an
+// absolute one is left as it is.
+func rootPath(root, p string) string {
+	switch {
+	case filepath.IsAbs(p):
+		return p
+	case strings.Contains(p, "!/"):
+		// An archive entry, `x.zip!/path/in/it`: only the archive is a path
+		// on disk. Join would clean the whole string, and `x.zip!/../y`
+		// would come back as the file y beside the archive — a read of the
+		// disk under a name the model meant as a name inside the archive.
+		return root + string(filepath.Separator) + p
+	default:
+		return filepath.Join(root, p)
+	}
+}
+
+// rootPaths resolves every entry of query's "paths" array against root, the
+// way RootArgs resolves a single path. A glob is rooted like any other
+// entry: the tool walks from its literal leading directories, so a pattern
+// joined to the child's copy is walked in that copy. Arguments that don't
+// parse, and entries that are not strings, are left for the tool to refuse.
+func rootPaths(root string, args json.RawMessage) json.RawMessage {
+	var m map[string]any
+	if err := json.Unmarshal(args, &m); err != nil {
+		return args
+	}
+	paths, ok := m["paths"].([]any)
+	if !ok {
+		return args
+	}
+	for i, e := range paths {
+		if p, ok := e.(string); ok && p != "" {
+			paths[i] = rootPath(root, p)
+		}
+	}
+	b, err := json.Marshal(m)
+	if err != nil {
+		return args
+	}
+	return b
 }
 
 // withinRoot reports whether p (already cleaned/joined) is root or inside it.
