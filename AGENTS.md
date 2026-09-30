@@ -277,6 +277,7 @@ internal/
   shell/                   Which shell this platform runs a command line with, and how — the one resolution the prompt and every runner read
   process/                 Background process management (the process tool)
   structural/              Optional external tools integration (ast-grep, fd, jaq, sd, tokei, yq), the read-only git verbs, and the four git writes a surface can ask for
+  hostgit/                 How shhh runs git on the host: the environment every call takes and the per-verb flags that shut the programs a checkout can name
   radius/                  Blast-radius analysis for edits
   preflight/               Startup checks
   rpc/                     The JSON-RPC surface behind `shhh serve`: the wire, the session registry and the approval queue a client answers
@@ -350,11 +351,29 @@ a usage dump.
 
 **One git configuration key is shut off from the environment, not by a flag.**
 `core.fsmonitor` names a program git execs on `status`, `diff` and `blame`,
-and there is no flag for it — `spawnEnv` blanks it with the `GIT_CONFIG_*`
-triple, which is why `run` sets `cmd.Env` at all. Doing it with `-c` on the
-command line would put the one flag the closed vocabulary most needs to
-exclude back into the argv. `--no-pager`, `--no-ext-diff`, `--no-textconv` and
-`--no-show-signature` cover the other four keys that name a program.
+and there is no flag for it — `spawnEnv` hands the spawn `hostgit.Env`, which
+blanks it through the `GIT_CONFIG_*` variables, which is why `run` sets
+`cmd.Env` at all. Doing it with `-c` on the command line would put the one flag
+the closed vocabulary most needs to exclude back into the argv. `--no-pager`,
+`--no-ext-diff`, `--no-textconv` and `--no-show-signature` cover the other four
+keys that name a program, and `status` and `diff` carry
+`hostgit.IgnoreSubmodules` so a submodule a contained command staged is never
+asked whether it is dirty.
+
+**Every other git shhh runs on the host goes through `hostgit.Command`**
+([`docs/capabilities/containment.md#the-hosts-own-git-runs-nothing-a-command-wrote`](docs/capabilities/containment.md#the-hosts-own-git-runs-nothing-a-command-wrote)):
+the tree reading, the survey, the quality fingerprint, the changeset tracker,
+the worktree helpers in `internal/subagent/worktree.go`, `run.Commit`, the
+doctor's probe, the containment probe's `rev-parse` and the backlog runner's
+diffs. It puts `--no-pager` first and `verbFlags` after the verb, so a caller
+never names the submodule flag itself — and a new `exec.Command("git", …)` is
+a call that has none of it. A caller that needs its own environment (the
+session's, or a scratch `GIT_INDEX_FILE`) passes it through `hostgit.Env`,
+never onto `cmd.Env` bare. What will bite you: **`git add` takes no
+`--ignore-submodules` and honours no key that would stop it**, so
+`stageAll` in `worktree.go` keeps a gitlink out of a writer's `add -A` by
+pathspec, and `run.Commit` is safe only because its paths come from a status
+that already left submodules out.
 
 Pathspecs use `resolveGitPaths`, not the package's `resolvePath`: history
 names files that no longer exist, so containment is lexical and the symlink

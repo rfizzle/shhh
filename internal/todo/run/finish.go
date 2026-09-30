@@ -10,12 +10,14 @@ package run
 // See docs/capabilities/todo.md#a-run-is-turns-with-gates-between-them.
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"strings"
 
+	"github.com/rfizzle/shhh/internal/hostgit"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/runner"
 	"github.com/rfizzle/shhh/internal/structural"
@@ -230,8 +232,8 @@ func git(root string, args ...string) (string, int) {
 // puts the path three characters to the left of where every reader of that
 // format looks for it.
 func gitLines(root string, args ...string) (string, int) {
-	cmd := exec.Command("git", append([]string{"-C", root}, args...)...)
-	cmd.Env = gitEnv()
+	cmd := hostgit.Command(context.Background(), root, args...)
+	cmd.Env = hostgit.Env(runner.Environ())
 	out, err := cmd.CombinedOutput()
 	code := 0
 	if err != nil {
@@ -244,23 +246,4 @@ func gitLines(root string, args ...string) (string, int) {
 		}
 	}
 	return string(out), code
-}
-
-func gitEnv() []string {
-	env := runner.Environ()
-	if env == nil {
-		env = os.Environ()
-	}
-	kept := env[:0]
-	for _, pair := range env {
-		if strings.HasPrefix(pair, "GIT_CONFIG_") {
-			continue
-		}
-		kept = append(kept, pair)
-	}
-	return append(kept,
-		"GIT_CONFIG_COUNT=1",
-		"GIT_CONFIG_KEY_0=core.fsmonitor",
-		"GIT_CONFIG_VALUE_0=",
-	)
 }

@@ -46,6 +46,7 @@ import (
 	"github.com/rfizzle/shhh/internal/clipboard"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/hook"
+	"github.com/rfizzle/shhh/internal/hostgit"
 	"github.com/rfizzle/shhh/internal/lsp"
 	"github.com/rfizzle/shhh/internal/memory"
 	"github.com/rfizzle/shhh/internal/migrate"
@@ -1649,7 +1650,7 @@ func readGitState(ctx context.Context, dir string) doctorGitState {
 
 	state := doctorGitState{Dir: dir}
 	git := func(args ...string) (string, error) {
-		out, err := exec.CommandContext(ctx, "git", append([]string{"-C", dir}, args...)...).Output()
+		out, err := hostgit.Command(ctx, dir, args...).Output()
 		return strings.TrimSpace(string(out)), err
 	}
 	if _, err := exec.LookPath("git"); err != nil {

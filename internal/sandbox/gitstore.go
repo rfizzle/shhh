@@ -3,11 +3,12 @@ package sandbox
 import (
 	"context"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"slices"
 	"strings"
 	"time"
+
+	"github.com/rfizzle/shhh/internal/hostgit"
 )
 
 // gitStore is what a contained command must not be able to change about the
@@ -132,7 +133,7 @@ func readGitStore(dir string) (gitStore, bool) {
 func askGit(d string) (gitDir, common, hooks string, asked bool) {
 	ctx, cancel := context.WithTimeout(context.Background(), gitStoreTimeout)
 	defer cancel()
-	out, err := exec.CommandContext(ctx, "git", "-C", d, "rev-parse", "--path-format=absolute",
+	out, err := hostgit.Command(ctx, d, "rev-parse", "--path-format=absolute",
 		"--git-dir", "--git-common-dir", "--git-path", "hooks").Output()
 	if err != nil {
 		return "", "", "", false

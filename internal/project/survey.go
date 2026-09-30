@@ -13,13 +13,15 @@ package project
 // says so (Partial) rather than stalling the launch.
 
 import (
+	"context"
 	"encoding/json"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/rfizzle/shhh/internal/hostgit"
 )
 
 const (
@@ -360,7 +362,7 @@ func Branch(dir string) string {
 }
 
 func gitOutput(dir string, args ...string) (string, error) {
-	out, err := exec.Command("git", append([]string{"-C", dir}, args...)...).Output()
+	out, err := hostgit.Command(context.Background(), dir, args...).Output()
 	if err != nil {
 		return "", err
 	}

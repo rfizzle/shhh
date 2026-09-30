@@ -1,9 +1,11 @@
 package changeset
 
 import (
-	"os/exec"
+	"context"
 	"strings"
 	"sync"
+
+	"github.com/rfizzle/shhh/internal/hostgit"
 )
 
 // Tracker answers whether git knew about a file when it was edited. It is the
@@ -53,7 +55,6 @@ func (t *Tracker) Track(path string) Tracking {
 func (t *Tracker) Repo() bool { return t != nil && t.repo }
 
 func (t *Tracker) git(args ...string) (string, error) {
-	cmd := exec.Command("git", append([]string{"-C", t.dir}, args...)...)
-	out, err := cmd.Output()
+	out, err := hostgit.Command(context.Background(), t.dir, args...).Output()
 	return string(out), err
 }

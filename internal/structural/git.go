@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/rfizzle/shhh/internal/hostgit"
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
@@ -283,8 +284,10 @@ func buildGitArgv(a gitArgs, paths []string) ([]string, error) {
 	case gitStatus:
 		// The porcelain format is stable across versions and across the
 		// user's configuration, and it is colour-free by construction: git
-		// status is the one verb with no --no-color to force.
-		argv = append(argv, "--porcelain=v1", "--branch")
+		// status is the one verb with no --no-color to force. A submodule is
+		// not asked whether it is dirty: that runs git inside it, under a
+		// store this repository's mask does not name.
+		argv = append(argv, "--porcelain=v1", "--branch", hostgit.IgnoreSubmodules)
 
 	case gitLog:
 		limit := a.Limit
@@ -332,7 +335,8 @@ func buildGitArgv(a gitArgs, paths []string) ([]string, error) {
 		if a.ToRef != "" && a.Staged {
 			return nil, fmt.Errorf("staged compares the index against one ref; drop to_ref or drop staged")
 		}
-		argv = append(argv, "--no-color", "--no-ext-diff", "--no-textconv", "--unified=3")
+		argv = append(argv, "--no-color", "--no-ext-diff", "--no-textconv",
+			hostgit.IgnoreSubmodules, "--unified=3")
 		if a.Staged {
 			argv = append(argv, "--staged")
 		}
@@ -394,40 +398,15 @@ func blameWindow(a gitArgs) (string, error) {
 
 // spawnEnv is the environment one tool's spawn runs with; nil inherits the
 // session's unchanged, which is what every tool but git wants. Both halves of
-// git share it rather than each keeping a copy: the hygiene is a fact about
-// running git at all, and a second copy is a second thing to keep in step.
-//
-// git needs one because two of its configuration keys name a program git then
-// runs, and neither is reachable by a flag. --no-pager and --no-ext-diff shut
-// the two that are; core.fsmonitor is the one that is left, and git execs it
-// on status, diff and blame — so a repository someone else wrote could turn a
-// read that runs in every mode, with no approval, into arbitrary execution.
-// Blanking it takes a config override, and an override on the command line
-// would mean putting -c into the vocabulary this tool exists to keep closed.
-// The environment form does the same job and stays out of the argv.
-//
-// Whatever GIT_CONFIG_* the session inherited is dropped first: those
-// variables are numbered, so appending ours to an existing set would either
-// renumber theirs or be renumbered by it, and either way the override this
-// function exists for is the one that goes missing.
+// git take hostgit's, which is every host-side git call's: core.fsmonitor
+// names a program git execs on status, diff and blame, and blanking it takes a
+// config override — which on the command line would put -c into the
+// vocabulary this tool exists to keep closed.
 func spawnEnv(name string) []string {
 	if name != GitToolName && name != GitWriteToolName {
 		return nil
 	}
-	env := os.Environ()
-	kept := make([]string, 0, len(env)+3)
-	for _, v := range env {
-		if strings.HasPrefix(v, "GIT_CONFIG_COUNT=") ||
-			strings.HasPrefix(v, "GIT_CONFIG_KEY_") ||
-			strings.HasPrefix(v, "GIT_CONFIG_VALUE_") {
-			continue
-		}
-		kept = append(kept, v)
-	}
-	return append(kept,
-		"GIT_CONFIG_COUNT=1",
-		"GIT_CONFIG_KEY_0=core.fsmonitor",
-		"GIT_CONFIG_VALUE_0=")
+	return hostgit.Env(nil)
 }
 
 func (t *Toolset) executeGit(raw json.RawMessage) (string, error) {

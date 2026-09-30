@@ -6,12 +6,14 @@ package chat
 // is reached from here and from nowhere else in the runner.
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os/exec"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/shhh/internal/hostgit"
 	"github.com/rfizzle/shhh/internal/runner"
 	"github.com/rfizzle/shhh/internal/todo/run"
 )
@@ -88,8 +90,8 @@ const gitNotInstalled = 127
 // It is the reading side only — the diff a reviewer child is handed; the
 // commit a run makes is the run package's (run.Commit).
 func git(root string, args ...string) (string, int) {
-	cmd := exec.Command("git", append([]string{"-C", root}, args...)...)
-	cmd.Env = runner.Environ()
+	cmd := hostgit.Command(context.Background(), root, args...)
+	cmd.Env = hostgit.Env(runner.Environ())
 	out, err := cmd.CombinedOutput()
 	code := 0
 	if err != nil {

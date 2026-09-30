@@ -35,6 +35,7 @@ import (
 
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/evidence"
+	"github.com/rfizzle/shhh/internal/hostgit"
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/quality"
@@ -1206,8 +1207,8 @@ const todoGitNotInstalled = 127
 // run may stage is read by column, and that reading lives in the run package
 // beside the definition of what a commit holds (run.DirtyPaths).
 func todoGit(root string, args ...string) (string, int) {
-	cmd := exec.Command("git", append([]string{"-C", root}, args...)...)
-	cmd.Env = runner.Environ()
+	cmd := hostgit.Command(context.Background(), root, args...)
+	cmd.Env = hostgit.Env(runner.Environ())
 	out, err := cmd.CombinedOutput()
 	code := 0
 	if err != nil {

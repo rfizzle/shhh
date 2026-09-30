@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/hostgit/hostgittest"
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
@@ -903,5 +904,22 @@ func TestTree_AFailedFirstSnapshotIsSaidAtTheFirstBoundary(t *testing.T) {
 	write(t, ws, ".git/index", "not an index")
 	if _, ok := a.NextTreeNotice(false); !ok {
 		t.Error("the reason is said again after a snapshot cleared it")
+	}
+}
+
+// The reading runs between rounds and is asked of nobody, so a submodule a
+// contained command made and staged, with a store it wrote, must not be
+// asked whether it is dirty: that runs the store's clean filter, as the
+// person.
+// See docs/capabilities/containment.md#the-hosts-own-git-runs-nothing-a-command-wrote.
+func TestTreeSnapshotRunsNothingFromAPlantedSubmodule(t *testing.T) {
+	p := hostgittest.PlantedSubmodule(t)
+	p.Control(t, "status", "--porcelain=v2", "--branch", "--untracked-files=normal", "-z")
+	p.Stir(t)
+	if _, err := TakeTreeSnapshot(p.Root); err != nil {
+		t.Fatal(err)
+	}
+	if p.Ran() {
+		t.Fatal("the tree reading ran the planted submodule's filter")
 	}
 }

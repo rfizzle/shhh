@@ -44,6 +44,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/hostgit"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/tools"
 )
@@ -245,8 +246,7 @@ func (t *Toolset) Rooted(root string) *Toolset {
 var insideRepo = func(root string) bool {
 	ctx, cancel := context.WithTimeout(context.Background(), repoProbeTimeout)
 	defer cancel()
-	cmd := exec.CommandContext(ctx, "git", "-C", root, "rev-parse", "--is-inside-work-tree")
-	out, err := cmd.Output()
+	out, err := hostgit.Command(ctx, root, "rev-parse", "--is-inside-work-tree").Output()
 	return err == nil && strings.TrimSpace(string(out)) == "true"
 }
 

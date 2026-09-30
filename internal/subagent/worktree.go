@@ -20,6 +20,7 @@ import (
 	"sync"
 
 	"github.com/rfizzle/shhh/internal/diff"
+	"github.com/rfizzle/shhh/internal/hostgit"
 )
 
 // runGit executes one git command in dir, returning combined output.
@@ -32,8 +33,7 @@ func runGit(dir string, args ...string) (string, error) {
 // the copy exists, so a stop that cannot reach this command leaves its slot and
 // the parent waiting behind work it no longer wants.
 func runGitContext(ctx context.Context, dir string, args ...string) (string, error) {
-	cmd := exec.CommandContext(ctx, "git", append([]string{"-C", dir}, args...)...)
-	out, err := cmd.CombinedOutput()
+	out, err := hostgit.Command(ctx, dir, args...).CombinedOutput()
 	if err != nil {
 		return string(out), fmt.Errorf("git %s: %s", strings.Join(args, " "), strings.TrimSpace(string(out)))
 	}
@@ -287,7 +287,7 @@ const landedBaseMessage = "patch landed in the parent session"
 // is its own work and not the landed one a second time. The flags are
 // commitSeed's, for its reasons.
 func commitBase(worktree, message string) error {
-	if _, err := runGit(worktree, "add", "-A"); err != nil {
+	if err := stageAll(worktree); err != nil {
 		return err
 	}
 	_, err := runGit(worktree,
@@ -317,7 +317,7 @@ func removeWorktree(repoTop, worktree string) {
 // apply, so the two streams are kept apart wherever the output is content
 // rather than a report.
 func gitOutput(dir string, args ...string) (string, error) {
-	cmd := exec.Command("git", append([]string{"-C", dir}, args...)...)
+	cmd := hostgit.Command(context.Background(), dir, args...)
 	var out, errBuf bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &out, &errBuf
 	if err := cmd.Run(); err != nil {
@@ -331,10 +331,35 @@ func gitOutput(dir string, args ...string) (string, error) {
 // there is the seed, so what comes back is the child's own work and never the
 // parent's.
 func worktreePatch(worktree string) (string, error) {
-	if _, err := runGit(worktree, "add", "-A"); err != nil {
+	if err := stageAll(worktree); err != nil {
 		return "", err
 	}
 	return gitOutput(worktree, "diff", "--cached", "--binary")
+}
+
+// stageAll is `git add -A` over a copy a child wrote, with every gitlink the
+// index holds left out by pathspec. Staging a submodule path asks that
+// submodule whether it is dirty by running git inside it — under a store the
+// child could have written, clean filter and all — and add takes no
+// --ignore-submodules and honours no configuration that would stop it; a
+// pathspec that never names the path is the one thing that does. A child's
+// copy has no submodule checked out, so a gitlink there with a store behind
+// it is one the child made.
+// See docs/capabilities/containment.md#the-hosts-own-git-runs-nothing-a-command-wrote.
+func stageAll(worktree string) error {
+	listed, err := gitOutput(worktree, "ls-files", "--stage", "-z")
+	if err != nil {
+		return err
+	}
+	args := []string{"add", "-A", "--", "."}
+	for _, entry := range strings.Split(listed, "\x00") {
+		meta, path, ok := strings.Cut(entry, "\t")
+		if ok && strings.HasPrefix(meta, "160000 ") {
+			args = append(args, ":(exclude,literal)"+path)
+		}
+	}
+	_, err = runGit(worktree, args...)
+	return err
 }
 
 // applyPatch applies a patch to a checkout's working tree, and is both
@@ -350,7 +375,7 @@ func worktreePatch(worktree string) (string, error) {
 // nothing, where a three-way merge would leave conflict markers in the
 // person's files for them to find.
 func applyPatch(repoTop, patch string) error {
-	cmd := exec.Command("git", "-C", repoTop, "apply", "--whitespace=nowarn")
+	cmd := hostgit.Command(context.Background(), repoTop, "apply", "--whitespace=nowarn")
 	cmd.Stdin = strings.NewReader(patch)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
@@ -799,9 +824,9 @@ func firstReseedLine(s string) string {
 // empty, the given text on its standard input, answering with its standard
 // output. It exists for the scratch index a reseed builds its base in.
 func gitWithEnv(dir string, env []string, stdin string, args ...string) (string, error) {
-	cmd := exec.Command("git", append([]string{"-C", dir}, args...)...)
+	cmd := hostgit.Command(context.Background(), dir, args...)
 	if len(env) > 0 {
-		cmd.Env = append(os.Environ(), env...)
+		cmd.Env = hostgit.Env(append(os.Environ(), env...))
 	}
 	if stdin != "" {
 		cmd.Stdin = strings.NewReader(stdin)
@@ -1129,7 +1154,7 @@ func mergeFile(scratch string, base, ours, theirs mergeSide) (mergeSide, bool, e
 		}
 		names[i] = f.Name()
 	}
-	cmd := exec.Command("git", append([]string{"merge-file", "-p"}, names...)...)
+	cmd := hostgit.Command(context.Background(), "", append([]string{"merge-file", "-p"}, names...)...)
 	var out, errBuf bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &out, &errBuf
 	err := cmd.Run()

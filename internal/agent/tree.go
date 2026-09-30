@@ -47,6 +47,7 @@ package agent
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"os/exec"
@@ -57,6 +58,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/hostgit"
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
@@ -971,7 +973,7 @@ func parseStatusV2(out string) TreeSnapshot {
 // own first line of complaint where it gave one, since "exit status 128" is
 // not a reason anybody can act on.
 func gitOut(dir string, args ...string) (string, error) {
-	cmd := exec.Command("git", append([]string{"-C", dir}, args...)...)
+	cmd := hostgit.Command(context.Background(), dir, args...)
 	var out, errOut bytes.Buffer
 	cmd.Stdout = &out
 	cmd.Stderr = &errOut
@@ -989,7 +991,7 @@ func gitOut(dir string, args ...string) (string, error) {
 // saying none of these — and comes back as an empty answer rather than an
 // error; anything else is git failing.
 func gitIn(dir, stdin string, args ...string) (string, error) {
-	cmd := exec.Command("git", append([]string{"-C", dir}, args...)...)
+	cmd := hostgit.Command(context.Background(), dir, args...)
 	cmd.Stdin = strings.NewReader(stdin)
 	var out bytes.Buffer
 	cmd.Stdout = &out

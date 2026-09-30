@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/rfizzle/shhh/internal/diff"
+	"github.com/rfizzle/shhh/internal/hostgit/hostgittest"
 )
 
 const samplePatch = `diff --git a/main.go b/main.go
@@ -659,5 +660,28 @@ func TestAddWorktree_ThreeWritersAtOnceInOneRepository(t *testing.T) {
 			}()
 		}
 		wg.Wait()
+	}
+}
+
+// A writer's copy is the child's to write, a gitlink and its store included,
+// and the patch is read off it on the host with nobody asked: staging must
+// not ask the submodule anything.
+// See docs/capabilities/containment.md#the-hosts-own-git-runs-nothing-a-command-wrote.
+func TestWorktreePatchRunsNothingFromAPlantedSubmodule(t *testing.T) {
+	p := hostgittest.PlantedSubmodule(t)
+	p.Control(t, "add", "-A")
+	if err := os.WriteFile(filepath.Join(p.Root, "main.go"), []byte("package main\n\nfunc main() {}\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	p.Stir(t)
+	patch, err := worktreePatch(p.Root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if p.Ran() {
+		t.Fatal("staging the copy ran the planted submodule's filter")
+	}
+	if !strings.Contains(patch, "func main() {}") {
+		t.Fatalf("the child's own work should still be in the patch, got %q", patch)
 	}
 }

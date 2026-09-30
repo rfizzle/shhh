@@ -1,14 +1,16 @@
 package todo
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/rfizzle/shhh/internal/hostgit"
 )
 
 // Grooming: an item read against the checkout as it stands now.
@@ -598,7 +600,7 @@ func Behind(root, head string) (int, bool) {
 	if head == "" {
 		return 0, false
 	}
-	out, err := exec.Command("git", "-C", root, "rev-list", "--count", head+"..HEAD").Output()
+	out, err := hostgit.Command(context.Background(), root, "rev-list", "--count", head+"..HEAD").Output()
 	if err != nil {
 		return 0, false
 	}

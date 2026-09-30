@@ -35,6 +35,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/hostgit"
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
@@ -333,8 +334,7 @@ func tableAttempt(ctx context.Context, c Case, opts Options) Attempt {
 
 // dirtyPaths reports the paths the session left changed in its fresh fixture.
 func dirtyPaths(dir string) int {
-	cmd := exec.Command("git", "-C", dir, "status", "--porcelain=v1", "-z")
-	out, err := cmd.Output()
+	out, err := hostgit.Command(context.Background(), dir, "status", "--porcelain=v1", "-z").Output()
 	if err != nil {
 		return 0
 	}

@@ -1,6 +1,7 @@
 package quality
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
@@ -9,9 +10,10 @@ import (
 	"io"
 	"io/fs"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"github.com/rfizzle/shhh/internal/hostgit"
 )
 
 // Fingerprint pins a gate result to the tree it ran against: the git HEAD
@@ -213,8 +215,7 @@ func (f Fingerprint) Describe() string {
 }
 
 func gitOutput(workspace string, args ...string) (string, error) {
-	cmd := exec.Command("git", append([]string{"-C", workspace}, args...)...)
-	out, err := cmd.Output()
+	out, err := hostgit.Command(context.Background(), workspace, args...).Output()
 	if err != nil {
 		return "", err
 	}

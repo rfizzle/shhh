@@ -7,10 +7,13 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 	"testing"
 
 	"github.com/rfizzle/shhh/internal/evidence"
+	"github.com/rfizzle/shhh/internal/hostgit"
+	"github.com/rfizzle/shhh/internal/hostgit/hostgittest"
 )
 
 // stubInsideRepo decides the repository question for the duration of a test.
@@ -85,7 +88,7 @@ func TestBuildGitArgvPerVerb(t *testing.T) {
 		{
 			name: "status",
 			args: `{"verb":"status"}`,
-			want: []string{"--no-pager", "--no-optional-locks", "status", "--porcelain=v1", "--branch", "--"},
+			want: []string{"--no-pager", "--no-optional-locks", "status", "--porcelain=v1", "--branch", "--ignore-submodules=all", "--"},
 		},
 		{
 			name: "log",
@@ -111,7 +114,7 @@ func TestBuildGitArgvPerVerb(t *testing.T) {
 			args: `{"verb":"diff","ref":"main","to_ref":"HEAD"}`,
 			want: []string{
 				"--no-pager", "--no-optional-locks", "diff", "--no-color", "--no-ext-diff", "--no-textconv",
-				"--unified=3", "main", "HEAD", "--",
+				"--ignore-submodules=all", "--unified=3", "main", "HEAD", "--",
 			},
 		},
 		{
@@ -119,7 +122,7 @@ func TestBuildGitArgvPerVerb(t *testing.T) {
 			args: `{"verb":"diff","ref":"main","staged":true,"stat":true}`,
 			want: []string{
 				"--no-pager", "--no-optional-locks", "diff", "--no-color", "--no-ext-diff", "--no-textconv",
-				"--unified=3", "--staged", "--stat", "main", "--",
+				"--ignore-submodules=all", "--unified=3", "--staged", "--stat", "main", "--",
 			},
 		},
 		{
@@ -235,35 +238,21 @@ func TestGitPathspecMagicIsNeutralised(t *testing.T) {
 }
 
 // The spawn's environment is the only place git configuration is overridden,
-// and core.fsmonitor is why: git execs it on status, diff and blame.
+// and core.fsmonitor is why: git execs it on status, diff and blame. The
+// environment is hostgit's; this holds the tool to taking it.
 func TestGitSpawnEnvBlanksTheHookConfig(t *testing.T) {
 	t.Setenv("GIT_CONFIG_COUNT", "1")
 	t.Setenv("GIT_CONFIG_KEY_0", "core.fsmonitor")
 	t.Setenv("GIT_CONFIG_VALUE_0", "/tmp/attacker")
 
-	env := spawnEnv(GitToolName)
-	var count, key, value int
-	for _, v := range env {
-		switch {
-		case strings.HasPrefix(v, "GIT_CONFIG_COUNT="):
-			count++
-			if v != "GIT_CONFIG_COUNT=1" {
-				t.Fatalf("unexpected count entry %q", v)
-			}
-		case strings.HasPrefix(v, "GIT_CONFIG_KEY_"):
-			key++
-			if v != "GIT_CONFIG_KEY_0=core.fsmonitor" {
-				t.Fatalf("unexpected key entry %q", v)
-			}
-		case strings.HasPrefix(v, "GIT_CONFIG_VALUE_"):
-			value++
-			if v != "GIT_CONFIG_VALUE_0=" {
-				t.Fatalf("an inherited hook path survived: %q", v)
-			}
+	for _, name := range []string{GitToolName, GitWriteToolName} {
+		env := spawnEnv(name)
+		if !slices.Equal(env, hostgit.Env(nil)) {
+			t.Fatalf("%s should spawn under hostgit's environment, got %q", name, env)
 		}
-	}
-	if count != 1 || key != 1 || value != 1 {
-		t.Fatalf("expected exactly one override triple, got %d/%d/%d", count, key, value)
+		if slices.Contains(env, "GIT_CONFIG_VALUE_0=/tmp/attacker") {
+			t.Fatalf("%s: an inherited hook path survived", name)
+		}
 	}
 	if spawnEnv(FdToolName) != nil {
 		t.Fatal("only git needs an environment; every other tool inherits the session's")
@@ -500,7 +489,7 @@ func TestBuildGitArgvNamesIsPerVerb(t *testing.T) {
 	}{
 		{`{"verb":"diff","ref":"upstream/main...HEAD","names":true}`, []string{
 			"--no-pager", "--no-optional-locks", "diff", "--no-color", "--no-ext-diff", "--no-textconv",
-			"--unified=3", "--name-status", "-M", "upstream/main...HEAD", "--",
+			"--ignore-submodules=all", "--unified=3", "--name-status", "-M", "upstream/main...HEAD", "--",
 		}},
 		{`{"verb":"show","ref":"HEAD","names":true}`, []string{
 			"--no-pager", "--no-optional-locks", "show", "--no-color", "--no-ext-diff",
@@ -855,4 +844,22 @@ func newGitRepo(t *testing.T) string {
 		}
 	}
 	return root
+}
+
+// The read verbs auto-run in every mode, so a submodule a contained command
+// made and staged, with a store it wrote, must not be asked whether it is
+// dirty: that runs the store's clean filter, as the person.
+func TestExecuteGitRunsNothingFromAPlantedSubmodule(t *testing.T) {
+	p := hostgittest.PlantedSubmodule(t)
+	p.Control(t, "status", "--porcelain=v1")
+	ts := &Toolset{root: p.Root, bins: map[string]string{GitToolName: "git"}, timeout: SpawnTimeout}
+	for _, args := range []string{`{"verb":"status"}`, `{"verb":"diff"}`, `{"verb":"diff","ref":"HEAD"}`} {
+		p.Stir(t)
+		if _, err := ts.Execute(GitToolName, json.RawMessage(args)); err != nil {
+			t.Fatalf("%s: %v", args, err)
+		}
+		if p.Ran() {
+			t.Fatalf("%s ran the planted submodule's filter", args)
+		}
+	}
 }

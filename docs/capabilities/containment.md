@@ -462,13 +462,57 @@ What this leaves open, in a trusted checkout. A hook the checkout already has
 may run what the working tree says — husky's scripts, the pre-commit
 framework's configuration, a `package.json` — and the working tree is the one
 thing a contained command is there to write; that is the checkout's trust
-answering, and withdrawing trust is the way to refuse it. Git reads a
-submodule's own store when it reads the superproject, so a submodule a
-contained command staged, with a store it wrote, is not one this mask names.
-A repository a contained command creates in a workspace that had none is
-masked from the next command on, but not in the command that made it. And
-configuration outside the store — the global file, a file an `include.path`
-names in the working tree — is only as protected as the grants around it.
+answering, and withdrawing trust is the way to refuse it. Under bubblewrap, a
+`commondir` a contained command writes into a store that had none, and a
+`.git` it makes in a workspace below the checkout's top, are what the host's
+git will read next — [the next section](#the-hosts-own-git-runs-nothing-a-command-wrote)
+says why shhh does not pin the store to close them. A repository a contained
+command creates in a workspace that had none is masked from the next command
+on, but not in the command that made it. And configuration outside the store
+— the global file, a file an `include.path` names in the working tree — is
+only as protected as the grants around it.
+
+## The host's own git runs nothing a command wrote
+
+The mask decides what a contained command may write; this is the other half,
+what shhh's own git does with what it finds. Shhh runs git on the host, as
+you, in more places than the `git` tool: the reading of the tree between
+rounds, the survey of the workspace at the start, the fingerprint a gate
+result is pinned to, the check of whether a file was tracked before an edit,
+the seeding and the patch of a writer's copy, and the backlog runner's
+commit. None of those is carded, and the tree reading is asked of nobody.
+Every one of them runs git the same way.
+
+- **No program the configuration names that a reading can do without.** An
+  fsmonitor is blanked, and the pager, an external diff, a textconv driver
+  and a signature verifier are turned off wherever the verb would start one.
+  A clean filter is not: a status needs it to know whether a file changed,
+  which is why the store that names one is masked.
+- **No submodule is asked anything.** Git's own answer to "is this submodule
+  dirty" is to run git inside it, under the submodule's store, and read its
+  files through that store's clean filters. A submodule's store is not the
+  superproject's, so the mask does not name it, and a contained command can
+  make a repository, stage it as a submodule and write its store with nothing
+  but the working tree. Every reading that compares the working tree
+  therefore leaves submodules out, whatever `.gitmodules` asks for; staging a
+  writer's copy leaves out every submodule path; and a commit is told the
+  same by configuration, because it takes no flag for it. What that costs: a
+  submodule's own changes and its moved pointer are not in the tree notice,
+  the survey's count, a writer's patch or the lines a history reading shows.
+
+**The store is not pinned.** Git could be told, for every call, which store
+to use — the one found when the session started — and a `commondir` or a
+subdirectory `.git` written afterwards would then be ignored rather than
+followed. Shhh does not do this. Git takes a pinned store and a pinned
+working tree as a pair, so the pin would be one answer per checkout, and the
+host's git runs in several: your checkout, each writer's copy, each copy the
+backlog runner makes, a scratch index. And the pin is inherited by everything
+git starts, so a trusted checkout's commit hook that runs git in another
+repository — a hook manager keeping its own clone — would be pointed at this
+one. The two cases it would close are open only under bubblewrap, which
+cannot mount over a path that is absent, and `/sandbox doctor` names each
+there as not held; Seatbelt holds both by name. A workspace at the
+checkout's top has no subdirectory `.git` to find.
 
 ## The sandbox image ships with the binary
 
