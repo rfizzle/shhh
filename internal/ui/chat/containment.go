@@ -39,6 +39,13 @@ type Containment struct {
 	// that nothing is confining the command to.
 	Hosts  []string
 	Detail string
+	// GitStore is sandbox.GitStoreWords: that the workspace repository's
+	// hooks and config are read-only to a contained command, in the words
+	// the doctor row uses, or "" where nothing is masked. It rides the
+	// sandbox field and /status because git runs those programs on the host
+	// and a reader deciding on a command is owed whether it can plant one.
+	// See docs/capabilities/containment.md#the-repositorys-own-programs-are-read-only.
+	GitStore string
 	// Required says the session was told to contain the assistant's
 	// commands rather than to prefer it, which is what the chip reports: a
 	// mechanism that is in force and a mechanism that had to be are
@@ -137,6 +144,9 @@ func (m Model) containmentWords(mechanism string) string {
 	}
 	if m.containment.Profile != "" {
 		words += " · " + m.containment.Profile
+	}
+	if m.containment.GitStore != "" {
+		words += " · " + m.containment.GitStore
 	}
 	return words
 }

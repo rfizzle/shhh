@@ -35,10 +35,11 @@ prompt, so a grant is said once.
 - **Refused.** A path behind the deny mask cannot be granted at all, by any
   key. The mask cannot be disabled, so neither can this.
 - **Sensitive.** A home directory, a system root, another tool's credential
-  store, or shhh's own configuration and state. It can be granted, but only by
-  a person answering for it — never by a permissive mode and never by the
-  classifier. For a credential store the grant is also what makes it readable
-  at all.
+  store, shhh's own configuration and state, or a repository's store and
+  hooks ([below](#the-repositorys-own-programs-are-read-only)). It can be
+  granted, but only by a person answering for it — never by a permissive mode
+  and never by the classifier. For a credential store the grant is also what
+  makes it readable at all.
 
 The second class is the interesting one. It exists because "can be granted"
 and "can be granted without a human" are different questions, and a mode that
@@ -368,6 +369,81 @@ An unattended run answers the same way: a git write goes to `--yes` or the
 classifier like any other write, and the containment refusal is not consulted
 for it. The model reads what the card or the run answered, as it would for an
 edit.
+
+## The repository's own programs are read-only
+
+The other half of that: with a mechanism in force, a contained command cannot
+write the places git reads a program from. The repository's `config` (where
+`core.hooksPath`, `core.fsmonitor`, `gpg.program` and every filter and diff
+driver are named), its hooks directory wherever `core.hooksPath` puts it, and
+`info/` (which holds `info/attributes`) are read-only to it. So are the paths
+that say where the store is: a `commondir` file in the store, the `commondir`
+and `config.worktree` of each linked worktree, the `.git` file of a checkout
+whose store lives elsewhere, and a `.git` in the workspace when the workspace
+is below the checkout's top — git finds that one first.
+
+Git runs these on the host. A commit you approve runs the hooks; the reading
+of the tree that happens between rounds, and the read-only `git` tool, run
+`git status`, which runs an fsmonitor and a clean filter from the config. None
+of those is contained, and the tree reading is asked of nobody. A contained
+command that could write one of these paths would be a bounded command
+leaving an unbounded one behind for the next host-side git to start, as you.
+Trust decides whether a checkout's own programs run; this is what stops a
+command the session ran from becoming one of them.
+
+Reads stay open, and so does the rest of the store: `git status`, `log` and
+`diff` need the config and the objects, and staging, a branch or a fetch are
+ordinary work. What a contained command meets is a refusal to write, in its
+own words — `could not lock config file`, a read-only file system, an
+operation not permitted — and the model reads that as the command's result,
+the way it reads any denial. That costs the commands that write the config
+themselves: `git remote add`, `git config`, `git push -u`, a branch created
+to track a remote, `git sparse-checkout`. Run those yourself, or grant the
+store.
+
+The grant is the store, as it is for a credential store: `/add-dir` on the
+repository's `.git`, or on anything inside it, or on the hooks directory,
+makes all of it writable to contained commands for the session. The working
+scope classifies each of those sensitive, so no mode and no classifier makes
+that grant; a person does, knowing that the next commit runs what is there.
+Masking was chosen over checking at commit time — naming the hooks that
+changed on the card and refusing a commit whose hooks a command wrote —
+because the commit is not the only thing that runs them: the tree reading
+runs the config's programs with no card at all.
+
+On both mechanisms the directories between the workspace and those paths —
+`.git` itself, in an ordinary checkout — cannot be renamed, because moving
+`.git` aside, writing a hook into it under a name no rule covers and moving it
+back would walk around every other rule here. Files are still created inside
+them; every lock git takes is one.
+
+The two mechanisms do not hold the rest equally. Seatbelt's rules are about
+names, so a path that does not exist yet is as read-only as one that does.
+Bubblewrap can only mount over a path that exists, so what it holds is the
+entries that are there; an entry that is absent, or that is a symbolic link,
+it cannot hold, and `/sandbox doctor` names each of those as not held rather
+than claiming it. Two of those matter: `commondir`, which
+is normally absent in an ordinary checkout and redirects the whole store when
+it is written, and a `.git` in a workspace below the checkout's top, which a
+contained `git init` makes and git then finds first. Creating either to mount
+over would change the repository — an empty `commondir` breaks it.
+
+Where the paths are is read before every command, from git and from the
+`.git` found by walking up, and a store git cannot read still gets its
+ordinary layout masked: a command that broke the store for a moment, so that
+git answered nothing, does not buy the next command an unmasked config.
+
+What this leaves open, in a trusted checkout. A hook the checkout already has
+may run what the working tree says — husky's scripts, the pre-commit
+framework's configuration, a `package.json` — and the working tree is the one
+thing a contained command is there to write; that is the checkout's trust
+answering, and withdrawing trust is the way to refuse it. Git reads a
+submodule's own store when it reads the superproject, so a submodule a
+contained command staged, with a store it wrote, is not one this mask names.
+A repository a contained command creates in a workspace that had none is
+masked from the next command on, but not in the command that made it. And
+configuration outside the store — the global file, a file an `include.path`
+names in the working tree — is only as protected as the grants around it.
 
 ## A cancelled command takes its children with it
 

@@ -56,6 +56,17 @@ func Report(avail Availability, p Policy, running int) string {
 	} else {
 		fmt.Fprintf(&b, "  masked:    %s\n", pathList(masked))
 	}
+	if len(s.gitReadOnly) > 0 {
+		// Read-only rather than masked: git's readers need the store, and
+		// what a contained command must not do is write a program into it.
+		// See docs/capabilities/containment.md#the-repositorys-own-programs-are-read-only.
+		fmt.Fprintf(&b, "  read-only: %s\n", pathList(s.gitReadOnly))
+	}
+	if len(s.gitUnheld) > 0 {
+		fmt.Fprintf(&b, "  not held:  %s\n", pathList(s.gitUnheld))
+		// Only bubblewrap leaves any: Seatbelt's rules are about names.
+		b.WriteString("             (bubblewrap mounts only over a path that exists, and cannot hold a link)\n")
+	}
 	return strings.TrimRight(b.String(), "\n")
 }
 

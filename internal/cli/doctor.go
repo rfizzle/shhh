@@ -1492,9 +1492,14 @@ func joinConsequence(head, tail string) string {
 // and `/sandbox doctor`, which resolves the whole policy.
 func doctorSandbox(avail sandbox.Availability, policy sandbox.Policy, goos string) doctorFinding {
 	if avail.OK {
+		detail := joinDetail(joinDetail(joinDetail(avail.Detail, string(policy.Profile)+" profile"), sandbox.NetworkWords(avail, policy)), "private tmpdir")
+		// The repository's hooks and config, said where they are read-only
+		// and not claimed where they are not (GitStoreWords is "" then): git
+		// runs them on the host, and this row's reader would not know.
+		// See docs/capabilities/containment.md#the-repositorys-own-programs-are-read-only.
 		return doctorFinding{
 			Subject: avail.Mechanism,
-			Detail:  joinDetail(joinDetail(joinDetail(avail.Detail, string(policy.Profile)+" profile"), sandbox.NetworkWords(avail, policy)), "private tmpdir"),
+			Detail:  joinDetail(detail, sandbox.GitStoreWords(avail, policy)),
 			Outcome: "contained",
 		}
 	}

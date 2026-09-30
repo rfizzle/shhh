@@ -1701,6 +1701,36 @@ func TestGolden_CommandAmend(t *testing.T) {
 // columns the chip and the `was` row are competing for a card that is also
 // carrying a warning, which is exactly the case a reader has to be able to
 // read.
+// TestGolden_CommandCardGitStore captures the command card's sandbox row in
+// a checkout whose hooks and config are read-only to a contained command:
+// the clause rides the mechanism and the profile, so the one reading of the
+// containment the card and /status share says it. The second panel is the
+// same card where nothing was masked — no repository, or a granted store —
+// and says nothing about git at all
+// (docs/capabilities/containment.md#the-repositorys-own-programs-are-read-only).
+func TestGolden_CommandCardGitStore(t *testing.T) {
+	captureGolden(t, "command-card-git-store", "the approval card's sandbox row", goldenWidths,
+		func(width int) []golden.Panel {
+			card := func(gitStore string) string {
+				m := gatedModel(t, nil, nil).WithWorkspace(t.TempDir()).
+					WithRunner(legacyRunner(func(context.Context, string) (string, int) { return "", 0 })).
+					WithContainment(Containment{
+						Status: "contained: bwrap (workspace profile)", Mechanism: "bwrap", Profile: "workspace",
+						GitStore: gitStore,
+					})
+				m.width, m.height = width, 40
+				m.syncInputWidth()
+				m = execApproval(t, m, "go test ./...")
+				m.syncViewport()
+				return strings.Join(m.confirmPanelLines(), "\n")
+			}
+			return []golden.Panel{
+				{Label: "a checkout whose hooks and config are read-only to the command", View: card("read-only git hooks and config")},
+				{Label: "nothing masked — no repository, or the store granted", View: card("")},
+			}
+		})
+}
+
 func TestGolden_CommandAmended(t *testing.T) {
 	captureGolden(t, "command-amended", "the approval card's amendment", goldenWidths,
 		func(width int) []golden.Panel {

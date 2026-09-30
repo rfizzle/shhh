@@ -11,6 +11,7 @@ import (
 	"context"
 	"errors"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -325,6 +326,27 @@ func TestDoctorSandbox_Contained(t *testing.T) {
 	}
 	if !strings.Contains(f.Detail, "network preserved") {
 		t.Fatalf("the row does not say what the network is: %q", f.Detail)
+	}
+}
+
+// In a checkout the row says the repository's hooks and config are read-only
+// to a contained command, and outside one it claims nothing.
+func TestDoctorSandbox_SaysTheGitStoreIsReadOnly(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git is not on PATH")
+	}
+	ws := t.TempDir()
+	if out, err := exec.Command("git", "-C", ws, "init", "-q").CombinedOutput(); err != nil {
+		t.Fatalf("git init: %v: %s", err, out)
+	}
+	avail := sandbox.Availability{OK: true, Mechanism: "bwrap", Detail: "bubblewrap"}
+	f := doctorSandbox(avail, sandbox.Policy{Profile: sandbox.ProfileWorkspace, Workspace: ws}, "linux")
+	if !strings.HasSuffix(f.Detail, "private tmpdir · read-only git hooks and config") {
+		t.Fatalf("the row does not say the repository's hooks and config are read-only: %q", f.Detail)
+	}
+	f = doctorSandbox(avail, sandbox.Policy{Profile: sandbox.ProfileWorkspace, Workspace: t.TempDir()}, "linux")
+	if strings.Contains(f.Detail, "git") {
+		t.Fatalf("outside a repository the row claims a mask nothing made: %q", f.Detail)
 	}
 }
 

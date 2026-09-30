@@ -357,6 +357,22 @@ func TestRequiredContainmentSaysSoOnTheCardAndInStatus(t *testing.T) {
 	}
 }
 
+// The repository's hooks and config are read-only in the one reading the card
+// and /status share, and absent from it when nothing is masked.
+func TestContainmentStatusSaysTheGitStoreIsReadOnly(t *testing.T) {
+	var bare, contained []string
+	m := containedModel(t, &bare, &contained, "contained: bwrap (workspace profile)")
+	if text, _ := m.statusCommand(); strings.Contains(text, "git hooks") {
+		t.Fatalf("/status must not claim a mask nothing made:\n%s", text)
+	}
+	c := m.containment
+	c.GitStore = "read-only git hooks and config"
+	m = m.WithContainment(c)
+	if text, _ := m.statusCommand(); !strings.Contains(text, "bwrap · workspace · read-only git hooks and config") {
+		t.Fatalf("/status should say the repository's hooks and config are read-only:\n%s", text)
+	}
+}
+
 // Without the knob the chip is the mechanism alone, and a session with no
 // containment wiring claims neither state.
 func TestContainmentStatusWithoutTheKnob(t *testing.T) {

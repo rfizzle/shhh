@@ -2,6 +2,7 @@ package scope
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -207,6 +208,34 @@ func TestClassifyWarnsThatAGrantInsideAStoreExposesTheWholeStore(t *testing.T) {
 	}
 	if !strings.Contains(reason, "whole store") || !strings.Contains(reason, kube) {
 		t.Errorf("the reason must name the store and say the grant reaches all of it, got %q", reason)
+	}
+}
+
+// A grant is what unmasks a repository's hooks and config for contained
+// commands, and git runs those on the host, so the store and its program
+// paths are a person's to grant — never a mode's or the classifier's. The
+// working tree beside them is ordinary.
+func TestClassifyMakesARepositorysStoreSensitive(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git is not on PATH")
+	}
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	repo := t.TempDir()
+	if out, err := exec.Command("git", "-C", repo, "init", "-q").CombinedOutput(); err != nil {
+		t.Fatalf("git init: %v: %s", err, out)
+	}
+	for _, dir := range []string{filepath.Join(repo, ".git"), filepath.Join(repo, ".git", "hooks")} {
+		if class, reason := Classify(dir); class != Sensitive || !strings.Contains(reason, "outside containment") {
+			t.Errorf("Classify(%s) = %v, %q; want sensitive, saying git runs it outside containment", dir, class, reason)
+		}
+	}
+	src := filepath.Join(repo, "src")
+	if err := os.MkdirAll(src, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if class, reason := Classify(src); class != Ordinary {
+		t.Errorf("the working tree is ordinary, got %v, %q", class, reason)
 	}
 }
 

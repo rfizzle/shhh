@@ -977,3 +977,85 @@ func greetLocally(t *testing.T) string {
 	}()
 	return ln.Addr().String()
 }
+
+// The repository's program paths, put to the kernel: a contained command in a
+// checkout can read the store — `git status` answers — and cannot write a
+// hook, the config, or move .git aside to rebuild one, while a file in the
+// working tree still lands. Each half alone passes on the wrong wrap: a wrap
+// that refused everything passes the negative, and one that masked nothing
+// passes the positive.
+//
+// The host is asked what is on disk afterwards rather than the command being
+// asked whether it succeeded, because a mask that let the write land where
+// the host cannot see it would still be a mask that holds.
+func refuseTheHookWrite(t *testing.T, avail Availability) {
+	t.Helper()
+	testHome(t)
+	policy, ws := workspacePolicy(t)
+	policy.Cwd = ws
+	if out, err := capture(t, "git", "-C", ws, "init", "-q"); err != nil {
+		t.Fatalf("git init: %v: %s", err, out)
+	}
+	config, err := os.ReadFile(filepath.Join(ws, ".git", "config"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	hook := filepath.Join(ws, ".git", "hooks", "pre-commit")
+	command := "git status --porcelain >/dev/null && echo STATUS-READ; " +
+		"echo x > inside.txt && echo WROTE-INSIDE; " +
+		"printf '#!/bin/sh\\n' > " + hook + " && echo WROTE-HOOK; " +
+		"printf '[core]\\n\\thooksPath = /nowhere\\n' >> .git/config && echo WROTE-CONFIG; " +
+		"mv .git .git-aside && echo MOVED-STORE"
+	if avail.Mechanism == "sandbox-exec" {
+		// Only Seatbelt holds a path that does not exist yet; bubblewrap's
+		// report names commondir as not held rather than claiming it.
+		command += "; echo /nowhere > .git/commondir && echo WROTE-COMMONDIR"
+	}
+
+	argv, err := Wrap(avail, policy, command)
+	if err != nil {
+		t.Fatalf("Wrap under %s: %v", avail.Mechanism, err)
+	}
+	out, _ := capture(t, argv[0], argv[1:]...)
+	for _, want := range []string{"STATUS-READ", "WROTE-INSIDE"} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("a contained command must still read the store and write the tree under %s (no %s):\n%s", avail.Mechanism, want, out)
+		}
+	}
+	for _, refused := range []string{"WROTE-HOOK", "WROTE-CONFIG", "MOVED-STORE", "WROTE-COMMONDIR"} {
+		if strings.Contains(out, refused) {
+			t.Errorf("a contained command did what the mask refuses under %s (%s):\n%s", avail.Mechanism, refused, out)
+		}
+	}
+	if _, err := os.Lstat(hook); err == nil {
+		t.Errorf("a contained command planted a hook on the host under %s", avail.Mechanism)
+	}
+	if got, err := os.ReadFile(filepath.Join(ws, ".git", "config")); err != nil || string(got) != string(config) {
+		t.Errorf("the config changed on the host under %s: %v\n%s", avail.Mechanism, err, got)
+	}
+	if _, err := os.Lstat(filepath.Join(ws, ".git", "commondir")); err == nil {
+		t.Errorf("a contained command redirected the store under %s", avail.Mechanism)
+	}
+}
+
+func TestBubblewrapKeepsTheRepositorysProgramsReadOnly(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skipf("bubblewrap is the Linux mechanism and this host is %s", runtime.GOOS)
+	}
+	avail := detectBwrap()
+	if !avail.OK {
+		t.Skipf("no bubblewrap containment here: %s", avail.Detail)
+	}
+	refuseTheHookWrite(t, avail)
+}
+
+func TestSeatbeltKeepsTheRepositorysProgramsReadOnly(t *testing.T) {
+	if runtime.GOOS != "darwin" {
+		t.Skipf("Seatbelt is the macOS mechanism and this host is %s", runtime.GOOS)
+	}
+	avail := detectSeatbelt()
+	if !avail.OK {
+		t.Skipf("no Seatbelt containment here: %s", avail.Detail)
+	}
+	refuseTheHookWrite(t, avail)
+}

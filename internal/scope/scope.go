@@ -354,6 +354,15 @@ func Classify(dir string) (Class, string) {
 			return Sensitive, "granting anything under " + c + " makes the whole store readable to contained commands"
 		}
 	}
+	// A repository's hooks, config and the rest of what git runs programs
+	// from are read-only to a contained command until a grant covers the
+	// store, and git runs them on the host, outside containment. That is a
+	// grant only a person may make: a mode or the classifier that widened
+	// into one would be handing the next commit a program nobody approved.
+	// See docs/capabilities/containment.md#the-repositorys-own-programs-are-read-only.
+	if store, ok := sandbox.GitStoreOf(resolved); ok {
+		return Sensitive, "granting " + resolved + " lets contained commands write " + store + "'s hooks and config, which git runs on the host outside containment"
+	}
 	return Ordinary, ""
 }
 

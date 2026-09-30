@@ -68,6 +68,16 @@ func bwrapPrefix(s spec) []string {
 	for _, w := range s.write {
 		argv = append(argv, "--bind", w, w)
 	}
+	// The repository's program paths, over the grant that would reach them:
+	// each directory above them bound over itself first, so it is a mount
+	// point nothing can rename aside, then the paths themselves read-only.
+	// See docs/capabilities/containment.md#the-repositorys-own-programs-are-read-only.
+	for _, p := range s.gitPinned {
+		argv = append(argv, "--bind", p, p)
+	}
+	for _, e := range s.gitReadOnly {
+		argv = append(argv, "--ro-bind", e, e)
+	}
 	for _, d := range s.denyDirs {
 		argv = append(argv, "--tmpfs", d)
 	}

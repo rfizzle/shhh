@@ -85,6 +85,24 @@ func seatbeltProfile(s spec) string {
 		}
 		b.WriteString(")\n")
 	}
+	if len(s.gitReadOnly) > 0 {
+		// After the write allowances, so the rule about the repository's
+		// program paths is the one that holds inside the workspace. A rule
+		// about a name holds whether the path exists yet or not, which is
+		// what keeps an absent commondir from being written.
+		// See docs/capabilities/containment.md#the-repositorys-own-programs-are-read-only.
+		// The pinned directories by their literal name: that refuses moving
+		// .git aside and back with a hook written in between, and leaves
+		// creating a file inside it — every lock git takes — alone.
+		b.WriteString("(deny file-write*")
+		for _, e := range s.gitReadOnly {
+			fmt.Fprintf(&b, "\n  (subpath %s)", sbplQuote(e))
+		}
+		for _, p := range s.gitPinned {
+			fmt.Fprintf(&b, "\n  (literal %s)", sbplQuote(p))
+		}
+		b.WriteString(")\n")
+	}
 	if len(s.denyDirs)+len(s.denyFiles) > 0 {
 		b.WriteString("(deny file-read* file-write*")
 		for _, d := range s.denyDirs {

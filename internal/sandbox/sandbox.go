@@ -244,7 +244,16 @@ type spec struct {
 	// to stay readable anyway: a workspace or a working directory that is not
 	// also a write grant. A grant needs no entry here — it is rebound over the
 	// privatised tmpdir on its own.
-	tmpVisible     []string
+	tmpVisible []string
+	// gitReadOnly are the paths in the workspace's repository that git
+	// reads a program from, read-only to a contained command; gitPinned are
+	// the directories above them that may not be renamed, so none can be
+	// moved aside, written into and moved back; gitUnheld are the ones this
+	// mechanism cannot hold, named by the report rather than claimed.
+	// See docs/capabilities/containment.md#the-repositorys-own-programs-are-read-only.
+	gitReadOnly    []string
+	gitPinned      []string
+	gitUnheld      []string
 	privateGoCache bool
 	// goCacheHost is the session's build cache as the host names it, bound
 	// over the private tmpfs's go-build directory under bubblewrap, where
@@ -702,6 +711,8 @@ func resolvePolicy(p Policy, mechanism string) (spec, error) {
 			return spec{}, fmt.Errorf("wrap unsupported: cannot mask %s (not a directory or regular file)", rp)
 		}
 	}
+
+	s.maskGitStore(mechanism)
 
 	// Masks outrank write grants by mount order; a write grant *inside* a mask
 	// would defeat it, so that configuration is refused outright.

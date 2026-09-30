@@ -174,6 +174,7 @@ func buildContainment(cfg config.Config, sc *scope.Scope, sup *process.Superviso
 	c.Status = fmt.Sprintf("contained: %s (%s profile)", avail.Mechanism, policy.Profile)
 	c.Mechanism, c.Profile, c.Required = avail.Mechanism, string(policy.Profile), cfg.Sandbox.Require
 	c.Network = policy.Profile != sandbox.ProfileWorkspaceNetless
+	c.GitStore = sandbox.GitStoreWords(avail, policy)
 	if c.Network && sandbox.HoldsHosts(avail.Mechanism) {
 		// The list the wrap will hold, so the card and the prompt name the
 		// hosts in force rather than calling the network open.
