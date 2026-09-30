@@ -1,0 +1,9 @@
+id,region,product,amount
+1,north,widget,120
+2,east,gadget,75
+3,north,gadget,60
+4,west,widget,210
+5,east,widget,95
+6,north,gizmo,40
+7,west,gizmo,55
+8,east,gadget,80

@@ -1396,6 +1396,21 @@ than the idiom's. The defaults are where that is won or lost:
 - **Results are compact, one per line**, the way a pipe would have printed
   them.
 
+**The rule is measured, not promised.** Each idiom the readers replace — a
+field out of a lockfile, a workflow's job names, a TOML value, a CSV column's
+distinct values, a table's row count, a zip's entry list, a line in a `.gz`
+log — is written down with the output the idiom prints over one fixture, and a
+test asks the built-in reader the same question in one call and fails when
+the answer is larger than that output as the model would have read it, under
+the status lines a command's result carries. The idiom is never run by the
+test: the output is a file, so the measurement does not depend on which of
+those programs this machine has. The readers' own definitions are held the
+same way, because they ride every request: the two that came in may cost the
+prefix no more than one tool beyond the two that went. And an eval case per
+idiom asks a real session the question and counts what the case is read for —
+the calls that went to the shell beside the ones that went to a built-in, the
+rounds, and the bytes of every result the session read back.
+
 The answer is bounded the way a search's is — a result count and a byte cap —
 and a cut answer keeps the rest in the evidence store and names the id, so a
 long answer is a read of the store rather than the same call again. A file

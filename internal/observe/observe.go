@@ -740,15 +740,19 @@ const (
 // were written with, and nothing fails when they stop matching.
 //
 // A command is on neither list, because one tool name covers a grep and a
-// build and the record cannot tell them apart. Neither are the data query,
-// git's reading half, or the structural rewriter — which
-// always previews and never writes, so it is neither the looking nor the end
-// of it. All of them answer a question about a file somebody has already
-// found, which is not the looking this measures.
+// build and the record cannot tell them apart. Neither are git's reading
+// half or the structural rewriter — which always previews and never writes,
+// so it is neither the looking nor the end of it. Both answer a question
+// about a file somebody has already found, which is not the looking this
+// measures. The data readers are reads: query and sqlite take the place of a
+// read_file of a whole manifest, lockfile or database dump, and a session
+// that moved to them from read_file would otherwise read as one that looked
+// less.
 var (
 	searchTools = []string{
-		// Reads and listings.
-		"read_file", "list_directory",
+		// Reads and listings, the structured-data and database readers
+		// among them.
+		"read_file", "list_directory", "query", "sqlite",
 		// Searches and globs, structural and otherwise.
 		"search", "ast_grep", "glob", "fd",
 		// The language server's six questions.

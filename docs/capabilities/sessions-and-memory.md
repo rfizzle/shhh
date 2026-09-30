@@ -773,6 +773,15 @@ with it, and a test run piped into `tail` is a build. A program the reading
 does not recognise is `other` rather than a guess, and so is a script run by
 its path.
 
+**A program that reads or writes by how it was invoked is read by its
+options.** `sed` without `-i` is a read and with it an edit. An archive or
+compression program is a write unless it was told only to show what it holds:
+`tar t` and `unzip -l` list, and `unzip -p`, `gzip -dc` and `gunzip -c` read.
+`sqlite3` handed a query or a schema command is a read, and `python -c` is one
+when the snippet reads JSON and nothing in it could write. Every other form of
+them keeps the word it had, so a line counted as a read is one a built-in
+reader could have answered.
+
 **A command recorded before the word existed stays unrecorded until someone
 asks.** Those rows are counted apart from `other` — other is a reading of a
 line, and those are lines nothing read. `shhh observe classify` reads each

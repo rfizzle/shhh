@@ -75,7 +75,7 @@ var commandPurposes = map[string]string{
 	"comm": PurposeRead, "diff": PurposeRead, "cmp": PurposeRead, "file": PurposeRead,
 	"stat": PurposeRead, "xxd": PurposeRead, "hexdump": PurposeRead, "od": PurposeRead,
 	"strings": PurposeRead, "jq": PurposeRead, "jaq": PurposeRead, "gojq": PurposeRead,
-	"yq": PurposeRead, "bat": PurposeRead, "zcat": PurposeRead, "md5sum": PurposeRead,
+	"yq": PurposeRead, "bat": PurposeRead, "zcat": PurposeRead, "gzcat": PurposeRead, "md5sum": PurposeRead,
 	"sha1sum": PurposeRead, "sha256sum": PurposeRead, "shasum": PurposeRead,
 	"base64": PurposeRead, "readlink": PurposeRead, "realpath": PurposeRead,
 	"basename": PurposeRead, "dirname": PurposeRead, "pwd": PurposeRead,
@@ -94,8 +94,7 @@ var commandPurposes = map[string]string{
 	"rmdir": PurposeWrite, "mkdir": PurposeWrite, "touch": PurposeWrite, "ln": PurposeWrite,
 	"chmod": PurposeWrite, "chown": PurposeWrite, "install": PurposeWrite,
 	"truncate": PurposeWrite, "dd": PurposeWrite, "rsync": PurposeWrite,
-	"tar": PurposeWrite, "zip": PurposeWrite, "unzip": PurposeWrite,
-	"gzip": PurposeWrite, "gunzip": PurposeWrite,
+	"zip": PurposeWrite,
 	// edit
 	"patch": PurposeEdit, "sd": PurposeEdit, "ed": PurposeEdit,
 	// build
@@ -119,8 +118,8 @@ var commandPurposes = map[string]string{
 	// Named as other rather than left out, because each is an interpreter
 	// safety.Commands pulls the code out of as a command of its own, and
 	// what that code's first word looks like is not what the line did.
-	"python": PurposeOther, "python3": PurposeOther, "node": PurposeOther,
-	"ruby": PurposeOther, "perl": PurposeOther,
+	// python's one read is told by its options, in flagPurposes.
+	"node": PurposeOther, "ruby": PurposeOther, "perl": PurposeOther,
 }
 
 // flagPurposes is the programs whose word turns on an option: the same verb
@@ -132,6 +131,177 @@ var flagPurposes = map[string]func(args []string) string{
 	"awk":  awkInPlace,
 	"gawk": awkInPlace,
 	"perl": inPlace(PurposeOther),
+	// The archive and compression programs write unless they were told only
+	// to show what they hold: a listing names entries the way ls names
+	// files, and an entry or a decompressed text sent to the output is a
+	// read. Every other form extracts or compresses into a file.
+	"tar":    tarPurpose,
+	"unzip":  unzipPurpose,
+	"gzip":   gzipPurpose,
+	"gunzip": gunzipPurpose,
+	// sqlite3 and python are other unless the line hands them a read a
+	// built-in reader answers: a query or a schema command, a snippet that
+	// reads JSON and writes nothing.
+	"sqlite3": sqlitePurpose,
+	"python":  pythonPurpose,
+	"python3": pythonPurpose,
+}
+
+// shortOptions is every letter passed in a short option bundle, and the long
+// options by name, for the programs whose word turns on a mode letter.
+func shortOptions(args []string) (letters string, long []string) {
+	for _, a := range args {
+		switch {
+		case strings.HasPrefix(a, "--"):
+			name, _, _ := strings.Cut(a, "=")
+			long = append(long, name)
+		case len(a) > 1 && a[0] == '-':
+			letters += a[1:]
+		}
+	}
+	return letters, long
+}
+
+func hasLong(long []string, names ...string) bool {
+	for _, l := range long {
+		for _, n := range names {
+			if l == n {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// tarPurpose is a listing when tar was told t — in a short bundle, in the
+// dashless bundle its first argument may be, or as --list — and nothing
+// that creates, extracts or appends; every other tar is the write it was.
+func tarPurpose(args []string) string {
+	letters, long := shortOptions(args)
+	if len(args) > 0 && !strings.HasPrefix(args[0], "-") {
+		letters += args[0]
+	}
+	if strings.ContainsAny(letters, "cxruA") ||
+		hasLong(long, "--create", "--extract", "--get", "--append", "--update", "--concatenate", "--catenate", "--delete") {
+		return PurposeWrite
+	}
+	if strings.ContainsRune(letters, 't') || hasLong(long, "--list") {
+		return PurposeList
+	}
+	return PurposeWrite
+}
+
+// unzipPurpose is a listing for -l, -v and -Z (zipinfo's mode), a read for
+// -p, which sends an entry to the output rather than to a file, and
+// otherwise the extraction it is.
+func unzipPurpose(args []string) string {
+	letters, _ := shortOptions(args)
+	switch {
+	case strings.ContainsAny(letters, "lvZ"):
+		return PurposeList
+	case strings.ContainsRune(letters, 'p'):
+		return PurposeRead
+	}
+	return PurposeWrite
+}
+
+// gzipPurpose is a read when gzip decompresses to its output (-d with -c, in
+// either spelling) or lists what a file holds (-l); compressing, or
+// decompressing in place, writes a file.
+func gzipPurpose(args []string) string {
+	letters, long := shortOptions(args)
+	decompress := strings.ContainsRune(letters, 'd') || hasLong(long, "--decompress", "--uncompress")
+	if (decompress && gzipToOutput(letters, long)) || gzipListing(letters, long) {
+		return PurposeRead
+	}
+	return PurposeWrite
+}
+
+// gunzipPurpose is gzip -d under its own name.
+func gunzipPurpose(args []string) string {
+	letters, long := shortOptions(args)
+	if gzipToOutput(letters, long) || gzipListing(letters, long) {
+		return PurposeRead
+	}
+	return PurposeWrite
+}
+
+func gzipToOutput(letters string, long []string) bool {
+	return strings.ContainsRune(letters, 'c') || hasLong(long, "--stdout", "--to-stdout")
+}
+
+func gzipListing(letters string, long []string) bool {
+	return strings.ContainsRune(letters, 'l') || hasLong(long, "--list")
+}
+
+var (
+	// sqliteReads are what a sqlite3 statement may open with and still be a
+	// read: a query, or a dot-command that prints the schema.
+	sqliteReads = map[string]bool{
+		"SELECT": true, "WITH": true, "EXPLAIN": true, "VALUES": true,
+		".SCHEMA": true, ".TABLES": true, ".INDEXES": true, ".INDICES": true,
+		".FULLSCHEMA": true, ".DATABASES": true,
+	}
+	// sqliteWrites are the words that make a sqlite3 line something other
+	// than a read wherever they stand in it — a second statement that
+	// changes the database, or a dot-command that writes a file, opens
+	// another or runs a program.
+	sqliteWrites = regexp.MustCompile(`(?i)(?:^|[^a-z0-9_.])(?:insert|update|delete|replace|create|drop|alter|attach|detach|vacuum|reindex|pragma|begin|commit|savepoint|\.(?:import|output|once|save|backup|restore|shell|system|read|excel|open|clone|recover|load|cd))(?:[^a-z0-9_]|$)`)
+)
+
+// sqlitePurpose is a read when sqlite3 is handed a database and a statement
+// that only reads — a query, the schema, the table list — with none of the
+// words that change a database anywhere in the line. A sqlite3 with no
+// statement takes its commands from somewhere this reading cannot see, and
+// one told to run something first (-cmd, -init) runs that too; both stay
+// other, as every sqlite3 was.
+func sqlitePurpose(args []string) string {
+	var rest []string
+	for i := 0; i < len(args); i++ {
+		switch a := args[i]; {
+		case a == "-cmd" || a == "--cmd" || a == "-init" || a == "--init":
+			return PurposeOther
+		case a == "-separator" || a == "--separator" || a == "-newline" || a == "--newline" ||
+			a == "-nullvalue" || a == "--nullvalue" || a == "-vfs" || a == "--vfs":
+			i++ // the option's own value
+		case strings.HasPrefix(a, "-"):
+		default:
+			rest = append(rest, a)
+		}
+	}
+	if len(rest) < 2 {
+		return PurposeOther
+	}
+	sql := strings.TrimSpace(strings.Trim(strings.Join(rest[1:], " "), `'"`))
+	first, _, _ := strings.Cut(sql, " ")
+	if !sqliteReads[strings.ToUpper(first)] || sqliteWrites.MatchString(sql) {
+		return PurposeOther
+	}
+	return PurposeRead
+}
+
+// pythonWrites are what a -c snippet could change something with: a write
+// or a dump to a file, an open for writing or appending, the file system's
+// own verbs, and a way to run or fetch anything else.
+var pythonWrites = regexp.MustCompile(`\b(?:write|writelines|write_text|write_bytes|dump|remove|unlink|rename|replace|rmtree|rmdir|mkdir|makedirs|touch|truncate|chmod|chown|symlink|link|copy|copyfile|copytree|move|system|popen|subprocess|shutil|exec|eval|compile|__import__|socket|urllib|requests|http)\b|['"][rbt]*[wax+][rbt+]*['"]|\bmode\s*=`)
+
+// pythonPurpose is a read when python is handed a -c snippet that reads
+// JSON — json.load or json.loads — and holds nothing that could write: the
+// scripting-language spelling of a jq read. Every other python is other, as
+// every python was: a script run by name, a snippet that does something
+// else, one this reading cannot vouch for.
+func pythonPurpose(args []string) string {
+	for i, a := range args {
+		if a != "-c" {
+			continue
+		}
+		code := strings.Join(args[i+1:], " ")
+		if strings.Contains(code, "json.load") && !pythonWrites.MatchString(code) {
+			return PurposeRead
+		}
+		return PurposeOther
+	}
+	return PurposeOther
 }
 
 // find joins the table here rather than in its literal because its reading
@@ -267,10 +437,13 @@ func strongest(words ...string) string {
 // and behind an interpreter the command it was handed, each after the one it
 // came from and each a suffix of it; only one of them is the command, and a
 // group is how the others are kept from counting as programs of their own.
+// The suffix is judged without trailing space: a quote closing an
+// interpreter's code stands alone once its parentheses are blanked, and
+// trimmed to nothing it leaves a space the code handed on does not end with.
 func commandGroups(cmds []string) [][]string {
 	var groups [][]string
 	for _, c := range cmds {
-		if n := len(groups); n > 0 && strings.HasSuffix(groups[n-1][0], c) {
+		if n := len(groups); n > 0 && strings.HasSuffix(strings.TrimRight(groups[n-1][0], " "), c) {
 			groups[n-1] = append(groups[n-1], c)
 			continue
 		}

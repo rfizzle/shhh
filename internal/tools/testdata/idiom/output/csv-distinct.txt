@@ -1,0 +1,4 @@
+# output of `python3 -c 'import csv; print("\n".join(sorted({r["region"] for r in csv.DictReader(open("sales.csv"))})))'`, run in testdata/idiom
+east
+north
+west

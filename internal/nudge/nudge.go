@@ -53,6 +53,21 @@ var rows = []row{
 		line: "query answers this without an approval: part of a JSON, YAML, TOML, XML or CSV file by a jq expression, or with none, the file's shape."},
 	{verbs: []string{"yq"}, when: without("-i", "--inplace"), tool: tools.QueryName,
 		line: "query answers this without an approval: part of a JSON, YAML, TOML, XML or CSV file by a jq expression, or with none, the file's shape."},
+	// python only reaches here as the record's read: a -c snippet that
+	// reads JSON and writes nothing.
+	{verbs: []string{"python", "python3"}, tool: tools.QueryName,
+		line: "query answers this without an approval: part of a JSON, YAML, TOML, XML or CSV file by a jq expression, or with none, the file's shape."},
+	{verbs: []string{"sqlite3"}, tool: tools.SqliteName,
+		line: "sqlite answers this without an approval: a database read-only — with no sql, every table's columns, indexes and row count; several statements in one call as an array."},
+	// The archive rows stand before search's: a listing piped into grep is
+	// still a question about what the archive holds, which search does not
+	// look inside.
+	{verbs: []string{"unzip"}, when: bundled("lvZ"), tool: tools.ListDirectoryName,
+		line: "list_directory answers this without an approval: a .zip, .jar, .tar or .tar.gz lists like a directory, each entry with its size."},
+	{verbs: []string{"tar"}, tool: tools.ListDirectoryName,
+		line: "list_directory answers this without an approval: a .zip, .jar, .tar or .tar.gz lists like a directory, each entry with its size."},
+	{verbs: []string{"unzip"}, tool: tools.ReadFileName,
+		line: "read_file answers this without an approval: one entry of an archive is read as archive.zip!/path/in/it, numbered as any file."},
 	{verbs: []string{"grep", "egrep", "fgrep", "rg"}, tool: tools.SearchName,
 		line: "search answers this without an approval: a pattern across the tree or in one file, each match with the lines around it; files_only names only the files, include narrows to one kind of file."},
 	{verbs: []string{"find"}, when: without("-delete", "-exec", "-execdir", "-ok", "-okdir", "-fprint", "-fprint0", "-fprintf", "-fls"), tool: tools.GlobName,
@@ -72,6 +87,11 @@ var rows = []row{
 	// answers.
 	{verbs: []string{"sed"}, when: quietSed, tool: tools.ReadFileName,
 		line: "read_file answers this without an approval: a whole file in one call, or the lines between start_line and end_line."},
+	// The decompressing readers reach here only in the forms the record
+	// files as reads, and the one that decompresses to the output is the one
+	// a reader answers: gzip -l reports a ratio no reader states.
+	{verbs: []string{"zcat", "gzcat", "gzip", "gunzip"}, when: notListing, tool: tools.ReadFileName,
+		line: "read_file answers this without an approval: a .gz file reads as the text it decompresses to, and search looks inside it too."},
 }
 
 // escalations run the command after them as somebody else.
@@ -171,6 +191,24 @@ func without(flags ...string) func([]string) bool {
 		}
 		return true
 	}
+}
+
+// bundled holds where any of these letters was passed in a short option
+// bundle.
+func bundled(letters string) func([]string) bool {
+	return func(args []string) bool {
+		for _, a := range args {
+			if len(a) > 1 && a[0] == '-' && a[1] != '-' && strings.ContainsAny(a[1:], letters) {
+				return true
+			}
+		}
+		return false
+	}
+}
+
+// notListing is a gzip that was not told -l, in a bundle or spelled out.
+func notListing(args []string) bool {
+	return !bundled("l")(args) && without("--list")(args)
 }
 
 // notFollowing is a tail that prints and exits: -f or -F in any bundle, or

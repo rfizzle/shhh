@@ -1,0 +1,2 @@
+# output of `zcat logs/app.log.gz | grep ERROR`, run in testdata/idiom
+2026-09-29T03:00:37Z ERROR payments: card processor timed out after 30s (order 1187)

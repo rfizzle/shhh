@@ -1,0 +1,4 @@
+# output of `yq '.jobs | keys' workflows/ci.yml`, run in testdata/idiom
+- build
+- lint
+- test

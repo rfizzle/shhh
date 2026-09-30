@@ -63,6 +63,60 @@ func TestCommandPurpose(t *testing.T) {
 	}
 }
 
+// The archive, compression and database programs and python each have a
+// form that only shows what a file holds, which a built-in reader answers,
+// and forms that change something, which keep the word they always had.
+func TestCommandPurpose_TheDataProgramsReadOnlyInTheirReadingForms(t *testing.T) {
+	for _, c := range []struct {
+		line, want string
+	}{
+		{"tar tzf release.tgz", PurposeList},
+		{"tar -tvf release.tar", PurposeList},
+		{"tar --list -f release.tar", PurposeList},
+		{"tar tzf release.tgz | grep src/", PurposeSearch},
+		{"tar xzf release.tgz", PurposeWrite},
+		{"tar -czf out.tgz src", PurposeWrite},
+		{"tar -xf a.tar -C dest", PurposeWrite},
+		{"unzip -l release.zip", PurposeList},
+		{"unzip -Z1 release.zip", PurposeList},
+		{"unzip -p release.zip docs/README.md", PurposeRead},
+		{"unzip release.zip", PurposeWrite},
+		{"unzip -o release.zip -d out", PurposeWrite},
+		{"zcat app.log.gz | grep ERROR", PurposeSearch},
+		{"gzcat app.log.gz | tail -5", PurposeRead},
+		{"gzip -dc app.log.gz | tail -5", PurposeRead},
+		{"gzip -d -c app.log.gz", PurposeRead},
+		{"gzip -l app.log.gz", PurposeRead},
+		{"gunzip -c app.log.gz", PurposeRead},
+		{"gzip app.log", PurposeWrite},
+		{"gzip -d app.log.gz", PurposeWrite},
+		{"gunzip app.log.gz", PurposeWrite},
+		{"gzip -c app.log > app.log.gz", PurposeWrite},
+		{`sqlite3 app.db "SELECT count(*) FROM orders"`, PurposeRead},
+		{"sqlite3 -header -column app.db 'select name from users limit 5'", PurposeRead},
+		{"sqlite3 app.db .schema", PurposeRead},
+		{"sqlite3 app.db '.tables'", PurposeRead},
+		{`sqlite3 app.db "DELETE FROM orders"`, PurposeOther},
+		{`sqlite3 app.db "SELECT 1; DROP TABLE orders"`, PurposeOther},
+		{`sqlite3 app.db ".output dump.sql"`, PurposeOther},
+		{`sqlite3 app.db "PRAGMA journal_mode=delete"`, PurposeOther},
+		{"sqlite3 -cmd '.read x.sql' app.db 'SELECT 1'", PurposeOther},
+		{"sqlite3 app.db", PurposeOther},
+		{"sqlite3 app.db < migrate.sql", PurposeOther},
+		{`python3 -c 'import json; print(json.load(open("package.json"))["version"])'`, PurposeRead},
+		{`cat package.json | python -c 'import json,sys; print(json.load(sys.stdin)["name"])'`, PurposeRead},
+		{`python3 -c 'import json; d=json.load(open("a.json")); open("b.json","w").write(str(d))'`, PurposeOther},
+		{`python3 -c 'import json; json.dump({}, open("a.json", "w"))'`, PurposeOther},
+		{`python3 -c 'import json,os; os.remove("a.json")'`, PurposeOther},
+		{`python3 -c 'import csv; print(1)'`, PurposeOther},
+		{"python3 script.py", PurposeOther},
+	} {
+		if got := CommandPurpose(c.line); got != c.want {
+			t.Errorf("CommandPurpose(%q) = %q, want %q", c.line, got, c.want)
+		}
+	}
+}
+
 // The word is always one of the set: a line is content, and whatever it
 // holds must come out as a code.
 func TestCommandPurpose_IsAlwaysAWordOfTheSet(t *testing.T) {

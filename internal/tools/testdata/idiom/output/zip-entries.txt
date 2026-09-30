@@ -1,0 +1,10 @@
+# output of `unzip -l release.zip`, run in testdata/idiom
+Archive:  release.zip
+  Length      Date    Time    Name
+---------  ---------- -----   ----
+       49  2026-09-29 12:00   ledger/README.md
+       47  2026-09-29 12:00   ledger/LICENSE
+      384  2026-09-29 12:00   ledger/bin/ledger
+       39  2026-09-29 12:00   ledger/config/default.toml
+---------                     -------
+      519                     4 files

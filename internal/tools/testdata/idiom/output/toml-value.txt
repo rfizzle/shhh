@@ -1,0 +1,2 @@
+# output of `yq -p toml '.package.version' Cargo.toml`, run in testdata/idiom
+0.4.1

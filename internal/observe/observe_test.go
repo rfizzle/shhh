@@ -376,6 +376,20 @@ func TestToolNames_NothingIsBothLookingAndWriting(t *testing.T) {
 	}
 }
 
+// The structured-data and database readers are reads: a session that moved
+// from reading a lockfile whole to querying it has not stopped looking.
+func TestToolNames_TheDataReadersAreLooking(t *testing.T) {
+	looking := map[string]bool{}
+	for _, s := range SearchToolNames() {
+		looking[s] = true
+	}
+	for _, name := range []string{"query", "sqlite"} {
+		if !looking[name] {
+			t.Errorf("%q is not counted as looking", name)
+		}
+	}
+}
+
 // The caller gets a copy: the lists are named by a query on every call, and
 // one that came back as the package's own slice could be sorted or appended
 // to under it.

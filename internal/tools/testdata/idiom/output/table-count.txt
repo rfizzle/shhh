@@ -1,0 +1,2 @@
+# output of `sqlite3 app.db 'SELECT count(*) FROM orders'`, run in testdata/idiom
+42

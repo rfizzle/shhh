@@ -1,0 +1,2 @@
+# output of `jq -r '.packages["node_modules/left-pad"].version' package-lock.json`, run in testdata/idiom
+1.3.0
