@@ -40,6 +40,21 @@ func TestOutputView_ScrollsAndClamps(t *testing.T) {
 	}
 }
 
+// [enter] is offered as closing the row only where a row is behind the
+// view; a view opened from a screen or a card has none, so enter leaves the
+// way esc does and esc is the one way out the footer states.
+func TestOutputView_EnterIsOfferedOnlyOverARow(t *testing.T) {
+	v := outputFixture(3)
+	if plain := ansi.Strip(v.View(120)); !strings.Contains(plain, "[enter] close the row") {
+		t.Fatalf("a row's view offers to close it:\n%s", plain)
+	}
+	v.Rowless = true
+	plain := ansi.Strip(v.View(120))
+	if strings.Contains(plain, "[enter]") || !strings.Contains(plain, "[esc] back") {
+		t.Fatalf("a rowless view offers esc alone:\n%s", plain)
+	}
+}
+
 // Foreign bytes are re-painted on the way through, exactly as a detail
 // body's are: no colour of the program's own reaches the screen.
 func TestOutputView_RepaintsForeignOutput(t *testing.T) {

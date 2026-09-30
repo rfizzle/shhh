@@ -36,6 +36,12 @@ type OutputView struct {
 	// command card's full view exists to read a long command whole, and a
 	// clip there would hide the thing the screen was opened for.
 	Wrap bool
+	// Rowless marks a view opened from no transcript row — a screen's kept
+	// page, a card's facts. There is no row for [enter] to fold, so it
+	// leaves exactly as esc does, and the footer offers only esc: one way
+	// out stated once, rather than a promise to close a row that is not
+	// there.
+	Rowless bool
 }
 
 // OutputResult is what a key did to the view: left it up, or one of the two
@@ -95,10 +101,11 @@ func (v *OutputView) View(width int) string {
 	stats := plural(len(v.Lines), "line")
 	header := padRight(Clip(" "+v.Title, max(0, width-lipgloss.Width(stats))),
 		max(0, width-lipgloss.Width(stats))) + sty.Dim.Render(stats)
-	footer := sty.Dim.Render("output · ") + keyOffers([]KeyOffer{
-		keyOffer(keys.Output.Scroll), keyOffer(keys.Output.PageUp), keyOffer(keys.Output.PageDown),
-		keyOffer(keys.Output.Collapse), keyOffer(keys.Output.Back),
-	})
+	offers := []KeyOffer{keyOffer(keys.Output.Scroll), keyOffer(keys.Output.PageUp), keyOffer(keys.Output.PageDown)}
+	if !v.Rowless {
+		offers = append(offers, keyOffer(keys.Output.Collapse))
+	}
+	footer := sty.Dim.Render("output · ") + keyOffers(append(offers, keyOffer(keys.Output.Back)))
 
 	p := Pager{Offset: v.Offset, Height: v.bodyHeight()}
 	visible := p.Window(v.bodyRows(width))

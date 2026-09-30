@@ -22,8 +22,10 @@ import (
 const noOutputEntry = -1
 
 // openOutputFull takes the viewer full screen; esc returns to ret. idx is
-// the transcript entry the view came from, or noOutputEntry.
+// the transcript entry the view came from, or noOutputEntry — which is also
+// what tells the view it has no row for [enter] to close.
 func (m Model) openOutputFull(v *components.OutputView, idx int, ret state) (tea.Model, tea.Cmd) {
+	v.Rowless = idx == noOutputEntry
 	m.fullOutput = v
 	m.outputIdx = idx
 	m.outputReturn = ret

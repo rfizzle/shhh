@@ -14,6 +14,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
 // longOutputModel is a session whose last row is a command with n output
@@ -114,6 +115,22 @@ func TestOutputDepths_EnterOnFullScreenCollapses(t *testing.T) {
 	}
 	if es := *m.entries(); es[m.focusIdx].expanded {
 		t.Fatal("the depth past full screen is closed")
+	}
+}
+
+// Only a view opened from a transcript row offers [enter] as closing it;
+// the rowless openers (a screen's kept page, the command card) go back the
+// way esc does, so the view is told it has no row.
+func TestOutputFull_RowlessViewIsToldSo(t *testing.T) {
+	m := longOutputModel(t, 200)
+	updated, _ := m.updateFocus(tea.KeyPressMsg{Code: tea.KeyEnter})
+	updated, _ = updated.(Model).updateFocus(tea.KeyPressMsg{Code: tea.KeyEnter})
+	if v := updated.(Model).fullOutput; v == nil || v.Rowless {
+		t.Fatal("a row's full screen should know it has a row to close")
+	}
+	updated, _ = m.openOutputFull(&components.OutputView{Title: "page"}, noOutputEntry, stateSources)
+	if v := updated.(Model).fullOutput; v == nil || !v.Rowless {
+		t.Fatal("a view opened from no row should be told so")
 	}
 }
 

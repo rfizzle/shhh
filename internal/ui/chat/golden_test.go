@@ -2083,6 +2083,9 @@ func TestGolden_ExplainView(t *testing.T) {
 				},
 			})
 			failed.SetSize(width, 14)
+			// The card opens the screen through openOutputFull with no row
+			// behind it, which is what drops [enter] from the footer.
+			read.Rowless, failed.Rowless = true, true
 			return []golden.Panel{
 				{Label: "the paragraph, and what asking it cost", View: read.View(width)},
 				{Label: "a reading that did not happen", View: failed.View(width)},
