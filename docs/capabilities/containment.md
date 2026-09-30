@@ -562,13 +562,13 @@ follows is also, word for word, what a drafted declaration is handed
 The declaration is `.shhh/toolchain.toml`, and it takes four keys:
 
 ```toml
-packages = ["shellcheck"]
+packages = ["shfmt"]
 install = [
   "go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.5.0",
   "go install github.com/securego/gosec/v2/cmd/gosec@v2.21.4",
 ]
 hosts = ["proxy.golang.org", "sum.golang.org"]
-check = ["golangci-lint", "gosec", "shellcheck"]
+check = ["golangci-lint", "gosec", "shfmt"]
 ```
 
 - `packages` are names in the base image's own package index — Wolfi, so
