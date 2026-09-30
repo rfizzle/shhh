@@ -402,7 +402,9 @@ Force is not what makes a recursive delete permanent — it only stops `rm`
 asking about a write-protected file — so recursion alone is enough to move
 the key. The same reading covers the spellings people reach for when they are
 in a hurry: a `find` with `-delete`, a `git clean -fdx`, a `git checkout` of
-a pathspec rather than a branch, a `chmod 777` with or without `-R`.
+a pathspec rather than a branch, a `chmod 777` with or without `-R`, and an
+`mkfs` by any of its names — `mkfs -t ext4` and `mkfs.ext4` format the same
+disk.
 
 What stays a pattern in the text is what genuinely is one: a redirection onto
 a device, a pipe into an interpreter, a statement in SQL. A table straining
@@ -429,9 +431,9 @@ server, a checked-in script — says nothing here.
 ## Some targets are never destroyed
 
 A recursive delete, a search that deletes what it finds, a `git clean`, a
-recursive `chmod` or `chown`, and a write onto a device are read for what they
-are pointed at, and where that is somewhere no session may destroy the
-command is refused by rule: the filesystem root, the home directory, the
+recursive `chmod` or `chown`, a write onto a device and an `mkfs` of one are
+read for what they are pointed at, and where that is somewhere no session may
+destroy the command is refused by rule: the filesystem root, the home directory, the
 workspace root, a repository's git store, a path behind the containment deny
 mask, and anywhere outside the working scope. It is answered where the deny
 list is — before the mode, before any grant and before the classifier — so

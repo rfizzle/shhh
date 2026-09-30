@@ -258,6 +258,15 @@ func (r *destroyReader) command(words []token, depth int) {
 				r.resolved(of, of, true, true)
 			}
 		}
+	case verb == "mkfs" || strings.HasPrefix(verb, "mkfs."):
+		// What mkfs formats is gone, and it is refused where that is a
+		// device. A file it is pointed at — an image being built — is a
+		// file like any other write's, and is the card's to judge.
+		for _, t := range args {
+			if t.literal && device(t.text) {
+				r.resolved(t.text, t.text, true, true)
+			}
+		}
 	case verb == "eval" && depth < maxCarried:
 		r.carried(args, depth)
 	case shells[verb] && depth < maxCarried:

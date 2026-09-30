@@ -59,6 +59,9 @@ type rule struct {
 	// verb is the leading words, matched exactly. It is a list because the
 	// dangerous thing is usually a subcommand: `git push` is not `git`.
 	verb []string
+	// family is whether the first verb word also names every program
+	// spelled `<verb>.<something>`, the way `mkfs.ext4` is an mkfs.
+	family bool
 	// flags must all be satisfied. An empty list matches the verb alone, so
 	// only a rule with a where clause should leave it out.
 	flags []flag
@@ -170,6 +173,17 @@ var rules = []rule{{
 		return false
 	},
 	risk: "writes directly to a device — may destroy disk contents",
+}, {
+	// `mkfs` is a family: `mkfs.ext4` and `mkfs.vfat` are what it runs, and
+	// a person calls whichever member they mean directly, so the row is
+	// every name spelled `mkfs` or `mkfs.<type>`. What it formats is gone
+	// whatever options it was given, and the verb alone is the condition:
+	// the split cuts a line at `$`, so `mkfs.ext4 $DEV` reaches the row
+	// with no operand at all, and asking for one lost exactly that call.
+	name:   "mkfs",
+	verb:   []string{"mkfs"},
+	family: true,
+	risk:   "formats a filesystem — all data on target will be lost",
 }}
 
 // patterns are the dangers that are not a verb carrying options: a
@@ -181,7 +195,6 @@ var patterns = []struct {
 	re   *regexp.Regexp
 	risk string
 }{
-	{"mkfs", regexp.MustCompile(`\bmkfs\.`), "formats a filesystem — all data on target will be lost"},
 	{"> /dev/sd", regexp.MustCompile(`>\s*/dev/sd[a-z]`), "overwrites a raw block device"},
 	{"> /dev/nvme", regexp.MustCompile(`>\s*/dev/nvme`), "overwrites a raw block device"},
 	{"fork bomb", regexp.MustCompile(`\b:(){ :\|:& };:`), "fork bomb — will crash the system"},
@@ -666,7 +679,8 @@ func (r rule) matches(words []string) bool {
 		return false
 	}
 	for i, v := range r.verb {
-		if words[i] != v {
+		member := i == 0 && r.family && strings.HasPrefix(words[0], v+".")
+		if words[i] != v && !member {
 			return false
 		}
 	}
