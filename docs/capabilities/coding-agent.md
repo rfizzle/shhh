@@ -557,7 +557,11 @@ otherwise the next call is the same call, scoped smaller. What it says
 instead is what the file is: its size, its line count and, for a Markdown
 file, its headings with their lines, taken in one pass that holds a line at
 a time. A bare refusal was answered with `wc` and a heading grep, which is
-the same pass run as a command. A file whose opening bytes are not text comes back as one line
+the same pass run as a command. The end of such a file is the one part still
+returned, because reading it costs a seek rather than the file: what a large
+log ended with was the last thing `tail` was being run for. The lines are
+read back from the end until there are enough of them or a result is full,
+and numbered from the line count that same pass takes. A file whose opening bytes are not text comes back as one line
 saying what it is: a type, a size, and nothing else. Naming the type is the
 part that matters, because "this is a PNG" tells the model to stop reaching
 for this tool, where "not text" invites another attempt.

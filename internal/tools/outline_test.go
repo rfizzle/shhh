@@ -206,3 +206,113 @@ func TestLineCount(t *testing.T) {
 		}
 	}
 }
+
+// lowerReadCeiling puts read_file's ceiling at n for one test, so a file past
+// it can be generated in kilobytes rather than megabytes.
+func lowerReadCeiling(t *testing.T, n int64) {
+	t.Helper()
+	old := readCeiling
+	readCeiling = n
+	t.Cleanup(func() { readCeiling = old })
+}
+
+// A tail read of a file past the ceiling seeks back from the end rather than
+// being refused, and answers what the same read of a file under the ceiling
+// answers — the size line, the lines numbered as in the file, the caps — save
+// for where it sends the reader for the lines before. It records nothing as
+// seen: no fingerprint of the file was taken.
+func TestReadFile_TailPastTheCeilingSeeksFromTheEnd(t *testing.T) {
+	dir := t.TempDir()
+	numbered := func(n int, end string) string {
+		var b strings.Builder
+		for i := 1; i <= n; i++ {
+			fmt.Fprintf(&b, "entry %d of the log\n", i)
+		}
+		return strings.TrimSuffix(b.String(), "\n") + end
+	}
+	for _, tc := range []struct {
+		name    string
+		content string
+		tail    int
+		cut     bool
+	}{
+		{"trailing newline", numbered(20000, "\n"), 5, false},
+		{"no trailing newline", numbered(20000, ""), 5, false},
+		{"a blank last line", numbered(20000, "\n\n"), 3, false},
+		{"more lines than a result holds", numbered(20000, "\n"), 5000, true},
+		{"one long line before the last", numbered(20000, "\n") + strings.Repeat("y", 100<<10) + "\nlast\n", 3, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			path := filepath.Join(dir, strings.ReplaceAll(tc.name, " ", "-")+".log")
+			must(t, os.WriteFile(path, []byte(tc.content), 0o644))
+			args := fmt.Sprintf(`{"path":%q,"tail_lines":%d}`, path, tc.tail)
+			under := readWith(t, NewRecorder(), args)
+
+			lowerReadCeiling(t, 128<<10)
+			if int64(len(tc.content)) <= readCeiling {
+				t.Fatalf("the fixture is %d bytes, not past the ceiling", len(tc.content))
+			}
+			r := NewRecorder()
+			over := readWith(t, r, args)
+			if tc.cut {
+				underBody, _ := cutLastLine(under)
+				overBody, notice := cutLastLine(over)
+				if overBody != underBody {
+					t.Errorf("past the ceiling:\n%s\nunder it:\n%s", firstLines(overBody, 4), firstLines(underBody, 4))
+				}
+				if !strings.HasPrefix(notice, "… (cut: showing the last ") || !strings.HasSuffix(notice, "over the read ceiling, so search it for the lines before)") {
+					t.Errorf("the notice should send the reader to search, got %q", notice)
+				}
+			} else if over != under {
+				t.Errorf("past the ceiling:\n%s\nunder it:\n%s", over, under)
+			}
+			if _, ok := r.lookupSeen(path); ok {
+				t.Error("a tail read past the ceiling recorded the file as seen")
+			}
+		})
+	}
+}
+
+func cutLastLine(s string) (string, string) {
+	i := strings.LastIndexByte(s, '\n')
+	return s[:i], s[i+1:]
+}
+
+// A last line longer than a result holds is shown by its end, the part a tail
+// read asked for, whether or not a newline ends it.
+func TestReadFile_TailPastTheCeilingOfOneHugeLastLine(t *testing.T) {
+	dir := t.TempDir()
+	lowerReadCeiling(t, 128<<10)
+	huge := strings.Repeat("é", 100<<10) + "THE END"
+	for _, end := range []string{"", "\n"} {
+		path := filepath.Join(dir, fmt.Sprintf("huge%d.log", len(end)))
+		content := "first\nsecond\n" + huge + end
+		must(t, os.WriteFile(path, []byte(content), 0o644))
+		got := readWith(t, NewRecorder(), fmt.Sprintf(`{"path":%q,"tail_lines":2}`, path))
+		head, rest, _ := strings.Cut(got, "\n")
+		if want := fmt.Sprintf("%s: 3 lines, %s bytes; showing lines 3-3", path, commas(len(content))); head != want {
+			t.Errorf("size line = %q, want %q", head, want)
+		}
+		row, notice := cutLastLine(rest)
+		if !strings.HasPrefix(row, "3\té") || !strings.HasSuffix(row, "éTHE END") || len(row) > MaxReadFileBytes+2 {
+			t.Errorf("the row should be line 3's end within the cap, cut on a character, got %d bytes: %q…%q", len(row), row[:4], row[len(row)-10:])
+		}
+		if !strings.HasPrefix(notice, "… (cut: line 3 is longer than one result holds; showing its last ") {
+			t.Errorf("notice = %q", notice)
+		}
+	}
+}
+
+// A range past the ceiling keeps the size-and-outline answer, which says the
+// end can still be read.
+func TestReadFile_ARangePastTheCeilingOffersTheEnd(t *testing.T) {
+	lowerReadCeiling(t, 1<<10)
+	path := filepath.Join(t.TempDir(), "notes.md")
+	must(t, os.WriteFile(path, []byte("# Title\n"+strings.Repeat("text\n", 1000)), 0o644))
+	got := readWith(t, NewRecorder(), fmt.Sprintf(`{"path":%q,"start_line":1,"end_line":5}`, path))
+	for _, want := range []string{"1,001 lines", "whatever line range is asked for", "or read its end with tail_lines.", "\n1 # Title"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("the answer should carry %q, got:\n%s", want, got)
+		}
+	}
+}

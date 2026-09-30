@@ -13,6 +13,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/rfizzle/shhh/internal/attachment"
 	"github.com/rfizzle/shhh/internal/project"
@@ -321,7 +322,7 @@ var readFile = Definition{
 			"start_line/end_line are for continuing through a file too large to return at once, which the result says explicitly when it happens; tail_lines reads the end of a file, such as a log's last entries, numbered as in the file. " +
 			"A result that shows part of a file opens with a line giving the whole file's line and byte count. " +
 			"An entry inside a .zip, .jar, .tar, .tar.gz or .tgz archive is read as `archive.zip!/path/in/it`, and a .gz file as the text it decompresses to — nothing is extracted, one call decompresses at most 10 MB, and an archive inflating past 100 to 1 is refused. " +
-			"A file over the size ceiling is answered with its size, its line count and, for Markdown, its headings instead of its contents — search it for what you need — and a binary file comes back as a one-line notice of what it is, images attached where the model can see one.",
+			"A file over the size ceiling is answered with its size, its line count and, for Markdown, its headings instead of its contents — search it for what you need, or read its end with tail_lines — and a binary file comes back as a one-line notice of what it is, images attached where the model can see one.",
 		Parameters: json.RawMessage(`{
 			"type": "object",
 			"properties": {
@@ -380,7 +381,7 @@ func (r *Recorder) executeReadFile(raw json.RawMessage) (string, error) {
 	} else if isGzipFile(args.Path) {
 		data, notice, err = readGzipForModel(args.Path)
 	} else {
-		data, notice, err = readForModel(args.Path)
+		data, notice, err = readForModel(args.Path, tail)
 		onDisk = true
 	}
 	if err != nil {
@@ -441,7 +442,7 @@ func (r *Recorder) executeReadFile(raw json.RawMessage) (string, error) {
 		content += fmt.Sprintf("\n… (truncated: showing lines %d-%d of %d; call read_file again with start_line=%d to continue)", start, lastLine, total, lastLine+1)
 	}
 	if windowed || truncated {
-		content = sizeLine(args.Path, data, start, lastLine) + "\n" + content
+		content = sizeLine(args.Path, lineCount(data), int64(len(data)), start, lastLine) + "\n" + content
 	}
 
 	// What the model has now been shown, so a later mutation can tell a
@@ -510,6 +511,90 @@ func tailWindow(lines []string, start, end int) (int, string, bool) {
 	return first, strings.Join(lines[first-1:end], "\n"), truncated
 }
 
+// readCeiling is MaxReadFileSize as read_file applies it. It is a variable so
+// a test can put a file past it without writing ten megabytes.
+var readCeiling int64 = MaxReadFileSize
+
+// tailBlock is how far each step of a tail read past the ceiling seeks back.
+const tailBlock = 64 << 10
+
+// tailOverCeiling is a tail read of a file past the read ceiling: the last
+// lines, read back from the end a block at a time until the read holds n of
+// them or more than a result can carry, and numbered from the file's line
+// count — the one streaming pass the over-ceiling answer already pays for,
+// which is also what the size line states. Everything is read out of the
+// first size bytes, the file as it was statted, so a log still being written
+// is counted and quoted as one file rather than numbered against lines that
+// arrived between the two.
+//
+// A file too large for the count to finish (MaxScanBytes) has no line number
+// to give its end, and is answered as any other file past the ceiling is.
+// See docs/capabilities/coding-agent.md#the-readers-refuse-before-they-spend.
+func tailOverCeiling(path string, f io.ReaderAt, size int64, n int) (string, error) {
+	o, err := scanFile(io.NewSectionReader(f, 0, size), IsMarkdown(path))
+	if err != nil {
+		return "", fmt.Errorf("cannot read file: %w", err)
+	}
+	if o.partial {
+		return overCeilingAnswer(path, o, size), nil
+	}
+	total := o.lines
+
+	// Read back until the text after the first newline held is n whole
+	// lines, or until it is past the byte cap, where tailWindow would drop
+	// anything further back anyway. The final newline ends the last line
+	// rather than starting an empty one after it.
+	var buf, body []byte
+	pos := size
+	for pos > 0 {
+		step := min(int64(tailBlock), pos)
+		pos -= step
+		chunk := make([]byte, step)
+		if _, err := f.ReadAt(chunk, pos); err != nil && !errors.Is(err, io.EOF) {
+			return "", fmt.Errorf("cannot read file: %w", err)
+		}
+		buf = append(chunk, buf...)
+		body = bytes.TrimSuffix(buf, []byte{'\n'})
+		if bytes.Count(body, []byte{'\n'}) >= n || len(body) > MaxReadFileBytes {
+			break
+		}
+	}
+	if last := body[bytes.LastIndexByte(body, '\n')+1:]; len(last) > MaxReadFileBytes {
+		// The last line alone is longer than a result holds, and a read that
+		// seeks from the end may never reach where it starts. Its end is what
+		// a tail read asked for, so its end is what is shown, cut to a
+		// character boundary.
+		last = last[len(last)-MaxReadFileBytes:]
+		for len(last) > 0 && !utf8.RuneStart(last[0]) {
+			last = last[1:]
+		}
+		return fmt.Sprintf("%s\n%s\n… (cut: line %s is longer than one result holds; showing its last %s bytes. The file is over the read ceiling, so search it for the lines before)",
+			sizeLine(path, total, size, total, total), numberLines(string(last), total), commas(total), commas(len(last))), nil
+	}
+	if pos > 0 {
+		// The text before the first newline held is the tail of a line that
+		// starts further back: not a line this read can show whole. There is
+		// a newline, since the last line is within the cap and the read
+		// went past it.
+		body = body[bytes.IndexByte(body, '\n')+1:]
+	}
+
+	lines := strings.Split(string(body), "\n")
+	held := len(lines)
+	first, content, truncated := tailWindow(lines, max(1, held-n+1), held)
+	// Asked for more lines than the read could hold, and the file has lines
+	// before the ones held: that is a cut as much as tailWindow's own.
+	truncated = truncated || (n > held && total > held)
+	firstLine := total - held + first
+	shown := strings.Count(content, "\n") + 1
+	lastLine := firstLine + shown - 1
+	out := sizeLine(path, total, size, firstLine, lastLine) + "\n" + numberLines(content, firstLine)
+	if truncated {
+		out += fmt.Sprintf("\n… (cut: showing the last %d lines, %d-%d of %d. The file is over the read ceiling, so search it for the lines before)", shown, firstLine, lastLine, total)
+	}
+	return out, nil
+}
+
 // notRegular refuses a path that is neither a regular file nor a directory,
 // naming what it is, and every reader that opens a path asks it first with
 // the stat it already took. Opening a named pipe blocks until a writer comes
@@ -544,8 +629,13 @@ func notRegular(path string, info fs.FileInfo) error {
 // with `wc` and `grep '^#'`, which is the same pass run as a command. It
 // still says that a narrower range will not help, so the next call is not the
 // same call scoped smaller.
+//
+// The end of such a file is the exception, because reading it costs a seek
+// and not the file: a tail read (tail > 0) past the ceiling is answered by
+// tailOverCeiling rather than by the size and outline. Either way the answer
+// comes back as the notice, so nothing past the ceiling is recorded as seen.
 // See docs/capabilities/coding-agent.md#the-readers-refuse-before-they-spend.
-func readForModel(path string) (data []byte, notice string, err error) {
+func readForModel(path string, tail int) (data []byte, notice string, err error) {
 	info, err := os.Stat(path)
 	if err != nil {
 		return nil, "", fmt.Errorf("cannot read file: %w", err)
@@ -575,7 +665,11 @@ func readForModel(path string) (data []byte, notice string, err error) {
 		}
 		return nil, binaryNotice(path, mediaType, head, f, info.Size()), nil
 	}
-	if info.Size() > MaxReadFileSize {
+	if info.Size() > readCeiling {
+		if tail > 0 {
+			notice, err := tailOverCeiling(path, f, info.Size(), tail)
+			return nil, notice, err
+		}
 		notice, err := overCeiling(path, io.MultiReader(bytes.NewReader(head), f), info.Size())
 		return nil, notice, err
 	}

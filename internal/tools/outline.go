@@ -298,13 +298,12 @@ func lineCount(data []byte) int {
 // what `wc` was being run for — the size of a file the model is reading in
 // part, stated where the part is.
 // See docs/capabilities/coding-agent.md#finding-things.
-func sizeLine(path string, data []byte, first, last int) string {
-	lines := lineCount(data)
+func sizeLine(path string, lines int, size int64, first, last int) string {
 	shown := fmt.Sprintf("showing lines %d-%d", first, last)
 	if last < first {
 		shown = "showing no lines"
 	}
-	return fmt.Sprintf("%s: %s %s, %s bytes; %s", path, commas(lines), noun(lines, "line", "lines"), commas(len(data)), shown)
+	return fmt.Sprintf("%s: %s %s, %s bytes; %s", path, commas(lines), noun(lines, "line", "lines"), commas64(size), shown)
 }
 
 // IsSizeLine reports whether line is the size line a partial read opens with
@@ -328,9 +327,21 @@ func overCeiling(path string, f io.Reader, size int64) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("cannot read file: %w", err)
 	}
+	return overCeilingAnswer(path, o, size), nil
+}
+
+// overCeilingAnswer words what one pass over a file past the ceiling found.
+// The end is offered only where the pass counted every line, since a tail
+// read numbers its lines from that count.
+func overCeilingAnswer(path string, o scanned, size int64) string {
 	var b strings.Builder
-	fmt.Fprintf(&b, "%s is %s (%s bytes, %s) and read_file returns no file over %s, whatever line range is asked for. Search it for what you need.",
-		path, provider.HumanSize(int(size)), commas64(size), o.lineWord(), provider.HumanSize(MaxReadFileSize))
+	fmt.Fprintf(&b, "%s is %s (%s bytes, %s) and read_file returns no file over %s, whatever line range is asked for. Search it for what you need",
+		path, provider.HumanSize(int(size)), commas64(size), o.lineWord(), provider.HumanSize(int(readCeiling)))
+	if o.partial {
+		b.WriteString(".")
+	} else {
+		b.WriteString(", or read its end with tail_lines.")
+	}
 	if IsMarkdown(path) {
 		if len(o.headings) == 0 {
 			b.WriteString(" It has no headings.")
@@ -339,7 +350,7 @@ func overCeiling(path string, f io.Reader, size int64) (string, error) {
 			o.writeHeadings(&b)
 		}
 	}
-	return b.String(), nil
+	return b.String()
 }
 
 func noun(n int, one, many string) string {
