@@ -19,6 +19,7 @@ import (
 	"github.com/rfizzle/shhh/internal/logs"
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/notebook"
+	"github.com/rfizzle/shhh/internal/nudge"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/plan"
 	"github.com/rfizzle/shhh/internal/pricing"
@@ -1050,6 +1051,10 @@ type Model struct {
 	// dispatches itself — an approved command, an applied edit — and one the
 	// executor ran are the same history (approval.go).
 	repeats *agent.RepeatDetector
+	// nudges is which built-in tools this turn's shell reads have already
+	// been pointed at, so an assistant command a reader answers carries the
+	// line naming it once per turn and not at every call (turn.go).
+	nudges *nudge.Turn
 	// gate backs the /gate quality-gate command.
 	gate Gate
 	// closeGate is the run a turn makes as it closes: whether this session

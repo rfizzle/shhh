@@ -10,6 +10,7 @@ package chat
 import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/nudge"
 	"github.com/rfizzle/shhh/internal/plan"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/tools"
@@ -124,6 +125,9 @@ func (m *Model) startNewSession() (notes []entry, save tea.Cmd) {
 	// and not the old one's.
 	m.turnCount = 0
 	m.agent.SetTurn(0)
+	// The new conversation has been pointed at no tool yet, and a turn
+	// number it shares with the old one must not say it has.
+	m.nudges = &nudge.Turn{}
 	// A backlog run's bookkeeping is counted in those turns and indexed into
 	// that transcript, and a cancel mark left standing would end the first
 	// stage turn of the next run before it was read.

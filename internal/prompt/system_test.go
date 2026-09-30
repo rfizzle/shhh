@@ -738,6 +738,36 @@ func TestWindowsRulesWarnAboutTheAliasedPosixNames(t *testing.T) {
 	}
 }
 
+// An agent edits files with its tools, so no agent prompt teaches an in-place
+// sed; the one-shot generator, whose whole output is a command, still does,
+// and every other macOS rule reaches the agents as it always did.
+func TestOnlyTheGeneratorIsTaughtAnInPlaceSed(t *testing.T) {
+	info := shell.Info{Shell: "zsh", OS: "darwin", Cwd: "/tmp"}
+	if got := Build(info); !strings.Contains(got, "-i ''") {
+		t.Errorf("the generator should keep the BSD in-place spelling:\n%s", got)
+	}
+	agents := map[string]string{
+		"agent":  BuildAgent(info),
+		"writer": BuildWriter(info),
+		"profile": BuildProfile(info, ProfileSpec{Name: "fixer", Write: true, Execute: true,
+			Tools: []string{"read_file", "edit_file", "execute_command"}}),
+	}
+	for name, got := range agents {
+		if strings.Contains(got, "sed:") || strings.Contains(got, "-i ''") {
+			t.Errorf("the %s prompt should not teach editing with sed:\n%s", name, got)
+		}
+		if !strings.Contains(got, "stat -f") {
+			t.Errorf("the %s prompt lost the rest of the macOS rules:\n%s", name, got)
+		}
+	}
+	// A profile whose commands are its only way to change a file keeps it.
+	shellOnly := BuildProfile(info, ProfileSpec{Name: "scripter", Execute: true,
+		Tools: []string{"read_file", "execute_command"}})
+	if !strings.Contains(shellOnly, "-i ''") {
+		t.Errorf("a profile that edits only through commands should keep the in-place spelling:\n%s", shellOnly)
+	}
+}
+
 // The whole prompt has to hold together: a Windows session gets Windows rules
 // throughout, and no POSIX ones anywhere in it.
 func TestAWindowsPromptCarriesNoPosixAdvice(t *testing.T) {

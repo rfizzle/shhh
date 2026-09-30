@@ -261,6 +261,7 @@ internal/
   profile/                 Provider profile loading (gateway endpoints)
   prompt/                  System prompt construction (per-command prompts + the registered-toolset section)
   safety/                  Command safety analysis
+  nudge/                   The line a shell read's result carries naming the built-in tool that answers it: one table of reading programs and their tools
   memory/                  Durable memory (cross-session remembered facts)
   skill/                   Agent Skills: discovery, SKILL.md frontmatter, the catalog prompt block and the activation tool
   mcp/                     MCP clients: server definitions and their catalog, the connect over the official SDK, the toolset on the executor chain
@@ -329,6 +330,25 @@ the file read either, which is `noteAppended` in `seen.go`
 ([`docs/capabilities/coding-agent.md#adding-to-the-end-of-a-file-needs-no-read`](docs/capabilities/coding-agent.md#adding-to-the-end-of-a-file-needs-no-read)).
 Why the batch exists and what it deliberately does not cover:
 [`docs/capabilities/coding-agent.md#several-places-in-one-file-are-one-call`](docs/capabilities/coding-agent.md#several-places-in-one-file-are-one-call).
+
+### The shell read's line
+
+`internal/nudge` is the line an `execute_command` result carries when the
+command was a plain read a built-in tool answers
+([`docs/capabilities/coding-agent.md#the-built-in-tools-come-before-the-shell`](docs/capabilities/coding-agent.md#the-built-in-tools-come-before-the-shell)).
+Whether a line is a read is `observe.CommandPurpose` and nothing else — the
+record's reading is the read set, and `rows` in `nudge.go` only says which
+tool answers each reading program, so a reader a new tool takes over is a
+row there. `nudge.Turn` is the once-per-turn-per-tool memory, and each
+surface holds one: `Model.nudges` (reset in `startNewSession`) appended in
+`turn.go`'s `cmdDoneMsg` case, `child.nudges` in `resolveGated`, and for
+`runPrintSession` and `serveLoop` the pair `Turn.Ran` (around the runner the
+approvers are handed) and `Turn.WrapResolver`. What will bite you: **the
+line goes on outside the repeat detector, never inside it.** The detector
+keys on the result, so a line on the first of two identical commands and
+not the second makes them two different results and the repeat goes
+unnoticed; and `Ran` is what keeps the line off a refusal, since the
+resolver wrap cannot tell a refusal's sentence from a command's output.
 
 ### The read-only git verbs
 

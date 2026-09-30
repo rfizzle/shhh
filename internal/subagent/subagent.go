@@ -25,6 +25,7 @@ import (
 	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/digest"
 	"github.com/rfizzle/shhh/internal/meter"
+	"github.com/rfizzle/shhh/internal/nudge"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/plan"
 	"github.com/rfizzle/shhh/internal/pricing"
@@ -1133,6 +1134,11 @@ type child struct {
 	// different fact from the same call in round 2 of turn 1.
 	turns     int
 	toolCalls int
+	// nudges is which built-in tools this attempt's shell reads have been
+	// pointed at in the turn it is on; nil until its first command, and
+	// dropped with the rest of an attempt's counts on a retry, whose
+	// conversation has been told nothing.
+	nudges *nudge.Turn
 	// round is the tool round the child last started, copied off its agent
 	// by the goroutine that drives it, so a status taken from anywhere can
 	// state it: the agent's own counter is written unguarded by that
@@ -1819,6 +1825,18 @@ func (c *child) beginTurn() {
 // agent, which is a passive state machine that goroutine drives and no lock
 // guards; anything raised from elsewhere — a reading that lands on its own
 // goroutine — states the round it is about and takes signalAt instead.
+// nudgeTurn is the attempt's record of the tools its shell reads have been
+// pointed at, made on first use. The mutex is the child's, because a retry
+// clears it from the supervisor's goroutine.
+func (c *child) nudgeTurn() *nudge.Turn {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.nudges == nil {
+		c.nudges = &nudge.Turn{}
+	}
+	return c.nudges
+}
+
 func (c *child) pos() observe.Pos {
 	c.mu.Lock()
 	turn, a := int64(c.turns), c.agent
@@ -3097,6 +3115,7 @@ func (s *Supervisor) restart(c *child, detail string) error {
 	c.endReason, c.killed, c.cancelledBy = "", false, ""
 	c.turns, c.round = 0, 0
 	c.toolCalls, c.step = 0, 0
+	c.nudges = nil
 	// A retry is a fresh conversation, which names its own plan.
 	c.own = plan.Checklist{}
 	// A retry starts from a worktree of its own, so what the attempt it
@@ -5269,8 +5288,11 @@ func (s *Supervisor) resolveGated(c *child, tc provider.ToolCall) string {
 		result := c.env.RunCommand(c.ctx, action.Command)
 		// The runner has already scrubbed the output, so the reduction — and
 		// the copy the evidence store keeps of it — is over the text the
-		// child is allowed to see, as it is on the parent.
-		return c.env.execResult(result)
+		// child is allowed to see, as it is on the parent. A read a built-in
+		// tool answers says so under it, once per tool in the child's turn,
+		// the way it does for the session.
+		// See docs/capabilities/coding-agent.md#the-built-in-tools-come-before-the-shell.
+		return c.nudgeTurn().Append(c.pos().Turn, action.Command, c.env.execResult(result))
 	}
 	return agent.ExecuteWith(c.env.ExecuteGated, provider.ToolCall{ID: tc.ID, Name: tc.Name, Arguments: string(rooted)})
 }

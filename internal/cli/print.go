@@ -21,6 +21,7 @@ import (
 	"github.com/rfizzle/shhh/internal/hook"
 	"github.com/rfizzle/shhh/internal/mcp"
 	"github.com/rfizzle/shhh/internal/meter"
+	"github.com/rfizzle/shhh/internal/nudge"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/process"
@@ -1386,7 +1387,11 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	// and is remembered on its way past: a denial still standing when the
 	// model stops is what says this run was refused rather than finished.
 	verdict := &lastVerdict{}
-	resolve := headlessApprover(cmd.Context(), opts, allowlist, cfg.Behavior.CommandDenylist, run, containRefusal, red, verdict.wrap(obs.decision),
+	// A command a built-in reader answers says so under its output, once
+	// per tool in the turn. The runner is wrapped so the line follows a
+	// command that ran and never a refusal (nudge.Turn.Ran).
+	nudges := &nudge.Turn{}
+	resolve := headlessApprover(cmd.Context(), opts, allowlist, cfg.Behavior.CommandDenylist, nudges.Ran(run), containRefusal, red, verdict.wrap(obs.decision),
 		session.web, procSup, chainMutation(lspMutationHook(session.lsp), hookPostMutation(hooks)), sc, session.mcpTools, session.structural,
 		unattended{sup: sup, judge: judge, at: obs.pos, conversation: conversationReads(session.conversation, cfg.Web.DenyHosts)})
 	// The gated tier is where an unattended run circles: the test command
@@ -1396,6 +1401,10 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	// is put on here as well, innermost, where the result it keys on is the
 	// one the tier produced rather than one a seam has since added to.
 	resolve = repeats.WrapResolver(resolve)
+	// Outside the detector, which keys on the result: a line on the first
+	// of two identical commands and not the second would hide the repeat.
+	// See docs/capabilities/coding-agent.md#the-built-in-tools-come-before-the-shell.
+	resolve = nudges.WrapResolver(func() int64 { return obs.pos().Turn }, resolve)
 	// A supervisor blocks on its event channel, so a run that spawned a
 	// child and read nothing would stop the child at its first routed
 	// request and itself behind it. What this run's own calls wrote is where

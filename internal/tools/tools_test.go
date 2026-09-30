@@ -99,6 +99,42 @@ func TestExecCommandTool_SaysWhatACommandIs(t *testing.T) {
 	}
 }
 
+// The description sends each file job to the tool that does it, and names
+// only tools every session registers beside it — the readers this package
+// defines and, where edits are held, edit_file.
+func TestExecCommandTool_SendsFileWorkToTheBuiltInTools(t *testing.T) {
+	desc := ExecCommandTool().Description
+	for _, want := range []string{
+		"building, testing and running programs",
+		ReadFileName, SearchName, GlobName, QueryName, SqliteName, EditFileName,
+		"without an approval",
+		"tail", "grep", "sed -i", ">>",
+	} {
+		if !strings.Contains(desc, want) {
+			t.Errorf("execute_command's description should name %q:\n%s", want, desc)
+		}
+	}
+	for _, base := range ReadOnly() {
+		name := base.Tool.Name
+		if !strings.Contains(desc, name) && name != ListDirectoryName && name != DocumentSymbolName {
+			t.Errorf("a base reader the description leaves out: %s", name)
+		}
+	}
+	for _, optional := range []string{"fd", "ast_grep", "definition", "references", "document_symbol", "web_fetch"} {
+		if strings.Contains(desc, optional+" ") || strings.Contains(desc, optional+",") {
+			t.Errorf("the description names %s, which a session may not have:\n%s", optional, desc)
+		}
+	}
+
+	held := ExecCommandToolNoEdits().Description
+	if strings.Contains(held, EditFileName) || strings.Contains(held, "sed -i") {
+		t.Errorf("an agent without the edit tools should not be sent to them:\n%s", held)
+	}
+	if !strings.Contains(held, ReadFileName) || !strings.Contains(held, "building, testing and running programs") {
+		t.Errorf("an agent without the edit tools is still sent to the readers:\n%s", held)
+	}
+}
+
 func TestReadFile_Basic(t *testing.T) {
 	tmp := t.TempDir()
 	path := filepath.Join(tmp, "test.txt")

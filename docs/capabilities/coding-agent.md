@@ -275,6 +275,67 @@ its own, so the definitions every request carries do not grow, and a model
 that already asks for an outline before reading a file asks the same way of
 a document.
 
+## The built-in tools come before the shell
+
+Reading a file, searching one, finding files by name, reading structured data
+and editing or adding to a file each have a built-in tool, and each of those
+is cheaper than the command a model reaches for out of habit. A reader runs
+without an approval in every mode. A command is a card, or in auto mode a
+classifier round spent deciding whether `cat` may run, and in a read-only
+session a piped one is refused. An edit is decided as the diff it makes; a
+`sed -i` or a `cat >> <<EOF` is a command line somebody, or the classifier,
+has to read and judge — and the one a classifier refused in the session that
+asked why is what started this. So the model is steered to the tools, in the
+three places it reads anything, and nothing about the permission gate moves.
+
+**The command tool says what it is for.** Its description opens by saying a
+command is for building, testing and running programs, and names the tool
+for each file job with the shell idiom it replaces beside it — because the
+idiom is what the model was about to type, and naming it is how the sentence
+connects to the moment. It names only tools every session registers beside
+the command tool: an optional tool the machine may not have is promised by
+its own toolbox line where it exists, and a description that named it would
+send a session without it looking. An agent granted commands and not edits
+is not told to edit with a tool it does not hold.
+
+**A shell read says so under its output.** When a command that ran was a
+plain read — every program in it reads, searches or lists, by the same
+reading the session record files it under — its result carries one line
+naming the built-in tool that answers it without an approval. A command that
+did anything else carries nothing: an in-place edit, a redirect into a file,
+a pipe into an interpreter, a find that runs something on what it found, a
+tail that follows a file, a read under another user's privileges, and a line
+where one of the programs is a read no tool answers — a count through `sort
+| uniq -c` is not a search, and a line that names a tool for half of the
+work is one the model is right to ignore. The line is said once per turn for
+each tool: said at every call it is a line the model learns to skip. It
+follows a command that ran and never a refusal, which already told the model
+the command did not happen. It is the model's alone; the row the person
+reads shows the output. And it is added after the session notices a
+repeated call, not before — a line on the first of two identical commands
+and not the second would make them look like different results, and the
+repeat would go unsaid.
+
+What counts as a read is decided once. The record's reading of a command
+line is already the one closed answer to "what was this command for", and
+the line is only ever appended where that answer is a read, a search or a
+listing; what this adds is which tool answers each reading program, as the
+rows of one table. A reader a new tool takes over is a row there.
+
+**The agent prompts stop teaching the shell edit.** The macOS rules used to
+teach the BSD spelling of an in-place `sed`, which is how a model on a Mac
+was told to edit files. The agent, writer and profile prompts no longer
+carry that line. The one-shot command generator keeps it, since a command
+line is its whole output and an in-place sed is a command somebody asks it
+for — and so does a profile holding commands and not the edit tool, whose
+commands are its only way to change a file.
+
+**A shell read is not allowed because of any of this.** The gate reads a
+command line as a command line whatever it contains; auto mode does not wave
+a `cat` through because a reader could have answered it. The tools and the
+steering remove the need, and the permission rules stay the ones every
+command is held to.
+
 ## A call the session has already made is answered by saying so
 
 The instruction is one half. The other is that the session watches what it

@@ -20,6 +20,7 @@ import (
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/logs"
+	"github.com/rfizzle/shhh/internal/nudge"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/process"
 	"github.com/rfizzle/shhh/internal/provider"
@@ -306,6 +307,38 @@ func TestHeadlessApprover_DeniesCommandByDefault(t *testing.T) {
 	}
 	if len(ran) != 0 {
 		t.Fatalf("command must not run, ran %v", ran)
+	}
+}
+
+// The unattended run's chain, composed as runPrintSession composes it: the
+// line naming the tool that answers a shell read follows a read that ran,
+// sits outside the repeat detector so a second identical run is still seen
+// as one, and never follows a refusal, which ran nothing.
+func TestHeadlessApprover_AShellReadThatRanNamesItsToolOncePerTurn(t *testing.T) {
+	chain := func(opts printOpts) func(provider.ToolCall) string {
+		var ran []string
+		nudges := &nudge.Turn{}
+		resolve := headlessApprover(context.Background(), opts, nil, nil, nudges.Ran(fakeRun(&ran)), "", nil, nil, nil, nil, nil, nil, nil, nil, unattended{})
+		resolve = agent.NewRepeatDetector().WrapResolver(resolve)
+		return nudges.WrapResolver(func() int64 { return 1 }, resolve)
+	}
+
+	refused := chain(printOpts{})(execCall("cat go.mod | head -3"))
+	if !strings.HasPrefix(refused, "error:") || strings.Contains(refused, "[built-in:") {
+		t.Fatalf("a refused read ran nothing and carries no line: %q", refused)
+	}
+
+	resolve := chain(printOpts{yes: true})
+	first := resolve(execCall("cat go.mod | head -3"))
+	if !strings.Contains(first, "ok") || !strings.Contains(first, "\n[built-in: read_file answers this without an approval") {
+		t.Fatalf("a read that ran should name read_file under its output: %q", first)
+	}
+	second := resolve(execCall("cat go.mod | head -3"))
+	if !agent.IsRepeatNotice(second) || strings.Contains(second, "[built-in:") {
+		t.Fatalf("the second run is a repeat, told once already: %q", second)
+	}
+	if got := resolve(execCall("go build ./...")); strings.Contains(got, "[built-in:") {
+		t.Fatalf("a build is no read: %q", got)
 	}
 }
 

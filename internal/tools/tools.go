@@ -162,14 +162,43 @@ const ExecCommandName = "execute_command"
 // `process` from the start, because started here it is a command that never
 // returns.
 //
+// It opens by saying what a command is for, and which built-in tool does
+// each of the file jobs a shell gets used for instead — naming the shell
+// idiom each replaces, since the idiom is what the model was about to type.
+// A read through a command is a card or a classifier round, and a piped one
+// is refused in a read-only session; the readers are neither. Every tool it
+// names is one every session registers beside this one, which is why fd,
+// ast-grep and the language server are not in it: those have toolbox lines
+// of their own, written only where they exist.
+// See docs/capabilities/coding-agent.md#the-built-in-tools-come-before-the-shell.
+//
 // What contains the commands and whether they can reach the network is the
 // one fact that is not the same in two sessions, so it is not here: it is
 // resolved per session and stated in the prompt beside the working scope.
 // See docs/capabilities/containment.md#the-model-is-told-what-its-commands-run-under.
-func ExecCommandTool() provider.Tool {
+func ExecCommandTool() provider.Tool { return execCommandTool(true) }
+
+// ExecCommandToolNoEdits is the definition for an agent that holds commands
+// and not the edit tools — a profile granted execute and not write. Told to
+// edit with a tool it does not have, it calls one that is not there; its
+// commands are its only way to change a file, and its prompt says so.
+func ExecCommandToolNoEdits() provider.Tool { return execCommandTool(false) }
+
+func execCommandTool(edits bool) provider.Tool {
+	jobs := "It is for building, testing and running programs, not for working with files: " +
+		"read a file, a range of it or its end with read_file (not cat, head, tail or wc), " +
+		"find text with search (not grep or rg), find files by name with glob (not find or ls -R), " +
+		"and read JSON, YAML, TOML, CSV or a SQLite database with query or sqlite (not jq, yq or sqlite3)"
+	if edits {
+		jobs += ", and change a file or add to its end with edit_file (not sed -i, a heredoc or >>). " +
+			"The readers run without an approval in every mode, and an edit is decided as the diff it makes rather than as a command line to judge. "
+	} else {
+		jobs += ". The readers run without an approval in every mode. "
+	}
 	return provider.Tool{
 		Name: ExecCommandName,
 		Description: "Run a shell command in the user's working directory and return its combined stdout/stderr and exit code. " +
+			jobs +
 			"Whether it runs straight away or is shown to the user for approval first is the session's permission mode's to decide; a declined call returns an error result. " +
 			"Each call is a fresh shell: a cd, a shell variable or a source does not carry to the next one, so chain what depends on it into one command line. " +
 			"A command still running at the session's time limit is moved to the background as a named process rather than killed, and the result says so. " +

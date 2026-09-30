@@ -1141,7 +1141,7 @@ func profileEnv(def config.AgentDefinition, spec subagent.Spec, info shell.Info,
 		}
 	}
 	if def.Has(config.PermissionExecute) && def.Allows(tools.ExecCommandName) {
-		defs = append(defs, tools.ExecCommandTool())
+		defs = append(defs, execCommandDefinition(def))
 		gated[tools.ExecCommandName] = true
 	}
 	base := agent.ToolExecutor(tools.Execute)
@@ -1181,6 +1181,16 @@ func profileEnv(def config.AgentDefinition, spec subagent.Spec, info shell.Info,
 		base = gate.WrapExecutorHolding(base)
 	}
 	return func(names []string) string { return profilePrompt(def, spec, info, extra, names) }, defs, base
+}
+
+// execCommandDefinition is the command tool as a profile's child is told it:
+// the description names edit_file as the way to change a file, which is
+// true only where the profile was granted it.
+func execCommandDefinition(def config.AgentDefinition) provider.Tool {
+	if def.Has(config.PermissionWrite) && def.Allows(tools.EditFileName) {
+		return tools.ExecCommandTool()
+	}
+	return tools.ExecCommandToolNoEdits()
 }
 
 // builtinEnv is the environment of a built-in role no profile file

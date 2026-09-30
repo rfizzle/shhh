@@ -199,7 +199,7 @@ Make changes with write_file and edit_file rather than pasting code blocks into 
 - Be concise. Report what you changed and how you verified it, not a narration of every step.
 - Use markdown formatting (headers, lists, code blocks) — the terminal renders it.
 - If a task is ambiguous, make the most reasonable assumption, state it, and proceed rather than stopping to ask.`,
-		info.Shell, os, info.Cwd, today(), findingThings, executionDefault, shellSyntaxRules(info.Shell), sudoRules(info.OS, info.IsRoot), osRules(info.OS))
+		info.Shell, os, info.Cwd, today(), findingThings, executionDefault, shellSyntaxRules(info.Shell), sudoRules(info.OS, info.IsRoot), agentOSRules(info.OS))
 	if len(extra) > 0 && extra[0] != "" {
 		base += "\n\n" + extra[0]
 	}
@@ -479,7 +479,7 @@ Make changes with write_file and edit_file rather than pasting code into your me
 
 # Final report
 Your last message IS the deliverable. Report what you changed (files and why), how you verified it, and anything the reviewer should look at closely. %s Do not end on a question or a promise of further work.`,
-		info.Shell, os, info.Cwd, today(), executionDefault, findingThingsBrief, writerCheckSlots, shellSyntaxRules(info.Shell), sudoRules(info.OS, info.IsRoot), osRules(info.OS), writerCopyMoves, assumptionsSection)
+		info.Shell, os, info.Cwd, today(), executionDefault, findingThingsBrief, writerCheckSlots, shellSyntaxRules(info.Shell), sudoRules(info.OS, info.IsRoot), agentOSRules(info.OS), writerCopyMoves, assumptionsSection)
 	if len(extra) > 0 && extra[0] != "" {
 		base += "\n\n" + extra[0]
 	}
@@ -671,12 +671,25 @@ func sudoRules(goos string, isRoot bool) string {
 	return "The user is NOT root. Prefix commands with sudo when they require elevated privileges (e.g. writing to /usr/local/bin, /etc, managing system services, installing system packages, binding to privileged ports)."
 }
 
+// macSedInPlace is the one line of the macOS rules that teaches editing a
+// file with a command. The one-shot generator keeps it: a command line is
+// its whole output, and an in-place sed is a command somebody asks it for.
+const macSedInPlace = "\n- sed: use -i '' for in-place editing (not -i alone)."
+
+// agentOSRules is osRules for a prompt whose reader edits files with its
+// own tools. An agent taught the BSD spelling of an in-place sed reaches for
+// it, and every such edit is a command line — a card, or a classifier round
+// in auto mode — where the edit tool is a diff the mode already decides.
+// See docs/capabilities/coding-agent.md#the-built-in-tools-come-before-the-shell.
+func agentOSRules(goos string) string {
+	return strings.Replace(osRules(goos), macSedInPlace, "", 1)
+}
+
 func osRules(goos string) string {
 	switch goos {
 	case "darwin":
 		return `IMPORTANT: This is macOS, which uses BSD command-line tools (not GNU coreutils).
-- ps: use BSD flags only (e.g. ps -eo, ps -p PID). No GNU long options (--pid, --no-headers).
-- sed: use -i '' for in-place editing (not -i alone).
+- ps: use BSD flags only (e.g. ps -eo, ps -p PID). No GNU long options (--pid, --no-headers).` + macSedInPlace + `
 - grep: -P (perl regex) is not available; use -E for extended regex.
 - date: BSD date syntax (e.g. date -v+1d, not date -d "+1 day").
 - stat: use stat -f (not stat -c).
@@ -815,7 +828,14 @@ func BuildProfile(info shell.Info, spec ProfileSpec, extra ...string) string {
 	if spec.Execute {
 		b.WriteString("\n- After changing anything, verify: run the project's build or tests with execute_command when one is available.")
 		b.WriteString("\n- Never run destructive commands (rm -rf, dropping databases, force-pushing) unless the task explicitly asked for that exact action.")
-		fmt.Fprintf(&b, "\n\n# Shell commands\n%s\n%s\n%s", shellSyntaxRules(info.Shell), sudoRules(info.OS, info.IsRoot), osRules(info.OS))
+		// A profile holding commands and not the edit tool changes files
+		// with commands and nothing else, so it keeps the in-place spelling
+		// every other agent is no longer taught.
+		platform := osRules(info.OS)
+		if have["edit_file"] {
+			platform = agentOSRules(info.OS)
+		}
+		fmt.Fprintf(&b, "\n\n# Shell commands\n%s\n%s\n%s", shellSyntaxRules(info.Shell), sudoRules(info.OS, info.IsRoot), platform)
 	}
 
 	b.WriteString("\n\n# Final report\nYour last message IS the deliverable. Make it a self-contained report: ")

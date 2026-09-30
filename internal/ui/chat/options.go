@@ -17,6 +17,7 @@ import (
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/clipboard"
 	"github.com/rfizzle/shhh/internal/meter"
+	"github.com/rfizzle/shhh/internal/nudge"
 	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/provider"
@@ -78,6 +79,7 @@ func New(initialMessages []provider.Message, stream StreamFunc) Model {
 		sessionName: newSessionName(),
 		searchMemo:  &searchMemo{},
 		alertMemo:   &alertMemo{},
+		nudges:      &nudge.Turn{},
 	}
 }
 

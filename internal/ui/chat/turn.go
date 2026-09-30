@@ -544,6 +544,14 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 			if amendedFrom != "" {
 				toolResult = amendedNotice(amendedFrom, msg.command) + "\n" + toolResult
 			}
+			// A read a built-in tool answers says so under its output, once
+			// per turn for each tool. It goes on after the detector for the
+			// reason the amendment's lead does: a line on the first call and
+			// not the second would make two identical runs look different.
+			// It is the line that ran that is judged, and only the model
+			// reads it; the row above shows the output alone.
+			// See docs/capabilities/coding-agent.md#the-built-in-tools-come-before-the-shell.
+			toolResult = m.nudges.Append(m.turnCount, msg.command, toolResult)
 			m.agent.ResolveApproval(toolResult)
 			m.viewport.SetLines(m.renderHistoryLines())
 			m.viewport.GotoBottom()

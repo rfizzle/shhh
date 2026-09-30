@@ -31,6 +31,7 @@ import (
 	"github.com/rfizzle/shhh/internal/hook"
 	"github.com/rfizzle/shhh/internal/mcp"
 	"github.com/rfizzle/shhh/internal/meter"
+	"github.com/rfizzle/shhh/internal/nudge"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/prompt"
 	"github.com/rfizzle/shhh/internal/provider"
@@ -570,8 +571,13 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 	// `--yes` run. An answer is a decision, and a decision cannot outrank a
 	// standing refusal, which is why the answer chooses an approver rather
 	// than replacing one.
+	//
+	// Both approvers run commands through a runner that tells the resolver
+	// around them a command ran, so the line naming the built-in tool that
+	// answers a shell read follows a command and never a refusal.
+	nudges := &nudge.Turn{}
 	allowed := headlessApprover(cmd.Context(), printOpts{yes: true}, cfg.Behavior.CommandAllowlist,
-		cfg.Behavior.CommandDenylist, run, containment.Refusal, red, answeredByClient(record),
+		cfg.Behavior.CommandDenylist, nudges.Ran(run), containment.Refusal, red, answeredByClient(record),
 		session.web, procSup, chainMutation(lspMutationHook(session.lsp), hookPostMutation(hooks)), sc, session.mcpTools, session.structural,
 		unattended{sup: sup, at: l.obs.pos, seen: l.seen})
 	// And the approver of a server told there is nobody to ask: the same
@@ -580,7 +586,7 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 	var judged func(provider.ToolCall) string
 	if opts.autoMode {
 		judged = headlessApprover(cmd.Context(), printOpts{}, cfg.Behavior.CommandAllowlist,
-			cfg.Behavior.CommandDenylist, run, containment.Refusal, red, record,
+			cfg.Behavior.CommandDenylist, nudges.Ran(run), containment.Refusal, red, record,
 			session.web, procSup, chainMutation(lspMutationHook(session.lsp), hookPostMutation(hooks)), sc, session.mcpTools, session.structural,
 			unattended{sup: sup, at: l.obs.pos, seen: l.seen,
 				judge: &autoJudge{ctx: cmd.Context(), classifier: classifier, recent: a.Messages, cwd: hookCwd,
@@ -685,6 +691,10 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 	// declines the same call twice is told so, and so is a command that comes
 	// back with the same failure round after round.
 	resolveCall = repeats.WrapResolver(resolveCall)
+	// Outside the detector, which keys on the result, and under this
+	// session's own turn numbering.
+	// See docs/capabilities/coding-agent.md#the-built-in-tools-come-before-the-shell.
+	resolveCall = nudges.WrapResolver(l.turnNow, resolveCall)
 	if session.ask {
 		// The question goes round every answer under it, because those exist
 		// to decide which *acts* stop to ask and a question is not an act: a
