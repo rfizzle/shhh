@@ -766,6 +766,23 @@ naming the skills and the toolset holding the gate were both built when the
 session started, and something that joined without being named would be
 something the model does not know it has.
 
+### The model is told what was held back
+
+A person is told on the start screen; the model has to be told too, or the
+withholding costs rounds. An instruction file that says to run the project's
+suite, use its skills or ask its servers is read whether or not the checkout
+is trusted, and a model that finds none of them goes looking for them or
+rebuilds them by hand. So the prompt names the kinds this checkout declared
+and this session did not load, says the instructions that mention them
+describe things the session does not have, and — where the suites are among
+them and the session can run commands — says to check the work with ordinary
+commands, which are approved like any other.
+
+It does not tell the model how to undo it, and it tells it not to ask. Trust
+is a person's answer about files that run as them, and the person has already
+been told what was held back. The checkout the withholding exists for is one
+whose own `AGENTS.md` would like the model to press for it.
+
 ## Quality gates run what you wrote
 
 A session can run a named suite of checks, and the check commands come from a

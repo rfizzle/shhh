@@ -377,3 +377,26 @@ func TestDoctorTrustRowGolden(t *testing.T) {
 	}
 	assertReportGolden(t, "doctor.trust", doctorReportOf("shhh doctor", "check", "checks", checks).Render(80))
 }
+
+// The model is told what the checkout declared and this session held back,
+// so an instruction naming the project's suite is not a tool it goes looking
+// for — and it is told not to press for trust, which is the person's answer.
+// See docs/capabilities/approvals-and-safety.md#the-model-is-told-what-was-held-back.
+func TestTrustPromptBlockNamesWhatWasHeldBackAndNotHowToUndoIt(t *testing.T) {
+	held := project.Trust{Root: "/checkout", Present: []project.Kind{project.KindSkills, project.KindGate}}
+	block := trustPromptBlock(held, false)
+	for _, want := range []string{"# Project trust", "skills and quality suites", "ordinary commands", "do not ask them to trust it"} {
+		if !strings.Contains(block, want) {
+			t.Errorf("the block lacks %q:\n%s", want, block)
+		}
+	}
+	if strings.Contains(block, "/trust") || strings.Contains(block, "shhh trust") {
+		t.Errorf("the block must not tell the model how to trust the checkout:\n%s", block)
+	}
+	if got := trustPromptBlock(held, true); strings.Contains(got, "ordinary commands") {
+		t.Errorf("a conversation runs no commands and is not told to check with one:\n%s", got)
+	}
+	if got := trustPromptBlock(project.Trust{Root: "/checkout", Granted: true, Present: held.Present}, false); got != "" {
+		t.Errorf("a trusted checkout withholds nothing and says nothing, got:\n%s", got)
+	}
+}

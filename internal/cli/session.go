@@ -432,7 +432,7 @@ func (s chatSession) systemPrompt(configExtra string) (text string, projectToken
 	// from it, cannot state two different answers.
 	survey.Sibling = s.sibling.since()
 	block := project.InstructionBlock(instructions, prompt.InstructionBudget)
-	extra := prompt.CombineExtra(configExtra, block, project.PromptBlock(survey), s.promptExtra)
+	extra := prompt.CombineExtra(configExtra, block, project.PromptBlock(survey), trustPromptBlock(projectTrust(), s.conversation), s.promptExtra)
 	return s.buildPrompt(info, extra), agent.EstimateTokens(block), survey
 }
 

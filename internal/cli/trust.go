@@ -13,6 +13,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 	"sync"
 
@@ -287,6 +288,32 @@ func trustStartupNote() string {
 			" changed since you trusted it, and load as they are now — `shhh trust off` withdraws the answer"
 	}
 	return ""
+}
+
+// trustPromptBlock tells the model what the checkout declared and this
+// session held back. A model whose instructions say to run the project's
+// suite, activate its skills or use its servers, and which finds none of
+// them, goes looking — or rebuilds them by hand — unless it is told they
+// were withheld. It is told that, and not how to undo it: trust is the
+// person's answer, they have already been told, and a checkout whose own
+// instruction file asks the model to press for it is the case the whole
+// withholding exists for. conversation is a session that runs no commands,
+// which is told nothing about checking its work with one.
+// See docs/capabilities/approvals-and-safety.md#the-model-is-told-what-was-held-back.
+func trustPromptBlock(t project.Trust, conversation bool) string {
+	withheld := t.Withheld()
+	if len(withheld) == 0 {
+		return ""
+	}
+	var b strings.Builder
+	b.WriteString("# Project trust\nThis checkout declares " + joinAnd(kindNames(withheld)) +
+		" that this session did not load, because the user has not trusted the checkout. " +
+		"Where the project's instructions mention them, they describe things this session does not have: do not look for them or ask for them")
+	if !conversation && slices.Contains(withheld, project.KindGate) {
+		b.WriteString("; check your work with ordinary commands instead, which are approved like any other")
+	}
+	b.WriteString(". Whether to trust the checkout is the user's decision, and they have already been told what was held back; do not ask them to trust it or suggest how.")
+	return b.String()
 }
 
 // probeTrust is the doctor's reading of the checkout. The store is opened
