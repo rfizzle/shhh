@@ -603,6 +603,12 @@ func goldenObserveCompare() observeCompareData {
 				{Tool: "execute_command", Class: "timeout", Count: 2},
 				{Tool: "edit_file", Class: "bad-args", Count: 2},
 			},
+			Commands: []storage.AgentCommandPurpose{
+				{Purpose: "read", Count: 24},
+				{Purpose: "build", Count: 18},
+				{Purpose: "search", Count: 12},
+				{Purpose: "", Count: 8},
+			},
 			FirstWrites: goldenFirstWrites(11, 4, 5, 6, 6, 7, 8, 9, 11),
 			Decisions: []storage.AgentDecisionCount{
 				{Decision: "allow", Reason: "mode-accept-edits", Count: 96},
@@ -650,6 +656,13 @@ func goldenObserveCompare() observeCompareData {
 				{Tool: "execute_command", Class: "exit-status", Count: 5},
 				{Tool: "edit_file", Class: "bad-args", Count: 2},
 				{Tool: "execute_command", Class: "timeout", Count: 1},
+			},
+			// Fewer of the shell calls were reads a built-in tool answers.
+			Commands: []storage.AgentCommandPurpose{
+				{Purpose: "build", Count: 30},
+				{Purpose: "read", Count: 12},
+				{Purpose: "search", Count: 12},
+				{Purpose: "other", Count: 6},
 			},
 			FirstWrites: goldenFirstWrites(14, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 9),
 			Decisions: []storage.AgentDecisionCount{

@@ -1708,3 +1708,40 @@ func TestAgentCommandPurposes_SplitsCommandsByTheirWord(t *testing.T) {
 		t.Fatalf("wrote %d (err %v), want only the one with no word", n, err)
 	}
 }
+
+// A cohort's command split is the dashboard's query over the cohort's own
+// sessions: the other side's commands never reach it.
+func TestReadAgentCohort_CommandsAreTheCohortsOwn(t *testing.T) {
+	db := openTestDB(t)
+	write := func(hash string, purposes ...string) {
+		id, err := db.StartAgentSession("code", "openai", "gpt-test")
+		if err != nil {
+			t.Fatalf("start session: %v", err)
+		}
+		if err := db.StampAgentSession(id, AgentProvenance{PromptHash: hash}); err != nil {
+			t.Fatalf("stamp session: %v", err)
+		}
+		for _, p := range purposes {
+			e := AgentEvent{Kind: AgentEventTool, Tool: "execute_command", Outcome: "ok", Purpose: p}
+			if err := db.RecordAgentEvent(id, e); err != nil {
+				t.Fatalf("record: %v", err)
+			}
+		}
+	}
+	write("aaa", observe.PurposeRead, observe.PurposeRead, observe.PurposeBuild)
+	write("bbb", observe.PurposeSearch)
+
+	reading, err := db.ReadAgentCohort(time.Now().Add(-time.Hour), "prompt_hash", "aaa")
+	if err != nil {
+		t.Fatalf("read cohort: %v", err)
+	}
+	want := []AgentCommandPurpose{{Purpose: observe.PurposeRead, Count: 2}, {Purpose: observe.PurposeBuild, Count: 1}}
+	if len(reading.Commands) != len(want) {
+		t.Fatalf("cohort commands = %+v, want %+v", reading.Commands, want)
+	}
+	for i := range want {
+		if reading.Commands[i] != want[i] {
+			t.Fatalf("cohort commands = %+v, want %+v", reading.Commands, want)
+		}
+	}
+}

@@ -1446,6 +1446,33 @@ func TestObserveOverturns_AShareOfTheJudgedDenials(t *testing.T) {
 	}
 }
 
+// The command split is a share of each cohort's own commands, unrecorded
+// ones included in the denominator and named apart from other.
+func TestObserveCommands_AShareOfEachCohortsCommands(t *testing.T) {
+	earlier := observeCohortOf("aaa", 10, []storage.AgentTurnOutcome{{Outcome: "done", Count: 20}})
+	earlier.Reading.Commands = []storage.AgentCommandPurpose{
+		{Purpose: observe.PurposeRead, Count: 6}, {Purpose: "", Count: 2}, {Purpose: observe.PurposeBuild, Count: 2},
+	}
+	later := observeCohortOf("bbb", 10, []storage.AgentTurnOutcome{{Outcome: "done", Count: 40}})
+	later.Reading.Commands = []storage.AgentCommandPurpose{
+		{Purpose: observe.PurposeBuild, Count: 15}, {Purpose: observe.PurposeRead, Count: 5},
+	}
+	data := observeCompared(observeCompareData{Window: "30d", Split: "prompt_hash", Sessions: 20,
+		Earlier: earlier, Later: later, MinSessions: compareMinSessions})
+
+	read, ok := findObserveChange(data.Changes, "commands", observe.PurposeRead)
+	if !ok {
+		t.Fatalf("no read row: %+v", data.Changes)
+	}
+	if read.Before != 0.6 || read.After != 0.25 || read.Unit != "of commands" {
+		t.Fatalf("the read share is not over each cohort's commands: %+v", read)
+	}
+	unrecorded, ok := findObserveChange(data.Changes, "commands", "unrecorded")
+	if !ok || unrecorded.Before != 0.2 || unrecorded.After != 0 {
+		t.Fatalf("the unrecorded row = %+v (found %v)", unrecorded, ok)
+	}
+}
+
 // The median is the middle of the sample, and the mean of the middle two
 // where there is no single middle.
 func TestObserveMedian(t *testing.T) {

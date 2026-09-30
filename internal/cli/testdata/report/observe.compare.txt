@@ -43,6 +43,14 @@
   · execute_command  1.07 → 0.83 per turn · 14% → 10% failed (-4 pts)  [-22%]
   · edit_file        0.69 → 0.72 per turn · 5% → 4% failed (-1 pts)  [+5%]
 
+  COMMANDS
+
+  · build       29% → 50% of commands  [+21 pts]
+  · read        39% → 20% of commands  [-19 pts]
+  · search      19% → 20% of commands  [+1 pts]
+  · other       0% → 10% of commands  [+10 pts]
+  · unrecorded  13% → 0% of commands  [-13 pts]
+
   DECISIONS
 
   · allowed     1.66 → 1.67 per turn · auto · mode-accept-edits  [+1%]

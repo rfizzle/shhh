@@ -843,9 +843,13 @@ func (db *DB) AgentCohorts(since time.Time, key string) ([]AgentCohort, error) {
 // the same shapes, so a figure on the comparison and the same figure on the
 // dashboard are the same query with a narrower scope.
 type AgentCohortReading struct {
-	Turns       []AgentTurnOutcome
-	Tools       []AgentToolUsage
-	ToolErrors  []AgentToolErrorCount
+	Turns      []AgentTurnOutcome
+	Tools      []AgentToolUsage
+	ToolErrors []AgentToolErrorCount
+	// Commands is the dashboard's COMMANDS split over this cohort: the share
+	// of shell calls that were a read a built-in tool answers is the figure a
+	// change to those tools is made to move.
+	Commands    []AgentCommandPurpose
 	FirstWrites []AgentFirstWrite
 	Decisions   []AgentDecisionCount
 	// Overturns is the one decision figure that is a pairing rather than a
@@ -882,6 +886,9 @@ func (db *DB) ReadAgentCohort(since time.Time, key, value string) (AgentCohortRe
 	}
 	if r.ToolErrors, err = db.agentToolErrors(events, cutoff, value); err != nil {
 		return AgentCohortReading{}, fmt.Errorf("query cohort tool errors: %w", err)
+	}
+	if r.Commands, err = db.agentCommandPurposes(events, cutoff, value); err != nil {
+		return AgentCohortReading{}, fmt.Errorf("query cohort command purposes: %w", err)
 	}
 	if r.FirstWrites, err = db.agentFirstWrites(events, cutoff, value); err != nil {
 		return AgentCohortReading{}, fmt.Errorf("query cohort first writes: %w", err)

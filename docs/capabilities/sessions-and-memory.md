@@ -761,7 +761,9 @@ anybody deciding what the built-in tools lack is asking.
 So a command is recorded with one word for what it did: `read`, `search`,
 `list`, `write`, `edit`, `build`, `vcs` or `other`. The first five are the
 ones a built-in tool answers; the other three are the ones none does. The
-dashboard splits the window's commands by that word, beside the tool mix.
+dashboard splits the window's commands by that word, beside the tool mix, and
+a comparison draws each word's share of both cohorts' commands, so whether a
+change moved reads off the shell is one reading rather than two.
 
 **The word is read off what the line runs, never kept beside the line.** The
 command is content — it names paths — and the record is content-free by

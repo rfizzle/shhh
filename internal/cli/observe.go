@@ -2299,6 +2299,7 @@ func observeCompareChanges(earlier, later *observeCohortData) []observeChange {
 	out = append(out, observeGateChanges(earlier, later)...)
 	out = append(out, observeCostChanges(earlier, later)...)
 	out = append(out, observeToolChanges(earlier, later)...)
+	out = append(out, observeCommandChanges(earlier, later)...)
 	out = append(out, observeDecisionChanges(earlier, later)...)
 	out = append(out, observeSignalChanges(earlier, later)...)
 	out = append(out, observeOutcomeChanges(earlier, later)...)
@@ -2615,6 +2616,36 @@ func observeToolChanges(earlier, later *observeCohortData) []observeChange {
 		out[i].Beside = &rate
 	}
 	return out
+}
+
+// observeCommandChanges is the share of each cohort's commands that did each
+// kind of thing, the dashboard's COMMANDS block as a comparison: a change to
+// the built-in tools is made to move the share of shell calls that were a
+// read (docs/capabilities/sessions-and-memory.md#a-command-is-recorded-by-what-it-was-for).
+// A share of commands rather than a rate per turn, because a cohort that ran
+// fewer commands at all would otherwise read as one that read less by shell.
+// Commands recorded before the record said stay a row of their own, as on
+// the dashboard: they are in the denominator either way.
+func observeCommandChanges(earlier, later *observeCohortData) []observeChange {
+	tally := func(c *observeCohortData) (observeTally, float64) {
+		var (
+			t     observeTally
+			total float64
+		)
+		for _, p := range c.Reading.Commands {
+			name := p.Purpose
+			if name == "" {
+				name = "unrecorded"
+			}
+			t.add(name, name, "", float64(p.Count))
+			total += float64(p.Count)
+		}
+		return t, total
+	}
+	earlierTally, earlierTotal := tally(earlier)
+	laterTally, laterTotal := tally(later)
+	return observeTallyRows("commands", "of commands", observeShare,
+		earlierTally, laterTally, earlierTotal, laterTotal)
 }
 
 // observeDecisionChanges is how often the permission policy was asked and
