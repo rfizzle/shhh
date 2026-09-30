@@ -455,6 +455,87 @@ func TestArchives_APlainTarIsReadPastTheCeiling(t *testing.T) {
 	}
 }
 
+// manyEntryTar is the bytes of a tar holding n small files, f00000.txt
+// onwards, with no end-of-archive blocks: a test appends what follows them.
+func manyEntryTar(t *testing.T, n int) []byte {
+	t.Helper()
+	var buf bytes.Buffer
+	tw := tar.NewWriter(&buf)
+	for i := range n {
+		must(t, tw.WriteHeader(&tar.Header{Name: fmt.Sprintf("f%05d.txt", i), Mode: 0o644, Size: 2, Typeflag: tar.TypeReg}))
+		_, err := tw.Write([]byte("x\n"))
+		must(t, err)
+	}
+	must(t, tw.Flush())
+	return buf.Bytes()
+}
+
+// damagedBlock is a block that is not a tar header: what a reader that went
+// on past the entries before it would stop on as damage.
+var damagedBlock = bytes.Repeat([]byte{0xff}, 512)
+
+// A listing of an archive with more entries than one listing returns stops
+// reading it at the cap and spends its last line saying so. The damage laid
+// past the cap is the proof the pass stopped: a reader that went on to the
+// archive's end would have met it and said that instead. A .tar.gz whose
+// stream is cut short past the cap is the same proof for decompression.
+func TestArchives_AListingStopsReadingAtItsRowCap(t *testing.T) {
+	dir := t.TempDir()
+	body := append(manyEntryTar(t, 3*MaxListEntries), damagedBlock...)
+
+	plain := filepath.Join(dir, "many.tar")
+	must(t, os.WriteFile(plain, body, 0o644))
+
+	var gz bytes.Buffer
+	zw := gzip.NewWriter(&gz)
+	_, err := zw.Write(body)
+	must(t, err)
+	must(t, zw.Close())
+	tgz := filepath.Join(dir, "many.tgz")
+	must(t, os.WriteFile(tgz, gz.Bytes()[:gz.Len()*3/4], 0o644))
+
+	entries := make([]fixtureEntry, 3*MaxListEntries)
+	for i := range entries {
+		entries[i] = fixtureEntry{name: fmt.Sprintf("f%05d.txt", i), body: "x\n"}
+	}
+	z := filepath.Join(dir, "many.zip")
+	writeZip(t, z, entries)
+
+	for _, p := range []string{plain, tgz, z} {
+		got, err := listDir(t, p, 1)
+		if err != nil {
+			t.Fatalf("%s: %v", p, err)
+		}
+		lines := strings.Split(got, "\n")
+		last := lines[len(lines)-1]
+		if len(lines) != MaxListEntries || !TruncationNotice(last) ||
+			!strings.Contains(last, fmt.Sprintf("stopped at %d rows", MaxListEntries)) {
+			t.Errorf("%s: want %d lines ending on the cap's line, got %d ending %q",
+				filepath.Base(p), MaxListEntries, len(lines), last)
+			continue
+		}
+		if want := fmt.Sprintf("file: f%05d.txt\t2 B", MaxListEntries-2); lines[MaxListEntries-2] != want {
+			t.Errorf("%s: the last row is the entry before the cap, want %q, got %q", filepath.Base(p), want, lines[MaxListEntries-2])
+		}
+	}
+}
+
+// Damage before the cap ends the listing on the line saying so, under the
+// entries read before it.
+func TestArchives_ADamagedTarListsWhatCameBeforeTheDamage(t *testing.T) {
+	p := filepath.Join(t.TempDir(), "damaged.tar")
+	must(t, os.WriteFile(p, append(manyEntryTar(t, 3), damagedBlock...), 0o644))
+	got, err := listDir(t, p, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 4 || lines[2] != "file: f00002.txt\t2 B" ||
+		!strings.HasPrefix(lines[3], "… (stopped: "+p+" is damaged past this point") {
+		t.Errorf("want the three entries and the damage line, got:\n%s", got)
+	}
+}
+
 func TestArchives_HostileNamesAreShownAndNeverResolved(t *testing.T) {
 	dir := t.TempDir()
 	must(t, os.MkdirAll(filepath.Join(dir, "a"), 0o755))

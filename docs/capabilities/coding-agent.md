@@ -1500,7 +1500,12 @@ hundred to one — ordinary text compresses at three to fifteen — is refused a
 the bomb it is, with the ratio it reached. The ratio is judged on the bytes
 the inflation actually read and wrote, not only on the sizes a zip's table
 declares, since the table is the archive's own word; an entry that holds
-more than it declares is read no further than its declaration. An entry named with `..` or an
+more than it declares is read no further than its declaration. A listing
+returns at most the five hundred rows a directory's does, and stops reading
+the archive once it has found more, so a tar with a million entries costs the
+headers of the rows shown rather than every header it holds; a listing that
+stops before the archive's end — at that cap, at a bound or at damage — says
+which on its last line. An entry named with `..` or an
 absolute path is listed exactly as written and marked, and is never joined to
 a path on disk: an entry is only ever looked up by its name inside the
 archive. A link inside an archive is named with its target and not followed,

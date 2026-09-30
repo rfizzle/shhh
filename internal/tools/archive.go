@@ -457,6 +457,9 @@ func isBound(err error) bool {
 func stoppedNote(p string, err error) string {
 	var ratio *archiveRatioError
 	switch {
+	case errors.Is(err, errRowCap):
+		return fmt.Sprintf("… (stopped at %d rows, the most one listing returns; the rows above are from the entries read before it. List a directory inside it as %s%s<dir>, or a smaller depth, to see the rest)",
+			MaxListEntries, p, archiveEntrySep)
 	case errors.As(err, &ratio):
 		return fmt.Sprintf("… (stopped: %s; the entries above are the ones read before it)", ratio.Error())
 	case errors.Is(err, errPastCeiling):
@@ -528,19 +531,101 @@ func (n *archiveNode) lookup(clean string) *archiveNode {
 	return n
 }
 
+// errRowCap is the third way a listing's pass stops before the archive's
+// end: it has found more rows than one listing returns.
+var errRowCap = errors.New("past the listing's row cap")
+
+// archiveRows counts the rows a listing will draw as the entries are found,
+// so the pass over an archive can stop once there are more than one listing
+// returns. A tar has no table, and the pass is the cost: a plain tar with a
+// million entries is a million headers to seek between, and a .tar.gz a
+// million to decompress, for a listing that shows five hundred of them.
+//
+// A row is a node walkArchive would draw: under the directory being listed,
+// no deeper than depth, and not inside a directory it names and does not
+// enter. A name that would leave the archive's root is its own row at the top
+// of a listing of the whole archive. seen is what makes an entry that only
+// repeats a directory an earlier one implied cost no row.
+type archiveRows struct {
+	start string // the cleaned directory being listed, "" for the root
+	depth int
+	seen  map[string]bool
+	n     int
+}
+
+// add counts the rows e adds, and reports whether the rows found now fill the
+// listing, its stop line included.
+func (c *archiveRows) add(e archiveEntry) bool {
+	if unsafeEntryName(e.name) {
+		if c.start == "" {
+			c.n++
+		}
+		return c.full()
+	}
+	rel := cleanEntryName(e.name)
+	if c.start != "" {
+		var ok bool
+		if rel, ok = strings.CutPrefix(rel, c.start+"/"); !ok {
+			return c.full()
+		}
+	}
+	if rel == "" {
+		return c.full()
+	}
+	parts := strings.Split(rel, "/")
+	for i := 0; i < len(parts) && i < c.depth; i++ {
+		if key := strings.Join(parts[:i+1], "/"); !c.seen[key] {
+			c.seen[key] = true
+			c.n++
+		}
+		if skipWalk(parts[i]) {
+			break
+		}
+	}
+	return c.full()
+}
+
+// full reports whether there are rows past the one the stop line takes: the
+// listing keeps MaxListEntries-1 rows and says why it stopped on the last.
+func (c *archiveRows) full() bool { return c.n >= MaxListEntries }
+
 // listArchive is list_directory for an archive, or for a directory inside
 // one: the same rows a directory gets — `dir: rel`, `file: rel` and a tab and
 // the size — in the same order, to the same depth, with .git, node_modules
 // and vendor named and not entered. The sizes are the decompressed ones.
+//
+// It returns no more lines than one listing returns, and a listing that
+// stopped before the archive's end — at the row cap, a bound, or damage —
+// spends its last line saying which: a cut applied after the rows were drawn
+// would drop that line first. The pass stops reading the archive once the
+// rows are more than the listing holds, so a huge tar costs the headers of
+// the rows shown and not every header it has.
 func listArchive(archive, inner string, depth int) ([]string, error) {
 	if compressedName(inner) || nestedArchive(inner) != "" {
 		return nil, nestedRefusal(archive, inner)
 	}
-	s, err := scanArchive(archive, nil)
+	rows := &archiveRows{start: cleanEntryName(inner), depth: depth, seen: map[string]bool{}}
+	s, err := scanArchive(archive, func(e archiveEntry, _ io.Reader) (bool, error) {
+		return !rows.add(e), nil
+	})
 	if err != nil {
 		return nil, err
 	}
 	defer s.Close()
+	if s.kind == archiveZip {
+		// A zip's table has been read whole and cost nothing to decompress;
+		// the rows are counted over it in the same order a tar is read in,
+		// so both kinds stop at the same entry.
+		for i, e := range s.entries {
+			if rows.add(e) {
+				s.entries = s.entries[:i+1]
+				break
+			}
+		}
+	}
+	if rows.full() && s.stopped == nil {
+		s.stopped = errRowCap
+	}
 	root, unsafe := archiveTree(s.entries)
 	start := root.lookup(cleanEntryName(inner))
 	switch {
@@ -563,7 +648,7 @@ func listArchive(archive, inner string, depth int) ([]string, error) {
 		lines = append(lines, fmt.Sprintf("(%s holds no entries)", archive))
 	}
 	if s.stopped != nil {
-		lines = append(lines, stoppedNote(archive, s.stopped))
+		lines = append(lines[:min(len(lines), MaxListEntries-1)], stoppedNote(archive, s.stopped))
 	}
 	return lines, nil
 }
