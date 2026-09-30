@@ -70,10 +70,9 @@ is prose in `docs/capabilities/`, cited from the comment beside it
   `t.TempDir()`, never the real filesystem.
 - Stdlib `testing` only (`teatest` is the one harness allowed), table-driven,
   beside the source. Don't add `-count=1` to `make test`.
-- **Goldens** are in `testdata/golden/` at 60/80/110/130 columns, colour and
-  mono. `golden.Run(m)` deletes every golden no test touched, so add or remove
-  a case with `-update-golden`; never hand-write one. Anything the screen
-  draws reads the held `clock()`, never `time.Now`.
+- **Goldens**: `golden.Run(m)` deletes every golden no test touched, so add
+  or remove a case with `-update-golden`; never hand-write one. Anything the
+  screen draws reads the held `clock()`, never `time.Now`.
 
 ### Driving the binary
 
@@ -145,8 +144,6 @@ internal/
   (`chat.Containment.Run`, `process.Supervisor`), including a new one.
 - **Anything that persists tool output takes the secret scrub before it
   writes.** The executor wrap only sees a result after it is on disk.
-- **An MCP server's annotations grant nothing.** Read-only is the user's
-  `Definition.ReadOnly`, never `Tool.ReadOnlyHint`.
 - **Every git shhh runs on the host goes through `hostgit.Command`**, never a
   bare `exec.Command("git", …)`.
 - **`CGO_ENABLED=0`.** The build is pure Go (`modernc.org/sqlite`).
@@ -156,24 +153,8 @@ internal/
 - **Storage** is single-connection SQLite on purpose. In `internal/cli` open
   it with `openStore()`, never `storage.Open()`.
 - **Config**: read the merged layers with `ConfigFrom`, never `config.Load`.
-  Every setting is one row of `settings` in `internal/config/settings.go`.
   Write config files through `config.ReplaceFile`.
-- **Provider names are normalised**: underscores become hyphens.
-- **Bubble Tea**: shhh's messages are typed structs handled in `Update`. Match
-  `tea.KeyPressMsg` and the concrete mouse types, not v2's interfaces.
-  `View()` returns a `tea.View`; tests read `.View().Content`.
 - **Chat geometry is rectangles in `internal/ui/chat/layout.go`.** Add one to
-  the split rather than a `width - n` in a renderer. A chat surface is one row
-  of the register in `overlay.go`.
-- **`edit_file` ranges are offsets into the file as read.** Every edit goes
-  through `applyEdits`; applying them one at a time by string replacement
-  changes the meaning of each edit after the first.
+  the split rather than a `width - n` in a renderer.
 - **A new optional tool joins `registrableDefinitions`**
   (`internal/cli/registrable.go`) in the change that registers it.
-- **The tool-round cap is a checkpoint**: at 150 rounds a session pauses for
-  the user. The "Finding things" rules in `BuildAgent` are load-bearing;
-  without them a session spent all 150 re-running the same searches.
-- **Migrations are `shhh doctor` checks**, never a startup step. Config, data
-  and cache follow XDG on every platform; don't add a `darwin` branch.
-- **Every stream loop calls `idleWatch.alive()` on every raw event** and ends
-  through `idleWatch.err`, or the dialect has no idle deadline.
