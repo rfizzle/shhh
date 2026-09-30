@@ -265,6 +265,9 @@ func executeSearch(raw json.RawMessage) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("cannot access path: %w", err)
 	}
+	if err := notRegular(args.Path, info); err != nil {
+		return "", err
+	}
 	args.inflate = newInflateBudget()
 
 	if args.OnlyMatching {
@@ -614,6 +617,13 @@ func walkSearch(include *includeMatcher, args searchArgs, visit func(path string
 func readSearchFile(path string, args searchArgs) (string, error) {
 	if args.inflate != nil && isGzipFile(path) {
 		return args.inflate.read(path)
+	}
+	info, err := os.Stat(path)
+	if err != nil {
+		return "", err
+	}
+	if err := notRegular(path, info); err != nil {
+		return "", err
 	}
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -989,8 +999,12 @@ func MeasureSearch(result string) SearchSize {
 // about, differently.
 //
 // A file that cannot be opened or is empty counts as binary: there is nothing
-// in it to match, and the walk has better uses for the round.
+// in it to match, and the walk has better uses for the round. So does a pipe,
+// a socket or a device, decided before the open, which on a pipe would wait.
 func isBinary(path string) bool {
+	if info, err := os.Stat(path); err != nil || notRegular(path, info) != nil {
+		return true
+	}
 	f, err := os.Open(path)
 	if err != nil {
 		return true

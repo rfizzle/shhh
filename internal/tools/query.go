@@ -376,6 +376,9 @@ func queryFile(ctx context.Context, watch *queryMemoryWatch, out *queryOutput, p
 	if info.IsDir() {
 		return fmt.Errorf("%s is a directory; name the files in it, or a glob such as %s", path, filepath.ToSlash(filepath.Join(path, "*.json")))
 	}
+	if err := notRegular(path, info); err != nil {
+		return err
+	}
 	if info.Size() > MaxQueryFileSize {
 		return fmt.Errorf("%s is %s and query reads at most %s of one file", path,
 			attachment.HumanSize(int(info.Size())), attachment.HumanSize(MaxQueryFileSize))

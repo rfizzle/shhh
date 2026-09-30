@@ -510,6 +510,28 @@ func tailWindow(lines []string, start, end int) (int, string, bool) {
 	return first, strings.Join(lines[first-1:end], "\n"), truncated
 }
 
+// notRegular refuses a path that is neither a regular file nor a directory,
+// naming what it is, and every reader that opens a path asks it first with
+// the stat it already took. Opening a named pipe blocks until a writer comes
+// and nothing bounds that wait; a socket or a device has no contents a reader
+// could quote either.
+func notRegular(path string, info fs.FileInfo) error {
+	mode := info.Mode()
+	if mode.IsRegular() || mode.IsDir() {
+		return nil
+	}
+	kind := "special file"
+	switch {
+	case mode&fs.ModeNamedPipe != 0:
+		kind = "named pipe"
+	case mode&fs.ModeSocket != 0:
+		kind = "socket"
+	case mode&fs.ModeDevice != 0:
+		kind = "device"
+	}
+	return fmt.Errorf("%s is a %s, not a regular file; name a file", path, kind)
+}
+
 // readForModel opens a file on read_file's behalf: the size ceiling and the
 // binary sniff both happen here, before the file is read whole, and either
 // can end the call without its contents.
@@ -530,6 +552,9 @@ func readForModel(path string) (data []byte, notice string, err error) {
 	}
 	if info.IsDir() {
 		return nil, "", fmt.Errorf("%s is a directory; list_directory is the tool for one", path)
+	}
+	if err := notRegular(path, info); err != nil {
+		return nil, "", err
 	}
 
 	f, err := os.Open(path)

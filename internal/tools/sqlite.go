@@ -312,9 +312,8 @@ func checkSqliteFile(path string) error {
 	if info.IsDir() {
 		return fmt.Errorf("%s is a directory; name the database file in it", path)
 	}
-	// A pipe or a device would block the open, and nothing bounds that wait.
-	if !info.Mode().IsRegular() {
-		return fmt.Errorf("%s is not a regular file; name the database file", path)
+	if err := notRegular(path, info); err != nil {
+		return err
 	}
 	if info.Size() == 0 {
 		return nil
