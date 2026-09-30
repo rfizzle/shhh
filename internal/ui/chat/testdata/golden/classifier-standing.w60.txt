@@ -22,8 +22,8 @@
 │ standing  listed host (urlhaus)                      │
 ├──────────────────────────────────────────────────────┤
 │ [y] fetch it · [Y] fetch with a note · [n] deny      │
-│ [N] deny with a note                                 │
-│ [a] allow bad.test without asking · [?] keys · [esc] │
+│ [N] deny with a note · [?] keys · [esc] wait         │
+│ [a] always — not offered: the lists warn about it    │
 ╰──────────────────────────────────────────────────────╯
 
 ── ansi ────────────────────────────────────────────────────
@@ -39,6 +39,6 @@
 ␛[38;5;214m│␛[m ␛[38;5;243mstanding  ␛[m␛[38;5;214mlisted host (urlhaus)␛[m                      ␛[38;5;214m│␛[m
 ␛[38;5;214m├──────────────────────────────────────────────────────┤␛[m
 ␛[38;5;214m│␛[m ␛[94m[y]␛[m ␛[38;5;252mfetch it␛[m␛[38;5;241m · ␛[m␛[94m[Y]␛[m ␛[38;5;252mfetch with a note␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m ␛[38;5;252mdeny␛[m      ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[94m[N]␛[m ␛[38;5;252mdeny with a note␛[m                                 ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[94m[a]␛[m ␛[38;5;252mallow bad.test without asking␛[m␛[38;5;241m · ␛[m␛[94m[?]␛[m ␛[38;5;252mkeys␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[94m[N]␛[m ␛[38;5;252mdeny with a note␛[m␛[38;5;241m · ␛[m␛[94m[?]␛[m ␛[38;5;252mkeys␛[m␛[38;5;241m · ␛[m␛[92m[esc] wait␛[m         ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;241m[a] always — not offered: the lists warn about it␛[m    ␛[38;5;214m│␛[m
 ␛[38;5;214m╰──────────────────────────────────────────────────────╯␛[m

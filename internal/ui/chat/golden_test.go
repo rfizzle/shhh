@@ -3219,7 +3219,9 @@ func TestGolden_ClassifierAsk(t *testing.T) {
 // otherwise expect: the classifier said yes to a fetch, and the host lists
 // put it to the person instead. The standing is a row of the card's block,
 // open, with the level stated from it
-// (docs/capabilities/approvals-and-safety.md#a-host-is-read-against-the-world-before-it-is-judged).
+// (docs/capabilities/approvals-and-safety.md#a-host-is-read-against-the-world-before-it-is-judged),
+// and the grant is not offered for the host
+// (docs/capabilities/approvals-and-safety.md#a-host-is-granted-once).
 func TestGolden_ClassifierStanding(t *testing.T) {
 	useFixtureReputation(t, map[string][]string{"urlhaus": {"bad.test"}})
 	previews := map[string]GatedPreviewFunc{

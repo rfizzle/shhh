@@ -108,6 +108,13 @@ at, so it is what the grant is made of — exactly, never as a suffix.
 `docs.python.org` does not grant `python.org`, and it does not grant
 `docs.python.org.evil.test` either.
 
+A host the public lists warn about — young, disposable or listed — is never
+offered the grant, at any width and in any mode: a grant is a standing yes,
+and a warning is the lists asking for each fetch to be answered on its own,
+so the answer on that card is for that one fetch and the card says why the
+key is missing. Vouching for such a host for
+good is `web.allow_hosts`, which is written down rather than pressed.
+
 A grant is a session's, and it travels the way the other grants travel: it
 is listed by `/permissions grants`, counted on the status line, taken back
 by `/permissions revoke`, and inherited by every child the session spawns.

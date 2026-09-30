@@ -149,6 +149,43 @@ func TestReputation_AWarnedHostIsCardedWhereTheClassifierAllowed(t *testing.T) {
 	}
 }
 
+// A host the lists warn about is never offered the session grant, in the mode
+// that puts every fetch on a card as in the one the lists overrule the
+// classifier in: a grant is a standing yes, and the lists are why the card is
+// up. The card says why the key is missing, pressing it grants nothing, and a
+// host no list names keeps the offer.
+func TestReputation_AWarnedHostIsNotOfferedTheGrant(t *testing.T) {
+	for _, c := range []struct {
+		name, host string
+		warned     bool
+	}{
+		{"listed", "bad.test", true},
+		{"unknown", "nowhere.test", false},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			useFixtureReputation(t, map[string][]string{"urlhaus": {"bad.test"}})
+			m := gatedModel(t, func(string, json.RawMessage) (string, error) { return "", nil }, fetchPreviews())
+			updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{fetchCall("call_1", "https://"+c.host+"/x")}})
+			m = handover(t, updated.(Model))
+			view := m.View().Content
+			offered := strings.Contains(view, "allow "+c.host+" without asking")
+			if offered == c.warned {
+				t.Fatalf("offered the grant: %v, want %v:\n%s", offered, !c.warned, view)
+			}
+			if !c.warned {
+				return
+			}
+			if !strings.Contains(view, "not offered: the lists warn about it") {
+				t.Fatalf("the card does not say why the grant is missing:\n%s", view)
+			}
+			m, _ = pressKey(t, m, keyPress('a'))
+			if len(m.policy.hosts) != 0 || m.state != stateConfirmRun {
+				t.Fatalf("[a] on a warned host granted %v (state %d)", m.policy.hosts, m.state)
+			}
+		})
+	}
+}
+
 // An unknown host changes nothing: the classifier's yes stands.
 func TestReputation_AnUnknownHostLeavesTheClassifiersAnswer(t *testing.T) {
 	useFixtureReputation(t, nil)

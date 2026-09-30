@@ -123,6 +123,10 @@ type approvalRequest struct {
 	// host is the host a generic approval's outbound request leaves for,
 	// from its GatedPreview: what [a] grants and what the host lists answer.
 	host string
+	// hostWarns is set when the host lists warn about host, read once when
+	// the request is built because the card is rebuilt every frame and the
+	// reading searches the lists on disk. It is what withholds [a].
+	hostWarns bool
 	// spawn is the child a spawn_agent call would start, from its
 	// GatedPreview: the card's own row, the role [a] grants, and what marks
 	// this decision as one a round's other spawns are answered with.
@@ -370,15 +374,16 @@ func (m Model) buildApprovalRequest(tc provider.ToolCall) (*approvalRequest, err
 		title = firstLine(p.Summary)
 	}
 	return &approvalRequest{
-		call:    tc,
-		kind:    approvalGeneric,
-		title:   title,
-		command: p.DenyLine,
-		summary: summary,
-		fields:  p.Fields,
-		write:   p.Write,
-		host:    p.Host,
-		spawn:   p.Spawn,
+		call:      tc,
+		kind:      approvalGeneric,
+		title:     title,
+		command:   p.DenyLine,
+		summary:   summary,
+		fields:    p.Fields,
+		write:     p.Write,
+		host:      p.Host,
+		hostWarns: p.Host != "" && web.ReadFetch(json.RawMessage(tc.Arguments)).Warns(),
+		spawn:     p.Spawn,
 	}, nil
 }
 
@@ -1330,7 +1335,19 @@ func (m Model) buildApprovalCard() *components.ApprovalCard {
 		// rather than the category: what the reader read on the card's own
 		// domain row is exactly what pressing it grants, and a page from the
 		// same site is then not a card at all.
-		if req.host != "" && len(card.Warnings) == 0 {
+		//
+		// Not on a host the lists warn about, at any width or in any mode: a
+		// grant is a standing yes, and a warning asks for each fetch to be
+		// answered on its own, so the card says why the key is missing.
+		// web.allow_hosts is still the person's way to vouch for it
+		// (docs/capabilities/approvals-and-safety.md#a-host-is-granted-once).
+		switch {
+		case req.host == "" || len(card.Warnings) > 0:
+		case req.hostWarns:
+			if card.Footnote == "" {
+				card.Footnote = "[a] always — not offered: the lists warn about it"
+			}
+		default:
 			card.AllowAlways = true
 			card.AlwaysHint = "allow " + req.host + " without asking"
 		}

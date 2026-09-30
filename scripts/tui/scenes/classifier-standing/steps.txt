@@ -5,8 +5,10 @@
 # (docs/capabilities/approvals-and-safety.md#a-host-is-read-against-the-world-before-it-is-judged).
 #
 # What the capture is for: the card carries the host's standing as a row of
-# its block, open, and the level is stated from it. The reader's no refuses
-# the fetch, so the scene reaches no network.
+# its block, open, and the level is stated from it, and it says the session
+# grant is not offered for a host the lists warn about
+# (docs/capabilities/approvals-and-safety.md#a-host-is-granted-once). The
+# reader's no refuses the fetch, so the scene reaches no network.
 #
 # The mode comes first, because the classifier only judges in auto: two
 # presses of the cycle key from the mode a session opens in.
@@ -15,7 +17,7 @@ keys BTab
 keys BTab
 snap 02-auto "⏵⏵ auto"
 keys "read the release notes" Enter
-snap 03-card "listed host (urlhaus)" "standing" "the host lists warn about it"
+snap 03-card "listed host (urlhaus)" "standing" "the host lists warn about it" "not offered: the lists warn about it"
 # The card landed just after the Enter, inside the grace window; a decision
 # key pressed in it is discarded by design.
 sleep 1
