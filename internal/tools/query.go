@@ -1032,11 +1032,20 @@ func decodeJSONLines(path string, r *bufio.Reader, each func(any) error) error {
 // decodeYAML reads every document in turn. Anchors, aliases and merge keys
 // are resolved by the decoder, so an expression sees the values they stand
 // for.
+//
+// A document is read as nodes first and then decoded, which is the two steps
+// the decoder takes anyway, so a date can be kept as the text it was written
+// as before it is turned into a time.
 func decodeYAML(path string, r io.Reader, each func(any) error) error {
 	dec := yaml.NewDecoder(r)
 	for {
 		var v any
-		err := dec.Decode(&v)
+		var doc yaml.Node
+		err := dec.Decode(&doc)
+		if err == nil {
+			keepYAMLDates(&doc)
+			err = doc.Decode(&v)
+		}
 		if err == io.EOF {
 			return nil
 		}
@@ -1057,6 +1066,27 @@ func decodeYAML(path string, r io.Reader, each func(any) error) error {
 		}
 		if err := each(v); err != nil {
 			return err
+		}
+	}
+}
+
+// keepYAMLDates marks every date-only timestamp as a string, so it comes back
+// as the file wrote it — 2001-01-01, the way a TOML local date does — rather
+// than as a time at midnight UTC, which would put a clock and a zone on a
+// value that had neither. An alias is not followed: the node it names is
+// visited where it is defined.
+func keepYAMLDates(n *yaml.Node) {
+	switch n.Kind {
+	case yaml.ScalarNode:
+		if len(n.Value) >= len("2006-1-2") && n.Value[4] == '-' && n.ShortTag() == "!!timestamp" {
+			if _, err := time.Parse("2006-1-2", n.Value); err == nil {
+				n.Tag = "!!str"
+			}
+		}
+	case yaml.AliasNode:
+	default:
+		for _, c := range n.Content {
+			keepYAMLDates(c)
 		}
 	}
 }
