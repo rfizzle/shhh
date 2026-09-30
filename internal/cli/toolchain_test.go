@@ -178,7 +178,13 @@ func TestAContainedInstallIsTheWrapOfTheNarrowedPolicy(t *testing.T) {
 	}
 	joined := strings.Join(argv, " ")
 	ws, _ := os.Getwd()
-	for _, want := range []string{"--setenv GOBIN " + filepath.Join(dir, "bin"), "--chdir " + dir, line} {
+	// The mechanism starts the line in the directory as resolved, and a
+	// temporary directory is behind a link on macOS (/var is /private/var).
+	start, err := filepath.EvalSymlinks(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"--setenv GOBIN " + filepath.Join(dir, "bin"), "--chdir " + start, line} {
 		if !strings.Contains(joined, want) {
 			t.Errorf("the wrap never carries %q:\n%s", want, joined)
 		}
