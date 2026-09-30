@@ -453,6 +453,15 @@ it is written, and a `.git` in a workspace below the checkout's top, which a
 contained `git init` makes and git then finds first. Creating either to mount
 over would change the repository — an empty `commondir` breaks it.
 
+A container sandbox holds them the way bubblewrap does, for the same reason:
+its one writable mount is the workspace, and a container is just as unable to
+mount over a path that is not there. The entries inside the workspace that
+exist are bound read-only over that mount, with `.git` bound over itself
+before them so it cannot be renamed aside; an absent entry or a link is not
+held, and nothing in a `--sandbox` run names it. A store outside the workspace
+— a linked worktree's, or the checkout's when the run starts below its top —
+is not in the container at all.
+
 Where the paths are is read before every command, from git and from the
 `.git` found by walking up, and a store git cannot read still gets its
 ordinary layout masked: a command that broke the store for a moment, so that
@@ -462,7 +471,8 @@ What this leaves open, in a trusted checkout. A hook the checkout already has
 may run what the working tree says — husky's scripts, the pre-commit
 framework's configuration, a `package.json` — and the working tree is the one
 thing a contained command is there to write; that is the checkout's trust
-answering, and withdrawing trust is the way to refuse it. Under bubblewrap, a
+answering, and withdrawing trust is the way to refuse it. Under bubblewrap
+and in a container sandbox, a
 `commondir` a contained command writes into a store that had none, and a
 `.git` it makes in a workspace below the checkout's top, are what the host's
 git will read next — [the next section](#the-hosts-own-git-runs-nothing-a-command-wrote)

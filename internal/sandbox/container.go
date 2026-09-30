@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -33,6 +34,11 @@ type ContainerSpec struct {
 	CPUs      string
 	PidsLimit int
 	TTL       time.Duration
+
+	// git is the workspace repository's program paths as the container
+	// holds them, read on the host by CreateContainer once the workspace is
+	// resolved.
+	git spec
 }
 
 // Default resource ceilings and lifetime for sandbox containers.
@@ -134,10 +140,53 @@ func createArgv(eng Engine, name string, s ContainerSpec) []string {
 		"--cpus", s.CPUs,
 		"--pids-limit", strconv.Itoa(s.PidsLimit),
 	}
+	argv = append(argv, gitVolumes(s.Workspace, s.git)...)
 	if !s.Network {
 		argv = append(argv, "--network", "none")
 	}
 	return append(argv, s.run(), "sleep", "2147483647")
+}
+
+// containerGit reads the workspace repository's program paths the way
+// bubblewrap holds them, with the workspace as the one grant — the mount is
+// the whole of what the container can write. Git runs these on the host
+// after the run: a hook on the next commit, an fsmonitor on the next status.
+// So the ones that exist are bound read-only over the workspace mount, and
+// the directories between the mount and each of them are bound over
+// themselves, since a mount point cannot be renamed and .git moved aside,
+// written into and moved back would walk around the rest. An entry that does
+// not exist, or is a link, cannot be held by a mount at all, as under
+// bubblewrap; an entry outside the workspace is not in the container.
+// See docs/capabilities/containment.md#the-repositorys-own-programs-are-read-only.
+func containerGit(ws string) spec {
+	g := spec{workspace: ws, write: []string{ws}}
+	g.maskGitStore("bwrap")
+	return g
+}
+
+// gitVolumes are the binds that hold what containerGit read, each at its
+// place under the workspace mount: the pins first, shortest first, then the
+// read-only entries, so no bind covers one inside it.
+func gitVolumes(ws string, g spec) []string {
+	var argv []string
+	at := func(host string) (string, bool) {
+		rel, err := filepath.Rel(ws, host)
+		if err != nil || rel == "." || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+			return "", false
+		}
+		return workspaceMount + "/" + filepath.ToSlash(rel), true
+	}
+	for _, p := range g.gitPinned {
+		if dst, ok := at(p); ok {
+			argv = append(argv, "--volume", p+":"+dst)
+		}
+	}
+	for _, p := range g.gitReadOnly {
+		if dst, ok := at(p); ok {
+			argv = append(argv, "--volume", p+":"+dst+":ro")
+		}
+	}
+	return argv
 }
 
 // run is the image the container is created from: the prepared one where
@@ -190,6 +239,7 @@ func CreateContainer(ctx context.Context, eng Engine, s ContainerSpec, allowlist
 		return Container{}, fmt.Errorf("cannot resolve workspace %s: %w", s.Workspace, err)
 	}
 	s.Workspace = ws
+	s.git = containerGit(ws)
 
 	id, err := newSandboxID()
 	if err != nil {

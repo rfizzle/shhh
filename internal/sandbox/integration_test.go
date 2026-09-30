@@ -95,6 +95,66 @@ func TestContainerLifecycleIntegration(t *testing.T) {
 	}
 }
 
+// TestContainerKeepsTheRepositorysProgramsReadOnly puts the git holds to a
+// real engine: a command in the container can stage and write the checkout,
+// and cannot write a hook or the config, or move .git aside to write one
+// under a name nothing holds — the program the host's next git would run.
+func TestContainerKeepsTheRepositorysProgramsReadOnly(t *testing.T) {
+	image := os.Getenv("SHHH_SANDBOX_IT_IMAGE")
+	if image == "" {
+		t.Skip("set SHHH_SANDBOX_IT_IMAGE to a local digest-pinned image to run")
+	}
+	eng := DetectEngine(os.Getenv("SHHH_SANDBOX_IT_ENGINE"))
+	if !eng.OK {
+		t.Skipf("no container engine: %s", eng.Detail)
+	}
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git is not on PATH")
+	}
+	ctx := context.Background()
+	store := NewStoreAt(filepath.Join(t.TempDir(), "sandboxes.json"))
+	ws := t.TempDir()
+	if out, err := exec.Command("git", "-C", ws, "init", "-q").CombinedOutput(); err != nil {
+		t.Fatalf("git init: %v: %s", err, out)
+	}
+	config, err := os.ReadFile(filepath.Join(ws, ".git", "config"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	c, err := CreateContainer(ctx, eng, ContainerSpec{Image: image, Workspace: ws, TTL: time.Hour}, nil, store)
+	if err != nil {
+		t.Fatalf("CreateContainer: %v", err)
+	}
+	defer func() { _ = DestroyContainer(ctx, eng.Path, store, c.Record) }()
+
+	for _, refused := range []string{
+		"echo probe > .git/hooks/pre-commit",
+		"echo '[core]' >> .git/config",
+		"echo probe > .git/info/attributes",
+		"mv .git .git-aside",
+		"rm -rf .git/hooks",
+	} {
+		if out, err := runEngine(ctx, c.ExecArgv(refused)); err == nil {
+			t.Errorf("%q ran inside the container: %s", refused, out)
+		}
+	}
+	for _, allowed := range []string{"echo work > file.txt", "touch .git/objects/probe", "echo ref > .git/probe-ref"} {
+		if out, err := runEngine(ctx, c.ExecArgv(allowed)); err != nil {
+			t.Errorf("%q was refused, and it is ordinary work: %v: %s", allowed, err, out)
+		}
+	}
+	if _, err := os.Stat(filepath.Join(ws, ".git", "hooks", "pre-commit")); err == nil {
+		t.Error("a hook written in the container landed in the checkout")
+	}
+	if got, _ := os.ReadFile(filepath.Join(ws, ".git", "config")); string(got) != string(config) {
+		t.Errorf("the config moved under the container:\n%s", got)
+	}
+	if _, err := os.Stat(filepath.Join(ws, ".git-aside")); err == nil {
+		t.Error(".git was moved aside")
+	}
+}
+
 // TestPreparedImageIntegration puts the preparation to a real engine: an
 // image prepared from a declaration holds what it named, is found again
 // under its key, and is what a session's container runs with its network

@@ -340,3 +340,53 @@ func TestCreateContainerFailsClosed(t *testing.T) {
 		t.Error("failed creations must not leave ownership records")
 	}
 }
+
+// A container's one mount is the workspace, and git runs what the repository
+// names on the host after the run, so the program paths are held read-only
+// over that mount the way bubblewrap holds them: .git bound over itself first
+// so it cannot be renamed aside, then the config, the hooks and info/, with
+// the objects left writable and an absent commondir named rather than held.
+func TestTheContainerHoldsTheRepositorysProgramsReadOnly(t *testing.T) {
+	_, ws := gitWorkspace(t)
+	dotgit := filepath.Join(ws, ".git")
+	eng := Engine{Name: "docker", Path: "/usr/bin/docker", OK: true}
+	s, err := ContainerSpec{Image: "alpine" + testDigest, Workspace: ws}.withDefaults()
+	if err != nil {
+		t.Fatal(err)
+	}
+	s.git = containerGit(ws)
+	argv := createArgv(eng, "shhh-sbx-test", s)
+
+	mount := argvIndex(argv, "--volume", ws+":"+workspaceMount)
+	pin := argvIndex(argv, "--volume", dotgit+":"+workspaceMount+"/.git")
+	if mount < 0 || pin < 0 || mount >= pin {
+		t.Fatalf("the workspace, then .git over itself, must be mounted (got %d, %d):\n%v", mount, pin, argv)
+	}
+	for _, entry := range []string{"config", "hooks", "info"} {
+		at := argvIndex(argv, "--volume", filepath.Join(dotgit, entry)+":"+workspaceMount+"/.git/"+entry+":ro")
+		if at < 0 || at <= pin {
+			t.Errorf(".git/%s is not bound read-only after the pin:\n%v", entry, argv)
+		}
+	}
+	if strings.Contains(strings.Join(argv, " "), "/.git/objects") {
+		t.Errorf("the objects stay writable — staging is ordinary work:\n%v", argv)
+	}
+	if !slices.Contains(s.git.gitUnheld, filepath.Join(dotgit, "commondir")) {
+		t.Errorf("an absent commondir cannot be held by a mount and must be named: %v", s.git.gitUnheld)
+	}
+
+	// A workspace below the checkout's top has its store outside the mount,
+	// which the container cannot reach at all; nothing is bound for it.
+	sub := filepath.Join(ws, "sub")
+	if err := os.Mkdir(sub, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	below, err := ContainerSpec{Image: "alpine" + testDigest, Workspace: sub}.withDefaults()
+	if err != nil {
+		t.Fatal(err)
+	}
+	below.git = containerGit(sub)
+	if n := strings.Count(strings.Join(createArgv(eng, "n", below), " "), "--volume"); n != 1 {
+		t.Errorf("a store outside the workspace was bound into the container (%d volumes)", n)
+	}
+}
