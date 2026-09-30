@@ -17,6 +17,7 @@ require (
 	github.com/charmbracelet/x/exp/teatest/v2 v2.0.0-20260906004030-3986e9119cf9
 	github.com/charmbracelet/x/term v0.2.2
 	github.com/creack/pty v1.1.24
+	github.com/itchyny/gojq v0.12.19
 	github.com/mattn/go-isatty v0.0.20
 	github.com/modelcontextprotocol/go-sdk v1.7.0
 	github.com/sashabaranov/go-openai v1.41.2
@@ -41,6 +42,7 @@ require (
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.22.0 // indirect
+	github.com/itchyny/timefmt-go v0.1.8 // indirect
 	go.opentelemetry.io/otel/metric v1.29.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240903143218-8af14fe29dc1 // indirect
 )
@@ -90,7 +92,7 @@ require (
 	github.com/yosida95/uritemplate/v3 v3.0.2 // indirect
 	github.com/yuin/goldmark-emoji v1.0.6
 	go.opencensus.io v0.24.0 // indirect
-	go.yaml.in/yaml/v4 v4.0.0-rc.2 // indirect
+	go.yaml.in/yaml/v4 v4.0.0-rc.2
 	golang.org/x/crypto v0.40.0 // indirect
 	golang.org/x/oauth2 v0.35.0 // indirect
 	golang.org/x/sync v0.22.0 // indirect

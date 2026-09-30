@@ -3390,7 +3390,7 @@ func goldenDoctorChecks() []DoctorCheck {
 			Fix:         []string{"shhh config set sandbox.container_image <name>@sha256:<digest>"}},
 		{Name: "git", Subject: "~/src/shhh", Detail: "3 files changed, all tracked",
 			Outcome: "ok", Duration: "0.2s"},
-		{Name: "tools", Subject: "fd, ast-grep", Detail: "no sd/tokei/jaq · gopls", Outcome: "ok"},
+		{Name: "tools", Subject: "fd, ast-grep", Detail: "no sd/tokei · gopls", Outcome: "ok"},
 		{Name: "memory", Subject: "nothing remembered yet", Detail: "~/src/shhh",
 			Outcome: "empty", State: DoctorSkipped},
 		{Name: "update", Subject: "shhh 0.9.5 is out", Detail: "this machine is on 0.9.4",

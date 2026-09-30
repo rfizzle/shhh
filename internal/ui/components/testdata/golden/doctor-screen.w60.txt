@@ -27,7 +27,7 @@ shhh doctor · 10 checks           1.4s · [?] keys · [q] quit
     the engine is there, so only the image stands between t…
     [f] show the 1-line fix
    ✓ git     ~/src/shhh · 3 files changed, all t…  ok   0.2s
-   ✓ tools   fd, ast-grep · no sd/tokei/jaq · go…  ok
+   ✓ tools   fd, ast-grep · no sd/tokei · gopls    ok
    ⊘ memory  nothing remembered yet · ~/src/s…  empty
    ⚠ update  shhh 0.9.5 is out · this m…  out of date
     [f] show how to upgrade
@@ -57,7 +57,7 @@ shhh doctor · 10 checks           1.4s · [?] keys · [q] quit
     the engine is there, so only the image stands between t…
     [f] show the 1-line fix
    ✓ git     ~/src/shhh · 3 files changed, all t…  ok   0.2s
-   ✓ tools   fd, ast-grep · no sd/tokei/jaq · go…  ok
+   ✓ tools   fd, ast-grep · no sd/tokei · gopls    ok
    ⊘ memory  nothing remembered yet · ~/src/s…  empty
    ⚠ update  shhh 0.9.5 is out · this m…  out of date
     [f] show how to upgrade
@@ -83,7 +83,7 @@ shhh doctor · 10 checks           1.4s · [?] keys · [q] quit
     the engine is there, so only the image stands between t…
     [f] show the 1-line fix
    ✓ git     ~/src/shhh · 3 files changed, all t…  ok   0.2s
-   ✓ tools   fd, ast-grep · no sd/tokei/jaq · go…  ok
+   ✓ tools   fd, ast-grep · no sd/tokei · gopls    ok
    ⊘ memory  nothing remembered yet · ~/src/s…  empty
    ⚠ update  shhh 0.9.5 is out · this m…  out of date
     [f] show how to upgrade
@@ -148,7 +148,7 @@ shhh doctor · 10 checks           1.4s · [?] keys · [q] quit
     the engine is there, so only the image stands between t…
     [f] show the 1-line fix
    ✓ git     ~/src/shhh · 3 files changed, all t…  ok   0.2s
-   ✓ tools   fd, ast-grep · no sd/tokei/jaq · go…  ok
+   ✓ tools   fd, ast-grep · no sd/tokei · gopls    ok
    ⊘ memory  nothing remembered yet · ~/src/s…  empty
    ⚠ update  shhh 0.9.5 is out · this m…  out of date
     [f] show how to upgrade
@@ -207,7 +207,7 @@ shhh doctor · 3 checks            0.9s · [?] keys · [q] quit
     ␛[38;5;245mthe engine is there, so only the image stands between t…␛[m
     ␛[38;5;245m[f]␛[m␛[38;5;241m show the 1-line fix␛[m
    ␛[92m✓␛[m ␛[38;5;252mgit␛[m     ␛[38;5;252m~/src/shhh␛[m␛[38;5;241m · 3 files changed, all t…␛[m  ␛[38;5;241mok␛[m   ␛[38;5;241m0.2s␛[m
-   ␛[92m✓␛[m ␛[38;5;252mtools␛[m   ␛[38;5;252mfd, ast-grep␛[m␛[38;5;241m · no sd/tokei/jaq · go…␛[m  ␛[38;5;241mok␛[m
+   ␛[92m✓␛[m ␛[38;5;252mtools␛[m   ␛[38;5;252mfd, ast-grep␛[m␛[38;5;241m · no sd/tokei · gopls␛[m    ␛[38;5;241mok␛[m
    ␛[38;5;241m⊘␛[m ␛[38;5;252mmemory␛[m  ␛[38;5;252mnothing remembered yet␛[m␛[38;5;241m · ~/src/s…␛[m  ␛[38;5;241mempty␛[m
    ␛[38;5;214m⚠␛[m ␛[38;5;252mupdate␛[m  ␛[38;5;252mshhh 0.9.5 is out␛[m␛[38;5;241m · this m…␛[m  ␛[38;5;214mout of date␛[m
     ␛[38;5;245m[f]␛[m␛[38;5;241m show how to upgrade␛[m
@@ -237,7 +237,7 @@ shhh doctor · 3 checks            0.9s · [?] keys · [q] quit
     ␛[38;5;245mthe engine is there, so only the image stands between t…␛[m
     ␛[38;5;245m[f]␛[m␛[38;5;241m show the 1-line fix␛[m
    ␛[92m✓␛[m ␛[38;5;252mgit␛[m     ␛[38;5;252m~/src/shhh␛[m␛[38;5;241m · 3 files changed, all t…␛[m  ␛[38;5;241mok␛[m   ␛[38;5;241m0.2s␛[m
-   ␛[92m✓␛[m ␛[38;5;252mtools␛[m   ␛[38;5;252mfd, ast-grep␛[m␛[38;5;241m · no sd/tokei/jaq · go…␛[m  ␛[38;5;241mok␛[m
+   ␛[92m✓␛[m ␛[38;5;252mtools␛[m   ␛[38;5;252mfd, ast-grep␛[m␛[38;5;241m · no sd/tokei · gopls␛[m    ␛[38;5;241mok␛[m
    ␛[38;5;241m⊘␛[m ␛[38;5;252mmemory␛[m  ␛[38;5;252mnothing remembered yet␛[m␛[38;5;241m · ~/src/s…␛[m  ␛[38;5;241mempty␛[m
    ␛[38;5;214m⚠␛[m ␛[38;5;252mupdate␛[m  ␛[38;5;252mshhh 0.9.5 is out␛[m␛[38;5;241m · this m…␛[m  ␛[38;5;214mout of date␛[m
     ␛[38;5;245m[f]␛[m␛[38;5;241m show how to upgrade␛[m
@@ -263,7 +263,7 @@ shhh doctor · 3 checks            0.9s · [?] keys · [q] quit
     ␛[38;5;245mthe engine is there, so only the image stands between t…␛[m
     ␛[38;5;245m[f]␛[m␛[38;5;241m show the 1-line fix␛[m
    ␛[92m✓␛[m ␛[38;5;252mgit␛[m     ␛[38;5;252m~/src/shhh␛[m␛[38;5;241m · 3 files changed, all t…␛[m  ␛[38;5;241mok␛[m   ␛[38;5;241m0.2s␛[m
-   ␛[92m✓␛[m ␛[38;5;252mtools␛[m   ␛[38;5;252mfd, ast-grep␛[m␛[38;5;241m · no sd/tokei/jaq · go…␛[m  ␛[38;5;241mok␛[m
+   ␛[92m✓␛[m ␛[38;5;252mtools␛[m   ␛[38;5;252mfd, ast-grep␛[m␛[38;5;241m · no sd/tokei · gopls␛[m    ␛[38;5;241mok␛[m
    ␛[38;5;241m⊘␛[m ␛[38;5;252mmemory␛[m  ␛[38;5;252mnothing remembered yet␛[m␛[38;5;241m · ~/src/s…␛[m  ␛[38;5;241mempty␛[m
    ␛[38;5;214m⚠␛[m ␛[38;5;252mupdate␛[m  ␛[38;5;252mshhh 0.9.5 is out␛[m␛[38;5;241m · this m…␛[m  ␛[38;5;214mout of date␛[m
     ␛[38;5;245m[f]␛[m␛[38;5;241m show how to upgrade␛[m
@@ -328,7 +328,7 @@ shhh doctor · 3 checks            0.9s · [?] keys · [q] quit
     ␛[38;5;245mthe engine is there, so only the image stands between t…␛[m
     ␛[38;5;245m[f]␛[m␛[38;5;241m show the 1-line fix␛[m
    ␛[92m✓␛[m ␛[38;5;252mgit␛[m     ␛[38;5;252m~/src/shhh␛[m␛[38;5;241m · 3 files changed, all t…␛[m  ␛[38;5;241mok␛[m   ␛[38;5;241m0.2s␛[m
-   ␛[92m✓␛[m ␛[38;5;252mtools␛[m   ␛[38;5;252mfd, ast-grep␛[m␛[38;5;241m · no sd/tokei/jaq · go…␛[m  ␛[38;5;241mok␛[m
+   ␛[92m✓␛[m ␛[38;5;252mtools␛[m   ␛[38;5;252mfd, ast-grep␛[m␛[38;5;241m · no sd/tokei · gopls␛[m    ␛[38;5;241mok␛[m
    ␛[38;5;241m⊘␛[m ␛[38;5;252mmemory␛[m  ␛[38;5;252mnothing remembered yet␛[m␛[38;5;241m · ~/src/s…␛[m  ␛[38;5;241mempty␛[m
    ␛[38;5;214m⚠␛[m ␛[38;5;252mupdate␛[m  ␛[38;5;252mshhh 0.9.5 is out␛[m␛[38;5;241m · this m…␛[m  ␛[38;5;214mout of date␛[m
     ␛[38;5;245m[f]␛[m␛[38;5;241m show how to upgrade␛[m

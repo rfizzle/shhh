@@ -28,7 +28,7 @@ func TestToolbox_NamesOnlyWhatIsRegistered(t *testing.T) {
 			t.Errorf("expected %q to be described, got:\n%s", want, got)
 		}
 	}
-	for _, absent := range []string{"ast_grep", "web_search", "spawn_agent", "jaq"} {
+	for _, absent := range []string{"ast_grep", "web_search", "spawn_agent", "query"} {
 		if strings.Contains(got, absent) {
 			t.Errorf("described %q, which this session does not have:\n%s", absent, got)
 		}
@@ -120,32 +120,25 @@ func TestToolbox_SplitsSdFromABatchedEdit(t *testing.T) {
 	}
 }
 
-// The two structured-query tools cover disjoint formats, and a model told
-// about only one of them reaches for it with the wrong file. Each note names
-// the formats it answers, so "what does the CI workflow run" lands on the
-// tool that can parse a workflow.
-func TestToolbox_SplitsTheStructuredQueryToolsByFormat(t *testing.T) {
-	got := Toolbox(toolList("jaq", "yq"), false)
-	if !strings.Contains(got, "- jaq — query JSON") {
-		t.Errorf("the jaq note should claim JSON, got:\n%s", got)
+// One tool reads every structured format, and its note says so, says when
+// it is the answer over reading the file whole and over the commands it
+// replaces, and names the cheap first call. A session without it is told
+// nothing of the kind.
+// See docs/capabilities/coding-agent.md#structured-files-are-read-in-one-call.
+func TestToolbox_SendsAPartOfAStructuredFileToQuery(t *testing.T) {
+	got := Toolbox(toolList("query"), false)
+	for _, want := range []string{"JSON, JSONL, YAML, TOML, XML, CSV or TSV", "needs only part of it", "jq, yq", "no expression first"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("the query note should say %q, got:\n%s", want, got)
+		}
 	}
-	if !strings.Contains(got, "- yq — query YAML and XML") {
-		t.Errorf("the yq note should claim YAML and XML, got:\n%s", got)
-	}
-}
-
-// The structured-query notes say when to take a part of a large file rather
-// than read it whole; how to select that part is the tools' own definitions'.
-// A session without either tool is told nothing of the kind.
-func TestToolbox_SendsAPartOfALargeFileToTheStructuredQueryTools(t *testing.T) {
-	for _, name := range []string{"jaq", "yq"} {
-		got := Toolbox(toolList(name), false)
-		if !strings.Contains(got, "rather than reading a large") || !strings.Contains(got, "needs only part of it") {
-			t.Errorf("the %s note should say when to query rather than read a large file, got:\n%s", name, got)
+	for _, gone := range []string{"- jaq — ", "- yq — "} {
+		if strings.Contains(Toolbox(toolList("jaq", "yq"), false), gone) {
+			t.Errorf("%q is still described; query replaced it", gone)
 		}
 	}
 	if got := Toolbox(toolList("fd"), false); strings.Contains(got, "needs only part of it") {
-		t.Errorf("a session without jaq or yq should not be told to query part of a file:\n%s", got)
+		t.Errorf("a session without query should not be told to query part of a file:\n%s", got)
 	}
 }
 

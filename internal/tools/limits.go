@@ -74,6 +74,35 @@ const (
 	// will read; larger files are skipped (ripgrep bounds its own reads).
 	MaxSearchFileBytes = 1 << 20
 
+	// MaxQueryResults and MaxQueryOutputBytes cap what one query answer
+	// shows; whichever is reached first cuts it, and the notice names the
+	// evidence id holding the rest. Two hundred is search's ceiling less
+	// its context lines: a result is one value, and a question whose answer
+	// is more values than that is one to narrow or to count.
+	MaxQueryResults     = 200
+	MaxQueryOutputBytes = 32 << 10
+
+	// MaxQueryKeptBytes is how much of a cut query answer is kept for the
+	// evidence store, which is the store's own cap on one entry. Past it the
+	// expression stops being run: nothing more of its answer could be kept.
+	MaxQueryKeptBytes = 4 << 20
+
+	// MaxQueryFileSize is the largest file query will decode. It is well
+	// past MaxReadFileSize on purpose: taking part of a file too large to
+	// read whole is what the tool is for, and a lockfile or an API dump
+	// past ten megabytes is ordinary. The bound is on memory — a document
+	// decodes to several times its size — and one file of many inputs (a
+	// JSONL log, a multi-document YAML, a CSV) is decoded one input at a
+	// time under it.
+	MaxQueryFileSize = 64 << 20
+
+	// MaxQueryFiles caps how many files one query reads, globs expanded.
+	// A labelled answer per file past fifty is a listing, not an answer.
+	MaxQueryFiles = 50
+
+	// MaxQueryShapeKeys caps the keys a shape answer lists.
+	MaxQueryShapeKeys = 50
+
 	// MaxListEntries caps how many entries list_directory returns.
 	MaxListEntries = 500
 

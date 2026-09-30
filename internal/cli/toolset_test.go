@@ -3,11 +3,16 @@ package cli
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"os"
+	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 	"testing"
 
 	"github.com/rfizzle/shhh/internal/config"
+	"github.com/rfizzle/shhh/internal/evidence"
 	"github.com/rfizzle/shhh/internal/lsp"
 	"github.com/rfizzle/shhh/internal/notebook"
 	"github.com/rfizzle/shhh/internal/process"
@@ -359,5 +364,59 @@ func TestRegistrationDeclaresWhatBoundsItself(t *testing.T) {
 	}
 	if cut == big {
 		t.Error("show has no bound of its own; the pipeline is it")
+	}
+}
+
+// A query answer too long to show keeps the rest in the session's own store,
+// and a declared secret reaches neither what the model reads nor the stored
+// copy: the store's Keep scrubs before it writes, and the vault's wrap is
+// outside everything.
+func TestAQueryIsKeptInTheSessionsStoreScrubbed(t *testing.T) {
+	t.Setenv("XDG_DATA_HOME", t.TempDir())
+	sc, err := sessionScope(config.Config{}, nil)
+	if err != nil {
+		t.Fatalf("session scope: %v", err)
+	}
+	session := codeToolset()
+	ts, err := buildToolset(toolsetCmd(t), &session, "code", toolsetOpts{scope: sc, seen: tools.NewRecorder()})
+	if err != nil {
+		t.Fatalf("session registration: %v", err)
+	}
+	defer ts.close()
+	if ts.evidence == nil {
+		t.Fatal("this session was supposed to open a store")
+	}
+	const token = "sk-query-fixture-7c1d9e"
+	if err := session.vault.Add("API_TOKEN", token); err != nil {
+		t.Fatalf("declare: %v", err)
+	}
+
+	var rows strings.Builder
+	for i := range tools.MaxQueryResults * 2 {
+		fmt.Fprintf(&rows, "{\"n\":%d,\"token\":%q}\n", i, token)
+	}
+	file := filepath.Join(t.TempDir(), "rows.jsonl")
+	if err := os.WriteFile(file, []byte(rows.String()), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	exec := ts.executor(session)
+	args, _ := json.Marshal(map[string]any{"paths": []string{file}, "expression": ".token"})
+	out, err := exec(tools.QueryName, args)
+	if err != nil {
+		t.Fatalf("query: %v", err)
+	}
+	if strings.Contains(out, token) {
+		t.Fatal("a declared secret reached the model through a query")
+	}
+	m := regexp.MustCompile(`evidence (\S+) —`).FindStringSubmatch(out)
+	if m == nil {
+		t.Fatalf("a cut answer should name the evidence id: %q", out[strings.LastIndex(out, "\n"):])
+	}
+	stored, err := exec(evidence.ToolName, json.RawMessage(fmt.Sprintf(`{"action":"search","id":%q,"query":"API_TOKEN"}`, m[1])))
+	if err != nil {
+		t.Fatalf("evidence: %v", err)
+	}
+	if strings.Contains(stored, token) || !strings.Contains(stored, "400 line(s)") {
+		t.Errorf("the stored answer should hold every row, scrubbed: %q", stored)
 	}
 }

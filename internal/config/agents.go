@@ -128,6 +128,7 @@ var knownAgentTools = map[string]string{
 	"list_directory":  PermissionRead,
 	"search":          PermissionRead,
 	"glob":            PermissionRead,
+	"query":           PermissionRead,
 	"write_file":      PermissionWrite,
 	"edit_file":       PermissionWrite,
 	"execute_command": PermissionExecute,

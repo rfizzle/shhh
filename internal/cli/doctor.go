@@ -1853,16 +1853,8 @@ func profileLines(p backlogProfile) []string {
 func probeTools(context.Context, config.Config) doctorFinding {
 	var found, missing []string
 	for _, tool := range structural.ToolBinaries() {
-		path, err := exec.LookPath(tool)
-		if err != nil {
+		if _, err := exec.LookPath(tool); err != nil {
 			missing = append(missing, tool)
-			continue
-		}
-		// A name on PATH that resolves to a program the agent cannot use is
-		// reported as an absence carrying its reason, because "it is
-		// installed and shhh says it is not" is otherwise a dead end.
-		if reason := structural.UnsupportedBinary(tool, path); reason != "" {
-			missing = append(missing, tool+" ("+reason+")")
 			continue
 		}
 		found = append(found, tool)

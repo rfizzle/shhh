@@ -101,6 +101,10 @@ func buildToolset(cmd *cobra.Command, session *chatSession, kind string, opts to
 	// No store means no reduction and no evidence tool.
 	if t.evidence = openEvidence(); t.evidence != nil {
 		register(evidence.ToolDefinition())
+		// The query tool bounds its own answer and keeps what it cut in
+		// this store under the id its notice names, the way a fetch keeps
+		// its page; the store's Keep scrubs before it writes.
+		t.seen.UseEvidence(t.evidence.Keep)
 	}
 	// Guarded web tools: web_fetch, approval-gated as an external action,
 	// and web_search where a search key is configured.
@@ -131,7 +135,7 @@ func buildToolset(cmd *cobra.Command, session *chatSession, kind string, opts to
 		t.evidence.Exempt(toolNames(defs)...)
 		t.closers = append(t.closers, session.lsp.Close)
 	}
-	// Structural code tools: fd, ast-grep, sd, tokei, jaq — read-only
+	// Structural code tools: fd, ast-grep, sd, tokei — read-only
 	// wrappers, each registered only when its binary is on PATH — and the
 	// writing half of git where the surface asked for it, which is the one
 	// tool here that is approved rather than auto-run.

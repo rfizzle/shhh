@@ -182,7 +182,7 @@ func TestActivityVerbs_ClosedVocabulary(t *testing.T) {
 		"list_directory": "read", "ast_grep": "search", "fd": "glob",
 		"references": "lsp", "workspace_symbol": "lsp", "document_symbol": "lsp",
 		"hover": "lsp", "diagnostics": "lsp", "web_fetch": "web", "web_search": "web",
-		"sd": "patch", "quality_gate": "run", "process": "run", "yq": "search",
+		"sd": "patch", "quality_gate": "run", "process": "run", "query": "search",
 		"remember": "memory", "spawn_agent": "spawn", "agent_report": "agent",
 		"agent_steer": "steer", "agent_retry": "retry", "report": "report",
 	} {

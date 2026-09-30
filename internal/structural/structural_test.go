@@ -22,15 +22,6 @@ func stubLookPath(t *testing.T, found map[string]string) {
 	t.Cleanup(func() { lookPath = orig })
 }
 
-// stubYqFlavor answers the yq version probe without either yq installed:
-// "" registers the tool, anything else is the reason it stays absent.
-func stubYqFlavor(t *testing.T, reason string) {
-	t.Helper()
-	orig := yqFlavor
-	yqFlavor = func(string) string { return reason }
-	t.Cleanup(func() { yqFlavor = orig })
-}
-
 func newTestToolset(t *testing.T, bins map[string]string) *Toolset {
 	t.Helper()
 	root, err := filepath.EvalSymlinks(t.TempDir())
@@ -89,7 +80,7 @@ func TestDetectRegistersOnlyFoundBinaries(t *testing.T) {
 	if defs[0].Name != FdToolName || defs[1].Name != TokeiToolName {
 		t.Fatalf("unexpected definitions: %s, %s", defs[0].Name, defs[1].Name)
 	}
-	if !ts.Has(FdToolName) || ts.Has(SdToolName) || ts.Has(JaqToolName) || ts.Has(AstGrepToolName) {
+	if !ts.Has(FdToolName) || ts.Has(SdToolName) || ts.Has(AstGrepToolName) {
 		t.Fatal("Has does not reflect the found binaries")
 	}
 }
@@ -98,9 +89,6 @@ func TestExecuteUnavailableToolIsCleanError(t *testing.T) {
 	ts := newTestToolset(t, nil)
 
 	if _, err := ts.Execute(SdToolName, json.RawMessage(`{}`)); err == nil || !strings.Contains(err.Error(), "not found on PATH") {
-		t.Fatalf("expected a missing-binary error, got %v", err)
-	}
-	if _, err := ts.Execute(YqToolName, json.RawMessage(`{"expression": ".", "paths": ["a.yaml"]}`)); err == nil || !strings.Contains(err.Error(), "not found on PATH") {
 		t.Fatalf("expected a missing-binary error, got %v", err)
 	}
 	if _, err := ts.Execute("nonsense", json.RawMessage(`{}`)); err == nil || !strings.Contains(err.Error(), "unknown structural tool") {
@@ -294,158 +282,29 @@ func TestBuildTokeiArgvInvariants(t *testing.T) {
 	}
 }
 
-func TestBuildJaqArgvInvariants(t *testing.T) {
-	argv := buildJaqArgv(jaqArgs{Expression: "--in-place", Slurp: true, RawOutput: true, Compact: true, Indent: 2}, []string{"/ws/a.json"})
-
-	// The expression and paths follow the -- delimiter — a dash-prefixed
-	// expression is otherwise parsed as an unknown flag.
-	sep := indexOf(argv, "--")
-	if sep < 0 {
-		t.Fatalf("missing -- delimiter: %v", argv)
-	}
-	tail := argv[sep+1:]
-	if len(tail) != 2 || tail[0] != "--in-place" || tail[1] != "/ws/a.json" {
-		t.Fatalf("expression and paths must follow --: %v", argv)
-	}
-	// --indent rides as two separate tokens: jaq rejects the attached form.
-	if i := indexOf(argv[:sep], "--indent"); i < 0 || argv[i+1] != "2" {
-		t.Fatalf("--indent must be two tokens: %v", argv)
-	}
-	// The file-reading and in-place flags are never in the vocabulary.
-	for _, forbidden := range []string{"-L", "-f", "--from-file", "--slurpfile", "--rawfile", "-i"} {
-		if contains(argv[:sep], forbidden) {
-			t.Fatalf("forbidden flag %s in %v", forbidden, argv)
-		}
-	}
-	for _, want := range []string{"--slurp", "--raw-output", "--compact-output"} {
-		if !contains(argv[:sep], want) {
-			t.Fatalf("missing %s in %v", want, argv)
-		}
-	}
-}
-
-// The two security flags are the containment argument for this tool, not
-// defense in depth: yq's expression language opens files and reads the
-// environment from inside the expression, where the check on paths cannot see
-// it. So they are asserted on every argv the builder can produce, the
-// minimal call included.
-func TestBuildYqArgvInvariants(t *testing.T) {
-	cases := []struct {
-		name string
-		args yqArgs
-		want []string
-	}{
-		{"minimal", yqArgs{Expression: "."}, nil},
-		{"formats", yqArgs{Expression: ".", InputFormat: "xml", OutputFormat: "json", Indent: 4}, []string{"--input-format=xml", "--output-format=json", "--indent=4"}},
-		{"shape", yqArgs{Expression: ".", PrettyPrint: true, NoDocumentSeparators: true}, []string{"--prettyPrint", "--no-doc"}},
-		{"all documents", yqArgs{Expression: ".", AllDocuments: true}, []string{"eval-all"}},
-	}
-	for _, c := range cases {
-		t.Run(c.name, func(t *testing.T) {
-			argv, err := buildYqArgv(c.args, []string{"/ws/ci.yml"})
-			if err != nil {
-				t.Fatal(err)
-			}
-			for _, flag := range []string{yqDisableFileOps, yqDisableEnvOps} {
-				if !contains(argv, flag) {
-					t.Fatalf("missing %s in %v", flag, argv)
-				}
-			}
-			for _, want := range c.want {
-				if !contains(argv, want) {
-					t.Fatalf("missing %s in %v", want, argv)
-				}
-			}
-			// The in-place flags are not in the vocabulary, so no argument
-			// can put one there.
-			for _, forbidden := range []string{"-i", "--inplace", "-f", "--from-file"} {
-				if contains(argv, forbidden) {
-					t.Fatalf("forbidden flag %s in %v", forbidden, argv)
-				}
-			}
-		})
-	}
-
-	// A dash-prefixed expression lands after the delimiter rather than being
-	// parsed as an unknown flag, and the paths follow it.
-	argv, err := buildYqArgv(yqArgs{Expression: "--inplace"}, []string{"/ws/ci.yml"})
-	if err != nil {
-		t.Fatal(err)
-	}
-	sep := indexOf(argv, "--")
-	if sep < 0 {
-		t.Fatalf("missing -- delimiter: %v", argv)
-	}
-	if tail := argv[sep+1:]; len(tail) != 2 || tail[0] != "--inplace" || tail[1] != "/ws/ci.yml" {
-		t.Fatalf("expression and paths must follow --: %v", argv)
-	}
-	if argv[0] != "eval" {
-		t.Fatalf("the subcommand leads the argv: %v", argv)
-	}
-
-	if _, err := buildYqArgv(yqArgs{Expression: ".", InputFormat: "yamlish"}, nil); err == nil {
-		t.Fatal("expected an unknown input_format to be rejected")
-	}
-	if _, err := buildYqArgv(yqArgs{Expression: ".", OutputFormat: "--evil"}, nil); err == nil {
-		t.Fatal("expected an unknown output_format to be rejected")
-	}
-}
-
-// Two unrelated programs install as `yq` and only one of them takes the
-// security flags, so the name on PATH is not enough: a binary that does not
-// identify itself as mikefarah's Go yq is treated as absent, and the reason
-// is the one `shhh doctor` prints.
-func TestNewToolsetRequiresTheGoYq(t *testing.T) {
-	stubLookPath(t, map[string]string{"yq": "/usr/bin/yq"})
-
-	stubYqFlavor(t, "not mikefarah's Go yq")
+// Structured data files are read by the built-in query tool, in every
+// session, so a jaq or yq on PATH registers nothing here and doctor does not
+// look for either: a second tool for the same question is a second schema in
+// every request and a choice the model has to make for nothing.
+// See docs/capabilities/coding-agent.md#structured-files-are-read-in-one-call.
+func TestNewToolsetRegistersNoDataQueryTool(t *testing.T) {
+	stubLookPath(t, map[string]string{"jaq": "/usr/bin/jaq", "yq": "/usr/bin/yq"})
 	ts := NewToolset(t.TempDir())
 	if ts == nil {
 		t.Fatal("expected a toolset")
 	}
-	if ts.Has(YqToolName) {
-		t.Fatal("a foreign yq must not be registered")
+	if defs := ts.Definitions(); len(defs) != 0 {
+		t.Fatalf("a jaq or yq on PATH reached the model: %+v", defs)
 	}
-	if len(ts.Definitions()) != 0 {
-		t.Fatalf("a foreign yq must not reach the model: %+v", ts.Definitions())
+	for _, bin := range ToolBinaries() {
+		if bin == "jaq" || bin == "yq" {
+			t.Errorf("doctor still looks for %s", bin)
+		}
 	}
-	if reason := UnsupportedBinary("yq", "/usr/bin/yq"); reason == "" {
-		t.Fatal("doctor has no reason to report")
-	}
-
-	stubYqFlavor(t, "")
-	ts = NewToolset(t.TempDir())
-	if ts == nil || !ts.Has(YqToolName) {
-		t.Fatal("mikefarah's yq should register")
-	}
-	if reason := UnsupportedBinary("yq", "/usr/bin/yq"); reason != "" {
-		t.Fatalf("a usable yq should give doctor nothing to report, got %q", reason)
-	}
-	// Every other tool is usable the moment its name resolves.
-	if reason := UnsupportedBinary("fd", "/usr/bin/fd"); reason != "" {
-		t.Fatalf("fd should need no probe, got %q", reason)
-	}
-}
-
-// Containment is checked before anything spawns: the script would report its
-// own failure if it ran.
-func TestExecuteYqRefusesAPathOutsideTheWorkspace(t *testing.T) {
-	script := writeScript(t, `echo spawned >&2; exit 3`)
-	ts := newTestToolset(t, map[string]string{YqToolName: script})
-	outside := filepath.Join(t.TempDir(), "secrets.yml")
-	if err := os.WriteFile(outside, []byte("key: value\n"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-
-	args, err := json.Marshal(map[string]any{"expression": ".", "paths": []string{outside}})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err := ts.Execute(YqToolName, args); err == nil || !strings.Contains(err.Error(), "outside the workspace") {
-		t.Fatalf("expected containment rejection, got %v", err)
-	}
-	if _, err := ts.Execute(YqToolName, json.RawMessage(`{"expression": "."}`)); err == nil || !strings.Contains(err.Error(), "paths is required") {
-		t.Fatalf("expected paths to be required, got %v", err)
+	for _, d := range Registrable() {
+		if d.Name == "jaq" || d.Name == "yq" {
+			t.Errorf("%s is still registrable", d.Name)
+		}
 	}
 }
 
@@ -540,14 +399,9 @@ func TestExecuteEmptyResultsMessages(t *testing.T) {
 		FdToolName:      script,
 		AstGrepToolName: script,
 		SdToolName:      unchanged,
-		JaqToolName:     script,
-		YqToolName:      script,
 	})
 	file := filepath.Join(ts.root, "a.json")
 	if err := os.WriteFile(file, []byte("{}"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(ts.root, "a.yaml"), []byte("{}\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -559,8 +413,6 @@ func TestExecuteEmptyResultsMessages(t *testing.T) {
 		{FdToolName, `{}`, "No files matched."},
 		{AstGrepToolName, `{"pattern": "foo"}`, "No matches."},
 		{SdToolName, `{"pattern": "a", "replacement": "b", "paths": ["a.json"]}`, "No replacements: the pattern did not match."},
-		{JaqToolName, `{"expression": ".", "paths": ["a.json"]}`, "(no output)"},
-		{YqToolName, `{"expression": ".", "paths": ["a.yaml"]}`, "(no output)"},
 	}
 	for _, c := range cases {
 		out, err := ts.Execute(c.tool, json.RawMessage(c.args))
@@ -631,62 +483,6 @@ func TestRootedIsTheSameToolsElsewhereWithoutTheWriteHalf(t *testing.T) {
 	}
 	if got := (*Toolset)(nil).Rooted(elsewhere); got != nil {
 		t.Errorf("a session with no tools handed a child some: %+v", got)
-	}
-}
-
-// A structured query's output past MaxOutputBytes is cut off and kept
-// nowhere, so the definitions have to teach selecting the answer in the
-// expression and must not promise a truncated result can be got back.
-func TestStructuredQueryDefinitionsTeachSelectingTheAnswer(t *testing.T) {
-	for _, tool := range []struct {
-		name   string
-		schema string
-		desc   string
-	}{
-		{JaqToolName, string(jaqTool.Parameters), jaqTool.Description},
-		{YqToolName, string(yqTool.Parameters), yqTool.Description},
-	} {
-		for _, want := range []string{"select the fields the question needs", "shape first", "cut off and lost", "narrower expression"} {
-			if !strings.Contains(tool.desc, want) {
-				t.Errorf("%s description should say %q:\n%s", tool.name, want, tool.desc)
-			}
-		}
-		if strings.Contains(tool.desc, "evidence") {
-			t.Errorf("%s description must not send a truncated result to evidence:\n%s", tool.name, tool.desc)
-		}
-		for _, want := range []string{"selects only what the question needs", "name only the files that hold the answer"} {
-			if !strings.Contains(tool.schema, want) {
-				t.Errorf("%s arguments should say %q:\n%s", tool.name, want, tool.schema)
-			}
-		}
-	}
-}
-
-// The failure the guidance is for: printing a large document with "." runs
-// into the cap and comes back cut off, while an expression that selects the
-// answer comes back whole. The script stands in for jaq so the tier needs no
-// binary: it floods for "." and answers one value for anything else.
-func TestJaqNarrowQueryAnswersWhereTheWholeDocumentIsCut(t *testing.T) {
-	script := writeScript(t, `if [ "$2" = "." ]; then yes '{"version": "1.0.0"},' | head -c 300000; else printf '"1.42.0"\n'; fi`)
-	ts := newTestToolset(t, map[string]string{JaqToolName: script})
-	if err := os.WriteFile(filepath.Join(ts.root, "big.json"), []byte("{}"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-
-	whole, err := ts.Execute(JaqToolName, json.RawMessage(`{"expression": ".", "paths": ["big.json"]}`))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !strings.Contains(whole, "output truncated") || !strings.Contains(whole, "narrow the query") {
-		t.Fatalf("printing the whole document should be cut at the cap, got %d bytes ending %q", len(whole), whole[max(0, len(whole)-80):])
-	}
-
-	narrow, err := ts.Execute(JaqToolName, json.RawMessage(`{"expression": ".packages.pkg42.version", "paths": ["big.json"]}`))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if narrow != `"1.42.0"` {
-		t.Fatalf("a selecting expression should come back whole, got %q", narrow)
 	}
 }
 

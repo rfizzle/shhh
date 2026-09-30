@@ -1,11 +1,11 @@
 // Package structural exposes best-in-class external code tools — fd,
-// ast-grep, sd, tokei, jaq, yq, and git — as first-class agent tools, so the
-// model searches structurally, reads history, writes to the repository and
+// ast-grep, sd, tokei, and git — as first-class agent tools, so the model
+// searches structurally, reads history, writes to the repository and
 // previews transforms instead of improvising shell pipelines. Each tool is
 // registered only when its binary is found on PATH; git additionally only
-// inside a repository, the writing half of git additionally only where a
-// surface asked for it, and yq additionally only when the binary answering to
-// that name is the one whose flags this package relies on.
+// inside a repository, and the writing half of git additionally only where a
+// surface asked for it. Structured data files are not read here: that is
+// the query tool's, which is built in and needs no binary.
 //
 // The safety invariants are ported from pi tool-runtime, several of them
 // empirically load-bearing there:
@@ -18,10 +18,7 @@
 //     and containment-checked before any spawn.
 //   - No tool that auto-runs here writes anything, ever: sd always runs with
 //     --preview (it writes in place by default), ast-grep never sees
-//     -U/--update-all, jaq's file-reading and in-place flags
-//     (-L, -f/--from-file, --slurpfile, --rawfile, -i/--in-place) are not in
-//     its vocabulary, yq never sees -i/--inplace and always runs with both of
-//     its security flags, and git reaches five reading verbs with no field a
+//     -U/--update-all, and git reaches five reading verbs with no field a
 //     sixth could arrive in. Rewrites and replacements return preview diffs
 //     the model applies via edit_file through the approval queue.
 //   - The writing half of git is the one tool here that changes anything, and
@@ -55,8 +52,6 @@ const (
 	AstGrepToolName  = "ast_grep"
 	SdToolName       = "sd"
 	TokeiToolName    = "tokei"
-	JaqToolName      = "jaq"
-	YqToolName       = "yq"
 	GitToolName      = "git"
 	GitWriteToolName = "git_write"
 )
@@ -95,20 +90,18 @@ var binaryNames = map[string]string{
 	AstGrepToolName:  "ast-grep",
 	SdToolName:       "sd",
 	TokeiToolName:    "tokei",
-	JaqToolName:      "jaq",
-	YqToolName:       "yq",
 	GitToolName:      "git",
 	GitWriteToolName: "git",
 }
 
 // toolOrder fixes the registration order of the wrapped tools. git is not in
-// it: the six here are optional installs, and git is registered by a
+// it: the four here are optional installs, and git is registered by a
 // different question — whether this is a repository — which is why
 // Definitions and ToolBinaries treat it separately.
-var toolOrder = []string{FdToolName, AstGrepToolName, SdToolName, TokeiToolName, JaqToolName, YqToolName}
+var toolOrder = []string{FdToolName, AstGrepToolName, SdToolName, TokeiToolName}
 
 // ToolBinaries are the binaries the wrapped tools need, in registration
-// order. `shhh doctor` reads them to say which of the six this machine has
+// order. `shhh doctor` reads them to say which of the four this machine has
 // ; nothing else needs the list, because every other caller asks a
 // built toolset what it found rather than what it looked for. git is absent
 // deliberately: doctor already reports the repository, and listing git among
@@ -183,13 +176,6 @@ func NewToolset(root string) *Toolset {
 		if !ok {
 			continue
 		}
-		// Every tool here but one is usable the moment its name resolves on
-		// PATH. yq is the exception, because the name resolves to either of
-		// two unrelated programs and only one of them takes the flags this
-		// package's containment argument rests on.
-		if UnsupportedBinary(tool, path) != "" {
-			continue
-		}
 		t.bins[tool] = path
 	}
 	// The history tool needs a history. Outside a repository every verb it
@@ -209,7 +195,7 @@ func NewToolset(root string) *Toolset {
 // an isolated copy of the checkout — and every path argument here is resolved
 // against the root the toolset was built with, so a child handed the
 // session's own toolset would be searching the tree it is not working in.
-// Probing PATH again per child would spend six lookups and a git subprocess
+// Probing PATH again per child would spend four lookups and a git subprocess
 // on every spawn, every retry and every handoff to learn what this session
 // already knows; what differs between the two is the root and nothing else.
 //
@@ -272,10 +258,6 @@ func (t *Toolset) Definitions() []provider.Tool {
 			defs = append(defs, sdTool)
 		case TokeiToolName:
 			defs = append(defs, tokeiTool)
-		case JaqToolName:
-			defs = append(defs, jaqTool)
-		case YqToolName:
-			defs = append(defs, yqTool)
 		}
 	}
 	if _, ok := t.bins[GitToolName]; ok {
@@ -329,10 +311,6 @@ func (t *Toolset) Execute(name string, args json.RawMessage) (string, error) {
 		return t.executeSd(args)
 	case TokeiToolName:
 		return t.executeTokei(args)
-	case JaqToolName:
-		return t.executeJaq(args)
-	case YqToolName:
-		return t.executeYq(args)
 	case GitToolName:
 		return t.executeGit(args)
 	case GitWriteToolName:

@@ -739,8 +739,8 @@ const (
 // were written with, and nothing fails when they stop matching.
 //
 // A command is on neither list, because one tool name covers a grep and a
-// build and the record cannot tell them apart. Neither are the structural
-// data queries, git's reading half, or the structural rewriter — which
+// build and the record cannot tell them apart. Neither are the data query,
+// git's reading half, or the structural rewriter — which
 // always previews and never writes, so it is neither the looking nor the end
 // of it. All of them answer a question about a file somebody has already
 // found, which is not the looking this measures.

@@ -276,7 +276,7 @@ internal/
   project/                 The checkout as the session finds it: the survey, and the instruction files it reads root-down
   shell/                   Which shell this platform runs a command line with, and how — the one resolution the prompt and every runner read
   process/                 Background process management (the process tool)
-  structural/              Optional external tools integration (ast-grep, fd, jaq, sd, tokei, yq), the read-only git verbs, and the four git writes a surface can ask for
+  structural/              Optional external tools integration (ast-grep, fd, sd, tokei), the read-only git verbs, and the four git writes a surface can ask for
   hostgit/                 How shhh runs git on the host: the environment every call takes and the per-verb flags that shut the programs a checkout can name
   radius/                  Blast-radius analysis for edits
   preflight/               Startup checks
@@ -298,7 +298,7 @@ The `internal/agent` package is a **passive state machine** — front-ends (the 
 
 Tools are split into three permission tiers that must never be mixed:
 
-1. **Read-only** (`ReadOnly()`): `read_file`, `list_directory`, `search`, `glob` — auto-execute without approval
+1. **Read-only** (`ReadOnly()`): `read_file`, `list_directory`, `search`, `glob`, `query` — auto-execute without approval
 2. **Execute** (`ExecCommandTool()`): `execute_command` — requires user approval or policy match
 3. **Mutating** (`Mutating()`): `write_file`, `edit_file` — require approval in manual mode, auto-apply in accept-edits/auto
 

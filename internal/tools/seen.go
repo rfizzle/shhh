@@ -86,6 +86,9 @@ func (f seenFile) unknown() bool { return f.sum == "" }
 type Recorder struct {
 	mu   sync.Mutex
 	seen map[string]seenFile
+	// keep is where a query answer too long to show keeps the rest of
+	// itself (UseEvidence); nil where the owner has no evidence store.
+	keep ExecKeep
 }
 
 // NewRecorder opens a record of its own, for an owner that does not share one

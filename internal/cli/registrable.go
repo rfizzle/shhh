@@ -17,6 +17,7 @@ import (
 	"github.com/rfizzle/shhh/internal/structural"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/todo"
+	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/web"
 )
 
@@ -38,8 +39,18 @@ import (
 // MCP server tools are not here and cannot be: their names and descriptions
 // are the server's. The one MCP definition shhh writes itself, the resource
 // read, is.
+//
+// The structured-data reader is the one base tool here. Every session has
+// it, but BuildAgent's paragraph names only the four reads it always named,
+// so what the model learns of it is its toolbox line and its own schema —
+// the two things this list holds a tool to.
 func registrableDefinitions(skills *skill.Catalog, profiles subagent.Profiles) []provider.Tool {
 	var defs []provider.Tool
+	for _, d := range tools.Definitions() {
+		if d.Name == tools.QueryName {
+			defs = append(defs, d)
+		}
+	}
 	defs = append(defs, lsp.NewToolset(nil).Definitions()...)
 	defs = append(defs, structural.Registrable()...)
 	defs = append(defs, web.NewToolset(nil, &web.Searcher{}).Definitions()...)

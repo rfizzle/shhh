@@ -1249,30 +1249,67 @@ here, in prose, rather than in the line: the model reads the line and nothing
 behind it, and a line that argues its own case is paid for in every request
 it rides in.
 
-### Two programs answer to `yq`
+Reading a structured file is not one of the things that depends on the
+machine. It used to be: JSON was answered by one wrapped binary and YAML and
+XML by another, each registered only where it was on PATH, so a session on a
+machine without them read every manifest through a command or read it whole.
+Those two are no longer registered, and doctor no longer looks for them; the
+built-in reader below is in every session instead.
 
-Structured queries are split by format. One tool answers JSON, another answers
-YAML and XML — the query engines are separate programs with separate flags,
-and this project's own surface is on the second side: the linter
-configuration, the release workflow, the CI job matrix. Without the second
-tool a question about any of them is a text search, which returns whichever
-indentation happened to match rather than the value that was asked for.
+## Structured files are read in one call
 
-The YAML one is also the only optional tool where being on PATH is the wrong
-question. Two unrelated programs install under the name `yq` — one written in
-Go, one in Python — sharing the name, most of the purpose, and almost none of
-the flags. Only one takes the two flags that shut off reading files and
-environment variables from inside an expression, and those flags are the whole
-containment argument here: the expression language reaches a file directly, so
-without them the path check in front of the tool is decorative and the most
-permissive field of the schema is an arbitrary file read.
+A session reads structured files all the time — a manifest's version, the
+jobs a workflow runs, one package out of a lockfile, a count of rows — and
+every way it had of doing that cost something it should not. Reading the file
+whole spends a window on three thousand lines to learn one. A command with
+`jq`, `yq` or a scripting language costs an approval or a classifier round
+each time, and works only where the host installed the program. A wrapper
+around a binary exists only on the machines that have the binary, which is the
+wrong thing for the commonest read there is to depend on.
 
-So this tool's registration asks a second question, and the binary has to say
-which program it is. One that does not is treated as absent — a silent success
-under the other program would mean nothing was ever disabled, which is worse
-than not having the tool. `shhh doctor` reports it in those words rather than
-as a plain absence, because "it is installed and shhh says it is not" is a
-question that needs an answer.
+So one reader answers a jq expression over JSON, JSON Lines, YAML, TOML, XML,
+CSV and TSV, in-process and in every session, and it auto-runs like any other
+read. It replaces two optional tools with one that is always there, which also
+keeps the definitions every request carries from growing.
+
+**A built-in that takes more calls, more bytes or more arguments than the
+shell idiom it replaces is a tool the model walks past.** That is the rule
+this reader and every reader of a file format after it is held to: name the
+idioms it replaces, answer each of them in one call, with output no larger
+than the idiom's. The defaults are where that is won or lost:
+
+- **No expression answers the file's shape** — its top-level keys, their
+  types, array lengths, and how many documents, lines or rows it held. That is
+  the first question asked of an unfamiliar file, and answered this way it
+  costs a few lines instead of the file.
+- **Several files are one call**, globs included, and each file's results come
+  back under its path. A question that spans every workflow in a directory is
+  not a call per workflow.
+- **A string comes back raw.** jq's `-r` is the flag nobody remembers until
+  the quotes come back, and the round spent asking again is the cost.
+- **Results are compact, one per line**, the way a pipe would have printed
+  them.
+
+The answer is bounded the way a search's is — a result count and a byte cap —
+and a cut answer keeps the rest in the evidence store and names the id, so a
+long answer is a read of the store rather than the same call again. A file
+too large to read whole can still be queried, since taking part of a large
+file is exactly what the tool is for; the formats that hold many inputs are
+decoded one at a time, and the tool has a size and a time bound of its own. A
+file that will not parse is named with its line and column, and an
+expression that will not compile with its position in the expression, so the
+next call is a fix rather than a guess.
+
+XML is read the way `yq` reads it — attributes as `+@name`, element text as
+`+content` — so an expression written against yq keeps working. CSV and TSV
+rows are objects keyed by the header row, and every cell stays a string: a
+column of ZIP codes or version numbers read as numbers would lose what it
+said.
+
+The expression reaches the file it was handed and nothing else. The engine is
+given no environment, no module loader and no way to read a second input, so
+the path the call names is the whole of what it can read — the same paths
+the file reader itself can read.
 
 ## The agent knows where and when it is standing
 

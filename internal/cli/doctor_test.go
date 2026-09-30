@@ -518,31 +518,14 @@ func TestDoctorTools(t *testing.T) {
 	}
 }
 
-// A binary that is on PATH but is not the program the tool wraps is neither
-// found nor plainly missing, and the row has to say which — "yq is installed
-// and shhh says it is not" is otherwise a dead end for the reader.
-func TestDoctorTools_SaysWhyAToolOnPathIsUnusable(t *testing.T) {
-	f := doctorTools([]string{"fd"}, []string{"yq (not mikefarah's Go yq)"}, []string{"gopls"})
-	if !strings.Contains(f.Detail, "not mikefarah's Go yq") {
-		t.Fatalf("the row drops the reason: %q", f.Detail)
-	}
-	if strings.Contains(f.Subject, "yq") {
-		t.Fatalf("an unusable binary must not be listed as found: %q", f.Subject)
-	}
-}
-
-// Registration and the doctor ask the same question about a wrapped binary,
-// so a machine the session would refuse cannot read as a machine it accepts.
-func TestDoctorTools_AsksRegistrationsOwnQuestion(t *testing.T) {
-	if reason := structural.UnsupportedBinary("yq", "/nonexistent/yq"); reason == "" {
-		t.Fatal("a yq that cannot answer its version must not count as usable")
-	}
+// Structured files are read by a built-in tool, so the row looks for no
+// data-query binary and never reports one missing: "no jaq" on a machine
+// where every JSON question is answered would send the reader to install
+// something the session will not use.
+func TestDoctorTools_LooksForNoDataQueryBinary(t *testing.T) {
 	for _, tool := range structural.ToolBinaries() {
-		if tool == "yq" {
-			continue
-		}
-		if reason := structural.UnsupportedBinary(tool, "/nonexistent/"+tool); reason != "" {
-			t.Fatalf("%s should need no probe, got %q", tool, reason)
+		if tool == "jaq" || tool == "yq" {
+			t.Errorf("the doctor still looks for %s", tool)
 		}
 	}
 }
