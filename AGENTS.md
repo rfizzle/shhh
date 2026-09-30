@@ -175,21 +175,5 @@ internal/
   without them a session spent all 150 re-running the same searches.
 - **Migrations are `shhh doctor` checks**, never a startup step. Config, data
   and cache follow XDG on every platform; don't add a `darwin` branch.
-
-### Provider quirks
-
-Each looks like something to simplify, and the symptom doesn't point at the
-cause.
-
-- **Gemini pairs tool results by function name, not id.** Put the id in
-  `FunctionResponse.Name` and the model silently calls the tool again.
-- **Messages and Responses replay only the current chain's thinking**
-  (`replayFrom`; Gemini replays all on purpose), and the cut only moves forward. Replay everything and every round bills the
-  session's thinking again; cut in the middle and the request is a 400.
-- **Chat-completions tool calls are keyed by id, never `index`.** Gateways
-  renumber, skip or omit it, and keying on it folds two calls into one.
-- **The output ceiling is `max_completion_tokens`**, except on
-  `openai-compatible` for a non-reasoning model. Never read that field's name
-  as a context-length failure.
 - **Every stream loop calls `idleWatch.alive()` on every raw event** and ends
   through `idleWatch.err`, or the dialect has no idle deadline.
