@@ -7,9 +7,42 @@ on:
 
 permissions:
   contents: write
+  packages: write
 
 jobs:
+  # The image is built first because the binary carries its digest: the
+  # digest exists only once the push has finished, and goreleaser links it in.
+  # See docs/capabilities/containment.md#the-sandbox-image-ships-with-the-binary.
+  image:
+    runs-on: ubuntu-latest
+    outputs:
+      ref: ${{ steps.ref.outputs.ref }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: docker/sandbox
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/shhh-sandbox:${{ github.ref_name }}
+
+      # The multi-platform index's digest, so one pin serves both architectures.
+      - id: ref
+        run: echo "ref=ghcr.io/${{ github.repository_owner }}/shhh-sandbox@${{ steps.build.outputs.digest }}" >> "$GITHUB_OUTPUT"
+
   release:
+    needs: image
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -31,3 +64,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          SHHH_SANDBOX_IMAGE: ${{ needs.image.outputs.ref }}

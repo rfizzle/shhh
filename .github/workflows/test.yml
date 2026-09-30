@@ -62,6 +62,21 @@ jobs:
 
       - run: make ci
 
+  # The sandbox image is built by the release, where a broken Dockerfile would
+  # stop the tag; building it here, without pushing, moves that failure to the
+  # change that caused it.
+  sandbox-image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: docker/sandbox
+          push: false
+
   # These tests deliberately bind loopback listeners. They are a boundary
   # contract, not a contained-session check, so this job provides the host
   # capability explicitly instead of making the ordinary CI job depend on it.
