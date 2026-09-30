@@ -1,0 +1,10 @@
+name = "data-gz-line"
+prompt = "Yesterday's log was rotated to logs/app.log.1.gz. Copy the one ERROR line in it, exactly as it appears, into answer.txt. Change nothing else."
+
+# One question the shell answers with a data idiom (a line in a .gz log) and a built-in
+# reader answers in one call without an approval. The check only says the
+# answer is right; the report's shell calls, rounds and result bytes are
+# what the case is read for.
+requires = ["sh", "git"]
+
+check = ["sh", "check.sh"]

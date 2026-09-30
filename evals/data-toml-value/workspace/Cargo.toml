@@ -1,0 +1,25 @@
+[package]
+name = "ledger"
+version = "0.4.1"
+edition = "2021"
+rust-version = "1.78"
+license = "MIT"
+description = "A double-entry ledger for small shops"
+
+[dependencies]
+serde = { version = "1.0.210", features = ["derive"] }
+toml = "0.8.19"
+chrono = { version = "0.4.38", default-features = false, features = ["clock"] }
+thiserror = "1.0.64"
+
+[dev-dependencies]
+tempfile = "3.13.0"
+proptest = "1.5.0"
+
+[profile.release]
+lto = true
+codegen-units = 1
+
+[[bin]]
+name = "ledger"
+path = "src/main.rs"

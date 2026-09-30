@@ -37,7 +37,9 @@ and failing-test cases show whether a coding request reaches a change and
 validation, while the analysis-only case shows whether the same tools were left
 unused. It counts the calls that went through the shell as well, beside the
 calls that went to a built-in tool, so a case whose work the built-in tools
-answer shows which of the two the model reached for.
+answer shows which of the two the model reached for — and the bytes of every
+result the session read back, so a built-in that answered in more than the
+command it replaced shows as that rather than as a pass.
 
 ## Flaky is its own verdict
 

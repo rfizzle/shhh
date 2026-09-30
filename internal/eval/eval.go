@@ -132,6 +132,11 @@ type Behaviour struct {
 	// tools answer reads this to see which one the model reached for
 	// (docs/capabilities/coding-agent.md#the-built-in-tools-come-before-the-shell).
 	ShellCalls int
+	// ResultBytes is the size of every tool result the attempt read back.
+	// Beside the shell count it says whether a built-in reader answered in
+	// less than the command it replaced, which a pass cannot
+	// (docs/capabilities/coding-agent.md#structured-files-are-read-in-one-call).
+	ResultBytes int
 }
 
 // Result is every attempt at one case.
@@ -189,6 +194,7 @@ func (r Result) Behaviour() (Behaviour, bool) {
 		ValidationAttempts:       int(r.Median(func(a Attempt) float64 { return float64(a.Behaviour.ValidationAttempts) })),
 		UnintendedMutations:      int(r.Median(func(a Attempt) float64 { return float64(a.Behaviour.UnintendedMutations) })),
 		ShellCalls:               int(r.Median(func(a Attempt) float64 { return float64(a.Behaviour.ShellCalls) })),
+		ResultBytes:              int(r.Median(func(a Attempt) float64 { return float64(a.Behaviour.ResultBytes) })),
 	}, len(r.Attempts) > 0
 }
 

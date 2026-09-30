@@ -109,10 +109,11 @@ func TestEvalReportShowsWorkspaceBehaviourMetrics(t *testing.T) {
 		Behaviour: eval.Behaviour{
 			CallsBeforeFirstMutation: 2,
 			ValidationAttempts:       1,
+			ResultBytes:              2048,
 		},
 	}}}
 	out := evalReport(eval.Summary{Results: []eval.Result{res}}, "").Render(160)
-	for _, want := range []string{"0 mutations", "2 calls before mutation", "1 validations", "0 unintended mutations", "0 shell calls"} {
+	for _, want := range []string{"0 mutations", "2 calls before mutation", "1 validations", "0 unintended mutations", "0 shell calls", "2048 result bytes"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("report lost %q:\n%s", want, out)
 		}

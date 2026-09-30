@@ -1,0 +1,10 @@
+name = "data-table-count"
+prompt = "How many rows does the orders table in app.db hold? Write just the number to answer.txt. Change nothing else."
+
+# One question the shell answers with a data idiom (a table's row count) and a built-in
+# reader answers in one call without an approval. The check only says the
+# answer is right; the report's shell calls, rounds and result bytes are
+# what the case is read for.
+requires = ["sh", "git"]
+
+check = ["sh", "check.sh"]

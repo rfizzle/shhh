@@ -1,0 +1,10 @@
+name = "data-lockfile-field"
+prompt = "Which version of left-pad does package-lock.json pin for the project itself (not a copy nested under another package)? Write just the version to answer.txt. Change nothing else."
+
+# One question the shell answers with a data idiom (the lockfile field) and a built-in
+# reader answers in one call without an approval. The check only says the
+# answer is right; the report's shell calls, rounds and result bytes are
+# what the case is read for.
+requires = ["sh", "git"]
+
+check = ["sh", "check.sh"]

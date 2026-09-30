@@ -174,7 +174,7 @@ func TestRoundsAndCallsAreReadFromTheTranscript(t *testing.T) {
 	if a.TokensIn != 100 || a.TokensOut != 20 {
 		t.Errorf("usage = %d/%d, want 100/20", a.TokensIn, a.TokensOut)
 	}
-	if got, want := a.Behaviour, (Behaviour{MutationsAttempted: 1, CallsBeforeFirstMutation: 3, ValidationAttempts: 1, ShellCalls: 1}); got != want {
+	if got, want := a.Behaviour, (Behaviour{MutationsAttempted: 1, CallsBeforeFirstMutation: 3, ValidationAttempts: 1, ShellCalls: 1, ResultBytes: 1}); got != want {
 		t.Errorf("behaviour = %+v, want %+v", got, want)
 	}
 }

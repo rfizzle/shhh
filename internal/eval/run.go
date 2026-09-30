@@ -90,6 +90,7 @@ type transcript struct {
 	} `json:"usage"`
 	Messages []struct {
 		Role      string `json:"role"`
+		Content   string `json:"content"`
 		ToolCalls []struct {
 			Name      string `json:"name"`
 			Arguments string `json:"arguments"`
@@ -115,6 +116,9 @@ func (t transcript) rounds() (rounds, calls int) {
 func (t transcript) behaviour() (b Behaviour) {
 	seenMutation := false
 	for _, m := range t.Messages {
+		if m.Role == "tool" {
+			b.ResultBytes += len(m.Content)
+		}
 		if m.Role != "assistant" {
 			continue
 		}

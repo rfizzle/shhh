@@ -1,0 +1,10 @@
+name = "data-zip-entries"
+prompt = "List every file inside dist/release.zip, one path per line as the archive names it, in answer.txt. Change nothing else."
+
+# One question the shell answers with a data idiom (a zip's entry list) and a built-in
+# reader answers in one call without an approval. The check only says the
+# answer is right; the report's shell calls, rounds and result bytes are
+# what the case is read for.
+requires = ["sh", "git"]
+
+check = ["sh", "check.sh"]

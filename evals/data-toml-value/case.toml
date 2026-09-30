@@ -1,0 +1,10 @@
+name = "data-toml-value"
+prompt = "What version does Cargo.toml give the package itself? Write just the version to answer.txt. Change nothing else."
+
+# One question the shell answers with a data idiom (a TOML value) and a built-in
+# reader answers in one call without an approval. The check only says the
+# answer is right; the report's shell calls, rounds and result bytes are
+# what the case is read for.
+requires = ["sh", "git"]
+
+check = ["sh", "check.sh"]
