@@ -70,11 +70,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
 
+      # Both platforms the release ships, so the emulated one is timed here
+      # rather than for the first time on a tag.
       - uses: docker/build-push-action@v6
         with:
           context: docker/sandbox
+          platforms: linux/amd64,linux/arm64
           push: false
 
   # These tests deliberately bind loopback listeners. They are a boundary
