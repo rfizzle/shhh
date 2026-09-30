@@ -4,6 +4,7 @@ import (
 	"archive/tar"
 	"archive/zip"
 	"bytes"
+	"compress/flate"
 	"compress/gzip"
 	"encoding/json"
 	"fmt"
@@ -339,6 +340,58 @@ func TestArchives_ARatioBombIsRefusedWithTheRatio(t *testing.T) {
 	}
 	if !strings.Contains(got, "stopped:") || !strings.Contains(got, "to 1") || strings.Contains(got, "after.txt") {
 		t.Errorf("listing a tgz bomb stops at the ratio and says so, got %q", got)
+	}
+}
+
+// writeRawZip writes a zip of one entry whose table states the sizes it is
+// given rather than the sizes of data, which is written as it stands.
+func writeRawZip(t *testing.T, path, name string, method uint16, data []byte, packed, size uint64) {
+	t.Helper()
+	var buf bytes.Buffer
+	zw := zip.NewWriter(&buf)
+	h := &zip.FileHeader{Name: name, Method: method, CompressedSize64: packed, UncompressedSize64: size}
+	h.SetMode(0o644)
+	w, err := zw.CreateRaw(h)
+	must(t, err)
+	_, err = w.Write(data)
+	must(t, err)
+	must(t, zw.Close())
+	must(t, os.WriteFile(path, buf.Bytes(), 0o644))
+}
+
+// A zip's table is the archive's own word. An entry that declares a size and
+// a compressed size an honest ratio apart, and inflates at a thousand to one
+// from bytes that are not what it declared, is judged on what the inflation
+// read — and one that declares less than it holds is stopped at what it
+// declared, with a sentence naming that bound.
+func TestArchives_AZipEntryIsBoundedOnTheBytesItReads(t *testing.T) {
+	dir := t.TempDir()
+	var packed bytes.Buffer
+	fw, err := flate.NewWriter(&packed, flate.BestCompression)
+	must(t, err)
+	_, err = fw.Write(make([]byte, 8<<20))
+	must(t, err)
+	must(t, fw.Close())
+
+	lying := filepath.Join(dir, "lying.zip")
+	writeRawZip(t, lying, "zeros.txt", zip.Deflate, packed.Bytes(), 1<<20, 2<<20)
+	got, err := readPath(t, NewRecorder(), lying+"!/zeros.txt", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(got, fmt.Sprintf("past the bound of %d to 1", MaxArchiveRatio)) {
+		t.Errorf("an entry that inflates past the ratio on the bytes it read is refused with it, got %q", got)
+	}
+
+	body := bytes.Repeat([]byte("a line of text\n"), 4<<10)
+	short := filepath.Join(dir, "short.zip")
+	writeRawZip(t, short, "notes.txt", zip.Store, body, uint64(len(body)), 1<<10)
+	got, err = readPath(t, NewRecorder(), short+"!/notes.txt", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(got, "inflates past the 1 KB its archive declares for it") {
+		t.Errorf("an entry holding more than it declares is refused naming the declared size, got %q", got)
 	}
 }
 

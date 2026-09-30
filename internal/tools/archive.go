@@ -13,6 +13,7 @@ import (
 	"path"
 	"sort"
 	"strings"
+	"sync/atomic"
 
 	"github.com/rfizzle/shhh/internal/provider"
 )
@@ -135,6 +136,21 @@ func (c *countingReader) Read(p []byte) (int, error) {
 	return n, err
 }
 
+// countingReaderAt is countingReader for a zip, which is read at offsets:
+// every byte the zip reader takes from the archive file is counted, so the
+// compressed bytes an entry's inflation consumed are the count's growth
+// while it is read, whatever the archive's table says the entry holds.
+type countingReaderAt struct {
+	r io.ReaderAt
+	n atomic.Int64
+}
+
+func (c *countingReaderAt) ReadAt(p []byte, off int64) (int, error) {
+	n, err := c.r.ReadAt(p, off)
+	c.n.Add(int64(n))
+	return n, err
+}
+
 // inflateGuard is the decompressed side of a stream, bounded two ways. It
 // stops at limit bytes, and a read past it reports errPastCeiling rather than
 // a clean end — so a caller can tell a stream that was exactly the ceiling
@@ -143,11 +159,10 @@ func (c *countingReader) Read(p []byte) (int, error) {
 // the compressed bytes it has consumed; below the floor a small file of one
 // repeated byte would be refused for compressing well.
 //
-// packed is nil where the compressed side is not ours to count — a zip
-// entry, whose sizes are declared and checked before the entry is opened.
+// packed reports the compressed bytes consumed so far.
 type inflateGuard struct {
 	r      io.Reader
-	packed *countingReader
+	packed func() int64
 	out    int64
 	limit  int64
 }
@@ -169,8 +184,10 @@ func (g *inflateGuard) Read(p []byte) (int, error) {
 	}
 	n, err := g.r.Read(p)
 	g.out += int64(n)
-	if g.packed != nil && g.out > ArchiveRatioFloor && g.out > MaxArchiveRatio*max(g.packed.n, 1) {
-		return n, &archiveRatioError{packed: g.packed.n, inflated: g.out}
+	if g.out > ArchiveRatioFloor {
+		if packed := g.packed(); g.out > MaxArchiveRatio*max(packed, 1) {
+			return n, &archiveRatioError{packed: packed, inflated: g.out}
+		}
 	}
 	return n, err
 }
@@ -193,7 +210,7 @@ func openGzip(f io.Reader, name string, limit int64) (*inflateGuard, error) {
 	if err != nil {
 		return nil, fmt.Errorf("%s is not a readable gzip stream: %w", name, err)
 	}
-	return &inflateGuard{r: zr, packed: packed, limit: limit}, nil
+	return &inflateGuard{r: zr, packed: func() int64 { return packed.n }, limit: limit}, nil
 }
 
 // isGzipFile reports whether read_file and search read a file as the text it
@@ -274,6 +291,7 @@ type archiveEntry struct {
 	isLink bool
 	other  bool // a device, a FIFO or anything else that is not a file
 	zf     *zip.File
+	zipAt  *countingReaderAt // the zip's file, counting what is read of it
 }
 
 // unsafeEntryName reports whether a name would leave the directory an
@@ -309,12 +327,12 @@ type archiveScan struct {
 	kind    archiveKind
 	entries []archiveEntry
 	stopped error
-	zr      *zip.ReadCloser
+	zipFile *os.File
 }
 
 func (s *archiveScan) Close() {
-	if s.zr != nil {
-		s.zr.Close()
+	if s.zipFile != nil {
+		s.zipFile.Close()
 	}
 }
 
@@ -335,14 +353,20 @@ func scanArchive(p string, visit func(e archiveEntry, r io.Reader) (bool, error)
 	}
 	s := &archiveScan{kind: kind}
 	if kind == archiveZip {
-		zr, err := zip.OpenReader(p)
+		f, err := os.Open(p)
+		if err != nil {
+			return nil, fmt.Errorf("cannot read archive: %w", err)
+		}
+		at := &countingReaderAt{r: f}
+		zr, err := zip.NewReader(at, info.Size())
 		// A non-local name is reported as ErrInsecurePath with the reader
 		// still usable; such names are what this listing marks, not a
 		// reason to refuse the archive.
 		if err != nil && !errors.Is(err, zip.ErrInsecurePath) {
+			f.Close()
 			return nil, fmt.Errorf("%s is not a readable zip archive: %w", p, err)
 		}
-		s.zr = zr
+		s.zipFile = f
 		for _, f := range zr.File {
 			e := archiveEntry{
 				name:   f.Name,
@@ -350,6 +374,7 @@ func scanArchive(p string, visit func(e archiveEntry, r io.Reader) (bool, error)
 				packed: int64(f.CompressedSize64),
 				dir:    f.FileInfo().IsDir(),
 				zf:     f,
+				zipAt:  at,
 			}
 			mode := f.Mode()
 			switch {
@@ -684,9 +709,12 @@ func readArchiveEntry(archive, entry string) (data []byte, notice string, err er
 	}
 	if readErr != nil {
 		var ratio *archiveRatioError
+		var declared *zipUnderDeclaredError
 		switch {
 		case errors.As(readErr, &ratio):
 			return nil, fmt.Sprintf("%s is not read: %s.", display, ratio.Error()), nil
+		case errors.As(readErr, &declared):
+			return nil, fmt.Sprintf("%s is not read: %s.", display, declared.Error()), nil
 		case errors.Is(readErr, errPastCeiling):
 			return nil, fmt.Sprintf("%s was not read whole: decompressing it passed %s, the read ceiling for one call.", display, provider.HumanSize(MaxReadFileSize)), nil
 		}
@@ -700,19 +728,37 @@ func readArchiveEntry(archive, entry string) (data []byte, notice string, err er
 }
 
 // readZipEntry opens one zip entry. Its sizes are declared in the archive's
-// table, and the zip reader refuses an entry that inflates past its declared
-// size, so the ratio is judged on the declaration before anything inflates,
-// and the ceiling is held again on the stream in case the table lied low.
+// table, so the ratio is judged on the declaration before anything inflates.
+// The table is the archive's own word, though, and a hostile one declares
+// whatever passes: so the ratio is judged again on the stream, on the bytes
+// the inflation actually consumed and produced, and the ceiling is held on
+// it too. The zip reader stops an entry that inflates past its declared
+// size, which is the one bound it enforces itself; that is refused in a
+// sentence naming it rather than as a malformed archive.
 func readZipEntry(e *archiveEntry) ([]byte, error) {
 	if e.size > ArchiveRatioFloor && e.size > MaxArchiveRatio*max(e.packed, 1) {
 		return nil, &archiveRatioError{packed: e.packed, inflated: e.size}
 	}
+	start := e.zipAt.n.Load()
 	rc, err := e.zf.Open()
 	if err != nil {
 		return nil, err
 	}
 	defer rc.Close()
-	return io.ReadAll(&inflateGuard{r: rc, limit: MaxReadFileSize})
+	data, err := io.ReadAll(&inflateGuard{r: rc, packed: func() int64 { return e.zipAt.n.Load() - start }, limit: MaxReadFileSize})
+	if errors.Is(err, zip.ErrFormat) {
+		return nil, &zipUnderDeclaredError{declared: e.size}
+	}
+	return data, err
+}
+
+// zipUnderDeclaredError is an entry that inflated past the size its
+// archive's table declares for it.
+type zipUnderDeclaredError struct{ declared int64 }
+
+func (e *zipUnderDeclaredError) Error() string {
+	return fmt.Sprintf("it inflates past the %s its archive declares for it, and an entry is read no further than its declared size; it is refused rather than read",
+		provider.HumanSize(int(e.declared)))
 }
 
 // archiveNotice is read_file's answer for an archive named whole: what it is

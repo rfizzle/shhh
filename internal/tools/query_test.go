@@ -345,6 +345,95 @@ func TestQuery_ARunawayExpressionIsStopped(t *testing.T) {
 	}
 }
 
+// lowerQueryBound sets one of the query bounds for a test and puts it back.
+func lowerQueryBound[T any](t *testing.T, bound *T, to T) {
+	t.Helper()
+	old := *bound
+	*bound = to
+	t.Cleanup(func() { *bound = old })
+}
+
+// An expression that builds without end is stopped by what it holds, well
+// before the timeout, and the refusal names the bound it reached.
+func TestQuery_AnExpressionThatBuildsWithoutEndIsStoppedByItsMemory(t *testing.T) {
+	lowerQueryBound(t, &queryExpressionMemory, 4<<20)
+	p := writeQueryFile(t, t.TempDir(), "a.json", `1`)
+	for _, expr := range []string{"[range(1e9)]", "[limit(1e9; repeat(1))]"} {
+		start := time.Now()
+		_, err := runQuery(t, NewRecorder(), map[string]any{"paths": []string{p}, "expression": expr})
+		if err == nil || !strings.Contains(err.Error(), "built more than 4.0 MB in memory") ||
+			!strings.Contains(err.Error(), "the most one expression may hold") {
+			t.Errorf("%s: err = %v", expr, err)
+		}
+		if took := time.Since(start); took >= queryTimeout {
+			t.Errorf("%s: stopped after %s, by the timeout rather than the memory bound", expr, took)
+		}
+	}
+}
+
+// A document that decodes to many times its size is refused by the value
+// bound: an array of empty arrays and a deep nest before the decoder builds
+// either, a YAML alias fan-out as its values are counted. A file of many
+// inputs is counted one input at a time, unless slurp holds them together.
+func TestQuery_ADocumentPastTheValueBoundIsRefused(t *testing.T) {
+	lowerQueryBound(t, &queryValues, 1000)
+	dir := t.TempDir()
+	wide := writeQueryFile(t, dir, "wide.json", "["+strings.Repeat("[],", 5000)+"[]]")
+	deep := writeQueryFile(t, dir, "deep.json", strings.Repeat("[", 2000)+strings.Repeat("]", 2000))
+	var fan strings.Builder
+	fan.WriteString("a: &a [x, x, x, x, x, x, x, x, x, x]\n")
+	fan.WriteString("b: &b [*a, *a, *a, *a, *a, *a, *a, *a, *a, *a]\n")
+	fan.WriteString("c: [*b, *b, *b, *b, *b, *b, *b, *b, *b, *b]\n")
+	for i := range 40 {
+		fmt.Fprintf(&fan, "k%d: v\n", i)
+	}
+	fanout := writeQueryFile(t, dir, "fan.yaml", fan.String())
+	for _, p := range []string{wide, deep, fanout} {
+		_, err := runQuery(t, NewRecorder(), map[string]any{"paths": []string{p}, "expression": "length"})
+		if err == nil || !strings.Contains(err.Error(), "decodes to more than 1000 values in one document") {
+			t.Errorf("%s: err = %v", filepath.Base(p), err)
+		}
+	}
+
+	line := "[" + strings.Repeat("0,", 600) + "0]\n"
+	lines := writeQueryFile(t, dir, "lines.jsonl", strings.Repeat(line, 3))
+	if got := mustQuery(t, map[string]any{"paths": []string{lines}, "expression": "length"}); got != "601\n601\n601" {
+		t.Errorf("each input is counted on its own: got %q", got)
+	}
+	_, err := runQuery(t, NewRecorder(), map[string]any{"paths": []string{lines}, "expression": "length", "slurp": true})
+	if err == nil || !strings.Contains(err.Error(), "more than 1000 values") {
+		t.Errorf("slurped inputs are one document: err = %v", err)
+	}
+}
+
+// A document the value bound passes can still decode past the memory bound,
+// and a decoder that builds as it reads is stopped part way through it.
+func TestQuery_ADocumentPastTheMemoryBoundIsRefused(t *testing.T) {
+	lowerQueryBound(t, &queryMemory, 16<<20)
+	p := writeQueryFile(t, t.TempDir(), "list.yaml", strings.Repeat("- a\n", 1<<20))
+	_, err := runQuery(t, NewRecorder(), map[string]any{"paths": []string{p}, "expression": "length"})
+	if err == nil || !strings.Contains(err.Error(), "list.yaml decodes to more than 16.0 MB in memory") {
+		t.Errorf("err = %v", err)
+	}
+}
+
+// The bounds leave an ordinary large file alone: a 5 MB lockfile answers.
+func TestQuery_AnOrdinaryLockfileIsUnderEveryBound(t *testing.T) {
+	var b strings.Builder
+	b.WriteString(`{"packages":{`)
+	n := 0
+	for b.Len() < 5<<20 {
+		fmt.Fprintf(&b, `"node_modules/pkg%d":{"version":"1.2.%d","resolved":"https://registry.npmjs.org/pkg%d/-/pkg%d-1.2.%d.tgz","integrity":"sha512-0123456789abcdef","dependencies":{"a":"^1.0.0"}},`, n, n, n, n, n)
+		n++
+	}
+	b.WriteString(`"":{}}}`)
+	p := writeQueryFile(t, t.TempDir(), "package-lock.json", b.String())
+	got := mustQuery(t, map[string]any{"paths": []string{p}, "expression": `[.packages[] | .version] | length`})
+	if got != fmt.Sprint(n+1) {
+		t.Errorf("got %q, want %d", got, n+1)
+	}
+}
+
 func TestQuery_RefusesWhatItCannotRead(t *testing.T) {
 	dir := t.TempDir()
 	cases := []struct {

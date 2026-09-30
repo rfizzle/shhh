@@ -103,6 +103,29 @@ const (
 	// time under it.
 	MaxQueryFileSize = 64 << 20
 
+	// MaxQueryFileSize bounds what is read and not what it becomes: a JSON
+	// array of empty arrays decodes to thirty times its size, a YAML list to
+	// sixty, an alias fans one node out to thousands, and `[range(1e9)]`
+	// needs no file at all. Three bounds hold what a call becomes.
+	//
+	// MaxQueryValues is the most values one document may decode to — every
+	// scalar, array and object, keys aside. A document of many inputs
+	// (JSONL, multi-document YAML, CSV) is counted one input at a time, as
+	// it is decoded and let go, unless slurp holds them together.
+	// MaxQueryMemory is how far the live heap may grow while a call decodes
+	// its files, and MaxQueryExpressionMemory how far past what the decoding
+	// left an expression may grow it. The file's bound is the larger because
+	// an ordinary large file needs it: a 64 MiB lockfile is about two million
+	// values, holds some 300 MiB live while it is decoded, and peaks near
+	// 360 MiB with its garbage; eight million of the densest values peak
+	// near 560 MiB. An expression is held to less so that one collecting an
+	// unbounded stream — `[limit(1e9; repeat(1))]` grows its array at some
+	// fifty megabytes a second — is stopped before QueryTimeout rather than
+	// by it (query.go).
+	MaxQueryValues           = 8_000_000
+	MaxQueryMemory           = 512 << 20
+	MaxQueryExpressionMemory = 256 << 20
+
 	// MaxQueryFiles caps how many files one query reads, globs expanded.
 	// A labelled answer per file past fifty is a listing, not an answer.
 	MaxQueryFiles = 50

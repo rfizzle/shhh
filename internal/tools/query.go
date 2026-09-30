@@ -14,9 +14,12 @@ import (
 	"math/big"
 	"os"
 	"path/filepath"
+	"runtime"
+	"runtime/metrics"
 	"sort"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/BurntSushi/toml"
@@ -37,8 +40,15 @@ const QueryName = "query"
 // ever (`repeat(.)`), and a read that auto-runs must still come back.
 const QueryTimeout = 10 * time.Second
 
-// queryTimeout is QueryTimeout, a variable so a test can wait less for it.
-var queryTimeout = QueryTimeout
+// queryTimeout is QueryTimeout, and the three after it are the bounds of
+// the same names in limits.go: variables so a test can reach them with a
+// small input instead of a large one.
+var (
+	queryTimeout          = QueryTimeout
+	queryValues           = MaxQueryValues
+	queryMemory           = uint64(MaxQueryMemory)
+	queryExpressionMemory = uint64(MaxQueryExpressionMemory)
+)
 
 // What the query tool is for, and why it answers the way it does.
 //
@@ -156,8 +166,12 @@ func (r *Recorder) executeQuery(raw json.RawMessage) (string, error) {
 		return "", err
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), queryTimeout)
-	defer cancel()
+	timed, cancelTimed := context.WithTimeout(context.Background(), queryTimeout)
+	defer cancelTimed()
+	ctx, cancel := context.WithCancelCause(timed)
+	defer cancel(nil)
+	watch := watchQueryMemory(ctx, cancel)
+	defer watch.stop()
 
 	out := &queryOutput{}
 	labelled := len(files) > 1
@@ -165,11 +179,18 @@ func (r *Recorder) executeQuery(raw json.RawMessage) (string, error) {
 		if labelled {
 			out.header(f)
 		}
-		err := queryFile(ctx, out, f, args, code)
+		err := queryFile(ctx, watch, out, f, args, code)
 		if errors.Is(err, errQueryFull) {
 			break
 		}
 		if ctx.Err() != nil {
+			// A memory bound ends the call as the timeout does, rather than
+			// one file's answer: every file after it would be read under
+			// the context it cancelled.
+			var memory *queryMemoryError
+			if errors.As(queryBound(ctx, f, ctx.Err()), &memory) {
+				return "", memory
+			}
 			return "", fmt.Errorf("query stopped after %s; narrow the expression or name fewer files", queryTimeout)
 		}
 		if err != nil {
@@ -347,7 +368,7 @@ var errQueryFull = errors.New("query answer full")
 
 // queryFile reads one file and answers the expression, or its shape when
 // there is none, into out.
-func queryFile(ctx context.Context, out *queryOutput, path string, args queryArgs, code *gojq.Code) error {
+func queryFile(ctx context.Context, watch *queryMemoryWatch, out *queryOutput, path string, args queryArgs, code *gojq.Code) error {
 	info, err := os.Stat(path)
 	if err != nil {
 		return fmt.Errorf("cannot read file: %w", err)
@@ -373,17 +394,30 @@ func queryFile(ctx context.Context, out *queryOutput, path string, args queryArg
 	defer f.Close()
 
 	// The inputs are decoded one at a time and handed on, so a file of many
-	// documents, lines or rows is never held whole unless slurp asks for it.
+	// documents, lines or rows is never held whole unless slurp asks for it
+	// — and so the value bound is counted per input, except under slurp,
+	// where every input is one array held at once.
+	eval := func(v any) error {
+		defer watch.evaluating()()
+		return evalQuery(ctx, out, code, v)
+	}
 	var (
 		slurped []any
 		first   any
 		count   int
+		left    = queryValues
 	)
 	each := func(v any) error {
 		if err := ctx.Err(); err != nil {
 			return err
 		}
-		v = normalizeQueryValue(v)
+		if !args.Slurp {
+			left = queryValues
+		}
+		v = normalizeQueryValue(v, &left)
+		if left < 0 {
+			return &queryValuesError{path: path}
+		}
 		count++
 		switch {
 		case args.Slurp:
@@ -395,10 +429,13 @@ func queryFile(ctx context.Context, out *queryOutput, path string, args queryArg
 			}
 			return nil
 		}
-		return evalQuery(ctx, out, code, v)
+		return eval(v)
 	}
-	if err := decodeQueryInputs(format, path, bufio.NewReader(f), each); err != nil {
-		return err
+	// The reader stops once the call's context is done, which is what stops
+	// a decoder that builds as it reads — YAML's, XML's, CSV's — part way
+	// through a document the memory bound has already refused.
+	if err := decodeQueryInputs(format, path, bufio.NewReader(queryContextReader{ctx, f}), each); err != nil {
+		return queryBound(ctx, path, err)
 	}
 
 	if args.Slurp {
@@ -410,7 +447,7 @@ func queryFile(ctx context.Context, out *queryOutput, path string, args queryArg
 			out.shape(describeShape(all, 1, ""))
 			return nil
 		}
-		return evalQuery(ctx, out, code, all)
+		return queryBound(ctx, path, eval(all))
 	}
 	if code == nil {
 		if count == 0 {
@@ -449,6 +486,165 @@ func evalQuery(ctx context.Context, out *queryOutput, code *gojq.Code, v any) er
 		}
 	}
 }
+
+// The two causes the memory watch cancels a call's context with: the heap
+// grew past MaxQueryMemory while a file was being decoded, or past
+// MaxQueryExpressionMemory while the expression ran.
+var (
+	errQueryDecodeMemory     = errors.New("query decode memory bound reached")
+	errQueryExpressionMemory = errors.New("query expression memory bound reached")
+)
+
+// queryMemoryError is a call a memory bound stopped.
+type queryMemoryError struct {
+	path       string
+	expression bool
+}
+
+func (e *queryMemoryError) Error() string {
+	if e.expression {
+		return fmt.Sprintf("query stopped: the expression built more than %s in memory over %s, the most one expression may hold; ask for a count, a slice or a filtered part rather than every value at once",
+			attachment.HumanSize(int(queryExpressionMemory)), e.path)
+	}
+	return fmt.Sprintf("query stopped: %s decodes to more than %s in memory, the most one call may hold of a file; it is refused rather than read",
+		e.path, attachment.HumanSize(int(queryMemory)))
+}
+
+// queryValuesError is a document that decodes to more values than one
+// document may.
+type queryValuesError struct{ path string }
+
+func (e *queryValuesError) Error() string {
+	return fmt.Sprintf("%s decodes to more than %d values in one document, the most query decodes; it is refused rather than read", e.path, queryValues)
+}
+
+// queryBound puts the decode and memory bounds' refusals in their own
+// words, whatever a decoder wrapped them in: a decoder reports the reader's
+// error, or the refusal each handed it, as one of its own.
+func queryBound(ctx context.Context, path string, err error) error {
+	if err == nil {
+		return nil
+	}
+	var values *queryValuesError
+	if errors.As(err, &values) {
+		return values
+	}
+	switch context.Cause(ctx) {
+	case errQueryDecodeMemory:
+		return &queryMemoryError{path: path}
+	case errQueryExpressionMemory:
+		return &queryMemoryError{path: path, expression: true}
+	}
+	return err
+}
+
+// queryContextReader is a file that stops reading once the call is over.
+type queryContextReader struct {
+	ctx context.Context
+	r   io.Reader
+}
+
+func (c queryContextReader) Read(p []byte) (int, error) {
+	if c.ctx.Err() != nil {
+		return 0, context.Cause(c.ctx)
+	}
+	return c.r.Read(p)
+}
+
+// queryMemoryWatch cancels a call once the heap still live has grown past
+// the bound in force: MaxQueryMemory over the heap as it stood when the call
+// began, while a file is decoded, and MaxQueryExpressionMemory over the heap
+// as it stood when the expression began, while one runs.
+//
+// The engine evaluates iteratively and keeps what it builds — an array being
+// collected, a string being joined — inside itself, where no result, output
+// writer or iteration count sees it: `[range(1e9)]` is one result, reached
+// after the memory is spent. So the heap is what is measured. It is sampled
+// between the engine's steps, and the engine reads the context at every
+// step, so a cancel stops it at once. The heap is the process's: what else
+// the session allocates in the same seconds counts too, which is why the
+// figure judged is what the last collection found live and never the heap's
+// raw size — garbage, the call's own or another goroutine's, is not what
+// trips it. A raw size past the bound asks for a collection, at most once
+// per queryMemoryCollect, so the bound holds with collection switched off
+// too, without a call that stays under it spending its time collecting.
+type queryMemoryWatch struct {
+	phase atomic.Pointer[queryMemoryPhase]
+	call  *queryMemoryPhase
+	done  chan struct{}
+}
+
+// queryMemoryPhase is one bound in force: the heap it is measured over, how
+// far past it the heap may grow, and the cause a call past it ends with.
+type queryMemoryPhase struct {
+	base, limit uint64
+	cause       error
+}
+
+// watchQueryMemory starts the watch over a call; stop ends it.
+func watchQueryMemory(ctx context.Context, cancel context.CancelCauseFunc) *queryMemoryWatch {
+	samples := []metrics.Sample{
+		{Name: "/memory/classes/heap/objects:bytes"},
+		{Name: "/gc/heap/live:bytes"},
+	}
+	metrics.Read(samples)
+	w := &queryMemoryWatch{
+		call: &queryMemoryPhase{base: samples[0].Value.Uint64(), limit: queryMemory, cause: errQueryDecodeMemory},
+		done: make(chan struct{}),
+	}
+	w.phase.Store(w.call)
+	go func() {
+		tick := time.NewTicker(queryMemoryTick)
+		defer tick.Stop()
+		var collected time.Time
+		for {
+			select {
+			case <-w.done:
+				return
+			case <-ctx.Done():
+				return
+			case <-tick.C:
+			}
+			p := w.phase.Load()
+			past := func(n uint64) bool { return n > p.base && n-p.base > p.limit }
+			metrics.Read(samples)
+			if !past(samples[1].Value.Uint64()) {
+				if !past(samples[0].Value.Uint64()) || time.Since(collected) < queryMemoryCollect {
+					continue
+				}
+				runtime.GC()
+				collected = time.Now()
+				metrics.Read(samples)
+				if !past(samples[1].Value.Uint64()) {
+					continue
+				}
+			}
+			cancel(p.cause)
+			return
+		}
+	}()
+	return w
+}
+
+// evaluating puts the expression's bound in force, over the heap as it
+// stands, until the function it returns puts the call's back.
+func (w *queryMemoryWatch) evaluating() func() {
+	samples := []metrics.Sample{{Name: "/memory/classes/heap/objects:bytes"}}
+	metrics.Read(samples)
+	w.phase.Store(&queryMemoryPhase{base: samples[0].Value.Uint64(), limit: queryExpressionMemory, cause: errQueryExpressionMemory})
+	return func() { w.phase.Store(w.call) }
+}
+
+func (w *queryMemoryWatch) stop() { close(w.done) }
+
+// queryMemoryTick is how often the memory watch samples the heap: the engine
+// allocates some tens of megabytes between two samples at most, which the
+// bounds have room for. queryMemoryCollect is the least time between two
+// collections the watch asks for.
+const (
+	queryMemoryTick    = 5 * time.Millisecond
+	queryMemoryCollect = 100 * time.Millisecond
+)
 
 // formatQueryResult is one result as the model reads it: a string raw, since
 // a string is nearly always wanted as text and jq's -r is the flag nobody
@@ -693,7 +889,7 @@ func offsetPosition(path string, offset int64) (line, col int) {
 
 // decodeJSONStream reads one JSON value, or several in a row as jq does.
 func decodeJSONStream(path string, r io.Reader, each func(any) error) error {
-	dec := json.NewDecoder(r)
+	dec := json.NewDecoder(&jsonValueCounter{r: r, path: path, left: queryValues})
 	dec.UseNumber()
 	for {
 		var v any
@@ -721,6 +917,78 @@ func decodeJSONStream(path string, r io.Reader, each func(any) error) error {
 			return err
 		}
 	}
+}
+
+// jsonValueCounter counts the values in JSON text as the decoder reads it,
+// and fails the read that takes a document past the value bound. The
+// decoder reads a whole value's text before it builds anything from it, so
+// a refusal here comes before the tree does: a 64 MiB array of empty arrays
+// is refused some twenty-four megabytes into its text rather than after two
+// gigabytes of tree. It counts what normalizeQueryValue counts — every
+// scalar, array and object, keys aside — and starts again at each top-level
+// value, as the walk does for a document of several.
+type jsonValueCounter struct {
+	r       io.Reader
+	path    string
+	left    int
+	objects []bool // for each open container, whether it is an object
+	last    byte   // the last byte outside a string that was not space
+	str     bool   // inside a string
+	escaped bool   // the byte before was a backslash inside a string
+}
+
+func (c *jsonValueCounter) Read(p []byte) (int, error) {
+	n, err := c.r.Read(p)
+	for _, b := range p[:n] {
+		if c.str {
+			switch {
+			case c.escaped:
+				c.escaped = false
+			case b == '\\':
+				c.escaped = true
+			case b == '"':
+				c.str = false
+				c.last = '"'
+			}
+			continue
+		}
+		switch b {
+		case ' ', '\t', '\n', '\r':
+			if c.last != '"' && !strings.ContainsRune("[]{},:", rune(c.last)) {
+				c.last = ' '
+			}
+			continue
+		case '"':
+			c.str = true
+			// A string straight after an object's opening brace or a comma
+			// inside one is a key.
+			if len(c.objects) > 0 && c.objects[len(c.objects)-1] && (c.last == '{' || c.last == ',') {
+				continue
+			}
+			c.left--
+		case '[', '{':
+			c.objects = append(c.objects, b == '{')
+			c.left--
+		case ']', '}':
+			if len(c.objects) > 0 {
+				c.objects = c.objects[:len(c.objects)-1]
+			}
+			if len(c.objects) == 0 {
+				c.left = queryValues
+			}
+		case ',', ':':
+		default:
+			// A number, true, false or null: counted at its first byte.
+			if c.last == 0 || c.last == ' ' || c.last == '[' || c.last == ',' || c.last == ':' {
+				c.left--
+			}
+		}
+		c.last = b
+		if c.left < 0 {
+			return 0, &queryValuesError{path: c.path}
+		}
+	}
+	return n, err
 }
 
 // decodeJSONLines reads one JSON value per line, skipping blank lines.
@@ -970,7 +1238,16 @@ func csvError(path string, err error) error {
 // nothing else, since anything else is a panic inside it. The decoders hand
 // back more than that: JSON numbers kept as text so a large integer is not
 // rounded, YAML's integer widths and non-string keys, and TOML's datetimes.
-func normalizeQueryValue(v any) any {
+//
+// It also counts the document against the value bound: left is what the
+// document may still hold, and once it goes below zero the walk stops and
+// the value is to be refused, not read. An array or object is rewritten in
+// place rather than copied, since the decoder's value is not used again and
+// a copy would hold the document twice at the moment it is largest.
+func normalizeQueryValue(v any, left *int) any {
+	if *left--; *left < 0 {
+		return nil
+	}
 	switch x := v.(type) {
 	case nil, bool, string, float64, int:
 		return x
@@ -1016,27 +1293,33 @@ func normalizeQueryValue(v any) any {
 	case []byte:
 		return string(x)
 	case []any:
-		out := make([]any, len(x))
 		for i, e := range x {
-			out[i] = normalizeQueryValue(e)
+			if x[i] = normalizeQueryValue(e, left); *left < 0 {
+				return nil
+			}
 		}
-		return out
+		return x
 	case []map[string]any:
 		out := make([]any, len(x))
 		for i, e := range x {
-			out[i] = normalizeQueryValue(e)
+			if out[i] = normalizeQueryValue(e, left); *left < 0 {
+				return nil
+			}
 		}
 		return out
 	case map[string]any:
-		out := make(map[string]any, len(x))
 		for k, e := range x {
-			out[k] = normalizeQueryValue(e)
+			if x[k] = normalizeQueryValue(e, left); *left < 0 {
+				return nil
+			}
 		}
-		return out
+		return x
 	case map[any]any:
 		out := make(map[string]any, len(x))
 		for k, e := range x {
-			out[fmt.Sprint(k)] = normalizeQueryValue(e)
+			if out[fmt.Sprint(k)] = normalizeQueryValue(e, left); *left < 0 {
+				return nil
+			}
 		}
 		return out
 	}

@@ -1416,7 +1416,14 @@ and a cut answer keeps the rest in the evidence store and names the id, so a
 long answer is a read of the store rather than the same call again. A file
 too large to read whole can still be queried, since taking part of a large
 file is exactly what the tool is for; the formats that hold many inputs are
-decoded one at a time, and the tool has a size and a time bound of its own. A
+decoded one at a time, and the tool has a size and a time bound of its own.
+The size bounds what is read and not what it becomes — an array of empty
+arrays decodes to thirty times its size, a YAML alias fans one node out to
+thousands, and an expression can build an array of a billion numbers from a
+file of one — so what a call holds is bounded too: a document by the values
+it decodes to, the call by how far it grows the heap, and an expression by
+how far it grows it past the document. Each is refused in a sentence naming
+the bound, before the time bound and long before the machine's memory. A
 file that will not parse is named with its line and column, and an
 expression that will not compile with its position in the expression, so the
 next call is a fix rather than a guess.
@@ -1486,7 +1493,10 @@ it is spent. One call decompresses at most the read ceiling, the same bound a
 plain file is read under, and a search shares that one budget across every
 compressed file it reads and says which it cut. A stream that inflates past a
 hundred to one — ordinary text compresses at three to fifteen — is refused as
-the bomb it is, with the ratio it reached. An entry named with `..` or an
+the bomb it is, with the ratio it reached. The ratio is judged on the bytes
+the inflation actually read and wrote, not only on the sizes a zip's table
+declares, since the table is the archive's own word; an entry that holds
+more than it declares is read no further than its declaration. An entry named with `..` or an
 absolute path is listed exactly as written and marked, and is never joined to
 a path on disk: an entry is only ever looked up by its name inside the
 archive. A link inside an archive is named with its target and not followed,
