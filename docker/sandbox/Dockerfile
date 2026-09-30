@@ -16,8 +16,11 @@ LABEL org.opencontainers.image.source="https://github.com/rfizzle/shhh"
 
 # A sandbox has no network by default, so nothing can be installed once it is
 # running: whatever a session may need to build and test is here already.
-# Compilers are left out on purpose; a project that needs one names its own
-# image in sandbox.container_image.
+# Compilers and a project's own linters and scanners are left out on
+# purpose: a checkout declares the tools its work needs in
+# .shhh/toolchain.toml, and a project that wants a different base altogether
+# names its own image in sandbox.container_image.
+# See docs/capabilities/containment.md#a-checkout-declares-the-toolchain-its-work-needs.
 RUN apk add --no-cache \
         bash ca-certificates-bundle curl fd git go-1.26 jq make \
         nodejs-24 npm python-3.13 ripgrep

@@ -23,8 +23,10 @@ var contextFilenames = []string{filepath.Join(".shhh", "project.md"), "AGENTS.md
 // inside it — where `shhh init --project` writes and what a session reads
 // first — ConfigFile the settings a checkout keeps beside them, HooksFile
 // the commands it asks a session to run at its own seams, PromptsDir the
-// wordings it replaces shhh's own with, and TodoProfileDir the profile its
-// backlog is written in and worked under, all relative to the checkout.
+// wordings it replaces shhh's own with, TodoProfileDir the profile its
+// backlog is written in and worked under, and ToolchainFile the tools its
+// own checks need that the sandbox image does not carry, all relative to the
+// checkout.
 //
 // The wordings are a directory of files by convention rather than keys,
 // because the settings file may not point at a file anywhere on the machine
@@ -39,6 +41,7 @@ const (
 	HooksFile      = ".shhh/hooks.json"
 	PromptsDir     = ".shhh/prompts"
 	TodoProfileDir = ".shhh/todo/profile"
+	ToolchainFile  = ".shhh/toolchain.toml"
 )
 
 // Root is the directory a checkout's shhh state belongs to: the nearest

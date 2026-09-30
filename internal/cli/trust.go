@@ -191,7 +191,7 @@ func newTrustCmd() *cobra.Command {
 		Use:   "trust [off]",
 		Short: "Let this checkout's skills, agent profiles, quality suites and servers load",
 		Long: "Record that the checkout you are standing in may put what it declares into a session: its skills, " +
-			"agent profiles, quality suites, hooks, MCP servers, settings, wordings and backlog profile. They run as you. " +
+			"agent profiles, quality suites, hooks, MCP servers, settings, wordings, backlog profile and toolchain. They run as you. " +
 			"The answer is about the checkout, so it holds while those files change; the next session after a change " +
 			"says once what moved. `shhh trust off` withdraws it.",
 		Args: func(cmd *cobra.Command, args []string) error {

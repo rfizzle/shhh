@@ -871,15 +871,18 @@ about.
 A clone arrives with more than code. It can name skills for the model to
 activate, agent profiles carrying their own permission sets, quality suites
 with command text in them, hooks to run at the session's own seams
-([`hooks.md`](hooks.md#where-a-hook-is-written)), MCP servers to start, and
-settings that say which commands run without asking — and every one of those runs as whoever
-cloned it. None of them load until you have said so.
+([`hooks.md`](hooks.md#where-a-hook-is-written)), MCP servers to start,
+settings that say which commands run without asking, and install lines that
+prepare the place its commands run in
+([`containment.md`](containment.md#a-checkout-declares-the-toolchain-its-work-needs))
+— and every one of those runs as whoever cloned it. None of them load until you have said so.
 
 It is one answer about the whole checkout, given once: `shhh trust`, `[a]`
 on the doctor's trust row, or `/trust` in a session. It covers
 `.shhh/skills`, `.agents/skills`, `.claude/skills`, `.shhh/agents`,
 `.shhh/quality.json`, `.shhh/hooks.json`, `.shhh/mcp.json`, `.mcp.json`,
-`.shhh/config.toml`, `.shhh/prompts` and `.shhh/todo/profile`. The answer
+`.shhh/config.toml`, `.shhh/prompts`, `.shhh/todo/profile` and
+`.shhh/toolchain.toml`. The answer
 is keyed on the checkout and held until you withdraw it — `shhh trust off`,
 or `/trust off` — so the files it covers are yours to edit, and editing them
 does not ask again. The answer is kept outside the checkout, in the local

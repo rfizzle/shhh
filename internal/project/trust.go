@@ -21,7 +21,9 @@ package project
 // sentence out of every run in every clone. A backlog profile is that same
 // text plus the shape of the run that sends it — which steps there are, what
 // each may do to the tree, where the person is asked — so it is in the set
-// on both counts.
+// on both counts. A toolchain declaration is install lines that will run to
+// prepare the place a session's commands run in, so it is in the set as
+// command text, like a suite.
 
 import (
 	"crypto/sha256"
@@ -42,14 +44,15 @@ import (
 type Kind string
 
 const (
-	KindSkills   Kind = "skills"
-	KindAgents   Kind = "agent profiles"
-	KindGate     Kind = "quality suites"
-	KindHooks    Kind = "hooks"
-	KindServers  Kind = "MCP servers"
-	KindSettings Kind = "settings"
-	KindPrompts  Kind = "wordings"
-	KindProfile  Kind = "backlog profile"
+	KindSkills    Kind = "skills"
+	KindAgents    Kind = "agent profiles"
+	KindGate      Kind = "quality suites"
+	KindHooks     Kind = "hooks"
+	KindServers   Kind = "MCP servers"
+	KindSettings  Kind = "settings"
+	KindPrompts   Kind = "wordings"
+	KindProfile   Kind = "backlog profile"
+	KindToolchain Kind = "toolchain"
 )
 
 // resource is one kind and the paths, relative to the root, it is read from.
@@ -73,6 +76,7 @@ var resources = []resource{
 	{KindSettings, []string{ConfigFile}},
 	{KindPrompts, []string{PromptsDir}},
 	{KindProfile, []string{TodoProfileDir}},
+	{KindToolchain, []string{ToolchainFile}},
 }
 
 // Store is where the answer is kept: outside the checkout, because a file in

@@ -536,6 +536,64 @@ only once the release has pushed the image, so a `make build` carries none and
 container sandboxes stay unavailable until the setting names one, which
 `shhh doctor` says.
 
+## A checkout declares the toolchain its work needs
+
+The image carries the toolchains most projects build with and nothing a
+particular project's checks add on top: a Go project that lints with
+`golangci-lint` and scans with `gosec` finds neither, and with the network
+off there is nothing a running container can fetch them with. So a checkout
+names what its work needs, once, in `.shhh/toolchain.toml`:
+
+```toml
+packages = ["shellcheck"]
+install = [
+  "go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.5.0",
+  "go install github.com/securego/gosec/v2/cmd/gosec@v2.21.4",
+]
+hosts = ["proxy.golang.org", "sum.golang.org"]
+check = ["golangci-lint", "gosec", "shellcheck"]
+```
+
+- `packages` are names in the base image's own package index, alone or as
+  `name=version`.
+- `install` are command lines, one install each, every package on them at one
+  exact version.
+- `hosts` are the registries an install run on the host may reach — host names
+  alone, read exactly as a contained command's host list reads them.
+- `check` are the binaries the work expects to find on `PATH`.
+
+The file is read whole or not at all. A key it does not know, a host that is
+not a host name, a check that is a path rather than a program, or an install
+line whose pin cannot be read is refused when the file is read, and the
+refusal quotes the entry. A declaration that quietly lost a line would
+prepare a place to work without the tool that line was for, and the first
+anyone would hear of it is a check failing inside it. Reading and checking
+the file is what exists today; nothing yet prepares an image from it or
+checks a session's `PATH` against it.
+
+**An install line names one exact version, or it is refused.** A place to
+work prepared from the declaration is kept under the file's bytes, so it is
+prepared once and not on every run — and that is only true while the same
+bytes mean the same tools. `@latest`, `@master`, `@v1`, a bare `apk add jq`,
+`pip install ruff` with no `==`, `npm i -g prettier` with no `@version`, or
+anything that installs from a requirements file, a branch or a working tree,
+means something different next month under an unchanged line, and a cache
+keyed on the line would go on serving last month's tool. So a line is
+accepted only where the pin can be read: one command, with no chain, pipe,
+redirection, substitution or quote, from an installer whose arguments say
+the version — `go install`, `apk add`, `pip install` (and `pip3`, `python -m
+pip`, `pipx`), `npm install` or `pnpm add`, and `cargo install`. Any other
+line is refused rather than guessed at, since a pin that cannot be read is
+one nobody can vouch for.
+
+The declaration is command text that runs as you, so it is part of what a
+checkout has to be trusted for
+([`approvals-and-safety.md`](approvals-and-safety.md#a-checkout-declares-what-it-runs)):
+in a checkout you have not answered for it is not read at all, and it is
+named among what was held back. It has to be a file in the checkout, not a
+link, because the trust answer records a link as the link and an edit to
+what it pointed at would never be told.
+
 ## A cancelled command takes its children with it
 
 Every captured command is a shell, and the work is that shell's children.
