@@ -67,6 +67,12 @@ func RootArgs(root, name string, args json.RawMessage) (json.RawMessage, error) 
 			return args, nil
 		}
 		m["path"] = root
+	case !filepath.IsAbs(p) && strings.Contains(p, "!/"):
+		// An archive entry, `x.zip!/path/in/it`: only the archive is a path
+		// on disk. Join would clean the whole string, and `x.zip!/../y`
+		// would come back as the file y beside the archive — a read of the
+		// disk under a name the model meant as a name inside the archive.
+		m["path"] = root + string(filepath.Separator) + p
 	case !filepath.IsAbs(p):
 		m["path"] = filepath.Join(root, p)
 	}

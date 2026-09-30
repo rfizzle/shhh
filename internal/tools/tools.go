@@ -320,6 +320,7 @@ var readFile = Definition{
 			"Read the whole file by default — it is one call, and reading it in small windows is not cheaper. " +
 			"start_line/end_line are for continuing through a file too large to return at once, which the result says explicitly when it happens; tail_lines reads the end of a file, such as a log's last entries, numbered as in the file. " +
 			"A result that shows part of a file opens with a line giving the whole file's line and byte count. " +
+			"An entry inside a .zip, .jar, .tar, .tar.gz or .tgz archive is read as `archive.zip!/path/in/it`, and a .gz file as the text it decompresses to — nothing is extracted, one call decompresses at most 10 MB, and an archive inflating past 100 to 1 is refused. " +
 			"A file over the size ceiling is answered with its size, its line count and, for Markdown, its headings instead of its contents — search it for what you need — and a binary file comes back as a one-line notice of what it is, images attached where the model can see one.",
 		Parameters: json.RawMessage(`{
 			"type": "object",
@@ -364,7 +365,24 @@ func (r *Recorder) executeReadFile(raw json.RawMessage) (string, error) {
 		tail = *args.TailLines
 	}
 
-	data, notice, err := readForModel(args.Path)
+	// An archive's entry and a .gz are read as the text they hold, which is
+	// not the file on disk: neither is recorded as seen. A record of the
+	// entry's bytes under the archive's path, or of the decompressed text
+	// under the .gz's, would be a fingerprint of content the file does not
+	// have — every later write to it refused as stale, or worse, a whole
+	// read vouching for a file the model never saw.
+	var data []byte
+	var notice string
+	var err error
+	onDisk := false
+	if archive, entry, ok := splitArchivePath(args.Path); ok {
+		data, notice, err = readArchiveEntry(archive, entry)
+	} else if isGzipFile(args.Path) {
+		data, notice, err = readGzipForModel(args.Path)
+	} else {
+		data, notice, err = readForModel(args.Path)
+		onDisk = true
+	}
 	if err != nil {
 		return "", err
 	}
@@ -432,7 +450,9 @@ func (r *Recorder) executeReadFile(raw json.RawMessage) (string, error) {
 	// file moved, and a window is still a reading of the file it came from.
 	// A tail read is a window whatever it covered: it was asked for the end,
 	// and a whole-file write built on it is built on the end.
-	r.noteShown(args.Path, data, !windowed && !truncated)
+	if onDisk {
+		r.noteShown(args.Path, data, !windowed && !truncated)
+	}
 
 	return content, nil
 }
@@ -525,6 +545,9 @@ func readForModel(path string) (data []byte, notice string, err error) {
 	}
 	head = head[:n]
 	if mediaType, text := sniffText(head); !text {
+		if archiveKindOf(path) != notArchive {
+			return nil, archiveNotice(path, info.Size()), nil
+		}
 		return nil, binaryNotice(path, mediaType, head, f, info.Size()), nil
 	}
 	if info.Size() > MaxReadFileSize {
@@ -623,7 +646,8 @@ var listDirectory = Definition{
 		Name: ListDirectoryName,
 		Description: "List files and directories at a given path. Returns one entry per line with type prefix (file: or dir:), and each file's size after a tab, so a file can be sized before it is opened. " +
 			"Reports .git, node_modules and vendor without descending into them, and leaves out anything .gitignore names — " +
-			"list an ignored directory by naming it directly if you need to see inside it.",
+			"list an ignored directory by naming it directly if you need to see inside it. " +
+			"A .zip, .jar, .tar, .tar.gz or .tgz file lists like a directory — its entries with their decompressed sizes, depth applying, `archive.zip!/dir` for one directory in it — and an archive inside it is listed, not opened.",
 		Parameters: json.RawMessage(`{
 			"type": "object",
 			"properties": {
@@ -657,7 +681,14 @@ func executeListDirectory(raw json.RawMessage) (string, error) {
 	}
 
 	var lines []string
-	err := walkDir(args.Path, "", args.Depth, project.LoadIgnore(args.Path), &lines)
+	var err error
+	if archive, inner, ok := splitArchivePath(args.Path); ok {
+		lines, err = listArchive(archive, inner, args.Depth)
+	} else if info, statErr := os.Stat(args.Path); statErr == nil && info.Mode().IsRegular() && archiveKindOf(args.Path) != notArchive {
+		lines, err = listArchive(args.Path, "", args.Depth)
+	} else {
+		err = walkDir(args.Path, "", args.Depth, project.LoadIgnore(args.Path), &lines)
+	}
 	if err != nil {
 		return "", err
 	}

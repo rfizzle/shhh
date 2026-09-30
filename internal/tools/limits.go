@@ -138,6 +138,18 @@ const (
 	// MaxListEntries caps how many entries list_directory returns.
 	MaxListEntries = 500
 
+	// MaxArchiveRatio is the most a compressed stream may inflate — output
+	// bytes per compressed byte — before it is refused as a bomb, and
+	// ArchiveRatioFloor is how much output there has to be before the
+	// ratio is judged at all. Text and JSON gzip at three to fifteen to one
+	// and a repetitive log at thirty or forty; a decompression bomb is built
+	// at hundreds to a thousand. Below the floor a small file of one byte
+	// repeated compresses past any ratio and costs nothing to read. How much
+	// one call decompresses in all is the read ceiling, MaxReadFileSize, the
+	// same bound a plain file is read under (archive.go).
+	MaxArchiveRatio   = 100
+	ArchiveRatioFloor = 1 << 20
+
 	// MaxGlobResults caps how many file paths glob returns.
 	MaxGlobResults = 500
 

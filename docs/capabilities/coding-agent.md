@@ -1447,6 +1447,39 @@ does not stand in the way of the session writing to it, and the answer on it
 carries one line pointing at the dashboard, which already answers most of
 what is asked of that record.
 
+An archive or a compressed file is the same question again — a release
+artifact, a fixture tarball, yesterday's rotated log — asked through
+`unzip -l`, `tar tzf` and `zcat | grep`. Those are answered by the readers a
+session already has rather than by a new tool, because the answer has the
+shape those readers already give. Listing a `.zip`, `.jar`, `.tar`,
+`.tar.gz` or `.tgz` lists it as a directory is listed: its entries with
+their decompressed sizes, to the depth asked for, and a directory inside it
+named as `archive.zip!/dir`. One entry is read as `archive.zip!/path/in/it`,
+numbered as any file is. A single-file `.gz` is read, and searched, as the
+text it decompresses to. The listing is one call and an entry is one call,
+and nothing is extracted: no temporary file, no directory, no second step to
+clean up.
+
+Because the readers are base tools every session has, the model is told in
+their own descriptions — one clause on the file reader for the `!/` form and
+the `.gz`, one on the listing for archives listing like directories — and
+there is no toolbox line: a toolbox line is how the model learns a tool the
+session may or may not have, and these it always has.
+
+The input is somebody else's file, so every reading of it is bounded before
+it is spent. One call decompresses at most the read ceiling, the same bound a
+plain file is read under, and a search shares that one budget across every
+compressed file it reads and says which it cut. A stream that inflates past a
+hundred to one — ordinary text compresses at three to fifteen — is refused as
+the bomb it is, with the ratio it reached. An entry named with `..` or an
+absolute path is listed exactly as written and marked, and is never joined to
+a path on disk: an entry is only ever looked up by its name inside the
+archive. A link inside an archive is named with its target and not followed,
+and an archive inside an archive is listed and never opened. What was read
+out of an archive or a `.gz` is not the file on disk, so it is not recorded
+as a reading of that file: an edit to the archive is not vouched for by a
+look at one of its entries.
+
 ## The agent knows where and when it is standing
 
 The session already surveys the checkout before the first keystroke — the

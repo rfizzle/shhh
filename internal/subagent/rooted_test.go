@@ -35,6 +35,20 @@ func TestRootArgs_RelativeJoinsRoot(t *testing.T) {
 	}
 }
 
+// An archive entry's name is not a path on disk, so rooting it must not clean
+// it: `x.zip!/../y` names an entry, and cleaned it would name the file y
+// beside the archive in the child's copy.
+func TestRootArgs_AnArchiveEntryIsNotCleaned(t *testing.T) {
+	root := t.TempDir()
+	p, err := rootedPath(t, root, "read_file", `{"path":"dist/x.zip!/../y.txt"}`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := root + string(filepath.Separator) + "dist/x.zip!/../y.txt"; p != want {
+		t.Fatalf("got %s, want %s", p, want)
+	}
+}
+
 // The database reader takes a path like the file reader, so a writer's
 // relative path names the database in its own copy.
 func TestRootArgs_SqliteReadsTheChildsCopy(t *testing.T) {

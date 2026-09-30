@@ -88,6 +88,71 @@ type searchArgs struct {
 	// the machine has.
 	context int
 	limit   int
+
+	// inflate is the call's budget for decompressing .gz files, shared by
+	// every file the call reads.
+	inflate *inflateBudget
+}
+
+// inflateBudget is how much one search may decompress across every .gz it
+// reads: the read ceiling, once per call, not once per file — a directory of
+// rotated logs is otherwise ten megabytes each. What a bound cut or refused
+// is said at the end of the answer, since a search that quietly read half a
+// file answers a question nobody asked.
+type inflateBudget struct {
+	left    int64
+	notes   []string
+	skipped int
+}
+
+func newInflateBudget() *inflateBudget { return &inflateBudget{left: MaxReadFileSize} }
+
+// read decompresses one .gz under what is left of the budget, and returns
+// the text to search — possibly only its head — or an error for a file that
+// is not searched at all.
+func (b *inflateBudget) read(path string) (string, error) {
+	if b.left <= 0 {
+		b.skipped++
+		return "", errPastCeiling
+	}
+	data, _, err := inflateGzip(path, b.left)
+	b.left -= int64(len(data))
+	var ratio *archiveRatioError
+	switch {
+	case errors.As(err, &ratio):
+		b.notes = append(b.notes, fmt.Sprintf("… (%s not searched: %s)", path, ratio.Error()))
+		return "", err
+	case errors.Is(err, errPastCeiling):
+		b.notes = append(b.notes, fmt.Sprintf("… (%s searched only in its first %s decompressed: one search decompresses at most %s)",
+			path, provider.HumanSize(len(data)), provider.HumanSize(MaxReadFileSize)))
+	case err != nil:
+		return "", err
+	}
+	if _, text := sniffText(data[:min(len(data), SniffBytes)]); len(data) == 0 || !text {
+		return "", errors.New("not text")
+	}
+	return string(data), nil
+}
+
+// tail is the lines a search's answer ends with for what its budget cut.
+func (b *inflateBudget) tail() []string {
+	if b == nil {
+		return nil
+	}
+	out := b.notes
+	if b.skipped > 0 {
+		out = append(out, fmt.Sprintf("… (%d more compressed %s not searched: one search decompresses at most %s)",
+			b.skipped, noun(b.skipped, "file", "files"), provider.HumanSize(MaxReadFileSize)))
+	}
+	return out
+}
+
+// withInflateNotes adds the budget's lines to a formatted answer.
+func withInflateNotes(out string, args searchArgs) string {
+	if tail := args.inflate.tail(); len(tail) > 0 {
+		return out + "\n" + strings.Join(tail, "\n")
+	}
+	return out
 }
 
 // lookupRg reports where ripgrep lives, if it is on PATH. A variable so tests
@@ -196,18 +261,32 @@ func executeSearch(raw json.RawMessage) (string, error) {
 		return "", err
 	}
 
-	if _, err := os.Stat(args.Path); err != nil {
+	info, err := os.Stat(args.Path)
+	if err != nil {
 		return "", fmt.Errorf("cannot access path: %w", err)
 	}
+	args.inflate = newInflateBudget()
 
 	if args.OnlyMatching {
 		return searchDistinct(re, include, args)
 	}
 
-	if rg, ok := lookupRg(); ok {
+	// Ripgrep reads a .gz as the bytes it is, so a named one is searched
+	// by the walker, and a directory's are searched by the walker after
+	// ripgrep has answered for everything else (ripgrepArgv leaves them
+	// out). Both backends then read one file the same way.
+	if rg, ok := lookupRg(); ok && !isGzipFile(args.Path) {
 		results, matches, err := searchWithRipgrep(rg, args)
 		if err == nil {
-			return formatSearchResults(results, matches, args), nil
+			if info.IsDir() {
+				for _, p := range ripgrepGzipFiles(rg, include, args) {
+					if matches >= args.limit {
+						break
+					}
+					results, matches = searchFile(p, re, args, results, matches, args.limit)
+				}
+			}
+			return withInflateNotes(formatSearchResults(results, matches, args), args), nil
 		}
 		// Ripgrep failed (e.g. a pattern its regex engine rejects): fall
 		// through to the pure-Go walker.
@@ -217,7 +296,7 @@ func executeSearch(raw json.RawMessage) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return formatSearchResults(results, matches, args), nil
+	return withInflateNotes(formatSearchResults(results, matches, args), args), nil
 }
 
 // includeMatcher tests a path relative to the search root against the
@@ -376,7 +455,45 @@ func ripgrepArgv(args searchArgs) []string {
 	if args.Include != "" {
 		argv = append(argv, "--glob", args.Include)
 	}
-	return argv
+	// Last, so it outranks an include of *.gz: those files are the walker's
+	// (ripgrepGzipFiles), and ripgrep reading them as bytes as well would
+	// answer for the same file twice.
+	return append(argv, "--iglob", "!*.gz")
+}
+
+// ripgrepGzipFiles names the .gz files under a directory that ripgrepArgv
+// left out, for the walker to search as their text: ripgrep chooses them, so
+// the ignore rules are the ones every other file was chosen by, and the
+// include glob and the walker's size and binary tests are then asked here,
+// as walkSearch asks them.
+func ripgrepGzipFiles(rg string, include *includeMatcher, args searchArgs) []string {
+	argv := []string{
+		"--files", "--no-messages", "--null", "--hidden",
+		"--glob", "!.git", "--glob", "!node_modules", "--glob", "!vendor",
+		"--iglob", "*.gz", "--", args.Path,
+	}
+	out, _ := exec.Command(rg, argv...).Output()
+	var files []string
+	for _, p := range strings.Split(string(out), "\x00") {
+		if p = strings.Trim(p, "\n"); p == "" || !strings.HasSuffix(strings.ToLower(p), ".gz") {
+			continue
+		}
+		if include != nil {
+			rel, err := filepath.Rel(args.Path, p)
+			if err != nil || !include.match(rel) {
+				continue
+			}
+		}
+		if fi, err := os.Stat(p); err != nil || fi.Size() > MaxSearchFileBytes {
+			continue
+		}
+		if !isGzipFile(p) && isBinary(p) {
+			continue
+		}
+		files = append(files, p)
+	}
+	sort.Strings(files)
+	return files
 }
 
 // ripgrepFiles asks ripgrep only which files hold a match. It is how
@@ -479,7 +596,7 @@ func walkSearch(include *includeMatcher, args searchArgs, visit func(path string
 		if fi, err := d.Info(); err != nil || fi.Size() > MaxSearchFileBytes {
 			return nil
 		}
-		if isBinary(p) {
+		if !isGzipFile(p) && isBinary(p) {
 			return nil
 		}
 		more = visit(p)
@@ -494,7 +611,10 @@ func walkSearch(include *includeMatcher, args searchArgs, visit func(path string
 // readSearchFile is the one place the walker reads a file's text, for every
 // mode, so a reader that has to turn a file into text first wraps this and
 // nothing else.
-func readSearchFile(path string) (string, error) {
+func readSearchFile(path string, args searchArgs) (string, error) {
+	if args.inflate != nil && isGzipFile(path) {
+		return args.inflate.read(path)
+	}
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return "", err
@@ -549,7 +669,7 @@ func matchedLines(text string, lines []string, re *regexp.Regexp, args searchArg
 // match count, which is what the cap is measured in — context lines ride
 // along with the match that earned them.
 func searchFile(path string, re *regexp.Regexp, args searchArgs, results []string, matches, limit int) ([]string, int) {
-	text, err := readSearchFile(path)
+	text, err := readSearchFile(path, args)
 	if err != nil {
 		return results, matches
 	}
@@ -625,7 +745,7 @@ type distinctMatch struct {
 func searchDistinct(re *regexp.Regexp, include *includeMatcher, args searchArgs) (string, error) {
 	tally := map[string]*distinctMatch{}
 	count := func(path string) {
-		text, err := readSearchFile(path)
+		text, err := readSearchFile(path, args)
 		if err != nil {
 			return
 		}
@@ -645,7 +765,7 @@ func searchDistinct(re *regexp.Regexp, include *includeMatcher, args searchArgs)
 	}
 
 	walked := false
-	if rg, ok := lookupRg(); ok {
+	if rg, ok := lookupRg(); ok && !isGzipFile(args.Path) {
 		if files, err := ripgrepFiles(rg, args); err == nil {
 			// The walker leaves an oversized file out of a directory's
 			// search and reads a file it was pointed at, so this does too.
@@ -659,6 +779,11 @@ func searchDistinct(re *regexp.Regexp, include *includeMatcher, args searchArgs)
 				}
 				count(p)
 			}
+			if dir {
+				for _, p := range ripgrepGzipFiles(rg, include, args) {
+					count(p)
+				}
+			}
 			walked = true
 		}
 	}
@@ -667,7 +792,7 @@ func searchDistinct(re *regexp.Regexp, include *includeMatcher, args searchArgs)
 			return "", err
 		}
 	}
-	return formatDistinct(tally, args), nil
+	return withInflateNotes(formatDistinct(tally, args), args), nil
 }
 
 // distinctTexts is every non-empty text re matches in a file, a line at a

@@ -397,7 +397,7 @@ func TestSearch_RipgrepFilesOnlyParsing(t *testing.T) {
 
 func TestSearch_RipgrepArgvPerMode(t *testing.T) {
 	argvFile := filepath.Join(t.TempDir(), "argv")
-	fakeRg(t, fmt.Sprintf(`printf '%%s\n' "$@" > %s`, argvFile))
+	fakeRg(t, fmt.Sprintf(`[ "$1" = --files ] && exit 0; printf '%%s\n' "$@" > %s`, argvFile))
 
 	read := func() string {
 		t.Helper()
@@ -837,7 +837,7 @@ func TestSearch_OnlyMatchingReadsTheFilesRipgrepNames(t *testing.T) {
 	dir := onlyMatchingFixture(t)
 	argvFile := filepath.Join(t.TempDir(), "argv")
 	// Names a.go only, whatever the tree holds: the answer is then a.go's.
-	fakeRg(t, fmt.Sprintf(`printf '%%s\n' "$@" > %s; printf '%%s\0' %q`, argvFile, filepath.Join(dir, "a.go")))
+	fakeRg(t, fmt.Sprintf(`[ "$1" = --files ] && exit 0; printf '%%s\n' "$@" > %s; printf '%%s\0' %q`, argvFile, filepath.Join(dir, "a.go")))
 
 	out := runSearch(t, fmt.Sprintf(`{"pattern":"ID-\\d","path":%q,"only_matching":true,"multiline":true}`, dir))
 	if want := "2 matches in 1 file: ID-1\n1 match in 1 file: ID-2"; out != want {
@@ -960,7 +960,7 @@ func TestSearch_MultilineOnlyMatching(t *testing.T) {
 
 func TestSearch_RipgrepIsAskedForMultiline(t *testing.T) {
 	argvFile := filepath.Join(t.TempDir(), "argv")
-	fakeRg(t, fmt.Sprintf(`printf '%%s\n' "$@" > %s`, argvFile))
+	fakeRg(t, fmt.Sprintf(`[ "$1" = --files ] && exit 0; printf '%%s\n' "$@" > %s`, argvFile))
 	runSearch(t, fmt.Sprintf(`{"pattern":"x","path":%q,"multiline":true}`, t.TempDir()))
 	argv, err := os.ReadFile(argvFile)
 	if err != nil {
