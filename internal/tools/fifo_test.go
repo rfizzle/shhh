@@ -51,6 +51,28 @@ func TestReaders_APipeIsRefusedNotOpened(t *testing.T) {
 	}
 }
 
+// The outline reads Markdown by its extension, so a pipe named like a
+// document reaches it; it is refused before the open like every other reader.
+func TestDocumentSymbol_APipeIsRefusedNotOpened(t *testing.T) {
+	pipe := filepath.Join(t.TempDir(), "pipe.md")
+	if err := syscall.Mkfifo(pipe, 0o600); err != nil {
+		t.Skip(err)
+	}
+	done := make(chan error, 1)
+	go func() {
+		_, err := NewRecorder().Execute(DocumentSymbolName, json.RawMessage(`{"path":`+mustJSON(t, pipe)+`}`))
+		done <- err
+	}()
+	select {
+	case err := <-done:
+		if err == nil || !strings.Contains(err.Error(), "is a named pipe, not a regular file") {
+			t.Fatalf("want the refusal naming a pipe, got %v", err)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("the outline opened the pipe and waited for a writer")
+	}
+}
+
 // A pipe inside a directory is passed over by a search of the directory
 // rather than waited on or reported.
 func TestSearch_APipeInADirectoryIsPassedOver(t *testing.T) {

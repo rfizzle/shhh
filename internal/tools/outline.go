@@ -81,6 +81,9 @@ func executeDocumentSymbol(raw json.RawMessage) (string, error) {
 	if info.IsDir() {
 		return "", fmt.Errorf("%s is a directory; list_directory is the tool for one", a.Path)
 	}
+	if err := notRegular(a.Path, info); err != nil {
+		return "", err
+	}
 	f, err := os.Open(a.Path)
 	if err != nil {
 		return "", fmt.Errorf("cannot read file: %w", err)
