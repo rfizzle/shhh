@@ -23,6 +23,14 @@ func TestCompareVersions(t *testing.T) {
 		{"empty latest", "0.5.0", "", false},
 		{"invalid latest", "0.5.0", "nightly", false},
 		{"invalid current", "garbage", "v0.5.0", false},
+		// A build from a checkout is stamped by git describe, and is the
+		// release it stands past, not a pre-release of it.
+		{"past the latest tag", "v0.14.0-4-g392fe807", "v0.14.0", false},
+		{"past the latest tag, dirty", "v0.14.0-4-g392fe807-dirty", "v0.14.0", false},
+		{"on the tag, dirty", "v0.14.0-dirty", "v0.14.0", false},
+		{"past an older tag", "v0.13.0-12-gabc1234", "v0.14.0", true},
+		{"a real pre-release", "v0.15.0-rc.1", "v0.15.0", true},
+		{"past a pre-release tag", "v0.15.0-rc.1-3-gabc1234", "v0.15.0", true},
 	}
 
 	for _, tt := range tests {

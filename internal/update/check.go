@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -112,6 +113,22 @@ func BackgroundCheck(currentVersion string) {
 	}()
 }
 
+// describeSuffix is what `git describe --tags --dirty` puts after the tag a
+// build sits past: the commits since it and the abbreviated hash.
+var describeSuffix = regexp.MustCompile(`-[0-9]+-g[0-9a-f]+$`)
+
+// describedRelease is the release a build's own version names. The Makefile
+// stamps a build from a checkout with `git describe`, so a build four
+// commits past v0.14.0 is v0.14.0-4-g392fe807-dirty — and semver reads that
+// suffix as a pre-release, which sorts before v0.14.0, so the nudge told a
+// build newer than the release to update to it. The suffix is dropped and
+// the build compares as the tag it stands on; a real pre-release such as
+// v0.15.0-rc.1 keeps its own suffix, since that is part of the tag.
+func describedRelease(v string) string {
+	v = strings.TrimSuffix(v, "-dirty")
+	return describeSuffix.ReplaceAllString(v, "")
+}
+
 // fresh reports whether a cache entry still stands. An entry that recorded a
 // failure stands for a shorter window than one that recorded an answer.
 func fresh(entry *cacheEntry) bool {
@@ -123,7 +140,7 @@ func fresh(entry *cacheEntry) bool {
 }
 
 func compareVersions(current, latest string) *Result {
-	c := "v" + strings.TrimPrefix(current, "v")
+	c := "v" + strings.TrimPrefix(describedRelease(current), "v")
 	l := "v" + strings.TrimPrefix(latest, "v")
 	if !semver.IsValid(c) || !semver.IsValid(l) || semver.Compare(l, c) <= 0 {
 		return nil
