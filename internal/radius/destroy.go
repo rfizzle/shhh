@@ -138,8 +138,50 @@ const maxCarried = 4
 // line reads each command of a line in order.
 func (r *destroyReader) line(text string, depth int) {
 	for _, seg := range splitSegments(text) {
-		r.segment(tokenize(seg.text), depth)
+		for _, part := range parens(seg.text) {
+			r.segment(tokenize(part), depth)
+		}
 	}
+}
+
+// parens cuts one command at the parentheses that stand between commands: a
+// subshell's, a `case` pattern's and the ones a flow word is written against
+// (`if(rm -rf /)`). The safety table cuts a line at every parenthesis, and a
+// reading that cut at fewer would let `case x in x) rm -rf /;; esac` be
+// flagged there and walked past here. A parenthesis that is quoted, escaped
+// or inside a `$(…)` is left where it is, since the substitution is what the
+// word-level reading marks as something the shell expands.
+func parens(text string) []string {
+	var out []string
+	var cur strings.Builder
+	var quote rune
+	subst := 0
+	runes := []rune(text)
+	for i := 0; i < len(runes); i++ {
+		r := runes[i]
+		switch {
+		case quote != 0:
+			if r == quote {
+				quote = 0
+			}
+		case r == '\'' || r == '"':
+			quote = r
+		case r == '\\' && i+1 < len(runes):
+			cur.WriteRune(r)
+			i++
+			r = runes[i]
+		case r == '(' && (subst > 0 || i > 0 && runes[i-1] == '$'):
+			subst++
+		case r == ')' && subst > 0:
+			subst--
+		case r == '(' || r == ')':
+			out = append(out, cur.String())
+			cur.Reset()
+			continue
+		}
+		cur.WriteRune(r)
+	}
+	return append(out, cur.String())
 }
 
 // changesDir are the commands after which a relative path no longer means

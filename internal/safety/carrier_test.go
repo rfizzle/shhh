@@ -28,6 +28,12 @@ func TestCheck_BehindACarrierOrAFlowWord(t *testing.T) {
 		{"timeout --preserve-status 1m git push --force", "git push --force"},
 		{"sudo nice -n 5 timeout 5 rm -rf /", "rm -rf /"},
 		{"/usr/bin/nice rm -rf ./dist", "rm -r -f"},
+		{"exec rm -rf /tmp/x", "rm -r -f"},
+		{"exec rm -rf /", "rm -rf /"},
+		{"stdbuf -oL rm -rf ~", "rm -rf ~"},
+		{"stdbuf -o L -e 0 git reset --hard", "git reset --hard"},
+		{"setsid rm -rf /", "rm -rf /"},
+		{"setsid -f find . -delete", "find -delete"},
 
 		{"if x; then rm -rf /; fi", "rm -rf /"},
 		{"if true; then :; else rm -rf ./dist; fi", "rm -r -f"},
@@ -66,6 +72,9 @@ func TestCheck_ACarrierOrAFlowWordInFrontOfAPlainCommand(t *testing.T) {
 		"nice -n 5 go test ./...",
 		"timeout 30 make test",
 		"ionice -c3 tar czf out.tgz src",
+		"exec go run ./cmd/app",
+		"stdbuf -oL tail -f app.log",
+		"setsid make serve",
 		"echo then rm -rf is how you lose a tree",
 		"git commit -m 'if in doubt'",
 	} {
@@ -116,5 +125,38 @@ func TestCheck_ADownloadRunBehindAFlowWord(t *testing.T) {
 	}
 	if !found {
 		t.Errorf("Findings(%q) = %v, want the downloaded script run", command, Findings(command))
+	}
+}
+
+// A variable is a word and not a separator: the operand it names reaches the
+// row that asks for one, and the variable's name is never offered as a
+// command of its own, which is what made `echo $mkfs` a format.
+func TestCheck_AVariableIsAnOperand(t *testing.T) {
+	cases := []struct {
+		command string
+		want    string
+	}{
+		{"rm -rf $DIR", "rm -r -f"},
+		{`rm -rf "$DIR"`, "rm -r -f"},
+		{"chmod -R 777 $HOME", "chmod -R 777"},
+		{"chmod 777 $F", "chmod 777"},
+		{"mkfs.ext4 $DEV", "mkfs"},
+		{"find $DIR -delete", "find -delete"},
+	}
+	for _, c := range cases {
+		if ws := Check(c.command); len(ws) == 0 || ws[0].Pattern != c.want {
+			t.Errorf("Check(%q) = %v, want %q", c.command, ws, c.want)
+		}
+	}
+	for _, command := range []string{"echo $x", "echo $mkfs", "echo $rm -rf", "chmod -R $MODE dir"} {
+		if ws := Check(command); len(ws) > 0 {
+			t.Errorf("Check(%q) = %v, want nothing", command, ws)
+		}
+	}
+	if got := Commands("echo $x"); !slices.Equal(got, []string{"echo $x"}) {
+		t.Errorf(`Commands("echo $x") = %q, want the one command`, got)
+	}
+	if got := Commands("echo $(rm -rf /)"); !slices.Contains(got, "rm -rf /") {
+		t.Errorf(`Commands("echo $(rm -rf /)") = %q, want the substitution's command among them`, got)
 	}
 }

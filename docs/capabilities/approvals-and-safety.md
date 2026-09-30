@@ -391,12 +391,18 @@ at the first flag, so what follows an escalation is offered at every word:
 shhh cannot tell the value of `-u` from the command behind it without
 knowing sudo's option table, and guessing in the safe direction costs one
 visible refusal. A wrapper that changes only how a command runs — `nice`,
-`ionice`, `timeout` — is read the same way, since its options and
-`timeout`'s duration are as opaque as sudo's. The shell's own flow words are
-read past too: `if x; then rm -rf /; fi`, `while :; do rm -rf ~; done`,
-`! rm -rf /` and `{ rm -rf /; }` each run an rm, and a reader that took `then`
-or `!` for the program saw nothing to flag. A flow word takes no options, so
-the word after it is the command.
+`ionice`, `timeout`, `stdbuf`, `setsid`, `exec` — is read the same way, since
+its options and `timeout`'s duration are as opaque as sudo's. The shell's own
+flow words are read past too: `if x; then rm -rf /; fi`, `while :; do rm -rf
+~; done`, `! rm -rf /` and `{ rm -rf /; }` each run an rm, and a reader that
+took `then` or `!` for the program saw nothing to flag. A flow word takes no
+options, so the word after it is the command, and a parenthesis — a
+subshell's, a `case` pattern's — ends one command and begins the next. A
+variable is a word like any other: `rm -rf $DIR` is a recursive delete of
+whatever it names, not a delete of nothing followed by a program called
+`DIR`. The rule [below](#some-targets-are-never-destroyed) reads past the
+same wrappers, flow words and parentheses, so a target it can prove is
+refused behind any spelling here that the card flags.
 
 Force is not what makes a recursive delete permanent — it only stops `rm`
 asking about a write-protected file — so recursion alone is enough to move

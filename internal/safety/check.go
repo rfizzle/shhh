@@ -178,8 +178,8 @@ var rules = []rule{{
 	// a person calls whichever member they mean directly, so the row is
 	// every name spelled `mkfs` or `mkfs.<type>`. What it formats is gone
 	// whatever options it was given, and the verb alone is the condition:
-	// the split cuts a line at `$`, so `mkfs.ext4 $DEV` reaches the row
-	// with no operand at all, and asking for one lost exactly that call.
+	// `mkfs.ext4 "${DEV}"` reaches the row with its operand cut off at the
+	// brace, and asking for one would lose exactly that call.
 	name:   "mkfs",
 	verb:   []string{"mkfs"},
 	family: true,
@@ -335,6 +335,10 @@ func runsADownloadedScript(line string) bool {
 	// verb is the program the current command runs, empty until it is
 	// reached; fetching is whether that program is one of the fetchers.
 	verb, fetching := "", false
+	// timing is whether a `timeout` in front of the command has yet to be
+	// handed its duration: `timeout 5 sh i.sh` runs sh, and the bare number
+	// in front of it is not a program.
+	timing := false
 	for i := 0; i < len(words); i++ {
 		w := strings.Trim(words[i], `'"`)
 		switch {
@@ -348,9 +352,22 @@ func runsADownloadedScript(line string) bool {
 			i++
 		case strings.Trim(w, separators) == "":
 			// An operator ends the command before it.
-			verb, fetching = "", false
+			verb, fetching, timing = "", false, false
 		case verb == "":
-			if strings.HasPrefix(w, "-") || prefixes[BaseName(w)] || flowWords[w] || strings.Contains(w, "=") {
+			switch {
+			case BaseName(w) == "timeout":
+				timing = true
+				continue
+			case timing && strings.HasPrefix(w, "-"):
+				// The two options that take their value as the next word.
+				if w == "-s" || w == "-k" || w == "--signal" || w == "--kill-after" {
+					i++
+				}
+				continue
+			case timing:
+				timing = false // the duration
+				continue
+			case strings.HasPrefix(w, "-") || prefixes[BaseName(w)] || flowWords[w] || strings.Contains(w, "="):
 				continue // an option, an escalation, a flow word or an assignment
 			}
 			verb = BaseName(w)
@@ -479,8 +496,10 @@ func BaseName(w string) string {
 }
 
 // separators are the characters that can begin another command inside one
-// line.
-const separators = ";&|<>()`$\n{}"
+// line. `$` is not one: `$(` begins a command at its parenthesis, and a bare
+// `$NAME` is a word, so cutting there took the operand off `rm -rf $DIR` and
+// made `echo $x` a command called `x`.
+const separators = ";&|<>()`\n{}"
 
 func segments(line string) []string {
 	return strings.FieldsFunc(line, func(r rune) bool {
@@ -495,11 +514,14 @@ func segments(line string) []string {
 // `nice`, `ionice` and `timeout` change how the command runs and not what it
 // is, and each takes options — and `timeout` a bare duration — that cannot be
 // told from the command behind them without its option table, which is the
-// same problem an escalation's options are.
+// same problem an escalation's options are. `exec`, `stdbuf` and `setsid` are
+// the same kind of word, and the destruction reading in internal/radius
+// carries them too, so a command behind one is flagged where it is refused.
 var prefixes = map[string]bool{
 	"sudo": true, "doas": true, "command": true, "env": true,
 	"nohup": true, "time": true, "xargs": true, "eval": true,
 	"nice": true, "ionice": true, "timeout": true,
+	"exec": true, "stdbuf": true, "setsid": true,
 }
 
 // flowWords are the shell's own words that open the command behind them:

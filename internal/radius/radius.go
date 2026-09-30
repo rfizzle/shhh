@@ -385,6 +385,9 @@ var escalators = map[string]bool{"sudo": true, "doas": true}
 var harmlessVerbs = map[string]bool{
 	"echo": true, "printf": true, "true": true, "false": true, "sleep": true,
 	"exit": true, "cd": true, "export": true, ":": true,
+	// The words that close a construct run nothing of their own; what ran
+	// inside it was its own segment.
+	"fi": true, "done": true, "esac": true, "}": true,
 }
 
 // interpreters are the programs that run whatever is piped into them, so a
@@ -402,7 +405,10 @@ func (c *Command) resolveSegment(seg segment) {
 	for _, t := range redirects {
 		c.add(t)
 	}
-	for len(toks) > 0 && (argPrefixes[path.Base(toks[0].text)] || strings.Contains(toks[0].text, "=")) {
+	// A shell flow word opens the command behind it, and the verb after
+	// `then` is the one whose radius the card names — the reading the safety
+	// table and the destruction reading take of the same words.
+	for len(toks) > 0 && (argPrefixes[path.Base(toks[0].text)] || safety.FlowWord(toks[0].text) || strings.Contains(toks[0].text, "=")) {
 		if escalators[path.Base(toks[0].text)] {
 			c.Sudo = true
 		}
