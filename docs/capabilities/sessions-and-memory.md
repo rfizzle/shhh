@@ -749,6 +749,44 @@ opposite of what happened. The share that reached a write is printed next to
 the count for the same reason, because a population that stopped writing
 would otherwise look like one that got faster.
 
+### A command is recorded by what it was for
+
+A tool call is recorded by the tool's name, and for every tool but one the
+name says what it did: a `search` searched. The one it does not is the shell.
+"The model ran 443 commands" says nothing about whether those were builds
+nobody could have done another way or file reads a built-in tool would have
+answered with no card and no classifier round — and that is the question
+anybody deciding what the built-in tools lack is asking.
+
+So a command is recorded with one word for what it did: `read`, `search`,
+`list`, `write`, `edit`, `build`, `vcs` or `other`. The first five are the
+ones a built-in tool answers; the other three are the ones none does. The
+dashboard splits the window's commands by that word, beside the tool mix.
+
+**The word is read off what the line runs, never kept beside the line.** The
+command is content — it names paths — and the record is content-free by
+construction, so the word is decided where the command runs, from the same
+reading of a shell line both approval gates use, and only the word is
+stored. A line that runs several commands is filed under the strongest thing
+it did: an append through a here-document is a write however many reads came
+with it, and a test run piped into `tail` is a build. A program the reading
+does not recognise is `other` rather than a guess, and so is a script run by
+its path.
+
+**A command recorded before the word existed stays unrecorded until someone
+asks.** Those rows are counted apart from `other` — other is a reading of a
+line, and those are lines nothing read. `shhh observe classify` reads each
+one back out of the conversation this machine saved beside it, the way a
+session's page reads its targets, and writes the word onto the row: only the
+word, on this machine, as a deliberate act. A command whose conversation is
+gone, or that was recorded before messages carried a position, stays
+unrecorded, because pairing it by order alone would hand it a neighbour's
+line.
+
+The word goes to the local record and its JSON export and nowhere else — not
+to the trace a collector receives, not to the session's page, not to the
+model.
+
 ### The record is kept for a window
 
 The record is pruned the way command history and generated report pages are:

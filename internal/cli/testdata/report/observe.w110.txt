@@ -15,6 +15,13 @@
   ⚠ execute_command  8 calls · 2.4s  [25% failed]
       exit-status 2
 
+  COMMANDS
+
+  ✓ build       3 commands  [38%]
+  ✓ read        2 commands  [25%]
+  ✓ search      1 command  [12%]
+  ⊘ unrecorded  2 commands · `shhh observe classify`  [25%]
+
   FIRST WRITE
 
   ✓ search calls  median 5 · 1 of 2 sessions that called a tool

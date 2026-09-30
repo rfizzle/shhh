@@ -587,6 +587,13 @@ var migrations = []string{
 	// It is the slot's, like the summary: a conversation's own words. Empty
 	// on every slot written before it, which is a session with no list.
 	`ALTER TABLE chat_sessions ADD COLUMN steps TEXT NOT NULL DEFAULT '';`,
+
+	// What each command the model ran was for, as a word from a closed set
+	// and never the command
+	// (docs/capabilities/sessions-and-memory.md#a-command-is-recorded-by-what-it-was-for).
+	// Empty on every row written before it, which the dashboard counts as
+	// unrecorded rather than as other.
+	`ALTER TABLE agent_events ADD COLUMN purpose TEXT NOT NULL DEFAULT '';`,
 }
 
 const (

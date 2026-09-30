@@ -28,6 +28,7 @@ import (
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/todo"
+	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/spf13/cobra"
 )
@@ -533,7 +534,10 @@ func (r *observeRecorder) usagePriced(turns, tokensIn, tokensOut int64, cost flo
 	_ = r.db.UpdateAgentSession(r.id, turns, tokensIn, tokensOut, cost)
 }
 
-func (r *observeRecorder) toolCallAt(at observe.Pos, tool string, duration time.Duration, outcome, class string) {
+// toolCallAt records one call. The purpose goes to the table and not to the
+// span: the word is the dashboard's reading of the local record, and the
+// export's attribute set is closed on its own terms (otel.go).
+func (r *observeRecorder) toolCallAt(at observe.Pos, tool string, duration time.Duration, outcome, class, purpose string) {
 	if r == nil {
 		return
 	}
@@ -541,7 +545,7 @@ func (r *observeRecorder) toolCallAt(at observe.Pos, tool string, duration time.
 	ms := duration.Milliseconds()
 	_ = r.db.RecordAgentEvent(r.id, storage.AgentEvent{
 		Kind: storage.AgentEventTool, Tool: tool, DurationMs: &ms, Outcome: outcome, Reason: class,
-		Turn: at.Turn, Round: at.Round,
+		Turn: at.Turn, Round: at.Round, Purpose: purpose,
 	})
 }
 
@@ -871,8 +875,89 @@ func newObserveCmd() *cobra.Command {
 
 	purgeCmd.Flags().BoolVarP(&purgeYes, "yes", "y", false, "skip the confirmation")
 
-	cmd.AddCommand(exportCmd, sessionCmd, purgeCmd, newObserveCompareCmd(&window))
+	classifyCmd := &cobra.Command{
+		Use:   "classify",
+		Short: "Say what each command recorded before the record carried it was for",
+		Long: "Read every command recorded without a purpose word back out of the conversation this machine saved beside it, " +
+			"and write the word onto the record. Only the word is written — never the command. " +
+			"A command whose conversation is gone, or that was recorded before messages carried a position, stays unrecorded.",
+		Args: cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			since, err := parseObserveWindow(window)
+			if err != nil {
+				return err
+			}
+			db, err := openStore()
+			if err != nil {
+				return fmt.Errorf("open database: %w", err)
+			}
+			defer db.Close()
+			written, unread, err := classifyRecordedCommands(db, since)
+			if err != nil {
+				return err
+			}
+			if written == 0 && unread == 0 {
+				return report.Fprintln(cmd.OutOrStdout(), report.Empty(
+					"no unrecorded commands in the last "+window, "shhh observe"))
+			}
+			r := report.Done("classified", countOf(written, "command", "commands"))
+			if unread > 0 {
+				r.Detail = countOf(unread, "command", "commands") + " had no conversation to read"
+			}
+			return report.Fprintln(cmd.OutOrStdout(), r)
+		},
+	}
+
+	cmd.AddCommand(exportCmd, sessionCmd, classifyCmd, purgeCmd, newObserveCompareCmd(&window))
 	return cmd
+}
+
+// classifyRecordedCommands writes a purpose word onto every command the
+// window recorded without one, reading each command's line out of the
+// conversation its session saved (docs/capabilities/sessions-and-memory.md#a-command-is-recorded-by-what-it-was-for).
+// It returns how many took a word and how many could not be read.
+//
+// The pairing is observeCalls', the one the session page draws targets by:
+// a command is the nth execute_command of its turn and round on both sides.
+// A command at turn 0 is left alone even where a call sits at turn 0 too:
+// both sides wrote zero before they kept a position, so the pairing would be
+// by order across the whole session, and a compaction that dropped the
+// early calls would hand every later command its predecessor's line.
+func classifyRecordedCommands(db *storage.DB, since time.Time) (written, unread int, err error) {
+	sessions, err := db.AgentUnclassifiedCommandSessions(since)
+	if err != nil {
+		return 0, 0, fmt.Errorf("query unrecorded commands: %w", err)
+	}
+	for _, id := range sessions {
+		events, err := db.AgentCommandEvents(id)
+		if err != nil {
+			return written, unread, fmt.Errorf("query commands of session %d: %w", id, err)
+		}
+		calls, err := db.AgentSessionCalls(id)
+		if err != nil {
+			return written, unread, fmt.Errorf("query calls of session %d: %w", id, err)
+		}
+		found := newObserveCalls(calls)
+		purposes := map[int64]string{}
+		for _, e := range events {
+			call := found.next(storage.AgentExportEvent{Kind: storage.AgentEventTool,
+				Turn: e.Turn, Round: e.Round, Tool: tools.ExecCommandName})
+			if e.Purpose != "" {
+				continue
+			}
+			if e.Turn == 0 || call.Tool == "" {
+				unread++
+				continue
+			}
+			purposes[e.ID] = observe.ToolPurpose(call.Tool, call.Args)
+		}
+		n, err := db.SetAgentCommandPurposes(purposes)
+		if err != nil {
+			return written, unread, fmt.Errorf("record purposes of session %d: %w", id, err)
+		}
+		written += n
+	}
+	return written, unread, nil
 }
 
 // parseObserveWindow parses a day-granularity window like "7d" or "30d" into
@@ -904,6 +989,8 @@ type observeData struct {
 	ByModel    []storage.AgentModelUsage
 	ToolMix    []storage.AgentToolUsage
 	ToolErrors []storage.AgentToolErrorCount
+	// Commands is execute_command split by what each command was for.
+	Commands []storage.AgentCommandPurpose
 	// FirstWrites is one row per session that called a tool, carrying how
 	// much of that calling came before the session changed anything.
 	FirstWrites []storage.AgentFirstWrite
@@ -932,6 +1019,7 @@ func readObserveData(db *storage.DB, window string, since time.Time) (observeDat
 		{"usage by model", func() (err error) { data.ByModel, err = db.AgentUsageByModel(since); return }},
 		{"tool mix", func() (err error) { data.ToolMix, err = db.AgentToolMix(since); return }},
 		{"tool errors", func() (err error) { data.ToolErrors, err = db.AgentToolErrors(since); return }},
+		{"command purposes", func() (err error) { data.Commands, err = db.AgentCommandPurposes(since); return }},
 		{"first writes", func() (err error) { data.FirstWrites, err = db.AgentFirstWrites(since); return }},
 		{"decisions", func() (err error) { data.Decisions, err = db.AgentDecisions(since); return }},
 		{"turns", func() (err error) { data.Turns, err = db.AgentTurns(since); return }},
@@ -974,6 +1062,7 @@ func observeReport(data observeData) report.Report {
 		{Header: "BY DAY", Rows: observeDayRows(data.ByDay)},
 		{Header: "BY MODEL", Rows: observeModelRows(data.ByModel)},
 		{Header: "TOOLS", Rows: observeToolRows(data.ToolMix, data.ToolErrors)},
+		{Header: "COMMANDS", Rows: observeCommandRows(data.Commands)},
 		{Header: "FIRST WRITE", Rows: observeFirstWriteRows(data.FirstWrites)},
 		{Header: "DECISIONS", Rows: observeDecisionRows(data.Decisions)},
 		{Header: "TURNS", Rows: observeTurnRows(data.Turns)},
@@ -1035,6 +1124,41 @@ func observeToolRows(mix []storage.AgentToolUsage, errs []storage.AgentToolError
 			row.Consequence = strings.Join(classes[u.Tool], " · ")
 		}
 		rows = append(rows, row)
+	}
+	return rows
+}
+
+// observeCommandRows splits the commands the model ran by what each was for,
+// with each word's share of them — the reading that says how many shell
+// calls a built-in tool could have answered, taken without a single
+// command's text (docs/capabilities/sessions-and-memory.md#a-command-is-recorded-by-what-it-was-for).
+//
+// Commands recorded before the record said are a row of their own and are
+// never folded into other: other is a reading of a line, and those are lines
+// nothing read. The row names the verb that reads them.
+func observeCommandRows(purposes []storage.AgentCommandPurpose) []report.Row {
+	var total int
+	for _, p := range purposes {
+		total += p.Count
+	}
+	if total == 0 {
+		return nil
+	}
+	share := func(n int) string { return fmt.Sprintf("%.0f%%", float64(n)*100/float64(total)) }
+	var rows []report.Row
+	var unrecorded int
+	for _, p := range purposes {
+		if p.Purpose == "" {
+			unrecorded = p.Count
+			continue
+		}
+		rows = append(rows, report.Row{State: report.Pass, Name: p.Purpose,
+			Subject: countOf(p.Count, "command", "commands"), Outcome: share(p.Count)})
+	}
+	if unrecorded > 0 {
+		rows = append(rows, report.Row{State: report.Skip, Name: "unrecorded",
+			Subject: countOf(unrecorded, "command", "commands"),
+			Detail:  "`shhh observe classify`", Outcome: share(unrecorded)})
 	}
 	return rows
 }

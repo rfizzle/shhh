@@ -502,7 +502,8 @@ func (h headlessObserver) call(tc provider.ToolCall) {
 // happened to the run and not a property of the call.
 func (h headlessObserver) toolResult(r agent.ToolResult) {
 	outcome, class := observe.ToolOutcome(r.Result)
-	h.rec.toolCallAt(h.pos(), r.Call.Name, r.Duration, outcome, class)
+	h.rec.toolCallAt(h.pos(), r.Call.Name, r.Duration, outcome, class,
+		observe.ToolPurpose(r.Call.Name, r.Call.Arguments))
 	h.stream.result(h.pos(), r, outcome, class)
 	if agent.IsRepeatNotice(r.Result) {
 		h.signal(observe.SignalRepeat, r.Call.Name)

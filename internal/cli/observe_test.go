@@ -61,7 +61,7 @@ func TestObserveRecorder_RoundTrip(t *testing.T) {
 	}
 
 	rec.usage(2, 100, 50)
-	rec.toolCallAt(observe.Pos{Turn: 1, Round: 1}, "read_file", 5*time.Millisecond, "ok", "")
+	rec.toolCallAt(observe.Pos{Turn: 1, Round: 1}, "read_file", 5*time.Millisecond, "ok", "", "")
 	rec.decisionAt(observe.Pos{Turn: 1, Round: 1}, "deny", "plan-mode")
 	rec.end()
 
@@ -274,7 +274,7 @@ func TestRenderObserveDashboard_Sections(t *testing.T) {
 func TestObserveRecorder_NilSafe(t *testing.T) {
 	var rec *observeRecorder
 	rec.usage(1, 1, 1)
-	rec.toolCallAt(observe.Pos{}, "read_file", time.Millisecond, "ok", "")
+	rec.toolCallAt(observe.Pos{}, "read_file", time.Millisecond, "ok", "", "")
 	rec.decisionAt(observe.Pos{}, "allow", "user")
 	rec.stamp("prompt", 1, "/repo", storage.AgentSettings{})
 	rec.turn(1, 3, time.Second, "done")
@@ -305,7 +305,7 @@ func TestObserveSessionTimeline(t *testing.T) {
 	}))
 	rec.link("2026-01-01 10:00:00")
 	rec.link("2026-01-01 10:00:00")
-	rec.toolCallAt(observe.Pos{Turn: 1, Round: 1}, "search", 5*time.Millisecond, "ok", "empty")
+	rec.toolCallAt(observe.Pos{Turn: 1, Round: 1}, "search", 5*time.Millisecond, "ok", "empty", "")
 	rec.decisionAt(observe.Pos{Turn: 1, Round: 2}, "ask", "safety")
 	rec.signal(observe.Pos{Turn: 1, Round: 40}, "summary", "off-target")
 	rec.turn(1, 41, 90*time.Second, "cap-paused")
@@ -415,7 +415,7 @@ func recordEverySurface(t *testing.T, db *storage.DB) map[string]int64 {
 	sess.stamp("the agent prompt", 3, "/repo", storage.AgentSettings{})
 	sess.link("2026-09-02 09:00:00")
 	emptyOutcome, emptyClass := observe.ToolOutcome("No matches found.")
-	sess.toolCallAt(observe.Pos{Turn: 1, Round: 1}, "search", 4*time.Millisecond, emptyOutcome, emptyClass)
+	sess.toolCallAt(observe.Pos{Turn: 1, Round: 1}, "search", 4*time.Millisecond, emptyOutcome, emptyClass, "")
 	sess.decisionAt(observe.Pos{Turn: 1, Round: 2}, observe.DecisionAsk,
 		observe.AskReason(agent.Action{Kind: agent.ActionEdit, OutOfScope: []string{"/etc/passwd"}}))
 	sess.signal(observe.Pos{Turn: 1, Round: 3}, observe.SignalSummary, observe.SummaryCode(agent.SummaryOnTarget))
@@ -448,7 +448,7 @@ func recordEverySurface(t *testing.T, db *storage.DB) map[string]int64 {
 	declined, declinedClass := observe.ToolOutcome("error: the user declined this tool call")
 	child.decisionAt(observe.Pos{Turn: 1, Round: 1}, observe.DecisionAsk, observe.ReasonPolicy)
 	child.decisionAt(observe.Pos{Turn: 1, Round: 1}, observe.DecisionDeny, observe.ReasonUser)
-	child.toolCallAt(observe.Pos{Turn: 1, Round: 1}, "read_file", 2*time.Millisecond, declined, declinedClass)
+	child.toolCallAt(observe.Pos{Turn: 1, Round: 1}, "read_file", 2*time.Millisecond, declined, declinedClass, "")
 	child.signal(observe.Pos{Turn: 1, Round: 1}, observe.SignalRepeat, "read_file")
 	child.turn(1, 1, time.Second, observe.TurnCapPaused)
 	child.end()
@@ -1499,8 +1499,8 @@ func observedSessionWithItsWords(t *testing.T, db *storage.DB) *observeRecorder 
 		t.Fatalf("save chat: %v", err)
 	}
 	rec.link(slot)
-	rec.toolCallAt(observe.Pos{Turn: 1, Round: 8}, "search", 57*time.Millisecond, "ok", "")
-	rec.toolCallAt(observe.Pos{Turn: 1, Round: 8}, "search", 12*time.Millisecond, "ok", "")
+	rec.toolCallAt(observe.Pos{Turn: 1, Round: 8}, "search", 57*time.Millisecond, "ok", "", "")
+	rec.toolCallAt(observe.Pos{Turn: 1, Round: 8}, "search", 12*time.Millisecond, "ok", "", "")
 	rec.turn(1, 8, time.Minute, "done")
 	return rec
 }

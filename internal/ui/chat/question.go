@@ -1216,7 +1216,7 @@ func (m Model) resolveQuestion(req *approvalRequest, qs []ask.Question, as []ask
 	m.pendingApproval = nil
 	m.releaseDecision()
 	m.agent.ResolveApproval(result)
-	m.recordToolResult(req.call.Name, 0, result)
+	m.recordToolResult(req.call, 0, result)
 	m.appendCallRow(req.call.ID, entry{
 		kind:       entryTool,
 		toolName:   req.call.Name,

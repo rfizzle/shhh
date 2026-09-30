@@ -1583,3 +1583,55 @@ func TestSaveChat_KeepsWhereEachMessageWasWritten(t *testing.T) {
 		}
 	}
 }
+
+// A command's purpose is its own column: a failed command keeps its class in
+// the reason and its word beside it, the split counts only commands, and a
+// row recorded before the column existed reads as no word rather than as
+// one.
+func TestAgentCommandPurposes_SplitsCommandsByTheirWord(t *testing.T) {
+	db := openTestDB(t)
+	id, err := db.StartAgentSession("code", "openai", "gpt-test")
+	if err != nil {
+		t.Fatalf("start session: %v", err)
+	}
+	for _, e := range []AgentEvent{
+		{Kind: AgentEventTool, Tool: "execute_command", Outcome: "ok", Purpose: observe.PurposeRead},
+		{Kind: AgentEventTool, Tool: "execute_command", Outcome: "error", Reason: observe.ClassExitStatus, Purpose: observe.PurposeBuild},
+		{Kind: AgentEventTool, Tool: "execute_command", Outcome: "ok", Purpose: observe.PurposeRead},
+		{Kind: AgentEventTool, Tool: "execute_command", Outcome: "ok"},
+		{Kind: AgentEventTool, Tool: "read_file", Outcome: "ok"},
+	} {
+		if err := db.RecordAgentEvent(id, e); err != nil {
+			t.Fatalf("record: %v", err)
+		}
+	}
+	got, err := db.AgentCommandPurposes(time.Now().Add(-time.Hour))
+	if err != nil {
+		t.Fatalf("purposes: %v", err)
+	}
+	want := []AgentCommandPurpose{
+		{Purpose: observe.PurposeRead, Count: 2}, {Purpose: "", Count: 1}, {Purpose: observe.PurposeBuild, Count: 1},
+	}
+	if len(got) != len(want) {
+		t.Fatalf("purposes = %+v, want %+v", got, want)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("purposes = %+v, want %+v", got, want)
+		}
+	}
+
+	// The backfill writes only onto a command with no word.
+	events, err := db.AgentCommandEvents(id)
+	if err != nil || len(events) != 4 {
+		t.Fatalf("command events = %+v (err %v), want 4", events, err)
+	}
+	set := map[int64]string{}
+	for _, e := range events {
+		set[e.ID] = observe.PurposeOther
+	}
+	n, err := db.SetAgentCommandPurposes(set)
+	if err != nil || n != 1 {
+		t.Fatalf("wrote %d (err %v), want only the one with no word", n, err)
+	}
+}

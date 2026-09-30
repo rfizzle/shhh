@@ -36,7 +36,7 @@ func TestObserveRecorder_ADeadCollectorLeavesTheRunAlone(t *testing.T) {
 	if rec == nil {
 		t.Fatal("expected a recorder")
 	}
-	rec.toolCallAt(observe.Pos{Turn: 1, Round: 1}, "read_file", 5*time.Millisecond, observe.OutcomeOK, "")
+	rec.toolCallAt(observe.Pos{Turn: 1, Round: 1}, "read_file", 5*time.Millisecond, observe.OutcomeOK, "", "")
 	rec.turn(1, 1, time.Second, observe.TurnDone)
 	rec.end()
 

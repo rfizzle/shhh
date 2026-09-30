@@ -66,8 +66,9 @@ type Observer struct {
 	Usage func(turns, tokensIn, tokensOut int64, cost float64, priced bool)
 	// ToolCall reports one executed tool call. class is the error's class
 	// when the outcome is an error, and "empty" for a search that found
-	// nothing.
-	ToolCall func(at Pos, tool string, duration time.Duration, outcome, class string)
+	// nothing. purpose is what a command was for, from ToolPurpose or
+	// CommandPurpose, and "" for every other tool.
+	ToolCall func(at Pos, tool string, duration time.Duration, outcome, class, purpose string)
 	// Decision reports one mode-policy verdict for a gated tool call.
 	Decision func(at Pos, decision, reason string)
 	// Turn reports a turn closing: how it ended, how many tool rounds it

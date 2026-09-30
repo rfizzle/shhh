@@ -23,6 +23,7 @@ type recordedEvent struct {
 	tool    string
 	outcome string
 	reason  string
+	purpose string
 	pos     observe.Pos
 	// timed says a duration was reported at all, which is the fact worth
 	// asserting: a call's wall time is not reproducible, and its presence is.
@@ -52,8 +53,8 @@ func (r *testRecorder) recorder() Recorder {
 				defer r.mu.Unlock()
 				r.turns, r.tokensIn, r.tokensOut, r.cost, r.priced = turns, in, out, cost, priced
 			},
-			ToolCall: func(at observe.Pos, tool string, d time.Duration, outcome, class string) {
-				r.add(recordedEvent{kind: "tool", tool: tool, outcome: outcome, reason: class, pos: at, timed: d > 0})
+			ToolCall: func(at observe.Pos, tool string, d time.Duration, outcome, class, purpose string) {
+				r.add(recordedEvent{kind: "tool", tool: tool, outcome: outcome, reason: class, purpose: purpose, pos: at, timed: d > 0})
 			},
 			Turn: func(turn, rounds int64, d time.Duration, outcome string) {
 				r.add(recordedEvent{kind: "turn", outcome: outcome, pos: observe.Pos{Turn: turn, Round: rounds}, timed: d > 0})
@@ -276,12 +277,40 @@ func TestChildRecordsNothingOutsideTheClosedSets(t *testing.T) {
 	execTool(t, sup, ReportToolName, `{"name":"researcher-1"}`)
 
 	for _, e := range rec.all() {
-		for _, s := range []string{e.kind, e.tool, e.outcome, e.reason} {
+		for _, s := range []string{e.kind, e.tool, e.outcome, e.reason, e.purpose} {
 			if s == "" {
 				continue
 			}
 			if !storedWord.MatchString(s) {
 				t.Fatalf("a stored string is not a code: %q in %+v", s, e)
+			}
+		}
+	}
+}
+
+// A child's command is filed under what it was for, the way a session's is,
+// and the word is all of it that reaches the record: the line itself names a
+// path, which is content.
+func TestChildRecordsACommandsPurposeAndNotItsText(t *testing.T) {
+	env := &scriptedEnv{steps: []streamStep{
+		{calls: []provider.ToolCall{{ID: "c1", Name: tools.ExecCommandName,
+			Arguments: `{"command":"grep -n secret /home/someone/notes.md | head -5"}`}}},
+		{text: "found it"},
+	}}
+	rec := &testRecorder{}
+	sup := supervisorRecording(t, env, rec)
+
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"find the word"}`)
+	execTool(t, sup, ReportToolName, `{"name":"researcher-1"}`)
+
+	calls := rec.of("tool")
+	if len(calls) != 1 || calls[0].purpose != observe.PurposeSearch {
+		t.Fatalf("want one command filed as search, got %+v", calls)
+	}
+	for _, e := range rec.all() {
+		for _, s := range []string{e.tool, e.outcome, e.reason, e.purpose} {
+			if strings.Contains(s, "someone") || strings.Contains(s, "grep") {
+				t.Fatalf("the command's text reached the record: %+v", e)
 			}
 		}
 	}

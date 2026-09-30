@@ -61,7 +61,19 @@ from agent_events where kind='tool' group by tool order by n desc;
 
 select tool, outcome, reason, count(*) from agent_events
 where kind='tool' and outcome<>'ok' group by 1,2,3 order by 4 desc;
+
+select purpose, count(*) from agent_events
+where kind='tool' and tool='execute_command' group by 1 order by 2 desc;
 ```
+
+The third query is the dashboard's `COMMANDS` block: `execute_command` split
+by what each command was for — `read`, `search`, `list`, `write`, `edit`,
+`build`, `vcs`, `other` — without any command's text. The first five are the
+ones a built-in tool answers, so their share is how much of the shell was a
+gap or a wording. An empty purpose is a command recorded before the column
+existed; `shhh observe classify` reads those back from the saved
+conversations, and what it cannot read stays empty. Never count empty as
+`other`.
 
 **Read-tier volume against writes.** The read tools are `read_file`,
 `search`, `glob`, `list_directory`, `git`, `fd`, the six language-server

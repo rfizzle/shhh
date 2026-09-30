@@ -434,7 +434,7 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 		}
 		m.agent.RecordAutoResults(msg.results)
 		for _, r := range msg.results {
-			m.recordToolResult(r.Call.Name, r.Duration, r.Result)
+			m.recordToolResult(r.Call, r.Duration, r.Result)
 			if agent.IsRepeatNotice(r.Result) {
 				m.signal(observe.SignalRepeat, r.Call.Name)
 			}
@@ -484,7 +484,10 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 			result.Output = out
 			formatted = m.execToolResult(result)
 			outcome, class := observe.ToolOutcome(formatted)
-			m.recordToolEvent(tools.ExecCommandName, msg.duration, outcome, class)
+			// The purpose is read off the line that ran, which is the
+			// reader's where they amended the model's.
+			m.recordToolEvent(tools.ExecCommandName, msg.duration, outcome, class,
+				observe.CommandPurpose(msg.command))
 			// What allowed the command rides the command's own row: nothing
 			// said so above it (approval.go). A rule that answered names
 			// itself; a card the reader answered names them, because a
@@ -586,7 +589,7 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 		req := m.pendingApproval
 		m.pendingApproval = nil
 		m.agent.ResolveApproval(msg.result)
-		m.recordToolResult(req.call.Name, msg.duration, msg.result)
+		m.recordToolResult(req.call, msg.duration, msg.result)
 		// A git write is gated at the write tier, so this is the one place a
 		// switch lands.
 		m.noteBranchSwitch(req.call.Name, req.call.Arguments)

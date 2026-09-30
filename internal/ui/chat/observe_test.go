@@ -33,14 +33,14 @@ func TestObserver_ModelReachesEveryHook(t *testing.T) {
 		WithDB(db).
 		WithObserver(observe.Observer{
 			Usage:    func(int64, int64, int64, float64, bool) { reached = append(reached, "usage") },
-			ToolCall: func(observe.Pos, string, time.Duration, string, string) { reached = append(reached, "tool") },
+			ToolCall: func(observe.Pos, string, time.Duration, string, string, string) { reached = append(reached, "tool") },
 			Decision: func(observe.Pos, string, string) { reached = append(reached, "decision") },
 			Turn:     func(int64, int64, time.Duration, string) { reached = append(reached, "turn") },
 			Signal:   func(observe.Pos, string, string) { reached = append(reached, "signal") },
 			Session:  func(string) { reached = append(reached, "session") },
 		})
 	m.notifyUsage()
-	m.recordToolResult("read_file", time.Millisecond, "data")
+	m.recordToolResult(provider.ToolCall{Name: "read_file"}, time.Millisecond, "data")
 	m.recordDecision(observe.DecisionAllow, "user")
 	m.recordTurn(observe.TurnDone)
 	m.signal(observe.SignalMode, "auto")
@@ -81,8 +81,8 @@ func TestObserver_UsageReportsTurnsAndTotals(t *testing.T) {
 func TestObserver_ToolEventsRecorded(t *testing.T) {
 	var events []string
 	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).
-		WithObserver(observe.Observer{ToolCall: func(_ observe.Pos, tool string, duration time.Duration, outcome, class string) {
-			events = append(events, tool+":"+outcome)
+		WithObserver(observe.Observer{ToolCall: func(_ observe.Pos, tool string, duration time.Duration, outcome, class, purpose string) {
+			events = append(events, tool+":"+outcome+":"+purpose)
 		}})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 100, Height: 40})
 	model := updated.(Model)
@@ -91,10 +91,14 @@ func TestObserver_ToolEventsRecorded(t *testing.T) {
 	updated, _ = model.Update(toolResultsMsg{runID: 0, results: []agent.ToolResult{
 		{Call: provider.ToolCall{ID: "1", Name: "read_file"}, Result: "data", Duration: time.Millisecond},
 		{Call: provider.ToolCall{ID: "2", Name: "search"}, Result: "error: bad pattern", Duration: time.Millisecond},
+		{Call: provider.ToolCall{ID: "3", Name: "execute_command", Arguments: `{"command":"grep -n foo main.go | head"}`},
+			Result: "1:foo", Duration: time.Millisecond},
 	}})
 	_ = updated
 
-	want := []string{"read_file:ok", "search:error"}
+	// A command carries what it was for and nothing of its text; every other
+	// tool says what it did by its name and carries no word.
+	want := []string{"read_file:ok:", "search:error:", "execute_command:ok:search"}
 	if len(events) != len(want) {
 		t.Fatalf("expected %d events, got %v", len(want), events)
 	}
@@ -113,7 +117,7 @@ func TestObserver_ToolEventsRecorded(t *testing.T) {
 func TestObserver_TheRecordedRoundIsTheRoundTheConversationCarries(t *testing.T) {
 	var at observe.Pos
 	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).
-		WithObserver(observe.Observer{ToolCall: func(p observe.Pos, _ string, _ time.Duration, _, _ string) {
+		WithObserver(observe.Observer{ToolCall: func(p observe.Pos, _ string, _ time.Duration, _, _, _ string) {
 			at = p
 		}})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 100, Height: 40})

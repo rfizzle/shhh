@@ -4513,7 +4513,8 @@ func (s *Supervisor) run(c *child) {
 			c.noteWrite(r.Call, r.Result)
 			if c.rec.ToolCall != nil {
 				outcome, class := observe.ToolOutcome(r.Result)
-				c.rec.ToolCall(c.pos(), r.Call.Name, r.Duration, outcome, class)
+				c.rec.ToolCall(c.pos(), r.Call.Name, r.Duration, outcome, class,
+					observe.ToolPurpose(r.Call.Name, r.Call.Arguments))
 			}
 			if agent.IsRepeatNotice(r.Result) {
 				signal(observe.SignalRepeat, r.Call.Name)

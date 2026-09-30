@@ -21,6 +21,7 @@ import (
 
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/tools"
 )
 
 const observeTimeFormat = "2006-01-02T15:04:05.000Z"
@@ -68,6 +69,11 @@ type AgentEvent struct {
 	Reason     string
 	Turn       int64
 	Round      int64
+	// Purpose is what an execute_command did, as a word from observe's
+	// closed set, and empty for every other tool. It is a column of its own
+	// rather than the reason because a command that failed carries its
+	// failure's class there, and one row has to say both.
+	Purpose string
 }
 
 // AgentProvenance is what a session ran under, stamped once it is known.
@@ -671,16 +677,17 @@ func heartbeatCutoff(now time.Time) string {
 // outcome is how the turn ended and round how many rounds it took. For
 // signals, outcome is the signal code and reason its qualifier — and for the
 // one signal that names a subject as well, the gate's verdict, tool carries
-// the suite that ran.
+// the suite that ran. A tool event for a command carries its purpose word
+// beside the class.
 //
 // The write is retried while a lock is refused (storage.go): an event is the
 // record of something that happened, so dropping one under contention would
 // make the dashboard quietest exactly when the checkout is busiest.
 func (db *DB) RecordAgentEvent(sessionID int64, e AgentEvent) error {
 	return db.execRetry(
-		`INSERT INTO agent_events (session_id, kind, tool, duration_ms, outcome, reason, turn, round)
-		 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-		sessionID, e.Kind, e.Tool, e.DurationMs, e.Outcome, e.Reason, e.Turn, e.Round,
+		`INSERT INTO agent_events (session_id, kind, tool, duration_ms, outcome, reason, turn, round, purpose)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		sessionID, e.Kind, e.Tool, e.DurationMs, e.Outcome, e.Reason, e.Turn, e.Round, e.Purpose,
 	)
 }
 
@@ -1031,6 +1038,132 @@ func (db *DB) agentToolErrors(scope string, args ...any) ([]AgentToolErrorCount,
 		out = append(out, c)
 	}
 	return out, rows.Err()
+}
+
+// AgentCommandPurpose is how many of the commands the model ran did one kind
+// of thing. Purpose is empty for a command recorded before the record said.
+type AgentCommandPurpose struct {
+	Purpose string
+	Count   int
+}
+
+const agentCommandPurposesQuery = `SELECT purpose, COUNT(*)
+		 FROM agent_events WHERE kind = ? AND tool = ? AND %s
+		 GROUP BY purpose ORDER BY COUNT(*) DESC, purpose`
+
+// AgentCommandPurposes splits the window's execute_command events by what
+// each was for, most frequent first
+// (docs/capabilities/sessions-and-memory.md#a-command-is-recorded-by-what-it-was-for).
+func (db *DB) AgentCommandPurposes(since time.Time) ([]AgentCommandPurpose, error) {
+	return db.agentCommandPurposes(observeEventWindow, observeCutoff(since))
+}
+
+func (db *DB) agentCommandPurposes(scope string, args ...any) ([]AgentCommandPurpose, error) {
+	rows, err := db.sql.Query(fmt.Sprintf(agentCommandPurposesQuery, scope),
+		append([]any{AgentEventTool, tools.ExecCommandName}, args...)...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var out []AgentCommandPurpose
+	for rows.Next() {
+		var p AgentCommandPurpose
+		if err := rows.Scan(&p.Purpose, &p.Count); err != nil {
+			return nil, err
+		}
+		out = append(out, p)
+	}
+	return out, rows.Err()
+}
+
+// AgentCommandEvent is one recorded command, addressed by its row so a
+// purpose read back from the conversation can be written onto it.
+type AgentCommandEvent struct {
+	ID, Turn, Round int64
+	Purpose         string
+}
+
+// AgentUnclassifiedCommandSessions is every session started since the cutoff
+// that recorded a command with no purpose word, oldest first.
+func (db *DB) AgentUnclassifiedCommandSessions(since time.Time) ([]int64, error) {
+	rows, err := db.sql.Query(
+		`SELECT DISTINCT e.session_id FROM agent_events e
+		 JOIN agent_sessions a ON a.id = e.session_id
+		 WHERE e.kind = ? AND e.tool = ? AND e.purpose = '' AND a.started_at >= ?
+		 ORDER BY e.session_id`, AgentEventTool, tools.ExecCommandName, observeCutoff(since))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var ids []int64
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		ids = append(ids, id)
+	}
+	return ids, rows.Err()
+}
+
+// AgentCommandEvents is every command one session recorded, in the order it
+// recorded them, classified or not: a round's commands are paired with the
+// conversation's by their order, so a reader that skipped the classified ones
+// would hand each of the rest its neighbour's line.
+func (db *DB) AgentCommandEvents(sessionID int64) ([]AgentCommandEvent, error) {
+	rows, err := db.sql.Query(
+		`SELECT id, turn, round, purpose FROM agent_events
+		 WHERE session_id = ? AND kind = ? AND tool = ? ORDER BY id`,
+		sessionID, AgentEventTool, tools.ExecCommandName)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []AgentCommandEvent
+	for rows.Next() {
+		var e AgentCommandEvent
+		if err := rows.Scan(&e.ID, &e.Turn, &e.Round, &e.Purpose); err != nil {
+			return nil, err
+		}
+		out = append(out, e)
+	}
+	return out, rows.Err()
+}
+
+// SetAgentCommandPurposes writes purpose words onto recorded commands by row,
+// in one transaction, and only onto a row that has none: a word the session
+// recorded as it ran is the line that ran, and a reading of the conversation
+// afterwards is the line the model asked for, which an amended command made
+// different. It returns how many rows took a word.
+func (db *DB) SetAgentCommandPurposes(purposes map[int64]string) (int, error) {
+	if len(purposes) == 0 {
+		return 0, nil
+	}
+	var written int
+	err := retryBusy(func() error {
+		written = 0
+		tx, err := db.sql.Begin()
+		if err != nil {
+			return err
+		}
+		defer func() { _ = tx.Rollback() }()
+		for id, purpose := range purposes {
+			res, err := tx.Exec(
+				`UPDATE agent_events SET purpose = ? WHERE id = ? AND kind = ? AND tool = ? AND purpose = ''`,
+				purpose, id, AgentEventTool, tools.ExecCommandName)
+			if err != nil {
+				return err
+			}
+			n, err := res.RowsAffected()
+			if err != nil {
+				return err
+			}
+			written += int(n)
+		}
+		return tx.Commit()
+	})
+	return written, err
 }
 
 // AgentFirstWrite is how much looking one session did before it changed
@@ -1805,6 +1938,7 @@ type AgentExportEvent struct {
 	DurationMs *int64 `json:"duration_ms,omitempty"`
 	Outcome    string `json:"outcome,omitempty"`
 	Reason     string `json:"reason,omitempty"`
+	Purpose    string `json:"purpose,omitempty"`
 }
 
 // AgentExportMessage is one conversation message in the transcript join.
@@ -1890,7 +2024,7 @@ func exportSession(s AgentSessionSummary) AgentExportSession {
 
 func (db *DB) exportAgentEvents(sessionID int64) ([]AgentExportEvent, error) {
 	rows, err := db.sql.Query(
-		`SELECT created_at, kind, turn, round, tool, duration_ms, outcome, reason
+		`SELECT created_at, kind, turn, round, tool, duration_ms, outcome, reason, purpose
 		 FROM agent_events WHERE session_id = ? ORDER BY id`, sessionID)
 	if err != nil {
 		return nil, err
@@ -1900,7 +2034,7 @@ func (db *DB) exportAgentEvents(sessionID int64) ([]AgentExportEvent, error) {
 	var events []AgentExportEvent
 	for rows.Next() {
 		var e AgentExportEvent
-		if err := rows.Scan(&e.CreatedAt, &e.Kind, &e.Turn, &e.Round, &e.Tool, &e.DurationMs, &e.Outcome, &e.Reason); err != nil {
+		if err := rows.Scan(&e.CreatedAt, &e.Kind, &e.Turn, &e.Round, &e.Tool, &e.DurationMs, &e.Outcome, &e.Reason, &e.Purpose); err != nil {
 			return nil, err
 		}
 		events = append(events, e)

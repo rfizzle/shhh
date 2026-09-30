@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -56,15 +57,15 @@ func (m Model) usageTotalCost(in, out int64) (float64, bool) {
 }
 
 // recordToolResult records a tool call from its result text: the outcome
-// and, for a failure, its class.
-func (m *Model) recordToolResult(tool string, duration time.Duration, result string) {
+// and, for a failure, its class — and, for a command, what it was for.
+func (m *Model) recordToolResult(call provider.ToolCall, duration time.Duration, result string) {
 	outcome, class := observe.ToolOutcome(result)
-	m.recordToolEvent(tool, duration, outcome, class)
+	m.recordToolEvent(call.Name, duration, outcome, class, observe.ToolPurpose(call.Name, call.Arguments))
 }
 
-func (m *Model) recordToolEvent(tool string, duration time.Duration, outcome, class string) {
+func (m *Model) recordToolEvent(tool string, duration time.Duration, outcome, class, purpose string) {
 	if m.observer.ToolCall != nil {
-		m.observer.ToolCall(m.pos(), tool, duration, outcome, class)
+		m.observer.ToolCall(m.pos(), tool, duration, outcome, class, purpose)
 	}
 }
 

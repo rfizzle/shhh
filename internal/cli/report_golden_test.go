@@ -301,6 +301,14 @@ func goldenObserve() observeData {
 		ToolErrors: []storage.AgentToolErrorCount{
 			{Tool: "execute_command", Class: "exit-status", Count: 2},
 		},
+		// The eight commands by what each was for, two of them run before
+		// the record said — which are counted apart from other, never in it.
+		Commands: []storage.AgentCommandPurpose{
+			{Purpose: "build", Count: 3},
+			{Purpose: "", Count: 2},
+			{Purpose: "read", Count: 2},
+			{Purpose: "search", Count: 1},
+		},
 		// One session that found its place and changed something, and one
 		// that never wrote at all — which is counted beside the figure and
 		// never in it.
