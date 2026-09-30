@@ -536,6 +536,17 @@ only once the release has pushed the image, so a `make build` carries none and
 container sandboxes stay unavailable until the setting names one, which
 `shhh doctor` says.
 
+**An image prepared from a checkout's declaration is allowed because its base
+was.** Where a checkout declares a toolchain, a sandbox's container starts
+from an image built on this machine from the base and the declaration
+([below](#a-sandbox-starts-from-an-image-prepared-from-it)), and that image
+has no digest a registry ever saw, so nothing could list it. The allowlist
+names bases instead: the base is put to the policy before anything is
+prepared from it, exactly as it is when it runs bare, and the prepared image
+is built here — from an allowed base and a declaration the checkout was
+trusted for — with both recorded on it as labels. It is run by its image ID,
+which is as fixed as a digest, and never by its tag.
+
 ## A checkout declares the toolchain its work needs
 
 The image carries the toolchains most projects build with and nothing a
@@ -609,7 +620,8 @@ A declaration that quietly lost a line would prepare a place to work without
 the tool that line was for, and the first anyone would hear of it is a check
 failing inside it — which is why a file is read whole or not at all. On this
 machine a session checks its `PATH` against the file and offers to install
-what is missing (below); nothing yet prepares a container image from it.
+what is missing (below); a container sandbox starts from an image prepared
+from it ([further on](#a-sandbox-starts-from-an-image-prepared-from-it)).
 
 The declaration is command text that runs as you, so it is part of what a
 checkout has to be trusted for
@@ -692,6 +704,70 @@ that the file waits on trust are read again whenever this session records the
 checkout's trust answer or writes the declaration, rather than once when it
 opened — so trusting a checkout mid-session, or taking a drafted file, shows
 what that changed straight away instead of a state from before it.
+
+### A sandbox starts from an image prepared from it
+
+A `--sandbox` run's container has no network under the netless profile and no
+installer the checkout can reach through, so the declaration is carried out
+before the container exists rather than inside it. Preparing is a step of its
+own: a throwaway container from the base image runs the declaration, is kept
+as a local image, and the session's container is created from that image with
+the profile's network, exactly as it would have been from the base. Setup and
+session are two containers rather than one whose network is switched off
+partway, because a container that once had the network may have fetched
+anything, and a switch flipped in a container's life is a state to get wrong.
+
+**The setup container is handed nothing of the checkout's but the
+declaration.** It mounts no workspace, carries no host environment and none
+of the session's secrets, and drops every capability, under the same
+ceilings as the session's container. What goes in is the declaration's own
+lines, run one exec at a time; the grammar names no lockfile, since a line
+that installs from a file is refused when the file is read. It runs the
+`packages` in one `apk add`, then each `install` line in order, with each
+installer pointed at a directory on the `PATH` the session's container is
+handed — `/usr/local/bin` for `go install`, `cargo`, `npm`, `pnpm` and
+`pipx`, where pip, run as root, installs where the image's own Python already
+reads. Those settings are handed to each line and never kept in the image, so
+the session's container does not run under an installer's variables. An
+`apk add` line runs here too, since the base's package manager is this
+container's.
+
+**The setup container has the network, and nothing is there to take.**
+With no workspace, no secrets and no host environment inside it, there is
+nothing in it to carry out, so its network is the plain switch, on. No proxy
+is taught to serve a container, and the declaration's `hosts` are not held
+here: they are the host list for an install that runs beside your own files
+([above](#a-checkout-declares-the-toolchain-its-work-needs)).
+
+**The image is kept under the base's digest and the declaration's bytes,
+and reused while both stand.** A changed declaration, or a new base — which is
+what a new release of shhh brings — prepares again; anything else starts
+from the image already there, so the installs are paid for once rather than
+on every run. The key and the base are labels on the image, and an image
+under shhh's name whose key label says otherwise is prepared over rather
+than trusted. A package named without a version is resolved when the image
+is prepared and held until the declaration or the base moves, the way the
+base's own packages are held; `name=version` decides it yourself. An image
+prepared from an earlier declaration stays on the machine until you remove
+it: they are all tagged `localhost/shhh-toolchain`.
+
+**A preparation that fails stops the run.** The first line that fails ends it,
+and the run stops naming that line and quoting the end of its output, which
+is where an installer says why. It never falls back to the bare base: a run
+started without the tools its checks need would only fail those checks, inside
+the container, far from the line that was meant to install them. A
+declaration that does not load stops a `--sandbox` run for the same reason,
+where on this machine it is a note.
+
+A run that prepares says so in one line before it starts, since the installs
+take minutes; one that reuses says nothing. `shhh doctor` has a row for the
+image beside the engine's, naming the declaration, the prepared image and
+whether it is current — prepared from the declaration and the base as they
+stand now — and one not yet prepared is a wait the next run will take rather
+than a fault. The doctor asks the engine and prepares nothing. The model is told nothing:
+its commands find the tools where they would look for them, and the note
+about tools missing from this machine's `PATH` is not printed on a run whose
+commands never see that `PATH`.
 
 ### A declaration can be drafted for you
 

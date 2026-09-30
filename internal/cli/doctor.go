@@ -179,13 +179,14 @@ func doctorCommand(use, short, long string, probes []doctorProbe) *cobra.Command
 	return cmd
 }
 
-// containmentProbes are the two checks `shhh code doctor` has always been
-// over: what wraps an approved command, and what could run one in a container
-// instead.
+// containmentProbes are the checks `shhh code doctor` is over: what wraps an
+// approved command, what could run one in a container instead, and the image
+// that container starts from.
 func containmentProbes() []doctorProbe {
 	return []doctorProbe{
 		{name: "sandbox", run: probeSandbox},
 		{name: "engine", run: probeEngine},
+		{name: "image", run: probeImage},
 	}
 }
 
@@ -245,6 +246,7 @@ func doctorProbes() []doctorProbe {
 		{name: "otel", run: probeOtel},
 		{name: "sandbox", run: probeSandbox},
 		{name: "engine", run: probeEngine},
+		{name: "image", run: probeImage},
 		{name: "git", run: probeGit},
 		{name: "project", run: probeProject},
 		{name: "trust", run: probeTrust},
@@ -1555,6 +1557,71 @@ func probeEngine(_ context.Context, cfg config.Config) doctorFinding {
 	return f
 }
 
+// probeImage is the doctor's reading of the image a --sandbox run would start
+// from. It asks the engine and prepares nothing: a diagnostic looks and does
+// not touch, and a preparation is minutes of installs.
+func probeImage(ctx context.Context, cfg config.Config) doctorFinding {
+	tc, declared, err := project.LoadToolchain(projectTrust())
+	r := preparedReading{declared: declared && sandbox.NeedsPreparing(tc), broken: err != nil}
+	if !r.declared {
+		return doctorImage(r)
+	}
+	eng := sandbox.DetectEngine(cfg.Sandbox.ContainerEngine)
+	base := sandboxImageFor(cfg)
+	if !eng.OK || sandbox.ValidateImage(base, cfg.Sandbox.ImageAllowlist) != nil {
+		// The engine row says which, and why.
+		return doctorImage(r)
+	}
+	r.sandbox = true
+	r.id, _, r.err = sandbox.LookupPrepared(ctx, eng, base, tc.Digest)
+	return doctorImage(r)
+}
+
+// preparedReading is what the doctor found of the image a --sandbox run
+// would start from.
+type preparedReading struct {
+	// declared is a declaration that loaded and names something to install.
+	declared bool
+	// broken is a declaration that is there, trusted, and does not load.
+	broken bool
+	// sandbox is an engine and a base a container could start from.
+	sandbox bool
+	// id is the prepared image, where one is current.
+	id string
+	// err is an engine that could not say.
+	err error
+}
+
+// doctorImage reads the image a --sandbox run starts from: the declaration it
+// is prepared from, the image, and whether it is current — prepared from the
+// declaration and the base as they stand now. Its outcome is the answer,
+// because an outcome is the one field a row never clips. An image not yet
+// prepared is not a fault; the next run prepares it, and the row says so
+// rather than leaving the wait to surprise the reader. A declaration that
+// does not load is the needs row's to explain, since one fault is not two.
+// See docs/capabilities/containment.md#a-sandbox-starts-from-an-image-prepared-from-it.
+func doctorImage(r preparedReading) doctorFinding {
+	switch {
+	case r.broken:
+		return doctorFinding{Subject: "unreadable", Detail: project.ToolchainFile + " · --sandbox refuses until it loads",
+			Outcome: "not checked", State: components.DoctorSkipped}
+	case !r.declared:
+		return doctorFinding{Subject: "nothing to prepare", Detail: "the base image runs as it is",
+			Outcome: "empty", State: components.DoctorSkipped}
+	case !r.sandbox:
+		return doctorFinding{Subject: project.ToolchainFile, Detail: "no container sandbox to prepare it for",
+			Outcome: "not checked", State: components.DoctorSkipped}
+	case r.err != nil:
+		return doctorFinding{Subject: project.ToolchainFile, Detail: r.err.Error(),
+			Outcome: "unknown", State: components.DoctorWarned,
+			Consequence: "the engine could not say whether an image was prepared from it"}
+	case r.id == "":
+		return doctorFinding{Subject: project.ToolchainFile, Detail: "the next --sandbox run prepares it, once",
+			Outcome: "not prepared", State: components.DoctorSkipped}
+	}
+	return doctorFinding{Subject: project.ToolchainFile, Detail: "prepared as " + shortPrepared(r.id), Outcome: "current"}
+}
+
 // ownedSandboxCount is how many sandbox containers this machine still owns.
 // An unreadable ownership store answers -1, which the reading states rather
 // than passing off as none.
@@ -2193,6 +2260,8 @@ func doctorQueuedSubject(name string) string {
 		return "what contains an approved command"
 	case "engine":
 		return "container sandboxes"
+	case "image":
+		return "the image a container sandbox starts from"
 	case "git":
 		return "the workspace, and whether an edit can be undone"
 	case "project":

@@ -671,7 +671,7 @@ func TestDoctorReport_CarriesTheWholeRun(t *testing.T) {
 // is why a run can be pasted into an issue whichever way it was read.
 func TestDoctorReport_IsWhatTheSurfaceCopies(t *testing.T) {
 	m := newDoctorModel(config.Config{}, containmentProbes())
-	if got := m.report(); !strings.Contains(got, "shhh doctor — 2 checks") {
+	if got := m.report(); !strings.Contains(got, "shhh doctor — 3 checks") {
 		t.Fatalf("the copied report is not the run: %s", got)
 	}
 }

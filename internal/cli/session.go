@@ -138,6 +138,10 @@ type chatSession struct {
 	// which it can only turn on. A session that requires containment and has
 	// none refuses the assistant's commands rather than running them bare.
 	requireSandbox bool
+	// sandbox is --sandbox: the run's commands exec in a container started
+	// from an image the declaration was prepared into, so the host's PATH
+	// is not what they will find.
+	sandbox bool
 	// secretFlags are the --secret specs; vault is what they and
 	// secrets.env resolved to, opened by openSecrets before anything that
 	// runs a command. Both `shhh chat` and `shhh code`, headless included.
@@ -488,12 +492,9 @@ func buildSessionEnv(cmd *cobra.Command, session chatSession, ledger *meter.Ledg
 	restampProjectTrust()
 	// And the tools the checkout declared that its commands will not find,
 	// for the same reason and to both kinds of session: the headless one is
-	// the one that cannot be offered the install, and says so. A
-	// conversation runs no commands, so it is told nothing (toolchain.go).
-	if !session.conversation {
-		if note := toolchainStartupNote(openToolchain()); note != "" {
-			_ = report.Fprintln(os.Stderr, report.Row{State: report.Warn, Subject: note})
-		}
+	// the one that cannot be offered the install, and says so.
+	if note := session.toolchainNote(); note != "" {
+		_ = report.Fprintln(os.Stderr, report.Row{State: report.Warn, Subject: note})
 	}
 
 	flags := session.flags

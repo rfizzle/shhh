@@ -106,6 +106,7 @@ func newCodeCmd() *cobra.Command {
 				secretFlags:    secretFlags,
 				mcp:            true,
 				requireSandbox: requireSandbox,
+				sandbox:        popts.sandbox,
 			}
 			if headless {
 				// Sub-agent orchestration where this run was given an answer

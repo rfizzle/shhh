@@ -22,7 +22,11 @@ import (
 // ContainerSpec describes one sandbox container. Zero-valued ceilings take
 // the package defaults; Image must be digest-pinned and pass the allowlist.
 type ContainerSpec struct {
-	Image     string
+	Image string
+	// Prepared is the ID of the image PrepareImage built from Image and the
+	// checkout's declaration. Where it is set the container runs it in
+	// Image's place, and Image is still what the policy is asked about.
+	Prepared  string
 	Workspace string
 	Network   bool // false adds --network none (the netless profile)
 	Memory    string
@@ -133,7 +137,16 @@ func createArgv(eng Engine, name string, s ContainerSpec) []string {
 	if !s.Network {
 		argv = append(argv, "--network", "none")
 	}
-	return append(argv, s.Image, "sleep", "2147483647")
+	return append(argv, s.run(), "sleep", "2147483647")
+}
+
+// run is the image the container is created from: the prepared one where
+// there is one, the base otherwise.
+func (s ContainerSpec) run() string {
+	if s.Prepared != "" {
+		return s.Prepared
+	}
+	return s.Image
 }
 
 // ExecArgv builds the argv that runs command inside the sandbox. The command
@@ -161,6 +174,9 @@ func CreateContainer(ctx context.Context, eng Engine, s ContainerSpec, allowlist
 	}
 	if err := ValidateImage(s.Image, allowlist); err != nil {
 		return Container{}, err
+	}
+	if s.Prepared != "" && !preparedIDRE.MatchString(s.Prepared) {
+		return Container{}, fmt.Errorf("prepared image %q is not an image ID", s.Prepared)
 	}
 	s, err := s.withDefaults()
 	if err != nil {
@@ -191,7 +207,7 @@ func CreateContainer(ctx context.Context, eng Engine, s ContainerSpec, allowlist
 		ID:        id,
 		Name:      name,
 		Engine:    eng.Name,
-		Image:     s.Image,
+		Image:     s.run(),
 		Workspace: s.Workspace,
 		CreatedAt: now,
 		ExpiresAt: now.Add(s.TTL),

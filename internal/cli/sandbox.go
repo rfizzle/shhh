@@ -14,6 +14,7 @@ import (
 	"github.com/rfizzle/shhh/internal/logs"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/process"
+	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/runner"
 	"github.com/rfizzle/shhh/internal/sandbox"
 	"github.com/rfizzle/shhh/internal/scope"
@@ -338,6 +339,9 @@ func startSandbox(ctx context.Context, cfg config.Config, env []string) (run fun
 	if err != nil {
 		return nil, nil, err
 	}
+	if spec.Prepared, err = preparedImage(ctx, eng, spec, cfg.Sandbox.ImageAllowlist, store); err != nil {
+		return nil, nil, err
+	}
 	c, err := sandbox.CreateContainer(ctx, eng, spec, cfg.Sandbox.ImageAllowlist, store)
 	if err != nil {
 		return nil, nil, err
@@ -357,6 +361,58 @@ func startSandbox(ctx context.Context, cfg config.Config, env []string) (run fun
 		}
 	}
 	return run, cleanup, nil
+}
+
+// preparedImage is the image the run's container starts from when the
+// checkout declares a toolchain: the one prepared from the declaration and
+// the base, reused while both stand and prepared first where they have
+// moved. It answers "" where nothing is declared, or nothing declared needs
+// installing, and the base is then what runs.
+//
+// A declaration that does not load, and a preparation that fails, stop the
+// run rather than starting it on the bare base: a run started without the
+// tools its checks need would only fail those checks, inside the container,
+// far from the line that was meant to install them.
+// See docs/capabilities/containment.md#a-sandbox-starts-from-an-image-prepared-from-it.
+func preparedImage(ctx context.Context, eng sandbox.Engine, spec sandbox.ContainerSpec, allowlist []string, store *sandbox.Store) (string, error) {
+	tc, declared, err := project.LoadToolchain(projectTrust())
+	if err != nil {
+		return "", err
+	}
+	if !declared || !sandbox.NeedsPreparing(tc) {
+		return "", nil
+	}
+	// The policy is asked before the engine is: a base the allowlist
+	// refuses has no prepared image worth looking for.
+	if err := sandbox.ValidateImage(spec.Image, allowlist); err != nil {
+		return "", err
+	}
+	id, found, err := sandbox.LookupPrepared(ctx, eng, spec.Image, tc.Digest)
+	if err != nil || found {
+		return id, err
+	}
+	// Preparing runs the declaration's installs, which is minutes rather
+	// than seconds, and the reader of a headless run is owed a reason for
+	// the wait before it starts rather than after.
+	_ = report.Fprintln(os.Stderr, report.Row{State: report.Run,
+		Subject: "toolchain: preparing the sandbox image from " + project.ToolchainFile + ", once"})
+	start := time.Now()
+	if id, err = sandbox.PrepareImage(ctx, eng, spec, tc, allowlist, store); err != nil {
+		return "", err
+	}
+	_ = report.Fprintln(os.Stderr, report.Row{State: report.Pass,
+		Subject: "toolchain: prepared " + shortPrepared(id) + " in " + time.Since(start).Round(time.Second).String()})
+	return id, nil
+}
+
+// shortPrepared is a prepared image's ID cut the way shortImage cuts a
+// digest, in docker's spelling whichever engine reported it.
+func shortPrepared(id string) string {
+	id = strings.TrimPrefix(id, "sha256:")
+	if len(id) > 12 {
+		id = id[:12] + "…"
+	}
+	return "sha256:" + id
 }
 
 // containerReport is the container-sandbox half of the doctor output: engine

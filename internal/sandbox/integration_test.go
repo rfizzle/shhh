@@ -15,6 +15,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/storage"
 )
 
@@ -91,6 +92,87 @@ func TestContainerLifecycleIntegration(t *testing.T) {
 	}
 	if _, gone, err := ContainerState(ctx, eng.Path, c.Record.Name); err != nil || !gone {
 		t.Errorf("container should be gone after destroy (gone=%v, err=%v)", gone, err)
+	}
+}
+
+// TestPreparedImageIntegration puts the preparation to a real engine: an
+// image prepared from a declaration holds what it named, is found again
+// under its key, and is what a session's container runs with its network
+// off; a line that fails stops the preparation and leaves no setup container
+// behind. It needs an apk-based digest-pinned image and a network the setup
+// container can reach its index over, e.g.:
+//
+//	SHHH_SANDBOX_IT_IMAGE=cgr.dev/chainguard/wolfi-base@sha256:… go test -tags integration ./internal/sandbox -run PreparedImage -v
+func TestPreparedImageIntegration(t *testing.T) {
+	image := os.Getenv("SHHH_SANDBOX_IT_IMAGE")
+	if image == "" {
+		t.Skip("set SHHH_SANDBOX_IT_IMAGE to a local digest-pinned apk-based image to run")
+	}
+	eng := DetectEngine(os.Getenv("SHHH_SANDBOX_IT_ENGINE"))
+	if !eng.OK {
+		t.Skipf("no container engine: %s", eng.Detail)
+	}
+	ctx := context.Background()
+	store := NewStoreAt(filepath.Join(t.TempDir(), "sandboxes.json"))
+	// The comment makes the declaration's bytes this run's own, so its key
+	// is one no real checkout's image is kept under.
+	mark := fmt.Sprintf("# shhh integration %d\n", time.Now().UnixNano())
+	tc, err := project.ParseToolchain([]byte(mark + "packages = [\"jq\"]\ncheck = [\"jq\"]\n"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Setenv("SHHH_IT_CANARY", "host-secret")
+	id, err := PrepareImage(ctx, eng, ContainerSpec{Image: image}, tc, nil, store)
+	if err != nil {
+		t.Fatalf("PrepareImage: %v", err)
+	}
+	key := PreparedKey(image, tc.Digest)
+	t.Cleanup(func() { _, _ = runEngine(ctx, []string{eng.Path, "rmi", "--force", preparedRef(key)}) })
+	if recs, _ := store.List(); len(recs) != 0 {
+		t.Errorf("the setup container outlived the preparation: %+v", recs)
+	}
+	again, found, err := LookupPrepared(ctx, eng, image, tc.Digest)
+	if err != nil || !found || again != id {
+		t.Fatalf("the prepared image is not found under its key: %q, %v, %v (prepared %q)", again, found, err, id)
+	}
+	labels, err := runEngine(ctx, []string{eng.Path, "image", "inspect", "--format", "{{json .Config.Labels}}", preparedRef(key)})
+	if err != nil || !strings.Contains(string(labels), key) || !strings.Contains(string(labels), image) {
+		t.Errorf("the image does not carry its key and base: %s (%v)", labels, err)
+	}
+
+	c, err := CreateContainer(ctx, eng, ContainerSpec{Image: image, Prepared: id, Workspace: t.TempDir(), TTL: time.Hour}, nil, store)
+	if err != nil {
+		t.Fatalf("CreateContainer from the prepared image: %v", err)
+	}
+	defer func() { _ = DestroyContainer(ctx, eng.Path, store, c.Record) }()
+	out, err := runEngine(ctx, c.ExecArgv("command -v jq && echo '{\"a\":1}' | jq .a && env"))
+	if err != nil {
+		t.Fatalf("the session's container does not find what was prepared: %v: %s", err, out)
+	}
+	for _, never := range []string{"GOBIN", "PIPX", "host-secret"} {
+		if strings.Contains(string(out), never) {
+			t.Errorf("the session's container carries %s from the preparation or the host:\n%s", never, out)
+		}
+	}
+	// A spec with no Network is the netless profile's: loopback alone.
+	if out, err := runEngine(ctx, c.ExecArgv("ls /sys/class/net")); err != nil || strings.TrimSpace(string(out)) != "lo" {
+		t.Errorf("a netless session's container has more than loopback: %q (%v)", out, err)
+	}
+
+	broken, err := project.ParseToolchain([]byte(mark + "install = [\"apk add shhh-no-such-package=1.0-r0\"]\n"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := PrepareImage(ctx, eng, ContainerSpec{Image: image}, broken, nil, store); err == nil ||
+		!strings.Contains(err.Error(), "install[0] apk add shhh-no-such-package=1.0-r0") {
+		t.Errorf("a failing line did not stop the preparation naming it: %v", err)
+	}
+	if recs, _ := store.List(); len(recs) != 1 || recs[0].ID != c.Record.ID {
+		t.Errorf("a failed preparation left a setup container recorded: %+v", recs)
+	}
+	if _, found, _ := LookupPrepared(ctx, eng, image, broken.Digest); found {
+		t.Error("a failed preparation left an image to be reused")
 	}
 }
 

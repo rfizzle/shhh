@@ -89,6 +89,17 @@ func toolchainStartupNote(r toolchainReading) string {
 		", not on PATH — /setup in a session installs them; a run with nobody to ask does not"
 }
 
+// toolchainNote is the startup note this session prints, where it prints
+// one at all. A conversation runs no commands, so it is told nothing; nor is
+// a --sandbox run, whose commands find what the prepared image holds rather
+// than what this machine's PATH does (sandbox.go).
+func (s chatSession) toolchainNote() string {
+	if s.conversation || s.sandbox {
+		return ""
+	}
+	return toolchainStartupNote(openToolchain())
+}
+
 // toolchainPromptBlock tells the model which declared binaries are missing,
 // and nothing at all where none is: a paragraph about tools that are all
 // there would be one more thing to read on every request for no reason.
