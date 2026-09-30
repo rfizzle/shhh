@@ -42,10 +42,13 @@ import (
 // changes nothing. The proof is taken before anything runs, so a command
 // that moves or links a tracked tree to where a delete then points
 // (`mv src .tmp/gone && rm -rf .tmp/gone`) would make the delete's target
-// something the proof never saw.
+// something the proof never saw. Both readings read past the shell's flow
+// words, so a delete behind `then` or `!` is proved or not like any other;
+// the words that close a conditional or a loop (`fi`, `done`) are not
+// inspections, so a delete inside one keeps its card.
 func ScratchDelete(command string, where Where) bool {
 	findings := safety.Findings(command)
-	if len(findings) == 0 || hasControlFlow(command) {
+	if len(findings) == 0 {
 		return false
 	}
 	for _, w := range findings {
@@ -73,31 +76,6 @@ func ScratchDelete(command string, where Where) bool {
 		}
 	}
 	return all.Untracked(where.Root)
-}
-
-// flowWords are the words that open a command in a shell's control flow. Both
-// readings take the word after one of them for the verb's operand rather than
-// the verb, so a delete behind `then` or `!` is one neither sees beside a
-// delete they do: `rm -rf .tmp/x; if true; then rm -rf src; fi` reads as the
-// first alone.
-var flowWords = map[string]bool{
-	"if": true, "then": true, "else": true, "elif": true, "fi": true,
-	"while": true, "until": true, "do": true, "done": true, "for": true,
-	"case": true, "esac": true, "!": true,
-}
-
-// hasControlFlow reports whether any word of the line is a flow word, which
-// keeps the line's card: a clean-up that needs a conditional or a loop is not
-// the plain delete this reading proves.
-func hasControlFlow(command string) bool {
-	for _, w := range strings.FieldsFunc(command, func(r rune) bool {
-		return strings.ContainsRune(" \t\r\n;&|(){}", r)
-	}) {
-		if flowWords[w] {
-			return true
-		}
-	}
-	return false
 }
 
 // Untracked reports whether nothing the line destroys is something git could

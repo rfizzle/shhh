@@ -337,8 +337,8 @@ func runsADownloadedScript(line string) bool {
 			// An operator ends the command before it.
 			verb, fetching = "", false
 		case verb == "":
-			if strings.HasPrefix(w, "-") || prefixes[BaseName(w)] || strings.Contains(w, "=") {
-				continue // an option, an escalation or an assignment
+			if strings.HasPrefix(w, "-") || prefixes[BaseName(w)] || flowWords[w] || strings.Contains(w, "=") {
+				continue // an option, an escalation, a flow word or an assignment
 			}
 			verb = BaseName(w)
 			fetching = fetchers[verb]
@@ -431,9 +431,10 @@ func firstOperand(rest []string) (string, bool) {
 }
 
 // Commands is every command line a shell line will actually run, as far as
-// reading the text can say: each piece of a chain, with the escalation and
-// the environment in front of it stripped, and the command line an
-// interpreter or a `-exec` was handed pulled out as one of its own.
+// reading the text can say: each piece of a chain, with the escalation, the
+// environment and the shell's flow words in front of it stripped, and the
+// command line an interpreter or a `-exec` was handed pulled out as one of
+// its own.
 //
 // It over-reads on purpose, and everything that reads it is a gate. The split
 // ignores quoting, so a quoted `rm -rf /` is offered as a command — a stop
@@ -477,10 +478,32 @@ func segments(line string) []string {
 // prefixes are the words that stand in front of the command they run. The
 // verb behind them is the one that matters — `sudo rm -rf /` is an rm — and
 // a reading of the first word alone would miss every escalated spelling.
+//
+// `nice`, `ionice` and `timeout` change how the command runs and not what it
+// is, and each takes options — and `timeout` a bare duration — that cannot be
+// told from the command behind them without its option table, which is the
+// same problem an escalation's options are.
 var prefixes = map[string]bool{
 	"sudo": true, "doas": true, "command": true, "env": true,
 	"nohup": true, "time": true, "xargs": true, "eval": true,
+	"nice": true, "ionice": true, "timeout": true,
 }
+
+// flowWords are the shell's own words that open the command behind them:
+// `if x; then rm -rf /; fi` runs an rm, and a reading that took `then` for
+// the verb saw nothing. Unlike a prefix, a flow word takes no options, so the
+// word after it is the command and nothing further along need be offered.
+// The words that close a construct (`fi`, `done`) have no command behind
+// them and are not here.
+var flowWords = map[string]bool{
+	"if": true, "then": true, "else": true, "elif": true,
+	"do": true, "while": true, "until": true, "!": true, "{": true,
+}
+
+// FlowWord reports whether w is a shell flow word that stands in front of the
+// command it opens. It is exported so a reading of its own — the destruction
+// reading in internal/radius — reads past the same words this one does.
+func FlowWord(w string) bool { return flowWords[w] }
 
 // interpreters take the command they run as an argument of their own, so
 // what sits after their options is a command line rather than an operand.
@@ -514,7 +537,14 @@ func candidates(seg string) []string {
 		words[i] = strings.Trim(w, `'"`)
 	}
 	escalated := false
-	for len(words) > 0 && (prefixes[BaseName(words[0])] || strings.Contains(words[0], "=")) {
+	for len(words) > 0 {
+		if flowWords[words[0]] {
+			words = words[1:]
+			continue
+		}
+		if !prefixes[BaseName(words[0])] && !strings.Contains(words[0], "=") {
+			break
+		}
 		words, escalated = words[1:], true
 	}
 	if len(words) == 0 {

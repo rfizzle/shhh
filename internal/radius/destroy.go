@@ -23,6 +23,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/rfizzle/shhh/internal/safety"
 	"github.com/rfizzle/shhh/internal/sandbox"
 	"github.com/rfizzle/shhh/internal/scope"
 )
@@ -158,21 +159,23 @@ var carriers = map[string]bool{
 // segment reads one command.
 func (r *destroyReader) segment(toks []token, depth int) {
 	words := r.operandWords(toks)
-	// A subshell's parenthesis is punctuation, not part of the verb.
-	for len(words) > 0 && strings.Trim(words[0].text, "({") == "" {
-		words = words[1:]
-	}
-	if len(words) == 0 {
-		return
-	}
-	words[0].text = strings.TrimLeft(words[0].text, "({")
 	carried := false
+front:
 	for len(words) > 0 {
+		// A subshell's parenthesis or a group's brace is punctuation, not
+		// part of the verb, wherever it stands among the words in front.
+		words[0].text = strings.TrimLeft(words[0].text, "({")
 		base := path.Base(words[0].text)
-		if carriers[base] {
+		switch {
+		case words[0].text == "" || safety.FlowWord(words[0].text):
+			// A shell flow word opens the command behind it and takes no
+			// options: `if x; then rm -rf /; fi` is an rm, and the word
+			// after `then` is its verb — the reading the safety table
+			// takes, so the rule and the card see one command.
+		case carriers[base]:
 			carried = true
-		} else if !argPrefixes[base] && (!strings.Contains(words[0].text, "=") || strings.HasPrefix(words[0].text, "-")) {
-			break
+		case !argPrefixes[base] && (!strings.Contains(words[0].text, "=") || strings.HasPrefix(words[0].text, "-")):
+			break front
 		}
 		words = words[1:]
 	}

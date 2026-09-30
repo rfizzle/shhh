@@ -125,7 +125,7 @@ func TestScratchDelete_OnlyProvenUntrackedScratch(t *testing.T) {
 		{"rm -rf .tmp/test-build && git push --force", false},
 		{"rm -rf .tmp/test-build && chmod -R 777 .tmp", false},
 		{"rm -rf .tmp/test-build\ngit reset --hard", false},
-		// A delete behind a shell keyword, which neither reading carries.
+		// A delete behind a shell flow word is read like any other.
 		{"rm -rf .tmp/test-build; if true; then rm -rf src; fi", false},
 		{"rm -rf .tmp/test-build; ! rm -rf src", false},
 		// Anything else on the line that is not an inspection, since the
