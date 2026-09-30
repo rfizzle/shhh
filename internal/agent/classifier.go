@@ -456,12 +456,35 @@ func firstNonEmptyLine(s string) string {
 // front of somebody who can answer, unsure is a question for them.
 // See docs/capabilities/approvals-and-safety.md#the-classifier-fails-closed.
 func ResolveAuto(a Action, v ClassifierVerdict) (Decision, string) {
+	if v.Decision == Allow && !v.Failed && ClassifierClearsScratch(a) {
+		return Allow, ScratchReason
+	}
 	decision, reason := resolveVerdict(a, v)
 	if JudgedDenialAsks(a, v) {
 		return Ask, reason
 	}
 	return decision, reason
 }
+
+// ClassifierClearsScratch is the one exception to a flagged command always
+// asking: a delete the rules proved reaches only untracked scratch inside the
+// workspace — every target resolved, below the workspace root, holding no
+// tracked file and reached through no link, with nothing else on the line
+// flagged — is the classifier's to judge like any unflagged command, and its
+// yes stands. The proof is the front-end's (Action.Scratch, from
+// radius.ScratchDelete); anything else the call reaches that only a person
+// may answer for, or that is refused outright, takes the exception away. It
+// is asked by ResolveAuto alone: an unattended run and a child keep the
+// answer a flagged command always had.
+// See docs/capabilities/approvals-and-safety.md#severity-moves-the-default.
+func ClassifierClearsScratch(a Action) bool {
+	return a.Kind == ActionCommand && a.SafetyFlagged && a.Scratch &&
+		!a.ScopeSensitive && !a.ScopeRefused && len(a.OutOfScope) == 0 && a.Irreplaceable == ""
+}
+
+// ScratchReason is the rule a scratch delete the classifier allowed is
+// allowed under, as the row prints it after `auto-allowed ·`.
+const ScratchReason = "scratch inside the workspace (untracked)"
 
 // JudgedDenialAsks is the seam between the two surfaces: whether this
 // verdict is a no the classifier itself reached, which a session with a

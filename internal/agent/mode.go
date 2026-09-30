@@ -292,6 +292,13 @@ type Action struct {
 	// read beside the deny list, before the mode and before the classifier.
 	// See docs/capabilities/approvals-and-safety.md#some-targets-are-never-destroyed.
 	Irreplaceable string
+	// Scratch marks a safety-flagged command whose every flag is a delete
+	// the front-end proved reaches only untracked scratch inside the
+	// workspace (radius.ScratchDelete). It is the one flag a classifier's
+	// yes may clear, and only in a session with a person in front of it
+	// (ClassifierClearsScratch). The zero value is the card.
+	// See docs/capabilities/approvals-and-safety.md#severity-moves-the-default.
+	Scratch bool
 }
 
 // Decision is a mode policy verdict for one gated tool call.

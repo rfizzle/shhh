@@ -143,6 +143,11 @@ type approvalRequest struct {
 	// the card and the safe answer at its end
 	// (docs/capabilities/approvals-and-safety.md#a-judged-denial-carries-its-reason).
 	judged string
+	// scratch is whether the command is a delete of untracked scratch
+	// inside the workspace (scratchDelete), read once where the decision is
+	// armed because it asks git and walks the targets. It is what lets auto
+	// mode's classifier judge a flagged command at all.
+	scratch bool
 	// memoryDraft is the proposed entry for approvalMemory.
 	memoryDraft memory.Draft
 	// question is the parsed question for approvalQuestion — the call's first
@@ -538,9 +543,17 @@ func (m Model) armApprovalDecision(req *approvalRequest) (tea.Model, tea.Cmd) {
 		return m.executeApprovedTool()
 	}
 	// In auto mode the classifier judges what the static policy would
-	// ask about — except safety-flagged actions, which always prompt the human.
+	// ask about — except safety-flagged actions, which always prompt the
+	// human, short of the one the rules prove is a clean-up of untracked
+	// scratch inside the workspace
+	// (docs/capabilities/approvals-and-safety.md#severity-moves-the-default).
+	if m.policy.mode == agent.ModeAuto && m.classifier != nil {
+		if act := m.approvalAction(req); act.SafetyFlagged && !act.ScopeSensitive {
+			req.scratch = m.scratchDelete(req)
+		}
+	}
 	if act := m.approvalAction(req); m.policy.mode == agent.ModeAuto && m.classifier != nil &&
-		!act.SafetyFlagged && !act.ScopeSensitive {
+		(!act.SafetyFlagged || agent.ClassifierClearsScratch(act)) && !act.ScopeSensitive {
 		return m.startClassifierCheck(req)
 	}
 	m.recordDecision(observe.DecisionAsk, observe.AskReason(m.approvalAction(req)))
@@ -649,6 +662,12 @@ func (m Model) finishClassifierCheck(v agent.ClassifierVerdict) (tea.Model, tea.
 	case agent.Allow:
 		m.recordDecision(observe.DecisionAllow, observe.ReasonClassifier)
 		req.autoRule, req.autoCost = classifierRule, v.Elapsed
+		if reason == agent.ScratchReason {
+			// A flagged command ran without a card, so the row says what
+			// let it: the proof, which is what stood in for the card, and
+			// not the judgement, which any unflagged command also gets.
+			req.autoRule, req.autoCost = reason, 0
+		}
 		if req.kind == approvalExec {
 			return m.executeRun()
 		}

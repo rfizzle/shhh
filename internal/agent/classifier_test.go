@@ -238,6 +238,42 @@ func TestResolveAuto_Backstop(t *testing.T) {
 	}
 }
 
+// A flagged delete the front-end proved is untracked scratch is the
+// classifier's to judge, and its yes stands under the rule that let it
+// stand; anything else the call reaches that is a person's, or the same
+// action on a surface with nobody there, keeps the answer it always had.
+func TestResolveAuto_ScratchDeleteIsTheClassifiersToJudge(t *testing.T) {
+	scratch := Action{Kind: ActionCommand, Command: "rm -rf .tmp/test-build", SafetyFlagged: true, Scratch: true}
+	allow := ClassifierVerdict{Decision: Allow, Reason: "cleans the build output"}
+
+	if d, reason := ResolveAuto(scratch, allow); d != Allow || reason != ScratchReason {
+		t.Fatalf("a proven scratch delete the classifier allowed = %v %q; want Allow under %q", d, reason, ScratchReason)
+	}
+	if d, reason := ResolveAuto(scratch, ClassifierVerdict{Decision: Deny, Reason: "not asked for"}); d != Ask || reason != "not asked for" {
+		t.Fatalf("the classifier's no on it is still a card with its sentence, got %v %q", d, reason)
+	}
+	if d, _ := ResolveAuto(scratch, ClassifierVerdict{Decision: Ask, Reason: "timed out", Failed: true}); d != Ask {
+		t.Fatal("a failed classifier never allows a scratch delete")
+	}
+
+	short := map[string]func(Action) Action{
+		"unproved":              func(a Action) Action { a.Scratch = false; return a },
+		"outside the scope":     func(a Action) Action { a.OutOfScope = []string{"/elsewhere"}; return a },
+		"a sensitive directory": func(a Action) Action { a.ScopeSensitive = true; return a },
+		"behind the deny mask":  func(a Action) Action { a.ScopeRefused = true; return a },
+		"irreplaceable":         func(a Action) Action { a.Irreplaceable = "~ — your home directory"; return a },
+		"not a command":         func(a Action) Action { a.Kind = ActionEdit; return a },
+	}
+	for name, change := range short {
+		if d, _ := ResolveAuto(change(scratch), allow); d == Allow {
+			t.Errorf("%s: a classifier's yes cleared a flagged action", name)
+		}
+	}
+	if d, _ := ResolveUnattended(scratch, allow); d != Deny {
+		t.Fatalf("an unattended run keeps refusing a flagged command, got %v", d)
+	}
+}
+
 func TestRecentContext_Bounds(t *testing.T) {
 	msgs := []provider.Message{
 		{Role: provider.RoleSystem, Content: "system prompt"},

@@ -196,6 +196,13 @@ func (m Model) irreplaceable(req *approvalRequest) string {
 	if req == nil || req.command == "" || req.write || req.host != "" {
 		return ""
 	}
+	return radius.Destroys(req.command, m.destroyWhere(req)).Refusal()
+}
+
+// destroyWhere is where a request's command is read for what it destroys:
+// the working scope, its root, the directory a command runs in where the
+// request says, and the home directory.
+func (m Model) destroyWhere(req *approvalRequest) radius.Where {
 	where := radius.Where{Scope: m.scope}
 	where.Root = m.workspace
 	if m.scope != nil {
@@ -211,7 +218,21 @@ func (m Model) irreplaceable(req *approvalRequest) string {
 		}
 	}
 	where.Home, _ = os.UserHomeDir()
-	return radius.Destroys(req.command, where).Refusal()
+	return where
+}
+
+// scratchDelete reports whether a request's command is a delete of untracked
+// scratch inside the workspace, read against the same place irreplaceable
+// reads it: every target resolved below the workspace root, none of it
+// tracked, nothing else on the line flagged. A process start names a
+// directory of its own the request does not carry, so its relative paths
+// prove nothing and it is scratch only where every target is absolute.
+// See docs/capabilities/approvals-and-safety.md#severity-moves-the-default.
+func (m Model) scratchDelete(req *approvalRequest) bool {
+	if req == nil || req.command == "" || req.write || req.host != "" {
+		return false
+	}
+	return radius.ScratchDelete(req.command, m.destroyWhere(req))
 }
 
 // ruleDenial is what a refusal by one of the rules tells the model, the
@@ -634,6 +655,7 @@ func (m Model) approvalAction(req *approvalRequest) agent.Action {
 	a.ScopeReason = reach.reason
 	if a.Kind == agent.ActionCommand {
 		a.Irreplaceable = m.irreplaceable(req)
+		a.Scratch = req.scratch
 	}
 	return a
 }

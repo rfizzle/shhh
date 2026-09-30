@@ -26,6 +26,15 @@ type Warning struct {
 	// the row it names accepts many.
 	Pattern string
 	Risk    string
+	// Deletes marks a row whose whole danger is removing files from where
+	// it is pointed — a recursive rm, a deleting find, a forced git clean —
+	// so what it costs is decided by what it is pointed at. It is what lets
+	// a delete proved to reach only untracked scratch inside the workspace
+	// be judged rather than always asked
+	// (docs/capabilities/approvals-and-safety.md#severity-moves-the-default).
+	// The rows naming the root and the home directory are not marked: they
+	// are never scratch.
+	Deletes bool
 }
 
 // flag is the spellings of one option a rule requires. A command satisfies
@@ -58,6 +67,8 @@ type rule struct {
 	// Nil means the flags are the whole of it.
 	where func(opts options) bool
 	risk  string
+	// deletes is the Warning's Deletes.
+	deletes bool
 }
 
 // rules are the verb-shaped dangers, most specific first: Check reports the
@@ -88,20 +99,23 @@ var rules = []rule{{
 		{letters: "rR", words: []string{"--recursive", "--dir"}},
 		{letters: "f", words: []string{"--force"}},
 	},
-	risk: "recursive forced deletion — may destroy files irrecoverably",
+	risk:    "recursive forced deletion — may destroy files irrecoverably",
+	deletes: true,
 }, {
 	// Force is not what makes a recursive delete permanent — it only stops
 	// rm asking about a write-protected file — so a rule that required it
 	// let a whole tree go as long as nothing in it happened to be read-only.
-	name:  "rm -r",
-	verb:  []string{"rm"},
-	flags: []flag{{letters: "rR", words: []string{"--recursive", "--dir"}}},
-	risk:  "recursive deletion — the directory and everything under it goes",
+	name:    "rm -r",
+	verb:    []string{"rm"},
+	flags:   []flag{{letters: "rR", words: []string{"--recursive", "--dir"}}},
+	risk:    "recursive deletion — the directory and everything under it goes",
+	deletes: true,
 }, {
-	name:  "find -delete",
-	verb:  []string{"find"},
-	flags: []flag{{words: []string{"-delete"}}},
-	risk:  "deletes every file the search matched",
+	name:    "find -delete",
+	verb:    []string{"find"},
+	flags:   []flag{{words: []string{"-delete"}}},
+	risk:    "deletes every file the search matched",
+	deletes: true,
 }, {
 	name:  "git push --force",
 	verb:  []string{"git", "push"},
@@ -116,10 +130,11 @@ var rules = []rule{{
 	// `git clean -f` deletes untracked files on its own; -d takes the
 	// directories with them and -x the ignored ones. Force is the whole
 	// condition because git refuses to clean without it.
-	name:  "git clean -f",
-	verb:  []string{"git", "clean"},
-	flags: []flag{{letters: "f", words: []string{"--force"}}},
-	risk:  "deletes untracked files — nothing in git can bring them back",
+	name:    "git clean -f",
+	verb:    []string{"git", "clean"},
+	flags:   []flag{{letters: "f", words: []string{"--force"}}},
+	risk:    "deletes untracked files — nothing in git can bring them back",
+	deletes: true,
 }, {
 	// Switching branches is not a loss; throwing away the working tree is.
 	// The two are told apart by the pathspec — an explicit `--`, or a bare
@@ -190,9 +205,35 @@ func Check(command string) []Warning {
 	return warnings
 }
 
-// checkLine reads one line: each command in it against the verb table, then
-// the line whole against the text patterns.
+// Findings reports every dangerous shape in a command rather than the first
+// of each line: every command's row, every text pattern and the download run
+// in a second step. Check keeps a line to one warning because a card leads
+// with one; a reader asking whether *all* of a line is one kind of danger —
+// a delete chained with a pipe into a shell is not only a delete — needs the
+// rest, and it gets them from the reading Check leads with, so the two cannot
+// disagree about what a line holds.
+func Findings(command string) []Warning {
+	var warnings []Warning
+	for _, line := range strings.Split(command, "\n") {
+		warnings = append(warnings, lineFindings(strings.TrimSpace(line))...)
+	}
+	return warnings
+}
+
+// checkLine reads one line for the warning a card leads with: the first of
+// lineFindings.
 func checkLine(line string) (Warning, bool) {
+	if ws := lineFindings(line); len(ws) > 0 {
+		return ws[0], true
+	}
+	return Warning{}, false
+}
+
+// lineFindings reads one line: each command in it against the verb table,
+// the first row a command matches standing for it, then the line whole
+// against the text patterns.
+func lineFindings(line string) []Warning {
+	var out []Warning
 	for _, cmd := range Commands(line) {
 		words := strings.Fields(cmd)
 		// A reading of a line can yield a command with no words in it at
@@ -210,22 +251,23 @@ func checkLine(line string) (Warning, bool) {
 		words[0] = BaseName(words[0])
 		for _, r := range rules {
 			if r.matches(words) {
-				return Warning{Pattern: r.name, Risk: r.risk}, true
+				out = append(out, Warning{Pattern: r.name, Risk: r.risk, Deletes: r.deletes})
+				break
 			}
 		}
 	}
 	for _, p := range patterns {
 		if p.re.MatchString(line) {
-			return Warning{Pattern: p.name, Risk: p.risk}, true
+			out = append(out, Warning{Pattern: p.name, Risk: p.risk})
 		}
 	}
 	// Last, because the rows above name the same act more precisely where
 	// they match it: `curl … | sh` is this shape written in one command, and
 	// a reader chasing that warning wants the row that says pipe.
 	if runsADownloadedScript(line) {
-		return Warning{Pattern: "curl -o … && sh", Risk: "runs a script this line just downloaded — executes untrusted code"}, true
+		out = append(out, Warning{Pattern: "curl -o … && sh", Risk: "runs a script this line just downloaded — executes untrusted code"})
 	}
-	return Warning{}, false
+	return out
 }
 
 // fetchers are the programs that write a file whose contents came off the

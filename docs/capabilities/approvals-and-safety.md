@@ -250,7 +250,10 @@ as none is on a flagged card: a grant answers before the classifier, so it
 would wave through every later call of the shape just judged, none of them put
 to anyone. A yes runs this one and a no
 refuses it, and the model reads either as it reads any card's answer. The
-classifier only ever moves a call toward a person, never away from one.
+classifier only ever moves a call toward a person, never away from one: the
+one flagged command it may answer for is put in its hands by a proof the
+rules make, not by anything it says ([a delete of
+scratch](#severity-moves-the-default)).
 
 The same holds for a child: its classifier's no is routed to the session's
 card with its other requests
@@ -327,6 +330,44 @@ it has already been chosen.
 
 A command that reaches execution without having been confirmed somewhere still
 gets asked. There is no path that skips both.
+
+**One flagged command is judged rather than always asked: a delete of
+scratch.** In auto mode, with a person in front of the session, a recursive
+delete, a deleting search or a forced `git clean` goes to the classifier like
+any unflagged command, and runs on its yes, where the rules prove all of this
+about it:
+
+- every target is resolved — no variable, glob, substitution or relative path
+  after a `cd` — and sits below the workspace root, not at it, inside the
+  working scope, and reached through no symlink;
+- nothing at or under a target is in the repository's index, whether committed
+  or only staged, and none of it is a repository of its own — no `.git` at a
+  target, inside one, or in a directory between the workspace root and one;
+- nothing under a target is a link that leads out of it, and the tree is small
+  enough to walk in full (the same bound the card's blast radius walks under);
+- nothing else on the line is flagged. A download piped into a shell or run
+  in a second step, an interpreter handed what was fetched, a force push, a
+  `chmod 777` — any of them beside the delete, and the line keeps its card;
+- every other command on the line is an inspection command, one that changes
+  nothing. The proof is taken before the line runs, so a move or a link made
+  earlier on it (`mv src .tmp/gone && rm -rf .tmp/gone`) would put somewhere
+  the proof never looked under the delete. Nor may the line branch or loop,
+  or carry the delete behind an escalation.
+
+`rm -rf .tmp/test-build` and an ignored `node_modules` are the cases it is
+for: routine clean-ups that raised a card every time and taught the person to
+press yes without reading. The row says why no card was drawn: `auto-allowed ·
+scratch inside the workspace (untracked)`.
+
+Everything short of that keeps the card it had — a target partly tracked, one
+the reading cannot resolve, one outside the scope, a link under the target to
+the home directory, a workspace that is not a repository, a git that does not
+answer. It is not the classifier that moves the call: the proof decides which
+calls the classifier may answer for, and the classifier is asked only what it
+is asked about any other command. A classifier's no on one of these is still
+a card with its reason, and a classifier that failed is still a card. An
+unattended run and a sub-agent are not given the exception; a flagged command
+there keeps the answer it always had.
 
 ## One act has many spellings
 
@@ -417,7 +458,9 @@ deletes only what its tests matched destroys some of a tree rather than the
 tree, so it is refused for reaching outside the scope and not for starting at
 the workspace root; `git clean` is refused at the workspace root, because what
 it deletes there is everything git cannot bring back. `rm -rf .tmp/test-build`
-and `rm -rf node_modules` are none of these and go to the card as before.
+and `rm -rf node_modules` are none of these; they go to the card as before,
+or, where they are untracked scratch in auto mode, to the classifier
+([above](#severity-moves-the-default)).
 
 **It cannot be lifted**, per session or by configuration. There is no setting
 for it and no grant reaches it. A person who means it types the command

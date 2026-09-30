@@ -202,7 +202,7 @@ func (m Model) confirmCommandEdit(line string) (tea.Model, tea.Cmd) {
 	// mode, a grant or the batch put on the request when it waved the call
 	// through, and the line it waved through is not this one — and a
 	// classifier's no was about the line it read, not the reader's.
-	amended.autoRule, amended.autoCost, amended.judged = "", 0, ""
+	amended.autoRule, amended.autoCost, amended.judged, amended.scratch = "", 0, "", false
 	reach := m.scopeReachFor(&amended)
 
 	if why := m.amendRefusal(&amended, reach); why != "" {
