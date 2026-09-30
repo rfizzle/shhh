@@ -14,6 +14,10 @@ FROM node:${NODE_VERSION}-trixie-slim AS node
 
 FROM debian:trixie-slim
 
+# Links the published package to this repository, which is what keeps the
+# release workflow's token able to push new versions to it.
+LABEL org.opencontainers.image.source="https://github.com/rfizzle/shhh"
+
 # A sandbox has no network by default, so nothing can be installed once it is
 # running: whatever a session may need to build and test is here already.
 # Compilers are left out on purpose; a project that needs one names its own
