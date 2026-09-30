@@ -78,7 +78,7 @@ func Surfaces() []Surface {
 			Position: Home,
 			Reached:  "it has the keyboard unless something has taken it",
 			Bindings: []Binding{
-				Draft.Send, Draft.Newline, Draft.Queue,
+				Draft.Send, Draft.Newline, Draft.Queue, Draft.Queued,
 				Draft.Editor, Draft.Attach,
 				Draft.Complete, Draft.Palette, Draft.Reasoning, Draft.Mode,
 				Draft.Pause,
@@ -131,6 +131,17 @@ func Surfaces() []Surface {
 			Position: Takeover,
 			Reached:  "reading mode's last row, below the transcript",
 			Bindings: Staged.All(),
+		},
+		{
+			// What waits for the turn, once the keyboard has moved into it.
+			// A takeover: the draft keeps its sentence but not the keyboard,
+			// so the queue's letters are live while it is up, and one of them
+			// cancels a message.
+			Name:     "the message queue",
+			Section:  "docs/interface/surfaces.md#the-input-frame",
+			Position: Takeover,
+			Reached:  Shown(Draft.Queued),
+			Bindings: append(Queue.All(), Screen.List),
 		},
 		{
 			// The staged paste, opened from its chip on the staged strip or

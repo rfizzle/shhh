@@ -673,6 +673,12 @@ func (m Model) updateKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 		if m.inputLive() {
 			return m, nil, true
 		}
+	case keys.Is(pressed, keys.Draft.Queued):
+		// The keyboard moves into what is queued, where any one message can
+		// be pulled back or cancelled (msgqueue.go).
+		if next, cmd, claimed := m.openQueue(); claimed {
+			return next, cmd, true
+		}
 	case keys.Is(pressed, keys.Draft.Send):
 		// A trailing backslash turns this enter into a newline, the
 		// shell's own continuation (continuation.go).

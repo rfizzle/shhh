@@ -5,6 +5,7 @@
   · send            enter · send the message  [shipped]
   · newline         shift+enter ctrl+j · insert a newline  [shipped]
   · queue           ctrl+n · queue the draft for after the turn; on …  [shipped]
+  · queued          f2 · see what is queued, to pull one back or can…  [shipped]
   · editor          ctrl+g · open the draft in $EDITOR  [shipped]
   · attach          ctrl+v · attach the clipboard  [shipped]
   · complete        tab · complete a slash command  [shipped]
@@ -66,6 +67,13 @@
   · open  enter · open  [shipped]
   · drop  x · drop  [shipped]
   · back  esc · back to the draft  [shipped]
+
+  QUEUE
+
+  · move    up down k j · select a message  [shipped]
+  · edit    enter · pull it back into the draft  [shipped]
+  · cancel  x · cancel it  [shipped]
+  · back    esc ctrl+c · back to the draft  [shipped]
 
   PASTE
 
@@ -323,4 +331,4 @@
   · paste   p · paste a key  [shipped]
   · local   o · a local model  [shipped]
 
-  236 keys · 1 moved
+  241 keys · 1 moved

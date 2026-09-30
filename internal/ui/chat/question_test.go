@@ -428,8 +428,9 @@ func TestQuestion_AQueuedFollowUpIsStillForAfterTheTurn(t *testing.T) {
 		t.Fatalf("the sentence should be queued, got %+v", m.followUps)
 	}
 	rail := stripANSI(m.noticeLine())
-	if !strings.Contains(rail, "1 question waiting") || !strings.Contains(rail, "1 follow-up") {
-		t.Errorf("the rail should count the two promises separately: %q", rail)
+	queued := stripANSI(strings.Join(m.queueRail(), "\n"))
+	if !strings.Contains(rail, "1 question waiting") || !strings.Contains(queued, "follow-up  then update the README") {
+		t.Errorf("the rail should keep the question and the queue list the follow-up: %q / %q", rail, queued)
 	}
 	if _, tools := countRows(m); tools != 0 {
 		t.Error("queueing a sentence answers nothing")

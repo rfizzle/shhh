@@ -39,7 +39,8 @@
 ╰─ [enter] send · [ctrl+v] attach · [ctrl+/] commands · [shift+tab] change mode · [ctrl+d] ×2 quit · [ctrl+]] keys ──────────╯
 
 · a notice above it · transient first, then what rides
-1 queued for this turn                                                                                                        
+[f2] edit the queue                                                                                                           
+steering   and check the parser                                                                                               
 ▣ Image#1 shot.png 412 KB                                                                                                     
 ╭─ idle ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ ▸                                                                                                                          │
@@ -95,7 +96,8 @@
 ␛[38;5;241m╰─␛[m ␛[94m[enter]␛[38;5;241m send · ␛[94m[ctrl+v]␛[38;5;241m attach · ␛[94m[ctrl+/]␛[38;5;241m commands · ␛[94m[shift+tab]␛[38;5;241m change mode · ␛[94m[ctrl+d]␛[38;5;241m ×2 quit · ␛[94m[ctrl+]]␛[38;5;241m keys␛[m ␛[38;5;241m──────────╯␛[m
 
 · a notice above it · transient first, then what rides
-␛[94m1 queued for this turn␛[m                                                                                                        
+␛[94m[f2] edit the queue␛[m                                                                                                           
+␛[94msteering ␛[m  ␛[38;5;252mand check the parser␛[m                                                                                               
 ␛[38;5;252m▣ Image#1 shot.png␛[38;5;241m 412 KB␛[m                                                                                                     
 ␛[38;5;241m╭─␛[m ␛[38;5;241midle␛[m ␛[38;5;241m─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮␛[m
 ␛[38;5;241m│␛[m ␛[38;5;241m▸␛[m ␛[38;5;252m                                                                                                                        ␛[m ␛[38;5;241m│␛[m

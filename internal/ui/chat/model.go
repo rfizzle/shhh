@@ -235,6 +235,11 @@ const (
 	// width, the rail hidden, esc returns, and its [enter] opens a turn's
 	// review, whose own esc comes back here (turns.go).
 	stateTurns
+	// stateQueue: the keyboard is in what is queued for the turn — every
+	// message typed while it runs and not yet sent, with the pointer on
+	// one to pull back into the draft or cancel (msgqueue.go). It borrows the
+	// bottom panel, so the turn keeps running and delivering under it.
+	stateQueue
 )
 
 // minPanelHeight is the fewest rows the bottom panel takes: what a surface
@@ -664,9 +669,21 @@ type entry struct {
 // steeringItem is an entry in the steering queue. Messages the session writes
 // for itself (e.g. mid-turn secret announcements) are marked as machine so
 // that injection does not treat them as the person's own words.
+//
+// The same shape is a follow-up's (followup.go), because what the queue
+// holds is one list to the reader whichever way a message waits
+// (msgqueue.go).
 type steeringItem struct {
 	text    string
 	machine bool
+	// id names a message the reader typed into the draft and queued, which
+	// is what the queue lists and what a pull-back or a cancel is aimed at.
+	// Zero on everything the session queued for itself.
+	id int
+	// atts are what was staged when the message was queued. They belong to
+	// it from then on, so pulling it back puts them back on the strip and
+	// cancelling it takes them with it.
+	atts []provider.Attachment
 	// sent marks a line another session handed this one (inbound.go), and
 	// from is the slot that sent it, empty for the command line. It joins
 	// the turn as a steer does but in the session's own voice, framed by the
@@ -1326,16 +1343,19 @@ type Model struct {
 	// sent one per turn end once the session is idle (followup.go). held
 	// stops the automatic send after a cancel: the queue survives, the rail
 	// says so, and the reader decides what still applies.
-	followUps     []string
+	followUps     []steeringItem
 	followUpsHeld bool
+	// queue is the queue's own: the next id a queued message is given and
+	// the one the pointer is on while the keyboard is in it (msgqueue.go).
+	queue queueState
 	// pasteDrop is the open `/paste drop` selector and pasteDropConfirm the
 	// inline confirm the one-chip case asks through (attachments.go).
 	pasteDrop        *components.MultiSelect
 	pasteDropConfirm *components.Confirm
 	// attachments are the images and files staged for the next message
 	// (attachments.go). They ride on whichever user message goes out
-	// next — a fresh turn or the first queued steering line — and are never
-	// rendered, only named.
+	// next — a fresh turn, or a line queued while a turn runs, which takes
+	// them with it into the queue — and are never rendered, only named.
 	attachments []provider.Attachment
 	// handles is the conversation's count of attachment handles, per kind
 	// (attachments.go): zeroed at the session boundary, read back off the
@@ -2086,9 +2106,15 @@ func (m Model) sendUserMessage(text string) (tea.Model, tea.Cmd) {
 // shown in its place — the command that produced a message, where the
 // message itself is not what the user typed.
 func (m Model) sendUserMessageAs(text, shown string) (tea.Model, tea.Cmd) {
+	return m.sendUserMessageWith(text, shown, m.takeAttachments())
+}
+
+// sendUserMessageWith is sendUserMessageAs with the attachments named rather
+// than taken off the strip: a queued follow-up carries the ones it was
+// queued with, and what is staged now belongs to the sentence being typed.
+func (m Model) sendUserMessageWith(text, shown string, atts []provider.Attachment) (tea.Model, tea.Cmd) {
 	m.openTurn(shown)
 	m.recordCheckpoint(shown)
-	atts := m.takeAttachments()
 	m.agent.StartTurnWith(text, atts)
 	m.appendEntry(userEntry(shown, atts))
 	return m.streamOpenedTurn()

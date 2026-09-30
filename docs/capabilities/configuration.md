@@ -779,6 +779,7 @@ rules above are what refuse a move, not a list of keys held back from it.
 | `draft.send` | `enter` | send the message | yes |
 | `draft.newline` | `shift+enter`, `ctrl+j` | insert a newline | yes |
 | `draft.queue` | `ctrl+n` | queue the draft for after the turn; on an empty draft, pull the newest queued message back | yes |
+| `draft.queued` | `f2` | see what is queued, to pull one back or cancel it | yes |
 | `draft.editor` | `ctrl+g` | open the draft in $EDITOR | yes |
 | `draft.attach` | `ctrl+v` | attach the clipboard | yes |
 | `draft.complete` | `tab` | complete a slash command | yes |
@@ -828,6 +829,10 @@ rules above are what refuse a move, not a list of keys held back from it.
 | `staged.open` | `enter` | open | yes |
 | `staged.drop` | `x` | drop | yes |
 | `staged.back` | `esc` | back to the draft | yes |
+| `queue.move` | `up`, `down`, `k`, `j` | select a message | yes |
+| `queue.edit` | `enter` | pull it back into the draft | yes |
+| `queue.cancel` | `x` | cancel it | yes |
+| `queue.back` | `esc`, `ctrl+c` | back to the draft | yes |
 | `paste.scroll` | `k`, `j`, `up`, `down` | scroll | yes |
 | `paste.remove` | `x` | remove the paste | yes |
 | `paste.leave` | `q`, `ctrl+c` | back to the draft, cursor where you left it | yes |

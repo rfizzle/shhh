@@ -21,6 +21,12 @@
                      cancel the queue is held rather than sent — the notice rail says so
                      on an empty draft the same key pulls the newest queued message — a follow-up first,
                      else a steering line — back (it was the line editor's next-line; ↓ still is)
+    [f2]             move the keyboard into what is queued, drawn as rows above the input in the order
+                     it will go out: ↑↓ picks a message, enter pulls it back into the draft with what
+                     was staged with it — out of the queue, so sending it queues it again at the end — x
+                     cancels it, esc goes back to the draft as it was
+                     a message the turn delivered before the key reached it is already sent, and the row
+                     says so; /rewind is what takes a sent message back out
     [@]              at the start of a word, open a file menu over what this session changed and the
                      checkout's recent files, filtered by what you type after it. tab or enter inserts
                      the path, esc keeps what you typed; a mentioned image is staged the way a pasted
@@ -177,6 +183,12 @@
                      ␛[38;5;241mcancel the queue is held rather than sent — the notice rail says so␛[m
                      ␛[38;5;241mon an empty draft the same key pulls the newest queued message — a follow-up first,␛[m
                      ␛[38;5;241melse a steering line — back (it was the line editor's next-line; ↓ still is)␛[m
+    ␛[94m[f2]␛[m             ␛[38;5;241mmove the keyboard into what is queued, drawn as rows above the input in the order␛[m
+                     ␛[38;5;241mit will go out: ↑↓ picks a message, enter pulls it back into the draft with what␛[m
+                     ␛[38;5;241mwas staged with it — out of the queue, so sending it queues it again at the end — x␛[m
+                     ␛[38;5;241mcancels it, esc goes back to the draft as it was␛[m
+                     ␛[38;5;241ma message the turn delivered before the key reached it is already sent, and the row␛[m
+                     ␛[38;5;241msays so; /rewind is what takes a sent message back out␛[m
     ␛[94m[@]␛[m              ␛[38;5;241mat the start of a word, open a file menu over what this session changed and the␛[m
                      ␛[38;5;241mcheckout's recent files, filtered by what you type after it. tab or enter inserts␛[m
                      ␛[38;5;241mthe path, esc keeps what you typed; a mentioned image is staged the way a pasted␛[m

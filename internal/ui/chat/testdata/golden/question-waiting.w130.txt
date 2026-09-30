@@ -18,7 +18,8 @@
 ╰─ [enter] answer the question · [ctrl+space/ctrl+y] show the card again · [ctrl+n] queue for after the turn ────────────────╯
 
 · beside a steer · three promises, told apart
-1 question waiting · 1 queued for this turn                                                                                   
+1 question waiting · [f2] edit the queue                                                                                      
+steering   and keep the migration reversible                                                                                  
 ╭─ ⏸ 1 waiting ──────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ ▸ the one that needs no new service                                                                                        │
 ├─ ⏸ manual · round 1 of 150 · context 32% ▰▰▱▱▱▱▱▱ · $0.51 ─────────────────────────────────────────────────────────────────┤
@@ -33,7 +34,8 @@
 ␛[38;5;241m╰─␛[m ␛[94m[enter]␛[38;5;241m answer the question · ␛[94m[ctrl+space/ctrl+y]␛[38;5;241m show the card again · ␛[94m[ctrl+n]␛[38;5;241m queue for after the turn␛[m ␛[38;5;241m────────────────╯␛[m
 
 · beside a steer · three promises, told apart
-␛[94m1 question waiting␛[38;5;241m · ␛[94m1 queued for this turn␛[m                                                                                   
+␛[94m1 question waiting␛[38;5;241m · ␛[94m[f2] edit the queue␛[m                                                                                      
+␛[94msteering ␛[m  ␛[38;5;252mand keep the migration reversible␛[m                                                                                  
 ␛[38;5;241m╭─␛[m ␛[38;5;214;1m⏸ 1 waiting␛[m ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────╮␛[m
 ␛[38;5;241m│␛[m ␛[94m▸␛[m ␛[38;5;252mthe one that needs no new service                                                                                       ␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m├─␛[m ␛[38;5;214m⏸ manual␛[38;5;243m · round 1 of 150 · ␛[92mcontext 32%␛[m ␛[92m▰▰␛[38;5;241m▱▱▱▱▱▱␛[38;5;243m · $0.51␛[m ␛[38;5;241m─────────────────────────────────────────────────────────────────┤␛[m

@@ -683,7 +683,7 @@ func TestGolden_QuestionWaiting(t *testing.T) {
 			esc, _ := next.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 			next = esc.(Model)
 			for i := 0; i < steering; i++ {
-				next.steering = append(next.steering, steeringItem{text: "and keep the migration reversible"})
+				next.steering = append(next.steering, steeringItem{text: "and keep the migration reversible", id: i + 1})
 			}
 			next.input.SetValue("the one that needs no new service")
 			next.syncInputHeight()
@@ -768,8 +768,8 @@ func TestGolden_HistorySearch(t *testing.T) {
 
 // TestGolden_DraftGrammar captures what the draft means before it is sent
 // (bang.go, mention.go, followup.go): the gutter swapped for a bang draft,
-// the file-mention menu under the box, and the notice rail counting the
-// follow-up queue apart from steering — held after a cancel.
+// the file-mention menu under the box, and the queue listing a follow-up
+// apart from steering — held after a cancel.
 func TestGolden_DraftGrammar(t *testing.T) {
 	captureGolden(t, "draft-grammar", "the draft grammar", []int{80}, func(width int) []golden.Panel {
 		bang := func() string {
@@ -793,8 +793,8 @@ func TestGolden_DraftGrammar(t *testing.T) {
 		queues := func(held bool) string {
 			m := goldenModel(t, width)
 			m.state = stateStreaming
-			m.steering = []steeringItem{{text: "and check the parser"}}
-			m.followUps = []string{"then update the docs"}
+			m.steering = []steeringItem{{text: "and check the parser", id: 1}}
+			m.followUps = []steeringItem{{text: "then update the docs", id: 2}}
 			m.followUpsHeld = held
 			return promptSurface(m)
 		}
@@ -815,7 +815,7 @@ func TestGolden_DraftGrammar(t *testing.T) {
 			{Label: "a bang draft · the gutter says it is a command", View: bang()},
 			{Label: "the @ mention menu under the draft", View: mention()},
 			{Label: "a paste folded into the sentence", View: folded()},
-			{Label: "both queues counted apart", View: queues(false)},
+			{Label: "both queues listed apart", View: queues(false)},
 			{Label: "the follow-up held after a cancel", View: queues(true)},
 		}
 	})
@@ -914,7 +914,7 @@ func TestGolden_StagedRail(t *testing.T) {
 				}
 			})},
 			{Label: "a notice above it · transient first, then what rides", View: frame(func(m *Model) {
-				m.steering = []steeringItem{{text: "and check the parser"}}
+				m.steering = []steeringItem{{text: "and check the parser", id: 1}}
 			})},
 			{Label: "reading mode on the strip · the cursor on the second of three chips, the strip's keys under it", View: func() string {
 				m := goldenModel(t, width)

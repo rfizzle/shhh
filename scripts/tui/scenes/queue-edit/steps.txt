@@ -1,0 +1,29 @@
+# program test: TestProgram_AQueuedLineIsCancelledOrPulledBackBeforeItIsSent
+#
+# What was typed at a running turn is still the reader's until it is sent
+# (docs/interface/surfaces.md#the-input-frame). The reply is held for twenty
+# seconds, so the turn is running while a steer and a follow-up are queued.
+#
+# What the captures are for: the two rows above the box, marked steering and
+# follow-up in the order they go out, with the key that reaches them on the
+# notice rail; the queue as a card once that key has the keyboard, the
+# pointer on the steer; the steer back in the draft and out of the queue; the
+# follow-up cancelled, with its one row in the transcript and the queue gone;
+# and the turn's answer landing with neither sent.
+snap 01-start "Some things worth doing first"
+keys "start on the parser" Enter
+snap 02-working "thinking"
+keys "fix the header too" Enter
+keys "then do the footer" C-n
+snap 03-queued "follow-up  then do the footer" "steering   fix the header too" "[f2] edit the queue"
+keys F2
+snap 04-card "queued · 2 messages" "[x] cancel it" "[esc] back to the draft"
+keys Up
+snap 05-selected "❯ steering   fix the header too"
+keys Enter
+snap 06-edited "▸ fix the header too" "follow-up  then do the footer"
+keys F2
+snap 07-card-again "queued · 1 message"
+keys x
+snap 08-cancelled "cancelled" "then do the footer"
+snap 09-answer "Finished the first pass over the parser" "▸ fix the header too"

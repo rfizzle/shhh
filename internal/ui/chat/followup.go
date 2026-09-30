@@ -17,7 +17,6 @@ package chat
 // just abandoned.
 
 import (
-	"fmt"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
@@ -52,7 +51,7 @@ func (m Model) queueFollowUp() (tea.Model, tea.Cmd, bool) {
 		m.recordInput(text)
 	}
 	m.input.Reset()
-	m.followUps = append(m.followUps, text)
+	m.followUps = append(m.followUps, steeringItem{text: text, id: m.queue.next(), atts: m.takeAttachments()})
 	// Queueing again is asking for the automatic send back: whatever a
 	// cancel held, the reader has now written something meant for after
 	// the current turn.
@@ -63,30 +62,21 @@ func (m Model) queueFollowUp() (tea.Model, tea.Cmd, bool) {
 }
 
 // pullQueued is the queue chord's other half: on an empty draft, the newest
-// queued message — a follow-up first, else a steering line — comes back into
-// the draft. It reports false with a draft in the box or nothing to pull.
+// queued message comes back into the draft. It is the queue's own pull-back
+// aimed at the last row — a follow-up first, else a steering line, which is
+// the order the queue lists them in — so the message leaves the queue the
+// same way whichever key took it (msgqueue.go). It reports false with a draft
+// in the box or nothing to pull.
 func (m Model) pullQueued() (tea.Model, tea.Cmd, bool) {
 	if !m.inputLive() || m.attachedTo != "" || strings.TrimSpace(m.input.Value()) != "" {
 		return m, nil, false
 	}
-	var pulled string
-	switch {
-	case len(m.followUps) > 0:
-		pulled = m.followUps[len(m.followUps)-1]
-		m.followUps = m.followUps[:len(m.followUps)-1]
-		if len(m.followUps) == 0 {
-			m.followUpsHeld = false
-		}
-	case len(m.steering) > 0:
-		item := m.steering[len(m.steering)-1]
-		m.steering = m.steering[:len(m.steering)-1]
-		pulled = item.text
-	default:
+	rows := m.queuedRows()
+	if len(rows) == 0 {
 		return m, nil, false
 	}
-	m.input.SetValue(pulled)
-	m.input.MoveToEnd()
-	// The rail's count shrank, and the box may have grown a line.
+	m.pullBack(rows[len(rows)-1].id)
+	// The queue lost a row, and the box may have grown a line.
 	m.syncViewport()
 	return m, nil, true
 }
@@ -120,9 +110,9 @@ func (m Model) dispatchFollowUp() (tea.Model, tea.Cmd, bool) {
 	if m.todoRunner.state != nil && !m.todoRunner.state.Over() {
 		return m, nil, false
 	}
-	text := m.followUps[0]
+	item := m.followUps[0]
 	m.followUps = m.followUps[1:]
-	next, cmd := m.sendUserMessage(text)
+	next, cmd := m.sendUserMessageWith(item.text, item.text, item.atts)
 	// The turn that just ended has not been autosaved yet — this dispatch
 	// returns before the done handler's own save — so the save rides here,
 	// with the follow-up already in the conversation, the way steering's
@@ -133,20 +123,21 @@ func (m Model) dispatchFollowUp() (tea.Model, tea.Cmd, bool) {
 	return next, cmd, true
 }
 
-// followUpNotice is the notice rail's count of what waits for the turn to
-// end, with the held state and its way out when a cancel stopped the
-// automatic send.
+// followUpNotice is the notice rail's part about the queue: the key that
+// moves the keyboard into it, which the rows above the box cannot carry
+// themselves, and the held state when a cancel stopped the automatic send.
+// The messages are counted by their own rows (msgqueue.go), so the rail does
+// not count them a second time.
+//
+// Attached, the draft is a child's and the key is not answered, so the rail
+// offers nothing: the queue is the session's.
 func (m Model) followUpNotice() string {
-	n := len(m.followUps)
-	if n == 0 {
+	if m.attachedTo != "" || len(m.queuedRows()) == 0 {
 		return ""
 	}
-	label := fmt.Sprintf("%d follow-up", n)
-	if n > 1 {
-		label += "s"
+	offer := keys.Bracket(keys.Draft.Queued) + " edit the queue"
+	if m.followUpsHeld && len(m.followUps) > 0 {
+		return "follow-ups held — " + offer
 	}
-	if m.followUpsHeld {
-		label += " held — " + keys.Bracket(keys.Draft.Queue) + " recalls"
-	}
-	return label
+	return offer
 }

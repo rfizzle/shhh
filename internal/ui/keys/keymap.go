@@ -297,7 +297,7 @@ func pairs() []Binding {
 		Reading.Move, Reading.Match, Reading.Half,
 		Context.Move, Sources.Move, Notes.Move,
 		Backlog.Move, Backlog.Page, Sprint.Move,
-		Select.Move, Select.MoveJK, Select.Tab, Staged.Pick,
+		Select.Move, Select.MoveJK, Select.Tab, Staged.Pick, Queue.Move,
 		Review.MoveFile, Review.MoveHunk,
 		Agent.Move, Profile.Move,
 		Diff.Scroll, Diff.Hunk, Output.Scroll,
@@ -358,6 +358,7 @@ func destructive() []Binding {
 		Agent.Cancel, Agent.Kill, Agent.KillAll,
 		Select.Delete, Screen.Delete,
 		Notes.Drop, Backlog.Drop,
+		Queue.Cancel,
 		Confirm.Force,
 	}
 }
@@ -443,6 +444,7 @@ func movable() []namedGroup {
 		{"reading", reflect.ValueOf(&Reading).Elem()},
 		{"find", reflect.ValueOf(&Find).Elem()},
 		{"staged", reflect.ValueOf(&Staged).Elem()},
+		{"queue", reflect.ValueOf(&Queue).Elem()},
 		{"paste", reflect.ValueOf(&Paste).Elem()},
 		{"context", reflect.ValueOf(&Context).Elem()},
 		{"row", reflect.ValueOf(&Row).Elem()},

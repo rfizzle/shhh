@@ -120,10 +120,11 @@ func (m Model) frameShowing() bool {
 
 // framePreRails are the rows the surface draws above the box, in the order
 // they stand in: whatever the session is saying, the status row that stands
-// in for a dropped inspector rail, and what is staged to ride out with the
-// next message. Each is empty when it has nothing to say and takes no row.
-// The order is the rails' scopes, narrowing towards the box: the notices are
-// the session talking, the status row is what the session amounts to, and the
+// in for a dropped inspector rail, what is queued for the turn, and what is
+// staged to ride out with the next message. Each is empty when it has nothing
+// to say and takes no row. The order is the rails' scopes, narrowing towards
+// the box: the notices are the session talking, the status row is what the
+// session amounts to, the queue is what the reader already wrote, and the
 // staged rail belongs to the sentence being typed.
 func (m Model) framePreRails() []string {
 	if m.framed == nil {
@@ -139,7 +140,9 @@ func (m Model) framePreRails() []string {
 // resolveFramePreRails renders the three rails. The row budget counts them
 // and the draw prints them, so a frame renders them once.
 func (m Model) resolveFramePreRails() []string {
-	return []string{m.noticeLine(), m.statusRow(), m.stagedRail()}
+	rails := []string{m.noticeLine(), m.statusRow()}
+	rails = append(rails, m.queueRail()...)
+	return append(rails, m.stagedRail())
 }
 
 // frameExtraHeight is what the frame adds beyond the standard chrome rows:
@@ -785,11 +788,9 @@ func (m Model) noticeLine() string {
 	if note := m.questionNotice(); note != "" {
 		parts = append(parts, noticePart{text: sty.Frame.NoticeInfo.Render(note)})
 	}
-	if n := len(m.steering); n > 0 {
-		parts = append(parts, noticePart{text: sty.Frame.NoticeInfo.Render(queuedForTurn(n))})
-	}
-	// Follow-ups count separately from steering: one joins the running
-	// turn, the other waits for it to end (followup.go).
+	// What is queued is drawn as rows of its own above the box; the rail
+	// carries the key that reaches them and whether a cancel held them
+	// (followup.go).
 	if note := m.followUpNotice(); note != "" {
 		parts = append(parts, noticePart{text: sty.Frame.NoticeInfo.Render(note)})
 	}

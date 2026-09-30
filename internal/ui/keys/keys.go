@@ -188,7 +188,18 @@ type DraftKeys struct {
 	// the better trade anyway, since the two halves cannot be confused.
 	// The chord was the textarea's next-line, which the arrows already
 	// are, the way ctrl+p was its previous-line before the hold took it.
-	Queue     Binding
+	Queue Binding
+	// Queued moves the keyboard into what is queued, drawn above the box:
+	// every message waiting for the turn, where one can be pulled back into
+	// the draft or cancelled before it is sent. Queue above stays the
+	// shortcut for the newest.
+	//
+	// It is a function key because the draft spends chords only and every
+	// ctrl letter the terminal delivers is spent or the line editor's; f2 is
+	// the free one that already means "edit the thing selected" to anyone
+	// who has renamed a file in a desktop file manager
+	// (docs/interface/reserved-keys.md#what-is-left).
+	Queued    Binding
 	Editor    Binding
 	Attach    Binding
 	Complete  Binding
@@ -277,6 +288,7 @@ var Draft = DraftKeys{
 	Send:     bind("enter", "send the message", "enter"),
 	Newline:  bind("shift+enter", "insert a newline", "shift+enter", "ctrl+j"),
 	Queue:    bind("ctrl+n", "queue the draft for after the turn; on an empty draft, pull the newest queued message back", "ctrl+n"),
+	Queued:   bind("f2", "see what is queued, to pull one back or cancel it", "f2"),
 	Editor:   bind("ctrl+g", "open the draft in $EDITOR", "ctrl+g"),
 	Attach:   bind("ctrl+v", "attach the clipboard", "ctrl+v"),
 	Complete: bind("tab", "complete a slash command", "tab"),
@@ -472,6 +484,35 @@ var Staged = StagedKeys{
 	// The safe answer: the draft comes back as it was, with the chip still
 	// staged (docs/interface/principles.md#esc-is-always-the-safe-answer).
 	Back: bind("esc", "back to the draft", "esc"),
+}
+
+// QueueKeys are the queue's: the messages typed while a turn runs and not
+// yet sent, drawn above the box, once Draft.Queued has moved the keyboard
+// into them (docs/interface/surfaces.md#the-input-frame). The draft does not
+// have the keyboard while they are live, which is what lets two of them be
+// letters.
+type QueueKeys struct {
+	Move   Binding
+	Edit   Binding
+	Cancel Binding
+	Back   Binding
+}
+
+// All is the queue's keys in the order its row offers them.
+func (k QueueKeys) All() []Binding { return []Binding{k.Move, k.Edit, k.Cancel, k.Back} }
+
+var Queue = QueueKeys{
+	Move: bind("↑↓", "select a message", "up", "down", "k", "j"),
+	// Edit takes the message out of the queue and puts it in the draft: it
+	// is the reader's sentence again, and sending it queues it afresh at the
+	// end like any other.
+	Edit: bind("enter", "pull it back into the draft", "enter"),
+	// Cancel is the letter the staged strip drops a chip on, for the same
+	// act on a different thing.
+	Cancel: bind("x", "cancel it", "x"),
+	// The safe answer: the draft comes back exactly as it was and nothing
+	// queued moves (docs/interface/principles.md#esc-is-always-the-safe-answer).
+	Back: bind("esc", "back to the draft", "esc", "ctrl+c"),
 }
 
 // FindKeys are the transcript search's query row — what reading mode's bar

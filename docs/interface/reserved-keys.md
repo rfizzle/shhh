@@ -243,7 +243,7 @@ not the tick: it sets the eighth bit on the byte, which is not the
 escape prefix a chord is, and the row says so.
 
 Free chords, spelled the way the decoder spells them and so the way a
-keymap file must: `ctrl+^`, the plain function keys `f2` … `f9`,
+keymap file must: `ctrl+^`, the plain function keys `f3` … `f9`,
 and the modifier combinations on the arrow and navigation rows
 the tables above do not name — `alt+pgup`, `alt+pgdown`, `alt+home`,
 `alt+end`, `ctrl+home`, `ctrl+end`, `alt+shift+pgup`, `alt+shift+pgdown`,
@@ -252,7 +252,12 @@ is spent or the line editor's (`ctrl+a`, `ctrl+e`, `ctrl+k`, `ctrl+u`,
 `ctrl+w` stay with the textarea), which is why the agent manager is on the
 function row. `ctrl+]` left that set for the key list: it is the door a lost
 reader opens, and it had to be a chord every terminal delivers. The agent
-family spends `f12` from the same set, and shift on `f7` and `f8`.
+family spends `f12` from the same set, and shift on `f7` and `f8`. The queue
+spends `f2` — `draft.queued`, the input's key into what is queued for the
+turn — because it is the one key on the row that already means "edit the
+thing selected" to anyone who has renamed a file on a desktop; the queue's
+own keys (`queue.move`, `queue.edit`, `queue.cancel`, `queue.back`) are
+letters and the arrows, live only once it holds the keyboard.
 
 Nothing ships on alt, so every alt letter is left to a keymap file on Linux
 and Windows — where it costs nothing — apart from the six the textarea holds

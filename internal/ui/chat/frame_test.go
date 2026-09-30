@@ -298,9 +298,10 @@ func TestFrame_NoticeRailAppearsAndCounts(t *testing.T) {
 		t.Fatalf("the notice rail must shrink the viewport (%d -> %d)", base, m.viewport.Height())
 	}
 
-	m.steering = []steeringItem{{text: "one"}, {text: "two"}}
-	if !strings.Contains(stripANSI(m.View().Content), "2 queued for this turn") {
-		t.Fatal("the notice rail should show the queued steering count")
+	m.steering = []steeringItem{{text: "one", id: 1}, {text: "two", id: 2}}
+	view := stripANSI(m.View().Content)
+	if !strings.Contains(view, "steering   one") || !strings.Contains(view, "steering   two") {
+		t.Fatalf("the queue above the box should list the queued steering:\n%s", view)
 	}
 }
 

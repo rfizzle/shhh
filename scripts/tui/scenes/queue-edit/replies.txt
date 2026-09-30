@@ -1,0 +1,5 @@
+# One turn held open long enough for two messages to be typed at it, the
+# keyboard to be moved into the queue, and one of them to be pulled back and
+# the other cancelled before the answer lands.
+wait:20
++Finished the first pass over the parser; nothing else was asked for.

@@ -954,12 +954,40 @@ out, and the bytes are still on the clipboard either way.
 Typing while the agent works is steering, not a queued prompt, and the gutter
 says which of the two you are doing. The queued prompt exists too, behind a
 chord of its own: a follow-up waits for the turn to end and goes out as the
-next message, where steering joins the conversation mid-flight. The notice
-rail counts the two queues separately, because "change what you are doing"
-and "when you are done, then" are different promises. A cancel does not send
-what was queued behind it — the follow-up was written against work that was
-just abandoned — so the queue survives, marked held, and one chord takes a
-line back into the draft for the reader to decide what still applies.
+next message, where steering joins the conversation mid-flight. Each marks
+its own rows, because "change what you are doing" and "when you are done,
+then" are different promises. A cancel does not send what was queued behind
+it — the follow-up was written against work that was just abandoned — so the
+queue survives, marked held, for the reader to decide what still applies.
+
+A queued message is still the reader's until it is sent, so the queue is
+drawn and it can be edited. Above the box, between the status row and the
+staged strip, it is one row per message in the order they will go out —
+steering first, since it goes at the next round, then the follow-ups — each
+marked with which of the two it is, cut to one line, and naming what was
+staged with it, since what was staged when a message was queued leaves with
+that message and not with the next one. Past three rows the oldest are kept,
+because they go next, and the rest are counted. The notice rail carries the
+one key that reaches it, and whether a cancel has held the follow-ups.
+
+That key moves the keyboard into the queue, which becomes a card in the
+panel with the pointer on the newest message: the arrows move it, enter
+pulls the message back into the draft with its attachments back on the
+strip, a letter cancels it — its attachments with it, and one row in the
+transcript saying so — and esc goes back to the draft exactly as it was.
+Pulling a message back takes it out of the queue: it is a sentence in the
+draft again, and sending it queues it afresh at the end like anything else
+typed, so nothing is ever delivered twice. The queue chord on an empty
+draft is the same pull-back aimed at the newest message. The turn keeps
+running while the card is up, so a message can be delivered while the
+pointer is on it; the key that arrives second does nothing to it and says it
+was already sent, and a sent message is taken back by rewinding to before
+it. Nothing about any of this reaches the model: a cancelled message never
+does, and an edited one does as it is sent. What the session queues for
+itself — an announcement, a line another session sent — is not the reader's
+sentence, and is not on the list. Attached to a child, the draft is the
+child's and the queue drawn is not: the lane's own queue is not yet
+editable.
 
 Two prefixes turn the draft into something other than a message, because
 every other harness taught the same two. A word starting `@` opens the

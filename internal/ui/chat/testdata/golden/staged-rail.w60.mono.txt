@@ -35,7 +35,8 @@
 ╰─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 ────────────────╯
 
 · a notice above it · transient first, then what rides
-1 queued for this turn                                  
+[f2] edit the queue                                     
+steering   and check the parser                         
 ▣ Image#1 shot.png 412 KB                               
 ╭─ idle ───────────────────────────────────────────────╮
 │ ▸                                                    │
@@ -86,7 +87,8 @@
 ␛[38;5;244m╰─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mctx 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51␛[m ␛[38;5;244m────────────────╯␛[m
 
 · a notice above it · transient first, then what rides
-␛[38;5;254m1 queued for this turn␛[m                                  
+␛[38;5;254m[f2] edit the queue␛[m                                     
+␛[38;5;254msteering ␛[m  ␛[38;5;254mand check the parser␛[m                         
 ␛[38;5;254m▣ Image#1 shot.png␛[38;5;244m 412 KB␛[m                               
 ␛[38;5;244m╭─␛[m ␛[38;5;244midle␛[m ␛[38;5;244m───────────────────────────────────────────────╮␛[m
 ␛[38;5;244m│␛[m ␛[38;5;244m▸␛[m ␛[38;5;254m                                                  ␛[m ␛[38;5;244m│␛[m

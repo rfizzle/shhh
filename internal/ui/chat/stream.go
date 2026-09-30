@@ -308,10 +308,8 @@ func (m *Model) injectSteering() bool {
 	if len(m.steering) == 0 {
 		return false
 	}
-	// Whatever was staged goes with the first line of the batch: they are
-	// all injected into the same round, so which one carries them is only a
-	// question of where the transcript names them.
-	atts := m.takeAttachments()
+	// Each line carries what was staged when it was queued: those belong to
+	// it, and what is staged now belongs to the sentence still being typed.
 	humanSteers, sentSteers := 0, 0
 	for _, item := range m.steering {
 		if item.sent {
@@ -340,14 +338,13 @@ func (m *Model) injectSteering() bool {
 		m.turnCount++
 		m.agent.SetTurn(m.turnCount)
 		m.recordCheckpoint(item.text)
-		m.agent.Append(provider.Message{Role: provider.RoleUser, Content: item.text, Attachments: atts})
-		m.appendEntry(userEntry(item.text, atts))
+		m.agent.Append(provider.Message{Role: provider.RoleUser, Content: item.text, Attachments: item.atts})
+		m.appendEntry(userEntry(item.text, item.atts))
 		// What the reader has just asked for is part of what this turn is
 		// serving, so it is part of what the readings judge it against
 		// (agent.ExtendTarget). The anchor is there to stop the run moving
 		// its own yardstick; the person is not the run.
 		m.summaryTarget = agent.ExtendTarget(m.summaryTarget, item.text)
-		atts = nil
 	}
 	if humanSteers+sentSteers > 0 {
 		// And what was judged against the shorter instruction is retired, before
@@ -407,6 +404,12 @@ func (m *Model) restoreSteering() {
 			m.inbound.held = append(m.inbound.held, InboundLine{From: item.from, Text: item.text})
 		case !item.machine:
 			parts = append(parts, item.text)
+			if item.id != 0 && item.id == m.queue.sel {
+				m.queue.returned = true
+			}
+			// What rode with it goes back on the strip, where the fold its
+			// sentence holds can find it again.
+			m.attachments = append(m.attachments, item.atts...)
 		}
 	}
 	if cur := m.input.Value(); strings.TrimSpace(cur) != "" {

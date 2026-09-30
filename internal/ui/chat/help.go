@@ -321,6 +321,11 @@ ctrl+j does the same, for terminals that cannot report shift+enter. A draft endi
 on an empty draft the same key pulls the newest queued message — a follow-up first, else a steering line — back (it was the line editor's next-line; ↓ still is)`,
 		},
 		{
+			binds: []keys.Binding{keys.Draft.Queued},
+			text: `move the keyboard into what is queued, drawn as rows above the input in the order it will go out: ↑↓ picks a message, enter pulls it back into the draft with what was staged with it — out of the queue, so sending it queues it again at the end — x cancels it, esc goes back to the draft as it was
+a message the turn delivered before the key reached it is already sent, and the row says so; /rewind is what takes a sent message back out`,
+		},
+		{
 			key:  "[@]",
 			text: `at the start of a word, open a file menu over what this session changed and the checkout's recent files, filtered by what you type after it. tab or enter inserts the path, esc keeps what you typed; a mentioned image is staged the way a pasted one is`,
 		},

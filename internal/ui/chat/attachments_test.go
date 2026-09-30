@@ -144,8 +144,9 @@ func TestAttachments_RideOnTheUserMessage(t *testing.T) {
 	}
 }
 
-// Staged while the agent works, they go with the steering line that is
-// injected next — the same round, the same request.
+// Staged while the agent works, they go into the queue with the steering
+// line they were staged for — the strip is left for the next sentence — and
+// out with it at the next round, in the same request.
 func TestAttachments_RideOnQueuedSteering(t *testing.T) {
 	m := stagePNG(t, frameModel(t, 100, 40), "shot.png")
 	m.setTurnState(stateStreaming)
@@ -156,8 +157,9 @@ func TestAttachments_RideOnQueuedSteering(t *testing.T) {
 	if len(next.steering) != 1 {
 		t.Fatalf("expected the line to queue as steering, got %v", next.steering)
 	}
-	if len(next.attachments) != 1 {
-		t.Fatal("queueing should not spend the attachment yet")
+	if len(next.attachments) != 0 || len(next.steering[0].atts) != 1 {
+		t.Fatalf("queueing should move the attachment onto the queued line: staged %d, queued %d",
+			len(next.attachments), len(next.steering[0].atts))
 	}
 
 	if !next.injectSteering() {
@@ -167,9 +169,6 @@ func TestAttachments_RideOnQueuedSteering(t *testing.T) {
 	last := msgs[len(msgs)-1]
 	if len(last.Attachments) != 1 {
 		t.Fatalf("the injected steering message lost the attachment: %#v", last)
-	}
-	if len(next.attachments) != 0 {
-		t.Fatal("injecting should empty the staging area")
 	}
 }
 

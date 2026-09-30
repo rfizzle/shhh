@@ -455,6 +455,17 @@ func buildOverlays() map[state]*mode {
 			keys:    (Model).updateHeldLine,
 			keyList: staticKeyList("the held-line card"),
 		},
+		// The queue with the keyboard in it (msgqueue.go). It borrows the panel
+		// and never the turn: steering is still delivered at every boundary
+		// while it is up, which is why its pointer names a message rather
+		// than a row.
+		stateQueue: {
+			place:   placePanel,
+			borrows: true,
+			lines:   panelRows((Model).queueLines),
+			answer:  (*Model).answerQueue,
+			keyList: staticKeyList("the message queue"),
+		},
 		stateQuitConfirm: {
 			place:    placePanel,
 			borrows:  true,

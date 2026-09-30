@@ -30,14 +30,18 @@
 │ ▸ why does ⟨Paste#1 · 214 lines⟩ never stop                              │
 ╰─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 · Paste#1 will cost ~2.0k tokens ───╯
 
-· both queues counted apart
-1 queued for this turn · 1 follow-up                                        
+· both queues listed apart
+[f2] edit the queue                                                         
+steering   and check the parser                                             
+follow-up  then update the docs                                             
 ╭─ ⠋ thinking… ────────────────────────────────────────────────────────────╮
 │ ▸                                                                        │
 ╰─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 ────────────────────────────────────╯
 
 · the follow-up held after a cancel
-1 queued for this turn · 1 follow-up held — [ctrl+n] recalls                
+follow-ups held — [f2] edit the queue                                       
+steering   and check the parser                                             
+follow-up  then update the docs                                             
 ╭─ ⠋ thinking… ────────────────────────────────────────────────────────────╮
 │ ▸                                                                        │
 ╰─ ⏸ manual · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 ────────────────────────────────────╯
@@ -63,14 +67,18 @@
 ␛[38;5;244m│␛[m ␛[38;5;244m▸␛[m ␛[38;5;254mwhy does ⟨Paste#1 · 214 lines⟩ never stop                             ␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m╰─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mctx 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51 · Paste#1 will cost ~2.0k tokens␛[m ␛[38;5;244m───╯␛[m
 
-· both queues counted apart
-␛[38;5;254m1 queued for this turn␛[38;5;244m · ␛[38;5;254m1 follow-up␛[m                                        
+· both queues listed apart
+␛[38;5;254m[f2] edit the queue␛[m                                                         
+␛[38;5;254msteering ␛[m  ␛[38;5;254mand check the parser␛[m                                             
+␛[38;5;254mfollow-up␛[m  ␛[38;5;254mthen update the docs␛[m                                             
 ␛[38;5;244m╭─␛[m ␛[38;5;254m⠋ thinking…␛[m ␛[38;5;244m────────────────────────────────────────────────────────────╮␛[m
 ␛[38;5;244m│␛[m ␛[38;5;254;1m▸␛[m ␛[38;5;254m                                                                      ␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m╰─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mctx 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51␛[m ␛[38;5;244m────────────────────────────────────╯␛[m
 
 · the follow-up held after a cancel
-␛[38;5;254m1 queued for this turn␛[38;5;244m · ␛[38;5;254m1 follow-up held — [ctrl+n] recalls␛[m                
+␛[38;5;254mfollow-ups held — [f2] edit the queue␛[m                                       
+␛[38;5;254msteering ␛[m  ␛[38;5;254mand check the parser␛[m                                             
+␛[38;5;254mfollow-up␛[m  ␛[38;5;254mthen update the docs␛[m                                             
 ␛[38;5;244m╭─␛[m ␛[38;5;254m⠋ thinking…␛[m ␛[38;5;244m────────────────────────────────────────────────────────────╮␛[m
 ␛[38;5;244m│␛[m ␛[38;5;254;1m▸␛[m ␛[38;5;254m                                                                      ␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m╰─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mctx 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · $0.51␛[m ␛[38;5;244m────────────────────────────────────╯␛[m

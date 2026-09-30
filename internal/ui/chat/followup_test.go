@@ -23,7 +23,7 @@ func TestFollowUp_QueuesWhileTurnIsLive(t *testing.T) {
 	updated, _ := m.Update(queueChord())
 	next := updated.(Model)
 
-	if len(next.followUps) != 1 || next.followUps[0] != "and then update the docs" {
+	if len(next.followUps) != 1 || next.followUps[0].text != "and then update the docs" {
 		t.Fatalf("expected one queued follow-up, got %v", next.followUps)
 	}
 	if len(next.steering) != 0 {
@@ -32,8 +32,8 @@ func TestFollowUp_QueuesWhileTurnIsLive(t *testing.T) {
 	if next.input.Value() != "" {
 		t.Fatal("queueing should clear the draft")
 	}
-	if !strings.Contains(stripANSI(next.noticeLine()), "1 follow-up") {
-		t.Fatalf("the notice rail should count the follow-up: %q", stripANSI(next.noticeLine()))
+	if rows := stripANSI(strings.Join(next.queueRail(), "\n")); !strings.Contains(rows, "follow-up  and then update the docs") {
+		t.Fatalf("the queue above the box should list the follow-up: %q", rows)
 	}
 }
 
@@ -92,7 +92,7 @@ func TestFollowUp_SurvivesCancelHeld(t *testing.T) {
 		t.Fatal("a cancel must hold the queue rather than send it")
 	}
 	notice := stripANSI(m.noticeLine())
-	if !strings.Contains(notice, "follow-up held") {
+	if !strings.Contains(notice, "follow-ups held") {
 		t.Fatalf("the rail should say the queue is held: %q", notice)
 	}
 
@@ -121,7 +121,7 @@ func TestFollowUp_TheChordOnAnEmptyDraftPullsNewestBack(t *testing.T) {
 	if m.input.Value() != "second" {
 		t.Fatalf("expected the newest follow-up back in the draft, got %q", m.input.Value())
 	}
-	if len(m.followUps) != 1 || m.followUps[0] != "first" {
+	if len(m.followUps) != 1 || m.followUps[0].text != "first" {
 		t.Fatalf("expected the older follow-up still queued, got %v", m.followUps)
 	}
 }

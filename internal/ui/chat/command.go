@@ -94,8 +94,8 @@ func (m Model) submitInput() (tea.Model, tea.Cmd) {
 		// is a turn in flight for this purpose — enter queues the sentence
 		// for the next round rather than starting a turn the pending
 		// decision would immediately interrupt.
-		m.steering = append(m.steering, steeringItem{text: text})
-		// The queued count surfaces on the notice rail.
+		m.steering = append(m.steering, steeringItem{text: text, id: m.queue.next(), atts: m.takeAttachments()})
+		// The queue above the box grows a row (msgqueue.go).
 		m.syncViewport()
 		return m, nil
 	}
