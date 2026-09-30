@@ -129,11 +129,22 @@ const draftSchemaTemplate = `{
 				"reasoning": {"type": "string", "enum": ["off", "low", "medium", "high", "inherit"], "description": "How deeply the role reasons; inherit takes the session's level"},
 				"permissions": {"type": "array", "items": {"type": "string", "enum": ["web", "write", "execute"]}, "description": "Tiers granted beyond read: web, write or execute"},
 				"tools": {"type": "array", "items": {"type": "string", "enum": %s}, "description": "Optional: narrow the toolset to these names, within the tiers you granted. Omit unless narrowing is the point of the role"},
-				"prompt": {"type": "string", "description": "The standing instructions, second person, 80-300 words"},
+				"sections": {
+					"type": "object",
+					"description": "The standing instructions, second person, 80-300 words across the five sections. Answer every section by name; where the brief gives you nothing to put in one and you cannot reasonably assume it, answer it with an empty string rather than leaving it out or folding it into another, so the person sees it is empty",
+					"properties": {
+						"purpose": {"type": "string", "description": "Purpose: the job, and what done looks like"},
+						"scope": {"type": "string", "description": "Scope: the paths and areas it works in, and what it must leave alone"},
+						"restrictions": {"type": "string", "description": "Restrictions: what it never does"},
+						"method": {"type": "string", "description": "Method: how it works and how it verifies"},
+						"report": {"type": "string", "description": "Report: what it hands back, and in what shape"}
+					},
+					"required": ["purpose", "scope", "restrictions", "method", "report"]
+				},
 				"max_tokens": {"type": "integer", "description": "Token budget for one task; omit for the default"},
 				"why": {"type": "string", "description": "One sentence on the choices that were not obvious"}
 			},
-			"required": ["name", "description", "permissions", "prompt"]
+			"required": ["name", "description", "permissions", "sections"]
 		},
 		"questions": {
 			"type": "array",
@@ -270,11 +281,11 @@ func parse(text string, kind Kind) (Outcome, bool) {
 // in a coding session, and a single prompt hedging between them would
 // draft a persona that hedges too.
 func systemPrompt(kind Kind) string {
-	common := `You draft agent profiles for shhh, a terminal assistant. A profile is a small file: a role name, a one-line description the orchestrating model uses to choose the role, the permission tiers it gets beyond reading, optionally a model and reasoning level, and a prompt that is the agent's standing instructions. The agent spawned from it works one delegated task at a time, cannot see the conversation it was spawned from, and ends with a report that is the whole of what comes back.
+	common := `You draft agent profiles for shhh, a terminal assistant. A profile is a small file: a role name, a one-line description the orchestrating model uses to choose the role, the permission tiers it gets beyond reading, optionally a model and reasoning level, and a prompt that is the agent's standing instructions, written in five sections: Purpose, Scope, Restrictions, Method and Report. The agent spawned from it works one delegated task at a time, cannot see the conversation it was spawned from, and ends with a report that is the whole of what comes back.
 
 Answer with the draft_profile tool. Draft from what you were given, making reasonable assumptions and naming them in "why"; ask questions only when an answer would genuinely change the draft, and then at most three, short. A person who gave you a full specification should get a draft, not questions. A person who gave you four words should get a draft too, if the four words are enough — a single sharp question is better than a vague draft, and a good draft is better than any question.
 
-The prompt is the part that matters. Write it in the second person, to the agent. Be specific about what it does first, what it must never do, what its report looks like, and how it should sound. Do not restate what every agent is told (that it works one task, cannot see the conversation, ends with a report). Do not pad.`
+The prompt is the part that matters. Write it in the second person, to the agent, one section at a time: Purpose is the job and what done looks like, Scope is where it works and what it leaves alone, Restrictions is what it never does, Method is how it works and verifies, and Report is what it hands back and in what shape. Be specific about what it does first, what it must never do, what its report looks like, and how it should sound. Each section is its own text: do not repeat another section's content or write its heading. A section you have nothing for is an empty string, which the person will see and can fill; never pad one to hide the gap. Do not restate what every agent is told (that it works one task, cannot see the conversation, ends with a report). Do not pad.`
 	if kind == KindChat {
 		return common + `
 
@@ -304,7 +315,13 @@ func userPrompt(req Request) string {
 		}
 	}
 	if req.Current != nil {
-		cur, _ := json.MarshalIndent(req.Current, "", "  ")
+		// The sections are the prompt the drafter answered; sending the
+		// prompt assembled from them as well would be the same text twice.
+		shown := *req.Current
+		if shown.Sections != nil {
+			shown.Prompt = ""
+		}
+		cur, _ := json.MarshalIndent(shown, "", "  ")
 		fmt.Fprintf(&b, "\nCURRENT DRAFT:\n%s\n", cur)
 		fmt.Fprintf(&b, "\nWhat the person said about it — revise the draft to match, keeping everything they did not mention:\n%s\n", strings.TrimSpace(req.Feedback))
 	}

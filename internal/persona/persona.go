@@ -41,14 +41,77 @@ type Draft struct {
 	// every tool they allow. It is how a role that only verifies through
 	// the project's own checks says so: quality_gate sits under read
 	// (docs/capabilities/subagents.md#a-profile-that-changes-nothing-can-still-run-the-checks).
-	Tools     []string `json:"tools,omitempty"`
-	Prompt    string   `json:"prompt"`
-	MaxTokens int64    `json:"max_tokens,omitempty"`
-	Why       string   `json:"why,omitempty"`
+	Tools []string `json:"tools,omitempty"`
+	// Sections is the prompt as the drafter answers it: the five prose
+	// sections by name, so one it left empty is an empty field rather than
+	// a paragraph nobody can see is missing. Normalise writes Prompt from
+	// it, which makes it the source of the prompt wherever both are set; a
+	// draft carrying only Prompt — an answer in the older shape — has it
+	// read into Sections instead.
+	Sections  *Sections `json:"sections,omitempty"`
+	Prompt    string    `json:"prompt,omitempty"`
+	MaxTokens int64     `json:"max_tokens,omitempty"`
+	Why       string    `json:"why,omitempty"`
 	// Dropped is the tools Normalise took off the list because the session
 	// cannot grant their tier, for the card to name. It is not part of the
 	// file, nor of the draft the drafter is shown again.
 	Dropped []string `json:"-"`
+}
+
+// Sections is a profile's five prose sections as the drafter's answer names
+// them. The stored form is the prompt with a `##` heading per section; this
+// is the same text held apart, so a later revision can change one section
+// and hand the other four back as they were
+// (docs/capabilities/subagents.md#a-profile-is-drafted-in-conversation).
+type Sections struct {
+	Purpose      string `json:"purpose"`
+	Scope        string `json:"scope"`
+	Restrictions string `json:"restrictions"`
+	Method       string `json:"method"`
+	Report       string `json:"report"`
+}
+
+// List is the sections in the loader's order and spelling.
+func (s Sections) List() []config.PromptSection {
+	return []config.PromptSection{
+		{Name: config.SectionPurpose, Body: s.Purpose},
+		{Name: config.SectionScope, Body: s.Scope},
+		{Name: config.SectionRestrictions, Body: s.Restrictions},
+		{Name: config.SectionMethod, Body: s.Method},
+		{Name: config.SectionReport, Body: s.Report},
+	}
+}
+
+// sectionsOf is the loader's reading of a prompt as a Sections.
+func sectionsOf(list []config.PromptSection) *Sections {
+	s := &Sections{}
+	for _, sec := range list {
+		body := strings.TrimSpace(sec.Body)
+		switch sec.Name {
+		case config.SectionPurpose:
+			s.Purpose = body
+		case config.SectionScope:
+			s.Scope = body
+		case config.SectionRestrictions:
+			s.Restrictions = body
+		case config.SectionMethod:
+			s.Method = body
+		case config.SectionReport:
+			s.Report = body
+		}
+	}
+	return s
+}
+
+// Empty is the names of the sections with nothing in them, in order.
+func (s Sections) Empty() []string {
+	var out []string
+	for _, sec := range s.List() {
+		if strings.TrimSpace(sec.Body) == "" {
+			out = append(out, sec.Name)
+		}
+	}
+	return out
 }
 
 // Definition is the draft as the loader would read it.
@@ -103,7 +166,16 @@ func (d *Draft) Normalise(kind Kind) error {
 	if d.Description == "" {
 		return fmt.Errorf("description is empty")
 	}
-	d.Prompt = strings.TrimSpace(d.Prompt)
+	// The sections are the prompt whenever they say anything; a draft with
+	// none is read from its prompt, which keeps a prompt with no headings
+	// as its Purpose and as the text it was.
+	if d.Sections != nil && len(d.Sections.Empty()) < len(config.PromptSectionNames()) {
+		d.Sections = sectionsOf(d.Sections.List())
+		d.Prompt = config.WritePromptSections(d.Sections.List())
+	} else {
+		d.Prompt = strings.TrimSpace(d.Prompt)
+		d.Sections = sectionsOf(config.ReadPromptSections(d.Prompt))
+	}
 	if d.Prompt == "" {
 		return fmt.Errorf("prompt is empty")
 	}

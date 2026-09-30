@@ -12,4 +12,4 @@ description = "read-only tools plus web; use for parallel research and codebase 
 model = "claude-haiku-4-5-20251001"
 reasoning = "off"
 permissions = ["read", "web"]
-max_tokens = 60000
+max_tokens = 300000

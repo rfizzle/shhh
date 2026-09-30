@@ -16,7 +16,7 @@ permissions = ["read", "web"]
 # It searches and fetches; it does not need to walk directories.
 tools = ["read_file", "search", "web_search", "web_fetch"]
 
-max_tokens = 120000
+max_tokens = 300000
 
 # A longer prompt lives in its own file beside this one.
 prompt_file = "web-researcher-prompt.txt"

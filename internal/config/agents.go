@@ -421,6 +421,179 @@ func LoadAgentFile(path string) (AgentDefinition, error) {
 	return def, nil
 }
 
+// The prose sections a profile's prompt is written in, in the order a draft
+// draws them and a file lists them. They are `##` headings inside the prompt
+// rather than fields of their own: the child is handed the prompt as its
+// author wrote it, headings included, and the headings are what let the
+// drafter revise one section and leave the other four as they stand. The
+// other three sections of a profile — tools and permissions, commands, model
+// and budget — are the file's own fields.
+// See docs/capabilities/subagents.md#a-profile-is-drafted-in-conversation.
+const (
+	SectionPurpose      = "Purpose"
+	SectionScope        = "Scope"
+	SectionRestrictions = "Restrictions"
+	SectionMethod       = "Method"
+	SectionReport       = "Report"
+)
+
+// PromptSectionNames is the five prose sections in order.
+func PromptSectionNames() []string {
+	return []string{SectionPurpose, SectionScope, SectionRestrictions, SectionMethod, SectionReport}
+}
+
+// PromptSection is one named section of a profile's prompt: its heading's
+// name and the text under it, trimmed. An empty Body is a section the
+// prompt does not fill.
+type PromptSection struct {
+	Name string
+	Body string
+}
+
+// Sections is the profile's prompt read as its five sections. It reads the
+// prompt the loader resolved, so a prompt_file and an inline prompt are one
+// reading.
+func (d AgentDefinition) Sections() []PromptSection {
+	return ReadPromptSections(d.Prompt)
+}
+
+// ReadPromptSections reads a prompt into the five sections, always all five
+// and always in order, so a section nothing filled is present and empty
+// rather than missing. A line is a section heading only when it is `## `
+// and one of the five names (case and trailing space aside) and it stands
+// outside a fenced code block — an example inside a fence is the author's
+// text, and a `## Examples` of their own belongs to the section it sits in.
+// Text above the first heading is read as Purpose: a prompt written before
+// the sections existed, with no headings at all, is therefore one Purpose
+// section, and it still reaches the child exactly as written, because the
+// child is handed the prompt and never this reading of it. A heading written
+// twice gathers both bodies under the one section, in the order they appear.
+//
+// It is the one reading of the stored form; WritePromptSections is its
+// inverse.
+func ReadPromptSections(prompt string) []PromptSection {
+	names := PromptSectionNames()
+	bodies := make([][]string, len(names))
+	current := 0
+	var lines []string
+	flush := func() {
+		if text := strings.TrimSpace(strings.Join(lines, "\n")); text != "" {
+			bodies[current] = append(bodies[current], text)
+		}
+		lines = lines[:0]
+	}
+	var fence string
+	for _, line := range strings.Split(strings.ReplaceAll(prompt, "\r\n", "\n"), "\n") {
+		if marker, rest := fenceMarker(line); marker != "" {
+			switch {
+			case fence == "":
+				fence = marker
+			case marker[0] == fence[0] && len(marker) >= len(fence) && strings.TrimSpace(rest) == "":
+				fence = ""
+			}
+		} else if fence == "" {
+			if i := sectionHeading(line, names); i >= 0 {
+				flush()
+				current = i
+				continue
+			}
+		}
+		lines = append(lines, line)
+	}
+	flush()
+	out := make([]PromptSection, len(names))
+	for i, name := range names {
+		out[i] = PromptSection{Name: name, Body: strings.Join(bodies[i], "\n\n")}
+	}
+	return out
+}
+
+// sectionHeading is the index of the section a line heads, or -1.
+func sectionHeading(line string, names []string) int {
+	rest, ok := strings.CutPrefix(line, "## ")
+	if !ok {
+		return -1
+	}
+	rest = strings.TrimSpace(rest)
+	for i, name := range names {
+		if strings.EqualFold(rest, name) {
+			return i
+		}
+	}
+	return -1
+}
+
+// fenceMarker is the run of backticks or tildes a line opens or closes a
+// fenced code block with — three or more, indented at most three spaces, as
+// Markdown reads one — and what follows it on the line; "" for any other
+// line.
+func fenceMarker(line string) (string, string) {
+	trimmed := strings.TrimLeft(line, " ")
+	if len(line)-len(trimmed) > 3 || trimmed == "" {
+		return "", ""
+	}
+	c := trimmed[0]
+	if c != '`' && c != '~' {
+		return "", ""
+	}
+	n := 0
+	for n < len(trimmed) && trimmed[n] == c {
+		n++
+	}
+	if n < 3 {
+		return "", ""
+	}
+	// A backtick fence's info string holds no backtick: "```x``` y" is a line
+	// of inline code, and reading it as an opening would swallow every
+	// heading after it.
+	if c == '`' && strings.Contains(trimmed[n:], "`") {
+		return "", ""
+	}
+	return trimmed[:n], trimmed[n:]
+}
+
+// WritePromptSections is the stored form of a set of sections: each filled
+// one under its `## ` heading, in the five's order whatever order they were
+// handed in. A section with an empty body is left out of the text — a
+// heading with nothing under it is an instruction that says nothing — and
+// reading the text back gives it again as present and empty. A set whose
+// only filled section is Purpose is written as that text alone, which is
+// how ReadPromptSections reads a prompt with no headings, so the two are
+// each other's inverse on either shape and a profile written before the
+// sections existed is not given a heading by being read and written again.
+func WritePromptSections(sections []PromptSection) string {
+	names := PromptSectionNames()
+	bodies := make([]string, len(names))
+	filled := 0
+	for _, s := range sections {
+		body := strings.TrimSpace(s.Body)
+		if body == "" {
+			continue
+		}
+		for i, name := range names {
+			if !strings.EqualFold(strings.TrimSpace(s.Name), name) {
+				continue
+			}
+			if bodies[i] == "" {
+				filled++
+				bodies[i] = body
+			} else {
+				bodies[i] += "\n\n" + body
+			}
+		}
+	}
+	if filled == 1 && bodies[0] != "" {
+		return bodies[0]
+	}
+	var parts []string
+	for i, name := range names {
+		if bodies[i] != "" {
+			parts = append(parts, "## "+name+"\n\n"+bodies[i])
+		}
+	}
+	return strings.Join(parts, "\n\n")
+}
+
 // SkillDirs returns shhh's own user-scope skill directories in search
 // order, one per config path, beside the agents directory: the layout that
 // holds config.toml holds everything the user wrote for shhh.

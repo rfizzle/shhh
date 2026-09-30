@@ -1,8 +1,10 @@
 package persona
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -200,5 +202,104 @@ func TestExistingSorted(t *testing.T) {
 	got := Existing(map[string]config.AgentDefinition{"zed": {}, "researcher": {}}, "writer", "researcher")
 	if strings.Join(got, ",") != "researcher,writer,zed" {
 		t.Fatalf("existing = %v", got)
+	}
+}
+
+// The drafter answers the prompt by section name, and a section it left
+// empty stays an empty section on the draft rather than vanishing: the
+// written prompt is the filled ones under their headings, and the file reads
+// back to the same five.
+func TestDraftAnswersInSections(t *testing.T) {
+	o, ok := parse(`{"profile":{"name":"docs-keeper","description":"updates stale docs","permissions":["write"],
+		"sections":{"purpose":"Keep the docs true.","scope":"docs/ only.","restrictions":"",
+		"method":"Read the change, then the docs it names.","report":"The files changed and why."}}}`, KindCode)
+	if !ok || o.Failed || o.Draft == nil || o.Draft.Sections == nil {
+		t.Fatalf("sectioned draft = %+v ok=%v", o, ok)
+	}
+	d := *o.Draft
+	if empty := d.Sections.Empty(); strings.Join(empty, ",") != config.SectionRestrictions {
+		t.Fatalf("empty sections = %v", empty)
+	}
+	const want = "## Purpose\n\nKeep the docs true.\n\n## Scope\n\ndocs/ only.\n\n## Method\n\nRead the change, then the docs it names.\n\n## Report\n\nThe files changed and why."
+	if d.Prompt != want {
+		t.Fatalf("prompt = %q", d.Prompt)
+	}
+	path, err := Write(filepath.Join(t.TempDir(), "agents"), d, KindCode, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	def, err := config.LoadAgentFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// The file's multi-line string ends on a line of its own; the child is
+	// handed the prompt trimmed, so the text it reads is the draft's.
+	if strings.TrimSpace(def.Prompt) != want {
+		t.Fatalf("the file's prompt is not the draft's: %q", def.Prompt)
+	}
+	if got := sectionsOf(def.Sections()); *got != *d.Sections {
+		t.Fatalf("read back = %+v, drafted %+v", *got, *d.Sections)
+	}
+
+	// Revised, the drafter sees the sections by name, the empty one
+	// included, and not the prompt assembled from them a second time.
+	u := userPrompt(Request{Kind: KindCode, Brief: "docs", Current: &d, Feedback: "add a restriction"})
+	if !strings.Contains(u, `"restrictions": ""`) || strings.Contains(u, "## Purpose") {
+		t.Fatalf("current draft as sent:\n%s", u)
+	}
+}
+
+// An answer in the older shape — one prompt — is still a draft, and reads as
+// the loader reads a prompt with no headings: one Purpose section, written
+// back as the text it was.
+func TestAPromptAnswerIsItsPurpose(t *testing.T) {
+	o, ok := parse(`{"profile":{"name":"fixer","description":"fixes","permissions":["write"],"prompt":"Fix the bug."}}`, KindCode)
+	if !ok || o.Failed || o.Draft == nil {
+		t.Fatalf("draft = %+v ok=%v", o, ok)
+	}
+	d := *o.Draft
+	if d.Prompt != "Fix the bug." || d.Sections == nil || d.Sections.Purpose != "Fix the bug." ||
+		len(d.Sections.Empty()) != 4 {
+		t.Fatalf("draft = %+v sections = %+v", d, d.Sections)
+	}
+	if err := d.Normalise(KindCode); err != nil || d.Prompt != "Fix the bug." {
+		t.Fatalf("normalising again gave the prompt a heading: %q err=%v", d.Prompt, err)
+	}
+}
+
+// The tool asks for the five by name and requires every one, which is what
+// makes an empty section an answer rather than an omission.
+func TestDraftSchemaAsksForTheSectionsByName(t *testing.T) {
+	var schema struct {
+		Properties struct {
+			Profile struct {
+				Required   []string `json:"required"`
+				Properties struct {
+					Sections struct {
+						Required   []string                   `json:"required"`
+						Properties map[string]json.RawMessage `json:"properties"`
+					} `json:"sections"`
+				} `json:"properties"`
+			} `json:"profile"`
+		} `json:"properties"`
+	}
+	if err := json.Unmarshal(DraftTool().Parameters, &schema); err != nil {
+		t.Fatal(err)
+	}
+	profile := schema.Properties.Profile
+	if !slices.Contains(profile.Required, "sections") || slices.Contains(profile.Required, "prompt") {
+		t.Fatalf("profile requires %v", profile.Required)
+	}
+	var want []string
+	for _, name := range config.PromptSectionNames() {
+		want = append(want, strings.ToLower(name))
+	}
+	if strings.Join(profile.Properties.Sections.Required, ",") != strings.Join(want, ",") {
+		t.Fatalf("sections required = %v, want %v", profile.Properties.Sections.Required, want)
+	}
+	for _, name := range want {
+		if _, ok := profile.Properties.Sections.Properties[name]; !ok {
+			t.Errorf("schema has no %q section", name)
+		}
 	}
 }

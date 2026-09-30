@@ -197,6 +197,25 @@ func TestAReviewingProfilesPromptNamesTheGateItHolds(t *testing.T) {
 	}
 }
 
+// A profile's prompt reaches its child as the file wrote it — the section
+// headings included and in the author's order, not reassembled from the
+// loader's reading of them — whichever base prompt it is appended to, and
+// alone under replace.
+func TestAProfilesSectionedPromptReachesTheChildAsWritten(t *testing.T) {
+	const written = "## Purpose\nFix one bug.\n\n## Report\nWhat changed.\n\n```\n## Scope\n```\n\n## Method\nReproduce it first."
+	info := shell.Info{OS: "linux", Cwd: "/w"}
+	for _, def := range []config.AgentDefinition{
+		{Name: "fixer", Description: "fixes", Prompt: written},
+		{Name: "critic", Description: "audits", Reviews: true, Prompt: written},
+		{Name: "bare", Description: "alone", PromptMode: config.PromptReplace, Prompt: written},
+	} {
+		got := composed(profileEnv(def, subagent.Spec{}, info, "", nil, nil, map[string]bool{}))
+		if !strings.Contains(got, written) {
+			t.Errorf("%s: the child's prompt does not carry the profile's as written:\n%s", def.Name, got)
+		}
+	}
+}
+
 // The same holds for a read-only profile that does not review: the gate
 // sentence follows the toolset, so it is there when the runner reached the
 // child and absent when an untrusted checkout opened none.

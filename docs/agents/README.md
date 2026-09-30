@@ -15,11 +15,11 @@ and edit it.
 
 | Example | What it shows |
 |---------|---------------|
-| [`reviewer.toml`](reviewer.toml) | overriding the built-in reviewer: read-only permissions and mode, a cheap model at low reasoning — the built-in uses the session's model |
+| [`reviewer.toml`](reviewer.toml) | overriding the built-in reviewer: read-only permissions and mode, a cheap model at low reasoning — the built-in uses the session's model — and a prompt in the five sections |
 | [`test-writer.toml`](test-writer.toml) | write + execute in an isolated worktree, narrowed to the editing tools it needs, high reasoning |
 | [`web-researcher.toml`](web-researcher.toml) | read + web with a tool allowlist, budgets, and a prompt in a separate file |
 | [`researcher.toml`](researcher.toml) | overriding a built-in role: same name, different model |
-| [`web-researcher-prompt.txt`](web-researcher-prompt.txt) | the `prompt_file` the web researcher points at |
+| [`web-researcher-prompt.txt`](web-researcher-prompt.txt) | the `prompt_file` the web researcher points at, in the same five sections |
 
 ## Fields
 
@@ -37,13 +37,48 @@ read-only researcher named after the file.
 | `max_depth` | Not a profile field — it is `[agents] max_depth` in `config.toml`, and it is how deep delegation goes, counting the session itself as 1. The default is 3: this session, its children, and theirs. An agent at the deepest level is handed no delegation tools, and a spawn that would open a level past it is refused naming the depth and the key. |
 | `max_children` | Not a profile field either — it is `[agents] max_children` in `config.toml`, and it is how many agents one session may start in all, wherever in the tree the spawn happened. The default is 32. A finished agent keeps its slot, so the count the manager's header shows never goes down, and a spawn past the cap is refused naming the count and the key. |
 | `mode` | Permission mode the agent starts in: `"manual"`, `"accept-edits"`, `"auto"`, `"read-only"`, `"plan"`. Empty inherits the parent's. Always clamped to the parent's mode — a profile can be stricter, never looser. |
-| `prompt` | The agent's instructions. Appended to a base prompt built from the permissions (environment, tools, working style, final-report contract), or from `reviews` where that is set. |
+| `prompt` | The agent's instructions, written in [sections](#the-prompts-sections). Appended to a base prompt built from the permissions (environment, tools, working style, final-report contract), or from `reviews` where that is set. |
 | `prompt_file` | Path to a file whose contents are the prompt; relative paths resolve against the profile's directory. Not with `prompt`. |
 | `prompt_mode` | `"append"` (default) or `"replace"`. Replace sends your prompt alone — you then own the environment and tool description too. |
 | `reviews` | `true` makes the agent's declared paths the change it judges rather than files it may change: it is handed those paths and their diff ahead of its task, claims nothing against other agents, and is stopped at its round cap with a request for its report. It also selects the base prompt: the reviewer's, which reads the declared evidence first, ranks findings by severity and ends on a verdict, instead of the read-only agent's, which gathers facts and reports them. Your `prompt` still follows it. Only for a profile granting neither `write` nor `execute`. |
 | `max_tokens` | Default token budget when the spawn names none, counted in new tokens — what the provider did not serve from its cache, plus the completion. Unset, the agent takes the ordinary default of 1200000, what one writer measured on one backlog item. A profile default is at least 300000; an explicit spawn may be as low as 200000 only where it covers the admission floor — the inherited prompt and tool definitions, the declared task, the inherited turns where any, and the context the first turn opens on (review evidence, a resume or retry prologue), plus the 200000-token working reserve. A spawn or a retry under that floor is refused with the floor stated. |
 | `max_rounds` | Default check-in interval in tool rounds when the spawn names none. Zero, the default, never pauses. Under `reviews` it is not a pause but the end of the inspection: the agent is asked for its report there. |
 | `inherit` | How many of the spawning agent's last turns the agent is handed ahead of its task when the spawn does not say — a count of turns, not of bytes. Zero, the default, hands it the task alone. A spawn may lower it, to zero included; the turns count against the budget like the task does. |
+
+## The prompt's sections
+
+A prompt is written in five sections, each a `## ` heading on a line of its
+own, in this order:
+
+```markdown
+## Purpose
+The job, and what done looks like.
+
+## Scope
+The paths and areas it works in, and what it must leave alone.
+
+## Restrictions
+What it never does.
+
+## Method
+How it works and how it verifies.
+
+## Report
+What it hands back, and in what shape.
+```
+
+The agent is handed the prompt exactly as the file writes it, headings
+included; the headings are what let `/agents new` revise one section and
+leave the other four as they stand. The rest of a profile — its permissions
+and tools, its model and budget — is the file's own fields, not sections.
+The same holds for a `prompt_file`.
+
+A heading counts only when it is `## ` followed by one of the five names
+(case does not matter). Inside a fenced code block it is text, and any other
+`## ` heading belongs to the section it sits in. Text above the first heading
+is read as Purpose, so a prompt with no headings at all — every profile
+written before the sections — still loads and runs as it did, and reads as
+one Purpose section.
 
 ## What a profile cannot do
 

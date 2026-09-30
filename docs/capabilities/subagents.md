@@ -1221,7 +1221,10 @@ the other seven sent as fixed context, or their own words in the editor,
 which marks the section as theirs and puts it beyond any later refine — and
 nothing is written until they take the card's save row. The five prose
 sections are `##` headings inside the profile's prompt; the other three are
-the file's fields.
+the file's fields. The headings are for the drafter and the person reading the
+file: the child is handed the prompt as it is written, and a profile written
+before the sections, with no headings at all, loads as it did and reads to the
+drafter as one Purpose section.
 
 ## A failed child leaves a handoff
 
