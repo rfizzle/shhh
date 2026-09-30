@@ -542,3 +542,28 @@ func TestScopeReportNamesACheckoutGrantForWriters(t *testing.T) {
 		t.Fatalf("a grant outside the checkout was named for writers:\n%s", out)
 	}
 }
+
+// The image a container sandbox runs is the configured one, else the one
+// released with the binary, and a build that has neither has none to offer.
+func TestSandboxImageFor_ConfiguredThenReleased(t *testing.T) {
+	released := "ghcr.io/x/shhh-sandbox@sha256:" + strings.Repeat("a", 64)
+	configured := "example.com/mine@sha256:" + strings.Repeat("b", 64)
+	for _, tc := range []struct {
+		name, built, set, want string
+	}{
+		{"released when unset", released, "", released},
+		{"configured wins", released, configured, configured},
+		{"neither", "", "", ""},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			old := sandboxImage
+			sandboxImage = tc.built
+			t.Cleanup(func() { sandboxImage = old })
+			var cfg config.Config
+			cfg.Sandbox.ContainerImage = tc.set
+			if got := sandboxImageFor(cfg); got != tc.want {
+				t.Fatalf("sandboxImageFor = %q, want %q", got, tc.want)
+			}
+		})
+	}
+}

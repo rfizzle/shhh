@@ -367,8 +367,8 @@ var settings = []Setting{
 		Values: []string{"podman", "docker"},
 		Desc:   "Which engine runs a container sandbox.",
 	}, {
-		Key: "sandbox.container_image", Kind: KindString, Default: "(unset — container sandboxes are unavailable)",
-		Desc: "The digest-pinned image (name@sha256:…) a sandbox container runs.",
+		Key: "sandbox.container_image", Kind: KindString, Default: "(the image released with this shhh)",
+		Desc: "The digest-pinned image (name@sha256:…) a sandbox container runs, in place of the one released with this shhh.",
 	}, {
 		Key: "sandbox.image_allowlist", Kind: KindList, Default: "(any digest-pinned image)",
 		Desc: "The only sandbox images that may run, as digest-pinned references.",

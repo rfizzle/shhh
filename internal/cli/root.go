@@ -24,6 +24,12 @@ import (
 
 var version = "dev"
 
+// sandboxImage is the digest-pinned image the release built beside this
+// binary, linked in the way version is. It is empty in a build that did not
+// come from a release, which leaves container sandboxes unavailable until
+// sandbox.container_image names one.
+var sandboxImage = ""
+
 // Execute runs the command tree under fang, which is what dresses every
 // surface the binary has that is not a Bubble Tea program: `--help`,
 // the error a failed command prints on its way out, and the `man` page it can

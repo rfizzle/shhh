@@ -1132,7 +1132,7 @@ own file could hold.
 | `deny_extra` | list | (the built-in deny mask alone) | Paths added to the built-in deny mask; a contained command sees them as empty. |
 | `write_extra` | list | (the workspace, the session's own tmpdir and the toolchain caches) | Paths writable inside containment, beside the workspace. |
 | `container_engine` | word: `podman`, `docker` | (auto-detected, a rootless engine first) | Which engine runs a container sandbox. |
-| `container_image` | text | (unset — container sandboxes are unavailable) | The digest-pinned image (name@sha256:…) a sandbox container runs. |
+| `container_image` | text | (the image released with this shhh) | The digest-pinned image (name@sha256:…) a sandbox container runs, in place of the one released with this shhh. |
 | `image_allowlist` | list | (any digest-pinned image) | The only sandbox images that may run, as digest-pinned references. |
 | `container_memory` | text | `2g` | The memory ceiling on a sandbox container. |
 | `container_cpus` | text | `2` | The CPU ceiling on a sandbox container. |

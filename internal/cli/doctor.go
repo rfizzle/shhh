@@ -1540,8 +1540,9 @@ func doctorSandbox(avail sandbox.Availability, policy sandbox.Policy, goos strin
 
 func probeEngine(_ context.Context, cfg config.Config) doctorFinding {
 	eng := sandbox.DetectEngine(cfg.Sandbox.ContainerEngine)
-	imageErr := sandbox.ValidateImage(cfg.Sandbox.ContainerImage, cfg.Sandbox.ImageAllowlist)
-	f := doctorEngine(eng, cfg.Sandbox.ContainerImage, imageErr, ownedSandboxCount())
+	image := sandboxImageFor(cfg)
+	imageErr := sandbox.ValidateImage(image, cfg.Sandbox.ImageAllowlist)
+	f := doctorEngine(eng, image, imageErr, ownedSandboxCount())
 	if eng.OK && len(cfg.Sandbox.AllowHosts) > 0 {
 		// A container's network is a switch, so the list is not what a
 		// --sandbox run's commands are held to, and the row is where that

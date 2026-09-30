@@ -267,6 +267,19 @@ func reconcileOwnedSandboxes() {
 	sandbox.Reconcile(context.Background(), store, time.Now().UTC())
 }
 
+// sandboxImageFor is the image a container sandbox runs: the one the person
+// configured, else the one released with this binary. The binary's image is a
+// fallback and never a rewrite, so a configured image and an allowlist keep
+// meaning exactly what they said — an allowlist that does not list the
+// released image refuses it like any other.
+// See docs/capabilities/containment.md#the-sandbox-image-ships-with-the-binary.
+func sandboxImageFor(cfg config.Config) string {
+	if cfg.Sandbox.ContainerImage != "" {
+		return cfg.Sandbox.ContainerImage
+	}
+	return sandboxImage
+}
+
 // containerSpec builds the sandbox-container spec from config: workspace is
 // the current directory and the netless containment profile also removes the
 // container's network.
@@ -280,7 +293,7 @@ func containerSpec(cfg config.Config) (sandbox.ContainerSpec, error) {
 		return sandbox.ContainerSpec{}, err
 	}
 	return sandbox.ContainerSpec{
-		Image:     cfg.Sandbox.ContainerImage,
+		Image:     sandboxImageFor(cfg),
 		Workspace: ws,
 		Network:   profile != sandbox.ProfileWorkspaceNetless,
 		Memory:    cfg.Sandbox.ContainerMemory,
@@ -350,8 +363,8 @@ func containerReport(cfg config.Config) string {
 	if !eng.OK {
 		engine = "unavailable — " + eng.Detail
 	}
-	image := cfg.Sandbox.ContainerImage
-	if err := sandbox.ValidateImage(cfg.Sandbox.ContainerImage, cfg.Sandbox.ImageAllowlist); err != nil {
+	image := sandboxImageFor(cfg)
+	if err := sandbox.ValidateImage(image, cfg.Sandbox.ImageAllowlist); err != nil {
 		image = err.Error()
 	}
 	r := report.Report{Title: "/sandbox status", Sections: []report.Section{{Pairs: []report.Pair{

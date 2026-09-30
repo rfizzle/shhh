@@ -470,6 +470,28 @@ masked from the next command on, but not in the command that made it. And
 configuration outside the store — the global file, a file an `include.path`
 names in the working tree — is only as protected as the grants around it.
 
+## The sandbox image ships with the binary
+
+A container sandbox needs an image, and an image nobody chose is one nobody
+built the tools into: with the network off there is no installing anything
+once the container is running. So each release builds one, pushes it, and
+links its digest into the binary it ships. `sandbox.container_image` unset
+means the image built beside this shhh, and updating shhh updates the image
+with it, so the tools a session finds in the container are the ones that
+release was made with.
+
+**A configured image replaces it and is never second-guessed.** The released
+image is the answer only where the setting is empty, and the image policy
+applies to it exactly as it applies to a named one: it is digest-pinned, and
+`sandbox.image_allowlist`, when set, must list it. An allowlist is a
+restriction somebody wrote on purpose, so it refuses the default like any other
+image rather than making an exception for shhh's own.
+
+**A build that did not come from a release has no image.** The digest exists
+only once the release has pushed the image, so a `make build` carries none and
+container sandboxes stay unavailable until the setting names one, which
+`shhh doctor` says.
+
 ## A cancelled command takes its children with it
 
 Every captured command is a shell, and the work is that shell's children.
