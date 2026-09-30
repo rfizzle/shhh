@@ -246,6 +246,7 @@ func checkLine(line string) (Warning, bool) {
 // the first row a command matches standing for it, then the line whole
 // against the text patterns.
 func lineFindings(line string) []Warning {
+	line = ExpandIFS(line)
 	var out []Warning
 	for _, cmd := range Commands(line) {
 		words := strings.Fields(cmd)
@@ -423,20 +424,26 @@ func operatorWords(line string) []string {
 			word.Reset()
 		}
 	}
-	for _, r := range line {
+	for i := 0; i < len(line); i++ {
+		c := line[i]
 		switch {
-		case r == ' ' || r == '\t':
+		case bracedName(line, i) > 0:
+			// `${F}` is one word, braces and all.
+			n := bracedName(line, i)
+			word.WriteString(line[i : i+n])
+			i += n - 1
+		case c == ' ' || c == '\t':
 			flush()
-		case strings.ContainsRune(separators, r):
+		case strings.IndexByte(separators, c) >= 0:
 			// A run of operators is one word, so `&&` and `>>` arrive whole.
 			if n := len(out); word.Len() == 0 && n > 0 && strings.Trim(out[n-1], separators) == "" {
-				out[n-1] += string(r)
+				out[n-1] += string(c)
 				continue
 			}
 			flush()
-			out = append(out, string(r))
+			out = append(out, string(c))
 		default:
-			word.WriteRune(r)
+			word.WriteByte(c)
 		}
 	}
 	flush()
@@ -452,7 +459,9 @@ func firstOperand(rest []string) (string, bool) {
 		switch {
 		case w == "" || (len(w) > 1 && w[0] == '-'):
 			continue
-		case strings.ContainsAny(w, separators):
+		case len(segments(w)) != 1 || segments(w)[0] != w:
+			// A word an operator stands in. `${F}` is not one: its braces
+			// belong to the name.
 			return "", false
 		}
 		return w, true
@@ -474,6 +483,7 @@ func firstOperand(rest []string) (string, bool) {
 // -rf /` cannot be told from `sudo -E rm -rf /` without knowing sudo's own
 // option table, and stopping at the first flag is how both walk past.
 func Commands(line string) []string {
+	line = ExpandIFS(line)
 	var out []string
 	for _, seg := range segments(line) {
 		for _, cmd := range candidates(seg) {
@@ -498,13 +508,81 @@ func BaseName(w string) string {
 // separators are the characters that can begin another command inside one
 // line. `$` is not one: `$(` begins a command at its parenthesis, and a bare
 // `$NAME` is a word, so cutting there took the operand off `rm -rf $DIR` and
-// made `echo $x` a command called `x`.
+// made `echo $x` a command called `x`. The braces of a `${NAME}` do not cut
+// either, for the same reason — segments reads past them — while any other
+// braced expansion is still cut at its braces, since `${x:-$(rm -rf /)}`
+// carries a command inside it.
 const separators = ";&|<>()`\n{}"
 
+// segments cuts a line at every separator outside a `${NAME}`.
 func segments(line string) []string {
-	return strings.FieldsFunc(line, func(r rune) bool {
-		return strings.ContainsRune(separators, r)
-	})
+	var out []string
+	start := 0
+	for i := 0; i < len(line); i++ {
+		if n := bracedName(line, i); n > 0 {
+			i += n - 1
+			continue
+		}
+		if strings.IndexByte(separators, line[i]) >= 0 {
+			if i > start {
+				out = append(out, line[start:i])
+			}
+			start = i + 1
+		}
+	}
+	if start < len(line) {
+		out = append(out, line[start:])
+	}
+	return out
+}
+
+// bracedName is the length of the `${NAME}` that starts at line[i], or 0
+// where none does. Only a bare name counts: an expansion with an operator in
+// it can hold a command, and is left to be cut.
+func bracedName(line string, i int) int {
+	if !strings.HasPrefix(line[i:], "${") {
+		return 0
+	}
+	j := i + 2
+	for j < len(line) && nameByte(line[j]) {
+		j++
+	}
+	if j == i+2 || j == len(line) || line[j] != '}' {
+		return 0
+	}
+	return j + 1 - i
+}
+
+// nameByte reports whether c can stand in a shell variable's name.
+func nameByte(c byte) bool {
+	return c == '_' || '0' <= c && c <= '9' || 'a' <= c && c <= 'z' || 'A' <= c && c <= 'Z'
+}
+
+// ExpandIFS puts a space where a line spells the shell's field separator as
+// `$IFS` or `${IFS}`. Unquoted, the shell splits that expansion into a word
+// break, so `rm${IFS}-rf${IFS}/` runs `rm -rf /` — the spelling reached for
+// when the plain one is refused — and a reading that took it for one word
+// named a program nobody has. Quoted, it would not split; reading it as a
+// break anyway is the over-read every gate here makes. It is exported so the
+// destruction reading in internal/radius reads the line this one does.
+func ExpandIFS(line string) string {
+	if !strings.Contains(line, "IFS") {
+		return line
+	}
+	var b strings.Builder
+	for i := 0; i < len(line); i++ {
+		switch {
+		case strings.HasPrefix(line[i:], "${IFS}"):
+			b.WriteByte(' ')
+			i += len("${IFS}") - 1
+		case strings.HasPrefix(line[i:], "$IFS") && (i+len("$IFS") == len(line) || !nameByte(line[i+len("$IFS")])):
+			b.WriteByte(' ')
+			i += len("$IFS") - 1
+		default:
+			b.WriteByte(line[i])
+		}
+	}
+	return b.String()
 }
 
 // prefixes are the words that stand in front of the command they run. The

@@ -112,7 +112,9 @@ func (d Destruction) ProvenInside(root string) bool {
 // asking git where a repository keeps its store.
 func Destroys(command string, where Where) Destruction {
 	r := destroyReader{where: where, known: where.Dir != ""}
-	r.line(command, 0)
+	// `rm${IFS}-rf${IFS}/` is `rm -rf /` once the shell has split it, and
+	// the safety table reads it that way too.
+	r.line(safety.ExpandIFS(command), 0)
 	return r.out
 }
 

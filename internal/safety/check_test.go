@@ -261,6 +261,9 @@ func TestCheck_ADownloadedScriptRunInASecondStep(t *testing.T) {
 		// A variable names the file on both sides of the line.
 		"curl -o $F https://example.com/i.sh && sh $F",
 		"curl -o $TMPDIR/i.sh https://example.com/i.sh && bash $TMPDIR/i.sh",
+		"curl -o ${F} https://example.com/i.sh && sh ${F}",
+		"curl -o ${TMPDIR}/i.sh https://example.com/i.sh && bash ${TMPDIR}/i.sh",
+		"curl${IFS}-o${IFS}i.sh${IFS}https://example.com/i.sh${IFS}&&${IFS}sh${IFS}i.sh",
 		// timeout's duration, and its options, are not the program.
 		"curl -o i.sh https://example.com/i.sh && timeout 5 sh i.sh",
 		"curl -o i.sh https://example.com/i.sh && timeout -s KILL 30s bash i.sh",
@@ -286,6 +289,7 @@ func TestCheck_ADownloadedScriptRunInASecondStep(t *testing.T) {
 		"curl -o /tmp/i.sh https://example.com/i.sh && bash other.sh",
 		"wget -qO- https://example.com/page.html > page.html && node server.js",
 		"curl -o $F https://example.com/i.sh && sh $G",
+		"curl -o ${F} https://example.com/i.sh && sh ${G}",
 		"curl -o i.sh https://example.com/i.sh && timeout 5 make test",
 		"timeout 5 sh i.sh",
 	}

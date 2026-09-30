@@ -160,3 +160,66 @@ func TestCheck_AVariableIsAnOperand(t *testing.T) {
 		t.Errorf(`Commands("echo $(rm -rf /)") = %q, want the substitution's command among them`, got)
 	}
 }
+
+// A braced name is the same word as a bare one: `${x}` is not a command
+// called `x`, and the operand it names reaches the row that asks for one.
+// Any other braced expansion is still cut at its braces, because what is
+// inside one can be a command.
+func TestCheck_ABracedVariableIsOneWord(t *testing.T) {
+	cases := []struct {
+		command string
+		want    string
+	}{
+		{"rm -rf ${DIR}", "rm -r -f"},
+		{`rm -rf "${DIR}/build"`, "rm -r -f"},
+		{"chmod -R 777 ${HOME}", "chmod -R 777"},
+		{"mkfs.ext4 ${DEV}", "mkfs"},
+		{"find ${DIR} -delete", "find -delete"},
+		{"echo ${x}; rm -rf /", "rm -rf /"},
+	}
+	for _, c := range cases {
+		if ws := Check(c.command); len(ws) == 0 || ws[0].Pattern != c.want {
+			t.Errorf("Check(%q) = %v, want %q", c.command, ws, c.want)
+		}
+	}
+	for _, command := range []string{"echo ${x}", "echo ${mkfs}", "echo ${rm} -rf", "echo ${_1}${a}"} {
+		if ws := Check(command); len(ws) > 0 {
+			t.Errorf("Check(%q) = %v, want nothing", command, ws)
+		}
+	}
+	if got := Commands("echo ${x}"); !slices.Equal(got, []string{"echo ${x}"}) {
+		t.Errorf(`Commands("echo ${x}") = %q, want the one command`, got)
+	}
+	for _, line := range []string{"echo ${x:-$(rm -rf /)}", "echo ${x:-`rm -rf /`}", "{ rm -rf /; }"} {
+		if got := Commands(line); !slices.Contains(got, "rm -rf /") {
+			t.Errorf("Commands(%q) = %q, want the rm inside among them", line, got)
+		}
+	}
+}
+
+// The field separator spelled as a variable is a word break to the shell, so
+// it is one here: `rm${IFS}-rf${IFS}/` is `rm -rf /` to every reader of
+// Commands, the deny list's included. A longer name that begins IFS is some
+// other variable.
+func TestCommands_TheFieldSeparatorIsAWordBreak(t *testing.T) {
+	cases := []struct {
+		line string
+		want string
+	}{
+		{"rm${IFS}-rf${IFS}/", "rm -rf /"},
+		{"rm$IFS-rf$IFS/", "rm -rf /"},
+		{"git${IFS}push${IFS}--force", "git push --force"},
+		{"chmod${IFS}-R${IFS}777${IFS}.", "chmod -R 777 ."},
+	}
+	for _, c := range cases {
+		if got := Commands(c.line); !slices.Contains(got, c.want) {
+			t.Errorf("Commands(%q) = %q, want %q among them", c.line, got, c.want)
+		}
+		if ws := Check(c.line); len(ws) == 0 {
+			t.Errorf("Check(%q) = nothing, want the row %q reads as", c.line, c.want)
+		}
+	}
+	if got := Commands("echo $IFSX"); !slices.Equal(got, []string{"echo $IFSX"}) {
+		t.Errorf(`Commands("echo $IFSX") = %q, want the one command`, got)
+	}
+}

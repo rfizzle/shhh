@@ -30,6 +30,12 @@ func TestBothReaders_ReadTheSameCommand(t *testing.T) {
 		{"exec rm -rf " + other, "rm -r -f", "outside the working scope"},
 		{"stdbuf -oL rm -rf ~", "rm -rf ~", "your home directory"},
 		{"setsid rm -rf /", "rm -rf /", "the filesystem root"},
+		// The field separator is a word break once the shell expands it.
+		{"rm${IFS}-rf${IFS}/", "rm -rf /", "the filesystem root"},
+		{"rm$IFS-rf$IFS/", "rm -rf /", "the filesystem root"},
+		{"rm${IFS}-rf${IFS}~", "rm -rf ~", "your home directory"},
+		{"sudo${IFS}rm${IFS}-rf${IFS}/", "rm -rf /", "the filesystem root"},
+		{"if x; then rm$IFS-rf$IFS/; fi", "rm -rf /", "the filesystem root"},
 	}
 	for _, c := range cases {
 		if ws := safety.Check(c.command); len(ws) == 0 || ws[0].Pattern != c.pattern {

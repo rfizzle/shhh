@@ -515,8 +515,9 @@ var (
 	outputRedirect = regexp.MustCompile(`(?:\d+|&)?>>?\|?\s*(&\d+|&-|[^\s;&|<>()]+)`)
 	// inputRedirect is a redirection of input and the file it reads.
 	inputRedirect = regexp.MustCompile(`\d*<\s*(?:&\d+|[^\s;&|<>()]+)`)
-	// variable is a parameter expansion, which safety.Commands would split at
-	// its `$` and offer the name as a command.
+	// variable is a parameter expansion. safety.Commands keeps `$NAME` and
+	// `${NAME}` as one word, but cuts any other braced expansion (`${x:-y}`,
+	// `${#x}`) at its braces and offers what is inside as a command.
 	variable = regexp.MustCompile(`\$(?:\{[^}]*\}|[A-Za-z_][A-Za-z0-9_]*|[0-9?@#*!$-])`)
 	// findEnd is the `{} \;` or `{} +` that ends a find's -exec.
 	findEnd = regexp.MustCompile(`\{\}|\\;`)
