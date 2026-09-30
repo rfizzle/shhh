@@ -445,7 +445,10 @@ func TestSearch_LongMatchLineTrimmed(t *testing.T) {
 	if !strings.Contains(out, "(line truncated)") {
 		t.Error("expected per-line truncation marker")
 	}
-	if len(out) > MaxSearchLineBytes+len(path)+100 {
+	// The match and its one context line each carry the path, so the bound
+	// counts it twice; counting it once held only while the temp directory
+	// was short, and a test binary run under GOTMPDIR gets a longer one.
+	if len(out) > MaxSearchLineBytes+2*len(path)+100 {
 		t.Errorf("matched line not trimmed: %d bytes", len(out))
 	}
 }
