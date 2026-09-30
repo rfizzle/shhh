@@ -32,7 +32,7 @@ var toolboxNotes = []struct{ name, note string }{
 	{"definition", "where a symbol is defined, answered by the language server. Prefer it over search for any symbol — search finds the word, this finds the declaration."},
 	{"references", "every real usage of a symbol, declaration included. Prefer it over search before changing anything shared: it finds usages, not string matches in comments."},
 	{"workspace_symbol", "find a declaration anywhere in the project by name, from the language server's index. Ask it \"where is X declared\" instead of guessing at how the declaration was spelled."},
-	{"document_symbol", "the outline of one file — every declaration, its kind and its line. Ask it before read_file when the question is what is in a file; the outline is a fraction of the file and usually says which part to read."},
+	{"document_symbol", "the outline of one file — every declaration, its kind and its line — and it outlines Markdown too, by its headings, with or without a language server. Ask it before read_file when the question is what is in a file, and rather than a grep for lines starting with # in a document; the outline is a fraction of the file and usually says which part to read."},
 	{"hover", "the type, signature and documentation of a symbol where it appears. It answers what something is without opening the file it is declared in."},
 	{"diagnostics", "the language server's current errors and warnings for one file, or for every file this session has had checked. Ask it when an edit came back saying the file was not checked yet."},
 	{"ast_grep", "structural search by syntax pattern (e.g. `if $A != nil { return $A }`). For shapes a regex cannot describe."},

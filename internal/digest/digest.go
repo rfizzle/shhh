@@ -114,7 +114,10 @@ func Arg(tool, rawArgs string) string {
 		if p, _ := args["path"].(string); p != "" {
 			start, okS := args["start_line"].(float64)
 			end, okE := args["end_line"].(float64)
+			tail, okT := args["tail_lines"].(float64)
 			switch {
+			case okT:
+				return p + ":last " + strconv.Itoa(int(tail))
 			case okS && okE:
 				return p + ":" + strconv.Itoa(int(start)) + "–" + strconv.Itoa(int(end))
 			case okS:

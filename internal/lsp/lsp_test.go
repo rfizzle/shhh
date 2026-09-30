@@ -1014,11 +1014,37 @@ func TestToolset_UnrecognisedResponseShapesAreEmptyAnswers(t *testing.T) {
 	}
 }
 
+// The outline is taken by the server only for a file it covers. A Markdown
+// file, and a language nothing was detected for, go on to the outline every
+// session has, so a session with a Go server still outlines its README.
+func TestToolset_AnOutlineNoServerCoversGoesOn(t *testing.T) {
+	ts := NewToolset(NewManager(t.TempDir(), []ServerSpec{{Name: "gopls", Command: "shhh-no-such-server", Extensions: []string{".go"}}}, Options{}))
+	var passed []string
+	exec := ts.WrapExecutor(func(name string, args json.RawMessage) (string, error) {
+		passed = append(passed, string(args))
+		return "fallback", nil
+	})
+	for _, path := range []string{"README.md", "notes.markdown", "a.py"} {
+		if got, err := exec(DocumentSymbolToolName, json.RawMessage(fmt.Sprintf(`{"path":%q}`, path))); err != nil || got != "fallback" {
+			t.Errorf("%s should reach the fallback outline, got %q, %v", path, got, err)
+		}
+	}
+	if _, err := exec(DocumentSymbolToolName, json.RawMessage(`{"path":"main.go"}`)); err == nil {
+		t.Error("a file the server covers is the server's to answer, and this one cannot start")
+	}
+	if len(passed) != 3 {
+		t.Errorf("passed on %d calls, want 3: %v", len(passed), passed)
+	}
+}
+
 func TestToolset_DefinitionsMatchWhatItDispatches(t *testing.T) {
 	ts := NewToolset(NewManager(t.TempDir(), nil, Options{}))
 	defs := ts.Definitions()
-	if len(defs) != 6 {
-		t.Fatalf("expected six language-server tools, got %d", len(defs))
+	// Five, not six: the outline is defined by the tools package, which
+	// registers it in every session, and this toolset answers it through
+	// WrapExecutor for the files a server covers.
+	if len(defs) != 5 {
+		t.Fatalf("expected five language-server tools, got %d", len(defs))
 	}
 	for _, def := range defs {
 		if !ts.Has(def.Name) {

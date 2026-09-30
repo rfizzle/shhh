@@ -34,6 +34,7 @@ func TestArg_PicksTheOneWorthShowing(t *testing.T) {
 		{"a plain read shows the path", "read_file", `{"path":"a.go"}`, "a.go"},
 		{"a paged read shows the range", "read_file", `{"path":"a.go","start_line":10,"end_line":40}`, "a.go:10–40"},
 		{"an open-ended page shows the start", "read_file", `{"path":"a.go","start_line":10}`, "a.go:10–"},
+		{"a tail read shows how much of the end", "read_file", `{"path":"a.log","tail_lines":40}`, "a.log:last 40"},
 		{"unparseable args pass through", "mystery", "not json", "not json"},
 		{"no args at all", "mystery", "", ""},
 		{"an mcp call names the server and tool", "gh__create_issue", `{"title":"Bug"}`, "gh create_issue title=Bug"},

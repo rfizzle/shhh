@@ -40,14 +40,17 @@ import (
 // are the server's. The one MCP definition shhh writes itself, the resource
 // read, is.
 //
-// The structured-data and SQLite readers are the two base tools here. Every
-// session has them, but BuildAgent's paragraph names only the four reads it
-// always named, so what the model learns of them is their toolbox lines and
-// their own schemas — the two things this list holds a tool to.
+// The structured-data and SQLite readers and the outline are the three base
+// tools here. Every session has them, but BuildAgent's paragraph names only
+// the four reads it always named, so what the model learns of them is their
+// toolbox lines and their own schemas — the two things this list holds a tool
+// to. The outline is defined once, by the tools package; a language server
+// answers it for the files it covers rather than defining it again.
 func registrableDefinitions(skills *skill.Catalog, profiles subagent.Profiles) []provider.Tool {
 	var defs []provider.Tool
 	for _, d := range tools.Definitions() {
-		if d.Name == tools.QueryName || d.Name == tools.SqliteName {
+		switch d.Name {
+		case tools.QueryName, tools.SqliteName, tools.DocumentSymbolName:
 			defs = append(defs, d)
 		}
 	}

@@ -249,6 +249,32 @@ these are the three narrowings a reader would otherwise do by rewriting the
 regular expression, and getting one of them wrong is the round that gets
 spent.
 
+Sizing a file up is asked of the readers too, and not of a shell. A session
+that went looking with commands was, command by command, asking how big a
+file was, reading its end, and listing a document's headings — `wc`, `tail`
+and a grep for lines that start with `#`, the heading grep five times in one
+session. Each of those is a card or a classifier round where the reader is
+neither, and in a read-only session a piped one is refused. And the tools'
+own words sent it there: the reader's description said to take a part of a
+large file with a command. So the reader reads the end of a file, numbered
+where the lines stand in it; every result that shows part of a file opens
+with the whole file's line and byte count, so the size of what is being read
+in part is stated where the part is; and a listing or a glob carries each
+file's size, taken from the stat the walk already made, so a file is sized
+before it is opened. A listing does not count lines: that is a read of every
+file listed, to answer a question about one of them.
+
+The outline answers a document's headings in every session, with or without
+a language server behind it, because a heading outline needs nothing a
+server knows and was the one shell read a session repeated most. It is the
+headings a reader of the document sees rather than every line that starts
+with a `#`: a comment inside a fenced block, an indented code block and the
+front matter are not headings, and an outline that listed them would send
+the next read to the wrong line. It is the outline tool rather than a tool of
+its own, so the definitions every request carries do not grow, and a model
+that already asks for an outline before reading a file asks the same way of
+a document.
+
 ## A call the session has already made is answered by saying so
 
 The instruction is one half. The other is that the session watches what it
@@ -334,7 +360,9 @@ the receiver, the keyword, the spacing — and one that guesses wrong returns
 either nothing or every mention of the word. The index has the answer exactly
 and is asked by name. And a nine-hundred-line file read to learn its shape
 costs most of what the reduction exists to save, where the same file as an
-outline is a screen and usually settles which part to read.
+outline is a screen and usually settles which part to read. A Markdown
+document is outlined by its headings whether a server was detected or not;
+the server is asked only for the files it covers.
 
 A question is addressed by file, line and the text on it, and the position
 that resolves to decides the whole answer — which the model never sees, only
@@ -448,10 +476,13 @@ text and worth nothing. A path that lands on a large log returns the first
 part of it and an invitation to page through the rest, which is a plan for
 spending the rest of the turn.
 
-So the reader looks before it reads. A file past the size ceiling is refused
-outright, with its size and the ceiling named, and the refusal says that a
-narrower line range will not help — otherwise the next call is the same call,
-scoped smaller. A file whose opening bytes are not text comes back as one line
+So the reader looks before it reads. A file past the size ceiling is not
+returned, and the answer says that a narrower line range will not help —
+otherwise the next call is the same call, scoped smaller. What it says
+instead is what the file is: its size, its line count and, for a Markdown
+file, its headings with their lines, taken in one pass that holds a line at
+a time. A bare refusal was answered with `wc` and a heading grep, which is
+the same pass run as a command. A file whose opening bytes are not text comes back as one line
 saying what it is: a type, a size, and nothing else. Naming the type is the
 part that matters, because "this is a PNG" tells the model to stop reaching
 for this tool, where "not text" invites another attempt.

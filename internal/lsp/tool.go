@@ -16,9 +16,13 @@ const (
 	DefinitionToolName      = "definition"
 	ReferencesToolName      = "references"
 	WorkspaceSymbolToolName = "workspace_symbol"
-	DocumentSymbolToolName  = "document_symbol"
-	HoverToolName           = "hover"
-	DiagnosticsToolName     = "diagnostics"
+	// The outline is defined by the tools package, which registers it in
+	// every session and answers it for Markdown; a language server answers
+	// it for the languages it covers (WrapExecutor), so it is not among this
+	// toolset's definitions.
+	DocumentSymbolToolName = tools.DocumentSymbolName
+	HoverToolName          = "hover"
+	DiagnosticsToolName    = "diagnostics"
 )
 
 // Toolset exposes a Manager as agent tools. It is only registered when at
@@ -79,18 +83,6 @@ func (t *Toolset) Definitions() []provider.Tool {
 			}`),
 		},
 		{
-			Name: DocumentSymbolToolName,
-			Description: "Outline a file with the language server: every declaration in it, with its kind and line, nested as it is nested. " +
-				"Prefer this over read_file when the question is what is in a file — the outline is a fraction of the file and usually settles which part to read.",
-			Parameters: json.RawMessage(`{
-				"type": "object",
-				"properties": {
-					"path": {"type": "string", "description": "File to outline (absolute or workspace-relative)"}
-				},
-				"required": ["path"]
-			}`),
-		},
-		{
 			Name: HoverToolName,
 			Description: "Get a symbol's type, signature and documentation from the language server. " +
 				"Point at any occurrence of the symbol (path + line + its text). " +
@@ -123,6 +115,26 @@ func (t *Toolset) Has(name string) bool {
 		return true
 	}
 	return false
+}
+
+// answers reports whether this toolset takes the call rather than passing it
+// on. An outline is taken only for a file a detected server covers: every
+// other file — Markdown, which no server here covers, and a language nothing
+// was detected for — goes on to the outline the tools package answers, so a
+// session with a Go server still outlines its README by its headings.
+func (t *Toolset) answers(name string, args json.RawMessage) bool {
+	if name != DocumentSymbolToolName {
+		return t.Has(name)
+	}
+	var a struct {
+		Path string `json:"path"`
+	}
+	if json.Unmarshal(args, &a) != nil || a.Path == "" {
+		// The call is malformed either way; the server's own refusal says
+		// so as well as the fallback's would.
+		return true
+	}
+	return !tools.IsMarkdown(a.Path) && t.Manager.covers(a.Path)
 }
 
 type navigateArgs struct {
@@ -222,7 +234,7 @@ func (t *Toolset) WrapExecutor(next func(name string, args json.RawMessage) (str
 	return func(name string, args json.RawMessage) (string, error) {
 		var result string
 		var err error
-		if t.Has(name) {
+		if t.answers(name, args) {
 			result, err = t.Execute(name, args)
 		} else {
 			result, err = next(name, args)

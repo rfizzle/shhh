@@ -14,7 +14,7 @@ import (
 var globFiles = Definition{
 	Tool: provider.Tool{
 		Name:        GlobName,
-		Description: "Find files by glob pattern, e.g. **/*.go or cmd/*/main.go. Use ** to match any number of directories. Returns matching file paths relative to the search root. Hidden files are matched; .git, node_modules, vendor and anything .gitignore names are not.",
+		Description: "Find files by glob pattern, e.g. **/*.go or cmd/*/main.go. Use ** to match any number of directories. Returns matching file paths relative to the search root, each with its size after a tab, so a file can be sized before it is opened. Hidden files are matched; .git, node_modules, vendor and anything .gitignore names are not.",
 		Parameters: json.RawMessage(`{
 			"type": "object",
 			"properties": {
@@ -105,7 +105,7 @@ func executeGlob(raw json.RawMessage) (string, error) {
 			truncated = true
 			return filepath.SkipAll
 		}
-		results = append(results, rel)
+		results = append(results, rel+entrySize(d))
 		return nil
 	})
 	if err != nil {

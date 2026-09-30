@@ -364,6 +364,11 @@ func activityCounts(tool, result string) string {
 	if more {
 		lines = lines[:len(lines)-1]
 	}
+	// A read of part of a file opens with the whole file's size, which is
+	// the tool's own line about the file and not one of the lines it read.
+	if tool == tools.ReadFileName && len(lines) > 1 && tools.IsSizeLine(lines[0]) {
+		lines = lines[1:]
+	}
 	switch tool {
 	case tools.GlobName, tools.ListDirectoryName, structural.FdToolName:
 		return countPhrase(len(lines), more, "item", "items")

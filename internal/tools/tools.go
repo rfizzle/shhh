@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -46,7 +47,7 @@ func (r *Recorder) ReadOnly() []Definition {
 	q.Execute = r.executeQuery
 	db := sqliteTool
 	db.Execute = r.executeSqlite
-	return []Definition{read, listDirectory, search, globFiles, q, db}
+	return []Definition{read, listDirectory, search, globFiles, q, db, documentSymbol}
 }
 
 // SelfBounding reports whether a tool already bounds its own output.
@@ -68,7 +69,7 @@ func (r *Recorder) ReadOnly() []Definition {
 // See docs/capabilities/evidence.md#reduction-is-for-unbounded-output.
 func SelfBounding(name string) bool {
 	switch name {
-	case ReadFileName, ListDirectoryName, SearchName, GlobName, QueryName, SqliteName:
+	case ReadFileName, ListDirectoryName, SearchName, GlobName, QueryName, SqliteName, DocumentSymbolName:
 		return true
 	}
 	return false
@@ -277,19 +278,27 @@ func UnknownTool(name string, registered []string) error {
 // instruction, and that sentence described the exception. The common case
 // leads now, and paging is what it actually is: how to continue through a
 // file the tool has already told you it could not finish.
+//
+// It also used to send a file past the ceiling to "a command", and the end
+// of a log, a file's size and a document's headings were read that way —
+// `tail`, `wc` and `grep '^#'`, each a card or a classifier round. tail_lines,
+// the size line and the over-ceiling answer take those here.
+// See docs/capabilities/coding-agent.md#finding-things.
 var readFile = Definition{
 	Tool: provider.Tool{
 		Name: ReadFileName,
 		Description: "Read the contents of a file. Each line is returned as `<line number>\t<text>`; the number is a reading aid, not part of the file. " +
 			"Read the whole file by default — it is one call, and reading it in small windows is not cheaper. " +
-			"start_line/end_line are for continuing through a file too large to return at once, which the result says explicitly when it happens. " +
-			"A file over the size ceiling is refused whatever range is asked for — search it instead, or take a part of it with a command — and a binary file comes back as a one-line notice of what it is, images attached where the model can see one.",
+			"start_line/end_line are for continuing through a file too large to return at once, which the result says explicitly when it happens; tail_lines reads the end of a file, such as a log's last entries, numbered as in the file. " +
+			"A result that shows part of a file opens with a line giving the whole file's line and byte count. " +
+			"A file over the size ceiling is answered with its size, its line count and, for Markdown, its headings instead of its contents — search it for what you need — and a binary file comes back as a one-line notice of what it is, images attached where the model can see one.",
 		Parameters: json.RawMessage(`{
 			"type": "object",
 			"properties": {
 				"path": {"type": "string", "description": "Absolute or relative file path to read"},
 				"start_line": {"type": "integer", "description": "Optional 1-based start line"},
-				"end_line": {"type": "integer", "description": "Optional 1-based end line (inclusive)"}
+				"end_line": {"type": "integer", "description": "Optional 1-based end line (inclusive)"},
+				"tail_lines": {"type": "integer", "description": "Optional: read only the last N lines of the file, numbered as in the file — the end of a log or a list. Give it without start_line/end_line"}
 			},
 			"required": ["path"]
 		}`),
@@ -302,6 +311,9 @@ type readFileArgs struct {
 	Path      string `json:"path"`
 	StartLine int    `json:"start_line"`
 	EndLine   int    `json:"end_line"`
+	// TailLines is a pointer so an explicit zero is refused rather than read
+	// as the argument being absent.
+	TailLines *int `json:"tail_lines"`
 }
 
 func (r *Recorder) executeReadFile(raw json.RawMessage) (string, error) {
@@ -311,6 +323,16 @@ func (r *Recorder) executeReadFile(raw json.RawMessage) (string, error) {
 	}
 	if args.Path == "" {
 		return "", fmt.Errorf("path is required")
+	}
+	tail := 0
+	if args.TailLines != nil {
+		if args.StartLine > 0 || args.EndLine > 0 {
+			return "", fmt.Errorf("tail_lines reads the end of the file on its own; give it without start_line/end_line")
+		}
+		if *args.TailLines < 1 {
+			return "", fmt.Errorf("tail_lines must be at least 1")
+		}
+		tail = *args.TailLines
 	}
 
 	data, notice, err := readForModel(args.Path)
@@ -322,9 +344,15 @@ func (r *Recorder) executeReadFile(raw json.RawMessage) (string, error) {
 		// built on a notice is a mutation built on nothing.
 		return notice, nil
 	}
-	windowed := args.StartLine > 0 || args.EndLine > 0
+	windowed := args.StartLine > 0 || args.EndLine > 0 || tail > 0
 
+	// The text after the last newline is a line; the empty string after a
+	// final newline is not one, and numbering it would give the file a line
+	// it does not have — and a tail read a blank last line.
 	lines := strings.Split(string(data), "\n")
+	if len(lines) > 1 && lines[len(lines)-1] == "" {
+		lines = lines[:len(lines)-1]
+	}
 	total := len(lines)
 	start := 1
 	end := total
@@ -342,8 +370,47 @@ func (r *Recorder) executeReadFile(raw json.RawMessage) (string, error) {
 			return "", fmt.Errorf("end_line %d is before start_line %d", end, start)
 		}
 	}
-	selected := lines[start-1 : end]
+	if tail > 0 && tail < total {
+		start = total - tail + 1
+	}
 
+	var content string
+	var truncated bool
+	if tail > 0 {
+		start, content, truncated = tailWindow(lines, start, end)
+	} else {
+		content, truncated = headWindow(lines[start-1 : end])
+	}
+	shown := strings.Count(content, "\n") + 1
+	lastLine := start + shown - 1
+	// Number after the caps, never before: MaxReadFileBytes is a budget for
+	// the file, and spending part of it on the numbering would mean a reader
+	// asking for a whole file got less of one than limits.go promises.
+	content = numberLines(content, start)
+	switch {
+	case truncated && tail > 0:
+		content += fmt.Sprintf("\n… (cut: showing the last %d lines, %d-%d of %d; read the lines before with start_line/end_line)", shown, start, lastLine, total)
+	case truncated:
+		content += fmt.Sprintf("\n… (truncated: showing lines %d-%d of %d; call read_file again with start_line=%d to continue)", start, lastLine, total, lastLine+1)
+	}
+	if windowed || truncated {
+		content = sizeLine(args.Path, data, start, lastLine) + "\n" + content
+	}
+
+	// What the model has now been shown, so a later mutation can tell a
+	// change from a clobber (seen.go). The fingerprint is of the whole file
+	// even for a windowed read — the question a mutation asks is whether the
+	// file moved, and a window is still a reading of the file it came from.
+	// A tail read is a window whatever it covered: it was asked for the end,
+	// and a whole-file write built on it is built on the end.
+	r.noteShown(args.Path, data, !windowed && !truncated)
+
+	return content, nil
+}
+
+// headWindow joins the lines a read shows, cutting at the end to the line and
+// byte caps.
+func headWindow(selected []string) (string, bool) {
 	truncated := false
 	if len(selected) > MaxReadFileLines {
 		selected = selected[:MaxReadFileLines]
@@ -359,34 +426,54 @@ func (r *Recorder) executeReadFile(raw json.RawMessage) (string, error) {
 		content = cut
 		truncated = true
 	}
-	shown := strings.Count(content, "\n") + 1
-	// Number after the caps, never before: MaxReadFileBytes is a budget for
-	// the file, and spending part of it on the numbering would mean a reader
-	// asking for a whole file got less of one than limits.go promises.
-	content = numberLines(content, start)
-	if truncated {
-		lastLine := start + shown - 1
-		content += fmt.Sprintf("\n… (truncated: showing lines %d-%d of %d; call read_file again with start_line=%d to continue)", start, lastLine, total, lastLine+1)
+	return content, truncated
+}
+
+// tailWindow is headWindow for a read of the end: when the lines asked for
+// are over either cap, what is dropped is the lines at the front, because the
+// end is what was asked for. It returns the first line it kept.
+func tailWindow(lines []string, start, end int) (int, string, bool) {
+	truncated := false
+	if end-start+1 > MaxReadFileLines {
+		start = end - MaxReadFileLines + 1
+		truncated = true
 	}
-
-	// What the model has now been shown, so a later mutation can tell a
-	// change from a clobber (seen.go). The fingerprint is of the whole file
-	// even for a windowed read — the question a mutation asks is whether the
-	// file moved, and a window is still a reading of the file it came from.
-	r.noteShown(args.Path, data, !windowed && !truncated)
-
-	return content, nil
+	size := 0
+	first := end + 1
+	for i := end; i >= start; i-- {
+		add := len(lines[i-1])
+		if i < end {
+			add++
+		}
+		if size+add > MaxReadFileBytes {
+			truncated = true
+			break
+		}
+		size += add
+		first = i
+	}
+	if first > end {
+		// The last line alone is over the byte cap: show its head, which is
+		// all of it a reader can be pointed back to.
+		cut, _ := TruncateOutput(lines[end-1], MaxReadFileBytes)
+		return end, cut, true
+	}
+	return first, strings.Join(lines[first-1:end], "\n"), truncated
 }
 
 // readForModel opens a file on read_file's behalf: the size ceiling and the
 // binary sniff both happen here, before the file is read whole, and either
 // can end the call without its contents.
 //
-// The two answers are deliberately different kinds. Over the ceiling is an
-// error, because the model asked for something it cannot have and has to ask
-// differently. A binary file is not an error: "this is a PNG" is a complete
-// answer to what was asked, and an error there invites the retry with a
-// smaller range — the same call again, for a file that has no lines.
+// Neither is an error. "This is a PNG" is a complete answer to what was
+// asked, and an error there invites the retry with a smaller range — the same
+// call again, for a file that has no lines. A text file past the ceiling is
+// answered with what it is — its size, its line count and a Markdown file's
+// headings, taken in one streaming pass — because a bare refusal was answered
+// with `wc` and `grep '^#'`, which is the same pass run as a command. It
+// still says that a narrower range will not help, so the next call is not the
+// same call scoped smaller.
+// See docs/capabilities/coding-agent.md#the-readers-refuse-before-they-spend.
 func readForModel(path string) (data []byte, notice string, err error) {
 	info, err := os.Stat(path)
 	if err != nil {
@@ -394,10 +481,6 @@ func readForModel(path string) (data []byte, notice string, err error) {
 	}
 	if info.IsDir() {
 		return nil, "", fmt.Errorf("%s is a directory; list_directory is the tool for one", path)
-	}
-	if info.Size() > MaxReadFileSize {
-		return nil, "", fmt.Errorf("%s is %s and read_file stops at %s, whatever line range is asked for; search it for what you need, or read a part of it with a command",
-			path, attachment.HumanSize(int(info.Size())), attachment.HumanSize(MaxReadFileSize))
 	}
 
 	f, err := os.Open(path)
@@ -414,6 +497,10 @@ func readForModel(path string) (data []byte, notice string, err error) {
 	head = head[:n]
 	if mediaType, text := sniffText(head); !text {
 		return nil, binaryNotice(path, mediaType, head, f, info.Size()), nil
+	}
+	if info.Size() > MaxReadFileSize {
+		notice, err := overCeiling(path, io.MultiReader(bytes.NewReader(head), f), info.Size())
+		return nil, notice, err
 	}
 
 	rest, err := io.ReadAll(f)
@@ -505,7 +592,7 @@ func numberLines(content string, start int) string {
 var listDirectory = Definition{
 	Tool: provider.Tool{
 		Name: ListDirectoryName,
-		Description: "List files and directories at a given path. Returns one entry per line with type prefix (file: or dir:). " +
+		Description: "List files and directories at a given path. Returns one entry per line with type prefix (file: or dir:), and each file's size after a tab, so a file can be sized before it is opened. " +
 			"Reports .git, node_modules and vendor without descending into them, and leaves out anything .gitignore names — " +
 			"list an ignored directory by naming it directly if you need to see inside it.",
 		Parameters: json.RawMessage(`{
@@ -582,8 +669,27 @@ func walkDir(base, prefix string, depth int, rules project.Ignore, lines *[]stri
 				_ = walkDir(base, rel, depth-1, rules.Descend(full), lines)
 			}
 		} else {
-			*lines = append(*lines, "file: "+rel)
+			*lines = append(*lines, "file: "+rel+entrySize(e))
 		}
 	}
 	return nil
+}
+
+// entrySize is what a listing says of a file's size: a tab and the size, from
+// the stat the walk already has, or nothing for an entry that is not a
+// regular file. It is the size and not the line count because a line count is
+// a read of every file listed, and a listing of five hundred entries would
+// cost five hundred reads to answer a question about one of them; read_file's
+// first line gives the lines of a file somebody opens. The tab is the
+// separator because a path can hold a space and cannot usefully hold a tab.
+// See docs/capabilities/coding-agent.md#finding-things.
+func entrySize(e fs.DirEntry) string {
+	if !e.Type().IsRegular() {
+		return ""
+	}
+	info, err := e.Info()
+	if err != nil {
+		return ""
+	}
+	return "\t" + provider.HumanSize(int(info.Size()))
 }

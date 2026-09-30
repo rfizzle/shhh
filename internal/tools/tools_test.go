@@ -17,14 +17,14 @@ import (
 
 func TestDefinitions(t *testing.T) {
 	defs := Definitions()
-	if len(defs) != 6 {
-		t.Fatalf("expected 6 tool definitions, got %d", len(defs))
+	if len(defs) != 7 {
+		t.Fatalf("expected 7 tool definitions, got %d", len(defs))
 	}
 	names := map[string]bool{}
 	for _, d := range defs {
 		names[d.Name] = true
 	}
-	for _, want := range []string{"read_file", "list_directory", "search", "glob", "query", "sqlite"} {
+	for _, want := range []string{"read_file", "list_directory", "search", "glob", "query", "sqlite", "document_symbol"} {
 		if !names[want] {
 			t.Errorf("missing tool definition: %s", want)
 		}
@@ -124,7 +124,7 @@ func TestReadFile_LineRange(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if result != "2\tb\n3\tc\n4\td" {
+	if _, body, _ := strings.Cut(result, "\n"); body != "2\tb\n3\tc\n4\td" {
 		t.Errorf("expected numbered 'b\\nc\\nd', got %q", result)
 	}
 }
@@ -139,7 +139,7 @@ func TestReadFile_StartLineOnly(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if !strings.HasPrefix(result, "2\tb\n") {
+	if _, body, _ := strings.Cut(result, "\n"); !strings.HasPrefix(body, "2\tb\n") {
 		t.Errorf("expected to start at line 2, got %q", result)
 	}
 }
@@ -156,7 +156,7 @@ func TestReadFile_NumbersLinesFromTheirPlaceInTheFile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if whole != "1\ta\n2\tb\n3\tc\n4\td\n5\t" {
+	if whole != "1\ta\n2\tb\n3\tc\n4\td" {
 		t.Errorf("whole-file numbering: %q", whole)
 	}
 
@@ -165,7 +165,7 @@ func TestReadFile_NumbersLinesFromTheirPlaceInTheFile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if window != "3\tc" {
+	if _, body, _ := strings.Cut(window, "\n"); body != "3\tc" {
 		t.Errorf("a window keeps the file's numbering, got %q", window)
 	}
 }
@@ -366,7 +366,7 @@ func TestSearch_NoMatches(t *testing.T) {
 }
 
 func TestSearch_DefaultPath(t *testing.T) {
-	args, _ := json.Marshal(searchArgs{Pattern: "package"})
+	args, _ := json.Marshal(searchArgs{Pattern: "^package tools$"})
 	result, err := Execute("search", args)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -454,26 +454,55 @@ func tinyPNG(t *testing.T) []byte {
 	return buf.Bytes()
 }
 
-func TestReadFile_RefusesOverTheCeilingBeforeOpeningTheFile(t *testing.T) {
+// A file past the ceiling is answered with what it is — its size, its line
+// count and a Markdown file's headings — rather than refused bare, and the
+// answer still says a narrower range will not help. Nothing is recorded as
+// read: the model was shown no line of it.
+func TestReadFile_OverTheCeilingIsAnsweredWithItsSizeAndOutline(t *testing.T) {
 	tmp := t.TempDir()
-	path := filepath.Join(tmp, "huge.log")
-	f, err := os.Create(path)
-	must(t, err)
-	// Sparse: the point is the size in the stat, not 200 MiB of bytes.
-	must(t, f.Truncate(200<<20))
-	must(t, f.Close())
-	// Unreadable, so a refusal that named permission rather than size would
-	// mean the file had been opened before the ceiling was consulted.
-	must(t, os.Chmod(path, 0))
+	path := filepath.Join(tmp, "huge.md")
+	var b strings.Builder
+	b.WriteString("# Title\n```sh\n# a shell comment, not a heading\n```\n")
+	lines := 4
+	for i := 0; b.Len() <= MaxReadFileSize; i++ {
+		fmt.Fprintf(&b, "## Section %d\n%s\n", i, strings.Repeat("x", 4000))
+		lines += 2
+	}
+	b.WriteString("no newline at the end")
+	lines++
+	must(t, os.WriteFile(path, []byte(b.String()), 0o644))
 
-	args, _ := json.Marshal(readFileArgs{Path: path})
-	_, err = Execute("read_file", args)
-	if err == nil {
-		t.Fatal("expected a file over the ceiling to be refused")
+	r := NewRecorder()
+	args, _ := json.Marshal(readFileArgs{Path: path, StartLine: 1, EndLine: 10})
+	got, err := r.Execute(ReadFileName, args)
+	if err != nil {
+		t.Fatalf("a file over the ceiling is an answer, not an error: %v", err)
 	}
-	if !strings.Contains(err.Error(), "200.0 MB") || !strings.Contains(err.Error(), "10.0 MB") {
-		t.Errorf("the refusal should name both sizes, got: %v", err)
+	for _, want := range []string{
+		fmt.Sprintf("%s bytes", commas(b.Len())),
+		fmt.Sprintf("%s lines", commas(lines)),
+		"returns no file over 10.0 MB, whatever line range is asked for",
+		"\n1 # Title\n5 ## Section 0\n7 ## Section 1",
+		"… and ",
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("the answer should carry %q, got:\n%s", want, firstLines(got, 8))
+		}
 	}
+	if strings.Contains(got, "shell comment") {
+		t.Errorf("a # inside a fence is not a heading:\n%s", firstLines(got, 8))
+	}
+	if _, ok := r.lookupSeen(path); ok {
+		t.Error("an answer that showed no line of the file recorded it as read")
+	}
+}
+
+func firstLines(s string, n int) string {
+	parts := strings.SplitN(s, "\n", n+1)
+	if len(parts) > n {
+		parts = parts[:n]
+	}
+	return strings.Join(parts, "\n")
 }
 
 func TestReadFile_BinaryIsANoticeNamingWhatItIs(t *testing.T) {

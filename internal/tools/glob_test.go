@@ -21,7 +21,7 @@ func TestGlob_TopLevel(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if result != "main.go" {
+	if result != "main.go\t1 B" {
 		t.Errorf("*.go should match only top-level main.go, got: %q", result)
 	}
 }

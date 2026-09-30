@@ -143,6 +143,14 @@ func (m *Manager) ServerNames() []string {
 	return names
 }
 
+// covers reports whether a detected server owns path's extension, without
+// starting it.
+func (m *Manager) covers(path string) bool {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m.byExt[strings.ToLower(filepath.Ext(path))] != nil
+}
+
 // serverFor lazily starts and returns the server owning path's extension;
 // (nil, "") when no detected server covers it or its start failed.
 func (m *Manager) serverFor(path string) (*server, string) {

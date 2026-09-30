@@ -26,7 +26,8 @@ const (
 	// file in this repository is under 200 KB and the largest generated file
 	// in the Go toolchain is under 3 MB — and far below the sizes this is
 	// for. A file over it is not one to read in windows; it is one to search,
-	// or to take a part of with a command.
+	// and what read_file says of it is its size, its line count and, for
+	// Markdown, its headings (outline.go).
 	MaxReadFileSize = 10 << 20
 
 	// SniffBytes is how much of a file is read to decide whether it is text.
@@ -114,6 +115,19 @@ const (
 	MaxSqliteKeptBytes   = 4 << 20
 	MaxSqliteCellRunes   = 200
 	MaxSqliteStatements  = 20
+
+	// MaxOutlineHeadings caps the headings a Markdown outline lists. It is
+	// the language server's own cap on an outline, so a file outlined by a
+	// server and one outlined here are bounded alike. MaxOutlineTextRunes
+	// cuts one heading's text, which is a title and not a paragraph.
+	MaxOutlineHeadings  = 100
+	MaxOutlineTextRunes = 120
+
+	// MaxScanBytes is how far one streaming pass reads a file to count its
+	// lines or outline it. It bounds the time the pass costs rather than the
+	// memory, which is one line at a time: a file past it is sized from its
+	// stat and its line count is given as a floor.
+	MaxScanBytes = 256 << 20
 
 	// MaxListEntries caps how many entries list_directory returns.
 	MaxListEntries = 500

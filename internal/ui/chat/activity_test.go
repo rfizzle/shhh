@@ -373,6 +373,9 @@ func TestActivityCounts_CountsWhatWasFound(t *testing.T) {
 			"read_file", "package a\nfunc A() {}\n" +
 				"… (truncated: showing lines 1-2 of 90; call read_file again with start_line=3 to continue)",
 			"2+ lines"},
+		{"nor is the size line a partial read opens with",
+			"read_file", "a.log: 90 lines, 1,204 bytes; showing lines 89-90\n89\tlast but one\n90\tlast",
+			"2 lines"},
 		{"a foreign tool's output is measured in what it is",
 			structural.AstGrepToolName, "a.go\n12│\tneedle\n13│\tbelow", "3 lines"},
 	}

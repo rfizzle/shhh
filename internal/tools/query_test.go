@@ -301,8 +301,8 @@ func TestQuery_AFileOverTheReadCeilingIsStillQueryable(t *testing.T) {
 	if err := f.Close(); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := NewRecorder().Execute(ReadFileName, json.RawMessage(fmt.Sprintf(`{"path":%q}`, p))); err == nil {
-		t.Fatal("fixture should be past read_file's ceiling")
+	if got, err := NewRecorder().Execute(ReadFileName, json.RawMessage(fmt.Sprintf(`{"path":%q}`, p))); err != nil || !strings.Contains(got, "read_file returns no file over") {
+		t.Fatalf("fixture should be past read_file's ceiling: %q, %v", got, err)
 	}
 	got := mustQuery(t, map[string]any{"paths": []string{p}, "expression": "select(.id == 7) | .id"})
 	if got != "7" {

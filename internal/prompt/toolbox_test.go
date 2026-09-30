@@ -174,6 +174,19 @@ func TestToolbox_SteersTheLanguageServerAheadOfSearchAndRead(t *testing.T) {
 	}
 }
 
+// The outline answers a document's headings in every session, and a
+// heading grep was the shell read a session reached for most, so the note
+// says Markdown by name and says what it replaces.
+// See docs/capabilities/coding-agent.md#finding-things.
+func TestToolbox_SendsADocumentsHeadingsToTheOutline(t *testing.T) {
+	got := Toolbox(toolList("document_symbol"), false)
+	for _, want := range []string{"outlines Markdown too", "without a language server", "rather than a grep"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("the outline note should say %q, got:\n%s", want, got)
+		}
+	}
+}
+
 // What a repeatedly steered child means is said where the roster that
 // reports it is described, and only to a session that can spawn one. What it
 // is asked to do about one is the act it now has, named: a message the roster
