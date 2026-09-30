@@ -347,8 +347,9 @@ func TestDecideRefusesMaskedPathsInEveryMode(t *testing.T) {
 			t.Errorf("the refusal should say why, got %q", reason)
 		}
 	}
-	if result := ScopeRefusedResult("masked"); !strings.HasPrefix(result, "error:") || !strings.Contains(result, "/add-dir") {
-		t.Errorf("the tool result should name the boundary and the way to widen it, got %q", result)
+	// No grant opens a masked path, so the result must not point at one.
+	if result := ScopeRefusedResult("masked"); !strings.HasPrefix(result, "error:") || !strings.Contains(result, "masked") || strings.Contains(result, "/add-dir") {
+		t.Errorf("the tool result should name the boundary and offer no way to widen it, got %q", result)
 	}
 }
 

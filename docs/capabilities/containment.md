@@ -55,7 +55,10 @@ finish what the scope allows and say which directory the next run needs with
 ### Two classes of directory never come along
 
 - **Refused.** A path behind the deny mask cannot be granted at all, by any
-  key. The mask cannot be disabled, so neither can this.
+  key. The mask cannot be disabled, so neither can this. The model is told so
+  in those words and is not pointed at `/add-dir`: a refusal that names a way
+  to widen the scope, for a path no widening reaches, reads as a door that
+  is only hard to open, and invites the search for another way in.
 - **Sensitive.** A home directory, a system root, another tool's credential
   store, shhh's own configuration and state, or a repository's store and
   hooks ([below](#the-repositorys-own-programs-are-read-only)). It can be

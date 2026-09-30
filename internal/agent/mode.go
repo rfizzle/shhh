@@ -310,9 +310,13 @@ func scopeRefusedReason(a Action) string {
 
 // ScopeRefusedResult is the tool result recorded for a call refused for the
 // paths it reaches, so the model learns the boundary instead of retrying it.
+// Only a path behind the deny mask is refused this way, and no grant opens
+// one, so the result names no way to widen the scope: pointing at one would
+// read as a door that is merely hard to open.
+// See docs/capabilities/containment.md#two-classes-of-directory-never-come-along.
 func ScopeRefusedResult(reason string) string {
-	return "error: this path is outside the session's working scope and cannot be granted (" + reason +
-		"). Work inside the session's directories, or ask the user to run /add-dir for a directory that can be granted."
+	return "error: this path is off-limits to every session (" + reason +
+		"), and no grant or scope change opens it. Do not reach it another way: do the work without it, or tell the user what you needed from it."
 }
 
 // DenyReasonDenylist is the rule name a command refused for the deny list
