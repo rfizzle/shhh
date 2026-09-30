@@ -16,7 +16,9 @@ import (
 
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/digest"
+	"github.com/rfizzle/shhh/internal/lsp"
 	"github.com/rfizzle/shhh/internal/meter"
+	"github.com/rfizzle/shhh/internal/tools"
 )
 
 const (
@@ -158,7 +160,7 @@ func handoffText(text string) string {
 }
 
 func handoffReadPath(tool, args string) string {
-	if tool != "read_file" && tool != "search" && tool != "lsp_document_symbol" && tool != "lsp_hover" {
+	if tool != "read_file" && tool != "search" && tool != tools.DocumentSymbolName && tool != lsp.HoverToolName {
 		return ""
 	}
 	var raw struct {

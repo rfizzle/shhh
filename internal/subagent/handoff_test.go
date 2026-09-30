@@ -15,7 +15,9 @@ import (
 	"time"
 
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/lsp"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/tools"
 )
 
 func TestHandoff_UsesOnlyPublicProgressAndOpaqueEvidence(t *testing.T) {
@@ -44,6 +46,22 @@ func TestHandoff_UsesOnlyPublicProgressAndOpaqueEvidence(t *testing.T) {
 	}
 	if strings.Contains(string(data), "private model prose") || strings.Contains(string(data), "secret raw output") {
 		t.Fatalf("handoff retained untrusted or private text: %s", data)
+	}
+}
+
+// The outline and hover tools are named off their definitions, so a rename
+// there cannot quietly drop the files they read out of the handoff again.
+func TestHandoff_CountsTheOutlineAndHoverCallsItMade(t *testing.T) {
+	c := &child{
+		name: "researcher-1", role: RoleResearcher, task: "survey the parser", model: "test", maxTokens: 300000,
+		transcript: []TranscriptEntry{
+			{Kind: EntryTool, Tool: tools.DocumentSymbolName, Args: `{"path":"lexer.go"}`, Result: "12 symbols"},
+			{Kind: EntryTool, Tool: lsp.HoverToolName, Args: `{"path":"parser.go","line":4,"symbol":"Parse"}`, Result: "func Parse()"},
+		},
+	}
+	h := c.makeHandoff("provider", "failed · provider unavailable", 2)
+	if !slices.Equal(h.ReadPaths, []string{"lexer.go", "parser.go"}) {
+		t.Fatalf("read paths = %#v, want the outline's file and the hover's", h.ReadPaths)
 	}
 }
 
